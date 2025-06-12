@@ -8284,6 +8284,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(BACKFILL_SCHED, "BACKFILL_ATTEMPTED"),
 	add_flag_bit(BACKFILL_LAST, "SCHEDULING_ATTEMPTED"),
 	add_flag_bit(STEPMGR_ENABLED, "STEPMGR_ENABLED"),
+	add_flag_bit(SPREAD_SEGMENTS, "SPREAD_SEGMENTS"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHOW_FLAGS)[] = {

@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "August 2025" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "September  2025" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -2051,6 +2051,15 @@ was not specified) as one task per requested thread.
 Spread the job allocation over as many nodes as possible and attempt to
 evenly distribute tasks across the allocated nodes.
 This option disables the topology/tree plugin.
+.IP
+
+.TP
+\fB\-\-spread\-segments\fR
+Prevent nodes within the same base block from being allocated to
+separate segments within the same block.
+
+This option applies to job allocations.
+\fBNOTE\fR: This option will only work with the \fBtopology/block\fR plugin.
 .IP
 
 .TP

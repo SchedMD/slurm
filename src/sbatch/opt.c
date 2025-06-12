@@ -229,6 +229,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_SEGMENT_SIZE", LONG_OPT_SEGMENT_SIZE },
   { "SBATCH_SIGNAL", LONG_OPT_SIGNAL },
   { "SBATCH_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
+  { "SBATCH_SPREAD_SEGMENTS", LONG_OPT_SPREAD_SEGMENTS },
   { "SBATCH_THREAD_SPEC", LONG_OPT_THREAD_SPEC },
   { "SBATCH_THREADS_PER_CORE", LONG_OPT_THREADSPERCORE },
   { "SBATCH_TIMELIMIT", 't' },
@@ -1093,6 +1094,7 @@ static void _usage(void)
 "              [--core-spec=cores] [--thread-spec=threads]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "              [--array=index_values] [--profile=...] [--ignore-pbs] [--spread-job]\n"
+"              [--spread-segments]\n"
 "              [--export[=names]] [--export-file=file|fd] [--delay-boot=mins]\n"
 "              [--use-min-nodes]\n"
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
@@ -1175,6 +1177,7 @@ static void _help(void)
 "  -S, --core-spec=cores       count of reserved cores\n"
 "      --signal=[[R][B]:]num[@time] send signal when time limit within time seconds\n"
 "      --spread-job            spread job across as many nodes as possible\n"
+"      --spread-segments       spread job segments across separate base blocks\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --thread-spec=threads   count of reserved threads\n"

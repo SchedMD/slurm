@@ -612,6 +612,7 @@ env_vars_t env_vars[] = {
   { "SLURM_SEND_LIBS", LONG_OPT_SEND_LIBS },
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
+  { "SLURM_SPREAD_SEGMENTS", LONG_OPT_SPREAD_SEGMENTS },
   { "SLURM_SRUN_MULTI", LONG_OPT_MULTI },
   { "SLURM_STDERRMODE", 'e' }, /* Left for backward compatibility */
   { "SLURM_STDINMODE", 'i' }, /* Left for backward compatibility */
@@ -1498,6 +1499,7 @@ static void _usage(void)
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog] [--mcs-label=mcs]\n"
 "            [--cpu-freq=min[-max[:gov]]] [--power=flags] [--spread-job]\n"
+"            [--spread-segments]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -1606,6 +1608,7 @@ static void _help(void)
 "      --signal=[R:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --spread-job            spread job across as many nodes as possible\n"
+"      --spread-segments       spread job segments across separate base blocks\n"
 "      --switches=max-switches{@max-time-to-wait}\n"
 "                              Optimum switches and max time to wait for optimum\n"
 "      --task-epilog=program   run \"program\" after launching task\n"
