@@ -223,6 +223,22 @@ static void _jobinfo_add_segment(
 	return;
 }
 
+int _get_block_level(int rem_nodes, int *llblock_level, block_context_t *ctx)
+{
+	int bblock_per_block = ROUNDUP(rem_nodes, ctx->bblock_node_cnt);
+	int block_level = ceil(log2(bblock_per_block));
+
+	if (block_level > 0 && llblock_level)
+		*llblock_level =
+			bit_fls_from_bit(ctx->block_levels, block_level - 1);
+	else if (llblock_level)
+		*llblock_level = 0;
+
+	block_level = bit_ffs_from_bit(ctx->block_levels, block_level);
+
+	return block_level;
+}
+
 extern int eval_nodes_block(topology_eval_t *topo_eval)
 {
 	bitstr_t **block_node_bitmap = NULL;	/* nodes on this block */
@@ -301,14 +317,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			req_nodes = req_nodes / segment_cnt;
 	}
 
-	bblock_per_block = ROUNDUP(rem_nodes, ctx->bblock_node_cnt);
-	block_level = ceil(log2(bblock_per_block));
-	if (block_level > 0)
-		llblock_level =
-			bit_fls_from_bit(ctx->block_levels, block_level - 1);
-	else
-		llblock_level = 0;
-	block_level = bit_ffs_from_bit(ctx->block_levels, block_level);
+	block_level = _get_block_level(rem_nodes, &llblock_level, ctx);
 
 	xassert(llblock_level >= 0);
 
