@@ -661,8 +661,6 @@ extern int init(void)
 		return SLURM_SUCCESS;
 	init_run = true;
 
-	debug("%s loaded", plugin_type);
-
 	if (s2n_init() != S2N_SUCCESS) {
 		on_s2n_error(NULL, s2n_init);
 		return errno;
@@ -682,6 +680,16 @@ extern int init(void)
 		error("Could not create server configuration for s2n");
 		return errno;
 	}
+
+	/*
+	 * Description of OpenSSL versions:
+	 * https://docs.openssl.org/1.1.1/man3/OPENSSL_VERSION_NUMBER/#description
+	 */
+	debug("Initialized %s. DEBUG_FLAG_TLS:%s s2n_stack_traces_enabled:%s s2n_get_openssl_version:0x%09zx",
+		 plugin_type,
+		 BOOL_STRINGIFY(slurm_conf.debug_flags & DEBUG_FLAG_TLS),
+		 BOOL_STRINGIFY(s2n_stack_traces_enabled()),
+		 s2n_get_openssl_version());
 
 	return SLURM_SUCCESS;
 }
