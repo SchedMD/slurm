@@ -668,8 +668,8 @@ extern int init(void)
 		return errno;
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS)
-		s2n_stack_traces_enabled_set(true);
+	/* Only enable backtraces with TLS debugflag active */
+	s2n_stack_traces_enabled_set(slurm_conf.debug_flags & DEBUG_FLAG_TLS);
 
 	/* Create client s2n_config */
 	if (!(client_config = _create_config())) {
