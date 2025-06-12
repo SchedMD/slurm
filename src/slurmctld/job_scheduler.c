@@ -4318,6 +4318,8 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		FREE_NULL_BITMAP(avail_bitmap);
 		reservation_delete_resv_exc_parts(&resv_exc);
 		job_start_data->rc = rc2;
+		if (rc2 == ESLURM_INVALID_QOS)
+			return 0;
 		return -1;
 	}
 

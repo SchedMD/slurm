@@ -167,6 +167,22 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 				resv_msg_ptr->users = val;
 			}
 
+		} else if (!xstrncasecmp(tag, "QOS", MAX(taglen, 1))) {
+			if (resv_msg_ptr->qos) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+			if (plus_minus) {
+				resv_msg_ptr->qos =
+					scontrol_process_plus_minus(plus_minus,
+								    val, false);
+				*res_free_flags |= RESV_FREE_STR_QOS;
+				plus_minus = '\0';
+			} else {
+				resv_msg_ptr->qos = val;
+			}
 		} else if (!xstrncasecmp(tag, "ReservationName",
 			   MAX(taglen, 1))) {
 			resv_msg_ptr->name = val;

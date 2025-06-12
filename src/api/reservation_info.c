@@ -148,6 +148,11 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrcat(out, line_end);
 
 	/****** Line ******/
+	xstrfmtcat(out,
+		   "QOS=%s", resv_ptr->qos);
+	xstrcat(out, line_end);
+
+	/****** Line ******/
 	if ((resv_ptr->start_time <= now) && (resv_ptr->end_time >= now))
 		state = "ACTIVE";
 	xstrfmtcat(out,

@@ -1000,13 +1000,13 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	else
 		duration = resv_ptr->duration;
 
-	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%u CoreCnt=%u NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s BurstBuffer=%s TRES=%s Comment=%s",
+	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%u CoreCnt=%u NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s QOS=%s BurstBuffer=%s TRES=%s Comment=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, resv_ptr->node_cnt, resv_ptr->core_cnt,
 	     resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
-	     resv_ptr->licenses,
+	     resv_ptr->licenses, resv_ptr->qos,
 	     resv_ptr->burst_buffer, resv_ptr->tres_str,
 	     resv_ptr->comment);
 
@@ -1260,7 +1260,8 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				goto end_it;
 			}
 		}
-	} else if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
+	} else if (!resv_ptr->qos &&
+		   (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		error("We need at least 1 user or 1 account to "
 		      "create a reservtion.");
 		rc = SLURM_ERROR;
@@ -1289,6 +1290,266 @@ end_it:
 	FREE_NULL_LIST(assoc_list_allow);
 	FREE_NULL_LIST(assoc_list_deny);
 	assoc_mgr_unlock(&locks);
+
+	return rc;
+}
+
+static void _addto_name_str(foreach_set_allow_str_t *set_allow_str,
+			    char *name)
+{
+	xstrfmtcatat(*set_allow_str->str, &set_allow_str->str_pos, "%s%s%s",
+		     *set_allow_str->str ? "," : "",
+		     set_allow_str->prefix,
+		     name);
+}
+
+static int _foreach_set_qos_name_str(void *x, void *arg)
+{
+	slurmdb_qos_rec_t *qos_ptr = x;
+	foreach_set_allow_str_t *set_allow_str = arg;
+
+	_addto_name_str(set_allow_str, qos_ptr->name);
+	return 0;
+}
+
+extern int _sort_qos_list_asc(void *v1, void *v2)
+{
+	slurmdb_qos_rec_t *qos_a = *(slurmdb_qos_rec_t **) v1;
+	slurmdb_qos_rec_t *qos_b = *(slurmdb_qos_rec_t **) v2;
+
+	return slurm_sort_char_list_asc(&qos_a->name, &qos_b->name);
+}
+
+/*
+ * Since the returned qos_list is full of pointers from the
+ * assoc_mgr_qos_list assoc_mgr_lock_t READ_LOCK on
+ * qos must be set before calling this function and while
+ * handling it after a return.
+ */
+static int _append_to_qos_list(list_t *qos_list, char *qos_name)
+{
+	int rc = ESLURM_INVALID_QOS;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+	slurmdb_qos_rec_t qos = {
+		.name = qos_name,
+	};
+
+	xassert(qos_list);
+	xassert(qos.name);
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce,
+				  &qos_ptr, true)) {
+		if (accounting_enforce & ACCOUNTING_ENFORCE_QOS) {
+			error("No QOS by name %s", qos.name);
+		} else {
+			verbose("No QOS by name %s", qos.name);
+			rc = SLURM_SUCCESS;
+		}
+	}
+
+	if (qos_ptr) {
+		if (!list_find_first(qos_list, slurm_find_ptr_in_list, qos_ptr))
+			list_append(qos_list, qos_ptr);
+		rc = SLURM_SUCCESS;
+	}
+
+	return rc;
+}
+
+/*
+ * Since the returned qos_list is full of pointers from the
+ * assoc_mgr_qos_list assoc_mgr_lock_t READ_LOCK on
+ * qos must be set before calling this function and while
+ * handling it after a return.
+ */
+static int _remove_from_qos_list(list_t *qos_list, char *qos_name)
+{
+	int rc = ESLURM_INVALID_QOS;
+	slurmdb_qos_rec_t *qos_ptr = NULL;
+	slurmdb_qos_rec_t qos = {
+		.name = qos_name,
+	};
+
+	xassert(qos_list);
+	xassert(qos.name);
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce,
+				  &qos_ptr, true)) {
+		if (accounting_enforce & ACCOUNTING_ENFORCE_QOS) {
+			error("No QOS by name %s", qos.name);
+		} else {
+			verbose("No QOS by name %s", qos.name);
+			rc = SLURM_SUCCESS;
+		}
+	}
+
+	if (qos_ptr) {
+		(void) list_delete_first(qos_list, slurm_find_ptr_in_list,
+					 qos_ptr);
+		rc = SLURM_SUCCESS;
+	}
+
+	return rc;
+}
+
+/*
+ * Validate a comma delimited list of account names and build an array of
+ *	them
+ * IN account       - a list of account names
+ * OUT account_cnt  - number of accounts in the list
+ * OUT account_list - list of the account names,
+ *		      CALLER MUST XFREE this plus each individual record
+ * OUT account_not  - true of account_list is that of accounts to be blocked
+ *                    from reservation access
+ * RETURN 0 on success
+ */
+static int _build_qos_list(char *qos, list_t **qos_list, bool *qos_not,
+			   bool break_on_failure)
+{
+	char *last = NULL, *tmp, *tok;
+	int rc = SLURM_SUCCESS;
+	assoc_mgr_lock_t locks = {
+		.qos = READ_LOCK,
+	};
+
+	xassert(qos_list);
+
+	*qos_not = false;
+
+	if (!qos)
+		return ESLURM_INVALID_QOS;
+
+	assoc_mgr_lock(&locks);
+
+	tmp = xstrdup(qos);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (tok[0] == '-') {
+			if (!*qos_list) {
+				*qos_not = true;
+			} else if (*qos_not != true) {
+				info("Reservation request has some not/qos");
+				rc = ESLURM_INVALID_QOS;
+				break;
+			}
+			tok++;
+		} else if (*qos_not != false) {
+			info("Reservation request has some not/qos");
+			rc = ESLURM_INVALID_QOS;
+			break;
+		}
+
+		if (!*qos_list)
+			*qos_list = list_create(NULL);
+		if (((rc = _append_to_qos_list(*qos_list, tok)) !=
+		     SLURM_SUCCESS) && break_on_failure)
+			break;
+
+		tok = strtok_r(NULL, ",", &last);
+	}
+
+	if (rc != SLURM_SUCCESS)
+		FREE_NULL_LIST(*qos_list);
+
+	if (*qos_list) {
+		list_sort(*qos_list, _sort_qos_list_asc);
+	}
+
+	assoc_mgr_unlock(&locks);
+
+	xfree(tmp);
+
+	return rc;
+}
+
+/*
+ * Update a qos list for an existing reservation based upon an
+ *	update comma delimited specification of qos to add (+name),
+ *	remove (-name), or set value of
+ * IN/OUT resv_ptr - pointer to reservation structure being updated
+ * IN qos     - a list of qos names, to set, add, or remove
+ * RETURN 0 on success
+ */
+static int _update_qos_list(slurmctld_resv_t *resv_ptr, char *qos)
+{
+	int rc = SLURM_SUCCESS;
+	char *last = NULL, *tmp, *tok;
+	bool minus_qos = false, cleared = false;
+	list_t *qos_list = NULL;
+	assoc_mgr_lock_t locks = {
+		.qos = READ_LOCK,
+	};
+
+	if (!qos)
+		return ESLURM_INVALID_QOS;
+
+	if (!resv_ptr->qos_list)
+		resv_ptr->qos_list = list_create(NULL);
+	qos_list = list_shallow_copy(resv_ptr->qos_list);
+
+	assoc_mgr_lock(&locks);
+
+	tmp = xstrdup(qos);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (tok[0] == '-') {
+			minus_qos = 1;
+			tok++;
+		} else if (tok[0] == '+') {
+			minus_qos = 0;
+			tok++;
+		} else if (tok[0] == '\0') {
+			continue;
+		} else {
+			/* The request is a completely new list */
+			if (!cleared) {
+				list_flush(qos_list);
+				resv_ptr->ctld_flags &= (~RESV_CTLD_QOS_NOT);
+				cleared = true;
+			}
+		}
+
+		if (resv_ptr->ctld_flags & RESV_CTLD_QOS_NOT) {
+			if (minus_qos)
+				rc = _append_to_qos_list(qos_list, tok);
+			else
+				rc = _remove_from_qos_list(qos_list, tok);
+		} else {
+			if (minus_qos)
+				rc = _remove_from_qos_list(qos_list, tok);
+			else
+				rc = _append_to_qos_list(qos_list, tok);
+		}
+
+		if (rc != SLURM_SUCCESS)
+			break;
+
+		tok = strtok_r(NULL, ",", &last);
+	}
+
+	if ((rc == SLURM_SUCCESS) && list_count(qos_list)) {
+		foreach_set_allow_str_t set_allow_str = {
+			.prefix = (resv_ptr->ctld_flags & RESV_CTLD_QOS_NOT) ?
+			"-" : "",
+			.str = &resv_ptr->qos,
+		};
+
+		list_sort(qos_list, _sort_qos_list_asc);
+		xfree(resv_ptr->qos);
+		(void) list_for_each(qos_list, _foreach_set_qos_name_str,
+				     &set_allow_str);
+		FREE_NULL_LIST(resv_ptr->qos_list);
+		resv_ptr->qos_list = qos_list;
+		qos_list = NULL;
+	} else if (rc == SLURM_SUCCESS)
+		rc = ESLURM_INVALID_QOS;
+
+	assoc_mgr_unlock(&locks);
+
+	FREE_NULL_LIST(qos_list);
+	xfree(tmp);
 
 	return rc;
 }
@@ -2807,6 +3068,9 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		if (resv_ptr->node_list)
 			xstrfmtcatat(tmp_str, &tmp_str_pos, " nodes=%s",
 				     resv_ptr->node_list);
+		if (resv_ptr->qos)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " qos=%s",
+				     resv_ptr->qos);
 		if (resv_ptr->tres_fmt_str)
 			xstrfmtcatat(tmp_str, &tmp_str_pos, " tres=%s",
 				     resv_ptr->tres_fmt_str);
@@ -3006,8 +3270,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	uid_t *user_list = NULL;
 	list_t *license_list = NULL;
 	uint32_t total_node_cnt = 0;
-	bool account_not = false, user_not = false;
+	bool account_not = false, user_not = false, qos_not = false;
 	resv_select_t resv_select = { 0 };
+	list_t *qos_list = NULL;
 
 	_create_resv_lists(false);
 
@@ -3161,9 +3426,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		goto bad_parse;
 
 	} else if (!resv_desc_ptr->accounts &&
-	    !resv_desc_ptr->users &&
-	    !resv_desc_ptr->groups) {
-		info("Reservation request lacks users, accounts or groups");
+		   !resv_desc_ptr->users &&
+		   !resv_desc_ptr->qos &&
+		   !resv_desc_ptr->groups) {
+		info("Reservation request lacks users, accounts, QOS, or groups");
 		rc = ESLURM_RESERVATION_EMPTY;
 		goto bad_parse;
 	}
@@ -3190,6 +3456,22 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			rc = ESLURM_GROUP_ID_MISSING;
 			goto bad_parse;
 		}
+	}
+
+	if (resv_desc_ptr->qos) {
+		foreach_set_allow_str_t set_allow_str = {
+			.str = &resv_desc_ptr->qos,
+		};
+
+		rc = _build_qos_list(resv_desc_ptr->qos, &qos_list,
+				     &qos_not, true);
+		if (rc != SLURM_SUCCESS)
+			goto bad_parse;
+
+		set_allow_str.prefix = qos_not ? "-" : "";
+		xfree(resv_desc_ptr->qos);
+		(void) list_for_each(qos_list, _foreach_set_qos_name_str,
+				     &set_allow_str);
 	}
 
 	if (resv_desc_ptr->licenses) {
@@ -3400,6 +3682,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
 	if (account_not)
 		resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
+	if (qos_not)
+		resv_ptr->ctld_flags |= RESV_CTLD_QOS_NOT;
 
 	resv_ptr->duration      = resv_desc_ptr->duration;
 	if (resv_desc_ptr->purge_comp_time != NO_VAL)
@@ -3447,6 +3731,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_ptr->user_cnt	= user_cnt;
 	resv_ptr->user_list	= user_list;
 	user_list = NULL;
+	resv_ptr->qos = resv_desc_ptr->qos;
+	resv_desc_ptr->qos = NULL;
+	resv_ptr->qos_list = qos_list;
+	qos_list = NULL;
 
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) &&
 	    (resv_desc_ptr->core_cnt == NO_VAL)) {
@@ -3482,6 +3770,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		xfree(account_list[i]);
 	xfree(account_list);
 	FREE_NULL_LIST(license_list);
+	FREE_NULL_LIST(qos_list);
 	_free_resv_select_members(&resv_select);
 	xfree(user_list);
 	return rc;
@@ -3895,10 +4184,19 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		goto update_failure;
 	}
 
+	if (resv_desc_ptr->qos) {
+		rc = _update_qos_list(resv_ptr, resv_desc_ptr->qos);
+		if (rc) {
+			error_code = rc;
+			goto update_failure;
+		}
+	}
+
 	if (!resv_ptr->users &&
 	    !resv_ptr->accounts &&
+	    !resv_ptr->qos &&
 	    !resv_ptr->groups) {
-		info("Reservation %s request lacks users, accounts or groups",
+		info("Reservation %s request lacks users, accounts, QOS or groups",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_RESERVATION_EMPTY;
 		goto update_failure;
@@ -4487,6 +4785,19 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			resv_ptr->user_list = user_list;
 			resv_ptr->user_cnt = user_cnt;
 			resv_ptr->ctld_flags &= (~RESV_CTLD_USER_NOT);
+		}
+	}
+
+	if (resv_ptr->qos) {
+		bool qos_not; /* we don't care about this */
+		(void) _build_qos_list(resv_ptr->qos,
+				       &resv_ptr->qos_list,
+				       &qos_not, false);
+
+		if (!resv_ptr->qos_list || !list_count(resv_ptr->qos_list)) {
+			error("Reservation %s has invalid QOS (%s)",
+			      resv_ptr->name, resv_ptr->qos);
+			return false;
 		}
 	}
 
@@ -6413,6 +6724,9 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 		char tmp_char[30];
 		slurmdb_assoc_rec_t *assoc;
 		if (!resv_ptr->assoc_list) {
+			if (resv_ptr->qos_list)
+				return SLURM_SUCCESS;
+
 			error("Reservation %s has no association list. "
 			      "Checking user/account lists",
 			      resv_ptr->name);
@@ -6510,6 +6824,67 @@ end_it:
 		     job_ptr->user_id, job_ptr->account, resv_ptr->name);
 
 	return ESLURM_RESERVATION_ACCESS;
+}
+
+/*
+ * Check if user is requesting a QOS that isn't
+ * allowed in the reservation.
+ * RET SLURM_SUCCESS if true, some error code otherwise
+ */
+static int _valid_job_access_resv_at_sched(job_record_t *job_ptr,
+					   slurmctld_resv_t *resv_ptr)
+{
+	int rc = SLURM_SUCCESS;
+
+	if (validate_slurm_user(job_ptr->user_id))
+		return SLURM_SUCCESS;
+
+	/* Check QOS */
+	if (resv_ptr->qos_list) {
+		slurmdb_qos_rec_t *qos_ptr = NULL;
+		if (!job_ptr->qos_ptr) {
+			slurmdb_qos_rec_t qos_rec = {
+				.id = job_ptr->qos_id,
+			};
+			/*
+			 * This should never be called, but just to be
+			 * safe we will try to fill it in.
+			 */
+			if (assoc_mgr_fill_in_qos(
+				    acct_db_conn, &qos_rec,
+				    accounting_enforce,
+				    &job_ptr->qos_ptr, false) ||
+			    !job_ptr->qos_ptr) {
+				return ESLURM_INVALID_QOS;
+			}
+		}
+
+		/*
+		 * Since we do not allow mixed state check the list's pointers.
+		 */
+		qos_ptr = list_find_first(resv_ptr->qos_list,
+					  slurm_find_ptr_in_list,
+					  job_ptr->qos_ptr);
+
+		if (resv_ptr->ctld_flags & RESV_CTLD_QOS_NOT) {
+			if (qos_ptr) { /* explicitly denied */
+				rc = ESLURM_INVALID_QOS;
+			}
+		} else if (!qos_ptr) { /* not allowed */
+			rc = ESLURM_INVALID_QOS;
+		}
+
+		if (rc != SLURM_SUCCESS) {
+			debug2("%pJ attempted to use reservation '%s' with QOS '%s' not allowed in reservation (%s)",
+			       job_ptr,
+			       resv_ptr->name,
+			       job_ptr->qos_ptr->name,
+			       resv_ptr->qos);
+			return rc;
+		}
+	}
+
+	return rc;
 }
 
 /*
@@ -6927,6 +7302,11 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 		rc2 = _valid_job_access_resv(job_ptr, resv_ptr, true);
 		if (rc2 != SLURM_SUCCESS)
 			return rc2;
+
+		rc2 = _valid_job_access_resv_at_sched(job_ptr, resv_ptr);
+		if (rc2 != SLURM_SUCCESS)
+			return rc2;
+
 		/*
 		 * Just in case the reservation was altered since last looking
 		 * we want to make sure things are good in the database.

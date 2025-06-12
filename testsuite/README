@@ -955,6 +955,7 @@ test_123_1   /features/reservations/test_flags.py
 test_123_2   Test RESV_DEL_HOLD
 test_123_3   Test overlapping reservations.
 test_123_4   Test reservation access
+test_123_5   Test reservation access based on QOS
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================

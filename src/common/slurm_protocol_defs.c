@@ -6490,8 +6490,9 @@ extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,
 
 	if (((resv_msg->users == NULL) || (resv_msg->users[0] == '\0')) &&
 	    ((resv_msg->groups == NULL) || (resv_msg->groups[0] == '\0')) &&
+	    (!resv_msg->qos || (resv_msg->qos[0] == '\0')) &&
 	    ((resv_msg->accounts == NULL) || (resv_msg->accounts[0] == '\0'))) {
-		*err_msg = "Either Users/Groups and/or Accounts must be specified.  No reservation created.";
+		*err_msg = "Either Users/Groups, QOS and/or Accounts must be specified.  No reservation created.";
 		return SLURM_ERROR;
 	} else if (resv_msg->users && resv_msg->groups) {
 		*err_msg = "Users and Groups are mutually exclusive.  You can have one or the other, but not both.  No reservation created.";
