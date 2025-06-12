@@ -2008,6 +2008,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		pack32(msg->max_start_delay, buffer);
 		packstr(msg->partition,    buffer);
 		pack32(msg->purge_comp_time, buffer);
+		packstr(msg->qos, buffer);
 		packstr(msg->users,        buffer);
 		packstr(msg->accounts,     buffer);
 		packstr(msg->burst_buffer, buffer);
@@ -2067,6 +2068,8 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 
 		safe_unpackstr(&tmp_ptr->partition, buffer);
 		safe_unpack32(&tmp_ptr->purge_comp_time, buffer);
+
+		safe_unpackstr(&tmp_ptr->qos, buffer);
 		safe_unpackstr(&tmp_ptr->users, buffer);
 		safe_unpackstr(&tmp_ptr->accounts, buffer);
 		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
@@ -2992,6 +2995,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 		safe_unpackstr(&resv->tres_str, buffer);
 		safe_unpackstr(&resv->users, buffer);
 		safe_unpackstr(&resv->groups, buffer);
+		safe_unpackstr(&resv->qos, buffer);
 
 		unpack_bit_str_hex_as_inx(&resv->node_inx, buffer);
 

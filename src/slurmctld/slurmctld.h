@@ -341,6 +341,7 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
 #define RESV_CTLD_NODE_FLAGS_SET SLURM_BIT(3)
 #define RESV_CTLD_EPILOG SLURM_BIT(4)
 #define RESV_CTLD_PROLOG SLURM_BIT(5)
+#define RESV_CTLD_QOS_NOT SLURM_BIT(6)
 
 typedef struct slurmctld_resv {
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
@@ -385,6 +386,8 @@ typedef struct slurmctld_resv {
 				   * minutes this reservation will sit idle
 				   * until it is revoked.
 				   */
+	char *qos; /* names of qos permitted to use */
+	list_t *qos_list; /* pointers to qos permitted or not to use */
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
 	time_t start_time_first;/* when the reservation first started	*/

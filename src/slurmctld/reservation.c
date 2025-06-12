@@ -567,6 +567,10 @@ static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr)
 	resv_copy_ptr->node_list = xstrdup(resv_orig_ptr->node_list);
 	resv_copy_ptr->partition = xstrdup(resv_orig_ptr->partition);
 	resv_copy_ptr->part_ptr = resv_orig_ptr->part_ptr;
+	resv_copy_ptr->qos = xstrdup(resv_orig_ptr->qos);
+	if (resv_orig_ptr->qos_list)
+		resv_copy_ptr->qos_list =
+			list_shallow_copy(resv_orig_ptr->qos_list);
 	resv_copy_ptr->resv_id = resv_orig_ptr->resv_id;
 	resv_copy_ptr->start_time = resv_orig_ptr->start_time;
 	resv_copy_ptr->start_time_first = resv_orig_ptr->start_time_first;
@@ -670,6 +674,15 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	src_resv->partition = NULL;
 
 	dest_resv->part_ptr = src_resv->part_ptr;
+
+	xfree(dest_resv->qos);
+	dest_resv->qos = src_resv->qos;
+	src_resv->qos = NULL;
+
+	FREE_NULL_LIST(dest_resv->qos_list);
+	dest_resv->qos_list = src_resv->qos_list;
+	src_resv->qos_list = NULL;
+
 	dest_resv->resv_id = src_resv->resv_id;
 	dest_resv->start_time = src_resv->start_time;
 	dest_resv->start_time_first = src_resv->start_time_first;
@@ -734,6 +747,8 @@ static void _del_resv_rec(void *x)
 		FREE_NULL_BITMAP(resv_ptr->node_bitmap);
 		xfree(resv_ptr->node_list);
 		xfree(resv_ptr->partition);
+		xfree(resv_ptr->qos);
+		FREE_NULL_LIST(resv_ptr->qos_list);
 		xfree(resv_ptr->tres_str);
 		xfree(resv_ptr->tres_fmt_str);
 		xfree(resv_ptr->users);
@@ -2132,6 +2147,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		packstr(resv_ptr->tres_fmt_str,	buffer);
 		packstr(resv_ptr->users,	buffer);
 		packstr(resv_ptr->groups, buffer);
+		packstr(resv_ptr->qos, buffer);
 
 		if (internal) {
 			packstr(resv_ptr->assoc_list,	buffer);
@@ -2286,6 +2302,7 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpackstr(&resv_ptr->tres_fmt_str, buffer);
 		safe_unpackstr(&resv_ptr->users, buffer);
 		safe_unpackstr(&resv_ptr->groups, buffer);
+		safe_unpackstr(&resv_ptr->qos, buffer);
 
 		/* Fields saved for internal use only (save state) */
 		safe_unpackstr(&resv_ptr->assoc_list, buffer);

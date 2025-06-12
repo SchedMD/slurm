@@ -2753,6 +2753,7 @@ typedef struct reserve_info {
 				   * minutes this reservation will sit idle
 				   * until it is revoked.
 				   */
+	char *qos; /* names of QOS permitted to use */
 	time_t start_time;	/* start time of reservation */
 	char *tres_str;         /* list of TRES's used by reservation */
 	char *users;		/* names of users permitted to use */
@@ -2788,6 +2789,7 @@ typedef struct resv_desc_msg {
 				   * minutes this reservation will sit idle
 				   * until it is revoked.
 				   */
+	char *qos; /* names of QOS permitted to use */
 	time_t start_time;	/* start time of reservation */
 	time_t time_force; /* Actual start of reservation */
 	char *tres_str;         /* list of TRES's used by reservation */
