@@ -248,6 +248,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		segment_cnt = rem_nodes / details_ptr->segment_size;
 		rem_segment_cnt = segment_cnt;
 		rem_nodes = details_ptr->segment_size;
+		if (segment_cnt > 1)
+			req_nodes = req_nodes / segment_cnt;
 	}
 
 	bblock_per_block = ROUNDUP(rem_nodes, ctx->bblock_node_cnt);
