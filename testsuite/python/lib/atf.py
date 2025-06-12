@@ -646,15 +646,15 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
                     f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}"
                 )
 
-            # Verify that the slurmd is registered correctly
-            if not repeat_until(
-                lambda: get_node_parameter(slurmd_name, "State"),
-                lambda state: state == "IDLE",
-            ):
-                pytest.fail(
-                    f"Node {slurmd_name} was not able to register correctly, not IDLE."
-                )
-            logging.debug(f"{slurmd_name} is IDLE.")
+        # Verify that the slurmd is registered correctly
+        if not repeat_until(
+            lambda: get_nodes(quiet=True),
+            lambda nodes: all(nodes[name]["State"] == "IDLE" for name in slurmd_list),
+        ):
+            nodes = get_nodes()
+            non_idle = [name for name in slurmd_list if nodes[name]["State"] != "IDLE"]
+            pytest.fail(f"Some nodes are not IDLE: {non_idle}")
+        logging.debug(f"All nodes are IDLE: {slurmd_list}")
 
 
 def start_slurmdbd(clean=False, quiet=False):
