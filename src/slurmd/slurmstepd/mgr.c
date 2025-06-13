@@ -2177,6 +2177,10 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		step_complete.step_rc = rc;
 		slurm_mutex_unlock(&step_complete.lock);
 
+		/* get_exit_code may log a false message since estatus = rc */
+		info("%s: step_rc [0x%x] is not a status", __func__,
+		     step_complete.step_rc);
+
 		if (step->batch)
 			rc = SLURM_SUCCESS;	/* drains node otherwise */
 		goto fail1;
@@ -2667,8 +2671,12 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 			rc = task_g_post_term(step, t);
 			if (rc == ENOMEM)
 				step->oom_error = true;
-			else if (rc && !t->estatus)
+			else if (rc && !t->estatus) {
 				t->estatus = rc;
+				if (!step_complete.step_rc)
+					info("%s: step_rc [0x%x] is not a status",
+					     __func__, step_complete.step_rc);
+			}
 
 			if (t->estatus) {
 				slurm_mutex_lock(&step_complete.lock);
