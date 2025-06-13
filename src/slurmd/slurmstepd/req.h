@@ -48,4 +48,6 @@ extern void wait_for_resumed(uint16_t msg_type);
 
 extern void set_msg_node_id(stepd_step_rec_t *step);
 
+extern void join_extern_threads();
+
 #endif /* _STEP_REQ_H */
