@@ -1638,6 +1638,13 @@ static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid)
 	int rc = SLURM_SUCCESS;
 	pid_t pid;
 
+	slurm_mutex_lock(&step->state_mutex);
+	if (step->state >= SLURMSTEPD_STEP_CANCELLED) {
+		error("Rejecting request to add extern pid from uid %u because step is ending",
+		      uid);
+		goto rwfail;
+	}
+
 	safe_read(fd, &pid, sizeof(pid_t));
 
 	if (!_slurm_authorized_user(uid)) {
@@ -1651,8 +1658,10 @@ static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid)
 	safe_write(fd, &rc, sizeof(int));
 
 	debug("Leaving _handle_add_extern_pid");
+	slurm_mutex_unlock(&step->state_mutex);
 	return SLURM_SUCCESS;
 rwfail:
+	slurm_mutex_unlock(&step->state_mutex);
 	return SLURM_ERROR;
 }
 
