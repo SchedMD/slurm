@@ -18,7 +18,7 @@ Optional plugins can be used for
 <a href="gang_scheduling.html">gang scheduling</a> (time sharing for
 parallel jobs), backfill scheduling,
 <a href="topology.html">topology optimized resource selection</a>,
-<a href="resource_limits.html">resource limits</a> by user or bank account,
+<a href="resource_limits.html">resource limits</a> by user or account,
 and sophisticated <a href="priority_multifactor.html"> multifactor job
 prioritization</a> algorithms.
 
@@ -49,7 +49,7 @@ job status including network topology.
 There is an administrative tool <b>scontrol</b> available to monitor
 and/or modify configuration and state information on the cluster.
 The administrative tool used to manage the database is <b>sacctmgr</b>.
-It can be used to identify the clusters, valid users, valid bank accounts, etc.
+It can be used to identify the clusters, valid users, valid accounts, etc.
 APIs are available for all functions.</p>
 
 <div class="figure">

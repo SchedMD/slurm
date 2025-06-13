@@ -349,9 +349,9 @@ enum job_state_reason {
 	WAIT_HELD,		/* job is held by administrator */
 	WAIT_TIME,		/* job waiting for specific begin time */
 	WAIT_LICENSES,		/* job is waiting for licenses */
-	WAIT_ASSOC_JOB_LIMIT,	/* user/bank job limit reached */
-	WAIT_ASSOC_RESOURCE_LIMIT,/* user/bank resource limit reached */
-	WAIT_ASSOC_TIME_LIMIT,  /* user/bank time limit reached */
+	WAIT_ASSOC_JOB_LIMIT,	/* user/account job limit reached */
+	WAIT_ASSOC_RESOURCE_LIMIT,/* user/account resource limit reached */
+	WAIT_ASSOC_TIME_LIMIT,  /* user/account time limit reached */
 	WAIT_RESERVATION,	/* reservation not available */
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
 	WAIT_HELD_USER,		/* job is held by user */
