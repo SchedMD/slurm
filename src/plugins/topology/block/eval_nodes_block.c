@@ -319,6 +319,16 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	block_level = _get_block_level(rem_nodes, &llblock_level, ctx);
 
+	if (block_level < 0) {
+		/* Number of base blocks in block */
+		bblock_per_block = ctx->block_count;
+		block_cnt = 1;
+	} else {
+		/* Number of base blocks in block */
+		bblock_per_block = (1 << block_level);
+		block_cnt = ROUNDUP(ctx->block_count, bblock_per_block);
+	}
+
 	xassert(llblock_level >= 0);
 
 	bblock_per_llblock = (1 << llblock_level);
@@ -453,16 +463,6 @@ next_segment:
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		(void) list_for_each(node_weight_list,
 				     eval_nodes_topo_weight_log, NULL);
-
-	if (block_level < 0) {
-		/* Number of base blocks in block */
-		bblock_per_block = ctx->block_count;
-		block_cnt = 1;
-	} else {
-		/* Number of base blocks in block */
-		bblock_per_block = (1 << block_level);
-		block_cnt = ROUNDUP(ctx->block_count, bblock_per_block);
-	}
 
 	if ((bblock_per_block != (bblock_per_llblock * max_llblock)) &&
 	    !nodes_on_llblock) {
