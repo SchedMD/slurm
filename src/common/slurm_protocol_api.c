@@ -719,6 +719,7 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
 	if (!(tls_conn = conn_g_create(&tls_args))) {
 		log_flag(NET, "Unable to create client TLS connection to address %pA on fd %d: %m",
 			 addr, fd);
+		fd_close(&fd);
 		return NULL;
 	}
 
