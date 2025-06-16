@@ -78,6 +78,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	tls_args.input_fd = tls_args.output_fd = fd;
 	if (!(tls_conn = conn_g_create(&tls_args))) {
 		rc = SLURM_ERROR;
+		fd_close(&fd);
 		goto cleanup;
 	}
 
