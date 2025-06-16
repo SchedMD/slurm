@@ -316,7 +316,7 @@ extern int wait_fd_readable(int fd, int time_limit)
 
 		rc = poll(&ufd, 1, time_left * 1000);
 		if (rc > 0) {	/* activity on this fd */
-			if (ufd.revents & POLLIN)
+			if (ufd.revents & (POLLIN | POLLHUP))
 				return 0;
 			else	/* Exception */
 				return -1;
