@@ -1727,7 +1727,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 		debug4("connecting IO back to %pA", &srun->ioaddr);
 	}
 
-	if ((sock = (int) slurm_open_stream(&srun->ioaddr, true)) < 0) {
+	if (!(tls_conn = slurm_open_msg_conn(&srun->ioaddr, srun->tls_cert))) {
 		error("connect io: %m");
 		/* XXX retry or silently fail?
 		 *     fail for now.
@@ -1735,19 +1735,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 		return SLURM_ERROR;
 	}
 
-	if (tls_enabled()) {
-		conn_args_t tls_args = {
-			.input_fd = sock,
-			.output_fd = sock,
-			.mode = TLS_CONN_CLIENT,
-			.cert = srun->tls_cert,
-		};
-
-		if (!(tls_conn = conn_g_create(&tls_args))) {
-			error("Could not create client TLS connection for step IO");
-			return SLURM_ERROR;
-		}
-	}
+	sock = conn_g_get_fd(tls_conn);
 
 	fd_set_blocking(sock);  /* just in case... */
 	_send_io_init_msg(sock, tls_conn, srun, step, false);
