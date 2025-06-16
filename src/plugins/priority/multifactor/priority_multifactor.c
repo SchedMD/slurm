@@ -534,9 +534,9 @@ static int _priority_each_qos(void *object, void *arg)
 		priority_part = (double) tmp_64;
 	}
 	if (((flags & PRIORITY_FLAGS_INCR_ONLY) == 0) ||
-	    (job_ptr->part_prio->priority_array[args->counter] <
+	    (job_ptr->prio_mult->priority_array[args->counter] <
 	     (uint32_t) priority_part)) {
-		job_ptr->part_prio->priority_array[args->counter] =
+		job_ptr->prio_mult->priority_array[args->counter] =
 			(uint32_t) priority_part;
 	}
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO) {
@@ -546,12 +546,12 @@ static int _priority_each_qos(void *object, void *arg)
 			xstrfmtcat(args->multi_prio_str,
 				   "%s/%s=%u", args->part_ptr->name,
 				   qos_ptr->name,
-				   job_ptr->part_prio->
+				   job_ptr->prio_mult->
 				   priority_array[args->counter]);
 		else
 			xstrfmtcat(args->multi_prio_str,
 				   "%s=%u", args->part_ptr->name,
-				   job_ptr->part_prio->
+				   job_ptr->prio_mult->
 				   priority_array[args->counter]);
 	}
 
@@ -683,10 +683,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 	 * Free after transitioning from multi-part/qos job to single part job.
 	 */
 	if (!job_ptr->part_ptr_list && !job_ptr->qos_list &&
-	    job_ptr->part_prio) {
-		xfree(job_ptr->part_prio->priority_array);
-		xfree(job_ptr->part_prio->priority_array_names);
-		xfree(job_ptr->part_prio);
+	    job_ptr->prio_mult) {
+		xfree(job_ptr->prio_mult->priority_array);
+		xfree(job_ptr->prio_mult->priority_array_names);
+		xfree(job_ptr->prio_mult);
 	}
 
 	if (job_ptr->part_ptr_list || job_ptr->qos_list) {
@@ -695,20 +695,20 @@ static uint32_t _get_priority_internal(time_t start_time,
 			.job_ptr = job_ptr
 		};
 
-		if (!job_ptr->part_prio)
-			job_ptr->part_prio =
-				xmalloc(sizeof(*job_ptr->part_prio));
+		if (!job_ptr->prio_mult)
+			job_ptr->prio_mult =
+				xmalloc(sizeof(*job_ptr->prio_mult));
 
-		if (job_ptr->part_prio &&
-		    (!job_ptr->part_prio->priority_array ||
-		     (job_ptr->part_prio->last_update < last_part_update))) {
+		if (job_ptr->prio_mult &&
+		    (!job_ptr->prio_mult->priority_array ||
+		     (job_ptr->prio_mult->last_update < last_part_update))) {
 
-			xfree(job_ptr->part_prio->priority_array);
+			xfree(job_ptr->prio_mult->priority_array);
 			if (job_ptr->part_ptr_list) {
 				i = list_count(job_ptr->part_ptr_list);
 				/* part_ptr_list is already sorted */
-				xfree(job_ptr->part_prio->priority_array_names);
-				job_ptr->part_prio->priority_array_names =
+				xfree(job_ptr->prio_mult->priority_array_names);
+				job_ptr->prio_mult->priority_array_names =
 					part_list_to_xstr(
 						job_ptr->part_ptr_list);
 			}
@@ -721,10 +721,10 @@ static uint32_t _get_priority_internal(time_t start_time,
 					i = qos_count;
 			}
 
-			job_ptr->part_prio->priority_array =
+			job_ptr->prio_mult->priority_array =
 				xcalloc(i, sizeof(uint32_t));
 
-			job_ptr->part_prio->last_update = time(NULL);
+			job_ptr->prio_mult->last_update = time(NULL);
 		}
 
 		if (job_ptr->part_ptr_list)

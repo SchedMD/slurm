@@ -395,7 +395,8 @@ struct job_record {
 	bool part_nodes_missing;	/* set if job's nodes removed from this
 					 * partition */
 	part_record_t *part_ptr;	/* pointer to the partition record */
-	priority_mult_t *part_prio;	/* partition based priority */
+	priority_mult_t *prio_mult;	/* priority based on requested partition
+					 * and qos */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	time_t preempt_time;		/* job preemption signal time */
 	bool preempt_in_progress;	/* Preemption of other jobs in progress

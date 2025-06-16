@@ -284,10 +284,10 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->het_job_list);
 	xfree(job_ptr->partition);
 	FREE_NULL_LIST(job_ptr->part_ptr_list);
-	if (job_ptr->part_prio) {
-		xfree(job_ptr->part_prio->priority_array);
-		xfree(job_ptr->part_prio->priority_array_names);
-		xfree(job_ptr->part_prio);
+	if (job_ptr->prio_mult) {
+		xfree(job_ptr->prio_mult->priority_array);
+		xfree(job_ptr->prio_mult->priority_array_names);
+		xfree(job_ptr->prio_mult);
 	}
 	slurm_destroy_priority_factors(job_ptr->prio_factors);
 	FREE_NULL_LIST(job_ptr->qos_list);
