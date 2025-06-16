@@ -311,6 +311,9 @@ extern int wait_fd_readable(int fd, int time_limit)
 		const double elapsed = difftime(time(NULL), start);
 		const double time_left = time_limit - elapsed;
 
+		if (time_left < 0)
+			goto on_timeout;
+
 		rc = poll(&ufd, 1, time_left * 1000);
 		if (rc > 0) {	/* activity on this fd */
 			if (ufd.revents & POLLIN)
@@ -318,6 +321,7 @@ extern int wait_fd_readable(int fd, int time_limit)
 			else	/* Exception */
 				return -1;
 		} else if (rc == 0) {
+on_timeout:
 			error("Timeout waiting for socket");
 			return -1;
 		} else if (errno != EINTR) {
