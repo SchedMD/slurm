@@ -713,8 +713,8 @@ Used to define parameters for certmgr plugin.
 .RS
 .TP
 \fBcertificate_renewal_period=\fR
-The period of time in minutes at which new certificate signing requests will be
-sent to slurmctld.
+slurmd/sackd will request a new signed certificate from slurmctld at this
+specified interval (in minutes).
 
 Default is 1440 minutes (once per day).
 .IP
