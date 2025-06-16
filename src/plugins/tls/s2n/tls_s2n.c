@@ -855,6 +855,9 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 
 	if (conn->using_global_s2n_conf)
 		_s2n_config_dec(conn);
+
+	if (s2n_stack_traces_enabled())
+		s2n_free_stacktrace();
 }
 
 static int _set_conn_s2n_conf(tls_conn_t *conn,
