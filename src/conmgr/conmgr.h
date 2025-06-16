@@ -697,6 +697,7 @@ extern const char *conmgr_fd_get_name(const conmgr_fd_t *con);
  * IN con - connection to query data
  * IN data_ptr - pointer to set with pointer to buffer data or NULL
  * IN len_ptr - number of bytes in buffer
+ * WARNING: only safe to call from connection callback function
  */
 extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
 				    const void **data_ptr, size_t *bytes_ptr);
