@@ -1536,9 +1536,6 @@ rwfail:
 
 static void _block_on_pid(pid_t pid)
 {
-	/* I wish there was another way to wait on a foreign pid, but
-	 * I was unable to find one.
-	 */
 	while (kill(pid, 0) != -1)
 		sleep(1);
 }
