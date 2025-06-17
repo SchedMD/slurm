@@ -283,12 +283,6 @@ def class_setup(request):
         logging.info(request.cls.__doc__)
 
 
-def pytest_fixture_setup(fixturedef, request):
-    # Log fixture docstring when invoked if present
-    if fixturedef.func.__doc__ is not None:
-        logging.info(fixturedef.func.__doc__)
-
-
 def pytest_keyboard_interrupt(excinfo):
     """Called for keyboard interrupt"""
     module_teardown()
