@@ -881,6 +881,7 @@ extern void notice_thread_fini(void)
 extern int commit_check(char *warning)
 {
 	int ans = 0;
+	int input = 0;
 	char c = '\0';
 	int fd = fileno(stdin);
 	fd_set rfds;
@@ -907,14 +908,18 @@ extern int commit_check(char *warning)
 		if ((ans = select(fd+1, &rfds, NULL, NULL, &tv)) <= 0)
 			break;
 
-		c = (char) getchar();
 		printf("\n");
+		if ((input = getchar()) == EOF)
+			break;
+		c = (char) input;
 	}
 	_nonblock(0);
-	if (ans <= 0)
+	if (ans == 0)
 		printf("timeout\n");
 	else if (c == 'Y' || c == 'y')
 		return 1;
+	else if ((ans < 0) || (input < 0))
+		printf("error: %s\n", strerror(errno));
 
 	return 0;
 }
