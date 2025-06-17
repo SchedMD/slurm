@@ -721,23 +721,33 @@ Default is 1440 minutes (once per day).
 
 .TP
 \fBgenerate_csr_script=\fR
-Path to script used to generate certificate signing requests.  The nodename is
-passed in as an argument to the script.  The script must print only the
+Path to script used to generate certificate signing requests. The nodename is
+passed in as an argument to the script. The script must print only the
 certificate signing request PEM file to stdout, and return 0 on success. Must
 return non-zero on error.
 
-Required with certmgr/script. Only run by daemons requesting cerfificates.
+Required with certmgr/script. Only run by daemons requesting certificates.
+.IP
+
+.TP
+\fBget_node_cert_key_script=\fR
+Path to script used to get node's private key which was used to generate the
+CSR returned by \fBgenerate_csr_script\fR. The nodename is passed in as an
+argument to the script. The script must print the node's private key (PEM file)
+to stdout. Must return 0 on success, and non-zero on error.
+
+Required with certmgr/script. Only run by daemons requesting certificates.
 .IP
 
 .TP
 \fBget_node_token_script=\fR
 Path to script used to get node's unique token which will be validated by
 slurmctld using the script set by \fBvalidate_node_script=\fR.
-The nodename is passed in as an argument to the script.  The script must print
+The nodename is passed in as an argument to the script. The script must print
 the node's unique token to stdout, and return 0 on success. Must return
 non-zero on error.
 
-Required with certmgr/script. Only run by daemons requesting cerfificates.
+Required with certmgr/script. Only run by daemons requesting certificates.
 .IP
 
 .TP
@@ -6352,7 +6362,7 @@ Default path is "ca_cert.pem" in the Slurm configuration directory
 .TP
 \fBctld_cert_file=\fR
 Path of certificate used by slurmctld. Must chain to \fBca_cert_file\fR. Should
-only exist on host running slurmctld.  File permissions must be 600, and owned
+only exist on host running slurmctld. File permissions must be 600, and owned
 by SlurmUser.
 
 Default path is "ctld_cert.pem" in the Slurm configuration directory
@@ -6369,7 +6379,7 @@ Default path is "ctld_cert_key.pem" in the Slurm configuration directory
 .TP
 \fBrestd_cert_file=\fR
 Path of certificate used by slurmrestd. Must chain to \fBca_cert_file\fR. Should
-only exist on host running slurmrestd.  File permissions must be 600, and owned
+only exist on host running slurmrestd. File permissions must be 600, and owned
 by the user that runs slurmrestd.
 
 Default path is "restd_cert.pem" in the Slurm configuration directory
@@ -6387,7 +6397,7 @@ Default path is "restd_cert_key.pem" in the Slurm configuration directory
 .TP
 \fBsackd_cert_file=\fR
 Path of certificate used by sackd. Must chain to \fBca_cert_file\fR. Should
-only exist on host running sackd.  File permissions must be 600, and owned
+only exist on host running sackd. File permissions must be 600, and owned
 by SlurmUser.
 
 Default path is "sackd_cert.pem" in the Slurm configuration directory
@@ -6408,7 +6418,7 @@ NOTE: If not using the certmgr plugin, this file needs to exist.
 .TP
 \fBslurmd_cert_file=\fR
 Path of certificate used by slurmd. Must chain to \fBca_cert_file\fR. Should
-only exist on host running slurmd.  File permissions must be 600, and owned
+only exist on host running slurmd. File permissions must be 600, and owned
 by SlurmUser.
 
 Default path is "slurmd_cert.pem" in the Slurm configuration directory
