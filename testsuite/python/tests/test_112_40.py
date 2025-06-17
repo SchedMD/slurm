@@ -1210,11 +1210,12 @@ def test_resv(slurm, reservation, admin_level):
     assert resp.reservations
 
     # Delete reservation
-    resp = slurm.slurm_v0040_delete_reservation(resv_name)
-    assert not resp.warnings and not resp.errors
-    assert resv_name not in [
-        r.name for r in slurm.slurm_v0040_get_reservations().reservations
-    ], f"Reservation {resv_name} should be deleted"
+    if atf.get_version("sbin/slurmrestd") >= (25, 5):
+        resp = slurm.slurm_v0040_delete_reservation(resv_name)
+        assert not resp.warnings and not resp.errors
+        assert resv_name not in [
+            r.name for r in slurm.slurm_v0040_get_reservations().reservations
+        ], f"Reservation {resv_name} should be deleted"
 
 
 def test_partitions(slurm):
