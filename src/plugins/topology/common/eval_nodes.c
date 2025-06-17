@@ -686,9 +686,6 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 
 				avail_res_array[i]->avail_cpus =
 					topo_eval->avail_cpus;
-				avail_res_array[i]->avail_res_cnt =
-					avail_res_array[i]->avail_cpus +
-					avail_res_array[i]->avail_gpus;
 
 				if (topo_eval->gres_per_job) {
 					eval_nodes_gres(topo_eval, &maxtasks,
@@ -1824,8 +1821,6 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 		/* Round up CPU count to CPU in allocation unit (e.g. core) */
 		avail_res->avail_cpus = topo_eval->avail_cpus;
 	}
-	avail_res->avail_res_cnt = avail_res->avail_cpus +
-				   avail_res->avail_gpus;
 check_gres_per_job:
 	if (check_gres && topo_eval->gres_per_job && topo_eval->avail_cpus) {
 		node_record_t *node_ptr = node_record_table_ptr[node_inx];
