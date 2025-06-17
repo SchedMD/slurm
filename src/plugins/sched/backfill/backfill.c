@@ -1389,11 +1389,11 @@ static uint32_t _hetjob_calc_prio(job_record_t *het_leader)
 	iter = list_iterator_create(het_leader->het_job_list);
 	while ((het_comp = list_next(iter))) {
 		if (het_comp->part_ptr_list &&
-		    het_comp->part_prio &&
-		    het_comp->part_prio->priority_array &&
+		    het_comp->prio_mult &&
+		    het_comp->prio_mult->priority_array &&
 		    (nparts = list_count(het_comp->part_ptr_list))) {
 			for (i = 0; i < nparts; i++) {
-				tmp = het_comp->part_prio->priority_array[i];
+				tmp = het_comp->prio_mult->priority_array[i];
 				if (tmp == 0) { /* job held */
 					prio = 0;
 					break;

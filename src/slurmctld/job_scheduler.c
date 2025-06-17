@@ -559,9 +559,9 @@ static int _build_job_queue_for_qos(void *x, void *arg)
 		return 0;
 
 	setup_job->job_prio_pairs++;
-	if (job_ptr->part_prio && job_ptr->part_prio->priority_array) {
+	if (job_ptr->prio_mult && job_ptr->prio_mult->priority_array) {
 		_job_queue_append(setup_job->job_queue, job_ptr,
-				  job_ptr->part_prio->
+				  job_ptr->prio_mult->
 				  priority_array[setup_job->prio_inx]);
 	} else {
 		_job_queue_append(setup_job->job_queue, job_ptr,
@@ -2225,16 +2225,16 @@ extern int sort_job_queue2(void *x, void *y)
 			p1 = details->priority;
 		else {
 			if (job_rec1->job_ptr->part_ptr_list &&
-			    job_rec1->job_ptr->part_prio &&
-			    job_rec1->job_ptr->part_prio->priority_array)
+			    job_rec1->job_ptr->prio_mult &&
+			    job_rec1->job_ptr->prio_mult->priority_array)
 				p1 = job_rec1->priority;
 			else
 				p1 = job_rec1->job_ptr->priority;
 		}
 	} else {
 		if (job_rec1->job_ptr->part_ptr_list &&
-		    job_rec1->job_ptr->part_prio &&
-		    job_rec1->job_ptr->part_prio->priority_array)
+		    job_rec1->job_ptr->prio_mult &&
+		    job_rec1->job_ptr->prio_mult->priority_array)
 			p1 = job_rec1->priority;
 		else
 			p1 = job_rec1->job_ptr->priority;
@@ -2247,16 +2247,16 @@ extern int sort_job_queue2(void *x, void *y)
 			p2 = details->priority;
 		else {
 			if (job_rec2->job_ptr->part_ptr_list &&
-			    job_rec2->job_ptr->part_prio &&
-			    job_rec2->job_ptr->part_prio->priority_array)
+			    job_rec2->job_ptr->prio_mult &&
+			    job_rec2->job_ptr->prio_mult->priority_array)
 				p2 = job_rec2->priority;
 			else
 				p2 = job_rec2->job_ptr->priority;
 		}
 	} else {
 		if (job_rec2->job_ptr->part_ptr_list &&
-		    job_rec2->job_ptr->part_prio &&
-		    job_rec2->job_ptr->part_prio->priority_array)
+		    job_rec2->job_ptr->prio_mult &&
+		    job_rec2->job_ptr->prio_mult->priority_array)
 			p2 = job_rec2->priority;
 		else
 			p2 = job_rec2->job_ptr->priority;
