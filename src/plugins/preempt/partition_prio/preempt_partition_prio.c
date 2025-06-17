@@ -115,7 +115,8 @@ extern void fini(void)
 extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 					job_queue_rec_t *preemptee)
 {
-	if ((preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	if (((preemptor->part_ptr->preempt_mode != NO_VAL16) &&
+	     (preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY)) ||
 	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
 		if (preemptor->priority < preemptee->priority)
 			return false;
@@ -133,7 +134,8 @@ extern bool preempt_p_job_preempt_check(job_queue_rec_t *preemptor,
 extern bool preempt_p_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor)
 {
-	if ((preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY) ||
+	if (((preemptor->part_ptr->preempt_mode != NO_VAL16) &&
+	     (preemptor->part_ptr->preempt_mode & PREEMPT_MODE_PRIORITY)) ||
 	    (slurm_conf.preempt_mode & PREEMPT_MODE_PRIORITY))
 		if (preemptor->priority < preemptee->priority)
 			return false;
