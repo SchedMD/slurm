@@ -299,6 +299,19 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 		}
 
+		/*
+		 * Check that shared avail_gres is at least equal to
+		 * the amount of gres_per_task if defined, we definitely do not
+		 * want to accumulate shards per socket that could not be really
+		 * used by the tasks on the node at the end (see bug 23010)
+		 * This is because we allow only one sharing gres per task.
+		 * (See _set_shared_task_bits() in gres_select_filter.c)
+		 */
+		if (gres_id_shared(gres_state_node->config_flags) &&
+		    gres_js->gres_per_task &&
+		    gres_js->gres_per_task > avail_gres)
+			continue;
+
 		/* By default only allow one sharing gres per job */
 		if (gres_id_shared(gres_state_node->config_flags) &&
 		    !(slurm_conf.select_type_param &
