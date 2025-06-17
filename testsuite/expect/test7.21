@@ -113,121 +113,66 @@ expect {
 }
 reconfigure -fail
 
-#
-# Test of srun help message
-#
-# NOTE: Expect parsing failures have been noted running "$srun --help"
-#       directly, so we build a script containing a pipe to tail
-#
-
 log_info "Testing sbatch.........."
-
 make_bash_script $file_in "$srun $bin_echo IT_RAN"
-set matches 0
 set job_id [submit_job -fail "-W -N1 -t1 -o $file_out $file_in"]
+wait_for_job $job_id "DONE"
 
-# Check echo worked
-spawn $bin_cat $file_out
-expect {
-	-re "error" {
-		fail "Some error happened"
-	}
-	-re "IT_RAN" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
+# Check the output of the job
+set output ""
+wait_for {[regexp -all "IT_RAN" $output] == 1} {
+	set output [run_command_output -fail "$bin_cat $file_out"]
 }
-if {$matches != 1} {
-	fail "Local (srun) sbatch spank plugin failure ($matches != 1)"
-}
+subtest {[regexp -all "IT_RAN" $output] == 1} "Local sbatch should print IT_RAN once with srun"
 
 # Check the output of spank plugin
 set matches 0
-set njob_id 0
-spawn $bin_cat $spank_out
-expect {
-# Example: slurm_spank_task_ini load_job: step_id=0 job_id=290 array_job_id=0 array_task_id=NO_VAL
-	-re "slurm_spank_task_init (load_job|spank_get_item): step_id=($number) job_id=($number) array_job_id=($number) array_task_id=($number)" {
-		set njob_id $expect_out(3,string)
-		set narray_job_id $expect_out(4,string)
-		set narray_task_id $expect_out(5,string)
-		if {$njob_id == $job_id && $narray_task_id == $NO_VAL} {
+wait_for {$matches == 4} {
+	set output [run_command_output -fail "$bin_cat $spank_out"]
+	set inline [regexp -inline -all "slurm_spank_task_init $re_word_str step_id=($number) job_id=($number) array_job_id=($number) array_task_id=($number)" $output]
+	for {set i 0} {$i < [llength $inline]} {incr i 5} {
+		set spank_step_id [lindex $inline [expr {$i + 1}]]
+		set spank_job_id [lindex $inline [expr {$i + 2}]]
+		set spank_array_job_id [lindex $inline [expr {$i + 3}]]
+		set spank_array_task_id [lindex $inline [expr {$i + 4}]]
+		if {$spank_job_id == $job_id && $spank_array_task_id == $NO_VAL && ($spank_step_id == 0 || $spank_step_id == $SLURM_BATCH_SCRIPT)} {
 			incr matches
-			exp_continue
 		} else {
-			fail "Unexpected job id: $njob_id != $job_id"
+			subfail "Values from slurm_spank_task_init are not correct: step_id: $spank_step_id job_id: $spank_job_id array_job_id: $spank_array_job_id array_task_id: $spank_array_task_id"
 		}
 	}
-	-re "error" {
-		fail "Some error happened"
-	}
-	eof {
-		wait
-	}
 }
-if {$matches != 4} {
-	fail "Local (srun) sbatch spank plugin failure ($matches != 4)"
-}
+subtest {$matches == 4} "slurm_spank_task_init should print 4 lines with the right info"
 
-spawn $bin_rm $spank_out
+run_command -fail -nolog "$bin_rm $spank_out"
 
 log_info "Testing sbatch array.........."
-
 make_bash_script $file_in "$srun $bin_echo IT_RAN"
-set matches 0
 set array_job_id [submit_job -fail "--array=1-2 -W -N1 -t1 -o $file_out $file_in"]
-
 wait_for_job $array_job_id "DONE"
-wait_for_file -fail $file_out
 
-# Check echo worked
-spawn $bin_cat $file_out
-expect {
-	-re "error" {
-		fail "Some error happened"
-	}
-	-re "IT_RAN" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
+# Check the output of the job array
+set output ""
+wait_for {[regexp -all "IT_RAN" $output] == 2} {
+	set output [run_command_output -fail "$bin_cat $file_out"]
 }
-if {$matches != 2} {
-	fail "Local (srun) sbatch spank plugin failure ($matches != 2)"
-}
+subtest {[regexp -all "IT_RAN" $output] == 2} "Local sbatch array should print IT_RAN twice with srun"
 
 # Check the output of spank plugin
 set matches 0
-spawn $bin_cat $spank_out
-expect {
-	-re "slurm_spank_task_init (load_job|spank_get_item): step_id=(-?$number) job_id=($number) array_job_id=($number) array_task_id=($number)" {
-		set nstep_id $expect_out(2,string)
-		set njob_id $expect_out(3,string)
-		set narray_job_id $expect_out(4,string)
-		set narray_task_id $expect_out(5,string)
-
-		if {$narray_task_id == 0 || $nstep_id == $SLURM_BATCH_SCRIPT} {
-			#ignore extern and batch steps
-			exp_continue
-		} elseif {$nstep_id == 0 && $narray_job_id == $array_job_id} {
+wait_for {$matches == 10} {
+	set output [run_command_output -fail "$bin_cat $spank_out"]
+	set inline [regexp -inline -all "slurm_spank_task_init $re_word_str step_id=($number) job_id=($number) array_job_id=($number) array_task_id=($number)" $output]
+	for {set i 0} {$i < [llength $inline]} {incr i 5} {
+		set spank_step_id [lindex $inline [expr {$i + 1}]]
+		set spank_job_id [lindex $inline [expr {$i + 2}]]
+		set spank_array_job_id [lindex $inline [expr {$i + 3}]]
+		set spank_array_task_id [lindex $inline [expr {$i + 4}]]
+		if {$spank_array_job_id >= $array_job_id && ($spank_array_task_id == 1 || $spank_array_task_id == 2) && ($spank_step_id == 0 || $spank_step_id == $SLURM_BATCH_SCRIPT)} {
 			incr matches
-			exp_continue
 		} else {
-			fail "Unexpected array job id: $narray_job_id != $array_job_id"
+			subfail "Values from slurm_spank_task_init are not correct: step_id: $spank_step_id job_id: $spank_job_id array_job_id: $spank_array_job_id array_task_id: $spank_array_task_id"
 		}
 	}
-	-re "error" {
-		fail "Some error happened"
-	}
-	eof {
-		wait
-	}
 }
-if {$matches != 5} {
-	fail "Local (srun) sbatch spank plugin failure ($matches != 5)"
-}
+subtest {$matches == 10} "slurm_spank_task_init should print 10 lines with the right info" "$matches != 10"
