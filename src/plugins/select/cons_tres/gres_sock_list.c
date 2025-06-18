@@ -77,12 +77,9 @@ static void _handle_gres_exc_topo(resv_exc_t *resv_exc_ptr, int node_inx,
 	gres_js = resv_exc_ptr->gres_js_exc ?
 		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
 
-	if (!gres_js)
-		return;
-
-	if (!gres_js->gres_bit_alloc || !gres_js->gres_bit_alloc[node_inx]) {
-		if (!resv_exc_ptr->gres_js_exc) {
-			/* No matching gres found in reservation */
+	if (!gres_js || !gres_js->gres_bit_alloc ||
+	    !gres_js->gres_bit_alloc[node_inx]) {
+		if (resv_exc_ptr->gres_list_inc) { /* In a reservation */
 			log_flag(SELECT_TYPE, "Can't use %s (topo:%d) on node %s because it is not included in the reservation",
 				 gres_name, topo_inx,
 				 node_record_table_ptr[node_inx]->name);
@@ -130,14 +127,11 @@ static void _handle_gres_exc_by_type(resv_exc_t *resv_exc_ptr,
 	gres_js = resv_exc_ptr->gres_js_exc ?
 		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
 
-	if (!gres_js)
-		return;
-
-	if (gres_js->type_name && (gres_js->type_id != gres_js_in->type_id)) {
-		if (resv_exc_ptr->gres_js_exc)
-			return;
-
-		*avail_gres = 0;
+	if (!gres_js ||
+	    (gres_js->type_name && (gres_js->type_id != gres_js_in->type_id))) {
+		if (resv_exc_ptr->gres_list_inc) { /* In a reservation */
+			*avail_gres = 0;
+		}
 		return;
 	}
 
@@ -167,9 +161,12 @@ static void _handle_gres_exc_basic(resv_exc_t *resv_exc_ptr,
 	gres_js = resv_exc_ptr->gres_js_exc ?
 		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
 
-	if (!gres_js)
+	if (!gres_js) {
+		if (resv_exc_ptr->gres_list_inc) { /* In a reservation */
+			*avail_gres = 0;
+		}
 		return;
-
+	}
 	if (resv_exc_ptr->gres_js_exc) {
 		if (gres_js->gres_cnt_node_alloc[node_inx] >= *avail_gres)
 			*avail_gres = 0;
