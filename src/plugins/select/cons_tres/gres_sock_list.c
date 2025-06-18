@@ -56,37 +56,66 @@ typedef struct {
 	list_t *gres_list_resv;
 } foreach_gres_sock_list_create_t;
 
-static bool _can_use_gres_exc_topo(resv_exc_t *resv_exc_ptr,
-				   int node_inx, int gres_bit)
+static void _handle_gres_exc_topo(resv_exc_t *resv_exc_ptr, int node_inx,
+				  int topo_inx, gres_node_state_t *gres_ns,
+				  uint64_t *avail_gres, bool use_total_gres,
+				  char *gres_name)
 {
 	gres_job_state_t *gres_js;
-	bool found = false;
+	uint64_t gres_cnt = 0;
+	uint64_t orig_avail_gres = *avail_gres;
 
 	if (!resv_exc_ptr)
-		return true;
+		return;
 
+	/*
+	 * If this job is not in a reservation we must exclude all gres in
+	 * reservations.
+	 * Otherwise, if this job is in a reservation we must include only gres
+	 * included in the reservation.
+	 */
 	gres_js = resv_exc_ptr->gres_js_exc ?
 		resv_exc_ptr->gres_js_exc : resv_exc_ptr->gres_js_inc;
 
 	if (!gres_js)
-		return true;
+		return;
 
-	if (!gres_js->gres_bit_alloc || !gres_js->gres_bit_alloc[node_inx])
-		return resv_exc_ptr->gres_js_exc ? true : false;
-	found = bit_test(gres_js->gres_bit_alloc[node_inx], gres_bit);
-
-	if (resv_exc_ptr->gres_js_exc && found) {
-		log_flag(SELECT_TYPE, "can't include!, it is excluded %d %d",
-		     node_inx, gres_bit);
-		return false;
-	} else if (resv_exc_ptr->gres_js_inc && !found) {
-		log_flag(SELECT_TYPE,
-			 "can't include!, it is not included %d %d",
-			 node_inx, gres_bit);
-		return false;
+	if (!gres_js->gres_bit_alloc || !gres_js->gres_bit_alloc[node_inx]) {
+		if (!resv_exc_ptr->gres_js_exc) {
+			/* No matching gres found in reservation */
+			log_flag(SELECT_TYPE, "Can't use %s (topo:%d) on node %s because it is not included in the reservation",
+				 gres_name, topo_inx,
+				 node_record_table_ptr[node_inx]->name);
+			*avail_gres = 0;
+		}
+		return;
 	}
 
-	return true;
+	if (!use_total_gres && !gres_ns->no_consume) {
+		bitstr_t *tmp_bitmap =
+			bit_copy(gres_ns->topo_gres_bitmap[topo_inx]);
+		bit_and(tmp_bitmap, gres_js->gres_bit_alloc[node_inx]);
+		bit_and_not(tmp_bitmap, gres_ns->gres_bit_alloc);
+		gres_cnt = bit_set_count(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
+	} else {
+		gres_cnt = bit_overlap(gres_js->gres_bit_alloc[node_inx],
+				       gres_ns->topo_gres_bitmap[topo_inx]);
+	}
+
+	if (resv_exc_ptr->gres_js_exc) {
+		*avail_gres -= MIN(gres_cnt, *avail_gres);
+	} else
+		*avail_gres = gres_cnt;
+
+	/* If we change the avail_gres print a message */
+	if (orig_avail_gres != *avail_gres) {
+		log_flag(SELECT_TYPE, "%s (topo: %d) avail_gres for node %s is now %"PRIu64" because of reservations",
+			 gres_name, topo_inx,
+			 node_record_table_ptr[node_inx]->name, *avail_gres);
+	}
+
+	return;
 }
 
 static void _handle_gres_exc_by_type(resv_exc_t *resv_exc_ptr,
@@ -232,16 +261,18 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			continue;	/* No GRES remaining */
 		}
 
-		if (!_can_use_gres_exc_topo(resv_exc_ptr,
-					    create_args->node_inx, i))
-			continue;   /* Not allowed in resv_exc_ptr */
-
 		if (!use_total_gres && !gres_ns->no_consume) {
 			avail_gres = gres_ns->topo_gres_cnt_avail[i] -
 				gres_ns->topo_gres_cnt_alloc[i];
 		} else {
 			avail_gres = gres_ns->topo_gres_cnt_avail[i];
 		}
+		if (avail_gres == 0)
+			continue;
+
+		_handle_gres_exc_topo(resv_exc_ptr, create_args->node_inx, i,
+				      gres_ns, &avail_gres, use_total_gres,
+				      gres_state_node->gres_name);
 		if (avail_gres == 0)
 			continue;
 
