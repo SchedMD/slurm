@@ -301,28 +301,32 @@ extern int wait_fd_readable(int fd, int time_limit)
 {
 	struct pollfd ufd;
 	time_t start;
-	int rc, time_left;
 
 	start = time(NULL);
-	time_left = time_limit;
 	ufd.fd = fd;
 	ufd.events = POLLIN;
 	ufd.revents = 0;
 	while (1) {
+		int rc = -1;
+		const double elapsed = difftime(time(NULL), start);
+		const double time_left = time_limit - elapsed;
+
+		if (time_left < 0)
+			goto on_timeout;
+
 		rc = poll(&ufd, 1, time_left * 1000);
 		if (rc > 0) {	/* activity on this fd */
-			if (ufd.revents & POLLIN)
+			if (ufd.revents & (POLLIN | POLLHUP))
 				return 0;
 			else	/* Exception */
 				return -1;
 		} else if (rc == 0) {
+on_timeout:
 			error("Timeout waiting for socket");
 			return -1;
 		} else if (errno != EINTR) {
 			error("poll(): %m");
 			return -1;
-		} else {
-			time_left = time_limit - (time(NULL) - start);
 		}
 	}
 }
