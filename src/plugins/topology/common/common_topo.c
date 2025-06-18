@@ -272,6 +272,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	uint32_t orig_max_nodes = topo_eval->max_nodes;
 	_sort_choose_nodes_t *sorted_res = NULL;
 	int res_cnt = 0, idx = 0;
+	bool need_bit_test = false;
 
 	if (job_ptr->details->req_node_bitmap)
 		req_node_map = job_ptr->details->req_node_bitmap;
@@ -348,6 +349,16 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		if (rem_nodes <= topo_eval->min_nodes)
 			break;
 
+		if (ec == ESLURM_RETRY_EVAL) {
+			bit_and_not(orig_node_map, topo_eval->node_map);
+			rem_nodes = bit_set_count(orig_node_map);
+
+			if (sorted_res)
+				need_bit_test = true;
+
+			continue;
+		}
+
 		if (!sorted_res) {
 			sorted_res = xcalloc(rem_nodes, sizeof(*sorted_res));
 			for (int i = 0; next_node_bitmap(orig_node_map, &i);
@@ -368,6 +379,14 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			qsort(sorted_res, res_cnt, sizeof(*sorted_res),
 			      _cmp_res);
 		}
+
+		while (need_bit_test && (idx < res_cnt) &&
+		       !bit_test(orig_node_map, sorted_res[idx].node_inx)) {
+			idx++;
+		}
+
+		if (idx == res_cnt)
+			break;
 
 		bit_clear(orig_node_map, sorted_res[idx].node_inx);
 		--rem_nodes;
