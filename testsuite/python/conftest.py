@@ -342,6 +342,25 @@ def pytest_keyboard_interrupt(excinfo):
 
 
 @pytest.fixture(scope="module")
+def taskget(module_setup):
+    """
+    Create the taskget program from the taskget.c in scripts directory.
+    Returns its bin path.
+    """
+
+    atf.require_tool("gcc")
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/taskget.c"
+    bin_path = os.getcwd() + "/taskget"
+
+    atf.run_command(f"gcc -o {bin_path} {src_path}", fatal=True)
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
 def mpi_program(module_setup):
     """Create the MPI program from the mpi_program.c in scripts directory.
     Returns the bin path of the mpi_program."""
