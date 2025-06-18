@@ -2318,7 +2318,8 @@ static void _restore_job_licenses(job_record_t *job_ptr)
 			license_list_to_string(job_ptr->license_list);
 	}
 
-	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
+	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr) ||
+	    IS_JOB_COMPLETING(job_ptr))
 		license_job_get(job_ptr, true);
 }
 
