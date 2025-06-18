@@ -126,6 +126,11 @@ static char *socket_name;
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool suspended = false;
 
+static int extern_thread_cnt = 0;
+static pthread_t *extern_threads = NULL;
+static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
+
 struct request_params {
 	int fd;
 	stepd_step_rec_t *step;
@@ -1534,13 +1539,20 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static void _block_on_pid(pid_t pid)
+static void _block_on_pid(pid_t pid, stepd_step_rec_t *step)
 {
-	/* I wish there was another way to wait on a foreign pid, but
-	 * I was unable to find one.
-	 */
-	while (kill(pid, 0) != -1)
-		sleep(1);
+	struct timespec ts = { 0, 0 };
+
+	slurm_mutex_lock(&extern_thread_lock);
+	while (kill(pid, 0) != -1) {
+		if (step->state >= SLURMSTEPD_STEP_CANCELLED)
+			break;
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += 1;
+		slurm_cond_timedwait(&extern_thread_cond, &extern_thread_lock,
+				     &ts);
+	}
+	slurm_mutex_unlock(&extern_thread_lock);
 }
 
 /*
@@ -1566,7 +1578,7 @@ static void *_wait_extern_pid(void *args)
 	xfree(extern_pid);
 
 	//info("waiting on pid %d", pid);
-	_block_on_pid(pid);
+	_block_on_pid(pid, step);
 	//info("done with pid %d %d: %m", pid, rc);
 	jobacct = jobacct_gather_remove_task(pid);
 	if (jobacct) {
@@ -1575,6 +1587,9 @@ static void *_wait_extern_pid(void *args)
 		jobacctinfo_destroy(jobacct);
 	}
 	acct_gather_profile_g_task_end(pid);
+
+	if (step->state >= SLURMSTEPD_STEP_CANCELLED)
+		goto end;
 
 	/*
 	 * See if we have any children of the given pid left behind, and if
@@ -1622,9 +1637,20 @@ static void *_wait_extern_pid(void *args)
 	next_pid:
 		fclose(stat_fp);
 	}
+end:
 	xfree(pids);
-
 	return NULL;
+}
+
+static void _wait_extern_thr_create(extern_pid_t *extern_pid)
+{
+	/* Lock as several RPC can write to the same variable. */
+	slurm_mutex_lock(&extern_thread_lock);
+	extern_thread_cnt++;
+	xrecalloc(extern_threads, extern_thread_cnt, sizeof(pthread_t));
+	slurm_thread_create(&extern_threads[extern_thread_cnt - 1],
+			    _wait_extern_pid, extern_pid);
+	slurm_mutex_unlock(&extern_thread_lock);
 }
 
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
@@ -1673,7 +1699,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 		set_user_limits(step, pid);
 
 	/* spawn a thread that will wait on the pid given */
-	slurm_thread_create_detached(_wait_extern_pid, extern_pid);
+	_wait_extern_thr_create(extern_pid);
 
 	return SLURM_SUCCESS;
 }
@@ -1682,6 +1708,13 @@ static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	pid_t pid;
+
+	slurm_mutex_lock(&step->state_mutex);
+	if (step->state >= SLURMSTEPD_STEP_CANCELLED) {
+		error("Rejecting request to add extern pid from uid %u because step is ending",
+		      uid);
+		goto rwfail;
+	}
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
@@ -1696,8 +1729,10 @@ static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid)
 	safe_write(fd, &rc, sizeof(int));
 
 	debug("Leaving _handle_add_extern_pid");
+	slurm_mutex_unlock(&step->state_mutex);
 	return SLURM_SUCCESS;
 rwfail:
+	slurm_mutex_unlock(&step->state_mutex);
 	return SLURM_ERROR;
 }
 
@@ -2506,4 +2541,19 @@ extern void set_msg_node_id(stepd_step_rec_t *step)
 	char *ptr = getenvp(step->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
 	if (ptr)
 		msg_target_node_id = atoi(ptr);
+}
+
+extern void join_extern_threads()
+{
+	slurm_mutex_lock(&extern_thread_lock);
+	slurm_cond_broadcast(&extern_thread_cond);
+	slurm_mutex_unlock(&extern_thread_lock);
+
+	for (int i = 0; i < extern_thread_cnt; i++) {
+		debug2("Joining extern pid thread %d. . .", i);
+		slurm_thread_join(extern_threads[i]);
+	}
+	debug2("Done joining extern pid threads");
+
+	xfree(extern_threads);
 }
