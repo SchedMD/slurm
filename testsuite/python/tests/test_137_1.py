@@ -92,8 +92,8 @@ def our_node():
 def test_plugin_features(our_node):
     """Verify plugin is enabled and ActiveFeatures != AvailableFeatures"""
 
-    active_feats = atf.get_node_parameter(our_node, "ActiveFeatures")
-    avail_feats = atf.get_node_parameter(our_node, "AvailableFeatures")
+    active_feats = atf.get_node_parameter(our_node, "active_features")
+    avail_feats = atf.get_node_parameter(our_node, "features")
     assert (
         active_feats != avail_feats
     ), "AvailableFeatures should not equal ActiveFeatures"
@@ -117,8 +117,8 @@ def test_request_adds_new_ActiveFeature(our_node):
     )
 
     assert atf.repeat_until(
-        lambda: atf.get_node_parameter(our_node, "ActiveFeatures"),
-        lambda f: f == "f2",
+        lambda: atf.get_node_parameter(our_node, "active_features"),
+        lambda f: f == ["f2"],
         timeout=30,
         fatal=True,
     ), "f2 is not included in ActiveFeatures"

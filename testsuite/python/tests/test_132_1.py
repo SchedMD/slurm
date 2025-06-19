@@ -66,8 +66,8 @@ exit 1
     # The node should be set to a DRAIN state
     node_name = atf.run_command_output(f"cat {prolog_output_file}", fatal=True).strip()
     assert atf.repeat_until(
-        lambda: atf.get_node_parameter(node_name, "State"),
-        lambda state: re.search(r"DRAIN", state) is not None,
+        lambda: atf.get_node_parameter(node_name, "state"),
+        lambda state: "DRAIN" in state,
         fatal=True,
     ), "The node is not in the drain state"
 

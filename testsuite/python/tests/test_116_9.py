@@ -19,9 +19,9 @@ def test_overcommit():
     # Find an idle node with at least 1 cpu
     eligible_node = None
     for node in atf.nodes:
-        if atf.nodes[node]["State"] == "IDLE" and atf.nodes[node]["CPUTot"] > 0:
+        if "IDLE" in atf.nodes[node]["state"] and atf.nodes[node]["cpus"] > 0:
             eligible_node = node
-            cpu_count = atf.nodes[node]["CPUTot"]
+            cpu_count = atf.nodes[node]["cpus"]
             break
 
     if eligible_node is None:
