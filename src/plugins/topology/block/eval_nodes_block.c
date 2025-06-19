@@ -287,7 +287,10 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
 	bitstr_t *alloc_node_map = NULL;
 	uint32_t orig_max_nodes = topo_eval->max_nodes;
-	int as_rem_nodes = -1;
+	int as_rem_nodes = -1, asblock_cnt = -1;
+	int asblock_inx = -1;
+	uint32_t *nodes_on_asblock = NULL; /* total nodes on asblock */
+	int block_per_asblock = 0;
 
 	topo_eval->avail_cpus = 0;
 
@@ -334,6 +337,29 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	bblock_per_llblock = (1 << llblock_level);
 	llblock_size = bblock_per_llblock * ctx->bblock_node_cnt;
 	max_llblock = ROUNDUP(rem_nodes, llblock_size);
+
+	if (details_ptr->segment_size &&
+	    job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
+		if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
+			int asblock_level;
+			int tmp = ROUNDUP(details_ptr->segment_size,
+					  ctx->bblock_node_cnt);
+
+			tmp *= ctx->bblock_node_cnt;
+			tmp *= segment_cnt;
+			asblock_level = _get_block_level(tmp, NULL, ctx);
+
+			block_per_asblock =
+				(1 << (asblock_level - block_level));
+		} else {
+			int asblock_level =
+				_get_block_level(as_rem_nodes, NULL, ctx);
+			block_per_asblock =
+				(1 << (asblock_level - block_level));
+		}
+
+		asblock_cnt = ROUNDUP(block_cnt, block_per_asblock);
+	}
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
@@ -504,11 +530,27 @@ next_segment:
 		}
 	}
 
+	if (block_per_asblock && !alloc_node_map) {
+		nodes_on_asblock = xcalloc(asblock_cnt, sizeof(uint32_t));
+		for (i = 0; i < block_cnt; i++) {
+			int asb_inx = i / block_per_asblock;
+			nodes_on_asblock[asb_inx] +=
+				bit_overlap(block_node_bitmap[i],
+					    topo_eval->node_map);
+		}
+	}
+
 	block_inx = -1;
 	for (i = 0; i < block_cnt; i++) {
 		uint32_t block_cpus = 0;
 		uint32_t avail_bnc = 0;
 		uint32_t bnc;
+
+		if (block_per_asblock && !alloc_node_map) {
+			if (nodes_on_asblock[i / block_per_asblock] <
+			    as_rem_nodes)
+				continue;
+		}
 
 		bit_and(block_node_bitmap[i], topo_eval->node_map);
 
@@ -575,7 +617,7 @@ next_segment:
 	if (block_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to find block",
 			 job_ptr);
-		if (alloc_node_map) {
+		if (alloc_node_map && !block_per_asblock) {
 			bit_or(topo_eval->node_map, alloc_node_map);
 			rc = ESLURM_RETRY_EVAL_HINT;
 		} else
@@ -590,6 +632,17 @@ next_segment:
 		info("%pJ requires nodes that do not have shared block",
 		     job_ptr);
 		goto fini;
+	}
+
+	if (block_per_asblock && !alloc_node_map) {
+		asblock_inx = block_inx / block_per_asblock;
+		bitstr_t *tmp_bitmap = bit_alloc(node_record_count);
+		for (i = 0; i < block_cnt; i++) {
+			if ((i / block_per_asblock) == asblock_inx)
+				bit_or(tmp_bitmap, block_node_bitmap[i]);
+		}
+		bit_and(orig_node_map, tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
 	}
 
 	if (req_nodes_bitmap) {
@@ -996,6 +1049,16 @@ fini:
 		}
 	}
 
+	if (rc && block_per_asblock && (asblock_inx != -1)) {
+		bit_clear_all(topo_eval->node_map);
+		for (i = 0; i < ctx->block_count; i++) {
+			if ((i / (block_per_asblock * bblock_per_block)) ==
+			    asblock_inx)
+				bit_or(topo_eval->node_map,
+				       ctx->block_record_table[i].node_bitmap);
+		}
+		rc = ESLURM_RETRY_EVAL;
+	}
 
 	if (rc == SLURM_SUCCESS)
 		eval_nodes_clip_socket_cores(topo_eval);
@@ -1020,6 +1083,7 @@ fini:
 	}
 	xfree(nodes_on_bblock);
 	xfree(nodes_on_llblock);
+	xfree(nodes_on_asblock);
 	FREE_NULL_BITMAP(bblock_required);
 	return rc;
 }
