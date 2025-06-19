@@ -65,7 +65,7 @@ def test_constraint(constraint, xfail, command):
         node = match.group(1)
 
     if not xfail:
-        node_features = atf.get_node_parameter(node, "AvailableFeatures")
+        node_features = atf.get_node_parameter(node, "features")
         constraints = constraint.split(",")
         for c in constraints:
             assert c in node_features, "Verify {node} has feature {c}"

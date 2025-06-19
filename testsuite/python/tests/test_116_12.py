@@ -234,8 +234,8 @@ done""",
     atf.run_job(f"--output={file_out} printenv SLURMD_NODENAME")
     result_out = fpc.get_tmp_file()
     node_name = (tmp_path / result_out).read_text().rstrip()
-    node_host_name = atf.get_node_parameter(node_name, "NodeHostName")
-    node_addr = atf.get_node_parameter(node_name, "NodeAddr")
+    node_host_name = atf.get_node_parameter(node_name, "hostname")
+    node_addr = atf.get_node_parameter(node_name, "address")
     if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
         node_host_name = node_addr
     assert (
@@ -245,8 +245,8 @@ done""",
 
     job_id = atf.submit_job_srun(f"--error={file_err} true")
     node_name = atf.get_job_parameter(job_id, "NodeList")
-    node_host_name = atf.get_node_parameter(node_name, "NodeHostName")
-    node_addr = atf.get_node_parameter(node_name, "NodeAddr")
+    node_host_name = atf.get_node_parameter(node_name, "hostname")
+    node_addr = atf.get_node_parameter(node_name, "address")
     if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
         node_host_name = node_addr
     result_err = fpc.get_tmp_file()

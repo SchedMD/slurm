@@ -38,11 +38,10 @@ def node_names():
     # Reserve 1 spec core on the first, 2 on the second
     for idx, node in enumerate(nodes):
         atf.set_node_parameter(node, "CoreSpecCount", idx + 1)
-        sockets = atf.get_node_parameter(node, "Sockets")
-        cores_per_socket = atf.get_node_parameter(node, "CoresPerSocket")
-        threads_per_core = atf.get_node_parameter(node, "ThreadsPerCore")
-        total_cores += sockets * cores_per_socket
-        total_cpus += sockets * cores_per_socket * threads_per_core
+        cores = atf.get_node_parameter(node, "cores")
+        threads = atf.get_node_parameter(node, "threads")
+        total_cores += cores
+        total_cpus += cores * threads
 
     available_cores = total_cores - 3
     return ",".join(nodes)

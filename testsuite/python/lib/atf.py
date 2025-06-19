@@ -650,10 +650,12 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
         # Verify that the slurmd is registered correctly
         if not repeat_until(
             lambda: get_nodes(quiet=True),
-            lambda nodes: all(nodes[name]["State"] == "IDLE" for name in slurmd_list),
+            lambda nodes: all(nodes[name]["state"] == ["IDLE"] for name in slurmd_list),
         ):
             nodes = get_nodes()
-            non_idle = [name for name in slurmd_list if nodes[name]["State"] != "IDLE"]
+            non_idle = [
+                name for name in slurmd_list if nodes[name]["state"] != ["IDLE"]
+            ]
             pytest.fail(f"Some nodes are not IDLE: {non_idle}")
         logging.debug(f"All nodes are IDLE: {slurmd_list}")
 
@@ -2352,7 +2354,10 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
     if live:
         # TODO: Remove extra debug info for t22858 instead of fatal
         result = run_command(
-            "scontrol show nodes -oF", fatal=False, quiet=quiet, **run_command_kwargs
+            "scontrol show nodes --json -F",
+            fatal=False,
+            quiet=quiet,
+            **run_command_kwargs,
         )
         if result["exit_code"]:
             logging.debug(
@@ -2363,36 +2368,13 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
             pytest.fail(
                 f"Command 'scontrol show nodes -oF' failed with rc={result['exit_code']}: {result['stderr']}"
             )
-
         output = result["stdout"]
+        node_dict_json = json.loads(output)["nodes"]
+
         node_dict = {}
-        for line in output.splitlines():
-            if line == "":
-                continue
-
-            while match := re.search(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", line):
-                parameter_name, parameter_value = match.group(1), match.group(2)
-
-                # Remove the consumed parameter from the line
-                line = re.sub(r"^ *([^ =]+)=(.*?)(?= +[^ =]+=| *$)", "", line)
-
-                # Reformat the value if necessary
-                if is_integer(parameter_value):
-                    parameter_value = int(parameter_value)
-                elif is_float(parameter_value):
-                    parameter_value = float(parameter_value)
-                elif parameter_value == "(null)":
-                    parameter_value = None
-
-                # Add it to the temporary node dictionary
-                node_dict[parameter_name] = parameter_value
-
+        for node in node_dict_json:
             # Add the node dictionary to the nodes dictionary
-            nodes_dict[node_dict["NodeName"]] = node_dict
-
-            # Clear the node dictionary for use by the next node
-            node_dict = {}
-
+            nodes_dict[node["name"]] = node
     else:
         # Get the config dictionary
         config_dict = get_config(live=False, quiet=quiet)
@@ -2457,7 +2439,7 @@ def get_node_parameter(node_name, parameter_name, default=None, live=True):
         'primary'
     """
 
-    nodes_dict = get_nodes(live=live)
+    nodes_dict = get_nodes(live=live, quiet=True)
 
     if node_name in nodes_dict:
         node_dict = nodes_dict[node_name]
@@ -3290,18 +3272,18 @@ def wait_for_node_state_any(
     state_set = frozenset(desired_node_states)
 
     def any_overlap(state):
-        return bool(state_set & set(state.split("+"))) != reverse
+        return bool(state_set & set(state)) != reverse
 
     # Wrapper for the repeat_until command to do all our state checking for us
     repeat_until(
-        lambda: get_node_parameter(nodename, "State"),
+        lambda: get_node_parameter(nodename, "state"),
         any_overlap,
         timeout=timeout,
         poll_interval=poll_interval,
         fatal=fatal,
     )
 
-    return any_overlap(get_node_parameter(nodename, "State"))
+    return any_overlap(get_node_parameter(nodename, "state"))
 
 
 def wait_for_node_state(
@@ -3337,23 +3319,21 @@ def wait_for_node_state(
 
     # Figure out if we're waiting for the desired_node_state to be present or to be gone
     def has_state(state):
-        return desired_node_state in state.split("+")
+        return desired_node_state in state
 
     def not_state(state):
-        return desired_node_state not in state.split("+")
+        return desired_node_state not in state
 
     # Wrapper for the repeat_until command to do all our state checking for us
     repeat_until(
-        lambda: get_node_parameter(nodename, "State"),
+        lambda: get_node_parameter(nodename, "state"),
         not_state if reverse else has_state,
         timeout=timeout,
         poll_interval=poll_interval,
         fatal=fatal,
     )
 
-    return (
-        desired_node_state in get_node_parameter(nodename, "State").split("+")
-    ) != reverse
+    return (desired_node_state in get_node_parameter(nodename, "state")) != reverse
 
 
 def wait_for_step(job_id, step_id, **repeat_until_kwargs):

@@ -41,13 +41,13 @@ def init_gpu_vars():
 
     for node_name in atf.nodes:
         node_dict = atf.nodes[node_name]
-        if "Gres" in node_dict and node_dict["Gres"] is not None:
-            if match := re.search(r"gpu:(\d+)", node_dict["Gres"]):
+        if "gres" in node_dict and node_dict["gres"] is not None:
+            if match := re.search(r"gpu:(\d+)", node_dict["gres"]):
                 nodes_with_gpus += 1
                 node_gpu_count = int(match.group(1))
-                node_cpu_count = node_dict["CPUTot"]
-                node_memory = node_dict["RealMemory"]
-                node_socket_count = node_dict["Sockets"]
+                node_cpu_count = node_dict["cpus"]
+                node_memory = node_dict["real_memory"]
+                node_socket_count = node_dict["sockets"]
                 if node_cpu_count < node_gpu_count:
                     node_gpu_count = node_cpu_count
                 if node_gpu_count < min_gpus_per_node:
