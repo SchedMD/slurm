@@ -313,9 +313,47 @@ set jid($cid($ji2)) $ji2
 set regex [make_regex 0]
 squeue " -M$fedc1,$fedc2,$fedc3 " $regex
 
-set regex [verify_scancel "-M$fedc3" $jid($fedc2) $regex]
-set regex [verify_scancel "-M$fedc2" $jid($fedc3) $regex]
-set regex [verify_scancel "-M$fedc2" $jid($fedc1) $regex]
+# Make sure these don't cancel anything
+scancel "-M$fedc3" $jid($fedc1)
+squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+
+scancel "-M$fedc3" $jid($fedc2)
+squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+
+scancel "-M$fedc2" $jid($fedc3)
+squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+
+# Cleanup
+set regex [verify_scancel "-M$fedc1" $ji0 $regex]
+set regex [verify_scancel "-M$fedc1" $ji1 $regex]
+set regex [verify_scancel "-M$fedc1" $ji2 $regex]
+
+log_info "################################################################"
+log_info "Test scancel --ctld from nonparticipant sibling clusters"
+log_info "################################################################"
+# Note that --ctld is currently ignored for federated jobs,
+# but this test is valid now and once it is enforced
+
+set ji0 [sbatch]
+set cid($ji0)  [wait_for_fed_job $ji0 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji0)) $ji0
+set ji1 [sbatch]
+set cid($ji1)  [wait_for_fed_job $ji1 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji1)) $ji1
+set ji2 [sbatch]
+set cid($ji2)  [wait_for_fed_job $ji2 RUNNING $fedc1,$fedc2,$fedc3]
+set jid($cid($ji2)) $ji2
+
+set regex [make_regex 0]
+squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+
+set my_scancel "${fed_slurm_base}/$fedc3/bin/scancel"
+set regex [verify_scancel "--ctld" $jid($fedc2) $regex]
+
+set my_scancel "${fed_slurm_base}/$fedc2/bin/scancel"
+set regex [verify_scancel "--ctld" $jid($fedc3) $regex]
+set regex [verify_scancel "--ctld" $jid($fedc1) $regex]
+set my_scancel "${fed_slurm_base}/$fedc1/bin/scancel"
 
 log_info "################################################################"
 log_info "Test scancel -u from sibling cluster"
