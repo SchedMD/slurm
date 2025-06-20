@@ -116,6 +116,10 @@ scheduling. It is only compatible with <I>PreemptType=preempt/none</I>.
 <I>GANG</I>: Enables gang scheduling (time slicing) of jobs in the same
 partition, and allows the resuming of suspended jobs. In order to use gang
 scheduling, the <b>GANG</b> option must be specified at the cluster level.
+<BR><B>NOTE</B>: If <b>GANG</b> scheduling is enabled with
+<I>PreemptType=preempt/partition_prio</I>, the controller will ignore
+<I>PreemptExemptTime</I> and the following <I>PreemptParameters</I>:
+<I>reorder_count</I>, <I>strict_order</I>, and <I>youngest_first</I>.
 <BR>
 <B>NOTE</B>: Gang scheduling is performed independently for each partition, so
 if you only want time-slicing by <I>OverSubscribe</I>, without any preemption,
@@ -552,6 +556,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 21 May 2024</p>
+<p style="text-align:center;">Last modified 20 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
