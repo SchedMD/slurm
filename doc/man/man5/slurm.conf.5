@@ -2808,6 +2808,12 @@ Enables gang scheduling (time slicing) of jobs in the same partition, and
 allows the resuming of suspended jobs. In order to use gang scheduling, the
 \fBGANG\fR option must be specified at the cluster level.
 
+\fBNOTE:\fR
+If \fBGANG\fR scheduling is enabled with
+\fBPreemptType=preempt/partition_prio\fR, the controller will ignore
+\fBPreemptExemptTime\fR and the following \fBPreemptParameters\fR:
+\fBreorder_count\fR, \fBstrict_order\fR, and \fByoungest_first\fR.
+
 \fBNOTE\fR:
 Gang scheduling is performed independently for each partition, so
 if you only want time\-slicing by \fBOverSubscribe\fR, without any preemption,
