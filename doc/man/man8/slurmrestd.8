@@ -274,6 +274,65 @@ Higher verbosity levels will have significant performance impact.
 Print version information and exit.
 .IP
 
+.SH "TLS"
+slurmrestd supports TLS encrypion via the TLS plugin interface. For a detailed
+description of TLS support in Slurm, see <https://slurm.schedmd.com/tls.html>.
+.PP
+slurmrestd supports TLS encryption for incoming HTTPS connections independently
+of how \fBTLSType\fR in \fBslurm.conf\fR(5) is configured. The configuration of
+\fBTLSParameters\fR in \fBslurm.conf\fR(5) is always applied. This allows the
+Slurm RPC layer to remain unencrypted via TLS while allowing slurmrestd to
+service HTTPS requests via TLS.
+.PP
+slurmrestd includes automatic detection of incoming TLS connections. If TLS
+plugin is fully configured and successfully loads at startup, then all new
+incoming connections will be fingerprinted for SSLv3 (per RFC#6101) and TLSv1.x
+(per RFC#8446) handshakes. Upon a matching fingerprint, each incoming
+connections will then be encrypted via the configured TLS plugin for the
+duration of the connection. Support for TLS is handled independently of if the
+connection is a [\fBunix\fR(2)] \fBsocket\fR(2) or \fBpipe(2)\fR (in INETD
+mode). Listening connections created with \fBhttps://\fR will be required to be
+encrypted via the TLS plugin. Any incoming connections to these listeners
+without TLS encryption will be closed immediately without sending an error
+response the client.
+.PP
+TLS support in slurmrestd is dependent on the requirements of the TLS plugin.
+slurmrestd will attempt to load the first available TLS plugin (except \fI
+tls/none\fR) automatically at startup. The requirements for each plugin are
+listed below:
+.TP
+\fBtls/s2n\fR
+The following files must be present and readable by the invoking user (before
+\fB\-u <user id>\fR is applied) at startup:
+.IP
+.RS
+.TP
+\fBrestd_cert_file.pem\fR
+TLS x509 server public certificate. Must be signed by CA trusted by clients.
+The certificate's \fICN\fR (common name) must match the hostname. slurmrestd
+ignores the host in client HTTP requests but most TLS clients will require they
+match.
+.sp 1
+Note: The certificate's file must be placed in the \fBautoconf(1)\fR
+installation directory variable sysconfdir which can be overridden via setting
+\fBTLSParameters\fR=\fBrestd_cert_file=\fR\fI/path/to/restd_cert_file.pem\fR in
+\fBslurm.conf\fR(5).
+.IP
+
+.TP
+\fBrestd_cert_key_file.pem\fR
+Private key for \fBrestd_cert_file.pem\fR. This file must \fBonly\fR be
+readable by the slurmrestd user.
+.sp 1
+Note: The certificate's file must be placed in the \fBautoconf(1)\fR
+installation directory variable sysconfdir which can be overridden via setting
+\fBTLSParameters\fR=\fBrestd_cert_key_file=\fR\fI/path/to/restd_cert_key.pem\fR
+in \fBslurm.conf\fR(5).
+.IP
+
+.RE
+.IP
+
 .SH "ENVIRONMENT VARIABLES"
 The following environment variables can be used to override settings
 compiled into slurmrestd.
