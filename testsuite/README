@@ -790,6 +790,7 @@ test_102_1   /commands/sacctmgr/test_federation.py
 test_102_2   /commands/sacctmgr/test_--usage.py
 test_102_3   /commands/sacctmgr/test_--json.py
 test_102_5   sacctmgr create qos/account job and then delete account/qos
+test_102_8   Test sacctmgr remove multiple qos
 
 test_103_#   Testing of salloc options.
 =======================================
