@@ -572,13 +572,12 @@ done:
 	/* skipping lock of step_complete.lock */
 	if (rc || step_complete.step_rc) {
 		/*
-		 * When step_rc is equal to slurm_rc it is not a status.
-		 * There are also a few cases where step_rc is set to a
-		 * non-status error code, but slurm_rc reports "No error"
-		 * to prevent the node from draining. Otherwise, step_rc
-		 * is a wait status.
-		 * */
-		info("%s: done with step (step_rc: [0x%x], slurm_rc: [0x%x] - %s)",
+		 * The step_rc can be anything. Certain plugins will set it to
+		 * errno POSIX errors while others will set it to Slurm internal
+		 * errors or just task exit codes. So we are not gona translate
+		 * it.
+		 */
+		info("%s: done with step (step_rc: %d, slurm_rc: %d - %s)",
 		     __func__, step_complete.step_rc, rc, slurm_strerror(rc));
 	} else {
 		info("done with step");
