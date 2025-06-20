@@ -25,10 +25,10 @@ designed to work with piped input, inetd, xinetd or systemd socket activation.
 Hostname and port to listen against. \fIhost\fR may be an IPv4/IPv6 IP or a
 resolvable hostname. Hostnames are only looked up at startup and do not change
 for the life of the process. \fIhost\fR is optional; if not provided, slurmrestd
-will listen on all network interfaces. \fIhttps\fR is optional; if not provided,
-slurmrestd will not use TLS plugin to encrypt traffic. If \fIhttps\fR is
-specified; slurmrestd will use (and require) the configured TLS plugin to
-encrypt traffic.
+will listen on all network interfaces. \fIhttps://\fR is optional; if not
+provided, slurmrestd will automatically use TLS plugin to encrypt traffic when
+possible. If \fIhttps://\fR is specified; slurmrestd will require the configured
+TLS plugin to encrypt traffic.
 .IP
 
 .TP
