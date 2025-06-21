@@ -2545,15 +2545,22 @@ extern void set_msg_node_id(stepd_step_rec_t *step)
 
 extern void join_extern_threads()
 {
+	int thread_cnt;
+
 	slurm_mutex_lock(&extern_thread_lock);
 	slurm_cond_broadcast(&extern_thread_cond);
+	thread_cnt = extern_thread_cnt;
 	slurm_mutex_unlock(&extern_thread_lock);
 
-	for (int i = 0; i < extern_thread_cnt; i++) {
-		debug2("Joining extern pid thread %d. . .", i);
+	for (int i = 0; i < thread_cnt; i++) {
+		debug2("Joining extern pid thread %d", i);
 		slurm_thread_join(extern_threads[i]);
 	}
-	debug2("Done joining extern pid threads");
 
+	slurm_mutex_lock(&extern_thread_lock);
 	xfree(extern_threads);
+	extern_thread_cnt = 0;
+	slurm_mutex_unlock(&extern_thread_lock);
+
+	debug2("Done joining extern pid threads");
 }
