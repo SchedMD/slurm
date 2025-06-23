@@ -1,6 +1,7 @@
 usage:	sackd [OPTIONS]
     --ca-cert-file              Absolute path to CA cert for configless TLS
     --conf-server host[:port]   Get configs from slurmctld at `host[:port]`.
+    -D                          Run daemon in foreground.
     -f config                   Read configuration from the specified file.
     -h                          Print this help message.
     -p port                     Listening port for configuration updates.
