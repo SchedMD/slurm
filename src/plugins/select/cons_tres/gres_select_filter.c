@@ -103,205 +103,191 @@ static bool _set_max_node_gres(sock_gres_t *sock_gres, uint64_t val)
 	return false;
 }
 
+static int _foreach_remove_unusable(void *x, void *arg)
+{
+	sock_gres_t *sock_gres = x;
+	gres_remove_unused_args_t *args = arg;
+	uint64_t max_gres, mem_per_gres = 0, near_gres_cnt = 0;
+	uint16_t cpus_per_gres;
+	uint64_t min_gres = 1, tmp_u64;
+	gres_job_state_t *gres_js = NULL;
+	int s;
+
+	xassert(sock_gres->gres_state_job);
+
+	gres_js = sock_gres->gres_state_job->gres_data;
+	if (args->whole_node)
+		min_gres = sock_gres->total_cnt;
+	else if (gres_js->gres_per_node)
+		min_gres = gres_js->gres_per_node;
+	if (gres_js->gres_per_socket) {
+		tmp_u64 = gres_js->gres_per_socket;
+		if (args->sock_per_node != NO_VAL)
+			tmp_u64 *= args->sock_per_node;
+		min_gres = MAX(min_gres, tmp_u64);
+	}
+	if (gres_js->gres_per_task) {
+		tmp_u64 = gres_js->gres_per_task;
+		if (args->task_per_node != NO_VAL16)
+			tmp_u64 *= args->task_per_node;
+		min_gres = MAX(min_gres, tmp_u64);
+	}
+
+	if (gres_js->cpus_per_gres)
+		cpus_per_gres = gres_js->cpus_per_gres;
+	else if (gres_js->ntasks_per_gres &&
+		 (gres_js->ntasks_per_gres != NO_VAL16))
+		cpus_per_gres = gres_js->ntasks_per_gres * args->cpus_per_task;
+	else
+		cpus_per_gres = gres_js->def_cpus_per_gres;
+	if (cpus_per_gres) {
+		max_gres = args->max_cpus / cpus_per_gres;
+		if ((max_gres == 0) || (gres_js->gres_per_node > max_gres) ||
+		    (gres_js->gres_per_task > max_gres) ||
+		    (gres_js->gres_per_socket > max_gres)) {
+			log_flag(SELECT_TYPE, "Insufficient CPUs for any GRES: max_gres (%"PRIu64") = max_cpus (%d) / cpus_per_gres (%d)",
+				 max_gres, args->max_cpus, cpus_per_gres);
+			return -1;
+		}
+	}
+
+	if (gres_js->mem_per_gres)
+		mem_per_gres = gres_js->mem_per_gres;
+	else
+		mem_per_gres = gres_js->def_mem_per_gres;
+	if (mem_per_gres && (args->avail_mem != NO_VAL64)) {
+		/* NO_VAL64 is set by caller if SELECT_MEMORY not in use */
+		if (mem_per_gres <= args->avail_mem) {
+			sock_gres->max_node_gres =
+				args->avail_mem / mem_per_gres;
+		} else {
+			log_flag(SELECT_TYPE, "Insufficient memory for any GRES: mem_per_gres (%"PRIu64") > avail_mem (%"PRIu64")",
+				 mem_per_gres, args->avail_mem);
+			return -1;
+		}
+	}
+
+	if (sock_gres->cnt_by_sock && !args->avail_cores_by_sock)
+		args->avail_cores_by_sock =
+			_build_avail_cores_by_sock(args->core_bitmap,
+						   args->sockets,
+						   args->cores_per_sock);
+
+	/*
+	 * NOTE: gres_per_socket enforcement is performed by
+	 * _build_sock_gres_by_topo(), called by gres_sock_list_create()
+	 */
+	if (sock_gres->cnt_by_sock && args->enforce_binding) {
+		for (s = 0; s < args->sockets; s++) {
+			if (!(args->avail_cores_by_sock)[s]) {
+				sock_gres->total_cnt -=
+					sock_gres->cnt_by_sock[s];
+				sock_gres->cnt_by_sock[s] = 0;
+			}
+		}
+		near_gres_cnt = sock_gres->total_cnt;
+	} else if (sock_gres->cnt_by_sock) { /* NO enforce_binding */
+		near_gres_cnt = sock_gres->total_cnt;
+		for (s = 0; s < args->sockets; s++) {
+			if (!(args->avail_cores_by_sock)[s]) {
+				near_gres_cnt -= sock_gres->cnt_by_sock[s];
+			}
+		}
+	} else {
+		near_gres_cnt = sock_gres->total_cnt;
+	}
+
+	if (!args->whole_node) {
+		/* If gres_per_node isn't set, try gres_per_job */
+		if (!_set_max_node_gres(sock_gres, gres_js->gres_per_node))
+			(void) _set_max_node_gres(sock_gres,
+						  gres_js->gres_per_job);
+	}
+
+	/* Avoid max_node_gres with ntasks_per_gres and whole node */
+	if (cpus_per_gres &&
+	    ((gres_js->ntasks_per_gres == NO_VAL16) || !args->whole_node)) {
+		int cpu_cnt;
+		cpu_cnt = bit_set_count(args->core_bitmap);
+		cpu_cnt *= args->cpus_per_core;
+		max_gres = cpu_cnt / cpus_per_gres;
+		if (max_gres == 0) {
+			log_flag(SELECT_TYPE, "max_gres == 0 == cpu_cnt (%d) / cpus_per_gres (%d)",
+				 cpu_cnt, cpus_per_gres);
+			return -1;
+		} else if ((sock_gres->max_node_gres == 0) ||
+			   (sock_gres->max_node_gres > max_gres)) {
+			sock_gres->max_node_gres = max_gres;
+		}
+	}
+	if (mem_per_gres && (args->avail_mem != NO_VAL64)) {
+		/* NO_VAL64 is set by caller if SELECT_MEMORY not in use */
+		max_gres = args->avail_mem / mem_per_gres;
+		sock_gres->total_cnt = MIN(sock_gres->total_cnt, max_gres);
+	}
+	if ((sock_gres->total_cnt < min_gres) ||
+	    ((sock_gres->max_node_gres != 0) &&
+	     (sock_gres->max_node_gres < min_gres))) {
+		log_flag(SELECT_TYPE, "min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")",
+			 min_gres, sock_gres->max_node_gres,
+			 sock_gres->total_cnt);
+		return -1;
+	}
+
+	if (gres_id_sharing(sock_gres->gres_state_job->plugin_id)) {
+		*(args->avail_gpus) += sock_gres->total_cnt;
+		if (sock_gres->max_node_gres &&
+		    (sock_gres->max_node_gres < near_gres_cnt))
+			near_gres_cnt = sock_gres->max_node_gres;
+		if (*(args->near_gpus) + near_gres_cnt < 0xff)
+			*(args->near_gpus) += near_gres_cnt;
+		else /* overflow */
+			*(args->near_gpus) = 0xff;
+	}
+
+	return 0;
+}
+
 /*
  * Determine which GRES can be used on this node given the available cores.
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by
  *                     gres_sock_list_create()
- * IN avail_mem - memory available for the job
- * IN max_cpus - maximum CPUs available on this node (limited by specialized
- *               cores and partition CPUs-per-node)
- * IN enforce_binding - GRES must be co-allocated with cores
- * IN core_bitmap - Identification of available cores on this node
- * IN sockets - Count of sockets on the node
- * IN cores_per_sock - Count of cores per socket on this node
- * IN cpus_per_core - Count of CPUs per core on this node
- * IN sock_per_node - sockets requested by job per node or NO_VAL
- * IN task_per_node - tasks requested by job per node or NO_VAL16
- * IN cpus_per_task - Count of CPUs per task
- * IN whole_node - we are requesting the whole node or not
- * OUT avail_gpus - Count of available GPUs on this node
- * OUT near_gpus - Count of GPUs available on sockets with available CPUs
+ * IN args->avail_mem - memory available for the job or NO_VAL64
+ *                      (when no SELECT_MEMORY)
+ * IN args->max_cpus - maximum CPUs available on this node (limited by
+ *                     specialized cores and partition CPUs-per-node)
+ * IN args->enforce_binding - GRES must be co-allocated with cores
+ * IN args->core_bitmap - Identification of available cores on this node
+ * IN args->sockets - Count of sockets on the node
+ * IN args->cores_per_sock - Count of cores per socket on this node
+ * IN args->cpus_per_core - Count of CPUs per core on this node
+ * IN args->sock_per_node - sockets requested by job per node or NO_VAL
+ * IN args->task_per_node - tasks requested by job per node or NO_VAL16
+ * IN args->cpus_per_task - Count of CPUs per task
+ * IN args->whole_node - we are requesting the whole node or not
+ * OUT args->avail_gpus - Count of available GPUs on this node
+ * OUT args->near_gpus - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
 extern int gres_select_filter_remove_unusable(list_t *sock_gres_list,
-					      uint64_t avail_mem,
-					      uint16_t max_cpus,
-					      bool enforce_binding,
-					      bitstr_t *core_bitmap,
-					      uint16_t sockets,
-					      uint16_t cores_per_sock,
-					      uint16_t cpus_per_core,
-					      uint32_t sock_per_node,
-					      uint16_t task_per_node,
-					      uint16_t cpus_per_task,
-					      bool whole_node,
-					      uint16_t *avail_gpus,
-					      uint16_t *near_gpus)
+					      gres_remove_unused_args_t *args)
 {
-	list_itr_t *sock_gres_iter;
-	sock_gres_t *sock_gres;
-	bool *avail_cores_by_sock = NULL;
-	uint64_t max_gres, mem_per_gres = 0, near_gres_cnt = 0;
-	uint16_t cpus_per_gres;
-	int s, rc = 0;
+	int rc = SLURM_SUCCESS;
 
-	*avail_gpus = 0;
-	*near_gpus = 0;
-	if (!core_bitmap || !sock_gres_list ||
+	xassert(args);
+	xassert(!args->avail_cores_by_sock); /* for internal use only */
+
+	*(args->avail_gpus) = 0;
+	*(args->near_gpus) = 0;
+	if (!args->core_bitmap || !sock_gres_list ||
 	    (list_count(sock_gres_list) == 0))
 		return rc;
 
-	sock_gres_iter = list_iterator_create(sock_gres_list);
-	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
-		uint64_t min_gres = 1, tmp_u64;
-		gres_job_state_t *gres_js = NULL;
-		xassert(sock_gres->gres_state_job);
+	if (list_for_each(sock_gres_list, _foreach_remove_unusable, args) < 0)
+		rc = SLURM_ERROR;
 
-		gres_js = sock_gres->gres_state_job->gres_data;
-		if (whole_node)
-			min_gres = sock_gres->total_cnt;
-		else if (gres_js->gres_per_node)
-			min_gres = gres_js-> gres_per_node;
-		if (gres_js->gres_per_socket) {
-			tmp_u64 = gres_js->gres_per_socket;
-			if (sock_per_node != NO_VAL)
-				tmp_u64 *= sock_per_node;
-			min_gres = MAX(min_gres, tmp_u64);
-		}
-		if (gres_js->gres_per_task) {
-			tmp_u64 = gres_js->gres_per_task;
-			if (task_per_node != NO_VAL16)
-				tmp_u64 *= task_per_node;
-			min_gres = MAX(min_gres, tmp_u64);
-		}
-
-		if (gres_js->cpus_per_gres)
-			cpus_per_gres = gres_js->cpus_per_gres;
-		else if (gres_js->ntasks_per_gres &&
-			 (gres_js->ntasks_per_gres != NO_VAL16))
-			cpus_per_gres = gres_js->ntasks_per_gres *
-				cpus_per_task;
-		else
-			cpus_per_gres = gres_js->def_cpus_per_gres;
-		if (cpus_per_gres) {
-			max_gres = max_cpus / cpus_per_gres;
-			if ((max_gres == 0) ||
-			    (gres_js->gres_per_node > max_gres) ||
-			    (gres_js->gres_per_task > max_gres) ||
-			    (gres_js->gres_per_socket > max_gres)){
-				log_flag(SELECT_TYPE, "Insufficient CPUs for any GRES: max_gres (%"PRIu64") = max_cpus (%d) / cpus_per_gres (%d)",
-					 max_gres, max_cpus, cpus_per_gres);
-				rc = -1;
-				break;
-			}
-		}
-
-		if (gres_js->mem_per_gres)
-			mem_per_gres = gres_js->mem_per_gres;
-		else
-			mem_per_gres = gres_js->def_mem_per_gres;
-		if (mem_per_gres && (avail_mem != NO_VAL64)) {
-			/* NO_VAL64 is set by caller if SELECT_MEMORY not in use */
-			if (mem_per_gres <= avail_mem) {
-				sock_gres->max_node_gres = avail_mem /
-					mem_per_gres;
-			} else {
-				log_flag(SELECT_TYPE, "Insufficient memory for any GRES: mem_per_gres (%"PRIu64") > avail_mem (%"PRIu64")",
-					 mem_per_gres, avail_mem);
-				rc = -1;
-				break;
-			}
-		}
-
-		if (sock_gres->cnt_by_sock && !avail_cores_by_sock)
-			avail_cores_by_sock =_build_avail_cores_by_sock(
-				core_bitmap, sockets, cores_per_sock);
-
-		/*
-		 * NOTE: gres_per_socket enforcement is performed by
-		 * _build_sock_gres_by_topo(), called by
-		 * gres_sock_list_create()
-		 */
-		if (sock_gres->cnt_by_sock && enforce_binding) {
-			for (s = 0; s < sockets; s++) {
-				if (!avail_cores_by_sock[s]) {
-					sock_gres->total_cnt -=
-						sock_gres->cnt_by_sock[s];
-					sock_gres->cnt_by_sock[s] = 0;
-				}
-			}
-			near_gres_cnt = sock_gres->total_cnt;
-		} else if (sock_gres->cnt_by_sock) { /* NO enforce_binding */
-			near_gres_cnt = sock_gres->total_cnt;
-			for (s = 0; s < sockets; s++) {
-				if (!avail_cores_by_sock[s]) {
-					near_gres_cnt -=
-						sock_gres->cnt_by_sock[s];
-				}
-			}
-		} else {
-			near_gres_cnt = sock_gres->total_cnt;
-		}
-
-		if (!whole_node) {
-			/* If gres_per_node isn't set, try gres_per_job */
-			if (!_set_max_node_gres(
-				    sock_gres,
-				    gres_js->gres_per_node))
-				(void)_set_max_node_gres(
-					sock_gres,
-					gres_js->gres_per_job);
-		}
-
-		/* Avoid max_node_gres with ntasks_per_gres and whole node */
-		if (cpus_per_gres &&
-		    ((gres_js->ntasks_per_gres == NO_VAL16) ||
-		     !whole_node)) {
-			int cpu_cnt;
-			cpu_cnt = bit_set_count(core_bitmap);
-			cpu_cnt *= cpus_per_core;
-			max_gres = cpu_cnt / cpus_per_gres;
-			if (max_gres == 0) {
-				log_flag(SELECT_TYPE, "max_gres == 0 == cpu_cnt (%d) / cpus_per_gres (%d)",
-					 cpu_cnt, cpus_per_gres);
-				rc = -1;
-				break;
-			} else if ((sock_gres->max_node_gres == 0) ||
-				   (sock_gres->max_node_gres > max_gres)) {
-				sock_gres->max_node_gres = max_gres;
-			}
-		}
-		if (mem_per_gres && (avail_mem != NO_VAL64)) {
-			/* NO_VAL64 is set by caller if SELECT_MEMORY not in use */
-			max_gres = avail_mem / mem_per_gres;
-			sock_gres->total_cnt = MIN(sock_gres->total_cnt,
-						   max_gres);
-		}
-		if ((sock_gres->total_cnt < min_gres) ||
-		    ((sock_gres->max_node_gres != 0) &&
-		     (sock_gres->max_node_gres < min_gres))) {
-			log_flag(SELECT_TYPE, "min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")",
-				 min_gres, sock_gres->max_node_gres,
-				 sock_gres->total_cnt);
-			rc = -1;
-			break;
-		}
-
-		if (gres_id_sharing(sock_gres->gres_state_job->plugin_id)) {
-			*avail_gpus += sock_gres->total_cnt;
-			if (sock_gres->max_node_gres &&
-			    (sock_gres->max_node_gres < near_gres_cnt))
-				near_gres_cnt = sock_gres->max_node_gres;
-			if (*near_gpus + near_gres_cnt < 0xff)
-				*near_gpus += near_gres_cnt;
-			else /* overflow */
-				*near_gpus = 0xff;
-		}
-	}
-	list_iterator_destroy(sock_gres_iter);
-	xfree(avail_cores_by_sock);
-
+	xfree(args->avail_cores_by_sock);
 	return rc;
 }
 

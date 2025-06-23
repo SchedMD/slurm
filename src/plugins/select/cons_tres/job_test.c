@@ -642,18 +642,26 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 
 	if (sock_gres_list) {
 		uint16_t near_gpu_cnt = 0;
+		gres_remove_unused_args_t gres_rm_args = {
+			.avail_mem = avail_mem,
+			.max_cpus = avail_res->avail_cpus,
+			.enforce_binding = create_args.enforce_binding,
+			.core_bitmap = core_map[node_i],
+			.sockets = node_ptr->tot_sockets,
+			.cores_per_sock = node_ptr->cores,
+			.cpus_per_core = node_ptr->tpc,
+			.sock_per_node = s_p_n,
+			.task_per_node = job_ptr->details->ntasks_per_node,
+			.cpus_per_task = job_ptr->details->cpus_per_task,
+			.whole_node = (job_ptr->details->whole_node &
+				       WHOLE_NODE_REQUIRED),
+			.avail_gpus = &avail_res->avail_gpus,
+			.near_gpus = &near_gpu_cnt,
+		};
 		avail_res->sock_gres_list = sock_gres_list;
 		/* Disable GRES that can't be used with remaining cores */
-		rc = gres_select_filter_remove_unusable(
-			sock_gres_list, avail_mem,
-			avail_res->avail_cpus,
-			create_args.enforce_binding, core_map[node_i],
-			node_ptr->tot_sockets, node_ptr->cores, node_ptr->tpc,
-			s_p_n,
-			job_ptr->details->ntasks_per_node,
-			job_ptr->details->cpus_per_task,
-			(job_ptr->details->whole_node & WHOLE_NODE_REQUIRED),
-			&avail_res->avail_gpus, &near_gpu_cnt);
+		rc = gres_select_filter_remove_unusable(sock_gres_list,
+							&gres_rm_args);
 		if (rc != 0) {
 			log_flag(SELECT_TYPE, "Test fail on node %d: gres_select_filter_remove_unusable",
 			     node_i);
