@@ -517,7 +517,7 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
-def gcore(component, sbin=True):
+def gcore(component, pid=None, sbin=True):
     """Generates a gcore file for all pids running of a given Slurm component.
 
     The gcore file will be save at slurm-logs-dir, where all the logs and kernel
@@ -525,6 +525,7 @@ def gcore(component, sbin=True):
 
     Args:
         component (string): The name of the component. E.g. slurmctld, slurmdbd...
+        pid (integer): The specific PID of the process to gcore. All PIDs of component are gcored by default...
         sbin: If True search for pids related to slurm-sbin-dir, or slurm-bin-dir otherwise.
 
     Returns:
@@ -542,6 +543,14 @@ def gcore(component, sbin=True):
         prefix = properties["slurm-bin-dir"]
 
     pids = pids_from_exe(f"{prefix}/{component}")
+
+    if pid:
+        if pid not in pids:
+            logging.warning(
+                f"Requested PID {pid} is not in the obtained PIDs ({pids}), but using it anyway"
+            )
+        pids = [pid]
+
     if not pids:
         logging.warning("Process {prefix}/{component} not found")
     logging.debug(f"Getting gcores for PIDs: {pids}")
