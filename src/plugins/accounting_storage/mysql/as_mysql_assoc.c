@@ -1110,6 +1110,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	bool is_coord = false;
 	bool disable_coord_dbd = false;
 	bool checked_new_parent = false;
+	bool checked_parent_is_not_child = false;
 
 	xassert(result);
 
@@ -1239,6 +1240,54 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		if (assoc->parent_acct && row[MASSOC_PACCT][0]) {
 			account = assoc->parent_acct;
 			moved_parent = 1;
+
+			if (!checked_parent_is_not_child) {
+				slurmdb_assoc_rec_t par_assoc = {
+					.acct = assoc->parent_acct,
+					.cluster = cluster_name,
+					.uid = NO_VAL,
+				};
+				slurmdb_assoc_rec_t *par_assoc_ptr = NULL;
+
+				if (assoc_mgr_fill_in_assoc(
+					    mysql_conn,
+					    &par_assoc,
+					    ACCOUNTING_ENFORCE_ASSOCS,
+					    &par_assoc_ptr, true) !=
+				    SLURM_SUCCESS) {
+					object = xstrdup_printf(
+						"Parent account %s doesn't exist on cluster %s",
+						assoc->parent_acct,
+						cluster_name);
+					list_append(ret_list, object);
+					object = NULL;
+					/* We want SLURM_SUCCESS here */
+					// rc = ESLURM_INVALID_PARENT_ACCOUNT;
+					break;
+				}
+
+				while (par_assoc_ptr) {
+					if (id == par_assoc_ptr->id)
+						break;
+					par_assoc_ptr =
+						par_assoc_ptr->usage->
+						parent_assoc_ptr;
+				}
+				if (par_assoc_ptr) {
+					object = xstrdup_printf(
+						"Requested parent account %s is a child of %s on cluster %s. Please re-parent %s before using it as a parent.",
+						assoc->parent_acct,
+						row[MASSOC_ACCT],
+						cluster_name,
+						assoc->parent_acct);
+					list_append(ret_list, object);
+					object = NULL;
+					/* We want SLURM_SUCCESS here */
+					// rc = ESLURM_INVALID_PARENT_ACCOUNT;
+					break;
+				}
+				checked_parent_is_not_child = true;
+			}
 		}
 
 		/* Only do this when not dealing with the root association. */
@@ -1317,21 +1366,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->cluster = xstrdup(cluster_name);
 		if (moved_parent) {
 			/*
-			 * Now check to see if we are going to make a child of
-			 * this account the new parent. If so we need to move
-			 * that child to this accounts parent and then do the
-			 * move.
+			 * Now set the lineage with the new parent. This needs
+			 * to be done here and it's children will be moved later
+			 * below in _modify_child_assocs().
 			 */
-			_modify_child_assocs(mysql_conn,
-					     mod_assoc,
-					     row[MASSOC_ACCT],
-					     row[MASSOC_LINEAGE],
-					     ret_list,
-					     true,
-					     row[MASSOC_PACCT],
-					     assoc->parent_acct,
-					     true);
-
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 			rc = _set_lineage(mysql_conn, mod_assoc,
 					  mod_assoc->parent_acct,
@@ -3630,6 +3668,8 @@ is_same_user:
 		wanted_qos = bit_alloc(g_qos_count);
 		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
 		assoc_mgr_lock(&assoc_locks);
+	} else if (assoc->parent_acct) {
+		assoc_mgr_lock(&assoc_locks);
 	}
 
 	memset(&qos_assoc_cond, 0, sizeof(qos_assoc_cond));
@@ -3676,7 +3716,7 @@ is_same_user:
 	}
 	list_iterator_destroy(itr);
 
-	if (wanted_qos)
+	if (wanted_qos || assoc->parent_acct)
 		assoc_mgr_unlock(&assoc_locks);
 
 	FREE_NULL_BITMAP(wanted_qos);
