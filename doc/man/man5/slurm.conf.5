@@ -580,12 +580,6 @@ Deprecated option, see \fBSlurmctldHost\fR.
 .TP
 \fBBackupController\fR
 Deprecated option, see \fBSlurmctldHost\fR.
-
-The backup controller recovers state information from the
-\fBStateSaveLocation\fR directory, which must be readable and writable from both
-the primary and backup controllers.
-While not essential, it is recommended that you specify a backup controller.
-See the \fBRELOCATING CONTROLLERS\fR section if you change this.
 .IP
 
 .TP
@@ -5063,6 +5057,12 @@ primary fails.
 Slurm daemons need to be reconfigured (e.g. "scontrol reconfig") for changes to
 this parameter to take effect. It is okay for jobs to be running when making
 these changes, as the running steps will get the updated SlurmctldHost info.
+
+Every slurmctld host controller must have access to the \fBStateSaveLocation\fR
+directory, which must be readable and writable from the primary and all backup
+controllers at all times.
+
+Refer to the \fBRELOCATING CONTROLLERS\fR section if you need to change this.
 .IP
 
 .TP
