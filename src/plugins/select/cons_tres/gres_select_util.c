@@ -40,6 +40,49 @@
 
 #include "src/common/xstring.h"
 
+typedef struct {
+	uint64_t cpu_per_gpu;
+	uint16_t *cpus_per_task;
+	char **cpus_per_tres;
+	uint64_t mem_per_gpu;
+	char **mem_per_tres;
+	uint32_t plugin_id;
+} foreach_gres_job_set_defs_args_t;
+
+static int _foreach_gres_job_set_defs(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_gres_job_set_defs_args_t *args = arg;
+	gres_job_state_t *gres_js;
+
+	if (gres_state_job->plugin_id != args->plugin_id)
+		return 0;
+	gres_js = gres_state_job->gres_data;
+	if (!gres_js)
+		return 0;
+	gres_js->def_cpus_per_gres = args->cpu_per_gpu;
+	gres_js->def_mem_per_gres = args->mem_per_gpu;
+	if (!gres_js->cpus_per_gres) {
+		xfree(*(args->cpus_per_tres));
+		if (args->cpu_per_gpu)
+			xstrfmtcat(*(args->cpus_per_tres), "gpu:%"PRIu64,
+				   args->cpu_per_gpu);
+	}
+	if (!gres_js->mem_per_gres) {
+		xfree(*(args->mem_per_tres));
+		if (args->mem_per_gpu)
+			xstrfmtcat(*(args->mem_per_tres), "gpu:%"PRIu64,
+				   args->mem_per_gpu);
+	}
+	if (args->cpu_per_gpu && gres_js->gres_per_task) {
+		*(args->cpus_per_task) =
+			MAX(*(args->cpus_per_task),
+			    (gres_js->gres_per_task * args->cpu_per_gpu));
+	}
+
+	return 0;
+}
+
 /*
  * Set job default parameters in a given element of a list
  * IN job_gres_list - job's gres_list built by gres_job_state_validate()
@@ -60,10 +103,13 @@ extern void gres_select_util_job_set_defs(list_t *job_gres_list,
 					  char **mem_per_tres,
 					  uint16_t *cpus_per_task)
 {
-	uint32_t plugin_id;
-	list_itr_t *gres_iter;
-	gres_state_t *gres_state_job = NULL;
-	gres_job_state_t *gres_js;
+	foreach_gres_job_set_defs_args_t args = {
+		.cpu_per_gpu = cpu_per_gpu,
+		.cpus_per_task = cpus_per_task,
+		.cpus_per_tres = cpus_per_tres,
+		.mem_per_gpu = mem_per_gpu,
+		.mem_per_tres = mem_per_tres,
+	};
 
 	/*
 	 * Currently only GPU supported, check how cpus_per_tres/mem_per_tres
@@ -75,35 +121,8 @@ extern void gres_select_util_job_set_defs(list_t *job_gres_list,
 	if (!job_gres_list)
 		return;
 
-	plugin_id = gres_build_id(gres_name);
-	gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(gres_iter))) {
-		if (gres_state_job->plugin_id != plugin_id)
-			continue;
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (!gres_js)
-			continue;
-		gres_js->def_cpus_per_gres = cpu_per_gpu;
-		gres_js->def_mem_per_gres = mem_per_gpu;
-		if (!gres_js->cpus_per_gres) {
-			xfree(*cpus_per_tres);
-			if (cpu_per_gpu)
-				xstrfmtcat(*cpus_per_tres, "gpu:%"PRIu64,
-					   cpu_per_gpu);
-		}
-		if (!gres_js->mem_per_gres) {
-			xfree(*mem_per_tres);
-			if (mem_per_gpu)
-				xstrfmtcat(*mem_per_tres, "gpu:%"PRIu64,
-					   mem_per_gpu);
-		}
-		if (cpu_per_gpu && gres_js->gres_per_task) {
-			*cpus_per_task = MAX(*cpus_per_task,
-					     (gres_js->gres_per_task *
-					      cpu_per_gpu));
-		}
-	}
-	list_iterator_destroy(gres_iter);
+	args.plugin_id = gres_build_id(gres_name);
+	(void) list_for_each(job_gres_list, _foreach_gres_job_set_defs, &args);
 }
 
 /*
