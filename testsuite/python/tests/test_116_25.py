@@ -6,6 +6,7 @@ import pytest
 import pathlib
 import signal
 import time
+import re
 
 
 # Setup
@@ -73,13 +74,9 @@ def test_signal_forwarding():
     expected_sig2_line = f"Received: {signal.SIGUSR2.value}"
 
     # Read the output file
-    with open(file_out, "r") as fp:
-        content = fp.read()
-
-    # Verify signal counts in the output file
-    assert (
-        content.count(expected_sig1_line) == sig1_expected_count
-    ), f"Incorrect SIGUSR1 ({signal.SIGUSR1.value}) count. Expected: {sig1_expected_count}, Got: {content.count(expected_sig1_line)}"
-    assert (
-        content.count(expected_sig2_line) == sig2_expected_count
-    ), f"Incorrect SIGUSR2 ({signal.SIGUSR2.value}) count. Expected: {sig2_expected_count}, Got: {content.count(expected_sig2_line)}"
+    assert atf.repeat_until(
+        lambda: atf.run_command_output(f"cat {file_out}", fatal=True),
+        lambda output: len(re.findall(expected_sig1_line, output))
+        == sig1_expected_count
+        and len(re.findall(expected_sig2_line, output)) == sig2_expected_count,
+    ), f"Output file should contain the correct amount of received messages of both signals ({sig1_expected_count} and {sig2_expected_count})"
