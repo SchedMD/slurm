@@ -661,11 +661,20 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
             lambda: get_nodes(quiet=True),
             lambda nodes: all(nodes[name]["state"] == ["IDLE"] for name in slurmd_list),
         ):
-            nodes = get_nodes()
+            nodes = get_nodes(quiet=True)
             non_idle = [
                 name for name in slurmd_list if nodes[name]["state"] != ["IDLE"]
             ]
+            logging.warning(
+                f"Getting the core files of the still not IDLE slurmds ({non_idle})"
+            )
+            for node in non_idle:
+                pid = run_command_output(
+                    f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet
+                ).strip()
+                gcore("slurmd", pid)
             pytest.fail(f"Some nodes are not IDLE: {non_idle}")
+
         logging.debug(f"All nodes are IDLE: {slurmd_list}")
 
 
