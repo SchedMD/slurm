@@ -571,15 +571,10 @@ done:
 	slurm_mutex_unlock(&cleanup_mutex);
 	/* skipping lock of step_complete.lock */
 	if (rc || step_complete.step_rc) {
-		/*
-		 * When step_rc is equal to slurm_rc it is not a status.
-		 * There are also a few cases where step_rc is set to a
-		 * non-status error code, but slurm_rc reports "No error"
-		 * to prevent the node from draining. Otherwise, step_rc
-		 * is a wait status.
-		 * */
-		info("%s: done with step (step_rc: [0x%x], slurm_rc: [0x%x] - %s)",
-		     __func__, step_complete.step_rc, rc, slurm_strerror(rc));
+		info("%s: done with step (rc[0x%x]:%s, cleanup_rc[0x%x]:%s)",
+		     __func__, step_complete.step_rc,
+		     slurm_strerror(step_complete.step_rc), rc,
+		     slurm_strerror(rc));
 	} else {
 		info("done with step");
 	}
