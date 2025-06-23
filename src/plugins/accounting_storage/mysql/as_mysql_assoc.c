@@ -1336,6 +1336,13 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			rc = _set_lineage(mysql_conn, mod_assoc,
 					  mod_assoc->parent_acct,
 					  row[MASSOC_ACCT], NULL, NULL);
+			if (rc != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
+				object = xstrdup_printf("Parent account %s doesn't exist on cluster %s", assoc->parent_acct, cluster_name);
+				list_append(ret_list, object);
+				object = NULL;
+				break;
+			}
 		}
 
 		if (row[MASSOC_PART][0]) {
