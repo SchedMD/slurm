@@ -21561,7 +21561,11 @@ printf "%s\n" "#define HAVE_JSON_INC 1" >>confdefs.h
 printf "%s\n" "#define HAVE_JSON 1" >>confdefs.h
 
       JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
-      JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
+      if test "$ac_with_rpath" = "yes"; then
+        JSON_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_json_dir/$bit -L$x_ac_cv_json_dir/$bit -ljson-c"
+      else
+        JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
+      fi
     fi
 
 

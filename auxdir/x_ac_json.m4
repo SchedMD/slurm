@@ -64,7 +64,11 @@ AC_DEFUN([X_AC_JSON], [
       fi
       AC_DEFINE([HAVE_JSON], [1], [Define if you are compiling with json.])
       JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
-      JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
+      if test "$ac_with_rpath" = "yes"; then
+        JSON_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_json_dir/$bit -L$x_ac_cv_json_dir/$bit -ljson-c"
+      else
+        JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
+      fi
     fi
 
     AC_SUBST(JSON_CPPFLAGS)
