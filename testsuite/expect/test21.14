@@ -89,6 +89,13 @@ array set acct_mod_acct_vals5 {}
 array set acct_mod_assoc_vals5 {}
 set acct_mod_assoc_vals5(parent) $ta3
 
+# Mod account 5_1
+array set acct_mod_desc5_1 {}
+set acct_mod_desc5_1(cluster) $tc1
+array set acct_mod_acct_vals5_1 {}
+array set acct_mod_assoc_vals5_1 {}
+set acct_mod_assoc_vals5_1(parent) "root"
+
 # Mod account 6
 array set acct_mod_desc6 {}
 set acct_mod_desc6(cluster) $tc1
@@ -257,7 +264,19 @@ if {$matches != 2} {
 }
 
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
-# making the child the parent
+# making the child the parent - This should fail
+if [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]] {
+	log_info "Assuming we weren't able to re-parent $ta2 to child $ta3, expected"
+} else {
+	fail "The above was suppose to fail to re-parent, but it succeeded erroneously"
+}
+
+# Now do it correctly, reparent the child $ta3 to $ta1
+if [mod_acct $ta3 [array get acct_mod_desc5_1] [array get acct_mod_assoc_vals5_1] [array get acct_mod_acct_vals5_1]] {
+	fail "Unable to modify account ($ta3)"
+}
+
+# Now this original request should work
 if [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]] {
 	fail "Unable to modify account ($ta2)"
 }
@@ -288,6 +307,18 @@ if {$matches != 4} {
 
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
+if [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]] {
+	log_info "Assuming we weren't able to re-parent $ta3 to child $ta2, expected"
+} else {
+	fail "The above was suppose to fail to re-parent, but it succeeded erroneously"
+}
+
+# Now do it correctly, reparent the child $ta2 to $ta1
+if [mod_acct $ta2 [array get acct_mod_desc5_1] [array get acct_mod_assoc_vals5_1] [array get acct_mod_acct_vals5_1]] {
+	fail "Unable to modify account ($ta2)"
+}
+
+# Now this original request should work
 if [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]] {
 	fail "Unable to modify account ($ta3)"
 }
