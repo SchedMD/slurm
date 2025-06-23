@@ -548,7 +548,7 @@ def gcore(component, sbin=True):
     logging.debug(f"Getting gcores for PIDs: {pids}")
     for pid in pids:
         run_command(
-            f"sudo gcore -o {properties['slurm-logs-dir']}/slurmctld.core {pid}"
+            f"sudo gcore -o {properties['slurm-logs-dir']}/{component}.core {pid}"
         )
 
 
