@@ -572,10 +572,10 @@ done:
 	/* skipping lock of step_complete.lock */
 	if (rc || step_complete.step_rc) {
 		/*
-		 * The step_rc can be anything. Slurmstepd usually sets it to
-		 * a task exit code. Otherwise, certain plugins will set it
-		 * to POSIX errno errors while others use Slurm internal errors.
-		 * So we won't translate it.
+		 * The step_rc can be anything. Certain plugins will set it to
+		 * errno POSIX errors while others will set it to Slurm internal
+		 * errors or just task exit codes. So we are not gona translate
+		 * it.
 		 */
 		info("%s: done with step (step_rc: %d, slurm_rc: %d - %s)",
 		     __func__, step_complete.step_rc, rc, slurm_strerror(rc));
