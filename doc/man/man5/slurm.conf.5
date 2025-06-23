@@ -5051,9 +5051,8 @@ a name by which the address can be identified, enclosed in parentheses. e.g.
 SlurmctldHost=slurmctl\-primary(12.34.56.78)
 .fi
 
-If the host where slurmctld will run may be modified by another process, such as
-pacemaker, then each potential host should have a \fBSlurmctldHost=\fR entry.
-e.g.
+Each host running an instance of slurmctld should have a \fBSlurmctldHost=\fR
+entry.  e.g.
 .nf
 SlurmctldHost=slurmctl\-primary1
 SlurmctldHost=slurmctl\-primary2
