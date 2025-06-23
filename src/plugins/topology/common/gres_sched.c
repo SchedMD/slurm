@@ -375,6 +375,28 @@ extern void gres_sched_consec(list_t **consec_gres, list_t *job_gres_list,
 	list_iterator_destroy(iter);
 }
 
+static int _find_insufficient_gres(void *x, void *args)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	list_t *sock_gres_list = args;
+	sock_gres_t *sock_data;
+
+	if (!gres_js->gres_per_job) /* Don't care about totals */
+		return 0;
+	if (gres_js->total_gres >= gres_js->gres_per_job)
+		return 0;
+	sock_data = list_find_first(sock_gres_list, gres_find_sock_by_job_state,
+				    gres_state_job);
+	if (!sock_data) /* None of this GRES available */
+		return -1;
+	if ((gres_js->total_gres + sock_data->total_cnt) <
+	    gres_js->gres_per_job)
+		return -1;
+
+	return 0;
+}
+
 /*
  * Determine if the additional sock_gres_list resources will result in
  * satisfying the job's gres_per_job constraints
@@ -384,38 +406,11 @@ extern void gres_sched_consec(list_t **consec_gres, list_t *job_gres_list,
  */
 extern bool gres_sched_sufficient(list_t *job_gres_list, list_t *sock_gres_list)
 {
-	list_itr_t *iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	sock_gres_t *sock_data;
-	bool rc = true;
-
 	if (!job_gres_list)
 		return true;
 	if (!sock_gres_list)
 		return false;
 
-	iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (!gres_js->gres_per_job)	/* Don't care about totals */
-			continue;
-		if (gres_js->total_gres >= gres_js->gres_per_job)
-			continue;
-		sock_data = list_find_first(sock_gres_list,
-					    gres_find_sock_by_job_state,
-					    gres_state_job);
-		if (!sock_data)	{	/* None of this GRES available */
-			rc = false;
-			break;
-		}
-		if ((gres_js->total_gres + sock_data->total_cnt) <
-		    gres_js->gres_per_job) {
-			rc = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
+	return !list_find_first(job_gres_list, _find_insufficient_gres,
+				sock_gres_list);
 }
