@@ -895,6 +895,8 @@ def stop_slurmdbd(quiet=False):
         timeout=60,
     ):
         failures.append("Slurmdbd is still running")
+        logging.warning("Getting the core files of the still running slurmdbd")
+        gcore("slurmdbd")
     else:
         logging.debug("No slurmdbd is running.")
 
