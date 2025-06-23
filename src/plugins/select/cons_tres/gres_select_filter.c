@@ -616,7 +616,9 @@ static int _set_shared_task_bits(int node_inx,
 	} else {
 		/* Allow only one sharing gres per task */
 		uint32_t *used_sock = xcalloc(sock_gres->sock_cnt, sizeof(int));
-		for (int s = 0; s < sock_gres->sock_cnt; s++) {
+		uint64_t task_cnt = _get_task_cnt_node(tasks_per_socket,
+						       sock_gres->sock_cnt);
+		for (int s = 0; s < sock_gres->sock_cnt && task_cnt; s++) {
 			used_sock[s] = 1;
 			uint32_t sock_res_gres = 0;
 			uint32_t used_res = 0;
@@ -636,7 +638,8 @@ static int _set_shared_task_bits(int node_inx,
 				}
 			}
 
-			for (int i = 0; i < tasks_per_socket[s]; i++) {
+			for (int i = 0; i < tasks_per_socket[s] && task_cnt;
+			     i++) {
 				uint64_t gres_needed = gres_js->gres_per_task;
 				uint32_t this_task_res_gres = 0;
 				if (sock_res_gres)
@@ -661,18 +664,20 @@ static int _set_shared_task_bits(int node_inx,
 					      node_inx);
 					rc = ESLURM_INVALID_GRES;
 				} else if (gres_needed) {
-					error("Not enough shared gres available to satisfy gres per task request for job %u on node %s (node_inx %d) (%"PRIu64"/%"PRIu64" still needed)",
-					      job_id,
-					      node_record_table_ptr[node_inx]->
-						      name,
-					      node_inx,
-					      gres_needed,
-					      gres_js->gres_per_task);
-					rc = ESLURM_INVALID_GRES;
+					/* Move on to next socket */
 					break;
+				} else {
+					/* Success */
+					task_cnt--;
 				}
 			}
 			used_sock[s] = 0;
+		}
+		if (task_cnt) {
+			error("Not enough shared gres available to satisfy gres per task request for job %u on node %s (node_inx %d) (%"PRIu64" tasks unable to select gres)",
+			      job_id, node_record_table_ptr[node_inx]->name,
+			      node_inx, task_cnt);
+			rc = ESLURM_INVALID_GRES;
 		}
 		xfree(used_sock);
 	}
@@ -1404,7 +1409,8 @@ static int _build_tasks_per_node_sock(struct job_resources *job_res,
 			rem_tasks--;
 			continue;
 		}
-		tasks_per_node_socket[i] = xcalloc(sock_cnt, sizeof(uint32_t));
+		tasks_per_node_socket[i] =
+			xcalloc(sock_cnt + 1, sizeof(uint32_t));
 		if (tres_mc_ptr->ntasks_per_node) {
 			task_per_node_limit = tres_mc_ptr->ntasks_per_node;
 			cpus_per_task = MAX(1, job_res->cpus[job_node_inx] /
@@ -1476,21 +1482,6 @@ static int _build_tasks_per_node_sock(struct job_resources *job_res,
 				tasks_per_node += tpc;
 				tasks_per_socket += tpc;
 				rem_tasks -= tpc;
-				if (task_per_node_limit) {
-					if (tasks_per_node >
-					    task_per_node_limit) {
-						excess_tasks = tasks_per_node -
-							task_per_node_limit;
-						tasks_per_node_socket[i][s] -=
-							excess_tasks;
-						rem_tasks += excess_tasks;
-					}
-					if (tasks_per_node >=
-					    task_per_node_limit) {
-						s = sock_cnt;
-						break;
-					}
-				}
 				/* NOTE: No support for ntasks_per_board */
 				if (tres_mc_ptr->ntasks_per_socket) {
 					if (tasks_per_socket >
@@ -1509,6 +1500,13 @@ static int _build_tasks_per_node_sock(struct job_resources *job_res,
 					}
 				}
 			}
+		}
+		/* Count excess tasks from each socket */
+		if (tasks_per_node > task_per_node_limit) {
+			excess_tasks = tasks_per_node - task_per_node_limit;
+			rem_tasks += excess_tasks;
+			/* Use last spot in array as excess_tasks count */
+			tasks_per_node_socket[i][sock_cnt] += excess_tasks;
 		}
 	}
 	while ((rem_tasks > 0) && overcommit) {
@@ -1560,6 +1558,9 @@ static uint32_t _get_task_cnt_node(uint32_t *tasks_per_socket, int sock_cnt)
 
 	for (int s = 0; s < sock_cnt; s++)
 		task_cnt += tasks_per_socket[s];
+
+	/* last spot in array is set to track excess_tasks */
+	task_cnt -= tasks_per_socket[sock_cnt];
 
 	return task_cnt;
 }
