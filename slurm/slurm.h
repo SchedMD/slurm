@@ -2949,7 +2949,6 @@ typedef struct {
 					 * password */
 	uint16_t accounting_storage_port;/* node accounting storage port */
 	char *accounting_storage_type; /* accounting storage type */
-	char *accounting_storage_user; /* accounting storage user */
 	void *acct_gather_conf; /* account gather config */
 	char *acct_gather_energy_type; /* energy accounting type */
 	char *acct_gather_profile_type; /* profile accounting type */
