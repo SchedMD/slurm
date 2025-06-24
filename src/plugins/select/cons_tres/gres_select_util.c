@@ -47,6 +47,14 @@ typedef struct {
 } foreach_gres_job_min_cpu_node_args_t;
 
 typedef struct {
+	int min_tasks;
+	uint32_t node_count;
+	uint16_t ntasks_per_tres;
+	uint32_t plugin_id;
+	uint32_t sockets_per_node;
+} foreach_gres_job_min_tasks_args_t;
+
+typedef struct {
 	uint64_t cpu_per_gpu;
 	uint16_t *cpus_per_task;
 	char **cpus_per_tres;
@@ -187,6 +195,39 @@ extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 	return args.min_cpus;
 }
 
+static int _foreach_gres_job_min_tasks(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_gres_job_min_tasks_args_t *args = arg;
+	gres_job_state_t *gres_js;
+	uint64_t total_gres = 0;
+	int tmp;
+
+	/* Filter on GRES name, if specified */
+	if (args->plugin_id && (args->plugin_id != gres_state_job->plugin_id))
+		return 0;
+
+	gres_js = gres_state_job->gres_data;
+
+	if (gres_js->gres_per_job) {
+		total_gres = gres_js->gres_per_job;
+	} else if (gres_js->gres_per_node) {
+		total_gres = gres_js->gres_per_node * args->node_count;
+	} else if (gres_js->gres_per_socket) {
+		total_gres = gres_js->gres_per_socket * args->node_count *
+			args->sockets_per_node;
+	} else if (gres_js->gres_per_task) {
+		error("%s: gres_per_task and ntasks_per_tres conflict",
+			__func__);
+	} else
+		return 0;
+
+	tmp = args->ntasks_per_tres * total_gres;
+	args->min_tasks = MAX(args->min_tasks, tmp);
+
+	return 0;
+}
+
 /*
  * Determine the minimum number of tasks required to satisfy the job's GRES
  *	request (based upon total GRES times ntasks_per_tres value). If
@@ -204,11 +245,11 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 					  char *gres_name,
 					  list_t *job_gres_list)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	int tmp, min_tasks = 0;
-	uint32_t plugin_id = 0;
+	foreach_gres_job_min_tasks_args_t args = {
+		.node_count = node_count,
+		.ntasks_per_tres = ntasks_per_tres,
+		.sockets_per_node = sockets_per_node,
+	};
 
 	if (!ntasks_per_tres || (ntasks_per_tres == NO_VAL16))
 		return 0;
@@ -217,35 +258,11 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 		return 0;
 
 	if (gres_name && (gres_name[0] != '\0'))
-		plugin_id = gres_build_id(gres_name);
+		args.plugin_id = gres_build_id(gres_name);
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(job_gres_iter))) {
-		uint64_t total_gres = 0;
-		/* Filter on GRES name, if specified */
-		if (plugin_id && (plugin_id != gres_state_job->plugin_id))
-			continue;
+	(void) list_for_each(job_gres_list, _foreach_gres_job_min_tasks, &args);
 
-		gres_js = (gres_job_state_t *)gres_state_job->gres_data;
-
-		if (gres_js->gres_per_job) {
-			total_gres = gres_js->gres_per_job;
-		} else if (gres_js->gres_per_node) {
-			total_gres = gres_js->gres_per_node * node_count;
-		} else if (gres_js->gres_per_socket) {
-			total_gres = gres_js->gres_per_socket * node_count *
-				sockets_per_node;
-		} else if (gres_js->gres_per_task) {
-			error("%s: gres_per_task and ntasks_per_tres conflict",
-			      __func__);
-		} else
-			continue;
-
-		tmp = ntasks_per_tres * total_gres;
-		min_tasks = MAX(min_tasks, tmp);
-	}
-	list_iterator_destroy(job_gres_iter);
-	return min_tasks;
+	return args.min_tasks;
 }
 
 /*
