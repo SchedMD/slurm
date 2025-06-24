@@ -1227,6 +1227,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		}
 
 		if (assoc->parent_acct && row[MASSOC_PACCT][0]) {
+			account = assoc->parent_acct;
 			moved_parent = 1;
 		}
 
