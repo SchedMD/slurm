@@ -14,10 +14,12 @@
 <li><a href="#slurm-accounting-configuration-after-build">Slurm Accounting Configuration After Build</a></li>
 <li><a href="#slurmdbd-configuration">SlurmDBD Configuration</a>
 <ul>
-<li><a href="#slurmdbd-archive-purge">SlurmDBD Archive and Purge</a></li>
 </ul></li>
 <li><a href="#mysql-configuration">MySQL Configuration</a></li>
+<li><a href="#slurmdbd-archive-purge">SlurmDBD Archive and Purge</a>
+<ul>
 <li><a href="#archive">Archive Server</a></li>
+</ul></li>
 <li><a href="#tools">Tools</a></li>
 <li><a href="#database-configuration">Database Configuration</a></li>
 <li><a href="#cluster-options">Cluster Options</a></li>
@@ -576,28 +578,6 @@ Define the name of the user we are going to connect to the database
 with to store the job accounting data.</li>
 </ul>
 
-<h3 id="slurmdbd-archive-purge">SlurmDBD Archive and Purge
-<a class="slurm_link" href="#slurmdbd-archive-purge"></a>
-</h3>
-
-<p>As time goes on, the slurm database can grow large enough that it is hard to
-manage. To maintain the database at a reasonable size, slurmdbd supports
-archiving and purging data based on its age. Purged data will be deleted from
-the database, but you can choose to archive the data as it is being purged.
-Archived data will be placed in flat files that can later be loaded into a
-slurmdbd by sacctmgr.</p>
-
-<p>Archive and Purge options come in the form of <b>Archive${*}</b> and
-<b>Purge${*}After</b>. See <a href="slurmdbd.conf.html">slurmdbd.conf</a>(5)
-for more details on the available configuration parameters.</p>
-
-<p>The units for the purge options are important. For example:
-<i>PurgeJobsAfter=12months</i> will purge jobs more than 12 months old at the
-beginning of each month, while <i>PurgeJobsAfter=365days</i> will purge jobs
-older than 365 days old at the beginning of each day. This distinction can be
-useful for very active clusters, reducing the amount of data that needs to be
-purged at one time.</p>
-
 <h2 id="mysql-configuration">MySQL Configuration
 <a class="slurm_link" href="#mysql-configuration"></a>
 </h2>
@@ -689,7 +669,36 @@ information.  Starting the SlurmDBD in daemon mode with the '-D' option can
 also help in debugging so you don't have to go to the log to find the
 problem.</p>
 
-<h2 id="archive">Archive Server<a class="slurm_link" href="#archive"></a></h2>
+<h2 id="slurmdbd-archive-purge">SlurmDBD Archive and Purge
+<a class="slurm_link" href="#slurmdbd-archive-purge"></a>
+</h2>
+
+<p>As time goes on, the slurm database can grow large enough that it is hard to
+manage. To maintain the database at a reasonable size, slurmdbd supports
+archiving and purging data based on its age. Purged data will be deleted from
+the database, but you can choose to archive the data as it is being purged.
+Archived data will be placed in flat files that can later be loaded into a
+slurmdbd by sacctmgr.</p>
+
+<p>It is strongly recommended to <b>make a plan</b> for data retention shortly
+after setting up accounting. If purging is added after the database has already
+grown to an unwieldy size, it may difficult to catch up to the desired purge
+interval. Monitor table sizes and system utilization to decide how long you want
+to retain data, and try to set the relevant configuration options before you
+reach that time.</p>
+
+<p>Archive and Purge options come in the form of <b>Archive${*}</b> and
+<b>Purge${*}After</b>. See <a href="slurmdbd.conf.html">slurmdbd.conf</a>(5)
+for more details on the available configuration parameters.</p>
+
+<p>The units for the purge options are important. For example:
+<i>PurgeJobsAfter=12months</i> will purge jobs more than 12 months old at the
+beginning of each month, while <i>PurgeJobsAfter=365days</i> will purge jobs
+older than 365 days old at the beginning of each day. This distinction can be
+useful for very active clusters, reducing the amount of data that needs to be
+purged at one time.</p>
+
+<h3 id="archive">Archive Server<a class="slurm_link" href="#archive"></a></h3>
 
 <p>If ongoing access to Archived/Purged data is required at your site, it is
 possible to create an archive instance of slurmdbd.  Data previously archived
@@ -1027,6 +1036,6 @@ Profiling works similarly, and we provide
 and InfluxDB that can help to visualize accounting data in other ways.
 </p>
 
-<p style="text-align:center;">Last modified 29 January 2025</p>
+<p style="text-align:center;">Last modified 11 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
