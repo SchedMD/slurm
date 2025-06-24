@@ -415,30 +415,35 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 	return args.min_cpus;
 }
 
+static int _foreach_gres_job_mem_max(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	uint64_t *mem_max = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	uint64_t mem_per_gres;
+
+	if (gres_js->mem_per_gres)
+		mem_per_gres = gres_js->mem_per_gres;
+	else
+		mem_per_gres = gres_js->def_mem_per_gres;
+	*mem_max = MAX(*mem_max, mem_per_gres);
+
+	return 0;
+}
+
 /*
  * Determine if the job GRES specification includes a mem-per-tres specification
  * RET largest mem-per-tres specification found
  */
 extern uint64_t gres_select_util_job_mem_max(list_t *job_gres_list)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	uint64_t mem_max = 0, mem_per_gres;
+	uint64_t mem_max = 0;
 
 	if (!job_gres_list)
 		return 0;
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->mem_per_gres)
-			mem_per_gres = gres_js->mem_per_gres;
-		else
-			mem_per_gres = gres_js->def_mem_per_gres;
-		mem_max = MAX(mem_max, mem_per_gres);
-	}
-	list_iterator_destroy(job_gres_iter);
+	(void) list_for_each(job_gres_list, _foreach_gres_job_mem_max,
+			     &mem_max);
 
 	return mem_max;
 }
