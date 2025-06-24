@@ -1098,7 +1098,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_assoc_cond_t *qos_assoc_cond,
 					 bitstr_t *wanted_qos)
 {
-	list_itr_t *itr = NULL;
 	MYSQL_ROW row;
 	int added = 0;
 	int rc = SLURM_SUCCESS;
@@ -1159,7 +1158,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		   things they are allowed to change.
 		*/
 		if (!is_admin && !same_user) {
-			slurmdb_coord_rec_t *coord = NULL;
 			char *orig_account = account;
 
 			if (disable_coord_dbd) {
@@ -1174,14 +1172,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				goto end_it;
 			}
 		check_again:
-			itr = list_iterator_create(user->coord_accts);
-			while ((coord = list_next(itr))) {
-				if (!xstrcasecmp(coord->name, account))
-					break;
-			}
-			list_iterator_destroy(itr);
-
-			if (!coord) {
+			if (!list_find_first(user->coord_accts,
+					     assoc_mgr_find_coord_in_user,
+					     account)) {
 				if (row[MASSOC_PACCT][0])
 					error("User %s(%d) can not modify "
 					      "account (%s) because they "
