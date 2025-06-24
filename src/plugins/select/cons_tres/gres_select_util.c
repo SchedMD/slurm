@@ -41,6 +41,12 @@
 #include "src/common/xstring.h"
 
 typedef struct {
+	bool first_set;
+	job_resources_t *job_res;
+	bool rc;
+} foreach_gres_job_mem_set_args_t;
+
+typedef struct {
 	int min_cpus;
 	uint32_t sockets_per_node;
 	uint32_t tasks_per_node;
@@ -265,6 +271,60 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 	return args.min_tasks;
 }
 
+static int _foreach_gres_job_mem_set(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_gres_job_mem_set_args_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	uint64_t gres_cnt, mem_size, mem_per_gres;
+	int node_off;
+	node_record_t *node_ptr;
+
+	if (gres_js->mem_per_gres)
+		mem_per_gres = gres_js->mem_per_gres;
+	else
+		mem_per_gres = gres_js->def_mem_per_gres;
+	/*
+	 * The logic below is correct because the only mem_per_gres
+	 * is --mem-per-gpu adding another option will require change
+	 * to take MAX of mem_per_gres for all types.
+	 * Similar logic is in _step_alloc() (which is called by
+	 * gres_stepmgr_step_alloc()), which would also need to be changed
+	 * if another mem_per_gres option was added.
+	 */
+	if (!mem_per_gres || !gres_js->gres_cnt_node_select)
+		return 0;
+	args->rc = true;
+	node_off = -1;
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(args->job_res->node_bitmap, &i));
+	     i++) {
+		node_off++;
+		if (args->job_res->whole_node & WHOLE_NODE_REQUIRED) {
+			gres_state_t *gres_state_node;
+			gres_node_state_t *gres_ns;
+
+			gres_state_node =
+				list_find_first(node_ptr->gres_list,
+						gres_find_id,
+						&gres_state_job->plugin_id);
+			if (!gres_state_node)
+				return 0;
+			gres_ns = gres_state_node->gres_data;
+			gres_cnt = gres_ns->gres_cnt_avail;
+		} else
+			gres_cnt = gres_js->gres_cnt_node_select[i];
+		mem_size = mem_per_gres * gres_cnt;
+		if (args->first_set)
+			args->job_res->memory_allocated[node_off] = mem_size;
+		else
+			args->job_res->memory_allocated[node_off] += mem_size;
+	}
+
+	args->first_set = false;
+	return 0;
+}
+
 /*
  * Set per-node memory limits based upon GRES assignments
  * RET TRUE if mem-per-tres specification used to set memory limits
@@ -272,68 +332,20 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 extern bool gres_select_util_job_mem_set(list_t *job_gres_list,
 					 job_resources_t *job_res)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	bool rc = false, first_set = true;
-	uint64_t gres_cnt, mem_size, mem_per_gres;
-	int node_off;
-	node_record_t *node_ptr;
+	foreach_gres_job_mem_set_args_t args = {
+		.first_set = true,
+		.job_res = job_res,
+	};
 
 	if (!job_gres_list)
 		return false;
 
 	if (!bit_set_count(job_res->node_bitmap))
 		return false;
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(job_gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->mem_per_gres)
-			mem_per_gres = gres_js->mem_per_gres;
-		else
-			mem_per_gres = gres_js->def_mem_per_gres;
-		/*
-		 * The logic below is correct because the only mem_per_gres
-		 * is --mem-per-gpu adding another option will require change
-		 * to take MAX of mem_per_gres for all types.
-		 * Similar logic is in _step_alloc() (which is called by
-		 * gres_stepmgr_step_alloc()), which would also need to be changed
-		 * if another mem_per_gres option was added.
-		 */
-		if ((mem_per_gres == 0) || !gres_js->gres_cnt_node_select)
-			continue;
-		rc = true;
-		node_off = -1;
-		for (int i = 0;
-		     (node_ptr = next_node_bitmap(job_res->node_bitmap, &i));
-		     i++) {
-			node_off++;
-			if (job_res->whole_node & WHOLE_NODE_REQUIRED) {
-				gres_state_t *gres_state_node;
-				gres_node_state_t *gres_ns;
 
-				gres_state_node = list_find_first(
-					node_ptr->gres_list,
-					gres_find_id,
-					&gres_state_job->plugin_id);
-				if (!gres_state_node)
-					continue;
-				gres_ns = gres_state_node->gres_data;
-				gres_cnt = gres_ns->gres_cnt_avail;
-			} else
-				gres_cnt =
-					gres_js->gres_cnt_node_select[i];
-			mem_size = mem_per_gres * gres_cnt;
-			if (first_set)
-				job_res->memory_allocated[node_off] = mem_size;
-			else
-				job_res->memory_allocated[node_off] += mem_size;
-		}
-		first_set = false;
-	}
-	list_iterator_destroy(job_gres_iter);
+	(void) list_for_each(job_gres_list, _foreach_gres_job_mem_set, &args);
 
-	return rc;
+	return args.rc;
 }
 
 /*
