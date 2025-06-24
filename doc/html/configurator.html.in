@@ -204,7 +204,6 @@ function displayfile()
    "# LOGGING AND ACCOUNTING <br>" +
    "#AccountingStorageEnforce=0 <br>" +
    get_field("AccountingStorageHost",document.config.accounting_storage_host) + "<br>" +
-   get_field("AccountingStoragePass",document.config.accounting_storage_pass) + "<br>" +
    get_field("AccountingStoragePort",document.config.accounting_storage_port) + "<br>" +
    print_pair("AccountingStorageType",get_radio_value(document.config.accounting_storage_type)) + "<br>" +
    get_field("AccountingStoreFlags",document.config.acctng_store_flags) + "<br>" +
@@ -619,11 +618,6 @@ save the data from many Slurm managed clusters into a common database<BR>
 Host the database is running on for Job Accounting<br>
 <input type="text" name="accounting_storage_port" value=""> <B>AccountingStoragePort</B>:
 Port the database server is listening on for Job Accounting<br>
-<input type="text" name="accounting_storage_pass" value=""> <B>AccountingStoragePass</B>:
-Password we are to use to talk to the database for Job Accounting.
-In the case of SlurmDBD, this will be an alternate socket name for use with a Munge
-daemon providing enterprise-wide authentication (while the default Munge socket
-would provide cluster-wide authentication only).<br>
 <input type="text" name="acctng_store_flags" value=""> <B>AccountingStoreFlags</B>:
 Comma separated list. Options are:<br>
 'job_comment' - store the job comment field in the database;<br>
