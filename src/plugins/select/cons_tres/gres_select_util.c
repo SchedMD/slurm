@@ -41,6 +41,12 @@
 #include "src/common/xstring.h"
 
 typedef struct {
+	int min_cpus;
+	uint32_t sockets_per_node;
+	uint32_t tasks_per_node;
+} foreach_gres_job_min_cpu_node_args_t;
+
+typedef struct {
 	uint64_t cpu_per_gpu;
 	uint16_t *cpus_per_task;
 	char **cpus_per_tres;
@@ -125,6 +131,37 @@ extern void gres_select_util_job_set_defs(list_t *job_gres_list,
 	(void) list_for_each(job_gres_list, _foreach_gres_job_set_defs, &args);
 }
 
+/* sets args->min_cpus with min required cpus needed to satisfy gres request */
+static int _foreach_gres_job_min_cpu_node(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	foreach_gres_job_min_cpu_node_args_t *args = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	uint16_t cpus_per_gres;
+	uint64_t total_gres = 0;
+	int tmp;
+
+	if (gres_js->cpus_per_gres)
+		cpus_per_gres = gres_js->cpus_per_gres;
+	else
+		cpus_per_gres = gres_js->def_cpus_per_gres;
+	if (cpus_per_gres == 0)
+		return 0;
+
+	if (gres_js->gres_per_node) {
+		total_gres = gres_js->gres_per_node;
+	} else if (gres_js->gres_per_socket) {
+		total_gres = gres_js->gres_per_socket * args->sockets_per_node;
+	} else if (gres_js->gres_per_task) {
+		total_gres = gres_js->gres_per_task * args->tasks_per_node;
+	} else
+		total_gres = 1;
+	tmp = cpus_per_gres * total_gres;
+	args->min_cpus = MAX(args->min_cpus, tmp);
+
+	return 0;
+}
+
 /*
  * Determine the minimum number of CPUs required to satisfy the job's GRES
  *	request on one node
@@ -137,40 +174,17 @@ extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
 					     uint32_t tasks_per_node,
 					     list_t *job_gres_list)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t  *gres_js;
-	int tmp, min_cpus = 0;
-	uint16_t cpus_per_gres;
+	foreach_gres_job_min_cpu_node_args_t args = {
+		.sockets_per_node = sockets_per_node,
+		.tasks_per_node = tasks_per_node,
+	};
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
 		return 0;
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = (gres_state_t *) list_next(job_gres_iter))) {
-		uint64_t total_gres = 0;
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->cpus_per_gres)
-			cpus_per_gres = gres_js->cpus_per_gres;
-		else
-			cpus_per_gres = gres_js->def_cpus_per_gres;
-		if (cpus_per_gres == 0)
-			continue;
-		if (gres_js->gres_per_node) {
-			total_gres = gres_js->gres_per_node;
-		} else if (gres_js->gres_per_socket) {
-			total_gres = gres_js->gres_per_socket *
-				sockets_per_node;
-		} else if (gres_js->gres_per_task) {
-			total_gres = gres_js->gres_per_task *
-				tasks_per_node;
-		} else
-			total_gres = 1;
-		tmp = cpus_per_gres * total_gres;
-		min_cpus = MAX(min_cpus, tmp);
-	}
-	list_iterator_destroy(job_gres_iter);
-	return min_cpus;
+	(void) list_for_each(job_gres_list, _foreach_gres_job_min_cpu_node,
+			     &args);
+	return args.min_cpus;
 }
 
 /*
