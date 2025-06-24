@@ -315,6 +315,8 @@ static void *_sig_agent(void *args)
 			 * of them will terminate the application.
 			 */
 			for (i = 0; i < npids; i++) {
+				if (pids[i] == stepd_pid)
+					continue;
 				xstrfmtcat(stat_fname, "/proc/%d/stat",
 					   (int) pids[i]);
 				if (_test_core_dumping(stat_fname)) {
@@ -374,7 +376,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 	xassert(g_context);
 
 	if (signal == SIGKILL) {
-		pid_t *pids = NULL;
+		pid_t *pids = NULL, stepd_pid = getpid();
 		int i, j, npids = 0, hung_pids = 0;
 		char *stat_fname = NULL;
 		if (proctrack_g_get_pids(cont_id, &pids, &npids) ==
@@ -384,7 +386,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 					sleep(2);
 				hung_pids = 0;
 				for (i = 0; i < npids; i++) {
-					if (!pids[i])
+					if (!pids[i] || (pids[i] == stepd_pid))
 						continue;
 					xstrfmtcat(stat_fname, "/proc/%d/stat",
 						   (int) pids[i]);
