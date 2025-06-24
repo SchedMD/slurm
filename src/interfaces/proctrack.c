@@ -302,6 +302,12 @@ static void *_sig_agent(void *args)
 
 		if (proctrack_g_get_pids(agent_arg_ptr->cont_id, &pids,
 					     &npids) == SLURM_SUCCESS) {
+			if (!npids ||
+			    ((npids == 1) && (pids[0] == stepd_pid))) {
+				xfree(pids);
+				break;
+			}
+
 			/*
 			 * Check if any processes are core dumping.
 			 * If so, do not signal any of them, instead
