@@ -1110,6 +1110,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	bool is_coord = false;
 	bool disable_coord_dbd = false;
+	bool checked_new_parent = false;
 
 	xassert(result);
 
@@ -1159,6 +1160,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		*/
 		if (!is_admin && !same_user) {
 			slurmdb_coord_rec_t *coord = NULL;
+			char *orig_account = account;
 
 			if (disable_coord_dbd) {
 				error("Coordinator privilege revoked with DisableCoordDBD, only admins can modify accounts.");
@@ -1171,6 +1173,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
 			}
+		check_again:
 			itr = list_iterator_create(user->coord_accts);
 			while ((coord = list_next(itr))) {
 				if (!xstrcasecmp(coord->name, account))
@@ -1223,6 +1226,20 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
 			}
+
+			/*
+			 * Now check to see if they are also a coord of the new
+			 * parent.
+			 */
+			if (!checked_new_parent &&
+			    assoc->parent_acct &&
+			    row[MASSOC_PACCT][0]) {
+				account = assoc->parent_acct;
+				checked_new_parent = true;
+				goto check_again;
+			} else
+				account = orig_account;
+
 			is_coord = true;
 		}
 
