@@ -614,10 +614,6 @@ No job accounting storage<BR>
 <input type="radio" name="accounting_storage_type" value="accounting_storage/slurmdbd"> <B>SlurmDBD</B>:
 Write job accounting to SlurmDBD (database daemon) which can securely
 save the data from many Slurm managed clusters into a common database<BR>
-<input type="text" name="accounting_storage_loc" value=""> <B>AccountingStorageLoc</B>:
-Location specification or database name.
-This is the location of the text file to be written to (used by Log only).
-Use a fully qualified pathname. If using a database it is the name of the database you will use or create for the stored data.<br>
 <p><b>Options below are for use with a database to specify where the database is running and how to connect to it</b><br>
 <input type="text" name="accounting_storage_host" value=""> <B>AccountingStorageHost</B>:
 Host the database is running on for Job Accounting<br>

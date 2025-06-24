@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "April 2025" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "June 2025" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -37,9 +37,6 @@ with the \f3\-\-allusers\fP, \f3\-\-user\fP, or \f3\-\-uid\fP options.
 Elapsed time fields are presented as
 [days\-]hours:minutes:seconds[.microseconds]. Only 'CPU' fields will
 ever have microseconds.
-.PP
-The default input file is the file named in the
-\f3AccountingStorageLoc\fP parameter in slurm.conf.
 
 \fBNOTE\fR: If designated, the slurmdbd.conf option PrivateData may further
 restrict the accounting data visible to users which are not

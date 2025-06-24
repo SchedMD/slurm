@@ -210,7 +210,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStorageEnforce", S_P_STRING},
 	{"AccountingStorageExternalHost", S_P_STRING},
 	{"AccountingStorageHost", S_P_STRING},
-	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStorageParameters", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
 	{"AccountingStoragePort", S_P_UINT16},
@@ -4375,9 +4374,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->accounting_storage_host,
 			    "AccountingStorageHost", hashtbl))
 		conf->accounting_storage_host = xstrdup(DEFAULT_STORAGE_HOST);
-
-	if (s_p_get_string(&temp_str, "AccountingStorageLoc", hashtbl))
-		fatal("The AccountingStorageLoc option has been removed. It is safe to remove from your configuration.");
 
 	s_p_get_string(&conf->accounting_storage_pass, "AccountingStoragePass",
 		       hashtbl);
