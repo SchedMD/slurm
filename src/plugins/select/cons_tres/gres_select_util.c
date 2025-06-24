@@ -448,31 +448,28 @@ extern uint64_t gres_select_util_job_mem_max(list_t *job_gres_list)
 	return mem_max;
 }
 
+/* note: key is not used */
+static int _is_gres_per_task_set(void *x, void *key)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (gres_js->gres_per_task)
+		return -1; /* true */
+
+	return 0;
+}
+
 /*
  * Determine if job GRES specification includes a tres-per-task specification
  * RET TRUE if any GRES requested by the job include a tres-per-task option
  */
 extern bool gres_select_util_job_tres_per_task(list_t *job_gres_list)
 {
-	list_itr_t *job_gres_iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	bool have_gres_per_task = false;
-
 	if (!job_gres_list)
 		return false;
 
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(job_gres_iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->gres_per_task) {
-			have_gres_per_task = true;
-			break;
-		}
-	}
-	list_iterator_destroy(job_gres_iter);
-
-	return have_gres_per_task;
+	return list_find_first(job_gres_list, _is_gres_per_task_set, NULL);
 }
 
 /*
