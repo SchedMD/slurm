@@ -472,28 +472,34 @@ extern bool gres_select_util_job_tres_per_task(list_t *job_gres_list)
 	return list_find_first(job_gres_list, _is_gres_per_task_set, NULL);
 }
 
+static int _foreach_gres_get_task_limit(void *x, void *arg)
+{
+	sock_gres_t *sock_gres = x;
+	uint32_t *max_tasks = arg;
+	gres_job_state_t *gres_js;
+	uint64_t task_limit;
+
+	xassert(sock_gres->gres_state_job);
+
+	gres_js = sock_gres->gres_state_job->gres_data;
+	if (gres_js->gres_per_task == 0)
+		return 0;
+	task_limit = sock_gres->total_cnt / gres_js->gres_per_task;
+	*max_tasks = MIN(*max_tasks, task_limit);
+
+	return 0;
+}
+
 /*
  * Return the maximum number of tasks that can be started on a node with
  * sock_gres_list (per-socket GRES details for some node)
  */
 extern uint32_t gres_select_util_get_task_limit(list_t *sock_gres_list)
 {
-	list_itr_t *sock_gres_iter;
-	sock_gres_t *sock_gres;
 	uint32_t max_tasks = NO_VAL;
-	uint64_t task_limit;
 
-	sock_gres_iter = list_iterator_create(sock_gres_list);
-	while ((sock_gres = list_next(sock_gres_iter))) {
-		gres_job_state_t *gres_js;
-		xassert(sock_gres->gres_state_job);
-		gres_js = sock_gres->gres_state_job->gres_data;
-		if (gres_js->gres_per_task == 0)
-			continue;
-		task_limit = sock_gres->total_cnt / gres_js->gres_per_task;
-		max_tasks = MIN(max_tasks, task_limit);
-	}
-	list_iterator_destroy(sock_gres_iter);
+	(void) list_for_each(sock_gres_list, _foreach_gres_get_task_limit,
+			     &max_tasks);
 
 	return max_tasks;
 }
