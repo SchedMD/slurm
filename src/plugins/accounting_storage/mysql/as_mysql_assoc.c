@@ -1226,8 +1226,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			is_coord = true;
 		}
 
-		if (assoc->parent_acct && !row[MASSOC_USER][0])
+		if (assoc->parent_acct && row[MASSOC_PACCT][0]) {
 			moved_parent = 1;
+		}
 
 		/* Only do this when not dealing with the root association. */
 		if (xstrcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
