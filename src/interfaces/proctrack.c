@@ -288,6 +288,7 @@ static void *_sig_agent(void *args)
 {
 	bool hung_pids = false;
 	sig_agent_arg_t *agent_arg_ptr = args;
+	pid_t stepd_pid = getpid();
 
 	while (1) {
 		pid_t *pids = NULL;
@@ -332,6 +333,9 @@ static void *_sig_agent(void *args)
 			}
 
 			for (i = 0; i < npids; i++) {
+				/* Avoid killing our own (stepd) process. */
+				if (pids[i] == stepd_pid)
+					continue;
 				/* Kill processes */
 				kill(pids[i], agent_arg_ptr->signal);
 			}
