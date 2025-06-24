@@ -1226,54 +1226,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			is_coord = true;
 		}
 
-		if (row[MASSOC_PART][0]) {
-			// see if there is a partition name
-			object = xstrdup_printf(
-				"C = %-10s A = %-20s U = %-9s P = %s",
-				cluster_name, row[MASSOC_ACCT],
-				row[MASSOC_USER], row[MASSOC_PART]);
-		} else if (row[MASSOC_USER][0]){
-			object = xstrdup_printf(
-				"C = %-10s A = %-20s U = %-9s",
-				cluster_name, row[MASSOC_ACCT],
-				row[MASSOC_USER]);
-		} else {
-			if (assoc->parent_acct) {
-				if (!xstrcasecmp(row[MASSOC_ACCT],
-						 assoc->parent_acct)) {
-					error("You can't make an account be a "
-					      "child of it's self");
-					continue;
-				} else if (!xstrcasecmp(row[MASSOC_PACCT],
-							assoc->parent_acct)) {
-					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-						 "Trying to move association to the same parent? Nothing to do.");
-					continue;
-				}
-
-				moved_parent = 1;
-			}
-			if (row[MASSOC_PACCT][0]) {
-				object = xstrdup_printf(
-					"C = %-10s A = %s of %s",
-					cluster_name, row[MASSOC_ACCT],
-					row[MASSOC_PACCT]);
-			} else {
-				object = xstrdup_printf(
-					"C = %-10s A = %s",
-					cluster_name, row[MASSOC_ACCT]);
-			}
-			account_type = 1;
-		}
-		list_append(ret_list, object);
-		object = NULL;
-		added++;
-
-		if (name_char)
-			xstrfmtcat(name_char, " || id_assoc=%s",
-				   row[MASSOC_ID]);
-		else
-			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
+		if (assoc->parent_acct && !row[MASSOC_USER][0])
+			moved_parent = 1;
 
 		/* Only do this when not dealing with the root association. */
 		if (xstrcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
@@ -1371,6 +1325,53 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					  mod_assoc->parent_acct,
 					  row[MASSOC_ACCT], NULL, NULL);
 		}
+
+		if (row[MASSOC_PART][0]) {
+			// see if there is a partition name
+			object = xstrdup_printf(
+				"C = %-10s A = %-20s U = %-9s P = %s",
+				cluster_name, row[MASSOC_ACCT],
+				row[MASSOC_USER], row[MASSOC_PART]);
+		} else if (row[MASSOC_USER][0]){
+			object = xstrdup_printf(
+				"C = %-10s A = %-20s U = %-9s",
+				cluster_name, row[MASSOC_ACCT],
+				row[MASSOC_USER]);
+		} else {
+			if (assoc->parent_acct) {
+				if (!xstrcasecmp(row[MASSOC_ACCT],
+						 assoc->parent_acct)) {
+					error("You can't make an account be a "
+					      "child of it's self");
+					continue;
+				} else if (!xstrcasecmp(row[MASSOC_PACCT],
+							assoc->parent_acct)) {
+					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+						 "Trying to move association to the same parent? Nothing to do.");
+					continue;
+				}
+			}
+			if (row[MASSOC_PACCT][0]) {
+				object = xstrdup_printf(
+					"C = %-10s A = %s of %s",
+					cluster_name, row[MASSOC_ACCT],
+					row[MASSOC_PACCT]);
+			} else {
+				object = xstrdup_printf(
+					"C = %-10s A = %s",
+					cluster_name, row[MASSOC_ACCT]);
+			}
+			account_type = 1;
+		}
+		list_append(ret_list, object);
+		object = NULL;
+		added++;
+
+		if (name_char)
+			xstrfmtcat(name_char, " || id_assoc=%s",
+				   row[MASSOC_ID]);
+		else
+			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
 
 		if (alt_assoc.def_qos_id != NO_VAL)
 			mod_assoc->def_qos_id = alt_assoc.def_qos_id;
