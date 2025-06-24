@@ -314,9 +314,6 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	add_display_treestore_line(update, treestore, &iter,
 	                           "AccountingStorageType",
 	                           slurm_conf.accounting_storage_type);
-	add_display_treestore_line(update, treestore, &iter,
-				   "AccountingStorageUser",
-				   slurm_conf.accounting_storage_user);
 	add_display_treestore_line(update, treestore, &iter, "AuthType",
 				   slurm_conf.authtype);
 	snprintf(tmp_str, sizeof(tmp_str), "%u sec", slurm_conf.msg_timeout);

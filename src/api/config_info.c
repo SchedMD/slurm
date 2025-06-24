@@ -625,9 +625,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "AccountingStorageType", "%s",
 		     conf->accounting_storage_type);
 
-	add_key_pair(ret_list, "AccountingStorageUser", "%s",
-		     conf->accounting_storage_user);
-
 	add_key_pair_own(ret_list, "AccountingStoreFlags",
 			 _accountingstoreflags(conf->conf_flags));
 
@@ -1576,7 +1573,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "AccountingStorageHost") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStoragePort") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageType") ||
-		    !xstrcasecmp(key_pair->name, "AccountingStorageUser") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStoreFlags") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherEnergyType") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherFilesystemType") ||

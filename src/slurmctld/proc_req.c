@@ -279,8 +279,6 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 		xstrdup(conf->accounting_storage_tres);
 	conf_ptr->accounting_storage_type =
 		xstrdup(conf->accounting_storage_type);
-	conf_ptr->accounting_storage_user =
-		xstrdup(conf->accounting_storage_user);
 
 	conf_ptr->acct_gather_conf = acct_gather_conf_values();
 	conf_ptr->acct_gather_energy_type =

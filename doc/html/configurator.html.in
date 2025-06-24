@@ -207,7 +207,6 @@ function displayfile()
    get_field("AccountingStoragePass",document.config.accounting_storage_pass) + "<br>" +
    get_field("AccountingStoragePort",document.config.accounting_storage_port) + "<br>" +
    print_pair("AccountingStorageType",get_radio_value(document.config.accounting_storage_type)) + "<br>" +
-   get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
    get_field("AccountingStoreFlags",document.config.acctng_store_flags) + "<br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
    get_field("JobCompLoc",document.config.job_comp_loc) + "<br>" +
@@ -624,8 +623,6 @@ Use a fully qualified pathname. If using a database it is the name of the databa
 Host the database is running on for Job Accounting<br>
 <input type="text" name="accounting_storage_port" value=""> <B>AccountingStoragePort</B>:
 Port the database server is listening on for Job Accounting<br>
-<input type="text" name="accounting_storage_user" value=""> <B>AccountingStorageUser</B>:
-User we are to use to talk to the database for Job Accounting<br>
 <input type="text" name="accounting_storage_pass" value=""> <B>AccountingStoragePass</B>:
 Password we are to use to talk to the database for Job Accounting.
 In the case of SlurmDBD, this will be an alternate socket name for use with a Munge
@@ -692,6 +689,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 <hr>
 <p>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 13 March 2024</p>
+Last modified 24 June 2025</p>
 </body>
 </html>

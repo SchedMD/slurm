@@ -110,8 +110,6 @@ static void _print_slurm_config(void)
 	       slurm_conf.accounting_storage_port);
 	printf("AccountingStorageType  = %s\n",
 	       slurm_conf.accounting_storage_type);
-	printf("AccountingStorageUser  = %s\n",
-	       slurm_conf.accounting_storage_user);
 	printf("AuthType               = %s\n", slurm_conf.authtype);
 	printf("MessageTimeout         = %u sec\n", slurm_conf.msg_timeout);
 	printf("PluginDir              = %s\n", slurm_conf.plugindir);
