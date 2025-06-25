@@ -1042,43 +1042,18 @@ static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
 			      sizeof(addr), true, unixsock, NULL, arg);
 }
 
-extern int conmgr_create_listen_socket(conmgr_con_type_t type,
-				       conmgr_con_flags_t flags,
-				       const char *listen_on,
-				       const conmgr_events_t *events, void *arg)
+static int _add_socket_listener(conmgr_con_type_t type,
+				conmgr_con_flags_t flags, const char *listen_on,
+				url_t *url, const conmgr_events_t *events,
+				void *arg)
 {
-	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
 	int rc = SLURM_SUCCESS;
 	struct addrinfo *addrlist = NULL;
 
-	/* check for name local sockets */
-	if (unixsock) {
-		return _add_unix_listener(type, flags, listen_on, unixsock,
-					  events, arg);
-	} else {
-		url_t url = URL_INITIALIZER;
-		buf_t buffer = {
-			.magic = BUF_MAGIC,
-		};
-
-		buffer.head = (void *) listen_on;
-		buffer.processed = buffer.size = strlen(listen_on);
-
-		/* split up host and port */
-		if ((rc = url_parser_g_parse("listener", &buffer, &url)))
-			fatal("%s: Unable to parse %s: %s",
-			      __func__, listen_on, slurm_strerror(rc));
-
-		if (url.scheme == URL_SCHEME_HTTPS)
-			flags |= CON_FLAG_TLS_SERVER;
-
-		/* resolve out the host and port if provided */
-		if (!(addrlist = xgetaddrinfo(url.host, url.port)))
-			fatal("%s: Unable to listen on %s:%s(%s): %m",
-			      __func__, url.host, url.port, listen_on);
-
-		url_free_members(&url);
-	}
+	/* resolve out the host and port if provided */
+	if (!(addrlist = xgetaddrinfo(url->host, url->port)))
+		fatal("%s: Unable to listen on %s:%s(%s): %m",
+		      __func__, url->host, url->port, listen_on);
 
 	/*
 	 * Create a socket for every address returned
@@ -1131,6 +1106,43 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 	}
 
 	freeaddrinfo(addrlist);
+	return rc;
+}
+
+extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+				       conmgr_con_flags_t flags,
+				       const char *listen_on,
+				       const conmgr_events_t *events, void *arg)
+{
+	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
+	int rc = SLURM_SUCCESS;
+
+	/* check for name local sockets */
+	if (unixsock) {
+		return _add_unix_listener(type, flags, listen_on, unixsock,
+					  events, arg);
+	} else {
+		buf_t buffer = {
+			.magic = BUF_MAGIC,
+		};
+		url_t url = URL_INITIALIZER;
+
+		buffer.head = (void *) listen_on;
+		buffer.processed = buffer.size = strlen(listen_on);
+
+		/* split up host and port */
+		if ((rc = url_parser_g_parse("listener", &buffer, &url)))
+			fatal("%s: Unable to parse %s: %s",
+			      __func__, listen_on, slurm_strerror(rc));
+
+		if (url.scheme == URL_SCHEME_HTTPS)
+			flags |= CON_FLAG_TLS_SERVER;
+
+		rc = _add_socket_listener(type, flags, listen_on, &url, events,
+					  arg);
+
+		url_free_members(&url);
+	}
 
 	return rc;
 }
