@@ -277,16 +277,17 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	 * and we are not deleting all accounts of that user.
 	 */
 	query = xstrdup_printf(
-		"select user, acct from \"%s_%s\" "
-		"where is_def=1 and deleted=0 and user in "
-		"(select user as myuser "
-		"from \"%s_%s\" %s where deleted=0 and user!='' and (%s) "
+		"select %s from \"%s_%s\" "
+		"join (select user as myuser from \"%s_%s\" %s "
+		"where deleted=0 AND user!='' and (%s) "
 		"group by user "
 		"having max(is_def)=1 " /* Is default account is selected */
 		"and not count(*)=" /* Is this all of that user's assocs? */
 		"(select count(*) FROM \"%s_%s\" "
-		"where deleted=0 AND user=myuser))",
-		cluster_name, assoc_table, cluster_name, assoc_table,
+		"where deleted=0 AND user=myuser)) "
+		"as t3 ON user=myuser "
+		"where is_def=1 AND deleted=0",
+		tmp_char, cluster_name, assoc_table, cluster_name, assoc_table,
 		as_statement, assoc_char, cluster_name, assoc_table);
 
 	xfree(tmp_char);
