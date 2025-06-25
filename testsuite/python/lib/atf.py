@@ -5310,16 +5310,8 @@ def require_nodes(requested_node_count, requirements_list=[]):
         >>> require_nodes(2, [('CPUs', 4), ('Sockets', 1)])
     """
 
-    # If using local-config and slurm is running, use live node information
-    # so that a test is not incorrectly skipped when slurm derives a non-single
-    # CPUTot while the slurm.conf does not contain a CPUs property.
-    if not properties["auto-config"] and is_slurmctld_running(quiet=True):
-        live = True
-    else:
-        live = False
-
-    # This should return separate nodes and a DEFAULT (unless live)
-    nodes_dict = get_nodes(live=live, quiet=True)
+    # Always read from slurm.conf (live=False), so we never use --json.
+    nodes_dict = get_nodes(live=False, quiet=True)
     original_nodes = {}
     default_node = {}
 
@@ -5342,9 +5334,6 @@ def require_nodes(requested_node_count, requirements_list=[]):
     for node_name in original_nodes:
         for parameter_name, parameter_value in nodes_dict[node_name].items():
             if parameter_name.lower() != "nodename":
-                # Translate CPUTot to CPUs for screening qualifying nodes
-                if parameter_name.lower() == "cputot":
-                    parameter_name = "CPUs"
                 original_nodes[node_name][parameter_name] = parameter_value
 
     # Check to see how many qualifying nodes we have
