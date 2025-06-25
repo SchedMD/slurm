@@ -658,6 +658,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		"def_qos_id",
 		"qos",
 		"delta_qos",
+		"lineage",
 	};
 
 	enum {
@@ -679,6 +680,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		ASSOC_DEF_QOS,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
+		ASSOC_LINEAGE,
 		ASSOC_COUNT
 	};
 
@@ -692,7 +694,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 	for (i=1; i<ASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
-	/* We want all the sub accounts and user accounts */
+	/* We want all direct sub accounts and user accounts */
 	xstrfmtcatat(query, &query_pos,
 		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
 		     object, assoc->cluster, assoc_table,
@@ -888,6 +890,25 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 
 			list_append(ret_list, object);
 			object = NULL;
+
+			if (row[ASSOC_PACCT][0]) {
+				/*
+				 * This is a sub account so run it
+				 * through as if it is a parent.
+				 * We have already handled the parent change, so
+				 * send in the current parent as the last parent
+				 * as well.
+				 */
+				_modify_child_assocs(mysql_conn,
+						     mod_assoc,
+						     row[ASSOC_ACCT],
+						     row[ASSOC_LINEAGE],
+						     ret_list,
+						     moved_parent,
+						     row[ASSOC_PACCT],
+						     row[ASSOC_PACCT]);
+			}
+
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_ASSOC,
 					      mod_assoc) !=
