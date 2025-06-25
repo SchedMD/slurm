@@ -1432,8 +1432,9 @@ May not exceed 65533.
 Controls whether partition limits are enforced when a job is submitted to the
 cluster. The partition limits being considered by this option are its
 configured MaxMemPerCPU, MaxMemPerNode, MinNodes, MaxNodes, MaxTime, AllocNodes,
-AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. If set, then a
-job's QOS can not be used to exceed partition limits.
+AllowAccounts, AllowGroups, AllowQOS, and QOS usage threshold. It also considers
+if the job requests more nodes than exist in the partition. If set, then a
+job and job QOS cannot be submitted that exceed partition limits.
 .IP
 .RS
 .TP
@@ -1453,8 +1454,10 @@ requested partitions.
 .TP
 \fBNO\fR
 Partition limits will not be enforced at submit time, but will still be enforced
-during scheduling. A job that exceeds the limits on all requested partitions
-will remain queued until the partition limits are altered. This is the default.
+during scheduling. This includes jobs that request more nodes than exist in
+any of the partition, so jobs can be submitted to empty partitions. A job that
+exceeds the limits on all requested partitions will remain queued until the
+partition limits are altered. This is the default.
 .RE
 .IP
 
