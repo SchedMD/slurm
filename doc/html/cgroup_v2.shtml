@@ -480,7 +480,7 @@ slurmd: error: cannot create jobacct_gather context for jobacct_gather/cgroup
 slurmd: fatal: Unable to initialize jobacct_gather
 </pre>
 
-<p>One workaround is to set <i>EnableControllers=yes</i> in slurm.conf, but
+<p>One workaround is to set <i>EnableControllers=yes</i> in cgroup.conf, but
 note that this won't save you from possibly having other processes have OOM
 errors, as mentioned previously. Moreover, that will modify your entire cgroup
 tree from the root <i>/sys/fs/cgroup</i>. So the real solution is to either
