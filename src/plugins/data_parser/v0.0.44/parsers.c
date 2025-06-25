@@ -8822,6 +8822,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
 	add_flag_bit(RESERVE_FLAG_IGN_JOBS, "IGNORE_JOBS"),
 	add_flag_bit(RESERVE_FLAG_NO_IGN_JOB, "NO_IGNORE_JOBS"),
 	add_flag_bit(RESERVE_FLAG_ANY_NODES, "ANY_NODES"),
+	add_flag_bit(RESERVE_FLAG_NO_ANY_NODES, "NO_ANY_NODES"),
 	add_flag_bit(RESERVE_FLAG_STATIC, "STATIC"),
 	add_flag_bit(RESERVE_FLAG_NO_STATIC, "NO_STATIC"),
 	add_flag_bit(RESERVE_FLAG_PART_NODES, "PART_NODES"),
@@ -8841,14 +8842,23 @@ static const flag_bit_t PARSER_FLAG_ARRAY(RESERVATION_FLAGS)[] = {
 	add_flag_bit(RESERVE_FLAG_DUR_PLUS, "DURATION_PLUS"),
 	add_flag_bit(RESERVE_FLAG_DUR_MINUS, "DURATION_MINUS"),
 	add_flag_bit(RESERVE_FLAG_NO_HOLD_JOBS, "NO_HOLD_JOBS_AFTER_END"),
+	add_flag_bit(RESERVE_FLAG_REPLACE_DOWN, "REPLACE_DOWN"),
 	add_flag_bit(RESERVE_FLAG_NO_PURGE_COMP, "NO_PURGE_COMP"),
 	add_flag_bit(RESERVE_FLAG_MAGNETIC, "MAGNETIC"),
+	add_flag_bit(RESERVE_FLAG_NO_MAGNETIC, "NO_MAGNETIC"),
 	add_flag_bit(RESERVE_FLAG_SKIP, "SKIP"),
 	add_flag_bit(RESERVE_FLAG_HOURLY, "HOURLY"),
 	add_flag_bit(RESERVE_FLAG_NO_HOURLY, "NO_HOURLY"),
 	add_flag_bit(RESERVE_FLAG_USER_DEL, "USER_DELETE"),
+	add_flag_bit(RESERVE_FLAG_FORCE_START, "FORCE_START"),
 	add_flag_bit(RESERVE_FLAG_NO_USER_DEL, "NO_USER_DELETE"),
 	add_flag_bit(RESERVE_REOCCURRING, "REOCCURRING"),
+	/*
+	 * TRES_PER_NODE flag is user facing only in the data_parser since
+	 * scontrol sets it for the user if TRESPerNode option is used.
+	 * This is required for POSTing reservation functionality
+	 */
+	add_flag_bit(RESERVE_TRES_PER_NODE, "TRES_PER_NODE"),
 };
 
 #define add_parse(mtype, field, path, desc)				\
