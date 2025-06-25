@@ -84,29 +84,32 @@ extern char *gres_sched_str(list_t *sock_gres_list)
 	return out_str;
 }
 
+static int _foreach_gres_init(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	bool *rc = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (!gres_js->gres_per_job)
+		return 0;
+	gres_js->total_gres = 0;
+	*rc = true;
+
+	return 0;
+}
+
 /*
  * Clear GRES allocation info for all job GRES at start of scheduling cycle
  * Return TRUE if any gres_per_job constraints to satisfy
  */
 extern bool gres_sched_init(list_t *job_gres_list)
 {
-	list_itr_t *iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
 	bool rc = false;
 
 	if (!job_gres_list)
 		return rc;
 
-	iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (!gres_js->gres_per_job)
-			continue;
-		gres_js->total_gres = 0;
-		rc = true;
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(job_gres_list, _foreach_gres_init, &rc);
 
 	return rc;
 }
