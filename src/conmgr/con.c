@@ -77,8 +77,6 @@
 #include "src/interfaces/tls.h"
 #include "src/interfaces/url_parser.h"
 
-static const char UNIX_PREFIX[] = "unix:";
-
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {
 	conmgr_con_type_t type;
@@ -1008,11 +1006,6 @@ static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
 	if (fd < 0)
 		fatal("%s: socket() failed: %m", __func__);
 
-	unixsock += sizeof(UNIX_PREFIX) - 1;
-	if (unixsock[0] == '\0')
-		fatal("%s: [%s] Invalid UNIX socket",
-		      __func__, listen_on);
-
 	addr = sockaddr_from_unix_path(unixsock);
 
 	if (addr.ss_family != AF_UNIX)
@@ -1114,36 +1107,38 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 				       const char *listen_on,
 				       const conmgr_events_t *events, void *arg)
 {
-	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
 	int rc = SLURM_SUCCESS;
+	url_t url = URL_INITIALIZER;
+	buf_t buffer = {
+		.magic = BUF_MAGIC,
+		.head = (void *) listen_on,
+		.processed = strlen(listen_on),
+		.size = strlen(listen_on),
+		.shadow = true,
+	};
 
-	/* check for name local sockets */
-	if (unixsock) {
-		return _add_unix_listener(type, flags, listen_on, unixsock,
-					  events, arg);
-	} else {
-		buf_t buffer = {
-			.magic = BUF_MAGIC,
-		};
-		url_t url = URL_INITIALIZER;
+	if ((rc = url_parser_g_parse(__func__, &buffer, &url)))
+		fatal("%s: Unable to parse %s: %s",
+		      __func__, listen_on, slurm_strerror(rc));
 
-		buffer.head = (void *) listen_on;
-		buffer.processed = buffer.size = strlen(listen_on);
-
-		/* split up host and port */
-		if ((rc = url_parser_g_parse("listener", &buffer, &url)))
-			fatal("%s: Unable to parse %s: %s",
-			      __func__, listen_on, slurm_strerror(rc));
-
-		if (url.scheme == URL_SCHEME_HTTPS)
-			flags |= CON_FLAG_TLS_SERVER;
-
+	switch (url.scheme) {
+	case URL_SCHEME_UNIX:
+		rc = _add_unix_listener(type, flags, listen_on, url.path,
+					events, arg);
+		break;
+	case URL_SCHEME_HTTPS:
+		flags |= CON_FLAG_TLS_SERVER;
+		/* fall through */
+	case URL_SCHEME_HTTP:
+	case URL_SCHEME_INVALID:
 		rc = _add_socket_listener(type, flags, listen_on, &url, events,
 					  arg);
-
-		url_free_members(&url);
+		break;
+	case URL_SCHEME_INVALID_MAX:
+		fatal_abort("should never happen");
 	}
 
+	url_free_members(&url);
 	return rc;
 }
 
