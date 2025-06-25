@@ -537,8 +537,10 @@ Used by \fIauth/munge\fR and \fIcred/munge\fR.
 .TP
 \fBttl\fR
 Credential lifetime, in seconds (e.g. "ttl=300").
-The default value is dependent upon the MUNGE installation, but is typically
-300 seconds.
+The default value is dependent on the \fBAuthType\fR used.
+For \fBauth/munge\fR, the default value is dependent upon the MUNGE
+installation, but is typically 300 seconds. For \fBauth/slurm\fR, the default
+value is 60 seconds. For \fBauth/jwt\fR, the default value is 1800 seconds.
 .IP
 
 .TP
