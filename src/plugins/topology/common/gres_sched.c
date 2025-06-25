@@ -57,6 +57,11 @@ typedef struct {
 	uint64_t tot_cores;
 } foreach_gres_add_args_t;
 
+typedef struct {
+	list_t **consec_gres;
+	list_t *sock_gres_list;
+} foreach_gres_consec_args_t;
+
 /*
  * Given a list of sock_gres_t entries, return a string identifying the
  * count of each GRES available on this set of nodes
@@ -364,6 +369,35 @@ extern bool gres_sched_add(uint16_t *avail_cpus,
 	return rc;
 }
 
+static int _foreach_gres_consec(void *x, void *arg)
+{
+	foreach_gres_consec_args_t *args = arg;
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+	sock_gres_t *sock_data, *consec_data;
+
+	if (!gres_js->gres_per_job) /* Don't care about totals */
+		return 0;
+	sock_data =
+		list_find_first(args->sock_gres_list,
+				gres_find_sock_by_job_state, gres_state_job);
+	if (!sock_data) /* None of this GRES available */
+		return 0;
+	if (*(args->consec_gres) == NULL)
+		*(args->consec_gres) = list_create(gres_sock_delete);
+	consec_data =
+		list_find_first(*(args->consec_gres),
+				gres_find_sock_by_job_state, gres_state_job);
+	if (!consec_data) {
+		consec_data = xmalloc(sizeof(sock_gres_t));
+		consec_data->gres_state_job = gres_state_job;
+		list_append(*(args->consec_gres), consec_data);
+	}
+	consec_data->total_cnt += sock_data->total_cnt;
+
+	return 0;
+}
+
 /*
  * Create/update list GRES that can be made available on the specified node
  * IN/OUT consec_gres - list of sock_gres_t that can be made available on
@@ -374,37 +408,15 @@ extern bool gres_sched_add(uint16_t *avail_cpus,
 extern void gres_sched_consec(list_t **consec_gres, list_t *job_gres_list,
 			      list_t *sock_gres_list)
 {
-	list_itr_t *iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	sock_gres_t *sock_data, *consec_data;
+	foreach_gres_consec_args_t args = {
+		.consec_gres = consec_gres,
+		.sock_gres_list = sock_gres_list,
+	};
 
 	if (!job_gres_list)
 		return;
 
-	iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (!gres_js->gres_per_job)	/* Don't care about totals */
-			continue;
-		sock_data = list_find_first(sock_gres_list,
-					    gres_find_sock_by_job_state,
-					    gres_state_job);
-		if (!sock_data)		/* None of this GRES available */
-			continue;
-		if (*consec_gres == NULL)
-			*consec_gres = list_create(gres_sock_delete);
-		consec_data = list_find_first(*consec_gres,
-					      gres_find_sock_by_job_state,
-					      gres_state_job);
-		if (!consec_data) {
-			consec_data = xmalloc(sizeof(sock_gres_t));
-			consec_data->gres_state_job = gres_state_job;
-			list_append(*consec_gres, consec_data);
-		}
-		consec_data->total_cnt += sock_data->total_cnt;
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(job_gres_list, _foreach_gres_consec, &args);
 }
 
 static int _find_insufficient_gres(void *x, void *args)
