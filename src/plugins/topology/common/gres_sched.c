@@ -114,31 +114,28 @@ extern bool gres_sched_init(list_t *job_gres_list)
 	return rc;
 }
 
+/* Note - key is not used */
+static int _is_gres_per_job_met(void *x, void *key)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (gres_js->gres_per_job &&
+	    (gres_js->gres_per_job > gres_js->total_gres))
+		return -1; /* break out of list_find_first */
+
+	return 0;
+}
+
 /*
  * Return TRUE if all gres_per_job specifications are satisfied
  */
 extern bool gres_sched_test(list_t *job_gres_list, uint32_t job_id)
 {
-	list_itr_t *iter;
-	gres_state_t *gres_state_job;
-	gres_job_state_t *gres_js;
-	bool rc = true;
-
 	if (!job_gres_list)
-		return rc;
+		return true;
 
-	iter = list_iterator_create(job_gres_list);
-	while ((gres_state_job = list_next(iter))) {
-		gres_js = (gres_job_state_t *) gres_state_job->gres_data;
-		if (gres_js->gres_per_job &&
-		    (gres_js->gres_per_job > gres_js->total_gres)) {
-			rc = false;
-			break;
-		}
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
+	return !list_find_first(job_gres_list, _is_gres_per_job_met, NULL);
 }
 
 static void _gres_per_job_reduce_res_cores(bitstr_t *avail_core,
