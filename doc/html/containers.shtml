@@ -267,11 +267,11 @@ namespace support</a> instead.</p>
 <pre>
 EnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
 RunTimeEnvExclude="^(SLURM_CONF|SLURM_CONF_SERVER)="
-OCIRunTimeQuery="sudo singularity oci state %n.%u.%j.%s.%t"
-OCIRunTimeCreate="sudo singularity oci create --bundle %b %n.%u.%j.%s.%t"
-OCIRunTimeStart="sudo singularity oci start %n.%u.%j.%s.%t"
-OCIRunTimeKill="sudo singularity oci kill %n.%u.%j.%s.%t"
-OCIRunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
+RunTimeQuery="sudo singularity oci state %n.%u.%j.%s.%t"
+RunTimeCreate="sudo singularity oci create --bundle %b %n.%u.%j.%s.%t"
+RunTimeStart="sudo singularity oci start %n.%u.%j.%s.%t"
+RunTimeKill="sudo singularity oci kill %n.%u.%j.%s.%t"
+RunTimeDelete="sudo singularity oci delete %n.%u.%j.%s.%t
 </pre>
 </p>
 
@@ -947,6 +947,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 27 November 2024</p>
+<p style="text-align:center;">Last modified 24 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
