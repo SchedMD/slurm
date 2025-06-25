@@ -77,6 +77,8 @@
 #include "src/interfaces/tls.h"
 #include "src/interfaces/url_parser.h"
 
+static const char UNIX_PREFIX[] = "unix:";
+
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {
 	conmgr_con_type_t type;
@@ -995,56 +997,64 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 	return false;
 }
 
+static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
+			      const char *listen_on, const char *unixsock,
+			      const conmgr_events_t *events, void *arg)
+{
+	slurm_addr_t addr = { 0 };
+	int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+	int rc = EINVAL;
+
+	if (fd < 0)
+		fatal("%s: socket() failed: %m", __func__);
+
+	unixsock += sizeof(UNIX_PREFIX) - 1;
+	if (unixsock[0] == '\0')
+		fatal("%s: [%s] Invalid UNIX socket",
+		      __func__, listen_on);
+
+	addr = sockaddr_from_unix_path(unixsock);
+
+	if (addr.ss_family != AF_UNIX)
+		fatal("%s: [%s] Invalid Unix socket path: %s",
+		      __func__, listen_on, unixsock);
+
+	log_flag(CONMGR, "%s: [%pA] attempting to bind() and listen() UNIX socket",
+		 __func__, &addr);
+
+	if (unlink(unixsock) && (errno != ENOENT))
+		error("Error unlink(%s): %m", unixsock);
+
+	/* bind() will EINVAL if socklen=sizeof(addr) */
+	if ((rc = bind(fd, (const struct sockaddr *) &addr,
+		       sizeof(struct sockaddr_un))))
+		fatal("%s: [%s] Unable to bind UNIX socket: %m",
+		      __func__, listen_on);
+
+	fd_set_oob(fd, 0);
+
+	rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
+	if (rc < 0)
+		fatal("%s: [%s] unable to listen(): %m",
+		      __func__, listen_on);
+
+	return add_connection(type, NULL, fd, -1, events, flags, &addr,
+			      sizeof(addr), true, unixsock, NULL, arg);
+}
+
 extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 				       conmgr_con_flags_t flags,
 				       const char *listen_on,
 				       const conmgr_events_t *events, void *arg)
 {
-	static const char UNIX_PREFIX[] = "unix:";
 	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
 	int rc = SLURM_SUCCESS;
 	struct addrinfo *addrlist = NULL;
 
 	/* check for name local sockets */
 	if (unixsock) {
-		slurm_addr_t addr = {0};
-		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-
-		if (fd < 0)
-			fatal("%s: socket() failed: %m", __func__);
-
-		unixsock += sizeof(UNIX_PREFIX) - 1;
-		if (unixsock[0] == '\0')
-			fatal("%s: [%s] Invalid UNIX socket",
-			      __func__, listen_on);
-
-		addr = sockaddr_from_unix_path(unixsock);
-
-		if (addr.ss_family != AF_UNIX)
-			fatal("%s: [%s] Invalid Unix socket path: %s",
-			      __func__, listen_on, unixsock);
-
-		log_flag(CONMGR, "%s: [%pA] attempting to bind() and listen() UNIX socket",
-			 __func__, &addr);
-
-		if (unlink(unixsock) && (errno != ENOENT))
-			error("Error unlink(%s): %m", unixsock);
-
-		/* bind() will EINVAL if socklen=sizeof(addr) */
-		if ((rc = bind(fd, (const struct sockaddr *) &addr,
-			       sizeof(struct sockaddr_un))))
-			fatal("%s: [%s] Unable to bind UNIX socket: %m",
-			      __func__, listen_on);
-
-		fd_set_oob(fd, 0);
-
-		rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
-		if (rc < 0)
-			fatal("%s: [%s] unable to listen(): %m",
-			      __func__, listen_on);
-
-		return add_connection(type, NULL, fd, -1, events, flags, &addr,
-				      sizeof(addr), true, unixsock, NULL, arg);
+		return _add_unix_listener(type, flags, listen_on, unixsock,
+					  events, arg);
 	} else {
 		url_t url = URL_INITIALIZER;
 		buf_t buffer = {
