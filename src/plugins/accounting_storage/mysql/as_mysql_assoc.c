@@ -631,8 +631,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 				char *acct,
 				char *lineage,
 				list_t *ret_list, int moved_parent,
-				char *old_parent, char *new_parent,
-				bool handle_child_parent)
+				char *old_parent, char *new_parent)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -689,26 +688,16 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 	if (!ret_list || !lineage)
 		return SLURM_ERROR;
 
-	if (handle_child_parent && !moved_parent)
-		return SLURM_SUCCESS;
-
 	xstrcat(object, assoc_inx[0]);
 	for (i=1; i<ASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
 	/* We want all the sub accounts and user accounts */
 	xstrfmtcatat(query, &query_pos,
-		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s')",
+		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
 		     object, assoc->cluster, assoc_table,
-		     assoc->id, lineage, acct);
+		     assoc->id, lineage, acct, acct);
 	xfree(object);
-
-	if (!handle_child_parent)
-		xstrfmtcatat(query, &query_pos,
-			     " || (user != '' && acct = '%s')",
-			     acct);
-	xstrcatat(query, &query_pos, ") order by lineage;");
-
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -1612,8 +1601,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					     ret_list,
 					     moved_parent,
 					     row[MASSOC_PACCT],
-					     assoc->parent_acct,
-					     false);
+					     assoc->parent_acct);
 		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
