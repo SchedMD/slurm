@@ -54,6 +54,9 @@ const char plugin_name[] = "Slurm http_parser libhttp_parser plugin";
 const char plugin_type[] = HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+#define UNIX_PREFIX "unix:"
+#define UNIX_PREFIX_BYTES strlen("unix:")
+
 #define LOG_PARSE(state, fmt, ...) \
 	_log_parse(state, NULL, 0, __func__, fmt, ##__VA_ARGS__)
 #define LOG_PARSE_AT(state, at, bytes, fmt, ...) \
@@ -455,6 +458,33 @@ static void _http_parser_url_init(struct http_parser_url *url)
 /*
  * Parse URL where only the port is given.
  * Examples:
+ *	unix:/path/to/socket
+ *
+ * RET
+ *	SLURM_SUCCESS: parsed port successfully
+ *	ESLURM_URL_UNSUPPORTED_FORMAT: not a port only URL
+ *	*: error
+ */
+static int _parse_unix_url(const char *name, const buf_t *buffer, url_t *dst)
+{
+	const char *data = get_buf_data(buffer);
+	const size_t bytes = get_buf_offset(buffer);
+
+	if (xstrncmp(UNIX_PREFIX, data, UNIX_PREFIX_BYTES))
+		return ESLURM_URL_UNSUPPORTED_FORMAT;
+
+	if (data[UNIX_PREFIX_BYTES] == '\0')
+		return ESLURM_URL_EMPTY;
+
+	dst->scheme = URL_SCHEME_UNIX;
+	dst->path = xstrndup((data + UNIX_PREFIX_BYTES),
+			     (bytes - UNIX_PREFIX_BYTES));
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Parse URL where only the port is given.
+ * Examples:
  *	:8080
  *	:ssh
  *
@@ -576,11 +606,14 @@ extern int url_parser_p_parse(const char *name, const buf_t *buffer, url_t *dst)
 	 * Try using libhttp_parser's builtin URL parser and then try additional
 	 * parsers for formats it doesn't support
 	 */
-	if ((rc = _library_url_parse(name, buffer, dst))) {
-		if (rc == ESLURM_URL_UNSUPPORTED_FORMAT) {
-			url_free_members(dst);
-			rc = _parse_only_port(name, buffer, dst);
-		}
+	rc = _library_url_parse(name, buffer, dst);
+	if (rc == ESLURM_URL_UNSUPPORTED_FORMAT) {
+		url_free_members(dst);
+		rc = _parse_only_port(name, buffer, dst);
+	}
+	if (rc == ESLURM_URL_UNSUPPORTED_FORMAT) {
+		url_free_members(dst);
+		rc = _parse_unix_url(name, buffer, dst);
 	}
 
 	if (rc) {
