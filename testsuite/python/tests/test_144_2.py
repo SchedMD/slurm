@@ -13,7 +13,7 @@ def setup():
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("GresTypes", "gpu")
-    atf.require_nodes(1, [("Gres", "gpu:2 Sockets=2 CoresPerSocket=1")])
+    atf.require_nodes(1, [("Gres", "gpu:2 Sockets=4 CoresPerSocket=1")])
     # GPU's need to point to existing files
     gpu_file = f"{str(atf.module_tmp_path)}/gpu"
     atf.run_command(f"touch {gpu_file + '1'}")
