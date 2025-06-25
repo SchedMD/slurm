@@ -2067,12 +2067,15 @@ as that described above for the slurmd daemon. If it is running in an
 unprivileged phase, it will be in the spawned job's working directory.</p>
 
 
-<p>Nevertheless, in some operating systems this can vary:</p>
+<p>Nevertheless, in some operating systems this can vary, for example:</p>
 <ul>
 <li>
-I.e. in RHEL the event
-may be captured by abrt daemon and generated in the defined abrt configured
-dump location (i.e. /var/spool/abrt).
+In RHEL the event may be captured by the abrt daemon and generated in the
+configured dump location (e.g., /var/spool/abrt).
+</li>
+<li>
+In Ubuntu the event may be captured by the apport daemon and generated in the
+configured dump location (e.g., /var/lib/apport).
 </li>
 </ul>
 
@@ -2423,6 +2426,6 @@ dset TV::parallel_configs {
 }
 !-->
 
-<p style="text-align:center;">Last modified 09 May 2025</p>
+<p style="text-align:center;">Last modified 19 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
