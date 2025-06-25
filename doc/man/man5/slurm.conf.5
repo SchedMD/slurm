@@ -531,19 +531,21 @@ The default value is 120 seconds.
 Path name to a MUNGE daemon socket to use
 (e.g. "socket=/var/run/munge/munge.socket.2").
 The default value is "/var/run/munge/munge.socket.2".
-Used by \fIauth/munge\fR and \fIcred/munge\fR.
+Used by \fBauth/munge\fR and \fBcred/munge\fR.
 .IP
 
 .TP
 \fBttl\fR
 Credential lifetime, in seconds (e.g. "ttl=300").
-The default value is dependent upon the MUNGE installation, but is typically
-300 seconds.
+The default value is dependent on the \fBAuthType\fR used.
+For \fBauth/munge\fR, the default value is dependent upon the MUNGE
+installation, but is typically 300 seconds. For \fBauth/slurm\fR, the default
+value is 60 seconds. For \fBauth/jwt\fR, the default value is 1800 seconds.
 .IP
 
 .TP
 \fBuse_client_ids\fR
-Allow the \fIauth/slurm\fR plugin to authenticate users without relying on
+Allow the \fBauth/slurm\fR plugin to authenticate users without relying on
 the user information from LDAP or the operating system.
 .RE
 .IP
