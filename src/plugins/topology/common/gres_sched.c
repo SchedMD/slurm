@@ -62,6 +62,36 @@ typedef struct {
 	list_t *sock_gres_list;
 } foreach_gres_consec_args_t;
 
+static int _foreach_gres_str(void *x, void *arg)
+{
+	sock_gres_t *sock_data = x;
+	char **out_str = arg;
+	gres_job_state_t *gres_js;
+	char *sep;
+
+	if (!sock_data->gres_state_job) { /* Should never happen */
+		error("%s: sock_data has no gres_state_job. This should never happen.",
+		      __func__);
+		return 0;
+	}
+	gres_js = sock_data->gres_state_job->gres_data;
+	if (*out_str)
+		sep = ",";
+	else
+		sep = "GRES:";
+	if (gres_js->type_name) {
+		xstrfmtcat(*out_str, "%s%s:%s:%"PRIu64, sep,
+			   sock_data->gres_state_job->gres_name,
+			   gres_js->type_name, sock_data->total_cnt);
+	} else {
+		xstrfmtcat(*out_str, "%s%s:%"PRIu64, sep,
+			   sock_data->gres_state_job->gres_name,
+			   sock_data->total_cnt);
+	}
+
+	return 0;
+}
+
 /*
  * Given a list of sock_gres_t entries, return a string identifying the
  * count of each GRES available on this set of nodes
@@ -70,38 +100,12 @@ typedef struct {
  */
 extern char *gres_sched_str(list_t *sock_gres_list)
 {
-	list_itr_t *iter;
-	sock_gres_t *sock_data;
-	gres_job_state_t *gres_js;
-	char *out_str = NULL, *sep;
+	char *out_str = NULL;
 
 	if (!sock_gres_list)
 		return NULL;
 
-	iter = list_iterator_create(sock_gres_list);
-	while ((sock_data = (sock_gres_t *) list_next(iter))) {
-		if (!sock_data->gres_state_job)	{ /* Should never happen */
-			error("%s: sock_data has no gres_state_job. This should never happen.",
-			      __func__);
-			continue;
-		}
-		gres_js = sock_data->gres_state_job->gres_data;
-		if (out_str)
-			sep = ",";
-		else
-			sep = "GRES:";
-		if (gres_js->type_name) {
-			xstrfmtcat(out_str, "%s%s:%s:%"PRIu64, sep,
-				   sock_data->gres_state_job->gres_name,
-				   gres_js->type_name,
-				   sock_data->total_cnt);
-		} else {
-			xstrfmtcat(out_str, "%s%s:%"PRIu64, sep,
-				   sock_data->gres_state_job->gres_name,
-				   sock_data->total_cnt);
-		}
-	}
-	list_iterator_destroy(iter);
+	(void) list_for_each(sock_gres_list, _foreach_gres_str, &out_str);
 
 	return out_str;
 }
