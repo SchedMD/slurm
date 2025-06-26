@@ -288,6 +288,7 @@ static void *_sig_agent(void *args)
 {
 	bool hung_pids = false;
 	sig_agent_arg_t *agent_arg_ptr = args;
+	pid_t stepd_pid = getpid();
 
 	while (1) {
 		pid_t *pids = NULL;
@@ -301,6 +302,12 @@ static void *_sig_agent(void *args)
 
 		if (proctrack_g_get_pids(agent_arg_ptr->cont_id, &pids,
 					     &npids) == SLURM_SUCCESS) {
+			if (!npids ||
+			    ((npids == 1) && (pids[0] == stepd_pid))) {
+				xfree(pids);
+				break;
+			}
+
 			/*
 			 * Check if any processes are core dumping.
 			 * If so, do not signal any of them, instead
@@ -314,6 +321,8 @@ static void *_sig_agent(void *args)
 			 * of them will terminate the application.
 			 */
 			for (i = 0; i < npids; i++) {
+				if (pids[i] == stepd_pid)
+					continue;
 				xstrfmtcat(stat_fname, "/proc/%d/stat",
 					   (int) pids[i]);
 				if (_test_core_dumping(stat_fname)) {
@@ -332,6 +341,9 @@ static void *_sig_agent(void *args)
 			}
 
 			for (i = 0; i < npids; i++) {
+				/* Avoid killing our own (stepd) process. */
+				if (pids[i] == stepd_pid)
+					continue;
 				/* Kill processes */
 				kill(pids[i], agent_arg_ptr->signal);
 			}
@@ -370,7 +382,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 	xassert(g_context);
 
 	if (signal == SIGKILL) {
-		pid_t *pids = NULL;
+		pid_t *pids = NULL, stepd_pid = getpid();
 		int i, j, npids = 0, hung_pids = 0;
 		char *stat_fname = NULL;
 		if (proctrack_g_get_pids(cont_id, &pids, &npids) ==
@@ -380,7 +392,7 @@ extern int proctrack_g_signal(uint64_t cont_id, int signal)
 					sleep(2);
 				hung_pids = 0;
 				for (i = 0; i < npids; i++) {
-					if (!pids[i])
+					if (!pids[i] || (pids[i] == stepd_pid))
 						continue;
 					xstrfmtcat(stat_fname, "/proc/%d/stat",
 						   (int) pids[i]);
