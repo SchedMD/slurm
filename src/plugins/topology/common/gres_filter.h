@@ -38,46 +38,62 @@
 
 #include "common_topo.h"
 
+typedef struct {
+	bitstr_t *avail_core; /* cores available on this node, UPDATED */
+	uint16_t *avail_cpus; /* Count of available CPUs on the node, UPDATED */
+	uint16_t cores_per_socket; /* Count of cores per socket on the node */
+	uint16_t cpus_per_core; /* Count of CPUs per core on the node */
+	uint16_t cr_type;
+	bool enforce_binding; /* GRES must be co-allocated with cores */
+	bool first_pass; /* set if first scheduling attempt for this job,
+			  * use co-located GRES and cores if possible */
+	bool has_cpus_per_gres;
+	job_record_t *job_ptr; /* job's pointer */
+	uint32_t *max_tasks_this_node; /* Max tasks that can start on this node
+					* or NO_VAL, UPDATED */
+	gres_mc_data_t *mc_ptr; /* job's multi-core specs, NO_VAL and INFINITE
+				 * mapped to zero */
+	uint32_t *min_cores_this_node;
+	uint32_t *min_tasks_this_node; /* Min tasks that can start on this node,
+					* UPDATED */
+	int node_i;
+	char *node_name; /* name of the node */
+	int rem_nodes; /* node count left to allocate, including this node */
+	uint16_t res_cores_per_gpu;
+	uint16_t *res_cores_per_sock; /* internally set by function */
+	bool *req_sock; /* Required socket */
+	uint16_t sockets; /* Count of sockets on the node */
+	int *socket_index; /* internally set by function - Socket indexes */
+	uint32_t task_cnt_incr; /* internally set by function -
+				 * original value of min_tasks_this_node */
+	int tot_core_cnt; /* internally set by function */
+} foreach_gres_filter_sock_core_args_t;
+
 /*
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
- * IN job_ptr - job's pointer
- * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
+ * IN args->job_ptr - job's pointer
+ * IN args->mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
  * IN sock_gres_list - list of sock_gres_t entries built by
- *	gres_sock_list_create()
- * IN sockets - Count of sockets on the node
- * IN cores_per_socket - Count of cores per socket on the node
- * IN cpus_per_core - Count of CPUs per core on the node
- * IN avail_cpus - Count of available CPUs on the node, UPDATED
- * IN min_tasks_this_node - Minimum count of tasks that can be started on this
- *                          node, UPDATED
- * IN max_tasks_this_node - Maximum count of tasks that can be started on this
- *                          node or NO_VAL, UPDATED
- * IN rem_nodes - desired additional node count to allocate, including this node
- * IN enforce_binding - GRES must be co-allocated with cores
- * IN first_pass - set if first scheduling attempt for this job, use
- *		   co-located GRES and cores if possible
- * IN avail_core - cores available on this node, UPDATED
- * IN node_name - name of the node
+ *		       gres_sock_list_create()
+ * IN args->sockets - Count of sockets on the node
+ * IN args->cores_per_socket - Count of cores per socket on the node
+ * IN args->cpus_per_core - Count of CPUs per core on the node
+ * IN args->avail_cpus - Count of available CPUs on the node, UPDATED
+ * IN args->min_tasks_this_node - Minimum count of tasks that can be started on
+ *				  this node, UPDATED
+ * IN args->max_tasks_this_node - Maximum count of tasks that can be started on
+ *				  this node or NO_VAL, UPDATED
+ * IN args->rem_nodes - desired additional node count to allocate,
+ *			including this node
+ * IN args->enforce_binding - GRES must be co-allocated with cores
+ * IN args->first_pass - set if first scheduling attempt for this job, use
+ *			 co-located GRES and cores if possible
+ * IN args->avail_core - cores available on this node, UPDATED
+ * IN args->node_name - name of the node
  */
-extern void gres_filter_sock_core(job_record_t *job_ptr,
-				  gres_mc_data_t *mc_ptr,
-				  list_t *sock_gres_list,
-				  uint16_t sockets,
-				  uint16_t cores_per_socket,
-				  uint16_t cpus_per_core,
-				  uint16_t *avail_cpus,
-				  uint32_t *min_tasks_this_node,
-				  uint32_t *max_tasks_this_node,
-				  uint32_t *min_cores_this_node,
-				  int rem_nodes,
-				  bool enforce_binding,
-				  bool first_pass,
-				  bitstr_t *avail_core,
-				  char *node_name,
-				  uint16_t cr_type,
-				  uint16_t res_cores_per_gpu,
-				  int node_i,
-				  uint16_t **cores_per_sock_limit);
+extern void gres_filter_sock_core(list_t *sock_gres_list,
+				  uint16_t **cores_per_sock_limit,
+				  foreach_gres_filter_sock_core_args_t *args);
 
 #endif

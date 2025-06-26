@@ -35,36 +35,6 @@
 
 #include "gres_filter.h"
 
-typedef struct {
-	bitstr_t *avail_core; /* cores available on this node, UPDATED */
-	uint16_t *avail_cpus; /* Count of available CPUs on the node, UPDATED */
-	uint16_t cores_per_socket; /* Count of cores per socket on the node */
-	uint16_t cpus_per_core; /* Count of CPUs per core on the node */
-	uint16_t cr_type;
-	bool enforce_binding; /* GRES must be co-allocated with cores */
-	bool first_pass; /* set if first scheduling attempt for this job,
-			  * use co-located GRES and cores if possible */
-	bool has_cpus_per_gres;
-	job_record_t *job_ptr; /* job's pointer */
-	uint32_t *max_tasks_this_node; /* Max tasks that can start on this node
-					* or NO_VAL, UPDATED */
-	gres_mc_data_t *mc_ptr; /* job's multi-core specs, NO_VAL and INFINITE
-				 * mapped to zero */
-	uint32_t *min_cores_this_node;
-	uint32_t *min_tasks_this_node; /* Min tasks that can start on this node,
-					* UPDATED */
-	int node_i;
-	char *node_name; /* name of the node */
-	int rem_nodes; /* node count left to allocate, including this node */
-	uint16_t res_cores_per_gpu;
-	uint16_t *res_cores_per_sock;
-	bool *req_sock; /* Required socket */
-	uint16_t sockets; /* Count of sockets on the node */
-	int *socket_index; /* Socket indexes */
-	uint32_t task_cnt_incr; /* original value of min_tasks_this_node */
-	int tot_core_cnt;
-} foreach_gres_filter_sock_core_args_t;
-
 static uint16_t *avail_cores_per_sock = NULL;
 
 static uint64_t _shared_gres_task_limit(gres_job_state_t *gres_js,
@@ -940,80 +910,50 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 	return 0;
 }
 
-extern void gres_filter_sock_core(job_record_t *job_ptr,
-				  gres_mc_data_t *mc_ptr,
-				  list_t *sock_gres_list,
-				  uint16_t sockets,
-				  uint16_t cores_per_socket,
-				  uint16_t cpus_per_core,
-				  uint16_t *avail_cpus,
-				  uint32_t *min_tasks_this_node,
-				  uint32_t *max_tasks_this_node,
-				  uint32_t *min_cores_this_node,
-				  int rem_nodes,
-				  bool enforce_binding,
-				  bool first_pass,
-				  bitstr_t *avail_core,
-				  char *node_name,
-				  uint16_t cr_type,
-				  uint16_t res_cores_per_gpu,
-				  int node_i,
-				  uint16_t **cores_per_sock_limit)
+extern void gres_filter_sock_core(list_t *sock_gres_list,
+				  uint16_t **cores_per_sock_limit,
+				  foreach_gres_filter_sock_core_args_t *args)
 {
-	foreach_gres_filter_sock_core_args_t args = {
-		.job_ptr = job_ptr,
-		.mc_ptr = mc_ptr,
-		.sockets = sockets,
-		.cores_per_socket = cores_per_socket,
-		.cpus_per_core = cpus_per_core,
-		.avail_cpus = avail_cpus,
-		.min_tasks_this_node = min_tasks_this_node,
-		.max_tasks_this_node = max_tasks_this_node,
-		.min_cores_this_node = min_cores_this_node,
-		.rem_nodes = rem_nodes,
-		.enforce_binding = enforce_binding,
-		.first_pass = first_pass,
-		.avail_core = avail_core,
-		.node_name = node_name,
-		.cr_type = cr_type,
-		.res_cores_per_gpu = res_cores_per_gpu,
-		.node_i = node_i,
-		.task_cnt_incr = *min_tasks_this_node,
-	};
+	xassert(args);
+	xassert(args->mc_ptr->cpus_per_task);
+	xassert(!args->socket_index && !args->req_sock &&
+		!args->res_cores_per_sock);
 
-	xassert(mc_ptr->cpus_per_task);
+	args->task_cnt_incr = *(args->min_tasks_this_node);
+	args->tot_core_cnt = 0;
 
-	*min_cores_this_node = NO_VAL;
+	*(args->min_cores_this_node) = NO_VAL;
 
-	if (*max_tasks_this_node == 0)
+	if (*(args->max_tasks_this_node) == 0)
 		return;
 
-	if (mc_ptr->threads_per_core)
-		args.cpus_per_core =
-			MIN(cpus_per_core, mc_ptr->threads_per_core);
+	if (args->mc_ptr->threads_per_core)
+		args->cpus_per_core = MIN(args->cpus_per_core,
+					  args->mc_ptr->threads_per_core);
 
-	xassert(avail_core);
-	avail_cores_per_sock = xcalloc(sockets, sizeof(uint16_t));
-	for (int s = 0; s < sockets; s++) {
-		int start_core = s * cores_per_socket;
-		int end_core = start_core + cores_per_socket;
+	xassert(args->avail_core);
+	avail_cores_per_sock = xcalloc(args->sockets, sizeof(uint16_t));
+	for (int s = 0; s < args->sockets; s++) {
+		int start_core = s * args->cores_per_socket;
+		int end_core = start_core + args->cores_per_socket;
 		avail_cores_per_sock[s] =
-			bit_set_count_range(avail_core, start_core, end_core);
-		args.tot_core_cnt += avail_cores_per_sock[s];
+			bit_set_count_range(args->avail_core, start_core,
+					    end_core);
+		args->tot_core_cnt += avail_cores_per_sock[s];
 	}
 
-	args.req_sock = xcalloc(sockets, sizeof(bool));
-	args.socket_index = xcalloc(sockets, sizeof(int));
+	args->req_sock = xcalloc(args->sockets, sizeof(bool));
+	args->socket_index = xcalloc(args->sockets, sizeof(int));
 
 	list_sort(sock_gres_list, _sock_gres_sort);
 	(void) list_for_each(sock_gres_list, _foreach_gres_filter_sock_core,
-			     &args);
+			     args);
 
-	xfree(args.req_sock);
-	xfree(args.socket_index);
-	xfree(args.res_cores_per_sock);
+	xfree(args->req_sock);
+	xfree(args->socket_index);
+	xfree(args->res_cores_per_sock);
 
-	if (*max_tasks_this_node) {
+	if (*(args->max_tasks_this_node)) {
 		if (*cores_per_sock_limit)
 			xfree(*cores_per_sock_limit);
 		*cores_per_sock_limit = avail_cores_per_sock;
@@ -1021,11 +961,12 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 	}
 	xfree(avail_cores_per_sock);
 
-	if (!(*max_tasks_this_node) || (*min_cores_this_node == NO_VAL))
-		*min_cores_this_node = 0;
+	if (!(*(args->max_tasks_this_node)) ||
+	    (*(args->min_cores_this_node) == NO_VAL))
+		*(args->min_cores_this_node) = 0;
 
-	if (!args.has_cpus_per_gres &&
-	    ((mc_ptr->cpus_per_task > 1) ||
+	if (!args->has_cpus_per_gres &&
+	    ((args->mc_ptr->cpus_per_task > 1) ||
 	     !(slurm_conf.select_type_param & SELECT_ONE_TASK_PER_CORE))) {
 		/*
 		 * Only adjust *avail_cpus for the maximum task count if
@@ -1034,9 +975,11 @@ extern void gres_filter_sock_core(job_record_t *job_ptr,
 		 * when SelectTypeParameters includes SELECT_ONE_TASK_PER_CORE.
 		 */
 
-		*avail_cpus =
-			MIN(*avail_cpus,
-			    MAX(*max_tasks_this_node * mc_ptr->cpus_per_task,
-				*min_cores_this_node * cpus_per_core));
+		*(args->avail_cpus) =
+			MIN(*(args->avail_cpus),
+			    MAX(*(args->max_tasks_this_node) *
+				args->mc_ptr->cpus_per_task,
+				*(args->min_cores_this_node) *
+				args->cpus_per_core));
 	}
 }

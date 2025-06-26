@@ -1923,21 +1923,30 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 	 * do it.
 	 */
 	if (job_ptr->gres_list_req) {
+		foreach_gres_filter_sock_core_args_t args = {
+			.job_ptr = job_ptr,
+			.mc_ptr = mc_ptr,
+			.sockets = avail_res_array[node_inx]->sock_cnt,
+			.cores_per_socket = node_ptr->cores,
+			.cpus_per_core = node_ptr->tpc,
+			.avail_cpus = avail_cpus,
+			.min_tasks_this_node = &min_tasks_this_node,
+			.max_tasks_this_node = &max_tasks_this_node,
+			.min_cores_this_node = &min_cores_this_node,
+			.rem_nodes = rem_nodes,
+			.enforce_binding = enforce_binding,
+			.first_pass = first_pass,
+			.avail_core = avail_core[node_inx],
+			.node_name = node_record_table_ptr[node_inx]->name,
+			.cr_type = cr_type,
+			.res_cores_per_gpu = node_ptr->res_cores_per_gpu,
+			.node_i = node_inx,
+		};
+
 		gres_filter_sock_core(
-			job_ptr,
-			mc_ptr,
 			avail_res_array[node_inx]->sock_gres_list,
-			avail_res_array[node_inx]->sock_cnt,
-			node_ptr->cores, node_ptr->tpc, avail_cpus,
-			&min_tasks_this_node, &max_tasks_this_node,
-			&min_cores_this_node,
-			rem_nodes, enforce_binding, first_pass,
-			avail_core[node_inx],
-			node_record_table_ptr[node_inx]->name,
-			cr_type,
-			node_ptr->res_cores_per_gpu,
-			node_inx,
-			&avail_res_array[node_inx]->avail_cores_per_sock);
+			&avail_res_array[node_inx]->avail_cores_per_sock,
+			&args);
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
