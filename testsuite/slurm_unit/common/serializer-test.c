@@ -730,7 +730,8 @@ extern int main(void)
 	const char *debug_flags_env = getenv("SLURM_DEBUG_FLAGS");
 	const char slurm_unit_conf_content[] =
 		"ClusterName=slurm_unit\n"
-		"PluginDir=../../../src/plugins/serializer/json/.libs/\n"
+		"PluginDir=../../../src/plugins/serializer/json/.libs:"
+		"../../../src/plugins/serializer/yaml/.libs/\n"
 		"SlurmctldHost=slurm_unit\n";
 	const size_t csize = sizeof(slurm_unit_conf_content);
 
@@ -776,8 +777,9 @@ extern int main(void)
 	xfree(slurm_unit_conf_filename);
 	close(fd);
 
-	/* force load of JSON and all others if present */
+	/* force load of JSON and YAML and all others if present */
 	serializer_required(MIME_TYPE_JSON);
+	serializer_required(MIME_TYPE_YAML);
 
 	if (log_opts.stderr_level >= LOG_LEVEL_DEBUG) {
 		/* automatically be gdb friendly when debug logging */
