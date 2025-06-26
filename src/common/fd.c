@@ -227,6 +227,18 @@ void fd_set_blocking(int fd)
 	return;
 }
 
+bool fd_is_nonblocking(int fd)
+{
+	int fval = 0;
+
+	xassert(fd >= 0);
+
+	if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
+		error("fcntl(F_GETFL) failed: %m");
+
+	return (fval & O_NONBLOCK);
+}
+
 int fd_get_readw_lock(int fd)
 {
 	return(fd_get_lock(fd, F_SETLKW, F_RDLCK));

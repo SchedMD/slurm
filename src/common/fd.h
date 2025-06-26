@@ -83,6 +83,10 @@ void fd_set_nonblocking(int fd);
  */
 
 void fd_set_blocking(int fd);
+
+/* True is fd has O_NONBLOCK flag active */
+bool fd_is_nonblocking(int fd);
+
 /*
  * Sets the file descriptor (fd) for blocking I/O.
  */
