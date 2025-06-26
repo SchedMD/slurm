@@ -21995,7 +21995,11 @@ printf "%s\n" "$as_me: WARNING: unable to locate libyaml parser library" >&2;}
 printf "%s\n" "#define HAVE_YAML 1" >>confdefs.h
 
 			YAML_CPPFLAGS="-I$x_ac_cv_yaml_dir/include"
-			YAML_LDFLAGS="-L$x_ac_cv_yaml_dir/$bit -lyaml"
+			if test "$ac_with_rpath" = "yes"; then
+				YAML_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_yaml_dir/$bit -L$x_ac_cv_yaml_dir/$bit -lyaml"
+			else
+				YAML_LDFLAGS="-L$x_ac_cv_yaml_dir/$bit -lyaml"
+			fi
 		fi
 
 
