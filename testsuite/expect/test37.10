@@ -132,8 +132,10 @@ proc sbatch { args } {
 	return $job_id
 }
 
-
-proc squeue { options regex } {
+# The default not_regex never matches
+# When not_regex is specified, it should never match when regex matches
+# Otherwise, when both match the regex match will take precedence
+proc squeue { options regex {not_regex "(?!)"} } {
 	global my_squeue
 
 	set matches 0
@@ -143,6 +145,9 @@ proc squeue { options regex } {
 	expect {
 		-re "$regex" {
 			incr matches
+		}
+		-re "$not_regex" {
+			fail "Unexpected error in squeue (should not match $not_regex)"
 		}
 		eof {
 			wait
@@ -172,7 +177,7 @@ proc verify_scancel { options jobid regex } {
 	set rm [find_reg $jobid]
 	set regex [mod_regex $rm $regex]
 
-	squeue " -M$fedc1,$fedc2,$fedc3 " $regex
+	squeue " -M$fedc1,$fedc2,$fedc3 " $regex $jobid
 
 	return $regex
 }
