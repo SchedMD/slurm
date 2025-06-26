@@ -762,7 +762,6 @@ test39.14  Increase size of job with allocated GPUs
 test39.15  Test --gpus-per-tres with --overcommit option
 test39.16  Test --gpus-per-tres with --exclusive option
 test39.18  Test gres.conf and system GPU normalization and merging logic
-test39.19  Test accounting for GPU resources with various allocation options
 test39.20  Test GPU resource limits with various allocation options
 test39.22  Test heterogeneous job GPU allocations.
 test39.23  Test --gpus-per-task with implicit task count
@@ -811,6 +810,7 @@ test_105_3   /commands/sbatch/test_invalid_mps_options.py
 test_105_4   /commands/sbatch/test_--usage.py
 test_105_5   Test sbatch --output and --error options work, including use of spaces, %j, and %u
 test_105_6   Test #SBATCH directives in sbatch scripts
+test_105_7   Test accounting for GPU resources with various allocation options
 
 test_106_#   Testing of sbcast options.
 =======================================
