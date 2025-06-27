@@ -286,6 +286,11 @@ extern void *slurm_open_controller(int dest,
  */
 extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert);
 
+/*
+ * Same as slurm_open_msg_conn, but errors are not logged.
+ */
+extern void *slurm_open_msg_conn_maybe(slurm_addr_t *addr, char *tls_cert);
+
 /**********************************************************************\
  * stream functions
 \**********************************************************************/

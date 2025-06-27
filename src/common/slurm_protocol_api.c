@@ -700,13 +700,14 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
  * msg connection establishment functions used by msg clients
 \**********************************************************************/
 
-extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
+static void *_open_msg_conn(slurm_addr_t *addr, char *tls_cert, bool maybe)
 {
 	int fd;
 	void *tls_conn = NULL;
 	conn_args_t tls_args = {
 		.mode = TLS_CONN_CLIENT,
 		.cert = tls_cert,
+		.maybe = maybe,
 	};
 
 	if ((fd = slurm_open_stream(addr, false)) < 0) {
@@ -727,6 +728,16 @@ extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
 		 addr, fd);
 
 	return tls_conn;
+}
+
+extern void *slurm_open_msg_conn(slurm_addr_t *addr, char *tls_cert)
+{
+	return _open_msg_conn(addr, tls_cert, false);
+}
+
+extern void *slurm_open_msg_conn_maybe(slurm_addr_t *addr, char *tls_cert)
+{
+	return _open_msg_conn(addr, tls_cert, true);
 }
 
 /*
@@ -2104,8 +2115,9 @@ extern void slurm_send_msg_maybe(slurm_msg_t *req)
 {
 	void *tls_conn = NULL;
 
-	if (!(tls_conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
-		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
+	if (!(tls_conn = slurm_open_msg_conn_maybe(&req->address,
+						   req->tls_cert))) {
+		log_flag(NET, "%s: slurm_open_msg_conn_maybe(%pA): %m",
 			 __func__, &req->address);
 		return;
 	}
