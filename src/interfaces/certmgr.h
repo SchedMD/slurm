@@ -97,6 +97,6 @@ extern char *certmgr_g_generate_csr(char *node_name);
 extern char *certmgr_g_sign_csr(char *csr, bool is_client_auth, char *token,
 				char *name);
 
-extern int certmgr_get_cert_from_ctld(char *name);
+extern int certmgr_get_cert_from_ctld(char *name, bool retry_forever);
 
 #endif
