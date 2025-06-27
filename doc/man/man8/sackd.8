@@ -1,4 +1,4 @@
-.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "April 2025" "Slurm Auth and Cred Kiosk Daemon"
+.TH sackd "8" "Slurm Auth and Cred Kiosk Daemon" "June 2025" "Slurm Auth and Cred Kiosk Daemon"
 
 .SH "NAME"
 sackd \- Slurm Auth and Cred Kiosk Daemon.
@@ -25,6 +25,11 @@ configless in a TLS enabled cluster.
 Retrieve configs from slurmctld running at \fIhost[:port]\fR.
 Requires slurmctld support provided by setting \fBenable_configless\fR in
 SlurmctldParameters.
+.IP
+
+.TP
+\fB\-D\fR
+Run \fBsackd\fR in the foreground with logging copied to stderr.
 .IP
 
 .TP
