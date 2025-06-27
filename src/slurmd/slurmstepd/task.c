@@ -82,6 +82,7 @@
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 
+#include "src/slurmd/common/fname.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
@@ -507,7 +508,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	 * convention used by _rpc_file_bcast().
 	 */
 	if (task->argv[0][strlen(task->argv[0]) - 1] == '/') {
-		xstrfmtcat(task->argv[0], "slurm_bcast_%u.%u_%s",
+		xstrfmtcat(task->argv[0], BCAST_FILE_FMT,
 			   step->step_id.job_id, step->step_id.step_id,
 			   step->node_name);
 	}
