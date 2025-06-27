@@ -161,7 +161,6 @@ test1.86   Confirm node selection from within a job step on existing allocation
 	   (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation
 	   (--relative, --nodes and --nprocs options).
-test1.88   Basic MPI functionality tests via srun.
 test1.89   Test of CPU affinity/binding support.
 test1.90   Test of memory affinity support for NUMA systems.
 test1.91   Test of CPU affinity for multi-core systems.
@@ -919,6 +918,7 @@ test_116_45  /commands/srun/test_-t.py
 test_116_46  /commands/srun/test_--wait.py
 test_116_47  /commands/srun/test_identity.py
 test_116_48  Test SrunPortRange
+test_116_49  Basic MPI functionality tests via srun.
 
 test_117_#   Testing of sstat options.
 ======================================
