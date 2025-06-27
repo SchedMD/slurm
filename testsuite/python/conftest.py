@@ -286,3 +286,23 @@ def class_setup(request):
 def pytest_keyboard_interrupt(excinfo):
     """Called for keyboard interrupt"""
     module_teardown()
+
+
+@pytest.fixture(scope="module")
+def mpi_program(module_setup):
+    """Create the MPI program from the mpi_program.c in scripts directory.
+    Returns the bin path of the mpi_program."""
+
+    # Check for MPI setup
+    atf.require_mpi("pmix", "mpicc")
+
+    # Use the external C source file
+    src_path = atf.properties["testsuite_scripts_dir"] + "/mpi_program.c"
+    bin_path = os.getcwd() + "/mpi_program"
+
+    # Compile the MPI program
+    atf.run_command(f"mpicc -o {bin_path} {src_path}", fatal=True)
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
