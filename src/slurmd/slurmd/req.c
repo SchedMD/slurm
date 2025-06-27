@@ -4473,7 +4473,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 			 * with the correct libdir entry.
 			 */
 			xstrfmtcat(libdir_args.exe_fname,
-				   "slurm_bcast_%u.%u_%s", cred_arg->job_id,
+				   BCAST_FILE_FMT, cred_arg->job_id,
 				   cred_arg->step_id, conf->node_name);
 
 		slurm_rwlock_rdlock(&file_bcast_lock);
@@ -4500,7 +4500,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		 * req->fname. This same file name has to be recreated by
 		 * exec_task().
 		 */
-		xstrfmtcat(req->fname, "slurm_bcast_%u.%u_%s",
+		xstrfmtcat(req->fname, BCAST_FILE_FMT,
 			   cred_arg->job_id, cred_arg->step_id,
 			   conf->node_name);
 	}
