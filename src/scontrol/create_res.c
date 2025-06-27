@@ -109,6 +109,23 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			} else {
 				resv_msg_ptr->accounts = val;
 			}
+		} else if (!xstrncasecmp(tag, "AllowedPartitions",
+					 MAX(taglen, 2))) {
+			if (resv_msg_ptr->allowed_parts) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+			if (plus_minus) {
+				resv_msg_ptr->allowed_parts =
+					scontrol_process_plus_minus(plus_minus,
+								    val, false);
+				*res_free_flags |= RESV_FREE_STR_ALLOWED_PARTS;
+				plus_minus = '\0';
+			} else {
+				resv_msg_ptr->allowed_parts = val;
+			}
 		} else if (xstrncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
 			if (resv_msg_ptr->comment) {
 				exit_code = 1;

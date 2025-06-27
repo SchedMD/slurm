@@ -1,4 +1,4 @@
-/*****************************************************************************\
+	/*****************************************************************************\
  *  reservation.c - resource reservation management
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
@@ -1010,13 +1010,13 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 	else
 		duration = resv_ptr->duration;
 
-	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%u CoreCnt=%u NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s QOS=%s BurstBuffer=%s TRES=%s Comment=%s",
+	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%u CoreCnt=%u NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s AllowedPartitions=%s QOS=%s BurstBuffer=%s TRES=%s Comment=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, resv_ptr->node_cnt, resv_ptr->core_cnt,
 	     resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
-	     resv_ptr->licenses, resv_ptr->qos,
+	     resv_ptr->licenses, resv_ptr->allowed_parts, resv_ptr->qos,
 	     resv_ptr->burst_buffer, resv_ptr->tres_str,
 	     resv_ptr->comment);
 
@@ -1270,7 +1270,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 				goto end_it;
 			}
 		}
-	} else if (!resv_ptr->qos &&
+	} else if (!resv_ptr->qos && !resv_ptr->allowed_parts &&
 		   (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		error("We need at least 1 user or 1 account to "
 		      "create a reservtion.");
@@ -1311,6 +1311,245 @@ static void _addto_name_str(foreach_set_allow_str_t *set_allow_str,
 		     *set_allow_str->str ? "," : "",
 		     set_allow_str->prefix,
 		     name);
+}
+
+static int _foreach_set_allowed_parts_name_str(void *x, void *arg)
+{
+	part_record_t *part_ptr = x;
+	foreach_set_allow_str_t *set_allow_str = arg;
+
+	_addto_name_str(set_allow_str, part_ptr->name);
+	return 0;
+}
+
+extern int _sort_allowed_parts_list_asc(void *v1, void *v2)
+{
+	part_record_t *part_a = *(part_record_t **) v1;
+	part_record_t *part_b = *(part_record_t **) v2;
+
+	return slurm_sort_char_list_asc(&part_a->name, &part_b->name);
+}
+
+/*
+ * Since the returned allowed_parts_list is full of pointers from the
+ * allowed_parts_list slurmctld_lock_t READ_LOCK on PART must be set before
+ * calling this function and while handling it after a return.
+ */
+static int _append_to_allowed_parts_list(list_t *allowed_parts_list,
+					 char *part_name)
+{
+	int rc = ESLURM_INVALID_PARTITION_NAME;
+	part_record_t *part_ptr = NULL;
+
+	xassert(allowed_parts_list);
+	xassert(part_name);
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	if (!(part_ptr = list_find_first(part_list, &list_find_part,
+					 part_name))) {
+		error("No Partition by name %s", part_name);
+		return rc;
+	}
+
+	if (!list_find_first(allowed_parts_list, slurm_find_ptr_in_list,
+			     part_ptr)) {
+		list_append(allowed_parts_list, part_ptr);
+		rc = SLURM_SUCCESS;
+	}
+
+	return rc;
+}
+
+/*
+ * Since the returned allowed_parts_list is full of pointers from the
+ * allowed_parts_list slurmctld_lock_t READ_LOCK on PART must be set before
+ * calling this function and while handling it after a return.
+ */
+static int _remove_from_allowed_parts_list(list_t *allowed_parts_list,
+					   char *part_name)
+{
+	int rc = ESLURM_INVALID_PARTITION_NAME;
+	part_record_t *part_ptr = NULL;
+
+	xassert(allowed_parts_list);
+	xassert(part_name);
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	if (!(part_ptr = list_find_first(part_list, &list_find_part,
+					 part_name))) {
+		error("No Partition by name %s", part_name);
+		return rc;
+	}
+
+	if (part_ptr) {
+		(void) list_delete_first(allowed_parts_list,
+					 slurm_find_ptr_in_list,
+					 part_ptr);
+		rc = SLURM_SUCCESS;
+	}
+
+	return rc;
+}
+
+/*
+ * Validate a comma delimited list of account names and build an array of them
+ *
+ * IN part_name - a list of partition names
+ * OUT allowed_parts_list - list of the partitions names,
+ *		            CALLER MUST XFREE this plus each individual record
+ * OUT part_not - true if allowed_parts_list is that of partitions to be blocked
+ *                from reservation access.
+ * RETURN 0 on success
+ */
+static int _build_allowed_parts_list(char *part_names,
+				     list_t **allowed_parts_list,
+				     bool *part_not,
+				     bool break_on_failure)
+{
+	char *last = NULL, *tmp, *tok;
+	int rc = SLURM_SUCCESS;
+
+	xassert(allowed_parts_list);
+
+	*part_not = false;
+
+	if (!part_names)
+		return ESLURM_INVALID_PARTITION_NAME;
+
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	tmp = xstrdup(part_names);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (tok[0] == '-') {
+			if (!*allowed_parts_list) {
+				*part_not = true;
+			} else if (*part_not != true) {
+				info("Reservation request has some not/partitions");
+				rc = ESLURM_INVALID_PARTITION_NAME;
+				break;
+			}
+			tok++;
+		} else if (*part_not != false) {
+			info("Reservation request has some not/partitions");
+			rc = ESLURM_INVALID_PARTITION_NAME;
+			break;
+		}
+
+		if (!*allowed_parts_list)
+			*allowed_parts_list = list_create(NULL);
+		if (((rc = _append_to_allowed_parts_list(
+			      *allowed_parts_list, tok)) != SLURM_SUCCESS) &&
+		    break_on_failure)
+			break;
+
+		tok = strtok_r(NULL, ",", &last);
+	}
+
+	if (rc != SLURM_SUCCESS)
+		FREE_NULL_LIST(*allowed_parts_list);
+
+	if (*allowed_parts_list) {
+		list_sort(*allowed_parts_list, _sort_allowed_parts_list_asc);
+	}
+
+	xfree(tmp);
+
+	return rc;
+}
+
+/*
+ * Update a part list for an existing reservation based upon an
+ *	update comma delimited specification of part to add (+name),
+ *	remove (-name), or set value of
+ * IN/OUT resv_ptr - pointer to reservation structure being updated
+ * IN part_names - a list of part names, to set, add, or remove
+ * RETURN 0 on success
+ */
+static int _update_allowed_parts_list(slurmctld_resv_t *resv_ptr,
+				      char *part_names)
+{
+	int rc = SLURM_SUCCESS;
+	char *last = NULL, *tmp, *tok;
+	bool minus_part = false, cleared = false;
+	list_t *allowed_parts_list = NULL;
+
+	if (!part_names)
+		return ESLURM_INVALID_PARTITION_NAME;
+
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	if (!resv_ptr->allowed_parts_list)
+		resv_ptr->allowed_parts_list = list_create(NULL);
+	allowed_parts_list = list_shallow_copy(resv_ptr->allowed_parts_list);
+
+
+	tmp = xstrdup(part_names);
+	tok = strtok_r(tmp, ",", &last);
+	while (tok) {
+		if (tok[0] == '-') {
+			minus_part = 1;
+			tok++;
+		} else if (tok[0] == '+') {
+			minus_part = 0;
+			tok++;
+		} else if (tok[0] == '\0') {
+			continue;
+		} else {
+			/* The request is a completely new list */
+			if (!cleared) {
+				list_flush(allowed_parts_list);
+				resv_ptr->ctld_flags &=
+					(~RESV_CTLD_ALLOWED_PARTS_NOT);
+				cleared = true;
+			}
+		}
+
+		if (resv_ptr->ctld_flags & RESV_CTLD_ALLOWED_PARTS_NOT) {
+			if (minus_part)
+				rc = _append_to_allowed_parts_list(
+					allowed_parts_list, tok);
+			else
+				rc = _remove_from_allowed_parts_list(
+					allowed_parts_list, tok);
+		} else {
+			if (minus_part)
+				rc = _remove_from_allowed_parts_list(
+					allowed_parts_list, tok);
+			else
+				rc = _append_to_allowed_parts_list(
+					allowed_parts_list, tok);
+		}
+
+		if (rc != SLURM_SUCCESS)
+			break;
+
+		tok = strtok_r(NULL, ",", &last);
+	}
+
+	if ((rc == SLURM_SUCCESS) && list_count(allowed_parts_list)) {
+		foreach_set_allow_str_t set_allow_str = {
+			.prefix = (resv_ptr->ctld_flags &
+				   RESV_CTLD_ALLOWED_PARTS_NOT) ?
+			"-" : "",
+			.str = &resv_ptr->allowed_parts,
+		};
+
+		list_sort(allowed_parts_list, _sort_allowed_parts_list_asc);
+		xfree(resv_ptr->allowed_parts);
+		(void) list_for_each(allowed_parts_list,
+				     _foreach_set_allowed_parts_name_str,
+				     &set_allow_str);
+		FREE_NULL_LIST(resv_ptr->allowed_parts_list);
+		resv_ptr->allowed_parts_list = allowed_parts_list;
+		allowed_parts_list = NULL;
+	} else if (rc == SLURM_SUCCESS)
+		rc = ESLURM_INVALID_PARTITION_NAME;
+
+	FREE_NULL_LIST(allowed_parts_list);
+	xfree(tmp);
+
+	return rc;
 }
 
 static int _foreach_set_qos_name_str(void *x, void *arg)
@@ -3059,6 +3298,9 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		if (resv_ptr->accounts)
 			xstrfmtcatat(tmp_str, &tmp_str_pos, " accounts=%s",
 				     resv_ptr->accounts);
+		if (resv_ptr->allowed_parts)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " allowed_parts=%s",
+				     resv_ptr->allowed_parts);
 		if (resv_ptr->core_cnt)
 			xstrfmtcatat(tmp_str, &tmp_str_pos, " cores=%u",
 				     resv_ptr->core_cnt);
@@ -3282,9 +3524,11 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	uid_t *user_list = NULL;
 	list_t *license_list = NULL;
 	uint32_t total_node_cnt = 0;
-	bool account_not = false, user_not = false, qos_not = false;
+	bool account_not = false, user_not = false, qos_not = false,
+		allowed_parts_not = false;
 	resv_select_t resv_select = { 0 };
 	list_t *qos_list = NULL;
+	list_t *allowed_parts_list = NULL;
 
 	_create_resv_lists(false);
 
@@ -3440,8 +3684,9 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	} else if (!resv_desc_ptr->accounts &&
 		   !resv_desc_ptr->users &&
 		   !resv_desc_ptr->qos &&
+		   !resv_desc_ptr->allowed_parts &&
 		   !resv_desc_ptr->groups) {
-		info("Reservation request lacks users, accounts, QOS, or groups");
+		info("Reservation request lacks users, accounts, QOS, AllowedPartition or groups");
 		rc = ESLURM_RESERVATION_EMPTY;
 		goto bad_parse;
 	}
@@ -3483,6 +3728,26 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		set_allow_str.prefix = qos_not ? "-" : "";
 		xfree(resv_desc_ptr->qos);
 		(void) list_for_each(qos_list, _foreach_set_qos_name_str,
+				     &set_allow_str);
+	}
+
+	if (resv_desc_ptr->allowed_parts) {
+		foreach_set_allow_str_t set_allow_str = {
+			.str = &resv_desc_ptr->allowed_parts,
+		};
+
+		rc = _build_allowed_parts_list(
+			resv_desc_ptr->allowed_parts,
+			&allowed_parts_list,
+			&allowed_parts_not,
+			true);
+		if (rc != SLURM_SUCCESS)
+			goto bad_parse;
+
+		set_allow_str.prefix = allowed_parts_not ? "-" : "";
+		xfree(resv_desc_ptr->allowed_parts);
+		(void) list_for_each(allowed_parts_list,
+				     _foreach_set_allowed_parts_name_str,
 				     &set_allow_str);
 	}
 
@@ -3696,6 +3961,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->ctld_flags |= RESV_CTLD_ACCT_NOT;
 	if (qos_not)
 		resv_ptr->ctld_flags |= RESV_CTLD_QOS_NOT;
+	if (allowed_parts_not)
+		resv_ptr->ctld_flags |= RESV_CTLD_ALLOWED_PARTS_NOT;
 
 	resv_ptr->duration      = resv_desc_ptr->duration;
 	if (resv_desc_ptr->purge_comp_time != NO_VAL)
@@ -3747,6 +4014,10 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	resv_desc_ptr->qos = NULL;
 	resv_ptr->qos_list = qos_list;
 	qos_list = NULL;
+	resv_ptr->allowed_parts = resv_desc_ptr->allowed_parts;
+	resv_desc_ptr->allowed_parts = NULL;
+	resv_ptr->allowed_parts_list = allowed_parts_list;
+	allowed_parts_list = NULL;
 
 	if (!(resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) &&
 	    (resv_desc_ptr->core_cnt == NO_VAL)) {
@@ -3783,6 +4054,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 	xfree(account_list);
 	FREE_NULL_LIST(license_list);
 	FREE_NULL_LIST(qos_list);
+	FREE_NULL_LIST(allowed_parts_list);
 	_free_resv_select_members(&resv_select);
 	xfree(user_list);
 	return rc;
@@ -4204,11 +4476,21 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		}
 	}
 
+	if (resv_desc_ptr->allowed_parts) {
+		rc = _update_allowed_parts_list(resv_ptr,
+						resv_desc_ptr->allowed_parts);
+		if (rc) {
+			error_code = rc;
+			goto update_failure;
+		}
+	}
+
 	if (!resv_ptr->users &&
 	    !resv_ptr->accounts &&
 	    !resv_ptr->qos &&
+	    !resv_ptr->allowed_parts &&
 	    !resv_ptr->groups) {
-		info("Reservation %s request lacks users, accounts, QOS or groups",
+		info("Reservation %s request lacks users, accounts, AllowedPartitions, QOS or groups",
 		     resv_desc_ptr->name);
 		error_code = ESLURM_RESERVATION_EMPTY;
 		goto update_failure;
@@ -4809,6 +5091,20 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		if (!resv_ptr->qos_list || !list_count(resv_ptr->qos_list)) {
 			error("Reservation %s has invalid QOS (%s)",
 			      resv_ptr->name, resv_ptr->qos);
+			return false;
+		}
+	}
+
+	if (resv_ptr->allowed_parts) {
+		bool allowed_parts_not; /* we don't care about this */
+		(void) _build_allowed_parts_list(resv_ptr->allowed_parts,
+						 &resv_ptr->allowed_parts_list,
+						 &allowed_parts_not, false);
+
+		if (!resv_ptr->allowed_parts_list ||
+		    !list_count(resv_ptr->allowed_parts_list)) {
+			error("Reservation %s has invalid AllowedPartitions (%s)",
+			      resv_ptr->name, resv_ptr->allowed_parts);
 			return false;
 		}
 	}
@@ -6736,7 +7032,7 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 		char tmp_char[30];
 		slurmdb_assoc_rec_t *assoc;
 		if (!resv_ptr->assoc_list) {
-			if (resv_ptr->qos_list)
+			if (resv_ptr->qos_list || resv_ptr->allowed_parts_list)
 				return SLURM_SUCCESS;
 
 			error("Reservation %s has no association list. "
@@ -6892,6 +7188,37 @@ static int _valid_job_access_resv_at_sched(job_record_t *job_ptr,
 			       resv_ptr->name,
 			       job_ptr->qos_ptr->name,
 			       resv_ptr->qos);
+			return rc;
+		}
+	}
+
+	/* Check AllowedPartitions */
+	if (resv_ptr->allowed_parts_list) {
+		part_record_t *part_ptr = NULL;
+
+		xassert(job_ptr->part_ptr);
+
+		/*
+		 * Since we do not allow mixed state check the list's pointers.
+		 */
+		part_ptr = list_find_first(resv_ptr->allowed_parts_list,
+					   slurm_find_ptr_in_list,
+					   job_ptr->part_ptr);
+
+		if (resv_ptr->ctld_flags & RESV_CTLD_ALLOWED_PARTS_NOT) {
+			if (part_ptr) { /* explicitly denied */
+				rc = ESLURM_INVALID_PARTITION_NAME;
+			}
+		} else if (!part_ptr) { /* not allowed */
+			rc = ESLURM_INVALID_PARTITION_NAME;
+		}
+
+		if (rc != SLURM_SUCCESS) {
+			debug2("%pJ attempted to use reservation '%s' with partition '%s' not allowed in reservation (%s)",
+			       job_ptr,
+			       resv_ptr->name,
+			       job_ptr->part_ptr->name,
+			       resv_ptr->allowed_parts);
 			return rc;
 		}
 	}

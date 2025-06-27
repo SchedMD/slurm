@@ -3,7 +3,8 @@
 <h1>Advanced Resource Reservation Guide</h1>
 
 <p>Slurm has the ability to reserve resources for jobs
-being executed by select users and/or QOS and/or select accounts.
+being executed by select users and/or QOS and/or partitions and/or select
+accounts.
 A resource reservation identifies the resources in that reservation
 and a time period during which the reservation is available.
 The resources which can be reserved include cores, nodes, licenses and/or
@@ -174,8 +175,8 @@ $ scontrol create reservation StartTime=now Duration=60 \
 </pre>
 
 <p>Reservations can not only be created for the use of specific accounts and/or
-QOS and/or users, but specific accounts and/or QOS and/or users can be prevented
-from using them.
+QOS and/or partitions and/or users, but specific accounts and/or QOS and/or
+partitions and/or users can be prevented from using them.
 In the following example, a reservation is created for account "foo", but user
 "alan" is prevented from using the reservation even when using the account
 "foo".</p>

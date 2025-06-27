@@ -149,7 +149,8 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 
 	/****** Line ******/
 	xstrfmtcat(out,
-		   "QOS=%s", resv_ptr->qos);
+		   "AllowedPartitions=%s QOS=%s",
+		   resv_ptr->allowed_parts, resv_ptr->qos);
 	xstrcat(out, line_end);
 
 	/****** Line ******/
