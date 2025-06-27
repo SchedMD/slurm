@@ -1207,10 +1207,18 @@ extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 
 extern uint32_t tls_p_peek(tls_conn_t *conn)
 {
+	int readable = 0;
+
 	if (!conn)
 		return 0;
 
-	return s2n_peek(conn->s2n_conn);
+	if ((readable = s2n_peek(conn->s2n_conn)))
+		return readable;
+
+	if (fd_get_readable_bytes(conn->input_fd, &readable, NULL) || !readable)
+		return 0;
+
+	return readable;
 }
 
 extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
