@@ -1228,6 +1228,18 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 
 	xassert(conn);
 
+	if (!n) {
+		ssize_t r = -1;
+
+		if (s2n_peek(conn->s2n_conn))
+			return 0;
+
+		if ((r = s2n_recv(conn->s2n_conn, NULL, 0, &blocked)) < 0)
+			on_s2n_error(conn, s2n_recv);
+
+		return r;
+	}
+
 	while (bytes_read < n) {
 		ssize_t r = s2n_recv(conn->s2n_conn, (buf + bytes_read),
 				     (n - bytes_read), &blocked);
