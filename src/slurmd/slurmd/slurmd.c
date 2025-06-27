@@ -221,7 +221,6 @@ static void _create_msg_socket(void);
 static void      _decrement_thd_count(void);
 static void      _destroy_conf(void);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
-static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg);
 static int _increment_thd_count(bool block);
 static void      _init_conf(void);
 static int       _memory_spec_init(void);
@@ -517,7 +516,7 @@ main (int argc, char **argv)
 		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
-			conmgr_add_work_fifo(_get_tls_cert_work, NULL);
+			certmgr_client_daemon_init(conf->node_name);
 		} else {
 			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
 		}
@@ -567,31 +566,6 @@ main (int argc, char **argv)
 	log_fini();
 
 	return SLURM_SUCCESS;
-}
-
-static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	time_t delay_seconds;
-
-	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
-		return;
-
-	if (certmgr_get_cert_from_ctld(conf->node_name, false)) {
-		/*
-		 * Don't do full delay between tries to get TLS certificate if
-		 * we failed to get it.
-		 */
-		delay_seconds = slurm_conf.msg_timeout;
-		debug("Retry getting TLS certificate in %lu seconds...",
-		      delay_seconds);
-	} else {
-		delay_seconds =
-			certmgr_get_renewal_period_mins() * MINUTE_SECONDS;
-	}
-
-	/* Periodically renew TLS certificate indefinitely */
-	conmgr_add_work_delayed_fifo(_get_tls_cert_work, NULL, delay_seconds,
-				     0);
 }
 
 /*
