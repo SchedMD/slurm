@@ -56,7 +56,11 @@ AC_DEFUN([X_AC_YAML], [
 		else
 			AC_DEFINE([HAVE_YAML], [1], [Define if you are compiling with libyaml parser.])
 			YAML_CPPFLAGS="-I$x_ac_cv_yaml_dir/include"
-			YAML_LDFLAGS="-L$x_ac_cv_yaml_dir/$bit -lyaml"
+			if test "$ac_with_rpath" = "yes"; then
+				YAML_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_yaml_dir/$bit -L$x_ac_cv_yaml_dir/$bit -lyaml"
+			else
+				YAML_LDFLAGS="-L$x_ac_cv_yaml_dir/$bit -lyaml"
+			fi
 		fi
 
 		AC_SUBST(YAML_CPPFLAGS)
