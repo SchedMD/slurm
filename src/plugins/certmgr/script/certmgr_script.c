@@ -188,7 +188,7 @@ extern char *certmgr_p_get_node_cert_key(char *node_name)
 		      plugin_type);
 		goto fail;
 	} else {
-		log_flag(TLS, "Successfully retrieved node's private certificate key");
+		log_flag(AUDIT_TLS, "Successfully retrieved node's private certificate key");
 	}
 
 	return key;
@@ -234,7 +234,7 @@ extern char *certmgr_p_get_node_token(char *node_name)
 		      plugin_type);
 		goto fail;
 	} else {
-		log_flag(TLS, "Successfully retrieved unique node token");
+		log_flag(AUDIT_TLS, "Successfully retrieved unique node token");
 	}
 
 	return token;
@@ -266,7 +266,7 @@ extern char *certmgr_p_generate_csr(char *node_name)
 		      plugin_type);
 		goto fail;
 	} else {
-		log_flag(TLS, "Successfully generated csr: \n%s", csr);
+		log_flag(AUDIT_TLS, "Successfully generated csr: \n%s", csr);
 	}
 
 	return csr;
@@ -291,11 +291,11 @@ extern char *certmgr_p_sign_csr(char *csr, bool is_client_auth, char *token,
 	}
 
 	if (!(node = find_node_record(name))) {
-		log_flag(TLS, "Could not find node record for '%s'.", name);
+		log_flag(AUDIT_TLS, "Could not find node record for '%s'.", name);
 	}
 
 	if (is_client_auth) {
-		log_flag(TLS, "Client '%s' connected via mTLS, skipping validation.", name);
+		log_flag(AUDIT_TLS, "Client '%s' connected via mTLS, skipping validation.", name);
 		goto skip_validation_script;
 	}
 
@@ -306,22 +306,22 @@ extern char *certmgr_p_sign_csr(char *csr, bool is_client_auth, char *token,
 			return NULL;
 		}
 
-		log_flag(TLS, "Token received from node '%s' matches what was set in node record table.",
+		log_flag(AUDIT_TLS, "Token received from node '%s' matches what was set in node record table.",
 			 name);
 		goto skip_validation_script;
 	}
 
 	if (!cert_scripts[VALID_NODE].path) {
-		log_flag(TLS, "No token set in node record table for node '%s', and no validation script is configured. Token is invalid.",
+		log_flag(AUDIT_TLS, "No token set in node record table for node '%s', and no validation script is configured. Token is invalid.",
 			 name);
 		return NULL;
 	}
 
 	if (node) {
-		log_flag(TLS, "No token set in node record table for node '%s'. Will run validation script to check token.",
+		log_flag(AUDIT_TLS, "No token set in node record table for node '%s'. Will run validation script to check token.",
 			 name);
 	} else {
-		log_flag(TLS, "Running validation script to check token for '%s'.",
+		log_flag(AUDIT_TLS, "Running validation script to check token for '%s'.",
 			 name);
 	}
 
@@ -341,7 +341,7 @@ extern char *certmgr_p_sign_csr(char *csr, bool is_client_auth, char *token,
 	}
 
 skip_validation_script:
-	log_flag(TLS, "Successfully validated node token for node %s.",
+	log_flag(AUDIT_TLS, "Successfully validated node token for node %s.",
 		 name);
 
 	script_argv = xcalloc(3, sizeof(char *));
@@ -360,14 +360,14 @@ skip_validation_script:
 		      plugin_type, name);
 		goto fail;
 	} else {
-		log_flag(TLS, "Successfully generated signed certificate for node '%s': \n%s",
+		log_flag(AUDIT_TLS, "Successfully generated signed certificate for node '%s': \n%s",
 			 name, signed_cert_pem);
 	}
 
 	if ((xstrstr(slurm_conf.certmgr_params, "single_use_tokens")) && node &&
 	    node->cert_token) {
 		xfree(node->cert_token);
-		log_flag(TLS, "Token for node '%s' has been reset following successful certificate signing.",
+		log_flag(AUDIT_TLS, "Token for node '%s' has been reset following successful certificate signing.",
 			 node->name);
 	}
 
