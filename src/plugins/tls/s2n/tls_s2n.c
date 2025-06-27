@@ -105,6 +105,7 @@ typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	int input_fd;
 	int output_fd;
+	bool maybe;
 	struct s2n_connection *s2n_conn;
 	/* absolute time shutdown() delayed until (instead of sleep()ing) */
 	timespec_t delay;
@@ -182,7 +183,7 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 		      caller, funcname, s2n_strerror_name(alert), alert,
 		      s2n_strerror(alert, NULL),
 		      s2n_strerror_debug(alert, NULL));
-	} else {
+	} else if (!conn->maybe) {
 		xassert(s2n_errno != S2N_ERR_T_OK);
 
 		error("%s: %s() failed %s[%d]: %s -> %s",
@@ -191,7 +192,7 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 		      s2n_strerror_debug(s2n_errno, NULL));
 	}
 
-	if ((slurm_conf.debug_flags & DEBUG_FLAG_TLS) &&
+	if (!conn->maybe && (slurm_conf.debug_flags & DEBUG_FLAG_TLS) &&
 	    s2n_stack_traces_enabled())
 		s2n_print_stacktrace(log_fp());
 
@@ -961,6 +962,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	conn = xmalloc(sizeof(*conn));
 	conn->input_fd = tls_conn_args->input_fd;
 	conn->output_fd = tls_conn_args->output_fd;
+	conn->maybe = tls_conn_args->maybe;
 
 	switch (tls_conn_args->mode) {
 	case TLS_CONN_SERVER:

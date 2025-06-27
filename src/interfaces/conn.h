@@ -64,6 +64,8 @@ typedef struct {
 	int input_fd;
 	/* file descriptor for outgoing data */
 	int output_fd;
+	/* Ignore any errors for this connection */
+	bool maybe;
 	/* TLS connection mode (@see conn_mode_t) */
 	conn_mode_t mode;
 	/*
