@@ -1988,6 +1988,8 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
+	if (res_free_flags & RESV_FREE_STR_ALLOWED_PARTS)
+		xfree(msg->allowed_parts);
 	if (res_free_flags & RESV_FREE_STR_QOS)
 		xfree(msg->qos);
 	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
@@ -4399,6 +4401,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 	int i;
 	if (resv) {
 		xfree(resv->accounts);
+		xfree(resv->allowed_parts);
 		xfree(resv->burst_buffer);
 		xfree(resv->comment);
 		if (resv->core_spec) {

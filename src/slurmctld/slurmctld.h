@@ -342,6 +342,7 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
 #define RESV_CTLD_EPILOG SLURM_BIT(4)
 #define RESV_CTLD_PROLOG SLURM_BIT(5)
 #define RESV_CTLD_QOS_NOT SLURM_BIT(6)
+#define RESV_CTLD_ALLOWED_PARTS_NOT SLURM_BIT(7)
 
 typedef struct slurmctld_resv {
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
@@ -349,6 +350,9 @@ typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
+	char *allowed_parts; /* names of partitions permitted to use */
+	list_t *allowed_parts_list; /* pointers to partitions permitted or not
+				     * to use */
 	char *assoc_list;	/* list of associations			*/
 	uint32_t boot_time;	/* time it would take to reboot a node	*/
 	char *burst_buffer;	/* burst buffer resources		*/

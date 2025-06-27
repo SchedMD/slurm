@@ -2728,6 +2728,7 @@ typedef struct resv_core_spec {
 
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */
+	char *allowed_parts; /* names of partitions permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
 	uint32_t core_cnt;	/* count of cores required */
@@ -2767,6 +2768,7 @@ typedef struct reserve_info_msg {
 
 typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
+	char *allowed_parts; /* names of partitions permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
 	char *comment;		/* arbitrary comment */
 	uint32_t core_cnt;	/* Count of cores required */
