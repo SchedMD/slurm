@@ -66,7 +66,8 @@ on its respective slurmd host, as well as in a comprehensive list that contains
 all node tokens on the slurmctld host. This token will be sent from slurmd to
 slurmctld along with the certificate signing request that slurmd will generate
 at runtime, and be validated by slurmctld before slurmctld creates a signed
-certificate.
+certificate. Note that slurmd will not begin to process any RPCs until a signed
+certificate is loaded.
 </p>
 
 This is a simple example of how these tokens can be generated and stored:
