@@ -491,6 +491,17 @@ main (int argc, char **argv)
 	if (!under_systemd)
 		pidfd = create_pidfile(conf->pidfile, 0);
 
+	/* Periodically renew TLS certificate indefinitely */
+	if (tls_enabled()) {
+		if (conn_g_own_cert_loaded()) {
+			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
+		} else if (certmgr_enabled()) {
+			certmgr_client_daemon_init(conf->node_name);
+		} else {
+			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
+		}
+	}
+
 	conmgr_run(false);
 
 	if (original)
@@ -510,17 +521,6 @@ main (int argc, char **argv)
 
 	/* Allow listening socket to start accept()ing incoming */
 	_unquiesce_fd_listener();
-
-	/* Periodically renew TLS certificate indefinitely */
-	if (tls_enabled()) {
-		if (conn_g_own_cert_loaded()) {
-			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
-		} else if (certmgr_enabled()) {
-			certmgr_client_daemon_init(conf->node_name);
-		} else {
-			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
-		}
-	}
 
 	conmgr_run(true);
 
