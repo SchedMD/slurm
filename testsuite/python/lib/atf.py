@@ -1817,6 +1817,26 @@ def require_tool(tool):
         pytest.skip(msg, allow_module_level=True)
 
 
+def require_mpi(mpi_option="pmix", mpi_compiler="mpicc"):
+    """Skips if we cannot use the --mpi=mpi_option or the mpi_compiler is not available".
+
+    Args:
+        mpi_option (string): The value to use with --mpi when submitting jobs.
+        mpi_compiler (string): The required compiler in the system.
+
+    Returns:
+        None
+    """
+
+    require_tool(mpi_compiler)
+    output = run_command_output("srun --mpi=list", fatal=True)
+    if re.search(rf"plugin versions available: .*{mpi_option}", output) is None:
+        pytest.skip(
+            f"This test needs to be able to use --mpi={mpi_option}",
+            allow_module_level=True,
+        )
+
+
 def require_whereami():
     """Compiles the whereami.c program to be used by tests.
 
@@ -3739,7 +3759,7 @@ def create_node(node_dict):
     node_line = ""
     if "NodeName" in node_dict:
         node_line = f"NodeName={node_dict['NodeName']}"
-        node_dict.pop("NodeName")
+        node_range = node_dict.pop("NodeName")
     if "Port" in node_dict:
         node_line += f" Port={node_dict['Port']}"
         node_dict.pop("Port")
@@ -3758,6 +3778,24 @@ def create_node(node_dict):
         fatal=True,
         quiet=True,
     )
+
+    # Ensure that slurm-spool-dir and slurm-tmpfs are set.
+    if "slurm-spool-dir" not in properties:
+        properties["slurm-spool-dir"] = get_config_parameter(
+            "SlurmdSpoolDir", live=False, quiet=True
+        )
+    if "slurm-tmpfs" not in properties:
+        properties["slurm-tmpfs"] = get_config_parameter(
+            "TmpFS", live=False, quiet=True
+        )
+
+    # Create the required node directories
+    for node_name in node_range_to_list(node_range):
+        spool_dir = properties["slurm-spool-dir"].replace("%n", node_name)
+        tmpfs_dir = properties["slurm-tmpfs"].replace("%n", node_name)
+
+        run_command(f"sudo mkdir -p {spool_dir}", fatal=True)
+        run_command(f"sudo mkdir -p {tmpfs_dir}", fatal=True)
 
     # Restart slurm if it is already running
     if is_slurmctld_running(quiet=True):
