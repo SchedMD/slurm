@@ -97,6 +97,14 @@ extern char *certmgr_g_generate_csr(char *node_name);
 extern char *certmgr_g_sign_csr(char *csr, bool is_client_auth, char *token,
 				char *name);
 
-extern int certmgr_get_cert_from_ctld(char *name);
+extern int certmgr_get_cert_from_ctld(char *name, bool retry_forever);
+
+/*
+ * Initialization for daemons retrieving certificates from slurmctld.
+ *
+ * IN name - hostname/nodename which will be used by slurmctld to identify the
+ *	certificate signing request.
+ */
+extern void certmgr_client_daemon_init(char *name);
 
 #endif

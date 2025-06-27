@@ -7,7 +7,7 @@
 <p>
 The <code>certmgr</code> plugin interface can be used alongside the
 <code>tls</code> plugin interface to dynamically create and renew signed
-certificates for slurmd nodes.
+certificates for slurmd/sackd nodes.
 </p>
 
 <h2 id="script">certmgr/script<a class="slurm_link" href="#script"></a></h2>
@@ -29,7 +29,8 @@ responsibilities of each script.
 
 <p>
 In this example, there are a list of things that need to be preloaded on each
-machine before Slurm can do its certificate management.
+machine before Slurm can do its certificate management. Note that any
+instructions for slurmd also apply to sackd nodes.
 </p>
 
 <p>
@@ -65,7 +66,8 @@ on its respective slurmd host, as well as in a comprehensive list that contains
 all node tokens on the slurmctld host. This token will be sent from slurmd to
 slurmctld along with the certificate signing request that slurmd will generate
 at runtime, and be validated by slurmctld before slurmctld creates a signed
-certificate.
+certificate. Note that slurmd will not begin to process any RPCs until a signed
+certificate is loaded.
 </p>
 
 This is a simple example of how these tokens can be generated and stored:
@@ -308,6 +310,6 @@ slurmd: TLS: Successfully got signed certificate from slurmctld:
 to show less verbose logs of certificate renewal.
 </p>
 
-<p style="text-align:center;">Last modified 09 June 2025</p>
+<p style="text-align:center;">Last modified 27 June 2025</p>
 
 <!--#include virtual="footer.txt"-->
