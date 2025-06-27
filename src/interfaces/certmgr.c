@@ -204,7 +204,7 @@ extern char *certmgr_g_sign_csr(char *csr, bool is_client_auth, char *token,
 	return (*(ops.sign_csr))(csr, is_client_auth, token, name);
 }
 
-extern int certmgr_get_cert_from_ctld(char *name)
+extern int certmgr_get_cert_from_ctld(char *name, bool retry_forever)
 {
 	slurm_msg_t req, resp;
 	tls_cert_request_msg_t *cert_req;
@@ -240,9 +240,16 @@ extern int certmgr_get_cert_from_ctld(char *name)
 	log_flag(AUDIT_TLS, "Sending certificate signing request to slurmctld:\n%s",
 		 cert_req->csr);
 
+retry:
 	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <
 	    0) {
 		error("Unable to get TLS certificate from slurmctld: %m");
+		if (retry_forever) {
+			debug("Retry getting TLS certificate in %d seconds...",
+			      slurm_conf.msg_timeout);
+			sleep(slurm_conf.msg_timeout);
+			goto retry;
+		}
 		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;
 	}

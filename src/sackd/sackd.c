@@ -247,7 +247,7 @@ static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
 		fatal("Could not get hostname, cannot get TLS certificate from slurmctld.");
 	}
 
-	if (certmgr_get_cert_from_ctld(hostname)) {
+	if (certmgr_get_cert_from_ctld(hostname, false)) {
 		/*
 		 * Don't do full delay between tries to get TLS certificate if
 		 * we failed to get it.
