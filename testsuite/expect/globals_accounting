@@ -527,6 +527,10 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 			incr matches
 			exp_continue
 		}
+		-re "Requested parent account (.*) is a child of" {
+			set rc $::RETURN_ERROR
+			exp_continue
+		}
 		timeout {
 			fail "sacctmgr add not responding"
 		}

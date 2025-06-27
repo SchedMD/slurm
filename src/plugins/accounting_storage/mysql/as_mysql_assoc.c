@@ -631,8 +631,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 				char *acct,
 				char *lineage,
 				list_t *ret_list, int moved_parent,
-				char *old_parent, char *new_parent,
-				bool handle_child_parent)
+				char *old_parent, char *new_parent)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -659,6 +658,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		"def_qos_id",
 		"qos",
 		"delta_qos",
+		"lineage",
 	};
 
 	enum {
@@ -680,6 +680,7 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 		ASSOC_DEF_QOS,
 		ASSOC_QOS,
 		ASSOC_DELTA_QOS,
+		ASSOC_LINEAGE,
 		ASSOC_COUNT
 	};
 
@@ -689,26 +690,16 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 	if (!ret_list || !lineage)
 		return SLURM_ERROR;
 
-	if (handle_child_parent && !moved_parent)
-		return SLURM_SUCCESS;
-
 	xstrcat(object, assoc_inx[0]);
 	for (i=1; i<ASSOC_COUNT; i++)
 		xstrfmtcat(object, ", %s", assoc_inx[i]);
 
-	/* We want all the sub accounts and user accounts */
+	/* We want all direct sub accounts and user accounts */
 	xstrfmtcatat(query, &query_pos,
-		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s')",
+		     "select distinct %s from \"%s_%s\" where deleted!=1 && id_assoc!=%u && lineage like '%s%%' && ((user = '' && parent_acct = '%s') || (user != '' && acct = '%s')) order by lineage;",
 		     object, assoc->cluster, assoc_table,
-		     assoc->id, lineage, acct);
+		     assoc->id, lineage, acct, acct);
 	xfree(object);
-
-	if (!handle_child_parent)
-		xstrfmtcatat(query, &query_pos,
-			     " || (user != '' && acct = '%s')",
-			     acct);
-	xstrcatat(query, &query_pos, ") order by lineage;");
-
 
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
 	if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
@@ -899,6 +890,25 @@ static int _modify_child_assocs(mysql_conn_t *mysql_conn,
 
 			list_append(ret_list, object);
 			object = NULL;
+
+			if (row[ASSOC_PACCT][0]) {
+				/*
+				 * This is a sub account so run it
+				 * through as if it is a parent.
+				 * We have already handled the parent change, so
+				 * send in the current parent as the last parent
+				 * as well.
+				 */
+				_modify_child_assocs(mysql_conn,
+						     mod_assoc,
+						     row[ASSOC_ACCT],
+						     row[ASSOC_LINEAGE],
+						     ret_list,
+						     moved_parent,
+						     row[ASSOC_PACCT],
+						     row[ASSOC_PACCT]);
+			}
+
 			if (addto_update_list(mysql_conn->update_list,
 					      SLURMDB_MODIFY_ASSOC,
 					      mod_assoc) !=
@@ -1098,7 +1108,6 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 slurmdb_assoc_cond_t *qos_assoc_cond,
 					 bitstr_t *wanted_qos)
 {
-	list_itr_t *itr = NULL;
 	MYSQL_ROW row;
 	int added = 0;
 	int rc = SLURM_SUCCESS;
@@ -1110,6 +1119,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	bool is_coord = false;
 	bool disable_coord_dbd = false;
+	bool checked_new_parent = false;
+	bool checked_parent_is_not_child = false;
 
 	xassert(result);
 
@@ -1158,7 +1169,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		   things they are allowed to change.
 		*/
 		if (!is_admin && !same_user) {
-			slurmdb_coord_rec_t *coord = NULL;
+			char *orig_account = account;
 
 			if (disable_coord_dbd) {
 				error("Coordinator privilege revoked with DisableCoordDBD, only admins can modify accounts.");
@@ -1171,14 +1182,10 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
 			}
-			itr = list_iterator_create(user->coord_accts);
-			while ((coord = list_next(itr))) {
-				if (!xstrcasecmp(coord->name, account))
-					break;
-			}
-			list_iterator_destroy(itr);
-
-			if (!coord) {
+		check_again:
+			if (!list_find_first(user->coord_accts,
+					     assoc_mgr_find_coord_in_user,
+					     account)) {
 				if (row[MASSOC_PACCT][0])
 					error("User %s(%d) can not modify "
 					      "account (%s) because they "
@@ -1223,57 +1230,75 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
 			}
+
+			/*
+			 * Now check to see if they are also a coord of the new
+			 * parent.
+			 */
+			if (!checked_new_parent &&
+			    assoc->parent_acct &&
+			    row[MASSOC_PACCT][0]) {
+				account = assoc->parent_acct;
+				checked_new_parent = true;
+				goto check_again;
+			} else
+				account = orig_account;
+
 			is_coord = true;
 		}
 
-		if (row[MASSOC_PART][0]) {
-			// see if there is a partition name
-			object = xstrdup_printf(
-				"C = %-10s A = %-20s U = %-9s P = %s",
-				cluster_name, row[MASSOC_ACCT],
-				row[MASSOC_USER], row[MASSOC_PART]);
-		} else if (row[MASSOC_USER][0]){
-			object = xstrdup_printf(
-				"C = %-10s A = %-20s U = %-9s",
-				cluster_name, row[MASSOC_ACCT],
-				row[MASSOC_USER]);
-		} else {
-			if (assoc->parent_acct) {
-				if (!xstrcasecmp(row[MASSOC_ACCT],
-						 assoc->parent_acct)) {
-					error("You can't make an account be a "
-					      "child of it's self");
-					continue;
-				} else if (!xstrcasecmp(row[MASSOC_PACCT],
-							assoc->parent_acct)) {
-					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
-						 "Trying to move association to the same parent? Nothing to do.");
-					continue;
+		if (assoc->parent_acct && row[MASSOC_PACCT][0]) {
+			account = assoc->parent_acct;
+			moved_parent = 1;
+
+			if (!checked_parent_is_not_child) {
+				slurmdb_assoc_rec_t par_assoc = {
+					.acct = assoc->parent_acct,
+					.cluster = cluster_name,
+					.uid = NO_VAL,
+				};
+				slurmdb_assoc_rec_t *par_assoc_ptr = NULL;
+
+				if (assoc_mgr_fill_in_assoc(
+					    mysql_conn,
+					    &par_assoc,
+					    ACCOUNTING_ENFORCE_ASSOCS,
+					    &par_assoc_ptr, true) !=
+				    SLURM_SUCCESS) {
+					object = xstrdup_printf(
+						"Parent account %s doesn't exist on cluster %s",
+						assoc->parent_acct,
+						cluster_name);
+					list_append(ret_list, object);
+					object = NULL;
+					/* We want SLURM_SUCCESS here */
+					// rc = ESLURM_INVALID_PARENT_ACCOUNT;
+					break;
 				}
 
-				moved_parent = 1;
+				while (par_assoc_ptr) {
+					if (id == par_assoc_ptr->id)
+						break;
+					par_assoc_ptr =
+						par_assoc_ptr->usage->
+						parent_assoc_ptr;
+				}
+				if (par_assoc_ptr) {
+					object = xstrdup_printf(
+						"Requested parent account %s is a child of %s on cluster %s. Please re-parent %s before using it as a parent.",
+						assoc->parent_acct,
+						row[MASSOC_ACCT],
+						cluster_name,
+						assoc->parent_acct);
+					list_append(ret_list, object);
+					object = NULL;
+					/* We want SLURM_SUCCESS here */
+					// rc = ESLURM_INVALID_PARENT_ACCOUNT;
+					break;
+				}
+				checked_parent_is_not_child = true;
 			}
-			if (row[MASSOC_PACCT][0]) {
-				object = xstrdup_printf(
-					"C = %-10s A = %s of %s",
-					cluster_name, row[MASSOC_ACCT],
-					row[MASSOC_PACCT]);
-			} else {
-				object = xstrdup_printf(
-					"C = %-10s A = %s",
-					cluster_name, row[MASSOC_ACCT]);
-			}
-			account_type = 1;
 		}
-		list_append(ret_list, object);
-		object = NULL;
-		added++;
-
-		if (name_char)
-			xstrfmtcat(name_char, " || id_assoc=%s",
-				   row[MASSOC_ID]);
-		else
-			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
 
 		/* Only do this when not dealing with the root association. */
 		if (xstrcmp(orig_acct, "root") || row[MASSOC_USER][0]) {
@@ -1351,26 +1376,69 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 		mod_assoc->cluster = xstrdup(cluster_name);
 		if (moved_parent) {
 			/*
-			 * Now check to see if we are going to make a child of
-			 * this account the new parent. If so we need to move
-			 * that child to this accounts parent and then do the
-			 * move.
+			 * Now set the lineage with the new parent. This needs
+			 * to be done here and it's children will be moved later
+			 * below in _modify_child_assocs().
 			 */
-			_modify_child_assocs(mysql_conn,
-					     mod_assoc,
-					     row[MASSOC_ACCT],
-					     row[MASSOC_LINEAGE],
-					     ret_list,
-					     true,
-					     row[MASSOC_PACCT],
-					     assoc->parent_acct,
-					     true);
-
 			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 			rc = _set_lineage(mysql_conn, mod_assoc,
 					  mod_assoc->parent_acct,
 					  row[MASSOC_ACCT], NULL, NULL);
+			if (rc != SLURM_SUCCESS) {
+				slurmdb_destroy_assoc_rec(mod_assoc);
+				object = xstrdup_printf("Parent account %s doesn't exist on cluster %s", assoc->parent_acct, cluster_name);
+				list_append(ret_list, object);
+				object = NULL;
+				break;
+			}
 		}
+
+		if (row[MASSOC_PART][0]) {
+			// see if there is a partition name
+			object = xstrdup_printf(
+				"C = %-10s A = %-20s U = %-9s P = %s",
+				cluster_name, row[MASSOC_ACCT],
+				row[MASSOC_USER], row[MASSOC_PART]);
+		} else if (row[MASSOC_USER][0]){
+			object = xstrdup_printf(
+				"C = %-10s A = %-20s U = %-9s",
+				cluster_name, row[MASSOC_ACCT],
+				row[MASSOC_USER]);
+		} else {
+			if (assoc->parent_acct) {
+				if (!xstrcasecmp(row[MASSOC_ACCT],
+						 assoc->parent_acct)) {
+					error("You can't make an account be a "
+					      "child of it's self");
+					continue;
+				} else if (!xstrcasecmp(row[MASSOC_PACCT],
+							assoc->parent_acct)) {
+					DB_DEBUG(DB_ASSOC, mysql_conn->conn,
+						 "Trying to move association to the same parent? Nothing to do.");
+					continue;
+				}
+			}
+			if (row[MASSOC_PACCT][0]) {
+				object = xstrdup_printf(
+					"C = %-10s A = %s of %s",
+					cluster_name, row[MASSOC_ACCT],
+					row[MASSOC_PACCT]);
+			} else {
+				object = xstrdup_printf(
+					"C = %-10s A = %s",
+					cluster_name, row[MASSOC_ACCT]);
+			}
+			account_type = 1;
+		}
+		list_append(ret_list, object);
+		object = NULL;
+		added++;
+
+		if (name_char)
+			xstrfmtcat(name_char, " || id_assoc=%s",
+				   row[MASSOC_ID]);
+		else
+			xstrfmtcat(name_char, "(id_assoc=%s", row[MASSOC_ID]);
 
 		if (alt_assoc.def_qos_id != NO_VAL)
 			mod_assoc->def_qos_id = alt_assoc.def_qos_id;
@@ -1554,8 +1622,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					     ret_list,
 					     moved_parent,
 					     row[MASSOC_PACCT],
-					     assoc->parent_acct,
-					     false);
+					     assoc->parent_acct);
 		} else if ((assoc->is_def == 1) && row[MASSOC_USER][0]) {
 			/* Use fresh one here so we don't have to
 			   worry about dealing with bad values.
@@ -3610,6 +3677,8 @@ is_same_user:
 		wanted_qos = bit_alloc(g_qos_count);
 		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
 		assoc_mgr_lock(&assoc_locks);
+	} else if (assoc->parent_acct) {
+		assoc_mgr_lock(&assoc_locks);
 	}
 
 	memset(&qos_assoc_cond, 0, sizeof(qos_assoc_cond));
@@ -3656,7 +3725,7 @@ is_same_user:
 	}
 	list_iterator_destroy(itr);
 
-	if (wanted_qos)
+	if (wanted_qos || assoc->parent_acct)
 		assoc_mgr_unlock(&assoc_locks);
 
 	FREE_NULL_BITMAP(wanted_qos);
