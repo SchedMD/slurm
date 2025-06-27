@@ -40,6 +40,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/conmgr/conmgr.h"
 
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/conn.h"
@@ -204,7 +205,57 @@ extern char *certmgr_g_sign_csr(char *csr, bool is_client_auth, char *token,
 	return (*(ops.sign_csr))(csr, is_client_auth, token, name);
 }
 
-extern int certmgr_get_cert_from_ctld(char *name)
+static void _get_tls_cert_work(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	char *name = arg;
+	time_t delay_seconds;
+
+	xassert(name);
+
+	if (conmgr_args.status != CONMGR_WORK_STATUS_RUN)
+		return;
+
+	if (certmgr_get_cert_from_ctld(name, false)) {
+		/*
+		 * Don't do full delay between tries to get TLS certificate if
+		 * we failed to get it.
+		 */
+		delay_seconds = slurm_conf.msg_timeout;
+		debug("Retry getting TLS certificate in %lu seconds...",
+		      delay_seconds);
+	} else {
+		delay_seconds =
+			certmgr_get_renewal_period_mins() * MINUTE_SECONDS;
+	}
+
+	/* Periodically renew TLS certificate indefinitely */
+	conmgr_add_work_delayed_fifo(_get_tls_cert_work, name, delay_seconds,
+				     0);
+}
+
+extern void certmgr_client_daemon_init(char *name)
+{
+	char hostname[HOST_NAME_MAX];
+
+	if (!name) {
+		if (gethostname(hostname, HOST_NAME_MAX))
+			fatal("Could not get hostname, cannot get TLS certificate from slurmctld.");
+		name = hostname;
+	}
+
+	if (certmgr_get_cert_from_ctld(name, true))
+		fatal("Unable to retrieve signed certificate from slurmctld due to misconfiguration.");
+
+	/*
+	 * Setup indefinite certificate renewal after retrieving the
+	 * first signed certificate.
+	 */
+	conmgr_add_work_delayed_fifo(
+		_get_tls_cert_work, name,
+		(certmgr_get_renewal_period_mins() * MINUTE_SECONDS), 0);
+}
+
+extern int certmgr_get_cert_from_ctld(char *name, bool retry_forever)
 {
 	slurm_msg_t req, resp;
 	tls_cert_request_msg_t *cert_req;
@@ -240,9 +291,16 @@ extern int certmgr_get_cert_from_ctld(char *name)
 	log_flag(AUDIT_TLS, "Sending certificate signing request to slurmctld:\n%s",
 		 cert_req->csr);
 
+retry:
 	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <
 	    0) {
 		error("Unable to get TLS certificate from slurmctld: %m");
+		if (retry_forever) {
+			debug("Retry getting TLS certificate in %d seconds...",
+			      slurm_conf.msg_timeout);
+			sleep(slurm_conf.msg_timeout);
+			goto retry;
+		}
 		slurm_free_tls_cert_request_msg(cert_req);
 		return SLURM_ERROR;
 	}
