@@ -635,6 +635,7 @@ env_vars_t env_vars[] = {
   { "SRUN_ERROR", 'e' },
   { "SRUN_INPUT", 'i' },
   { "SRUN_OUTPUT", 'o' },
+  { "SRUN_SEGMENT_SIZE", LONG_OPT_SEGMENT_SIZE },
   { NULL }
 };
 
