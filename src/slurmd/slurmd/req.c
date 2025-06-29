@@ -4458,14 +4458,26 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 			.uid = key.uid,
 			.job_id = key.job_id,
 			.step_id = key.step_id,
-			.exe_fname = req->exe_fname,
+			.exe_fname = xstrdup(req->exe_fname),
 		};
 		char *fname = NULL;
+		size_t exe_fname_len = strlen(libdir_args.exe_fname);
+
+		if (libdir_args.exe_fname[exe_fname_len - 1] == '/')
+			/*
+			 * Append the default filename to the executable path in
+			 * the search key so this shared object is associated
+			 * with the correct libdir entry.
+			 */
+			xstrfmtcat(libdir_args.exe_fname,
+				   "slurm_bcast_%u.%u_%s", cred_arg->job_id,
+				   cred_arg->step_id, conf->node_name);
 
 		slurm_rwlock_rdlock(&file_bcast_lock);
-		if (!(libdir = list_find_first(bcast_libdir_list,
-					       _find_libdir_record,
-					       &libdir_args))) {
+		libdir = list_find_first(bcast_libdir_list, _find_libdir_record,
+					 &libdir_args);
+		xfree(libdir_args.exe_fname);
+		if (!libdir) {
 			error("Could not find library directory for transfer from uid %u",
 			      key.uid);
 			slurm_rwlock_unlock(&file_bcast_lock);
