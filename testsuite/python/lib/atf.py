@@ -26,6 +26,7 @@ import requests
 import signal
 
 import json
+import jsondiff
 
 # This module will be (un)imported in require_openapi_generator()
 openapi_client = None
@@ -1390,6 +1391,72 @@ def request_slurmrestd(request):
         f"{properties['slurmrestd_url']}/{request}",
         headers=properties["slurmrestd-headers"],
     )
+
+
+def assert_openapi_spec(path_tagged_spec):
+    """
+    Generates an OpenAPI specification and verifies that it hasn't changed.
+
+    Test newly generated OpenAPI specification against this officially tagged
+    specification of the specification for changes to catch inadvertent
+    changes.
+
+    It needs slurmrestd to be running (see require_slurmrestd()).
+
+    Args:
+            path_tagged_spec: path to openapi.json to compare
+
+    Returns:
+        None
+    """
+
+    with open(path_tagged_spec, "r") as f:
+        tagged_spec = json.load(f)
+        f.close()
+    if tagged_spec is None:
+        pytest.fail(f"Error parsing JSON openapi specs: {path_tagged_spec}")
+
+    r = request_slurmrestd("openapi/v3")
+    if r.status_code != 200:
+        pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
+
+    gen_spec = json.loads(r.text)
+    if gen_spec is None:
+        pytest.fail(f"Error parsing JSON openapi specs from slurmrestd: {r.text}")
+
+    # Avoid checking versions that change with each new release
+    tagged_spec["info"]["x-slurm"] = None
+    gen_spec["info"]["x-slurm"] = None
+
+    tagged_spec["info"]["version"] = None
+    gen_spec["info"]["version"] = None
+
+    # Recursively remove all description fields
+    def _strip_descriptions(oas):
+        """Recursively removes all description fields in oas
+        Returns:
+            oas with all description fields set to None
+        """
+
+        if type(oas) is dict:
+            for key, value in oas.items():
+                if key.casefold() == "description".casefold():
+                    oas[key] = None
+                else:
+                    oas[key] = _strip_descriptions(value)
+        elif type(oas) is list:
+            for value in oas:
+                value = _strip_descriptions(value)
+
+        return oas
+
+    tagged_spec = _strip_descriptions(tagged_spec)
+    gen_spec = _strip_descriptions(gen_spec)
+
+    d = jsondiff.diff(tagged_spec, gen_spec)
+    assert (
+        len(d) == 0
+    ), f"Openapi specification should not change, but these differences were found: {d}"
 
 
 def require_openapi_generator(version="7.3.0"):
