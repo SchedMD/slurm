@@ -234,7 +234,6 @@ without considering if there is enough free memory. Swapping could occur!</TD>
 </TR><TR>
 <TD>SelectType=<B>select/cons_tres</B><BR>
 Plus one of the following:<BR>
-SelectTypeParameters=<B>CR_Memory</B><BR>
 SelectTypeParameters=<B>CR_Core_Memory</B><BR>
 SelectTypeParameters=<B>CR_CPU_Memory</B><BR>
 SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
@@ -274,6 +273,6 @@ options are mutually exclusive when used at job submission. If both options are
 set when submitting a job, the job submission command used will fatal.
 </P>
 
-<p style="text-align:center;">Last modified 30 May 2023</p>
+<p style="text-align:center;">Last modified 09 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
