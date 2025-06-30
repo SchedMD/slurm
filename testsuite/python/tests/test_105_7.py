@@ -17,6 +17,7 @@ def setup():
     atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
     atf.require_config_parameter_includes("AccountingStorageTRES", "gres/gpu")
     atf.require_config_parameter("SelectType", "select/cons_tres")
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_tty(0)
     atf.require_tty(1)
     atf.require_config_parameter(
