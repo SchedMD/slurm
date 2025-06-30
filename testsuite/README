@@ -758,7 +758,6 @@ test39.10  Test --mem-per-gpu option
 test39.11  Test GRES options with craynetwork (no topology)
 test39.12  Test some valid combinations of srun --gpu and non-GPU GRES options
 test39.13  Validate proper GRES operation under heavy load (many jobs)
-test39.14  Increase size of job with allocated GPUs
 test39.15  Test --gpus-per-tres with --overcommit option
 test39.16  Test --gpus-per-tres with --exclusive option
 test39.18  Test gres.conf and system GPU normalization and merging logic
@@ -771,7 +770,6 @@ test40.#   Test of job select/cons_tres and gres/mps options.
 test40.1   Test some invalid gres/mps job option
 test40.3   Test accounting for MPS resources with various allocation options
 test40.4   Test MPS resource limits with various allocation options
-test40.5   Increase size of job with allocated MPS
 test40.6   Decrease size of job with allocated MPS
 test40.8   Simple CUDA MPS test
 
