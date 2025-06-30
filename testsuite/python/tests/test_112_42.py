@@ -7,6 +7,7 @@ import getpass
 import json
 import random
 import logging
+import os
 
 random.seed()
 
@@ -222,6 +223,11 @@ def test_loaded_versions():
     # verify current plugins are loaded
     assert "/slurm/v0.0.42/jobs/" in spec["paths"].keys()
     assert "/slurmdb/v0.0.42/jobs/" in spec["paths"].keys()
+
+
+@pytest.mark.xfail(reason="Ticket 23807: Schema changed")
+def test_specification():
+    atf.assert_openapi_spec(os.path.splitext(__file__)[0] + ".json")
 
 
 def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
