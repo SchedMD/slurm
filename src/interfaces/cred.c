@@ -557,16 +557,6 @@ extern void format_core_allocs(slurm_cred_t *credential, char *node_name,
 			bit_set(step_core_bitmap, j);
 	}
 
-	/* Scale CPU count, same as slurmd/req.c:_get_ncpus() */
-	if (i_last_bit <= i_first_bit)
-		error("step credential has no CPUs selected");
-	else {
-		uint32_t i = cpus / (i_last_bit - i_first_bit);
-		if (i > 1)
-			debug2("scaling CPU count by factor of %d (%u/(%u-%u)",
-			       i, cpus, i_last_bit, i_first_bit);
-	}
-
 	slurm_cred_get_mem(credential, node_name, __func__, job_mem_limit,
 			   step_mem_limit);
 
