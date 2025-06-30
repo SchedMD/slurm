@@ -1046,9 +1046,6 @@ proc cleanup {} {
 make_bash_script $file_in_long "$bin_sleep 60"
 make_bash_script $file_in_short "$bin_sleep 5"
 
-set permit_job_expansion [param_contains [get_config_param "ClusterName"] "permit_job_expansion"]
-log_info "permit_job_expansion: $permit_job_expansion"
-
 set kill_invalid_depend [param_contains [get_config_param "DependencyParameters"] "kill_invalid_depend"]
 set disable_remote_singleton [param_contains [get_config_param "DependencyParameters"]  "disable_remote_singleton"]
 log_info "kill_invalid_depend: $kill_invalid_depend; disable_remote_singleton: $disable_remote_singleton\n"
