@@ -294,7 +294,7 @@ extern slurm_jc_conf_t *init_slurm_jc_conf(void)
 		char *save_ptr = NULL, *token, *buffer;
 		memset(&slurm_jc_conf, 0, sizeof(slurm_jc_conf_t));
 		rc = _read_slurm_jc_conf();
-		if (rc == SLURM_ERROR)
+		if (rc != SLURM_SUCCESS)
 			return NULL;
 
 		xassert(slurm_jc_conf.dirs);
