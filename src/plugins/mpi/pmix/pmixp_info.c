@@ -877,3 +877,9 @@ extern uint32_t pmixp_info_appldr()
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
 	return _pmixp_job_info.app_ldr;
 }
+
+extern uint32_t pmixp_info_flags()
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return _pmixp_job_info.flags;
+}
