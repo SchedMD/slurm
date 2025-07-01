@@ -2381,8 +2381,10 @@ static void *_slurmctld_background(void *no_data)
 	 * call re_kill_job(), which can modify nodes and reads fed info.
 	 */
 	slurmctld_lock_t purge_job_locks = {
-		.conf = READ_LOCK, .job = WRITE_LOCK,
-		.node = WRITE_LOCK, .fed = READ_LOCK
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
 	};
 
 	/* Let the dust settle before doing work */

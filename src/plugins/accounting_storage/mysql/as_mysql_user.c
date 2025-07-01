@@ -1932,7 +1932,7 @@ static slurmdb_user_rec_t *_make_user_rec_with_coords(
 	};
 
 	assoc_mgr_lock_t locks = {
-		.user = READ_LOCK
+		.user = READ_LOCK,
 	};
 
 	if (!locked)

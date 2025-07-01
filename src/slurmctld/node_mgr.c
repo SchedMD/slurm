@@ -4799,7 +4799,7 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		.conf = READ_LOCK,
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
-		.part = WRITE_LOCK
+		.part = WRITE_LOCK,
 	};
 
 	xassert(nodeline);
@@ -5084,13 +5084,14 @@ extern int delete_nodes(char *names, char **err_msg)
 	bool one_success = false;
 	int ret_rc = SLURM_SUCCESS;
 	hostlist_t *error_hostlist = NULL;
+	slurmctld_lock_t write_lock = {
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+		.conf = READ_LOCK,
+	};
 
 	xassert(err_msg);
-
-	slurmctld_lock_t write_lock = {
-		.job = WRITE_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK,
-		.conf = READ_LOCK
-	};
 
 	if (!xstrstr(slurm_conf.select_type, "cons_tres")) {
 		*err_msg = xstrdup("Node deletion only compatible with select/cons_tres");

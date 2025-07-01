@@ -121,7 +121,8 @@ static int _route_part_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 				      int *count, uint16_t tree_width)
 {
 	slurmctld_lock_t node_read_lock = {
-		.node = READ_LOCK, .part = READ_LOCK
+		.node = READ_LOCK,
+		.part = READ_LOCK,
 	};
 	bitstr_t *nodes_bitmap = NULL;
 	_foreach_part_split_hostlist_t part_split;
