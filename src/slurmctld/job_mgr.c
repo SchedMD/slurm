@@ -371,9 +371,9 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 static char *_copy_nodelist_no_dup(char *node_list);
 static job_record_t *_create_job_record(uint32_t num_jobs, bool list_add);
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
-	bool locked, log_level_t log_lvl);
+	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr, bool privileged,
+	slurmdb_qos_rec_t *qos_rec, int *error_code, bool locked,
+	log_level_t log_lvl);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
 static uint64_t _get_def_mem(part_record_t *part_ptr, uint64_t *tres_req_cnt);
 static bool _get_whole_hetjob(void);
@@ -890,9 +890,9 @@ static uint32_t _max_switch_wait(uint32_t input_wait)
 }
 
 static slurmdb_qos_rec_t *_determine_and_validate_qos(
-	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
-	bool locked, log_level_t log_lvl)
+	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr, bool privileged,
+	slurmdb_qos_rec_t *qos_rec, int *error_code, bool locked,
+	log_level_t log_lvl)
 {
 	slurmdb_qos_rec_t *qos_ptr = NULL;
 
@@ -910,11 +910,10 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 		return NULL;
 	}
 
-	if ((accounting_enforce & ACCOUNTING_ENFORCE_QOS)
-	    && assoc_ptr
-	    && !operator
-	    && (!assoc_ptr->usage->valid_qos
-		|| !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
+	if ((accounting_enforce & ACCOUNTING_ENFORCE_QOS) && assoc_ptr &&
+	    !privileged &&
+	    (!assoc_ptr->usage->valid_qos ||
+	     !bit_test(assoc_ptr->usage->valid_qos, qos_rec->id))) {
 		log_var(log_lvl, "This association %d(account='%s', user='%s', partition='%s') does not have access to qos %s",
 		        assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
 		        assoc_ptr->partition, qos_rec->name);
@@ -946,8 +945,8 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 
 static list_t *_get_qos_ptr_list(char *qos_req, char *resv_name,
 				 slurmdb_assoc_rec_t *assoc_ptr,
-				 bool operator, int *error_code,
-				 bool locked, log_level_t log_lvl)
+				 bool privileged, int *error_code, bool locked,
+				 log_level_t log_lvl)
 {
 	list_t *qos_ptr_list = NULL;
 	char *token, *last = NULL, *tmp_qos_req;
@@ -963,9 +962,11 @@ static list_t *_get_qos_ptr_list(char *qos_req, char *resv_name,
 		slurmdb_qos_rec_t qos_rec = {
 			.name = token,
 		};
-		slurmdb_qos_rec_t *qos_ptr = _determine_and_validate_qos(
-			resv_name, assoc_ptr, operator, &qos_rec,
-			error_code, locked, log_lvl);
+		slurmdb_qos_rec_t *qos_ptr =
+			_determine_and_validate_qos(resv_name, assoc_ptr,
+						    privileged, &qos_rec,
+						    error_code, locked,
+						    log_lvl);
 
 		if (*error_code != SLURM_SUCCESS)
 			break;
@@ -1007,11 +1008,10 @@ static list_t *_get_qos_ptr_list(char *qos_req, char *resv_name,
 	return qos_ptr_list;
 }
 
-static int _get_qos_info(
-	char *qos_req, uint32_t qos_id,
-	list_t **qos_plist, slurmdb_qos_rec_t **qos_pptr,
-	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
-	bool operator, bool locked, log_level_t log_lvl)
+static int _get_qos_info(char *qos_req, uint32_t qos_id, list_t **qos_plist,
+			 slurmdb_qos_rec_t **qos_pptr, char *resv_name,
+			 slurmdb_assoc_rec_t *assoc_ptr, bool privileged,
+			 bool locked, log_level_t log_lvl)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1020,8 +1020,7 @@ static int _get_qos_info(
 	xassert(!*qos_plist);
 
 	*qos_plist = _get_qos_ptr_list(qos_req, resv_name, assoc_ptr,
-				       operator, &rc,
-				       locked, log_lvl);
+				       privileged, &rc, locked, log_lvl);
 
 	if (!*qos_plist) {
 		slurmdb_qos_rec_t qos_rec = {
@@ -1029,10 +1028,9 @@ static int _get_qos_info(
 			.id = qos_id,
 		};
 
-		*qos_pptr = _determine_and_validate_qos(
-			resv_name, assoc_ptr, operator,
-			&qos_rec, &rc,
-			locked, log_lvl);
+		*qos_pptr = _determine_and_validate_qos(resv_name, assoc_ptr,
+							privileged, &qos_rec,
+							&rc, locked, log_lvl);
 	} else {
 		*qos_pptr = list_peek(*qos_plist);
 	}
@@ -12506,7 +12504,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 {
 	int error_code = SLURM_SUCCESS;
 	enum job_state_reason fail_reason;
-	bool operator = false;
+	bool privileged = false;
 	bool is_coord_oldacc = false, is_coord_newacc = false;
 	uint32_t save_min_nodes = 0, save_max_nodes = 0;
 	uint32_t save_min_cpus = 0, save_max_cpus = 0;
@@ -12550,7 +12548,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_ptr->bit_flags & CRON_JOB)
 		return ESLURM_CANNOT_MODIFY_CRON_JOB;
 
-	operator = validate_operator(uid);
+	privileged = validate_operator(uid);
 
 	/* Check authorization for modifying this job */
 	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
@@ -12559,7 +12557,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 						       job_desc->account,
 						       false);
-	if ((job_ptr->user_id != uid) && !operator) {
+	if ((job_ptr->user_id != uid) && !privileged) {
 		/*
 		 * Fail if we are not coordinators of the current account or
 		 * if we are changing an account and  we are not coordinators
@@ -12580,7 +12578,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		 * be changed except to clear the value on a completed job and
 		 * purge the record in order to recover from a failure mode
 		 */
-		if (IS_JOB_COMPLETED(job_ptr) && operator &&
+		if (IS_JOB_COMPLETED(job_ptr) && privileged &&
 		    (job_desc->burst_buffer[0] == '\0')) {
 			xfree(job_ptr->burst_buffer);
 			last_job_update = now;
@@ -12667,7 +12665,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	memset(&acct_policy_limit_set, 0, sizeof(acct_policy_limit_set));
 	acct_policy_limit_set.tres = tres;
 
-	if (operator) {
+	if (privileged) {
 		/* set up the acct_policy if we are at least an operator */
 		for (tres_pos = 0; tres_pos < slurmctld_tres_cnt; tres_pos++)
 			acct_policy_limit_set.tres[tres_pos] = ADMIN_SET_LIMIT;
@@ -12714,7 +12712,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	acct_limit_already_exceeded = false;
 
-	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
+	if (!privileged && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_desc, job_ptr->part_ptr,
 					  job_ptr->part_ptr_list,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
@@ -12805,12 +12803,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 		assoc_mgr_lock(&qos_read_lock);
 
-		error_code = _get_qos_info(job_desc->qos, 0,
-					   &new_qos_list,
-					   &new_qos_ptr,
-					   resv_name,
-					   use_assoc_ptr,
-					   operator, true, LOG_LEVEL_ERROR);
+		error_code =
+			_get_qos_info(job_desc->qos, 0, &new_qos_list,
+				      &new_qos_ptr, resv_name, use_assoc_ptr,
+				      privileged, true, LOG_LEVEL_ERROR);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (!new_qos_list &&
 			    (job_ptr->qos_ptr == new_qos_ptr)) {
@@ -13439,7 +13435,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 		assoc_mgr_unlock(&assoc_mgr_read_lock);
 
-		if (!operator &&
+		if (!privileged &&
 		    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 			uint32_t acct_reason = 0;
 			char *resv_orig = NULL;
@@ -13859,7 +13855,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else if (job_ptr->time_limit == job_desc->time_limit) {
 			sched_debug("%s: new time limit identical to old time limit %pJ",
 				    __func__, job_ptr);
-		} else if (operator ||
+		} else if (privileged ||
 			   (job_ptr->time_limit > job_desc->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
 			uint32_t use_time_min = job_desc->time_min != NO_VAL ?
@@ -13950,7 +13946,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_NOT_RUNNING;
 		} else if (job_desc->end_time < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
-		} else if (operator ||
+		} else if (privileged ||
 			   (job_ptr->end_time > job_desc->end_time)) {
 			int delta_t  = job_desc->end_time - job_ptr->end_time;
 			job_ptr->end_time = job_desc->end_time;
@@ -13974,7 +13970,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				    sizeof(time_str));
 		if (job_desc->deadline < now) {
 			error_code = ESLURM_INVALID_TIME_VALUE;
-		} else if (operator) {
+		} else if (privileged) {
 			/* update deadline */
 			job_ptr->deadline = job_desc->deadline;
 			sched_info("%s: setting deadline to %s for %pJ",
@@ -14016,7 +14012,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_JOB_FINISHED;
 		else if (job_ptr->priority == job_desc->priority) {
 			debug("%s: setting priority to current value",__func__);
-			if ((job_ptr->priority == 0) && operator) {
+			if ((job_ptr->priority == 0) && privileged) {
 				/*
 				 * Authorized user can change from user hold
 				 * to admin hold or admin hold to user hold
@@ -14028,7 +14024,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			}
 		} else if ((job_ptr->priority == 0) &&
 			   (job_desc->priority == INFINITE) &&
-			   (operator ||
+			   (privileged ||
 			    (job_ptr->state_reason == WAIT_RESV_DELETED) ||
 			    (job_ptr->state_reason == WAIT_HELD_USER))) {
 			_release_job(job_ptr, uid);
@@ -14037,7 +14033,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			info("%s: ignore priority reset request on held %pJ",
 			     __func__, job_ptr);
 			error_code = ESLURM_JOB_HELD;
-		} else if (operator ||
+		} else if (privileged ||
 			   (job_ptr->priority > job_desc->priority)) {
 			if (job_desc->priority != 0)
 				job_ptr->details->nice = NICE_OFFSET;
@@ -14047,7 +14043,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			} else if (job_desc->priority == 0) {
 				_hold_job(job_ptr, uid);
 			} else {
-				if (operator) {
+				if (privileged) {
 					/*
 					 * Only administrator can make
 					 * persistent change to a job's
@@ -14073,9 +14069,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				   __func__, job_ptr->priority, job_ptr);
 			update_accounting = true;
 			if (job_ptr->priority == 0) {
-				if (!operator ||
-				    (job_desc->alloc_sid ==
-				     ALLOC_SID_USER_HOLD)) {
+				if (!privileged || (job_desc->alloc_sid ==
+						    ALLOC_SID_USER_HOLD)) {
 					job_ptr->state_reason = WAIT_HELD_USER;
 				} else
 					job_ptr->state_reason = WAIT_HELD;
@@ -14127,7 +14122,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else if (job_ptr->direct_set_prio && job_ptr->priority != 0)
 			info("%s: ignore nice set request on %pJ",
 			     __func__, job_ptr);
-		else if (operator || (job_desc->nice >= NICE_OFFSET)) {
+		else if (privileged || (job_desc->nice >= NICE_OFFSET)) {
 			if (!xstrcmp(slurm_conf.priority_type,
 			             "priority/basic")) {
 				int64_t new_prio = job_ptr->priority;
@@ -14241,7 +14236,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->shared != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (!operator) {
+		} else if (!privileged) {
 			sched_error("%s: Attempt to change sharing for %pJ",
 				    __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
@@ -14262,8 +14257,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->contiguous != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (operator
-			 || (detail_ptr->contiguous > job_desc->contiguous)) {
+		else if (privileged ||
+			 (detail_ptr->contiguous > job_desc->contiguous)) {
 			detail_ptr->contiguous = job_desc->contiguous;
 			sched_info("%s: setting contiguous to %u for %pJ",
 				   __func__, job_desc->contiguous, job_ptr);
@@ -14279,7 +14274,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->core_spec != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (operator && (slurm_conf.conf_flags & CONF_FLAG_ASRU)) {
+		else if (privileged &&
+			 (slurm_conf.conf_flags & CONF_FLAG_ASRU)) {
 			if (job_desc->core_spec == INFINITE16)
 				detail_ptr->core_spec = NO_VAL16;
 			else
@@ -14762,7 +14758,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (job_desc->ntasks_per_node != NO_VAL16) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_JOB_NOT_PENDING;
-		else if (operator) {
+		else if (privileged) {
 			detail_ptr->ntasks_per_node =
 				job_desc->ntasks_per_node;
 			if (detail_ptr->pn_min_cpus <
@@ -14786,7 +14782,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL) ||
 		    (detail_ptr->mc_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (operator) {
+		} else if (privileged) {
 			detail_ptr->mc_ptr->ntasks_per_socket =
 				job_desc->ntasks_per_socket;
 			sched_info("%s: setting ntasks_per_socket to %u for %pJ",
@@ -14908,7 +14904,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 * regular users can only completely remove license
 			 * counts on running jobs.
 			 */
-			if (!operator && license_list) {
+			if (!privileged && license_list) {
 				sched_error("%s: Not operator user: ignore licenses change for %pJ",
 					    __func__, job_ptr);
 				error_code = ESLURM_ACCESS_DENIED;
@@ -15189,7 +15185,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	 * the plugin to prevent the user from specifying it.
 	 */
 	if (user_site_factor != NO_VAL) {
-		if (!operator) {
+		if (!privileged) {
 			error("%s: Attempt to change SiteFactor for %pJ",
 			      __func__, job_ptr);
 			error_code = ESLURM_ACCESS_DENIED;
