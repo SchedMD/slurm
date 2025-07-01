@@ -70,6 +70,8 @@ extern list_t *resolve_ctls_from_dns_srv(void)
 		return NULL;
 	}
 
+	res.ndots = 2;
+
 	if ((len = res_nsearch(&res, SRV_RECORD, C_IN, T_SRV,
 			       answer, sizeof(answer))) < 0) {
 		error("%s: res_nsearch error: %s",
