@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "June 2025" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "July 2025" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -2288,8 +2288,8 @@ will be used to create the job allocation.
 No requirement would be placed on all segments for a job needing to
 be placed within the same higher-level block.
 
-\fBNOTE\fR: The segment size must always be evenly divisible by
-the requested node count.
+\fBNOTE\fR: The requested node count must always be evenly divisible by
+the requested segment size.
 
 \fBNOTE\fR: The segment size must be less than or equal to
 the planning base block size. E.g., for a system with 30 nodes as the
