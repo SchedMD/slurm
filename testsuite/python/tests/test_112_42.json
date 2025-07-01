@@ -501,37 +501,15 @@
         "parameters": [
           {
             "in": "query",
-            "name": "update_time",
+            "name": "job_id",
             "style": "form",
             "explode": false,
             "allowEmptyValue": false,
             "allowReserved": false,
-            "description": "Query jobs updated more recently than this time (UNIX timestamp)",
+            "description": "CSV list of Job IDs to search for",
             "required": false,
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "flags",
-            "style": "form",
-            "explode": false,
-            "allowEmptyValue": false,
-            "allowReserved": false,
-            "description": "Query flags",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "ALL",
-                "DETAIL",
-                "MIXED",
-                "LOCAL",
-                "SIBLING",
-                "FEDERATION",
-                "FUTURE"
-              ]
             }
           }
         ],
@@ -1459,6 +1437,60 @@
               }
             },
             "description": "reservation information"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "slurm"
+        ],
+        "summary": "delete a reservation",
+        "operationId": "slurm_v0042_delete_reservation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reservation_name",
+            "style": "simple",
+            "explode": false,
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "description": "Reservation name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application\/json": {
+                "schema": {
+                  "$ref": "#\/components\/schemas\/v0.0.42_openapi_resp"
+                }
+              },
+              "application\/yaml": {
+                "schema": {
+                  "$ref": "#\/components\/schemas\/v0.0.42_openapi_resp"
+                }
+              }
+            },
+            "description": "reservation delete request result"
+          },
+          "default": {
+            "content": {
+              "application\/json": {
+                "schema": {
+                  "$ref": "#\/components\/schemas\/v0.0.42_openapi_resp"
+                }
+              },
+              "application\/yaml": {
+                "schema": {
+                  "$ref": "#\/components\/schemas\/v0.0.42_openapi_resp"
+                }
+              }
+            },
+            "description": "reservation delete request result"
           }
         }
       }
@@ -4066,7 +4098,6 @@
               "enum": [
                 "REGISTERING",
                 "MULTIPLE_SLURMD",
-                "FRONT_END",
                 "FEDERATION",
                 "EXTERNAL"
               ]
@@ -4263,7 +4294,6 @@
               "enum": [
                 "REGISTERING",
                 "MULTIPLE_SLURMD",
-                "FRONT_END",
                 "FEDERATION",
                 "EXTERNAL"
               ]
@@ -7083,7 +7113,7 @@
           },
           "argv": {
             "$ref": "#\/components\/schemas\/v0.0.42_string_array",
-            "description": "Arguments to the script"
+            "description": "Arguments to the script. Note: The slurmstepd always overrides argv[0] with the path to the created script file. If this option is used, argv[0] should be a throwaway value."
           },
           "array": {
             "type": "string",
@@ -9257,7 +9287,8 @@
           "tres_weighted": {
             "type": "number",
             "format": "double",
-            "description": "Weighted number of billable trackable resources allocated"
+            "description": "Ignored. Was weighted number of billable trackable resources allocated",
+            "deprecated": true
           },
           "slurmd_start_time": {
             "$ref": "#\/components\/schemas\/v0.0.42_uint64_no_val_struct",
@@ -10830,7 +10861,6 @@
           "enum": [
             "REGISTERING",
             "MULTIPLE_SLURMD",
-            "FRONT_END",
             "FEDERATION",
             "EXTERNAL"
           ],
@@ -12580,10 +12610,30 @@
       "name": "Apache 2.0",
       "url": "https:\/\/www.apache.org\/licenses\/LICENSE-2.0.html"
     },
+    "x-slurm": {
+      "data_parsers": [
+        {
+          "plugin": "v0.0.42",
+          "flags": [
+            "NONE"
+          ]
+        }
+      ],
+      "openapi": [
+        "openapi\/slurmctld",
+        "openapi\/slurmdbd"
+      ],
+      "version": {
+        "major": "25",
+        "micro": "0",
+        "minor": "11"
+      },
+      "release": "25.11.0-0rc1"
+    },
     "title": "Slurm REST API",
     "description": "API to access and control Slurm",
     "termsOfService": "https:\/\/github.com\/SchedMD\/slurm\/blob\/master\/DISCLAIMER",
-    "version": "Slurm-24.11.0&openapi\/slurmctld&openapi\/slurmdbd"
+    "version": "Slurm-25.11.0-0rc1"
   },
   "servers": [
     {
