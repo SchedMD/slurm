@@ -290,12 +290,14 @@ extern list_t *list_shallow_copy(list_t *l)
 
 extern void list_append(list_t *l, void *x)
 {
+	LIST_THREAD_LOCK_DEF;
+
 	xassert(l != NULL);
 	xassert(x != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	LIST_THREAD_LOCK(l, true);
 	_list_node_create(l, l->tail, x);
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, true);
 }
 
 extern int list_append_list(list_t *l, list_t *sub)
