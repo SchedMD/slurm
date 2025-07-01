@@ -2206,7 +2206,7 @@ static void _step_create_job_lock(bool lock)
 	static int active_rpc_cnt = 0;
 	slurmctld_lock_t job_write_lock = {
 		.job = WRITE_LOCK,
-		.node = READ_LOCK
+		.node = READ_LOCK,
 	};
 
 	if (lock) {
@@ -2225,7 +2225,7 @@ static void _step_create_job_fail_lock(bool lock)
 	slurmctld_lock_t job_write_lock = {
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
-		.fed = READ_LOCK
+		.fed = READ_LOCK,
 	};
 
 	if (lock) {
@@ -2635,7 +2635,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
 		.part = WRITE_LOCK,
-		.fed = READ_LOCK
+		.fed = READ_LOCK,
 	};
 
 	START_TIMER;
@@ -5156,7 +5156,7 @@ static void _set_power_save_settings(char *new_str, char **slurm_conf_setting)
 	slurmctld_lock_t locks = {
 		.conf = WRITE_LOCK,
 		.node = READ_LOCK,
-		.part = READ_LOCK
+		.part = READ_LOCK,
 	};
 
 	lock_slurmctld(locks);
@@ -6408,7 +6408,7 @@ static void _slurm_rpc_node_alias_addrs(slurm_msg_t *msg)
 	node_record_t *node_ptr;
 
 	slurmctld_lock_t node_read_lock = {
-		.node = READ_LOCK
+		.node = READ_LOCK,
 	};
 
 	START_TIMER;
