@@ -1501,7 +1501,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		.assoc = WRITE_LOCK,
 		.qos = WRITE_LOCK,
 		.tres = READ_LOCK,
-		.user = READ_LOCK
+		.user = READ_LOCK,
 	};
 
 	if (job_record_unpack(&job_ptr, slurmctld_tres_cnt, buffer,

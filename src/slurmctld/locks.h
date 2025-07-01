@@ -97,7 +97,7 @@
 typedef enum {
 	NO_LOCK,
 	READ_LOCK,
-	WRITE_LOCK
+	WRITE_LOCK,
 }	lock_level_t;
 
 /* slurmctld specific data structures to lock via APIs */
