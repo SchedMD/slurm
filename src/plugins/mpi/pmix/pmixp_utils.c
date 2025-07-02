@@ -517,7 +517,9 @@ int pmixp_mkdir(char *path, bool trusted)
 
 	slash[0] = '\0';
 	newdir = slash + 1;
-	flags = (O_DIRECTORY | O_NOFOLLOW);
+	flags = O_DIRECTORY;
+	if (!trusted)
+		flags |= O_NOFOLLOW;
 
 	if ((dirfd = open(base, flags)) < 0) {
 		PMIXP_ERROR_STD("Could not open parent directory \"%s\"", base);
@@ -527,7 +529,9 @@ int pmixp_mkdir(char *path, bool trusted)
 
 #ifdef MULTIPLE_SLURMD
 	struct stat statbuf;
-	flags = AT_SYMLINK_NOFOLLOW;
+	flags = 0;
+	if (!trusted)
+		flags |= AT_SYMLINK_NOFOLLOW;
 	if (!fstatat(dirfd, newdir, &statbuf, flags)) {
 		if ((statbuf.st_mode & S_IFDIR) &&
 		    (statbuf.st_uid == pmixp_info_jobuid())) {

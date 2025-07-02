@@ -526,14 +526,17 @@ static void _set_localinfo(list_t *lresp)
 extern int pmixp_libpmix_init(void)
 {
 	int rc;
+	bool trusted;
 
-	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), false))) {
+	trusted = (pmixp_info_flags() & PMIXP_FLAG_TRUSTED_LIB_TMPDIR);
+	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), trusted))) {
 		PMIXP_ERROR_STD("Cannot create server lib tmpdir: \"%s\"",
 				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), false))) {
+	trusted = (pmixp_info_flags() & PMIXP_FLAG_TRUSTED_CLI_TMPDIR);
+	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), trusted))) {
 		PMIXP_ERROR_STD("Cannot create client cli tmpdir: \"%s\"",
 				pmixp_info_tmpdir_cli());
 		return errno;
