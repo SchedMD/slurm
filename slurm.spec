@@ -432,7 +432,6 @@ Provides a REST interface to Slurm.
 	%{?_with_jwt} \
 	%{?_with_yaml} \
 	%{?_with_nvml} \
-	%{?_with_freeipmi} \
 	%{!?with_munge:--without-munge} \
 	%{?_with_cflags}
 
