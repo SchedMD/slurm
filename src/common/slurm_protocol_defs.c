@@ -6465,7 +6465,7 @@ extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg)
 			resv_msg->flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg->flags |= RESERVE_FLAG_PART_NODES;
-		resv_msg->node_list = "ALL";
+		resv_msg->node_list = xstrdup("ALL");
 	}
 
 	if (((resv_msg->users == NULL) || (resv_msg->users[0] == '\0')) &&
