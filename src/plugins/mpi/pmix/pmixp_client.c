@@ -527,13 +527,13 @@ extern int pmixp_libpmix_init(void)
 {
 	int rc;
 
-	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_lib()))) {
+	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), false))) {
 		PMIXP_ERROR_STD("Cannot create server lib tmpdir: \"%s\"",
 				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_cli()))) {
+	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), false))) {
 		PMIXP_ERROR_STD("Cannot create client cli tmpdir: \"%s\"",
 				pmixp_info_tmpdir_cli());
 		return errno;

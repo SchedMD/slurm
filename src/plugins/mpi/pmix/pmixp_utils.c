@@ -481,7 +481,7 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 	return rc;
 }
 
-int pmixp_mkdir(char *path)
+int pmixp_mkdir(char *path, bool trusted)
 {
 	char *base = NULL, *newdir = NULL, *slash;
 	int dirfd, flags;

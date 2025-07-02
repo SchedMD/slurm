@@ -61,7 +61,7 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 		   uint32_t len, unsigned int start_delay,
 		   unsigned int retry_cnt, int silent);
-int pmixp_mkdir(char *path);
+int pmixp_mkdir(char *path, bool trusted);
 
 /* lightweight pmix list of pointers */
 #define PMIXP_LIST_DEBUG 0
