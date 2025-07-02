@@ -226,7 +226,7 @@ BuildRequires: libselinux-devel
 %define _mandir %{_slurm_mandir}
 
 #  Allow override of bashcompdir via _slurm_bashcompdir.
-%{!?_slurm_bashcompdir: %global _slurm_bashcompdir /usr/share}
+%{!?_slurm_bashcompdir: %global _slurm_bashcompdir %{_datadir}}
 %define _bashcompdir %{_slurm_bashcompdir}
 
 #
