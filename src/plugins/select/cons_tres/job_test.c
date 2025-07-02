@@ -826,6 +826,9 @@ static int _is_node_busy(part_res_record_t *p_ptr, uint32_t node_i,
 			if (!p_ptr->row[r].row_bitmap[node_i])
 				continue;
 
+			if (!bit_set_count(p_ptr->row[r].row_bitmap[node_i]))
+				continue;
+
 			if (jobs &&
 			    list_find_first(jobs, _is_job_sharing, NULL))
 				return 1;
