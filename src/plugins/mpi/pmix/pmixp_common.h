@@ -121,6 +121,10 @@
 #define PMIXP_DEBUG_LIB "SLURM_PMIX_SRV_DEBUG"
 #define PMIXP_DIRECT_CONN_EARLY "SLURM_PMIX_DIRECT_CONN_EARLY"
 
+/* Following pmix_jobinfo_t flags. */
+#define PMIXP_FLAG_TRUSTED_CLI_TMPDIR SLURM_BIT(0) /* Trusted cli_tmpdir */
+#define PMIXP_FLAG_TRUSTED_LIB_TMPDIR SLURM_BIT(1) /* Trusted lib_tmpdir */
+
 /* ----------------------------------------------------------
  * This is libPMIx variable that we need to control it
  * ---------------------------------------------------------- */
