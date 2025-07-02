@@ -69,12 +69,11 @@ the related functionality will be available:</p>
 	<li><a href="tls.html#s2n">s2n</a> (TLS communications)</li>
 </ul>
 
-<p>Additionally, it is highly recommended that you have
-<a href="slurmdbd.html">SlurmDBD</a> set up for
-<a href="accounting.html">accounting</a>. Without slurmdbd, slurmrestd may fail
-when loading some plugins (use
-<a href="slurmrestd.html#OPT_-s-<OpenAPI-plugins-to-load>">-s</a> to specify
-which to load) or when attempting JWT authentication.</p>
+<p>It is generally recommended that you have
+<a href="slurmdbd.html">slurmdbd</a> set up for
+<a href="accounting.html">accounting</a>. Without slurmdbd you may need to
+start slurmrestd with the <a href="slurmrestd.html#OPT_-s-<plugin>">-s</a>
+flag to tell it not to load the slurmdbd plugin.</p>
 
 <h2 id="quick_start">Quick Start
 <a class="slurm_link" href="#quick_start"></a></h2>
