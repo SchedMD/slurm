@@ -5,6 +5,7 @@ import atf
 import json
 import pytest
 import re
+import logging
 
 file_in1 = "input1"
 file_in2 = "input2"
@@ -45,6 +46,55 @@ def check_accounted_gpus(
         batch_gpus: Expected number of GPUs for the batch step
     """
 
+    def _get_job_with_sacct(job_id):
+        output = atf.run_command_output(
+            f"sacct --job={job_id} --json --start=now-15minutes",
+            fatal=True,
+            quiet=True,
+        )
+        data = json.loads(output)
+        jobs = data.get("jobs", [])
+        if len(jobs) != 1:
+            logging.debug("sacct reported wrong number jobs ({len(jobs)})")
+            return None
+
+        return jobs[0]
+
+    def _get_job_gpus(job_id, field):
+        job = _get_job_with_sacct(job_id)
+        if not job:
+            logging.debug("no job retrieved")
+            return -1
+
+        gpu = _gpus_from_tres_arrays([job.get("tres", {}).get(field, [])])
+        logging.debug(f"GPUs in {field} are {gpu}")
+
+        return gpu
+
+    def _get_step_gpus(job_id, step_id, field):
+        job = _get_job_with_sacct(job_id)
+        if not job:
+            logging.debug("no job retrieved")
+            return -1
+
+        step = next(
+            (
+                step
+                for step in job.get("steps", [])
+                if step.get("step", {}).get("id", "") == f"{job_id}.{step_id}"
+            ),
+            None,
+        )
+        if not step:
+            logging.debug("sacct did not report step_id {job_id}.{step_id}")
+            return -1
+
+        gpu = _gpus_from_tres_arrays([step.get("tres", {}).get(field, [])])
+
+        logging.debug(f"GPUs in {field} of step {step_id} are {gpu}")
+
+        return gpu
+
     def _gpus_from_tres_arrays(tres_arrays):
         """Helper to count GPU TRES from sacct JSON tres arrays."""
         gpu_count = 0
@@ -54,86 +104,34 @@ def check_accounted_gpus(
                     gpu_count += tres_item.get("count", 0)
         return gpu_count
 
-    if job_id == 0:
-        return
+    # Check allocated GPUs for the whole job (AllocTRES)
+    assert atf.repeat_until(
+        lambda: _get_job_gpus(job_id, "allocated"),
+        lambda allocated_gpus: allocated_gpus == job_gpus,
+        timeout=10,
+    ), f"Allocated GPUs reported by sacct in the job should be {job_gpus}"
 
-    # Wait for job to show up in the DB
-    atf.wait_for_job_accounted(job_id, fatal=True)
+    # Check requested GPUs for the whole job (ReqTRES)
+    assert atf.repeat_until(
+        lambda: _get_job_gpus(job_id, "requested"),
+        lambda requested_gpus: requested_gpus == job_gpus,
+        timeout=10,
+    ), f"Requested GPUs reported by sacct in the job should be {job_gpus}"
 
-    # If needed, wait for step to show up as well
+    # Check allocated gpus for the step 0
     if step_gpus is not None:
-        atf.wait_for_step_accounted(job_id, 0, fatal=True)
+        assert atf.repeat_until(
+            lambda: _get_step_gpus(job_id, 0, "allocated"),
+            lambda allocated_gpus: allocated_gpus == step_gpus,
+            timeout=10,
+        ), f"Allocated GPUs reported by sacct in step 0 should be {step_gpus}"
 
-    # Get accounting data using JSON
-    output = atf.run_command_output(
-        f"sacct --job={job_id} --json --start=now-15minutes",
-        fatal=True,
-    )
-    data = json.loads(output)
-    jobs = data.get("jobs", [])
-    if len(jobs) != 1:
-        pytest.fail(f"sacct reported wrong number jobs for {job_id}")
-
-    job_data = jobs[0]
-
-    # Check and count reported gpus on the step
-    if step_gpus is not None:
-        step_found = False
-        for step in job_data.get("steps", []):
-            step_id = step.get("step", {}).get("id", "")
-            if step_id == f"{job_id}.0":
-                step_found = True
-                allocated_gpus = _gpus_from_tres_arrays(
-                    [step.get("tres", {}).get("allocated", [])]
-                )
-                assert (
-                    allocated_gpus == step_gpus
-                ), f"Step GPUs reported by sacct should be {step_gpus}, found {allocated_gpus}"
-                break
-
-        if not step_found:
-            pytest.fail(f"sacct did not report a record for step {job_id}.0")
-
-    # Check and count reported batch gpus on the job
-    batch_found = False
-    for step in job_data.get("steps", []):
-        step_id = step.get("step", {}).get("id", "")
-        if step_id == f"{job_id}.batch":
-            batch_found = True
-            allocated_gpus = _gpus_from_tres_arrays(
-                [step.get("tres", {}).get("allocated", [])]
-            )
-            assert (
-                allocated_gpus == batch_gpus
-            ), f"Batch GPUs reported by sacct should be {batch_gpus}, found {allocated_gpus}"
-            break
-
-    if not batch_found:
-        pytest.fail(f"sacct did not report a record for job {job_id}.batch")
-
-    # Check and count reported gpus on the job
-    job_tres = job_data.get("tres", {})
-    allocated_gpus = _gpus_from_tres_arrays([job_tres.get("allocated", [])])
-    requested_gpus = _gpus_from_tres_arrays([job_tres.get("requested", [])])
-
-    # Count how many times we found valid GPU TRES
-    gpus_reported_count = 0
-
-    # Check allocated GPUs (AllocTRES)
-    assert (
-        allocated_gpus == job_gpus
-    ), f"Job allocated GPUs reported by sacct should be {job_gpus}, found {allocated_gpus}"
-    gpus_reported_count += 1
-
-    # Check requested GPUs (ReqTRES)
-    assert (
-        requested_gpus == job_gpus
-    ), f"Job requested GPUs reported by sacct should be {job_gpus}, found {requested_gpus}"
-    gpus_reported_count += 1
-
-    assert (
-        gpus_reported_count == 2
-    ), f"sacct should report job GPUs 2 times (once in AllocTRES and once in ReqTRES), found {gpus_reported_count} times"
+    # Check allocated gpus for the batch step
+    assert atf.repeat_until(
+        lambda: _get_step_gpus(job_id, "batch", "allocated"),
+        lambda allocated_gpus: allocated_gpus == batch_gpus,
+        timeout=10,
+    ), f"Allocated GPUs reported by sacct in batch step should be {batch_gpus}"
 
 
 def check_allocated_gpus(job_id, target):
