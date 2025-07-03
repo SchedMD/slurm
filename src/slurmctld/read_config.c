@@ -725,7 +725,7 @@ extern list_t *accounts_list_build(char *accounts, bool locked)
 }
 
 /* Convert a comma delimited list of QOS names into a bitmap */
-extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
+extern int qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 {
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
@@ -735,7 +735,7 @@ extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 
 	if (!qos) {
 		FREE_NULL_BITMAP(*qos_bits);
-		return;
+		return SLURM_SUCCESS;
 	}
 
 	/* Lock here to avoid g_qos_count changing under us */
@@ -749,7 +749,7 @@ extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 			assoc_mgr_unlock(&locks);
 		FREE_NULL_BITMAP(*qos_bits);
 		*qos_bits = NULL;
-		return;
+		return SLURM_ERROR;
 	}
 
 	tmp_qos_bitstr = bit_alloc(g_qos_count);
@@ -774,6 +774,8 @@ extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 	xfree(tmp_qos);
 	FREE_NULL_BITMAP(*qos_bits);
 	*qos_bits = tmp_qos_bitstr;
+
+	return SLURM_SUCCESS;
 }
 
 /*
