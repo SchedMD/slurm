@@ -896,11 +896,12 @@ extern char *xbase64_from_base64url(const char *in)
 {
 	char *out;
 	int i;
+	size_t length = strlen(in);
 
 	/* extra padding in case the padding was stripped off */
-	out = xmalloc(strlen(in) + 3);
+	out = xmalloc(length + 3);
 
-	for (i = 0; i < strlen(in); i++) {
+	for (i = 0; i < length; i++) {
 		switch (in[i]) {
 		case '-':
 			out[i] = '+';
