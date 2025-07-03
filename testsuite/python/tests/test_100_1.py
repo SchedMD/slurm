@@ -55,6 +55,21 @@ and hopefully remove them from the xfail list.
 """
 
 # TODO: Remove xfail_tests.append() once their issue is fixed.
+if atf.get_version() < (25, 11):
+    skip_tests.append(
+        (
+            "interfaces/test_data_parsers.c",
+            "test_data_parsers doesn't compile for versions < 25.11",
+        )
+    )
+else:
+    xfail_tests.append(
+        (
+            "interfaces/test_data_parsers.c",
+            "test_load_current_plugin",
+            "Ticket: 18070. Segfault can happen when no plugins are found. Fixed in 25.11+",
+        )
+    )
 if atf.get_version() < (25, 5):
     skip_tests.append(
         (
