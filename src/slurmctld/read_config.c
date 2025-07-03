@@ -761,7 +761,8 @@ extern int qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 		rc = assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					   accounting_enforce,
 					   &qos_ptr, 1);
-		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count)) {
+		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count) ||
+		    (!qos_ptr)) {
 			error("Ignoring invalid Allow/DenyQOS value: %s",
 			      one_qos_name);
 		} else {
