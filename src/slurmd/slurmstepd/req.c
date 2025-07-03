@@ -1831,7 +1831,7 @@ static int _handle_getgr(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 
 	if (!step->ngids || !step->gids || !step->gr_names) {
 		error("%s: incomplete data, ignoring request", __func__);
-	} else if (mode == GETGR_MATCH_GROUP_AND_PID ) {
+	} else if ((mode == GETGR_MATCH_GROUP_AND_PID) && pid_match) {
 		while (offset < step->ngids) {
 			if (gid == step->gids[offset])
 				break;
