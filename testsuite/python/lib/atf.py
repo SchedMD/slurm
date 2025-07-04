@@ -1838,6 +1838,54 @@ def require_mpi(mpi_option="pmix", mpi_compiler="mpicc"):
         )
 
 
+def require_influxdb(influx_client="influx", jobacct_gather="jobacct_gather/cgroup"):
+    """Require the influx client available and the right config.
+    With auto-config the default values would work. Without you may need to setup the acct_gather values in the testsuite.conf file.
+
+    Args:
+        influx_client (string): The name of the influxdb client. Default: influx.
+        jobacct_gather (string): To use influxdb we need to set some JobAcctGatherType. Default: cgroup.
+
+    Returns:
+        None
+    """
+
+    require_tool(influx_client)
+
+    require_config_parameter("JobAcctGatherType", jobacct_gather)
+    require_config_parameter("AcctGatherProfileType", "acct_gather_profile/influxdb")
+
+    require_config_parameter(
+        "ProfileInfluxDBHost",
+        f"{properties['influxdb_host']}:{properties['influxdb_port']}",
+        source="acct_gather",
+    )
+    require_config_parameter(
+        "ProfileInfluxDBDatabase", properties["influxdb_db"], source="acct_gather"
+    )
+    require_config_parameter("ProfileInfluxDBDefault", "ALL", source="acct_gather")
+    require_config_parameter("ProfileInfluxDBRTPolicy", "autogen", source="acct_gather")
+
+    request_influxdb(f"CREATE DATABASE {properties['influxdb_db']}")
+    properties["influxdb-started"] = True
+
+
+def request_influxdb(query):
+    """Send a query using the influx client. Requires to run require_influxdb first.
+
+    Args:
+        query (string): The query to send,
+
+    Returns:
+        The stdout returned by the influxdb client.
+        If the clients fails somehow, this function will fatal.
+    """
+    return run_command_output(
+        f"influx -host {properties['influxdb_host']} -port {properties['influxdb_port']} -database {properties['influxdb_db']} -format column -execute \"{query}\"",
+        fatal=True,
+    )
+
+
 def require_whereami():
     """Compiles the whereami.c program to be used by tests.
 
@@ -4621,6 +4669,9 @@ properties["testsuite_scripts_dir"] = (
     properties["testsuite_base_dir"] + "/python/scripts"
 )
 properties["testsuite_check_dir"] = properties["testsuite_base_dir"] + "/python/check"
+properties["influxdb_host"] = "localhost"
+properties["influxdb_port"] = 8086
+properties["influxdb_db"] = "slurm"
 
 # Override directory properties with values from testsuite.conf file
 testsuite_config = {}
@@ -4645,6 +4696,13 @@ if "slurminstalldir" in testsuite_config:
     properties["slurm-prefix"] = testsuite_config["slurminstalldir"]
 if "slurmconfigdir" in testsuite_config:
     properties["slurm-config-dir"] = testsuite_config["slurmconfigdir"]
+
+if "influxdb_host" in testsuite_config:
+    properties["influxdb_host"] = properties["influxdb_host"]
+if "influxdb_port" in testsuite_config:
+    properties["influxdb_host"] = properties["influxdb_port"]
+if "influxdb_db" in testsuite_config:
+    properties["influxdb_db"] = properties["influxdb_db"]
 
 # Set derived directory properties
 # The environment (e.g. PATH, SLURM_CONF) overrides the configuration.
