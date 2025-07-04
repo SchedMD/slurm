@@ -92,4 +92,5 @@ extern int initialize_and_process_args(int argc, char **argv);
  */
 extern bool has_default_opt(void);
 extern bool has_job_steps(void);
+extern bool has_fed_jobs(void);
 #endif	/* _HAVE_SCANCEL_H */
