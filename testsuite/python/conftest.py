@@ -154,6 +154,7 @@ def update_tmp_path_exec_permissions():
 def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
     atf.properties["slurmrestd-started"] = False
+    atf.properties["influxdb-started"] = False
     atf.properties["configurations-modified"] = set()
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
@@ -294,6 +295,9 @@ def module_teardown():
         for config in set(atf.properties["configurations-modified"]):
             atf.restore_config_file(config)
 
+        # Clean influxdb
+        if atf.properties["influxdb-started"]:
+            atf.request_influxdb(f"DROP DATABASE {atf.properties['influxdb_db']}")
     else:
         atf.cancel_jobs(atf.properties["submitted-jobs"])
 
