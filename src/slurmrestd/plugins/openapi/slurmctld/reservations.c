@@ -56,7 +56,7 @@ static int _validate_each_resv_create_desc(resv_desc_msg_t *resv_msg,
 {
 	char *error_msg;
 
-	if (validate_resv_create_desc(resv_msg, &error_msg))
+	if (validate_resv_create_desc(resv_msg, &error_msg, NULL))
 		return resp_error(ctxt, ESLURM_RESERVATION_INVALID,
 				  "validate_resv_create_desc", "%s", error_msg);
 

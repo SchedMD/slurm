@@ -6387,7 +6387,8 @@ extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object)
 }
 
 /* Resv creation msg client validation. On error err_msg is set */
-extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg)
+extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,
+				     uint32_t *res_free_flags)
 {
 	if (resv_msg->start_time == (time_t) NO_VAL) {
 		*err_msg = "A start time must be given.  No reservation created.";
@@ -6465,7 +6466,10 @@ extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg)
 			resv_msg->flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg->flags |= RESERVE_FLAG_PART_NODES;
-		resv_msg->node_list = "ALL";
+		resv_msg->node_list = xstrdup("ALL");
+
+		if (res_free_flags)
+			*res_free_flags |= RESV_FREE_STR_NODES;
 	}
 
 	if (((resv_msg->users == NULL) || (resv_msg->users[0] == '\0')) &&

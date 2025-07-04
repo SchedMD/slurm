@@ -1927,7 +1927,8 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr);
 extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object);
 
 /* Resv creation msg client validation. On error err_msg is set */
-extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg);
+extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,
+				     uint32_t *res_free_flags);
 
 /*
  * Get configured DefCpuPerGPU information from a list

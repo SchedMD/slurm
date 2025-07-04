@@ -386,7 +386,7 @@ scontrol_create_res(int argc, char **argv)
 	if (ret)
 		goto SCONTROL_CREATE_RES_CLEANUP;
 
-	if (validate_resv_create_desc(&resv_msg, &error_msg)) {
+	if (validate_resv_create_desc(&resv_msg, &error_msg, &res_free_flags)) {
 		exit_code = 1;
 		error("%s", error_msg);
 		goto SCONTROL_CREATE_RES_CLEANUP;
