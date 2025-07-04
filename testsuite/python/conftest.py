@@ -154,6 +154,7 @@ def update_tmp_path_exec_permissions():
 def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
     atf.properties["slurmrestd-started"] = False
+    atf.properties["influxdb-started"] = False
     atf.properties["configurations-modified"] = set()
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
@@ -294,6 +295,9 @@ def module_teardown():
         for config in set(atf.properties["configurations-modified"]):
             atf.restore_config_file(config)
 
+        # Clean influxdb
+        if atf.properties["influxdb-started"]:
+            atf.request_influxdb(f"DROP DATABASE {atf.properties['influxdb_db']}")
     else:
         atf.cancel_jobs(atf.properties["submitted-jobs"])
 
@@ -342,6 +346,26 @@ def mpi_program(module_setup):
 
     # Compile the MPI program
     atf.run_command(f"mpicc -o {bin_path} {src_path}", fatal=True)
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
+def use_memory_program(module_setup):
+    """
+    Returns the bin path of a program that allocates a certain amount of MB for some seconds.
+    """
+
+    atf.require_tool("python3")
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/use_memory_program.py"
+    bin_path = os.getcwd() + "/use_memory_program.py"
+
+    # Ensure x permissions
+    atf.run_command(f"cp {src_path} {bin_path}")
+    atf.run_command(f"chmod a+x {bin_path}")
 
     yield bin_path
 
