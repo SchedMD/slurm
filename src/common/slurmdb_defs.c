@@ -400,7 +400,7 @@ static const struct {
 	char *flag_str;
 	char *str;
 } slurmdb_qos_flags_map[] = {
-	T(QOS_FLAG_RELATIVE, "Deleted"),
+	T(QOS_FLAG_DELETED, "Deleted"),
 	T(QOS_FLAG_DENY_LIMIT, "DenyOnLimit"),
 	T(QOS_FLAG_ENFORCE_USAGE_THRES, "EnforceUsageThreshold"),
 	T(QOS_FLAG_PART_MIN_NODE, "PartitionMinNodes"),
