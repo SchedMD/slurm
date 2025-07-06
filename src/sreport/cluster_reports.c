@@ -1676,10 +1676,10 @@ extern int cluster_utilization(int argc, char **argv)
 	if (!list_count(format_list)) {
 		if (tres_str) {
 			slurm_addto_char_list(format_list,
-					      "Cl,TresName,al,d,planned,i,res,rep");
+					      "Cl,TresName,al,d,PLNDDown,i,res,rep");
 		} else {
 			slurm_addto_char_list(format_list,
-					      "Cl,al,d,planned,i,res,rep");
+					      "Cl,al,d,PLNDDown,i,res,rep");
 		}
 	}
 
