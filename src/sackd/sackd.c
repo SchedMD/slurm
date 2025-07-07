@@ -542,7 +542,7 @@ extern int main(int argc, char **argv)
 		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
-			certmgr_client_daemon_init(NULL);
+			certmgr_client_daemon_init(NULL, NULL);
 		} else {
 			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
 		}

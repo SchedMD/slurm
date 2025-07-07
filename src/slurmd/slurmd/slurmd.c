@@ -496,7 +496,8 @@ main (int argc, char **argv)
 		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
-			certmgr_client_daemon_init(conf->node_name);
+			certmgr_client_daemon_init(conf->node_name,
+						   conf->spooldir);
 		} else {
 			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
 		}
