@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+include /usr/share/dpkg/architecture.mk
+
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all,-bindnow
 
 %:
@@ -18,17 +20,17 @@ override_dh_autoreconf:
 override_dh_auto_configure:
 	# Run with --disable-debug to allow optimizations, -g is still provided
 	# by dpkg-buildflags.
-	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-mysql_config --with-slurmrestd --with-pmix --enable-pam --with-systemdsystemunitdir=/lib/systemd/system/ SUCMD=/bin/su SLEEP_CMD=/bin/sleep
+	dh_auto_configure -- --sysconfdir=/etc/slurm --disable-debug --with-mysql_config --with-slurmrestd --with-pmix --enable-pam --with-pam_dir=/usr/lib/$(DEB_HOST_MULTIARCH)/security --with-systemdsystemunitdir=/lib/systemd/system/ SUCMD=/bin/su SLEEP_CMD=/bin/sleep
 
 override_dh_auto_install:
 	dh_auto_install
 
 	rm -r debian/tmp/usr/lib/*/slurm/src
 
-	find debian/tmp/usr/lib/*/ -type f,l -not -name "*.a" -not -name "*.la" -not -name "libpmi*" -not -name "libnss*" -not -name "*_pbs*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd.install
+	find debian/tmp/usr/lib/*/ -type f,l -not -name "*.a" -not -name "*.la" -not -name "libpmi*" -not -name "libnss*" -not -name "pam_slurm*" -not -name "*_pbs*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd.install
 
 	find debian/tmp/usr/include/slurm/ -type f > debian/slurm-smd-dev.install
-	find debian/tmp/usr/lib/*/ -type f -not -name "*.so*" -not -name "libpmi*" -not -name "libnss*" -not -name "*_pbs*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd-dev.install
+	find debian/tmp/usr/lib/*/ -type f -not -name "*.so*" -not -name "libpmi*" -not -name "libnss*" -not -name "pam_slurm*" -not -name "*_pbs*" -not -path "*/perl*/*" | sed "s/^debian\/tmp\///" >> debian/slurm-smd-dev.install
 
 	# Build for libpam-slurm-adopt package
 	$(MAKE) -C obj-$(DEB_BUILD_GNU_TYPE)/contribs/pam_slurm_adopt install DESTDIR=$(CURDIR)/debian/tmp
