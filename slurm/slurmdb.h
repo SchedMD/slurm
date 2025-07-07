@@ -254,7 +254,6 @@ typedef enum {
 	/* SLURM_BIT(10) empty */
 	CLUSTER_FLAG_FED = SLURM_BIT(11), /* This cluster is in a federation. */
 	CLUSTER_FLAG_EXT = SLURM_BIT(12), /* This cluster is external */
-	CLUSTER_FLAG_INVALID
 }  slurmdb_cluster_flags_t;
 
 /* Assoc flags */

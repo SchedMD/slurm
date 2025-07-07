@@ -88,7 +88,6 @@ static const struct {
 	T(CLUSTER_FLAG_FED, "Federation"),
 	T(CLUSTER_FLAG_MULTSD, "MultipleSlurmd"),
 	T(CLUSTER_FLAG_REGISTER, "Registering"),
-	T(CLUSTER_FLAG_INVALID, "INVALID"),
 };
 #undef T
 
