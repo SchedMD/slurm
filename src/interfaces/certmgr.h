@@ -104,7 +104,8 @@ extern int certmgr_get_cert_from_ctld(char *name, bool retry_forever);
  *
  * IN name - hostname/nodename which will be used by slurmctld to identify the
  *	certificate signing request.
+ * IN spooldir - used to load/save signed certificate and private key pair
  */
-extern void certmgr_client_daemon_init(char *name);
+extern void certmgr_client_daemon_init(char *name, char *spooldir);
 
 #endif
