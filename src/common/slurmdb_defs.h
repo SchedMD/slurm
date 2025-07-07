@@ -118,7 +118,16 @@ extern slurmdb_assoc_usage_t *slurmdb_create_assoc_usage(int tres_cnt);
 extern slurmdb_qos_usage_t *slurmdb_create_qos_usage(int tres_cnt);
 
 extern char *slurmdb_acct_flags_2_str(slurmdb_acct_flags_t flags);
-extern slurmdb_acct_flags_t str_2_slurmdb_acct_flags(char *flag_str);
+
+/*
+ * Parse CSV of accounting flags
+ *
+ * IN str - CSV of accounting flags to parse
+ * OUT flags_ptr - pointer to populate based on parsed flags (SLURMDB_ACCT_FLAG_*)
+ * RET SLURM_SUCCESS or error
+ */
+extern int str_2_slurmdb_acct_flags(const char *str,
+				    slurmdb_acct_flags_t *flags_ptr);
 extern char *slurmdb_assoc_flags_2_str(slurmdb_assoc_flags_t flags);
 extern slurmdb_assoc_flags_t str_2_slurmdb_assoc_flags(char *flag_str);
 extern char *slurmdb_cluster_fed_states_str(uint32_t states);
