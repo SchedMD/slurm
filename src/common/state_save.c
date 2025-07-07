@@ -79,9 +79,17 @@ extern int save_buf_to_state(const char *target_file, buf_t *buf,
 	char *new_file, *old_file, *reg_file;
 	char *state_location = slurm_conf.state_save_location;
 
-	new_file = xstrdup_printf("%s/%s.new", state_location, target_file);
-	old_file = xstrdup_printf("%s/%s.old", state_location, target_file);
-	reg_file = xstrdup_printf("%s/%s", state_location, target_file);
+	if (target_file[0] == '/') {
+		new_file = xstrdup_printf("%s.new", target_file);
+		old_file = xstrdup_printf("%s.old", target_file);
+		reg_file = xstrdup_printf("%s", target_file);
+	} else {
+		new_file = xstrdup_printf("%s/%s.new", state_location,
+					  target_file);
+		old_file = xstrdup_printf("%s/%s.old", state_location,
+					  target_file);
+		reg_file = xstrdup_printf("%s/%s", state_location, target_file);
+	}
 
 	lock_state_files();
 	fd = open(new_file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0600);
@@ -132,8 +140,13 @@ extern buf_t *state_save_open(const char *target_file, char **state_file)
 {
 	buf_t *buf;
 
-	*state_file = xstrdup_printf("%s/%s", slurm_conf.state_save_location,
-				     target_file);
+	if (target_file[0] == '/') {
+		*state_file = xstrdup(target_file);
+	} else {
+		*state_file =
+			xstrdup_printf("%s/%s", slurm_conf.state_save_location,
+				       target_file);
+	}
 
 	lock_state_files();
 
