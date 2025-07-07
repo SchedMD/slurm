@@ -273,8 +273,6 @@ typedef enum {
 
 	ASSOC_FLAG_USER_COORD = SLURM_BIT(16),
 	ASSOC_FLAG_BLOCK_ADD = SLURM_BIT(17),
-
-	ASSOC_FLAG_INVALID
 } slurmdb_assoc_flags_t;
 
 /* Assoc Cond flags */
