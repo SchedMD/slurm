@@ -47,7 +47,8 @@ extern void unlock_state_files(void);
 /*
  * Safe buffer data to state file
  *
- * IN target_file - Path to state file in slurm_conf.state_save_location
+ * IN target_file - Path to state file in slurm_conf.state_save_location,
+ *                  or absolute path to state file.
  * IN buf - Data to save to target_file
  * OUT high_buffer_size - High watermark of buffers saved in previous calls.
  *
@@ -59,7 +60,8 @@ extern int save_buf_to_state(const char *target_file, buf_t *buf,
 /*
  * Open buffer to state file
  *
- * IN target_file - Path to state file in slurm_conf.state_save_location
+ * IN target_file - Path to state file in slurm_conf.state_save_location,
+ *                  or absolute path to state file.
  * OUT state_file - Absolute path to state file. Must be xfree'd.
  *
  * RET buf_t pointing to data in target_file
