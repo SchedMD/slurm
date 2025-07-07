@@ -3558,6 +3558,58 @@ static bool _depends_on_same_job(job_record_t *job_ptr,
 	}
 }
 
+static void _update_job_expand_dep(job_record_t *job_ptr,
+				   job_record_t *dep_job_ptr, uint32_t job_id,
+				   int select_hetero)
+{
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	job_details_t *detail_ptr = job_ptr->details;
+	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
+	gres_job_state_validate_t gres_js_val = {
+		.cpus_per_task = &detail_ptr->orig_cpus_per_task,
+		.max_nodes = &detail_ptr->max_nodes,
+		.min_cpus = &detail_ptr->min_cpus,
+		.min_nodes = &detail_ptr->min_nodes,
+		.ntasks_per_node = &detail_ptr->ntasks_per_node,
+		.ntasks_per_socket = &mc_ptr->ntasks_per_socket,
+		.ntasks_per_tres = &detail_ptr->ntasks_per_tres,
+		.num_tasks = &detail_ptr->num_tasks,
+		.sockets_per_node = &mc_ptr->sockets_per_node,
+
+		.gres_list = &job_ptr->gres_list_req,
+	};
+
+	job_ptr->details->expanding_jobid = job_id;
+	if (select_hetero == 0) {
+		/*
+		 * GRES per node of this job must match
+		 * the job being expanded. Other options
+		 * are ignored.
+		 */
+		_copy_tres_opts(job_ptr, dep_job_ptr);
+	}
+
+	gres_js_val.cpus_per_tres = job_ptr->cpus_per_tres;
+	gres_js_val.mem_per_tres = job_ptr->mem_per_tres;
+	gres_js_val.tres_freq = job_ptr->tres_freq;
+	gres_js_val.tres_per_job = job_ptr->tres_per_job;
+	gres_js_val.tres_per_node = job_ptr->tres_per_node;
+	gres_js_val.tres_per_socket = job_ptr->tres_per_socket;
+	gres_js_val.tres_per_task = job_ptr->tres_per_task;
+
+	FREE_NULL_LIST(job_ptr->gres_list_req);
+	(void) gres_job_state_validate(&gres_js_val);
+	assoc_mgr_lock(&locks);
+	gres_stepmgr_set_job_tres_cnt(job_ptr->gres_list_req,
+				      job_ptr->details->min_nodes,
+				      job_ptr->tres_req_cnt, true);
+	xfree(job_ptr->tres_req_str);
+	job_ptr->tres_req_str =
+		assoc_mgr_make_tres_str_from_array(job_ptr->tres_req_cnt,
+						   TRES_STR_FLAG_SIMPLE, true);
+	assoc_mgr_unlock(&locks);
+}
+
 /*
  * The new dependency format is:
  *
@@ -3651,56 +3703,8 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 		}
 
 		if (depend_type == SLURM_DEPEND_EXPAND) {
-			assoc_mgr_lock_t locks = { .tres = READ_LOCK };
-			job_details_t *detail_ptr = job_ptr->details;
-			multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
-			gres_job_state_validate_t gres_js_val = {
-				.cpus_per_task =
-				&detail_ptr->orig_cpus_per_task,
-				.max_nodes = &detail_ptr->max_nodes,
-				.min_cpus = &detail_ptr->min_cpus,
-				.min_nodes = &detail_ptr->min_nodes,
-				.ntasks_per_node = &detail_ptr->ntasks_per_node,
-				.ntasks_per_socket = &mc_ptr->ntasks_per_socket,
-				.ntasks_per_tres = &detail_ptr->ntasks_per_tres,
-				.num_tasks = &detail_ptr->num_tasks,
-				.sockets_per_node = &mc_ptr->sockets_per_node,
-
-				.gres_list = &job_ptr->gres_list_req,
-			};
-
-			job_ptr->details->expanding_jobid = job_id;
-			if (select_hetero == 0) {
-				/*
-				 * GRES per node of this job must match
-				 * the job being expanded. Other options
-				 * are ignored.
-				 */
-				_copy_tres_opts(job_ptr, dep_job_ptr);
-			}
-
-			gres_js_val.cpus_per_tres = job_ptr->cpus_per_tres;
-			gres_js_val.mem_per_tres = job_ptr->mem_per_tres;
-			gres_js_val.tres_freq = job_ptr->tres_freq;
-			gres_js_val.tres_per_job = job_ptr->tres_per_job;
-			gres_js_val.tres_per_node = job_ptr->tres_per_node;
-			gres_js_val.tres_per_socket = job_ptr->tres_per_socket;
-			gres_js_val.tres_per_task = job_ptr->tres_per_task;
-
-			FREE_NULL_LIST(job_ptr->gres_list_req);
-			(void) gres_job_state_validate(&gres_js_val);
-			assoc_mgr_lock(&locks);
-			gres_stepmgr_set_job_tres_cnt(
-				job_ptr->gres_list_req,
-				job_ptr->details->min_nodes,
-				job_ptr->tres_req_cnt,
-				true);
-			xfree(job_ptr->tres_req_str);
-			job_ptr->tres_req_str =
-				assoc_mgr_make_tres_str_from_array(
-					job_ptr->tres_req_cnt,
-					TRES_STR_FLAG_SIMPLE, true);
-			assoc_mgr_unlock(&locks);
+			_update_job_expand_dep(job_ptr, dep_job_ptr, job_id,
+					       select_hetero);
 		}
 
 		dep_ptr = xmalloc(sizeof(depend_spec_t));
