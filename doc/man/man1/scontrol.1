@@ -2622,6 +2622,9 @@ is specified at submit time, this partition will override the job's default
 partition. Jobs explicitly requesting a different partition will still be
 allowed to use this reservation as long as there are enough overlapping nodes
 between both partitions to allocate the job.
+\fBNOTE\fR: If \fIAllowedPartitions\fR is used and \fIPartitionName\fR is not
+given, the first partition in \fIAllowedPartitions\fR is what is used as
+\fIPartitionName\fR.
 .IP
 
 .TP

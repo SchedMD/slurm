@@ -139,6 +139,7 @@ typedef struct constraint_slot {
 } constraint_slot_t;
 
 typedef struct {
+	list_t *allowed_parts_list;
 	bitstr_t *core_bitmap;
 	list_t *gres_list_exc;
 	bitstr_t *node_bitmap;
@@ -3749,6 +3750,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		(void) list_for_each(allowed_parts_list,
 				     _foreach_set_allowed_parts_name_str,
 				     &set_allow_str);
+		resv_select.allowed_parts_list = allowed_parts_list;
 	}
 
 	if (resv_desc_ptr->licenses) {
@@ -4100,10 +4102,14 @@ static int _validate_reservation_access_update(void *x, void *y)
 }
 
 static int _validate_and_set_partition(part_record_t **part_ptr,
-				       char **partition)
+				       char **partition,
+				       list_t *allowed_parts_list)
 {
 	if (*part_ptr == NULL) {
-		*part_ptr = default_part_loc;
+		if (allowed_parts_list && list_count(allowed_parts_list))
+			*part_ptr = list_peek(allowed_parts_list);
+		else
+			*part_ptr = default_part_loc;
 		if (*part_ptr == NULL)
 			return ESLURM_DEFAULT_PARTITION_NOT_SET;
 	}
@@ -5300,7 +5306,9 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	int i, add_nodes, new_nodes, preserve_nodes, busy_nodes_needed;
 	bool log_it = true;
 	bool replaced = false;
-	resv_select_t resv_select = { 0 };
+	resv_select_t resv_select = {
+		.allowed_parts_list = resv_ptr->allowed_parts_list,
+	};
 
 	/* Identify nodes which can be preserved in this reservation */
 	preserve_bitmap = bit_copy(resv_ptr->node_bitmap);
@@ -5445,7 +5453,9 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 {
 	int i;
 	resv_desc_msg_t resv_desc;
-	resv_select_t resv_select = { 0 };
+	resv_select_t resv_select = {
+		.allowed_parts_list = resv_ptr->allowed_parts_list,
+	};
 
 	if ((resv_ptr->node_bitmap == NULL) ||
 	    (!(resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
@@ -5791,7 +5801,9 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 	bitstr_t *tmp2_bitmap = NULL;
 	int delta_node_cnt, i, rc;
 	resv_desc_msg_t resv_desc;
-	resv_select_t resv_select = { 0 };
+	resv_select_t resv_select = {
+		.allowed_parts_list = resv_ptr->allowed_parts_list,
+	};
 
 	delta_node_cnt = resv_ptr->node_cnt - node_cnt;
 	if (delta_node_cnt == 0)	/* Already correct node count */
@@ -5835,7 +5847,8 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 
 	/* Ensure if partition exists in reservation otherwise use default */
 	if ((rc = _validate_and_set_partition(&resv_ptr->part_ptr,
-					      &resv_ptr->partition))) {
+					      &resv_ptr->partition,
+					      resv_ptr->allowed_parts_list))) {
 		return rc;
 	}
 
@@ -6091,7 +6104,9 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 	job_record_t *job_ptr;
 
 	if ((rc = _validate_and_set_partition(part_ptr,
-					      &resv_desc_ptr->partition))) {
+					      &resv_desc_ptr->partition,
+					      resv_select_ret->
+					      allowed_parts_list))) {
 		return rc;
 	}
 
