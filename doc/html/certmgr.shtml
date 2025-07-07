@@ -10,6 +10,12 @@ The <code>certmgr</code> plugin interface can be used alongside the
 certificates for slurmd/sackd nodes.
 </p>
 
+<p>
+Signed certificates and accompanying private keys generated with certmgr are
+saved in slurmd's spool directory when they are retrieved from slurmctld, and
+loaded when slurmd starts up.
+</p>
+
 <h2 id="script">certmgr/script<a class="slurm_link" href="#script"></a></h2>
 
 <p>
@@ -310,6 +316,6 @@ slurmd: TLS: Successfully got signed certificate from slurmctld:
 to show less verbose logs of certificate renewal.
 </p>
 
-<p style="text-align:center;">Last modified 27 June 2025</p>
+<p style="text-align:center;">Last modified 06 July 2025</p>
 
 <!--#include virtual="footer.txt"-->

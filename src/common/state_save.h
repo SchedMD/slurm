@@ -44,8 +44,28 @@ extern int clustername_existed;
 extern void lock_state_files(void);
 extern void unlock_state_files(void);
 
+/*
+ * Safe buffer data to state file
+ *
+ * IN target_file - Path to state file in slurm_conf.state_save_location,
+ *                  or absolute path to state file.
+ * IN buf - Data to save to target_file
+ * OUT high_buffer_size - High watermark of buffers saved in previous calls.
+ *
+ * RET SLURM_SUCCESS or error
+ */
 extern int save_buf_to_state(const char *target_file, buf_t *buf,
 			     uint32_t *high_buffer_size);
+
+/*
+ * Open buffer to state file
+ *
+ * IN target_file - Path to state file in slurm_conf.state_save_location,
+ *                  or absolute path to state file.
+ * OUT state_file - Absolute path to state file. Must be xfree'd.
+ *
+ * RET buf_t pointing to data in target_file
+ */
 extern buf_t *state_save_open(const char *target_file, char **state_file);
 
 #endif
