@@ -92,36 +92,41 @@ static const struct {
 };
 #undef T
 
-static slurmdb_cluster_flags_t _str_2_cluster_flags(char *flags_in)
+static int _str_2_cluster_flags(const char *flags_in,
+				slurmdb_cluster_flags_t *flags_ptr)
 {
 	if (!flags_in || !flags_in[0])
-		return CLUSTER_FLAG_NONE;
+		return SLURM_SUCCESS;
 
-	for (int i = 0; i < ARRAY_SIZE(slurmdb_cluster_flags_map); i++)
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_cluster_flags_map); i++) {
 		if (!xstrncasecmp(flags_in, slurmdb_cluster_flags_map[i].str,
-				  strlen(flags_in)))
-			return slurmdb_cluster_flags_map[i].flag;
+				  strlen(flags_in))) {
+			*flags_ptr |= slurmdb_cluster_flags_map[i].flag;
+			return SLURM_SUCCESS;
+		}
+	}
 
 	debug("%s: Unable to match %s to a slurmdbd_cluster_flags_t flag",
 	      __func__, flags_in);
-	return CLUSTER_FLAG_INVALID;
+	return EINVAL;
 }
 
-
-extern slurmdb_cluster_flags_t slurmdb_str_2_cluster_flags(char *flags_in)
+extern int slurmdb_str_2_cluster_flags(const char *flags_in,
+				       slurmdb_cluster_flags_t *flags_ptr)
 {
-	slurmdb_cluster_flags_t cluster_flags = 0;
 	char *token, *my_flags, *last = NULL;
+	int rc = SLURM_SUCCESS;
+
+	/* Always reset flags */
+	*flags_ptr = CLUSTER_FLAG_NONE;
 
 	my_flags = xstrdup(flags_in);
 	token = strtok_r(my_flags, ",", &last);
-	while (token) {
-		cluster_flags |= _str_2_cluster_flags(token);
+	while (token && !(rc = _str_2_cluster_flags(token, flags_ptr)))
 		token = strtok_r(NULL, ",", &last);
-	}
-	xfree(my_flags);
 
-	return cluster_flags;
+	xfree(my_flags);
+	return rc;
 }
 
 /* must xfree() returned string */

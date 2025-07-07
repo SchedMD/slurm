@@ -112,9 +112,18 @@ static int _set_cond(int *start, int argc, char **argv,
 				cond_set |= SA_SET_CLUST;
 		} else if (!xstrncasecmp(argv[i], "flags",
 					 MAX(command_len, 2))) {
-			cluster_cond->flags = slurmdb_str_2_cluster_flags(
-				argv[i]+end);
-			cond_set |= SA_SET_CLUST;
+			const char *flag_str = (argv[i] + end);
+			int rc;
+
+			if ((rc = slurmdb_str_2_cluster_flags(
+				     flag_str, &cluster_cond->flags))) {
+				fprintf(stderr, " Unknown Flag(s)=%s\n",
+					flag_str);
+				exit_code = 1;
+			} else {
+				cond_set |= SA_SET_CLUST;
+			}
+			break;
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
