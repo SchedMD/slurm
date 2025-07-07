@@ -3611,6 +3611,29 @@ static void _update_job_expand_dep(job_record_t *job_ptr,
 }
 
 /*
+ * Parse a single job id with optional array task id.
+ * Format is: <job_id>[_(*|<array_task_id>)]
+ * Returns one char past the end of the job array or NULL for invalid syntax.
+ */
+static char *_parse_dependency_job_array(char *tok, uint32_t *job_id,
+					 uint32_t *array_task_id)
+{
+	char *tmp = NULL;
+	*job_id = strtol(tok, &tmp, 10);
+	if (tmp && (tmp[0] == '_')) {
+		if (tmp[1] == '*') {
+			tmp += 2; /* Past '_*' */
+			*array_task_id = INFINITE;
+		} else {
+			*array_task_id = strtol(tmp + 1, &tmp, 10);
+		}
+	} else {
+		*array_task_id = NO_VAL;
+	}
+	return tmp;
+}
+
+/*
  * The new dependency format is:
  *
  * <type:job_id[:job_id][,type:job_id[:job_id]]> or
@@ -3633,17 +3656,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 	int depend_time = 0;
 
 	while ((*rc) == SLURM_SUCCESS) {
-		job_id = strtol(tok, &tmp, 10);
-		if (tmp && (tmp[0] == '_')) {
-			if (tmp[1] == '*') {
-				array_task_id = INFINITE;
-				tmp += 2;	/* Past "_*" */
-			} else {
-				array_task_id = strtol(tmp+1,
-						       &tmp, 10);
-			}
-		} else
-			array_task_id = NO_VAL;
+		tmp = _parse_dependency_job_array(tok, &job_id, &array_task_id);
 		if (!tmp || (job_id == 0) ||
 		    ((tmp[0] != '\0') && (tmp[0] != ',') && (tmp[0] != '?') &&
 		     (tmp[0] != ':') && (tmp[0] != '+') && (tmp[0] != '('))) {
@@ -3755,18 +3768,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 	uint32_t job_id, array_task_id;
 	char *tmp = NULL;
 
-	job_id = strtol(tok, &tmp, 10);
-	if (tmp && (tmp[0] == '_')) {
-		if (tmp[1] == '*') {
-			array_task_id = INFINITE;
-			tmp += 2;	/* Past "_*" */
-		} else {
-			array_task_id = strtol(tmp+1, &tmp, 10);
-		}
-	} else {
-		array_task_id = NO_VAL;
-	}
-	*sep_ptr = tmp;
+	tmp = _parse_dependency_job_array(tok, &job_id, &array_task_id);
 	if (!tmp || (job_id == 0) || ((tmp[0] != '\0') && (tmp[0] != ','))) {
 		*rc = ESLURM_DEPENDENCY;
 		return;
@@ -3799,6 +3801,7 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 	} else
 		dep_ptr->job_id = job_id;
 	dep_ptr->job_ptr = dep_job_ptr; /* Can be NULL */
+	*sep_ptr = tmp;
 	_add_dependency_to_list(new_depend_list, dep_ptr);
 }
 
