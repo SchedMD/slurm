@@ -55,7 +55,8 @@ extern bool load_env(char *line, char **key, char **value)
 
 	/* read characters until next whitespace or = */
 	key_end = key_start;
-	while (line[key_end] && isalnum((int) line[key_end])) {
+	while (line[key_end] &&
+	       (isalnum((int) line[key_end]) || line[key_end] == '_')) {
 		if (!line[key_end + 1])
 			return false;
 		if (line[key_end] == '=')
