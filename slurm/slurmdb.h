@@ -412,8 +412,6 @@ typedef enum {
 	SLURMDB_ACCT_FLAG_BASE = 0x0000ffff,
 
 	SLURMDB_ACCT_FLAG_USER_COORD = SLURM_BIT(16),
-
-	SLURMDB_ACCT_FLAG_INVALID
 } slurmdb_acct_flags_t;
 
 typedef struct {
