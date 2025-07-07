@@ -482,6 +482,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Requested topology configuration is not available" },
 	{ ERRTAB_ENTRY(ESLURM_PREEMPTION_REQUIRED),
 	  "Preemption is required but is disabled on this system" },
+	{ ERRTAB_ENTRY(ESLURM_INVALID_NODE_STATE_TRANSITION),
+	  "Invalid node state transition"			},
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),

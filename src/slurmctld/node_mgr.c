@@ -1815,7 +1815,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				     node_state_string(base_state),
 				     node_state_string(state_val));
 				state_val = NO_VAL;
-				error_code = ESLURM_INVALID_NODE_STATE;
+				error_code =
+					ESLURM_INVALID_NODE_STATE_TRANSITION;
 			}
 			base_state &= NODE_STATE_BASE;
 		}

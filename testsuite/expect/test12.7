@@ -47,7 +47,7 @@ proc mod_state { state reason } {
 	global scontrol node
 
 	set output [run_command_output "$scontrol update nodename=$node state=$state reason=$reason"]
-	set bad_state [regexp "Invalid node state specified" $output]
+	set bad_state [regexp "Invalid node state" $output]
 
 	if {$bad_state == 1 && $state eq "resume" && [get_config_param "ReturnToService"] == 2} {
 		log_warn "This error is expected, no worries"
