@@ -1892,41 +1892,41 @@ static const struct {
 };
 #undef T
 
-static slurmdb_assoc_flags_t _str_2_assoc_flag(char *flag_in)
+static int _str_2_assoc_flag(const char *flag_in,
+			     slurmdb_assoc_flags_t *flags_ptr)
 {
 	if (!flag_in || !flag_in[0])
-		return ASSOC_FLAG_NONE;
+		return SLURM_SUCCESS;
 
-	for (int i = 0; i < ARRAY_SIZE(slurmdb_assoc_flags_map); i++)
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_assoc_flags_map); i++) {
 		if (!xstrncasecmp(flag_in, slurmdb_assoc_flags_map[i].str,
-				  strlen(flag_in)))
+				  strlen(flag_in))) {
+			*flags_ptr |= slurmdb_assoc_flags_map[i].flag;
 			return slurmdb_assoc_flags_map[i].flag;
+		}
+	}
 
 	debug("%s: Unable to match %s to a slurmdbd_assoc_flags_t flag",
 	      __func__, flag_in);
-	return ASSOC_FLAG_INVALID;
+	return EINVAL;
 }
 
-extern slurmdb_assoc_flags_t str_2_slurmdb_assoc_flags(char *flags_in)
+extern int str_2_slurmdb_assoc_flags(const char *str,
+				     slurmdb_assoc_flags_t *flags_ptr)
 {
-	slurmdb_assoc_flags_t assoc_flags = 0;
 	char *token, *my_flags, *last = NULL;
+	int rc = SLURM_SUCCESS;
 
-	my_flags = xstrdup(flags_in);
+	/* Always reset flags */
+	*flags_ptr = ASSOC_FLAG_NONE;
+
+	my_flags = xstrdup(str);
 	token = strtok_r(my_flags, ",", &last);
-	while (token) {
-		slurmdb_assoc_flags_t f = _str_2_assoc_flag(token);
-
-		if (f == ASSOC_FLAG_INVALID) {
-			assoc_flags = ASSOC_FLAG_INVALID;
-			break;
-		}
-		assoc_flags |= f;
+	while (token && !(rc = _str_2_assoc_flag(token, flags_ptr)))
 		token = strtok_r(NULL, ",", &last);
-	}
-	xfree(my_flags);
 
-	return assoc_flags;
+	xfree(my_flags);
+	return rc;
 }
 
 extern char *slurmdb_assoc_flags_2_str(slurmdb_assoc_flags_t flags)
