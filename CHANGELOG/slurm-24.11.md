@@ -1,3 +1,34 @@
+## Changes in 24.11.6
+
+* Fix race condition on x11 shutdown which caused other privileged cleanup operations to fail and leave stray cgroup or spool directories and errors in the logs.
+* slurmctld - Prevent sending repeat job start messages to the slurmdbd that can cause the loss of the reservation a job used in the database when upgrading from <24.11.
+* Prevent deadlock when loading reservations from state file.
+* slurmctld - Avoid race condition during shutdown when rpc_queue is enabled that could result in a SEGFAULT while processing job completions.
+* slurmctld - Fix CONMGR_WAIT_WRITE_DELAY, CONMGR_READ_TIMEOUT, CONMGR_WRITE_TIMEOUT, and CONMGR_CONNECT_TIMEOUT being ignored in SlurmctldParameters in slurm.conf.
+* slurmctld - Fix race condition in the ping logic that could result in the incorrect DOWNING of healthy/responding nodes.
+* Fix a minor and rare memory leak in slurmscriptd.
+* Fix a race condition that can cause slurmctld to hang forever when trying to shutdown or reconfigure.
+* Prevent slurmctld from crashing due to avoiding a deadlock in the assoc_mgr. The crash was triggered if slurmctld was started before slurmdbd, a partition had either AllowQOS or DenyQOS defined, and something triggered a message to the slurmdbd (like a job running).
+* slurmctld - Fix regression where configured timeouts would not be enforced for new incoming RPC connections until after the incoming RPC packet has been read.
+* slurmctld - Avoid timeouts not getting enforced due to race condition of when connections are examined for timeouts.
+* slurmctld/slurmd/sackd/slurmrestd/slurmdbd/scrun: Modified internal monitoring of I/O activity to always wake up with a maximum sleep of 300s seconds to check for changes and to restart polling of file descriptors. This will avoid daemons from getting effectively stuck forever (or until a POSIX signal) while idle if another bug is triggered which could cause an I/O event to be missed by the internal monitoring.
+* Fix sacctmgr ping to be able to connect to newer versioned slurmdbd.
+* Prevent slurmctld from allocating to many MPI ports to jobs using the stepmgr.
+* sacct - fix assert failure when running dataparser v0.0.42.
+* Fixed issue where slurmctld could segfault in specific cases of heavy controller load and job requeues.
+* Delay closing sockets in eio code which fixes issues in X11 forwarding when using applications such as Emacs or Matlab.
+* slurmctld: Avoid crash causing by race condition when job state cache is enabled with a large number of jobs.
+* Fix storing dynanmic future node's instance id and type on registration.
+* slurmd - Fixed a few minor memory leaks
+* Prevent slurmd -C from potentially crashing.
+* Fix incorrect extern step termination when using sbatch or salloc --signal option.
+* Fix slurmctld crash when updating a partition's QOS with an invalid QOS and not having AccountingStorageEnforce=QOS.
+* slurmrestd - Remove need to set both become_user and disable_user_check in SLURMRESTD_SECURITY when running slurmrestd as root in  become_user mode.
+* slurmrestd - Prevent potential crash when using the 'POST /slurmdb/*/accounts_association' endpoints.
+* Fix race condition during extern step termination when external pids were being added to or removed from the step. This could cause a segfault in the extern slurmstepd.
+* Fix allowing job submission to empty partitions when EnforcePartLimits=NO.
+* Fix potential incorrect group listing when using nss_slurm and requesting info for a single group.
+
 ## Changes in Slurm 24.11.5
 
 * Return error to scontrol reboot on bad nodelists.
