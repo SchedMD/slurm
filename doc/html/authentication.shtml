@@ -117,6 +117,15 @@ AuthType = auth/slurm
 </ul>
 </li>
 
+<li>If not using systemd, create the runtime directories. (Systemd takes care of
+this automatically if you're starting the daemons using the provided service
+files).
+<pre>
+mkdir /run/slurmctld /run/slurmdbd
+chown slurm:slurm /run/slurmctld /run/slurmdbd
+</pre>
+</li>
+
 <li>Start the daemons back up with the appropriate method for your cluster.</li>
 </ol>
 
@@ -214,6 +223,6 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 23 April 2025</p>
+<p style="text-align:center;">Last modified 30 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
