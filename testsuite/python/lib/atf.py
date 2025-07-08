@@ -4328,7 +4328,12 @@ def run_check_test(source_file, build_args=""):
 
 
 def compile_against_libslurm(
-    source_file, dest_file, build_args="", full=False, shared=False
+    source_file,
+    dest_file,
+    build_args="",
+    full=False,
+    shared=False,
+    **run_command_kwargs,
 ):
     """Compiles a test program against either libslurm.so or libslurmfull.so.
 
@@ -4342,6 +4347,8 @@ def compile_against_libslurm(
         full (boolean): Use libslurmfull.so instead of libslurm.so.
         shared (boolean): Produces a shared library (adds the -shared compiler option
             and adds a .so suffix to the output file name).
+        **run_command_kwargs: Auxiliary arguments to be passed to the
+            run_command function (e.g., quiet, fatal, timeout, etc.).
 
     Returns:
         None
@@ -4372,7 +4379,7 @@ def compile_against_libslurm(
     command += f" -I{properties['slurm-source-dir']} -I{properties['slurm-build-dir']} -I{properties['slurm-prefix']}/include -Wl,-rpath={lib_path} -L{lib_path} -l{slurm_library} -lresolv"
     if build_args != "":
         command += f" {build_args}"
-    run_command(command, fatal=True)
+    run_command(command, **run_command_kwargs)
 
 
 def get_partitions(**run_command_kwargs):
