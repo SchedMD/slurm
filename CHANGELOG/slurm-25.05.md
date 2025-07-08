@@ -1,3 +1,66 @@
+## Changes in 25.05.1
+
+* slurmd - Fixed a few minor memory leaks
+* sackd - Fix successive fetch and reconfiguration in configless mode used via DNS SRV records.
+* slurmstepd - Correct memory leak for --container steps before executing job.
+* slurmrestd - Set "deprecated: true" property for all "v0.0.40" versioned endpoints.
+* Prevent slurmd -C from potentially crashing.
+* slurmdbd - Fix memory leak resulting from adding accounts.
+* slurmdbd - Prevent account associations from being incorrectly marked as default.
+* slurmrestd - Correct crash when empty request submitted to 'POST slurm/*/job/submit' endpoints.
+* Fix slurmctld crash when updating a partition's QOS with an invalid QOS and not having AccountingStorageEnforce=QOS.
+* slurmrestd - Remove need to set both become_user and disable_user_check in SLURMRESTD_SECURITY when running slurmrestd as root in  become_user mode.
+* Fix a race that could incorrectly drain nodes due to "Kill task failed"
+* slurmrestd - Prevent potential crash when using the 'POST /slurmdb/*/accounts_association' endpoints.
+* squeue - Add support for multi-reservation filtering when --reservation specified.
+* Fix jobs requesting --ntasks-per-gpu and --cpus-per-task staying in pending state forever.
+* Fix interactive step being rejected by incorrect validation of SLURM_TRES_PER_TASK and NTASKS_PER_GPUS environment variables.
+* slurmctld - Prevent crash on start up if SelectType is invalid.
+* Fix memory leak in slurmctld agent when TLS is enabled
+* Fix memory leak when DebugFlags=TLS is configured
+* slurmctld - Prevent segfault when freeing job arrays that request one partition and a QOS list.
+* tls/s2n - Fix various malformed s2n-tls error messages
+* tls/s2n - Disable generating error backtrace unless configured in developer mode.
+* preempt/partition_prio - Prevent partition PreemptMode defaulting to PRIORITY which caused jobs on higher priority tier partitions to not preempt jobs on lower priority tier partitions.
+* Fix "undefined symbol" errors when using libslurm built with the tls/s2n plugin. This affected anything using libslurm, including seff.
+* tls/s2n - Fix leaked file descriptors after failed connection creation.
+* Fix race condition during extern step termination when external pids were being added to or removed from the step. This could cause a segfault in the extern slurmstepd.
+* Avoid potentially waiting forever while attempting to establish new TLS connection due to race condition during TLS negotiation.
+* Avoid delayed response during TLS negotiation due to socket being closed by remote side while expecting more incoming data.
+* tls/s2n - Fix segfault when running scontrol shutdown
+* Avoid incorrect error logging during CPU frequency cpuset validation when no CPU binding is enforced.
+* Remove undocumented gen_self_signed_cert/gen_private_key scripts from certmgr. This functionality is covered by the certgen plugin interface, and these scripts were already unused.
+* sched/backfill - Prevent running jobs from delaying the start of pending jobs planned for nodes not used by the running jobs.
+* Make the --test-only job option completely ignore hierarchical resources used by running jobs instead of partially ignoring them.
+* When specifying TaskPluginParam=SlurmdSpecOverride, the slurmd will register with the CpuSpecList and MemSpecLimit, not MemSpecList as was stated in the 25.05.0 changelog.
+* slurmrestd - Fix support for https when slurm.conf has TLSType=None or lacks TLSType entirely.
+* topology/tree - Insure the number of nodes selected when scheduling a job does not exceed the job's maximum nodes limit.
+* Fix allowing job submission to empty partitions when EnforcePartLimits=NO.
+* accounting_storage/mysql - Speed up account deletion by optimizing underlying sql query.
+* Fix slurmstepd unintentionally killing itself if proctrack/cgroup and cgroup/v2 configured while deferring killing tasks due to any still core dumping.
+* When a coordinator is altering association's parents make sure they are a coordinator over both the current and new parent account.
+* Remove the ability to allow moving a child to be a parent in the same association tree.
+* Correctly set lineage on all affected associations when reordering the association hierarchy.
+* Lower rpm libyaml version requirement to version in RHEL 8
+* Fix infinite loop in sacctmgr when prompting with invalid stdin, such as when run from cron or with input redirected from /dev/null.
+* Fix regression introduced in 24.05 for srun --bcast=<path> when libraries are also sent and <path> ends with a '/' (slash).
+* certmgr - Change several messages from "TLS" debug flag to the "AUDIT_TLS" debug flag. This includes logging for CSR generation and token validation.
+* tls/s2n - Suppress benign error messages for messages sent by slurmctld to srun clients that may have already exited.
+* certmgr - Retrieve signed certificate on slurmd/sackd before processing any RPCs.
+* Add SALLOC_SEGMENT_SIZE input variable for salloc.
+* Add SBATCH_SEGMENT_SIZE input variable for sbatch.
+* Add SRUN_SEGMENT_SIZE input variable for srun.
+* Fix slurmdbd crash when preparing to return a list of jobs that include ones that have been suspended.
+* Prevent slurmd crash at startup when tmpfs job containers configured but no job_container.conf file exists.
+* slurmctld - Fix a regression that allowed the same gres to be allocated to multiple jobs.
+* slurmctld - Prevent fatalling with "Resource deadlock avoided" when array jobs start being able to accrue age priority.
+* Fix rpmbuild when specifying a custom prefix.
+* Fix potential incorrect group listing when using nss_slurm and requesting info for a single group.
+* Fix orphaning pending federated jobs when using scancel --clusters/-M to a non-origin cluster.
+* Fix QOS Relative flag printing as Relative and Deleted flags.
+* certmgr - slurmd will now save signed certificates and corresponding private keys in the spooldir, and reload them on startup.
+* Allow '_' in scrontab environment variables.
+
 ## Changes in 25.05.0
 
 * Prevent slurmctld from allocating to many MPI ports to jobs using the stepmgr.
