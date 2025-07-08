@@ -1,5 +1,5 @@
 Name:		slurm
-Version:	24.11.5
+Version:	24.11.6
 %define rel	1
 %if %{defined patch} && %{undefined extraver}
 %define extraver .patched
