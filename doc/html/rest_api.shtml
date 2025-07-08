@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-24.11.5&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
+    <div class="app-desc">Version: Slurm-24.11.6&amp;openapi/slurmdbd&amp;openapi/slurmctld</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -116,7 +116,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_kill_job_resp">v0.0.42_openapi_kill_job_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -197,16 +197,12 @@
     "step_id" : "step_id"
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -230,7 +226,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -247,7 +242,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_kill_jobs_resp">v0.0.42_openapi_kill_jobs_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -328,16 +323,12 @@
     "step_id" : "step_id"
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -371,7 +362,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -421,16 +412,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -458,7 +445,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_diag_resp">v0.0.42_openapi_diag_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -658,16 +645,12 @@
     "schedule_cycle_last" : 3
   }
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -709,7 +692,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_job_info_resp">v0.0.42_openapi_job_info_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -1598,16 +1581,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -1643,7 +1622,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_job_info_resp">v0.0.42_openapi_job_info_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -2532,16 +2511,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -2575,7 +2550,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_job_info_resp">v0.0.42_openapi_job_info_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -3464,16 +3439,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -3501,7 +3472,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_licenses_resp">v0.0.42_openapi_licenses_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -3577,16 +3548,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -3628,7 +3595,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_nodes_resp">v0.0.42_openapi_nodes_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -3870,16 +3837,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -3915,7 +3878,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_nodes_resp">v0.0.42_openapi_nodes_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -4157,16 +4120,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -4208,7 +4167,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_partition_resp">v0.0.42_openapi_partition_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -4506,16 +4465,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -4551,7 +4506,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_partition_resp">v0.0.42_openapi_partition_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -4849,16 +4804,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -4886,7 +4837,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_ping_array_resp">v0.0.42_openapi_ping_array_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -4951,16 +4902,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -4988,7 +4935,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5038,16 +4985,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -5087,7 +5030,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_reservation_resp">v0.0.42_openapi_reservation_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5231,16 +5174,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -5274,7 +5213,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_reservation_resp">v0.0.42_openapi_reservation_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5418,16 +5357,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -5463,7 +5398,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_shares_resp">v0.0.42_openapi_shares_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5675,16 +5610,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -5714,7 +5645,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -5731,7 +5661,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_job_post_response">v0.0.42_openapi_job_post_response</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5794,16 +5724,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -5827,7 +5753,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -5844,7 +5769,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_job_alloc_resp">v0.0.42_openapi_job_alloc_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5896,16 +5821,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -5929,7 +5850,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -5946,7 +5866,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_job_submit_response">v0.0.42_openapi_job_submit_response</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -5999,16 +5919,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6038,7 +5954,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -6055,7 +5970,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6105,16 +6020,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6138,7 +6049,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -6155,7 +6065,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6205,16 +6115,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6249,7 +6155,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_accounts_removed_resp">v0.0.42_openapi_accounts_removed_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6300,16 +6206,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6377,7 +6279,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_assocs_removed_resp">v0.0.42_openapi_assocs_removed_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6428,16 +6330,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6505,7 +6403,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_assocs_removed_resp">v0.0.42_openapi_assocs_removed_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6556,16 +6454,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6623,7 +6517,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_clusters_removed_resp">v0.0.42_openapi_clusters_removed_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6674,16 +6568,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6717,7 +6607,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_qos_removed_resp">v0.0.42_openapi_slurmdbd_qos_removed_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6768,16 +6658,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6811,7 +6697,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6861,16 +6747,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -6904,7 +6786,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_wckey_removed_resp">v0.0.42_openapi_wckey_removed_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -6955,16 +6837,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -7008,7 +6886,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_accounts_resp">v0.0.42_openapi_accounts_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -7109,16 +6987,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -7162,7 +7036,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_accounts_resp">v0.0.42_openapi_accounts_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -7263,16 +7137,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -7340,7 +7210,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_assocs_resp">v0.0.42_openapi_assocs_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -7775,16 +7645,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -7852,7 +7718,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_assocs_resp">v0.0.42_openapi_assocs_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -8287,16 +8153,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -8354,7 +8216,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_clusters_resp">v0.0.42_openapi_clusters_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -8465,16 +8327,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -8508,7 +8366,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_clusters_resp">v0.0.42_openapi_clusters_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -8619,16 +8477,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -8656,7 +8510,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_config_resp">v0.0.42_openapi_slurmdbd_config_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -10000,16 +9854,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -10037,7 +9887,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_stats_resp">v0.0.42_openapi_slurmdbd_stats_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -10149,16 +9999,12 @@
     } ]
   }
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -10206,7 +10052,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_instances_resp">v0.0.42_openapi_instances_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -10277,16 +10123,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -10334,7 +10176,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_instances_resp">v0.0.42_openapi_instances_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -10405,16 +10247,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -10448,7 +10286,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_jobs_resp">v0.0.42_openapi_slurmdbd_jobs_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -11647,16 +11485,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -11756,7 +11590,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_jobs_resp">v0.0.42_openapi_slurmdbd_jobs_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -12955,16 +12789,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -12992,7 +12822,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_ping_resp">v0.0.42_openapi_slurmdbd_ping_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -13053,16 +12883,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -13106,7 +12932,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_qos_resp">v0.0.42_openapi_slurmdbd_qos_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -13661,16 +13487,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -13710,7 +13532,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_slurmdbd_qos_resp">v0.0.42_openapi_slurmdbd_qos_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -14265,16 +14087,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -14302,7 +14120,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_tres_resp">v0.0.42_openapi_tres_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -14363,16 +14181,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -14418,7 +14232,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_users_resp">v0.0.42_openapi_users_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -14661,16 +14475,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -14718,7 +14528,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_users_resp">v0.0.42_openapi_users_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -14961,16 +14771,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15004,7 +14810,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_wckey_resp">v0.0.42_openapi_wckey_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15121,16 +14927,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15182,7 +14984,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_wckey_resp">v0.0.42_openapi_wckey_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15299,16 +15101,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15332,7 +15130,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15349,7 +15146,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15399,16 +15196,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15432,7 +15225,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15449,7 +15241,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_accounts_add_cond_resp_str">v0.0.42_openapi_accounts_add_cond_resp_str</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15500,16 +15292,12 @@
   } ],
   "added_accounts" : "added_accounts"
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15533,7 +15321,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15550,7 +15337,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15600,16 +15387,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15633,7 +15416,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15656,7 +15438,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15706,16 +15488,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15739,7 +15517,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15756,7 +15533,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15806,16 +15583,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15839,7 +15612,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15872,7 +15644,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -15922,16 +15694,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -15955,7 +15723,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -15972,7 +15739,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -16022,16 +15789,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -16055,7 +15818,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -16072,7 +15834,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -16122,16 +15884,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -16155,7 +15913,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -16180,7 +15937,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_users_add_cond_resp_str">v0.0.42_openapi_users_add_cond_resp_str</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -16231,16 +15988,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -16264,7 +16017,6 @@
     This API call consumes the following media types via the <span class="header">Content-Type</span> request header:
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Request body</h3>
@@ -16305,7 +16057,7 @@
     <h3 class="field-label">Return type</h3>
     <div class="return-type">
       <a href="#v0.0.42_openapi_resp">v0.0.42_openapi_resp</a>
-      
+
     </div>
 
     <!--Todo: process Response Object and its headers, schema, examples -->
@@ -16355,16 +16107,12 @@
     "error_number" : 0
   } ]
 }</code></pre>
-    <h3 class="field-label">Example data</h3>
-    <div class="example-data-content-type">Content-Type: application/yaml</div>
-    <pre class="example"><code>Custom MIME type example not yet supported: application/yaml</code></pre>
 
     <h3 class="field-label">Produces</h3>
     This API call produces the following media types according to the <span class="header">Accept</span> request header;
     the media type will be conveyed by the <span class="header">Content-Type</span> response header.
     <ul>
       <li><code>application/json</code></li>
-      <li><code>application/yaml</code></li>
     </ul>
 
     <h3 class="field-label">Responses</h3>
@@ -16593,7 +16341,7 @@
 <div class="param">organization </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Organization to which the account belongs </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -16647,7 +16395,7 @@
 <div class="param">default (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_assoc_default">v0_0_42_assoc_default</a></span>  </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">max (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_assoc_max">v0_0_42_assoc_max</a></span>  </div>
 <div class="param">id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Unique ID format: int32</div>
 <div class="param">is_default (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Is default association for user </div>
@@ -16707,7 +16455,7 @@
 <div class="param">fairshare (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_assoc_shares_obj_wrap_fairshare">v0_0_42_assoc_shares_obj_wrap_fairshare</a></span>  </div>
 <div class="param">type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -16740,7 +16488,7 @@
       <div class="param">controller (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_cluster_rec_controller">v0_0_42_cluster_rec_controller</a></span>  </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> ClusterName </div>
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Node names </div>
 <div class="param">select_plugin (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span>  </div>
@@ -16775,7 +16523,7 @@
     <div class="field-items">
       <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">minute (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Ranged string specifying eligible minute values (e.g. 0-10,50) </div>
 <div class="param">hour (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Ranged string specifying eligible hour values (e.g. 0-5,23) </div>
 <div class="param">day_of_month (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Ranged string specifying eligible day of month values (e.g. 0-10,29) </div>
@@ -16827,7 +16575,7 @@
 <div class="param">failed_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of node that caused job failure </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">group (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Group ID of the user that owns the job </div>
 <div class="param">het (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_job_het">v0_0_42_job_het</a></span>  </div>
 <div class="param">job_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Job ID format: int32</div>
@@ -16895,7 +16643,7 @@
 <div class="param">begin_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint64_no_val_struct">v0.0.42_uint64_no_val_struct</a></span>  </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">burst_buffer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Burst buffer specifications </div>
 <div class="param">clusters (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Clusters that a federated job can run on </div>
 <div class="param">cluster_constraint (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Required features that a federated cluster must have to have a sibling job submitted to it </div>
@@ -16908,7 +16656,7 @@
 <div class="param">cpu_binding (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Method for binding tasks to allocated CPUs </div>
 <div class="param">cpu_binding_flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">cpu_frequency (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Requested CPU frequency range <p1>[-p2][:p3] </p1></div>
 <div class="param">cpus_per_tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Semicolon delimited list of TRES=# values values indicating how many CPUs should be allocated for each specified TRES (currently only used for gres/gpu) </div>
 <div class="param">crontab (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_cron_entry">v0.0.42_cron_entry</a></span>  </div>
@@ -16929,13 +16677,13 @@
 <div class="param">licenses (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> License(s) required by the job </div>
 <div class="param">mail_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">mail_user (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User to receive email notifications </div>
 <div class="param">mcs_label (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Multi-Category Security label on the job </div>
 <div class="param">memory_binding (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Binding map for map/mask_cpu </div>
 <div class="param">memory_binding_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">memory_per_tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Semicolon delimited list of TRES=# values indicating how much memory in megabytes should be allocated for each specified TRES (currently only used for gres/gpu) </div>
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Job name </div>
 <div class="param">network (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Network specs for job step </div>
@@ -16944,7 +16692,7 @@
 <div class="param">oom_kill_step (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Kill whole step in case of OOM in one of the tasks format: int32</div>
 <div class="param">open_mode (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">reserve_ports (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Port to send various notification msg to format: int32</div>
 <div class="param">overcommit (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Overcommit resources </div>
 <div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Partition assigned to the job </div>
@@ -16955,7 +16703,7 @@
 <div class="param">priority (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint32_no_val_struct">v0.0.42_uint32_no_val_struct</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Quality of Service assigned to the job </div>
 <div class="param">reboot (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Node reboot requested before start </div>
 <div class="param">required_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
@@ -16964,7 +16712,7 @@
 <div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Job batch script; only the first component in a HetJob is populated or honored </div>
 <div class="param">shared (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">site_factor (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Site-specific priority factor format: int32</div>
 <div class="param">spank_environment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">distribution (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Layout </div>
@@ -16980,7 +16728,7 @@
 <div class="param">wait_all_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> If true, wait to start until after all nodes have booted </div>
 <div class="param">kill_warning_flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">kill_warning_signal (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Signal to send when approaching end time (e.g. "10" or "USR1") </div>
 <div class="param">kill_warning_delay (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint16_no_val_struct">v0.0.42_uint16_no_val_struct</a></span>  </div>
 <div class="param">current_working_directory (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Working directory to use for the job </div>
@@ -17013,7 +16761,7 @@
 <div class="param">wckey (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Workload characterization key </div>
 <div class="param">x11 (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">x11_magic_cookie (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Magic cookie for X11 forwarding </div>
 <div class="param">x11_target_host (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Hostname or UNIX socket if x11_target_port=0 </div>
 <div class="param">x11_target_port (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> TCP port format: int32</div>
@@ -17037,7 +16785,7 @@
 <div class="param">batch_host (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of host running batch script </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">burst_buffer (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Burst buffer specifications </div>
 <div class="param">burst_buffer_state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Burst buffer state details </div>
 <div class="param">cluster (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Cluster name </div>
@@ -17082,12 +16830,12 @@
 <div class="param">job_size_str (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">job_state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">last_sched_evaluation (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint64_no_val_struct">v0.0.42_uint64_no_val_struct</a></span>  </div>
 <div class="param">licenses (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> License(s) required by the job </div>
 <div class="param">mail_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">mail_user (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User to receive email notifications </div>
 <div class="param">max_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint32_no_val_struct">v0.0.42_uint32_no_val_struct</a></span>  </div>
 <div class="param">max_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint32_no_val_struct">v0.0.42_uint32_no_val_struct</a></span>  </div>
@@ -17120,7 +16868,7 @@
 <div class="param">priority_by_partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_part_prio">array[v0.0.42_part_prio]</a></span>  </div>
 <div class="param">profile (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">qos (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Quality of Service assigned to the job, if pending the QOS requested </div>
 <div class="param">reboot (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Node reboot requested before start </div>
 <div class="param">required_nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Comma separated list of required nodes </div>
@@ -17133,7 +16881,7 @@
 <div class="param">selinux_context (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> SELinux context </div>
 <div class="param">shared (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">sockets_per_board (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of sockets per board required format: int32</div>
 <div class="param">sockets_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint16_no_val_struct">v0.0.42_uint16_no_val_struct</a></span>  </div>
 <div class="param">start_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint64_no_val_struct">v0.0.42_uint64_no_val_struct</a></span>  </div>
@@ -17169,7 +16917,7 @@
     <div class="field-items">
       <div class="param">select_type </div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">nodes (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_job_res_nodes">v0_0_42_job_res_nodes</a></span>  </div>
 <div class="param">cpus </div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of allocated CPUs format: int32</div>
 <div class="param">threads_per_core </div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint16_no_val_struct">v0.0.42_uint16_no_val_struct</a></span>  </div>
@@ -17182,7 +16930,7 @@
       <div class="param">index </div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Core index format: int32</div>
 <div class="param">status </div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -17220,7 +16968,7 @@
       <div class="param">account (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific account </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">job_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific name </div>
 <div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">partition (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific partition </div>
@@ -17229,7 +16977,7 @@
 <div class="param">signal (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Signal to send to jobs </div>
 <div class="param">job_state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">user_id (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific numeric user id </div>
 <div class="param">user_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific user name </div>
 <div class="param">wckey (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Filter jobs to a specific wckey </div>
@@ -17296,12 +17044,12 @@
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> NodeName </div>
 <div class="param">next_state_after_reboot (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">address (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> NodeAddr, used to establish a communication path </div>
 <div class="param">hostname (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> NodeHostname </div>
 <div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">operating_system (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Operating system reported by the node </div>
 <div class="param">owner (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User allowed to run jobs on this node (unset if no restriction) </div>
 <div class="param">partitions (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
@@ -17744,7 +17492,7 @@
 <div class="param">cluster (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Cluster name </div>
 <div class="param">select_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_partition_info_cpus">v0_0_42_partition_info_cpus</a></span>  </div>
 <div class="param">defaults (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_partition_info_defaults">v0_0_42_partition_info_defaults</a></span>  </div>
 <div class="param">grace_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> GraceTime format: int32</div>
@@ -17764,7 +17512,7 @@
     <div class="field-items">
       <div class="param">status (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">return_code (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint32_no_val_struct">v0.0.42_uint32_no_val_struct</a></span>  </div>
 <div class="param">signal (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_process_exit_code_verbose_signal">v0_0_42_process_exit_code_verbose_signal</a></span>  </div>
     </div>  <!-- field-items -->
@@ -17776,7 +17524,7 @@
       <div class="param">description (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Arbitrary description </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">id (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Unique ID format: int32</div>
 <div class="param">limits (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_qos_limits">v0_0_42_qos_limits</a></span>  </div>
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name </div>
@@ -17806,7 +17554,7 @@
 <div class="param">features (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Features </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">groups (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Groups </div>
 <div class="param">licenses (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Licenses </div>
 <div class="param">max_start_delay (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> MaxStartDelay in seconds format: int32</div>
@@ -18021,7 +17769,7 @@
 <div class="param">kill_request_user (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User ID that requested termination of the step </div>
 <div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">statistics (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_step_statistics">v0_0_42_step_statistics</a></span>  </div>
 <div class="param">step (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_step_step">v0_0_42_step_step</a></span>  </div>
 <div class="param">task (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_step_task">v0_0_42_step_task</a></span>  </div>
@@ -18080,7 +17828,7 @@
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">reason (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Reason for node being DOWN or DRAINING </div>
 <div class="param">reason_uid (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User ID to associate with the reason (needed if user root is sending message) </div>
 <div class="param">resume_after (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint32_no_val_struct">v0.0.42_uint32_no_val_struct</a></span>  </div>
@@ -18093,13 +17841,13 @@
     <div class="field-items">
       <div class="param">administrator_level (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">associations (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_assoc_short">array[v0.0.42_assoc_short]</a></span>  </div>
 <div class="param">coordinators (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_coord">array[v0.0.42_coord]</a></span>  </div>
 <div class="param">default (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0_0_42_user_default">v0_0_42_user_default</a></span>  </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">name </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User name </div>
 <div class="param">old_name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Previous user name </div>
 <div class="param">wckeys (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_wckey">array[v0.0.42_wckey]</a></span>  </div>
@@ -18111,7 +17859,7 @@
     <div class="field-items">
       <div class="param">adminlevel (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">defaultaccount (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Default account </div>
 <div class="param">defaultwckey (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Default WCKey </div>
     </div>  <!-- field-items -->
@@ -18139,7 +17887,7 @@
 <div class="param">user </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User name </div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18149,7 +17897,7 @@
       <div class="param">wckey </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> WCKey name </div>
 <div class="param">flags </div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18408,7 +18156,7 @@
       <div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of allocated nodes format: int32</div>
 <div class="param">select_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">list (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Node(s) allocated to the job </div>
 <div class="param">whole (optional)</div><div class="param-desc"><span class="param-type"><a href="#boolean">Boolean</a></span> Whether whole nodes were allocated </div>
 <div class="param">allocation (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_job_res_node">array[v0.0.42_job_res_node]</a></span> Job resources for a node </div>
@@ -18428,7 +18176,7 @@
     <div class="field-items">
       <div class="param">current (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">reason (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Reason for previous Pending or Failed state </div>
     </div>  <!-- field-items -->
   </div>
@@ -18591,7 +18339,7 @@
       <div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Maximum number of jobs allowed to oversubscribe resources format: int32</div>
 <div class="param">flags (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18616,7 +18364,7 @@
     <div class="field-items">
       <div class="param">state (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
     </div>  <!-- field-items -->
   </div>
   <div class="model">
@@ -18794,7 +18542,7 @@
       <div class="param">list (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">mode (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
         <div class="param-enum-header">Enum:</div>
-        
+
 <div class="param">exempt_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.42_uint32_no_val_struct">v0.0.42_uint32_no_val_struct</a></span>  </div>
     </div>  <!-- field-items -->
   </div>
@@ -19010,6 +18758,6 @@
 <div class="param">wckey (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Default WCKey </div>
     </div>  <!-- field-items -->
   </div>
-  
+
 
 </body> <!--#include virtual="footer.txt"-->
