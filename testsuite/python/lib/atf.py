@@ -4319,12 +4319,14 @@ def run_check_test(source_file, build_args=""):
         check_test,
         full=True,
         build_args=build_args + "-lcheck -lm -lsubunit",
+        fatal=True,
+        quiet=True,
     )
 
     result = run_command(check_test, quiet=True)
     logging.info(f"{result['stdout']}")
-
-    assert not result["exit_code"]
+    if result["exit_code"]:
+        pytest.fail(f"{result['stderr']}")
 
 
 def compile_against_libslurm(
