@@ -777,6 +777,10 @@ A summary of each python test is shown below.
 ############################################################################
 
 
+test_100_#   Special tests.
+===========================
+test_100_1   Run all libcheck tests
+
 test_101_#   Testing of sacct options.
 ======================================
 test_101_1   /commands/sacct/test_--help.py
