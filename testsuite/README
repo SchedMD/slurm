@@ -776,6 +776,11 @@ A summary of each python test is shown below.
 ############################################################################
 
 
+test_100_#   Special tests.
+===========================
+test_100_1   Run all libcheck tests
+test_100_2   Test live upgrades
+
 test_101_#   Testing of sacct options.
 ======================================
 test_101_1   /commands/sacct/test_--help.py
@@ -1050,14 +1055,6 @@ test_147_#   Testing SPANK.
 ===========================
 test_147_1   Test SPANK contained when SlurmdParameters=contain_spank
 
-test_148_#   Testing conmgr.
-============================
-test_148_1   Test conmgr
-
 test_149_#   Testing AcctGatherProfileType.
 ===========================================
 test_149_1   Test acct_gather_profile/influxdb
-
-test_200_#   Testing upgrades.
-==============================
-test_200_1   Test upgrade of a basic running cluster
