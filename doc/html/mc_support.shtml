@@ -338,17 +338,18 @@ as a consumable resource allocation strategy.</p>
 given that their added memory requirement do not exceed the total amount
 of memory on the nodes.</p>
 
+<p>In order to use memory as the only consumable resource, we need to use
+<i>select/linear</i> as the SelectType.</p>
 
-<p>In order to use memory as a consumable resource, the select/cons_tres
-plugin must be first enabled in slurm.conf:
 <PRE>
-SelectType=select/cons_tres     # enable consumable resources
+SelectType=select/linear
 SelectTypeParameters=CR_Memory  # memory as a consumable resource
 </PRE>
 
-<p> Using memory as a consumable resource is typically combined with
-the CPU, Socket, or Core consumable resources using SelectTypeParameters
-values of: CR_CPU_Memory, CR_Socket_Memory or CR_Core_Memory
+<p>With the <i>select/cons_tres</i> plugin, you can use memory as a consumable
+resource when combined with the CPU, Socket, or Core consumable resources, by
+using SelectTypeParameters values of: CR_CPU_Memory, CR_Socket_Memory or
+CR_Core_Memory.</p>
 
 <p>See the "Resource Selection" section if generating slurm.conf
 via <a href="configurator.html">configurator.html</a>.
@@ -935,6 +936,6 @@ NodeName=dualcore[01-16] CoresPerSocket=2 ThreadsPerCore=1
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 19 May 2023</p>
+<p style="text-align:center;">Last modified 09 July 2025</p>
 
 <!--#include virtual="footer.txt"-->

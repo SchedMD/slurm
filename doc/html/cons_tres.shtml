@@ -30,9 +30,7 @@ as well as any combination of the logical processors with Memory:</p>
   </ul>
   <li><b>Board</b> (<i>CR_Board</i>): Baseboard as a consumable resource.</li>
   <li><b>Socket</b> (<i>CR_Socket</i>): Socket as a consumable resource.</li>
-  <li/><b>Core</b> (<i>CR_Core</i>): Core as a consumable resource.</li>
-  <li><b>Memory</b> (<i>CR_Memory</i>) Memory <u>only</u> as a
-  consumable resource. <b>NOTE</b>: CR_Memory assumes OverSubscribe=Yes</li>
+  <li><b>Core</b> (<i>CR_Core</i>): Core as a consumable resource.</li>
   <li><b>Socket and Memory</b> (<i>CR_Socket_Memory</i>): Socket
   and Memory as consumable resources.</li>
   <li><b>Core and Memory</b> (<i>CR_Core_Memory</i>): Core and
@@ -42,8 +40,7 @@ as well as any combination of the logical processors with Memory:</p>
 </ul>
 
 <p>All CR_* parameters assume <b>OverSubscribe=No</b> or
-<b>OverSubscribe=Force</b> EXCEPT for <b>CR_MEMORY</b> which assumes
-<b>OverSubscribe=Yes</b>.</p>
+<b>OverSubscribe=Force</b>.</p>
 
 <p>The cons_tres plugin also provides functionality specifically
 related to GPUs.</p>
@@ -125,7 +122,7 @@ exclusive when used at job submission. If both options are set when submitting
 a job, the job submission command used will fatal.</p>
 
 
-<h2 id="example_mem">Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory
+<h2 id="example_mem">Examples of CR_Socket_Memory, and CR_CPU_Memory
 type consumable resources
 <a class="slurm_link" href="#example_mem"></a>
 </h2>
@@ -134,20 +131,6 @@ type consumable resources
 # sinfo -lNe
 NODELIST     NODES PARTITION  STATE  CPUS  S:C:T MEMORY
 hydra[12-16]     5 allNodes*  ...       4  2:2:1   2007
-</pre>
-
-<p>Using select/cons_tres plug-in with CR_Memory</p>
-<pre>
-Example:
-# srun -N 5 -n 20 --mem=1000 sleep 100 &  <-- running
-# srun -N 5 -n 20 --mem=10 sleep 100 &    <-- running
-# srun -N 5 -n 10 --mem=1000 sleep 100 &  <-- queued and waiting for resources
-
-# squeue
-JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
- 1820  allNodes  sleep sballe PD  0:00      5 (Resources)
- 1818  allNodes  sleep sballe  R  0:17      5 hydra[12-16]
- 1819  allNodes  sleep sballe  R  0:11      5 hydra[12-16]
 </pre>
 
 <p>Using select/cons_tres plug-in with CR_Socket_Memory (2 sockets/node)</p>
@@ -366,6 +349,6 @@ programs that will take advantage of all the CPUs on a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 18 May 2023</p>
+<p style="text-align:center;">Last modified 09 July 2025</p>
 
 <!--#include virtual="footer.txt"-->

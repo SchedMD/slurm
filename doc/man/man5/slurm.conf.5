@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4911,14 +4911,6 @@ Memory and sockets are consumable resources.
 On nodes with multiple cores, each core or thread is counted as a CPU
 to satisfy a job's resource requirement, but multiple jobs are not
 allocated resources on the same socket.
-Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
-.IP
-
-.TP
-\fBCR_Memory\fR
-Memory is a consumable resource.
-\fBNOTE\fR: This implies \fIOverSubscribe=YES\fR or \fIOverSubscribe=FORCE\fR
-for all partitions.
 Setting a value for \fBDefMemPerCPU\fR is strongly recommended.
 .IP
 
