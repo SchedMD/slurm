@@ -511,7 +511,7 @@ static void _load_multi(int *argc, char **argv)
 		      argv[0]);
 		exit(error_exit);
 	}
-	if (stat_buf.st_size > 60000) {
+	if (stat_buf.st_size > MAX_BATCH_SCRIPT_SIZE) {
 		error("Multi_prog config file %s is too large",
 		      argv[0]);
 		exit(error_exit);
