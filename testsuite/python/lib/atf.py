@@ -1033,6 +1033,20 @@ def require_slurm_running():
 
     if properties["auto-config"]:
         if not is_slurmctld_running(quiet=True):
+
+            # Check and report the mixed components
+            versions = dict()
+            versions["slurmdbd"] = get_version("sbin/slurmdbd")
+            versions["slurmctld"] = get_version("sbin/slurmctld")
+            versions["slurmd"] = get_version("sbin/slurmd")
+            versions["scontrol"] = get_version("bin/scontrol")
+            if len(set(versions.values())) == 1:
+                logging.info(
+                    f"Starting Slurm with all components in the same version: {versions['slurmctld']}"
+                )
+            else:
+                logging.info(f"Starting Slurm in a mixed version setup: {versions}")
+
             properties["slurm-started"] = True
             start_slurm(clean=True, quiet=True)
     else:
@@ -4318,16 +4332,23 @@ def run_check_test(source_file, build_args=""):
         check_test,
         full=True,
         build_args=build_args + "-lcheck -lm -lsubunit",
+        fatal=True,
+        quiet=True,
     )
 
     result = run_command(check_test, quiet=True)
     logging.info(f"{result['stdout']}")
-
-    assert not result["exit_code"]
+    if result["exit_code"]:
+        pytest.fail(f"{result['stderr']}")
 
 
 def compile_against_libslurm(
-    source_file, dest_file, build_args="", full=False, shared=False
+    source_file,
+    dest_file,
+    build_args="",
+    full=False,
+    shared=False,
+    **run_command_kwargs,
 ):
     """Compiles a test program against either libslurm.so or libslurmfull.so.
 
@@ -4341,6 +4362,8 @@ def compile_against_libslurm(
         full (boolean): Use libslurmfull.so instead of libslurm.so.
         shared (boolean): Produces a shared library (adds the -shared compiler option
             and adds a .so suffix to the output file name).
+        **run_command_kwargs: Auxiliary arguments to be passed to the
+            run_command function (e.g., quiet, fatal, timeout, etc.).
 
     Returns:
         None
@@ -4371,7 +4394,7 @@ def compile_against_libslurm(
     command += f" -I{properties['slurm-source-dir']} -I{properties['slurm-build-dir']} -I{properties['slurm-prefix']}/include -Wl,-rpath={lib_path} -L{lib_path} -l{slurm_library} -lresolv"
     if build_args != "":
         command += f" {build_args}"
-    run_command(command, fatal=True)
+    run_command(command, **run_command_kwargs)
 
 
 def get_partitions(**run_command_kwargs):
