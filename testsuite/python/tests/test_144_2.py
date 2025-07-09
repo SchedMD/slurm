@@ -24,6 +24,10 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11),
+    reason="Ticket 23100. Without !1331 (t22822 and t22862) we get 'Requested node configuration is not available'",
+)
 def test_gpu_socket_sharing():
     """Test allocating multiple gpus on the same core group with enforce-binding"""
 
@@ -50,15 +54,12 @@ def test_gpu_socket_sharing_no_alloc():
         fatal=False,
     )
     assert output["exit_code"] != 0, "Verify that srun command failed"
-    if atf.get_version() >= (24, 11):
-        expected_msg = r"srun: error: .+ Requested node configuration is not available"
-    else:
-        expected_msg = r"srun: job [0-9]+ queued and waiting for resources"
 
+    expected_msg = r"srun: error: .+ Requested node configuration is not available"
     assert (
         re.search(
             expected_msg,
             str(output["stderr"]),
         )
         is not None
-    ), "Verify that job is rejected."
+    ), "Verify that job is rejected with the right reason."
