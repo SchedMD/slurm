@@ -1033,6 +1033,20 @@ def require_slurm_running():
 
     if properties["auto-config"]:
         if not is_slurmctld_running(quiet=True):
+
+            # Check and report the mixed components
+            versions = dict()
+            versions["slurmdbd"] = get_version("sbin/slurmdbd")
+            versions["slurmctld"] = get_version("sbin/slurmctld")
+            versions["slurmd"] = get_version("sbin/slurmd")
+            versions["scontrol"] = get_version("bin/scontrol")
+            if len(set(versions.values())) == 1:
+                logging.info(
+                    f"Starting Slurm with all components in the same version: {versions['slurmctld']}"
+                )
+            else:
+                logging.info(f"Starting Slurm in a mixed version setup: {versions}")
+
             properties["slurm-started"] = True
             start_slurm(clean=True, quiet=True)
     else:
