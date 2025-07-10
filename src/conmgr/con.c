@@ -1284,6 +1284,14 @@ extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 	return con->name;
 }
 
+extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref)
+{
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	return conmgr_fd_get_name(ref->con);
+}
+
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
 	conmgr_fd_status_t status = {

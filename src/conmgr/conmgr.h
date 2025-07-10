@@ -914,8 +914,7 @@ extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
 extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 
 /* Get connection name from reference */
-#define conmgr_ref_get_name(ref) \
-	conmgr_fd_get_name(conmgr_fd_get_ref(ref))
+extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref);
 
 /*
  * Checks if incoming data matches a TLS handshake and will change connection to
