@@ -65,6 +65,13 @@
 typedef struct conmgr_fd_s conmgr_fd_t;
 
 /*
+ * Connection reference.
+ * Opaque struct - do not access directly.
+ * While exists: the conmgr_fd_t ptr will remain valid.
+ */
+typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
+
+/*
  * Struct of call backs to call on events
  * of a given connection.
  */
@@ -461,11 +468,27 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg);
 
 /*
+ * Write packed msg to connection (from callback).
+ * NOTE: type=CON_TYPE_RPC only
+ * IN ref reference to connection
+ * IN msg message to send
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_queue_write_msg(conmgr_fd_ref_t *ref, slurm_msg_t *msg);
+
+/*
  * Request soft close of connection
  * IN con connection manager connection struct
  * RET SLURM_SUCCESS or error
  */
 extern void conmgr_queue_close_fd(conmgr_fd_t *con);
+
+/*
+ * Request soft close of connection and release reference of connection
+ * WARNING: Connection may not exist after this called
+ * IN ref_ptr - ptr to reference to release (will be set to NULL)
+ */
+extern void conmgr_con_queue_close_free(conmgr_fd_ref_t **ref_ptr);
 
 /*
  * Change connection mode
@@ -873,13 +896,6 @@ extern void conmgr_quiesce(const char *caller);
 extern void conmgr_unquiesce(const char *caller);
 
 /*
- * Connection reference.
- * Opaque struct - do not access directly.
- * While exists: the conmgr_fd_t ptr will remain valid.
- */
-typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
-
-/*
  * Create new reference to conmgr connection
  * Will ensure that conmgr_fd_t will remain valid until released.
  * IN con - connection to create reference
@@ -898,8 +914,7 @@ extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
 extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 
 /* Get connection name from reference */
-#define conmgr_ref_get_name(ref) \
-	conmgr_fd_get_name(conmgr_fd_get_ref(ref))
+extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref);
 
 /*
  * Checks if incoming data matches a TLS handshake and will change connection to

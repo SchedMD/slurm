@@ -302,7 +302,9 @@ static void _send_reconfig_replies(void)
 	slurm_msg_t *msg = NULL;
 
 	while ((msg = list_pop(reconfig_reqs))) {
-		/* Must avoid sending reply via msg->conmgr_fd */
+		/* Must avoid sending reply via msg->conmgr_con */
+		xassert(!msg->conmgr_con);
+
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
 		conn_g_destroy(msg->tls_conn, true);
 		slurm_free_msg(msg);
@@ -1546,11 +1548,19 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	if (rate_limit_exceeded(msg)) {
 		rc = slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 		slurm_free_msg(msg);
-	} else if ((rc = conmgr_queue_extract_con_fd(
-			    con, _service_connection,
-			    XSTRINGIFY(_service_connection), msg))) {
-		error("%s: [%s] Extracting FDs failed: %s",
-		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+	} else {
+		/*
+		 * The fd will be extracted from conmgr, so the conmgr
+		 * connection ref should be removed from msg first.
+		 */
+		conmgr_fd_free_ref(&msg->conmgr_con);
+
+		if ((rc = conmgr_queue_extract_con_fd(
+			     con, _service_connection,
+			     XSTRINGIFY(_service_connection), msg)))
+			error("%s: [%s] Extracting FDs failed: %s",
+			      __func__, conmgr_fd_get_name(con),
+			      slurm_strerror(rc));
 	}
 
 	return rc;
@@ -1779,7 +1789,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	 * The fd was extracted from conmgr, so the conmgr connection is
 	 * invalid.
 	 */
-	msg->conmgr_fd = NULL;
+	conmgr_fd_free_ref(&msg->conmgr_con);
 	if (tls_conn) {
 		msg->tls_conn = tls_conn;
 	} else {

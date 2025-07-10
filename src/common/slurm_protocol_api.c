@@ -2040,13 +2040,14 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 
 	slurm_resp_msg_init(&resp_msg, source_msg, msg_type, data);
 
-	if (source_msg->conmgr_fd) {
-		rc = conmgr_queue_write_msg(source_msg->conmgr_fd, &resp_msg);
+	if (source_msg->conmgr_con) {
+		rc = conmgr_con_queue_write_msg(source_msg->conmgr_con,
+						&resp_msg);
 
 		if (rc)
 			log_flag(NET, "%s: [%s] write response RPC %s failure: %s",
 				 __func__,
-				 conmgr_fd_get_name(source_msg->conmgr_fd),
+				 conmgr_con_get_name(source_msg->conmgr_con),
 				 rpc_num2string(msg_type), slurm_strerror(rc));
 
 		return rc;
@@ -2706,6 +2707,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);
 		xfree(msg->tls_cert);
+		conmgr_fd_free_ref(&msg->conmgr_con);
 	}
 }
 

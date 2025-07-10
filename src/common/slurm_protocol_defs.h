@@ -232,9 +232,11 @@ typedef struct job_record job_record_t;
 #endif
 
 /*
- * Prototype for conmgr connection w/o including conmgr.h
+ * Prototype for conmgr connection w/o including conmgr.h to avoid recursive
+ * includes.
  */
 typedef struct conmgr_fd_s conmgr_fd_t;
+typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
 /*****************************************************************************\
  * core api configuration struct
@@ -321,7 +323,7 @@ typedef struct slurm_msg {
 				 * normal connection. It should be filled in
 				 * with the connection before sending the
 				 * message so that it is handled correctly. */
-	conmgr_fd_t *conmgr_fd; /* msg originates from conmgr connection. */
+	conmgr_fd_ref_t *conmgr_con; /* msg originates from conmgr connection */
 	void *data;
 	uint16_t flags;
 	uint8_t hash_index;	/* DON'T PACK: zero for normal communication.

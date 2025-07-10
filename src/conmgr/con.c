@@ -873,11 +873,11 @@ static void _deferred_close_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-extern void conmgr_queue_close_fd(conmgr_fd_t *con)
+/* Caller must hold mgr.mutex lock */
+static void _close_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	slurm_mutex_lock(&mgr.mutex);
 	if (!con_flag(con, FLAG_WORK_ACTIVE)) {
 		/*
 		 * Defer request to close connection until connection is no
@@ -889,6 +889,33 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 	} else {
 		close_con(true, con);
 	}
+}
+
+extern void conmgr_queue_close_fd(conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	_close_fd(con);
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+extern void conmgr_con_queue_close_free(conmgr_fd_ref_t **ref_ptr)
+{
+	conmgr_fd_ref_t *ref = NULL;
+
+	xassert(ref_ptr);
+
+	/* skip if already released */
+	if (!(ref = *ref_ptr))
+		return;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	_close_fd(ref->con);
+	fd_free_ref(ref_ptr);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
@@ -1255,6 +1282,14 @@ extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->name && con->name[0]);
 	return con->name;
+}
+
+extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref)
+{
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	return conmgr_fd_get_name(ref->con);
 }
 
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)

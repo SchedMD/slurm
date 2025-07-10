@@ -697,7 +697,7 @@ static void *_service_msg(void *arg)
 	 * The fd was extracted from conmgr, so the conmgr connection is
 	 * invalid.
 	 */
-	msg->conmgr_fd = NULL;
+	conmgr_fd_free_ref(&msg->conmgr_con);
 	if (args->tls_conn) {
 		msg->tls_conn = args->tls_conn;
 	} else {

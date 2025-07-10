@@ -100,7 +100,7 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 				msglen);
 	msg = xmalloc(sizeof(*msg));
 	slurm_msg_t_init(msg);
-	msg->conmgr_fd = con;
+	msg->conmgr_con = conmgr_fd_new_ref(con);
 	memcpy(&msg->address, &con->address, sizeof(con->address));
 
 	log_flag_hex(NET_RAW, get_buf_data(rpc), size_buf(rpc),
@@ -195,10 +195,30 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	return rc;
 }
 
+extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(msg);
+
+	return write_msg(con, msg);
+}
+
+extern int conmgr_con_queue_write_msg(conmgr_fd_ref_t *ref, slurm_msg_t *msg)
+{
+	if (!ref)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+	xassert(msg);
+
+	return write_msg(ref->con, msg);
+}
+
 /*
  * based on _pack_msg() and slurm_send_node_msg() in slurm_protocol_api.c
  */
-extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
+extern int write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 {
 	int rc;
 	msg_bufs_t buffers = {0};
