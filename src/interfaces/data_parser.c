@@ -78,7 +78,6 @@ typedef struct {
 		     char *params);
 	void (*free)(void *arg);
 	int (*assign)(void *arg, data_parser_attr_type_t type, void *obj);
-	int (*specify)(void *arg, data_t *dst);
 	openapi_type_t (*resolve_openapi_type)(void *arg,
 					       data_parser_type_t type,
 					       const char *field);
@@ -111,7 +110,6 @@ static const char *parse_syms[] = {
 	"data_parser_p_new",
 	"data_parser_p_free",
 	"data_parser_p_assign",
-	"data_parser_p_specify",
 	"data_parser_p_resolve_openapi_type",
 	"data_parser_p_resolve_type_string",
 	"data_parser_p_increment_reference",
@@ -812,29 +810,6 @@ cleanup:
 	FREE_NULL_DATA(dresp);
 	FREE_NULL_DATA_PARSER(parser);
 #endif
-
-	return rc;
-}
-
-extern int data_parser_g_specify(data_parser_t *parser, data_t *dst)
-{
-	int rc;
-	DEF_TIMERS;
-	const parse_funcs_t *funcs;
-
-	if (!parser)
-		return ESLURM_DATA_INVALID_PARSER;
-
-	funcs = plugins->functions[parser->plugin_offset];
-
-	xassert(parser);
-	xassert(plugins);
-	xassert(parser->magic == PARSE_MAGIC);
-	xassert(parser->plugin_offset < plugins->count);
-
-	START_TIMER;
-	rc = funcs->specify(parser->arg, dst);
-	END_TIMER2(__func__);
 
 	return rc;
 }
