@@ -1940,7 +1940,7 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		/* data_parser should be used for this conversion instead. */
 		return DATA_TYPE_NONE;
 	case DATA_TYPE_MAX:
-		break;
+		fatal_abort("%s: unexpected data type", __func__);
 	}
 
 	fatal_abort("%s: invalid conversion requested", __func__);
