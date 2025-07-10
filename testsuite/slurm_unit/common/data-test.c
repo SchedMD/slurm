@@ -329,6 +329,74 @@ START_TEST(test_dict_typeset)
 }
 END_TEST
 
+static data_for_each_cmd_t _list_is_index(const data_t *data, void *arg)
+{
+	int *i_ptr = arg;
+	int64_t v;
+
+	ck_assert(!data_get_int_converted(data, &v));
+	ck_assert_int_eq(v, *i_ptr);
+
+	(*i_ptr)++;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _dict_is_index(const char *key, const data_t *data,
+					  void *arg)
+{
+	int *i_ptr = arg;
+	int64_t v;
+	data_t *d = data_set_string(data_new(), key);
+
+	ck_assert(data_convert_type(d, DATA_TYPE_INT_64) == DATA_TYPE_INT_64);
+	ck_assert(data_get_int(d) == *i_ptr);
+	ck_assert(!data_get_int_converted(data, &v));
+	ck_assert_int_eq(v, *i_ptr);
+
+	(*i_ptr)++;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+START_TEST(test_convert_list_dict)
+{
+	static const int c = 10;
+	data_t *d = data_set_dict(data_new());
+
+	for (int i = 0; i < c; i++)
+		data_set_string_fmt(data_key_set_int(d, i), "%d", i);
+
+	for (int i = 0; i < c; i++) {
+		int64_t v;
+
+		ck_assert(!data_get_int_converted(data_key_get_int(d, i), &v));
+		ck_assert_int_eq(v, i);
+	}
+
+	ck_assert(data_convert_type(d, DATA_TYPE_LIST) == DATA_TYPE_LIST);
+	ck_assert(data_get_type(d) == DATA_TYPE_LIST);
+
+	{
+		int i = 0;
+		ck_assert(data_list_for_each_const(d, _list_is_index, &i) == c);
+		ck_assert_int_eq(i, c);
+	}
+
+	ck_assert(data_convert_type(d, DATA_TYPE_DICT) == DATA_TYPE_DICT);
+	ck_assert(data_get_type(d) == DATA_TYPE_DICT);
+
+	{
+		int i = 0;
+		ck_assert(data_dict_for_each_const(d, _dict_is_index, &i) == c);
+		ck_assert_int_eq(i, c);
+	}
+
+	FREE_NULL_DATA(d);
+}
+
+END_TEST
+
 START_TEST(test_detection)
 {
 	data_t *d = data_new();
@@ -356,6 +424,7 @@ Suite *suite_data(void)
 	tcase_add_test(tc_core, test_dict_typeset);
 	tcase_add_test(tc_core, test_dict_iteration);
 	tcase_add_test(tc_core, test_list_iteration);
+	tcase_add_test(tc_core, test_convert_list_dict);
 
 	suite_add_tcase(s, tc_core);
 	return s;
