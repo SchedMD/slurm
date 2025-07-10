@@ -65,6 +65,13 @@
 typedef struct conmgr_fd_s conmgr_fd_t;
 
 /*
+ * Connection reference.
+ * Opaque struct - do not access directly.
+ * While exists: the conmgr_fd_t ptr will remain valid.
+ */
+typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
+
+/*
  * Struct of call backs to call on events
  * of a given connection.
  */
@@ -871,13 +878,6 @@ extern void conmgr_quiesce(const char *caller);
  * IN caller - __func__ from caller for logging
  */
 extern void conmgr_unquiesce(const char *caller);
-
-/*
- * Connection reference.
- * Opaque struct - do not access directly.
- * While exists: the conmgr_fd_t ptr will remain valid.
- */
-typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
 /*
  * Create new reference to conmgr connection
