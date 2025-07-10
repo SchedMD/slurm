@@ -274,11 +274,14 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr);
 
 /*
  * Detect data type and if possible, change to correct type.
- * WARNING: command is currently only useful for to/from DATA_TYPE_STRING.
- * WARNING: Does not work on dict or list types
+ * WARNING: Conversion from DATA_TYPE_DICT to DATA_TYPE_LIST will drop all key
+ *	values.
+ * WARNING: Conversion from DATA_TYPE_LIST to DATA_TYPE_DICT will assign a
+ *	numeric sequential key starting at 0. Order of which key gets which
+ *	index is effectively random.
  * IN data structure to try to type and convert
  * IN match try to detect this type only
- * 	or DATA_TYPE_NONE to try automatic matching
+ * 	or DATA_TYPE_NONE to give best guess as to data type
  * RET new data type or DATA_TYPE_NONE on no change
  */
 extern data_type_t data_convert_type(data_t *data, const data_type_t match);
