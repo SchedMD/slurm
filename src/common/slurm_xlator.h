@@ -118,6 +118,7 @@
 #define fd_set_blocking		slurm_fd_set_blocking
 #define fd_set_nonblocking	slurm_fd_set_nonblocking
 #define fd_get_socket_error	slurm_fd_get_socket_error
+#define fd_get_readable_bytes slurm_fd_get_readable_bytes
 #define send_fd_over_socket	slurm_send_fd_over_socket
 #define receive_fd_over_socket	slurm_receive_fd_over_socket
 #define rmdir_recursive		slurm_rmdir_recursive
