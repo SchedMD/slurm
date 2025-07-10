@@ -1813,6 +1813,34 @@ static int _convert_data_float(data_t *data)
 	return ESLURM_DATA_CONV_FAILED;
 }
 
+static data_for_each_cmd_t _convert_data_foreach_dict_list(const char *key,
+							   data_t *data,
+							   void *arg)
+{
+	data_t *src = arg;
+
+	_check_magic(src);
+
+	(void) data_move(data_list_append(src), data);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _convert_data_dict_list(data_t *src)
+{
+	int rc = SLURM_SUCCESS;
+	data_t *dict = data_new();
+
+	(void) data_move(dict, src);
+	(void) data_set_list(src);
+
+	if (data_dict_for_each(dict, _convert_data_foreach_dict_list, src) < 0)
+		rc = ESLURM_DATA_CONV_FAILED;
+
+	FREE_NULL_DATA(dict);
+	return rc;
+}
+
 extern data_type_t data_convert_type(data_t *data, data_type_t match)
 {
 	_check_magic(data);
@@ -1861,6 +1889,9 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		return DATA_TYPE_NONE;
 	case DATA_TYPE_LIST:
 		if (data->type == TYPE_LIST)
+			return DATA_TYPE_LIST;
+		else if ((data->type == TYPE_DICT) &&
+			 !_convert_data_dict_list(data))
 			return DATA_TYPE_LIST;
 
 		/* data_parser should be used for this conversion instead. */
