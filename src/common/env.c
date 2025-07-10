@@ -2189,7 +2189,7 @@ char **env_array_user_default(const char *username)
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
-	char cmdstr[256], *env_loc = NULL;
+	char *cmdstr = NULL, *env_loc = NULL;
 	char *stepd_path = NULL;
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
@@ -2220,10 +2220,11 @@ char **env_array_user_default(const char *username)
 		env_loc = "/usr/bin/env";
 	else
 		fatal("Could not locate command: env");
-	snprintf(cmdstr, sizeof(cmdstr),
-		 "/bin/echo; /bin/echo; /bin/echo; "
-		 "/bin/echo %s; %s; /bin/echo %s",
-		 starttoken, env_loc, stoptoken);
+
+	/* Construct the final command */
+	cmdstr = xstrdup_printf("/bin/echo; /bin/echo; /bin/echo; "
+				"/bin/echo %s; %s; /bin/echo %s",
+				starttoken, env_loc, stoptoken);
 	xfree(stepd_path);
 
 	if (pipe(fildes) < 0) {
@@ -2275,6 +2276,7 @@ char **env_array_user_default(const char *username)
 		}
 	}
 #endif
+	xfree(cmdstr);
 	close(fildes[1]);
 	if ((fval = fcntl(fildes[0], F_GETFL, 0)) < 0)
 		error("fcntl(F_GETFL) failed: %m");
