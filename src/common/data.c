@@ -146,6 +146,14 @@ typedef struct {
 	type_t match;
 } convert_args_t;
 
+#define CONVERT_DATA_FOREACH_LIST_DICT_ARGS_MAGIC 0x139414ab
+
+typedef struct {
+	int magic; /* CONVERT_DATA_FOREACH_LIST_DICT_ARGS_MAGIC */
+	data_t *src;
+	int64_t index;
+} convert_data_foreach_list_dict_args_t;
+
 static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
@@ -1813,6 +1821,66 @@ static int _convert_data_float(data_t *data)
 	return ESLURM_DATA_CONV_FAILED;
 }
 
+static data_for_each_cmd_t _convert_data_foreach_dict_list(const char *key,
+							   data_t *data,
+							   void *arg)
+{
+	data_t *src = arg;
+
+	_check_magic(src);
+
+	(void) data_move(data_list_append(src), data);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _convert_data_dict_list(data_t *src)
+{
+	int rc = SLURM_SUCCESS;
+	data_t *dict = data_new();
+
+	(void) data_move(dict, src);
+	(void) data_set_list(src);
+
+	if (data_dict_for_each(dict, _convert_data_foreach_dict_list, src) < 0)
+		rc = ESLURM_DATA_CONV_FAILED;
+
+	FREE_NULL_DATA(dict);
+	return rc;
+}
+
+static data_for_each_cmd_t _convert_data_foreach_list_dict(data_t *data,
+							   void *arg)
+{
+	convert_data_foreach_list_dict_args_t *args = arg;
+	xassert(args->magic == CONVERT_DATA_FOREACH_LIST_DICT_ARGS_MAGIC);
+
+	(void) data_move(data_key_set_int(args->src, args->index), data);
+	args->index++;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _convert_data_list_dict(data_t *src)
+{
+	int rc = SLURM_SUCCESS;
+	convert_data_foreach_list_dict_args_t args = {
+		.magic = CONVERT_DATA_FOREACH_LIST_DICT_ARGS_MAGIC,
+		.src = src,
+	};
+	data_t *list = data_new();
+
+	(void) data_move(list, src);
+	(void) data_set_dict(src);
+
+	if (data_list_for_each(list, _convert_data_foreach_list_dict, &args) <
+	    0)
+		rc = ESLURM_DATA_CONV_FAILED;
+
+	FREE_NULL_DATA(list);
+	return rc;
+}
+
 extern data_type_t data_convert_type(data_t *data, data_type_t match)
 {
 	_check_magic(data);
@@ -1854,15 +1922,28 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 
 		return DATA_TYPE_NONE;
 	case DATA_TYPE_DICT:
+		if (data->type == TYPE_DICT)
+			return DATA_TYPE_DICT;
+		else if ((data->type == TYPE_LIST) &&
+			 !_convert_data_list_dict(data))
+			return DATA_TYPE_DICT;
+
+		/* data_parser should be used for this conversion instead. */
+		return DATA_TYPE_NONE;
 	case DATA_TYPE_LIST:
+		if (data->type == TYPE_LIST)
+			return DATA_TYPE_LIST;
+		else if ((data->type == TYPE_DICT) &&
+			 !_convert_data_dict_list(data))
+			return DATA_TYPE_LIST;
+
 		/* data_parser should be used for this conversion instead. */
 		return DATA_TYPE_NONE;
 	case DATA_TYPE_MAX:
-		break;
+		fatal_abort("%s: unexpected data type", __func__);
 	}
 
-	xassert(false);
-	return DATA_TYPE_NONE;
+	fatal_abort("%s: invalid conversion requested", __func__);
 }
 
 static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
