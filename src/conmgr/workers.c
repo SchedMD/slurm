@@ -299,17 +299,6 @@ static void *_worker(void *arg)
 	return NULL;
 }
 
-extern void wait_for_workers_idle(const char *caller)
-{
-	while (mgr.workers.active > 0) {
-		log_flag(CONMGR, "%s->%s: waiting for workers=%u/%u",
-			 caller, __func__, mgr.workers.active,
-			 mgr.workers.total);
-
-		EVENT_WAIT(&mgr.worker_return, &mgr.mutex);
-	}
-}
-
 extern void workers_shutdown(void)
 {
 	mgr.workers.shutdown_requested = true;

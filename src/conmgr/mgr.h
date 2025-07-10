@@ -592,13 +592,6 @@ extern conmgr_fd_t *con_find_by_fd(int fd);
 extern void wrap_work(work_t *work);
 
 /*
- * Wait for all workers to finish their work
- * WARNING: caller must hold mgr.mutex
- * WARNING: never call from work or call will never return
- */
-extern void wait_for_workers_idle(const char *caller);
-
-/*
  * Notify all worker thread to shutdown.
  * Wait until all work and workers have completed their work (and exited).
  * Note: Caller MUST hold conmgr lock
