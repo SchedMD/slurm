@@ -1860,6 +1860,9 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		/* data_parser should be used for this conversion instead. */
 		return DATA_TYPE_NONE;
 	case DATA_TYPE_LIST:
+		if (data->type == TYPE_LIST)
+			return DATA_TYPE_LIST;
+
 		/* data_parser should be used for this conversion instead. */
 		return DATA_TYPE_NONE;
 	case DATA_TYPE_MAX:
