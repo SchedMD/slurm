@@ -842,6 +842,20 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
 extern bool conmgr_fd_is_output_open(conmgr_fd_t *con);
 
 /*
+ * Check to see if the con->output_fd is currently open and can (in theory)
+ * accept more write()s.
+ *
+ * WARNING: This check is inherently a race condition and should only be used to
+ * verify a connection is still valid before an expensive operation. The
+ * connection output could close or fail at anytime after this check which will
+ * be relayed via callbacks on the connection.
+ *
+ * IN ref reference to connection
+ * RET true if output is still open or false if otherwise
+ */
+extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref);
+
+/*
  * Check if conmgr is enabled in this process
  * RET true if conmgr is enabled or running in this process
  */

@@ -1878,6 +1878,19 @@ extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 	return open;
 }
 
+extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref)
+{
+	bool open;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	slurm_mutex_lock(&mgr.mutex);
+	open = _is_output_open(ref->con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return open;
+}
+
 extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con)
 {
 	conmgr_fd_ref_t *ref;
