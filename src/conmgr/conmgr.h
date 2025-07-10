@@ -468,6 +468,15 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg);
 
 /*
+ * Write packed msg to connection (from callback).
+ * NOTE: type=CON_TYPE_RPC only
+ * IN ref reference to connection
+ * IN msg message to send
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_queue_write_msg(conmgr_fd_ref_t *ref, slurm_msg_t *msg);
+
+/*
  * Request soft close of connection
  * IN con connection manager connection struct
  * RET SLURM_SUCCESS or error

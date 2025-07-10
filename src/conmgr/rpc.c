@@ -203,6 +203,18 @@ extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 	return write_msg(con, msg);
 }
 
+extern int conmgr_con_queue_write_msg(conmgr_fd_ref_t *ref, slurm_msg_t *msg)
+{
+	if (!ref)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+	xassert(msg);
+
+	return write_msg(ref->con, msg);
+}
+
 /*
  * based on _pack_msg() and slurm_send_node_msg() in slurm_protocol_api.c
  */
