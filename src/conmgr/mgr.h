@@ -520,6 +520,16 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
  */
 extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out);
 
+/*
+ * Write packed msg to connection
+ * WARNING: caller must not hold mgr.mutex lock
+ * NOTE: type=CON_TYPE_RPC only
+ * IN con conmgr connection ptr
+ * IN msg message to send
+ * RET SLURM_SUCCESS or error
+ */
+extern int write_msg(conmgr_fd_t *con, slurm_msg_t *msg);
+
 extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*

@@ -195,10 +195,18 @@ extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg)
 	return rc;
 }
 
+extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(msg);
+
+	return write_msg(con, msg);
+}
+
 /*
  * based on _pack_msg() and slurm_send_node_msg() in slurm_protocol_api.c
  */
-extern int conmgr_queue_write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
+extern int write_msg(conmgr_fd_t *con, slurm_msg_t *msg)
 {
 	int rc;
 	msg_bufs_t buffers = {0};
