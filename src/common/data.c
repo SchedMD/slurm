@@ -1943,8 +1943,7 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		break;
 	}
 
-	xassert(false);
-	return DATA_TYPE_NONE;
+	fatal_abort("%s: invalid conversion requested", __func__);
 }
 
 static data_for_each_cmd_t _convert_list_entry(data_t *data, void *arg)
