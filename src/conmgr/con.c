@@ -873,11 +873,11 @@ static void _deferred_close_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-extern void conmgr_queue_close_fd(conmgr_fd_t *con)
+/* Caller must hold mgr.mutex lock */
+static void _close_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	slurm_mutex_lock(&mgr.mutex);
 	if (!con_flag(con, FLAG_WORK_ACTIVE)) {
 		/*
 		 * Defer request to close connection until connection is no
@@ -889,6 +889,14 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 	} else {
 		close_con(true, con);
 	}
+}
+
+extern void conmgr_queue_close_fd(conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	_close_fd(con);
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
