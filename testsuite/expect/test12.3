@@ -91,17 +91,6 @@ wait_for_job -fail $job_id_1 "DONE"
 wait_for_job -fail $job_id_2 "DONE"
 
 #
-# Wait for accounting data to be propagated to slurmdbd
-# NOTE: Sometimes the complete RPC reaches the DB before the start RPC.
-#       We use sacct -S to ensure that the start time is stored in the DB.
-#       Note that subsequent sacct -N queries will need start time stored to
-#       work properly because they need that to search for active node indexes
-#       along with the events table.
-#
-wait_for_command_match -fail "$sacct -A ${test_name}-account.1 --name=$job_name_1 -X -n -P -j $job_id_1 -S now-60 -o jobid,jobname" "$job_id_1.$job_name_1"
-wait_for_command_match -fail "$sacct -A ${test_name}-account.1 --name=$job_name_2 -X -n -P -j $job_id_2 -S now-60 -o jobid,jobname" "$job_id_2.$job_name_2"
-
-#
 # Execute sub-tests based upon these jobs
 #
 inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
