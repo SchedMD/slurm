@@ -238,7 +238,7 @@ static void _run_command_child(run_command_args_t *args, int write_fd,
 	dup2(write_fd, STDERR_FILENO);
 	dup2(write_fd, STDOUT_FILENO);
 
-	if (launcher_argv)
+	if (launcher_argv && !args->direct_exec)
 		_run_command_child_exec(script_launcher_fd, script_launcher,
 					launcher_argv, args->env);
 
@@ -400,7 +400,7 @@ extern char *run_command(run_command_args_t *args)
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
 
-	if (script_launcher)
+	if (script_launcher && !args->direct_exec)
 		launcher_argv = _setup_launcher_argv(args);
 
 	if ((cpid = fork()) == 0) {
