@@ -209,6 +209,31 @@ selected subset of llblocks, employing a best-fit algorithm for the
 precise placement of the job.</li>
 </ol>
 
+<h3 id="block-limitations">Limitations
+<a class="slurm_link" href="#block-limitations"></a>
+</h3>
+
+<p>Since the block topology takes a different approach than the traditional tree
+topology, there are limitations that should be taken into consideration.</p>
+
+<ul>
+<li><b>Ranges of nodes</b><br>
+When using <code>-N</code>/<code>--nodes</code> to specify a range of acceptable
+node counts, the scheduler will have to evaluate each value of that range to
+find optimal placement on the available block(s). If using a range is necessary,
+the number of possible values should be kept as small as possible.</li>
+<li><b>Requesting specific nodes</b><br>
+Using <code>-w</code>/<code>--nodelist</code> to request a specific node or
+nodes can conflict with the block placement and is not currently supported. You
+can use <code>-x</code>/<code>--exclude</code> to prevent a job from
+being scheduled on certain nodes.
+</li>
+<li><b>Contiguous blocks</b><br>
+The scheduler will attempt to place jobs on blocks that are adjacent to each
+other in the block structure. You cannot currently request that a job be
+placed on non-adjacent blocks.</li>
+</ul>
+
 <h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
 
 <p>For use with the <b>topology/tree</b> plugin, user can also specify the
@@ -280,6 +305,6 @@ allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
 
-<p style="text-align:center;">Last modified 17 July 2025</p>
+<p style="text-align:center;">Last modified 30 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
