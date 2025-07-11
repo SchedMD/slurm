@@ -141,6 +141,44 @@ static int _setup_stringarray(lua_State *L, int limit, char **data)
 	return 1;
 }
 
+extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
+			   char **err_ptr, const char *caller)
+{
+	lua_status_code_t sc;
+	int rc;
+
+	sc = lua_pcall(L, nargs, nresults, msgh);
+	rc = slurm_lua_status_error(sc);
+
+	if (rc) {
+		/*
+		 * When a lua_pcall() fails, Lua "pushes a single value on the
+		 * stack (the error object)" per lua_pcall() description in the
+		 * reference manual:
+		 *	https://www.lua.org/manual/5.3/manual.html
+		 * When msgh == 0, this is the same as the return value of
+		 * lua_pcall().
+		 *
+		 * This function will lua_pop() that value to remove it from
+		 * the stack.
+		 */
+		lua_pop(L, 1);
+		*err_ptr = xstrdup(slurm_strerror(rc));
+
+		error("%s: lua_pcall(0x%"PRIxPTR", %d, %d, %d)=%s(%s)=%s",
+		      caller, (uintptr_t) L, nargs, nresults, msgh,
+		      slurm_lua_status_code_stringify(sc),
+		      slurm_lua_status_code_string(sc), *err_ptr);
+	} else {
+		log_flag(SCRIPT, "%s: lua_pcall(0x%"PRIxPTR", %d, %d, %d)=%s(%s)=%s",
+		      caller, (uintptr_t) L, nargs, nresults, msgh,
+		      slurm_lua_status_code_stringify(sc),
+		      slurm_lua_status_code_string(sc), slurm_strerror(rc));
+	}
+
+	return rc;
+}
+
 extern bool slurm_lua_is_function_defined(lua_State *L, const char *name)
 {
 	bool rc = false;
@@ -768,7 +806,7 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	lua_State *curr = *L;
 	struct stat st;
 	int rc = 0;
-	char *err_str = NULL;
+	char *err_str = NULL, *ret_err_str = NULL;
 
 	if (stat(script_path, &st) != 0) {
 		err_str = xstrdup_printf("Unable to stat %s: %s",
@@ -811,9 +849,9 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	/*
 	 *  Run the user script:
 	 */
-	if (lua_pcall(new, 0, 1, 0)) {
-		err_str = xstrdup_printf("%s: %s",
-					 script_path, lua_tostring(new, -1));
+	if ((rc = slurm_lua_pcall(new, 0, 1, 0, &ret_err_str, __func__))) {
+		err_str = xstrdup_printf("%s: %s", script_path, ret_err_str);
+		xfree(ret_err_str);
 		lua_close(new);
 		goto fini_error;
 	}

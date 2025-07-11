@@ -106,6 +106,19 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
  */
 extern bool slurm_lua_is_function_defined(lua_State *L, const char *func_name);
 
+/*
+ * Call lua_pcall() and catch error
+ * IN L - lua state table pointer
+ * IN nargs - number of arguments to function already pushed
+ * IN nresults - number of returns expected from function
+ * IN msgh - message handler
+ * IN/OUT err_ptr - Populate error string on failure. Must xfree(*err_ptr)
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
+			   char **err_ptr, const char *caller);
+
 #else
 # define LUA_VERSION_NUM 0
 #endif
