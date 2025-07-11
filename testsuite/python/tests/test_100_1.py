@@ -62,6 +62,12 @@ if atf.get_version() < (25, 5):
             "timespec_t test doesn't compile for versions < 25.05",
         )
     )
+    skip_tests.append(
+        (
+            "common/test_conmgr.c",
+            "conmgr test doesn't compile for versions < 25.05",
+        )
+    )
 else:
     xfail_tests.append(
         (
