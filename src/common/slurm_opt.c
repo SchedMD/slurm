@@ -748,6 +748,35 @@ static slurm_cli_opt_t slurm_opt_bb = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_consolidate_segments(slurm_opt_t *opt, const char *arg)
+{
+	opt->job_flags |= CONSOLIDATE_SEGMENTS;
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_consolidate_segments(slurm_opt_t *opt)
+{
+	if (opt->job_flags & CONSOLIDATE_SEGMENTS)
+		return xstrdup("set");
+	return xstrdup("unset");
+}
+
+static void arg_reset_consolidate_segments(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~CONSOLIDATE_SEGMENTS;
+}
+
+static slurm_cli_opt_t slurm_opt_consolidate_segments = {
+	.name = "consolidate-segments",
+	.has_arg = no_argument,
+	.val = LONG_OPT_CONSOLIDATE_SEGMENTS,
+	.set_func = arg_set_consolidate_segments,
+	.get_func = arg_get_consolidate_segments,
+	.reset_func = arg_reset_consolidate_segments,
+	.reset_each_pass = true,
+};
+
 COMMON_STRING_OPTION(c_constraint);
 static slurm_cli_opt_t slurm_opt_c_constraint = {
 	.name = "cluster-constraint",
@@ -4177,6 +4206,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_clusters,
 	&slurm_opt_comment,
 	&slurm_opt_compress,
+	&slurm_opt_consolidate_segments,
 	&slurm_opt_container,
 	&slurm_opt_container_id,
 	&slurm_opt_context,
