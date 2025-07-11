@@ -180,9 +180,14 @@ https://github.com/aws-samples/ec2-topology-aware-for-slurm</a></li>
 
 <p>Slurm can be configured to allocate resources to jobs within a strictly
 enforced, hierarchical block structure using
-<b>TopologyPlugin=topology/block</b>.
-This approach begins with "base blocks" (bblocks), which are fundamental,
-contiguous groups of nodes defined in
+<b>TopologyPlugin=topology/block</b>. The block topology prioritizes the
+placement of jobs to minimize fragmentation across the cluster, as opposed to
+the tree topology, which focuses on fitting jobs on the first available
+resources. Small jobs will still be able to use the available space in a block
+that is partially used.</p>
+
+<p>The block topology approach begins with "base blocks" (bblocks), which are
+fundamental, contiguous groups of nodes defined in
 <a href="topology.conf.html">topology.conf</a>.
 These base blocks can be combined with other adjacent base blocks to form
 "aggregated blocks". In turn, these higher-level blocks can be aggregated
@@ -275,6 +280,6 @@ allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
 
-<p style="text-align:center;">Last modified 16 July 2025</p>
+<p style="text-align:center;">Last modified 17 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
