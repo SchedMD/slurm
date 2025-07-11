@@ -783,8 +783,7 @@ extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller)
 
 	if ((rc = slurmdb_connection_commit(ctxt->db_conn, true)))
 		resp_error(ctxt, rc, caller,
-			   "slurmdb_connection_commit(0x%" PRIxPTR ") failed",
-			   (uintptr_t) ctxt->db_conn);
+			   "slurmdb_connection_commit() failed");
 }
 
 /* Case insensitive string match */
