@@ -734,9 +734,8 @@ extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 		FREE_NULL_LIST(l);
 
 		if (!ignore_empty_result) {
-			resp_warn(ctxt, caller,
-				  "%s(0x%" PRIxPTR ") found nothing",
-				  func_name, (uintptr_t) ctxt->db_conn);
+			resp_warn(ctxt, caller, "%s() found nothing",
+				  func_name);
 		}
 	} else {
 		*list = l;
