@@ -4324,9 +4324,12 @@ def run_check_test(source_file, build_args=""):
         build_args (string): Additional string to be appended to the build command.
     """
 
+    import xmltodict
+
     check_test = (
-        f"{module_tmp_path}/{os.path.splitext(os.path.basename(source_file))[0]}.exe"
+        f"{module_tmp_path}/{os.path.splitext(os.path.basename(source_file))[0]}"
     )
+    xml_test = check_test + ".xml"
 
     compile_against_libslurm(
         f"{properties['testsuite_check_dir']}/{source_file}",
@@ -4337,10 +4340,23 @@ def run_check_test(source_file, build_args=""):
         quiet=True,
     )
 
-    result = run_command(check_test, quiet=True)
+    # Run the libcheck test setting an xml output
+    result = run_command(
+        check_test, quiet=True, env_vars=f"CK_XML_LOG_FILE_NAME={xml_test}"
+    )
+
+    # Parse the xml output
+    if not os.path.exists(xml_test):
+        pytest.fail(f"Test results not found: {xml_test}")
+
+    with open(xml_test) as f:
+        xml_data = xmltodict.parse(f.read())
+
     logging.info(f"{result['stdout']}")
     if result["exit_code"]:
-        pytest.fail(f"{result['stderr']}")
+        logging.error(f"\n{result['stderr']}")
+
+    return xml_data["testsuites"]["suite"]
 
 
 def compile_against_libslurm(
