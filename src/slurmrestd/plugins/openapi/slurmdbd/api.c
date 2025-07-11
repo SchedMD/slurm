@@ -768,8 +768,7 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 		else
 			rc = SLURM_ERROR;
 
-		return resp_error(ctxt, rc, caller, "%s(0x%" PRIxPTR ") failed",
-				  func_name, (uintptr_t) ctxt->db_conn);
+		return resp_error(ctxt, rc, caller, "%s() failed", func_name);
 	}
 
 	FREE_NULL_LIST(changed);
