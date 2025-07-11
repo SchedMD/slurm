@@ -268,7 +268,7 @@ proc inc21_21_submit_test { limit } {
 	}
 
 	make_bash_script $file_in "
-	$bin_sleep 10
+	$bin_sleep 120
 	"
 
 	# Test to make sure that the grpsubmit and maxsubmit
@@ -282,8 +282,10 @@ proc inc21_21_submit_test { limit } {
 			fail "sbatch didn't return jobid"
 		}
 		lappend job_list $job_id($inx)
+	}
 
-		# Wait for the allowed jobs to start running
+	# Wait for the allowed jobs to start running
+	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} {incr inx} {
 		if {$inx < $acct_mod_assoc_test_vals($limit_job)} {
 			wait_for_job -fail -timeout 10 -pollinterval .1 $job_id($inx) "RUNNING"
 		}
