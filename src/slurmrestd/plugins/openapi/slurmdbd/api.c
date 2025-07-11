@@ -749,8 +749,7 @@ extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
 	int rc;
 
 	if ((rc = func(ctxt->db_conn, list)))
-		return resp_error(ctxt, rc, caller, "%s(0x%" PRIxPTR ") failed",
-				  func_name, (uintptr_t) ctxt->db_conn);
+		return resp_error(ctxt, rc, caller, "%s() failed", func_name);
 
 	return rc;
 }
