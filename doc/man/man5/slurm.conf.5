@@ -6510,10 +6510,19 @@ with any nodes that aren't in a partition.
 .IP
 
 .TP
+\fBBlockAsNodeRank\fR
+Assign the same node rank to all nodes under one base block.
+This can be useful if the naming convention for the nodes does not match the
+network topology.
+Valid when topology/block is a cluster default topology.
+.IP
+
+.TP
 \fBSwitchAsNodeRank\fR
 Assign the same node rank to all nodes under one leaf switch.
 This can be useful if the naming convention for the nodes does not match the
 network topology.
+Valid when topology/tree is a cluster default topology.
 .IP
 
 .TP
