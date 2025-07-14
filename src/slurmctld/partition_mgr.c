@@ -677,7 +677,7 @@ extern list_t *part_list_copy(list_t *part_list_src)
  * IN name - partition name(s) in a comma separated list
  * OUT part_ptr_list - sorted list of pointers to the partitions or NULL
  * OUT prim_part_ptr - pointer to the primary partition
- * OUT err_part - The first invalid partition name.
+ * OUT err_part - All the invalid partition names.
  * OUT first_valid - bool ptr indicating if the first partition in name is valid
  * NOTE: Caller must free the returned list
  * NOTE: Caller must free err_part
@@ -692,6 +692,9 @@ extern void get_part_list(char *name, list_t **part_ptr_list,
 
 	*part_ptr_list = NULL;
 	*prim_part_ptr = NULL;
+
+	if (err_part)
+		xfree(*err_part);
 
 	if (first_valid)
 		*first_valid = true;
@@ -710,16 +713,10 @@ extern void get_part_list(char *name, list_t **part_ptr_list,
 					     part_ptr))
 				list_append(*part_ptr_list, part_ptr);
 		} else {
-			FREE_NULL_LIST(*part_ptr_list);
-			if (err_part) {
-				xfree(*err_part);
-				*err_part = xstrdup(token);
-			}
-
+			xstrfmtcat(*err_part, "%s%s", *err_part ? "," : "",
+				   token);
 			if (first_iteration && first_valid)
 				*first_valid = false;
-
-			break;
 		}
 		token = strtok_r(NULL, ",", &last);
 		first_iteration = false;

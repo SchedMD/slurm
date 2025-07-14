@@ -1543,7 +1543,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 
 	get_part_list(job_ptr->partition, &job_ptr->part_ptr_list,
 		      &job_ptr->part_ptr, &err_part, NULL);
-	if (job_ptr->part_ptr == NULL) {
+	if (err_part) {
 		verbose("Invalid partition (%s) for JobId=%u",
 			err_part, job_ptr->job_id);
 		xfree(err_part);
@@ -6501,7 +6501,7 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 		char *err_part = NULL;
 		get_part_list(job_desc->partition, &part_ptr_list, &part_ptr,
 			      &err_part, NULL);
-		if (part_ptr == NULL) {
+		if (err_part) {
 			info("%s: invalid partition specified: %s",
 			     __func__, job_desc->partition);
 			if (err_msg) {
@@ -6509,8 +6509,8 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 				xstrfmtcat(*err_msg,
 					   "invalid partition specified: %s",
 					   err_part);
-				xfree(err_part);
 			}
+			xfree(err_part);
 			FREE_NULL_LIST(part_ptr_list);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
