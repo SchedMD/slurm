@@ -1060,6 +1060,24 @@ def require_slurm_running():
     nodes = get_nodes(quiet=True)
 
 
+def is_upgrade_setup(
+    old_slurm_prefix="/opt/slurm-old", new_slurm_prefix="/opt/slurm-new"
+):
+    """
+    Return True if we have two Slurms configured in the system.
+    """
+
+    if not os.path.exists(old_slurm_prefix):
+        logging.debug(f"Old prefix {old_slurm_prefix} not exists.")
+        return False
+
+    if not os.path.exists(new_slurm_prefix):
+        logging.debug(f"New prefix {new_slurm_prefix} not exists.")
+        return False
+
+    return True
+
+
 def require_upgrades(
     old_slurm_prefix="/opt/slurm-old", new_slurm_prefix="/opt/slurm-new"
 ):
@@ -1070,15 +1088,8 @@ def require_upgrades(
     if not properties["auto-config"]:
         require_auto_config("to change/upgrade Slurm setup")
 
-    if not os.path.exists(old_slurm_prefix):
-        pytest.skip(
-            f"This test needs the upgrade setup. Old prefix {old_slurm_prefix} not exists."
-        )
-
-    if not os.path.exists(new_slurm_prefix):
-        pytest.skip(
-            f"This test needs the upgrade setup. New prefix {new_slurm_prefix} not exists."
-        )
+    if not is_upgrade_setup():
+        pytest.skip("This test needs an upgrade setup")
 
     # Double-check that old_version <= new_version
     old_version = get_version(slurm_prefix=old_slurm_prefix)
