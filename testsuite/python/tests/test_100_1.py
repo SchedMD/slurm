@@ -92,6 +92,9 @@ for test in test_files:
     def make_test(src):
 
         def test_func():
+            if atf.is_upgrade_setup():
+                pytest.skip("The libcheck test doesn't work with upgrade setups")
+
             # Run the libcheck tests and get the xml parsed results
             test_results = atf.run_check_test(src)
 
