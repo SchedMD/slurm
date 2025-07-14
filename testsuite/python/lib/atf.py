@@ -3131,8 +3131,19 @@ def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
         command = "scontrol -d -o show jobs"
         if job_id is not None:
             command += f" {job_id}"
-        output = run_command_output(command, fatal=True, **run_command_kwargs)
+        # TODO: Remove extra debug info for t22858 instead of fatal
+        result = run_command(command, fatal=False, **run_command_kwargs)
+        if result["exit_code"]:
+            logging.debug(
+                f"Fatal failure of {command}, probably due 'Unable to contact slurm controller' (t22858)"
+            )
+            logging.debug("Getting gcore from slurmctld before fatal.")
+            gcore("slurmctld")
+            pytest.fail(
+                f"Command {command} failed with rc={result['exit_code']}: {result['stderr']}"
+            )
 
+        output = result["stdout"]
         job_dict = {}
         for line in output.splitlines():
             if line == "":
