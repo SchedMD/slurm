@@ -727,6 +727,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	xstrcat(out, line_end);
 
 	/****** Line 22 ******/
+	xstrfmtcat(out, "SubmitLine=%s", job_ptr->submit_line);
+	xstrcat(out, line_end);
+
+	/****** Line 23 ******/
 	xstrfmtcat(out, "WorkDir=%s", job_ptr->work_dir);
 	xstrcat(out, line_end);
 
