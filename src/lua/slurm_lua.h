@@ -88,8 +88,6 @@ extern void slurm_lua_table_register(lua_State *L, const char *libname,
 extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 				      const char *name);
 
-extern int slurm_lua_isinteger(lua_State *L, int index);
-
 #else
 # define LUA_VERSION_NUM 0
 #endif
