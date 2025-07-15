@@ -301,7 +301,7 @@ static int _load_plugins(plugin_param_t *pparams, plugrack_foreach_t listf,
 
 static int _find_plugin_by_type(const char *plugin_type)
 {
-	if (!plugin_type)
+	if (!plugin_type || !plugins)
 		return -1;
 
 	/* quick match by pointer address */
