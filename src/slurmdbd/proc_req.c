@@ -2302,8 +2302,8 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		goto end_it;
 	}
 
-	debug2("DBD_REGISTER_CTLD: called in CONN %d for %s(%u)",
-	       fd, slurmdbd_conn->conn->cluster_name, register_ctld_msg->port);
+	debug2("DBD_REGISTER_CTLD: called in CONN %d for %s(%u), cluster_id=%u",
+	       fd, slurmdbd_conn->conn->cluster_name, register_ctld_msg->port, register_ctld_msg->cluster_id);
 
 	/* Just to make sure we don't allow a NULL cluster name to attempt
 	   to connect.  This should never happen, but here just for
@@ -2346,6 +2346,8 @@ static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 		cluster.name = slurmdbd_conn->conn->cluster_name;
 		cluster.flags |= CLUSTER_FLAG_REGISTER;
+		cluster.id = register_ctld_msg->cluster_id;
+
 		rc = acct_storage_g_add_clusters(slurmdbd_conn->db_conn,
 						 slurmdbd_conn->conn->auth_uid,
 						 add_list);

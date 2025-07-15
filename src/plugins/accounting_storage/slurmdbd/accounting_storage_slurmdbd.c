@@ -2556,6 +2556,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	req.port         = port;
 	req.dimensions   = 1;
 	req.flags        = slurmdb_setup_cluster_flags();
+	req.cluster_id = slurm_conf.cluster_id;
 
 	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.conn         = db_conn;
