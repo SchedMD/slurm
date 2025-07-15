@@ -62,14 +62,6 @@ if atf.get_version() < (25, 11):
             "test_data_parsers doesn't compile for versions < 25.11",
         )
     )
-else:
-    xfail_tests.append(
-        (
-            "interfaces/test_data_parsers.c",
-            "test_load_current_plugin",
-            "Ticket: 18070. Segfault can happen when no plugins are found. Fixed in 25.11+",
-        )
-    )
 if atf.get_version() < (25, 5):
     skip_tests.append(
         (
