@@ -718,25 +718,22 @@ extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
 		if (ignore_empty_result) {
-			resp_warn(ctxt, caller,
-				  "%s(0x%" PRIxPTR ") reports nothing changed",
-				  func_name, (uintptr_t) ctxt->db_conn);
+			resp_warn(ctxt, caller, "%s() reports nothing changed",
+				  func_name);
 			rc = SLURM_SUCCESS;
 		}
 	}
 
 	if (rc) {
-		return resp_error(ctxt, rc, caller, "%s(0x%" PRIxPTR ") failed",
-				  func_name, (uintptr_t) ctxt->db_conn);
+		return resp_error(ctxt, rc, caller, "%s failed", func_name);
 	}
 
 	if (!list_count(l)) {
 		FREE_NULL_LIST(l);
 
 		if (!ignore_empty_result) {
-			resp_warn(ctxt, caller,
-				  "%s(0x%" PRIxPTR ") found nothing",
-				  func_name, (uintptr_t) ctxt->db_conn);
+			resp_warn(ctxt, caller, "%s() found nothing",
+				  func_name);
 		}
 	} else {
 		*list = l;
@@ -752,8 +749,7 @@ extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
 	int rc;
 
 	if ((rc = func(ctxt->db_conn, list)))
-		return resp_error(ctxt, rc, caller, "%s(0x%" PRIxPTR ") failed",
-				  func_name, (uintptr_t) ctxt->db_conn);
+		return resp_error(ctxt, rc, caller, "%s() failed", func_name);
 
 	return rc;
 }
@@ -772,8 +768,7 @@ extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 		else
 			rc = SLURM_ERROR;
 
-		return resp_error(ctxt, rc, caller, "%s(0x%" PRIxPTR ") failed",
-				  func_name, (uintptr_t) ctxt->db_conn);
+		return resp_error(ctxt, rc, caller, "%s() failed", func_name);
 	}
 
 	FREE_NULL_LIST(changed);
@@ -788,8 +783,7 @@ extern void db_query_commit_funcname(ctxt_t *ctxt, const char *caller)
 
 	if ((rc = slurmdb_connection_commit(ctxt->db_conn, true)))
 		resp_error(ctxt, rc, caller,
-			   "slurmdb_connection_commit(0x%" PRIxPTR ") failed",
-			   (uintptr_t) ctxt->db_conn);
+			   "slurmdb_connection_commit() failed");
 }
 
 /* Case insensitive string match */
