@@ -225,8 +225,9 @@ static int _setup_cluster_cond_limits(slurmdb_cluster_cond_t *cluster_cond,
 	return set;
 }
 
-extern uint16_t as_mysql_cluster_get_unique_id(
-	mysql_conn_t *mysql_conn, char *cluster_name)
+extern uint16_t as_mysql_cluster_get_unique_id(mysql_conn_t *mysql_conn,
+					       char *cluster_name,
+					       uint16_t requested_id)
 {
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -249,7 +250,13 @@ extern uint16_t as_mysql_cluster_get_unique_id(
 	mysql_free_result(result);
 
 	while (!id) {
-		id = generate_cluster_id();
+		/* try the requested id first */
+		if (requested_id > 0) {
+			id = requested_id;
+		} else {
+			requested_id = 0;
+			id = generate_cluster_id();
+		}
 
 		/* Test to make sure we aren't a duplicate */
 		query = xstrdup_printf("select id from %s where id=%u;",
@@ -263,6 +270,7 @@ extern uint16_t as_mysql_cluster_get_unique_id(
 		if (!num_rows)
 			break;
 		id = 0;
+		requested_id = 0;
 	}
 
 	return id;
@@ -362,7 +370,8 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			has_feds = 1;
 		}
 
-		id = as_mysql_cluster_get_unique_id(mysql_conn, object->name);
+		id = as_mysql_cluster_get_unique_id(mysql_conn, object->name,
+						    object->id);
 
 		xstrfmtcat(query,
 			   "insert into %s (creation_time, mod_time, "
