@@ -10359,13 +10359,6 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 	xassert(!has_qos_lock || verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
-	/*
-	 * NOTE: There are nested pack blocks in
-	 * job_record_pack_details_common() and
-	 * job_record_pack_details_common(). Bump this protocol block when
-	 * bumping the blocks in these functions to help keep symmetry between
-	 * pack and unpacks.
-	 */
 	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, false, buffer,
 				       protocol_version);
