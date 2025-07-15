@@ -3477,6 +3477,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpackstr(&job->features, buffer);
 			safe_unpackstr(&job->prefer, buffer);
 			safe_unpackstr(&job->command, buffer);
+			safe_unpackstr(&job->submit_line, buffer);
 
 			safe_unpack32(&job->num_cpus, buffer);
 			safe_unpack32(&job->max_cpus, buffer);

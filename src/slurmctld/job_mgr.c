@@ -10975,6 +10975,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 			packstr(detail_ptr->argv[0], buffer);
 		else
 			packnull(buffer);
+		packstr(detail_ptr->submit_line, buffer);
 
 		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
 			pack32(job_ptr->cpu_cnt, buffer);
