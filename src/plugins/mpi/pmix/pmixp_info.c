@@ -615,8 +615,10 @@ static int _env_set(const stepd_step_rec_t *step, char ***env)
 	p = getenvp(*env, "UCX_TLS");
 	if (p)
 		setenv("UCX_TLS", p, 1);
-	else if (slurm_pmix_conf.ucx_tls)
+	else if (slurm_pmix_conf.ucx_tls) {
 		setenv("UCX_TLS", slurm_pmix_conf.ucx_tls, 1);
+		env_array_overwrite(env, "UCX_TLS", slurm_pmix_conf.ucx_tls);
+	}
 
 #endif
 
