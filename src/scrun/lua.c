@@ -221,9 +221,6 @@ static void _loadscript_extra(lua_State *st)
 	xassert(st);
 
 	slurm_lua_table_register(st, NULL, slurm_functions);
-	luaL_loadstring(st,
-			"slurm.user_msg (string.format(table.unpack({...})))");
-	lua_setfield(st, -2, "log_user");
 
 	/* Must be always done after we register the slurm_functions */
 	lua_setglobal(st, "slurm");
