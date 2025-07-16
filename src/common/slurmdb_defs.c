@@ -417,19 +417,22 @@ static const struct {
 };
 #undef T
 
-static slurmdb_qos_flags_t _str_2_qos_flags(char *flag_in)
+static int _str_2_qos_flags(char *flag_in, slurmdb_qos_flags_t *flags_ptr)
 {
 	if (!flag_in || !flag_in[0])
-		return QOS_FLAG_NONE;
+		return SLURM_SUCCESS;
 
-	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++)
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++) {
 		if (!xstrncasecmp(flag_in, slurmdb_qos_flags_map[i].str,
-				  strlen(flag_in)))
-			return slurmdb_qos_flags_map[i].flag;
+				  strlen(flag_in))) {
+			*flags_ptr |= slurmdb_qos_flags_map[i].flag;
+			return SLURM_SUCCESS;
+		}
+	}
 
 	debug("%s: Unable to match %s to a slurmdbd_qos_flags_t flag",
 	      __func__, flag_in);
-	return QOS_FLAG_INVALID;
+	return EINVAL;
 }
 
 static uint32_t _str_2_res_flags(char *flags)
@@ -2106,6 +2109,7 @@ extern slurmdb_qos_flags_t str_2_qos_flags(char *flags, int option)
 {
 	slurmdb_qos_flags_t qos_flags = 0;
 	char *token, *my_flags, *last = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (!flags) {
 		error("We need a qos flags string to translate");
@@ -2120,13 +2124,11 @@ extern slurmdb_qos_flags_t str_2_qos_flags(char *flags, int option)
 
 	my_flags = xstrdup(flags);
 	token = strtok_r(my_flags, ",", &last);
-	while (token) {
-		qos_flags |= _str_2_qos_flags(token);
+	while (token && !(rc = _str_2_qos_flags(token, &qos_flags)))
 		token = strtok_r(NULL, ",", &last);
-	}
 	xfree(my_flags);
 
-	if (!qos_flags)
+	if (rc || !qos_flags)
 		qos_flags = QOS_FLAG_NOTSET;
 	else if (option == '+')
 		qos_flags |= QOS_FLAG_ADD;
