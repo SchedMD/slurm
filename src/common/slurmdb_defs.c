@@ -413,7 +413,6 @@ static const struct {
 	T(QOS_FLAG_NO_DECAY, "NoDecay"),
 	T(QOS_FLAG_RELATIVE, "Relative"),
 	T(QOS_FLAG_USAGE_FACTOR_SAFE, "UsageFactorSafe"),
-	T(QOS_FLAG_INVALID, "INVALID"),
 };
 #undef T
 

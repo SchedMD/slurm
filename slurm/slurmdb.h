@@ -143,8 +143,6 @@ typedef enum {
 	QOS_FLAG_NOTSET = SLURM_BIT(28),
 	QOS_FLAG_ADD = SLURM_BIT(29),
 	QOS_FLAG_REMOVE = SLURM_BIT(30),
-
-	QOS_FLAG_INVALID,
 } slurmdb_qos_flags_t;
 
 /* Define QOS Cond flags */
