@@ -156,9 +156,7 @@ in order to optimize the job's network bandwidth.</p>
 <p><b>NOTE</b>: When using the <i>topology/tree</i> plugin, Slurm identifies
 the network switches which provide the best fit for pending jobs. If nodes
 have a <i>Weight</i> defined, this will override the resource selection based
-on network topology. If optimizing resource selection by node weight is more
-important than optimizing network topology then do NOT use the
-<i>topology/tree</i> plugin.</p>
+on network topology.</p>
 
 <h3 id="config_generators">Configuration Generators
 <a class="slurm_link" href="#config_generators"></a></h3>
@@ -277,6 +275,6 @@ allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
 
-<p style="text-align:center;">Last modified 30 May 2025</p>
+<p style="text-align:center;">Last modified 16 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
