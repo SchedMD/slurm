@@ -80,8 +80,9 @@ Default is "false". See also \fBPMIxCollFence\fR.
 
 .TP
 \fBPMIxNetDevicesUCX\fR=<\fIdevice type\fR>
-Type of network device to use for communication.
-Defaults to not being set.
+Type of network device to use for communication. This will set the
+UCX_NET_DEVICES environment variable in both slurmstepd and job step
+environments. Defaults to not being set.
 .IP
 
 .TP
