@@ -174,7 +174,9 @@ static void *_rpc_queue_worker(void *arg)
 				slurm_mutex_unlock(&q->mutex);
 			}
 			msg->flags |= CTLD_QUEUE_PROCESSING;
-			q->func(msg);
+
+			slurmctld_req(msg, q);
+
 			conn_g_destroy(msg->conn, true);
 			msg->conn = NULL;
 
