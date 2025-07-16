@@ -12,6 +12,8 @@ import re
 import shutil
 import sys
 
+from pathlib import Path
+
 sys.path.append(sys.path[0] + "/lib")
 import atf
 
@@ -121,7 +123,7 @@ def session_setup(request):
         color_log_level(logging.TRACE, purple=True, bold=True)
 
 
-def update_tmp_path_exec_permissions():
+def update_tmp_path_exec_permissions(path):
     """
     For pytest versions 6+  the tmp path it uses no longer has
     public exec permissions for dynamically created directories by default.
@@ -136,14 +138,21 @@ def update_tmp_path_exec_permissions():
     Bug 16568
     """
 
-    user_name = atf.get_user_name()
-    path = f"/tmp/pytest-of-{user_name}"
-
     if os.path.isdir(path):
         os.chmod(path, 0o777)
         for root, dirs, files in os.walk(path):
             for d in dirs:
                 os.chmod(os.path.join(root, d), 0o777)
+
+        # Ensure access for parent dirs too
+        path = path.resolve()
+        if not path.is_relative_to("/tmp"):
+            pytest.fail(f"Unexpected tmp path outside /tmp: {path}")
+
+        subdir = Path("/tmp")
+        for part in path.relative_to("/tmp").parts:
+            subdir = subdir / part
+            os.chmod(subdir, 0o777)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -175,7 +184,7 @@ def module_setup(request, tmp_path_factory):
     name = name[:30]
     atf.properties["test_name"] = name
     atf.module_tmp_path = tmp_path_factory.mktemp(name, numbered=True)
-    update_tmp_path_exec_permissions()
+    update_tmp_path_exec_permissions(atf.module_tmp_path)
 
     # Module-level fixtures should run from within the module_tmp_path
     os.chdir(atf.module_tmp_path)
@@ -314,6 +323,7 @@ def function_setup(request, monkeypatch, tmp_path):
         logging.info(request.function.__doc__)
 
     # Start each test inside the tmp_path
+    update_tmp_path_exec_permissions(tmp_path)
     monkeypatch.chdir(tmp_path)
 
 
