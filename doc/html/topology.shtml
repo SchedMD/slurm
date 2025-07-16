@@ -270,7 +270,7 @@ A period is used to separate each hardware component type.</p>
 <a href="topology.yaml.html">topology.yaml</a> configuration file.
 
 Each partition can be configured to use a specific topology by specifying the
-<a href="slurm.conf.html#OPT_Topology">Topology</a>
+<a href="slurm.conf.html#OPT_Topology_1">Topology</a>
 in its partition configuration line.
 The Slurm controller will use the selected topology to optimize resource
 allocation for jobs submitted to that partition.
