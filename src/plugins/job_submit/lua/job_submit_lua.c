@@ -1342,21 +1342,7 @@ static const struct luaL_Reg slurm_functions [] = {
 
 static void _register_local_output_functions(lua_State *L)
 {
-	char *unpack_str;
-	char tmp_string[100];
-
-#if LUA_VERSION_NUM == 501
-	unpack_str = "unpack";
-#else
-	unpack_str = "table.unpack";
-#endif
-
 	slurm_lua_table_register(L, NULL, slurm_functions);
-	snprintf(tmp_string, sizeof(tmp_string),
-		 "slurm.user_msg (string.format(%s({...})))",
-		 unpack_str);
-	luaL_loadstring(L, tmp_string);
-	lua_setfield(L, -2, "log_user");
 
 	/* Must be always done after we register the slurm_functions */
 	lua_setglobal(L, "slurm");

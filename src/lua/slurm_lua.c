@@ -259,6 +259,10 @@ static void _register_slurm_output_functions(lua_State *L)
 		 unpack_str);
 	luaL_loadstring(L, tmp_string);
 	lua_setfield(L, -2, "log_debug4");
+	snprintf(tmp_string, sizeof(tmp_string),
+		 "slurm.user_msg (string.format(%s({...})))", unpack_str);
+	luaL_loadstring(L, tmp_string);
+	lua_setfield(L, -2, "log_user");
 
 	/*
 	 * Error codes: slurm.SUCCESS, slurm.FAILURE, slurm.ERROR, etc.
