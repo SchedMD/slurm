@@ -6872,6 +6872,9 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	if (msg->tls_conn) {
 		fd = conn_g_get_fd(msg->tls_conn);
 		xassert(!msg->conmgr_con);
+	} else if (msg->conn && msg->conn->tls_conn) {
+		fd = conn_g_get_fd(msg->conn->tls_conn);
+		xassert(!msg->conmgr_con);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
