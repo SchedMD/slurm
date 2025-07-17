@@ -749,6 +749,7 @@ test_105_9   Test sbatch --requeue=expedite option (success, failure, epilog fai
 test_106_#   Testing of sbcast options.
 =======================================
 test_106_1   /commands/sbcast/test_--usage.py
+test_106_2   Test sbcast with job_container plugin
 
 test_107_#   Testing of scancel options.
 ========================================
