@@ -6854,6 +6854,22 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 	return NULL;
 }
 
+static bool _is_connection_stale(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc,
+				 int fd)
+{
+	if (this_rpc->skip_stale)
+		return false;
+
+	if ((fd >= 0) && !fd_is_writable(fd)) {
+		error("%s: [fd:%d] Connection is stale, discarding RPC %s from uid:%u",
+		      __func__, fd, rpc_num2string(msg->msg_type),
+		      msg->auth_uid);
+		return true;
+	}
+
+	return false;
+}
+
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
@@ -6901,12 +6917,10 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	if (this_rpc->skip_stale && !fd_is_writable(fd)) {
-		error("Connection is stale, discarding RPC %s",
-		      rpc_num2string(msg->msg_type));
-		/* do not record RPC stats, we didn't process this */
+	/* do not record RPC stats when stale as RPC not processed */
+	if (_is_connection_stale(msg, this_rpc, fd))
 		return;
-	}
+
 	(*(this_rpc->func))(msg);
 	END_TIMER;
 	record_rpc_stats(msg, DELTA_TIMER);
