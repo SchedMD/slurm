@@ -1,4 +1,4 @@
-.TH "mpi.conf" "5" "Slurm Configuration File" "November 2022" "Slurm Configuration File"
+.TH "mpi.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
 
 .SH "NAME"
 mpi.conf \- Slurm configuration file to allow the configuration of MPI plugins.
@@ -80,8 +80,9 @@ Default is "false". See also \fBPMIxCollFence\fR.
 
 .TP
 \fBPMIxNetDevicesUCX\fR=<\fIdevice type\fR>
-Type of network device to use for communication.
-Defaults to not being set.
+Type of network device to use for communication. This will set the
+UCX_NET_DEVICES environment variable in both slurmstepd and job step
+environments. Defaults to not being set.
 .IP
 
 .TP
@@ -92,10 +93,11 @@ take place. Defaults to 300 seconds.
 
 .TP
 \fBPMIxTlsUCX\fR=<\fItl1\fR>[,<\fItl2\fR>...]
-Sets the UCX_TLS variable which restricts the transports to use. The accepted
-values are defined in the UCX documentation and may vary between installations.
-Multiple values can be set and must be separated by commas.
-If not set, UCX tries to use all available transports and selects the best ones
+Sets the UCX_TLS variable which restricts the transports to use. This
+environment variable will be set in both slurmstepd and job step environments.
+The accepted values are defined in the UCX documentation and may vary between
+installations. Multiple values can be set and must be separated by commas. If
+not set, UCX tries to use all available transports and selects the best ones
 according to their performance capabilities and scale.
 Defaults to not being set.
 .IP
