@@ -70,15 +70,19 @@ extern list_t *resolve_ctls_from_dns_srv(void)
 		return NULL;
 	}
 
+	res.ndots = 2;
+
 	if ((len = res_nsearch(&res, SRV_RECORD, C_IN, T_SRV,
 			       answer, sizeof(answer))) < 0) {
 		error("%s: res_nsearch error: %s",
 		      __func__, hstrerror(h_errno));
+		res_nclose(&res);
 		return NULL;
 	}
 
 	if (ns_initparse(answer, len, &handle) < 0) {
 		error("%s: ns_initparse error: %m", __func__);
+		res_nclose(&res);
 		return NULL;
 	}
 
@@ -115,5 +119,6 @@ extern list_t *resolve_ctls_from_dns_srv(void)
 	} else
 		list_sort(controllers, _sort_controllers);
 
+	res_nclose(&res);
 	return controllers;
 }
