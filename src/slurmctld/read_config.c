@@ -763,8 +763,14 @@ extern int qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 					   &qos_ptr, 1);
 		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count) ||
 		    (!qos_ptr)) {
-			error("Ignoring invalid Allow/DenyQOS value: %s",
+			error("Invalid Allow/DenyQOS value: %s",
 			      one_qos_name);
+			if (!locked)
+				assoc_mgr_unlock(&locks);
+			xfree(tmp_qos);
+			FREE_NULL_BITMAP(tmp_qos_bitstr);
+			FREE_NULL_BITMAP(*qos_bits);
+			return SLURM_ERROR;
 		} else {
 			bit_set(tmp_qos_bitstr, qos_rec.id);
 		}
