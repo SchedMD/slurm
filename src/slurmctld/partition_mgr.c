@@ -562,7 +562,7 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		xfree(part_ptr->allow_qos);
 		part_ptr->allow_qos = part_rec_state->allow_qos;
 		part_rec_state->allow_qos = NULL;
-		qos_list_build(part_ptr->allow_qos, false,
+		qos_list_build(part_ptr->allow_qos, false, true,
 			       &part_ptr->allow_qos_bitstr);
 
 		if (part_rec_state->qos_char) {
@@ -603,7 +603,7 @@ extern int load_all_part_state(uint16_t reconfig_flags)
 		xfree(part_ptr->deny_qos);
 		part_ptr->deny_qos = part_rec_state->deny_qos;
 		part_rec_state->deny_qos = NULL;
-		qos_list_build(part_ptr->deny_qos, false,
+		qos_list_build(part_ptr->deny_qos, false, true,
 			       &part_ptr->deny_qos_bitstr);
 
 		/*
@@ -1474,7 +1474,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 			info("%s: setting AllowQOS to %s for partition %s",
 			     __func__, part_ptr->allow_qos, part_desc->name);
 		}
-		qos_list_build(part_ptr->allow_qos, false,
+		qos_list_build(part_ptr->allow_qos, false, false,
 			       &part_ptr->allow_qos_bitstr);
 	}
 
@@ -1641,7 +1641,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		part_desc->deny_qos = NULL;
 		info("%s: setting DenyQOS to %s for partition %s", __func__,
 		     part_ptr->deny_qos, part_desc->name);
-		qos_list_build(part_ptr->deny_qos, false,
+		qos_list_build(part_ptr->deny_qos, false, false,
 			       &part_ptr->deny_qos_bitstr);
 	}
 	if (part_desc->allow_qos && part_desc->deny_qos) {

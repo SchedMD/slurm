@@ -725,7 +725,8 @@ extern list_t *accounts_list_build(char *accounts, bool locked)
 }
 
 /* Convert a comma delimited list of QOS names into a bitmap */
-extern int qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
+extern int qos_list_build(char *qos, bool locked, bool ignore_invalid,
+			  bitstr_t **qos_bits)
 {
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
@@ -762,14 +763,19 @@ extern int qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 					   &qos_ptr, 1);
 		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count) ||
 		    (!qos_ptr)) {
-			error("Invalid Allow/DenyQOS value: %s",
-			      one_qos_name);
-			if (!locked)
-				assoc_mgr_unlock(&locks);
-			xfree(tmp_qos);
-			FREE_NULL_BITMAP(tmp_qos_bitstr);
-			FREE_NULL_BITMAP(*qos_bits);
-			return SLURM_ERROR;
+			if (ignore_invalid) {
+				error("Ignoring invalid Allow/DenyQOS value: %s",
+				      one_qos_name);
+			} else {
+				error("Invalid Allow/DenyQOS value: %s",
+				      one_qos_name);
+				if (!locked)
+					assoc_mgr_unlock(&locks);
+				xfree(tmp_qos);
+				FREE_NULL_BITMAP(tmp_qos_bitstr);
+				FREE_NULL_BITMAP(*qos_bits);
+				return SLURM_ERROR;
+			}
 		} else {
 			bit_set(tmp_qos_bitstr, qos_rec.id);
 		}
@@ -896,7 +902,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->allow_qos) {
 		part_ptr->allow_qos = xstrdup(part->allow_qos);
-		qos_list_build(part_ptr->allow_qos, false,
+		qos_list_build(part_ptr->allow_qos, false, false,
 			       &part_ptr->allow_qos_bitstr);
 	}
 
@@ -908,7 +914,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 	if (part->deny_qos) {
 		part_ptr->deny_qos = xstrdup(part->deny_qos);
-		qos_list_build(part_ptr->deny_qos, false,
+		qos_list_build(part_ptr->deny_qos, false, false,
 			       &part_ptr->deny_qos_bitstr);
 	}
 
