@@ -194,9 +194,30 @@ create_pidfile(const char *pidfile, uid_t uid)
 	return -1;
 }
 
+static void _wait_for_pidfile_lock(int fd)
+{
+	int rc;
+	bool retried = false;
+
+	/* Need to wait for parent process to exit */
+	while (((rc = fd_get_write_lock(fd)) < 0) &&
+	       ((errno == EAGAIN) || (errno == EACCES))) {
+		if (!retried) {
+			debug("%s: failed to lock slurmctld's pidfile, retrying",
+			      __func__);
+			retried = true;
+		}
+		usleep(10000);
+	}
+	if (rc)
+		error ("Unable to lock pidfile: %m");
+}
+
 extern int update_pidfile(int fd)
 {
 	FILE *fp;
+
+	_wait_for_pidfile_lock(fd);
 
 	if (!(fp = fdopen(fd, "w"))) {
 		error("Unable to access pidfd=%d: %m", fd);
