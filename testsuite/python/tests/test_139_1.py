@@ -4,7 +4,8 @@
 import atf
 import pytest
 
-node_prefix = "atf_node"
+# Note that node_prefix needs to be known or handled properly in s2n variant
+node_prefix = "node"
 suspend_time = 10
 resume_time = 10
 max_nodes = 5
