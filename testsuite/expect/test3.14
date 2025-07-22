@@ -72,7 +72,15 @@ if {[regexp "Nodes=($re_word_str)" $output - node_list_old] != 1} {
 #
 # Use a node from the reservation, so it gets replaced
 #
-run_command -fail "$srun -t1 -n1 --reservation=$resv_name $bin_hostname"
+# TODO: t18772: Remove temporary debug when fixed
+set rc [run_command_status "$srun -t1 -n1 --reservation=$resv_name $bin_hostname"]
+if {$rc} {
+	run_command "$scontrol show nodes"
+	run_command "$scontrol show reservations"
+	run_command "$scontrol show jobs"
+
+	fail "srun not responding"
+}
 
 #
 # Check that advanced reservation's allocated nodes has been updated
