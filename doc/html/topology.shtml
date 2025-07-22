@@ -48,7 +48,7 @@ Use of this logic requires a configuration setting of
 available resources. This may result in an allocation with
 more than the optimum number of switches. The user can request
 a maximum number of leaf switches for the job as well as a
-maximum time willing to wait for that number using the <i>--switches</i>
+maximum time willing to wait for that number using the <code>--switches</code>
 option with the salloc, sbatch and srun commands. The parameters can
 also be changed for pending jobs using the scontrol and squeue commands.</p>
 
@@ -239,7 +239,7 @@ placed on non-adjacent blocks.</li>
 <p>For use with the <b>topology/tree</b> plugin, user can also specify the
 maximum number of leaf switches to be used for their job with the maximum time
 the job should wait for this optimized configuration. The syntax for this option
-is <b>--switches=count[@time]</b>.
+is <code>--switches=count[@time]</code>.
 The system administrator can limit the maximum time that any job can
 wait for this optimized configuration using the <b>SchedulerParameters</b>
 configuration parameter with the
