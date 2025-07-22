@@ -7073,6 +7073,9 @@ autodetected or have valid cores configured in \fBgres.conf\fR(5).
 \fBNOTE\fR: Configuring multiple GPU types on overlapping sockets can result in
 erroneous GPU type and restricted core pairings in allocations requesting gpus
 without specifying a type.
+\fBNOTE\fR: Shared gpu gres (shards or mps) will have access to these cores, but
+there is no guarantee that reserved cores are used in proportion to the shared
+gres allocation.
 .IP
 
 .TP

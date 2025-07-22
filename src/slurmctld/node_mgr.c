@@ -2903,6 +2903,26 @@ static void _split_node_config(node_record_t *node_ptr,
 	config_ptr->tot_sockets = reg_msg->sockets;
 }
 
+static void _set_shared_gres_res_cores(gres_node_state_t *gres_ns)
+{
+	gres_node_state_t *alt_gres_ns;
+
+	alt_gres_ns = gres_ns->alt_gres->gres_data;
+	for (int i = 0; i < gres_ns->topo_cnt; i++) {
+		if (!gres_ns->topo_res_core_bitmap[i])
+			continue;
+		for (int j = 0; j < alt_gres_ns->topo_cnt; j++) {
+			if (!bit_overlap_any(gres_ns->topo_gres_bitmap[i],
+					     alt_gres_ns->topo_gres_bitmap[j]))
+				continue;
+			FREE_NULL_BITMAP(alt_gres_ns->topo_res_core_bitmap[j]);
+			alt_gres_ns->topo_res_core_bitmap[j] =
+				bit_copy(gres_ns->topo_res_core_bitmap[i]);
+			break;
+		}
+	}
+}
+
 static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 {
 	static uint32_t gpu_plugin_id = NO_VAL;
@@ -2979,6 +2999,9 @@ static int _set_gpu_spec(node_record_t *node_ptr, char **reason_down)
 			return ESLURM_RES_CORES_PER_GPU_UNIQUE;
 		}
 	}
+
+	if (gres_ns->alt_gres)
+		_set_shared_gres_res_cores(gres_ns);
 
 	/*
 	 * We want the opposite of the possible cores so

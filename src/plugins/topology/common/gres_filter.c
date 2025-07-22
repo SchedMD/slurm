@@ -307,8 +307,7 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 	gres_js = sock_gres->gres_state_job->gres_data;
 
 	if (!(args->cr_type & SELECT_SOCKET) &&
-	    (sock_gres->gres_state_job->plugin_id ==
-	     gres_get_gpu_plugin_id()) &&
+	    (gres_find_gpu_or_alt(sock_gres->gres_state_job, NULL)) &&
 	    args->res_cores_per_gpu && gres_js->res_gpu_cores &&
 	    gres_js->res_gpu_cores[args->node_i])
 		is_res_gpu = true;

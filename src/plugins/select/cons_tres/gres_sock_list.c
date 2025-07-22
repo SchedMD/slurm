@@ -758,7 +758,8 @@ static int _foreach_restricted_gpu(void *x, void *arg)
 	foreach_res_gpu_t *args = arg;
 	gres_job_state_t  *gres_js;
 
-	if ((gres_state_job->plugin_id != gres_get_gpu_plugin_id()))
+	/* Currently all shared gres are gpu alt gres */
+	if (!gres_find_gpu_or_alt(gres_state_job, NULL))
 		return SLURM_SUCCESS;
 	gres_js = gres_state_job->gres_data;
 

@@ -325,7 +325,8 @@ typedef struct gres_job_state {
 					   gres was allocated for which bit */
 
 	/*
-	 * Only initialized for gpus. One entry per node on the cluster.
+	 * Only initialized for gpus and gpu alt gres.
+	 * One entry per node on the cluster.
 	 * Used by select/cons_tres to keep track of which restricted cores each
 	 * gpu type has access to.
 	 */
@@ -1080,6 +1081,8 @@ extern void add_gres_to_list(list_t *gres_list,
 			     gres_slurmd_conf_t *gres_slurmd_conf_in);
 
 extern int gres_find_id(void *x, void *key);
+
+extern int gres_find_gpu_or_alt(void *x, void *key);
 
 extern int gres_find_flags(void *x, void *key);
 

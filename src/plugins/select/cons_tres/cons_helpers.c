@@ -60,12 +60,11 @@ extern bitstr_t **cons_helpers_mark_avail_cores(
 	uint16_t core_spec = job_ptr->details->core_spec;
 	uint32_t coff;
 	bool req_gpu = false;
-	uint32_t gpu_plugin_id = gres_get_gpu_plugin_id();
 
 	if ((job_ptr->details->whole_node == 1) ||
 	    (job_ptr->gres_list_req &&
-	     list_find_first(job_ptr->gres_list_req,
-			     gres_find_id, &gpu_plugin_id)))
+	     (list_find_first(job_ptr->gres_list_req, gres_find_gpu_or_alt,
+			      NULL))))
 		req_gpu = true;
 
 	avail_cores = build_core_array();
