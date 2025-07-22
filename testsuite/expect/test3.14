@@ -28,7 +28,7 @@ source ./globals
 set node_list_new       ""
 set node_list_orig      ""
 set resv_name           "resv$test_id"
-set user_name		""
+set user_name           [get_my_user_name]
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
@@ -40,7 +40,17 @@ if {$nb_nodes < 3} {
 	skip "This test requires at least 3 nodes in the cluster"
 }
 
-set user_name [get_my_user_name]
+proc cleanup {} {
+	global resv_name scontrol node_list_new
+
+	if [delete_res $resv_name] {
+		log_warn "Unable to delete reservation ($resv_name)"
+	}
+
+	if {$node_list_new != ""} {
+		run_command "$scontrol update NodeName=$node_list_new State=RESUME"
+	}
+}
 
 #
 # Create the advanced reservation
@@ -52,110 +62,49 @@ if { [create_res $resv_name "starttime=now duration=2 nodecnt=2 flags=replace pa
 #
 # Check the advanced reservation's allocated nodes and "REPLACE" flag
 #
-set match 0
-spawn $scontrol show ReservationName=$resv_name
-expect {
-	-re "Nodes=($re_word_str)" {
-		set node_list_orig $expect_out(1,string)
-		exp_continue
-	}
-	-re "Flags=REPLACE" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$scontrol show ReservationName=$resv_name"]
+subtest {[regexp "Flags=REPLACE" $output]} "Verify Reservation REPLACE flag found"
+
+if {[regexp "Nodes=($re_word_str)" $output - node_list_old] != 1} {
+	fail "Error getting the old node list"
 }
-subtest {$match == 1} "Verify Reservation REPLACE flag found"
 
 #
 # Use a node from the reservation, so it gets replaced
 #
-spawn $srun -t1 -n1 --reservation=$resv_name $bin_hostname
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
+# TODO: t18772: Remove temporary debug when fixed
+set rc [run_command_status "$srun -t1 -n1 --reservation=$resv_name $bin_hostname"]
+if {$rc} {
+	run_command "$scontrol show nodes"
+	run_command "$scontrol show reservations"
+	run_command "$scontrol show jobs"
+
+	fail "srun not responding"
 }
 
 #
 # Check that advanced reservation's allocated nodes has been updated
 #
-spawn $scontrol show ReservationName=$resv_name
-expect {
-	-re "Nodes=($re_word_str)" {
-		set node_list_new $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command -fail "$scontrol show ReservationName=$resv_name"]
+if {[regexp "Nodes=($re_word_str)" $output - node_list_new] != 1} {
+	fail "Error getting the new node list"
 }
-subtest {$node_list_orig ne $node_list_new} "Verify reservation replaces allocated node"
+subtest {$node_list_old ne $node_list_new} "Verify reservation replaces allocated node"
 
 #
 # Drain a node from the reservation, so it gets replaced
 #
-spawn $scontrol update NodeName=$node_list_new State=DRAIN Reason=TESTING
-expect {
-	-re "Error|error" {
-		fail "Error updating node"
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-#
-#Wait PERIODIC_TIMEOUT
-#
-sleep 32
-#
-# Check that advanced reservation's allocated nodes has been updated
-#
-spawn $scontrol show ReservationName=$resv_name
-expect {
-	-re "Nodes=($re_word_str)" {
-		set node_list_orig $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$node_list_orig ne $node_list_new} "Verify reservation replaces drain node"
-
-#
-# Delete the advanced reservation
-#
-if [delete_res $resv_name] {
-	fail "Unable to delete reservation ($resv_name)"
+set output [run_command_output -fail "$scontrol update NodeName=$node_list_new State=DRAIN Reason=TESTING"]
+if {[regexp "Error|error" $output]} {
+	fail "Error updating node"
 }
 
-spawn $scontrol update NodeName=$node_list_new State=RESUME
-expect {
-	-re "Error|error" {
-		fail "Error updating node"
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
+set PERIODIC_TIMEOUT 32
+set node_list_last $node_list_new
+wait_for -timeout $PERIODIC_TIMEOUT {$node_list_last ne $node_list_new} {
+	set output [run_command_output -fail "$scontrol show ReservationName=$resv_name"]
+	if {[regexp "Nodes=($re_word_str)" $output - node_list_last] != 1} {
+		fail "Error getting the last node list"
 	}
 }
+subtest {$node_list_last ne $node_list_new} "Verify reservation replaces drain node"
