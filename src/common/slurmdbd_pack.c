@@ -1004,6 +1004,7 @@ static void _pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
+		pack32(msg->cluster_id, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->dimensions, buffer);
 		pack32(msg->flags, buffer);
@@ -1022,6 +1023,7 @@ static int _unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg,
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
+		safe_unpack32(&msg_ptr->cluster_id, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg_ptr->dimensions, buffer);
 		safe_unpack32(&msg_ptr->flags, buffer);
