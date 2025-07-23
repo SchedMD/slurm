@@ -789,6 +789,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 		alloc_msg->cpu_freq_max = job_ptr->details->cpu_freq_max;
 		alloc_msg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
 		alloc_msg->ntasks_per_tres = job_ptr->details->ntasks_per_tres;
+		alloc_msg->segment_size = job_ptr->details->segment_size;
 		if (job_ptr->details->mc_ptr) {
 			alloc_msg->ntasks_per_board =
 				job_ptr->details->mc_ptr->ntasks_per_board;

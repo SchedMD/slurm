@@ -2613,6 +2613,7 @@ typedef struct resource_allocation_response_msg {
 				  * default=0 (no limit) */
 	char *qos;               /* allocation qos */
 	char *resv_name;         /* allocation reservation */
+	uint16_t segment_size; /* requested segment size */
 	char *tres_per_node; /* comma delimited list of TRES=# values */
 	char *tres_per_task; /* comma delimited list of TRES=# values */
 	uid_t uid; /* resolved user id of job */
