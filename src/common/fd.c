@@ -94,6 +94,7 @@ strong_alias(fd_close, slurm_fd_close);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
+strong_alias(fd_get_readable_bytes, slurm_fd_get_readable_bytes);
 strong_alias(send_fd_over_socket, slurm_send_fd_over_socket);
 strong_alias(receive_fd_over_socket, slurm_receive_fd_over_socket);
 strong_alias(rmdir_recursive, slurm_rmdir_recursive);
