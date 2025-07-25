@@ -271,8 +271,8 @@ static int _foreach_post_create(void *x, void *arg)
 		return rc;
 
 	if (db_curr_ver < 16) {
-		uint16_t id = as_mysql_cluster_get_unique_id(
-			mysql_conn, cluster_name);
+		uint16_t id = as_mysql_cluster_get_unique_id(mysql_conn,
+							     cluster_name, 0);
 		char *query = xstrdup_printf(
 			"update %s set id=%u, mod_time=UNIX_TIMESTAMP() where name='%s'",
 			cluster_table, id, cluster_name);
