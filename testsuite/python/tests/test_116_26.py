@@ -15,12 +15,7 @@ slurm_user = atf.properties["slurm-user"]
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(node_count)
-    atf.require_config_parameter(
-        "SlurmdTimeout",
-        5,
-        lambda v: v is not None and v <= 5,
-        skip_message="This test requires SlurmdTimeout to be <= 5",
-    )
+    atf.require_config_parameter("SlurmdTimeout", 5)
     atf.require_slurm_running()
 
 
