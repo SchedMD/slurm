@@ -348,6 +348,10 @@ echo "print This message has been printed with TaskProlog"
 
 <p>The above functionality is limited to the task prolog script.</p>
 
+<h2 id="environment_variables">Environment Variables
+<a class="slurm_link" href="#environment_variables"></a>
+</h2>
+
 <p>Unless otherwise specified, these environment variables are available
 to all of the programs.</p>
 <ul>
