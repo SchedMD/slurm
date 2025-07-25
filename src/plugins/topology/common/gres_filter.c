@@ -475,7 +475,9 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 					bit_nclear(args->avail_core, start,
 						   end - 1);
 					if (is_res_gpu) {
-						res_core_tot = 0;
+						res_core_tot -=
+							(args->res_cores_per_sock)
+								[s];
 						(args->res_cores_per_sock)[s] =
 							0;
 					}
@@ -858,7 +860,8 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 				int end = (s + 1) * args->cores_per_socket;
 				bit_nclear(args->avail_core, start, end - 1);
 				if (is_res_gpu) {
-					res_core_tot = 0;
+					res_core_tot -=
+						(args->res_cores_per_sock)[s];
 					(args->res_cores_per_sock)[s] = 0;
 				}
 			}
@@ -900,7 +903,8 @@ static int _foreach_gres_filter_sock_core(void *x, void *arg)
 			int end = (full_socket + 1) * args->cores_per_socket;
 			bit_nclear(args->avail_core, start, end - 1);
 			if (is_res_gpu) {
-				res_core_tot = 0;
+				res_core_tot -=
+					(args->res_cores_per_sock)[full_socket];
 				(args->res_cores_per_sock)[full_socket] = 0;
 			}
 		}
