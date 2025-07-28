@@ -1121,11 +1121,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		bitstr_t *exc_bitmap = NULL;
 		error_code = node_name2bitmap(step_spec->exc_nodes, false,
 					      &exc_bitmap, NULL);
-		if (error_code) {
-			*return_code = ESLURM_INVALID_NODE_NAME;
-			FREE_NULL_BITMAP(exc_bitmap);
-			goto cleanup;
-		}
+		if (error_code)
+			debug("Assuming invalid nodename requested for exclusion from step is excluded");
 		bit_and_not(nodes_avail, exc_bitmap);
 
 		if (step_spec->node_list) {
