@@ -67,8 +67,8 @@ static int _set_cond(int *start, int argc, char **argv,
 		if (!xstrncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
 			break;
-		} else if (!end && !xstrncasecmp(argv[i], "where",
-						 MAX(command_len, 5))) {
+		} else if (!xstrncasecmp(argv[i], "where",
+					 MAX(command_len, 5))) {
 			continue;
 		} else if (!xstrncasecmp(argv[i], "Accounts",
 					 MAX(command_len, 1)) ||
@@ -84,8 +84,8 @@ static int _set_cond(int *start, int argc, char **argv,
 				job_cond->cluster_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->cluster_list,
 					      argv[i]+end);
-		} else if (!xstrncasecmp(argv[i], "JobID",
-					 MAX(command_len, 1))) {
+		} else if (!end || !xstrncasecmp(argv[i], "JobID",
+						 MAX(command_len, 1))) {
 			if (!job_cond->step_list)
 				job_cond->step_list = list_create(
 					slurm_destroy_selected_step);
