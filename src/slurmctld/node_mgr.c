@@ -3124,13 +3124,14 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
-		if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
-					   "node_reg_mem_percent="))) {
+		if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+						"node_reg_mem_percent="))) {
 			if (s_p_handle_double(&conf_node_reg_mem_percent,
 					      "node_reg_mem_percent",
-					      tmp_ptr + 21))
+					      tmp_ptr))
 				conf_node_reg_mem_percent = -1;
 			sched_update = slurm_conf.last_update;
+			xfree(tmp_ptr);
 		}
 	}
 
