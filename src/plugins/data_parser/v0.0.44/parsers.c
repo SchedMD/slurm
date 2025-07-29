@@ -8480,6 +8480,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_cparse(JOB_INFO_STDOUT_EXP, "stdout_expanded", "Job stdout with expanded fields"),
 	add_cparse(JOB_INFO_STDERR_EXP, "stderr_expanded", "Job stderr with expanded fields"),
 	add_parse(TIMESTAMP_NO_VAL, submit_time, "submit_time", "Time when the job was submitted (UNIX timestamp)"),
+	add_parse(STRING, submit_line, "submit_line", "Job submit line (e.g. 'sbatch -N3 job.sh job_arg'"),
 	add_parse(TIMESTAMP_NO_VAL, suspend_time, "suspend_time", "Time the job was last suspended or resumed (UNIX timestamp)"),
 	add_parse(STRING, system_comment, "system_comment", "Arbitrary comment from slurmctld"),
 	add_parse(UINT32_NO_VAL, time_limit, "time_limit", "Maximum run time in minutes"),
