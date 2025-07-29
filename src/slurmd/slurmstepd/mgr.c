@@ -223,7 +223,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 inline static int
 _send_srun_resp_msg(slurm_msg_t *resp_msg, uint32_t nnodes)
 {
-	int rc = SLURM_ERROR, retry = 0, max_retry = 0;
+	int rc = SLURM_ERROR, retry = 1, max_retry = 0;
 	unsigned long delay = 100000;
 
 	/* NOTE: Wait until suspended job step is resumed or the RPC
