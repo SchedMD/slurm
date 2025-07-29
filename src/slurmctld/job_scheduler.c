@@ -165,6 +165,7 @@ typedef struct {
 
 typedef struct {
 	int expand_cnt;
+	bool is_remote_cluster;
 	job_record_t *job_ptr;
 	list_t *unique_depend_list;
 	int rc;
@@ -3289,6 +3290,29 @@ static int _foreach_test_job_dependency(void *x, void *arg)
 	return 0;
 }
 
+static int _handle_failed_dependency(job_record_t *job_ptr,
+				     test_job_dep_t *test_job_dep)
+{
+	int results;
+
+	if (test_job_dep->changed) {
+		_depend_list2str(job_ptr, false);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
+			print_job_dependency(job_ptr, __func__);
+	}
+	job_ptr->bit_flags |= JOB_DEPENDENT;
+	acct_policy_remove_accrue_time(job_ptr, false);
+	if (test_job_dep->and_failed ||
+	    (test_job_dep->or_flag && !test_job_dep->has_unfulfilled))
+		/* Dependency failed */
+		results = FAIL_DEPEND;
+	else
+		/* Still dependent */
+		results = test_job_dep->has_local_depend ? LOCAL_DEPEND :
+			REMOTE_DEPEND;
+	return results;
+}
+
 /*
  * Determine if a job's dependencies are met
  * Inputs: job_ptr
@@ -3348,21 +3372,7 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed)
 		log_flag(DEPENDENCY, "%s: %pJ dependency fulfilled",
 			 __func__, job_ptr);
 	} else {
-		if (test_job_dep.changed) {
-			_depend_list2str(job_ptr, false);
-			if (slurm_conf.debug_flags & DEBUG_FLAG_DEPENDENCY)
-				print_job_dependency(job_ptr, __func__);
-		}
-		job_ptr->bit_flags |= JOB_DEPENDENT;
-		acct_policy_remove_accrue_time(job_ptr, false);
-		if (test_job_dep.and_failed ||
-		    (test_job_dep.or_flag && !test_job_dep.has_unfulfilled))
-			/* Dependency failed */
-			results = FAIL_DEPEND;
-		else
-			/* Still dependent */
-			results = test_job_dep.has_local_depend ? LOCAL_DEPEND :
-				REMOTE_DEPEND;
+		results = _handle_failed_dependency(job_ptr, &test_job_dep);
 	}
 
 	if (was_changed)
@@ -4025,8 +4035,11 @@ static int _update_job_dependency(void *x, void *arg)
 	uint32_t job_id;
 	bool dep_is_remote;
 
-	/* Skip checks if we already have an error */
-	if (update_args->rc)
+	/*
+	 * Skip checks if we already have an error and are on the origin
+	 * cluster.
+	 */
+	if (update_args->rc && !update_args->is_remote_cluster)
 		return 1;
 
 	job_id = dep_ptr->job_id;
@@ -4046,7 +4059,8 @@ static int _update_job_dependency(void *x, void *arg)
 		 * job dependency was fulfilled or not.
 		 */
 		update_args->rc = ESLURM_DEPENDENCY;
-		return 1;
+		dep_ptr->depend_state = DEPEND_FAILED;
+		goto add_dependency;
 	}
 
 	/*
@@ -4056,7 +4070,8 @@ static int _update_job_dependency(void *x, void *arg)
 	if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id,
 				 dep_ptr->array_task_id)) {
 		update_args->rc = ESLURM_DEPENDENCY;
-		return 1;
+		dep_ptr->depend_state = DEPEND_FAILED;
+		goto add_dependency;
 	}
 
 	if (dep_is_remote) {
@@ -4080,13 +4095,15 @@ static int _update_job_dependency(void *x, void *arg)
 	} else if (dep_type == SLURM_DEPEND_EXPAND) {
 		if (!permit_job_expansion()) {
 			update_args->rc = ESLURM_NOT_SUPPORTED;
-			return 1;
+			dep_ptr->depend_state = DEPEND_FAILED;
+			goto add_dependency;
 		}
 		if (dep_is_remote) {
 			error("%s: Job expansion not permitted for remote jobs",
 			      __func__);
 			update_args->rc = ESLURM_DEPENDENCY;
-			return 1;
+			dep_ptr->depend_state = DEPEND_FAILED;
+			goto add_dependency;
 		}
 		if ((update_args->expand_cnt++ > 0) || (!dep_job_ptr) ||
 		    (!IS_JOB_RUNNING(dep_job_ptr)) ||
@@ -4097,13 +4114,15 @@ static int _update_job_dependency(void *x, void *arg)
 			 * Expand only jobs in the same QOS and partition
 			 */
 			update_args->rc = ESLURM_DEPENDENCY;
-			return 1;
+			dep_ptr->depend_state = DEPEND_FAILED;
+			goto add_dependency;
 		}
 
 		_update_job_expand_dep(job_ptr, dep_job_ptr, job_id,
 				       update_args->select_hetero);
 	}
 
+add_dependency:
 	_foreach_depend_list_copy(dep_ptr, &update_args->unique_depend_list);
 	return 1;
 }
@@ -4114,13 +4133,18 @@ static int _update_job_dependency(void *x, void *arg)
  * new format (e.g. "afterok:123:124,after:128").
  * IN job_ptr - job record to have dependency and depend_list updated
  * IN new_depend - new dependency description
+ * IN is_remote_cluster = if true, then this is a remote cluster. Do not
+ *    discard invalid dependencies. Instead, update the dependency like normal,
+ *    but return an error code.
  * RET returns an error code from slurm_errno.h
  */
-extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
+extern int update_job_dependency(job_record_t *job_ptr, char *new_depend,
+				 bool is_remote_cluster)
 {
 	static int select_hetero = -1;
 	int rc = SLURM_SUCCESS;
 	update_dependency_args_t update_args = {
+		.is_remote_cluster = is_remote_cluster,
 		.job_ptr = job_ptr,
 	};
 	list_t *new_depend_list, *unique_depend_list;
@@ -4172,7 +4196,8 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 			rc = ESLURM_CIRCULAR_DEPENDENCY;
 	}
 
-	if (rc == SLURM_SUCCESS) {
+	/* Always update the list if we're on a remote cluster. */
+	if ((rc == SLURM_SUCCESS) || is_remote_cluster) {
 		FREE_NULL_LIST(job_ptr->details->depend_list);
 		job_ptr->details->depend_list = unique_depend_list;
 		_depend_list2str(job_ptr, or_flag);

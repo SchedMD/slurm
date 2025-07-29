@@ -653,6 +653,10 @@ This job can begin execution after the specified jobs have terminated
 in some failed state (non\-zero exit code, node failure, timed out, etc).
 This job must be submitted while the specified job is still active or within
 \fBMinJobAge\fR seconds after the specified job has ended.
+If the dependent job id is not found and is on the same cluster as the job
+submission, the job is rejected. If the dependent job id is not found and is on
+a different cluster from the job submission, the dependency is marked as
+failed.
 .IP
 
 .TP
@@ -661,6 +665,10 @@ This job can begin execution after the specified jobs have successfully
 executed (ran to completion with an exit code of zero).
 This job must be submitted while the specified job is still active or within
 \fBMinJobAge\fR seconds after the specified job has ended.
+If the dependent job id is not found and is on the same cluster as the job
+submission, the job is rejected. If the dependent job id is not found and is on
+a different cluster from the job submission, the dependency is marked as
+failed.
 .IP
 
 .TP

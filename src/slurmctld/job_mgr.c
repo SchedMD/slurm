@@ -7488,7 +7488,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if (job_desc->site_factor != NO_VAL)
 		job_ptr->site_factor = job_desc->site_factor;
 
-	error_code = update_job_dependency(job_ptr, job_desc->dependency);
+	error_code =
+		update_job_dependency(job_ptr, job_desc->dependency, false);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 	job_ptr->details->orig_dependency = xstrdup(job_ptr->details->
@@ -14716,7 +14717,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		} else {
 			int rc;
 			rc = update_job_dependency(job_ptr,
-						   job_desc->dependency);
+						   job_desc->dependency, false);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			/*
