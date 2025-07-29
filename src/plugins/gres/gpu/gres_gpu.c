@@ -562,6 +562,10 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 					GRES_CONF_ENV_SET;
 			}
 
+			gres_slurmd_conf_sys->config_flags |=
+				gres_slurmd_conf->config_flags &
+				GRES_CONF_EXPLICIT;
+
 			list_remove(itr2);
 			list_append(gres_list_gpu, gres_slurmd_conf_sys);
 			continue;
