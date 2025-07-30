@@ -69,6 +69,7 @@ static char *slurmd_config_files[] = {
 	"scrun.lua",
 	"slurm.conf",
 	"topology.conf",
+	"topology.yaml",
 	NULL,
 };
 
@@ -79,6 +80,7 @@ static char *client_config_files[] = {
 	"scrun.lua",
 	"slurm.conf",
 	"topology.conf",
+	"topology.yaml",
 	NULL,
 };
 
