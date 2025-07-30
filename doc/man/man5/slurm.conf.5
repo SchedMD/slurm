@@ -5108,7 +5108,11 @@ controlled by the kernel. Defaults to 50.
 .TP
 \fBconmgr_threads\fR=\fI<thread_count>\fR
 The number of process threads in thread pool used to for receiving and
-processing connections on the listening sockets.
+processing connections on the listening sockets. While increasing this
+value may improve the capacity of conmgr to handle a larger number of
+connections, it does not generally improve the speed at which RPCs are
+processed. It is highly recommended that benchmarking be conducted when
+this value is changed to ensure optimal performance.
 .IP
 
 .TP
