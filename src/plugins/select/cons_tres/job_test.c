@@ -295,19 +295,6 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 	return tres_mc_ptr;
 }
 
-static struct multi_core_data *_create_default_mc(void)
-{
-	struct multi_core_data *mc_ptr;
-
-	mc_ptr = xmalloc(sizeof(struct multi_core_data));
-	mc_ptr->sockets_per_node = NO_VAL16;
-	mc_ptr->cores_per_socket = NO_VAL16;
-	mc_ptr->threads_per_core = NO_VAL16;
-	/* Other fields initialized to zero by xmalloc */
-
-	return mc_ptr;
-}
-
 /* list sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
@@ -3825,7 +3812,7 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if (!job_ptr->details->mc_ptr)
-		job_ptr->details->mc_ptr = _create_default_mc();
+		job_ptr->details->mc_ptr = job_record_create_mc();
 	job_node_req = _get_job_node_req(job_ptr);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {

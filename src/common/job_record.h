@@ -776,4 +776,9 @@ extern void update_job_limit_set_tres(uint16_t **tres_limits, int tres_cnt);
  */
 extern void job_record_set_sluid(job_record_t *job_ptr);
 
+/*
+ * Allocate and initialize multicore data block
+ */
+extern multi_core_data_t *job_record_create_mc(void);
+
 #endif /* _SLURM_JOB_RECORD_H */
