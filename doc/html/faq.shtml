@@ -2154,7 +2154,7 @@ backtrace of that crash to send to SchedMD for evaluation.</p>
 <p><b>NOTE</b>: Core files must be analyzed by the same binary that was used
 when they were generated. Compile time differences make it almost impossible
 for SchedMD to use a core file from a different system. You should always
-send a backtrace rather than a core file when sumitting a support request.</p>
+send a backtrace rather than a core file when submitting a support request.</p>
 
 <p>In order to generate a backtrace you must use <i>gdb</i>, specify the
 path to the <i>slurm*</i> binary that generated the crash, and specify the
