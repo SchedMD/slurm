@@ -260,7 +260,7 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
 	plugin_shutdown = time(NULL);
 
@@ -272,8 +272,6 @@ extern int fini ( void )
 
 	prev_node_record_count = -1;
 	first = 1;
-
-	return SLURM_SUCCESS;
 }
 
 extern void *acct_storage_p_get_connection(

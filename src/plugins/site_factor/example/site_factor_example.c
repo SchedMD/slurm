@@ -76,11 +76,9 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	debug("unloaded");
-
-	return SLURM_SUCCESS;
 }
 
 extern void site_factor_p_set(job_record_t *job_ptr)

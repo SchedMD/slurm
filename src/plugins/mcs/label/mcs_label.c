@@ -49,9 +49,9 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 extern int mcs_p_set_mcs_label(job_record_t *job_ptr, char *label)

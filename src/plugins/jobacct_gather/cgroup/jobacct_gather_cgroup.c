@@ -185,7 +185,7 @@ extern int init (void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini (void)
+extern void fini(void)
 {
 	if (running_in_slurmstepd()) {
 		/* Only destroy step if it has been previously created */
@@ -199,8 +199,6 @@ extern int fini (void)
 	}
 
 	debug("%s unloaded", plugin_name);
-
-	return SLURM_SUCCESS;
 }
 
 /*

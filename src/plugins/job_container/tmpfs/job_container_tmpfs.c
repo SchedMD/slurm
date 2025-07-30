@@ -170,9 +170,8 @@ extern int init(void)
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
-extern int fini(void)
+extern void fini(void)
 {
-	int rc = SLURM_SUCCESS;
 	debug("%s unloaded", plugin_name);
 
 	if (step_ns_fd != -1) {
@@ -183,7 +182,6 @@ extern int fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	free_jc_conf();
 #endif
-	return rc;
 }
 
 extern int container_p_restore(char *dir_name, bool recover)

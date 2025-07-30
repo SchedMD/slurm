@@ -120,10 +120,9 @@ extern int init(void)
  * fini() is called when the plugin is unloaded,
  * free any global memory allocations here to avoid memory leaks.
  */
-extern int fini(void)
+extern void fini(void)
 {
 	verbose("%s unloaded", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 static munge_ctx_t _munge_ctx_create(void)

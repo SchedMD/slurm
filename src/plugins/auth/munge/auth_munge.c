@@ -161,9 +161,9 @@ int init(void)
 	return rc;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 /*

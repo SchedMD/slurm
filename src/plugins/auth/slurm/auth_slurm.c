@@ -135,12 +135,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	static bool fini_run = false;
 
 	if (fini_run)
-		return SLURM_SUCCESS;
+		return;
 	fini_run = true;
 
 	if (internal) {
@@ -152,8 +152,6 @@ extern int fini(void)
 		 */
 		fini_internal();
 	}
-
-	return SLURM_SUCCESS;
 }
 
 extern auth_cred_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,

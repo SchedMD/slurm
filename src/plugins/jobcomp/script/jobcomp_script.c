@@ -655,7 +655,7 @@ extern int jobcomp_p_record_job_end(job_record_t *record, uint32_t event)
 }
 
 /* Called when script unloads */
-extern int fini ( void )
+extern void fini(void)
 {
 	slurm_mutex_lock(&thread_flag_mutex);
 	if (script_thread) {
@@ -672,8 +672,6 @@ extern int fini ( void )
 	slurm_mutex_lock(&comp_list_mutex);
 	FREE_NULL_LIST(comp_list);
 	slurm_mutex_unlock(&comp_list_mutex);
-
-	return SLURM_SUCCESS;
 }
 
 /*

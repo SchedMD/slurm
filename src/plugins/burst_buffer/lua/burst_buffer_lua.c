@@ -2248,7 +2248,7 @@ extern int init(void)
 /*
  * fini() is called when the plugin is unloaded. Free all memory.
  */
-extern int fini(void)
+extern void fini(void)
 {
 	int thread_cnt, last_thread_cnt = 0;
 
@@ -2259,7 +2259,7 @@ extern int fini(void)
 	slurm_mutex_lock(&bb_state.term_mutex);
 	if (bb_state.term_flag) {
 		slurm_mutex_unlock(&bb_state.term_mutex);
-		return SLURM_SUCCESS;
+		return;
 	}
 	bb_state.term_flag = true;
 	slurm_cond_broadcast(&bb_state.term_cond);
@@ -2289,8 +2289,6 @@ extern int fini(void)
 
 	slurm_lua_fini();
 	xfree(lua_script_path);
-
-	return SLURM_SUCCESS;
 }
 
 static void _free_orphan_alloc_rec(void *x)

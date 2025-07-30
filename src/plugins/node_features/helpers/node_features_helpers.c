@@ -616,14 +616,12 @@ extern int init(void)
 	return _read_config_file();
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	FREE_NULL_LIST(helper_features);
 	FREE_NULL_LIST(helper_exclusives);
 	xfree(allowed_uid);
 	allowed_uid_cnt = 0;
-
-	return SLURM_SUCCESS;
 }
 
 extern bool node_features_p_changeable_feature(char *input)

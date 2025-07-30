@@ -102,10 +102,9 @@ extern int init (void)
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
-extern int fini (void)
+extern void fini(void)
 {
 	debug("%s unloaded", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 /*

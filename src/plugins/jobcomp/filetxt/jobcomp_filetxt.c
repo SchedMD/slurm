@@ -103,12 +103,11 @@ int init ( void )
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern void fini(void)
 {
 	if (job_comp_fd >= 0)
 		close(job_comp_fd);
 	xfree(log_name);
-	return SLURM_SUCCESS;
 }
 
 /*

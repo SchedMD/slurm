@@ -138,12 +138,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	slurm_mutex_lock(&throttle_mutex);
 	xfree(thru_put_array);
 	slurm_mutex_unlock(&throttle_mutex);
-	return SLURM_SUCCESS;
 }
 
 extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,

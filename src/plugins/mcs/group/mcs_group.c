@@ -108,10 +108,9 @@ extern int init(void)
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
  */
-extern int fini(void)
+extern void fini(void)
 {
 	xfree(array_mcs_parameter);
-	return SLURM_SUCCESS;
 }
 
 /*

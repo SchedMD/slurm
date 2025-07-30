@@ -1815,7 +1815,7 @@ int init ( void )
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern void fini(void)
 {
 	plugin_shutdown = time(NULL);
 
@@ -1837,8 +1837,6 @@ int fini ( void )
 	slurm_thread_join(decay_handler_thread);
 
 	site_factor_g_fini();
-
-	return SLURM_SUCCESS;
 }
 
 void priority_p_thread_start(void)

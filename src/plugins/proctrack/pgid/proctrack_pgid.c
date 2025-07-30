@@ -103,9 +103,9 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 extern int proctrack_p_create(stepd_step_rec_t *step)

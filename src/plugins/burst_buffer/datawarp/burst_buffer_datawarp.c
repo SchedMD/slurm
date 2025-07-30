@@ -2516,7 +2516,7 @@ extern int init(void)
  * fini() is called when the plugin is unloaded. Free all memory and shutdown
  * threads.
  */
-extern int fini(void)
+extern void fini(void)
 {
 	int pc, last_pc = 0;
 
@@ -2545,8 +2545,6 @@ extern int fini(void)
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
-
-	return SLURM_SUCCESS;
 }
 
 static void _pre_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)

@@ -173,12 +173,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	/* cleanup after ourself */
 	pmi2_stop_agent();
 	pmi2_cleanup_stepd();
-	return 0;
 }
 
 extern void mpi_p_conf_options(s_p_options_t **full_options, int *full_opt_cnt)

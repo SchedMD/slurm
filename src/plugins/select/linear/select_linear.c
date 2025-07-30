@@ -2176,16 +2176,13 @@ extern int init ( void )
 	return rc;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
-	int rc = SLURM_SUCCESS;
-
 	cr_fini_global_core_data();
 	slurm_mutex_lock(&cr_mutex);
 	_free_cr(cr_ptr);
 	cr_ptr = NULL;
 	slurm_mutex_unlock(&cr_mutex);
-	return rc;
 }
 
 /*

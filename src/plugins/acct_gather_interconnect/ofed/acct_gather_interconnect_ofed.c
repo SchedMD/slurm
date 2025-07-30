@@ -334,17 +334,15 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (!running_in_slurmstepd())
-		return SLURM_SUCCESS;
+		return;
 
 	if (srcport)
 		mad_rpc_close_port(srcport);
 
 	log_flag(INTERCONNECT, "ofed: ended");
-
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_interconnect_p_node_update(void)

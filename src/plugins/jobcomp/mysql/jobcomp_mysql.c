@@ -142,13 +142,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (jobcomp_mysql_conn) {
 		destroy_mysql_conn(jobcomp_mysql_conn);
 		jobcomp_mysql_conn = NULL;
 	}
-	return SLURM_SUCCESS;
 }
 
 extern int jobcomp_p_set_location(void)

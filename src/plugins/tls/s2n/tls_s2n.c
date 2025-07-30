@@ -700,12 +700,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	static bool fini_run = false;
 
 	if (fini_run)
-		return SLURM_SUCCESS;
+		return;
 	fini_run = true;
 
 	if (s2n_config_free(client_config))
@@ -728,8 +728,6 @@ extern int fini(void)
 
 	xfree(own_cert);
 	xfree(own_key);
-
-	return SLURM_SUCCESS;
 }
 
 static int _negotiate(tls_conn_t *conn)

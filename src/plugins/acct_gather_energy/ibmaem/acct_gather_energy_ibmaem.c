@@ -237,14 +237,13 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (!running_in_slurmd_stepd())
-		return SLURM_SUCCESS;
+		return;
 
 	acct_gather_energy_destroy(local_energy);
 	local_energy = NULL;
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,

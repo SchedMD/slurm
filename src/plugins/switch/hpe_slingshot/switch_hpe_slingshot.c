@@ -130,7 +130,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (running_in_slurmctld() || active_outside_ctld) {
 		FREE_NULL_BITMAP(slingshot_state.vni_table);
@@ -139,7 +139,6 @@ extern int fini(void)
 		slingshot_free_config();
 	} else
 		slingshot_free_services();
-	return SLURM_SUCCESS;
 }
 
 /*

@@ -199,7 +199,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE)
 		info("%s shutting down ...", plugin_type);
@@ -211,8 +211,6 @@ extern int fini(void)
 	part_data_destroy_res(select_part_record);
 	select_part_record = NULL;
 	cr_fini_global_core_data();
-
-	return SLURM_SUCCESS;
 }
 
 /* This is Part 1 of a 2-part procedure which can be found in

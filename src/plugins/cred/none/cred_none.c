@@ -89,10 +89,9 @@ extern int init(void)
  * fini() is called when the plugin is unloaded,
  * free any global memory allocations here to avoid memory leaks.
  */
-extern int fini(void)
+extern void fini(void)
 {
 	verbose("%s unloaded", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,

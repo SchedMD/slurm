@@ -1194,12 +1194,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	uint16_t i;
 
 	if (!running_in_slurmd_stepd())
-		return SLURM_SUCCESS;
+		return;
 
 	flag_energy_accounting_shutdown = true;
 
@@ -1244,7 +1244,6 @@ extern int fini(void)
 	descriptions_len = 0;
 
 	flag_init = false;
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)

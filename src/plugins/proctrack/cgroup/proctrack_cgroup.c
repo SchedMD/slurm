@@ -160,9 +160,9 @@ extern int init (void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini (void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 /*

@@ -98,15 +98,13 @@ extern int init (void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini (void)
+extern void fini(void)
 {
 	if (running_in_slurmstepd()) {
 		/* just to make sure it closes things up since we call it
 		 * from here */
 		acct_gather_energy_fini();
 	}
-
-	return SLURM_SUCCESS;
 }
 
 /*

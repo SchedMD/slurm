@@ -90,9 +90,9 @@ int init (void)
 	return SLURM_SUCCESS;
 }
 
-int fini (void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 static void _add_env(job_desc_msg_t *job_desc, char *new_env)

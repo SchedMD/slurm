@@ -177,13 +177,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	FREE_NULL_LIST(interfaces);
 	xfree(sysfs_interfaces);
 	xfree(last_update);
-
-	return SLURM_SUCCESS;
 }
 
 static int _update(void)

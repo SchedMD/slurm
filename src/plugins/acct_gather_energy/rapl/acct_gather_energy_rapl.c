@@ -521,12 +521,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	int i;
 
 	if (!running_in_slurmd_stepd())
-		return SLURM_SUCCESS;
+		return;
 
 	for (i = 0; i < nb_pkg; i++) {
 		if (pkg_fd[i] != -1) {
@@ -537,7 +537,6 @@ extern int fini(void)
 
 	acct_gather_energy_destroy(local_energy);
 	local_energy = NULL;
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,

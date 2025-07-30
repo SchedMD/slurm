@@ -86,9 +86,9 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,

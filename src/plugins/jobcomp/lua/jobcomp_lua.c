@@ -170,7 +170,7 @@ extern int init(void)
 	return rc;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (L) {
 		lua_close(L);
@@ -180,8 +180,6 @@ extern int fini(void)
 	xfree(lua_script_path);
 
 	slurm_lua_fini();
-
-	return SLURM_SUCCESS;
 }
 
 /*

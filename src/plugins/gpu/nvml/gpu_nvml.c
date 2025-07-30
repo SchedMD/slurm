@@ -1701,13 +1701,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	_nvml_shutdown();
 
 	debug("%s: unloading %s", __func__, plugin_name);
-
-	return SLURM_SUCCESS;
 }
 
 extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)

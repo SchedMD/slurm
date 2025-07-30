@@ -205,15 +205,13 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	PMIXP_DEBUG("%s: call fini()", pmixp_info_hostname());
 	pmixp_agent_stop();
 	pmixp_stepd_finalize();
 	_libpmix_close(libpmix_plug);
 	_reset_pmix_conf();
-
-	return SLURM_SUCCESS;
 }
 
 extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)

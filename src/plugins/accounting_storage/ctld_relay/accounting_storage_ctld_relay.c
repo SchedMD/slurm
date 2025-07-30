@@ -199,7 +199,7 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
 	agent_shutdown = true;
 
@@ -210,8 +210,6 @@ extern int fini ( void )
 	slurm_thread_join(agent_thread_id);
 
 	FREE_NULL_LIST(agent_list);
-
-	return SLURM_SUCCESS;
 }
 
 extern void *acct_storage_p_get_connection(

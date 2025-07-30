@@ -238,12 +238,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	xfree(tables);
 	xfree(groups);
 	xfree(hdf5_conf.dir);
-	return SLURM_SUCCESS;
 }
 
 extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,

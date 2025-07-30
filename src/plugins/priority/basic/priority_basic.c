@@ -98,9 +98,9 @@ int init ( void )
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 void priority_p_thread_start(void)

@@ -258,7 +258,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	debug3("%s %s called", plugin_type, __func__);
 
@@ -271,7 +271,6 @@ extern int fini(void)
 	xfree(influxdb_conf.password);
 	xfree(influxdb_conf.rt_policy);
 	xfree(influxdb_conf.username);
-	return SLURM_SUCCESS;
 }
 
 extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,

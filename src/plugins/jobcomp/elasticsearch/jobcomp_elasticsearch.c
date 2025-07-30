@@ -348,7 +348,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	thread_shutdown = true;
 	slurm_thread_join(job_handler_thread);
@@ -359,8 +359,6 @@ extern int fini(void)
 
 	jobcomp_common_conf_fini();
 	slurm_curl_fini();
-
-	return SLURM_SUCCESS;
 }
 
 /*

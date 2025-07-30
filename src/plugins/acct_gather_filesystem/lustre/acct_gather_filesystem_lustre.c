@@ -399,14 +399,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (!running_in_slurmstepd())
-		return SLURM_SUCCESS;
+		return;
 
 	debug("lustre: ended");
-
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_filesystem_p_node_update(void)

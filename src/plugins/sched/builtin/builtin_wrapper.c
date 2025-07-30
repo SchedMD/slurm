@@ -76,7 +76,7 @@ int init(void)
 	return SLURM_SUCCESS;
 }
 
-void fini(void)
+extern void fini(void)
 {
 	slurm_mutex_lock( &thread_flag_mutex );
 	if ( builtin_thread ) {
