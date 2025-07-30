@@ -480,8 +480,11 @@ static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
 			return SLURM_SUCCESS;
 		}
 
-		if (!(task = job_task_info_by_pid(step, pid)))
+		if (!(task = job_task_info_by_pid(step, pid))) {
+			error("%s: Could not find pid %d in any task",
+			      __func__, pid);
 			return SLURM_ERROR;
+		}
 
 		/* save wstatus and rusage from wait */
 		task->estatus = wstatus;
@@ -493,8 +496,6 @@ static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
 		 */
 		if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus)) {
 			if (!(*ended_task = task)) {
-				error("%s: Could not find pid %d in any task",
-				      __func__, pid);
 				return SLURM_ERROR;
 			}
 
