@@ -495,9 +495,7 @@ static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
 		 * non-zero exit code
 		 */
 		if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus)) {
-			if (!(*ended_task = task)) {
-				return SLURM_ERROR;
-			}
+			*ended_task = task;
 
 			debug2("pid %d exited non-zero (%d). task %d will now be considered ended",
 			       pid, WEXITSTATUS(wstatus),
