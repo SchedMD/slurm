@@ -149,6 +149,8 @@ static int _set_rec(int *start, int argc, char **argv,
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
+	char *tmp_char = NULL;
+	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i]);
@@ -207,6 +209,19 @@ static int _set_rec(int *start, int argc, char **argv,
 			job->system_comment =
 				strip_quotes(argv[i] + end, NULL, false);
 			set = 1;
+		} else if (!xstrncasecmp(argv[i], "TRES",
+					 MAX(command_len, 1))) {
+			sacctmgr_initialize_g_tres_list();
+
+			if ((tmp_char = slurmdb_format_tres_str(
+				     argv[i] + end, g_tres_list, 1))) {
+				slurmdb_combine_tres_strings(
+					&job->tres_alloc_str, tmp_char,
+					tres_flags);
+				set = 1;
+				xfree(tmp_char);
+			} else
+				exit_code = 1;
 		} else if (!xstrncasecmp(argv[i], "NewWCKey",
 					 MAX(command_len, 1))) {
 			xfree(job->wckey);

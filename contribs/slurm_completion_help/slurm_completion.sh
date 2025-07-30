@@ -2260,6 +2260,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 		"newwckey="
 		"starttime="
 		"systemcomment="
+		"tres="
 		"wckey="
 		"user="
 	)
@@ -2281,6 +2282,7 @@ function __slurm_comp_sacctmgr_spec_jobs() {
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	jobid?(s)) __slurm_compreply_list "$(__slurm_jobs)" ;;
 	newwckey?(s)) __slurm_compreply "$(__slurm_wckeys)" ;;
+	tres?(s)) __slurm_compreply_list "$(__slurm_tres)" ;;
 	user?(s)) __slurm_compreply "$(__slurm_users)" ;;
 	wckey?(s)) __slurm_compreply_list "$(__slurm_wckeys)" ;;
 	*)

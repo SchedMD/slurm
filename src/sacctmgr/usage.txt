@@ -132,7 +132,7 @@ sacctmgr [<OPTION>] [<COMMAND>]
        delete federation  - Names=
 
        modify job         - (set options) DerivedExitCode=, Comment=,
-                            NewWCKey=
+                            NewWCKey=, TRES=
                             (where options) JobID=, Cluster=, EndTime=,
                             StartTime=, WCKey=, User=
 

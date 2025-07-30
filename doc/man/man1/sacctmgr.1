@@ -295,7 +295,7 @@ A group of clusters that work together to schedule jobs.
 .TP
 \fBjob\fR
 Used to modify specific fields of a job: Derived Exit Code, Comment,
-AdminComment, Extra, SystemComment, or WCKey.
+AdminComment, Extra, SystemComment, TRES, or WCKey.
 .IP
 
 .TP
@@ -1676,6 +1676,14 @@ Arbitrary descriptive string, usually managed by the BurstBufferPlugin.
 Can only be modified by a Slurm administrator.
 To clear an existing value, set a new value of '' (two single quotes
 with nothing between them).
+.IP
+
+.TP
+\fBTRES\fR=<\fItres_name=value\fR>
+Use to set or modify a TRES on job(s) in the accounting database that have
+already completed.
+
+\fBWARNING\fR: This is permanent, the original value will be lost afterwards.
 .IP
 
 .TP

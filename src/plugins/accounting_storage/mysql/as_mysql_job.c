@@ -338,6 +338,22 @@ static uint64_t _get_hash_inx(mysql_conn_t *mysql_conn,
 
 }
 
+static int _create_tres_replace_str(void *x, void *args)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+	char **vals = args;
+
+	/*
+	 * If we already have the tres we are looking for we will replace it
+	 * with the new value, otherwise we will just tack it onto the end.
+	 */
+	xstrfmtcat(*vals, ", tres_alloc=case when tres_alloc regexp '(^|,)%u=' then regexp_replace(tres_alloc, '(^|,)(%u)=[[:digit:]]+', '\\\\1\\\\2=%"PRIu64"') else concat_ws(',', tres_alloc, '%u=%"PRIu64"') end",
+		   tres_rec->id, tres_rec->id, tres_rec->count,
+		   tres_rec->id, tres_rec->count);
+
+	return 0;
+}
+
 /* extern functions */
 
 extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
@@ -951,6 +967,14 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (job->extra)
 		xstrfmtcat(vals, ", extra='%s'", job->extra);
+
+	if (job->tres_alloc_str) {
+		list_t *tmp_list = NULL;
+		slurmdb_tres_list_from_string(&tmp_list, job->tres_alloc_str,
+					      TRES_STR_FLAG_NONE, NULL);
+		(void) list_for_each(tmp_list, _create_tres_replace_str, &vals);
+		FREE_NULL_LIST(tmp_list);
+	}
 
 	if (job->wckey)
 		xstrfmtcat(vals, ", wckey='%s'", job->wckey);
