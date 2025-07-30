@@ -222,10 +222,6 @@ static void _create_directories(void)
 	/* Do not xfree() hdf5_dir_rel (interior pointer to freed data). */
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	if (!running_in_slurmstepd())

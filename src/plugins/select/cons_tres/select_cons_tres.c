@@ -183,10 +183,6 @@ static void _check_allocatable_sockets(node_record_t *node_ptr)
 		      node_ptr->name, node_ptr->core_spec_cnt);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	if (slurm_conf.preempt_mode & PREEMPT_MODE_GANG)

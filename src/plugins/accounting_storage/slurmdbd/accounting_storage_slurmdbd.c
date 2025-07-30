@@ -233,10 +233,6 @@ static void _update_cluster_nodes(void)
 	slurm_mutex_unlock(&cluster_hl_mutex);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	if (first) {

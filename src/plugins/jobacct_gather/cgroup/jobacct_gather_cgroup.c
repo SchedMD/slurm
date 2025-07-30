@@ -155,10 +155,6 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	return;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	if (running_in_slurmd() &&

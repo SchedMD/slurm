@@ -84,10 +84,6 @@ static int _check_and_load_params();
 static int _find_mcs_label(gid_t *groups, int ngroups, char **result);
 static int _check_mcs_label(job_record_t *job_ptr, char *label);
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	debug("%s loaded", plugin_name);
@@ -104,10 +100,6 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
 extern void fini(void)
 {
 	xfree(array_mcs_parameter);

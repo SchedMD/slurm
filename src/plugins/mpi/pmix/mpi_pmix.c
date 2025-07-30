@@ -189,10 +189,6 @@ static void _reset_pmix_conf(void)
 	xfree(slurm_pmix_conf.ucx_tls);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	libpmix_plug = _libpmix_open();

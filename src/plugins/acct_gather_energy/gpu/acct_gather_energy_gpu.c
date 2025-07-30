@@ -485,10 +485,6 @@ static int _get_joules_task(uint16_t delta)
 	return SLURM_SUCCESS;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	/* put anything that requires the .conf being read in
@@ -498,9 +494,6 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin exits.
- */
 extern void fini(void)
 {
 	if (!running_in_slurmd_stepd())

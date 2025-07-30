@@ -128,20 +128,12 @@ static void _print_topo_record(topoinfo_bblock_t * topo_ptr, char **out)
 
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
 extern void fini(void)
 {
 	return;

@@ -120,10 +120,6 @@ typedef struct {
 	gid_t gid;
 } auth_credential_t;
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	debug("%s loaded", plugin_name);

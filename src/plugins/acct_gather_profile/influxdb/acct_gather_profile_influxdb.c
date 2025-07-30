@@ -240,10 +240,6 @@ static int _send_data(const char *data)
 	return rc;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called. Put global initialization here.
- */
 extern int init(void)
 {
 	debug3("%s %s called", plugin_type, __func__);

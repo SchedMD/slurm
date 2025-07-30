@@ -1181,10 +1181,6 @@ static void _get_node_energy(acct_gather_energy_t *energy, uint16_t sensor_cnt)
 	energy->slurmd_start_time = slurmd_start_time;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	/* put anything that requires the .conf being read in

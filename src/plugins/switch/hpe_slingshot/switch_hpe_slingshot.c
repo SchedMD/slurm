@@ -110,10 +110,6 @@ static void _state_defaults(void)
 	/* Don't set up state->vni_table yet */
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	debug("loaded");

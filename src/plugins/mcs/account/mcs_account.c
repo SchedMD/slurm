@@ -71,20 +71,12 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 /*********************** local variables *********************/
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
 extern void fini(void)
 {
 	return;

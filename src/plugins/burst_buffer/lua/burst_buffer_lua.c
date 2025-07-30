@@ -2195,10 +2195,6 @@ static void _test_config(void)
 	}
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	int rc;
@@ -2245,9 +2241,6 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is unloaded. Free all memory.
- */
 extern void fini(void)
 {
 	int thread_cnt, last_thread_cnt = 0;

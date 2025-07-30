@@ -2161,10 +2161,6 @@ static int  _cr_job_list_sort(void *x, void *y)
 					&job2_ptr->end_time);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	int rc = SLURM_SUCCESS;

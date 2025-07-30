@@ -75,20 +75,12 @@ enum {
         ESIG_INVALID = 5000,
 };
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is unloaded,
- * free any global memory allocations here to avoid memory leaks.
- */
 extern void fini(void)
 {
 	verbose("%s unloaded", plugin_name);

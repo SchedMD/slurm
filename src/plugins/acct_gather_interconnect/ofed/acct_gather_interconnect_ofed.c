@@ -315,10 +315,6 @@ static int _update_node_interconnect(void)
 						     ofed_sens.update_time);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	slurmdb_tres_rec_t tres_rec;

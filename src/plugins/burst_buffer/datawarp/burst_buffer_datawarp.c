@@ -2493,9 +2493,8 @@ fini:	xfree(access);
 }
 
 /*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Read and validate configuration file here. Spawn thread to
- * periodically read Datawarp state.
+ * Read and validate configuration file.
+ * Spawn thread to periodically read Datawarp state.
  */
 extern int init(void)
 {
@@ -2512,10 +2511,6 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is unloaded. Free all memory and shutdown
- * threads.
- */
 extern void fini(void)
 {
 	int pc, last_pc = 0;

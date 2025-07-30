@@ -327,10 +327,6 @@ static void _jobslist_del(void *x)
 	xfree(jnode);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called. Put global initialization here.
- */
 extern int init(void)
 {
 	serializer_required(MIME_TYPE_JSON);

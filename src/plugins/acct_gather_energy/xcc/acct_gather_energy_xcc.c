@@ -901,10 +901,6 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	return SLURM_SUCCESS;
