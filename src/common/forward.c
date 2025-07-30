@@ -364,8 +364,16 @@ static int _fwd_tree_get_addr(fwd_tree_t *fwd_tree, char *name,
 			hostlist_create(fwd_tree->orig_msg->forward.alias_addrs.node_list);
 		int n = hostlist_find(hl, name);
 		hostlist_destroy(hl);
-		if (n < 0)
+		if (n < 0) {
+			error("%s: can't find address for host %s in alias_addrs",
+			      __func__, name);
+			slurm_mutex_lock(fwd_tree->tree_mutex);
+			mark_as_failed_forward(&fwd_tree->ret_list, name,
+					       SLURM_UNKNOWN_FORWARD_ADDR);
+			slurm_cond_signal(fwd_tree->notify);
+			slurm_mutex_unlock(fwd_tree->tree_mutex);
 			return SLURM_ERROR;
+		}
 		*address =
 			fwd_tree->orig_msg->forward.alias_addrs.node_addrs[n];
 	} else if (slurm_conf_get_addr(name, address,
@@ -477,6 +485,8 @@ static void *_fwd_tree_thread(void *arg)
 			FREE_NULL_LIST(ret_list);
 			/* try next node */
 			if (ret_cnt <= send_msg.forward.cnt) {
+				error("%s: Abandon tree forward by %s, ret_cnt:%u forward.cnt:%u",
+				      __func__, name, ret_cnt, send_msg.forward.cnt);
 				free(name);
 				/* Abandon tree. This way if all the
 				 * nodes in the branch are down we
@@ -487,7 +497,7 @@ static void *_fwd_tree_thread(void *arg)
 					fwd_tree->tree_hl, NULL,
 					fwd_tree,
 					hostlist_count(fwd_tree->tree_hl));
-				continue;
+				break;
 			}
 		} else {
 			/* This should never happen (when this was
