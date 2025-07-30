@@ -495,6 +495,14 @@ static int _check_for_child_non_zero_exit(stepd_step_rec_t *step,
 		 * non-zero exit code
 		 */
 		if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus)) {
+			if (!(step->flags & LAUNCH_KILL_ON_BAD_EXIT)) {
+				debug2("pid %d exited non-zero (%d), but --kill-on-bad-exit=0, so task %d will not end yet",
+				       pid, WEXITSTATUS(wstatus),
+				       task->gtid + task_offset);
+
+				return SLURM_SUCCESS;
+			}
+
 			*ended_task = task;
 
 			debug2("pid %d exited non-zero (%d). task %d will now be considered ended",
