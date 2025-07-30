@@ -1011,6 +1011,15 @@ extern list_t *as_mysql_modify_job(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 
+		/* If we changed the TRES we need to reroll the usage */
+		if (job->tres_alloc_str && job_rec->start) {
+			if (trigger_reroll(mysql_conn, job_rec->start)) {
+				debug("Need to reroll usage from %s Job %u from %s started then and we just changed the TRES on it.",
+				      slurm_ctime2(&job_rec->start),
+				      job_rec->jobid,
+				      mysql_conn->cluster_name);
+			}
+		}
 		slurm_make_time_str(&job_rec->submit,
 				    tmp_char, sizeof(tmp_char));
 
