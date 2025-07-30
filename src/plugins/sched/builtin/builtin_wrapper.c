@@ -56,7 +56,7 @@ const uint32_t		plugin_version	= SLURM_VERSION_NUMBER;
 static pthread_t builtin_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int init(void)
+extern int init(void)
 {
 	sched_verbose("Built-in scheduler plugin loaded");
 

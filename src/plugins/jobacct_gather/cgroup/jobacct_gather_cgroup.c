@@ -159,7 +159,7 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init (void)
+extern int init(void)
 {
 	if (running_in_slurmd() &&
 	    ((cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS) ||

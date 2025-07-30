@@ -237,7 +237,7 @@ static void _update_cluster_nodes(void)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	if (first) {
 		/* since this can be loaded from many different places

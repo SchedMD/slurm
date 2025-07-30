@@ -98,7 +98,7 @@ static int              job_comp_fd = -1;
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init(void)
 {
 	return SLURM_SUCCESS;
 }

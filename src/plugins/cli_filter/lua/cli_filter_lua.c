@@ -120,7 +120,7 @@ static const struct luaL_Reg slurm_functions[] = {
  *   let alone called from multiple threads. Therefore, locking
  *   is unnecessary here.
  */
-int init(void)
+extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 

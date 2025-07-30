@@ -188,7 +188,7 @@ static void _agent_append(buf_t *buffer)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-extern int init ( void )
+extern int init(void)
 {
 	agent_list = list_create(NULL);
 

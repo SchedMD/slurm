@@ -1379,7 +1379,7 @@ static void _loadscript_extra(lua_State *st)
  *   let alone called from multiple threads. Therefore, locking
  *   is unnecessary here.
  */
-int init(void)
+extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 

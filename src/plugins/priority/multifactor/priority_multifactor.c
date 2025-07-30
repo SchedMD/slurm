@@ -1773,7 +1773,7 @@ static void _set_usage_efctv(slurmdb_assoc_rec_t *assoc)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init(void)
 {
 	/* Write lock on jobs, read lock on nodes and partitions */
 
