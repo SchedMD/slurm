@@ -1535,8 +1535,10 @@ extern void scontrol_list_jobs(int argc, char **argv)
 	if (!steps || !list_count(steps)) {
 		if (mime_type)
 			_dump_listjobs(NULL, argc, argv);
-		else
+		else {
 			fprintf(stderr, "No slurmstepd's found on this node\n");
+			exit_code = 1;
+		}
 
 		goto cleanup;
 	}
@@ -1981,8 +1983,10 @@ extern void scontrol_list_steps(int argc, char **argv)
 	if (!steps || !list_count(steps)) {
 		if (mime_type)
 			_dump_liststeps(NULL, argc, argv);
-		else
+		else {
 			fprintf(stderr, "No slurmstepd's found on this node\n");
+			exit_code = 1;
+		}
 
 		goto cleanup;
 	}
