@@ -348,6 +348,28 @@ echo "print This message has been printed with TaskProlog"
 
 <p>The above functionality is limited to the task prolog script.</p>
 
+<h2 id="failure_handling">Failure Handling
+<a class="slurm_link" href="#failure_handling"></a>
+</h2>
+<p>If the Epilog fails (returns a non-zero exit code), this will result in the
+node being set to a DRAIN state.
+If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
+be logged.
+If the Prolog fails (returns a non-zero exit code), this will result in the
+node being set to a DRAIN state and the job requeued. The job will be placed
+in a held state unless nohold_on_prolog_fail is configured in
+SchedulerParameters.
+If the PrologSlurmctld fails (returns a non-zero exit code), this will cause
+the job to be requeued. Only batch jobs can be requeued. Interactive jobs
+(salloc and srun) will be cancelled if the PrologSlurmctld fails.</p>
+
+<p>If a task epilog or srun epilog fails (returns a non-zero exit code) this
+will only be logged.
+If a task prolog fails (returns a non-zero exit code), the task will be
+canceled.
+If the srun prolog fails (returns a non-zero exit code), the step will be
+canceled.</p>
+
 <h2 id="environment_variables">Environment Variables
 <a class="slurm_link" href="#environment_variables"></a>
 </h2>
@@ -727,28 +749,6 @@ points.</p>
 
 <p><a href="spank.html">SPANK</a> is another mechanism that may be useful
 to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
-
-<h2 id="failure_handling">Failure Handling
-<a class="slurm_link" href="#failure_handling"></a>
-</h2>
-<p>If the Epilog fails (returns a non-zero exit code), this will result in the
-node being set to a DRAIN state.
-If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
-be logged.
-If the Prolog fails (returns a non-zero exit code), this will result in the
-node being set to a DRAIN state and the job requeued. The job will be placed
-in a held state unless nohold_on_prolog_fail is configured in
-SchedulerParameters.
-If the PrologSlurmctld fails (returns a non-zero exit code), this will cause
-the job to be requeued. Only batch jobs can be requeued. Interactive jobs
-(salloc and srun) will be cancelled if the PrologSlurmctld fails.</p>
-
-<p>If a task epilog or srun epilog fails (returns a non-zero exit code) this
-will only be logged.
-If a task prolog fails (returns a non-zero exit code), the task will be
-canceled.
-If the srun prolog fails (returns a non-zero exit code), the step will be
-canceled.</p>
 
 <HR SIZE=4>
 
