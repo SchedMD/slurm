@@ -3504,3 +3504,15 @@ extern void job_record_set_sluid(job_record_t *job_ptr)
 	job_ptr->db_index = generate_sluid();
 	job_ptr->db_flags &= ~SLURMDB_JOB_FLAG_START_R;
 }
+
+extern multi_core_data_t *job_record_create_mc(void)
+{
+	multi_core_data_t *mc_ptr = xmalloc(sizeof(*mc_ptr));
+	mc_ptr->cores_per_socket = NO_VAL16;
+	mc_ptr->ntasks_per_socket = INFINITE16;
+	mc_ptr->sockets_per_node = NO_VAL16;
+	mc_ptr->threads_per_core = NO_VAL16;
+	/* Other fields initialized to zero by xmalloc */
+
+	return mc_ptr;
+}

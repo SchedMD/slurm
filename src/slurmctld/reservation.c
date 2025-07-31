@@ -186,6 +186,7 @@ static int _pick_nodes_ordered(resv_desc_msg_t *resv_desc_ptr,
 			       resv_select_t *resv_select_ret,
 			       const char **bitmap_tags);
 static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
+					    bitstr_t *preserve_bitmap,
 					    resv_desc_msg_t *resv_desc_ptr,
 					    resv_select_t *resv_select_ret,
 					    int total_node_cnt,
@@ -209,7 +210,8 @@ static void _run_script(char *script, slurmctld_resv_t *resv_ptr,
 			bool is_resv_epilog);
 static int  _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			  part_record_t **part_ptr,
-			  resv_select_t *resv_select_ret);
+			  resv_select_t *resv_select_ret,
+			  bitstr_t *preserve_bitmap);
 static int  _set_assoc_list(slurmctld_resv_t *resv_ptr);
 static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			  slurmctld_resv_t *old_resv_ptr);
@@ -426,10 +428,13 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 
 	job_ptr = resv_desc_ptr->job_ptr;
 
+	/*
+	 * request the maximum nodes, require the minimum
+	 */
 	rc = select_g_job_test(
 		job_ptr, resv_select->node_bitmap, job_ptr->details->min_nodes,
 		job_ptr->details->max_nodes,
-		job_ptr->details->min_nodes,
+		job_ptr->details->max_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
 		&resv_exc,
 		NULL);
@@ -3132,7 +3137,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				job_mgr_copy_resv_desc_to_job_record(
 					resv_desc_ptr);
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
-					   &resv_select);
+					   &resv_select, NULL);
 			if (rc != SLURM_SUCCESS)
 				goto bad_parse;
 		}
@@ -3149,7 +3154,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 				job_mgr_copy_resv_desc_to_job_record(
 					resv_desc_ptr);
 			rc = _select_nodes(resv_desc_ptr, &part_ptr,
-					   &resv_select);
+					   &resv_select, NULL);
 		}
 		if (rc != SLURM_SUCCESS) {
 			goto bad_parse;
@@ -4568,8 +4573,8 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 			bit_copy(resv_ptr->part_ptr->node_bitmap);
 		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 
-		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr,
-				  &resv_select);
+		i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select,
+				  preserve_bitmap);
 		xfree(resv_desc.node_list);
 		xfree(resv_desc.partition);
 		if (i == SLURM_SUCCESS) {
@@ -4706,7 +4711,7 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 	}
 
-	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
+	i = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select, NULL);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (i == SLURM_SUCCESS) {
@@ -5075,7 +5080,7 @@ static int  _resize_resv(slurmctld_resv_t *resv_ptr, uint32_t node_cnt)
 		bit_and_not(resv_select.node_bitmap, resv_ptr->node_bitmap);
 	}
 
-	rc = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select);
+	rc = _select_nodes(&resv_desc, &resv_ptr->part_ptr, &resv_select, NULL);
 	xfree(resv_desc.node_list);
 	xfree(resv_desc.partition);
 	if (rc == SLURM_SUCCESS) {
@@ -5295,7 +5300,8 @@ static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
  */
 static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			 part_record_t **part_ptr,
-			 resv_select_t *resv_select_ret)
+			 resv_select_t *resv_select_ret,
+			 bitstr_t *preserve_bitmap)
 {
 	slurmctld_resv_t *resv_ptr;
 	resv_select_t resv_select[MAX_BITMAPS] = {{0}};
@@ -5433,6 +5439,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			have_xand = true;
 			_pick_nodes_by_feature_node_cnt(
 				resv_select[max_bitmap].node_bitmap,
+				preserve_bitmap,
 				resv_desc_ptr,
 				resv_select_ret,
 				total_node_cnt,
@@ -5494,6 +5501,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 }
 
 static void _pick_nodes_by_feature_node_cnt(bitstr_t *avail_bitmap,
+					    bitstr_t *preserve_bitmap,
 					    resv_desc_msg_t *resv_desc_ptr,
 					    resv_select_t *resv_select_ret,
 					    int total_node_cnt,
@@ -5553,11 +5561,62 @@ TRY_AVAIL:
 			detail_ptr->min_nodes =
 			resv_desc_ptr->node_cnt =
 			feat_ptr->count ? feat_ptr->count : 1;
-		resv_select.node_bitmap = bit_copy(avail_bitmap);
-		bit_and(resv_select.node_bitmap, feature_bitmap);
-		resv_select.core_bitmap = resv_select_ret->core_bitmap;
-		_pick_nodes(resv_desc_ptr, &resv_select, resv_select_ret);
-		FREE_NULL_BITMAP(resv_select.node_bitmap);
+
+		/*
+		 * If we have a list of preserved nodes, select from those
+		 * first.
+		 */
+		if (preserve_bitmap) {
+			/*
+			* Set these = 1 to allow less than
+			* feature count number of nodes to
+			* be selected
+			*/
+			detail_ptr->orig_min_cpus =
+				detail_ptr->min_cpus =
+				detail_ptr->min_nodes = 1;
+
+			int node_count = 0;
+			if (resv_select_ret->node_bitmap) {
+				node_count = bit_set_count(
+					resv_select_ret->node_bitmap);
+			}
+
+			resv_select.node_bitmap = bit_copy(preserve_bitmap);
+			bit_and(resv_select.node_bitmap, feature_bitmap);
+			resv_select.core_bitmap = resv_select_ret->core_bitmap;
+
+			_pick_nodes(resv_desc_ptr, &resv_select,
+				    resv_select_ret);
+
+			FREE_NULL_BITMAP(resv_select.node_bitmap);
+
+			/* decrement needed node count */
+			if (resv_select_ret->node_bitmap) {
+				/* calculate the number of nodes added */
+				int found_count = bit_set_count(
+					resv_select_ret->node_bitmap) -
+					node_count;
+				/* reduce to number still needed */
+				detail_ptr->num_tasks =
+					detail_ptr->max_nodes =
+					resv_desc_ptr->node_cnt =
+					feat_ptr->count - found_count;
+			}
+		}
+
+		/* Search for replacements if needed */
+		if (resv_desc_ptr->node_cnt > 0) {
+			resv_select.node_bitmap = bit_copy(avail_bitmap);
+			bit_and(resv_select.node_bitmap, feature_bitmap);
+			resv_select.core_bitmap = resv_select_ret->core_bitmap;
+
+			_pick_nodes(resv_desc_ptr, &resv_select,
+				    resv_select_ret);
+
+			FREE_NULL_BITMAP(resv_select.node_bitmap);
+		}
+
 		if (!resv_select_ret->node_bitmap)
 			break;
 	}

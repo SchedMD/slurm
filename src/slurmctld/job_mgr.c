@@ -19302,12 +19302,13 @@ extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
 	}
 
 	if (resv_desc_ptr->tres_str || resv_desc_ptr->core_cnt != NO_VAL) {
-		detail_ptr->mc_ptr = xmalloc(sizeof(*detail_ptr->mc_ptr));
-		detail_ptr->mc_ptr->cores_per_socket = NO_VAL16;
+		detail_ptr->mc_ptr = job_record_create_mc();
+
+		/*
+		 * Since reservations are core based we need to request it that
+		 * way with one thread per core and one task per core.
+		 */
 		detail_ptr->mc_ptr->ntasks_per_core = 1;
-		detail_ptr->mc_ptr->ntasks_per_socket = INFINITE16;
-		detail_ptr->mc_ptr->plane_size = 0;
-		detail_ptr->mc_ptr->sockets_per_node = NO_VAL16;
 		detail_ptr->mc_ptr->threads_per_core = 1;
 
 		detail_ptr->num_tasks = detail_ptr->min_cpus =
