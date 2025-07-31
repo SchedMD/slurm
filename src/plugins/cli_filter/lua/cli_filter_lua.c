@@ -131,7 +131,10 @@ extern int init(void)
 
 	stored_data = xcalloc(24, sizeof(char *));
 	stored_sz = 24;
-	lua_script_path = get_extra_conf_path("cli_filter.lua");
+
+	if (!(lua_script_path = conf_get_opt_str(slurm_conf.cli_filter_params,
+						 "cli_filter_lua_path=")))
+		lua_script_path = get_extra_conf_path("cli_filter.lua");
 
 	return slurm_lua_loadscript(&L, "cli_filter/lua",
 				    lua_script_path, req_fxns,
