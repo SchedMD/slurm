@@ -1,4 +1,4 @@
-.TH "topology.conf" "5" "Slurm Configuration File" "May 2025" "Slurm Configuration File"
+.TH "topology.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
 
 .SH "NAME"
 topology.conf \-  Slurm configuration file for the topology plugins
@@ -16,6 +16,9 @@ as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
 Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
+.LP
+Refer to the topology guide for more details:
+<https://slurm.schedmd.com/topology.html>
 .LP
 
 .SH "topology/tree"
@@ -78,7 +81,7 @@ names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]").
 .LP
 This topology plugin places emphasis on reducing fragmentation of the
 cluster, allowing jobs to take advantage of lower\-latency connections
-between smaller "blocks" of node, rather than starting jobs as quickly
+between smaller "blocks" of nodes, rather than starting jobs as quickly
 as possible on the first available resources.
 
 .LP

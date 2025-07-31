@@ -16,7 +16,25 @@ Jobs are allocated resources on a best-fit basis.
 For larger jobs, this minimizes the number of sets of consecutive nodes
 allocated to the job.</p>
 
-<h2 id="topo_3d">Three-dimension Topology
+<h2 id="contents">Contents
+<a class="slurm_link" href="#topo_3d"></a>
+</h2>
+
+<ul>
+<li><a href="#topo_3d">Three-dimensional Topology</a></li>
+<li><a href="#hierarchical">Tree Topology (Hierarchical Networks)</a>
+<ul>
+<li><a href="#config_generators">Configuration Generators</a></li>
+</ul></li>
+<li><a href="#block">Block Topology</a>
+<ul>
+<li><a href="#block-limitations">Limitations</a></li>
+</ul></li>
+<li><a href="#env_vars">Environment Variables</a></li>
+<li><a href="#multi_topo">Multiple Topologies</a></li>
+</ul>
+
+<h2 id="topo_3d">Three-dimensional Topology
 <a class="slurm_link" href="#topo_3d"></a>
 </h2>
 
@@ -30,9 +48,9 @@ Slurm accomplishes this using a
 to map the nodes from a three-dimensional space into a one-dimensional
 space.
 Slurm's native best-fit algorithm is thus able to achieve a high degree
-of locality for jobs.
+of locality for jobs.</p>
 
-<h2 id="hierarchical">Hierarchical Networks
+<h2 id="hierarchical">Tree Topology (Hierarchical Networks)
 <a class="slurm_link" href="#hierarchical"></a>
 </h2>
 
@@ -48,7 +66,7 @@ Use of this logic requires a configuration setting of
 available resources. This may result in an allocation with
 more than the optimum number of switches. The user can request
 a maximum number of leaf switches for the job as well as a
-maximum time willing to wait for that number using the <i>--switches</i>
+maximum time willing to wait for that number using the <code>--switches</code>
 option with the salloc, sbatch and srun commands. The parameters can
 also be changed for pending jobs using the scontrol and squeue commands.</p>
 
@@ -117,7 +135,7 @@ to optimize job placement.
 The application performance may achieve little benefit from such optimization.
 Listing the leaf switches with their nodes plus one top level switch
 should result in good performance for both applications and Slurm.
-The previous example might be configured as follows:
+The previous example might be configured as follows:</p>
 <pre>
 # topology.conf
 # Switch Configuration
@@ -161,8 +179,8 @@ on network topology.</p>
 <h3 id="config_generators">Configuration Generators
 <a class="slurm_link" href="#config_generators"></a></h3>
 
-The following independently maintained tools may be useful in generating the
-<b>topology.conf</b> file for certain switch types:
+<p>The following independently maintained tools may be useful in generating the
+<b>topology.conf</b> file for certain switch types:</p>
 
 <ul>
 <li>Infiniband switch - <b>slurmibtopology</b><br>
@@ -180,9 +198,14 @@ https://github.com/aws-samples/ec2-topology-aware-for-slurm</a></li>
 
 <p>Slurm can be configured to allocate resources to jobs within a strictly
 enforced, hierarchical block structure using
-<b>TopologyPlugin=topology/block</b>.
-This approach begins with "base blocks" (bblocks), which are fundamental,
-contiguous groups of nodes defined in
+<b>TopologyPlugin=topology/block</b>. The block topology prioritizes the
+placement of jobs to minimize fragmentation across the cluster, as opposed to
+the tree topology, which focuses on fitting jobs on the first available
+resources. Small jobs will still be able to use the available space in a block
+that is partially used.</p>
+
+<p>The block topology approach begins with "base blocks" (bblocks), which are
+fundamental, contiguous groups of nodes defined in
 <a href="topology.conf.html">topology.conf</a>.
 These base blocks can be combined with other adjacent base blocks to form
 "aggregated blocks". In turn, these higher-level blocks can be aggregated
@@ -204,12 +227,37 @@ selected subset of llblocks, employing a best-fit algorithm for the
 precise placement of the job.</li>
 </ol>
 
+<h3 id="block-limitations">Limitations
+<a class="slurm_link" href="#block-limitations"></a>
+</h3>
+
+<p>Since the block topology takes a different approach than the traditional tree
+topology, there are limitations that should be taken into consideration.</p>
+
+<ul>
+<li><b>Ranges of nodes</b><br>
+When using <code>-N</code>/<code>--nodes</code> to specify a range of acceptable
+node counts, the scheduler will have to evaluate each value of that range to
+find optimal placement on the available block(s). If using a range is necessary,
+the number of possible values should be kept as small as possible.</li>
+<li><b>Requesting specific nodes</b><br>
+Using <code>-w</code>/<code>--nodelist</code> to request a specific node or
+nodes can conflict with the block placement and is not currently supported. You
+can use <code>-x</code>/<code>--exclude</code> to prevent a job from
+being scheduled on certain nodes.
+</li>
+<li><b>Contiguous blocks</b><br>
+The scheduler will attempt to place jobs on blocks that are adjacent to each
+other in the block structure. You cannot currently request that a job be
+placed on non-adjacent blocks.</li>
+</ul>
+
 <h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
 
 <p>For use with the <b>topology/tree</b> plugin, user can also specify the
 maximum number of leaf switches to be used for their job with the maximum time
 the job should wait for this optimized configuration. The syntax for this option
-is <b>--switches=count[@time]</b>.
+is <code>--switches=count[@time]</code>.
 The system administrator can limit the maximum time that any job can
 wait for this optimized configuration using the <b>SchedulerParameters</b>
 configuration parameter with the
@@ -275,6 +323,6 @@ allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
 
-<p style="text-align:center;">Last modified 16 July 2025</p>
+<p style="text-align:center;">Last modified 31 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
