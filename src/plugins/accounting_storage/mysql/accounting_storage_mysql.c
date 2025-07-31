@@ -2790,6 +2790,51 @@ error:
 	return SLURM_ERROR;
 }
 
+/*
+ * Case-insensitive collations are assumed for the database. Not having them
+ * may lead to unexpected things happening including problems when removing
+ * users when PreserveCaseUser has been set.
+ *
+ * For now log exceptions to guide admins to the documentation and to aid in
+ * debugging collation issues. Future versions should enforce the assumption.
+ */
+static void _check_database_collations(mysql_conn_t *mysql_conn)
+{
+	/* suffix for case-insensitive collation names */
+	char *collation_ci_suffix = "_ci";
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row = NULL;
+
+	/* check database default collation */
+	query = xstrdup_printf("select default_collation_name from information_schema.schemata where schema_name=database() and default_collation_name not like '%%%s'",
+			       collation_ci_suffix);
+
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0)))
+		fatal("%s: null result from query `%s`", __func__, query);
+	xfree(query);
+
+	if ((row = mysql_fetch_row(result)) && row[0]) {
+		error("Database has a case-sensitive default collation '%s'. Case-sensitive collations are not supported. Please refer to the Slurm accounting documentation for more details.",
+		      row[0]);
+	}
+	mysql_free_result(result);
+
+	/* check column collations */
+	query = xstrdup_printf("select count(*) from information_schema.columns where table_schema=database() and collation_name not like '%%%s'",
+			       collation_ci_suffix);
+
+	if (!(result = mysql_db_query_ret(mysql_conn, query, 0)))
+		fatal("%s: null result from query `%s`", __func__, query);
+	xfree(query);
+
+	if ((row = mysql_fetch_row(result)) && xstrcmp(row[0], "0")) {
+		error("Database tables have a total of %s columns with a case-sensitive collation. Case-sensitive collations are not supported. Please refer to the Slurm accounting documentation for more details.",
+		      row[0]);
+	}
+	mysql_free_result(result);
+}
+
 static int _send_ctld_update(void *x, void *arg)
 {
 	slurmdbd_conn_t *db_conn = x;
@@ -2868,6 +2913,8 @@ extern int init(void)
 		if (mysql_db_rollback(mysql_conn))
 			error("rollback failed");
 	}
+
+	_check_database_collations(mysql_conn);
 
 	/*
 	 * Build the list for the first time after _as_mysql_acct_check_tables()
