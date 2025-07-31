@@ -44,6 +44,11 @@
 #include "src/slurmctld/slurmctld.h"
 #include "slurm/slurm_errno.h"
 
+#ifndef LUA_OK
+/* Define LUA_OK if Lua is <5.2 */
+#define LUA_OK 0
+#endif
+
 /* Using typedef as Lua status codes are distinct from POSIX return codes */
 typedef int lua_status_code_t;
 
