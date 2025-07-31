@@ -110,10 +110,6 @@ static void _state_defaults(void)
 	/* Don't set up state->vni_table yet */
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	debug("loaded");
@@ -130,7 +126,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (running_in_slurmctld() || active_outside_ctld) {
 		FREE_NULL_BITMAP(slingshot_state.vni_table);
@@ -139,7 +135,6 @@ extern int fini(void)
 		slingshot_free_config();
 	} else
 		slingshot_free_services();
-	return SLURM_SUCCESS;
 }
 
 /*

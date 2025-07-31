@@ -126,7 +126,7 @@ static void _print_cred(munge_ctx_t ctx);
 /*
  *  Munge plugin initialization
  */
-int init(void)
+extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *fail_test_env = getenv("SLURM_MUNGE_AUTH_FAIL_TEST");
@@ -161,9 +161,9 @@ int init(void)
 	return rc;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 /*

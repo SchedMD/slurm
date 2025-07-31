@@ -75,19 +75,14 @@ const char plugin_name[]      = "Process tracking via linux /proc";
 const char plugin_type[]      = "proctrack/linuxproc";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
+extern int init(void)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 /*

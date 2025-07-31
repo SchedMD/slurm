@@ -168,13 +168,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
 
 	rsmi_shut_down();
-
-	return SLURM_SUCCESS;
 }
 
 /*

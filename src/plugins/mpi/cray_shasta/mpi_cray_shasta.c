@@ -285,7 +285,7 @@ extern int init(void)
 /*
  * Clean up the application
  */
-extern int fini(void)
+extern void fini(void)
 {
 	// Remove application spool directory
 	if (appdir)
@@ -294,8 +294,6 @@ extern int fini(void)
 	// Free allocated storage
 	xfree(appdir);
 	xfree(apinfo);
-
-	return SLURM_SUCCESS;
 }
 
 extern void mpi_p_conf_options(s_p_options_t **full_options, int *full_opt_cnt)

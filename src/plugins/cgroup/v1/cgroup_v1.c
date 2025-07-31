@@ -508,7 +508,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	for (int sub = 0; sub < CG_CTL_CNT; sub++) {
 		FREE_NULL_LIST(g_task_list[sub]);
@@ -517,7 +517,6 @@ extern int fini(void)
 	}
 
 	debug("unloading %s", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 extern int cgroup_p_setup_scope(char *scope_path)

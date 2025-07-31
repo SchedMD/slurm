@@ -244,11 +244,9 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
-
-	return SLURM_SUCCESS;
 }
 
 extern void gpu_p_get_device_count(uint32_t *device_count)

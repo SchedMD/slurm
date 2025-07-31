@@ -82,13 +82,7 @@ const char plugin_name[] = "Job accounting gather LINUX plugin";
 const char plugin_type[] = "jobacct_gather/linux";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init (void)
+extern int init(void)
 {
 	if (running_in_slurmstepd())
 		jag_common_init(jobacct_gather_get_clk_tck());
@@ -98,15 +92,13 @@ extern int init (void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini (void)
+extern void fini(void)
 {
 	if (running_in_slurmstepd()) {
 		/* just to make sure it closes things up since we call it
 		 * from here */
 		acct_gather_energy_fini();
 	}
-
-	return SLURM_SUCCESS;
 }
 
 /*

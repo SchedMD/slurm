@@ -19,34 +19,32 @@ the Slurm Scheduler API.</p>
 <h2 id="versioning">Versioning
 <a class="slurm_link" href="#versioning"></a>
 </h2>
-<p>Slurm plugin version numbers comprise a major, minor and micro revision number.
-If the major and/or minor revision number changes, this indicates major changes
-to the Slurm functionality including changes to APIs, command options, and
-plugins.
-These plugin changes may include new functions and/or function arguments.
-If only the micro revision number changes, this is indicative of bug fixes
-and possibly minor enhancements which should not adversely impact users.
-In all cases, rebuilding and installing all Slurm plugins is recommended
-at upgrade time.
-Not all compute nodes in a cluster need be updated at the same time, but
-all Slurm APIs, commands, plugins, etc. on a compute node should represent
-the same version of Slurm.</p>
+<p>Slurm plugins must provide a plugin_version symbol exactly matching that
+of the process they are loaded into. This is to avoid any potential issues if,
+e.g., an underlying struct definition is changed by a maintenance release.</p>
 
+<p>It is expected that the plugins are automatically build, packaged, and
+distributed alongside the libslurm library, Slurm commands, and daemons.</p>
+
+<p>The only exception to this is the SPANK plugin interface which only requires
+the Slurm release to match, while the maintenance release (micro version) may be
+changed. This is to reflect the additional ABI stability commitment that is
+maintained exclusively for that plugin interface.</p>
 
 <h2 id="data_objects">Data Objects
 <a class="slurm_link" href="#data_objects"></a></h2>
 
 <p>A plugin must define and export the following symbols:</p>
 <ul>
-<li><span class="commandline">char plugin_type[]</span><br>
+<li><span class="commandline">char plugin_type[] = "";</span><br>
 A unique, short, formatted string to identify the plugin's purpose as
 described above. A &quot;null&quot; plugin (i.e., one that implements the desired
 API as stubs) should have a minor type of &quot;none.&quot;</li>
-<li><span class="commandline">char plugin_name[]</span><br>
+<li><span class="commandline">char plugin_name[] = "";</span><br>
 A free-form string that identifies the plugin in human-readable terms,
 such as &quot;Kerberos authentication.&quot; Slurm will use this string to identify
 the plugin to end users.</li>
-<li><span class="commandline">const uint32_t plugin_version</span><br>
+<li><span class="commandline">const uint32_t plugin_version = SLURM_VERSION_NUMBER;</span><br>
 Identifies the version of Slurm used to build this plugin and
 any attempt to load the plugin from a different version of Slurm will result
 in an error.
@@ -56,7 +54,7 @@ The micro version is not considered for <a href="spank.html">SPANK</a> plugins.
 <h2 id="api">API Functions in All Plugins
 <a class="slurm_link" href="#api"></a>
 </h2>
-<p class="commandline">int init (void);</p>
+<p class="commandline">extern int init(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: If present, this function is called
 just after the plugin is loaded. This allows the plugin to perform any global
 initialization prior to any actual API calls.</p>
@@ -64,7 +62,7 @@ initialization prior to any actual API calls.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the plugin's initialization
 was successful. Any other return value indicates to Slurm that the plugin should
 be unloaded and not used.</p>
-<p class="commandline">void fini (void);</p>
+<p class="commandline">extern void fini(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: If present, this function is called
 just before the plugin is unloaded. This allows the plugin to do any finalization
 after the last plugin-specific API call is made.</p>
@@ -79,6 +77,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">_fini()</span>.</p>
 <p>The functions need not appear. The plugin may provide either
 <span class="commandline">init()</span> or <span class="commandline">fini()</span> or both.</p>
+
 <h2 id="thread_safety">Thread Safety
 <a class="slurm_link" href="#thread_safety"></a>
 </h2>
@@ -87,6 +86,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 the plugin functions in a re-entrant fashion. It is the responsibility of the
 plugin author to provide the necessarily mutual exclusion and synchronization
 in order to avoid the pitfalls of re-entrant code.</p>
+
 <h2 id="run_time">Run-time Support
 <a class="slurm_link" href="#run_time"></a>
 </h2>
@@ -334,7 +334,6 @@ uint32_t reason_uid;
   No special advice.
 </p>
 
-
-<p style="text-align:center;">Last modified 25 August 2022</p>
+<p style="text-align:center;">Last modified 30 July 2025</p>
 
 <!--#include virtual="footer.txt"-->

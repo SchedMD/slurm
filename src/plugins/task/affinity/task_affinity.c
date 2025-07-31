@@ -82,11 +82,7 @@ const char plugin_name[]        = "task affinity plugin";
 const char plugin_type[]        = "task/affinity";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
-extern int init (void)
+extern int init(void)
 {
 	cpu_set_t cur_mask;
 	char mstr[CPU_SET_HEX_STR_SIZE];
@@ -98,14 +94,9 @@ extern int init (void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
-extern int fini (void)
+extern void fini(void)
 {
 	debug("%s unloaded", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 /*

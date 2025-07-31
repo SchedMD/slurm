@@ -122,10 +122,6 @@ static int _mysql_jobcomp_check_tables()
 	return SLURM_SUCCESS;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	static int first = 1;
@@ -142,13 +138,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (jobcomp_mysql_conn) {
 		destroy_mysql_conn(jobcomp_mysql_conn);
 		jobcomp_mysql_conn = NULL;
 	}
-	return SLURM_SUCCESS;
 }
 
 extern int jobcomp_p_set_location(void)

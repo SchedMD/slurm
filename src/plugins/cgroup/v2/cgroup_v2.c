@@ -1739,7 +1739,7 @@ extern int cgroup_p_setup_scope(char *scope_path)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	/*
 	 * Clear up the namespace and cgroups memory. Don't rmdir anything since
@@ -1756,7 +1756,6 @@ extern int fini(void)
 	xfree(stepd_scope_path);
 
 	debug("unloading %s", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 /*

@@ -272,13 +272,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	xfree(claim_field);
 	FREE_NULL_DATA(jwks);
 	FREE_NULL_BUFFER(key);
-
-	return SLURM_SUCCESS;
 }
 
 extern auth_token_t *auth_p_create(char *auth_info, uid_t r_uid, void *data,

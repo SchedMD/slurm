@@ -149,10 +149,6 @@ static int _set_job_rec_field_index(lua_State *st)
 	return SLURM_SUCCESS;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -170,7 +166,7 @@ extern int init(void)
 	return rc;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (L) {
 		lua_close(L);
@@ -180,8 +176,6 @@ extern int fini(void)
 	xfree(lua_script_path);
 
 	slurm_lua_fini();
-
-	return SLURM_SUCCESS;
 }
 
 /*

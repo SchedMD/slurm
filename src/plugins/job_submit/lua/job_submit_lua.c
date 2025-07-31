@@ -1379,7 +1379,7 @@ static void _loadscript_extra(lua_State *st)
  *   let alone called from multiple threads. Therefore, locking
  *   is unnecessary here.
  */
-int init(void)
+extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1393,7 +1393,7 @@ int init(void)
 				    _loadscript_extra, NULL);
 }
 
-int fini(void)
+extern void fini(void)
 {
 	if (L) {
 		debug3("%s: Unloading Lua script", __func__);
@@ -1404,8 +1404,6 @@ int fini(void)
 	xfree(lua_script_path);
 
 	slurm_lua_fini();
-
-	return SLURM_SUCCESS;
 }
 
 

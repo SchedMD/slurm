@@ -120,7 +120,7 @@ extern int init(void)
 
 extern void fini(void)
 {
-	/* Empty. */
+	return;
 }
 
 /* Return true if the preemptor can preempt the preemptee, otherwise false */

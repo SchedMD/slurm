@@ -79,11 +79,9 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
-
-	return SLURM_SUCCESS;
 }
 
 extern int hash_p_compute(char *input, int len, char *custom_str, int cs_len,

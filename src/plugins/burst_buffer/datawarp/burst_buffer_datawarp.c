@@ -2493,9 +2493,8 @@ fini:	xfree(access);
 }
 
 /*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Read and validate configuration file here. Spawn thread to
- * periodically read Datawarp state.
+ * Read and validate configuration file.
+ * Spawn thread to periodically read Datawarp state.
  */
 extern int init(void)
 {
@@ -2512,11 +2511,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is unloaded. Free all memory and shutdown
- * threads.
- */
-extern int fini(void)
+extern void fini(void)
 {
 	int pc, last_pc = 0;
 
@@ -2545,8 +2540,6 @@ extern int fini(void)
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
-
-	return SLURM_SUCCESS;
 }
 
 static void _pre_queue_stage_out(job_record_t *job_ptr, bb_job_t *bb_job)

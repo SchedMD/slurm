@@ -947,7 +947,7 @@ extern int init(void)
 }
 
 /* Release allocated memory */
-extern int fini(void)
+extern void fini(void)
 {
 	shutdown_time = time(NULL);
 	slurm_mutex_lock(&ume_mutex);
@@ -960,8 +960,6 @@ extern int fini(void)
 	xfree(numa_cpu_bind);
 	xfree(syscfg_path);
 	FREE_NULL_BITMAP(knl_node_bitmap);
-
-	return SLURM_SUCCESS;
 }
 
 /* Update active and available features on specified nodes,

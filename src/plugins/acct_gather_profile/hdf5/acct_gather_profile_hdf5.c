@@ -222,10 +222,6 @@ static void _create_directories(void)
 	/* Do not xfree() hdf5_dir_rel (interior pointer to freed data). */
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	if (!running_in_slurmstepd())
@@ -238,12 +234,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	xfree(tables);
 	xfree(groups);
 	xfree(hdf5_conf.dir);
-	return SLURM_SUCCESS;
 }
 
 extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,

@@ -107,23 +107,15 @@ typedef struct topoinfo_tree {
 	topoinfo_switch_t *topo_array;	/* the switch topology records */
 } topoinfo_tree_t;
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- *	are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is removed. Clear any allocated
- *	storage here.
- */
-extern int fini(void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,

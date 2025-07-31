@@ -85,14 +85,14 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static pthread_mutex_t depend_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int init (void)
+extern int init(void)
 {
 	return SLURM_SUCCESS;
 }
 
-int fini (void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 static void _add_env(job_desc_msg_t *job_desc, char *new_env)

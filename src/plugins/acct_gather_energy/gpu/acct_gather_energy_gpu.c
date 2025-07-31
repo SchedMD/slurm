@@ -485,10 +485,6 @@ static int _get_joules_task(uint16_t delta)
 	return SLURM_SUCCESS;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	/* put anything that requires the .conf being read in
@@ -498,13 +494,10 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin exits.
- */
-extern int fini(void)
+extern void fini(void)
 {
 	if (!running_in_slurmd_stepd())
-		return SLURM_SUCCESS;
+		return;
 
 	flag_energy_accounting_shutdown = true;
 
@@ -518,8 +511,6 @@ extern int fini(void)
 	xfree(gpus);
 	xfree(start_current_energies);
 	saved_usable_gpus = NULL;
-
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_energy_p_update_node_energy(void)

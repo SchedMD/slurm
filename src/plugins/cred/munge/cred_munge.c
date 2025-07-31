@@ -106,24 +106,15 @@ enum local_error_code {
 	ESIG_CRED_REPLAYED,
 };
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
-/*
- * fini() is called when the plugin is unloaded,
- * free any global memory allocations here to avoid memory leaks.
- */
-extern int fini(void)
+extern void fini(void)
 {
 	verbose("%s unloaded", plugin_name);
-	return SLURM_SUCCESS;
 }
 
 static munge_ctx_t _munge_ctx_create(void)

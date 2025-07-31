@@ -315,10 +315,6 @@ static int _update_node_interconnect(void)
 						     ofed_sens.update_time);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	slurmdb_tres_rec_t tres_rec;
@@ -334,17 +330,15 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (!running_in_slurmstepd())
-		return SLURM_SUCCESS;
+		return;
 
 	if (srcport)
 		mad_rpc_close_port(srcport);
 
 	log_flag(INTERCONNECT, "ofed: ended");
-
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_interconnect_p_node_update(void)

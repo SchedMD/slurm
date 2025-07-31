@@ -94,21 +94,16 @@ static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
 static char *           log_name  = NULL;
 static int              job_comp_fd = -1;
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-int init ( void )
+extern int init(void)
 {
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern void fini(void)
 {
 	if (job_comp_fd >= 0)
 		close(job_comp_fd);
 	xfree(log_name);
-	return SLURM_SUCCESS;
 }
 
 /*

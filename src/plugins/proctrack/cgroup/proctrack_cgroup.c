@@ -146,11 +146,7 @@ _slurm_cgroup_is_pid_a_slurm_task(uint64_t id, pid_t pid)
 	return fstatus;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init (void)
+extern int init(void)
 {
 	/* initialize cgroup internal data */
 	if (cgroup_g_initialize(CG_TRACK) != SLURM_SUCCESS) {
@@ -160,9 +156,9 @@ extern int init (void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini (void)
+extern void fini(void)
 {
-	return SLURM_SUCCESS;
+	return;
 }
 
 /*

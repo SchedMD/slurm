@@ -2859,10 +2859,6 @@ static int _send_ctld_update(void *x, void *arg)
 	return 0;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -2929,7 +2925,7 @@ extern int init(void)
 	return rc;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
 	slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 	FREE_NULL_LIST(as_mysql_cluster_list);
@@ -2942,7 +2938,6 @@ extern int fini ( void )
 	xfree(default_qos_str);
 
 	mysql_db_cleanup();
-	return SLURM_SUCCESS;
 }
 
 /*

@@ -1768,12 +1768,7 @@ static void _set_usage_efctv(slurmdb_assoc_rec_t *assoc)
 			(s_child / (long double) s_all_siblings);
 }
 
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-int init ( void )
+extern int init(void)
 {
 	/* Write lock on jobs, read lock on nodes and partitions */
 
@@ -1815,7 +1810,7 @@ int init ( void )
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern void fini(void)
 {
 	plugin_shutdown = time(NULL);
 
@@ -1837,8 +1832,6 @@ int fini ( void )
 	slurm_thread_join(decay_handler_thread);
 
 	site_factor_g_fini();
-
-	return SLURM_SUCCESS;
 }
 
 void priority_p_thread_start(void)

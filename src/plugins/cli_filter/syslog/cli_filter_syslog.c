@@ -123,12 +123,11 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	for (int i = 0; i < stored_n; i++)
 		xfree(stored_data[i]);
 	xfree(stored_data);
-	return SLURM_SUCCESS;
 }
 
 /*****************************************************************************\

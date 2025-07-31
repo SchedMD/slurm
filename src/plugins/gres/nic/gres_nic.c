@@ -136,12 +136,11 @@ extern int init(void)
 
 	return SLURM_SUCCESS;
 }
-extern int fini(void)
+
+extern void fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
 	FREE_NULL_LIST(gres_devices);
-
-	return SLURM_SUCCESS;
 }
 
 /*

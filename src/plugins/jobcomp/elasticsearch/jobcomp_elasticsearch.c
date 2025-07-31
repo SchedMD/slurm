@@ -327,10 +327,6 @@ static void _jobslist_del(void *x)
 	xfree(jnode);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called. Put global initialization here.
- */
 extern int init(void)
 {
 	serializer_required(MIME_TYPE_JSON);
@@ -348,7 +344,7 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	thread_shutdown = true;
 	slurm_thread_join(job_handler_thread);
@@ -359,8 +355,6 @@ extern int fini(void)
 
 	jobcomp_common_conf_fini();
 	slurm_curl_fini();
-
-	return SLURM_SUCCESS;
 }
 
 /*

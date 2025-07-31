@@ -596,10 +596,6 @@ static void * _script_agent (void *args)
 	return NULL;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	verbose("jobcomp/script plugin loaded init");
@@ -654,8 +650,7 @@ extern int jobcomp_p_record_job_end(job_record_t *record, uint32_t event)
 	return SLURM_SUCCESS;
 }
 
-/* Called when script unloads */
-extern int fini ( void )
+extern void fini(void)
 {
 	slurm_mutex_lock(&thread_flag_mutex);
 	if (script_thread) {
@@ -672,8 +667,6 @@ extern int fini ( void )
 	slurm_mutex_lock(&comp_list_mutex);
 	FREE_NULL_LIST(comp_list);
 	slurm_mutex_unlock(&comp_list_mutex);
-
-	return SLURM_SUCCESS;
 }
 
 /*

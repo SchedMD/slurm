@@ -120,7 +120,7 @@ static const struct luaL_Reg slurm_functions[] = {
  *   let alone called from multiple threads. Therefore, locking
  *   is unnecessary here.
  */
-int init(void)
+extern int init(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -139,7 +139,7 @@ int init(void)
 				    NULL);
 }
 
-int fini(void)
+extern void fini(void)
 {
 	for (int i = 0; i < stored_n; i++)
 		xfree(stored_data[i]);
@@ -149,8 +149,6 @@ int fini(void)
 	lua_close(L);
 
 	slurm_lua_fini();
-
-	return SLURM_SUCCESS;
 }
 
 static int _setup_stringarray(lua_State *st, int limit, char **data) {

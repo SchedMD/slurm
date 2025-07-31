@@ -233,11 +233,7 @@ static void _update_cluster_nodes(void)
 	slurm_mutex_unlock(&cluster_hl_mutex);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
+extern int init(void)
 {
 	if (first) {
 		/* since this can be loaded from many different places
@@ -260,7 +256,7 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
 	plugin_shutdown = time(NULL);
 
@@ -272,8 +268,6 @@ extern int fini ( void )
 
 	prev_node_record_count = -1;
 	first = 1;
-
-	return SLURM_SUCCESS;
 }
 
 extern void *acct_storage_p_get_connection(

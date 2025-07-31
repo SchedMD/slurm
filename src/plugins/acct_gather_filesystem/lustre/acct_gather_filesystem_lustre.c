@@ -380,10 +380,6 @@ static int _update_node_filesystem(void)
 	return SLURM_SUCCESS;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
 extern int init(void)
 {
 	slurmdb_tres_rec_t tres_rec;
@@ -399,14 +395,12 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int fini(void)
+extern void fini(void)
 {
 	if (!running_in_slurmstepd())
-		return SLURM_SUCCESS;
+		return;
 
 	debug("lustre: ended");
-
-	return SLURM_SUCCESS;
 }
 
 extern int acct_gather_filesystem_p_node_update(void)

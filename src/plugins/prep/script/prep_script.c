@@ -110,7 +110,7 @@ extern int init(void)
 
 extern void fini(void)
 {
-
+	return;
 }
 
 extern void prep_p_register_callbacks(prep_callbacks_t *callbacks)

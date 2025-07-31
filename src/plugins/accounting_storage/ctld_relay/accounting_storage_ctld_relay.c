@@ -184,11 +184,7 @@ static void _agent_append(buf_t *buffer)
 	slurm_cond_signal(&agent_cond);
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
+extern int init(void)
 {
 	agent_list = list_create(NULL);
 
@@ -199,7 +195,7 @@ extern int init ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int fini ( void )
+extern void fini(void)
 {
 	agent_shutdown = true;
 
@@ -210,8 +206,6 @@ extern int fini ( void )
 	slurm_thread_join(agent_thread_id);
 
 	FREE_NULL_LIST(agent_list);
-
-	return SLURM_SUCCESS;
 }
 
 extern void *acct_storage_p_get_connection(
