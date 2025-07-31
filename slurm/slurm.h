@@ -2972,6 +2972,7 @@ typedef struct {
 	char *certmgr_params;	/* certmgr parameters */
 	char *certmgr_type;	/* certmgr type */
 	void *cgroup_conf;	/* cgroup support config file */
+	char *cli_filter_params; /* CliFilterParameters */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
 	uint16_t cluster_id; /* unique ID for this cluster from the DBD */
 	char *cluster_name;     /* general name of the entire cluster */

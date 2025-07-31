@@ -310,6 +310,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	    xstrstr(conf->task_plugin, "cgroup"))
 		conf_ptr->cgroup_conf = cgroup_get_conf_list();
 
+	conf_ptr->cli_filter_params = xstrdup(conf->cli_filter_params);
 	conf_ptr->cli_filter_plugins  = xstrdup(conf->cli_filter_plugins);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
 	conf_ptr->comm_params         = xstrdup(conf->comm_params);

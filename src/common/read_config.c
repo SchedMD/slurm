@@ -240,6 +240,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CertgenParameters", S_P_STRING},
 	{"CertmgrType", S_P_STRING},
 	{"CertmgrParameters", S_P_STRING},
+	{"CliFilterParameters", S_P_STRING},
 	{"CliFilterPlugins", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CommunicationParameters", S_P_STRING},
@@ -2597,6 +2598,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree(ctl_conf_ptr->certmgr_params);
 	xfree(ctl_conf_ptr->certmgr_type);
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
+	xfree(ctl_conf_ptr->cli_filter_params);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree_array(ctl_conf_ptr->control_addr);
@@ -2748,6 +2750,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->certgen_type);
 	xfree(ctl_conf_ptr->certmgr_params);
 	xfree(ctl_conf_ptr->certmgr_type);
+	xfree(ctl_conf_ptr->cli_filter_params);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->comm_params);
@@ -3836,6 +3839,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			error("CommunicationParameters option host_unreach_retry_count=%ld is invalid, ignored",
 			      tmp_val);
 	}
+
+	(void) s_p_get_string(&conf->cli_filter_params, "CliFilterParameters",
+			      hashtbl);
 
 	if (!s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
 			    hashtbl)) {
