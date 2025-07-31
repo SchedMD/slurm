@@ -174,13 +174,20 @@ cli_filter_p_post_submit().<br>
 
 <h2 id="lua">LUA Interface<a class="slurm_link" href="#lua"></a></h2>
 <p>Setting <b>CliFilterPlugins=cli_filter/lua</b> in slurm.conf will allow
-you to implement the API functions mentioned using Lua language. The file must
-be named "cli_filter.lua" and, similar to the job_submit plugin, it must be
-located in the default configuration directory (typically the subdirectory
-"etc" of the installation).
+you to implement the API functions mentioned using Lua language. Unless
+otherwise specified via
+<a href="slurm.conf.html#OPT_cli_filter_lua_path">
+CliFilterParameters=cli_filter_lua_path</a>,
+the file must be named "cli_filter.lua" and, similar to the job_submit plugin,
+it must be located in the default configuration directory (typically the
+subdirectory "etc" of the installation).
 An example is provided within the source code
 <a href="https://github.com/SchedMD/slurm/blob/master/etc/cli_filter.lua.example">
 here</a>.</p>
+
+<p>If explicitly configuring a path for "cli_filter.lua" the configured
+directory containing the cli_filter.lua script should have 755 permissions,
+the script itself 644 and both be owned by SlurmdUser.</p>
 
 <p><b>NOTE</b>: Although available options are defined in the struct
 <span class="commandline">slurm_opt_t</span> within
@@ -235,6 +242,6 @@ sbatch:*:partition = high
 srun:*:partition = short
 </pre></p>
 
-<p style="text-align:center;">Last modified 19 February 2024</p>
+<p style="text-align:center;">Last modified 1 August 2025</p>
 
 <!--#include virtual="footer.txt"-->
