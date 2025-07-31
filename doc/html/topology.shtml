@@ -16,6 +16,24 @@ Jobs are allocated resources on a best-fit basis.
 For larger jobs, this minimizes the number of sets of consecutive nodes
 allocated to the job.</p>
 
+<h2 id="contents">Contents
+<a class="slurm_link" href="#topo_3d"></a>
+</h2>
+
+<ul>
+<li><a href="#topo_3d">Three-dimensional Topology</a></li>
+<li><a href="#hierarchical">Tree Topology (Hierarchical Networks)</a>
+<ul>
+<li><a href="#config_generators">Configuration Generators</a></li>
+</ul></li>
+<li><a href="#block">Block Topology</a>
+<ul>
+<li><a href="#block-limitations">Limitations</a></li>
+</ul></li>
+<li><a href="#env_vars">Environment Variables</a></li>
+<li><a href="#multi_topo">Multiple Topologies</a></li>
+</ul>
+
 <h2 id="topo_3d">Three-dimensional Topology
 <a class="slurm_link" href="#topo_3d"></a>
 </h2>
