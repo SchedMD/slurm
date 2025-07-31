@@ -428,10 +428,13 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 
 	job_ptr = resv_desc_ptr->job_ptr;
 
+	/*
+	 * request the maximum nodes, require the minimum
+	 */
 	rc = select_g_job_test(
 		job_ptr, resv_select->node_bitmap, job_ptr->details->min_nodes,
 		job_ptr->details->max_nodes,
-		job_ptr->details->min_nodes,
+		job_ptr->details->max_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
 		&resv_exc,
 		NULL);
