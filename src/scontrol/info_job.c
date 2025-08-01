@@ -717,87 +717,88 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 
 	/****** Line 22 ******/
 	xstrfmtcat(out, "WorkDir=%s", job_ptr->work_dir);
+	xstrcat(out, line_end);
 
 	/****** Line (optional) ******/
 	if (job_ptr->admin_comment) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "AdminComment=%s ", job_ptr->admin_comment);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->system_comment) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "SystemComment=%s ", job_ptr->system_comment);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->comment) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "Comment=%s ", job_ptr->comment);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->extra) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "Extra=%s ", job_ptr->extra);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 30 (optional) ******/
 	if (job_ptr->batch_flag) {
-		xstrcat(out, line_end);
 		slurm_get_job_stderr(tmp_path, sizeof(tmp_path), job_ptr);
 		xstrfmtcat(out, "StdErr=%s", tmp_path);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 31 (optional) ******/
 	if (job_ptr->batch_flag) {
-		xstrcat(out, line_end);
 		slurm_get_job_stdin(tmp_path, sizeof(tmp_path), job_ptr);
 		xstrfmtcat(out, "StdIn=%s", tmp_path);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 32 (optional) ******/
 	if (job_ptr->batch_flag) {
-		xstrcat(out, line_end);
 		slurm_get_job_stdout(tmp_path, sizeof(tmp_path), job_ptr);
 		xstrfmtcat(out, "StdOut=%s", tmp_path);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->segment_size) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "SegmentSize=%u", job_ptr->segment_size);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 34 (optional) ******/
 	if (job_ptr->req_switch) {
 		char time_buf[32];
-		xstrcat(out, line_end);
 		secs2time_str((time_t) job_ptr->wait4switch, time_buf,
 			      sizeof(time_buf));
 		xstrfmtcat(out, "Switches=%u@%s",
 			   job_ptr->req_switch, time_buf);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 35 (optional) ******/
 	if (job_ptr->burst_buffer) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "BurstBuffer=%s", job_ptr->burst_buffer);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->burst_buffer_state) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "BurstBufferState=%s",
 			   job_ptr->burst_buffer_state);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 36 (optional) ******/
 	if (cpu_freq_debug(NULL, NULL, tmp1, sizeof(tmp1),
 			   job_ptr->cpu_freq_gov, job_ptr->cpu_freq_min,
 			   job_ptr->cpu_freq_max, NO_VAL) != 0) {
-		xstrcat(out, line_end);
 		xstrcat(out, tmp1);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line 38 (optional) ******/
@@ -806,7 +807,6 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	     GRES_MULT_TASKS_PER_SHARING |
 	     GRES_ONE_TASK_PER_SHARING | KILL_INV_DEP | NO_KILL_INV_DEP |
 	     SPREAD_JOB)) {
-		xstrcat(out, line_end);
 		if (job_ptr->bitflags & GRES_ALLOW_TASK_SHARING)
 			xstrcat(out, "GresAllowTaskSharing=Yes,");
 		if (job_ptr->bitflags & GRES_DISABLE_BIND)
@@ -825,98 +825,97 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 			xstrcat(out, "SpreadJob=Yes,");
 
 		out[strlen(out)-1] = '\0'; /* remove trailing ',' */
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->oom_kill_step != NO_VAL16) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "OOMKillStep=%u", job_ptr->oom_kill_step);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->cpus_per_tres) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "CpusPerTres=%s", job_ptr->cpus_per_tres);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->mem_per_tres) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "MemPerTres=%s", job_ptr->mem_per_tres);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->tres_bind) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "TresBind=%s", job_ptr->tres_bind);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->tres_freq) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "TresFreq=%s", job_ptr->tres_freq);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->tres_per_job) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "TresPerJob=%s", job_ptr->tres_per_job);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->tres_per_node) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "TresPerNode=%s", job_ptr->tres_per_node);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->tres_per_socket) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "TresPerSocket=%s", job_ptr->tres_per_socket);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->tres_per_task) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "TresPerTask=%s", job_ptr->tres_per_task);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->mail_type && job_ptr->mail_user) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "MailUser=%s MailType=%s",
 			   job_ptr->mail_user,
 			   print_mail_type(job_ptr->mail_type));
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if ((job_ptr->ntasks_per_tres) &&
 	    (job_ptr->ntasks_per_tres != NO_VAL16) &&
 	    (job_ptr->ntasks_per_tres != INFINITE16)) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "NtasksPerTRES=%u", job_ptr->ntasks_per_tres);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->container || job_ptr->container_id) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "Container=%s ContainerID=%s",
 			   job_ptr->container, job_ptr->container_id);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->selinux_context) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "SELinuxContext=%s", job_ptr->selinux_context);
+		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->resv_ports) {
-		xstrcat(out, line_end);
 		xstrfmtcat(out, "ResvPorts=%s", job_ptr->resv_ports);
+		xstrcat(out, line_end);
 	}
-
-	xstrcat(out, line_end);
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
