@@ -159,6 +159,7 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	hostlist_t *hl, *hl_last;
 	uint32_t threads;
 	char *line_end = (one_liner) ? " " : "\n   ";
+	char *indent = (one_liner) ? "" : "  ";
 
 	if (job_ptr->job_id == 0)	/* Duplicated sibling job record */
 		return NULL;
@@ -602,9 +603,9 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 						hostlist_ranged_string_xmalloc(
 						hl_last);
 					xstrfmtcat(out,
-						   "  Nodes=%s CPU_IDs=%s "
+						   "%sNodes=%s CPU_IDs=%s "
 						   "Mem=%"PRIu64" GRES=%s",
-						   last_hosts, tmp2,
+						   indent, last_hosts, tmp2,
 						   last_mem_alloc_ptr ?
 						   last_mem_alloc : 0,
 						   gres_last);
@@ -646,10 +647,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 
 		if (hostlist_count(hl_last)) {
 			last_hosts = hostlist_ranged_string_xmalloc(hl_last);
-			xstrfmtcat(out, "  Nodes=%s CPU_IDs=%s Mem=%"PRIu64" GRES=%s",
-				 last_hosts, tmp2,
-				 last_mem_alloc_ptr ? last_mem_alloc : 0,
-				 gres_last);
+			xstrfmtcat(out, "%sNodes=%s CPU_IDs=%s Mem=%"PRIu64" GRES=%s",
+				   indent, last_hosts, tmp2,
+				   last_mem_alloc_ptr ? last_mem_alloc : 0,
+				   gres_last);
 			xfree(last_hosts);
 			xstrcat(out, line_end);
 		}
