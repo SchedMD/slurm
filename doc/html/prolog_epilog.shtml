@@ -394,9 +394,9 @@ This is because the Prolog and Epilog programs run <u>outside</u> of any Linux
 cgroup while the job runs <u>inside</u> of the cgroup and may thus have a
 different set of visible devices.
 For example, if a job is allocated the device "/dev/nvidia1", then
-<b>CUDA_VISIBLE_DEVICES</b> will be set to a value of "1" in the Prolog and
-Epilog while the job's value of <b>CUDA_VISIBLE_DEVICES</b> will be set to a
-value of "0" (i.e. the first GPU device visible to the job).
+the Prolog and Epilog will have <b>CUDA_VISIBLE_DEVICES=1</b> set, while the
+job will have <b>CUDA_VISIBLE_DEVICES=0</b> set (i.e. the first GPU device
+visible to the job).
 <b>CUDA_VISIBLE_DEVICES</b> will be set unless otherwise excluded via the
 <i>Flags</i> or <i>AutoDetect</i> options in <i>gres.conf</i>. See also
 <b>SLURM_JOB_GPUS</b>. Available in Prolog and Epilog only.</li>
