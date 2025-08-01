@@ -829,6 +829,14 @@ extern int sacctmgr_add_qos(int argc, char **argv)
 			i++;
 
 		_set_rec(&i, argc, argv, name_list, start_qos);
+
+		if (start_qos->flags & QOS_FLAG_REMOVE) {
+			/*
+			 * Tried to remove flags on creation, which doesn't make
+			 * sense so just reset the rec so it doesn't go the dbd.
+			 */
+			start_qos->flags = QOS_FLAG_NOTSET;
+		}
 	}
 
 	if (exit_code) {

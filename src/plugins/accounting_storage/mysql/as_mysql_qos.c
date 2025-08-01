@@ -222,7 +222,7 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		*/
 		if (!qos->description)
 			qos->description = xstrdup("");
-		if (qos->flags & QOS_FLAG_NOTSET)
+		if (qos->flags & (QOS_FLAG_NOTSET | QOS_FLAG_REMOVE))
 			qos->flags = 0;
 		if (qos->grace_time == NO_VAL)
 			qos->grace_time = 0;
