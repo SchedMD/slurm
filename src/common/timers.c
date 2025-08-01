@@ -182,6 +182,10 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 	*start = (timespec_t) {0};
 	metric->count++;
 
+	/* Check if interval is not to be checked */
+	if (timespec_is_infinite(interval))
+		return rc;
+
 	if (!metric->last_log.tv_sec) {
 		/* Set timestamp on full run and skip analysis */
 		metric->last_log = end;

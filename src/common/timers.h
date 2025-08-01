@@ -127,7 +127,9 @@ extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start);
  * IN metric - metric state
  * IN start - timestamp populated by START_LATENCY_TIMER()
  * IN end - timestamp when event ended or timespec_now()
- * IN interval - Min interval between calculating analysis
+ * IN interval
+ *	Min interval between calculating analysis
+ *	TIMESPEC_INFINITE to skip
  * RET struct full of latency metric analysis
  */
 extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
