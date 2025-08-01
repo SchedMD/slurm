@@ -174,7 +174,7 @@ static int _send_data(const char *data)
 {
 	int rc = SLURM_SUCCESS;
 	long response_code = 0;
-	char *url = NULL, *response_str;
+	char *url = NULL, *response_str = NULL;
 	size_t length;
 
 	debug3("%s %s called", plugin_type, __func__);

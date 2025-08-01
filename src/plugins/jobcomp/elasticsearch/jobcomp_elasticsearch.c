@@ -183,7 +183,7 @@ static int _index_job(const char *jobcomp)
 	struct curl_slist *slist = NULL;
 	int rc = SLURM_SUCCESS;
 	long response_code = 0;
-	char *response_str;
+	char *response_str = NULL;
 
 	slurm_mutex_lock(&location_mutex);
 	if (log_url == NULL) {
