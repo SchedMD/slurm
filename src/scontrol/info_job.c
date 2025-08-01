@@ -124,6 +124,12 @@ static void _sprint_range(char *str, uint32_t str_size,
 		snprintf(str, str_size, "%u", lower);
 }
 
+static void _add_to_line(char **str1, bool *is_new_line, char *str2)
+{
+	xstrfmtcat(*str1, "%s%s", *is_new_line ? "" : " ", str2);
+	*is_new_line = false;
+}
+
 /*
  * _sprint_job_info - output information about a specific Slurm
  *	job based upon message as loaded using slurm_load_jobs
@@ -134,6 +140,7 @@ static void _sprint_range(char *str, uint32_t str_size,
 static char *_sprint_job_info(job_info_t *job_ptr)
 {
 	int i, j, k;
+	bool is_new_line;
 	char time_str[256], *group_name, *user_name;
 	char *gres_last = "", tmp1[128], tmp2[128];
 	char *tmp6_ptr;
@@ -406,15 +413,18 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	xstrcat(out, line_end);
 
 	/****** Line 14 (optional) ******/
-	if (job_ptr->batch_features)
-		xstrfmtcat(out, "BatchFeatures=%s", job_ptr->batch_features);
-	if (job_ptr->batch_host) {
-		char *sep = "";
-		if (job_ptr->batch_features)
-			sep = " ";
-		xstrfmtcat(out, "%sBatchHost=%s", sep, job_ptr->batch_host);
+	is_new_line = true;
+	if (job_ptr->batch_features) {
+		snprintf(tmp_line, sizeof(tmp_line), "BatchFeatures=%s",
+			 job_ptr->batch_features);
+		_add_to_line(&out, &is_new_line, tmp_line);
 	}
-	if (job_ptr->batch_features || job_ptr->batch_host)
+	if (job_ptr->batch_host) {
+		snprintf(tmp_line, sizeof(tmp_line), "BatchHost=%s",
+			 job_ptr->batch_host);
+		_add_to_line(&out, &is_new_line, tmp_line);
+	}
+	if (!is_new_line)
 		xstrcat(out, line_end);
 
 	/****** Line 14 (optional) ******/
@@ -803,31 +813,26 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	}
 
 	/****** Line 38 (optional) ******/
-	if (job_ptr->bitflags &
-	    (GRES_DISABLE_BIND | GRES_ENFORCE_BIND |
-	     GRES_MULT_TASKS_PER_SHARING |
-	     GRES_ONE_TASK_PER_SHARING | KILL_INV_DEP | NO_KILL_INV_DEP |
-	     SPREAD_JOB)) {
-		if (job_ptr->bitflags & GRES_ALLOW_TASK_SHARING)
-			xstrcat(out, "GresAllowTaskSharing=Yes ");
-		if (job_ptr->bitflags & GRES_DISABLE_BIND)
-			xstrcat(out, "GresEnforceBind=No ");
-		if (job_ptr->bitflags & GRES_ENFORCE_BIND)
-			xstrcat(out, "GresEnforceBind=Yes ");
-		if (job_ptr->bitflags & GRES_MULT_TASKS_PER_SHARING)
-			xstrcat(out, "GresOneTaskPerSharing=No ");
-		if (job_ptr->bitflags & GRES_ONE_TASK_PER_SHARING)
-			xstrcat(out, "GresOneTaskPerSharing=Yes ");
-		if (job_ptr->bitflags & KILL_INV_DEP)
-			xstrcat(out, "KillOnInvalidDependent=Yes ");
-		if (job_ptr->bitflags & NO_KILL_INV_DEP)
-			xstrcat(out, "KillOnInvalidDependent=No ");
-		if (job_ptr->bitflags & SPREAD_JOB)
-			xstrcat(out, "SpreadJob=Yes ");
+	is_new_line = true;
+	if (job_ptr->bitflags & GRES_ALLOW_TASK_SHARING)
+		_add_to_line(&out, &is_new_line, "GresAllowTaskSharing=Yes");
+	if (job_ptr->bitflags & GRES_DISABLE_BIND)
+		_add_to_line(&out, &is_new_line, "GresEnforceBind=No");
+	if (job_ptr->bitflags & GRES_ENFORCE_BIND)
+		_add_to_line(&out, &is_new_line, "GresEnforceBind=Yes");
+	if (job_ptr->bitflags & GRES_MULT_TASKS_PER_SHARING)
+		_add_to_line(&out, &is_new_line, "GresOneTaskPerSharing=No");
+	if (job_ptr->bitflags & GRES_ONE_TASK_PER_SHARING)
+		_add_to_line(&out, &is_new_line, "GresOneTaskPerSharing=Yes");
+	if (job_ptr->bitflags & KILL_INV_DEP)
+		_add_to_line(&out, &is_new_line, "KillOnInvalidDependent=Yes");
+	if (job_ptr->bitflags & NO_KILL_INV_DEP)
+		_add_to_line(&out, &is_new_line, "KillOnInvalidDependent=No");
+	if (job_ptr->bitflags & SPREAD_JOB)
+		_add_to_line(&out, &is_new_line, "SpreadJob=Yes");
 
-		out[strlen(out)-1] = '\0'; /* remove trailing ' ' */
+	if (!is_new_line)
 		xstrcat(out, line_end);
-	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->oom_kill_step != NO_VAL16) {
