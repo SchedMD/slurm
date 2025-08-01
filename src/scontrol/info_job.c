@@ -818,9 +818,9 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		if (job_ptr->bitflags & GRES_ONE_TASK_PER_SHARING)
 			xstrcat(out, "GresOneTaskPerSharing=Yes,");
 		if (job_ptr->bitflags & KILL_INV_DEP)
-			xstrcat(out, "KillOInInvalidDependent=Yes,");
+			xstrcat(out, "KillOnInvalidDependent=Yes,");
 		if (job_ptr->bitflags & NO_KILL_INV_DEP)
-			xstrcat(out, "KillOInInvalidDependent=No,");
+			xstrcat(out, "KillOnInvalidDependent=No,");
 		if (job_ptr->bitflags & SPREAD_JOB)
 			xstrcat(out, "SpreadJob=Yes,");
 
