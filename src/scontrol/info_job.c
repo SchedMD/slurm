@@ -809,23 +809,23 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	     GRES_ONE_TASK_PER_SHARING | KILL_INV_DEP | NO_KILL_INV_DEP |
 	     SPREAD_JOB)) {
 		if (job_ptr->bitflags & GRES_ALLOW_TASK_SHARING)
-			xstrcat(out, "GresAllowTaskSharing=Yes,");
+			xstrcat(out, "GresAllowTaskSharing=Yes ");
 		if (job_ptr->bitflags & GRES_DISABLE_BIND)
-			xstrcat(out, "GresEnforceBind=No,");
+			xstrcat(out, "GresEnforceBind=No ");
 		if (job_ptr->bitflags & GRES_ENFORCE_BIND)
-			xstrcat(out, "GresEnforceBind=Yes,");
+			xstrcat(out, "GresEnforceBind=Yes ");
 		if (job_ptr->bitflags & GRES_MULT_TASKS_PER_SHARING)
-			xstrcat(out, "GresOneTaskPerSharing=No,");
+			xstrcat(out, "GresOneTaskPerSharing=No ");
 		if (job_ptr->bitflags & GRES_ONE_TASK_PER_SHARING)
-			xstrcat(out, "GresOneTaskPerSharing=Yes,");
+			xstrcat(out, "GresOneTaskPerSharing=Yes ");
 		if (job_ptr->bitflags & KILL_INV_DEP)
-			xstrcat(out, "KillOnInvalidDependent=Yes,");
+			xstrcat(out, "KillOnInvalidDependent=Yes ");
 		if (job_ptr->bitflags & NO_KILL_INV_DEP)
-			xstrcat(out, "KillOnInvalidDependent=No,");
+			xstrcat(out, "KillOnInvalidDependent=No ");
 		if (job_ptr->bitflags & SPREAD_JOB)
-			xstrcat(out, "SpreadJob=Yes,");
+			xstrcat(out, "SpreadJob=Yes ");
 
-		out[strlen(out)-1] = '\0'; /* remove trailing ',' */
+		out[strlen(out)-1] = '\0'; /* remove trailing ' ' */
 		xstrcat(out, line_end);
 	}
 
