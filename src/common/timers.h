@@ -126,11 +126,12 @@ extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start);
  * NOTE: call END_LATENCY_TIMER() instead
  * IN metric - metric state
  * IN start - timestamp populated by START_LATENCY_TIMER()
+ * IN end - timestamp when event ended or timespec_now()
  * IN interval - Min interval between calculating analysis
  * RET struct full of latency metric analysis
  */
 extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
-					      timespec_t *start,
+					      timespec_t *start, timespec_t end,
 					      const timespec_t interval);
 
 /* Declare latency timer */
@@ -151,7 +152,8 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 
 /* End latency timer and generate analysis if past interval */
 #define END_LATENCY_TIMER(interval) \
-	latency_metric_end(&latency_metric, &latency_metric_start, interval)
+	latency_metric_end(&latency_metric, &latency_metric_start, \
+			   timespec_now(), interval)
 
 /* Expected buffer size to hold printed latency histogram */
 #define LATENCY_METRIC_HISTOGRAM_STR_LEN 1024

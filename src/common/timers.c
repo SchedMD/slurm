@@ -165,16 +165,15 @@ extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start)
 }
 
 extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
-					      timespec_t *start,
+					      timespec_t *start, timespec_t end,
 					      const timespec_t interval)
 {
 	latency_metric_rc_t rc = {0};
-	const timespec_t now = timespec_now();
 
 	xassert(start->tv_sec > 0);
 
 	{
-		timespec_diff_ns_t diff = timespec_diff_ns(now, *start);
+		timespec_diff_ns_t diff = timespec_diff_ns(end, *start);
 		xassert(diff.after);
 		metric->total = timespec_add(metric->total, diff.diff);
 		rc.delay = diff.diff;
@@ -185,11 +184,11 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 
 	if (!metric->last_log.tv_sec) {
 		/* Set timestamp on full run and skip analysis */
-		metric->last_log = now;
+		metric->last_log = end;
 		return rc;
 	} else {
 		timespec_diff_ns_t diff =
-			timespec_diff_ns(now, metric->last_log);
+			timespec_diff_ns(end, metric->last_log);
 
 		xassert(diff.after);
 
