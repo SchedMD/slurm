@@ -44,9 +44,15 @@ extern uint16_t slurmdb_setup_cluster_dims(void);
 /* Return the architecture flags in the current working cluster */
 extern uint32_t slurmdb_setup_cluster_flags(void);
 
-/* Translate architecture flag strings to their equivalent bitmaps */
-extern slurmdb_cluster_flags_t slurmdb_str_2_cluster_flags(char *flags_in);
-
+/*
+ * Translate architecture flag strings to their equivalent bitmaps
+ *
+ * IN str - CSV of cluster flags to parse
+ * OUT flags_ptr - pointer to populate based on parsed flags (CLUSTER_FLAG_*)
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurmdb_str_2_cluster_flags(const char *flags_in,
+				       slurmdb_cluster_flags_t *flags_ptr);
 /*
  * Translate architecture flag bitmaps to their equivalent comma-delimited
  * string

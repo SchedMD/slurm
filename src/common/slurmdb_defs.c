@@ -413,23 +413,25 @@ static const struct {
 	T(QOS_FLAG_NO_DECAY, "NoDecay"),
 	T(QOS_FLAG_RELATIVE, "Relative"),
 	T(QOS_FLAG_USAGE_FACTOR_SAFE, "UsageFactorSafe"),
-	T(QOS_FLAG_INVALID, "INVALID"),
 };
 #undef T
 
-static slurmdb_qos_flags_t _str_2_qos_flags(char *flag_in)
+static int _str_2_qos_flags(char *flag_in, slurmdb_qos_flags_t *flags_ptr)
 {
 	if (!flag_in || !flag_in[0])
-		return QOS_FLAG_NONE;
+		return SLURM_SUCCESS;
 
-	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++)
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++) {
 		if (!xstrncasecmp(flag_in, slurmdb_qos_flags_map[i].str,
-				  strlen(flag_in)))
-			return slurmdb_qos_flags_map[i].flag;
+				  strlen(flag_in))) {
+			*flags_ptr |= slurmdb_qos_flags_map[i].flag;
+			return SLURM_SUCCESS;
+		}
+	}
 
 	debug("%s: Unable to match %s to a slurmdbd_qos_flags_t flag",
 	      __func__, flag_in);
-	return QOS_FLAG_INVALID;
+	return EINVAL;
 }
 
 static uint32_t _str_2_res_flags(char *flags)
@@ -1819,46 +1821,44 @@ static const struct {
 	T(SLURMDB_ACCT_FLAG_WCOORD, "WithCoordinators"),
 	T(SLURMDB_ACCT_FLAG_USER_COORD_NO, "NoUsersAreCoords"),
 	T(SLURMDB_ACCT_FLAG_USER_COORD, "UsersAreCoords"),
-	T(SLURMDB_ACCT_FLAG_INVALID, "INVALID"),
 };
 #undef T
 
-static slurmdb_acct_flags_t _str_2_acct_flag(char *flag_in)
+static int _str_2_acct_flag(const char *flag_in,
+			    slurmdb_acct_flags_t *flags_ptr)
 {
 	if (!flag_in || !flag_in[0])
-		return SLURMDB_ACCT_FLAG_NONE;
+		return SLURM_SUCCESS;
 
-	for (int i = 0; i < ARRAY_SIZE(slurmdb_acct_flags_map); i++)
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_acct_flags_map); i++) {
 		if (!xstrncasecmp(flag_in, slurmdb_acct_flags_map[i].str,
-				  strlen(flag_in)))
-			return slurmdb_acct_flags_map[i].flag;
+				  strlen(flag_in))) {
+			*flags_ptr |= slurmdb_acct_flags_map[i].flag;
+			return SLURM_SUCCESS;
+		}
+	}
 
 	debug("%s: Unable to match %s to a slurmdbd_acct_flags_t flag",
 	      __func__, flag_in);
-	return SLURMDB_ACCT_FLAG_INVALID;
+	return EINVAL;
 }
 
-extern slurmdb_acct_flags_t str_2_slurmdb_acct_flags(char *flags_in)
+extern int str_2_slurmdb_acct_flags(const char *str,
+				    slurmdb_acct_flags_t *flags_ptr)
 {
-	slurmdb_acct_flags_t acct_flags = 0;
 	char *token, *my_flags, *last = NULL;
+	int rc = SLURM_SUCCESS;
 
-	my_flags = xstrdup(flags_in);
+	/* Always reset flags */
+	*flags_ptr = SLURMDB_ACCT_FLAG_NONE;
+
+	my_flags = xstrdup(str);
 	token = strtok_r(my_flags, ",", &last);
-	while (token) {
-		slurmdb_acct_flags_t f = _str_2_acct_flag(token);
-
-		if (f == SLURMDB_ACCT_FLAG_INVALID) {
-			acct_flags = SLURMDB_ACCT_FLAG_INVALID;
-			break;
-		}
-
-		acct_flags |= f;
+	while (token && !(rc = _str_2_acct_flag(token, flags_ptr)))
 		token = strtok_r(NULL, ",", &last);
-	}
-	xfree(my_flags);
 
-	return acct_flags;
+	xfree(my_flags);
+	return rc;
 }
 
 extern char *slurmdb_acct_flags_2_str(slurmdb_acct_flags_t flags)
@@ -1890,45 +1890,44 @@ static const struct {
 	T(ASSOC_FLAG_EXACT, "Exact"),
 	T(ASSOC_FLAG_USER_COORD_NO, "NoUsersAreCoords"),
 	T(ASSOC_FLAG_USER_COORD, "UsersAreCoords"),
-	T(ASSOC_FLAG_INVALID, "INVALID"),
 };
 #undef T
 
-static slurmdb_assoc_flags_t _str_2_assoc_flag(char *flag_in)
+static int _str_2_assoc_flag(const char *flag_in,
+			     slurmdb_assoc_flags_t *flags_ptr)
 {
 	if (!flag_in || !flag_in[0])
-		return ASSOC_FLAG_NONE;
+		return SLURM_SUCCESS;
 
-	for (int i = 0; i < ARRAY_SIZE(slurmdb_assoc_flags_map); i++)
+	for (int i = 0; i < ARRAY_SIZE(slurmdb_assoc_flags_map); i++) {
 		if (!xstrncasecmp(flag_in, slurmdb_assoc_flags_map[i].str,
-				  strlen(flag_in)))
+				  strlen(flag_in))) {
+			*flags_ptr |= slurmdb_assoc_flags_map[i].flag;
 			return slurmdb_assoc_flags_map[i].flag;
+		}
+	}
 
 	debug("%s: Unable to match %s to a slurmdbd_assoc_flags_t flag",
 	      __func__, flag_in);
-	return ASSOC_FLAG_INVALID;
+	return EINVAL;
 }
 
-extern slurmdb_assoc_flags_t str_2_slurmdb_assoc_flags(char *flags_in)
+extern int str_2_slurmdb_assoc_flags(const char *str,
+				     slurmdb_assoc_flags_t *flags_ptr)
 {
-	slurmdb_assoc_flags_t assoc_flags = 0;
 	char *token, *my_flags, *last = NULL;
+	int rc = SLURM_SUCCESS;
 
-	my_flags = xstrdup(flags_in);
+	/* Always reset flags */
+	*flags_ptr = ASSOC_FLAG_NONE;
+
+	my_flags = xstrdup(str);
 	token = strtok_r(my_flags, ",", &last);
-	while (token) {
-		slurmdb_assoc_flags_t f = _str_2_assoc_flag(token);
-
-		if (f == ASSOC_FLAG_INVALID) {
-			assoc_flags = ASSOC_FLAG_INVALID;
-			break;
-		}
-		assoc_flags |= f;
+	while (token && !(rc = _str_2_assoc_flag(token, flags_ptr)))
 		token = strtok_r(NULL, ",", &last);
-	}
-	xfree(my_flags);
 
-	return assoc_flags;
+	xfree(my_flags);
+	return rc;
 }
 
 extern char *slurmdb_assoc_flags_2_str(slurmdb_assoc_flags_t flags)
@@ -2109,6 +2108,7 @@ extern slurmdb_qos_flags_t str_2_qos_flags(char *flags, int option)
 {
 	slurmdb_qos_flags_t qos_flags = 0;
 	char *token, *my_flags, *last = NULL;
+	int rc = SLURM_SUCCESS;
 
 	if (!flags) {
 		error("We need a qos flags string to translate");
@@ -2123,13 +2123,11 @@ extern slurmdb_qos_flags_t str_2_qos_flags(char *flags, int option)
 
 	my_flags = xstrdup(flags);
 	token = strtok_r(my_flags, ",", &last);
-	while (token) {
-		qos_flags |= _str_2_qos_flags(token);
+	while (token && !(rc = _str_2_qos_flags(token, &qos_flags)))
 		token = strtok_r(NULL, ",", &last);
-	}
 	xfree(my_flags);
 
-	if (!qos_flags)
+	if (rc || !qos_flags)
 		qos_flags = QOS_FLAG_NOTSET;
 	else if (option == '+')
 		qos_flags |= QOS_FLAG_ADD;

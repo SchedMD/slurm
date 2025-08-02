@@ -143,8 +143,6 @@ typedef enum {
 	QOS_FLAG_NOTSET = SLURM_BIT(28),
 	QOS_FLAG_ADD = SLURM_BIT(29),
 	QOS_FLAG_REMOVE = SLURM_BIT(30),
-
-	QOS_FLAG_INVALID,
 } slurmdb_qos_flags_t;
 
 /* Define QOS Cond flags */
@@ -254,7 +252,6 @@ typedef enum {
 	/* SLURM_BIT(10) empty */
 	CLUSTER_FLAG_FED = SLURM_BIT(11), /* This cluster is in a federation. */
 	CLUSTER_FLAG_EXT = SLURM_BIT(12), /* This cluster is external */
-	CLUSTER_FLAG_INVALID
 }  slurmdb_cluster_flags_t;
 
 /* Assoc flags */
@@ -274,8 +271,6 @@ typedef enum {
 
 	ASSOC_FLAG_USER_COORD = SLURM_BIT(16),
 	ASSOC_FLAG_BLOCK_ADD = SLURM_BIT(17),
-
-	ASSOC_FLAG_INVALID
 } slurmdb_assoc_flags_t;
 
 /* Assoc Cond flags */
@@ -412,8 +407,6 @@ typedef enum {
 	SLURMDB_ACCT_FLAG_BASE = 0x0000ffff,
 
 	SLURMDB_ACCT_FLAG_USER_COORD = SLURM_BIT(16),
-
-	SLURMDB_ACCT_FLAG_INVALID
 } slurmdb_acct_flags_t;
 
 typedef struct {

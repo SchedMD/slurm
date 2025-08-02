@@ -129,9 +129,19 @@ static int _set_cond(int *start, int argc, char **argv,
 				cond_set |= SA_SET_USER;
 		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
-			acct_cond->flags |= str_2_slurmdb_acct_flags(
-				argv[i]+end);
-			cond_set |= SA_SET_USER;
+			const char *flag_str = (argv[i] + end);
+			slurmdb_acct_flags_t *flags_ptr = &acct_cond->flags;
+			int rc;
+
+			if ((rc = str_2_slurmdb_acct_flags(flag_str,
+							   flags_ptr))) {
+				fprintf(stderr, " Unknown Flag(s)=%s\n",
+					flag_str);
+				exit_code = 1;
+				break;
+			} else {
+				cond_set |= SA_SET_USER;
+			}
 		} else if (!xstrncasecmp(argv[i], "Format",
 					 MAX(command_len, 2))) {
 			if (format_list)
@@ -228,8 +238,18 @@ static int _set_rec(int *start, int argc, char **argv,
 
 		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
-			acct->flags = str_2_slurmdb_acct_flags(argv[i]+end);
-			rec_set |= SA_SET_USER;
+			const char *flag_str = (argv[i] + end);
+			int rc;
+
+			if ((rc = str_2_slurmdb_acct_flags(flag_str,
+							   &acct->flags))) {
+				fprintf(stderr, " Unknown Flag(s)=%s\n",
+					flag_str);
+				exit_code = 1;
+				break;
+			} else {
+				rec_set |= SA_SET_USER;
+			}
 		} else if (!xstrncasecmp(argv[i], "Organization",
 					 MAX(command_len, 1))) {
 			acct->organization = strip_quotes(argv[i]+end, NULL, 1);
