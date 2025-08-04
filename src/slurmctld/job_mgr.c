@@ -7146,14 +7146,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		.user = READ_LOCK,
 	};
 	gres_job_state_validate_t gres_js_val = {
-		.cpus_per_tres = job_desc->cpus_per_tres,
-		.mem_per_tres = job_desc->mem_per_tres,
-		.tres_freq = job_desc->tres_freq,
-		.tres_per_job = job_desc->tres_per_job,
-		.tres_per_node = job_desc->tres_per_node,
-		.tres_per_socket = job_desc->tres_per_socket,
-		.tres_per_task = job_desc->tres_per_task,
-
 		.cpus_per_task = &job_desc->cpus_per_task,
 		.max_nodes = &job_desc->max_nodes,
 		.min_cpus = &job_desc->min_cpus,
@@ -7309,6 +7301,13 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
+	gres_js_val.cpus_per_tres = job_desc->cpus_per_tres;
+	gres_js_val.mem_per_tres = job_desc->mem_per_tres;
+	gres_js_val.tres_freq = job_desc->tres_freq;
+	gres_js_val.tres_per_job = job_desc->tres_per_job;
+	gres_js_val.tres_per_node = job_desc->tres_per_node;
+	gres_js_val.tres_per_socket = job_desc->tres_per_socket;
+	gres_js_val.tres_per_task = job_desc->tres_per_task;
 	if ((error_code = gres_job_state_validate(&gres_js_val)))
 		goto cleanup_fail;
 
