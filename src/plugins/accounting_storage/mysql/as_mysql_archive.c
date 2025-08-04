@@ -5501,6 +5501,23 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				break;
 			}
 			break;
+		case DBD_GOT_QOS_USAGE:
+			switch (period) {
+			case DBD_ROLLUP_HOUR:
+				sql_table = qos_hour_table;
+				break;
+			case DBD_ROLLUP_DAY:
+				sql_table = qos_day_table;
+				break;
+			case DBD_ROLLUP_MONTH:
+				sql_table = qos_month_table;
+				break;
+			default:
+				error("Unknown period");
+				return SLURM_ERROR;
+				break;
+			}
+			break;
 		default:
 			error("Unknown usage type %d", type);
 			return SLURM_ERROR;
@@ -5757,6 +5774,12 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 			if ((rc = _archive_purge_table(
 				     PURGE_USAGE,
 				     usage_info + DBD_GOT_WCKEY_USAGE,
+				     mysql_conn, cluster_name, arch_cond)))
+				return rc;
+
+			if ((rc = _archive_purge_table(
+				     PURGE_USAGE,
+				     usage_info + DBD_GOT_QOS_USAGE,
 				     mysql_conn, cluster_name, arch_cond)))
 				return rc;
 
