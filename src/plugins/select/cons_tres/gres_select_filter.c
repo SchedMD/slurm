@@ -312,6 +312,10 @@ static void _init_gres_per_bit_select(gres_job_state_t *gres_js, int node_inx)
 		gres_js->gres_per_bit_select = xcalloc(gres_js->total_node_cnt,
 						       sizeof(bitstr_t *));
 	}
+
+	if (gres_js->gres_per_bit_select[node_inx])
+		xfree(gres_js->gres_per_bit_select[node_inx]);
+
 	gres_js->gres_per_bit_select[node_inx] = xcalloc(
 		bit_size(gres_js->gres_bit_select[node_inx]), sizeof(uint64_t));
 }
