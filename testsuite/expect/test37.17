@@ -382,6 +382,25 @@ proc test_local_aftercorr { } {
 	log_info "# Test local aftercorr"
 	log_info "#############################################################"
 
+	# Dependency on non-array job behaves like afterok:
+	log_info "aftercorr: test that dependency on a non-array job behaves like afterok:"
+	set job1 [submit_job "-M$c1" $c1 $file_in_short]
+	set job_array2 [submit_job "--depend=aftercorr:$job1 -M$c1 \
+		--array=1-2" $c1 $file_in_long]
+	my_wait_for_fed_job "$job1" "RUNNING" $c1
+	my_wait_for_fed_job "$job_array2\_1" "PENDING" $c1
+	my_wait_for_fed_job "$job_array2\_2" "PENDING" $c1
+	wait_for_depend "$job_array2\_1" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	wait_for_depend "$job_array2\_2" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	my_wait_for_fed_job "$job1" "DONE" $c1
+	wait_for_depend "$job_array2\_1" "None" "(null)"
+	wait_for_depend "$job_array2\_2" "None" "(null)"
+	my_wait_for_fed_job "$job_array2\_1" "RUNNING" $c1
+	my_wait_for_fed_job "$job_array2\_2" "RUNNING" $c1
+	cancel_job $job_array2 $c1
+
 	# Local dependency succeeds
 	log_info "aftercorr: test that local dependency succeeds:"
 	set job_array1 [submit_job "-M$c1 --array=1-2" $c1 $file_in_short]
@@ -437,6 +456,25 @@ proc test_remote_aftercorr { } {
 	log_info "#############################################################"
 	log_info "# Test remote aftercorr"
 	log_info "#############################################################"
+
+	# Dependency on non-array job behaves like afterok:
+	log_info "aftercorr: test that remote dependency on a non-array job behaves like afterok:"
+	set job1 [submit_job "-M$c1" $c1 $file_in_short]
+	set job_array2 [submit_job "--depend=aftercorr:$job1 -M$c2 \
+		--array=1-2" $c2 $file_in_long]
+	my_wait_for_fed_job "$job1" "RUNNING" $c1
+	my_wait_for_fed_job "$job_array2\_1" "PENDING" $c2
+	my_wait_for_fed_job "$job_array2\_2" "PENDING" $c2
+	wait_for_depend "$job_array2\_1" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	wait_for_depend "$job_array2\_2" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	my_wait_for_fed_job "$job1" "DONE" $c1
+	wait_for_depend "$job_array2\_1" "None" "(null)"
+	wait_for_depend "$job_array2\_2" "None" "(null)"
+	my_wait_for_fed_job "$job_array2\_1" "RUNNING" $c2
+	my_wait_for_fed_job "$job_array2\_2" "RUNNING" $c2
+	cancel_job $job_array2 $c2
 
 	# Remote dependency succeeds
 	log_info "aftercorr: test that remote dependency succeeds:"
