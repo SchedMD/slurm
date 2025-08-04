@@ -14,8 +14,9 @@ as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
 SlurmDBD or daemon receipt of the SIGHUP signal unless otherwise noted.
 .LP
-This file should be only on the computer where SlurmDBD executes and
-should only be readable by the user which executes SlurmDBD (e.g. "slurm").
+This file should be only on the machine where SlurmDBD executes, should only
+be owned by the user which executes SlurmDBD (e.g. "slurm"), and have
+permissions set to 600 or 640.
 If the slurmdbd daemon is started as user root and changes to another
 user ID, the configuration file will initially be read as user root, but will
 be read as the other user ID in response to a SIGHUP signal.
