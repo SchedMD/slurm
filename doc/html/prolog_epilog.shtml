@@ -348,6 +348,32 @@ echo "print This message has been printed with TaskProlog"
 
 <p>The above functionality is limited to the task prolog script.</p>
 
+<h2 id="failure_handling">Failure Handling
+<a class="slurm_link" href="#failure_handling"></a>
+</h2>
+<p>If the Epilog fails (returns a non-zero exit code), this will result in the
+node being set to a DRAIN state.
+If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
+be logged.
+If the Prolog fails (returns a non-zero exit code), this will result in the
+node being set to a DRAIN state and the job requeued. The job will be placed
+in a held state unless nohold_on_prolog_fail is configured in
+SchedulerParameters.
+If the PrologSlurmctld fails (returns a non-zero exit code), this will cause
+the job to be requeued. Only batch jobs can be requeued. Interactive jobs
+(salloc and srun) will be cancelled if the PrologSlurmctld fails.</p>
+
+<p>If a task epilog or srun epilog fails (returns a non-zero exit code) this
+will only be logged.
+If a task prolog fails (returns a non-zero exit code), the task will be
+canceled.
+If the srun prolog fails (returns a non-zero exit code), the step will be
+canceled.</p>
+
+<h2 id="environment_variables">Environment Variables
+<a class="slurm_link" href="#environment_variables"></a>
+</h2>
+
 <p>Unless otherwise specified, these environment variables are available
 to all of the programs.</p>
 <ul>
@@ -368,35 +394,29 @@ This is because the Prolog and Epilog programs run <u>outside</u> of any Linux
 cgroup while the job runs <u>inside</u> of the cgroup and may thus have a
 different set of visible devices.
 For example, if a job is allocated the device "/dev/nvidia1", then
-<span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set to a value of
-"1" in the Prolog and Epilog while the job's value of
-<span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set to a
-value of "0" (i.e. the first GPU device visible to the job).
-<span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set unless
-otherwise excluded via the <i>Flags</i> or <i>AutoDetect</i> options in
-<i>gres.conf</i>. See also <span class="commandline">SLURM_JOB_GPUS</span>.
-Available in Prolog and Epilog only.</li>
+the Prolog and Epilog will have <b>CUDA_VISIBLE_DEVICES=1</b> set, while the
+job will have <b>CUDA_VISIBLE_DEVICES=0</b> set (i.e. the first GPU device
+visible to the job).
+<b>CUDA_VISIBLE_DEVICES</b> will be set unless otherwise excluded via the
+<i>Flags</i> or <i>AutoDetect</i> options in <i>gres.conf</i>. See also
+<b>SLURM_JOB_GPUS</b>. Available in Prolog and Epilog only.</li>
 
 <li><b>GPU_DEVICE_ORDINAL</b>
 Specifies the GPU devices for the job allocation. The considerations for
-<span class="commandline">CUDA_VISIBLE_DEVICES</span> also apply to
-<span class="commandline">GPU_DEVICE_ORDINAL</span>.
+<b>CUDA_VISIBLE_DEVICES</b> also apply to <b>GPU_DEVICE_ORDINAL</b>.
 </li>
 
 <li><b>ROCR_VISIBLE_DEVICES</b>
 Specifies the GPU devices for the job allocation. The considerations for
-<span class="commandline">CUDA_VISIBLE_DEVICES</span> also apply to
-<span class="commandline">ROCR_VISIBLE_DEVICES</span>.
+<b>CUDA_VISIBLE_DEVICES</b> also apply to <b>ROCR_VISIBLE_DEVICES</b>.
 </li>
 
 <li><b>SLURM_ARRAY_JOB_ID</b>
 If this job is part of a job array, this will be set to the job ID.
 Otherwise it will not be set.
 To reference this specific task of a job array, combine
-<span class="commandline">SLURM_ARRAY_JOB_ID</span> with
-<span class="commandline">SLURM_ARRAY_TASK_ID</span>
-(e.g. <span class="commandline">scontrol update
-${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</span>);
+<b>SLURM_ARRAY_JOB_ID</b> with <b>SLURM_ARRAY_TASK_ID</b> (e.g.
+<code>scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</code>);
 Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
 SrunEpilog and TaskEpilog.</li>
 
@@ -410,10 +430,8 @@ SrunEpilog and TaskEpilog.</li>
 If this job is part of a job array, this will be set to the task ID.
 Otherwise it will not be set.
 To reference this specific task of a job array, combine
-<span class="commandline">SLURM_ARRAY_JOB_ID</span> with
-<span class="commandline">SLURM_ARRAY_TASK_ID</span>
-(e.g. <span class="commandline">scontrol update
-${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</span>);
+<b>SLURM_ARRAY_JOB_ID</b> with <b>SLURM_ARRAY_TASK_ID</b> (e.g.
+<code>scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...</code>);
 Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
 SrunEpilog and TaskEpilog.</li>
 
@@ -454,12 +472,6 @@ SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 Distribution type for the job. Available in SrunProlog, TaskProlog, SrunEpilog
 and TaskEpilog.</li>
 
-<li><b>SLURMD_NODENAME</b>
-Name of the node running the task. In the case of a parallel job executing
-on multiple compute nodes, the various tasks will have this environment
-variable set to different values on each compute node. Available in Prolog,
-SrunProlog, TaskProlog, Epilog, SrunEpilog and TaskEpilog.</li>
-
 <li><b>SLURM_GPUS</b>
 Count of the GPUs available to the job. Available in SrunProlog, TaskProlog,
 SrunEpilog and TaskEpilog.</li>
@@ -491,15 +503,13 @@ The UNIX timestamp for a job's end time.</li>
 
 <li><b>SLURM_JOB_EXIT_CODE</b>
 The exit code of the job script (or salloc). The value is the status
-as returned by the <span class="commandline">wait()</span> system call
-(See <span class="commandline">wait(2)</span>).
+as returned by the <code>wait()</code> system call (See <code>wait(2)</code>).
 Available in Epilog and EpilogSlurmctld.</li>
 
 <li><b>SLURM_JOB_EXIT_CODE2</b>
 The exit code of the job script (or salloc). The value has the format
-<span class="commandline">&lt;exit&gt;:&lt;sig&gt;</span>.
-The first number is the exit code, typically as set by the
-<span class="commandline">exit()</span> function.
+<code>&lt;exit&gt;:&lt;sig&gt;</code>. The first number is the exit code,
+typically as set by the <code>exit()</code> function.
 The second number is the signal that caused the process to
 terminate if it was terminated by a signal.
 Available in Epilog and EpilogSlurmctld.</li>
@@ -537,13 +547,8 @@ SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_NODELIST</b>
 Nodes assigned to job. A Slurm hostlist expression.
-<span class="commandline">scontrol show hostnames</span>
-can be used to convert this to a
-list of individual host names.</li>
-
-<li><b>SLURM_NTASKS</b>
-Number of tasks requested by the job.
-Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+<code>scontrol show hostnames</code> can be used to convert this to a list of
+individual host names.</li>
 
 <li><b>SLURM_JOB_NUM_NODES</b>
 Number of nodes assigned to a job.</li>
@@ -609,6 +614,10 @@ SrunEpilog and TaskEpilog.</li>
 ID of current node relative to other nodes in a multi-node job. Available in
 SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 
+<li><b>SLURM_NTASKS</b>
+Number of tasks requested by the job.
+Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
+
 <li><b>SLURM_PRIO_PROCESS</b>
 Scheduling priority (nice value) at the time of submission. Available in
 SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
@@ -666,14 +675,14 @@ TaskProlog, SrunEpilog and TaskEpilog.</li>
 Identifies which epilog or prolog program is currently running.
 The value is one of the following:
 <ul>
-<li><span class="commandline">prolog_slurmctld</span></li>
-<li><span class="commandline">epilog_slurmctld</span></li>
-<li><span class="commandline">prolog_slurmd</span></li>
-<li><span class="commandline">epilog_slurmd</span></li>
-<li><span class="commandline">prolog_task</span></li>
-<li><span class="commandline">epilog_task</span></li>
-<li><span class="commandline">prolog_srun</span></li>
-<li><span class="commandline">epilog_srun</span></li>
+<li><code>prolog_slurmctld</code></li>
+<li><code>epilog_slurmctld</code></li>
+<li><code>prolog_slurmd</code></li>
+<li><code>epilog_slurmd</code></li>
+<li><code>prolog_task</code></li>
+<li><code>epilog_task</code></li>
+<li><code>prolog_srun</code></li>
+<li><code>epilog_srun</code></li>
 </ul>
 </li>
 
@@ -686,8 +695,8 @@ Step ID of the current job. Available in SrunProlog and SrunEpilog.</li>
 
 <li><b>SLURM_SUBMIT_DIR</b>
 Directory from which the job was submitted or, if applicable, the directory
-specified by the <b>-D, --chdir</b> option. Available in SrunProlog,
-Taskprolog, SrunEpilog and TaskEpilog.</li>
+specified by the <code>-D</code>/<code>--chdir</code> option. Available in
+SrunProlog, Taskprolog, SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_SUBMIT_HOST</b>
 Host from which the job was submitted. Available in SrunProlog, TaskProlog,
@@ -717,38 +726,23 @@ type. Available in SrunProlog, TaskProlog, SrunEpilog and TaskEpilog.</li>
 User name of the job's wckey (if any).
 Available in PrologSlurmctld and EpilogSlurmctld only.</li>
 
+<li><b>SLURMD_NODENAME</b>
+Name of the node running the task. In the case of a parallel job executing
+on multiple compute nodes, the various tasks will have this environment
+variable set to different values on each compute node. Available in Prolog,
+SrunProlog, TaskProlog, Epilog, SrunEpilog and TaskEpilog.</li>
+</ul>
+
 <p>Plugin functions may also be useful to execute logic at various well-defined
 points.</p>
 
 <p><a href="spank.html">SPANK</a> is another mechanism that may be useful
 to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
 
-<h2 id="failure_handling">Failure Handling
-<a class="slurm_link" href="#failure_handling"></a>
-</h2>
-<p>If the Epilog fails (returns a non-zero exit code), this will result in the
-node being set to a DRAIN state.
-If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
-be logged.
-If the Prolog fails (returns a non-zero exit code), this will result in the
-node being set to a DRAIN state and the job requeued. The job will be placed
-in a held state unless nohold_on_prolog_fail is configured in
-SchedulerParameters.
-If the PrologSlurmctld fails (returns a non-zero exit code), this will cause
-the job to be requeued. Only batch jobs can be requeued. Interactive jobs
-(salloc and srun) will be cancelled if the PrologSlurmctld fails.</p>
-
-<p>If a task epilog or srun epilog fails (returns a non-zero exit code) this
-will only be logged.
-If a task prolog fails (returns a non-zero exit code), the task will be
-canceled.
-If the srun prolog fails (returns a non-zero exit code), the step will be
-canceled.</p>
-
 <HR SIZE=4>
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 12 March 2025</p>
+<p style="text-align:center;">Last modified 31 July 2025</p>
 
 <!--#include virtual="footer.txt"-->
