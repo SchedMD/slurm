@@ -39,7 +39,9 @@
 #ifndef _HAVE_TIMERS_H
 #define _HAVE_TIMERS_H
 
+#include <stdint.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <src/common/slurm_time.h>
 
 #define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
@@ -77,6 +79,25 @@ extern int slurm_delta_tv(struct timeval *tv);
 extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 			      char *tv_str, int len_tv_str, const char *from,
 			      long limit, long *delta_t);
+
+/*
+ * Number of latency ranges in latency histogram.
+ * WARNING: Must be kept in sync with ARRAY_SIZE(latency_ranges).
+ */
+#define LATENCY_RANGE_COUNT 24
+
+typedef struct {
+	ssize_t count;
+} latency_histogram_bucket_t;
+
+typedef struct {
+	latency_histogram_bucket_t buckets[LATENCY_RANGE_COUNT];
+} latency_histogram_t;
+
+#define LATENCY_HISTOGRAM_INITIALIZER \
+	((latency_histogram_t) { \
+		.buckets = { { 0 } }, \
+	})
 
 /* Struct to hold latency metric state */
 typedef struct {
@@ -131,5 +152,36 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 /* End latency timer and generate analysis if past interval */
 #define END_LATENCY_TIMER(interval) \
 	latency_metric_end(&latency_metric, &latency_metric_start, interval)
+
+/* Expected buffer size to hold printed latency histogram */
+#define LATENCY_METRIC_HISTOGRAM_STR_LEN 1024
+
+/*
+ * print histogram buckets labels to buffer
+ * IN buffer - pointer to buffer to populate
+ * IN buffer_len - number of bytes in buffer. should be at least
+ *	LATENCY_METRIC_HISTOGRAM_STR_LEN.
+ * IN numbers of bytes written (excluding \0)
+ */
+extern int latency_histogram_print_labels(char *buffer, size_t buffer_len);
+
+/*
+ * print histogram buckets to buffer
+ * IN metric - latency metric to print histogram from
+ * IN buffer - pointer to buffer to populate
+ * IN buffer_len - number of bytes in buffer. should be at least
+ *	LATENCY_METRIC_HISTOGRAM_STR_LEN.
+ * IN numbers of bytes written (excluding \0)
+ */
+extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
+				   size_t buffer_len);
+
+/*
+ * Add latency value to histogram
+ * IN metric - latency metric to add new result
+ * IN value - duration of time spent waiting
+ */
+extern void latency_metric_add_histogram_value(latency_histogram_t *histogram,
+					       timespec_t value);
 
 #endif
