@@ -472,6 +472,14 @@ static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
 	debug5("Caught SIGALRM. Ignoring.");
 }
 
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	conmgr_log_diagnostics();
+}
+
 static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 				      void *arg)
 {
@@ -486,6 +494,7 @@ static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
 	conmgr_add_work_signal(SIGXCPU, _on_sigxcpu, NULL);
 	conmgr_add_work_signal(SIGABRT, _on_sigabrt, NULL);
 	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 }
 
 static void _reopen_stdio(void)
