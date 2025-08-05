@@ -3621,11 +3621,14 @@ static char *_parse_dependency_job_array(char *tok, uint32_t *job_id,
 	char *tmp = NULL;
 	*job_id = strtol(tok, &tmp, 10);
 	if (tmp && (tmp[0] == '_')) {
-		if (tmp[1] == '*') {
-			tmp += 2; /* Past '_*' */
+		char *tmp2 = tmp + 1; /* Past '_' */
+		if (tmp2[0] == '*') {
+			tmp = tmp2 + 1; /* Past '*' */
 			*array_task_id = INFINITE;
 		} else {
-			*array_task_id = strtol(tmp + 1, &tmp, 10);
+			*array_task_id = strtol(tmp2, &tmp, 10);
+			if (tmp2 == tmp)
+				return NULL;
 		}
 	} else {
 		*array_task_id = NO_VAL;
