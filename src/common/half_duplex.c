@@ -183,7 +183,10 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 		} else {
 			out = write(*fd_out, buf, in - wr);
 		}
-		if (out <= 0) {
+		if ((out < 0) &&
+		    ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
+			continue;
+		} else if (out <= 0) {
 			error("%s: wrote %zd of %zd: %m", __func__, out, in);
 			goto shutdown;
 		}
