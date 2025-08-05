@@ -3155,9 +3155,16 @@ Display version information and exit.
 \fB\-\-wait\-for\-children\fR
 Wait for all processes in each task to finish before considering a task as
 ended. The default behavior without this option is to only wait for the parent
-process in each task to finish. Note that if the parent process exits with a
-non-zero exit code, the task will end regardless of whether there are still
-children processes running. This option requires proctrack/cgroup and cgroup/v2.
+process in each task to finish.
+
+Depending on the setting of \fB\-\-kill\-on\-bad\-exit\fR, the task may end if
+the parent process exits with a non-zero exit code. If
+\fB\-\-kill\-on\-bad\-exit\fR=1 and the parent process exits with a non-zero
+exit code, the task will end. If \fB\-\-kill\-on\-bad\-exit\fR=0 and the parent
+process exits with a non-zero exit code, the task will continue until all
+children processes have exited.
+
+This option requires proctrack/cgroup and cgroup/v2.
 .IP
 
 .TP

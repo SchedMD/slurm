@@ -1224,6 +1224,7 @@ typedef enum {
 	SSF_EXT_LAUNCHER = 1 << 8, /* Request is for an external launcher */
 	SSF_GRES_ALLOW_TASK_SHARING = 1 << 9,
 	SSF_WAIT_FOR_CHILDREN = 1 << 10,
+	SSF_KILL_ON_BAD_EXIT = 1 << 11,
 } step_spec_flags_t;
 
 enum topology_plugin_type {

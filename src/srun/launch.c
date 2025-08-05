@@ -718,6 +718,11 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	if (srun_opt->wait_for_children)
 		step_req->flags |= SSF_WAIT_FOR_CHILDREN;
 
+	if (((srun_opt->kill_bad_exit != NO_VAL) && srun_opt->kill_bad_exit) ||
+	    ((srun_opt->kill_bad_exit == NO_VAL) &&
+	     slurm_conf.kill_on_bad_exit))
+		step_req->flags |= SSF_KILL_ON_BAD_EXIT;
+
 	if (opt_local->immediate == 1)
 		step_req->immediate = opt_local->immediate;
 
