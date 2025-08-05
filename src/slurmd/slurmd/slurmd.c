@@ -3285,7 +3285,8 @@ extern int run_script_health_check(void)
 	int rc = SLURM_SUCCESS;
 
 	if (slurm_conf.health_check_program &&
-	    slurm_conf.health_check_interval) {
+	    (slurm_conf.health_check_interval ||
+	     (slurm_conf.health_check_node_state & HEALTH_CHECK_START_ONLY))) {
 		char **env = env_array_create();
 		char *cmd_argv[2];
 		char *resp = NULL;
