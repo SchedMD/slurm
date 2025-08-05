@@ -65,7 +65,6 @@ typedef struct {
 				 * what resources are available on each
 				 * socket. Returns NULL if none available. Call
 				 * FREE_NULL_LIST() to release memory. */
-	uint32_t s_p_n; /* IN - Expected sockets_per_node */
 	bool use_total_gres; /* IN - if set then consider all gres resources as
 			      * available, and none are committed to running
 			      * jobs */

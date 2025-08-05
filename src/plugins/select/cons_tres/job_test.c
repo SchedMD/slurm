@@ -69,12 +69,6 @@ typedef struct {
 } cr_job_list_args_t;
 
 typedef struct {
-	uint32_t min_nodes;
-	uint32_t num_tasks;
-	uint32_t *sum_cpus;
-} gres_cpus_foreach_args_t;
-
-typedef struct {
 	licenses_id_t *id;
 	uint32_t remaining;
 	uint32_t required;
@@ -418,30 +412,6 @@ static void _set_gpu_defaults(job_record_t *job_ptr)
 				      &job_ptr->details->cpus_per_task);
 }
 
-/* Calculated the minimum number of gres cpus based on cpus_per_gres */
-static int _sum_min_gres_cpus(void *gres_job_state, void *args)
-{
-	gres_job_state_t *gres_js = ((gres_state_t*)gres_job_state)->gres_data;
-	gres_cpus_foreach_args_t *gres_cpus_args = args;
-	uint32_t cpus = gres_js->cpus_per_gres;
-
-	if (!cpus)
-		return SLURM_SUCCESS;
-
-	if (gres_js->gres_per_node)
-		cpus *= gres_js->gres_per_node;
-	else if (gres_js->gres_per_task)
-		cpus *= gres_js->gres_per_task * gres_cpus_args->num_tasks;
-	else if (gres_js->gres_per_socket)
-		cpus *= gres_js->gres_per_socket;
-	else if (gres_js->gres_per_job)
-		cpus *= gres_js->gres_per_job / gres_cpus_args->min_nodes;
-
-	*gres_cpus_args->sum_cpus += cpus;
-
-	return SLURM_SUCCESS;
-}
-
 /* Determine how many sockets per node this job requires for GRES */
 static uint32_t _socks_per_node(job_record_t *job_ptr)
 {
@@ -449,7 +419,6 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
 	uint32_t s_p_n = NO_VAL;
 	uint32_t cpu_cnt, cpus_per_node, tasks_per_node;
 	uint32_t min_nodes;
-	uint32_t sum_cpus = 0;
 
 	if (!job_ptr->details)
 		return s_p_n;
@@ -458,23 +427,7 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
 	cpu_cnt = MAX(job_ptr->details->min_cpus, cpu_cnt);
 	min_nodes = MAX(job_ptr->details->min_nodes, 1);
 	cpus_per_node = cpu_cnt / min_nodes;
-
-	/*
-	 * Here we need to sum up the cpus per gres so we can tell if we need
-	 * more sockets than 1 when enforcing binding.
-	 */
-	if (job_ptr->gres_list_req) {
-		gres_cpus_foreach_args_t gres_args = {
-			.min_nodes = min_nodes,
-			.num_tasks = job_ptr->details->num_tasks,
-			.sum_cpus = &sum_cpus,
-		};
-
-		(void) list_for_each(job_ptr->gres_list_req,
-				     _sum_min_gres_cpus, &gres_args);
-	}
-
-	if ((cpus_per_node <= 1) && (sum_cpus <= 1))
+	if (cpus_per_node <= 1)
 		return (uint32_t) 1;
 
 	mc_ptr = job_ptr->details->mc_ptr;
@@ -551,7 +504,6 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		.req_sock_map = NULL,
 		.res_cores_per_gpu = node_ptr->res_cores_per_gpu,
 		.sockets = node_ptr->tot_sockets,
-		.s_p_n = s_p_n,
 		.use_total_gres = test_only,
 	};
 
