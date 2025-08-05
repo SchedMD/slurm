@@ -50,7 +50,7 @@
 #include "src/common/log.h"	/* for error() */
 #include "src/common/strlcpy.h"
 
-#define STACK_SIZE (1024 * 1024)
+#define STACK_SIZE (8 * 1024 * 1024)
 
 #ifndef MAX
 #  define MAX(a,b) ((a) > (b) ? (a) : (b))
