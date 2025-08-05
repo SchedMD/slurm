@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "August 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -551,7 +551,11 @@ value is 60 seconds. For \fBauth/jwt\fR, the default value is 1800 seconds.
 .TP
 \fBuse_client_ids\fR
 Allow the \fBauth/slurm\fR plugin to authenticate users without relying on
-the user information from LDAP or the operating system.
+the user information from LDAP or the operating system. When coupled with
+nss_slurm, the user information can be managed on the compute nodes by
+slurmstepd. This would allow the cluster to operate in an environment where
+only the login nodes have access to LDAP/OS user information.
+See <https://slurm.schedmd.com/nss_slurm.html> for more information.
 .RE
 .IP
 
