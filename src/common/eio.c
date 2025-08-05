@@ -102,8 +102,8 @@ typedef struct {
 
 /* Function prototypes */
 
-static int          _poll_internal(struct pollfd *pfds, unsigned int nfds,
-				   time_t shutdown_time);
+static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
+			  eio_obj_t *map[], time_t shutdown_time);
 static unsigned int _poll_setup_pollfds(struct pollfd *pfds, eio_obj_t *map[],
 					list_t *l);
 static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
@@ -173,7 +173,7 @@ bool eio_message_socket_readable(eio_obj_t *obj)
 
 int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 {
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	int fd;
 	slurm_addr_t addr;
 	slurm_msg_t *msg = NULL;
@@ -183,7 +183,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 	xassert(obj);
 	xassert(obj->ops->handle_msg);
 
-	while (!(tls_conn = slurm_accept_msg_conn(obj->fd, &addr))) {
+	while (!(conn = slurm_accept_msg_conn(obj->fd, &addr))) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||
@@ -202,7 +202,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 		return SLURM_SUCCESS;
 	}
 
-	fd = conn_g_get_fd(tls_conn);
+	fd = conn_g_get_fd(conn);
 	net_set_keep_alive(fd);
 	fd_set_blocking(fd);
 
@@ -212,7 +212,7 @@ int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 again:
-	if (slurm_receive_msg(tls_conn, msg, obj->ops->timeout) != 0) {
+	if (slurm_receive_msg(conn, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR)
 			goto again;
 		error_in_daemon("%s: slurm_receive_msg[%pA]: %m",
@@ -220,13 +220,13 @@ again:
 		goto cleanup;
 	}
 
-	msg->tls_conn = tls_conn;
+	msg->tls_conn = conn;
 	(*obj->ops->handle_msg)(obj->arg, msg);
 
 cleanup:
 	/* may be adopted by the handle_msg routine */
 	if (msg->tls_conn)
-		conn_g_destroy(tls_conn, true);
+		conn_g_destroy(conn, true);
 	slurm_free_msg(msg);
 
 	return SLURM_SUCCESS;
@@ -338,7 +338,8 @@ int eio_handle_mainloop(eio_handle_t *eio)
 		slurm_mutex_lock(&eio->shutdown_mutex);
 		shutdown_time = eio->shutdown_time;
 		slurm_mutex_unlock(&eio->shutdown_mutex);
-		if (_poll_internal(pollfds, nfds, shutdown_time) < 0)
+
+		if (_poll_internal(pollfds, nfds, map, shutdown_time) < 0)
 			goto error;
 
 		/* See if we've been told to shut down by eio_signal_shutdown */
@@ -375,8 +376,22 @@ done:
 	return retval;
 }
 
+static bool _peek_internal(eio_obj_t *map[], unsigned int obj_cnt)
+{
+	bool data_on_any_conn = false;
+
+	for (int i = 0; i < obj_cnt; i++) {
+		eio_obj_t *obj = map[i];
+
+		if (obj->conn && (obj->data_on_conn = conn_g_peek(obj->conn)))
+			data_on_any_conn = true;
+	}
+
+	return data_on_any_conn;
+}
+
 static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
-			  time_t shutdown_time)
+			  eio_obj_t *map[], time_t shutdown_time)
 {
 	int n, timeout;
 
@@ -384,6 +399,14 @@ static int _poll_internal(struct pollfd *pfds, unsigned int nfds,
 		timeout = 1000;	/* Return every 1000 msec during shutdown */
 	else
 		timeout = 60000;
+
+	/*
+	 * If there is data to be read on the connection, don't block, simply
+	 * read whatever events are already available.
+	 */
+	if (_peek_internal(map, nfds - 1))
+		timeout = 0;
+
 	while ((n = poll(pfds, nfds, timeout)) < 0) {
 		switch (errno) {
 		case EINTR:
@@ -467,7 +490,7 @@ static void _poll_dispatch(struct pollfd *pfds, unsigned int nfds,
 	int i;
 
 	for (i = 0; i < nfds; i++) {
-		if (pfds[i].revents > 0)
+		if ((pfds[i].revents > 0) || map[i]->data_on_conn)
 			_poll_handle_event(pfds[i].revents, map[i], objList,
 					   del_objs);
 	}
@@ -514,7 +537,7 @@ static void _poll_handle_event(short revents, eio_obj_t *obj, list_t *objList,
 		}
 	}
 
-	if (revents & POLLIN) {
+	if ((revents & POLLIN) || (obj->data_on_conn)) {
 		if (obj->ops->handle_read) {
 			if (!read_called) {
 				(*obj->ops->handle_read ) (obj, objList);
@@ -573,7 +596,7 @@ void eio_obj_destroy(void *arg)
 		/* 	close(obj->fd); */
 		/* 	obj->fd = -1; */
 		/* } */
-		conn_g_destroy(obj->tls_conn, false);
+		conn_g_destroy(obj->conn, false);
 		xfree(obj->ops);
 		xfree(obj);
 	}

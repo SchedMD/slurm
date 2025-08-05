@@ -56,16 +56,19 @@ struct io_operations half_duplex_ops = {
 
 typedef struct {
 	int *fd_out;
-	void **tls_conn_out;
-	void **tls_conn_in;
+	void **conn_out;
+	void **conn_in;
 } half_duplex_eio_arg_t;
 
 extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 					  int *local_fd, int *remote_fd,
-					  void *tls_conn)
+					  void *conn)
 {
+	void **conn_ptr = xmalloc(sizeof(*conn_ptr));
 	half_duplex_eio_arg_t *local_arg = NULL;
 	half_duplex_eio_arg_t *remote_arg = NULL;
+
+	xassert(conn);
 
 	eio_obj_t *remote_to_local_eio, *local_to_remote_eio;
 
@@ -80,38 +83,39 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	remote_to_local_eio =
 		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
 
-	if (tls_conn) {
-		void **tls_conn_ptr = xmalloc(sizeof(*tls_conn_ptr));
-		*tls_conn_ptr = tls_conn;
+	remote_to_local_eio->conn = conn;
 
-		/*
-		 * Ensure that both eio objects point to the same place in
-		 * memory for the remote TLS connection. This way, we avoid
-		 * calling conn_g_destroy() twice.
-		 *
-		 * Because eio_handle_mainloop loops over both eio objects in
-		 * the same thread, we don't have to worry about concurrency
-		 * issues with both eio objects checking the same TLS conn
-		 * memory space.
-		 */
-		local_arg->tls_conn_out = tls_conn_ptr;
-		remote_arg->tls_conn_in = tls_conn_ptr;
+	*conn_ptr = conn;
 
-		/*
-		 * if fd is blocking, conn_g_recv will want to block until the
-		 * entire buffer size is read (similar to safe_read). For eio,
-		 * we just want to get whatever data is on the line, and forward
-		 * it.
-		 */
+	/*
+	 * Ensure that both eio objects point to the same place in memory for
+	 * the remote conn. This way, we avoid calling conn_g_destroy() twice.
+	 *
+	 * Because eio_handle_mainloop loops over both eio objects in the same
+	 * thread, we don't have to worry about concurrency issues with both eio
+	 * objects checking the same conn memory space.
+	 */
+	local_arg->conn_out = conn_ptr;
+	remote_arg->conn_in = conn_ptr;
+
+	/*
+	 * tls/s2n's tls_p_recv will attempt to read data on a connection until
+	 * it has read all 'n' bytes. If it is non-blocking however, it will
+	 * only read the available bytes and return after that.
+	 *
+	 * For half_duplex, only the available data should be read and then
+	 * immediately forwarded instead of waiting to fill the entire read
+	 * buffer before writing. For this reason, the connection needs to be
+	 * set to non-blocking when tls_enabled() is true.
+	 */
+	if (tls_enabled())
 		fd_set_nonblocking(*remote_fd);
 
-		/*
-		 * Peer will be waiting on conn_g_recv(), and they will need to
-		 * know if connection was intentionally closed or if an error
-		 * occurred.
-		 */
-		conn_g_set_graceful_shutdown(tls_conn, true);
-	}
+	/*
+	 * Peer will be waiting on conn_g_recv(), and they will need to know if
+	 * connection was intentionally closed or if an error occurred.
+	 */
+	conn_g_set_graceful_shutdown(conn, true);
 
 	eio_new_obj(eio_handle, local_to_remote_eio);
 	eio_new_obj(eio_handle, remote_to_local_eio);
@@ -124,14 +128,14 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 	if (obj->shutdown) {
 		half_duplex_eio_arg_t *args = obj->arg;
 		int *fd_out = args->fd_out;
-		void **tls_conn_out = args->tls_conn_out;
+		void **conn_out = args->conn_out;
 
 		if (fd_out) {
-			if (tls_conn_out && *tls_conn_out) {
-				conn_g_destroy(*tls_conn_out, false);
-				*tls_conn_out = NULL;
-			} else if (tls_conn_out) {
-				xfree(tls_conn_out);
+			if (conn_out && *conn_out) {
+				conn_g_destroy(*conn_out, false);
+				*conn_out = NULL;
+			} else if (conn_out) {
+				xfree(conn_out);
 			}
 			shutdown(*fd_out, SHUT_WR);
 			xfree(fd_out);
@@ -149,16 +153,16 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 	char buf[BUFFER_SIZE];
 	half_duplex_eio_arg_t *args = obj->arg;
 	int *fd_out = args->fd_out;
-	void **tls_conn_out = args->tls_conn_out;
-	void **tls_conn_in = args->tls_conn_in;
+	void **conn_out = args->conn_out;
+	void **conn_in = args->conn_in;
 
-	xassert(!(tls_conn_in && tls_conn_out));
+	xassert(!(conn_in && conn_out));
 
 	if (obj->shutdown || !fd_out)
 		goto shutdown;
 
-	if (tls_conn_in && *tls_conn_in) {
-		in = conn_g_recv(*tls_conn_in, buf, sizeof(buf));
+	if (conn_in && *conn_in) {
+		in = conn_g_recv(*conn_in, buf, sizeof(buf));
 	} else {
 		in = read(obj->fd, buf, sizeof(buf));
 	}
@@ -166,19 +170,24 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 		debug("%s: shutting down %d -> %d",
 		      __func__, obj->fd, *fd_out);
 		goto shutdown;
+	} else if ((in < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
+		return 0;
 	} else if (in < 0) {
 		error("%s: read error %zd %m", __func__, in);
 		goto shutdown;
 	}
 
 	while (wr < in) {
-		if (tls_conn_out && *tls_conn_out) {
-			out = conn_g_send(*tls_conn_out, buf, in - wr);
+		if (conn_out && *conn_out) {
+			out = conn_g_send(*conn_out, buf, in - wr);
 		} else {
 			out = write(*fd_out, buf, in - wr);
 		}
-		if (out <= 0) {
-			error("%s: wrote %zd of %zd", __func__, out, in);
+		if ((out < 0) &&
+		    ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
+			continue;
+		} else if (out <= 0) {
+			error("%s: wrote %zd of %zd: %m", __func__, out, in);
 			goto shutdown;
 		}
 		wr += out;
@@ -187,17 +196,18 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 
 shutdown:
 	obj->shutdown = true;
-	if (tls_conn_in && *tls_conn_in) {
-		conn_g_destroy(*tls_conn_in, false);
-		*tls_conn_in = NULL;
+	if (conn_in && *conn_in) {
+		conn_g_destroy(*conn_in, false);
+		*conn_in = NULL;
+		obj->conn = NULL;
 	}
 	shutdown(obj->fd, SHUT_RD);
 	if (fd_out) {
-		if (tls_conn_out && *tls_conn_out) {
-			conn_g_destroy(*tls_conn_out, false);
-			*tls_conn_out = NULL;
-		} else if (tls_conn_out) {
-			xfree(tls_conn_out);
+		if (conn_out && *conn_out) {
+			conn_g_destroy(*conn_out, false);
+			*conn_out = NULL;
+		} else if (conn_out) {
+			xfree(conn_out);
 		}
 		shutdown(*fd_out, SHUT_WR);
 		xfree(fd_out);
@@ -209,6 +219,10 @@ shutdown:
 static int _cleanup_sockets(eio_obj_t *obj, list_t *objs, list_t *del_objs)
 {
 	eio_obj_t *e;
+
+	/* Avoid double freeing conn */
+	if (!obj->arg)
+		obj->conn = NULL;
 
 	if (obj->shutdown) {
 		e = eio_obj_create(obj->fd, obj->ops, obj->arg);
