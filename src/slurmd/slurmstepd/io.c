@@ -872,6 +872,10 @@ static void *_window_manager(void *arg)
 				(int)win_info->task->pid);
 		}
 	}
+
+	conn_g_destroy(win_info->conn, true);
+	xfree(win_info);
+
 	return NULL;
 }
 
