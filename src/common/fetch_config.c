@@ -57,15 +57,29 @@
 strong_alias(dump_to_memfd, slurm_dump_to_memfd);
 
 static char *slurmd_config_files[] = {
-	"slurm.conf", "acct_gather.conf", "cgroup.conf",
-	"cli_filter.lua", "gres.conf", "helpers.conf",
-	"job_container.conf", "mpi.conf", "oci.conf",
-	"plugstack.conf", "scrun.lua", "topology.conf", NULL
+	"acct_gather.conf",
+	"cgroup.conf",
+	"cli_filter.lua",
+	"gres.conf",
+	"helpers.conf",
+	"job_container.conf",
+	"mpi.conf",
+	"oci.conf",
+	"plugstack.conf",
+	"scrun.lua",
+	"slurm.conf",
+	"topology.conf",
+	NULL,
 };
 
 static char *client_config_files[] = {
-	"slurm.conf", "cli_filter.lua", "plugstack.conf", "topology.conf",
-	"oci.conf", "scrun.lua", NULL
+	"cli_filter.lua",
+	"oci.conf",
+	"plugstack.conf",
+	"scrun.lua",
+	"slurm.conf",
+	"topology.conf",
+	NULL,
 };
 
 
