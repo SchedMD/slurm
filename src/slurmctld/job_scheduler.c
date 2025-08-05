@@ -3658,9 +3658,7 @@ static void _parse_dependency_jobid_new(list_t *new_depend_list, char **sep_ptr,
 
 	while ((*rc) == SLURM_SUCCESS) {
 		tmp = _parse_dependency_job_array(tok, &job_id, &array_task_id);
-		if (!tmp || (job_id == 0) ||
-		    ((tmp[0] != '\0') && (tmp[0] != ',') && (tmp[0] != '?') &&
-		     (tmp[0] != ':') && (tmp[0] != '+') && (tmp[0] != '('))) {
+		if (!tmp || (job_id == 0)) {
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
@@ -3709,7 +3707,7 @@ static void _parse_dependency_jobid_old(list_t *new_depend_list, char **sep_ptr,
 	char *tmp = NULL;
 
 	tmp = _parse_dependency_job_array(tok, &job_id, &array_task_id);
-	if (!tmp || (job_id == 0) || ((tmp[0] != '\0') && (tmp[0] != ','))) {
+	if (!tmp || (job_id == 0)) {
 		*rc = ESLURM_DEPENDENCY;
 		return;
 	}
@@ -3877,7 +3875,7 @@ extern int handle_job_dependency_updates(void *object, void *arg)
  * _parse_dependency_sep - parse separator between dependencies
  * IN tok - String to parse
  * IN expected_sep - Which separator(s) will succeed if encountered
- * OUT sep_ptr - Set to one char past the separator if parsing succeeds
+ * OUT sep_ptr - Set to one char past the separator if it exists, otherwise tok
  * OUT sep_type - Set to SEP_DEPEND_OR or SEP_DEPEND_AND if parsing succeeds
  * OUT rc - Set if an unexpected separator was encountered
  * Returns true when a separator was successfully parsed
@@ -3887,6 +3885,7 @@ static bool _parse_dependency_sep(char *tok, sep_depend_t expected_sep,
 				  int *rc)
 {
 	sep_depend_t parsed_sep = SEP_DEPEND_ANY;
+	*sep_ptr = tok;
 	if (tok) {
 		if (tok[0] == ',') {
 			parsed_sep = SEP_DEPEND_AND;
@@ -3958,8 +3957,6 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 			if (_parse_dependency_sep(tok, sep_type, &tok,
 						  &sep_type, rc))
 				continue;
-			if (tok[0] != '\0')
-				*rc = ESLURM_DEPENDENCY;
 			break;
 		}
 
@@ -4001,11 +3998,16 @@ static list_t *_parse_dependency_str(char *new_depend, int *rc, bool *or_flag)
 		tok = sep_ptr + 1; /* skip over ":" */
 		_parse_dependency_jobid_new(new_depend_list, &sep_ptr, tok,
 					    depend_type, rc);
-
+		if (*rc)
+			break;
 		if (!_parse_dependency_sep(sep_ptr, sep_type, &tok, &sep_type,
 					   rc))
 			break;
 	}
+
+	if (!tok || tok[0] != '\0')
+		*rc = ESLURM_DEPENDENCY;
+
 	xfree(new_array_dep);
 	*or_flag = (sep_type == SEP_DEPEND_OR);
 	return new_depend_list;
