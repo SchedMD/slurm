@@ -146,8 +146,9 @@ is as follows:</p>
 <li>plugstack.conf</li>
 <li>scrun.lua</li>
 <li>topology.conf</li>
+<li>topology.yaml</li>
 </ul>
 
-<p style="text-align:center;">Last modified 18 April 2025</p>
+<p style="text-align:center;">Last modified 01 August 2025</p>
 
 <!--#include virtual="footer.txt"-->
