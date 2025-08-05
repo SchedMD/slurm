@@ -64,8 +64,11 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 					  int *local_fd, int *remote_fd,
 					  void *conn)
 {
+	void **conn_ptr = xmalloc(sizeof(*conn_ptr));
 	half_duplex_eio_arg_t *local_arg = NULL;
 	half_duplex_eio_arg_t *remote_arg = NULL;
+
+	xassert(conn);
 
 	eio_obj_t *remote_to_local_eio, *local_to_remote_eio;
 
@@ -80,38 +83,31 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	remote_to_local_eio =
 		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
 
-	if (conn) {
-		void **conn_ptr = xmalloc(sizeof(*conn_ptr));
-		*conn_ptr = conn;
+	*conn_ptr = conn;
 
-		/*
-		 * Ensure that both eio objects point to the same place in
-		 * memory for the remote conn. This way, we avoid calling
-		 * conn_g_destroy() twice.
-		 *
-		 * Because eio_handle_mainloop loops over both eio objects in
-		 * the same thread, we don't have to worry about concurrency
-		 * issues with both eio objects checking the same conn memory
-		 * space.
-		 */
-		local_arg->conn_out = conn_ptr;
-		remote_arg->conn_in = conn_ptr;
+	/*
+	 * Ensure that both eio objects point to the same place in memory for
+	 * the remote conn. This way, we avoid calling conn_g_destroy() twice.
+	 *
+	 * Because eio_handle_mainloop loops over both eio objects in the same
+	 * thread, we don't have to worry about concurrency issues with both eio
+	 * objects checking the same conn memory space.
+	 */
+	local_arg->conn_out = conn_ptr;
+	remote_arg->conn_in = conn_ptr;
 
-		/*
-		 * if fd is blocking, conn_g_recv will want to block until the
-		 * entire buffer size is read (similar to safe_read). For eio,
-		 * we just want to get whatever data is on the line, and forward
-		 * it.
-		 */
-		fd_set_nonblocking(*remote_fd);
+	/*
+	 * if fd is blocking, conn_g_recv will want to block until the entire
+	 * buffer size is read (similar to safe_read). For eio, we just want to
+	 * get whatever data is on the line, and forward it.
+	 */
+	fd_set_nonblocking(*remote_fd);
 
-		/*
-		 * Peer will be waiting on conn_g_recv(), and they will need to
-		 * know if connection was intentionally closed or if an error
-		 * occurred.
-		 */
-		conn_g_set_graceful_shutdown(conn, true);
-	}
+	/*
+	 * Peer will be waiting on conn_g_recv(), and they will need to know if
+	 * connection was intentionally closed or if an error occurred.
+	 */
+	conn_g_set_graceful_shutdown(conn, true);
 
 	eio_new_obj(eio_handle, local_to_remote_eio);
 	eio_new_obj(eio_handle, remote_to_local_eio);
