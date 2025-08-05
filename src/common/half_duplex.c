@@ -83,6 +83,8 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	remote_to_local_eio =
 		eio_obj_create(*remote_fd, &half_duplex_ops, remote_arg);
 
+	remote_to_local_eio->conn = conn;
+
 	*conn_ptr = conn;
 
 	/*
@@ -192,6 +194,7 @@ shutdown:
 	if (conn_in && *conn_in) {
 		conn_g_destroy(*conn_in, false);
 		*conn_in = NULL;
+		obj->conn = NULL;
 	}
 	shutdown(obj->fd, SHUT_RD);
 	if (fd_out) {
@@ -211,6 +214,10 @@ shutdown:
 static int _cleanup_sockets(eio_obj_t *obj, list_t *objs, list_t *del_objs)
 {
 	eio_obj_t *e;
+
+	/* Avoid double freeing conn */
+	if (!obj->arg)
+		obj->conn = NULL;
 
 	if (obj->shutdown) {
 		e = eio_obj_create(obj->fd, obj->ops, obj->arg);
