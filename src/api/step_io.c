@@ -80,7 +80,7 @@ static struct io_buf *_alloc_io_buf(void);
 static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
-static int _read_io_init_msg(int fd, void *tls_conn, client_io_t *cio,
+static int _read_io_init_msg(int fd, void *conn, client_io_t *cio,
 			     slurm_addr_t *host);
 static int      _wid(int n);
 static bool     _incoming_buf_free(client_io_t *cio);
@@ -219,9 +219,9 @@ _set_listensocks_nonblocking(client_io_t *cio)
 /**********************************************************************
  * IO server socket functions
  **********************************************************************/
-static eio_obj_t *_create_server_eio_obj(int fd, void *tls_conn,
-					 client_io_t *cio, int nodeid,
-					 int stdout_objs, int stderr_objs)
+static eio_obj_t *_create_server_eio_obj(int fd, void *conn, client_io_t *cio,
+					 int nodeid, int stdout_objs,
+					 int stderr_objs)
 {
 	eio_obj_t *eio = NULL;
 	struct server_io_info *info = xmalloc(sizeof(*info));
@@ -241,7 +241,7 @@ static eio_obj_t *_create_server_eio_obj(int fd, void *tls_conn,
 
 	net_set_keep_alive(fd);
 	eio = eio_obj_create(fd, &server_ops, (void *)info);
-	eio->tls_conn = tls_conn;
+	eio->conn = conn;
 
 	return eio;
 }
@@ -301,7 +301,7 @@ static int _server_read(eio_obj_t *obj, list_t *objs)
 			return SLURM_ERROR;
 		}
 
-		n = io_hdr_read_fd(obj->fd, obj->tls_conn, &s->header);
+		n = io_hdr_read_fd(obj->fd, obj->conn, &s->header);
 		if (n <= 0) { /* got eof or error on socket read */
 			if (n < 0) {	/* Error */
 				if (obj->shutdown) {
@@ -370,8 +370,8 @@ static int _server_read(eio_obj_t *obj, list_t *objs)
 	if (s->header.length != 0) {
 		buf = s->in_msg->data + (s->in_msg->length - s->in_remaining);
 	again:
-		if (obj->tls_conn) {
-			n = conn_g_recv(obj->tls_conn, buf, s->in_remaining);
+		if (obj->conn) {
+			n = conn_g_recv(obj->conn, buf, s->in_remaining);
 		} else {
 			n = read(obj->fd, buf, s->in_remaining);
 		}
@@ -499,8 +499,8 @@ static int _server_write(eio_obj_t *obj, list_t *objs)
 	 */
 	buf = s->out_msg->data + (s->out_msg->length - s->out_remaining);
 again:
-	if (obj->tls_conn) {
-		n = conn_g_send(obj->tls_conn, buf, s->out_remaining);
+	if (obj->conn) {
+		n = conn_g_send(obj->conn, buf, s->out_remaining);
 	} else {
 		n = write(obj->fd, buf, s->out_remaining);
 	}
@@ -845,12 +845,12 @@ _create_listensock_eio(int fd, client_io_t *cio)
 	return eio;
 }
 
-static int _read_io_init_msg(int fd, void *tls_conn, client_io_t *cio,
+static int _read_io_init_msg(int fd, void *conn, client_io_t *cio,
 			     slurm_addr_t *host)
 {
 	io_init_msg_t msg = { 0 };
 
-	if (io_init_msg_read_from_fd(fd, tls_conn, &msg) != SLURM_SUCCESS)
+	if (io_init_msg_read_from_fd(fd, conn, &msg) != SLURM_SUCCESS)
 		goto fail;
 
 	if (io_init_msg_validate(&msg, cio->io_key) < 0) {
@@ -873,7 +873,7 @@ static int _read_io_init_msg(int fd, void *tls_conn, client_io_t *cio,
 	}
 
 	cio->ioserver[msg.nodeid] =
-		_create_server_eio_obj(fd, tls_conn, cio, msg.nodeid,
+		_create_server_eio_obj(fd, conn, cio, msg.nodeid,
 				       msg.stdout_objs, msg.stderr_objs);
 
 	slurm_mutex_lock(&cio->ioservers_lock);
@@ -894,7 +894,7 @@ static int _read_io_init_msg(int fd, void *tls_conn, client_io_t *cio,
 	return SLURM_SUCCESS;
 
     fail:
-	conn_g_destroy(tls_conn, false);
+	conn_g_destroy(conn, false);
 	xfree(msg.io_key);
 	if (fd > STDERR_FILENO)
 		close(fd);
@@ -925,7 +925,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 
 	for (j = 0; j < 15; j++) {
 		int sd;
-		void *tls_conn = NULL;
+		void *conn = NULL;
 		slurm_addr_t addr;
 
 		/*
@@ -934,7 +934,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 		if (!_is_fd_ready(fd))
 			return;
 
-		while (!(tls_conn = slurm_accept_msg_conn(fd, &addr))) {
+		while (!(conn = slurm_accept_msg_conn(fd, &addr))) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN)	/* No more connections */
@@ -947,7 +947,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			return;
 		}
 
-		sd = conn_g_get_fd(tls_conn);
+		sd = conn_g_get_fd(conn);
 		debug3("Accepted IO connection: ip=%pA sd=%d", &addr, sd);
 
 		/*
@@ -962,7 +962,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 		/*
 		 * Read IO header and update cio structure appropriately
 		 */
-		if (_read_io_init_msg(sd, tls_conn, cio, &addr) < 0)
+		if (_read_io_init_msg(sd, conn, cio, &addr) < 0)
 			continue;
 
 		fd_set_nonblocking(sd);
