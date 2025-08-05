@@ -97,11 +97,17 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	remote_arg->conn_in = conn_ptr;
 
 	/*
-	 * if fd is blocking, conn_g_recv will want to block until the entire
-	 * buffer size is read (similar to safe_read). For eio, we just want to
-	 * get whatever data is on the line, and forward it.
+	 * tls/s2n's tls_p_recv will attempt to read data on a connection until
+	 * it has read all 'n' bytes. If it is non-blocking however, it will
+	 * only read the available bytes and return after that.
+	 *
+	 * For half_duplex, only the available data should be read and then
+	 * immediately forwarded instead of waiting to fill the entire read
+	 * buffer before writing. For this reason, the connection needs to be
+	 * set to non-blocking when tls_enabled() is true.
 	 */
-	fd_set_nonblocking(*remote_fd);
+	if (tls_enabled())
+		fd_set_nonblocking(*remote_fd);
 
 	/*
 	 * Peer will be waiting on conn_g_recv(), and they will need to know if
