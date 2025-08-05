@@ -170,6 +170,8 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 		debug("%s: shutting down %d -> %d",
 		      __func__, obj->fd, *fd_out);
 		goto shutdown;
+	} else if ((in < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
+		return 0;
 	} else if (in < 0) {
 		error("%s: read error %zd %m", __func__, in);
 		goto shutdown;
