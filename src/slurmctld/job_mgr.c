@@ -788,7 +788,7 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 
 static int _add_job_record(job_record_t *job_ptr, int num_jobs)
 {
-	if ((job_count + num_jobs) >= slurm_conf.max_job_cnt) {
+	if ((job_count + num_jobs) > slurm_conf.max_job_cnt) {
 		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
 		      __func__, slurm_conf.max_job_cnt);
 		return SLURM_ERROR;
@@ -4083,7 +4083,7 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 	else
 		i = 1;
 
-	if ((job_count + i) >= slurm_conf.max_job_cnt) {
+	if ((job_count + i) > slurm_conf.max_job_cnt) {
 		error("%s: MaxJobCount limit from slurm.conf reached (%u)",
 		      __func__, slurm_conf.max_job_cnt);
 		return EAGAIN;
