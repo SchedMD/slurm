@@ -221,12 +221,12 @@ extern int read_slurmdbd_conf(void)
 		bool tmp_bool = false;
 		uint32_t parse_flags = 0;
 		uid_t conf_path_uid;
+		mode_t permission = buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
 		debug3("Checking slurmdbd.conf file:%s access permissions",
 		       conf_path);
-		if ((buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)) != 0600)
-			fatal("slurmdbd.conf file %s should be 600 is %o accessible for group or others",
-			      conf_path,
-			      buf.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+		if ((permission != 0600) && (permission != 0640))
+			fatal("slurmdbd.conf file %s should be 600 or 640 but is %o",
+			      conf_path, permission);
 
 		debug("Reading slurmdbd.conf file %s", conf_path);
 
