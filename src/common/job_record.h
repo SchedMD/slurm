@@ -544,6 +544,7 @@ typedef struct depend_spec {
 	uint32_t        depend_time;    /* time to wait (mins) */
 	uint32_t	job_id;		/* Slurm job_id */
 	job_record_t   *job_ptr;	/* pointer to this job */
+	uint32_t parsed_array_task_id; /* Unmodified array task id */
 	uint64_t 	singleton_bits; /* which clusters have satisfied the
 					   singleton dependency */
 } depend_spec_t;

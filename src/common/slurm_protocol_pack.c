@@ -6610,6 +6610,7 @@ extern void pack_dep_list(list_t *dep_list, buf_t *buffer,
 			pack32(dep_ptr->depend_state, buffer);
 			pack32(dep_ptr->depend_time, buffer);
 			pack32(dep_ptr->job_id, buffer);
+			pack32(dep_ptr->parsed_array_task_id, buffer);
 			pack64(dep_ptr->singleton_bits, buffer);
 		}
 		list_iterator_destroy(itr);
@@ -6658,6 +6659,7 @@ extern int unpack_dep_list(list_t **dep_list, buf_t *buffer,
 			safe_unpack32(&dep_ptr->depend_state, buffer);
 			safe_unpack32(&dep_ptr->depend_time, buffer);
 			safe_unpack32(&dep_ptr->job_id, buffer);
+			safe_unpack32(&dep_ptr->parsed_array_task_id, buffer);
 			safe_unpack64(&dep_ptr->singleton_bits, buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
