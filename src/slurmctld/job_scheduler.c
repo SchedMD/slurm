@@ -4081,7 +4081,8 @@ static int _update_job_dependency(void *x, void *arg)
 	dep_ptr->job_ptr = dep_job_ptr; /* Can be NULL */
 
 	/* Ignore duplicates */
-	if (list_find_first(update_args->unique_depend_list, _find_dependency,
+	if (!update_args->is_remote_cluster &&
+	    list_find_first(update_args->unique_depend_list, _find_dependency,
 			    dep_ptr))
 		return 1;
 
