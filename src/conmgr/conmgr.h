@@ -1058,4 +1058,7 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *con,
 				 const conmgr_events_t *events, void *arg,
 				 const char *caller);
 
+/* Log diagnostics to info() */
+extern void conmgr_log_diagnostics(void);
+
 #endif /* _CONMGR_H */

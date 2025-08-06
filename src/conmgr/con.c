@@ -79,6 +79,8 @@
 #include "src/interfaces/tls.h"
 #include "src/interfaces/url_parser.h"
 
+#define CTIME_STR_LEN 72
+
 #define T(type) { type, XSTRINGIFY(type) }
 static const struct {
 	conmgr_con_type_t type;
@@ -145,6 +147,14 @@ typedef struct {
 	int magic; /* MAGIC_SEND_FD */
 	int fd; /* fd to send over con */
 } send_fd_args_t;
+
+#define MAGIC_CON_LOG_WORK_ARGS 0xaafb100b
+
+typedef struct {
+	int magic; /* MAGIC_CON_LOG_WORK_ARGS */
+	const char *type;
+	int index;
+} log_con_work_args_t;
 
 static void _validate_pctl_type(pollctl_fd_type_t type)
 {
@@ -2167,4 +2177,130 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
+}
+
+#define MAGIC_LIST_BUFFER_STATS 0x4aa19f2f
+
+typedef struct {
+	int magic; /* MAGIC_LIST_BUFFER_STATS */
+	int size; /* total number of bytes in list of buffers */
+	int offset; /* total of offsets in each buffer */
+} list_buffer_stats_t;
+
+static int _foreach_count_buffer(void *x, void *arg)
+{
+	buf_t *buf = x;
+	list_buffer_stats_t *out_stats = arg;
+
+	xassert(buf->magic == BUF_MAGIC);
+	xassert(out_stats->magic == MAGIC_LIST_BUFFER_STATS);
+
+	out_stats->offset += get_buf_offset(buf);
+	out_stats->size += size_buf(buf);
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_log_work(void *x, void *arg)
+{
+	const work_t *work = x;
+	log_con_work_args_t *args = arg;
+	char str[PRINTF_WORK_CHARS];
+
+	xassert(args->magic == MAGIC_CON_LOG_WORK_ARGS);
+	xassert(work->magic == MAGIC_WORK);
+
+	/* logging connection would be redundant */
+	printf_work(work, str, sizeof(str), false);
+
+	info("%s[%d]: %s", args->type, args->index, str);
+
+	args->index++;
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_log_connection(void *x, void *arg)
+{
+	conmgr_fd_t *con = x;
+	list_buffer_stats_t out_stats = {
+		.magic = MAGIC_LIST_BUFFER_STATS,
+	};
+	list_buffer_stats_t tls_out_stats = {
+		.magic = MAGIC_LIST_BUFFER_STATS,
+	};
+	char last_read[CTIME_STR_LEN] = "", *last_read_delim = "";
+	char last_write[CTIME_STR_LEN] = "", *last_write_delim = "";
+	char *flags = NULL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	flags = con_flags_string(con->flags);
+
+	if (con->last_read.tv_sec) {
+		last_read_delim = "@";
+		timespec_ctime(con->last_read, true, last_read,
+			       sizeof(last_read));
+	}
+	if (con->last_write.tv_sec) {
+		last_write_delim = "@";
+		timespec_ctime(con->last_write, true, last_write,
+			       sizeof(last_write));
+	}
+
+	if (con->out)
+		(void) list_for_each_ro(con->out, _foreach_count_buffer,
+					&out_stats);
+	if (con->tls_out)
+		(void) list_for_each_ro(con->tls_out, _foreach_count_buffer,
+					&tls_out_stats);
+
+	info("connection: [%s]+%d flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
+	     con->name, con->refs, flags, conmgr_con_type_string(con->type),
+	     con->input_fd, con->output_fd, &con->address,
+	     BOOL_CHARIFY(con->tls),
+	     (con->tls_in ? get_buf_offset(con->tls_in) : 0),
+	     (con->tls_in ? size_buf(con->tls_in) : 0), tls_out_stats.offset,
+	     tls_out_stats.size, (con->tls_out ? list_count(con->tls_out) : 0),
+	     (con->in ? get_buf_offset(con->in) : 0),
+	     (con->in ?  size_buf(con->in) : 0), last_read_delim, last_read,
+	     out_stats.offset, out_stats.size,
+	     (con->out ? list_count(con->out) : 0), last_write_delim,
+	     last_write, (con->mss == NO_VAL ? 0 : con->mss),
+	     BOOL_CHARIFY(con->on_extract.func),
+	     pollctl_type_to_string(con->polling_input_fd),
+	     pollctl_type_to_string(con->polling_output_fd));
+
+	xfree(flags);
+
+	if (con->work) {
+		log_con_work_args_t args = {
+			.magic = MAGIC_CON_LOG_WORK_ARGS,
+			.type = "work",
+		};
+
+		(void) list_for_each_ro(con->work, _foreach_log_work, &args);
+	}
+	if (con->write_complete_work) {
+		log_con_work_args_t args = {
+			.magic = MAGIC_CON_LOG_WORK_ARGS,
+			.type = "write_complete_work",
+		};
+
+		(void) list_for_each_ro(con->write_complete_work,
+					_foreach_log_work, &args);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern void conmgr_log_connections(void)
+{
+	info("connections:%d/%d listeners:%d complete:%d",
+	      list_count(mgr.connections), mgr.max_connections,
+	      list_count(mgr.listen_conns), list_count(mgr.complete_conns));
+
+	(void) list_for_each_ro(mgr.listen_conns, _foreach_log_connection,
+				NULL);
+	(void) list_for_each_ro(mgr.connections, _foreach_log_connection, NULL);
 }

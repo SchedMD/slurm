@@ -41,6 +41,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -55,6 +56,7 @@
 #include "src/interfaces/url_parser.h"
 
 #define MAX_CONNECTIONS_DEFAULT 150
+#define CTIME_STR_LEN 72
 
 conmgr_t mgr = CONMGR_DEFAULT;
 
@@ -82,6 +84,72 @@ static void _at_exit(void)
 {
 	/* Skip locking mgr.mutex to avoid a deadlock */
 	mgr.shutdown_requested = true;
+}
+
+static void _log_diag_mgr(void)
+{
+	char conf_read_timeout[CTIME_STR_LEN] = "∞";
+	char conf_write_timeout[CTIME_STR_LEN] = "∞";
+	char conf_connect_timeout[CTIME_STR_LEN] = "∞";
+	char watch_max_sleep[CTIME_STR_LEN] = "∞";
+	char quiesce_timeout[CTIME_STR_LEN] = "∞";
+	char quiesce_start[CTIME_STR_LEN] = { 0 };
+	char *quiesce_start_delim = "";
+
+	if (mgr.conf_read_timeout.tv_sec || mgr.conf_read_timeout.tv_nsec)
+		timespec_ctime(mgr.conf_read_timeout, false, conf_read_timeout,
+			       sizeof(conf_read_timeout));
+	if (mgr.conf_write_timeout.tv_sec || mgr.conf_write_timeout.tv_nsec)
+		timespec_ctime(mgr.conf_write_timeout, false,
+			       conf_write_timeout, sizeof(conf_write_timeout));
+	if (mgr.conf_connect_timeout.tv_sec || mgr.conf_connect_timeout.tv_nsec)
+		timespec_ctime(mgr.conf_connect_timeout, false,
+			       conf_connect_timeout,
+			       sizeof(conf_connect_timeout));
+	if (mgr.watch_max_sleep.tv_sec || mgr.watch_max_sleep.tv_nsec)
+		timespec_ctime(mgr.watch_max_sleep, true, watch_max_sleep,
+			       sizeof(watch_max_sleep));
+	if (mgr.quiesce.conf_timeout.tv_sec || mgr.quiesce.conf_timeout.tv_nsec)
+		timespec_ctime(mgr.quiesce.conf_timeout, false, quiesce_timeout,
+			       sizeof(quiesce_timeout));
+	if (mgr.quiesce.requested) {
+		quiesce_start_delim = "@";
+		timespec_ctime(mgr.quiesce.start, true, quiesce_start,
+			       sizeof(quiesce_start));
+	}
+
+	info("config: max_connections:%d delay_write_complete:%us read_timeout:%s write_timeout:%s connect_timeout:%s quiesce_timeout:%s threads=%d",
+	     mgr.conf_max_connections, mgr.conf_delay_write_complete,
+	     conf_read_timeout, conf_write_timeout, conf_connect_timeout,
+	     quiesce_timeout, mgr.workers.conf_threads);
+
+	info("status: initialized:%c shutdown_requested:%c",
+	     BOOL_CHARIFY(mgr.initialized), BOOL_CHARIFY(mgr.shutdown_requested));
+
+	info("watch: max_sleep:%s polling:%c inspecting:%c waiting_on_work:%c",
+	     watch_max_sleep, BOOL_CHARIFY(mgr.poll_active),
+	     BOOL_CHARIFY(mgr.inspecting), BOOL_CHARIFY(mgr.waiting_on_work));
+
+	info("quiesce: requested:%c%s%s active:%c",
+	     BOOL_CHARIFY(mgr.quiesce.requested), quiesce_start_delim,
+	     quiesce_start, BOOL_CHARIFY(mgr.quiesce.active));
+}
+
+extern void conmgr_log_diagnostics(void)
+{
+	if (get_log_level() < LOG_LEVEL_INFO)
+		return;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	info("BEGIN: CONMGR Diagnostics:");
+	_log_diag_mgr();
+	conmgr_log_workers();
+	conmgr_log_connections();
+	conmgr_log_work();
+	info("END: CONMGR Diagnostics:");
+
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void conmgr_init(int thread_count, int max_connections)
