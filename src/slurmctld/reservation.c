@@ -2710,8 +2710,7 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 {
 	uint64_t cpu_cnt = 0;
 	node_record_t *node_ptr;
-	char start_time[256], end_time[256], tmp_msd[40];
-	char *name1, *name2, *name3, *val1, *val2, *val3;
+	char *name1;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	if ((resv_ptr->ctld_flags & RESV_CTLD_FULL_NODE) &&
@@ -2774,40 +2773,56 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 		CONVERT_NUM_UNIT_EXACT, 0, NULL);
 	assoc_mgr_unlock(&locks);
 
-	slurm_make_time_str(&resv_ptr->start_time, start_time,
-			    sizeof(start_time));
-	slurm_make_time_str(&resv_ptr->end_time, end_time, sizeof(end_time));
-	if (resv_ptr->accounts) {
-		name1 = " accounts=";
-		val1  = resv_ptr->accounts;
-	} else
-		name1 = val1 = "";
-	if (resv_ptr->users) {
-		name2 = " users=";
-		val2  = resv_ptr->users;
-	} else
-		name2 = val2 = "";
+	if (get_sched_log_level() >= LOG_LEVEL_INFO) {
+		char *tmp_str = NULL, *tmp_str_pos = NULL;
+		char start_time[256], end_time[256];
 
-	if (resv_ptr->groups) {
-		name3 = " groups=";
-		val3  = resv_ptr->groups;
-	} else
-		name3 = val3 = "";
+		slurm_make_time_str(&resv_ptr->start_time, start_time,
+				    sizeof(start_time));
+		slurm_make_time_str(&resv_ptr->end_time, end_time, sizeof(end_time));
+		xstrfmtcatat(tmp_str, &tmp_str_pos, "%sstart=%s end=%s",
+			     tmp_str ? " " : "", start_time, end_time);
 
-	if (resv_ptr->max_start_delay)
-		secs2time_str(resv_ptr->max_start_delay,
-			      tmp_msd, sizeof(tmp_msd));
+		if (resv_ptr->accounts)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " accounts=%s",
+				     resv_ptr->accounts);
+		if (resv_ptr->core_cnt)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " cores=%u",
+				     resv_ptr->core_cnt);
+		if (resv_ptr->groups)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " groups=%s",
+				     resv_ptr->groups);
+		if (resv_ptr->licenses)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " licenses=%s",
+				     resv_ptr->licenses);
 
-	sched_info("%s reservation=%s%s%s%s%s%s%s nodes=%s cores=%u "
-		   "licenses=%s tres=%s start=%s end=%s MaxStartDelay=%s "
-		   "Comment=%s",
-		   old_resv_ptr ? "Updated" : "Created",
-		   resv_ptr->name, name1, val1, name2, val2, name3, val3,
-		   resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
-		   resv_ptr->tres_fmt_str,
-		   start_time, end_time,
-		   resv_ptr->max_start_delay ? tmp_msd : "",
-		   resv_ptr->comment ? resv_ptr->comment : "");
+		if (resv_ptr->max_start_delay) {
+			char tmp_msd[40];
+			secs2time_str(resv_ptr->max_start_delay,
+				      tmp_msd, sizeof(tmp_msd));
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " MaxStartDelay=%s",
+				     tmp_msd);
+		}
+
+		if (resv_ptr->node_list)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " nodes=%s",
+				     resv_ptr->node_list);
+		if (resv_ptr->tres_fmt_str)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " tres=%s",
+				     resv_ptr->tres_fmt_str);
+		if (resv_ptr->users)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " users=%s",
+				     resv_ptr->users);
+		if (resv_ptr->comment)
+			xstrfmtcatat(tmp_str, &tmp_str_pos, " comment='%s'",
+				     resv_ptr->comment);
+
+		sched_info("%s reservation=%s %s",
+			   old_resv_ptr ? "Updated" : "Created", resv_ptr->name,
+			   tmp_str);
+
+		xfree(tmp_str);
+	}
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);
 	else
