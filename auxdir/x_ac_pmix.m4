@@ -21,6 +21,7 @@ AC_DEFUN([X_AC_PMIX],
   _x_ac_pmix_v3_found="0"
   _x_ac_pmix_v4_found="0"
   _x_ac_pmix_v5_found="0"
+  _x_ac_pmix_v6_found="0"
 
   AC_ARG_WITH(
     [pmix],
@@ -75,6 +76,13 @@ AC_DEFUN([X_AC_PMIX],
 
             _x_ac_pmix_version="0"
             AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
+	      #include <pmix_version.h>
+              #if (PMIX_VERSION_MAJOR != 6L)
+                #error "not version 6"
+              #endif
+            ], [ ] )],
+            [ _x_ac_pmix_version="6" ],
+            [ AC_PREPROC_IFELSE([AC_LANG_PROGRAM([
               #include <pmix_version.h>
               #if (PMIX_VERSION_MAJOR != 5L)
                 #error "not version 5"
@@ -102,6 +110,7 @@ AC_DEFUN([X_AC_PMIX],
               #endif
             ], [ ] )],
             [ _x_ac_pmix_version="2" ] )
+            ])
             ])
             ])
             ])
@@ -186,6 +195,25 @@ AC_DEFUN([X_AC_PMIX],
               # symlink of lib.
               break
             fi
+
+            if [test "$_x_ac_pmix_version" = "6"]; then
+              if [test "$_x_ac_pmix_v6_found" = "1" ]; then
+                m4_define([err_pmix_v6],[error processing $x_ac_cv_pmix_libdir: PMIx v6.x])
+                AC_MSG_ERROR(err_pmix_v6 err_pmix)
+              fi
+              _x_ac_pmix_found="1"
+              _x_ac_pmix_v6_found="1"
+              PMIX_V6_CPPFLAGS="-I$x_ac_cv_pmix_dir/include"
+              if test "$ac_with_rpath" = "yes"; then
+                PMIX_V6_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_pmix_libdir -L$x_ac_cv_pmix_libdir"
+              else
+                PMIX_V6_CPPFLAGS=$PMIX_V6_CPPFLAGS" -DPMIXP_LIBPATH=\\\"$x_ac_cv_pmix_libdir\\\""
+              fi
+              # We don't want to search the other lib after we found it in
+              # one place or we might report a false duplicate if lib64 is a
+              # symlink of lib.
+              break
+            fi
           done
         done
       ])
@@ -200,6 +228,8 @@ AC_DEFUN([X_AC_PMIX],
     AC_SUBST(PMIX_V4_LDFLAGS)
     AC_SUBST(PMIX_V5_CPPFLAGS)
     AC_SUBST(PMIX_V5_LDFLAGS)
+    AC_SUBST(PMIX_V6_CPPFLAGS)
+    AC_SUBST(PMIX_V6_LDFLAGS)
 
     if test $_x_ac_pmix_found = 0; then
       if test -z "$with_pmix"; then
@@ -215,4 +245,5 @@ AC_DEFUN([X_AC_PMIX],
   AM_CONDITIONAL(HAVE_PMIX_V3, [test $_x_ac_pmix_v3_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V4, [test $_x_ac_pmix_v4_found = "1"])
   AM_CONDITIONAL(HAVE_PMIX_V5, [test $_x_ac_pmix_v5_found = "1"])
+  AM_CONDITIONAL(HAVE_PMIX_V6, [test $_x_ac_pmix_v6_found = "1"])
 ])

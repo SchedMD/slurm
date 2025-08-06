@@ -57,8 +57,16 @@
 static int _client_connected(const pmix_proc_t *proc, void *server_object,
 			     pmix_op_cbfunc_t cbfunc, void *cbdata)
 {
-	/* we don't do anything by now */
-	return PMIX_SUCCESS;
+	/*
+	 * Call the callback function. The status will be set in cbdata and we
+	 * only return PMIX_SUCCESS indicating we called it.
+	 */
+	if (cbfunc) {
+		cbfunc(PMIX_SUCCESS, cbdata);
+		return PMIX_SUCCESS;
+	}
+
+	return PMIX_OPERATION_SUCCEEDED;
 }
 
 static void _op_callbk(pmix_status_t status, void *cbdata)
