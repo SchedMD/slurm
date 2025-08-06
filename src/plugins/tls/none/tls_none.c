@@ -172,7 +172,8 @@ extern bool tls_p_is_client_authenticated(void *conn)
 
 extern int tls_p_get_conn_fd(tls_conn_t *conn)
 {
-	xassert(conn);
+	if (!conn)
+		return -1;
 
 	if (conn->input_fd != conn->output_fd)
 		debug("%s: asymmetric connection %d->%d",
