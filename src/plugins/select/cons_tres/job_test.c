@@ -114,8 +114,8 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 		return;
 	}
 
-	log_flag(SELECT_TYPE, "Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u ThreadsPerCore:%u",
-		 node_name, avail_res->sock_cnt, avail_res->spec_threads,
+	log_flag(SELECT_TYPE, "Node:%s ResProd:%"PRIu64" Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u ThreadsPerCore:%u",
+		 node_name, avail_res->avail_res_prod, avail_res->sock_cnt, avail_res->spec_threads,
 		 avail_res->min_cpus, avail_res->max_cpus,
 		 avail_res->avail_cpus, avail_res->tpc);
 	gres_info = gres_sock_str(avail_res->sock_gres_list, -1);
@@ -520,6 +520,7 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		.enforce_binding = false,
 		.gpu_spec_bitmap = node_ptr->gpu_spec_bitmap,
 		.job_gres_list = job_ptr->gres_list_req,
+		.need_gpu = false,
 		.node_gres_list = node_usage[node_i].gres_list ?
 					  node_usage[node_i].gres_list :
 					  node_ptr->gres_list,
@@ -710,7 +711,9 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	         node_ptr->real_memory);
 
 	avail_res->avail_cpus = cpus;
-	avail_res->avail_res_cnt = cpus + avail_res->avail_gpus;
+	avail_res->avail_res_prod = cpus;
+	if (create_args.need_gpu)
+		avail_res->avail_res_prod *= avail_res->avail_gpus;
 	_avail_res_log(avail_res, node_ptr->name);
 
 	return avail_res;

@@ -834,6 +834,9 @@ static int _foreach_gres_sock_list_create(void *x, void *arg)
 				&gres_state_job->plugin_id);
 	node_record_t *node_ptr = node_record_table_ptr[create_args->node_inx];
 
+	if (gres_id_sharing(gres_state_job->plugin_id))
+		create_args->need_gpu = true;
+
 	if (!gres_state_node) {
 		/* node lack GRES of type required by the job */
 		FREE_NULL_LIST(create_args->sock_gres_list);
