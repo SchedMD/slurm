@@ -6596,7 +6596,24 @@ extern void pack_dep_list(list_t *dep_list, buf_t *buffer,
 	depend_spec_t *dep_ptr;
 	list_itr_t *itr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		cnt = list_count(dep_list);
+		pack32(cnt, buffer);
+		if (!cnt)
+			return;
+
+		itr = list_iterator_create(dep_list);
+		while ((dep_ptr = list_next(itr))) {
+			pack32(dep_ptr->array_task_id, buffer);
+			pack16(dep_ptr->depend_type, buffer);
+			pack16(dep_ptr->depend_flags, buffer);
+			pack32(dep_ptr->depend_state, buffer);
+			pack32(dep_ptr->depend_time, buffer);
+			pack32(dep_ptr->job_id, buffer);
+			pack64(dep_ptr->singleton_bits, buffer);
+		}
+		list_iterator_destroy(itr);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		cnt = list_count(dep_list);
 		pack32(cnt, buffer);
 		if (!cnt)
@@ -6625,7 +6642,25 @@ extern int unpack_dep_list(list_t **dep_list, buf_t *buffer,
 	xassert(dep_list);
 
 	*dep_list = NULL;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&cnt, buffer);
+		if (!cnt)
+			return SLURM_SUCCESS;
+
+		*dep_list = list_create(xfree_ptr);
+		for (int i = 0; i < cnt; i++) {
+			dep_ptr = xmalloc(sizeof *dep_ptr);
+			list_push(*dep_list, dep_ptr);
+
+			safe_unpack32(&dep_ptr->array_task_id, buffer);
+			safe_unpack16(&dep_ptr->depend_type, buffer);
+			safe_unpack16(&dep_ptr->depend_flags, buffer);
+			safe_unpack32(&dep_ptr->depend_state, buffer);
+			safe_unpack32(&dep_ptr->depend_time, buffer);
+			safe_unpack32(&dep_ptr->job_id, buffer);
+			safe_unpack64(&dep_ptr->singleton_bits, buffer);
+		}
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&cnt, buffer);
 		if (!cnt)
 			return SLURM_SUCCESS;
