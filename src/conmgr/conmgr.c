@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <errno.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -60,13 +61,19 @@ static bool enabled_status = false;
 
 static void _atfork_child(void)
 {
+	/* Do nothing if conmgr was not running or already cleaned up */
+	if (!mgr.initialized || !mgr.connections)
+		return;
+
 	/*
-	 * Force conmgr to return to default state before it was initialized at
-	 * forking as all of the prior state is completely unusable.
+	 * fork() while conmgr was running which means mgr's state is invalid
+	 * and must not be used. Set mgr to same state as if conmgr_init() and
+	 * conmgr_fini() was already called while being in an error state.
 	 */
 	mgr = CONMGR_DEFAULT;
-	enabled_init = 0;
-	enabled_status = false;
+	mgr.initialized = true;
+	mgr.shutdown_requested = true;
+	mgr.error = ESHUTDOWN;
 }
 
 static void _at_exit(void)
