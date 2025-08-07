@@ -36,4 +36,29 @@
 #ifndef _INTERFACES_URL_PARSER_H
 #define _INTERFACES_URL_PARSER_H
 
+#include "src/common/http.h"
+#include "src/common/pack.h"
+
+#define URL_PARSER_MAJOR_TYPE "url_parser"
+#define URL_PARSER_PREFIX URL_PARSER_MAJOR_TYPE "/"
+
+/*
+ * Load and initialize URL parser plugin
+ * RET SLURM_SUCCESS or error
+ */
+extern int url_parser_g_init(void);
+
+/* Unload URL plugin */
+extern void url_parser_g_fini(void);
+
+/*
+ * Parse URL
+ * IN name - name used for logging
+ * IN buffer - buffer containing string to parse
+ * IN/OUT url - URL to populate with parsed components of URL
+ * RET SLURM_SUCCESS or error
+ */
+extern int url_parser_g_parse(const char *name, const buf_t *buffer,
+			      url_t *url);
+
 #endif
