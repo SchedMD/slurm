@@ -492,14 +492,21 @@ extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
 static int _con_get_shadow_in_buffer(const conmgr_fd_t *con, buf_t **buf_ptr)
 {
 	buf_t *buffer = NULL;
+	void *data = NULL;
+	size_t bytes = 0;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
-	buffer = create_shadow_buf((get_buf_data(con->in) + con->in->processed),
-				   (size_buf(con->in) - con->in->processed));
-	*buf_ptr = buffer;
+	if (!con->in)
+		return EEXIST;
+
+	data = (get_buf_data(con->in) + con->in->processed);
+	bytes = (size_buf(con->in) - con->in->processed);
+
+	if (!(buffer = create_shadow_buf(data, bytes)))
+		return ENOMEM;
 
 	xassert(!*buf_ptr);
 	*buf_ptr = buffer;
