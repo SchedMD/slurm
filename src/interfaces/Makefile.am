@@ -51,6 +51,8 @@ libcommon_interfaces_la_SOURCES =    \
 	gres.h					\
 	hash.c					\
 	hash.h					\
+	http_parser.c				\
+	http_parser.h				\
 	jobacct_gather.c			\
 	jobacct_gather.h			\
 	jobcomp.c				\
