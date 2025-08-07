@@ -1893,6 +1893,19 @@ extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
 	return ref;
 }
 
+extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con)
+{
+	conmgr_fd_ref_t *ref = NULL;
+
+	xassert(con);
+
+	slurm_mutex_lock(&mgr.mutex);
+	ref = fd_new_ref(con->con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return ref;
+}
+
 extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 {
 	conmgr_fd_ref_t *ref = *ref_ptr;

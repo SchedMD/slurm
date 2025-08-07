@@ -903,6 +903,13 @@ extern void conmgr_unquiesce(const char *caller);
  */
 extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con);
 /*
+ * Link newq reference to conmgr connection
+ * Will ensure that connection will remain valid until released.
+ * IN con - connection reference
+ * RET ptr to new reference (must be released by conmgr_fd_free_ref())
+ */
+extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con);
+/*
  * Release reference to conmgr connection
  * WARNING: Connection may not exist after this called
  * IN ref_ptr - ptr to reference to release (will be set to NULL)
