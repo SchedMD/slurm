@@ -73,6 +73,7 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/http_parser.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/tls.h"
@@ -724,6 +725,10 @@ int main(int argc, char **argv)
 		serializer_required(MIME_TYPE_YAML);
 	serializer_required(MIME_TYPE_URL_ENCODED);
 
+	if ((rc = http_parser_g_init()))
+		fatal("Unable to load http_parser plugin: %s",
+		      slurm_strerror(rc));
+
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
 		    max_connections, callbacks);
@@ -880,6 +885,7 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
+	http_parser_g_fini();
 	acct_storage_g_fini();
 	slurm_fini();
 	hash_g_fini();
