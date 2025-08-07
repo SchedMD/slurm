@@ -15,6 +15,7 @@ RuntimeDirectoryMode=0755
 ExecStart=@sbindir@/slurmdbd -D -s $SLURMDBD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 LimitNOFILE=65536
+LimitMEMLOCK=infinity
 @SYSTEMD_TASKSMAX_OPTION@
 
 # Uncomment the following lines to disable logging through journald.
