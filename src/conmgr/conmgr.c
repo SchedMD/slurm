@@ -163,6 +163,12 @@ extern void conmgr_fini(void)
 		slurm_mutex_lock(&mgr.mutex);
 	}
 
+	if (!mgr.connections) {
+		log_flag(CONMGR, "%s: skipping clean up", __func__);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
 	/* processing may still be running at this point in a thread */
