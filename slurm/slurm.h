@@ -3015,6 +3015,7 @@ typedef struct {
 				 * health check program, see
 				 * HEALTH_CHECK_NODE_* above */
 	char * health_check_program;	/* pathname of health check program */
+	char *http_parser_type; /* http_parser plugin type */
 	uint32_t host_unreach_retry_count; /* times to retry connecting if
                                             * rc=EHOSTUNREACH */
 	uint16_t inactive_limit;/* seconds of inactivity before a

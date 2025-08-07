@@ -3829,6 +3829,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->health_check_node_state, buffer);
 		packstr(build_ptr->health_check_program, buffer);
 
+		packstr(build_ptr->http_parser_type, buffer);
+
 		pack16(build_ptr->inactive_limit, buffer);
 		packstr(build_ptr->interactive_step_opts, buffer);
 
@@ -4905,6 +4907,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->health_check_interval, buffer);
 		safe_unpack16(&build_ptr->health_check_node_state, buffer);
 		safe_unpackstr(&build_ptr->health_check_program, buffer);
+
+		safe_unpackstr(&build_ptr->http_parser_type, buffer);
 
 		safe_unpack16(&build_ptr->inactive_limit, buffer);
 		safe_unpackstr(&build_ptr->interactive_step_opts, buffer);

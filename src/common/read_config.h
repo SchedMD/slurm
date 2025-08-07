@@ -97,6 +97,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #define DEFAULT_HASH_PLUGIN "hash/k12"
+#define DEFAULT_HTTP_PARSER_TYPE "http_parser/libhttp_parser"
 #define DEFAULT_HOST_UNREACH_RETRY_COUNT 0
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
 #define DEFAULT_KEEPALIVE_INTERVAL (NO_VAL)

@@ -196,6 +196,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* health_check_interval */
 	/* health_check_node_state */
 	/* health_check_program */
+	/* http_parser_type */
 	/* inactive_limit */
 	/* interactive_step_opts */
 	packstr(slurm_conf.job_acct_gather_freq, buffer);
