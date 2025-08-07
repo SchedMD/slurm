@@ -99,6 +99,17 @@ static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
 static int _send_reject(const http_parser *parser,
 			http_status_code_t status_code);
 
+static int _valid_http_version(uint16_t major, uint16_t minor)
+{
+	if ((major == 0) && (minor == 0))
+		return SLURM_SUCCESS;
+
+	if ((major == 1) && ((minor == 0) || (minor == 1)))
+		return SLURM_SUCCESS;
+
+	return ESLURM_HTTP_UNSUPPORTED_VERSION;
+}
+
 extern void free_http_header(http_header_entry_t *header)
 {
 	xfree(header->name);
@@ -627,8 +638,7 @@ static int _send_reject(const http_parser *parser,
 	FREE_NULL_LIST(args.headers);
 
 	if (request->connection_close ||
-	    ((parser->http_major == 1) && (parser->http_minor >= 1)) ||
-	     (parser->http_major > 1))
+	    _valid_http_version(parser->http_major, parser->http_minor))
 		send_http_connection_close(request->context);
 
 	/* ensure connection gets closed */
