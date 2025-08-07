@@ -43,6 +43,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsched.h"
@@ -60,6 +61,12 @@
  *	exceeds 16 bytes, the string is silently truncated.
  */
 #define PRCTL_BUF_BYTES 17
+
+/*
+ * Amount of time to sleep while polling for all threads to have started up
+ * during shutdown
+ */
+#define SHUTDOWN_WAIT_STARTUP_THREADS_SLEEP_NS 10
 
 static void *_worker(void *arg);
 
@@ -275,6 +282,19 @@ static void *_worker(void *arg)
 
 extern void workers_shutdown(void)
 {
+	/*
+	 * Wait until all threads have started up fully to avoid a thread
+	 * starting after shutdown and hanging forever
+	 */
+	while (mgr.workers.threads &&
+	       (mgr.workers.threads != mgr.workers.total)) {
+		EVENT_BROADCAST(&mgr.worker_sleep);
+		slurm_mutex_unlock(&mgr.mutex);
+		(void) slurm_nanosleep(0,
+				       SHUTDOWN_WAIT_STARTUP_THREADS_SLEEP_NS);
+		slurm_mutex_lock(&mgr.mutex);
+	}
+
 	mgr.workers.shutdown_requested = true;
 
 	do {
