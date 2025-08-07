@@ -1,3 +1,29 @@
+## Changes in 25.05.2
+
+* sbatch - Fix case where --get-user-env and some --export flags could make a job fail and get requeued+held if Slurm's installation path was too long.
+* srun - Increase --multi-prog configuration file size limit from 60 kB to 512 MiB.
+* sreport - Fix Planned being printed instead of Planned Down by default in the cluster utilization report.
+* slurmstepd - Avoid regression requiring slurmstepd (and all library dependencies) needing to exist inside of job container's mount namespace to execute TaskProlog and TaskEpilog.
+* Fix issue with shared gres_per_task.
+* Fix issue with --wait-for-children incorrectly implying --gres-flags=allow-task-sharing and vice-versa. These options are now handled independently as originally intended. Note that upgraded daemons will not honor the --wait-for-children option from older clients, and clients will need to be upgraded immediately alongside daemons in order to use --wait-for-children.
+* Log case-insensitive collation exceptions in the slurm database to alert admins and to aid in investigating collation issues.
+* Fix new QOS getting in bad state when attempting to remove flags at QOS at creation.
+* Fix potential segfault of slurmstepd when acct_gather_profile/influxdb plugin fails to send data.
+* Fix potential segfault when jobcomp/elasticsearch fails to send data.
+* Fix parsing SlurmctldParameters=node_reg_mem_percent when it is followed by other comma-separated parameters.
+* Fix stepmgr enabled srun allocations failing when excluding nodes.
+* Fix bug where tres-per-task is ignored.
+* Add topology.yaml to the list of files sent with configless
+* Increase default thread stack size to 8 MB.
+* When using --wait-for-children, a task's behavior in regards to the parent process exit will now depend on --kill-on-bad-exit. If --kill-on-bad-exit=1 and the parent process exits non-zero, the task will end. If --kill-on-bad-exit=0 and the parent process exits with an error, the task will continue.  Note that default KillOnBadExit setting in slurm.conf is 0, which will result in different behavior for --wait-for-children as described above.
+* Fix x11 forwarding issues causing applications (e.g. matlab) to intermittently crash on startup.
+* Print errors for write failures in half_duplex code used for x11 forwarding connections
+* tls/s2n - Do not print S2N_ERR_IO_BLOCKED error when it is expected.
+* tls/s2n - Fix x11 forwarding issues
+* Fix slurmdbd crash when failing to open a persistent connection to slurmctld
+* Fix missing error logs for failures to send messages on persistent connections.
+* Add support for PMIx v6.x
+
 ## Changes in 25.05.1
 
 * slurmd - Fixed a few minor memory leaks
