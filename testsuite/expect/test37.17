@@ -946,6 +946,21 @@ proc test_remote_or_dependencies { } {
 	if { !$kill_invalid_depend } {
 		cancel_job $job_id3 $c1
 	}
+
+	log_info "OR dependencies: Test that a dependency on non-existent remote job fails:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set fake_job_id [expr $job_id1 + 123]
+	set job_id2 [submit_job "--depend=afternotok:$job_id1?afternotok:$fake_job_id \
+		-M$c2" $c2 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "PENDING" $c2
+	wait_for_depend $job_id2 "Dependency" \
+		"afternotok:$job_id1\(unfulfilled\)?afternotok:$fake_job_id\(failed\)"
+
+	cancel_job $job_id1 $c1
+	wait_for_depend $job_id2 "None" "(null)"
+	cancel_job $job_id2 $c2
 }
 
 proc test_local_and_dependencies { } {
@@ -1042,6 +1057,21 @@ proc test_remote_and_dependencies { } {
 		"afterok:$job_id1\(unfulfilled\),afterok:$job_id2\(failed\)"
 	if { !$kill_invalid_depend } {
 		cancel_job $job_id3 $c1
+	}
+	cancel_job $job_id1 $c1
+
+	log_info "AND dependencies: Test that a dependency on non-existent remote job fails:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set fake_job_id [expr $job_id1 + 123]
+	set job_id2 [submit_job "--depend=afternotok:$job_id1,afternotok:$fake_job_id \
+		-M$c2" $c2 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "PENDING" $c2
+	wait_for_depend $job_id2 "DependencyNeverSatisfied" \
+		"afternotok:$job_id1\(unfulfilled\),afternotok:$fake_job_id\(failed\)"
+	if { !$kill_invalid_depend } {
+		cancel_job $job_id2 $c2
 	}
 	cancel_job $job_id1 $c1
 }
