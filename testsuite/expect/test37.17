@@ -1074,6 +1074,33 @@ proc test_remote_and_dependencies { } {
 		cancel_job $job_id2 $c2
 	}
 	cancel_job $job_id1 $c1
+
+	# Only the remote cluster knows that these are duplicate dependencies
+	log_info "AND dependencies: Test that remote dependencies with both array syntaxes are fulfilled:"
+	set job_id1 [submit_job "-M$c2 --array=1-2" $c2 $file_in_long]
+	# Order should have no effect
+	set job_id2 [submit_job \
+		"--depend=afternotok:$job_id1,afternotok:$job_id1\_* -M$c1" \
+		$c1 $file_in_long]
+	set job_id3 [submit_job \
+		"--depend=afternotok:$job_id1\_*,afternotok:$job_id1 -M$c1" \
+		$c1 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c2
+	my_wait_for_fed_job $job_id2 "PENDING" $c1
+	my_wait_for_fed_job $job_id3 "PENDING" $c1
+	wait_for_depend $job_id2 "Dependency" \
+		"afternotok:$job_id1\(unfulfilled\),afternotok:$job_id1\_*\(unfulfilled\)"
+	wait_for_depend $job_id3 "Dependency" \
+		"afternotok:$job_id1\_*\(unfulfilled\),afternotok:$job_id1\(unfulfilled\)"
+
+	cancel_job $job_id1 $c2
+	wait_for_depend $job_id2 "None" "(null)"
+	wait_for_depend $job_id3 "None" "(null)"
+	my_wait_for_fed_job $job_id2 "RUNNING" $c1
+	my_wait_for_fed_job $job_id3 "RUNNING" $c1
+	cancel_job $job_id2 $c1
+	cancel_job $job_id3 $c1
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
