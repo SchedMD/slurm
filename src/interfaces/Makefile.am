@@ -78,7 +78,9 @@ libcommon_interfaces_la_SOURCES =    \
 	tls.c				        \
 	tls.h				        \
 	topology.c				\
-	topology.h
+	topology.h                              \
+	url_parser.c                            \
+	url_parser.h
 
 libslurmctld_interfaces_la_SOURCES =    \
 	burst_buffer.c	\

@@ -170,7 +170,7 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	data_parser.lo gpu.lo gres.lo hash.lo http_parser.lo \
 	jobacct_gather.lo jobcomp.lo mcs.lo mpi.lo node_features.lo \
 	prep.lo priority.lo select.lo serializer.lo site_factor.lo \
-	switch.lo tls.lo topology.lo
+	switch.lo tls.lo topology.lo url_parser.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -231,7 +231,8 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
 	./$(DEPDIR)/serializer.Plo ./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/switch.Plo ./$(DEPDIR)/task.Plo \
-	./$(DEPDIR)/tls.Plo ./$(DEPDIR)/topology.Plo
+	./$(DEPDIR)/tls.Plo ./$(DEPDIR)/topology.Plo \
+	./$(DEPDIR)/url_parser.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -608,7 +609,9 @@ libcommon_interfaces_la_SOURCES = \
 	tls.c				        \
 	tls.h				        \
 	topology.c				\
-	topology.h
+	topology.h                              \
+	url_parser.c                            \
+	url_parser.h
 
 libslurmctld_interfaces_la_SOURCES = \
 	burst_buffer.c	\
@@ -740,6 +743,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/url_parser.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -903,6 +907,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/task.Plo
 	-rm -f ./$(DEPDIR)/tls.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
+	-rm -f ./$(DEPDIR)/url_parser.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -986,6 +991,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/task.Plo
 	-rm -f ./$(DEPDIR)/tls.Plo
 	-rm -f ./$(DEPDIR)/topology.Plo
+	-rm -f ./$(DEPDIR)/url_parser.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
