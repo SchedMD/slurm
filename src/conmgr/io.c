@@ -453,15 +453,28 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 	return SLURM_SUCCESS;
 }
 
-extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
-				    const void **data_ptr, size_t *bytes_ptr)
+static int _get_input_buffer(const conmgr_fd_t *con, const void **data_ptr,
+			     size_t *bytes_ptr)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
+	if (!con->in)
+		return ENOENT;
+
 	if (data_ptr)
 		*data_ptr = get_buf_data(con->in) + get_buf_offset(con->in);
 	*bytes_ptr = size_buf(con->in);
+
+	return SLURM_SUCCESS;
+}
+
+extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
+				    const void **data_ptr, size_t *bytes_ptr)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	(void) _get_input_buffer(con, data_ptr, bytes_ptr);
 }
 
 extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
