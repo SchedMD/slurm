@@ -43,6 +43,7 @@
 #include "src/common/list.h"
 
 #include "src/conmgr/conmgr.h"
+#include "src/interfaces/http_parser.h"
 
 struct on_http_request_args_s;
 typedef struct on_http_request_args_s on_http_request_args_t;
@@ -67,8 +68,8 @@ typedef struct {
 	void *auth;
 	/* callback to call on each HTTP request */
 	on_http_request_t on_http_request;
-	/* http parser context */
-	void *parser;
+	/* http parser plugin state */
+	http_parser_state_t *parser;
 	/* http request_t */
 	void *request;
 } http_context_t;
