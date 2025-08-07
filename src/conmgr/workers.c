@@ -108,20 +108,6 @@ static void _worker_delete(void *x)
 	mgr.workers.total--;
 }
 
-static void _increase_thread_count(int count)
-{
-	for (int i = 0; i < count; i++) {
-		worker_t *worker = xmalloc(sizeof(*worker));
-		worker->magic = MAGIC_WORKER;
-		worker->id = i + 1;
-
-		slurm_thread_create(&worker->tid, _worker, worker);
-		_check_magic_worker(worker);
-
-		list_append(mgr.workers.workers, worker);
-	}
-}
-
 static int _detect_cpu_count(void)
 {
 	cpu_set_t mask = { { 0 } };
@@ -158,26 +144,6 @@ extern void workers_init(int count)
 		count = CONMGR_THREAD_COUNT_MAX;
 	}
 
-	if (mgr.workers.threads) {
-		_check_magic_workers();
-
-		if (mgr.workers.threads >= count) {
-			int threads = mgr.workers.threads;
-			log_flag(CONMGR, "%s: ignoring duplicate init request with thread count=%d, current thread count=%d",
-				 __func__, count, threads);
-		} else {
-			int prev = mgr.workers.threads;
-
-			/* Need to increase thread count to match count */
-			_increase_thread_count(count - mgr.workers.threads);
-			mgr.workers.threads = count;
-
-			log_flag(CONMGR, "%s: increased thread count from %d to %d",
-				 __func__, prev, count);
-		}
-		return;
-	}
-
 	log_flag(CONMGR, "%s: Initializing with %d workers", __func__, count);
 	xassert(!mgr.workers.workers);
 	mgr.workers.workers = list_create(_worker_free);
@@ -185,7 +151,16 @@ extern void workers_init(int count)
 
 	_check_magic_workers();
 
-	_increase_thread_count(count);
+	for (int i = 0; i < count; i++) {
+		worker_t *worker = xmalloc(sizeof(*worker));
+		worker->magic = MAGIC_WORKER;
+		worker->id = i + 1;
+
+		slurm_thread_create(&worker->tid, _worker, worker);
+		_check_magic_worker(worker);
+
+		list_append(mgr.workers.workers, worker);
+	}
 }
 
 extern void workers_fini(void)
