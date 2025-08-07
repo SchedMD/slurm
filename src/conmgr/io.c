@@ -37,6 +37,8 @@
 #include <limits.h>
 #include <sys/uio.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -497,17 +499,27 @@ extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
 				 (size_buf(con->in) - con->in->processed));
 }
 
-extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
-					      size_t bytes)
+static int _mark_consumed_in_buffer(const conmgr_fd_t *con, size_t bytes)
 {
-	size_t offset;
+	ssize_t offset = -1;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
+	if (!con->in)
+		return ENOENT;
+
 	offset = get_buf_offset(con->in) + bytes;
 	xassert(offset <= size_buf(con->in));
+
 	set_buf_offset(con->in, offset);
+	return SLURM_SUCCESS;
+}
+
+extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
+					      size_t bytes)
+{
+	(void) _mark_consumed_in_buffer(con, bytes);
 }
 
 extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
