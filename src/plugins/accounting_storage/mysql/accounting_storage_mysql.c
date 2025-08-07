@@ -266,6 +266,10 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		DASSOC_COUNT
 	};
 
+	/* We allow removing it when AllowNoDefAcct=yes */
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT)
+		return args->default_account;
+
 	xstrcat(tmp_char, dassoc_inx[0]);
 	for (i = 1; i < DASSOC_COUNT; i++)
 		xstrfmtcat(tmp_char, ", %s", dassoc_inx[i]);
