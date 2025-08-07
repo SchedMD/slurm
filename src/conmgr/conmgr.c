@@ -153,7 +153,7 @@ extern void conmgr_fini(void)
 	slurm_mutex_lock(&mgr.mutex);
 
 	if (!mgr.initialized)
-		fatal_abort("%s: duplicate shutdown request", __func__);
+		fatal_abort("%s: shutdown but never initialized", __func__);
 
 	mgr.shutdown_requested = true;
 
