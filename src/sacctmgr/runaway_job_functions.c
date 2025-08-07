@@ -38,6 +38,16 @@
 /* Max runaway jobs per single sql statement. */
 #define RUNAWAY_JOBS_PER_PASS 1000
 
+static uint32_t _parse_state(char *state_str)
+{
+	uint32_t state = job_state_num(state_str);
+
+	if ((state != JOB_COMPLETE) && (state != JOB_FAILED)) {
+		fatal("Unknown or unsupported state specified (%s). Only Completed or Failed are accepted.", state_str);
+	}
+	return state;
+}
+
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_job_cond_t *job_cond,
 		     list_t *format_list)
@@ -71,6 +81,49 @@ static int _set_cond(int *start, int argc, char **argv,
 		} else {
 			exit_code=1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
+		}
+	}
+
+	(*start) = i;
+
+	return set;
+}
+
+static int _set_rec(int *start, int argc, char **argv,
+		    slurmdb_job_rec_t *job_rec)
+{
+	int i;
+	int set = 0;
+	int end = 0;
+	int command_len = 0;
+
+	for (i = (*start); i < argc; i++) {
+		end = parse_option_end(argv[i]);
+		if (!end)
+			command_len = strlen(argv[i]);
+		else {
+			command_len = end - 1;
+			if (argv[i][end] == '=') {
+				end++;
+			}
+		}
+
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
+			i--;
+			break;
+		} else if (!end &&
+			   !xstrncasecmp(argv[i], "set", MAX(command_len, 3))) {
+			continue;
+		} else if (!end) {
+			exit_code = 1;
+			error("Bad format on %s: End your option with an '=' sign\n",
+			      argv[i]);
+		} else if (!xstrncasecmp(argv[i], "EndState",
+					 MAX(command_len, 1))) {
+			job_rec->state = _parse_state(argv[i] + end);
+			set = 1;
+		} else {
+			error("Unknown option: %s\n", argv[i]);
 		}
 	}
 
@@ -285,9 +338,11 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 	list_t *runaway_jobs = NULL;
 	list_t *process_jobs = list_create(slurmdb_destroy_job_rec);
 	int rc = SLURM_SUCCESS;
+	int altered = 0;
 	int i=0;
 	char *cluster_str;
 	list_t *format_list = list_create(xfree_ptr);
+	slurmdb_job_rec_t job_rec_update = { 0 };
 	slurmdb_job_cond_t *job_cond = xmalloc(sizeof(slurmdb_job_cond_t));
 	char *ask_msg = "\nWould you like to fix these runaway jobs?\n"
 			"(This sets the end time for each job to the latest of "
@@ -301,10 +356,15 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 
 	for (i=0; i<argc; i++) {
 		int command_len = strlen(argv[i]);
-		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))
-		    || !xstrncasecmp(argv[i], "Set", MAX(command_len, 3)))
+		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i++;
-		_set_cond(&i, argc, argv, job_cond, format_list);
+			_set_cond(&i, argc, argv, job_cond, format_list);
+		} else if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
+			i++;
+			altered += _set_rec(&i, argc, argv, &job_rec_update);
+		} else {
+			_set_cond(&i, argc, argv, job_cond, format_list);
+		}
 	}
 
 	runaway_jobs = _get_runaway_jobs(job_cond);
@@ -333,6 +393,16 @@ extern int sacctmgr_list_runaway_jobs(int argc, char **argv)
 
 	while (!rc && list_transfer_max(process_jobs, runaway_jobs,
 					RUNAWAY_JOBS_PER_PASS)) {
+		/*
+		 * To tell which end state we want for the jobs,
+		 * we mark the first job of the list for slurmdbd.
+		 */
+		if (altered) {
+			slurmdb_job_rec_t *job_rec = list_peek(process_jobs);
+			if (job_rec_update.state)
+				job_rec->state = job_rec_update.state;
+			job_rec->flags = SLURMDB_JOB_FLAG_ALTERED;
+		}
 		rc = slurmdb_jobs_fix_runaway(db_conn, process_jobs);
 		list_flush(process_jobs);
 	}

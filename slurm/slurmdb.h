@@ -193,6 +193,9 @@ enum cluster_fed_states {
 #define SLURMDB_JOB_FLAG_BACKFILL SLURM_BIT(3) /* Job was started from
 						* backfill */
 #define SLURMDB_JOB_FLAG_START_R  SLURM_BIT(4) /* Job start rpc was received */
+#define SLURMDB_JOB_FLAG_ALTERED  SLURM_BIT(5) /* Mainly for runaway fix: if
+						* set, the job record has been
+						* altered at some point */
 
 /*
  * Slurm job condition flags
