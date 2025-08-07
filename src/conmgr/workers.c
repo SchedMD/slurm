@@ -217,12 +217,8 @@ static void *_worker(void *arg)
 
 		/* wait for work if nothing to do */
 		if (!work) {
-			if (mgr.workers.shutdown_requested) {
-				log_flag(CONMGR, "%s: [%u] shutting down",
-					 __func__, worker->id);
-				_worker_delete(worker);
+			if (mgr.workers.shutdown_requested)
 				break;
-			}
 
 			log_flag(CONMGR, "%s: [%u] waiting for work. Current active workers %u/%u",
 				 __func__, worker->id, mgr.workers.active,
@@ -269,6 +265,9 @@ static void *_worker(void *arg)
 			EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
+	log_flag(CONMGR, "%s: [%u] shutting down",
+		 __func__, worker->id);
+	_worker_delete(worker);
 	EVENT_SIGNAL(&mgr.worker_return);
 	slurm_mutex_unlock(&mgr.mutex);
 	return NULL;
