@@ -4034,13 +4034,6 @@ static int _update_job_dependency(void *x, void *arg)
 		dep_ptr->depend_flags |= SLURM_FLAGS_REMOTE;
 		dep_job_ptr = NULL;
 	}
-
-	if (dep_job_ptr) { /* job still active */
-		if (dep_ptr->array_task_id == NO_VAL)
-			dep_ptr->job_id = dep_job_ptr->job_id;
-		else
-			dep_ptr->job_id = dep_job_ptr->array_job_id;
-	}
 	dep_ptr->job_ptr = dep_job_ptr; /* Can be NULL */
 
 	/* Ignore duplicates */
