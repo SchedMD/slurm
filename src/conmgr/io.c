@@ -477,6 +477,16 @@ extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
 	(void) _get_input_buffer(con, data_ptr, bytes_ptr);
 }
 
+extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
+				       const void **data_ptr, size_t *bytes_ptr)
+{
+	xassert(ref);
+	xassert(data_ptr || bytes_ptr);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	return _get_input_buffer(ref->con, data_ptr, bytes_ptr);
+}
+
 extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);

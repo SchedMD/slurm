@@ -726,6 +726,18 @@ extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
 				    const void **data_ptr, size_t *bytes_ptr);
 
 /*
+ * Get pointer to data held by input buffer for connection reference
+ * WARNING: only safe to call from connection callback function
+ * IN ref - reference to connection
+ * IN/OUT data_ptr - pointer to set with pointer to buffer data or NULL
+ * IN/OUT bytes_ptr - number of bytes in buffer
+ * RET SLURM_SUCCESS or ENOENT if connection lacks input buffer or error
+ */
+extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
+				       const void **data_ptr,
+				       size_t *bytes_ptr);
+
+/*
  * Get shadow buffer to data held by input buffer
  * IN con - connection to query data
  * RET new shadow buffer
