@@ -95,6 +95,28 @@ START_TEST(test_params)
 
 END_TEST
 
+START_TEST(test_reinit)
+{
+	conmgr_init(0, 0, (conmgr_callbacks_t) { 0 });
+	ck_assert(conmgr_enabled());
+	conmgr_init(0, 0, (conmgr_callbacks_t) { 0 });
+	ck_assert(conmgr_enabled());
+	conmgr_fini();
+	ck_assert(conmgr_enabled());
+	conmgr_request_shutdown();
+	ck_assert(conmgr_enabled());
+	conmgr_init(0, 0, (conmgr_callbacks_t) { 0 });
+	ck_assert(conmgr_enabled());
+	conmgr_fini();
+	ck_assert(conmgr_enabled());
+	conmgr_fini();
+	ck_assert(conmgr_enabled());
+	conmgr_request_shutdown();
+	ck_assert(conmgr_enabled());
+}
+
+END_TEST
+
 extern int main(int argc, char **argv)
 {
 	int failures;
@@ -103,6 +125,7 @@ extern int main(int argc, char **argv)
 	TCase *tcase = tcase_create("conmgr");
 	tcase_add_unchecked_fixture(tcase, setup, teardown);
 	tcase_add_test(tcase, test_params);
+	tcase_add_test(tcase, test_reinit);
 
 	Suite *suite = suite_create("conmgr");
 	suite_add_tcase(suite, tcase);

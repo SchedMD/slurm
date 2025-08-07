@@ -291,13 +291,8 @@ typedef struct {
 	 * type: conmgr_fd_t
 	 */
 	list_t *complete_conns;
-	/*
-	 * True after conmgr_init() is called, false after conmgr_fini() is
-	 * called.
-	 */
+	/* True after conmgr_init() is called */
 	bool initialized;
-	/* One time per process tasks initialized */
-	bool one_time_initialized;
 	/*
 	 * Thread id of thread running watch()
 	 */

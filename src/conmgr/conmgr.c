@@ -33,6 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <errno.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -60,13 +61,19 @@ static bool enabled_status = false;
 
 static void _atfork_child(void)
 {
+	/* Do nothing if conmgr was not running or already cleaned up */
+	if (!mgr.initialized || !mgr.connections)
+		return;
+
 	/*
-	 * Force conmgr to return to default state before it was initialized at
-	 * forking as all of the prior state is completely unusable.
+	 * fork() while conmgr was running which means mgr's state is invalid
+	 * and must not be used. Set mgr to same state as if conmgr_init() and
+	 * conmgr_fini() was already called while being in an error state.
 	 */
 	mgr = CONMGR_DEFAULT;
-	enabled_init = 0;
-	enabled_status = false;
+	mgr.initialized = true;
+	mgr.shutdown_requested = true;
+	mgr.error = ESHUTDOWN;
 }
 
 static void _at_exit(void)
@@ -78,6 +85,8 @@ static void _at_exit(void)
 extern void conmgr_init(int thread_count, int max_connections,
 			conmgr_callbacks_t callbacks)
 {
+	int rc = EINVAL;
+
 	/* The configured value takes the highest precedence */
 	if (mgr.conf_max_connections > 0)
 		max_connections = mgr.conf_max_connections;
@@ -87,6 +96,12 @@ extern void conmgr_init(int thread_count, int max_connections,
 
 	slurm_mutex_lock(&mgr.mutex);
 
+	if (mgr.initialized) {
+		slurm_mutex_unlock(&mgr.mutex);
+		debug5("%s: skipping - already initialized", __func__);
+		return;
+	}
+
 	enabled_status = true;
 	mgr.shutdown_requested = false;
 
@@ -94,40 +109,21 @@ extern void conmgr_init(int thread_count, int max_connections,
 		thread_count = mgr.workers.conf_threads;
 	workers_init(thread_count);
 
-	if (!mgr.one_time_initialized) {
-		int rc;
+	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
+		fatal_abort("%s: pthread_atfork() failed: %s",
+			    __func__, slurm_strerror(rc));
 
-		if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
-			fatal_abort("%s: pthread_atfork() failed: %s",
-				    __func__, slurm_strerror(rc));
-
-		add_work(true, NULL, (conmgr_callback_t) {
-				.func = on_signal_alarm,
-				.func_name = XSTRINGIFY(on_signal_alarm),
-			 }, (conmgr_work_control_t) {
-				.depend_type = CONMGR_WORK_DEP_SIGNAL,
-				.on_signal_number = SIGALRM,
-				.schedule_type = CONMGR_WORK_SCHED_FIFO,
-			 }, 0, __func__);
-
-		mgr.one_time_initialized = true;
-	} else {
-		/* already initialized */
-
-		mgr.max_connections = MAX(max_connections, mgr.max_connections);
-
-		/* Catch if callbacks are different while ignoring NULLS */
-		xassert(!callbacks.parse || !mgr.callbacks.parse);
-		xassert(!callbacks.free_parse || !mgr.callbacks.free_parse);
-
-		if (callbacks.parse)
-			mgr.callbacks.parse = callbacks.parse;
-		if (callbacks.free_parse)
-			mgr.callbacks.free_parse = callbacks.free_parse;
-
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
+	add_work(true, NULL,
+		 (conmgr_callback_t) {
+			 .func = on_signal_alarm,
+			 .func_name = XSTRINGIFY(on_signal_alarm),
+		 },
+		 (conmgr_work_control_t) {
+			 .depend_type = CONMGR_WORK_DEP_SIGNAL,
+			 .on_signal_number = SIGALRM,
+			 .schedule_type = CONMGR_WORK_SCHED_FIFO,
+		 },
+		 0, __func__);
 
 	if (!mgr.conf_delay_write_complete)
 		mgr.conf_delay_write_complete = slurm_conf.msg_timeout;
@@ -164,7 +160,7 @@ extern void conmgr_fini(void)
 	slurm_mutex_lock(&mgr.mutex);
 
 	if (!mgr.initialized)
-		fatal_abort("%s: duplicate shutdown request", __func__);
+		fatal_abort("%s: shutdown but never initialized", __func__);
 
 	mgr.shutdown_requested = true;
 
@@ -174,7 +170,11 @@ extern void conmgr_fini(void)
 		slurm_mutex_lock(&mgr.mutex);
 	}
 
-	mgr.initialized = false;
+	if (!mgr.connections) {
+		log_flag(CONMGR, "%s: skipping clean up", __func__);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
 
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
 
@@ -308,7 +308,7 @@ extern bool conmgr_enabled(void)
 		return enabled_status;
 
 	slurm_mutex_lock(&mgr.mutex);
-	enabled_status = (mgr.one_time_initialized || mgr.initialized);
+	enabled_status = mgr.initialized;
 	slurm_mutex_unlock(&mgr.mutex);
 
 	log_flag(CONMGR, "%s: enabled=%c",

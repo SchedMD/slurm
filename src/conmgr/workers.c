@@ -43,6 +43,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsched.h"
@@ -60,6 +61,12 @@
  *	exceeds 16 bytes, the string is silently truncated.
  */
 #define PRCTL_BUF_BYTES 17
+
+/*
+ * Amount of time to sleep while polling for all threads to have started up
+ * during shutdown
+ */
+#define SHUTDOWN_WAIT_STARTUP_THREADS_SLEEP_NS 10
 
 static void *_worker(void *arg);
 
@@ -108,20 +115,6 @@ static void _worker_delete(void *x)
 	mgr.workers.total--;
 }
 
-static void _increase_thread_count(int count)
-{
-	for (int i = 0; i < count; i++) {
-		worker_t *worker = xmalloc(sizeof(*worker));
-		worker->magic = MAGIC_WORKER;
-		worker->id = i + 1;
-
-		slurm_thread_create(&worker->tid, _worker, worker);
-		_check_magic_worker(worker);
-
-		list_append(mgr.workers.workers, worker);
-	}
-}
-
 static int _detect_cpu_count(void)
 {
 	cpu_set_t mask = { { 0 } };
@@ -158,26 +151,6 @@ extern void workers_init(int count)
 		count = CONMGR_THREAD_COUNT_MAX;
 	}
 
-	if (mgr.workers.threads) {
-		_check_magic_workers();
-
-		if (mgr.workers.threads >= count) {
-			int threads = mgr.workers.threads;
-			log_flag(CONMGR, "%s: ignoring duplicate init request with thread count=%d, current thread count=%d",
-				 __func__, count, threads);
-		} else {
-			int prev = mgr.workers.threads;
-
-			/* Need to increase thread count to match count */
-			_increase_thread_count(count - mgr.workers.threads);
-			mgr.workers.threads = count;
-
-			log_flag(CONMGR, "%s: increased thread count from %d to %d",
-				 __func__, prev, count);
-		}
-		return;
-	}
-
 	log_flag(CONMGR, "%s: Initializing with %d workers", __func__, count);
 	xassert(!mgr.workers.workers);
 	mgr.workers.workers = list_create(_worker_free);
@@ -185,7 +158,16 @@ extern void workers_init(int count)
 
 	_check_magic_workers();
 
-	_increase_thread_count(count);
+	for (int i = 0; i < count; i++) {
+		worker_t *worker = xmalloc(sizeof(*worker));
+		worker->magic = MAGIC_WORKER;
+		worker->id = i + 1;
+
+		slurm_thread_create(&worker->tid, _worker, worker);
+		_check_magic_worker(worker);
+
+		list_append(mgr.workers.workers, worker);
+	}
 }
 
 extern void workers_fini(void)
@@ -242,12 +224,8 @@ static void *_worker(void *arg)
 
 		/* wait for work if nothing to do */
 		if (!work) {
-			if (mgr.workers.shutdown_requested) {
-				log_flag(CONMGR, "%s: [%u] shutting down",
-					 __func__, worker->id);
-				_worker_delete(worker);
+			if (mgr.workers.shutdown_requested)
 				break;
-			}
 
 			log_flag(CONMGR, "%s: [%u] waiting for work. Current active workers %u/%u",
 				 __func__, worker->id, mgr.workers.active,
@@ -294,6 +272,9 @@ static void *_worker(void *arg)
 			EVENT_SIGNAL(&mgr.watch_sleep);
 	}
 
+	log_flag(CONMGR, "%s: [%u] shutting down",
+		 __func__, worker->id);
+	_worker_delete(worker);
 	EVENT_SIGNAL(&mgr.worker_return);
 	slurm_mutex_unlock(&mgr.mutex);
 	return NULL;
@@ -301,6 +282,19 @@ static void *_worker(void *arg)
 
 extern void workers_shutdown(void)
 {
+	/*
+	 * Wait until all threads have started up fully to avoid a thread
+	 * starting after shutdown and hanging forever
+	 */
+	while (mgr.workers.threads &&
+	       (mgr.workers.threads != mgr.workers.total)) {
+		EVENT_BROADCAST(&mgr.worker_sleep);
+		slurm_mutex_unlock(&mgr.mutex);
+		(void) slurm_nanosleep(0,
+				       SHUTDOWN_WAIT_STARTUP_THREADS_SLEEP_NS);
+		slurm_mutex_lock(&mgr.mutex);
+	}
+
 	mgr.workers.shutdown_requested = true;
 
 	do {
