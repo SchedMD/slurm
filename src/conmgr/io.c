@@ -522,6 +522,14 @@ extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
 	return buffer;
 }
 
+extern int conmgr_con_shadow_in_buffer(conmgr_fd_ref_t *ref, buf_t **buf_ptr)
+{
+	xassert(ref);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	return _con_get_shadow_in_buffer(ref->con, buf_ptr);
+}
+
 static int _mark_consumed_in_buffer(const conmgr_fd_t *con, size_t bytes)
 {
 	ssize_t offset = -1;

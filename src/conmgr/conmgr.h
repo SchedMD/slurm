@@ -750,6 +750,19 @@ extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
 extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con);
 
 /*
+ * Get shadow buffer to data held by input buffer
+ * IN ref - reference to connection
+ * IN/OUR buf_ptr - Pointer to populate with buffer (on success)
+ *	shadow buffer must FREE_NULL_BUFFER()ed before end of callback function
+ *	completes. Shadow buffer's data pointer will be invalid once the
+ *	callbackup function completes.
+ *	conmgr_con_mark_consumed_input_buffer() must be called to register
+ *	that any bytes of the buffer were processed.
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_shadow_in_buffer(conmgr_fd_ref_t *ref, buf_t **buf_ptr);
+
+/*
  * Mark bytes in input buffer as have been consumed
  * WARNING: will xassert() if bytes > size of buffer
  */
