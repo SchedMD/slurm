@@ -177,6 +177,8 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 		xassert(diff.after);
 		metric->total = timespec_add(metric->total, diff.diff);
 		rc.delay = diff.diff;
+		latency_metric_add_histogram_value(&metric->histogram,
+						   diff.diff);
 	}
 
 	*start = (timespec_t) {0};

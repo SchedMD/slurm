@@ -101,6 +101,7 @@ typedef struct {
 
 /* Struct to hold latency metric state */
 typedef struct {
+	latency_histogram_t histogram;
 	timespec_t total;
 	uint64_t count;
 	timespec_t last_log;
@@ -143,6 +144,7 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 
 #define LATENCY_METRIC_INITIALIZER \
 	((latency_metric_t) { \
+		.histogram = LATENCY_HISTOGRAM_INITIALIZER, \
 		.total = { 0, 0 }, \
 		.count = 0, \
 		.last_log = { 0, 0 }, \
