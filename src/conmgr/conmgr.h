@@ -206,26 +206,6 @@ typedef struct {
 	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
 } conmgr_events_t;
 
-typedef struct {
-	const char *host;
-	const char *port; /* port as string for later parsing */
-} parsed_host_port_t;
-
-typedef struct {
-	/*
-	 * Parse a combined host:port string into host and port
-	 * IN str host:port string for parsing
-	 * OUT parsed will be populated with strings (must xfree())
-	 * RET SLURM_SUCCESS or error
-	 */
-	parsed_host_port_t *(*parse)(const char *str);
-
-	/*
-	 * Free parsed_host_port_t returned from parse_host_port_t()
-	 */
-	void (*free_parse)(parsed_host_port_t *parsed);
-} conmgr_callbacks_t;
-
 typedef enum {
 	CONMGR_WORK_STATUS_INVALID = 0,
 	CONMGR_WORK_STATUS_PENDING,
@@ -378,11 +358,9 @@ typedef enum {
  * Initialise global connection manager
  * IN thread_count - number of thread workers to run
  * IN max_connections - max number of connections or 0 for default
- * IN callbacks - struct containing function pointers
  * WARNING: Never queue as work for conmgr or call from work run by conmgr.
  */
-extern void conmgr_init(int thread_count, int max_connections,
-			conmgr_callbacks_t callbacks);
+extern void conmgr_init(int thread_count, int max_connections);
 /* WARNING: Never queue as work for conmgr or call from work run by conmgr. */
 extern void conmgr_fini(void);
 
@@ -726,6 +704,18 @@ extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
 				    const void **data_ptr, size_t *bytes_ptr);
 
 /*
+ * Get pointer to data held by input buffer for connection reference
+ * WARNING: only safe to call from connection callback function
+ * IN ref - reference to connection
+ * IN/OUT data_ptr - pointer to set with pointer to buffer data or NULL
+ * IN/OUT bytes_ptr - number of bytes in buffer
+ * RET SLURM_SUCCESS or ENOENT if connection lacks input buffer or error
+ */
+extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
+				       const void **data_ptr,
+				       size_t *bytes_ptr);
+
+/*
  * Get shadow buffer to data held by input buffer
  * IN con - connection to query data
  * RET new shadow buffer
@@ -738,11 +728,35 @@ extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
 extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con);
 
 /*
+ * Get shadow buffer to data held by input buffer
+ * IN ref - reference to connection
+ * IN/OUR buf_ptr - Pointer to populate with buffer (on success)
+ *	shadow buffer must FREE_NULL_BUFFER()ed before end of callback function
+ *	completes. Shadow buffer's data pointer will be invalid once the
+ *	callbackup function completes.
+ *	conmgr_con_mark_consumed_input_buffer() must be called to register
+ *	that any bytes of the buffer were processed.
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_shadow_in_buffer(conmgr_fd_ref_t *ref, buf_t **buf_ptr);
+
+/*
  * Mark bytes in input buffer as have been consumed
  * WARNING: will xassert() if bytes > size of buffer
  */
 extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 					      size_t bytes);
+
+/*
+ * Mark bytes in input buffer as have been consumed
+ * WARNING: only safe to call from connection callback function
+ * WARNING: will xassert() if bytes > size of buffer
+ * IN ref - reference to connection
+ * IN bytes - number of bytes to mark as consumed in input buffer
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
+						 const size_t bytes);
 
 /*
  * Transfer incoming data into a buf_t
@@ -902,6 +916,13 @@ extern void conmgr_unquiesce(const char *caller);
  * RET ptr to new reference (must be released by conmgr_fd_free_ref())
  */
 extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con);
+/*
+ * Link newq reference to conmgr connection
+ * Will ensure that connection will remain valid until released.
+ * IN con - connection reference
+ * RET ptr to new reference (must be released by conmgr_fd_free_ref())
+ */
+extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con);
 /*
  * Release reference to conmgr connection
  * WARNING: Connection may not exist after this called

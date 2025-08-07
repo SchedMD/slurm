@@ -3015,6 +3015,7 @@ typedef struct {
 				 * health check program, see
 				 * HEALTH_CHECK_NODE_* above */
 	char * health_check_program;	/* pathname of health check program */
+	char *http_parser_type; /* http_parser plugin type */
 	uint32_t host_unreach_retry_count; /* times to retry connecting if
                                             * rc=EHOSTUNREACH */
 	uint16_t inactive_limit;/* seconds of inactivity before a
@@ -3204,6 +3205,7 @@ typedef struct {
 	uint16_t unkillable_timeout; /* time in seconds, after processes in a
 				      * job step have been signaled, before
 				      * they are considered "unkillable". */
+	char *url_parser_type; /* url_parser plugin type */
 	char *version;		/* version of slurmctld */
 	uint16_t vsize_factor;	/* virtual memory limit size factor */
 	uint16_t wait_time;	/* default job --wait time */

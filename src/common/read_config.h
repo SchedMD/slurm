@@ -97,6 +97,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_ENFORCE_PART_LIMITS 0
 #define DEFAULT_ALLOW_SPEC_RESOURCE_USAGE 0
 #define DEFAULT_HASH_PLUGIN "hash/k12"
+#define DEFAULT_HTTP_PARSER_TYPE "http_parser/libhttp_parser"
 #define DEFAULT_HOST_UNREACH_RETRY_COUNT 0
 #define DEFAULT_KEEPALIVE_TIME (NO_VAL)
 #define DEFAULT_KEEPALIVE_INTERVAL (NO_VAL)
@@ -157,6 +158,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_WAIT_TIME           0
 #define DEFAULT_TREE_WIDTH	    16
 #define DEFAULT_UNKILLABLE_TIMEOUT  60 /* seconds */
+#define DEFAULT_URL_PARSER_TYPE "url_parser/libhttp_parser"
 #define DEFAULT_BATCH_SCRIPT_LIMIT (4 * 1024 * 1024) /* 4MB */
 #define MAX_BATCH_SCRIPT_SIZE (512 * 1024 * 1024) /* 512MB */
 #define DEFAULT_MAX_SUBMIT_LINE_SIZE (1024 * 1024) /* 1MB */

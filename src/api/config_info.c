@@ -775,6 +775,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "HealthCheckProgram", "%s",
 		     conf->health_check_program);
+	add_key_pair(ret_list, "HttpParserType", "%s", conf->http_parser_type);
 
 	add_key_pair(ret_list, "InactiveLimit", "%u sec",
 		     conf->inactive_limit);
@@ -1226,6 +1227,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "UnkillableStepTimeout", "%u sec",
 		     conf->unkillable_timeout);
+
+	add_key_pair(ret_list, "UrlParserType", "%s", conf->url_parser_type);
 
 	add_key_pair(ret_list, "VSizeFactor", "%u percent",
 		     conf->vsize_factor);

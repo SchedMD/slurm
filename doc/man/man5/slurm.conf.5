@@ -1714,6 +1714,19 @@ By default, no program will be executed.
 .IP
 
 .TP
+\fBHttpParserType\fR
+Specify the http_parser implementation that will be used. Default is
+\fIhttp_parser/libhttp_parser\fR.
+Acceptable values at present:
+.IP
+.RS
+.TP
+\fBhttp_parser/libhttp_parser\fR
+Use the libhttp_parser based plugin.
+.RE
+.IP
+
+.TP
 \fBInactiveLimit\fR
 The interval, in seconds, after which a non\-responsive job allocation
 command (e.g. \fBsrun\fR or \fBsalloc\fR) will result in the job being
@@ -6605,6 +6618,19 @@ scheduled on the node.
 
 \fBNOTE\fR: Ensure that UnkillableStepTimeout is at least 5 times larger than
 MessageTimeout, otherwise it can lead to unexpected draining of nodes.
+.IP
+
+.TP
+\fBUrlParserType\fR
+Specify the url_parser implementation that will be used. Default is
+\fIurl_parser/libhttp_parser\fR.
+Acceptable values at present:
+.IP
+.RS
+.TP
+\fBurl_parser/libhttp_parser\fR
+Use the libhttp_parser based plugin.
+.RE
 .IP
 
 .TP

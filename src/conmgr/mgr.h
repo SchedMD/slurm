@@ -325,9 +325,6 @@ typedef struct {
 	/* list of work_t* */
 	list_t *work;
 
-	/* functions to handle host/port parsing */
-	conmgr_callbacks_t callbacks;
-
 	pthread_mutex_t mutex;
 
 	struct {

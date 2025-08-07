@@ -73,9 +73,11 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/http_parser.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/tls.h"
+#include "src/interfaces/url_parser.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
@@ -136,9 +138,6 @@ static bool unshare_files = true;
 static bool check_user = true;
 static bool become_user = false;
 static http_status_code_t *response_status_codes = NULL;
-
-extern parsed_host_port_t *parse_host_port(const char *str);
-extern void free_parse_host_port(parsed_host_port_t *parsed);
 
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
@@ -694,10 +693,6 @@ int main(int argc, char **argv)
 		.on_connection = _setup_http_context,
 		.on_finish = _inet_on_finish,
 	};
-	static const conmgr_callbacks_t callbacks = {
-		.parse = parse_host_port,
-		.free_parse = free_parse_host_port,
-	};
 
 	_parse_env();
 	_parse_commandline(argc, argv);
@@ -724,9 +719,16 @@ int main(int argc, char **argv)
 		serializer_required(MIME_TYPE_YAML);
 	serializer_required(MIME_TYPE_URL_ENCODED);
 
+	if ((rc = http_parser_g_init()))
+		fatal("Unable to load http_parser plugin: %s",
+		      slurm_strerror(rc));
+	if ((rc = url_parser_g_init()))
+		fatal("Unable to load url_parser plugin: %s",
+		      slurm_strerror(rc));
+
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
-		    max_connections, callbacks);
+		    max_connections);
 
 	/*
 	 * Attempt to load TLS plugin and then attempt to load the certificate
@@ -880,6 +882,8 @@ int main(int argc, char **argv)
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
+	http_parser_g_fini();
+	url_parser_g_fini();
 	acct_storage_g_fini();
 	slurm_fini();
 	hash_g_fini();

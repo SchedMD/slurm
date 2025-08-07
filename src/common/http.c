@@ -388,3 +388,27 @@ extern http_request_method_t get_http_method(const char *str)
 
 	return HTTP_REQUEST_INVALID;
 }
+
+extern void url_free_members(url_t *url)
+{
+	url->scheme = URL_SCHEME_INVALID;
+	xfree(url->host);
+	xfree(url->port);
+	xfree(url->user);
+	xfree(url->path);
+	xfree(url->query);
+	xfree(url->fragment);
+}
+
+extern void url_copy_members(url_t *dst, const url_t *src)
+{
+	url_free_members(dst);
+
+	dst->scheme = src->scheme;
+	dst->host = xstrdup(src->host);
+	dst->port = xstrdup(src->port);
+	dst->user = xstrdup(src->user);
+	dst->path = xstrdup(src->path);
+	dst->query = xstrdup(src->query);
+	dst->fragment = xstrdup(src->fragment);
+}

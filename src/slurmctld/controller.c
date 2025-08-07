@@ -673,8 +673,7 @@ int main(int argc, char **argv)
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
-	conmgr_init(0, SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS,
-		    (conmgr_callbacks_t) { 0 });
+	conmgr_init(0, SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 

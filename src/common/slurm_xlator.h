@@ -561,6 +561,18 @@
 /* run_command.[ch] functions */
 #define run_command slurm_run_command
 
+/* http_parser.[ch] functions */
+#define http_parser_g_init slurm_http_parser_g_init
+#define http_parser_g_fini slurm_http_parser_g_fini
+#define http_parser_g_new_parse_request slurm_http_parser_g_new_parse_request
+#define http_parser_g_free_parse_request slurm_http_parser_g_free_parse_request
+#define http_parser_g_parse_request slurm_http_parser_g_parse_request
+
+/* url_parser.[ch] functions */
+#define url_parser_g_init slurm_url_parser_g_init
+#define url_parser_g_fini slurm_url_parser_g_fini
+#define url_parser_g_parse slurm_url_parser_g_parse
+
 #endif /* USE_ALIAS */
 
 #endif /*__SLURM_XLATOR_H__*/

@@ -37,6 +37,8 @@
 #include <limits.h>
 #include <sys/uio.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -453,38 +455,111 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 	return SLURM_SUCCESS;
 }
 
-extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
-				    const void **data_ptr, size_t *bytes_ptr)
+static int _get_input_buffer(const conmgr_fd_t *con, const void **data_ptr,
+			     size_t *bytes_ptr)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	if (!con->in)
+		return ENOENT;
 
 	if (data_ptr)
 		*data_ptr = get_buf_data(con->in) + get_buf_offset(con->in);
 	*bytes_ptr = size_buf(con->in);
+
+	return SLURM_SUCCESS;
 }
 
-extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
+extern void conmgr_fd_get_in_buffer(const conmgr_fd_t *con,
+				    const void **data_ptr, size_t *bytes_ptr)
 {
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	(void) _get_input_buffer(con, data_ptr, bytes_ptr);
+}
+
+extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
+				       const void **data_ptr, size_t *bytes_ptr)
+{
+	xassert(ref);
+	xassert(data_ptr || bytes_ptr);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	return _get_input_buffer(ref->con, data_ptr, bytes_ptr);
+}
+
+static int _con_get_shadow_in_buffer(const conmgr_fd_t *con, buf_t **buf_ptr)
+{
+	buf_t *buffer = NULL;
+	void *data = NULL;
+	size_t bytes = 0;
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
-	return create_shadow_buf((get_buf_data(con->in) + con->in->processed),
-				 (size_buf(con->in) - con->in->processed));
+	if (!con->in)
+		return EEXIST;
+
+	data = (get_buf_data(con->in) + con->in->processed);
+	bytes = (size_buf(con->in) - con->in->processed);
+
+	if (!(buffer = create_shadow_buf(data, bytes)))
+		return ENOMEM;
+
+	xassert(!*buf_ptr);
+	*buf_ptr = buffer;
+	return SLURM_SUCCESS;
+}
+
+extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
+{
+	buf_t *buffer = NULL;
+
+	(void) _con_get_shadow_in_buffer(con, &buffer);
+
+	return buffer;
+}
+
+extern int conmgr_con_shadow_in_buffer(conmgr_fd_ref_t *ref, buf_t **buf_ptr)
+{
+	xassert(ref);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	return _con_get_shadow_in_buffer(ref->con, buf_ptr);
+}
+
+static int _mark_consumed_in_buffer(const conmgr_fd_t *con, size_t bytes)
+{
+	ssize_t offset = -1;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	if (!con->in)
+		return ENOENT;
+
+	offset = get_buf_offset(con->in) + bytes;
+	xassert(offset <= size_buf(con->in));
+
+	set_buf_offset(con->in, offset);
+	return SLURM_SUCCESS;
 }
 
 extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 					      size_t bytes)
 {
-	size_t offset;
+	(void) _mark_consumed_in_buffer(con, bytes);
+}
 
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
+						 const size_t bytes)
+{
+	xassert(ref);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 
-	offset = get_buf_offset(con->in) + bytes;
-	xassert(offset <= size_buf(con->in));
-	set_buf_offset(con->in, offset);
+	return _mark_consumed_in_buffer(ref->con, bytes);
 }
 
 extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,

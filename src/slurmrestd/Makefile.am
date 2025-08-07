@@ -12,7 +12,7 @@ SRCS = \
 	rest_auth.h rest_auth.c
 
 if WITH_SLURMRESTD
-AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 sbin_PROGRAMS = slurmrestd
 
@@ -20,7 +20,7 @@ slurmrestd_SOURCES = $(SRCS)
 slurmrestd_DEPENDENCIES = $(LIB_SLURM_BUILD)
 slurmrestd_LDFLAGS = $(CMD_LDFLAGS)
 
-slurmrestd_LDADD = $(LIB_SLURM) $(HTTP_PARSER_LDFLAGS)
+slurmrestd_LDADD = $(LIB_SLURM)
 
 REF = usage.txt
 include $(top_srcdir)/make_ref.include
