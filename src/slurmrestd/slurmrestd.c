@@ -77,6 +77,7 @@
 #include "src/interfaces/select.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/tls.h"
+#include "src/interfaces/url_parser.h"
 
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
@@ -728,6 +729,9 @@ int main(int argc, char **argv)
 	if ((rc = http_parser_g_init()))
 		fatal("Unable to load http_parser plugin: %s",
 		      slurm_strerror(rc));
+	if ((rc = url_parser_g_init()))
+		fatal("Unable to load url_parser plugin: %s",
+		      slurm_strerror(rc));
 
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
@@ -886,6 +890,7 @@ int main(int argc, char **argv)
 
 	xfree(auth_plugin_handles);
 	http_parser_g_fini();
+	url_parser_g_fini();
 	acct_storage_g_fini();
 	slurm_fini();
 	hash_g_fini();
