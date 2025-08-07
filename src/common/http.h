@@ -180,4 +180,25 @@ extern const char *url_get_scheme_string(const url_scheme_t scheme);
 extern data_t *parse_url_path(const char *path, bool convert_types,
 			      bool allow_templates);
 
+typedef struct {
+	url_scheme_t scheme;
+	char *host;
+	char *port;
+	char *user;
+	char *path;
+	char *query;
+	char *fragment;
+} url_t;
+
+#define URL_INITIALIZER                       \
+	((url_t) {                            \
+		.scheme = URL_SCHEME_INVALID, \
+	})
+
+/* Free all members in URL */
+extern void url_free_members(url_t *url);
+
+/* Copy all members in URL */
+extern void url_copy_members(url_t *dst, const url_t *src);
+
 #endif /* SLURM_HTTP_H */
