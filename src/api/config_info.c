@@ -1228,6 +1228,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "UnkillableStepTimeout", "%u sec",
 		     conf->unkillable_timeout);
 
+	add_key_pair(ret_list, "UrlParserType", "%s", conf->url_parser_type);
+
 	add_key_pair(ret_list, "VSizeFactor", "%u percent",
 		     conf->vsize_factor);
 

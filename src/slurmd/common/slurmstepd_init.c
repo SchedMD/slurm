@@ -356,6 +356,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	pack16(slurm_conf.tree_width, buffer);
 	packstr(slurm_conf.unkillable_program, buffer);
 	pack16(slurm_conf.unkillable_timeout, buffer);
+	/* url_parser_type */
 	/* version */
 	pack16(slurm_conf.vsize_factor, buffer);
 	pack16(slurm_conf.wait_time, buffer);

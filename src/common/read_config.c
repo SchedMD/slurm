@@ -433,6 +433,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"TreeWidth", S_P_UINT16},
 	{"UnkillableStepProgram", S_P_STRING},
 	{"UnkillableStepTimeout", S_P_UINT16},
+	{"UrlParserType", S_P_STRING},
 	{"UsePAM", S_P_BOOLEAN},
 	{"VSizeFactor", S_P_UINT16},
 	{"WaitTime", S_P_UINT16},
@@ -2709,6 +2710,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->topology_param);
 	xfree (ctl_conf_ptr->topology_plugin);
 	xfree (ctl_conf_ptr->unkillable_program);
+	xfree(ctl_conf_ptr->url_parser_type);
 	xfree (ctl_conf_ptr->version);
 	xfree (ctl_conf_ptr->x11_params);
 
@@ -2903,6 +2905,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->topology_plugin);
 	ctl_conf_ptr->tree_width       		= NO_VAL16;
 	xfree (ctl_conf_ptr->unkillable_program);
+	xfree(ctl_conf_ptr->url_parser_type);
 	ctl_conf_ptr->unkillable_timeout        = NO_VAL16;
 	ctl_conf_ptr->vsize_factor              = 0;
 	ctl_conf_ptr->wait_time			= NO_VAL16;
@@ -5271,6 +5274,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (conf->unkillable_timeout < default_unkillable_timeout)
 		error_in_daemon("UnkillableStepTimeout must be at least 5 times greater than MessageTimeout, otherwise nodes may go down with the reason \"KillTaskFailed\". Current values: UnkillableStepTimeout=%u, MessageTimeout=%u",
 				conf->unkillable_timeout, conf->msg_timeout);
+
+	if (!s_p_get_string(&conf->url_parser_type, "UrlParserType", hashtbl))
+		conf->url_parser_type = xstrdup(DEFAULT_URL_PARSER_TYPE);
 
 	(void) s_p_get_uint16(&conf->vsize_factor, "VSizeFactor", hashtbl);
 

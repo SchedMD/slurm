@@ -6621,6 +6621,19 @@ MessageTimeout, otherwise it can lead to unexpected draining of nodes.
 .IP
 
 .TP
+\fBUrlParserType\fR
+Specify the url_parser implementation that will be used. Default is
+\fIurl_parser/libhttp_parser\fR.
+Acceptable values at present:
+.IP
+.RS
+.TP
+\fBurl_parser/libhttp_parser\fR
+Use the libhttp_parser based plugin.
+.RE
+.IP
+
+.TP
 \fBUsePAM\fR
 If set to 1, PAM (Pluggable Authentication Modules for Linux) will be enabled.
 PAM is used to establish the upper bounds for resource limits. With PAM support

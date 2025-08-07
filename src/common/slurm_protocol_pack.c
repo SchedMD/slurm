@@ -4010,6 +4010,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		packstr(build_ptr->unkillable_program, buffer);
 		pack16(build_ptr->unkillable_timeout, buffer);
+		packstr(build_ptr->url_parser_type, buffer);
 		packstr(build_ptr->version, buffer);
 		pack16(build_ptr->vsize_factor, buffer);
 
@@ -5100,6 +5101,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 
 		safe_unpackstr(&build_ptr->unkillable_program, buffer);
 		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
+		safe_unpackstr(&build_ptr->url_parser_type, buffer);
 		safe_unpackstr(&build_ptr->version, buffer);
 		safe_unpack16(&build_ptr->vsize_factor, buffer);
 
