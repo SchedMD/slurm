@@ -400,7 +400,7 @@ extern int main(int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
-	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+	conmgr_init(0, 0);
 
 	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);

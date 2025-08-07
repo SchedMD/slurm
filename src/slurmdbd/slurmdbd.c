@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 	_init_pidfile();
 	become_slurm_user();
 
-	conmgr_init(0, 0, (conmgr_callbacks_t) {0});
+	conmgr_init(0, 0);
 
 	_register_signal_handlers();
 

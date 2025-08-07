@@ -206,26 +206,6 @@ typedef struct {
 	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
 } conmgr_events_t;
 
-typedef struct {
-	const char *host;
-	const char *port; /* port as string for later parsing */
-} parsed_host_port_t;
-
-typedef struct {
-	/*
-	 * Parse a combined host:port string into host and port
-	 * IN str host:port string for parsing
-	 * OUT parsed will be populated with strings (must xfree())
-	 * RET SLURM_SUCCESS or error
-	 */
-	parsed_host_port_t *(*parse)(const char *str);
-
-	/*
-	 * Free parsed_host_port_t returned from parse_host_port_t()
-	 */
-	void (*free_parse)(parsed_host_port_t *parsed);
-} conmgr_callbacks_t;
-
 typedef enum {
 	CONMGR_WORK_STATUS_INVALID = 0,
 	CONMGR_WORK_STATUS_PENDING,
@@ -378,11 +358,9 @@ typedef enum {
  * Initialise global connection manager
  * IN thread_count - number of thread workers to run
  * IN max_connections - max number of connections or 0 for default
- * IN callbacks - struct containing function pointers
  * WARNING: Never queue as work for conmgr or call from work run by conmgr.
  */
-extern void conmgr_init(int thread_count, int max_connections,
-			conmgr_callbacks_t callbacks);
+extern void conmgr_init(int thread_count, int max_connections);
 /* WARNING: Never queue as work for conmgr or call from work run by conmgr. */
 extern void conmgr_fini(void);
 

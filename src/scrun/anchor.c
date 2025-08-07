@@ -1437,7 +1437,7 @@ static int _anchor_child(int pipe_fd[2])
 	_populate_pidfile();
 
 	/* must init conmgr after calling fork() in _daemonize() */
-	conmgr_init(0, 0, (conmgr_callbacks_t) { NULL, NULL } );
+	conmgr_init(0, 0);
 
 	change_status_force(CONTAINER_ST_CREATING);
 

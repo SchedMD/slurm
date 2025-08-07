@@ -139,9 +139,6 @@ static bool check_user = true;
 static bool become_user = false;
 static http_status_code_t *response_status_codes = NULL;
 
-extern parsed_host_port_t *parse_host_port(const char *str);
-extern void free_parse_host_port(parsed_host_port_t *parsed);
-
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
@@ -696,10 +693,6 @@ int main(int argc, char **argv)
 		.on_connection = _setup_http_context,
 		.on_finish = _inet_on_finish,
 	};
-	static const conmgr_callbacks_t callbacks = {
-		.parse = parse_host_port,
-		.free_parse = free_parse_host_port,
-	};
 
 	_parse_env();
 	_parse_commandline(argc, argv);
@@ -735,7 +728,7 @@ int main(int argc, char **argv)
 
 	/* This checks if slurmrestd is running in inetd mode */
 	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
-		    max_connections, callbacks);
+		    max_connections);
 
 	/*
 	 * Attempt to load TLS plugin and then attempt to load the certificate

@@ -492,7 +492,6 @@ rwfail:
 
 extern int main(int argc, char **argv)
 {
-	conmgr_callbacks_t callbacks = {NULL, NULL};
 	main_argv = argv;
 	_parse_args(argc, argv);
 
@@ -503,7 +502,7 @@ extern int main(int argc, char **argv)
 		if (xdaemon())
 			error("daemon(): %m");
 
-	conmgr_init(0, 0, callbacks);
+	conmgr_init(0, 0);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);

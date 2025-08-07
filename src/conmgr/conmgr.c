@@ -83,8 +83,7 @@ static void _at_exit(void)
 	mgr.shutdown_requested = true;
 }
 
-extern void conmgr_init(int thread_count, int max_connections,
-			conmgr_callbacks_t callbacks)
+extern void conmgr_init(int thread_count, int max_connections)
 {
 	int rc = EINVAL;
 
@@ -145,7 +144,6 @@ extern void conmgr_init(int thread_count, int max_connections,
 	mgr.connections = list_create(NULL);
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
-	mgr.callbacks = callbacks;
 	mgr.work = list_create(NULL);
 	init_delayed_work();
 

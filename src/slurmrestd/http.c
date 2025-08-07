@@ -850,69 +850,6 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	return rc;
 }
 
-extern parsed_host_port_t *parse_host_port(const char *str)
-{
-	struct http_parser_url url;
-	parsed_host_port_t *parsed;
-
-	if (!str || str[0] == '\0') {
-		error("%s: invalid empty host string", __func__);
-		return NULL;
-	}
-
-	/* Allow :::PORT and :PORT to default to in6addr_any */
-	if (str[0] == ':') {
-		char *pstr = xstrdup(str);
-		pstr[0] = ' ';
-
-		if (pstr[1] == ':' && pstr[2] == ':') {
-			pstr[1] = ' ';
-			pstr[2] = ' ';
-		}
-
-		/* remove any whitespace */
-		xstrtrim(pstr);
-
-		parsed = xmalloc(sizeof(*parsed));
-		parsed->host = xstrdup("::");
-		parsed->port = pstr;
-		return parsed;
-	}
-
-	/* Only useful for RFC3986 addresses */
-	_http_parser_url_init(&url);
-
-	if (http_parser_parse_url(str, strlen(str), true, &url)) {
-		error("%s: invalid host string: %s", __func__, str);
-		return NULL;
-	}
-
-	parsed = xmalloc(sizeof(*parsed));
-
-	if (url.field_set & (1 << UF_HOST))
-		parsed->host = xstrndup(str + url.field_data[UF_HOST].off,
-					url.field_data[UF_HOST].len);
-	if (url.field_set & (1 << UF_PORT))
-		parsed->port = xstrndup(str + url.field_data[UF_PORT].off,
-					url.field_data[UF_PORT].len);
-
-	if (parsed->host && parsed->port)
-		log_flag(NET, "%s: parsed: %s -> %s:%s",
-			 __func__, str, parsed->host, parsed->port);
-
-	return parsed;
-}
-
-extern void free_parse_host_port(parsed_host_port_t *parsed)
-{
-	if (!parsed)
-		return;
-
-	xfree(parsed->host);
-	xfree(parsed->port);
-	xfree(parsed);
-}
-
 static http_context_t *_http_context_new(void)
 {
 	http_context_t *context = xmalloc(sizeof(*context));

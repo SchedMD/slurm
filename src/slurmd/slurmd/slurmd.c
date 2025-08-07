@@ -416,8 +416,7 @@ main (int argc, char **argv)
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
-	conmgr_init(0, SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS,
-		    (conmgr_callbacks_t) { 0 });
+	conmgr_init(0, SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);

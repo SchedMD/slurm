@@ -1133,12 +1133,10 @@ static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _init_slurmscriptd_conmgr(void)
 {
-	conmgr_callbacks_t callbacks = { NULL, NULL };
-
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
-	conmgr_init(0, 0, callbacks);
+	conmgr_init(0, 0);
 
 	/*
 	 * Ignore signals. slurmscriptd should only handle requests directly
