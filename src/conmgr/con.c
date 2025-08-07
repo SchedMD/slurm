@@ -1046,23 +1046,10 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		return add_connection(type, NULL, fd, -1, events, flags, &addr,
 				      sizeof(addr), true, unixsock, NULL, arg);
 	} else {
-		static const char TLS_PREFIX[] = "https://";
 		url_t url = URL_INITIALIZER;
 		buf_t buffer = {
 			.magic = BUF_MAGIC,
 		};
-
-		if (!xstrncasecmp(listen_on, TLS_PREFIX, strlen(TLS_PREFIX))) {
-			(void) tls_g_init();
-
-			if (!tls_available()) {
-				fatal("Unable to create %s listening socket because no TLS plugin is loaded.",
-				      listen_on);
-			}
-			/* shift forward past https: */
-			listen_on += strlen(TLS_PREFIX);
-			flags |= CON_FLAG_TLS_SERVER;
-		}
 
 		buffer.head = (void *) listen_on;
 		buffer.processed = buffer.size = strlen(listen_on);
@@ -1071,6 +1058,9 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		if ((rc = url_parser_g_parse("listener", &buffer, &url)))
 			fatal("%s: Unable to parse %s: %s",
 			      __func__, listen_on, slurm_strerror(rc));
+
+		if (url.scheme == URL_SCHEME_HTTPS)
+			flags |= CON_FLAG_TLS_SERVER;
 
 		/* resolve out the host and port if provided */
 		if (!(addrlist = xgetaddrinfo(url.host, url.port)))
