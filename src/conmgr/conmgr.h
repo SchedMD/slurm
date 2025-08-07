@@ -757,6 +757,17 @@ extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 					      size_t bytes);
 
 /*
+ * Mark bytes in input buffer as have been consumed
+ * WARNING: only safe to call from connection callback function
+ * WARNING: will xassert() if bytes > size of buffer
+ * IN ref - reference to connection
+ * IN bytes - number of bytes to mark as consumed in input buffer
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
+						 const size_t bytes);
+
+/*
  * Transfer incoming data into a buf_t
  * IN con - connection to query data
  * IN buffer_ptr - pointer to buf_t to add/set with incoming data

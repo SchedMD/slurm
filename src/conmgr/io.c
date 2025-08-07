@@ -522,6 +522,15 @@ extern void conmgr_fd_mark_consumed_in_buffer(const conmgr_fd_t *con,
 	(void) _mark_consumed_in_buffer(con, bytes);
 }
 
+extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
+						 const size_t bytes)
+{
+	xassert(ref);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	return _mark_consumed_in_buffer(ref->con, bytes);
+}
+
 extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 				    buf_t **buffer_ptr)
 {
