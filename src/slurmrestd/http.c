@@ -58,6 +58,7 @@
 
 #define CRLF "\r\n"
 #define MAGIC 0xDFAFFEEF
+#define MAX_BODY_BYTES 52428800 /* 50MB */
 
 /* return magic number 2 to close the connection */
 #define HTTP_PARSER_RETURN_ERROR 1
@@ -418,7 +419,6 @@ static int _on_headers_complete(http_parser *parser)
 	return 0;
 }
 
-#define MAX_BODY_BYTES 52428800 /* 50MB */
 static int _on_body(http_parser *parser, const char *at, size_t length)
 {
 	request_t *request = parser->data;
