@@ -489,14 +489,30 @@ extern int conmgr_con_get_input_buffer(conmgr_fd_ref_t *ref,
 	return _get_input_buffer(ref->con, data_ptr, bytes_ptr);
 }
 
-extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
+static int _con_get_shadow_in_buffer(const conmgr_fd_t *con, buf_t **buf_ptr)
 {
+	buf_t *buffer = NULL;
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
 
-	return create_shadow_buf((get_buf_data(con->in) + con->in->processed),
-				 (size_buf(con->in) - con->in->processed));
+	buffer = create_shadow_buf((get_buf_data(con->in) + con->in->processed),
+				   (size_buf(con->in) - con->in->processed));
+	*buf_ptr = buffer;
+
+	xassert(!*buf_ptr);
+	*buf_ptr = buffer;
+	return SLURM_SUCCESS;
+}
+
+extern buf_t *conmgr_fd_shadow_in_buffer(const conmgr_fd_t *con)
+{
+	buf_t *buffer = NULL;
+
+	(void) _con_get_shadow_in_buffer(con, &buffer);
+
+	return buffer;
 }
 
 static int _mark_consumed_in_buffer(const conmgr_fd_t *con, size_t bytes)
