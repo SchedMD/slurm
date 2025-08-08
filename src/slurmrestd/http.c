@@ -806,7 +806,7 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 		return;
 	xassert(context->magic == MAGIC);
 
-	xfree(context->parser);
+	http_parser_g_free_parse_request(&context->parser);
 	_free_request_t(context->request);
 	/* auth should have been released long before now */
 	xassert(!context->auth);
