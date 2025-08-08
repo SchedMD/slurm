@@ -341,6 +341,10 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 
 		if (ec == SLURM_SUCCESS)
 			break;
+
+		if (ec == ESLURM_BREAK_EVAL)
+			break;
+
 		if (rem_nodes <= topo_eval->min_nodes)
 			break;
 
