@@ -486,6 +486,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid node state transition"			},
 	{ ERRTAB_ENTRY(ESLURM_INVALID_JOB_STATE),
 	  "Invalid job state" },
+	{ ERRTAB_ENTRY(ESLURM_BREAK_EVAL),
+	  "Break common_topo_choose_nodes" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
