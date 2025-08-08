@@ -577,8 +577,10 @@ extern int url_parser_p_parse(const char *name, const buf_t *buffer, url_t *dst)
 	 * parsers for formats it doesn't support
 	 */
 	if ((rc = _library_url_parse(name, buffer, dst))) {
-		if (rc == ESLURM_URL_UNSUPPORTED_FORMAT)
+		if (rc == ESLURM_URL_UNSUPPORTED_FORMAT) {
+			url_free_members(dst);
 			rc = _parse_only_port(name, buffer, dst);
+		}
 	}
 
 	if (rc) {
