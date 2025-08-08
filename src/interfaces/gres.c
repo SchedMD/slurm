@@ -5505,8 +5505,10 @@ static void *_node_state_dup(gres_node_state_t *gres_ns)
 					bit_copy(gres_ns->
 						 topo_res_core_bitmap[i]);
 			}
-			new_gres_ns->topo_gres_bitmap[i] =
-				bit_copy(gres_ns->topo_gres_bitmap[i]);
+			if (gres_ns->topo_gres_bitmap[i]) {
+				new_gres_ns->topo_gres_bitmap[i] =
+					bit_copy(gres_ns->topo_gres_bitmap[i]);
+			}
 			new_gres_ns->topo_gres_cnt_alloc[i] =
 				gres_ns->topo_gres_cnt_alloc[i];
 			new_gres_ns->topo_gres_cnt_avail[i] =
