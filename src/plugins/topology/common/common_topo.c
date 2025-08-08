@@ -249,7 +249,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
 	job_record_t *job_ptr = topo_eval->job_ptr;
 
-	int i, count, ec, most_res = 0;
+	int count, ec, most_res = 0;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
 	int rem_nodes;
@@ -259,7 +259,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		req_node_map = job_ptr->details->req_node_bitmap;
 
 	/* clear nodes from the bitmap that don't have available resources */
-	for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
+	for (int i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
 		/*
 		 * Make sure we don't say we can use a node exclusively
 		 * that is bigger than our whole-job maximum CPU count.
@@ -267,6 +267,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		if (((job_ptr->details->whole_node & WHOLE_NODE_REQUIRED) &&
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus <
+
 		      avail_res_array[i]->avail_cpus)) ||
 		    /* OR node has no CPUs */
 		    (avail_res_array[i]->avail_cpus < 1)) {
@@ -315,7 +316,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * incrementally remove nodes with low resource counts (sum of CPU and
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
-	for (i = 0; next_node(&i); i++) {
+	for (int i = 0; next_node(&i); i++) {
 		if (avail_res_array[i]) {
 			most_res = MAX(most_res,
 				       avail_res_array[i]->avail_res_cnt);
@@ -327,7 +328,8 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		topo_eval->max_nodes = orig_max_nodes;
 		bit_or(topo_eval->node_map, orig_node_map);
 		core_array_or(topo_eval->avail_core, orig_core_array);
-		for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
+		for (int i = 0; next_node_bitmap(topo_eval->node_map, &i);
+		     i++) {
 			if ((avail_res_array[i]->avail_res_cnt > 0) &&
 			    (avail_res_array[i]->avail_res_cnt <= count)) {
 				if (req_node_map && bit_test(req_node_map, i))
@@ -366,7 +368,8 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 		 * Update available CPU count for any removed cores.
 		 * Cores are only removed for jobs with GRES to enforce binding.
 		 */
-		for (i = 0; next_node_bitmap(topo_eval->node_map, &i); i++) {
+		for (int i = 0; next_node_bitmap(topo_eval->node_map, &i);
+		     i++) {
 			if (!orig_core_array[i] || !topo_eval->avail_core[i])
 				continue;
 			count = bit_set_count(topo_eval->avail_core[i]);
