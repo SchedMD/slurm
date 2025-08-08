@@ -293,7 +293,39 @@ extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
 
 extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 {
-	return false;
+	/* By default, node_rank is 0, so start at 1 */
+	int block_rank = 1;
+	block_context_t *ctx;
+	node_record_t *node_ptr;
+
+	if (!xstrcasestr(slurm_conf.topology_param, "BlockAsNodeRank"))
+		return false;
+
+	block_record_validate(tctx);
+
+	ctx = tctx->plugin_ctx;
+
+	if (ctx->block_count == 0) {
+		topology_p_destroy_config(tctx);
+		return false;
+	}
+
+	for (int i = 0; i < ctx->block_count; i++) {
+		for (int n = 0;
+		     (node_ptr = next_node_bitmap(ctx->block_record_table[i]
+							  .node_bitmap,
+						  &n));
+		     n++) {
+			node_ptr->node_rank = block_rank;
+			debug("node=%s rank=%d", node_ptr->name, block_rank);
+		}
+		block_rank++;
+	}
+
+	/* Discard the temporary topology */
+	topology_p_destroy_config(tctx);
+
+	return true;
 }
 
 /*

@@ -295,7 +295,7 @@ extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 		if (ctx->switch_table[sw].level != 0)
 			continue;
 
-		for (int n = 0; n < node_record_count; n++) {
+		for (int n = 0; next_node(&n); n++) {
 			if (!bit_test(ctx->switch_table[sw].node_bitmap, n))
 				continue;
 			node_record_table_ptr[n]->node_rank = switch_rank;
