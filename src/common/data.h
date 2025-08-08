@@ -282,7 +282,7 @@ extern data_t *_data_set_string_own(data_t *data, char **value_ptr);
  * IN data structure to try to type and convert
  * IN match try to detect this type only
  * 	or DATA_TYPE_NONE to give best guess as to data type
- * RET new data type or DATA_TYPE_NONE on no change
+ * RET (new or unchanged) data type of data
  */
 extern data_type_t data_convert_type(data_t *data, const data_type_t match);
 
