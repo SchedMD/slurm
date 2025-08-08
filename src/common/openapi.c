@@ -259,6 +259,7 @@ extern void free_openapi_resp_meta(void *obj)
 
 	xfree(x->client.source);
 	xfree(x->command);
+	xfree(x->plugin.accounting_storage);
 	xfree(x->plugin.data_parser);
 	xfree(x->plugin.name);
 	xfree(x->plugin.type);
