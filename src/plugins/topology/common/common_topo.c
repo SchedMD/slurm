@@ -268,9 +268,8 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		     (job_ptr->details->max_cpus != NO_VAL) &&
 		     (job_ptr->details->max_cpus <
 		      avail_res_array[i]->avail_cpus)) ||
-		/* OR node has no CPUs */
+		    /* OR node has no CPUs */
 		    (avail_res_array[i]->avail_cpus < 1)) {
-
 			if (req_node_map && bit_test(req_node_map, i)) {
 				/* can't clear a required node! */
 				return SLURM_ERROR;
