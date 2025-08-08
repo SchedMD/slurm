@@ -229,13 +229,10 @@ static int _send_data(const char *data)
 
 	xfree(response_str);
 
-	if (data) {
-		datastr = xstrdup(data);
-		datastrlen = strlen(data);
-	} else {
-		datastr[0] = '\0';
-		datastrlen = 0;
-	}
+	datastr[0] = '\0';
+	if (data)
+		xstrcat(datastr, data);
+	datastrlen = strlen(datastr);
 
 	return rc;
 }
