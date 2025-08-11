@@ -409,7 +409,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		check_time = submit_time;
 
 	if (trigger_reroll(mysql_conn, check_time)) {
-		/* check to see if we are hearing about this time for the
+		/*
+		 * Check to see if we are hearing about this time for the
 		 * first time.
 		 */
 		query = xstrdup_printf("select job_db_inx "
@@ -420,32 +421,24 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 				       job_table, job_ptr->job_id,
 				       submit_time, begin_time, start_time);
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-		if (!(result =
-		      mysql_db_query_ret(mysql_conn, query, 0))) {
+		if (!(result = mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
 			return SLURM_ERROR;
 		}
 		xfree(query);
 		if (mysql_fetch_row(result))
-			debug4("revieved an update for a "
-			       "job (%u) already known about",
+			debug4("Received an update for a job (%u) already known about",
 			       job_ptr->job_id);
 		else if (job_ptr->start_time)
-			debug("Need to reroll usage from %s Job %u "
-			      "from %s started then and we are just "
-			      "now hearing about it.",
+			debug("Need to reroll usage from %s Job %u from %s started then and we are just now hearing about it.",
 			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 		else if (begin_time)
-			debug("Need to reroll usage from %s Job %u "
-			      "from %s became eligible then and we are just "
-			      "now hearing about it.",
+			debug("Need to reroll usage from %s Job %u from %s became eligible then and we are just now hearing about it.",
 			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 		else
-			debug("Need to reroll usage from %s Job %u "
-			      "from %s was submitted then and we are just "
-			      "now hearing about it.",
+			debug("Need to reroll usage from %s Job %u from %s was submitted then and we are just now hearing about it.",
 			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 
