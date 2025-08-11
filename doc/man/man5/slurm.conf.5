@@ -2667,6 +2667,19 @@ necessitate higher values.
 .IP
 
 .TP
+\fBMetricsType\fR
+Specify the metrics plugin to be used to dump statistics from the slurmctld
+socket. Gathering of metrics is disabled when PrivateData is set.
+Configurable values at present are:
+.IP
+.RS
+.TP
+\fBmetrics/openmetrics\fR
+Use the OpenMetrics based plugin.
+.RE
+.IP
+
+.TP
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is cleared from the list
 of jobs slurmctld keeps in memory. Combine with \fBMaxJobCount\fR

@@ -236,6 +236,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	pack16(slurm_conf.max_tasks_per_node, buffer);
 	/* mcs_plugin */
 	/* mcs_plugin_params */
+	/* metrics_type */
 	/* min_job_age */
 	/* mpi_conf */
 	packstr(slurm_conf.mpi_default, buffer);

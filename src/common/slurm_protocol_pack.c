@@ -4362,6 +4362,8 @@ static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->mcs_plugin, buffer);
 		packstr(msg->mcs_plugin_params, buffer);
 
+		packstr(msg->metrics_type, buffer);
+
 		pack32(msg->min_job_age, buffer);
 		pack_key_pair_list(msg->mpi_conf, smsg->protocol_version,
 				   buffer);
@@ -5420,6 +5422,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
 		safe_unpackstr(&build_ptr->mcs_plugin, buffer);
 		safe_unpackstr(&build_ptr->mcs_plugin_params, buffer);
+		safe_unpackstr(&build_ptr->metrics_type, buffer);
 		safe_unpack32(&build_ptr->min_job_age, buffer);
 		if (unpack_key_pair_list(&build_ptr->mpi_conf,
 					 smsg->protocol_version,

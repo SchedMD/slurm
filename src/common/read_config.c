@@ -322,6 +322,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MCSParameters", S_P_STRING},
 	{"MCSPlugin", S_P_STRING},
 	{"MessageTimeout", S_P_UINT16},
+	{"MetricsType", S_P_STRING},
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
@@ -2647,6 +2648,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mcs_plugin);
 	xfree (ctl_conf_ptr->mcs_plugin_params);
+	xfree(ctl_conf_ptr->metrics_type);
 	FREE_NULL_LIST(ctl_conf_ptr->mpi_conf);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->mpi_params);
@@ -2822,6 +2824,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_step_cnt		= NO_VAL;
 	xfree(ctl_conf_ptr->mcs_plugin);
 	xfree(ctl_conf_ptr->mcs_plugin_params);
+	xfree(ctl_conf_ptr->metrics_type);
 	ctl_conf_ptr->job_acct_oom_kill         = false;
 	ctl_conf_ptr->min_job_age = NO_VAL;
 	FREE_NULL_LIST(ctl_conf_ptr->mpi_conf);
@@ -4077,6 +4080,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->http_parser_type, "HttpParserType", hashtbl))
 		conf->http_parser_type = xstrdup(DEFAULT_HTTP_PARSER_TYPE);
+
+	(void) s_p_get_string(&conf->metrics_type, "MetricsType", hashtbl);
 
 	if (!s_p_get_uint32(&conf->keepalive_time, "KeepAliveTime", hashtbl)) {
 		conf->keepalive_time = DEFAULT_KEEPALIVE_TIME;

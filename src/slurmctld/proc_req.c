@@ -411,6 +411,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->max_tasks_per_node  = conf->max_tasks_per_node;
 	conf_ptr->mcs_plugin          = xstrdup(conf->mcs_plugin);
 	conf_ptr->mcs_plugin_params   = xstrdup(conf->mcs_plugin_params);
+	conf_ptr->metrics_type = xstrdup(conf->metrics_type);
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_conf = mpi_g_conf_get_printable();
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
