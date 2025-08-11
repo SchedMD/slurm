@@ -110,7 +110,7 @@ typedef enum {
 					      * the same type ignoring -1 */
 #define TRES_STR_FLAG_ALLOW_REAL  0x00000800 /* Allow all counts (even zero)
 					      * unless INFINITE64 or NO_VAL64 */
-#define TRES_STR_FLAG_BYTES       0x00000800 /* Convertible Usage in Bytes */
+#define TRES_STR_FLAG_BYTES       0x00001000 /* Convertible Usage in Bytes */
 
 extern slurmdb_job_rec_t *slurmdb_create_job_rec(void);
 extern slurmdb_step_rec_t *slurmdb_create_step_rec(void);
