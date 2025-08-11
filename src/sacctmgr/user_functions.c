@@ -58,16 +58,7 @@ static int _set_add_cond(int *start, int argc, char **argv,
 	xassert(user);
 
 	for (i = (*start); i < argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len = strlen(argv[i]);
-		else {
-			command_len = end - 1;
-			if (argv[i][end] == '=') {
-				option = (int)argv[i][end - 1];
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!end ||
 		    !xstrncasecmp(argv[i], "Names", MAX(command_len, 1)) ||
@@ -187,15 +178,10 @@ static int _set_cond(int *start, int argc, char **argv,
 		assoc_cond->user_list = list_create(xfree_ptr);
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type = 0;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
@@ -337,16 +323,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	xassert(assoc);
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;

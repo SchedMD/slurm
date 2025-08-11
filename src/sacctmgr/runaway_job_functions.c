@@ -57,15 +57,10 @@ static int _set_cond(int *start, int argc, char **argv,
 	int command_len = 0;
 
 	for (i = (*start); i < argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len = strlen(argv[i]);
-		else {
-			command_len = end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!end ||
 		    !xstrncasecmp(argv[i], "Cluster", MAX(command_len, 1))) {
@@ -96,17 +91,10 @@ static int _set_rec(int *start, int argc, char **argv,
 	int set = 0;
 	int end = 0;
 	int command_len = 0;
+	int option = 0;
 
 	for (i = (*start); i < argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len = strlen(argv[i]);
-		else {
-			command_len = end - 1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;

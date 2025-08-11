@@ -233,12 +233,7 @@ static char *_parse_option(char *options, bool make_lower,
 		return NULL;
 
 	*sub = xstrndup(options + start, *i - start);
-	*end = parse_option_end(*sub);
-	*command_len = *end - 1;
-	if ((*sub)[*end] == '=') {
-		*option2 = (int)(*sub)[*end-1];
-		(*end)++;
-	}
+	*end = parse_option_end(*sub, option2, command_len);
 
 	return strip_quotes(*sub + *end, NULL, make_lower);
 }
@@ -2440,15 +2435,11 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	slurmdb_connection_commit(db_conn, 0);
 
 	for (i = 0; i < argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		int end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
+
 		if (!xstrncasecmp(argv[i], "clean",
 				  MAX(command_len, 3))) {
 			if (end) {

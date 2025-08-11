@@ -59,15 +59,10 @@ static int _set_cond(int *start, int argc, char **argv,
 	without_limits = 0;
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
@@ -164,16 +159,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	xassert(cluster);
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;
@@ -1026,16 +1012,11 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	char *class_str = NULL;
 
 	for (i = 0; i < argc; i++) {
-		int end = parse_option_end(argv[i]);
+		int op_type;
+		int end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
-		if (!end)
-			command_len = strlen(argv[i]);
-		else {
-			command_len = end - 1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
 		if (!end || !xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			if (cluster_name) {

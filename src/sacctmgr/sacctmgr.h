@@ -299,7 +299,9 @@ extern int sacctmgr_archive_dump(int argc, char **argv);
 extern int sacctmgr_archive_load(int argc, char **argv);
 
 /* common.c */
-extern int parse_option_end(char *option);
+extern int parse_option_end(char *option, int *op_type, int *command_end);
+extern bool common_verify_option_syntax(char *option, int op_type,
+					bool allow_op);
 extern char *strip_quotes(char *option, int *increased, bool make_lower);
 extern void notice_thread_init(void);
 extern void notice_thread_fini(void);

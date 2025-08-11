@@ -50,15 +50,10 @@ static int _set_cond(int *start, int argc, char **argv,
 	int command_len = 0;
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!end && !xstrncasecmp(argv[i], "where",
 					MAX(command_len, 5))) {

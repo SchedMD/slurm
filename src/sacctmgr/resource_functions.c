@@ -150,15 +150,10 @@ static int _set_res_cond(int *start, int argc, char **argv,
 	}
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
@@ -284,16 +279,7 @@ static int _set_res_rec(int *start, int argc, char **argv,
 	xassert(res);
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;
