@@ -409,8 +409,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		check_time = submit_time;
 
 	if (trigger_reroll(mysql_conn, check_time)) {
-		MYSQL_ROW row;
-
 		/* check to see if we are hearing about this time for the
 		 * first time.
 		 */
@@ -428,7 +426,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			return SLURM_ERROR;
 		}
 		xfree(query);
-		if ((row = mysql_fetch_row(result)))
+		if (mysql_fetch_row(result))
 			debug4("revieved an update for a "
 			       "job (%u) already known about",
 			       job_ptr->job_id);
