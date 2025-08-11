@@ -3829,46 +3829,44 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 					  gres_slurmd_conf_t *gres_slurmd_conf)
 {
 	int total_core_cnt = bit_set_count(tmp_bitmap);
+	slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
+	gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
+	char *gres_cores_str, *tmp;
+	int first, last, core_cnt;
 
 	for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
-		int first = i * rebuild_topo->cores_per_sock;
-		int last = (i + 1) * rebuild_topo->cores_per_sock;
-		int core_cnt = bit_set_count_range(tmp_bitmap, first, last);
+		first = i * rebuild_topo->cores_per_sock;
+		last = (i + 1) * rebuild_topo->cores_per_sock;
+		core_cnt = bit_set_count_range(tmp_bitmap, first, last);
 
-		if (core_cnt && ((core_cnt != rebuild_topo->cores_per_sock) ||
-				 (core_cnt != total_core_cnt))) {
-			slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
-			gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
-			char *gres_cores_str = bit_fmt_full(tmp_bitmap);
-			char *tmp;
+		if (!core_cnt || /* No cores set */
+		    ((core_cnt == rebuild_topo->cores_per_sock) &&
+		     (core_cnt == total_core_cnt))) /* Cores match 1 socket */
+			continue;
 
-			if (gres_slurmd_conf->config_flags &
-			    GRES_CONF_AUTODETECT) {
-				tmp = xstrdup_printf(
-					"%s GRES autodetected core affinity %s on node %s doesn't match socket boundaries. (Socket %d is cores %d-%d). "
-					"Consider setting SlurmdParameters=l3cache_as_socket (recommended) or override this by manually specifying core affinity in gres.conf.",
-					gres_ctx->gres_type, gres_cores_str,
-					rebuild_topo->node_name, i, first,
-					(last - 1));
-			} else {
-				tmp = xstrdup_printf(
-					"%s GRES core specification %s for node %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
-					gres_ctx->gres_type, gres_cores_str,
-					rebuild_topo->node_name, i, first,
-					(last - 1));
-			}
-			xfree(gres_cores_str);
-			FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[
-						 rebuild_topo->topo_cnt]);
-			rebuild_topo->rc = EINVAL;
-			error("%s: %s", __func__, tmp);
-			if (rebuild_topo->reason_down &&
-			    !(*rebuild_topo->reason_down))
-				xstrfmtcat(*rebuild_topo->reason_down, "%s",
-					   tmp);
-			xfree(tmp);
-			return SLURM_ERROR;
+		gres_cores_str = bit_fmt_full(tmp_bitmap);
+
+		if (gres_slurmd_conf->config_flags & GRES_CONF_AUTODETECT) {
+			tmp = xstrdup_printf(
+				"%s GRES autodetected core affinity %s on node %s doesn't match socket boundaries. (Socket %d is cores %d-%d). "
+				"Consider setting SlurmdParameters=l3cache_as_socket (recommended) or override this by manually specifying core affinity in gres.conf.",
+				gres_ctx->gres_type, gres_cores_str,
+				rebuild_topo->node_name, i, first, (last - 1));
+		} else {
+			tmp = xstrdup_printf(
+				"%s GRES core specification %s for node %s doesn't match socket boundaries. (Socket %d is cores %d-%d)",
+				gres_ctx->gres_type, gres_cores_str,
+				rebuild_topo->node_name, i, first, (last - 1));
 		}
+		xfree(gres_cores_str);
+		FREE_NULL_BITMAP(gres_ns->topo_core_bitmap[rebuild_topo
+								   ->topo_cnt]);
+		rebuild_topo->rc = EINVAL;
+		error("%s: %s", __func__, tmp);
+		if (rebuild_topo->reason_down && !(*rebuild_topo->reason_down))
+			xstrfmtcat(*rebuild_topo->reason_down, "%s", tmp);
+		xfree(tmp);
+		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
 }
