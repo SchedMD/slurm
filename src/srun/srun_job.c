@@ -388,12 +388,9 @@ extern srun_job_t *job_step_create_allocation(
 			xfree(opt_local->nodelist);
 			opt_local->nodelist = buf;
 		} else {
-			if (count > ai->nnodes) {
-				/* remove more nodes than needed for
-				 * allocation */
-				int i;
-				for (i = count; i >= ai->nnodes; i--)
-					hostlist_delete_nth(hl, i);
+			/* remove more nodes than needed for allocation */
+			for (int i = count; i > ai->nnodes; i--) {
+				hostlist_delete_nth(hl, i - 1);
 			}
 			xfree(opt_local->nodelist);
 			opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
