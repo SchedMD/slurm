@@ -408,8 +408,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	else
 		check_time = submit_time;
 
-	slurm_mutex_lock(&rollup_lock);
-	if (check_time < global_last_rollup) {
+	if (trigger_reroll(mysql_conn, check_time)) {
 		MYSQL_ROW row;
 
 		/* check to see if we are hearing about this time for the
@@ -426,21 +425,14 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (!(result =
 		      mysql_db_query_ret(mysql_conn, query, 0))) {
 			xfree(query);
-			slurm_mutex_unlock(&rollup_lock);
 			return SLURM_ERROR;
 		}
 		xfree(query);
-		if ((row = mysql_fetch_row(result))) {
-			mysql_free_result(result);
+		if ((row = mysql_fetch_row(result)))
 			debug4("revieved an update for a "
 			       "job (%u) already known about",
 			       job_ptr->job_id);
-			slurm_mutex_unlock(&rollup_lock);
-			goto no_rollup_change;
-		}
-		mysql_free_result(result);
-
-		if (job_ptr->start_time)
+		else if (job_ptr->start_time)
 			debug("Need to reroll usage from %s Job %u "
 			      "from %s started then and we are just "
 			      "now hearing about it.",
@@ -459,27 +451,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			      slurm_ctime2(&check_time),
 			      job_ptr->job_id, mysql_conn->cluster_name);
 
-		global_last_rollup = check_time;
-		slurm_mutex_unlock(&rollup_lock);
-
-		/* If the times here are later than the daily_rollup
-		   or monthly rollup it isn't a big deal since they
-		   are always shrunk down to the beginning of each
-		   time period.
-		*/
-		query = xstrdup_printf("update \"%s_%s\" set "
-				       "hourly_rollup=%ld, "
-				       "daily_rollup=%ld, monthly_rollup=%ld",
-				       mysql_conn->cluster_name,
-				       last_ran_table, check_time,
-				       check_time, check_time);
-		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-	} else
-		slurm_mutex_unlock(&rollup_lock);
-
-no_rollup_change:
+		mysql_free_result(result);
+	}
 
 	if (job_ptr->name && job_ptr->name[0])
 		jname = job_ptr->name;
