@@ -1253,7 +1253,6 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 		int last_max_cpu_cnt = -1;
 		while (!all_done) {
 			int max_cpu_idx = -1;
-			uint16_t max_cpu_avail_cpus = 0;
 			for (i = i_start; i <= i_end; i++) {
 				/* Node not available or already selected */
 				if (!bit_test(nwt->node_bitmap, i) ||
@@ -1264,10 +1263,6 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 					continue;
 				eval_nodes_select_cores(topo_eval, i,
 							min_rem_nodes);
-				(void) eval_nodes_cpus_to_use(topo_eval, i,
-						              rem_max_cpus,
-							      min_rem_nodes,
-							      NULL, false);
 				if (topo_eval->avail_cpus == 0)
 					continue;
 				/*
@@ -1284,27 +1279,24 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 				      node_record_table_ptr[max_cpu_idx]->
 				      cpus))) {
 					max_cpu_idx = i;
-					max_cpu_avail_cpus =
-						topo_eval->avail_cpus;
 					if (avail_res_array[max_cpu_idx]->
 					    max_cpus == last_max_cpu_cnt)
 						break;
 				}
 			}
-			if ((max_cpu_idx == -1) ||
-			    (max_cpu_avail_cpus == 0)) {
+			if (max_cpu_idx == -1) {
 				/* No more usable nodes left, get next weight */
 				break;
 			}
 			i = max_cpu_idx;
-			topo_eval->avail_cpus = max_cpu_avail_cpus;
-			if (job_ptr->gres_list_req) {
-				node_ptr = node_record_table_ptr[i];
-				if (!eval_nodes_gres(topo_eval, &maxtasks,
-						     job_ptr, node_ptr,
-						     min_rem_nodes, i, 0))
-					continue;
-			}
+
+			(void) eval_nodes_cpus_to_use(topo_eval, i,
+						      rem_max_cpus,
+						      min_rem_nodes, NULL,
+						      false);
+			if (topo_eval->avail_cpus == 0)
+				continue;
+
 			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += topo_eval->avail_cpus;
 			rem_cpus -= topo_eval->avail_cpus;
