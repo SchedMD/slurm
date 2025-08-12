@@ -430,7 +430,11 @@ static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 		slurmscriptd_update_log_level(slurm_conf.slurmctld_debug, true);
 	unlock_slurmctld(conf_write_lock);
 
-	if (slurmctld_primary && jobcomp_g_set_location())
+	/*
+	 * This can happen when jobcomp hasn't been init yet, so call it here.
+	 * It is a NOOP if it has already been init.
+	 */
+	if (slurmctld_primary && jobcomp_g_init() && jobcomp_g_set_location())
 		error("%s: JobComp set location operation failed on SIGUSR2",
 		      __func__);
 }
