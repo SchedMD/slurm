@@ -760,13 +760,9 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc,
 		if (!user->default_acct
 		    || xstrcmp(user->default_acct, assoc->acct)) {
 			xfree(user->default_acct);
-			if (assoc->is_def == 1) {
-				user->default_acct = xstrdup(assoc->acct);
-				debug2("user %s default acct is %s",
-				       user->name, user->default_acct);
-			} else
-				debug2("user %s default acct %s removed",
-				       user->name, assoc->acct);
+			user->default_acct = xstrdup(assoc->acct);
+			debug2("user %s default acct is %s", user->name,
+			       user->default_acct);
 		}
 		/* cache user rec reference for backfill*/
 		assoc->user_rec = user;
