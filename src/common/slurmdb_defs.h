@@ -77,40 +77,42 @@ typedef enum {
 /* These #defines are for the tres_str functions below and should be
  * sent when flags are allowed in the functions.
  */
-#define TRES_STR_FLAG_NONE        0x00000000 /* No flags, meaning by
-					      * default the string
-					      * will contain -1 and
-					      * be unique honoring
-					      * the first value found
-					      * in an incoming string */
-#define TRES_STR_FLAG_ONLY_CONCAT 0x00000001 /* Only concat the
-					      * string, this will
-					      * most likely trump the
-					      * other flags below. */
-#define TRES_STR_FLAG_REPLACE     0x00000002 /* Replace previous count
-					      * values found, if this
-					      * is not set duplicate
-					      * entries will be skipped. */
-#define TRES_STR_FLAG_REMOVE      0x00000004 /* If -1 entries are
+typedef enum {
+	TRES_STR_FLAG_NONE = 0, /* No flags, meaning by
+				 * default the string
+				 * will contain -1 and
+				 * be unique honoring
+				 * the first value found
+				 * in an incoming string */
+	TRES_STR_FLAG_ONLY_CONCAT = SLURM_BIT(1), /* Only concat the
+						   * string, this will
+						   * most likely trump the
+						   * other flags below. */
+	TRES_STR_FLAG_REPLACE = SLURM_BIT(2), /* Replace previous count
+					       * values found, if this
+					       * is not set duplicate
+					       * entries will be skipped. */
+	TRES_STR_FLAG_REMOVE = SLURM_BIT(3), /* If -1 entries are
 					      * found remove them, by
 					      * default they will be
-					      * added to the string
-					      */
-#define TRES_STR_FLAG_SORT_ID     0x00000008 /* sort string by ID */
-#define TRES_STR_FLAG_SIMPLE      0x00000010 /* make a simple string */
-#define TRES_STR_FLAG_COMMA1      0x00000020 /* make a first char a comma */
-#define TRES_STR_FLAG_NO_NULL     0x00000040 /* return blank string
-					      * instead of NULL */
-#define TRES_STR_CONVERT_UNITS    0x00000080 /* Convert number units */
-#define TRES_STR_FLAG_SUM         0x00000100 /* Sum entries of the same type
-					      * ignoring -1 */
-#define TRES_STR_FLAG_MAX         0x00000200 /* Set Max value from entries of
-					      * the same type ignoring -1 */
-#define TRES_STR_FLAG_MIN         0x00000400 /* Set Min value from entries of
-					      * the same type ignoring -1 */
-#define TRES_STR_FLAG_ALLOW_REAL  0x00000800 /* Allow all counts (even zero)
-					      * unless INFINITE64 or NO_VAL64 */
-#define TRES_STR_FLAG_BYTES       0x00000800 /* Convertible Usage in Bytes */
+					      * added to the string */
+	TRES_STR_FLAG_SORT_ID = SLURM_BIT(4), /* sort string by ID */
+	TRES_STR_FLAG_SIMPLE = SLURM_BIT(5), /* make a simple string */
+	TRES_STR_FLAG_COMMA1 = SLURM_BIT(6), /* make a first char a comma */
+	TRES_STR_FLAG_NO_NULL = SLURM_BIT(7), /* return blank string
+					       * instead of NULL */
+	TRES_STR_CONVERT_UNITS = SLURM_BIT(8), /* Convert number units */
+	TRES_STR_FLAG_SUM = SLURM_BIT(9), /* Sum entries of the same type
+					   * ignoring -1 */
+	TRES_STR_FLAG_MAX = SLURM_BIT(10), /* Set Max value from entries of
+					    * the same type ignoring -1 */
+	TRES_STR_FLAG_MIN = SLURM_BIT(11), /* Set Min value from entries of
+					    * the same type ignoring -1 */
+	TRES_STR_FLAG_ALLOW_REAL = SLURM_BIT(12), /* Allow all counts (even
+						   * zero) unless INFINITE64 or
+						   * NO_VAL64 */
+	TRES_STR_FLAG_BYTES = SLURM_BIT(13), /* Convertible Usage in Bytes */
+} tres_str_flags_t;
 
 extern slurmdb_job_rec_t *slurmdb_create_job_rec(void);
 extern slurmdb_step_rec_t *slurmdb_create_step_rec(void);
