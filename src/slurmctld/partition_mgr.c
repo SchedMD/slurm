@@ -1463,19 +1463,27 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->allow_qos != NULL) {
-		xfree(part_ptr->allow_qos);
-		if ((xstrcasecmp(part_desc->allow_qos, "ALL") == 0) ||
-		    (part_desc->allow_qos[0] == '\0')) {
+		bitstr_t *tmp_allow_qos_bitstr = NULL;
+		if (qos_list_build(part_desc->allow_qos, false, false,
+				   &tmp_allow_qos_bitstr) != SLURM_SUCCESS) {
+			error("%s: invalid qos (%s) given for AllowQOS",
+			      __func__, part_desc->allow_qos);
+			error_code = ESLURM_INVALID_QOS;
+		} else if ((xstrcasecmp(part_desc->allow_qos, "ALL") == 0) ||
+			   (part_desc->allow_qos[0] == '\0')) {
 			info("%s: setting AllowQOS to ALL for partition %s",
 			     __func__, part_desc->name);
+			xfree(part_ptr->allow_qos);
+			FREE_NULL_BITMAP(part_ptr->allow_qos_bitstr);
 		} else {
+			xfree(part_ptr->allow_qos);
 			part_ptr->allow_qos = part_desc->allow_qos;
 			part_desc->allow_qos = NULL;
+			FREE_NULL_BITMAP(part_ptr->allow_qos_bitstr);
+			part_ptr->allow_qos_bitstr = tmp_allow_qos_bitstr;
 			info("%s: setting AllowQOS to %s for partition %s",
 			     __func__, part_ptr->allow_qos, part_desc->name);
 		}
-		qos_list_build(part_ptr->allow_qos, false, false,
-			       &part_ptr->allow_qos_bitstr);
 	}
 
 	if (part_desc->qos_char && part_desc->qos_char[0] == '\0') {
@@ -1634,16 +1642,25 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 	}
 
 	if (part_desc->deny_qos != NULL) {
-		xfree(part_ptr->deny_qos);
-		if (part_desc->deny_qos[0] == '\0')
+		bitstr_t *tmp_deny_qos_bitstr = NULL;
+		if (qos_list_build(part_desc->deny_qos, false, false,
+				   &tmp_deny_qos_bitstr) != SLURM_SUCCESS) {
+			error("%s: invalid qos (%s) given for DenyQOS",
+			      __func__, part_desc->deny_qos);
+			error_code = ESLURM_INVALID_QOS;
+		} else {
 			xfree(part_ptr->deny_qos);
-		part_ptr->deny_qos = part_desc->deny_qos;
-		part_desc->deny_qos = NULL;
-		info("%s: setting DenyQOS to %s for partition %s", __func__,
-		     part_ptr->deny_qos, part_desc->name);
-		qos_list_build(part_ptr->deny_qos, false, false,
-			       &part_ptr->deny_qos_bitstr);
+			if (part_desc->deny_qos[0] != '\0') {
+				part_ptr->deny_qos = part_desc->deny_qos;
+				part_desc->deny_qos = NULL;
+			}
+			FREE_NULL_BITMAP(part_ptr->deny_qos_bitstr);
+			part_ptr->deny_qos_bitstr = tmp_deny_qos_bitstr;
+			info("%s: setting DenyQOS to %s for partition %s",
+			     __func__, part_ptr->deny_qos, part_desc->name);
+		}
 	}
+
 	if (part_desc->allow_qos && part_desc->deny_qos) {
 		error("%s: Both AllowQOS and DenyQOS are defined, DenyQOS will be ignored",
 		      __func__);

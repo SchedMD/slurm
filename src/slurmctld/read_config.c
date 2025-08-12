@@ -734,7 +734,7 @@ extern int qos_list_build(char *qos, bool locked, bool ignore_invalid,
 	int rc;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
-	if (!qos) {
+	if (!qos || !qos[0] || !xstrcasecmp(qos, "ALL")) {
 		FREE_NULL_BITMAP(*qos_bits);
 		return SLURM_SUCCESS;
 	}
@@ -901,9 +901,14 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 
 	if (part->allow_qos) {
-		part_ptr->allow_qos = xstrdup(part->allow_qos);
-		qos_list_build(part_ptr->allow_qos, false, false,
-			       &part_ptr->allow_qos_bitstr);
+		if (qos_list_build(part->allow_qos, false, false,
+				   &part_ptr->allow_qos_bitstr) ==
+		    SLURM_SUCCESS) {
+			part_ptr->allow_qos = xstrdup(part->allow_qos);
+		} else {
+			fatal("Partition %s has an invalid AllowQOS (%s), please check your configuration",
+			      part_ptr->name, part->allow_qos);
+		}
 	}
 
 	if (part->deny_accounts) {
@@ -913,9 +918,14 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 
 	if (part->deny_qos) {
-		part_ptr->deny_qos = xstrdup(part->deny_qos);
-		qos_list_build(part_ptr->deny_qos, false, false,
-			       &part_ptr->deny_qos_bitstr);
+		if (qos_list_build(part->deny_qos, false, false,
+				   &part_ptr->deny_qos_bitstr) ==
+		    SLURM_SUCCESS) {
+			part_ptr->deny_qos = xstrdup(part->deny_qos);
+		} else {
+			fatal("Partition %s has an invalid DenyQOS (%s), please check your configuration",
+			      part_ptr->name, part->deny_qos);
+		}
 	}
 
 	if (part->qos_char) {
