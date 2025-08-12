@@ -742,8 +742,7 @@ extern int qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 	if (!locked)
 		assoc_mgr_lock(&locks);
 	if (!g_qos_count) {
-		error("We have no QOS on the system Ignoring invalid "
-		      "Allow/DenyQOS value(s) %s",
+		error("Invalid Allow/DenyQOS value(s) %s: We have no QOS on the system",
 		      qos);
 		if (!locked)
 			assoc_mgr_unlock(&locks);
