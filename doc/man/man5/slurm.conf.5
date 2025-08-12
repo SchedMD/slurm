@@ -5739,7 +5739,8 @@ The value may not exceed 65533 seconds.
 The name of the user that the \fBslurmd\fR daemon executes as.
 This user must exist on all nodes of the cluster for authentication
 of communications between Slurm components.
-The default value is "root".
+The default value is "root", which should be kept in almost all cases so that
+slurmd can run jobs as the user that submitted them.
 .IP
 
 .TP
