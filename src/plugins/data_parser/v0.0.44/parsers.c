@@ -7467,6 +7467,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(SLURMDB_JOB_FLAGS)[] = {
 	add_flag_bit(SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE"),
 	add_flag_bit(SLURMDB_JOB_FLAG_BACKFILL, "STARTED_ON_BACKFILL"),
 	add_flag_bit(SLURMDB_JOB_FLAG_START_R, "START_RECEIVED"),
+	add_flag_bit(SLURMDB_JOB_FLAG_ALTERED, "JOB_ALTERED"),
 };
 
 #define add_skip(field)					\
@@ -9330,6 +9331,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_CONDITION_DB_FLAGS)[] = {
 	add_flag(SLURMDB_JOB_FLAG_SCHED, "scheduled_by_main", false, "Job was started from main scheduler"),
 	add_flag(SLURMDB_JOB_FLAG_BACKFILL, "scheduled_by_backfill", false, "Job was started from backfill"),
 	add_flag(SLURMDB_JOB_FLAG_START_R, "job_started", false, "Job start RPC was received"),
+	add_flag(SLURMDB_JOB_FLAG_ALTERED, "job_altered", false, "Job record has been altered"),
 };
 #undef add_flag
 #undef add_flag_eq

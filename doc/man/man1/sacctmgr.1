@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "July 2025" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "August 2025" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -327,10 +327,10 @@ jobs that have been orphaned on the local cluster and are now
 runaway. If there are jobs in this state it will also give you an
 option to "fix" them.
 This sets the end time for each job to the latest of the job's start, eligible,
-and submit times, and sets the state to completed. Once corrected, this triggers
-the SlurmDBD to recalculate the usage from before the earliest submit time of
-all the runaway jobs. \fBNOTE\fR: This could take a long time and sreport
-may not return data until the recalculation is completed.
+and submit times, and sets the state to completed by default. Once corrected,
+this triggers the SlurmDBD to recalculate the usage from before the earliest
+submit time of all the runaway jobs. \fBNOTE\fR: This could take a long time
+and sreport may not return data until the recalculation is completed.
 \fBNOTE\fR: You must have an \fBAdminLevel\fR of at least \fBOperator\fR to perform
 this.
 .IP
@@ -2819,7 +2819,7 @@ The type of the server controlling the licenses.
 Type of resource this record represents.
 .IP
 
-.SH "LIST/SHOW RUNAWAYJOB FORMAT OPTIONS"
+.SH "SPECIFICATIONS FOR RUNAWAYJOB"
 
 .LP
 Under certain circumstances, jobs can complete without having that completion
@@ -2827,6 +2827,23 @@ recorded by slurmdbd. This results in a "runaway job", where slurmdbd is not
 going to record a completion time for that job without intervention.
 This command will identify jobs that are in this state and offer to have
 slurmdbd clean up the job record(s).
+
+This particular variant of the "show" command also permits the use of the
+"set" keyword to define the following specifications:
+
+.TP
+\fBEndState\fR=<\fIstate\fR>
+Desired state to use as the end state for fixed jobs. Supported states are:
+Completed, Failed.
+.IP
+
+.SH "LIST/SHOW RUNAWAYJOB FORMAT OPTIONS"
+
+.LP
+Fields you can display when viewing runaway job records by using the
+\fIformat=\fR option. The default format is:
+.br
+ID,Name,Partition,Cluster,State,TimeSubmit,TimeStart,TimeEnd
 
 .TP
 \fBCluster\fR
@@ -2861,6 +2878,11 @@ Current recorded time of the end of the job.
 .TP
 \fBTimeStart\fR
 Time job started running.
+.IP
+
+.TP
+\fBTimeSubmit\fR
+Time job was submitted.
 .IP
 
 .SH "SPECIFICATIONS FOR TRANSACTIONS"

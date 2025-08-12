@@ -484,6 +484,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Preemption is required but is disabled on this system" },
 	{ ERRTAB_ENTRY(ESLURM_INVALID_NODE_STATE_TRANSITION),
 	  "Invalid node state transition"			},
+	{ ERRTAB_ENTRY(ESLURM_INVALID_JOB_STATE),
+	  "Invalid job state" },
 
 	/* SPANK errors */
 	{ ERRTAB_ENTRY(ESPANK_ERROR),
