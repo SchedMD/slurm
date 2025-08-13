@@ -493,6 +493,7 @@ list_t *slurm_allocate_het_job_blocking(
 	bool immediate_flag = false;
 	uint32_t node_cnt = 0, job_id = 0;
 	bool already_done = false;
+	char *alloc_tls_cert = NULL;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -507,6 +508,13 @@ list_t *slurm_allocate_het_job_blocking(
 			return NULL;
 	}
 
+	if (tls_enabled()) {
+		if (!(alloc_tls_cert = conn_g_get_own_public_cert())) {
+			error("Could not get self signed certificate for allocation response");
+			return NULL;
+		}
+	}
+
 	iter = list_iterator_create(job_req_list);
 	while ((req = (job_desc_msg_t *) list_next(iter))) {
 		if (req->alloc_sid == NO_VAL)
@@ -516,8 +524,11 @@ list_t *slurm_allocate_het_job_blocking(
 
 		if (req->immediate)
 			immediate_flag = true;
+		req->alloc_tls_cert = xstrdup(alloc_tls_cert);
 	}
 	list_iterator_destroy(iter);
+
+	xfree(alloc_tls_cert);
 
 	req_msg.msg_type = REQUEST_HET_JOB_ALLOCATION;
 	req_msg.data     = job_req_list;
