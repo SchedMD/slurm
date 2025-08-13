@@ -162,6 +162,8 @@ static void _request_reset(http_context_t *context)
 {
 	xassert(context->magic == MAGIC);
 
+	FREE_NULL_REST_AUTH(context->auth);
+
 	_request_free_members(context);
 	_request_init(context);
 }
@@ -697,12 +699,8 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	xassert(context->magic == MAGIC);
 	xassert(context->con);
 	xassert(context->ref);
-	xassert(!context->auth);
 	xassert(request->magic == MAGIC_REQUEST_T);
 	xassert(request->context == context);
-
-	/* make sure there is no auth context inherited */
-	FREE_NULL_REST_AUTH(context->auth);
 
 	if (!context->parser &&
 	    (rc = http_parser_g_new_parse_request(
@@ -750,7 +748,6 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
-	FREE_NULL_REST_AUTH(context->auth);
 	return rc;
 }
 
