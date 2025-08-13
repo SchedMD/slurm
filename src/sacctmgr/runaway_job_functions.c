@@ -123,6 +123,7 @@ static int _set_rec(int *start, int argc, char **argv,
 			job_rec->state = _parse_state(argv[i] + end);
 			set = 1;
 		} else {
+			exit_code = 1;
 			error("Unknown option: %s\n", argv[i]);
 		}
 	}

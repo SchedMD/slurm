@@ -228,6 +228,7 @@ static int _set_rec(int *start, int argc, char **argv,
 			job->wckey = strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
 		} else {
+			exit_code = 1;
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
 			       argv[i]);
