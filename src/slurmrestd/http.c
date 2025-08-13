@@ -122,6 +122,24 @@ static void _free_http_header(void *header)
 	free_http_header(header);
 }
 
+static void _request_init(http_context_t *context)
+{
+	request_t *request = context->request;
+
+	xassert(request);
+	xassert(context->magic == MAGIC);
+
+	*request = (request_t) {
+		.magic = MAGIC_REQUEST_T,
+		.url = URL_INITIALIZER,
+		.method = HTTP_REQUEST_INVALID,
+		.context = context,
+		.keep_alive = -1,
+	};
+
+	request->headers = list_create(_free_http_header);
+}
+
 static void _free_request_t(request_t *request)
 {
 	if (!request)
@@ -782,18 +800,17 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 					  on_http_request_t on_http_request)
 {
 	http_context_t *context = _http_context_new();
-	request_t *request = xmalloc(sizeof(*request));
 
 	xassert(context->magic == MAGIC);
 	xassert(!context->con);
 	xassert(!context->request);
-	request->magic = MAGIC_REQUEST_T;
 	context->con = con;
 	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
-	context->request = request;
-	request->headers = list_create(_free_http_header);
-	request->url = URL_INITIALIZER;
+
+	/* Must use type since context->request is void ptr */
+	context->request = xmalloc(sizeof(request_t));
+	_request_init(context);
 
 	return context;
 }
