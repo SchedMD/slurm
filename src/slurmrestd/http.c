@@ -166,17 +166,6 @@ static void _request_reset(http_context_t *context)
 	_request_init(context);
 }
 
-static void _free_request_t(request_t *request)
-{
-	if (!request)
-		return;
-
-	xassert(request->magic == MAGIC_REQUEST_T);
-	_request_free_members(request->context);
-	request->magic = ~MAGIC_REQUEST_T;
-	xfree(request);
-}
-
 static int _on_request(const http_parser_request_t *req, void *arg)
 {
 	request_t *request = arg;
@@ -709,19 +698,8 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	xassert(context->con);
 	xassert(context->ref);
 	xassert(!context->auth);
-
-	if (!request) {
-		/* Connection has already been closed */
-		log_flag(NET, "%s: [%s] Rejecting continued HTTP connection",
-			 __func__, conmgr_con_get_name(context->ref));
-		rc = SLURM_UNEXPECTED_MSG_ERROR;
-		goto cleanup;
-	}
-
 	xassert(request->magic == MAGIC_REQUEST_T);
-	if (request->context)
-		xassert(request->context == context);
-	request->context = context;
+	xassert(request->context == context);
 
 	/* make sure there is no auth context inherited */
 	FREE_NULL_REST_AUTH(context->auth);
@@ -837,13 +815,21 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
+	request_t *request = NULL;
 
 	if (!context)
 		return;
 	xassert(context->magic == MAGIC);
 
 	http_parser_g_free_parse_request(&context->parser);
-	_free_request_t(context->request);
+
+	/* release request */
+	request = context->request;
+	xassert(request->magic == MAGIC_REQUEST_T);
+	_request_free_members(context);
+	request->magic = ~MAGIC_REQUEST_T;
+	xfree(context->request);
+
 	/* auth should have been released long before now */
 	xassert(!context->auth);
 	FREE_NULL_REST_AUTH(context->auth);
