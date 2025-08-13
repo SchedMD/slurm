@@ -607,6 +607,9 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	/* ensure connection gets closed */
 	(void) conmgr_queue_close_fd(request->context->con);
 
+	/* reset connection to avoid any possible auth inheritance */
+	_request_reset(context);
+
 	return error_number;
 }
 
