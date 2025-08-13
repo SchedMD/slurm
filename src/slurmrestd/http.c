@@ -140,20 +140,31 @@ static void _request_init(http_context_t *context)
 	request->headers = list_create(_free_http_header);
 }
 
+static void _request_free_members(http_context_t *context)
+{
+	request_t *request = context->request;
+
+	xassert(context->magic == MAGIC);
+	xassert(request->magic == MAGIC_REQUEST_T);
+	xassert(request->context == context);
+
+	url_free_members(&request->url);
+	FREE_NULL_LIST(request->headers);
+	xfree(request->last_header);
+	xfree(request->content_type);
+	xfree(request->accept);
+	xfree(request->body);
+	xfree(request->body_encoding);
+}
+
 static void _free_request_t(request_t *request)
 {
 	if (!request)
 		return;
 
 	xassert(request->magic == MAGIC_REQUEST_T);
+	_request_free_members(request->context);
 	request->magic = ~MAGIC_REQUEST_T;
-	FREE_NULL_LIST(request->headers);
-	url_free_members(&request->url);
-	xfree(request->content_type);
-	xfree(request->accept);
-	xfree(request->body);
-	xfree(request->body_encoding);
-	request->body_length = 0;
 	xfree(request);
 }
 
