@@ -157,6 +157,15 @@ static void _request_free_members(http_context_t *context)
 	xfree(request->body_encoding);
 }
 
+/* reset state of request */
+static void _request_reset(http_context_t *context)
+{
+	xassert(context->magic == MAGIC);
+
+	_request_free_members(context);
+	_request_init(context);
+}
+
 static void _free_request_t(request_t *request)
 {
 	if (!request)
@@ -676,8 +685,7 @@ static int _on_content_complete(void *arg)
 		context->con = NULL;
 	}
 
-	context->request = NULL;
-	_free_request_t(request);
+	_request_reset(context);
 
 	return SLURM_SUCCESS;
 }
