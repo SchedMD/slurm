@@ -380,6 +380,27 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			      _cmp_res);
 		}
 
+		if (ec == ESLURM_RETRY_EVAL_HINT) {
+			int tmp_idx = idx;
+
+			while ((tmp_idx < res_cnt) &&
+			       !bit_test(topo_eval->node_map,
+					 sorted_res[tmp_idx].node_inx)) {
+				tmp_idx++;
+			}
+			if (tmp_idx == res_cnt)
+				break;
+			bit_clear(orig_node_map, sorted_res[tmp_idx].node_inx);
+			--rem_nodes;
+
+			if (tmp_idx == idx)
+				idx++;
+			else
+				need_bit_test = true;
+
+			continue;
+		}
+
 		while (need_bit_test && (idx < res_cnt) &&
 		       !bit_test(orig_node_map, sorted_res[idx].node_inx)) {
 			idx++;
