@@ -313,7 +313,11 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	topo_eval->first_pass = true;
 
 	ec = eval_nodes(topo_eval);
-	if (ec == SLURM_SUCCESS)
+	/*
+	 * Already succeeded or permanent error
+	 */
+	if ((ec == SLURM_SUCCESS) ||
+	    (ec == ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE))
 		goto fini;
 
 	/*
