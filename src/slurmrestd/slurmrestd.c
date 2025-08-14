@@ -148,6 +148,9 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	debug5("%s: received SIGPIPE", __func__);
 }
 
@@ -667,6 +670,9 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 
 static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("%s: caught SIGINT. Shutting down.", __func__);
 	conmgr_request_shutdown();
 }
