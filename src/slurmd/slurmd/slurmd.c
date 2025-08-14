@@ -280,18 +280,27 @@ static void *_service_msg(void *arg);
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Caught SIGINT. Shutting down.");
 	slurmd_shutdown();
 }
 
 static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Caught SIGTERM. Shutting down.");
 	slurmd_shutdown();
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Caught SIGQUIT. Shutting down.");
 	slurmd_shutdown();
 }
@@ -325,6 +334,9 @@ static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Caught SIGPIPE. Ignoring.");
 }
 
