@@ -31,9 +31,7 @@ source ./globals
 set file_in          "$test_dir/job_script"
 set job_id           0
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-} elseif {[get_config_param "KillOnBadExit"] == 1} {
+if {[get_config_param "KillOnBadExit"] == 1} {
     skip "This test is incompatible with KillOnBadExit=1"
 } elseif {[string first "none" [get_affinity_types]] != -1} {
     skip "This test is incompatible with TaskPlugin=none"

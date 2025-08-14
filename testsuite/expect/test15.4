@@ -34,10 +34,6 @@ set got_job_grps         0
 set got_login_grps       0
 set job_id               0
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
-
 proc cleanup {} {
 	global job_id
 

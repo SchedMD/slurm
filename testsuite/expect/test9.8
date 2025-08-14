@@ -58,7 +58,7 @@ if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 # A single slurmd can't handle a large task count without
 # running out of memory and pthreads
 #
-if {[get_config_param "FrontendName"] ne "MISSING" || $enable_memory_leak_debug != 0} {
+if {$enable_memory_leak_debug != 0} {
 	set task_cnt 2
 }
 

@@ -27,7 +27,6 @@ def setup():
         source="gres",
     )
     atf.require_nodes(2, [("Gres", f"gpu:2,mps:{mps_cnt}"), ("CPUs", 6)])
-    atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
 

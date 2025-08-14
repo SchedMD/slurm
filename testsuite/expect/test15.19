@@ -51,12 +51,7 @@ expect {
 		exp_continue
 	}
 	-re "(Task count specification invalid|configuration not available)" {
-		cancel_job $job_id
-		if {[get_config_param "FrontendName"] ne "MISSING"} {
-			skip "Error expected, Testing is incompatible with front-end systems"
-		} else {
-			 skip "Test not compatible with this configuration"
-		}
+		skip "Test not compatible with this configuration"
 	}
 	-re "($number): *($re_word_str)" {
 		if {$task_cnt == 0} {
@@ -139,10 +134,6 @@ expect {
 #
 subtest {$host_0 ne ""} "A task should run on the first host"
 subtest {$host_1 eq ""} "Only a single task should run" "A task was found running on the second host $host_1"
-
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional testing is incompatible with front-end systems"
-}
 
 #
 # Submit a 1 to 3 node job

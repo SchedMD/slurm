@@ -237,8 +237,7 @@ cset bin_perldoc "/usr/bin/perldoc"
 cset bin_py3     "python3"
 cset bin_oasgen  "openapi-generator-cli"
 
-# Don't user $bin_hostname unless on a front-end system that
-# doesn't fully use the slurmd, use $bin_printenv SLURMD_NODENAME
+# Don't user $bin_hostname, use $bin_printenv SLURMD_NODENAME
 cset bin_hostname "hostname"
 
 cset bin_kill	"kill"

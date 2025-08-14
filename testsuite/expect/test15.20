@@ -112,10 +112,6 @@ if {$dup_hostname == 1} {
 	fail "Re-used a node in the allocation"
 }
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional testing is incompatible with front-end systems"
-}
-
 set exclude_node $host_0
 set include_node $host_2
 

@@ -33,9 +33,6 @@ set job_id           0
 if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "This test is incompatible with front-end systems"
-}
 
 set constrain_devices [expr {[get_config_param "ConstrainDevices"] eq "yes"}]
 if {$constrain_devices} {

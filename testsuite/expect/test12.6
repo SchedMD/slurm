@@ -33,10 +33,6 @@ set file_prog   "$test_name.prog"
 set hdf5_file   "$test_name.h5"
 set job_id      0
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
-
 proc cleanup {} {
 	global file_prog hdf5_file
 
