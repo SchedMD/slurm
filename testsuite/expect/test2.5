@@ -2,7 +2,7 @@
 ############################################################################
 # Purpose: Test of Slurm functionality
 #          Validate scontrol show commands for configuration, daemons,
-#          nodes, frontends, and partitions.
+#          nodes and partitions.
 ############################################################################
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Copyright (C) 2008-2011 Lawrence Livermore National Security.
@@ -102,50 +102,6 @@ expect {
 	}
 }
 subtest {$matches == 1} "Verify scontrol show partition by name"
-
-#
-# Report all slurm front end nodes
-#
-set matches     0
-set node_name   ""
-spawn $scontrol show frontend
-expect {
-	-re "FrontendName=($re_word_str)" {
-		set node_name $expect_out(1,string)
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches < 1} {
-	subskip "Subtest requires front end nodes"
-} else {
-#
-#	Report one slurm front end node
-#
-	set matches     0
-	spawn $scontrol show frontend $node_name
-	expect {
-		-re "FrontendName=($re_word_str)" {
-			if {$expect_out(1,string) eq $node_name} {
-				incr matches
-			}
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	subtest {$matches == 1} "Verify scontrol show frontend by name"
-}
 
 #
 # Report all slurm nodes

@@ -266,9 +266,6 @@ testproc test_constrain 3 "$feat4&\[$feat1|$feat0\]" [list]
 # Special testprocs
 #
 # Specific test for batch host
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip_following_testprocs "Test incompatible with front-end"
-}
 testproc test_constrain_batch 3 "$feat0|$feat3" $feat3 [list $nodes(3)]
 run_following_testprocs
 

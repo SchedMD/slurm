@@ -28,10 +28,6 @@ set file_in  "$test_dir/input"
 set file_out "$test_dir/output"
 set job_list [list]
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front end systems"
-}
-
 set nodes [get_nodes_by_request "--gres=gpu:2 -N2"]
 if {[llength $nodes] != 2} {
 	skip "This test requires 2 or more GPUs on at least 2 nodes in the default partition"

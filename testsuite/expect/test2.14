@@ -34,10 +34,6 @@ set file_out2        "$test_dir/output2"
 set job_id           0
 set node_cnt         2
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "This test is incompatible with front-end systems"
-}
-
 set available [llength [get_nodes_by_state idle,alloc,comp]]
 if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"

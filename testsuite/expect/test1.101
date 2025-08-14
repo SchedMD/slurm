@@ -89,9 +89,6 @@ expect {
 set exec_cnt 0
 send "$srun -l --bcast=$file_tmp $file_in\r"
 expect {
-	-re "not supported" {
-		skip "srun --bcast option not supported on this system type (e.g. front-end)"
-	}
 	-re "($number): $file_tmp" {
 		incr exec_cnt
 		exp_continue
