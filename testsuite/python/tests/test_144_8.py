@@ -79,42 +79,62 @@ def test_no_enforce_binding(test_id, description, job_args, exp_alloc_tres):
 
 # The enforce binding tests need to test for specific indices to verify core placement on sockets.
 enforce_binding_parameters = [
-    (
+    pytest.param(
         "case00 - 2tasks_3gpu_per_task",
         "The job should have one core on each socket.",
         "-n2 --tres-per-task=gres/gpu:3",
         "0-1,16-17",
         "gpu:6(IDX:0-5)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (24, 11, 1),
+            reason="Ticket 21262: Fixed in 24.11.1",
+        ),
     ),
-    (
+    pytest.param(
         "case01 - 1task_3gpu_per_task",
         "The job should have one core on the same socket as the gpus.",
         "-n1 --tres-per-task=gres/gpu:3",
         "0-1",
         "gpu:3(IDX:0-2)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="MR !1713: Socket binding fixed in 25.11",
+        ),
     ),
-    (
+    pytest.param(
         "case02 - 2tasks_2cpu_3gpu_per_task",
         "The job should have one core on each socket.",
         "--ntasks-per-node=2 -N1 -c2 --tres-per-task=gres/gpu:3",
         "0-1,16-17",
         "gpu:6(IDX:0-5)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (24, 11, 1),
+            reason="Ticket 21262: Fixed in 24.11.1",
+        ),
     ),
     # Submit with --sockets-per-node=2 to make sure it still runs. This doesn't change the job
     # allocation. This tests a previous bug in which this job was rejected at submission time.
-    (
+    pytest.param(
         "case03 - 2sockets_2tasks_2cpu_3gpu",
         "The job should have one core on each socket.",
         "--sockets-per-node=2 --ntasks-per-node=2 -N1 -c2 --tres-per-task=gres/gpu:3",
         "0-1,16-17",
         "gpu:6(IDX:0-5)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (24, 11, 1),
+            reason="Ticket 21262: Fixed in 24.11.1",
+        ),
     ),
-    (
+    pytest.param(
         "case04 - 2tasks_2cpu_2gpu_per_task",
         "The job should have one core on each socket and 2 gpus on each socket.",
         "--ntasks-per-node=2 -N1 -c2 --tres-per-task=gres/gpu:2",
         "0-1,16-17",
         "gpu:4(IDX:0-1,3-4)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (24, 11, 1),
+            reason="Ticket 21262: Fixed in 24.11.1",
+        ),
     ),
     (
         "case05 - 1task_2cpu_3gpu",
@@ -123,12 +143,16 @@ enforce_binding_parameters = [
         "0-1",
         "gpu:3(IDX:0-2)",
     ),
-    (
+    pytest.param(
         "case06 - 1task_2cpu_4gpu",
         "The job should have one core on each socket.",
         "--gres=gpu:4 -n1 -c2",
         "0-1,16-17",
         "gpu:4(IDX:0-1,3-4)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (24, 11, 1),
+            reason="Ticket 21262: Fixed in 24.11.1",
+        ),
     ),
     (
         "case07 - 1task_4cpu_4gpu",
@@ -167,12 +191,16 @@ enforce_binding_parameters = [
     ),
     # This job implicitly requests just one cpu. However, with enforce-binding, it needs one core
     # on each socket.
-    (
+    pytest.param(
         "case12 - 1task_6gpu_implicit_cpu",
         "The job should have one core on each socket.",
         "-n1 --gpus=6 -N1",
         "0-1,16-17",
         "gpu:6(IDX:0-5)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="MR !1713: Socket binding fixed in 25.11",
+        ),
     ),
 ]
 
@@ -180,7 +208,10 @@ enforce_binding_parameters = [
 @pytest.mark.parametrize(
     "test_id,description,job_args,cpu_ids,gpu_idx",
     enforce_binding_parameters,
-    ids=[param[0] for param in enforce_binding_parameters],
+    ids=[
+        param.values[0] if hasattr(param, "values") else param[0]
+        for param in enforce_binding_parameters
+    ],
 )
 def test_enforce_binding(test_id, description, job_args, cpu_ids, gpu_idx):
     job_str = f'{job_args} --gres-flags=enforce-binding --wrap "sleep infinity"'
@@ -264,6 +295,10 @@ multi_node_parameters = [
 ]
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11),
+    reason="MR !1713: Multi-node binding fixed in 25.11",
+)
 @pytest.mark.parametrize(
     "test_id,job_args,exp_gres,exp_nodes,exp_cpu_count,exp_cores",
     multi_node_parameters,
