@@ -36,9 +36,6 @@ set test_script     "$test_dir/script"
 if {![is_super_user]} {
 	skip "Test can only be run as SlurmUser"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-        skip "This test is incompatible with front-end systems"
-}
 
 proc cleanup { } {
 	global job_list config_file scontrol test_node

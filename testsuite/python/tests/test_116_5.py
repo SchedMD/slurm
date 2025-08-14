@@ -12,7 +12,6 @@ node_num = 3
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(node_num + 2)
-    atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
 

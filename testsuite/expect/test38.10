@@ -25,11 +25,7 @@
 ############################################################################
 source ./globals
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-        skip "This test is incompatible with front-end systems"
-} else {
-	set task_num 2
-}
+set task_num 2
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"

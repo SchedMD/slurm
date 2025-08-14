@@ -42,9 +42,6 @@ if {[llength $testnode] != 1} {
 if {![is_super_user]} {
 	skip "This test must be run as SlurmUser"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
 #
 # Verify the slurmctld and local slurm version are the same
 #
