@@ -49,6 +49,7 @@
 #include "src/conmgr/delayed.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
+#include "src/conmgr/signals.h"
 
 #include "src/interfaces/tls.h"
 #include "src/interfaces/url_parser.h"
@@ -178,6 +179,9 @@ extern void conmgr_fini(void)
 	}
 
 	log_flag(CONMGR, "%s: connection manager shutting down", __func__);
+
+	/* stop and cleanup signal manager */
+	signal_mgr_fini();
 
 	/* processing may still be running at this point in a thread */
 	close_all_connections();
