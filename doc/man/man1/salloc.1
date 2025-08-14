@@ -1111,7 +1111,8 @@ Bind tasks according to application hints.
 .br
 \fBNOTE\fR: This option implies specific values for certain related options,
 which prevents its use with any user\-specified values for
-\fB\-\-ntasks\-per\-core\fR, \fB\-\-threads\-per\-core\fR or \fB\-B\fR.
+\fB\-\-ntasks\-per\-core\fR, \fB\-\-cores\-per\-socket\fR,
+\fB\-\-sockets\-per\-node\fR, \fB\-\-threads\-per\-core\fR or \fB\-B\fR.
 These conflicting options will override \fB\-\-hint\fR when specified as
 command line arguments. If a conflicting option is specified as an environment
 variable, \-\-hint as a command line argument will take precedence.
