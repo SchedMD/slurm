@@ -665,6 +665,8 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
  * IN arg - arg to hand to function pointer
  * NOTE: never add a thread that will never return or conmgr_run() will never
  * return either.
+ * NOTE: handlers will be called with CONMGR_WORK_STATUS_CANCELLED during
+ *	shutdown
  */
 #define conmgr_add_work_signal(signal_number, _func, func_arg) \
 	conmgr_add_work(NULL, (conmgr_callback_t) { \
