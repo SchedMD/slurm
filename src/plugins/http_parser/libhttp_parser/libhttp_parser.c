@@ -245,8 +245,11 @@ static void _log_parse_buffer(state_t *state, const char *caller,
 	const void *buffer_ptr = get_buf_data(state->buffer);
 	const size_t buffer_bytes = get_buf_offset(state->buffer);
 	const void *buffer_begin = buffer_ptr;
+	const void *begin = NULL;
+#ifndef NDEBUG
 	const void *buffer_end = (buffer_ptr + buffer_bytes);
-	const void *begin = NULL, *end = NULL;
+	const void *end = (at ? (at + at_bytes) : buffer_end);
+#endif
 	size_t offset_begin = 0, offset_end = 0;
 
 	xassert(buffer_begin);
@@ -254,14 +257,12 @@ static void _log_parse_buffer(state_t *state, const char *caller,
 
 	if (at) {
 		begin = at;
-		end = (at + at_bytes);
 		offset_begin = (begin - buffer_begin);
 		offset_end = (offset_begin + at_bytes);
 	} else {
 		xassert(!at_bytes);
 
 		begin = buffer_begin;
-		end = buffer_end;
 		offset_begin = 0;
 		offset_end = buffer_bytes;
 	}
