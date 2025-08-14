@@ -40,10 +40,6 @@ set file_cnt         0
 set file_out_t_glob  ""
 set file_out_n_glob  ""
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "This test is incompatible with front-end systems"
-}
-
 proc cleanup {} {
 	global job_id
 
@@ -110,10 +106,6 @@ subtest {$file_cnt == $node_count} "Stdout file names should be generated with t
 
 cleanup
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional tests are incompatible with front-end systems"
-}
-
 #
 # Spawn a program that generates "node_id" (%n) in stdout file names
 # and confirm they are created
@@ -143,9 +135,6 @@ if {$job_id == 0} {
 for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 	set file_out_n_glob  "$test_dir/n.$node_id.output"
 	if {[wait_for_file $file_out_n_glob] != 0} {
-		if {$node_id == 1} {
-			log_debug "This failure is expected on front-end configurations"
-		}
 		fail "Output file ($file_out_n_glob) did not get created"
 	} else {
 		set task_found false

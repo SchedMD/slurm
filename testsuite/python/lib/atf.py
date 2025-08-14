@@ -1515,7 +1515,6 @@ def get_config(live=True, source="slurm", quiet=False, delimiter="="):
                 )
                 if parameter_name.lower() in [
                     "downnodes",
-                    "frontendname",
                     "name",
                     "nodename",
                     "nodeset",

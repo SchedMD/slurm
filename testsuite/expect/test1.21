@@ -69,10 +69,6 @@ expect {
 
 subtest {$matches == 1} "Verify stdin to specific task id"
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "Additional portions of this test are incompatible with front-end systems"
-}
-
 log_debug "So far... stdin to specific task worked fine"
 
 #
