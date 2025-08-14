@@ -271,7 +271,6 @@ void slurm_print_cpu_bind_help(void)
 "        q[uiet]         quietly bind before task runs (default)\n"
 "        v[erbose]       verbosely report binding before task runs\n"
 "        no[ne]          don't bind tasks to CPUs (default)\n"
-"        rank            bind by task rank\n"
 "        map_cpu:<list>  specify a CPU ID binding for each task\n"
 "                        where <list> is <cpuid1>,<cpuid2>,...<cpuidN>\n"
 "        mask_cpu:<list> specify a CPU ID binding mask for each task\n"
