@@ -11,7 +11,6 @@ import re
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(4)
-    atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
 

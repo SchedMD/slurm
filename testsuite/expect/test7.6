@@ -62,9 +62,6 @@ if {[info exists totalviewcli] == 0} {
 if {[file executable $totalviewcli] == 0} {
 	skip "$totalviewcli does not exist"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "This test is incompatible with front-end systems"
-}
 
 proc cleanup {} {
 	global job_id bin_rm test_prog

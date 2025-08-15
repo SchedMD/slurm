@@ -30,10 +30,6 @@
 ############################################################################
 source ./globals
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front end systems"
-}
-
 # find out if we have enough nodes to test functionality
 set node_count [get_partition_param [default_partition] "TotalNodes"]
 if { $node_count < 2 } {
@@ -94,10 +90,6 @@ if {$tested_layout ne $expected_layout1 &&
 	$tested_layout ne $expected_layout2 &&
 	$tested_layout ne $expected_layout3} {
 	fail "Failed to distribute tasks in block fashion"
-}
-
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional testing is incompatible with front-end systems"
 }
 
 #

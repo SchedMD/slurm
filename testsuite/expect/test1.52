@@ -36,10 +36,6 @@ set max_nodes   0
 set task_count  0
 set hostfile    "$test_dir/hostfile"
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test incompatible with front-end systems"
-}
-
 # Determine if we have enough nodes to test functionality
 spawn $scontrol show partition [default_partition]
 expect {

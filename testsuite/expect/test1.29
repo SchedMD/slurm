@@ -39,9 +39,6 @@ set limit_nofile     1016
 set limit_nproc      30500
 set limit_stack      5021
 
-if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
-	skip "This test is incompatible with front-end systems"
-}
 if {[get_config_param "PropagateResourceLimits"] ne "ALL" || [get_config_param "PropagateResourceLimitsExcept"] ne "(null)"} {
 	skip "This test need PropagateResourceLimits ALL"
 }
