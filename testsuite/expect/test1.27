@@ -34,44 +34,24 @@ set matches          0
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	array set good_vars {
-	    SLURM_CPUS_ON_NODE 1
-	    SLURM_CPUS_PER_TASK 1
-	    SLURM_JOB_ID 1
-	    SLURM_LAUNCH_NODE_IPADDR 0
-	    SLURM_LOCALID 0
-	    SLURM_NNODES 0
-	    SLURM_NODEID 0
-	    SLURM_NODELIST 0
-	    SLURM_NTASKS 1
-	    SLURM_PROCID 0
-	    SLURM_SRUN_COMM_HOST 0
-	    SLURM_SRUN_COMM_PORT 1
-	    SLURM_STEPID 0
-	    SLURM_TASKS_PER_NODE 1
-	    SLURM_TASK_PID 1
-	}
-} else {
-	array set good_vars {
-	    SLURM_CPUS_ON_NODE 1
-	    SLURM_CPUS_PER_TASK 1
-	    SLURM_JOB_ID 1
-	    SLURM_LAUNCH_NODE_IPADDR 0
-	    SLURM_LOCALID 0
-	    SLURM_NNODES 0
-	    SLURM_NODEID 0
-	    SLURM_NODELIST 0
-	    SLURM_NTASKS 1
-	    SLURM_PROCID 0
-	    SLURM_SRUN_COMM_HOST 0
-	    SLURM_SRUN_COMM_PORT 1
-	    SLURM_STEPID 0
-	    SLURM_TASKS_PER_NODE 1
-	    SLURM_TASK_PID 1
-	    SLURM_TOPOLOGY_ADDR 0
-	    SLURM_TOPOLOGY_ADDR_PATTERN 0
-	}
+array set good_vars {
+    SLURM_CPUS_ON_NODE 1
+    SLURM_CPUS_PER_TASK 1
+    SLURM_JOB_ID 1
+    SLURM_LAUNCH_NODE_IPADDR 0
+    SLURM_LOCALID 0
+    SLURM_NNODES 0
+    SLURM_NODEID 0
+    SLURM_NODELIST 0
+    SLURM_NTASKS 1
+    SLURM_PROCID 0
+    SLURM_SRUN_COMM_HOST 0
+    SLURM_SRUN_COMM_PORT 1
+    SLURM_STEPID 0
+    SLURM_TASKS_PER_NODE 1
+    SLURM_TASK_PID 1
+    SLURM_TOPOLOGY_ADDR 0
+    SLURM_TOPOLOGY_ADDR_PATTERN 0
 }
 
 #

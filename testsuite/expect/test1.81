@@ -46,10 +46,7 @@ set timeout $max_job_delay
 spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
-		if {[get_config_param "FrontendName"] ne "MISSING"} {
-			skip "Error expected, Testing is incompatible with front-end systems"
-		}
-		exp_continue
+		fail "Error unexpected, not able to submit job"
 	}
 	-re "($number):" {
 		if {$task_cnt == 0} {
@@ -120,10 +117,6 @@ expect {
 #
 subtest {$host_0 ne ""} "Should get SLURM_NODEID of task 0"
 subtest {$host_1 eq ""} "Should start just one task"
-
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional testing is incompatible with front-end systems"
-}
 
 #
 # Submit a 1 to 3 node job

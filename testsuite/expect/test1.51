@@ -31,10 +31,6 @@ source ./globals
 set file_in      "$test_dir/input"
 set file_script  "$test_dir/job_script"
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
-
 #
 # Build input script files
 #

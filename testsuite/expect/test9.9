@@ -28,7 +28,7 @@ set job_cnt     1000
 set fanout      10
 set test_script "$test_dir/test_script"
 
-if {[get_config_param "FrontendName"] ne "MISSING" || $enable_memory_leak_debug != 0} {
+if {$enable_memory_leak_debug != 0} {
 	set job_cnt 2
 }
 

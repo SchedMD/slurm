@@ -51,9 +51,6 @@ if { [llength $node_name] != 1 } {
 if {![param_contains [get_config_param "AccountingStorageTRES"] "gres/gpu"]} {
 	skip "This test requires AccountingStorageTRES=gres/gpu"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
 
 # Get the total number of GPUs in the test node
 set gres_node [get_node_param $node_name "Gres"]
