@@ -2651,8 +2651,8 @@ next_task:
 			comp_time_limit = MIN(time_limit, deadline_time_limit);
 		else if (job_ptr->time_min &&
 			 (job_ptr->time_min < time_limit)) {
-			time_limit = job_ptr->time_limit = job_ptr->time_min;
 			comp_time_limit = time_limit;
+			time_limit = job_ptr->time_limit = job_ptr->time_min;
 		} else
 			comp_time_limit = time_limit;
 		if ((qos_flags & QOS_FLAG_NO_RESERVE) &&
