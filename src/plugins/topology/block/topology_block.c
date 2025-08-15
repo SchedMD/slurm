@@ -149,6 +149,24 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 
 	bit_clear(ctx->blocks_nodes_bitmap, node_ptr->index);
 
+	if (unit) {
+		/*
+		 * Check for a valid block first before being destructive on
+		 * bitmaps.
+		 */
+		bool found_one_block = false;
+		for (int i = 0; i < ctx->block_count; i++) {
+			if (!xstrcmp(ctx->block_record_table[i].name, unit)) {
+				found_one_block = true;
+				break;
+			}
+		}
+		if (!found_one_block) {
+			/* Tried to add to a block that doesn't exist */
+			return SLURM_ERROR;
+		}
+	}
+
 	for (int i = 0; i < ctx->block_count; i++) {
 		bool in_block = bit_test(ctx->block_record_table[i].node_bitmap,
 					 node_ptr->index);
