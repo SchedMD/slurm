@@ -2884,13 +2884,15 @@ typedef struct reservation_name_msg {
 #define RECONFIG_KEEP_PART_STAT SLURM_BIT(1) /* keep dynamic partition state on scontrol reconfig */
 #define RECONFIG_KEEP_POWER_SAVE_SETTINGS SLURM_BIT(2) /* keep dynamic power save settings on scontrol reconfig */
 
-#define HEALTH_CHECK_NODE_IDLE	0x0001	/* execute on idle nodes */
-#define HEALTH_CHECK_NODE_ALLOC	0x0002	/* execute on fully allocated nodes */
-#define HEALTH_CHECK_NODE_MIXED	0x0004	/* execute on partially allocated nodes */
-#define HEALTH_CHECK_NODE_NONDRAINED_IDLE 0x0008 /* execute on idle nodes that
-						  * are not drained */
-#define HEALTH_CHECK_CYCLE	0x8000	/* cycle through nodes node */
-#define HEALTH_CHECK_NODE_ANY	0x000f	/* execute on all node states */
+/* NodeHealthCheck states */
+#define HEALTH_CHECK_NODE_IDLE	SLURM_BIT(0) /* execute on idle nodes */
+#define HEALTH_CHECK_NODE_ALLOC	SLURM_BIT(1) /* execute on fully allocated nodes */
+#define HEALTH_CHECK_NODE_MIXED	SLURM_BIT(2) /* execute on partially allocated nodes */
+#define HEALTH_CHECK_NODE_NONDRAINED_IDLE SLURM_BIT(3) /* execute on idle nodes that are not drained */
+#define HEALTH_CHECK_NODE_ANY	SLURM_BIT(15) /* execute on all node states */
+/* NodeHealthCheck flags */
+#define HEALTH_CHECK_CYCLE	SLURM_BIT(16) /* cycle through nodes node */
+#define HEALTH_CHECK_START_ONLY SLURM_BIT(17) /* execute only at slurmd startup */
 
 #define PROLOG_FLAG_ALLOC	0x0001 /* execute prolog upon allocation */
 #define PROLOG_FLAG_NOHOLD	0x0002 /* don't block salloc/srun until
