@@ -191,8 +191,6 @@ set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
 	skip "This test requires accounting for MPS"
-} elseif {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
 }
 
 if {![check_config_select "cons_tres"]} {

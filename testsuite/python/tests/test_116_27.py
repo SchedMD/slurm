@@ -11,7 +11,6 @@ import time
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_config_parameter("FrontendName", None)
     atf.require_auto_config("wants to set the mail program")
     atf.require_slurm_running()
 

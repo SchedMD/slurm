@@ -80,9 +80,6 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {$nb_nodes > 1} {

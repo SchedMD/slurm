@@ -11,7 +11,6 @@ import re
 def setup():
     atf.require_config_parameter("SelectType", "select/linear")
     atf.require_config_parameter("SelectTypeParameters", "CR_Memory")
-    atf.require_config_parameter("FrontendName", None)
     atf.require_slurm_running()
 
 

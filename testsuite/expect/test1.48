@@ -36,10 +36,6 @@ set cwd                  "[$bin_pwd]"
 set mail_prog            "$test_id.MailProg.sh"
 set mail_prog_out        "$test_id.MailProg.out"
 
-if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
-	skip "This test is incompatible with front-end systems"
-}
-
 if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
 }
