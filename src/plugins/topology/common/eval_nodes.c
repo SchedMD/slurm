@@ -724,6 +724,14 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 		}
 	}
 
+	/* Compute CPUs already allocated to required nodes */
+	if ((details_ptr->max_cpus != NO_VAL) &&
+	    (total_cpus > details_ptr->max_cpus)) {
+		info("%pJ can't use required nodes due to max CPU limit",
+		     job_ptr);
+		goto fini;
+	}
+
 	for (i = 0; next_node(&i); i++) { /* For each node */
 		if ((consec_index + 1) >= consec_size) {
 			consec_size *= 2;
@@ -840,14 +848,6 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			xfree(gres_str);
 			xfree(host_list);
 		}
-	}
-
-	/* Compute CPUs already allocated to required nodes */
-	if ((details_ptr->max_cpus != NO_VAL) &&
-	    (total_cpus > details_ptr->max_cpus)) {
-		info("%pJ can't use required nodes due to max CPU limit",
-		     job_ptr);
-		goto fini;
 	}
 
 	/*
