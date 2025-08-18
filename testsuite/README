@@ -1040,6 +1040,7 @@ test_144_3   Test --exact with GPUs and multiple steps
 test_144_4   Test gres with file or type and --overlap
 test_144_6   Test gres with no_consume flag
 test_144_7   Test allocating sub-sets of GRES to job steps
+test_144_8   Test various parameters with and without enforce binding
 
 test_145_#   Testing --constraint.
 ==================================
