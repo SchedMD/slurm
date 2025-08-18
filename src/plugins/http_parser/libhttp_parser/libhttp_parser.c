@@ -589,6 +589,7 @@ extern int url_parser_p_parse(const char *name, const buf_t *buffer, url_t *dst)
 		if (rc == ESLURM_URL_UNSUPPORTED_FORMAT)
 			rc = ESLURM_URL_INVALID_FORMATING;
 
+		url_free_members(dst);
 		return URL_PARSE_ERROR(rc, name, buffer);
 	}
 
