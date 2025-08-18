@@ -33,10 +33,6 @@ set job_grp_info         ""
 set got_job_grps         0
 set got_login_grps       0
 
-if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
-	skip "This test is incompatible with front-end systems"
-}
-
 #
 # Execute 'id' to determine my user and group ID...
 #

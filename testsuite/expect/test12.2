@@ -59,9 +59,6 @@ if {[get_config_param "KillOnBadExit"] == 1} {
 #
 # Check requirements
 #
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"

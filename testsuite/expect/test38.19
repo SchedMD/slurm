@@ -54,9 +54,6 @@ set gpu_cnt [get_highest_gres_count $nb_nodes "gpu"]
 if {$gpu_cnt < 2} {
         skip "This test requires 2 or more GPUs on $nb_nodes nodes of the default partition"
 }
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-        skip "This test is incompatible with front-end systems"
-}
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }

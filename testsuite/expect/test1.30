@@ -30,12 +30,7 @@ source ./globals
 
 set error     0
 set srun_opts "-c1"
-
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	set max_node_cnt 2
-} else {
-	set max_node_cnt 1024
-}
+set max_node_cnt 1024
 
 #
 # Spawn a srun immediate jobs with ever larger node counts

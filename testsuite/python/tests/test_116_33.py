@@ -15,11 +15,7 @@ def setup():
 def test_srun_increasing_job_sizes():
     """Spawn srun immediate jobs with ever larger node counts"""
 
-    if atf.get_config_parameter("FrontendName") != None:
-        max_node_cnt = 2
-    else:
-        max_node_cnt = 1024
-
+    max_node_cnt = 1024
     good_errors = [
         "Immediate execution impossible",
         "Unable to allocate resources",

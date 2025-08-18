@@ -82,9 +82,6 @@ expect {
 subtest {$host_0 ne ""} "Should get hostname of task 0"
 subtest {$host_1 ne ""} "Should get hostname of task 1"
 subtest {$host_2 ne ""} "Should get hostname of task 2"
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional testing is incompatible with front-end systems"
-}
 subtest {$host_3 eq ""} "Should start no more than three tasks"
 
 set dup_hostname 0

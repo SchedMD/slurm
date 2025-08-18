@@ -38,9 +38,6 @@ def setup():
     atf.require_config_parameter_includes("AccountingStorageEnforce", "limits")
     atf.require_slurm_running()
 
-    if atf.get_config_parameter("frontendname") is not None:
-        pytest.skip("SKIP: This test is incompatible with front-end systems")
-
 
 @pytest.fixture(scope="function", autouse=True)
 def create_account_with_limit():

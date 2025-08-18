@@ -36,9 +36,6 @@ if { $node_count < 3 } {
 	skip "Insufficient nodes in default partition ($node_count < 3)"
 }
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-        skip "This test is incompatible with front-end systems"
-}
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }

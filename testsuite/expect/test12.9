@@ -28,6 +28,7 @@ source ./globals
 set array1_job_id   0
 set array2_job_id   0
 set job_array_size  6
+set task_num        2
 set timeout $max_job_delay
 
 #
@@ -35,12 +36,6 @@ set timeout $max_job_delay
 #
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
-}
-
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-        skip "This test is incompatible with front-end systems"
-} else {
-	set task_num 2
 }
 
 proc cleanup {} {
