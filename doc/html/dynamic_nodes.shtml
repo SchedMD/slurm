@@ -122,7 +122,7 @@ reservation can be deleted.
 <a class="slurm_link" href="#topology"></a>
 </h2>
 <p>
-Nodes can be dynamically added to topologies, defined in either
+Nodes can be dynamically added and/or removed from topologies, defined in either
 <i>topology.conf</i> or <i>topology.yaml</i>, by specifying the node's
 <b>Topology</b> option and providing the list of topology names and units.
 A <b>topology unit</b> is the block name or the name of a leaf switch.
@@ -158,6 +158,6 @@ suboptimal job allocations if node names represent topology of the nodes.
 </p>
 
 
-<p style="text-align:center;">Last modified 31 December 2024</p>
+<p style="text-align:center;">Last modified 15 August 2025</p>
 
 <!--#include virtual="footer.txt"-->
