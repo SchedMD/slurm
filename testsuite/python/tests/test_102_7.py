@@ -9,6 +9,7 @@ import pytest
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     """Test setup with required configurations."""
+    atf.require_version((25, 11), "bin/sacctmgr")
     atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
     atf.require_slurm_running()
 
