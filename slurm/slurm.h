@@ -2889,10 +2889,10 @@ typedef struct reservation_name_msg {
 #define HEALTH_CHECK_NODE_ALLOC	SLURM_BIT(1) /* execute on fully allocated nodes */
 #define HEALTH_CHECK_NODE_MIXED	SLURM_BIT(2) /* execute on partially allocated nodes */
 #define HEALTH_CHECK_NODE_NONDRAINED_IDLE SLURM_BIT(3) /* execute on idle nodes that are not drained */
-#define HEALTH_CHECK_NODE_ANY	SLURM_BIT(15) /* execute on all node states */
+#define HEALTH_CHECK_NODE_ANY	0x00ff /* execute on all node states */
 /* NodeHealthCheck flags */
-#define HEALTH_CHECK_CYCLE	SLURM_BIT(16) /* cycle through nodes node */
-#define HEALTH_CHECK_START_ONLY SLURM_BIT(17) /* execute only at slurmd startup */
+#define HEALTH_CHECK_CYCLE	SLURM_BIT(8) /* cycle through nodes node */
+#define HEALTH_CHECK_START_ONLY SLURM_BIT(9) /* execute only at slurmd startup */
 
 #define PROLOG_FLAG_ALLOC	0x0001 /* execute prolog upon allocation */
 #define PROLOG_FLAG_NOHOLD	0x0002 /* don't block salloc/srun until
