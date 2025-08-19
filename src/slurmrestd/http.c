@@ -600,7 +600,7 @@ static int _on_message_complete_request(request_t *request)
 		.body_encoding = request->body_encoding
 	};
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((rc = context->on_http_request(&args)))
