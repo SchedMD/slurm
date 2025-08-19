@@ -1723,11 +1723,11 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 
 	xassert(topo_eval->node_map);
 	if (bit_set_count(topo_eval->node_map) < topo_eval->min_nodes)
-		return SLURM_ERROR;
+		return ESLURM_BREAK_EVAL;
 
 	if ((details_ptr->req_node_bitmap) &&
 	    (!bit_super_set(details_ptr->req_node_bitmap, topo_eval->node_map)))
-		return SLURM_ERROR;
+		return ESLURM_BREAK_EVAL;
 
 	if (topo_eval->trump_others && topo_eval->eval_nodes) {
 		int rc = topo_eval->eval_nodes(topo_eval);
