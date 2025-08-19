@@ -268,7 +268,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
 			     job_ptr);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 
@@ -284,14 +284,14 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		if (req_node_cnt == 0) {
 			info("%pJ required node list has no nodes",
 			     job_ptr);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		if (req_node_cnt > topo_eval->max_nodes) {
 			info("%pJ requires more nodes than currently available (%u>%u)",
 			     job_ptr, req_node_cnt,
 			     topo_eval->max_nodes);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		if (segment_cnt > 1) {
@@ -336,7 +336,11 @@ next_segment:
 	if (!bit_set_count(topo_eval->node_map)) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
-		rc = SLURM_ERROR;
+		if (alloc_node_map) {
+			bit_or(topo_eval->node_map, alloc_node_map);
+			rc = ESLURM_RETRY_EVAL_HINT;
+		} else
+			rc = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 	if (!avail_cpu_per_node)
@@ -356,7 +360,7 @@ next_segment:
 			if (topo_eval->avail_cpus == 0) {
 				debug2("%pJ insufficient resources on required node",
 				       job_ptr);
-				rc = SLURM_ERROR;
+				rc = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			avail_cpu_per_node[i] = topo_eval->avail_cpus;
@@ -507,14 +511,18 @@ next_segment:
 	if (block_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to find block",
 			 job_ptr);
-		rc = SLURM_ERROR;
+		if (alloc_node_map) {
+			bit_or(topo_eval->node_map, alloc_node_map);
+			rc = ESLURM_RETRY_EVAL_HINT;
+		} else
+			rc = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
 	/* Check that all specifically required nodes are in one block  */
 	if (req_nodes_bitmap &&
 	    !bit_super_set(req_nodes_bitmap, block_node_bitmap[block_inx])) {
-		rc = SLURM_ERROR;
+		rc = ESLURM_BREAK_EVAL;
 		info("%pJ requires nodes that do not have shared block",
 		     job_ptr);
 		goto fini;
@@ -551,7 +559,7 @@ next_segment:
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			info("%pJ requires nodes exceed maximum node limit",
 			     job_ptr);
 			goto fini;
@@ -698,6 +706,7 @@ next_segment:
 		}
 		if (topo_eval->max_nodes <= 0) {
 			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			debug("%pJ reached maximum node limit",
 			      job_ptr);
 			goto fini;
@@ -875,7 +884,10 @@ next_segment:
 		rc = SLURM_SUCCESS;
 		goto fini;
 	}
-	rc = SLURM_ERROR;
+
+	rc = ESLURM_RETRY_EVAL_HINT;
+	if (alloc_node_map)
+		bit_or(topo_eval->node_map, alloc_node_map);
 
 fini:
 	if (rem_segment_cnt && !rc ) {
