@@ -3786,6 +3786,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
 		                   buffer);
+		packstr(build_ptr->cli_filter_params, buffer);
 		packstr(build_ptr->cli_filter_plugins, buffer);
 		packstr(build_ptr->cluster_name, buffer);
 		packstr(build_ptr->comm_params, buffer);
@@ -4864,6 +4865,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                         protocol_version, buffer)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpackstr(&build_ptr->cli_filter_params, buffer);
 		safe_unpackstr(&build_ptr->cli_filter_plugins, buffer);
 		safe_unpackstr(&build_ptr->cluster_name, buffer);
 		safe_unpackstr(&build_ptr->comm_params, buffer);

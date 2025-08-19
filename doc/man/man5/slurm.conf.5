@@ -787,6 +787,23 @@ Use script hooks to implement certificate management. See
 .RE
 
 .TP
+\fBCliFilterParameters\fR
+Extra parameters for cli_filter plugins. Multiple options may be
+comma\-separated. Acceptable values at present are:
+.IP
+.RS
+.TP
+\fBcli_filter_lua_path\fR=\fI<path>\fR
+Absolute path to the cli_filter.lua script to be used when cli_filter/lua is
+enabled. If this is not defined, the default path will be used instead (same
+path to slurm.conf).
+
+\fBNOTE\fR: The configured directory containing the cli_filter.lua script should
+have 755 permissions, the script itself 644 and both be owned by SlurmdUser.
+.RE
+.IP
+
+.TP
 \fBCliFilterPlugins\fR
 A comma\-delimited list of command line interface option filter/modification
 plugins. The specified plugins will be executed in the order listed.
