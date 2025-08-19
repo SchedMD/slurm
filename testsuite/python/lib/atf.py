@@ -1205,6 +1205,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
             f"sudo {slurm_prefix}/{component} -V", quiet=True
         )
         .replace("slurm ", "")
+        .strip()
         .split(".")
     )
 
