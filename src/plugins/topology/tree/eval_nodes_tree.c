@@ -145,7 +145,6 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	bitstr_t **switch_node_bitmap = NULL;	/* nodes on this switch */
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
 	int       *switch_required = NULL;	/* set if has required node */
-	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
 	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
@@ -511,11 +510,9 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	 * Use the same indexes as ctx->switch_table in slurmctld.
 	 */
 	bit_or(best_nodes_bitmap, topo_eval->node_map);
-	avail_nodes_bitmap = bit_alloc(node_record_count);
 	for (i = 0, switch_ptr = ctx->switch_table; i < ctx->switch_count;
 	     i++, switch_ptr++) {
 		bit_and(switch_node_bitmap[i], best_nodes_bitmap);
-		bit_or(avail_nodes_bitmap, switch_node_bitmap[i]);
 		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
 	}
 
@@ -534,14 +531,6 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 			     ctx->switch_table[i].link_speed);
 			xfree(node_names);
 		}
-	}
-
-	if (req_nodes_bitmap &&
-	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
-		info("%pJ requires nodes not available on any switch",
-		     job_ptr);
-		rc = SLURM_ERROR;
-		goto fini;
 	}
 
 	/*
@@ -734,7 +723,6 @@ fini:
 
 	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
-	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
