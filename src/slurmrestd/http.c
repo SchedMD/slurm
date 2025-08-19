@@ -145,7 +145,7 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	http_context_t *context = request->context;
 	int rc = EINVAL;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	request->http_version.major = req->http_version.major;
