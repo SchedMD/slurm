@@ -209,27 +209,28 @@ static bool _is_valid_url_char(char buffer)
 static unsigned char _decode_seq(const char *ptr)
 {
 	if (isxdigit(*(ptr + 1)) && isxdigit(*(ptr + 2))) {
-		/* using unsigned char to avoid any rollover */
-		unsigned char high = *(ptr + 1);
-		unsigned char low = *(ptr + 2);
-		unsigned char decoded = (slurm_char_to_hex(high) << 4) +
-					slurm_char_to_hex(low);
+		/* using uint16_t char to catch any overflows */
+		uint16_t high = *(ptr + 1);
+		uint16_t low = *(ptr + 2);
+		uint16_t decoded = ((slurm_char_to_hex(high) << 4) +
+				    slurm_char_to_hex(low));
 
 		//TODO: find more invalid characters?
 		if (decoded == '\0') {
 			error("%s: invalid URL escape sequence for 0x00",
 			      __func__);
 			return '\0';
-		} else if (decoded == 0xff) {
-			error("%s: invalid URL escape sequence for 0xff",
-			      __func__);
+		} else if (decoded >= 0xff) {
+			error("%s: invalid URL escape sequence for 0x%02" PRIx16,
+			      __func__, decoded);
 			return '\0';
 		}
 
-		debug5("%s: URL decoded: 0x%c%c -> %c",
-		       __func__, high, low, decoded);
+		debug5("%s: URL decoded: 0x%c%c -> %c (0x%02" PRIx16 ")",
+		       __func__, (unsigned char) high, (unsigned char) low,
+		       (unsigned char) decoded, decoded);
 
-		return decoded;
+		return (unsigned char) decoded;
 	} else {
 		debug("%s: invalid URL escape sequence: %s", __func__, ptr);
 		return '\0';
