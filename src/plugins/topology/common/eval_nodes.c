@@ -1292,8 +1292,8 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 
 			(void) eval_nodes_cpus_to_use(topo_eval, i,
 						      rem_max_cpus,
-						      min_rem_nodes, NULL,
-						      false);
+						      min_rem_nodes, &maxtasks,
+						      true);
 			if (topo_eval->avail_cpus == 0)
 				continue;
 
