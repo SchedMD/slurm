@@ -763,7 +763,6 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	int       *switch_node_cnt = NULL;	/* total nodes on switch */
 	int       *switch_required = NULL;	/* set if has required node */
 	int *req_switch_required = NULL;
-	bitstr_t  *avail_nodes_bitmap = NULL;	/* nodes on any switch */
 	bitstr_t  *req_nodes_bitmap   = NULL;	/* required node bitmap */
 	bitstr_t  *req2_nodes_bitmap  = NULL;	/* required+lowest prio nodes */
 	bitstr_t  *best_nodes_bitmap  = NULL;	/* required+low prio nodes */
@@ -1171,11 +1170,9 @@ try_again:
 	 * Use the same indexes as ctx->switch_table in slurmctld.
 	 */
 	bit_or(best_nodes_bitmap, topo_eval->node_map);
-	avail_nodes_bitmap = bit_alloc(node_record_count);
 	for (i = 0, switch_ptr = ctx->switch_table; i < ctx->switch_count;
 	     i++, switch_ptr++) {
 		bit_and(switch_node_bitmap[i], best_nodes_bitmap);
-		bit_or(avail_nodes_bitmap, switch_node_bitmap[i]);
 		switch_node_cnt[i] = bit_set_count(switch_node_bitmap[i]);
 	}
 
@@ -1372,7 +1369,6 @@ fini:
 					bit_copybits(
 						switch_node_bitmap[i],
 						start_switch_node_bitmap[i]);
-				FREE_NULL_BITMAP(avail_nodes_bitmap);
 				FREE_NULL_BITMAP(req2_nodes_bitmap);
 				FREE_NULL_BITMAP(best_nodes_bitmap);
 				FREE_NULL_LIST(best_gres);
@@ -1391,7 +1387,6 @@ fini:
 
 	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
-	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req2_nodes_bitmap);
 	FREE_NULL_BITMAP(best_nodes_bitmap);
 	FREE_NULL_BITMAP(start_node_map);
