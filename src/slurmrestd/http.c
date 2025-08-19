@@ -203,7 +203,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 	http_context_t *context = request->context;
 	http_header_entry_t *entry = NULL;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag(NET, "%s: [%s] Header: %s Value: %s",
