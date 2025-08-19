@@ -200,8 +200,6 @@ extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
 		_fname_format(buf, buf_size, job_ptr, job_ptr->std_err);
 	else if (job_ptr->batch_flag == 0)
 		snprintf(buf, buf_size, "%s", "");
-	else if (job_ptr->std_out)
-		_fname_format(buf, buf_size, job_ptr, job_ptr->std_out);
 	else if (job_ptr->array_job_id) {
 		snprintf(buf, buf_size, "%s/slurm-%u_%u.out",
 			 job_ptr->work_dir,
