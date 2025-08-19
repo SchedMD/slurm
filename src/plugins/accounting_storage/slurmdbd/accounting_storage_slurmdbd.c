@@ -148,20 +148,6 @@ char *wckey_month_table = NULL;
 extern void acct_storage_p_send_all(void *db_conn, time_t event_time,
 				    slurm_msg_type_t msg_type);
 
-static void _fill_stdout_str(dbd_job_start_msg_t *req, job_record_t *job_ptr)
-{
-	if (job_ptr->details->std_out) {
-		req->std_out = xstrdup(job_ptr->details->std_out);
-	} else if (job_ptr->batch_flag) {
-		if (job_ptr->array_job_id)
-			xstrfmtcat(req->std_out, "%s/slurm-%%A_%%a.out",
-				   job_ptr->details->work_dir);
-                else
-			xstrfmtcat(req->std_out, "%s/slurm-%%j.out",
-				   job_ptr->details->work_dir);
-	}
-}
-
 static int _send_cluster_tres(void *db_conn,
 			      char *cluster_nodes,
 			      char *tres_str_in,
@@ -2673,7 +2659,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	if (!(slurm_conf.conf_flags & CONF_FLAG_NO_STDIO)) {
 		req.std_err = job_ptr->details->std_err;
 		req.std_in = job_ptr->details->std_in;
-		_fill_stdout_str(&req, job_ptr);
+		req.std_out = job_ptr->details->std_out;
 	}
 	req.submit_line = job_ptr->details->submit_line;
 	/* Only send this once per instance of the job! */
@@ -2703,7 +2689,6 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	/* Message sent to the database, we don't need to do that again. */
 	job_ptr->db_flags |= SLURMDB_JOB_FLAG_START_R;
 
-	xfree(req.std_out);
 	/* This is set while packing the request to avoid locks */
 	xfree(req.node_inx);
 

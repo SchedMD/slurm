@@ -7532,6 +7532,15 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		}
 		job_ptr->batch_flag = 1;
 
+		if (!job_ptr->details->std_out) {
+			if (!job_desc->array_inx)
+				job_ptr->details->std_out =
+					xstrdup("slurm-%j.out");
+			else
+				job_ptr->details->std_out =
+					xstrdup("slurm-%A_%a.out");
+		}
+
 		if (slurm_conf.conf_flags & CONF_FLAG_SJE) {
 			tmp = xstring_bytes2hex(job_desc->env_hash.hash,
 						sizeof(job_desc->env_hash.hash),

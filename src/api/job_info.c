@@ -198,16 +198,8 @@ extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
 	else if (job_ptr->std_err)
 		_fname_format(buf, buf_size, job_ptr, job_ptr->std_err);
-	else if (job_ptr->batch_flag == 0)
+	else
 		snprintf(buf, buf_size, "%s", "");
-	else if (job_ptr->array_job_id) {
-		snprintf(buf, buf_size, "%s/slurm-%u_%u.out",
-			 job_ptr->work_dir,
-			 job_ptr->array_job_id, job_ptr->array_task_id);
-	} else {
-		snprintf(buf, buf_size, "%s/slurm-%u.out",
-			 job_ptr->work_dir, job_ptr->job_id);
-	}
 }
 
 /* Given a job record pointer, return its stdin path in buf */
@@ -230,16 +222,8 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
 	else if (job_ptr->std_out)
 		_fname_format(buf, buf_size, job_ptr, job_ptr->std_out);
-	else if (job_ptr->batch_flag == 0)
+	else
 		snprintf(buf, buf_size, "%s", "");
-	else if (job_ptr->array_job_id) {
-		snprintf(buf, buf_size, "%s/slurm-%u_%u.out",
-			 job_ptr->work_dir,
-			 job_ptr->array_job_id, job_ptr->array_task_id);
-	} else {
-		snprintf(buf, buf_size, "%s/slurm-%u.out",
-			 job_ptr->work_dir, job_ptr->job_id);
-	}
 }
 
 extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
