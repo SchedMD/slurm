@@ -347,7 +347,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 	const void *at = get_buf_data(content->buffer);
 	const size_t length = get_buf_offset(content->buffer);
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP content",
