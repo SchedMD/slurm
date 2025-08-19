@@ -617,7 +617,7 @@ static int _on_content_complete(void *arg)
 	http_context_t *context = request->context;
 	int rc = EINVAL;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->expected_body_length > 0) &&
