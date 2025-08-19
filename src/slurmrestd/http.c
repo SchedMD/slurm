@@ -293,7 +293,7 @@ static int _on_headers_complete(void *arg)
 	request_t *request = arg;
 	http_context_t *context = request->context;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->http_version.major == 1) &&
