@@ -212,22 +212,24 @@ extern unsigned char url_decode_escape_seq(const char *ptr)
 
 		//TODO: find more invalid characters?
 		if (decoded == '\0') {
-			error("%s: invalid URL escape sequence for 0x00",
-			      __func__);
+			log_flag(DATA, "%s: invalid URL escape sequence for 0x00",
+				 __func__);
 			return '\0';
 		} else if (decoded >= 0xff) {
-			error("%s: invalid URL escape sequence for 0x%02" PRIx16,
-			      __func__, decoded);
+			log_flag(DATA, "%s: invalid URL escape sequence for 0x%02" PRIx16,
+				 __func__, decoded);
 			return '\0';
 		}
 
-		debug5("%s: URL decoded: 0x%c%c -> %c (0x%02" PRIx16 ")",
+		log_flag(DATA, "%s: URL decoded: 0x%c%c -> %c (0x%02" PRIx16 ")",
 		       __func__, (unsigned char) high, (unsigned char) low,
 		       (unsigned char) decoded, decoded);
 
 		return (unsigned char) decoded;
 	} else {
-		debug("%s: invalid URL escape sequence: %s", __func__, ptr);
+		log_flag_hex(DATA, ptr, strnlen(ptr, 3),
+			     "%s: invalid URL escape sequence: %s", __func__,
+			     ptr);
 		return '\0';
 	}
 }
