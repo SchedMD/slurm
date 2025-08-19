@@ -205,7 +205,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
 			      job_ptr);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 
@@ -213,14 +213,14 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 		if (req_node_cnt == 0) {
 			info("%pJ required node list has no nodes",
 			      job_ptr);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		if (req_node_cnt > topo_eval->max_nodes) {
 			info("%pJ requires more nodes than currently available (%u>%u)",
 			      job_ptr, req_node_cnt,
 			      topo_eval->max_nodes);
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		req_nodes_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
@@ -233,7 +233,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	if (!bit_set_count(topo_eval->node_map)) {
 		debug("%pJ node_map is empty",
 		      job_ptr);
-		rc = SLURM_ERROR;
+		rc = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 	avail_cpu_per_node = xcalloc(node_record_count, sizeof(uint16_t));
@@ -250,7 +250,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 			if (topo_eval->avail_cpus == 0) {
 				log_flag(SELECT_TYPE, "%pJ insufficient resources on required node",
 				       job_ptr);
-				rc = SLURM_ERROR;
+				rc = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			avail_cpu_per_node[i] = topo_eval->avail_cpus;
@@ -284,7 +284,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = SLURM_ERROR;
+			rc = ESLURM_BREAK_EVAL;
 			log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
 				 job_ptr);
 			goto fini;
@@ -444,7 +444,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 	if (!sufficient) {
 		log_flag(SELECT_TYPE, "insufficient resources currently available for %pJ",
 		      job_ptr);
-		rc = SLURM_ERROR;
+		rc = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
@@ -488,7 +488,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 		}
 		bit_or(topo_eval->node_map, req2_nodes_bitmap);
 		if (topo_eval->max_nodes <= 0) {
-			rc = SLURM_ERROR;
+			rc = ESLURM_RETRY_EVAL_HINT;
 			log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
 				 job_ptr);
 			goto fini;
@@ -620,7 +620,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 					goto fini;
 				}
 				if (topo_eval->max_nodes <= 0) {
-					rc = SLURM_ERROR;
+					rc = ESLURM_RETRY_EVAL_HINT;
 					log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
 						 job_ptr);
 					goto fini;
@@ -669,7 +669,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 					goto fini;
 				}
 				if (topo_eval->max_nodes <= 0) {
-					rc = SLURM_ERROR;
+					rc = ESLURM_RETRY_EVAL_HINT;
 					log_flag(SELECT_TYPE, "%pJ reached maximum node limit",
 						 job_ptr);
 					goto fini;
@@ -684,7 +684,7 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 		rc = SLURM_SUCCESS;
 		goto fini;
 	}
-	rc = SLURM_ERROR;
+	rc = ESLURM_RETRY_EVAL_HINT;
 
 fini:
 	if (rc == SLURM_SUCCESS)
