@@ -3738,6 +3738,7 @@ extern char *slurmdb_make_tres_string(list_t *tres, uint32_t flags)
 	char *tres_str = NULL;
 	list_itr_t *itr;
 	slurmdb_tres_rec_t *tres_rec;
+	bool allow_amend = flags & TRES_STR_FLAG_ALLOW_AMEND;
 
 	if (!tres)
 		return tres_str;
@@ -3749,19 +3750,23 @@ extern char *slurmdb_make_tres_string(list_t *tres, uint32_t flags)
 			continue;
 
 		if ((flags & TRES_STR_FLAG_SIMPLE) || !tres_rec->type)
-			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+			xstrfmtcat(tres_str, "%s%u=",
 				   (tres_str ||
 				    (flags & TRES_STR_FLAG_COMMA1)) ? "," : "",
-				   tres_rec->id, tres_rec->count);
+				   tres_rec->id);
 
 		else
-			xstrfmtcat(tres_str, "%s%s%s%s=%"PRIu64,
+			xstrfmtcat(tres_str, "%s%s%s%s=",
 				   (tres_str ||
 				    (flags & TRES_STR_FLAG_COMMA1)) ? "," : "",
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
-				   tres_rec->name ? tres_rec->name : "",
-				   tres_rec->count);
+				   tres_rec->name ? tres_rec->name : "");
+
+		if (allow_amend && tres_rec->modifier)
+			xstrcatchar(tres_str, tres_rec->modifier);
+
+		xstrfmtcat(tres_str, "%"PRIu64, tres_rec->count);
 	}
 	list_iterator_destroy(itr);
 
