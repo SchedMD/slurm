@@ -55,13 +55,18 @@ See also:
 in order for slurmrestd to be compiled (minimum versions are on the related
 software page linked below):</p>
 <ul>
-	<li><a href="related_software.html#httpparser">HTTP Parser</a>
-	</li>
-	<li><a href="related_software.html#yaml">LibYAML</a> (optional)
-	</li>
+	<li><a href="related_software.html#httpparser">HTTP Parser</a></li>
 	<li><a href="related_software.html#json">JSON-C</a></li>
-	<li><a href="related_software.html#jwt">JWT Authentication</a>
-    (optional, used in this guide)</li>
+</ul>
+
+<p>The following development libraries are optional; if present at compile time
+the related functionality will be available:</p>
+
+<ul>
+	<li><a href="related_software.html#yaml">YAML</a> (YAML support)</li>
+	<li><a href="related_software.html#jwt">JWT</a>
+    (authentication for socket-based clients)</li>
+	<li><a href="tls.html#s2n">s2n</a> (TLS communications)</li>
 </ul>
 
 <p>Additionally, it is highly recommended that you have
