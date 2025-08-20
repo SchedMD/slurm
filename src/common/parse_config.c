@@ -1196,14 +1196,22 @@ static int _parse_include_directive(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 			last_ancestor = xbasename(slurm_conf_path);
 
 		if (xstrstr(file_name, "*")) {
+			rc = -1;
 			if ((!xstrcasecmp(last_ancestor,"slurm.conf")) ||
 			    (!(slurm_conf.debug_flags & DEBUG_FLAG_GLOB_SILENCE))) {
 				error("Slurm does not support glob parsing. %s from %s will be skipped over. If this expected, ignore this message and set DebugFlags=GLOB_SILENCE in your slurm.conf.",
 				      path_name, last_ancestor);
+			} else if (slurm_conf.debug_flags &
+				   DEBUG_FLAG_GLOB_SILENCE) {
+				/*
+				 * Silence failed to include error by behaving
+				 * as if the include directive was parsed
+				 */
+				rc = 1;
 			}
 			xfree(path_name);
 			xfree(file_name);
-			return -1;
+			return rc;
 		} else {
 			rc = s_p_parse_file(hashtbl, hash_val, path_name, flags,
 					    last_ancestor);
