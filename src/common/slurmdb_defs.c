@@ -285,6 +285,18 @@ static char *_get_qos_list_str(list_t *qos_list)
 	return qos_char;
 }
 
+static int _unset_amending_tres(void *x, void *key)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+
+	if (tres_rec->modifier == '-')
+		tres_rec->count = 0;
+
+	tres_rec->modifier = '\0';
+
+	return 0;
+}
+
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 {
 	xassert(cluster_rec);
@@ -4027,12 +4039,14 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 					  uint32_t flags, list_t *sub_tres_list)
 {
 	const char *tmp_str = tres;
+	char sign;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	int remove_found = 0;
 	list_t *mgr_tres_list =
 		sub_tres_list ? sub_tres_list : assoc_mgr_tres_list;
+	bool allow_amend = flags & TRES_STR_FLAG_ALLOW_AMEND;
 	xassert(tres_list);
 
 	if (!tres || !tres[0])
@@ -4092,7 +4106,15 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			      "no value found %s", tres);
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
+
+		sign = *(++tmp_str);
+
+		if ((sign != '+') && (sign != '-'))
+			sign = '\0';
+		else
+			tmp_str++;
+
+		count = slurm_atoull(tmp_str);
 
 		if (!*tres_list)
 			*tres_list = list_create(slurmdb_destroy_tres_rec);
@@ -4102,6 +4124,8 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
 			tres_rec->id = id;
 			tres_rec->count = count;
+			if (allow_amend && sign)
+				tres_rec->modifier = sign;
 			list_append(*tres_list, tres_rec);
 			if (count == INFINITE64)
 				remove_found++;
@@ -4110,6 +4134,10 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			       "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
 			tres_rec->count = count;
+			if (allow_amend && sign)
+				tres_rec->modifier = sign;
+			else
+				tres_rec->modifier = '\0';
 		} else if (flags & TRES_STR_FLAG_SUM) {
 			if (count != INFINITE64) {
 				if (tres_rec->count == INFINITE64)
@@ -4133,6 +4161,30 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 					tres_rec->count =
 						MIN(tres_rec->count, count);
 			}
+		} else if (allow_amend && (flags & TRES_STR_FLAG_COMB_AMEND) &&
+			   tres_rec->modifier) {
+			/*
+			 * We will calculate the resulting value for tres_rec
+			 * but we will avoid negative values and overflows.
+			 * This operation REQUIRES that only up to two TRES of
+			 * the same type can appear in the same string. This
+			 * operation is only called from mod_tres_str(), which
+			 * ensures amending TRES (if present) will appear in
+			 * the string before the currently stored absolute
+			 * values.
+			 */
+
+			if (tres_rec->modifier == '+') {
+				tres_rec->count += count;
+				if ((tres_rec->count < count) ||
+				    (tres_rec->count > MAX_VAL64))
+					tres_rec->count = MAX_VAL64;
+			} else {
+				tres_rec->count = count - tres_rec->count;
+				if (tres_rec->count > count)
+					tres_rec->count = 0;
+			}
+			tres_rec->modifier = '\0';
 		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
@@ -4154,6 +4206,13 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			      "was expecting to remove %d, but removed %d",
 			      remove_found, removed);
 	}
+
+	/*
+	 * If we are combining relative values, the resulting TRES list
+	 * needs to be cleaned up and only hold absolute values
+	 */
+	if (*tres_list && (flags & TRES_STR_FLAG_COMB_AMEND))
+		list_for_each(*tres_list, _unset_amending_tres, NULL);
 
 	if (*tres_list && (flags & TRES_STR_FLAG_SORT_ID))
 		list_sort(*tres_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);

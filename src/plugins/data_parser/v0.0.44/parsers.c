@@ -7705,6 +7705,7 @@ static const parser_t PARSER_ARRAY(WCKEY)[] = {
 static const parser_t PARSER_ARRAY(TRES)[] = {
 	add_skip(alloc_secs), /* sreport func */
 	add_skip(rec_count), /* not packed */
+	add_skip(modifier), /* not packed */
 	add_parse_req(STRING, type, "type", "TRES type (CPU, MEM, etc)"),
 	add_parse(STRING, name, "name", "TRES name (if applicable)"),
 	add_parse(UINT32, id, "id", "ID used in the database"),

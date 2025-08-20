@@ -309,6 +309,9 @@ typedef struct {
 	uint64_t count; /* Count of TRES on a given cluster, 0 if
 			 * listed generically. */
 	uint32_t id;    /* Database ID for the TRES */
+	char modifier; /* Only used for amending TRES: '-' for negative values,
+			* '+' for positive values. Normal TRES should just
+			* have this set to 0 ('\0') (DON'T PACK) */
 	char *name;     /* Name of TRES if type is generic like GRES
 			 * or License. Make include optional GRES type
 			 * (e.g. "gpu" or "gpu:tesla") */
