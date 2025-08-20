@@ -154,10 +154,18 @@ extern int conn_g_load_ca_cert(char *cert_file);
 extern void *conn_g_create(const conn_args_t *conn_args);
 /*
  * Destroy connection state and release memory
+ * Note: Use FREE_NULL_CONN() instead of calling directly
  * IN conn - connection to destroy
  * IN close_fds - True to close input and output file descriptors
  */
 extern void conn_g_destroy(void *conn, bool close_fds);
+
+#define FREE_NULL_CONN(_X)                        \
+	do {                                      \
+		if (_X)                           \
+			conn_g_destroy(_X, true); \
+		_X = NULL;                        \
+	} while (0)
 
 /*
  * Attempt TLS connection negotiation
