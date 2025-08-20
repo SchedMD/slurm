@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "August 2025" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "September 2025" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -373,6 +373,11 @@ that job will not be considered for scheduling even if that job might preempt
 other jobs which would release sufficient group resources for the pending
 job to be initiated.
 
+\fBNOTE\fR: TRES limit modifications of any kind using "+=" or "\-=" syntax
+will always produce a value between 0 and 18446744073709551610.
+Trying to set a negative value using "\-=" will set that TRES to 0, even if
+there was not a TRES limit present beforehand.
+
 .TP
 \fBDefaultQOS\fR=<\fIdefault_qos\fR>
 The QOS this association and its children will use by default if allowed in the
@@ -418,7 +423,7 @@ To clear an existing value, set a new value of \-1.
 .IP
 
 .TP
-\fBGrpTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+\fBGrpTRES\fR=TRES[+|\-]=<\fImax_TRES\fR>[,TRES[+|\-]=<\fImax_TRES\fR>,...]
 Maximum number of TRES able to be allocated by running jobs in aggregate for
 this association and its children.
 
@@ -426,7 +431,7 @@ Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .TP
-\fBGrpTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+\fBGrpTRESMins\fR=TRES[+|\-]=<\fIminutes\fR>[,TRES[+|\-]=<\fIminutes\fR>,...]
 Maximum number of TRES minutes that can possibly be used by past, present, and
 future jobs in this association and its children.
 
@@ -445,7 +450,7 @@ they are able to run inside the limit.
 .IP
 
 .TP
-\fBGrpTRESRunMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+\fBGrpTRESRunMins\fR=TRES[+|\-]=<\fIminutes\fR>[,TRES[+|\-]=<\fIminutes\fR>,...]
 Maximum number of TRES minutes able to be allocated by running jobs in this
 association and its children. This takes into consideration time limit of
 running jobs and consumes it. If the limit is reached no new jobs are started
@@ -498,11 +503,11 @@ association. Default is the cluster's limit.
 To clear an existing value, set a new value of \-1.
 .IP
 
-.IP \fBMaxTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.IP \fBMaxTRES\fR=TRES[+|\-]=<\fImax_TRES\fR>[,TRES[+|\-]=<\fImax_TRES\fR>,...]
 .PD 0
-.IP \fBMaxTRESPJ\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.IP \fBMaxTRESPJ\fR=TRES[+|\-]=<\fImax_TRES\fR>[,TRES[+|\-]=<\fImax_TRES\fR>,...]
 .PD 0
-.IP \fBMaxTRESPerJob\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.IP \fBMaxTRESPerJob\fR=TRES[+|\-]=<\fImax_TRES\fR>[,TRES[+|\-]=<\fImax_TRES\fR>,...]
 .PD
 Maximum number of TRES each job can use in this association.
 This is overridden if set directly on a user.
@@ -511,11 +516,11 @@ Default is the cluster's limit.
 Refer to the \fBTRES information\fR section below for further details.
 .IP
 
-.IP \fBMaxTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+.IP \fBMaxTRESMins\fR=TRES[+|\-]=<\fIminutes\fR>[,TRES[+|\-]=<\fIminutes\fR>,...]
 .PD 0
-.IP \fBMaxTRESMinsPJ\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+.IP \fBMaxTRESMinsPJ\fR=TRES[+|\-]=<\fIminutes\fR>[,TRES[+|\-]=<\fIminutes\fR>,...]
 .PD 0
-.IP \fBMaxTRESMinsPerJob\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
+.IP \fBMaxTRESMinsPerJob\fR=TRES[+|\-]=<\fIminutes\fR>[,TRES[+|\-]=<\fIminutes\fR>,...]
 .PD
 Maximum number of TRES minutes each job can use in this association.
 This is overridden if set directly on a user.
@@ -524,9 +529,9 @@ Default is the cluster's limit.
 Refer to the \fBTRES information\fR section below for further details.
 .IP
 
-.IP \fBMaxTRESPN\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.IP \fBMaxTRESPN\fR=TRES[+|\-]=<\fImax_TRES\fR>[,TRES[+|\-]=<\fImax_TRES\fR>,...]
 .PD 0
-.IP \fBMaxTRESPerNode\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
+.IP \fBMaxTRESPerNode\fR=TRES[+|\-]=<\fImax_TRES\fR>[,TRES[+|\-]=<\fImax_TRES\fR>,...]
 .PD
 Maximum number of TRES each node in a job allocation can use in this association.
 This is overridden if set directly on a user.
@@ -1701,6 +1706,9 @@ If starting a job would cause any of its group limit to be exceeded,
 that job will not be considered for scheduling even if that job might preempt
 other jobs which would release sufficient group resources for the pending
 job to be initiated.
+
+\fBNOTE\fR: All TRES options (GrpTRES, MaxTRES, etc.) can also use the same
+"[+|\-]=" syntax available for association-based entities.
 
 .TP
 \fBDescription\fR
