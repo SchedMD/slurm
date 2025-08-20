@@ -69,8 +69,6 @@
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
 
-#define MAX_PURGE_LIMIT 50000 /* Number of records that are purged at a time
-				 so that locks can be periodically released. */
 #define MAX_ARCHIVE_AGE (60 * 60 * 24 * 60) /* If archive data is older than
 					       this then archive by month to
 					       handle large datasets. */
@@ -5181,7 +5179,7 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 				       "order by %s asc LIMIT %d",
 				       sql_table,col_name, period_end,
 				       cluster_name, col_name,
-				       MAX_PURGE_LIMIT);
+				       slurmdbd_conf->max_purge_limit);
 
 		break;
 
@@ -5190,7 +5188,8 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
 				       "%s <= %ld order by %s asc LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end, col_name, MAX_PURGE_LIMIT);
+				       period_end, col_name,
+				       slurmdbd_conf->max_purge_limit);
 		break;
 
 	case PURGE_JOB_ENV:
@@ -5204,7 +5203,8 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 				       "e.deleted = 1",
 				       cluster_name, sql_table, hash_col,
 				       cluster_name, parent_table, col_name,
-				       period_end, col_name, MAX_PURGE_LIMIT,
+				       period_end, col_name,
+				       slurmdbd_conf->max_purge_limit,
 				       hash_col);
 		break;
 	default:
@@ -5212,7 +5212,8 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 				       "%s <= %ld && time_end != 0 "
 				       "order by %s asc LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end, col_name, MAX_PURGE_LIMIT);
+				       period_end, col_name,
+				       slurmdbd_conf->max_purge_limit);
 
 		break;
 	}
@@ -5293,14 +5294,15 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 				       "deleted = 1 && cluster='%s' "
 				       "LIMIT %d",
 				       cols, sql_table,
-				       cluster_name, MAX_PURGE_LIMIT);
+				       cluster_name,
+				       slurmdbd_conf->max_purge_limit);
 
 		break;
 	default:
 		query = xstrdup_printf("select %s from \"%s_%s\" where "
 				       "deleted = 1 LIMIT %d",
 				       cols, cluster_name, sql_table,
-				       MAX_PURGE_LIMIT);
+				       slurmdbd_conf->max_purge_limit);
 
 		break;
 	}
@@ -5569,20 +5571,22 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 			"delete from \"%s\" where "
 			"deleted=1 && cluster='%s' LIMIT %d",
 			sql_table, cluster_name,
-			MAX_PURGE_LIMIT);
+			slurmdbd_conf->max_purge_limit);
 
 		break;
 	case PURGE_JOB:
 		purge_query = xstrdup_printf(
 			"delete from \"%s_%s\" where deleted=1 LIMIT %d;"
 			"delete from \"%s_%s\" where deleted=1 LIMIT %d;",
-			cluster_name, job_script_table, MAX_PURGE_LIMIT,
-			cluster_name, job_env_table, MAX_PURGE_LIMIT);
+			cluster_name, job_script_table,
+			slurmdbd_conf->max_purge_limit, cluster_name,
+			job_env_table, slurmdbd_conf->max_purge_limit);
 		/* fall through */
 	default:
 		xstrfmtcat(purge_query,
 			   "delete from \"%s_%s\" where deleted=1 LIMIT %d;",
-			   cluster_name, sql_table, MAX_PURGE_LIMIT);
+			   cluster_name, sql_table,
+			   slurmdbd_conf->max_purge_limit);
 		break;
 	}
 
@@ -5681,9 +5685,9 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 		/*
 		 * Don't loop this query, just do it once, since we are only
-		 * archiving and purging MAX_PURGE_LIMIT rows at a time.
-		 * mysql_db_delete_affected_rows will return < 0 on failure or
-		 * 0 if no records are affected.
+		 * archiving and purging slurmdbd_conf->max_purge_limit rows at
+		 * a time. mysql_db_delete_affected_rows will return < 0 on
+		 * failure or 0 if no records are affected.
 		 */
 		if ((rc = mysql_db_delete_affected_rows(
 			     mysql_conn, purge_query)) > 0) {
