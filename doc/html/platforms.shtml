@@ -17,7 +17,6 @@ Currently supported distributions include:
 <li>SUSE Linux Enterprise Server (SLES) 15</li>
 <li>Ubuntu 20.04</li>
 <li>Ubuntu 22.04</li>
-<li>Ubuntu 23.04</li>
 <li>Ubuntu 24.04</li>
 </ul>
 </li>
@@ -68,6 +67,6 @@ share GPUs between multiple compute processes</li>
 GPUs between multiple compute processes</li>
 </ul>
 
-<p style="text-align:center;">Last modified 01 January 2025</p>
+<p style="text-align:center;">Last modified 20 August 2025</p>
 
 <!--#include virtual="footer.txt"-->
