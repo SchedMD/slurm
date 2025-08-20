@@ -2718,6 +2718,34 @@ static void _check_mysql_concat_is_sane(mysql_conn_t *mysql_conn)
 }
 
 /*
+ * REGEXP_REPLACE() was not added to MySQL until version 8.0.4 and
+ * not added to MariaDB until version 10.0.5.
+ *
+ * Since this is required for certain queries, we need to pre-check
+ * with a test query.
+ *
+ */
+static void _check_regexp_replace(mysql_conn_t *mysql_conn)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row = NULL;
+	char *query = "SELECT REGEXP_REPLACE('abc123', '[0-9]+', 'X');";
+
+	/* Run a sanity query to confirm REGEXP_REPLACE actually works */
+	result = mysql_db_query_ret(mysql_conn, query, 0);
+	if (!result)
+		fatal("%s: null result from query `%s`", __func__, query);
+
+	if (mysql_num_rows(result) != 1)
+		fatal("%s: invalid results from query `%s`", __func__, query);
+
+	if (!(row = mysql_fetch_row(result)) || !row[0])
+		fatal("%s: REGEXP_REPLACE() appears defective on this server. Please upgrade to MariaDB >= 10.0.5 or MySQL >= 8.0.4.", __func__);
+
+	mysql_free_result(result);
+}
+
+/*
  * Check the values of innodb global database variables, and print
  * an error if the values are not at least half the recommendation.
  */
@@ -2898,6 +2926,7 @@ extern int init(void)
 		exit(as_mysql_print_dbver(mysql_conn));
 
 	_check_mysql_concat_is_sane(mysql_conn);
+	_check_regexp_replace(mysql_conn);
 	_check_database_variables(mysql_conn);
 
 	rc = _as_mysql_acct_check_tables(mysql_conn);
