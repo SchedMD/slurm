@@ -152,6 +152,11 @@ extern int conn_g_load_ca_cert(char *cert_file);
  * RET ptr to TLS state
  */
 extern void *conn_g_create(const conn_args_t *conn_args);
+/*
+ * Destroy connection state and release memory
+ * IN conn - connection to destroy
+ * IN close_fds - True to close input and output file descriptors
+ */
 extern void conn_g_destroy(void *conn, bool close_fds);
 
 /*
