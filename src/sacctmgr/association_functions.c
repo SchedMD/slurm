@@ -219,7 +219,8 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	uint32_t mins = NO_VAL;
 	uint64_t tmp64;
 	char *tmp_char = NULL;
-	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
+	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE |
+		TRES_STR_FLAG_ALLOW_AMEND;
 
 	if (!assoc)
 		return set;

@@ -2644,7 +2644,8 @@ extern void mod_tres_str(char **out, char *mod, char *cur,
 {
 	uint32_t tres_str_flags = TRES_STR_FLAG_REMOVE |
 		TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_SIMPLE |
-		TRES_STR_FLAG_NO_NULL;
+		TRES_STR_FLAG_NO_NULL | TRES_STR_FLAG_ALLOW_AMEND |
+		TRES_STR_FLAG_COMB_AMEND;
 
 	xassert(out);
 	xassert(name);
