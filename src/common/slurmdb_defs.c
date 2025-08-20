@@ -3892,6 +3892,7 @@ extern char *slurmdb_format_tres_str(
 	char *tres_str = NULL;
 	char *val_unit = NULL;
 	char *tmp_str = tres_in;
+	char *sign;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 
@@ -3922,7 +3923,9 @@ extern char *slurmdb_format_tres_str(
 			char *tres_name;
 
 			while (tmp_str[end]) {
-				if (tmp_str[end] == '=')
+				if ((tmp_str[end] == '=') ||
+				    (tmp_str[end] == '+') ||
+				    (tmp_str[end] == '-'))
 					break;
 				end++;
 			}
@@ -3948,6 +3951,11 @@ extern char *slurmdb_format_tres_str(
 			error("%s: no value given as TRES type/id.", __func__);
 			return NULL;
 		}
+
+		sign = tmp_str - 1;
+		if ((*sign != '+') && (*sign != '-'))
+			sign = "";
+
 		count = strtoull(++tmp_str, &val_unit, 10);
 		if (val_unit && *val_unit != ',' && *val_unit != '\0' &&
 		    tres_rec->type) {
@@ -3962,14 +3970,14 @@ extern char *slurmdb_format_tres_str(
 		if (tres_str)
 			xstrcat(tres_str, ",");
 		if (simple || !tres_rec->type)
-			xstrfmtcat(tres_str, "%u=%"PRIu64"",
-				   tres_rec->id, count);
+			xstrfmtcat(tres_str, "%u=%.1s%"PRIu64"",
+				   tres_rec->id, sign, count);
 
 		else
-			xstrfmtcat(tres_str, "%s%s%s=%"PRIu64"",
+			xstrfmtcat(tres_str, "%s%s%s=%.1s%"PRIu64"",
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
-				   tres_rec->name ? tres_rec->name : "",
+				   tres_rec->name ? tres_rec->name : "", sign,
 				   count);
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
