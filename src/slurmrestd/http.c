@@ -76,8 +76,6 @@ typedef struct {
 	/* RFC7230-6.1 "Connection: Close" */
 	bool connection_close;
 	int expect; /* RFC7231-5.1.1 expect requested */
-	/* Connection context */
-	http_context_t *context;
 	/* Body of request (may be NULL) */
 	char *body;
 	/* if provided: expected body length to process or 0 */
@@ -148,7 +146,6 @@ static void _request_init(http_context_t *context)
 	*request = (request_t) {
 		.url = URL_INITIALIZER,
 		.method = HTTP_REQUEST_INVALID,
-		.context = context,
 		.keep_alive = -1,
 	};
 
@@ -160,7 +157,6 @@ static void _request_free_members(http_context_t *context)
 	request_t *request = &context->request;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->context == context);
 
 	url_free_members(&request->url);
 	FREE_NULL_LIST(request->headers);
@@ -707,14 +703,12 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 		.on_content_complete = _on_content_complete,
 	};
 	int rc = SLURM_SUCCESS;
-	request_t *request = &context->request;
 	ssize_t bytes_parsed = -1;
 	buf_t *buffer = NULL;
 
 	xassert(context->magic == MAGIC);
 	xassert(context->con);
 	xassert(context->ref);
-	xassert(request->context == context);
 
 	if (!context->parser &&
 	    (rc = http_parser_g_new_parse_request(
