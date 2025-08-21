@@ -221,7 +221,7 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 	return rc;
 }
 
-static int _operations_router_reject(const on_http_request_args_t *args,
+static int _operations_router_reject(on_http_request_args_t *args,
 				     const char *err,
 				     http_status_code_t err_code,
 				     const char *body_encoding)
