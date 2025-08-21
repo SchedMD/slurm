@@ -122,21 +122,50 @@ static void _free_http_header(void *header)
 	free_http_header(header);
 }
 
-static void _free_request_t(request_t *request)
+static void _request_init(http_context_t *context)
 {
-	if (!request)
-		return;
+	request_t *request = context->request;
 
+	xassert(request);
+	xassert(context->magic == MAGIC);
+
+	*request = (request_t) {
+		.magic = MAGIC_REQUEST_T,
+		.url = URL_INITIALIZER,
+		.method = HTTP_REQUEST_INVALID,
+		.context = context,
+		.keep_alive = -1,
+	};
+
+	request->headers = list_create(_free_http_header);
+}
+
+static void _request_free_members(http_context_t *context)
+{
+	request_t *request = context->request;
+
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
-	request->magic = ~MAGIC_REQUEST_T;
-	FREE_NULL_LIST(request->headers);
+	xassert(request->context == context);
+
 	url_free_members(&request->url);
+	FREE_NULL_LIST(request->headers);
+	xfree(request->last_header);
 	xfree(request->content_type);
 	xfree(request->accept);
 	xfree(request->body);
 	xfree(request->body_encoding);
-	request->body_length = 0;
-	xfree(request);
+}
+
+/* reset state of request */
+static void _request_reset(http_context_t *context)
+{
+	xassert(context->magic == MAGIC);
+
+	FREE_NULL_REST_AUTH(context->auth);
+
+	_request_free_members(context);
+	_request_init(context);
 }
 
 static int _on_request(const http_parser_request_t *req, void *arg)
@@ -578,6 +607,9 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	/* ensure connection gets closed */
 	(void) conmgr_queue_close_fd(request->context->con);
 
+	/* reset connection to avoid any possible auth inheritance */
+	_request_reset(context);
+
 	return error_number;
 }
 
@@ -647,8 +679,7 @@ static int _on_content_complete(void *arg)
 		context->con = NULL;
 	}
 
-	context->request = NULL;
-	_free_request_t(request);
+	_request_reset(context);
 
 	return SLURM_SUCCESS;
 }
@@ -671,23 +702,8 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	xassert(context->magic == MAGIC);
 	xassert(context->con);
 	xassert(context->ref);
-	xassert(!context->auth);
-
-	if (!request) {
-		/* Connection has already been closed */
-		log_flag(NET, "%s: [%s] Rejecting continued HTTP connection",
-			 __func__, conmgr_con_get_name(context->ref));
-		rc = SLURM_UNEXPECTED_MSG_ERROR;
-		goto cleanup;
-	}
-
 	xassert(request->magic == MAGIC_REQUEST_T);
-	if (request->context)
-		xassert(request->context == context);
-	request->context = context;
-
-	/* make sure there is no auth context inherited */
-	FREE_NULL_REST_AUTH(context->auth);
+	xassert(request->context == context);
 
 	if (!context->parser &&
 	    (rc = http_parser_g_new_parse_request(
@@ -735,7 +751,6 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 
 cleanup:
 	FREE_NULL_BUFFER(buffer);
-	FREE_NULL_REST_AUTH(context->auth);
 	return rc;
 }
 
@@ -782,18 +797,17 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 					  on_http_request_t on_http_request)
 {
 	http_context_t *context = _http_context_new();
-	request_t *request = xmalloc(sizeof(*request));
 
 	xassert(context->magic == MAGIC);
 	xassert(!context->con);
 	xassert(!context->request);
-	request->magic = MAGIC_REQUEST_T;
 	context->con = con;
 	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
-	context->request = request;
-	request->headers = list_create(_free_http_header);
-	request->url = URL_INITIALIZER;
+
+	/* Must use type since context->request is void ptr */
+	context->request = xmalloc(sizeof(request_t));
+	_request_init(context);
 
 	return context;
 }
@@ -801,13 +815,21 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
+	request_t *request = NULL;
 
 	if (!context)
 		return;
 	xassert(context->magic == MAGIC);
 
 	http_parser_g_free_parse_request(&context->parser);
-	_free_request_t(context->request);
+
+	/* release request */
+	request = context->request;
+	xassert(request->magic == MAGIC_REQUEST_T);
+	_request_free_members(context);
+	request->magic = ~MAGIC_REQUEST_T;
+	xfree(context->request);
+
 	/* auth should have been released long before now */
 	xassert(!context->auth);
 	FREE_NULL_REST_AUTH(context->auth);
