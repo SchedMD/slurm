@@ -174,7 +174,7 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	http_context_t *context = request->context;
 	int rc = EINVAL;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	request->http_version.major = req->http_version.major;
@@ -232,7 +232,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 	http_context_t *context = request->context;
 	http_header_entry_t *entry = NULL;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag(NET, "%s: [%s] Header: %s Value: %s",
@@ -322,7 +322,7 @@ static int _on_headers_complete(void *arg)
 	request_t *request = arg;
 	http_context_t *context = request->context;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->http_version.major == 1) &&
@@ -376,7 +376,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 	const void *at = get_buf_data(content->buffer);
 	const size_t length = get_buf_offset(content->buffer);
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP content",
@@ -632,7 +632,7 @@ static int _on_message_complete_request(request_t *request)
 		.body_encoding = request->body_encoding
 	};
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((rc = context->on_http_request(&args)))
@@ -649,7 +649,7 @@ static int _on_content_complete(void *arg)
 	http_context_t *context = request->context;
 	int rc = EINVAL;
 
-	xassert(context->magic = MAGIC);
+	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->expected_body_length > 0) &&
