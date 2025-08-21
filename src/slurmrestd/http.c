@@ -108,7 +108,7 @@ typedef struct http_context_s {
 	/* http parser plugin state */
 	http_parser_state_t *parser;
 	/* http request_t */
-	void *request;
+	request_t *request;
 } http_context_t;
 
 /* default keep_alive value which appears to be implementation specific */
