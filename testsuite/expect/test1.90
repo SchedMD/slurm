@@ -175,7 +175,7 @@ subtest {$mem_mask == $full_mask} "Verify affinity mask for a job step with memo
 #
 # Run all tasks all bound to the same CPU's memory (local CPU)
 #
-send "$srun -n $task_cnt --cpu-bind=rank --mem-bind=local ./$file_prog\r"
+send "$srun -n $task_cnt  --distribution=*:block --cpu-bind=core --mem-bind=local ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		if {$expect_out(2,string) != $expect_out(3,string)} {
