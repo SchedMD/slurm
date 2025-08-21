@@ -589,7 +589,7 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 {
 	request_t *request = &context->request;
 	send_http_response_args_t args = {
-		.con = request->context->con,
+		.con = context->con,
 		.http_major = request->http_version.major,
 		.http_minor = request->http_version.minor,
 		.status_code = status_code,
@@ -610,10 +610,10 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	if (request->connection_close ||
 	    _valid_http_version(request->http_version.major,
 				request->http_version.minor))
-		send_http_connection_close(request->context);
+		send_http_connection_close(context);
 
 	/* ensure connection gets closed */
-	(void) conmgr_queue_close_fd(request->context->con);
+	(void) conmgr_queue_close_fd(context->con);
 
 	/* reset connection to avoid any possible auth inheritance */
 	_request_reset(context);
