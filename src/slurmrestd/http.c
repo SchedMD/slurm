@@ -456,7 +456,7 @@ static char *_fmt_header(const char *name, const char *value)
 static int _write_fmt_header(conmgr_fd_t *con, const char *name,
 			     const char *value)
 {
-	const char *buffer = _fmt_header(name, value);
+	char *buffer = _fmt_header(name, value);
 	int rc = conmgr_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
 	return rc;
