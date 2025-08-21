@@ -46,6 +46,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
+#include "src/slurmrestd/http.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
@@ -500,22 +501,24 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	data_t *resp = data_new();
 	char *body = NULL;
 	http_status_code_t e;
+	void *auth = NULL;
 
 	xassert(op_path);
 	debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
 	       __func__, _name(args), (uintptr_t) op_path->callback,
 	       callback_tag, args->path);
 
+	auth = http_context_set_auth(args->context, NULL);
+
 	rc = wrap_openapi_ctxt_callback(_name(args), args->method, params,
-					query, callback_tag, resp,
-					args->context->auth, parser, op_path,
-					meta);
+					query, callback_tag, resp, auth, parser,
+					op_path, meta);
 
 	/*
 	 * Clear auth context after callback is complete. Client has to provide
 	 * full auth for every request already.
 	 */
-	FREE_NULL_REST_AUTH(args->context->auth);
+	FREE_NULL_REST_AUTH(auth);
 
 	if (data_get_type(resp) != DATA_TYPE_NULL) {
 		int rc2;
