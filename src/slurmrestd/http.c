@@ -361,12 +361,13 @@ static int _on_headers_complete(void *arg)
 	if (request->expect) {
 		int rc = EINVAL;
 		send_http_response_args_t args = {
-			.con = context->con,
 			.http_major = request->http_version.major,
 			.http_minor = request->http_version.minor,
 			.status_code = request->expect,
 			.body_length = 0,
 		};
+
+		args.con = conmgr_fd_get_ref(context->ref);
 
 		if ((rc = send_http_response(&args)))
 			return rc;
