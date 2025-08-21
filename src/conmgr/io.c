@@ -436,8 +436,36 @@ static buf_t *_buf_clone(const void *buffer, const size_t bytes)
 	return buf;
 }
 
+/*
+ * Append buffer to output queue
+ * WARNING: caller must hold mgr.mutex lock
+ * IN con - connection to queue outgoing buffer
+ * IN buf - buffer to queue as output (takes ownership)
+ * RET SLURM_SUCCESS or error
+ */
+static int _append_output(conmgr_fd_t *con, buf_t *buf)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	log_flag(NET, "%s: [%s] write of %u bytes queued",
+		 __func__, con->name, get_buf_offset(buf));
+
+	log_flag_hex(NET_RAW, get_buf_data(buf), get_buf_offset(buf),
+		     "%s: queuing up write", __func__);
+
+	list_append(con->out, buf);
+
+	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
+		con->last_write = timespec_now();
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	return SLURM_SUCCESS;
+}
+
 static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 {
+	int rc = EINVAL;
 	buf_t *buf = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -450,22 +478,10 @@ static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 	buf = _buf_clone(buffer, bytes);
 
 	slurm_mutex_lock(&mgr.mutex);
-
-	log_flag(NET, "%s: [%s] write of %zu bytes queued",
-		 __func__, con->name, bytes);
-
-	log_flag_hex(NET_RAW, get_buf_data(buf), get_buf_offset(buf),
-		     "%s: queuing up write", __func__);
-
-	list_append(con->out, buf);
-
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-		con->last_write = timespec_now();
-
-	EVENT_SIGNAL(&mgr.watch_sleep);
+	rc = _append_output(con, buf);
 	slurm_mutex_unlock(&mgr.mutex);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
