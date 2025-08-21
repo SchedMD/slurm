@@ -3802,9 +3802,11 @@ extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
 	int id;
+	bool allow_amend = tres_str_flags & TRES_STR_FLAG_ALLOW_AMEND;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	char *node_name = NULL;
+	char sign;
 	list_t *char_list = NULL;
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0]
@@ -3831,7 +3833,14 @@ extern char *slurmdb_make_tres_string_from_simple(
 			      "no value found");
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
+
+		sign = *(++tmp_str);
+
+		if ((sign != '+') && (sign != '-'))
+			sign = '\0';
+		else
+			tmp_str++;
+		count = slurm_atoull(tmp_str);
 
 		if (count == NO_VAL64)
 			goto get_next;
@@ -3846,6 +3855,10 @@ extern char *slurmdb_make_tres_string_from_simple(
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "");
+
+		if (allow_amend && sign)
+			xstrcatchar(tres_str, sign);
+
 		if (count != INFINITE64) {
 			if (nodes) {
 				node_name = find_hostname(count, nodes);
