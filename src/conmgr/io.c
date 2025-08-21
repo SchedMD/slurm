@@ -449,6 +449,8 @@ static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 	/* TODO: would be nice to avoid this copy */
 	buf = _buf_clone(buffer, bytes);
 
+	slurm_mutex_lock(&mgr.mutex);
+
 	log_flag(NET, "%s: [%s] write of %zu bytes queued",
 		 __func__, con->name, bytes);
 
@@ -460,9 +462,9 @@ static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
 		con->last_write = timespec_now();
 
-	slurm_mutex_lock(&mgr.mutex);
 	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
+
 	return SLURM_SUCCESS;
 }
 
