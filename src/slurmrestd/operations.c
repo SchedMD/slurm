@@ -227,7 +227,6 @@ static int _operations_router_reject(on_http_request_args_t *args,
 				     const char *body_encoding)
 {
 	send_http_response_args_t send_args = {
-		.con = args->context->con,
 		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
@@ -241,13 +240,15 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.value = "Close",
 	};
 
+	send_args.con = conmgr_fd_get_ref(args->con);
+
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
 
 	(void) send_http_response(&send_args);
 
 	/* close connection on error */
-	conmgr_queue_close_fd(args->context->con);
+	conmgr_queue_close_fd(send_args.con);
 
 	FREE_NULL_LIST(send_args.headers);
 
@@ -537,11 +538,11 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		 *
 		 */
 		send_http_response_args_t send_args = {
-			.con = args->context->con,
 			.http_major = args->http_major,
 			.http_minor = args->http_minor,
 			.status_code = HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED,
 		};
+		send_args.con = conmgr_fd_get_ref(args->con);
 		e = send_args.status_code;
 		rc = send_http_response(&send_args);
 	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
@@ -578,13 +579,14 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		rc = _operations_router_reject(args, body, e, write_mime);
 	} else {
 		send_http_response_args_t send_args = {
-			.con = args->context->con,
 			.http_major = args->http_major,
 			.http_minor = args->http_minor,
 			.status_code = HTTP_STATUS_CODE_SUCCESS_OK,
 			.body = NULL,
 			.body_length = 0,
 		};
+
+		send_args.con = conmgr_fd_get_ref(args->con);
 
 		if (body) {
 			send_args.body = body;
