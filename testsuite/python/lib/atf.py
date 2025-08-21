@@ -565,12 +565,18 @@ def is_slurmrestd_running():
     """Checks if slurmrestd is running.
     Needs to be run after the related properties are set.
     """
+
+    def safe_request_openapi():
+        try:
+            return request_slurmrestd("openapi/v3")
+        except Exception as err:
+            logging.warn(err)
+            return None
+
     # TODO: We could check also if the required plugins/parsers in properties
     #       are in the returned specs, but the format still depends on the version.
     #       Once v0.0.39 is removed, we could add the extra check.
-    return repeat_until(
-        lambda: request_slurmrestd("openapi/v3"), lambda r: r.status_code == 200
-    )
+    return repeat_until(safe_request_openapi, lambda r: r and r.status_code == 200)
 
 
 def is_slurmctld_running(quiet=False):

@@ -90,6 +90,16 @@ def admin_level(setup):
 
 
 @pytest.fixture(scope="function")
+def cleanup_crash(setup):
+    yield
+
+    if not atf.is_slurmrestd_running():
+        atf.start_slurmrestd()
+        # We have a new port
+        atf.properties["openapi_config"].host = atf.properties["slurmrestd_url"]
+
+
+@pytest.fixture(scope="function")
 def create_accounts():
     atf.run_command(
         f"sacctmgr -i create account {account_name}",
@@ -1458,3 +1468,42 @@ def test_reservations(slurm, flags, admin_level):
     assert resv_name not in [
         r.name for r in slurm.slurm_v0043_get_reservations().reservations
     ], f"Reservation {resv_name} should be deleted"
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmrestd") < (25, 5, 1),
+    reason="Ticket 23038 (!1574): slurmrestd - Fix crash for /reservations endpoint when a valid reservation_desc_msg body without node_list string array is submitted.",
+)
+def test_resv_crash(slurm, admin_level, cleanup_crash):
+    """Check for xfree crash (bug 23038)"""
+    from openapi_client.models.v0043_reservation_mod_req import V0043ReservationModReq
+    from openapi_client.models.v0043_reservation_desc_msg import V0043ReservationDescMsg
+    from openapi_client.models.v0043_uint64_no_val_struct import V0043Uint64NoValStruct
+    from openapi_client.models.v0043_uint32_no_val_struct import V0043Uint32NoValStruct
+
+    # Don't overlap with other resv in case of restd crash/restart
+    resv_name = "crash_test_resv"
+    users = ["root", "atf"]
+    duration = V0043Uint32NoValStruct(number=1, set=True)
+    start_time = V0043Uint64NoValStruct(
+        number=int(time.time()) + 10000000,
+        set=True,
+    )
+    partition = "primary"
+
+    # Create a reservation with empty node_list
+    reservation_info = V0043ReservationDescMsg(
+        name=resv_name,
+        users=users,
+        duration=duration,
+        start_time=start_time,
+        partition=partition,
+        node_list=[],
+    )
+    # Exception means restd crashed
+    resp = slurm.slurm_v0043_post_reservations(
+        V0043ReservationModReq(reservations=[reservation_info])
+    )
+    assert (
+        not resp.warnings and not resp.errors
+    ), "We should be able to get the server response from this message"
