@@ -164,17 +164,12 @@ extern int init_rest_auth(bool become_user,
 extern int rest_authenticate_http_request(on_http_request_args_t *args)
 {
 	int rc = ESLURM_AUTH_CRED_INVALID;
-	rest_auth_context_t *context =
-		(rest_auth_context_t *) args->context->auth;
-
-	if (context) {
-		fatal("%s: authentication context already set for connection: %s",
-		      __func__, conmgr_fd_get_name(args->context->con));
-	}
-
-	args->context->auth = context = rest_auth_g_new();
+	rest_auth_context_t *context = rest_auth_g_new();
 
 	_check_magic(context);
+
+	if (http_context_set_auth(args->context, context))
+		fatal_abort("authentication context already set for connection");
 
 	/* continue if already authenticated via plugin */
 	if (context->plugin_id)
@@ -194,7 +189,10 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 			break;
 	}
 
-	FREE_NULL_REST_AUTH(args->context->auth);
+	if (http_context_set_auth(args->context, NULL) != context)
+		fatal_abort("authentication context unexpectedly changed");
+
+	FREE_NULL_REST_AUTH(context);
 	return rc;
 }
 
