@@ -168,4 +168,12 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt);
  */
 extern void *http_context_get_auth(http_context_t *context);
 
+/*
+ * Set and Get (arbitrary) auth pointer from context
+ * IN context - connection context
+ * IN auth - (arbitrary) auth pointer to set into context
+ * RET Prior auth pointer or auth arg if context==NULL
+ */
+extern void *http_context_set_auth(http_context_t *context, void *auth);
+
 #endif /* SLURMRESTD_HTTP_H */

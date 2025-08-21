@@ -850,3 +850,18 @@ extern void *http_context_get_auth(http_context_t *context)
 
 	return context->auth;
 }
+
+extern void *http_context_set_auth(http_context_t *context, void *auth)
+{
+	void *old = NULL;
+
+	if (!context)
+		return auth;
+
+	xassert(context->magic == MAGIC);
+
+	old = context->auth;
+	context->auth = auth;
+
+	return old;
+}
