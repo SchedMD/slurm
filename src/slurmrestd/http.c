@@ -622,10 +622,10 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	return error_number;
 }
 
-static int _on_message_complete_request(request_t *request)
+static int _on_message_complete_request(http_context_t *context)
 {
 	int rc = EINVAL;
-	http_context_t *context = request->context;
+	request_t *request = &context->request;
 	on_http_request_args_t args = {
 		.method = request->method,
 		.headers = request->headers,
@@ -674,7 +674,7 @@ static int _on_content_complete(void *arg)
 				    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
 
-	if ((rc = _on_message_complete_request(request)))
+	if ((rc = _on_message_complete_request(context)))
 		return rc;
 
 	if (request->keep_alive) {
