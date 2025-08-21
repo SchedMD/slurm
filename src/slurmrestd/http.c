@@ -95,6 +95,22 @@ typedef struct {
 	} http_version;
 } request_t;
 
+typedef struct http_context_s {
+	int magic; /* MAGIC */
+	/* reference to assigned connection */
+	conmgr_fd_ref_t *ref;
+	/* assigned connection */
+	conmgr_fd_t *con;
+	/* Authentication context (auth_context_type_t) */
+	void *auth;
+	/* callback to call on each HTTP request */
+	on_http_request_t on_http_request;
+	/* http parser plugin state */
+	http_parser_state_t *parser;
+	/* http request_t */
+	void *request;
+} http_context_t;
+
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
 

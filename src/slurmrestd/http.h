@@ -58,21 +58,8 @@ typedef struct on_http_request_args_s on_http_request_args_t;
  */
 typedef int (*on_http_request_t)(on_http_request_args_t *args);
 
-typedef struct {
-	int magic;
-	/* reference to assigned connection */
-	conmgr_fd_ref_t *ref;
-	/* assigned connection */
-	conmgr_fd_t *con;
-	/* Authentication context (auth_context_type_t) */
-	void *auth;
-	/* callback to call on each HTTP request */
-	on_http_request_t on_http_request;
-	/* http parser plugin state */
-	http_parser_state_t *parser;
-	/* http request_t */
-	void *request;
-} http_context_t;
+/* Opaque connection context */
+typedef struct http_context_s http_context_t;
 
 typedef struct on_http_request_args_s {
 	const http_request_method_t method; /* HTTP request method */
