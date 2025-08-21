@@ -272,7 +272,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 			request->keep_alive = ibuffer;
 		} else {
 			error("%s: [%s] invalid Keep-Alive value %s",
-			      __func__, conmgr_fd_get_name(context->con),
+			      __func__, conmgr_con_get_name(context->ref),
 			      header->value);
 			return _send_reject(
 				context, HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
