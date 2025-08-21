@@ -161,4 +161,11 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
  */
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt);
 
+/*
+ * Get (arbitrary) auth pointer from context
+ * IN context - connection context
+ * RET auth pointer or NULL
+ */
+extern void *http_context_get_auth(http_context_t *context);
+
 #endif /* SLURMRESTD_HTTP_H */

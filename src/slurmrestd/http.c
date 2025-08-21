@@ -840,3 +840,13 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	context->magic = ~MAGIC;
 	xfree(context);
 }
+
+extern void *http_context_get_auth(http_context_t *context)
+{
+	if (!context)
+		return NULL;
+
+	xassert(context->magic == MAGIC);
+
+	return context->auth;
+}
