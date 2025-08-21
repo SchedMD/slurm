@@ -184,8 +184,8 @@ static void _request_reset(http_context_t *context)
 
 static int _on_request(const http_parser_request_t *req, void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	int rc = EINVAL;
 
 	xassert(context->magic == MAGIC);
@@ -241,8 +241,8 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 
 static int _on_header(const http_parser_header_t *header, void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	http_header_entry_t *entry = NULL;
 
 	xassert(context->magic == MAGIC);
@@ -331,8 +331,8 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 
 static int _on_headers_complete(void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 
 	xassert(context->magic == MAGIC);
 
@@ -382,8 +382,8 @@ static int _on_headers_complete(void *arg)
 
 static int _on_content(const http_parser_content_t *content, void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	const void *at = get_buf_data(content->buffer);
 	const size_t length = get_buf_offset(content->buffer);
 
@@ -659,8 +659,8 @@ static int _on_message_complete_request(request_t *request)
 
 static int _on_content_complete(void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	int rc = EINVAL;
 
 	xassert(context->magic == MAGIC);
@@ -719,7 +719,7 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 
 	if (!context->parser &&
 	    (rc = http_parser_g_new_parse_request(
-		     conmgr_con_get_name(context->ref), &callbacks, request,
+		     conmgr_con_get_name(context->ref), &callbacks, context,
 		     &context->parser))) {
 		log_flag(NET, "%s: [%s] Creating new HTTP parser failed: %s",
 			 __func__, conmgr_con_get_name(context->ref),
