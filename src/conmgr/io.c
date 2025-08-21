@@ -422,10 +422,9 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in->size = size;
 }
 
-extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
-				   const size_t bytes)
+static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 {
-	buf_t *buf;
+	buf_t *buf = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -453,6 +452,15 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 	EVENT_SIGNAL(&mgr.watch_sleep);
 	slurm_mutex_unlock(&mgr.mutex);
 	return SLURM_SUCCESS;
+}
+
+extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
+				   const size_t bytes)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(buffer || !bytes);
+
+	return _write_data(con, buffer, bytes);
 }
 
 static int _get_input_buffer(const conmgr_fd_t *con, const void **data_ptr,
