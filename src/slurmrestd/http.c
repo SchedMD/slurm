@@ -61,10 +61,8 @@
 #define MAGIC 0xDFAFFEEF
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 
-#define MAGIC_REQUEST_T 0xdbadaaaf
 /* Data to handed around by http_parser to call backs */
 typedef struct {
-	int magic;
 	/* Requested URL */
 	url_t url;
 	/* Request HTTP method */
@@ -108,7 +106,7 @@ typedef struct http_context_s {
 	/* http parser plugin state */
 	http_parser_state_t *parser;
 	/* http request_t */
-	request_t *request;
+	request_t request;
 } http_context_t;
 
 /* default keep_alive value which appears to be implementation specific */
@@ -142,13 +140,12 @@ static void _free_http_header(void *header)
 
 static void _request_init(http_context_t *context)
 {
-	request_t *request = context->request;
+	request_t *request = &context->request;
 
 	xassert(request);
 	xassert(context->magic == MAGIC);
 
 	*request = (request_t) {
-		.magic = MAGIC_REQUEST_T,
 		.url = URL_INITIALIZER,
 		.method = HTTP_REQUEST_INVALID,
 		.context = context,
@@ -160,10 +157,9 @@ static void _request_init(http_context_t *context)
 
 static void _request_free_members(http_context_t *context)
 {
-	request_t *request = context->request;
+	request_t *request = &context->request;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 	xassert(request->context == context);
 
 	url_free_members(&request->url);
@@ -193,7 +189,6 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	int rc = EINVAL;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	request->http_version.major = req->http_version.major;
 	request->http_version.minor = req->http_version.minor;
@@ -251,7 +246,6 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 	http_header_entry_t *entry = NULL;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag(NET, "%s: [%s] Header: %s Value: %s",
 		 __func__, conmgr_con_get_name(context->ref), header->name,
@@ -341,7 +335,6 @@ static int _on_headers_complete(void *arg)
 	http_context_t *context = request->context;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->http_version.major == 1) &&
 	    (request->http_version.minor == 0)) {
@@ -395,7 +388,6 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 	const size_t length = get_buf_offset(content->buffer);
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP content",
 	       __func__, conmgr_con_get_name(context->ref));
@@ -596,8 +588,7 @@ extern int send_http_response(const send_http_response_args_t *args)
 static int _send_reject(http_context_t *context, http_status_code_t status_code,
 			slurm_err_t error_number)
 {
-	request_t *request = context->request;
-	xassert(request->magic == MAGIC_REQUEST_T);
+	request_t *request = &context->request;
 	send_http_response_args_t args = {
 		.con = request->context->con,
 		.http_major = request->http_version.major,
@@ -651,7 +642,6 @@ static int _on_message_complete_request(request_t *request)
 	};
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if (!(args.con = conmgr_con_link(context->ref)) ||
 	    !(args.name = conmgr_con_get_name(args.con))) {
@@ -674,7 +664,6 @@ static int _on_content_complete(void *arg)
 	int rc = EINVAL;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->expected_body_length > 0) &&
 	    (request->expected_body_length != request->body_length)) {
@@ -719,14 +708,13 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 		.on_content_complete = _on_content_complete,
 	};
 	int rc = SLURM_SUCCESS;
-	request_t *request = context->request;
+	request_t *request = &context->request;
 	ssize_t bytes_parsed = -1;
 	buf_t *buffer = NULL;
 
 	xassert(context->magic == MAGIC);
 	xassert(context->con);
 	xassert(context->ref);
-	xassert(request->magic == MAGIC_REQUEST_T);
 	xassert(request->context == context);
 
 	if (!context->parser &&
@@ -824,13 +812,10 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 
 	xassert(context->magic == MAGIC);
 	xassert(!context->con);
-	xassert(!context->request);
 	context->con = con;
 	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
 
-	/* Must use type since context->request is void ptr */
-	context->request = xmalloc(sizeof(request_t));
 	_request_init(context);
 
 	return context;
@@ -839,7 +824,6 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
-	request_t *request = NULL;
 
 	if (!context)
 		return;
@@ -848,11 +832,7 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	http_parser_g_free_parse_request(&context->parser);
 
 	/* release request */
-	request = context->request;
-	xassert(request->magic == MAGIC_REQUEST_T);
 	_request_free_members(context);
-	request->magic = ~MAGIC_REQUEST_T;
-	xfree(context->request);
 
 	/* auth should have been released long before now */
 	xassert(!context->auth);
