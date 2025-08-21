@@ -437,6 +437,17 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 				   const size_t bytes);
 
 /*
+ * Copy and write binary data to connection
+ * NOTE: type=CON_TYPE_RAW only
+ * IN ref reference to connection
+ * IN buffer pointer to buffer
+ * IN bytes number of bytes in buffer to write
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_queue_write_data(conmgr_fd_ref_t *ref, const void *buffer,
+				       const size_t bytes);
+
+/*
  * Write packed msg to connection (from callback).
  * NOTE: type=CON_TYPE_RPC only
  * IN con conmgr connection ptr

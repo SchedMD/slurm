@@ -493,6 +493,19 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 	return _write_data(con, buffer, bytes);
 }
 
+extern int conmgr_con_queue_write_data(conmgr_fd_ref_t *ref, const void *buffer,
+				       const size_t bytes)
+{
+	if (!ref)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+	xassert(buffer || !bytes);
+
+	return _write_data(ref->con, buffer, bytes);
+}
+
 static int _get_input_buffer(const conmgr_fd_t *con, const void **data_ptr,
 			     size_t *bytes_ptr)
 {
