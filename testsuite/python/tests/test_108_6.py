@@ -12,6 +12,8 @@ nodes = list(atf.get_nodes(live=False).keys())
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_config_parameter("SelectType", "select/cons_tres")
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
     atf.require_config_parameter("TopologyPlugin", "topology/tree")
     atf.require_config_parameter(
         "SwitchName", f"{switch_name} Nodes={nodes[0]}", source="topology"
