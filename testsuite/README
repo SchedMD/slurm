@@ -1052,6 +1052,7 @@ test_146_1   Test MaxCPUsPerNode and MaxCPUsPerSocket
 test_147_#   Testing SPANK.
 ===========================
 test_147_1   Test SPANK contained when SlurmdParameters=contain_spank
+test_147_2   Test SPANK remote spank init failure modes
 
 test_149_#   Testing AcctGatherProfileType.
 ===========================================

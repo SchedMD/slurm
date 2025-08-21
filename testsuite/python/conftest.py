@@ -366,3 +366,19 @@ def use_memory_program(module_setup):
     yield bin_path
 
     atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
+def spank_fail_lib(module_setup):
+    """
+    Returns the bin path of the spank .so that will fail if configured.
+    """
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/spank_fail_test.c"
+    bin_path = os.getcwd() + "/spank_fail_test.so"
+
+    atf.compile_against_libslurm(src_path, bin_path, full=True, shared=True)
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
