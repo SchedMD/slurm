@@ -586,7 +586,6 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 {
 	request_t *request = &context->request;
 	send_http_response_args_t args = {
-		.con = context->con,
 		.http_major = request->http_version.major,
 		.http_minor = request->http_version.minor,
 		.status_code = status_code,
@@ -595,6 +594,8 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	};
 
 	xassert(context->magic == MAGIC);
+
+	args.con = conmgr_fd_get_ref(context->ref);
 
 	/* If we don't have a requested client version, default to 0.9 */
 	if ((args.http_major == 0) && (args.http_minor == 0))
@@ -610,7 +611,8 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 		send_http_connection_close(context);
 
 	/* ensure connection gets closed */
-	(void) conmgr_queue_close_fd(context->con);
+	conmgr_con_queue_close_free(&context->ref);
+	context->con = NULL;
 
 	/* reset connection to avoid any possible auth inheritance */
 	_request_reset(context);
