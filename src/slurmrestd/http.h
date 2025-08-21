@@ -80,6 +80,8 @@ typedef struct on_http_request_args_s {
 	const char *path; /* requested URL path (may be NULL) */
 	const char *query; /* requested URL query (may be NULL) */
 	http_context_t *context; /* calling context (do not xfree) */
+	conmgr_fd_ref_t *con; /* reference to connection */
+	const char *name; /* connection name */
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
 	const char *content_type; /* header content-type */

@@ -50,6 +50,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/http_parser.h"
 
 #include "src/slurmrestd/http.h"
@@ -635,11 +637,17 @@ static int _on_message_complete_request(request_t *request)
 	xassert(context->magic == MAGIC);
 	xassert(request->magic == MAGIC_REQUEST_T);
 
-	if ((rc = context->on_http_request(&args)))
+	if (!(args.con = conmgr_con_link(context->ref)) ||
+	    !(args.name = conmgr_con_get_name(args.con))) {
+		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+		log_flag(NET, "%s: connection missing: %s",
+			 __func__, slurm_strerror(rc));
+	} else if ((rc = context->on_http_request(&args)))
 		log_flag(NET, "%s: [%s] on_http_request rejected: %s",
 			 __func__, conmgr_con_get_name(context->ref),
 			 slurm_strerror(rc));
 
+	conmgr_fd_free_ref(&args.con);
 	return rc;
 }
 
