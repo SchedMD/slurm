@@ -422,6 +422,20 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in->size = size;
 }
 
+/* Copy buffer into new buf_t */
+static buf_t *_buf_clone(const void *buffer, const size_t bytes)
+{
+	buf_t *buf = NULL;
+
+	xassert(bytes > 0);
+
+	buf = init_buf(bytes);
+
+	memmove(get_buf_data(buf), buffer, bytes);
+
+	return buf;
+}
+
 static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 {
 	buf_t *buf = NULL;
@@ -432,10 +446,8 @@ static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
 	if (!bytes)
 		return SLURM_SUCCESS;
 
-	buf = init_buf(bytes);
-
 	/* TODO: would be nice to avoid this copy */
-	memmove(get_buf_data(buf), buffer, bytes);
+	buf = _buf_clone(buffer, bytes);
 
 	log_flag(NET, "%s: [%s] write of %zu bytes queued",
 		 __func__, con->name, bytes);
