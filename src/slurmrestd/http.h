@@ -63,7 +63,7 @@ typedef struct http_context_s http_context_t;
 
 typedef struct on_http_request_args_s {
 	const http_request_method_t method; /* HTTP request method */
-	list_t *headers; /* list of http_header_entry_t from client */
+	list_t *headers; /* list_t of http_header_t* from client */
 	const char *path; /* requested URL path (may be NULL) */
 	const char *query; /* requested URL query (may be NULL) */
 	http_context_t *context; /* calling context (do not xfree) */
