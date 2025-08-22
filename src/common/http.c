@@ -418,3 +418,38 @@ extern void free_http_header(http_header_t *header)
 	xfree(header->value);
 	xfree(header);
 }
+
+/* find operator against http_header_t */
+static int _http_header_find_key(void *x, void *y)
+{
+	const http_header_t *entry = x;
+	const char *key = y;
+
+	xassert(entry->name);
+
+	if (key == NULL)
+		return 0;
+
+	/* case insensitive compare per rfc2616:4.2 */
+	if (entry->name && !xstrcasecmp(entry->name, key))
+		return 1;
+	else
+		return 0;
+}
+
+extern const char *find_http_header(list_t *headers, const char *name)
+{
+	http_header_t *header = NULL;
+
+	if (!headers || !name)
+		return NULL;
+
+	header = (http_header_t *) list_find_first(headers,
+						   _http_header_find_key,
+						   (void *) name);
+
+	if (header)
+		return header->value;
+	else
+		return NULL;
+}

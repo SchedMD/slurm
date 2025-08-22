@@ -78,13 +78,6 @@ typedef struct on_http_request_args_s {
 	const char *body_encoding; /* body encoding type or NULL */
 } on_http_request_args_t;
 
-/* find http header from header list
- * IN headers List of http_header_entry_t
- * IN name name of header to find
- * RET ptr to header value or NULL if not found
- */
-extern const char *find_http_header(list_t *headers, const char *name);
-
 /*
  * Call back for new connection to setup HTTP
  *
