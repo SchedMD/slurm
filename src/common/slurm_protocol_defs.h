@@ -1622,6 +1622,11 @@ extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
 extern void slurm_free_requeue_msg(requeue_msg_t *);
+/*
+ * Free()s the data pointer of a given type or returns !SLURM_SUCCESS if type is
+ *	unsupported.
+ * WARNING: Use slurm_free_msg_members() for slurm_msg_t instead
+ */
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
