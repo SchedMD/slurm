@@ -448,9 +448,7 @@ static void *_ping_ctld_thread(void *arg)
 			      __func__, resp.msg_type, ping->control_machine);
 			break;
 		}
-		slurm_free_msg_data(resp.msg_type, resp.data);
-		if (resp.auth_cred)
-			auth_g_destroy(resp.auth_cred);
+		slurm_free_msg_members(&resp);
 	}
 
 	slurm_mutex_lock(&ping_mutex);
