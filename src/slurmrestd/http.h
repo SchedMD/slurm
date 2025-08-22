@@ -43,7 +43,6 @@
 #include "src/common/list.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/interfaces/http_parser.h"
 
 struct on_http_request_args_s;
 typedef struct on_http_request_args_s on_http_request_args_t;
