@@ -874,7 +874,7 @@ extern int send_registration_msg(uint32_t status)
 	}
 
 	_handle_node_reg_resp(&resp_msg);
-	slurm_free_msg_data(resp_msg.msg_type, resp_msg.data);
+	slurm_free_msg_members(&resp_msg);
 
 	if (errno) {
 		ret_val = errno;
