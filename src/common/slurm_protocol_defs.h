@@ -1642,6 +1642,8 @@ extern void slurm_free_crontab_update_response_msg(
 	crontab_update_response_msg_t *msg);
 extern void slurm_free_tls_cert_request_msg(tls_cert_request_msg_t *msg);
 extern void slurm_free_tls_cert_response_msg(tls_cert_response_msg_t *msg);
+extern void slurm_free_tls_cert_response_msg_members(tls_cert_response_msg_t
+							     *msg);
 extern void slurm_free_suspend_exc_update_msg(suspend_exc_update_msg_t *msg);
 extern void slurm_free_sbcast_cred_req_msg(sbcast_cred_req_msg_t *msg);
 

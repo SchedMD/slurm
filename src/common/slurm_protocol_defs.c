@@ -4792,12 +4792,21 @@ extern void slurm_free_tls_cert_request_msg(tls_cert_request_msg_t *msg)
 	xfree(msg);
 }
 
-extern void slurm_free_tls_cert_response_msg(tls_cert_response_msg_t *msg)
+extern void slurm_free_tls_cert_response_msg_members(tls_cert_response_msg_t
+							     *msg)
 {
 	if (!msg)
 		return;
 
 	xfree(msg->signed_cert);
+}
+
+extern void slurm_free_tls_cert_response_msg(tls_cert_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	slurm_free_tls_cert_response_msg_members(msg);
 	xfree(msg);
 }
 
