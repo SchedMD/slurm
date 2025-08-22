@@ -180,6 +180,13 @@ extern const char *url_get_scheme_string(const url_scheme_t scheme);
 extern data_t *parse_url_path(const char *path, bool convert_types,
 			      bool allow_templates);
 
+/*
+ * Decodes URL escape sequence (denoted via %XX)
+ * IN ptr - pointing to % character
+ * RET \0 on error or decoded character
+ */
+extern unsigned char url_decode_escape_seq(const char *ptr);
+
 typedef struct {
 	url_scheme_t scheme;
 	char *host;
