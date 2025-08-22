@@ -235,7 +235,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
 		.body_length = (err ? strlen(err) : 0),
 	};
-	http_header_entry_t close = {
+	http_header_t close = {
 		.name = "Connection",
 		.value = "Close",
 	};

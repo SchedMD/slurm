@@ -232,7 +232,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 {
 	http_context_t *context = arg;
 	request_t *request = &context->request;
-	http_header_entry_t *entry = NULL;
+	http_header_t *entry = NULL;
 
 	xassert(context->magic == MAGIC);
 
@@ -525,7 +525,7 @@ extern int send_http_response(const send_http_response_args_t *args)
 	/* send along any requested headers */
 	if (args->headers) {
 		list_itr_t *itr = list_iterator_create(args->headers);
-		http_header_entry_t *header = NULL;
+		http_header_t *header = NULL;
 		while ((header = list_next(itr))) {
 			if ((rc = _write_fmt_header(args->con, header->name,
 						    header->value)))
@@ -768,10 +768,10 @@ static http_context_t *_http_context_new(void)
 	return context;
 }
 
-/* find operator against http_header_entry_t */
+/* find operator against http_header_t */
 static int _http_header_find_key(void *x, void *y)
 {
-	http_header_entry_t *entry = (http_header_entry_t *)x;
+	http_header_t *entry = (http_header_t *) x;
 	const char *key = (const char *)y;
 	xassert(entry->name);
 
@@ -786,13 +786,14 @@ static int _http_header_find_key(void *x, void *y)
 
 extern const char *find_http_header(list_t *headers, const char *name)
 {
-	http_header_entry_t *header = NULL;
+	http_header_t *header = NULL;
 
 	if (!headers || !name)
 		return NULL;
 
-	header = (http_header_entry_t *)list_find_first(
-		headers, _http_header_find_key, (void *)name);
+	header = (http_header_t *) list_find_first(headers,
+						   _http_header_find_key,
+						   (void *) name);
 
 	if (header)
 		return header->value;
