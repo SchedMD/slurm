@@ -120,14 +120,6 @@ typedef struct {
 } send_http_response_args_t;
 
 /*
- * Send HTTP close notification.
- * 	Warns the client that we are about to close the connection.
- * IN args arguments of response
- * RET SLURM_SUCCESS or error
- */
-extern int send_http_connection_close(http_context_t *ctxt);
-
-/*
  * Send HTTP response
  * IN args arguments of response
  * RET SLURM_SUCCESS or error

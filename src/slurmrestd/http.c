@@ -480,7 +480,13 @@ static char *_fmt_header_num(const char *name, size_t value)
 	return xstrdup_printf("%s: %zu" CRLF, name, value);
 }
 
-extern int send_http_connection_close(http_context_t *ctxt)
+/*
+ * Send HTTP close notification header
+ *	Warns the client that we are about to close the connection.
+ * IN ctxt - connection context
+ * RET SLURM_SUCCESS or error
+ */
+static int _send_http_connection_close(http_context_t *ctxt)
 {
 	return _write_fmt_header(ctxt->con, "Connection", "Close");
 }
@@ -608,7 +614,7 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	if (request->connection_close ||
 	    _valid_http_version(request->http_version.major,
 				request->http_version.minor))
-		send_http_connection_close(context);
+		_send_http_connection_close(context);
 
 	/* ensure connection gets closed */
 	conmgr_con_queue_close_free(&context->ref);
@@ -684,7 +690,7 @@ static int _on_content_complete(void *arg)
 	if (request->connection_close) {
 		/* Notify client that this connection will be closed now */
 		if (request->connection_close)
-			send_http_connection_close(context);
+			_send_http_connection_close(context);
 
 		conmgr_con_queue_close_free(&context->ref);
 		context->con = NULL;
