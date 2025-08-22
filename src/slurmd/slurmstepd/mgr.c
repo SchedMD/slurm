@@ -2166,7 +2166,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	if (rc) {
 		error("%s: IO setup failed: %s", __func__, slurm_strerror(rc));
 
-		step->task[0]->estatus = rc;
+		step->task[0]->estatus = W_EXITCODE(1, 0);
 		slurm_mutex_lock(&step_complete.lock);
 		step_complete.step_rc = rc;
 		slurm_mutex_unlock(&step_complete.lock);
