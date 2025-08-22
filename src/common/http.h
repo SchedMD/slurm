@@ -147,6 +147,7 @@ typedef enum {
 	URL_SCHEME_INVALID = 0,
 	URL_SCHEME_HTTP,
 	URL_SCHEME_HTTPS,
+	URL_SCHEME_UNIX, /* UNIX Socket - Not IANA registered */
 	URL_SCHEME_INVALID_MAX /* place holder */
 } url_scheme_t;
 

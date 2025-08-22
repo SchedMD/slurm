@@ -995,80 +995,58 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 	return false;
 }
 
-extern int conmgr_create_listen_socket(conmgr_con_type_t type,
-				       conmgr_con_flags_t flags,
-				       const char *listen_on,
-				       const conmgr_events_t *events, void *arg)
+static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
+			      const char *listen_on, const char *unixsock,
+			      const conmgr_events_t *events, void *arg)
 {
-	static const char UNIX_PREFIX[] = "unix:";
-	const char *unixsock = xstrstr(listen_on, UNIX_PREFIX);
+	slurm_addr_t addr = { 0 };
+	int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+	int rc = EINVAL;
+
+	if (fd < 0)
+		fatal("%s: socket() failed: %m", __func__);
+
+	addr = sockaddr_from_unix_path(unixsock);
+
+	if (addr.ss_family != AF_UNIX)
+		fatal("%s: [%s] Invalid Unix socket path: %s",
+		      __func__, listen_on, unixsock);
+
+	log_flag(CONMGR, "%s: [%pA] attempting to bind() and listen() UNIX socket",
+		 __func__, &addr);
+
+	if (unlink(unixsock) && (errno != ENOENT))
+		error("Error unlink(%s): %m", unixsock);
+
+	/* bind() will EINVAL if socklen=sizeof(addr) */
+	if ((rc = bind(fd, (const struct sockaddr *) &addr,
+		       sizeof(struct sockaddr_un))))
+		fatal("%s: [%s] Unable to bind UNIX socket: %m",
+		      __func__, listen_on);
+
+	fd_set_oob(fd, 0);
+
+	rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
+	if (rc < 0)
+		fatal("%s: [%s] unable to listen(): %m",
+		      __func__, listen_on);
+
+	return add_connection(type, NULL, fd, -1, events, flags, &addr,
+			      sizeof(addr), true, unixsock, NULL, arg);
+}
+
+static int _add_socket_listener(conmgr_con_type_t type,
+				conmgr_con_flags_t flags, const char *listen_on,
+				url_t *url, const conmgr_events_t *events,
+				void *arg)
+{
 	int rc = SLURM_SUCCESS;
 	struct addrinfo *addrlist = NULL;
 
-	/* check for name local sockets */
-	if (unixsock) {
-		slurm_addr_t addr = {0};
-		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-
-		if (fd < 0)
-			fatal("%s: socket() failed: %m", __func__);
-
-		unixsock += sizeof(UNIX_PREFIX) - 1;
-		if (unixsock[0] == '\0')
-			fatal("%s: [%s] Invalid UNIX socket",
-			      __func__, listen_on);
-
-		addr = sockaddr_from_unix_path(unixsock);
-
-		if (addr.ss_family != AF_UNIX)
-			fatal("%s: [%s] Invalid Unix socket path: %s",
-			      __func__, listen_on, unixsock);
-
-		log_flag(CONMGR, "%s: [%pA] attempting to bind() and listen() UNIX socket",
-			 __func__, &addr);
-
-		if (unlink(unixsock) && (errno != ENOENT))
-			error("Error unlink(%s): %m", unixsock);
-
-		/* bind() will EINVAL if socklen=sizeof(addr) */
-		if ((rc = bind(fd, (const struct sockaddr *) &addr,
-			       sizeof(struct sockaddr_un))))
-			fatal("%s: [%s] Unable to bind UNIX socket: %m",
-			      __func__, listen_on);
-
-		fd_set_oob(fd, 0);
-
-		rc = listen(fd, SLURM_DEFAULT_LISTEN_BACKLOG);
-		if (rc < 0)
-			fatal("%s: [%s] unable to listen(): %m",
-			      __func__, listen_on);
-
-		return add_connection(type, NULL, fd, -1, events, flags, &addr,
-				      sizeof(addr), true, unixsock, NULL, arg);
-	} else {
-		url_t url = URL_INITIALIZER;
-		buf_t buffer = {
-			.magic = BUF_MAGIC,
-		};
-
-		buffer.head = (void *) listen_on;
-		buffer.processed = buffer.size = strlen(listen_on);
-
-		/* split up host and port */
-		if ((rc = url_parser_g_parse("listener", &buffer, &url)))
-			fatal("%s: Unable to parse %s: %s",
-			      __func__, listen_on, slurm_strerror(rc));
-
-		if (url.scheme == URL_SCHEME_HTTPS)
-			flags |= CON_FLAG_TLS_SERVER;
-
-		/* resolve out the host and port if provided */
-		if (!(addrlist = xgetaddrinfo(url.host, url.port)))
-			fatal("%s: Unable to listen on %s:%s(%s): %m",
-			      __func__, url.host, url.port, listen_on);
-
-		url_free_members(&url);
-	}
+	/* resolve out the host and port if provided */
+	if (!(addrlist = xgetaddrinfo(url->host, url->port)))
+		fatal("%s: Unable to listen on %s:%s(%s): %m",
+		      __func__, url->host, url->port, listen_on);
 
 	/*
 	 * Create a socket for every address returned
@@ -1121,7 +1099,46 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 	}
 
 	freeaddrinfo(addrlist);
+	return rc;
+}
 
+extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+				       conmgr_con_flags_t flags,
+				       const char *listen_on,
+				       const conmgr_events_t *events, void *arg)
+{
+	int rc = SLURM_SUCCESS;
+	url_t url = URL_INITIALIZER;
+	buf_t buffer = {
+		.magic = BUF_MAGIC,
+		.head = (void *) listen_on,
+		.processed = strlen(listen_on),
+		.size = strlen(listen_on),
+		.shadow = true,
+	};
+
+	if ((rc = url_parser_g_parse(__func__, &buffer, &url)))
+		fatal("%s: Unable to parse %s: %s",
+		      __func__, listen_on, slurm_strerror(rc));
+
+	switch (url.scheme) {
+	case URL_SCHEME_UNIX:
+		rc = _add_unix_listener(type, flags, listen_on, url.path,
+					events, arg);
+		break;
+	case URL_SCHEME_HTTPS:
+		flags |= CON_FLAG_TLS_SERVER;
+		/* fall through */
+	case URL_SCHEME_HTTP:
+	case URL_SCHEME_INVALID:
+		rc = _add_socket_listener(type, flags, listen_on, &url, events,
+					  arg);
+		break;
+	case URL_SCHEME_INVALID_MAX:
+		fatal_abort("should never happen");
+	}
+
+	url_free_members(&url);
 	return rc;
 }
 
