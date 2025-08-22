@@ -124,13 +124,6 @@ static int _valid_http_version(uint16_t major, uint16_t minor)
 	return ESLURM_HTTP_UNSUPPORTED_VERSION;
 }
 
-extern void free_http_header(http_header_entry_t *header)
-{
-	xfree(header->name);
-	xfree(header->value);
-	xfree(header);
-}
-
 static void _free_http_header(void *header)
 {
 	free_http_header(header);

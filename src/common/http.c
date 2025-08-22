@@ -411,3 +411,10 @@ extern void url_copy_members(url_t *dst, const url_t *src)
 	dst->query = xstrdup(src->query);
 	dst->fragment = xstrdup(src->fragment);
 }
+
+extern void free_http_header(http_header_t *header)
+{
+	xfree(header->name);
+	xfree(header->value);
+	xfree(header);
+}
