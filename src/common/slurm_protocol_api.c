@@ -2695,6 +2695,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 	slurm_free_msg_data(msg->msg_type, msg->data);
 	FREE_NULL_LIST(msg->ret_list);
 	xfree(msg->tls_cert);
+	/* msg->tls_conn is always a symlink and not free()ed */
 	conmgr_fd_free_ref(&msg->conmgr_con);
 }
 
