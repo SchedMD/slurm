@@ -2683,8 +2683,7 @@ static void *_agent_thread(void *arg)
 					      __func__, resp_msg.msg_type);
 				}
 			}
-			(void) slurm_free_msg_data(resp_msg.msg_type,
-						   resp_msg.data);
+			slurm_free_msg_members(&resp_msg);
 
 			FREE_NULL_LIST(ctld_req_msg.my_list);
 		}
