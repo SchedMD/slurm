@@ -131,7 +131,7 @@ static char *_get_default_account(uint32_t user_id)
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = user_id;
 	if (assoc_mgr_fill_in_user(acct_db_conn, &user, accounting_enforce,
-				   NULL, false) != SLURM_ERROR) {
+				   NULL, false) == SLURM_SUCCESS) {
 		return user.default_acct;
 	} else {
 		return NULL;
@@ -163,7 +163,7 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 	slurmdb_qos_rec_t qos;
 	uint32_t qos_id = 0;
 
-	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
+	if (_fill_assoc(user_id, account, partition, &assoc) == SLURM_SUCCESS)
 		qos_id = assoc.def_qos_id;
 
 	if (!qos_id)
@@ -171,8 +171,8 @@ static char *_get_default_qos(uint32_t user_id, char *account, char *partition)
 
 	memset(&qos, 0, sizeof(slurmdb_qos_rec_t));
 	qos.id = qos_id;
-	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce,
-				  NULL, false) != SLURM_ERROR) {
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
+				  false) == SLURM_SUCCESS) {
 		return qos.name;
 	} else {
 		return NULL;
@@ -188,7 +188,7 @@ static int _qos_id_to_qos_name(void *x, void *arg)
 	qos.id = atoi(qos_id);
 
 	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos, accounting_enforce, NULL,
-				  false) == SLURM_ERROR) {
+				  false) != SLURM_SUCCESS) {
 		return 0;
 	}
 
@@ -203,11 +203,16 @@ static char *_get_assoc_qos(uint32_t user_id, char *account, char *partition)
 	slurmdb_assoc_rec_t assoc;
 	list_t *qos_name_list;
 	char *qos_name_list_str;
+	list_t *qos_list = NULL;
 
-	_fill_assoc(user_id, account, partition, &assoc);
+	if (_fill_assoc(user_id, account, partition, &assoc) == SLURM_SUCCESS)
+		qos_list = assoc.qos_list;
+
+	if (!qos_list)
+		return NULL;
 
 	qos_name_list = list_create(xfree_ptr);
-	list_for_each_ro(assoc.qos_list, _qos_id_to_qos_name, qos_name_list);
+	list_for_each_ro(qos_list, _qos_id_to_qos_name, qos_name_list);
 
 	qos_name_list_str = slurm_char_list_to_xstr(qos_name_list);
 
@@ -223,7 +228,7 @@ static char *_get_assoc_comment(uint32_t user_id, char *account,
 	slurmdb_assoc_rec_t assoc;
 	char *comment = NULL;
 
-	if (_fill_assoc(user_id, account, partition, &assoc) != SLURM_ERROR)
+	if (_fill_assoc(user_id, account, partition, &assoc) == SLURM_SUCCESS)
 		comment = assoc.comment;
 
 	return comment;
@@ -1481,7 +1486,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 				  &lua_script_last_loaded, _loadscript_extra,
 				  NULL);
 
-	if (rc == SLURM_ERROR)
+	if (rc != SLURM_SUCCESS)
 		goto out;
 
 	/*
