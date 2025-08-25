@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_container_tmpfs.c - Define job container plugin for creating a
+ *  namespace_tmpfs.c - Define job namespace plugin for creating a
  *			    temporary mount namespace for the job, to provide
  *			    quota based access to node local memory.
  *****************************************************************************
@@ -73,8 +73,8 @@ extern slurmd_conf_t *conf __attribute__((weak_import));
 slurmd_conf_t *conf = NULL;
 #endif
 
-const char plugin_name[]        = "job_container tmpfs plugin";
-const char plugin_type[]        = "job_container/tmpfs";
+const char plugin_name[]        = "namespace tmpfs plugin";
+const char plugin_type[]        = "namespace/tmpfs";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static slurm_jc_conf_t *jc_conf = NULL;
@@ -119,7 +119,7 @@ static int _restore_ns(list_t *steps, const char *d_name)
 		return SLURM_SUCCESS;
 	}
 
-	/* here we think this is a job container */
+	/* here we think this is a job namespace */
 	log_flag(JOB_CONT, "determine if job %lu is still running", job_id);
 	stepd = list_find_first(steps, (ListFindF)_find_step_in_list, &job_id);
 	if (!stepd) {
@@ -154,7 +154,7 @@ extern int init(void)
 			return SLURM_ERROR;
 		}
 		plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
-		debug("job_container.conf read successfully");
+		debug("namespace.conf read successfully");
 	}
 
 	debug("%s loaded", plugin_name);
@@ -176,7 +176,7 @@ extern void fini(void)
 #endif
 }
 
-extern int container_p_restore(char *dir_name, bool recover)
+extern int namespace_p_restore(char *dir_name, bool recover)
 {
 	DIR *dp;
 	struct dirent *ep;
@@ -232,7 +232,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 	FREE_NULL_LIST(steps);
 
 	if (rc)
-		error("Encountered an error while restoring job containers.");
+		error("Encountered an error while restoring job namespaces.");
 
 	return rc;
 }
@@ -690,7 +690,7 @@ end_it:
 	return rc;
 }
 
-extern int container_p_join_external(uint32_t job_id)
+extern int namespace_p_join_external(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 
@@ -711,7 +711,7 @@ extern int container_p_join_external(uint32_t job_id)
 	return step_ns_fd;
 }
 
-extern int container_p_join(slurm_step_id_t *step_id, uid_t uid,
+extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 			    bool step_create)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
@@ -851,7 +851,7 @@ static int _delete_ns(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
-extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
+extern int namespace_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
@@ -859,7 +859,7 @@ extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 	return _create_ns(job_id, step);
 }
 
-extern int container_p_stepd_delete(uint32_t job_id)
+extern int namespace_p_stepd_delete(uint32_t job_id)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
@@ -867,7 +867,7 @@ extern int container_p_stepd_delete(uint32_t job_id)
 	return _delete_ns(job_id);
 }
 
-extern int container_p_send_stepd(int fd)
+extern int namespace_p_send_stepd(int fd)
 {
 	int len;
 	buf_t *buf;
@@ -887,7 +887,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int container_p_recv_stepd(int fd)
+extern int namespace_p_recv_stepd(int fd)
 {
 	int len;
 	buf_t *buf;

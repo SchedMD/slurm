@@ -99,9 +99,9 @@
 #include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gres.h"
-#include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
@@ -620,8 +620,8 @@ _send_slurmstepd_init(int fd, int type, void *req, slurm_addr_t *cli,
 	}
 
 	/* Send job_container information to slurmstepd */
-	if (container_g_send_stepd(fd)) {
-		error("%s: container_g_send_stepd(%d) failed: %m",
+	if (namespace_g_send_stepd(fd)) {
+		error("%s: namespace_g_send_stepd(%d) failed: %m",
 		      __func__, fd);
 		goto fail;
 	}
@@ -836,8 +836,8 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		if (step_id != SLURM_EXTERN_CONT) {
 			slurm_step_id_t tmp_step_id = { NO_VAL64, job_id,
 							step_id, NO_VAL };
-			if (container_g_join(&tmp_step_id, uid, true)) {
-				error("%s container_g_join(%u): %m",
+			if (namespace_g_join(&tmp_step_id, uid, true)) {
+				error("%s namespace_g_join(%u): %m",
 				      __func__, job_id);
 				_exit(SLURM_ERROR);
 			}
@@ -1550,13 +1550,13 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 
 	close(pipe[1]);
 
-	/* container_g_join needs to be called in the
+	/* namespace_g_join needs to be called in the
 	 * forked process part of the fork to avoid a race
 	 * condition where if this process makes a file or
 	 * detacts itself from a child before we add the pid
 	 * to the container in the parent of the fork. */
-	if (container_g_join(&tmp_step_id, uid, false)) {
-		error("%s container_g_join(%u): %m", __func__, jobid);
+	if (namespace_g_join(&tmp_step_id, uid, false)) {
+		error("%s namespace_g_join(%u): %m", __func__, jobid);
 		_exit(SLURM_ERROR);
 	}
 

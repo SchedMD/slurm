@@ -35,13 +35,13 @@
 
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/read_config.h"
-#include "src/interfaces/job_container.h"
+#include "src/interfaces/namespace.h"
 #include "src/slurmd/slurmstepd/mgr.h"
-#include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
+#include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -216,15 +216,15 @@ static int _call_external_program(void)
 		char *argv[2];
 		char **env = NULL;
 
-		/* container_g_join needs to be called in the
+		/* namespace_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
 		   condition where if this process makes a file or
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_join(&step->step_id, getuid(), false) !=
+		if (namespace_g_join(&step->step_id, getuid(), false) !=
 		    SLURM_SUCCESS)
-			error("container_g_join(%u): %m", recorded_jobid);
+			error("namespace_g_join(%u): %m", recorded_jobid);
 		env = env_array_create();
 		env_array_append_fmt(&env, "SLURM_JOBID", "%u", recorded_jobid);
 		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", recorded_jobid);

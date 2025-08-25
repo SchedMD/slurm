@@ -183,8 +183,7 @@ am_libslurmctld_interfaces_la_OBJECTS = burst_buffer.lo job_submit.lo \
 libslurmctld_interfaces_la_OBJECTS =  \
 	$(am_libslurmctld_interfaces_la_OBJECTS)
 libslurmd_interfaces_la_LIBADD =
-am_libslurmd_interfaces_la_OBJECTS = job_container.lo proctrack.lo \
-	task.lo
+am_libslurmd_interfaces_la_OBJECTS = namespace.lo proctrack.lo task.lo
 libslurmd_interfaces_la_OBJECTS =  \
 	$(am_libslurmd_interfaces_la_OBJECTS)
 am_libcommon_interfaces_o_OBJECTS =
@@ -222,10 +221,10 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/conn.Plo \
 	./$(DEPDIR)/cred.Plo ./$(DEPDIR)/data_parser.Plo \
 	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
-	./$(DEPDIR)/http_parser.Plo ./$(DEPDIR)/job_container.Plo \
-	./$(DEPDIR)/job_submit.Plo ./$(DEPDIR)/jobacct_gather.Plo \
-	./$(DEPDIR)/jobcomp.Plo ./$(DEPDIR)/mcs.Plo \
-	./$(DEPDIR)/metrics.Plo ./$(DEPDIR)/mpi.Plo \
+	./$(DEPDIR)/http_parser.Plo ./$(DEPDIR)/job_submit.Plo \
+	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
+	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/metrics.Plo \
+	./$(DEPDIR)/mpi.Plo ./$(DEPDIR)/namespace.Plo \
 	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/preempt.Plo \
 	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
 	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/sched_plugin.Plo \
@@ -626,8 +625,8 @@ libslurmctld_interfaces_la_SOURCES = \
 	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES = \
-	job_container.c \
-	job_container.h \
+	namespace.c \
+	namespace.h \
 	proctrack.c \
 	proctrack.h \
 	task.c \
@@ -726,13 +725,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_parser.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_container.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mcs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/metrics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/namespace.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
@@ -891,13 +890,13 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/hash.Plo
 	-rm -f ./$(DEPDIR)/http_parser.Plo
-	-rm -f ./$(DEPDIR)/job_container.Plo
 	-rm -f ./$(DEPDIR)/job_submit.Plo
 	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/jobcomp.Plo
 	-rm -f ./$(DEPDIR)/mcs.Plo
 	-rm -f ./$(DEPDIR)/metrics.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
+	-rm -f ./$(DEPDIR)/namespace.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo
@@ -976,13 +975,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/gres.Plo
 	-rm -f ./$(DEPDIR)/hash.Plo
 	-rm -f ./$(DEPDIR)/http_parser.Plo
-	-rm -f ./$(DEPDIR)/job_container.Plo
 	-rm -f ./$(DEPDIR)/job_submit.Plo
 	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/jobcomp.Plo
 	-rm -f ./$(DEPDIR)/mcs.Plo
 	-rm -f ./$(DEPDIR)/metrics.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
+	-rm -f ./$(DEPDIR)/namespace.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
 	-rm -f ./$(DEPDIR)/prep.Plo

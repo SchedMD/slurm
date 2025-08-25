@@ -73,9 +73,9 @@
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
-#include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/select.h"
@@ -567,8 +567,8 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 		cleanup_container();
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
-		if (container_g_stepd_delete(step->step_id.job_id))
-			error("container_g_stepd_delete(%u): %m",
+		if (namespace_g_stepd_delete(step->step_id.job_id))
+			error("namespace_g_stepd_delete(%u): %m",
 			      step->step_id.job_id);
 	}
 
@@ -1100,7 +1100,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (task_g_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
-	    (job_container_init() != SLURM_SUCCESS) ||
+	    (namespace_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
@@ -1117,7 +1117,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		fatal("Failed to read acct_gather conf from slurmd");
 
 	/* Receive job_container information from slurmd */
-	if (container_g_recv_stepd(sock) != SLURM_SUCCESS)
+	if (namespace_g_recv_stepd(sock) != SLURM_SUCCESS)
 		fatal("Failed to read job_container.conf from slurmd.");
 
 	/* Receive GRES information from slurmd */

@@ -483,8 +483,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/hash/sha3/Makefile
 		 src/plugins/http_parser/Makefile
 		 src/plugins/http_parser/libhttp_parser/Makefile
-		 src/plugins/job_container/Makefile
-		 src/plugins/job_container/tmpfs/Makefile
 		 src/plugins/job_submit/Makefile
 		 src/plugins/job_submit/all_partitions/Makefile
 		 src/plugins/job_submit/defaults/Makefile
@@ -517,6 +515,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/cray_shasta/Makefile
 		 src/plugins/mpi/pmi2/Makefile
 		 src/plugins/mpi/pmix/Makefile
+		 src/plugins/namespace/Makefile
+		 src/plugins/namespace/tmpfs/Makefile
 		 src/plugins/node_features/Makefile
 		 src/plugins/node_features/helpers/Makefile
 		 src/plugins/preempt/Makefile

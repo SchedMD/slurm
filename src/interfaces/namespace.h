@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_container.h - job container plugin stub.
+ *  namespace.h - job namespace plugin interface.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *  Written by Morris Jette
@@ -34,24 +34,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_JOB_CONTAINER_H
-#define _INTERFACES_JOB_CONTAINER_H
+#ifndef _INTERFACES_NAMESPACE_H
+#define _INTERFACES_NAMESPACE_H
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
- * Initialize the job container plugin.
+ * Initialize the job namespace plugin.
  *
  * RET - slurm error code
  */
-extern int job_container_init(void);
+extern int namespace_init(void);
 
 /*
- * Terminate the job container plugin, free memory.
+ * Terminate the job namespace plugin, free memory.
  *
  * RET - slurm error code
  */
-extern int job_container_fini(void);
+extern int namespace_fini(void);
 
 /*
  **************************************************************************
@@ -59,29 +59,29 @@ extern int job_container_fini(void);
  **************************************************************************
  */
 
-/* Add the calling process's pid to the specified job's container. */
-extern int container_g_join(slurm_step_id_t *step_id, uid_t uid,
+/* Add the calling process's pid to the specified job's namespace. */
+extern int namespace_g_join(slurm_step_id_t *step_id, uid_t uid,
 			    bool step_create);
 
 /*
- * Allow external processes to join the job container
+ * Allow external processes to join the job namespace
  * (eg. via PAM)
  */
-extern int container_g_join_external(uint32_t job_id);
+extern int namespace_g_join_external(uint32_t job_id);
 
-/* Restore container information */
-extern int container_g_restore(char * dir_name, bool recover);
+/* Restore namespace information */
+extern int namespace_g_restore(char *dir_name, bool recover);
 
-/* Create a container for the specified job, actions run in slurmstepd */
-extern int container_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step);
+/* Create a namespace for the specified job, actions run in slurmstepd */
+extern int namespace_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step);
 
-/* Delete the container for the specified job, actions run in slurmstepd */
-extern int container_g_stepd_delete(uint32_t job_id);
+/* Delete the namespace for the specified job, actions run in slurmstepd */
+extern int namespace_g_stepd_delete(uint32_t job_id);
 
-/* Send job_container config to slurmstepd on the provided file descriptor */
-extern int container_g_send_stepd(int fd);
+/* Send namespace config to slurmstepd on the provided file descriptor */
+extern int namespace_g_send_stepd(int fd);
 
-/* Receive job_container config from slurmd on the provided file descriptor */
-extern int container_g_recv_stepd(int fd);
+/* Receive namespace config from slurmd on the provided file descriptor */
+extern int namespace_g_recv_stepd(int fd);
 
 #endif

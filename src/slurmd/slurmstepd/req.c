@@ -68,8 +68,8 @@
 
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
@@ -1262,7 +1262,7 @@ static int _handle_get_ns_fd(int fd, uid_t uid, pid_t remote_pid)
 	debug("%s: for job %u:%u",
 	      __func__, step->step_id.job_id, step->step_id.step_id);
 
-	ns_fd = container_g_join_external(step->step_id.job_id);
+	ns_fd = namespace_g_join_external(step->step_id.job_id);
 
 	/*
 	 * We need to send the ns_fd as an int first to let the receiver know if
