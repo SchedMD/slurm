@@ -553,7 +553,7 @@ def gcore(component, pid=None, sbin=True):
         pids = [pid]
 
     if not pids:
-        logging.warning("Process {prefix}/{component} not found")
+        logging.warning(f"Process {prefix}/{component} not found")
     logging.debug(f"Getting gcores for PIDs: {pids}")
     for pid in pids:
         run_command(
@@ -1191,23 +1191,33 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
 
     Args:
         component (string): The bin/ or sbin/ component of Slurm to check.
+                            It also supports "config.h" to obtain the VERSION in the header.
         slurm_prefix (string): The path where the component is. By default the defined in testsuite.conf.
+                               Ignored when component is "config.h".
 
     Returns:
         A tuple representing the version. E.g. (25.05.0).
     """
-    if slurm_prefix == "":
-        slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
+    if component == "config.h":
+        header = pathlib.Path(f"{properties['slurm-build-dir']}/config.h")
+        if not header.exists():
+            pytest.fail("Unable to access to config.h to get Slurm version")
 
-    return tuple(
-        int(part) if part.isdigit() else 0
-        for part in run_command_output(
-            f"sudo {slurm_prefix}/{component} -V", quiet=True
+        version_str = re.search(
+            r'#define\s+VERSION\s+"([^"]+)"', header.read_text()
+        ).group(1)
+
+    else:
+        if slurm_prefix == "":
+            slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
+
+        version_str = (
+            run_command_output(f"sudo {slurm_prefix}/{component} -V", quiet=True)
+            .strip()
+            .replace("slurm ", "")
         )
-        .replace("slurm ", "")
-        .strip()
-        .split(".")
-    )
+
+    return tuple(int(part) if part.isdigit() else 0 for part in version_str.split("."))
 
 
 def require_version(version, component="sbin/slurmctld", slurm_prefix=""):
