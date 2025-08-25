@@ -906,8 +906,6 @@ extern void print_fields(type_t type, void *object)
 					tmp_int2 = WTERMSIG(exit_code);
 				else if (WIFEXITED(exit_code))
 					tmp_int = WEXITSTATUS(exit_code);
-				if (tmp_int >= 128)
-					tmp_int -= 128;
 				snprintf(outbuf, sizeof(outbuf), "%d:%d",
 					 tmp_int, tmp_int2);
 			}
