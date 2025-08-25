@@ -6015,11 +6015,17 @@ static void _addto_gres_list_exc(list_t **total_list, list_t *sub_list)
  */
 static void _filter_resv(resv_desc_msg_t *resv_desc_ptr,
 			 slurmctld_resv_t *resv_ptr,
-			 resv_select_t *resv_select, bool filter_overlap)
+			 resv_select_t *resv_select, bool filter_overlap, bool filter_maint)
 {
 	if (!filter_overlap &&
-	    ((resv_ptr->flags & RESERVE_FLAG_MAINT) ||
-	    (resv_ptr->flags & RESERVE_FLAG_OVERLAP))) {
+	    ((resv_ptr->flags & RESERVE_FLAG_OVERLAP))) {
+		log_flag(RESERVATION,
+			 "%s: skipping reservation %s filter for reservation %s",
+			 __func__, resv_ptr->name, resv_desc_ptr->name);
+		return;
+	}
+	if (!filter_maint &&
+	    ((resv_ptr->flags & RESERVE_FLAG_MAINT))) {
 		log_flag(RESERVATION,
 			 "%s: skipping reservation %s filter for reservation %s",
 			 __func__, resv_ptr->name, resv_desc_ptr->name);
@@ -6173,10 +6179,10 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 			(void)_advance_resv_time(resv_ptr);
 
 		_filter_resv(resv_desc_ptr, resv_ptr,
-			     &resv_select[SELECT_NOT_RSVD], true);
+			     &resv_select[SELECT_NOT_RSVD], true, true);
 
 		_filter_resv(resv_desc_ptr, resv_ptr,
-			     &resv_select[SELECT_OVR_RSVD], false);
+			     &resv_select[SELECT_OVR_RSVD], false, true);
 	}
 	list_iterator_destroy(itr);
 
