@@ -2639,7 +2639,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
-	xfree (ctl_conf_ptr->job_container_plugin);
+	xfree (ctl_conf_ptr->namespace_plugin);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_params);
@@ -2801,7 +2801,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_comp_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
-	xfree (ctl_conf_ptr->job_container_plugin);
+	xfree (ctl_conf_ptr->namespace_plugin);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
@@ -4054,10 +4054,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
 
-	(void) s_p_get_string(&conf->job_container_plugin, "JobContainerType",
+	(void) s_p_get_string(&conf->namespace_plugin, "JobContainerType",
 			      hashtbl);
-	if (xstrcasestr(conf->job_container_plugin, "none"))
-		xfree(conf->job_container_plugin);
+	if (xstrcasestr(conf->namespace_plugin, "none"))
+		xfree(conf->namespace_plugin);
 
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;
@@ -4717,7 +4717,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->tls_type, "TLSType", hashtbl))
 		conf->tls_type = xstrdup(DEFAULT_TLS_TYPE);
 
-	if (xstrstr(conf->job_container_plugin, "tmpfs") &&
+	if (xstrstr(conf->namespace_plugin, "tmpfs") &&
 	    !(conf->prolog_flags & PROLOG_FLAG_CONTAIN))
 		fatal("PrologFlags=Contain is required for use with job_container/tmpfs");
 

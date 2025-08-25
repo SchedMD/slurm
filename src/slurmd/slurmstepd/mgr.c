@@ -1083,7 +1083,7 @@ static bool _need_join_container()
 	 * home_xauthority, don't join the container to create the xauthority
 	 * file when it is set.
 	 */
-	if ((xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) &&
+	if ((xstrcasestr(slurm_conf.namespace_plugin, "tmpfs")) &&
 	    (!xstrcasestr(slurm_conf.x11_params, "home_xauthority"))) {
 		return true;
 	}

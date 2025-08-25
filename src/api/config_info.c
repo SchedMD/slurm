@@ -807,7 +807,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 	add_key_pair(ret_list, "JobCompUser", "%s", conf->job_comp_user);
 
 	add_key_pair(ret_list, "JobContainerType", "%s",
-		     conf->job_container_plugin);
+		     conf->namespace_plugin);
 
 	add_key_pair_own(ret_list, "JobDefaults",
 			 job_defaults_str(conf->job_defaults_list));

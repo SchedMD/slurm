@@ -94,11 +94,10 @@ extern int namespace_g_init(void)
 		goto done;
 
 	g_namespace_context_num = 0; /* mark it before anything else */
-	if (!slurm_conf.job_container_plugin ||
-	    !slurm_conf.job_container_plugin[0])
+	if (!slurm_conf.namespace_plugin || !slurm_conf.namespace_plugin[0])
 		goto done;
 
-	type = plugin_list = xstrdup(slurm_conf.job_container_plugin);
+	type = plugin_list = xstrdup(slurm_conf.namespace_plugin);
 	while ((namespace = strtok_r(plugin_list, ",", &last))) {
 		xrecalloc(ops, g_namespace_context_num + 1,
 			  sizeof(namespace_ops_t));

@@ -491,8 +491,8 @@ static int _stepd_setup_imex_channel(
 
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
-	if (xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) {
-		error("%s: %s: skipping due incompatibility with job_container/tmpfs",
+	if (xstrcasestr(slurm_conf.namespace_plugin, "tmpfs")) {
+		error("%s: %s: skipping due incompatibility with namespace/tmpfs",
 		      plugin_type, __func__);
 		return SLURM_SUCCESS;
 	}

@@ -4306,7 +4306,7 @@ static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32((uint32_t) msg->job_comp_port, buffer);
 		packstr(msg->job_comp_type, buffer);
 		packstr(msg->job_comp_user, buffer);
-		packstr(msg->job_container_plugin, buffer);
+		packstr(msg->namespace_plugin, buffer);
 
 		(void) slurm_pack_list(msg->job_defaults_list,
 				       job_defaults_pack, buffer,
@@ -4569,7 +4569,7 @@ static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32((uint32_t) msg->job_comp_port, buffer);
 		packstr(msg->job_comp_type, buffer);
 		packstr(msg->job_comp_user, buffer);
-		packstr(msg->job_container_plugin, buffer);
+		packstr(msg->namespace_plugin, buffer);
 
 		(void) slurm_pack_list(msg->job_defaults_list,
 				       job_defaults_pack, buffer,
@@ -4827,7 +4827,7 @@ static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32((uint32_t) msg->job_comp_port, buffer);
 		packstr(msg->job_comp_type, buffer);
 		packstr(msg->job_comp_user, buffer);
-		packstr(msg->job_container_plugin, buffer);
+		packstr(msg->namespace_plugin, buffer);
 
 		(void) slurm_pack_list(msg->job_defaults_list,
 				       job_defaults_pack, buffer,
@@ -5084,7 +5084,7 @@ static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32((uint32_t) msg->job_comp_port, buffer);
 		packstr(msg->job_comp_type, buffer);
 		packstr(msg->job_comp_user, buffer);
-		packstr(msg->job_container_plugin, buffer);
+		packstr(msg->namespace_plugin, buffer);
 
 		(void) slurm_pack_list(msg->job_defaults_list,
 				       job_defaults_pack, buffer,
@@ -5367,7 +5367,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr(&build_ptr->job_comp_type, buffer);
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
+		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
 
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
@@ -5654,7 +5654,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr(&build_ptr->job_comp_type, buffer);
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
+		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
 
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
@@ -5937,7 +5937,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr(&build_ptr->job_comp_type, buffer);
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
+		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
 
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
@@ -6222,7 +6222,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&build_ptr->job_comp_port, buffer);
 		safe_unpackstr(&build_ptr->job_comp_type, buffer);
 		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->job_container_plugin, buffer);
+		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
 
 		if (slurm_unpack_list(&build_ptr->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
