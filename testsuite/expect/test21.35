@@ -307,7 +307,7 @@ foreach limit [array names limit_map] {
 		log_info "==== Testing QoS ===="
 		test_limit "qos" $test_qos $limit $tres_type
 
-		if {$tres_type eq "MaxTresPerUser"} {
+		if {$limit ne "MaxTresPerUser"} {
 			# Check DenyOnLimit for Association
 			log_info "==== Testing Association ===="
 			test_limit "account" $test_acct $limit $tres_type
