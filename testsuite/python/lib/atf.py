@@ -553,7 +553,7 @@ def gcore(component, pid=None, sbin=True):
         pids = [pid]
 
     if not pids:
-        logging.warning("Process {prefix}/{component} not found")
+        logging.warning(f"Process {prefix}/{component} not found")
     logging.debug(f"Getting gcores for PIDs: {pids}")
     for pid in pids:
         run_command(
