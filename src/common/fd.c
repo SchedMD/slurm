@@ -809,7 +809,7 @@ extern int fd_get_buffered_output_bytes(int fd, int *bytes_ptr,
 extern int fd_get_maxmss(int fd, const char *con_name)
 {
 	int mss = NO_VAL;
-	socklen_t tmp_socklen = { 0 };
+	socklen_t tmp_socklen = sizeof(mss);
 
 	if (getsockopt(fd, IPPROTO_TCP, TCP_MAXSEG, &mss, &tmp_socklen))
 		log_net(fd, con_name,
