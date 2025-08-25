@@ -23,7 +23,7 @@ def setup():
 
 
 def test_show_topo():
-    if atf.get_version() >= (25, 5, 0):
+    if atf.get_version("bin/scontrol") >= (25, 5, 0):
         opt = f"switch={switch_name}"
     else:
         opt = f"{switch_name}"
