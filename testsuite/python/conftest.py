@@ -374,6 +374,9 @@ def spank_fail_lib(module_setup):
     Returns the bin path of the spank .so that will fail if configured.
     """
 
+    # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+
+    atf.require_version((25, 5), "config.h")
+
     src_path = atf.properties["testsuite_scripts_dir"] + "/spank_fail_test.c"
     bin_path = os.getcwd() + "/spank_fail_test.so"
 
