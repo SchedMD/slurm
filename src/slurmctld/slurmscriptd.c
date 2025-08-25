@@ -1077,57 +1077,90 @@ static void _setup_eio(int fd)
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGINT. Ignoring.");
 }
 
 static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGTERM. Ignoring.");
 }
 
 static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGCHLD. Ignoring");
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGQUIT. Ignoring.");
 }
 
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGHUP. Ignoring.");
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGUSR1. Ignoring.");
 }
 
 static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGUSR2. Ignoring.");
 }
 
 static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	/* debug5 to avoid polluting the SCRIPT debug flag */
 	debug5("Caught SIGPIPE. Ignoring.");
 }
 
 static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGXCPU. Ignoring.");
 }
 
 static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGABRT. Ignoring.");
 }
 
 static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(SCRIPT, "Caught SIGALRM. Ignoring.");
 }
 

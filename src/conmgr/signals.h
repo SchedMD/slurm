@@ -50,6 +50,12 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg);
 extern void signal_mgr_stop(void);
 
 /*
+ * Cancel all handlers and release all memory for signal mgr
+ * Note: Caller must lock mgr.mutex
+ */
+extern void signal_mgr_fini(void);
+
+/*
  * Add signal work to signal manager
  * IN work - work with depend=CONMGR_WORK_DEP_SIGNAL.
  * 	Takes ownership of work.

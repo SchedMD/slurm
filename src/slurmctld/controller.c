@@ -350,23 +350,35 @@ static void _attempt_reconfig(void)
 
 static void _on_sigint(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Terminate signal SIGINT received");
 	slurmctld_shutdown();
 }
 
 static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Terminate signal SIGTERM received");
 	slurmctld_shutdown();
 }
 
 static void _on_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	debug5("Caught SIGCHLD. Ignoring");
 }
 
 static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("Terminate signal SIGQUIT received");
 	slurmctld_shutdown();
 }
@@ -374,6 +386,9 @@ static void _on_sigquit(conmgr_callback_args_t conmgr_args, void *arg)
 static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool standby_mode;
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
 
 	info("Reconfigure signal (SIGHUP) received");
 
@@ -392,6 +407,9 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	debug5("Caught SIGUSR1. Ignoring.");
 }
 
@@ -400,6 +418,9 @@ static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 	static const slurmctld_lock_t conf_write_lock = {
 		.conf = WRITE_LOCK,
 	};
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
 
 	info("Logrotate signal (SIGUSR2) received");
 
@@ -416,16 +437,25 @@ static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	debug5("Caught SIGPIPE. Ignoring.");
 }
 
 static void _on_sigxcpu(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	debug5("Caught SIGXCPU. Ignoring.");
 }
 
 static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	info("SIGABRT received");
 	slurmctld_shutdown();
 	dump_core = true;
@@ -433,6 +463,9 @@ static void _on_sigabrt(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	debug5("Caught SIGALRM. Ignoring.");
 }
 

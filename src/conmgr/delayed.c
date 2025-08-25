@@ -289,6 +289,9 @@ static void _update_delayed_work(bool locked)
 
 extern void on_signal_alarm(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	log_flag(CONMGR, "%s: caught SIGALRM", __func__);
 	_update_delayed_work(false);
 }

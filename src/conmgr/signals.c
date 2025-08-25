@@ -276,8 +276,7 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	xassert(fd != -1);
 	fd_close(&fd);
 
-	xassert(con == signal_con);
-	xassert(signal_con);
+	xassert((con == signal_con) || !signal_con);
 	signal_con = NULL;
 
 	slurm_rwlock_unlock(&lock);
@@ -351,10 +350,73 @@ extern void signal_mgr_start(conmgr_callback_args_t conmgr_args, void *arg)
 
 extern void signal_mgr_stop(void)
 {
-	slurm_rwlock_rdlock(&lock);
+	slurm_rwlock_wrlock(&lock);
 
-	if (signal_con)
+	if (signal_con) {
 		close_con(true, signal_con);
+		signal_con = NULL;
+	}
+
+	slurm_rwlock_unlock(&lock);
+}
+
+extern void signal_mgr_fini(void)
+{
+	signal_handler_t *handlers = NULL;
+	int signal_fd_close = -1, count = 0;
+
+	signal_mgr_stop();
+
+	slurm_rwlock_wrlock(&lock);
+
+	if (!one_time_init) {
+		slurm_rwlock_unlock(&lock);
+		return;
+	}
+
+	xassert(one_time_init);
+	/* should already be cleaned up by signal_mgr_stop() */
+	xassert(!signal_con);
+
+	/* try to be as atomic as possible to close(signal_fd) */
+	signal_fd_close = signal_fd;
+	signal_fd = SIGNAL_FD_FAILED;
+	fd_close(&signal_fd_close);
+
+	/* Swap out handlers array before cleanup */
+	SWAP(signal_handler_count, count);
+	SWAP(signal_handlers, handlers);
+
+	for (int i = 0; i < signal_handler_count; i++) {
+		signal_handler_t *handler = &handlers[signal_handler_count];
+
+		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
+		xassert(handler->signal > 0);
+
+		if (sigaction(handler->signal, &handler->prior, &handler->new))
+			fatal("%s: unable to revert %s: %m",
+			      __func__, strsignal(handler->signal));
+
+		/* clear handler entirely */
+		*handler = (signal_handler_t) {
+			.magic = ~MAGIC_SIGNAL_HANDLER,
+		};
+	}
+
+	xfree(handlers);
+
+	for (int i = 0; i < signal_work_count; i++) {
+		work_t *work = NULL;
+
+		SWAP(signal_work[i], work);
+		xassert(work->magic == MAGIC_WORK);
+
+		work->status = CONMGR_WORK_STATUS_CANCELLED;
+		handle_work(true, work);
+	}
+
+	xfree(signal_work);
+	signal_work_count = 0;
 
 	slurm_rwlock_unlock(&lock);
 }
