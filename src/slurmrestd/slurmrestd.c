@@ -63,6 +63,7 @@
 #include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+#include "src/common/util-net.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -890,6 +891,7 @@ int main(int argc, char **argv)
 	conn_g_fini();
 	cred_g_fini();
 	auth_g_fini();
+	getnameinfo_cache_purge();
 	log_fini();
 
 	/* send parsing RC if there were no higher level errors */
