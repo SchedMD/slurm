@@ -481,10 +481,10 @@ int pmixp_p2p_send(const char *nodename, const char *address, const char *data,
 	return rc;
 }
 
-int pmixp_mkdir(char *path)
+int pmixp_mkdir(char *path, bool trusted)
 {
 	char *base = NULL, *newdir = NULL, *slash;
-	int dirfd;
+	int dirfd, flags;
 	mode_t rights = (S_IRUSR | S_IWUSR | S_IXUSR);
 
 	/* NOTE: we need user who owns the job to access PMIx usock
@@ -517,8 +517,11 @@ int pmixp_mkdir(char *path)
 
 	slash[0] = '\0';
 	newdir = slash + 1;
+	flags = O_DIRECTORY;
+	if (!trusted)
+		flags |= O_NOFOLLOW;
 
-	if ((dirfd = open(base, O_DIRECTORY | O_NOFOLLOW)) < 0) {
+	if ((dirfd = open(base, flags)) < 0) {
 		PMIXP_ERROR_STD("Could not open parent directory \"%s\"", base);
 		xfree(base);
 		return errno;
@@ -526,7 +529,10 @@ int pmixp_mkdir(char *path)
 
 #ifdef MULTIPLE_SLURMD
 	struct stat statbuf;
-	if (!fstatat(dirfd, newdir, &statbuf, AT_SYMLINK_NOFOLLOW)) {
+	flags = 0;
+	if (!trusted)
+		flags |= AT_SYMLINK_NOFOLLOW;
+	if (!fstatat(dirfd, newdir, &statbuf, flags)) {
 		if ((statbuf.st_mode & S_IFDIR) &&
 		    (statbuf.st_uid == pmixp_info_jobuid())) {
 			PMIXP_ERROR_STD("Directory \"%s\" already exists, but has correct uid",

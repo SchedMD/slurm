@@ -242,7 +242,7 @@ static void _set_procdatas(list_t *lresp)
 
 		/* localid is the task id in this node */
 		localid = pmixp_info_taskid2localid(i);
-		if (0 <= localid) {
+		if (localid >= 0) {
 			PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_RANK,
 					 &localid, PMIX_UINT16);
 			list_append(rankinfo, kvp);
@@ -344,7 +344,7 @@ static void _set_topology(list_t *lresp)
 	char *p = NULL;
 	int len;
 
-	if (0 != hwloc_topology_init(&topology)) {
+	if (hwloc_topology_init(&topology)) {
 		/* error in initialize hwloc library */
 		error("%s: hwloc_topology_init() failed", __func__);
 		goto err_exit;
@@ -367,9 +367,9 @@ static void _set_topology(list_t *lresp)
 	}
 
 #if HWLOC_API_VERSION < 0x00020000
-	if (0 != hwloc_topology_export_xmlbuffer(topology, &p, &len)) {
+	if (hwloc_topology_export_xmlbuffer(topology, &p, &len)) {
 #else
-	if (0 != hwloc_topology_export_xmlbuffer(topology, &p, &len, 0)) {
+	if (hwloc_topology_export_xmlbuffer(topology, &p, &len, 0)) {
 #endif
 		error("%s: hwloc_topology_load() failed", __func__);
 		goto err_release_topo;
@@ -454,7 +454,7 @@ static int _set_mapsinfo(list_t *lresp)
 	input = hostlist_deranged_string_xmalloc(hl);
 	rc = PMIx_generate_regex(input, &regexp);
 	xfree(input);
-	if (PMIX_SUCCESS != rc) {
+	if (rc != PMIX_SUCCESS) {
 		return SLURM_ERROR;
 	}
 	PMIXP_KVP_CREATE(kvp, PMIX_NODE_MAP, regexp, PMIX_STRING);
@@ -484,7 +484,7 @@ static int _set_mapsinfo(list_t *lresp)
 	xfree(map);
 	xfree(node2tasks);
 
-	if (PMIX_SUCCESS != rc) {
+	if (rc != PMIX_SUCCESS) {
 		return SLURM_ERROR;
 	}
 
@@ -526,21 +526,24 @@ static void _set_localinfo(list_t *lresp)
 extern int pmixp_libpmix_init(void)
 {
 	int rc;
+	bool trusted;
 
-	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_lib()))) {
+	trusted = (pmixp_info_flags() & PMIXP_FLAG_TRUSTED_LIB_TMPDIR);
+	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_lib(), trusted))) {
 		PMIXP_ERROR_STD("Cannot create server lib tmpdir: \"%s\"",
 				pmixp_info_tmpdir_lib());
 		return errno;
 	}
 
-	if (0 != (rc = pmixp_mkdir(pmixp_info_tmpdir_cli()))) {
+	trusted = (pmixp_info_flags() & PMIXP_FLAG_TRUSTED_CLI_TMPDIR);
+	if ((rc = pmixp_mkdir(pmixp_info_tmpdir_cli(), trusted))) {
 		PMIXP_ERROR_STD("Cannot create client cli tmpdir: \"%s\"",
 				pmixp_info_tmpdir_cli());
 		return errno;
 	}
 
 	rc = pmixp_lib_init();
-	if (SLURM_SUCCESS != rc) {
+	if (rc != SLURM_SUCCESS) {
 		PMIXP_ERROR_STD("PMIx_server_init failed with error %d\n", rc);
 		return SLURM_ERROR;
 	}
@@ -558,14 +561,14 @@ extern int pmixp_libpmix_finalize(void)
 	rc = pmixp_lib_finalize();
 
 	rc1 = rmdir_recursive(pmixp_info_tmpdir_lib(), true);
-	if (0 != rc1) {
+	if (rc1) {
 		PMIXP_ERROR_STD("Failed to remove %s\n",
 				pmixp_info_tmpdir_lib());
 		/* Not considering this as fatal error */
 	}
 
 	rc1 = rmdir_recursive(pmixp_info_tmpdir_cli(), true);
-	if (0 != rc1) {
+	if (rc1) {
 		PMIXP_ERROR_STD("Failed to remove %s\n",
 				pmixp_info_tmpdir_cli());
 		/* Not considering this as fatal error */
@@ -619,7 +622,7 @@ extern int pmixp_lib_dmodex_request(
 	strlcpy(proc_v1.nspace, proc->nspace, PMIX_MAX_NSLEN);
 
 	rc = PMIx_server_dmodex_request(&proc_v1, cbfunc, caddy);
-	if (PMIX_SUCCESS != rc) {
+	if (rc != PMIX_SUCCESS) {
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -633,7 +636,7 @@ extern int pmixp_lib_setup_fork(uint32_t rank, const char *nspace, char ***env)
 	proc.rank = rank;
 	strlcpy(proc.nspace, nspace, PMIX_MAX_NSLEN);
 	rc = PMIx_server_setup_fork(&proc, env);
-	if (PMIX_SUCCESS != rc) {
+	if (rc != PMIX_SUCCESS) {
 		return SLURM_ERROR;
 	}
 	return SLURM_SUCCESS;
@@ -686,7 +689,7 @@ extern int pmixp_libpmix_job_set(void)
 
 	_set_euid(lresp);
 
-	if (SLURM_SUCCESS != _set_mapsinfo(lresp)) {
+	if (_set_mapsinfo(lresp) != SLURM_SUCCESS) {
 		FREE_NULL_LIST(lresp);
 		PMIXP_ERROR("Can't build nodemap");
 		return SLURM_ERROR;
@@ -710,7 +713,7 @@ extern int pmixp_libpmix_job_set(void)
 					 ninfo, _release_cb,
 					 &register_caddy[0]);
 
-	if (PMIX_SUCCESS != rc) {
+	if (rc != PMIX_SUCCESS) {
 		PMIXP_ERROR("Cannot register namespace %s, nlocalproc=%d, ninfo = %d",
 			    pmixp_info_namespace(), pmixp_info_tasks_loc(),
 			    ninfo);
@@ -726,7 +729,7 @@ extern int pmixp_libpmix_job_set(void)
 		rc = PMIx_server_register_client(&proc, uid, gid, NULL,
 						 _release_cb,
 						 &register_caddy[i + 1]);
-		if (PMIX_SUCCESS != rc) {
+		if (rc != PMIX_SUCCESS) {
 			PMIXP_ERROR("Cannot register client %d(%d) in namespace %s",
 				    pmixp_info_taskid(i), i,
 				    pmixp_info_namespace());
@@ -756,7 +759,7 @@ extern int pmixp_libpmix_job_set(void)
 					exit_flag = 0;
 				}
 				// An error may occur during registration
-				if (PMIX_SUCCESS != register_caddy[i].rc) {
+				if (register_caddy[i].rc != PMIX_SUCCESS) {
 					PMIXP_ERROR("Failed to complete registration #%d, error: %d", i, register_caddy[i].rc);
 					ret = SLURM_ERROR;
 				}
@@ -807,7 +810,7 @@ extern int pmixp_lib_fence(const pmix_proc_t procs[], size_t nprocs,
 		goto error;
 	}
 	ret = pmixp_coll_contrib_local(coll, type, data, ndata, cbfunc, cbdata);
-	if (SLURM_SUCCESS != ret) {
+	if (ret != SLURM_SUCCESS) {
 		status = PMIX_ERROR;
 		goto error;
 	}
