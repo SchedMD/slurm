@@ -71,6 +71,8 @@ typedef struct {
 	char *first_step_node;
 	uint32_t jobid;
 	char *jobname;
+	uint32_t nodeid;
+	uint32_t taskid;
 	char *user;
 	char *work_dir;
 } job_std_pattern_t;

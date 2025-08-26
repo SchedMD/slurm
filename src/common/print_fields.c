@@ -494,7 +494,7 @@ static bool _is_wildcard(char *ptr)
 	case 's': /* Stepid of the running job */
 	case 't': /* Task id (rank) relative to current job */
 	case 'u': /* User name */
-	case 'x':
+	case 'x': /* Job name */
 		return true;
 		break;
 	default:
@@ -541,13 +541,15 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 				     job->first_step_id);
 		break;
 	case 'n': /* Node id relative to current job */
+		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->nodeid);
+		break;
 	case 't': /* Task id (rank) relative to current job */
-		xstrfmtcatat(*expanded, pos, "0");
+		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->taskid);
 		break;
 	case 'u': /* User name */
 		xstrfmtcatat(*expanded, pos, "%s", job->user);
 		break;
-	case 'x':
+	case 'x': /* Job name */
 		xstrfmtcatat(*expanded, pos, "%s", job->jobname);
 		break;
 	default:
@@ -557,8 +559,6 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 
 /*
  * Special expansion function for stdin/stdout/stderr filename patterns.
- * Fields that can potentially map to a range of values will use the first in
- * that range (e.g %t is replaced by 0).
  *
  * \      If we found this symbol, don't replace anything.
  * %%     The character "%".
