@@ -119,8 +119,8 @@ static int _set_cond(int *start, int argc, char **argv,
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
 		} else if (!(set = sacctmgr_set_assoc_cond(
-				    assoc_cond, argv[i], argv[i]+end,
-				    command_len, option)) || exit_code) {
+				     assoc_cond, argv[i], argv[i]+end,
+				     command_len, option)) || exit_code) {
 			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
@@ -132,8 +132,8 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
-					 char *type, char *value,
-					 int command_len, int option)
+				   char *type, char *value,
+				   int command_len, int option)
 {
 	int set =0;
 

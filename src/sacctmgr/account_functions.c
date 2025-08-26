@@ -156,8 +156,8 @@ static int _set_cond(int *start, int argc, char **argv,
 						 argv[i]+end))
 				cond_set |= SA_SET_USER;
 		} else if (sacctmgr_set_assoc_cond(
-				    assoc_cond, argv[i], argv[i]+end,
-				    command_len, option)) {
+				   assoc_cond, argv[i], argv[i]+end,
+				   command_len, option)) {
 			cond_set |= SA_SET_ASSOC;
 		} else {
 			exit_code=1;
