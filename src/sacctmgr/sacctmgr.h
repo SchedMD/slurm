@@ -237,7 +237,7 @@ extern bool have_db_conn;
 
 extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 				   char *type, char *value,
-				   int command_len, int option);
+				   int command_len);
 extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc_rec,
 					char *type, char *value,
 					int command_len, int option);

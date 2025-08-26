@@ -51,7 +51,6 @@ static int _set_cond(int *start, int argc, char **argv,
 	int end = 0;
 	slurmdb_assoc_cond_t *assoc_cond = NULL;
 	int command_len = 0;
-	int option = 0;
 
 	if (!acct_cond) {
 		exit_code=1;
@@ -73,7 +72,6 @@ static int _set_cond(int *start, int argc, char **argv,
 		else {
 			command_len=end-1;
 			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
 				end++;
 			}
 		}
@@ -157,7 +155,7 @@ static int _set_cond(int *start, int argc, char **argv,
 				cond_set |= SA_SET_USER;
 		} else if (sacctmgr_set_assoc_cond(
 				   assoc_cond, argv[i], argv[i]+end,
-				   command_len, option)) {
+				   command_len)) {
 			cond_set |= SA_SET_ASSOC;
 		} else {
 			exit_code=1;
