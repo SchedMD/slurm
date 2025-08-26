@@ -481,7 +481,7 @@ extern void print_fields_char_list(print_field_t *field, void *input, int last)
 	xfree(print_this);
 }
 
-static bool _is_wildcard(char *ptr)
+static bool _is_wildcard(char *ptr, job_std_pattern_t *job)
 {
 	switch (*ptr) {
 	case 'A': /* Array job ID */
@@ -489,13 +489,19 @@ static bool _is_wildcard(char *ptr)
 	case 'b': /* Array task ID modulo 10 */
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
-	case 'N': /* Short hostname */
-	case 'n': /* Node id relative to current job */
 	case 's': /* Stepid of the running job */
-	case 't': /* Task id (rank) relative to current job */
-	case 'u': /* User name */
 	case 'x': /* Job name */
 		return true;
+		break;
+	case 'N': /* Short hostname */
+	case 'n': /* Node id relative to current job */
+	case 't': /* Task id (rank) relative to current job */
+	case 'u': /* User name */
+		if (job->is_srun) { /* srun leaves these wildcards untouched */
+			job->io_per_task = true; /* set flag for srun to use */
+			return false;
+		} else
+			return true;
 		break;
 	default:
 		break;
@@ -593,7 +599,7 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 	if (!stdio_path || !*stdio_path || !job)
 		return NULL;
 
-	if (job->work_dir && (stdio_path[0] != '/')) {
+	if (!job->is_srun && job->work_dir && (stdio_path[0] != '/')) {
 		size_t len = strlen(job->work_dir);
 		if (job->work_dir[len - 1] == '/')
 			xstrcatat(expanded, &pos, job->work_dir);
@@ -642,7 +648,7 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 				 * except the last one to match with the current
 				 * fname creation.
 				 */
-				if (!_is_wildcard(ptr)) {
+				if (!_is_wildcard(ptr, job)) {
 					ptr = tmp_ptr;
 					/* seek until the last digit */
 					while (isdigit(*(ptr + 1))) {
@@ -655,7 +661,7 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 					break;
 				}
 			}
-			if (!_is_wildcard(ptr)) {
+			if (!_is_wildcard(ptr, job)) {
 				/* If not a wildcard print also the %. */
 				xstrfmtcatat(expanded, &pos, "%%%c", *ptr);
 			} else {
