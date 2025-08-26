@@ -3363,8 +3363,9 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			used_cores[i] += free_cores[i];
 			used_cpus = used_cores[i] * threads_per_core;
 			free_cores[i] = 0;
-		} else if (used_cpus >=
-			   job_ptr->part_ptr->max_cpus_per_socket) {
+		} else if (tmp_core &&
+			   (used_cpus >=
+			    job_ptr->part_ptr->max_cpus_per_socket)) {
 			log_flag(SELECT_TYPE, "MaxCpusPerSocket: %u, CPUs already used on socket[%d]: %u - won't use the socket.",
 				 job_ptr->part_ptr->max_cpus_per_socket,
 				 i,
@@ -3377,7 +3378,8 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 				     threads_per_core));
 		}
 		free_core_count += free_cores[i];
-		used_cpu_count += used_cpus;
+		if (tmp_core)
+			used_cpu_count += used_cpus;
 	}
 	free_cpu_count = free_core_count * threads_per_core;
 	avail_res->max_cpus = free_cpu_count;
