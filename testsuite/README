@@ -236,7 +236,6 @@ test3.3    Validate scontrol update command for nodes.
 test3.4    Validate scontrol update command for jobs by JobID.
 test3.5    Validate scontrol create, delete, and update of partition.
 test3.6    Testing of hidden partitions.
-test3.7    Test of job suspend/resume.
 test3.8    Test of batch job requeue.
 test3.9    Test of "scontrol show slurmd"
 test3.10   Test of "scontrol notify <jobid> <message>"
@@ -836,6 +835,7 @@ test_108_3   /commands/scontrol/test_--help.py
 test_108_4   /commands/scontrol/test_reconfigure.py
 test_108_5   /commands/scontrol/test_--json.py
 test_108_6   Test scontrol show topology option
+test_108_7   Test of job suspend/resume
 
 test_109_#   Testing of sdiag options.
 ======================================
