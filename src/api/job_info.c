@@ -92,113 +92,17 @@ typedef struct load_job_prio_resp_struct {
 	priority_factors_response_msg_t *new_msg;
 } load_job_prio_resp_struct_t;
 
-/* Perform file name substitutions
- * %A - Job array's master job allocation number.
- * %a - Job array ID (index) number.
- * %j - Job ID
- * %u - User name
- * %x - Job name
- */
-static void _fname_format(char *buf, int buf_size, job_info_t * job_ptr,
-			  char *fname)
-{
-	char *q, *p, *tmp, *tmp2 = NULL, *user;
-	unsigned int wid, offset;
-
-	tmp = xstrdup(fname);
-	q = p  = tmp;
-	while (*p != '\0') {
-		if (*p == '%') {
-			offset = 1;
-			wid = 0;
-			if (*(p + 1) == '%') {
-				p++;
-				xmemcat(tmp2, q, p);
-				q = ++p;
-				continue;
-			}
-			if (isdigit(*(p + 1))) {
-				unsigned long in_width = 0;
-				if ((in_width = strtoul(p + 1, &p, 10)) > 9) {
-					/* Remove % and double digit 10 */
-					wid = 10;
-					offset = 3;
-				} else {
-					wid = (unsigned int)in_width;
-					offset = 2;
-				}
-				if (*p == '\0')
-					break;
-			} else
-				p++;
-
-			switch (*p) {
-				case 'A': /* Array job ID */
-					xmemcat(tmp2, q, p - offset);
-					q = p + 1;
-					if (job_ptr->array_task_id == NO_VAL) {
-						/* Not a job array */
-						xstrfmtcat(tmp2, "%0*u", wid,
-							   job_ptr->job_id);
-					} else {
-						xstrfmtcat(tmp2, "%0*u", wid,
-							job_ptr->array_job_id);
-					}
-					break;
-				case 'a': /* Array task ID */
-					xmemcat(tmp2, q, p - offset);
-					xstrfmtcat(tmp2, "%0*u", wid,
-						   job_ptr->array_task_id);
-					q = p + 1;
-					break;
-				case 'b': /* Array task ID modulo 10 */
-					xmemcat(tmp2, q, p - offset);
-					xstrfmtcat(tmp2, "%0*u", wid,
-						   job_ptr->array_task_id % 10);
-					q = p + 1;
-					break;
-				case 'j': /* Job ID */
-					xmemcat(tmp2, q, p - offset);
-					xstrfmtcat(tmp2, "%0*u", wid,
-						   job_ptr->job_id);
-					q = p + 1;
-					break;
-				case 'u': /* User name */
-					xmemcat(tmp2, q, p - offset);
-					user = uid_to_string(
-						(uid_t) job_ptr->user_id);
-					xstrfmtcat(tmp2, "%s", user);
-					xfree(user);
-					q = p + 1;
-					break;
-				case 'x':
-					xmemcat(tmp2, q, p - offset);
-					xstrfmtcat(tmp2, "%s", job_ptr->name);
-					q = p + 1;
-					break;
-			}
-		} else
-			p++;
-	}
-	if (p != q)
-		xmemcat(tmp2, q, p);
-	xfree(tmp);
-
-	if (tmp2[0] == '/')
-		snprintf(buf, buf_size, "%s", tmp2);
-	else
-		snprintf(buf, buf_size, "%s/%s", job_ptr->work_dir, tmp2);
-	xfree(tmp2);
-}
-
 /* Given a job record pointer, return its stderr path in buf */
 extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t * job_ptr)
 {
 	if (job_ptr == NULL)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
-	else if (job_ptr->std_err)
-		_fname_format(buf, buf_size, job_ptr, job_ptr->std_err);
-	else
+	else if (job_ptr->std_err) {
+		char *expanded = slurm_expand_job_stdio_fields(job_ptr->std_err,
+							       job_ptr);
+		snprintf(buf, buf_size, "%s", expanded);
+		xfree(expanded);
+	} else
 		snprintf(buf, buf_size, "%s", "");
 }
 
@@ -207,9 +111,12 @@ extern void slurm_get_job_stdin(char *buf, int buf_size, job_info_t * job_ptr)
 {
 	if (job_ptr == NULL)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
-	else if (job_ptr->std_in)
-		_fname_format(buf, buf_size, job_ptr, job_ptr->std_in);
-	else if (job_ptr->batch_flag == 0)
+	else if (job_ptr->std_in) {
+		char *expanded = slurm_expand_job_stdio_fields(job_ptr->std_in,
+							       job_ptr);
+		snprintf(buf, buf_size, "%s", expanded);
+		xfree(expanded);
+	} else if (job_ptr->batch_flag == 0)
 		snprintf(buf, buf_size, "%s", "");
 	else
 		snprintf(buf, buf_size, "%s", "/dev/null");
@@ -220,9 +127,12 @@ extern void slurm_get_job_stdout(char *buf, int buf_size, job_info_t * job_ptr)
 {
 	if (job_ptr == NULL)
 		snprintf(buf, buf_size, "%s", "job pointer is NULL");
-	else if (job_ptr->std_out)
-		_fname_format(buf, buf_size, job_ptr, job_ptr->std_out);
-	else
+	else if (job_ptr->std_out) {
+		char *expanded = slurm_expand_job_stdio_fields(job_ptr->std_out,
+							       job_ptr);
+		snprintf(buf, buf_size, "%s", expanded);
+		xfree(expanded);
+	} else
 		snprintf(buf, buf_size, "%s", "");
 }
 
