@@ -109,6 +109,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	bool allow_option = false;
 
 	xassert(fed);
 
@@ -128,6 +129,7 @@ static int _set_rec(int *start, int argc, char **argv,
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 2))) {
+			allow_option = true;
 			char *name = NULL;
 			list_itr_t *itr;
 
@@ -165,6 +167,7 @@ static int _set_rec(int *start, int argc, char **argv,
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
+			allow_option = true;
 			fed->flags = str_2_federation_flags(argv[i]+end,
 								   option);
 			if (fed->flags == FEDERATION_FLAG_NOTSET) {
@@ -185,12 +188,15 @@ static int _set_rec(int *start, int argc, char **argv,
 			} else
 				set = 1;
 		} else {
+			allow_option = true;
 			exit_code = 1;
 			fprintf(stderr,
 				" Unknown option: %s\n"
 				" Use keyword 'where' to modify condition\n",
 				argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 
 	(*start) = i;

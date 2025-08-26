@@ -275,6 +275,7 @@ static int _set_res_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	bool allow_option = false;
 
 	xassert(res);
 
@@ -326,6 +327,7 @@ static int _set_res_rec(int *start, int argc, char **argv,
 			set = 1;
 		} else if (!xstrncasecmp(argv[i], "Flags",
 					 MAX(command_len, 2))) {
+			allow_option = true;
 			res->flags = str_2_res_flags(argv[i]+end, option);
 			if (res->flags == SLURMDB_RES_FLAG_NOTSET) {
 				char *tmp_char = slurmdb_res_flags_str(
@@ -383,11 +385,14 @@ static int _set_res_rec(int *start, int argc, char **argv,
 			}
 			xfree(temp);
 		} else {
+			allow_option = true;
 			exit_code = 1;
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
 			       argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 
 	(*start) = i;

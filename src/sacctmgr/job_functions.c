@@ -146,6 +146,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	char *tmp_char = NULL;
 	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
 	int option = 0;
+	bool allow_option = false;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i], &option, &command_len);
@@ -215,11 +216,14 @@ static int _set_rec(int *start, int argc, char **argv,
 			job->wckey = strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
 		} else {
+			allow_option = true;
 			exit_code = 1;
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
 			       argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 
 	(*start) = i;

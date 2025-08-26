@@ -154,6 +154,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	bool allow_option = false;
 
 	xassert(assoc);
 	xassert(cluster);
@@ -183,6 +184,7 @@ static int _set_rec(int *start, int argc, char **argv,
 				rec_set |= SA_SET_CLUST;
 		} else if (!xstrncasecmp(argv[i], "Features",
 					MAX(command_len, 2))) {
+			allow_option = true;
 			if (*(argv[i]+end) == '\0' &&
 			    (option == '+' || option == '-')) {
 				fprintf(stderr,
@@ -244,14 +246,18 @@ static int _set_rec(int *start, int argc, char **argv,
 				"for the root association of a cluster.\n");
 		} else if (sacctmgr_set_assoc_rec(
 				   assoc, argv[i], argv[i]+end,
-				   command_len, option)) {
+				   command_len, option,
+				   &allow_option)) {
 			rec_set |= SA_SET_ASSOC;
 		} else {
+			allow_option = true;
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"
 				" Use keyword 'where' to modify condition\n",
 				argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 	(*start) = i;
 

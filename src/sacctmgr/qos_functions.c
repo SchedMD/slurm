@@ -186,7 +186,8 @@ static int _set_cond(int *start, int argc, char **argv,
 
 extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 				char *type, char *value,
-				int command_len, int option)
+				int command_len, int option,
+				bool *allow_option)
 {
 	int set = 0, mins;
 	uint64_t tmp64;
@@ -201,6 +202,7 @@ extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 		set = 1;
 	} else if (!xstrncasecmp(type, "Flags",
 				 MAX(command_len, 2))) {
+		*allow_option = true;
 		qos->flags = str_2_qos_flags(value, option);
 		if (qos->flags == QOS_FLAG_NOTSET) {
 			char *tmp_char = NULL;
@@ -624,6 +626,7 @@ extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 		/* Preempt needs to follow PreemptMode */
 	} else if (!xstrncasecmp(type, "Preempt",
 				 MAX(command_len, 7))) {
+		*allow_option = true;
 		if (!qos->preempt_list)
 			qos->preempt_list = list_create(xfree_ptr);
 
@@ -680,6 +683,7 @@ extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 			       "UsageThreshold") == SLURM_SUCCESS)
 			set = 1;
 	} else {
+		*allow_option = true;
 		exit_code = 1;
 		printf(" Unknown option: %s\n Use keyword 'where' to modify condition\n",
 		       type);
@@ -697,6 +701,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	bool allow_option = false;
 
 	for (i=(*start); i<argc; i++) {
 		end = parse_option_end(argv[i], &option, &command_len);
@@ -713,9 +718,12 @@ static int _set_rec(int *start, int argc, char **argv,
 			if (name_list)
 				slurm_addto_char_list(name_list, argv[i]+end);
 		} else if (sacctmgr_set_qos_rec(qos, argv[i], argv[i] + end,
-						command_len, option)) {
+						command_len, option,
+						&allow_option)) {
 			set = 1;
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 
 	(*start) = i;

@@ -252,6 +252,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 	char *option = NULL;
 	int command_len = 0;
 	int option2 = 0;
+	bool allow_op = false;
 
 	_init_sacctmgr_file_opts(file_opts);
 
@@ -312,11 +313,14 @@ static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 			slurm_addto_char_list(file_opts->wckey_list, option);
 		} else if (!sacctmgr_set_assoc_rec(
 				   &file_opts->assoc_rec, sub, option,
-				   command_len, option2)) {
+				   command_len, option2, &allow_op)) {
+			allow_op = true;
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
 			break;
 		}
+
+		common_verify_option_syntax(sub, option2, allow_op);
 
 		xfree(sub);
 		xfree(option);
@@ -358,6 +362,7 @@ static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
 	char *option = NULL;
 	int command_len = 0;
 	int option2 = 0;
+	bool allow_op = false;
 
 	slurmdb_init_qos_rec(qos_rec, 0, NO_VAL);
 
@@ -380,11 +385,15 @@ static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
 		} else if (end && !strlen(option)) {
 			debug("blank field given for %s discarding", sub);
 		} else if (!sacctmgr_set_qos_rec(qos_rec, sub, option,
-						 command_len, option2)) {
+						 command_len, option2,
+						 &allow_op)) {
+			allow_op = true;
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
 			break;
 		}
+
+		common_verify_option_syntax(sub, option2, allow_op);
 
 		xfree(sub);
 		xfree(option);

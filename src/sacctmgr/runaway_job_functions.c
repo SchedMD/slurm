@@ -92,6 +92,7 @@ static int _set_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	bool allow_option = false;
 
 	for (i = (*start); i < argc; i++) {
 		end = parse_option_end(argv[i], &option, &command_len);
@@ -114,6 +115,8 @@ static int _set_rec(int *start, int argc, char **argv,
 			exit_code = 1;
 			error("Unknown option: %s\n", argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 
 	(*start) = i;

@@ -212,7 +212,8 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 
 extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				  char *type, char *value,
-				  int command_len, int option)
+				  int command_len, int option,
+				  bool *allow_option)
 {
 	int set = 0;
 	uint32_t mins = NO_VAL;
@@ -511,6 +512,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		    SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "QosLevel", MAX(command_len, 1))) {
+		*allow_option = true;
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(xfree_ptr);
 
