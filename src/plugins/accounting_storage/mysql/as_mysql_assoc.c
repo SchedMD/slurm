@@ -1516,7 +1516,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mod_assoc->priority = assoc->priority;
 
 		if (is_coord &&
-		    assoc_mgr_check_assoc_lim_incr(mod_assoc, &str)) {
+		    assoc_mgr_check_assoc_lim_incr(mod_assoc, &str, false)) {
 			error("Coordinators can not increase %s above the parent limit",
 			      str);
 			xfree(str);

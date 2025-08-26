@@ -7216,7 +7216,7 @@ static char *_make_tres_str(char *spec, int tres_pos)
 }
 
 extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
-					   char **str)
+					   char **str, bool assoc_tres_locked)
 {
 	slurmdb_assoc_rec_t *curr;
 	bool rc = false;
@@ -7227,7 +7227,11 @@ extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
 		.tres = READ_LOCK,
 	};
 
-	assoc_mgr_lock(&locks);
+	if (!assoc_tres_locked)
+		assoc_mgr_lock(&locks);
+
+	xassert(verify_assoc_lock(ASSOC_LOCK, locks.assoc));
+	xassert(verify_assoc_lock(TRES_LOCK, locks.tres));
 
 	if (!assoc_mgr_assoc_list)
 		goto end_it;
@@ -7376,7 +7380,8 @@ extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
 	}
 
 end_it:
-	assoc_mgr_unlock(&locks);
+	if (!assoc_tres_locked)
+		assoc_mgr_unlock(&locks);
 
 	return rc;
 }

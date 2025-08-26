@@ -635,10 +635,11 @@ extern void assoc_mgr_set_job_tres_alloc_str(job_record_t *job_ptr,
  * Check if any assoc job limits are increasing the current ones.
  * IN: assoc - assoc to check
  * IN/OUT: str - description of parameter found to be increasing the limit
+ * IN: assoc_tres_locked - if true ASSOC_LOCK and TRES_LOCK already owned
  * RET: returns true if any limit is increasing the current one
  */
 extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
-					   char **str);
+					   char **str, bool assoc_tres_locked);
 
 /*
  * Verify a User 'coord_name' is a coordinator of all the qos in qos_list
