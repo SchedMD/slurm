@@ -251,8 +251,8 @@ static int _set_rec(int *start, int argc, char **argv,
 				rec_set |= SA_SET_ASSOC;
 			}
 		} else if (sacctmgr_set_assoc_rec(
-					      assoc, argv[i], argv[i]+end,
-					      command_len, option)) {
+				   assoc, argv[i], argv[i]+end,
+				   command_len, option)) {
 			rec_set |= SA_SET_ASSOC;
 		} else {
 			exit_code=1;
