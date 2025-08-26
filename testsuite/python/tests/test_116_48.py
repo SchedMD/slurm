@@ -5,10 +5,6 @@ import atf
 import pytest
 import re
 
-# TODO: Bug 17619
-#       From the docs:
-#       "A single srun opens 3 listening ports plus 2 more for every 48 hosts."
-#       It seems that docs are not right, but (4 + 2 * ((hosts-1)//48))
 
 port_range = 9
 srun_port_lower = 60000
@@ -47,6 +43,9 @@ def test_srun_ports_in_range(nodes):
             port_int >= srun_port_lower and port_int <= srun_port_upper
         ), f"Port {port_int} is not in range {srun_port_lower}-{srun_port_upper}"
 
+    # From the docs:
+    # "A single srun opens 4 listening ports plus 2 more for every 48 hosts
+    # beyond the first 48."
     ports = nodes * (4 + 2 * ((nodes - 1) // 48))
     assert count == ports, f"srun with -N{nodes} should use {ports} ports, not {count}"
 
