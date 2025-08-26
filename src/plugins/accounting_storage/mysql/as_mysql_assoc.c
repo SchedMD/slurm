@@ -3814,8 +3814,17 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		.mysql_conn = mysql_conn,
 	};
 	bitstr_t *wanted_qos = NULL;
+	/*
+	 * ASSOC_LOCK needed by _assoc_id_has_qos and _handle_coord_parent_flag
+	 * QOS_LOCK needed by _check_jobs_before_remove
+	 * USER_LOCK needed by _handle_coord_parent_flag
+	 * WCKEY_LOCK needed by _check_jobs_before_remove
+	 */
 	assoc_mgr_lock_t assoc_locks = {
 		.assoc = READ_LOCK,
+		.qos = READ_LOCK,
+		.user = READ_LOCK,
+		.wckey = READ_LOCK,
 	};
 	remove_common_args_t args = {
 		.default_account = false,
@@ -3874,6 +3883,8 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		wanted_qos = bit_alloc(g_qos_count);
 		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
 		assoc_mgr_lock(&assoc_locks);
+		add_assoc_cond.assoc_mgr_locked = true;
+		args.qos_wckey_locked = true;
 	}
 
 	itr = list_iterator_create(args.use_cluster_list);
@@ -3944,8 +3955,11 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 	}
-	if (wanted_qos)
+	if (wanted_qos) {
 		assoc_mgr_unlock(&assoc_locks);
+		add_assoc_cond.assoc_mgr_locked = false;
+		args.qos_wckey_locked = false;
+	}
 
 	FREE_NULL_LIST(add_assoc_cond.coord_users);
 	FREE_NULL_BITMAP(wanted_qos);
