@@ -1206,7 +1206,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			} else if (!assoc_mgr_check_coord_qos(cluster_name,
 							      account,
 							      user->name,
-							      assoc->qos_list)) {
+							      assoc->qos_list,
+							      false)) {
 				/*
 				 * The assoc READ_LOCK is locked in the caller.
 				 * This is only locking the qos READ_LOCK.
@@ -2908,7 +2909,7 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 		    acct_assoc.cluster,
 		    acct_assoc.acct,
 		    add_assoc_cond->user_name,
-		    add_assoc_cond->add_assoc->assoc.qos_list)) {
+		    add_assoc_cond->add_assoc->assoc.qos_list, false)) {
 		assoc_mgr_lock_t locks = {
 			.qos = READ_LOCK,
 		};
@@ -3215,7 +3216,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (add_assoc_cond.is_coord &&
 		    !assoc_mgr_check_coord_qos(object->cluster, object->acct,
 					       add_assoc_cond.user_name,
-					       object->qos_list)) {
+					       object->qos_list, false)) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };

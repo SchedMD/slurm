@@ -646,10 +646,12 @@ extern bool assoc_mgr_check_assoc_lim_incr(slurmdb_assoc_rec_t *assoc,
  * IN: account: Account name we are interested in.
  * IN: coord_name: User name given.
  * IN: qos_list: list of all QOS we need to verify.
+ * IN: assoc_mgr_locked: if true assoc_mgr assoc/user locks are already owned
  * RET: true if they are or false if they are not
  */
 extern bool assoc_mgr_check_coord_qos(char *cluster_name, char *account,
-				     char *coord_name, list_t *qos_list);
+				      char *coord_name, list_t *qos_list,
+				      bool assoc_mgr_locked);
 
 /*
  * Here we are checking to see if the association given has the flag
