@@ -11697,10 +11697,12 @@ unpack_error:
 static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, buf_t *buffer,
 			  uint16_t protocol_version)
 {
-	pack32((uint32_t)msg_ptr->task_id, buffer);
-	pack32((uint32_t)msg_ptr->size, buffer);
-	pack16((uint16_t)msg_ptr->port, buffer);
-	packstr(msg_ptr->hostname, buffer);
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32((uint32_t) msg_ptr->task_id, buffer);
+		pack32((uint32_t) msg_ptr->size, buffer);
+		pack16((uint16_t) msg_ptr->port, buffer);
+		packstr(msg_ptr->hostname, buffer);
+	}
 }
 
 static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, buf_t *buffer,
@@ -11710,10 +11712,13 @@ static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, buf_t *buffer,
 
 	msg = xmalloc(sizeof(struct kvs_get_msg));
 	*msg_ptr = msg;
-	safe_unpack32(&msg->task_id, buffer);
-	safe_unpack32(&msg->size, buffer);
-	safe_unpack16(&msg->port, buffer);
-	safe_unpackstr(&msg->hostname, buffer);
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->task_id, buffer);
+		safe_unpack32(&msg->size, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpackstr(&msg->hostname, buffer);
+	}
 	return SLURM_SUCCESS;
 
 unpack_error:
