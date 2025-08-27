@@ -210,11 +210,6 @@ packages that contain Slurm daemons and client commands depend on the general
 or <code>dpkg</code> as they may not properly enforce these dependencies.
 After upgrading, daemons should be started in the order listed above.</p>
 
-<p>Running multiple daemons on the same system is <b>not a recommended setup</b>
-for production, in part because of the stated restriction to piecewise upgrades.
-Sites are strongly advised to assign a single Slurm daemon (slurmd, slurmctld,
-or slurmdbd) to each system.</p>
-
 <h3 id="preparation">Preparation
 <a class="slurm_link" href="#preparation"></a></h3>
 
@@ -611,6 +606,6 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 05 June 2025</p>
+<p style="text-align:center;">Last modified 27 August 2025</p>
 
 <!--#include virtual="footer.txt"-->
