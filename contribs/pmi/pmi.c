@@ -1259,6 +1259,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	kvs_set.kvs_host_ptr->task_id  = pmi_rank;
 	kvs_set.kvs_host_ptr->port     = 0;
 	kvs_set.kvs_host_ptr->hostname = NULL;
+	kvs_set.kvs_host_ptr->tls_cert = NULL;
 	kvs_set.kvs_comm_recs = 0;
 	kvs_set.kvs_comm_ptr  = NULL;
 
