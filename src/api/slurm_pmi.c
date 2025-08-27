@@ -185,6 +185,7 @@ extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
+	msg_send.tls_cert = getenv("SLURM_SRUN_TLS_CERT");
 
 	/* Send the RPC to the local srun communication manager.
 	 * Since the srun can be sent thousands of messages at
@@ -269,6 +270,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
+	msg_send.tls_cert = getenv("SLURM_SRUN_TLS_CERT");
 
 	/* Send the RPC to the local srun communication manager.
 	 * Since the srun can be sent thousands of messages at
