@@ -2101,12 +2101,14 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 		msg->flags |= SLURM_NO_AUTH_CRED;
 		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 		slurm_free_msg(msg);
+		conmgr_queue_close_fd(con);
 		return SLURM_SUCCESS;
 	} else if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_fd_get_name(con),
 		      slurm_strerror(unpack_rc));
 		slurm_free_msg(msg);
+		conmgr_queue_close_fd(con);
 		return unpack_rc;
 	}
 
