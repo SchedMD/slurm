@@ -3148,11 +3148,17 @@ Each TRES can be one of the Slurm defaults (e.g., \fIcpu\fR, \fImem\fR,
 \fInode\fR), or any defined generic resource. You can see the list of available
 resources by running \fBsacctmgr show tres\fR.
 
-Each TRES has a different limit, e.g., "GrpTRESMins=cpu=10,mem=20" would
-establish 2 different limits: one for 10 cpu minutes and another for 20
-MB-minutes of memory. This is the case for each limit that deals with TRES. To
-remove the limit \-1 is used, e.g., "GrpTRESMins=cpu=\-1" would remove only the
-cpu TRES limit.
+Each TRES has a different limit, e.g., "GrpTRES=cpu=16,mem=32G" would
+establish 2 different limits: one for 16 CPUs and another for 32 GB of memory.
+
+Setting a new value for a TRES type does not affect any other TRES types that
+were previously specified. For example, on the same entity as above, a
+subsequent assignment of "GrpTRES=gres/gpu=2" will result in
+"GrpTRES=cpu=16,mem=32G,gres/gpu=2" applying to that entity.
+
+To remove a limit, assign \-1 to the TRES type whose limit should be removed,
+e.g., "GrpTRESMins=cpu=\-1" would remove only the cpu TRES limit, resulting in
+"GrpTRES=mem=32G,gres/gpu=2" on that entity.
 
 \fBNOTE\fR: When dealing with Memory as a TRES the default units are MB. A
 suffix of G, T, or P can be added to specify a limit in larger units.
