@@ -702,11 +702,9 @@ static void *_service_msg(void *arg)
 		 rpc_num2string(msg->msg_type), msg->auth_uid, addr,
 		 msg->protocol_version);
 
-	/*
-	 * The fd was extracted from conmgr, so the conmgr connection is
-	 * invalid.
-	 */
+	/* Release conmgr connection as it will have been closed */
 	conmgr_fd_free_ref(&msg->conmgr_con);
+
 	if (args->tls_conn) {
 		msg->tls_conn = args->tls_conn;
 	} else {
