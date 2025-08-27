@@ -2039,8 +2039,8 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	xassert(msg);
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [fd:%d] connection work cancelled",
-		       __func__, input_fd);
+		log_flag(NET, "%s: [%s] connection work cancelled",
+			 __func__, conmgr_con_get_name(msg->conmgr_con));
 
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
@@ -2049,8 +2049,8 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	}
 
 	if ((input_fd < 0) || (output_fd < 0)) {
-		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
-		      __func__, input_fd, output_fd);
+		log_flag(NET, "%s: [%s] rejecting partially open connection",
+			 __func__, conmgr_con_get_name(msg->conmgr_con));
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
@@ -2065,8 +2065,9 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	args->msg = msg;
 
 	if ((rc = slurm_get_peer_addr(input_fd, &args->addr))) {
-		error("%s: [fd:%d] getting socket peer failed: %s",
-		      __func__, input_fd, slurm_strerror(rc));
+		log_flag(NET, "%s: [%s] getting socket peer failed: %s",
+			 __func__, conmgr_con_get_name(msg->conmgr_con),
+			 slurm_strerror(rc));
 		fd_close(&input_fd);
 		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
 		xfree(args);
