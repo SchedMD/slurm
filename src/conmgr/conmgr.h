@@ -861,6 +861,8 @@ typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
  *	connection.
  * WARNING: Only to be used for conversion to conmgr where file descriptors must
  *	be controlled by non-conmgr code.
+ * WARNING: Only 1 extraction can be requested at any 1 time for a given
+ *	connection.
  *
  * IN con - connection to extract file descriptors from
  * IN func - callback function when extraction is complete to take ownership of
