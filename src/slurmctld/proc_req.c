@@ -6857,8 +6857,6 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	DEF_TIMERS;
 	int fd = conn_g_get_fd(msg->tls_conn);
 
-	fd_set_nonblocking(fd);
-
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
 		      __func__);
