@@ -2390,6 +2390,7 @@ extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostname);
+		xfree(msg->tls_cert);
 		xfree(msg);
 	}
 }

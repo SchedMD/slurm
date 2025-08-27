@@ -997,6 +997,7 @@ typedef struct kvs_get_msg {
 	uint32_t size;		/* count of tasks in job */
 	uint16_t port;		/* port to be sent the kvs data */
 	char * hostname;	/* hostname to be sent the kvs data */
+	char *tls_cert;		/* TLS certificate for Slurm message server */
 } kvs_get_msg_t;
 
 enum compress_type {

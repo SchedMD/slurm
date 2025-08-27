@@ -264,6 +264,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	data.size = pmi_size;
 	data.port = slurm_get_port(&slurm_addr);
 	data.hostname = hostname;
+	data.tls_cert = conn_g_get_own_public_cert();
 	slurm_msg_t_init(&msg_send);
 	slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 	slurm_msg_t_init(&msg_rcv);
@@ -294,11 +295,14 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
+			xfree(data.tls_cert);
 			return SLURM_ERROR;
 		} else
 			debug("get kvs retry %d", retries);
 		_delay_rpc(pmi_rank, pmi_size);
 	}
+	xfree(data.tls_cert);
+
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
 		return rc;
