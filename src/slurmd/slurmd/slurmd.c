@@ -1096,8 +1096,9 @@ _read_config(void)
 	cf = slurm_conf_lock();
 
 	/*
-	 * Allow for Prolog and Epilog scripts to have non-absolute paths.
-	 * This is needed for configless to work with Prolog and Epilog.
+	 * Allow for Prolog, Epilog, TaskProlog, and TaskEpilog scripts to
+	 * have non-absolute paths. This is needed for configless to work
+	 * with Prolog, Epilog, TaskProlog, and TaskEpilog.
 	 */
 	for (int i = 0; i < cf->prolog_cnt; i++) {
 		char *tmp_prolog = cf->prolog[i];
@@ -1108,6 +1109,16 @@ _read_config(void)
 		char *tmp_epilog = cf->epilog[i];
 		cf->epilog[i] = get_extra_conf_path(tmp_epilog);
 		xfree(tmp_epilog);
+	}
+	if (cf->task_prolog) {
+		char *tmp_task_prolog = cf->task_prolog;
+		cf->task_prolog = get_extra_conf_path(tmp_task_prolog);
+		xfree(tmp_task_prolog);
+	}
+	if (cf->task_epilog) {
+		char *tmp_task_epilog = cf->task_epilog;
+		cf->task_epilog = get_extra_conf_path(tmp_task_epilog);
+		xfree(tmp_task_epilog);
 	}
 
 	/*
