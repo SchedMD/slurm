@@ -601,7 +601,7 @@ static int _handle_connection_write(conmgr_fd_t *con,
 static bool can_extract(conmgr_fd_t *con, const bool is_tls)
 {
 	/* Extract not queued */
-	if (!con->extract)
+	if (!con->on_extract.func)
 		return false;
 
 	/* Extract as failure state as file descriptor already closed */
@@ -812,9 +812,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	if (can_extract(con, is_tls)) {
 		/*
 		 * extraction of file descriptors requested
-		 * but only after starting TLS if needed
+		 * but only after starting TLS if needed or connection already
+		 * closed
 		 */
-		extract_con_fd(con);
+		con_set_flag(con, FLAG_WAIT_ON_EXTRACT);
+		add_work_con_fifo(true, con, on_extract, NULL);
 		return 0;
 	}
 

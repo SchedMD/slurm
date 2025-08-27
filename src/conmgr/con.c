@@ -74,6 +74,7 @@
 #include "src/conmgr/polling.h"
 #include "src/conmgr/tls.h"
 
+#include "src/interfaces/conn.h"
 #include "src/interfaces/tls.h"
 #include "src/interfaces/url_parser.h"
 
@@ -1660,89 +1661,38 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 				      out_type, false, caller);
 }
 
-extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
-				       conmgr_extract_fd_func_t func,
-				       const char *func_name,
-				       void *func_arg)
+extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	int rc = SLURM_ERROR;
+	int input_fd = -1, output_fd = -1;
+	void *conn = NULL;
+	conmgr_extract_fd_func_t func = NULL;
+	const char *func_name = NULL;
+	void *func_arg = NULL;
+	conmgr_fd_t *con = conmgr_args.con;
 
-	xassert(con);
-	xassert(func);
-	if (!con || !func)
-		return EINVAL;
+	xassert(!arg);
 
 	slurm_mutex_lock(&mgr.mutex);
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (con->extract) {
-		rc = EEXIST;
-	} else {
-		extract_fd_t *extract = xmalloc_nz(sizeof(*extract));
-		*extract = (extract_fd_t) {
-			.magic = MAGIC_EXTRACT_FD,
-			.func = func,
-			.func_name = func_name,
-			.func_arg = func_arg,
-			.input_fd = -1,
-			.output_fd = -1,
-		};
+	/* Verify extract was requested */
+	xassert(con_flag(con, FLAG_WAIT_ON_EXTRACT));
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+	xassert(con->on_extract.func);
+	xassert(con->on_extract.func_name);
 
-		xassert(!con->extract);
-		con->extract = extract;
-
-		/* Disable all polling for this connection */
-		con_set_polling(con, PCTL_TYPE_NONE, __func__);
-
-		/* wake up watch to finish extraction */
-		EVENT_SIGNAL(&mgr.watch_sleep);
-
-		rc = SLURM_SUCCESS;
+	/* Catch file descriptors being closed for any reason before now */
+	if (con->input_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] invalid input_fd",
+			 __func__, con->name);
+		goto failed;
 	}
-
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return rc;
-}
-
-static void _free_extract(extract_fd_t **extract_ptr)
-{
-	extract_fd_t *extract = NULL;
-	SWAP(*extract_ptr, extract);
-
-	xassert(extract->magic == MAGIC_EXTRACT_FD);
-	extract->magic = ~MAGIC_EXTRACT_FD;
-	xfree(extract);
-}
-
-static void _wrap_on_extract(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	extract_fd_t *extract = arg;
-	xassert(extract->magic == MAGIC_EXTRACT_FD);
-
-	log_flag(CONMGR, "%s: calling %s() input_fd=%d output_fd=%d arg=0x%"PRIxPTR,
-		 __func__, extract->func_name, extract->input_fd,
-		 extract->output_fd, (uintptr_t) extract->func_arg);
-
-	extract->func(conmgr_args, extract->input_fd, extract->output_fd,
-		      extract->tls_conn, extract->func_arg);
-
-	_free_extract(&extract);
-
-	/* wake up watch() to cleanup connection */
-	slurm_mutex_lock(&mgr.mutex);
-	EVENT_SIGNAL(&mgr.watch_sleep);
-	slurm_mutex_unlock(&mgr.mutex);
-}
-
-/* caller must hold mgr.mutex lock */
-extern void extract_con_fd(conmgr_fd_t *con)
-{
-	extract_fd_t *extract = NULL;
-
-	SWAP(extract, con->extract);
-	xassert(extract);
-	xassert(extract->magic == MAGIC_EXTRACT_FD);
+	if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] invalid output_fd",
+			 __func__, con->name);
+		goto failed;
+	}
 
 	/* Polling should already be disabled */
 	xassert((con->polling_input_fd == PCTL_TYPE_NONE) ||
@@ -1751,7 +1701,6 @@ extern void extract_con_fd(conmgr_fd_t *con)
 		(con->polling_output_fd == PCTL_TYPE_UNSUPPORTED));
 
 	/* can't extract safely when work running or not connected */
-	xassert(!con_flag(con, FLAG_WORK_ACTIVE));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
 	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
 		  con_flag(con, FLAG_TLS_CLIENT)) ||
@@ -1760,11 +1709,21 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
 
+	/* assert input/outputs are empty */
+	xassert(!con->tls_out || list_is_empty(con->out));
+	xassert(!con->tls_in || !get_buf_offset(con->tls_in));
+	xassert(list_is_empty(con->out));
+	xassert(!get_buf_offset(con->in));
+
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		goto failed;
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: extracting input_fd=%d output_fd=%d func=%s() flags=%s",
-			 __func__, con->input_fd, con->output_fd,
-			 extract->func_name, flags);
+		log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+			 __func__, con->name, con->input_fd, con->output_fd,
+			 (uintptr_t) con->tls, con->on_extract.func_name,
+			 (uintptr_t) con->on_extract.func_arg, flags);
 		xfree(flags);
 	}
 
@@ -1774,30 +1733,120 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
-	/* assert input/outputs are empty */
-	xassert(!con->tls_out || list_is_empty(con->out));
-	xassert(!con->tls_in || !get_buf_offset(con->tls_in));
-	xassert(list_is_empty(con->out));
-	xassert(!get_buf_offset(con->in));
+	/* Remove extraction state from connection */
+	SWAP(input_fd, con->input_fd);
+	SWAP(output_fd, con->output_fd);
+	SWAP(conn, con->tls);
+	SWAP(func, con->on_extract.func);
+	SWAP(func_name, con->on_extract.func_name);
+	SWAP(func_arg, con->on_extract.func_arg);
 
-	/* Extract TLS state (or fail) */
-	if (con->tls && tls_extract(con, extract)) {
-		_free_extract(&extract);
-		return;
+	slurm_mutex_unlock(&mgr.mutex);
+
+	/* Set file descriptors as blocking by default */
+	fd_set_blocking(input_fd);
+	fd_set_blocking(output_fd);
+
+	if (conn) {
+		int rc = EINVAL;
+
+		/*
+		 * Assign ownership of the file descriptor to the interface/TLS
+		 * connection.
+		 */
+		if ((rc = tls_g_set_conn_fds(conn, input_fd, output_fd))) {
+			log_flag(CONMGR, "%s: [%s] tls_g_set_fds() failed: %s",
+				 __func__, con->name, slurm_strerror(rc));
+			slurm_mutex_lock(&mgr.mutex);
+			goto failed;
+		}
+	} else {
+		conn_args_t args = {
+			.input_fd = input_fd,
+			.output_fd = output_fd,
+		};
+
+		/* Create new interface/conn connection from file descriptors */
+		if (!(conn = conn_g_create(&args))) {
+			log_flag(CONMGR, "%s: [%s] conn_g_create() failed: %m",
+				 __func__, con->name);
+			slurm_mutex_lock(&mgr.mutex);
+			goto failed;
+		}
 	}
 
-	/*
-	 * take the file descriptors, replacing the file descriptors in
-	 * con with invalid values initialized in conmgr_queue_extract_con_fd().
-	 */
-	SWAP(extract->input_fd, con->input_fd);
-	SWAP(extract->output_fd, con->output_fd);
+	func(conmgr_args, conn, func_arg);
 
-	/*
-	 * Queue up work but not against the connection as we want watch() to
-	 * cleanup the connection.
-	 */
-	add_work_fifo(true, _wrap_on_extract, extract);
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: [%s] END: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+			 __func__, con->name, con->input_fd, con->output_fd,
+			 (uintptr_t) con->tls, con->on_extract.func_name,
+			 (uintptr_t) con->on_extract.func_arg, flags);
+		xfree(flags);
+	}
+
+	/* Close connection as file descriptors are now extracted */
+	con_unset_flag(con, FLAG_WAIT_ON_EXTRACT);
+	close_con(true, con);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return;
+
+failed:
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: [%s] FAILED: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+			 __func__, con->name, con->input_fd, con->output_fd,
+			 (uintptr_t) con->tls, con->on_extract.func_name,
+			 (uintptr_t) con->on_extract.func_arg, flags);
+		xfree(flags);
+	}
+
+	con_unset_flag(con, FLAG_WAIT_ON_EXTRACT);
+	close_con(true, con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (!conn) {
+		fd_close(&input_fd);
+		fd_close(&output_fd);
+	}
+	FREE_NULL_CONN(conn);
+
+	/* Notify requester that extract failed */
+	func(conmgr_args, NULL, func_arg);
+}
+
+extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
+				       conmgr_extract_fd_func_t func,
+				       const char *func_name, void *func_arg)
+{
+	xassert(con);
+	xassert(func);
+	if (!con || !func)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(!con_flag(con, FLAG_WAIT_ON_EXTRACT));
+	xassert(!con->on_extract.func);
+	xassert(!con->on_extract.func_name);
+	xassert(!con->on_extract.func_arg);
+
+	/* Disable all polling for this connection */
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
+
+	/* Set extract state on connectoin */
+	con->on_extract.func = func;
+	con->on_extract.func_name = func_name;
+	con->on_extract.func_arg = func_arg;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return SLURM_SUCCESS;
 }
 
 static int _unquiesce_fd(conmgr_fd_t *con)
