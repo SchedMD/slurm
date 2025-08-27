@@ -1988,6 +1988,14 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 		xfree(key);
 	}
 
+	if (resp->segment_size) {
+		key = _build_key("SLURM_JOB_SEGMENT_SIZE", het_job_offset);
+		if (!getenv(key) &&
+		    (setenvf(NULL, key, "%u", resp->segment_size) < 0)) {
+			error("unable to set %s in environment", key);
+		}
+	}
+
 	return;
 }
 

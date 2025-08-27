@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "July 2025" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "August 2025" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -4152,6 +4152,12 @@ Quality Of Service (QOS) of the job allocation.
 .TP
 \fBSLURM_JOB_RESERVATION\fR
 Advanced reservation containing the job allocation, if any.
+.IP
+
+.TP
+\fBSLURM_JOB_SEGMENT_SIZE\fR
+The size of the segments that was used to create the job allocation.
+Only set if \-\-segment\fR is specified.
 .IP
 
 .TP

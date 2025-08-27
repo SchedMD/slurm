@@ -1223,6 +1223,12 @@ extern int env_array_for_job(char ***dest,
 					     desc->ntasks_per_node);
 	}
 
+	if (alloc->segment_size) {
+		env_array_overwrite_het_fmt(dest, "SLURM_JOB_SEGMENT_SIZE",
+					    het_job_offset, "%u",
+					    alloc->segment_size);
+	}
+
 	return rc;
 }
 
