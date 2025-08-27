@@ -700,7 +700,7 @@ static void *_service_msg(void *arg)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
 		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
 			 rpc_num2string(msg->msg_type), msg->auth_uid,
-			 &addr, msg->protocol_version);
+			 addr, msg->protocol_version);
 	}
 
 	/*
