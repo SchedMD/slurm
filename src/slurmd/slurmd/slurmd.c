@@ -165,7 +165,6 @@ bool tres_packed = false;
 typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
-	slurm_addr_t addr;
 	int fd;
 	void *tls_conn;
 	slurm_msg_t *msg;
@@ -690,7 +689,7 @@ static void *_service_msg(void *arg)
 {
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
-	slurm_addr_t *addr = &args->addr;
+	const slurm_addr_t *addr = &msg->address;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
@@ -1997,7 +1996,7 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 
 	if (!(rc = _increment_thd_count(false))) {
 		debug3("%s: [%pA] detaching new thread for RPC connection",
-		       __func__, &args->addr);
+		       __func__, &args->msg->address);
 
 		slurm_thread_create_detached(_service_msg, args);
 	} else {
@@ -2012,7 +2011,7 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		_decrement_thd_count();
 
 		debug3("%s: [%pA] deferring servicing connection",
-		       __func__, &args->addr);
+		       __func__, &args->msg->address);
 
 		/*
 		 * Backoff attempts to avoid needless lock contention while
@@ -2033,7 +2032,6 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 			   void *arg)
 {
 	service_msg_args_t *args = NULL;
-	int rc = SLURM_SUCCESS;
 	slurm_msg_t *msg = arg;
 
 	xassert(msg);
@@ -2059,20 +2057,9 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 
 	args = xmalloc(sizeof(*args));
 	args->magic = SERVICE_MSG_ARGS_MAGIC;
-	args->addr.ss_family = AF_UNSPEC;
 	args->fd = input_fd;
 	args->tls_conn = tls_conn;
 	args->msg = msg;
-
-	if ((rc = slurm_get_peer_addr(input_fd, &args->addr))) {
-		log_flag(NET, "%s: [%s] getting socket peer failed: %s",
-			 __func__, conmgr_con_get_name(msg->conmgr_con),
-			 slurm_strerror(rc));
-		fd_close(&input_fd);
-		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
-		xfree(args);
-		return;
-	}
 
 	/* force blocking mode for blocking handlers */
 	fd_set_blocking(input_fd);
