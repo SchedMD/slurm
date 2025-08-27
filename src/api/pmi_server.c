@@ -62,6 +62,7 @@ static int pmi_kvs_no_dup_keys = 1;
 struct barrier_resp {
 	uint16_t port;
 	char *hostname;
+	char *tls_cert;
 };				/* details for barrier task communications */
 struct barrier_resp *barrier_ptr = NULL;
 uint32_t barrier_resp_cnt = 0;	/* tasks having reached barrier */
@@ -149,6 +150,7 @@ static void *_msg_thread(void *x)
 		msg_arg_ptr->bar_ptr->port);
 	msg_send.msg_type = PMI_KVS_GET_RESP;
 	msg_send.data = (void *) msg_arg_ptr->kvs_ptr;
+	msg_send.tls_cert = msg_arg_ptr->bar_ptr->tls_cert;
 	slurm_set_addr(&msg_send.address,
 		msg_arg_ptr->bar_ptr->port,
 		msg_arg_ptr->bar_ptr->hostname);
@@ -271,8 +273,10 @@ static void *_agent(void *x)
 	for (i=0; i<kvs_set_cnt; i++)
 		xfree(kvs_set[i].kvs_host_ptr);
 	xfree(kvs_set);
-	for (i=0; i<args->barrier_xmit_cnt; i++)
+	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		xfree(args->barrier_xmit_ptr[i].hostname);
+		xfree(args->barrier_xmit_ptr[i].tls_cert);
+	}
 	xfree(args->barrier_xmit_ptr);
 	for (i=0; i<args->kvs_xmit_cnt; i++) {
 		for (j=0; j<args->kvs_xmit_ptr[i]->kvs_cnt; j++) {
@@ -500,6 +504,8 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 	barrier_ptr[kvs_get_ptr->task_id].port = kvs_get_ptr->port;
 	barrier_ptr[kvs_get_ptr->task_id].hostname = kvs_get_ptr->hostname;
 	kvs_get_ptr->hostname = NULL; /* just moved the pointer */
+	barrier_ptr[kvs_get_ptr->task_id].tls_cert = kvs_get_ptr->tls_cert;
+	kvs_get_ptr->tls_cert = NULL;
 	if (barrier_resp_cnt == barrier_cnt) {
 #if _DEBUG_TIMING
 		info("task[%d] at %u", 0, tm[0]);
