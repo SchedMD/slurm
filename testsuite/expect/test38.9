@@ -67,25 +67,15 @@ if {$het_job_id == 0} {
 
 log_debug "Collect Nodenames"
 
-send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader \r"
-expect {
-	-re "--noheader" {
-		exp_continue
-	}
-	-re "NAME=($re_word_str)" {
-		set component($index) $expect_out(1,string)
-		incr index
-		exp_continue
-	}
-	-re "$test_prompt" {
-		#break
-	}
-	timeout {
-		fail "squeue not responding"
+dict for {k v} [get_jobs] {
+	if {[dict get $v "HetJobId"] eq $het_job_id} {
+		set het_offset [dict get $v "HetJobOffset"]
+		set component($het_offset) [dict get $v "NodeList"]
 	}
 }
-if {$index != 3} {
-	fail "squeue failure ($index != 3)"
+
+if {[array size component] != 3} {
+	fail "Unable to obtain the nodes of each component ([array size component] != 3)"
 }
 
 log_info "Test Sending Jobs To Various Components"
