@@ -2079,9 +2079,6 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	args->conn = tls_conn;
 	args->msg = msg;
 
-	/* force blocking mode for blocking handlers */
-	fd_set_blocking(input_fd);
-
 	_try_service_msg(conmgr_args, args);
 }
 
