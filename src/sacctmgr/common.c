@@ -93,26 +93,54 @@ static void _nonblock(int state)
 
 }
 
-extern int parse_option_end(char *option)
+/*
+ * IN option - string to parse as /<command>([-+]=<value>)?/
+ * OUT op_type - Set to the type of operator parsed, '-', '+', or 0.
+ * OUT command_len - The strlen of <command>
+ * returns the offset of <value> if it exists, otherwise 0
+ */
+extern int parse_option_end(char *option, int *op_type, int *command_len)
 {
+	xassert(op_type);
+	xassert(command_len);
+
 	int end = 0;
+	*op_type = 0;
+	*command_len = 0;
 
 	if (!option)
 		return 0;
 
-	while(option[end]) {
-		if ((option[end] == '=')
-		   || (option[end] == '+' && option[end+1] == '=')
-		   || (option[end] == '-' && option[end+1] == '='))
-			break;
+	while (option[end] && option[end] != '=')
 		end++;
-	}
 
-	if (!option[end])
+	*command_len = end; /* before '=' */
+
+	if (!option[end]) /* no <value> */
 		return 0;
 
-	end++;
+	if (end) {
+		char tmp_type = option[end - 1];
+		if (tmp_type == '+' || tmp_type == '-') {
+			*op_type = tmp_type;
+			*command_len = end - 1; /* before "[+-]=" */
+		}
+	}
+
+	end++; /* past '=' */
 	return end;
+}
+
+extern bool common_verify_option_syntax(char *option, int op_type,
+					bool allow_op)
+{
+	if (op_type && !allow_op) {
+		exit_code = 1;
+		fprintf(stderr, " Invalid operator '%c=' in %s\n", op_type,
+			option);
+		return false;
+	}
+	return true;
 }
 
 /* you need to xfree whatever is sent from here */

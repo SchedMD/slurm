@@ -53,16 +53,10 @@ static int _set_cond(int *start, int argc, char **argv,
 	}
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-/* 				option = (int)argv[i][end-1]; */
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!xstrncasecmp (argv[i], "Set", MAX(command_len, 3))) {
 			i--;
@@ -151,17 +145,11 @@ static int _set_rec(int *start, int argc, char **argv,
 	int command_len = 0;
 	char *tmp_char = NULL;
 	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
+	int option = 0;
+	bool allow_option = false;
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!xstrncasecmp (argv[i], "Where", MAX(command_len, 5))) {
 			i--;
@@ -228,10 +216,14 @@ static int _set_rec(int *start, int argc, char **argv,
 			job->wckey = strip_quotes(argv[i]+end, NULL, 1);
 			set = 1;
 		} else {
+			allow_option = true;
+			exit_code = 1;
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
 			       argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 
 	(*start) = i;

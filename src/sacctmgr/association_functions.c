@@ -48,18 +48,11 @@ static int _set_cond(int *start, int argc, char **argv,
 	int i, end = 0;
 	int set = 0;
 	int command_len = 0;
-	int option = 0;
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!end && !xstrncasecmp(argv[i], "OnlyDefaults",
 					  MAX(command_len, 2))) {
@@ -119,8 +112,8 @@ static int _set_cond(int *start, int argc, char **argv,
 				slurm_addto_char_list(format_list,
 						      argv[i]+end);
 		} else if (!(set = sacctmgr_set_assoc_cond(
-				    assoc_cond, argv[i], argv[i]+end,
-				    command_len, option)) || exit_code) {
+				     assoc_cond, argv[i], argv[i]+end,
+				     command_len)) || exit_code) {
 			exit_code = 1;
 			fprintf(stderr, " Unknown condition: %s\n", argv[i]);
 		}
@@ -132,8 +125,8 @@ static int _set_cond(int *start, int argc, char **argv,
 }
 
 extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
-					 char *type, char *value,
-					 int command_len, int option)
+				   char *type, char *value,
+				   int command_len)
 {
 	int set =0;
 
@@ -204,7 +197,7 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 				db_conn, NULL);
 
 		if (slurmdb_addto_qos_char_list(assoc_cond->qos_list,
-						g_qos_list, value, option) > 0)
+						g_qos_list, value, 0) > 0)
 			set = 1;
 	} else if (!xstrncasecmp(type, "Users", MAX(command_len, 1))) {
 		if (!assoc_cond->user_list)
@@ -219,7 +212,8 @@ extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
 
 extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				  char *type, char *value,
-				  int command_len, int option)
+				  int command_len, int option,
+				  bool *allow_option)
 {
 	int set = 0;
 	uint32_t mins = NO_VAL;
@@ -518,6 +512,7 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		    SLURM_SUCCESS)
 			set = 1;
 	} else if (!xstrncasecmp(type, "QosLevel", MAX(command_len, 1))) {
+		*allow_option = true;
 		if (!assoc->qos_list)
 			assoc->qos_list = list_create(xfree_ptr);
 

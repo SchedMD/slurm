@@ -233,12 +233,7 @@ static char *_parse_option(char *options, bool make_lower,
 		return NULL;
 
 	*sub = xstrndup(options + start, *i - start);
-	*end = parse_option_end(*sub);
-	*command_len = *end - 1;
-	if ((*sub)[*end] == '=') {
-		*option2 = (int)(*sub)[*end-1];
-		(*end)++;
-	}
+	*end = parse_option_end(*sub, option2, command_len);
 
 	return strip_quotes(*sub + *end, NULL, make_lower);
 }
@@ -257,6 +252,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 	char *option = NULL;
 	int command_len = 0;
 	int option2 = 0;
+	bool allow_op = false;
 
 	_init_sacctmgr_file_opts(file_opts);
 
@@ -317,11 +313,14 @@ static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 			slurm_addto_char_list(file_opts->wckey_list, option);
 		} else if (!sacctmgr_set_assoc_rec(
 				   &file_opts->assoc_rec, sub, option,
-				   command_len, option2)) {
+				   command_len, option2, &allow_op)) {
+			allow_op = true;
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
 			break;
 		}
+
+		common_verify_option_syntax(sub, option2, allow_op);
 
 		xfree(sub);
 		xfree(option);
@@ -363,6 +362,7 @@ static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
 	char *option = NULL;
 	int command_len = 0;
 	int option2 = 0;
+	bool allow_op = false;
 
 	slurmdb_init_qos_rec(qos_rec, 0, NO_VAL);
 
@@ -385,11 +385,15 @@ static slurmdb_qos_rec_t *_parse_qos_options(char *options, bool make_lower)
 		} else if (end && !strlen(option)) {
 			debug("blank field given for %s discarding", sub);
 		} else if (!sacctmgr_set_qos_rec(qos_rec, sub, option,
-						 command_len, option2)) {
+						 command_len, option2,
+						 &allow_op)) {
+			allow_op = true;
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n", sub);
 			break;
 		}
+
+		common_verify_option_syntax(sub, option2, allow_op);
 
 		xfree(sub);
 		xfree(option);
@@ -2440,15 +2444,11 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	slurmdb_connection_commit(db_conn, 0);
 
 	for (i = 0; i < argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		int end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
+
 		if (!xstrncasecmp(argv[i], "clean",
 				  MAX(command_len, 3))) {
 			if (end) {

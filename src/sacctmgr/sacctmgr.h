@@ -236,18 +236,20 @@ extern bool tree_display;
 extern bool have_db_conn;
 
 extern int sacctmgr_set_assoc_cond(slurmdb_assoc_cond_t *assoc_cond,
-					 char *type, char *value,
-					 int command_len, int option);
+				   char *type, char *value,
+				   int command_len);
 extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc_rec,
-					char *type, char *value,
-					int command_len, int option);
+				  char *type, char *value,
+				  int command_len, int option,
+				  bool *allow_option);
 extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				     print_field_t *field, list_t *tree_list,
 				     bool last);
 
 extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 				char *type, char *value,
-				int command_len, int option);
+				int command_len, int option,
+				bool *allow_option);
 extern void sacctmgr_print_qos_rec(slurmdb_qos_rec_t *qos,
 				   print_field_t *field,
 				   bool last);
@@ -299,7 +301,9 @@ extern int sacctmgr_archive_dump(int argc, char **argv);
 extern int sacctmgr_archive_load(int argc, char **argv);
 
 /* common.c */
-extern int parse_option_end(char *option);
+extern int parse_option_end(char *option, int *op_type, int *command_end);
+extern bool common_verify_option_syntax(char *option, int op_type,
+					bool allow_op);
 extern char *strip_quotes(char *option, int *increased, bool make_lower);
 extern void notice_thread_init(void);
 extern void notice_thread_fini(void);

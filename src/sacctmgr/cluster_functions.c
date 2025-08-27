@@ -59,15 +59,10 @@ static int _set_cond(int *start, int argc, char **argv,
 	without_limits = 0;
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
+		int op_type;
+		end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
 		if (!xstrncasecmp(argv[i], "Set", MAX(command_len, 3))) {
 			i--;
@@ -159,21 +154,13 @@ static int _set_rec(int *start, int argc, char **argv,
 	int end = 0;
 	int command_len = 0;
 	int option = 0;
+	bool allow_option = false;
 
 	xassert(assoc);
 	xassert(cluster);
 
 	for (i=(*start); i<argc; i++) {
-		end = parse_option_end(argv[i]);
-		if (!end)
-			command_len=strlen(argv[i]);
-		else {
-			command_len=end-1;
-			if (argv[i][end] == '=') {
-				option = (int)argv[i][end-1];
-				end++;
-			}
-		}
+		end = parse_option_end(argv[i], &option, &command_len);
 
 		if (!xstrncasecmp(argv[i], "Where", MAX(command_len, 5))) {
 			i--;
@@ -197,6 +184,7 @@ static int _set_rec(int *start, int argc, char **argv,
 				rec_set |= SA_SET_CLUST;
 		} else if (!xstrncasecmp(argv[i], "Features",
 					MAX(command_len, 2))) {
+			allow_option = true;
 			if (*(argv[i]+end) == '\0' &&
 			    (option == '+' || option == '-')) {
 				fprintf(stderr,
@@ -257,15 +245,19 @@ static int _set_rec(int *start, int argc, char **argv,
 			fprintf(stderr, "GrpWall is not a valid option "
 				"for the root association of a cluster.\n");
 		} else if (sacctmgr_set_assoc_rec(
-					      assoc, argv[i], argv[i]+end,
-					      command_len, option)) {
+				   assoc, argv[i], argv[i]+end,
+				   command_len, option,
+				   &allow_option)) {
 			rec_set |= SA_SET_ASSOC;
 		} else {
+			allow_option = true;
 			exit_code=1;
 			fprintf(stderr, " Unknown option: %s\n"
 				" Use keyword 'where' to modify condition\n",
 				argv[i]);
 		}
+
+		common_verify_option_syntax(argv[i], option, allow_option);
 	}
 	(*start) = i;
 
@@ -1026,16 +1018,11 @@ extern int sacctmgr_dump_cluster (int argc, char **argv)
 	char *class_str = NULL;
 
 	for (i = 0; i < argc; i++) {
-		int end = parse_option_end(argv[i]);
+		int op_type;
+		int end = parse_option_end(argv[i], &op_type, &command_len);
+		if (!common_verify_option_syntax(argv[i], op_type, false))
+			continue;
 
-		if (!end)
-			command_len = strlen(argv[i]);
-		else {
-			command_len = end - 1;
-			if (argv[i][end] == '=') {
-				end++;
-			}
-		}
 		if (!end || !xstrncasecmp(argv[i], "Cluster",
 					 MAX(command_len, 1))) {
 			if (cluster_name) {
