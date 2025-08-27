@@ -11580,7 +11580,11 @@ unpack_error:
 static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, buf_t *buffer,
 			       uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg_ptr->task_id, buffer);
+		pack16(msg_ptr->port, buffer);
+		packstr(msg_ptr->hostname, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg_ptr->task_id, buffer);
 		pack16(msg_ptr->port, buffer);
 		packstr(msg_ptr->hostname, buffer);
@@ -11590,7 +11594,11 @@ static void _pack_kvs_host_rec(struct kvs_hosts *msg_ptr, buf_t *buffer,
 static int _unpack_kvs_host_rec(struct kvs_hosts *msg_ptr, buf_t *buffer,
 				uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg_ptr->task_id, buffer);
+		safe_unpack16(&msg_ptr->port, buffer);
+		safe_unpackstr(&msg_ptr->hostname, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->task_id, buffer);
 		safe_unpack16(&msg_ptr->port, buffer);
 		safe_unpackstr(&msg_ptr->hostname, buffer);
