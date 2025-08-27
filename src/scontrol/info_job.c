@@ -923,6 +923,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrcat(out, line_end);
 	}
 
+	xstrtrim(out);
+
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
 		xstrcat(out, "\n");
