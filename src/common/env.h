@@ -94,6 +94,7 @@ typedef struct env_options {
 	char *job_licenses;	/* job's licenses */
 	time_t job_start_time;  /* job's start time */
 	uint16_t oom_kill_step;   /* --oom-kill-step */
+	char *tls_cert;		/* srun TLS certificate */
 } env_t;
 
 
