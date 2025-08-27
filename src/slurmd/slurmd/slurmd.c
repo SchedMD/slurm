@@ -693,15 +693,14 @@ static void *_service_msg(void *arg)
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
-	debug3("%s: [%pA] processing new RPC connection", __func__, addr);
+	log_flag(NET, "%s: [%s] processing new RPC msg_type[0x%x]=%s connection from %pA",
+		 __func__, conmgr_con_get_name(msg->conmgr_con),
+		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type), addr);
 
-	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
-		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
-			 rpc_num2string(msg->msg_type), msg->auth_uid,
-			 addr, msg->protocol_version);
-	}
+	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 conmgr_con_get_name(msg->conmgr_con),
+		 rpc_num2string(msg->msg_type), msg->auth_uid, addr,
+		 msg->protocol_version);
 
 	/*
 	 * The fd was extracted from conmgr, so the conmgr connection is
@@ -722,7 +721,9 @@ static void *_service_msg(void *arg)
 	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
-	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
+	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
+		 __func__, conmgr_con_get_name(msg->conmgr_con),
+		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type));
 
 	slurm_free_msg(msg);
 
