@@ -376,6 +376,7 @@ struct kvs_hosts {
 	uint32_t	task_id;	/* job step's task id */
 	uint16_t	port;		/* communication port */
 	char *		hostname;	/* communication host */
+	char * tls_cert;	/* communication host */
 };
 struct kvs_comm {
 	char *		kvs_name;

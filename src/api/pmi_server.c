@@ -225,6 +225,8 @@ static void *_agent(void *x)
 					args->barrier_xmit_ptr[j].port;
 			kvs_host_list[host_cnt].hostname =
 					args->barrier_xmit_ptr[j].hostname;
+			kvs_host_list[host_cnt].tls_cert =
+					args->barrier_xmit_ptr[j].tls_cert;
 			args->barrier_xmit_ptr[j].port = 0;/* don't reissue */
 			host_cnt++;
 			if (host_cnt >= pmi_fanout)
