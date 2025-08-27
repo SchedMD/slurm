@@ -308,6 +308,11 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		atfork_install_handlers();
 	}
 
+	if (syslog_open) {
+		closelog();
+		syslog_open = false;
+	}
+
 	if (prog) {
 		if (log->argv0)
 			xfree(log->argv0);
@@ -338,11 +343,6 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	if (log->opt.buffered) {
 		log->buf  = cbuf_create(128, 8192);
 		log->fbuf = cbuf_create(128, 8192);
-	}
-
-	if (syslog_open) {
-		closelog();
-		syslog_open = false;
 	}
 
 	if (log->opt.syslog_level > LOG_LEVEL_QUIET) {
@@ -522,6 +522,10 @@ void log_fini(void)
 
 	slurm_mutex_lock(&log_lock);
 	_log_flush(log);
+	if (syslog_open) {
+		closelog();
+		syslog_open = false;
+	}
 	xfree(log->argv0);
 	xfree(log->prefix);
 	if (log->buf)
@@ -530,10 +534,6 @@ void log_fini(void)
 		cbuf_destroy(log->fbuf);
 	if (log->logfp)
 		fclose(log->logfp);
-	if (syslog_open) {
-		closelog();
-		syslog_open = false;
-	}
 	xfree(log);
 	slurm_mutex_unlock(&log_lock);
 }
@@ -578,6 +578,10 @@ void log_set_prefix(char **prefix)
 void log_set_argv0(char *argv0)
 {
 	slurm_mutex_lock(&log_lock);
+	if (syslog_open) {
+		closelog();
+		syslog_open = false;
+	}
 	if (log->argv0)
 		xfree(log->argv0);
 	if (!argv0)
