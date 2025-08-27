@@ -1995,8 +1995,8 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
 	if (!(rc = _increment_thd_count(false))) {
-		debug3("%s: [%pA] detaching new thread for RPC connection",
-		       __func__, &args->msg->address);
+		log_flag(NET, "%s: [%pA] detaching new thread for RPC connection",
+			 __func__, &args->msg->address);
 
 		slurm_thread_create_detached(_service_msg, args);
 	} else {
@@ -2010,8 +2010,8 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		 */
 		_decrement_thd_count();
 
-		debug3("%s: [%pA] deferring servicing connection",
-		       __func__, &args->msg->address);
+		log_flag(NET, "%s: [%pA] deferring servicing connection",
+			 __func__, &args->msg->address);
 
 		/*
 		 * Backoff attempts to avoid needless lock contention while
