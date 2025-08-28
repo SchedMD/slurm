@@ -158,6 +158,7 @@ def module_setup(request, tmp_path_factory):
     atf.properties["configurations-modified"] = set()
     atf.properties["orig-environment"] = dict(os.environ)
     atf.properties["orig-pypath"] = list(sys.path)
+    atf.properties["forced_upgrade_setup"] = False
     if "old-slurm-prefix" in atf.properties.keys():
         del atf.properties["old-slurm-prefix"]
     if "new-slurm-prefix" in atf.properties.keys():
@@ -265,7 +266,7 @@ def module_teardown():
             atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
 
         # Restore upgrade setup
-        if "old-slurm-prefix" in atf.properties.keys():
+        if atf.properties.get("forced_upgrade_setup"):
             logging.debug("Restoring upgrade setup...")
             if not os.path.exists(f"{atf.module_tmp_path}/upgrade-sbin"):
                 pytest.fail(
@@ -379,12 +380,47 @@ def spank_fail_lib(module_setup):
     """
 
     # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+
-    atf.require_version((25, 5), "config.h")
+    # It also needs to be built against the same version of slurmd and submit
+    # clients like sbatch
+    new_prefixes = False
+    if not atf.is_upgrade_setup():
+        atf.require_version((25, 5), "config.h")
+    else:
+        slurmd_version = atf.get_version("sbin/slurmd")
+        sbatch_version = atf.get_version("bin/sbatch")
+
+        if slurmd_version != sbatch_version:
+            pytest.skip(
+                f"We need to build SPANK against Slurm version of submit clients as sbatch {sbatch_version} and slurmd {slurmd_version}, but they diffear."
+            )
+
+        if slurmd_version < (25, 5):
+            pytest.skip(
+                f"This SPANK plugin needs a Slurm 25.05+, but slurmd version is {slurmd_version}"
+            )
+
+        if (
+            atf.get_version("config.h", slurm_prefix=atf.properties["new-build-prefix"])
+            == slurmd_version
+        ):
+            new_prefixes = True
+        elif (
+            not atf.get_version(
+                "config.h", slurm_prefix=atf.properties["old-build-prefix"]
+            )
+            == slurmd_version
+        ):
+            # This should never happen, slurmd should be one of those versions
+            pytest.fail(
+                "Unable to find build dir to match slurmd version {slurmd_version}"
+            )
 
     src_path = atf.properties["testsuite_scripts_dir"] + "/spank_fail_test.c"
     bin_path = os.getcwd() + "/spank_fail_test.so"
 
-    atf.compile_against_libslurm(src_path, bin_path, full=True, shared=True)
+    atf.compile_against_libslurm(
+        src_path, bin_path, full=True, shared=True, new_prefixes=new_prefixes
+    )
 
     yield bin_path
 
