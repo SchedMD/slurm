@@ -782,6 +782,19 @@ static int _mod_assoc(sacctmgr_file_opts_t *file_opts,
 			   file_opts->assoc_rec.priority);
 	}
 
+	if ((file_opts->assoc_rec.def_qos_id != NO_VAL) &&
+	    (assoc->def_qos_id != file_opts->assoc_rec.def_qos_id)) {
+		mod_assoc.def_qos_id = file_opts->assoc_rec.def_qos_id;
+		changed = 1;
+		if (!g_qos_list)
+			g_qos_list = slurmdb_qos_get(db_conn, NULL);
+		xstrfmtcat(my_info,
+			   "%-30.30s for %-7.7s %-10.10s %8s\n",
+			   " Set DefaultQOS",
+			   type, name,
+			   slurmdb_qos_str(g_qos_list, file_opts->assoc_rec.def_qos_id));
+	}
+
 	if (assoc->qos_list && list_count(assoc->qos_list) &&
 	    file_opts->assoc_rec.qos_list &&
 	    list_count(file_opts->assoc_rec.qos_list)) {

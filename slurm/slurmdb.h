@@ -1298,6 +1298,7 @@ struct slurmdb_user_rec {
 	slurmdb_bf_usage_t *bf_usage; /* data for backfill scheduler,
 				       * (DON'T PACK) */
 	list_t *coord_accts; /* list of slurmdb_coord_rec_t *'s */
+	uint32_t def_qos_id; /* Which QOS id is this user's default */
 	char *default_acct;
 	char *default_wckey;
 	uint32_t flags;		/* SLURMDB_USER_FLAG_* */

@@ -1195,6 +1195,11 @@ extern int sacctmgr_list_user(int argc, char **argv)
 						&tmp_uint32,
 						(curr_inx == field_count));
 					break;
+				case PRINT_DQOS:
+					sacctmgr_print_default_qos(
+						user->def_qos_id, field,
+						(curr_inx == field_count));
+					break;
 				default:
 					field->print_routine(
 						field, NULL,
