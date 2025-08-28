@@ -157,6 +157,7 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 		slurm_pack_list(object->coord_accts, slurmdb_pack_coord_rec,
 				buffer, protocol_version);
 
+		pack32(object->def_qos_id, buffer);
 		packstr(object->default_acct, buffer);
 		packstr(object->default_wckey, buffer);
 		pack32(object->flags, buffer);
@@ -235,6 +236,7 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 				      buffer, protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpack32(&object_ptr->def_qos_id, buffer);
 		safe_unpackstr(&object_ptr->default_acct, buffer);
 		safe_unpackstr(&object_ptr->default_wckey, buffer);
 		safe_unpack32(&object_ptr->flags, buffer);
