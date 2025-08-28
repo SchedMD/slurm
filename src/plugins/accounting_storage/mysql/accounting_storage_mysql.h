@@ -137,6 +137,7 @@ typedef struct {
 	mysql_conn_t *mysql_conn;
 	char *name_char;
 	time_t now;
+	bool qos_wckey_locked; /* read QOS_LOCK and WCKEY_LOCK already owned */
 	int *rc_ptr;
 	list_t *ret_list;
 	char *table;

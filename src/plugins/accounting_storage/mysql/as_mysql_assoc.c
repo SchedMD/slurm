@@ -1098,6 +1098,10 @@ static bool _assoc_id_has_qos(mysql_conn_t *mysql_conn, char *cluster,
 	return true;
 }
 
+/*
+ * If assoc_mgr_locked then the following READ_LOCKs need to be already owned:
+ * ASSOC_LOCK, USER_LOCK, QOS_LOCK, TRES_LOCK
+ */
 static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 MYSQL_RES *result,
 					 slurmdb_assoc_rec_t *assoc,
@@ -1106,7 +1110,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 					 bool is_admin, bool same_user,
 					 list_t *ret_list,
 					 slurmdb_assoc_cond_t *qos_assoc_cond,
-					 bitstr_t *wanted_qos)
+					 bitstr_t *wanted_qos,
+					 bool assoc_mgr_locked)
 {
 	MYSQL_ROW row;
 	int added = 0;
@@ -1203,23 +1208,24 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 
 				rc = ESLURM_ACCESS_DENIED;
 				goto end_it;
-			} else if (!assoc_mgr_check_coord_qos(cluster_name,
-							      account,
-							      user->name,
-							      assoc->qos_list)) {
-				/*
-				 * The assoc READ_LOCK is locked in the caller.
-				 * This is only locking the qos READ_LOCK.
-				 */
+			} else if (!assoc_mgr_check_coord_qos(
+					   cluster_name, account, user->name,
+					   assoc->qos_list, assoc_mgr_locked)) {
+				/* Caller may have already locked the qos */
 				assoc_mgr_lock_t locks = {
 					.qos = READ_LOCK,
 				};
 				char *requested_qos;
 
-				assoc_mgr_lock(&locks);
+				if (!assoc_mgr_locked)
+					assoc_mgr_lock(&locks);
+
+				xassert(verify_assoc_lock(QOS_LOCK, locks.qos));
+
 				requested_qos = get_qos_complete_str(
 					assoc_mgr_qos_list, assoc->qos_list);
-				assoc_mgr_unlock(&locks);
+				if (!assoc_mgr_locked)
+					assoc_mgr_unlock(&locks);
 				error("Coordinator %s(%d) does not have the "
 				      "access to all the qos requested (%s), "
 				      "so they can't modify account "
@@ -1260,10 +1266,9 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 				slurmdb_assoc_rec_t *par_assoc_ptr = NULL;
 
 				if (assoc_mgr_fill_in_assoc(
-					    mysql_conn,
-					    &par_assoc,
+					    mysql_conn, &par_assoc,
 					    ACCOUNTING_ENFORCE_ASSOCS,
-					    &par_assoc_ptr, true) !=
+					    &par_assoc_ptr, assoc_mgr_locked) !=
 				    SLURM_SUCCESS) {
 					object = xstrdup_printf(
 						"Parent account %s doesn't exist on cluster %s",
@@ -1515,7 +1520,8 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 			mod_assoc->priority = assoc->priority;
 
 		if (is_coord &&
-		    assoc_mgr_check_assoc_lim_incr(mod_assoc, &str)) {
+		    assoc_mgr_check_assoc_lim_incr(mod_assoc, &str,
+						   assoc_mgr_locked)) {
 			error("Coordinators can not increase %s above the parent limit",
 			      str);
 			xfree(str);
@@ -2908,7 +2914,7 @@ static int _add_assoc_cond_acct(void *x, void *arg)
 		    acct_assoc.cluster,
 		    acct_assoc.acct,
 		    add_assoc_cond->user_name,
-		    add_assoc_cond->add_assoc->assoc.qos_list)) {
+		    add_assoc_cond->add_assoc->assoc.qos_list, false)) {
 		assoc_mgr_lock_t locks = {
 			.qos = READ_LOCK,
 		};
@@ -3215,7 +3221,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (add_assoc_cond.is_coord &&
 		    !assoc_mgr_check_coord_qos(object->cluster, object->acct,
 					       add_assoc_cond.user_name,
-					       object->qos_list)) {
+					       object->qos_list, false)) {
 			assoc_mgr_lock_t locks = {
 				NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK,
 				NO_LOCK, NO_LOCK, NO_LOCK };
@@ -3558,9 +3564,19 @@ extern list_t *as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	bool locked = false;
 	slurmdb_assoc_cond_t qos_assoc_cond;
 	bitstr_t *wanted_qos = NULL;
+	/*
+	 * ASSOC_LOCK required by _assoc_id_has_qos/assoc_mgr_check_coord_qos
+	 * QOS_LOCK required by _process_modify_assoc_results
+	 * TRES_LOCK requerd by assoc_mgr_check_assoc_lim_incr
+	 * USER_LOCK required by assoc_mgr_check_coord_qos
+	 */
 	assoc_mgr_lock_t assoc_locks = {
 		.assoc = READ_LOCK,
+		.qos = READ_LOCK,
+		.tres = READ_LOCK,
+		.user = READ_LOCK,
 	};
+	bool assoc_mgr_locked = false;
 
 	if (!assoc_cond || !assoc) {
 		error("we need something to change");
@@ -3677,8 +3693,10 @@ is_same_user:
 		wanted_qos = bit_alloc(g_qos_count);
 		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
 		assoc_mgr_lock(&assoc_locks);
+		assoc_mgr_locked = true;
 	} else if (assoc->parent_acct) {
 		assoc_mgr_lock(&assoc_locks);
+		assoc_mgr_locked = true;
 	}
 
 	memset(&qos_assoc_cond, 0, sizeof(qos_assoc_cond));
@@ -3701,9 +3719,9 @@ is_same_user:
 		rc = _process_modify_assoc_results(mysql_conn, result, assoc,
 						   &user, cluster_name, vals,
 						   is_admin, same_user,
-						   ret_list,
-						   &qos_assoc_cond,
-						   wanted_qos);
+						   ret_list, &qos_assoc_cond,
+						   wanted_qos,
+						   assoc_mgr_locked);
 		mysql_free_result(result);
 
 		if ((rc == ESLURM_INVALID_PARENT_ACCOUNT)
@@ -3725,8 +3743,10 @@ is_same_user:
 	}
 	list_iterator_destroy(itr);
 
-	if (wanted_qos || assoc->parent_acct)
+	if (wanted_qos || assoc->parent_acct) {
 		assoc_mgr_unlock(&assoc_locks);
+		assoc_mgr_locked = false;
+	}
 
 	FREE_NULL_BITMAP(wanted_qos);
 
@@ -3794,8 +3814,17 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		.mysql_conn = mysql_conn,
 	};
 	bitstr_t *wanted_qos = NULL;
+	/*
+	 * ASSOC_LOCK needed by _assoc_id_has_qos and _handle_coord_parent_flag
+	 * QOS_LOCK needed by _check_jobs_before_remove
+	 * USER_LOCK needed by _handle_coord_parent_flag
+	 * WCKEY_LOCK needed by _check_jobs_before_remove
+	 */
 	assoc_mgr_lock_t assoc_locks = {
 		.assoc = READ_LOCK,
+		.qos = READ_LOCK,
+		.user = READ_LOCK,
+		.wckey = READ_LOCK,
 	};
 	remove_common_args_t args = {
 		.default_account = false,
@@ -3854,6 +3883,8 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		wanted_qos = bit_alloc(g_qos_count);
 		set_qos_bitstr_from_list(wanted_qos, assoc_cond->qos_list);
 		assoc_mgr_lock(&assoc_locks);
+		add_assoc_cond.assoc_mgr_locked = true;
+		args.qos_wckey_locked = true;
 	}
 
 	itr = list_iterator_create(args.use_cluster_list);
@@ -3924,8 +3955,11 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 		}
 	}
-	if (wanted_qos)
+	if (wanted_qos) {
 		assoc_mgr_unlock(&assoc_locks);
+		add_assoc_cond.assoc_mgr_locked = false;
+		args.qos_wckey_locked = false;
+	}
 
 	FREE_NULL_LIST(add_assoc_cond.coord_users);
 	FREE_NULL_BITMAP(wanted_qos);

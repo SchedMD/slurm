@@ -432,7 +432,11 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 			.wckey = READ_LOCK,
 		};
 
-		assoc_mgr_lock(&locks);
+		if (!args->qos_wckey_locked)
+			assoc_mgr_lock(&locks);
+
+		xassert(verify_assoc_lock(QOS_LOCK, locks.qos));
+		xassert(verify_assoc_lock(WCKEY_LOCK, locks.wckey));
 
 		while ((row = mysql_fetch_row(result))) {
 			slurmdb_qos_rec_t qos_req = {
@@ -477,7 +481,8 @@ static bool _check_jobs_before_remove(remove_common_args_t *args)
 
 			list_append(ret_list, object);
 		}
-		assoc_mgr_unlock(&locks);
+		if (!args->qos_wckey_locked)
+			assoc_mgr_unlock(&locks);
 	}
 	mysql_free_result(result);
 	return rc;
