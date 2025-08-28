@@ -150,6 +150,6 @@ extern int op_handler_wckeys(ctxt_t *ctxt)
 	}
 
 cleanup:
-	slurmdb_destroy_wckey_rec(wckey_cond);
+	slurmdb_destroy_wckey_cond(wckey_cond);
 	return SLURM_SUCCESS;
 }
