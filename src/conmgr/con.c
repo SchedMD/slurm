@@ -1862,7 +1862,7 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con)
 static bool _is_output_open(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	return (con->output_fd >= 0);
+	return (!con_flag(con, FLAG_READ_EOF) && (con->output_fd >= 0));
 }
 
 extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
