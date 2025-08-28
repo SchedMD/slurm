@@ -425,3 +425,55 @@ def spank_fail_lib(module_setup):
     yield bin_path
 
     atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
+def spank_tmp_lib(module_setup):
+    """
+    Compiles a SPANK plugin that will write files in a /tmp directory.
+    Returns the tmp_spank dir and the bin path of the spank .so that will write
+    files in the tmp_spank dir if configured.
+    """
+
+    # The plugin uses ESPANK_NODE_FAILURE, so it needs to compile against 25.05+
+    # It also needs to be built against the same version of slurmd and submit
+    # clients like sbatch
+    new_prefixes = False
+    if atf.is_upgrade_setup():
+        slurmd_version = atf.get_version("sbin/slurmd")
+        sbatch_version = atf.get_version("bin/sbatch")
+
+        if slurmd_version != sbatch_version:
+            pytest.skip(
+                f"We need to build SPANK against Slurm version of submit clients as sbatch {sbatch_version} and slurmd {slurmd_version}, but they diffear."
+            )
+        if (
+            atf.get_version("config.h", slurm_prefix=atf.properties["new-build-prefix"])
+            == slurmd_version
+        ):
+            new_prefixes = True
+        elif (
+            not atf.get_version(
+                "config.h", slurm_prefix=atf.properties["old-build-prefix"]
+            )
+            == slurmd_version
+        ):
+            # This should never happen, slurmd should be one of those versions
+            pytest.fail(
+                "Unable to find build dir to match slurmd version {slurmd_version}"
+            )
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/spank_tmp_plugin.c"
+    bin_path = os.getcwd() + "/spank_tmp_plugin.so"
+
+    atf.compile_against_libslurm(
+        src_path, bin_path, full=True, shared=True, new_prefixes=new_prefixes
+    )
+
+    tmp_spank = "/tmp/spank"
+    atf.run_command(f"mkdir -p {tmp_spank}", fatal=True)
+
+    yield tmp_spank, bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
+    atf.run_command(f"rm -rf {tmp_spank}", fatal=True)
