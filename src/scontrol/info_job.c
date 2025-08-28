@@ -732,25 +732,25 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 
 	/****** Line (optional) ******/
 	if (job_ptr->admin_comment) {
-		xstrfmtcat(out, "AdminComment=%s ", job_ptr->admin_comment);
+		xstrfmtcat(out, "AdminComment=%s", job_ptr->admin_comment);
 		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->system_comment) {
-		xstrfmtcat(out, "SystemComment=%s ", job_ptr->system_comment);
+		xstrfmtcat(out, "SystemComment=%s", job_ptr->system_comment);
 		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->comment) {
-		xstrfmtcat(out, "Comment=%s ", job_ptr->comment);
+		xstrfmtcat(out, "Comment=%s", job_ptr->comment);
 		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (job_ptr->extra) {
-		xstrfmtcat(out, "Extra=%s ", job_ptr->extra);
+		xstrfmtcat(out, "Extra=%s", job_ptr->extra);
 		xstrcat(out, line_end);
 	}
 
@@ -922,6 +922,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrfmtcat(out, "ResvPorts=%s", job_ptr->resv_ports);
 		xstrcat(out, line_end);
 	}
+
+	xstrtrim(out);
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
