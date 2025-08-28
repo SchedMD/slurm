@@ -68,9 +68,11 @@ if {$het_job_id == 0} {
 log_debug "Collect Nodenames"
 
 dict for {k v} [get_jobs] {
-	if {[dict get $v "HetJobId"] eq $het_job_id} {
-		set het_offset [dict get $v "HetJobOffset"]
-		set component($het_offset) [dict get $v "NodeList"]
+	if {[dict exists $v "HetJobId"]} {
+		if {[dict get $v "HetJobId"] eq $het_job_id} {
+			set het_offset [dict get $v "HetJobOffset"]
+			set component($het_offset) [dict get $v "NodeList"]
+		}
 	}
 }
 
