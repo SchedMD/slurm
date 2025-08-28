@@ -529,6 +529,26 @@ extern int sacctmgr_set_assoc_rec(slurmdb_assoc_rec_t *assoc,
 	return set;
 }
 
+extern void sacctmgr_print_default_qos(uint32_t def_qos_id,
+				       print_field_t *field, bool last)
+{
+	char *tmp_char = NULL, *print_acct = NULL;
+
+	if (!g_qos_list)
+		g_qos_list = slurmdb_qos_get(db_conn, NULL);
+
+	if (def_qos_id != NO_VAL) {
+		tmp_char = slurmdb_qos_str(g_qos_list, def_qos_id);
+		if (!tmp_char)
+			tmp_char = print_acct =
+				xstrdup_printf("UNKN-%u", def_qos_id);
+	} else
+		tmp_char = print_acct = xstrdup("");
+
+	field->print_routine(field, tmp_char, last);
+	xfree(print_acct);
+}
+
 extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 				     print_field_t *field, list_t *tree_list,
 				     bool last)
@@ -573,20 +593,7 @@ extern void sacctmgr_print_assoc_rec(slurmdb_assoc_rec_t *assoc,
 		field->print_routine(field, assoc->comment, last);
 		break;
 	case PRINT_DQOS:
-		if (!g_qos_list)
-			g_qos_list = slurmdb_qos_get(
-				db_conn, NULL);
-		if (assoc->def_qos_id != NO_VAL) {
-			tmp_char = slurmdb_qos_str(g_qos_list,
-						   assoc->def_qos_id);
-			if (!tmp_char)
-				tmp_char = print_acct =
-					xstrdup_printf("UNKN-%u",
-						       assoc->def_qos_id);
-		} else
-			tmp_char = print_acct = xstrdup("");
-		field->print_routine(field, tmp_char, last);
-		xfree(print_acct);
+		sacctmgr_print_default_qos(assoc->def_qos_id, field, last);
 		break;
 	case PRINT_FAIRSHARE:
 		if (assoc->shares_raw == SLURMDB_FS_USE_PARENT)
