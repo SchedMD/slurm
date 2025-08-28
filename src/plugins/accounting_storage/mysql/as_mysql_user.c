@@ -1814,6 +1814,9 @@ empty:
 					user->default_acct =
 						xstrdup(assoc->acct);
 
+				if (!user->def_qos_id && assoc->def_qos_id)
+					user->def_qos_id = assoc->def_qos_id;
+
 				if (!user_cond->with_assocs) {
 					/* We just got the default so no
 					   reason to hang around if we aren't
