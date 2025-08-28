@@ -102,8 +102,14 @@ strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
 
-static bool _is_fd_skipped(int fd, int *skipped)
+static bool _is_fd_skipped(int fd, int *skipped, log_closeall_skip_t log_skip)
 {
+	if (fd == log_skip.log_fd)
+		return true;
+
+	if (fd == log_skip.sched_log_fd)
+		return true;
+
 	if (!skipped)
 		return false;
 
@@ -114,7 +120,7 @@ static bool _is_fd_skipped(int fd, int *skipped)
 	return false;
 }
 
-static void _slow_closeall(int fd, int *skipped)
+static void _slow_closeall(int fd, int *skipped, log_closeall_skip_t log_skip)
 {
 	struct rlimit rlim;
 
@@ -124,7 +130,7 @@ static void _slow_closeall(int fd, int *skipped)
 	}
 
 	for (; fd < rlim.rlim_cur; fd++)
-		if (!_is_fd_skipped(fd, skipped))
+		if (!_is_fd_skipped(fd, skipped, log_skip))
 			close(fd);
 }
 
@@ -133,6 +139,7 @@ extern void closeall_except(int fd, int *skipped)
 	char *name = "/proc/self/fd";
 	DIR *d;
 	struct dirent *dir;
+	log_closeall_skip_t log_skip = log_closeall_pre();
 
 	/*
 	 * Blindly closing all file descriptors is slow.
@@ -143,7 +150,8 @@ extern void closeall_except(int fd, int *skipped)
 	if (!(d = opendir(name))) {
 		debug("Could not read open files from %s: %m, closing all potential file descriptors",
 		      name);
-		_slow_closeall(fd, skipped);
+		_slow_closeall(fd, skipped, log_skip);
+		log_closeall_post();
 		return;
 	}
 
@@ -153,11 +161,13 @@ extern void closeall_except(int fd, int *skipped)
 			int open_fd = atoi(dir->d_name);
 
 			if ((open_fd >= fd) &&
-			    !_is_fd_skipped(open_fd, skipped))
+			    !_is_fd_skipped(open_fd, skipped, log_skip))
 				close(open_fd);
 		}
 	}
 	closedir(d);
+
+	log_closeall_post();
 }
 
 extern void closeall(int fd)

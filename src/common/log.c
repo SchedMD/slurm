@@ -1734,3 +1734,44 @@ extern void _log_flag_hex(const void *data, size_t len, ssize_t start,
 
 	xfree(prepend);
 }
+
+log_closeall_skip_t log_closeall_pre(void)
+{
+	log_closeall_skip_t skip = {
+		.log_fd = -1,
+		.sched_log_fd = -1,
+	};
+
+	slurm_mutex_lock(&log_lock);
+
+	if (log && log->logfp)
+		skip.log_fd = fileno(log->logfp);
+	else
+		skip.log_fd = fileno(stderr);
+
+	if (sched_log && sched_log->logfp)
+		skip.sched_log_fd = fileno(sched_log->logfp);
+
+	closelog();
+	syslog_open = false;
+
+	slurm_mutex_unlock(&log_lock);
+
+	return skip;
+}
+
+void log_closeall_post(void)
+{
+	slurm_mutex_lock(&log_lock);
+
+	/*
+	 * Re-open syslog file descriptor after closeall() with same settings
+	 * if logging had already been initialized.
+	 */
+	if (log && log->initialized) {
+		openlog(log->argv0, LOG_PID, log->facility);
+		syslog_open = true;
+	}
+
+	slurm_mutex_unlock(&log_lock);
+}

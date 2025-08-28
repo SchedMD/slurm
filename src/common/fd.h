@@ -46,11 +46,18 @@
 
 #include "src/common/macros.h"
 
-/* close all FDs >= a specified value */
+/*
+ * Close all FDs >= a specified value
+ * NOTE: logging file descriptors will be skipped
+ * WARNING: Will skip close()ing any open logging file descriptors
+ * IN fd - start closing file descriptors at fd
+ */
 extern void closeall(int fd);
 
 /*
  * close all FDs >= a specified value except FDs in skipped array
+ * NOTE: logging file descriptors will be skipped
+ * WARNING: Will skip close()ing any open logging file descriptors
  * IN fd - start closing file descriptors at fd
  * IN skipped - array of file descriptors to skip (or NULL)
  *              array must be terminated by -1 if provided
