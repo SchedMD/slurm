@@ -1501,8 +1501,7 @@ Specify a minimum number of logical cpus/processors per node.
 \fB\-\-network\fR=<\fItype\fR>
 Specify information pertaining to the switch or network.
 The interpretation of \fItype\fR is system dependent.
-This option is supported when running Slurm on a Cray natively. It is
-used to request using Network Performance Counters.
+It is used to request using Network Performance Counters.
 Only one value per request is valid.
 All options are case in\-sensitive.
 In this configuration supported values include:
@@ -2851,6 +2850,11 @@ Only set if the \fB\-\-mem\-per\-gpu\fR option is specified.
 .TP
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
+.IP
+
+.TP
+\fBSLURM_NETWORK\fR
+Set to the value of the \fB\-\-network\fR option, if specified.
 .IP
 
 .TP

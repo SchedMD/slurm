@@ -2553,11 +2553,9 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 		env_array_overwrite(&launch->environment, "SLURM_ACCTG_FREQ",
 				    job->details->acctg_freq);
 
-#ifdef HAVE_NATIVE_CRAY
 	if (job->network)
 		env_array_overwrite(&launch->environment, "SLURM_NETWORK",
 				    job->network);
-#endif
 
 	if (job->details->cpu_freq_min || job->details->cpu_freq_max ||
 	    job->details->cpu_freq_gov) {
