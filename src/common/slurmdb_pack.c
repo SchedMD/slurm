@@ -144,19 +144,11 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (!object) {
-			pack16(0, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			packnull(buffer);
-			pack32(0, buffer);
-			packnull(buffer);
-			packnull(buffer);
-			pack32(0, buffer);
-			pack32(NO_VAL, buffer);
+			packbool(0, buffer);
 			return;
 		}
 
+		packbool(1, buffer);
 		pack16(object->admin_level, buffer);
 
 		slurm_pack_list(object->assoc_list, slurmdb_pack_assoc_rec,
@@ -218,6 +210,7 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 				   buf_t *buffer)
 {
 	slurmdb_user_rec_t *object_ptr = xmalloc(sizeof(slurmdb_user_rec_t));
+	bool need_unpack = false;
 
 	xassert(object);
 	xassert(buffer);
@@ -225,6 +218,10 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackbool(&need_unpack, buffer);
+		if (!need_unpack)
+			goto end_unpack;
+
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		if (slurm_unpack_list(&object_ptr->assoc_list,
 				      slurmdb_unpack_assoc_rec,
@@ -282,6 +279,7 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 		goto unpack_error;
 	}
 
+end_unpack:
 	return SLURM_SUCCESS;
 
 unpack_error:
