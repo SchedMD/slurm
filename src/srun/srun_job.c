@@ -1994,6 +1994,7 @@ static void _set_env_vars(resource_allocation_response_msg_t *resp,
 		    (setenvf(NULL, key, "%u", resp->segment_size) < 0)) {
 			error("unable to set %s in environment", key);
 		}
+		xfree(key);
 	}
 
 	return;
