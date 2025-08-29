@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2025" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "September 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -5192,10 +5192,11 @@ Disable the ability to register new triggers.
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
 When enabled the slurmd will be permitted to retrieve config files and
-\fBProlog\fR and \fBEpilog\fR scripts from the slurmctld, and on any 'scontrol
-reconfigure' command new configs and scripts will be automatically pushed out
-and applied to nodes that are running in this "configless" mode.
-See https://slurm.schedmd.com/configless_slurm.html for more details.
+\fBProlog\fR, \fBEpilog\fR, \fBTaskProlog\fR, and \fBTaskEpilog\fR scripts from
+the slurmctld, and on any 'scontrol reconfigure' command new configs and scripts
+will be automatically pushed out and applied to nodes that are running in this
+"configless" mode. See https://slurm.schedmd.com/configless_slurm.html for more
+details.
 
 \fBNOTE\fR: Included files with the \fBInclude\fR directive will only be pushed
 if the filename has no path separators and is located adjacent to slurm.conf.
