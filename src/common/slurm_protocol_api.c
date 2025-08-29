@@ -102,7 +102,6 @@ strong_alias(get_unit_type, slurm_get_unit_type);
 /* #DEFINES */
 
 /* STATIC VARIABLES */
-static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
 static char *_global_auth_key(void);
@@ -1531,15 +1530,7 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
 		       msg->forward_struct->buf_len);
 
 		msg->forward_struct->ret_list = msg->ret_list;
-		/* take out the amount of timeout from this hop */
-		msg->forward_struct->timeout = header.forward.timeout;
-		if (!msg->forward_struct->timeout)
-			msg->forward_struct->timeout = message_timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
-
-		log_flag(NET, "%s: [%s] forwarding messages to %u nodes with timeout of %d",
-			 __func__, peer, msg->forward_struct->fwd_cnt,
-			 msg->forward_struct->timeout);
 
 		if (forward_msg(msg->forward_struct, &header) == SLURM_ERROR) {
 			/* peer may have not been resolved already */
