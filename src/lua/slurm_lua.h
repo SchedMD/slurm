@@ -44,6 +44,21 @@
 #include "src/slurmctld/slurmctld.h"
 #include "slurm/slurm_errno.h"
 
+#ifndef LUA_OK
+/* Define LUA_OK if Lua is <5.2 */
+#define LUA_OK 0
+#endif
+
+/* Using typedef as Lua status codes are distinct from POSIX return codes */
+typedef int lua_status_code_t;
+
+/* Get string description of Lua status code */
+extern const char *slurm_lua_status_code_string(lua_status_code_t sc);
+/* Get stringified form of status codes macro from lua.h */
+extern const char *slurm_lua_status_code_stringify(lua_status_code_t sc);
+/* Get slurm_err_t of status codes macro from lua.h */
+extern slurm_err_t slurm_lua_status_error(lua_status_code_t sc);
+
 /* Generic stack dump function for debugging purposes */
 extern void slurm_lua_stack_dump(const char *plugin,
 				 char *header, lua_State *L);
@@ -87,6 +102,27 @@ extern void slurm_lua_table_register(lua_State *L, const char *libname,
  */
 extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 				      const char *name);
+
+/*
+ * Check if a function is present in script
+ * IN L - lua state table pointer
+ * IN func_name - name of function to check
+ * RET true if function is present or false is function not found
+ */
+extern bool slurm_lua_is_function_defined(lua_State *L, const char *func_name);
+
+/*
+ * Call lua_pcall() and catch error
+ * IN L - lua state table pointer
+ * IN nargs - number of arguments to function already pushed
+ * IN nresults - number of returns expected from function
+ * IN msgh - message handler
+ * IN/OUT err_ptr - Populate error string on failure. Must xfree(*err_ptr)
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
+			   char **err_ptr, const char *caller);
 
 #else
 # define LUA_VERSION_NUM 0

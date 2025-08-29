@@ -67,6 +67,64 @@ uint16_t accounting_enforce = 0;
 void *acct_db_conn = NULL;
 #endif
 
+#define T(status_code, string, err) { status_code, #status_code, string, err }
+
+static const struct {
+	lua_status_code_t status_code;
+	const char *status_code_string;
+	const char *string;
+	slurm_err_t err;
+} lua_status_codes[] = {
+	/*
+	 * Status codes macros from lua.h and messages derived from:
+	 *	https://www.lua.org/manual/5.3/manual.html
+	 */
+	T(LUA_OK, "SUCCESS", SLURM_SUCCESS),
+	T(LUA_YIELD, "Thread yielded", ESLURM_LUA_FUNC_FAILED),
+	T(LUA_ERRRUN, "Runtime error", ESLURM_LUA_FUNC_FAILED_RUNTIME_ERROR),
+	T(LUA_ERRSYNTAX, "Syntax error during precompilation",
+	  ESLURM_LUA_INVALID_SYNTAX),
+	T(LUA_ERRMEM, "Memory allocation error", ESLURM_LUA_FUNC_FAILED_ENOMEM),
+#ifdef LUA_ERRGCMM
+	T(LUA_ERRGCMM, "Error while running a __gc metamethod",
+	  ESLURM_LUA_FUNC_FAILED_GARBAGE_COLLECTOR),
+#endif
+	T(LUA_ERRERR, "Error while running the message handler",
+	  ESLURM_LUA_FUNC_FAILED_RUNTIME_ERROR),
+};
+#undef T
+
+extern const char *slurm_lua_status_code_string(lua_status_code_t sc)
+{
+	for (int i = 0; i < ARRAY_SIZE(lua_status_codes); i++)
+		if (lua_status_codes[i].status_code == sc)
+			return lua_status_codes[i].string;
+
+	/*
+	 * Should never happen but only Lua controls returns these values so it
+	 * is out of Slurm's control.
+	 */
+	return "Unknown Lua status code";
+}
+
+extern const char *slurm_lua_status_code_stringify(lua_status_code_t sc)
+{
+	for (int i = 0; i < ARRAY_SIZE(lua_status_codes); i++)
+		if (lua_status_codes[i].status_code == sc)
+			return lua_status_codes[i].status_code_string;
+
+	return "INVALID";
+}
+
+extern slurm_err_t slurm_lua_status_error(lua_status_code_t sc)
+{
+	for (int i = 0; i < ARRAY_SIZE(lua_status_codes); i++)
+		if (lua_status_codes[i].status_code == sc)
+			return lua_status_codes[i].err;
+
+	return ESLURM_LUA_FUNC_FAILED;
+}
+
 static int _setup_stringarray(lua_State *L, int limit, char **data)
 {
 	/*
@@ -83,17 +141,53 @@ static int _setup_stringarray(lua_State *L, int limit, char **data)
 	return 1;
 }
 
-/*
- *  check that global symbol [name] in lua script is a function
- */
-static int _check_lua_script_function(lua_State *L, const char *name)
+extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
+			   char **err_ptr, const char *caller)
 {
-	int rc = 0;
+	lua_status_code_t sc;
+	int rc;
+
+	sc = lua_pcall(L, nargs, nresults, msgh);
+	rc = slurm_lua_status_error(sc);
+
+	if (rc) {
+		/*
+		 * When a lua_pcall() fails, Lua "pushes a single value on the
+		 * stack (the error object)" per lua_pcall() description in the
+		 * reference manual:
+		 *	https://www.lua.org/manual/5.3/manual.html
+		 * When msgh == 0, this is the same as the return value of
+		 * lua_pcall().
+		 *
+		 * This function will lua_pop() that value to remove it from
+		 * the stack.
+		 */
+		lua_pop(L, 1);
+		*err_ptr = xstrdup(slurm_strerror(rc));
+
+		error("%s: lua_pcall(0x%"PRIxPTR", %d, %d, %d)=%s(%s)=%s",
+		      caller, (uintptr_t) L, nargs, nresults, msgh,
+		      slurm_lua_status_code_stringify(sc),
+		      slurm_lua_status_code_string(sc), *err_ptr);
+	} else {
+		log_flag(SCRIPT, "%s: lua_pcall(0x%"PRIxPTR", %d, %d, %d)=%s(%s)=%s",
+		      caller, (uintptr_t) L, nargs, nresults, msgh,
+		      slurm_lua_status_code_stringify(sc),
+		      slurm_lua_status_code_string(sc), slurm_strerror(rc));
+	}
+
+	return rc;
+}
+
+extern bool slurm_lua_is_function_defined(lua_State *L, const char *name)
+{
+	bool rc = false;
+
 	lua_getglobal(L, name);
-	if (!lua_isfunction(L, -1))
-		rc = -1;
+	rc = lua_isfunction(L, -1);
 	lua_pop(L, -1);
-	return (rc);
+
+	return rc;
 }
 
 /*
@@ -106,7 +200,7 @@ static int _check_lua_script_functions(lua_State *L, const char *plugin,
 	int rc = 0;
 	const char **ptr = NULL;
 	for (ptr = req_fxns; ptr && *ptr; ptr++) {
-		if (_check_lua_script_function(L, *ptr) < 0) {
+		if (!slurm_lua_is_function_defined(L, *ptr)) {
 			error("%s: %s: missing required function %s",
 			      plugin, script_path, *ptr);
 			rc = -1;
@@ -712,7 +806,7 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	lua_State *curr = *L;
 	struct stat st;
 	int rc = 0;
-	char *err_str = NULL;
+	char *err_str = NULL, *ret_err_str = NULL;
 
 	if (stat(script_path, &st) != 0) {
 		err_str = xstrdup_printf("Unable to stat %s: %s",
@@ -755,9 +849,9 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	/*
 	 *  Run the user script:
 	 */
-	if (lua_pcall(new, 0, 1, 0)) {
-		err_str = xstrdup_printf("%s: %s",
-					 script_path, lua_tostring(new, -1));
+	if ((rc = slurm_lua_pcall(new, 0, 1, 0, &ret_err_str, __func__))) {
+		err_str = xstrdup_printf("%s: %s", script_path, ret_err_str);
+		xfree(ret_err_str);
 		lua_close(new);
 		goto fini_error;
 	}
