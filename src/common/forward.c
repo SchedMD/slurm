@@ -692,6 +692,10 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 		header->forward.timeout *= 2 * depth;
 	header->forward.tree_depth = depth;
 	forward_struct->timeout = header->forward.timeout;
+
+	log_flag(NET, "%s: forwarding messages to %u nodes with timeout of %d",
+		 __func__, forward_struct->fwd_cnt, forward_struct->timeout);
+
 	_forward_msg_internal(NULL, sp_hl, forward_struct, header,
 			      forward_struct->timeout, hl_count);
 
