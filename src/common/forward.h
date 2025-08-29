@@ -118,8 +118,16 @@ extern void destroy_data_info(void *object);
 extern void destroy_forward(forward_t *forward);
 /*
  * Destroy forwarding struct instance
+ * NOTE: Call FREE_NULL_FORWARD_STRUCT() instead of destroy_forward_struct()
  * IN forward - pointer to forward_struct_t
  */
 extern void destroy_forward_struct(forward_struct_t *forward_struct);
+
+#define FREE_NULL_FORWARD_STRUCT(_X)                \
+	do {                                        \
+		if (_X)                             \
+			destroy_forward_struct(_X); \
+		_X = NULL;                          \
+	} while (0)
 
 #endif
