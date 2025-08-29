@@ -1801,8 +1801,8 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	slurmctld_rpc_t *this_rpc = NULL;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [fd:%d] connection work cancelled",
-		       __func__, input_fd);
+		debug3("%s: [%s] connection work cancelled",
+		       __func__, conmgr_fd_get_name(conmgr_args.con));
 		goto invalid;
 	}
 
@@ -1847,10 +1847,9 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
-		conn_g_destroy(msg->conn, true);
-		msg->conn = NULL;
-		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
-			 input_fd, output_fd);
+		FREE_NULL_CONN(msg->conn);
+		log_flag(TLS, "[%s] Destroyed server TLS connection for incoming RPC",
+			 conmgr_fd_get_name(conmgr_args.con));
 		slurm_free_msg(msg);
 	}
 
