@@ -2,29 +2,22 @@ import atf
 import pytest
 import os
 
-spank_plugin_script = "test_147_1_spank_plugin.c"
-spank_compiled_plugin = "test_147_1_spank_plugin.so"
+spank_tmp = ""
 
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)
-def setup():
+def setup(spank_tmp_lib):
+    global spank_tmp
+    spank_tmp, spank_lib = spank_tmp_lib
     atf.require_config_parameter("JobContainerType", "job_container/tmpfs")
     atf.require_config_parameter_includes("SlurmdParameters", "contain_spank")
     atf.require_config_parameter_includes("PrologFlags", "Contain")
 
-    # Compile SPANK plugin
-    spank_plugin_script_path = (
-        f"{atf.properties['testsuite_scripts_dir']}/{spank_plugin_script}"
-    )
-    atf.compile_against_libslurm(
-        spank_plugin_script_path, spank_compiled_plugin, full=True, shared=True
-    )
-
     # Ensure the SPANK plugin is included in plugstack.conf
     atf.require_config_parameter(
         "required",
-        f"{atf.module_tmp_path}/{spank_compiled_plugin}",
+        f"{spank_lib}",
         delimiter=" ",
         source="plugstack",
     )
@@ -35,11 +28,8 @@ def setup():
         "BasePath", f"/tmp/%h_%n_base_path", source="job_container"
     )
 
-    # Mount /tmp/test_147_1_private in the job container as a private mount
-    atf.require_config_parameter(
-        "Dirs", "/tmp/test_147_1_private", source="job_container"
-    )
-    atf.run_command("mkdir -p /tmp/test_147_1_private", fatal=True)
+    # Mount spank_tmp in the job container as a private mount
+    atf.require_config_parameter("Dirs", spank_tmp, source="job_container")
 
     atf.require_slurm_running()
 
@@ -49,14 +39,14 @@ def test_spank_plugin_tmpfs():
     Test that SPANK plugin hooks execute correctly in the tmpfs job container.
     """
     # Clear out the private mount and create a file outside the container
-    atf.run_command("rm -rf /tmp/test_147_1_private/*", fatal=True)
-    atf.run_command("touch /tmp/test_147_1_private/file_on_host", fatal=True)
+    atf.run_command(f"rm -rf {spank_tmp}/*", fatal=True)
+    atf.run_command(f"touch {spank_tmp}/file_on_host", fatal=True)
 
     atf.make_bash_script(
         "job.sh",
         f"""
     # Check to make sure job_container/tmpfs made a private mount
-    if [[ -f /tmp/test_147_1_private/file_on_host ]]; then
+    if [[ -f {spank_tmp}/file_on_host ]]; then
         echo "job_container/tmpfs failed to create private mount"
     else
         echo "job_container/tmpfs created private mount"
@@ -66,21 +56,21 @@ def test_spank_plugin_tmpfs():
     srun hostname
 
     # Check if slurm_spank_user_init executed its functions and left behind a file
-    if [[ -f /tmp/test_147_1_private/slurm_spank_user_init_log ]]; then
+    if [[ -f {spank_tmp}/slurm_spank_user_init_log ]]; then
         echo "Found log for hook slurm_spank_user_init"
     else
         echo "Couldn't find log for hook slurm_spank_user_init"
     fi
 
     # Check if slurm_spank_task_post_fork executed its functions and left behind a file
-    if [[ -f /tmp/test_147_1_private/slurm_spank_task_post_fork_log ]]; then
+    if [[ -f {spank_tmp}/slurm_spank_task_post_fork_log ]]; then
         echo "Found log for hook slurm_spank_task_post_fork"
     else
         echo "Couldn't find log for hook slurm_spank_task_post_fork"
     fi
 
     # Check if slurm_spank_task_exit executed its functions and left behind a file
-    if [[ -f /tmp/test_147_1_private/slurm_spank_task_exit_log ]]; then
+    if [[ -f {spank_tmp}/slurm_spank_task_exit_log ]]; then
         echo "Found log for hook slurm_spank_task_exit"
     else
         echo "Couldn't find log for hook slurm_spank_task_exit"
@@ -115,7 +105,7 @@ def test_spank_plugin_tmpfs():
             "job_container/tmpfs created private mount" in content
         ), "job_container/tmpfs failed to create a private mount because we found a pre-existing file on the host when running a job"
         assert not (
-            os.path.isfile("/tmp/test_147_1_private/slurm_spank_user_init_log")
-            or os.path.isfile("/tmp/test_147_1_private/slurm_spank_task_post_fork_log")
-            or os.path.isfile("/tmp/test_147_1_private/slurm_spank_task_exit_log")
+            os.path.isfile(f"{spank_tmp}/slurm_spank_user_init_log")
+            or os.path.isfile(f"{spank_tmp}/slurm_spank_task_post_fork_log")
+            or os.path.isfile(f"{spank_tmp}/slurm_spank_task_exit_log")
         ), "job_container/tmpfs failed to isolate private mount; files created in container appear on host"
