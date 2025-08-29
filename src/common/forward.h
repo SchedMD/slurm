@@ -116,6 +116,10 @@ extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *node_alias);
 /* destroyers */
 extern void destroy_data_info(void *object);
 extern void destroy_forward(forward_t *forward);
+/*
+ * Destroy forwarding struct instance
+ * IN forward - pointer to forward_struct_t
+ */
 extern void destroy_forward_struct(forward_struct_t *forward_struct);
 
 #endif
