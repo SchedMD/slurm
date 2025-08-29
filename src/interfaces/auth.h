@@ -99,9 +99,18 @@ extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 			   void *data, int dlen);
 /*
  * Destroy auth credential and release memory
+ * NOTE: Call FREE_NULL_AUTH() instead of auth_g_destroy()
  * IN cred - pointer returned by auth_g_create()
  */
 extern void auth_g_destroy(void *cred);
+
+#define FREE_NULL_AUTH(_X)                  \
+	do {                                \
+		if (_X)                     \
+			auth_g_destroy(_X); \
+		_X = NULL;                  \
+	} while (0)
+
 extern int auth_g_verify(void *cred, char *auth_info);
 extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid);
 extern uid_t auth_g_get_uid(void *cred);
