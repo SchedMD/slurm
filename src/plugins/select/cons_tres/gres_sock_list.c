@@ -181,21 +181,25 @@ static void _handle_gres_exc_basic(resv_exc_t *resv_exc_ptr,
 	return;
 }
 
-static void _handle_gres_exc_bit_and_not(resv_exc_t *resv_exc_ptr,
-					 bitstr_t *bits_by_sock, int node_inx)
+static void _handle_gres_exc_bit_restrict(resv_exc_t *resv_exc_ptr,
+					  bitstr_t *bits_by_sock, int node_inx)
 {
 	gres_job_state_t *gres_js;
 
 	if (!resv_exc_ptr)
 		return;
 
-	gres_js = resv_exc_ptr->gres_js_exc;
+	gres_js = resv_exc_ptr->gres_js_exc ? resv_exc_ptr->gres_js_exc :
+					      resv_exc_ptr->gres_js_inc;
 
 	if (!gres_js || !gres_js->gres_bit_alloc ||
 	    !gres_js->gres_bit_alloc[node_inx])
 		return;
 
-	bit_and_not(bits_by_sock, gres_js->gres_bit_alloc[node_inx]);
+	if (resv_exc_ptr->gres_js_exc) /* use only not reserved bits */
+		bit_and_not(bits_by_sock, gres_js->gres_bit_alloc[node_inx]);
+	else /* resv_exc_ptr->gres_js_inc - use only reserved bits */
+		bit_and(bits_by_sock, gres_js->gres_bit_alloc[node_inx]);
 
 	return;
 }
@@ -374,6 +378,11 @@ static sock_gres_t *_build_sock_gres_by_topo(
 				bit_or(sock_gres->bits_any_sock,
 				       gres_ns->topo_gres_bitmap[i]);
 			}
+
+			_handle_gres_exc_bit_restrict(resv_exc_ptr,
+						      sock_gres->bits_any_sock,
+						      create_args->node_inx);
+
 			match = true;
 			continue;
 		}
@@ -411,7 +420,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 					       gres_ns->topo_gres_bitmap[i]);
 				}
 
-				_handle_gres_exc_bit_and_not(
+				_handle_gres_exc_bit_restrict(
 					resv_exc_ptr,
 					sock_gres->bits_by_sock[s],
 					create_args->node_inx);
