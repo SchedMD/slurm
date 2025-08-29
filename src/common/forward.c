@@ -944,8 +944,7 @@ extern void forward_wait(slurm_msg_t * msg)
 		}
 		debug2("Got them all");
 		slurm_mutex_unlock(&msg->forward_struct->forward_mutex);
-		destroy_forward_struct(msg->forward_struct);
-		msg->forward_struct = NULL;
+		FREE_NULL_FORWARD_STRUCT(msg->forward_struct);
 	}
 	return;
 }
