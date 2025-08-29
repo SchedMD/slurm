@@ -97,6 +97,10 @@ extern void auth_setuid_unlock(void);
  */
 extern void *auth_g_create(int index, char *auth_info, uid_t r_uid,
 			   void *data, int dlen);
+/*
+ * Destroy auth credential and release memory
+ * IN cred - pointer returned by auth_g_create()
+ */
 extern void auth_g_destroy(void *cred);
 extern int auth_g_verify(void *cred, char *auth_info);
 extern void auth_g_get_ids(void *cred, uid_t *uid, gid_t *gid);
