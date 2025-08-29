@@ -218,6 +218,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
 	bitstr_t *alloc_node_map = NULL;
 	uint32_t orig_max_nodes = topo_eval->max_nodes;
+	int as_rem_nodes = -1;
 
 	topo_eval->avail_cpus = 0;
 
@@ -237,6 +238,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	}
 
 	if (details_ptr->segment_size) {
+		as_rem_nodes = rem_nodes;
 		segment_cnt = rem_nodes / details_ptr->segment_size;
 		rem_segment_cnt = segment_cnt;
 		rem_nodes = details_ptr->segment_size;
@@ -262,12 +264,6 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
 		int req_node_cnt;
-		if (segment_cnt > 1) {
-			info("%pJ requires nodes with segment are not supported",
-			     job_ptr);
-			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-			goto fini;
-		}
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
@@ -298,7 +294,20 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			rc = SLURM_ERROR;
 			goto fini;
 		}
-		req_nodes_bitmap = job_ptr->details->req_node_bitmap;
+		if (segment_cnt > 1) {
+			if (as_rem_nodes > req_node_cnt) {
+				info("%pJ requires less nodes than job size with segment are not supported",
+				     job_ptr);
+				rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+				goto fini;
+			}
+			bit_and(orig_node_map,
+				job_ptr->details->req_node_bitmap);
+			bit_and(topo_eval->node_map,
+				job_ptr->details->req_node_bitmap);
+		} else {
+			req_nodes_bitmap = job_ptr->details->req_node_bitmap;
+		}
 	}
 
 next_segment:
