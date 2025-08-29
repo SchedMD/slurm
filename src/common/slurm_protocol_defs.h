@@ -1628,7 +1628,7 @@ extern void slurm_free_requeue_msg(requeue_msg_t *);
  * WARNING: Use slurm_free_msg_members() for slurm_msg_t instead
  * NOTE: Use FREE_NULL_MSG_DATA() instead of slurm_free_msg_data() directly
  */
-extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
+extern void slurm_free_msg_data(slurm_msg_type_t type, void *data);
 
 #define FREE_NULL_MSG_DATA(slurm_msg_type, _X)                   \
 	do {                                                     \
