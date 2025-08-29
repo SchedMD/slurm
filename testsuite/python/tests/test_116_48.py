@@ -5,14 +5,10 @@ import atf
 import pytest
 import re
 
-# TODO: Bug 17619
-#       From the docs:
-#       "A single srun opens 3 listening ports plus 2 more for every 48 hosts."
-#       It seems that docs are not right, but (4 + 2 * ((hosts-1)//48))
 
-port_range = 8
+port_range = 9
 srun_port_lower = 60000
-srun_port_upper = srun_port_lower + port_range
+srun_port_upper = srun_port_lower + port_range - 1  # 60008 inclusive
 
 
 # Setup
@@ -35,7 +31,7 @@ def test_srun_ports_in_range(nodes):
         | grep SrunHost | awk -F: '{print \\$3}')
         lsof -P -p \\$task_id 2>/dev/null | grep LISTEN | awk '{print \\$9}' \
         | awk -F: '{print \\$2}'"'''
-    output = atf.run_command_output(f"srun -N{nodes} {command}").split("\n")
+    output = atf.run_job_output(f"-N{nodes} {command}", timeout=120).split("\n")
     count = 0
     for port_string in output:
         # Ignore blank lines
@@ -47,6 +43,9 @@ def test_srun_ports_in_range(nodes):
             port_int >= srun_port_lower and port_int <= srun_port_upper
         ), f"Port {port_int} is not in range {srun_port_lower}-{srun_port_upper}"
 
+    # From the docs:
+    # "A single srun opens 4 listening ports plus 2 more for every 48 hosts
+    # beyond the first 48."
     ports = nodes * (4 + 2 * ((nodes - 1) // 48))
     assert count == ports, f"srun with -N{nodes} should use {ports} ports, not {count}"
 
@@ -55,14 +54,11 @@ def test_srun_ports_in_range(nodes):
 def test_srun_ports_out_of_range(nodes):
     """Test sruns with too many nodes, so with not enough SrunPortRange"""
 
-    result = atf.run_command(f"srun -t1 -N{nodes} sleep 1", xfail=True)
-    assert (
-        result["exit_code"] != 0
-    ), f"srun with -N{nodes} should fail because it needs more than {port_range} ports"
+    result = atf.run_job_error(f"-t1 -N{nodes} sleep 1", fatal=True, xfail=True)
 
     regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
     assert (
-        re.search(regex, result["stderr"]) is not None
+        re.search(regex, result) is not None
     ), "srun's stderr should contain the 'all ports in range exhausted' message"
 
 
@@ -75,12 +71,9 @@ def test_out_of_srun_ports():
     atf.wait_for_step(job_id1, 0, fatal=True)
     atf.wait_for_step(job_id2, 0, fatal=True)
 
-    result = atf.run_command("srun -t1 -N1 sleep 1", xfail=True)
-    assert (
-        result["exit_code"] != 0
-    ), "srun should fail because running job shoulb be using the whole SrunPortRange"
+    result = atf.run_job_error("-t1 -N1 sleep 1", fatal=True, xfail=True)
 
     regex = rf"all ports in range .{srun_port_lower}, {srun_port_upper}. exhausted"
     assert (
-        re.search(regex, result["stderr"]) is not None
+        re.search(regex, result) is not None
     ), "srun's stderr should contain the 'all ports in range exhausted' message"
