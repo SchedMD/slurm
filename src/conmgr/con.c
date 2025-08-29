@@ -118,6 +118,7 @@ static const struct {
 	T(FLAG_TLS_FINGERPRINT),
 	T(FLAG_TLS_WAIT_ON_CLOSE),
 	T(FLAG_RPC_RECV_FORWARD),
+	T(FLAG_WAIT_ON_EXTRACT),
 };
 #undef T
 
