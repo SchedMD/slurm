@@ -1626,8 +1626,17 @@ extern void slurm_free_requeue_msg(requeue_msg_t *);
  * Free()s the data pointer of a given type or returns !SLURM_SUCCESS if type is
  *	unsupported.
  * WARNING: Use slurm_free_msg_members() for slurm_msg_t instead
+ * NOTE: Use FREE_NULL_MSG_DATA() instead of slurm_free_msg_data() directly
  */
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
+
+#define FREE_NULL_MSG_DATA(slurm_msg_type, _X)                   \
+	do {                                                     \
+		if (_X)                                          \
+			slurm_free_msg_data(slurm_msg_type, _X); \
+		_X = NULL;                                       \
+	} while (0)
+
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);
