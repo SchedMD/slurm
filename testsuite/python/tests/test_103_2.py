@@ -10,6 +10,12 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (24, 11, 1)
+    and "use_interactive_step"
+    in atf.get_config_parameter("LaunchParameters", "", live=False),
+    reason="The 'ioctl(TIOCGWINSZ): Inappropriate ioctl for device' error when using LaunchParameters=use_interactive_step was fixed in 24.11.1",
+)
 def test_salloc_normal():
     """Test salloc allocations without commands. We test the stderr and
     stdout because the exit_codes seem to be 0 even when it has error messages.
