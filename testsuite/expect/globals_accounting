@@ -1187,7 +1187,7 @@ proc archive_load { file } {
 	# Use sacctmgr to load info
 	#
 	set rc $::RETURN_SUCCESS
-	set result [run_command -timeout 180 "$sacctmgr -i -n archive load $file"]
+	set result [run_command -timeout 360 "$sacctmgr -i -n archive load $file"]
 	if { [dict get $result exit_code] != 0 || [regexp "There was a problem" [dict get $result output]]} {
 		log_error "sacctmgr didn't load archive correctly"
 		set rc $::RETURN_ERROR
