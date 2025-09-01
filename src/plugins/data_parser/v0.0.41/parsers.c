@@ -2218,7 +2218,10 @@ static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 				   "Invalid group field: %pd", src);
 	case DATA_TYPE_NONE:
 	case DATA_TYPE_MAX:
-		fatal_abort("invalid type");
+		return parse_error(
+			parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
+			"Invalid group field, data type out of bounds: %s",
+			data_get_type_string(src));
 	}
 
 	if (gid >= INT_MAX)
