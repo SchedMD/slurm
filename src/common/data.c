@@ -1490,7 +1490,7 @@ static void _convert_data_string(data_t *data)
 	}
 }
 
-static int _convert_data_force_bool(data_t *data)
+static void _convert_data_force_bool(data_t *data)
 {
 	_check_magic(data);
 
@@ -1502,23 +1502,21 @@ static int _convert_data_force_bool(data_t *data)
 	case TYPE_STRING_PTR:
 		/* non-empty string but not recognized format */
 		data_set_bool(data, true);
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_BOOL:
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_NULL:
 		data_set_bool(data, false);
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_FLOAT:
 		data_set_bool(data, data->data.float_u != 0);
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_INT_64:
 		data_set_bool(data, data->data.int_u != 0);
-		return SLURM_SUCCESS;
+		break;
 	default:
-		return ESLURM_DATA_CONV_FAILED;
+		break;
 	}
-
-	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_null(data_t *data)
@@ -1891,7 +1889,7 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 		_convert_data_string(data);
 		break;
 	case DATA_TYPE_BOOL:
-		(void) _convert_data_force_bool(data);
+		_convert_data_force_bool(data);
 		break;
 	case DATA_TYPE_INT_64:
 		(void) _convert_data_int(data, true);
