@@ -1459,37 +1459,35 @@ extern int data_dict_for_each(data_t *d, DataDictForF f, void *arg)
 	return count;
 }
 
-static int _convert_data_string(data_t *data)
+static void _convert_data_string(data_t *data)
 {
 	_check_magic(data);
 
 	switch (data->type) {
 	case TYPE_STRING_INLINE:
 	case TYPE_STRING_PTR:
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_BOOL:
 		data_set_string(data, (data->data.bool_u ? "true" : "false"));
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_NULL:
 		data_set_string(data, "");
-		return SLURM_SUCCESS;
+		break;
 	case TYPE_FLOAT:
 	{
 		char *str = xstrdup_printf("%lf", data->data.float_u);
 		data_set_string_own(data, str);
-		return SLURM_SUCCESS;
+		break;
 	}
 	case TYPE_INT_64:
 	{
 		char *str = xstrdup_printf("%"PRId64, data->data.int_u);
 		data_set_string_own(data, str);
-		return SLURM_SUCCESS;
+		break;
 	}
 	default:
-		return ESLURM_DATA_CONV_FAILED;
+		break;
 	}
-
-	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_force_bool(data_t *data)
@@ -1890,7 +1888,7 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 
 	switch (match) {
 	case DATA_TYPE_STRING:
-		(void) _convert_data_string(data);
+		_convert_data_string(data);
 		break;
 	case DATA_TYPE_BOOL:
 		(void) _convert_data_force_bool(data);
