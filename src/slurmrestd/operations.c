@@ -236,6 +236,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.body_length = (err ? strlen(err) : 0),
 	};
 	http_header_t close = {
+		.magic = HTTP_HEADER_MAGIC,
 		.name = "Connection",
 		.value = "Close",
 	};

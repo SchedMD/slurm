@@ -242,6 +242,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 
 	/* Add copy to list of headers */
 	entry = xmalloc(sizeof(*entry));
+	entry->magic = HTTP_HEADER_MAGIC;
 	entry->name = xstrdup(header->name);
 	entry->value = xstrdup(header->value);
 	list_append(request->headers, entry);
@@ -527,6 +528,7 @@ extern int send_http_response(const send_http_response_args_t *args)
 		list_itr_t *itr = list_iterator_create(args->headers);
 		http_header_t *header = NULL;
 		while ((header = list_next(itr))) {
+			xassert(header->magic == HTTP_HEADER_MAGIC);
 			if ((rc = _write_fmt_header(args->con, header->name,
 						    header->value)))
 				break;

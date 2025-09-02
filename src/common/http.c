@@ -414,8 +414,10 @@ extern void url_copy_members(url_t *dst, const url_t *src)
 
 extern void free_http_header(http_header_t *header)
 {
+	xassert(header->magic == HTTP_HEADER_MAGIC);
 	xfree(header->name);
 	xfree(header->value);
+	header->magic = ~HTTP_HEADER_MAGIC;
 	xfree(header);
 }
 
@@ -426,6 +428,7 @@ static int _http_header_find_key(void *x, void *y)
 	const char *key = y;
 
 	xassert(entry->name);
+	xassert(entry->magic == HTTP_HEADER_MAGIC);
 
 	if (key == NULL)
 		return 0;
@@ -448,8 +451,10 @@ extern const char *find_http_header(list_t *headers, const char *name)
 						   _http_header_find_key,
 						   (void *) name);
 
-	if (header)
+	if (header) {
+		xassert(header->magic == HTTP_HEADER_MAGIC);
 		return header->value;
-	else
-		return NULL;
+	}
+
+	return NULL;
 }
