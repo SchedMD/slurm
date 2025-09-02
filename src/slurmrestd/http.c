@@ -803,6 +803,7 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	xassert(!context->auth);
 	FREE_NULL_REST_AUTH(context->auth);
 
+	xassert(conmgr_fd_get_ref(context->ref) == context->con);
 	conmgr_fd_free_ref(&context->ref);
 	context->con = NULL;
 
