@@ -180,7 +180,7 @@ extern int dbd_conn_check_and_reopen(persist_conn_t *pc)
 {
 	xassert(pc);
 
-	if (pc && pc->tls_conn) {
+	if (pc && pc->conn) {
 		debug("Attempt to re-open slurmdbd socket");
 		/* clear errno (checked after this for errors) */
 		errno = 0;
@@ -278,11 +278,11 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 	xassert(resp);
 	xassert(use_conn);
 
-	if (!use_conn->tls_conn) {
+	if (!use_conn->conn) {
 		/* The connection has been closed, reopen */
 		rc = dbd_conn_check_and_reopen(use_conn);
 
-		if (rc != SLURM_SUCCESS || !use_conn->tls_conn) {
+		if (rc != SLURM_SUCCESS || !use_conn->conn) {
 			rc = SLURM_ERROR;
 			goto end_it;
 		}

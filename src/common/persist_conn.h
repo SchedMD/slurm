@@ -84,7 +84,7 @@ typedef struct {
 	time_t *shutdown;
 	pthread_t thread_id;
 	int timeout;
-	void *tls_conn;
+	void *conn; /* interfaces/conn data */
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
 } persist_conn_t;

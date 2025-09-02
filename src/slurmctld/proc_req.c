@@ -5661,7 +5661,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		 * isn't then _signal_job will signal the sibling jobs
 		 */
 		if (origin && origin->fed.send &&
-		    ((persist_conn_t *) origin->fed.send)->tls_conn &&
+		    ((persist_conn_t *) origin->fed.send)->conn &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
 		     (job_ptr && job_ptr->fed_details &&
@@ -5835,7 +5835,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.pcon = persist_conn;
-	msg.conn = persist_conn->tls_conn;
+	msg.conn = persist_conn->conn;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
@@ -5906,7 +5906,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
 
-	persist_conn->tls_conn = msg->conn;
+	persist_conn->conn = msg->conn;
 	msg->conn = NULL;
 
 	persist_conn->callback_proc = _process_persist_conn;
@@ -5915,7 +5915,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->rem_port = persist_init->port;
 
 	persist_conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
-	(void) slurm_get_peer_addr(conn_g_get_fd(persist_conn->tls_conn),
+	(void) slurm_get_peer_addr(conn_g_get_fd(persist_conn->conn),
 				   &rem_addr);
 	slurm_get_ip_str(&rem_addr, persist_conn->rem_host, INET6_ADDRSTRLEN);
 
@@ -5934,7 +5934,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 		slurm_persist_conn_recv_thread_init(
-			persist_conn, conn_g_get_fd(persist_conn->tls_conn), -1,
+			persist_conn, conn_g_get_fd(persist_conn->conn), -1,
 			persist_conn);
 	} else
 		rc = SLURM_ERROR;
@@ -5946,12 +5946,12 @@ end_it:
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d uid(%u)",
-		      conn_g_get_fd(p_tmp.tls_conn), msg->auth_uid);
+		      conn_g_get_fd(p_tmp.conn), msg->auth_uid);
 	}
 
 	if (rc && persist_conn) {
 		/* Free AFTER message has been sent back to remote */
-		persist_conn->tls_conn = NULL;
+		persist_conn->conn = NULL;
 		slurm_persist_conn_destroy(persist_conn);
 	}
 	xfree(comment);
@@ -6895,8 +6895,8 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	if (msg->conn) {
 		fd = conn_g_get_fd(msg->conn);
 		xassert(!msg->conmgr_con);
-	} else if (msg->pcon && msg->pcon->tls_conn) {
-		fd = conn_g_get_fd(msg->pcon->tls_conn);
+	} else if (msg->pcon && msg->pcon->conn) {
+		fd = conn_g_get_fd(msg->pcon->conn);
 		xassert(!msg->conmgr_con);
 	}
 

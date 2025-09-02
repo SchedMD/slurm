@@ -1761,7 +1761,7 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		persist_msg_t persist_msg;
 		buf_t *buffer;
 		char *peer = NULL;
-		int persist_fd = conn_g_get_fd(msg->pcon->tls_conn);
+		int persist_fd = conn_g_get_fd(msg->pcon->conn);
 
 		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
 			 rpc_num2string(msg->msg_type), &msg->address,
@@ -2054,7 +2054,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	rc = errno;
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
 		 __func__, (source_msg->pcon ?
-			    conn_g_get_fd(source_msg->pcon->tls_conn) :
+			    conn_g_get_fd(source_msg->pcon->conn) :
 			    conn_g_get_fd(source_msg->conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 

@@ -380,7 +380,7 @@ static int _open_controller_conn(slurmdb_cluster_rec_t *cluster, bool locked)
 	} else {
 		log_flag(FEDR, "opened sibling conn to %s:%d",
 			 cluster->name,
-			 conn_g_get_fd(persist_conn->tls_conn));
+			 conn_g_get_fd(persist_conn->conn));
 	}
 
 	if (!locked)
@@ -394,7 +394,7 @@ static int _check_send(slurmdb_cluster_rec_t *cluster)
 {
 	persist_conn_t *send = cluster->fed.send;
 
-	if (!send || !send->tls_conn) {
+	if (!send || !send->conn) {
 		return _open_controller_conn(cluster, true);
 	}
 
@@ -426,7 +426,7 @@ static void _open_persist_sends(void)
 			continue;
 
 		send = cluster->fed.send;
-		if (!send || !send->tls_conn)
+		if (!send || !send->conn)
 			_open_controller_conn(cluster, false);
 	}
 	list_iterator_destroy(itr);
@@ -450,7 +450,7 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 	rc = _check_send(cluster);
 	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
 		resp->pcon = req->pcon = cluster->fed.send;
-		rc = slurm_send_recv_msg(req->pcon->tls_conn, req, resp, 0);
+		rc = slurm_send_recv_msg(req->pcon->conn, req, resp, 0);
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cluster->lock);
@@ -974,8 +974,7 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	slurm_msg_t req_msg;
 	sib_msg_t   sib_msg;
 
-	if (!conn->fed.send ||
-	    (!((persist_conn_t *) conn->fed.send)->tls_conn))
+	if (!conn->fed.send || (!((persist_conn_t *) conn->fed.send)->conn))
 		return SLURM_SUCCESS;
 
 	slurm_msg_t_init(&req_msg);
@@ -3574,8 +3573,7 @@ extern int fed_mgr_add_sibling_conn(persist_conn_t *persist_conn,
 	cluster->fed.recv = persist_conn;
 
 	slurm_persist_conn_recv_thread_init(persist_conn,
-					    conn_g_get_fd(persist_conn
-								  ->tls_conn),
+					    conn_g_get_fd(persist_conn->conn),
 					    -1, persist_conn);
 	_q_send_job_sync(cluster->name);
 
@@ -4561,7 +4559,7 @@ extern int fed_mgr_job_lock(job_record_t *job_ptr)
 
 		/* Check dbd is up to make sure ctld isn't on an island. */
 		if (acct_db_conn && _slurmdbd_conn_active() &&
-		    (!origin_conn || !origin_conn->tls_conn)) {
+		    (!origin_conn || !origin_conn->conn)) {
 			rc = _job_lock_all_sibs(job_ptr);
 		} else if (origin_cluster) {
 			rc = _persist_fed_job_lock(origin_cluster,
@@ -4712,7 +4710,7 @@ extern int fed_mgr_job_unlock(job_record_t *job_ptr)
 				(persist_conn_t *) origin_cluster->fed.send;
 		}
 
-		if (!origin_conn || !origin_conn->tls_conn) {
+		if (!origin_conn || !origin_conn->conn) {
 			uint64_t tmp_sibs;
 			tmp_sibs = job_ptr->fed_details->siblings_viable &
 				   ~FED_SIBLING_BIT(origin_id);
@@ -4773,7 +4771,7 @@ extern int fed_mgr_job_start(job_record_t *job_ptr, time_t start_time)
 				(persist_conn_t *) origin_cluster->fed.send;
 		}
 
-		if (!origin_conn || !origin_conn->tls_conn) {
+		if (!origin_conn || !origin_conn->conn) {
 			uint64_t viable_sibs;
 			viable_sibs = job_ptr->fed_details->siblings_viable;
 			viable_sibs &= ~FED_SIBLING_BIT(origin_id);
@@ -5195,7 +5193,7 @@ static int _cancel_sibling_jobs(job_record_t *job_ptr, uint16_t signal,
 			/* Don't send request to siblings that are down when
 			 * killing viables */
 			sib_conn = (persist_conn_t *) cluster->fed.send;
-			if (kill_viable && (!sib_conn || !sib_conn->tls_conn))
+			if (kill_viable && (!sib_conn || !sib_conn->conn))
 				goto next_job;
 
 			_persist_fed_job_cancel(cluster, job_ptr->job_id,
@@ -6106,7 +6104,7 @@ static int _list_find_not_synced_sib(void *x, void *key)
 
 	if (sib != fed_mgr_cluster_rec &&
 	    sib->fed.send &&
-	    ((persist_conn_t *) sib->fed.send)->tls_conn &&
+	    ((persist_conn_t *) sib->fed.send)->conn &&
 	    !sib->fed.sync_recvd)
 		return 1;
 

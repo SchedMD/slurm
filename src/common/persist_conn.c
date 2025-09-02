@@ -109,10 +109,10 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 	 * The tls layer may already have data buffered, which could lead to
 	 * poll blocking indefinitely.
 	 */
-	if (conn_g_peek(persist_conn->tls_conn))
+	if (conn_g_peek(persist_conn->conn))
 		return true;
 
-	ufds.fd = conn_g_get_fd(persist_conn->tls_conn);
+	ufds.fd = conn_g_get_fd(persist_conn->conn);
 	ufds.events = POLLIN;
 	while (!(*persist_conn->shutdown)) {
 		if (persist_conn->timeout) {
@@ -227,19 +227,19 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
-	if (first && !(persist_conn->tls_conn = conn_g_create(&tls_args))) {
+	if (first && !(persist_conn->conn = conn_g_create(&tls_args))) {
 		error("%s: conn_g_create() failed negotiation, closing connection %d(%s)",
 		      __func__, fd, persist_conn->rem_host);
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
-	conn_g_set_graceful_shutdown(persist_conn->tls_conn, true);
+	conn_g_set_graceful_shutdown(persist_conn->conn, true);
 
 	while (!(*persist_conn->shutdown) && !fini) {
 		if (!_conn_readable(persist_conn))
 			break;		/* problem with this socket */
 
-		msg_read = conn_g_recv(persist_conn->tls_conn, &nw_size,
+		msg_read = conn_g_recv(persist_conn->conn, &nw_size,
 				       sizeof(nw_size));
 		if (msg_read == 0)	/* EOF */
 			break;
@@ -262,7 +262,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		while (msg_size > offset) {
 			if (!_conn_readable(persist_conn))
 				break;		/* problem with this socket */
-			msg_read = conn_g_recv(persist_conn->tls_conn,
+			msg_read = conn_g_recv(persist_conn->conn,
 					       (msg_char + offset),
 					       (msg_size - offset));
 			if (msg_read <= 0) {
@@ -427,7 +427,7 @@ extern void slurm_persist_conn_recv_server_fini(void)
 		}
 
 		if (persist_service_conn[i]->pcon) {
-			void *tls = persist_service_conn[i]->pcon->tls_conn;
+			void *tls = persist_service_conn[i]->pcon->conn;
 			conn_g_set_graceful_shutdown(tls, false);
 		}
 
@@ -552,9 +552,9 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	xassert(persist_conn->rem_port);
 	xassert(persist_conn->cluster_name);
 
-	if (persist_conn->tls_conn) {
-		conn_g_destroy(persist_conn->tls_conn, true);
-		persist_conn->tls_conn = NULL;
+	if (persist_conn->conn) {
+		conn_g_destroy(persist_conn->conn, true);
+		persist_conn->conn = NULL;
 	}
 
 	if (!persist_conn->inited)
@@ -572,7 +572,7 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 
 	slurm_set_addr(&addr, persist_conn->rem_port, persist_conn->rem_host);
 
-	if (!(persist_conn->tls_conn = slurm_open_msg_conn(&addr, NULL))) {
+	if (!(persist_conn->conn = slurm_open_msg_conn(&addr, NULL))) {
 		if (_comm_fail_log(persist_conn)) {
 			if (persist_conn->flags & PERSIST_FLAG_SUPPRESS_ERR)
 				log_flag(NET, "%s: failed to open persistent connection (with error suppression active) to host:%s:%d: %m",
@@ -590,9 +590,9 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	 * Peer will be waiting on conn_g_recv(), and they will need to know if
 	 * connection was intentionally closed or if an error occurred.
 	 */
-	conn_g_set_graceful_shutdown(persist_conn->tls_conn, true);
+	conn_g_set_graceful_shutdown(persist_conn->conn, true);
 
-	fd = conn_g_get_fd(persist_conn->tls_conn);
+	fd = conn_g_get_fd(persist_conn->conn);
 
 	fd_set_nonblocking(fd);
 	net_set_keep_alive(fd);
@@ -638,11 +638,11 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 
 	req_msg.data = &req;
 
-	if (slurm_send_node_msg(persist_conn->tls_conn, &req_msg) < 0) {
+	if (slurm_send_node_msg(persist_conn->conn, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
-		conn_g_destroy(persist_conn->tls_conn, true);
-		persist_conn->tls_conn = NULL;
+		conn_g_destroy(persist_conn->conn, true);
+		persist_conn->conn = NULL;
 	} else {
 		buf_t *buffer = NULL;
 		persist_msg_t msg;
@@ -656,8 +656,8 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      __func__);
 			}
 
-			conn_g_destroy(persist_conn->tls_conn, true);
-			persist_conn->tls_conn = NULL;
+			conn_g_destroy(persist_conn->conn, true);
+			persist_conn->conn = NULL;
 
 			if (!errno)
 				errno = SLURM_ERROR;
@@ -691,8 +691,8 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
 			}
-			conn_g_destroy(persist_conn->tls_conn, true);
-			persist_conn->tls_conn = NULL;
+			conn_g_destroy(persist_conn->conn, true);
+			persist_conn->conn = NULL;
 		} else if (resp) {
 			persist_conn->version = resp->ret_info;
 			persist_conn->flags |= resp->flags;
@@ -711,8 +711,8 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
-	conn_g_destroy(persist_conn->tls_conn, true);
-	persist_conn->tls_conn = NULL;
+	conn_g_destroy(persist_conn->conn, true);
+	persist_conn->conn = NULL;
 }
 
 extern int slurm_persist_conn_reopen(persist_conn_t *persist_conn)
@@ -775,7 +775,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 					 slurmdbd_msg_type_2_str(
 						 persist_msg->msg_type, true));
 		error("CONN:%u %s",
-		      conn_g_get_fd(persist_conn->tls_conn), comment);
+		      conn_g_get_fd(persist_conn->conn), comment);
 		*out_buffer = slurm_persist_make_rc_msg(
 			persist_conn, rc, comment, persist_msg->msg_type);
 		xfree(comment);
@@ -789,7 +789,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	if (first && !init_msg) {
 		comment = "Initial RPC not REQUEST_PERSIST_INIT";
 		error("CONN:%u %s type (%d)",
-		      conn_g_get_fd(persist_conn->tls_conn), comment,
+		      conn_g_get_fd(persist_conn->conn), comment,
 		      persist_msg->msg_type);
 		rc = EINVAL;
 		*out_buffer = slurm_persist_make_rc_msg(
@@ -798,7 +798,7 @@ extern int slurm_persist_conn_process_msg(persist_conn_t *persist_conn,
 	} else if (!first && init_msg) {
 		comment = "REQUEST_PERSIST_INIT sent after connection established";
 		error("CONN:%u %s",
-		      conn_g_get_fd(persist_conn->tls_conn),
+		      conn_g_get_fd(persist_conn->conn),
 		      comment);
 		rc = EINVAL;
 		*out_buffer =
@@ -826,7 +826,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 	if (!persist_conn || !persist_conn->shutdown)
 		fatal("%s: unexpected NULL persist_conn", __func__);
 
-	if (!persist_conn->tls_conn) {
+	if (!persist_conn->conn) {
 		log_flag(NET, "%s: called on invalid connection to host %s:%hu",
 		         __func__, (persist_conn->rem_host ?
 				    persist_conn->rem_host :
@@ -834,7 +834,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 			 persist_conn->rem_port);
 		return -1;
 	}
-	fd = conn_g_get_fd(persist_conn->tls_conn);
+	fd = conn_g_get_fd(persist_conn->conn);
 
 	if (*persist_conn->shutdown) {
 		log_flag(NET, "%s: called on shutdown fd:%d to host %s:%hu",
@@ -872,8 +872,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 				 __func__, ufds.fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
-			conn_g_set_graceful_shutdown(persist_conn->tls_conn,
-						     false);
+			conn_g_set_graceful_shutdown(persist_conn->conn, false);
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {
@@ -920,7 +919,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (!persist_conn->tls_conn)
+	if (!persist_conn->conn)
 		return EAGAIN;
 
 	if (!buffer)
@@ -949,8 +948,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
 
-	msg_wrote =
-		conn_g_send(persist_conn->tls_conn, &nw_size, sizeof(nw_size));
+	msg_wrote = conn_g_send(persist_conn->conn, &nw_size, sizeof(nw_size));
 	if (msg_wrote != sizeof(nw_size))
 		return EAGAIN;
 
@@ -961,7 +959,7 @@ extern int slurm_persist_send_msg(persist_conn_t *persist_conn,
 			goto re_open;
 		if (rc < 1)
 			return EAGAIN;
-		msg_wrote = conn_g_send(persist_conn->tls_conn, msg, msg_size);
+		msg_wrote = conn_g_send(persist_conn->conn, msg, msg_size);
 		if (msg_wrote <= 0)
 			return EAGAIN;
 		msg += msg_wrote;
@@ -981,7 +979,7 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 
 	xassert(persist_conn);
 
-	if (!persist_conn->tls_conn) {
+	if (!persist_conn->conn) {
 		if (!persist_conn->shutdown || *persist_conn->shutdown)
 			log_flag(NET, "%s: Invalid connection to host:%s port:%u",
 				 __func__,
@@ -992,12 +990,11 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 
 	if (!_conn_readable(persist_conn)) {
 		log_flag(NET, "%s: Unable to read from file descriptor (%d)",
-			 __func__, conn_g_get_fd(persist_conn->tls_conn));
+			 __func__, conn_g_get_fd(persist_conn->conn));
 		goto endit;
 	}
 
-	msg_read =
-		conn_g_recv(persist_conn->tls_conn, &nw_size, sizeof(nw_size));
+	msg_read = conn_g_recv(persist_conn->conn, &nw_size, sizeof(nw_size));
 	if (msg_read != sizeof(nw_size)) {
 		log_flag(NET, "%s: Unable to read message size: only read %zd bytes of expected %zu.",
 			 __func__, msg_read, sizeof(nw_size));
@@ -1022,12 +1019,12 @@ static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 	while (msg_size > offset) {
 		if (!_conn_readable(persist_conn))
 			break;		/* problem with this socket */
-		msg_read = conn_g_recv(persist_conn->tls_conn, (msg + offset),
+		msg_read = conn_g_recv(persist_conn->conn, (msg + offset),
 				       (msg_size - offset));
 		if (msg_read <= 0) {
 			error("%s: read of fd %u failed: %m",
 			      __func__,
-			      conn_g_get_fd(persist_conn->tls_conn));
+			      conn_g_get_fd(persist_conn->conn));
 			break;
 		}
 		offset += msg_read;
