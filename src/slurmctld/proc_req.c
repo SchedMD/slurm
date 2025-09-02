@@ -3137,8 +3137,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		conn_g_destroy(msg->tls_conn, true);
-		msg->tls_conn = NULL;
+		conn_g_destroy(msg->conn, true);
+		msg->conn = NULL;
 		slurm_free_msg(msg);
 		return;
 	} else
@@ -5835,7 +5835,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
 	msg.pcon = persist_conn;
-	msg.tls_conn = persist_conn->tls_conn;
+	msg.conn = persist_conn->tls_conn;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
@@ -5906,8 +5906,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
 
-	persist_conn->tls_conn = msg->tls_conn;
-	msg->tls_conn = NULL;
+	persist_conn->tls_conn = msg->conn;
+	msg->conn = NULL;
 
 	persist_conn->callback_proc = _process_persist_conn;
 
@@ -5981,7 +5981,7 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 			 __func__);
 	}
 
-	is_client_auth = conn_g_is_client_authenticated(msg->tls_conn);
+	is_client_auth = conn_g_is_client_authenticated(msg->conn);
 
 	if (!(resp.signed_cert =
 		      certmgr_g_sign_csr(req->csr, is_client_auth, req->token,
@@ -6892,8 +6892,8 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	 */
 	START_TIMER;
 
-	if (msg->tls_conn) {
-		fd = conn_g_get_fd(msg->tls_conn);
+	if (msg->conn) {
+		fd = conn_g_get_fd(msg->conn);
 		xassert(!msg->conmgr_con);
 	} else if (msg->pcon && msg->pcon->tls_conn) {
 		fd = conn_g_get_fd(msg->pcon->tls_conn);

@@ -306,7 +306,7 @@ static void _send_reconfig_replies(void)
 		xassert(!msg->conmgr_con);
 
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
-		conn_g_destroy(msg->tls_conn, true);
+		conn_g_destroy(msg->conn, true);
 		slurm_free_msg(msg);
 	}
 }
@@ -1818,13 +1818,13 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	 */
 	conmgr_fd_free_ref(&msg->conmgr_con);
 	if (tls_conn) {
-		msg->tls_conn = tls_conn;
+		msg->conn = tls_conn;
 	} else {
 		conn_args_t tls_args = {
 			.input_fd = input_fd,
 			.output_fd = output_fd,
 		};
-		msg->tls_conn = conn_g_create(&tls_args);
+		msg->conn = conn_g_create(&tls_args);
 	}
 
 	server_thread_incr();
@@ -1847,8 +1847,8 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
-		conn_g_destroy(msg->tls_conn, true);
-		msg->tls_conn = NULL;
+		conn_g_destroy(msg->conn, true);
+		msg->conn = NULL;
 		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
 			 input_fd, output_fd);
 		slurm_free_msg(msg);

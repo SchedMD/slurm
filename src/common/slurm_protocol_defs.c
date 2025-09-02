@@ -255,7 +255,7 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	if (src->auth_ids_set)
 		slurm_msg_set_r_uid(dest, src->auth_uid);
 
-	dest->tls_conn = src->tls_conn;
+	dest->conn = src->conn;
 }
 
 /* here to add \\ to all \" in a string this needs to be xfreed later */

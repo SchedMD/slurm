@@ -1366,7 +1366,7 @@ extern int stepd_relay_msg(int fd, slurm_msg_t *msg, uint16_t protocol_version)
 	buf_size = get_buf_offset(msg->buffer) - msg->body_offset;
 
 	safe_write(fd, &msg->protocol_version, sizeof(uint16_t));
-	send_fd_over_socket(fd, conn_g_get_fd(msg->tls_conn));
+	send_fd_over_socket(fd, conn_g_get_fd(msg->conn));
 	safe_write(fd, &buf_size, sizeof(uint32_t));
 	safe_write(fd, &msg->buffer->head[msg->body_offset], buf_size);
 

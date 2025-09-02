@@ -706,18 +706,18 @@ static void *_service_msg(void *arg)
 	conmgr_fd_free_ref(&msg->conmgr_con);
 
 	if (args->tls_conn) {
-		msg->tls_conn = args->tls_conn;
+		msg->conn = args->tls_conn;
 	} else {
 		conn_args_t tls_args = {
 			.input_fd = args->fd,
 			.output_fd = args->fd,
 		};
-		msg->tls_conn = conn_g_create(&tls_args);
+		msg->conn = conn_g_create(&tls_args);
 	}
 	slurmd_req(msg);
 
-	conn_g_destroy(msg->tls_conn, true);
-	msg->tls_conn = NULL;
+	conn_g_destroy(msg->conn, true);
+	msg->conn = NULL;
 
 	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
 		 __func__, conmgr_con_get_name(msg->conmgr_con),

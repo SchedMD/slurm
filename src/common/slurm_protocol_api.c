@@ -1052,7 +1052,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 
 	fd = conn_g_get_fd(tls_conn);
 
-	msg->tls_conn = tls_conn;
+	msg->conn = tls_conn;
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
@@ -2046,7 +2046,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 
 	resp_msg.pcon = source_msg->pcon;
 
-	rc = slurm_send_node_msg(source_msg->tls_conn, &resp_msg);
+	rc = slurm_send_node_msg(source_msg->conn, &resp_msg);
 
 	if (rc >= 0)
 		return SLURM_SUCCESS;
@@ -2055,7 +2055,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
 		 __func__, (source_msg->pcon ?
 			    conn_g_get_fd(source_msg->pcon->tls_conn) :
-			    conn_g_get_fd(source_msg->tls_conn)),
+			    conn_g_get_fd(source_msg->conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 
 	return rc;

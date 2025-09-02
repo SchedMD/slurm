@@ -220,12 +220,12 @@ again:
 		goto cleanup;
 	}
 
-	msg->tls_conn = conn;
+	msg->conn = conn;
 	(*obj->ops->handle_msg)(obj->arg, msg);
 
 cleanup:
 	/* may be adopted by the handle_msg routine */
-	if (msg->tls_conn)
+	if (msg->conn)
 		conn_g_destroy(conn, true);
 	slurm_free_msg(msg);
 
