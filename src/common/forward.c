@@ -120,7 +120,7 @@ static void *_forward_thread(void *arg)
 	forward_t *fwd_ptr = &fwd_msg->header.forward;
 	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	list_t *ret_list = NULL;
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);
@@ -145,7 +145,7 @@ static void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		if (!(tls_conn = slurm_open_msg_conn(&addr, NULL))) {
+		if (!(conn = slurm_open_msg_conn(&addr, NULL))) {
 			error("%s: failed to %s (%pA): %m",
 			      __func__, name, &addr);
 
@@ -206,7 +206,7 @@ static void *_forward_thread(void *arg)
 		/*
 		 * forward message
 		 */
-		if (slurm_msg_sendto(tls_conn, get_buf_data(buffer),
+		if (slurm_msg_sendto(conn, get_buf_data(buffer),
 				     get_buf_offset(buffer)) < 0) {
 			error("%s: slurm_msg_sendto: %m", __func__);
 
@@ -218,8 +218,8 @@ static void *_forward_thread(void *arg)
 				FREE_NULL_BUFFER(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
-				conn_g_destroy(tls_conn, true);
-				tls_conn = NULL;
+				conn_g_destroy(conn, true);
+				conn = NULL;
 				/* Abandon tree. This way if all the
 				 * nodes in the branch are down we
 				 * don't have to time out for each
@@ -255,9 +255,8 @@ static void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		ret_list =
-			slurm_receive_resp_msgs(tls_conn, fwd_ptr->tree_depth,
-						fwd_ptr->timeout);
+		ret_list = slurm_receive_resp_msgs(conn, fwd_ptr->tree_depth,
+						   fwd_ptr->timeout);
 		/* info("sent %d forwards got %d back", */
 		/*      fwd_ptr->cnt, list_count(ret_list)); */
 
@@ -271,8 +270,8 @@ static void *_forward_thread(void *arg)
 				FREE_NULL_BUFFER(buffer);
 				buffer = init_buf(fwd_struct->buf_len);
 				slurm_mutex_unlock(&fwd_struct->forward_mutex);
-				conn_g_destroy(tls_conn, true);
-				tls_conn = NULL;
+				conn_g_destroy(conn, true);
+				conn = NULL;
 				continue;
 			}
 			goto cleanup;
@@ -341,7 +340,7 @@ static void *_forward_thread(void *arg)
 	}
 	free(name);
 cleanup:
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 	hostlist_destroy(hl);
 	fwd_ptr->alias_addrs.net_cred = NULL;
 	fwd_ptr->alias_addrs.node_addrs = NULL;

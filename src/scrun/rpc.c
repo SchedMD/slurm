@@ -49,7 +49,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 		    int *conn_fd)
 {
 	int rc = SLURM_ERROR;
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	conn_args_t tls_args = { 0 };
 	slurm_msg_t *resp_msg = NULL;
 	int fd = conn_fd ? *conn_fd : -1;
@@ -76,13 +76,13 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	fd_set_close_on_exec(fd);
 
 	tls_args.input_fd = tls_args.output_fd = fd;
-	if (!(tls_conn = conn_g_create(&tls_args))) {
+	if (!(conn = conn_g_create(&tls_args))) {
 		rc = SLURM_ERROR;
 		fd_close(&fd);
 		goto cleanup;
 	}
 
-	if ((rc = slurm_send_node_msg(tls_conn, msg)) == -1) {
+	if ((rc = slurm_send_node_msg(conn, msg)) == -1) {
 		/* capture real error */
 		rc = errno;
 
@@ -107,7 +107,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 
 	wait_fd_readable(fd, slurm_conf.msg_timeout);
 
-	if ((rc = slurm_receive_msg(tls_conn, resp_msg, INFINITE))) {
+	if ((rc = slurm_receive_msg(conn, resp_msg, INFINITE))) {
 		/* capture real error */
 		rc = errno;
 
@@ -131,7 +131,7 @@ cleanup:
 		*ptr_resp = resp_msg;
 	}
 
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 
 	return rc;
 }

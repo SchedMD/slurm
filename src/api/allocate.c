@@ -1394,12 +1394,12 @@ static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
 static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 				  uint32_t job_id)
 {
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	slurm_msg_t  *msg = NULL;
 	slurm_addr_t cli_addr;
 	int          rc = 0;
 
-	if (!(tls_conn = slurm_accept_msg_conn(listen_fd, &cli_addr)))
+	if (!(conn = slurm_accept_msg_conn(listen_fd, &cli_addr)))
 		return 0;
 
 	debug2("got message connection from %pA", &cli_addr);
@@ -1407,17 +1407,17 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
 
-	if ((rc = slurm_receive_msg(tls_conn, msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(conn, msg, 0)) != 0) {
 		slurm_free_msg(msg);
 
 		if (errno == EINTR) {
-			conn_g_destroy(tls_conn, true);
+			conn_g_destroy(conn, true);
 			*resp = NULL;
 			return 0;
 		}
 
 		error("%s[%pA]: %m", __func__, &cli_addr);
-		conn_g_destroy(tls_conn, true);
+		conn_g_destroy(conn, true);
 		return SLURM_ERROR;
 	}
 
@@ -1425,7 +1425,7 @@ static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 
 	slurm_free_msg(msg);
 
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 	return rc;
 }
 

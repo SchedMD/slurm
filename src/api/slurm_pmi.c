@@ -221,7 +221,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 				      int pmi_rank, int pmi_size)
 {
 	int rc, retries = 0, timeout = 0;
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr_t slurm_addr, srun_reply_addr;
 	char hostname[HOST_NAME_MAX];
@@ -303,16 +303,16 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	}
 
 	/* get the message after all tasks reach the barrier */
-	if (!(tls_conn = slurm_accept_msg_conn(pmi_fd, &srun_reply_addr))) {
+	if (!(conn = slurm_accept_msg_conn(pmi_fd, &srun_reply_addr))) {
 		error("slurm_accept_msg_conn: %m");
 		return errno;
 	}
 
-	while ((rc = slurm_receive_msg(tls_conn, &msg_rcv, timeout)) != 0) {
+	while ((rc = slurm_receive_msg(conn, &msg_rcv, timeout)) != 0) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
-		conn_g_destroy(tls_conn, true);
+		conn_g_destroy(conn, true);
 		return errno;
 	}
 	if (msg_rcv.auth_cred)
@@ -321,13 +321,13 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%s",
 		      rpc_num2string(msg_rcv.msg_type));
-		conn_g_destroy(tls_conn, true);
+		conn_g_destroy(conn, true);
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
 
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 	*kvs_set_ptr = msg_rcv.data;
 
 	rc = _forward_comm_set(*kvs_set_ptr);

@@ -427,8 +427,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 		}
 
 		if (persist_service_conn[i]->pcon) {
-			void *tls = persist_service_conn[i]->pcon->conn;
-			conn_g_set_graceful_shutdown(tls, false);
+			void *conn = persist_service_conn[i]->pcon->conn;
+			conn_g_set_graceful_shutdown(conn, false);
 		}
 
 		_destroy_persist_service(persist_service_conn[i]);

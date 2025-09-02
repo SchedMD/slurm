@@ -115,13 +115,13 @@ static void _sock_bind_wild(int sockfd)
 	return;
 }
 
-extern ssize_t slurm_msg_recvfrom_timeout(void *tls_conn, char **pbuf,
-					  size_t *lenp, int timeout)
+extern ssize_t slurm_msg_recvfrom_timeout(void *conn, char **pbuf, size_t *lenp,
+					  int timeout)
 {
 	ssize_t  len;
 	uint32_t msglen;
 
-	len = slurm_recv_timeout(tls_conn, (char *) &msglen, sizeof(msglen),
+	len = slurm_recv_timeout(conn, (char *) &msglen, sizeof(msglen),
 				 timeout);
 
 	if (len < ((ssize_t) sizeof(msglen)))
@@ -138,7 +138,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(void *tls_conn, char **pbuf,
 	if (!(*pbuf = try_xmalloc(msglen)))
 		slurm_seterrno_ret(ENOMEM);
 
-	if (slurm_recv_timeout(tls_conn, *pbuf, msglen, timeout) != msglen) {
+	if (slurm_recv_timeout(conn, *pbuf, msglen, timeout) != msglen) {
 		xfree(*pbuf);
 		*pbuf = NULL;
 		return SLURM_ERROR;
@@ -149,8 +149,8 @@ extern ssize_t slurm_msg_recvfrom_timeout(void *tls_conn, char **pbuf,
 	return (ssize_t) msglen;
 }
 
-static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
-			   int iovcnt, int timeout)
+static int _writev_timeout(int fd, void *conn, struct iovec *iov, int iovcnt,
+			   int timeout)
 {
 	int tot_bytes_sent = 0;
 	size_t size = 0;
@@ -159,8 +159,8 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 	struct timeval tstart;
 	char temp[2];
 
-	if (tls_conn)
-		fd = conn_g_get_fd(tls_conn);
+	if (conn)
+		fd = conn_g_get_fd(conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
@@ -178,7 +178,7 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 		int rc;
 		int timeleft = timeout - timeval_tot_wait(&tstart);
 
-		if (conn_g_peek(tls_conn))
+		if (conn_g_peek(conn))
 			goto ready;
 
 		if (timeleft <= 0) {
@@ -242,8 +242,8 @@ static int _writev_timeout(int fd, void *tls_conn, struct iovec *iov,
 		}
 
 ready:
-		if (tls_conn) {
-			bytes_sent = conn_g_sendv(tls_conn, iov, iovcnt);
+		if (conn) {
+			bytes_sent = conn_g_sendv(conn, iov, iovcnt);
 		} else {
 			bytes_sent = writev(fd, iov, iovcnt);
 		}
@@ -311,14 +311,13 @@ ready:
  * Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error
  */
-extern int slurm_send_timeout(void *tls_conn, char *buf, size_t size,
-			      int timeout)
+extern int slurm_send_timeout(void *conn, char *buf, size_t size, int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
-	return _writev_timeout(-1, tls_conn, &iov, 1, timeout);
+	return _writev_timeout(-1, conn, &iov, 1, timeout);
 }
 
-extern ssize_t slurm_msg_sendto(void *tls_conn, char *buffer, size_t size)
+extern ssize_t slurm_msg_sendto(void *conn, char *buffer, size_t size)
 {
 	struct iovec iov[2];
 	uint32_t usize;
@@ -339,7 +338,7 @@ extern ssize_t slurm_msg_sendto(void *tls_conn, char *buffer, size_t size)
 
 	usize = htonl(iov[1].iov_len);
 
-	len = _writev_timeout(-1, tls_conn, iov, 2, timeout);
+	len = _writev_timeout(-1, conn, iov, 2, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 
@@ -380,7 +379,7 @@ extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size)
 	return size;
 }
 
-extern ssize_t slurm_bufs_sendto(void *tls_conn, msg_bufs_t *buffers)
+extern ssize_t slurm_bufs_sendto(void *conn, msg_bufs_t *buffers)
 {
 	struct iovec iov[4];
 	int len;
@@ -408,7 +407,7 @@ extern ssize_t slurm_bufs_sendto(void *tls_conn, msg_bufs_t *buffers)
 
 	usize = htonl(iov[1].iov_len + iov[2].iov_len + iov[3].iov_len);
 
-	len = _writev_timeout(-1, tls_conn, iov, 4, timeout);
+	len = _writev_timeout(-1, conn, iov, 4, timeout);
 
 	xsignal(SIGPIPE, ohandler);
 	return len;
@@ -416,7 +415,7 @@ extern ssize_t slurm_bufs_sendto(void *tls_conn, msg_bufs_t *buffers)
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
+extern int slurm_recv_timeout(void *conn, char *buffer, size_t size,
 			      int timeout)
 {
 	int fd = -1;
@@ -427,7 +426,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 	struct timeval tstart;
 	int timeleft = timeout;
 
-	fd = conn_g_get_fd(tls_conn);
+	fd = conn_g_get_fd(conn);
 
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
@@ -447,7 +446,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 			goto done;
 		}
 
-		if (conn_g_peek(tls_conn))
+		if (conn_g_peek(conn))
 			goto ready;
 
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
@@ -499,7 +498,7 @@ extern int slurm_recv_timeout(void *tls_conn, char *buffer, size_t size,
 		}
 
 ready:
-		rc = conn_g_recv(tls_conn, &buffer[recvlen], (size - recvlen));
+		rc = conn_g_recv(conn, &buffer[recvlen], (size - recvlen));
 
 		if (rc < 0)  {
 			if ((errno == EINTR) || (errno == EAGAIN)) {
@@ -602,7 +601,7 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
 	int sock = -1;
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	conn_args_t tls_args = {
 		.mode = TLS_CONN_SERVER,
 	};
@@ -618,13 +617,13 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 	tls_args.input_fd = tls_args.output_fd = sock;
 	net_set_nodelay(sock, true, NULL);
 
-	if (!(tls_conn = conn_g_create(&tls_args))) {
+	if (!(conn = conn_g_create(&tls_args))) {
 		error("%s: Unable to create server TLS connection to address %pA: %m",
 		      __func__, addr);
 		(void) close(sock);
 	}
 
-	return tls_conn;
+	return conn;
 }
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
