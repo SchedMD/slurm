@@ -166,7 +166,7 @@ typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
 	int fd;
-	void *tls_conn;
+	void *conn; /* interfaces/conn data */
 	slurm_msg_t *msg;
 } service_msg_args_t;
 
@@ -705,8 +705,8 @@ static void *_service_msg(void *arg)
 	/* Release conmgr connection as it will have been closed */
 	conmgr_fd_free_ref(&msg->conmgr_con);
 
-	if (args->tls_conn) {
-		msg->conn = args->tls_conn;
+	if (args->conn) {
+		msg->conn = args->conn;
 	} else {
 		conn_args_t tls_args = {
 			.input_fd = args->fd,
@@ -2070,7 +2070,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	args = xmalloc(sizeof(*args));
 	args->magic = SERVICE_MSG_ARGS_MAGIC;
 	args->fd = input_fd;
-	args->tls_conn = tls_conn;
+	args->conn = tls_conn;
 	args->msg = msg;
 
 	/* force blocking mode for blocking handlers */
