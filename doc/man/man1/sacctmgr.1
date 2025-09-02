@@ -421,22 +421,16 @@ To clear an existing value, set a new value of \-1.
 \fBGrpTRES\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
 Maximum number of TRES able to be allocated by running jobs in aggregate for
 this association and its children.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .TP
 \fBGrpTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 Maximum number of TRES minutes that can possibly be used by past, present, and
 future jobs in this association and its children.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 
 \fBNOTE\fR: This limit is not enforced if set on the root
 association of a cluster. So even though it may appear in sacctmgr
@@ -456,11 +450,8 @@ Maximum number of TRES minutes able to be allocated by running jobs in this
 association and its children. This takes into consideration time limit of
 running jobs and consumes it. If the limit is reached no new jobs are started
 until other jobs finish to allow time to free up.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .TP
@@ -516,7 +507,9 @@ To clear an existing value, set a new value of \-1.
 Maximum number of TRES each job can use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+
+Refer to the \fBTRES information\fR section below for further details.
+.IP
 
 .IP \fBMaxTRESMins\fR=TRES=<\fIminutes\fR>[,TRES=<\fIminutes\fR>,...]
 .PD 0
@@ -527,16 +520,8 @@ To clear an existing value, set a new value of \-1 for each TRES type/name.
 Maximum number of TRES minutes each job can use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-.IP
-
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESPN\fR=TRES=<\fImax_TRES\fR>[,TRES=<\fImax_TRES\fR>,...]
@@ -546,11 +531,8 @@ of available resources by running \fBsacctmgr show tres\fR.
 Maximum number of TRES each node in a job allocation can use in this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxWall\fR=<\fImax_wall\fR>
@@ -1867,22 +1849,16 @@ To clear an existing value, set a new value of \-1.
 \fBGrpTRES\fR
 Maximum number of TRES able to be allocated by running jobs in aggregate for
 this QOS.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .TP
 \fBGrpTRESMins\fR
 Maximum number of TRES minutes that can possibly be used by past, present, and
 future jobs with this QOS.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 
 \fBNOTE\fR: This limit only applies when using the Priority Multifactor
 plugin. The time is decayed using the value of PriorityDecayHalfLife
@@ -1898,11 +1874,8 @@ Maximum number of TRES minutes able to be allocated by running jobs with this
 QOS. This takes into consideration time limit of running jobs and consumes it.
 If the limit is reached no new jobs are started until other jobs finish to allow
 time to free up.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .TP
@@ -1993,10 +1966,7 @@ To clear an existing value, set a new value of \-1.
 .PD
 Maximum number of TRES each job can use.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESMins\fR
@@ -2007,10 +1977,7 @@ To clear an existing value, set a new value of \-1 for each TRES type/name.
 .PD
 Maximum number of TRES minutes each job can use.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESPA\fR
@@ -2019,10 +1986,7 @@ To clear an existing value, set a new value of \-1 for each TRES type/name.
 .PD
 Maximum number of TRES each account can use.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESPN\fR
@@ -2031,10 +1995,7 @@ To clear an existing value, set a new value of \-1 for each TRES type/name.
 .PD
 Maximum number of TRES each node in a job allocation can use.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESPU\fR
@@ -2043,10 +2004,7 @@ To clear an existing value, set a new value of \-1 for each TRES type/name.
 .PD
 Maximum number of TRES each user can use.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESRunMinsPA\fR
@@ -2057,10 +2015,7 @@ Maximum number of TRES minutes each account can use. This takes into
 consideration the time limit of running jobs. If the limit is reached, no new
 jobs are started until other jobs finish to allow time to free up.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxTRESRunMinsPU\fR
@@ -2071,10 +2026,7 @@ Maximum number of TRES minutes each user can use. This takes into
 consideration the time limit of running jobs. If the limit is reached, no new
 jobs are started until other jobs finish to allow time to free up.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .IP \fBMaxWall\fR
@@ -2100,10 +2052,7 @@ To clear an existing value, set a new value of \-1.
 Minimum number of TRES each job running under this QOS must request.
 Otherwise the job will pend until modified.
 
-\fBTRES\fR can be one of the Slurm defaults (i.e. \fIcpu\fR, \fImem\fR,
-\fInode\fR, etc...), or any defined generic resource. You can see the list
-of available resources by running \fBsacctmgr show tres\fR.
-To clear an existing value, set a new value of \-1 for each TRES type/name.
+Refer to the \fBTRES information\fR section below for further details.
 .IP
 
 .TP
@@ -3161,21 +3110,34 @@ buffer), CPU, Energy, GRES, License, Memory, and Node.
 .IP
 
 .SH "TRES information"
-Trackable RESources (TRES) are used in many QOS or Association limits.
-When setting the limits they are comma\-separated list. Each TRES has
-a different limit, i.e. GrpTRESMins=cpu=10,mem=20 would make 2
-different limits 1 for 10 cpu minutes and 1 for 20 MB memory minutes.
-This is the case for each limit that deals with TRES. To remove the
-limit \-1 is used i.e. GrpTRESMins=cpu=\-1 would remove only the cpu
-TRES limit.
+Trackable RESources (TRES) are used in many QOS or Association limits
+(GrpTRES* / MaxTRES*). When setting limits, one or more comma\-separated
+"TRES=value" assignments can be specified.
 
-\fBNOTE\fR: When dealing with Memory as a TRES all limits are in MB.
+Each TRES can be one of the Slurm defaults (e.g., \fIcpu\fR, \fImem\fR,
+\fInode\fR), or any defined generic resource. You can see the list of available
+resources by running \fBsacctmgr show tres\fR.
+
+Each TRES has a different limit, e.g., "GrpTRES=cpu=16,mem=32G" would
+establish 2 different limits: one for 16 CPUs and another for 32 GB of memory.
+
+Setting a new value for a TRES type does not affect any other TRES types that
+were previously specified. For example, on the same entity as above, a
+subsequent assignment of "GrpTRES=gres/gpu=2" will result in
+"GrpTRES=cpu=16,mem=32G,gres/gpu=2" applying to that entity.
+
+To remove a limit, assign \-1 to the TRES type whose limit should be removed,
+e.g., "GrpTRESMins=cpu=\-1" would remove only the cpu TRES limit, resulting in
+"GrpTRES=mem=32G,gres/gpu=2" on that entity.
+
+\fBNOTE\fR: When dealing with Memory as a TRES the default units are MB. A
+suffix of G, T, or P can be added to specify a limit in larger units.
 
 \fBNOTE\fR: The Billing TRES is calculated from a partition's
 TRESBillingWeights. It is temporarily calculated during scheduling for each
-partition to enforce billing TRES limits. The final Billing TRES is calculated
-after the job has been allocated resources. The final number can be seen in
-\fBscontrol show jobs\fP and \fBsacct\fP output.
+partition to enforce billing TRES limits. The final Billing TRES value is
+calculated after the job has been allocated resources and can be seen in
+\fBscontrol show jobs\fR and \fBsacct\fR output.
 
 .SH "GLOBAL FORMAT OPTION"
 When using the format option for listing various fields you can put a
