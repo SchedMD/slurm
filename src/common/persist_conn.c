@@ -60,7 +60,7 @@
 
 typedef struct {
 	void *arg;
-	persist_conn_t *conn;
+	persist_conn_t *pcon;
 	int fd;
 	int thread_loc;
 	pthread_t thread_id;
@@ -185,7 +185,7 @@ static bool _conn_readable(persist_conn_t *persist_conn)
 static void _destroy_persist_service(persist_service_conn_t *persist_service)
 {
 	if (persist_service) {
-		slurm_persist_conn_destroy(persist_service->conn);
+		slurm_persist_conn_destroy(persist_service->pcon);
 		xfree(persist_service);
 	}
 }
@@ -333,11 +333,11 @@ static void *_service_connection(void *arg)
 	persist_service_conn_t *service_conn = arg;
 
 	xassert(service_conn);
-	xassert(service_conn->conn);
+	xassert(service_conn->pcon);
 
 #if HAVE_SYS_PRCTL_H
 	char *name = xstrdup_printf("p-%s",
-				    service_conn->conn->cluster_name);
+				    service_conn->pcon->cluster_name);
 	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL) < 0) {
 		error("%s: cannot set my name to %s %m", __func__, name);
 	}
@@ -346,14 +346,14 @@ static void *_service_connection(void *arg)
 
 	service_conn->thread_id = pthread_self();
 
-	_process_service_connection(service_conn->conn, service_conn->fd,
+	_process_service_connection(service_conn->pcon, service_conn->fd,
 				    service_conn->arg);
 
-	if (service_conn->conn->callback_fini)
-		(service_conn->conn->callback_fini)(service_conn->arg);
+	if (service_conn->pcon->callback_fini)
+		(service_conn->pcon->callback_fini)(service_conn->arg);
 	else
 		log_flag(NET, "%s: Persist connection from cluster %s has disconnected",
-			 __func__, service_conn->conn->cluster_name);
+			 __func__, service_conn->pcon->cluster_name);
 
 	/* service_conn is freed inside here */
 	slurm_persist_conn_free_thread_loc(service_conn->thread_loc);
@@ -426,8 +426,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			slurm_mutex_lock(&thread_count_lock);
 		}
 
-		if (persist_service_conn[i]->conn) {
-			void *tls = persist_service_conn[i]->conn->tls_conn;
+		if (persist_service_conn[i]->pcon) {
+			void *tls = persist_service_conn[i]->pcon->tls_conn;
 			conn_g_set_graceful_shutdown(tls, false);
 		}
 
@@ -455,7 +455,7 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 	slurm_mutex_unlock(&thread_count_lock);
 
 	service_conn->arg = arg;
-	service_conn->conn = persist_conn;
+	service_conn->pcon = persist_conn;
 	service_conn->fd = fd;
 	service_conn->thread_loc = thread_loc;
 
