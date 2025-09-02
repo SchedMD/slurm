@@ -107,14 +107,20 @@ expect {
 		set id_set $expect_out(1,string)
 		exp_continue
 	}
-	-re "CPUs/Task=1" {
+	-re "CPUs/Task=4" {
 		incr matches
 		exp_continue
 	}
-	-re "MinMemoryCPU=6M" {
+	-re "MinMemoryCPU=10M" {
 		incr matches
 		exp_continue
 	}
+        -re "JobId=$re_word_str\\s+HetJobId=$job_id" {
+                # this match ensures that the previous regexp are matched before
+                # the 2nd and 3rd components are printed
+                incr matches
+                exp_continue
+        }
 	timeout {
 		fail "scontrol not responding"
 	}
@@ -122,8 +128,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 3} {
-	fail "Problem with scontrol ($matches != 3)"
+if {$matches != 5} {
+	fail "Problem with scontrol ($matches != 5)"
 }
 
 set js [parse_id_set $id_set $job_id]
