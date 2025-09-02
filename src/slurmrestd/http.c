@@ -834,3 +834,13 @@ extern void *http_context_set_auth(http_context_t *context, void *auth)
 
 	return old;
 }
+
+extern void http_context_free_null_auth(http_context_t *context)
+{
+	if (!context)
+		return;
+
+	xassert(context->magic == MAGIC);
+
+	FREE_NULL_REST_AUTH(context->auth);
+}

@@ -144,4 +144,10 @@ extern void *http_context_get_auth(http_context_t *context);
  */
 extern void *http_context_set_auth(http_context_t *context, void *auth);
 
+/*
+ * Release and NULL auth pointer from context
+ * IN context - connection context
+ */
+extern void http_context_free_null_auth(http_context_t *context);
+
 #endif /* SLURMRESTD_HTTP_H */
