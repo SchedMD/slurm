@@ -175,14 +175,14 @@ static bool _validate_operator(slurmdbd_conn_t *dbd_conn)
 	return false;
 }
 
-static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
+static void _add_registered_cluster(slurmdbd_conn_t *dbd_conn)
 {
 	list_itr_t *itr;
 	slurmdbd_conn_t *slurmdbd_conn;
 
-	if (!db_conn->conn->rem_port) {
+	if (!dbd_conn->conn->rem_port) {
 		error("%s: trying to register a cluster (%s) with no remote port",
-		      __func__, db_conn->conn->cluster_name);
+		      __func__, dbd_conn->conn->cluster_name);
 		return;
 	}
 
@@ -191,11 +191,11 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 	while ((slurmdbd_conn = list_next(itr))) {
 		int new_fd = -1, existing_fd = -1;
 
-		if (db_conn == slurmdbd_conn)
+		if (dbd_conn == slurmdbd_conn)
 			break;
 
-		if (db_conn->conn->tls_conn) {
-			new_fd = conn_g_get_fd(db_conn->conn->tls_conn);
+		if (dbd_conn->conn->tls_conn) {
+			new_fd = conn_g_get_fd(dbd_conn->conn->tls_conn);
 		}
 
 		if (slurmdbd_conn->conn->tls_conn) {
@@ -203,46 +203,47 @@ static void _add_registered_cluster(slurmdbd_conn_t *db_conn)
 				conn_g_get_fd(slurmdbd_conn->conn->tls_conn);
 		}
 
-		if (!xstrcmp(db_conn->conn->cluster_name,
+		if (!xstrcmp(dbd_conn->conn->cluster_name,
 			     slurmdbd_conn->conn->cluster_name) &&
 		    (new_fd != existing_fd)) {
 			error("A new registration for cluster %s CONN:%d just came in, but I am already talking to that cluster (CONN:%d), closing other connection.",
-			      db_conn->conn->cluster_name, new_fd, existing_fd);
+			      dbd_conn->conn->cluster_name, new_fd, existing_fd);
 			slurmdbd_conn->conn->rem_port = 0;
 			list_delete_item(itr);
 		}
 	}
 	list_iterator_destroy(itr);
 	if (!slurmdbd_conn) {
-		slurm_mutex_init(&db_conn->conn_send_lock);
-		slurm_mutex_lock(&db_conn->conn_send_lock);
-		db_conn->conn_send = xmalloc(sizeof(persist_conn_t));
-		db_conn->conn_send->cluster_name =
-			xstrdup(db_conn->conn->cluster_name);
-		db_conn->conn_send->persist_type = PERSIST_TYPE_ACCT_UPDATE;
-		db_conn->conn_send->my_port = slurmdbd_conf->dbd_port;
-		db_conn->conn_send->rem_host = xstrdup(db_conn->conn->rem_host);
-		db_conn->conn_send->rem_port = db_conn->conn->rem_port;
-		db_conn->conn_send->version = db_conn->conn->version;
-		db_conn->conn_send->shutdown = &shutdown_time;
+		slurm_mutex_init(&dbd_conn->conn_send_lock);
+		slurm_mutex_lock(&dbd_conn->conn_send_lock);
+		dbd_conn->conn_send = xmalloc(sizeof(persist_conn_t));
+		dbd_conn->conn_send->cluster_name =
+			xstrdup(dbd_conn->conn->cluster_name);
+		dbd_conn->conn_send->persist_type = PERSIST_TYPE_ACCT_UPDATE;
+		dbd_conn->conn_send->my_port = slurmdbd_conf->dbd_port;
+		dbd_conn->conn_send->rem_host =
+			xstrdup(dbd_conn->conn->rem_host);
+		dbd_conn->conn_send->rem_port = dbd_conn->conn->rem_port;
+		dbd_conn->conn_send->version = dbd_conn->conn->version;
+		dbd_conn->conn_send->shutdown = &shutdown_time;
 		/* we want timeout to be zero */
-		db_conn->conn_send->timeout = 0;
-		db_conn->conn_send->r_uid = SLURM_AUTH_UID_ANY;
-		db_conn->conn_send->flags |= PERSIST_FLAG_RECONNECT;
-		slurm_mutex_unlock(&db_conn->conn_send_lock);
+		dbd_conn->conn_send->timeout = 0;
+		dbd_conn->conn_send->r_uid = SLURM_AUTH_UID_ANY;
+		dbd_conn->conn_send->flags |= PERSIST_FLAG_RECONNECT;
+		slurm_mutex_unlock(&dbd_conn->conn_send_lock);
 		/*
 		 * We can't open a pipe back to the slurmctld right
 		 * now, the slurmctld might just be starting up and the
 		 * rpc_mgr might not be listening yet, so we will handle
 		 * this in the mysql plugin on the first commit.
 		 */
-		/* if (slurm_persist_conn_open(db_conn->conn_send) != */
+		/* if (slurm_persist_conn_open(dbd_conn->conn_send) != */
 		/*     SLURM_SUCCESS) { */
 		/* 	error("persist_conn_send: Unable to open connection to cluster %s who is actively talking to us.", */
-		/* 	      db_conn->conn->cluster_name); */
+		/* 	      dbd_conn->conn->cluster_name); */
 		/* } */
 
-		list_append(registered_clusters, db_conn);
+		list_append(registered_clusters, dbd_conn);
 	}
 	slurm_mutex_unlock(&registered_lock);
 }
