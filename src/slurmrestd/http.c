@@ -711,8 +711,7 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	buf_t *buffer = NULL;
 
 	xassert(context->magic == MAGIC);
-	xassert(context->con);
-	xassert(context->ref);
+	xassert(conmgr_fd_get_ref(context->ref) == context->con);
 
 	if (!context->parser &&
 	    (rc = http_parser_g_new_parse_request(
