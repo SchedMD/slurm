@@ -5963,7 +5963,7 @@ end_it:
 static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 {
 	tls_cert_request_msg_t *req = msg->data;
-	tls_cert_response_msg_t *resp = xmalloc(sizeof(*resp));
+	tls_cert_response_msg_t resp = { 0 };
 	node_record_t *node = NULL;
 	bool is_client_auth = false;
 
@@ -5981,7 +5981,7 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 
 	is_client_auth = conn_g_is_client_authenticated(msg->tls_conn);
 
-	if (!(resp->signed_cert =
+	if (!(resp.signed_cert =
 		      certmgr_g_sign_csr(req->csr, is_client_auth, req->token,
 					 req->node_name))) {
 		error("%s: Unable to sign certificate signing request.",
@@ -5991,13 +5991,13 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 		node->cert_last_renewal = time(NULL);
 	}
 
-	if (resp->signed_cert) {
+	if (resp.signed_cert) {
 		log_flag(AUDIT_TLS, "Sending signed certificate back to node \'%s\'",
 			 req->node_name);
 	}
 
-	(void) send_msg_response(msg, RESPONSE_TLS_CERT, resp);
-	slurm_free_msg_data(RESPONSE_TLS_CERT, resp);
+	(void) send_msg_response(msg, RESPONSE_TLS_CERT, &resp);
+	slurm_free_tls_cert_response_msg_members(&resp);
 }
 
 static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
