@@ -15319,17 +15319,16 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	}
 
 reply:
-	if (msg->tls_conn) {
-		if (resp_array) {
-			job_array_resp_msg_t *resp_array_msg =
-				_resp_array_xlate(resp_array, job_id);
-			(void) send_msg_response(msg, RESPONSE_JOB_ARRAY_ERRORS,
-						 resp_array_msg);
-			slurm_free_job_array_resp(resp_array_msg);
-		} else {
-			slurm_send_rc_err_msg(msg, rc, err_msg);
-		}
+	if (resp_array) {
+		job_array_resp_msg_t *resp_array_msg =
+			_resp_array_xlate(resp_array, job_id);
+		(void) send_msg_response(msg, RESPONSE_JOB_ARRAY_ERRORS,
+					 resp_array_msg);
+		slurm_free_job_array_resp(resp_array_msg);
+	} else {
+		slurm_send_rc_err_msg(msg, rc, err_msg);
 	}
+
 	xfree(err_msg);
 	_resp_array_free(resp_array);
 
