@@ -1021,17 +1021,17 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 	if (msg->flags & SLURM_MSG_KEEP_BUFFER)
 		keep_buffer = true;
 
-	if (msg->conn) {
+	if (msg->pcon) {
 		persist_msg_t persist_msg;
 
-		buffer = slurm_persist_recv_msg(msg->conn);
+		buffer = slurm_persist_recv_msg(msg->pcon);
 		if (!buffer) {
 			error("%s: No response to persist_init", __func__);
-			slurm_persist_conn_close(msg->conn);
+			slurm_persist_conn_close(msg->pcon);
 			return SLURM_ERROR;
 		}
 		memset(&persist_msg, 0, sizeof(persist_msg_t));
-		rc = slurm_persist_msg_unpack(msg->conn, &persist_msg, buffer);
+		rc = slurm_persist_msg_unpack(msg->pcon, &persist_msg, buffer);
 
 		if (keep_buffer)
 			msg->buffer = buffer;
@@ -1040,7 +1040,7 @@ extern int slurm_receive_msg(void *tls_conn, slurm_msg_t *msg, int timeout)
 
 		if (rc) {
 			error("%s: Failed to unpack persist msg", __func__);
-			slurm_persist_conn_close(msg->conn);
+			slurm_persist_conn_close(msg->pcon);
 			return SLURM_ERROR;
 		}
 
@@ -1757,11 +1757,11 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 	msg_bufs_t buffers = { 0 };
 	int rc;
 
-	if (msg->conn) {
+	if (msg->pcon) {
 		persist_msg_t persist_msg;
 		buf_t *buffer;
 		char *peer = NULL;
-		int persist_fd = conn_g_get_fd(msg->conn->tls_conn);
+		int persist_fd = conn_g_get_fd(msg->pcon->tls_conn);
 
 		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
 			 rpc_num2string(msg->msg_type), &msg->address,
@@ -1771,11 +1771,11 @@ extern int slurm_send_node_msg(void *tls_conn, slurm_msg_t *msg)
 		persist_msg.msg_type  = msg->msg_type;
 		persist_msg.data      = msg->data;
 
-		buffer = slurm_persist_msg_pack(msg->conn, &persist_msg);
+		buffer = slurm_persist_msg_pack(msg->pcon, &persist_msg);
 		if (!buffer)    /* pack error */
 			return SLURM_ERROR;
 
-		rc = slurm_persist_send_msg(msg->conn, buffer);
+		rc = slurm_persist_send_msg(msg->pcon, buffer);
 		FREE_NULL_BUFFER(buffer);
 
 		if ((rc != SLURM_SUCCESS) && (fd < 0))
@@ -1843,7 +1843,7 @@ static void _send_node_msg_maybe(void *tls_conn, slurm_msg_t *msg)
 {
 	msg_bufs_t buffers = { 0 };
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		/* Pack and send message */
 		if (slurm_buffers_pack_msg(msg, &buffers, true))
 			goto cleanup;
@@ -1987,7 +1987,7 @@ extern void slurm_resp_msg_init(slurm_msg_t *resp_msg, slurm_msg_t *msg,
 	slurm_msg_t_init(resp_msg);
 	resp_msg->address = msg->address;
 	resp_msg->auth_index = msg->auth_index;
-	resp_msg->conn = msg->conn;
+	resp_msg->pcon = msg->pcon;
 	resp_msg->data = data;
 	resp_msg->flags = msg->flags;
 	resp_msg->forward = msg->forward;
@@ -2044,7 +2044,7 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 		return rc;
 	}
 
-	resp_msg.conn = source_msg->conn;
+	resp_msg.pcon = source_msg->pcon;
 
 	rc = slurm_send_node_msg(source_msg->tls_conn, &resp_msg);
 
@@ -2053,8 +2053,8 @@ extern int send_msg_response(slurm_msg_t *source_msg, slurm_msg_type_t msg_type,
 
 	rc = errno;
 	log_flag(NET, "%s: [fd:%d] write response RPC %s failed: %s",
-		 __func__, (source_msg->conn ?
-			    conn_g_get_fd(source_msg->conn->tls_conn) :
+		 __func__, (source_msg->pcon ?
+			    conn_g_get_fd(source_msg->pcon->tls_conn) :
 			    conn_g_get_fd(source_msg->tls_conn)),
 		 rpc_num2string(msg_type), slurm_strerror(rc));
 
@@ -2163,8 +2163,8 @@ extern int slurm_send_recv_msg(void *tls_conn, slurm_msg_t *req,
 	 * actually want.  This should be the correct one already, but just make
 	 * sure.
 	 */
-	if (req->conn) {
-		resp->conn = req->conn;
+	if (req->pcon) {
+		resp->pcon = req->pcon;
 	}
 
 	if (slurm_send_node_msg(tls_conn, req) < 0)

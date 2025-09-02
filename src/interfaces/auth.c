@@ -435,9 +435,9 @@ extern char *auth_g_get_host(void *slurm_msg)
 		return host;
 	}
 
-	if (msg->conn && msg->conn->rem_host) {
+	if (msg->pcon && msg->pcon->rem_host) {
 		/* use remote host name if persistent connection */
-		host = xstrdup(msg->conn->rem_host);
+		host = xstrdup(msg->pcon->rem_host);
 		debug3("%s: using remote hostname: %s", __func__, host);
 		return host;
 	}

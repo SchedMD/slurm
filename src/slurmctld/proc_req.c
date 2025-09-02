@@ -5834,7 +5834,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_gid = persist_conn->auth_gid;
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
-	msg.conn = persist_conn;
+	msg.pcon = persist_conn;
 	msg.tls_conn = persist_conn->tls_conn;
 
 	msg.msg_type = persist_msg->msg_type;
@@ -5874,7 +5874,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
 
-	if (msg->conn)
+	if (msg->pcon)
 		error("We already have a persistent connect, this should never happen");
 
 	START_TIMER;
@@ -6007,7 +6007,7 @@ static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, SIB_JOB_LOCK RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6024,7 +6024,7 @@ static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, SIB_JOB_UNLOCK RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6037,7 +6037,7 @@ static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 }
 
 static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, SIB_SUBMISSION RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6049,7 +6049,7 @@ static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
 
 static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 {
-	if (!msg->conn || !validate_slurm_user(uid)) {
+	if (!msg->pcon || !validate_slurm_user(uid)) {
 		error("Security violation, REQUEST_SEND_DEP RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6061,7 +6061,7 @@ static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 
 static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
 {
-	if (!msg->conn || !validate_slurm_user(uid)) {
+	if (!msg->pcon || !validate_slurm_user(uid)) {
 		error("Security violation, REQUEST_UPDATE_ORIGIN_DEP RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6114,7 +6114,7 @@ static int _foreach_proc_multi_msg(void *x, void *arg)
 		list_append(multi_msg->full_resp_list, ret_buf);
 		return 0;
 	}
-	sub_msg.conn = msg->conn;
+	sub_msg.pcon = msg->pcon;
 	sub_msg.auth_cred = msg->auth_cred;
 	ret_buf = NULL;
 
@@ -6159,7 +6159,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 		.msg = msg,
 	};
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6187,9 +6187,9 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 	xassert(msg);
 
 	/* route msg to origin cluster if a federated job */
-	if (!msg->conn && fed_mgr_fed_rec) {
+	if (!msg->pcon && fed_mgr_fed_rec) {
 		/* Don't send reroute if coming from a federated cluster (aka
-		 * has a msg->conn). */
+		 * has a msg->pcon). */
 		uint32_t job_id, origin_id;
 
 		if (src_job_id_str)
@@ -6895,17 +6895,17 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	if (msg->tls_conn) {
 		fd = conn_g_get_fd(msg->tls_conn);
 		xassert(!msg->conmgr_con);
-	} else if (msg->conn && msg->conn->tls_conn) {
-		fd = conn_g_get_fd(msg->conn->tls_conn);
+	} else if (msg->pcon && msg->pcon->tls_conn) {
+		fd = conn_g_get_fd(msg->pcon->tls_conn);
 		xassert(!msg->conmgr_con);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		const char *p = rpc_num2string(msg->msg_type);
-		if (msg->conn) {
+		if (msg->pcon) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
-			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host, msg->auth_uid);
+			     __func__, p, msg->pcon->cluster_name,
+			     msg->pcon->rem_host, msg->auth_uid);
 		} else if (msg->address.ss_family != AF_UNSPEC) {
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &msg->address, msg->auth_uid);

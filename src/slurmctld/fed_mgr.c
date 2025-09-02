@@ -449,8 +449,8 @@ static int _send_recv_msg(slurmdb_cluster_rec_t *cluster, slurm_msg_t *req,
 
 	rc = _check_send(cluster);
 	if ((rc == SLURM_SUCCESS) && cluster->fed.send) {
-		resp->conn = req->conn = cluster->fed.send;
-		rc = slurm_send_recv_msg(req->conn->tls_conn, req, resp, 0);
+		resp->pcon = req->pcon = cluster->fed.send;
+		rc = slurm_send_recv_msg(req->pcon->tls_conn, req, resp, 0);
 	}
 	if (!locked)
 		slurm_mutex_unlock(&cluster->lock);
@@ -5817,7 +5817,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_update_info = xmalloc(sizeof(fed_job_update_info_t));
 
 	job_update_info->job_id           = job_desc->job_id;
-	job_update_info->submit_cluster   = xstrdup(msg->conn->cluster_name);
+	job_update_info->submit_cluster   = xstrdup(msg->pcon->cluster_name);
 	job_update_info->submit_desc      = job_desc;
 	job_update_info->submit_proto_ver = sib_msg->submit_proto_ver;
 
@@ -5838,21 +5838,21 @@ static int _q_sib_submit_response(slurm_msg_t *msg)
 	fed_job_update_info_t *job_update_info = NULL;
 
 	xassert(msg);
-	xassert(msg->conn);
+	xassert(msg->pcon);
 
 	sib_msg = msg->data;
 
 	/* if failure then remove from active siblings */
 	if (sib_msg && sib_msg->return_code) {
 		log_flag(FEDR, "%s: cluster %s failed to submit sibling JobId=%u. Removing from active_sibs. (error:%d)",
-			 __func__, msg->conn->cluster_name, sib_msg->job_id,
+			 __func__, msg->pcon->cluster_name, sib_msg->job_id,
 			 sib_msg->return_code);
 
 		job_update_info = xmalloc(sizeof(fed_job_update_info_t));
 		job_update_info->job_id       = sib_msg->job_id;
 		job_update_info->type         = FED_JOB_REMOVE_ACTIVE_SIB_BIT;
 		job_update_info->siblings_str =
-			xstrdup(msg->conn->cluster_name);
+			xstrdup(msg->pcon->cluster_name);
 		_append_job_update(job_update_info);
 	}
 
@@ -5874,7 +5874,7 @@ static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
 	job_update_info->submit_desc    = job_desc;
 	job_update_info->job_id         = sib_msg->job_id;
 	job_update_info->uid            = uid;
-	job_update_info->submit_cluster = xstrdup(msg->conn->cluster_name);
+	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
 	_append_job_update(job_update_info);
 
@@ -5938,7 +5938,7 @@ static int _q_sib_job_update_response(slurm_msg_t *msg)
 	job_update_info->type           = FED_JOB_UPDATE_RESPONSE;
 	job_update_info->job_id         = sib_msg->job_id;
 	job_update_info->return_code    = sib_msg->return_code;
-	job_update_info->submit_cluster = xstrdup(msg->conn->cluster_name);
+	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
 	_append_job_update(job_update_info);
 
@@ -5992,7 +5992,7 @@ static int _q_sib_job_sync(slurm_msg_t *msg)
 	job_update_info->type           = FED_JOB_SYNC;
 	job_update_info->job_info_msg   = job_info_msg;
 	job_update_info->start_time     = sib_msg->start_time;
-	job_update_info->submit_cluster = xstrdup(msg->conn->cluster_name);
+	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
 	_append_job_update(job_update_info);
 

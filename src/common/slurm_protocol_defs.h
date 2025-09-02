@@ -318,7 +318,7 @@ typedef struct slurm_msg {
 				 buffer starts. */
 	buf_t *buffer;		/* DON'T PACK! ptr to buffer that msg was
 				 * unpacked from. */
-	persist_conn_t *conn;	/* DON'T PACK OR FREE! this is here to
+	persist_conn_t *pcon;	/* DON'T PACK OR FREE! this is here to
 				 * distinguish a persistent connection from a
 				 * normal connection. It should be filled in
 				 * with the connection before sending the

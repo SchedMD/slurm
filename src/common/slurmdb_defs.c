@@ -3148,7 +3148,7 @@ extern int slurmdb_send_accounting_update_persist(list_t *update_list,
 	msg.rpc_version = req.protocol_version = persist_conn->version;
 	slurm_msg_t_init(&req);
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
-	req.conn = persist_conn;
+	req.pcon = persist_conn;
 	req.data = &msg;
 
 	/* resp is inited in slurm_send_recv_msg */
