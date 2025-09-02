@@ -672,10 +672,7 @@ cleanup:
 	FREE_NULL_DATA(params);
 
 	/* always clear the auth context */
-	if (args->context) {
-		void *auth = http_context_set_auth(args->context, NULL);
-		FREE_NULL_REST_AUTH(auth);
-	}
+	http_context_free_null_auth(args->context);
 
 	return rc;
 }
