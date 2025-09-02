@@ -71,7 +71,7 @@ extern void *rpc_mgr(void *no_data)
 	int sockfd, newsockfd;
 	int i;
 	slurm_addr_t cli_addr;
-	slurmdbd_conn_t *conn_arg = NULL;
+	slurmdbd_conn_t *dbd_conn = NULL;
 
 	master_thread_id = pthread_self();
 
@@ -100,21 +100,21 @@ extern void *rpc_mgr(void *no_data)
 		}
 		fd_set_nonblocking(newsockfd);
 
-		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
-		conn_arg->conn = xmalloc(sizeof(persist_conn_t));
-		conn_arg->conn->flags = PERSIST_FLAG_DBD;
-		conn_arg->conn->callback_proc = proc_req;
-		conn_arg->conn->callback_fini = _connection_fini_callback;
-		conn_arg->conn->shutdown = &shutdown_time;
-		conn_arg->conn->version = SLURM_MIN_PROTOCOL_VERSION;
-		conn_arg->conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
+		dbd_conn = xmalloc(sizeof(slurmdbd_conn_t));
+		dbd_conn->conn = xmalloc(sizeof(persist_conn_t));
+		dbd_conn->conn->flags = PERSIST_FLAG_DBD;
+		dbd_conn->conn->callback_proc = proc_req;
+		dbd_conn->conn->callback_fini = _connection_fini_callback;
+		dbd_conn->conn->shutdown = &shutdown_time;
+		dbd_conn->conn->version = SLURM_MIN_PROTOCOL_VERSION;
+		dbd_conn->conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
 		/* Don't fill in the rem_port here.  It will be filled in
 		 * later if it is a slurmctld connection. */
-		slurm_get_ip_str(&cli_addr, conn_arg->conn->rem_host,
+		slurm_get_ip_str(&cli_addr, dbd_conn->conn->rem_host,
 				 INET6_ADDRSTRLEN);
 
 		slurm_persist_conn_recv_thread_init(
-			conn_arg->conn, newsockfd, i, conn_arg);
+			dbd_conn->conn, newsockfd, i, dbd_conn);
 	}
 
 	debug("rpc_mgr shutting down");
