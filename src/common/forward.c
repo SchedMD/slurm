@@ -678,10 +678,22 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 	if (header->forward.tree_depth)
 		header->forward.timeout = (header->forward.timeout * depth) /
 					  header->forward.tree_depth;
-	else
-		header->forward.timeout *= 2 * depth;
+	else {
+		/*
+		 * tree_depth not packed - likely using 24.05- protocol version.
+		 * Calculate the timeout based on MessageTimeout instead.
+		 */
+		header->forward.timeout =
+			(2 * depth * slurm_conf.msg_timeout * MSEC_IN_SEC);
+		debug3("%s: original tree_depth was 0 so setting new timeout to %d",
+			__func__, header->forward.timeout);
+	}
 	header->forward.tree_depth = depth;
 	forward_struct->timeout = header->forward.timeout;
+
+	log_flag(NET, "%s: forwarding messages to %u nodes with timeout of %d",
+		 __func__, forward_struct->fwd_cnt, forward_struct->timeout);
+
 	_forward_msg_internal(NULL, sp_hl, forward_struct, header,
 			      forward_struct->timeout, hl_count);
 
