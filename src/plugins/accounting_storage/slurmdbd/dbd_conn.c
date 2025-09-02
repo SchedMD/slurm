@@ -232,7 +232,7 @@ extern void dbd_conn_close(persist_conn_t **pc)
 	get_msg.commit = false;
 
 	req.msg_type = DBD_FINI;
-	req.conn = *pc;
+	req.pcon = *pc;
 	req.data = &get_msg;
 
 	if ((rc = dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &req,
@@ -272,7 +272,7 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 {
 	int rc = SLURM_SUCCESS;
 	buf_t *buffer;
-	persist_conn_t *use_conn = req->conn;
+	persist_conn_t *use_conn = req->pcon;
 
 	xassert(req);
 	xassert(resp);
@@ -360,7 +360,7 @@ extern int dbd_conn_send_recv_rc_comment_msg(uint16_t rpc_version,
 			char *comment = msg->comment;
 			if (!comment)
 				comment = slurm_strerror(msg->rc);
-			if (!req->conn &&
+			if (!req->pcon &&
 			    (msg->ret_info == DBD_REGISTER_CTLD) &&
 			    slurm_conf.accounting_storage_enforce) {
 				error("Issue with call "
@@ -410,7 +410,7 @@ extern int dbd_conn_send_recv(uint16_t rpc_version,
 			      persist_msg_t *resp)
 {
 	if (running_in_slurmctld() &&
-	    (!req->conn || (req->conn == slurmdbd_conn)))
+	    (!req->pcon || (req->pcon == slurmdbd_conn)))
 		return slurmdbd_agent_send_recv(rpc_version, req, resp);
 	else
 		return dbd_conn_send_recv_direct(rpc_version, req, resp);

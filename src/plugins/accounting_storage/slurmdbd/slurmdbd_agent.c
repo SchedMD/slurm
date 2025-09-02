@@ -693,7 +693,7 @@ static void *_agent(void *x)
 	slurm_mutex_unlock(&agent_lock);
 
 	list_req.msg_type = DBD_SEND_MULT_MSG;
-	list_req.conn = slurmdbd_conn;
+	list_req.pcon = slurmdbd_conn;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
 
@@ -961,10 +961,10 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
 		return ESLURM_DB_CONNECTION_INVALID;
 	}
 
-	if (req->conn && (req->conn != slurmdbd_conn))
+	if (req->pcon && (req->pcon != slurmdbd_conn))
 		error("We are overriding the connection!!!!!");
 
-	req->conn = slurmdbd_conn;
+	req->pcon = slurmdbd_conn;
 
 	rc = dbd_conn_send_recv_direct(rpc_version, req, resp);
 
