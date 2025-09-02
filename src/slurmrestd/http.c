@@ -762,20 +762,12 @@ cleanup:
 	return rc;
 }
 
-static http_context_t *_http_context_new(void)
-{
-	http_context_t *context = xmalloc(sizeof(*context));
-	context->magic = MAGIC;
-	return context;
-}
-
 extern http_context_t *setup_http_context(conmgr_fd_t *con,
 					  on_http_request_t on_http_request)
 {
-	http_context_t *context = _http_context_new();
+	http_context_t *context = xmalloc(sizeof(*context));
 
-	xassert(context->magic == MAGIC);
-	xassert(!context->con);
+	context->magic = MAGIC;
 	context->con = con;
 	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
