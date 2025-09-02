@@ -57,12 +57,12 @@ static pthread_mutex_t ext_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _destroy_external_host_conns(void *object)
 {
-	persist_conn_t *conn = object;
+	persist_conn_t *pcon = object;
 	/*
 	 * Don't call dbd_conn_close() to prevent DBD_FINI being sent to
 	 * external DBDs.
 	 */
-	slurm_persist_conn_destroy(conn);
+	slurm_persist_conn_destroy(pcon);
 }
 
 /* don't connect now as it will block the ctld */
