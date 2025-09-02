@@ -1931,8 +1931,7 @@ extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 	xassert(con->refs >= 0);
 
 	ref->magic = ~MAGIC_CON_MGR_FD_REF;
-	xfree(ref);
-	*ref_ptr = NULL;
+	xfree((*ref_ptr));
 }
 
 extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
