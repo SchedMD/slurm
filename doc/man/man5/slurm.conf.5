@@ -2154,21 +2154,6 @@ Only used for database type storage plugins, ignored otherwise.
 .IP
 
 .TP
-\fBJobContainerType\fR
-Identifies the plugin to be used for job isolation through Linux namespaces.
-\fBNOTE\fR: See \fBProctrackType\fR for resource containment and usage tracking.
-Acceptable values at present include:
-.IP
-.RS
-.TP 20
-\fBjob_container/tmpfs\fR
-Used to create a private namespace on the filesystem for jobs, which houses
-temporary file systems (/tmp and /dev/shm) for each job. 'PrologFlags=Contain'
-must be set to use this plugin.
-.RE
-.IP
-
-.TP
 \fBJobFileAppend\fR
 This option controls what to do if a job's output or error file
 exist when the job is started.
@@ -2735,6 +2720,21 @@ HYDRA_BOOTSTRAP, HYDRA_LAUNCHER_EXTRA_ARGS.
 Manually setting I_MPI_HYDRA_BOOTSTRAP or HYDRA_BOOTSTRAP to 'slurm' in the
 allocation will skip this parameter and injection of extra args will be
 performed as usual.
+.RE
+.IP
+
+.TP
+\fBNamespaceType\fR
+Identifies the plugin to be used for job isolation through namespaces.
+\fBNOTE\fR: See \fBProctrackType\fR for resource containment and usage tracking.
+Acceptable values at present include:
+.IP
+.RS
+.TP 20
+\fBnamespace/tmpfs\fR
+Used to create a private namespace on the filesystem for jobs, which houses
+temporary file systems (/tmp and /dev/shm) for each job. 'PrologFlags=Contain'
+must be set to use this plugin.
 .RE
 .IP
 
@@ -3407,7 +3407,7 @@ identify all processes associated with a job since processes
 can become a child of the init process (when the parent process
 terminates) or change their process group.
 To reliably track all processes, "proctrack/cgroup" is highly recommended.
-\fBNOTE\fR: The \fBJobContainerType\fR applies to a job namespace isolation,
+\fBNOTE\fR: The \fBNamespaceType\fR applies to a job namespace isolation,
 while \fBProctrackType\fR applies to job resource limits and tracking.
 Acceptable values at present include:
 .IP

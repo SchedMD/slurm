@@ -476,7 +476,7 @@ main (int argc, char **argv)
 	if (jobacct_gather_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize jobacct_gather");
 	if (namespace_g_init() < 0)
-		fatal("Unable to initialize job_container plugin.");
+		fatal("Unable to initialize namespace plugin.");
 	if (namespace_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
 	if (prep_g_init(NULL) != SLURM_SUCCESS)

@@ -326,6 +326,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
+	{"NamespaceType", S_P_STRING},
 	{"NodeFeaturesPlugins", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
@@ -3682,7 +3683,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	uint64_t uint64_tmp;
 	uint32_t default_unkillable_timeout;
 	job_defaults_t *job_defaults;
-	int i;
+	int i, found_plugin = 0;
 
 	if (!s_p_get_uint16(&conf->batch_start_timeout, "BatchStartTimeout",
 			    hashtbl))
@@ -4054,8 +4055,19 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
 
-	(void) s_p_get_string(&conf->namespace_plugin, "JobContainerType",
-			      hashtbl);
+	found_plugin = s_p_get_string(&conf->namespace_plugin, "NamespaceType",
+				      hashtbl);
+	if (s_p_get_string(&temp_str, "JobContainerType", hashtbl)) {
+		if (running_in_slurmctld())
+			warning("JobContainerType has been replaced with NamespaceType and will be removed in a future release, please update your config.");
+		if (!found_plugin) {
+			xfree(conf->namespace_plugin);
+			conf->namespace_plugin = temp_str;
+			temp_str = NULL;
+		} else {
+			xfree(temp_str);
+		}
+	}
 	if (xstrcasestr(conf->namespace_plugin, "none"))
 		xfree(conf->namespace_plugin);
 
@@ -4717,9 +4729,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->tls_type, "TLSType", hashtbl))
 		conf->tls_type = xstrdup(DEFAULT_TLS_TYPE);
 
-	if (xstrstr(conf->namespace_plugin, "tmpfs") &&
+	if (conf->namespace_plugin &&
 	    !(conf->prolog_flags & PROLOG_FLAG_CONTAIN))
-		fatal("PrologFlags=Contain is required for use with job_container/tmpfs");
+		fatal("PrologFlags=Contain is required for use with %s", conf->namespace_plugin);
 
 	if (!s_p_get_uint16(&conf->propagate_prio_process,
 			"PropagatePrioProcess", hashtbl)) {

@@ -1,31 +1,31 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "Slurm 25.11" "Slurm Configuration File"
+.TH "namespace.conf" "5" "Slurm Configuration File" "Slurm 25.11" "Slurm Configuration File"
 
 .SH "NAME"
-job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
+namespace.conf \- Slurm configuration file for namespace/tmpfs plugin
 
 .SH "DESCRIPTION"
 
-\fBjob_container.conf\fP is an ASCII file which defines parameters used by
-Slurm's job_container/tmpfs plugin. The plugin reads the
-job_container.conf file to find out the configuration settings. Based on them it
+\fBnamespace.conf\fP is an ASCII file which defines parameters used by
+Slurm's namespace/tmpfs plugin. The plugin reads the
+namespace.conf file to find out the configuration settings. Based on them it
 constructs a private (or optionally shared) filesystem namespace for the job and
 mounts a list of directories (defaults to /tmp and /dev/shm) inside it. This
 gives the job a private view of these directories. These paths are mounted
-inside the location specified by 'BasePath' in the \fBjob_container.conf\fR
+inside the location specified by 'BasePath' in the \fBnamespace.conf\fR
 file. When the job completes, the private namespace is unmounted and all
 files therein are automatically removed.
 To make use of this plugin, 'PrologFlags=Contain' must also be present in
 your \fBslurm.conf\fR file, as shown:
 
 .nf
-JobContainerType=job_container/tmpfs
+NamespaceType=namespace/tmpfs
 PrologFlags=Contain
 .fi
 
 The file will always be located in the same directory as the \fBslurm.conf\fR.
 
 .LP
-If using the \fBjob_container.conf\fR file to define a namespace available to
+If using the \fBnamespace.conf\fR file to define a namespace available to
 nodes the first parameter on the line should be \fBNodeName\fR. If configuring a
 namespace without specifying nodes, the first parameter on the line
 should be \fBBasePath\fR.
@@ -37,8 +37,8 @@ as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of Slurm daemons.
 
 .LP
-The following job_container.conf parameters are defined to control the behavior
-of the job_container/tmpfs plugin.
+The following namespace.conf parameters are defined to control the behavior
+of the namespace/tmpfs plugin.
 
 .TP
 \fBAutoBasePath\fR
@@ -129,7 +129,7 @@ optional.
 
 .TP
 \fBNodeName\fR
-A NodeName specification can be used to permit one job_container.conf
+A NodeName specification can be used to permit one namespace.conf
 file to be used for all compute nodes in a cluster by specifying the node(s)
 that each line should apply to.
 The NodeName specification can use a Slurm hostlist specification as shown in
@@ -145,30 +145,30 @@ the node. This parameter is optional.
 
 .SH "NOTES"
 .LP
-If any parameters in job_container.conf are changed while slurm is running, then
+If any parameters in namespace.conf are changed while slurm is running, then
 slurmd on the respective nodes will need to be
 restarted for changes to take effect (scontrol reconfigure is not sufficient).
 Additionally this can be disruptive to
 jobs already running on the node. So care must be taken to make sure no jobs
-are running if any changes to job_container.conf are deployed.
+are running if any changes to namespace.conf are deployed.
 
 Restarting slurmd is safe and non\-disruptive to running jobs, as long as
-job_container.conf is not changed between restarts in which case above point
+namespace.conf is not changed between restarts in which case above point
 applies.
 
 .SH "EXAMPLE"
 .TP
 \fB/etc/slurm/slurm.conf\fR:
 These are the entries required in \fBslurm.conf\fR to activate the
-job_container/tmpfs plugin.
+namespace/tmpfs plugin.
 .IP
 .nf
-JobContainerType=job_container/tmpfs
+NamespaceType=namespace/tmpfs
 PrologFlags=Contain
 .fi
 
 .TP
-\fB/etc/slurm/job_container.conf\fR:
+\fB/etc/slurm/namespace.conf\fR:
 The first sample file will define 1 basepath for all nodes and it will be
 automatically created.
 .nf

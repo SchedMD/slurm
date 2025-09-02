@@ -103,7 +103,9 @@ extern int namespace_g_init(void)
 			  sizeof(namespace_ops_t));
 		xrecalloc(g_namespace_context, g_namespace_context_num + 1,
 			  sizeof(plugin_context_t *));
-		if (xstrncmp(namespace, "namespace/", 14) == 0)
+		if (xstrncmp(namespace, "namespace/", 10) == 0)
+			namespace += 10; /* backward compatibility */
+		else if (xstrncmp(namespace, "job_container/", 14) == 0)
 			namespace += 14; /* backward compatibility */
 		namespace = xstrdup_printf("namespace/%s",
 					       namespace);

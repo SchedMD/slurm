@@ -62,7 +62,7 @@ typedef struct slurm_jc_conf {
 extern char *tmpfs_conf_file;
 
 /*
- * Init the job_container/tmpfs config if required.
+ * Init the namespace/tmpfs config if required.
  *
  * Return a pointer to the config structure if successful or NULL on error.
  */

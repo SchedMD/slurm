@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_jcconf.c - parse job_container.conf configuration file.
+ *  read_jcconf.c - parse namespace.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
@@ -48,7 +48,7 @@
 
 #include "read_jcconf.h"
 
-char *tmpfs_conf_file = "job_container.conf";
+char *tmpfs_conf_file = "namespace.conf";
 
 static slurm_jc_conf_t slurm_jc_conf;
 static buf_t *slurm_jc_conf_buf = NULL;
