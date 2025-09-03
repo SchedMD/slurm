@@ -176,6 +176,7 @@ static int _op_handler_qos(ctxt_t *ctxt, slurmdb_qos_cond_t *qos_cond)
 					 qos_list, ctxt);
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		openapi_resp_single_t post = { 0 };
+		openapi_resp_single_t *post_ptr = &post;
 
 		if (!DATA_PARSE(ctxt->parser, OPENAPI_SLURMDBD_QOS_RESP, post,
 				ctxt->query, ctxt->parent_path) &&
@@ -183,6 +184,7 @@ static int _op_handler_qos(ctxt_t *ctxt, slurmdb_qos_cond_t *qos_cond)
 			qos_list = post.response;
 			update_qos(ctxt, true, qos_list);
 		}
+		FREE_OPENAPI_RESP_COMMON_CONTENTS(post_ptr);
 	} else {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",

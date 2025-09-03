@@ -257,16 +257,17 @@ extern void free_openapi_resp_meta(void *obj)
 	if (!obj)
 		return;
 
-	xfree(x->command);
-	xfree(x->plugin.type);
-	xfree(x->plugin.name);
-	xfree(x->plugin.data_parser);
 	xfree(x->client.source);
+	xfree(x->command);
+	xfree(x->plugin.accounting_storage);
+	xfree(x->plugin.data_parser);
+	xfree(x->plugin.name);
+	xfree(x->plugin.type);
+	xfree(x->slurm.cluster);
+	xfree(x->slurm.release);
 	xfree(x->slurm.version.major);
 	xfree(x->slurm.version.micro);
 	xfree(x->slurm.version.minor);
-	xfree(x->slurm.release);
-	xfree(x->slurm.cluster);
 	xfree(x);
 }
 
