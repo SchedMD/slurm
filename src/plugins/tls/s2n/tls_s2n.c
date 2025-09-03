@@ -882,7 +882,7 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 			      const conn_args_t *tls_conn_args)
 {
 	char *cert_file = NULL;
-	bool is_server = (tls_conn_args->mode == TLS_CONN_SERVER);
+	bool is_server = (tls_conn_args->mode == CONN_SERVER);
 
 	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
 		if (is_server && !own_cert_and_key) {
@@ -963,12 +963,12 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	conn->maybe = tls_conn_args->maybe;
 
 	switch (tls_conn_args->mode) {
-	case TLS_CONN_SERVER:
+	case CONN_SERVER:
 	{
 		s2n_conn_mode = S2N_SERVER;
 		break;
 	}
-	case TLS_CONN_CLIENT:
+	case CONN_CLIENT:
 	{
 		s2n_conn_mode = S2N_CLIENT;
 		if (!tls_conn_args->cert) {

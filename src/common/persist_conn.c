@@ -215,7 +215,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	conn_args_t conn_args = {
 		.input_fd = fd,
 		.output_fd = fd,
-		.mode = TLS_CONN_SERVER,
+		.mode = CONN_SERVER,
 	};
 
 	xassert(persist_conn->callback_proc);

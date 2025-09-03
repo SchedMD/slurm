@@ -704,7 +704,7 @@ static void *_open_msg_conn(slurm_addr_t *addr, char *tls_cert, bool maybe)
 	int fd;
 	void *conn = NULL;
 	conn_args_t conn_args = {
-		.mode = TLS_CONN_CLIENT,
+		.mode = CONN_CLIENT,
 		.cert = tls_cert,
 		.maybe = maybe,
 	};

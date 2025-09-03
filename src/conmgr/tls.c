@@ -516,11 +516,11 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		con_flag(con, FLAG_TLS_SERVER));
 
 	if (con_flag(con, FLAG_TLS_CLIENT))
-		conn_args.mode = TLS_CONN_CLIENT;
+		conn_args.mode = CONN_CLIENT;
 	else if (con_flag(con, FLAG_TLS_SERVER))
-		conn_args.mode = TLS_CONN_SERVER;
+		conn_args.mode = CONN_SERVER;
 
-	xassert(conn_args.mode != TLS_CONN_NULL);
+	xassert(conn_args.mode != CONN_NULL);
 	xassert(con->input_fd >= 0);
 	xassert(con->output_fd >= 0);
 

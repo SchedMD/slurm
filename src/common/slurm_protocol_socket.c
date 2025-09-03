@@ -603,7 +603,7 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 	int sock = -1;
 	void *conn = NULL;
 	conn_args_t conn_args = {
-		.mode = TLS_CONN_SERVER,
+		.mode = CONN_SERVER,
 	};
 
 	sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
