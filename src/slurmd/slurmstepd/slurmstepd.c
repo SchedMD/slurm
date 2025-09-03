@@ -1134,7 +1134,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	 * through slurmd. This caches slurmd spooldir so that slurmstepd can
 	 * get the address for slurmd's local unix socket.
 	 */
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		stepd_proxy_stepd_init(conf->spooldir);
 
 	return 1;

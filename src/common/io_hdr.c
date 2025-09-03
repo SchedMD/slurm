@@ -230,7 +230,7 @@ io_init_msg_write_to_fd(int fd, void *conn, io_init_msg_t *msg)
 	if (io_init_msg_pack(msg, buf) != SLURM_SUCCESS)
 		goto rwfail;
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		conn_g_send(conn, buf->head, get_buf_offset(buf));
 	} else {
 		safe_write(fd, buf->head, get_buf_offset(buf));
@@ -257,7 +257,7 @@ extern int io_init_msg_read_from_fd(int fd, void *conn, io_init_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		conn_g_recv(conn, &len, sizeof(uint32_t));
 	} else {
 		safe_read(fd, &len, sizeof(uint32_t));
@@ -265,7 +265,7 @@ extern int io_init_msg_read_from_fd(int fd, void *conn, io_init_msg_t *msg)
 	len = ntohl(len);
 	buf = init_buf(len);
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		conn_g_recv(conn, buf->head, len);
 	} else {
 		safe_read(fd, buf->head, len);

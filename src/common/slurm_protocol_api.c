@@ -2222,7 +2222,7 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	request_msg->forward_struct = NULL;
 	slurm_msg_set_r_uid(request_msg, SLURM_AUTH_UID_ANY);
 
-	if (tls_enabled() && running_in_slurmstepd()) {
+	if (conn_tls_enabled() && running_in_slurmstepd()) {
 		return stepd_proxy_send_recv_ctld_msg(request_msg,
 						      response_msg);
 	}
@@ -2341,7 +2341,7 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 
 	resp->auth_cred = NULL;
 
-	if (tls_enabled() && running_in_slurmstepd()) {
+	if (conn_tls_enabled() && running_in_slurmstepd()) {
 		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
 	}
 
@@ -2373,7 +2373,7 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	int rc = SLURM_SUCCESS;
 	int index = 0;
 
-	if (tls_enabled() && running_in_slurmstepd()) {
+	if (conn_tls_enabled() && running_in_slurmstepd()) {
 		return stepd_proxy_send_only_ctld_msg(req);
 	}
 
@@ -2437,7 +2437,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	int value = -1;
 	int pollrc;
 
-	if (tls_enabled() && running_in_slurmstepd()) {
+	if (conn_tls_enabled() && running_in_slurmstepd()) {
 		return stepd_proxy_send_only_node_msg(req);
 	}
 
@@ -2471,7 +2471,7 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	 * Skip this if running with TLS enabled as it may mess up the internal
 	 * session state.
 	 */
-	if (!tls_enabled() && shutdown(fd, SHUT_WR))
+	if (!conn_tls_enabled() && shutdown(fd, SHUT_WR))
 		log_flag(NET, "%s: shutdown call failed: %m", __func__);
 
 again:

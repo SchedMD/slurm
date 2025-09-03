@@ -502,7 +502,7 @@ main (int argc, char **argv)
 		pidfd = create_pidfile(conf->pidfile, 0);
 
 	/* Periodically renew TLS certificate indefinitely */
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
@@ -525,7 +525,7 @@ main (int argc, char **argv)
 	 * through slurmd. This creates slurmd.socket which slurmstepd will use
 	 * to send its messages.
 	 */
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		stepd_proxy_slurmd_init(conf->spooldir);
 
 	slurm_thread_create_detached(_registration_engine, NULL);
@@ -2159,7 +2159,7 @@ static void _create_msg_socket(void)
 		fatal("Unable to bind listen port (%u): %m", conf->port);
 	}
 
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		flags |= CON_FLAG_TLS_SERVER;
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,

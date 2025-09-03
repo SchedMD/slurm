@@ -1768,7 +1768,7 @@ static void _open_ports(void)
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
 
-		if (tls_enabled())
+		if (conn_tls_enabled())
 			flags |= CON_FLAG_TLS_SERVER;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],

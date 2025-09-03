@@ -7024,7 +7024,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	    !job_ptr->job_resrcs->cpu_array_cnt)
 		return;
 
-	if (tls_enabled() && !job_ptr->alloc_tls_cert)
+	if (conn_tls_enabled() && !job_ptr->alloc_tls_cert)
 		return;
 
 	if (job_ptr->het_job_id == 0) {

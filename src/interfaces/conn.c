@@ -120,7 +120,7 @@ extern char *conn_mode_to_str(conn_mode_t mode)
 	return "INVALID";
 }
 
-extern bool tls_enabled(void)
+extern bool conn_tls_enabled(void)
 {
 	return tls_enabled_bool;
 }

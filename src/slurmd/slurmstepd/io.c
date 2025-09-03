@@ -921,7 +921,7 @@ _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 	port_u = atoi(port);
 	slurm_set_addr(&pty_addr, port_u, host);
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		srun_info_t *srun = list_peek(step->sruns);
 		if (srun)
 			tls_cert = srun->tls_cert;

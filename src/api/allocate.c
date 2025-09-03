@@ -201,7 +201,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		req->alloc_resp_port = listen->port;
 	}
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		if (!(req->alloc_tls_cert = conn_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for allocation response");
 			return NULL;
@@ -508,7 +508,7 @@ list_t *slurm_allocate_het_job_blocking(
 			return NULL;
 	}
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		if (!(alloc_tls_cert = conn_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for allocation response");
 			return NULL;
