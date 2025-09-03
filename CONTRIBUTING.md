@@ -74,10 +74,3 @@ patch. This ensures the relevant author line and commit message stay attached.
 Plain `diff`'d output is also okay. In either case, please attach them to the
 bug for us to review. Spelling corrections or documentation improvements can be
 suggested without attaching the patch as long as you describe their location.
-
-LEGAL
------
-
-We ask that a contributor licensing agreement be signed for all substantial
-contributions. Please see https://slurm.schedmd.com/contributor.html for
-details.
