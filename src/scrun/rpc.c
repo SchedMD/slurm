@@ -50,7 +50,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 {
 	int rc = SLURM_ERROR;
 	void *conn = NULL;
-	conn_args_t tls_args = { 0 };
+	conn_args_t conn_args = { 0 };
 	slurm_msg_t *resp_msg = NULL;
 	int fd = conn_fd ? *conn_fd : -1;
 	const char *sock = state.anchor_socket;
@@ -75,8 +75,8 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	fd_set_blocking(fd);
 	fd_set_close_on_exec(fd);
 
-	tls_args.input_fd = tls_args.output_fd = fd;
-	if (!(conn = conn_g_create(&tls_args))) {
+	conn_args.input_fd = conn_args.output_fd = fd;
+	if (!(conn = conn_g_create(&conn_args))) {
 		rc = SLURM_ERROR;
 		fd_close(&fd);
 		goto cleanup;

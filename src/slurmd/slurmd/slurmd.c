@@ -708,11 +708,11 @@ static void *_service_msg(void *arg)
 	if (args->conn) {
 		msg->conn = args->conn;
 	} else {
-		conn_args_t tls_args = {
+		conn_args_t conn_args = {
 			.input_fd = args->fd,
 			.output_fd = args->fd,
 		};
-		msg->conn = conn_g_create(&tls_args);
+		msg->conn = conn_g_create(&conn_args);
 	}
 	slurmd_req(msg);
 

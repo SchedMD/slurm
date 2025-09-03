@@ -1820,11 +1820,11 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	if (conn) {
 		msg->conn = conn;
 	} else {
-		conn_args_t tls_args = {
+		conn_args_t conn_args = {
 			.input_fd = input_fd,
 			.output_fd = output_fd,
 		};
-		msg->conn = conn_g_create(&tls_args);
+		msg->conn = conn_g_create(&conn_args);
 	}
 
 	server_thread_incr();

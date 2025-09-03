@@ -602,7 +602,7 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 	socklen_t len = sizeof(*addr);
 	int sock = -1;
 	void *conn = NULL;
-	conn_args_t tls_args = {
+	conn_args_t conn_args = {
 		.mode = TLS_CONN_SERVER,
 	};
 
@@ -614,10 +614,10 @@ extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 		return NULL;
 	}
 
-	tls_args.input_fd = tls_args.output_fd = sock;
+	conn_args.input_fd = conn_args.output_fd = sock;
 	net_set_nodelay(sock, true, NULL);
 
-	if (!(conn = conn_g_create(&tls_args))) {
+	if (!(conn = conn_g_create(&conn_args))) {
 		error("%s: Unable to create server TLS connection to address %pA: %m",
 		      __func__, addr);
 		(void) close(sock);

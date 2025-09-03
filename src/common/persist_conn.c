@@ -212,7 +212,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	bool first = true, fini = false;
 	buf_t *buffer = NULL;
 	int rc = SLURM_SUCCESS;
-	conn_args_t tls_args = {
+	conn_args_t conn_args = {
 		.input_fd = fd,
 		.output_fd = fd,
 		.mode = TLS_CONN_SERVER,
@@ -227,7 +227,7 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 	if (persist_conn->flags & PERSIST_FLAG_ALREADY_INITED)
 		first = false;
 
-	if (first && !(persist_conn->conn = conn_g_create(&tls_args))) {
+	if (first && !(persist_conn->conn = conn_g_create(&conn_args))) {
 		error("%s: conn_g_create() failed negotiation, closing connection %d(%s)",
 		      __func__, fd, persist_conn->rem_host);
 		(void) close(fd);

@@ -703,7 +703,7 @@ static void *_open_msg_conn(slurm_addr_t *addr, char *tls_cert, bool maybe)
 {
 	int fd;
 	void *conn = NULL;
-	conn_args_t tls_args = {
+	conn_args_t conn_args = {
 		.mode = TLS_CONN_CLIENT,
 		.cert = tls_cert,
 		.maybe = maybe,
@@ -714,9 +714,9 @@ static void *_open_msg_conn(slurm_addr_t *addr, char *tls_cert, bool maybe)
 		return NULL;
 	}
 
-	tls_args.input_fd = tls_args.output_fd = fd;
+	conn_args.input_fd = conn_args.output_fd = fd;
 
-	if (!(conn = conn_g_create(&tls_args))) {
+	if (!(conn = conn_g_create(&conn_args))) {
 		log_flag(NET, "Unable to create client TLS connection to address %pA on fd %d: %m",
 			 addr, fd);
 		fd_close(&fd);
