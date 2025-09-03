@@ -4309,6 +4309,7 @@ function __scontrol_update_partitionname() {
 function __scontrol_update_reservationname() {
 	local parameters=(
 		"accounts="
+		"allowedpartitions="
 		"burstbuffer="
 		"corecnt="
 		"duration="
@@ -4321,6 +4322,7 @@ function __scontrol_update_reservationname() {
 		"nodecnt="
 		"nodes="
 		"partition="
+		"qos="
 		"reservation"      # meta
 		"reservationname=" # meta
 		"skip"
@@ -4364,6 +4366,8 @@ function __scontrol_update_reservationname() {
 	license?(s)) __slurm_compreply_list "$(__slurm_licenses)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	partition?(s)) __slurm_compreply "$(__slurm_partitions)" ;;
+	allowedpartition?(s)) __slurm_compreply "$(__slurm_partitions)" ;;
+	qos?(s)) __slurm_compreply "$(__slurm_qos)" ;;
 	reservationname?(s)) __slurm_compreply "$(__slurm_reservations)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)

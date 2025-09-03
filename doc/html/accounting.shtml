@@ -128,7 +128,7 @@ will utilize an internal cache until SlurmDBD is returned to service.
 The cached data is written by <i>slurmctld</i> to local storage upon shutdown
 and recovered at startup.
 If SlurmDBD is not available when <i>slurmctld</i> starts, a cache of
-valid bank accounts, user limits, etc. based upon their state when the
+valid accounts, user limits, etc. based upon their state when the
 daemons were last communicating will be used.
 Note that SlurmDBD must be responding when <i>slurmctld</i> is first started
 since no cache of this critical data will be available.
@@ -878,7 +878,7 @@ The account is added to all defined clusters by default.</li>
   account name)</li>
 
 <li><b>Name=</b> Name of account. Note the name must be unique and can not
-represent different bank accounts at different points in the account
+represent different accounts at different points in the account
 hierarchy</li>
 
 <li><b>Organization=</b>Organization of the account. (Default is

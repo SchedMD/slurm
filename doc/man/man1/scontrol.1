@@ -2448,7 +2448,8 @@ For create, if you do not want to give a reservation name, use
 List of accounts permitted to use the reserved nodes, for example
 "Accounts=physcode1,physcode2".
 A user in any of the specified accounts or subaccounts may use the reserved
-nodes. A new reservation must specify Users or Groups and/or Accounts.
+nodes. A new reservation must specify Users or Groups and/or QOS and/or
+AllowedPartitions and/or Accounts.
 If both Users/Groups and Accounts are specified, a job must match both in order
 to use the reservation.
 Accounts can also be denied access to reservations by preceding all of the
@@ -2462,6 +2463,28 @@ then all other accounts are implicitly allowed to use the reservation and it is
 not possible to also explicitly specify allowed accounts.
 Root and the SlurmUser are given access to all reservations, regardless of the
 accounts set here.
+.IP
+
+.TP
+\fBAllowedPartitions\fR=<\fIpartition list\fR>
+List of Partitions permitted to use the reserved resources, for example
+"Partition=debug,low".
+A user using any of the specified Partition may use the reserved
+resources. A new reservation must specify Users or Groups and/or QOS and/or
+AllowedPartitions and/or Accounts.
+If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
+job must match all in order to use the reservation.
+Partition can also be denied access to reservations by preceding all of the
+Partition names with '\-'. Alternately precede the equal sign with '\-'.
+For example, "Partition=\-debug,\-low" or "Partition\-=debug,low"
+will permit any Partition except debug and low to use the reservation.
+You can add or remove individual Partition from an existing reservation by
+using the update command and adding a '+' or '\-' sign before the '=' sign.
+If Partition are denied access to a reservation (Partition name preceded
+by a '\-'), then all other Partition are implicitly allowed to use the
+reservation and it is not possible to also explicitly specify allowed Partition.
+Root and the SlurmUser are given access to all reservations, regardless of the
+Partition set here.
 .IP
 
 .TP
@@ -2599,6 +2622,9 @@ is specified at submit time, this partition will override the job's default
 partition. Jobs explicitly requesting a different partition will still be
 allowed to use this reservation as long as there are enough overlapping nodes
 between both partitions to allocate the job.
+\fBNOTE\fR: If \fIAllowedPartitions\fR is used and \fIPartitionName\fR is not
+given, the first partition in \fIAllowedPartitions\fR is what is used as
+\fIPartitionName\fR.
 .IP
 
 .TP
@@ -2796,9 +2822,10 @@ Value may be cleared with blank data value, "Features=".
 \fBGroups\fR=<\fIgroup list\fR>
 List of groups permitted to use the reserved nodes, for example
 "Group=bio,chem".
-A new reservation must specify Users or Groups and/or Accounts.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+A new reservation must specify Users or Groups and/or QOS and/or
+AllowedPartitions and/or Accounts.
+If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
+job must match all in order to use the reservation.
 Unlike users groups do not allow denied access to reservations.
 You can add or remove individual groups from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
@@ -2816,12 +2843,35 @@ Used on a reoccurring reservation, skip to the next reservation iteration.
 .IP
 
 .TP
+\fBQOS\fR=<\fIqos list\fR>
+List of QOS permitted to use the reserved resources, for example
+"QOS=normal,standby".
+A user using any of the specified QOS may use the reserved
+resources. A new reservation must specify Users or Groups and/or QOS and/or
+AllowedPartitions and/or Accounts.
+If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
+job must match all in order to use the reservation.
+QOS can also be denied access to reservations by preceding all of the
+QOS names with '\-'. Alternately precede the equal sign with '\-'.
+For example, "QOS=\-normal,\-standby" or "QOS\-=normal,standby"
+will permit any QOS except normal and standby to use the reservation.
+You can add or remove individual QOS from an existing reservation by
+using the update command and adding a '+' or '\-' sign before the '=' sign.
+If QOS are denied access to a reservation (QOS name preceded by a '\-'),
+then all other QOS are implicitly allowed to use the reservation and it is
+not possible to also explicitly specify allowed QOS.
+Root and the SlurmUser are given access to all reservations, regardless of the
+QOS set here.
+.IP
+
+.TP
 \fBUsers\fR=<\fIuser list\fR>
 List of users permitted to use the reserved nodes, for example
 "User=jones1,smith2".
-A new reservation must specify Users or Groups and/or Accounts.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+A new reservation must specify Users or Groups and/or QOS and/or
+AllowedPartitions and/or Accounts.
+If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
+job must match all in order to use the reservation.
 Users can also be denied access to reservations by preceding all of the
 user names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "User=\-jones1,\-smith2" or "User\-=jones1,smith2"

@@ -1153,11 +1153,11 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 	}
 
 	/*
-	 * When we are removing submit we need to set the pointer back if it was
-	 * changed.
+	 * Now that we are done with accrue set things back to the way
+	 * it was qos wise. Accrue limits are always based on the
+	 * highest priority QOS.
 	 */
-	if ((type == ACCT_POLICY_REM_SUBMIT) &&
-	    (orig_qos_ptr != job_ptr->qos_ptr)) {
+	if (orig_qos_ptr && (orig_qos_ptr != job_ptr->qos_ptr)) {
 		job_ptr->qos_ptr = orig_qos_ptr;
 		job_ptr->qos_id = orig_qos_ptr->id;
 	}

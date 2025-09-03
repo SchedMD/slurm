@@ -1988,6 +1988,10 @@ extern void slurm_free_resv_desc_msg_part(resv_desc_msg_t *msg,
 		xfree(msg->burst_buffer);
 	if (res_free_flags & RESV_FREE_STR_COMMENT)
 		xfree(msg->comment);
+	if (res_free_flags & RESV_FREE_STR_ALLOWED_PARTS)
+		xfree(msg->allowed_parts);
+	if (res_free_flags & RESV_FREE_STR_QOS)
+		xfree(msg->qos);
 	if (res_free_flags & RESV_FREE_STR_TRES_LIC)
 		xfree(msg->licenses);
 	if (res_free_flags & RESV_FREE_STR_GROUP)
@@ -4397,6 +4401,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 	int i;
 	if (resv) {
 		xfree(resv->accounts);
+		xfree(resv->allowed_parts);
 		xfree(resv->burst_buffer);
 		xfree(resv->comment);
 		if (resv->core_spec) {
@@ -4413,6 +4418,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 		xfree(resv->node_inx);
 		xfree(resv->node_list);
 		xfree(resv->partition);
+		xfree(resv->qos);
 		xfree(resv->tres_str);
 		xfree(resv->users);
 	}
@@ -6487,8 +6493,11 @@ extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,
 
 	if (((resv_msg->users == NULL) || (resv_msg->users[0] == '\0')) &&
 	    ((resv_msg->groups == NULL) || (resv_msg->groups[0] == '\0')) &&
+	    (!resv_msg->qos || (resv_msg->qos[0] == '\0')) &&
+	    (!resv_msg->allowed_parts ||
+	     (resv_msg->allowed_parts[0] == '\0')) &&
 	    ((resv_msg->accounts == NULL) || (resv_msg->accounts[0] == '\0'))) {
-		*err_msg = "Either Users/Groups and/or Accounts must be specified.  No reservation created.";
+		*err_msg = "Either Users/Groups, AllowedPartitions, QOS and/or Accounts must be specified.  No reservation created.";
 		return SLURM_ERROR;
 	} else if (resv_msg->users && resv_msg->groups) {
 		*err_msg = "Users and Groups are mutually exclusive.  You can have one or the other, but not both.  No reservation created.";

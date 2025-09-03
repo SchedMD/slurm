@@ -335,12 +335,14 @@ extern uint16_t part_max_priority;      /* max priority_job_factor in all parts 
  *  RESERVATION parameters and data structures
 \*****************************************************************************/
 
-#define RESV_CTLD_ACCT_NOT       0x00000001
-#define RESV_CTLD_USER_NOT       0x00000002
-#define RESV_CTLD_FULL_NODE      0x00000004
-#define RESV_CTLD_NODE_FLAGS_SET 0x00000008
-#define RESV_CTLD_EPILOG         0x00000010
-#define RESV_CTLD_PROLOG         0x00000020
+#define RESV_CTLD_ACCT_NOT SLURM_BIT(0)
+#define RESV_CTLD_USER_NOT SLURM_BIT(1)
+#define RESV_CTLD_FULL_NODE SLURM_BIT(2)
+#define RESV_CTLD_NODE_FLAGS_SET SLURM_BIT(3)
+#define RESV_CTLD_EPILOG SLURM_BIT(4)
+#define RESV_CTLD_PROLOG SLURM_BIT(5)
+#define RESV_CTLD_QOS_NOT SLURM_BIT(6)
+#define RESV_CTLD_ALLOWED_PARTS_NOT SLURM_BIT(7)
 
 typedef struct slurmctld_resv {
 	uint16_t magic;		/* magic cookie, RESV_MAGIC		*/
@@ -348,6 +350,9 @@ typedef struct slurmctld_resv {
 	char *accounts;		/* names of accounts permitted to use	*/
 	int account_cnt;	/* count of accounts permitted to use	*/
 	char **account_list;	/* list of accounts permitted to use	*/
+	char *allowed_parts; /* names of partitions permitted to use */
+	list_t *allowed_parts_list; /* pointers to partitions permitted or not
+				     * to use */
 	char *assoc_list;	/* list of associations			*/
 	uint32_t boot_time;	/* time it would take to reboot a node	*/
 	char *burst_buffer;	/* burst buffer resources		*/
@@ -385,6 +390,8 @@ typedef struct slurmctld_resv {
 				   * minutes this reservation will sit idle
 				   * until it is revoked.
 				   */
+	char *qos; /* names of qos permitted to use */
+	list_t *qos_list; /* pointers to qos permitted or not to use */
 	uint32_t resv_id;	/* unique reservation ID, internal use	*/
 	time_t start_time;	/* start time of reservation		*/
 	time_t start_time_first;/* when the reservation first started	*/

@@ -21,7 +21,7 @@ More complex configurations can satisfy the job scheduling needs of
 world-class computer centers and rely upon a
 <a href="http://www.mysql.com/">MySQL</a> database for archiving
 <a href="accounting.html">accounting</a> records, managing
-<a href="resource_limits.html">resource limits</a> by user or bank account,
+<a href="resource_limits.html">resource limits</a> by user or account,
 or supporting sophisticated
 <a href="priority_multifactor.html">job prioritization</a> algorithms.</p>
 

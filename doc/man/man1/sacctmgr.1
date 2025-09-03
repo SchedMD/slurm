@@ -19,7 +19,7 @@ These parameters are \fIuser\fR, \fIcluster\fR, \fIpartition\fR, and
 \fIcluster\fR is the name of a Slurm managed cluster as specified by
 the \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file.
 \fIpartition\fR is the name of a Slurm partition on that cluster.
-\fIaccount\fR is the bank account for a job.
+\fIaccount\fR is the account for a job.
 The intended mode of operation is to initiate the \fBsacctmgr\fR command,
 add, delete, modify, and/or list \fIassociation\fR records then
 commit the changes and exit.
@@ -236,7 +236,7 @@ Repeat the last command.
 
 .TP
 \fBaccount\fR
-A bank account, typically specified at job submit time using the
+An account, typically specified at job submit time using the
 \fB\-\-account=\fR option.
 These may be arranged in a hierarchical fashion, for example
 accounts 'chemistry' and 'physics' may be children of
@@ -630,8 +630,8 @@ any sub-account in it's hierarchy.
 
 .TP
 \fBName\fR=<\fIname\fR>
-The name of a bank account.
-Note the name must be unique and can not be represent different bank
+The name of an account.
+Note the name must be unique and can not be represent different
 accounts at different points in the account hierarchy.
 .IP
 
@@ -690,7 +690,7 @@ Account,Description,Organization
 
 .TP
 \fBAccount\fR
-The name of a bank account.
+The name of an account.
 .IP
 
 .TP
@@ -815,7 +815,7 @@ Fields you can display when viewing Association records by using the
 
 .TP
 \fBAccount\fR
-The name of a bank account in the association.
+The name of an account in the association.
 .IP
 
 .TP
@@ -2965,7 +2965,7 @@ Specific cluster to add user to the account on. Default is all in system.
 
 .TP
 \fBDefaultAccount\fR=<\fIaccount\fR>
-Identify the default bank account name to be used for a job if none is
+Identify the default account name to be used for a job if none is
 specified at submission time.
 .IP
 

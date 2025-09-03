@@ -68,7 +68,7 @@ for SlurmDBD execution.</p>
 
 <p>Both accounting and scheduling policies are configured based upon
 an <i>association</i>. An <i>association</i> is a 4-tuple consisting
-of the cluster name, bank account, user and (optionally) the Slurm
+of the cluster name, account, user and (optionally) the Slurm
 partition.
 In order to enforce scheduling policy, set the value of
 <b>AccountingStorageEnforce</b>.
@@ -117,7 +117,7 @@ cluster.
 <h2 id="tools">Tools<a class="slurm_link" href="#tools"></a></h2>
 
 <p>The tool used to manage accounting policy is <i>sacctmgr</i>.
-It can be used to create and delete cluster, user, bank account,
+It can be used to create and delete cluster, user, account,
 and partition records plus their combined <i>association</i> record.
 See <i>man sacctmgr</i> for details on this tools and examples of
 its use.</p>
@@ -547,7 +547,7 @@ individually for each partition.  For example, if a QOS has a
 unique partitions, users will be limited to 20 CPUs for the QOS
 rather than being allowed 20 CPUs for each partition.</p>
 
-<p>Fair-share scheduling is based upon the hierarchical bank account
+<p>Fair-share scheduling is based upon the hierarchical account
 data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
