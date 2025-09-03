@@ -61,6 +61,7 @@
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
@@ -90,6 +91,8 @@
 #define OPT_LONG_GEN_OAS 0x102
 
 #define SLURM_CONF_DISABLED "/dev/null"
+#define DEFAULT_OPENAPI_PLUGINS_SLURMDBD "slurmctld,slurmdbd"
+#define DEFAULT_OPENAPI_PLUGINS "slurmctld"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define unshare(_) (false)
@@ -692,6 +695,13 @@ static void _load_oas_specs(void)
 		(void) init_openapi(oas_specs, _plugrack_foreach_list, NULL,
 				    NULL);
 		exit(0);
+	}
+
+	if (!oas_specs) {
+		if (slurm_with_slurmdbd())
+			oas_specs = xstrdup(DEFAULT_OPENAPI_PLUGINS_SLURMDBD);
+		else
+			oas_specs = xstrdup(DEFAULT_OPENAPI_PLUGINS);
 	}
 
 	if (init_openapi(oas_specs, NULL, parsers, response_status_codes))
