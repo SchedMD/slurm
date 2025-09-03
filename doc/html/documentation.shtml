@@ -114,7 +114,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <h2 id="developers">Slurm Developers
 <a class="slurm_link" href="#developers"></a></h2>
 <ul>
-<li><a href="contributor.html">Contributor Agreement</a></li>
+<li><a href="contributor.html">Contributor Guide</a></li>
 <li><a href="programmer_guide.html">Programmer Guide</a></li>
 <li><a href="api.html">Application Programmer Interface (API) Guide</a></li>
 <li><a href="add.html">Adding Files or Plugins to Slurm</a></li>
