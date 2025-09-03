@@ -685,6 +685,21 @@ static void _inet_on_finish(conmgr_fd_t *con, void *ctxt)
 	conmgr_request_shutdown();
 }
 
+static void _load_oas_specs(void)
+{
+	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
+		fprintf(stderr, "Possible OpenAPI plugins:\n");
+		(void) init_openapi(oas_specs, _plugrack_foreach_list, NULL,
+				    NULL);
+		exit(0);
+	}
+
+	if (init_openapi(oas_specs, NULL, parsers, response_status_codes))
+		fatal("Unable to initialize OpenAPI structures");
+
+	xfree(oas_specs);
+}
+
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
@@ -812,15 +827,7 @@ int main(int argc, char **argv)
 	if (init_operations(parsers))
 		fatal("Unable to initialize operations structures");
 
-	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
-		fprintf(stderr, "Possible OpenAPI plugins:\n");
-		init_openapi(oas_specs, _plugrack_foreach_list, NULL, NULL);
-		exit(0);
-	} else if (init_openapi(oas_specs, NULL, parsers,
-				response_status_codes))
-		fatal("Unable to initialize OpenAPI structures");
-
-	xfree(oas_specs);
+	_load_oas_specs();
 
 	/* Sanity check modes */
 	if (run_mode.stdin_socket) {
