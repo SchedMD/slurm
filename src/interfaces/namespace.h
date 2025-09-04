@@ -73,7 +73,7 @@ extern int namespace_g_join_external(uint32_t job_id);
 extern int namespace_g_restore(char *dir_name, bool recover);
 
 /* Create a namespace for the specified job, actions run in slurmstepd */
-extern int namespace_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step);
+extern int namespace_g_stepd_create(stepd_step_rec_t *step);
 
 /* Delete the namespace for the specified job, actions run in slurmstepd */
 extern int namespace_g_stepd_delete(uint32_t job_id);

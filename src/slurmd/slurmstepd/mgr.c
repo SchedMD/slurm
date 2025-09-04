@@ -1315,7 +1315,7 @@ static int _spawn_job_container(void)
 	int rc = SLURM_SUCCESS;
 	uint32_t jobid = step->step_id.job_id;
 
-	if (namespace_g_stepd_create(jobid, step)) {
+	if (namespace_g_stepd_create(step)) {
 		error("%s: namespace_g_stepd_create(%u): %m", __func__, jobid);
 		return SLURM_ERROR;
 	}

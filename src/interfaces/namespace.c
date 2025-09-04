@@ -52,8 +52,7 @@ typedef struct namespace_ops {
 				bool step_create);
 	int (*namespace_p_join_external)(uint32_t job_id);
 	int (*namespace_p_restore)(char *dir_name, bool recover);
-	int (*namespace_p_stepd_create)(uint32_t job_id,
-				        stepd_step_rec_t *step);
+	int (*namespace_p_stepd_create)(stepd_step_rec_t *step);
 	int (*namespace_p_stepd_delete)(uint32_t job_id);
 	int (*namespace_p_send_stepd)(int fd);
 	int (*namespace_p_recv_stepd)(int fd);
@@ -218,7 +217,7 @@ extern int namespace_g_restore(char *dir_name, bool recover)
 }
 
 /* Create a namespace for the specified job, actions run in slurmstepd */
-extern int namespace_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
+extern int namespace_g_stepd_create(stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -226,7 +225,7 @@ extern int namespace_g_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
 
 	for (i = 0; ((i < g_namespace_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].namespace_p_stepd_create))(job_id, step);
+		rc = (*(ops[i].namespace_p_stepd_create))(step);
 	}
 
 	return rc;

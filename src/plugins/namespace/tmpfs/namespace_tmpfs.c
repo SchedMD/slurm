@@ -64,7 +64,7 @@
 
 #include "read_jcconf.h"
 
-static int _create_ns(uint32_t job_id, stepd_step_rec_t *step);
+static int _create_ns(stepd_step_rec_t *step);
 static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
@@ -385,7 +385,7 @@ static char **_setup_script_env(uint32_t job_id,
 	return env;
 }
 
-static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
+static int _create_ns(stepd_step_rec_t *step)
 {
 	char *job_mount = NULL, *ns_holder = NULL, *src_bind = NULL;
 	char *result = NULL;
@@ -395,7 +395,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	sem_t *sem2 = NULL;
 	pid_t cpid;
 
-	_create_paths(job_id, &job_mount, &ns_holder, &src_bind);
+	_create_paths(step->step_id.job_id, &job_mount, &ns_holder, &src_bind);
 
 	if (mkdir(job_mount, 0700)) {
 		error("%s: mkdir %s failed: %m", __func__, job_mount);
@@ -437,8 +437,8 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			.script_type = "initscript",
 			.status = &rc,
 		};
-		run_command_args.env = _setup_script_env(job_id, step,
-							 src_bind, NULL);
+		run_command_args.env = _setup_script_env(step->step_id.job_id,
+							 step, src_bind, NULL);
 
 		log_flag(NAMESPACE, "Running InitScript");
 		result = run_command(&run_command_args);
@@ -575,7 +575,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 * but not the basepath mount.
 		 */
 		if (jc_conf->shared)
-			rc = _clean_job_basepath(job_id);
+			rc = _clean_job_basepath(step->step_id.job_id);
 		else
 			rc = umount2(job_mount, MNT_DETACH);
 		if (rc) {
@@ -642,8 +642,9 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			.script_type = "clonensscript",
 			.status = &rc,
 		};
-		run_command_args.env = _setup_script_env(job_id, step,
-							 src_bind, ns_holder);
+		run_command_args.env = _setup_script_env(step->step_id.job_id,
+							 step, src_bind,
+							 ns_holder);
 
 		log_flag(NAMESPACE, "Running CloneNSScript");
 		result = run_command(&run_command_args);
@@ -851,12 +852,12 @@ static int _delete_ns(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
-extern int namespace_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
+extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
-	return _create_ns(job_id, step);
+	return _create_ns(step);
 }
 
 extern int namespace_p_stepd_delete(uint32_t job_id)
