@@ -16,6 +16,12 @@ acct1 = f"{test_name}_acct"
 def setup():
     global local_cluster_name
 
+    atf.require_version(
+        (25, 11),
+        "bin/scontrol",
+        reason="Creating reservations with allowedpartition= added in scontrol 25.11",
+    )
+    atf.require_accounting(True)
     atf.require_slurm_running()
     local_cluster_name = atf.get_config_parameter("ClusterName")
 
