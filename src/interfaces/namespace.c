@@ -223,6 +223,8 @@ extern int namespace_g_stepd_create(stepd_step_rec_t *step)
 
 	xassert(g_namespace_context_num >= 0);
 
+	xassert(step->step_id.step_id == SLURM_EXTERN_CONT);
+
 	for (i = 0; ((i < g_namespace_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
 		rc = (*(ops[i].namespace_p_stepd_create))(step);
@@ -237,6 +239,8 @@ extern int namespace_g_stepd_delete(slurm_step_id_t *step_id)
 	int i, rc = SLURM_SUCCESS;
 
 	xassert(g_namespace_context_num >= 0);
+
+	xassert(step_id->step_id == SLURM_EXTERN_CONT);
 
 	for (i = 0; ((i < g_namespace_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
