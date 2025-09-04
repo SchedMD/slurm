@@ -1,3 +1,30 @@
+## Changes in 25.05.3
+
+* slurmctld.service - Set LimitMEMLOCK=infinity by default to avoid slurmctld crashes due to default for locked memory being too low.
+* slurmdbd.service - Set LimitMEMLOCK=infinity by default to avoid slurmdbd crashes due to default for locked memory being too low.
+* slurmrestd.service - Set LimitMEMLOCK=infinity by default to avoid slurmrestd crashes due to default for locked memory being too low.
+* Fix a segfault in the slurmctld caused by invalid core affinity for GPUs on a node.
+* Fix a node not being set to the invalid state when GPU core affinity is invalid.
+* A cluster will start the MaxJobCount of jobs and not one less.
+* Allow QOS usage to be purged and optionally archived as part of a Usage purge and optional archive.
+* Fix slurmctld crash caused by accessing job_desc.assoc_qos in job_submit.lua for an association that doesn't exist.
+* Fix slurmctld segfault when SIGUSR2 is received early and jobcomp plugin is enabled.
+* Fix use-cases incorrectly rejecting job requests when MaxCPUsPer[Socket|Node] applied and CPUSpecList/CoreSpecCount configured.
+* tls/s2n - Fix heterogeneous jobs failing to run in a TLS enabled environment.
+* sbatch - Fix a regression where SLURM_NETWORK would not be exported for non-Cray systems when using --network.
+* REGEX_REPLACE() was not supported before MySQL 8.0.4 and MariaDB 10, and the regex syntax used previously was not supported for both MySQL and MariaDB (not all POSIX syntax is supported in both)
+* fatal() if the SQL server does not support REGEXP_REPLACE(). This was introduced in MySQL 8.0.4 or MariaDB 10.0.5.
+* Pass environment variables to container when using Apptainer/Singularity OCI runtimes.
+* slurmscriptd,slurmstepd - Fix use-after-free issue with the "ident" string when logging to syslog.
+* Fix bug where the backfill scheduler changed the specified --time of a job and incorrectly reset it to --time-min.
+* Prevent healthy nodes being marked as unresponsive due to forwarding message timeouts increasing as the tree is traversed. The issue occurred if Slurm was running with a mix of 24.05- and 24.11+ slurmds. This only fixes 25.05+ slurmds.
+* Fix crash while using the wckeys rest endpoint.
+* Fix cases of job updates incorrectly rejected when specifying modifications on fields unrelated to tasks computation (i.e. changing JobName).
+* slurmrestd - Prevent triggering a fatal abort when parasing a non-empty group id string by replacing it with an error. This affects all endpoints with request bodies containing openapi_meta_client group field. It also affects the following endpoints: 'GET /slurmdb/v0.0.4[1-3]/jobs' 'POST /slurm/v0.0.4[1-3]/job/submit' 'POST /slurm/v0.0.4[1-3]/job/{job_id}' 'POST /slurm/v0.0.4[1-3]/job/allocate'
+* slurmrestd - Fix memory leak that happened when submitting a request body containing the meta.plugin.accounting_storage field.
+* slurmrestd - Fix memory leak that happened when submitting a request body containing the "warnings", "errors", or "meta" field. This affects the following endpoints: 'POST /slurmdb/v0.0.4*/qos'
+* slurmctld - Fix how gres with cores or a type defined are selected to prevent jobs not using reservations from being allocated reserved gres and vice versa.
+
 ## Changes in 25.05.2
 
 * sbatch - Fix case where --get-user-env and some --export flags could make a job fail and get requeued+held if Slurm's installation path was too long.
