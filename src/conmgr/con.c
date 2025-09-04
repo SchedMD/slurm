@@ -36,8 +36,9 @@
 #define _GNU_SOURCE
 #include <limits.h>
 #include <stdbool.h>
-#include <sys/stat.h>
+#include <stdint.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -2101,4 +2102,71 @@ extern bool conmgr_fd_is_tls(conmgr_fd_ref_t *ref)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return tls;
+}
+
+extern int conmgr_con_get_events(conmgr_fd_ref_t *ref,
+				 const conmgr_events_t **events_ptr,
+				 void **arg_ptr)
+{
+	if (!ref)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(events_ptr);
+	xassert(!*events_ptr);
+	xassert(arg_ptr);
+	xassert(!*arg_ptr);
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	*events_ptr = ref->con->events;
+	*arg_ptr = ref->con->arg;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return SLURM_SUCCESS;
+}
+
+extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
+				 const conmgr_events_t *events, void *arg,
+				 const char *caller)
+{
+	int rc = EINVAL;
+
+	if (!ref)
+		return rc;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(events);
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	/* Reject changing connections in process of cleaning up */
+	if (!ref->con) {
+		rc = EINVAL;
+	} else if ((ref->con->input_fd >= 0) || (ref->con->output_fd >= 0)) {
+		log_flag(CONMGR, "%s->%s: [%s] changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR,
+			 caller, __func__, ref->con->name,
+			 (uintptr_t) ref->con->events, (uintptr_t) events,
+			 (uintptr_t) ref->con->arg, (uintptr_t) arg);
+
+		ref->con->events = events;
+		ref->con->arg = arg;
+		rc = SLURM_SUCCESS;
+	} else {
+		log_flag(CONMGR, "%s->%s: [%s] rejecting changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR" for closed connection",
+			 caller, __func__, ref->con->name,
+			 (uintptr_t) ref->con->events, (uintptr_t) events,
+			 (uintptr_t) ref->con->arg, (uintptr_t) arg);
+
+		rc = ESHUTDOWN;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
 }

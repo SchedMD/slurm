@@ -956,4 +956,31 @@ extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref);
 /* Return true if connection is TLS wrapped */
 extern bool conmgr_fd_is_tls(conmgr_fd_ref_t *ref);
 
+/*
+ * Get connection events and arg
+ * IN con - connection to query
+ * IN/OUT events_ptr to populate with connection events pointer.
+ *	WARNING: pointer only valid until on_finish() callback
+ * IN/OUT arg_ptr - pointer to populate with connection arg
+ *	WARNING: pointer only valid until on_finish() callback
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_get_events(conmgr_fd_ref_t *con,
+				 const conmgr_events_t **events_ptr,
+				 void **arg_ptr);
+
+/*
+ * Set connection events and arg
+ * IN con - connection to query
+ * IN events - pointer to events to use in connection callbacks
+ *	WARNING: pointer must be valid until on_finish() callback
+ * IN arg - change arbitrary pointer for arg
+ *	WARNING: pointer must be valid until on_finish() callback
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_set_events(conmgr_fd_ref_t *con,
+				 const conmgr_events_t *events, void *arg,
+				 const char *caller);
+
 #endif /* _CONMGR_H */
