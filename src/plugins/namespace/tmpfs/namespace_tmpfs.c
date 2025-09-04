@@ -860,12 +860,12 @@ extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 	return _create_ns(step);
 }
 
-extern int namespace_p_stepd_delete(uint32_t job_id)
+extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
-	return _delete_ns(job_id);
+	return _delete_ns(step_id->job_id);
 }
 
 extern int namespace_p_send_stepd(int fd)

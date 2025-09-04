@@ -76,7 +76,7 @@ extern int namespace_g_restore(char *dir_name, bool recover);
 extern int namespace_g_stepd_create(stepd_step_rec_t *step);
 
 /* Delete the namespace for the specified job, actions run in slurmstepd */
-extern int namespace_g_stepd_delete(uint32_t job_id);
+extern int namespace_g_stepd_delete(slurm_step_id_t *step_id);
 
 /* Send namespace config to slurmstepd on the provided file descriptor */
 extern int namespace_g_send_stepd(int fd);
