@@ -1229,7 +1229,7 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			error_code = SLURM_ERROR;
+			error_code = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		bit_and_not(orig_node_map, topo_eval->node_map);
@@ -1240,6 +1240,7 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 	/* Compute CPUs already allocated to required nodes */
 	if ((details_ptr->max_cpus != NO_VAL) &&
 	    (total_cpus > details_ptr->max_cpus)) {
+		error_code = ESLURM_BREAK_EVAL;
 		info("%pJ can't use required nodes due to max CPU limit",
 		     job_ptr);
 		goto fini;
