@@ -16,7 +16,12 @@ testuser = atf.properties["test-user"]
 def setup():
     global local_cluster_name
 
-    atf.require_accounting()
+    atf.require_version(
+        (25, 11),
+        "bin/scontrol",
+        reason="Creating reservations with qos= added in scontrol 25.11",
+    )
+    atf.require_accounting(True)
     atf.require_slurm_running()
     atf.require_config_parameter_includes("AccountingStorageEnforce", "qos")
     local_cluster_name = atf.get_config_parameter("ClusterName")
