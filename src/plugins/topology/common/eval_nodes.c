@@ -1611,11 +1611,13 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
+				error_code = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			if (topo_eval->max_nodes <= 0) {
 				log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
 					 job_ptr);
+				error_code = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			used_cpu_per_node[i] = cpus_per_task;
