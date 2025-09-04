@@ -1400,11 +1400,13 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
+				error_code = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			if (topo_eval->max_nodes <= 0) {
 				log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
 					 job_ptr);
+				error_code = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
@@ -1414,6 +1416,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 			if (topo_eval->avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
+				error_code = ESLURM_BREAK_EVAL;
 				goto fini;
 			}
 			total_cpus += topo_eval->avail_cpus;
@@ -1431,7 +1434,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			error_code = SLURM_ERROR;
+			error_code = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		bit_and_not(orig_node_map, topo_eval->node_map);
@@ -1444,6 +1447,7 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 	    (total_cpus > details_ptr->max_cpus)) {
 		info("%pJ can't use required nodes due to max CPU limit",
 		     job_ptr);
+		error_code = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
