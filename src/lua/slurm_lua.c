@@ -294,8 +294,10 @@ extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults,
 		 * This function will lua_pop() that value to remove it from
 		 * the stack.
 		 */
+		if (!(*err_ptr = xstrdup(lua_tostring(L, -1))))
+			*err_ptr = xstrdup(slurm_strerror(rc));
+
 		lua_pop(L, 1);
-		*err_ptr = xstrdup(slurm_strerror(rc));
 
 		error("%s: lua_pcall(0x%"PRIxPTR", %d, %d, %d)=%s(%s)=%s",
 		      caller, (uintptr_t) L, nargs, nresults, msgh,
