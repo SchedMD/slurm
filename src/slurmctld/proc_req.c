@@ -63,6 +63,7 @@
 #include "src/common/id_util.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/node_features.h"
 #include "src/common/pack.h"
 #include "src/common/persist_conn.h"
@@ -5932,7 +5933,17 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	if (persist_init->persist_type == PERSIST_TYPE_FED)
 		rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
+		const int fd = conn_g_get_fd(persist_conn->conn);
+
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
+
+		/* Persistent connection handlers expect file descriptor to be
+		 * already configured as nonblocking with keepalive activated
+		 */
+		xassert(fd >= 0);
+		fd_set_nonblocking(fd);
+		net_set_keep_alive(fd);
+
 		slurm_persist_conn_recv_thread_init(
 			persist_conn, conn_g_get_fd(persist_conn->conn), -1,
 			persist_conn);
