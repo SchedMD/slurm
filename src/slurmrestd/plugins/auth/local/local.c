@@ -134,15 +134,16 @@ static int _auth_socket(on_http_request_args_t *args,
 			const char *header_user_name)
 {
 	int rc;
-	const char *name = conmgr_fd_get_name(args->context->con);
+	const char *name = args->name;
+	conmgr_fd_t *con = conmgr_fd_get_ref(args->con);
 	uid_t cred_uid;
 	gid_t cred_gid;
 	pid_t cred_pid;
 
 	xassert(!ctxt->user_name);
 
-	if ((rc = conmgr_get_fd_auth_creds(args->context->con, &cred_uid,
-					   &cred_gid, &cred_pid))) {
+	if ((rc = conmgr_get_fd_auth_creds(con, &cred_uid, &cred_gid,
+					   &cred_pid))) {
 		/* socket may be remote, local auth doesn't apply */
 		debug("%s: [%s] unable to get socket ownership: %s",
 		      __func__, name, slurm_strerror(rc));
@@ -245,11 +246,11 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 	struct stat status = { 0 };
 	const char *header_user_name = find_http_header(args->headers,
 							HTTP_HEADER_USER_NAME);
-	const conmgr_fd_status_t cstatus =
-		conmgr_fd_get_status(args->context->con);
-	const int input_fd = conmgr_fd_get_input_fd(args->context->con);
-	const int output_fd = conmgr_fd_get_output_fd(args->context->con);
-	const char *name = conmgr_fd_get_name(args->context->con);
+	conmgr_fd_t *con = conmgr_fd_get_ref(args->con);
+	const conmgr_fd_status_t cstatus = conmgr_fd_get_status(con);
+	const int input_fd = conmgr_fd_get_input_fd(con);
+	const int output_fd = conmgr_fd_get_output_fd(con);
+	const char *name = args->name;
 
 	xassert(!ctxt->user_name);
 

@@ -50,6 +50,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/http_parser.h"
 
 #include "src/slurmrestd/http.h"
@@ -59,10 +61,8 @@
 #define MAGIC 0xDFAFFEEF
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 
-#define MAGIC_REQUEST_T 0xdbadaaaf
 /* Data to handed around by http_parser to call backs */
 typedef struct {
-	int magic;
 	/* Requested URL */
 	url_t url;
 	/* Request HTTP method */
@@ -76,8 +76,6 @@ typedef struct {
 	/* RFC7230-6.1 "Connection: Close" */
 	bool connection_close;
 	int expect; /* RFC7231-5.1.1 expect requested */
-	/* Connection context */
-	http_context_t *context;
 	/* Body of request (may be NULL) */
 	char *body;
 	/* if provided: expected body length to process or 0 */
@@ -92,6 +90,22 @@ typedef struct {
 		uint16_t minor;
 	} http_version;
 } request_t;
+
+typedef struct http_context_s {
+	int magic; /* MAGIC */
+	/* reference to assigned connection */
+	conmgr_fd_ref_t *ref;
+	/* assigned connection */
+	conmgr_fd_t *con;
+	/* Authentication context (auth_context_type_t) */
+	void *auth;
+	/* callback to call on each HTTP request */
+	on_http_request_t on_http_request;
+	/* http parser plugin state */
+	http_parser_state_t *parser;
+	/* http request_t */
+	request_t request;
+} http_context_t;
 
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
@@ -110,13 +124,6 @@ static int _valid_http_version(uint16_t major, uint16_t minor)
 	return ESLURM_HTTP_UNSUPPORTED_VERSION;
 }
 
-extern void free_http_header(http_header_entry_t *header)
-{
-	xfree(header->name);
-	xfree(header->value);
-	xfree(header);
-}
-
 static void _free_http_header(void *header)
 {
 	free_http_header(header);
@@ -124,16 +131,14 @@ static void _free_http_header(void *header)
 
 static void _request_init(http_context_t *context)
 {
-	request_t *request = context->request;
+	request_t *request = &context->request;
 
 	xassert(request);
 	xassert(context->magic == MAGIC);
 
 	*request = (request_t) {
-		.magic = MAGIC_REQUEST_T,
 		.url = URL_INITIALIZER,
 		.method = HTTP_REQUEST_INVALID,
-		.context = context,
 		.keep_alive = -1,
 	};
 
@@ -142,11 +147,9 @@ static void _request_init(http_context_t *context)
 
 static void _request_free_members(http_context_t *context)
 {
-	request_t *request = context->request;
+	request_t *request = &context->request;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
-	xassert(request->context == context);
 
 	url_free_members(&request->url);
 	FREE_NULL_LIST(request->headers);
@@ -170,12 +173,11 @@ static void _request_reset(http_context_t *context)
 
 static int _on_request(const http_parser_request_t *req, void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	int rc = EINVAL;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	request->http_version.major = req->http_version.major;
 	request->http_version.minor = req->http_version.minor;
@@ -228,12 +230,11 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 
 static int _on_header(const http_parser_header_t *header, void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
-	http_header_entry_t *entry = NULL;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
+	http_header_t *entry = NULL;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag(NET, "%s: [%s] Header: %s Value: %s",
 		 __func__, conmgr_con_get_name(context->ref), header->name,
@@ -241,6 +242,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 
 	/* Add copy to list of headers */
 	entry = xmalloc(sizeof(*entry));
+	entry->magic = HTTP_HEADER_MAGIC;
 	entry->name = xstrdup(header->name);
 	entry->value = xstrdup(header->value);
 	list_append(request->headers, entry);
@@ -264,8 +266,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 			request->keep_alive = ibuffer;
 		} else {
 			error("%s: [%s] invalid Keep-Alive value %s",
-			      __func__,
-			      conmgr_fd_get_name(request->context->con),
+			      __func__, conmgr_con_get_name(context->ref),
 			      header->value);
 			return _send_reject(
 				context, HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
@@ -319,11 +320,10 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 
 static int _on_headers_complete(void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->http_version.major == 1) &&
 	    (request->http_version.minor == 0)) {
@@ -355,12 +355,13 @@ static int _on_headers_complete(void *arg)
 	if (request->expect) {
 		int rc = EINVAL;
 		send_http_response_args_t args = {
-			.con = context->con,
 			.http_major = request->http_version.major,
 			.http_minor = request->http_version.minor,
 			.status_code = request->expect,
 			.body_length = 0,
 		};
+
+		args.con = conmgr_fd_get_ref(context->ref);
 
 		if ((rc = send_http_response(&args)))
 			return rc;
@@ -371,13 +372,12 @@ static int _on_headers_complete(void *arg)
 
 static int _on_content(const http_parser_content_t *content, void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	const void *at = get_buf_data(content->buffer);
 	const size_t length = get_buf_offset(content->buffer);
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP content",
 	       __func__, conmgr_con_get_name(context->ref));
@@ -456,7 +456,7 @@ static char *_fmt_header(const char *name, const char *value)
 static int _write_fmt_header(conmgr_fd_t *con, const char *name,
 			     const char *value)
 {
-	const char *buffer = _fmt_header(name, value);
+	char *buffer = _fmt_header(name, value);
 	int rc = conmgr_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
 	return rc;
@@ -474,7 +474,13 @@ static char *_fmt_header_num(const char *name, size_t value)
 	return xstrdup_printf("%s: %zu" CRLF, name, value);
 }
 
-extern int send_http_connection_close(http_context_t *ctxt)
+/*
+ * Send HTTP close notification header
+ *	Warns the client that we are about to close the connection.
+ * IN ctxt - connection context
+ * RET SLURM_SUCCESS or error
+ */
+static int _send_http_connection_close(http_context_t *ctxt)
 {
 	return _write_fmt_header(ctxt->con, "Connection", "Close");
 }
@@ -520,8 +526,9 @@ extern int send_http_response(const send_http_response_args_t *args)
 	/* send along any requested headers */
 	if (args->headers) {
 		list_itr_t *itr = list_iterator_create(args->headers);
-		http_header_entry_t *header = NULL;
+		http_header_t *header = NULL;
 		while ((header = list_next(itr))) {
+			xassert(header->magic == HTTP_HEADER_MAGIC);
 			if ((rc = _write_fmt_header(args->con, header->name,
 						    header->value)))
 				break;
@@ -578,10 +585,8 @@ extern int send_http_response(const send_http_response_args_t *args)
 static int _send_reject(http_context_t *context, http_status_code_t status_code,
 			slurm_err_t error_number)
 {
-	request_t *request = context->request;
-	xassert(request->magic == MAGIC_REQUEST_T);
+	request_t *request = &context->request;
 	send_http_response_args_t args = {
-		.con = request->context->con,
 		.http_major = request->http_version.major,
 		.http_minor = request->http_version.minor,
 		.status_code = status_code,
@@ -590,6 +595,8 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	};
 
 	xassert(context->magic == MAGIC);
+
+	args.con = conmgr_fd_get_ref(context->ref);
 
 	/* If we don't have a requested client version, default to 0.9 */
 	if ((args.http_major == 0) && (args.http_minor == 0))
@@ -602,10 +609,11 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	if (request->connection_close ||
 	    _valid_http_version(request->http_version.major,
 				request->http_version.minor))
-		send_http_connection_close(request->context);
+		_send_http_connection_close(context);
 
 	/* ensure connection gets closed */
-	(void) conmgr_queue_close_fd(request->context->con);
+	conmgr_con_queue_close_free(&context->ref);
+	context->con = NULL;
 
 	/* reset connection to avoid any possible auth inheritance */
 	_request_reset(context);
@@ -613,10 +621,10 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	return error_number;
 }
 
-static int _on_message_complete_request(request_t *request)
+static int _on_message_complete_request(http_context_t *context)
 {
 	int rc = EINVAL;
-	http_context_t *context = request->context;
+	request_t *request = &context->request;
 	on_http_request_args_t args = {
 		.method = request->method,
 		.headers = request->headers,
@@ -633,24 +641,28 @@ static int _on_message_complete_request(request_t *request)
 	};
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
-	if ((rc = context->on_http_request(&args)))
+	if (!(args.con = conmgr_con_link(context->ref)) ||
+	    !(args.name = conmgr_con_get_name(args.con))) {
+		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+		log_flag(NET, "%s: connection missing: %s",
+			 __func__, slurm_strerror(rc));
+	} else if ((rc = context->on_http_request(&args)))
 		log_flag(NET, "%s: [%s] on_http_request rejected: %s",
 			 __func__, conmgr_con_get_name(context->ref),
 			 slurm_strerror(rc));
 
+	conmgr_fd_free_ref(&args.con);
 	return rc;
 }
 
 static int _on_content_complete(void *arg)
 {
-	request_t *request = arg;
-	http_context_t *context = request->context;
+	http_context_t *context = arg;
+	request_t *request = &context->request;
 	int rc = EINVAL;
 
 	xassert(context->magic == MAGIC);
-	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if ((request->expected_body_length > 0) &&
 	    (request->expected_body_length != request->body_length)) {
@@ -661,7 +673,7 @@ static int _on_content_complete(void *arg)
 				    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
 
-	if ((rc = _on_message_complete_request(request)))
+	if ((rc = _on_message_complete_request(context)))
 		return rc;
 
 	if (request->keep_alive) {
@@ -673,7 +685,7 @@ static int _on_content_complete(void *arg)
 	if (request->connection_close) {
 		/* Notify client that this connection will be closed now */
 		if (request->connection_close)
-			send_http_connection_close(context);
+			_send_http_connection_close(context);
 
 		conmgr_con_queue_close_free(&context->ref);
 		context->con = NULL;
@@ -695,19 +707,15 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 		.on_content_complete = _on_content_complete,
 	};
 	int rc = SLURM_SUCCESS;
-	request_t *request = context->request;
 	ssize_t bytes_parsed = -1;
 	buf_t *buffer = NULL;
 
 	xassert(context->magic == MAGIC);
-	xassert(context->con);
-	xassert(context->ref);
-	xassert(request->magic == MAGIC_REQUEST_T);
-	xassert(request->context == context);
+	xassert(conmgr_fd_get_ref(context->ref) == context->con);
 
 	if (!context->parser &&
 	    (rc = http_parser_g_new_parse_request(
-		     conmgr_con_get_name(context->ref), &callbacks, request,
+		     conmgr_con_get_name(context->ref), &callbacks, context,
 		     &context->parser))) {
 		log_flag(NET, "%s: [%s] Creating new HTTP parser failed: %s",
 			 __func__, conmgr_con_get_name(context->ref),
@@ -754,59 +762,16 @@ cleanup:
 	return rc;
 }
 
-static http_context_t *_http_context_new(void)
-{
-	http_context_t *context = xmalloc(sizeof(*context));
-	context->magic = MAGIC;
-	return context;
-}
-
-/* find operator against http_header_entry_t */
-static int _http_header_find_key(void *x, void *y)
-{
-	http_header_entry_t *entry = (http_header_entry_t *)x;
-	const char *key = (const char *)y;
-	xassert(entry->name);
-
-	if (key == NULL)
-		return 0;
-	/* case insensitive compare per rfc2616:4.2 */
-	if (entry->name && !xstrcasecmp(entry->name, key))
-		return 1;
-	else
-		return 0;
-}
-
-extern const char *find_http_header(list_t *headers, const char *name)
-{
-	http_header_entry_t *header = NULL;
-
-	if (!headers || !name)
-		return NULL;
-
-	header = (http_header_entry_t *)list_find_first(
-		headers, _http_header_find_key, (void *)name);
-
-	if (header)
-		return header->value;
-	else
-		return NULL;
-}
-
 extern http_context_t *setup_http_context(conmgr_fd_t *con,
 					  on_http_request_t on_http_request)
 {
-	http_context_t *context = _http_context_new();
+	http_context_t *context = xmalloc(sizeof(*context));
 
-	xassert(context->magic == MAGIC);
-	xassert(!context->con);
-	xassert(!context->request);
+	context->magic = MAGIC;
 	context->con = con;
 	context->ref = conmgr_fd_new_ref(con);
 	context->on_http_request = on_http_request;
 
-	/* Must use type since context->request is void ptr */
-	context->request = xmalloc(sizeof(request_t));
 	_request_init(context);
 
 	return context;
@@ -815,7 +780,6 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
-	request_t *request = NULL;
 
 	if (!context)
 		return;
@@ -824,19 +788,51 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	http_parser_g_free_parse_request(&context->parser);
 
 	/* release request */
-	request = context->request;
-	xassert(request->magic == MAGIC_REQUEST_T);
 	_request_free_members(context);
-	request->magic = ~MAGIC_REQUEST_T;
-	xfree(context->request);
 
 	/* auth should have been released long before now */
 	xassert(!context->auth);
 	FREE_NULL_REST_AUTH(context->auth);
 
+	xassert(conmgr_fd_get_ref(context->ref) == context->con);
 	conmgr_fd_free_ref(&context->ref);
 	context->con = NULL;
 
 	context->magic = ~MAGIC;
 	xfree(context);
+}
+
+extern void *http_context_get_auth(http_context_t *context)
+{
+	if (!context)
+		return NULL;
+
+	xassert(context->magic == MAGIC);
+
+	return context->auth;
+}
+
+extern void *http_context_set_auth(http_context_t *context, void *auth)
+{
+	void *old = NULL;
+
+	if (!context)
+		return auth;
+
+	xassert(context->magic == MAGIC);
+
+	old = context->auth;
+	context->auth = auth;
+
+	return old;
+}
+
+extern void http_context_free_null_auth(http_context_t *context)
+{
+	if (!context)
+		return;
+
+	xassert(context->magic == MAGIC);
+
+	FREE_NULL_REST_AUTH(context->auth);
 }

@@ -46,6 +46,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
 
+#include "src/slurmrestd/http.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
@@ -75,11 +76,6 @@ typedef struct {
 	char *type; /* mime type and sub type unchanged */
 	float q; /* quality factor (priority) */
 } http_header_accept_t;
-
-static const char *_name(const on_http_request_args_t *args)
-{
-	return conmgr_fd_get_name(args->context->con);
-}
 
 static void _check_path_magic(const path_t *path)
 {
@@ -225,13 +221,12 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 	return rc;
 }
 
-static int _operations_router_reject(const on_http_request_args_t *args,
+static int _operations_router_reject(on_http_request_args_t *args,
 				     const char *err,
 				     http_status_code_t err_code,
 				     const char *body_encoding)
 {
 	send_http_response_args_t send_args = {
-		.con = args->context->con,
 		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
@@ -240,10 +235,13 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
 		.body_length = (err ? strlen(err) : 0),
 	};
-	http_header_entry_t close = {
+	http_header_t close = {
+		.magic = HTTP_HEADER_MAGIC,
 		.name = "Connection",
 		.value = "Close",
 	};
+
+	send_args.con = conmgr_fd_get_ref(args->con);
 
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
@@ -251,7 +249,7 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 	(void) send_http_response(&send_args);
 
 	/* close connection on error */
-	conmgr_queue_close_fd(args->context->con);
+	conmgr_queue_close_fd(send_args.con);
 
 	FREE_NULL_LIST(send_args.headers);
 
@@ -408,7 +406,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		*read_mime = MIME_TYPE_URL_ENCODED;
 
 		debug4("%s: [%s] did not provide a known content type header. Assuming URL encoded.",
-		       __func__, _name(args));
+		       __func__, args->name);
 	}
 
 	if (args->accept) {
@@ -419,17 +417,17 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 			xassert(ptr->magic == MAGIC_HEADER_ACCEPT);
 
 			debug4("%s: [%s] accepts %s with q=%f",
-			       __func__, _name(args), ptr->type, ptr->q);
+			       __func__, args->name, ptr->type, ptr->q);
 
 			if ((*write_mime = resolve_mime_type(ptr->type,
 							     plugin_ptr))) {
 				debug4("%s: [%s] found accepts %s=%s with q=%f",
-				       __func__, _name(args), ptr->type,
+				       __func__, args->name, ptr->type,
 				       *write_mime, ptr->q);
 				break;
 			} else {
 				debug4("%s: [%s] rejecting accepts %s with q=%f",
-				       __func__, _name(args), ptr->type,
+				       __func__, args->name, ptr->type,
 				       ptr->q);
 			}
 		}
@@ -437,7 +435,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		FREE_NULL_LIST(accept);
 	} else {
 		debug3("%s: [%s] Accept header not specified. Defaulting to JSON.",
-		       __func__, _name(args));
+		       __func__, args->name);
 		*write_mime = MIME_TYPE_JSON;
 	}
 
@@ -478,14 +476,14 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		 * requests.
 		 */
 		debug("%s: [%s] Overriding content type from %s to %s for %s",
-		      __func__, _name(args), *read_mime, MIME_TYPE_URL_ENCODED,
+		      __func__, args->name, *read_mime, MIME_TYPE_URL_ENCODED,
 		      get_http_method_string(args->method));
 
 		*read_mime = MIME_TYPE_URL_ENCODED;
 	}
 
 	debug3("%s: [%s] mime read: %s write: %s",
-	       __func__, _name(args), *read_mime, *write_mime);
+	       __func__, args->name, *read_mime, *write_mime);
 
 	return SLURM_SUCCESS;
 }
@@ -500,22 +498,24 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	data_t *resp = data_new();
 	char *body = NULL;
 	http_status_code_t e;
+	void *auth = NULL;
 
 	xassert(op_path);
 	debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
-	       __func__, _name(args), (uintptr_t) op_path->callback,
+	       __func__, args->name, (uintptr_t) op_path->callback,
 	       callback_tag, args->path);
 
-	rc = wrap_openapi_ctxt_callback(_name(args), args->method, params,
-					query, callback_tag, resp,
-					args->context->auth, parser, op_path,
-					meta);
+	auth = http_context_set_auth(args->context, NULL);
+
+	rc = wrap_openapi_ctxt_callback(args->name, args->method, params, query,
+					callback_tag, resp, auth, parser,
+					op_path, meta);
 
 	/*
 	 * Clear auth context after callback is complete. Client has to provide
 	 * full auth for every request already.
 	 */
-	FREE_NULL_REST_AUTH(args->context->auth);
+	FREE_NULL_REST_AUTH(auth);
 
 	if (data_get_type(resp) != DATA_TYPE_NULL) {
 		int rc2;
@@ -539,11 +539,11 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		 *
 		 */
 		send_http_response_args_t send_args = {
-			.con = args->context->con,
 			.http_major = args->http_major,
 			.http_minor = args->http_minor,
 			.status_code = HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED,
 		};
+		send_args.con = conmgr_fd_get_ref(args->con);
 		e = send_args.status_code;
 		rc = send_http_response(&send_args);
 	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
@@ -580,13 +580,14 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		rc = _operations_router_reject(args, body, e, write_mime);
 	} else {
 		send_http_response_args_t send_args = {
-			.con = args->context->con,
 			.http_major = args->http_major,
 			.http_minor = args->http_minor,
 			.status_code = HTTP_STATUS_CODE_SUCCESS_OK,
 			.body = NULL,
 			.body_length = 0,
 		};
+
+		send_args.con = conmgr_fd_get_ref(args->con);
 
 		if (body) {
 			send_args.body = body;
@@ -599,7 +600,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	}
 
 	debug3("%s: [%s] END: calling handler: (0x%"PRIXPTR") callback_tag %d for path: %s rc[%d]=%s status[%d]=%s",
-	       __func__, _name(args), (uintptr_t) op_path->callback,
+	       __func__, args->name, (uintptr_t) op_path->callback,
 	       callback_tag, args->path, rc, slurm_strerror(rc), e,
 	       get_http_status_code_string(e));
 
@@ -621,12 +622,12 @@ extern int operations_router(on_http_request_args_t *args)
 	data_parser_t *parser = NULL;
 
 	info("%s: [%s] %s %s",
-	     __func__, _name(args), get_http_method_string(args->method),
+	     __func__, args->name, get_http_method_string(args->method),
 	     args->path);
 
 	if ((rc = rest_authenticate_http_request(args))) {
 		error("%s: [%s] authentication failed: %s",
-		      __func__, _name(args), slurm_strerror(rc));
+		      __func__, args->name, slurm_strerror(rc));
 		_operations_router_reject(args, "Authentication failure",
 					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED,
 					  NULL);
@@ -653,7 +654,7 @@ extern int operations_router(on_http_request_args_t *args)
 	slurm_rwlock_unlock(&paths_lock);
 
 	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag=%d path=%s parser=%s",
-	       __func__, _name(args), (uintptr_t) path->op_path->callback,
+	       __func__, args->name, (uintptr_t) path->op_path->callback,
 	       callback_tag, args->path,
 	       (parser ? data_parser_get_plugin(parser) : ""));
 
@@ -671,7 +672,7 @@ cleanup:
 	FREE_NULL_DATA(params);
 
 	/* always clear the auth context */
-	FREE_NULL_REST_AUTH(args->context->auth);
+	http_context_free_null_auth(args->context);
 
 	return rc;
 }

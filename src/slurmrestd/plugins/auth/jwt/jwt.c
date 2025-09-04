@@ -91,12 +91,12 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 					  rest_auth_context_t *ctxt)
 {
 	plugin_data_t *data;
-	const char *key, *user_name, *bearer, *name;
+	const char *key, *user_name, *bearer;
+	const char *name = args->name;
 
 	key = find_http_header(args->headers, HTTP_HEADER_USER_TOKEN);
 	bearer = find_http_header(args->headers, HTTP_HEADER_AUTH);
 	user_name = find_http_header(args->headers, HTTP_HEADER_USER_NAME);
-	name = conmgr_fd_get_name(args->context->con);
 
 	if (!key && !user_name && !bearer) {
 		debug3("%s: [%s] skipping token authentication",

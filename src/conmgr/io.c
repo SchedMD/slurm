@@ -422,24 +422,33 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in->size = size;
 }
 
-extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
-				   const size_t bytes)
+/* Copy buffer into new buf_t */
+static buf_t *_buf_clone(const void *buffer, const size_t bytes)
 {
-	buf_t *buf;
+	buf_t *buf = NULL;
 
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	/* Ignore empty write requests */
-	if (!bytes)
-		return SLURM_SUCCESS;
+	xassert(bytes > 0);
 
 	buf = init_buf(bytes);
 
-	/* TODO: would be nice to avoid this copy */
 	memmove(get_buf_data(buf), buffer, bytes);
 
-	log_flag(NET, "%s: [%s] write of %zu bytes queued",
-		 __func__, con->name, bytes);
+	return buf;
+}
+
+/*
+ * Append buffer to output queue
+ * WARNING: caller must hold mgr.mutex lock
+ * IN con - connection to queue outgoing buffer
+ * IN buf - buffer to queue as output (takes ownership)
+ * RET SLURM_SUCCESS or error
+ */
+static int _append_output(conmgr_fd_t *con, buf_t *buf)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	log_flag(NET, "%s: [%s] write of %u bytes queued",
+		 __func__, con->name, get_buf_offset(buf));
 
 	log_flag_hex(NET_RAW, get_buf_data(buf), get_buf_offset(buf),
 		     "%s: queuing up write", __func__);
@@ -449,10 +458,52 @@ extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
 		con->last_write = timespec_now();
 
-	slurm_mutex_lock(&mgr.mutex);
 	EVENT_SIGNAL(&mgr.watch_sleep);
-	slurm_mutex_unlock(&mgr.mutex);
+
 	return SLURM_SUCCESS;
+}
+
+static int _write_data(conmgr_fd_t *con, const void *buffer, const size_t bytes)
+{
+	int rc = EINVAL;
+	buf_t *buf = NULL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	/* Ignore empty write requests */
+	if (!bytes)
+		return SLURM_SUCCESS;
+
+	/* TODO: would be nice to avoid this copy */
+	buf = _buf_clone(buffer, bytes);
+
+	slurm_mutex_lock(&mgr.mutex);
+	rc = _append_output(con, buf);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
+				   const size_t bytes)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(buffer || !bytes);
+
+	return _write_data(con, buffer, bytes);
+}
+
+extern int conmgr_con_queue_write_data(conmgr_fd_ref_t *ref, const void *buffer,
+				       const size_t bytes)
+{
+	if (!ref)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+	xassert(buffer || !bytes);
+
+	return _write_data(ref->con, buffer, bytes);
 }
 
 static int _get_input_buffer(const conmgr_fd_t *con, const void **data_ptr,

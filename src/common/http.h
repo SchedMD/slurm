@@ -209,4 +209,23 @@ extern void url_free_members(url_t *url);
 /* Copy all members in URL */
 extern void url_copy_members(url_t *dst, const url_t *src);
 
+#define HTTP_HEADER_MAGIC 0x1aaffbe2
+
+/* HTTP header */
+typedef struct {
+	int magic; /* HTTP_HEADER_MAGIC */
+	char *name;
+	char *value;
+} http_header_t;
+
+/* Free http header and contents */
+extern void free_http_header(http_header_t *header);
+
+/* find http header from header list
+ * IN headers - list_t of http_header_t*
+ * IN name - name of header to find
+ * RET ptr to header value or NULL if not found
+ */
+extern const char *find_http_header(list_t *headers, const char *name);
+
 #endif /* SLURM_HTTP_H */

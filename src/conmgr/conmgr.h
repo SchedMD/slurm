@@ -426,7 +426,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd);
 
 /*
- * Write binary data to connection (from callback).
+ * Write binary data to connection
  * NOTE: type=CON_TYPE_RAW only
  * IN con connection manager connection struct
  * IN buffer pointer to buffer
@@ -435,6 +435,17 @@ extern int conmgr_queue_send_fd(conmgr_fd_t *con, int fd);
  */
 extern int conmgr_queue_write_data(conmgr_fd_t *con, const void *buffer,
 				   const size_t bytes);
+
+/*
+ * Copy and write binary data to connection
+ * NOTE: type=CON_TYPE_RAW only
+ * IN ref reference to connection
+ * IN buffer pointer to buffer
+ * IN bytes number of bytes in buffer to write
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_queue_write_data(conmgr_fd_ref_t *ref, const void *buffer,
+				       const size_t bytes);
 
 /*
  * Write packed msg to connection (from callback).

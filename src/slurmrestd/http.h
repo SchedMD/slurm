@@ -43,7 +43,6 @@
 #include "src/common/list.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/interfaces/http_parser.h"
 
 struct on_http_request_args_s;
 typedef struct on_http_request_args_s on_http_request_args_t;
@@ -58,28 +57,17 @@ typedef struct on_http_request_args_s on_http_request_args_t;
  */
 typedef int (*on_http_request_t)(on_http_request_args_t *args);
 
-typedef struct {
-	int magic;
-	/* reference to assigned connection */
-	conmgr_fd_ref_t *ref;
-	/* assigned connection */
-	conmgr_fd_t *con;
-	/* Authentication context (auth_context_type_t) */
-	void *auth;
-	/* callback to call on each HTTP request */
-	on_http_request_t on_http_request;
-	/* http parser plugin state */
-	http_parser_state_t *parser;
-	/* http request_t */
-	void *request;
-} http_context_t;
+/* Opaque connection context */
+typedef struct http_context_s http_context_t;
 
 typedef struct on_http_request_args_s {
 	const http_request_method_t method; /* HTTP request method */
-	list_t *headers; /* list of http_header_entry_t from client */
+	list_t *headers; /* list_t of http_header_t* from client */
 	const char *path; /* requested URL path (may be NULL) */
 	const char *query; /* requested URL query (may be NULL) */
 	http_context_t *context; /* calling context (do not xfree) */
+	conmgr_fd_ref_t *con; /* reference to connection */
+	const char *name; /* connection name */
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
 	const char *content_type; /* header content-type */
@@ -88,19 +76,6 @@ typedef struct on_http_request_args_s {
 	const size_t body_length; /* bytes in body to send or 0 */
 	const char *body_encoding; /* body encoding type or NULL */
 } on_http_request_args_t;
-
-typedef struct {
-	char *name;
-	char *value;
-} http_header_entry_t;
-extern void free_http_header(http_header_entry_t *);
-
-/* find http header from header list
- * IN headers List of http_header_entry_t
- * IN name name of header to find
- * RET ptr to header value or NULL if not found
- */
-extern const char *find_http_header(list_t *headers, const char *name);
 
 /*
  * Call back for new connection to setup HTTP
@@ -124,19 +99,12 @@ typedef struct {
 	uint16_t http_major; /* HTTP major version */
 	uint16_t http_minor; /* HTTP minor version */
 	http_status_code_t status_code; /* HTTP status code to send */
-	list_t *headers; /* list of http_header_entry_t to send (can be empty) */
+	/* list of http_header_entry_t to send (can be empty) */
+	list_t *headers; /* list_t of http_header_t* from client */
 	const char *body; /* body to send or NULL */
 	size_t body_length; /* bytes in body to send or 0 */
 	const char *body_encoding; /* body encoding type or NULL */
 } send_http_response_args_t;
-
-/*
- * Send HTTP close notification.
- * 	Warns the client that we are about to close the connection.
- * IN args arguments of response
- * RET SLURM_SUCCESS or error
- */
-extern int send_http_connection_close(http_context_t *ctxt);
 
 /*
  * Send HTTP response
@@ -160,5 +128,26 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
  * IN context - context to connection to free
  */
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt);
+
+/*
+ * Get (arbitrary) auth pointer from context
+ * IN context - connection context
+ * RET auth pointer or NULL
+ */
+extern void *http_context_get_auth(http_context_t *context);
+
+/*
+ * Set and Get (arbitrary) auth pointer from context
+ * IN context - connection context
+ * IN auth - (arbitrary) auth pointer to set into context
+ * RET Prior auth pointer or auth arg if context==NULL
+ */
+extern void *http_context_set_auth(http_context_t *context, void *auth);
+
+/*
+ * Release and NULL auth pointer from context
+ * IN context - connection context
+ */
+extern void http_context_free_null_auth(http_context_t *context);
 
 #endif /* SLURMRESTD_HTTP_H */
