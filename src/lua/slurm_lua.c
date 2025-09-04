@@ -141,11 +141,12 @@ static int _setup_stringarray(lua_State *L, int limit, char **data)
 	return 1;
 }
 
-extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
+extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults,
 			   char **err_ptr, const char *caller)
 {
 	lua_status_code_t sc;
 	int rc;
+	int msgh = 0;
 
 	sc = lua_pcall(L, nargs, nresults, msgh);
 	rc = slurm_lua_status_error(sc);
@@ -851,7 +852,7 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	/*
 	 *  Run the user script:
 	 */
-	if ((rc = slurm_lua_pcall(new, 0, 1, 0, &ret_err_str, __func__))) {
+	if ((rc = slurm_lua_pcall(new, 0, 1, &ret_err_str, __func__))) {
 		err_str = xstrdup_printf("%s: %s", script_path, ret_err_str);
 		xfree(ret_err_str);
 		lua_close(new);
