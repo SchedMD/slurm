@@ -1940,6 +1940,8 @@ typedef struct job_info {
 	char *std_in;		/* pathname of job's stdin file */
 	char *std_out;		/* pathname of job's stdout file */
 	uint16_t segment_size;	/* requested segment size */
+	char *submit_line;	/* full submit line of the slurm command used to
+				 * submit this job */
 	time_t submit_time;	/* time of job submission */
 	time_t suspend_time;	/* time job last suspended or resumed */
 	char *system_comment;	/* slurmctld's arbitrary comment */
