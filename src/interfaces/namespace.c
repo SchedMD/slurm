@@ -107,8 +107,7 @@ extern int namespace_g_init(void)
 			namespace += 10; /* backward compatibility */
 		else if (xstrncmp(namespace, "job_container/", 14) == 0)
 			namespace += 14; /* backward compatibility */
-		namespace = xstrdup_printf("namespace/%s",
-					       namespace);
+		namespace = xstrdup_printf("namespace/%s", namespace);
 		g_namespace_context[g_namespace_context_num] =
 			plugin_context_create(
 				plugin_type, namespace,
