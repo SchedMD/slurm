@@ -2329,15 +2329,18 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 		}
 		tok = strtok_r(NULL, ",", &last);
 	}
+
+	xfree(tmp);
+
 	if (u_cnt > 0) {
 		*user_cnt  = u_cnt;
 		*user_list = u_list;
-		xfree(tmp);
 		return SLURM_SUCCESS;
-	} else {
-		info("Reservation request has no valid users");
-		return ESLURM_USER_ID_MISSING;
 	}
+
+	xfree(u_list);
+	info("Reservation request has no valid users");
+	return ESLURM_USER_ID_MISSING;
 
  inval:	xfree(tmp);
 	xfree(u_list);
