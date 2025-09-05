@@ -789,6 +789,9 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] TLS fingerprint failed: %s",
 				 __func__, con->name, slurm_strerror(match));
 
+		/* should never happen */
+		xassert(false);
+
 		close_con(false, con);
 	}
 }
