@@ -754,12 +754,11 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 
 		/* Only servers can accept an incoming TLS handshake requests */
 		con_set_flag(con, FLAG_TLS_SERVER);
+
+		/* Deactivate fingerprinting */
 		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
-		if (con->events->on_connection &&
-		    !con_flag(con, FLAG_TLS_SERVER))
-			queue_on_connection(con);
 		slurm_mutex_unlock(&mgr.mutex);
 
 		log_flag(CONMGR, "%s: [%s] TLS fingerprint matched",
@@ -772,6 +771,18 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS fingerprint",
 			 __func__, con->name);
 	} else if (match == ENOENT) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Deactivate fingerprinting */
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+		if (con->events->on_connection &&
+		    !con_flag(con, FLAG_TLS_SERVER))
+			queue_on_connection(con);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
 		log_flag(CONMGR, "%s: [%s] TLS not detected",
 			 __func__, con->name);
 	} else {
