@@ -21,7 +21,6 @@ def setup():
         "bin/scontrol",
         reason="Creating reservations with allowedpartition= added in scontrol 25.11",
     )
-    atf.require_accounting(True)
     atf.require_slurm_running()
     local_cluster_name = atf.get_config_parameter("ClusterName")
 
@@ -32,15 +31,6 @@ def setup():
             user=atf.properties["slurm-user"],
             fatal=True,
         )
-
-    atf.run_command(
-        f"sacctmgr -i add account {acct1} cluster={local_cluster_name}",
-        user=atf.properties["slurm-user"],
-    )
-    atf.run_command(
-        f"sacctmgr -i add user {testuser} cluster={local_cluster_name} account={acct1}",
-        user=atf.properties["slurm-user"],
-    )
 
     # Create the reservation for partition 1
     result = atf.run_command(
@@ -53,16 +43,6 @@ def setup():
 
     atf.run_command(
         f"scontrol delete reservation {res_name}",
-        user=atf.properties["slurm-user"],
-        quiet=True,
-    )
-    atf.run_command(
-        f"sacctmgr -i remove user {testuser} wckey={acct1}",
-        user=atf.properties["slurm-user"],
-        quiet=True,
-    )
-    atf.run_command(
-        f"sacctmgr -i remove account {acct1}",
         user=atf.properties["slurm-user"],
         quiet=True,
     )
