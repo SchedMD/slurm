@@ -746,8 +746,10 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	if (!(match = tls_is_handshake(get_buf_data(con->in),
-				       get_buf_offset(con->in), con->name))) {
+	match = tls_is_handshake(get_buf_data(con->in), get_buf_offset(con->in),
+				 con->name);
+
+	if (!match) {
 		log_flag(CONMGR, "%s: [%s] TLS matched",
 			 __func__, con->name);
 
@@ -757,23 +759,7 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		con_set_flag(con, FLAG_TLS_SERVER);
 
 		slurm_mutex_unlock(&mgr.mutex);
-		match = SLURM_SUCCESS;
-	} else if (match == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS match",
-				 __func__, con->name);
 
-		slurm_mutex_lock(&mgr.mutex);
-		con_set_flag(con, FLAG_ON_DATA_TRIED);
-		slurm_mutex_unlock(&mgr.mutex);
-
-		match = EWOULDBLOCK;
-	} else if (match == ENOENT) {
-		log_flag(CONMGR, "%s: [%s] TLS not detected",
-			 __func__, con->name);
-		match = SLURM_SUCCESS;
-	}
-
-	if (match == SLURM_SUCCESS) {
 		log_flag(CONMGR, "%s: [%s] TLS fingerprint match completed",
 					 __func__, con->name);
 
@@ -786,12 +772,22 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 			queue_on_connection(con);
 		slurm_mutex_unlock(&mgr.mutex);
 	} else if (match == EWOULDBLOCK) {
+		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS match",
+				 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+
 		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS fingerprint",
 				 __func__, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
 		con_set_flag(con, FLAG_ON_DATA_TRIED);
 		slurm_mutex_unlock(&mgr.mutex);
+	} else if (match == ENOENT) {
+		log_flag(CONMGR, "%s: [%s] TLS not detected",
+			 __func__, con->name);
 	} else {
 		log_flag(CONMGR, "%s: [%s] TLS fingerprint failed: %s",
 				 __func__, con->name, slurm_strerror(match));
