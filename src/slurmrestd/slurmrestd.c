@@ -718,7 +718,6 @@ int main(int argc, char **argv)
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
-		.on_fingerprint = on_fingerprint_tls,
 	};
 	static const conmgr_events_t inet_events = {
 		.on_data = parse_http,
