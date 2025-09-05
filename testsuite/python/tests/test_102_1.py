@@ -54,6 +54,15 @@ def setup_federation1(no_federations):
     )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def clean_clusters():
+    yield
+    atf.run_command(
+        f"sacctmgr -i delete cluster {cluster_string}",
+        user=atf.properties["slurm-user"],
+    )
+
+
 @pytest.fixture(scope="function")
 def no_federations():
     atf.run_command(

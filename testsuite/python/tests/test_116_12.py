@@ -125,7 +125,7 @@ def test_output_error_formatting(tmp_path):
     fpc.remove_file(file_err)
 
     # Test %u puts the user name in the file name
-    user_name = atf.get_user_name()
+    user_name = atf.properties["test-user"]
     file_out = fpc.create_file_path("u")
     atf.run_job(f"--output={file_out} -N1 -O id")
     file_out = fpc.get_tmp_file()
@@ -174,7 +174,6 @@ do
     srun -O --output={file_out} true
 done""",
     )
-    os.chmod(file_in, 0o0777)
     job_id = atf.submit_job_sbatch(f"-N{node_count} --output /dev/null {str(file_in)}")
     atf.wait_for_job_state(job_id, "DONE")
     tmp_dir_list = os.listdir(tmp_path)
@@ -191,7 +190,6 @@ do
     srun -O --error={file_err} true
 done""",
     )
-    os.chmod(file_in, 0o0777)
     job_id = atf.submit_job_sbatch(f"-N{node_count} --output /dev/null {str(file_in)}")
     atf.wait_for_job_state(job_id, "DONE")
     tmp_dir_list = os.listdir(tmp_path)

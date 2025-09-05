@@ -281,7 +281,6 @@ def test_upgrade():
             "-N1 --qos=qos1",
             "false",
             fatal=True,
-            user=atf.properties["test-user"],
         )
     )
     jobs.append(atf.submit_job("sbatch", "-N2 --qos=qos2", "false", fatal=True))
@@ -295,7 +294,6 @@ def test_upgrade():
             "-N1 --qos=qos1",
             "sleep 300",
             fatal=True,
-            user=atf.properties["test-user"],
         )
     )
     jobs.append(atf.submit_job("sbatch", "-N2 --qos=qos2", "sleep 300", fatal=True))

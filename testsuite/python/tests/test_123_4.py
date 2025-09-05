@@ -32,10 +32,8 @@ def test_reservation_user():
     result = atf.run_command(create_res, user=atf.properties["slurm-user"])
     assert result["exit_code"] == 0, "Couldn't create the reservation!"
 
-    # Try to run a job as atf
-    result = atf.run_command(
-        f"srun -N1 --reservation={res_name} true", user=atf.properties["test-user"]
-    )
+    # Try to run a job as test-user
+    result = atf.run_command(f"srun -N1 --reservation={res_name} true")
     assert result["exit_code"] != 0, "The job should have been denied for user!"
     assert (
         "Access denied" in result["stderr"]
