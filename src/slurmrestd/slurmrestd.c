@@ -767,7 +767,9 @@ int main(int argc, char **argv)
 	 * or give user warning TLS will not be supported
 	 */
 	if (!tls_g_init() && tls_available() &&
-	    tls_g_load_own_cert(NULL, 0, NULL, 0)) {
+	    !tls_g_load_own_cert(NULL, 0, NULL, 0)) {
+		flags |= CON_FLAG_TLS_FINGERPRINT;
+	} else {
 		debug("Disabling TLS support due to failure loading TLS certificate");
 
 		if ((rc = tls_g_fini()))
