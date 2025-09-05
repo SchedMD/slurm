@@ -750,20 +750,10 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 				 con->name);
 
 	if (!match) {
-		log_flag(CONMGR, "%s: [%s] TLS matched",
-			 __func__, con->name);
-
 		slurm_mutex_lock(&mgr.mutex);
 
 		/* Only servers can accept an incoming TLS handshake requests */
 		con_set_flag(con, FLAG_TLS_SERVER);
-
-		slurm_mutex_unlock(&mgr.mutex);
-
-		log_flag(CONMGR, "%s: [%s] TLS fingerprint match completed",
-					 __func__, con->name);
-
-		slurm_mutex_lock(&mgr.mutex);
 		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
@@ -771,6 +761,9 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		    !con_flag(con, FLAG_TLS_SERVER))
 			queue_on_connection(con);
 		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint matched",
+					 __func__, con->name);
 	} else if (match == EWOULDBLOCK) {
 		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS match",
 				 __func__, con->name);
