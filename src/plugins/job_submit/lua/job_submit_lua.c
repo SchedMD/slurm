@@ -1393,6 +1393,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 		      char **err_msg)
 {
 	int rc;
+	char *err_str = NULL;
+
 	slurm_mutex_lock (&lua_lock);
 
 	rc = slurm_lua_loadscript(&L, "job_submit/lua",
@@ -1419,9 +1421,18 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	lua_pushnumber(L, submit_uid);
 	slurm_lua_stack_dump(
 		"job_submit/lua", "job_submit, before lua_pcall", L);
-	if (lua_pcall(L, 3, 1, 0) != 0) {
+	if ((rc = slurm_lua_pcall(L, 3, 1, &err_str, __func__))) {
+		if (!err_str)
+			err_str = xstrdup_printf("Lua %s failed: %s",
+						 lua_script_path,
+						 slurm_strerror(rc));
+
 		error("%s/lua: %s: %s",
-		      __func__, lua_script_path, lua_tostring(L, -1));
+		      __func__, lua_script_path, err_str);
+
+		/* Replace user_msg as err_msg with Lua error */
+		xfree(user_msg);
+		SWAP(*err_msg, err_str);
 	} else {
 		if (lua_isnumber(L, -1)) {
 			rc = lua_tonumber(L, -1);
@@ -1440,6 +1451,8 @@ extern int job_submit(job_desc_msg_t *job_desc, uint32_t submit_uid,
 	}
 
 out:	slurm_mutex_unlock (&lua_lock);
+
+	xfree(err_str);
 	return rc;
 }
 
