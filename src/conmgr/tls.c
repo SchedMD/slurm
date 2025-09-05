@@ -713,15 +713,6 @@ extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
-		slurm_mutex_unlock(&mgr.mutex);
-
-		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprinting as TLS already activated",
-				 __func__, con->name);
-
-		return SLURM_SUCCESS;
-	}
-
 	xassert(!con->tls);
 	xassert(!con->tls_in);
 	xassert(!con->tls_out);
@@ -782,6 +773,14 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 
 		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprint match on closed connection",
 			 __func__, con->name);
+		return;
+	}
+
+	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprinting as TLS already activated",
+				 __func__, con->name);
 		return;
 	}
 
