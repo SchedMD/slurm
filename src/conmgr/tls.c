@@ -711,21 +711,6 @@ extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	slurm_mutex_lock(&mgr.mutex);
-
-	xassert(!con->tls);
-	xassert(!con->tls_in);
-	xassert(!con->tls_out);
-	xassert(!con_flag(con, FLAG_TLS_CLIENT));
-	xassert(!con_flag(con, FLAG_TLS_SERVER));
-	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
-	xassert(!con_flag(con, FLAG_READ_EOF));
-	xassert(!con_flag(con, FLAG_IS_LISTEN));
-	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(con_flag(con, FLAG_TLS_FINGERPRINT));
-
-	slurm_mutex_unlock(&mgr.mutex);
-
 	if (!(match = tls_is_handshake(get_buf_data(con->in),
 				       get_buf_offset(con->in), con->name))) {
 		log_flag(CONMGR, "%s: [%s] TLS matched",
@@ -765,9 +750,6 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
-
 	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ)) {
 		slurm_mutex_unlock(&mgr.mutex);
 
@@ -783,6 +765,21 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 				 __func__, con->name);
 		return;
 	}
+
+	/* fingerprinting must be done before reaching CONNECTED status */
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+	/* verify connection is not a listener which can't be fingerprinted */
+	xassert(!con_flag(con, FLAG_IS_LISTEN));
+
+	/* Verify TLS has not already started */
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	xassert(!con_flag(con, FLAG_TLS_CLIENT));
+	xassert(!con_flag(con, FLAG_TLS_SERVER));
+	xassert(con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	slurm_mutex_unlock(&mgr.mutex);
 
