@@ -90,4 +90,10 @@ extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
 			   const size_t bytes, void *arg);
 
+/*
+ * Work to check if connection matches TLS fingerprint or not
+ */
+extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args,
+				  void *arg);
+
 #endif /* _CONMGR_TLS_H */

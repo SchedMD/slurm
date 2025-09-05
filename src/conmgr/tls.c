@@ -765,6 +765,60 @@ extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
 	fatal_abort("should never happen");
 }
 
+extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	int match = EINVAL;
+	bool bail = false;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ))
+		bail = true;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if (bail) {
+		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprint match",
+			 __func__, con->name);
+		return;
+	}
+
+	match = tls_fingerprint(con, get_buf_data(con->in),
+				get_buf_offset(con->in), con->arg);
+
+	if (match == SLURM_SUCCESS) {
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint match completed",
+					 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+		if (con->events->on_connection &&
+		    !con_flag(con, FLAG_TLS_SERVER))
+			queue_on_connection(con);
+		slurm_mutex_unlock(&mgr.mutex);
+	} else if (match == EWOULDBLOCK) {
+		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS fingerprint",
+				 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		slurm_mutex_unlock(&mgr.mutex);
+	} else {
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint failed: %s",
+				 __func__, con->name, slurm_strerror(match));
+
+		close_con(false, con);
+	}
+}
+
 extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract)
 {
 	int rc;
