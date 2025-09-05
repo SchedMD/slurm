@@ -765,19 +765,12 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] TLS fingerprint matched",
 					 __func__, con->name);
 	} else if (match == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS match",
-				 __func__, con->name);
-
 		slurm_mutex_lock(&mgr.mutex);
 		con_set_flag(con, FLAG_ON_DATA_TRIED);
 		slurm_mutex_unlock(&mgr.mutex);
 
 		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS fingerprint",
-				 __func__, con->name);
-
-		slurm_mutex_lock(&mgr.mutex);
-		con_set_flag(con, FLAG_ON_DATA_TRIED);
-		slurm_mutex_unlock(&mgr.mutex);
+			 __func__, con->name);
 	} else if (match == ENOENT) {
 		log_flag(CONMGR, "%s: [%s] TLS not detected",
 			 __func__, con->name);
