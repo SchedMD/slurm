@@ -349,6 +349,12 @@ typedef enum {
 	 */
 	CON_FLAG_TLS_CLIENT = SLURM_BIT(19),
 	/*
+	 * Fingerprint incoming connection for TLS handshake and activate
+	 * CON_FLAG_TLS_SERVER when detected. CON_FLAG_TLS_FINGERPRINT is
+	 * deactivated once matched or match not possible.
+	 */
+	CON_FLAG_TLS_FINGERPRINT = SLURM_BIT(21),
+	/*
 	 * Receive and forward incoming messages to their intended destinations.
 	 */
 	CON_FLAG_RPC_RECV_FORWARD = SLURM_BIT(23),

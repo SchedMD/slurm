@@ -374,7 +374,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(con_flag(con, FLAG_TLS_SERVER) ||
 			con_flag(con, FLAG_TLS_CLIENT));
-		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(con_flag(con, FLAG_WORK_ACTIVE));
 		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
@@ -394,7 +394,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(con_flag(con, FLAG_TLS_SERVER) ||
 			con_flag(con, FLAG_TLS_CLIENT));
-		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(con_flag(con, FLAG_WORK_ACTIVE));
 		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 		xassert(con->tls == tls);
@@ -444,7 +444,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	if ((con->input_fd < 0) || (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
@@ -585,7 +585,7 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 	con->tls_out = list_create((ListDelF) free_buf);
 
 	/* Can't finger print existing TLS connections */
-	con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
+	con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 
 	if ((rc = tls_g_set_conn_callbacks(tls_conn, &callbacks))) {
 		log_flag(CONMGR, "%s: [%s] adopting TLS state failed: %s",
@@ -605,7 +605,7 @@ extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 	xassert(con->tls);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
 		con_flag(con, FLAG_TLS_SERVER));
@@ -621,7 +621,7 @@ extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
 		con_flag(con, FLAG_TLS_SERVER));
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	if (count)
 		write_output(con, count, con->tls_out);
@@ -731,7 +731,7 @@ extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
 	xassert(!con_flag(con, FLAG_READ_EOF));
 	xassert(!con_flag(con, FLAG_IS_LISTEN));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	slurm_mutex_unlock(&mgr.mutex);
 
