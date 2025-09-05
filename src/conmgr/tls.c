@@ -765,12 +765,6 @@ extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
 	fatal_abort("should never happen");
 }
 
-extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
-			      const size_t bytes, void *arg)
-{
-	return tls_fingerprint(con, buffer, bytes, arg);
-}
-
 extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract)
 {
 	int rc;
