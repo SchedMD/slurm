@@ -441,11 +441,23 @@ static int _get_qos_priority(lua_State *L)
 	return 1;
 }
 
+static int _from_json(lua_State *L)
+{
+	return 0;
+}
+
+static int _to_json(lua_State *L)
+{
+	return 0;
+}
+
 static const struct luaL_Reg slurm_functions[] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
 	{ "time_str2mins", _time_str2mins },
 	{ "get_qos_priority", _get_qos_priority },
+	{ "to_json", _to_json },
+	{ "from_json", _from_json },
 	{ NULL, NULL }
 };
 
