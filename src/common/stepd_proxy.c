@@ -160,7 +160,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 	uint16_t msg_type, protocol_version, proxy_type;
 	int rc = SLURM_SUCCESS;
 	slurm_addr_t req_address = { 0 };
-	slurm_msg_t req, resp;
+	slurm_msg_t req = SLURM_MSG_INITIALIZER, resp = SLURM_MSG_INITIALIZER;
 	return_code_msg_t *rc_msg;
 	char *req_tls_cert = NULL;
 
@@ -214,9 +214,6 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 		return SLURM_SUCCESS;
 	}
 	conmgr_fd_mark_consumed_in_buffer(con, length);
-
-	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
 
 	req.protocol_version = protocol_version;
 	req.msg_type = msg_type;
