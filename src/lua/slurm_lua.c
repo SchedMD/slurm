@@ -51,6 +51,8 @@
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
+#include "src/interfaces/serializer.h"
+
 /* Max table depth for data_t conversions */
 #define MAX_DEPTH 16
 #define DUMP_DATA_FOREACH_ARGS_MAGIC 0x02141444
@@ -1119,6 +1121,9 @@ extern int slurm_lua_init(void)
 		error("Failed to open liblua.so: %s", dlerror());
 		return SLURM_ERROR;
 	}
+
+	/* Load any serializer plugins for JSON/YAML conversions */
+	serializer_g_init();
 
 	return SLURM_SUCCESS;
 }
