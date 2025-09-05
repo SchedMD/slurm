@@ -2,7 +2,6 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
-import os
 import pytest
 import re
 
@@ -21,7 +20,7 @@ def srun_output():
 # Verify that a job executes as the appropriate user and group
 def test_uid(srun_output):
     """Verify that a job executes as the invoking user"""
-    test_uid = os.geteuid()
+    test_uid = atf.properties["test-user-uid"]
     job_uid = (
         int(match.group(1)) if (match := re.search(r"uid=(\d+)", srun_output)) else None
     )
@@ -30,7 +29,7 @@ def test_uid(srun_output):
 
 def test_gid(srun_output):
     """Verify that a job executes as the invoking group"""
-    test_gid = os.getegid()
+    test_gid = atf.properties["test-user-gid"]
     job_gid = (
         int(match.group(1)) if (match := re.search(r"gid=(\d+)", srun_output)) else None
     )

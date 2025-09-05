@@ -86,7 +86,6 @@ def test_reservation_qos():
     # Try to run a job as in the wrong QOS
     result = atf.run_command(
         f"srun -N1 --reservation={res_name} --account={acct1} --qos=normal true",
-        user=atf.properties["test-user"],
     )
     assert (
         result["exit_code"] != 0
@@ -98,7 +97,6 @@ def test_reservation_qos():
     # Try to run a job as in the correct QOS
     result = atf.run_command(
         f"srun -N1 --reservation={res_name} --account={acct1} --qos=normal,{qos1} true",
-        user=atf.properties["test-user"],
     )
     assert (
         result["exit_code"] == 0

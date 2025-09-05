@@ -80,7 +80,6 @@ def test_reservation_partition():
     # Try to run a job as in the wrong partition
     result = atf.run_command(
         f"srun -N1 --reservation={res_name} --partition={partitions[1]} true",
-        user=atf.properties["test-user"],
     )
     assert (
         result["exit_code"] != 0
@@ -92,7 +91,6 @@ def test_reservation_partition():
     # Try to run a job that can use either partition
     result = atf.run_command(
         f"srun -N1 --reservation={res_name} --partition={partitions[1]},{partitions[0]} true",
-        user=atf.properties["test-user"],
     )
     assert (
         result["exit_code"] == 0
