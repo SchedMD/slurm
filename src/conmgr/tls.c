@@ -759,6 +759,12 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
+		/*
+		 * _negotiate() will queue on_connection() callback once TLS
+		 * negotiation is complete since it was deferred for
+		 * fingerprinting
+		 */
+
 		slurm_mutex_unlock(&mgr.mutex);
 
 		log_flag(CONMGR, "%s: [%s] TLS fingerprint matched",
@@ -781,6 +787,10 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(!con_flag(con, FLAG_TLS_SERVER));
 		xassert(!con_flag(con, FLAG_TLS_CLIENT));
 
+		/*
+		 * Run on_connection() callback now since it was deferred for
+		 * fingerprinting
+		 */
 		if (con->events->on_connection)
 			queue_on_connection(con);
 
