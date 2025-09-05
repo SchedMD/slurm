@@ -777,8 +777,11 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
-		if (con->events->on_connection &&
-		    !con_flag(con, FLAG_TLS_SERVER))
+		/* connection should never be TLS wrapped at this point */
+		xassert(!con_flag(con, FLAG_TLS_SERVER));
+		xassert(!con_flag(con, FLAG_TLS_CLIENT));
+
+		if (con->events->on_connection)
 			queue_on_connection(con);
 
 		slurm_mutex_unlock(&mgr.mutex);
