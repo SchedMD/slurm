@@ -1,4 +1,4 @@
-.TH slurmd "8" "Slurm Daemon" "June 2025" "Slurm Daemon"
+.TH slurmd "8" "Slurm Daemon" "September 2025" "Slurm Daemon"
 
 .SH "NAME"
 slurmd \- The compute node daemon for Slurm.
@@ -198,8 +198,8 @@ Print version information and exit.
 .TP
 \fB\-Z\fR
 Start this node as a Dynamic Normal node. If no \fB\-\-conf\fR is specified,
-then the slurmd will register with the same hardware configuration as defined
-by the \fB\-C\fR option.
+then the slurmd will register with the same hardware configuration (except GRES)
+as defined by the \fB\-C\fR option.
 .IP
 
 .SH "ENVIRONMENT VARIABLES"
