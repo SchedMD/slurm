@@ -704,8 +704,8 @@ extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
-			      const size_t bytes, void *arg)
+extern int tls_fingerprint(conmgr_fd_t *con, const void *buffer,
+			   const size_t bytes, void *arg)
 {
 	int match = EINVAL;
 
@@ -763,6 +763,12 @@ extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
 	}
 
 	fatal_abort("should never happen");
+}
+
+extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
+			      const size_t bytes, void *arg)
+{
+	return tls_fingerprint(con, buffer, bytes, arg);
 }
 
 extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract)
