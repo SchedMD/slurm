@@ -769,7 +769,6 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	int match = EINVAL;
-	bool bail = false;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -778,16 +777,15 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
 	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 
-	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ))
-		bail = true;
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ)) {
+		slurm_mutex_unlock(&mgr.mutex);
 
-	slurm_mutex_unlock(&mgr.mutex);
-
-	if (bail) {
 		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprint match",
 			 __func__, con->name);
 		return;
 	}
+
+	slurm_mutex_unlock(&mgr.mutex);
 
 	match = tls_fingerprint(con, get_buf_data(con->in),
 				get_buf_offset(con->in), con->arg);
