@@ -575,7 +575,6 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
 		   !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
-		bit_clear_all(topo_eval->node_map);
 		error_code = SLURM_ERROR;
 	} else {
 		error_code = SLURM_SUCCESS;
@@ -1323,7 +1322,6 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
 		   !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
-		bit_clear_all(topo_eval->node_map);
 		error_code = SLURM_ERROR;
 	} else {
 		error_code = SLURM_SUCCESS;
@@ -1488,7 +1486,6 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
 		   !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
-		bit_clear_all(topo_eval->node_map);
 		error_code = SLURM_ERROR;
 	} else {
 		error_code = SLURM_SUCCESS;
@@ -1694,7 +1691,6 @@ more_nodes:
 
 	if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
 	    !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
-		bit_clear_all(topo_eval->node_map);
 		error_code = SLURM_ERROR;
 	} else {
 		error_code = SLURM_SUCCESS;
