@@ -550,6 +550,16 @@ static int _to_json(lua_State *L)
 	return _dump(L, MIME_TYPE_JSON);
 }
 
+static int _from_yaml(lua_State *L)
+{
+	return 0;
+}
+
+static int _to_yaml(lua_State *L)
+{
+	return 0;
+}
+
 static const struct luaL_Reg slurm_functions[] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
@@ -557,6 +567,8 @@ static const struct luaL_Reg slurm_functions[] = {
 	{ "get_qos_priority", _get_qos_priority },
 	{ "to_json", _to_json },
 	{ "from_json", _from_json },
+	{ "to_yaml", _to_yaml },
+	{ "from_yaml", _from_yaml },
 	{ NULL, NULL }
 };
 
