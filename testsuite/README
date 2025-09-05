@@ -963,6 +963,7 @@ test_123_4   Test reservation access
 test_123_5   Test reservation access based on QOS
 test_123_6   Test reservation access based on Partition
 test_123_7   Test reservation node replacement interactions
+test_123_8   Test reservation node replacement by features
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
