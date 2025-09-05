@@ -441,14 +441,113 @@ static int _get_qos_priority(lua_State *L)
 	return 1;
 }
 
+static int _parse(lua_State *L, const char *mime_type)
+{
+	int rc = EINVAL;
+	const char *str = NULL;
+	size_t str_len = 0;
+	data_t *data = NULL;
+
+	if (!(str = lua_tolstring(L, -1, &str_len))) {
+		rc = ESLURM_LUA_INVALID_CONVERSION_TYPE;
+		goto failed;
+	}
+
+	if ((rc = serialize_g_string_to_data(&data, str, str_len, mime_type)))
+		goto failed;
+
+	log_flag_hex(SCRIPT, str, str_len,
+		     "%s: Lua@0x%" PRIxPTR "[+%d]: parsed %s",
+		     __func__, (uintptr_t) L, lua_gettop(L), mime_type);
+
+	/* Pop string arg off stack after converting it */
+	lua_pop(L, -1);
+
+	if ((rc = slurm_lua_from_data(L, data)))
+		goto failed;
+
+	FREE_NULL_DATA(data);
+	return 1;
+failed:
+	error("%s: Lua@0x%" PRIxPTR "[+%d]: parsing string as %s failed: %s",
+	      __func__, (uintptr_t) L, lua_gettop(L), mime_type,
+	      slurm_strerror(rc));
+
+	if (str_len > 0)
+		log_flag_hex(SCRIPT, str, str_len, "%s: parsing %s failed",
+			     __func__, mime_type);
+
+	FREE_NULL_DATA(data);
+
+	(void) lua_pushfstring(L, "Conversion from %s failed: %s", mime_type,
+			       slurm_strerror(rc));
+	lua_error(L);
+	fatal_abort("lua_error() should never return");
+}
+
+static int _dump(lua_State *L, const char *mime_type)
+{
+	int rc = EINVAL;
+	char *str = NULL;
+	size_t str_len = 0;
+	data_t *data = data_new();
+
+	if ((rc = slurm_lua_to_data(L, data)))
+		goto failed;
+
+	/* Pop table arg off stack after converting it */
+	lua_pop(L, -1);
+
+	if ((rc = serialize_g_data_to_string(&str, &str_len, data, mime_type,
+					     SER_FLAGS_NONE)))
+		goto failed;
+
+	log_flag_hex(SCRIPT, str, str_len,
+		     "%s: Lua@0x%" PRIxPTR "[+%d]: dumped %pD->%s",
+		     __func__, (uintptr_t) L, lua_gettop(L), data, mime_type);
+
+	FREE_NULL_DATA(data);
+
+	(void) lua_pushstring(L, str);
+
+	xfree(str);
+	return 1;
+failed:
+	error("%s: Lua@0x%" PRIxPTR "[+%d]: dumping %pD as %s failed: %s",
+	      __func__, (uintptr_t) L, lua_gettop(L), data, mime_type,
+	      slurm_strerror(rc));
+
+	FREE_NULL_DATA(data);
+	xfree(str);
+
+	(void) lua_pushfstring(L, "Conversion to %s failed: %s", mime_type,
+			       slurm_strerror(rc));
+	lua_error(L);
+	fatal_abort("lua_error() should never return");
+}
+
 static int _from_json(lua_State *L)
 {
-	return 0;
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_JSON);
+		load_once = true;
+	}
+
+	return _parse(L, MIME_TYPE_JSON);
 }
 
 static int _to_json(lua_State *L)
 {
-	return 0;
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_JSON);
+		load_once = true;
+	}
+
+	return _dump(L, MIME_TYPE_JSON);
 }
 
 static const struct luaL_Reg slurm_functions[] = {
