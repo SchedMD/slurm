@@ -114,20 +114,26 @@ static const http_status_code_txt_t http_status_codes[] = {
 };
 #undef T
 
+#define T(method, upper_case, lower_case) \
+	[method] = { method, upper_case, lower_case }
 static const struct {
 	http_request_method_t method;
 	const char *uc_text;
 	const char *lc_text;
 } method_strings[] = {
-	{ HTTP_REQUEST_GET, "GET", "get" },
-	{ HTTP_REQUEST_POST, "POST", "post" },
-	{ HTTP_REQUEST_PUT, "PUT", "put" },
-	{ HTTP_REQUEST_DELETE, "DELETE", "delete" },
-	{ HTTP_REQUEST_OPTIONS, "OPTIONS", "options" },
-	{ HTTP_REQUEST_HEAD, "HEAD", "head" },
-	{ HTTP_REQUEST_PATCH, "PATCH", "patch" },
-	{ HTTP_REQUEST_TRACE, "TRACE", "trace" },
+	T(HTTP_REQUEST_INVALID, NULL, NULL),
+	T(HTTP_REQUEST_GET, "GET", "get"),
+	T(HTTP_REQUEST_POST, "POST", "post"),
+	T(HTTP_REQUEST_PUT, "PUT", "put"),
+	T(HTTP_REQUEST_DELETE, "DELETE", "delete"),
+	T(HTTP_REQUEST_OPTIONS, "OPTIONS", "options"),
+	T(HTTP_REQUEST_HEAD, "HEAD", "head"),
+	T(HTTP_REQUEST_PATCH, "PATCH", "patch"),
+	T(HTTP_REQUEST_TRACE, "TRACE", "trace"),
+	T(HTTP_REQUEST_INVALID_MAX, NULL, NULL),
 };
+
+#undef T
 
 #define T(tscheme, str) \
 	{ \
@@ -365,20 +371,20 @@ extern const char *get_http_status_code_string(http_status_code_t code)
 
 extern const char *get_http_method_string(http_request_method_t method)
 {
-	for (int i = 0; i < ARRAY_SIZE(method_strings); i++)
-		if (method_strings[i].method == method)
-			return method_strings[i].uc_text;
+	if ((method <= HTTP_REQUEST_INVALID) ||
+	    (method >= HTTP_REQUEST_INVALID_MAX))
+		return NULL;
 
-	return "INVALID";
+	return method_strings[method].uc_text;
 }
 
 extern const char *get_http_method_string_lc(http_request_method_t method)
 {
-	for (int i = 0; i < ARRAY_SIZE(method_strings); i++)
-		if (method_strings[i].method == method)
-			return method_strings[i].lc_text;
+	if ((method <= HTTP_REQUEST_INVALID) ||
+	    (method >= HTTP_REQUEST_INVALID_MAX))
+		return NULL;
 
-	return "INVALID";
+	return method_strings[method].lc_text;
 }
 
 extern http_request_method_t get_http_method(const char *str)
@@ -387,7 +393,8 @@ extern http_request_method_t get_http_method(const char *str)
 		return HTTP_REQUEST_INVALID;
 
 	for (int i = 0; i < ARRAY_SIZE(method_strings); i++)
-		if (!xstrcasecmp(method_strings[i].lc_text, str))
+		if (method_strings[i].method &&
+		    !xstrcasecmp(method_strings[i].lc_text, str))
 			return method_strings[i].method;
 
 	return HTTP_REQUEST_INVALID;
