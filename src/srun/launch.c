@@ -1394,7 +1394,7 @@ extern int launch_g_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.argc = opt_local->argc;
 	launch_params.argv = opt_local->argv;
 	launch_params.multi_prog = srun_opt->multi_prog ? true : false;
-	launch_params.container = xstrdup(opt_local->container);
+	launch_params.container = opt_local->container;
 	launch_params.cwd = opt_local->chdir;
 	launch_params.slurmd_debug = srun_opt->slurmd_debug;
 	launch_params.buffered_stdio = !srun_opt->unbuffered;
