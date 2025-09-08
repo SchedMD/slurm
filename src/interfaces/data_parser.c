@@ -623,7 +623,7 @@ extern openapi_resp_meta_t *data_parser_cli_meta(int argc, char **argv,
 		.plugin = {
 			.data_parser = NULL,
 			.accounting_storage =
-				slurm_conf.accounting_storage_type,
+				xstrdup(slurm_conf.accounting_storage_type),
 		},
 		.command = argvnt,
 		.client = {
