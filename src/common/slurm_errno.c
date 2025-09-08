@@ -791,6 +791,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid or unsupported HTTP Keep-Alive header" },
 	{ ERRTAB_ENTRY(ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE),
 	  "HTTP Content-Length header too large to process" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_POST_MISSING_CONTENT_LENGTH),
+	  "HTTP Content-Length header required for POST method requests" },
 
 	/* TLS errors */
 	{ ERRTAB_ENTRY(ESLURM_TLS_REQUIRED),
