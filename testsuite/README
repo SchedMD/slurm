@@ -45,6 +45,11 @@ SlurmBuildDir:   Slurm Build Directory (where you ran configure and make from)
 SlurmInstallDir: Slurm Installation Directory (value of --prefix configure option)
 SlurmConfigDir:  Slurm Configuration Directory (compiled-in location of slurm.conf)
 
+If you are running in local-config, if the user running the test is SlurmUser or
+AdminLevel, you better specify an unprivileged user to run the test commands as:
+
+SlurmTestUser: Linux user without AdminLevel in the local-config Slurm.
+
 Tips:
 
 * the include and exclude filters use (perl 5) regular expressions

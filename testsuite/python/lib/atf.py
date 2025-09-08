@@ -182,6 +182,10 @@ def run_command(
     if env_vars is not None:
         command = env_vars.strip() + " " + command
 
+    # If user is not specified but test-user is set, then set user to test-user
+    if not user and properties["test-user-set"]:
+        user = properties["test-user"]
+
     start_time = time.time()
     invocation_message = "Running command"
     if user is not None:
@@ -189,7 +193,7 @@ def run_command(
     invocation_message += f": {command}"
     logging.log(log_command_level, invocation_message)
     try:
-        if user is not None and user != properties["test-user"]:
+        if user is not None:
             if not properties["sudo-rights"]:
                 pytest.skip(
                     "This test requires the test user to have unprompted sudo rights",
@@ -1278,7 +1282,9 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
             slurm_prefix = f"{properties['slurm-sbin-dir']}/.."
 
         version_str = (
-            run_command_output(f"sudo {slurm_prefix}/{component} -V", quiet=True)
+            run_command_output(
+                f"{slurm_prefix}/{component} -V", quiet=True, user="root"
+            )
             .strip()
             .replace("slurm ", "")
         )
@@ -2481,7 +2487,7 @@ def cancel_all_jobs(
         False
     """
 
-    user_name = get_user_name()
+    user_name = properties["test-user"]
 
     run_command(f"scancel -u {user_name}", fatal=fatal, quiet=quiet)
 
@@ -4125,7 +4131,9 @@ def require_nodes(requested_node_count, requirements_list=[]):
                         augmentation_dict[parameter_name] = parameter_value
             elif parameter_name == "Features":
                 required_features = set(parameter_value.split(","))
-                node_features = set(lower_node_dict.get("features", "").split(","))
+                features = lower_node_dict.get("features", [])
+                features = features[0] if features else ""
+                node_features = set(features.split(","))
                 if not required_features.issubset(node_features):
                     if node_qualifies:
                         node_qualifies = False
@@ -4224,7 +4232,16 @@ def make_bash_script(script_name, script_contents):
     with open(script_name, "w") as f:
         f.write("#!/bin/bash\n")
         f.write(script_contents)
-    os.chmod(script_name, 0o0700)
+
+    run_command(f"chmod 777 {script_name}", user="root", fatal=True, quiet=True)
+
+    if properties["test-user-set"]:
+        run_command(
+            f"chown {properties['test-user']} {script_name}",
+            user="root",
+            fatal=True,
+            quiet=True,
+        )
 
 
 def wait_for_file(file_name, **repeat_until_kwargs):
@@ -4883,7 +4900,7 @@ if os.access(slurm_config_file, os.R_OK):
             if match := re.search(r"^\s*(?i:SlurmUser)\s*=\s*(.*)$", line):
                 properties["slurm-user"] = match.group(1)
 else:
-    # slurm.conf is not readable as test-user. We will try reading it as root
+    # slurm.conf is not readable, we will try reading it as root
     results = run_command(
         f"grep -i SlurmUser {slurm_config_file}", user="root", quiet=True
     )
@@ -4894,7 +4911,16 @@ else:
             properties["slurm-user"] = match.group(1)
 
 properties["submitted-jobs"] = []
-properties["test-user"] = pwd.getpwuid(os.getuid()).pw_name
+if "slurmtestuser" in testsuite_config:
+    properties["test-user"] = testsuite_config["slurmtestuser"]
+    properties["test-user-set"] = True
+else:
+    properties["test-user"] = pwd.getpwuid(os.getuid()).pw_name
+    properties["test-user-set"] = False
+
+properties["test-user-uid"] = pwd.getpwnam(properties["test-user"]).pw_uid
+properties["test-user-gid"] = pwd.getpwnam(properties["test-user"]).pw_gid
+
 properties["auto-config"] = False
 properties["allow-slurmdbd-modify"] = False
 properties["slurmrestd-started"] = False
