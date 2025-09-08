@@ -108,12 +108,12 @@ static const http_status_code_txt_t http_status_codes[] = {
 	{ HTTP_STATUS_CODE_SRVERR_HTTP_VERSION_NOT_SUPPORTED,
 	  "HTTP VERSION NOT SUPPORTED" },
 	{ HTTP_STATUS_CODE_SRVERR_VARIANT_ALSO_NEGOTIATES,
-		"Variant Also Negotiates" },
+	  "Variant Also Negotiates" },
 	{ HTTP_STATUS_CODE_SRVERR_INSUFFICENT_STORAGE, "Insufficient Storage" },
 	{ HTTP_STATUS_CODE_SRVERR_LOOP_DETECTED, "Loop Detected" },
 	{ HTTP_STATUS_CODE_SRVERR_NOT_EXTENDED, "Not Extended" },
 	{ HTTP_STATUS_CODE_SRVERR_NETWORK_AUTH_REQ,
-		"Network Authentication Required" },
+	  "Network Authentication Required" },
 	{ HTTP_STATUS_CODE_DEFAULT, "default" },
 };
 
