@@ -836,6 +836,7 @@ extern int data_parser_p_populate_parameters(args_t *args,
 		.references = (*references_ptr)->references,
 	};
 	const parser_t *param_parser = NULL, *query_parser = NULL;
+	int rc = SLURM_SUCCESS;
 
 	xassert(refs && refs->magic == MAGIC_REFS_PTR);
 	xassert(args->magic == MAGIC_ARGS);
@@ -853,11 +854,15 @@ extern int data_parser_p_populate_parameters(args_t *args,
 
 	if (parameter_type &&
 	    !(param_parser =
-		      unalias_parser(find_parser_by_type(parameter_type))))
-		return ESLURM_DATA_INVALID_PARSER;
+	      unalias_parser(find_parser_by_type(parameter_type)))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		goto endit;
+	}
 	if (query_type &&
-	    !(query_parser = unalias_parser(find_parser_by_type(query_type))))
-		return ESLURM_DATA_INVALID_PARSER;
+	    !(query_parser = unalias_parser(find_parser_by_type(query_type)))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		goto endit;
+	}
 
 	if (param_parser) {
 		if (param_parser->model != PARSER_MODEL_ARRAY)
@@ -890,9 +895,10 @@ extern int data_parser_p_populate_parameters(args_t *args,
 					  &sargs);
 	}
 
+endit:
 	FREE_NULL_DATA(sargs.path_params);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern void data_parser_p_release_references(args_t *args,
