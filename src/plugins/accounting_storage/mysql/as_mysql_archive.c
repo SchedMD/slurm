@@ -69,10 +69,6 @@
 #define SLURMDBD_2_6_VERSION   12	/* slurm version 2.6 */
 #define SLURMDBD_2_5_VERSION   11	/* slurm version 2.5 */
 
-#define MAX_ARCHIVE_AGE (60 * 60 * 24 * 60) /* If archive data is older than
-					       this then archive by month to
-					       handle large datasets. */
-
 #ifndef RECORDS_PER_PASS
 #define RECORDS_PER_PASS 1000	/* Records per single sql statement. */
 #endif /* RECORDS_PER_PASS */
@@ -5428,10 +5424,9 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 	uint32_t purge_attr  = 0;
 	uint16_t type, period;
 	time_t   last_submit = time(NULL);
-	time_t   curr_end    = 0, tmp_end = 0, record_start = 0;
+	time_t curr_end = 0, record_start = 0;
 	char    *purge_query = NULL, *sql_table = NULL,
 		*col_name = NULL;
-	uint32_t tmp_archive_period;
 
 	switch (purge_type) {
 	case PURGE_EVENT:
@@ -5600,22 +5595,12 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		else if (rc == SLURM_ERROR)
 			goto end_it;
 
-		tmp_archive_period = purge_attr;
-
-		if (curr_end - record_start > MAX_ARCHIVE_AGE) {
-			time_t begin_next = _get_begin_next_month(record_start);
-			/* old stuff, catch up by archiving by month */
-			tmp_archive_period = SLURMDB_PURGE_MONTHS;
-			tmp_end = MIN(curr_end, begin_next);
-		} else
-			tmp_end = curr_end;
-
 		log_flag(DB_ARCHIVE, "Purging %s_%s before %ld",
-			 cluster_name, sql_table, tmp_end);
+			 cluster_name, sql_table, curr_end);
 
 		/* Mark rows to be purged and archived (if requested) */
 		rc = _purge_mark(purge_type, mysql_conn,
-				 tmp_end, cluster_name,
+				 curr_end, cluster_name,
 				 col_name, sql_table);
 
 		if (rc != SLURM_SUCCESS)
@@ -5624,13 +5609,13 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		if (purge_type == PURGE_JOB) {
 			/* Purge associated data from hash tables */
 			rc = _purge_mark(PURGE_JOB_ENV, mysql_conn,
-					 tmp_end, cluster_name,
+					 curr_end, cluster_name,
 					 col_name, job_env_table);
 			if (rc != SLURM_SUCCESS)
 				goto end_it;
 
 			rc = _purge_mark(PURGE_JOB_SCRIPT, mysql_conn,
-					 tmp_end, cluster_name,
+					 curr_end, cluster_name,
 					 col_name, job_script_table);
 			if (rc != SLURM_SUCCESS)
 				goto end_it;
@@ -5645,19 +5630,19 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 				/* Archive associated data from hash tables */
 				rc = _archive_table(PURGE_JOB_ENV,
 						    mysql_conn, cluster_name,
-						    col_name, &start, tmp_end,
+						    col_name, &start, curr_end,
 						    arch_cond->archive_dir,
-						    tmp_archive_period,
-						    job_env_table, usage_info);
+						    purge_attr, job_env_table,
+						    usage_info);
 				if (rc == SLURM_ERROR)
 					goto end_it;
 				cnt += rc;
 
 				rc = _archive_table(PURGE_JOB_SCRIPT,
 						    mysql_conn, cluster_name,
-						    col_name, &start, tmp_end,
+						    col_name, &start, curr_end,
 						    arch_cond->archive_dir,
-						    tmp_archive_period,
+						    purge_attr,
 						    job_script_table,
 						    usage_info);
 				if (rc == SLURM_ERROR)
@@ -5667,8 +5652,8 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 			rc = _archive_table(purge_type, mysql_conn,
 					    cluster_name, col_name, &start,
-					    tmp_end, arch_cond->archive_dir,
-					    tmp_archive_period, sql_table,
+					    curr_end, arch_cond->archive_dir,
+					    purge_attr, sql_table,
 					    usage_info);
 			if (rc == SLURM_ERROR)
 				goto end_it;
@@ -5677,7 +5662,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 			if (!cnt) { /* no records archived */
 				error("%s: No records archived for %s before %ld but we found some records",
-				      __func__, sql_table, tmp_end);
+				      __func__, sql_table, curr_end);
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
