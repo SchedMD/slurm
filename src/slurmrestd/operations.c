@@ -223,15 +223,13 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
 }
 
 static int _operations_router_reject(on_http_request_args_t *args,
-				     const char *err,
-				     http_status_code_t err_code,
+				     const char *err, slurm_err_t error_code,
 				     const char *body_encoding)
 {
 	send_http_response_args_t send_args = {
 		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
-		.status_code = err_code,
 		.body = err,
 		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
 		.body_length = (err ? strlen(err) : 0),
@@ -243,6 +241,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 	};
 
 	send_args.con = conmgr_fd_get_ref(args->con);
+	send_args.status_code = http_status_from_error(error_code);
 
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
@@ -254,7 +253,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 
 	FREE_NULL_LIST(send_args.headers);
 
-	return http_status_to_error(err_code);
+	return error_code;
 }
 
 static int _resolve_path(on_http_request_args_t *args, int *path_tag,
@@ -262,9 +261,10 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 {
 	data_t *path = parse_url_path(args->path, true, false);
 	if (!path)
-		return _operations_router_reject(
-			args, "Unable to parse URL path.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
+		return _operations_router_reject(args,
+						 "Unable to parse URL path.",
+						 ESLURM_REST_FAIL_PARSING,
+						 NULL);
 
 	/* attempt to identify path leaf types */
 	(void) data_convert_tree(path, DATA_TYPE_NONE);
@@ -277,12 +277,12 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 		return _operations_router_reject(
 			args,
 			"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.",
-			HTTP_STATUS_CODE_ERROR_NOT_FOUND, NULL);
+			ESLURM_URL_INVALID_PATH, NULL);
 	else if (*path_tag == -2)
 		return _operations_router_reject(
 			args,
 			"Requested HTTP query method is not support at URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.",
-			HTTP_STATUS_CODE_ERROR_METHOD_NOT_ALLOWED, NULL);
+			ESLURM_HTTP_INVALID_METHOD, NULL);
 	else
 		return SLURM_SUCCESS;
 }
@@ -305,10 +305,13 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 			query, args->query,
 			(args->query ? strlen(args->query) : 0), read_mime);
 
-	if (rc || !*query)
-		return _operations_router_reject(
-			args, "Unable to parse query.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
+	if (rc)
+		return _operations_router_reject(args, "Unable to parse query.",
+						 rc, NULL);
+	else if (!*query)
+		return _operations_router_reject(args, "Unable to parse query.",
+						 ESLURM_REST_INVALID_QUERY,
+						 NULL);
 	else
 		return SLURM_SUCCESS;
 
@@ -443,7 +446,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 	if (!*write_mime)
 		return _operations_router_reject(
 			args, "Accept content type is unknown",
-			HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE, NULL);
+			ESLURM_DATA_UNKNOWN_MIME_TYPE, NULL);
 
 	/*
 	 * RFC7230 3.3: Allows for any request to have a BODY but doesn't require
@@ -463,7 +466,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 		return _operations_router_reject(
 			args,
 			"Unexpected HTTP body provided when URL Query provided",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
+			ESLURM_HTTP_UNEXPECTED_BODY, NULL);
 
 	if (xstrcasecmp(*read_mime, MIME_TYPE_URL_ENCODED) &&
 	    (args->body_length == 0)) {
@@ -548,38 +551,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		e = send_args.status_code;
 		rc = send_http_response(&send_args);
 	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
-		e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
-
-		if (rc == ESLURM_REST_INVALID_QUERY)
-			e = HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT;
-		else if (rc == ESLURM_REST_FAIL_PARSING)
-			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
-		else if (rc == ESLURM_REST_INVALID_JOBS_DESC)
-			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
-		else if (rc == ESLURM_DATA_UNKNOWN_MIME_TYPE)
-			e = HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE;
-		else if ((rc == ESLURM_INVALID_JOB_ID) ||
-			 (rc == ESLURM_REST_UNKNOWN_URL))
-			e = HTTP_STATUS_CODE_ERROR_NOT_FOUND;
-		else if ((rc == SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT) ||
-			 (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR) ||
-			 (rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
-			 (rc == SLURM_COMMUNICATIONS_RECEIVE_ERROR) ||
-			 (rc == SLURM_COMMUNICATIONS_SHUTDOWN_ERROR) ||
-			 (rc == SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR) ||
-			 (rc == SLURMCTLD_COMMUNICATIONS_SEND_ERROR) ||
-			 (rc == SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR) ||
-			 (rc == SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR) ||
-			 (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) ||
-			 (rc == ESLURM_DB_CONNECTION) ||
-			 (rc == ESLURM_PROTOCOL_INCOMPLETE_PACKET))
-			e = HTTP_STATUS_CODE_SRVERR_BAD_GATEWAY;
-		else if (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT)
-			e = HTTP_STATUS_CODE_SRVERR_GATEWAY_TIMEOUT;
-		else if (rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR)
-			e = HTTP_STATUS_CODE_SRVERR_NETWORK_AUTH_REQ;
-
-		rc = _operations_router_reject(args, body, e, write_mime);
+		rc = _operations_router_reject(args, body, rc, write_mime);
 	} else {
 		send_http_response_args_t send_args = {
 			.http_major = args->http_major,
@@ -630,8 +602,7 @@ extern int operations_router(on_http_request_args_t *args)
 	if ((rc = rest_authenticate_http_request(args))) {
 		error("%s: [%s] authentication failed: %s",
 		      __func__, args->name, slurm_strerror(rc));
-		_operations_router_reject(args, "Authentication failure",
-					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED,
+		_operations_router_reject(args, "Authentication failure", rc,
 					  NULL);
 		return rc;
 	}
