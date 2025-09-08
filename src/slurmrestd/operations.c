@@ -40,6 +40,7 @@
 #include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
 
+#include "src/common/http.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/xassert.h"
@@ -501,7 +502,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	int rc;
 	data_t *resp = data_new();
 	char *body = NULL;
-	http_status_code_t e;
+	http_status_code_t e = HTTP_STATUS_CODE_INVALID;
 	void *auth = NULL;
 
 	xassert(op_path);
@@ -575,8 +576,9 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 
 	debug3("%s: [%s] END: calling handler: (0x%"PRIXPTR") callback_tag %d for path: %s rc[%d]=%s status[%d]=%s",
 	       __func__, args->name, (uintptr_t) op_path->callback,
-	       callback_tag, args->path, rc, slurm_strerror(rc), e,
-	       get_http_status_code_string(e));
+	       callback_tag, args->path, rc, slurm_strerror(rc),
+	       ((e == HTTP_STATUS_CODE_INVALID) ? http_status_from_error(rc) :
+		e), get_http_status_code_string(e));
 
 	xfree(body);
 	FREE_NULL_DATA(resp);
