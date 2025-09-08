@@ -110,8 +110,7 @@ typedef struct http_context_s {
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
 
-static int _send_reject(http_context_t *context, http_status_code_t status_code,
-			slurm_err_t error_number);
+static int _send_reject(http_context_t *context, slurm_err_t error_number);
 
 static int _valid_http_version(uint16_t major, uint16_t minor)
 {
@@ -192,14 +191,11 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 		error("%s: [%s] Rejecting request with empty URL path",
 		      __func__, conmgr_con_get_name(context->ref));
 
-		return _send_reject(context, HTTP_STATUS_CODE_ERROR_NOT_FOUND,
-				    ESLURM_URL_INVALID_PATH);
+		return _send_reject(context, ESLURM_URL_INVALID_PATH);
 	}
 
 	if (req->method == HTTP_REQUEST_INVALID)
-		return _send_reject(context,
-				    HTTP_STATUS_CODE_ERROR_METHOD_NOT_ALLOWED,
-				    ESLURM_HTTP_INVALID_METHOD);
+		return _send_reject(context, ESLURM_HTTP_INVALID_METHOD);
 
 	if ((rc = _valid_http_version(req->http_version.major,
 				      req->http_version.minor))) {
@@ -268,9 +264,8 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 			error("%s: [%s] invalid Keep-Alive value %s",
 			      __func__, conmgr_con_get_name(context->ref),
 			      header->value);
-			return _send_reject(
-				context, HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
-				ESLURM_HTTP_UNSUPPORTED_KEEP_ALIVE);
+			return _send_reject(context,
+					    ESLURM_HTTP_UNSUPPORTED_KEEP_ALIVE);
 		}
 	} else if (!xstrcasecmp(header->name, "Content-Type")) {
 		xfree(request->content_type);
@@ -284,7 +279,6 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 
 		if ((sscanf(header->value, "%zd", &cl) != 1) || (cl < 0))
 			return _send_reject(context,
-					    HTTP_STATUS_CODE_ERROR_BAD_REQUEST,
 					    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 		request->expected_body_length = cl;
 	} else if (!xstrcasecmp(header->name, "Accept")) {
@@ -294,25 +288,19 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 		if (!xstrcasecmp(header->value, "100-continue"))
 			request->expect = 100;
 		else
-			return _send_reject(
-				context,
-				HTTP_STATUS_CODE_ERROR_EXPECTATION_FAILED,
-				ESLURM_HTTP_UNSUPPORTED_EXPECT);
+			return _send_reject(context,
+					    ESLURM_HTTP_UNSUPPORTED_EXPECT);
 	} else if (!xstrcasecmp(header->name, "Transfer-Encoding")) {
 		/* Transfer encoding is not allowed */
 		return _send_reject(context,
-				    HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
 				    ESLURM_HTTP_INVALID_TRANSFER_ENCODING);
 	} else if (!xstrcasecmp(header->name, "Content-Encoding")) {
 		/* Content encoding is not allowed */
 		return _send_reject(context,
-				    HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
 				    ESLURM_HTTP_INVALID_CONTENT_ENCODING);
 	} else if (!xstrcasecmp(header->name, "Upgrade")) {
 		/* Upgrades are not allowed */
-		return _send_reject(context,
-				    HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
-				    ESLURM_HTTP_UNSUPPORTED_UPGRADE);
+		return _send_reject(context, ESLURM_HTTP_UNSUPPORTED_UPGRADE);
 	}
 
 	return SLURM_SUCCESS;
@@ -349,8 +337,7 @@ static int _on_headers_complete(void *arg)
 	if ((request->method == HTTP_REQUEST_POST) &&
 	    (request->expected_body_length <= 0))
 		return _send_reject(context,
-				    HTTP_STATUS_CODE_ERROR_LENGTH_REQUIRED,
-				    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
+				    ESLURM_HTTP_POST_MISSING_CONTENT_LENGTH);
 
 	if (request->expect) {
 		int rc = EINVAL;
@@ -430,8 +417,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 
 no_mem:
 	/* total body was way too large to store */
-	return _send_reject(context, HTTP_STATUS_CODE_ERROR_ENTITY_TOO_LARGE,
-			    ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE);
+	return _send_reject(context, ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE);
 }
 
 /*
@@ -583,14 +569,12 @@ extern int send_http_response(const send_http_response_args_t *args)
 	return rc;
 }
 
-static int _send_reject(http_context_t *context, http_status_code_t status_code,
-			slurm_err_t error_number)
+static int _send_reject(http_context_t *context, slurm_err_t error_number)
 {
 	request_t *request = &context->request;
 	send_http_response_args_t args = {
 		.http_major = request->http_version.major,
 		.http_minor = request->http_version.minor,
-		.status_code = status_code,
 		.body_length = 0,
 		.headers = list_create(_free_http_header),
 	};
@@ -598,6 +582,7 @@ static int _send_reject(http_context_t *context, http_status_code_t status_code,
 	xassert(context->magic == MAGIC);
 
 	args.con = conmgr_fd_get_ref(context->ref);
+	args.status_code = http_status_from_error(error_number);
 
 	/* If we don't have a requested client version, default to 0.9 */
 	if ((args.http_major == 0) && (args.http_minor == 0))
@@ -670,7 +655,7 @@ static int _on_content_complete(void *arg)
 		error("%s: [%s] Content-Length %zu and received body length %zu mismatch",
 		      __func__, conmgr_con_get_name(context->ref),
 		      request->expected_body_length, request->body_length);
-		return _send_reject(context, HTTP_STATUS_CODE_ERROR_BAD_REQUEST,
+		return _send_reject(context,
 				    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
 
@@ -747,8 +732,7 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 			 slurm_strerror(rc));
 
 	if (rc) {
-		rc = _send_reject(context, HTTP_STATUS_CODE_SRVERR_INTERNAL,
-				  rc);
+		rc = _send_reject(context, rc);
 	} else if (context->ref && (bytes_parsed > 0) &&
 		   (rc = conmgr_con_mark_consumed_input_buffer(context->ref,
 							       bytes_parsed))) {
