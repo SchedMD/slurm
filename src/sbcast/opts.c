@@ -283,6 +283,7 @@ extern void parse_command_line(int argc, char **argv)
 				params.tree_width = atoi(optarg);
 			break;
 		case (int)'j':
+			slurm_destroy_selected_step(params.selected_step);
 			params.selected_step = slurm_parse_step_str(optarg);
 			break;
 		case (int)'p':
