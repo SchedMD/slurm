@@ -126,6 +126,15 @@ extern http_status_code_t get_http_status_code(const char *str);
 extern http_status_code_t http_status_from_error(slurm_err_t error);
 
 /*
+ * Convert HTTP status code to Slurm error
+ * IN code - HTTP status code to convert to Slurm error
+ * WARNING: In the event of more than 1 Slurm error being mapped to the same
+ *	HTTP status code, then the the first error (found) will be returned.
+ * RET error or SLURM_ERROR (catch all)
+ */
+extern slurm_err_t http_status_to_error(http_status_code_t code);
+
+/*
  * Supported HTTP request Methods.
  * All others will be rejected.
  */

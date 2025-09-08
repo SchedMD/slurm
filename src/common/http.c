@@ -404,6 +404,15 @@ extern http_status_code_t http_status_from_error(slurm_err_t error)
 	return HTTP_STATUS_CODE_SRVERR_INTERNAL;
 }
 
+extern slurm_err_t http_status_to_error(http_status_code_t code)
+{
+	for (int i = 0; i < ARRAY_SIZE(http_status_errors); i++)
+		if (code == http_status_errors[i].code)
+			return http_status_errors[i].error;
+
+	return SLURM_ERROR;
+}
+
 extern const char *get_http_status_code_string(http_status_code_t code)
 {
 	for (int i = 0; i < ARRAY_SIZE(http_status_codes); i++)
