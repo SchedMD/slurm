@@ -431,7 +431,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 no_mem:
 	/* total body was way too large to store */
 	return _send_reject(context, HTTP_STATUS_CODE_ERROR_ENTITY_TOO_LARGE,
-			    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
+			    ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE);
 }
 
 /*
