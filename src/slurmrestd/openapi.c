@@ -530,7 +530,7 @@ static void _check_openapi_path_binding(const openapi_path_binding_t *op_path)
 		xassert(method->response.description &&
 			method->response.description[0]);
 		xassert(method->method > HTTP_REQUEST_INVALID);
-		xassert(method->method < HTTP_REQUEST_MAX);
+		xassert(method->method < HTTP_REQUEST_INVALID_MAX);
 		xassert(method->tags && method->tags[0]);
 		xassert(method->response.type > DATA_PARSER_TYPE_INVALID);
 		xassert(method->response.type < DATA_PARSER_TYPE_MAX);

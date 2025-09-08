@@ -122,7 +122,8 @@ extern http_status_code_t get_http_status_code(const char *str);
  * All others will be rejected.
  */
 typedef enum {
-	HTTP_REQUEST_INVALID = 0,	/* should never happen */
+	/* place holder for invalid method */
+	HTTP_REQUEST_INVALID = 0,
 	HTTP_REQUEST_GET,
 	HTTP_REQUEST_POST,
 	HTTP_REQUEST_PUT,
@@ -131,7 +132,8 @@ typedef enum {
 	HTTP_REQUEST_HEAD,
 	HTTP_REQUEST_PATCH,
 	HTTP_REQUEST_TRACE,
-	HTTP_REQUEST_MAX		/* keep at end */
+	/* place holder for invalid max method */
+	HTTP_REQUEST_INVALID_MAX,
 } http_request_method_t;
 
 /*
