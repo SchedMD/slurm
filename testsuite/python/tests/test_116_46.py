@@ -2,7 +2,6 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
-import os
 import pytest
 import re
 
@@ -31,7 +30,6 @@ fi
 sleep 20
 """,
     )
-    os.chmod(file_in, 0o0755)
     run_error = atf.run_command_error(
         f"srun -n{task_count} -N{node_count} -O -W2 {file_in}"
     )
