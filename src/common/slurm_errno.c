@@ -690,7 +690,7 @@ slurm_errtab_t slurm_errtab[] = {
 	{ ERRTAB_ENTRY(ESLURM_REST_MISSING_GID),
 	  "Missing UNIX group in the system"},
 	{ ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL),
-	  "Unknown URL endpoint requested in query"},
+	  "Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints."},
 	{ ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL_METHOD),
 	  "Requested HTTP query method is not supported at URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints."},
 

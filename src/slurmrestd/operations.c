@@ -277,10 +277,8 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 	FREE_NULL_DATA(path);
 
 	if (*path_tag == -1)
-		return _operations_router_reject(
-			args,
-			"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.",
-			ESLURM_URL_INVALID_PATH, NULL);
+		return _operations_router_reject(args, NULL,
+						 ESLURM_URL_INVALID_PATH, NULL);
 	else if (*path_tag == -2)
 		return _operations_router_reject(args, NULL,
 						 ESLURM_REST_UNKNOWN_URL_METHOD,
