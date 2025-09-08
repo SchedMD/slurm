@@ -468,10 +468,9 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 	 * ignored, reject request when both query and body are provided.
 	 */
 	if ((args->body_length > 0) && args->query && args->query[0])
-		return _operations_router_reject(
-			args,
-			"Unexpected HTTP body provided when URL Query provided",
-			ESLURM_HTTP_UNEXPECTED_BODY, NULL);
+		return _operations_router_reject(args, NULL,
+						 ESLURM_HTTP_UNEXPECTED_BODY,
+						 NULL);
 
 	if (xstrcasecmp(*read_mime, MIME_TYPE_URL_ENCODED) &&
 	    (args->body_length == 0)) {
