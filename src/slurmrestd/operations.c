@@ -37,6 +37,7 @@
 
 #include <unistd.h>
 
+#include "slurm/slurm_errno.h"
 #include "slurm/slurm.h"
 
 #include "src/common/list.h"
@@ -557,7 +558,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
 		else if (rc == ESLURM_DATA_UNKNOWN_MIME_TYPE)
 			e = HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE;
-		else if (rc == ESLURM_INVALID_JOB_ID)
+		else if ((rc == ESLURM_INVALID_JOB_ID) ||
+			 (rc == ESLURM_REST_UNKNOWN_URL))
 			e = HTTP_STATUS_CODE_ERROR_NOT_FOUND;
 		else if ((rc == SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT) ||
 			 (rc == SLURM_COMMUNICATIONS_CONNECTION_ERROR) ||
