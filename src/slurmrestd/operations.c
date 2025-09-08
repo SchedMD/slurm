@@ -450,8 +450,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 
 	if (!*write_mime)
 		return _operations_router_reject(
-			args, "Accept content type is unknown",
-			ESLURM_DATA_UNKNOWN_MIME_TYPE, NULL);
+			args, NULL, ESLURM_HTTP_UNKNOWN_ACCEPT_MIME_TYPE, NULL);
 
 	/*
 	 * RFC7230 3.3: Allows for any request to have a BODY but doesn't require
