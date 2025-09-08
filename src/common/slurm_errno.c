@@ -793,6 +793,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "HTTP Content-Length header too large to process" },
 	{ ERRTAB_ENTRY(ESLURM_HTTP_POST_MISSING_CONTENT_LENGTH),
 	  "HTTP Content-Length header required for POST method requests" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_UNEXPECTED_BODY),
+	  "Unexpected HTTP body provided when URL Query provided" },
 
 	/* TLS errors */
 	{ ERRTAB_ENTRY(ESLURM_TLS_REQUIRED),
