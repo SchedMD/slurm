@@ -266,10 +266,8 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 {
 	data_t *path = parse_url_path(args->path, true, false);
 	if (!path)
-		return _operations_router_reject(args,
-						 "Unable to parse URL path.",
-						 ESLURM_REST_FAIL_PARSING,
-						 NULL);
+		return _operations_router_reject(args, NULL,
+						 ESLURM_URL_INVALID_PATH, NULL);
 
 	/* attempt to identify path leaf types */
 	(void) data_convert_tree(path, DATA_TYPE_NONE);
