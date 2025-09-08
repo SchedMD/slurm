@@ -283,9 +283,9 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 		ssize_t cl;
 
 		if ((sscanf(header->value, "%zd", &cl) != 1) || (cl < 0))
-			return _send_reject(
-				context, HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE,
-				ESLURM_HTTP_INVALID_CONTENT_LENGTH);
+			return _send_reject(context,
+					    HTTP_STATUS_CODE_ERROR_BAD_REQUEST,
+					    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 		request->expected_body_length = cl;
 	} else if (!xstrcasecmp(header->name, "Accept")) {
 		xfree(request->accept);
