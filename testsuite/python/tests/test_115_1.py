@@ -201,10 +201,10 @@ def create_entities():
     # Verify they were all populated with an id
     for user in user1, user2:
         if user not in user_account_id:
-            atf.log_die(f"Account association for {user} was not created")
+            pytest.fail(f"Account association for {user} was not created")
         for account in account1, account2, account3:
             if account not in user_account_id[user]:
-                atf.log_die(f"Association for {user} and {account} was not created")
+                pytest.fail(f"Association for {user} and {account} was not created")
 
     # Populate user_wckey_id dictionary with user-wckey association ids
     output = atf.run_command_output(
@@ -221,9 +221,9 @@ def create_entities():
     # Verify they were all populated with an id
     for user in user1, user2:
         if user not in user_wckey_id:
-            atf.log_die(f"WCKey association for {user} was not created")
+            pytest.fail(f"WCKey association for {user} was not created")
         if wckey1 not in user_wckey_id[user]:
-            atf.log_die(f"Association for {user} and {wckey1} was not created")
+            pytest.fail(f"Association for {user} and {wckey1} was not created")
 
 
 @pytest.fixture(scope="module")
@@ -284,17 +284,17 @@ def archive_load(create_entities):
             rf"{cluster}\|{account1}\|{user_account_id[user1][account1]}\|{wckey1}\|{user_wckey_id[user1][wckey1]}\|{job1_start_string}\|{job1_end_string}\|{job1_duration_string}",
             output,
         ):
-            atf.log_die(f"The job accounting data was not loaded correctly for job1")
+            pytest.fail("The job accounting data was not loaded correctly for job1")
         if not re.search(
             rf"{cluster}\|{account3}\|{user_account_id[user2][account3]}\|{wckey1}\|{user_wckey_id[user2][wckey1]}\|{job2_start_string}\|{job2_end_string}\|{job2_duration_string}",
             output,
         ):
-            atf.log_die(f"The job accounting data was not loaded correctly for job2")
+            pytest.fail("The job accounting data was not loaded correctly for job2")
         if not re.search(
             rf"{cluster}\|{account2}\|{user_account_id[user1][account2]}\|{wckey1}\|{user_wckey_id[user1][wckey1]}\|{job3_start_string}\|{job3_end_string}\|{job3_duration_string}",
             output,
         ):
-            atf.log_die(f"The job accounting data was not loaded correctly for job3")
+            pytest.fail("The job accounting data was not loaded correctly for job3")
 
         # Use sacctmgr to see if the node event loaded
         output = atf.run_command_output(
@@ -306,14 +306,14 @@ def archive_load(create_entities):
             rf"{cluster}\|\|{period_start_string}\|{period_end_string}\|{cluster_cpus}",
             output,
         ):
-            atf.log_die(
-                f"The event accounting data was not loaded correctly for the cluster"
+            pytest.fail(
+                "The event accounting data was not loaded correctly for the cluster"
             )
         if not re.search(
             rf"{cluster}\|{node0}\|{node0_start_string}\|{node0_end_string}\|{node0_cpus}",
             output,
         ):
-            atf.log_die(f"The event accounting data was not loaded correctly for node0")
+            pytest.fail("The event accounting data was not loaded correctly for node0")
 
         # Use sacctmgr to roll up the time period
         atf.run_command_output(

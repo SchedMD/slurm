@@ -7,7 +7,7 @@ import os
 import pytest
 import re
 
-user_name = atf.get_user_name()
+user_name = atf.properties["test-user"]
 
 
 @pytest.fixture(scope="module", autouse=True)

@@ -25,7 +25,7 @@ def test_task_prolog_and_epilog():
 
     num_tasks = 4
     node_count = 1
-    my_uid = os.getuid()
+    test_uid = atf.properties["test-user-uid"]
 
     atf.make_bash_script(
         task_prolog,
@@ -65,10 +65,10 @@ echo DISPLAY==${DISPLAY}X""",
 
     atf.wait_for_file(file_out_pre)
     output = atf.run_command_output(f"cat {file_out_pre}")
-    match_uid = re.findall(rf"uid={my_uid}", output)
+    match_uid = re.findall(rf"uid={test_uid}", output)
     assert len(match_uid) == num_tasks, "Task prolog output is missing or uid mismatch"
 
     atf.wait_for_file(file_out_post)
     output = atf.run_command_output(f"cat {file_out_post}")
-    match_uid = re.findall(rf"uid={my_uid}", output)
+    match_uid = re.findall(rf"uid={test_uid}", output)
     assert len(match_uid) == num_tasks, "Task epilog output is missing or uid mismatch"
