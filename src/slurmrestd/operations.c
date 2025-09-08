@@ -310,13 +310,11 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 			query, args->query,
 			(args->query ? strlen(args->query) : 0), read_mime);
 
+	if (!rc && !*query)
+		rc = ESLURM_REST_INVALID_QUERY;
+
 	if (rc)
-		return _operations_router_reject(args, "Unable to parse query.",
-						 rc, NULL);
-	else if (!*query)
-		return _operations_router_reject(args, "Unable to parse query.",
-						 ESLURM_REST_INVALID_QUERY,
-						 NULL);
+		return _operations_router_reject(args, NULL, rc, NULL);
 	else
 		return SLURM_SUCCESS;
 
