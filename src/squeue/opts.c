@@ -217,6 +217,8 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int) 'j':
 			if (optarg) {
+				xfree(params.jobs);
+				FREE_NULL_LIST(params.job_list);
 				params.jobs = xstrdup(optarg);
 				params.job_list =
 					_build_job_list(params.jobs);
