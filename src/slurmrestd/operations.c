@@ -254,7 +254,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 
 	FREE_NULL_LIST(send_args.headers);
 
-	return SLURM_ERROR;
+	return http_status_to_error(err_code);
 }
 
 static int _resolve_path(on_http_request_args_t *args, int *path_tag,
