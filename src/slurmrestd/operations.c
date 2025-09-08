@@ -231,7 +231,6 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
-		.body = err,
 		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
 		.body_length = (err ? strlen(err) : 0),
 	};
@@ -243,6 +242,11 @@ static int _operations_router_reject(on_http_request_args_t *args,
 
 	send_args.con = conmgr_fd_get_ref(args->con);
 	send_args.status_code = http_status_from_error(error_code);
+
+	if (!err)
+		send_args.body = slurm_strerror(error_code);
+	else
+		send_args.body = err;
 
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
