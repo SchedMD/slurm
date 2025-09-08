@@ -689,6 +689,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Missing UNIX user in the system"},
 	{ ERRTAB_ENTRY(ESLURM_REST_MISSING_GID),
 	  "Missing UNIX group in the system"},
+	{ ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL),
+	  "Unknown URL endpoint requested in query"},
 
 	/* data_t errors */
 	{ ERRTAB_ENTRY(ESLURM_DATA_PATH_NOT_FOUND),
