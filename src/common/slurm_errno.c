@@ -789,6 +789,8 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid or unsupported HTTP Content-Encoding header" },
 	{ ERRTAB_ENTRY(ESLURM_HTTP_UNSUPPORTED_KEEP_ALIVE),
 	  "Invalid or unsupported HTTP Keep-Alive header" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE),
+	  "HTTP Content-Length header too large to process" },
 
 	/* TLS errors */
 	{ ERRTAB_ENTRY(ESLURM_TLS_REQUIRED),
