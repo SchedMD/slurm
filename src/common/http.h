@@ -37,6 +37,7 @@
 #define SLURM_HTTP_H
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 #include "src/common/data.h"
 
 /*
@@ -116,6 +117,13 @@ extern const char *get_http_status_code_string(http_status_code_t code);
  * RET status code or HTTP_STATUS_CODE_INVALID on error
  */
 extern http_status_code_t get_http_status_code(const char *str);
+
+/*
+ * Convert Slurm error to HTTP status
+ * IN error - Slurm error to convert http status code
+ * RET http status code or HTTP_STATUS_CODE_SRVERR_INTERNAL (catch all)
+ */
+extern http_status_code_t http_status_from_error(slurm_err_t error);
 
 /*
  * Supported HTTP request Methods.
