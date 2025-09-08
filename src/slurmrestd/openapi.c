@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/data.h"
+#include "src/common/http.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
@@ -305,7 +306,7 @@ static const http_status_code_t *response_status_codes = NULL;
 static const http_status_code_t default_response_status_codes[] = {
 	HTTP_STATUS_CODE_SUCCESS_OK,
 	HTTP_STATUS_CODE_DEFAULT,
-	HTTP_STATUS_NONE
+	HTTP_STATUS_CODE_INVALID,
 };
 
 static char *_entry_to_string(entry_t *entry);

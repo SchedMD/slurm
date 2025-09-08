@@ -333,8 +333,16 @@ extern http_status_code_t get_http_status_code(const char *str)
 	if (isdigit(str[0])) {
 		uint64_t n = slurm_atoul(str);
 
-		if (!n || (n > HTTP_STATUS_CODE_DEFAULT))
-			return HTTP_STATUS_NONE;
+		/*
+		 * Check for default explicitly as it is outside the valid range
+		 * that is checked by next if()
+		 */
+		if (n == HTTP_STATUS_CODE_DEFAULT)
+			return HTTP_STATUS_CODE_DEFAULT;
+
+		if ((n <= HTTP_STATUS_CODE_INVALID) ||
+		    (n >= HTTP_STATUS_CODE_INVALID_MAX))
+			return HTTP_STATUS_CODE_INVALID;
 
 		return n;
 	}
@@ -343,7 +351,7 @@ extern http_status_code_t get_http_status_code(const char *str)
 		if (!xstrcasecmp(http_status_codes[i].text, str))
 			return http_status_codes[i].code;
 
-	return HTTP_STATUS_NONE;
+	return HTTP_STATUS_CODE_INVALID;
 }
 
 extern const char *get_http_status_code_string(http_status_code_t code)

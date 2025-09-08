@@ -505,7 +505,8 @@ extern int send_http_response(const send_http_response_args_t *args)
 {
 	char *buffer = NULL;
 	int rc = SLURM_SUCCESS;
-	xassert(args->status_code != HTTP_STATUS_NONE);
+	xassert(args->status_code > HTTP_STATUS_CODE_INVALID);
+	xassert(args->status_code < HTTP_STATUS_CODE_INVALID_MAX);
 	xassert(args->body_length == 0 || (args->body_length && args->body));
 
 	log_flag(NET, "%s: [%s] sending response %u: %s",

@@ -43,7 +43,8 @@
  * HTTP status codes from rfc2616&rfc7231 for http1.1
  */
 typedef enum {
-	HTTP_STATUS_NONE = 0,
+	/* place holder for invalid status code */
+	HTTP_STATUS_CODE_INVALID = 0,
 	/* 1xx (Informational) */
 	HTTP_STATUS_CODE_CONTINUE = 100,
 	HTTP_STATUS_CODE_SWITCH_PROTOCOLS = 101,
@@ -98,6 +99,8 @@ typedef enum {
 	HTTP_STATUS_CODE_SRVERR_LOOP_DETECTED = 508,
 	HTTP_STATUS_CODE_SRVERR_NOT_EXTENDED = 510,
 	HTTP_STATUS_CODE_SRVERR_NETWORK_AUTH_REQ = 511,
+	/* place holder for invalid max status code */
+	HTTP_STATUS_CODE_INVALID_MAX,
 	/* place holder for default status code */
 	HTTP_STATUS_CODE_DEFAULT = INFINITE,
 } http_status_code_t;
@@ -110,7 +113,7 @@ extern const char *get_http_status_code_string(http_status_code_t code);
 /*
  * Convert string to status code
  * IN str - string to parse
- * RET status code or HTTP_STATUS_NONE on error
+ * RET status code or HTTP_STATUS_CODE_INVALID on error
  */
 extern http_status_code_t get_http_status_code(const char *str);
 
