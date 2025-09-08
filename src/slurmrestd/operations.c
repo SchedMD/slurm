@@ -608,8 +608,7 @@ extern int operations_router(on_http_request_args_t *args)
 	if ((rc = rest_authenticate_http_request(args))) {
 		error("%s: [%s] authentication failed: %s",
 		      __func__, args->name, slurm_strerror(rc));
-		_operations_router_reject(args, "Authentication failure", rc,
-					  NULL);
+		_operations_router_reject(args, NULL, rc, NULL);
 		return rc;
 	}
 
