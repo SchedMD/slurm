@@ -1859,6 +1859,12 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con)
 	return rc;
 }
 
+static bool _is_output_open(conmgr_fd_t *con)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	return (!con_flag(con, FLAG_READ_EOF) && (con->output_fd >= 0));
+}
+
 extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 {
 	bool open;
@@ -1866,7 +1872,20 @@ extern bool conmgr_fd_is_output_open(conmgr_fd_t *con)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
-	open = (con->output_fd >= 0);
+	open = _is_output_open(con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return open;
+}
+
+extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref)
+{
+	bool open;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	slurm_mutex_lock(&mgr.mutex);
+	open = _is_output_open(ref->con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return open;

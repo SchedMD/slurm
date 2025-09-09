@@ -72,6 +72,8 @@
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/burst_buffer.h"
@@ -6852,12 +6854,33 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 	return NULL;
 }
 
+static bool _is_connection_stale(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc,
+				 int fd)
+{
+	if (this_rpc->skip_stale)
+		return false;
+
+	if ((fd >= 0) && !fd_is_writable(fd)) {
+		error("%s: [fd:%d] Connection is stale, discarding RPC %s from uid:%u",
+		      __func__, fd, rpc_num2string(msg->msg_type),
+		      msg->auth_uid);
+		return true;
+	}
+
+	if (msg->conmgr_con && !conmgr_con_is_output_open(msg->conmgr_con)) {
+		error("%s: [%s] Connection is stale, discarding RPC %s from uid:%u",
+		      __func__, conmgr_con_get_name(msg->conmgr_con),
+		      rpc_num2string(msg->msg_type), msg->auth_uid);
+		return true;
+	}
+
+	return false;
+}
+
 extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 {
 	DEF_TIMERS;
-	int fd = conn_g_get_fd(msg->tls_conn);
-
-	fd_set_nonblocking(fd);
+	int fd = -1;
 
 	if (!msg->auth_ids_set) {
 		error("%s: received message without previously validated auth",
@@ -6868,6 +6891,15 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	/* Debug the protocol layer.
 	 */
 	START_TIMER;
+
+	if (msg->tls_conn) {
+		fd = conn_g_get_fd(msg->tls_conn);
+		xassert(!msg->conmgr_con);
+	} else if (msg->conn && msg->conn->tls_conn) {
+		fd = conn_g_get_fd(msg->conn->tls_conn);
+		xassert(!msg->conmgr_con);
+	}
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		const char *p = rpc_num2string(msg->msg_type);
 		if (msg->conn) {
@@ -6877,6 +6909,10 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 		} else if (msg->address.ss_family != AF_UNSPEC) {
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &msg->address, msg->auth_uid);
+		} else if (msg->conmgr_con) {
+			info("%s: [%s] received opcode %s uid %u",
+			     __func__, conmgr_con_get_name(msg->conmgr_con), p,
+			     msg->auth_uid);
 		} else {
 			slurm_addr_t cli_addr;
 			(void) slurm_get_peer_addr(fd, &cli_addr);
@@ -6888,12 +6924,10 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	if (this_rpc->skip_stale && !fd_is_writable(fd)) {
-		error("Connection is stale, discarding RPC %s",
-		      rpc_num2string(msg->msg_type));
-		/* do not record RPC stats, we didn't process this */
+	/* do not record RPC stats when stale as RPC not processed */
+	if (_is_connection_stale(msg, this_rpc, fd))
 		return;
-	}
+
 	(*(this_rpc->func))(msg);
 	END_TIMER;
 	record_rpc_stats(msg, DELTA_TIMER);
