@@ -192,7 +192,8 @@ extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 	int set = 0, mins;
 	uint64_t tmp64;
 	char *tmp_char = NULL;
-	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE;
+	uint32_t tres_flags = TRES_STR_FLAG_SORT_ID | TRES_STR_FLAG_REPLACE |
+		TRES_STR_FLAG_ALLOW_AMEND;
 
 	if (!xstrncasecmp(type, "Description",
 			  MAX(command_len, 1))) {

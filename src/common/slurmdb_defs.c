@@ -285,6 +285,18 @@ static char *_get_qos_list_str(list_t *qos_list)
 	return qos_char;
 }
 
+static int _unset_amending_tres(void *x, void *key)
+{
+	slurmdb_tres_rec_t *tres_rec = x;
+
+	if (tres_rec->modifier == '-')
+		tres_rec->count = 0;
+
+	tres_rec->modifier = '\0';
+
+	return 0;
+}
+
 extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 {
 	xassert(cluster_rec);
@@ -3726,6 +3738,7 @@ extern char *slurmdb_make_tres_string(list_t *tres, uint32_t flags)
 	char *tres_str = NULL;
 	list_itr_t *itr;
 	slurmdb_tres_rec_t *tres_rec;
+	bool allow_amend = flags & TRES_STR_FLAG_ALLOW_AMEND;
 
 	if (!tres)
 		return tres_str;
@@ -3737,19 +3750,23 @@ extern char *slurmdb_make_tres_string(list_t *tres, uint32_t flags)
 			continue;
 
 		if ((flags & TRES_STR_FLAG_SIMPLE) || !tres_rec->type)
-			xstrfmtcat(tres_str, "%s%u=%"PRIu64,
+			xstrfmtcat(tres_str, "%s%u=",
 				   (tres_str ||
 				    (flags & TRES_STR_FLAG_COMMA1)) ? "," : "",
-				   tres_rec->id, tres_rec->count);
+				   tres_rec->id);
 
 		else
-			xstrfmtcat(tres_str, "%s%s%s%s=%"PRIu64,
+			xstrfmtcat(tres_str, "%s%s%s%s=",
 				   (tres_str ||
 				    (flags & TRES_STR_FLAG_COMMA1)) ? "," : "",
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
-				   tres_rec->name ? tres_rec->name : "",
-				   tres_rec->count);
+				   tres_rec->name ? tres_rec->name : "");
+
+		if (allow_amend && tres_rec->modifier)
+			xstrcatchar(tres_str, tres_rec->modifier);
+
+		xstrfmtcat(tres_str, "%"PRIu64, tres_rec->count);
 	}
 	list_iterator_destroy(itr);
 
@@ -3785,9 +3802,11 @@ extern char *slurmdb_make_tres_string_from_simple(
 	char *tres_str = NULL;
 	char *tmp_str = tres_in;
 	int id;
+	bool allow_amend = tres_str_flags & TRES_STR_FLAG_ALLOW_AMEND;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	char *node_name = NULL;
+	char sign;
 	list_t *char_list = NULL;
 
 	if (!full_tres_list || !tmp_str || !tmp_str[0]
@@ -3814,7 +3833,14 @@ extern char *slurmdb_make_tres_string_from_simple(
 			      "no value found");
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
+
+		sign = *(++tmp_str);
+
+		if ((sign != '+') && (sign != '-'))
+			sign = '\0';
+		else
+			tmp_str++;
+		count = slurm_atoull(tmp_str);
 
 		if (count == NO_VAL64)
 			goto get_next;
@@ -3829,6 +3855,10 @@ extern char *slurmdb_make_tres_string_from_simple(
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
 				   tres_rec->name ? tres_rec->name : "");
+
+		if (allow_amend && sign)
+			xstrcatchar(tres_str, sign);
+
 		if (count != INFINITE64) {
 			if (nodes) {
 				node_name = find_hostname(count, nodes);
@@ -3892,6 +3922,7 @@ extern char *slurmdb_format_tres_str(
 	char *tres_str = NULL;
 	char *val_unit = NULL;
 	char *tmp_str = tres_in;
+	char *sign;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 
@@ -3922,7 +3953,9 @@ extern char *slurmdb_format_tres_str(
 			char *tres_name;
 
 			while (tmp_str[end]) {
-				if (tmp_str[end] == '=')
+				if ((tmp_str[end] == '=') ||
+				    (tmp_str[end] == '+') ||
+				    (tmp_str[end] == '-'))
 					break;
 				end++;
 			}
@@ -3948,6 +3981,11 @@ extern char *slurmdb_format_tres_str(
 			error("%s: no value given as TRES type/id.", __func__);
 			return NULL;
 		}
+
+		sign = tmp_str - 1;
+		if ((*sign != '+') && (*sign != '-'))
+			sign = "";
+
 		count = strtoull(++tmp_str, &val_unit, 10);
 		if (val_unit && *val_unit != ',' && *val_unit != '\0' &&
 		    tres_rec->type) {
@@ -3962,14 +4000,14 @@ extern char *slurmdb_format_tres_str(
 		if (tres_str)
 			xstrcat(tres_str, ",");
 		if (simple || !tres_rec->type)
-			xstrfmtcat(tres_str, "%u=%"PRIu64"",
-				   tres_rec->id, count);
+			xstrfmtcat(tres_str, "%u=%.1s%"PRIu64"",
+				   tres_rec->id, sign, count);
 
 		else
-			xstrfmtcat(tres_str, "%s%s%s=%"PRIu64"",
+			xstrfmtcat(tres_str, "%s%s%s=%.1s%"PRIu64"",
 				   tres_rec->type,
 				   tres_rec->name ? "/" : "",
-				   tres_rec->name ? tres_rec->name : "",
+				   tres_rec->name ? tres_rec->name : "", sign,
 				   count);
 		if (!(tmp_str = strchr(tmp_str, ',')))
 			break;
@@ -4019,12 +4057,14 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 					  uint32_t flags, list_t *sub_tres_list)
 {
 	const char *tmp_str = tres;
+	char sign;
 	int id;
 	uint64_t count;
 	slurmdb_tres_rec_t *tres_rec;
 	int remove_found = 0;
 	list_t *mgr_tres_list =
 		sub_tres_list ? sub_tres_list : assoc_mgr_tres_list;
+	bool allow_amend = flags & TRES_STR_FLAG_ALLOW_AMEND;
 	xassert(tres_list);
 
 	if (!tres || !tres[0])
@@ -4084,7 +4124,15 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			      "no value found %s", tres);
 			break;
 		}
-		count = slurm_atoull(++tmp_str);
+
+		sign = *(++tmp_str);
+
+		if ((sign != '+') && (sign != '-'))
+			sign = '\0';
+		else
+			tmp_str++;
+
+		count = slurm_atoull(tmp_str);
 
 		if (!*tres_list)
 			*tres_list = list_create(slurmdb_destroy_tres_rec);
@@ -4094,6 +4142,8 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			tres_rec = xmalloc(sizeof(slurmdb_tres_rec_t));
 			tres_rec->id = id;
 			tres_rec->count = count;
+			if (allow_amend && sign)
+				tres_rec->modifier = sign;
 			list_append(*tres_list, tres_rec);
 			if (count == INFINITE64)
 				remove_found++;
@@ -4102,6 +4152,10 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			       "replacing with %"PRIu64,
 			      tres_rec->id, tres_rec->count, count);
 			tres_rec->count = count;
+			if (allow_amend && sign)
+				tres_rec->modifier = sign;
+			else
+				tres_rec->modifier = '\0';
 		} else if (flags & TRES_STR_FLAG_SUM) {
 			if (count != INFINITE64) {
 				if (tres_rec->count == INFINITE64)
@@ -4125,6 +4179,30 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 					tres_rec->count =
 						MIN(tres_rec->count, count);
 			}
+		} else if (allow_amend && (flags & TRES_STR_FLAG_COMB_AMEND) &&
+			   tres_rec->modifier) {
+			/*
+			 * We will calculate the resulting value for tres_rec
+			 * but we will avoid negative values and overflows.
+			 * This operation REQUIRES that only up to two TRES of
+			 * the same type can appear in the same string. This
+			 * operation is only called from mod_tres_str(), which
+			 * ensures amending TRES (if present) will appear in
+			 * the string before the currently stored absolute
+			 * values.
+			 */
+
+			if (tres_rec->modifier == '+') {
+				tres_rec->count += count;
+				if ((tres_rec->count < count) ||
+				    (tres_rec->count > MAX_VAL64))
+					tres_rec->count = MAX_VAL64;
+			} else {
+				tres_rec->count = count - tres_rec->count;
+				if (tres_rec->count > count)
+					tres_rec->count = 0;
+			}
+			tres_rec->modifier = '\0';
 		}
 
 		if (!(tmp_str = strchr(tmp_str, ',')))
@@ -4146,6 +4224,13 @@ extern void slurmdb_tres_list_from_string(list_t **tres_list, const char *tres,
 			      "was expecting to remove %d, but removed %d",
 			      remove_found, removed);
 	}
+
+	/*
+	 * If we are combining relative values, the resulting TRES list
+	 * needs to be cleaned up and only hold absolute values
+	 */
+	if (*tres_list && (flags & TRES_STR_FLAG_COMB_AMEND))
+		list_for_each(*tres_list, _unset_amending_tres, NULL);
 
 	if (*tres_list && (flags & TRES_STR_FLAG_SORT_ID))
 		list_sort(*tres_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);

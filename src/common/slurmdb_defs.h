@@ -112,6 +112,12 @@ typedef enum {
 						   * zero) unless INFINITE64 or
 						   * NO_VAL64 */
 	TRES_STR_FLAG_BYTES = SLURM_BIT(13), /* Convertible Usage in Bytes */
+	TRES_STR_FLAG_ALLOW_AMEND = SLURM_BIT(14), /* Allow TRES string with
+						    * +- syntax (-= and +=) */
+	TRES_STR_FLAG_COMB_AMEND = SLURM_BIT(15), /* Combine two entries of the
+						   * same type when using
+						   * amending TRES, unset
+						   * amending status after */
 } tres_str_flags_t;
 
 extern slurmdb_job_rec_t *slurmdb_create_job_rec(void);
