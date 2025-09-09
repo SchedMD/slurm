@@ -102,7 +102,7 @@ typedef enum {
 	/* place holder for invalid max status code */
 	HTTP_STATUS_CODE_INVALID_MAX,
 	/* place holder for default status code */
-	HTTP_STATUS_CODE_DEFAULT = INFINITE,
+	HTTP_STATUS_CODE_DEFAULT = INFINITE16,
 } http_status_code_t;
 /*
  * Convert status code to string of status code
