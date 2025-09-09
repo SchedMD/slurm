@@ -365,8 +365,12 @@ on_timeout:
 extern bool fd_is_writable(int fd)
 {
 	bool rc = true;
-	char temp[2];
 	struct pollfd ufd;
+	int flags = 0;
+
+#ifdef MSG_DONTWAIT
+	flags |= MSG_DONTWAIT;
+#endif
 
 	/* setup call to poll */
 	ufd.fd = fd;
@@ -380,8 +384,7 @@ extern bool fd_is_writable(int fd)
 			rc = false;
 			break;
 		}
-		if ((ufd.revents & POLLHUP) ||
-		    (recv(fd, &temp, 1, MSG_PEEK) == 0)) {
+		if ((ufd.revents & POLLHUP) || send(fd, NULL, 0, flags)) {
 			debug2("%s: socket is not writable", __func__);
 			rc = false;
 			break;
