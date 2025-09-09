@@ -379,6 +379,7 @@ static int _set_options(const int argc, char **argv)
 	                         long_options, &option_index)) != EOF) {
 		switch (cc) {
 		case 'd':
+			xfree(params.data_item);
 			params.data_item = xstrdup(optarg);
 			/* params.data_item =
 			   xstrtolower(params.data_item); */
@@ -397,6 +398,7 @@ static int _set_options(const int argc, char **argv)
 			return -1;
 			break;
 		case 'i':
+			xfree(params.input);
 			params.input = xstrdup(optarg);
 			break;
 		case 'j':
@@ -406,18 +408,23 @@ static int _set_options(const int argc, char **argv)
 					strtol(next_str + 1, NULL, 10);
 			break;
 		case 'l':
+			xfree(params.level);
 			params.level = xstrdup(optarg);
 			break;
 		case 'N':
+			xfree(params.node);
 			params.node = xstrdup(optarg);
 			break;
 		case 'o':
+			xfree(params.output);
 			params.output = xstrdup(optarg);
 			break;
 		case 'p':
+			xfree(params.dir);
 			params.dir = xstrdup(optarg);
 			break;
 		case 's':
+			xfree(params.series);
 			if (xstrcmp(optarg, GRP_ENERGY)
 			    && xstrcmp(optarg, GRP_FILESYSTEM)
 			    && xstrcmp(optarg, GRP_NETWORK)
@@ -433,6 +440,7 @@ static int _set_options(const int argc, char **argv)
 			params.keepfiles = 1;
 			break;
 		case 'u':
+			xfree(params.user);
 			if (uid_from_string(optarg, &u) != SLURM_SUCCESS) {
 				error("No such user --uid=\"%s\"",
 				      optarg);

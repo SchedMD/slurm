@@ -2275,7 +2275,7 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 	time_t now = args->now;
 	char *table = args->table;
 
-	int rc;
+	int rc = SLURM_SUCCESS;
 	char *query;
 	char *loc_assoc_char = NULL;
 	MYSQL_RES *result = NULL;
@@ -2316,7 +2316,6 @@ static int _remove_from_assoc_table(remove_common_args_t *args)
 		}
 		xfree(query);
 
-		rc = 0;
 		xfree(loc_assoc_char);
 		while ((row = mysql_fetch_row(result))) {
 			slurmdb_assoc_rec_t *rem_assoc = NULL;

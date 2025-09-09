@@ -80,6 +80,7 @@ void step_terminate_monitor_start(stepd_step_rec_t *step)
 
 void step_terminate_monitor_stop(void)
 {
+	pthread_t tmp_tid;
 	slurm_mutex_lock(&lock);
 
 	if (!tid) {
@@ -87,12 +88,13 @@ void step_terminate_monitor_stop(void)
 		slurm_mutex_unlock(&lock);
 		return;
 	}
-
+	tmp_tid = tid;
+	tid = 0;
 	debug("signaling condition");
 	slurm_cond_signal(&cond);
 	signaled = true;
 	slurm_mutex_unlock(&lock);
-	slurm_thread_join(tid);
+	slurm_thread_join(tmp_tid);
 
 	xfree(program_name);
 }

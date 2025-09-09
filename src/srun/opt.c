@@ -386,7 +386,9 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		if (opt_found || (i > 0)) {
 			xstrfmtcat(sropt.het_group, "%d", i);
-			sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
+			if (!sropt.het_grp_bits)
+				sropt.het_grp_bits =
+					bit_alloc(MAX_HET_JOB_COMPONENTS);
 			bit_set(sropt.het_grp_bits, i);
 		}
 

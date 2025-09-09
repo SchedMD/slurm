@@ -154,6 +154,7 @@ static void _parse_create(int argc, char **argv)
 		case OPT_LONG_BUNDLE:
 		case 'b':
 			xfree(state.bundle);
+			xfree(state.orig_bundle);
 			state.bundle = xstrdup(optarg);
 			state.orig_bundle = xstrdup(optarg);
 			break;
