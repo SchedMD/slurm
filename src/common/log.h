@@ -108,6 +108,11 @@ typedef struct {
 	log_file_fmt_t logfile_fmt; /* format of logfile output */
 } 	log_options_t;
 
+typedef struct {
+	int log_fd;
+	int sched_log_fd;
+} log_closeall_skip_t;
+
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\
@@ -156,6 +161,17 @@ int log_init(char *argv0, log_options_t opts,
  */
 int sched_log_init(char *argv0, log_options_t opts, log_facility_t fac,
 		   char *logfile);
+
+/*
+ * Prepare for closeall()
+ * RET struct containing which file descriptors to skip close()ing
+ */
+log_closeall_skip_t log_closeall_pre(void);
+
+/*
+ * Rebuild logging state after closeall()
+ */
+void log_closeall_post(void);
 
 /* reinitialize log module.
  * Keep same log options as previously initialized log, but reinit mutex
