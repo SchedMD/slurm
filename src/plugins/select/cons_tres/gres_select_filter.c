@@ -892,17 +892,18 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 		}
 	}
 
-	if (gres_needed) {
-		/* Something bad happened on task layout for this GRES type */
-		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64")",
-		      __func__, sock_gres->gres_state_job->gres_name, job_id,
-		      node_inx, gres_needed);
-	}
-
 	xfree(links_cnt);
 	xfree(sorted_gres);
 	if (allocated_array_copy)
 		xfree(used_sock);
+
+	if (gres_needed) {
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64", total requested: %"PRIu64", gres per socket: %"PRIu64")",
+		      __func__, sock_gres->gres_state_job->gres_name, job_id,
+		      node_inx, gres_needed,
+		      used_sock_cnt * gres_js->gres_per_socket,
+		      gres_js->gres_per_socket);
+	}
 }
 
 /*
@@ -1253,6 +1254,12 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	}
 	xfree(links_cnt);
 	xfree(sorted_gres);
+
+	if (gres_needed) {
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64", total requested: %"PRIu64")",
+		      __func__, sock_gres->gres_state_job->gres_name, job_id,
+		      node_inx, gres_needed, gres_js->gres_per_node);
+	}
 }
 
 /*
@@ -1333,11 +1340,11 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 
 	if (gres_needed) {
 		/* Something bad happened on task layout for this GRES type */
-		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64", total requested: %"PRIu64")",
+		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64", total requested: %"PRIu64", gres_per_task: %"PRIu64")",
 		      __func__, sock_gres->gres_state_job->gres_name, job_id,
 		      node_inx, gres_needed,
-		      _get_task_cnt_node(tasks_per_socket, sock_cnt) *
-		      gres_js->gres_per_task);
+		      (_get_task_cnt_node(tasks_per_socket, sock_cnt) *
+		      gres_js->gres_per_task), gres_js->gres_per_task);
 	}
 }
 
