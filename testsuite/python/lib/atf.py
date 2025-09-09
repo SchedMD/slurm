@@ -4842,11 +4842,11 @@ if "slurmconfigdir" in testsuite_config:
     properties["slurm-config-dir"] = testsuite_config["slurmconfigdir"]
 
 if "influxdb_host" in testsuite_config:
-    properties["influxdb_host"] = properties["influxdb_host"]
+    properties["influxdb_host"] = testsuite_config["influxdb_host"]
 if "influxdb_port" in testsuite_config:
-    properties["influxdb_host"] = properties["influxdb_port"]
+    properties["influxdb_port"] = testsuite_config["influxdb_port"]
 if "influxdb_db" in testsuite_config:
-    properties["influxdb_db"] = properties["influxdb_db"]
+    properties["influxdb_db"] = testsuite_config["influxdb_db"]
 
 # Set derived directory properties
 # The environment (e.g. PATH, SLURM_CONF) overrides the configuration.
