@@ -1128,6 +1128,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		break;
 	case URL_SCHEME_HTTPS:
 		flags |= CON_FLAG_TLS_SERVER;
+		if (!tls_available())
+			fatal("Cannot create https:// socket because no TLS plugin is available");
 		/* fall through */
 	case URL_SCHEME_HTTP:
 	case URL_SCHEME_INVALID:
