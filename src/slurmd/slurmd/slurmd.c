@@ -165,7 +165,6 @@ bool tres_packed = false;
 typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
-	slurm_addr_t addr;
 	int fd;
 	void *tls_conn;
 	slurm_msg_t *msg;
@@ -690,25 +689,22 @@ static void *_service_msg(void *arg)
 {
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
-	slurm_addr_t *addr = &args->addr;
+	const slurm_addr_t *addr = &msg->address;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
-	debug3("%s: [%pA] processing new RPC connection", __func__, addr);
+	log_flag(NET, "%s: [%s] processing new RPC msg_type[0x%x]=%s connection from %pA",
+		 __func__, conmgr_con_get_name(msg->conmgr_con),
+		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type), addr);
 
-	debug2("Start processing RPC: %s", rpc_num2string(msg->msg_type));
+	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 conmgr_con_get_name(msg->conmgr_con),
+		 rpc_num2string(msg->msg_type), msg->auth_uid, addr,
+		 msg->protocol_version);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_AUDIT_RPCS) {
-		log_flag(AUDIT_RPCS, "msg_type=%s uid=%u client=[%pA] protocol=%u",
-			 rpc_num2string(msg->msg_type), msg->auth_uid,
-			 &addr, msg->protocol_version);
-	}
-
-	/*
-	 * The fd was extracted from conmgr, so the conmgr connection is
-	 * invalid.
-	 */
+	/* Release conmgr connection as it will have been closed */
 	conmgr_fd_free_ref(&msg->conmgr_con);
+
 	if (args->tls_conn) {
 		msg->tls_conn = args->tls_conn;
 	} else {
@@ -723,7 +719,9 @@ static void *_service_msg(void *arg)
 	conn_g_destroy(msg->tls_conn, true);
 	msg->tls_conn = NULL;
 
-	debug2("Finish processing RPC: %s", rpc_num2string(msg->msg_type));
+	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
+		 __func__, conmgr_con_get_name(msg->conmgr_con),
+		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type));
 
 	slurm_free_msg(msg);
 
@@ -1996,8 +1994,8 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
 	if (!(rc = _increment_thd_count(false))) {
-		debug3("%s: [%pA] detaching new thread for RPC connection",
-		       __func__, &args->addr);
+		log_flag(NET, "%s: [%pA] detaching new thread for RPC connection",
+			 __func__, &args->msg->address);
 
 		slurm_thread_create_detached(_service_msg, args);
 	} else {
@@ -2011,8 +2009,8 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		 */
 		_decrement_thd_count();
 
-		debug3("%s: [%pA] deferring servicing connection",
-		       __func__, &args->addr);
+		log_flag(NET, "%s: [%pA] deferring servicing connection",
+			 __func__, &args->msg->address);
 
 		/*
 		 * Backoff attempts to avoid needless lock contention while
@@ -2033,14 +2031,13 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 			   void *arg)
 {
 	service_msg_args_t *args = NULL;
-	int rc = SLURM_SUCCESS;
 	slurm_msg_t *msg = arg;
 
 	xassert(msg);
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [fd:%d] connection work cancelled",
-		       __func__, input_fd);
+		log_flag(NET, "%s: [%s] connection work cancelled",
+			 __func__, conmgr_con_get_name(msg->conmgr_con));
 
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
@@ -2049,8 +2046,8 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	}
 
 	if ((input_fd < 0) || (output_fd < 0)) {
-		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
-		      __func__, input_fd, output_fd);
+		log_flag(NET, "%s: [%s] rejecting partially open connection",
+			 __func__, conmgr_con_get_name(msg->conmgr_con));
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
@@ -2059,19 +2056,9 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 
 	args = xmalloc(sizeof(*args));
 	args->magic = SERVICE_MSG_ARGS_MAGIC;
-	args->addr.ss_family = AF_UNSPEC;
 	args->fd = input_fd;
 	args->tls_conn = tls_conn;
 	args->msg = msg;
-
-	if ((rc = slurm_get_peer_addr(input_fd, &args->addr))) {
-		error("%s: [fd:%d] getting socket peer failed: %s",
-		      __func__, input_fd, slurm_strerror(rc));
-		fd_close(&input_fd);
-		args->magic = ~SERVICE_MSG_ARGS_MAGIC;
-		xfree(args);
-		return;
-	}
 
 	/* force blocking mode for blocking handlers */
 	fd_set_blocking(input_fd);
