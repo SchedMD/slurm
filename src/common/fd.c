@@ -381,15 +381,18 @@ extern bool fd_is_writable(int fd)
 		if (poll(&ufd, 1, 0) == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			debug2("%s: poll error: %m", __func__);
+			log_flag(NET, "%s: [fd:%d] socket poll() error: %m",
+				 __func__, fd);
 			rc = false;
 			break;
 		}
 		if ((ufd.revents & POLLHUP) || send(fd, NULL, 0, flags)) {
-			debug2("%s: socket is not writable", __func__);
+			log_flag(NET, "%s: [fd:%d] socket is not writable",
+			       __func__, fd);
 			rc = false;
 			break;
 		}
+		log_flag(NET, "%s: [fd:%d] socket is writable", __func__, fd);
 		break;
 	}
 
