@@ -689,7 +689,7 @@ static void _update_and_sort_by_links(int *sorted_gres, int *links_cnt,
 	sorting_links_cnt = NULL;
 }
 
-static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, int gres_needed,
+static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
 				int node_inx, int socket_index,
 				int *sorted_gres, int *links_cnt)
 {
@@ -1185,9 +1185,9 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	int g, s;
 	gres_job_state_t *gres_js;
 	gres_node_state_t *gres_ns;
-	uint32_t gres_needed;
+	uint64_t gres_needed;
 	int *links_cnt = NULL, *sorted_gres = NULL;
-	float gres_needed_per_core;
+	double gres_needed_per_core;
 
 	gres_js = sock_gres->gres_state_job->gres_data;
 	gres_ns = sock_gres->gres_state_node->gres_data;
@@ -1195,7 +1195,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 
 	gres_cnt = bit_size(gres_js->gres_bit_select[node_inx]);
 	gres_needed = gres_js->gres_per_node - total_res_gres;
-	gres_needed_per_core = (float)gres_needed / (float)used_core_cnt;
+	gres_needed_per_core = (double)gres_needed / (double)used_core_cnt;
 
 	if (!gres_needed)
 		return;
@@ -1642,7 +1642,7 @@ static int _set_res_core_bits(uint32_t **res_gres_per_sock,
 	int *links_cnt = NULL, *sorted_gres = NULL;
 	uint16_t cores_per_socket_cnt = 0;
 	uint16_t sock_cnt = 0;
-	uint32_t gres_needed;
+	uint64_t gres_needed;
 	uint32_t res_cores_per_gpu =
 		node_record_table_ptr[args->node_inx]->res_cores_per_gpu;
 
