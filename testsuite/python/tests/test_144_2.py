@@ -19,7 +19,10 @@ def setup():
     atf.run_command(f"touch {gpu_file + '1'}")
     atf.run_command(f"touch {gpu_file + '2'}")
     atf.require_config_parameter(
-        "NodeName", f"node1 Name=gpu Cores=0-1 File={gpu_file}[1-2]", source="gres"
+        "NodeName",
+        f"""node1 Name=gpu Cores=0 File={gpu_file}1
+        NodeName=node1 Name=gpu Cores=1 File={gpu_file}2""",
+        source="gres",
     )
     atf.require_slurm_running()
 
