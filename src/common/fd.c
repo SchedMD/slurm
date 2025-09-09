@@ -357,9 +357,6 @@ on_timeout:
 /*
  * Check if a file descriptor is writable now.
  *
- * This function assumes that O_NONBLOCK is set already, if it is not this
- * function will block!
- *
  * Return 1 when writeable or 0 on error
  */
 extern bool fd_is_writable(int fd)
@@ -367,9 +364,13 @@ extern bool fd_is_writable(int fd)
 	bool rc = true;
 	struct pollfd ufd;
 	int flags = 0;
+	bool nonblocking = true;
 
 #ifdef MSG_DONTWAIT
 	flags |= MSG_DONTWAIT;
+
+	if (!(nonblocking = fd_is_nonblocking(fd)))
+		fd_set_nonblocking(fd);
 #endif
 
 	/* setup call to poll */
@@ -391,6 +392,9 @@ extern bool fd_is_writable(int fd)
 		}
 		break;
 	}
+
+	if (!nonblocking)
+		slurm_fd_set_blocking(fd);
 
 	return rc;
 }
