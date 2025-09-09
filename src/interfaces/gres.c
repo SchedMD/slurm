@@ -1878,6 +1878,11 @@ static int _foreach_gres_conf(void *x, void *arg)
 
 	if (gres_slurmd_conf->config_flags & GRES_CONF_ONE_SHARING)
 		gres_ctx->config_flags |= GRES_CONF_ONE_SHARING;
+
+	if (!(gres_slurmd_conf->config_flags & GRES_CONF_ENV_DEF) &&
+	    gres_slurmd_conf->config_flags & GRES_CONF_ENV_SET)
+		gres_ctx->config_flags |=
+			(gres_slurmd_conf->config_flags & GRES_CONF_ENV_SET);
 	/*
 	 * Since there could be multiple types of the same plugin we
 	 * need to only make sure we load it once.
@@ -2279,11 +2284,18 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 	 */
 
 	/* Set default env flags, and allow AutoDetect to override */
-	if (!xstrcasecmp(merge_gres->gres_ctx->gres_name, "gpu"))
-		gres_slurmd_conf.config_flags |=
-			(GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
+	if (!xstrcasecmp(merge_gres->gres_ctx->gres_name, "gpu")) {
+		if (merge_gres->gres_ctx->config_flags & GRES_CONF_ENV_SET)
+			gres_slurmd_conf.config_flags |=
+				merge_gres->gres_ctx->config_flags;
+		else
+			gres_slurmd_conf.config_flags |=
+				(GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
+	}
 	if (merge_gres->gres_ctx->config_flags & GRES_CONF_COUNT_ONLY)
 		gres_slurmd_conf.config_flags |= GRES_CONF_COUNT_ONLY;
+	if (merge_gres->gres_ctx->config_flags & GRES_CONF_EXPLICIT)
+		gres_slurmd_conf.config_flags |= GRES_CONF_EXPLICIT;
 
 	gres_slurmd_conf.count = count;
 
