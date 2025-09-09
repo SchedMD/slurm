@@ -61,6 +61,7 @@
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
@@ -90,6 +91,8 @@
 #define OPT_LONG_GEN_OAS 0x102
 
 #define SLURM_CONF_DISABLED "/dev/null"
+#define DEFAULT_OPENAPI_PLUGINS_SLURMDBD "slurmctld,slurmdbd"
+#define DEFAULT_OPENAPI_PLUGINS "slurmctld"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define unshare(_) (false)
@@ -685,6 +688,28 @@ static void _inet_on_finish(conmgr_fd_t *con, void *ctxt)
 	conmgr_request_shutdown();
 }
 
+static void _load_oas_specs(void)
+{
+	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
+		fprintf(stderr, "Possible OpenAPI plugins:\n");
+		(void) init_openapi(oas_specs, _plugrack_foreach_list, NULL,
+				    NULL);
+		exit(0);
+	}
+
+	if (!oas_specs) {
+		if (slurm_with_slurmdbd())
+			oas_specs = xstrdup(DEFAULT_OPENAPI_PLUGINS_SLURMDBD);
+		else
+			oas_specs = xstrdup(DEFAULT_OPENAPI_PLUGINS);
+	}
+
+	if (init_openapi(oas_specs, NULL, parsers, response_status_codes))
+		fatal("Unable to initialize OpenAPI structures");
+
+	xfree(oas_specs);
+}
+
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
@@ -812,15 +837,7 @@ int main(int argc, char **argv)
 	if (init_operations(parsers))
 		fatal("Unable to initialize operations structures");
 
-	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
-		fprintf(stderr, "Possible OpenAPI plugins:\n");
-		init_openapi(oas_specs, _plugrack_foreach_list, NULL, NULL);
-		exit(0);
-	} else if (init_openapi(oas_specs, NULL, parsers,
-				response_status_codes))
-		fatal("Unable to initialize OpenAPI structures");
-
-	xfree(oas_specs);
+	_load_oas_specs();
 
 	/* Sanity check modes */
 	if (run_mode.stdin_socket) {

@@ -275,12 +275,12 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 	if (*path_tag == -1)
 		return _operations_router_reject(
 			args,
-			"Unable find requested URL. Please view /openapi/v3 for API reference.",
+			"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.",
 			HTTP_STATUS_CODE_ERROR_NOT_FOUND, NULL);
 	else if (*path_tag == -2)
 		return _operations_router_reject(
 			args,
-			"Requested REST method is not defined at URL. Please view /openapi/v3 for API reference.",
+			"Requested HTTP query method is not support at URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.",
 			HTTP_STATUS_CODE_ERROR_METHOD_NOT_ALLOWED, NULL);
 	else
 		return SLURM_SUCCESS;

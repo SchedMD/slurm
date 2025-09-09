@@ -1,4 +1,4 @@
-.TH slurmrestd "8" "Slurm REST Daemon" "August 2025" "Slurm REST Daemon"
+.TH slurmrestd "8" "Slurm REST Daemon" "September 2025" "Slurm REST Daemon"
 
 .SH "NAME"
 slurmrestd \- Interface to Slurm via REST API.
@@ -228,7 +228,10 @@ Default: 124
 .TP
 \fB\-s <plugin>\fR[,plugin]...
 Comma\-delimited list of OpenAPI plugins to load, which will determine the
-available content. By default all available OpenAPI plugins will be loaded.
+available content. By default, OpenAPI plugins loaded will be
+\fIslurmctld,slurmdbd\fR when
+\fBAccountingStorageType\fR=\fIaccounting_storage/slurmdbd\fR is configured in
+\fBslurm.conf\fR(5) or \fIslurmctld\fR for any other configuration.
 See also \fB-d\fR for the data_parser plugins controlling the output format.
 .RS
 .TP
