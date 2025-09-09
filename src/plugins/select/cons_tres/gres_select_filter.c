@@ -745,12 +745,12 @@ static uint64_t _pick_gres_topo(sock_gres_t *sock_gres, uint64_t gres_needed,
  * job_id IN - job ID for logging
  * tres_mc_ptr IN - job's multi-core options
  */
-static void _set_sock_bits(int node_inx, int job_node_inx,
-			   sock_gres_t *sock_gres, uint32_t job_id,
-			   gres_mc_data_t *tres_mc_ptr,
-			   uint32_t *used_cores_on_sock,
-			   uint32_t *res_gres_per_sock, uint32_t total_res_gres,
-			   uint32_t used_sock_cnt, bool enforce_binding)
+static int _set_sock_bits(int node_inx, int job_node_inx,
+			  sock_gres_t *sock_gres, uint32_t job_id,
+			  gres_mc_data_t *tres_mc_ptr,
+			  uint32_t *used_cores_on_sock,
+			  uint32_t *res_gres_per_sock, uint32_t total_res_gres,
+			  uint32_t used_sock_cnt, bool enforce_binding)
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
@@ -903,7 +903,9 @@ static void _set_sock_bits(int node_inx, int job_node_inx,
 		      node_inx, gres_needed,
 		      used_sock_cnt * gres_js->gres_per_socket,
 		      gres_js->gres_per_socket);
+		return ESLURM_INVALID_GRES;
 	}
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1176,10 +1178,10 @@ static int _set_job_bits2(int node_inx, int job_node_inx,
  * job_id IN - job ID for logging
  * tres_mc_ptr IN - job's multi-core options
  */
-static void _set_node_bits(int node_inx, int job_node_inx,
-			   sock_gres_t *sock_gres, uint32_t job_id,
-			   uint32_t *used_cores_on_sock, uint32_t used_core_cnt,
-			   uint32_t total_res_gres, bool enforce_binding)
+static int _set_node_bits(int node_inx, int job_node_inx,
+			  sock_gres_t *sock_gres, uint32_t job_id,
+			  uint32_t *used_cores_on_sock, uint32_t used_core_cnt,
+			  uint32_t total_res_gres, bool enforce_binding)
 {
 	int gres_cnt;
 	uint16_t sock_cnt = 0;
@@ -1199,7 +1201,7 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 	gres_needed_per_core = (double)gres_needed / (double)used_core_cnt;
 
 	if (!gres_needed)
-		return;
+		return SLURM_SUCCESS;
 
 	if (gres_ns->link_len == gres_cnt) {
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
@@ -1259,7 +1261,9 @@ static void _set_node_bits(int node_inx, int job_node_inx,
 		error("%s: Insufficient gres/%s allocated for job %u on node_inx %u (gres still needed %"PRIu64", total requested: %"PRIu64")",
 		      __func__, sock_gres->gres_state_job->gres_name, job_id,
 		      node_inx, gres_needed, gres_js->gres_per_node);
+		return ESLURM_INVALID_GRES;
 	}
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1272,9 +1276,9 @@ static void _set_node_bits(int node_inx, int job_node_inx,
  * tasks_per_socket IN - Task count for each socket
 
  */
-static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
-			   uint32_t job_id, uint32_t *tasks_per_socket,
-			   uint32_t total_res_gres, bool enforce_binding)
+static int _set_task_bits(int node_inx, sock_gres_t *sock_gres,
+			  uint32_t job_id, uint32_t *tasks_per_socket,
+			  uint32_t total_res_gres, bool enforce_binding)
 {
 	uint16_t sock_cnt = 0;
 	int gres_cnt, g, s;
@@ -1291,7 +1295,7 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 	if (!tasks_per_socket) {
 		error("%s: tasks_per_socket unset for job %u on node %s",
 		      __func__, job_id, node_record_table_ptr[node_inx]->name);
-		return;
+		return ESLURM_INVALID_GRES;
 	}
 
 	if (gres_ns->link_len == gres_cnt) {
@@ -1345,7 +1349,9 @@ static void _set_task_bits(int node_inx, sock_gres_t *sock_gres,
 		      node_inx, gres_needed,
 		      (_get_task_cnt_node(tasks_per_socket, sock_cnt) *
 		      gres_js->gres_per_task), gres_js->gres_per_task);
+		return ESLURM_INVALID_GRES;
 	}
+	return SLURM_SUCCESS;
 }
 
 /* Build array to identify task count for each node-socket pair */
@@ -1875,18 +1881,19 @@ static int _select_and_set_node(void *x, void *arg)
 			*rc = ESLURM_INVALID_GRES;
 		}
 	} else if (gres_js->gres_per_node) {
-		_set_node_bits(node_inx, job_node_inx, sock_gres, job_id,
-			       args->used_cores_on_sock, args->used_core_cnt,
-			       total_res_gres, enforce_binding);
+		*rc = _set_node_bits(node_inx, job_node_inx, sock_gres, job_id,
+				     args->used_cores_on_sock,
+				     args->used_core_cnt, total_res_gres,
+				     enforce_binding);
 	} else if (gres_js->gres_per_socket) {
-		_set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
-			       tres_mc_ptr, args->used_cores_on_sock,
-			       res_gres_per_sock, total_res_gres,
-			       args->used_sock_cnt, enforce_binding);
+		*rc = _set_sock_bits(node_inx, job_node_inx, sock_gres, job_id,
+				     tres_mc_ptr, args->used_cores_on_sock,
+				     res_gres_per_sock, total_res_gres,
+				     args->used_sock_cnt, enforce_binding);
 	} else if (gres_js->gres_per_task) {
-		_set_task_bits(node_inx, sock_gres, job_id,
-			       tasks_per_node_socket[node_inx], total_res_gres,
-			       enforce_binding);
+		*rc = _set_task_bits(node_inx, sock_gres, job_id,
+				     tasks_per_node_socket[node_inx],
+				     total_res_gres, enforce_binding);
 	} else if (gres_js->gres_per_job) {
 		int tmp = _set_job_bits1(node_inx, job_node_inx, rem_node_cnt,
 					 sock_gres, job_id, tres_mc_ptr,
