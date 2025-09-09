@@ -115,9 +115,11 @@ static int _create_exec_script(char *name, char *contents, char **script_path)
 {
 	int fd = -1;
 
+	xassert(script_path);
+
 	if ((fd = dump_to_memfd(name, contents, script_path)) < 0) {
 		error("%s: Failed to create script file", plugin_type);
-		xfree(script_path);
+		xfree(*script_path);
 	}
 
 	return fd;
