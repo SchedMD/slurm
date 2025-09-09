@@ -767,8 +767,8 @@ static int _foreach_restricted_gpu(void *x, void *arg)
 	foreach_res_gpu_t *args = arg;
 	gres_job_state_t  *gres_js;
 
-	if ((gres_state_job->plugin_id != gres_get_gpu_plugin_id()) ||
-	    !args->res_cores_per_gpu)
+	/* Currently all shared gres are gpu alt gres */
+	if (!gres_find_gpu_or_alt(gres_state_job, NULL))
 		return SLURM_SUCCESS;
 	gres_js = gres_state_job->gres_data;
 
@@ -795,7 +795,8 @@ static void _gres_limit_reserved_cores(gres_sock_list_create_t *create_args)
 	};
 
 	if (!create_args->gpu_spec_bitmap || !create_args->core_bitmap ||
-	    !create_args->job_gres_list || !create_args->node_gres_list)
+	    !create_args->job_gres_list || !create_args->node_gres_list ||
+	    !create_args->res_cores_per_gpu)
 		return;
 
 	gres_state_node = list_find_first(create_args->node_gres_list,

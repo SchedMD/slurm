@@ -281,7 +281,7 @@ static int _foreach_gres_add(void *x, void *arg)
 	}
 	gres_limit = MAX(gres_limit, min_gres);
 
-	if ((gres_state_job->plugin_id == gres_get_gpu_plugin_id()) &&
+	if ((gres_find_gpu_or_alt(gres_state_job, NULL)) &&
 	    args->res_cores_per_gpu) {
 		if (!args->actual_cores_per_sock) {
 			args->actual_cores_per_sock =

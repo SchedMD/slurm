@@ -617,7 +617,8 @@ static int _set_shared_task_bits(int node_inx,
 			used_sock[s] = 1;
 			uint32_t sock_res_gres = 0;
 			uint32_t used_res = 0;
-			if (res_gres_per_sock && res_gres_per_sock[s]) {
+			if (res_gres_per_sock && res_gres_per_sock[s] &&
+			    tasks_per_socket[s]) {
 				sock_res_gres = res_gres_per_sock[s];
 
 				if ((tasks_per_socket[s] *
