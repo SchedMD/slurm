@@ -626,7 +626,7 @@ extern config_response_msg_t *new_config_response(bool to_slurmd)
 	}
 
 	/*
-	 * Load Prolog and Epilog scripts.
+	 * Load Prolog, Epilog, TaskProlog, and TaskEpilog scripts.
 	 * Only load if a non-absolute path is provided, this is our
 	 * indication that the file should be sent out, and matches
 	 * configuration semantics for the Include lines.
@@ -642,6 +642,12 @@ extern config_response_msg_t *new_config_response(bool to_slurmd)
 				_load_conf2list(msg, slurm_conf.epilog[i],
 						true);
 		}
+		if ((slurm_conf.task_prolog) &&
+		    (slurm_conf.task_prolog[0] != '/'))
+			_load_conf2list(msg, slurm_conf.task_prolog, true);
+		if ((slurm_conf.task_epilog) &&
+		    (slurm_conf.task_epilog[0] != '/'))
+			_load_conf2list(msg, slurm_conf.task_epilog, true);
 	}
 
 	return msg;

@@ -102,9 +102,10 @@ Any additional config files will need to be shared a different way or added to
 the parent config.
 </p>
 
-<p>If <b>Prolog</b> and <b>Epilog</b> scripts are specified in slurm.conf,
-the scripts will <b>ONLY</b> be shipped if the filenames referenced have no path
-separators and the file is located adjacent to slurm.conf.
+<p>If <b>Prolog</b>, <b>Epilog</b>, <b>TaskProlog</b>, and <b>TaskEpilog</b>
+scripts are specified in slurm.conf, the scripts will <b>ONLY</b> be shipped if
+the filenames referenced have no path separators and the file is located
+adjacent to slurm.conf.
 </p>
 
 <h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
@@ -149,6 +150,6 @@ is as follows:</p>
 <li>topology.yaml</li>
 </ul>
 
-<p style="text-align:center;">Last modified 01 August 2025</p>
+<p style="text-align:center;">Last modified 09 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
