@@ -6958,9 +6958,13 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			slurm_addr_t cli_addr = {
 				.ss_family = AF_UNSPEC,
 			};
-			(void) slurm_get_peer_addr(fd, &cli_addr);
-			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &cli_addr, msg->auth_uid);
+
+			if ((fd >= 0) && !slurm_get_peer_addr(fd, &cli_addr))
+				info("%s: received opcode %s from %pA uid %u",
+				     __func__, p, &cli_addr, msg->auth_uid);
+			else
+				info("%s: received opcode %s from (unresolvable socket peer) uid %u",
+				     __func__, p, msg->auth_uid);
 		}
 	}
 
