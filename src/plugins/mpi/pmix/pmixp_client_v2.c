@@ -58,15 +58,26 @@ static int _client_connected(const pmix_proc_t *proc, void *server_object,
 			     pmix_op_cbfunc_t cbfunc, void *cbdata)
 {
 	/*
-	 * Call the callback function. The status will be set in cbdata and we
-	 * only return PMIX_SUCCESS indicating we called it.
+	 * Before PMIx v6, a return of PMIX_SUCCESS was always excepted.
+	 * (Note: PMIx v3.1.0rc2+ would also treat PMIX_OPERATION_SUCCEEDED the
+	 *  same as PMIX_SUCCESS. Also cbfunc was always NULL before PMIx v6)
+	 *
+	 * Starting in PMIx v6, PMIX_SUCCESS and PMIX_OPERATION_SUCCEEDED are
+	 * treated differently. In v6+ only return PMIX_SUCCESS to indicate
+	 * cbfunc was called.
+	 *
+	 * Also, guarding PMIX_OPERATION_SUCCEEDED in PMIx v6+ allows Slurm to
+	 * compile against PMIx v2 - v3.0.0 since it didn't exist yet.
 	 */
-	if (cbfunc) {
-		cbfunc(PMIX_SUCCESS, cbdata);
-		return PMIX_SUCCESS;
-	}
+#if (HAVE_PMIX_VER >= 6)
+	if (!cbfunc)
+		return PMIX_OPERATION_SUCCEEDED;
 
-	return PMIX_OPERATION_SUCCEEDED;
+	/* Call the callback function. The status will be set in cbdata */
+	cbfunc(PMIX_SUCCESS, cbdata);
+#endif
+
+	return PMIX_SUCCESS;
 }
 
 static void _op_callbk(pmix_status_t status, void *cbdata)
