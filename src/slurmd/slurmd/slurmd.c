@@ -2026,6 +2026,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
+		FREE_NULL_MSG(msg);
 		return;
 	}
 
@@ -2035,6 +2036,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
+		FREE_NULL_MSG(msg);
 		return;
 	}
 

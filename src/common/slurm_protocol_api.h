@@ -551,6 +551,13 @@ extern int slurm_send_recv_msg(void *tls_conn, slurm_msg_t *req,
 extern void slurm_free_msg_members(slurm_msg_t *msg);
 extern void slurm_free_msg(slurm_msg_t * msg);
 
+#define FREE_NULL_MSG(_X)                   \
+	do {                                \
+		if (_X)                     \
+			slurm_free_msg(_X); \
+		_X = NULL;                  \
+	} while (0)
+
 extern void slurm_msg_set_r_uid(slurm_msg_t *msg, uid_t r_uid);
 
 /* must free this memory with free not xfree */
