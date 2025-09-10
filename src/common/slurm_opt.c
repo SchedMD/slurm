@@ -3419,6 +3419,35 @@ static slurm_cli_opt_t slurm_opt_spread_job = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_spread_segments(slurm_opt_t *opt, const char *arg)
+{
+	opt->job_flags |= SPREAD_SEGMENTS;
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_spread_segments(slurm_opt_t *opt)
+{
+	if (opt->job_flags & SPREAD_SEGMENTS)
+		return xstrdup("set");
+	return xstrdup("unset");
+}
+
+static void arg_reset_spread_segments(slurm_opt_t *opt)
+{
+	opt->job_flags &= ~SPREAD_SEGMENTS;
+}
+
+static slurm_cli_opt_t slurm_opt_spread_segments = {
+	.name = "spread-segments",
+	.has_arg = no_argument,
+	.val = LONG_OPT_SPREAD_SEGMENTS,
+	.set_func = arg_set_spread_segments,
+	.get_func = arg_get_spread_segments,
+	.reset_func = arg_reset_spread_segments,
+	.reset_each_pass = true,
+};
+
 static int arg_set_stepmgr(slurm_opt_t *opt, const char *arg)
 {
 	opt->job_flags |= STEPMGR_ENABLED;
@@ -4266,6 +4295,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_slurmd_debug,
 	&slurm_opt_sockets_per_node,
 	&slurm_opt_spread_job,
+	&slurm_opt_spread_segments,
 	&slurm_opt_stepmgr,
 	&slurm_opt_switch_req,
 	&slurm_opt_switch_wait,
@@ -4281,7 +4311,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_tmp,
 	&slurm_opt_tree_width,
 	&slurm_opt_tres_bind,
- 	&slurm_opt_tres_per_task,
+	&slurm_opt_tres_per_task,
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,

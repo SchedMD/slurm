@@ -787,6 +787,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	/****** Line (optional) ******/
 	if (job_ptr->segment_size) {
 		xstrfmtcat(out, "SegmentSize=%u", job_ptr->segment_size);
+		if (job_ptr->bitflags & SPREAD_SEGMENTS)
+			xstrcat(out, " SpreadSegments=Yes");
 		xstrcat(out, line_end);
 	}
 
