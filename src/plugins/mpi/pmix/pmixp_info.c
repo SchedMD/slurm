@@ -385,11 +385,6 @@ static void _parse_pmix_conf_env(char ***env, char *pmix_conf_env)
 		if (sep) {
 			sep[0] = '\0';
 			sep++;
-			/* Only set PMIX and UCX related env. vars. */
-			if (!xstrncasecmp("PMIX", tok, 4) &&
-			    !xstrncasecmp("UCX", tok, 4))
-				continue;
-
 			/* Overwrite current user's environment */
 			setenvf(env, tok, "%s", sep);
 
