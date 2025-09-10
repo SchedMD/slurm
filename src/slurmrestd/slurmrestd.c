@@ -768,8 +768,7 @@ int main(int argc, char **argv)
 	 */
 	if (!tls_g_init() && tls_available() &&
 	    (rc = tls_g_load_own_cert(NULL, 0, NULL, 0))) {
-		warning("Disabling TLS support due to failure loading TLS certificate: %s",
-			slurm_strerror(rc));
+		debug("Disabling TLS support due to failure loading TLS certificate");
 
 		if ((rc = tls_g_fini()))
 			fatal("Unable to unload TLS plugin: %s",

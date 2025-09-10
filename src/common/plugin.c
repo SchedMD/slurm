@@ -370,7 +370,7 @@ extern plugin_context_t *plugin_context_create(
 		goto fail;
 	}
 
-	error("Couldn't find the specified plugin name for %s "
+	debug("Couldn't find the specified plugin name for %s "
 	      "looking at all files",
 	      c->type);
 
@@ -382,7 +382,7 @@ extern plugin_context_t *plugin_context_create(
 
 	c->cur_plugin = plugrack_use_by_type(c->plugin_list, c->type);
 	if (c->cur_plugin == PLUGIN_INVALID_HANDLE) {
-		error("cannot find %s plugin for %s", plugin_type, c->type);
+		debug("cannot find %s plugin for %s", plugin_type, c->type);
 		goto fail;
 	}
 
