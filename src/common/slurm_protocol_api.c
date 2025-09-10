@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -1935,7 +1936,9 @@ void slurm_get_ip_str(slurm_addr_t *addr, char *ip, unsigned int buf_len)
  */
 int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 {
-	slurm_addr_t name = {0};
+	slurm_addr_t name = {
+		.ss_family = AF_UNSPEC,
+	};
 	socklen_t namelen = sizeof(name);
 
 	if (getpeername(fd, (struct sockaddr *) &name, &namelen))
