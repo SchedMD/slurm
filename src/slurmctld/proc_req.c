@@ -6955,7 +6955,9 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 			     __func__, conmgr_con_get_name(msg->conmgr_con), p,
 			     msg->auth_uid);
 		} else {
-			slurm_addr_t cli_addr;
+			slurm_addr_t cli_addr = {
+				.ss_family = AF_UNSPEC,
+			};
 			(void) slurm_get_peer_addr(fd, &cli_addr);
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &cli_addr, msg->auth_uid);
