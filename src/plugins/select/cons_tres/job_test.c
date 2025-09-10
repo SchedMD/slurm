@@ -61,6 +61,7 @@ typedef struct {
 	part_res_record_t *future_part;
 	list_t *future_license_list;
 	list_t *job_license_list;
+	time_t now;
 	bitstr_t *orig_map;
 	bool *qos_preemptor;
 	time_t start;
@@ -94,6 +95,7 @@ uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
 bool preempt_for_licenses = false;
 int preempt_reorder_cnt	= 1;
+bool soft_time_limit = false;
 
 /* Local functions */
 static avail_res_t *_allocate(job_record_t *job_ptr,
@@ -308,14 +310,36 @@ static struct multi_core_data *_create_default_mc(void)
 	return mc_ptr;
 }
 
+static time_t _soft_job_end(job_record_t *job_ptr, time_t now)
+{
+	time_t end_time;
+
+	if (!soft_time_limit || !job_ptr->time_min)
+		return job_ptr->end_time;
+
+	end_time = job_ptr->start_time + job_ptr->time_min * 60;
+	/*
+	 * To ensure consistency with the _bf_reserve_running() function.
+	 * If over the soft limit, assume the job will use half of the
+	 * remaining time until the hard limit.
+	 */
+	if (end_time < now)
+		end_time = now + (job_ptr->end_time - now) / 2;
+
+	return end_time;
+}
+
 /* list sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
 	job_record_t *job1_ptr = *(job_record_t **) x;
 	job_record_t *job2_ptr = *(job_record_t **) y;
+	time_t end_time1, end_time2;
 
-	return slurm_sort_time_list_asc(&job1_ptr->end_time,
-					&job2_ptr->end_time);
+	end_time1 = _soft_job_end(job1_ptr, 0);
+	end_time2 = _soft_job_end(job2_ptr, 0);
+
+	return slurm_sort_time_list_asc(&end_time1, &end_time2);
 }
 
 static int _find_job (void *x, void *key)
@@ -2368,7 +2392,8 @@ static int _build_cr_job_list(void *x, void *arg)
 			return 0;
 		}
 	}
-	if (job_ptr_preempt->end_time <= args->start) {
+
+	if (_soft_job_end(job_ptr_preempt, args->now) <= args->start) {
 		bitstr_t *efctv_bitmap_ptr;
 		efctv_bitmap_ptr =
 			_select_topo_bitmap(tmp_job_ptr, args->orig_map,
@@ -2650,6 +2675,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		.future_part = future_part,
 		.future_license_list = future_license_list,
 		.job_license_list = job_ptr->license_list,
+		.now = now,
 		.orig_map = orig_map,
 		.qos_preemptor = &qos_preemptor,
 		.start = will_run_ptr ? will_run_ptr->start : 0,
@@ -2691,6 +2717,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		job_record_t *last_job_ptr = NULL;
 		job_record_t *next_job_ptr = NULL;
 		int overlap, rm_job_cnt = 0;
+		time_t last_job_end_time, next_job_end_time;
 
 		bit_or(node_bitmap, orig_map);
 		while (true) {
@@ -2698,7 +2725,8 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 			if (!tmp_job_ptr ||
 			    (will_run_ptr && will_run_ptr->end &&
-			     tmp_job_ptr->end_time > will_run_ptr->end)) {
+			     _soft_job_end(tmp_job_ptr, now) >
+				     will_run_ptr->end)) {
 				more_jobs = false;
 				break;
 			}
@@ -2727,6 +2755,8 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			}
 			if (!end_time) {
 				time_t delta = 0;
+				time_t tmp_job_end_time =
+					_soft_job_end(tmp_job_ptr, now);
 
 				/*
 				 * align all time windows on a
@@ -2736,10 +2766,9 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				 * changing the results between
 				 * scheduling evaluations
 				 */
-				delta = tmp_job_ptr->end_time %
-							time_window;
-				end_time = tmp_job_ptr->end_time +
-						(time_window - delta);
+				delta = tmp_job_end_time % time_window;
+				end_time = tmp_job_end_time +
+					   (time_window - delta);
 			}
 			last_job_ptr = tmp_job_ptr;
 			(void) job_res_rm_job(
@@ -2751,7 +2780,8 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			if (!next_job_ptr) {
 				more_jobs = false;
 				break;
-			} else if (next_job_ptr->end_time >
+			} else if ((next_job_end_time =
+					    _soft_job_end(next_job_ptr, now)) >
 				   (end_time + time_window)) {
 				break;
 			}
@@ -2782,14 +2812,13 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			xassert(last_relevant_job); /* should never be NULL */
 			if (last_relevant_job)
 				last_job_ptr = last_relevant_job;
-
-			if (last_job_ptr->end_time <= now) {
+			last_job_end_time = _soft_job_end(last_job_ptr, now);
+			if (last_job_end_time <= now) {
 				job_ptr->start_time =
 					_guess_job_end(last_job_ptr,
 						       now);
 			} else {
-				job_ptr->start_time =
-					last_job_ptr->end_time;
+				job_ptr->start_time = last_job_end_time;
 			}
 			break;
 		}
@@ -2798,8 +2827,8 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				time_window += bf_window_scale;
 			else
 				time_window *= 2;
-		} while (next_job_ptr && next_job_ptr->end_time >
-			 (end_time + time_window));
+		} while (next_job_ptr &&
+			 next_job_end_time > (end_time + time_window));
 timer_check:
 		END_TIMER;
 		if (DELTA_TIMER >= 2000000)
