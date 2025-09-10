@@ -4281,7 +4281,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_tmp,
 	&slurm_opt_tree_width,
 	&slurm_opt_tres_bind,
- 	&slurm_opt_tres_per_task,
+	&slurm_opt_tres_per_task,
 	&slurm_opt_uid,
 	&slurm_opt_unbuffered,
 	&slurm_opt_use_min_nodes,
