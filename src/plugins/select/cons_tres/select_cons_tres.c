@@ -255,6 +255,10 @@ extern int select_p_node_init(void)
 		preempt_reorder_cnt = 1;	/* Use default value */
 	}
 
+	soft_time_limit = false;
+	if (xstrcasestr(slurm_conf.sched_params, "time_min_as_soft_limit"))
+		soft_time_limit = true;
+
 	if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 				   "bf_window_linear="))) {
 		bf_window_scale = atoi(tmp_ptr + 17);
