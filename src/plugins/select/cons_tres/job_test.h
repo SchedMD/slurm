@@ -43,6 +43,7 @@ extern uint64_t def_mem_per_gpu;
 extern bool preempt_strict_order;
 extern bool preempt_for_licenses;
 extern int preempt_reorder_cnt;
+extern bool soft_time_limit;
 
 /*
  * job_test - Given a specification of scheduling requirements,
