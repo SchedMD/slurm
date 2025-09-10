@@ -375,7 +375,7 @@ static int _attach_to_tasks(slurm_step_id_t stepid,
 	reattach_msg.num_io_port = num_io_ports;
 	reattach_msg.io_key = xstrdup(io_key);
 	reattach_msg.io_port = io_ports;
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		if (!(reattach_msg.tls_cert = conn_g_get_own_public_cert())) {
 			error("Could not get self signed certificate for step IO");
 			return SLURM_ERROR;

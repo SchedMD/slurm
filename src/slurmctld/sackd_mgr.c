@@ -131,7 +131,7 @@ static void _update_sackd_node(sackd_node_t *node, slurm_msg_t *msg)
 	/* Resolve IP of slurmd if needed */
 	xfree(node->nodeaddr);
 	if (addr->ss_family == AF_UNSPEC) {
-		int fd = conn_g_get_fd(msg->tls_conn);
+		int fd = conn_g_get_fd(msg->conn);
 		(void) slurm_get_peer_addr(fd, addr);
 	}
 

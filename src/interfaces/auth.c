@@ -435,16 +435,16 @@ extern char *auth_g_get_host(void *slurm_msg)
 		return host;
 	}
 
-	if (msg->conn && msg->conn->rem_host) {
+	if (msg->pcon && msg->pcon->rem_host) {
 		/* use remote host name if persistent connection */
-		host = xstrdup(msg->conn->rem_host);
+		host = xstrdup(msg->pcon->rem_host);
 		debug3("%s: using remote hostname: %s", __func__, host);
 		return host;
 	}
 
 	if (addr->ss_family == AF_UNSPEC) {
 		int rc;
-		int fd = conn_g_get_fd(msg->tls_conn);
+		int fd = conn_g_get_fd(msg->conn);
 
 		if ((rc = slurm_get_peer_addr(fd, addr))) {
 			error("%s: [fd:%d] unable to determine socket remote host: %s",

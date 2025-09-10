@@ -60,7 +60,7 @@ typedef enum {
 } persist_conn_type_t;
 
 typedef struct {
-	void *conn;		/* persist_conn_t */
+	void *pcon;		/* persist_conn_t */
 	void *data;		/* pointer to a message type below */
 	uint16_t msg_type;	/* slurmdbd_msg_type_t / slurm_msg_type_t */
 } persist_msg_t;
@@ -84,7 +84,7 @@ typedef struct {
 	time_t *shutdown;
 	pthread_t thread_id;
 	int timeout;
-	void *tls_conn;
+	void *conn; /* interfaces/conn data */
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;
 } persist_conn_t;

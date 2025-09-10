@@ -166,7 +166,7 @@ typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
 	int fd;
-	void *tls_conn;
+	void *conn; /* interfaces/conn data */
 	slurm_msg_t *msg;
 } service_msg_args_t;
 
@@ -502,7 +502,7 @@ main (int argc, char **argv)
 		pidfd = create_pidfile(conf->pidfile, 0);
 
 	/* Periodically renew TLS certificate indefinitely */
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {
@@ -525,7 +525,7 @@ main (int argc, char **argv)
 	 * through slurmd. This creates slurmd.socket which slurmstepd will use
 	 * to send its messages.
 	 */
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		stepd_proxy_slurmd_init(conf->spooldir);
 
 	slurm_thread_create_detached(_registration_engine, NULL);
@@ -705,19 +705,19 @@ static void *_service_msg(void *arg)
 	/* Release conmgr connection as it will have been closed */
 	conmgr_fd_free_ref(&msg->conmgr_con);
 
-	if (args->tls_conn) {
-		msg->tls_conn = args->tls_conn;
+	if (args->conn) {
+		msg->conn = args->conn;
 	} else {
-		conn_args_t tls_args = {
+		conn_args_t conn_args = {
 			.input_fd = args->fd,
 			.output_fd = args->fd,
 		};
-		msg->tls_conn = conn_g_create(&tls_args);
+		msg->conn = conn_g_create(&conn_args);
 	}
 	slurmd_req(msg);
 
-	conn_g_destroy(msg->tls_conn, true);
-	msg->tls_conn = NULL;
+	conn_g_destroy(msg->conn, true);
+	msg->conn = NULL;
 
 	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
 		 __func__, conmgr_con_get_name(msg->conmgr_con),
@@ -2070,7 +2070,7 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
 	args = xmalloc(sizeof(*args));
 	args->magic = SERVICE_MSG_ARGS_MAGIC;
 	args->fd = input_fd;
-	args->tls_conn = tls_conn;
+	args->conn = tls_conn;
 	args->msg = msg;
 
 	/* force blocking mode for blocking handlers */
@@ -2159,7 +2159,7 @@ static void _create_msg_socket(void)
 		fatal("Unable to bind listen port (%u): %m", conf->port);
 	}
 
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		flags |= CON_FLAG_TLS_SERVER;
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,

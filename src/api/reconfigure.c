@@ -169,31 +169,31 @@ extern int slurm_takeover(int backup_inx)
 static int _send_message_controller(int dest, slurm_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	slurm_msg_t resp_msg;
 
 	/*
 	 * always communicate with a single node (primary or some backup per
 	 * value of "dest")
 	 */
-	if (!(tls_conn = slurm_open_controller(dest, working_cluster_rec))) {
+	if (!(conn = slurm_open_controller(dest, working_cluster_rec))) {
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 	}
 
 	slurm_msg_set_r_uid(req, slurm_conf.slurm_user_id);
-	if (slurm_send_node_msg(tls_conn, req) < 0) {
-		conn_g_destroy(tls_conn, true);
+	if (slurm_send_node_msg(conn, req) < 0) {
+		conn_g_destroy(conn, true);
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
 	}
 
 	slurm_msg_t_init(&resp_msg);
-	if ((rc = slurm_receive_msg(tls_conn, &resp_msg, 0)) != 0) {
+	if ((rc = slurm_receive_msg(conn, &resp_msg, 0)) != 0) {
 		slurm_free_msg_members(&resp_msg);
-		conn_g_destroy(tls_conn, true);
+		conn_g_destroy(conn, true);
 		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
 	}
 
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 
 	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;

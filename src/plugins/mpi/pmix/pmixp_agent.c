@@ -174,7 +174,7 @@ static int _abort_conn_close(eio_obj_t *obj, list_t *objs)
 
 static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 {
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	slurm_addr_t abort_client;
 	int shutdown = 0;
 
@@ -191,14 +191,13 @@ static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 			return SLURM_SUCCESS;
 		}
 
-		if (!(tls_conn =
-			      slurm_accept_msg_conn(obj->fd, &abort_client))) {
+		if (!(conn = slurm_accept_msg_conn(obj->fd, &abort_client))) {
 			PMIXP_ERROR("slurm_accept_conn: %m");
 			continue;
 		}
 		PMIXP_DEBUG("New abort client: %pA", &abort_client);
-		pmixp_abort_handle(tls_conn);
-		conn_g_destroy(tls_conn, true);
+		pmixp_abort_handle(conn);
+		conn_g_destroy(conn, true);
 	}
 	return SLURM_SUCCESS;
 }

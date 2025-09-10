@@ -413,7 +413,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	conn_args_t tls_args = {
+	conn_args_t conn_args = {
 		.input_fd = -1,
 		.output_fd = -1,
 		.defer_blinding = true,
@@ -516,11 +516,11 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		con_flag(con, FLAG_TLS_SERVER));
 
 	if (con_flag(con, FLAG_TLS_CLIENT))
-		tls_args.mode = TLS_CONN_CLIENT;
+		conn_args.mode = CONN_CLIENT;
 	else if (con_flag(con, FLAG_TLS_SERVER))
-		tls_args.mode = TLS_CONN_SERVER;
+		conn_args.mode = CONN_SERVER;
 
-	xassert(tls_args.mode != TLS_CONN_NULL);
+	xassert(conn_args.mode != CONN_NULL);
 	xassert(con->input_fd >= 0);
 	xassert(con->output_fd >= 0);
 
@@ -529,7 +529,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	if (!(tls = tls_g_create_conn(&tls_args))) {
+	if (!(tls = tls_g_create_conn(&conn_args))) {
 		rc = errno;
 		log_flag(CONMGR, "%s: [%s] tls_g_create() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));

@@ -106,9 +106,9 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	 * For half_duplex, only the available data should be read and then
 	 * immediately forwarded instead of waiting to fill the entire read
 	 * buffer before writing. For this reason, the connection needs to be
-	 * set to non-blocking when tls_enabled() is true.
+	 * set to non-blocking when conn_tls_enabled() is true.
 	 */
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		fd_set_nonblocking(*remote_fd);
 
 	/*

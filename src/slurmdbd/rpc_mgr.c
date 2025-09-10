@@ -71,7 +71,7 @@ extern void *rpc_mgr(void *no_data)
 	int sockfd, newsockfd;
 	int i;
 	slurm_addr_t cli_addr;
-	slurmdbd_conn_t *conn_arg = NULL;
+	slurmdbd_conn_t *dbd_conn = NULL;
 
 	master_thread_id = pthread_self();
 
@@ -100,21 +100,21 @@ extern void *rpc_mgr(void *no_data)
 		}
 		fd_set_nonblocking(newsockfd);
 
-		conn_arg = xmalloc(sizeof(slurmdbd_conn_t));
-		conn_arg->conn = xmalloc(sizeof(persist_conn_t));
-		conn_arg->conn->flags = PERSIST_FLAG_DBD;
-		conn_arg->conn->callback_proc = proc_req;
-		conn_arg->conn->callback_fini = _connection_fini_callback;
-		conn_arg->conn->shutdown = &shutdown_time;
-		conn_arg->conn->version = SLURM_MIN_PROTOCOL_VERSION;
-		conn_arg->conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
+		dbd_conn = xmalloc(sizeof(slurmdbd_conn_t));
+		dbd_conn->pcon = xmalloc(sizeof(persist_conn_t));
+		dbd_conn->pcon->flags = PERSIST_FLAG_DBD;
+		dbd_conn->pcon->callback_proc = proc_req;
+		dbd_conn->pcon->callback_fini = _connection_fini_callback;
+		dbd_conn->pcon->shutdown = &shutdown_time;
+		dbd_conn->pcon->version = SLURM_MIN_PROTOCOL_VERSION;
+		dbd_conn->pcon->rem_host = xmalloc(INET6_ADDRSTRLEN);
 		/* Don't fill in the rem_port here.  It will be filled in
 		 * later if it is a slurmctld connection. */
-		slurm_get_ip_str(&cli_addr, conn_arg->conn->rem_host,
+		slurm_get_ip_str(&cli_addr, dbd_conn->pcon->rem_host,
 				 INET6_ADDRSTRLEN);
 
 		slurm_persist_conn_recv_thread_init(
-			conn_arg->conn, newsockfd, i, conn_arg);
+			dbd_conn->pcon, newsockfd, i, dbd_conn);
 	}
 
 	debug("rpc_mgr shutting down");
@@ -132,30 +132,30 @@ extern void rpc_mgr_wake(void)
 
 static void _connection_fini_callback(void *arg)
 {
-	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
+	slurmdbd_conn_t *dbd_conn = (slurmdbd_conn_t *) arg;
 	bool stay_locked = false;
 
-	slurm_mutex_lock(&conn->conn_send_lock);
-	slurm_persist_conn_destroy(conn->conn_send);
-	conn->conn_send = NULL;
-	slurm_mutex_unlock(&conn->conn_send_lock);
+	slurm_mutex_lock(&dbd_conn->pcon_send_lock);
+	slurm_persist_conn_destroy(dbd_conn->pcon_send);
+	dbd_conn->pcon_send = NULL;
+	slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 
-	if (conn->conn->rem_port) {
+	if (dbd_conn->pcon->rem_port) {
 		if (!shutdown_time) {
 			slurmdb_cluster_rec_t cluster_rec;
 			memset(&cluster_rec, 0, sizeof(slurmdb_cluster_rec_t));
-			cluster_rec.name = conn->conn->cluster_name;
-			cluster_rec.control_host = conn->conn->rem_host;
-			cluster_rec.control_port = conn->conn->rem_port;
-			cluster_rec.rpc_version = conn->conn->version;
-			cluster_rec.tres_str = conn->tres_str;
-			if (conn->conn->flags & PERSIST_FLAG_EXT_DBD)
+			cluster_rec.name = dbd_conn->pcon->cluster_name;
+			cluster_rec.control_host = dbd_conn->pcon->rem_host;
+			cluster_rec.control_port = dbd_conn->pcon->rem_port;
+			cluster_rec.rpc_version = dbd_conn->pcon->version;
+			cluster_rec.tres_str = dbd_conn->tres_str;
+			if (dbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD)
 				cluster_rec.flags = CLUSTER_FLAG_EXT;
 			debug("cluster %s has disconnected",
-			      conn->conn->cluster_name);
+			      dbd_conn->pcon->cluster_name);
 
 			clusteracct_storage_g_fini_ctld(
-				conn->db_conn, &cluster_rec);
+				dbd_conn->db_conn, &cluster_rec);
 		} else if (slurmdbd_conf->commit_delay)
 			stay_locked = true;
 
@@ -166,21 +166,21 @@ static void _connection_fini_callback(void *arg)
 		 * below.
 		 */
 		slurm_mutex_lock(&registered_lock);
-		list_delete_ptr(registered_clusters, conn);
+		list_delete_ptr(registered_clusters, dbd_conn);
 		if (!stay_locked)
 			slurm_mutex_unlock(&registered_lock);
 
 		/* needs to be the last thing done */
-		acct_storage_g_commit(conn->db_conn, 1);
+		acct_storage_g_commit(dbd_conn->db_conn, 1);
 	}
 
-	acct_storage_g_close_connection(&conn->db_conn);
+	acct_storage_g_close_connection(&dbd_conn->db_conn);
 
 	if (stay_locked)
 		slurm_mutex_unlock(&registered_lock);
 	/* handled directly in the internal persist_conn code */
-	//slurm_persist_conn_members_destroy(&conn->conn);
-	slurm_mutex_destroy(&conn->conn_send_lock);
-	xfree(conn->tres_str);
-	xfree(conn);
+	//slurm_persist_conn_members_destroy(&dbd_conn->pcon);
+	slurm_mutex_destroy(&dbd_conn->pcon_send_lock);
+	xfree(dbd_conn->tres_str);
+	xfree(dbd_conn);
 }

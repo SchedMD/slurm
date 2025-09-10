@@ -44,9 +44,9 @@
 #include "src/common/slurm_protocol_defs.h"
 
 typedef struct {
-	persist_conn_t *conn;
-	persist_conn_t *conn_send;
-	pthread_mutex_t conn_send_lock;
+	persist_conn_t *pcon;
+	persist_conn_t *pcon_send;
+	pthread_mutex_t pcon_send_lock;
 	void *db_conn; /* database connection */
 	char *tres_str;
 } slurmdbd_conn_t;

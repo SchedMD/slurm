@@ -98,7 +98,7 @@ static bool _x11_socket_readable(eio_obj_t *obj)
 
 static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 {
-	void *tls_conn = NULL;
+	void *conn = NULL;
 	slurm_msg_t req, resp;
 	net_forward_msg_t rpc;
 	slurm_addr_t sin;
@@ -114,13 +114,13 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 		goto shutdown;
 	}
 
-	if (!(tls_conn = slurm_open_msg_conn(&alloc_node, srun_tls_cert))) {
+	if (!(conn = slurm_open_msg_conn(&alloc_node, srun_tls_cert))) {
 		error("%s: slurm_open_msg_conn(%pA): %m",
 		      __func__, &alloc_node);
 		goto shutdown;
 	}
 
-	*remote = conn_g_get_fd(tls_conn);
+	*remote = conn_g_get_fd(conn);
 
 	rpc.job_id = job_id;
 	rpc.flags = 0;
@@ -135,7 +135,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	slurm_msg_set_r_uid(&req, job_uid);
 	req.data = &rpc;
 
-	slurm_send_recv_msg(tls_conn, &req, &resp, 0);
+	slurm_send_recv_msg(conn, &req, &resp, 0);
 
 	if (resp.msg_type != RESPONSE_SLURM_RC) {
 		error("Unexpected response on setup, forwarding failed.");
@@ -155,8 +155,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	net_set_nodelay(*local, true, NULL);
 	net_set_nodelay(*remote, true, NULL);
 
-	if (half_duplex_add_objs_to_handle(eio_handle, local, remote,
-					   tls_conn)) {
+	if (half_duplex_add_objs_to_handle(eio_handle, local, remote, conn)) {
 		goto shutdown;
 	}
 

@@ -281,7 +281,7 @@ static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void         _send_future_cloud_to_db();
 static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *tls_conn,
+				int input_fd, int output_fd, void *conn,
 				void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
@@ -306,7 +306,7 @@ static void _send_reconfig_replies(void)
 		xassert(!msg->conmgr_con);
 
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
-		conn_g_destroy(msg->tls_conn, true);
+		conn_g_destroy(msg->conn, true);
 		slurm_free_msg(msg);
 	}
 }
@@ -1768,7 +1768,7 @@ static void _open_ports(void)
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
 
-		if (tls_enabled())
+		if (conn_tls_enabled())
 			flags |= CON_FLAG_TLS_SERVER;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
@@ -1793,7 +1793,7 @@ static void _open_ports(void)
  * RET - NULL
  */
 static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *tls_conn,
+				int input_fd, int output_fd, void *conn,
 				void *arg)
 {
 	int rc;
@@ -1817,14 +1817,14 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	 * invalid.
 	 */
 	conmgr_fd_free_ref(&msg->conmgr_con);
-	if (tls_conn) {
-		msg->tls_conn = tls_conn;
+	if (conn) {
+		msg->conn = conn;
 	} else {
-		conn_args_t tls_args = {
+		conn_args_t conn_args = {
 			.input_fd = input_fd,
 			.output_fd = output_fd,
 		};
-		msg->tls_conn = conn_g_create(&tls_args);
+		msg->conn = conn_g_create(&conn_args);
 	}
 
 	server_thread_incr();
@@ -1847,8 +1847,8 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
-		conn_g_destroy(msg->tls_conn, true);
-		msg->tls_conn = NULL;
+		conn_g_destroy(msg->conn, true);
+		msg->conn = NULL;
 		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
 			 input_fd, output_fd);
 		slurm_free_msg(msg);
@@ -1859,13 +1859,13 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 
 invalid:
 	/* Cleanup for invalid RPC */
-	if (!tls_conn) {
+	if (!conn) {
 		if (input_fd != output_fd)
 			fd_close(&output_fd);
 		fd_close(&input_fd);
 	}
 	slurm_free_msg(msg);
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */

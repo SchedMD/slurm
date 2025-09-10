@@ -349,7 +349,7 @@ static void _listen_for_reconf(void)
 		return;
 	}
 
-	if (tls_enabled())
+	if (conn_tls_enabled())
 		flags |= CON_FLAG_TLS_SERVER;
 
 	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, &events,
@@ -549,7 +549,7 @@ extern int main(int argc, char **argv)
 		xsystemd_change_mainpid(getpid());
 
 	/* Periodically renew TLS certificate indefinitely */
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		if (conn_g_own_cert_loaded()) {
 			log_flag(AUDIT_TLS, "Loaded static certificate key pair, will not do any certificate renewal.");
 		} else if (certmgr_enabled()) {

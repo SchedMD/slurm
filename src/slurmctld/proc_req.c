@@ -3137,8 +3137,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		conn_g_destroy(msg->tls_conn, true);
-		msg->tls_conn = NULL;
+		conn_g_destroy(msg->conn, true);
+		msg->conn = NULL;
 		slurm_free_msg(msg);
 		return;
 	} else
@@ -5661,7 +5661,7 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 		 * isn't then _signal_job will signal the sibling jobs
 		 */
 		if (origin && origin->fed.send &&
-		    ((persist_conn_t *) origin->fed.send)->tls_conn &&
+		    ((persist_conn_t *) origin->fed.send)->conn &&
 		    (origin != fed_mgr_cluster_rec) &&
 		    (!(job_ptr = find_job_record(job_id)) ||
 		     (job_ptr && job_ptr->fed_details &&
@@ -5834,8 +5834,8 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 	msg.auth_gid = persist_conn->auth_gid;
 	msg.auth_ids_set = persist_conn->auth_ids_set;
 
-	msg.conn = persist_conn;
-	msg.tls_conn = persist_conn->tls_conn;
+	msg.pcon = persist_conn;
+	msg.conn = persist_conn->conn;
 
 	msg.msg_type = persist_msg->msg_type;
 	msg.data = persist_msg->data;
@@ -5874,7 +5874,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
 
-	if (msg->conn)
+	if (msg->pcon)
 		error("We already have a persistent connect, this should never happen");
 
 	START_TIMER;
@@ -5906,8 +5906,8 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->cluster_name = persist_init->cluster_name;
 	persist_init->cluster_name = NULL;
 
-	persist_conn->tls_conn = msg->tls_conn;
-	msg->tls_conn = NULL;
+	persist_conn->conn = msg->conn;
+	msg->conn = NULL;
 
 	persist_conn->callback_proc = _process_persist_conn;
 
@@ -5915,7 +5915,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_conn->rem_port = persist_init->port;
 
 	persist_conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
-	(void) slurm_get_peer_addr(conn_g_get_fd(persist_conn->tls_conn),
+	(void) slurm_get_peer_addr(conn_g_get_fd(persist_conn->conn),
 				   &rem_addr);
 	slurm_get_ip_str(&rem_addr, persist_conn->rem_host, INET6_ADDRSTRLEN);
 
@@ -5934,7 +5934,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
 		slurm_persist_conn_recv_thread_init(
-			persist_conn, conn_g_get_fd(persist_conn->tls_conn), -1,
+			persist_conn, conn_g_get_fd(persist_conn->conn), -1,
 			persist_conn);
 	} else
 		rc = SLURM_ERROR;
@@ -5946,12 +5946,12 @@ end_it:
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
 		debug("Problem sending response to connection %d uid(%u)",
-		      conn_g_get_fd(p_tmp.tls_conn), msg->auth_uid);
+		      conn_g_get_fd(p_tmp.conn), msg->auth_uid);
 	}
 
 	if (rc && persist_conn) {
 		/* Free AFTER message has been sent back to remote */
-		persist_conn->tls_conn = NULL;
+		persist_conn->conn = NULL;
 		slurm_persist_conn_destroy(persist_conn);
 	}
 	xfree(comment);
@@ -5981,7 +5981,7 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 			 __func__);
 	}
 
-	is_client_auth = conn_g_is_client_authenticated(msg->tls_conn);
+	is_client_auth = conn_g_is_client_authenticated(msg->conn);
 
 	if (!(resp.signed_cert =
 		      certmgr_g_sign_csr(req->csr, is_client_auth, req->token,
@@ -6007,7 +6007,7 @@ static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, SIB_JOB_LOCK RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6024,7 +6024,7 @@ static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, SIB_JOB_UNLOCK RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6037,7 +6037,7 @@ static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 }
 
 static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, SIB_SUBMISSION RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6049,7 +6049,7 @@ static void _slurm_rpc_sib_msg(uint32_t uid, slurm_msg_t *msg) {
 
 static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 {
-	if (!msg->conn || !validate_slurm_user(uid)) {
+	if (!msg->pcon || !validate_slurm_user(uid)) {
 		error("Security violation, REQUEST_SEND_DEP RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6061,7 +6061,7 @@ static void _slurm_rpc_dependency_msg(uint32_t uid, slurm_msg_t *msg)
 
 static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
 {
-	if (!msg->conn || !validate_slurm_user(uid)) {
+	if (!msg->pcon || !validate_slurm_user(uid)) {
 		error("Security violation, REQUEST_UPDATE_ORIGIN_DEP RPC from uid=%u",
 		      uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6114,7 +6114,7 @@ static int _foreach_proc_multi_msg(void *x, void *arg)
 		list_append(multi_msg->full_resp_list, ret_buf);
 		return 0;
 	}
-	sub_msg.conn = msg->conn;
+	sub_msg.pcon = msg->pcon;
 	sub_msg.auth_cred = msg->auth_cred;
 	ret_buf = NULL;
 
@@ -6159,7 +6159,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 		.msg = msg,
 	};
 
-	if (!msg->conn) {
+	if (!msg->pcon) {
 		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%u",
 		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
@@ -6187,9 +6187,9 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 	xassert(msg);
 
 	/* route msg to origin cluster if a federated job */
-	if (!msg->conn && fed_mgr_fed_rec) {
+	if (!msg->pcon && fed_mgr_fed_rec) {
 		/* Don't send reroute if coming from a federated cluster (aka
-		 * has a msg->conn). */
+		 * has a msg->pcon). */
 		uint32_t job_id, origin_id;
 
 		if (src_job_id_str)
@@ -6892,20 +6892,20 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	 */
 	START_TIMER;
 
-	if (msg->tls_conn) {
-		fd = conn_g_get_fd(msg->tls_conn);
+	if (msg->conn) {
+		fd = conn_g_get_fd(msg->conn);
 		xassert(!msg->conmgr_con);
-	} else if (msg->conn && msg->conn->tls_conn) {
-		fd = conn_g_get_fd(msg->conn->tls_conn);
+	} else if (msg->pcon && msg->pcon->conn) {
+		fd = conn_g_get_fd(msg->pcon->conn);
 		xassert(!msg->conmgr_con);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		const char *p = rpc_num2string(msg->msg_type);
-		if (msg->conn) {
+		if (msg->pcon) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
-			     __func__, p, msg->conn->cluster_name,
-			     msg->conn->rem_host, msg->auth_uid);
+			     __func__, p, msg->pcon->cluster_name,
+			     msg->pcon->rem_host, msg->auth_uid);
 		} else if (msg->address.ss_family != AF_UNSPEC) {
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &msg->address, msg->auth_uid);
@@ -7024,7 +7024,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	    !job_ptr->job_resrcs->cpu_array_cnt)
 		return;
 
-	if (tls_enabled() && !job_ptr->alloc_tls_cert)
+	if (conn_tls_enabled() && !job_ptr->alloc_tls_cert)
 		return;
 
 	if (job_ptr->het_job_id == 0) {

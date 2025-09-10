@@ -241,7 +241,7 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	local = xmalloc(sizeof(*local));
 	remote = xmalloc(sizeof(*remote));
 
-	*remote = conn_g_get_fd(forward_msg->tls_conn);
+	*remote = conn_g_get_fd(forward_msg->conn);
 	net_set_nodelay(*remote, true, NULL);
 
 	if (msg->port) {
@@ -275,12 +275,12 @@ static void _net_forward(struct allocation_msg_thread *msg_thr,
 	slurm_send_rc_msg(forward_msg, SLURM_SUCCESS);
 
 	if (half_duplex_add_objs_to_handle(msg_thr->handle, local, remote,
-					   forward_msg->tls_conn)) {
+					   forward_msg->conn)) {
 		goto error;
 	}
 
 	/* prevent the upstream call path from closing the connection */
-	forward_msg->tls_conn = NULL;
+	forward_msg->conn = NULL;
 
 	return;
 

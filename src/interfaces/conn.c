@@ -109,18 +109,18 @@ static bool tls_enabled_bool = false;
 extern char *conn_mode_to_str(conn_mode_t mode)
 {
 	switch (mode) {
-	case TLS_CONN_NULL:
+	case CONN_NULL:
 		return "null";
-	case TLS_CONN_SERVER:
+	case CONN_SERVER:
 		return "server";
-	case TLS_CONN_CLIENT:
+	case CONN_CLIENT:
 		return "client";
 	}
 
 	return "INVALID";
 }
 
-extern bool tls_enabled(void)
+extern bool conn_tls_enabled(void)
 {
 	return tls_enabled_bool;
 }

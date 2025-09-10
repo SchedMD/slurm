@@ -949,7 +949,7 @@ static void *_commit_handler(void *db_conn)
 			itr = list_iterator_create(registered_clusters);
 			while ((slurmdbd_conn = list_next(itr))) {
 				debug4("running commit for %s",
-				       slurmdbd_conn->conn->cluster_name);
+				       slurmdbd_conn->pcon->cluster_name);
 				acct_storage_g_commit(
 					slurmdbd_conn->db_conn, 1);
 			}
@@ -979,14 +979,14 @@ static void *_commit_handler(void *db_conn)
 static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 {
 	slurm_msg_t req_msg;
-	void *tls_conn = NULL;
+	void *conn = NULL;
 
 	slurm_msg_t_init(&req_msg);
 
 	slurm_set_addr(&req_msg.address, cluster_rec->control_port,
 		       cluster_rec->control_host);
 
-	if (!(tls_conn = slurm_open_msg_conn(&req_msg.address, NULL))) {
+	if (!(conn = slurm_open_msg_conn(&req_msg.address, NULL))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req_msg.address);
 		return SLURM_ERROR;
@@ -996,11 +996,11 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 	req_msg.msg_type = ACCOUNTING_REGISTER_CTLD;
 	req_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 	req_msg.protocol_version = cluster_rec->rpc_version;
-	slurm_send_node_msg(tls_conn, &req_msg);
+	slurm_send_node_msg(conn, &req_msg);
 
 	/* response is ignored */
 
-	conn_g_destroy(tls_conn, true);
+	conn_g_destroy(conn, true);
 
 	return SLURM_SUCCESS;
 }

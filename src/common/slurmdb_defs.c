@@ -3133,12 +3133,12 @@ extern int slurmdb_send_accounting_update_persist(list_t *update_list,
 
 	xassert(persist_conn);
 
-	if (!persist_conn->tls_conn) {
+	if (!persist_conn->conn) {
 		if (slurm_persist_conn_open(persist_conn) !=
 		    SLURM_SUCCESS) {
 			error("slurmdb_send_accounting_update_persist: Unable to open connection to registered cluster %s.",
 			      persist_conn->cluster_name);
-			persist_conn->tls_conn = NULL;
+			persist_conn->conn = NULL;
 			rc = SLURM_ERROR;
 			goto end;
 		}
@@ -3148,11 +3148,11 @@ extern int slurmdb_send_accounting_update_persist(list_t *update_list,
 	msg.rpc_version = req.protocol_version = persist_conn->version;
 	slurm_msg_t_init(&req);
 	req.msg_type = ACCOUNTING_UPDATE_MSG;
-	req.conn = persist_conn;
+	req.pcon = persist_conn;
 	req.data = &msg;
 
 	/* resp is inited in slurm_send_recv_msg */
-	rc = slurm_send_recv_msg(persist_conn->tls_conn, &req, &resp, 0);
+	rc = slurm_send_recv_msg(persist_conn->conn, &req, &resp, 0);
 
 end:
 	if (rc != SLURM_SUCCESS) {

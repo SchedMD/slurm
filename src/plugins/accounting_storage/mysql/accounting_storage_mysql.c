@@ -2874,25 +2874,25 @@ static void _check_database_collations(mysql_conn_t *mysql_conn)
 
 static int _send_ctld_update(void *x, void *arg)
 {
-	slurmdbd_conn_t *db_conn = x;
+	slurmdbd_conn_t *dbd_conn = x;
 	list_t *update_list = arg;
 
-	if ((db_conn->conn->flags & PERSIST_FLAG_EXT_DBD) ||
-	    (db_conn->conn->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
+	if ((dbd_conn->pcon->flags & PERSIST_FLAG_EXT_DBD) ||
+	    (dbd_conn->pcon->flags & PERSIST_FLAG_DONT_UPDATE_CLUSTER))
 		return 0;
 
-	slurm_mutex_lock(&db_conn->conn_send_lock);
+	slurm_mutex_lock(&dbd_conn->pcon_send_lock);
 
-	if (!db_conn->conn_send) {
-		debug("slurmctld for cluster %s left at the moment we were about to send to it.", db_conn->conn->cluster_name);
-		slurm_mutex_unlock(&db_conn->conn_send_lock);
+	if (!dbd_conn->pcon_send) {
+		debug("slurmctld for cluster %s left at the moment we were about to send to it.", dbd_conn->pcon->cluster_name);
+		slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 		return 0;
 	}
 
 	(void) slurmdb_send_accounting_update_persist(
-		update_list, db_conn->conn_send);
+		update_list, dbd_conn->pcon_send);
 
-	slurm_mutex_unlock(&db_conn->conn_send_lock);
+	slurm_mutex_unlock(&dbd_conn->pcon_send_lock);
 	return 0;
 }
 

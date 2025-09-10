@@ -114,7 +114,7 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 
 /*
  * Return true if interface/tls has TLS plugin loaded
- * WARNING: tls_available() is different than tls_enabled()
+ * WARNING: tls_available() is different than conn_tls_enabled()
  */
 extern bool tls_available(void);
 

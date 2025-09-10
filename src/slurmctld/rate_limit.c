@@ -198,7 +198,7 @@ extern bool rate_limit_exceeded(slurm_msg_t *msg)
 		slurm_addr_t *cli_addr = &msg->address;
 
 		if (cli_addr->ss_family == AF_UNSPEC) {
-			int fd = conn_g_get_fd(msg->tls_conn);
+			int fd = conn_g_get_fd(msg->conn);
 			(void) slurm_get_peer_addr(fd, cli_addr);
 		}
 

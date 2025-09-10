@@ -338,13 +338,13 @@ typedef enum {
 	CON_FLAG_WATCH_CONNECT_TIMEOUT = SLURM_BIT(17),
 	/*
 	 * Incoming and outgoing is wrapped by TLS (or connection will fail)
-	 * in TLS_CONN_SERVER mode.
+	 * in CONN_SERVER mode.
 	 * Mutually exclusive with CON_FLAG_TLS_CLIENT.
 	 */
 	CON_FLAG_TLS_SERVER = SLURM_BIT(18),
 	/*
 	 * Incoming and outgoing is wrapped by TLS (or connection will fail)
-	 * in TLS_CONN_CLIENT mode.
+	 * in CONN_CLIENT mode.
 	 * Mutually exclusive with CON_FLAG_TLS_SERVER.
 	 */
 	CON_FLAG_TLS_CLIENT = SLURM_BIT(19),

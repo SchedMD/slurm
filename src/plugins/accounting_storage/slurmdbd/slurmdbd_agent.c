@@ -693,7 +693,7 @@ static void *_agent(void *x)
 	slurm_mutex_unlock(&agent_lock);
 
 	list_req.msg_type = DBD_SEND_MULT_MSG;
-	list_req.conn = slurmdbd_conn;
+	list_req.pcon = slurmdbd_conn;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
 
@@ -711,11 +711,11 @@ static void *_agent(void *x)
 		}
 
 		START_TIMER;
-		if (!slurmdbd_conn->tls_conn &&
+		if (!slurmdbd_conn->conn &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
 			dbd_conn_check_and_reopen(slurmdbd_conn);
-			if (!slurmdbd_conn->tls_conn) {
+			if (!slurmdbd_conn->conn) {
 				fail_time = time(NULL);
 
 				log_flag(DBD_AGENT, "slurmdbd disconnected with agent_count=%d",
@@ -725,7 +725,7 @@ static void *_agent(void *x)
 
 		slurm_mutex_lock(&agent_lock);
 		cnt = list_count(agent_list);
-		if ((cnt == 0) || !slurmdbd_conn->tls_conn ||
+		if ((cnt == 0) || !slurmdbd_conn->conn ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
 			slurm_mutex_unlock(&slurmdbd_lock);
 			_max_dbd_msg_action(&cnt);
@@ -769,7 +769,7 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 
 			slurm_mutex_lock(&assoc_cache_mutex);
-			if (slurmdbd_conn->tls_conn &&
+			if (slurmdbd_conn->conn &&
 			    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 				slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
@@ -810,7 +810,7 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		slurm_mutex_lock(&assoc_cache_mutex);
-		if (slurmdbd_conn->tls_conn &&
+		if (slurmdbd_conn->conn &&
 		    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 			slurm_cond_signal(&assoc_cache_cond);
 		slurm_mutex_unlock(&assoc_cache_mutex);
@@ -961,10 +961,10 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
 		return ESLURM_DB_CONNECTION_INVALID;
 	}
 
-	if (req->conn && (req->conn != slurmdbd_conn))
+	if (req->pcon && (req->pcon != slurmdbd_conn))
 		error("We are overriding the connection!!!!!");
 
-	req->conn = slurmdbd_conn;
+	req->pcon = slurmdbd_conn;
 
 	rc = dbd_conn_send_recv_direct(rpc_version, req, resp);
 
@@ -1039,7 +1039,7 @@ extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 /* Return true if connection to slurmdbd is active, false otherwise. */
 extern bool slurmdbd_conn_active(void)
 {
-	if (!slurmdbd_conn || !slurmdbd_conn->tls_conn)
+	if (!slurmdbd_conn || !slurmdbd_conn->conn)
 		return false;
 
 	return true;
