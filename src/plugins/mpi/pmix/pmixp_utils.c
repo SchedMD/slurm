@@ -385,15 +385,14 @@ int pmixp_stepd_send(const char *nodelist, const char *address,
 static int _pmix_p2p_send_core(const char *nodename, const char *address,
 			       const char *data, uint32_t len)
 {
-	int rc, timeout;
-	slurm_msg_t msg;
+	int rc;
+	slurm_msg_t msg, resp;
 	forward_data_msg_t req;
-	list_t *ret_list;
-	ret_data_info_t *ret_data_info = NULL;
 
 	pmixp_debug_hang(0);
 
 	slurm_msg_t_init(&msg);
+	slurm_msg_t_init(&resp);
 
 	PMIXP_DEBUG("nodelist=%s, address=%s, len=%u", nodename, address, len);
 	req.address = (char *)address;
@@ -411,36 +410,15 @@ static int _pmix_p2p_send_core(const char *nodename, const char *address,
 		return SLURM_ERROR;
 	}
 
-	timeout = slurm_conf.msg_timeout * 1000;
-	msg.forward.timeout = timeout;
-	msg.forward.cnt = 0;
-	msg.forward.nodelist = NULL;
 	slurm_msg_set_r_uid(&msg, slurm_conf.slurmd_user_id);
-	ret_list = slurm_send_addr_recv_msgs(&msg, (char*)nodename, timeout);
-	if (!ret_list) {
-		/* This should never happen (when this was
-		 * written slurm_send_addr_recv_msgs always
-		 * returned a list */
-		PMIXP_ERROR("No return list given from "
-			    "slurm_send_addr_recv_msgs spawned for %s",
-			    nodename);
-		return SLURM_ERROR;
-	} else if ((errno != SLURM_COMMUNICATIONS_CONNECTION_ERROR) &&
-		   !list_count(ret_list)) {
+
+	if (slurm_send_recv_node_msg(&msg, &resp, 0)) {
 		PMIXP_ERROR("failed to send to %s, errno=%d", nodename, errno);
 		return SLURM_ERROR;
 	}
 
-	rc = SLURM_SUCCESS;
-	while ((ret_data_info = list_pop(ret_list))) {
-		int temp_rc = slurm_get_return_code(ret_data_info->type,
-						    ret_data_info->data);
-		if (temp_rc != SLURM_SUCCESS)
-			rc = temp_rc;
-		destroy_data_info(ret_data_info);
-	}
-
-	FREE_NULL_LIST(ret_list);
+	rc = slurm_get_return_code(resp.msg_type, resp.data);
+	slurm_free_msg_data(resp.msg_type, resp.data);
 
 	return rc;
 }
