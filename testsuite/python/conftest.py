@@ -11,7 +11,7 @@ import os
 import pytest
 import re
 
-# import shutil
+import shutil
 import sys
 
 from pathlib import Path
@@ -485,3 +485,226 @@ def spank_tmp_lib(module_setup):
 
     atf.run_command(f"rm -f {bin_path}", fatal=True)
     atf.run_command(f"rm -rf {tmp_spank}", fatal=True)
+
+
+@pytest.fixture(scope="module")
+def sql_statement_repeat(module_setup):
+    """Loads statement_repeat sql procedure.
+
+    This function may only be used in auto-config mode and only needs to be
+    called once to load the statement_repeat() sql procedure that may be called
+    as part of an sql query. See usage and examples below.
+
+    Args:
+        None
+
+    Returns:
+        mysql_command_base - string filled in with mysql command basic options
+                             to be used when running the mysql command
+    """
+
+    if not atf.properties["auto-config"]:
+        return
+
+    mysql_path = shutil.which("mysql")
+    if mysql_path is None:
+        pytest.fail(
+            "Unable to load statement_repeat sql procedure. mysql was not found in your path"
+        )
+
+    """
+    Usage:
+
+    statement_repeat(stmt_str, seq_start, seq_end, step, use_trans)
+
+    Execute statement(s) in stmt_str repeatedly at the sql server level to avoid
+    repeatedly sending statements from the client.
+
+    Arguments:
+
+    stmt_str  - A single sql statement or multiple ones separated by a semicolon
+                to be repeatedly executed.
+
+                Content of each statement in stmt_str is limited to what is
+                allowed by the "prepare" statement.
+
+                Note that a simple split on this character is done so care must
+                be taken when using it to avoid inadvertently
+                splitting the string. One
+                way would be to create a procedure containing the desired
+                statements and then call statement_repeat() with a single
+                statement calling that procedure. See Performance Considerations
+                (below).
+
+    seq_start - Starting sequence value. If specified as NULL, 1 will be used.
+
+                The sequence value is accessible to statements in the user
+                variable @seq. stmt_str will be repeated N times where
+                N=floor(abs(seq_start-seq_end)/step)+1. If nstart > nstop,
+                sequence will be decreasing.
+
+    seq_end   - Ending sequence value. If specified as NULL, 1 will be used.
+
+                Actual ending sequence value may be less than seq_end if
+                step > 1.
+
+    step      - Sequence step value. If specified as NULL, 1 will be used.
+                If step < 0, it will be set to its absolute value to avoid
+                an infinite loop.
+
+    use_trans - Execute statement(s) in stmt_str within a single transaction.
+                Use NULL or non-zero for true, 0 for false. Generally, a single
+                transaction will be faster but may not be desired when bench-
+                marking statements (and autocommit is ON).
+
+
+    User variables visible to statements in stmt_str as set in the procedure:
+
+    @now      - Current timestamp (seconds since epoch) at start of procedure.
+    @seq      - Sequence number (between seq_start and seq_end).
+    @stmt     - Statement string being executed.
+
+    Note that any user variables set outside the procedure are visible to the
+    statements.
+
+    This procedure was inspired my MariaDB's sequence engine which is not
+    available in MySQL.
+
+
+    Performance Considerations:
+
+    When one statement is given in stmt_str, "prepare" is run once then the
+    prepared statement is executed N times.
+
+    When multiple statements are given, "prepare" and "execute" are each run once
+    per statement and this is repeated N times.
+
+
+    Examples:
+
+    Decreasing sequence from 5 down to 1 using step 2 in a single transaction:
+     call statement_repeat('select @seq+5', 5, 1, 2, 1);
+
+    Run statement 10 times in a single transaction:
+     call statement_repeat('select unix_timestamp()', 10, null, null, null);
+
+    Increasing sequence from 1 up to 3 using step 1 not grouped in a
+    transaction:
+     call statement_repeat('select @seq as \'sequence number\',@now as timestamp,@stmt as statement', 1, 3, 1, 0);
+
+    Populate Slurm user table with 500 users named user1..user500 in a single transaction:
+     call statement_repeat('insert into user_table (creation_time,name) values (@now, concat(\'user\', @seq))', 1, 500, 1, 1)
+
+    Populate Slurm job table with 10000 jobs in a single transaction:
+     call statement_repeat('insert into mycluster_job_table (cpus_req,job_name,id_assoc,id_job,id_resv,id_wckey,id_user,id_group,het_job_id,het_job_offset,state_reason_prev,nodes_alloc,`partition`,priority,state,time_end,env_hash_inx,script_hash_inx) values (0,concat(\'job\', @seq),0,@seq,0,0,0,0,0,0,0,0,\'\',0,0,@now,@seq,@seq)', 1, 10000, 1, 1)
+    """
+
+    statement_repeat_sql = """
+        delimiter //
+        drop procedure if exists statement_repeat //
+        create procedure statement_repeat(stmt_str varchar(500), seq_start bigint, seq_end bigint, step bigint, use_trans int)
+        begin
+          declare counter bigint;
+          declare incr bigint;
+          declare max bigint;
+          declare multi int default 0;
+          declare pos int;
+          declare rem_str varchar(500);
+
+          -- ensure sane values
+          set seq_start = ifnull(seq_start, 1);
+          set counter = seq_start;
+          set seq_end = ifnull(seq_end, 1);
+          set max = seq_end;
+          set step = abs(ifnull(step, 1));
+          set incr = step;
+
+          -- user variables visible to statement(s) in stmt_str
+          set @now = unix_timestamp();
+          set @seq = seq_start;
+          set @stmt = stmt_str;
+
+          -- adjust for descending sequence
+          if seq_start > seq_end then
+            set counter = seq_end;
+            set max = seq_start;
+            set step = -step;
+          end if;
+
+          -- see if we were given multiple statements
+          --  they will be tokenized and prepared later
+          set multi = locate(';', @stmt);
+          if not multi then
+            -- have single statement so prepare it once
+            prepare tmp_stmt from @stmt;
+          end if;
+
+          if use_trans is NULL or use_trans then
+            start transaction;
+          end if;
+          while counter <= max do
+            if multi then
+              -- tokenize multi-statement string
+              set rem_str = stmt_str;
+              repeat
+                set pos = locate(';', rem_str);
+                if pos then
+                  set @stmt = substring(rem_str, 1, pos - 1);
+                  set rem_str = substring(rem_str, pos + 1);
+                else
+                  -- last token
+                  set @stmt = rem_str;
+                  set rem_str = '';
+                end if;
+
+                prepare tmp_stmt from @stmt;
+                execute tmp_stmt;
+              until rem_str = '' end repeat;
+            else
+              execute tmp_stmt;
+            end if;
+
+            set @seq = @seq + step;
+            set counter = counter + incr;
+          end while;
+          if use_trans is NULL or use_trans then
+            commit;
+          end if;
+
+          deallocate prepare tmp_stmt;
+        end //
+    """
+
+    slurmdbd_dict = atf.get_config(live=False, source="slurmdbd", quiet=True)
+    database_host, database_port, database_name, database_user, database_password = (
+        slurmdbd_dict.get(key)
+        for key in [
+            "StorageHost",
+            "StoragePort",
+            "StorageLoc",
+            "StorageUser",
+            "StoragePass",
+        ]
+    )
+
+    mysql_options = ""
+    if database_host:
+        mysql_options += f" -h {database_host}"
+    if database_port:
+        mysql_options += f" -P {database_port}"
+    if database_user:
+        mysql_options += f" -u {database_user}"
+    else:
+        mysql_options += f" -u {atf.properties['slurm-user']}"
+    if database_password:
+        mysql_options += f" -p {database_password}"
+    if not database_name:
+        database_name = "slurm_acct_db"
+    mysql_options += f" -D {database_name}"
+
+    mysql_command_base = f"{mysql_path}{mysql_options}"
+    mysql_command = f'{mysql_command_base} -e "{statement_repeat_sql}"'
+    if atf.run_command_exit(mysql_command, quiet=True) != 0:
+        logging.debug(f"Slurm accounting database ({database_name}) is not present")
+
+    return mysql_command_base
