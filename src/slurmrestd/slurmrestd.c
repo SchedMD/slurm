@@ -246,7 +246,7 @@ static void _parse_env(void)
 		while (token) {
 			http_status_code_t code = get_http_status_code(token);
 
-			if (code == HTTP_STATUS_NONE)
+			if (code == HTTP_STATUS_CODE_INVALID)
 				fatal("Unable to parse %s as HTTP status code",
 				      token);
 
@@ -261,7 +261,7 @@ static void _parse_env(void)
 		xfree(toklist);
 
 		if (response_status_codes)
-			response_status_codes[count] = HTTP_STATUS_NONE;
+			response_status_codes[count] = HTTP_STATUS_CODE_INVALID;
 	}
 }
 

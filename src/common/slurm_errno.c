@@ -689,6 +689,10 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Missing UNIX user in the system"},
 	{ ERRTAB_ENTRY(ESLURM_REST_MISSING_GID),
 	  "Missing UNIX group in the system"},
+	{ ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL),
+	  "Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints."},
+	{ ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL_METHOD),
+	  "Requested HTTP query method is not supported at URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints."},
 
 	/* data_t errors */
 	{ ERRTAB_ENTRY(ESLURM_DATA_PATH_NOT_FOUND),
@@ -787,6 +791,14 @@ slurm_errtab_t slurm_errtab[] = {
 	  "Invalid or unsupported HTTP Content-Encoding header" },
 	{ ERRTAB_ENTRY(ESLURM_HTTP_UNSUPPORTED_KEEP_ALIVE),
 	  "Invalid or unsupported HTTP Keep-Alive header" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE),
+	  "HTTP Content-Length header too large to process" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_POST_MISSING_CONTENT_LENGTH),
+	  "HTTP Content-Length header required for POST method requests" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_UNEXPECTED_BODY),
+	  "Unexpected HTTP body provided when URL Query provided" },
+	{ ERRTAB_ENTRY(ESLURM_HTTP_UNKNOWN_ACCEPT_MIME_TYPE),
+	  "HTTP Accept header content type is unknown or unsupported" },
 
 	/* TLS errors */
 	{ ERRTAB_ENTRY(ESLURM_TLS_REQUIRED),

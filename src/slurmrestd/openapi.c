@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/data.h"
+#include "src/common/http.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
@@ -305,7 +306,7 @@ static const http_status_code_t *response_status_codes = NULL;
 static const http_status_code_t default_response_status_codes[] = {
 	HTTP_STATUS_CODE_SUCCESS_OK,
 	HTTP_STATUS_CODE_DEFAULT,
-	HTTP_STATUS_NONE
+	HTTP_STATUS_CODE_INVALID,
 };
 
 static char *_entry_to_string(entry_t *entry);
@@ -529,7 +530,7 @@ static void _check_openapi_path_binding(const openapi_path_binding_t *op_path)
 		xassert(method->response.description &&
 			method->response.description[0]);
 		xassert(method->method > HTTP_REQUEST_INVALID);
-		xassert(method->method < HTTP_REQUEST_MAX);
+		xassert(method->method < HTTP_REQUEST_INVALID_MAX);
 		xassert(method->tags && method->tags[0]);
 		xassert(method->response.type > DATA_PARSER_TYPE_INVALID);
 		xassert(method->response.type < DATA_PARSER_TYPE_MAX);
