@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "March 2025" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "September 2025" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -1449,6 +1449,22 @@ separated list of qos's.
 Specify the reservations of the jobs to view. Accepts a comma separated
 list of reservation names. Jobs matching any reservation will satisfy the
 filter (logic works like an OR).
+.IP
+
+.TP
+\fB\-\-running\-over\fR=<\fItime\fR>
+Display only jobs that have been running over the amount of specified time.
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
+.IP
+
+.TP
+\fB\-\-running\-under\fR=<\fItime\fR>
+Display only jobs that have been running under the amount of specified time.
+Acceptable time formats include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
 .IP
 
 .TP

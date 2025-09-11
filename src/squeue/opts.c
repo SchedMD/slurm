@@ -54,6 +54,7 @@
 #include "src/common/ref.h"
 #include "src/common/uid.h"
 #include "src/interfaces/serializer.h"
+#include "src/common/parse_time.h"
 
 #include "src/squeue/squeue.h"
 
@@ -76,6 +77,8 @@
 #define OPT_LONG_HELPFORMAT2  0x116
 #define OPT_LONG_ONLY_JOB_STATE   0x117
 #define OPT_LONG_EXPAND_PATTERNS 0x118
+#define OPT_LONG_R_OVER 0x119
+#define OPT_LONG_R_UNDER 0x120
 
 /* FUNCTIONS */
 static list_t *_build_job_list(char *str);
@@ -147,6 +150,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"priority",   no_argument,       0, 'P'},
 		{"qos",        required_argument, 0, 'q'},
 		{"reservation",required_argument, 0, 'R'},
+		{"running-over", required_argument, 0, OPT_LONG_R_OVER},
+		{"running-under", required_argument, 0, OPT_LONG_R_UNDER},
 		{"sib",        no_argument,       0, OPT_LONG_SIBLING},
 		{"sibling",    no_argument,       0, OPT_LONG_SIBLING},
 		{"sort",       required_argument, 0, 'S'},
@@ -400,6 +405,18 @@ extern void parse_command_line(int argc, char **argv)
 			_help_format2(params.step_flag);
 			exit(0);
 			break;
+		case OPT_LONG_R_OVER:
+			params.time_running_over = time_str2secs(optarg);
+			if (((int32_t) params.time_running_over <= 0) &&
+			    (params.time_running_over != INFINITE))
+				fatal("Invalid time limit specification");
+			break;
+		case OPT_LONG_R_UNDER:
+			params.time_running_under = time_str2secs(optarg);
+			if (((int32_t) params.time_running_under <= 0) &&
+			    (params.time_running_under != INFINITE))
+				fatal("Invalid time limit specification");
+			break;
 		}
 	}
 
@@ -530,6 +547,18 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		}
 		list_iterator_destroy(iterator);
+	}
+
+	if (params.time_running_over && params.time_running_under) {
+		if (params.time_running_over > params.time_running_under) {
+			char buffer_o[32], buffer_u[32];
+			secs2time_str((time_t) params.time_running_over,
+				      buffer_o, sizeof(buffer_o));
+			secs2time_str((time_t) params.time_running_under,
+				      buffer_u, sizeof(buffer_u));
+			fatal("--running-over=%s and --running-under=%s will return 0 jobs.",
+			      buffer_o, buffer_u);
+		}
 	}
 
 	if ( params.verbose )

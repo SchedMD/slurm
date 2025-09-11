@@ -3243,6 +3243,18 @@ static bool _filter_job(job_info_t *job)
 		}
 	}
 
+	if (params.time_running_over) {
+		if (!IS_JOB_RUNNING(job) ||
+		    (job_time_used(job) < params.time_running_over))
+			return true;
+	}
+
+	if (params.time_running_under) {
+		if (!IS_JOB_RUNNING(job) ||
+		    (job_time_used(job) >= params.time_running_under))
+			return true;
+	}
+
 	return false;
 }
 

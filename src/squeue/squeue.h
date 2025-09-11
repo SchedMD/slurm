@@ -119,6 +119,9 @@ struct squeue_parameters {
 	list_t *state_list;
 	list_t *step_list;
 	list_t *user_list;
+
+	uint32_t time_running_over;
+	uint32_t time_running_under;
 };
 
 extern struct squeue_parameters params;
