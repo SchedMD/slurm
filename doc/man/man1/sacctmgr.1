@@ -3127,7 +3127,7 @@ subsequent assignment of "GrpTRES=gres/gpu=2" will result in
 "GrpTRES=cpu=16,mem=32G,gres/gpu=2" applying to that entity.
 
 To remove a limit, assign \-1 to the TRES type whose limit should be removed,
-e.g., "GrpTRESMins=cpu=\-1" would remove only the cpu TRES limit, resulting in
+e.g., "GrpTRES=cpu=\-1" would remove only the cpu TRES limit, resulting in
 "GrpTRES=mem=32G,gres/gpu=2" on that entity.
 
 \fBNOTE\fR: When dealing with Memory as a TRES the default units are MB. A
