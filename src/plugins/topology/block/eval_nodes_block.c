@@ -183,7 +183,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	int *bblock_block_inx = NULL;
 	bitstr_t *bblock_required = NULL;
 	int i, j, rc = SLURM_SUCCESS;
-	int best_cpu_cnt, best_node_cnt, req_node_cnt = 0;
+	int best_cpu_cnt, best_node_cnt;
 	list_t *best_gres = NULL;
 	block_record_t *block_ptr;
 	list_t *node_weight_list = NULL;
@@ -261,6 +261,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
+		int req_node_cnt;
 		if (segment_cnt > 1) {
 			info("%pJ requires nodes with segment are not supported",
 			     job_ptr);
