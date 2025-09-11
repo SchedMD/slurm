@@ -68,6 +68,7 @@
 #include "src/curl/slurm_curl.h"
 #include "src/interfaces/proctrack.h"
 
+#define DEFAULT_INFLUXDB_FREQUENCY 30
 #define DEFAULT_INFLUXDB_TIMEOUT 10
 
 /*
@@ -105,6 +106,7 @@ typedef struct {
 	uint32_t def;
 	char *password;
 	char *rt_policy;
+	uint32_t frequency;
 	uint32_t timeout;
 	char *username;
 } slurm_influxdb_conf_t;
@@ -274,6 +276,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 	s_p_options_t options[] = {
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
+		{"ProfileInfluxDBFrequency", S_P_UINT32},
 		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
@@ -303,6 +306,9 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database,
 			       "ProfileInfluxDBDatabase", tbl);
+		if (!s_p_get_uint32(&influxdb_conf.frequency,
+				    "ProfileInfluxDBFrequency", tbl))
+			influxdb_conf.frequency = DEFAULT_INFLUXDB_FREQUENCY;
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		s_p_get_string(&influxdb_conf.password,
 			       "ProfileInfluxDBPass", tbl);
@@ -523,6 +529,9 @@ extern void acct_gather_profile_p_conf_values(list_t **data)
 
 	add_key_pair(*data, "ProfileInfluxDBDefault", "%s",
 		     acct_gather_profile_to_string(influxdb_conf.def));
+
+	add_key_pair(*data, "ProfileInfluxDBFrequency", "%u",
+		     influxdb_conf.frequency);
 
 	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
 		     influxdb_conf.host);
