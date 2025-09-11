@@ -1371,6 +1371,8 @@ static void _clear_event_triggers(void)
 		bit_clear_all(trigger_down_nodes_bitmap);
 	if (trigger_drained_nodes_bitmap)
 		bit_clear_all(trigger_drained_nodes_bitmap);
+	if (trigger_fail_nodes_bitmap)
+		bit_clear_all(trigger_fail_nodes_bitmap);
 	if (trigger_up_nodes_bitmap)
 		bit_clear_all(trigger_up_nodes_bitmap);
 	if (trigger_draining_nodes_bitmap)
