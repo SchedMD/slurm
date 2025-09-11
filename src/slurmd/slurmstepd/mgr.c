@@ -1079,11 +1079,11 @@ fail:
 static bool _need_join_container()
 {
 	/*
-	 * To avoid potential problems with the job_container/tmpfs and
-	 * home_xauthority, don't join the container to create the xauthority
+	 * To avoid potential problems with namespace plugins and
+	 * home_xauthority, don't join the namespace to create the xauthority
 	 * file when it is set.
 	 */
-	if ((xstrcasestr(slurm_conf.namespace_plugin, "tmpfs")) &&
+	if ((slurm_conf.namespace_plugin) &&
 	    (!xstrcasestr(slurm_conf.x11_params, "home_xauthority"))) {
 		return true;
 	}
