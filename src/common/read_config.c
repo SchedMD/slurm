@@ -5613,10 +5613,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "JobComp");
 	}
-	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
+	if (debug_flags & DEBUG_FLAG_NAMESPACE) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "JobContainer");
+		xstrcat(rc, "Namespace");
 	}
 	if (debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		if (rc)
@@ -5823,13 +5823,16 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			 !xstrcasecmp(tok, "Elasticsearch"))
 			(*flags_out) |= DEBUG_FLAG_JOBCOMP;
 		else if (xstrcasecmp(tok, "JobContainer") == 0)
-			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
+			/* Compat for JobContainer name change */
+			(*flags_out) |= DEBUG_FLAG_NAMESPACE;
 		else if (xstrcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
 		else if (xstrcasecmp(tok, "Metrics") == 0)
 			(*flags_out) |= DEBUG_FLAG_METRICS;
 		else if (xstrcasecmp(tok, "MPI") == 0)
 			(*flags_out) |= DEBUG_FLAG_MPI;
+		else if (xstrcasecmp(tok, "Namespace") == 0)
+			(*flags_out) |= DEBUG_FLAG_NAMESPACE;
 		else if (xstrcasecmp(tok, "Network") == 0 ||
 			 xstrcasecmp(tok, "Net") == 0)
 			(*flags_out) |= DEBUG_FLAG_NET;

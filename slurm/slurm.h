@@ -2850,7 +2850,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_INTERCONNECT	SLURM_BIT(22) /* AcctGatherInterconnect
 						    * plugin */
 #define DEBUG_FLAG_GLOB_SILENCE SLURM_BIT(23) /* Suppresses the glob error */
-#define DEBUG_FLAG_JOB_CONT 	SLURM_BIT(24) /* JobContainer plugin */
+#define DEBUG_FLAG_NAMESPACE SLURM_BIT(24) /* Namespace plugin */
 #define	DEBUG_FLAG_AUDIT_RPCS	SLURM_BIT(25) /* Audit RPCs */
 #define DEBUG_FLAG_PROTOCOL	SLURM_BIT(26) /* Communication protocol */
 #define DEBUG_FLAG_BACKFILL_MAP	SLURM_BIT(27) /* Backfill scheduler node

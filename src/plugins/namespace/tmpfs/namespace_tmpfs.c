@@ -120,7 +120,7 @@ static int _restore_ns(list_t *steps, const char *d_name)
 	}
 
 	/* here we think this is a job namespace */
-	log_flag(JOB_CONT, "determine if job %lu is still running", job_id);
+	log_flag(NAMESPACE, "determine if job %lu is still running", job_id);
 	stepd = list_find_first(steps, (ListFindF)_find_step_in_list, &job_id);
 	if (!stepd) {
 		debug("%s: Job %lu not found, deleting the namespace",
@@ -338,7 +338,7 @@ static int _clean_job_basepath(uint32_t job_id)
 				   jc_conf->basepath, ep->d_name);
 			/* it is not important if this fails */
 			if (umount2(path, MNT_DETACH))
-				log_flag(JOB_CONT, "failed to unmount %s for job %u",
+				log_flag(NAMESPACE, "failed to unmount %s for job %u",
 					 path, job_id);
 			xfree(path);
 		}
@@ -440,9 +440,9 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		run_command_args.env = _setup_script_env(job_id, step,
 							 src_bind, NULL);
 
-		log_flag(JOB_CONT, "Running InitScript");
+		log_flag(NAMESPACE, "Running InitScript");
 		result = run_command(&run_command_args);
-		log_flag(JOB_CONT, "InitScript rc: %d, stdout: %s", rc, result);
+		log_flag(NAMESPACE, "InitScript rc: %d, stdout: %s", rc, result);
 		env_array_free(run_command_args.env);
 		xfree(result);
 
@@ -645,9 +645,9 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		run_command_args.env = _setup_script_env(job_id, step,
 							 src_bind, ns_holder);
 
-		log_flag(JOB_CONT, "Running CloneNSScript");
+		log_flag(NAMESPACE, "Running CloneNSScript");
 		result = run_command(&run_command_args);
-		log_flag(JOB_CONT, "CloneNSScript rc: %d, stdout: %s",
+		log_flag(NAMESPACE, "CloneNSScript rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);
 		env_array_free(run_command_args.env);
@@ -760,7 +760,7 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 		xfree(ns_holder);
 		return SLURM_ERROR;
 	} else {
-		log_flag(JOB_CONT, "job %u entered namespace", step_id->job_id);
+		log_flag(NAMESPACE, "job %u entered namespace", step_id->job_id);
 	}
 
 	close(fd);
@@ -789,10 +789,10 @@ static int _delete_ns(uint32_t job_id)
 		};
 		run_command_args.env = _setup_script_env(job_id, NULL,
 							 NULL, ns_holder);
-		log_flag(JOB_CONT, "Running CloneNSEpilog");
+		log_flag(NAMESPACE, "Running CloneNSEpilog");
 		result = run_command(&run_command_args);
 		env_array_free(run_command_args.env);
-		log_flag(JOB_CONT, "CloneNSEpilog rc: %d, stdout: %s",
+		log_flag(NAMESPACE, "CloneNSEpilog rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);
 
@@ -811,7 +811,7 @@ static int _delete_ns(uint32_t job_id)
 	 */
 	if (step_ns_fd != -1) {
 		if (close(step_ns_fd))
-			log_flag(JOB_CONT, "job %u close step_ns_fd(%d) failed: %m",
+			log_flag(NAMESPACE, "job %u close step_ns_fd(%d) failed: %m",
 				 job_id, step_ns_fd);
 
 		else
@@ -826,7 +826,7 @@ static int _delete_ns(uint32_t job_id)
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
 		if ((errno == EINVAL) || (errno == ENOENT)) {
-			log_flag(JOB_CONT, "%s: umount2 %s failed: %m",
+			log_flag(NAMESPACE, "%s: umount2 %s failed: %m",
 				 __func__, ns_holder);
 		} else {
 			error("%s: umount2 %s failed: %m",
@@ -841,7 +841,7 @@ static int _delete_ns(uint32_t job_id)
 		error("%s: failed to remove %d files from %s",
 		      __func__, failures, job_mount);
 	if (umount2(job_mount, MNT_DETACH))
-		log_flag(JOB_CONT, "umount2: %s failed: %m", job_mount);
+		log_flag(NAMESPACE, "umount2: %s failed: %m", job_mount);
 	if (rmdir(job_mount))
 		error("rmdir %s failed: %m", job_mount);
 

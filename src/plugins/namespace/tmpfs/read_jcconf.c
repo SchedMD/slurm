@@ -82,21 +82,21 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 
 static void _dump_jc_conf(void)
 {
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_JOB_CONT))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NAMESPACE))
 		return;
 
-	log_flag(JOB_CONT, "AutoBasePath=%d", slurm_jc_conf.auto_basepath);
-	log_flag(JOB_CONT, "BasePath=%s", slurm_jc_conf.basepath);
-	log_flag(JOB_CONT, "Dirs=%s", slurm_jc_conf.dirs);
-	log_flag(JOB_CONT, "EntireStepInNS=%d",
+	log_flag(NAMESPACE, "AutoBasePath=%d", slurm_jc_conf.auto_basepath);
+	log_flag(NAMESPACE, "BasePath=%s", slurm_jc_conf.basepath);
+	log_flag(NAMESPACE, "Dirs=%s", slurm_jc_conf.dirs);
+	log_flag(NAMESPACE, "EntireStepInNS=%d",
 		 slurm_jc_conf.entire_step_in_ns);
-	log_flag(JOB_CONT, "Shared=%d", slurm_jc_conf.shared);
-	log_flag(JOB_CONT, "InitScript=%s", slurm_jc_conf.initscript);
-	log_flag(JOB_CONT, "CloneNSScript=%s", slurm_jc_conf.clonensscript);
-	log_flag(JOB_CONT, "CloneNSEpilog=%s", slurm_jc_conf.clonensepilog);
-	log_flag(JOB_CONT, "CloneNSScript_Wait=%u",
+	log_flag(NAMESPACE, "Shared=%d", slurm_jc_conf.shared);
+	log_flag(NAMESPACE, "InitScript=%s", slurm_jc_conf.initscript);
+	log_flag(NAMESPACE, "CloneNSScript=%s", slurm_jc_conf.clonensscript);
+	log_flag(NAMESPACE, "CloneNSEpilog=%s", slurm_jc_conf.clonensepilog);
+	log_flag(NAMESPACE, "CloneNSScript_Wait=%u",
 		 slurm_jc_conf.clonensscript_wait);
-	log_flag(JOB_CONT, "CloneNSEpilog_Wait=%u",
+	log_flag(NAMESPACE, "CloneNSEpilog_Wait=%u",
 		 slurm_jc_conf.clonensepilog_wait);
 }
 
