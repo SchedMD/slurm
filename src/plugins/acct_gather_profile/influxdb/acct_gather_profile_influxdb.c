@@ -134,6 +134,8 @@ static table_t *tables = NULL;
 static size_t tables_max_len = 0;
 static size_t tables_cur_len = 0;
 
+static time_t last_send = 0;
+
 static void _free_tables(void)
 {
 	int i, j;
@@ -178,8 +180,19 @@ static int _send_data(const char *data)
 	long response_code = 0;
 	char *url = NULL, *response_str = NULL;
 	size_t length;
+	time_t now = time(NULL);
+	bool send_now = false;
 
 	debug3("%s %s called", plugin_type, __func__);
+
+	/*
+	 * Send data to InfluxDB immediately if buffering is disabled, the send
+	 * interval has elapsed, or a job step has ended (indicated by data ==
+	 * NULL).
+	 */
+	if ((!influxdb_conf.frequency) ||
+	    ((now - last_send) >= (time_t) influxdb_conf.frequency) || (!data))
+		send_now = true;
 
 	/*
 	 * Every compute node which is sampling data will try to establish a
@@ -189,7 +202,7 @@ static int _send_data(const char *data)
 	 * try to open the connection and send this buffer, instead of opening
 	 * one per sample.
 	 */
-	if (data && ((datastrlen + strlen(data)) <= BUF_SIZE)) {
+	if ((!send_now) && ((datastrlen + strlen(data)) <= BUF_SIZE)) {
 		xstrcat(datastr, data);
 		length = strlen(data);
 		datastrlen += length;
@@ -236,6 +249,8 @@ static int _send_data(const char *data)
 		xstrcat(datastr, data);
 	datastrlen = strlen(datastr);
 
+	last_send = now;
+
 	return rc;
 }
 
@@ -250,6 +265,7 @@ extern int init(void)
 		return SLURM_ERROR;
 
 	datastr = xmalloc(BUF_SIZE);
+	last_send = time(NULL);
 	return SLURM_SUCCESS;
 }
 
