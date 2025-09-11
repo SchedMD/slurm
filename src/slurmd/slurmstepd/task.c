@@ -362,7 +362,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	step->envtp->user_name = xstrdup(step->user_name);
 	step->envtp->oom_kill_step = step->oom_kill_step ? 1 : 0;
 
-	if (tls_enabled()) {
+	if (conn_tls_enabled()) {
 		srun_info_t *srun = list_peek(step->sruns);
 		if (srun)
 			step->envtp->tls_cert = srun->tls_cert;
