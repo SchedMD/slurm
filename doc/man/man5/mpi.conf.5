@@ -1,4 +1,4 @@
-.TH "mpi.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
+.TH "mpi.conf" "5" "Slurm Configuration File" "September 2025" "Slurm Configuration File"
 
 .SH "NAME"
 mpi.conf \- Slurm configuration file to allow the configuration of MPI plugins.
@@ -83,6 +83,17 @@ Default is "false". See also \fBPMIxCollFence\fR.
 Type of network device to use for communication. This will set the
 UCX_NET_DEVICES environment variable in both slurmstepd and job step
 environments. Defaults to not being set.
+.IP
+
+.TP
+\fBPMIxShareServerTopology\fR={true|false}
+Allow the PMIx server to share its copy of the local node topology of the job
+with clients. If set to true, the PMIx server will set any necessary key-value
+pairs in the job-level information provided to each client. The topology will
+not be shared via shared memory.
+Defaults to "false".
+
+\fBNOTE\fR: This is only supported by PMIx v4.x+.
 .IP
 
 .TP

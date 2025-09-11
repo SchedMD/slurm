@@ -222,6 +222,7 @@ typedef struct {
 	bool direct_samearch;
 	char *env;
 	bool fence_barrier;
+	bool share_topology;
 	uint32_t timeout;
 	char *ucx_netdevices;
 	char *ucx_tls;
