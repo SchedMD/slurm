@@ -67,7 +67,7 @@ static unsigned int _xlate_freq_value(char *gpu_freq)
 {
 	unsigned int value;
 
-	if (!gpu_freq || ((gpu_freq[0] < '0') && (gpu_freq[0] > '9')))
+	if (!gpu_freq || ((gpu_freq[0] < '0') || (gpu_freq[0] > '9')))
 		return 0;	/* Not a numeric value */
 	value = strtoul(gpu_freq, NULL, 10);
 	return value;
