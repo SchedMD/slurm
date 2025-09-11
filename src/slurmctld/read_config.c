@@ -1818,7 +1818,7 @@ extern int read_slurm_conf(int recover)
 		xfree(slurm_conf.namespace_plugin);
 		slurm_conf.namespace_plugin = old_namespace_type;
 		old_namespace_type = NULL;
-		rc =  ESLURM_INVALID_JOB_CONTAINER_CHANGE;
+		rc = ESLURM_INVALID_NAMESPACE_CHANGE;
 	}
 
 	if (xstrcmp(old_sched_type, slurm_conf.schedtype)) {
