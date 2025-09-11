@@ -47,12 +47,17 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
 static void *lua_handle = NULL;
 
 #ifdef HAVE_LUA
+
+#if LUA_VERSION_NUM >= 502
+#define LUA_ERROR_BACKTRACE
+#endif
 
 /*
  * These are defined here so when we link with something other than the
@@ -66,6 +71,8 @@ extern void *acct_db_conn  __attribute__((weak_import));
 uint16_t accounting_enforce = 0;
 void *acct_db_conn = NULL;
 #endif
+
+#define LUA_ERROR_HANDLER_FUNC "slurm_backtrace_on_error"
 
 #define T(status_code, string, err) { status_code, #status_code, string, err }
 
@@ -125,6 +132,125 @@ extern slurm_err_t slurm_lua_status_error(lua_status_code_t sc)
 	return ESLURM_LUA_FUNC_FAILED;
 }
 
+#ifdef LUA_ERROR_BACKTRACE
+
+/*
+ * Error callback handler function.
+ * Partially based on msghandler() from lua.c (from the lua binary).
+ */
+static int _on_error_callback(lua_State *L)
+{
+	const char *msg = NULL;
+
+	/*
+	 * Only log the backtrace when running at least under DEBUG_FLAG_SCRIPT
+	 * as this is not a free operation and may end up logging excessively.
+	 */
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT))
+		return 1;
+
+	/* Lua should have already have already placed error string on stack */
+	if (!(msg = lua_tostring(L, -1))) {
+		/*
+		 * Request Lua convert error to string if lua_tostring() failed
+		 * for any reason or gracefully fail while getting the type of
+		 * what was unexpectedly pushed on the stack
+		 */
+		if (luaL_callmeta(L, -1, "__tostring") &&
+		    lua_type(L, -1) == LUA_TSTRING)
+			msg = lua_tostring(L, -1);
+		else
+			msg = lua_pushfstring(L, "Unknown error of type %s",
+					      luaL_typename(L, -1));
+	}
+
+	/* msg should always have a string at this point */
+	xassert(msg && msg[0]);
+
+	/* Request Lua generate backtrace with given error message */
+	luaL_traceback(L, L, msg, 1);
+
+	if ((msg = lua_tostring(L, -1))) {
+		char *save_ptr = NULL, *token = NULL, *str = NULL;
+		int count = 0, line = 0;
+
+		xassert(msg && msg[0]);
+
+		/* count number of lines */
+		for (const char *ptr = msg; ptr && *ptr; count++)
+			if ((ptr = strstr(ptr, "\n")))
+				ptr++;
+
+		/*
+		 * Split up the backtrace by each newline to keep the logs
+		 * readable
+		 */
+		str = xstrdup(msg);
+		token = strtok_r(str, "\n", &save_ptr);
+		while (token) {
+			token = strtok_r(NULL, "\n", &save_ptr);
+			line++;
+
+			log_flag(SCRIPT, "%s: Lua@0x%"PRIxPTR" backtrace[%04d/%04d]: %s",
+				 __func__, (uintptr_t) L, line, count, token);
+		}
+		xfree(str);
+	}
+
+	/*
+	 * Pop backtrace off stack to preserve returning original error message
+	 * for existing logging
+	 */
+	lua_pop(L, -1);
+
+	/* returning original error message */
+	return 1;
+}
+
+/*
+ * Push error callback before pcall args
+ * IN L - Lua state
+ * RET index for function (aka msgh)
+ */
+static int _push_error_callback(lua_State *L)
+{
+	const int index = 1;
+
+	/*
+	 * Always place error handler function at the very bottom of the stack
+	 * to avoid it getting moved around by any of the arg or return stack
+	 * shifting
+	 *
+	 * The error handler doesn't work when registered via slurm_functions[]
+	 * due to the requirement to be placed directly on the stack.
+	 */
+
+	lua_getglobal(L, LUA_ERROR_HANDLER_FUNC);
+
+	/* There must be something on the stack here */
+	xassert(lua_gettop(L) > 0);
+
+	lua_insert(L, index);
+
+	return index;
+}
+
+/*
+ * Register error handler callback into Lua globals
+ * IN L - Lua stack
+ */
+static void _register_error_callback(lua_State *L)
+{
+	lua_register(L, LUA_ERROR_HANDLER_FUNC, _on_error_callback);
+}
+
+#else
+
+#define _push_error_callback(L) 0
+#define _register_error_callback(L) ((void) 0)
+
+#endif
+
 static int _setup_stringarray(lua_State *L, int limit, char **data)
 {
 	/*
@@ -141,11 +267,17 @@ static int _setup_stringarray(lua_State *L, int limit, char **data)
 	return 1;
 }
 
-extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
+extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults,
 			   char **err_ptr, const char *caller)
 {
 	lua_status_code_t sc;
 	int rc;
+	int msgh = 0;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT) {
+		/* Resolve out the error handler if it was already pushed */
+		msgh = _push_error_callback(L);
+	}
 
 	sc = lua_pcall(L, nargs, nresults, msgh);
 	rc = slurm_lua_status_error(sc);
@@ -162,8 +294,10 @@ extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
 		 * This function will lua_pop() that value to remove it from
 		 * the stack.
 		 */
+		if (!(*err_ptr = xstrdup(lua_tostring(L, -1))))
+			*err_ptr = xstrdup(slurm_strerror(rc));
+
 		lua_pop(L, 1);
-		*err_ptr = xstrdup(slurm_strerror(rc));
 
 		error("%s: lua_pcall(0x%"PRIxPTR", %d, %d, %d)=%s(%s)=%s",
 		      caller, (uintptr_t) L, nargs, nresults, msgh,
@@ -175,6 +309,10 @@ extern int slurm_lua_pcall(lua_State *L, int nargs, int nresults, int msgh,
 		      slurm_lua_status_code_stringify(sc),
 		      slurm_lua_status_code_string(sc), slurm_strerror(rc));
 	}
+
+	/* Pop error handler off stack if pushed */
+	if (msgh)
+		lua_remove(L, msgh);
 
 	return rc;
 }
@@ -847,11 +985,13 @@ extern int slurm_lua_loadscript(lua_State **L, const char *plugin,
 	else
 		lua_setglobal(new, "slurm"); /* done in local_options */
 
+	/* Register error handler globally */
+	_register_error_callback(new);
 
 	/*
 	 *  Run the user script:
 	 */
-	if ((rc = slurm_lua_pcall(new, 0, 1, 0, &ret_err_str, __func__))) {
+	if ((rc = slurm_lua_pcall(new, 0, 1, &ret_err_str, __func__))) {
 		err_str = xstrdup_printf("%s: %s", script_path, ret_err_str);
 		xfree(ret_err_str);
 		lua_close(new);
