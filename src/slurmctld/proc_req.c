@@ -6857,9 +6857,6 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 static bool _is_connection_stale(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc,
 				 int fd)
 {
-	if (this_rpc->skip_stale)
-		return false;
-
 	if ((fd >= 0) && !fd_is_writable(fd)) {
 		error("%s: [fd:%d] Connection is stale, discarding RPC %s from uid:%u",
 		      __func__, fd, rpc_num2string(msg->msg_type),
@@ -6925,7 +6922,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
 	/* do not record RPC stats when stale as RPC not processed */
-	if (_is_connection_stale(msg, this_rpc, fd))
+	if (this_rpc->skip_stale && _is_connection_stale(msg, this_rpc, fd))
 		return;
 
 	(*(this_rpc->func))(msg);
