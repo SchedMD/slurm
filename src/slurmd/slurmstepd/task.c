@@ -76,6 +76,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/proctrack.h"
@@ -360,6 +361,12 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	step->envtp->job_start_time = step->job_start_time;
 	step->envtp->user_name = xstrdup(step->user_name);
 	step->envtp->oom_kill_step = step->oom_kill_step ? 1 : 0;
+
+	if (tls_enabled()) {
+		srun_info_t *srun = list_peek(step->sruns);
+		if (srun)
+			step->envtp->tls_cert = srun->tls_cert;
+	}
 
 	/*
 	 * Modify copy of step's environment. Do not alter in place or

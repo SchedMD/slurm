@@ -376,6 +376,7 @@ struct kvs_hosts {
 	uint32_t	task_id;	/* job step's task id */
 	uint16_t	port;		/* communication port */
 	char *		hostname;	/* communication host */
+	char * tls_cert;	/* communication host */
 };
 struct kvs_comm {
 	char *		kvs_name;
@@ -997,6 +998,7 @@ typedef struct kvs_get_msg {
 	uint32_t size;		/* count of tasks in job */
 	uint16_t port;		/* port to be sent the kvs data */
 	char * hostname;	/* hostname to be sent the kvs data */
+	char *tls_cert;		/* TLS certificate for Slurm message server */
 } kvs_get_msg_t;
 
 enum compress_type {

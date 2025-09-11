@@ -185,6 +185,7 @@ extern int slurm_pmi_send_kvs_comm_set(kvs_comm_set_t *kvs_set_ptr,
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
+	msg_send.tls_cert = getenv("SLURM_SRUN_TLS_CERT");
 
 	/* Send the RPC to the local srun communication manager.
 	 * Since the srun can be sent thousands of messages at
@@ -263,12 +264,14 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	data.size = pmi_size;
 	data.port = slurm_get_port(&slurm_addr);
 	data.hostname = hostname;
+	data.tls_cert = conn_g_get_own_public_cert();
 	slurm_msg_t_init(&msg_send);
 	slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 	slurm_msg_t_init(&msg_rcv);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
+	msg_send.tls_cert = getenv("SLURM_SRUN_TLS_CERT");
 
 	/* Send the RPC to the local srun communication manager.
 	 * Since the srun can be sent thousands of messages at
@@ -292,11 +295,14 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
+			xfree(data.tls_cert);
 			return SLURM_ERROR;
 		} else
 			debug("get kvs retry %d", retries);
 		_delay_rpc(pmi_rank, pmi_size);
 	}
+	xfree(data.tls_cert);
+
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
 		return rc;
@@ -352,6 +358,7 @@ static int _forward_comm_set(kvs_comm_set_t *kvs_set_ptr)
 		slurm_msg_set_r_uid(&msg_send, SLURM_AUTH_UID_ANY);
 		msg_send.msg_type = PMI_KVS_GET_RESP;
 		msg_send.data = (void *) kvs_set_ptr;
+		msg_send.tls_cert = kvs_set_ptr->kvs_host_ptr[i].tls_cert;
 		slurm_set_addr(&msg_send.address,
 			kvs_set_ptr->kvs_host_ptr[i].port,
 			kvs_set_ptr->kvs_host_ptr[i].hostname);
@@ -363,6 +370,7 @@ static int _forward_comm_set(kvs_comm_set_t *kvs_set_ptr)
 		}
 		rc = MAX(rc, msg_rc);
 		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
+		xfree(kvs_set_ptr->kvs_host_ptr[i].tls_cert);
 	}
 	xfree(kvs_set_ptr->kvs_host_ptr);
 	return rc;

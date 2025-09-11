@@ -874,6 +874,15 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 	}
 
+	if (env->tls_cert) {
+		if (setenvf(&env->env, "SLURM_SRUN_TLS_CERT", "%s",
+			    env->tls_cert)) {
+			error("%s: can't set SLURM_SRUN_TLS_CERT env variable",
+			      __func__);
+			rc = SLURM_ERROR;
+		}
+	}
+
 	return rc;
 }
 

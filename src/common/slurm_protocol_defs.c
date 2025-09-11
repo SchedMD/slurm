@@ -2390,6 +2390,7 @@ extern void slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostname);
+		xfree(msg->tls_cert);
 		xfree(msg);
 	}
 }
@@ -2400,8 +2401,10 @@ extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg)
 
 	if (msg) {
 		if (msg->kvs_host_ptr) {
-			for (i = 0; i < msg->host_cnt; i++)
+			for (i = 0; i < msg->host_cnt; i++) {
 				xfree(msg->kvs_host_ptr[i].hostname);
+				xfree(msg->kvs_host_ptr[i].tls_cert);
+			}
 			xfree(msg->kvs_host_ptr);
 		}
 		if (msg->kvs_comm_ptr) {
