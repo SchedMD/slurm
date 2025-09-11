@@ -227,6 +227,18 @@ void fd_set_blocking(int fd)
 	return;
 }
 
+bool fd_is_nonblocking(int fd)
+{
+	int fval = 0;
+
+	xassert(fd >= 0);
+
+	if ((fval = fcntl(fd, F_GETFL, 0)) < 0)
+		error("fcntl(F_GETFL) failed: %m");
+
+	return (fval & O_NONBLOCK);
+}
+
 int fd_get_readw_lock(int fd)
 {
 	return(fd_get_lock(fd, F_SETLKW, F_RDLCK));
@@ -345,16 +357,21 @@ on_timeout:
 /*
  * Check if a file descriptor is writable now.
  *
- * This function assumes that O_NONBLOCK is set already, if it is not this
- * function will block!
- *
  * Return 1 when writeable or 0 on error
  */
 extern bool fd_is_writable(int fd)
 {
 	bool rc = true;
-	char temp[2];
 	struct pollfd ufd;
+	int flags = 0;
+	bool nonblocking = true;
+
+#ifdef MSG_DONTWAIT
+	flags |= MSG_DONTWAIT;
+
+	if (!(nonblocking = fd_is_nonblocking(fd)))
+		fd_set_nonblocking(fd);
+#endif
 
 	/* setup call to poll */
 	ufd.fd = fd;
@@ -364,18 +381,23 @@ extern bool fd_is_writable(int fd)
 		if (poll(&ufd, 1, 0) == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
-			debug2("%s: poll error: %m", __func__);
+			log_flag(NET, "%s: [fd:%d] socket poll() error: %m",
+				 __func__, fd);
 			rc = false;
 			break;
 		}
-		if ((ufd.revents & POLLHUP) ||
-		    (recv(fd, &temp, 1, MSG_PEEK) == 0)) {
-			debug2("%s: socket is not writable", __func__);
+		if ((ufd.revents & POLLHUP) || send(fd, NULL, 0, flags)) {
+			log_flag(NET, "%s: [fd:%d] socket is not writable",
+			       __func__, fd);
 			rc = false;
 			break;
 		}
+		log_flag(NET, "%s: [fd:%d] socket is writable", __func__, fd);
 		break;
 	}
+
+	if (!nonblocking)
+		slurm_fd_set_blocking(fd);
 
 	return rc;
 }
