@@ -1772,6 +1772,11 @@ extern int slurm_send_node_msg(void *conn, slurm_msg_t *msg)
 		char *peer = NULL;
 		int persist_fd = conn_g_get_fd(msg->pcon->conn);
 
+		if ((rc = slurm_msg_t_init_address(msg)))
+			log_flag(NET, "%s: [%s:%hu] Resolving peer address failed: %s",
+				 __func__, msg->pcon->rem_host,
+				 msg->pcon->rem_port, slurm_strerror(rc));
+
 		log_flag(NET, "Sending persist_msg_t %s to %pA on fd %d",
 			 rpc_num2string(msg->msg_type), &msg->address,
 			 persist_fd);
@@ -1807,6 +1812,10 @@ extern int slurm_send_node_msg(void *conn, slurm_msg_t *msg)
 	}
 
 	fd = conn_g_get_fd(conn);
+
+	if ((rc = slurm_msg_t_init_address(msg)))
+		log_flag(NET, "%s: [fd:%d] Resolving peer address failed: %s",
+			 __func__, fd, slurm_strerror(rc));
 
 	log_flag(NET, "Sending message %s to %pA on fd %d",
 		 rpc_num2string(msg->msg_type), &msg->address, fd);
