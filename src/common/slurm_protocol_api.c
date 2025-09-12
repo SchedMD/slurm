@@ -1024,6 +1024,11 @@ extern int slurm_receive_msg(void *conn, slurm_msg_t *msg, int timeout)
 	if (msg->pcon) {
 		persist_msg_t persist_msg;
 
+		if ((rc = slurm_msg_t_init_address(msg)))
+			log_flag(NET, "%s: [%s:%hu] Unable to resolve persistent msg peer: %s",
+				 __func__, msg->pcon->rem_host,
+				 msg->pcon->rem_port, slurm_strerror(rc));
+
 		buffer = slurm_persist_recv_msg(msg->pcon);
 		if (!buffer) {
 			error("%s: No response to persist_init", __func__);
@@ -1053,6 +1058,10 @@ extern int slurm_receive_msg(void *conn, slurm_msg_t *msg, int timeout)
 	fd = conn_g_get_fd(conn);
 
 	msg->conn = conn;
+
+	if ((rc = slurm_msg_t_init_address(msg)))
+		log_flag(NET, "%s: [fd:%d] Unable to resolve msg peer: %s",
+			 __func__, fd, slurm_strerror(rc));
 
 	if (timeout <= 0) {
 		/* convert secs to msec */
