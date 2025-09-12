@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "May 2025" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2025" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -2827,6 +2827,10 @@ AllowedPartitions and/or Accounts.
 If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
 job must match all in order to use the reservation.
 Unlike users groups do not allow denied access to reservations.
+Prior to version 25.05, if a reservation used user- or group-based access
+controls and slurmctld ever failed to validate the user(s) or group(s), it would
+delete the reservation. Reservations are now resilient to temporary validation
+outages.
 You can add or remove individual groups from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
 Root and the SlurmUser are given access to all reservations, regardless of the
@@ -2876,6 +2880,10 @@ Users can also be denied access to reservations by preceding all of the
 user names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "User=\-jones1,\-smith2" or "User\-=jones1,smith2"
 will permit any user except jones1 and smith2 to use the reservation.
+Prior to version 25.05, if a reservation used user- or group-based access
+controls and slurmctld ever failed to validate the user(s) or group(s), it would
+delete the reservation. Reservations are now resilient to temporary validation
+outages.
 You can add or remove individual users from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
 If users are denied access to a reservation (user name preceded by a '\-'),
