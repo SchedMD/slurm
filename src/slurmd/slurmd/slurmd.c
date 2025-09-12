@@ -690,20 +690,23 @@ static void *_service_msg(void *arg)
 	service_msg_args_t *args = arg;
 	slurm_msg_t *msg = args->msg;
 	const slurm_addr_t *addr = &msg->address;
+	conmgr_fd_ref_t *conmgr_con = NULL;
 
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
+	/*
+	 * Remove conmgr connection from msg to avoid msg logic trying to send
+	 * via conmgr instead via msg->conn.
+	 */
+	SWAP(conmgr_con, msg->conmgr_con);
+
 	log_flag(NET, "%s: [%s] processing new RPC msg_type[0x%x]=%s connection from %pA",
-		 __func__, conmgr_con_get_name(msg->conmgr_con),
+		 __func__, conmgr_con_get_name(conmgr_con),
 		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type), addr);
 
 	log_flag(AUDIT_RPCS, "[%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
-		 conmgr_con_get_name(msg->conmgr_con),
-		 rpc_num2string(msg->msg_type), msg->auth_uid, addr,
-		 msg->protocol_version);
-
-	/* Release conmgr connection as it will have been closed */
-	conmgr_fd_free_ref(&msg->conmgr_con);
+		 conmgr_con_get_name(conmgr_con), rpc_num2string(msg->msg_type),
+		 msg->auth_uid, addr, msg->protocol_version);
 
 	if (args->conn) {
 		msg->conn = args->conn;
@@ -720,8 +723,11 @@ static void *_service_msg(void *arg)
 	msg->conn = NULL;
 
 	log_flag(NET, "%s: [%s] Finish processing RPC msg_type[0x%x]=%s",
-		 __func__, conmgr_con_get_name(msg->conmgr_con),
+		 __func__, conmgr_con_get_name(conmgr_con),
 		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type));
+
+	/* Release conmgr connection as it will have been closed */
+	conmgr_fd_free_ref(&conmgr_con);
 
 	slurm_free_msg(msg);
 
