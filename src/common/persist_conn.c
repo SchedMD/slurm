@@ -629,6 +629,10 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	if (persist_conn->flags & PERSIST_FLAG_DBD)
 		req_msg.flags |= SLURMDBD_CONNECTION;
 	slurm_msg_set_r_uid(&req_msg, persist_conn->r_uid);
+	req_msg.conn = persist_conn->conn;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
+		(void) slurm_msg_t_init_address(&req_msg);
 
 	memset(&req, 0, sizeof(persist_init_req_msg_t));
 	req.cluster_name = persist_conn->cluster_name;
