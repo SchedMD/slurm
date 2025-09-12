@@ -1075,3 +1075,4 @@ test_149_1   Test acct_gather_profile/influxdb
 test_150_#   Testing topology/block.
 ================================
 test_150_1   Test topology/block
+test_150_2   Test "--nodelist" + "--segment"
