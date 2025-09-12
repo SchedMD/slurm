@@ -54,7 +54,14 @@ typedef struct {
 	/* Queue structural elements */
 	const char *msg_name; /* automatically derived from msg_type */
 
-	bool skip_stale; /* skip processing if connection is stale */
+	/*
+	 * False: Always process incoming RPC even if the connection has been
+	 *	closed.
+	 * True: Check if the RPC's connection has become stale (either
+	 *	close()ed or is in an error state) and drop processing the
+	 *	incoming RPC entirely.
+	 */
+	bool skip_stale;
 	bool queue_enabled;
 	bool hard_drop; /* discard traffic if max_queued exceeded */
 	bool shutdown;
