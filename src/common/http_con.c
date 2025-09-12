@@ -59,26 +59,16 @@
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 #define MAX_STATUS_BYTES 1024
 
-typedef struct on_http_request_args_s on_http_request_args_t;
-
-/*
- * Call back for each HTTP requested method.
- * This may be called several times in the same connection.
- * must call http_con_send_response().
- *
- * IN args see on_http_request_args_t
- * RET SLURM_SUCCESS or error to kill connection
- */
-typedef int (*on_http_request_t)(on_http_request_args_t *args);
-
 #define MAGIC 0xab0a8aff
 
 typedef struct http_con_s {
 	int magic; /* MAGIC */
 	/* reference to assigned connection */
 	conmgr_fd_ref_t *con;
-	/* callback to call on each HTTP request */
-	on_http_request_t on_http_request;
+	/* True to xfree() this pointer */
+	bool free_on_close;
+	const http_con_server_events_t *events;
+	void *arg; /* arbitrary pointer from caller */
 	http_parser_state_t *parser; /* http parser plugin state */
 	http_con_request_t request;
 } http_con_t;
@@ -90,41 +80,6 @@ typedef struct {
 	int rc;
 	conmgr_fd_ref_t *con;
 } write_each_header_args_t;
-
-/*
- * Call back for new connection to setup HTTP
- *
- * IN fd file descriptor of new connection
- * RET ptr to http connection to hand to parse_http()
- */
-typedef http_con_t *(*on_http_connection_t)(int fd);
-
-typedef struct on_http_request_args_s {
-	const http_request_method_t method; /* HTTP request method */
-	list_t *headers; /* list_t of http_header_t* from client */
-	const char *path; /* requested URL path (may be NULL) */
-	const char *query; /* requested URL query (may be NULL) */
-	http_con_t *hcon; /* calling http connection (do not xfree) */
-	conmgr_fd_ref_t *con; /* reference to connection */
-	const char *name; /* connection name */
-	uint16_t http_major; /* HTTP major version */
-	uint16_t http_minor; /* HTTP minor version */
-	const char *content_type; /* header content-type */
-	const char *accept; /* header accepted content-types */
-	const char *body; /* body sent by client or NULL (do not xfree) */
-	const size_t body_length; /* bytes in body to send or 0 */
-	const char *body_encoding; /* body encoding type or NULL */
-} on_http_request_args_t;
-
-/*
- * Call back for each HTTP requested method.
- * This may be called several times in the same connection.
- * must call http_con_send_response().
- *
- * IN args see on_http_request_args_t
- * RET SLURM_SUCCESS or error to kill connection
- */
-typedef int (*on_http_request_t)(on_http_request_args_t *args);
 
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
@@ -640,44 +595,6 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 	return error_number;
 }
 
-static int _on_message_complete_request(http_con_t *hcon)
-{
-	int rc = EINVAL;
-	http_con_request_t *request = &hcon->request;
-	on_http_request_args_t args = {
-		.method = request->method,
-		.headers = request->headers,
-		.path = request->url.path,
-		.query = request->url.query,
-		.hcon = hcon,
-		.http_major = request->http_version.major,
-		.http_minor = request->http_version.minor,
-		.content_type = request->content_type,
-		.accept = request->accept,
-		.body = (request->content ? get_buf_data(request->content) :
-					    NULL),
-		.body_length =
-			(request->content ? get_buf_offset(request->content) :
-					    0),
-		.body_encoding = request->content_type,
-	};
-
-	xassert(hcon->magic == MAGIC);
-
-	if (!(args.con = conmgr_con_link(hcon->con)) ||
-	    !(args.name = conmgr_con_get_name(args.con))) {
-		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
-		log_flag(NET, "%s: connection missing: %s",
-			 __func__, slurm_strerror(rc));
-	} else if ((rc = hcon->on_http_request(&args)))
-		log_flag(NET, "%s: [%s] on_http_request rejected: %s",
-			 __func__, conmgr_con_get_name(hcon->con),
-			 slurm_strerror(rc));
-
-	conmgr_fd_free_ref(&args.con);
-	return rc;
-}
-
 static int _on_content_complete(void *arg)
 {
 	http_con_t *hcon = arg;
@@ -694,7 +611,8 @@ static int _on_content_complete(void *arg)
 		return _send_reject(hcon, ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
 
-	rc = _on_message_complete_request(hcon);
+	rc = hcon->events->on_request(hcon, conmgr_con_get_name(hcon->con),
+				      &hcon->request, hcon->arg);
 
 	if (request->keep_alive) {
 		//TODO: implement keep alive correctly
@@ -713,9 +631,9 @@ static int _on_content_complete(void *arg)
 	return rc;
 }
 
-extern int parse_http(conmgr_fd_t *con, void *x)
+extern int _on_data(conmgr_fd_t *con, void *arg)
 {
-	http_con_t *hcon = (http_con_t *) x;
+	http_con_t *hcon = arg;
 	static const http_parser_callbacks_t callbacks = {
 		.on_request = _on_request,
 		.on_header = _on_header,
@@ -776,54 +694,98 @@ cleanup:
 	return rc;
 }
 
-/*
- * setup http connection against a given new socket
- * IN fd file descriptor of socket (must be connected!)
- * IN on_http_request callback to call on each HTTP request
- * RET NULL on error or new http connection (must xfree)
- */
-extern http_con_t *setup_http_context(conmgr_fd_t *con,
-				      on_http_request_t on_http_request)
+static void _on_finish(conmgr_fd_t *con, void *arg)
 {
-	http_con_t *hcon = xmalloc(sizeof(*hcon));
+	http_con_t *hcon = arg;
+	void *hcon_arg = hcon->arg;
+	conmgr_fd_ref_t *hcon_con = NULL;
+	const http_con_server_events_t *hcon_events = hcon->events;
 
-	hcon->magic = MAGIC;
-	hcon->con = conmgr_fd_new_ref(con);
-	hcon->on_http_request = on_http_request;
-
-	_request_init(hcon);
-
-	return hcon;
-}
-
-/*
- * cleanup http connection on finished connection
- * IN con - conmgr connection
- * IN hcon - http_connection to connection to free
- */
-extern void on_http_connection_finish(conmgr_fd_t *con, void *arg)
-{
-	http_con_t *hcon = (http_con_t *) arg;
-
-	if (!hcon)
-		return;
 	xassert(hcon->magic == MAGIC);
+	xassert(conmgr_fd_get_ref(hcon->con) == con);
+
+	/*
+	 * Preserve conmgr connection reference to ensure that the connection is
+	 * always valid which is redundant since this callback will keep the
+	 * conmgr alive until the conversion to only conmgr references.
+	 * TODO: remove hcon->con once after conmgr reference conversion
+	 */
+	SWAP(hcon_con, hcon->con);
 
 	http_parser_g_free_parse_request(&hcon->parser);
-
-	/* release request */
 	_request_free_members(hcon);
-
-	xassert(conmgr_fd_get_ref(hcon->con) == con);
-	conmgr_fd_free_ref(&hcon->con);
-
 	hcon->magic = ~MAGIC;
-	xfree(hcon);
+
+	if (hcon->free_on_close)
+		xfree(hcon);
+
+	/*
+	 * hcon must not be used in any way to call on_close() as it is expected
+	 * that this function call will release that memory which would risk a
+	 * use after free()
+	 */
+
+	if (hcon_events->on_close)
+		hcon_events->on_close(conmgr_con_get_name(hcon_con), hcon_arg);
+
+	conmgr_fd_free_ref(&hcon_con);
 }
 
 extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 				  const http_con_server_events_t *events,
 				  void *arg)
 {
-	return ESLURM_NOT_SUPPORTED;
+	static const conmgr_events_t http_events = {
+		.on_data = _on_data,
+		.on_finish = _on_finish,
+	};
+	const conmgr_events_t *prior_events = NULL;
+	void *prior_arg = NULL;
+	bool free_on_close = false;
+	int rc = EINVAL;
+
+	xassert(con);
+	xassert(events);
+	xassert(events->on_request);
+
+	if (!con || !events)
+		return rc;
+
+	if (!hcon) {
+		hcon = xmalloc(sizeof(*hcon));
+		free_on_close = true;
+	}
+
+	/* catch over-subscription */
+	xassert(hcon->magic != MAGIC);
+
+	*hcon = (http_con_t) {
+		.magic = MAGIC,
+		.free_on_close = free_on_close,
+		.events = events,
+		.arg = arg,
+	};
+
+	if ((rc = conmgr_con_get_events(con, &prior_events, &prior_arg)))
+		goto failed;
+
+	if (!(hcon->con = conmgr_con_link(con)))
+		goto failed;
+
+	if ((rc = conmgr_con_set_events(con, &http_events, hcon, __func__)))
+		goto failed;
+
+	_request_init(hcon);
+
+	return rc;
+failed:
+	conmgr_fd_free_ref(&hcon->con);
+	hcon->magic = ~MAGIC;
+
+	/* Attempt to revert changes */
+	if (prior_events)
+		(void) conmgr_con_set_events(con, prior_events, prior_arg,
+					     __func__);
+
+	return rc;
 }
