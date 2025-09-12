@@ -2249,6 +2249,10 @@ tryagain:
 			request_msg->protocol_version =
 				comm_cluster_rec->rpc_version;
 
+		request_msg->conn = conn;
+		if (slurm_conf.debug_flags & DEBUG_FLAG_NET)
+			(void) slurm_msg_t_init_address(request_msg);
+
 		rc = slurm_send_recv_msg(conn, request_msg, response_msg, 0);
 
 		conn_g_destroy(conn, true);
