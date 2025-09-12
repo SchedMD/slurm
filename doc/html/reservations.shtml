@@ -223,6 +223,12 @@ ReservationName=test StartTime=2020-08-28T11:07:09
    MaxStartDelay=(null)
 </pre>
 
+<p>Prior to version 25.05, if a reservation used user- or group-based access
+controls and slurmctld ever failed to validate the user(s) or group(s), it would
+delete the reservation. With the release of 25.05 this behavior was changed to
+leave the reservation in place and wait for the users/groups to be able to be
+validated again, making reservations resilient to temporary validation outages.</p>
+
 <h2 id="use">Reservation Use<a class="slurm_link" href="#use"></a></h2>
 
 <p>The reservation create response includes the reservation's name.
@@ -529,6 +535,6 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 02 August 2024</p>
+<p style="text-align: center;">Last modified 17 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
