@@ -117,29 +117,6 @@ typedef struct {
 	int (*on_data)(conmgr_fd_t *con, void *arg);
 
 	/*
-	 * Call back when there is initial data ready in "in" buffer but before
-	 * on_data() or on_msg() to allow fingerprinting and re-typing of
-	 * the incoming connection.
-	 *
-	 * This may be called again in the same connection if prior call
-	 * returned EWOULDBLOCK.
-	 *
-	 * If NULL, then fingerprinting will be skipped for this connection.
-	 *
-	 * IN con - connection handler
-	 * IN buffer - pointer to buffer of already read() data
-	 * IN bytes - number of bytes in buffer
-	 * IN arg - ptr returned by on_connection() callback.
-	 * RET
-	 *	SLURM_SUCCESS: fingerprinting complete - stop callback
-	 *	EWOULDBLOCK: fingerprint requires more data, call again on new
-	 *		data.
-	 *	Any other error will cause connection to close in error.
-	 */
-	int (*on_fingerprint)(conmgr_fd_t *con, const void *buffer,
-			      const size_t bytes, void *arg);
-
-	/*
 	 * Call back when there is new RPC msg ready
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RPC.
@@ -348,6 +325,12 @@ typedef enum {
 	 * Mutually exclusive with CON_FLAG_TLS_SERVER.
 	 */
 	CON_FLAG_TLS_CLIENT = SLURM_BIT(19),
+	/*
+	 * Fingerprint incoming connection for TLS handshake and activate
+	 * CON_FLAG_TLS_SERVER when detected. CON_FLAG_TLS_FINGERPRINT is
+	 * deactivated once matched or match not possible.
+	 */
+	CON_FLAG_TLS_FINGERPRINT = SLURM_BIT(21),
 	/*
 	 * Receive and forward incoming messages to their intended destinations.
 	 */
@@ -963,14 +946,6 @@ extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 
 /* Get connection name from reference */
 extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref);
-
-/*
- * Checks if incoming data matches a TLS handshake and will change connection to
- * CON_FLAG_TLS_SERVER on match
- * Note: function is designed to be a on_fingerprint() event callback
- */
-extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
-			      const size_t bytes, void *arg);
 
 /* Return true if connection is TLS wrapped */
 extern bool conmgr_fd_is_tls(conmgr_fd_ref_t *ref);

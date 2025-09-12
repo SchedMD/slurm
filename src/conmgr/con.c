@@ -115,7 +115,7 @@ static const struct {
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
-	T(FLAG_WAIT_ON_FINGERPRINT),
+	T(FLAG_TLS_FINGERPRINT),
 	T(FLAG_TLS_WAIT_ON_CLOSE),
 	T(FLAG_RPC_RECV_FORWARD),
 };
@@ -556,13 +556,13 @@ extern int add_connection(conmgr_con_type_t type,
 	con_assign_flag(con, FLAG_IS_CHR, is_chr);
 
 	/*
-	 * Check for TLS fingerprint if connection is not already flagged as a
-	 * TLS connection and the fingerprint callback is present.
+	 * FLAG_TLS_FINGERPRINT is mutually exclusive with FLAG_TLS_CLIENT or
+	 * FLAG_TLS_SERVER. It is expected that FLAG_TLS_FINGERPRINT may be set
+	 * by default, which means we should silently remove
+	 * FLAG_TLS_FINGERPRINT if either are set.
 	 */
-	con_assign_flag(con, FLAG_WAIT_ON_FINGERPRINT,
-			(events->on_fingerprint &&
-			 !con_flag(con, FLAG_TLS_CLIENT) &&
-			 !con_flag(con, FLAG_TLS_SERVER)));
+	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER))
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 
 	if (!is_listen) {
 		con->in = create_buf(xmalloc(BUFFER_START_SIZE),
@@ -1748,7 +1748,7 @@ extern void extract_con_fd(conmgr_fd_t *con)
 	xassert(!(con_flag(con, FLAG_TLS_SERVER) ||
 		  con_flag(con, FLAG_TLS_CLIENT)) ||
 		  con_flag(con, FLAG_IS_TLS_CONNECTED));
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 	xassert(!con_flag(con, FLAG_WAIT_ON_FINISH));
 

@@ -597,60 +597,6 @@ static int _handle_connection_write(conmgr_fd_t *con,
 	return 0;
 }
 
-extern void _handle_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	conmgr_fd_t *con = conmgr_args.con;
-	int match = EINVAL;
-	bool bail = false;
-
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	slurm_mutex_lock(&mgr.mutex);
-
-	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
-
-	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ))
-		bail = true;
-
-	slurm_mutex_unlock(&mgr.mutex);
-
-	if (bail) {
-		log_flag(CONMGR, "%s: [%s] skipping fingerprint match",
-			 __func__, con->name);
-		return;
-	}
-
-	match = con->events->on_fingerprint(con, get_buf_data(con->in),
-					    get_buf_offset(con->in), con->arg);
-
-	if (match == SLURM_SUCCESS) {
-		log_flag(CONMGR, "%s: [%s] fingerprint match completed",
-					 __func__, con->name);
-
-		slurm_mutex_lock(&mgr.mutex);
-		con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
-		con_unset_flag(con, FLAG_ON_DATA_TRIED);
-
-		if (con->events->on_connection &&
-		    !con_flag(con, FLAG_TLS_SERVER))
-			queue_on_connection(con);
-		slurm_mutex_unlock(&mgr.mutex);
-	} else if (match == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] waiting for more bytes for fingerprint",
-				 __func__, con->name);
-
-		slurm_mutex_lock(&mgr.mutex);
-		con_set_flag(con, FLAG_ON_DATA_TRIED);
-		slurm_mutex_unlock(&mgr.mutex);
-	} else {
-		log_flag(CONMGR, "%s: [%s] fingerprint failed: %s",
-				 __func__, con->name, slurm_strerror(match));
-
-		close_con(false, con);
-	}
-}
-
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -726,7 +672,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 				/* follow normal checks */
 			}
 		} else if (con->events->on_connection && !is_tls &&
-			   !con_flag(con, FLAG_WAIT_ON_FINGERPRINT)) {
+			   !con_flag(con, FLAG_TLS_FINGERPRINT)) {
 			queue_on_connection(con);
 			return 0;
 		} else {
@@ -809,7 +755,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (con->extract && !con_flag(con, FLAG_WAIT_ON_FINGERPRINT) &&
+	if (con->extract && !con_flag(con, FLAG_TLS_FINGERPRINT) &&
 	    (!is_tls || (con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 			 !con_flag(con, FLAG_WAIT_ON_FINISH))) &&
 	    !con_flag(con, FLAG_QUIESCE) && list_is_empty(con->out) &&
@@ -864,7 +810,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	    (count = list_count(con->write_complete_work))) {
 		bool queue_work = false;
 
-		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
 		if (con->output_fd < 0) {
@@ -967,7 +913,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	    !con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
 	    !con_flag(con, FLAG_READ_EOF)) {
-		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 
 		/*
 		 * TLS handshake must happen attempting to process any of the
@@ -985,10 +931,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
 		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
-		if (con_flag(con, FLAG_WAIT_ON_FINGERPRINT)) {
+		if (con_flag(con, FLAG_TLS_FINGERPRINT)) {
 			log_flag(CONMGR, "%s: [%s] checking for fingerprint in %u bytes",
 				 __func__, con->name, get_buf_offset(con->in));
-			add_work_con_fifo(true, con, _handle_fingerprint, con);
+			add_work_con_fifo(true, con, tls_check_fingerprint,
+					  con);
 		} else {
 			log_flag(CONMGR, "%s: [%s] need to process %u bytes",
 				 __func__, con->name, get_buf_offset(con->in));

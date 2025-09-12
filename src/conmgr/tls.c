@@ -374,7 +374,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(con_flag(con, FLAG_TLS_SERVER) ||
 			con_flag(con, FLAG_TLS_CLIENT));
-		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(con_flag(con, FLAG_WORK_ACTIVE));
 		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
@@ -394,7 +394,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(con_flag(con, FLAG_TLS_SERVER) ||
 			con_flag(con, FLAG_TLS_CLIENT));
-		xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 		xassert(con_flag(con, FLAG_WORK_ACTIVE));
 		xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 		xassert(con->tls == tls);
@@ -444,7 +444,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	if ((con->input_fd < 0) || (con->output_fd < 0)) {
 		xassert(con_flag(con, FLAG_READ_EOF));
@@ -585,7 +585,7 @@ extern void tls_adopt(conmgr_fd_t *con, void *tls_conn)
 	con->tls_out = list_create((ListDelF) free_buf);
 
 	/* Can't finger print existing TLS connections */
-	con_unset_flag(con, FLAG_WAIT_ON_FINGERPRINT);
+	con_unset_flag(con, FLAG_TLS_FINGERPRINT);
 
 	if ((rc = tls_g_set_conn_callbacks(tls_conn, &callbacks))) {
 		log_flag(CONMGR, "%s: [%s] adopting TLS state failed: %s",
@@ -605,7 +605,7 @@ extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 	xassert(con->tls);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
 		con_flag(con, FLAG_TLS_SERVER));
@@ -621,7 +621,7 @@ extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ||
 		con_flag(con, FLAG_TLS_SERVER));
-	xassert(!con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	if (count)
 		write_output(con, count, con->tls_out);
@@ -704,65 +704,109 @@ extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-extern int on_fingerprint_tls(conmgr_fd_t *con, const void *buffer,
-			      const size_t bytes, void *arg)
+extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int match = EINVAL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
 
+	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ)) {
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprint match on closed connection",
+			 __func__, con->name);
+		return;
+	}
+
 	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
 		slurm_mutex_unlock(&mgr.mutex);
 
 		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprinting as TLS already activated",
 				 __func__, con->name);
-
-		return SLURM_SUCCESS;
+		return;
 	}
 
+	/* fingerprinting must be done before reaching CONNECTED status */
+	xassert(con_flag(con, FLAG_IS_CONNECTED));
+	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+	/* verify connection is not a listener which can't be fingerprinted */
+	xassert(!con_flag(con, FLAG_IS_LISTEN));
+
+	/* Verify TLS has not already started */
 	xassert(!con->tls);
 	xassert(!con->tls_in);
 	xassert(!con->tls_out);
 	xassert(!con_flag(con, FLAG_TLS_CLIENT));
 	xassert(!con_flag(con, FLAG_TLS_SERVER));
-	xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
-	xassert(!con_flag(con, FLAG_READ_EOF));
-	xassert(!con_flag(con, FLAG_IS_LISTEN));
-	xassert(con_flag(con, FLAG_IS_CONNECTED));
-	xassert(con_flag(con, FLAG_WAIT_ON_FINGERPRINT));
+	xassert(con_flag(con, FLAG_TLS_FINGERPRINT));
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	if (!(match = tls_is_handshake(get_buf_data(con->in),
-				       get_buf_offset(con->in), con->name))) {
-		log_flag(CONMGR, "%s: [%s] TLS matched",
-			 __func__, con->name);
+	match = tls_is_handshake(get_buf_data(con->in), get_buf_offset(con->in),
+				 con->name);
 
+	if (!match) {
 		slurm_mutex_lock(&mgr.mutex);
 
 		/* Only servers can accept an incoming TLS handshake requests */
 		con_set_flag(con, FLAG_TLS_SERVER);
 
-		slurm_mutex_unlock(&mgr.mutex);
-		return SLURM_SUCCESS;
-	} else if (match == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS match",
-				 __func__, con->name);
+		/* Deactivate fingerprinting */
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
+		/*
+		 * _negotiate() will queue on_connection() callback once TLS
+		 * negotiation is complete since it was deferred for
+		 * fingerprinting
+		 */
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint matched",
+					 __func__, con->name);
+	} else if (match == EWOULDBLOCK) {
 		slurm_mutex_lock(&mgr.mutex);
 		con_set_flag(con, FLAG_ON_DATA_TRIED);
 		slurm_mutex_unlock(&mgr.mutex);
 
-		return EWOULDBLOCK;
+		log_flag(CONMGR, "%s: [%s] waiting for more bytes for TLS fingerprint",
+			 __func__, con->name);
 	} else if (match == ENOENT) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Deactivate fingerprinting */
+		con_unset_flag(con, FLAG_TLS_FINGERPRINT);
+		con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
+		/* connection should never be TLS wrapped at this point */
+		xassert(!con_flag(con, FLAG_TLS_SERVER));
+		xassert(!con_flag(con, FLAG_TLS_CLIENT));
+
+		/*
+		 * Run on_connection() callback now since it was deferred for
+		 * fingerprinting
+		 */
+		if (con->events->on_connection)
+			queue_on_connection(con);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
 		log_flag(CONMGR, "%s: [%s] TLS not detected",
 			 __func__, con->name);
-		return SLURM_SUCCESS;
-	}
+	} else {
+		log_flag(CONMGR, "%s: [%s] TLS fingerprint failed: %s",
+				 __func__, con->name, slurm_strerror(match));
 
-	fatal_abort("should never happen");
+		/* should never happen */
+		xassert(false);
+
+		close_con(false, con);
+	}
 }
 
 extern int tls_extract(conmgr_fd_t *con, extract_fd_t *extract)

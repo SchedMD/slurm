@@ -718,13 +718,13 @@ int main(int argc, char **argv)
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = on_http_connection_finish,
-		.on_fingerprint = on_fingerprint_tls,
 	};
 	static const conmgr_events_t inet_events = {
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
 		.on_finish = _inet_on_finish,
 	};
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	_parse_env();
 	_parse_commandline(argc, argv);
@@ -767,7 +767,9 @@ int main(int argc, char **argv)
 	 * or give user warning TLS will not be supported
 	 */
 	if (!tls_g_init() && tls_available() &&
-	    (rc = tls_g_load_own_cert(NULL, 0, NULL, 0))) {
+	    !tls_g_load_own_cert(NULL, 0, NULL, 0)) {
+		flags |= CON_FLAG_TLS_FINGERPRINT;
+	} else {
 		debug("Disabling TLS support due to failure loading TLS certificate");
 
 		if ((rc = tls_g_fini()))
@@ -855,9 +857,8 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, &inet_events,
-					    CON_FLAG_NONE, NULL, 0,
-					    NULL, operations_router)))
+					    STDOUT_FILENO, &inet_events, flags,
+					    NULL, 0, NULL, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -866,7 +867,7 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_listen_sockets(CON_TYPE_RAW, CON_FLAG_NONE,
+		if (conmgr_create_listen_sockets(CON_TYPE_RAW, flags,
 						 socket_listen, &conmgr_events,
 						 operations_router))
 			fatal("Unable to create sockets");
