@@ -117,8 +117,15 @@ void slurm_print_node_table(FILE *out, node_info_t *node_ptr, int one_liner)
 	xfree(print_this);
 }
 
-/* Given data structures containing information about nodes and partitions,
- * populate the node's "partitions" field */
+/*
+ * Given data structures containing information about nodes and partitions,
+ * populate the node's "partitions" field
+ *
+ * The `node_buffer_ptr` argument must contain either the complete list of
+ * nodes known to the slurm controller *or* a single one, for which
+ * special-case support is present. Calling it with any other number of
+ * nodes results in incorrect behavior.
+ */
 void
 slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 			       partition_info_msg_t *part_buffer_ptr)
@@ -147,6 +154,28 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 	 */
 	for (p = 0, part_ptr = part_buffer_ptr->partition_array;
 	     p < part_buffer_ptr->record_count; p++, part_ptr++) {
+		/* handle single node case */
+		if (node_buffer_ptr->record_count == 1) {
+			int pos = -1;
+			hostlist_t *hl;
+			char *sep = "";
+
+			node_ptr = &(node_buffer_ptr->node_array[0]);
+			if ((node_ptr->name == NULL) ||
+			    (part_ptr->nodes == NULL))
+				continue;
+			hl = hostlist_create(part_ptr->nodes);
+			pos = hostlist_find(hl, node_ptr->name);
+			hostlist_destroy(hl);
+			if (pos < 0)
+				continue;
+			if (node_ptr->partitions)
+				sep = ",";
+			xstrfmtcat(node_ptr->partitions, "%s%s", sep,
+				   part_ptr->name);
+			continue;
+		}
+
 		for (i = 0; ; i += 2) {
 			if (part_ptr->node_inx[i] == -1)
 				break;

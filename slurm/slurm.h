@@ -4382,8 +4382,15 @@ extern int slurm_load_node_single2(node_info_msg_t **resp, char *node_name,
 				   uint16_t show_flags,
 				   slurmdb_cluster_rec_t *cluster);
 
-/* Given data structures containing information about nodes and partitions,
- * populate the node's "partitions" field */
+/*
+ * Given data structures containing information about nodes and partitions,
+ * populate the node's "partitions" field
+ *
+ * The `node_buffer_ptr` argument must contain either the complete list of
+ * nodes known to the slurm controller *or* a single one, for which
+ * special-case support is present. Calling it with any other number of
+ * nodes results in incorrect behavior.
+ */
 void
 slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 			       partition_info_msg_t *part_buffer_ptr);
