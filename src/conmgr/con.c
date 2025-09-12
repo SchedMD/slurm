@@ -1300,7 +1300,14 @@ extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 
 extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref)
 {
+	if (!ref)
+		return NULL;
+
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	if (!ref->con)
+		return NULL;
+
 	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
 
 	return conmgr_fd_get_name(ref->con);
