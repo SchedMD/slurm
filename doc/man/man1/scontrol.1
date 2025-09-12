@@ -1875,7 +1875,8 @@ simple node range expressions (e.g. "lx[10\-20]"). Nodesets can also be
 specified by themselves or mixed with node range expressions, using a comma as
 a list separator. If the keyword "ALL" is specified alone, then the update
 will be attempted against all the nodes in the local cluster. This specification
-is required.
+is required. Only dynamic nodes that have no running jobs and that are not part
+of a reservation can be deleted.
 .IP
 
 .SH "NODES \- SPECIFICATIONS FOR SHOW COMMAND"
