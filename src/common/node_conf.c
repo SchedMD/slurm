@@ -1266,8 +1266,11 @@ extern int node_name2bitmap(char *node_names, bool test_alias,
 	}
 
 	while ((this_node_name = hostlist_shift(host_list))) {
-		rc = _single_node_name2bitmap(this_node_name, test_alias,
-					      *bitmap, invalid_hostlist);
+		int tmp_rc;
+		if ((tmp_rc = _single_node_name2bitmap(this_node_name,
+						       test_alias, *bitmap,
+						       invalid_hostlist)))
+			rc = tmp_rc;
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
