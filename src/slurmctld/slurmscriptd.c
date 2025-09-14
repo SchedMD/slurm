@@ -391,8 +391,16 @@ static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
-	if (msg_type == SLURMSCRIPTD_REQUEST_RUN_SCRIPT)
-		_incr_script_cnt();
+	if (msg_type == SLURMSCRIPTD_REQUEST_RUN_SCRIPT) {
+		run_script_msg_t *run_script_msg = msg_data;
+
+		/*
+		 * Don't track powersave scripts. We don't want slurmctld to
+		 * wait forever for them to finish while shutting down.
+		 */
+		if (!(run_script_msg->script_type == SLURMSCRIPTD_POWER))
+			_incr_script_cnt();
+	}
 
 	if (wait)
 		slurm_mutex_lock(&script_resp->mutex);
@@ -884,7 +892,8 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 		break;
 	case SLURMSCRIPTD_POWER:
 		ping_nodes_now = true;
-		break;
+		/* Don't call _decr_script_cnt() */
+		return SLURM_SUCCESS;
 	case SLURMSCRIPTD_PROLOG:
 		prep_prolog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id,
