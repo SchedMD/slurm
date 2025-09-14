@@ -3168,6 +3168,11 @@ To remove a limit, assign \-1 to the TRES type whose limit should be removed,
 e.g., "GrpTRES=cpu=\-1" would remove only the cpu TRES limit, resulting in
 "GrpTRES=mem=32G,gres/gpu=2" on that entity.
 
+Starting in Slurm 25.11, a TRES assignment can use a += or \-= operator to add
+to or remove from the previously set value for that TRES, e.g.,
+"GrpTRES=mem-=8G,gres/gpu+=2" would result in "GrpTRES=mem=24G,gres/gpu=4" on
+that entity.
+
 \fBNOTE\fR: When dealing with Memory as a TRES the default units are MB. A
 suffix of G, T, or P can be added to specify a limit in larger units.
 
