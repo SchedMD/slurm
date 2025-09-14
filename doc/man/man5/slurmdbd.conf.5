@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "July 2025" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "August 2025" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -46,7 +46,7 @@ element is set to true. Default is /tmp. The format for this files name is
 .na
 $ArchiveDir/$ClusterName_$ArchiveObject_archive_$BeginTimeStamp_$endTimeStamp
 .ad
-We limit archive files to 50000 records per file. If more than 50000 records
+We limit archive files to \fBMaxPurgeLimit\fR records per file. If more records
 exist during that time period, they will be written to a new file. Subsequent
 archive files during the same time period will have ".<number>" appended
 to the file, for example .2, with the number increasing by one for each file in
@@ -636,6 +636,18 @@ date and time format. The "thread_id" format shows the timestamp
 in the C standard ctime() function form without the year but
 including the microseconds, the daemon's process ID and the current thread name
 and ID.
+.IP
+
+.TP
+\fBMaxPurgeLimit\fR
+When archiving and purging records, limit each individual operation to this many
+rows. The operations will then repeat until all targeted rows are processed.
+This limit ensures that locks will periodically be released, allowing other
+database operations to occur. A lower limit will release locks more frequently,
+which may improve system responsiveness while purging records from large tables.
+However, a lower limit will also increase the total amount of time required to
+complete the purge. In most cases it is not recommended to set a higher limit
+than default. Default value is 50000.
 .IP
 
 .TP

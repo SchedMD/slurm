@@ -157,6 +157,7 @@ extern int read_slurmdbd_conf(void)
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
 		{"LogTimeFormat", S_P_STRING},
+		{"MaxPurgeLimit", S_P_UINT32},
 		{"MaxQueryTimeRange", S_P_STRING},
 		{"MessageTimeout", S_P_UINT16},
 		{"Parameters", S_P_STRING},
@@ -385,6 +386,11 @@ extern int read_slurmdbd_conf(void)
 				slurm_conf.log_fmt = LOG_FMT_THREAD_ID;
 			xfree(temp_str);
 		}
+
+		if (!s_p_get_uint32(&slurmdbd_conf->max_purge_limit,
+				    "MaxPurgeLimit", tbl))
+			slurmdbd_conf->max_purge_limit =
+				DEFAULT_SLURMDBD_MAX_PURGE_LIMIT;
 
 		if (s_p_get_string(&temp_str, "MaxQueryTimeRange", tbl)) {
 			slurmdbd_conf->max_time_range = time_str2secs(temp_str);
@@ -838,6 +844,9 @@ extern list_t *dump_config(void)
 	add_key_pair(my_list, "HashPlugin", "%s", slurm_conf.hash_plugin);
 
 	add_key_pair(my_list, "LogFile", "%s", slurmdbd_conf->log_file);
+
+	add_key_pair(my_list, "MaxPurgeLimit", "%u",
+		     slurmdbd_conf->max_purge_limit);
 
 	secs2time_str(slurmdbd_conf->max_time_range, time_str,
 		      sizeof(time_str));
