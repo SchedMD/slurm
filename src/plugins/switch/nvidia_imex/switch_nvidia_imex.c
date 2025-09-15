@@ -178,10 +178,10 @@ extern int switch_p_restore(bool recover)
 extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	log_flag(SWITCH, "channel %u",
-		 (switch_info ? switch_info->channel : NO_VAL));
-
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		log_flag(SWITCH, "channel %u",
+			 (switch_info ? switch_info->channel : NO_VAL));
+
 		if (!switch_info) {
 			pack32(NO_VAL, buffer);
 			return;
@@ -195,18 +195,18 @@ extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
 extern int switch_p_unpack_jobinfo(switch_info_t **switch_info, buf_t *buffer,
 				   uint16_t protocol_version)
 {
-	uint32_t channel = NO_VAL;
-
-	*switch_info = NULL;
-
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t channel = NO_VAL;
+
+		*switch_info = NULL;
+
 		safe_unpack32(&channel, buffer);
+
+		if (channel != NO_VAL)
+			*switch_info = _create_info(channel);
+
+		log_flag(SWITCH, "channel %u", channel);
 	}
-
-	if (channel != NO_VAL)
-		*switch_info = _create_info(channel);
-
-	log_flag(SWITCH, "channel %u", channel);
 
 	return SLURM_SUCCESS;
 
