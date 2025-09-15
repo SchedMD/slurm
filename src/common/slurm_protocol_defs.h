@@ -98,7 +98,7 @@
 	((_X->job_state & JOB_STATE_BASE) == JOB_NODE_FAIL)
 #define IS_JOB_DEADLINE(_X)		\
 	((_X->job_state & JOB_STATE_BASE) == JOB_DEADLINE)
-#define IS_JOB_OOM(_X)		\
+#define IS_JOB_OOM(_X)			\
 	((_X->job_state & JOB_STATE_BASE) == JOB_OOM)
 #define IS_JOB_POWER_UP_NODE(_X)	\
 	(_X->job_state & JOB_POWER_UP_NODE)
