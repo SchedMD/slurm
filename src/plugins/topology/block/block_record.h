@@ -61,6 +61,10 @@ typedef struct {
 	int ablock_count;
 } block_context_t;
 
+typedef struct {
+	list_t *segment_list; /* List of char *node_list */
+} topology_jobinfo_t;
+
 /* Free all memory associated with block_record_table structure */
 extern void block_record_table_destroy(block_context_t *ctx);
 
