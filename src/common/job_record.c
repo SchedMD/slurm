@@ -42,6 +42,7 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/topology.h"
 
 #include "src/stepmgr/stepmgr.h"
 
@@ -306,6 +307,7 @@ extern void job_record_delete(void *job_entry)
 	if (job_ptr->switch_jobinfo)
 		switch_g_free_jobinfo(job_ptr);
 	xfree(job_ptr->system_comment);
+	topology_g_jobinfo_free(job_ptr->topo_jobinfo);
 	xfree(job_ptr->tres_alloc_cnt);
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_bind);
@@ -2523,6 +2525,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 
 		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
+		topology_g_jobinfo_pack(dump_job_ptr->topo_jobinfo, buffer,
+					protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
 
@@ -3109,6 +3113,9 @@ extern int job_record_unpack(job_record_t **out,
 
 		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
+			goto unpack_error;
+		if (topology_g_jobinfo_unpack(&job_ptr->topo_jobinfo, buffer,
+					      protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
 					 protocol_version))
