@@ -3828,12 +3828,15 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 					  rebuild_topo_t *rebuild_topo,
 					  gres_slurmd_conf_t *gres_slurmd_conf)
 {
+	int total_core_cnt = bit_set_count(tmp_bitmap);
+
 	for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
 		int first = i * rebuild_topo->cores_per_sock;
 		int last = (i + 1) * rebuild_topo->cores_per_sock;
 		int core_cnt = bit_set_count_range(tmp_bitmap, first, last);
 
-		if (core_cnt && (core_cnt != rebuild_topo->cores_per_sock)) {
+		if (core_cnt && ((core_cnt != rebuild_topo->cores_per_sock) ||
+				 (core_cnt != total_core_cnt))) {
 			slurm_gres_context_t *gres_ctx = rebuild_topo->gres_ctx;
 			gres_node_state_t *gres_ns = rebuild_topo->gres_ns;
 			char *gres_cores_str = bit_fmt_full(tmp_bitmap);
