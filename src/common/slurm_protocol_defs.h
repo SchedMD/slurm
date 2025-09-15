@@ -100,8 +100,6 @@
 	((_X->job_state & JOB_STATE_BASE) == JOB_DEADLINE)
 #define IS_JOB_OOM(_X)			\
 	((_X->job_state & JOB_STATE_BASE) == JOB_OOM)
-#define IS_JOB_POWER_UP_NODE(_X)	\
-	(_X->job_state & JOB_POWER_UP_NODE)
 
 /* Derived job states */
 #define IS_JOB_COMPLETING(_X)		\
@@ -120,6 +118,8 @@
 	(_X->job_state & JOB_REQUEUE)
 #define IS_JOB_FED_REQUEUED(_X)		\
 	(_X->job_state & JOB_REQUEUE_FED)
+#define IS_JOB_POWER_UP_NODE(_X)	\
+	(_X->job_state & JOB_POWER_UP_NODE)
 #define IS_JOB_REVOKED(_X)		\
 	(_X->job_state & JOB_REVOKED)
 #define IS_JOB_SIGNALING(_X)		\
