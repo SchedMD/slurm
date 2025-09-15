@@ -544,7 +544,7 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 /* Caller must hold mgr->mutex lock */
 static bool _is_accept_deferred(void)
 {
-	return (list_count(mgr.connections) >= mgr.max_connections);
+	return (list_count(mgr.connections) > mgr.max_connections);
 }
 
 /* caller must hold mgr->mutex lock */
