@@ -1975,11 +1975,27 @@ static void hostlist_shift_iterators(hostlist_t *hl, int idx, int depth, int n)
 			if (i->idx == idx && i->depth >= depth)
 				i->depth = i->depth > -1 ? i->depth - 1 : -1;
 		} else {
+			/* Modify iter if rm indexes have already been seen */
 			if (i->idx >= idx) {
-				if ((i->idx -= n) >= 0)
-					i->hr = i->hl->hr[i->idx];
-				else
-					hostlist_iterator_reset(i);
+				/* Current referenced host range was deleted */
+				if (i->idx < (idx + n)) {
+					/*
+					 * idx is now the index of the first
+					 * host range after the deleted ones
+					 */
+					i->idx = idx;
+					i->depth = -1; /* reset depth */
+				} else {
+					/*
+					 * Current host range not deleted,
+					 * update i->idx to the current host
+					 * range's new index but keep depth the
+					 * same.
+					 */
+					i->idx -= n;
+				}
+
+				i->hr = i->hl->hr[i->idx];
 			}
 		}
 	}
