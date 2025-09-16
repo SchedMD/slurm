@@ -335,8 +335,10 @@ expect {
 	}
 }
 
-if {$matches != 2} {
-	fail "File dump 1 incorrect ($matches != 1)"
+if {[package vcompare [get_version] "25.05.0"] >= 0} {
+	subtest {$matches == 2} "Dump should report correct output" "$matches != 2"
+} else {
+	subtest {$matches == 1} "Ticket 50238: Dump should report correct output, but fixed in 25.05.0" "$matches != 1"
 }
 
 set matches 0
@@ -390,6 +392,8 @@ while {[gets $tfile line] != -1} {
 }
 
 
-if {$matches != 15} {
-	fail "Parse of file for 15 entries incorrect ($matches != 15)"
+if {[package vcompare [get_version] "25.05.0"] >= 0} {
+	subtest {$matches == 15} "Output file should be correct" "$matches != 15"
+} else {
+	subtest {$matches == 14} "Ticket 50238: Output file should be correct, but was fixed in 25.05.0" "$matches != 15"
 }
