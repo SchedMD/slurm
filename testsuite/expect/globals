@@ -1629,6 +1629,32 @@ proc get_my_gid {  } {
 ################################################################
 #
 # NAME
+#	get_version - gets the version of the Slurm component to use with the
+#                     TCL package module. It call the component with "-V"
+#
+# SYNOPSIS
+#	get_version <component>
+#
+# RETURN VALUE
+#	The version of the component
+#
+################################################################
+
+proc get_version {{component "slurmctld"}} {
+	set version_str [string map {"slurm " ""} [string trimright [run_command_output -fail "$component -V"]]]
+
+	set re {^([0-9]+(?:\.[0-9]+)*)(.*)$}
+	if {[regexp $re $version_str -> version_num suffix1] == 0} {
+		fail "Invalid version: $version_num"
+	}
+
+	return $version_num
+}
+
+
+################################################################
+#
+# NAME
 #	kill_salloc - kills all salloc commands associated with this user
 #
 # SYNOPSIS
