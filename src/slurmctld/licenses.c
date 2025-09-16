@@ -945,26 +945,27 @@ static int _foreach_hres_filter(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
 	hres_filter_args_t *args = arg;
+	bitstr_t *node_mask;
+	foreach_hres_filter_t arg2 = {
+		.job_ptr = args->job_ptr,
+		.license_entry = license_entry,
+		.when = args->when,
+	};
 
-	if (license_entry->id.hres_id != NO_VAL16) {
-		bitstr_t *node_mask = bit_alloc(node_record_count);
-		foreach_hres_filter_t arg2 = {
-			.job_ptr = args->job_ptr,
-			.node_mask = node_mask,
-			.license_entry = license_entry,
-			.when = args->when,
-		};
-
-		list_for_each_ro(args->license_list, _foreach_hres_filter_mode1,
-				 &arg2);
-		if (license_entry->mode == HRES_MODE_2)
-			list_for_each_ro(args->license_list,
-					 _foreach_hres_filter_mode2, &arg2);
-
-		bit_and(args->node_bitmap, node_mask);
-		FREE_NULL_BITMAP(node_mask);
+	if ((license_entry->id.hres_id == NO_VAL16) ||
+	    (license_entry->mode == HRES_MODE_3))
 		return 0;
-	}
+
+	node_mask = bit_alloc(node_record_count);
+	arg2.node_mask = node_mask;
+
+	list_for_each_ro(args->license_list, _foreach_hres_filter_mode1, &arg2);
+	if (license_entry->mode == HRES_MODE_2)
+		list_for_each_ro(args->license_list, _foreach_hres_filter_mode2,
+				 &arg2);
+
+	bit_and(args->node_bitmap, node_mask);
+	FREE_NULL_BITMAP(node_mask);
 
 	return 0;
 }
@@ -1013,26 +1014,28 @@ static int _foreach_bf_hres_filter(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
 	bf_hres_filter_args_t *args = arg;
+	bitstr_t *node_mask;
+	foreach_hres_filter_t arg2 = {
+		.job_ptr = args->job_ptr,
+		.license_entry = license_entry,
+	};
 
-	if (license_entry->id.hres_id != NO_VAL16) {
-		bitstr_t *node_mask = bit_alloc(node_record_count);
-		foreach_hres_filter_t arg2 = {
-			.job_ptr = args->job_ptr,
-			.node_mask = node_mask,
-			.license_entry = license_entry,
-		};
-
-		list_for_each_ro(args->bf_license_list,
-				 _foreach_bf_hres_filter_mode1, &arg2);
-
-		if (license_entry->mode == HRES_MODE_2)
-			list_for_each_ro(args->bf_license_list,
-					 _foreach_bf_hres_filter_mode2, &arg2);
-
-		bit_and(args->node_bitmap, node_mask);
-		FREE_NULL_BITMAP(node_mask);
+	if ((license_entry->id.hres_id == NO_VAL16) ||
+	    (license_entry->mode == HRES_MODE_3))
 		return 0;
-	}
+
+	node_mask = bit_alloc(node_record_count);
+	arg2.node_mask = node_mask;
+
+	list_for_each_ro(args->bf_license_list, _foreach_bf_hres_filter_mode1,
+			 &arg2);
+
+	if (license_entry->mode == HRES_MODE_2)
+		list_for_each_ro(args->bf_license_list,
+				 _foreach_bf_hres_filter_mode2, &arg2);
+
+	bit_and(args->node_bitmap, node_mask);
+	FREE_NULL_BITMAP(node_mask);
 
 	return 0;
 }
