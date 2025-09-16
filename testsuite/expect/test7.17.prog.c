@@ -71,6 +71,10 @@ int main(int argc, char *argv[])
 	char *orig_config, *new_config = NULL, *tres_per_node = NULL;
 	buf_t *buffer;
 	list_t *job_gres_list = NULL;
+#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(25,11,0)
+	// Ticket 22718: In newer versions we should use node_ptr->gres_list
+	list_t *node_gres_list = NULL;
+#endif
 	char config_dir[1000], test[1000];
 	char slurm_conf[1000];
 	uint32_t num_tasks = 1;
@@ -96,11 +100,14 @@ int main(int argc, char *argv[])
 
 		.gres_list = &job_gres_list,
 	};
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
+	// Ticket 22718: In newer versions we should use node_ptr->gres_list
 	node_record_t *node_ptr;
 
 	/* Initializing node_ptr */
 	node_ptr = xmalloc(sizeof(node_record_t));
 	node_ptr->config_ptr = xmalloc(sizeof(config_record_t));
+#endif
 
 	/* Setup slurm.conf and gres.conf test paths */
 	strlcpy(config_dir, argv[2], sizeof(config_dir));
@@ -127,15 +134,25 @@ int main(int argc, char *argv[])
 	 * Logic normally executed by slurmctld daemon
 	 */
 	orig_config = "gpu:8";
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
+	// Ticket 22718: In newer versions we should use node_ptr->gres_list
 	node_ptr->config_ptr->gres = orig_config;
 	gres_init_node_config(orig_config, &node_ptr->gres_list);
+#else
+	gres_init_node_config(orig_config, &node_gres_list);
+#endif
 	cpu_count = strtol(argv[4], NULL, 10);
 	core_count = strtol(argv[5], NULL, 10);
 	sock_count = strtol(argv[6], NULL, 10);
 	node_name = "test_node";
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
 	node_ptr->name = node_name;
 	rc = gres_g_node_config_load(cpu_count, node_name, node_ptr->gres_list,
 				     NULL, NULL);
+#else
+	rc = gres_g_node_config_load(cpu_count, node_name, node_gres_list,
+				     NULL, NULL);
+#endif
 	if (rc)
 		fatal("failure: gres_node_config_load: %s",
 		      slurm_strerror(rc));
@@ -153,8 +170,16 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
+	// Ticket 22718: In newer versions we should use node_ptr->gres_list
 	rc = gres_node_config_validate(node_ptr, cpu_count, core_count,
 				       sock_count, 0, &reason_down);
+#else
+	rc = gres_node_config_validate(node_name, orig_config,
+				       &new_config, &node_gres_list,
+				       cpu_count, core_count, sock_count,
+				       0, &reason_down);
+#endif
 	if (rc)
 		fatal("failure: gres_node_config_validate: %s",
 		      slurm_strerror(rc));
@@ -167,11 +192,20 @@ int main(int argc, char *argv[])
 		fatal("failure: gres_job_state_validate: %s",
 		      slurm_strerror(rc));
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
+	// Ticket 22718: In newer versions we should use node_ptr->gres_list
 	gres_node_state_log(node_ptr->gres_list, node_name);
 	gres_job_state_log(job_gres_list, job_id);
 
 	cpu_alloc = gres_job_test(job_gres_list, node_ptr->gres_list, true, 0,
 				  cpu_count - 1, job_id, node_name);
+#else
+	gres_node_state_log(node_gres_list, node_name);
+	gres_job_state_log(job_gres_list, job_id);
+	cpu_alloc = gres_job_test(job_gres_list, node_gres_list, true,
+				  0, cpu_count - 1,
+				  job_id, node_name);
+#endif
 	if (cpu_alloc == NO_VAL)
 		printf("cpu_alloc=ALL\n");
 	else
