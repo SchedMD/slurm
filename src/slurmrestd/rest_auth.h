@@ -47,7 +47,7 @@
 #define HTTP_HEADER_AUTH_BEARER "Bearer "
 #define HTTP_HEADER_USER_NAME "X-SLURM-USER-NAME"
 
-typedef struct {
+typedef struct rest_auth_context_s {
 	int magic;
 	uint32_t plugin_id;
 	/* optional user supplied user name */
