@@ -574,7 +574,7 @@ extern char *run_command_poll_child(int cpid,
 		 * for the process here until max_wait.
 		 */
 		run_command_waitpid_timeout(script_type,
-					    cpid, status,
+					    cpid, orphan_on_shutdown, status,
 					    max_wait,
 					    timeval_tot_wait(&tstart),
 					    tid, timed_out);
@@ -589,7 +589,8 @@ extern char *run_command_poll_child(int cpid,
  *  Same as waitpid(2) but kill process group for pid after timeout millisecs.
  */
 extern int run_command_waitpid_timeout(
-	const char *name, pid_t pid, int *pstatus, int timeout_ms,
+	const char *name, pid_t pid, bool orphan_on_shutdown,
+	int *pstatus, int timeout_ms,
 	int elapsed_ms, pthread_t tid, bool *timed_out)
 {
 	int max_delay = 1000;		 /* max delay between waitpid calls */
@@ -610,6 +611,12 @@ extern int run_command_waitpid_timeout(
 			error("%s: waitpid(%d): %m", __func__, pid);
 			return -1;
 		} else if (command_shutdown) {
+			if (orphan_on_shutdown) {
+				error("%s: orphaning %s on shutdown",
+				      __func__, name);
+				*pstatus = 0;
+				return SLURM_SUCCESS;
+			}
 			error("%s: killing %s on shutdown",
 			      __func__, name);
 			_kill_pg(pid);
