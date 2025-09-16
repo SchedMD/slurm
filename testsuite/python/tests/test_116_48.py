@@ -2,8 +2,10 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import atf
+import logging
 import pytest
 import re
+import time
 
 
 port_range = 9
@@ -26,12 +28,92 @@ def setup():
 def test_srun_ports_in_range(nodes):
     """Test srun uses the right SrunPortRange"""
 
-    command = '''bash -c "
-        task_id=\\$(scontrol show step \\$SLURM_JOBID.\\$SLURM_STEPID \
-        | grep SrunHost | awk -F: '{print \\$3}')
-        lsof -P -p \\$task_id 2>/dev/null | grep LISTEN | awk '{print \\$9}' \
-        | awk -F: '{print \\$2}'"'''
-    output = atf.run_job_output(f"-N{nodes} {command}", timeout=120).split("\n")
+    command = """bash -c '
+        echo "[DEBUG] Starting port check" >&2
+        echo "[DEBUG] Environment: SLURM_JOBID=$SLURM_JOBID SLURM_STEPID=$SLURM_STEPID" >&2
+        echo "[DEBUG] Hostname: $(hostname)" >&2
+        echo "[DEBUG] PID: $$" >&2
+
+        echo "[DEBUG] Running scontrol show step..." >&2
+        step_info=$(scontrol show step $SLURM_JOBID.$SLURM_STEPID 2>&1)
+        scontrol_exit_code=$?
+        echo "[DEBUG] scontrol exit code: $scontrol_exit_code" >&2
+        echo "[DEBUG] scontrol output length: ${#step_info}" >&2
+        echo "[DEBUG] scontrol output: $step_info" >&2
+
+        if [[ $scontrol_exit_code -ne 0 ]]; then
+            echo "[ERROR] scontrol failed with exit code $scontrol_exit_code" >&2
+            exit 1
+        fi
+
+        echo "[DEBUG] Extracting SrunHost info..." >&2
+        srun_host_line=$(echo "$step_info" | grep SrunHost)
+        echo "[DEBUG] SrunHost line: $srun_host_line" >&2
+
+        if [[ -z "$srun_host_line" ]]; then
+            echo "[ERROR] No SrunHost found in step info" >&2
+            exit 2
+        fi
+
+        task_id=$(echo "$srun_host_line" | awk -F: '"'"'{print $3}'"'"')
+        echo "[DEBUG] Extracted task_id: $task_id" >&2
+
+        if [[ -z "$task_id" ]]; then
+            echo "[ERROR] Could not extract task_id" >&2
+            exit 3
+        fi
+
+        echo "[DEBUG] Checking if process $task_id exists..." >&2
+        if ! ps -p $task_id > /dev/null 2>&1; then
+            echo "[ERROR] Process $task_id does not exist" >&2
+            echo "[DEBUG] Current srun processes:" >&2
+            ps aux | grep srun | grep -v grep >&2
+            exit 4
+        fi
+
+        echo "[DEBUG] Running ss to find listening ports for PID $task_id..." >&2
+        ss_output=$(ss -tlnp 2>&1)
+        ss_exit_code=$?
+        echo "[DEBUG] ss exit code: $ss_exit_code" >&2
+
+        if [[ $ss_exit_code -ne 0 ]]; then
+            echo "[ERROR] ss failed with exit code $ss_exit_code" >&2
+            echo "[DEBUG] ss error output: $ss_output" >&2
+            exit 5
+        fi
+
+        echo "[DEBUG] Filtering ss output for PID $task_id..." >&2
+        filtered_output=$(echo "$ss_output" | grep "pid=$task_id,")
+        echo "[DEBUG] Filtered output: $filtered_output" >&2
+
+        echo "[DEBUG] Using filtered output as listen ports..." >&2
+        listen_ports="$filtered_output"
+        echo "[DEBUG] LISTEN lines: $listen_ports" >&2
+
+        echo "[DEBUG] Extracting port numbers..." >&2
+        port_numbers=$(echo "$listen_ports" | awk '"'"'{print $4}'"'"' | awk -F: '"'"'{print $NF}'"'"')
+        echo "[DEBUG] Port numbers: $port_numbers" >&2
+
+        echo "[DEBUG] Final output:" >&2
+        echo "$port_numbers"
+
+        echo "[DEBUG] Completed" >&2
+    \'    """
+
+    start_time = time.time()
+
+    # Log existing srun processes before test
+    ps_result = atf.run_command("ps aux | grep srun | grep -v grep")
+    # Logging for Ticket 19089
+    logging.debug(f"[TEST] Existing srun processes before test: {ps_result['stdout']}")
+
+    result = atf.run_job(f"-N{nodes} {command}", timeout=180)
+    end_time = time.time()
+
+    # Logging for Ticket 19089
+    logging.debug(f"[TEST] Command took {end_time - start_time:.3f} seconds")
+
+    output = result["stdout"].split("\n")
     count = 0
     for port_string in output:
         # Ignore blank lines
