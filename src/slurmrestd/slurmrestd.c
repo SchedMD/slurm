@@ -681,13 +681,6 @@ static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_request_shutdown();
 }
 
-
-static void _inet_on_finish(conmgr_fd_t *con, void *ctxt)
-{
-	on_http_connection_finish(con, ctxt);
-	conmgr_request_shutdown();
-}
-
 static void _load_oas_specs(void)
 {
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
@@ -722,7 +715,7 @@ int main(int argc, char **argv)
 	static const conmgr_events_t inet_events = {
 		.on_data = parse_http,
 		.on_connection = _setup_http_context,
-		.on_finish = _inet_on_finish,
+		.on_finish = on_http_connection_finish,
 	};
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
@@ -856,6 +849,7 @@ int main(int argc, char **argv)
 		debug("Interactive mode activated (TTY detected on STDIN)");
 
 	if (!run_mode.listen) {
+		inetd_mode = true;
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
 					    STDOUT_FILENO, &inet_events, flags,
 					    NULL, 0, NULL, operations_router)))

@@ -55,6 +55,7 @@
 #include "src/interfaces/http_parser.h"
 
 #include "src/slurmrestd/http.h"
+#include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
 #define CRLF "\r\n"
@@ -785,6 +786,9 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 
 	context->magic = ~MAGIC;
 	xfree(context);
+
+	if (inetd_mode)
+		conmgr_request_shutdown();
 }
 
 extern void *http_context_get_auth(http_context_t *context)

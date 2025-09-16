@@ -55,6 +55,7 @@
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static list_t *paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
+bool inetd_mode = false;
 
 #define MAGIC_HEADER_ACCEPT 0xDF9EAABE
 

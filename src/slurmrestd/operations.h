@@ -41,6 +41,11 @@
 #include "src/slurmrestd/openapi.h"
 
 /*
+ * True if slurmrestd is running in inetd mode
+ */
+extern bool inetd_mode;
+
+/*
  * setup locks.
  * only call once!
  */
