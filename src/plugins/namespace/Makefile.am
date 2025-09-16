@@ -3,5 +3,5 @@
 SUBDIRS =
 
 if LINUX_BUILD
-SUBDIRS += tmpfs
+SUBDIRS += tmpfs linux
 endif

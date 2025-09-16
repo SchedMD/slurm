@@ -516,6 +516,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/pmi2/Makefile
 		 src/plugins/mpi/pmix/Makefile
 		 src/plugins/namespace/Makefile
+		 src/plugins/namespace/linux/Makefile
 		 src/plugins/namespace/tmpfs/Makefile
 		 src/plugins/node_features/Makefile
 		 src/plugins/node_features/helpers/Makefile
