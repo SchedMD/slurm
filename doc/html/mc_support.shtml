@@ -186,9 +186,6 @@ See the "Task Launch" section if generating slurm.conf via
     map_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID
                     for each task where <i>&lt;list&gt;</i> is
                     <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
-    rank_ldom       bind task by rank to CPUs in a NUMA
-                    locality domain where <i>&lt;list&gt;</i> is
-                    <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
     mask_ldom:<i>&lt;list&gt;</i> specify a NUMA locality domain ID mask
                     for each task where <i>&lt;list&gt;</i> is
                     <i>&lt;ldom1&gt;,&lt;ldom2&gt;,...&lt;ldomN&gt;</i>
