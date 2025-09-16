@@ -705,18 +705,13 @@ static void _load_oas_specs(void)
 
 int main(int argc, char **argv)
 {
+	static const conmgr_events_t events = {
+		.on_data = parse_http,
+		.on_connection = _setup_http_context,
+		.on_finish = on_http_connection_finish,
+	};
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	socket_listen = list_create(xfree_ptr);
-	static const conmgr_events_t conmgr_events = {
-		.on_data = parse_http,
-		.on_connection = _setup_http_context,
-		.on_finish = on_http_connection_finish,
-	};
-	static const conmgr_events_t inet_events = {
-		.on_data = parse_http,
-		.on_connection = _setup_http_context,
-		.on_finish = on_http_connection_finish,
-	};
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	_parse_env();
@@ -851,8 +846,8 @@ int main(int argc, char **argv)
 	if (!run_mode.listen) {
 		inetd_mode = true;
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, &inet_events, flags,
-					    NULL, 0, NULL, operations_router)))
+					    STDOUT_FILENO, &events, flags, NULL,
+					    0, NULL, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -862,7 +857,7 @@ int main(int argc, char **argv)
 		mode_t mask = umask(0);
 
 		if (conmgr_create_listen_sockets(CON_TYPE_RAW, flags,
-						 socket_listen, &conmgr_events,
+						 socket_listen, &events,
 						 operations_router))
 			fatal("Unable to create sockets");
 
