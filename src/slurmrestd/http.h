@@ -44,7 +44,9 @@
 
 #include "src/conmgr/conmgr.h"
 
-struct on_http_request_args_s;
+/* Opaque structs */
+typedef struct http_context_s http_context_t;
+typedef struct rest_auth_context_s rest_auth_context_t;
 typedef struct on_http_request_args_s on_http_request_args_t;
 
 /*
@@ -56,9 +58,6 @@ typedef struct on_http_request_args_s on_http_request_args_t;
  * RET SLURM_SUCCESS or error to kill connection
  */
 typedef int (*on_http_request_t)(on_http_request_args_t *args);
-
-/* Opaque connection context */
-typedef struct http_context_s http_context_t;
 
 typedef struct on_http_request_args_s {
 	const http_request_method_t method; /* HTTP request method */
@@ -85,14 +84,8 @@ typedef struct on_http_request_args_s {
  */
 typedef http_context_t *(*on_http_connection_t)(int fd);
 
-/*
- * Parse HTTP and call on_http_request on each HTTP request
- * must call send_http_response() on success
- * IN con conmgr connection of client
- * IN context connection context to hand to callback (do not xfree)
- * RET SLURM_SUCCESS or error
- */
-extern int parse_http(conmgr_fd_t *con, void *context);
+/* Get http events for conmgr connections */
+const conmgr_events_t *http_events_get(void);
 
 typedef struct {
 	conmgr_fd_t *con; /* assigned connection */
@@ -113,22 +106,6 @@ typedef struct {
  */
 extern int send_http_response(http_context_t *context,
 			      const send_http_response_args_t *args);
-
-/*
- * setup http context against a given new socket
- * IN fd file descriptor of socket (must be connected!)
- * IN on_http_request callback to call on each HTTP request
- * RET NULL on error or new http context (must xfree)
- */
-extern http_context_t *setup_http_context(conmgr_fd_t *con,
-					  on_http_request_t on_http_request);
-
-/*
- * cleanup http context on finished connection
- * IN con - conmgr connection
- * IN context - context to connection to free
- */
-extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt);
 
 /*
  * Get (arbitrary) auth pointer from context

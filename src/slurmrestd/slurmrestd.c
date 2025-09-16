@@ -649,13 +649,6 @@ static void _check_user(void)
 	}
 }
 
-/* simple wrapper to hand over operations router in http context */
-static void *_setup_http_context(conmgr_fd_t *con, void *arg)
-{
-	xassert(operations_router == arg);
-	return setup_http_context(con, operations_router);
-}
-
 static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
@@ -705,11 +698,6 @@ static void _load_oas_specs(void)
 
 int main(int argc, char **argv)
 {
-	static const conmgr_events_t events = {
-		.on_data = parse_http,
-		.on_connection = _setup_http_context,
-		.on_finish = on_http_connection_finish,
-	};
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	socket_listen = list_create(xfree_ptr);
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
@@ -846,8 +834,9 @@ int main(int argc, char **argv)
 	if (!run_mode.listen) {
 		inetd_mode = true;
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, &events, flags, NULL,
-					    0, NULL, operations_router)))
+					    STDOUT_FILENO, http_events_get(),
+					    flags, NULL, 0, NULL,
+					    operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -857,7 +846,8 @@ int main(int argc, char **argv)
 		mode_t mask = umask(0);
 
 		if (conmgr_create_listen_sockets(CON_TYPE_RAW, flags,
-						 socket_listen, &events,
+						 socket_listen,
+						 http_events_get(),
 						 operations_router))
 			fatal("Unable to create sockets");
 
