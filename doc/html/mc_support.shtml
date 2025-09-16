@@ -175,7 +175,6 @@ See the "Task Launch" section if generating slurm.conf via
     q[uiet]         quietly bind before task runs (default)
     v[erbose]       verbosely report binding before task runs
     no[ne]          don't bind tasks to CPUs (default)
-    rank            bind by task rank
     map_cpu:<i>&lt;list&gt;</i>  specify a CPU ID binding for each task
                     where <i>&lt;list&gt;</i> is
                     <i>&lt;cpuid1&gt;,&lt;cpuid2&gt;,...&lt;cpuidN&gt;</i>
