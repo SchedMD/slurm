@@ -201,6 +201,12 @@ if {$matches != 3} {
 	fail "User modification 3 incorrect ($matches != 3)"
 }
 
+if {[package vcompare [get_version] "25.05.0"] < 0} {
+	log_info "Ticket 22355: The following test cases would fail due an issue with Coordinators and subaccounts fixed in 25.05.0."
+	# Ending the test here for older versions
+	pass
+}
+
 # Next, make nm3 parent of nm1
 array unset acct_mod_assoc_vals
 array unset acct_mod_acct_vals
