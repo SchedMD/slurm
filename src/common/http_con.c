@@ -45,6 +45,7 @@
 #define CRLF "\r\n"
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 #define MAX_STATUS_BYTES 1024
+#define MAX_HEADER_BYTES 80
 
 #define MAGIC 0xab0a8aff
 
@@ -396,31 +397,27 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 }
 
 /*
- * Create rfc2616 formatted header
- * TODO: add more sanity checks
- * IN name header name
- * IN value header value
- * RET formatted string (must xfree)
- * */
-static char *_fmt_header(const char *name, const char *value)
-{
-	return xstrdup_printf("%s: %s"CRLF, name, value);
-}
-
-/*
- * Create and write formatted header
+ * Create and write rfc2616 formatted header
  * IN con - connection pointer
  * IN name header name
  * IN value header value
- * RET formatted string (must xfree)
- * */
+ * RET SLURM_SUCCESS or error
+ */
 static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 			     const char *value)
 {
-	char *buffer = _fmt_header(name, value);
-	int rc = conmgr_con_queue_write_data(con, buffer, strlen(buffer));
-	xfree(buffer);
-	return rc;
+	char buffer[MAX_HEADER_BYTES] = { 0 };
+	int wrote = -1;
+
+	if ((wrote = snprintf(buffer, sizeof(buffer), "%s: %s%s", name, value,
+			      CRLF)) >= sizeof(buffer)) {
+		log_flag_hex(NET, value, strlen(value), "%s: [%s] header \"%s\" too large: %d/%d bytes",
+			 __func__, conmgr_con_get_name(con), name, wrote,
+			 sizeof(buffer));
+		return ENOMEM;
+	}
+
+	return conmgr_con_queue_write_data(con, buffer, wrote);
 }
 
 /*
