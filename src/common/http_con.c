@@ -57,6 +57,7 @@
 
 #define CRLF "\r\n"
 #define MAX_BODY_BYTES 52428800 /* 50MB */
+#define MAX_STATUS_BYTES 1024
 
 typedef struct on_http_request_args_s on_http_request_args_t;
 
@@ -599,12 +600,137 @@ extern int send_http_response(http_con_t *hcon,
 	return rc;
 }
 
+static int _write_each_header(void *x, void *arg)
+{
+	http_header_t *header = x;
+	write_each_header_args_t *args = arg;
+
+	xassert(args->magic == WRITE_EACH_HEADER_MAGIC);
+	xassert(header->magic == HTTP_HEADER_MAGIC);
+
+	if ((args->rc =
+		     _write_fmt_header(args->con, header->name, header->value)))
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+/* Send RFC2616 response */
+static int _send_http_status_response(http_con_request_t *request,
+				      http_status_code_t status_code,
+				      conmgr_fd_ref_t *con)
+{
+	char buffer[MAX_STATUS_BYTES] = { 0 };
+	int wrote = -1;
+
+	if ((wrote = snprintf(buffer, sizeof(buffer), "HTTP/%d.%d %d %s%s",
+			      request->http_version.major,
+			      request->http_version.minor, status_code,
+			      get_http_status_code_string(status_code),
+			      CRLF)) >= sizeof(buffer)) {
+		log_flag(NET, "%s: [%s] HTTP response %s too large: %d/%zu bytes",
+			 __func__, conmgr_con_get_name(con),
+			 get_http_status_code_string(status_code), wrote,
+			 sizeof(buffer));
+		return ENOMEM;
+	}
+
+	log_flag_hex(NET, buffer, wrote, "%s: [%s] HTTP response",
+		     __func__, conmgr_con_get_name(con), status_code,
+	       get_http_status_code_string(status_code));
+
+	return conmgr_con_queue_write_data(con, buffer, wrote);
+}
+
 extern int http_con_send_response(http_con_t *hcon,
 				  http_status_code_t status_code,
 				  list_t *headers, bool close_header,
 				  buf_t *body, const char *body_encoding)
 {
-	return ESLURM_NOT_SUPPORTED;
+	int rc = SLURM_SUCCESS;
+	http_con_request_t *request = &hcon->request;
+	conmgr_fd_ref_t *con = hcon->con;
+	uint16_t http_major = request->http_version.major;
+	uint16_t http_minor = request->http_version.minor;
+
+	xassert(hcon->magic == MAGIC);
+	xassert(conmgr_con_get_name(con));
+	xassert(status_code > HTTP_STATUS_CODE_INVALID);
+	xassert(status_code < HTTP_STATUS_CODE_INVALID_MAX);
+
+	/* If we don't have a requested client version, default to 0.9 */
+	if ((http_major == 0) && (http_minor == 0))
+		http_minor = 9;
+
+	log_flag(NET, "%s: [%s] sending response %u: %s",
+	       __func__, conmgr_con_get_name(con), status_code,
+	       get_http_status_code_string(status_code));
+
+	if ((rc = _send_http_status_response(request, status_code, con)))
+		return rc;
+
+	/* send along any requested headers */
+	if (headers) {
+		write_each_header_args_t args = {
+			.magic = WRITE_EACH_HEADER_MAGIC,
+			.rc = SLURM_SUCCESS,
+			.con = hcon->con,
+		};
+
+		(void) list_for_each(headers, _write_each_header, &args);
+
+		if (args.rc)
+			return args.rc;
+	}
+
+	if (close_header && (rc = _send_http_connection_close(hcon)))
+		return rc;
+
+	if (body && (get_buf_offset(body) > 0)) {
+		const size_t body_length = get_buf_offset(body);
+
+		/* RFC7230-3.3.2 limits response of Content-Length */
+		if ((status_code < 100) ||
+		    ((status_code >= 200) && (status_code != 204))) {
+			if ((rc = _write_fmt_num_header(con, "Content-Length",
+							body_length))) {
+				return rc;
+			}
+		}
+
+		if (body_encoding &&
+		    (rc = _write_fmt_header(con, "Content-Type",
+					    body_encoding)))
+			return rc;
+
+		/* Send end of headers */
+		if ((rc = conmgr_con_queue_write_data(con, CRLF, strlen(CRLF))))
+			return rc;
+
+		log_flag(NET, "%s: [%s] rc=%s(%u) sending %zu bytes of body",
+			 __func__, conmgr_con_get_name(con),
+			 get_http_status_code_string(status_code), status_code,
+			 body_length);
+
+		log_flag_hex(NET_RAW, get_buf_data(body), body_length,
+			     "%s: [%s] sending body", __func__,
+			     conmgr_con_get_name(con));
+
+		if ((rc = conmgr_con_queue_write_data(con, get_buf_data(body),
+						      body_length)))
+			return rc;
+	} else if (((status_code >= 100) && (status_code < 200)) ||
+		   (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT) ||
+		   (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)) {
+		/*
+		 * RFC2616 requires empty line after headers for return code
+		 * that "MUST NOT" include a message body
+		 */
+		if ((rc = conmgr_con_queue_write_data(con, CRLF, strlen(CRLF))))
+			return rc;
+	}
+
+	return rc;
 }
 
 static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
