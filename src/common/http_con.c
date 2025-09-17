@@ -512,17 +512,12 @@ extern int http_con_send_response(http_con_t *hcon,
 	int rc = SLURM_SUCCESS;
 	http_con_request_t *request = &hcon->request;
 	conmgr_fd_ref_t *con = hcon->con;
-	uint16_t http_major = request->http_version.major;
-	uint16_t http_minor = request->http_version.minor;
 
 	xassert(hcon->magic == MAGIC);
 	xassert(conmgr_con_get_name(con));
 	xassert(status_code > HTTP_STATUS_CODE_INVALID);
 	xassert(status_code < HTTP_STATUS_CODE_INVALID_MAX);
-
-	/* If we don't have a requested client version, default to 0.9 */
-	if ((http_major == 0) && (http_minor == 0))
-		http_minor = 9;
+	xassert(request->http_version.major > 0);
 
 	log_flag(NET, "%s: [%s] sending response %u: %s",
 	       __func__, conmgr_con_get_name(con), status_code,
