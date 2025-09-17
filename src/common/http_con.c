@@ -736,30 +736,17 @@ extern int http_con_send_response(http_con_t *hcon,
 static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 {
 	http_con_request_t *request = &hcon->request;
-	send_http_response_args_t args = {
-		.http_major = request->http_version.major,
-		.http_minor = request->http_version.minor,
-		.body_length = 0,
-		.headers = list_create((ListDelF) free_http_header),
-	};
+	bool close_header = false;
 
 	xassert(hcon->magic == MAGIC);
 
-	args.con = conmgr_fd_get_ref(hcon->con);
-	args.status_code = http_status_from_error(error_number);
+	close_header = (request->connection_close ||
+			_valid_http_version(request->http_version.major,
+					    request->http_version.minor));
 
-	/* If we don't have a requested client version, default to 0.9 */
-	if ((args.http_major == 0) && (args.http_minor == 0))
-		args.http_minor = 9;
-
-	/* Ignore response since this connection is already dead */
-	(void) send_http_response(hcon, &args);
-	FREE_NULL_LIST(args.headers);
-
-	if (request->connection_close ||
-	    _valid_http_version(request->http_version.major,
-				request->http_version.minor))
-		_send_http_connection_close(hcon);
+	(void) http_con_send_response(hcon,
+				      http_status_from_error(error_number),
+				      NULL, close_header, NULL, NULL);
 
 	/* ensure connection gets closed */
 	conmgr_con_queue_close(hcon->con);
