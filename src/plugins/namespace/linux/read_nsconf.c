@@ -32,6 +32,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#define _GNU_SOURCE
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -56,6 +57,7 @@ static bool auto_basepath_set = false;
 static bool shared_set = false;
 static bool clonensscript_wait_set = false;
 static bool clonensepilog_wait_set = false;
+static bool clonensflags_set = false;
 
 static s_p_hashtbl_t *_create_ns_hashtbl(void)
 {
@@ -63,6 +65,7 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 		{ "AutoBasePath", S_P_BOOLEAN },
 		{ "BasePath", S_P_STRING },
 		{ "CloneNSEpilog", S_P_STRING },
+		{ "CloneNSFlags", S_P_STRING },
 		{ "CloneNSScript", S_P_STRING },
 		{ "CloneNSEpilog_Wait", S_P_UINT32 },
 		{ "CloneNSScript_Wait", S_P_UINT32 },
@@ -83,6 +86,7 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "AutoBasePath=%d", slurm_ns_conf.auto_basepath);
 	log_flag(NAMESPACE, "BasePath=%s", slurm_ns_conf.basepath);
 	log_flag(NAMESPACE, "CloneNSEpilog=%s", slurm_ns_conf.clonensepilog);
+	log_flag(NAMESPACE, "CloneNSFlags=%s", slurm_ns_conf.clonensflags_str);
 	log_flag(NAMESPACE, "CloneNSScript=%s", slurm_ns_conf.clonensscript);
 	log_flag(NAMESPACE, "CloneNSEpilog_Wait=%u",
 		 slurm_ns_conf.clonensepilog_wait);
@@ -91,6 +95,17 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "Dirs=%s", slurm_ns_conf.dirs);
 	log_flag(NAMESPACE, "Shared=%d", slurm_ns_conf.shared);
 	log_flag(NAMESPACE, "InitScript=%s", slurm_ns_conf.initscript);
+}
+
+static void _set_clonensflags(void)
+{
+	/* Always set CLONE_NEWNS */
+	slurm_ns_conf.clonensflags = CLONE_NEWNS;
+
+	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWNS"))
+		slurm_ns_conf.clonensflags |= CLONE_NEWNS;
+
+	clonensflags_set = true;
 }
 
 static void _pack_slurm_ns_conf_buf(void)
@@ -102,6 +117,7 @@ static void _pack_slurm_ns_conf_buf(void)
 	packbool(slurm_ns_conf.auto_basepath, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.basepath, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.clonensepilog, slurm_ns_conf_buf);
+	pack32(slurm_ns_conf.clonensflags, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.clonensscript, slurm_ns_conf_buf);
 	pack32(slurm_ns_conf.clonensepilog_wait, slurm_ns_conf_buf);
 	pack32(slurm_ns_conf.clonensscript_wait, slurm_ns_conf_buf);
@@ -161,6 +177,10 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 			   "CloneNSEpilog_Wait", tbl))
 		clonensepilog_wait_set = true;
 
+	if (s_p_get_string(&slurm_ns_conf.clonensflags_str, "CloneNSFlags",
+			   tbl))
+		_set_clonensflags();
+
 end_it:
 	s_p_hashtbl_destroy(tbl);
 
@@ -203,6 +223,7 @@ static int _read_slurm_ns_conf(void)
 		{ "AutoBasePath", S_P_BOOLEAN },
 		{ "BasePath", S_P_ARRAY, _parse_ns_conf_internal, NULL },
 		{ "CloneNSEpilog", S_P_STRING },
+		{ "CloneNSFlags", S_P_STRING },
 		{ "CloneNSScript", S_P_STRING },
 		{ "CloneNSEpilog_Wait", S_P_UINT32 },
 		{ "CloneNSScript_Wait", S_P_UINT32 },
@@ -274,6 +295,12 @@ static int _read_slurm_ns_conf(void)
 			slurm_ns_conf.clonensepilog_wait = 10;
 	}
 
+	if (!slurm_ns_conf.clonensflags_str)
+		s_p_get_string(&slurm_ns_conf.clonensflags_str, "CloneNSFlags",
+			       tbl);
+
+	_set_clonensflags();
+
 end_it:
 
 	s_p_hashtbl_destroy(tbl);
@@ -323,6 +350,7 @@ extern slurm_ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 	safe_unpackbool(&slurm_ns_conf.auto_basepath, buf);
 	safe_unpackstr(&slurm_ns_conf.basepath, buf);
 	safe_unpackstr(&slurm_ns_conf.clonensepilog, buf);
+	safe_unpack32(&slurm_ns_conf.clonensflags, buf);
 	safe_unpackstr(&slurm_ns_conf.clonensscript, buf);
 	safe_unpack32(&slurm_ns_conf.clonensepilog_wait, buf);
 	safe_unpack32(&slurm_ns_conf.clonensscript_wait, buf);
@@ -353,6 +381,7 @@ extern void free_ns_conf(void)
 	if (slurm_ns_conf_inited) {
 		xfree(slurm_ns_conf.basepath);
 		xfree(slurm_ns_conf.clonensepilog);
+		xfree(slurm_ns_conf.clonensflags_str);
 		xfree(slurm_ns_conf.clonensscript);
 		xfree(slurm_ns_conf.dirs);
 		xfree(slurm_ns_conf.initscript);
