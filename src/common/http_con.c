@@ -33,26 +33,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <limits.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
-
 #include "src/common/http_con.h"
 #include "src/common/http.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
 #include "src/conmgr/conmgr.h"
-
 #include "src/interfaces/http_parser.h"
 
 #define CRLF "\r\n"
