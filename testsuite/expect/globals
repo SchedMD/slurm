@@ -173,6 +173,7 @@ cset sshare      "${slurm_dir}/bin/sshare"
 cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
+cset slurmctld   "${slurm_dir}/sbin/slurmctld"
 cset slurmd      "${slurm_dir}/sbin/slurmd"
 cset slurmrestd  "${slurm_dir}/sbin/slurmrestd"
 
@@ -1640,7 +1641,12 @@ proc get_my_gid {  } {
 #
 ################################################################
 
-proc get_version {{component "slurmctld"}} {
+proc get_version {{component ""}} {
+	global slurmctld
+
+	if {$component == ""} {
+		set component $slurmctld
+	}
 	set version_str [string map {"slurm " ""} [string trimright [run_command_output -fail "$component -V"]]]
 
 	set re {^([0-9]+(?:\.[0-9]+)*)(.*)$}
