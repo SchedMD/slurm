@@ -187,11 +187,6 @@ static int _valid_http_version(uint16_t major, uint16_t minor)
 	return ESLURM_HTTP_UNSUPPORTED_VERSION;
 }
 
-static void _free_http_header(void *header)
-{
-	free_http_header(header);
-}
-
 static void _request_init(http_con_t *hcon)
 {
 	request_t *request = &hcon->request;
@@ -205,7 +200,7 @@ static void _request_init(http_con_t *hcon)
 		.keep_alive = -1,
 	};
 
-	request->headers = list_create(_free_http_header);
+	request->headers = list_create((ListDelF) free_http_header);
 }
 
 static void _request_free_members(http_con_t *hcon)
@@ -653,7 +648,7 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 		.http_major = request->http_version.major,
 		.http_minor = request->http_version.minor,
 		.body_length = 0,
-		.headers = list_create(_free_http_header),
+		.headers = list_create((ListDelF) free_http_header),
 	};
 
 	xassert(hcon->magic == MAGIC);
