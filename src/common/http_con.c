@@ -105,9 +105,7 @@ typedef int (*on_http_request_t)(on_http_request_args_t *args);
 typedef struct http_con_s {
 	int magic; /* MAGIC */
 	/* reference to assigned connection */
-	conmgr_fd_ref_t *ref;
-	/* assigned connection */
-	conmgr_fd_t *con;
+	conmgr_fd_ref_t *con;
 	/* callback to call on each HTTP request */
 	on_http_request_t on_http_request;
 	/* http parser plugin state */
@@ -246,7 +244,7 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 
 	if (!request->url.path) {
 		error("%s: [%s] Rejecting request with empty URL path",
-		      __func__, conmgr_con_get_name(hcon->ref));
+		      __func__, conmgr_con_get_name(hcon->con));
 
 		return _send_reject(hcon, ESLURM_URL_INVALID_PATH);
 	}
@@ -257,7 +255,7 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	if ((rc = _valid_http_version(req->http_version.major,
 				      req->http_version.minor))) {
 		error("%s: [%s] rejecting unsupported HTTP %hu.%hu version: %s",
-		      __func__, conmgr_con_get_name(hcon->ref),
+		      __func__, conmgr_con_get_name(hcon->con),
 		      req->http_version.major, req->http_version.minor,
 		      slurm_strerror(rc));
 		return rc;
@@ -266,15 +264,15 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 	if ((request->url.scheme != URL_SCHEME_HTTP) &&
 	    (request->url.scheme != URL_SCHEME_HTTPS)) {
 		error("%s: [%s] URL scheme not supported: %s",
-		      __func__, conmgr_con_get_name(hcon->ref),
+		      __func__, conmgr_con_get_name(hcon->con),
 		      url_get_scheme_string(request->url.scheme));
 		return ESLURM_URL_UNSUPPORTED_SCHEME;
 	}
 
 	if ((request->url.scheme == URL_SCHEME_HTTPS) &&
-	    !conmgr_fd_is_tls(hcon->ref)) {
+	    !conmgr_fd_is_tls(hcon->con)) {
 		error("%s: [%s] URL requested HTTPS but connection is not TLS wrapped",
-		      __func__, conmgr_con_get_name(hcon->ref));
+		      __func__, conmgr_con_get_name(hcon->con));
 		return ESLURM_TLS_REQUIRED;
 	}
 
@@ -290,7 +288,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 	xassert(hcon->magic == MAGIC);
 
 	log_flag(NET, "%s: [%s] Header: %s Value: %s",
-		 __func__, conmgr_con_get_name(hcon->ref), header->name,
+		 __func__, conmgr_con_get_name(hcon->con), header->name,
 		 header->value);
 
 	/* Add copy to list of headers */
@@ -310,7 +308,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 		} else {
 			warning("%s: [%s] ignoring unsupported header request: Connection: %s",
 			      __func__,
-			      conmgr_con_get_name(hcon->ref),
+			      conmgr_con_get_name(hcon->con),
 			      header->value);
 		}
 	} else if (!xstrcasecmp(header->name, "Keep-Alive")) {
@@ -319,7 +317,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 			request->keep_alive = ibuffer;
 		} else {
 			error("%s: [%s] invalid Keep-Alive value %s",
-			      __func__, conmgr_con_get_name(hcon->ref),
+			      __func__, conmgr_con_get_name(hcon->con),
 			      header->value);
 			return _send_reject(hcon,
 					    ESLURM_HTTP_UNSUPPORTED_KEEP_ALIVE);
@@ -372,7 +370,7 @@ static int _on_headers_complete(void *arg)
 	if ((request->http_version.major == 1) &&
 	    (request->http_version.minor == 0)) {
 		log_flag(NET, "%s: [%s] HTTP/1.0 connection",
-			 __func__, conmgr_con_get_name(hcon->ref));
+			 __func__, conmgr_con_get_name(hcon->con));
 
 		/* 1.0 defaults to close w/o keep_alive */
 		if (!request->keep_alive)
@@ -380,7 +378,7 @@ static int _on_headers_complete(void *arg)
 	} else if ((request->http_version.major == 1) &&
 		   (request->http_version.minor == 1)) {
 		log_flag(NET, "%s: [%s] HTTP/1.1 connection",
-			 __func__, conmgr_con_get_name(hcon->ref));
+			 __func__, conmgr_con_get_name(hcon->con));
 
 		/* keep alive is assumed for 1.1 */
 		if (request->keep_alive == -1)
@@ -404,7 +402,7 @@ static int _on_headers_complete(void *arg)
 			.body_length = 0,
 		};
 
-		args.con = conmgr_fd_get_ref(hcon->ref);
+		args.con = conmgr_fd_get_ref(hcon->con);
 
 		if ((rc = send_http_response(hcon, &args)))
 			return rc;
@@ -423,11 +421,11 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 	xassert(hcon->magic == MAGIC);
 
 	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP content",
-	       __func__, conmgr_con_get_name(hcon->ref));
+	       __func__, conmgr_con_get_name(hcon->con));
 
 	if (!request->url.path) {
 		error("%s: [%s] rejecting missing path",
-		      __func__, conmgr_con_get_name(hcon->ref));
+		      __func__, conmgr_con_get_name(hcon->con));
 		return ESLURM_HTTP_UNEXPECTED_REQUEST;
 	}
 
@@ -466,7 +464,7 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 	request->body[request->body_length] = '\0';
 
 	log_flag(NET, "%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
-		 __func__, conmgr_con_get_name(hcon->ref), length,
+		 __func__, conmgr_con_get_name(hcon->con), length,
 		 request->body_length, request->expected_body_length);
 
 	return 0;
@@ -490,16 +488,16 @@ static char *_fmt_header(const char *name, const char *value)
 
 /*
  * Create and write formatted header
- * IN request HTTP request
+ * IN con - connection pointer
  * IN name header name
  * IN value header value
  * RET formatted string (must xfree)
  * */
-static int _write_fmt_header(conmgr_fd_t *con, const char *name,
+static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 			     const char *value)
 {
 	char *buffer = _fmt_header(name, value);
-	int rc = conmgr_queue_write_data(con, buffer, strlen(buffer));
+	int rc = conmgr_con_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
 	return rc;
 }
@@ -534,11 +532,11 @@ static int _send_http_connection_close(http_con_t *hcon)
  * IN value header value
  * RET formatted string (must xfree)
  * */
-static int _write_fmt_num_header(conmgr_fd_t *con, const char *name,
+static int _write_fmt_num_header(conmgr_fd_ref_t *con, const char *name,
 				 size_t value)
 {
 	const char *buffer = _fmt_header_num(name, value);
-	int rc = conmgr_queue_write_data(con, buffer, strlen(buffer));
+	int rc = conmgr_con_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
 	return rc;
 }
@@ -560,7 +558,7 @@ extern int send_http_response(http_con_t *hcon,
 	xassert(args->body_length == 0 || (args->body_length && args->body));
 
 	log_flag(NET, "%s: [%s] sending response %u: %s",
-	       __func__, conmgr_fd_get_name(args->con), args->status_code,
+	       __func__, conmgr_con_get_name(hcon->con), args->status_code,
 	       get_http_status_code_string(args->status_code));
 
 	/* send rfc2616 response */
@@ -568,7 +566,7 @@ extern int send_http_response(http_con_t *hcon,
 		   args->http_major, args->http_minor, args->status_code,
 		   get_http_status_code_string(args->status_code));
 
-	rc = conmgr_queue_write_data(args->con, buffer, strlen(buffer));
+	rc = conmgr_con_queue_write_data(hcon->con, buffer, strlen(buffer));
 	xfree(buffer);
 
 	if (rc)
@@ -580,7 +578,7 @@ extern int send_http_response(http_con_t *hcon,
 		http_header_t *header = NULL;
 		while ((header = list_next(itr))) {
 			xassert(header->magic == HTTP_HEADER_MAGIC);
-			if ((rc = _write_fmt_header(args->con, header->name,
+			if ((rc = _write_fmt_header(hcon->con, header->name,
 						    header->value)))
 				break;
 		}
@@ -595,28 +593,29 @@ extern int send_http_response(http_con_t *hcon,
 		if ((args->status_code < 100) ||
 		    ((args->status_code >= 200) &&
 		     (args->status_code != 204))) {
-			if ((rc = _write_fmt_num_header(args->con,
-				"Content-Length", args->body_length))) {
+			if ((rc = _write_fmt_num_header(hcon->con,
+							"Content-Length",
+							args->body_length))) {
 				return rc;
 			}
 		}
 
 		if (args->body_encoding &&
-		    (rc = _write_fmt_header(
-			     args->con, "Content-Type", args->body_encoding)))
+		    (rc = _write_fmt_header(hcon->con, "Content-Type",
+					    args->body_encoding)))
 			return rc;
 
-		if ((rc = conmgr_queue_write_data(args->con, CRLF,
-						  strlen(CRLF))))
+		if ((rc = conmgr_con_queue_write_data(hcon->con, CRLF,
+						      strlen(CRLF))))
 			return rc;
 
 		log_flag(NET, "%s: [%s] rc=%s(%u) sending body:\n%s",
-			 __func__, conmgr_fd_get_name(args->con),
+			 __func__, conmgr_con_get_name(hcon->con),
 			 get_http_status_code_string(args->status_code),
 			 args->status_code, args->body);
 
-		if ((rc = conmgr_queue_write_data(args->con, args->body,
-						  args->body_length)))
+		if ((rc = conmgr_con_queue_write_data(hcon->con, args->body,
+						      args->body_length)))
 			return rc;
 	} else if (((args->status_code >= 100) && (args->status_code < 200)) ||
 		   (args->status_code == 204) ||
@@ -625,8 +624,8 @@ extern int send_http_response(http_con_t *hcon,
 		 * RFC2616 requires empty line after headers for return code
 		 * that "MUST NOT" include a message body
 		 */
-		if ((rc = conmgr_queue_write_data(args->con, CRLF,
-						  strlen(CRLF))))
+		if ((rc = conmgr_con_queue_write_data(hcon->con, CRLF,
+						      strlen(CRLF))))
 			return rc;
 	}
 
@@ -653,7 +652,7 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 
 	xassert(hcon->magic == MAGIC);
 
-	args.con = conmgr_fd_get_ref(hcon->ref);
+	args.con = conmgr_fd_get_ref(hcon->con);
 	args.status_code = http_status_from_error(error_number);
 
 	/* If we don't have a requested client version, default to 0.9 */
@@ -670,8 +669,7 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 		_send_http_connection_close(hcon);
 
 	/* ensure connection gets closed */
-	conmgr_con_queue_close_free(&hcon->ref);
-	hcon->con = NULL;
+	conmgr_con_queue_close(hcon->con);
 
 	/* reset connection to avoid inheriting request state */
 	_request_reset(hcon);
@@ -700,14 +698,14 @@ static int _on_message_complete_request(http_con_t *hcon)
 
 	xassert(hcon->magic == MAGIC);
 
-	if (!(args.con = conmgr_con_link(hcon->ref)) ||
+	if (!(args.con = conmgr_con_link(hcon->con)) ||
 	    !(args.name = conmgr_con_get_name(args.con))) {
 		rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
 		log_flag(NET, "%s: connection missing: %s",
 			 __func__, slurm_strerror(rc));
 	} else if ((rc = hcon->on_http_request(&args)))
 		log_flag(NET, "%s: [%s] on_http_request rejected: %s",
-			 __func__, conmgr_con_get_name(hcon->ref),
+			 __func__, conmgr_con_get_name(hcon->con),
 			 slurm_strerror(rc));
 
 	conmgr_fd_free_ref(&args.con);
@@ -725,7 +723,7 @@ static int _on_content_complete(void *arg)
 	if ((request->expected_body_length > 0) &&
 	    (request->expected_body_length != request->body_length)) {
 		error("%s: [%s] Content-Length %zu and received body length %zu mismatch",
-		      __func__, conmgr_con_get_name(hcon->ref),
+		      __func__, conmgr_con_get_name(hcon->con),
 		      request->expected_body_length, request->body_length);
 		return _send_reject(hcon, ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
@@ -736,16 +734,13 @@ static int _on_content_complete(void *arg)
 	if (request->keep_alive) {
 		//TODO: implement keep alive correctly
 		log_flag(NET, "%s: [%s] keep alive not currently implemented",
-			 __func__, conmgr_con_get_name(hcon->ref));
+			 __func__, conmgr_con_get_name(hcon->con));
 	}
 
 	if (request->connection_close) {
 		/* Notify client that this connection will be closed now */
-		if (request->connection_close)
-			_send_http_connection_close(hcon);
-
-		conmgr_con_queue_close_free(&hcon->ref);
-		hcon->con = NULL;
+		_send_http_connection_close(hcon);
+		conmgr_con_queue_close(hcon->con);
 	}
 
 	_request_reset(hcon);
@@ -768,20 +763,20 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	buf_t *buffer = NULL;
 
 	xassert(hcon->magic == MAGIC);
-	xassert(conmgr_fd_get_ref(hcon->ref) == hcon->con);
+	xassert(conmgr_fd_get_ref(hcon->con) == con);
 
 	if (!hcon->parser && (rc = http_parser_g_new_parse_request(
-				      conmgr_con_get_name(hcon->ref),
+				      conmgr_con_get_name(hcon->con),
 				      &callbacks, hcon, &hcon->parser))) {
 		log_flag(NET, "%s: [%s] Creating new HTTP parser failed: %s",
-			 __func__, conmgr_con_get_name(hcon->ref),
+			 __func__, conmgr_con_get_name(hcon->con),
 			 slurm_strerror(rc));
 		goto cleanup;
 	}
 
-	if ((rc = conmgr_con_shadow_in_buffer(hcon->ref, &buffer))) {
+	if ((rc = conmgr_con_shadow_in_buffer(hcon->con, &buffer))) {
 		log_flag(NET, "%s: [%s] Unable to get HTTP input buffer: %s",
-			 __func__, conmgr_con_get_name(hcon->ref),
+			 __func__, conmgr_con_get_name(hcon->con),
 			 slurm_strerror(rc));
 		goto cleanup;
 	}
@@ -790,23 +785,23 @@ extern int parse_http(conmgr_fd_t *con, void *x)
 	set_buf_offset(buffer, size_buf(buffer));
 
 	log_flag(NET, "%s: [%s] Accepted HTTP connection",
-		 __func__, conmgr_con_get_name(hcon->ref));
+		 __func__, conmgr_con_get_name(hcon->con));
 
 	rc = http_parser_g_parse_request(hcon->parser, buffer, &bytes_parsed);
 
-	if (hcon->ref)
+	if (hcon->con)
 		log_flag(NET, "%s: [%s] parsed %zu/%u bytes: %s",
-			 __func__, conmgr_con_get_name(hcon->ref),
+			 __func__, conmgr_con_get_name(hcon->con),
 			 bytes_parsed, get_buf_offset(buffer),
 			 slurm_strerror(rc));
 
 	if (rc) {
 		rc = _send_reject(hcon, rc);
-	} else if (hcon->ref && (bytes_parsed > 0) &&
-		   (rc = conmgr_con_mark_consumed_input_buffer(hcon->ref,
+	} else if (hcon->con && (bytes_parsed > 0) &&
+		   (rc = conmgr_con_mark_consumed_input_buffer(hcon->con,
 							       bytes_parsed))) {
 		log_flag(NET, "%s: [%s] Input buffer became invalid after parsing: %s",
-			 __func__, conmgr_con_get_name(hcon->ref),
+			 __func__, conmgr_con_get_name(hcon->con),
 			 slurm_strerror(rc));
 		goto cleanup;
 	}
@@ -828,8 +823,7 @@ extern http_con_t *setup_http_context(conmgr_fd_t *con,
 	http_con_t *hcon = xmalloc(sizeof(*hcon));
 
 	hcon->magic = MAGIC;
-	hcon->con = con;
-	hcon->ref = conmgr_fd_new_ref(con);
+	hcon->con = conmgr_fd_new_ref(con);
 	hcon->on_http_request = on_http_request;
 
 	_request_init(hcon);
@@ -855,9 +849,8 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *arg)
 	/* release request */
 	_request_free_members(hcon);
 
-	xassert(conmgr_fd_get_ref(hcon->ref) == hcon->con);
-	conmgr_fd_free_ref(&hcon->ref);
-	hcon->con = NULL;
+	xassert(conmgr_fd_get_ref(hcon->con) == con);
+	conmgr_fd_free_ref(&hcon->con);
 
 	hcon->magic = ~MAGIC;
 	xfree(hcon);
