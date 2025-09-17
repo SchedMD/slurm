@@ -283,7 +283,6 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 {
 	http_con_t *hcon = arg;
 	request_t *request = &hcon->request;
-	http_header_t *entry = NULL;
 
 	xassert(hcon->magic == MAGIC);
 
@@ -291,12 +290,9 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 		 __func__, conmgr_con_get_name(hcon->con), header->name,
 		 header->value);
 
-	/* Add copy to list of headers */
-	entry = xmalloc(sizeof(*entry));
-	entry->magic = HTTP_HEADER_MAGIC;
-	entry->name = xstrdup(header->name);
-	entry->value = xstrdup(header->value);
-	list_append(request->headers, entry);
+	/* Add header copy to list of headers */
+	list_append(request->headers,
+		    http_header_new(header->name, header->value));
 
 	/* Watch for connection headers */
 	if (!xstrcasecmp(header->name, "Connection")) {
