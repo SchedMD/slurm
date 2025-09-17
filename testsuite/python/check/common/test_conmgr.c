@@ -97,6 +97,7 @@ END_TEST
 
 START_TEST(test_reinit)
 {
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
 	conmgr_init(0, 0);
 	ck_assert(conmgr_enabled());
 	conmgr_init(0, 0);
@@ -113,6 +114,9 @@ START_TEST(test_reinit)
 	ck_assert(conmgr_enabled());
 	conmgr_request_shutdown();
 	ck_assert(conmgr_enabled());
+#else
+	ck_abort_msg("conmgr_init() has different arguments for versions < 25.11");
+#endif
 }
 
 END_TEST

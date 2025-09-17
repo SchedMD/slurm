@@ -62,6 +62,13 @@ if atf.get_version() < (25, 11):
             "test_data_parsers doesn't compile for versions < 25.11",
         )
     )
+    xfail_tests.append(
+        (
+            "common/test_conmgr.c",
+            "test_reinit",
+            "conmgr_init() has different parameters for versions < 25.11",
+        )
+    )
 if atf.get_version() < (25, 5):
     skip_tests.append(
         (
