@@ -1083,3 +1083,7 @@ test_150_2   Test "--nodelist" + "--segment"
 test_151_#   Testing Oversubscribe
 ===========================================
 test_151_1   Test oversubscribe with sharing partitions
+
+test_152_#   Testing switch/nvidia_imex.
+========================================
+test_152_1   Test IMEX channel allocation/deallocation
