@@ -362,20 +362,9 @@ static int _on_headers_complete(void *arg)
 		return _send_reject(hcon,
 				    ESLURM_HTTP_POST_MISSING_CONTENT_LENGTH);
 
-	if (request->expect) {
-		int rc = EINVAL;
-		send_http_response_args_t args = {
-			.http_major = request->http_version.major,
-			.http_minor = request->http_version.minor,
-			.status_code = request->expect,
-			.body_length = 0,
-		};
-
-		args.con = conmgr_fd_get_ref(hcon->con);
-
-		if ((rc = send_http_response(hcon, &args)))
-			return rc;
-	}
+	if (request->expect)
+		return http_con_send_response(hcon, request->expect, NULL,
+					      false, NULL, NULL);
 
 	return SLURM_SUCCESS;
 }
