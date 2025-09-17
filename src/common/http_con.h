@@ -49,8 +49,8 @@ typedef struct {
 	http_request_method_t method;
 	/* list of each header received */
 	list_t *headers;
-	/* client requested to keep_alive header or -1 */
-	int keep_alive;
+	/* RFC2068-19.7.1 "Connection: keep-alive" header */
+	bool keep_alive;
 	/* RFC7230-6.1 "Connection: Close" */
 	bool connection_close;
 	/* RFC7231-5.1.1 expect requested */

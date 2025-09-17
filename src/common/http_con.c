@@ -68,9 +68,6 @@ typedef struct {
 	conmgr_fd_ref_t *con;
 } write_each_header_args_t;
 
-/* default keep_alive value which appears to be implementation specific */
-static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
-
 static int _send_reject(http_con_t *hcon, slurm_err_t error_number);
 
 extern const size_t http_con_bytes(void)
@@ -100,7 +97,6 @@ static void _request_init(http_con_t *hcon)
 	*request = (http_con_request_t) {
 		.url = URL_INITIALIZER,
 		.method = HTTP_REQUEST_INVALID,
-		.keep_alive = -1,
 	};
 
 	request->headers = list_create((ListDelF) free_http_header);
@@ -200,8 +196,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 	/* Watch for connection headers */
 	if (!xstrcasecmp(header->name, "Connection")) {
 		if (!xstrcasecmp(header->value, "Keep-Alive")) {
-			if (request->keep_alive == -1)
-				request->keep_alive = DEFAULT_KEEP_ALIVE;
+			request->keep_alive = true;
 		} else if (!xstrcasecmp(header->value, "Close")) {
 			request->connection_close = true;
 		} else {
@@ -211,16 +206,15 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 			      header->value);
 		}
 	} else if (!xstrcasecmp(header->name, "Keep-Alive")) {
-		int ibuffer = atoi(header->value);
-		if (ibuffer > 1) {
-			request->keep_alive = ibuffer;
-		} else {
-			error("%s: [%s] invalid Keep-Alive value %s",
-			      __func__, conmgr_con_get_name(hcon->con),
-			      header->value);
-			return _send_reject(hcon,
-					    ESLURM_HTTP_UNSUPPORTED_KEEP_ALIVE);
-		}
+		/*
+		 * RFC2068-19.7.1.1: HTTP/1.1 does not define any parameters.
+		 * RFC2068-19.7.1.1: If the Keep-Alive header is sent, the
+		 * corresponding connection token MUST be transmitted. The
+		 * Keep-Alive header MUST be ignored if received without the
+		 * connection token.
+		 */
+		log_flag(NET, "%s: [%s] Ignoring Keep-Alive header parameter: %s",
+			 __func__, conmgr_con_get_name(hcon->con), header->value);
 	} else if (!xstrcasecmp(header->name, "Content-Type")) {
 		xfree(request->content_type);
 		request->content_type = xstrdup(header->value);
@@ -263,12 +257,42 @@ static int _on_headers_complete(void *arg)
 
 	xassert(hcon->magic == MAGIC);
 
-	if ((request->http_version.major == 1) &&
-	    (request->http_version.minor == 0)) {
-		log_flag(NET, "%s: [%s] HTTP/1.0 connection",
+	if (!request->http_version.major && !request->http_version.minor) {
+		log_flag(NET, "%s: [%s] HTTP/0.9 connection",
 			 __func__, conmgr_con_get_name(hcon->con));
 
-		/* 1.0 defaults to close w/o keep_alive */
+		/*
+		 * Force connection without version to HTTP/0.9 as only
+		 * recognized versions in RFC2068-19.7
+		 */
+		request->http_version.major = 0;
+		request->http_version.minor = 9;
+
+		/*
+		 * Disable persistent connections for HTTP/0.9 connections to
+		 * avoid breaking non-compliant clients
+		 *
+		 * RFC9112-C.2.2: Clients are also encouraged to consider the
+		 * use of "Connection: keep-alive" in requests carefully
+		 */
+		request->connection_close = true;
+		request->keep_alive = false;
+	} else if ((request->http_version.major == 1) &&
+		   (request->http_version.minor == 0)) {
+		log_flag(NET, "%s: [%s] HTTP/1.0 connection",
+			 __func__, conmgr_con_get_name(hcon->con));
+		/*
+		 * RFC9112-C.2.2: In HTTP/1.0, each connection is established by
+		 * the client prior to the request and closed by the server
+		 * after sending the response. Servers might wish to be
+		 * compatible with these previous approaches to persistent
+		 * connections, by explicitly negotiating for them with a
+		 * "Connection: keep-alive" request header field.
+		 * RFC2068-19.7.1: Persistent connections in HTTP/1.0 must be
+		 * explicitly negotiated as they are not the default behavior.
+		 *
+		 * Default HTTP/1.0 to close w/o keep_alive being requested.
+		 */
 		if (!request->keep_alive)
 			request->connection_close = true;
 	} else if ((request->http_version.major == 1) &&
@@ -276,9 +300,22 @@ static int _on_headers_complete(void *arg)
 		log_flag(NET, "%s: [%s] HTTP/1.1 connection",
 			 __func__, conmgr_con_get_name(hcon->con));
 
-		/* keep alive is assumed for 1.1 */
-		if (request->keep_alive == -1)
-			request->keep_alive = DEFAULT_KEEP_ALIVE;
+		/*
+		 * RFC2068-8.1.2.1: An HTTP/1.1 server MAY assume that a
+		 * HTTP/1.1 client intends to maintain a persistent connection
+		 */
+		request->keep_alive = true;
+	} else {
+		log_flag(NET, "%s: [%s] HTTP/%d.%d connection",
+				 __func__, conmgr_con_get_name(hcon->con),
+				 request->http_version.major,
+				 request->http_version.minor);
+
+		/*
+		 * RFC9112-9.3: If the received protocol is HTTP/1.1 (or later),
+		 * the connection will persist after the current response
+		 */
+		request->keep_alive = true;
 	}
 
 	if (!request->http_version.major && request->http_version.minor)
@@ -600,12 +637,6 @@ static int _on_content_complete(void *arg)
 
 	rc = hcon->events->on_request(hcon, conmgr_con_get_name(hcon->con),
 				      &hcon->request, hcon->arg);
-
-	if (request->keep_alive) {
-		//TODO: implement keep alive correctly
-		log_flag(NET, "%s: [%s] keep alive not currently implemented",
-			 __func__, conmgr_con_get_name(hcon->con));
-	}
 
 	if (request->connection_close) {
 		/* Notify client that this connection will be closed now */
