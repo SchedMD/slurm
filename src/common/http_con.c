@@ -58,36 +58,6 @@
 #define CRLF "\r\n"
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 
-/* Data to handed around by http_parser to call backs */
-typedef struct {
-	/* Requested URL */
-	url_t url;
-	/* Request HTTP method */
-	http_request_method_t method;
-	/* list of each header received (to be handed to callback) */
-	list_t *headers;
-	/* state tracking of last header received */
-	char *last_header;
-	/* client requested to keep_alive header or -1 to disable */
-	int keep_alive;
-	/* RFC7230-6.1 "Connection: Close" */
-	bool connection_close;
-	int expect; /* RFC7231-5.1.1 expect requested */
-	/* Body of request (may be NULL) */
-	char *body;
-	/* if provided: expected body length to process or 0 */
-	size_t expected_body_length;
-	size_t body_length;
-	const char *body_encoding; //TODO: implement detection of this
-	const char *content_type;
-	const char *accept;
-
-	struct {
-		uint16_t major;
-		uint16_t minor;
-	} http_version;
-} request_t;
-
 typedef struct on_http_request_args_s on_http_request_args_t;
 
 /*
@@ -108,11 +78,17 @@ typedef struct http_con_s {
 	conmgr_fd_ref_t *con;
 	/* callback to call on each HTTP request */
 	on_http_request_t on_http_request;
-	/* http parser plugin state */
-	http_parser_state_t *parser;
-	/* http request_t */
-	request_t request;
+	http_parser_state_t *parser; /* http parser plugin state */
+	http_con_request_t request;
 } http_con_t;
+
+#define WRITE_EACH_HEADER_MAGIC 0xba3a8aff
+
+typedef struct {
+	int magic; /* WRITE_EACH_HEADER_MAGIC */
+	int rc;
+	conmgr_fd_ref_t *con;
+} write_each_header_args_t;
 
 /*
  * Call back for new connection to setup HTTP
@@ -187,12 +163,13 @@ static int _valid_http_version(uint16_t major, uint16_t minor)
 
 static void _request_init(http_con_t *hcon)
 {
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 
-	xassert(request);
 	xassert(hcon->magic == MAGIC);
+	/* catch memory leak */
+	xassert(!request->headers);
 
-	*request = (request_t) {
+	*request = (http_con_request_t) {
 		.url = URL_INITIALIZER,
 		.method = HTTP_REQUEST_INVALID,
 		.keep_alive = -1,
@@ -203,17 +180,15 @@ static void _request_init(http_con_t *hcon)
 
 static void _request_free_members(http_con_t *hcon)
 {
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 
 	xassert(hcon->magic == MAGIC);
 
 	url_free_members(&request->url);
 	FREE_NULL_LIST(request->headers);
-	xfree(request->last_header);
-	xfree(request->content_type);
 	xfree(request->accept);
-	xfree(request->body);
-	xfree(request->body_encoding);
+	xfree(request->content_type);
+	FREE_NULL_BUFFER(request->content);
 }
 
 /* reset state of request */
@@ -228,7 +203,7 @@ static void _request_reset(http_con_t *hcon)
 static int _on_request(const http_parser_request_t *req, void *arg)
 {
 	http_con_t *hcon = arg;
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 	int rc = EINVAL;
 
 	xassert(hcon->magic == MAGIC);
@@ -282,7 +257,7 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 static int _on_header(const http_parser_header_t *header, void *arg)
 {
 	http_con_t *hcon = arg;
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 
 	xassert(hcon->magic == MAGIC);
 
@@ -331,7 +306,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 		if ((sscanf(header->value, "%zd", &cl) != 1) || (cl < 0))
 			return _send_reject(hcon,
 					    ESLURM_HTTP_INVALID_CONTENT_LENGTH);
-		request->expected_body_length = cl;
+		request->content_length = cl;
 	} else if (!xstrcasecmp(header->name, "Accept")) {
 		xfree(request->accept);
 		request->accept = xstrdup(header->value);
@@ -359,7 +334,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 static int _on_headers_complete(void *arg)
 {
 	http_con_t *hcon = arg;
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 
 	xassert(hcon->magic == MAGIC);
 
@@ -385,7 +360,7 @@ static int _on_headers_complete(void *arg)
 		return SLURM_SUCCESS;
 
 	if ((request->method == HTTP_REQUEST_POST) &&
-	    (request->expected_body_length <= 0))
+	    (request->content_length <= 0))
 		return _send_reject(hcon,
 				    ESLURM_HTTP_POST_MISSING_CONTENT_LENGTH);
 
@@ -410,7 +385,7 @@ static int _on_headers_complete(void *arg)
 static int _on_content(const http_parser_content_t *content, void *arg)
 {
 	http_con_t *hcon = arg;
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 	const void *at = get_buf_data(content->buffer);
 	const size_t length = get_buf_offset(content->buffer);
 
@@ -425,49 +400,48 @@ static int _on_content(const http_parser_content_t *content, void *arg)
 		return ESLURM_HTTP_UNEXPECTED_REQUEST;
 	}
 
-	if (request->body) {
-		size_t nlength = length + request->body_length;
-
-		xassert(request->body_length > 0);
-		xassert(request->body_length <= MAX_BODY_BYTES);
-		xassert((request->body_length + 1) == xsize(request->body));
+	if (get_buf_offset(content->buffer) > 0) {
+		size_t nlength = (length + request->content_bytes);
+		int rc = EINVAL;
 
 		if (nlength > MAX_BODY_BYTES)
-			goto no_mem;
+			return _send_reject(
+				hcon, ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE);
 
-		if (request->expected_body_length &&
-		    (nlength > request->expected_body_length))
-			goto no_mem;
+		if ((request->content_length > 0) &&
+		    (nlength > request->content_length))
+			return _send_reject(hcon, ESLURM_HTTP_UNEXPECTED_BODY);
 
-		if (!try_xrealloc(request->body, (nlength + 1)))
-			goto no_mem;
+		if (!request->content &&
+		    !(request->content = try_init_buf(BUF_SIZE)))
+			return _send_reject(hcon, ENOMEM);
 
-		memmove((request->body + request->body_length), at, length);
-		request->body_length += length;
-	} else {
-		if ((length >= MAX_BODY_BYTES) ||
-		    (request->expected_body_length &&
-		     (length > request->expected_body_length)) ||
-		    !(request->body = try_xmalloc(length + 1)))
-			goto no_mem;
+		/* Always include 1 extra byte for NULL terminator */
+		if ((rc = try_grow_buf_remaining(request->content,
+						 (length + 1))))
+			return _send_reject(hcon, rc);
 
-		request->body_length = length;
-		memmove(request->body, at, length);
+		xassert(remaining_buf(request->content) >= nlength);
+		memmove((get_buf_data(request->content) +
+			 get_buf_offset(request->content)),
+			at, length);
+		set_buf_offset(request->content,
+			       (get_buf_offset(request->content) + length));
+		request->content_bytes += length;
+
+		/* final byte must in body must always be NULL terminated */
+		{
+			char *term = (get_buf_data(request->content) +
+				      get_buf_offset(request->content) + 1);
+			*term = '\0';
+		}
 	}
-
-	/* final byte must in body must always be NULL terminated */
-	xassert(!request->body[request->body_length]);
-	request->body[request->body_length] = '\0';
 
 	log_flag(NET, "%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
 		 __func__, conmgr_con_get_name(hcon->con), length,
-		 request->body_length, request->expected_body_length);
+		 request->content_bytes, request->content_length);
 
-	return 0;
-
-no_mem:
-	/* total body was way too large to store */
-	return _send_reject(hcon, ESLURM_HTTP_CONTENT_LENGTH_TOO_LARGE);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -638,7 +612,7 @@ extern int http_con_send_response(http_con_t *hcon,
 
 static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 {
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 	send_http_response_args_t args = {
 		.http_major = request->http_version.major,
 		.http_minor = request->http_version.minor,
@@ -676,7 +650,7 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 static int _on_message_complete_request(http_con_t *hcon)
 {
 	int rc = EINVAL;
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 	on_http_request_args_t args = {
 		.method = request->method,
 		.headers = request->headers,
@@ -687,9 +661,12 @@ static int _on_message_complete_request(http_con_t *hcon)
 		.http_minor = request->http_version.minor,
 		.content_type = request->content_type,
 		.accept = request->accept,
-		.body = request->body,
-		.body_length = request->body_length,
-		.body_encoding = request->body_encoding
+		.body = (request->content ? get_buf_data(request->content) :
+					    NULL),
+		.body_length =
+			(request->content ? get_buf_offset(request->content) :
+					    0),
+		.body_encoding = request->content_type,
 	};
 
 	xassert(hcon->magic == MAGIC);
@@ -711,16 +688,16 @@ static int _on_message_complete_request(http_con_t *hcon)
 static int _on_content_complete(void *arg)
 {
 	http_con_t *hcon = arg;
-	request_t *request = &hcon->request;
+	http_con_request_t *request = &hcon->request;
 	int rc = EINVAL;
 
 	xassert(hcon->magic == MAGIC);
 
-	if ((request->expected_body_length > 0) &&
-	    (request->expected_body_length != request->body_length)) {
-		error("%s: [%s] Content-Length %zu and received body length %zu mismatch",
+	if ((request->content_length > 0) &&
+	    (request->content_length != request->content_bytes)) {
+		error("%s: [%s] Content-Length %zd and received body length %zd mismatch",
 		      __func__, conmgr_con_get_name(hcon->con),
-		      request->expected_body_length, request->body_length);
+		      request->content_length, request->content_bytes);
 		return _send_reject(hcon, ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
 
