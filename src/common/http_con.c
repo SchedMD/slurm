@@ -116,22 +116,20 @@ typedef struct http_con_s {
 	request_t request;
 } http_con_t;
 
-typedef http_con_t http_context_t;
-
 /*
  * Call back for new connection to setup HTTP
  *
  * IN fd file descriptor of new connection
  * RET ptr to context to hand to parse_http()
  */
-typedef http_context_t *(*on_http_connection_t)(int fd);
+typedef http_con_t *(*on_http_connection_t)(int fd);
 
 typedef struct on_http_request_args_s {
 	const http_request_method_t method; /* HTTP request method */
 	list_t *headers; /* list_t of http_header_t* from client */
 	const char *path; /* requested URL path (may be NULL) */
 	const char *query; /* requested URL query (may be NULL) */
-	http_context_t *context; /* calling context (do not xfree) */
+	http_con_t *context; /* calling context (do not xfree) */
 	conmgr_fd_ref_t *con; /* reference to connection */
 	const char *name; /* connection name */
 	uint16_t http_major; /* HTTP major version */
@@ -165,13 +163,13 @@ typedef struct {
 	const char *body_encoding; /* body encoding type or NULL */
 } send_http_response_args_t;
 
-extern int send_http_response(http_context_t *context,
+extern int send_http_response(http_con_t *context,
 			      const send_http_response_args_t *args);
 
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
 
-static int _send_reject(http_context_t *context, slurm_err_t error_number);
+static int _send_reject(http_con_t *context, slurm_err_t error_number);
 
 extern const size_t http_con_bytes(void)
 {
@@ -194,7 +192,7 @@ static void _free_http_header(void *header)
 	free_http_header(header);
 }
 
-static void _request_init(http_context_t *context)
+static void _request_init(http_con_t *context)
 {
 	request_t *request = &context->request;
 
@@ -210,7 +208,7 @@ static void _request_init(http_context_t *context)
 	request->headers = list_create(_free_http_header);
 }
 
-static void _request_free_members(http_context_t *context)
+static void _request_free_members(http_con_t *context)
 {
 	request_t *request = &context->request;
 
@@ -226,7 +224,7 @@ static void _request_free_members(http_context_t *context)
 }
 
 /* reset state of request */
-static void _request_reset(http_context_t *context)
+static void _request_reset(http_con_t *context)
 {
 	xassert(context->magic == MAGIC);
 
@@ -236,7 +234,7 @@ static void _request_reset(http_context_t *context)
 
 static int _on_request(const http_parser_request_t *req, void *arg)
 {
-	http_context_t *context = arg;
+	http_con_t *context = arg;
 	request_t *request = &context->request;
 	int rc = EINVAL;
 
@@ -290,7 +288,7 @@ static int _on_request(const http_parser_request_t *req, void *arg)
 
 static int _on_header(const http_parser_header_t *header, void *arg)
 {
-	http_context_t *context = arg;
+	http_con_t *context = arg;
 	request_t *request = &context->request;
 	http_header_t *entry = NULL;
 
@@ -372,7 +370,7 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 
 static int _on_headers_complete(void *arg)
 {
-	http_context_t *context = arg;
+	http_con_t *context = arg;
 	request_t *request = &context->request;
 
 	xassert(context->magic == MAGIC);
@@ -423,7 +421,7 @@ static int _on_headers_complete(void *arg)
 
 static int _on_content(const http_parser_content_t *content, void *arg)
 {
-	http_context_t *context = arg;
+	http_con_t *context = arg;
 	request_t *request = &context->request;
 	const void *at = get_buf_data(content->buffer);
 	const size_t length = get_buf_offset(content->buffer);
@@ -530,7 +528,7 @@ static char *_fmt_header_num(const char *name, size_t value)
  * IN ctxt - connection context
  * RET SLURM_SUCCESS or error
  */
-static int _send_http_connection_close(http_context_t *ctxt)
+static int _send_http_connection_close(http_con_t *ctxt)
 {
 	return _write_fmt_header(ctxt->con, "Connection", "Close");
 }
@@ -558,7 +556,7 @@ static int _write_fmt_num_header(conmgr_fd_t *con, const char *name,
  * IN context connection context to hand to callback (do not xfree)
  * RET SLURM_SUCCESS or error
  */
-extern int send_http_response(http_context_t *context,
+extern int send_http_response(http_con_t *context,
 			      const send_http_response_args_t *args)
 {
 	char *buffer = NULL;
@@ -649,7 +647,7 @@ extern int http_con_send_response(http_con_t *hcon,
 	return ESLURM_NOT_SUPPORTED;
 }
 
-static int _send_reject(http_context_t *context, slurm_err_t error_number)
+static int _send_reject(http_con_t *context, slurm_err_t error_number)
 {
 	request_t *request = &context->request;
 	send_http_response_args_t args = {
@@ -687,7 +685,7 @@ static int _send_reject(http_context_t *context, slurm_err_t error_number)
 	return error_number;
 }
 
-static int _on_message_complete_request(http_context_t *context)
+static int _on_message_complete_request(http_con_t *context)
 {
 	int rc = EINVAL;
 	request_t *request = &context->request;
@@ -724,7 +722,7 @@ static int _on_message_complete_request(http_context_t *context)
 
 static int _on_content_complete(void *arg)
 {
-	http_context_t *context = arg;
+	http_con_t *context = arg;
 	request_t *request = &context->request;
 	int rc = EINVAL;
 
@@ -764,7 +762,7 @@ static int _on_content_complete(void *arg)
 
 extern int parse_http(conmgr_fd_t *con, void *x)
 {
-	http_context_t *context = (http_context_t *) x;
+	http_con_t *context = (http_con_t *) x;
 	static const http_parser_callbacks_t callbacks = {
 		.on_request = _on_request,
 		.on_header = _on_header,
@@ -833,10 +831,10 @@ cleanup:
  * IN on_http_request callback to call on each HTTP request
  * RET NULL on error or new http context (must xfree)
  */
-extern http_context_t *setup_http_context(conmgr_fd_t *con,
-					  on_http_request_t on_http_request)
+extern http_con_t *setup_http_context(conmgr_fd_t *con,
+				      on_http_request_t on_http_request)
 {
-	http_context_t *context = xmalloc(sizeof(*context));
+	http_con_t *context = xmalloc(sizeof(*context));
 
 	context->magic = MAGIC;
 	context->con = con;
@@ -855,7 +853,7 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
  */
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
-	http_context_t *context = (http_context_t *) ctxt;
+	http_con_t *context = (http_con_t *) ctxt;
 
 	if (!context)
 		return;
