@@ -64,7 +64,7 @@ typedef struct on_http_request_args_s on_http_request_args_t;
 /*
  * Call back for each HTTP requested method.
  * This may be called several times in the same connection.
- * must call send_http_response().
+ * must call http_con_send_response().
  *
  * IN args see on_http_request_args_t
  * RET SLURM_SUCCESS or error to kill connection
@@ -119,27 +119,12 @@ typedef struct on_http_request_args_s {
 /*
  * Call back for each HTTP requested method.
  * This may be called several times in the same connection.
- * must call send_http_response().
+ * must call http_con_send_response().
  *
  * IN args see on_http_request_args_t
  * RET SLURM_SUCCESS or error to kill connection
  */
 typedef int (*on_http_request_t)(on_http_request_args_t *args);
-
-typedef struct {
-	conmgr_fd_t *con; /* assigned connection */
-	uint16_t http_major; /* HTTP major version */
-	uint16_t http_minor; /* HTTP minor version */
-	http_status_code_t status_code; /* HTTP status code to send */
-	/* list of http_header_entry_t to send (can be empty) */
-	list_t *headers; /* list_t of http_header_t* from client */
-	const char *body; /* body to send or NULL */
-	size_t body_length; /* bytes in body to send or 0 */
-	const char *body_encoding; /* body encoding type or NULL */
-} send_http_response_args_t;
-
-extern int send_http_response(http_con_t *hcon,
-			      const send_http_response_args_t *args);
 
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
@@ -495,97 +480,6 @@ static int _write_fmt_num_header(conmgr_fd_ref_t *con, const char *name,
 	const char *buffer = _fmt_header_num(name, value);
 	int rc = conmgr_con_queue_write_data(con, buffer, strlen(buffer));
 	xfree(buffer);
-	return rc;
-}
-
-/*
- * Parse HTTP and call on_http_request on each HTTP request
- * must call send_http_response() on success
- * IN con conmgr connection of client
- * IN hcon - http connection to hand to callback (do not xfree)
- * RET SLURM_SUCCESS or error
- */
-extern int send_http_response(http_con_t *hcon,
-			      const send_http_response_args_t *args)
-{
-	char *buffer = NULL;
-	int rc = SLURM_SUCCESS;
-	xassert(args->status_code > HTTP_STATUS_CODE_INVALID);
-	xassert(args->status_code < HTTP_STATUS_CODE_INVALID_MAX);
-	xassert(args->body_length == 0 || (args->body_length && args->body));
-
-	log_flag(NET, "%s: [%s] sending response %u: %s",
-	       __func__, conmgr_con_get_name(hcon->con), args->status_code,
-	       get_http_status_code_string(args->status_code));
-
-	/* send rfc2616 response */
-	xstrfmtcat(buffer, "HTTP/%d.%d %d %s"CRLF,
-		   args->http_major, args->http_minor, args->status_code,
-		   get_http_status_code_string(args->status_code));
-
-	rc = conmgr_con_queue_write_data(hcon->con, buffer, strlen(buffer));
-	xfree(buffer);
-
-	if (rc)
-		return rc;
-
-	/* send along any requested headers */
-	if (args->headers) {
-		list_itr_t *itr = list_iterator_create(args->headers);
-		http_header_t *header = NULL;
-		while ((header = list_next(itr))) {
-			xassert(header->magic == HTTP_HEADER_MAGIC);
-			if ((rc = _write_fmt_header(hcon->con, header->name,
-						    header->value)))
-				break;
-		}
-		list_iterator_destroy(itr);
-
-		if (rc)
-			return rc;
-	}
-
-	if (args->body && args->body_length) {
-		/* RFC7230-3.3.2 limits response of Content-Length */
-		if ((args->status_code < 100) ||
-		    ((args->status_code >= 200) &&
-		     (args->status_code != 204))) {
-			if ((rc = _write_fmt_num_header(hcon->con,
-							"Content-Length",
-							args->body_length))) {
-				return rc;
-			}
-		}
-
-		if (args->body_encoding &&
-		    (rc = _write_fmt_header(hcon->con, "Content-Type",
-					    args->body_encoding)))
-			return rc;
-
-		if ((rc = conmgr_con_queue_write_data(hcon->con, CRLF,
-						      strlen(CRLF))))
-			return rc;
-
-		log_flag(NET, "%s: [%s] rc=%s(%u) sending body:\n%s",
-			 __func__, conmgr_con_get_name(hcon->con),
-			 get_http_status_code_string(args->status_code),
-			 args->status_code, args->body);
-
-		if ((rc = conmgr_con_queue_write_data(hcon->con, args->body,
-						      args->body_length)))
-			return rc;
-	} else if (((args->status_code >= 100) && (args->status_code < 200)) ||
-		   (args->status_code == 204) ||
-		   (args->status_code == 304)) {
-		/*
-		 * RFC2616 requires empty line after headers for return code
-		 * that "MUST NOT" include a message body
-		 */
-		if ((rc = conmgr_con_queue_write_data(hcon->con, CRLF,
-						      strlen(CRLF))))
-			return rc;
-	}
-
 	return rc;
 }
 
