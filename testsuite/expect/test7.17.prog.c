@@ -127,7 +127,12 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,5,0)
 	if (select_g_init() != SLURM_SUCCESS)
+#else
+	// In 25.05.0 the only_default argument was removed from select_g_init()
+	if (select_g_init(1) != SLURM_SUCCESS)
+#endif
 		fatal("failed to initialize node selection plugin");
 
 	/*
