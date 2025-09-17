@@ -29,6 +29,10 @@ Usage: squeue [OPTIONS]
                                   to view, default is all qos's
   -R, --reservation=name(s)       comma separated list of reservations to view
   -r, --array                     display one job array element per line
+      --running-over=time         Display only jobs that have been running
+                                  over the specified time.
+      --running-under=time        Display only jobs that have been running
+                                  under the specified time.
       --sibling                   Report information about all sibling jobs
                                   on a federated cluster. Implies --federation.
   -s, --step=step(s)              comma separated list of job steps
