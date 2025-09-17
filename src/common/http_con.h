@@ -36,4 +36,94 @@
 #ifndef SLURM_HTTP_CON_H
 #define SLURM_HTTP_CON_H
 
+#include "src/common/http.h"
+#include "src/conmgr/conmgr.h"
+
+/* Opaque struct for HTTP connection instance */
+typedef struct http_con_s http_con_t;
+
+typedef struct {
+	/* Requested URL */
+	url_t url;
+	/* Request HTTP method */
+	http_request_method_t method;
+	/* list of each header received */
+	list_t *headers;
+	/* client requested to keep_alive header or -1 */
+	int keep_alive;
+	/* RFC7230-6.1 "Connection: Close" */
+	bool connection_close;
+	/* RFC7231-5.1.1 expect requested */
+	int expect;
+	/* Accept Header */
+	char *accept;
+	/* Content-Type header */
+	char *content_type;
+	/* Content-Length header or -1 */
+	ssize_t content_length;
+	/* Content buffer (may have already been truncated) or NULL */
+	buf_t *content;
+	/* Number of Content bytes received for this request */
+	ssize_t content_bytes;
+
+	struct {
+		uint16_t major;
+		uint16_t minor;
+	} http_version;
+} http_con_request_t;
+
+typedef struct {
+	/*
+	 * Called on HTTP request and headers and content received
+	 * WARNING: Content-Length header may not be enforced before this is
+	 *	called with complete=true or this may be skipped entirely for
+	 *	unexpected EOF/error
+	 * IN hcon - pointer to http connection
+	 * IN name - connection name for logging
+	 * IN request - pointer to parsed request
+	 * IN body - buffer containing body received and retained from last
+	 *	on_request()
+	 * IN arg - arbitrary pointer handed to http_con_assign_server()
+	 * RET SLURM_SUCCESS to continue parsing to error to stop
+	 */
+	int (*on_request)(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg);
+	/*
+	 * Call back when connection is closed.
+	 * Note: hcon will already be free()ed before this callback.
+	 * IN name - connection name for logging
+	 * IN arg - arbitrary pointer handed to http_con_assign_server()
+	 */
+	void (*on_close)(const char *name, void *arg);
+} http_con_server_events_t;
+
+/* Get number of bytes needed to hold http_con_t instance */
+extern const size_t http_con_bytes(void);
+
+/*
+ * Assign HTTP handlers to server connection
+ * IN con - conmgr connection to parse incoming HTTP requests
+ * IN hcon - pointer to bytes allocated for connection's state or NULL.
+ * NOTE: hcon pointer must be valid until on_close() is called.
+ * IN events - HTTP server callbacks for events
+ * IN arg - arbitrary pointer to include in callbacks
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
+				  const http_con_server_events_t *events,
+				  void *arg);
+/*
+ * Send HTTP response
+ * IN status_code - HTTP status code to send
+ * IN headers - list_t of http_header_t* to send (can be NULL or empty)
+ * IN close_header - Include "Connection: Close" header
+ * IN body - body contents to send or NULL
+ * IN body_encoding - mime type for body (ignored if body is NULL) or NULL
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_send_response(http_con_t *hcon,
+				  http_status_code_t status_code,
+				  list_t *headers, bool close_header,
+				  buf_t *body, const char *body_encoding);
+
 #endif

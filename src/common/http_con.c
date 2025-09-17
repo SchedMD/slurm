@@ -170,6 +170,11 @@ static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
 
 static int _send_reject(http_context_t *context, slurm_err_t error_number);
 
+extern const size_t http_con_bytes(void)
+{
+	return 0;
+}
+
 static int _valid_http_version(uint16_t major, uint16_t minor)
 {
 	if ((major == 0) && (minor == 0))
@@ -633,6 +638,14 @@ extern int send_http_response(http_context_t *context,
 	return rc;
 }
 
+extern int http_con_send_response(http_con_t *hcon,
+				  http_status_code_t status_code,
+				  list_t *headers, bool close_header,
+				  buf_t *body, const char *body_encoding)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 static int _send_reject(http_context_t *context, slurm_err_t error_number)
 {
 	request_t *request = &context->request;
@@ -856,4 +869,11 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 
 	context->magic = ~MAGIC;
 	xfree(context);
+}
+
+extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
+				  const http_con_server_events_t *events,
+				  void *arg)
+{
+	return ESLURM_NOT_SUPPORTED;
 }
