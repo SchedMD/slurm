@@ -35,8 +35,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #define _GNU_SOURCE
+#include <inttypes.h>
+#include <stdbool.h>
+
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/run_in_daemon.h"
+#include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "read_nsconf.h"
@@ -51,9 +56,23 @@ const char plugin_name[] = "namespace linux plugin";
 const char plugin_type[] = "namespace/linux";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static slurm_ns_conf_t *ns_conf = NULL;
 
 extern int init(void)
 {
+	if (running_in_slurmd()) {
+		/*
+		 * Only init the config here for the slurmd. It will be sent by
+		 * the slurmd to the slurmstepd at launch time.
+		 */
+		if (!(ns_conf = init_slurm_ns_conf())) {
+			error("%s: Configuration not read correctly: Does '%s' not exist?",
+			      plugin_type, ns_conf_file);
+			return SLURM_ERROR;
+		}
+		debug("namespace.conf read successfully");
+	}
+
 	debug("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
@@ -61,6 +80,9 @@ extern int init(void)
 
 extern void fini(void)
 {
+#ifdef MEMORY_LEAK_DEBUG
+	free_ns_conf();
+#endif
 	debug("%s unloaded", plugin_name);
 }
 
