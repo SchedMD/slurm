@@ -351,7 +351,7 @@ static int _on_headers_complete(void *arg)
 
 		args.con = conmgr_fd_get_ref(context->ref);
 
-		if ((rc = send_http_response(&args)))
+		if ((rc = send_http_response(context, &args)))
 			return rc;
 	}
 
@@ -488,10 +488,12 @@ static int _write_fmt_num_header(conmgr_fd_t *con, const char *name,
 	return rc;
 }
 
-extern int send_http_response(const send_http_response_args_t *args)
+extern int send_http_response(http_context_t *context,
+			      const send_http_response_args_t *args)
 {
 	char *buffer = NULL;
 	int rc = SLURM_SUCCESS;
+	xassert(context->magic == MAGIC);
 	xassert(args->status_code > HTTP_STATUS_CODE_INVALID);
 	xassert(args->status_code < HTTP_STATUS_CODE_INVALID_MAX);
 	xassert(args->body_length == 0 || (args->body_length && args->body));
@@ -590,7 +592,7 @@ static int _send_reject(http_context_t *context, slurm_err_t error_number)
 		args.http_minor = 9;
 
 	/* Ignore response since this connection is already dead */
-	(void) send_http_response(&args);
+	(void) send_http_response(context, &args);
 	FREE_NULL_LIST(args.headers);
 
 	if (request->connection_close ||

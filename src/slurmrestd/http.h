@@ -111,7 +111,8 @@ typedef struct {
  * IN args arguments of response
  * RET SLURM_SUCCESS or error
  */
-extern int send_http_response(const send_http_response_args_t *args);
+extern int send_http_response(http_context_t *context,
+			      const send_http_response_args_t *args);
 
 /*
  * setup http context against a given new socket
