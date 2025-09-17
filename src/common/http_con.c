@@ -173,7 +173,7 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number);
 
 extern const size_t http_con_bytes(void)
 {
-	return 0;
+	return sizeof(http_con_t);
 }
 
 static int _valid_http_version(uint16_t major, uint16_t minor)
