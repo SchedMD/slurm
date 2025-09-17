@@ -27,10 +27,6 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.mark.xfail(
-    atf.get_version() < (25, 11),
-    reason="Ticket 23100. Without !1331 (t22822 and t22862) we get 'Requested node configuration is not available'",
-)
 def test_gpu_socket_sharing():
     """Test allocating multiple gpus on the same core group with enforce-binding"""
 
