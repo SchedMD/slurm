@@ -48,10 +48,24 @@
 #define HRES_MODE_2 0x02
 #define HRES_MODE_3 0x03
 
+#define MAX_HIERARCHY_DEPTH 16
+
 typedef struct {
 	uint16_t lic_id;
 	uint16_t hres_id;
 } licenses_id_t;
+
+typedef uint16_t path_idx_t[MAX_HIERARCHY_DEPTH];
+
+typedef struct {
+	uint16_t depth; /* depth of layout */
+	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
+	uint16_t layers_cnt; /* count of layers, set only for root*/
+	uint16_t leaf_cnt; /* count of leafs, set only for root*/
+	uint16_t level; /* level - 0 for leaf */
+	uint16_t parent_id; /* lic_id of parent - NO_VAL16 for root */
+	path_idx_t path_idx;
+} hres_rec_t;
 
 typedef struct {
 	licenses_id_t id;
@@ -67,6 +81,7 @@ typedef struct {
 	bitstr_t *node_bitmap;
 	char *nodes;
 	uint8_t mode;
+	hres_rec_t hres_rec; /* mode_3 specific structure*/
 } licenses_t;
 
 /*
