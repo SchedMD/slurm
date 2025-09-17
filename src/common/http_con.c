@@ -503,6 +503,17 @@ static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 }
 
 /*
+ * Send HTTP close notification header
+ *	Warns the client that we are about to close the connection.
+ * IN hcon - http connection
+ * RET SLURM_SUCCESS or error
+ */
+static int _send_http_connection_close(http_con_t *hcon)
+{
+	return _write_fmt_header(hcon->con, "Connection", "Close");
+}
+
+/*
  * Create rfc2616 formatted numerical header
  * TODO: add sanity checks
  * IN name header name
@@ -512,17 +523,6 @@ static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 static char *_fmt_header_num(const char *name, size_t value)
 {
 	return xstrdup_printf("%s: %zu" CRLF, name, value);
-}
-
-/*
- * Send HTTP close notification header
- *	Warns the client that we are about to close the connection.
- * IN hcon - http connection
- * RET SLURM_SUCCESS or error
- */
-static int _send_http_connection_close(http_con_t *hcon)
-{
-	return _write_fmt_header(hcon->con, "Connection", "Close");
 }
 
 /*
