@@ -56,7 +56,6 @@
 #include "src/interfaces/http_parser.h"
 
 #define CRLF "\r\n"
-#define MAGIC 0xDFAFFEEF
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 
 /* Data to handed around by http_parser to call backs */
@@ -101,7 +100,9 @@ typedef struct on_http_request_args_s on_http_request_args_t;
  */
 typedef int (*on_http_request_t)(on_http_request_args_t *args);
 
-typedef struct http_context_s {
+#define MAGIC 0xab0a8aff
+
+typedef struct http_con_s {
 	int magic; /* MAGIC */
 	/* reference to assigned connection */
 	conmgr_fd_ref_t *ref;
@@ -113,7 +114,9 @@ typedef struct http_context_s {
 	http_parser_state_t *parser;
 	/* http request_t */
 	request_t request;
-} http_context_t;
+} http_con_t;
+
+typedef http_con_t http_context_t;
 
 /*
  * Call back for new connection to setup HTTP
