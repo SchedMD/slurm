@@ -2294,6 +2294,12 @@ be placed within the same higher-level block.
 
 \fBNOTE\fR: The requested node count must always be evenly divisible by
 the requested segment size.
+
+\fBNOTE\fR: When used in conjunction with \fB\-\-nodelist=<node_list>\fR:
+The requested node count must be less than or equal to the total
+number of unique nodes specified in the \fB\-\-nodelist\fR argument.
+Requesting more nodes than available unique nodes in the provided
+\fB\-\-nodelist\fR will result in the job being rejected by slurmctld.
 .IP
 
 .TP
