@@ -113,7 +113,10 @@ static void _setup_controller(void)
 
 	log_flag(SWITCH, "managing %u channels", max_channel_count);
 
-	imex_channels = bit_alloc(max_channel_count);
+	/* Allocate one extra space for the '0' index bit to always be set */
+	imex_channels = bit_alloc(max_channel_count + 1);
+
+	/* Reserve channel 0 */
 	bit_set(imex_channels, 0);
 }
 
@@ -151,7 +154,7 @@ static int _mark_used(void *x, void *arg)
 	if (!switch_info)
 		return 1;
 
-	if (switch_info->channel < max_channel_count) {
+	if (switch_info->channel <= max_channel_count) {
 		debug("marking channel %u used by %pJ",
 		      switch_info->channel, job_ptr);
 		bit_set(imex_channels, switch_info->channel);
@@ -334,7 +337,7 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	if (!switch_jobinfo)
 		return;
 
-	if (switch_jobinfo->channel < max_channel_count) {
+	if (switch_jobinfo->channel <= max_channel_count) {
 		debug("marking channel %u released by %pJ",
 		      switch_jobinfo->channel, job_ptr);
 		bit_clear(imex_channels, switch_jobinfo->channel);
