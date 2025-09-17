@@ -296,9 +296,6 @@ static int _on_header(const http_parser_header_t *header, void *arg)
 	} else if (!xstrcasecmp(header->name, "Content-Type")) {
 		xfree(request->content_type);
 		request->content_type = xstrdup(header->value);
-	} else if (!xstrcasecmp(header->name, "Content-Type")) {
-		xfree(request->content_type);
-		request->content_type = xstrdup(header->value);
 	} else if (!xstrcasecmp(header->name, "Content-Length")) {
 		/* Use signed buffer to catch if negative length is provided */
 		ssize_t cl;
