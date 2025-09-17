@@ -57,6 +57,12 @@ const char plugin_type[] = "namespace/linux";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static slurm_ns_conf_t *ns_conf = NULL;
+static bool plugin_disabled = false;
+
+static bool _is_plugin_disabled(char *basepath)
+{
+	return ((!basepath) || (!xstrncasecmp(basepath, "none", 4)));
+}
 
 extern int init(void)
 {
@@ -70,6 +76,7 @@ extern int init(void)
 			      plugin_type, ns_conf_file);
 			return SLURM_ERROR;
 		}
+		plugin_disabled = _is_plugin_disabled(ns_conf->basepath);
 		debug("namespace.conf read successfully");
 	}
 
@@ -88,27 +95,42 @@ extern void fini(void)
 
 extern int namespace_p_restore(char *dir_name, bool recover)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return SLURM_SUCCESS;
 }
 
 extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return SLURM_SUCCESS;
 }
 
 extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 			    bool step_create)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return SLURM_SUCCESS;
 }
 
 extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return SLURM_SUCCESS;
 }
 
 extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 {
+	if (plugin_disabled)
+		return SLURM_SUCCESS;
+
 	return SLURM_SUCCESS;
 }
 
