@@ -136,10 +136,41 @@ extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 
 extern int namespace_p_send_stepd(int fd)
 {
+	int len;
+	buf_t *buf;
+
+	buf = get_slurm_ns_conf_buf();
+
+	/* The config should have been inited by now */
+	xassert(buf);
+
+	len = get_buf_offset(buf);
+	safe_write(fd, &len, sizeof(len));
+	safe_write(fd, get_buf_data(buf), len);
+
 	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
 }
 
 extern int namespace_p_recv_stepd(int fd)
 {
+	int len;
+	buf_t *buf;
+
+	safe_read(fd, &len, sizeof(len));
+
+	buf = init_buf(len);
+	safe_read(fd, buf->head, len);
+
+	if (!(ns_conf = set_slurm_ns_conf(buf)))
+		goto rwfail;
+
+	plugin_disabled = _is_plugin_disabled(ns_conf->basepath);
+
 	return SLURM_SUCCESS;
+rwfail:
+	error("%s: failed", __func__);
+	return SLURM_ERROR;
 }
