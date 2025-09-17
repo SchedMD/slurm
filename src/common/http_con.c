@@ -527,7 +527,7 @@ static char *_fmt_header_num(const char *name, size_t value)
 
 /*
  * Create and write formatted numerical header
- * IN request HTTP request
+ * IN con - connection pointer
  * IN name header name
  * IN value header value
  * RET formatted string (must xfree)
