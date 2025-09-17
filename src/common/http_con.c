@@ -432,31 +432,27 @@ static int _send_http_connection_close(http_con_t *hcon)
 }
 
 /*
- * Create rfc2616 formatted numerical header
- * TODO: add sanity checks
- * IN name header name
- * IN value header value
- * RET formatted string (must xfree)
- * */
-static char *_fmt_header_num(const char *name, size_t value)
-{
-	return xstrdup_printf("%s: %zu" CRLF, name, value);
-}
-
-/*
- * Create and write formatted numerical header
+ * Create and write rfc2616 formatted numerical header
  * IN con - connection pointer
  * IN name header name
  * IN value header value
- * RET formatted string (must xfree)
- * */
+ * RET SLURM_SUCCESS or error
+ */
 static int _write_fmt_num_header(conmgr_fd_ref_t *con, const char *name,
 				 size_t value)
 {
-	const char *buffer = _fmt_header_num(name, value);
-	int rc = conmgr_con_queue_write_data(con, buffer, strlen(buffer));
-	xfree(buffer);
-	return rc;
+	char buffer[MAX_HEADER_BYTES] = { 0 };
+	int wrote = -1;
+
+	if ((wrote = snprintf(buffer, sizeof(buffer), "%s: %zu%s", name, value,
+			      CRLF)) >= sizeof(buffer)) {
+		log_flag(NET, "%s: [%s] header \"%s\":%zu too large: %d/%zu bytes",
+			 __func__, conmgr_con_get_name(con), name, value, wrote,
+			 sizeof(buffer));
+		return ENOMEM;
+	}
+
+	return conmgr_con_queue_write_data(con, buffer, wrote);
 }
 
 static int _write_each_header(void *x, void *arg)
