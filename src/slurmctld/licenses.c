@@ -129,6 +129,13 @@ typedef struct {
 	bool locked;
 } license_return_args_t;
 
+static void _print_path(path_idx_t path_idx, uint16_t depth)
+{
+	for (int i = 0; i < depth; i++) {
+		info("\t\tpath_id[%d]:%u", i, path_idx[i]);
+	}
+}
+
 static int _foreach_license_print(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
@@ -140,6 +147,17 @@ static int _foreach_license_print(void *x, void *arg)
 		     license_entry->id.hres_id, license_entry->mode,
 		     license_entry->nodes, license_entry->total,
 		     license_entry->used);
+		if (license_entry->mode == HRES_MODE_3) {
+			info("\tidx=%u parent_id=%u depth=%u level=%u layers_cnt=%u, leaf_cnt=%u",
+			     license_entry->hres_rec.idx,
+			     license_entry->hres_rec.parent_id,
+			     license_entry->hres_rec.depth,
+			     license_entry->hres_rec.level,
+			     license_entry->hres_rec.layers_cnt,
+			     license_entry->hres_rec.leaf_cnt);
+			_print_path(license_entry->hres_rec.path_idx,
+				    license_entry->hres_rec.depth);
+		}
 	} else if (!args->job_ptr) {
 		info("licenses: %s=%s lic_id=%u total=%u used=%u",
 		     args->header, license_entry->name, license_entry->id.lic_id,
