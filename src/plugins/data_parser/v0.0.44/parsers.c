@@ -10309,6 +10309,7 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 static const flag_bit_t PARSER_FLAG_ARRAY(H_RESOURCE_MODE_FLAG)[] = {
 	add_flag_eq(HRES_MODE_1, "MODE_1", NULL),
 	add_flag_eq(HRES_MODE_2, "MODE_2", NULL),
+	add_flag_eq(HRES_MODE_3, "MODE_3", NULL),
 };
 #undef add_flag_eq
 
