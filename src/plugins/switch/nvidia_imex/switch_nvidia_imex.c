@@ -42,6 +42,7 @@
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/switch.h"
@@ -86,18 +87,47 @@ const uint32_t plugin_id = SWITCH_PLUGIN_NVIDIA_IMEX;
 #define SWITCH_INFO_MAGIC 0xFF00FF00
 
 typedef struct {
+	uint32_t id;
+	char *node_list;
+} channel_t;
+
+typedef struct {
+	list_t *channel_list;
+	uint32_t flags;
 	uint32_t magic;
-	uint32_t channel;
 } switch_info_t;
+
+typedef struct {
+	list_t **channel_list;
+	job_record_t *job_ptr;
+} allocate_channel_args_t;
 
 static uint32_t max_channel_count = 2048;
 static bitstr_t *imex_channels = NULL;
 
-static switch_info_t *_create_info(uint32_t channel)
+static void _channel_free(
+	void *x)
+{
+	channel_t *channel = x;
+
+	if (!channel)
+		return;
+
+	xfree(channel->node_list);
+	xfree(channel);
+}
+
+static switch_info_t *_create_info(
+	list_t *channel_list)
 {
 	switch_info_t *new = xmalloc(sizeof(*new));
 	new->magic = SWITCH_INFO_MAGIC;
-	new->channel = channel;
+
+	if (channel_list)
+		new->channel_list = list_shallow_copy(channel_list);
+	else
+		new->channel_list = list_create(_channel_free);
+
 	return new;
 }
 
@@ -146,22 +176,42 @@ extern int switch_p_save(void)
 	return SLURM_SUCCESS;
 }
 
-static int _mark_used(void *x, void *arg)
+static int _mark_used_channel(
+	void *x,
+	void *arg)
+{
+	channel_t *channel = x;
+	job_record_t *job_ptr = arg;
+
+	if (IS_JOB_FINISHED(job_ptr)) {
+		log_flag(SWITCH, "finished %pJ was using channel id %u, not marking as used.",
+			 job_ptr, channel->id);
+		return 1;
+	}
+
+	if (channel->id <= max_channel_count) {
+		log_flag(SWITCH, "marking channel id %u used by %pJ",
+		      channel->id, job_ptr);
+		bit_set(imex_channels, channel->id);
+	} else {
+		error("%s: channel id %u outside of tracked range, ignoring",
+		      plugin_type, channel->id);
+	}
+
+	return 1;
+}
+
+static int _mark_used_channels_in_job(
+	void *x,
+	void *arg)
 {
 	job_record_t *job_ptr = x;
 	switch_info_t *switch_info = job_ptr->switch_jobinfo;
 
-	if (!switch_info)
+	if (!switch_info || !switch_info->channel_list)
 		return 1;
 
-	if (switch_info->channel <= max_channel_count) {
-		debug("marking channel %u used by %pJ",
-		      switch_info->channel, job_ptr);
-		bit_set(imex_channels, switch_info->channel);
-	} else {
-		error("%s: channel %u outside of tracked range, ignoring",
-		      plugin_type, switch_info->channel);
-	}
+	list_for_each(switch_info->channel_list, _mark_used_channel, job_ptr);
 
 	return 1;
 }
@@ -175,37 +225,113 @@ extern int switch_p_restore(bool recover)
 	return SLURM_SUCCESS;
 }
 
+void _pack_channel(
+	void *object,
+	uint16_t protocol_version,
+	buf_t *buffer)
+{
+	channel_t *channel = object;
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(channel->id, buffer);
+		packstr(channel->node_list, buffer);
+		log_flag(SWITCH, "channel id %u allocated to nodes '%s'",
+			 channel->id, channel->node_list);
+	}
+}
+
+int _unpack_channel(
+	void **object,
+	uint16_t protocol_version,
+	buf_t *buffer)
+{
+	channel_t *channel = xmalloc(sizeof(*channel));
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&(channel->id), buffer);
+		safe_unpackstr(&(channel->node_list), buffer);
+		log_flag(SWITCH, "channel id %u allocated to nodes '%s'",
+			 channel->id, channel->node_list);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	*object = channel;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	_channel_free(channel);
+
+	return SLURM_ERROR;
+}
+
 extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		log_flag(SWITCH, "channel %u",
-			 (switch_info ? switch_info->channel : NO_VAL));
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		list_t *channel_list = NULL;
 
-		if (!switch_info) {
-			pack32(NO_VAL, buffer);
-			return;
+		if (switch_info) {
+			xassert(switch_info->magic == SWITCH_INFO_MAGIC);
+			channel_list = switch_info->channel_list;
 		}
 
-		xassert(switch_info->magic == SWITCH_INFO_MAGIC);
-		pack32(switch_info->channel, buffer);
+		slurm_pack_list(channel_list, _pack_channel, buffer,
+				protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		channel_t *channel;
+		uint32_t channel_id = NO_VAL;
+
+		/*
+		 * Only pack the first channel in the channel list. There should
+		 * only be one channel allocated to older versioned jobs
+		 * anyways.
+		 */
+		if (switch_info && switch_info->channel_list &&
+		    (channel = list_peek(switch_info->channel_list))) {
+			xassert(switch_info->magic == SWITCH_INFO_MAGIC);
+			xassert((list_count(switch_info->channel_list) == 1));
+			channel_id = channel->id;
+		}
+
+		log_flag(SWITCH, "channel id %u", channel_id);
+
+		pack32(channel_id, buffer);
 	}
 }
 
 extern int switch_p_unpack_jobinfo(switch_info_t **switch_info, buf_t *buffer,
 				   uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t channel = NO_VAL;
+	xassert(switch_info);
+
+	*switch_info = xmalloc(sizeof(**switch_info));
+	(*switch_info)->magic = SWITCH_INFO_MAGIC;
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&((*switch_info)->channel_list),
+				      _unpack_channel, _channel_free, buffer,
+				      protocol_version))
+			goto unpack_error;
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		channel_t *channel;
+		uint32_t channel_id = NO_VAL;
 
 		*switch_info = NULL;
 
-		safe_unpack32(&channel, buffer);
+		safe_unpack32(&channel_id, buffer);
 
-		if (channel != NO_VAL)
-			*switch_info = _create_info(channel);
+		if (channel_id != NO_VAL) {
+			*switch_info = _create_info(NULL);
+			channel = xmalloc(sizeof(*channel));
+			channel->id = channel_id;
+			list_append((*switch_info)->channel_list, channel);
+		}
 
-		log_flag(SWITCH, "channel %u", channel);
+		log_flag(SWITCH, "channel id %u", channel_id);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -222,21 +348,66 @@ unpack_error:
 /* Used to free switch_jobinfo when switch_p_job_complete can't be used */
 extern void switch_p_free_jobinfo(job_record_t *job_ptr)
 {
+	if (job_ptr->switch_jobinfo) {
+		switch_info_t *switch_jobinfo = job_ptr->switch_jobinfo;
+
+		xassert(switch_jobinfo->magic == SWITCH_INFO_MAGIC);
+		FREE_NULL_LIST(switch_jobinfo->channel_list);
+	}
 	xfree(job_ptr->switch_jobinfo);
 	job_ptr->switch_jobinfo = NULL;
+}
+
+static int _log_channel_job(
+	void *x,
+	void *arg)
+{
+	channel_t *channel = x;
+	job_record_t *job_ptr = arg;
+
+	log_flag(SWITCH, "using channel id %u for %pJ",
+		 channel->id, job_ptr);
+
+	return 1;
+}
+
+static int _log_channel_step(
+	void *x,
+	void *arg)
+{
+	channel_t *channel = x;
+	step_record_t *step_ptr = arg;
+
+	log_flag(SWITCH, "using channel id %u for %pS",
+		 channel->id, step_ptr);
+
+	return 1;
 }
 
 extern int switch_p_build_stepinfo(switch_info_t **switch_step,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
-	if (step_ptr->job_ptr && step_ptr->job_ptr->switch_jobinfo) {
-		switch_info_t *jobinfo = step_ptr->job_ptr->switch_jobinfo;
-		*switch_step = _create_info(jobinfo->channel);
-		log_flag(SWITCH, "using channel %u for %pS",
-			 jobinfo->channel, step_ptr);
-	} else {
-		log_flag(SWITCH, "no channel for %pS", step_ptr);
+	switch_info_t *jobinfo;
+
+	if (!step_ptr->job_ptr ||
+	    !(jobinfo = step_ptr->job_ptr->switch_jobinfo)) {
+		log_flag(SWITCH, "no channels for %pS", step_ptr);
+		return SLURM_SUCCESS;
+	}
+
+	if (!jobinfo->channel_list)
+		return SLURM_SUCCESS;
+
+	log_flag(SWITCH, "%s: Creating step info for %pS",
+		 __func__, step_ptr);
+
+	/* Copy job channel list to step switch info */
+	*switch_step = _create_info(jobinfo->channel_list);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
+		list_for_each(jobinfo->channel_list, _log_channel_step,
+			      step_ptr);
 	}
 
 	return SLURM_SUCCESS;
@@ -245,12 +416,18 @@ extern int switch_p_build_stepinfo(switch_info_t **switch_step,
 extern void switch_p_duplicate_stepinfo(switch_info_t *orig,
 					switch_info_t **dest)
 {
-	if (orig)
-		*dest = _create_info(orig->channel);
+	if (!orig)
+		return;
+
+	*dest = _create_info(orig->channel_list);
 }
 
 extern void switch_p_free_stepinfo(switch_info_t *switch_step)
 {
+	if (switch_step) {
+		xassert(switch_step->magic == SWITCH_INFO_MAGIC);
+		FREE_NULL_LIST(switch_step->channel_list);
+	}
 	xfree(switch_step);
 }
 
@@ -271,6 +448,65 @@ extern int switch_p_job_preinit(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
+static int _find_channel(
+	void *x,
+	void *arg)
+{
+	channel_t *channel = x;
+	char *node_name_key = arg;
+	char *node_name;
+	hostlist_t *node_hostlist;
+	int rc = 0;
+
+	if (!channel->node_list) {
+		log_flag(SWITCH, "Channel id %u has no node list, using this channel.",
+			 channel->id);
+		return 1;
+	}
+
+	node_hostlist = hostlist_create(channel->node_list);
+	while ((node_name = hostlist_shift(node_hostlist))) {
+		if (!xstrcmp(node_name, node_name_key)) {
+			log_flag(SWITCH, "Node name %s found in node list %s, using channel id %u",
+				 node_name_key, channel->node_list,
+				 channel->id);
+			rc = 1;
+		}
+		free(node_name);
+
+		if (rc)
+			break;
+	}
+	FREE_NULL_HOSTLIST(node_hostlist);
+
+	return rc;
+}
+
+static int _stepd_setup_imex_channel(
+	stepd_step_rec_t *step)
+{
+	switch_info_t *switch_info;
+	channel_t *channel;
+
+	if (!step->switch_step || !(switch_info = step->switch_step->data) ||
+	    !switch_info->channel_list ||
+	    !list_count(switch_info->channel_list)) {
+		log_flag(SWITCH, "No channel info provided, no IMEX channel will be setup.");
+		return SLURM_SUCCESS;
+	}
+
+	channel = list_find_first(switch_info->channel_list, _find_channel,
+				  step->node_name);
+
+	if (!channel || (channel->id == NO_VAL)) {
+		log_flag(SWITCH, "No channel found for this node, '%s', no IMEX channel will be setup.",
+                         step->node_name);
+		return SLURM_SUCCESS;
+	}
+
+	return setup_imex_channel(channel->id, true);
+}
+
 extern int switch_p_job_init(stepd_step_rec_t *step)
 {
 	if (xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) {
@@ -279,14 +515,7 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 	}
 
-	if (step->switch_step && step->switch_step->data) {
-		switch_info_t *switch_info = step->switch_step->data;
-
-		if (switch_info->channel != NO_VAL)
-			return setup_imex_channel(switch_info->channel, true);
-	}
-
-	return SLURM_SUCCESS;
+	return _stepd_setup_imex_channel(step);
 }
 
 extern int switch_p_job_postfini(stepd_step_rec_t *step)
@@ -306,10 +535,59 @@ extern int switch_p_job_step_complete(switch_info_t *stepinfo, char *nodelist)
 	return SLURM_SUCCESS;
 }
 
+static int _release_channel(
+	void *x,
+	void *arg)
+{
+	channel_t *channel = x;
+	job_record_t *job_ptr = arg;
+
+	if (channel->id <= max_channel_count) {
+		log_flag(SWITCH, "marking channel id %u released by %pJ", channel->id, job_ptr);
+		bit_clear(imex_channels, channel->id);
+	} else {
+		error("%s: %s: channel id %u outside of tracked range, ignoring release",
+		      plugin_type, __func__, channel->id);
+	}
+
+	return 1;
+}
+
+static void _allocate_channel(
+	allocate_channel_args_t *args,
+	char *node_list)
+{
+	int id = bit_ffc(imex_channels);
+	channel_t *channel;
+	list_t **channel_list = args->channel_list;
+	job_record_t *job_ptr = args->job_ptr;
+
+	if (id > 0) {
+		log_flag(SWITCH, "allocating channel %d to %pJ with node_list %s",
+		      id, job_ptr, node_list);
+
+		channel = xmalloc(sizeof(*channel));
+		channel->id = id;
+		channel->node_list = xstrdup(node_list);
+
+		bit_set(imex_channels, channel->id);
+		list_append(*channel_list, channel);
+	} else {
+		error("%s: %s: no more IMEX channels available, releasing all allocated channels for %pJ",
+		      plugin_type, __func__, job_ptr);
+
+		list_for_each(*channel_list, _release_channel, job_ptr);
+		FREE_NULL_LIST(*channel_list);
+	}
+}
+
 extern void switch_p_job_start(job_record_t *job_ptr)
 {
 	static bool first_alloc = true;
-	int channel = -1;
+	switch_info_t *switch_jobinfo;
+	allocate_channel_args_t args = {
+		.job_ptr = job_ptr,
+	};
 
 	/*
 	 * FIXME: this is hacked in here as switch_p_restore() is called
@@ -318,19 +596,35 @@ extern void switch_p_job_start(job_record_t *job_ptr)
 	 * are already in use.
 	 */
 	if (first_alloc) {
-		list_for_each(job_list, _mark_used, NULL);
+		list_for_each(job_list, _mark_used_channels_in_job, NULL);
 		first_alloc = false;
 	}
 
-	channel = bit_ffc(imex_channels);
+	job_ptr->switch_jobinfo = switch_jobinfo = _create_info(NULL);
+	args.channel_list = &switch_jobinfo->channel_list;
 
-	if (channel > 0) {
-		debug("allocating channel %d to %pJ", channel, job_ptr);
-		bit_set(imex_channels, channel);
-		job_ptr->switch_jobinfo = _create_info(channel);
+	if (job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) {
+		/*
+		 * Remove this case when 25.05 support is no longer supported.
+		 *
+		 * Older versioned slurmstepd's are only expecting one channel
+		 * for the job and would not be able to determine which channel
+		 * to use. Here only one channel is allocated as only one
+		 * channel can be packed for older versions anyways.
+		 */
+		log_flag(SWITCH, "%s: Allocating only one channel for %pJ with older protocol version %d",
+			 __func__, job_ptr, job_ptr->start_protocol_ver);
+		_allocate_channel(&args, NULL);
 	} else {
-		error("%s: %s: no channel available",
-		      plugin_type, __func__);
+		/*
+		 * Allocate one channel for the entire job.
+		 */
+		_allocate_channel(&args, NULL);
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
+		list_for_each(switch_jobinfo->channel_list, _log_channel_job,
+			      job_ptr);
 	}
 }
 
@@ -338,39 +632,31 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 {
 	switch_info_t *switch_jobinfo = job_ptr->switch_jobinfo;
 
-	if (!switch_jobinfo)
+	if (!switch_jobinfo || !switch_jobinfo->channel_list)
 		return;
 
-	if (switch_jobinfo->channel <= max_channel_count) {
-		debug("marking channel %u released by %pJ",
-		      switch_jobinfo->channel, job_ptr);
-		bit_clear(imex_channels, switch_jobinfo->channel);
-		xfree(job_ptr->switch_jobinfo);
-	} else {
-		error("%s: %s: channel %u outside of tracked range, ignoring release",
-		      plugin_type, __func__, switch_jobinfo->channel);
-	}
+	list_for_each(switch_jobinfo->channel_list, _release_channel, job_ptr);
 }
 
 extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
-	if (step->switch_step && step->switch_step->data) {
-		switch_info_t *switch_info = step->switch_step->data;
-		if (switch_info->channel != NO_VAL)
-			return setup_imex_channel(switch_info->channel, false);
-	}
-
-	return SLURM_SUCCESS;
+	return _stepd_setup_imex_channel(step);
 }
 
 extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
 				     job_record_t *job_ptr)
 {
-	if (job_ptr->switch_jobinfo) {
-                switch_info_t *jobinfo = job_ptr->switch_jobinfo;
-                *stepinfo = _create_info(jobinfo->channel);
-                log_flag(SWITCH, "using channel %u for %pJ",
-                         jobinfo->channel, job_ptr);
+	switch_info_t *jobinfo;
+
+	if (!(jobinfo = job_ptr->switch_jobinfo) || !(jobinfo->channel_list)) {
+		log_flag(SWITCH, "no channels for %pJ", job_ptr);
+		return;
+	}
+	/* Copy job channel list to step switch info */
+	*stepinfo = _create_info(jobinfo->channel_list);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
+		list_for_each(jobinfo->channel_list, _log_channel_job, job_ptr);
 	}
 }
 
