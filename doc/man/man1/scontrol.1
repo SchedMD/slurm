@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "May 2025" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "September 2025" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -2822,18 +2822,26 @@ Value may be cleared with blank data value, "Features=".
 \fBGroups\fR=<\fIgroup list\fR>
 List of groups permitted to use the reserved nodes, for example
 "Group=bio,chem".
-A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
-Unlike users groups do not allow denied access to reservations.
-You can add or remove individual groups from an existing reservation by
-using the update command and adding a '+' or '\-' sign before the '=' sign.
+A new reservation must specify Users or Groups and/or Accounts, with Users and
+Groups being mutually exclusive.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
+Unlike users, you cannot deny access to reservations based on group membership.
 Root and the SlurmUser are given access to all reservations, regardless of the
 groups set here.
-\fBNOTE\fR: Groups and Users are mutually exclusive in reservations, if you
-want to switch between the 2 you must update the reservation with a group=''
-or user='' and fill in the opposite with the appropriate setting.
+
+You can add or remove individual groups from an existing reservation by
+using the update command and adding a '+' or '\-' sign before the '=' sign.
+You can also unset the Groups field by updating the reservation with an empty
+string:
+.nf
+group=''
+.fi
+
+Prior to version 25.05, if a reservation used user- or group-based access
+controls and slurmctld ever failed to validate the user(s) or group(s), it would
+delete the reservation. Reservations are now resilient to temporary validation
+outages.
 .IP
 
 .TP
@@ -2867,25 +2875,53 @@ QOS set here.
 .TP
 \fBUsers\fR=<\fIuser list\fR>
 List of users permitted to use the reserved nodes, for example
-"User=jones1,smith2".
-A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
-Users can also be denied access to reservations by preceding all of the
-user names with '\-'. Alternately precede the equal sign with '\-'.
-For example, "User=\-jones1,\-smith2" or "User\-=jones1,smith2"
-will permit any user except jones1 and smith2 to use the reservation.
-You can add or remove individual users from an existing reservation by
-using the update command and adding a '+' or '\-' sign before the '=' sign.
-If users are denied access to a reservation (user name preceded by a '\-'),
-then all other users are implicitly allowed to use the reservation and it is
-not possible to also explicitly specify allowed users.
+"User=jones1,smith2". Users can also be denied access to a reservation,
+indicated by having a '-' sign before their name, e.g. "User=-jones1,-smith2".
+A new reservation must specify Users or Groups and/or Accounts, with Users and
+Groups being mutually exclusive.
+If both Users/Groups and Accounts are specified, a job must match both in order
+to use the reservation.
+
 Root and the SlurmUser are given access to all reservations, regardless of the
 users set here.
-\fBNOTE\fR: Groups and Users are mutually exclusive in reservations, if you
-want to switch between the 2 you must update the reservation with a group=''
-or user='' and fill in the opposite with the appropriate setting.
+
+Each user in the system may be in one of three states in a reservation:
+ - Explicitly allowed
+ - Unspecified
+ - Explicitly denied
+
+If any users are explicitly allowed to use a reservation, all other users are
+implicitly denied access. If any users are explicitly denied access to a
+reservation, all other users are implicitly allowed access to the reservation.
+
+When updating existing reservations, you may use the '+=' and '-=' operators to
+move users up (+) or down (-) on the list of states. However, you cannot have a
+mix of explicitly allowed and explicitly denied users on the same reservation,
+and an update command that would result in that state will result in an error.
+The '+' or '\-' sign can also be placed directly before the username.
+For example, the following are equivalent:
+.nf
+User\-=jones1,smith2
+.fi
+.nf
+User=\-jones1,\-smith2
+.fi
+
+In these examples, if the users were explicitly allowed before, this assignment
+would remove their names from the allowed list and place them in the unspecified
+state. If the command was repeated again the users would be explicitly denied
+from the reservation.
+
+You can also unset the Users field (reverting all to a neutral/unspecified
+state) by updating the reservation with an empty string:
+.nf
+user=''
+.fi
+
+Prior to version 25.05, if a reservation used user- or group-based access
+controls and slurmctld ever failed to validate the user(s) or group(s), it would
+delete the reservation. Reservations are now resilient to temporary validation
+outages.
 .IP
 
 .TP
