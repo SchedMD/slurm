@@ -2048,6 +2048,37 @@ static bool _filter_exclusive_user_mcs_nodes(job_record_t *job_ptr,
 	return args.delay_start;
 }
 
+static int _get_licenses_from_nspace(node_space_map_t *node_space,
+				     time_t start_time,
+				     bf_licenses_t **licenses_pptr)
+{
+	int j = 0;
+	while (true) {
+		if ((node_space[j].end_time > start_time) &&
+		    (node_space[j].begin_time <= start_time)) {
+			*licenses_pptr = node_space[j].licenses;
+
+			return SLURM_SUCCESS;
+		}
+		if ((j = node_space[j].next) == 0)
+			return SLURM_ERROR;
+	}
+}
+
+static int _hres_pre_select(job_record_t *job_ptr, node_space_map_t *node_space,
+			    will_run_data_t *will_run_data)
+{
+	bf_licenses_t *licenses;
+
+	if (_get_licenses_from_nspace(node_space, will_run_data->start,
+				      &licenses))
+		return SLURM_ERROR;
+
+	slurm_bf_hres_pre_select(job_ptr, licenses);
+
+	return SLURM_SUCCESS;
+}
+
 /* This is for use in _attempt_backfill() only */
 #define SKIP_SCHED_OR_TRY_LATER(job_ptr, job_no_reserve, later_start,	\
 				orig_time_limit, orig_start_time)	\
@@ -2991,6 +3022,7 @@ later_start_set:
 		if (active_bitmap) {
 			will_run_data.start = start_res;
 			will_run_data.end = later_start;
+			_hres_pre_select(job_ptr, node_space, &will_run_data);
 			j = _try_sched(job_ptr, &active_bitmap, min_nodes,
 				       max_nodes, req_nodes, &resv_exc,
 				       &will_run_data);
@@ -3076,6 +3108,7 @@ later_start_set:
 			 * job. Test using avail_bitmap instead */
 			will_run_data.start = start_res;
 			will_run_data.end = later_start;
+			_hres_pre_select(job_ptr, node_space, &will_run_data);
 			j = _try_sched(job_ptr, &avail_bitmap, min_nodes,
 				       max_nodes, req_nodes, &resv_exc,
 				       &will_run_data);
