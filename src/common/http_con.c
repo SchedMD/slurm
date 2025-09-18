@@ -668,7 +668,7 @@ static int _send_reject(http_context_t *context, slurm_err_t error_number)
 	conmgr_con_queue_close_free(&context->ref);
 	context->con = NULL;
 
-	/* reset connection to avoid any possible auth inheritance */
+	/* reset connection to avoid inheriting request state */
 	_request_reset(context);
 
 	return error_number;
