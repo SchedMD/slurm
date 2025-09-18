@@ -1980,14 +1980,19 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					     __func__, this_node_name);
 					kill_running_job_by_node_ptr(node_ptr);
 				}
-				trigger_node_draining(node_ptr);
+				/* Notify of strigger event */
+				if (state_val == NODE_STATE_DRAIN)
+					trigger_node_draining(node_ptr);
+				else
+					trigger_node_failing(node_ptr);
 				bit_clear (avail_node_bitmap, node_ptr->index);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				state_val = node_ptr->node_state |= state_val;
 				if ((node_ptr->run_job_cnt  == 0) &&
 				    (node_ptr->comp_job_cnt == 0)) {
-					trigger_node_drained(node_ptr);
+					if (state_val & NODE_STATE_DRAIN)
+						trigger_node_drained(node_ptr);
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
 						node_ptr, now, NULL,
