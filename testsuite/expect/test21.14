@@ -264,21 +264,24 @@ if {$matches != 2} {
 }
 
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
-# making the child the parent - This should fail
-if [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]] {
-	log_info "Assuming we weren't able to re-parent $ta2 to child $ta3, expected"
+# making the child the parent
+set rc [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]]
+if {[package vcompare [get_version] "25.05.1"] >= 0} {
+	# Ticket 22650: Fix issue where lower sub-associations were missed
+	#               Re-parent is not anymore allowed
+	subtest {$rc == $::RETURN_ERROR} "We shouldn't be able to re-parent $ta2 to child $ta3"
+
+	# Now do it correctly, reparent the child $ta3 to $ta1
+	if [mod_acct $ta3 [array get acct_mod_desc5_1] [array get acct_mod_assoc_vals5_1] [array get acct_mod_acct_vals5_1]] {
+		fail "Unable to modify account ($ta3)"
+	}
+	# Now this original request should work
+	if [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]] {
+		fail "Unable to modify account ($ta2)"
+	}
+
 } else {
-	fail "The above was suppose to fail to re-parent, but it succeeded erroneously"
-}
-
-# Now do it correctly, reparent the child $ta3 to $ta1
-if [mod_acct $ta3 [array get acct_mod_desc5_1] [array get acct_mod_assoc_vals5_1] [array get acct_mod_acct_vals5_1]] {
-	fail "Unable to modify account ($ta3)"
-}
-
-# Now this original request should work
-if [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]] {
-	fail "Unable to modify account ($ta2)"
+	subtest {$rc == $::RETURN_SUCCESS} "Ticket: 22650. We shouldn't be able to re-parent $ta2 to child $ta3, but was fixed in 25.05.1"
 }
 
 #
@@ -307,20 +310,23 @@ if {$matches != 4} {
 
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
-if [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]] {
-	log_info "Assuming we weren't able to re-parent $ta3 to child $ta2, expected"
+set rc [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]]
+if {[package vcompare [get_version] "25.05.1"] >= 0} {
+	# Ticket 22650: Fix issue where lower sub-associations were missed
+	#               Re-parent is not anymore allowed
+	subtest {$rc == $::RETURN_ERROR} "We shouldn't be able to re-parent $ta3 to child $ta2"
+
+	# Now do it correctly, reparent the child $ta2 to $ta1
+	if [mod_acct $ta2 [array get acct_mod_desc5_1] [array get acct_mod_assoc_vals5_1] [array get acct_mod_acct_vals5_1]] {
+		fail "Unable to modify account ($ta2)"
+	}
+
+	# Now this original request should work
+	if [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]] {
+		fail "Unable to modify account ($ta3)"
+	}
 } else {
-	fail "The above was suppose to fail to re-parent, but it succeeded erroneously"
-}
-
-# Now do it correctly, reparent the child $ta2 to $ta1
-if [mod_acct $ta2 [array get acct_mod_desc5_1] [array get acct_mod_assoc_vals5_1] [array get acct_mod_acct_vals5_1]] {
-	fail "Unable to modify account ($ta2)"
-}
-
-# Now this original request should work
-if [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]] {
-	fail "Unable to modify account ($ta3)"
+	subtest {$rc == $::RETURN_SUCCESS} "Ticket: 22650. We shouldn't be able to re-parent $ta3 to child $ta2, but was fixed in 25.05.1"
 }
 
 #
