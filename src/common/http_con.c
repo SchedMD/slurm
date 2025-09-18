@@ -55,8 +55,6 @@
 
 #include "src/interfaces/http_parser.h"
 
-// FIXME: Disabling authentication calls for copy
-#define FREE_NULL_REST_AUTH(x) ((void) NULL)
 // FIXME: Avoid needing indetd_mode from operations.h
 #define inetd_mode false
 
@@ -112,8 +110,6 @@ typedef struct http_context_s {
 	conmgr_fd_ref_t *ref;
 	/* assigned connection */
 	conmgr_fd_t *con;
-	/* Authentication context (auth_context_type_t) */
-	void *auth;
 	/* callback to call on each HTTP request */
 	on_http_request_t on_http_request;
 	/* http parser plugin state */
@@ -228,8 +224,6 @@ static void _request_free_members(http_context_t *context)
 static void _request_reset(http_context_t *context)
 {
 	xassert(context->magic == MAGIC);
-
-	FREE_NULL_REST_AUTH(context->auth);
 
 	_request_free_members(context);
 	_request_init(context);
@@ -859,10 +853,6 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 	/* release request */
 	_request_free_members(context);
 
-	/* auth should have been released long before now */
-	xassert(!context->auth);
-	FREE_NULL_REST_AUTH(context->auth);
-
 	xassert(conmgr_fd_get_ref(context->ref) == context->con);
 	conmgr_fd_free_ref(&context->ref);
 	context->con = NULL;
@@ -872,39 +862,4 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 
 	if (inetd_mode)
 		conmgr_request_shutdown();
-}
-
-extern void *http_context_get_auth(http_context_t *context)
-{
-	if (!context)
-		return NULL;
-
-	xassert(context->magic == MAGIC);
-
-	return context->auth;
-}
-
-extern void *http_context_set_auth(http_context_t *context, void *auth)
-{
-	void *old = NULL;
-
-	if (!context)
-		return auth;
-
-	xassert(context->magic == MAGIC);
-
-	old = context->auth;
-	context->auth = auth;
-
-	return old;
-}
-
-extern void http_context_free_null_auth(http_context_t *context)
-{
-	if (!context)
-		return;
-
-	xassert(context->magic == MAGIC);
-
-	FREE_NULL_REST_AUTH(context->auth);
 }
