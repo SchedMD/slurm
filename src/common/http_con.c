@@ -694,8 +694,7 @@ static int _on_content_complete(void *arg)
 		return _send_reject(hcon, ESLURM_HTTP_INVALID_CONTENT_LENGTH);
 	}
 
-	if ((rc = _on_message_complete_request(hcon)))
-		return rc;
+	rc = _on_message_complete_request(hcon);
 
 	if (request->keep_alive) {
 		//TODO: implement keep alive correctly
@@ -711,7 +710,7 @@ static int _on_content_complete(void *arg)
 
 	_request_reset(hcon);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int parse_http(conmgr_fd_t *con, void *x)
