@@ -80,7 +80,9 @@ static bool plugin_disabled = false;
 
 /* NS_L_NS must be last */
 enum ns_l_types {
-	NS_L_NS = 0,
+	NS_L_PID = 0,
+	NS_L_USER,
+	NS_L_NS,
 	NS_L_END
 };
 
@@ -110,6 +112,22 @@ static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 			xstrfmtcat(ns_l_enabled[NS_L_NS].path, "%s/mnt",
 				   *ns_base);
 			ns_l_enabled[NS_L_NS].proc_name = "mnt";
+		}
+		if (ns_conf->clonensflags & CLONE_NEWPID) {
+			ns_l_enabled[NS_L_PID].enabled = true;
+			ns_l_enabled[NS_L_NS].flag = CLONE_NEWPID;
+			xfree(ns_l_enabled[NS_L_PID].path);
+			xstrfmtcat(ns_l_enabled[NS_L_PID].path, "%s/pid",
+				   *ns_base);
+			ns_l_enabled[NS_L_PID].proc_name = "pid";
+		}
+		if (ns_conf->clonensflags & CLONE_NEWUSER) {
+			ns_l_enabled[NS_L_USER].enabled = true;
+			ns_l_enabled[NS_L_NS].flag = CLONE_NEWUSER;
+			xfree(ns_l_enabled[NS_L_USER].path);
+			xstrfmtcat(ns_l_enabled[NS_L_USER].path, "%s/user",
+				   *ns_base);
+			ns_l_enabled[NS_L_USER].proc_name = "user";
 		}
 	}
 
