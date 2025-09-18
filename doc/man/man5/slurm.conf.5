@@ -2572,7 +2572,9 @@ The maximum job array task index value will be one less than MaxArraySize
 to allow for an index value of zero.
 Configure MaxArraySize to 0 in order to disable job array use.
 The value may not exceed 4000001.
-The value of \fBMaxJobCount\fR should be much larger than \fBMaxArraySize\fR.
+The value of \fBMaxJobCount\fR should be much larger than \fBMaxArraySize\fR,
+since each job array task still counts as a separate job (see \fBMaxJobCount\fR
+for further details).
 The default value is 1001.
 See also \fBmax_array_tasks\fR in SchedulerParameters.
 .IP
