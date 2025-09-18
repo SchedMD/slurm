@@ -55,9 +55,6 @@
 
 #include "src/interfaces/http_parser.h"
 
-// FIXME: Avoid needing indetd_mode from operations.h
-#define inetd_mode false
-
 #define CRLF "\r\n"
 #define MAGIC 0xDFAFFEEF
 #define MAX_BODY_BYTES 52428800 /* 50MB */
@@ -859,7 +856,4 @@ extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 
 	context->magic = ~MAGIC;
 	xfree(context);
-
-	if (inetd_mode)
-		conmgr_request_shutdown();
 }
