@@ -94,6 +94,18 @@ typedef struct {
 	} http_version;
 } request_t;
 
+typedef struct on_http_request_args_s on_http_request_args_t;
+
+/*
+ * Call back for each HTTP requested method.
+ * This may be called several times in the same connection.
+ * must call send_http_response().
+ *
+ * IN args see on_http_request_args_t
+ * RET SLURM_SUCCESS or error to kill connection
+ */
+typedef int (*on_http_request_t)(on_http_request_args_t *args);
+
 typedef struct http_context_s {
 	int magic; /* MAGIC */
 	/* reference to assigned connection */
@@ -109,6 +121,56 @@ typedef struct http_context_s {
 	/* http request_t */
 	request_t request;
 } http_context_t;
+
+/*
+ * Call back for new connection to setup HTTP
+ *
+ * IN fd file descriptor of new connection
+ * RET ptr to context to hand to parse_http()
+ */
+typedef http_context_t *(*on_http_connection_t)(int fd);
+
+typedef struct on_http_request_args_s {
+	const http_request_method_t method; /* HTTP request method */
+	list_t *headers; /* list_t of http_header_t* from client */
+	const char *path; /* requested URL path (may be NULL) */
+	const char *query; /* requested URL query (may be NULL) */
+	http_context_t *context; /* calling context (do not xfree) */
+	conmgr_fd_ref_t *con; /* reference to connection */
+	const char *name; /* connection name */
+	uint16_t http_major; /* HTTP major version */
+	uint16_t http_minor; /* HTTP minor version */
+	const char *content_type; /* header content-type */
+	const char *accept; /* header accepted content-types */
+	const char *body; /* body sent by client or NULL (do not xfree) */
+	const size_t body_length; /* bytes in body to send or 0 */
+	const char *body_encoding; /* body encoding type or NULL */
+} on_http_request_args_t;
+
+/*
+ * Call back for each HTTP requested method.
+ * This may be called several times in the same connection.
+ * must call send_http_response().
+ *
+ * IN args see on_http_request_args_t
+ * RET SLURM_SUCCESS or error to kill connection
+ */
+typedef int (*on_http_request_t)(on_http_request_args_t *args);
+
+typedef struct {
+	conmgr_fd_t *con; /* assigned connection */
+	uint16_t http_major; /* HTTP major version */
+	uint16_t http_minor; /* HTTP minor version */
+	http_status_code_t status_code; /* HTTP status code to send */
+	/* list of http_header_entry_t to send (can be empty) */
+	list_t *headers; /* list_t of http_header_t* from client */
+	const char *body; /* body to send or NULL */
+	size_t body_length; /* bytes in body to send or 0 */
+	const char *body_encoding; /* body encoding type or NULL */
+} send_http_response_args_t;
+
+extern int send_http_response(http_context_t *context,
+			      const send_http_response_args_t *args);
 
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
@@ -490,12 +552,18 @@ static int _write_fmt_num_header(conmgr_fd_t *con, const char *name,
 	return rc;
 }
 
+/*
+ * Parse HTTP and call on_http_request on each HTTP request
+ * must call send_http_response() on success
+ * IN con conmgr connection of client
+ * IN context connection context to hand to callback (do not xfree)
+ * RET SLURM_SUCCESS or error
+ */
 extern int send_http_response(http_context_t *context,
 			      const send_http_response_args_t *args)
 {
 	char *buffer = NULL;
 	int rc = SLURM_SUCCESS;
-	xassert(context->magic == MAGIC);
 	xassert(args->status_code > HTTP_STATUS_CODE_INVALID);
 	xassert(args->status_code < HTTP_STATUS_CODE_INVALID_MAX);
 	xassert(args->body_length == 0 || (args->body_length && args->body));
@@ -752,6 +820,12 @@ cleanup:
 	return rc;
 }
 
+/*
+ * setup http context against a given new socket
+ * IN fd file descriptor of socket (must be connected!)
+ * IN on_http_request callback to call on each HTTP request
+ * RET NULL on error or new http context (must xfree)
+ */
 extern http_context_t *setup_http_context(conmgr_fd_t *con,
 					  on_http_request_t on_http_request)
 {
@@ -767,6 +841,11 @@ extern http_context_t *setup_http_context(conmgr_fd_t *con,
 	return context;
 }
 
+/*
+ * cleanup http context on finished connection
+ * IN con - conmgr connection
+ * IN context - context to connection to free
+ */
 extern void on_http_connection_finish(conmgr_fd_t *con, void *ctxt)
 {
 	http_context_t *context = (http_context_t *) ctxt;
