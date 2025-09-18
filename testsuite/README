@@ -1087,3 +1087,4 @@ test_151_1   Test oversubscribe with sharing partitions
 test_152_#   Testing switch/nvidia_imex.
 ========================================
 test_152_1   Test IMEX channel allocation/deallocation
+test_152_2   Test --network=unique-channel-per-segment
