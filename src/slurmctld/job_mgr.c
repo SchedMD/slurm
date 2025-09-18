@@ -1542,7 +1542,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	}
 
 	get_part_list(job_ptr->partition, &job_ptr->part_ptr_list,
-		      &job_ptr->part_ptr, &err_part);
+		      &job_ptr->part_ptr, &err_part, NULL);
 	if (job_ptr->part_ptr == NULL) {
 		verbose("Invalid partition (%s) for JobId=%u",
 			err_part, job_ptr->job_id);
@@ -6500,7 +6500,7 @@ static int _get_job_parts(job_desc_msg_t *job_desc, part_record_t **part_pptr,
 	if (job_desc->partition) {
 		char *err_part = NULL;
 		get_part_list(job_desc->partition, &part_ptr_list, &part_ptr,
-			      &err_part);
+			      &err_part, NULL);
 		if (part_ptr == NULL) {
 			info("%s: invalid partition specified: %s",
 			     __func__, job_desc->partition);

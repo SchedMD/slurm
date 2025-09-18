@@ -788,7 +788,8 @@ extern uint32_t get_next_job_id(bool test_only);
  * NOTE: Caller must free err_part
  */
 extern void get_part_list(char *name, list_t **part_ptr_list,
-			  part_record_t **prim_part_ptr, char **err_part);
+			  part_record_t **prim_part_ptr, char **err_part,
+			  bool *first_valid);
 
 /*
  * init_depend_policy()
