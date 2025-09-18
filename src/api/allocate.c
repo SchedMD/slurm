@@ -240,6 +240,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
 		resp = (resource_allocation_response_msg_t *) resp_msg.data;
+		verbose("JobId=%u returned by the controller", resp->job_id);
 		if (resp->node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_SUCCESS;
