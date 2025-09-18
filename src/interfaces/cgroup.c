@@ -41,7 +41,11 @@ strong_alias(cgroup_conf_destroy, slurm_cgroup_conf_destroy);
 strong_alias(autodetect_cgroup_version, slurm_autodetect_cgroup_version);
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
+#ifdef WITH_CGROUP
 #define DEFAULT_CGROUP_PLUGIN "autodetect"
+#else
+#define DEFAULT_CGROUP_PLUGIN "disabled"
+#endif
 
 /* Symbols provided by the plugin */
 typedef struct {
