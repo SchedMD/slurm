@@ -495,9 +495,11 @@ extern char *autodetect_cgroup_version(void)
 		error("unsupported cgroup version %d", cgroup_ver);
 		break;
 	}
-#endif
 
 	return NULL;
+#else
+	return "disabled";
+#endif
 }
 
 /*
@@ -763,16 +765,16 @@ extern int cgroup_g_init(void)
 
 	type = slurm_cgroup_conf.cgroup_plugin;
 
-	if (!xstrcmp(type, "disabled")) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
-
 	if (!xstrcmp(type, "autodetect")) {
 		if (!(type = autodetect_cgroup_version())) {
 			rc = SLURM_ERROR;
 			goto done;
 		}
+	}
+
+	if (!xstrcmp(type, "disabled")) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
 	}
 
 	if (running_in_slurmd())
