@@ -495,7 +495,7 @@ Slurm cluster programmatically. See detailed
 first being treated as a backup host. Any backup hosts configured should be on
 a different node than the node hosting the primary slurmctld. However, all
 hosts should mount a common file system containing the state information (see
-&quot;StateSaveLocation&quot; in the <a href="#Config">Configuration</a>
+<b>StateSaveLocation</b> in the <a href="#Config">Configuration</a>
 section below).</p>
 
 <p>If more than one host is specified, when the primary fails the second listed
@@ -505,10 +505,10 @@ mode. The primary reads the saved state and resumes normal operation. Likewise,
 if both of the first two listed hosts fail the third SlurmctldHost will take
 over until the primary returns to service. Other than a brief period of non-
 responsiveness, the transition back and forth should go undetected.
-You can use <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">&quot;
-SlurmctldPrimaryOnProg&quot;</a> and
-<a href="slurm.conf.html#OPT_SlurmctldPrimaryOffProg">&quot;
-SlurmctldPrimaryOffProg&quot;</a> to define the actions taken when machines
+You can use <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">
+SlurmctldPrimaryOnProg</a> and
+<a href="slurm.conf.html#OPT_SlurmctldPrimaryOffProg">
+SlurmctldPrimaryOffProg</a> to define the actions taken when machines
 transition between primary and backup roles.</p>
 
 <p>Any time the slurmctld daemon or hardware fails before state information
