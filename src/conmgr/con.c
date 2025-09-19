@@ -1266,7 +1266,11 @@ static int _get_fd_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 			pid_t *cred_pid)
 {
 #if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-	struct ucred cred = { 0 };
+	struct ucred cred = {
+		.uid = SLURM_AUTH_NOBODY,
+		.gid = SLURM_AUTH_NOBODY,
+		.pid = 0,
+	};
 	socklen_t len = sizeof(cred);
 
 	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len))
@@ -1276,7 +1280,11 @@ static int _get_fd_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	*cred_gid = cred.gid;
 	*cred_pid = cred.pid;
 #else
-	struct xucred cred = { 0 };
+	struct xucred cred = {
+		.cr_uid = SLURM_AUTH_NOBODY,
+		.cr_groups = { SLURM_AUTH_NOBODY, },
+		.cr_pid = 0,
+	};
 	socklen_t len = sizeof(cred);
 
 	if (getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len))
