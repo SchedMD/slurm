@@ -361,8 +361,6 @@ extern void parse_command_line(int argc, char **argv)
 		params.local = true;
 	}
 
-	params.cluster_flags = slurmdb_setup_cluster_flags();
-
 	if (params.federation_flag && !params.clusters && !params.local) {
 		void *ptr = NULL;
 		if (slurm_load_federation(&ptr) ||
