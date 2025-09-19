@@ -86,7 +86,7 @@ generating content. As of Slurm-21.08, the OpenAPI plugins are available
 outside of slurmrestd daemon and other slurm commands may provide or accept the
 latest version of the OpenAPI formatted output. This functionality is provided
 on a per command basis. Please refer to the
-<a href="rest_clients.html#data_parser_lifecycle">data_parser life cycle</a>
+<a href="rest_clients.html#data_parser_lifecycle">Data Parser Lifecycle</a>
 documentation for the planned life cycles of versioned endpoints.
 These plugins can be optionally listed or selected via command line arguments
 as described in the <a href="slurmrestd.html">slurmrestd</a> documentation.</p>
