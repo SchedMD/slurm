@@ -1262,10 +1262,37 @@ again:
 			      false, NULL, NULL, arg);
 }
 
+static int _get_fd_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
+			pid_t *cred_pid)
+{
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
+	struct ucred cred = { 0 };
+	socklen_t len = sizeof(cred);
+
+	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len))
+		return errno;
+
+	*cred_uid = cred.uid;
+	*cred_gid = cred.gid;
+	*cred_pid = cred.pid;
+#else
+	struct xucred cred = { 0 };
+	socklen_t len = sizeof(cred);
+
+	if (getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len))
+		return errno;
+
+	*cred_uid = cred.cr_uid;
+	*cred_gid = cred.cr_groups[0];
+	*cred_pid = cred.cr_pid;
+#endif
+	return SLURM_SUCCESS;
+}
+
 static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 			   pid_t *cred_pid)
 {
-	int fd, rc = ESLURM_NOT_SUPPORTED;
+	int fd = -1;
 
 	xassert(cred_uid);
 	xassert(cred_gid);
@@ -1278,31 +1305,7 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 	if (((fd = con->input_fd) == -1) && ((fd = con->output_fd) == -1))
 		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-	struct ucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.uid;
-		*cred_gid = cred.gid;
-		*cred_pid = cred.pid;
-		return SLURM_SUCCESS;
-	} else {
-		rc = errno;
-	}
-#else
-	struct xucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.cr_uid;
-		*cred_gid = cred.cr_groups[0];
-		*cred_pid = cred.cr_pid;
-		return SLURM_SUCCESS;
-	} else {
-		rc = errno;
-	}
-#endif
-
-	return rc;
+	return _get_fd_peer(fd, cred_uid, cred_gid, cred_pid);
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
