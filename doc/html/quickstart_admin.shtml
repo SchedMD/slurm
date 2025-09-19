@@ -504,18 +504,12 @@ notifies the backup.  The backup then saves the state and returns to backup
 mode. The primary reads the saved state and resumes normal operation. Likewise,
 if both of the first two listed hosts fail the third SlurmctldHost will take
 over until the primary returns to service. Other than a brief period of non-
-responsiveness, the transition back and forth should go undetected.</p>
-
-<p>Prior to 18.08, Slurm used the <a href="slurm.conf.html#OPT_BackupAddr">
-&quot;BackupAddr&quot;</a> and <a href="slurm.conf.html#OPT_BackupController">
-&quot;BackupController&quot;</a> parameters for High Availability. These
-parameters have been deprecated and are replaced by
-<a href="slurm.conf.html#OPT_SlurmctldHost">&quot;SlurmctldHost&quot;</a>.
-Also see <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">&quot;
+responsiveness, the transition back and forth should go undetected.
+You can use <a href="slurm.conf.html#OPT_SlurmctldPrimaryOnProg">&quot;
 SlurmctldPrimaryOnProg&quot;</a> and
 <a href="slurm.conf.html#OPT_SlurmctldPrimaryOffProg">&quot;
-SlurmctldPrimaryOffProg&quot;</a> to adjust the actions taken when machines
-transition between being the primary controller.</p>
+SlurmctldPrimaryOffProg&quot;</a> to define the actions taken when machines
+transition between primary and backup roles.</p>
 
 <p>Any time the slurmctld daemon or hardware fails before state information
 reaches disk can result in lost state.
