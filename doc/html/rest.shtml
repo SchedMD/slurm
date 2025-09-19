@@ -85,50 +85,11 @@ for details.</p>
 generating content. As of Slurm-21.08, the OpenAPI plugins are available
 outside of slurmrestd daemon and other slurm commands may provide or accept the
 latest version of the OpenAPI formatted output. This functionality is provided
-on a per command basis. These plugins can be optionally listed or selected via
-command line arguments as described in the <a href="slurmrestd.html">
-slurmrestd</a> documentation.</p>
-
-<h3 id="lifecycle">Plugin life cycle
-<a class="slurm_link" href="#lifecycle"></a>
-</h3>
-<p>Plugins provided upstream with Slurm in any release are considered supported
-by that release. In general, only the latest versioned plugins will receive
-minor bug fixes but all will receive security fixes. Due to the nature of the
-plugins, one plugin can be supported across multiple Slurm releases to ensure
-(limited) backward client compatibility. SchedMD is currently only explicitly
-deprecating plugins per the
-<a href="https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md?plain=1#L861">
-OpenAPI standard method of setting "Deprecated: True"</a>
-in the method path. Any plugin that is not marked as deprecated will
-continue to exist in the next Slurm Major release pending any critical issues
-which will be announced separately. Any plugin marked for deprecation will be
-removed on the next Slurm major release. In general, the last three plugins
-have been retained in each Slurm major release with the oldest getting marked
-as deprecated.
-</p>
-
-<p>Sites are <b>always</b> encouraged to use the latest stable plugin version
-available for code development. There is <b>no</b> guarantee of compatibility
-between different versions of the same plugin with clients. Clients should
-always make sure to validate their code when migrating to newer versions of
-plugins. Plugin versions will always be included in the path for every method
-provided by a given plugin to ensure no two plugins will provide the same
-path.</p>
-
-<p>As the plugins utilize the Slurm API internally, plugins that existed in
-previous versions of Slurm should continue to be able to communicate with the
-two previous versions of Slurm, similar to other components of Slurm. Newer
-plugins may have required RPC changes which will exclude them from working with
-previous Slurm versions. For instance, the openapi/dbv0.0.36 plugin will not be
-able to communicate with any slurmdbd servers prior to the slurm-20.11
-release.</p>
-
-<p>As with all other plugins in Slurm, sites are more than welcome to write
-their own plugins and are suggested to submit them as code contributions via
-<a href="https://bugs.schedmd.com/">bugzilla</a>, tagged as a contribution.
-The plugin API provided may change between releases which could cause site
-specific plugins to break.</p>
+on a per command basis. Please refer to the
+<a href="rest_clients.html#data_parser_lifecycle">data_parser life cycle</a>
+documentation for the planned life cycles of versioned endpoints.
+These plugins can be optionally listed or selected via command line arguments
+as described in the <a href="slurmrestd.html">slurmrestd</a> documentation.</p>
 
 <h2 id="high_availability">High Availability
 <a class="slurm_link" href="#high_availability"></a></h2>
@@ -243,6 +204,6 @@ for deployment in a production environment.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 16 May 2025</p>
+<p style="text-align:center;">Last modified 19 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
