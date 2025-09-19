@@ -1099,6 +1099,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_AUTH_UNABLE_TO_GENERATE_TOKEN),
 		"Token Generation failed.",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_AUTH_NOBODY),
+		"Rejecting authentication of user nobody or group nobody",
+	},
 
 	/* accounting errors */
 	{
