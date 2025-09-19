@@ -33,7 +33,6 @@
 #include "src/common/parse_time.h"
 #include <gdk/gdkkeysyms.h>
 
-#define TOPO_DEBUG 0
 #define _DEBUG 0
 static bool menu_right_pressed = false;
 
@@ -75,11 +74,6 @@ static int _find_node_inx (char *name)
 	}
 
 	return -1;
-}
-
-static void _display_topology(void)
-{
-	slurm_print_topo_info_msg(stdout, g_topo_info_msg_ptr, NULL, NULL, 0);
 }
 
 static void _foreach_popup_all(GtkTreeModel  *model,
@@ -586,9 +580,6 @@ extern int build_nodes_bitmap(char *node_names, bitstr_t **bitmap)
 	hostlist_t *host_list;
 	int node_inx = -1;
 
-	if (TOPO_DEBUG)
-		g_print("...............build_nodes_bitmap............%s\n",
-			node_names);
 	my_bitmap = bit_alloc(g_node_info_ptr->record_count);
 	*bitmap = my_bitmap;
 
@@ -625,14 +616,9 @@ extern int get_topo_conf(void)
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr;
 	topoinfo_tree_t *topo_info;
 
-	if (TOPO_DEBUG)
-		g_print("get_topo_conf\n");
-
 	if (!g_topo_info_msg_ptr &&
 	    slurm_load_topo(&g_topo_info_msg_ptr, NULL)) {
 		slurm_perror ("slurm_load_topo error");
-		if (TOPO_DEBUG)
-			g_print("get_topo_conf error !!\n");
 		return SLURM_ERROR;
 	}
 
@@ -645,8 +631,6 @@ extern int get_topo_conf(void)
 	if (g_topo_info_msg_ptr->topo_info->plugin_id != TOPOLOGY_PLUGIN_TREE) {
 		slurm_free_topo_info_msg(g_topo_info_msg_ptr);
 		g_topo_info_msg_ptr = NULL;
-		if (TOPO_DEBUG)
-			g_print("get_topo_conf only topology tree supported!!\n");
 		return SLURM_ERROR;
 	}
 
@@ -659,18 +643,11 @@ extern int get_topo_conf(void)
 	sw_nodes_bitmaps_ptr = g_switch_nodes_maps;
 	g_switch_nodes_maps_count = 0;
 
-	if (TOPO_DEBUG)
-		g_print("_display_topology,  record_count = %d\n",
-			topo_info->record_count);
 	for (i = 0; i < topo_info->record_count; i++) {
 		if (!topo_info->topo_array[i].nodes)
 			continue;
 		if (topo_info->topo_array[i].level)
 			continue;
-		if (TOPO_DEBUG)  {
-			g_print("ptr->nodes =  %s \n",
-				topo_info->topo_array[i].nodes);
-		}
 		if (build_nodes_bitmap(
 			    topo_info->topo_array[g_switch_nodes_maps_count]
 				    .nodes,
@@ -684,9 +661,6 @@ extern int get_topo_conf(void)
 		sw_nodes_bitmaps_ptr++;
 		g_switch_nodes_maps_count++;
 	}
-
-	if (TOPO_DEBUG)
-		_display_topology();
 
 	return SLURM_SUCCESS;
 }
