@@ -413,6 +413,14 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
 				    gid_t *cred_gid, pid_t *cred_pid);
 
 /*
+ * Request kernel provide auth credentials for connection
+ * IN con - connection to query creds
+ * RET SLURM_SUCCESS or error (ESLURM_NOT_SUPPORTED if connection can't query)
+ */
+extern int conmgr_con_get_auth_creds(conmgr_fd_ref_t *con, uid_t *cred_uid,
+				     gid_t *cred_gid, pid_t *cred_pid);
+
+/*
  * instruct connection manager to process fd (async)
  * IN type connection type for fd
  * IN input_fd file descriptor to have conmgr take ownership and read from

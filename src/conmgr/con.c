@@ -1312,6 +1312,18 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
 	return _get_auth_creds(con, cred_uid, cred_gid, cred_pid);
 }
 
+extern int conmgr_con_get_auth_creds(conmgr_fd_ref_t *con, uid_t *cred_uid,
+				     gid_t *cred_gid, pid_t *cred_pid)
+{
+	if (!con || !con->con)
+		return EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	return _get_auth_creds(con->con, cred_uid, cred_gid, cred_pid);
+}
+
 extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
