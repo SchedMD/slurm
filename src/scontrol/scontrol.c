@@ -77,7 +77,6 @@ int one_liner = 0;	/* one record per line if =1 */
 int quiet_flag = 0;	/* quiet=1, verbose=-1, normal=0 */
 int sibling_flag = 0;   /* show sibling jobs (if any fed job). */
 int verbosity = 0;	/* count of "-v" options */
-uint32_t cluster_flags; /* what type of cluster are we talking to */
 uint32_t euid = SLURM_AUTH_NOBODY; /* proxy request as user */
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
 const char *data_parser = NULL; /* data_parser args */
@@ -278,7 +277,6 @@ int main(int argc, char **argv)
 
 	if (clusters && (list_count(clusters) > 1))
 		fatal("Only one cluster can be used at a time with scontrol");
-	cluster_flags = slurmdb_setup_cluster_flags();
 
 	if (verbosity) {
 		opts.stderr_level += verbosity;
@@ -1095,7 +1093,6 @@ static int _process_command (int argc, char **argv)
 				      "with scontrol");
 			}
 		}
-		cluster_flags = slurmdb_setup_cluster_flags();
 		slurm_free_job_info_msg(old_job_info_ptr);
 		old_job_info_ptr = NULL;
 		slurm_free_node_info_msg(old_node_info_ptr);

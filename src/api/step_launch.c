@@ -965,29 +965,6 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 }
 
 /*
- * If a steps size has changed update the launch_state structure for a
- * specified step context, "ctx".
- */
-void step_launch_state_alter(slurm_step_ctx_t *ctx)
-{
-	struct step_launch_state *sls = ctx->launch_state;
-	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
-	int ii;
-
-	xassert(sls);
-	sls->tasks_requested = layout->task_cnt;
-	bit_realloc(sls->tasks_started, layout->task_cnt);
-	bit_realloc(sls->tasks_exited, layout->task_cnt);
-	bit_realloc(sls->node_io_error, layout->node_cnt);
-	xrealloc(sls->io_deadline, sizeof(time_t) * layout->node_cnt);
-	sls->layout = sls->mpi_step->step_layout = layout;
-
-	for (ii = 0; ii < layout->node_cnt; ii++) {
-		sls->io_deadline[ii] = (time_t)NO_VAL;
-	}
-}
-
-/*
  * Free the memory associated with the a launch state structure.
  */
 void step_launch_state_destroy(struct step_launch_state *sls)
