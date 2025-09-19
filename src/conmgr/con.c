@@ -63,6 +63,7 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
@@ -1297,10 +1298,11 @@ static int _get_fd_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	return SLURM_SUCCESS;
 }
 
+/* WARNING: caller must not hold mgr.mutex lock */
 static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 			   pid_t *cred_pid)
 {
-	int fd = -1;
+	int rc = EINVAL, input_fd = -1, output_fd = -1;
 
 	xassert(cred_uid);
 	xassert(cred_gid);
@@ -1308,12 +1310,52 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (!cred_uid || !cred_gid || !cred_pid)
-		return EINVAL;
+		return rc;
 
-	if (((fd = con->input_fd) == -1) && ((fd = con->output_fd) == -1))
-		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
+	slurm_mutex_lock(&mgr.mutex);
 
-	return _get_fd_peer(fd, cred_uid, cred_gid, cred_pid);
+	if (con_flag(con, FLAG_IS_SOCKET)) {
+		if (!con_flag(con, FLAG_READ_EOF))
+			input_fd = con->input_fd;
+
+		output_fd = con->output_fd;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if ((input_fd < 0) || (output_fd < 0)) {
+		/* Both sockets must be open to authenticate */
+		return SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	} else if ((rc = _get_fd_peer(input_fd, cred_uid, cred_gid,
+				      cred_pid))) {
+		return rc;
+	}
+
+	/* Sanity check returned creds */
+
+	/* special user/group nobody is never allowed to authenticate */
+	if (*cred_uid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+	if (*cred_gid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+
+	/* Catch invalid process ID of -1, 0 which should never happen */
+	if (*cred_pid < 1)
+		return ESRCH;
+
+	if (!rc) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Catch connection state changing during kernel queries */
+		if ((input_fd != con->input_fd) ||
+		    (output_fd != con->output_fd) ||
+		    con_flag(con, FLAG_READ_EOF))
+			rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+
+	return rc;
 }
 
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
