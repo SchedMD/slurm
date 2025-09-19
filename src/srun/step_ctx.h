@@ -57,7 +57,7 @@ struct slurm_step_ctx_struct {
  * IN timeout - in milliseconds
  * OUT timed_out - indicate if poll timed-out
  * RET the step context or NULL on failure with slurm errno set
- * NOTE: Free allocated memory using slurm_step_ctx_destroy.
+ * NOTE: Free allocated memory using step_ctx_destroy()
  */
 extern slurm_step_ctx_t *step_ctx_create_timeout(
 	job_step_create_request_msg_t *step_req, int timeout, bool *timed_out);
@@ -68,7 +68,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
  * IN step_req - job step request
  * IN step_id     - since we are faking it give me the id to use
  * RET the step context or NULL on failure with slurm errno set
- * NOTE: Free allocated memory using slurm_step_ctx_destroy.
+ * NOTE: Free allocated memory using step_ctx_destroy()
  */
 extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 	job_step_create_request_msg_t *step_req, uint32_t step_id);
