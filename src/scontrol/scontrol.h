@@ -86,7 +86,6 @@ extern int local_flag;	/* show only local jobs -- not remote remote sib jobs */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int sibling_flag; /* show sibling jobs (if any fed job). */
-extern uint32_t cluster_flags; /* what type of cluster are we talking to */
 extern uint32_t euid; /* send request to the slurmctld in behave of this user */
 extern const char *mime_type; /* user requested JSON or YAML */
 extern const char *data_parser; /* data_parser args */
