@@ -1262,9 +1262,8 @@ again:
 			      false, NULL, NULL, arg);
 }
 
-extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
-				     uid_t *cred_uid, gid_t *cred_gid,
-				     pid_t *cred_pid)
+static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
+			   pid_t *cred_pid)
 {
 	int fd, rc = ESLURM_NOT_SUPPORTED;
 
@@ -1305,6 +1304,12 @@ extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
 #endif
 
 	return rc;
+}
+
+extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
+				    gid_t *cred_gid, pid_t *cred_pid)
+{
+	return _get_auth_creds(con, cred_uid, cred_gid, cred_pid);
 }
 
 extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)
