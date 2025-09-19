@@ -2,6 +2,20 @@
 
 <h1>REST API Client Writing Guide</h1>
 
+<p>
+See also:
+<ul>
+<li><a href="rest_quickstart.html">REST API Quick Start Guide</a>
+<ul>
+<li><a href="rest_quickstart.html#common_issues">Common Issues</a></li>
+</ul></li>
+<li><a href="rest.html">REST API Details</a></li>
+<li><a href="rest_api.html">REST API Methods and Models</a></li>
+<li><a href="slurmrestd.html">slurmrestd man page</a></li>
+<li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
+</ul>
+</p>
+
 <h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
 <ul>
 <li><a href="#openapi">OpenAPI Specification (OAS)</a></li>
