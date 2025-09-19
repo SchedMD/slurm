@@ -12,6 +12,8 @@ See also:
 <li><a href="rest.html">REST API Details</a></li>
 <li><a href="rest_api.html">REST API Methods and Models</a></li>
 <li><a href="slurmrestd.html">slurmrestd man page</a></li>
+<li><a href="openapi_release_notes.html">OpenAPI Plugin Release Notes</a></li>
+<li><a href="rest_clients.html">REST API Client Guide</a></li>
 </ul>
 </p>
 
