@@ -1270,11 +1270,10 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 	xassert(cred_uid);
 	xassert(cred_gid);
 	xassert(cred_pid);
-
-	if (!con || !cred_uid || !cred_gid || !cred_pid)
-		return EINVAL;
-
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (!cred_uid || !cred_gid || !cred_pid)
+		return EINVAL;
 
 	if (((fd = con->input_fd) == -1) && ((fd = con->output_fd) == -1))
 		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
@@ -1309,6 +1308,11 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
 				    gid_t *cred_gid, pid_t *cred_pid)
 {
+	if (!con)
+		return EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
 	return _get_auth_creds(con, cred_uid, cred_gid, cred_pid);
 }
 
