@@ -2848,8 +2848,8 @@ List of groups permitted to use the reserved nodes, for example
 "Group=bio,chem".
 A new reservation must specify Users or Groups and/or Accounts, with Users and
 Groups being mutually exclusive.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
+job must match all in order to use the reservation.
 Unlike users, you cannot deny access to reservations based on group membership.
 Root and the SlurmUser are given access to all reservations, regardless of the
 groups set here.
@@ -2903,8 +2903,8 @@ List of users permitted to use the reserved nodes, for example
 indicated by having a '-' sign before their name, e.g. "User=-jones1,-smith2".
 A new reservation must specify Users or Groups and/or Accounts, with Users and
 Groups being mutually exclusive.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
+job must match all in order to use the reservation.
 
 Root and the SlurmUser are given access to all reservations, regardless of the
 users set here.
