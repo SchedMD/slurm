@@ -2335,6 +2335,47 @@ function __slurm_comp_sacctmgr_spec_resources() {
 	esac
 }
 
+# completion helper for sacctmgr runawayjobs specifications
+# https://slurm.schedmd.com/sacctmgr.html#SPECIFICATIONS-FOR-RUNAWAYJOB
+# https://slurm.schedmd.com/sacctmgr.html#SECTION_LIST/SHOW-RUNAWAYJOB-FORMAT-OPTIONS
+function __slurm_comp_sacctmgr_spec_runawayjobs() {
+	local mode="$1"
+	local parameters=()
+	local parameters_where=(
+		"cluster="
+	)
+	local parameters_set=(
+		"endstate="
+	)
+	local options=(
+		"format="
+	)
+	local endstates=(
+		"completed"
+		"failed"
+	)
+
+	__slurm_log_debug "$(__func__): mode='$mode'"
+
+	__slurm_comp_mode_select "$mode" || return
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split && __slurm_comp_reset || return 1
+
+	case "${prev}" in
+	cluster) __slurm_compreply "$(__slurm_clusters)" ;;
+	endstate) __slurm_compreply "${endstates[*]}" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
 # completion helper for sacctmgr transaction specifications
 # https://slurm.schedmd.com/sacctmgr.html#SECTION_SPECIFICATIONS-FOR-TRANSACTIONS
 # https://slurm.schedmd.com/sacctmgr.html#SECTION_LIST/SHOW-TRANSACTIONS-FORMAT-OPTIONS
@@ -2755,6 +2796,11 @@ function __sacctmgr_list_resource() {
 # completion handler for: sacctmgr list reservation [key=val]...
 function __sacctmgr_list_reservation() {
 	__slurm_comp_sacctmgr_spec_reservations 1
+}
+
+# completion handler for: sacctmgr list runawayjobs [key=val]...
+function __sacctmgr_list_runawayjobs() {
+	__slurm_comp_sacctmgr_spec_runawayjobs 3
 }
 
 # completion handler for: sacctmgr list transaction [key=val]...
