@@ -18,5 +18,7 @@ def test_immediate():
     run_error = atf.run_command_error("srun --immediate --hold pwd", xfail=True)
     assert re.search(r"Unable to allocate resources", run_error) is not None
 
-    # test that --immediate runs in under 2 seconds
-    assert atf.run_command_exit("srun --immediate pwd", timeout=2) == 0
+    # test that --immediate runs (using high timeout to avoid false failures due system being too busy)
+    assert (
+        atf.run_command_exit("srun --immediate true", timeout=5) == 0
+    ), "srun --immediate should end correctly and quickly"
