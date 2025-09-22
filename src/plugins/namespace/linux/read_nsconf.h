@@ -54,6 +54,7 @@ typedef struct slurm_ns_conf {
 	char *dirs;
 	char *initscript;
 	bool shared;
+	char *usernsscript;
 } slurm_ns_conf_t;
 
 extern char *ns_conf_file;

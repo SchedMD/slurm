@@ -72,6 +72,7 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 		{ "Dirs", S_P_STRING },
 		{ "InitScript", S_P_STRING },
 		{ "Shared", S_P_BOOLEAN },
+		{ "UserNSScript", S_P_STRING },
 		{ NULL }
 	};
 
@@ -93,8 +94,9 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "CloneNSScript_Wait=%u",
 		 slurm_ns_conf.clonensscript_wait);
 	log_flag(NAMESPACE, "Dirs=%s", slurm_ns_conf.dirs);
-	log_flag(NAMESPACE, "Shared=%d", slurm_ns_conf.shared);
 	log_flag(NAMESPACE, "InitScript=%s", slurm_ns_conf.initscript);
+	log_flag(NAMESPACE, "Shared=%d", slurm_ns_conf.shared);
+	log_flag(NAMESPACE, "UserNSScript=%s", slurm_ns_conf.usernsscript);
 }
 
 static void _set_clonensflags(void)
@@ -128,6 +130,7 @@ static void _pack_slurm_ns_conf_buf(void)
 	packstr(slurm_ns_conf.dirs, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.initscript, slurm_ns_conf_buf);
 	packbool(slurm_ns_conf.shared, slurm_ns_conf_buf);
+	packstr(slurm_ns_conf.usernsscript, slurm_ns_conf_buf);
 }
 
 static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
@@ -166,6 +169,9 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_boolean(&slurm_ns_conf.shared, "Shared", tbl))
 		shared_set = true;
+
+	if (!s_p_get_string(&slurm_ns_conf.usernsscript, "UserNSScript", tbl))
+		debug3("empty user ns script detected");
 
 	if (!s_p_get_string(&slurm_ns_conf.clonensscript, "CloneNSScript", tbl))
 		debug3("empty post clone ns script detected");
@@ -234,6 +240,7 @@ static int _read_slurm_ns_conf(void)
 		{ "Dirs", S_P_STRING },
 		{ "NodeName", S_P_ARRAY, _parse_ns_conf, NULL },
 		{ "Shared", S_P_BOOLEAN },
+		{ "UserNSScript", S_P_STRING },
 		{ NULL }
 	};
 
@@ -286,6 +293,10 @@ static int _read_slurm_ns_conf(void)
 
 	if (!shared_set)
 		s_p_get_boolean(&slurm_ns_conf.shared, "Shared", tbl);
+
+	if (!slurm_ns_conf.usernsscript)
+		s_p_get_string(&slurm_ns_conf.usernsscript, "UserNSScript",
+			       tbl);
 
 	if (!clonensscript_wait_set) {
 		if (!s_p_get_uint32(&slurm_ns_conf.clonensscript_wait,
@@ -361,6 +372,7 @@ extern slurm_ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 	safe_unpackstr(&slurm_ns_conf.dirs, buf);
 	safe_unpackstr(&slurm_ns_conf.initscript, buf);
 	safe_unpackbool(&slurm_ns_conf.shared, buf);
+	safe_unpackstr(&slurm_ns_conf.usernsscript, buf);
 	slurm_ns_conf_inited = true;
 
 	return &slurm_ns_conf;
@@ -389,6 +401,7 @@ extern void free_ns_conf(void)
 		xfree(slurm_ns_conf.clonensscript);
 		xfree(slurm_ns_conf.dirs);
 		xfree(slurm_ns_conf.initscript);
+		xfree(slurm_ns_conf.usernsscript);
 		FREE_NULL_BUFFER(slurm_ns_conf_buf);
 		slurm_ns_conf_inited = false;
 	}
