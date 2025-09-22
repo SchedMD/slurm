@@ -3721,21 +3721,22 @@ function __scontrol_show_steps() {
 function __scontrol_show_topology() {
 	local parameters=(
 		"block="
-		"node="
+		"nodes="
 		"unit="
 		"switch="
 	)
 
-	param="$(__slurm_find_param "${parameters[*]}")"
-
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
-	__slurm_log_debug "$(__func__): param='$param'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
-	if [[ -z $param ]]; then
-		__slurm_compreply "${parameters[*]}"
-	fi
+	case "${prev}" in
+	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol show *
