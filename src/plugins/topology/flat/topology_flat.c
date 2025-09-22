@@ -197,6 +197,36 @@ extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 }
 
+extern void topology_p_jobinfo_free(
+	void *topo_jobinfo)
+{
+	return;
+}
+
+extern void topology_p_jobinfo_pack(
+	void *topo_jobinfo,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	return;
+}
+
+extern int topology_p_jobinfo_unpack(
+	void **topo_jobinfo,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_jobinfo_get(
+	topology_jobinfo_type_t type,
+	void *topo_jobinfo,
+	void *data)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
 {
 	return 0;

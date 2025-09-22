@@ -55,6 +55,10 @@ typedef enum {
 	TOPO_DATA_TCTX_IDX,
 } topology_data_t;
 
+typedef enum {
+	TOPO_JOBINFO_SEGMENT_LIST,
+} topology_jobinfo_type_t;
+
 typedef struct slurm_conf_block {
 	char *block_name; /* name of this block */
 	char *nodes; /* names of nodes directly connect to this block */
@@ -260,6 +264,45 @@ extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer,
 				      uint16_t protocol_version);
+
+/* free storage allocated for topology job info
+ * IN jobinfo_plugin_data - pointer to topology job info to free
+ */
+extern void topology_g_jobinfo_free(
+	dynamic_plugin_data_t *jobinfo_plugin_data);
+
+/* pack topology job info into buffer
+ * IN jobinfo_plugin_data - pointer to topology job info to pack
+ * IN buffer - data will be packed into this preexisting buffer
+ * IN protocol_version - job's version
+ */
+extern void topology_g_jobinfo_pack(
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/* unpack topology job info from buffer
+ * IN jobinfo_plugin_data - address of pointer to new job info data. Must be
+ *	free'd with topology_g_jobinfo_free()
+ * IN buffer - data will be packed into this pre-existing buffer
+ * IN protocol_version - job's version
+ * RET - SLURM_SUCCESS or error.
+ */
+extern int topology_g_jobinfo_unpack(
+	dynamic_plugin_data_t **jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/* Get data from topology job info
+ * IN type - specify the type of data to be retrieved
+ * IN jobinfo_plugin_data - get data from this job info
+ * OUT data - pointer to new data
+ * RET - SLURM_SUCCESS means data points to the requested data, otherwise error.
+ */
+extern int topology_g_jobinfo_get(
+	topology_jobinfo_type_t type,
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	void *data);
 
 /* Return fragmentation score of given bitmap
  * IN node_mask - aviabled nodes

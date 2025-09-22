@@ -81,6 +81,13 @@ typedef struct slurm_topo_ops {
 			      char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
+	void (*jobinfo_free)(void *topo_jobinfo);
+	void (*jobinfo_pack)(void *topo_jobinfo, buf_t *buffer,
+			     uint16_t protocol_version);
+	int (*jobinfo_unpack)(void **topo_jobinfo, buf_t *buffer,
+			      uint16_t protocol_version);
+	int (*jobinfo_get)(topology_jobinfo_type_t type, void *topo_jobinfo,
+			   void *data);
 	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
 } slurm_topo_ops_t;
 
@@ -105,6 +112,10 @@ static const char *syms[] = {
 	"topology_p_topoinfo_pack",
 	"topology_p_topoinfo_print",
 	"topology_p_topoinfo_unpack",
+	"topology_p_jobinfo_free",
+	"topology_p_jobinfo_pack",
+	"topology_p_jobinfo_unpack",
+	"topology_p_jobinfo_get",
 	"topology_p_get_fragmentation",
 };
 
@@ -698,6 +709,101 @@ unpack_error:
 	*topoinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
+}
+
+extern void topology_g_jobinfo_free(
+	dynamic_plugin_data_t *jobinfo_plugin_data)
+{
+	int plugin_index;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (!jobinfo_plugin_data)
+		return;
+
+	plugin_index = _get_plugin_index(jobinfo_plugin_data->plugin_id);
+	if (plugin_index < 0)
+		return;
+
+	(*(ops[plugin_index].jobinfo_free))(jobinfo_plugin_data->data);
+
+	xfree(jobinfo_plugin_data);
+
+	return;
+}
+
+extern void topology_g_jobinfo_pack(
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	int plugin_index;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (!jobinfo_plugin_data)
+		goto pack_no_plugin;
+
+	plugin_index = _get_plugin_index(jobinfo_plugin_data->plugin_id);
+	if (plugin_index < 0)
+		goto pack_no_plugin;
+
+	dynamic_plugin_data_pack(jobinfo_plugin_data,
+				 *(ops[plugin_index].jobinfo_pack), buffer,
+				 protocol_version);
+	return;
+
+pack_no_plugin:
+	dynamic_plugin_data_pack(NULL, NULL, buffer, protocol_version);
+	return;
+}
+
+static dynamic_plugin_data_unpack_func _get_unpack_func(
+	uint32_t plugin_id)
+{
+	int plugin_index = _get_plugin_index(plugin_id);
+
+	if (plugin_index < 0)
+		return NULL;
+
+	return *(ops[plugin_index].jobinfo_unpack);
+}
+
+extern int topology_g_jobinfo_unpack(
+	dynamic_plugin_data_t **jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	xassert(jobinfo_plugin_data);
+
+	if (plugin_inited != PLUGIN_INITED) {
+		return dynamic_plugin_data_unpack(NULL, NULL, buffer,
+						  protocol_version);
+	}
+
+	return dynamic_plugin_data_unpack(jobinfo_plugin_data, _get_unpack_func,
+					  buffer, protocol_version);
+}
+
+extern int topology_g_jobinfo_get(
+	topology_jobinfo_type_t type,
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	void *data)
+{
+	int plugin_index;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (!jobinfo_plugin_data)
+		return SLURM_ERROR;
+
+	plugin_index = _get_plugin_index(jobinfo_plugin_data->plugin_id);
+	if (plugin_index < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[plugin_index].jobinfo_get))(type,
+						  jobinfo_plugin_data->data,
+						  data);
 }
 
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)
