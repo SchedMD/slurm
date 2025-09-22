@@ -2498,17 +2498,17 @@ resources. A new reservation must specify Users or Groups and/or QOS and/or
 AllowedPartitions and/or Accounts.
 If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
 job must match all in order to use the reservation.
-Partition can also be denied access to reservations by preceding all of the
-Partition names with '\-'. Alternately precede the equal sign with '\-'.
+Partitions can also be denied access to reservations by preceding all of the
+partition names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "AllowedPartitions=\-debug,\-low" or "AllowedPartitions\-=debug,low"
-will permit any Partition except debug and low to use the reservation.
-You can add or remove individual Partition from an existing reservation by
+will permit any partition except debug and low to use the reservation.
+You can add or remove individual partitions from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
-If Partition are denied access to a reservation (Partition name preceded
-by a '\-'), then all other Partition are implicitly allowed to use the
-reservation and it is not possible to also explicitly specify allowed Partition.
+If any partitions are denied access to a reservation (partition name preceded
+by a '\-'), then all other partitions are implicitly allowed to use the
+reservation and it is not possible to also explicitly specify allowed partitions.
 Root and the SlurmUser are given access to all reservations, regardless of the
-Partition set here.
+partition(s) set here.
 .IP
 
 .TP
