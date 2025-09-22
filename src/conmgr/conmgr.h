@@ -47,7 +47,7 @@
 
 #define CONMGR_THREAD_COUNT_DEFAULT 8
 #define CONMGR_THREAD_COUNT_MIN 2
-#define CONMGR_THREAD_COUNT_MAX 1024
+#define CONMGR_THREAD_COUNT_MAX 256
 
 /*
  * connection manager will do the follow:
