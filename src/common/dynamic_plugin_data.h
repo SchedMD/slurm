@@ -36,9 +36,78 @@
 #ifndef _COMMON_DYNAMIC_PLUGIN_DATA_H
 #define _COMMON_DYNAMIC_PLUGIN_DATA_H
 
+#include "src/common/pack.h"
+
 typedef struct dynamic_plugin_data {
 	void *data;
 	uint32_t plugin_id;
 } dynamic_plugin_data_t;
+
+/*
+ * Pack function pointer for dynamic data
+ *
+ * IN data - pointer to data to pack
+ * IN buffer - pack data into this buffer
+ * IN protocol_version - version used to pack
+ */
+typedef void (*dynamic_plugin_data_pack_func)(
+	void *data,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/*
+ * Unpack function pointer for dynamic data
+ *
+ * IN data - address of pointer to new unpacked data. Must be freed using
+ *	a plugin interface free function
+ * IN buffer - unpack data from this buffer
+ * IN protocol_version - version used to unpack
+ *
+ * RET - SLURM_SUCCESS or error
+ */
+typedef int (*dynamic_plugin_data_unpack_func)(
+	void **data,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/*
+ * Get unpack pointer for dynamic data
+ *
+ * IN plugin id
+ *
+ * RET function pointer for plugin data unpack function
+ */
+typedef dynamic_plugin_data_unpack_func (*dynamic_plugin_data_get_unpack_func)(
+	uint32_t plugin_id);
+
+/*
+ * Pack plugin dynamic data
+ *
+ * IN plugin_data - data to pack
+ * IN pack_func - function for packing
+ * IN buffer - pack data into this buffer
+ * IN protocol_version - version used to pack
+ */
+extern void dynamic_plugin_data_pack(
+	dynamic_plugin_data_t *plugin_data,
+	dynamic_plugin_data_pack_func pack_func,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/*
+ * Pack plugin dynamic data
+ *
+ * IN plugin_data - address of pointer to new unpacked dynamic plugin data
+ * IN pack_func - function for packing
+ * IN buffer - pack data into this buffer
+ * IN protocol_version - version used to unpack
+ *
+ * RET - SLURM_SUCCESS or error
+ */
+extern int dynamic_plugin_data_unpack(
+	dynamic_plugin_data_t **plugin_data,
+	dynamic_plugin_data_get_unpack_func get_unpack_func,
+	buf_t *buffer,
+	uint16_t protocol_version);
 
 #endif
