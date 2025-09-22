@@ -732,7 +732,6 @@ static void _get_alias_addrs(hostlist_t *hl, slurm_msg_t *msg, int *cnt)
 			++addr_index;
 		} else {
 			hostlist_remove(hi);
-			forward->cnt--;
 			(*cnt)--;
 		}
 		free(node_name);
