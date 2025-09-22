@@ -3160,8 +3160,8 @@ def submit_job_srun(srun_args, **run_command_kwargs):
             if results["process"].poll() is not None:
                 break
     else:
-        if match := re.search(r"jobid (\d+)", results["stderr"]):
-            job_id = int(match.group(1))
+        if match := re.search(r"job(id)?[ =](\d+)", results["stderr"], re.IGNORECASE):
+            job_id = int(match.group(2))
         else:
             job_id = None
 
