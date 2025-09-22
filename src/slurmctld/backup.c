@@ -422,12 +422,11 @@ extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 static void *_ping_ctld_thread(void *arg)
 {
 	ping_struct_t *ping = (ping_struct_t *) arg;
-	slurm_msg_t req, resp;
+	slurm_msg_t req = SLURM_MSG_INITIALIZER, resp = SLURM_MSG_INITIALIZER;
 	control_status_msg_t *control_msg;
 	time_t control_time = (time_t) 0;
 	bool responding = false;
 
-	slurm_msg_t_init(&req);
 	slurm_set_addr(&req.address, ping->slurmctld_port, ping->control_addr);
 	req.msg_type = REQUEST_CONTROL_STATUS;
 	slurm_msg_set_r_uid(&req, SLURM_AUTH_UID_ANY);
@@ -449,9 +448,7 @@ static void *_ping_ctld_thread(void *arg)
 			      __func__, resp.msg_type, ping->control_machine);
 			break;
 		}
-		slurm_free_msg_data(resp.msg_type, resp.data);
-		if (resp.auth_cred)
-			auth_g_destroy(resp.auth_cred);
+		slurm_free_msg_members(&resp);
 	}
 
 	slurm_mutex_lock(&ping_mutex);

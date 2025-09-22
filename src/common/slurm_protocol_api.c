@@ -68,6 +68,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/stepd_proxy.h"
@@ -2687,15 +2688,19 @@ extern int slurm_send_recv_controller_rc_msg(slurm_msg_t *req, int *rc,
  */
 extern void slurm_free_msg_members(slurm_msg_t *msg)
 {
-	if (msg) {
-		if (msg->auth_cred)
-			auth_g_destroy(msg->auth_cred);
-		FREE_NULL_BUFFER(msg->buffer);
-		slurm_free_msg_data(msg->msg_type, msg->data);
-		FREE_NULL_LIST(msg->ret_list);
-		xfree(msg->tls_cert);
-		conmgr_fd_free_ref(&msg->conmgr_con);
-	}
+	if (!msg)
+		return;
+
+	FREE_NULL_AUTH(msg->auth_cred);
+	FREE_NULL_BUFFER(msg->buffer);
+	FREE_NULL_MSG_DATA(msg->msg_type, msg->data);
+	msg->msg_type = NO_VAL16;
+	FREE_NULL_LIST(msg->ret_list);
+	xfree(msg->tls_cert);
+	/* msg->tls_conn is always a symlink and not free()ed */
+	conmgr_fd_free_ref(&msg->conmgr_con);
+	FREE_NULL_FORWARD_STRUCT(msg->forward_struct);
+	destroy_forward(&msg->forward);
 }
 
 /*

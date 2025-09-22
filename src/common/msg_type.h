@@ -43,6 +43,7 @@
  *
  * NOTE: Never alter the enum value of an existing message.
  *       That would break backwards-compatibility.
+ * NOTE: NO_VAL16 is used as the placeholder for an unset msg_type
  */
 typedef enum {
 	REQUEST_NODE_REGISTRATION_STATUS = 1001,

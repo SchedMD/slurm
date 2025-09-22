@@ -350,15 +350,15 @@ typedef struct slurm_msg {
 	list_t *ret_list;
 } slurm_msg_t;
 
-#define SLURM_MSG_INITIALIZER \
-	{ \
-		.auth_uid = SLURM_AUTH_NOBODY, \
-		.auth_gid = SLURM_AUTH_NOBODY, \
-		.msg_type = NO_VAL16, \
-		.protocol_version = NO_VAL16, \
+#define SLURM_MSG_INITIALIZER                     \
+	((slurm_msg_t) {                          \
+		.auth_uid = SLURM_AUTH_NOBODY,    \
+		.auth_gid = SLURM_AUTH_NOBODY,    \
+		.msg_type = NO_VAL16,             \
+		.protocol_version = NO_VAL16,     \
 		.flags = SLURM_PROTOCOL_NO_FLAGS, \
-		.forward = FORWARD_INITIALIZER, \
-	}
+		.forward = FORWARD_INITIALIZER,   \
+	})
 
 typedef struct ret_data_info {
 	uint16_t type; /* really a slurm_msg_type_t but needs to be
@@ -1622,7 +1622,21 @@ extern void slurm_free_ctld_multi_msg(ctld_list_msg_t *msg);
 
 extern void slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
 extern void slurm_free_requeue_msg(requeue_msg_t *);
-extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
+/*
+ * Free()s the data pointer of a given type or returns !SLURM_SUCCESS if type is
+ *	unsupported.
+ * WARNING: Use slurm_free_msg_members() for slurm_msg_t instead
+ * NOTE: Use FREE_NULL_MSG_DATA() instead of slurm_free_msg_data() directly
+ */
+extern void slurm_free_msg_data(slurm_msg_type_t type, void *data);
+
+#define FREE_NULL_MSG_DATA(slurm_msg_type, _X)                   \
+	do {                                                     \
+		if (_X)                                          \
+			slurm_free_msg_data(slurm_msg_type, _X); \
+		_X = NULL;                                       \
+	} while (0)
+
 extern void slurm_free_license_info_request_msg(license_info_request_msg_t *msg);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 extern void slurm_free_network_callerid_msg(network_callerid_msg_t *mesg);

@@ -42,6 +42,7 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -4872,14 +4873,14 @@ extern void slurm_free_node_alias_addrs(slurm_node_alias_addrs_t *msg)
 	xfree(msg);
 }
 
-extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
+extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
-		return SLURM_SUCCESS;
+		return;
 
 	/* this message was never loaded */
 	if ((uint16_t)type == NO_VAL16)
-		return SLURM_SUCCESS;
+		return;
 
 	switch (type) {
 	case RESPONSE_LAUNCH_TASKS:
@@ -5358,10 +5359,10 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_node_alias_addrs(data);
 		break;
 	default:
-		error("invalid type trying to be freed %u", type);
+		error("%s: Unable to free unknown msg_type=0x%x @ 0x%" PRIxPTR,
+		      __func__, type, (uintptr_t) data);
 		break;
 	}
-	return SLURM_SUCCESS;
 }
 
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
