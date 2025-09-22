@@ -391,7 +391,7 @@ static void *_handle_accept(void *arg)
 	buf_t *buffer = NULL;
 	int rc;
 	uid_t uid;
-	pid_t remote_pid = NO_VAL;
+	pid_t remote_pid = 0;
 
 	debug3("%s: entering (new thread)", __func__);
 	xfree(arg);
