@@ -37,6 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -59,6 +61,11 @@
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
 #define	SOL_TCP		IPPROTO_TCP
+#endif
+
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#include <sys/param.h>
+#include <sys/ucred.h>
 #endif
 
 #ifndef NI_MAXHOST
@@ -512,4 +519,52 @@ extern slurm_addr_t sockaddr_from_unix_path(const char *path)
 	/* Did not overflow - set family to indicate success */
 	addr.ss_family = AF_UNIX;
 	return addr;
+}
+
+extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
+			pid_t *cred_pid)
+{
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
+	struct ucred cred = {
+		.uid = SLURM_AUTH_NOBODY,
+		.gid = SLURM_AUTH_NOBODY,
+		.pid = 0,
+	};
+	socklen_t len = sizeof(cred);
+
+	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len))
+		return errno;
+
+	*cred_uid = cred.uid;
+	*cred_gid = cred.gid;
+	*cred_pid = cred.pid;
+#else
+	struct xucred cred = {
+		.cr_uid = SLURM_AUTH_NOBODY,
+		.cr_groups = { SLURM_AUTH_NOBODY, },
+		.cr_pid = 0,
+	};
+	socklen_t len = sizeof(cred);
+
+	if (getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len))
+		return errno;
+
+	*cred_uid = cred.cr_uid;
+	*cred_gid = cred.cr_groups[0];
+	*cred_pid = cred.cr_pid;
+#endif
+
+	/* Sanity check returned creds */
+
+	/* special user/group nobody is never allowed to authenticate */
+	if (*cred_uid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+	if (*cred_gid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+
+	/* Catch invalid process ID of -1, 0 which should never happen */
+	if (*cred_pid < 1)
+		return ESRCH;
+
+	return SLURM_SUCCESS;
 }

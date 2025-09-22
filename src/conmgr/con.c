@@ -33,7 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -42,11 +41,6 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-#include <sys/param.h>
-#include <sys/ucred.h>
-#endif
 
 #if defined(__linux__)
 #include <sys/sysmacros.h>
@@ -1263,54 +1257,6 @@ again:
 			      false, NULL, NULL, arg);
 }
 
-static int _get_fd_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
-			pid_t *cred_pid)
-{
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-	struct ucred cred = {
-		.uid = SLURM_AUTH_NOBODY,
-		.gid = SLURM_AUTH_NOBODY,
-		.pid = 0,
-	};
-	socklen_t len = sizeof(cred);
-
-	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len))
-		return errno;
-
-	*cred_uid = cred.uid;
-	*cred_gid = cred.gid;
-	*cred_pid = cred.pid;
-#else
-	struct xucred cred = {
-		.cr_uid = SLURM_AUTH_NOBODY,
-		.cr_groups = { SLURM_AUTH_NOBODY, },
-		.cr_pid = 0,
-	};
-	socklen_t len = sizeof(cred);
-
-	if (getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len))
-		return errno;
-
-	*cred_uid = cred.cr_uid;
-	*cred_gid = cred.cr_groups[0];
-	*cred_pid = cred.cr_pid;
-#endif
-
-	/* Sanity check returned creds */
-
-	/* special user/group nobody is never allowed to authenticate */
-	if (*cred_uid == SLURM_AUTH_NOBODY)
-		return ESLURM_AUTH_NOBODY;
-	if (*cred_gid == SLURM_AUTH_NOBODY)
-		return ESLURM_AUTH_NOBODY;
-
-	/* Catch invalid process ID of -1, 0 which should never happen */
-	if (*cred_pid < 1)
-		return ESRCH;
-
-	return SLURM_SUCCESS;
-}
-
 /* WARNING: caller must not hold mgr.mutex lock */
 static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 			   pid_t *cred_pid)
@@ -1339,7 +1285,7 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 	if ((input_fd < 0) || (output_fd < 0)) {
 		/* Both sockets must be open to authenticate */
 		return SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
-	} else if ((rc = _get_fd_peer(input_fd, cred_uid, cred_gid,
+	} else if ((rc = net_get_peer(input_fd, cred_uid, cred_gid,
 				      cred_pid))) {
 		return rc;
 	}
