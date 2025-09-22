@@ -200,7 +200,7 @@ def test_reservation_by_feature_and_replace():
             f"scontrol create reservation reservationname={res_name} "
             f"user={atf.properties['test-user']} start=now duration=1 "
             f"partition={part_name} "
-            f"features='[{"&".join(f"{s}*1" for s in feature_list)}]' "
+            f"features='[{'&'.join(s + '*1' for s in feature_list)}]' "
             f"NodeCnt={f_len} flags=REPLACE_DOWN",
             user=atf.properties["slurm-user"],
             fatal=True,
