@@ -1819,6 +1819,16 @@ Addressing contexts. The default is 2 per-CPU, maximum 1022 per-node.
 .RE
 .IP
 
+On systems configured with \fBSwitchType=switch/nvidia_imex\fR, the following
+options are supported:
+.RS
+.TP
+\fBunique-channel-per-segment\fR
+Instead of one channel for the entire job, allocate one channel per segment in
+the job. This only takes effect when \fBtopology/block\fR is configured.
+.RE
+.IP
+
 .IP
 
 .TP

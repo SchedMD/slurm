@@ -46,6 +46,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/topology.h"
 
 #include "src/plugins/switch/nvidia_imex/imex_device.h"
 
@@ -583,9 +584,21 @@ static void _allocate_channel(
 	}
 }
 
+static int _allocate_channel_per_segment(
+	void *x,
+	void *arg)
+{
+	char *node_list = x;
+
+	_allocate_channel(arg, node_list);
+
+	return 1;
+}
+
 extern void switch_p_job_start(job_record_t *job_ptr)
 {
 	static bool first_alloc = true;
+	list_t *segment_list = NULL;
 	switch_info_t *switch_jobinfo;
 	allocate_channel_args_t args = {
 		.job_ptr = job_ptr,
@@ -619,6 +632,17 @@ extern void switch_p_job_start(job_record_t *job_ptr)
 		log_flag(SWITCH, "%s: Allocating only one channel for %pJ with older protocol version %d",
 			 __func__, job_ptr, job_ptr->start_protocol_ver);
 		_allocate_channel(&args, NULL);
+	} else if (xstrstr("unique-channel-per-segment", job_ptr->network) &&
+		   job_ptr->topo_jobinfo &&
+		   (topology_g_jobinfo_get(TOPO_JOBINFO_SEGMENT_LIST,
+					   job_ptr->topo_jobinfo,
+					   &segment_list) == SLURM_SUCCESS) &&
+		   segment_list && list_count(segment_list)) {
+		/*
+		 * Allocate one channel for each segment in the job.
+		 */
+		(void) list_for_each(segment_list,
+				     _allocate_channel_per_segment, &args);
 	} else {
 		/*
 		 * Allocate one channel for the entire job.
