@@ -2460,6 +2460,12 @@ See the slurm.conf man page for more information.
 
 .SH "RESERVATIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
+A new reservation must specify at least one access control field: \fBUsers\fR,
+\fBGroups\fR, \fBAccounts\fR, \fBQOS\fR, and \fBAllowedPartitions\fR.
+However, Users and Groups are mutually exclusive. If multiple access control
+fields are specified, a job must be approved by all of them to use the
+reservation.
+
 .TP
 \fBReservationName\fR=<\fIname\fR>
 Identify the name of the reservation to be created or updated.
@@ -2472,10 +2478,8 @@ a name will be created automatically (e.g., "scontrol create reservation ...").
 List of accounts permitted to use the reserved nodes, for example
 "Accounts=physcode1,physcode2".
 A user in any of the specified accounts or subaccounts may use the reserved
-nodes. A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+nodes. Refer to the start of this section for general details about access
+control fields.
 Accounts can also be denied access to reservations by preceding all of the
 account names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "Accounts=\-physcode1,\-physcode2" or "Accounts\-=physcode1,physcode2"
@@ -2494,11 +2498,9 @@ accounts set here.
 List of Partitions permitted to use the reserved resources, for example
 "Partition=debug,low".
 A user using any of the specified Partition may use the reserved
-resources. A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
-Partitions can also be denied access to reservations by preceding all of the
+resources. Refer to the start of this section for general details about access
+control fields.
+Partition can also be denied access to reservations by preceding all of the
 partition names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "AllowedPartitions=\-debug,\-low" or "AllowedPartitions\-=debug,low"
 will permit any partition except debug and low to use the reservation.
@@ -2846,10 +2848,8 @@ Value may be cleared with blank data value, "Features=".
 \fBGroups\fR=<\fIgroup list\fR>
 List of groups permitted to use the reserved nodes, for example
 "Group=bio,chem".
-A new reservation must specify Users or Groups and/or Accounts, with Users and
-Groups being mutually exclusive.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
+Refer to the start of this section for general details about access control
+fields.
 Unlike users, you cannot deny access to reservations based on group membership.
 Root and the SlurmUser are given access to all reservations, regardless of the
 groups set here.
@@ -2879,10 +2879,8 @@ Used on a reoccurring reservation, skip to the next reservation iteration.
 List of QOS permitted to use the reserved resources, for example
 "QOS=normal,standby".
 A user using any of the specified QOS may use the reserved
-resources. A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
+resources. Refer to the start of this section for general details about access
+control fields.
 QOS can also be denied access to reservations by preceding all of the
 QOS names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "QOS=\-normal,\-standby" or "QOS\-=normal,standby"
@@ -2901,10 +2899,8 @@ QOS set here.
 List of users permitted to use the reserved nodes, for example
 "User=jones1,smith2". Users can also be denied access to a reservation,
 indicated by having a '-' sign before their name, e.g. "User=-jones1,-smith2".
-A new reservation must specify Users or Groups and/or Accounts, with Users and
-Groups being mutually exclusive.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
+Refer to the start of this section for general details about access control
+fields.
 
 Root and the SlurmUser are given access to all reservations, regardless of the
 users set here.
