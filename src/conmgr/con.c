@@ -1295,6 +1295,19 @@ static int _get_fd_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	*cred_gid = cred.cr_groups[0];
 	*cred_pid = cred.cr_pid;
 #endif
+
+	/* Sanity check returned creds */
+
+	/* special user/group nobody is never allowed to authenticate */
+	if (*cred_uid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+	if (*cred_gid == SLURM_AUTH_NOBODY)
+		return ESLURM_AUTH_NOBODY;
+
+	/* Catch invalid process ID of -1, 0 which should never happen */
+	if (*cred_pid < 1)
+		return ESRCH;
+
 	return SLURM_SUCCESS;
 }
 
@@ -1330,18 +1343,6 @@ static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
 				      cred_pid))) {
 		return rc;
 	}
-
-	/* Sanity check returned creds */
-
-	/* special user/group nobody is never allowed to authenticate */
-	if (*cred_uid == SLURM_AUTH_NOBODY)
-		return ESLURM_AUTH_NOBODY;
-	if (*cred_gid == SLURM_AUTH_NOBODY)
-		return ESLURM_AUTH_NOBODY;
-
-	/* Catch invalid process ID of -1, 0 which should never happen */
-	if (*cred_pid < 1)
-		return ESRCH;
 
 	if (!rc) {
 		slurm_mutex_lock(&mgr.mutex);
