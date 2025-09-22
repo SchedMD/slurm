@@ -15,7 +15,7 @@ def setup():
 def test_immediate():
     # Spawn a srun immediate execution job with hold (priority==0) option,
     # The job can't run immediately with a priority of zero
-    run_error = atf.run_command_error("srun --immediate --hold pwd")
+    run_error = atf.run_command_error("srun --immediate --hold pwd", xfail=True)
     assert re.search(r"Unable to allocate resources", run_error) is not None
 
     # test that --immediate runs in under 2 seconds
