@@ -53,8 +53,10 @@
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/stepd_api.h"
 #include "src/common/stepd_proxy.h"
@@ -390,7 +392,8 @@ static void *_handle_accept(void *arg)
 	int client_protocol_ver;
 	buf_t *buffer = NULL;
 	int rc;
-	uid_t uid;
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
 	pid_t remote_pid = 0;
 
 	debug3("%s: entering (new thread)", __func__);
@@ -398,20 +401,12 @@ static void *_handle_accept(void *arg)
 
 	safe_read(fd, &req, sizeof(int));
 	if (req >= SLURM_MIN_PROTOCOL_VERSION) {
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-		gid_t tmp_gid;
-
-		rc = getpeereid(fd, &uid, &tmp_gid);
-#else
-		struct ucred ucred;
-		socklen_t len = sizeof(ucred);
-
-		rc = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &ucred, &len);
-		uid = ucred.uid;
-		remote_pid = ucred.pid;
-#endif
-		if (rc)
+		if ((rc = net_get_peer(fd, &uid, &gid, &remote_pid))) {
+			error("%s: [fd:%d] Unable to resolve socket peer process from kernel: %s",
+			      __func__, fd, slurm_strerror(rc));
 			goto fail;
+		}
+
 		client_protocol_ver = req;
 	} else {
 		error("%s: Invalid Protocol Version %d", __func__, req);
