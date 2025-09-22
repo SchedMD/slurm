@@ -176,6 +176,8 @@ extern char *run_command_poll_child(int cpid,
  *
  *  name IN - name or class of program we're waiting on (for log messages)
  *  pid IN - child on which to call waitpid(2)
+ *  orphan_on_shutdown IN - if true, orphan instead of kill the child process
+ *                          group when the daemon is shutting down
  *  pstatus OUT - pointer to integer status
  *  timeout_ms IN - timeout in milliseconds
  *  elapsed_ms IN - already elapsed time in milliseconds
@@ -186,7 +188,8 @@ extern char *run_command_poll_child(int cpid,
  *  Returns 0 for valid status in pstatus, -1 on failure of waitpid(2).
  */
 extern int run_command_waitpid_timeout(
-	const char *name, pid_t pid, int *pstatus, int timeout_ms,
+	const char *name, pid_t pid, bool orphan_on_shutdown,
+	int *pstatus, int timeout_ms,
 	int elapsed_ms, pthread_t tid,
 	bool *timed_out);
 

@@ -1326,7 +1326,7 @@ static void _kill_slurmscriptd(void)
 			 * that we won't wait forever.
 			 */
 			run_command_waitpid_timeout("slurmscriptd",
-						    slurmscriptd_pid,
+						    slurmscriptd_pid, false,
 						    &status, 10 * MSEC_IN_SEC,
 						    0, 0, NULL);
 		}
