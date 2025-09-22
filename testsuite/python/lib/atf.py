@@ -1659,7 +1659,9 @@ def get_config(live=True, source="slurm", quiet=False, delimiter="="):
             f"cat {config_file}", user=properties["slurm-user"], quiet=quiet
         )
         for line in output.splitlines():
-            if match := re.search(rf"^\s*(\S+)\s*{re.escape(delimiter)}\s*(.*)$", line):
+            if match := re.search(
+                rf"^\s*(\S+?)\s*{re.escape(delimiter)}\s*(.*)$", line
+            ):
                 parameter_name, parameter_value = (
                     match.group(1),
                     match.group(2).rstrip(),
