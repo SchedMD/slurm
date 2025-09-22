@@ -515,6 +515,76 @@ child_exit:
 	exit(rc);
 }
 
+static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
+{
+	int fd = 0, rc = SLURM_SUCCESS;
+	char *tmpstr = NULL;
+
+	if (!ns_l_enabled[NS_L_USER].enabled)
+		return rc;
+
+	/* If the script is specified, it takes precidendce */
+	if (ns_conf->usernsscript) {
+		char *result = NULL;
+		run_command_args_t run_command_args = {
+			.max_wait = 10 * MSEC_IN_SEC,
+			.script_path = ns_conf->usernsscript,
+			.script_type = "UserNSScript",
+			.status = &rc,
+		};
+		run_command_args.env = _setup_script_env(step->step_id.job_id,
+							 step, NULL, NULL);
+		env_array_overwrite_fmt(&run_command_args.env, "SLURM_NS_PID",
+					"%u", pid);
+
+		log_flag(NAMESPACE, "Running UserNSScript");
+		result = run_command(&run_command_args);
+		log_flag(NAMESPACE, "UserNSScript rc: %d, stdout: %s",
+			 rc, result);
+		env_array_free(run_command_args.env);
+		xfree(result);
+
+		if (rc)
+			error("%s: UserNSScript: %s failed with rc: %d",
+			      __func__, ns_conf->usernsscript, rc);
+		goto end_it;
+	}
+
+	xstrfmtcat(tmpstr, "/proc/%d/uid_map", pid);
+	if (!(-1 != (fd = open(tmpstr, O_WRONLY)))) {
+		error("%s: open uid_map %s failed: %m", __func__, tmpstr);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	if (!(1 <= dprintf(fd, "0 0 4294967295\n"))) {
+		error("%s: write 0 0 4294967295 uid_map %s failed: %m",
+		      __func__, tmpstr);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	close(fd);
+	xfree(tmpstr);
+
+	xstrfmtcat(tmpstr, "/proc/%d/gid_map", pid);
+	if (!(-1 != (fd = open(tmpstr, O_WRONLY)))) {
+		error("%s: open gid_map failed: %m", __func__);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	if (!(1 <= dprintf(fd, "0 0 4294967295\n"))) {
+		error("%s: write 0 0 4294967295 failed: %m",
+		      __func__ );
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+end_it:
+	if (fd)
+		close(fd);
+	xfree(tmpstr);
+	return rc;
+}
+
 static int _create_ns(stepd_step_rec_t *step)
 {
 	int child_tid = 0, parent_tid = 0;
@@ -675,6 +745,15 @@ static int _create_ns(stepd_step_rec_t *step)
 			}
 			xfree(proc_path);
 		}
+
+		/* setup users before setting up the rest of the container */
+		if ((rc = _clonens_user_setup(step, cpid))) {
+			error("%s: Unable to prepare user namespace.",
+			      __func__);
+			/* error needs to fall though here */
+		}
+
+		/* Setup remainder of the container */
 		if (sem_post(sem2) < 0) {
 			error("%s: sem_post failed: %m", __func__);
 			goto exit1;
@@ -687,7 +766,9 @@ static int _create_ns(stepd_step_rec_t *step)
 			goto exit1;
 		}
 
-		rc = 0;
+		/* Any error that remains here should skip further setup */
+		if (rc)
+			goto exit1;
 	}
 
 	/* run any post clone initialization script */
