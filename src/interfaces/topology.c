@@ -418,6 +418,13 @@ extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 	xassert((idx >= 0) && (idx < tctx_num));
 
+	/*
+	 * topo_jobinfo needs to be reset in interface before entering plugin in
+	 * case it was set by a different topology plugin.
+	 */
+	topology_g_jobinfo_free(topo_eval->job_ptr->topo_jobinfo);
+	topo_eval->job_ptr->topo_jobinfo = NULL;
+
 	topo_eval->tctx = &(tctx[idx]);
 
 	return (*(ops[tctx[idx].idx].eval_nodes))(topo_eval);
