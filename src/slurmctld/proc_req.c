@@ -6854,10 +6854,43 @@ extern slurmctld_rpc_t *find_rpc(uint16_t msg_type)
 	return NULL;
 }
 
+/* Return 1 when writeable and readable or 0 on error */
+static bool _fd_is_stale(int fd)
+{
+	bool stale = false;
+	char temp[2];
+	int flags = 0;
+	bool nonblocking = true;
+
+#ifdef MSG_DONTWAIT
+	flags |= MSG_DONTWAIT;
+
+	if (!(nonblocking = fd_is_nonblocking(fd)))
+		fd_set_nonblocking(fd);
+#endif
+
+	if (send(fd, NULL, 0, flags)) {
+		log_flag(NET, "%s: [fd:%d] stale socket is not writable",
+		       __func__, fd);
+		stale = true;
+	} else if (recv(fd, &temp, 1, MSG_PEEK)) {
+		log_flag(NET, "%s: [fd:%d] stale socket is not readable",
+		       __func__, fd);
+		stale = true;
+	} else {
+		log_flag(NET, "%s: [fd:%d] socket is not stale", __func__, fd);
+	}
+
+	if (!nonblocking)
+		fd_set_blocking(fd);
+
+	return stale;
+}
+
 static bool _is_connection_stale(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc,
 				 int fd)
 {
-	if ((fd >= 0) && !fd_is_writable(fd)) {
+	if ((fd >= 0) && !_fd_is_stale(fd)) {
 		error("%s: [fd:%d] Connection is stale, discarding RPC %s from uid:%u",
 		      __func__, fd, rpc_num2string(msg->msg_type),
 		      msg->auth_uid);

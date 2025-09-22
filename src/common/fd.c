@@ -355,54 +355,6 @@ on_timeout:
 }
 
 /*
- * Check if a file descriptor is writable now.
- *
- * Return 1 when writeable or 0 on error
- */
-extern bool fd_is_writable(int fd)
-{
-	bool rc = true;
-	struct pollfd ufd;
-	int flags = 0;
-	bool nonblocking = true;
-
-#ifdef MSG_DONTWAIT
-	flags |= MSG_DONTWAIT;
-
-	if (!(nonblocking = fd_is_nonblocking(fd)))
-		fd_set_nonblocking(fd);
-#endif
-
-	/* setup call to poll */
-	ufd.fd = fd;
-	ufd.events = POLLOUT;
-
-	while (true) {
-		if (poll(&ufd, 1, 0) == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			log_flag(NET, "%s: [fd:%d] socket poll() error: %m",
-				 __func__, fd);
-			rc = false;
-			break;
-		}
-		if ((ufd.revents & POLLHUP) || send(fd, NULL, 0, flags)) {
-			log_flag(NET, "%s: [fd:%d] socket is not writable",
-			       __func__, fd);
-			rc = false;
-			break;
-		}
-		log_flag(NET, "%s: [fd:%d] socket is writable", __func__, fd);
-		break;
-	}
-
-	if (!nonblocking)
-		slurm_fd_set_blocking(fd);
-
-	return rc;
-}
-
-/*
  * fsync() then close() a file.
  * Execute fsync() and close() multiple times if necessary and log failures
  * RET 0 on success or -1 on error
