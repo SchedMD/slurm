@@ -165,6 +165,10 @@ def _check_nodes_for_features(name, nodes):
         )
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11),
+    reason="Ticket 23175: When REPLACE_DOWN flag is set for xand feature selected reservation, nodes are over-selected when replacing",
+)
 def test_reservation_by_feature_and_replace():
     """
     This only tests the simple case where the reservation expects
