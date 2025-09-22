@@ -413,8 +413,9 @@ static void *_handle_accept(void *arg)
 		goto fail;
 	}
 
-	debug3("%s: Protocol Version %d from uid=%u",
-	       __func__, client_protocol_ver, uid);
+	debug3("%s: [fd:%d] Protocol Version %d from uid=%u gid=%u pid=%lu",
+	       __func__, fd, client_protocol_ver, uid, gid,
+	       (unsigned long) remote_pid);
 
 	rc = SLURM_PROTOCOL_VERSION;
 	safe_write(fd, &rc, sizeof(int));
