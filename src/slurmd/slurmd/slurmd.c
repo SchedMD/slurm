@@ -165,8 +165,6 @@ bool tres_packed = false;
 typedef struct {
 	int magic; /* SERVICE_MSG_ARGS_MAGIC */
 	timespec_t delay;
-	int fd;
-	void *conn; /* interfaces/conn data */
 	slurm_msg_t *msg;
 } service_msg_args_t;
 
@@ -708,15 +706,8 @@ static void *_service_msg(void *arg)
 		 conmgr_con_get_name(conmgr_con), rpc_num2string(msg->msg_type),
 		 msg->auth_uid, addr, msg->protocol_version);
 
-	if (args->conn) {
-		msg->conn = args->conn;
-	} else {
-		conn_args_t conn_args = {
-			.input_fd = args->fd,
-			.output_fd = args->fd,
-		};
-		msg->conn = conn_g_create(&conn_args);
-	}
+	/* Release conmgr connection as it will have been closed */
+	conmgr_fd_free_ref(&msg->conmgr_con);
 	slurmd_req(msg);
 
 	conn_g_destroy(msg->conn, true);
@@ -2011,8 +2002,8 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(args->magic == SERVICE_MSG_ARGS_MAGIC);
 
 	if (!(rc = _increment_thd_count(false))) {
-		log_flag(NET, "%s: [%pA] detaching new thread for RPC connection",
-			 __func__, &args->msg->address);
+		log_flag(NET, "%s: [%s] detaching new thread for RPC connection",
+			 __func__, conmgr_fd_get_name(conmgr_args.con));
 
 		slurm_thread_create_detached(_service_msg, args);
 	} else {
@@ -2037,50 +2028,33 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
 			args->delay = MAX_THREAD_DELAY_MAX;
 
-		conmgr_add_work_delayed_fifo(_try_service_msg, args,
-					     args->delay.tv_sec,
-					     args->delay.tv_sec);
+		conmgr_add_work_con_delayed_fifo(conmgr_args.con,
+						 _try_service_msg, args,
+						 args->delay.tv_sec,
+						 args->delay.tv_sec);
 	}
 }
 
-static void _on_extract_fd(conmgr_callback_args_t conmgr_args,
-			   int input_fd, int output_fd, void *tls_conn,
+static void _on_extract_fd(conmgr_callback_args_t conmgr_args, void *conn,
 			   void *arg)
 {
 	service_msg_args_t *args = NULL;
 	slurm_msg_t *msg = arg;
 
-	xassert(msg);
+	xassert(!msg->conn || (msg->conn == conn));
+	msg->conn = conn;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(NET, "%s: [%s] connection work cancelled",
 			 __func__, conmgr_con_get_name(msg->conmgr_con));
-
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
-		FREE_NULL_MSG(msg);
-		return;
-	}
-
-	if ((input_fd < 0) || (output_fd < 0)) {
-		log_flag(NET, "%s: [%s] rejecting partially open connection",
-			 __func__, conmgr_con_get_name(msg->conmgr_con));
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
+		FREE_NULL_CONN(msg->conn);
 		FREE_NULL_MSG(msg);
 		return;
 	}
 
 	args = xmalloc(sizeof(*args));
 	args->magic = SERVICE_MSG_ARGS_MAGIC;
-	args->fd = input_fd;
-	args->conn = tls_conn;
 	args->msg = msg;
-
-	/* force blocking mode for blocking handlers */
-	fd_set_blocking(input_fd);
 
 	_try_service_msg(conmgr_args, args);
 }

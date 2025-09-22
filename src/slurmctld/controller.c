@@ -280,8 +280,7 @@ static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void         _send_future_cloud_to_db();
-static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *conn,
+static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 				void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
@@ -1792,23 +1791,20 @@ static void _open_ports(void)
  *	upon completion
  * RET - NULL
  */
-static void _service_connection(conmgr_callback_args_t conmgr_args,
-				int input_fd, int output_fd, void *conn,
+static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 				void *arg)
 {
 	int rc;
 	slurm_msg_t *msg = arg;
 	slurmctld_rpc_t *this_rpc = NULL;
 
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [fd:%d] connection work cancelled",
-		       __func__, input_fd);
-		goto invalid;
-	}
+	/* Set connection into message for replies */
+	xassert(!msg->conn || (msg->conn == conn));
+	msg->conn = conn;
 
-	if ((input_fd < 0) || (output_fd < 0)) {
-		error("%s: Rejecting partially open connection input_fd=%d output_fd=%d",
-		      __func__, input_fd, output_fd);
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+		debug3("%s: [%s] connection work cancelled",
+		       __func__, conmgr_fd_get_name(conmgr_args.con));
 		goto invalid;
 	}
 
@@ -1817,15 +1813,6 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	 * invalid.
 	 */
 	conmgr_fd_free_ref(&msg->conmgr_con);
-	if (conn) {
-		msg->conn = conn;
-	} else {
-		conn_args_t conn_args = {
-			.input_fd = input_fd,
-			.output_fd = output_fd,
-		};
-		msg->conn = conn_g_create(&conn_args);
-	}
 
 	server_thread_incr();
 
@@ -1847,10 +1834,9 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
-		conn_g_destroy(msg->conn, true);
-		msg->conn = NULL;
-		log_flag(TLS, "Destroyed server TLS connection for incoming RPC on fd %d->%d",
-			 input_fd, output_fd);
+		FREE_NULL_CONN(msg->conn);
+		log_flag(TLS, "[%s] Destroyed server TLS connection for incoming RPC",
+			 conmgr_fd_get_name(conmgr_args.con));
 		slurm_free_msg(msg);
 	}
 
@@ -1859,13 +1845,8 @@ static void _service_connection(conmgr_callback_args_t conmgr_args,
 
 invalid:
 	/* Cleanup for invalid RPC */
-	if (!conn) {
-		if (input_fd != output_fd)
-			fd_close(&output_fd);
-		fd_close(&input_fd);
-	}
+	FREE_NULL_CONN(msg->conn);
 	slurm_free_msg(msg);
-	conn_g_destroy(conn, true);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */

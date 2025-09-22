@@ -597,6 +597,54 @@ static int _handle_connection_write(conmgr_fd_t *con,
 	return 0;
 }
 
+/* True when ready to queue up on_extract() */
+static bool can_extract(conmgr_fd_t *con, const bool is_tls)
+{
+	/* Extract not queued */
+	if (!con->on_extract.func)
+		return false;
+
+	/* Extract as failure state as file descriptor already closed */
+	if ((con->input_fd < 0) || (con->output_fd < 0) ||
+	    con_flag(con, FLAG_READ_EOF))
+		return true;
+
+	/* Do not extract while waiting for fingerprint */
+	if (con_flag(con, FLAG_TLS_FINGERPRINT))
+		return false;
+
+	/* Waiting for TLS negotiation */
+	if (is_tls && (con_flag(con, FLAG_IS_TLS_CONNECTED) ||
+		       con_flag(con, FLAG_WAIT_ON_FINISH)))
+		return false;
+
+	/* Wait to extract until Quiesce has ended */
+	if (con_flag(con, FLAG_QUIESCE))
+		return false;
+
+	/* Pending output data */
+	if (!list_is_empty(con->out))
+		return false;
+
+	/* Pending TLS output data */
+	if (con->tls_out && !list_is_empty(con->tls_out))
+		return false;
+
+	/* Pending inbound TLS data */
+	if (con->tls_in && get_buf_offset(con->tls_in))
+		return false;
+
+	/* Pending inbound data */
+	if (get_buf_offset(con->in))
+		return false;
+
+	/* Wait for on_finish() to complete first */
+	if (con_flag(con, FLAG_WAIT_ON_FINISH))
+		return false;
+
+	return true;
+}
+
 /*
  * handle connection states and apply actions required.
  * mgr mutex must be locked.
@@ -755,19 +803,20 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (con->extract && !con_flag(con, FLAG_TLS_FINGERPRINT) &&
-	    (!is_tls || (con_flag(con, FLAG_IS_TLS_CONNECTED) &&
-			 !con_flag(con, FLAG_WAIT_ON_FINISH))) &&
-	    !con_flag(con, FLAG_QUIESCE) && list_is_empty(con->out) &&
-	    (!con->tls_out || list_is_empty(con->tls_out)) &&
-	    (!con->tls_in || !get_buf_offset(con->tls_in)) &&
-	    !con_flag(con, FLAG_READ_EOF) &&
-	    !con_flag(con, FLAG_WAIT_ON_FINISH) && !get_buf_offset(con->in)) {
+	if (con_flag(con, FLAG_WAIT_ON_EXTRACT)) {
+		log_flag(CONMGR, "%s: [%s] waiting on connection extraction",
+			 __func__, con->name);
+		return 0;
+	}
+
+	if (can_extract(con, is_tls)) {
 		/*
 		 * extraction of file descriptors requested
-		 * but only after starting TLS if needed
+		 * but only after starting TLS if needed or connection already
+		 * closed
 		 */
-		extract_con_fd(con);
+		con_set_flag(con, FLAG_WAIT_ON_EXTRACT);
+		add_work_con_fifo(true, con, on_extract, NULL);
 		return 0;
 	}
 

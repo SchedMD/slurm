@@ -847,12 +847,10 @@ extern bool conmgr_enabled(void);
 /*
  * Callback function for when connection file descriptors extracted
  * IN conmgr_args - Args relaying conmgr callback state
- * IN input_fd - input file descriptor or -1 - Ownership is transferred.
- * IN output_fd - output file descriptor or -1 - Ownership is transferred.
- * IN tls_connn - TLS connection state or NULL
+ * IN tls_conn - extracted interface/connection pointer (or NULL on failure)
+ * IN arg - arbitrary pointer func_arg handed to conmgr_queue_extract_con_fd()
  */
 typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
-					 int input_fd, int output_fd,
 					 void *tls_conn, void *arg);
 
 /*
@@ -861,13 +859,15 @@ typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
  *	connection.
  * WARNING: Only to be used for conversion to conmgr where file descriptors must
  *	be controlled by non-conmgr code.
+ * WARNING: Only 1 extraction can be requested at any 1 time for a given
+ *	connection.
  *
  * IN con - connection to extract file descriptors from
  * IN func - callback function when extraction is complete to take ownership of
  *	file descriptors
  * IN func_name - XSTRINGIFY(func) for logging
  * IN func_arg - arbitrary pointer passed directly to func
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS or EEXIST if already extracting or error
  */
 extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 				       conmgr_extract_fd_func_t func,

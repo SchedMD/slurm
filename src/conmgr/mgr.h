@@ -60,17 +60,6 @@
 #define BUFFER_START_SIZE 4096
 
 typedef struct {
-#define MAGIC_EXTRACT_FD 0xabf8e2a3
-	int magic; /* MAGIC_EXTRACT_FD */
-	int input_fd;
-	int output_fd;
-	void *tls_conn; /* TLS state */
-	conmgr_extract_fd_func_t func;
-	const char *func_name;
-	void *func_arg;
-} extract_fd_t;
-
-typedef struct {
 #define MAGIC_WORK 0xD231444A
 	int magic; /* MAGIC_WORK */
 	conmgr_work_status_t status;
@@ -151,6 +140,8 @@ typedef enum {
 	FLAG_TLS_WAIT_ON_CLOSE = SLURM_BIT(22),
 	/* @see CON_FLAG_RPC_RECV_FORWARD */
 	FLAG_RPC_RECV_FORWARD = CON_FLAG_RPC_RECV_FORWARD,
+	/* True if on_fingerprint() pending */
+	FLAG_WAIT_ON_EXTRACT = SLURM_BIT(24),
 } con_flags_t;
 
 /* Mask over flags that track connection state */
@@ -218,8 +209,12 @@ struct conmgr_fd_s {
 	/* socket maximum segment size (MSS) or NO_VAL if not known */
 	int mss;
 
-	/* queued extraction of input_fd/output_fd request */
-	extract_fd_t *extract;
+	/* Function to call on connection extraction */
+	struct {
+		conmgr_extract_fd_func_t func;
+		const char *func_name;
+		void *func_arg;
+	} on_extract;
 
 	/*
 	 * Current active polling (if any).
@@ -621,7 +616,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
 /*
  * Extract connection file descriptors
  */
-extern void extract_con_fd(conmgr_fd_t *con);
+extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Create new connection reference
