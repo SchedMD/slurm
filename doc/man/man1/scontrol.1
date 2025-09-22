@@ -2500,7 +2500,7 @@ If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
 job must match all in order to use the reservation.
 Partition can also be denied access to reservations by preceding all of the
 Partition names with '\-'. Alternately precede the equal sign with '\-'.
-For example, "Partition=\-debug,\-low" or "Partition\-=debug,low"
+For example, "AllowedPartitions=\-debug,\-low" or "AllowedPartitions\-=debug,low"
 will permit any Partition except debug and low to use the reservation.
 You can add or remove individual Partition from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
