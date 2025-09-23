@@ -2305,8 +2305,6 @@ function __slurm_comp_sacctmgr_spec_resources() {
 		"withclusters"
 		"withdeleted"
 	)
-	local condition_set
-	condition_set="$(__slurm_find_subcmd "${conditions[1]}")"
 	local flags=(
 	)
 	local types=(
