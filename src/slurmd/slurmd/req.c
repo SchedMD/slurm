@@ -481,184 +481,6 @@ static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_PRIVATE_DATA, true);
 }
 
-void
-slurmd_req(slurm_msg_t *msg)
-{
-	if (msg == NULL) {
-		if (startup == 0)
-			startup = time(NULL);
-		slurm_mutex_lock(&waiter_mutex);
-		FREE_NULL_LIST(waiters);
-		slurm_mutex_unlock(&waiter_mutex);
-		slurm_mutex_lock(&job_limits_mutex);
-		if (job_limits_list) {
-			FREE_NULL_LIST(job_limits_list);
-			job_limits_loaded = false;
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
-		return;
-	}
-
-	if (!msg->auth_ids_set) {
-		error("%s: received message without previously validated auth",
-		      __func__);
-		return;
-	}
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
-		const char *p = rpc_num2string(msg->msg_type);
-		info("%s: received opcode %s from %pA uid %u",
-		     __func__, p, &msg->address, msg->auth_uid);
-	}
-
-	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
-	switch (msg->msg_type) {
-	case REQUEST_LAUNCH_PROLOG:
-		_rpc_prolog(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_BATCH_JOB_LAUNCH:
-		_rpc_batch_job(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		_rpc_launch_tasks(msg);
-		break;
-	case REQUEST_SIGNAL_TASKS:
-		_rpc_signal_tasks(msg);
-		break;
-	case REQUEST_TERMINATE_TASKS:
-		_rpc_terminate_tasks(msg);
-		break;
-	case REQUEST_KILL_PREEMPTED:
-		last_slurmctld_msg = time(NULL);
-		_rpc_timelimit(msg);
-		break;
-	case REQUEST_KILL_TIMELIMIT:
-		last_slurmctld_msg = time(NULL);
-		_rpc_timelimit(msg);
-		break;
-	case REQUEST_REATTACH_TASKS:
-		_rpc_reattach_tasks(msg);
-		break;
-	case REQUEST_SUSPEND_INT:
-		_rpc_suspend_job(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_ABORT_JOB:
-		last_slurmctld_msg = time(NULL);
-		_rpc_abort_job(msg);
-		break;
-	case REQUEST_TERMINATE_JOB:
-		last_slurmctld_msg = time(NULL);
-		_rpc_terminate_job(msg);
-		break;
-	case REQUEST_SHUTDOWN:
-		_rpc_shutdown(msg);
-		break;
-	case REQUEST_RECONFIGURE:
-		_rpc_reconfig(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_SET_DEBUG_FLAGS:
-		_rpc_set_slurmd_debug_flags(msg);
-		break;
-	case REQUEST_SET_DEBUG_LEVEL:
-		_rpc_set_slurmd_debug(msg);
-		break;
-	case REQUEST_RECONFIGURE_WITH_CONFIG:
-		_rpc_reconfig_with_config(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_REBOOT_NODES:
-		_rpc_reboot(msg);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
-		_rpc_ping(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_PING:
-		_rpc_ping(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_HEALTH_CHECK:
-		_rpc_health_check(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_ACCT_GATHER_UPDATE:
-		_rpc_acct_gather_update(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_ACCT_GATHER_ENERGY:
-		_rpc_acct_gather_energy(msg);
-		break;
-	case REQUEST_JOB_ID:
-		_rpc_pid2jid(msg);
-		break;
-	case REQUEST_FILE_BCAST:
-		_rpc_file_bcast(msg);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		_rpc_step_complete(msg);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		_slurm_rpc_job_step_create(msg);
-		break;
-	case REQUEST_JOB_STEP_STAT:
-		_rpc_stat_jobacct(msg);
-		break;
-	case REQUEST_JOB_STEP_PIDS:
-		_rpc_list_pids(msg);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		_slurm_rpc_job_step_get_info(msg);
-		break;
-	case REQUEST_DAEMON_STATUS:
-		_rpc_daemon_status(msg);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		_rpc_job_notify(msg);
-		break;
-	case REQUEST_FORWARD_DATA:
-		_rpc_forward_data(msg);
-		break;
-	case REQUEST_NETWORK_CALLERID:
-		_rpc_network_callerid(msg);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(msg);
-		break;
-	case SRUN_JOB_COMPLETE:
-		_slurm_rpc_srun_job_complete(msg);
-		break;
-	case SRUN_NODE_FAIL:
-		_slurm_rpc_srun_node_fail(msg);
-		break;
-	case SRUN_TIMEOUT:
-		_slurm_rpc_srun_timeout(msg);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		_slurm_rpc_update_step(msg);
-		break;
-	case REQUEST_STEP_LAYOUT:
-		_slurm_rpc_step_layout(msg);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_slurm_rpc_sbcast_cred(msg);
-		break;
-	case REQUEST_HET_JOB_ALLOC_INFO:
-		_slurm_het_job_alloc_info(msg);
-		break;
-	default:
-		error("%s: invalid request msg type %d",
-		      __func__, msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
-		break;
-	}
-	return;
-}
-
 extern int send_slurmd_conf_lite(int fd, slurmd_conf_t *cf)
 {
 	int len;
@@ -6065,4 +5887,181 @@ static void _launch_complete_wait(uint32_t job_id)
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job wait", job_id);
+}
+
+extern void slurmd_req(slurm_msg_t *msg)
+{
+	if (msg == NULL) {
+		if (startup == 0)
+			startup = time(NULL);
+		slurm_mutex_lock(&waiter_mutex);
+		FREE_NULL_LIST(waiters);
+		slurm_mutex_unlock(&waiter_mutex);
+		slurm_mutex_lock(&job_limits_mutex);
+		if (job_limits_list) {
+			FREE_NULL_LIST(job_limits_list);
+			job_limits_loaded = false;
+		}
+		slurm_mutex_unlock(&job_limits_mutex);
+		return;
+	}
+
+	if (!msg->auth_ids_set) {
+		error("%s: received message without previously validated auth",
+		      __func__);
+		return;
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
+		const char *p = rpc_num2string(msg->msg_type);
+		info("%s: received opcode %s from %pA uid %u",
+		     __func__, p, &msg->address, msg->auth_uid);
+	}
+
+	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
+	switch (msg->msg_type) {
+	case REQUEST_LAUNCH_PROLOG:
+		_rpc_prolog(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_BATCH_JOB_LAUNCH:
+		_rpc_batch_job(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_LAUNCH_TASKS:
+		_rpc_launch_tasks(msg);
+		break;
+	case REQUEST_SIGNAL_TASKS:
+		_rpc_signal_tasks(msg);
+		break;
+	case REQUEST_TERMINATE_TASKS:
+		_rpc_terminate_tasks(msg);
+		break;
+	case REQUEST_KILL_PREEMPTED:
+		last_slurmctld_msg = time(NULL);
+		_rpc_timelimit(msg);
+		break;
+	case REQUEST_KILL_TIMELIMIT:
+		last_slurmctld_msg = time(NULL);
+		_rpc_timelimit(msg);
+		break;
+	case REQUEST_REATTACH_TASKS:
+		_rpc_reattach_tasks(msg);
+		break;
+	case REQUEST_SUSPEND_INT:
+		_rpc_suspend_job(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_ABORT_JOB:
+		last_slurmctld_msg = time(NULL);
+		_rpc_abort_job(msg);
+		break;
+	case REQUEST_TERMINATE_JOB:
+		last_slurmctld_msg = time(NULL);
+		_rpc_terminate_job(msg);
+		break;
+	case REQUEST_SHUTDOWN:
+		_rpc_shutdown(msg);
+		break;
+	case REQUEST_RECONFIGURE:
+		_rpc_reconfig(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_SET_DEBUG_FLAGS:
+		_rpc_set_slurmd_debug_flags(msg);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+		_rpc_set_slurmd_debug(msg);
+		break;
+	case REQUEST_RECONFIGURE_WITH_CONFIG:
+		_rpc_reconfig_with_config(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_REBOOT_NODES:
+		_rpc_reboot(msg);
+		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
+		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
+		_rpc_ping(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_PING:
+		_rpc_ping(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_HEALTH_CHECK:
+		_rpc_health_check(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_ACCT_GATHER_UPDATE:
+		_rpc_acct_gather_update(msg);
+		last_slurmctld_msg = time(NULL);
+		break;
+	case REQUEST_ACCT_GATHER_ENERGY:
+		_rpc_acct_gather_energy(msg);
+		break;
+	case REQUEST_JOB_ID:
+		_rpc_pid2jid(msg);
+		break;
+	case REQUEST_FILE_BCAST:
+		_rpc_file_bcast(msg);
+		break;
+	case REQUEST_STEP_COMPLETE:
+		_rpc_step_complete(msg);
+		break;
+	case REQUEST_JOB_STEP_CREATE:
+		_slurm_rpc_job_step_create(msg);
+		break;
+	case REQUEST_JOB_STEP_STAT:
+		_rpc_stat_jobacct(msg);
+		break;
+	case REQUEST_JOB_STEP_PIDS:
+		_rpc_list_pids(msg);
+		break;
+	case REQUEST_JOB_STEP_INFO:
+		_slurm_rpc_job_step_get_info(msg);
+		break;
+	case REQUEST_DAEMON_STATUS:
+		_rpc_daemon_status(msg);
+		break;
+	case REQUEST_JOB_NOTIFY:
+		_rpc_job_notify(msg);
+		break;
+	case REQUEST_FORWARD_DATA:
+		_rpc_forward_data(msg);
+		break;
+	case REQUEST_NETWORK_CALLERID:
+		_rpc_network_callerid(msg);
+		break;
+	case REQUEST_CANCEL_JOB_STEP:
+		_slurm_rpc_job_step_kill(msg);
+		break;
+	case SRUN_JOB_COMPLETE:
+		_slurm_rpc_srun_job_complete(msg);
+		break;
+	case SRUN_NODE_FAIL:
+		_slurm_rpc_srun_node_fail(msg);
+		break;
+	case SRUN_TIMEOUT:
+		_slurm_rpc_srun_timeout(msg);
+		break;
+	case REQUEST_UPDATE_JOB_STEP:
+		_slurm_rpc_update_step(msg);
+		break;
+	case REQUEST_STEP_LAYOUT:
+		_slurm_rpc_step_layout(msg);
+		break;
+	case REQUEST_JOB_SBCAST_CRED:
+		_slurm_rpc_sbcast_cred(msg);
+		break;
+	case REQUEST_HET_JOB_ALLOC_INFO:
+		_slurm_het_job_alloc_info(msg);
+		break;
+	default:
+		error("%s: invalid request msg type %d",
+		      __func__, msg->msg_type);
+		slurm_send_rc_msg(msg, EINVAL);
+		break;
+	}
+	return;
 }
