@@ -2793,54 +2793,50 @@ _rpc_reboot(slurm_msg_t *msg)
 	reboot_msg_t *reboot_msg;
 	slurm_conf_t *cfg;
 	int exit_code;
+	bool need_reboot = true;
 
-	if (!_slurm_authorized_user(msg->auth_uid))
-		error("Security violation, reboot RPC from uid %u",
-		      msg->auth_uid);
-	else {
-		bool need_reboot = true;
-		cfg = slurm_conf_lock();
-		reboot_program = cfg->reboot_program;
-		reboot_msg = msg->data;
+	cfg = slurm_conf_lock();
+	reboot_program = cfg->reboot_program;
+	reboot_msg = msg->data;
 
-		if (reboot_msg && reboot_msg->features) {
+	if (reboot_msg && reboot_msg->features) {
+		/*
+		 * Run node_features_g_node_set first to check
+		 * if reboot will be required.
+		 */
+		char *new_features = xstrdup(reboot_msg->features);
+		info("Node features change request %s being processed",
+		     reboot_msg->features);
+		if (node_features_g_node_set(reboot_msg->features,
+					     &need_reboot)) {
+			error("Failed to set features: '%s'.",
+			      new_features);
+			update_node_msg_t update_node_msg;
+			slurm_init_update_node_msg(&update_node_msg);
+			update_node_msg.node_names = conf->node_name;
+			update_node_msg.node_state = NODE_STATE_DOWN;
+			xstrfmtcat(update_node_msg.reason,
+				   "Failed to set node feature(s): '%s'",
+				   new_features);
+			slurm_conf_unlock();
+
 			/*
-			 * Run node_features_g_node_set first to check
-			 * if reboot will be required.
+			 * Send updated registration to clear booting
+			 * state on controller and then down the node
+			 * with the failure reason so it's the last
+			 * reason displayed.
 			 */
-			char *new_features = xstrdup(reboot_msg->features);
-			info("Node features change request %s being processed",
-			     reboot_msg->features);
-			if (node_features_g_node_set(reboot_msg->features,
-						     &need_reboot)) {
-				error("Failed to set features: '%s'.",
-				      new_features);
-				update_node_msg_t update_node_msg;
-				slurm_init_update_node_msg(&update_node_msg);
-				update_node_msg.node_names = conf->node_name;
-				update_node_msg.node_state = NODE_STATE_DOWN;
-				xstrfmtcat(update_node_msg.reason,
-					   "Failed to set node feature(s): '%s'",
-					   new_features);
-				slurm_conf_unlock();
+			conf->boot_time = time(NULL);
+			send_registration_msg(SLURM_SUCCESS);
+			slurm_update_node(&update_node_msg);
 
-				/*
-				 * Send updated registration to clear booting
-				 * state on controller and then down the node
-				 * with the failure reason so it's the last
-				 * reason displayed.
-				 */
-				conf->boot_time = time(NULL);
-				send_registration_msg(SLURM_SUCCESS);
-				slurm_update_node(&update_node_msg);
-
-				xfree(update_node_msg.reason);
-				xfree(new_features);
-				return;
-			}
+			xfree(update_node_msg.reason);
 			xfree(new_features);
-			log_flag(NODE_FEATURES, "Features on node updated successfully");
+			return;
 		}
+		xfree(new_features);
+		log_flag(NODE_FEATURES, "Features on node updated successfully");
+	}
 		if (!need_reboot) {
 			log_flag(NODE_FEATURES, "Reboot not required - sending registration message");
 			conf->boot_time = time(NULL);
@@ -2897,7 +2893,6 @@ _rpc_reboot(slurm_msg_t *msg)
 			error("RebootProgram isn't defined in config");
 			slurm_conf_unlock();
 		}
-	}
 
 	/* Never return a message, slurmctld does not expect one */
 	/* slurm_send_rc_msg(msg, rc); */
@@ -5796,6 +5791,7 @@ slurmd_rpc_t slurmd_rpcs[] =
 		.func = _rpc_reconfig,
 	},{
 		.msg_type = REQUEST_REBOOT_NODES,
+		.from_slurmctld = true,
 		.func = _rpc_reboot,
 	},{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
