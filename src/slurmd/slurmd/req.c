@@ -5889,8 +5889,162 @@ static void _launch_complete_wait(uint32_t job_id)
 	_launch_complete_log("job wait", job_id);
 }
 
+typedef struct {
+	uint16_t msg_type;
+	bool from_slurmctld;
+	void (*func)(slurm_msg_t *msg);
+} slurmd_rpc_t;
+
+slurmd_rpc_t slurmd_rpcs[] =
+{
+	{
+		.msg_type = REQUEST_LAUNCH_PROLOG,
+		.from_slurmctld = true,
+		.func = _rpc_prolog,
+	},{
+		.msg_type = REQUEST_BATCH_JOB_LAUNCH,
+		.from_slurmctld = true,
+		.func = _rpc_batch_job,
+	},{
+		.msg_type = REQUEST_LAUNCH_TASKS,
+		.func = _rpc_launch_tasks,
+	},{
+		.msg_type = REQUEST_SIGNAL_TASKS,
+		.func = _rpc_signal_tasks,
+	},{
+		.msg_type = REQUEST_TERMINATE_TASKS,
+		.func = _rpc_terminate_tasks,
+	},{
+		.msg_type = REQUEST_KILL_PREEMPTED,
+		.from_slurmctld = true,
+		.func = _rpc_timelimit,
+	},{
+		.msg_type = REQUEST_KILL_TIMELIMIT,
+		.from_slurmctld = true,
+		.func = _rpc_timelimit,
+	},{
+		.msg_type = REQUEST_REATTACH_TASKS,
+		.func = _rpc_reattach_tasks,
+	},{
+		.msg_type = REQUEST_SUSPEND_INT,
+		.from_slurmctld = true,
+		.func = _rpc_suspend_job,
+	},{
+		.msg_type = REQUEST_ABORT_JOB,
+		.from_slurmctld = true,
+		.func = _rpc_abort_job,
+	},{
+		.msg_type = REQUEST_TERMINATE_JOB,
+		.from_slurmctld = true,
+		.func = _rpc_terminate_job,
+	},{
+		.msg_type = REQUEST_SHUTDOWN,
+		.func = _rpc_shutdown,
+	},{
+		.msg_type = REQUEST_RECONFIGURE,
+		.from_slurmctld = true,
+		.func = _rpc_reconfig,
+	},{
+		.msg_type = REQUEST_SET_DEBUG_FLAGS,
+		.func = _rpc_set_slurmd_debug_flags,
+	},{
+		.msg_type = REQUEST_SET_DEBUG_LEVEL,
+		.func = _rpc_set_slurmd_debug,
+	},{
+		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
+		.from_slurmctld = true,
+		.func = _rpc_reconfig_with_config,
+	},{
+		.msg_type = REQUEST_REBOOT_NODES,
+		.func = _rpc_reboot,
+	},{
+		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
+		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
+		.from_slurmctld = true,
+		.func = _rpc_ping,
+	},{
+		.msg_type = REQUEST_PING,
+		.from_slurmctld = true,
+		.func = _rpc_ping,
+	},{
+		.msg_type = REQUEST_HEALTH_CHECK,
+		.from_slurmctld = true,
+		.func = _rpc_health_check,
+	},{
+		.msg_type = REQUEST_ACCT_GATHER_UPDATE,
+		.from_slurmctld = true,
+		.func = _rpc_acct_gather_update,
+	},{
+		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
+		.func = _rpc_acct_gather_energy,
+	},{
+		.msg_type = REQUEST_JOB_ID,
+		.func = _rpc_pid2jid,
+	},{
+		.msg_type = REQUEST_FILE_BCAST,
+		.func = _rpc_file_bcast,
+	},{
+		.msg_type = REQUEST_STEP_COMPLETE,
+		.func = _rpc_step_complete,
+	},{
+		.msg_type = REQUEST_JOB_STEP_CREATE,
+		.func = _slurm_rpc_job_step_create,
+	},{
+		.msg_type = REQUEST_JOB_STEP_STAT,
+		.func = _rpc_stat_jobacct,
+	},{
+		.msg_type = REQUEST_JOB_STEP_PIDS,
+		.func = _rpc_list_pids,
+	},{
+		.msg_type = REQUEST_JOB_STEP_INFO,
+		.func = _slurm_rpc_job_step_get_info,
+	},{
+		.msg_type = REQUEST_DAEMON_STATUS,
+		.func = _rpc_daemon_status,
+	},{
+		.msg_type = REQUEST_JOB_NOTIFY,
+		.func = _rpc_job_notify,
+	},{
+		.msg_type = REQUEST_FORWARD_DATA,
+		.func = _rpc_forward_data,
+	},{
+		.msg_type = REQUEST_NETWORK_CALLERID,
+		.func = _rpc_network_callerid,
+	},{
+		.msg_type = REQUEST_CANCEL_JOB_STEP,
+		.func = _slurm_rpc_job_step_kill,
+	},{
+		.msg_type = SRUN_JOB_COMPLETE,
+		.func = _slurm_rpc_srun_job_complete,
+	},{
+		.msg_type = SRUN_NODE_FAIL,
+		.func = _slurm_rpc_srun_node_fail,
+	},{
+		.msg_type = SRUN_TIMEOUT,
+		.func = _slurm_rpc_srun_timeout,
+	},{
+		.msg_type = REQUEST_UPDATE_JOB_STEP,
+		.func = _slurm_rpc_update_step,
+	},{
+		.msg_type = REQUEST_STEP_LAYOUT,
+		.func = _slurm_rpc_step_layout,
+	},{
+		.msg_type = REQUEST_JOB_SBCAST_CRED,
+		.func = _slurm_rpc_sbcast_cred,
+	},{
+		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
+		.func = _slurm_het_job_alloc_info,
+	},{
+		/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
 extern void slurmd_req(slurm_msg_t *msg)
 {
+	slurmd_rpc_t *this_rpc = NULL;
+
 	if (msg == NULL) {
 		if (startup == 0)
 			startup = time(NULL);
@@ -5919,149 +6073,21 @@ extern void slurmd_req(slurm_msg_t *msg)
 	}
 
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
-	switch (msg->msg_type) {
-	case REQUEST_LAUNCH_PROLOG:
-		_rpc_prolog(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_BATCH_JOB_LAUNCH:
-		_rpc_batch_job(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		_rpc_launch_tasks(msg);
-		break;
-	case REQUEST_SIGNAL_TASKS:
-		_rpc_signal_tasks(msg);
-		break;
-	case REQUEST_TERMINATE_TASKS:
-		_rpc_terminate_tasks(msg);
-		break;
-	case REQUEST_KILL_PREEMPTED:
-		last_slurmctld_msg = time(NULL);
-		_rpc_timelimit(msg);
-		break;
-	case REQUEST_KILL_TIMELIMIT:
-		last_slurmctld_msg = time(NULL);
-		_rpc_timelimit(msg);
-		break;
-	case REQUEST_REATTACH_TASKS:
-		_rpc_reattach_tasks(msg);
-		break;
-	case REQUEST_SUSPEND_INT:
-		_rpc_suspend_job(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_ABORT_JOB:
-		last_slurmctld_msg = time(NULL);
-		_rpc_abort_job(msg);
-		break;
-	case REQUEST_TERMINATE_JOB:
-		last_slurmctld_msg = time(NULL);
-		_rpc_terminate_job(msg);
-		break;
-	case REQUEST_SHUTDOWN:
-		_rpc_shutdown(msg);
-		break;
-	case REQUEST_RECONFIGURE:
-		_rpc_reconfig(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_SET_DEBUG_FLAGS:
-		_rpc_set_slurmd_debug_flags(msg);
-		break;
-	case REQUEST_SET_DEBUG_LEVEL:
-		_rpc_set_slurmd_debug(msg);
-		break;
-	case REQUEST_RECONFIGURE_WITH_CONFIG:
-		_rpc_reconfig_with_config(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_REBOOT_NODES:
-		_rpc_reboot(msg);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
-		_rpc_ping(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_PING:
-		_rpc_ping(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_HEALTH_CHECK:
-		_rpc_health_check(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_ACCT_GATHER_UPDATE:
-		_rpc_acct_gather_update(msg);
-		last_slurmctld_msg = time(NULL);
-		break;
-	case REQUEST_ACCT_GATHER_ENERGY:
-		_rpc_acct_gather_energy(msg);
-		break;
-	case REQUEST_JOB_ID:
-		_rpc_pid2jid(msg);
-		break;
-	case REQUEST_FILE_BCAST:
-		_rpc_file_bcast(msg);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		_rpc_step_complete(msg);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		_slurm_rpc_job_step_create(msg);
-		break;
-	case REQUEST_JOB_STEP_STAT:
-		_rpc_stat_jobacct(msg);
-		break;
-	case REQUEST_JOB_STEP_PIDS:
-		_rpc_list_pids(msg);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		_slurm_rpc_job_step_get_info(msg);
-		break;
-	case REQUEST_DAEMON_STATUS:
-		_rpc_daemon_status(msg);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		_rpc_job_notify(msg);
-		break;
-	case REQUEST_FORWARD_DATA:
-		_rpc_forward_data(msg);
-		break;
-	case REQUEST_NETWORK_CALLERID:
-		_rpc_network_callerid(msg);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(msg);
-		break;
-	case SRUN_JOB_COMPLETE:
-		_slurm_rpc_srun_job_complete(msg);
-		break;
-	case SRUN_NODE_FAIL:
-		_slurm_rpc_srun_node_fail(msg);
-		break;
-	case SRUN_TIMEOUT:
-		_slurm_rpc_srun_timeout(msg);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		_slurm_rpc_update_step(msg);
-		break;
-	case REQUEST_STEP_LAYOUT:
-		_slurm_rpc_step_layout(msg);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_slurm_rpc_sbcast_cred(msg);
-		break;
-	case REQUEST_HET_JOB_ALLOC_INFO:
-		_slurm_het_job_alloc_info(msg);
-		break;
-	default:
-		error("%s: invalid request msg type %d",
+
+	for (this_rpc = slurmd_rpcs; this_rpc->msg_type; this_rpc++) {
+		if (this_rpc->msg_type == msg->msg_type)
+			break;
+	}
+
+	if (!this_rpc->msg_type) {
+		error("%s: invalid request for msg_type %u",
 		      __func__, msg->msg_type);
 		slurm_send_rc_msg(msg, EINVAL);
-		break;
+		return;
 	}
-	return;
+
+	if (this_rpc->from_slurmctld)
+		last_slurmctld_msg = time(NULL);
+
+	this_rpc->func(msg);
 }
