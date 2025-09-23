@@ -38,8 +38,8 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"
 
-#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
 
