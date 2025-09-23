@@ -515,6 +515,8 @@ extern int switch_p_job_init(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 	}
 
+	log_flag(SWITCH, "%s: Running IMEX channel setup", __func__);
+
 	return _stepd_setup_imex_channel(step);
 }
 
@@ -603,6 +605,8 @@ extern void switch_p_job_start(job_record_t *job_ptr)
 	job_ptr->switch_jobinfo = switch_jobinfo = _create_info(NULL);
 	args.channel_list = &switch_jobinfo->channel_list;
 
+	log_flag(SWITCH, "%s: Starting %pJ", __func__, job_ptr);
+
 	if (job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) {
 		/*
 		 * Remove this case when 25.05 support is no longer supported.
@@ -640,6 +644,8 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 
 extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
+	log_flag(SWITCH, "%s: Running IMEX channel setup", __func__);
+
 	return _stepd_setup_imex_channel(step);
 }
 
@@ -652,6 +658,10 @@ extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
 		log_flag(SWITCH, "no channels for %pJ", job_ptr);
 		return;
 	}
+
+	log_flag(SWITCH, "%s: Creating extern step info for %pJ",
+		 __func__, job_ptr);
+
 	/* Copy job channel list to step switch info */
 	*stepinfo = _create_info(jobinfo->channel_list);
 
