@@ -165,6 +165,10 @@ def _check_nodes_for_features(name, nodes):
         )
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11),
+    reason="Ticket 23175: When REPLACE_DOWN flag is set for xand feature selected reservation, nodes are over-selected when replacing",
+)
 def test_reservation_by_feature_and_replace():
     """
     This only tests the simple case where the reservation expects
@@ -200,7 +204,7 @@ def test_reservation_by_feature_and_replace():
             f"scontrol create reservation reservationname={res_name} "
             f"user={atf.properties['test-user']} start=now duration=1 "
             f"partition={part_name} "
-            f"features='[{"&".join(f"{s}*1" for s in feature_list)}]' "
+            f"features='[{'&'.join(s + '*1' for s in feature_list)}]' "
             f"NodeCnt={f_len} flags=REPLACE_DOWN",
             user=atf.properties["slurm-user"],
             fatal=True,

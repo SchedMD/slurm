@@ -126,22 +126,34 @@ def _bring_node_up(node: str):
             False,
         ),
         # MAINT vs Normal - replacement must NOT overlap
-        (
+        pytest.param(
             ("resv_a3", "MAINT"),
             ("resv_b3", ""),
             False,
+            marks=pytest.mark.xfail(
+                atf.get_version() < (25, 11),
+                reason="Ticket 23547: Do not select replacement nodes from MAINT reservations",
+            ),
         ),
         # MAINT vs REPLACE_DOWN - replacement must NOT overlap
-        (
+        pytest.param(
             ("resv_a4", "MAINT"),
             ("resv_b4", "REPLACE_DOWN"),
             False,
+            marks=pytest.mark.xfail(
+                atf.get_version() < (25, 11),
+                reason="Ticket 23547: Do not select replacement nodes from MAINT reservations",
+            ),
         ),
         # MAINT vs REPLACE - replacement must NOT overlap
-        (
+        pytest.param(
             ("resv_a5", "MAINT"),
             ("resv_b5", "REPLACE"),
             False,
+            marks=pytest.mark.xfail(
+                atf.get_version() < (25, 11),
+                reason="Ticket 23547: Do not select replacement nodes from MAINT reservations",
+            ),
         ),
         # OVERLAP vs Normal - replacement overlap is allowed
         (
