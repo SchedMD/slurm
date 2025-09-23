@@ -795,6 +795,15 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output);
 extern int conmgr_fd_get_input_fd(conmgr_fd_t *con);
 
 /*
+ * Get connection input file descriptor
+ * WARNING: returned input_fd may become invalid at any time after return
+ * IN ref - connection reference to query
+ * IN input_fd_ptr - pointer to be populated on success
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_get_input_fd(conmgr_fd_ref_t *ref, int *input_fd_ptr);
+
+/*
  * Get output file descriptor
  * WARNING: fd is only valid until return from callback and may close due to
  * other calls against connection
