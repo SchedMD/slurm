@@ -115,7 +115,6 @@ test1.36   Test parallel launch of srun (e.g. "srun srun hostname")
 test1.37   Test of srun --ntasks-per-node option.
 test1.38   Test srun handling of SIGINT to get task status or kill the job
 	   (--quit-on-interrupt option).
-test1.40   Test of job account (--account option).
 test1.41   Validate Slurm debugger infrastructure (--debugger-test option).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.
@@ -818,6 +817,8 @@ test_105_4   /commands/sbatch/test_--usage.py
 test_105_5   Test sbatch --output and --error options work, including use of spaces, %j, and %u
 test_105_6   Test #SBATCH directives in sbatch scripts
 test_105_7   Test accounting for GPU resources with various allocation options
+test_105_8   Test of job account (--account option).
+
 
 test_106_#   Testing of sbcast options.
 =======================================
