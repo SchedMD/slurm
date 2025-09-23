@@ -1,29 +1,6 @@
 # shellcheck shell=bash
 ################################################################################
 # slurm_completion.sh - bash completion script for Slurm client commands.
-#
-# Setting environment variables can control additional behaviors:
-# - SLURM_COMP_VALUE=[0-1]
-#   - Description: Toggles value completion from slurmctld, slurmdbd.
-#   - Accepted values:
-#     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
-#     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
-# - SLURM_COMP_HOSTLIST=[0-1]
-#   - Description: Alter slurm hostlist comprehension completion behavior.
-#   - Accepted values:
-#     - 0 = Disabled -- will not convert to hostlist notation.
-#     - 1 = Enabled -- will convert to hostlist notation. (default)
-# - SLURM_COMPLOG_FILE=</path/to/file.log>
-#   - Description: File for script logging to write to.
-# - SLURM_COMPLOG_LEVEL=[0-5]
-#   - Description: Script will log at this level of detail to specified file.
-#   - Accepted values:
-#     - 0 = QUIET
-#     - 1 = ERROR
-#     - 2 = WARN
-#     - 3 = INFO (default)
-#     - 4 = DEBUG
-#     - 5 = TRACE
 ################################################################################
 #  Copyright (C) SchedMD LLC.
 #  Written by Skyler Malinowski <skyler@schedmd.com>
@@ -57,6 +34,52 @@
 #  with Slurm; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ################################################################################
+
+# Setting environment variables can control additional behaviors:
+# - SLURM_COMP_VALUE=[0-1]
+#   - Description: Toggles value completion from slurmctld, slurmdbd.
+#   - Accepted values:
+#     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
+#     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
+# - SLURM_COMP_HOSTLIST=[0-1]
+#   - Description: Alter slurm hostlist comprehension completion behavior.
+#   - Accepted values:
+#     - 0 = Disabled -- will not convert to hostlist notation.
+#     - 1 = Enabled -- will convert to hostlist notation. (default)
+# - SLURM_COMPLOG_FILE=</path/to/file.log>
+#   - Description: File for script logging to write to.
+# - SLURM_COMPLOG_LEVEL=[0-5]
+#   - Description: Script will log at this level of detail to specified file.
+#   - Accepted values:
+#     - 0 = QUIET
+#     - 1 = ERROR
+#     - 2 = WARN
+#     - 3 = INFO (default)
+#     - 4 = DEBUG
+#     - 5 = TRACE
+#
+# Setting environment variables can control additional behaviors:
+# - SLURM_COMP_VALUE=[0-1]
+#   - Description: Toggles value completion from slurmctld, slurmdbd.
+#   - Accepted values:
+#     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
+#     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
+# - SLURM_COMP_HOSTLIST=[0-1]
+#   - Description: Alter slurm hostlist comprehension completion behavior.
+#   - Accepted values:
+#     - 0 = Disabled -- will not convert to hostlist notation.
+#     - 1 = Enabled -- will convert to hostlist notation. (default)
+# - SLURM_COMPLOG_FILE=</path/to/file.log>
+#   - Description: File for script logging to write to.
+# - SLURM_COMPLOG_LEVEL=[0-5]
+#   - Description: Script will log at this level of detail to specified file.
+#   - Accepted values:
+#     - 0 = QUIET
+#     - 1 = ERROR
+#     - 2 = WARN
+#     - 3 = INFO (default)
+#     - 4 = DEBUG
+#     - 5 = TRACE
 
 # Source guard
 (return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
@@ -748,37 +771,36 @@ function __slurm_func_wrapper() {
 	echo "${output}"
 }
 
+# Slurm helper function that calls slurmctld
+#
+# RET: space delimited list
+function __slurm_ctld_cmd() {
+	__slurm_comp_slurm_value || return
+	__slurm_ctld_status || return
+
+	local cmd="$1"
+	__slurm_log_trace "$(__func__): cmd='${cmd}'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function that calls slurmdbd
+#
+# RET: space delimited list
+function __slurm_dbd_cmd() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="$1"
+	__slurm_log_trace "$(__func__): cmd='${cmd}'"
+	__slurm_func_wrapper "$cmd"
+}
+
 # Slurm helper function to get accounts list
 #
 # RET: space delimited list
 function __slurm_accounts() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list accounts format=account"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get burst buffer list
-#
-# RET: space delimited list
-function __slurm_burstbuffers() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
-	local cmd="scontrol -o show burstbuffer | grep -E -o 'Name=\S+' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get associations list
-#
-# RET: space delimited list
-function __slurm_associations() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list associations format=id"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to return accepted boolean values
@@ -833,66 +855,24 @@ function __slurm_cpubind_types() {
 #
 # RET: space delimited list
 function __slurm_clusters() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list clusters format=clusters"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get cluster features list
-#
-# RET: space delimited list
-function __slurm_clusters_feature() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list federation format=features"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get clusters RPC list
-#
-# RET: space delimited list
-function __slurm_clusters_rpc() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list clusters format=rpc"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get features list
 #
 # RET: space delimited list
 function __slurm_features() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show nodes | grep -E -o 'AvailableFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get active features list
-#
-# RET: space delimited list
-function __slurm_features_active() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
-	local cmd="scontrol -o show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get federations list
 #
 # RET: space delimited list
 function __slurm_federations() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list federation format=federation"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get format list
@@ -995,209 +975,80 @@ function __slurm_hostnames() {
 #
 # RET: space delimited list
 function __slurm_gres() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show config | grep 'GresTypes' | tr -d '[:space:]' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get instance extra list
-#
-# RET: space delimited list
-function __slurm_instances_extra() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list instances format=extra"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get instance id list
-#
-# RET: space delimited list
-function __slurm_instances_id() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list instances format=instanceid"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get instance type list
-#
-# RET: space delimited list
-function __slurm_instances_type() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list instances format=instancetype"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get recent jobs list
 #
 # RET: space delimited list
 function __slurm_jobs() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show jobs | grep -Po 'JobId=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get recent jobstep tasks list
-#
-# RET: space delimited list
-function __slurm_jobsteps_tasks() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
-	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get recent jobsteps list
 #
 # RET: space delimited list
 function __slurm_jobsteps() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get recent job name list
 #
 # RET: space delimited list
 function __slurm_jobnames() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show jobs | grep -Po 'JobName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get license list
 #
 # RET: space delimited list
 function __slurm_licenses() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get node list
 #
 # RET: space delimited list
 function __slurm_nodes() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show nodes | grep -Po 'NodeName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get frontend node list
 #
 # RET: space delimited list
 function __slurm_nodes_frontend() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show frontend | grep -Po 'FrontendName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get node hostname list
-#
-# RET: space delimited list
-function __slurm_nodes_hostname() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
-	local cmd="scontrol -o show nodes | grep -Po 'NodeHostName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get organizations list
-#
-# RET: space delimited list
-function __slurm_organizations() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list accounts format=organization"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get partition list
 #
 # RET: space delimited list
 function __slurm_partitions() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show partitions | grep -Po 'PartitionName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get QOS list
 #
 # RET: space delimited list
 function __slurm_qos() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list qos format=name"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get QOS ID list
-#
-# RET: space delimited list
-function __slurm_qosid() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list qos format=id"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get reservation list
 #
 # RET: space delimited list
 function __slurm_reservations() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show reservations | grep -Po 'ReservationName=\S+' | cut -d= -f2"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get resources list
-#
-# RET: space delimited list
-function __slurm_resources() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list resource format=name"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get resource servers list
-#
-# RET: space delimited list
-function __slurm_resources_servers() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list resource format=server"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function for client data parser (json) plugin list
@@ -1587,7 +1438,7 @@ function __slurm_comp_common_flags() {
 	--bcast) _filedir -d ;;
 	--bcast-exclude) _filedir -d ;;
 	-D | --chdir) _filedir -d ;;
-	--cluster-constraint?(s)) __slurm_compreply_list "$(__slurm_clusters_feature)" ;;
+	--cluster-constraint?(s)) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list federation format=features")" ;;
 	-M | --cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	--compress) __slurm_compreply "$(__slurm_compress_types)" ;;
 	-C | --constraint) __slurm_compreply_list "$(__slurm_features)" ;;
@@ -1745,7 +1596,7 @@ function __slurm_comp_sacct_flags() {
 
 	case "${prev}" in
 	-A | --account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	-x | --association?(s)) __slurm_compreply_list "$(__slurm_associations)" ;;
+	-x | --association?(s)) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list associations format=id")" ;;
 	-M | --clusters) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	-C | --constraint?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	-f | --file) _filedir ;;
@@ -1983,7 +1834,7 @@ function __slurm_comp_sacctmgr_spec_accounts() {
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	organization?(s)) __slurm_compreply "$(__slurm_organizations)" ;;
+	organization?(s)) __slurm_compreply "$(__slurm_dbd_cmd "sacctmgr -Pn list accounts format=organization")" ;;
 	parent?(s)) __slurm_compreply "$(__slurm_accounts)" ;;
 	*)
 		$split && return
@@ -2048,7 +1899,7 @@ function __slurm_comp_sacctmgr_spec_clusters() {
 	fedstate) __slurm_compreply "${fed_states[*]}" ;;
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	rpc) __slurm_compreply_list "$(__slurm_clusters_rpc)" ;;
+	rpc) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list clusters format=rpc")" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -2231,9 +2082,9 @@ function __slurm_comp_sacctmgr_spec_instances() {
 
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
-	extra) __slurm_compreply_list "$(__slurm_instances_extra)" ;;
-	instanceid) __slurm_compreply_list "$(__slurm_instances_id)" ;;
-	instancetype) __slurm_compreply_list "$(__slurm_instances_type)" ;;
+	extra) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list instances format=extra")" ;;
+	instanceid) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list instances format=instanceid")" ;;
+	instancetype) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list instances format=instancetype")" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		$split && return
@@ -2377,7 +2228,7 @@ function __slurm_comp_sacctmgr_spec_qos() {
 
 	case "${prev}" in
 	flag?(s)?(+|-)) __slurm_compreply_list "${flags[*]}" ;;
-	id?(s)) __slurm_compreply_list "$(__slurm_qosid)" ;;
+	id?(s)) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list qos format=id")" ;;
 	name?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	preempt?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	preemptmode) __slurm_compreply "${preempt_modes[*]}" ;;
@@ -2454,8 +2305,6 @@ function __slurm_comp_sacctmgr_spec_resources() {
 		"withclusters"
 		"withdeleted"
 	)
-	local condition_set
-	condition_set="$(__slurm_find_subcmd "${conditions[1]}")"
 	local flags=(
 	)
 	local types=(
@@ -2476,9 +2325,50 @@ function __slurm_comp_sacctmgr_spec_resources() {
 	case "${prev}" in
 	cluster?(s)) __slurm_compreply_list "$(__slurm_clusters)" ;;
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
-	name?(s)) __slurm_compreply_list "$(__slurm_resources)" ;;
-	server?(s)) __slurm_compreply_list "$(__slurm_resources_servers)" ;;
+	name?(s)) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list resource format=name")" ;;
+	server?(s)) __slurm_compreply_list "$(__slurm_dbd_cmd "sacctmgr -Pn list resource format=server")" ;;
 	type?(s)) __slurm_compreply "${types[*]}" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
+}
+
+# completion helper for sacctmgr runawayjobs specifications
+# https://slurm.schedmd.com/sacctmgr.html#SPECIFICATIONS-FOR-RUNAWAYJOB
+# https://slurm.schedmd.com/sacctmgr.html#SECTION_LIST/SHOW-RUNAWAYJOB-FORMAT-OPTIONS
+function __slurm_comp_sacctmgr_spec_runawayjobs() {
+	local mode="$1"
+	local parameters=()
+	local parameters_where=(
+		"cluster="
+	)
+	local parameters_set=(
+		"endstate="
+	)
+	local options=(
+		"format="
+	)
+	local endstates=(
+		"completed"
+		"failed"
+	)
+
+	__slurm_log_debug "$(__func__): mode='$mode'"
+
+	__slurm_comp_mode_select "$mode" || return
+
+	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
+	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
+	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
+
+	__slurm_compreply_param "${parameters[*]}"
+	$split && __slurm_comp_reset || return 1
+
+	case "${prev}" in
+	cluster) __slurm_compreply "$(__slurm_clusters)" ;;
+	endstate) __slurm_compreply "${endstates[*]}" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -2908,6 +2798,11 @@ function __sacctmgr_list_reservation() {
 	__slurm_comp_sacctmgr_spec_reservations 1
 }
 
+# completion handler for: sacctmgr list runawayjobs [key=val]...
+function __sacctmgr_list_runawayjobs() {
+	__slurm_comp_sacctmgr_spec_runawayjobs 3
+}
+
 # completion handler for: sacctmgr list transaction [key=val]...
 function __sacctmgr_list_transaction() {
 	__slurm_comp_sacctmgr_spec_transactions 1
@@ -3216,7 +3111,7 @@ function _sattach() {
 	__slurm_comp_flags "$1" && return
 	$split && return
 
-	__slurm_compreply "$(__slurm_jobsteps_tasks)"
+	__slurm_compreply "$(__slurm_ctld_cmd "scontrol -o show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2")"
 
 }
 complete -o nospace -F _sattach sattach
@@ -3779,7 +3674,7 @@ function __scontrol_show_aliases() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	aliases) __slurm_compreply "$(__slurm_nodes_hostname)" ;;
+	aliases) __slurm_compreply "$(__slurm_ctld_cmd "scontrol -o show nodes | grep -Po 'NodeHostName=\S+' | cut -d'=' -f2")" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -3872,21 +3767,22 @@ function __scontrol_show_steps() {
 function __scontrol_show_topology() {
 	local parameters=(
 		"block="
-		"node="
+		"nodes="
 		"unit="
 		"switch="
 	)
 
-	param="$(__slurm_find_param "${parameters[*]}")"
-
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
-	__slurm_log_debug "$(__func__): param='$param'"
 	__slurm_log_trace "$(__func__): #parameters[@]='${#parameters[@]}'"
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
-	if [[ -z $param ]]; then
-		__slurm_compreply "${parameters[*]}"
-	fi
+	case "${prev}" in
+	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	*)
+		$split && return
+		__slurm_compreply_param "${parameters[*]}"
+		;;
+	esac
 }
 
 # completion handler for: scontrol show *
@@ -4186,7 +4082,7 @@ function __scontrol_update_nodename() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	activefeature?(s)) __slurm_compreply_list "$(__slurm_features_active)" ;;
+	activefeature?(s)) __slurm_compreply_list "$(__slurm_ctld_cmd "scontrol -o show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'")" ;;
 	availablefeature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	cpubind) __slurm_compreply "$(__slurm_cpubind_types)" ;;
 	gres) __slurm_compreply "$(__slurm_gres)" ;;
@@ -4359,15 +4255,15 @@ function __scontrol_update_reservationname() {
 
 	case "${prev}" in
 	account?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
-	burstbuffer?(s)) __slurm_compreply_count "$(__slurm_burstbuffers)" "$(__slurm_units)" ;;
+	burstbuffer?(s)) __slurm_compreply_count "$(__slurm_ctld_cmd "scontrol -o show burstbuffer | grep -E -o 'Name=\S+' | cut -d= -f2 | tr ',' '\n'")" "$(__slurm_units)" ;;
 	feature?(s)) __slurm_compreply_list "$(__slurm_features)" ;;
 	flag?(s)) __slurm_compreply_list "${flags[*]}" ;;
 	group?(s)) __slurm_compreply_list "$(__slurm_linux_groups)" ;;
 	license?(s)) __slurm_compreply_list "$(__slurm_licenses)" ;;
 	node?(s)) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	partition?(s)) __slurm_compreply "$(__slurm_partitions)" ;;
-	allowedpartition?(s)) __slurm_compreply "$(__slurm_partitions)" ;;
-	qos?(s)) __slurm_compreply "$(__slurm_qos)" ;;
+	allowedpartition?(s)) __slurm_compreply_list "$(__slurm_partitions)" ;;
+	qos?(s)) __slurm_compreply_list "$(__slurm_qos)" ;;
 	reservationname?(s)) __slurm_compreply "$(__slurm_reservations)" ;;
 	user?(s)) __slurm_compreply_list "$(__slurm_users)" ;;
 	*)
