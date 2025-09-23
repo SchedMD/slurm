@@ -2270,12 +2270,6 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (req == NULL)
 		return;
 
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("REQUEST_LAUNCH_PROLOG request from uid %u",
-		      msg->auth_uid);
-		return;
-	}
-
 	/*
 	 * Send message back to the slurmctld so it knows we got the rpc.  A
 	 * prolog could easily run way longer than a MessageTimeout or we would
@@ -2371,13 +2365,6 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	slurm_addr_t *cli = &msg->orig_addr;
 	uid_t batch_uid = SLURM_AUTH_NOBODY;
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
-
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, batch launch RPC from uid %u",
-		      msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;  /* or bad in this case */
-		goto done;
-	}
 
 	if (_launch_job_test(req->job_id, true)) {
 		error("Job %u already running, do not launch second copy",
@@ -2721,11 +2708,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 static void
 _rpc_reconfig(slurm_msg_t *msg)
 {
-	if (!_slurm_authorized_user(msg->auth_uid))
-		error("Security violation, reconfig RPC from uid %u",
-		      msg->auth_uid);
-	else
-		kill(conf->pid, SIGHUP);
+	kill(conf->pid, SIGHUP);
 	forward_wait(msg);
 	/* Never return a message, slurmctld does not expect one */
 }
@@ -2779,22 +2762,18 @@ static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
 
 static void _rpc_reconfig_with_config(slurm_msg_t *msg)
 {
-	if (!_slurm_authorized_user(msg->auth_uid))
-		error("Security violation, reconfig RPC from uid %u",
-		      msg->auth_uid);
-	else {
-		if (conf->conf_cache) {
-			config_response_msg_t *configs = msg->data;
-			/*
-			 * Running in "configless" mode as indicated by the
-			 * cache directory's existence. Update those so
-			 * our reconfigure picks up the changes, and so
-			 * client commands see the changes as well.
-			 */
-			write_configs_to_conf_cache(configs, conf->conf_cache);
-		}
-		kill(conf->pid, SIGHUP);
+	if (conf->conf_cache) {
+		config_response_msg_t *configs = msg->data;
+		/*
+		 * Running in "configless" mode as indicated by the
+		 * cache directory's existence. Update those so
+		 * our reconfigure picks up the changes, and so
+		 * client commands see the changes as well.
+		 */
+		write_configs_to_conf_cache(configs, conf->conf_cache);
 	}
+
+	kill(conf->pid, SIGHUP);
 	forward_wait(msg);
 	/* Never return a message, slurmctld does not expect one */
 }
@@ -3208,80 +3187,42 @@ _enforce_job_mem_limit(void)
 
 static void _rpc_ping(slurm_msg_t *msg)
 {
-	int        rc = SLURM_SUCCESS;
-	static bool first_msg = true;
+	slurm_msg_t resp_msg;
+	ping_slurmd_resp_msg_t ping_resp;
+	get_cpu_load(&ping_resp.cpu_load);
+	get_free_mem(&ping_resp.free_mem);
+	slurm_msg_t_copy(&resp_msg, msg);
+	resp_msg.msg_type = RESPONSE_PING_SLURMD;
+	resp_msg.data = &ping_resp;
 
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, ping RPC from uid %u",
-		      msg->auth_uid);
-		if (first_msg) {
-			error("Do you have SlurmUser configured as uid %u?",
-			      msg->auth_uid);
-		}
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	}
-	first_msg = false;
+	slurm_send_node_msg(msg->conn, &resp_msg);
 
-	if (rc != SLURM_SUCCESS) {
-		/* Return result. If the reply can't be sent this indicates
-		 * 1. The network is broken OR
-		 * 2. slurmctld has died    OR
-		 * 3. slurmd was paged out due to full memory
-		 * If the reply request fails, we send an registration message
-		 * to slurmctld in hopes of avoiding having the node set DOWN
-		 * due to slurmd paging and not being able to respond in a
-		 * timely fashion. */
-		if (slurm_send_rc_msg(msg, rc) < 0) {
-			error("Error responding to ping: %m");
-			send_registration_msg(SLURM_SUCCESS);
-		}
-	} else {
-		slurm_msg_t resp_msg;
-		ping_slurmd_resp_msg_t ping_resp;
-		get_cpu_load(&ping_resp.cpu_load);
-		get_free_mem(&ping_resp.free_mem);
-		slurm_msg_t_copy(&resp_msg, msg);
-		resp_msg.msg_type = RESPONSE_PING_SLURMD;
-		resp_msg.data     = &ping_resp;
+	/* Take this opportunity to enforce any job memory limits */
+	_enforce_job_mem_limit();
+	/* Clear up any stalled file transfers as well */
+	_file_bcast_cleanup();
 
-		slurm_send_node_msg(msg->conn, &resp_msg);
-
-		/* Take this opportunity to enforce any job memory limits */
-		_enforce_job_mem_limit();
-		/* Clear up any stalled file transfers as well */
-		_file_bcast_cleanup();
-
-		if (msg->msg_type == REQUEST_NODE_REGISTRATION_STATUS) {
-			get_reg_resp = true;
-			send_registration_msg(SLURM_SUCCESS);
-		}
+	if (msg->msg_type == REQUEST_NODE_REGISTRATION_STATUS) {
+		get_reg_resp = true;
+		send_registration_msg(SLURM_SUCCESS);
 	}
 }
 
 static void _rpc_health_check(slurm_msg_t *msg)
 {
-	int        rc = SLURM_SUCCESS;
-
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, health check RPC from uid %u",
-		      msg->auth_uid);
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	}
-
-	/* Return result. If the reply can't be sent this indicates that
+	/* If the reply can't be sent this indicates that
 	 * 1. The network is broken OR
 	 * 2. slurmctld has died    OR
 	 * 3. slurmd was paged out due to full memory
 	 * If the reply request fails, we send an registration message to
 	 * slurmctld in hopes of avoiding having the node set DOWN due to
 	 * slurmd paging and not being able to respond in a timely fashion. */
-	if (slurm_send_rc_msg(msg, rc) < 0) {
+	if (slurm_send_rc_msg(msg, SLURM_SUCCESS) < 0) {
 		error("Error responding to health check: %m");
 		send_registration_msg(SLURM_SUCCESS);
 	}
 
-	if (rc == SLURM_SUCCESS)
-		rc = run_script_health_check();
+	run_script_health_check();
 
 	/* Take this opportunity to enforce any job memory limits */
 	_enforce_job_mem_limit();
@@ -3292,55 +3233,26 @@ static void _rpc_health_check(slurm_msg_t *msg)
 
 static void _rpc_acct_gather_update(slurm_msg_t *msg)
 {
-	int        rc = SLURM_SUCCESS;
-	static bool first_msg = true;
+	slurm_msg_t resp_msg;
+	acct_gather_node_resp_msg_t acct_msg;
 
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation, acct_gather_update RPC from uid %u",
-		      msg->auth_uid);
-		if (first_msg) {
-			error("Do you have SlurmUser configured as uid %u?",
-			      msg->auth_uid);
-		}
-		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
-	}
-	first_msg = false;
+	/* Update node energy usage data */
+	acct_gather_energy_g_update_node_energy();
 
-	if (rc != SLURM_SUCCESS) {
-		/* Return result. If the reply can't be sent this indicates
-		 * 1. The network is broken OR
-		 * 2. slurmctld has died    OR
-		 * 3. slurmd was paged out due to full memory
-		 * If the reply request fails, we send an registration message
-		 * to slurmctld in hopes of avoiding having the node set DOWN
-		 * due to slurmd paging and not being able to respond in a
-		 * timely fashion. */
-		if (slurm_send_rc_msg(msg, rc) < 0) {
-			error("Error responding to account gather: %m");
-			send_registration_msg(SLURM_SUCCESS);
-		}
-	} else {
-		slurm_msg_t resp_msg;
-		acct_gather_node_resp_msg_t acct_msg;
+	memset(&acct_msg, 0, sizeof(acct_msg));
+	acct_msg.node_name = conf->node_name;
+	acct_msg.sensor_cnt = 1;
+	acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
+	(void) acct_gather_energy_g_get_sum(ENERGY_DATA_NODE_ENERGY,
+					    acct_msg.energy);
 
-		/* Update node energy usage data */
-		acct_gather_energy_g_update_node_energy();
+	slurm_msg_t_copy(&resp_msg, msg);
+	resp_msg.msg_type = RESPONSE_ACCT_GATHER_UPDATE;
+	resp_msg.data = &acct_msg;
 
-		memset(&acct_msg, 0, sizeof(acct_msg));
-		acct_msg.node_name = conf->node_name;
-		acct_msg.sensor_cnt = 1;
-		acct_msg.energy = acct_gather_energy_alloc(acct_msg.sensor_cnt);
-		(void) acct_gather_energy_g_get_sum(
-			ENERGY_DATA_NODE_ENERGY, acct_msg.energy);
+	slurm_send_node_msg(msg->conn, &resp_msg);
 
-		slurm_msg_t_copy(&resp_msg, msg);
-		resp_msg.msg_type = RESPONSE_ACCT_GATHER_UPDATE;
-		resp_msg.data     = &acct_msg;
-
-		slurm_send_node_msg(msg->conn, &resp_msg);
-
-		acct_gather_energy_destroy(acct_msg.energy);
-	}
+	acct_gather_energy_destroy(acct_msg.energy);
 }
 
 static void _rpc_acct_gather_energy(slurm_msg_t *msg)
@@ -3917,13 +3829,6 @@ _rpc_timelimit(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req = msg->data;
 	int             nsteps, rc;
-
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation: rpc_timelimit req from uid %u",
-		      msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
 
 	/*
 	 *  Indicate to slurmctld that we've received the message
@@ -4865,15 +4770,6 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		rc = ESLURM_NOT_SUPPORTED;
 	}
 
-	/*
-	 * check that requesting user ID is the Slurm UID or root
-	 */
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation: suspend_job(%u) from uid %u",
-		      req->job_id, msg->auth_uid);
-		rc =  ESLURM_USER_ID_MISSING;
-	}
-
 	/* send a response now, which will include any errors
 	 * detected with the request */
 	slurm_send_rc_msg(msg, rc);
@@ -5036,17 +4932,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 {
 	kill_job_msg_t *req    = msg->data;
 
-	debug("%s: uid = %u", __func__, msg->auth_uid);
-	/*
-	 * check that requesting user ID is the Slurm UID
-	 */
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation: abort_job(%u) from uid %u",
-		      req->step_id.job_id, msg->auth_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
-
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
@@ -5123,17 +5008,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	bool send_response = true;
 
-	debug("%s: uid = %u %ps", __func__, msg->auth_uid, &req->step_id);
-	/*
-	 * check that requesting user ID is the Slurm UID
-	 */
-	if (!_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation: kill_job(%u) from uid %u",
-		      req->step_id.job_id, msg->auth_uid);
-		if (send_response)
-			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
-		return;
-	}
+	debug("%s: %ps", __func__, &req->step_id);
 
 	/*
 	 * This function is also used within _rpc_timelimit() which does not
