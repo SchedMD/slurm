@@ -178,6 +178,20 @@ static void _jobinfo_init(
 
 	xassert(job_ptr->topo_jobinfo);
 
+	/*
+	 * Currently segment info is only used when using the
+	 * --network=unique-channel-per-segment option. If that option is not
+	 *  specified, no segment data needs to be collected here.
+	 */
+	if (!xstrstr("unique-channel-per-segment", job_ptr->network)) {
+		log_flag(SELECT_TYPE, "Not recording segment information for %pJ",
+			 job_ptr);
+		return;
+	}
+
+	log_flag(SELECT_TYPE, "Recording segment information for %pJ",
+		 job_ptr);
+
 	/* Must be free'd by topology_g_jobinfo_free() */
 	topo_jobinfo = xmalloc(sizeof(*topo_jobinfo));
 	topo_jobinfo->segment_list = list_create(xfree_ptr);
