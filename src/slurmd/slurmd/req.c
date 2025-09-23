@@ -173,7 +173,7 @@ static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
 static void _rpc_suspend_job(slurm_msg_t *msg);
-static void _rpc_terminate_job(slurm_msg_t *msg, bool send_response);
+static void _rpc_terminate_job(slurm_msg_t *msg);
 static void _rpc_shutdown(slurm_msg_t *msg);
 static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg);
 static void _rpc_set_slurmd_debug(slurm_msg_t *msg);
@@ -551,7 +551,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_TERMINATE_JOB:
 		last_slurmctld_msg = time(NULL);
-		_rpc_terminate_job(msg, true);
+		_rpc_terminate_job(msg);
 		break;
 	case REQUEST_SHUTDOWN:
 		_rpc_shutdown(msg);
@@ -4185,7 +4185,7 @@ _rpc_timelimit(slurm_msg_t *msg)
 		req->step_id.job_id, nsteps);
 
 	/* Revoke credential, send SIGKILL, run epilog, etc. */
-	_rpc_terminate_job(msg, false);
+	_rpc_terminate_job(msg);
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg)
@@ -5321,12 +5321,13 @@ _rpc_abort_job(slurm_msg_t *msg)
 	_launch_complete_rm(req->step_id.job_id);
 }
 
-static void _rpc_terminate_job(slurm_msg_t *msg, bool send_response)
+static void _rpc_terminate_job(slurm_msg_t *msg)
 {
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
 	int             nsteps = 0;
 	int		delay;
+	bool send_response = true;
 
 	debug("%s: uid = %u %ps", __func__, msg->auth_uid, &req->step_id);
 	/*
@@ -5339,6 +5340,13 @@ static void _rpc_terminate_job(slurm_msg_t *msg, bool send_response)
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
+
+	/*
+	 * This function is also used within _rpc_timelimit() which does not
+	 * need us to send a response here.
+	 */
+	if (msg->msg_type != REQUEST_TERMINATE_JOB)
+		send_response = false;
 
 	/*
 	 *  Initialize a "waiter" thread for this jobid. If another
