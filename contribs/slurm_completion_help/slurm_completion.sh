@@ -771,37 +771,52 @@ function __slurm_func_wrapper() {
 	echo "${output}"
 }
 
+# Slurm helper function that calls slurmctld
+#
+# RET: space delimited list
+function __slurm_ctld_cmd() {
+	__slurm_comp_slurm_value || return
+	__slurm_ctld_status || return
+
+	local cmd="$1"
+	__slurm_log_trace "$(__func__): cmd='${cmd}'"
+	__slurm_func_wrapper "$cmd"
+}
+
+# Slurm helper function that calls slurmdbd
+#
+# RET: space delimited list
+function __slurm_dbd_cmd() {
+	__slurm_comp_slurm_value || return
+	__slurm_dbd_status || return
+
+	local cmd="$1"
+	__slurm_log_trace "$(__func__): cmd='${cmd}'"
+	__slurm_func_wrapper "$cmd"
+}
+
 # Slurm helper function to get accounts list
 #
 # RET: space delimited list
 function __slurm_accounts() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list accounts format=account"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get burst buffer list
 #
 # RET: space delimited list
 function __slurm_burstbuffers() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show burstbuffer | grep -E -o 'Name=\S+' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get associations list
 #
 # RET: space delimited list
 function __slurm_associations() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list associations format=id"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to return accepted boolean values
@@ -856,66 +871,48 @@ function __slurm_cpubind_types() {
 #
 # RET: space delimited list
 function __slurm_clusters() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list clusters format=clusters"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get cluster features list
 #
 # RET: space delimited list
 function __slurm_clusters_feature() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list federation format=features"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get clusters RPC list
 #
 # RET: space delimited list
 function __slurm_clusters_rpc() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list clusters format=rpc"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get features list
 #
 # RET: space delimited list
 function __slurm_features() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show nodes | grep -E -o 'AvailableFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get active features list
 #
 # RET: space delimited list
 function __slurm_features_active() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show nodes | grep -E -o 'ActiveFeatures=\S+' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get federations list
 #
 # RET: space delimited list
 function __slurm_federations() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list federation format=federation"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get format list
@@ -1018,209 +1015,144 @@ function __slurm_hostnames() {
 #
 # RET: space delimited list
 function __slurm_gres() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show config | grep 'GresTypes' | tr -d '[:space:]' | cut -d= -f2 | tr ',' '\n'"
-	__slurm_func_wrapper "$cmd"
-}
-
-# Slurm helper function to get instance extra list
-#
-# RET: space delimited list
-function __slurm_instances_extra() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
-	local cmd="sacctmgr -Pn list instances format=extra"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get instance id list
 #
 # RET: space delimited list
 function __slurm_instances_id() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list instances format=instanceid"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get instance type list
 #
 # RET: space delimited list
 function __slurm_instances_type() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list instances format=instancetype"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get recent jobs list
 #
 # RET: space delimited list
 function __slurm_jobs() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show jobs | grep -Po 'JobId=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get recent jobstep tasks list
 #
 # RET: space delimited list
 function __slurm_jobsteps_tasks() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\d+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get recent jobsteps list
 #
 # RET: space delimited list
 function __slurm_jobsteps() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show step | grep -Po 'StepId=\d+\.\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get recent job name list
 #
 # RET: space delimited list
 function __slurm_jobnames() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show jobs | grep -Po 'JobName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get license list
 #
 # RET: space delimited list
 function __slurm_licenses() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show license | grep -Po 'LicenseName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get node list
 #
 # RET: space delimited list
 function __slurm_nodes() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show nodes | grep -Po 'NodeName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get frontend node list
 #
 # RET: space delimited list
 function __slurm_nodes_frontend() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show frontend | grep -Po 'FrontendName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get node hostname list
 #
 # RET: space delimited list
 function __slurm_nodes_hostname() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show nodes | grep -Po 'NodeHostName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get organizations list
 #
 # RET: space delimited list
 function __slurm_organizations() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list accounts format=organization"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get partition list
 #
 # RET: space delimited list
 function __slurm_partitions() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show partitions | grep -Po 'PartitionName=\S+' | cut -d'=' -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get QOS list
 #
 # RET: space delimited list
 function __slurm_qos() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list qos format=name"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get QOS ID list
 #
 # RET: space delimited list
 function __slurm_qosid() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list qos format=id"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get reservation list
 #
 # RET: space delimited list
 function __slurm_reservations() {
-	__slurm_comp_slurm_value || return
-	__slurm_ctld_status || return
-
 	local cmd="scontrol -o show reservations | grep -Po 'ReservationName=\S+' | cut -d= -f2"
-	__slurm_func_wrapper "$cmd"
+	__slurm_ctld_cmd "$cmd"
 }
 
 # Slurm helper function to get resources list
 #
 # RET: space delimited list
 function __slurm_resources() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list resource format=name"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function to get resource servers list
 #
 # RET: space delimited list
 function __slurm_resources_servers() {
-	__slurm_comp_slurm_value || return
-	__slurm_dbd_status || return
-
 	local cmd="sacctmgr -Pn list resource format=server"
-	__slurm_func_wrapper "$cmd"
+	__slurm_dbd_cmd "$cmd"
 }
 
 # Slurm helper function for client data parser (json) plugin list
