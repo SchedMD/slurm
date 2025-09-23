@@ -2775,13 +2775,9 @@ static void
 _rpc_shutdown(slurm_msg_t *msg)
 {
 	forward_wait(msg);
-	if (!_slurm_authorized_user(msg->auth_uid))
-		error("Security violation, shutdown RPC from uid %u",
-		      msg->auth_uid);
-	else {
-		if (kill(conf->pid, SIGTERM) != 0)
-			error("kill(%u,SIGTERM): %m", conf->pid);
-	}
+
+	if (kill(conf->pid, SIGTERM) != 0)
+		error("kill(%u,SIGTERM): %m", conf->pid);
 
 	/* Never return a message, slurmctld does not expect one */
 }
@@ -5774,6 +5770,7 @@ slurmd_rpc_t slurmd_rpcs[] =
 		.func = _rpc_terminate_job,
 	},{
 		.msg_type = REQUEST_SHUTDOWN,
+		.from_slurmctld = true,
 		.func = _rpc_shutdown,
 	},{
 		.msg_type = REQUEST_RECONFIGURE,
