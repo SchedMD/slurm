@@ -1296,6 +1296,45 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_get_ns_fds_helper(void *object, void *arg)
+{
+	ns_fd_map_t *entry = (ns_fd_map_t *) object;
+	int *fd = (int *) arg;
+
+	safe_write(*fd, &entry->type, sizeof(entry->type));
+	send_fd_over_socket(*fd, entry->fd);
+
+	debug("sent fd: %d", entry->fd);
+	return SLURM_SUCCESS;
+
+rwfail:
+	return SLURM_ERROR;
+}
+
+static int _handle_get_ns_fds(int fd, uid_t uid, pid_t remote_pid)
+{
+	list_t *ns_map = list_create(NULL);
+	int ns_count = 0;
+
+	debug("%s: for job %u:%u",
+	      __func__, step->step_id.job_id, step->step_id.step_id);
+
+	if (namespace_g_join_external(step->step_id.job_id, ns_map) < 0)
+		goto rwfail;
+
+	ns_count = list_count(ns_map);
+	safe_write(fd, &ns_count, sizeof(ns_count));
+	list_for_each_ro(ns_map, _handle_get_ns_fds_helper, &fd);
+
+	debug("leaving %s", __func__);
+
+	list_destroy(ns_map);
+	return SLURM_SUCCESS;
+rwfail:
+	list_destroy(ns_map);
+	return SLURM_ERROR;
+}
+
 static void _block_on_pid(pid_t pid)
 {
 	struct timespec ts = { 0, 0 };
@@ -2368,6 +2407,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_GET_NS_FD,
 		.from_job_owner = true,
 		.func = _handle_get_ns_fd,
+	},
+	{
+		.msg_type = REQUEST_GET_NS_FDS,
+		.from_job_owner = true,
+		.func = _handle_get_ns_fds,
 	},
 	{
 		.msg_type = REQUEST_GETHOST,

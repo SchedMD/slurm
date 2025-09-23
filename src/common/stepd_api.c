@@ -378,6 +378,49 @@ rwfail:
 }
 
 /*
+ * Request to get required information to enter the namespace of a job.
+ *
+ * On success returns number of elements in the fd_map list and populates the
+ * list.
+ * Returns SLURM_ERROR on failure
+ */
+extern int stepd_get_namespace_fds(int fd, list_t *fd_map,
+				   uint16_t protocol_version)
+{
+	int req = REQUEST_GET_NS_FDS;
+	unsigned int fd_count = 0;
+
+	xassert(fd_map);
+
+	debug("entering %s", __func__);
+	safe_write(fd, &req, sizeof(req));
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_read(fd, &fd_count, sizeof(fd_count));
+		if (fd_count == 0)
+			return fd_count;
+
+		for (int i = 0; i < fd_count; i++) {
+			ns_fd_map_t *tmp_map = xmalloc(sizeof(*tmp_map));
+			safe_read(fd, &tmp_map->type, sizeof(tmp_map->type));
+			tmp_map->fd = receive_fd_over_socket(fd);
+			list_append(fd_map, tmp_map);
+			tmp_map = NULL;
+		}
+	} else {
+		error("%s: bad protocol version %hu",
+		      __func__, protocol_version);
+		goto rwfail;
+	}
+
+	return fd_count;
+
+rwfail:
+	list_destroy(fd_map);
+	return SLURM_ERROR;
+}
+
+/*
  * Attach a client to a running job step.
  *
  * On success returns SLURM_SUCCESS and fills in resp->local_pids,

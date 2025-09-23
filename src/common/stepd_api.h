@@ -79,6 +79,7 @@ typedef enum {
 	REQUEST_GETGR,
 	REQUEST_GET_NS_FD,
 	REQUEST_GETHOST,
+	REQUEST_GET_NS_FDS,
 } step_msg_t;
 
 typedef enum {
@@ -339,6 +340,16 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version);
  * On error returns -1.
  */
 extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version);
+
+/*
+ * Request to get required information to enter the namespace of a job.
+ *
+ * On success returns number of elements in the fd_map list and populates the
+ * list.
+ * Returns SLURM_ERROR on failure
+ */
+extern int stepd_get_namespace_fds(int fd, list_t *fd_map,
+				   uint16_t protocol_version);
 
 /*
  * Relay message to stepd.
