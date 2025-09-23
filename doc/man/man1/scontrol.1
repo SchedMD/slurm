@@ -2687,7 +2687,8 @@ not supported.
 Nodes which are DOWN or DRAINED are automatically replenished using idle
 resources. This is the default behavior.
 This option can be used to maintain a constant sized pool of resources
-available for pending jobs (subject to availability of idle resources).
+available for pending jobs (subject to availability of idle resources). Nodes in
+use by another reservation will not be considered as possible replacement nodes.
 This should be used with the \fINodeCnt\fP reservation option; do not identify
 specific nodes to be included in the reservation. Flag removal with '\-=' is
 not supported.
