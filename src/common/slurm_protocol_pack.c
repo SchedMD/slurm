@@ -39,7 +39,6 @@
 \*****************************************************************************/
 
 #include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14041,14 +14040,6 @@ int
 unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 {
 	int rc = SLURM_SUCCESS;
-
-#ifndef NDEBUG
-	if (msg->data)
-		error("%s: clobbering msg->data=0x%"PRIxPTR" pointer with msg->msg_type=%s[0x%x]",
-		      __func__, (uintptr_t) msg->data,
-		      rpc_num2string(msg->msg_type), msg->msg_type);
-#endif
-
 	msg->data = NULL;	/* Initialize to no data for now */
 
 	if (msg->protocol_version < SLURM_MIN_PROTOCOL_VERSION) {
