@@ -680,10 +680,15 @@ static int _fd_get_input_fd(conmgr_fd_t *con, int *input_fd_ptr)
 	if (!con)
 		return EINVAL;
 
+	xassert(input_fd_ptr);
+	xassert(*input_fd_ptr == -1);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	slurm_mutex_lock(&mgr.mutex);
 
 	*input_fd_ptr = con->input_fd;
+
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return SLURM_SUCCESS;
 }
