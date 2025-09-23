@@ -2705,14 +2705,6 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 	return rpc_rc;
 }
 
-static void
-_rpc_reconfig(slurm_msg_t *msg)
-{
-	kill(conf->pid, SIGHUP);
-	forward_wait(msg);
-	/* Never return a message, slurmctld does not expect one */
-}
-
 static void _rpc_set_slurmd_debug_flags(slurm_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
@@ -2760,9 +2752,10 @@ static void _rpc_set_slurmd_debug(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-static void _rpc_reconfig_with_config(slurm_msg_t *msg)
+static void _rpc_reconfig(slurm_msg_t *msg)
 {
-	if (conf->conf_cache) {
+	if ((msg->msg_type == REQUEST_RECONFIGURE_WITH_CONFIG) &&
+	    conf->conf_cache) {
 		config_response_msg_t *configs = msg->data;
 		/*
 		 * Running in "configless" mode as indicated by the
@@ -5800,7 +5793,7 @@ slurmd_rpc_t slurmd_rpcs[] =
 	},{
 		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
 		.from_slurmctld = true,
-		.func = _rpc_reconfig_with_config,
+		.func = _rpc_reconfig,
 	},{
 		.msg_type = REQUEST_REBOOT_NODES,
 		.func = _rpc_reboot,
