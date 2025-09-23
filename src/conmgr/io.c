@@ -675,11 +675,26 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 	return rc;
 }
 
-extern int conmgr_fd_get_input_fd(conmgr_fd_t *con)
+static int _fd_get_input_fd(conmgr_fd_t *con, int *input_fd_ptr)
 {
+	if (!con)
+		return EINVAL;
+
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
-	return con->input_fd;
+
+	*input_fd_ptr = con->input_fd;
+
+	return SLURM_SUCCESS;
+}
+
+extern int conmgr_fd_get_input_fd(conmgr_fd_t *con)
+{
+	int input_fd = -1;
+
+	(void) _fd_get_input_fd(con, &input_fd);
+
+	return input_fd;
 }
 
 extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
