@@ -12,8 +12,18 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.fixture(scope="function")
+def idle_node():
+    """Wait until at least one node is idle"""
+    atf.repeat_until(
+        lambda: atf.get_nodes(quiet=True),
+        lambda nodes: any(node["state"] == ["IDLE"] for node in nodes.values()),
+        fatal=True,
+    )
+
+
 @pytest.mark.parametrize("itime", ["", "=1", "=5", "=10"])
-def test_immediate_run(itime):
+def test_immediate_run(itime, idle_node):
     """
     Verify that a job submitted with --immediate runs if the system has
     available resources.
