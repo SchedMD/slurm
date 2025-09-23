@@ -1,29 +1,6 @@
 # shellcheck shell=bash
 ################################################################################
 # slurm_completion.sh - bash completion script for Slurm client commands.
-#
-# Setting environment variables can control additional behaviors:
-# - SLURM_COMP_VALUE=[0-1]
-#   - Description: Toggles value completion from slurmctld, slurmdbd.
-#   - Accepted values:
-#     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
-#     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
-# - SLURM_COMP_HOSTLIST=[0-1]
-#   - Description: Alter slurm hostlist comprehension completion behavior.
-#   - Accepted values:
-#     - 0 = Disabled -- will not convert to hostlist notation.
-#     - 1 = Enabled -- will convert to hostlist notation. (default)
-# - SLURM_COMPLOG_FILE=</path/to/file.log>
-#   - Description: File for script logging to write to.
-# - SLURM_COMPLOG_LEVEL=[0-5]
-#   - Description: Script will log at this level of detail to specified file.
-#   - Accepted values:
-#     - 0 = QUIET
-#     - 1 = ERROR
-#     - 2 = WARN
-#     - 3 = INFO (default)
-#     - 4 = DEBUG
-#     - 5 = TRACE
 ################################################################################
 #  Copyright (C) SchedMD LLC.
 #  Written by Skyler Malinowski <skyler@schedmd.com>
@@ -57,6 +34,52 @@
 #  with Slurm; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ################################################################################
+
+# Setting environment variables can control additional behaviors:
+# - SLURM_COMP_VALUE=[0-1]
+#   - Description: Toggles value completion from slurmctld, slurmdbd.
+#   - Accepted values:
+#     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
+#     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
+# - SLURM_COMP_HOSTLIST=[0-1]
+#   - Description: Alter slurm hostlist comprehension completion behavior.
+#   - Accepted values:
+#     - 0 = Disabled -- will not convert to hostlist notation.
+#     - 1 = Enabled -- will convert to hostlist notation. (default)
+# - SLURM_COMPLOG_FILE=</path/to/file.log>
+#   - Description: File for script logging to write to.
+# - SLURM_COMPLOG_LEVEL=[0-5]
+#   - Description: Script will log at this level of detail to specified file.
+#   - Accepted values:
+#     - 0 = QUIET
+#     - 1 = ERROR
+#     - 2 = WARN
+#     - 3 = INFO (default)
+#     - 4 = DEBUG
+#     - 5 = TRACE
+#
+# Setting environment variables can control additional behaviors:
+# - SLURM_COMP_VALUE=[0-1]
+#   - Description: Toggles value completion from slurmctld, slurmdbd.
+#   - Accepted values:
+#     - 0 = Disabled -- no call to slurm{ctl,db}d for value completion.
+#     - 1 = Enabled -- will make call to slurm{ctl,db}d. (default)
+# - SLURM_COMP_HOSTLIST=[0-1]
+#   - Description: Alter slurm hostlist comprehension completion behavior.
+#   - Accepted values:
+#     - 0 = Disabled -- will not convert to hostlist notation.
+#     - 1 = Enabled -- will convert to hostlist notation. (default)
+# - SLURM_COMPLOG_FILE=</path/to/file.log>
+#   - Description: File for script logging to write to.
+# - SLURM_COMPLOG_LEVEL=[0-5]
+#   - Description: Script will log at this level of detail to specified file.
+#   - Accepted values:
+#     - 0 = QUIET
+#     - 1 = ERROR
+#     - 2 = WARN
+#     - 3 = INFO (default)
+#     - 4 = DEBUG
+#     - 5 = TRACE
 
 # Source guard
 (return 0 2>/dev/null) && SOURCED=1 || SOURCED=0
