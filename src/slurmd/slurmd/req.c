@@ -2519,11 +2519,11 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 	info("Launching batch job %u for UID %u", req->job_id, batch_uid);
 
-	debug3("_rpc_batch_job: call to _forkexec_slurmstepd");
+	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, batch_uid,
 				  req->job_id, SLURM_BATCH_SCRIPT,
 				  NULL, SLURM_PROTOCOL_VERSION);
-	debug3("_rpc_batch_job: return from _forkexec_slurmstepd: %d", rc);
+	debug3("%s: return from _forkexec_slurmstepd: %d", __func__, rc);
 
 	_launch_complete_add(req->job_id, true);
 
