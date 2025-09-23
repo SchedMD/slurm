@@ -6058,8 +6058,20 @@ extern void slurmd_req(slurm_msg_t *msg)
 		return;
 	}
 
-	if (this_rpc->from_slurmctld)
+	if (this_rpc->from_slurmctld) {
+		/*
+		 * Consistently handle authentication for slurmctld -> slurmd
+		 * connections, rather than deferring to each rpc handler.
+		 */
+		if (!_slurm_authorized_user(msg->auth_uid)) {
+			error("Security violation: %s req from uid %u",
+			      rpc_num2string(msg->msg_type), msg->auth_uid);
+			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+			return;
+		}
+
 		last_slurmctld_msg = time(NULL);
+	}
 
 	this_rpc->func(msg);
 }
