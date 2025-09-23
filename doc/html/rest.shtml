@@ -2,12 +2,10 @@
 
 <h1>REST API Details</h1>
 
-<p>Slurm provides a
-	<a href="https://en.wikipedia.org/wiki/Representational_state_transfer">
-		REST API
-	</a> daemon named slurmrestd. This daemon is designed to allow clients to
-	communicate with Slurm via a REST API (in addition to the command line
-	interface (CLI) or C API).
+<p>Slurm provides a <a href="https://restfulapi.net/">REST API</a> through the
+slurmrestd daemon, using <a href="jwt.html">JSON Web Tokens</a> for
+authentication. This daemon is designed to allow clients to communicate with
+Slurm via a REST API (in addition to the command line interface (CLI) or C API).
 </p>
 
 <p>See also:
@@ -205,6 +203,6 @@ for deployment in a production environment.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 19 September 2025</p>
+<p style="text-align:center;">Last modified 23 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
