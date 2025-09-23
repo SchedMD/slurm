@@ -67,7 +67,7 @@ extern int namespace_g_join(slurm_step_id_t *step_id, uid_t uid,
  * Allow external processes to join the job namespace
  * (eg. via PAM)
  */
-extern int namespace_g_join_external(uint32_t job_id);
+extern int namespace_g_join_external(uint32_t job_id, list_t *fd_map);
 
 /* Restore namespace information */
 extern int namespace_g_restore(char *dir_name, bool recover);

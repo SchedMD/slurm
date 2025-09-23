@@ -2651,6 +2651,11 @@ typedef struct will_run_response_msg {
 	time_t start_time;	/* time when job will start */
 } will_run_response_msg_t;
 
+typedef struct {
+	int type;
+	int fd;
+} ns_fd_map_t;
+
 /*********************************/
 
 /*

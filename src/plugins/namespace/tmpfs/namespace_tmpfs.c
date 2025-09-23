@@ -691,12 +691,12 @@ end_it:
 	return rc;
 }
 
-extern int namespace_p_join_external(uint32_t job_id)
+extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 
 	if (plugin_disabled)
-		return SLURM_SUCCESS;
+		return 0;
 
 	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
@@ -706,10 +706,17 @@ extern int namespace_p_join_external(uint32_t job_id)
 			error("%s: %m", __func__);
 	}
 
+	if (step_ns_fd) {
+		ns_fd_map_t *tmp_map = xmalloc(sizeof(ns_fd_map_t));
+		tmp_map->type = CLONE_NEWNS;
+		tmp_map->fd = step_ns_fd;
+		list_append(ns_map, tmp_map);
+	}
+
 	xfree(job_mount);
 	xfree(ns_holder);
 
-	return step_ns_fd;
+	return list_count(ns_map);
 }
 
 extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
