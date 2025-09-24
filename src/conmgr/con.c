@@ -1816,6 +1816,9 @@ failed:
 	}
 	FREE_NULL_CONN(conn);
 
+	/* Always set failed as cancelled */
+	conmgr_args.status = CONMGR_WORK_STATUS_CANCELLED;
+
 	/* Notify requester that extract failed */
 	func(conmgr_args, NULL, func_arg);
 }
