@@ -8140,6 +8140,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NODE_STATES)[] = {
 	add_flag_masked_bit(NODE_STATE_POWER_UP, NODE_STATE_FLAGS, "POWER_UP"),
 	add_flag_masked_bit(NODE_STATE_POWER_DRAIN, NODE_STATE_FLAGS, "POWER_DRAIN"),
 	add_flag_masked_bit(NODE_STATE_DYNAMIC_NORM, NODE_STATE_FLAGS, "DYNAMIC_NORM"),
+	add_flag_masked_bit(NODE_STATE_BLOCKED, NODE_STATE_FLAGS, "BLOCKED"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_STATES)[] = {
