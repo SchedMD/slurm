@@ -46,6 +46,12 @@
 #define MAX_BODY_BYTES 52428800 /* 50MB */
 #define MAX_STATUS_BYTES 1024
 #define MAX_HEADER_BYTES 80
+/* RFC7231-6.2 Informational 1xx */
+#define HTTP_STATUS_INFO_BEGIN 100
+#define HTTP_STATUS_INFO_END 199
+/* RFC7231-6.3 Successful 2xx */
+#define HTTP_STATUS_SUCCESS_BEGIN 200
+#define HTTP_STATUS_SUCCESS_END 299
 
 #define MAGIC 0xab0a8aff
 
@@ -497,6 +503,35 @@ static int _send_http_status_response(http_con_request_t *request,
 	return conmgr_con_queue_write_data(con, buffer, wrote);
 }
 
+static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
+				http_status_code_t status_code,
+				const size_t body_length)
+{
+	/*
+	 * RFC7230-3.3.2:
+	 * A server MUST NOT send a Content-Length header field in any
+	 * response with a status code of 1xx (Informational) or 204 (No
+	 * Content). A server MUST NOT send a Content-Length header
+	 * field in any 2xx (Successful) response to a CONNECT request
+	 */
+
+	if ((status_code > HTTP_STATUS_INFO_BEGIN) &&
+	    (status_code <= HTTP_STATUS_INFO_END))
+		return SLURM_SUCCESS;
+
+	/*
+	 * TODO: Add reference to request method to only limit CONNECT requests
+	 */
+	if ((status_code > HTTP_STATUS_SUCCESS_BEGIN) &&
+	    (status_code <= HTTP_STATUS_SUCCESS_END))
+		return SLURM_SUCCESS;
+
+	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
+		return SLURM_SUCCESS;
+
+	return _write_fmt_num_header(con, "Content-Length", body_length);
+}
+
 extern int http_con_send_response(http_con_t *hcon,
 				  http_status_code_t status_code,
 				  list_t *headers, bool close_header,
@@ -539,14 +574,9 @@ extern int http_con_send_response(http_con_t *hcon,
 	if (body && (get_buf_offset(body) > 0)) {
 		const size_t body_length = get_buf_offset(body);
 
-		/* RFC7230-3.3.2 limits response of Content-Length */
-		if ((status_code < 100) ||
-		    ((status_code >= 200) && (status_code != 204))) {
-			if ((rc = _write_fmt_num_header(con, "Content-Length",
-							body_length))) {
-				return rc;
-			}
-		}
+		if ((rc = _send_content_length(hcon, con, status_code,
+					       body_length)))
+			return rc;
 
 		if (body_encoding &&
 		    (rc = _write_fmt_header(con, "Content-Type",
