@@ -7630,6 +7630,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	job_ptr->license_list = license_list;
 	license_list = NULL;
+	hres_create_select(job_ptr);
 
 	if (job_desc->req_switch != NO_VAL) {	/* Max # of switches */
 		job_ptr->req_switch = job_desc->req_switch;
@@ -9910,6 +9911,8 @@ static void _delete_job_common(job_record_t *job_ptr)
 		_remove_job_hash(job_ptr, JOB_HASH_ARRAY_JOB);
 		_remove_job_hash(job_ptr, JOB_HASH_ARRAY_TASK);
 	}
+
+	hres_select_free(job_ptr);
 }
 
 /*
@@ -14884,6 +14887,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				xfree(job_ptr->lic_req);
 				job_ptr->lic_req = xstrdup(job_desc->licenses);
 			}
+			hres_create_select(job_ptr);
 		} else if (IS_JOB_RUNNING(job_ptr)) {
 			/*
 			 * Operators can modify license counts on running jobs,
@@ -14922,6 +14926,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			FREE_NULL_LIST(license_list);
 		}
 
+		hres_select_free(job_ptr);
 		update_accounting = true;
 	}
 	if (error_code != SLURM_SUCCESS)
