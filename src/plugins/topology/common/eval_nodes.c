@@ -969,8 +969,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. But if the gres's cpu requirement
-				 * can not be satisfied due to gres layout try
-				 * next node.
+				 * can not be satisfied due to HRes or gres
+				 * layout try next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
 							    rem_max_cpus,
@@ -1005,8 +1005,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. But if the gres's cpu requirement
-				 * can not be satisfied due to gres layout try
-				 * next node.
+				 * can not be satisfied due to HRes or gres
+				 * layout try next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
 							    rem_max_cpus,
@@ -1092,8 +1092,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. But if the gres's cpu requirement
-				 * can not be satisfied due to gres layout try
-				 * next node.
+				 * can not be satisfied due to HRes or
+				 * gres layout try next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
 							    rem_max_cpus,

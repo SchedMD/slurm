@@ -797,7 +797,7 @@ next_segment:
 						    &maxtasks, true)) {
 				/*
 				 * To many restricted gpu cores were removed
-				 * due to gres layout.
+				 * due to gres or hres layout.
 				 */
 				bit_clear(req2_nodes_bitmap, i);
 				continue;
