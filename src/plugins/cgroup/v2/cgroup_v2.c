@@ -2848,6 +2848,14 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		xfree(cpu_stat);
 	}
 
+	if (memory_stat) {
+		ptr = xstrstr(memory_stat, "pgmajfault");
+		if (ptr && (sscanf(ptr, "pgmajfault %"PRIu64,
+				   &stats->total_pgmajfault) != 1))
+			log_flag(CGROUP, "Cannot parse pgmajfault field in memory.stat file");
+		xfree(memory_stat);
+	}
+
 	/*
 	 * In cgroup/v1, total_rss was the hierarchical sum of # of bytes of
 	 * anonymous and swap cache memory (including transparent huge pages).
@@ -2860,14 +2868,6 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		if (sscanf(memory_current, "%"PRIu64, &stats->total_rss) != 1)
 			error("Cannot parse memory.current file");
 		xfree(memory_current);
-	}
-
-	if (memory_stat) {
-		ptr = xstrstr(memory_stat, "pgmajfault");
-		if (ptr && (sscanf(ptr, "pgmajfault %"PRIu64,
-				   &stats->total_pgmajfault) != 1))
-			log_flag(CGROUP, "Cannot parse pgmajfault field in memory.stat file");
-		xfree(memory_stat);
 	}
 
 	if (memory_peak) {
