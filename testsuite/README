@@ -1079,3 +1079,7 @@ test_150_#   Testing topology/block.
 ================================
 test_150_1   Test topology/block
 test_150_2   Test "--nodelist" + "--segment"
+
+test_151_#   Testing Oversubscribe
+===========================================
+test_151_1   Test oversubscribe with sharing partitions
