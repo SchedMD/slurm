@@ -140,7 +140,7 @@
 
 decl_static_data(usage_txt);
 
-#define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
+#define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 512
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
