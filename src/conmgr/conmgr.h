@@ -811,6 +811,15 @@ extern int conmgr_con_get_input_fd(conmgr_fd_ref_t *ref, int *input_fd_ptr);
  */
 extern int conmgr_fd_get_output_fd(conmgr_fd_t *con);
 
+/*
+ * Get connection output file descriptor
+ * WARNING: returned output_fd may become invalid at any time after return
+ * IN ref - connection reference to query
+ * IN output_fd_ptr - pointer to be populated on success
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_get_output_fd(conmgr_fd_ref_t *ref, int *output_fd_ptr);
+
 typedef struct {
 	/* this is a socket fd */
 	bool is_socket;

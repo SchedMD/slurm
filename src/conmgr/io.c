@@ -741,3 +741,16 @@ extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
 
 	return output_fd;
 }
+
+extern int conmgr_con_get_output_fd(conmgr_fd_ref_t *ref, int *output_fd_ptr)
+{
+	xassert(output_fd_ptr);
+
+	if (!ref || !ref->con)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	return _fd_get_output_fd(ref->con, output_fd_ptr);
+}
