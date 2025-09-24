@@ -242,6 +242,28 @@ static int _license_find_rec_by_nodes(void *x, void *key)
 	return 1;
 }
 
+static int _license_find_mode3(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	if (license_entry->mode == HRES_MODE_3)
+		return 1;
+
+	return 0;
+}
+
+static int _license_find_root_mode3(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+	licenses_id_t *id = key;
+
+	if ((license_entry->id.hres_id == id->hres_id) &&
+	    (license_entry->hres_rec.parent_id == NO_VAL16))
+		return 1;
+
+	return 0;
+}
+
 /*
  * Find a license_t record by license id (for use by list_find_first)
  */
@@ -1048,6 +1070,250 @@ extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	return;
 }
 
+static int _foreach_hres_create_select(void *x, void *key)
+{
+	licenses_t *license = x;
+	hres_select_t *hres_select = key;
+
+	if (license->id.hres_id != hres_select->root_id.hres_id)
+		return 0;
+
+	if (license->hres_rec.level)
+		return 0;
+
+	hres_select->leaf[hres_select->leaf_cnt].node_bitmap =
+		bit_copy(license->node_bitmap);
+
+	hres_select->depth = license->hres_rec.depth;
+
+	for (int i = 0; i < hres_select->depth; i++)
+		hres_select->leaf[hres_select->leaf_cnt].path_idx[i] =
+			license->hres_rec.path_idx[i];
+
+	hres_select->leaf_cnt++;
+
+	return 0;
+}
+
+extern void hres_create_select(job_record_t *job_ptr)
+{
+	hres_select_t *hres_select = NULL;
+	licenses_t *license_entry, *match;
+
+	hres_select_free(job_ptr);
+
+	if (!job_ptr->license_list)
+		return;
+
+	license_entry = list_find_first_ro(job_ptr->license_list,
+					   _license_find_mode3, NULL);
+
+	if (!license_entry)
+		return;
+
+	slurm_mutex_lock(&license_mutex);
+	match = list_find_first_ro(cluster_license_list,
+				   _license_find_root_mode3,
+				   &(license_entry->id));
+
+	if (!match) {
+		slurm_mutex_unlock(&license_mutex);
+		return;
+	}
+
+	hres_select = xmalloc(sizeof(*hres_select));
+	hres_select->root_id = match->id;
+	hres_select->hres_per_node = license_entry->total;
+	hres_select->layers_cnt = match->hres_rec.layers_cnt;
+
+	xassert(match->hres_rec.leaf_cnt);
+	xassert(match->hres_rec.layers_cnt);
+
+	hres_select->leaf =
+		xcalloc(match->hres_rec.leaf_cnt, sizeof(hres_leaf_t));
+	hres_select->avail_hres =
+		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
+	hres_select->avail_hres_orgi =
+		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
+	list_for_each_ro(cluster_license_list, _foreach_hres_create_select,
+			 hres_select);
+
+	xassert(hres_select->leaf_cnt == match->hres_rec.leaf_cnt);
+
+	slurm_mutex_unlock(&license_mutex);
+
+	job_ptr->hres_select = hres_select;
+	hres_select_print(hres_select);
+	return;
+}
+
+static int _foreach_hres_pre_select(void *x, void *key)
+{
+	licenses_t *license = x;
+	hres_select_t *hres_select = key;
+
+	if (license->id.hres_id != hres_select->root_id.hres_id)
+		return 0;
+
+	hres_select->avail_hres[license->hres_rec.idx] = license->total;
+
+	if (!hres_select->test_only)
+		hres_select->avail_hres[license->hres_rec.idx] -= license->used;
+
+	hres_select->avail_hres_orgi[license->hres_rec.idx] =
+		hres_select->avail_hres[license->hres_rec.idx];
+
+	return 0;
+}
+
+extern void hres_pre_select(job_record_t *job_ptr, bool test_only)
+{
+	hres_select_t *hres_select = job_ptr->hres_select;
+
+	if (!hres_select)
+		return;
+
+	slurm_mutex_lock(&license_mutex);
+
+	hres_select->test_only = test_only;
+	list_for_each_ro(cluster_license_list, _foreach_hres_pre_select,
+			 hres_select);
+	slurm_mutex_unlock(&license_mutex);
+
+	for (int i = 0; i < hres_select->leaf_cnt; i++) {
+		uint32_t min = INFINITE;
+
+		for (int j = 0; j < hres_select->depth; j++) {
+			uint16_t idx = hres_select->leaf[i].path_idx[j];
+			if (min > hres_select->avail_hres[idx])
+				min = hres_select->avail_hres[idx];
+		}
+		hres_select->leaf[i].capacity = min;
+	}
+
+	hres_select_print(hres_select);
+
+	return;
+}
+
+static int _foreach_bf_hres_pre_select(void *x, void *key)
+{
+	bf_license_t *bf_lic = x;
+	hres_select_t *hres_select = key;
+	licenses_t *license;
+
+	if (bf_lic->id.hres_id != hres_select->root_id.hres_id)
+		return 0;
+
+	license = list_find_first_ro(cluster_license_list,
+				     _license_find_rec_by_id, &bf_lic->id);
+	if (!license)
+		return 0;
+
+	hres_select->avail_hres[license->hres_rec.idx] = bf_lic->remaining;
+
+	hres_select->avail_hres_orgi[license->hres_rec.idx] =
+		hres_select->avail_hres[license->hres_rec.idx];
+
+	return 0;
+}
+
+extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
+				     bf_licenses_t *bf_licenses)
+{
+	hres_select_t *hres_select = job_ptr->hres_select;
+
+	if (!hres_select || !bf_licenses)
+		return;
+
+	slurm_mutex_lock(&license_mutex);
+	list_for_each_ro(bf_licenses, _foreach_bf_hres_pre_select, hres_select);
+	slurm_mutex_unlock(&license_mutex);
+
+	for (int i = 0; i < hres_select->leaf_cnt; i++) {
+		uint32_t min = INFINITE;
+
+		for (int j = 0; j < hres_select->depth; j++) {
+			uint16_t idx = hres_select->leaf[i].path_idx[j];
+			if (min > hres_select->avail_hres[idx])
+				min = hres_select->avail_hres[idx];
+		}
+		hres_select->leaf[i].capacity = min;
+	}
+	return;
+}
+
+extern uint16_t hres_select_find_leaf(hres_select_t *hres_select, int node_inx)
+{
+	for (int i = 0; i < hres_select->leaf_cnt; i++) {
+		if (bit_test(hres_select->leaf[i].node_bitmap, node_inx))
+			return i;
+	}
+	return NO_VAL16;
+}
+
+extern void hres_select_free(job_record_t *job_ptr)
+{
+	hres_select_t *hres_select = job_ptr->hres_select;
+
+	if (!hres_select)
+		return;
+
+	for (int i = 0; i < hres_select->leaf_cnt; i++) {
+		FREE_NULL_BITMAP(hres_select->leaf[i].node_bitmap);
+	}
+
+	xfree(hres_select->leaf);
+	xfree(hres_select->avail_hres);
+	xfree(hres_select->avail_hres_orgi);
+
+	xfree(job_ptr->hres_select);
+}
+
+extern void hres_select_print(hres_select_t *hres_select)
+{
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_LICENSE))
+		return;
+	if (!hres_select)
+		return;
+	for (int i = 0; i < hres_select->leaf_cnt; i++) {
+		verbose("%s leaf:%d capacity:%u", __func__, i,
+			hres_select->leaf[i].capacity);
+		for (int j = 0; j < hres_select->depth; j++) {
+			uint16_t idx = hres_select->leaf[i].path_idx[j];
+			verbose("\t\t %u %d", idx,
+				hres_select->avail_hres[idx]);
+		}
+	}
+}
+
+extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
+{
+	bool can_run = true;
+	uint16_t i = hres_select_find_leaf(hres_select, node_inx);
+
+	if (i == NO_VAL16)
+		return false;
+
+	for (int j = 0; j < hres_select->depth; j++) {
+		uint16_t idx = hres_select->leaf[i].path_idx[j];
+		if (hres_select->avail_hres[idx] < hres_select->hres_per_node) {
+			can_run = false;
+			break;
+		}
+	}
+
+	if (can_run) {
+		for (int j = 0; j < hres_select->depth; j++) {
+			uint16_t idx = hres_select->leaf[i].path_idx[j];
+			hres_select->avail_hres[idx] -=
+				hres_select->hres_per_node;
+		}
+	}
+
+	return can_run;
+}
+
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
 					  licenses_id_t id)
 {
@@ -1686,6 +1952,16 @@ static int _foreach_hres_job_get(void *x, void *arg)
 	if (match->id.hres_id != args->license_entry->id.hres_id)
 		return 0;
 
+	if (args->license_entry->mode == HRES_MODE_3) {
+		int32_t used = bit_overlap(match->node_bitmap,
+					   args->job_ptr->node_bitmap);
+		if (!used)
+			return 0;
+
+		match->used += used * args->license_entry->total;
+		return 0;
+	}
+
 	if (!bit_overlap_any(match->node_bitmap, args->job_ptr->node_bitmap))
 		return 0;
 
@@ -1822,6 +2098,37 @@ static int _foreach_hres_job_return_mode2(void *x, void *arg)
 	return 0;
 }
 
+static int _foreach_hres_job_return_mode3(void *x, void *arg)
+{
+	licenses_t *lic = x;
+	foreach_get_hres_t *args = arg;
+	licenses_t *match;
+	int32_t used;
+
+	if (lic->id.hres_id != args->license_entry->id.hres_id)
+		return 0;
+	if (lic->node_bitmap)
+		match = lic;
+	else
+		match = list_find_first_ro(cluster_license_list,
+					   _license_find_rec_by_id, &lic->id);
+	if (!match)
+		return 0;
+	used = bit_overlap(match->node_bitmap, args->job_ptr->node_bitmap);
+	if (!used)
+		return 0;
+
+	used *= args->license_entry->total;
+	if (lic->used >= used)
+		lic->used -= used;
+	else {
+		error("%s: license use count underflow for lic_id=%u",
+		      __func__, lic->id.lic_id);
+		lic->used = 0;
+	}
+
+	return 0;
+}
 static int _foreach_license_job_return(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
@@ -1837,6 +2144,22 @@ static int _foreach_license_job_return(void *x, void *arg)
 			slurm_mutex_lock(&license_mutex);
 		list_for_each_ro(args->license_list,
 				 _foreach_hres_job_return_mode2, &arg2);
+		if (!args->locked)
+			slurm_mutex_unlock(&license_mutex);
+
+		license_entry->used = 0;
+		return 0;
+	}
+
+	if (license_entry->mode == HRES_MODE_3) {
+		foreach_get_hres_t arg2 = {
+			.job_ptr = args->job_ptr,
+			.license_entry = license_entry,
+		};
+		if (!args->locked)
+			slurm_mutex_lock(&license_mutex);
+		list_for_each_ro(args->license_list,
+				 _foreach_hres_job_return_mode3, &arg2);
 		if (!args->locked)
 			slurm_mutex_unlock(&license_mutex);
 
@@ -2274,6 +2597,7 @@ static int _foreach_hres_deduct(void *x, void *arg)
 	bf_license_t *bf_lic = x;
 	licenses_t *match;
 	foreach_get_hres_t *args = arg;
+	uint32_t used = 0;
 
 	if ((bf_lic->id.hres_id != args->license_entry->id.hres_id) ||
 	    ((args->license_entry->mode == HRES_MODE_1) &&
@@ -2286,18 +2610,29 @@ static int _foreach_hres_deduct(void *x, void *arg)
 
 	match = list_find_first(cluster_license_list, _license_find_rec_by_id,
 				&bf_lic->id);
-	if (!match ||
-	    !bit_overlap_any(match->node_bitmap, args->job_ptr->node_bitmap))
-
+	if (!match)
 		return 0;
+
+	if (args->license_entry->mode == HRES_MODE_3) {
+		used = bit_overlap(match->node_bitmap,
+				   args->job_ptr->node_bitmap);
+	} else {
+		used = bit_overlap_any(match->node_bitmap,
+				       args->job_ptr->node_bitmap);
+	}
+
+	if (!used)
+		return 0;
+
+	used *= args->license_entry->total;
 
 	if (bf_lic->remaining == INFINITE) {
 		;
-	} else if (bf_lic->remaining < args->license_entry->total) {
+	} else if (bf_lic->remaining < used) {
 		error("%s: underflow on lic_id=%u", __func__, match->id.lic_id);
 		bf_lic->remaining = 0;
 	} else {
-		bf_lic->remaining -= args->license_entry->total;
+		bf_lic->remaining -= used;
 	}
 
 	if (match->mode == HRES_MODE_1)

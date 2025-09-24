@@ -58,6 +58,24 @@ typedef struct {
 typedef uint16_t path_idx_t[MAX_HIERARCHY_DEPTH];
 
 typedef struct {
+	uint32_t capacity;
+	bitstr_t *node_bitmap;
+	path_idx_t path_idx;
+} hres_leaf_t;
+
+typedef struct {
+	int *avail_hres;
+	int *avail_hres_orgi;
+	uint16_t depth;
+	uint16_t hres_per_node;
+	uint16_t layers_cnt; /* size of avail_hres */
+	hres_leaf_t *leaf;
+	uint16_t leaf_cnt; /* size of leaf */
+	licenses_id_t root_id;
+	bool test_only;
+} hres_select_t;
+
+typedef struct {
 	uint16_t depth; /* depth of layout */
 	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
 	uint16_t layers_cnt; /* count of layers, set only for root*/
@@ -102,6 +120,22 @@ extern int license_init(char *licenses);
 
 extern int hres_init(void);
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
+
+extern bool hres_select_check(hres_select_t *hres_select, int node_inx);
+
+extern void hres_create_select(job_record_t *job_ptr);
+
+extern uint16_t hres_select_find_leaf(hres_select_t *hres_select, int node_inx);
+
+extern void hres_select_free(job_record_t *job_ptr);
+
+extern void hres_select_print(hres_select_t *hres_select);
+
+extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
+
+extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
+				     bf_licenses_t *bf_licenses);
+
 extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				 list_t *license_list);
 extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,
