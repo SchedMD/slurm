@@ -715,9 +715,26 @@ extern int conmgr_con_get_input_fd(conmgr_fd_ref_t *ref, int *input_fd_ptr)
 	return _fd_get_input_fd(ref->con, input_fd_ptr);
 }
 
-extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
+static int _fd_get_output_fd(conmgr_fd_t *con, int *output_fd_ptr)
 {
+	if (!con)
+		return EINVAL;
+
+	xassert(output_fd_ptr);
+	xassert(*output_fd_ptr == -1);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
-	return con->output_fd;
+
+	*output_fd_ptr = con->output_fd;
+
+	return SLURM_SUCCESS;
+}
+
+extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
+{
+	int output_fd = -1;
+
+	(void) _fd_get_output_fd(con, &output_fd);
+
+	return output_fd;
 }
