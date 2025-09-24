@@ -1723,6 +1723,8 @@ fini:
 extern int eval_nodes(topology_eval_t *topo_eval)
 {
 	job_details_t *details_ptr = topo_eval->job_ptr->details;
+	hres_select_t *hres_select = topo_eval->job_ptr->hres_select;
+
 	static bool pack_serial_at_end = false;
 
 	static bool set = false;
@@ -1734,6 +1736,10 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 			pack_serial_at_end = false;
 		set = true;
 	}
+	if (hres_select)
+		memcpy(hres_select->avail_hres, hres_select->avail_hres_orgi,
+		       hres_select->layers_cnt *
+			       sizeof(*hres_select->avail_hres));
 
 	xassert(topo_eval->node_map);
 	if (bit_set_count(topo_eval->node_map) < topo_eval->min_nodes)
@@ -1796,9 +1802,14 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 {
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
+	hres_select_t *hres_select = job_ptr->hres_select;
 	avail_res_t *avail_res = topo_eval->avail_res_array[node_inx];
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 
+	if (hres_select && !hres_select_check(hres_select, node_inx)) {
+		topo_eval->avail_cpus = 0;
+		return false;
+	}
 	/* Use all resources on node */
 	if (details_ptr->whole_node & WHOLE_NODE_REQUIRED)
 		goto check_gres_per_job;

@@ -44,6 +44,7 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/plugrack.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct avail_res {	/* Per-node resource availability */
@@ -60,6 +61,7 @@ typedef struct avail_res {	/* Per-node resource availability */
 	list_t *sock_gres_list;	/* Per-socket GRES availability, sock_gres_t */
 	uint16_t spec_threads;	/* Specialized threads to be reserved */
 	uint16_t tpc;		/* Threads/cpus per core */
+	uint16_t hres_leaf_idx;
 } avail_res_t;
 
 typedef struct will_run_data {

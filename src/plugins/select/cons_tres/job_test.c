@@ -513,6 +513,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	avail_res_t *avail_res = NULL;
 	list_t *sock_gres_list = NULL;
 	uint16_t min_cpus_per_node, ntasks_per_node = 1;
+	uint16_t hres_leaf_idx = NO_VAL16;
+	hres_select_t *hres_select = job_ptr->hres_select;
 	gres_sock_list_create_t create_args = {
 		.cores_per_sock = node_ptr->cores,
 		.core_bitmap = NULL,
@@ -566,6 +568,14 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		}
 	}
 
+	if (hres_select) {
+		hres_leaf_idx = hres_select_find_leaf(hres_select, node_i);
+		if (hres_leaf_idx == NO_VAL16) {
+			log_flag(SELECT_TYPE, "Test fail on node %s: hres_select_find_leaf",
+				 node_ptr->name);
+			return NULL;
+		}
+	}
 	/* Identify available CPUs */
 	avail_res = _allocate(job_ptr, core_map[node_i],
 			      part_core_map_ptr, node_i,
@@ -714,6 +724,11 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	avail_res->avail_res_prod = cpus;
 	if (create_args.need_gpu)
 		avail_res->avail_res_prod *= avail_res->avail_gpus;
+
+	avail_res->hres_leaf_idx = hres_leaf_idx;
+	if (hres_select)
+		avail_res->avail_res_prod *=
+			hres_select->leaf[hres_leaf_idx].capacity;
 	_avail_res_log(avail_res, node_ptr->name);
 
 	return avail_res;
@@ -2217,6 +2232,8 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	list_t *license_list = cluster_license_copy();
 
+	hres_pre_select(job_ptr, true);
+
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage, license_list,
@@ -2934,6 +2951,8 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool preempt_mode = false;
+
+	hres_pre_select(job_ptr, false);
 
 	save_node_map = bit_copy(node_bitmap);
 top:	orig_node_map = bit_copy(save_node_map);
