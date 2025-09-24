@@ -270,6 +270,7 @@ extern int block_record_validate(topology_ctx_t *tctx)
 
 	if (ctx->block_count == 0) {
 		s_p_hashtbl_destroy(conf_hashtbl);
+		FREE_NULL_BITMAP(ctx->block_levels);
 		xfree(ctx);
 		xfree(ptr_array_mem);
 		fatal("No blocks configured, failed to create context for topology plugin");
