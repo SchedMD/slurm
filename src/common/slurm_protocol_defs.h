@@ -352,6 +352,7 @@ typedef struct slurm_msg {
 
 #define SLURM_MSG_INITIALIZER \
 	((slurm_msg_t) { \
+		.auth_index = AUTH_DEFAULT_INDEX, \
 		.auth_uid = SLURM_AUTH_NOBODY, \
 		.auth_gid = SLURM_AUTH_NOBODY, \
 		.msg_type = NO_VAL16, \
