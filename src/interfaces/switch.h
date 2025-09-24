@@ -98,9 +98,9 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr);
  *                   tasks_per_node and tids set
  * IN  step_ptr    - step_record_t for this step
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
- * NOTE: storage must be freed using switch_g_free_stepinfo
+ * NOTE: storage must be freed using switch_g_stepinfo_free
  */
-extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
+extern int switch_g_stepinfo_build(dynamic_plugin_data_t **jobinfo,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr);
 
@@ -109,23 +109,23 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **jobinfo,
  * IN  source  - storage for a switch job credential
  * OUT dest    - pointer to NULL at beginning, will point to storage for
  *               duplicated switch job credential
- * NOTE: storage must be freed using switch_g_free_stepinfo
+ * NOTE: storage must be freed using switch_g_stepinfo_free
  */
-extern void switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
+extern void switch_g_stepinfo_duplicate(dynamic_plugin_data_t *source,
 					dynamic_plugin_data_t **dest);
 
 /*
  * free storage previously allocated for a switch step credential
  * IN jobinfo  - the switch job credential to be freed
  */
-extern void switch_g_free_stepinfo(dynamic_plugin_data_t *jobinfo);
+extern void switch_g_stepinfo_free(dynamic_plugin_data_t *jobinfo);
 
 /*
  * IN jobinfo  - the switch job credential to be saved
  * OUT buffer  - buffer with switch credential appended
  * IN protocol_version - version of Slurm we are talking to.
  */
-extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
+extern void switch_g_stepinfo_pack(dynamic_plugin_data_t *jobinfo,
 				   buf_t *buffer, uint16_t protocol_version);
 
 /*
@@ -133,11 +133,11 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *jobinfo,
  * IN  buffer  - buffer with switch credential read from current pointer loc
  * IN  protocol_version - version of Slurm we are talking to.
  * RET         - slurm error code
- * NOTE: returned value must be freed using switch_g_free_stepinfo
+ * NOTE: returned value must be freed using switch_g_stepinfo_free
  *	 Actual stepinfo will only be unpacked in the stepd as this is the only
  *	 location that requires it.
  */
-extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **jobinfo,
+extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **jobinfo,
 				    buf_t *buffer, uint16_t protocol_version);
 
 /*

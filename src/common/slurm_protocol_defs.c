@@ -2221,7 +2221,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 	xfree(msg->complete_nodelist);
 
 	if (msg->switch_step)
-		switch_g_free_stepinfo(msg->switch_step);
+		switch_g_stepinfo_free(msg->switch_step);
 
 	FREE_NULL_LIST(msg->options);
 
@@ -4140,7 +4140,7 @@ extern void slurm_free_job_step_create_response_msg(
 		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
 		if (msg->switch_step)
-			switch_g_free_stepinfo(msg->switch_step);
+			switch_g_stepinfo_free(msg->switch_step);
 
 		xfree(msg);
 	}

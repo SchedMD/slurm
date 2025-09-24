@@ -512,7 +512,7 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 	return node_cnt;
 }
 
-extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
+extern int switch_p_stepinfo_build(switch_stepinfo_t **switch_job,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
@@ -581,7 +581,7 @@ extern int switch_p_build_stepinfo(switch_stepinfo_t **switch_job,
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_duplicate_stepinfo(switch_stepinfo_t *tmp,
+extern void switch_p_stepinfo_duplicate(switch_stepinfo_t *tmp,
 					switch_stepinfo_t **dest)
 {
 	slingshot_stepinfo_t *old = (slingshot_stepinfo_t *) tmp;
@@ -592,7 +592,7 @@ extern void switch_p_duplicate_stepinfo(switch_stepinfo_t *tmp,
 	*dest = (switch_stepinfo_t *) new;
 }
 
-extern void switch_p_free_stepinfo(switch_stepinfo_t *switch_job)
+extern void switch_p_stepinfo_free(switch_stepinfo_t *switch_job)
 {
 	slingshot_stepinfo_t *stepinfo = (slingshot_stepinfo_t *) switch_job;
 	xassert(stepinfo);
@@ -747,7 +747,7 @@ unpack_error:
 	return false;
 }
 
-extern void switch_p_pack_stepinfo(switch_stepinfo_t *switch_job, buf_t *buffer,
+extern void switch_p_stepinfo_pack(switch_stepinfo_t *switch_job, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	uint32_t pidx;
@@ -792,7 +792,7 @@ extern void switch_p_pack_stepinfo(switch_stepinfo_t *switch_job, buf_t *buffer,
 	}
 }
 
-extern int switch_p_unpack_stepinfo(switch_stepinfo_t **switch_job,
+extern int switch_p_stepinfo_unpack(switch_stepinfo_t **switch_job,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t pidx = 0;
@@ -861,7 +861,7 @@ extern int switch_p_unpack_stepinfo(switch_stepinfo_t **switch_job,
 unpack_error:
 	error("error unpacking stepinfo struct");
 error:
-	switch_p_free_stepinfo(*switch_job);
+	switch_p_stepinfo_free(*switch_job);
 	*switch_job = NULL;
 	return SLURM_ERROR;
 }

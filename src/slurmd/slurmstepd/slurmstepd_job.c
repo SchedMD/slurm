@@ -235,7 +235,7 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 	step->node_list = xstrdup(cred_arg->job_hostlist);
 
 	if (cred_arg->switch_step)
-		switch_g_duplicate_stepinfo(cred_arg->switch_step,
+		switch_g_stepinfo_duplicate(cred_arg->switch_step,
 					    &step->switch_step);
 
 	slurm_cred_unlock_args(cred);
@@ -704,7 +704,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	xfree(step->x11_xauthority);
 
 	if (step->switch_step)
-		switch_g_free_stepinfo(step->switch_step);
+		switch_g_stepinfo_free(step->switch_step);
 
 	xfree(step);
 }

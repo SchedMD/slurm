@@ -385,7 +385,7 @@ static int _log_channel_step(
 	return 1;
 }
 
-extern int switch_p_build_stepinfo(switch_info_t **switch_step,
+extern int switch_p_stepinfo_build(switch_info_t **switch_step,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
@@ -414,7 +414,7 @@ extern int switch_p_build_stepinfo(switch_info_t **switch_step,
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_duplicate_stepinfo(switch_info_t *orig,
+extern void switch_p_stepinfo_duplicate(switch_info_t *orig,
 					switch_info_t **dest)
 {
 	if (!orig)
@@ -423,7 +423,7 @@ extern void switch_p_duplicate_stepinfo(switch_info_t *orig,
 	*dest = _create_info(orig->channel_list);
 }
 
-extern void switch_p_free_stepinfo(switch_info_t *switch_step)
+extern void switch_p_stepinfo_free(switch_info_t *switch_step)
 {
 	if (switch_step) {
 		xassert(switch_step->magic == SWITCH_INFO_MAGIC);
@@ -432,13 +432,13 @@ extern void switch_p_free_stepinfo(switch_info_t *switch_step)
 	xfree(switch_step);
 }
 
-extern void switch_p_pack_stepinfo(switch_info_t *switch_step, buf_t *buffer,
+extern void switch_p_stepinfo_pack(switch_info_t *switch_step, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	switch_p_jobinfo_pack(switch_step, buffer, protocol_version);
 }
 
-extern int switch_p_unpack_stepinfo(switch_info_t **switch_step, buf_t *buffer,
+extern int switch_p_stepinfo_unpack(switch_info_t **switch_step, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	return switch_p_jobinfo_unpack(switch_step, buffer, protocol_version);

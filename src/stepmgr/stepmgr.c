@@ -3195,7 +3195,7 @@ static int _switch_setup(step_record_t *step_ptr)
 		return SLURM_SUCCESS;
 
 	errno = 0;
-	if (switch_g_build_stepinfo(&step_ptr->switch_step,
+	if (switch_g_stepinfo_build(&step_ptr->switch_step,
 				    step_ptr->step_layout,
 				    step_ptr) < 0) {
 		if (errno == ESLURM_INTERCONNECT_BUSY)
@@ -4110,7 +4110,7 @@ no_aggregate:
 			switch_g_job_step_complete(
 				step_ptr->switch_step,
 				step_ptr->step_layout->node_list);
-			switch_g_free_stepinfo(step_ptr->switch_step);
+			switch_g_stepinfo_free(step_ptr->switch_step);
 			step_ptr->switch_step = NULL;
 		}
 	}
@@ -5152,7 +5152,7 @@ end_it:
 		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
 
 		if (step_rec->switch_step)
-			switch_g_duplicate_stepinfo(step_rec->switch_step,
+			switch_g_stepinfo_duplicate(step_rec->switch_step,
 						    &switch_step);
 		job_step_resp.switch_step = switch_step;
 
@@ -5184,7 +5184,7 @@ end_it:
 
 		slurm_cred_destroy(slurm_cred);
 		slurm_step_layout_destroy(step_layout);
-		switch_g_free_stepinfo(switch_step);
+		switch_g_stepinfo_free(switch_step);
 	}
 
 	xfree(err_msg);

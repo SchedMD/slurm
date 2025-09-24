@@ -65,16 +65,16 @@ typedef struct slurm_switch_ops {
 					    buf_t *buffer,
 					    uint16_t protocol_version );
 	void (*jobinfo_free)(void *switch_jobinfo);
-	int          (*build_stepinfo)    ( switch_stepinfo_t **stepinfo,
+	int          (*stepinfo_build)    ( switch_stepinfo_t **stepinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
-	void         (*duplicate_stepinfo)( switch_stepinfo_t *source,
+	void         (*stepinfo_duplicate)( switch_stepinfo_t *source,
 					    switch_stepinfo_t **dest);
-	void         (*free_stepinfo)     ( switch_stepinfo_t *stepinfo );
-	void         (*pack_stepinfo)     ( switch_stepinfo_t *stepinfo,
+	void         (*stepinfo_free)     ( switch_stepinfo_t *stepinfo );
+	void         (*stepinfo_pack)     ( switch_stepinfo_t *stepinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
-	int          (*unpack_stepinfo)   ( switch_stepinfo_t **stepinfo,
+	int          (*stepinfo_unpack)   ( switch_stepinfo_t **stepinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
@@ -105,11 +105,11 @@ static const char *syms[] = {
 	"switch_p_jobinfo_pack",
 	"switch_p_jobinfo_unpack",
 	"switch_p_jobinfo_free",
-	"switch_p_build_stepinfo",
-	"switch_p_duplicate_stepinfo",
-	"switch_p_free_stepinfo",
-	"switch_p_pack_stepinfo",
-	"switch_p_unpack_stepinfo",
+	"switch_p_stepinfo_build",
+	"switch_p_stepinfo_duplicate",
+	"switch_p_stepinfo_free",
+	"switch_p_stepinfo_pack",
+	"switch_p_stepinfo_unpack",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
 	"switch_p_job_postfini",
@@ -333,7 +333,7 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr)
 	(*(ops[switch_context_default].jobinfo_free))(job_ptr);
 }
 
-extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
+extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
@@ -348,11 +348,11 @@ extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,
 	*stepinfo = _create_dynamic_plugin_data(plugin_id);
 	data = &(*stepinfo)->data;
 
-	return (*(ops[plugin_id].build_stepinfo))((switch_stepinfo_t **) data,
+	return (*(ops[plugin_id].stepinfo_build))((switch_stepinfo_t **) data,
 						  step_layout, step_ptr);
 }
 
-extern void switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
+extern void switch_g_stepinfo_duplicate(dynamic_plugin_data_t *source,
 					dynamic_plugin_data_t **dest)
 {
 	dynamic_plugin_data_t *dest_ptr = NULL;
@@ -366,24 +366,24 @@ extern void switch_g_duplicate_stepinfo(dynamic_plugin_data_t *source,
 	dest_ptr = _create_dynamic_plugin_data(plugin_id);
 	*dest = dest_ptr;
 
-	(*(ops[plugin_id].duplicate_stepinfo))
+	(*(ops[plugin_id].stepinfo_duplicate))
 		(source->data, (switch_stepinfo_t **) &dest_ptr->data);
 }
 
-extern void switch_g_free_stepinfo(dynamic_plugin_data_t *stepinfo)
+extern void switch_g_stepinfo_free(dynamic_plugin_data_t *stepinfo)
 {
 	if (!switch_context_cnt)
 		return;
 
 	if (stepinfo) {
 		if (stepinfo->data)
-			(*(ops[stepinfo->plugin_id].free_stepinfo))
+			(*(ops[stepinfo->plugin_id].stepinfo_free))
 				(stepinfo->data);
 		xfree(stepinfo);
 	}
 }
 
-extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
+extern void switch_g_stepinfo_pack(dynamic_plugin_data_t *stepinfo,
 				   buf_t *buffer, uint16_t protocol_version)
 {
 	void *data = NULL;
@@ -415,7 +415,7 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 		return;
 	}
 
-	(*(ops[plugin_id].pack_stepinfo))(data, buffer, protocol_version);
+	(*(ops[plugin_id].stepinfo_pack))(data, buffer, protocol_version);
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		end = get_buf_offset(buffer);
@@ -425,7 +425,7 @@ extern void switch_g_pack_stepinfo(dynamic_plugin_data_t *stepinfo,
 	}
 }
 
-extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
+extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **stepinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	int i;
@@ -474,7 +474,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 		goto unpack_error;
 	}
 
-	if ((*(ops[stepinfo_ptr->plugin_id].unpack_stepinfo))
+	if ((*(ops[stepinfo_ptr->plugin_id].stepinfo_unpack))
 	     ((switch_stepinfo_t **) &stepinfo_ptr->data, buffer,
 	      protocol_version))
 		goto unpack_error;
@@ -485,7 +485,7 @@ extern int switch_g_unpack_stepinfo(dynamic_plugin_data_t **stepinfo,
 	 */
 	if ((stepinfo_ptr->plugin_id != switch_context_default) &&
 	    running_in_slurmctld()) {
-		switch_g_free_stepinfo(stepinfo_ptr);
+		switch_g_stepinfo_free(stepinfo_ptr);
 		*stepinfo = _create_dynamic_plugin_data(switch_context_default);
 	}
 
@@ -500,7 +500,7 @@ skip_buf:
 	return SLURM_SUCCESS;
 
 unpack_error:
-	switch_g_free_stepinfo(stepinfo_ptr);
+	switch_g_stepinfo_free(stepinfo_ptr);
 	*stepinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
