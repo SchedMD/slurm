@@ -269,11 +269,10 @@ extern int block_record_validate(topology_ctx_t *tctx)
 	}
 
 	if (ctx->block_count == 0) {
-		error("No blocks configured");
 		s_p_hashtbl_destroy(conf_hashtbl);
 		xfree(ctx);
 		xfree(ptr_array_mem);
-		return SLURM_ERROR;
+		fatal("No blocks configured, failed to create context for topology plugin");
 	}
 	/*
 	 *  Allocate more than enough space for all aggregated blocks
