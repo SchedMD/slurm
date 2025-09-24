@@ -775,8 +775,11 @@ MaxVMSize, MaxVMSizeNode, MaxVMSizeTask</i> and <i>vmem</i> in
 with <i>cgroup/v2</i>.</p>
 <p>In what regards to real stack size (RSS), this plugin provides cgroup's
 <i>memory.current</i> value from the memory interface, which is not equal to the
-RSS value provided by procfs. Nevertheless it is the same value that the kernel
-uses in its OOM killer logic.
+RSS value provided by procfs. Note that the file cache (active_file and
+inactive_file in memory.stat) is counted toward RSS and MaxRSS unless
+<i>JobAcctGatherParams=no_file_cache</i> is set. When that option is used,
+MaxRSS no longer relies on memory.peak, so brief memory spikes may go unnoticed
+if they occur between <i>JobAcctGatherFrequency</i> intervals.
 </p>
 
 <p>RHEL8 / Rocky8: According to its release notes, support for cgroups v2

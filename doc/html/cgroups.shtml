@@ -342,8 +342,12 @@ separate controller which needs to be mounted.
 program must be inserted in the kernel.
 </li>
 
-<li>In <i>cgroup/v2</i>, memory.stat file has changed and now we do the sum of
-anon+swapcached+anon_thp to match the RSS concept in v1.
+<li>In <i>cgroup/v2</i>, memory.current is used to report RSS and
+memory.peak for MaxRSS. File cache (active_file and inactive_file fields
+from memory.stat) are counted unless <i>JobAcctGatherParam=no_file_cache</i> is
+set. If this option is enabled, MaxRSS is taken only from the periodic polling
+rather than <i>memory.peak</i>, so short memory spikes can be missed between
+<i>JobAcctGatherFrequency</i> intervals.
 </li>
 
 <li>In <i>cgroup/v2</i>, cpu.stat provides metrics in milis while puacct.stat
