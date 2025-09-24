@@ -830,10 +830,41 @@ end_it:
 
 extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
 {
-	if (plugin_disabled)
-		return SLURM_SUCCESS;
+	char *job_mount = NULL, *ns_base = NULL;
+	ns_fd_map_t *tmp_map = NULL;
 
-	return SLURM_SUCCESS;
+	xassert(ns_map);
+
+	if (plugin_disabled)
+		return 0;
+
+	_create_paths(job_id, &job_mount, &ns_base, NULL);
+
+	for (int i = 0; i < NS_L_END; i++) {
+		if (!ns_l_enabled[i].enabled)
+			continue;
+
+		if (!ns_l_enabled[i].fd) {
+			ns_l_enabled[i].fd =
+				open(ns_l_enabled[i].path, O_RDONLY);
+			if (ns_l_enabled[i].fd == -1) {
+				error("%s: %m", __func__);
+				goto end_it;
+			}
+		}
+		tmp_map = xmalloc(sizeof(*tmp_map));
+		tmp_map->type = ns_l_enabled[i].flag;
+		tmp_map->fd = ns_l_enabled[i].fd;
+		list_append(ns_map, tmp_map);
+		tmp_map = NULL;
+	}
+
+end_it:
+
+	xfree(job_mount);
+	xfree(ns_base);
+
+	return list_count(ns_map);
 }
 
 extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
