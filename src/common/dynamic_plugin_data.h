@@ -36,4 +36,9 @@
 #ifndef _COMMON_DYNAMIC_PLUGIN_DATA_H
 #define _COMMON_DYNAMIC_PLUGIN_DATA_H
 
+typedef struct dynamic_plugin_data {
+	void *data;
+	uint32_t plugin_id;
+} dynamic_plugin_data_t;
+
 #endif

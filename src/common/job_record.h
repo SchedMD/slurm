@@ -35,6 +35,7 @@
 #define _SLURM_JOB_RECORD_H
 
 #include "src/common/cron.h"
+#include "src/common/dynamic_plugin_data.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/part_record.h"
 #include "src/common/slurm_protocol_defs.h"

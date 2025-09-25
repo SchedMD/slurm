@@ -43,6 +43,8 @@
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/common/dynamic_plugin_data.h"
+
 #include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 

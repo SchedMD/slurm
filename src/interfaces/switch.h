@@ -44,6 +44,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/dynamic_plugin_data.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/slurmctld/slurmctld.h"

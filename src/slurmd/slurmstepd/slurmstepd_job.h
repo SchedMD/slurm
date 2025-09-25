@@ -47,6 +47,7 @@
 #include <pwd.h>
 
 #include "src/common/data.h"
+#include "src/common/dynamic_plugin_data.h"
 #include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/list.h"

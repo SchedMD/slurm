@@ -1578,11 +1578,6 @@ typedef bitstr_t bitoff_t;
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
-typedef struct dynamic_plugin_data {
-	void *data;
-	uint32_t plugin_id;
-} dynamic_plugin_data_t;
-
 typedef struct acct_gather_energy {
 	uint32_t ave_watts;	  /* average power consump of node, in watts */
 	uint64_t base_consumed_energy;
