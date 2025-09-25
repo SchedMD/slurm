@@ -176,6 +176,7 @@ extern char *poll_revents_to_str(const short revents);
  * Pass an open fd back over a socket.
  */
 extern void send_fd_over_socket(int socket, int fd);
+extern void send_fd_over_socket_payload(int socket, int fd, char *payload);
 extern int receive_fd_over_socket(int socket);
 
 /*
