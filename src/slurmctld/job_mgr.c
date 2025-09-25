@@ -1548,7 +1548,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 			err_part, job_ptr->job_id);
 		xfree(err_part);
 		/* not fatal error, partition could have been
-		 * removed, reset_job_bitmaps() will clean-up
+		 * removed, _sync_jobs_to_conf() will clean-up
 		 * this job */
 	}
 

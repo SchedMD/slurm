@@ -213,7 +213,7 @@ extern void fini(void)
  * src/slurmctld/read_config.c. The whole story goes like this:
  *
  * Step 1: select_g_node_init          : initializes the global node arrays
- * Step 2: select_g_select_nodeinfo_set: called from reset_job_bitmaps() with
+ * Step 2: select_g_select_nodeinfo_set: called from _sync_jobs_to_conf() with
  *                                       each valid recovered job_ptr AND from
  *                                       select_nodes(), this procedure adds
  *                                       job data to the 'select_part_record'
