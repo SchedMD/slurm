@@ -1980,13 +1980,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	resv_desc_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
@@ -2008,7 +2006,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		packstr(msg->groups, buffer);
 		packstr(msg->comment, buffer);
 		packstr(msg->tres_str, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->end_time,   buffer);
@@ -13507,9 +13505,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_CREATE_RESERVATION:
 	case REQUEST_UPDATE_RESERVATION:
-		_pack_update_resv_msg((resv_desc_msg_t *) msg->
-				      data, buffer,
-				      msg->protocol_version);
+		_pack_update_resv_msg(msg, buffer);
 		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
