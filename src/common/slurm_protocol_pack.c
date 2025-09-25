@@ -2106,13 +2106,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_delete_partition_msg(delete_part_msg_t * msg, buf_t *buffer,
-			   uint16_t protocol_version)
+static void _pack_delete_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	delete_part_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
 	}
 }
@@ -13505,9 +13503,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_update_partition_msg(msg, buffer);
 		break;
 	case REQUEST_DELETE_PARTITION:
-		_pack_delete_partition_msg((delete_part_msg_t *) msg->
-					   data, buffer,
-					   msg->protocol_version);
+		_pack_delete_partition_msg(msg, buffer);
 		break;
 	case REQUEST_CREATE_RESERVATION:
 	case REQUEST_UPDATE_RESERVATION:
