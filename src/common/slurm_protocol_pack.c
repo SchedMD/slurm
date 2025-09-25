@@ -7882,11 +7882,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_last_update_msg(last_update_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_last_update_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	last_update_msg_t *msg = smsg->data;
+
 	pack_time(msg->last_update, buffer);
 }
 
@@ -13424,9 +13423,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_resv_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_BUILD_INFO:
-		_pack_last_update_msg((last_update_msg_t *)
-				      msg->data, buffer,
-				      msg->protocol_version);
+		_pack_last_update_msg(msg, buffer);
 		break;
 	case RESPONSE_BUILD_INFO:
 		_pack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t *)
