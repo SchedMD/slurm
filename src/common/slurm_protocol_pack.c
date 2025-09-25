@@ -7637,14 +7637,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_alloc_info_msg(job_alloc_info_msg_t *job_desc_ptr, buf_t *buffer,
-			 uint16_t protocol_version)
+static void _pack_job_alloc_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(job_desc_ptr);
+	job_alloc_info_msg_t *job_desc_ptr = smsg->data;
 
-	/* load the data values */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->job_id, buffer);
 		packstr(job_desc_ptr->req_cluster, buffer);
 	}
@@ -13449,8 +13446,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_HET_JOB_ALLOC_INFO:
-		_pack_job_alloc_info_msg((job_alloc_info_msg_t *) msg->data,
-					 buffer, msg->protocol_version);
+		_pack_job_alloc_info_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		_pack_step_alloc_info_msg((step_alloc_info_msg_t *) msg->data,
