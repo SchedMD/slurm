@@ -224,16 +224,20 @@ available hardware CPUs, increasing the potential for thread starvation. While
 processing incoming RPC requests, slurmctld usually has to obtain one or
 more of the global slurmctld locks. Each thread attempting to obtain a lock can
 cause increased contention with the scheduler threads. Lock contention will
-result in the job scheduler running slower or with non-neglible delays.
+result in the job scheduler running slower or with noticeable delays, and
+increase the average time per RPC.
 Sites wishing for more RPC throughput can increase <b>conmgr_threads</b> from
 the defaults, while sites wishing to prioritize scheduler threads can decrease
-the thread count. Sites are advised to monitor for changes in
-<code>sdiag</code>'s job start statistics when changing this parameter.
-<b>conmgr_threads</b> should at least be between 2-4 times the number of
-hardware CPU threads available to slurmctld daemon due to most RPC processing
-needing to wait on global locks. Increasing <b>conmgr_threads</b> too much
-could cause an <i>Out of Memory</i> event which will cause slurmctld to
-crash, potentially losing jobs and accounting.
+the thread count. We recommend trying to modify <b>conmgr_max_connections</b>
+and the <b>SchedulerParameters</b> to get the performance you want, before
+attempting to change <b>conmgr_threads</b>.
+You should monitor for changes in <code>sdiag</code>'s job start statistics
+when changing this parameter. In most cases, sites should consider reducing
+<b>conmgr_threads</b> instead of adding more threads, as having too many
+threads can cause locking overhead and cause <code>slurmctld</code> to hang.
+Increasing <b>conmgr_threads</b> also uses more memory, potentially causing an
+<i>Out of Memory</i> event for <code>slurmctld</code>, which could result in
+lost jobs and accounting.
 </li>
 </ul>
 <li><b>SchedulerType</b>:
