@@ -993,16 +993,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
-				   msg, buf_t *buffer,
-				   uint16_t protocol_version)
+static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
+					       buf_t *buffer)
 {
+	slurm_node_registration_status_msg_t *msg = smsg->data;
 	int i;
 	uint32_t gres_info_size = 0;
-	xassert(msg);
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
@@ -1032,7 +1030,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
 			pack_step_id(&msg->step_id[i], buffer,
-				     protocol_version);
+				     smsg->protocol_version);
 		}
 		pack16(msg->flags, buffer);
 		if (msg->gres_info)
@@ -1042,13 +1040,14 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 			packmem(get_buf_data(msg->gres_info), gres_info_size,
 				buffer);
 		}
-		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
+		acct_gather_energy_pack(msg->energy, buffer,
+					smsg->protocol_version);
 		packstr(msg->version, buffer);
 
 		pack8(msg->dynamic_type, buffer);
 		packstr(msg->dynamic_conf, buffer);
 		packstr(msg->dynamic_feature, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->timestamp, buffer);
 		pack_time(msg->slurmd_start_time, buffer);
 		pack32(msg->status, buffer);
@@ -1077,7 +1076,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 		pack32(msg->job_count, buffer);
 		for (i = 0; i < msg->job_count; i++) {
 			pack_step_id(&msg->step_id[i], buffer,
-				      protocol_version);
+				     smsg->protocol_version);
 		}
 		pack16(msg->flags, buffer);
 		if (msg->gres_info)
@@ -1087,7 +1086,8 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 			packmem(get_buf_data(msg->gres_info), gres_info_size,
 				buffer);
 		}
-		acct_gather_energy_pack(msg->energy, buffer, protocol_version);
+		acct_gather_energy_pack(msg->energy, buffer,
+					smsg->protocol_version);
 		packstr(msg->version, buffer);
 
 		pack8(msg->dynamic_type, buffer);
@@ -13415,10 +13415,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_script_msg(msg, buffer);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
-		_pack_node_registration_status_msg(
-			(slurm_node_registration_status_msg_t *) msg->data,
-			buffer,
-			msg->protocol_version);
+		_pack_node_registration_status_msg(msg, buffer);
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
 	case RESPONSE_ACCT_GATHER_ENERGY:
