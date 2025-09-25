@@ -87,6 +87,9 @@ const static entry_t jsra[] = {
 	[WAIT_HELD_USER] = {
 		.str = "JobHeldUser",
 	},
+	[WAIT_NVIDIA_IMEX_CHANNELS] = {
+		.str = "NvidiaImexChannels",
+	},
 	[WAIT_TIME] = {
 		.str = "BeginTime",
 	},

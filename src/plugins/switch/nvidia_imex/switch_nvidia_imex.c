@@ -101,6 +101,8 @@ typedef struct {
 typedef struct {
 	list_t **channel_list;
 	job_record_t *job_ptr;
+	int *rc_ptr;
+	bool test_only;
 } allocate_channel_args_t;
 
 static uint32_t max_channel_count = 2048;
@@ -564,6 +566,18 @@ static void _allocate_channel(
 	channel_t *channel;
 	list_t **channel_list = args->channel_list;
 	job_record_t *job_ptr = args->job_ptr;
+	int *rc_ptr = args->rc_ptr;
+	bool test_only = args->test_only;
+
+	if (test_only) {
+		xassert(!channel_list);
+
+		if (id < 0) {
+			*rc_ptr = SLURM_ERROR;
+			job_ptr->state_reason = WAIT_NVIDIA_IMEX_CHANNELS;
+		}
+		return;
+	}
 
 	if (id > 0) {
 		log_flag(SWITCH, "allocating channel %d to %pJ with node_list %s",
@@ -589,8 +603,12 @@ static int _allocate_channel_per_segment(
 	void *arg)
 {
 	char *node_list = x;
+	allocate_channel_args_t *args = arg;
 
 	_allocate_channel(arg, node_list);
+
+	if ((*args->rc_ptr) != SLURM_SUCCESS)
+		return -1;
 
 	return 1;
 }
@@ -600,12 +618,13 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 	static bool first_alloc = true;
 	list_t *segment_list = NULL;
 	switch_info_t *switch_jobinfo;
+	int rc = SLURM_SUCCESS;
+
 	allocate_channel_args_t args = {
 		.job_ptr = job_ptr,
+		.rc_ptr = &rc,
+		.test_only = test_only,
 	};
-
-	if (test_only)
-		return SLURM_SUCCESS;
 
 	/*
 	 * FIXME: this is hacked in here as switch_p_restore() is called
@@ -618,8 +637,10 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 		first_alloc = false;
 	}
 
-	job_ptr->switch_jobinfo = switch_jobinfo = _create_info(NULL);
-	args.channel_list = &switch_jobinfo->channel_list;
+	if (!test_only) {
+		job_ptr->switch_jobinfo = switch_jobinfo = _create_info(NULL);
+		args.channel_list = &switch_jobinfo->channel_list;
+	}
 
 	log_flag(SWITCH, "%s: Starting %pJ", __func__, job_ptr);
 
@@ -653,12 +674,16 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 		_allocate_channel(&args, NULL);
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
+	if (test_only)
+		return rc;
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) &&
+	    (rc == SLURM_SUCCESS) && switch_jobinfo->channel_list) {
 		list_for_each(switch_jobinfo->channel_list, _log_channel_job,
 			      job_ptr);
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern void switch_p_job_complete(job_record_t *job_ptr)
