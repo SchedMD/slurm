@@ -1682,18 +1682,6 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con->on_extract.func);
 	xassert(con->on_extract.func_name);
 
-	/* Catch file descriptors being closed for any reason before now */
-	if (con->input_fd < 0) {
-		log_flag(CONMGR, "%s: [%s] invalid input_fd",
-			 __func__, con->name);
-		goto failed;
-	}
-	if (con->output_fd < 0) {
-		log_flag(CONMGR, "%s: [%s] invalid output_fd",
-			 __func__, con->name);
-		goto failed;
-	}
-
 	/* Polling should already be disabled */
 	xassert((con->polling_input_fd == PCTL_TYPE_NONE) ||
 		(con->polling_input_fd == PCTL_TYPE_UNSUPPORTED));
@@ -1717,6 +1705,18 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		goto failed;
+
+	/* Catch file descriptors being closed for any reason before now */
+	if (con->input_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] invalid input_fd",
+			 __func__, con->name);
+		goto failed;
+	}
+	if (con->output_fd < 0) {
+		log_flag(CONMGR, "%s: [%s] invalid output_fd",
+			 __func__, con->name);
+		goto failed;
+	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
