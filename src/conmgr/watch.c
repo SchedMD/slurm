@@ -615,7 +615,7 @@ static bool can_extract(conmgr_fd_t *con, const bool is_tls)
 
 	/* Waiting for TLS negotiation */
 	if (is_tls && (con_flag(con, FLAG_IS_TLS_CONNECTED) ||
-		       con_flag(con, FLAG_WAIT_ON_FINISH)))
+		       con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)))
 		return false;
 
 	/* Wait to extract until Quiesce has ended */
