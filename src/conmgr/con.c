@@ -1819,6 +1819,7 @@ failed:
 	close_con(true, con);
 	slurm_mutex_unlock(&mgr.mutex);
 
+	/* Close file descriptors if they were extracted */
 	if (!conn) {
 		fd_close(&input_fd);
 		fd_close(&output_fd);
