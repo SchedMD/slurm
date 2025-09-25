@@ -997,7 +997,6 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 					       buf_t *buffer)
 {
 	slurm_node_registration_status_msg_t *msg = smsg->data;
-	int i;
 	uint32_t gres_info_size = 0;
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
@@ -1028,7 +1027,7 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 		pack64(msg->free_mem, buffer);
 
 		pack32(msg->job_count, buffer);
-		for (i = 0; i < msg->job_count; i++) {
+		for (int i = 0; i < msg->job_count; i++) {
 			pack_step_id(&msg->step_id[i], buffer,
 				     smsg->protocol_version);
 		}
@@ -1074,7 +1073,7 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 		pack64(msg->free_mem, buffer);
 
 		pack32(msg->job_count, buffer);
-		for (i = 0; i < msg->job_count; i++) {
+		for (int i = 0; i < msg->job_count; i++) {
 			pack_step_id(&msg->step_id[i], buffer,
 				     smsg->protocol_version);
 		}
