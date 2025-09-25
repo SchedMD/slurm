@@ -72,6 +72,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
+#include "src/common/parse_value.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
@@ -11169,4 +11170,85 @@ extern bool gres_valid_name(char *name)
 		return true;
 
 	return false;
+}
+
+static void _parse_gres_conf_values(char *gres_str, char *node_name)
+{
+	char *key, *saveptr;
+	gres_slurmd_conf_t *gsc;
+	gsc = xmalloc(sizeof(gres_slurmd_conf_t));
+
+	for (key = strtok_r(gres_str, ",", &saveptr);
+	     key;
+	     key = strtok_r(NULL, ",", &saveptr)) {
+		char *val = strchr(key, '=');
+		if (!val) {
+			error("Missing value in str: %s", key);
+			continue;
+		}
+		*val = '\0';
+		val++;
+
+		if (!xstrncasecmp(key, "count", strlen("count")))
+			s_p_handle_uint64(&gsc->count, key, val);
+		else if (!xstrncasecmp(key, "cpu_cnt", strlen("cpu_cnt")))
+			s_p_handle_uint32(&gsc->cpu_cnt, key, val);
+		else if (!xstrncasecmp(key, "flags", strlen("flags")))
+			s_p_handle_uint32(&gsc->config_flags, key, val);
+		else if (!xstrncasecmp(key, "cpus", strlen("cpus")))
+			gsc->cpus = xstrdup(val);
+		else if (!xstrncasecmp(key, "file", strlen("file")))
+			gsc->file = xstrdup(val);
+		else if (!xstrncasecmp(key, "links", strlen("links")))
+			gsc->links = xstrdup(val);
+		else if (!xstrncasecmp(key, "name", strlen("name")))
+			gsc->name = xstrdup(val);
+		else if (!xstrncasecmp(key, "type", strlen("type_name")))
+			gsc->type_name = xstrdup(val);
+		else if (!xstrncasecmp(key, "unique_id", strlen("unique_id")))
+			gsc->unique_id = xstrdup(val);
+		else if (!xstrncasecmp(key, "plugin_id", strlen("plugin_id")))
+			s_p_handle_uint32(&gsc->plugin_id, key, val);
+		else
+			error("invalid key: %s", key);
+	}
+
+	if (gsc->file)
+		gsc->config_flags |= GRES_CONF_HAS_FILE;
+
+	if (!gsc->plugin_id) {
+		for (int i = 0; i < gres_context_cnt; i++) {
+			if (!xstrcmp(gres_context[i].gres_name, gsc->name)) {
+				gsc->plugin_id = gres_context[i].plugin_id;
+				break;
+			}
+		}
+		xassert(gsc->plugin_id);
+	}
+
+	if (_add_to_gres_conf_list(gsc, node_name))
+		destroy_gres_slurmd_conf(gsc);
+}
+
+extern void gres_add_dynamic_gres(char *gres_str, char *node_name)
+{
+	char *tmp_gres_str;
+	char *tok, *saveptr;
+
+	FREE_NULL_LIST(gres_conf_list);
+	gres_conf_list = list_create(destroy_gres_slurmd_conf);
+
+	tmp_gres_str = xstrdup(gres_str);
+
+	slurm_mutex_lock(&gres_context_lock);
+
+	for (tok = strtok_r(gres_str, "+", &saveptr);
+	     tok;
+	     tok = strtok_r(NULL, "+", &saveptr)) {
+		_parse_gres_conf_values(tok, node_name);
+	}
+
+	slurm_mutex_unlock(&gres_context_lock);
+
+	xfree(tmp_gres_str);
 }
