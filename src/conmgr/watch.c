@@ -993,7 +993,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (!con_flag(con, FLAG_READ_EOF)) {
+	if (!con_flag(con, FLAG_READ_EOF) || con->on_extract.func) {
 		xassert(con->input_fd != -1);
 
 		/* must wait until poll allows read from this socket */
@@ -1026,7 +1026,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 			if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 				char *flags = con_flags_string(con->flags);
-				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u pending_tls_read=%d pending_tls_writes=%d work=%d write_complete_work=%d flags=%s",
+				log_flag(CONMGR, "%s: [%s] waiting for events: pending_read=%u pending_writes=%u pending_tls_read=%d pending_tls_writes=%d work=%d write_complete_work=%d extract=%s flags=%s",
 					 __func__, con->name,
 					 get_buf_offset(con->in),
 					 list_count(con->out),
@@ -1036,7 +1036,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 					  list_count(con->tls_out) : -1),
 					 list_count(con->work),
 					 list_count(con->write_complete_work),
-					 flags);
+					 con->on_extract.func_name, flags);
 				xfree(flags);
 			}
 		}
