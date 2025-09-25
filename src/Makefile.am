@@ -33,10 +33,11 @@ SUBDIRS =		\
 	strigger	\
 	sview
 
+if HAVE_LUA
+SUBDIRS += lua
+
 if LINUX_BUILD
 SUBDIRS += scrun
 endif
 
-if HAVE_LUA
-SUBDIRS += lua
 endif
