@@ -27233,7 +27233,7 @@ fi
 
 
   case ${host_os} in
-  darwin* | freebsd* | netbsd* )
+  darwin* | freebsd* | netbsd* | openbsd* )
     with_cgroup=no
     ;;
   *)

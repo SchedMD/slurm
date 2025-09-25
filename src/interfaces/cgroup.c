@@ -41,7 +41,11 @@ strong_alias(cgroup_conf_destroy, slurm_cgroup_conf_destroy);
 strong_alias(autodetect_cgroup_version, slurm_autodetect_cgroup_version);
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
+#ifdef WITH_CGROUP
 #define DEFAULT_CGROUP_PLUGIN "autodetect"
+#else
+#define DEFAULT_CGROUP_PLUGIN "disabled"
+#endif
 
 /* Symbols provided by the plugin */
 typedef struct {
@@ -491,9 +495,11 @@ extern char *autodetect_cgroup_version(void)
 		error("unsupported cgroup version %d", cgroup_ver);
 		break;
 	}
-#endif
 
 	return NULL;
+#else
+	return "disabled";
+#endif
 }
 
 /*
@@ -759,16 +765,16 @@ extern int cgroup_g_init(void)
 
 	type = slurm_cgroup_conf.cgroup_plugin;
 
-	if (!xstrcmp(type, "disabled")) {
-		plugin_inited = PLUGIN_NOOP;
-		goto done;
-	}
-
 	if (!xstrcmp(type, "autodetect")) {
 		if (!(type = autodetect_cgroup_version())) {
 			rc = SLURM_ERROR;
 			goto done;
 		}
+	}
+
+	if (!xstrcmp(type, "disabled")) {
+		plugin_inited = PLUGIN_NOOP;
+		goto done;
 	}
 
 	if (running_in_slurmd())
