@@ -11968,13 +11968,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_will_run_response_msg(will_run_response_msg_t *msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	will_run_response_msg_t *msg = smsg->data;
 	uint32_t count = NO_VAL, *job_id_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
@@ -13496,9 +13495,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_resource_allocation_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
-		_pack_will_run_response_msg((will_run_response_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
+		_pack_will_run_response_msg(msg, buffer);
 		break;
 	case REQUEST_CREATE_NODE:
 	case REQUEST_UPDATE_NODE:
