@@ -1862,6 +1862,7 @@ extern int conmgr_queue_extract_con_fd(conmgr_fd_t *con,
 	con->on_extract.func_name = func_name;
 	con->on_extract.func_arg = func_arg;
 
+	handle_connection(true, con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return SLURM_SUCCESS;
