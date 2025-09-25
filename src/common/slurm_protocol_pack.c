@@ -7796,16 +7796,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_node_reg_resp(
-	slurm_node_reg_resp_msg_t *msg,
-	buf_t *buffer, uint16_t protocol_version)
+static void _pack_node_reg_resp(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	slurm_node_reg_resp_msg_t *msg = smsg->data;
 	list_t *pack_list;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		bool locked = false;
 
 		if (msg->tres_list) {
@@ -7816,9 +7813,8 @@ static void _pack_node_reg_resp(
 			locked = true;
 		}
 
-		(void)slurm_pack_list(pack_list,
-				      slurmdb_pack_tres_rec, buffer,
-				      protocol_version);
+		(void) slurm_pack_list(pack_list, slurmdb_pack_tres_rec, buffer,
+				       smsg->protocol_version);
 
 		if (locked)
 			assoc_mgr_unlock(&locks);
@@ -13452,9 +13448,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_sbcast_cred_no_job_msg(msg, buffer);
 		break;
 	case RESPONSE_NODE_REGISTRATION:
-		_pack_node_reg_resp(
-			(slurm_node_reg_resp_msg_t *)msg->data,
-			buffer, msg->protocol_version);
+		_pack_node_reg_resp(msg, buffer);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
