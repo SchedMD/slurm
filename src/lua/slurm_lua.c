@@ -1251,10 +1251,6 @@ extern int slurm_lua_init(void)
 	 *   ensure symbols from liblua are available to libs opened
 	 *   by any lua scripts.
 	 */
-	if (!LUA_VERSION_NUM) {
-		fatal("Slurm wasn't configured against any LUA lib but you are trying to use it like it was.  Please check config.log and reconfigure against liblua.  Make sure you have lua devel installed.");
-	}
-
 	while (lua_libs[i] &&
 	       !(lua_handle = dlopen(lua_libs[i], RTLD_NOW | RTLD_GLOBAL)))
 		i++;
