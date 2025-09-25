@@ -9174,10 +9174,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_shutdown_msg(shutdown_msg_t * msg, buf_t *buffer,
-		   uint16_t protocol_version)
+static void _pack_shutdown_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	shutdown_msg_t *msg = smsg->data;
+
 	pack16((uint16_t)msg->options, buffer);
 }
 
@@ -13486,8 +13486,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_reboot_msg(msg, buffer);
 		break;
 	case REQUEST_SHUTDOWN:
-		_pack_shutdown_msg((shutdown_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
+		_pack_shutdown_msg(msg, buffer);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
 		_pack_submit_response_msg(msg, buffer);
