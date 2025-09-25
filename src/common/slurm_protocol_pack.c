@@ -8072,14 +8072,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
-				  buf_t *buffer,
-				  uint16_t protocol_version)
+static void _pack_reattach_tasks_response_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
 {
+	reattach_tasks_response_msg_t *msg = smsg->data;
 	int i;
 
-	xassert(msg);
 	packstr(msg->node_name,   buffer);
 	pack32(msg->return_code, buffer);
 	pack32(msg->ntasks, buffer);
@@ -13510,9 +13508,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_reattach_tasks_request_msg(msg, buffer);
 		break;
 	case RESPONSE_REATTACH_TASKS:
-		_pack_reattach_tasks_response_msg(
-			(reattach_tasks_response_msg_t *) msg->data, buffer,
-			msg->protocol_version);
+		_pack_reattach_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		_pack_launch_tasks_request_msg(
