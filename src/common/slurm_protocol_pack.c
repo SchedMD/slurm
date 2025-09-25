@@ -10131,10 +10131,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_part_info_request_msg(part_info_request_msg_t * msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static void _pack_part_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	part_info_request_msg_t *msg = smsg->data;
+
 	pack_time(msg->last_update, buffer);
 	pack16((uint16_t)msg->show_flags, buffer);
 }
@@ -13418,9 +13418,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_hostlist_expansion_response(msg, buffer);
 		break;
 	case REQUEST_PARTITION_INFO:
-		_pack_part_info_request_msg((part_info_request_msg_t *)
-					    msg->data, buffer,
-					    msg->protocol_version);
+		_pack_part_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		_pack_resv_info_request_msg((resv_info_request_msg_t *)
