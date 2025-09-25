@@ -45,6 +45,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h>
 
 #include "src/common/cron.h"
 #include "src/common/forward.h"
@@ -63,6 +64,7 @@
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cred.h"
+#include "src/interfaces/conn.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
@@ -221,6 +223,42 @@ static bool _is_valid_number(char *tok, uint64_t *value)
 extern void slurm_msg_t_init(slurm_msg_t *msg)
 {
 	*msg = (slurm_msg_t) SLURM_MSG_INITIALIZER;
+}
+
+extern int slurm_msg_t_init_address(slurm_msg_t *msg)
+{
+	int rc = EINVAL, fd = -1;
+	void *conn = NULL;
+
+	if (!msg)
+		return rc;
+
+	/* Check if already populated */
+	if (msg->address.ss_family != AF_UNSPEC)
+		return SLURM_SUCCESS;
+
+	if (msg->conmgr_con) {
+		/* conmgr should always populate msg->address */
+		xassert(msg->address.ss_family != AF_UNSPEC);
+		return SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	}
+
+	if (msg->conn)
+		conn = msg->conn;
+	else if (msg->pcon)
+		conn = msg->pcon->conn;
+
+	if (!conn)
+		return SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+
+	if ((fd = conn_g_get_fd(conn)) < 0)
+		return SLURM_COMMUNICATIONS_INVALID_FD;
+
+	if ((rc = slurm_get_peer_addr(fd, &msg->address)))
+		log_flag(NET, "%s: [fd:%d] resolving peer failed: %s",
+			 __func__, fd, slurm_strerror(rc));
+
+	return rc;
 }
 
 /*

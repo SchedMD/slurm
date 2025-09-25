@@ -1337,6 +1337,22 @@ extern void slurm_destroy_container_exec_msg(container_exec_msg_t *msg);
 extern void slurm_msg_t_init (slurm_msg_t *msg);
 
 /*
+ * Attempt to resolve msg->address
+ * NOTE: msg->conn or msg->pcon or msg->conmgr_con must be populated
+ * IN/OUT msg - pointer to msg->address to populate
+ * RET
+ *	SLURM_SUCCESS: msg->address populated
+ *	EINVAL: msg pointer is NULL
+ *	SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR:
+ *		msg->conn=NULL and msg->pcon=NULL making it impossible to
+ *		resolve peer
+ *	SLURM_COMMUNICATIONS_INVALID_FD: msg conn pointer resolved to an invalid
+ *		file descriptor
+ *	*: any error returned by slurm_get_peer_addr()
+ */
+extern int slurm_msg_t_init_address(slurm_msg_t *msg);
+
+/*
  * slurm_msg_t_copy - initialize a slurm_msg_t structure "dest" with
  *	values from the "src" slurm_msg_t structure.
  * IN src - Pointer to the initialized message from which "dest" will
