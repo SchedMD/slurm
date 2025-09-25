@@ -54,6 +54,10 @@ extern void fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->partition = xstrdup(opt.partition);
 	desc->profile = opt.profile;
 	desc->licenses = xstrdup(opt.licenses);
+	if (opt.resources) {
+		char *sep = desc->licenses ? "," : "";
+		xstrfmtcat(desc->licenses, "%s%s", sep, opt.resources);
+	}
 
 	if (opt.nodes_set) {
 		desc->min_nodes = opt.min_nodes;
