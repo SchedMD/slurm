@@ -954,12 +954,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_acct_gather_energy_req(acct_gather_energy_req_msg_t *msg,
-			     buf_t *buffer, uint16_t protocol_version)
+static void _pack_acct_gather_energy_req(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	acct_gather_energy_req_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->context_id, buffer);
 		pack16(msg->delta, buffer);
 	}
@@ -13471,9 +13470,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
-		_pack_acct_gather_energy_req(
-			(acct_gather_energy_req_msg_t *)msg->data,
-			buffer, msg->protocol_version);
+		_pack_acct_gather_energy_req(msg, buffer);
 		break;
 	case REQUEST_PERSIST_INIT:
 		slurm_persist_pack_init_req_msg(
