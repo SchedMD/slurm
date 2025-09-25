@@ -1703,6 +1703,15 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(list_is_empty(con->out));
 	xassert(!get_buf_offset(con->in));
 
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+		char *flags = con_flags_string(con->flags);
+		log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
+			 __func__, con->name, con->input_fd, con->output_fd,
+			 (uintptr_t) con->tls, con->on_extract.func_name,
+			 (uintptr_t) con->on_extract.func_arg, flags);
+		xfree(flags);
+	}
+
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		goto failed;
 
@@ -1716,15 +1725,6 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] invalid output_fd",
 			 __func__, con->name);
 		goto failed;
-	}
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char *flags = con_flags_string(con->flags);
-		log_flag(CONMGR, "%s: [%s] BEGIN: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name, con->input_fd, con->output_fd,
-			 (uintptr_t) con->tls, con->on_extract.func_name,
-			 (uintptr_t) con->on_extract.func_arg, flags);
-		xfree(flags);
 	}
 
 	/* clear all polling states */
