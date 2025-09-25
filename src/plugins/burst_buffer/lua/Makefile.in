@@ -184,10 +184,10 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_LUA_TRUE@burst_buffer_lua_la_DEPENDENCIES =  \
-@HAVE_LUA_TRUE@	../common/libburst_buffer_common.la \
-@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la
-@HAVE_LUA_TRUE@am_burst_buffer_lua_la_OBJECTS = burst_buffer_lua.lo
+burst_buffer_lua_la_DEPENDENCIES =  \
+	../common/libburst_buffer_common.la \
+	$(top_builddir)/src/lua/libslurm_lua.la
+am_burst_buffer_lua_la_OBJECTS = burst_buffer_lua.lo
 burst_buffer_lua_la_OBJECTS = $(am_burst_buffer_lua_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -197,7 +197,6 @@ burst_buffer_lua_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(burst_buffer_lua_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-@HAVE_LUA_TRUE@am_burst_buffer_lua_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -524,12 +523,12 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 
 
 # Burst buffer lua plugin.
-@HAVE_LUA_TRUE@pkglib_LTLIBRARIES = burst_buffer_lua.la
-@HAVE_LUA_TRUE@burst_buffer_lua_la_SOURCES = burst_buffer_lua.c
-@HAVE_LUA_TRUE@burst_buffer_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
-@HAVE_LUA_TRUE@burst_buffer_lua_la_LIBADD = ../common/libburst_buffer_common.la \
-@HAVE_LUA_TRUE@			     $(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@			     $(lua_lIBS)
+pkglib_LTLIBRARIES = burst_buffer_lua.la
+burst_buffer_lua_la_SOURCES = burst_buffer_lua.c
+burst_buffer_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
+burst_buffer_lua_la_LIBADD = ../common/libburst_buffer_common.la \
+			     $(top_builddir)/src/lua/libslurm_lua.la \
+			     $(lua_lIBS)
 
 all: all-am
 
@@ -599,7 +598,7 @@ clean-pkglibLTLIBRARIES:
 	$(am__rm_f) $${locs}
 
 burst_buffer_lua.la: $(burst_buffer_lua_la_OBJECTS) $(burst_buffer_lua_la_DEPENDENCIES) $(EXTRA_burst_buffer_lua_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(burst_buffer_lua_la_LINK) $(am_burst_buffer_lua_la_rpath) $(burst_buffer_lua_la_OBJECTS) $(burst_buffer_lua_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(burst_buffer_lua_la_LINK) -rpath $(pkglibdir) $(burst_buffer_lua_la_OBJECTS) $(burst_buffer_lua_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -821,9 +820,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .PRECIOUS: Makefile
 
 
-@HAVE_LUA_TRUE@force:
-@HAVE_LUA_TRUE@$(burst_buffer_lua_la_LIBADD) : force
-@HAVE_LUA_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+force:
+$(burst_buffer_lua_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
