@@ -614,7 +614,7 @@ static bool can_extract(conmgr_fd_t *con, const bool is_tls)
 		return false;
 
 	/* Waiting for TLS negotiation */
-	if (is_tls && (con_flag(con, FLAG_IS_TLS_CONNECTED) ||
+	if (is_tls && (!con_flag(con, FLAG_IS_TLS_CONNECTED) ||
 		       con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)))
 		return false;
 
