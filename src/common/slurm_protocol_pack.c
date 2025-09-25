@@ -2137,13 +2137,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_resv_name_msg(reservation_name_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_resv_name_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	reservation_name_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name, buffer);
 	}
 }
@@ -13509,9 +13507,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
-		_pack_resv_name_msg((reservation_name_msg_t *) msg->
-				    data, buffer,
-				    msg->protocol_version);
+		_pack_resv_name_msg(msg, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		_pack_reattach_tasks_request_msg(
