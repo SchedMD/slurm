@@ -185,10 +185,9 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@HAVE_LUA_TRUE@job_submit_lua_la_DEPENDENCIES =  \
-@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@	$(am__DEPENDENCIES_1)
-@HAVE_LUA_TRUE@am_job_submit_lua_la_OBJECTS = job_submit_lua.lo
+job_submit_lua_la_DEPENDENCIES =  \
+	$(top_builddir)/src/lua/libslurm_lua.la $(am__DEPENDENCIES_1)
+am_job_submit_lua_la_OBJECTS = job_submit_lua.lo
 job_submit_lua_la_OBJECTS = $(am_job_submit_lua_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -198,7 +197,6 @@ job_submit_lua_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(job_submit_lua_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-@HAVE_LUA_TRUE@am_job_submit_lua_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -234,8 +232,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(job_submit_lua_la_SOURCES) \
-	$(EXTRA_job_submit_lua_la_SOURCES)
+SOURCES = $(job_submit_lua_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -524,13 +521,12 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(lua_CFLAGS)
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 # Job submit lua plugin.
-@HAVE_LUA_TRUE@pkglib_LTLIBRARIES = job_submit_lua.la
-@HAVE_LUA_TRUE@job_submit_lua_la_SOURCES = job_submit_lua.c
-@HAVE_LUA_TRUE@job_submit_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
-@HAVE_LUA_TRUE@job_submit_lua_la_LIBADD = $(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@			    $(lua_LIBS)
+pkglib_LTLIBRARIES = job_submit_lua.la
+job_submit_lua_la_SOURCES = job_submit_lua.c
+job_submit_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
+job_submit_lua_la_LIBADD = $(top_builddir)/src/lua/libslurm_lua.la \
+			    $(lua_LIBS)
 
-@HAVE_LUA_FALSE@EXTRA_job_submit_lua_la_SOURCES = job_submit_lua.c
 all: all-am
 
 .SUFFIXES:
@@ -599,7 +595,7 @@ clean-pkglibLTLIBRARIES:
 	$(am__rm_f) $${locs}
 
 job_submit_lua.la: $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_DEPENDENCIES) $(EXTRA_job_submit_lua_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(job_submit_lua_la_LINK) $(am_job_submit_lua_la_rpath) $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(job_submit_lua_la_LINK) -rpath $(pkglibdir) $(job_submit_lua_la_OBJECTS) $(job_submit_lua_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -821,9 +817,9 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 .PRECIOUS: Makefile
 
 
-@HAVE_LUA_TRUE@force:
-@HAVE_LUA_TRUE@$(job_submit_lua_la_LIBADD) : force
-@HAVE_LUA_TRUE@	@cd `dirname $@` && $(MAKE) `basename $@`
+force:
+$(job_submit_lua_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
