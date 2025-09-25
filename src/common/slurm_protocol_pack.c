@@ -12227,8 +12227,9 @@ static int _unpack_topo_info_msg(topo_info_response_msg_t **msg,
 
 	*msg = msg_ptr;
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		topology_g_topology_unpack(&msg_ptr->topo_info, buffer,
-					   protocol_version);
+		topology_g_topology_unpack(
+			(dynamic_plugin_data_t **) &msg_ptr->topo_info,
+			buffer, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

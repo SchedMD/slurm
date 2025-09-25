@@ -2454,7 +2454,7 @@ typedef struct topo_info_request_msg {
 } topo_info_request_msg_t;
 
 typedef struct topo_info_response_msg {
-	dynamic_plugin_data_t *topo_info;
+	void *topo_info;
 } topo_info_response_msg_t;
 
 typedef struct topo_config_response_msg {
