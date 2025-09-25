@@ -8076,14 +8076,13 @@ static void _pack_reattach_tasks_response_msg(const slurm_msg_t *smsg,
 					      buf_t *buffer)
 {
 	reattach_tasks_response_msg_t *msg = smsg->data;
-	int i;
 
 	packstr(msg->node_name,   buffer);
 	pack32(msg->return_code, buffer);
 	pack32(msg->ntasks, buffer);
 	pack32_array(msg->gtids,      msg->ntasks, buffer);
 	pack32_array(msg->local_pids, msg->ntasks, buffer);
-	for (i = 0; i < msg->ntasks; i++) {
+	for (int i = 0; i < msg->ntasks; i++) {
 		packstr(msg->executable_names[i], buffer);
 	}
 }
