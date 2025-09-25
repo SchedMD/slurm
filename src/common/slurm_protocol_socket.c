@@ -543,11 +543,25 @@ ready:
 
 extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
 {
+	socklen_t bind_len = (addr->ss_family == AF_INET6) ?
+				     sizeof(struct sockaddr_in6) :
+				     sizeof(struct sockaddr_in);
 	int rc;
 	int fd;
 	int log_lvl = LOG_LEVEL_ERROR;
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+	/*
+	 * The BSDs requires the sa_len field to be set correctly in
+	 * struct sockaddr_in / sockaddr_in6 before calling bind().
+	 * If unset, bind() may fail with EINVAL.
+	 */
+	if (addr->ss_family == AF_INET)
+		((struct sockaddr_in *) addr)->sin_len = bind_len;
+	else if (addr->ss_family == AF_INET6)
+		((struct sockaddr_in6 *) addr)->sin6_len = bind_len;
+#endif
 
 	if (quiet)
 		log_lvl = LOG_LEVEL_DEBUG;
@@ -564,7 +578,7 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
 		goto error;
 	}
 
-	rc = bind(fd, (struct sockaddr const *) addr, sizeof(*addr));
+	rc = bind(fd, (struct sockaddr const *) addr, bind_len);
 	if (rc < 0) {
 		format_print(log_lvl, "Error binding slurm stream socket: %m");
 		goto error;
