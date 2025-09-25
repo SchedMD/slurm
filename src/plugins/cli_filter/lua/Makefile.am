@@ -6,8 +6,6 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(lua_CFLAGS)
 
-if HAVE_LUA
-
 pkglib_LTLIBRARIES = cli_filter_lua.la
 
 # cli_filter lua plugin.
@@ -20,6 +18,3 @@ cli_filter_lua_la_LIBADD = ../common/libcli_filter_common.la \
 force:
 $(cli_filter_lua_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
-else
-EXTRA_cli_filter_lua_la_SOURCES = cli_filter_lua.c
-endif
