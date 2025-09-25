@@ -143,21 +143,29 @@ ok_test_parameters = [
         0,
         "shard:1(1/10,0/10,0/10,0/10)",
     ),
-    (
+    pytest.param(
         "-N1 -n3 -c2 --tres-per-task=gres/shard:5 ",
         4,
         2,
         0,
         0,
         "shard:15(10/10,5/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
     ),
-    (
+    pytest.param(
         "-N1 -n1 -c8 --tres-per-task=gres/shard:10 ",
         4,
         4,
         0,
         0,
         "shard:10(10/10,0/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
     ),
 ]
 
@@ -165,7 +173,10 @@ ok_test_parameters = [
 @pytest.mark.parametrize(
     "job_args,s0_res,s0_reg,s1_res,s1_reg,gres",
     ok_test_parameters,
-    ids=[p[0].strip() for p in ok_test_parameters],
+    ids=[
+        param.values[0].strip() if hasattr(param, "values") else param[0].strip()
+        for param in ok_test_parameters
+    ],
 )
 def test_ok(job_args, s0_res, s0_reg, s1_res, s1_reg, gres):
     job_str = f'{job_args} --wrap "sleep infinity"'
