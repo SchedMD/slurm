@@ -3243,9 +3243,10 @@ static void _pack_buf_msg(const slurm_msg_t *msg, buf_t *buffer)
 	packmem_array(msg_buffer->head, msg_buffer->processed, buffer);
 }
 
-static void _pack_job_script_msg(buf_t *msg, buf_t *buffer,
-				 uint16_t protocol_version)
+static void _pack_job_script_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	buf_t *msg = smsg->data;
+
 	packstr(msg->head, buffer);
 }
 
@@ -13411,8 +13412,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_slurm_ctl_conf_msg(msg, buffer);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
-		_pack_job_script_msg((buf_t *) msg->data, buffer,
-				     msg->protocol_version);
+		_pack_job_script_msg(msg, buffer);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_pack_node_registration_status_msg(
