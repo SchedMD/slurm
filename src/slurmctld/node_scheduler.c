@@ -2858,6 +2858,13 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
+	if (switch_g_job_start(job_ptr, true) != SLURM_SUCCESS) {
+		error_code = ESLURM_NODES_BUSY;
+		/* switch_g_job_start should set job_ptr->state_reason */
+		xfree(job_ptr->state_desc);
+		goto cleanup;
+	}
+
 	if (test_only) {	/* set if job not highest priority */
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
