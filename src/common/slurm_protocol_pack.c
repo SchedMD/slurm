@@ -4125,11 +4125,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
-			 uint16_t protocol_version)
+static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	slurm_ctl_conf_info_msg_t *build_ptr = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -4142,7 +4142,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->accounting_storage_type, buffer);
 
 		pack_key_pair_list(build_ptr->acct_gather_conf,
-				   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -4163,8 +4163,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->certmgr_params, buffer);
 		packstr(build_ptr->certmgr_type, buffer);
 
-		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
-		                   buffer);
+		pack_key_pair_list(build_ptr->cgroup_conf,
+				   smsg->protocol_version, buffer);
 		packstr(build_ptr->cli_filter_params, buffer);
 		packstr(build_ptr->cli_filter_plugins, buffer);
 		packstr(build_ptr->cluster_name, buffer);
@@ -4228,7 +4228,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		(void) slurm_pack_list(build_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		pack16(build_ptr->job_file_append, buffer);
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
@@ -4256,7 +4256,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->mcs_plugin_params, buffer);
 
 		pack32(build_ptr->min_job_age, buffer);
-		pack_key_pair_list(build_ptr->mpi_conf, protocol_version,
+		pack_key_pair_list(build_ptr->mpi_conf, smsg->protocol_version,
 				   buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
@@ -4265,7 +4265,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->next_job_id, buffer);
 
 		pack_config_plugin_params_list(build_ptr->node_features_conf,
-		                               protocol_version, buffer);
+					       smsg->protocol_version, buffer);
 
 		packstr(build_ptr->node_features_plugins, buffer);
 
@@ -4330,7 +4330,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->select_type, buffer);
 
 		pack_key_pair_list(build_ptr->select_conf_key_pairs,
-		                   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -4396,7 +4396,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->wait_time, buffer);
 		packstr(build_ptr->x11_params, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -4410,7 +4410,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr("N/A", buffer); /* was accounting_storage_user */
 
 		pack_key_pair_list(build_ptr->acct_gather_conf,
-				   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -4431,8 +4431,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->certmgr_params, buffer);
 		packstr(build_ptr->certmgr_type, buffer);
 
-		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
-		                   buffer);
+		pack_key_pair_list(build_ptr->cgroup_conf,
+				   smsg->protocol_version, buffer);
 		packstr(build_ptr->cli_filter_plugins, buffer);
 		packstr(build_ptr->cluster_name, buffer);
 		packstr(build_ptr->comm_params, buffer);
@@ -4493,7 +4493,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		(void) slurm_pack_list(build_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		pack16(build_ptr->job_file_append, buffer);
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
@@ -4521,7 +4521,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->mcs_plugin_params, buffer);
 
 		pack32(build_ptr->min_job_age, buffer);
-		pack_key_pair_list(build_ptr->mpi_conf, protocol_version,
+		pack_key_pair_list(build_ptr->mpi_conf, smsg->protocol_version,
 				   buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
@@ -4530,7 +4530,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->next_job_id, buffer);
 
 		pack_config_plugin_params_list(build_ptr->node_features_conf,
-		                               protocol_version, buffer);
+					       smsg->protocol_version, buffer);
 
 		packstr(build_ptr->node_features_plugins, buffer);
 
@@ -4595,7 +4595,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->select_type, buffer);
 
 		pack_key_pair_list(build_ptr->select_conf_key_pairs,
-		                   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -4660,7 +4660,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->wait_time, buffer);
 		packstr(build_ptr->x11_params, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -4674,7 +4674,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr("N/A", buffer); /* was accounting_storage_user */
 
 		pack_key_pair_list(build_ptr->acct_gather_conf,
-				   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -4693,8 +4693,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->bcast_exclude, buffer);
 		packstr(build_ptr->bcast_parameters, buffer);
 
-		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
-		                   buffer);
+		pack_key_pair_list(build_ptr->cgroup_conf,
+				   smsg->protocol_version, buffer);
 		packstr(build_ptr->cli_filter_plugins, buffer);
 		packstr(build_ptr->cluster_name, buffer);
 		packstr(build_ptr->comm_params, buffer);
@@ -4755,7 +4755,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		(void) slurm_pack_list(build_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		pack16(build_ptr->job_file_append, buffer);
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
@@ -4783,7 +4783,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->mcs_plugin_params, buffer);
 
 		pack32(build_ptr->min_job_age, buffer);
-		pack_key_pair_list(build_ptr->mpi_conf, protocol_version,
+		pack_key_pair_list(build_ptr->mpi_conf, smsg->protocol_version,
 				   buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
@@ -4792,7 +4792,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->next_job_id, buffer);
 
 		pack_config_plugin_params_list(build_ptr->node_features_conf,
-		                               protocol_version, buffer);
+					       smsg->protocol_version, buffer);
 
 		packstr(build_ptr->node_features_plugins, buffer);
 		packnull(buffer); /* was node_prefix */
@@ -4859,7 +4859,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->select_type, buffer);
 
 		pack_key_pair_list(build_ptr->select_conf_key_pairs,
-		                   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -4923,7 +4923,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		pack16(build_ptr->wait_time, buffer);
 		packstr(build_ptr->x11_params, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(build_ptr->last_update, buffer);
 
 		pack16(build_ptr->accounting_storage_enforce, buffer);
@@ -4937,7 +4937,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr("N/A", buffer); /* was accounting_storage_user */
 
 		pack_key_pair_list(build_ptr->acct_gather_conf,
-				   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		packstr(build_ptr->acct_gather_energy_type, buffer);
 		packstr(build_ptr->acct_gather_filesystem_type, buffer);
@@ -4956,8 +4956,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->bcast_exclude, buffer);
 		packstr(build_ptr->bcast_parameters, buffer);
 
-		pack_key_pair_list(build_ptr->cgroup_conf, protocol_version,
-		                   buffer);
+		pack_key_pair_list(build_ptr->cgroup_conf,
+				   smsg->protocol_version, buffer);
 		packstr(build_ptr->cli_filter_plugins, buffer);
 		packstr(build_ptr->cluster_name, buffer);
 		packstr(build_ptr->comm_params, buffer);
@@ -5017,7 +5017,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 
 		(void) slurm_pack_list(build_ptr->job_defaults_list,
 				       job_defaults_pack, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		pack16(build_ptr->job_file_append, buffer);
 		pack16(build_ptr->job_requeue, buffer);
 		packstr(build_ptr->job_submit_plugins, buffer);
@@ -5045,7 +5045,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->mcs_plugin_params, buffer);
 
 		pack32(build_ptr->min_job_age, buffer);
-		pack_key_pair_list(build_ptr->mpi_conf, protocol_version,
+		pack_key_pair_list(build_ptr->mpi_conf, smsg->protocol_version,
 				   buffer);
 		packstr(build_ptr->mpi_default, buffer);
 		packstr(build_ptr->mpi_params, buffer);
@@ -5054,7 +5054,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack32(build_ptr->next_job_id, buffer);
 
 		pack_config_plugin_params_list(build_ptr->node_features_conf,
-		                               protocol_version, buffer);
+					       smsg->protocol_version, buffer);
 
 		packstr(build_ptr->node_features_plugins, buffer);
 		packnull(buffer); /* was node_prefix */
@@ -5121,7 +5121,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->select_type, buffer);
 
 		pack_key_pair_list(build_ptr->select_conf_key_pairs,
-		                   protocol_version, buffer);
+				   smsg->protocol_version, buffer);
 
 		pack16(build_ptr->select_type_param, buffer);
 
@@ -13426,9 +13426,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_last_update_msg(msg, buffer);
 		break;
 	case RESPONSE_BUILD_INFO:
-		_pack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t *)
-					 msg->data, buffer,
-					 msg->protocol_version);
+		_pack_slurm_ctl_conf_msg(msg, buffer);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
 		_pack_job_script_msg((buf_t *) msg->data, buffer,
