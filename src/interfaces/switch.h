@@ -149,8 +149,13 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 
 /*
  * Runs before the job prolog.
+ * IN job_ptr - Job to start
+ * IN test_only - Test if job can run right now
+ *
+ * RET - SLURM_SUCCESS or SLURM_ERROR and job_ptr->state_reason set if test_only
+ *	 is true and job cannot run right now but may be able to later.
  */
-extern void switch_g_job_start(job_record_t *job_ptr);
+extern int switch_g_job_start(job_record_t *job_ptr, bool test_only);
 
 /*
  * End of job - free any slurmctld job-specific switch data

@@ -595,7 +595,7 @@ static int _allocate_channel_per_segment(
 	return 1;
 }
 
-extern void switch_p_job_start(job_record_t *job_ptr)
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 {
 	static bool first_alloc = true;
 	list_t *segment_list = NULL;
@@ -603,6 +603,9 @@ extern void switch_p_job_start(job_record_t *job_ptr)
 	allocate_channel_args_t args = {
 		.job_ptr = job_ptr,
 	};
+
+	if (test_only)
+		return SLURM_SUCCESS;
 
 	/*
 	 * FIXME: this is hacked in here as switch_p_restore() is called
@@ -654,6 +657,8 @@ extern void switch_p_job_start(job_record_t *job_ptr)
 		list_for_each(switch_jobinfo->channel_list, _log_channel_job,
 			      job_ptr);
 	}
+
+	return SLURM_SUCCESS;
 }
 
 extern void switch_p_job_complete(job_record_t *job_ptr)

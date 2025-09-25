@@ -3022,7 +3022,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobcomp_g_record_job_start(job_ptr);
-	switch_g_job_start(job_ptr);
+	(void) switch_g_job_start(job_ptr, false);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);

@@ -989,13 +989,18 @@ extern int switch_p_job_step_complete(switch_stepinfo_t *stepinfo, char *nodelis
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_job_start(job_record_t *job_ptr)
+extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 {
+	if (test_only)
+		return SLURM_SUCCESS;
+
 	if (!(job_ptr->bit_flags & STEPMGR_ENABLED))
-		return;
+		return SLURM_SUCCESS;
 
 	if (!slingshot_setup_job_vni_pool(job_ptr))
 		error("couldn't allocate vni pool for job %pJ", job_ptr);
+
+	return SLURM_SUCCESS;
 }
 
 /*
