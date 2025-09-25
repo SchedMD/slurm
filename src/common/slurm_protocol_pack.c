@@ -9262,11 +9262,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_update_job_step_msg(step_update_request_msg_t * msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_update_job_step_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	step_update_request_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->step_id, buffer);
 		pack32(msg->time_limit, buffer);
@@ -13444,9 +13444,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_dep_update_origin_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
-		_pack_update_job_step_msg((step_update_request_msg_t *)
-					  msg->data, buffer,
-					  msg->protocol_version);
+		_pack_update_job_step_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
