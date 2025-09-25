@@ -36,7 +36,6 @@
 #include <dlfcn.h>
 #include <limits.h>
 #include <stdio.h>
-#include "config.h"
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -68,8 +67,6 @@ typedef struct {
 } dump_data_foreach_args_t;
 
 static void *lua_handle = NULL;
-
-#ifdef HAVE_LUA
 
 #if LUA_VERSION_NUM >= 502
 #define LUA_ERROR_BACKTRACE
@@ -1212,7 +1209,6 @@ fini_error:
 	}
 	return rc;
 }
-#endif
 
 /*
  *  Init function to dlopen() the appropriate Lua libraries, and
