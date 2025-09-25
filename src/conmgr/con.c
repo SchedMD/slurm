@@ -1806,8 +1806,11 @@ failed:
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
 		log_flag(CONMGR, "%s: [%s] FAILED: extracting input_fd=%d output_fd=%d tls=0x%"PRIxPTR " func=%s(0x%"PRIxPTR") flags=%s",
-			 __func__, con->name, con->input_fd, con->output_fd,
-			 (uintptr_t) con->tls, con->on_extract.func_name,
+			 __func__, con->name,
+			 ((input_fd > 0) ? input_fd : con->input_fd),
+			 ((output_fd > 0) ? output_fd : con->output_fd),
+			 (uintptr_t) (conn ? conn : con->tls),
+			 con->on_extract.func_name,
 			 (uintptr_t) con->on_extract.func_arg, flags);
 		xfree(flags);
 	}
