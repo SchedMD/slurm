@@ -908,22 +908,19 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t *msg,
-				buf_t *buffer, uint16_t protocol_version)
+static void _pack_acct_gather_node_resp_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
+	acct_gather_node_resp_msg_t *msg = smsg->data;
 	unsigned int i;
 
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->node_name, buffer);
 		pack16(msg->sensor_cnt, buffer);
 		for (i = 0; i < msg->sensor_cnt; i++)
-			acct_gather_energy_pack(&msg->energy[i],
-						buffer, protocol_version);
+			acct_gather_energy_pack(&msg->energy[i], buffer,
+						smsg->protocol_version);
 	}
-
 }
 static int
 _unpack_acct_gather_node_resp_msg(acct_gather_node_resp_msg_t **msg,
@@ -13418,9 +13415,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
 	case RESPONSE_ACCT_GATHER_ENERGY:
-		_pack_acct_gather_node_resp_msg(
-			(acct_gather_node_resp_msg_t *) msg->data,
-			buffer, msg->protocol_version);
+		_pack_acct_gather_node_resp_msg(msg, buffer);
 		break;
 	case REQUEST_RESOURCE_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_JOB:
