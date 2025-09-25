@@ -47,12 +47,12 @@
 #include <pwd.h>
 
 #include "src/common/data.h"
+#include "src/common/eio.h"
+#include "src/common/env.h"
+#include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/list.h"
-#include "src/common/eio.h"
-#include "src/common/env.h"
 #include "src/common/stepd_api.h"
 #include "src/common/xsched.h"
 
