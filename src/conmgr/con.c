@@ -1712,6 +1712,14 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 		xfree(flags);
 	}
 
+	/*
+	 * Swap out func() and args to allow calling func() on failure
+	 * even if the file descriptors have not been extracted
+	 */
+	SWAP(func, con->on_extract.func);
+	SWAP(func_name, con->on_extract.func_name);
+	SWAP(func_arg, con->on_extract.func_arg);
+
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		goto failed;
 
@@ -1737,9 +1745,6 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	SWAP(input_fd, con->input_fd);
 	SWAP(output_fd, con->output_fd);
 	SWAP(conn, con->tls);
-	SWAP(func, con->on_extract.func);
-	SWAP(func_name, con->on_extract.func_name);
-	SWAP(func_arg, con->on_extract.func_arg);
 
 	slurm_mutex_unlock(&mgr.mutex);
 
