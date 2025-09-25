@@ -1745,7 +1745,8 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/* Set file descriptors as blocking by default */
 	fd_set_blocking(input_fd);
-	fd_set_blocking(output_fd);
+	if (input_fd != output_fd)
+		fd_set_blocking(output_fd);
 
 	if (conn) {
 		int rc = EINVAL;
