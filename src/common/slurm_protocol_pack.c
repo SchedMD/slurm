@@ -6432,10 +6432,11 @@ unpack_error:
  * If this changes, then _pack_remote_dep_job() in fed_mgr.c probably
  * needs to change.
  */
-static void _pack_dep_msg(dep_msg_t *dep_msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_dep_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	dep_msg_t *dep_msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(dep_msg->array_job_id, buffer);
 		pack32(dep_msg->array_task_id, buffer);
 		packstr(dep_msg->dependency, buffer);
@@ -13437,8 +13438,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_sib_msg(msg, buffer);
 		break;
 	case REQUEST_SEND_DEP:
-		_pack_dep_msg((dep_msg_t *)msg->data, buffer,
-			      msg->protocol_version);
+		_pack_dep_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_ORIGIN_DEP:
 		_pack_dep_update_origin_msg(
