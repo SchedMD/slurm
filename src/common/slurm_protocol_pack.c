@@ -912,12 +912,11 @@ static void _pack_acct_gather_node_resp_msg(const slurm_msg_t *smsg,
 					    buf_t *buffer)
 {
 	acct_gather_node_resp_msg_t *msg = smsg->data;
-	unsigned int i;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->node_name, buffer);
 		pack16(msg->sensor_cnt, buffer);
-		for (i = 0; i < msg->sensor_cnt; i++)
+		for (int i = 0; i < msg->sensor_cnt; i++)
 			acct_gather_energy_pack(&msg->energy[i], buffer,
 						smsg->protocol_version);
 	}
