@@ -158,9 +158,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@HAVE_LUA_TRUE@libslurm_lua_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-@HAVE_LUA_TRUE@am_libslurm_lua_la_OBJECTS =  \
-@HAVE_LUA_TRUE@	libslurm_lua_la-slurm_lua.lo
+libslurm_lua_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_libslurm_lua_la_OBJECTS = libslurm_lua_la-slurm_lua.lo
 libslurm_lua_la_OBJECTS = $(am_libslurm_lua_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -170,7 +169,6 @@ libslurm_lua_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libslurm_lua_la_CFLAGS) $(CFLAGS) $(libslurm_lua_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-@HAVE_LUA_TRUE@am_libslurm_lua_la_rpath =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -206,7 +204,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurm_lua_la_SOURCES) $(EXTRA_libslurm_lua_la_SOURCES)
+SOURCES = $(libslurm_lua_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -492,13 +490,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
-@HAVE_LUA_FALSE@LUA_LIB = 
-@HAVE_LUA_TRUE@LUA_LIB = libslurm_lua.la
-@HAVE_LUA_TRUE@libslurm_lua_la_SOURCES = slurm_lua.c slurm_lua.h
-@HAVE_LUA_TRUE@libslurm_lua_la_LIBADD = $(lua_LIBS)
-@HAVE_LUA_TRUE@libslurm_lua_la_LDFLAGS = $(LIB_LDFLAGS)
-@HAVE_LUA_TRUE@libslurm_lua_la_CFLAGS = $(lua_CFLAGS) $(AM_CFLAGS)
-@HAVE_LUA_FALSE@EXTRA_libslurm_lua_la_SOURCES = slurm_lua.c slurm_lua.h
+LUA_LIB = libslurm_lua.la
+libslurm_lua_la_SOURCES = slurm_lua.c slurm_lua.h
+libslurm_lua_la_LIBADD = $(lua_LIBS)
+libslurm_lua_la_LDFLAGS = $(LIB_LDFLAGS)
+libslurm_lua_la_CFLAGS = $(lua_CFLAGS) $(AM_CFLAGS)
 noinst_LTLIBRARIES = $(LUA_LIB)
 all: all-am
 
@@ -544,7 +540,7 @@ clean-noinstLTLIBRARIES:
 	$(am__rm_f) $${locs}
 
 libslurm_lua.la: $(libslurm_lua_la_OBJECTS) $(libslurm_lua_la_DEPENDENCIES) $(EXTRA_libslurm_lua_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libslurm_lua_la_LINK) $(am_libslurm_lua_la_rpath) $(libslurm_lua_la_OBJECTS) $(libslurm_lua_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libslurm_lua_la_LINK)  $(libslurm_lua_la_OBJECTS) $(libslurm_lua_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

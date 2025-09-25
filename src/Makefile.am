@@ -6,7 +6,6 @@ SUBDIRS =		\
 	curl		\
 	database	\
 	interfaces	\
-	lua		\
 	plugins		\
 	sacct		\
 	sacctmgr	\
@@ -36,4 +35,8 @@ SUBDIRS =		\
 
 if LINUX_BUILD
 SUBDIRS += scrun
+endif
+
+if HAVE_LUA
+SUBDIRS += lua
 endif
