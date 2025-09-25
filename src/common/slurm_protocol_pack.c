@@ -9127,11 +9127,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_reboot_msg(reboot_msg_t * msg, buf_t *buffer,
-		 uint16_t protocol_version)
+static void _pack_reboot_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	reboot_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg) {
 			packstr(msg->features, buffer);
 			pack16(msg->flags, buffer);
@@ -13483,8 +13483,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
-		_pack_reboot_msg((reboot_msg_t *)msg->data, buffer,
-				 msg->protocol_version);
+		_pack_reboot_msg(msg, buffer);
 		break;
 	case REQUEST_SHUTDOWN:
 		_pack_shutdown_msg((shutdown_msg_t *) msg->data, buffer,
