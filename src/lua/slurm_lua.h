@@ -36,7 +36,9 @@
 #ifndef _SLURM_LUA_H
 #define _SLURM_LUA_H
 
-#ifdef HAVE_LUA
+#ifndef HAVE_LUA
+#error slurm_lua.h can only be included when HAVE_LUA is defined
+#endif
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -141,10 +143,6 @@ extern int slurm_lua_from_data(lua_State *L, const data_t *src);
  * RET SLURM_SUCCESS or error
  */
 extern int slurm_lua_to_data(lua_State *L, data_t *dst);
-
-#else
-# define LUA_VERSION_NUM 0
-#endif
 
 /*
  *  Init function to dlopen() the appropriate Lua libraries, and
