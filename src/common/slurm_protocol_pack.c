@@ -9178,7 +9178,7 @@ static void _pack_shutdown_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	shutdown_msg_t *msg = smsg->data;
 
-	pack16((uint16_t)msg->options, buffer);
+	pack16(msg->options, buffer);
 }
 
 static int
