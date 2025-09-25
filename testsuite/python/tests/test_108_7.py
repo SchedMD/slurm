@@ -12,6 +12,9 @@ file_out2 = "output2"
 job_cpus = 2
 job_mem = 2
 
+# Big enough to avoid busy systems to detect false suspend times
+suspend_time = 5
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
@@ -41,17 +44,18 @@ def job_script():
     job_script = "job_script.sh"
     atf.make_bash_script(
         job_script,
-        """
+        f"""
 ts_prev=$(date +%s)
 i=1
 while [ $i -le 30 ]; do
     ts_curr=$(date +%s)
-    printf "%02d  %s\n" $i $ts_curr
-    if (( ts_curr > ts_prev + 2 )); then
-        echo "JobSuspended"
+    printf "%02d  %s" $i $ts_curr
+    if (( ts_curr > ts_prev + {suspend_time} )); then
+        printf " (JobSuspended)"
         # Run only for extra 2s
         i=28
     fi
+    printf "\n"
 
     sleep 1
 
@@ -91,7 +95,7 @@ def test_job_suspend_resume(job_script, node):
     ), f"Job {job_id2} should start RUNNING"
 
     # Give sometime to job1 so it can detect that it was suspended
-    time.sleep(3)
+    time.sleep(suspend_time + 1)
 
     # Now switch suspend/running between job1 and job2
     atf.run_command(
@@ -108,7 +112,7 @@ def test_job_suspend_resume(job_script, node):
     ), f"Job {job_id2} should be SUSPENDED"
 
     # Give some time to job2 so it can detect it was suspended
-    time.sleep(3)
+    time.sleep(suspend_time + 1)
 
     # Let both jobs run until they end
     atf.run_command(
