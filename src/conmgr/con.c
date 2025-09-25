@@ -1744,6 +1744,15 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
+	/*
+	 * Treat partially shutdown connections as a single file descriptor to
+	 * avoid triggering assert()s or failures in interfaces/tls
+	 */
+	if (input_fd < 0)
+		input_fd = output_fd;
+	else if (output_fd < 0)
+		output_fd = input_fd;
+
 	/* Set file descriptors as blocking by default */
 	fd_set_blocking(input_fd);
 	if (input_fd != output_fd)
