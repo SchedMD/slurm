@@ -4601,6 +4601,8 @@ static int DUMP_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 	}
 
 	if (!(host_list = hostlist_create(host_list_str))) {
+		if (!is_complex_mode(args))
+			data_set_list(dst);
 		return on_error(DUMPING, parser->type, args,
 				ESLURM_DATA_CONV_FAILED, "hostlist_create()",
 				__func__, "Invalid hostlist string: %s",
