@@ -774,13 +774,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	update_node_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -798,7 +796,7 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 		pack32(msg->resume_after, buffer);
 		packstr(msg->topology_str, buffer);
 		pack32(msg->weight, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -815,7 +813,7 @@ _pack_update_node_msg(update_node_msg_t * msg, buf_t *buffer,
 		packstr(msg->reason, buffer);
 		pack32(msg->resume_after, buffer);
 		pack32(msg->weight, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
 		packstr(msg->extra, buffer);
@@ -13500,9 +13498,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_CREATE_NODE:
 	case REQUEST_UPDATE_NODE:
 	case REQUEST_DELETE_NODE:
-		_pack_update_node_msg((update_node_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
+		_pack_update_node_msg(msg, buffer);
 		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
