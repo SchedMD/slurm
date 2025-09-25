@@ -170,7 +170,7 @@ extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
 	job_stp.first_step_node = job->batch_host;
 	job_stp.jobid = job->job_id;
 	job_stp.jobname = job->name;
-	job_stp.user = job->user_name;
+	job_stp.user = uid_to_string_cached((uid_t) job->user_id);
 	job_stp.work_dir = job->work_dir;
 
 	return expand_stdio_fields(path, &job_stp);
