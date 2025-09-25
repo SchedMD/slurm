@@ -6331,12 +6331,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_sib_msg(sib_msg_t *sib_msg_ptr, buf_t *buffer, uint16_t protocol_version)
+static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(sib_msg_ptr);
+	sib_msg_t *sib_msg_ptr = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(sib_msg_ptr->cluster_id, buffer);
 		pack16(sib_msg_ptr->data_type, buffer);
 		pack16(sib_msg_ptr->data_version, buffer);
@@ -13435,8 +13434,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_MSG:
-		_pack_sib_msg((sib_msg_t *)msg->data, buffer,
-			      msg->protocol_version);
+		_pack_sib_msg(msg, buffer);
 		break;
 	case REQUEST_SEND_DEP:
 		_pack_dep_msg((dep_msg_t *)msg->data, buffer,
