@@ -7976,17 +7976,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
-				 buf_t *buffer,
-				 uint16_t protocol_version)
+static void _pack_reattach_tasks_request_msg(const slurm_msg_t *smsg,
+					     buf_t *buffer)
 {
+	reattach_tasks_request_msg_t *msg = smsg->data;
 	int i;
 
-	xassert(msg);
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(msg->tls_cert, buffer);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->io_key, buffer);
 		pack16(msg->num_resp_port, buffer);
 		for (i = 0; i < msg->num_resp_port; i++)
@@ -7994,8 +7992,8 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 		pack16(msg->num_io_port, buffer);
 		for (i = 0; i < msg->num_io_port; i++)
 			pack16(msg->io_port[i], buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->io_key, buffer);
 		pack16(msg->num_resp_port, buffer);
 		for (i = 0; i < msg->num_resp_port; i++)
@@ -13510,9 +13508,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_resv_name_msg(msg, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
-		_pack_reattach_tasks_request_msg(
-			(reattach_tasks_request_msg_t *) msg->data, buffer,
-			msg->protocol_version);
+		_pack_reattach_tasks_request_msg(msg, buffer);
 		break;
 	case RESPONSE_REATTACH_TASKS:
 		_pack_reattach_tasks_response_msg(
