@@ -336,6 +336,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	void *con_arg = NULL;
 	buf_t shadow_buffer = { 0 };
 	buf_t *in = NULL, *buf = &shadow_buffer;
+	const conmgr_events_t *events = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -363,10 +364,11 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 	con->in = buf;
 	con_arg = con->arg;
+	events = con->events;
 
 	if (con->type == CON_TYPE_RAW) {
-		callback = con->events->on_data;
-		callback_string = XSTRINGIFY(con->events->on_data);
+		callback = events->on_data;
+		callback_string = XSTRINGIFY(events->on_data);
 	} else if (con->type == CON_TYPE_RPC) {
 		callback = on_rpc_connection_data;
 		callback_string = XSTRINGIFY(on_rpc_connection_data);
@@ -433,12 +435,21 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(size_buf(buf) == get_buf_offset(in));
 	xassert(get_buf_offset(buf) <= size_buf(buf));
 
+	/*
+	 * Catch if events callbacks changed during callback and read was not
+	 * complete
+	 */
+	if ((events != con->events) && (get_buf_offset(buf) < size_buf(buf)))
+		callback = NULL;
+
 	if (!get_buf_offset(buf)) {
 		/* need more data for parser to read */
 		log_flag(CONMGR, "%s: [%s] parser refused to read %u bytes. Waiting for more data",
 			 __func__, con->name, size_buf(buf));
 
-		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		/* Only set FLAG_ON_DATA_TRIED if not trying next callback */
+		if (callback)
+			con_set_flag(con, FLAG_ON_DATA_TRIED);
 	} else if (get_buf_offset(buf) < size_buf(buf)) {
 		log_flag(CONMGR, "%s: [%s] partial read of %u/%u bytes",
 			 __func__, con->name, get_buf_offset(buf),
@@ -462,6 +473,14 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con->in = in;
 
 	slurm_mutex_unlock(&mgr.mutex);
+
+	/*
+	 * Call immediately to avoid waiting for another rotation of the work
+	 * queue and _handle_connection() as change in events happened during
+	 * the callback
+	 */
+	if (!callback)
+		wrap_on_data(conmgr_args, arg);
 }
 
 /* Copy buffer into new buf_t */
