@@ -330,13 +330,18 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	int avail = get_buf_offset(con->in);
-	int size = size_buf(con->in);
-	int rc;
+	int avail = -1, size = -1, rc = EINVAL;
 	int (*callback)(conmgr_fd_t *con, void *arg) = NULL;
 	const char *callback_string = NULL;
+	void *con_arg = NULL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	avail = get_buf_offset(con->in);
+	size = size_buf(con->in);
+	con_arg = con->arg;
 
 	/* override buffer offset to allow reading */
 	set_buf_offset(con->in, 0);
@@ -353,14 +358,16 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		fatal("%s: invalid type", __func__);
 	}
 
+	slurm_mutex_unlock(&mgr.mutex);
+
 	log_flag(CONMGR, "%s: [%s] BEGIN func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR,
-		 __func__, con->name, callback_string, (uintptr_t) con->arg,
+		 __func__, con->name, callback_string, (uintptr_t) con_arg,
 		 (uintptr_t) callback);
 
-	rc = callback(con, con->arg);
+	rc = callback(con, con_arg);
 
 	log_flag(CONMGR, "%s: [%s] END func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR"=[%d]%s",
-		 __func__, con->name, callback_string, (uintptr_t) con->arg,
+		 __func__, con->name, callback_string, (uintptr_t) con_arg,
 		 (uintptr_t) callback, rc, slurm_strerror(rc));
 
 	if (rc) {
