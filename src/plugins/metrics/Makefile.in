@@ -13,6 +13,8 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Makefile for metrics plugins
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -90,8 +92,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@WITH_CGROUP_TRUE@am__append_1 = cgroup
-subdir = src/plugins
+subdir = src/plugins/metrics
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -204,13 +205,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = accounting_storage acct_gather_energy \
-	acct_gather_profile acct_gather_interconnect \
-	acct_gather_filesystem auth burst_buffer certgen certmgr \
-	cli_filter cred data_parser gpu gres hash http_parser \
-	jobacct_gather jobcomp job_container job_submit metrics mcs \
-	mpi node_features preempt prep priority proctrack sched select \
-	serializer site_factor switch task tls topology cgroup
+DIST_SUBDIRS = $(SUBDIRS)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -471,13 +466,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
-	acct_gather_interconnect acct_gather_filesystem auth \
-	burst_buffer certgen certmgr cli_filter cred data_parser gpu \
-	gres hash http_parser jobacct_gather jobcomp job_container \
-	job_submit metrics mcs mpi node_features preempt prep priority \
-	proctrack sched select serializer site_factor switch task tls \
-	topology $(am__append_1)
+SUBDIRS = openmetrics
 all: all-recursive
 
 .SUFFIXES:
@@ -490,9 +479,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/plugins/metrics/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/plugins/Makefile
+	  $(AUTOMAKE) --gnu src/plugins/metrics/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
