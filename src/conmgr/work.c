@@ -214,12 +214,31 @@ static work_t *_find_con_work(conmgr_fd_t *con, work_t *work)
 	return next;
 }
 
-static void _con_all_work_complete(conmgr_fd_t *con, work_t *work)
+static work_t *_con_all_work_complete(conmgr_fd_t *con, work_t *work)
 {
+	work_t *next = NULL;
+	/*
+	 * All connection work has completed and we will call
+	 * handle_connection() to check the connection. In most cases,
+	 * handle_connection() will add more connection work which can be
+	 * executed next.
+	 */
 	con_unset_flag(con, FLAG_WORK_ACTIVE);
 
-	EVENT_SIGNAL(&mgr.watch_sleep);
 	handle_connection(true, con);
+
+	if (!con_flag(con, FLAG_WORK_ACTIVE) &&
+	    (next = _find_con_work(con, work))) {
+		con_set_flag(con, FLAG_WORK_ACTIVE);
+		return next;
+	}
+
+	/*
+	 * No new eligible work was queued that can be run now, wake up watch to
+	 * see if other work can be done instead
+	 */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	return NULL;
 }
 
 static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
@@ -229,11 +248,9 @@ static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
 	slurm_mutex_lock(&mgr.mutex);
 	/* con may be xfree()ed any time once lock is released */
 
-	if ((next = _find_con_work(con, work))) {
+	if ((next = _find_con_work(con, work)) ||
+	    (next = _con_all_work_complete(con, work)))
 		work->status = CONMGR_WORK_STATUS_RUN;
-	} else {
-		_con_all_work_complete(con, work);
-	}
 
 	fd_free_ref(&work->ref);
 
