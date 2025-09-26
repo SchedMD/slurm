@@ -603,6 +603,7 @@ slurmctld_SOURCES = \
 	state_save.c	\
 	state_save.h	\
 	statistics.c	\
+	statistics.h	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 
