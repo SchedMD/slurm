@@ -112,6 +112,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/state_save.h"
+#include "src/slurmctld/statistics.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #include "src/stepmgr/srun_comm.h"

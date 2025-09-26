@@ -1384,9 +1384,6 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 			     uint16_t protocol_version);
 
-/* Pack all scheduling statistics */
-extern buf_t *pack_all_stat(uint16_t protocol_version);
-
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
  * IN step_id - specific id or NO_VAL/NO_VAL for all
@@ -1608,10 +1605,6 @@ extern void reset_node_load(char *node_name, uint32_t cpu_load);
 
 /* Reset a node's free memory value */
 extern void reset_node_free_mem(char *node_name, uint64_t free_mem);
-
-/* Reset all scheduling statistics
- * level IN - clear backfilled_jobs count if set */
-extern void reset_stats(int level);
 
 /*
  * restore_node_features - Make node and config (from slurm.conf) fields

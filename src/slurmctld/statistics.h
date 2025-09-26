@@ -35,4 +35,12 @@
 
 #ifndef _STATISTICS_H
 #define _STATISTICS_H
+
+/* Pack all scheduling statistics */
+extern buf_t *pack_all_stat(uint16_t protocol_version);
+
+/* Reset all scheduling statistics
+ * level IN - clear backfilled_jobs count if set */
+extern void reset_stats(int level);
+
 #endif
