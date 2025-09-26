@@ -182,6 +182,20 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 	xfree(fmtstr);
 }
 
+static void _on_con_work_complete(conmgr_fd_t *con, work_t *work)
+{
+	slurm_mutex_lock(&mgr.mutex);
+	con_unset_flag(con, FLAG_WORK_ACTIVE);
+	/* con may be xfree()ed any time once lock is released */
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	handle_connection(true, con);
+
+	fd_free_ref(&work->ref);
+
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
 extern void wrap_work(work_t *work)
 {
 	conmgr_fd_t *con = fd_get_ref(work->ref);
@@ -199,17 +213,8 @@ extern void wrap_work(work_t *work)
 
 	_log_work(work, __func__, "END");
 
-	if (con) {
-		slurm_mutex_lock(&mgr.mutex);
-		con_unset_flag(con, FLAG_WORK_ACTIVE);
-		/* con may be xfree()ed any time once lock is released */
-
-		EVENT_SIGNAL(&mgr.watch_sleep);
-		handle_connection(true, con);
-
-		fd_free_ref(&work->ref);
-		slurm_mutex_unlock(&mgr.mutex);
-	}
+	if (con)
+		_on_con_work_complete(con, work);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
