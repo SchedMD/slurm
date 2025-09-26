@@ -221,20 +221,6 @@ which would hold the job if it was requeued at a later time.
 .IP
 
 .TP
-\fBnotify\fR <\fIjob_id\fR> <\fImessage\fR>
-Send a message to standard error of the salloc or srun command or batch job
-associated with the specified \fIjob_id\fP.
-.IP
-
-.TP
-\fBpidinfo\fR <\fIproc_id\fR>
-Print the Slurm job id and scheduled termination time corresponding to the
-supplied process id, \fIproc_id\fP, on the current node. This will work only
-with processes on node on which scontrol is run, and only for those processes
-spawned by Slurm and their descendants.
-.IP
-
-.TP
 \fBlistjobs\fR [<\fINodeName\fR>]
 Print jobs running on the host that runs this. This contacts any slurmstepd's
 running locally, and does not contact slurmctld
@@ -264,6 +250,20 @@ Print steps running on the host that runs this. This contacts any slurmstepd's
 running locally, and does not contact slurmctld
 
 Use <\fINodeName\fR> if using --enable-multiple-slurmd.
+.IP
+
+.TP
+\fBnotify\fR <\fIjob_id\fR> <\fImessage\fR>
+Send a message to standard error of the salloc or srun command or batch job
+associated with the specified \fIjob_id\fP.
+.IP
+
+.TP
+\fBpidinfo\fR <\fIproc_id\fR>
+Print the Slurm job id and scheduled termination time corresponding to the
+supplied process id, \fIproc_id\fP, on the current node. This will work only
+with processes on node on which scontrol is run, and only for those processes
+spawned by Slurm and their descendants.
 .IP
 
 .TP
