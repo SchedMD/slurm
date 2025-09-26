@@ -178,7 +178,8 @@ OpenAPI specifications if the schema is only referenced once.
 .TP
 \fB[data_parser/]v0.0.44[+fast][+minimize_refs]\fR
 Load data_parser/]v0.0.44 plugin to for formatting of data. Only compatible
-with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
+with \fBopenapi/slurmctld\fR, \fBopenapi/slurmdbd\fR, and \fBopenapi/util\fR
+content plugins.
 .RS
 .TP
 \fB+fast\fR
@@ -269,6 +270,12 @@ Provides 'slurm/' endpoints for the loaded data_parser plugins.
 \fB[openapi/]slurmdbd\fR
 Provides 'slurmdb/' endpoints for the loaded data_parser plugins. This plugin
 will fail if \fBaccounting_storage/slurmdbd\fR is not used in the cluster.
+.IP
+
+.TP
+\fB[openapi/]util\fR
+Provides 'util/' endpoints for the loaded data_parser plugins. Util is short for
+utility. It provides utilities available directly through slurmrestd.
 .IP
 .RE
 .IP
