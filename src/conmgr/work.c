@@ -196,7 +196,7 @@ static void _on_con_work_complete(conmgr_fd_t *con, work_t *work)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void wrap_work(work_t *work)
+static void _run_work(work_t *work)
 {
 	conmgr_fd_t *con = fd_get_ref(work->ref);
 
@@ -218,6 +218,11 @@ extern void wrap_work(work_t *work)
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
+}
+
+extern void wrap_work(work_t *work)
+{
+	_run_work(work);
 }
 
 /*
