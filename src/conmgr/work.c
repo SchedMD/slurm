@@ -214,6 +214,14 @@ static work_t *_find_con_work(conmgr_fd_t *con, work_t *work)
 	return next;
 }
 
+static void _con_all_work_complete(conmgr_fd_t *con, work_t *work)
+{
+	con_unset_flag(con, FLAG_WORK_ACTIVE);
+
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	handle_connection(true, con);
+}
+
 static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
 {
 	work_t *next = NULL;
@@ -224,10 +232,7 @@ static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
 	if ((next = _find_con_work(con, work))) {
 		work->status = CONMGR_WORK_STATUS_RUN;
 	} else {
-		con_unset_flag(con, FLAG_WORK_ACTIVE);
-
-		EVENT_SIGNAL(&mgr.watch_sleep);
-		handle_connection(true, con);
+		_con_all_work_complete(con, work);
 	}
 
 	fd_free_ref(&work->ref);
