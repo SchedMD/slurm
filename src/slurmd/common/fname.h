@@ -43,7 +43,7 @@
 
 #define BCAST_FILE_FMT "slurm_bcast_%u.%u_%s"
 
-extern char *fname_create(stepd_step_rec_t *step, const char *fmt, int taskid);
+extern char *fname_create(stepd_step_rec_t *step, char *stdio_path, int taskid);
 extern int   fname_single_task_io(const char *fmt);
 extern char *remove_path_slashes(char *);
 

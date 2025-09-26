@@ -69,8 +69,12 @@ typedef struct {
 	uint32_t array_task_id;
 	uint32_t first_step_id;
 	char *first_step_node;
+	bool is_srun;
+	bool io_per_task;
 	uint32_t jobid;
 	char *jobname;
+	uint32_t nodeid;
+	uint32_t taskid;
 	char *user;
 	char *work_dir;
 } job_std_pattern_t;

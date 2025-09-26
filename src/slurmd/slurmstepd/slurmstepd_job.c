@@ -79,21 +79,6 @@ static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
 static void _task_info_array_destroy(stepd_step_rec_t *step);
 
 /*
- * return the default output filename for a batch job
- */
-static char *
-_batchfilename(stepd_step_rec_t *step, const char *name)
-{
-	if (name == NULL) {
-		if (step->array_task_id == NO_VAL)
-			return fname_create(step, "slurm-%J.out", 0);
-		else
-			return fname_create(step, "slurm-%A_%a.out", 0);
-	} else
-		return fname_create(step, name, 0);
-}
-
-/*
  * Expand a stdio file name.
  *
  * If "filename" is NULL it means that an eio object should be created
@@ -638,8 +623,8 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 		in_name = fname_create(step, msg->std_in, 0);
 
 	step->task[0] = _task_info_create(0, 0, in_name,
-					 _batchfilename(step, msg->std_out),
-					 _batchfilename(step, msg->std_err));
+					  fname_create(step, msg->std_out, 0),
+					  fname_create(step, msg->std_err, 0));
 	step->task[0]->argc = step->argc;
 	step->task[0]->argv = step->argv;
 	step->oom_kill_step = msg->oom_kill_step;
