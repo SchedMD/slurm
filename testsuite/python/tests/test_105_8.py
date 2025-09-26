@@ -21,7 +21,8 @@ def assert_account(job_id, account):
     ), f"Job's account in slurmctld should be {account}"
 
     rc = atf.repeat_until(
-        lambda: atf.get_jobs(dbd=True), lambda jobs: jobs[job_id]["account"] == account
+        lambda: atf.get_jobs(dbd=True),
+        lambda jobs: job_id in jobs and jobs[job_id]["account"] == account,
     )
     assert rc, f"Job's account in slurmdbd should be {account}"
 
