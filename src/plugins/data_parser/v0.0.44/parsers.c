@@ -4613,6 +4613,34 @@ static int DUMP_FUNC(HOSTLIST_STRING)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+/* Meant to takes in data type string and validates the string is a hostlist */
+static int PARSE_FUNC(HOSTLIST_STRING_TO_STRING)(const parser_t *const parser,
+						 void *obj, data_t *src,
+						 args_t *args,
+						 data_t *parent_path)
+{
+	int rc;
+	char **host_list_str = obj;
+	hostlist_t *host_list = NULL;
+
+	if ((rc = PARSE_FUNC(HOSTLIST)(parser, &host_list, src, args,
+				       parent_path)))
+		return rc;
+
+	if (host_list)
+		*host_list_str = hostlist_ranged_string_xmalloc(host_list);
+
+	hostlist_destroy(host_list);
+	return rc;
+}
+
+static int DUMP_FUNC(HOSTLIST_STRING_TO_STRING)(const parser_t *const parser,
+						void *obj, data_t *dst,
+						args_t *args)
+{
+	return DUMP(STRING, *(char **) obj, dst, args);
+}
+
 PARSE_DISABLED(CPU_FREQ_FLAGS)
 
 static int DUMP_FUNC(CPU_FREQ_FLAGS)(const parser_t *const parser, void *obj,
@@ -10243,6 +10271,8 @@ add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node 
 add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
 add_openapi_response_single(OPENAPI_KILL_JOB_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
 add_openapi_response_single(OPENAPI_RESERVATION_MOD_RESP, RESERVATION_DESC_MSG_LIST, "reservations", "Reservation descriptions");
+add_openapi_response_single(OPENAPI_HOSTLIST_REQ_RESP, HOSTLIST_STRING_TO_STRING, "hostlist", "Hostlist expression string");
+add_openapi_response_single(OPENAPI_HOSTNAMES_REQ_RESP, HOSTLIST_STRING, "hostnames", "Array of host names");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -10738,6 +10768,7 @@ static const parser_t parsers[] = {
 	addps(CONTROLLER_PING_RESULT, bool, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(HOSTLIST, STRING, hostlist_t *, NEED_NONE, NULL),
 	addpsa(HOSTLIST_STRING, STRING, char *, NEED_NONE, NULL),
+	addps(HOSTLIST_STRING_TO_STRING, char *, NEED_NONE, STRING, NULL, NULL, "Hostlist expression string"),
 	addps(CPU_FREQ_FLAGS, uint32_t, NEED_NONE, STRING, NULL, NULL, NULL),
 	addps(ERROR, int, NEED_NONE, STRING, NULL, NULL, NULL),
 	addpsa(JOB_INFO_MSG, JOB_INFO, job_info_msg_t, NEED_NONE, NULL),
@@ -11043,6 +11074,8 @@ static const parser_t parsers[] = {
 	addpap(OPENAPI_JOB_ALLOC_RESP, openapi_job_alloc_response_t, NULL, NULL),
 	addoar(OPENAPI_KILL_JOB_RESP),
 	addoar(OPENAPI_RESERVATION_MOD_RESP),
+	addoar(OPENAPI_HOSTNAMES_REQ_RESP),
+	addoar(OPENAPI_HOSTLIST_REQ_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
