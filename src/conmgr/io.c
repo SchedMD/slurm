@@ -380,7 +380,6 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 		if (!mgr.error)
 			mgr.error = rc;
-		slurm_mutex_unlock(&mgr.mutex);
 
 		/*
 		 * processing data failed so drop any
@@ -390,7 +389,8 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name, get_buf_offset(con->in));
 		set_buf_offset(con->in, 0);
 
-		close_con(false, con);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
