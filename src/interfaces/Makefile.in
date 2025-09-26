@@ -168,9 +168,9 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
 	certgen.lo certmgr.lo cgroup.lo cli_filter.lo conn.lo cred.lo \
 	data_parser.lo gpu.lo gres.lo hash.lo http_parser.lo \
-	jobacct_gather.lo jobcomp.lo mcs.lo mpi.lo node_features.lo \
-	prep.lo priority.lo select.lo serializer.lo site_factor.lo \
-	switch.lo tls.lo topology.lo url_parser.lo
+	jobacct_gather.lo jobcomp.lo mcs.lo metrics.lo mpi.lo \
+	node_features.lo prep.lo priority.lo select.lo serializer.lo \
+	site_factor.lo switch.lo tls.lo topology.lo url_parser.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -225,14 +225,14 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/http_parser.Plo ./$(DEPDIR)/job_container.Plo \
 	./$(DEPDIR)/job_submit.Plo ./$(DEPDIR)/jobacct_gather.Plo \
 	./$(DEPDIR)/jobcomp.Plo ./$(DEPDIR)/mcs.Plo \
-	./$(DEPDIR)/mpi.Plo ./$(DEPDIR)/node_features.Plo \
-	./$(DEPDIR)/preempt.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/priority.Plo ./$(DEPDIR)/proctrack.Plo \
-	./$(DEPDIR)/sched_plugin.Plo ./$(DEPDIR)/select.Plo \
-	./$(DEPDIR)/serializer.Plo ./$(DEPDIR)/site_factor.Plo \
-	./$(DEPDIR)/switch.Plo ./$(DEPDIR)/task.Plo \
-	./$(DEPDIR)/tls.Plo ./$(DEPDIR)/topology.Plo \
-	./$(DEPDIR)/url_parser.Plo
+	./$(DEPDIR)/metrics.Plo ./$(DEPDIR)/mpi.Plo \
+	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/preempt.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
+	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/sched_plugin.Plo \
+	./$(DEPDIR)/select.Plo ./$(DEPDIR)/serializer.Plo \
+	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/switch.Plo \
+	./$(DEPDIR)/task.Plo ./$(DEPDIR)/tls.Plo \
+	./$(DEPDIR)/topology.Plo ./$(DEPDIR)/url_parser.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -590,6 +590,8 @@ libcommon_interfaces_la_SOURCES = \
 	jobcomp.h				\
 	mcs.c					\
 	mcs.h					\
+	metrics.c				\
+	metrics.h				\
 	mpi.c					\
 	mpi.h					\
 	node_features.c				\
@@ -729,6 +731,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mcs.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/metrics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Plo@am__quote@ # am--include-marker
@@ -893,6 +896,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/jobcomp.Plo
 	-rm -f ./$(DEPDIR)/mcs.Plo
+	-rm -f ./$(DEPDIR)/metrics.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo
@@ -977,6 +981,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
 	-rm -f ./$(DEPDIR)/jobcomp.Plo
 	-rm -f ./$(DEPDIR)/mcs.Plo
+	-rm -f ./$(DEPDIR)/metrics.Plo
 	-rm -f ./$(DEPDIR)/mpi.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
 	-rm -f ./$(DEPDIR)/preempt.Plo

@@ -59,6 +59,8 @@ libcommon_interfaces_la_SOURCES =    \
 	jobcomp.h				\
 	mcs.c					\
 	mcs.h					\
+	metrics.c				\
+	metrics.h				\
 	mpi.c					\
 	mpi.h					\
 	node_features.c				\
