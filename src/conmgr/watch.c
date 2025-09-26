@@ -1478,6 +1478,9 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 	log_flag(CONMGR, "%s: [%s] free connection input_fd=%d output_fd=%d",
 		 __func__, con->name, con->input_fd, con->output_fd);
 
+	/* Catch shadow buffer during wrap_on_data() */
+	xassert(!con->in || !con->in->shadow);
+
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->tls_in);
 	FREE_NULL_LIST(con->out);
