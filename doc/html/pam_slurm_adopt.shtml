@@ -36,7 +36,9 @@ and run</p>
 
 <p>as root. This will place pam_slurm_adopt.a, pam_slurm_adopt.la,
 and pam_slurm_adopt.so in /lib/security/ (on Debian systems) or
-/lib64/security/ (on RedHat/SuSE systems).</p>
+/lib64/security/ (on RedHat/SuSE systems). This install location
+is not affected by configure's --prefix flag; use --with-pam_dir=PATH
+to modify the install location if desired.</p>
 
 <h3 id="rpm">RPM:<a class="slurm_link" href="#rpm"></a></h3>
 
