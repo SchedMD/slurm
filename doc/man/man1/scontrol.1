@@ -2108,6 +2108,11 @@ accounting for nodes is disabled.
 .SH "PARTITIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
 .TP
+\fBPartitionName\fR=<\fIname\fR>
+Identify the partition to be updated. This specification is required.
+.IP
+
+.TP
 \fBAllocNodes\fR=<\fIname\fR>
 Comma separated list of nodes from which users can execute jobs in the
 partition.
@@ -2243,14 +2248,20 @@ Default memory limit (in megabytes) per allocated GPU.
 .IP
 
 .TP
+\fBLLN\fR={yes|no}
+Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
+.IP
+
+.TP
 \fBMaxCPUsPerNode\fR=<\fIcount\fR>
 Set the maximum number of CPUs that can be allocated per node to all jobs
 in this partition.
 .IP
 
 .TP
-\fBLLN\fR={yes|no}
-Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
+\fBMaxCPUsPerSocket\fR=<\fIcount\fR>
+Set the maximum number of CPUs that can be allocated per socket to all jobs
+in this partition.
 .IP
 
 .TP
@@ -2298,12 +2309,6 @@ pending job using the scontrol command will allow that job to be scheduled.
 .IP
 
 .TP
-\fBMaxCPUsPerSocket\fR=<\fIcount\fR>
-Set the maximum number of CPUs that can be allocated per socket to all jobs
-in this partition.
-.IP
-
-.TP
 \fBNodes\fR=<\fIname\fR>
 Identify the node(s) to be associated with this partition. Multiple node names
 may be specified using simple node range expressions (e.g. "lx[10\-20]").
@@ -2341,11 +2346,6 @@ If not specified, the global \fIOverTimeLimit\fP value will take precedence.
 May not exceed 65533 minutes.
 An input value of "UNLIMITED" will clear any previously configured
 partition\-specific \fIOverTimeLimit\fP value.
-.IP
-
-.TP
-\fBPartitionName\fR=<\fIname\fR>
-Identify the partition to be updated. This specification is required.
 .IP
 
 .TP
