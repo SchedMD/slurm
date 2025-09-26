@@ -899,6 +899,15 @@ changed automatically as changes made by the Administrators are allowed to
 violate these restrictions.
 
 .TP
+\fBJobName\fR=<\fIname\fR>
+Identify the name of jobs to be modified or set the job's name to the
+specified value.
+When used to identify jobs to be modified, all jobs belonging to all users
+are modified unless the \fIUserID\fP option is used to identify a specific user.
+Either \fIJobId\fP or \fIJobName\fP is required.
+.IP
+
+.TP
 \fBAccount\fR=<\fIaccount\fR>
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
@@ -1183,20 +1192,6 @@ Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
-\fBTimeMin\fR=<\fItimespec\fR>
-Change TimeMin value which specifies the minimum time limit minutes of the job.
-.IP
-
-.TP
-\fBJobName\fR=<\fIname\fR>
-Identify the name of jobs to be modified or set the job's name to the
-specified value.
-When used to identify jobs to be modified, all jobs belonging to all users
-are modified unless the \fIUserID\fP option is used to identify a specific user.
-Either \fIJobId\fP or \fIJobName\fP is required.
-.IP
-
-.TP
 \fBName\fR[=<\fIname\fR>]
 See JobName.
 .IP
@@ -1433,11 +1428,6 @@ Also see \fIwait\-for\-switch\fP.
 .IP
 
 .TP
-\fBwait\-for\-switch\fR=<\fIseconds\fR>
-Change max time to wait for a switch <seconds> secs.
-.IP
-
-.TP
 \fBTasksPerNode\fR=<\fIcount\fR>
 Change the job's requested TasksPerNode.
 .IP
@@ -1469,9 +1459,19 @@ Only a Slurm administrator or root can increase job's TimeLimit.
 .IP
 
 .TP
+\fBTimeMin\fR=<\fItimespec\fR>
+Change TimeMin value which specifies the minimum time limit minutes of the job.
+.IP
+
+.TP
 \fBUserID\fR=<\fIUID\fR or \fIname\fR>
 Used with the \fIJobName\fP option to identify jobs to be modified.
 Either a user name or numeric ID (UID), may be specified.
+.IP
+
+.TP
+\fBwait\-for\-switch\fR=<\fIseconds\fR>
+Change max time to wait for a switch <seconds> secs.
 .IP
 
 .TP
