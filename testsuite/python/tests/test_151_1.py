@@ -63,6 +63,10 @@ def partition_nodes():
     )
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11),
+    reason="Ticket 22228: Fix the 'is-busy' check for a node shared between partitions",
+)
 def test_overlapping_oversubscribe_differ_sharing_restriction_1(partition_nodes):
     """
     With the select plugin targeting CPU, two partitions sharing a node
