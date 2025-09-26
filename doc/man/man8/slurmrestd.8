@@ -175,6 +175,27 @@ OpenAPI specifications if the schema is only referenced once.
 .RE
 .IP
 
+.TP
+\fB[data_parser/]v0.0.44[+fast][+minimize_refs]\fR
+Load data_parser/]v0.0.44 plugin to for formatting of data. Only compatible
+with \fBopenapi/slurmctld\fR and \fBopenapi/slurmdbd\fR content plugins.
+.RS
+.TP
+\fB+fast\fR
+Disable builtin warnings and other logic to strictly validate
+incoming requests. Should only ever be used in a production environment with
+very well tested clients and potentially malformatted requests will be accepted
+as given and no warnings will be generated about ignored or incorrect fields or
+values.
+.IP
+.TP
+\fB+minimize_refs\fR
+Avoid inline expansion of referenced schemas (via \fI$ref\fR) in generated
+OpenAPI specifications if the schema is only referenced once.
+.IP
+.RE
+.IP
+
 .RE
 .IP
 
