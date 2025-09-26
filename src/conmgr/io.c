@@ -330,23 +330,39 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg)
 extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
-	int avail = -1, size = -1, rc = EINVAL;
+	int rc = EINVAL;
 	int (*callback)(conmgr_fd_t *con, void *arg) = NULL;
 	const char *callback_string = NULL;
 	void *con_arg = NULL;
+	buf_t shadow_buffer = { 0 };
+	buf_t *in = NULL, *buf = &shadow_buffer;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	avail = get_buf_offset(con->in);
-	size = size_buf(con->in);
-	con_arg = con->arg;
+	xassert(con->in->magic == BUF_MAGIC);
+	in = con->in;
 
-	/* override buffer offset to allow reading */
-	set_buf_offset(con->in, 0);
-	/* override buffer size to only read up to previous offset */
-	con->in->size = avail;
+	/*
+	 * Create shadow buffer to point to the data owned by the con->in
+	 * buffer. get_buf_offset(con->in) signifies how many of incoming bytes
+	 * have been read(). The shadow buffer needs to have size_buf(buf)
+	 * signify how much data has been read() and needs to be processed. The
+	 * shadow buffer is temporarily swapped out with the con->in buffer to
+	 * avoid having to change around logic handling processing incoming data
+	 * by the on_data() callback while avoiding having to store another
+	 * buffer (or a set of pointers or offsets) in conmgr_fd_t.
+	 */
+	*buf = (buf_t) {
+		.magic = BUF_MAGIC,
+		.head = get_buf_data(in),
+		.size = get_buf_offset(con->in),
+		.shadow = true,
+	};
+
+	con->in = buf;
+	con_arg = con->arg;
 
 	if (con->type == CON_TYPE_RAW) {
 		callback = con->events->on_data;
@@ -386,7 +402,11 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		 * pending data on the floor
 		 */
 		log_flag(CONMGR, "%s: [%s] on_data callback failed. Purging the remaining %d bytes of pending input.",
-			 __func__, con->name, get_buf_offset(con->in));
+			 __func__, con->name, get_buf_offset(buf));
+
+		/* Return buffer to connection but empty it */
+		xassert(con->in == buf);
+		con->in = in;
 		set_buf_offset(con->in, 0);
 
 		close_con(true, con);
@@ -394,39 +414,54 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
-	if (get_buf_offset(con->in) < size_buf(con->in)) {
-		if (get_buf_offset(con->in) > 0) {
-			log_flag(CONMGR, "%s: [%s] partial read %u/%u bytes.",
-				 __func__, con->name, get_buf_offset(con->in),
-				 size_buf(con->in));
+	/* check if shifting buffer data is required on partial read */
+	if ((get_buf_offset(buf) > 0) &&
+	    (get_buf_offset(buf) < size_buf(buf))) {
+		/*
+		 * Need to shift it to start of buffer but fix offsets when
+		 * holding the lock
+		 */
+		(void) memmove(get_buf_data(buf),
+			       (get_buf_data(buf) + get_buf_offset(buf)),
+			       remaining_buf(buf));
+	}
 
-			/*
-			 * not all data read, need to shift it to start of
-			 * buffer and fix offset
-			 */
-			memmove(get_buf_data(con->in),
-				(get_buf_data(con->in) +
-				 get_buf_offset(con->in)),
-				remaining_buf(con->in));
+	slurm_mutex_lock(&mgr.mutex);
 
-			/* reset start of offset to end of previous data */
-			set_buf_offset(con->in, remaining_buf(con->in));
-		} else {
-			/* need more data for parser to read */
-			log_flag(CONMGR, "%s: [%s] parser refused to read %u bytes. Waiting for more data.",
-				 __func__, con->name, size_buf(con->in));
+	/* Catch anything changing con->in's pointers */
+	xassert(get_buf_data(buf) == get_buf_data(in));
+	xassert(size_buf(buf) == get_buf_offset(in));
+	xassert(get_buf_offset(buf) <= size_buf(buf));
 
-			con_set_flag(con, FLAG_ON_DATA_TRIED);
+	if (!get_buf_offset(buf)) {
+		/* need more data for parser to read */
+		log_flag(CONMGR, "%s: [%s] parser refused to read %u bytes. Waiting for more data",
+			 __func__, con->name, size_buf(buf));
 
-			/* revert offset change */
-			set_buf_offset(con->in, avail);
-		}
-	} else
+		con_set_flag(con, FLAG_ON_DATA_TRIED);
+	} else if (get_buf_offset(buf) < size_buf(buf)) {
+		log_flag(CONMGR, "%s: [%s] partial read of %u/%u bytes",
+			 __func__, con->name, get_buf_offset(buf),
+			 size_buf(buf));
+
+		/* reset start of offset to end of previous data */
+		set_buf_offset(in, remaining_buf(buf));
+	} else {
+		xassert(get_buf_offset(buf) == size_buf(buf));
+
+		log_flag(CONMGR, "%s: [%s] read %u/%u bytes",
+			 __func__, con->name, get_buf_offset(buf),
+			 size_buf(buf));
+
 		/* buffer completely read: reset it */
-		set_buf_offset(con->in, 0);
+		set_buf_offset(in, 0);
+	}
 
-	/* restore original size */
-	con->in->size = size;
+	/* Return buffer to connection */
+	xassert(con->in == buf);
+	con->in = in;
+
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /* Copy buffer into new buf_t */
