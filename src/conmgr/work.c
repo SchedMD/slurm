@@ -198,9 +198,14 @@ static void _on_con_work_complete(conmgr_fd_t *con, work_t *work)
 
 static void _run_work(work_t *work)
 {
-	conmgr_fd_t *con = fd_get_ref(work->ref);
+	conmgr_fd_t *con = NULL;
 
 	xassert(work->magic == MAGIC_WORK);
+
+	if (work->ref) {
+		con = fd_get_ref(work->ref);
+		xassert(con->magic == MAGIC_CON_MGR_FD);
+	}
 
 	_log_work(work, __func__, "BEGIN");
 
