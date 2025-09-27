@@ -425,9 +425,9 @@ extern int switch_record_validate(topology_ctx_t *tctx)
 	}
 
 	if (ctx->switch_count == 0) {
-		error("No switches configured");
 		xfree(ctx);
 		s_p_hashtbl_destroy(conf_hashtbl);
+		fatal("No switches configured, failed to create context for topology plugin");
 		return SLURM_ERROR;
 	}
 
