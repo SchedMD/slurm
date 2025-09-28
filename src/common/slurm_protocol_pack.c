@@ -8196,7 +8196,6 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 					   buf_t *buffer)
 {
 	launch_tasks_request_msg_t *msg = smsg->data;
-	int i = 0;
 	uint16_t cred_version =
 		msg->cred_version ? msg->cred_version : smsg->protocol_version;
 
@@ -8210,7 +8209,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->het_job_nnodes, buffer);
 		if (msg->het_job_nnodes != NO_VAL) {
-			for (i = 0; i < msg->het_job_nnodes; i++) {
+			for (int i = 0; i < msg->het_job_nnodes; i++) {
 				pack32_array(
 					msg->het_job_tids[i],
 					(uint32_t)msg->het_job_task_cnts[i],
@@ -8219,7 +8218,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		}
 		pack32(msg->het_job_ntasks, buffer);
 		if (msg->het_job_ntasks != NO_VAL) {
-			for (i = 0; i < msg->het_job_ntasks; i++)
+			for (int i = 0; i < msg->het_job_ntasks; i++)
 				pack32(msg->het_job_tid_offsets[i], buffer);
 		}
 		pack32(msg->het_job_offset, buffer);
@@ -8255,14 +8254,14 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 
 		pack16(cred_version, buffer);
 		slurm_cred_pack(msg->cred, buffer, cred_version);
-		for (i = 0; i < msg->nnodes; i++) {
+		for (int i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack32_array(msg->global_task_ids[i],
 				     (uint32_t) msg->tasks_to_launch[i],
 				     buffer);
 		}
 		pack16(msg->num_resp_port, buffer);
-		for (i = 0; i < msg->num_resp_port; i++)
+		for (int i = 0; i < msg->num_resp_port; i++)
 			pack16(msg->resp_port[i], buffer);
 		slurm_pack_addr(&msg->orig_addr, buffer);
 		packstr_array(msg->env, msg->envc, buffer);
@@ -8280,7 +8279,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
 		pack16(msg->num_io_port, buffer);
-		for (i = 0; i < msg->num_io_port; i++)
+		for (int i = 0; i < msg->num_io_port; i++)
 			pack16(msg->io_port[i], buffer);
 		packstr(msg->alloc_tls_cert, buffer);
 		pack32(msg->profile, buffer);
@@ -8328,7 +8327,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->het_job_nnodes, buffer);
 		if (msg->het_job_nnodes != NO_VAL) {
-			for (i = 0; i < msg->het_job_nnodes; i++) {
+			for (int i = 0; i < msg->het_job_nnodes; i++) {
 				pack32_array(
 					msg->het_job_tids[i],
 					(uint32_t)msg->het_job_task_cnts[i],
@@ -8337,7 +8336,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		}
 		pack32(msg->het_job_ntasks, buffer);
 		if (msg->het_job_ntasks != NO_VAL) {
-			for (i = 0; i < msg->het_job_ntasks; i++)
+			for (int i = 0; i < msg->het_job_ntasks; i++)
 				pack32(msg->het_job_tid_offsets[i], buffer);
 		}
 		pack32(msg->het_job_offset, buffer);
@@ -8368,14 +8367,14 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 
 		pack16(cred_version, buffer);
 		slurm_cred_pack(msg->cred, buffer, cred_version);
-		for (i = 0; i < msg->nnodes; i++) {
+		for (int i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack32_array(msg->global_task_ids[i],
 				     (uint32_t) msg->tasks_to_launch[i],
 				     buffer);
 		}
 		pack16(msg->num_resp_port, buffer);
-		for (i = 0; i < msg->num_resp_port; i++)
+		for (int i = 0; i < msg->num_resp_port; i++)
 			pack16(msg->resp_port[i], buffer);
 		slurm_pack_addr(&msg->orig_addr, buffer);
 		packstr_array(msg->env, msg->envc, buffer);
@@ -8393,7 +8392,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
 		pack16(msg->num_io_port, buffer);
-		for (i = 0; i < msg->num_io_port; i++)
+		for (int i = 0; i < msg->num_io_port; i++)
 			pack16(msg->io_port[i], buffer);
 		pack32(msg->profile, buffer);
 		packstr(msg->task_prolog, buffer);
@@ -8442,7 +8441,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->het_job_nnodes, buffer);
 		if (msg->het_job_nnodes != NO_VAL) {
-			for (i = 0; i < msg->het_job_nnodes; i++) {
+			for (int i = 0; i < msg->het_job_nnodes; i++) {
 				pack32_array(
 					msg->het_job_tids[i],
 					(uint32_t)msg->het_job_task_cnts[i],
@@ -8451,7 +8450,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		}
 		pack32(msg->het_job_ntasks, buffer);
 		if (msg->het_job_ntasks != NO_VAL) {
-			for (i = 0; i < msg->het_job_ntasks; i++)
+			for (int i = 0; i < msg->het_job_ntasks; i++)
 				pack32(msg->het_job_tid_offsets[i], buffer);
 		}
 		pack32(msg->het_job_offset, buffer);
@@ -8482,14 +8481,14 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 
 		pack16(cred_version, buffer);
 		slurm_cred_pack(msg->cred, buffer, cred_version);
-		for (i = 0; i < msg->nnodes; i++) {
+		for (int i = 0; i < msg->nnodes; i++) {
 			pack16(msg->tasks_to_launch[i], buffer);
 			pack32_array(msg->global_task_ids[i],
 				     (uint32_t) msg->tasks_to_launch[i],
 				     buffer);
 		}
 		pack16(msg->num_resp_port, buffer);
-		for (i = 0; i < msg->num_resp_port; i++)
+		for (int i = 0; i < msg->num_resp_port; i++)
 			pack16(msg->resp_port[i], buffer);
 		slurm_pack_addr(&msg->orig_addr, buffer);
 		packstr_array(msg->env, msg->envc, buffer);
@@ -8507,7 +8506,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->efname, buffer);
 		packstr(msg->ifname, buffer);
 		pack16(msg->num_io_port, buffer);
-		for (i = 0; i < msg->num_io_port; i++)
+		for (int i = 0; i < msg->num_io_port; i++)
 			pack16(msg->io_port[i], buffer);
 		pack32(msg->profile, buffer);
 		packstr(msg->task_prolog, buffer);
