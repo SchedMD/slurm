@@ -10265,18 +10265,17 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
-			   uint16_t protocol_version)
+static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	batch_job_launch_msg_t *msg = smsg->data;
 	uint16_t cred_version =
-		msg->cred_version ? msg->cred_version : protocol_version;
+		msg->cred_version ? msg->cred_version : smsg->protocol_version;
 	xassert(msg);
 
 	if (msg->script_buf)
 		msg->script = msg->script_buf->head;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
@@ -10339,7 +10338,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
@@ -10401,7 +10400,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->cpu_freq_max, buffer);
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
@@ -13686,9 +13685,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 				    msg->protocol_version);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
-		_pack_batch_job_launch_msg((batch_job_launch_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
+		_pack_batch_job_launch_msg(msg, buffer);
 		break;
 	case REQUEST_LAUNCH_PROLOG:
 		_pack_prolog_launch_msg(msg, buffer);
