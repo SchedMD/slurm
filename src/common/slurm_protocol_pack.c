@@ -409,10 +409,8 @@ static int _unpack_network_callerid_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	char *charptr_tmp = NULL;
-	network_callerid_msg_t *msg;
+	network_callerid_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(network_callerid_msg_t));
-	smsg->data = msg;
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackmem_xmalloc(&charptr_tmp, &uint32_tmp, buffer);
 		if (uint32_tmp > (uint32_t)sizeof(msg->ip_src)) {
@@ -437,10 +435,10 @@ static int _unpack_network_callerid_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32((uint32_t *)&msg->af, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	smsg->data = NULL;
 	xfree(charptr_tmp);
 	slurm_free_network_callerid_msg(msg);
 	return SLURM_ERROR;
@@ -461,9 +459,7 @@ static void _pack_network_callerid_resp_msg(const slurm_msg_t *smsg,
 
 static int _unpack_network_callerid_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	network_callerid_resp_t *msg;
-	msg = xmalloc(sizeof(network_callerid_resp_t));
-	smsg->data = msg;
+	network_callerid_resp_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
@@ -471,10 +467,10 @@ static int _unpack_network_callerid_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->node_name, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	smsg->data = NULL;
 	slurm_free_network_callerid_resp(msg);
 	return SLURM_ERROR;
 }
@@ -509,7 +505,6 @@ static void _pack_shares_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_shares_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	shares_request_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
-	smsg->data = object_ptr;
 
 	if (slurm_unpack_list(&object_ptr->acct_list, unpackstr_with_version,
 			      xfree_ptr, buffer, smsg->protocol_version) !=
@@ -521,11 +516,11 @@ static int _unpack_shares_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 	    SLURM_SUCCESS)
 		goto unpack_error;
 
+	smsg->data = object_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_shares_request_msg(object_ptr);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -563,7 +558,6 @@ static int _unpack_shares_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t count = NO_VAL;
 	void *tmp_info = NULL;
 	shares_response_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
-	smsg->data = object_ptr;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_array(&object_ptr->tres_names,
@@ -589,11 +583,11 @@ static int _unpack_shares_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack64(&object_ptr->tot_shares, buffer);
 	}
 
+	smsg->data = object_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_shares_response_msg(object_ptr);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -1379,11 +1373,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
 	char *tmp_char = NULL;
-	resource_allocation_response_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
-	smsg->data = tmp_ptr;
+	resource_allocation_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->account, buffer);
@@ -1529,11 +1519,11 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		}
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_resource_allocation_response_msg(tmp_ptr);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -1553,7 +1543,6 @@ static int _unpack_job_sbcast_cred_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	job_sbcast_cred_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
-	smsg->data = tmp_ptr;
 
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	safe_unpackstr(&tmp_ptr->node_list, buffer);
@@ -1565,11 +1554,11 @@ static int _unpack_job_sbcast_cred_msg(slurm_msg_t *smsg, buf_t *buffer)
 	if (tmp_ptr->sbcast_cred == NULL)
 		goto unpack_error;
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_sbcast_cred_msg(tmp_ptr);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -1589,7 +1578,6 @@ static void _pack_submit_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_submit_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	submit_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
-	smsg->data = tmp_ptr;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->job_id, buffer);
@@ -1598,11 +1586,11 @@ static int _unpack_submit_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_submit_response_response_msg(tmp_ptr);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -3256,8 +3244,6 @@ static int _unpack_job_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 	job_info_t *job = NULL;
 	job_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	smsg->data = msg;
-
 	/* load buffer's header (data structure version and time) */
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->record_count, buffer);
@@ -3282,11 +3268,11 @@ static int _unpack_job_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 			job_ptr->bitflags |= BACKFILL_LAST;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_info_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -7910,7 +7896,6 @@ static int _unpack_return_code2_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	char *err_msg = NULL;
 	return_code_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->return_code, buffer);
@@ -7921,11 +7906,11 @@ static int _unpack_return_code2_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_return_code_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -9437,7 +9422,6 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 	bool tmp_bool;
 	char *tmp_char = NULL;
 	prolog_launch_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
@@ -9564,11 +9548,11 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_prolog_launch_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -9820,7 +9804,6 @@ static void _pack_job_state_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_job_state_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_state_request_msg_t *js = xmalloc(sizeof(*js));
-	smsg->data = js;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&js->count, buffer);
@@ -9846,10 +9829,10 @@ static int _unpack_job_state_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 	}
 
+	smsg->data = js;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	smsg->data = NULL;
 	slurm_free_job_state_request_msg(js);
 	return SLURM_ERROR;
 }
@@ -9888,7 +9871,6 @@ static void _pack_job_state_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_job_state_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_state_response_msg_t *jsr = xmalloc(sizeof(*jsr));
-	smsg->data = jsr;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&jsr->jobs_count, buffer);
@@ -9917,10 +9899,10 @@ static int _unpack_job_state_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 	}
 
+	smsg->data = jsr;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	smsg->data = NULL;
 	slurm_free_job_state_response_msg(jsr);
 	return SLURM_ERROR;
 }
@@ -10087,15 +10069,15 @@ static void _pack_node_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_node_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	node_info_request_msg_t *node_info = xmalloc(sizeof(*node_info));
-	smsg->data = node_info;
 
 	safe_unpack_time(&node_info->last_update, buffer);
 	safe_unpack16(&node_info->show_flags, buffer);
+
+	smsg->data = node_info;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_node_info_request_msg(node_info);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10142,15 +10124,15 @@ static void _pack_node_info_single_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_node_info_single_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	node_info_single_msg_t *node_info = xmalloc(sizeof(*node_info));
-	smsg->data = node_info;
 
 	safe_unpackstr(&node_info->node_name, buffer);
 	safe_unpack16(&node_info->show_flags, buffer);
+
+	smsg->data = node_info;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_node_info_single_msg(node_info);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -10903,7 +10885,6 @@ static void _pack_srun_node_fail_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_srun_node_fail_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	srun_node_fail_msg_t *msg = xmalloc(sizeof(srun_node_fail_msg_t));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
@@ -10913,11 +10894,11 @@ static int _unpack_srun_node_fail_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->nodelist, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_srun_node_fail_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -11003,7 +10984,6 @@ static void _pack_job_requeue_msg(requeue_msg_t *msg, buf_t *buffer,
 static int _unpack_job_requeue_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	requeue_msg_t *msg = xmalloc(sizeof(requeue_msg_t));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
@@ -11011,11 +10991,11 @@ static int _unpack_job_requeue_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->flags, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_requeue_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12210,17 +12190,15 @@ static int _unpack_topo_config_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	topo_config_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	smsg->data = msg;
-
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->config, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_topo_config_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12728,17 +12706,16 @@ static void _pack_set_fs_dampening_factor_msg(const slurm_msg_t *smsg,
 static int _unpack_set_fs_dampening_factor_msg(slurm_msg_t *smsg,
 					       buf_t *buffer)
 {
-	set_fs_dampening_factor_msg_t *msg  = xmalloc(sizeof(*msg));
-	smsg->data = msg;
+	set_fs_dampening_factor_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION)
 		safe_unpack16(&msg->dampening_factor, buffer);
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_set_fs_dampening_factor_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12831,17 +12808,16 @@ static void _pack_crontab_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_crontab_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	crontab_request_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->uid, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_crontab_request_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12858,18 +12834,17 @@ static void _pack_crontab_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_crontab_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	crontab_response_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->crontab, buffer);
 		safe_unpackstr(&msg->disabled_lines, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_crontab_response_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12890,7 +12865,6 @@ static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	crontab_update_request_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->crontab, buffer);
@@ -12901,11 +12875,11 @@ static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->gid, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_crontab_update_request_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12926,7 +12900,6 @@ static void _pack_crontab_update_response_msg(const slurm_msg_t *smsg,
 static int _unpack_crontab_update_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	crontab_update_response_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->err_msg, buffer);
@@ -12936,11 +12909,11 @@ static int _unpack_crontab_update_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->return_code, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_crontab_update_response_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12958,7 +12931,6 @@ static void _pack_tls_cert_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_tls_cert_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	tls_cert_request_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->csr, buffer);
@@ -12966,11 +12938,11 @@ static int _unpack_tls_cert_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->token, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_tls_cert_request_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -12986,17 +12958,16 @@ static void _pack_tls_cert_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_tls_cert_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	tls_cert_response_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->signed_cert, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_tls_cert_response_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13016,7 +12987,6 @@ static void _pack_container_id_request_msg(const slurm_msg_t *smsg,
 static int _unpack_container_id_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_id_request_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->show_flags, buffer);
@@ -13024,11 +12994,11 @@ static int _unpack_container_id_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->uid, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_container_id_request_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13071,7 +13041,6 @@ static int _unpack_each_container_id(void **object, uint16_t protocol_version,
 static int _unpack_container_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_id_response_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&msg->steps, _unpack_each_container_id,
@@ -13080,11 +13049,11 @@ static int _unpack_container_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_container_id_response_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13106,7 +13075,6 @@ static void _pack_container_state_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_container_state_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_state_msg_t *msg = slurm_create_container_state_msg();
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->oci_version, buffer);
@@ -13119,11 +13087,11 @@ static int _unpack_container_state_msg(slurm_msg_t *smsg, buf_t *buffer)
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_destroy_container_state_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13139,17 +13107,16 @@ static void _pack_container_signal_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_container_signal_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_signal_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->signal, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13165,17 +13132,16 @@ static void _pack_container_delete_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_container_delete_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_delete_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackbool(&msg->force, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13192,7 +13158,6 @@ static void _pack_container_started_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_container_started_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_started_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->rc, buffer);
@@ -13201,11 +13166,11 @@ static int _unpack_container_started_msg(slurm_msg_t *smsg, buf_t *buffer)
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13222,18 +13187,17 @@ static void _pack_container_exec_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_container_exec_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	container_exec_msg_t *msg = xmalloc(sizeof(*msg));
-	smsg->data = msg;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->args, buffer);
 		safe_unpackstr(&msg->env, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_destroy_container_exec_msg(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13310,14 +13274,13 @@ static int _unpack_node_alias_addrs_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 			goto unpack_error;
 		}
 		msg->net_cred = tmp_str;
-		smsg->data = msg;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_node_alias_addrs(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13343,22 +13306,19 @@ static void _pack_dbd_relay(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_dbd_relay(slurm_msg_t *smsg, buf_t *buffer)
 {
-	persist_msg_t *msg = NULL;
+	persist_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		msg = xmalloc(sizeof(*msg));
 		safe_unpack16(&msg->msg_type, buffer);
 		if (unpack_slurmdbd_msg(msg, smsg->protocol_version, buffer))
 			goto unpack_error;
-
-		smsg->data = msg;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(msg);
-	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
