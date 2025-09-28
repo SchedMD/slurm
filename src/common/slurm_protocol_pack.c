@@ -9335,7 +9335,38 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	prolog_launch_msg_t *msg = smsg->data;
 	xassert(msg);
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(msg->alloc_tls_cert, buffer);
+		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
+				smsg->protocol_version);
+		pack32(msg->job_id, buffer);
+		pack32(msg->het_job_id, buffer);
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+
+		packstr(msg->nodes, buffer);
+		packstr(msg->work_dir, buffer);
+
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_alloc_host, buffer);
+		pack16(msg->x11_alloc_port, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target, buffer);
+		pack16(msg->x11_target_port, buffer);
+
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
+
+		if (msg->job_ptr_buf) {
+			packbool(true, buffer);
+			packbuf(msg->job_ptr_buf, buffer);
+			packbuf(msg->job_node_array_buf, buffer);
+			packbuf(msg->part_ptr_buf, buffer);
+		} else {
+			packbool(false, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(msg->alloc_tls_cert, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
@@ -9408,7 +9439,47 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 	prolog_launch_msg_t *msg = xmalloc(sizeof(*msg));
 	smsg->data = msg;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->alloc_tls_cert, buffer);
+		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
+					  smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->het_job_id, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+
+		safe_unpackstr(&msg->nodes, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
+
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_alloc_host, buffer);
+		safe_unpack16(&msg->x11_alloc_port, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
+
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		if (!(msg->cred = slurm_cred_unpack(buffer,
+						    smsg->protocol_version)))
+			goto unpack_error;
+
+		safe_unpackbool(&tmp_bool, buffer);
+		if (tmp_bool) {
+			if (job_record_unpack(&msg->job_ptr, 0, buffer,
+					      smsg->protocol_version))
+				goto unpack_error;
+			if (slurm_unpack_list(&msg->job_node_array,
+					      node_record_unpack,
+					      purge_node_rec, buffer,
+					      smsg->protocol_version))
+				goto unpack_error;
+			if (part_record_unpack(&msg->part_ptr, buffer,
+					       smsg->protocol_version))
+				goto unpack_error;
+		}
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
