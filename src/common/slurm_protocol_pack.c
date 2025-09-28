@@ -8164,20 +8164,14 @@ static void _pack_launch_tasks_response_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int
-_unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **msg_ptr,
-				  buf_t *buffer, uint16_t protocol_version)
+static int _unpack_launch_tasks_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
-	launch_tasks_response_msg_t *msg;
+	launch_tasks_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(launch_tasks_response_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version))
 			goto unpack_error;
 		safe_unpack32(&msg->return_code, buffer);
 		safe_unpackstr(&msg->node_name, buffer);
@@ -8190,11 +8184,11 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **msg_ptr,
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_launch_tasks_response_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14317,10 +14311,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_LAUNCH_TASKS:
-		rc = _unpack_launch_tasks_response_msg(
-			(launch_tasks_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_launch_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		rc = _unpack_reattach_tasks_request_msg(
