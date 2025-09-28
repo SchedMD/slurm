@@ -8551,24 +8551,18 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr,
-					    buf_t *buffer,
-					    uint16_t protocol_version)
+static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
 	bool tmp_bool;
 	char *tmp_char = NULL;
-	launch_tasks_request_msg_t *msg;
 	int i = 0;
 	dynamic_plugin_data_t *tmp_switch = NULL;
+	launch_tasks_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version))
 			goto unpack_error;
 
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
@@ -8714,20 +8708,20 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
 			if (job_record_unpack(&msg->job_ptr, 0, buffer,
-					      protocol_version))
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (slurm_unpack_list(&msg->job_node_array,
 					      node_record_unpack,
 					      purge_node_rec, buffer,
-					      protocol_version))
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (part_record_unpack(&msg->part_ptr, buffer,
-					       protocol_version))
+					       smsg->protocol_version))
 				goto unpack_error;
 		}
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version))
 			goto unpack_error;
 
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
@@ -8869,20 +8863,20 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
 			if (job_record_unpack(&msg->job_ptr, 0, buffer,
-					      protocol_version))
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (slurm_unpack_list(&msg->job_node_array,
 					      node_record_unpack,
 					      purge_node_rec, buffer,
-					      protocol_version))
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (part_record_unpack(&msg->part_ptr, buffer,
-					       protocol_version))
+					       smsg->protocol_version))
 				goto unpack_error;
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version))
 			goto unpack_error;
 
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
@@ -8995,7 +8989,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
 		if (switch_g_unpack_stepinfo(&tmp_switch, buffer,
-					     protocol_version) < 0) {
+					     smsg->protocol_version) < 0) {
 			error("switch_g_unpack_stepinfo: %m");
 			switch_g_free_stepinfo(tmp_switch);
 			goto unpack_error;
@@ -9030,24 +9024,24 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackbool(&tmp_bool, buffer);
 		if (tmp_bool) {
 			if (job_record_unpack(&msg->job_ptr, 0, buffer,
-					      protocol_version))
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (slurm_unpack_list(&msg->job_node_array,
 					      node_record_unpack,
 					      purge_node_rec, buffer,
-					      protocol_version))
+					      smsg->protocol_version))
 				goto unpack_error;
 			if (part_record_unpack(&msg->part_ptr, buffer,
-					       protocol_version))
+					       smsg->protocol_version))
 				goto unpack_error;
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_launch_tasks_request_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14298,10 +14292,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					      msg->protocol_version);
 		break;
 	case REQUEST_LAUNCH_TASKS:
-		rc = _unpack_launch_tasks_request_msg(
-			(launch_tasks_request_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_launch_tasks_request_msg(msg, buffer);
 		break;
 	case RESPONSE_LAUNCH_TASKS:
 		rc = _unpack_launch_tasks_response_msg(msg, buffer);
