@@ -8192,18 +8192,18 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
-					   buf_t *buffer,
-					   uint16_t protocol_version)
+static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
+					   buf_t *buffer)
 {
+	launch_tasks_request_msg_t *msg = smsg->data;
 	int i = 0;
 	uint16_t cred_version =
-		msg->cred_version ? msg->cred_version : protocol_version;
+		msg->cred_version ? msg->cred_version : smsg->protocol_version;
 
 	xassert(msg);
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -8312,17 +8312,16 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		if (msg->job_ptr) {
 			packbool(true, buffer);
 			job_record_pack(msg->job_ptr, 0, buffer,
-					protocol_version);
-			slurm_pack_list(msg->job_node_array,
-					node_record_pack, buffer,
-					protocol_version);
+					smsg->protocol_version);
+			slurm_pack_list(msg->job_node_array, node_record_pack,
+					buffer, smsg->protocol_version);
 			part_record_pack(msg->part_ptr, buffer,
-					 protocol_version);
+					 smsg->protocol_version);
 		} else {
 			packbool(false, buffer);
 		}
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -8427,17 +8426,16 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		if (msg->job_ptr) {
 			packbool(true, buffer);
 			job_record_pack(msg->job_ptr, 0, buffer,
-					protocol_version);
-			slurm_pack_list(msg->job_node_array,
-					node_record_pack, buffer,
-					protocol_version);
+					smsg->protocol_version);
+			slurm_pack_list(msg->job_node_array, node_record_pack,
+					buffer, smsg->protocol_version);
 			part_record_pack(msg->part_ptr, buffer,
-					 protocol_version);
+					 smsg->protocol_version);
 		} else {
 			packbool(false, buffer);
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32_array(msg->gids, msg->ngids, buffer);
 
 		pack32(msg->het_job_node_offset, buffer);
@@ -8516,7 +8514,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
 		switch_g_pack_stepinfo(msg->switch_step, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		job_options_pack(msg->options, buffer);
 
 		packnull(buffer);
@@ -8543,12 +8541,11 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		if (msg->job_ptr) {
 			packbool(true, buffer);
 			job_record_pack(msg->job_ptr, 0, buffer,
-					protocol_version);
-			slurm_pack_list(msg->job_node_array,
-					node_record_pack, buffer,
-					protocol_version);
+					smsg->protocol_version);
+			slurm_pack_list(msg->job_node_array, node_record_pack,
+					buffer, smsg->protocol_version);
 			part_record_pack(msg->part_ptr, buffer,
-					 protocol_version);
+					 smsg->protocol_version);
 		} else {
 			packbool(false, buffer);
 		}
@@ -13642,10 +13639,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_reattach_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
-		_pack_launch_tasks_request_msg(
-			(launch_tasks_request_msg_t *) msg->data,
-			buffer,
-			msg->protocol_version);
+		_pack_launch_tasks_request_msg(msg, buffer);
 		break;
 	case RESPONSE_LAUNCH_TASKS:
 		_pack_launch_tasks_response_msg(msg, buffer);
