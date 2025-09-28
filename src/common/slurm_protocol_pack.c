@@ -8149,14 +8149,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-static void
-_pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, buf_t *buffer,
-				uint16_t protocol_version)
+static void _pack_launch_tasks_response_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
-	xassert(msg);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	launch_tasks_response_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->return_code, buffer);
 		packstr(msg->node_name, buffer);
 		pack32(msg->count_of_pids, buffer);
@@ -13655,9 +13654,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case RESPONSE_LAUNCH_TASKS:
-		_pack_launch_tasks_response_msg((launch_tasks_response_msg_t
-						 *) msg->data, buffer,
-						msg->protocol_version);
+		_pack_launch_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
