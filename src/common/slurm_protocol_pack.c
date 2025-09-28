@@ -10466,19 +10466,14 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		msg->script = NULL;
 }
 
-static int
-_unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
-			     uint16_t protocol_version)
+static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	char *tmp_char = NULL;
-	batch_job_launch_msg_t *launch_msg_ptr;
+	batch_job_launch_msg_t *launch_msg_ptr =
+		xmalloc(sizeof(*launch_msg_ptr));
 
-	xassert(msg);
-	launch_msg_ptr = xmalloc(sizeof(batch_job_launch_msg_t));
-	*msg = launch_msg_ptr;
-
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32_array(&launch_msg_ptr->gids,
@@ -10550,7 +10545,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&launch_msg_ptr->cpu_freq_max, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_gov, buffer);
 		safe_unpackbool(&launch_msg_ptr->oom_kill_step, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32_array(&launch_msg_ptr->gids,
@@ -10621,7 +10616,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpack32(&launch_msg_ptr->cpu_freq_max, buffer);
 		safe_unpack32(&launch_msg_ptr->cpu_freq_gov, buffer);
 		safe_unpackbool(&launch_msg_ptr->oom_kill_step, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32_array(&launch_msg_ptr->gids,
@@ -10692,11 +10687,11 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&launch_msg_ptr->tres_freq, buffer);
 	}
 
+	smsg->data = launch_msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_launch_msg(launch_msg_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14367,9 +14362,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					   msg->protocol_version);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
-		rc = _unpack_batch_job_launch_msg((batch_job_launch_msg_t **)
-						  & (msg->data), buffer,
-						  msg->protocol_version);
+		rc = _unpack_batch_job_launch_msg(msg, buffer);
 		break;
 	case REQUEST_LAUNCH_PROLOG:
 		rc = _unpack_prolog_launch_msg(msg, buffer);
