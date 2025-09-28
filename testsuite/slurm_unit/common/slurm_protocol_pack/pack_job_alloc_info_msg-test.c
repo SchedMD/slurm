@@ -18,7 +18,6 @@ START_TEST(invalid_protocol)
 }
 END_TEST
 
-#ifndef NDEBUG
 START_TEST(pack_null_req)
 {
 	buf_t *buf = init_buf(1024);
@@ -30,8 +29,8 @@ START_TEST(pack_null_req)
 
 	free_buf(buf);
 }
+
 END_TEST
-#endif
 
 START_TEST(pack_back2_req_null_ptrs)
 {
@@ -182,12 +181,8 @@ Suite *suite(SRunner *sr)
 	Suite *s = suite_create("Pack job_alloc_info_msg_t");
 	TCase *tc_core = tcase_create("Pack pack_job_alloc_info_msg_t");
 	tcase_add_test(tc_core, invalid_protocol);
-#ifdef NDEBUG
-       printf("Can't perform pack_null_req test with NDEBUG set.\n");
-#else
-       if (srunner_fork_status(sr) != CK_NOFORK)
-               tcase_add_test_raise_signal(tc_core, pack_null_req, SIGABRT);
-#endif
+	if (srunner_fork_status(sr) != CK_NOFORK)
+		tcase_add_test_raise_signal(tc_core, pack_null_req, SIGSEGV);
 	tcase_add_test(tc_core, pack_back2_req_null_ptrs);
 	tcase_add_test(tc_core, pack_back2_req);
 	tcase_add_test(tc_core, pack_back1_req_null_ptrs);
