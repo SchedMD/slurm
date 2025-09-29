@@ -232,17 +232,39 @@ done""",
     atf.run_job(f"--output={file_out} printenv SLURMD_NODENAME")
     result_out = fpc.get_tmp_file()
     node_name = (tmp_path / result_out).read_text().rstrip()
+    node_host_name = atf.get_node_parameter(node_name, "hostname")
+    node_addr = atf.get_node_parameter(node_name, "address")
+    if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
+        node_host_name = node_addr
+
+    if atf.get_version() >= (25, 11):
+        # Ticket 23357: Use the node_name instead of hostname in file name creation.
+        expected_name = node_name
+    else:
+        expected_name = node_host_name
+
     assert (
-        re.search(node_name, result_out) is not None
-    ), f"%N: Output file ({result_out}) does not contain NodeHostName ({node_name})"
+        re.search(expected_name, result_out) is not None
+    ), f"%N: Output file ({result_out}) does not contain the expected node name ({expected_name})"
     fpc.remove_file(result_out)
 
     job_id = atf.submit_job_srun(f"--error={file_err} true")
     node_name = atf.get_job_parameter(job_id, "NodeList")
+    node_host_name = atf.get_node_parameter(node_name, "hostname")
+    node_addr = atf.get_node_parameter(node_name, "address")
+    if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
+        node_host_name = node_addr
+
+    if atf.get_version() >= (25, 11):
+        # Ticket 23357: Use the node_name instead of hostname in file name creation.
+        expected_name = node_name
+    else:
+        expected_name = node_host_name
+
     result_err = fpc.get_tmp_file()
     assert (
-        re.search(node_name, result_err) is not None
-    ), f"%N: Error file ({result_err}) does not contain NodeHostName ({node_name})"
+        re.search(expected_name, result_err) is not None
+    ), f"%N: Error file ({result_err}) does not contain the expected node name ({expected_name})"
     fpc.remove_file(result_err)
 
     # Test %A puts the Job array's master job allocation number in the file name
