@@ -206,6 +206,10 @@ extern int switch_p_unpack_jobinfo(switch_info_t **switch_info, buf_t *buffer,
 			*switch_info = _create_info(channel);
 
 		log_flag(SWITCH, "channel %u", channel);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
