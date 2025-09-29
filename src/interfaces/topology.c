@@ -73,8 +73,8 @@ typedef struct slurm_topo_ops {
 					       	);
 	int (*split_hostlist)(hostlist_t *hl, hostlist_t ***sp_hl, int *count,
 			      uint16_t tree_width, void *tctx);
-	int (*topoinfo_free) (void *topoinfo_ptr);
 	int (*get)(topology_data_t type, void *data, void *tctx);
+	int (*topoinfo_free) (void *topoinfo_ptr);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 	int (*topoinfo_print)(void *topoinfo_ptr, char *nodes_list, char *unit,
@@ -100,8 +100,8 @@ static const char *syms[] = {
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
-	"topology_p_topoinfo_free",
 	"topology_p_get",
+	"topology_p_topoinfo_free",
 	"topology_p_topoinfo_pack",
 	"topology_p_topoinfo_print",
 	"topology_p_topoinfo_unpack",
@@ -607,6 +607,22 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 						tctx[tctx_idx].plugin_ctx);
 }
 
+extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (topoinfo) {
+		int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+
+		if (topoinfo->data)
+			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
+		xfree(topoinfo);
+	}
+	return rc;
+}
+
 extern int topology_g_topoinfo_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
@@ -682,22 +698,6 @@ unpack_error:
 	*topoinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
-}
-
-extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo)
-{
-	int rc = SLURM_SUCCESS;
-
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (topoinfo) {
-		int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
-
-		if (topoinfo->data)
-			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
-		xfree(topoinfo);
-	}
-	return rc;
 }
 
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)

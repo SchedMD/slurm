@@ -141,11 +141,6 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		hl, sp_hl, count, tree_width);
 }
 
-extern int topology_p_topoinfo_free(void *topoinfo_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
 	switch (type) {
@@ -175,6 +170,11 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 		error("Unsupported option %d", type);
 	}
 
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_free(void *topoinfo_ptr)
+{
 	return SLURM_SUCCESS;
 }
 

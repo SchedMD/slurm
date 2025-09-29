@@ -232,6 +232,12 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
  */
 extern int topology_g_get(topology_data_t type, char *name, void *data);
 
+/* free storage previously allocated for a system topology
+ * IN jobinfo  - the system topology to be freed
+ * RET         - slurm error code
+ */
+extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo);
+
 /* pack a mchine independent form system topology
  * OUT buffer  - buffer with node topology appended
  * IN protocol_version - slurm protocol version of client
@@ -254,11 +260,6 @@ extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer,
 				      uint16_t protocol_version);
-/* free storage previously allocated for a system topology
- * IN jobinfo  - the system topology to be freed
- * RET         - slurm error code
- */
-extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo);
 
 /* Return fragmentation score of given bitmap
  * IN node_mask - aviabled nodes

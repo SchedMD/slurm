@@ -612,24 +612,6 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 	return depth;
 }
 
-extern int topology_p_topoinfo_free(void *topoinfo_ptr)
-{
-	int i = 0;
-	topoinfo_tree_t *topoinfo = topoinfo_ptr;
-	if (topoinfo) {
-		if (topoinfo->topo_array) {
-			for (i = 0; i < topoinfo->record_count; i++) {
-				xfree(topoinfo->topo_array[i].name);
-				xfree(topoinfo->topo_array[i].nodes);
-				xfree(topoinfo->topo_array[i].switches);
-			}
-			xfree(topoinfo->topo_array);
-		}
-		xfree(topoinfo);
-	}
-	return SLURM_SUCCESS;
-}
-
 extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
 	int rc = SLURM_SUCCESS;
@@ -683,6 +665,24 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	}
 
 	return rc;
+}
+
+extern int topology_p_topoinfo_free(void *topoinfo_ptr)
+{
+	int i = 0;
+	topoinfo_tree_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		if (topoinfo->topo_array) {
+			for (i = 0; i < topoinfo->record_count; i++) {
+				xfree(topoinfo->topo_array[i].name);
+				xfree(topoinfo->topo_array[i].nodes);
+				xfree(topoinfo->topo_array[i].switches);
+			}
+			xfree(topoinfo->topo_array);
+		}
+		xfree(topoinfo);
+	}
+	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
