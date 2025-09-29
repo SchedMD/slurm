@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "December 2023" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "September 2025" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -123,7 +123,8 @@ Called after privileges are temporarily dropped. (remote context only)
 .TP
 \fBslurm_spank_task_init_privileged\fR
 Called for each task just after fork, but before all elevated privileges
-are dropped. (remote context only)
+are dropped. This can run in parallel with \fBslurm_spank_task_post_fork\fR.
+(remote context only)
 .IP
 
 .TP
@@ -138,7 +139,8 @@ context only)
 Called for each task from parent process after fork (2) is complete.
 Due to the fact that \fBslurmd\fR does not exec any tasks until all
 tasks have completed fork (2), this call is guaranteed to run before
-the user task is executed. (remote context only)
+the user task is executed. This can run in parallel with
+\fBslurm_spank_task_init_privileged\fR. (remote context only)
 .IP
 
 .TP
