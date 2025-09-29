@@ -264,6 +264,23 @@ int pmixp_lib_init(void)
 		      pmixp_info_tmpdir_lib(), PMIX_STRING);
 #endif
 
+#if (HAVE_PMIX_VER > 3)
+	/*
+	 * (PMIx v4+) If share_topology is true tell the server to make the
+	 * HWLOC topology it grabs available to clients via job-level key-value
+	 * pairs. This results in the following keys being stored in PMIx's GDS:
+	 * PMIX_HWLOC_XML_V2, PMIX_HWLOC_XML_V1, and PMIX_LOCAL_TOPO
+	 *
+	 * Also instruct the server NOT to share the topology via shared memory
+	 * due to permission issues.
+	 */
+	if (slurm_pmix_conf.share_topology) {
+		PMIXP_KVP_ADD(kvp, PMIX_SERVER_SHARE_TOPOLOGY,
+			      &slurm_pmix_conf.share_topology, PMIX_BOOL);
+		setenv("PMIX_MCA_pmix_hwloc_hole_kind", "none", 1);
+	}
+#endif
+
 	/* setup the server library */
 	if (PMIX_SUCCESS != (rc = PMIx_server_init(&slurm_pmix_cb, kvp,
 						   PMIXP_INFO_SIZE(kvp)))) {

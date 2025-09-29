@@ -118,6 +118,7 @@ s_p_options_t pmix_options[] = {
 	{"PMIxEnv", S_P_STRING},
 	{"PMIxFenceBarrier", S_P_BOOLEAN},
 	{"PMIxNetDevicesUCX", S_P_STRING},
+	{"PMIxShareServerTopology", S_P_BOOLEAN},
 	{"PMIxTimeout", S_P_UINT32},
 	{"PMIxTlsUCX", S_P_STRING},
 	{NULL}
@@ -168,6 +169,7 @@ static void _init_pmix_conf(void)
 	slurm_pmix_conf.direct_samearch = false;
 	slurm_pmix_conf.env = NULL;
 	slurm_pmix_conf.fence_barrier = false;
+	slurm_pmix_conf.share_topology = false;
 	slurm_pmix_conf.timeout = PMIXP_TIMEOUT_DEFAULT;
 	slurm_pmix_conf.ucx_netdevices = NULL;
 	slurm_pmix_conf.ucx_tls = NULL;
@@ -184,6 +186,7 @@ static void _reset_pmix_conf(void)
 	slurm_pmix_conf.direct_samearch = false;
 	xfree(slurm_pmix_conf.env);
 	slurm_pmix_conf.fence_barrier = false;
+	slurm_pmix_conf.share_topology = false;
 	slurm_pmix_conf.timeout = PMIXP_TIMEOUT_DEFAULT;
 	xfree(slurm_pmix_conf.ucx_netdevices);
 	xfree(slurm_pmix_conf.ucx_tls);
@@ -343,6 +346,8 @@ extern void mpi_p_conf_set(s_p_hashtbl_t *tbl)
 				"PMIxFenceBarrier", tbl);
 		s_p_get_string(&slurm_pmix_conf.ucx_netdevices,
 			       "PMIxNetDevicesUCX", tbl);
+		s_p_get_boolean(&slurm_pmix_conf.share_topology,
+				"PMIxShareServerTopology", tbl);
 		s_p_get_uint32(&slurm_pmix_conf.timeout, "PMIxTimeout", tbl);
 		s_p_get_string(&slurm_pmix_conf.ucx_tls, "PMIxTlsUCX", tbl);
 	}
@@ -387,6 +392,9 @@ extern s_p_hashtbl_t *mpi_p_conf_get(void)
 		s_p_parse_pair(tbl, "PMIxNetDevicesUCX",
 			       slurm_pmix_conf.ucx_netdevices);
 
+	s_p_parse_pair(tbl, "PMIxShareServerTopology",
+		       (slurm_pmix_conf.share_topology ? "yes" : "no"));
+
 	value = xstrdup_printf("%u", slurm_pmix_conf.timeout);
 	s_p_parse_pair(tbl, "PMIxTimeout", value);
 	xfree(value);
@@ -426,6 +434,9 @@ extern list_t *mpi_p_conf_get_printable(void)
 
 	add_key_pair(data, "PMIxNetDevicesUCX", "%s",
 		     slurm_pmix_conf.ucx_netdevices);
+
+	add_key_pair_bool(data, "PMIxShareServerTopology",
+			  slurm_pmix_conf.share_topology);
 
 	add_key_pair(data, "PMIxTimeout", "%u", slurm_pmix_conf.timeout);
 

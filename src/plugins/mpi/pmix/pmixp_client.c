@@ -333,60 +333,6 @@ static void _set_sizeinfo(list_t *lresp)
 }
 
 /*
- * provide topology information if hwloc is available
- */
-static void _set_topology(list_t *lresp)
-{
-#ifdef HAVE_HWLOC
-	hwloc_topology_t topology;
-	unsigned long flags;
-	pmix_info_t *kvp;
-	char *p = NULL;
-	int len;
-
-	if (hwloc_topology_init(&topology)) {
-		/* error in initialize hwloc library */
-		error("%s: hwloc_topology_init() failed", __func__);
-		goto err_exit;
-	}
-
-#if HWLOC_API_VERSION < 0x00020000
-	flags = (HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM |
-		 HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
-	hwloc_topology_set_flags(topology, flags);
-#else
-	flags = HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM;
-	hwloc_topology_set_flags(topology, flags);
-	hwloc_topology_set_io_types_filter(topology,
-					   HWLOC_TYPE_FILTER_KEEP_ALL);
-#endif
-
-	if (hwloc_topology_load(topology)) {
-		error("%s: hwloc_topology_load() failed", __func__);
-		goto err_release_topo;
-	}
-
-#if HWLOC_API_VERSION < 0x00020000
-	if (hwloc_topology_export_xmlbuffer(topology, &p, &len)) {
-#else
-	if (hwloc_topology_export_xmlbuffer(topology, &p, &len, 0)) {
-#endif
-		error("%s: hwloc_topology_load() failed", __func__);
-		goto err_release_topo;
-	}
-
-	PMIXP_KVP_CREATE(kvp, PMIX_LOCAL_TOPO, p, PMIX_STRING);
-	list_append(lresp, kvp);
-
-	/* successful exit - fallthru */
-err_release_topo:
-	hwloc_topology_destroy(topology);
-err_exit:
-#endif
-	return;
-}
-
-/*
  * Estimate the size of a buffer capable of holding the proc map for this job.
  * PMIx proc map string format:
  *
@@ -684,8 +630,6 @@ extern int pmixp_libpmix_job_set(void)
 	_set_procdatas(lresp);
 
 	_set_sizeinfo(lresp);
-
-	_set_topology(lresp);
 
 	_set_euid(lresp);
 
