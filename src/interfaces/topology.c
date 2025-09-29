@@ -100,11 +100,11 @@ static const char *syms[] = {
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
-	"topology_p_topology_free",
+	"topology_p_topoinfo_free",
 	"topology_p_get",
-	"topology_p_topology_pack",
-	"topology_p_topology_print",
-	"topology_p_topology_unpack",
+	"topology_p_topoinfo_pack",
+	"topology_p_topoinfo_print",
+	"topology_p_topoinfo_unpack",
 	"topology_p_get_fragmentation",
 };
 
@@ -607,7 +607,7 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 						tctx[tctx_idx].plugin_ctx);
 }
 
-extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
@@ -626,7 +626,7 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 						  protocol_version);
 }
 
-extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char *unit, char **out)
 {
 	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
@@ -640,7 +640,7 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 							     out);
 }
 
-extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
+extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer, uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *topoinfo_ptr = NULL;
@@ -678,13 +678,13 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	topology_g_topology_free(topoinfo_ptr);
+	topology_g_topoinfo_free(topoinfo_ptr);
 	*topoinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
 
-extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
+extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo)
 {
 	int rc = SLURM_SUCCESS;
 

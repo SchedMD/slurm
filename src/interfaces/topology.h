@@ -226,9 +226,9 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
  * IN - topology name
  * OUT data
  *     type = TOPO_DATA_TOPOLOGY_PTR - the system topology - Returned value must
- *                                     be freed using topology_g_topology_free.
+ *                                     be freed using topology_g_topoinfo_free.
  * RET         - slurm error code
- * NOTE: returned value must be freed using topology_g_topology_free
+ * NOTE: returned value must be freed using topology_g_topoinfo_free
  */
 extern int topology_g_get(topology_data_t type, char *name, void *data);
 
@@ -237,11 +237,11 @@ extern int topology_g_get(topology_data_t type, char *name, void *data);
  * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  */
-extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer,
 				    uint16_t protocol_version);
 
-extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char *unit, char **out);
 
 /* unpack a system topology from a buffer
@@ -249,16 +249,16 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
  * IN  buffer  - buffer with system topology read from current pointer loc
  * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
- * NOTE: returned value must be freed using topology_g_topology_free
+ * NOTE: returned value must be freed using topology_g_topoinfo_free
  */
-extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
+extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer,
 				      uint16_t protocol_version);
 /* free storage previously allocated for a system topology
  * IN jobinfo  - the system topology to be freed
  * RET         - slurm error code
  */
-extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo);
+extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo);
 
 /* Return fragmentation score of given bitmap
  * IN node_mask - aviabled nodes

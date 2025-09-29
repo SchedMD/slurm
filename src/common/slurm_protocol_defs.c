@@ -4476,7 +4476,7 @@ extern void slurm_free_reserve_info_members(reserve_info_t * resv)
 extern void slurm_free_topo_info_msg(topo_info_response_msg_t *msg)
 {
 	if (msg) {
-		topology_g_topology_free(msg->topo_info);
+		topology_g_topoinfo_free(msg->topo_info);
 		xfree(msg);
 	}
 }

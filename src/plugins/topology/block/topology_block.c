@@ -368,7 +368,7 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		hl, sp_hl, count, tree_width);
 }
 
-extern int topology_p_topology_free(void *topoinfo_ptr)
+extern int topology_p_topoinfo_free(void *topoinfo_ptr)
 {
 	int i = 0;
 	topoinfo_block_t *topoinfo = topoinfo_ptr;
@@ -444,7 +444,7 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	return rc;
 }
 
-extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
+extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	int i;
@@ -473,7 +473,7 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
+extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 				     char *unit, char **out)
 {
 	int i, match, match_cnt = 0;;
@@ -527,7 +527,7 @@ extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
+extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
 	int i = 0;
@@ -573,7 +573,7 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	topology_p_topology_free(topoinfo_ptr);
+	topology_p_topoinfo_free(topoinfo_ptr);
 	*topoinfo_pptr = NULL;
 	return SLURM_ERROR;
 }
