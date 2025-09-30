@@ -3834,6 +3834,9 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 	char *gres_cores_str, *tmp;
 	int first, last, core_cnt;
 
+	if (total_core_cnt == bit_size(tmp_bitmap))
+		return SLURM_SUCCESS;
+
 	for (int i = 0; (i < rebuild_topo->sock_cnt); i++) {
 		first = i * rebuild_topo->cores_per_sock;
 		last = (i + 1) * rebuild_topo->cores_per_sock;
