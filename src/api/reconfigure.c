@@ -97,10 +97,31 @@ extern int slurm_ping(int dest)
 	return rc;
 }
 
+/*
+ * This will ping all controllers for the current cluster,
+ * or if --cluster=<name> is specified, it will ping the
+ * primary for a remote cluster.
+ */
 extern controller_ping_t *ping_all_controllers(void)
 {
 	controller_ping_t *pings =
 		xcalloc(slurm_conf.control_cnt + 1, sizeof(*pings));
+
+	/* Only ping primary for --cluster=cluster */
+	if (working_cluster_rec) {
+		DEF_TIMERS;
+		/* hostname is not known, use cluster name */
+		pings[0].hostname = working_cluster_rec->name;
+		pings[0].offset = 0;
+
+		START_TIMER;
+		pings[0].pinged = !slurm_ping(0);
+		END_TIMER;
+
+		pings[0].latency = DELTA_TIMER;
+
+		return pings;
+	}
 
 	for (int i = 0; i < slurm_conf.control_cnt; i++) {
 		DEF_TIMERS;
