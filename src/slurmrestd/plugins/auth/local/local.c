@@ -248,9 +248,8 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 							HTTP_HEADER_USER_NAME);
 	conmgr_fd_t *con = conmgr_fd_get_ref(args->con);
 	const conmgr_fd_status_t cstatus = conmgr_fd_get_status(con);
-	const int output_fd = conmgr_fd_get_output_fd(con);
 	const char *name = args->name;
-	int rc = EINVAL, input_fd = -1;
+	int rc = EINVAL, input_fd = -1, output_fd = -1;
 
 	xassert(!ctxt->user_name);
 
@@ -260,7 +259,12 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 		       slurm_strerror(rc));
 		return ESLURM_AUTH_SKIP;
 	}
-
+	if ((rc = conmgr_con_get_output_fd(args->con, &output_fd))) {
+		debug3("%s: [%s] skipping auth local with invalid output_fd: %s",
+		       __func__, conmgr_con_get_name(args->con),
+		       slurm_strerror(rc));
+		return ESLURM_AUTH_SKIP;
+	}
 	if ((input_fd < 0) || (output_fd < 0)) {
 		/* local auth requires there to be a valid fd */
 		debug3("%s: skipping auth local with invalid input_fd:%u output_fd:%u",
