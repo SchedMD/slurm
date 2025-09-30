@@ -28,9 +28,7 @@
 ############################################################################
 source ./globals
 
-set file_in1    "$test_dir/input1"
-set file_in2    "$test_dir/input2"
-set file_out2   "$test_dir/output2"
+set file_in     "$test_dir/input"
 set job_id1     0
 set job_id2     0
 
@@ -43,18 +41,17 @@ proc cleanup {} {
 #
 # Build input script files
 #
-make_bash_script $file_in1 "$bin_sleep 10"
+make_bash_script $file_in "$bin_sleep 10"
 
 #
 # Spawn a batch job that just sleeps for a while
 #
-set job_id1 [submit_job -fail "--output=/dev/null --error=/dev/null -t1 $file_in1"]
+set job_id1 [submit_job -fail "--output=/dev/null --error=/dev/null -t1 $file_in"]
 
 #
 # Submit a dependent job
 #
-make_bash_script $file_in2 "$scontrol show job $job_id1"
-set job_id2 [submit_job -fail "--output=$file_out2 --dependency=afterany:$job_id1 $file_in2"]
+set job_id2 [submit_job -fail "--output=/dev/null --dependency=afterany:$job_id1 $file_in"]
 
 #
 # Confirm dependency info within second job
@@ -67,7 +64,22 @@ subtest {$match_jobid == $job_id1} "Verify Dependency information is correct"
 #
 # Confirm that first job is complete before second job starts
 #
-wait_for_file -fail $file_out2
+wait_for_job -fail $job_id1 "RUNNING"
+wait_for_job -fail $job_id2 "PENDING"
+set job1_state ""
+wait_for -fail {$job1_state != "RUNNING"} {
+	set jobs [get_jobs]
 
-set output [run_command_output -fail "$bin_cat $file_out2"]
-subtest {[regexp "JobState=COMPLETED|COMPLETING" $output]} "Confirm that first job is complete before second job starts"
+	set job1_state [dict get [dict get $jobs $job_id1] "JobState"]
+	set job2_state [dict get [dict get $jobs $job_id2] "JobState"]
+
+	subtest {!($job1_state == "RUNNING" && $job2_state == "RUNNING")} "Jobs 1 and 2 should not be RUNNING at the same time"
+}
+
+wait_for_job -fail $job_id2 "RUNNING"
+subtest {[regexp "COMPLETED|COMPLETING" [get_job_param $job_id1 "JobState"]]} "Job1 should be COMPLETED or COMPLETING when job2 is RUNNING"
+
+set job1_end [convert_time_str [get_job_param $job_id1 "EndTime"] secs]
+set job2_start [convert_time_str [get_job_param $job_id2 "StartTime"] secs]
+
+subtest {$job2_start >= $job1_end} "StartTime of job2 should be >= than EndTime of job1"
