@@ -5,6 +5,7 @@ import atf
 import pytest
 import time
 import os
+import re
 
 file_out1 = "output1"
 file_out2 = "output2"
@@ -14,6 +15,9 @@ job_mem = 2
 
 # Big enough to avoid busy systems to detect false suspend times
 suspend_time = 5
+
+# To wait for some file content
+file_pattern = re.compile(r"01\s+\d+\n" r"02\s+\d+\n")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -83,6 +87,13 @@ def test_job_suspend_resume(job_script, node):
     )
     atf.wait_for_job_state(job_id2, "PENDING", desired_reason="Resources", fatal=True)
 
+    # Before suspending job1, ensure that it already printed something
+    atf.repeat_until(
+        lambda: atf.run_command_output(f"cat {file_out1}"),
+        lambda out: file_pattern.match(out),
+        fatal=True,
+    )
+
     # Suspend job1, and verify it is suspended and job2 starts running
     atf.run_command(
         f"scontrol suspend {job_id1}", user=atf.properties["slurm-user"], fatal=True
@@ -96,6 +107,13 @@ def test_job_suspend_resume(job_script, node):
 
     # Give sometime to job1 so it can detect that it was suspended
     time.sleep(suspend_time + 1)
+
+    # Before suspending job2, ensure that it already printed something
+    atf.repeat_until(
+        lambda: atf.run_command_output(f"cat {file_out2}"),
+        lambda out: file_pattern.match(out),
+        fatal=True,
+    )
 
     # Now switch suspend/running between job1 and job2
     atf.run_command(
