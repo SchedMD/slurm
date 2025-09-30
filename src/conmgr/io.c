@@ -723,9 +723,12 @@ static int _fd_get_output_fd(conmgr_fd_t *con, int *output_fd_ptr)
 	xassert(output_fd_ptr);
 	xassert(*output_fd_ptr == -1);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+
+	slurm_mutex_lock(&mgr.mutex);
 
 	*output_fd_ptr = con->output_fd;
+
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return SLURM_SUCCESS;
 }
