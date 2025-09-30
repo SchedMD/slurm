@@ -3154,6 +3154,8 @@ typedef struct reservation_name_msg {
 	SLURM_BIT(20) /* SlurmctldParameters=drain_absent_gres */
 #define CONF_FLAG_SJKV SLURM_BIT(21) /* AccountingStoreFlags=job_kv */
 #define CONF_FLAG_SRKV SLURM_BIT(22) /* AccountingStoreFlags=resv_kv */
+#define CONF_FLAG_SOFT_TIME_MIN \
+	SLURM_BIT(23) /* SchedulerParameters=time_min_as_soft_limit */
 
 /* How an internal buf_t is enlarged, from CommunicationParameters */
 typedef enum {

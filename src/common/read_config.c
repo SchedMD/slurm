@@ -5373,6 +5373,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	else
 		extra_constraints_set_parsing(false);
 
+	if (xstrcasestr(conf->sched_params, "time_min_as_soft_limit"))
+		conf->conf_flags |= CONF_FLAG_SOFT_TIME_MIN;
+
 	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
 	    hashtbl))
 		conf->sched_time_slice = DEFAULT_SCHED_TIME_SLICE;

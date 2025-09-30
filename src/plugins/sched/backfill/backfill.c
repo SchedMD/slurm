@@ -280,7 +280,6 @@ static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
 static bitstr_t *planned_bitmap = NULL;
 /* planned_bitmap without whole topology expansions */
 static bitstr_t *planned_resv_bitmap = NULL;
-static bool soft_time_limit = false;
 
 /*********************** local functions *********************/
 static void _add_reservation(time_t start_time, time_t end_reserve,
@@ -1161,9 +1160,6 @@ static void _load_config(void)
 	} else {
 		yield_rpc_cnt = tmp_val;
 	}
-
-	if (xstrcasestr(sched_params, "time_min_as_soft_limit"))
-		soft_time_limit = true;
 }
 
 /* Note that slurm.conf has changed */
@@ -1784,7 +1780,8 @@ static int _bf_reserve_running(void *x, void *arg)
 	if (*ns_recs_ptr >= bf_node_space_size)
 		return SLURM_ERROR;
 
-	if (soft_time_limit && job_ptr->time_min) {
+	if ((slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) &&
+	    job_ptr->time_min) {
 		time_t now = time(NULL);
 		time_t soft_end = job_ptr->start_time + job_ptr->time_min * 60;
 		/*
@@ -3641,7 +3638,9 @@ skip_start:
 					_set_job_time_limit(job_ptr,
 							    orig_time_limit);
 				}
-			} else if ((rc == SLURM_SUCCESS) && soft_time_limit &&
+			} else if ((rc == SLURM_SUCCESS) &&
+				   (slurm_conf.conf_flags &
+				    CONF_FLAG_SOFT_TIME_MIN) &&
 				   job_ptr->time_min) {
 				acct_policy_alter_job(job_ptr, orig_time_limit);
 				job_ptr->time_limit = orig_time_limit;

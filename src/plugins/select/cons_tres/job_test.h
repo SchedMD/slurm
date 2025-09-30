@@ -43,7 +43,6 @@ extern uint64_t def_mem_per_gpu;
 extern bool preempt_strict_order;
 extern bool preempt_for_licenses;
 extern int preempt_reorder_cnt;
-extern bool soft_time_limit;
 
 /*
  * Drained CPUs counted in cpus_efctv. A drained specialized CPU is already

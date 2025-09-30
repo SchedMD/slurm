@@ -160,7 +160,6 @@ uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
 bool preempt_for_licenses = false;
 int preempt_reorder_cnt	= 1;
-bool soft_time_limit = false;
 
 /* Local functions */
 static avail_res_t *_allocate(job_record_t *job_ptr,
@@ -382,7 +381,8 @@ static time_t _soft_job_end(job_record_t *job_ptr, time_t now)
 {
 	time_t end_time;
 
-	if (!soft_time_limit || !job_ptr->time_min)
+	if (!(slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) ||
+	    !job_ptr->time_min)
 		return job_ptr->end_time;
 
 	end_time = job_ptr->start_time + job_ptr->time_min * 60;
