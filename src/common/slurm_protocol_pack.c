@@ -7853,11 +7853,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_return_code_msg(return_code_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_return_code_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	return_code_msg_t *msg = smsg->data;
+
 	pack32(msg->return_code, buffer);
 }
 
@@ -13710,9 +13709,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
 	case RESPONSE_SLURM_RC:
-		_pack_return_code_msg((return_code_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
+		_pack_return_code_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURM_RC_MSG:
 		_pack_return_code2_msg(msg, buffer);
