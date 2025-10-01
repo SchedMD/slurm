@@ -9161,8 +9161,8 @@ static void _pack_job_step_kill_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->sjob_id, buffer);
 		packstr(msg->sibling, buffer);
-		pack16((uint16_t)msg->signal, buffer);
-		pack16((uint16_t)msg->flags, buffer);
+		pack16(msg->signal, buffer);
+		pack16(msg->flags, buffer);
 	}
 }
 
