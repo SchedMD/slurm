@@ -9580,15 +9580,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_stat(job_step_stat_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_job_step_stat(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_step_stat_t *msg = smsg->data;
+
 	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
-	jobacctinfo_pack(msg->jobacct, protocol_version,
+	jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 			 PROTOCOL_TYPE_SLURM, buffer);
-	_pack_job_step_pids(msg->step_pids, buffer, protocol_version);
+	_pack_job_step_pids(msg->step_pids, buffer, smsg->protocol_version);
 }
 
 
@@ -13668,9 +13668,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_step_complete_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
-		_pack_job_step_stat((job_step_stat_t *) msg->data,
-				    buffer,
-				    msg->protocol_version);
+		_pack_job_step_stat(msg, buffer);
 		break;
 		/********  slurm_step_id_t Messages  ********/
 	case SRUN_JOB_COMPLETE:
