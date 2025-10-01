@@ -11,6 +11,6 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 pkglib_LTLIBRARIES = openapi_util.la
 
 openapi_util_la_SOURCES = \
-	api.c api.h
+	api.c api.h convert_format.c
 
 openapi_util_la_LDFLAGS = $(PLUGIN_FLAGS)
