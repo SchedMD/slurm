@@ -174,6 +174,9 @@ static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static time_t last_set_all = 0;
 
+/* Global variable so cr lists can be sorted based on a single 'now' time */
+static time_t cr_sort_now = 0;
+
 /* Add job id to record of jobs running on this node */
 static void _add_run_job(struct cr_record *cr_ptr, uint32_t job_id)
 {
@@ -2093,6 +2096,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	if ((rc != SLURM_SUCCESS) &&
 	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
 		time_t last_job_end_time;
+		cr_sort_now = now;
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
@@ -2145,12 +2149,17 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 
 static int  _cr_job_list_sort(void *x, void *y)
 {
+	/*
+	 * This same function is also present in 'cons_tres > job_test.c'.
+	 * Refer to that location for details of why it remains copied instead
+	 * of placed in a common location.
+	 */
 	job_record_t *job1_ptr = *(job_record_t **) x;
 	job_record_t *job2_ptr = *(job_record_t **) y;
 	time_t end_time1, end_time2;
 
-	end_time1 = soft_job_end(job1_ptr, 0);
-	end_time2 = soft_job_end(job2_ptr, 0);
+	end_time1 = soft_job_end(job1_ptr, cr_sort_now);
+	end_time2 = soft_job_end(job2_ptr, cr_sort_now);
 
 	return slurm_sort_time_list_asc(&end_time1, &end_time2);
 }

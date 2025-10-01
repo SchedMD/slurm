@@ -160,6 +160,8 @@ uint64_t def_mem_per_gpu = 0;
 bool preempt_strict_order = false;
 bool preempt_for_licenses = false;
 int preempt_reorder_cnt	= 1;
+/* Global variable so cr lists can be sorted based on a single 'now' time */
+static time_t cr_sort_now = 0;
 
 /* Local functions */
 static avail_res_t *_allocate(job_record_t *job_ptr,
@@ -380,12 +382,21 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 /* list sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
+	/*
+	 * This same function is also present in 'linear > select_linear.c'.
+	 * Although the same logic is used to sort in both locations, it was
+	 * determined that placing the function in a common location would make
+	 * it impractical to allow the 'soft_job_end()' call to include a 'now'
+	 * time consistent with the rest of the '_future_run_test()' logic.
+	 * If changes are needed to this function, the same changes should be
+	 * considered for applicability to the copy for 'select/linear'.
+	 */
 	job_record_t *job1_ptr = *(job_record_t **) x;
 	job_record_t *job2_ptr = *(job_record_t **) y;
 	time_t end_time1, end_time2;
 
-	end_time1 = soft_job_end(job1_ptr, 0);
-	end_time2 = soft_job_end(job2_ptr, 0);
+	end_time1 = soft_job_end(job1_ptr, cr_sort_now);
+	end_time2 = soft_job_end(job2_ptr, cr_sort_now);
 
 	return slurm_sort_time_list_asc(&end_time1, &end_time2);
 }
@@ -3019,6 +3030,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	 * Remove the running jobs from exp_node_cr and try scheduling the
 	 * pending job after each one (or a few jobs that end close in time).
 	 */
+	cr_sort_now = now;
 	list_sort(cr_job_list, _cr_job_list_sort);
 
 	removed_jobs = list_create(NULL);
