@@ -91,8 +91,8 @@
 #define OPT_LONG_GEN_OAS 0x102
 
 #define SLURM_CONF_DISABLED "/dev/null"
-#define DEFAULT_OPENAPI_PLUGINS_SLURMDBD "slurmctld,slurmdbd"
-#define DEFAULT_OPENAPI_PLUGINS "slurmctld"
+#define DEFAULT_OPENAPI_PLUGINS_SLURMDBD "slurmctld,slurmdbd,util"
+#define DEFAULT_OPENAPI_PLUGINS "slurmctld,util"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define unshare(_) (false)
