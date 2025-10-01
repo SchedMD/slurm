@@ -10005,13 +10005,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_info_req_msg(job_step_info_request_msg_t * msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static void _pack_job_step_info_req_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	job_step_info_request_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack16((uint16_t)msg->show_flags, buffer);
 	}
 }
@@ -13642,9 +13642,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_cancel_tasks_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_INFO:
-		_pack_job_step_info_req_msg((job_step_info_request_msg_t
-					     *) msg->data, buffer,
-					    msg->protocol_version);
+		_pack_job_step_info_req_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_BY_CONTAINER_ID:
 		_pack_container_id_request_msg(msg, buffer);
