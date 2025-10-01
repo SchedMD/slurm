@@ -197,6 +197,7 @@ extern void license_free_rec(void *x)
 		xfree(license_entry->name);
 		FREE_NULL_BITMAP(license_entry->node_bitmap);
 		xfree(license_entry->nodes);
+		FREE_NULL_LIST(license_entry->hres_rec.variables);
 		xfree(license_entry);
 	}
 }
@@ -1315,6 +1316,16 @@ extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
 	}
 
 	return can_run;
+}
+
+extern void hres_variable_free(void *x)
+{
+	hres_variable_t *variable = x;
+
+	if (variable) {
+		xfree(variable->name);
+		xfree(variable);
+	}
 }
 
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
