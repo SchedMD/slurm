@@ -2287,14 +2287,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_step_create_request_msg(
-	job_step_create_request_msg_t *msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
 {
-	xassert(msg);
+	job_step_create_request_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -2343,8 +2342,8 @@ static void _pack_job_step_create_request_msg(
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -2513,23 +2512,23 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
+static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	kill_job_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
-			slurm_cred_pack(msg->cred, buffer, protocol_version);
+			slurm_cred_pack(msg->cred, buffer,
+					smsg->protocol_version);
 		} else
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack32(msg->exit_code, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
-				protocol_version);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+				smsg->protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
@@ -2540,18 +2539,19 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->time, buffer);
 		packstr(msg->work_dir, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
-			slurm_cred_pack(msg->cred, buffer, protocol_version);
+			slurm_cred_pack(msg->cred, buffer,
+					smsg->protocol_version);
 		} else
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack32(msg->exit_code, buffer);
 		gres_prep_pack_legacy(msg->job_gres_prep, buffer,
-				      protocol_version);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+				      smsg->protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
@@ -2641,14 +2641,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_epilog_comp_msg(epilog_complete_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_epilog_comp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack32((uint32_t)msg->return_code, buffer);
+	epilog_complete_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->return_code, buffer);
 		packstr(msg->node_name, buffer);
 	}
 }
@@ -2677,33 +2676,32 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_step_create_response_msg(
-	job_step_create_response_msg_t *msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
+					       buf_t *buffer)
 {
-	xassert(msg);
+	job_step_create_response_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(msg->step_layout, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		packstr(msg->stepmgr, buffer);
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(msg->step_layout, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		packstr(msg->stepmgr, buffer);
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
 		switch_g_pack_stepinfo(msg->switch_step, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
 	}
 }
@@ -7853,11 +7851,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_return_code_msg(return_code_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_return_code_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	return_code_msg_t *msg = smsg->data;
+
 	pack32(msg->return_code, buffer);
 }
 
@@ -7914,17 +7911,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_reroute_msg(reroute_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
+static void _pack_reroute_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(buffer);
-	xassert(msg);
+	reroute_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
 			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
-						 protocol_version, buffer);
+						 smsg->protocol_version,
+						 buffer);
 		} else
 			pack8(0, buffer);
 		packstr(msg->stepmgr, buffer);
@@ -8103,19 +8099,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-static void
-_pack_task_exit_msg(task_exit_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_task_exit_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	task_exit_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->return_code, buffer);
 		pack32(msg->num_tasks, buffer);
 		pack32_array(msg->task_id_list,
 			     msg->num_tasks, buffer);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 	}
 }
 
@@ -9045,12 +9038,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_cancel_tasks_msg(signal_tasks_msg_t *msg, buf_t *buffer,
-		       uint16_t protocol_version)
+static void _pack_cancel_tasks_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	signal_tasks_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack16(msg->flags, buffer);
 		pack16(msg->signal, buffer);
 	}
@@ -9153,22 +9146,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* _pack_job_step_kill_msg
- * packs a slurm job step signal message
- * IN msg - pointer to the job step signal message
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-static void
-_pack_job_step_kill_msg(job_step_kill_msg_t * msg, buf_t *buffer,
-			uint16_t protocol_version)
+static void _pack_job_step_kill_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	job_step_kill_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->sjob_id, buffer);
 		packstr(msg->sibling, buffer);
-		pack16((uint16_t)msg->signal, buffer);
-		pack16((uint16_t)msg->flags, buffer);
+		pack16(msg->signal, buffer);
+		pack16(msg->flags, buffer);
 	}
 }
 
@@ -9239,13 +9226,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_complete_job_allocation_msg(
-	complete_job_allocation_msg_t * msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_complete_job_allocation_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_rc, buffer);
+	complete_job_allocation_msg_t *msg = smsg->data;
+
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_rc, buffer);
 }
 
 static int
@@ -9268,10 +9255,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_complete_prolog_msg(complete_prolog_msg_t *msg, buf_t *buffer,
-				      uint16_t protocol_version)
+static void _pack_complete_prolog_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	complete_prolog_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		packstr(msg->node_name, buffer);
 		pack32(msg->prolog_rc, buffer);
@@ -9539,13 +9527,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_complete_batch_script_msg(
-	complete_batch_script_msg_t * msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_complete_batch_script_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		jobacctinfo_pack(msg->jobacct, protocol_version,
+	complete_batch_script_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_rc, buffer);
@@ -9585,15 +9573,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_stat(job_step_stat_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_job_step_stat(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	pack32((uint32_t)msg->return_code, buffer);
-	pack32((uint32_t)msg->num_tasks, buffer);
-	jobacctinfo_pack(msg->jobacct, protocol_version,
+	job_step_stat_t *msg = smsg->data;
+
+	pack32(msg->return_code, buffer);
+	pack32(msg->num_tasks, buffer);
+	jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 			 PROTOCOL_TYPE_SLURM, buffer);
-	_pack_job_step_pids(msg->step_pids, buffer, protocol_version);
+	_pack_job_step_pids(msg->step_pids, buffer, smsg->protocol_version);
 }
 
 
@@ -9656,16 +9644,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_step_complete_msg(step_complete_msg_t * msg, buf_t *buffer,
-			uint16_t protocol_version)
+static void _pack_step_complete_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
-		pack32((uint32_t)msg->range_first, buffer);
-		pack32((uint32_t)msg->range_last, buffer);
-		pack32((uint32_t)msg->step_rc, buffer);
-		jobacctinfo_pack(msg->jobacct, protocol_version,
+	step_complete_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack32(msg->range_first, buffer);
+		pack32(msg->range_last, buffer);
+		pack32(msg->step_rc, buffer);
+		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		packbool(msg->send_to_stepmgr, buffer);
 	}
@@ -9702,19 +9690,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_info_request_msg(job_info_request_msg_t * msg, buf_t *buffer,
-			   uint16_t protocol_version)
+static void _pack_job_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_info_request_msg_t *msg = smsg->data;
 	uint32_t count = NO_VAL;
 	list_itr_t *itr;
 
-	xassert(msg);
-	xassert(buffer);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
-		pack16((uint16_t)msg->show_flags, buffer);
+		pack16(msg->show_flags, buffer);
 
 		if (msg->job_ids)
 			count = list_count(msg->job_ids);
@@ -10005,13 +9989,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_info_req_msg(job_step_info_request_msg_t * msg, buf_t *buffer,
-			    uint16_t protocol_version)
+static void _pack_job_step_info_req_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	job_step_info_request_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack16((uint16_t)msg->show_flags, buffer);
 	}
 }
@@ -10774,13 +10758,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_id_request_msg(job_id_request_msg_t * msg, buf_t *buffer,
-			 uint16_t protocol_version)
+static void _pack_job_id_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	job_id_request_msg_t *msg = smsg->data;
 
-	pack32((uint32_t)msg->job_pid, buffer);
+	pack32(msg->job_pid, buffer);
 }
 
 static int
@@ -13639,14 +13621,10 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
-		_pack_cancel_tasks_msg((signal_tasks_msg_t *) msg->data,
-				       buffer,
-				       msg->protocol_version);
+		_pack_cancel_tasks_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_INFO:
-		_pack_job_step_info_req_msg((job_step_info_request_msg_t
-					     *) msg->data, buffer,
-					    msg->protocol_version);
+		_pack_job_step_info_req_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_BY_CONTAINER_ID:
 		_pack_container_id_request_msg(msg, buffer);
@@ -13655,9 +13633,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_container_id_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_INFO:
-		_pack_job_info_request_msg((job_info_request_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
+		_pack_job_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STATE:
 		_pack_job_state_request_msg(msg, buffer);
@@ -13668,34 +13644,22 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_CANCEL_JOB_STEP:
 	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
-		_pack_job_step_kill_msg((job_step_kill_msg_t *)
-					msg->data, buffer,
-					msg->protocol_version);
+		_pack_job_step_kill_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		_pack_complete_job_allocation_msg(
-			(complete_job_allocation_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_complete_job_allocation_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
-		_pack_complete_prolog_msg(
-			(complete_prolog_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_complete_prolog_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_pack_complete_batch_script_msg(
-			(complete_batch_script_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_complete_batch_script_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_COMPLETE:
-		_pack_step_complete_msg((step_complete_msg_t *)msg->data,
-					buffer,
-					msg->protocol_version);
+		_pack_step_complete_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
-		_pack_job_step_stat((job_step_stat_t *) msg->data,
-				    buffer,
-				    msg->protocol_version);
+		_pack_job_step_stat(msg, buffer);
 		break;
 		/********  slurm_step_id_t Messages  ********/
 	case SRUN_JOB_COMPLETE:
@@ -13719,17 +13683,13 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
-		_pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
+		_pack_kill_job_msg(msg, buffer);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
-		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
+		_pack_epilog_comp_msg(msg, buffer);
 		break;
 	case MESSAGE_TASK_EXIT:
-		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
-				    msg->protocol_version);
+		_pack_task_exit_msg(msg, buffer);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
 		_pack_batch_job_launch_msg(msg, buffer);
@@ -13744,34 +13704,22 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_PROLOG_EXECUTING:
 	case RESPONSE_JOB_READY:
 	case RESPONSE_SLURM_RC:
-		_pack_return_code_msg((return_code_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
+		_pack_return_code_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURM_RC_MSG:
 		_pack_return_code2_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
-		_pack_reroute_msg((reroute_msg_t *)msg->data, buffer,
-				  msg->protocol_version);
+		_pack_reroute_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
-		_pack_job_step_create_response_msg(
-			(job_step_create_response_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
+		_pack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		_pack_job_step_create_request_msg(
-			(job_step_create_request_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
+		_pack_job_step_create_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ID:
-		_pack_job_id_request_msg(
-			(job_id_request_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
+		_pack_job_id_request_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ID:
 		_pack_job_id_response_msg(
