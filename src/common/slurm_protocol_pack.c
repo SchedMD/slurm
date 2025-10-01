@@ -2642,12 +2642,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_epilog_comp_msg(epilog_complete_msg_t * msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static void _pack_epilog_comp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	epilog_complete_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t)msg->job_id, buffer);
 		pack32((uint32_t)msg->return_code, buffer);
 		packstr(msg->node_name, buffer);
@@ -13696,9 +13695,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_kill_job_msg(msg, buffer);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
-		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data,
-				      buffer,
-				      msg->protocol_version);
+		_pack_epilog_comp_msg(msg, buffer);
 		break;
 	case MESSAGE_TASK_EXIT:
 		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
