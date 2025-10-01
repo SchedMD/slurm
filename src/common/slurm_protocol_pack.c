@@ -10762,7 +10762,7 @@ static void _pack_job_id_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_id_request_msg_t *msg = smsg->data;
 
-	pack32((uint32_t)msg->job_pid, buffer);
+	pack32(msg->job_pid, buffer);
 }
 
 static int
