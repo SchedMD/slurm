@@ -2677,33 +2677,32 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_step_create_response_msg(
-	job_step_create_response_msg_t *msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
+					       buf_t *buffer)
 {
-	xassert(msg);
+	job_step_create_response_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(msg->step_layout, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		packstr(msg->stepmgr, buffer);
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_step_id, buffer);
 		pack_slurm_step_layout(msg->step_layout, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		packstr(msg->stepmgr, buffer);
-		slurm_cred_pack(msg->cred, buffer, protocol_version);
+		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
 		switch_g_pack_stepinfo(msg->switch_step, buffer,
-				       protocol_version);
+				       smsg->protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
 	}
 }
@@ -13717,10 +13716,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_reroute_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
-		_pack_job_step_create_response_msg(
-			(job_step_create_response_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
+		_pack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
 		_pack_job_step_create_request_msg(
