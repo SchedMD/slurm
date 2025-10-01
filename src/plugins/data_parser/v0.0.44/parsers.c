@@ -479,6 +479,7 @@ typedef struct {
 } foreach_topo_array_args_t;
 
 typedef struct {
+	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
 	char *nodes;
 } hierarchy_layer_t;
@@ -7002,6 +7003,7 @@ static void FREE_FUNC(H_LAYER)(void *ptr)
 	if (!layer)
 		return;
 
+	FREE_NULL_LIST(layer->base);
 	xfree(layer->nodes);
 	xfree(layer);
 }
@@ -7058,7 +7060,14 @@ static int _foreach_layer(void *x, void *arg)
 	license->name = xstrdup(args->resource->name);
 	license->mode = args->resource->mode;
 	license->nodes = xstrdup(layer->nodes);
-	license->total = layer->count;
+	license->hres_rec.total = layer->count;
+
+	if (hres_variable_free && list_count(layer->base)) {
+		license->hres_rec.base = list_create(hres_variable_free);
+		list_for_each(layer->base, _foreach_variable,
+			      license->hres_rec.base);
+	}
+
 	if (hres_variable_free && args->first_layer &&
 	    list_count(args->resource->variables)) {
 		license->hres_rec.variables = list_create(hres_variable_free);
@@ -7066,6 +7075,7 @@ static int _foreach_layer(void *x, void *arg)
 			      license->hres_rec.variables);
 		args->first_layer = false;
 	}
+
 	list_append(args->licenses, license);
 
 	return SLURM_SUCCESS;
@@ -7150,8 +7160,12 @@ static int _foreach_license(void *x, void *arg)
 		resource->layers = list_create(FREE_FUNC(H_LAYER));
 	layer = xmalloc(sizeof(*layer));
 	layer->nodes = xstrdup(license->nodes);
-	layer->count = license->total;
-
+	layer->count = license->hres_rec.total;
+	if (hres_variable_free && list_count(license->hres_rec.base)) {
+		layer->base = list_create(hres_variable_free);
+		list_for_each(license->hres_rec.base, _foreach_variable,
+			      layer->base);
+	}
 	list_append(resource->layers, layer);
 
 	return SLURM_SUCCESS;
@@ -10349,20 +10363,24 @@ static const flag_bit_t PARSER_FLAG_ARRAY(H_RESOURCE_MODE_FLAG)[] = {
 #undef add_flag_eq
 
 #define add_parse(mtype, field, path, desc)				\
-	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
-static const parser_t PARSER_ARRAY(H_LAYER)[] = {
-	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
-	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
-};
-#undef add_parse
-
-#define add_parse(mtype, field, path, desc)				\
 	add_parser(hres_variable_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
 	add_parse(STRING, name, "name", "Variable name"),
 	add_parse(UINT32_NO_VAL, value, "value", "Variable value"),
 };
 #undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(hierarchy_layer_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(H_LAYER)[] = {
+	add_parse_req(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
+	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
+	add_parse_req(UINT32_NO_VAL, count, "count", "Resource quantity"),
+};
+#undef add_parse
+#undef add_parse_req
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(hierarchical_resource_t, mtype, false, field, 0, path, desc)

@@ -76,6 +76,8 @@ typedef struct {
 } hres_select_t;
 
 typedef struct {
+	list_t *base;
+	uint32_t base_usage;
 	uint16_t depth; /* depth of layout */
 	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
 	uint16_t layers_cnt; /* count of layers, set only for root*/
@@ -83,6 +85,7 @@ typedef struct {
 	uint16_t level; /* level - 0 for leaf */
 	uint16_t parent_id; /* lic_id of parent - NO_VAL16 for root */
 	path_idx_t path_idx;
+	uint32_t total;
 	list_t *variables; /* list of hres_variable_t */
 } hres_rec_t;
 

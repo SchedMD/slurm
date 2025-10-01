@@ -206,6 +206,7 @@ extern void license_free_rec(void *x)
 	licenses_t *license_entry = (licenses_t *) x;
 
 	if (license_entry) {
+		FREE_NULL_LIST(license_entry->hres_rec.base);
 		xfree(license_entry->name);
 		FREE_NULL_BITMAP(license_entry->node_bitmap);
 		xfree(license_entry->nodes);
@@ -870,6 +871,45 @@ static int _foreach_license_set_cnt(void *x, void *key)
 	return 0;
 }
 
+static int _foreach_base_set(void *x, void *arg)
+{
+	hres_variable_t *var = x;
+	licenses_t *license = arg;
+
+	license->hres_rec.base_usage += var->value;
+
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_license_set_base(void *x, void *key)
+{
+	licenses_t *license = x;
+
+	if (license->mode == HRES_MODE_OFF)
+		return 0;
+
+	if (license->hres_rec.base)
+		list_for_each_ro(license->hres_rec.base, _foreach_base_set,
+				 license);
+
+	if (license->hres_rec.total < license->hres_rec.base_usage) {
+		error("%s HRes %s base greater than total", __func__,
+		      license->name);
+		return -1;
+	}
+	license->total = license->hres_rec.total - license->hres_rec.base_usage;
+
+	if ((license->mode == HRES_MODE_3) &&
+	    (license->hres_rec.parent_id != NO_VAL16)) {
+		licenses_t *parent =
+			list_find_first_ro(cluster_license_list,
+					   _license_find_parent, license);
+		parent->hres_rec.base_usage += license->hres_rec.base_usage;
+	}
+
+	return 0;
+}
+
 static int _sort_hres(void *void1, void *void2)
 {
 	licenses_t *lic1 = *(licenses_t **) void1;
@@ -932,6 +972,10 @@ extern int hres_init()
 	if (list_for_each_ro(cluster_license_list, _foreach_license_set_cnt,
 			     &root) < 0)
 		fatal("Can't set MODE3 cnt");
+
+	if (list_for_each_ro(cluster_license_list, _foreach_license_set_base,
+			     NULL) < 0)
+		fatal("Can't set base");
 
 	_licenses_print("hres_init", cluster_license_list, NULL);
 	slurm_mutex_unlock(&license_mutex);
