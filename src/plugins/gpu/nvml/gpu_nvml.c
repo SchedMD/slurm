@@ -1530,6 +1530,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 			gres_slurmd_conf.file = device_file;
 			gres_slurmd_conf.links = nvlinks;
 			gres_slurmd_conf.type_name = device_name;
+			gres_slurmd_conf.unique_id = uuid;
 
 			add_gres_to_list(gres_list_system, &gres_slurmd_conf);
 		}
