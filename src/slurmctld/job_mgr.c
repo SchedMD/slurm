@@ -12462,6 +12462,16 @@ extern bool permit_job_shrink(void)
 	return permit_job_shrink;
 }
 
+static int _find_hres(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	if (license_entry->mode != HRES_MODE_OFF)
+		return 1;
+
+	return 0;
+}
+
 /*
  * Job expansion is not allowed for jobs that requested OR licenses.
  */
@@ -12470,6 +12480,10 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 {
 	if (xstrchr(job_ptr1->licenses, '|') ||
 	    xstrchr(job_ptr2->licenses, '|'))
+		return false;
+
+	if (list_find_first_ro(job_ptr1->license_list, _find_hres, NULL) ||
+	    list_find_first_ro(job_ptr2->license_list, _find_hres, NULL))
 		return false;
 
 	return true;
