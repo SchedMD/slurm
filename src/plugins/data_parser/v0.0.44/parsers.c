@@ -75,6 +75,8 @@
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
+extern void __attribute__((weak)) hres_variable_free(void *x);
+
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
 #define IS_NO_VAL(x) is_overloaded_NO_VAL(&(x), sizeof(x), false)
 /* Force evaluation against (32bit) NO_VAL cast to value */
@@ -485,11 +487,13 @@ typedef struct {
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
+	list_t *variables; /* list of hres_variable_t */
 } hierarchical_resource_t;
 
 typedef struct {
 	list_t *licenses;
 	hierarchical_resource_t *resource;
+	bool first_layer;
 } resource_as_licenses_args_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
@@ -7011,6 +7015,7 @@ static void FREE_FUNC(H_RESOURCE)(void *ptr)
 
 	xfree(resource->name);
 	FREE_NULL_LIST(resource->layers);
+	FREE_NULL_LIST(resource->variables);
 	xfree(resource);
 }
 
@@ -7024,6 +7029,20 @@ static void FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)(void *ptr)
 	FREE_NULL_LIST(req->job_id_list);
 	slurmdb_destroy_job_rec(req->job_rec);
 	xfree(req);
+}
+
+static int _foreach_variable(void *x, void *arg)
+{
+	hres_variable_t *var = x, *var_cpy;
+	list_t *variables = arg;
+
+	var_cpy = xmalloc(sizeof(*var_cpy));
+	var_cpy->value = var->value;
+	var_cpy->name = xstrdup(var->name);
+
+	list_append(variables, var_cpy);
+
+	return SLURM_SUCCESS;
 }
 
 static int _foreach_layer(void *x, void *arg)
@@ -7040,6 +7059,13 @@ static int _foreach_layer(void *x, void *arg)
 	license->mode = args->resource->mode;
 	license->nodes = xstrdup(layer->nodes);
 	license->total = layer->count;
+	if (hres_variable_free && args->first_layer &&
+	    list_count(args->resource->variables)) {
+		license->hres_rec.variables = list_create(hres_variable_free);
+		list_for_each(args->resource->variables, _foreach_variable,
+			      license->hres_rec.variables);
+		args->first_layer = false;
+	}
 	list_append(args->licenses, license);
 
 	return SLURM_SUCCESS;
@@ -7050,6 +7076,7 @@ static int _foreach_resource(void *x, void *arg)
 	resource_as_licenses_args_t *args = arg;
 
 	args->resource = x;
+	args->first_layer = true;
 	xassert(args->resource && args->resource->layers);
 	list_for_each(args->resource->layers, _foreach_layer, args);
 
@@ -7110,6 +7137,13 @@ static int _foreach_license(void *x, void *arg)
 		resource->name = xstrdup(license->name);
 		resource->mode = license->mode;
 		list_append(*resources, resource);
+	}
+
+	if (!resource->variables && hres_variable_free &&
+	    list_count(license->hres_rec.variables)) {
+		resource->variables = list_create(hres_variable_free);
+		list_for_each(license->hres_rec.variables, _foreach_variable,
+			      resource->variables);
 	}
 
 	if (!resource->layers)
@@ -10322,12 +10356,24 @@ static const parser_t PARSER_ARRAY(H_LAYER)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(hres_variable_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
+	add_parse(STRING, name, "name", "Variable name"),
+	add_parse(UINT32_NO_VAL, value, "value", "Variable value"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(hierarchical_resource_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
 	add_parser(hierarchical_resource_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
-	add_parse(STRING, name, "resource", "Name of hierarchical resource"),
-	add_parse(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
-	add_parse(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+	add_parse_req(STRING, name, "resource", "Name of hierarchical resource"),
+	add_parse_req(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
+	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
 };
+#undef add_parse_req
 #undef add_parse
 
 #define add_openapi_response_meta(rtype)				\
@@ -11156,6 +11202,7 @@ static const parser_t parsers[] = {
 	addpap(BLOCK_CONFIG, slurm_conf_block_t, NULL, (parser_free_func_t) free_block_conf),
 	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
+	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -11286,6 +11333,7 @@ static const parser_t parsers[] = {
 	addpl(INT32_LIST, INT32_PTR, NEED_NONE),
 	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
+	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps
