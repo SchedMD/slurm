@@ -2647,8 +2647,8 @@ static void _pack_epilog_comp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	epilog_complete_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)msg->job_id, buffer);
-		pack32((uint32_t)msg->return_code, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->return_code, buffer);
 		packstr(msg->node_name, buffer);
 	}
 }
