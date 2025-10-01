@@ -374,10 +374,15 @@ static int _foreach_add_user(void *x, void *arg)
 	object->coord_accts = slurmdb_list_copy_coord(
 		add_user_cond->user_in->coord_accts);
 
+	/*
+	 * On a dup key we need to update name since the new one could contain a
+	 * case change when there has been a transition to/from PreserveCaseUser
+	 * being set.
+	 */
 	query = xstrdup_printf(
-		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
-		user_table, add_user_cond->now, add_user_cond->now,
-		object->name, object->admin_level);
+		"insert into %s (creation_time, mod_time, name, admin_level) values (%ld, %ld, '%s', %u) on duplicate key update name=VALUES(name), deleted=0, mod_time=VALUES(mod_time), admin_level=VALUES(admin_level);",
+		user_table, add_user_cond->now, add_user_cond->now, object->name,
+		object->admin_level);
 
 	DB_DEBUG(DB_ASSOC, add_user_cond->mysql_conn->conn, "query:\n%s",
 		 query);
