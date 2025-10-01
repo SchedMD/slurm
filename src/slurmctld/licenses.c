@@ -236,7 +236,18 @@ static int _license_find_root_rec(void *x, void *key)
 	if ((license_entry->mode == HRES_MODE_3) &&
 	    (license_entry->hres_rec.parent_id != NO_VAL16))
 		return 0;
+	return 1;
+}
 
+static int _license_find_variables_rec(void *x, void *key)
+{
+	licenses_t *license_entry = x;
+
+	if (!_license_find_rec(x, key))
+		return 0;
+
+	if (!license_entry->hres_rec.variables)
+		return 0;
 	return 1;
 }
 
@@ -338,8 +349,19 @@ static int _license_find_remote_rec(void *x, void *key)
 	return _license_find_rec(x, key);
 }
 
+static int _variable_find(void *x, void *key)
+{
+	hres_variable_t *var = x;
+	char *name = key;
+	if (!xstrcmp(var->name, name))
+		return 1;
+
+	return 0;
+}
+
 /* Given a license string, return a list of license_t records */
-static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
+static list_t *_build_license_list(char *licenses, bool *valid, bool hres,
+				   bool check_variables)
 {
 	int i;
 	char *end_num, *tmp_str, *token;
@@ -395,6 +417,42 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres)
 			    (token[i] == '=')) {
 				token[i++] = '\0';
 				num = (int32_t)strtol(&token[i], &end_num, 10);
+				if (&token[i] == end_num && check_variables) {
+					hres_variable_t *var = NULL;
+					licenses_t *match = NULL;
+					char *var_name_str = end_num;
+					char *var_name_str_end =
+						strpbrk(&token[i], delim);
+
+					slurm_mutex_lock(&license_mutex);
+					if (cluster_license_list)
+						match = list_find_first(
+							cluster_license_list,
+							_license_find_variables_rec,
+							name);
+
+					if (var_name_str_end)
+						*var_name_str_end = '\0';
+					if (match &&
+					    match->hres_rec.variables) {
+						var = list_find_first_ro(
+							match->hres_rec
+								.variables,
+							_variable_find,
+							var_name_str);
+					}
+					if (var) {
+						num = var->value;
+					} else {
+						*valid = false;
+					}
+					slurm_mutex_unlock(&license_mutex);
+					if (var_name_str_end) {
+						*var_name_str_end = delim[0];
+						end_num = var_name_str_end;
+					} else
+						*end_num = '\0';
+				}
 				if ((*end_num != '\0') &&
 				    !strchr(delim, *end_num))
 					*valid = false;
@@ -636,7 +694,8 @@ extern int license_init(char *licenses)
 	if (cluster_license_list)
 		fatal("cluster_license_list already defined");
 
-	cluster_license_list = _build_license_list(licenses, &valid, false);
+	cluster_license_list =
+		_build_license_list(licenses, &valid, false, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
@@ -1355,7 +1414,7 @@ extern int license_update(char *licenses)
 	list_t *new_list;
 	bool valid = true;
 
-	new_list = _build_license_list(licenses, &valid, false);
+	new_list = _build_license_list(licenses, &valid, false, false);
 	if (!valid)
 		fatal("Invalid configured licenses: %s", licenses);
 
@@ -1639,7 +1698,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		assoc_mgr_unlock(&locks);
 	}
 
-	job_license_list = _build_license_list(licenses, valid, hres);
+	job_license_list = _build_license_list(licenses, valid, hres, true);
 	if (!job_license_list)
 		return job_license_list;
 
@@ -1721,7 +1780,7 @@ extern void license_job_merge(job_record_t *job_ptr)
 
 	FREE_NULL_LIST(job_ptr->license_list);
 	job_ptr->license_list =
-		_build_license_list(job_ptr->licenses, &valid, false);
+		_build_license_list(job_ptr->licenses, &valid, false, false);
 	xfree(job_ptr->licenses);
 	job_ptr->licenses = license_list_to_string(job_ptr->license_list);
 }
