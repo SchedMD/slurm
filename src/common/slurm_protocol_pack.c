@@ -9702,17 +9702,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_info_request_msg(job_info_request_msg_t * msg, buf_t *buffer,
-			   uint16_t protocol_version)
+static void _pack_job_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_info_request_msg_t *msg = smsg->data;
 	uint32_t count = NO_VAL;
 	list_itr_t *itr;
 
-	xassert(msg);
-	xassert(buffer);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
 		pack16((uint16_t)msg->show_flags, buffer);
 
@@ -13651,9 +13647,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_container_id_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_INFO:
-		_pack_job_info_request_msg((job_info_request_msg_t *)
-					   msg->data, buffer,
-					   msg->protocol_version);
+		_pack_job_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STATE:
 		_pack_job_state_request_msg(msg, buffer);
