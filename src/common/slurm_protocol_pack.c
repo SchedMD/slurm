@@ -2513,23 +2513,23 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
+static void _pack_kill_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	kill_job_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
-			slurm_cred_pack(msg->cred, buffer, protocol_version);
+			slurm_cred_pack(msg->cred, buffer,
+					smsg->protocol_version);
 		} else
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack32(msg->exit_code, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
-				protocol_version);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+				smsg->protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
@@ -2540,18 +2540,19 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->time, buffer);
 		packstr(msg->work_dir, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->cred) {
 			pack8(1, buffer);
-			slurm_cred_pack(msg->cred, buffer, protocol_version);
+			slurm_cred_pack(msg->cred, buffer,
+					smsg->protocol_version);
 		} else
 			pack8(0, buffer);
 		packstr(msg->details, buffer);
 		pack32(msg->derived_ec, buffer);
 		pack32(msg->exit_code, buffer);
 		gres_prep_pack_legacy(msg->job_gres_prep, buffer,
-				      protocol_version);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+				      smsg->protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->job_uid, buffer);
@@ -13692,8 +13693,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
-		_pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
+		_pack_kill_job_msg(msg, buffer);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data,
