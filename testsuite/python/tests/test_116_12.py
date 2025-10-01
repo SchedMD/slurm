@@ -237,7 +237,7 @@ done""",
     if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
         node_host_name = node_addr
 
-    if atf.get_version() >= (25, 11):
+    if atf.get_version("sbin/slurmd") >= (25, 11):
         # Ticket 23357: Use the node_name instead of hostname in file name creation.
         expected_name = node_name
     else:
@@ -255,7 +255,7 @@ done""",
     if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
         node_host_name = node_addr
 
-    if atf.get_version() >= (25, 11):
+    if atf.get_version("sbin/slurmd") >= (25, 11):
         # Ticket 23357: Use the node_name instead of hostname in file name creation.
         expected_name = node_name
     else:
