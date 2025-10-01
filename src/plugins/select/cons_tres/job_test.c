@@ -2441,27 +2441,6 @@ static void _set_sched_weight(bitstr_t *node_bitmap, bool future)
 	}
 }
 
-/*
- * Find a license_t record by license id (for use by list_find_first)
- */
-static int _license_find_rec_by_id(void *x, void *key)
-{
-	licenses_t *license_entry = x;
-	licenses_id_t *id = key;
-
-	xassert(id->lic_id != NO_VAL16);
-
-	if (license_entry->id.lic_id == id->lic_id)
-		return 1;
-	return 0;
-}
-
-static licenses_t *_find_license_in_list(list_t *license_list,
-					 licenses_id_t *id)
-{
-	return list_find_first(license_list, _license_find_rec_by_id, id);
-}
-
 /* Return true if the removed job's end time can not be safely ignored */
 static int _is_job_relevant(void *x, void *key)
 {
@@ -2489,8 +2468,9 @@ static int _is_job_relevant(void *x, void *key)
 	if (running_job_ptr->license_list && args->needed_licenses) {
 		for (uint32_t i = 0; i < args->license_cnt; i++) {
 			license_req_t *needed_lic = &args->needed_licenses[i];
-			match = _find_license_in_list(
-				running_job_ptr->license_list, needed_lic->id);
+			match = license_find_rec_by_id(running_job_ptr
+							       ->license_list,
+						       *(needed_lic->id));
 			if (!match)
 				continue;
 
@@ -2530,8 +2510,8 @@ static int _set_license_req(void *x, void *arg)
 	 * hierarchal resources.
 	 */
 	if ((job_license->id.hres_id == NO_VAL16) &&
-	    (future_license = _find_license_in_list(args->future_license_list,
-						    &job_license->id))) {
+	    (future_license = license_find_rec_by_id(args->future_license_list,
+						     job_license->id))) {
 		args->needed_licenses[args->license_cnt].id =
 			&future_license->id;
 		args->needed_licenses[args->license_cnt].required =
