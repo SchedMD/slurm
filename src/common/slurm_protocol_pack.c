@@ -9153,18 +9153,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* _pack_job_step_kill_msg
- * packs a slurm job step signal message
- * IN msg - pointer to the job step signal message
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-static void
-_pack_job_step_kill_msg(job_step_kill_msg_t * msg, buf_t *buffer,
-			uint16_t protocol_version)
+static void _pack_job_step_kill_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	job_step_kill_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->sjob_id, buffer);
 		packstr(msg->sibling, buffer);
 		pack16((uint16_t)msg->signal, buffer);
@@ -13658,9 +13652,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_CANCEL_JOB_STEP:
 	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
-		_pack_job_step_kill_msg((job_step_kill_msg_t *)
-					msg->data, buffer,
-					msg->protocol_version);
+		_pack_job_step_kill_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_pack_complete_job_allocation_msg(
