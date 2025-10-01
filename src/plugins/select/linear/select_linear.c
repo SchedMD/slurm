@@ -2092,6 +2092,7 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 	 * scheduling the pending job after each one */
 	if ((rc != SLURM_SUCCESS) &&
 	    ((job_ptr->bit_flags & TEST_NOW_ONLY) == 0)) {
+		time_t last_job_end_time;
 		list_sort(cr_job_list, _cr_job_list_sort);
 		job_iterator = list_iterator_create(cr_job_list);
 		while ((tmp_job_ptr = list_next(job_iterator))) {
@@ -2107,10 +2108,11 @@ static int _will_run_test(job_record_t *job_ptr, bitstr_t *bitmap,
 				       req_nodes);
 			if (rc != SLURM_SUCCESS)
 				continue;
-			if (tmp_job_ptr->end_time <= now)
+			last_job_end_time = soft_job_end(tmp_job_ptr, now);
+			if (last_job_end_time <= now)
 				job_ptr->start_time = now + 1;
 			else
-				job_ptr->start_time = tmp_job_ptr->end_time;
+				job_ptr->start_time = last_job_end_time;
 			break;
 		}
 		list_iterator_destroy(job_iterator);
@@ -2145,9 +2147,12 @@ static int  _cr_job_list_sort(void *x, void *y)
 {
 	job_record_t *job1_ptr = *(job_record_t **) x;
 	job_record_t *job2_ptr = *(job_record_t **) y;
+	time_t end_time1, end_time2;
 
-	return slurm_sort_time_list_asc(&job1_ptr->end_time,
-					&job2_ptr->end_time);
+	end_time1 = soft_job_end(job1_ptr, 0);
+	end_time2 = soft_job_end(job2_ptr, 0);
+
+	return slurm_sort_time_list_asc(&end_time1, &end_time2);
 }
 
 extern int init(void)

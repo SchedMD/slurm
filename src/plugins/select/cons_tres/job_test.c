@@ -377,26 +377,6 @@ static gres_mc_data_t *_build_gres_mc_data(job_record_t *job_ptr)
 	return tres_mc_ptr;
 }
 
-static time_t _soft_job_end(job_record_t *job_ptr, time_t now)
-{
-	time_t end_time;
-
-	if (!(slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) ||
-	    !job_ptr->time_min)
-		return job_ptr->end_time;
-
-	end_time = job_ptr->start_time + job_ptr->time_min * 60;
-	/*
-	 * To ensure consistency with the _bf_reserve_running() function.
-	 * If over the soft limit, assume the job will use half of the
-	 * remaining time until the hard limit.
-	 */
-	if (end_time < now)
-		end_time = now + (job_ptr->end_time - now) / 2;
-
-	return end_time;
-}
-
 /* list sort function: sort by the job's expected end time */
 static int _cr_job_list_sort(void *x, void *y)
 {
@@ -404,8 +384,8 @@ static int _cr_job_list_sort(void *x, void *y)
 	job_record_t *job2_ptr = *(job_record_t **) y;
 	time_t end_time1, end_time2;
 
-	end_time1 = _soft_job_end(job1_ptr, 0);
-	end_time2 = _soft_job_end(job2_ptr, 0);
+	end_time1 = soft_job_end(job1_ptr, 0);
+	end_time2 = soft_job_end(job2_ptr, 0);
 
 	return slurm_sort_time_list_asc(&end_time1, &end_time2);
 }
@@ -2728,7 +2708,7 @@ static int _build_cr_job_list(void *x, void *arg)
 		}
 	}
 
-	if (_soft_job_end(job_ptr_preempt, args->now) <= args->start) {
+	if (soft_job_end(job_ptr_preempt, args->now) <= args->start) {
 		bitstr_t *efctv_bitmap_ptr;
 		efctv_bitmap_ptr =
 			_select_topo_bitmap(tmp_job_ptr, args->orig_map,
@@ -3064,7 +3044,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 
 			if (!tmp_job_ptr ||
 			    (will_run_ptr && will_run_ptr->end &&
-			     _soft_job_end(tmp_job_ptr, now) >
+			     soft_job_end(tmp_job_ptr, now) >
 				     will_run_ptr->end)) {
 				more_jobs = false;
 				break;
@@ -3095,7 +3075,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			if (!end_time) {
 				time_t delta = 0;
 				time_t tmp_job_end_time =
-					_soft_job_end(tmp_job_ptr, now);
+					soft_job_end(tmp_job_ptr, now);
 
 				/*
 				 * align all time windows on a
@@ -3120,7 +3100,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				more_jobs = false;
 				break;
 			} else if ((next_job_end_time =
-					    _soft_job_end(next_job_ptr, now)) >
+					    soft_job_end(next_job_ptr, now)) >
 				   (end_time + time_window)) {
 				break;
 			}
@@ -3151,7 +3131,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			xassert(last_relevant_job); /* should never be NULL */
 			if (last_relevant_job)
 				last_job_ptr = last_relevant_job;
-			last_job_end_time = _soft_job_end(last_job_ptr, now);
+			last_job_end_time = soft_job_end(last_job_ptr, now);
 			if (last_job_end_time <= now) {
 				job_ptr->start_time =
 					_guess_job_end(last_job_ptr,

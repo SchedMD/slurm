@@ -4738,3 +4738,22 @@ extern void job_record_set_flags(job_record_t *job_ptr)
 	else
 		job_ptr->bit_flags &= ~ALLOW_OVERCOMMIT_TRES_PER_TASK;
 }
+
+extern time_t soft_job_end(job_record_t *job_ptr, time_t now)
+{
+	time_t end_time;
+
+	if (!(slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) ||
+	    !job_ptr->time_min)
+		return job_ptr->end_time;
+
+	end_time = job_ptr->start_time + job_ptr->time_min * 60;
+	/*
+	 * If over the soft limit, assume the job will use half of the
+	 * remaining time until the hard limit.
+	 */
+	if (end_time < now)
+		end_time = now + (job_ptr->end_time - now) / 2;
+
+	return end_time;
+}

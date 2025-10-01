@@ -978,4 +978,13 @@ extern void job_record_set_flags(job_record_t *job_ptr);
 /* Free the members of a switch_st and zero it */
 extern void switch_st_free_members(switch_st_t *state);
 
+/*
+ * Get job end time with consideration of soft end time if
+ * 'time_min_as_soft_limit' is set
+ * IN job_ptr - pointer to the job record
+ * IN now - timestamp representing current time
+ * RET applicable end time
+ */
+extern time_t soft_job_end(job_record_t *job_ptr, time_t now);
+
 #endif /* _SLURM_JOB_RECORD_H */

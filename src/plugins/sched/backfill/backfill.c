@@ -1781,17 +1781,8 @@ static int _bf_reserve_running(void *x, void *arg)
 		return SLURM_ERROR;
 
 	if ((slurm_conf.conf_flags & CONF_FLAG_SOFT_TIME_MIN) &&
-	    job_ptr->time_min) {
-		time_t now = time(NULL);
-		time_t soft_end = job_ptr->start_time + job_ptr->time_min * 60;
-		/*
-		 * If over the soft limit, assume the job will use half of the
-		 * remaining time until the hard limit.
-		 */
-		if (soft_end < now)
-			soft_end = now + (end_time - now) / 2;
-		end_time = soft_end;
-	}
+	    job_ptr->time_min)
+		end_time = soft_job_end(job_ptr, time(NULL));
 
 	end_time = ROUNDUP(end_time, backfill_resolution) * backfill_resolution;
 
