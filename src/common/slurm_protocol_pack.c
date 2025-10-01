@@ -9238,8 +9238,8 @@ static void _pack_complete_job_allocation_msg(const slurm_msg_t *smsg,
 {
 	complete_job_allocation_msg_t *msg = smsg->data;
 
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->job_rc, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_rc, buffer);
 }
 
 static int
