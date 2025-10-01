@@ -141,6 +141,13 @@ static void _print_path(path_idx_t path_idx, uint16_t depth)
 	}
 }
 
+static int _foreach_variable_print(void *x, void *arg)
+{
+	hres_variable_t *variable = x;
+	info("\t\tname=%s value=%u", variable->name, variable->value);
+	return 0;
+}
+
 static int _foreach_license_print(void *x, void *arg)
 {
 	licenses_t *license_entry = x;
@@ -162,6 +169,11 @@ static int _foreach_license_print(void *x, void *arg)
 			     license_entry->hres_rec.leaf_cnt);
 			_print_path(license_entry->hres_rec.path_idx,
 				    license_entry->hres_rec.depth);
+		}
+		if (license_entry->hres_rec.variables) {
+			info("\tvariable:");
+			list_for_each(license_entry->hres_rec.variables,
+				      _foreach_variable_print, NULL);
 		}
 	} else if (!args->job_ptr) {
 		info("licenses: %s=%s lic_id=%u total=%u used=%u",
