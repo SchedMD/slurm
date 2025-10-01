@@ -9233,11 +9233,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_complete_job_allocation_msg(
-	complete_job_allocation_msg_t * msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_complete_job_allocation_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
 {
+	complete_job_allocation_msg_t *msg = smsg->data;
+
 	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->job_rc, buffer);
 }
@@ -13655,9 +13655,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_step_kill_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		_pack_complete_job_allocation_msg(
-			(complete_job_allocation_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_complete_job_allocation_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
 		_pack_complete_prolog_msg(
