@@ -456,6 +456,12 @@ extern int conmgr_con_queue_write_msg(conmgr_fd_ref_t *ref, slurm_msg_t *msg);
 extern void conmgr_queue_close_fd(conmgr_fd_t *con);
 
 /*
+ * Request soft close of connection
+ * IN ref_ptr - ptr to connection to close
+ */
+extern void conmgr_con_queue_close(conmgr_fd_ref_t *ref);
+
+/*
  * Request soft close of connection and release reference of connection
  * WARNING: Connection may not exist after this called
  * IN ref_ptr - ptr to reference to release (will be set to NULL)

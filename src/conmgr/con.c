@@ -904,6 +904,19 @@ extern void conmgr_queue_close_fd(conmgr_fd_t *con)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+extern void conmgr_con_queue_close(conmgr_fd_ref_t *ref)
+{
+	if (!ref || !ref->con)
+		return;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	_close_fd(ref->con);
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
 extern void conmgr_con_queue_close_free(conmgr_fd_ref_t **ref_ptr)
 {
 	conmgr_fd_ref_t *ref = NULL;
