@@ -2287,14 +2287,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_step_create_request_msg(
-	job_step_create_request_msg_t *msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
 {
-	xassert(msg);
+	job_step_create_request_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -2343,8 +2342,8 @@ static void _pack_job_step_create_request_msg(
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_socket, buffer);
 		packstr(msg->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->array_task_id, buffer);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -13719,10 +13718,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		_pack_job_step_create_request_msg(
-			(job_step_create_request_msg_t *)
-			msg->data, buffer,
-			msg->protocol_version);
+		_pack_job_step_create_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ID:
 		_pack_job_id_request_msg(
