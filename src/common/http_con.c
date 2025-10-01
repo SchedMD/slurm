@@ -621,6 +621,16 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 
 	xassert(hcon->magic == MAGIC);
 
+	if (!_valid_http_version(request->http_version.major,
+				 request->http_version.minor)) {
+		/*
+		 * Default to HTTP/1.1 when version is invalid or failed to
+		 * parse for rejecting a request:
+		 */
+		request->http_version.major = 1;
+		request->http_version.minor = 1;
+	}
+
 	close_header = (request->connection_close ||
 			_valid_http_version(request->http_version.major,
 					    request->http_version.minor));
