@@ -8103,19 +8103,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-static void
-_pack_task_exit_msg(task_exit_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_task_exit_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	task_exit_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->return_code, buffer);
 		pack32(msg->num_tasks, buffer);
 		pack32_array(msg->task_id_list,
 			     msg->num_tasks, buffer);
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 	}
 }
 
@@ -13698,8 +13695,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_epilog_comp_msg(msg, buffer);
 		break;
 	case MESSAGE_TASK_EXIT:
-		_pack_task_exit_msg((task_exit_msg_t *) msg->data, buffer,
-				    msg->protocol_version);
+		_pack_task_exit_msg(msg, buffer);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
 		_pack_batch_job_launch_msg(msg, buffer);
