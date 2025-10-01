@@ -9262,10 +9262,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_complete_prolog_msg(complete_prolog_msg_t *msg, buf_t *buffer,
-				      uint16_t protocol_version)
+static void _pack_complete_prolog_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	complete_prolog_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		packstr(msg->node_name, buffer);
 		pack32(msg->prolog_rc, buffer);
@@ -13658,9 +13659,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_complete_job_allocation_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
-		_pack_complete_prolog_msg(
-			(complete_prolog_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_complete_prolog_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		_pack_complete_batch_script_msg(
