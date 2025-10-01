@@ -9534,13 +9534,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_complete_batch_script_msg(
-	complete_batch_script_msg_t * msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_complete_batch_script_msg(const slurm_msg_t *smsg,
+					    buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		jobacctinfo_pack(msg->jobacct, protocol_version,
+	complete_batch_script_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		pack32(msg->job_id, buffer);
 		pack32(msg->job_rc, buffer);
@@ -13662,9 +13662,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_complete_prolog_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_pack_complete_batch_script_msg(
-			(complete_batch_script_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_complete_batch_script_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		_pack_step_complete_msg((step_complete_msg_t *)msg->data,
