@@ -9710,7 +9710,7 @@ static void _pack_job_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
-		pack16((uint16_t)msg->show_flags, buffer);
+		pack16(msg->show_flags, buffer);
 
 		if (msg->job_ids)
 			count = list_count(msg->job_ids);
