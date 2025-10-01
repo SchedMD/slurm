@@ -9657,9 +9657,9 @@ static void _pack_step_complete_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
-		pack32((uint32_t)msg->range_first, buffer);
-		pack32((uint32_t)msg->range_last, buffer);
-		pack32((uint32_t)msg->step_rc, buffer);
+		pack32(msg->range_first, buffer);
+		pack32(msg->range_last, buffer);
+		pack32(msg->step_rc, buffer);
 		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		packbool(msg->send_to_stepmgr, buffer);
