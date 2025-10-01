@@ -7913,17 +7913,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_reroute_msg(reroute_msg_t * msg, buf_t *buffer, uint16_t protocol_version)
+static void _pack_reroute_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(buffer);
-	xassert(msg);
+	reroute_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->working_cluster_rec) {
 			pack8(1, buffer);
 			slurmdb_pack_cluster_rec(msg->working_cluster_rec,
-						 protocol_version, buffer);
+						 smsg->protocol_version,
+						 buffer);
 		} else
 			pack8(0, buffer);
 		packstr(msg->stepmgr, buffer);
@@ -13715,8 +13714,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_return_code2_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
-		_pack_reroute_msg((reroute_msg_t *)msg->data, buffer,
-				  msg->protocol_version);
+		_pack_reroute_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		_pack_job_step_create_response_msg(
