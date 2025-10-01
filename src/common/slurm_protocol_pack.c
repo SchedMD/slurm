@@ -9651,16 +9651,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_step_complete_msg(step_complete_msg_t * msg, buf_t *buffer,
-			uint16_t protocol_version)
+static void _pack_step_complete_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_step_id(&msg->step_id, buffer, protocol_version);
+	step_complete_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32((uint32_t)msg->range_first, buffer);
 		pack32((uint32_t)msg->range_last, buffer);
 		pack32((uint32_t)msg->step_rc, buffer);
-		jobacctinfo_pack(msg->jobacct, protocol_version,
+		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		packbool(msg->send_to_stepmgr, buffer);
 	}
@@ -13665,9 +13665,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_complete_batch_script_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_COMPLETE:
-		_pack_step_complete_msg((step_complete_msg_t *)msg->data,
-					buffer,
-					msg->protocol_version);
+		_pack_step_complete_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
 		_pack_job_step_stat((job_step_stat_t *) msg->data,
