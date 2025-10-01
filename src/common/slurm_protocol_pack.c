@@ -9584,8 +9584,8 @@ static void _pack_job_step_stat(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_step_stat_t *msg = smsg->data;
 
-	pack32((uint32_t)msg->return_code, buffer);
-	pack32((uint32_t)msg->num_tasks, buffer);
+	pack32(msg->return_code, buffer);
+	pack32(msg->num_tasks, buffer);
 	jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 			 PROTOCOL_TYPE_SLURM, buffer);
 	_pack_job_step_pids(msg->step_pids, buffer, smsg->protocol_version);
