@@ -198,7 +198,6 @@ static time_t last_slurmctld_msg = 0;
 
 pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 list_t *job_limits_list = NULL;
-bool job_limits_loaded = false;
 
 static int next_fini_job_inx = 0;
 

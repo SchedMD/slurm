@@ -43,8 +43,12 @@
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+static int _extract_limits_from_step(void *x, void *arg);
+
 extern void job_mem_limit_init(void)
 {
+	list_t *steps = NULL;
+
 	if (!slurm_conf.job_acct_oom_kill) {
 		debug("%s: disabled", __func__);
 	}
@@ -53,6 +57,12 @@ extern void job_mem_limit_init(void)
 
 	slurm_mutex_lock(&job_limits_mutex);
 	job_limits_list = list_create(xfree_ptr);
+
+	/* set up limits from currently running steps */
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	list_for_each(steps, _extract_limits_from_step, NULL);
+	FREE_NULL_LIST(steps);
+
 	slurm_mutex_unlock(&job_limits_mutex);
 }
 
@@ -152,18 +162,6 @@ static int _extract_limits_from_step(void *x, void *arg)
 	return 1;
 }
 
-/* Call only with job_limits_mutex locked */
-static void _load_job_limits(void)
-{
-	list_t *steps;
-
-	job_limits_loaded = true;
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	list_for_each(steps, _extract_limits_from_step, NULL);
-	FREE_NULL_LIST(steps);
-}
-
 /* Enforce job memory limits here in slurmd. Step memory limits are
  * enforced within slurmstepd (using jobacct_gather plugin). */
 extern void job_mem_limit_enforce(void)
@@ -190,8 +188,6 @@ extern void job_mem_limit_enforce(void)
 		return;
 
 	slurm_mutex_lock(&job_limits_mutex);
-	if (!job_limits_loaded)
-		_load_job_limits();
 	if (list_count(job_limits_list) == 0) {
 		slurm_mutex_unlock(&job_limits_mutex);
 		return;
