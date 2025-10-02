@@ -407,9 +407,9 @@ int gid_from_string(const char *name, gid_t *gidp)
 
 extern char *gid_to_string(gid_t gid)
 {
-	char *result = gid_to_string_or_null(gid);
+	char *result = NULL;
 
-	if (!result)
+	if (!(result = gid_to_string_or_null(gid)))
 		return xstrdup_printf("%u", gid);
 
 	return result;
