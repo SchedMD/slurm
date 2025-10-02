@@ -180,6 +180,7 @@ typedef struct {
 	char *cgroup_mountpoint;
 	char *cgroup_plugin;
 	char *cgroup_prepend;
+	char *cgroup_slice;
 	bool constrain_cores;
 	bool constrain_devices;
 	bool constrain_ram_space;

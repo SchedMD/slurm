@@ -166,6 +166,7 @@ static void _clear_slurm_cgroup_conf(void)
 	xfree(slurm_cgroup_conf.cgroup_mountpoint);
 	xfree(slurm_cgroup_conf.cgroup_plugin);
 	xfree(slurm_cgroup_conf.cgroup_prepend);
+	xfree(slurm_cgroup_conf.cgroup_slice);
 	xfree(slurm_cgroup_conf.enable_extra_controllers);
 
 	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf));
@@ -184,6 +185,7 @@ static void _init_slurm_cgroup_conf(void)
 #else
 	slurm_cgroup_conf.cgroup_prepend = xstrdup("/slurm_%n");
 #endif
+	slurm_cgroup_conf.cgroup_slice = NULL;
 	slurm_cgroup_conf.constrain_cores = false;
 	slurm_cgroup_conf.constrain_devices = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
@@ -215,6 +217,7 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packstr(slurm_cgroup_conf.cgroup_mountpoint, buffer);
 
 	packstr(slurm_cgroup_conf.cgroup_prepend, buffer);
+	packstr(slurm_cgroup_conf.cgroup_slice, buffer);
 
 	packbool(slurm_cgroup_conf.constrain_cores, buffer);
 
@@ -259,6 +262,7 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 	safe_unpackstr(&slurm_cgroup_conf.cgroup_mountpoint, buffer);
 
 	safe_unpackstr(&slurm_cgroup_conf.cgroup_prepend, buffer);
+	safe_unpackstr(&slurm_cgroup_conf.cgroup_slice, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.constrain_cores, buffer);
 
@@ -301,6 +305,7 @@ static void _read_slurm_cgroup_conf(void)
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN, _defunct_option},
 		{"CgroupMountpoint", S_P_STRING},
+		{"CgroupSlice", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_FLOAT},
@@ -351,6 +356,12 @@ static void _read_slurm_cgroup_conf(void)
 				*(tmp_str + sz - 1) = '\0';
 			xfree(slurm_cgroup_conf.cgroup_mountpoint);
 			slurm_cgroup_conf.cgroup_mountpoint = tmp_str;
+			tmp_str = NULL;
+		}
+
+		if (s_p_get_string(&tmp_str, "CgroupSlice", tbl)) {
+			xfree(slurm_cgroup_conf.cgroup_slice);
+			slurm_cgroup_conf.cgroup_slice = tmp_str;
 			tmp_str = NULL;
 		}
 
@@ -581,6 +592,7 @@ extern list_t *cgroup_get_conf_list(void)
 
 	add_key_pair(cgroup_conf_l, "CgroupMountpoint", "%s",
 		     cg_conf->cgroup_mountpoint);
+	add_key_pair(cgroup_conf_l, "CgroupSlice", "%s", cg_conf->cgroup_slice);
 	add_key_pair_bool(cgroup_conf_l, "ConstrainCores",
 			  cg_conf->constrain_cores);
 	add_key_pair_bool(cgroup_conf_l, "ConstrainRAMSpace",
