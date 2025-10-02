@@ -3393,29 +3393,6 @@ static uint16_t _health_node_state(char *state_str)
 	return state_num;
 }
 
-/* Return TRUE if a comma-delimited token "hbm" is found */
-static bool _have_hbm_token(char *gres_plugins)
-{
-	char *tmp, *tok, *save_ptr = NULL;
-	bool rc = false;
-
-	if (!gres_plugins)
-		return false;
-
-	tmp = xstrdup(gres_plugins);
-	tok = strtok_r(tmp, ",", &save_ptr);
-	while (tok) {
-		if (!xstrcasecmp(tok, "hbm")) {
-			rc = true;
-			break;
-		}
-		tok = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(tmp);
-
-	return rc;
-}
-
 static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 						slurm_conf_t *conf)
 {
@@ -4333,15 +4310,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->node_features_plugins,
 			     "NodeFeaturesPlugins", hashtbl);
-
-	if (xstrstr(conf->node_features_plugins, "knl_") &&
-	    !_have_hbm_token(conf->gres_plugins)) {
-		/* KNL nodes implicitly add GRES type of "hbm" */
-		if (conf->gres_plugins && conf->gres_plugins[0])
-			xstrcat(conf->gres_plugins, ",hbm");
-		else
-			xstrcat(conf->gres_plugins, "hbm");
-	}
 
 	if (!s_p_get_string(&conf->accounting_storage_tres,
 			    "AccountingStorageTRES", hashtbl)) {
