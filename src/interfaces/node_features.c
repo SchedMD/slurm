@@ -52,7 +52,6 @@
 typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
 	bool    (*changeable_feature) (char *feature);
-	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features, list_t *feature_list);
 	char *	(*job_xlate)	(char *job_features, list_t *feature_list,
 				 bitstr_t *job_node_bitmap);
@@ -77,7 +76,6 @@ typedef struct node_features_ops {
 static const char *syms[] = {
 	"node_features_p_boot_time",
 	"node_features_p_changeable_feature",
-	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
 	"node_features_p_get_node_bitmap",
@@ -204,24 +202,6 @@ extern bool node_features_g_changeable_feature(char *feature)
 	END_TIMER2(__func__);
 
 	return changeable;
-}
-
-/* Update active and available features on specified nodes, sets features on
- * all nodes is node_list is NULL */
-extern int node_features_g_get_node(char *node_list)
-{
-	DEF_TIMERS;
-	int i, rc = SLURM_SUCCESS;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].get_node))(node_list);
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return rc;
 }
 
 /* Test if a job's feature specification is valid */

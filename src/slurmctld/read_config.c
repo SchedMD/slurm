@@ -1637,10 +1637,6 @@ extern int read_slurm_conf(int recover)
 	/* NOTE: Run restore_node_features before _restore_job_accounting */
 	restore_node_features(recover);
 
-	if ((node_features_g_count() > 0) &&
-	    (node_features_g_get_node(NULL) != SLURM_SUCCESS))
-		error("failed to initialize node features");
-
 	/*
 	 * _build_bitmaps() must follow node_features_g_get_node() and
 	 * precede build_features_list_*()

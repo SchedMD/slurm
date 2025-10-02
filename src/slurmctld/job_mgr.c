@@ -17537,9 +17537,6 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 		return SLURM_SUCCESS;
 	}
 
-	if (flags & JOB_RECONFIG_FAIL)
-		node_features_g_get_node(job_ptr->nodes);
-
 	/*
 	 * If the partition was removed don't allow the job to be
 	 * requeued.  If it doesn't have details then something is very

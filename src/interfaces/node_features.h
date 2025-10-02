@@ -52,10 +52,6 @@ extern int node_features_g_count(void);
 /* Return TRUE if this (one) feature name is under this plugin's control */
 extern bool node_features_g_changeable_feature(char *feature);
 
-/* Update active and available features on specified nodes, sets features on
- * all nodes is node_list is NULL */
-extern int node_features_g_get_node(char *node_list);
-
 /* Test if a job's feature specification is valid */
 extern int node_features_g_job_valid(char *job_features, list_t *feature_list);
 

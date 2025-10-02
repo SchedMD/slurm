@@ -1061,12 +1061,6 @@ extern int node_features_p_overlap(bitstr_t *active_bitmap)
 	return bit_set_count(active_bitmap);
 }
 
-extern int node_features_p_get_node(char *node_list)
-{
-	/* Executed on slurmctld and not used by this plugin */
-	return SLURM_SUCCESS;
-}
-
 extern int node_features_p_node_update(char *active_features,
 				       bitstr_t *node_bitmap)
 {
