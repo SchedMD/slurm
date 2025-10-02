@@ -4230,48 +4230,6 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, char *details,
 }
 
 /*
- * ume_notify - Notify all jobs and steps on this node that a Uncorrectable
- *	Memory Error (UME) has occurred by sending SIG_UME (to log event in
- *	stderr)
- * RET count of signaled job steps
- */
-extern int ume_notify(void)
-{
-	list_t *steps;
-	list_itr_t *i;
-	step_loc_t *stepd;
-	int step_cnt  = 0;
-	int fd;
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	i = list_iterator_create(steps);
-	while ((stepd = list_next(i))) {
-		step_cnt++;
-
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1) {
-			debug3("Unable to connect to %ps", &stepd->step_id);
-			continue;
-		}
-
-		debug2("container SIG_UME to %ps", &stepd->step_id);
-		if (stepd_signal_container(
-			    fd, stepd->protocol_version, SIG_UME, 0, NULL,
-			    getuid()) < 0)
-			debug("kill jobid=%u failed: %m",
-			      stepd->step_id.job_id);
-		close(fd);
-	}
-	list_iterator_destroy(i);
-	FREE_NULL_LIST(steps);
-
-	if (step_cnt == 0)
-		debug2("No steps to send SIG_UME");
-	return step_cnt;
-}
-
-/*
  * Wait until all job steps are in SLURMSTEPD_NOT_RUNNING state.
  * This indicates that switch_g_job_postfini has completed and
  * freed the switch windows (as needed only for Federation switch).
