@@ -67,7 +67,6 @@ typedef struct node_features_ops {
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
 				 char *avail_features, int node_inx);
 	char *	(*node_xlate2)	(char *new_features);
-	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	bool	(*user_update)	(uid_t uid);
 	void	(*get_config)	(config_plugin_params_t *p);
 } node_features_ops_t;
@@ -91,7 +90,6 @@ static const char *syms[] = {
 	"node_features_p_node_update_valid",
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
-	"node_features_p_step_config",
 	"node_features_p_user_update",
 	"node_features_p_get_config"
 };
@@ -190,24 +188,6 @@ extern int node_features_g_count(void)
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
-}
-
-/* Perform set up for step launch
- * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
- * numa_bitmap IN - NUMA nodes allocated to this job */
-extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
-{
-	DEF_TIMERS;
-	int i;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++)
-		(*(ops[i].step_config))(mem_sort, numa_bitmap);
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
 }
 
 /* Return TRUE if this (one) feature name is under this plugin's control */

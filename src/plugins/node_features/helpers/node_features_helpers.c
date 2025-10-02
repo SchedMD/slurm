@@ -1061,11 +1061,6 @@ extern bool node_features_p_user_update(uid_t uid)
 	return false;
 }
 
-extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
-{
-	return;
-}
-
 extern int node_features_p_overlap(bitstr_t *active_bitmap)
 {
 	/* Executed on slurmctld and not used by this plugin */
