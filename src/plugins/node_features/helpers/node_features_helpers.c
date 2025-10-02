@@ -943,12 +943,6 @@ extern char *node_features_p_job_xlate(char *job_features,
 	return _xlate_job_features(job_features, feature_list, job_node_bitmap);
 }
 
-/* Return true if the plugin requires PowerSave mode for booting nodes */
-extern bool node_features_p_node_power(void)
-{
-	return false;
-}
-
 static char *_make_helper_str(const plugin_feature_t *feature)
 {
 	char *str = NULL;

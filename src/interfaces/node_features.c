@@ -58,7 +58,6 @@ typedef struct node_features_ops {
 				 bitstr_t *job_node_bitmap);
 	bitstr_t * (*get_node_bitmap) (void);
 	int     (*overlap)      (bitstr_t *active_bitmap);
-	bool	(*node_power)	(void);
 	int	(*node_set)	(char *active_features, bool *need_reboot);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
 	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
@@ -83,7 +82,6 @@ static const char *syms[] = {
 	"node_features_p_job_xlate",
 	"node_features_p_get_node_bitmap",
 	"node_features_p_overlap",
-	"node_features_p_node_power",
 	"node_features_p_node_set",
 	"node_features_p_node_state",
 	"node_features_p_node_update",
@@ -315,27 +313,6 @@ extern int node_features_g_overlap(bitstr_t *active_bitmap)
 	END_TIMER2(__func__);
 
 	return cnt;
-}
-
-/* Return true if the plugin requires PowerSave mode for booting nodes */
-extern bool node_features_g_node_power(void)
-{
-	DEF_TIMERS;
-	bool node_power = false;
-	int i;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++) {
-		node_power = (*(ops[i].node_power))();
-		if (node_power)
-			break;
-	}
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return node_power;
 }
 
 /* Set's the node's active features based upon job constraints.
