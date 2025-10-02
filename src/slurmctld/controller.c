@@ -102,6 +102,7 @@
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
 #include "src/interfaces/mcs.h"
+#include "src/interfaces/metrics.h"
 #include "src/interfaces/mpi.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/preempt.h"
@@ -878,6 +879,8 @@ int main(int argc, char **argv)
 		fatal("failed to initialize node_features plugin");
 	if (mpi_g_daemon_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize MPI plugins.");
+	if (metrics_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize metrics plugin");
 	/* Fatal if we use extra_constraints without json serializer */
 	if (extra_constraints_enabled())
 		serializer_required(MIME_TYPE_JSON);
@@ -1188,6 +1191,7 @@ int main(int argc, char **argv)
 	certmgr_g_fini();
 	switch_g_fini();
 	site_factor_g_fini();
+	metrics_g_fini();
 
 	/* purge remaining data structures */
 	group_cache_purge();
