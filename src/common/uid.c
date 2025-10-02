@@ -71,6 +71,11 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 {
 	DEF_TIMERS;
 
+	if (uid == SLURM_AUTH_NOBODY) {
+		*result = NULL;
+		return;
+	}
+
 	START_TIMER;
 	while (true) {
 		int rc = getpwuid_r(uid, pwd, *curr_buf, *bufsize, result);
