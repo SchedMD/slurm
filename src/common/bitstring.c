@@ -138,7 +138,6 @@ strong_alias(bit_or,		slurm_bit_or);
 strong_alias(bit_set_count,	slurm_bit_set_count);
 strong_alias(bit_set_count_range, slurm_bit_set_count_range);
 strong_alias(bit_clear_count,	slurm_bit_clear_count);
-strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
 strong_alias(bit_rotate_copy,	slurm_bit_rotate_copy);
 strong_alias(bit_rotate,	slurm_bit_rotate);
 strong_alias(bit_fmt,		slurm_bit_fmt);
@@ -157,9 +156,6 @@ strong_alias(bit_overlap_any,	slurm_bit_overlap_any);
 strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
-strong_alias(bit_nffc,		slurm_bit_nffc);
-strong_alias(bit_noc,		slurm_bit_noc);
-strong_alias(bit_nffs,		slurm_bit_nffs);
 strong_alias(bit_copybits,	slurm_bit_copybits);
 strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
 
@@ -518,115 +514,6 @@ bit_ffc(bitstr_t *b)
 			bit++;
 		}
 	}
-	return value;
-}
-
-/* Find the first n contiguous bits clear in b.
- *   b (IN)             bitstring to search
- *   n (IN)             number of bits needed
- *   RETURN             position of first bit in range (-1 if none found)
- */
-bitoff_t
-bit_nffc(bitstr_t *b, int32_t n)
-{
-	bitoff_t value = -1;
-	bitoff_t bit;
-	int32_t cnt = 0;
-
-	_assert_bitstr_valid(b);
-	xassert(n > 0 && n < _bitstr_bits(b));
-
-	for (bit = 0; bit < _bitstr_bits(b); bit++) {
-		if (bit_test(b, bit)) {		/* fail */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				break;
-			}
-		}
-	}
-
-	return value;
-}
-
-/* Find n contiguous bits clear in b starting at some offset.
- *   b (IN)             bitstring to search
- *   n (IN)             number of bits needed
- *   seed (IN)          position at which to begin search
- *   RETURN             position of first bit in range (-1 if none found)
- */
-bitoff_t
-bit_noc(bitstr_t *b, int32_t n, int32_t seed)
-{
-	bitoff_t value = -1;
-	bitoff_t bit;
-	int32_t cnt = 0;
-
-	_assert_bitstr_valid(b);
-	xassert(n > 0 && n <= _bitstr_bits(b));
-
-	if ((seed + n) >= _bitstr_bits(b))
-		seed = _bitstr_bits(b);	/* skip offset test, too small */
-
-	for (bit = seed; bit < _bitstr_bits(b); bit++) {	/* start at offset */
-		if (bit_test(b, bit)) {		/* fail */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				return value;
-			}
-		}
-	}
-
-	cnt = 0;	/* start at beginning */
-	for (bit = 0; bit < _bitstr_bits(b); bit++) {
-		if (bit_test(b, bit)) {		/* fail */
-			if (bit >= seed)
-				break;
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				return value;
-			}
-		}
-	}
-
-	return -1;
-}
-
-/* Find the first n contiguous bits set in b.
- *   b (IN)             bitstring to search
- *   n (IN)             number of bits needed
- *   RETURN             position of first bit in range (-1 if none found)
- */
-bitoff_t
-bit_nffs(bitstr_t *b, int32_t n)
-{
-	bitoff_t value = -1;
-	bitoff_t bit;
-	int32_t cnt = 0;
-
-	_assert_bitstr_valid(b);
-	xassert(n > 0 && n <= _bitstr_bits(b));
-
-	for (bit = 0; bit <= _bitstr_bits(b) - n; bit++) {
-		if (!bit_test(b, bit)) {	/* fail */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				break;
-			}
-		}
-	}
-
 	return value;
 }
 
@@ -1138,38 +1025,6 @@ bit_clear_count(bitstr_t *b)
 {
 	_assert_bitstr_valid(b);
 	return (_bitstr_bits(b) - bit_set_count(b));
-}
-
-/* Return the count of the largest number of contiguous bits set in b.
- *   b (IN)             bitstring to search
- *   RETURN             the largest number of contiguous bits set in b
- */
-int32_t
-bit_nset_max_count(bitstr_t *b)
-{
-	bitoff_t bit;
-	int32_t  cnt = 0;
-	int32_t  maxcnt = 0;
-	uint32_t bitsize;
-
-	_assert_bitstr_valid(b);
-	bitsize = _bitstr_bits(b);
-
-	for (bit = 0; bit < bitsize; bit++) {
-		if (!bit_test(b, bit)) {	/* no longer continuous */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt > maxcnt) {
-				maxcnt = cnt;
-			}
-		}
-		if (cnt == 0 && ((bitsize - bit) < maxcnt)) {
-		    	break;			/* already found max */
-		}
-	}
-
-	return maxcnt;
 }
 
 /*

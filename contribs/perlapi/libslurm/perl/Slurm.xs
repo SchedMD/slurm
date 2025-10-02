@@ -1812,15 +1812,6 @@ bitoff_t
 slurm_bit_fls(bitstr_t *b)
 
 bitoff_t
-slurm_bit_nffc(bitstr_t *b, int n)
-
-bitoff_t
-slurm_bit_nffs(bitstr_t *b, int n)
-
-bitoff_t
-slurm_bit_noc(bitstr_t *b, int n, int seed)
-
-bitoff_t
 slurm_bit_size(bitstr_t *b)
 
 void
@@ -1843,9 +1834,6 @@ slurm_bit_set_count_range(bitstr_t *b, int start, int end)
 
 int
 slurm_bit_clear_count(bitstr_t *b)
-
-int
-slurm_bit_nset_max_count(bitstr_t *b)
 
 bitstr_t *
 slurm_bit_rotate_copy(bitstr_t *b, int n, bitoff_t nbits)

@@ -87,7 +87,6 @@
 #define	bit_set_count		slurm_bit_set_count
 #define	bit_set_count_range	slurm_bit_set_count_range
 #define	bit_clear_count		slurm_bit_clear_count
-#define	bit_nset_max_count	slurm_bit_nset_max_count
 #define	bit_rotate_copy		slurm_bit_rotate_copy
 #define	bit_rotate		slurm_bit_rotate
 #define	bit_fmt			slurm_bit_fmt
@@ -106,9 +105,6 @@
 #define	bit_copy		slurm_bit_copy
 #define	bit_equal		slurm_bit_equal
 #define	bit_pick_cnt		slurm_bit_pick_cnt
-#define bit_nffc		slurm_bit_nffc
-#define bit_noc			slurm_bit_noc
-#define bit_nffs		slurm_bit_nffs
 #define bit_copybits		slurm_bit_copybits
 #define	bit_get_bit_num		slurm_bit_get_bit_num
 
