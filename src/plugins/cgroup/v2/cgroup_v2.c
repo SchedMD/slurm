@@ -63,7 +63,7 @@
 #include "src/plugins/cgroup/v2/cgroup_dbus.h"
 #include "src/plugins/cgroup/v2/ebpf.h"
 
-#define SYSTEM_CGSLICE "system.slice"
+#define DEFAULT_SYSTEM_CGSLICE "system.slice"
 #define SYSTEM_CGSCOPE "slurmstepd"
 #define SYSTEM_CGDIR "system"
 
@@ -428,13 +428,18 @@ static void _set_int_cg_ns()
 		return;
 	}
 
+	/* The slice is a cgroup/v2 parameter only, so set the default here. */
+	if (!slurm_cgroup_conf.cgroup_slice)
+		slurm_cgroup_conf.cgroup_slice =
+			xstrdup(DEFAULT_SYSTEM_CGSLICE);
+
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s_%s.scope",
-		   int_cg_ns.init_cg_path, SYSTEM_CGSLICE, conf->node_name,
-		   SYSTEM_CGSCOPE);
+		   int_cg_ns.init_cg_path, slurm_cgroup_conf.cgroup_slice,
+		   conf->node_name, SYSTEM_CGSCOPE);
 #else
 	xstrfmtcat(stepd_scope_path, "%s/%s/%s.scope", int_cg_ns.init_cg_path,
-		   SYSTEM_CGSLICE, SYSTEM_CGSCOPE);
+		   slurm_cgroup_conf.cgroup_slice, SYSTEM_CGSCOPE);
 #endif
 	int_cg_ns.mnt_point = _get_proc_cg_path("self");
 }
