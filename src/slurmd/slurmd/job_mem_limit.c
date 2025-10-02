@@ -197,12 +197,10 @@ static int _add_step_usage(void *x, void *arg)
 				 resp)) &&
 	    (resp->jobacct)) {
 		/* resp->jobacct is NULL if account is disabled */
-		jobacctinfo_getinfo((struct jobacctinfo *) resp->jobacct,
-				    JOBACCT_DATA_TOT_RSS, &step_rss,
-				    stepd->protocol_version);
-		jobacctinfo_getinfo((struct jobacctinfo *) resp->jobacct,
-				    JOBACCT_DATA_TOT_VSIZE, &step_vsize,
-				    stepd->protocol_version);
+		jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_TOT_RSS,
+				    &step_rss, stepd->protocol_version);
+		jobacctinfo_getinfo(resp->jobacct, JOBACCT_DATA_TOT_VSIZE,
+				    &step_vsize, stepd->protocol_version);
 		debug2("%s: %ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
 		       __func__, &stepd->step_id, step_rss, step_vsize);
 
