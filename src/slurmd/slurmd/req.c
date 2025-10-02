@@ -112,6 +112,7 @@
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define _LIMIT_INFO 0
@@ -129,12 +130,6 @@ typedef struct {
 	char *directory;
 	time_t last_update;
 } libdir_rec_t;
-
-typedef struct {
-	uint64_t job_mem;
-	slurm_step_id_t step_id;
-	uint64_t step_mem;
-} job_mem_limits_t;
 
 typedef struct {
 	bool batch_step;
@@ -201,9 +196,9 @@ static list_t *waiters = NULL;
 static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
 
-static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
-static list_t *job_limits_list = NULL;
-static bool job_limits_loaded = false;
+pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
+list_t *job_limits_list = NULL;
+bool job_limits_loaded = false;
 
 static int next_fini_job_inx = 0;
 
