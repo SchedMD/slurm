@@ -4473,15 +4473,15 @@ static data_for_each_cmd_t _foreach_hostlist_parse(data_t *data, void *arg)
 
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING) {
 		parse_error(args->parser, args->args, args->parent_path,
-			    ESLURM_DATA_CONV_FAILED,
+			    ESLURM_DATA_PARSE_BAD_INPUT,
 			    "string expected but got %pd", data);
 		return DATA_FOR_EACH_FAIL;
 	}
 
 	if (!hostlist_push(args->host_list, data_get_string(data))) {
 		parse_error(args->parser, args->args, args->parent_path,
-			    ESLURM_DATA_CONV_FAILED, "Invalid host string: %s",
-			    data_get_string(data));
+			    ESLURM_DATA_PARSE_BAD_INPUT,
+			    "Invalid host string: %s", data_get_string(data));
 		return DATA_FOR_EACH_FAIL;
 	}
 
@@ -4508,7 +4508,7 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 
 		if (!(host_list = hostlist_create(host_list_str))) {
 			rc = parse_error(parser, args, parent_path,
-					 ESLURM_DATA_CONV_FAILED,
+					 ESLURM_DATA_PARSE_BAD_INPUT,
 					 "Invalid hostlist string: %s",
 					 host_list_str);
 			goto cleanup;
@@ -4525,10 +4525,10 @@ static int PARSE_FUNC(HOSTLIST)(const parser_t *const parser, void *obj,
 
 		if (data_list_for_each(src, _foreach_hostlist_parse, &fargs) <
 		    0)
-			rc = ESLURM_DATA_CONV_FAILED;
+			rc = ESLURM_DATA_PARSE_BAD_INPUT;
 	} else {
 		rc = parse_error(parser, args, parent_path,
-				 ESLURM_DATA_CONV_FAILED,
+				 ESLURM_DATA_PARSE_BAD_INPUT,
 				 "string expected but got %pd", src);
 		goto cleanup;
 	}
