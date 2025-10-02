@@ -153,7 +153,7 @@ static int _extract_limits_from_step(void *x, void *arg)
 }
 
 /* Call only with job_limits_mutex locked */
-extern void _load_job_limits(void)
+static void _load_job_limits(void)
 {
 	list_t *steps;
 
