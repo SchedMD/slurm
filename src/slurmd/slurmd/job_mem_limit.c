@@ -315,3 +315,37 @@ extern void job_mem_limit_enforce(void)
 	}
 	xfree(job_mem_info_ptr);
 }
+
+extern void job_mem_limit_register(slurm_step_id_t *step_id,
+				   uint64_t job_mem_limit,
+				   uint64_t step_mem_limit)
+{
+	job_mem_limits_t *job_limits_ptr = NULL;
+	step_loc_t step_info;
+
+	if (!slurm_conf.job_acct_oom_kill)
+		return;
+
+	if (!job_mem_limit && !step_mem_limit)
+		return;
+
+	memcpy(&step_info.step_id, step_id, sizeof(step_info.step_id));
+
+	slurm_mutex_lock(&job_limits_mutex);
+	job_limits_ptr =
+		list_find_first(job_limits_list, _match_step, &step_info);
+	if (!job_limits_ptr) {
+		job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
+		memcpy(&job_limits_ptr->step_id, step_id,
+		       sizeof(job_limits_ptr->step_id));
+		job_limits_ptr->job_mem = job_mem_limit;
+		job_limits_ptr->step_mem = step_mem_limit;
+#if _LIMIT_INFO
+		info("AddLim %ps job_mem:%"PRIu64" step_mem:%"PRIu64"",
+		     &job_limits_ptr->step_id, job_limits_ptr->job_mem,
+		     job_limits_ptr->step_mem);
+#endif
+		list_append(job_limits_list, job_limits_ptr);
+	}
+	slurm_mutex_unlock(&job_limits_mutex);
+}

@@ -36,6 +36,8 @@
 #ifndef _JOB_MEM_LIMIT_H
 #define _JOB_MEM_LIMIT_H
 
+#include "slurm/slurm.h"
+
 typedef struct {
 	uint64_t job_mem;
 	slurm_step_id_t step_id;
@@ -49,5 +51,8 @@ extern void job_mem_limit_init(void);
 extern void job_mem_limit_fini(void);
 
 extern void job_mem_limit_enforce(void);
+extern void job_mem_limit_register(slurm_step_id_t *step_id,
+				   uint64_t job_mem_limit,
+				   uint64_t step_mem_limit);
 
 #endif
