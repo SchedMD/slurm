@@ -91,17 +91,6 @@ static int _match_job(void *x, void *key)
 	return 0;
 }
 
-static int _match_step(void *x, void *key)
-{
-	job_mem_limits_t *job_limits_ptr = x;
-	step_loc_t *step_ptr = key;
-
-	if ((job_limits_ptr->step_id.job_id == step_ptr->step_id.job_id) &&
-	    (job_limits_ptr->step_id.step_id == step_ptr->step_id.step_id))
-		return 1;
-	return 0;
-}
-
 static void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 {
 	slurm_msg_t msg;
@@ -149,14 +138,23 @@ static int _extract_limit_from_step(void *x, void *arg)
 	}
 
 	if (stepd_mem_info.job_mem_limit) {
-		/* create entry for this step */
-		step_limits = xmalloc(sizeof(*step_limits));
-		memcpy(&step_limits->step_id, &stepd->step_id,
-		       sizeof(step_limits->step_id));
-		step_limits->job_mem = stepd_mem_info.job_mem_limit;
-		debug2("%s: RecLim %ps job_mem:%"PRIu64,
-		       __func__, &step_limits->step_id, step_limits->job_mem);
-		list_append(job_limits_list, step_limits);
+		step_limits = list_find_first(job_limits_list, _match_job,
+					      &stepd->step_id.job_id);
+
+		if (step_limits) {
+			if (stepd_mem_info.job_mem_limit > step_limits->job_mem)
+				step_limits->job_mem =
+					stepd_mem_info.job_mem_limit;
+		} else {
+			/* create entry for this step */
+			step_limits = xmalloc(sizeof(*step_limits));
+			memcpy(&step_limits->step_id, &stepd->step_id,
+			       sizeof(step_limits->step_id));
+			step_limits->job_mem = stepd_mem_info.job_mem_limit;
+			debug2("%s: RecLim %ps job_mem:%"PRIu64,
+			       __func__, &step_limits->step_id, step_limits->job_mem);
+			list_append(job_limits_list, step_limits);
+		}
 	}
 	close(fd);
 
@@ -331,7 +329,7 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 
 	slurm_mutex_lock(&job_limits_mutex);
 	job_limits_ptr =
-		list_find_first(job_limits_list, _match_step, &step_info);
+		list_find_first(job_limits_list, _match_job, &step_id->job_id);
 	if (!job_limits_ptr) {
 		job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
 		memcpy(&job_limits_ptr->step_id, step_id,
@@ -341,6 +339,8 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 		       __func__, &job_limits_ptr->step_id,
 		       job_limits_ptr->job_mem);
 		list_append(job_limits_list, job_limits_ptr);
+	} else if (job_mem_limit > job_limits_ptr->job_mem) {
+		job_limits_ptr->job_mem = job_mem_limit;
 	}
 	slurm_mutex_unlock(&job_limits_mutex);
 }
