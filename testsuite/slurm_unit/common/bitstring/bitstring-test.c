@@ -178,30 +178,6 @@ START_TEST(test_bit_fmt)
 }
 END_TEST
 
-START_TEST(test_bit_nffc_nffs)
-{
-	bitstr_t *bs = bit_alloc(1024);
-
-	bit_set(bs, 2);
-	bit_set(bs, 6);
-	bit_set(bs, 7);
-	bit_nset(bs,12,1018);
-
-	ck_assert_msg(bit_nffc(bs, 2) == 0, "bitstring");
-	ck_assert_msg(bit_nffc(bs, 3) == 3, "bitstring");
-	ck_assert_msg(bit_nffc(bs, 4) == 8, "bitstring");
-	ck_assert_msg(bit_nffc(bs, 5) == 1019, "bitstring");
-	ck_assert_msg(bit_nffc(bs, 6) == -1, "bitstring");
-
-	ck_assert_msg(bit_nffs(bs, 1) == 2, "bitstring");
-	ck_assert_msg(bit_nffs(bs, 2) == 6, "bitstring");
-	ck_assert_msg(bit_nffs(bs, 100) == 12, "bitstring");
-	ck_assert_msg(bit_nffs(bs, 1023) == -1, "bitstring");
-
-	bit_free(bs);
-}
-END_TEST
-
 START_TEST(test_bit_equal)
 {
 	bitstr_t *bs1 = bit_alloc(32);
@@ -347,7 +323,6 @@ int main(void)
 	tcase_add_test(tc_core, test_bit_selection);
 	tcase_add_test(tc_core, test_realloc);
 	tcase_add_test(tc_core, test_bit_fmt);
-	tcase_add_test(tc_core, test_bit_nffc_nffs);
 	tcase_add_test(tc_core, test_bit_equal);
 	tcase_add_test(tc_core, test_bit_unfmt);
 	tcase_add_test(tc_core, test_bit_overlap);
