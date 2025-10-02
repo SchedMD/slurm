@@ -48,7 +48,7 @@ typedef struct {
 	slurm_step_id_t step_id;
 } job_mem_limits_t;
 
-static int _extract_limits_from_step(void *x, void *arg);
+static int _extract_limit_from_step(void *x, void *arg);
 
 static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static list_t *job_limits_list = NULL;
@@ -68,7 +68,7 @@ extern void job_mem_limit_init(void)
 
 	/* set up limits from currently running steps */
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	list_for_each(steps, _extract_limits_from_step, NULL);
+	list_for_each(steps, _extract_limit_from_step, NULL);
 	FREE_NULL_LIST(steps);
 
 	slurm_mutex_unlock(&job_limits_mutex);
@@ -128,7 +128,7 @@ static void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 }
 
-static int _extract_limits_from_step(void *x, void *arg)
+static int _extract_limit_from_step(void *x, void *arg)
 {
 	step_loc_t *stepd = x;
 	int fd;
