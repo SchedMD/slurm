@@ -227,6 +227,9 @@ extern char *uid_to_string_cached(uid_t uid)
 	uid_cache_entry_t *entry;
 	uid_cache_entry_t target = {uid, NULL};
 
+	if (uid == SLURM_AUTH_NOBODY)
+		return SLURM_AUTH_NOBODY_NAME;
+
 	slurm_mutex_lock(&uid_lock);
 	/*
 	 * bsearch and qsort depend on the first field of uid_cache_entry
