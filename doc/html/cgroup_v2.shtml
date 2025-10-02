@@ -344,6 +344,9 @@ default, this scope will be placed under system.slice and the cgroup directory
 associated with this scope will be:
 "/sys/fs/cgroup/system.slice/slurmstepd.scope" or
 "/sys/fs/cgroup/system.slice/nodename_slurmstepd.scope".
+The slice can be changed by specifying the "Slice=" property under the
+[Service] section of the slurmd.service unit file and adding the CgroupSlice
+parameter in the cgroup.conf file.
 </p>
 <p>Since the call to dbus "startTransientUnit" requires a pid as a parameter,
 slurmd needs to fork a "slurmstepd infinity" and use this parameter as the
