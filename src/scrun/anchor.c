@@ -1511,7 +1511,6 @@ static int _anchor_child(int pipe_fd[2])
 	slurm_mutex_lock(&state.debug_lock);
 	xassert(!state.locked);
 	xassert(state.needs_lock);
-	state.needs_lock = false;
 	debug4("%s: END conmgr_run()", __func__);
 	slurm_mutex_unlock(&state.debug_lock);
 #endif
