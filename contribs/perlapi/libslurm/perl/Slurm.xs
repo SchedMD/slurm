@@ -1844,9 +1844,6 @@ slurm_bit_set_count_range(bitstr_t *b, int start, int end)
 int
 slurm_bit_clear_count(bitstr_t *b)
 
-int
-slurm_bit_nset_max_count(bitstr_t *b)
-
 bitstr_t *
 slurm_bit_rotate_copy(bitstr_t *b, int n, bitoff_t nbits)
 	POSTCALL:

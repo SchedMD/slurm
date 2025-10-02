@@ -118,7 +118,6 @@ void	bit_or_not(bitstr_t *b1, bitstr_t *b2);
 int32_t	bit_set_count(bitstr_t *b);
 int32_t	bit_set_count_range(bitstr_t *b, int32_t start, int32_t end);
 int32_t	bit_clear_count(bitstr_t *b);
-int32_t	bit_nset_max_count(bitstr_t *b);
 bitstr_t *bit_rotate_copy(bitstr_t *b1, int32_t n, bitoff_t nbits);
 void	bit_rotate(bitstr_t *b1, int32_t n);
 char	*bit_fmt(char *str, int32_t len, bitstr_t *b);

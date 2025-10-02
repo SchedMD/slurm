@@ -138,7 +138,6 @@ strong_alias(bit_or,		slurm_bit_or);
 strong_alias(bit_set_count,	slurm_bit_set_count);
 strong_alias(bit_set_count_range, slurm_bit_set_count_range);
 strong_alias(bit_clear_count,	slurm_bit_clear_count);
-strong_alias(bit_nset_max_count,slurm_bit_nset_max_count);
 strong_alias(bit_rotate_copy,	slurm_bit_rotate_copy);
 strong_alias(bit_rotate,	slurm_bit_rotate);
 strong_alias(bit_fmt,		slurm_bit_fmt);
@@ -1138,38 +1137,6 @@ bit_clear_count(bitstr_t *b)
 {
 	_assert_bitstr_valid(b);
 	return (_bitstr_bits(b) - bit_set_count(b));
-}
-
-/* Return the count of the largest number of contiguous bits set in b.
- *   b (IN)             bitstring to search
- *   RETURN             the largest number of contiguous bits set in b
- */
-int32_t
-bit_nset_max_count(bitstr_t *b)
-{
-	bitoff_t bit;
-	int32_t  cnt = 0;
-	int32_t  maxcnt = 0;
-	uint32_t bitsize;
-
-	_assert_bitstr_valid(b);
-	bitsize = _bitstr_bits(b);
-
-	for (bit = 0; bit < bitsize; bit++) {
-		if (!bit_test(b, bit)) {	/* no longer continuous */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt > maxcnt) {
-				maxcnt = cnt;
-			}
-		}
-		if (cnt == 0 && ((bitsize - bit) < maxcnt)) {
-		    	break;			/* already found max */
-		}
-	}
-
-	return maxcnt;
 }
 
 /*
