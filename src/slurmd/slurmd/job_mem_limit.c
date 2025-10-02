@@ -38,6 +38,8 @@
 #include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/jobacct_gather.h"
+
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -59,6 +61,16 @@ extern void job_mem_limit_fini(void)
 	slurm_mutex_lock(&job_limits_mutex);
 	FREE_NULL_LIST(job_limits_list);
 	slurm_mutex_unlock(&job_limits_mutex);
+}
+
+static int _match_job(void *x, void *key)
+{
+	job_mem_limits_t *job_limits_ptr = x;
+	uint32_t *job_id = key;
+
+	if (job_limits_ptr->step_id.job_id == *job_id)
+		return 1;
+	return 0;
 }
 
 static int _match_step(void *x, void *key)
@@ -150,4 +162,162 @@ extern void _load_job_limits(void)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	list_for_each(steps, _extract_limits_from_step, NULL);
 	FREE_NULL_LIST(steps);
+}
+
+/* Enforce job memory limits here in slurmd. Step memory limits are
+ * enforced within slurmstepd (using jobacct_gather plugin). */
+extern void _enforce_job_mem_limit(void)
+{
+	list_t *steps;
+	list_itr_t *step_iter, *job_limits_iter;
+	job_mem_limits_t *job_limits_ptr;
+	step_loc_t *stepd;
+	int fd, i, job_inx, job_cnt;
+	uint64_t step_rss, step_vsize;
+	slurm_step_id_t step_id = { 0 };
+	job_step_stat_t *resp = NULL;
+	struct job_mem_info {
+		uint32_t job_id;
+		uint64_t mem_limit;	/* MB */
+		uint64_t mem_used;	/* MB */
+		uint64_t vsize_limit;	/* MB */
+		uint64_t vsize_used;	/* MB */
+	};
+	struct job_mem_info *job_mem_info_ptr = NULL;
+
+	if (!slurm_conf.job_acct_oom_kill)
+		return;
+
+	slurm_mutex_lock(&job_limits_mutex);
+	if (!job_limits_loaded)
+		_load_job_limits();
+	if (list_count(job_limits_list) == 0) {
+		slurm_mutex_unlock(&job_limits_mutex);
+		return;
+	}
+
+	/* Build table of job limits, use highest mem limit recorded */
+	job_mem_info_ptr = xmalloc((list_count(job_limits_list) + 1) *
+				   sizeof(struct job_mem_info));
+	job_cnt = 0;
+	job_limits_iter = list_iterator_create(job_limits_list);
+	while ((job_limits_ptr = list_next(job_limits_iter))) {
+		if (job_limits_ptr->job_mem == 0) 	/* no job limit */
+			continue;
+		for (i=0; i<job_cnt; i++) {
+			if (job_mem_info_ptr[i].job_id !=
+			    job_limits_ptr->step_id.job_id)
+				continue;
+			job_mem_info_ptr[i].mem_limit = MAX(
+				job_mem_info_ptr[i].mem_limit,
+				job_limits_ptr->job_mem);
+			break;
+		}
+		if (i < job_cnt)	/* job already found & recorded */
+			continue;
+		job_mem_info_ptr[job_cnt].job_id =
+			job_limits_ptr->step_id.job_id;
+		job_mem_info_ptr[job_cnt].mem_limit = job_limits_ptr->job_mem;
+		job_cnt++;
+	}
+	list_iterator_destroy(job_limits_iter);
+	slurm_mutex_unlock(&job_limits_mutex);
+
+	for (i=0; i<job_cnt; i++) {
+		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].
+			mem_limit;
+		job_mem_info_ptr[i].vsize_limit *=
+			(slurm_conf.vsize_factor / 100.0);
+	}
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	step_iter = list_iterator_create(steps);
+	while ((stepd = list_next(step_iter))) {
+		for (job_inx=0; job_inx<job_cnt; job_inx++) {
+			if (job_mem_info_ptr[job_inx].job_id ==
+			    stepd->step_id.job_id)
+				break;
+		}
+		if (job_inx >= job_cnt)
+			continue;	/* job/step not being tracked */
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd == -1)
+			continue;	/* step completed */
+
+		memcpy(&step_id, &stepd->step_id, sizeof(step_id));
+
+		resp = xmalloc(sizeof(job_step_stat_t));
+
+		if ((!stepd_stat_jobacct(fd, stepd->protocol_version,
+					 &step_id, resp)) &&
+		    (resp->jobacct)) {
+			/* resp->jobacct is NULL if account is disabled */
+			jobacctinfo_getinfo((struct jobacctinfo *)
+					    resp->jobacct,
+					    JOBACCT_DATA_TOT_RSS,
+					    &step_rss,
+					    stepd->protocol_version);
+			jobacctinfo_getinfo((struct jobacctinfo *)
+					    resp->jobacct,
+					    JOBACCT_DATA_TOT_VSIZE,
+					    &step_vsize,
+					    stepd->protocol_version);
+#if _LIMIT_INFO
+			info("%ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
+			     &stepd->step_id, step_rss, step_vsize);
+#endif
+			if (step_rss != INFINITE64) {
+				step_rss /= 1048576;	/* B to MB */
+				step_rss = MAX(step_rss, 1);
+				job_mem_info_ptr[job_inx].mem_used += step_rss;
+			}
+			if (step_vsize != INFINITE64) {
+				step_vsize /= 1048576;	/* B to MB */
+				step_vsize = MAX(step_vsize, 1);
+				job_mem_info_ptr[job_inx].vsize_used +=
+					step_vsize;
+			}
+		}
+		slurm_free_job_step_stat(resp);
+		close(fd);
+	}
+	list_iterator_destroy(step_iter);
+	FREE_NULL_LIST(steps);
+
+	for (i=0; i<job_cnt; i++) {
+		if (job_mem_info_ptr[i].mem_used == 0) {
+			/* no steps found,
+			 * purge records for all steps of this job */
+			slurm_mutex_lock(&job_limits_mutex);
+			list_delete_all(job_limits_list, _match_job,
+					&job_mem_info_ptr[i].job_id);
+			slurm_mutex_unlock(&job_limits_mutex);
+			break;
+		}
+
+		if ((job_mem_info_ptr[i].mem_limit != 0) &&
+		    (job_mem_info_ptr[i].mem_used >
+		     job_mem_info_ptr[i].mem_limit)) {
+			info("Job %u exceeded memory limit "
+			     "(%"PRIu64">%"PRIu64"), cancelling it",
+			     job_mem_info_ptr[i].job_id,
+			     job_mem_info_ptr[i].mem_used,
+			     job_mem_info_ptr[i].mem_limit);
+			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
+					       NO_VAL);
+		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
+			   (job_mem_info_ptr[i].vsize_used >
+			    job_mem_info_ptr[i].vsize_limit)) {
+			info("Job %u exceeded virtual memory limit "
+			     "(%"PRIu64">%"PRIu64"), cancelling it",
+			     job_mem_info_ptr[i].job_id,
+			     job_mem_info_ptr[i].vsize_used,
+			     job_mem_info_ptr[i].vsize_limit);
+			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
+					       NO_VAL);
+		}
+	}
+	xfree(job_mem_info_ptr);
 }

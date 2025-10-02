@@ -51,5 +51,6 @@ extern void job_mem_limit_fini(void);
 
 extern void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id);
 extern void _load_job_limits(void);
+extern void _enforce_job_mem_limit(void);
 
 #endif
