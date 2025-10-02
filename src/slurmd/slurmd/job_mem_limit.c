@@ -261,9 +261,8 @@ extern void job_mem_limit_enforce(void)
 	FREE_NULL_LIST(steps);
 
 	for (int i = 0; i < job_cnt; i++) {
+		/* No steps found for this job, remove record */
 		if (!job_mem_info_ptr[i].mem_used) {
-			/* no steps found,
-			 * purge records for all steps of this job */
 			slurm_mutex_lock(&job_limits_mutex);
 			list_delete_all(job_limits_list, _match_job,
 					&job_mem_info_ptr[i].job_id);
