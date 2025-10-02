@@ -485,6 +485,18 @@ extern void url_copy_members(url_t *dst, const url_t *src)
 	dst->fragment = xstrdup(src->fragment);
 }
 
+extern http_header_t *http_header_new(const char *name, const char *value)
+{
+	http_header_t *header = NULL;
+
+	header = xmalloc(sizeof(*header));
+	header->magic = HTTP_HEADER_MAGIC;
+	header->name = xstrdup(name);
+	header->value = xstrdup(value);
+
+	return header;
+}
+
 extern void free_http_header(http_header_t *header)
 {
 	xassert(header->magic == HTTP_HEADER_MAGIC);

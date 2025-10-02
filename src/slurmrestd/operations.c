@@ -55,6 +55,7 @@
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static list_t *paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
+bool inetd_mode = false;
 
 #define MAGIC_HEADER_ACCEPT 0xDF9EAABE
 
@@ -251,7 +252,7 @@ static int _operations_router_reject(on_http_request_args_t *args,
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
 
-	(void) send_http_response(&send_args);
+	(void) send_http_response(args->context, &send_args);
 
 	/* close connection on error */
 	conmgr_queue_close_fd(send_args.con);
@@ -545,7 +546,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		};
 		send_args.con = conmgr_fd_get_ref(args->con);
 		e = send_args.status_code;
-		rc = send_http_response(&send_args);
+		rc = send_http_response(args->context, &send_args);
 	} else if (rc && (rc != ESLURM_REST_EMPTY_RESULT)) {
 		rc = _operations_router_reject(args, body, rc, write_mime);
 	} else {
@@ -565,7 +566,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			send_args.body_encoding = write_mime;
 		}
 
-		rc = send_http_response(&send_args);
+		rc = send_http_response(args->context, &send_args);
 		e = send_args.status_code;
 	}
 

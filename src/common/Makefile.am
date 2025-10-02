@@ -47,6 +47,8 @@ libcommon_la_SOURCES =				\
 	hostlist.h				\
 	http.h					\
 	http.c					\
+	http_con.h				\
+	http_con.c				\
 	identity.h				\
 	identity.c				\
 	id_util.h				\

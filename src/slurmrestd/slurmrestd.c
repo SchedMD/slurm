@@ -649,13 +649,6 @@ static void _check_user(void)
 	}
 }
 
-/* simple wrapper to hand over operations router in http context */
-static void *_setup_http_context(conmgr_fd_t *con, void *arg)
-{
-	xassert(operations_router == arg);
-	return setup_http_context(con, operations_router);
-}
-
 static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
@@ -678,13 +671,6 @@ static void _on_signal_interrupt(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("%s: caught SIGINT. Shutting down.", __func__);
-	conmgr_request_shutdown();
-}
-
-
-static void _inet_on_finish(conmgr_fd_t *con, void *ctxt)
-{
-	on_http_connection_finish(con, ctxt);
 	conmgr_request_shutdown();
 }
 
@@ -714,16 +700,6 @@ int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	socket_listen = list_create(xfree_ptr);
-	static const conmgr_events_t conmgr_events = {
-		.on_data = parse_http,
-		.on_connection = _setup_http_context,
-		.on_finish = on_http_connection_finish,
-	};
-	static const conmgr_events_t inet_events = {
-		.on_data = parse_http,
-		.on_connection = _setup_http_context,
-		.on_finish = _inet_on_finish,
-	};
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
 	_parse_env();
@@ -856,9 +832,11 @@ int main(int argc, char **argv)
 		debug("Interactive mode activated (TTY detected on STDIN)");
 
 	if (!run_mode.listen) {
+		inetd_mode = true;
 		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
-					    STDOUT_FILENO, &inet_events, flags,
-					    NULL, 0, NULL, operations_router)))
+					    STDOUT_FILENO, http_events_get(),
+					    flags, NULL, 0, NULL,
+					    operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -868,7 +846,8 @@ int main(int argc, char **argv)
 		mode_t mask = umask(0);
 
 		if (conmgr_create_listen_sockets(CON_TYPE_RAW, flags,
-						 socket_listen, &conmgr_events,
+						 socket_listen,
+						 http_events_get(),
 						 operations_router))
 			fatal("Unable to create sockets");
 

@@ -231,6 +231,12 @@ typedef struct {
 	char *value;
 } http_header_t;
 
+/*
+ * Create new http header
+ * RET pointer to header (must free with free_http_header())
+ */
+extern http_header_t *http_header_new(const char *name, const char *value);
+
 /* Free http header and contents */
 extern void free_http_header(http_header_t *header);
 
