@@ -48,6 +48,14 @@ typedef struct {
 	uint64_t job_mem;
 } job_mem_limits_t;
 
+typedef struct {
+	uint32_t job_id;
+	uint64_t mem_limit; /* MB */
+	uint64_t mem_used; /* MB */
+	uint64_t vsize_limit; /* MB */
+	uint64_t vsize_used; /* MB */
+} job_mem_info_t;
+
 static int _extract_limit_from_step(void *x, void *arg);
 
 static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -172,15 +180,7 @@ extern void job_mem_limit_enforce(void)
 	uint64_t step_rss, step_vsize;
 	slurm_step_id_t step_id = { 0 };
 	job_step_stat_t *resp = NULL;
-
-	struct job_mem_info {
-		uint32_t job_id;
-		uint64_t mem_limit; /* MB */
-		uint64_t mem_used; /* MB */
-		uint64_t vsize_limit; /* MB */
-		uint64_t vsize_used; /* MB */
-	};
-	struct job_mem_info *job_mem_info_ptr = NULL;
+	job_mem_info_t *job_mem_info_ptr = NULL;
 
 	if (!slurm_conf.job_acct_oom_kill)
 		return;
@@ -192,8 +192,8 @@ extern void job_mem_limit_enforce(void)
 	}
 
 	/* Build table of job limits, use highest mem limit recorded */
-	job_mem_info_ptr = xmalloc((list_count(job_limits_list) + 1) *
-				   sizeof(struct job_mem_info));
+	job_mem_info_ptr = xcalloc((list_count(job_limits_list) + 1),
+				   sizeof(job_mem_info_t));
 	job_cnt = 0;
 	job_limits_iter = list_iterator_create(job_limits_list);
 	while ((job_limits_ptr = list_next(job_limits_iter))) {
