@@ -311,11 +311,9 @@ extern void job_mem_limit_enforce(void)
 	xfree(job_mem_info_ptr);
 }
 
-extern void job_mem_limit_register(slurm_step_id_t *step_id,
-				   uint64_t job_mem_limit)
+extern void job_mem_limit_register(uint32_t job_id, uint64_t job_mem_limit)
 {
 	job_mem_limits_t *job_limits_ptr = NULL;
-	step_loc_t step_info;
 
 	if (!slurm_conf.job_acct_oom_kill)
 		return;
@@ -323,14 +321,11 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 	if (!job_mem_limit)
 		return;
 
-	memcpy(&step_info.step_id, step_id, sizeof(step_info.step_id));
-
 	slurm_mutex_lock(&job_limits_mutex);
-	job_limits_ptr =
-		list_find_first(job_limits_list, _match_job, &step_id->job_id);
+	job_limits_ptr = list_find_first(job_limits_list, _match_job, &job_id);
 	if (!job_limits_ptr) {
 		job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-		job_limits_ptr->job_id = step_id->job_id;
+		job_limits_ptr->job_id = job_id;
 		job_limits_ptr->job_mem = job_mem_limit;
 		debug2("%s: AddLim JobId=%u job_mem:%"PRIu64,
 		       __func__, job_limits_ptr->job_id,

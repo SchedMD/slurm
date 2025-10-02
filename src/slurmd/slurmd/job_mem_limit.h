@@ -36,13 +36,10 @@
 #ifndef _JOB_MEM_LIMIT_H
 #define _JOB_MEM_LIMIT_H
 
-#include "slurm/slurm.h"
-
 extern void job_mem_limit_init(void);
 extern void job_mem_limit_fini(void);
 
 extern void job_mem_limit_enforce(void);
-extern void job_mem_limit_register(slurm_step_id_t *step_id,
-				   uint64_t job_mem_limit);
+extern void job_mem_limit_register(uint32_t job_id, uint64_t job_mem_limit);
 
 #endif

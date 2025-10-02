@@ -1626,7 +1626,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	node_features_g_step_config(mem_sort, numa_bitmap);
 	FREE_NULL_BITMAP(numa_bitmap);
 
-	job_mem_limit_register(&req->step_id, req->job_mem_lim);
+	job_mem_limit_register(req->step_id.job_id, req->job_mem_lim);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
@@ -2011,17 +2011,12 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = msg->data;
 	int rc = SLURM_SUCCESS;
-	slurm_step_id_t step_id = {
-		.job_id = req->job_id,
-		.step_id = SLURM_EXTERN_CONT,
-		.step_het_comp = NO_VAL,
-	};
 
 	/* Convert per-CPU mem limit */
 	if ((rc = _convert_job_mem(msg)) != SLURM_SUCCESS)
 		return rc;
 
-	job_mem_limit_register(&step_id, req->job_mem_limit);
+	job_mem_limit_register(req->job_id, req->job_mem_limit);
 
 	return rc;
 }
