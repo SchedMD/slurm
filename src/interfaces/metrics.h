@@ -36,4 +36,45 @@
 #ifndef _INTERFACES_METRICS_H
 #define _INTERFACES_METRICS_H
 
+#include "src/interfaces/data_parser.h"
+#include "src/slurmctld/statistics.h"
+
+typedef struct metric_keyval {
+	char *key;
+	char *val;
+} metric_keyval_t;
+
+typedef struct metric_set {
+	void *arg; /* actual metrics data provided by the specific plugin */
+	int plugin_id;
+	const char *plugin_type; /* ptr to plugin plugin_type - do not xfree */
+} metric_set_t;
+
+typedef struct metric {
+	int attr; /* Custom Attributes */
+	void *data; /* Data */
+	char *desc; /* Metric description */
+	void *id; /* Plugin custom identifier of this metric */
+	metric_keyval_t **keyval; /* Array of key-values strings, last element
+				   * is NULL=NULL */
+	char *name; /* Metric name */
+	metric_set_t *set; /* Pointer to a metric set */
+	data_parser_type_t type; /* Data type */
+} metric_t;
+
+extern metric_t *metrics_create_metric(metric_set_t *set,
+				       data_parser_type_t type, void *data,
+				       ssize_t sz_data, char *name, char *desc,
+				       int attr, metric_keyval_t **kv);
+extern void metrics_free_metric(metric_t *metric);
+
+extern int metrics_g_init(void);
+extern void metrics_g_fini(void);
+extern int metrics_g_dump(metric_set_t *set, char **buf);
+extern int metrics_g_free_set(metric_set_t *set);
+extern metric_set_t *metrics_g_parse_jobs_metrics(jobs_stats_t *s);
+extern metric_set_t *metrics_g_parse_nodes_metrics(nodes_stats_t *s);
+extern metric_set_t *metrics_g_parse_parts_metrics(partitions_stats_t *s);
+extern metric_set_t *metrics_g_parse_sched_metrics(scheduling_stats_t *s);
+extern metric_set_t *metrics_g_parse_ua_metrics(users_accts_stats_t *s);
 #endif
