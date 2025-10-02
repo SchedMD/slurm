@@ -115,6 +115,9 @@ int uid_from_string(const char *name, uid_t *uidp)
 	if (!name)
 		return SLURM_ERROR;
 
+	if (!xstrcmp(name, SLURM_AUTH_NOBODY_NAME))
+		return SLURM_AUTH_NOBODY;
+
 	/*
 	 *  Check to see if name is a valid username first.
 	 */
