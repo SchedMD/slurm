@@ -1637,8 +1637,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (req->job_mem_lim || req->step_mem_lim) {
 		step_loc_t step_info;
 		slurm_mutex_lock(&job_limits_mutex);
-		if (!job_limits_list)
-			job_limits_list = list_create(xfree_ptr);
 		memcpy(&step_info.step_id, &req->step_id,
 		       sizeof(step_info.step_id));
 		job_limits_ptr = list_find_first(job_limits_list,
@@ -2054,8 +2052,6 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 
 	if (req->job_mem_limit) {
 		slurm_mutex_lock(&job_limits_mutex);
-		if (!job_limits_list)
-			job_limits_list = list_create(xfree_ptr);
 		step_info.step_id.job_id  = req->job_id;
 		step_info.step_id.step_id = SLURM_EXTERN_CONT;
 		step_info.step_id.step_het_comp = NO_VAL;
@@ -2928,8 +2924,6 @@ _load_job_limits(void)
 	job_mem_limits_t *job_limits_ptr;
 	slurmstepd_mem_info_t stepd_mem_info;
 
-	if (!job_limits_list)
-		job_limits_list = list_create(xfree_ptr);
 	job_limits_loaded = true;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
@@ -5879,12 +5873,6 @@ extern void slurmd_req(slurm_msg_t *msg)
 		slurm_mutex_lock(&waiter_mutex);
 		FREE_NULL_LIST(waiters);
 		slurm_mutex_unlock(&waiter_mutex);
-		slurm_mutex_lock(&job_limits_mutex);
-		if (job_limits_list) {
-			FREE_NULL_LIST(job_limits_list);
-			job_limits_loaded = false;
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
 		return;
 	}
 

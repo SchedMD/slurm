@@ -130,6 +130,7 @@
 
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -473,6 +474,7 @@ main (int argc, char **argv)
 	if (acct_storage_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize acct_storage plugin");
 	file_bcast_init();
+	job_mem_limit_init();
 	if ((run_command_init(argc, argv, conf->binary) != SLURM_SUCCESS) &&
 	    conf->binary[0])
 		fatal("%s: Unable to reliably execute %s",
@@ -2768,6 +2770,7 @@ _slurmd_fini(void)
 	prep_g_fini();
 	topology_g_destroy_config();
 	topology_g_fini();
+	job_mem_limit_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {

@@ -32,3 +32,28 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+
+#include "src/slurmd/slurmd/job_mem_limit.h"
+
+extern void job_mem_limit_init(void)
+{
+	if (!slurm_conf.job_acct_oom_kill) {
+		debug("%s: disabled", __func__);
+	}
+
+	debug("%s: enabled", __func__);
+
+	slurm_mutex_lock(&job_limits_mutex);
+	job_limits_list = list_create(xfree_ptr);
+	slurm_mutex_unlock(&job_limits_mutex);
+}
+
+extern void job_mem_limit_fini(void)
+{
+	slurm_mutex_lock(&job_limits_mutex);
+	FREE_NULL_LIST(job_limits_list);
+	slurm_mutex_unlock(&job_limits_mutex);
+}

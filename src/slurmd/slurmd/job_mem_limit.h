@@ -46,4 +46,7 @@ extern pthread_mutex_t job_limits_mutex;
 extern list_t *job_limits_list;
 extern bool job_limits_loaded;
 
+extern void job_mem_limit_init(void);
+extern void job_mem_limit_fini(void);
+
 #endif
