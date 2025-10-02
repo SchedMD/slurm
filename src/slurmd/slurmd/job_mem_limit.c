@@ -84,7 +84,7 @@ static int _match_step(void *x, void *key)
 	return 0;
 }
 
-extern void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
+static void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 {
 	slurm_msg_t msg;
 	job_notify_msg_t notify_req;
