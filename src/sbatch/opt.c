@@ -935,10 +935,6 @@ static bool _opt_verify(void)
 		}
 		xfree(tmp);
 	}
-	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
-	    (opt.mem_bind_type & MEM_BIND_SORT)) {
-		het_job_env.mem_bind_sort = xstrdup("sort");
-	}
 
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_VERBOSE") == NULL)) {
 		if (opt.mem_bind_type & MEM_BIND_VERBOSE) {
@@ -1272,7 +1268,6 @@ extern void init_envs(sbatch_env_t *local_env)
 	local_env->cpus_per_task	= NO_VAL;
 	local_env->dist			= NULL;
 	local_env->mem_bind		= NULL;
-	local_env->mem_bind_sort	= NULL;
 	local_env->mem_bind_verbose	= NULL;
 	local_env->ntasks		= NO_VAL;
 	local_env->ntasks_per_core	= NO_VAL;
@@ -1304,12 +1299,6 @@ extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
 					 het_job_offset, "%s",
 					 local_env->mem_bind)) {
 		error("Can't set SLURM_MEM_BIND env variable");
-	}
-	if (local_env->mem_bind_sort &&
-	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND_SORT",
-					 het_job_offset, "%s",
-					 local_env->mem_bind_sort)) {
-		error("Can't set SLURM_MEM_BIND_SORT env variable");
 	}
 	if (local_env->mem_bind_verbose &&
 	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_MEM_BIND_VERBOSE",

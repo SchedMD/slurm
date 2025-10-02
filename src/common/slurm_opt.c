@@ -2307,11 +2307,6 @@ static void arg_reset_mem_bind(slurm_opt_t *opt)
 {
 	xfree(opt->mem_bind);
 	opt->mem_bind_type = 0;
-
-	if (opt->srun_opt) {
-		if (xstrstr(slurm_conf.launch_params, "mem_sort"))
-			opt->mem_bind_type |= MEM_BIND_SORT;
-	}
 }
 static slurm_cli_opt_t slurm_opt_mem_bind = {
 	.name = "mem-bind",

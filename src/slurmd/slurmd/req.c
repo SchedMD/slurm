@@ -1257,153 +1257,6 @@ fail:
 	slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 }
 
-static int _str_to_memset(bitstr_t *mask, char *str)
-{
-	int len = strlen(str);
-	const char *ptr = str + len - 1;
-	int base = 0;
-
-	while (ptr >= str) {
-		char val = slurm_char_to_hex(*ptr);
-		if (val == (char) -1)
-			return -1;
-		if ((val & 1) && (base < MAX_NUMA_CNT))
-			bit_set(mask, base);
-		base++;
-		if ((val & 2) && (base < MAX_NUMA_CNT))
-			bit_set(mask, base);
-		base++;
-		if ((val & 4) && (base < MAX_NUMA_CNT))
-			bit_set(mask, base);
-		base++;
-		if ((val & 8) && (base < MAX_NUMA_CNT))
-			bit_set(mask, base);
-		base++;
-		ptr--;
-	}
-
-	return 0;
-}
-
-static bitstr_t *_build_cpu_bitmap(uint16_t cpu_bind_type, char *cpu_bind,
-				   int task_cnt_on_node)
-{
-	bitstr_t *cpu_bitmap = NULL;
-	char *tmp_str, *tok, *save_ptr = NULL;
-	int cpu_id;
-
-	if (cpu_bind_type & CPU_BIND_NONE) {
-		/* Return NULL bitmap, sort all NUMA */
-	} else if (cpu_bind_type & CPU_BIND_MAP) {
-		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
-		tmp_str = xstrdup(cpu_bind);
-		tok = strtok_r(tmp_str, ",", &save_ptr);
-		while (tok) {
-			if (!xstrncmp(tok, "0x", 2))
-				cpu_id = strtoul(tok + 2, NULL, 16);
-			else
-				cpu_id = strtoul(tok, NULL, 10);
-			if (cpu_id < MAX_CPU_CNT)
-				bit_set(cpu_bitmap, cpu_id);
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(tmp_str);
-	} else if (cpu_bind_type & CPU_BIND_MASK) {
-		cpu_bitmap = bit_alloc(MAX_CPU_CNT);
-		tmp_str = xstrdup(cpu_bind);
-		tok = strtok_r(tmp_str, ",", &save_ptr);
-		while (tok) {
-			if (!xstrncmp(tok, "0x", 2))
-				tok += 2;	/* Skip "0x", always hex */
-			(void) _str_to_memset(cpu_bitmap, tok);
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(tmp_str);
-	}
-	return cpu_bitmap;
-}
-
-static bitstr_t *_xlate_cpu_to_numa_bitmap(bitstr_t *cpu_bitmap)
-{
-	bitstr_t *numa_bitmap = NULL;
-#ifdef HAVE_NUMA
-	struct bitmask *numa_bitmask = NULL;
-	char cpu_str[10240];
-	int i, max_numa;
-
-	if (numa_available() != -1) {
-		bit_fmt(cpu_str, sizeof(cpu_str), cpu_bitmap);
-		numa_bitmask = numa_parse_cpustring(cpu_str);
-		if (numa_bitmask) {
-			max_numa = numa_max_node();
-			numa_bitmap = bit_alloc(MAX_NUMA_CNT);
-			for (i = 0; i <= max_numa; i++) {
-				if (numa_bitmask_isbitset(numa_bitmask, i))
-					bit_set(numa_bitmap, i);
-			}
-			numa_bitmask_free(numa_bitmask);
-		}
-	}
-#endif
-	return numa_bitmap;
-
-}
-
-static bitstr_t *_build_numa_bitmap(uint16_t mem_bind_type, char *mem_bind,
-				    uint16_t cpu_bind_type, char *cpu_bind,
-				    int task_cnt_on_node)
-{
-	bitstr_t *cpu_bitmap = NULL, *numa_bitmap = NULL;
-	char *tmp_str, *tok, *save_ptr = NULL;
-	int numa_id;
-
-	if (mem_bind_type & MEM_BIND_NONE) {
-		/* Return NULL bitmap, sort all NUMA */
-	} else if ((mem_bind_type & MEM_BIND_RANK) &&
-		   (task_cnt_on_node > 0)) {
-		numa_bitmap = bit_alloc(MAX_NUMA_CNT);
-		if (task_cnt_on_node >= MAX_NUMA_CNT)
-			task_cnt_on_node = MAX_NUMA_CNT;
-		for (numa_id = 0; numa_id < task_cnt_on_node; numa_id++) {
-			bit_set(numa_bitmap, numa_id);
-		}
-	} else if (mem_bind_type & MEM_BIND_MAP) {
-		numa_bitmap = bit_alloc(MAX_NUMA_CNT);
-		tmp_str = xstrdup(mem_bind);
-		tok = strtok_r(tmp_str, ",", &save_ptr);
-		while (tok) {
-			if (!xstrncmp(tok, "0x", 2))
-				numa_id = strtoul(tok + 2, NULL, 16);
-			else
-				numa_id = strtoul(tok, NULL, 10);
-			if (numa_id < MAX_NUMA_CNT)
-				bit_set(numa_bitmap, numa_id);
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(tmp_str);
-	} else if (mem_bind_type & MEM_BIND_MASK) {
-		numa_bitmap = bit_alloc(MAX_NUMA_CNT);
-		tmp_str = xstrdup(mem_bind);
-		tok = strtok_r(tmp_str, ",", &save_ptr);
-		while (tok) {
-			if (!xstrncmp(tok, "0x", 2))
-				tok += 2;	/* Skip "0x", always hex */
-			(void) _str_to_memset(numa_bitmap, tok);
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(tmp_str);
-	} else if (mem_bind_type & MEM_BIND_LOCAL) {
-		cpu_bitmap = _build_cpu_bitmap(cpu_bind_type, cpu_bind,
-					       task_cnt_on_node);
-		if (cpu_bitmap) {
-			numa_bitmap = _xlate_cpu_to_numa_bitmap(cpu_bitmap);
-			FREE_NULL_BITMAP(cpu_bitmap);
-		}
-	}
-
-	return numa_bitmap;
-}
-
 static int _find_libdir_record(void *x, void *arg)
 {
 	libdir_rec_t *l = (libdir_rec_t *) x;
@@ -1476,14 +1329,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	uint16_t port;
 	char     host[HOST_NAME_MAX];
 	launch_tasks_request_msg_t *req = msg->data;
-	bool     mem_sort = false;
 	bool     first_job_run;
 	char *errmsg = NULL;
 
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostlist_t *step_hset = NULL;
 	int node_id = 0;
-	bitstr_t *numa_bitmap = NULL;
 
 	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
@@ -1612,19 +1463,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		errnum = SLURM_SUCCESS;
 		goto done;
 	}
-
-	if (req->mem_bind_type & MEM_BIND_SORT) {
-		int task_cnt = -1;
-		if (req->tasks_to_launch)
-			task_cnt = (int) req->tasks_to_launch[node_id];
-		mem_sort = true;
-		numa_bitmap = _build_numa_bitmap(req->mem_bind_type,
-						 req->mem_bind,
-						 req->cpu_bind_type,
-						 req->cpu_bind, task_cnt);
-	}
-	node_features_g_step_config(mem_sort, numa_bitmap);
-	FREE_NULL_BITMAP(numa_bitmap);
 
 	job_mem_limit_register(req->step_id.job_id, req->job_mem_lim);
 
