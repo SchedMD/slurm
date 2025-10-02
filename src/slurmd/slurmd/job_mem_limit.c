@@ -297,7 +297,7 @@ extern void job_mem_limit_enforce(void)
 
 extern void job_mem_limit_register(uint32_t job_id, uint64_t job_mem_limit)
 {
-	job_mem_limits_t *job_limits_ptr = NULL;
+	job_mem_limits_t *limits = NULL;
 
 	if (!slurm_conf.job_acct_oom_kill)
 		return;
@@ -306,17 +306,16 @@ extern void job_mem_limit_register(uint32_t job_id, uint64_t job_mem_limit)
 		return;
 
 	slurm_mutex_lock(&job_limits_mutex);
-	job_limits_ptr = list_find_first(job_limits_list, _match_job, &job_id);
-	if (!job_limits_ptr) {
-		job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-		job_limits_ptr->job_id = job_id;
-		job_limits_ptr->job_mem = job_mem_limit;
+	limits = list_find_first(job_limits_list, _match_job, &job_id);
+	if (!limits) {
+		limits = xmalloc(sizeof(*limits));
+		limits->job_id = job_id;
+		limits->job_mem = job_mem_limit;
 		debug2("%s: AddLim JobId=%u job_mem:%"PRIu64,
-		       __func__, job_limits_ptr->job_id,
-		       job_limits_ptr->job_mem);
-		list_append(job_limits_list, job_limits_ptr);
-	} else if (job_mem_limit > job_limits_ptr->job_mem) {
-		job_limits_ptr->job_mem = job_mem_limit;
+		       __func__, limits->job_id, limits->job_mem);
+		list_append(job_limits_list, limits);
+	} else if (job_mem_limit > limits->job_mem) {
+		limits->job_mem = job_mem_limit;
 	}
 	slurm_mutex_unlock(&job_limits_mutex);
 }
