@@ -168,18 +168,73 @@ static int _extract_limit_from_step(void *x, void *arg)
 	return 1;
 }
 
+static int _add_step_usage(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	job_mem_info_t *job_mem_info_ptr = arg;
+	job_step_stat_t *resp = NULL;
+	uint64_t step_rss = 0, step_vsize = 0;
+	slurm_step_id_t step_id = { 0 };
+	int fd = -1;
+
+	while (job_mem_info_ptr->job_id) {
+		if (job_mem_info_ptr->job_id == stepd->step_id.job_id)
+			break;
+		job_mem_info_ptr++;
+	}
+
+	/* job memory limit unknown or unlimited */
+	if (!job_mem_info_ptr->job_id)
+		return 1;
+
+	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
+			   &stepd->protocol_version);
+	if (fd == -1)
+		return 1; /* step completed */
+
+	memcpy(&step_id, &stepd->step_id, sizeof(step_id));
+
+	resp = xmalloc(sizeof(job_step_stat_t));
+
+	if ((!stepd_stat_jobacct(fd, stepd->protocol_version, &step_id,
+				 resp)) &&
+	    (resp->jobacct)) {
+		/* resp->jobacct is NULL if account is disabled */
+		jobacctinfo_getinfo((struct jobacctinfo *) resp->jobacct,
+				    JOBACCT_DATA_TOT_RSS, &step_rss,
+				    stepd->protocol_version);
+		jobacctinfo_getinfo((struct jobacctinfo *) resp->jobacct,
+				    JOBACCT_DATA_TOT_VSIZE, &step_vsize,
+				    stepd->protocol_version);
+		debug2("%s: %ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
+		       __func__, &stepd->step_id, step_rss, step_vsize);
+
+		if (step_rss != INFINITE64) {
+			step_rss /= 1048576; /* B to MB */
+			step_rss = MAX(step_rss, 1);
+			job_mem_info_ptr->mem_used += step_rss;
+		}
+
+		if (step_vsize != INFINITE64) {
+			step_vsize /= 1048576; /* B to MB */
+			step_vsize = MAX(step_vsize, 1);
+			job_mem_info_ptr->vsize_used += step_vsize;
+		}
+	}
+	slurm_free_job_step_stat(resp);
+	close(fd);
+
+	return 1;
+}
+
 /* Enforce job memory limits here in slurmd. Step memory limits are
  * enforced within slurmstepd (using jobacct_gather plugin). */
 extern void job_mem_limit_enforce(void)
 {
 	list_t *steps;
-	list_itr_t *step_iter, *job_limits_iter;
+	list_itr_t *job_limits_iter;
 	job_mem_limits_t *job_limits_ptr;
-	step_loc_t *stepd;
-	int fd, i, job_inx, job_cnt;
-	uint64_t step_rss, step_vsize;
-	slurm_step_id_t step_id = { 0 };
-	job_step_stat_t *resp = NULL;
+	int i, job_cnt;
 	job_mem_info_t *job_mem_info_ptr = NULL;
 
 	if (!slurm_conf.job_acct_oom_kill)
@@ -208,55 +263,7 @@ extern void job_mem_limit_enforce(void)
 	slurm_mutex_unlock(&job_limits_mutex);
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	step_iter = list_iterator_create(steps);
-	while ((stepd = list_next(step_iter))) {
-		for (job_inx = 0; job_inx < job_cnt; job_inx++) {
-			if (job_mem_info_ptr[job_inx].job_id ==
-			    stepd->step_id.job_id)
-				break;
-		}
-		if (job_inx >= job_cnt)
-			continue; /* job/step not being tracked */
-
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1)
-			continue; /* step completed */
-
-		memcpy(&step_id, &stepd->step_id, sizeof(step_id));
-
-		resp = xmalloc(sizeof(job_step_stat_t));
-
-		if ((!stepd_stat_jobacct(fd, stepd->protocol_version, &step_id,
-					 resp)) &&
-		    (resp->jobacct)) {
-			/* resp->jobacct is NULL if account is disabled */
-			jobacctinfo_getinfo((struct jobacctinfo *)
-						    resp->jobacct,
-					    JOBACCT_DATA_TOT_RSS, &step_rss,
-					    stepd->protocol_version);
-			jobacctinfo_getinfo((struct jobacctinfo *)
-						    resp->jobacct,
-					    JOBACCT_DATA_TOT_VSIZE, &step_vsize,
-					    stepd->protocol_version);
-			debug2("%s: %ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
-			       __func__, &stepd->step_id, step_rss, step_vsize);
-			if (step_rss != INFINITE64) {
-				step_rss /= 1048576; /* B to MB */
-				step_rss = MAX(step_rss, 1);
-				job_mem_info_ptr[job_inx].mem_used += step_rss;
-			}
-			if (step_vsize != INFINITE64) {
-				step_vsize /= 1048576; /* B to MB */
-				step_vsize = MAX(step_vsize, 1);
-				job_mem_info_ptr[job_inx].vsize_used +=
-					step_vsize;
-			}
-		}
-		slurm_free_job_step_stat(resp);
-		close(fd);
-	}
-	list_iterator_destroy(step_iter);
+	list_for_each(steps, _add_step_usage, job_mem_info_ptr);
 	FREE_NULL_LIST(steps);
 
 	for (i = 0; i < job_cnt; i++) {
