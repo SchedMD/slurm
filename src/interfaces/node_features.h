@@ -83,14 +83,6 @@ extern int node_features_g_node_set(char *active_features, bool *need_reboot);
  * current_mode IN/OUT - current modes, must be xfreed */
 extern void node_features_g_node_state(char **avail_modes, char **current_mode);
 
-/* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
- * IN active_features - New active features
- * IN node_bitmap - bitmap of nodes changed
- * RET error code */
-extern int node_features_g_node_update(char *active_features,
-				       bitstr_t *node_bitmap);
-
 /*
  * Return TRUE if the specified node update request is valid with respect
  * to features changes (i.e. don't permit a non-KNL node to set KNL features).

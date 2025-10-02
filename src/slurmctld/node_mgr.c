@@ -2435,8 +2435,6 @@ extern int update_node_active_features(char *node_names, char *active_features,
 		}
 		node_features_update_list(active_feature_list, active_features,
 					  node_bitmap);
-		(void) node_features_g_node_update(active_features,
-						   node_bitmap);
 	}
 
 	_update_node_features_post(node_names,

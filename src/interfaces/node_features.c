@@ -59,7 +59,6 @@ typedef struct node_features_ops {
 	int     (*overlap)      (bitstr_t *active_bitmap);
 	int	(*node_set)	(char *active_features, bool *need_reboot);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
-	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
 	bool	(*node_update_valid) (void *node_ptr,
 				      update_node_msg_t *update_node_msg);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
@@ -82,7 +81,6 @@ static const char *syms[] = {
 	"node_features_p_overlap",
 	"node_features_p_node_set",
 	"node_features_p_node_state",
-	"node_features_p_node_update",
 	"node_features_p_node_update_valid",
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
@@ -333,30 +331,6 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode)
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
 }
-
-/* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
- * IN active_features - New active features
- * IN node_bitmap - bitmap of nodes changed
- * RET error code */
-extern int node_features_g_node_update(char *active_features,
-				       bitstr_t *node_bitmap)
-{
-	DEF_TIMERS;
-	int i, rc = SLURM_SUCCESS;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(ops[i].node_update))(active_features, node_bitmap);
-	}
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return rc;
-}
-
 
 /*
  * Return TRUE if the specified node update request is valid with respect
