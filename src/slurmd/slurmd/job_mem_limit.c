@@ -135,9 +135,6 @@ static int _extract_limit_from_step(void *x, void *arg)
 	job_mem_limits_t *step_limits;
 	slurmstepd_mem_info_t stepd_mem_info;
 
-	step_limits = list_find_first(job_limits_list, _match_step, stepd);
-	if (step_limits) /* already processed */
-		return 1;
 	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
 			   &stepd->protocol_version);
 	if (fd == -1)
