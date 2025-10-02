@@ -74,6 +74,7 @@
  * The value is currently RedHat Linux's ID for the user "nobody".
  */
 #define SLURM_AUTH_NOBODY 99
+#define SLURM_AUTH_NOBODY_NAME "nobody"
 
 #define FORWARD_INIT 0xfffe
 
