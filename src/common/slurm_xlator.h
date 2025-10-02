@@ -105,7 +105,6 @@
 #define	bit_copy		slurm_bit_copy
 #define	bit_equal		slurm_bit_equal
 #define	bit_pick_cnt		slurm_bit_pick_cnt
-#define bit_nffc		slurm_bit_nffc
 #define bit_noc			slurm_bit_noc
 #define bit_copybits		slurm_bit_copybits
 #define	bit_get_bit_num		slurm_bit_get_bit_num
