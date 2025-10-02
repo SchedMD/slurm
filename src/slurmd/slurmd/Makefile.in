@@ -187,8 +187,8 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am__objects_1 = slurmd.$(OBJEXT) cred_context.$(OBJEXT) req.$(OBJEXT) \
-	get_mach_stat.$(OBJEXT)
+am__objects_1 = cred_context.$(OBJEXT) get_mach_stat.$(OBJEXT) \
+	req.$(OBJEXT) slurmd.$(OBJEXT)
 am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -536,10 +536,14 @@ slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(NUMA_LIBS) \
 	$(depend_ldadd) $(LIB_REF)
 slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 SLURMD_SOURCES = \
-	slurmd.c slurmd.h \
-	cred_context.c cred_context.h \
-	req.c req.h \
-	get_mach_stat.c get_mach_stat.h
+	cred_context.c \
+	cred_context.h \
+	get_mach_stat.c \
+	get_mach_stat.h \
+	req.c \
+	req.h \
+	slurmd.c \
+	slurmd.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 slurmd_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
