@@ -409,6 +409,9 @@ extern char *gid_to_string(gid_t gid)
 {
 	char *result = NULL;
 
+	if (gid == SLURM_AUTH_NOBODY)
+		return xstrdup(SLURM_AUTH_NOBODY_NAME);
+
 	if (!(result = gid_to_string_or_null(gid)))
 		return xstrdup_printf("%u", gid);
 
