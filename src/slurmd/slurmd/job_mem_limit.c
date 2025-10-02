@@ -197,31 +197,15 @@ extern void job_mem_limit_enforce(void)
 	job_cnt = 0;
 	job_limits_iter = list_iterator_create(job_limits_list);
 	while ((job_limits_ptr = list_next(job_limits_iter))) {
-		if (job_limits_ptr->job_mem == 0) /* no job limit */
-			continue;
-		for (i = 0; i < job_cnt; i++) {
-			if (job_mem_info_ptr[i].job_id !=
-			    job_limits_ptr->job_id)
-				continue;
-			job_mem_info_ptr[i].mem_limit =
-				MAX(job_mem_info_ptr[i].mem_limit,
-				    job_limits_ptr->job_mem);
-			break;
-		}
-		if (i < job_cnt) /* job already found & recorded */
-			continue;
 		job_mem_info_ptr[job_cnt].job_id = job_limits_ptr->job_id;
 		job_mem_info_ptr[job_cnt].mem_limit = job_limits_ptr->job_mem;
+		job_mem_info_ptr[job_cnt].vsize_limit = job_limits_ptr->job_mem;
+		job_mem_info_ptr[job_cnt].vsize_limit *=
+			(slurm_conf.vsize_factor / 100.0);
 		job_cnt++;
 	}
 	list_iterator_destroy(job_limits_iter);
 	slurm_mutex_unlock(&job_limits_mutex);
-
-	for (i = 0; i < job_cnt; i++) {
-		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].mem_limit;
-		job_mem_info_ptr[i].vsize_limit *=
-			(slurm_conf.vsize_factor / 100.0);
-	}
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	step_iter = list_iterator_create(steps);
