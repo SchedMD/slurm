@@ -35,9 +35,11 @@
 
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/stepd_api.h"
 #include "src/common/xmalloc.h"
 
 #include "src/slurmd/slurmd/job_mem_limit.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 extern void job_mem_limit_init(void)
 {
@@ -57,6 +59,17 @@ extern void job_mem_limit_fini(void)
 	slurm_mutex_lock(&job_limits_mutex);
 	FREE_NULL_LIST(job_limits_list);
 	slurm_mutex_unlock(&job_limits_mutex);
+}
+
+static int _match_step(void *x, void *key)
+{
+	job_mem_limits_t *job_limits_ptr = x;
+	step_loc_t *step_ptr = key;
+
+	if ((job_limits_ptr->step_id.job_id == step_ptr->step_id.job_id) &&
+	    (job_limits_ptr->step_id.step_id == step_ptr->step_id.step_id))
+		return 1;
+	return 0;
 }
 
 extern void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
@@ -83,4 +96,62 @@ extern void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	msg.msg_type = REQUEST_CANCEL_JOB_STEP;
 	msg.data = &kill_req;
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
+}
+
+/* Call only with job_limits_mutex locked */
+extern void _load_job_limits(void)
+{
+	list_t *steps;
+	list_itr_t *step_iter;
+	step_loc_t *stepd;
+	int fd;
+	job_mem_limits_t *job_limits_ptr;
+	slurmstepd_mem_info_t stepd_mem_info;
+
+	job_limits_loaded = true;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	step_iter = list_iterator_create(steps);
+	while ((stepd = list_next(step_iter))) {
+		job_limits_ptr = list_find_first(job_limits_list,
+						 _match_step, stepd);
+		if (job_limits_ptr)	/* already processed */
+			continue;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd == -1)
+			continue;	/* step completed */
+
+		if (stepd_get_mem_limits(fd, stepd->protocol_version,
+					 &stepd_mem_info) != SLURM_SUCCESS) {
+			error("Error reading %ps memory limits from slurmstepd",
+			      &stepd->step_id);
+			close(fd);
+			continue;
+		}
+
+
+		if ((stepd_mem_info.job_mem_limit
+		     || stepd_mem_info.step_mem_limit)) {
+			/* create entry for this job */
+			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
+			memcpy(&job_limits_ptr->step_id, &stepd->step_id,
+			       sizeof(job_limits_ptr->step_id));
+			job_limits_ptr->job_mem  =
+				stepd_mem_info.job_mem_limit;
+			job_limits_ptr->step_mem =
+				stepd_mem_info.step_mem_limit;
+#if _LIMIT_INFO
+			info("RecLim %ps job_mem:%"PRIu64""
+			     " step_mem:%"PRIu64"",
+			     &job_limits_ptr->step_id,
+			     job_limits_ptr->job_mem,
+			     job_limits_ptr->step_mem);
+#endif
+			list_append(job_limits_list, job_limits_ptr);
+		}
+		close(fd);
+	}
+	list_iterator_destroy(step_iter);
+	FREE_NULL_LIST(steps);
 }
