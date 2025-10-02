@@ -46,7 +46,6 @@
 typedef struct {
 	uint64_t job_mem;
 	slurm_step_id_t step_id;
-	uint64_t step_mem;
 } job_mem_limits_t;
 
 static int _extract_limits_from_step(void *x, void *arg);
@@ -152,17 +151,15 @@ static int _extract_limits_from_step(void *x, void *arg)
 		return 1;
 	}
 
-	if ((stepd_mem_info.job_mem_limit || stepd_mem_info.step_mem_limit)) {
+	if (stepd_mem_info.job_mem_limit) {
 		/* create entry for this step */
 		step_limits = xmalloc(sizeof(*step_limits));
 		memcpy(&step_limits->step_id, &stepd->step_id,
 		       sizeof(step_limits->step_id));
 		step_limits->job_mem = stepd_mem_info.job_mem_limit;
-		step_limits->step_mem = stepd_mem_info.step_mem_limit;
 #if _LIMIT_INFO
-		info("RecLim %ps job_mem:%"PRIu64" step_mem:%"PRIu64"",
-		     &step_limits->step_id, step_limits->job_mem,
-		     step_limits->step_mem);
+		info("RecLim %ps job_mem:%"PRIu64,
+		     &step_limits->step_id, step_limits->job_mem);
 #endif
 		list_append(job_limits_list, step_limits);
 	}
@@ -335,7 +332,7 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 	if (!slurm_conf.job_acct_oom_kill)
 		return;
 
-	if (!job_mem_limit && !step_mem_limit)
+	if (!job_mem_limit)
 		return;
 
 	memcpy(&step_info.step_id, step_id, sizeof(step_info.step_id));
@@ -348,11 +345,9 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 		memcpy(&job_limits_ptr->step_id, step_id,
 		       sizeof(job_limits_ptr->step_id));
 		job_limits_ptr->job_mem = job_mem_limit;
-		job_limits_ptr->step_mem = step_mem_limit;
 #if _LIMIT_INFO
-		info("AddLim %ps job_mem:%"PRIu64" step_mem:%"PRIu64"",
-		     &job_limits_ptr->step_id, job_limits_ptr->job_mem,
-		     job_limits_ptr->step_mem);
+		info("AddLim %ps job_mem:%"PRIu64,
+		     &job_limits_ptr->step_id, job_limits_ptr->job_mem);
 #endif
 		list_append(job_limits_list, job_limits_ptr);
 	}
