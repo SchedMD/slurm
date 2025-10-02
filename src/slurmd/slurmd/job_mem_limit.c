@@ -129,7 +129,6 @@ static int _extract_limit_from_step(void *x, void *arg)
 {
 	step_loc_t *stepd = x;
 	int fd;
-	job_mem_limits_t *step_limits;
 	slurmstepd_mem_info_t stepd_mem_info;
 
 	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
@@ -146,21 +145,21 @@ static int _extract_limit_from_step(void *x, void *arg)
 	}
 
 	if (stepd_mem_info.job_mem_limit) {
-		step_limits = list_find_first(job_limits_list, _match_job,
-					      &stepd->step_id.job_id);
+		job_mem_limits_t *limits =
+			list_find_first(job_limits_list, _match_job,
+					&stepd->step_id.job_id);
 
-		if (step_limits) {
-			if (stepd_mem_info.job_mem_limit > step_limits->job_mem)
-				step_limits->job_mem =
-					stepd_mem_info.job_mem_limit;
+		if (limits) {
+			if (stepd_mem_info.job_mem_limit > limits->job_mem)
+				limits->job_mem = stepd_mem_info.job_mem_limit;
 		} else {
 			/* create entry for this step */
-			step_limits = xmalloc(sizeof(*step_limits));
-			step_limits->job_id = stepd->step_id.job_id;
-			step_limits->job_mem = stepd_mem_info.job_mem_limit;
+			limits = xmalloc(sizeof(*limits));
+			limits->job_id = stepd->step_id.job_id;
+			limits->job_mem = stepd_mem_info.job_mem_limit;
 			debug2("%s: RecLim JobId=%u job_mem:%"PRIu64,
-			       __func__, stepd->step_id.job_id, step_limits->job_mem);
-			list_append(job_limits_list, step_limits);
+			       __func__, stepd->step_id.job_id, limits->job_mem);
+			list_append(job_limits_list, limits);
 		}
 	}
 	close(fd);
