@@ -106,7 +106,6 @@ void slurm_bit_free(bitstr_t **b);
 bitstr_t *slurm_bit_realloc(bitstr_t **b, bitoff_t nbits);
 
 /* new */
-bitoff_t bit_noc(bitstr_t *b, int32_t n, int32_t seed);
 bitoff_t bit_size(bitstr_t *b);
 void	bit_and(bitstr_t *b1, bitstr_t *b2);
 void	bit_and_not(bitstr_t *b1, bitstr_t *b2);

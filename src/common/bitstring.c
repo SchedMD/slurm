@@ -156,7 +156,6 @@ strong_alias(bit_overlap_any,	slurm_bit_overlap_any);
 strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
-strong_alias(bit_noc,		slurm_bit_noc);
 strong_alias(bit_copybits,	slurm_bit_copybits);
 strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
 
@@ -516,55 +515,6 @@ bit_ffc(bitstr_t *b)
 		}
 	}
 	return value;
-}
-
-/* Find n contiguous bits clear in b starting at some offset.
- *   b (IN)             bitstring to search
- *   n (IN)             number of bits needed
- *   seed (IN)          position at which to begin search
- *   RETURN             position of first bit in range (-1 if none found)
- */
-bitoff_t
-bit_noc(bitstr_t *b, int32_t n, int32_t seed)
-{
-	bitoff_t value = -1;
-	bitoff_t bit;
-	int32_t cnt = 0;
-
-	_assert_bitstr_valid(b);
-	xassert(n > 0 && n <= _bitstr_bits(b));
-
-	if ((seed + n) >= _bitstr_bits(b))
-		seed = _bitstr_bits(b);	/* skip offset test, too small */
-
-	for (bit = seed; bit < _bitstr_bits(b); bit++) {	/* start at offset */
-		if (bit_test(b, bit)) {		/* fail */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				return value;
-			}
-		}
-	}
-
-	cnt = 0;	/* start at beginning */
-	for (bit = 0; bit < _bitstr_bits(b); bit++) {
-		if (bit_test(b, bit)) {		/* fail */
-			if (bit >= seed)
-				break;
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				return value;
-			}
-		}
-	}
-
-	return -1;
 }
 
 /*
