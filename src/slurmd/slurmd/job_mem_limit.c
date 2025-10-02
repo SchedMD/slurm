@@ -98,58 +98,56 @@ extern void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
 	slurm_send_only_controller_msg(&msg, working_cluster_rec);
 }
 
+static int _extract_limits_from_step(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	int fd;
+	job_mem_limits_t *step_limits;
+	slurmstepd_mem_info_t stepd_mem_info;
+
+	step_limits = list_find_first(job_limits_list, _match_step, stepd);
+	if (step_limits) /* already processed */
+		return 1;
+	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
+			   &stepd->protocol_version);
+	if (fd == -1)
+		return 1; /* step completed */
+
+	if (stepd_get_mem_limits(fd, stepd->protocol_version,
+				 &stepd_mem_info) != SLURM_SUCCESS) {
+		error("Error reading %ps memory limits from slurmstepd",
+		      &stepd->step_id);
+		close(fd);
+		return 1;
+	}
+
+	if ((stepd_mem_info.job_mem_limit || stepd_mem_info.step_mem_limit)) {
+		/* create entry for this step */
+		step_limits = xmalloc(sizeof(*step_limits));
+		memcpy(&step_limits->step_id, &stepd->step_id,
+		       sizeof(step_limits->step_id));
+		step_limits->job_mem = stepd_mem_info.job_mem_limit;
+		step_limits->step_mem = stepd_mem_info.step_mem_limit;
+#if _LIMIT_INFO
+		info("RecLim %ps job_mem:%"PRIu64" step_mem:%"PRIu64"",
+		     &step_limits->step_id, step_limits->job_mem,
+		     step_limits->step_mem);
+#endif
+		list_append(job_limits_list, step_limits);
+	}
+	close(fd);
+
+	return 1;
+}
+
 /* Call only with job_limits_mutex locked */
 extern void _load_job_limits(void)
 {
 	list_t *steps;
-	list_itr_t *step_iter;
-	step_loc_t *stepd;
-	int fd;
-	job_mem_limits_t *job_limits_ptr;
-	slurmstepd_mem_info_t stepd_mem_info;
 
 	job_limits_loaded = true;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	step_iter = list_iterator_create(steps);
-	while ((stepd = list_next(step_iter))) {
-		job_limits_ptr =
-			list_find_first(job_limits_list, _match_step, stepd);
-		if (job_limits_ptr) /* already processed */
-			continue;
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1)
-			continue; /* step completed */
-
-		if (stepd_get_mem_limits(fd, stepd->protocol_version,
-					 &stepd_mem_info) != SLURM_SUCCESS) {
-			error("Error reading %ps memory limits from slurmstepd",
-			      &stepd->step_id);
-			close(fd);
-			continue;
-		}
-
-		if ((stepd_mem_info.job_mem_limit ||
-		     stepd_mem_info.step_mem_limit)) {
-			/* create entry for this job */
-			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			memcpy(&job_limits_ptr->step_id, &stepd->step_id,
-			       sizeof(job_limits_ptr->step_id));
-			job_limits_ptr->job_mem = stepd_mem_info.job_mem_limit;
-			job_limits_ptr->step_mem =
-				stepd_mem_info.step_mem_limit;
-#if _LIMIT_INFO
-			info("RecLim %ps job_mem:%"PRIu64""
-			     " step_mem:%"PRIu64"",
-			     &job_limits_ptr->step_id,
-			     job_limits_ptr->job_mem,
-			     job_limits_ptr->step_mem);
-#endif
-			list_append(job_limits_list, job_limits_ptr);
-		}
-		close(fd);
-	}
-	list_iterator_destroy(step_iter);
+	list_for_each(steps, _extract_limits_from_step, NULL);
 	FREE_NULL_LIST(steps);
 }
