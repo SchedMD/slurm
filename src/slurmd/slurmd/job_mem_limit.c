@@ -113,14 +113,14 @@ extern void _load_job_limits(void)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	step_iter = list_iterator_create(steps);
 	while ((stepd = list_next(step_iter))) {
-		job_limits_ptr = list_find_first(job_limits_list,
-						 _match_step, stepd);
-		if (job_limits_ptr)	/* already processed */
+		job_limits_ptr =
+			list_find_first(job_limits_list, _match_step, stepd);
+		if (job_limits_ptr) /* already processed */
 			continue;
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   &stepd->step_id, &stepd->protocol_version);
 		if (fd == -1)
-			continue;	/* step completed */
+			continue; /* step completed */
 
 		if (stepd_get_mem_limits(fd, stepd->protocol_version,
 					 &stepd_mem_info) != SLURM_SUCCESS) {
@@ -130,15 +130,13 @@ extern void _load_job_limits(void)
 			continue;
 		}
 
-
-		if ((stepd_mem_info.job_mem_limit
-		     || stepd_mem_info.step_mem_limit)) {
+		if ((stepd_mem_info.job_mem_limit ||
+		     stepd_mem_info.step_mem_limit)) {
 			/* create entry for this job */
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
 			memcpy(&job_limits_ptr->step_id, &stepd->step_id,
 			       sizeof(job_limits_ptr->step_id));
-			job_limits_ptr->job_mem  =
-				stepd_mem_info.job_mem_limit;
+			job_limits_ptr->job_mem = stepd_mem_info.job_mem_limit;
 			job_limits_ptr->step_mem =
 				stepd_mem_info.step_mem_limit;
 #if _LIMIT_INFO
