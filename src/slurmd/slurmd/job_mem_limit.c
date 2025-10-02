@@ -44,8 +44,8 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 typedef struct {
+	uint32_t job_id;
 	uint64_t job_mem;
-	slurm_step_id_t step_id;
 } job_mem_limits_t;
 
 static int _extract_limit_from_step(void *x, void *arg);
@@ -86,7 +86,7 @@ static int _match_job(void *x, void *key)
 	job_mem_limits_t *job_limits_ptr = x;
 	uint32_t *job_id = key;
 
-	if (job_limits_ptr->step_id.job_id == *job_id)
+	if (job_limits_ptr->job_id == *job_id)
 		return 1;
 	return 0;
 }
@@ -148,11 +148,10 @@ static int _extract_limit_from_step(void *x, void *arg)
 		} else {
 			/* create entry for this step */
 			step_limits = xmalloc(sizeof(*step_limits));
-			memcpy(&step_limits->step_id, &stepd->step_id,
-			       sizeof(step_limits->step_id));
+			step_limits->job_id = stepd->step_id.job_id;
 			step_limits->job_mem = stepd_mem_info.job_mem_limit;
-			debug2("%s: RecLim %ps job_mem:%"PRIu64,
-			       __func__, &step_limits->step_id, step_limits->job_mem);
+			debug2("%s: RecLim JobId=%u job_mem:%"PRIu64,
+			       __func__, stepd->step_id.job_id, step_limits->job_mem);
 			list_append(job_limits_list, step_limits);
 		}
 	}
@@ -202,7 +201,7 @@ extern void job_mem_limit_enforce(void)
 			continue;
 		for (i = 0; i < job_cnt; i++) {
 			if (job_mem_info_ptr[i].job_id !=
-			    job_limits_ptr->step_id.job_id)
+			    job_limits_ptr->job_id)
 				continue;
 			job_mem_info_ptr[i].mem_limit =
 				MAX(job_mem_info_ptr[i].mem_limit,
@@ -211,8 +210,7 @@ extern void job_mem_limit_enforce(void)
 		}
 		if (i < job_cnt) /* job already found & recorded */
 			continue;
-		job_mem_info_ptr[job_cnt].job_id =
-			job_limits_ptr->step_id.job_id;
+		job_mem_info_ptr[job_cnt].job_id = job_limits_ptr->job_id;
 		job_mem_info_ptr[job_cnt].mem_limit = job_limits_ptr->job_mem;
 		job_cnt++;
 	}
@@ -332,11 +330,10 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 		list_find_first(job_limits_list, _match_job, &step_id->job_id);
 	if (!job_limits_ptr) {
 		job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-		memcpy(&job_limits_ptr->step_id, step_id,
-		       sizeof(job_limits_ptr->step_id));
+		job_limits_ptr->job_id = step_id->job_id;
 		job_limits_ptr->job_mem = job_mem_limit;
-		debug2("%s: AddLim %ps job_mem:%"PRIu64,
-		       __func__, &job_limits_ptr->step_id,
+		debug2("%s: AddLim JobId=%u job_mem:%"PRIu64,
+		       __func__, job_limits_ptr->job_id,
 		       job_limits_ptr->job_mem);
 		list_append(job_limits_list, job_limits_ptr);
 	} else if (job_mem_limit > job_limits_ptr->job_mem) {
