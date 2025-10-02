@@ -116,8 +116,6 @@
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-#define _LIMIT_INFO 0
-
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 

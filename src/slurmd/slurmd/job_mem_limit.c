@@ -154,10 +154,8 @@ static int _extract_limit_from_step(void *x, void *arg)
 		memcpy(&step_limits->step_id, &stepd->step_id,
 		       sizeof(step_limits->step_id));
 		step_limits->job_mem = stepd_mem_info.job_mem_limit;
-#if _LIMIT_INFO
-		info("RecLim %ps job_mem:%"PRIu64,
-		     &step_limits->step_id, step_limits->job_mem);
-#endif
+		debug2("%s: RecLim %ps job_mem:%"PRIu64,
+		       __func__, &step_limits->step_id, step_limits->job_mem);
 		list_append(job_limits_list, step_limits);
 	}
 	close(fd);
@@ -261,10 +259,8 @@ extern void job_mem_limit_enforce(void)
 						    resp->jobacct,
 					    JOBACCT_DATA_TOT_VSIZE, &step_vsize,
 					    stepd->protocol_version);
-#if _LIMIT_INFO
-			info("%ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
-			     &stepd->step_id, step_rss, step_vsize);
-#endif
+			debug2("%s: %ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
+			       __func__, &stepd->step_id, step_rss, step_vsize);
 			if (step_rss != INFINITE64) {
 				step_rss /= 1048576; /* B to MB */
 				step_rss = MAX(step_rss, 1);
@@ -341,10 +337,9 @@ extern void job_mem_limit_register(slurm_step_id_t *step_id,
 		memcpy(&job_limits_ptr->step_id, step_id,
 		       sizeof(job_limits_ptr->step_id));
 		job_limits_ptr->job_mem = job_mem_limit;
-#if _LIMIT_INFO
-		info("AddLim %ps job_mem:%"PRIu64,
-		     &job_limits_ptr->step_id, job_limits_ptr->job_mem);
-#endif
+		debug2("%s: AddLim %ps job_mem:%"PRIu64,
+		       __func__, &job_limits_ptr->step_id,
+		       job_limits_ptr->job_mem);
 		list_append(job_limits_list, job_limits_ptr);
 	}
 	slurm_mutex_unlock(&job_limits_mutex);
