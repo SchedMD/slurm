@@ -86,10 +86,56 @@ const openapi_resp_meta_t plugin_meta = {
 	}
 };
 
+static const char *tags[] = { "util", NULL };
+
 #define OP_FLAGS \
 	(OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT | OP_BIND_NO_SLURMDBD)
 
-const openapi_path_binding_t openapi_paths[] = { { 0 } };
+const openapi_path_binding_t openapi_paths[] = {
+	{
+		.path = "/util/{data_parser}/hostnames",
+		.callback = op_handler_hostnames,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "Convert a hostlist expression into array of host names",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_HOSTNAMES_REQ_RESP,
+					.description = "Array of host names",
+				},
+				.body = {
+					.type = DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP,
+					.description = "Hostlist expression",
+				},
+			},
+			{ 0 }
+		},
+		.flags = OP_FLAGS,
+	},
+	{
+		.path = "/util/{data_parser}/hostlist",
+		.callback = op_handler_hostlist,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "Convert an array of host names into hostlist expression",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP,
+					.description = "Hostlist expression",
+				},
+				.body = {
+					.type = DATA_PARSER_OPENAPI_HOSTNAMES_REQ_RESP,
+					.description = "Array of host names",
+				},
+			},
+			{ 0 }
+		},
+		.flags = OP_FLAGS,
+	},
+	{ 0 }
+};
 
 extern void slurm_openapi_p_init(void)
 {

@@ -33,8 +33,57 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
+#include "src/common/xmalloc.h"
+
 #include "src/interfaces/data_parser.h"
 
 #include "src/slurmrestd/operations.h"
 
 #include "api.h"
+
+static int _convert_hostnames_hostlist(openapi_ctxt_t *ctxt,
+				       data_parser_type_t input_parser,
+				       data_parser_type_t output_parser)
+{
+	openapi_resp_single_t req = { 0 };
+	openapi_resp_single_t *req_ptr = &req; /* required for free macro */
+	openapi_resp_single_t resp = { 0 };
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+
+	if (!ctxt->query)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "unexpected empty query");
+
+	if (data_parser_g_parse(ctxt->parser, input_parser, &req, sizeof(req),
+				ctxt->query, ctxt->parent_path)) {
+		xfree(req.response);
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Rejecting request. Failure parsing request");
+	}
+
+	SWAP(resp.response, req.response);
+	rc = data_parser_g_dump(ctxt->parser, output_parser, &resp,
+				sizeof(resp), ctxt->resp);
+	xfree(resp.response);
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(req_ptr);
+	return rc;
+}
+
+extern int op_handler_hostlist(openapi_ctxt_t *ctxt)
+{
+	return _convert_hostnames_hostlist(
+		ctxt, DATA_PARSER_OPENAPI_HOSTNAMES_REQ_RESP,
+		DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP);
+}
+
+extern int op_handler_hostnames(openapi_ctxt_t *ctxt)
+{
+	return _convert_hostnames_hostlist(
+		ctxt, DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP,
+		DATA_PARSER_OPENAPI_HOSTNAMES_REQ_RESP);
+}

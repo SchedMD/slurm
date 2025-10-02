@@ -46,5 +46,7 @@ typedef openapi_ctxt_t ctxt_t;
 	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
 
 extern const openapi_path_binding_t openapi_paths[];
+extern int op_handler_hostlist(openapi_ctxt_t *ctxt);
+extern int op_handler_hostnames(openapi_ctxt_t *ctxt);
 
 #endif
