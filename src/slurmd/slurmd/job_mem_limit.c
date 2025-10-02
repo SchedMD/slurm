@@ -236,7 +236,7 @@ extern void job_mem_limit_enforce(void)
 		return;
 
 	slurm_mutex_lock(&job_limits_mutex);
-	if (list_count(job_limits_list) == 0) {
+	if (!list_count(job_limits_list)) {
 		slurm_mutex_unlock(&job_limits_mutex);
 		return;
 	}
@@ -262,7 +262,7 @@ extern void job_mem_limit_enforce(void)
 	FREE_NULL_LIST(steps);
 
 	for (int i = 0; i < job_cnt; i++) {
-		if (job_mem_info_ptr[i].mem_used == 0) {
+		if (!job_mem_info_ptr[i].mem_used) {
 			/* no steps found,
 			 * purge records for all steps of this job */
 			slurm_mutex_lock(&job_limits_mutex);
@@ -272,7 +272,7 @@ extern void job_mem_limit_enforce(void)
 			break;
 		}
 
-		if ((job_mem_info_ptr[i].mem_limit != 0) &&
+		if ((job_mem_info_ptr[i].mem_limit) &&
 		    (job_mem_info_ptr[i].mem_used >
 		     job_mem_info_ptr[i].mem_limit)) {
 			info("Job %u exceeded memory limit "
@@ -282,7 +282,7 @@ extern void job_mem_limit_enforce(void)
 			     job_mem_info_ptr[i].mem_limit);
 			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
 					       NO_VAL);
-		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
+		} else if ((job_mem_info_ptr[i].vsize_limit) &&
 			   (job_mem_info_ptr[i].vsize_used >
 			    job_mem_info_ptr[i].vsize_limit)) {
 			info("Job %u exceeded virtual memory limit "
