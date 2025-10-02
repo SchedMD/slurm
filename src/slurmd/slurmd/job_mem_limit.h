@@ -38,12 +38,6 @@
 
 #include "slurm/slurm.h"
 
-typedef struct {
-	uint64_t job_mem;
-	slurm_step_id_t step_id;
-	uint64_t step_mem;
-} job_mem_limits_t;
-
 extern pthread_mutex_t job_limits_mutex;
 extern list_t *job_limits_list;
 

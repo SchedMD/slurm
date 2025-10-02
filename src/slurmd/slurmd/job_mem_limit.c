@@ -43,6 +43,12 @@
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+typedef struct {
+	uint64_t job_mem;
+	slurm_step_id_t step_id;
+	uint64_t step_mem;
+} job_mem_limits_t;
+
 static int _extract_limits_from_step(void *x, void *arg);
 
 extern void job_mem_limit_init(void)
