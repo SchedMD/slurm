@@ -301,7 +301,6 @@ static void _read_slurm_cgroup_conf(void)
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN, _defunct_option},
 		{"CgroupMountpoint", S_P_STRING},
-		{"CgroupReleaseAgentDir", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_FLOAT},
@@ -353,10 +352,6 @@ static void _read_slurm_cgroup_conf(void)
 			xfree(slurm_cgroup_conf.cgroup_mountpoint);
 			slurm_cgroup_conf.cgroup_mountpoint = tmp_str;
 			tmp_str = NULL;
-		}
-		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
-			xfree(tmp_str);
-			fatal("Support for CgroupReleaseAgentDir option has been removed.");
 		}
 
 		/* Cores constraints related conf items */
