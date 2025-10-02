@@ -323,8 +323,7 @@ extern void job_mem_limit_enforce(void)
 }
 
 extern void job_mem_limit_register(slurm_step_id_t *step_id,
-				   uint64_t job_mem_limit,
-				   uint64_t step_mem_limit)
+				   uint64_t job_mem_limit)
 {
 	job_mem_limits_t *job_limits_ptr = NULL;
 	step_loc_t step_info;

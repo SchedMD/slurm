@@ -43,7 +43,6 @@ extern void job_mem_limit_fini(void);
 
 extern void job_mem_limit_enforce(void);
 extern void job_mem_limit_register(slurm_step_id_t *step_id,
-				   uint64_t job_mem_limit,
-				   uint64_t step_mem_limit);
+				   uint64_t job_mem_limit);
 
 #endif
