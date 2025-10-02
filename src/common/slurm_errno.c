@@ -1367,6 +1367,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_DATA_PARSER_INVALID_STATE),
 		"Parser went into an invalid state. Possible library issue.",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_DATA_PARSE_BAD_INPUT),
+		"Request to parse invalid data",
+	},
 
 	/* container  errors */
 	{
