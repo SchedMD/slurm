@@ -229,7 +229,7 @@ extern void job_mem_limit_enforce(void)
 	list_t *steps;
 	list_itr_t *job_limits_iter;
 	job_mem_limits_t *job_limits_ptr;
-	int i, job_cnt;
+	int job_cnt;
 	job_mem_info_t *job_mem_info_ptr = NULL;
 
 	if (!slurm_conf.job_acct_oom_kill)
@@ -261,7 +261,7 @@ extern void job_mem_limit_enforce(void)
 	list_for_each(steps, _add_step_usage, job_mem_info_ptr);
 	FREE_NULL_LIST(steps);
 
-	for (i = 0; i < job_cnt; i++) {
+	for (int i = 0; i < job_cnt; i++) {
 		if (job_mem_info_ptr[i].mem_used == 0) {
 			/* no steps found,
 			 * purge records for all steps of this job */
