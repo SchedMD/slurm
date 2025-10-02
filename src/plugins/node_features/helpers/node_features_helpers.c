@@ -1060,10 +1060,3 @@ extern int node_features_p_overlap(bitstr_t *active_bitmap)
 	/* Executed on slurmctld and not used by this plugin */
 	return bit_set_count(active_bitmap);
 }
-
-extern bool node_features_p_node_update_valid(void *node_ptr,
-					      update_node_msg_t *update_node_msg)
-{
-	/* Executed on slurmctld and not used by this plugin */
-	return true;
-}

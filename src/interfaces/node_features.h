@@ -84,16 +84,6 @@ extern int node_features_g_node_set(char *active_features, bool *need_reboot);
 extern void node_features_g_node_state(char **avail_modes, char **current_mode);
 
 /*
- * Return TRUE if the specified node update request is valid with respect
- * to features changes (i.e. don't permit a non-KNL node to set KNL features).
- *
- * node_ptr IN - Pointer to node_record_t record
- * update_node_msg IN - Pointer to update request
- */
-extern bool node_features_g_node_update_valid(void *node_ptr,
-					update_node_msg_t *update_node_msg);
-
-/*
  * Translate a node's feature specification by replacing any features associated
  *	with this plugin in the original value with the new values, preserving
  *	any features that are not associated with this plugin

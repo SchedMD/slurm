@@ -1599,12 +1599,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 		if (update_node_msg->features || update_node_msg->features_act) {
 			char *features_act = NULL, *features_avail = NULL;
-			if (!node_features_g_node_update_valid(node_ptr,
-							 update_node_msg)) {
-				error_code = ESLURM_INVALID_FEATURE;
-				xfree(update_node_msg->features);
-				xfree(update_node_msg->features_act);
-			}
+
 			if (update_node_msg->features_act)
 				features_act = update_node_msg->features_act;
 			else
