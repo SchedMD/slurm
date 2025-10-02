@@ -60,7 +60,7 @@ static int _process_and_close_reply_msg(DBusMessage *msg)
 		case DBUS_TYPE_SIGNATURE:
 			rc = SLURM_ERROR;
 			dbus_message_iter_get_basic(&itr, &tmp_str);
-			log_flag(CGROUP, "The unit may already exist or we got an error: %s",
+			error("The unit may already exist or we got an error: %s",
 				 tmp_str);
 			break;
 		default:
