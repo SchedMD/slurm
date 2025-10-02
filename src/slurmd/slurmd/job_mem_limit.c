@@ -176,12 +176,13 @@ extern void _enforce_job_mem_limit(void)
 	uint64_t step_rss, step_vsize;
 	slurm_step_id_t step_id = { 0 };
 	job_step_stat_t *resp = NULL;
+
 	struct job_mem_info {
 		uint32_t job_id;
-		uint64_t mem_limit;	/* MB */
-		uint64_t mem_used;	/* MB */
-		uint64_t vsize_limit;	/* MB */
-		uint64_t vsize_used;	/* MB */
+		uint64_t mem_limit; /* MB */
+		uint64_t mem_used; /* MB */
+		uint64_t vsize_limit; /* MB */
+		uint64_t vsize_used; /* MB */
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 
@@ -202,18 +203,18 @@ extern void _enforce_job_mem_limit(void)
 	job_cnt = 0;
 	job_limits_iter = list_iterator_create(job_limits_list);
 	while ((job_limits_ptr = list_next(job_limits_iter))) {
-		if (job_limits_ptr->job_mem == 0) 	/* no job limit */
+		if (job_limits_ptr->job_mem == 0) /* no job limit */
 			continue;
-		for (i=0; i<job_cnt; i++) {
+		for (i = 0; i < job_cnt; i++) {
 			if (job_mem_info_ptr[i].job_id !=
 			    job_limits_ptr->step_id.job_id)
 				continue;
-			job_mem_info_ptr[i].mem_limit = MAX(
-				job_mem_info_ptr[i].mem_limit,
-				job_limits_ptr->job_mem);
+			job_mem_info_ptr[i].mem_limit =
+				MAX(job_mem_info_ptr[i].mem_limit,
+				    job_limits_ptr->job_mem);
 			break;
 		}
-		if (i < job_cnt)	/* job already found & recorded */
+		if (i < job_cnt) /* job already found & recorded */
 			continue;
 		job_mem_info_ptr[job_cnt].job_id =
 			job_limits_ptr->step_id.job_id;
@@ -223,9 +224,8 @@ extern void _enforce_job_mem_limit(void)
 	list_iterator_destroy(job_limits_iter);
 	slurm_mutex_unlock(&job_limits_mutex);
 
-	for (i=0; i<job_cnt; i++) {
-		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].
-			mem_limit;
+	for (i = 0; i < job_cnt; i++) {
+		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].mem_limit;
 		job_mem_info_ptr[i].vsize_limit *=
 			(slurm_conf.vsize_factor / 100.0);
 	}
@@ -233,48 +233,46 @@ extern void _enforce_job_mem_limit(void)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	step_iter = list_iterator_create(steps);
 	while ((stepd = list_next(step_iter))) {
-		for (job_inx=0; job_inx<job_cnt; job_inx++) {
+		for (job_inx = 0; job_inx < job_cnt; job_inx++) {
 			if (job_mem_info_ptr[job_inx].job_id ==
 			    stepd->step_id.job_id)
 				break;
 		}
 		if (job_inx >= job_cnt)
-			continue;	/* job/step not being tracked */
+			continue; /* job/step not being tracked */
 
 		fd = stepd_connect(stepd->directory, stepd->nodename,
 				   &stepd->step_id, &stepd->protocol_version);
 		if (fd == -1)
-			continue;	/* step completed */
+			continue; /* step completed */
 
 		memcpy(&step_id, &stepd->step_id, sizeof(step_id));
 
 		resp = xmalloc(sizeof(job_step_stat_t));
 
-		if ((!stepd_stat_jobacct(fd, stepd->protocol_version,
-					 &step_id, resp)) &&
+		if ((!stepd_stat_jobacct(fd, stepd->protocol_version, &step_id,
+					 resp)) &&
 		    (resp->jobacct)) {
 			/* resp->jobacct is NULL if account is disabled */
 			jobacctinfo_getinfo((struct jobacctinfo *)
-					    resp->jobacct,
-					    JOBACCT_DATA_TOT_RSS,
-					    &step_rss,
+						    resp->jobacct,
+					    JOBACCT_DATA_TOT_RSS, &step_rss,
 					    stepd->protocol_version);
 			jobacctinfo_getinfo((struct jobacctinfo *)
-					    resp->jobacct,
-					    JOBACCT_DATA_TOT_VSIZE,
-					    &step_vsize,
+						    resp->jobacct,
+					    JOBACCT_DATA_TOT_VSIZE, &step_vsize,
 					    stepd->protocol_version);
 #if _LIMIT_INFO
 			info("%ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
 			     &stepd->step_id, step_rss, step_vsize);
 #endif
 			if (step_rss != INFINITE64) {
-				step_rss /= 1048576;	/* B to MB */
+				step_rss /= 1048576; /* B to MB */
 				step_rss = MAX(step_rss, 1);
 				job_mem_info_ptr[job_inx].mem_used += step_rss;
 			}
 			if (step_vsize != INFINITE64) {
-				step_vsize /= 1048576;	/* B to MB */
+				step_vsize /= 1048576; /* B to MB */
 				step_vsize = MAX(step_vsize, 1);
 				job_mem_info_ptr[job_inx].vsize_used +=
 					step_vsize;
@@ -286,7 +284,7 @@ extern void _enforce_job_mem_limit(void)
 	list_iterator_destroy(step_iter);
 	FREE_NULL_LIST(steps);
 
-	for (i=0; i<job_cnt; i++) {
+	for (i = 0; i < job_cnt; i++) {
 		if (job_mem_info_ptr[i].mem_used == 0) {
 			/* no steps found,
 			 * purge records for all steps of this job */
