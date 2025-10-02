@@ -174,7 +174,6 @@ static int _add_step_usage(void *x, void *arg)
 	job_mem_info_t *job_mem_info_ptr = arg;
 	job_step_stat_t *resp = NULL;
 	uint64_t step_rss = 0, step_vsize = 0;
-	slurm_step_id_t step_id = { 0 };
 	int fd = -1;
 
 	while (job_mem_info_ptr->job_id) {
@@ -192,11 +191,9 @@ static int _add_step_usage(void *x, void *arg)
 	if (fd == -1)
 		return 1; /* step completed */
 
-	memcpy(&step_id, &stepd->step_id, sizeof(step_id));
-
 	resp = xmalloc(sizeof(job_step_stat_t));
 
-	if ((!stepd_stat_jobacct(fd, stepd->protocol_version, &step_id,
+	if ((!stepd_stat_jobacct(fd, stepd->protocol_version, &stepd->step_id,
 				 resp)) &&
 	    (resp->jobacct)) {
 		/* resp->jobacct is NULL if account is disabled */
