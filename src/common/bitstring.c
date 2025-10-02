@@ -158,7 +158,6 @@ strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
 strong_alias(bit_nffc,		slurm_bit_nffc);
 strong_alias(bit_noc,		slurm_bit_noc);
-strong_alias(bit_nffs,		slurm_bit_nffs);
 strong_alias(bit_copybits,	slurm_bit_copybits);
 strong_alias(bit_get_bit_num,	slurm_bit_get_bit_num);
 
@@ -597,36 +596,6 @@ bit_noc(bitstr_t *b, int32_t n, int32_t seed)
 	}
 
 	return -1;
-}
-
-/* Find the first n contiguous bits set in b.
- *   b (IN)             bitstring to search
- *   n (IN)             number of bits needed
- *   RETURN             position of first bit in range (-1 if none found)
- */
-bitoff_t
-bit_nffs(bitstr_t *b, int32_t n)
-{
-	bitoff_t value = -1;
-	bitoff_t bit;
-	int32_t cnt = 0;
-
-	_assert_bitstr_valid(b);
-	xassert(n > 0 && n <= _bitstr_bits(b));
-
-	for (bit = 0; bit <= _bitstr_bits(b) - n; bit++) {
-		if (!bit_test(b, bit)) {	/* fail */
-			cnt = 0;
-		} else {
-			cnt++;
-			if (cnt >= n) {
-				value = bit - (cnt - 1);
-				break;
-			}
-		}
-	}
-
-	return value;
 }
 
 /*

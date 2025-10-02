@@ -1815,9 +1815,6 @@ bitoff_t
 slurm_bit_nffc(bitstr_t *b, int n)
 
 bitoff_t
-slurm_bit_nffs(bitstr_t *b, int n)
-
-bitoff_t
 slurm_bit_noc(bitstr_t *b, int n, int seed)
 
 bitoff_t
