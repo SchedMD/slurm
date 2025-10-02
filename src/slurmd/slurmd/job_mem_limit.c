@@ -166,7 +166,7 @@ static void _load_job_limits(void)
 
 /* Enforce job memory limits here in slurmd. Step memory limits are
  * enforced within slurmstepd (using jobacct_gather plugin). */
-extern void _enforce_job_mem_limit(void)
+extern void job_mem_limit_enforce(void)
 {
 	list_t *steps;
 	list_itr_t *step_iter, *job_limits_iter;

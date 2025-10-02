@@ -49,6 +49,6 @@ extern bool job_limits_loaded;
 extern void job_mem_limit_init(void);
 extern void job_mem_limit_fini(void);
 
-extern void _enforce_job_mem_limit(void);
+extern void job_mem_limit_enforce(void);
 
 #endif

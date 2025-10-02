@@ -2917,7 +2917,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 	slurm_send_node_msg(msg->conn, &resp_msg);
 
 	/* Take this opportunity to enforce any job memory limits */
-	_enforce_job_mem_limit();
+	job_mem_limit_enforce();
 	/* Clear up any stalled file transfers as well */
 	_file_bcast_cleanup();
 
@@ -2944,7 +2944,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 	run_script_health_check();
 
 	/* Take this opportunity to enforce any job memory limits */
-	_enforce_job_mem_limit();
+	job_mem_limit_enforce();
 	/* Clear up any stalled file transfers as well */
 	_file_bcast_cleanup();
 }
