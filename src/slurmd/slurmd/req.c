@@ -156,8 +156,7 @@ static void _launch_complete_wait(uint32_t job_id);
 static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
 static bool _launch_job_test(uint32_t job_id, bool batch_step);
 static void _note_batch_job_finished(uint32_t job_id);
-static int  _prolog_is_running (uint32_t jobid);
-static int  _step_limits_match(void *x, void *key);
+static int _prolog_is_running(uint32_t jobid);
 static void _rpc_terminate_job(slurm_msg_t *msg);
 static void _file_bcast_cleanup(void);
 static int  _file_bcast_register_file(slurm_msg_t *msg,
@@ -1488,7 +1487,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostlist_t *step_hset = NULL;
-	job_mem_limits_t *job_limits_ptr;
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
 
@@ -1633,31 +1631,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	node_features_g_step_config(mem_sort, numa_bitmap);
 	FREE_NULL_BITMAP(numa_bitmap);
 
-	if (req->job_mem_lim || req->step_mem_lim) {
-		step_loc_t step_info;
-		slurm_mutex_lock(&job_limits_mutex);
-		memcpy(&step_info.step_id, &req->step_id,
-		       sizeof(step_info.step_id));
-		job_limits_ptr = list_find_first(job_limits_list,
-						 _step_limits_match,
-						 &step_info);
-		if (!job_limits_ptr) {
-			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			memcpy(&job_limits_ptr->step_id, &req->step_id,
-			       sizeof(job_limits_ptr->step_id));
-			job_limits_ptr->job_mem  = req->job_mem_lim;
-			job_limits_ptr->step_mem = req->step_mem_lim;
-#if _LIMIT_INFO
-			info("AddLim %ps job_mem:%"PRIu64" "
-			     "step_mem:%"PRIu64"",
-			     &job_limits_ptr->step_id,
-			     job_limits_ptr->job_mem,
-			     job_limits_ptr->step_mem);
-#endif
-			list_append(job_limits_list, job_limits_ptr);
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
-	}
+	job_mem_limit_register(&req->step_id, req->job_mem_lim,
+			       req->step_mem_lim);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
@@ -2041,40 +2016,19 @@ static int _convert_job_mem(slurm_msg_t *msg)
 static int _make_prolog_mem_container(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = msg->data;
-	job_mem_limits_t *job_limits_ptr;
-	step_loc_t step_info;
 	int rc = SLURM_SUCCESS;
+	slurm_step_id_t step_id = {
+		.job_id = req->job_id,
+		.step_id = SLURM_EXTERN_CONT,
+		.step_het_comp = NO_VAL,
+	};
 
 	/* Convert per-CPU mem limit */
 	if ((rc = _convert_job_mem(msg)) != SLURM_SUCCESS)
 		return rc;
 
-	if (req->job_mem_limit) {
-		slurm_mutex_lock(&job_limits_mutex);
-		step_info.step_id.job_id  = req->job_id;
-		step_info.step_id.step_id = SLURM_EXTERN_CONT;
-		step_info.step_id.step_het_comp = NO_VAL;
-		job_limits_ptr = list_find_first(job_limits_list,
-						 _step_limits_match,
-						 &step_info);
-		if (!job_limits_ptr) {
-			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			job_limits_ptr->step_id.job_id   = req->job_id;
-			job_limits_ptr->job_mem  = req->job_mem_limit;
-			job_limits_ptr->step_id.step_id  = SLURM_EXTERN_CONT;
-			job_limits_ptr->step_id.step_het_comp = NO_VAL;
-			job_limits_ptr->step_mem = req->job_mem_limit;
-#if _LIMIT_INFO
-			info("AddLim %ps job_mem:%"PRIu64""
-			     " step_mem:%"PRIu64"",
-			     &job_limits_ptr->step_id,
-			     job_limits_ptr->job_mem,
-			     job_limits_ptr->step_mem);
-#endif
-			list_append(job_limits_list, job_limits_ptr);
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
-	}
+	job_mem_limit_register(&step_id, req->job_mem_limit,
+			       req->job_mem_limit);
 
 	return rc;
 }
@@ -2882,17 +2836,6 @@ _rpc_reboot(slurm_msg_t *msg)
 
 	/* Never return a message, slurmctld does not expect one */
 	/* slurm_send_rc_msg(msg, rc); */
-}
-
-static int _step_limits_match(void *x, void *key)
-{
-	job_mem_limits_t *job_limits_ptr = (job_mem_limits_t *) x;
-	step_loc_t *step_ptr = (step_loc_t *) key;
-
-	if ((job_limits_ptr->step_id.job_id  == step_ptr->step_id.job_id) &&
-	    (job_limits_ptr->step_id.step_id == step_ptr->step_id.step_id))
-		return 1;
-	return 0;
 }
 
 static int _find_step_loc(void *x, void *key)
