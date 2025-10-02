@@ -38,9 +38,6 @@
 
 #include "slurm/slurm.h"
 
-extern pthread_mutex_t job_limits_mutex;
-extern list_t *job_limits_list;
-
 extern void job_mem_limit_init(void);
 extern void job_mem_limit_fini(void);
 

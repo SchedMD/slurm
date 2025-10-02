@@ -51,6 +51,9 @@ typedef struct {
 
 static int _extract_limits_from_step(void *x, void *arg);
 
+static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
+static list_t *job_limits_list = NULL;
+
 extern void job_mem_limit_init(void)
 {
 	list_t *steps = NULL;

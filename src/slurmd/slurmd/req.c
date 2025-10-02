@@ -195,9 +195,6 @@ static list_t *waiters = NULL;
 static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
 
-pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
-list_t *job_limits_list = NULL;
-
 static int next_fini_job_inx = 0;
 
 /* NUM_PARALLEL_SUSP_JOBS controls the number of jobs that can be suspended or
