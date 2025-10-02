@@ -38,4 +38,13 @@
 
 #include "src/slurmrestd/openapi.h"
 
+typedef openapi_ctxt_t ctxt_t;
+
+#define resp_error(ctxt, error_code, source, why, ...) \
+	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
+#define resp_warn(ctxt, source, why, ...) \
+	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
+
+extern const openapi_path_binding_t openapi_paths[];
+
 #endif

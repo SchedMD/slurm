@@ -33,6 +33,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdint.h>
+
+#include "src/common/log.h"
+
 #include "src/slurmrestd/openapi.h"
 
 #include "api.h"
@@ -66,3 +70,41 @@ const char plugin_name[] = "Slurm OpenAPI util";
 const char plugin_type[] = "openapi/util";
 const uint32_t plugin_id = 112;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+const openapi_resp_meta_t plugin_meta = {
+	.plugin = {
+		.type = (char *) plugin_type,
+		.name = (char *) plugin_name,
+	},
+	.slurm = {
+		.version = {
+			.major = SLURM_MAJOR,
+			.micro = SLURM_MICRO,
+			.minor = SLURM_MINOR,
+		},
+		.release = SLURM_VERSION_STRING,
+	}
+};
+
+#define OP_FLAGS \
+	(OP_BIND_DATA_PARSER | OP_BIND_OPENAPI_RESP_FMT | OP_BIND_NO_SLURMDBD)
+
+const openapi_path_binding_t openapi_paths[] = { { 0 } };
+
+extern void slurm_openapi_p_init(void)
+{
+	/* do nothing */
+}
+
+extern void slurm_openapi_p_fini(void)
+{
+	/* do nothing */
+}
+
+extern int slurm_openapi_p_get_paths(const openapi_path_binding_t **paths_ptr,
+				     const openapi_resp_meta_t **meta_ptr)
+{
+	*paths_ptr = openapi_paths;
+	*meta_ptr = &plugin_meta;
+	return SLURM_SUCCESS;
+}
