@@ -49,4 +49,6 @@ extern bool job_limits_loaded;
 extern void job_mem_limit_init(void);
 extern void job_mem_limit_fini(void);
 
+extern void _cancel_step_mem_limit(uint32_t job_id, uint32_t step_id);
+
 #endif
