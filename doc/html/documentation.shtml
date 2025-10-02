@@ -25,11 +25,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="job_state_codes.html">Job State Codes</a></li>
 <li><a href="job_exit_code.html">Job Exit Codes</a></li>
 <li><a href="resource_binding.html">Resource Binding</a></li>
-<li>Specific Systems
-<ul>
-<li><a href="intel_knl.html">Intel Knights Landing (KNL) User and Administrator Guide</a></li>
-</ul>
-</li>
 </ul>
 
 <h2 id="administrators">Slurm Administrators
@@ -136,6 +131,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 27 April 2025</p>
+<p style="text-align:center;">Last modified 23 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
