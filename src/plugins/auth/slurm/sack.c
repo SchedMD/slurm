@@ -183,7 +183,8 @@ static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 	uid_t uid = SLURM_AUTH_NOBODY;
 	gid_t gid = SLURM_AUTH_NOBODY;
 	pid_t pid = 0;
-	uint32_t rc = SLURM_ERROR;
+	int rc = EINVAL;
+	uint32_t verify_rc = SLURM_ERROR;
 	auth_cred_t *cred = new_cred();
 
 	safe_unpackstr(&cred->token, in);
@@ -193,11 +194,16 @@ static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 		goto unpack_error;
 	}
 
-	rc = htonl(verify_internal(cred, uid));
-	conmgr_queue_write_data(con, &rc, sizeof(uint32_t));
+	if ((rc = verify_internal(cred, uid)))
+		debug("%s: [%s] credential verification from process uid:%u gid:%u pid:%u failed: %s",
+		      __func__, conmgr_fd_get_name(con), uid, gid, pid,
+		      slurm_strerror(rc));
+
+	verify_rc = htonl(rc);
+	rc = conmgr_queue_write_data(con, &verify_rc, sizeof(verify_rc));
 
 	FREE_NULL_CRED(cred);
-	return SLURM_SUCCESS;
+	return rc;
 
 unpack_error:
 	FREE_NULL_CRED(cred);
