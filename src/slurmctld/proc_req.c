@@ -6943,22 +6943,29 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PROTOCOL) {
 		const char *p = rpc_num2string(msg->msg_type);
-		if (msg->pcon) {
+
+		if (msg->conmgr_con) {
+			info("%s: [%s] received opcode %s uid %u",
+			     __func__, conmgr_con_get_name(msg->conmgr_con), p,
+			     msg->auth_uid);
+		} else if (msg->pcon) {
 			info("%s: received opcode %s from persist conn on (%s)%s uid %u",
 			     __func__, p, msg->pcon->cluster_name,
 			     msg->pcon->rem_host, msg->auth_uid);
 		} else if (msg->address.ss_family != AF_UNSPEC) {
 			info("%s: received opcode %s from %pA uid %u",
 			     __func__, p, &msg->address, msg->auth_uid);
-		} else if (msg->conmgr_con) {
-			info("%s: [%s] received opcode %s uid %u",
-			     __func__, conmgr_con_get_name(msg->conmgr_con), p,
-			     msg->auth_uid);
 		} else {
-			slurm_addr_t cli_addr;
-			(void) slurm_get_peer_addr(fd, &cli_addr);
-			info("%s: received opcode %s from %pA uid %u",
-			     __func__, p, &cli_addr, msg->auth_uid);
+			slurm_addr_t cli_addr = {
+				.ss_family = AF_UNSPEC,
+			};
+
+			if ((fd >= 0) && !slurm_get_peer_addr(fd, &cli_addr))
+				info("%s: received opcode %s from %pA uid %u",
+				     __func__, p, &cli_addr, msg->auth_uid);
+			else
+				info("%s: received opcode %s from (unresolvable socket peer) uid %u",
+				     __func__, p, msg->auth_uid);
 		}
 	}
 
