@@ -77,6 +77,21 @@ extern void print_date(void);
 /* Create typedef to follow *_t naming convention */
 typedef struct timespec timespec_t;
 
+/*
+ * timespec equivalent of -1 (AKA forever in the future).
+ * IEEE Std 1003.1, 2004 defines tv_sec as time_t but only defines time_t as a
+ * "integer or real-floating types". "GNU C Library additionally guarantees that
+ * time_t is a signed type".
+ * Note: Ignores nsecs due to normalization
+ * TIMESPEC_INFINITE is expected to be used for relative timestamps where
+ * (timespec_t){0} is same as timespec_now() for absolute timestamps.
+ */
+#define TIMESPEC_INFINITE \
+	((timespec_t) { \
+		.tv_sec = -1, \
+		.tv_nsec = 0, \
+	})
+
 /* Get timespec for current timestamp from UNIX Epoch */
 extern timespec_t timespec_now(void);
 
