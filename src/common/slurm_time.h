@@ -107,9 +107,10 @@ extern timespec_t timespec_now(void);
  *	false if ts is arbitrary length of time
  * IN buffer - pointer to buffer to populate (always \0 terminates string)
  * IN buffer_len - number of bytes in buffer
+ * RET number of bytes written to buffer
  */
-extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
-			   size_t buffer_len);
+extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
+			  size_t buffer_len);
 
 /* Add overflow of nanoseconds into seconds */
 extern timespec_t timespec_normalize(timespec_t ts);

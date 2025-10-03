@@ -110,8 +110,8 @@ extern timespec_t timespec_now(void)
 	return time;
 }
 
-extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
-			   size_t buffer_len)
+extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
+			  size_t buffer_len)
 {
 	uint64_t t, days, hours, minutes, seconds;
 	uint64_t milliseconds, microseconds, nanoseconds;
@@ -120,28 +120,32 @@ extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	xassert(buffer);
 	xassert(buffer_len > 0);
 	if (!buffer || (buffer_len <= 0))
-		return;
+		return 0;
 
 	if (!ts.tv_nsec && !ts.tv_sec) {
 		buffer[0] = '\0';
-		return;
+		return 0;
 	}
 
 	if (timespec_is_infinite(ts)) {
-		snprintf(buffer, buffer_len, "%s",
-			 (abs_time ? "now+INFINITE" : "INFINITE"));
-		return;
+		return snprintf(buffer, buffer_len, "%s",
+				(abs_time ? "now+INFINITE" : "INFINITE"));
 	}
 
 	if (!ts.tv_nsec && !ts.tv_sec) {
-		snprintf(buffer, buffer_len, "%s", (abs_time ? "now" : "None"));
-		return;
+		return snprintf(buffer, buffer_len, "%s",
+				(abs_time ? "now" : "None"));
 	}
 
 	ts = timespec_normalize(ts);
 
-	if (abs_time)
+	if (abs_time) {
 		ts = timespec_normalize(timespec_rem(ts, timespec_now()));
+
+		if (!ts.tv_nsec && !ts.tv_sec) {
+			return snprintf(buffer, buffer_len, "now");
+		}
+	}
 
 	/* Force positive time */
 	if (ts.tv_sec < 0) {
@@ -176,12 +180,12 @@ extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 
 	nanoseconds = t;
 
-	snprintf(buffer, buffer_len,
-		 "%s%s%"PRIu64"d:%"PRIu64"h:%"PRIu64"m:%"PRIu64"s:%"PRIu64"ms:%"PRIu64"μs:%"PRIu64"ns%s",
-		 (abs_time ? ( negative ? "now" : "now+" ) : ""),
-		 (negative ? "-(" : ""), days, hours, minutes, seconds,
-		 milliseconds, microseconds, nanoseconds,
-		 (negative ? ")" : ""));
+	return snprintf(buffer, buffer_len,
+			"%s%s%"PRIu64"d:%"PRIu64"h:%"PRIu64"m:%"PRIu64"s:%"PRIu64"ms:%"PRIu64"μs:%"PRIu64"ns%s",
+			(abs_time ? ( negative ? "now" : "now+" ) : ""),
+			(negative ? "-(" : ""), days, hours, minutes, seconds,
+			milliseconds, microseconds, nanoseconds,
+			(negative ? ")" : ""));
 }
 
 extern timespec_t timespec_normalize(timespec_t ts)
