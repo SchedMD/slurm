@@ -77,6 +77,24 @@ extern void print_date(void);
 /* Create typedef to follow *_t naming convention */
 typedef struct timespec timespec_t;
 
+/*
+ * timespec equivalent of -1 (AKA forever in the future).
+ * IEEE Std 1003.1, 2004 defines tv_sec as time_t but only defines time_t as a
+ * "integer or real-floating types". "GNU C Library additionally guarantees that
+ * time_t is a signed type".
+ * Note: Ignores nsecs due to normalization
+ * TIMESPEC_INFINITE is expected to be used for relative timestamps where
+ * (timespec_t){0} is same as timespec_now() for absolute timestamps.
+ */
+#define TIMESPEC_INFINITE \
+	((timespec_t) { \
+		.tv_sec = -1, \
+		.tv_nsec = 0, \
+	})
+
+/* True if X is equal to or after TIMESPEC_INFINITE */
+extern bool timespec_is_infinite(timespec_t x);
+
 /* Get timespec for current timestamp from UNIX Epoch */
 extern timespec_t timespec_now(void);
 
@@ -89,9 +107,10 @@ extern timespec_t timespec_now(void);
  *	false if ts is arbitrary length of time
  * IN buffer - pointer to buffer to populate (always \0 terminates string)
  * IN buffer_len - number of bytes in buffer
+ * RET number of bytes written to buffer
  */
-extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
-			   size_t buffer_len);
+extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
+			  size_t buffer_len);
 
 /* Add overflow of nanoseconds into seconds */
 extern timespec_t timespec_normalize(timespec_t ts);
@@ -124,6 +143,16 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 
 /* Convert timestamp to seconds with decimal for nanoseconds */
 extern double timespec_to_secs(const timespec_t x);
+
+/*
+ * Time diff to deadline passing against timespec_now()
+ * IN deadline - absolute time of deadline
+ * RET
+ *	negative: seconds since deadline elapsed
+ *	positive: seconds before deadline elapsed
+ *	INFINITE64: deadline is TIMESPEC_INFINITE
+ */
+extern int64_t timespec_after_deadline(const timespec_t deadline);
 
 /*
  * Return time in milliseconds since "start time"
