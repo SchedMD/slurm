@@ -178,37 +178,40 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _unpack_cred(conmgr_fd_t *con, char **token_ptr, buf_t *in)
+{
+	safe_unpackstr(token_ptr, in);
+	return SLURM_SUCCESS;
+unpack_error:
+	return SLURM_ERROR;
+}
+
 static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 {
 	uid_t uid = SLURM_AUTH_NOBODY;
 	gid_t gid = SLURM_AUTH_NOBODY;
 	pid_t pid = 0;
 	int rc = EINVAL;
-	uint32_t verify_rc = SLURM_ERROR;
 	auth_cred_t *cred = new_cred();
 
-	safe_unpackstr(&cred->token, in);
-
-	if ((rc = conmgr_get_fd_auth_creds(con, &uid, &gid, &pid))) {
+	if ((rc = _unpack_cred(con, &cred->token, in))) {
+		error("%s: [%s] unable to unpack token: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
+	} else if ((rc = conmgr_get_fd_auth_creds(con, &uid, &gid, &pid))) {
 		error("%s: [%s] unable to verify process via kernel: %s",
 		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
-		goto unpack_error;
-	}
-
-	if ((rc = verify_internal(cred, uid)))
+	} else if ((rc = verify_internal(cred, uid))) {
 		debug("%s: [%s] credential verification from process uid:%u gid:%u pid:%u failed: %s",
 		      __func__, conmgr_fd_get_name(con), uid, gid, pid,
 		      slurm_strerror(rc));
-
-	verify_rc = htonl(rc);
-	rc = conmgr_queue_write_data(con, &verify_rc, sizeof(verify_rc));
+	} else {
+		uint32_t verify_rc = htonl(rc);
+		rc = conmgr_queue_write_data(con, &verify_rc,
+					     sizeof(verify_rc));
+	}
 
 	FREE_NULL_CRED(cred);
 	return rc;
-
-unpack_error:
-	FREE_NULL_CRED(cred);
-	return SLURM_ERROR;
 }
 
 static int _on_connection_data(conmgr_fd_t *con, void *arg)
