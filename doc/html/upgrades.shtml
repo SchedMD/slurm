@@ -248,6 +248,10 @@ Slurm release. Typically, new naming and syntax conventions are introduced
 several versions before the old ones are removed, so you may be able to make the
 necessary changes before starting the upgrade process.</p>
 
+<p>If <b>SlurmctldParameters=reconfig_on_restart</b> is enabled extra caution
+should be taken as the slurmd and sackd daemons could be upgraded earlier than
+anticipated. Temporarily disabling that option may be advisable.</p>
+
 <h4 id="downtime">Plan for Downtime
 <a class="slurm_link" href="#downtime"></a></h4>
 

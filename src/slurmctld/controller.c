@@ -597,6 +597,7 @@ int main(int argc, char **argv)
 		.prolog_slurmctld = prep_prolog_slurmctld_callback,
 		.epilog_slurmctld = prep_epilog_slurmctld_callback,
 	};
+	bool push_reconfig = false;
 	bool backup_has_control = false;
 	bool slurmscriptd_mode = false;
 	char *conf_file;
@@ -736,6 +737,13 @@ int main(int argc, char **argv)
 		_init_pidfile();
 		become_slurm_user();
 	}
+
+	/*
+	 * When enabled, push a reconfig to nodes at startup instead of only on
+	 * an explicit 'scontrol reconfigure' command.
+	 */
+	if (xstrcasestr(slurm_conf.slurmctld_params, "reconfig_on_restart"))
+		push_reconfig = true;
 
 	reconfig_reqs = list_create(NULL);
 
@@ -1029,8 +1037,11 @@ int main(int argc, char **argv)
 			notify_parent_of_success();
 			if (!under_systemd)
 				_update_pidfile();
-			_post_reconfig();
+			push_reconfig = true;
 		}
+
+		if (push_reconfig)
+			_post_reconfig();
 
 		/*
 		 * process slurm background activities, could run as pthread

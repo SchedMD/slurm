@@ -5267,6 +5267,18 @@ second argument.
 .IP
 
 .TP
+\fBreconfig_on_restart\fR
+Every restart of slurmctld (process restart not triggered by "scontrol
+reconfigure") will trigger a reconfiguration request to all slurmd and sackd
+daemons. For "configless" systems this will ensure all processes are running
+the current configuration.
+
+\fBNOTE\fR: Use with caution when performing rolling upgrades as this could
+inadvertently trigger an upgrade of the slurmd or sackd daemons earlier than
+intended.
+.IP
+
+.TP
 \fBrl_bucket_size\fR=
 Size of the token bucket. This permits a certain amount of RPC burst from a
 user before the steady\-state rate limit takes effect.
