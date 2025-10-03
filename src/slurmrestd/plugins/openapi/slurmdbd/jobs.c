@@ -116,10 +116,6 @@ extern int op_handler_jobs(ctxt_t *ctxt)
 extern int op_handler_job(ctxt_t *ctxt)
 {
 	openapi_job_param_t params = { 0 };
-	slurmdb_job_cond_t job_cond = {
-		.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
-		.db_flags = SLURMDB_JOB_FLAG_NOTSET,
-	};
 
 	if (ctxt->method != HTTP_REQUEST_GET) {
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
@@ -134,11 +130,22 @@ extern int op_handler_job(ctxt_t *ctxt)
 			"Rejecting request. Failure parsing query parameters");
 	}
 
-	job_cond.step_list = list_create(slurm_destroy_selected_step);
-	list_append(job_cond.step_list, params.id);
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		slurmdb_job_cond_t job_cond = {
+			.flags = (JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC),
+			.db_flags = SLURMDB_JOB_FLAG_NOTSET,
+		};
+		job_cond.step_list = list_create(slurm_destroy_selected_step);
+		list_append(job_cond.step_list, params.id);
 
-	_dump_jobs(ctxt, &job_cond);
+		_dump_jobs(ctxt, &job_cond);
 
-	FREE_NULL_LIST(job_cond.step_list);
+		FREE_NULL_LIST(job_cond.step_list);
+	} else {
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	}
+
 	return SLURM_SUCCESS;
 }
