@@ -1232,10 +1232,6 @@ slurm_errtab_t slurm_errtab[] = {
 		"Time limit specification required, but not provided",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_INVALID_KNL),
-		"Invalid KNL configuration (MCDRAM or NUMA option)",
-	},
-	{
 		ERRTAB_ENTRY(ESLURM_PLUGIN_INVALID),
 		"Plugin has invalid format or unable to be loaded",
 	},
