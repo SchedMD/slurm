@@ -519,14 +519,14 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 	    (status_code <= HTTP_STATUS_INFO_END))
 		return SLURM_SUCCESS;
 
+	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
+		return SLURM_SUCCESS;
+
 	/*
 	 * TODO: Add reference to request method to only limit CONNECT requests
 	 */
 	if ((status_code > HTTP_STATUS_SUCCESS_BEGIN) &&
 	    (status_code <= HTTP_STATUS_SUCCESS_END))
-		return SLURM_SUCCESS;
-
-	if (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT)
 		return SLURM_SUCCESS;
 
 	return _write_fmt_num_header(con, "Content-Length", body_length);
