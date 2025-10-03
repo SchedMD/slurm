@@ -206,8 +206,11 @@ static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 		      slurm_strerror(rc));
 	} else {
 		uint32_t verify_rc = htonl(rc);
-		rc = conmgr_queue_write_data(con, &verify_rc,
-					     sizeof(verify_rc));
+		if ((rc = conmgr_queue_write_data(con, &verify_rc,
+						  sizeof(verify_rc))))
+			error("%s: [%s] reply failed: %s",
+			      __func__, conmgr_fd_get_name(con),
+			      slurm_strerror(rc));
 	}
 
 	FREE_NULL_CRED(cred);
