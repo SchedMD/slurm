@@ -199,7 +199,7 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	if (hours || minutes || seconds) {
 		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
 				  "%s%"PRIu64"h:%"PRIu64"m:%"PRIu64"s",
-				  (days ? ":" : ""), hours, minutes, seconds);
+				  (days ? "-" : ""), hours, minutes, seconds);
 
 		if (wrote >= buffer_len)
 			return wrote;
@@ -208,8 +208,9 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	if (milliseconds || microseconds || nanoseconds) {
 		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
 				"%s%"PRIu64"ms:%"PRIu64"μs:%"PRIu64"ns",
-				((days || hours || minutes || seconds) ? ":" :
-				 ""), milliseconds, microseconds, nanoseconds);
+				((hours || minutes || seconds) ? ":" :
+				 (days ?  "-" : "")),
+				milliseconds, microseconds, nanoseconds);
 
 		if (wrote >= buffer_len)
 			return wrote;
