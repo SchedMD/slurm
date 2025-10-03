@@ -543,6 +543,7 @@ static int _add_cert_from_file_to_server(void)
 	char *default_cert_path = NULL, *default_key_path = NULL;
 	buf_t *cert_buf = NULL, *key_buf = NULL;
 	bool check_owner = true;
+	bool add_cert_to_server_only = false;
 
 	if (running_in_slurmdbd()) {
 		cert_conf = "dbd_cert_file=";
@@ -555,6 +556,19 @@ static int _add_cert_from_file_to_server(void)
 		default_cert_path = "restd_cert.pem";
 		default_key_path = "restd_cert_key.pem";
 		check_owner = false;
+		/*
+		 * slurmrestd certificate may not be signed by CA used for
+		 * internal Slurm communications via the conn plugin interface,
+		 * so don't add it to the client s2n config.
+		 *
+		 * This will prevent servers (e.g. slurmctld) trying to use mTLS
+		 * with slurmrestd when it has an untrusted certificate (servers
+		 * may only trust Slurm's ca_cert_file and no one else)
+		 *
+		 * mTLS is not required/used for any slurmrestd connections
+		 * currently.
+		 */
+		add_cert_to_server_only = true;
 	} else if (running_in_slurmctld()) {
 		cert_conf = "ctld_cert_file=";
 		key_conf = "ctld_cert_key_file=";
@@ -626,7 +640,8 @@ static int _add_cert_from_file_to_server(void)
 	}
 
 	rc = _add_cert_to_global_config(cert_buf->head, cert_buf->size,
-					key_buf->head, key_buf->size, false);
+					key_buf->head, key_buf->size,
+					add_cert_to_server_only);
 
 cleanup:
 	xfree(key_file);
