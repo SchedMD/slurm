@@ -116,6 +116,7 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	uint64_t t, days, hours, minutes, seconds;
 	uint64_t milliseconds, microseconds, nanoseconds;
 	bool negative = false;
+	int wrote = 0;
 
 	xassert(buffer);
 	xassert(buffer_len > 0);
@@ -180,12 +181,44 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 
 	nanoseconds = t;
 
-	return snprintf(buffer, buffer_len,
-			"%s%s%"PRIu64"d:%"PRIu64"h:%"PRIu64"m:%"PRIu64"s:%"PRIu64"ms:%"PRIu64"μs:%"PRIu64"ns%s",
-			(abs_time ? ( negative ? "now" : "now+" ) : ""),
-			(negative ? "-(" : ""), days, hours, minutes, seconds,
-			milliseconds, microseconds, nanoseconds,
-			(negative ? ")" : ""));
+	wrote += snprintf(buffer, buffer_len, "%s%s",
+			  (abs_time ? (negative ? "now" : "now+") : ""),
+			  (negative ? "-(" : ""));
+
+	if (wrote >= buffer_len)
+		return wrote;
+
+	if (days) {
+		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
+				  "%"PRIu64"d", days);
+
+		if (wrote >= buffer_len)
+			return wrote;
+	}
+
+	if (hours || minutes || seconds) {
+		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
+				  "%s%"PRIu64"h:%"PRIu64"m:%"PRIu64"s",
+				  (days ? ":" : ""), hours, minutes, seconds);
+
+		if (wrote >= buffer_len)
+			return wrote;
+	}
+
+	if (milliseconds || microseconds || nanoseconds) {
+		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
+				"%s%"PRIu64"ms:%"PRIu64"μs:%"PRIu64"ns",
+				((days || hours || minutes || seconds) ? ":" :
+				 ""), milliseconds, microseconds, nanoseconds);
+
+		if (wrote >= buffer_len)
+			return wrote;
+	}
+
+	if (negative)
+		wrote += snprintf((buffer + wrote), (buffer_len - wrote), ")");
+
+	return wrote;
 }
 
 extern timespec_t timespec_normalize(timespec_t ts)
