@@ -144,6 +144,16 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 extern double timespec_to_secs(const timespec_t x);
 
 /*
+ * Time diff to deadline passing against timespec_now()
+ * IN deadline - absolute time of deadline
+ * RET
+ *	negative: seconds since deadline elapsed
+ *	positive: seconds before deadline elapsed
+ *	INFINITE64: deadline is TIMESPEC_INFINITE
+ */
+extern int64_t timespec_after_deadline(const timespec_t deadline);
+
+/*
  * Return time in milliseconds since "start time"
  * Takes a struct timeval.
  */

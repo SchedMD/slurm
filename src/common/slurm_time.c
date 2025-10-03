@@ -301,3 +301,11 @@ extern bool timespec_is_infinite(timespec_t x)
 
 	return (x.tv_sec == inf.tv_sec);
 }
+
+extern int64_t timespec_after_deadline(const timespec_t deadline)
+{
+	if (timespec_is_infinite(deadline))
+		return INFINITE64;
+
+	return timespec_diff(deadline, timespec_now());
+}
