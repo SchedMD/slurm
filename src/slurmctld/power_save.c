@@ -1127,9 +1127,6 @@ extern void config_power_mgr(void)
 			info("power_save mode has been disabled due to configuration changes");
 		}
 		power_save_enabled = false;
-		if (node_features_g_node_power()) {
-			fatal("PowerSave required with NodeFeatures plugin, but not fully configured (SuspendProgram, ResumeProgram and SuspendTime all required)");
-		}
 	} else {
 		power_save_enabled = true;
 	}

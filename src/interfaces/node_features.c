@@ -52,22 +52,16 @@
 typedef struct node_features_ops {
 	uint32_t(*boot_time)	(void);
 	bool    (*changeable_feature) (char *feature);
-	int	(*get_node)	(char *node_list);
 	int	(*job_valid)	(char *job_features, list_t *feature_list);
 	char *	(*job_xlate)	(char *job_features, list_t *feature_list,
 				 bitstr_t *job_node_bitmap);
 	bitstr_t * (*get_node_bitmap) (void);
 	int     (*overlap)      (bitstr_t *active_bitmap);
-	bool	(*node_power)	(void);
 	int	(*node_set)	(char *active_features, bool *need_reboot);
 	void	(*node_state)	(char **avail_modes, char **current_mode);
-	int	(*node_update)	(char *active_features, bitstr_t *node_bitmap);
-	bool	(*node_update_valid) (void *node_ptr,
-				      update_node_msg_t *update_node_msg);
 	char *	(*node_xlate)	(char *new_features, char *orig_features,
 				 char *avail_features, int node_inx);
 	char *	(*node_xlate2)	(char *new_features);
-	void	(*step_config)	(bool mem_sort, bitstr_t *numa_bitmap);
 	bool	(*user_update)	(uid_t uid);
 	void	(*get_config)	(config_plugin_params_t *p);
 } node_features_ops_t;
@@ -79,19 +73,14 @@ typedef struct node_features_ops {
 static const char *syms[] = {
 	"node_features_p_boot_time",
 	"node_features_p_changeable_feature",
-	"node_features_p_get_node",
 	"node_features_p_job_valid",
 	"node_features_p_job_xlate",
 	"node_features_p_get_node_bitmap",
 	"node_features_p_overlap",
-	"node_features_p_node_power",
 	"node_features_p_node_set",
 	"node_features_p_node_state",
-	"node_features_p_node_update",
-	"node_features_p_node_update_valid",
 	"node_features_p_node_xlate",
 	"node_features_p_node_xlate2",
-	"node_features_p_step_config",
 	"node_features_p_user_update",
 	"node_features_p_get_config"
 };
@@ -192,24 +181,6 @@ extern int node_features_g_count(void)
 	return rc;
 }
 
-/* Perform set up for step launch
- * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
- * numa_bitmap IN - NUMA nodes allocated to this job */
-extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
-{
-	DEF_TIMERS;
-	int i;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++)
-		(*(ops[i].step_config))(mem_sort, numa_bitmap);
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-}
-
 /* Return TRUE if this (one) feature name is under this plugin's control */
 extern bool node_features_g_changeable_feature(char *feature)
 {
@@ -226,24 +197,6 @@ extern bool node_features_g_changeable_feature(char *feature)
 	END_TIMER2(__func__);
 
 	return changeable;
-}
-
-/* Update active and available features on specified nodes, sets features on
- * all nodes is node_list is NULL */
-extern int node_features_g_get_node(char *node_list)
-{
-	DEF_TIMERS;
-	int i, rc = SLURM_SUCCESS;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
-		rc = (*(ops[i].get_node))(node_list);
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return rc;
 }
 
 /* Test if a job's feature specification is valid */
@@ -337,27 +290,6 @@ extern int node_features_g_overlap(bitstr_t *active_bitmap)
 	return cnt;
 }
 
-/* Return true if the plugin requires PowerSave mode for booting nodes */
-extern bool node_features_g_node_power(void)
-{
-	DEF_TIMERS;
-	bool node_power = false;
-	int i;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++) {
-		node_power = (*(ops[i].node_power))();
-		if (node_power)
-			break;
-	}
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return node_power;
-}
-
 /* Set's the node's active features based upon job constraints.
  * NOTE: Executed by the slurmd daemon.
  * IN active_features - New active features
@@ -395,59 +327,6 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode)
 	}
 	slurm_mutex_unlock(&g_context_lock);
 	END_TIMER2(__func__);
-}
-
-/* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
- * IN active_features - New active features
- * IN node_bitmap - bitmap of nodes changed
- * RET error code */
-extern int node_features_g_node_update(char *active_features,
-				       bitstr_t *node_bitmap)
-{
-	DEF_TIMERS;
-	int i, rc = SLURM_SUCCESS;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
-		rc = (*(ops[i].node_update))(active_features, node_bitmap);
-	}
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return rc;
-}
-
-
-/*
- * Return TRUE if the specified node update request is valid with respect
- * to features changes (i.e. don't permit a non-KNL node to set KNL features).
- *
- * node_ptr IN - Pointer to node_record_t record
- * update_node_msg IN - Pointer to update request
- */
-extern bool node_features_g_node_update_valid(void *node_ptr,
-					update_node_msg_t *update_node_msg)
-{
-	DEF_TIMERS;
-	bool update_valid = true;
-	int i;
-
-	START_TIMER;
-	xassert(g_context_cnt >= 0);
-	slurm_mutex_lock(&g_context_lock);
-	for (i = 0; i < g_context_cnt; i++) {
-		update_valid = (*(ops[i].node_update_valid))(node_ptr,
-							     update_node_msg);
-		if (!update_valid)
-			break;
-	}
-	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2(__func__);
-
-	return update_valid;
 }
 
 /*

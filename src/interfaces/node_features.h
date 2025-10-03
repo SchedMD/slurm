@@ -52,10 +52,6 @@ extern int node_features_g_count(void);
 /* Return TRUE if this (one) feature name is under this plugin's control */
 extern bool node_features_g_changeable_feature(char *feature);
 
-/* Update active and available features on specified nodes, sets features on
- * all nodes is node_list is NULL */
-extern int node_features_g_get_node(char *node_list);
-
 /* Test if a job's feature specification is valid */
 extern int node_features_g_job_valid(char *job_features, list_t *feature_list);
 
@@ -75,9 +71,6 @@ extern bitstr_t *node_features_g_get_node_bitmap(void);
 /* Return count of bits in active_bitmap that are in the features bitmap */
 extern int node_features_g_overlap(bitstr_t *active_bitmap);
 
-/* Return true if the plugin requires PowerSave mode for booting nodes */
-extern bool node_features_g_node_power(void);
-
 /* Set's the node's active features based upon job constraints.
  * NOTE: Executed by the slurmd daemon.
  * IN active_features - New active features
@@ -89,24 +82,6 @@ extern int node_features_g_node_set(char *active_features, bool *need_reboot);
  * avail_modes IN/OUT - available modes, must be xfreed
  * current_mode IN/OUT - current modes, must be xfreed */
 extern void node_features_g_node_state(char **avail_modes, char **current_mode);
-
-/* Note the active features associated with a set of nodes have been updated.
- * Specifically update the node's "hbm" GRES and "CpuBind" values as needed.
- * IN active_features - New active features
- * IN node_bitmap - bitmap of nodes changed
- * RET error code */
-extern int node_features_g_node_update(char *active_features,
-				       bitstr_t *node_bitmap);
-
-/*
- * Return TRUE if the specified node update request is valid with respect
- * to features changes (i.e. don't permit a non-KNL node to set KNL features).
- *
- * node_ptr IN - Pointer to node_record_t record
- * update_node_msg IN - Pointer to update request
- */
-extern bool node_features_g_node_update_valid(void *node_ptr,
-					update_node_msg_t *update_node_msg);
 
 /*
  * Translate a node's feature specification by replacing any features associated
@@ -124,11 +99,6 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 /* Translate a node's new feature specification into a "standard" ordering
  * RET node's new merged features, must be xfreed */
 extern char *node_features_g_node_xlate2(char *new_features);
-
-/* Perform set up for step launch
- * mem_sort IN - Trigger sort of memory pages (KNL zonesort)
- * numa_bitmap IN - NUMA nodes allocated to this job */
-extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap);
 
 /* Determine if the specified user can modify the currently available node
  * features */

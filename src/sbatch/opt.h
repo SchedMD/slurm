@@ -64,7 +64,6 @@ typedef struct sbatch_env_opts {
 	uint32_t cpus_per_task;
 	char *   dist;
 	char *   mem_bind;
-	char *   mem_bind_sort;
 	char *   mem_bind_verbose;
 	uint32_t ntasks;
 	uint32_t ntasks_per_core;

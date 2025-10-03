@@ -517,7 +517,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/pmix/Makefile
 		 src/plugins/node_features/Makefile
 		 src/plugins/node_features/helpers/Makefile
-		 src/plugins/node_features/knl_generic/Makefile
 		 src/plugins/preempt/Makefile
 		 src/plugins/preempt/partition_prio/Makefile
 		 src/plugins/preempt/qos/Makefile

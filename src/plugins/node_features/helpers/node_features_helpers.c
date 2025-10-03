@@ -943,12 +943,6 @@ extern char *node_features_p_job_xlate(char *job_features,
 	return _xlate_job_features(job_features, feature_list, job_node_bitmap);
 }
 
-/* Return true if the plugin requires PowerSave mode for booting nodes */
-extern bool node_features_p_node_power(void)
-{
-	return false;
-}
-
 static char *_make_helper_str(const plugin_feature_t *feature)
 {
 	char *str = NULL;
@@ -1061,33 +1055,8 @@ extern bool node_features_p_user_update(uid_t uid)
 	return false;
 }
 
-extern void node_features_p_step_config(bool mem_sort, bitstr_t *numa_bitmap)
-{
-	return;
-}
-
 extern int node_features_p_overlap(bitstr_t *active_bitmap)
 {
 	/* Executed on slurmctld and not used by this plugin */
 	return bit_set_count(active_bitmap);
-}
-
-extern int node_features_p_get_node(char *node_list)
-{
-	/* Executed on slurmctld and not used by this plugin */
-	return SLURM_SUCCESS;
-}
-
-extern int node_features_p_node_update(char *active_features,
-				       bitstr_t *node_bitmap)
-{
-	/* Executed on slurmctld and not used by this plugin */
-	return SLURM_SUCCESS;
-}
-
-extern bool node_features_p_node_update_valid(void *node_ptr,
-					      update_node_msg_t *update_node_msg)
-{
-	/* Executed on slurmctld and not used by this plugin */
-	return true;
 }

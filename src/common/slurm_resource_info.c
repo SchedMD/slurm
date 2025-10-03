@@ -239,8 +239,6 @@ extern char *slurm_xstr_mem_bind_type(mem_bind_type_t mem_bind_type)
 		xstrcat(str, "verbose,");
 	if (mem_bind_type & MEM_BIND_PREFER)
 		xstrcat(str, "prefer,");
-	if (mem_bind_type & MEM_BIND_SORT)
-		xstrcat(str, "sort,");
 	if (mem_bind_type & MEM_BIND_NONE)
 		xstrcat(str, "none,");
 	if (mem_bind_type & MEM_BIND_RANK)
@@ -592,10 +590,6 @@ int slurm_verify_mem_bind(const char *arg, char **mem_bind,
 		} else if ((xstrcasecmp(tok, "p") == 0) ||
 			   (xstrcasecmp(tok, "prefer") == 0)) {
 		        *flags |= MEM_BIND_PREFER;
-		} else if (!xstrcasecmp(tok, "nosort")) {
-		        *flags &= ~MEM_BIND_SORT;
-		} else if (!xstrcasecmp(tok, "sort")) {
-		        *flags |= MEM_BIND_SORT;
 		} else if ((xstrcasecmp(tok, "q") == 0) ||
 			   (xstrcasecmp(tok, "quiet") == 0)) {
 		        *flags &= ~MEM_BIND_VERBOSE;

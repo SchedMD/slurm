@@ -1599,12 +1599,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 		if (update_node_msg->features || update_node_msg->features_act) {
 			char *features_act = NULL, *features_avail = NULL;
-			if (!node_features_g_node_update_valid(node_ptr,
-							 update_node_msg)) {
-				error_code = ESLURM_INVALID_FEATURE;
-				xfree(update_node_msg->features);
-				xfree(update_node_msg->features_act);
-			}
+
 			if (update_node_msg->features_act)
 				features_act = update_node_msg->features_act;
 			else
@@ -2435,8 +2430,6 @@ extern int update_node_active_features(char *node_names, char *active_features,
 		}
 		node_features_update_list(active_feature_list, active_features,
 					  node_bitmap);
-		(void) node_features_g_node_update(active_features,
-						   node_bitmap);
 	}
 
 	_update_node_features_post(node_names,
@@ -3318,12 +3311,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		node_ptr->free_mem = reg_msg->free_mem;
 		node_ptr->free_mem_time = now;
 		last_node_update = now;
-	}
-
-	if (node_ptr->last_response &&
-	    (node_ptr->boot_time > node_ptr->last_response) &&
-	    !IS_NODE_UNKNOWN(node_ptr)) {	/* Node just rebooted */
-		(void) node_features_g_get_node(node_ptr->name);
 	}
 
 	if (IS_NODE_NO_RESPOND(node_ptr) ||

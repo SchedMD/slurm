@@ -498,7 +498,6 @@ int setup_env(env_t *env, bool preserve_env)
 	if (env->mem_bind_type && (env->stepid != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind_type = NULL, *str_bind_list;
 		char *str_prefer = NULL, *str_bind = NULL;
-		char *str_bind_sort = NULL;
 
 		if (env->batch_flag) {
 			unsetenvp(env->env, "SBATCH_MEM_BIND");
@@ -510,7 +509,6 @@ int setup_env(env_t *env, bool preserve_env)
 			unsetenvp(env->env, "SLURM_MEM_BIND");
 			unsetenvp(env->env, "SLURM_MEM_BIND_LIST");
 			unsetenvp(env->env, "SLURM_MEM_BIND_PREFER");
-			unsetenvp(env->env, "SLURM_MEM_BIND_SORT");
 			unsetenvp(env->env, "SLURM_MEM_BIND_TYPE");
 			unsetenvp(env->env, "SLURM_MEM_BIND_VERBOSE");
 		}
@@ -532,9 +530,6 @@ int setup_env(env_t *env, bool preserve_env)
 		} else if (env->mem_bind_type & MEM_BIND_LOCAL) {
 			str_bind_type = "local";
 		}
-
-		if (env->mem_bind_type & MEM_BIND_SORT)
-			str_bind_sort = "sort";
 
 		if (env->mem_bind)
 			str_bind_list = env->mem_bind;
@@ -569,12 +564,6 @@ int setup_env(env_t *env, bool preserve_env)
 				error("Unable to set SBATCH_MEM_BIND_PREFER");
 				rc = SLURM_ERROR;
 			}
-			if (str_bind_sort &&
-			    setenvf(&env->env, "SBATCH_MEM_BIND_SORT", "%s",
-				    str_bind_sort)) {
-				error("Unable to set SBATCH_MEM_BIND_SORT");
-				rc = SLURM_ERROR;
-			}
 			if (setenvf(&env->env, "SBATCH_MEM_BIND_TYPE", "%s",
 				    str_bind_type)) {
 				error("Unable to set SBATCH_MEM_BIND_TYPE");
@@ -599,12 +588,6 @@ int setup_env(env_t *env, bool preserve_env)
 			    setenvf(&env->env, "SLURM_MEM_BIND_PREFER", "%s",
 				    str_prefer)) {
 				error("Unable to set SLURM_MEM_BIND_PREFER");
-				rc = SLURM_ERROR;
-			}
-			if (str_bind_sort &&
-			    setenvf(&env->env, "SLURM_MEM_BIND_SORT", "%s",
-				    str_bind_sort)) {
-				error("Unable to set SLURM_MEM_BIND_SORT");
 				rc = SLURM_ERROR;
 			}
 			if (setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "%s",

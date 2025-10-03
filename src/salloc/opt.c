@@ -597,10 +597,6 @@ static bool _opt_verify(void)
 		}
 		xfree(tmp);
 	}
-	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_SORT") == NULL) &&
-	    (opt.mem_bind_type & MEM_BIND_SORT)) {
-		setenvf(NULL, "SLURM_MEM_BIND_SORT", "sort");
-	}
 
 	if (opt.mem_bind_type && (getenv("SLURM_MEM_BIND_VERBOSE") == NULL)) {
 		if (opt.mem_bind_type & MEM_BIND_VERBOSE) {

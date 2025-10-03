@@ -351,11 +351,6 @@ be used to specify that two nodes must be allocated from nodes with the feature
 of "rack1" and four nodes must be allocated from nodes with the feature
 "rack2".
 
-\fBNOTE\fR: This construct does not support multiple Intel KNL NUMA or MCDRAM
-modes. For example, while \fB\-\-constraint="[(knl&quad)*2&(knl&hemi)*4]"\fR is
-not supported, \fB\-\-constraint="[haswell*2&(knl&hemi)*4]"\fR is supported.
-Specification of multiple KNL modes requires the use of a heterogeneous job.
-
 \fBNOTE\fR: This option is not supported by the helpers NodeFeatures plugin.
 
 \fBNOTE\fR: Multiple Counts can cause jobs to be allocated with a non-optimal
@@ -1483,7 +1478,6 @@ The following informational environment variables are set when
 .nf
    SLURM_MEM_BIND_LIST
    SLURM_MEM_BIND_PREFER
-   SLURM_MEM_BIND_SORT
    SLURM_MEM_BIND_TYPE
    SLURM_MEM_BIND_VERBOSE
 .fi
@@ -1562,11 +1556,6 @@ quietly bind before task runs (default)
 .TP
 .B rank
 bind by task rank (not recommended)
-.IP
-
-.TP
-.B sort
-sort free cache pages (run zonesort on Intel KNL nodes)
 .IP
 
 .TP

@@ -72,8 +72,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="job_container.conf.html">job_container.conf</a></td>
 	<td>Slurm configuration file for configuring the tmpfs job container
 	plugin.</td></tr>
-<tr><td><a href="knl.conf.html">knl.conf</a></td>
-	<td>Slurm configuration file for Intel Knights Landing management.</td></tr>
 <tr><td><a href="mpi.conf.html">mpi.conf</a></td>
 	<td>Slurm configuration file to allow the configuration of MPI plugins.</td></tr>
 <tr><td><a href="oci.conf.html">oci.conf</a></td>
@@ -109,6 +107,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 	<td>Slurm Plug-in Architecture for Node and job (K)control.</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 10 July 2024</p>
+<p style="text-align:center;">Last modified 23 September 2025</p>
 
 <!--#include virtual="footer.txt"-->

@@ -34,7 +34,6 @@ generated_html = \
 	heterogeneous_jobs.html \
 	high_throughput.html \
 	hres.html \
-	intel_knl.html \
 	jobcomp_kafka.html \
 	job_array.html \
 	job_container_tmpfs.html \
