@@ -133,6 +133,11 @@ extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 		return;
 	}
 
+	if (!ts.tv_nsec && !ts.tv_sec) {
+		snprintf(buffer, buffer_len, "%s", (abs_time ? "now" : "None"));
+		return;
+	}
+
 	ts = timespec_normalize(ts);
 
 	if (abs_time)
