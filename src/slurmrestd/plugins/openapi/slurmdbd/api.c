@@ -754,6 +754,56 @@ extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
 	return rc;
 }
 
+extern int db_modify_list_funcname(ctxt_t *ctxt, list_t **list, void *cond,
+				   void *obj, db_list_modify_func_t func,
+				   const char *func_name, const char *caller,
+				   bool ignore_empty_result)
+{
+	list_t *l;
+	int rc = SLURM_SUCCESS;
+
+	xassert(!*list);
+
+	if (!ctxt->db_conn)
+		return ESLURM_DB_CONNECTION;
+
+	errno = 0;
+	l = func(ctxt->db_conn, cond, obj);
+
+	if (errno) {
+		rc = errno;
+		FREE_NULL_LIST(l);
+	} else if (!l) {
+		rc = ESLURM_REST_INVALID_QUERY;
+	}
+
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		if (ignore_empty_result) {
+			resp_warn(ctxt, caller, "%s() reports nothing changed",
+				  func_name);
+			rc = SLURM_SUCCESS;
+		}
+	}
+
+	if (rc) {
+		return resp_error(ctxt, rc, caller, "%s failed", func_name);
+	}
+
+	if (!list_count(l)) {
+		FREE_NULL_LIST(l);
+
+		if (!ignore_empty_result) {
+			resp_warn(ctxt, caller, "%s() found nothing",
+				  func_name);
+		}
+	} else {
+		*list = l;
+		db_query_commit(ctxt);
+	}
+
+	return rc;
+}
+
 extern int db_modify_rc_funcname(ctxt_t *ctxt, void *cond, void *obj,
 				 db_rc_modify_func_t func,
 				 const char *func_name, const char *caller)
