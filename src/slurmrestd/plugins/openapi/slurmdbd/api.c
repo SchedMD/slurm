@@ -123,6 +123,20 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.parameters = DATA_PARSER_OPENAPI_SLURMDBD_JOB_PARAM,
 			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "Update job",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_MODIFY_RESP,
+					.description = "Job update results",
+				},
+				.parameters = DATA_PARSER_OPENAPI_SLURMDBD_JOB_PARAM,
+				.body = {
+					.type = DATA_PARSER_JOB_MODIFY,
+					.description = "Job update description",
+				},
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,

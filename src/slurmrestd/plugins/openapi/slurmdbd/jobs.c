@@ -112,12 +112,49 @@ extern int op_handler_jobs(ctxt_t *ctxt)
 	return SLURM_SUCCESS;
 }
 
+static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
+{
+	int rc = SLURM_SUCCESS;
+	list_t *ret_list = NULL;
+	slurmdb_job_rec_t *job = NULL;
+	slurmdb_job_cond_t job_cond = { 0 };
+
+	job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
+	job_cond.flags = JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
+	if (DATA_PARSE(ctxt->parser, JOB_MODIFY_PTR, job, ctxt->query,
+		       ctxt->parent_path)) {
+		resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Failure parsing job update request.");
+		goto cleanup;
+	}
+
+	job_cond.step_list = list_create(slurm_destroy_selected_step);
+	list_append(job_cond.step_list, job_id);
+
+	if (db_modify_list(ctxt, &ret_list, &job_cond, job,
+			   slurmdb_job_modify)) {
+		resp_error(ctxt, rc, "slurmdb_job_modify()",
+			   "Job update requested failed");
+		goto cleanup;
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_MODIFY_RESP, ret_list, ctxt);
+
+cleanup:
+	FREE_NULL_LIST(ret_list);
+	slurmdb_destroy_job_cond_members(&job_cond);
+	slurmdb_destroy_job_rec(job);
+}
+
 /* based on get_data() in sacct/options.c */
 extern int op_handler_job(ctxt_t *ctxt)
 {
 	openapi_job_param_t params = { 0 };
 
-	if (ctxt->method != HTTP_REQUEST_GET) {
+	if ((ctxt->method != HTTP_REQUEST_GET) &&
+	    (ctxt->method != HTTP_REQUEST_POST)) {
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				  "Unsupported HTTP method requested: %s",
 				  get_http_method_string(ctxt->method));
@@ -141,6 +178,8 @@ extern int op_handler_job(ctxt_t *ctxt)
 		_dump_jobs(ctxt, &job_cond);
 
 		FREE_NULL_LIST(job_cond.step_list);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		_job_post_update(ctxt, params.id);
 	} else {
 		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 				  "Unsupported HTTP method requested: %s",
