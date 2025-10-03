@@ -189,8 +189,9 @@ static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 
 	safe_unpackstr(&cred->token, in);
 
-	if (conmgr_get_fd_auth_creds(con, &uid, &gid, &pid)) {
-		error("%s: conmgr_get_fd_auth_creds() failed", __func__);
+	if ((rc = conmgr_get_fd_auth_creds(con, &uid, &gid, &pid))) {
+		error("%s: [%s] unable to verify process via kernel: %s",
+		      __func__, conmgr_fd_get_name(con), slurm_strerror(rc));
 		goto unpack_error;
 	}
 
