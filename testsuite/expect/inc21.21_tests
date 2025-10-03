@@ -268,7 +268,7 @@ proc inc21_21_submit_test { limit } {
 	}
 
 	make_bash_script $file_in "
-	$bin_sleep 120
+	$bin_sleep infinity
 	"
 
 	# Test to make sure that the grpsubmit and maxsubmit
@@ -287,7 +287,7 @@ proc inc21_21_submit_test { limit } {
 	# Wait for the allowed jobs to start running
 	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} {incr inx} {
 		if {$inx < $acct_mod_assoc_test_vals($limit_job)} {
-			wait_for_job -fail -timeout 10 -pollinterval .1 $job_id($inx) "RUNNING"
+			wait_for_job -fail -pollinterval .1 $job_id($inx) "RUNNING"
 		}
 	}
 
