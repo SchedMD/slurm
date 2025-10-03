@@ -107,7 +107,7 @@ def test_two_parallel_consumption_sbatch(mps_nodes, file_in_2a):
         f"--gres=mps:{job_mps} -w {mps_nodes[0]} -n1 -t1 -o {file_out1} {file_in_2a}"
     )
     assert job_id != 0, "Job failed to submit"
-    atf.wait_for_job_state(job_id, "DONE", timeout=30, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
     atf.wait_for_file(file_out1)
     file_output = atf.run_command_output(f"cat {file_out1}")
 
@@ -172,7 +172,7 @@ def test_three_parallel_consumption_sbatch(mps_nodes, file_in_1a):
     )
 
     assert job_id != 0, "Job failed to submit"
-    atf.wait_for_job_state(job_id, "DONE", timeout=40, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
     atf.wait_for_file(file_out1)
     file_output = atf.run_command_output(f"cat {file_out1}")
     assert file_output is not None, "No output file"
@@ -212,7 +212,7 @@ def test_consume_more_gresMps_than_allocated(mps_nodes, file_in_1a):
     )
 
     assert job_id != 0, "Job failed to submit"
-    atf.wait_for_job_state(job_id, "DONE", timeout=20, fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
     atf.wait_for_file(file_out1)
     file_output = atf.run_command_output(f"cat {file_out1}")
     assert file_output is not None, "No output file"
@@ -279,7 +279,8 @@ def test_gresGPU_gresMPS_GPU_sharing(mps_nodes):
     )
 
     assert job_id != 0, "Job failed to submit"
-    atf.wait_for_job_state(job_id, "DONE", timeout=60, fatal=True)
+    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
     atf.wait_for_file(file_out1)
     file_output = atf.run_command_output(f"cat {file_out1}")
     assert file_output is not None, "No output file"
