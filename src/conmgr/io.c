@@ -675,16 +675,82 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 	return rc;
 }
 
+static int _fd_get_input_fd(conmgr_fd_t *con, int *input_fd_ptr)
+{
+	if (!con)
+		return EINVAL;
+
+	xassert(input_fd_ptr);
+	xassert(*input_fd_ptr == -1);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	*input_fd_ptr = con->input_fd;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return SLURM_SUCCESS;
+}
+
 extern int conmgr_fd_get_input_fd(conmgr_fd_t *con)
 {
+	int input_fd = -1;
+
+	(void) _fd_get_input_fd(con, &input_fd);
+
+	return input_fd;
+}
+
+extern int conmgr_con_get_input_fd(conmgr_fd_ref_t *ref, int *input_fd_ptr)
+{
+	xassert(input_fd_ptr);
+
+	if (!ref || !ref->con)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	return _fd_get_input_fd(ref->con, input_fd_ptr);
+}
+
+static int _fd_get_output_fd(conmgr_fd_t *con, int *output_fd_ptr)
+{
+	if (!con)
+		return EINVAL;
+
+	xassert(output_fd_ptr);
+	xassert(*output_fd_ptr == -1);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
-	return con->input_fd;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	*output_fd_ptr = con->output_fd;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return SLURM_SUCCESS;
 }
 
 extern int conmgr_fd_get_output_fd(conmgr_fd_t *con)
 {
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
-	return con->output_fd;
+	int output_fd = -1;
+
+	(void) _fd_get_output_fd(con, &output_fd);
+
+	return output_fd;
+}
+
+extern int conmgr_con_get_output_fd(conmgr_fd_ref_t *ref, int *output_fd_ptr)
+{
+	xassert(output_fd_ptr);
+
+	if (!ref || !ref->con)
+		return EINVAL;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	return _fd_get_output_fd(ref->con, output_fd_ptr);
 }

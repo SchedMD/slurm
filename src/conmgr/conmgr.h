@@ -50,24 +50,81 @@
 #define CONMGR_THREAD_COUNT_MAX 256
 
 /*
- * connection manager will do the follow:
- * 	maintain a list of active connections by
- * 		ip/source
- *		user
- *	hand out fd for processing
- *	hold fd until ready for processing
+ * Connection Manager (conmgr) exists to own and handle all operations related
+ * to file descriptors.
+ *
+ * Major design features:
+ *  * conmgr implements entirely asynchronous I/O operations handling allow for
+ *  many more file descriptors than threads to be handled in parallel.
+ *  * conmgr uses a fixed size thread pool to run work (function callbacks) for
+ *  each connection to handle processing many connections in parallel.
+ *  * conmgr never blocks or holds a thread idle to wait for I/O but will
+ *  instead yield the thread to handle work from another connection to achieve
+ *  high throughput of many connections at once.
+ *  * conmgr tracks and enforces all timeouts internally for a connection when
+ *  activated for a given connection avoiding any need to implement secondary
+ *  timers to implement timeouts.
+ *  * conmgr tracks connection state entirely and will preserve the following
+ *  properties of a connection for each access (even after closed):
+ *	name - Name created based on the IP or path of the given file
+ *	descriptor(s) for a given connection. Name remains constant for the life
+ *	of the connection and can be retrieved at any time via
+ *	conmgr_fd_get_name() or conmgr_con_get_name()
+ *	remote address - Resolved socket address (slurm_addr_t) for socket based
+ *	file descriptors
+ * * conmgr will maintain internal buffers for all I/O to be handled entirely
+ * asynchronously as available from the kernel. write()s can safely be added at
+ * anytime and will not block to wait for the data to be sent over the file
+ * descriptor. Incoming data will be held in an internal buffer until the
+ * on_data() callback to allow processing of the data. Any pending outbound data
+ * will be sent before the file descriptor is closed (except connections with
+ * I/O failures) allowing a connection to be requested to be closed at any time
+ * without losing any of the pending outbound data.
+ * * conmgr supports disjoint connections that use a different file descriptor
+ * for incoming data and outgoing data. All operations on disjoint connections
+ * are directed to the correct file descriptor with the same interface as a
+ * unified connection with only a single file descriptor.
  */
 
 /*
- * Connection tracking pointer
- * Opaque struct - do not access directly
+ * Connection tracking pointer:
+ *
+ * Opaque struct - Do not access internal structure directly.
+ *
+ * WARNING: conmgr_fd_t pointers are only valid inside of conmgr_events_t
+ * function callbacks. Once the callbacks complete, the conmgr_fd_t pointer
+ * could become invalid at any time leading to a dangling pointer.
+ * NOTE: Use conmgr_fd_ref_t for storing pointers to connections outside of
+ * callbacks.
+ * NOTE: conmgr_fd_t pointers are intended to be removed outside of conmgr's
+ * internal source code and reference based functions should be used where
+ * possible instead.
  */
 typedef struct conmgr_fd_s conmgr_fd_t;
 
 /*
- * Connection reference.
- * Opaque struct - do not access directly.
- * While exists: the conmgr_fd_t ptr will remain valid.
+ * Connection reference pointer:
+ *
+ * Opaque struct - Do not access internal structure directly.
+ *
+ * Connection references are reference counted pointers for a given conmgr_fd_t
+ * instance which is owned exclusively by conmgr (internally). conmgr guarantees
+ * that as long as one connection reference exists, that the connection will be
+ * not free()ed and by extension that the conmgr_fd_t pointer will be valid.
+ * Once the last reference is released and any conmgr_events_t function
+ * callbacks have completed, the conmgr_fd_t pointer could be released at any
+ * time by conmgr. conmgr_fd_ref_t pointers should not be copied around but
+ * instead a new reference should be made when stored anywhere.
+ *
+ * Usage:
+ *  * conmgr_fd_new_ref(): create a new reference pointer from a conmgr_fd_t
+ *  pointer.
+ *  * conmgr_con_link(): Create a new reference pointer from an existing
+ *  reference pointer.
+ *  * conmgr_fd_get_ref(): Retrieves a conmgr_fd_t pointer from a given
+ *  reference pointer to be used when no reference accepting function exists.
+ *  * conmgr_fd_free_ref(): Releases a connection reference and NULLs the
+ *  reference pointer.
  */
 typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
@@ -795,12 +852,30 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output);
 extern int conmgr_fd_get_input_fd(conmgr_fd_t *con);
 
 /*
+ * Get connection input file descriptor
+ * WARNING: returned input_fd may become invalid at any time after return
+ * IN ref - connection reference to query
+ * IN input_fd_ptr - pointer to be populated on success
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_get_input_fd(conmgr_fd_ref_t *ref, int *input_fd_ptr);
+
+/*
  * Get output file descriptor
  * WARNING: fd is only valid until return from callback and may close due to
  * other calls against connection
  * RET -1 if closed or valid number
  */
 extern int conmgr_fd_get_output_fd(conmgr_fd_t *con);
+
+/*
+ * Get connection output file descriptor
+ * WARNING: returned output_fd may become invalid at any time after return
+ * IN ref - connection reference to query
+ * IN output_fd_ptr - pointer to be populated on success
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_get_output_fd(conmgr_fd_ref_t *ref, int *output_fd_ptr);
 
 typedef struct {
 	/* this is a socket fd */
