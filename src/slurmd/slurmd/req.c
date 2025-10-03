@@ -110,11 +110,11 @@
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/common/slurmstepd_init.h"
+
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/slurmd.h"
-
-#define _LIMIT_INFO 0
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -131,12 +131,6 @@ typedef struct {
 } libdir_rec_t;
 
 typedef struct {
-	uint64_t job_mem;
-	slurm_step_id_t step_id;
-	uint64_t step_mem;
-} job_mem_limits_t;
-
-typedef struct {
 	bool batch_step;
 	uint32_t job_id;
 } active_job_t;
@@ -151,7 +145,6 @@ typedef struct {
 
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
-static int  _job_limits_match(void *x, void *key);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, int flags,
 				   char *details, bool batch, uid_t req_uid);
 static void _launch_complete_add(uint32_t job_id, bool btch_step);
@@ -161,8 +154,7 @@ static void _launch_complete_wait(uint32_t job_id);
 static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
 static bool _launch_job_test(uint32_t job_id, bool batch_step);
 static void _note_batch_job_finished(uint32_t job_id);
-static int  _prolog_is_running (uint32_t jobid);
-static int  _step_limits_match(void *x, void *key);
+static int _prolog_is_running(uint32_t jobid);
 static void _rpc_terminate_job(slurm_msg_t *msg);
 static void _file_bcast_cleanup(void);
 static int  _file_bcast_register_file(slurm_msg_t *msg,
@@ -200,10 +192,6 @@ static list_t *waiters = NULL;
 
 static time_t startup = 0;		/* daemon startup time */
 static time_t last_slurmctld_msg = 0;
-
-static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
-static list_t *job_limits_list = NULL;
-static bool job_limits_loaded = false;
 
 static int next_fini_job_inx = 0;
 
@@ -1494,7 +1482,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostlist_t *step_hset = NULL;
-	job_mem_limits_t *job_limits_ptr;
 	int node_id = 0;
 	bitstr_t *numa_bitmap = NULL;
 
@@ -1639,33 +1626,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	node_features_g_step_config(mem_sort, numa_bitmap);
 	FREE_NULL_BITMAP(numa_bitmap);
 
-	if (req->job_mem_lim || req->step_mem_lim) {
-		step_loc_t step_info;
-		slurm_mutex_lock(&job_limits_mutex);
-		if (!job_limits_list)
-			job_limits_list = list_create(xfree_ptr);
-		memcpy(&step_info.step_id, &req->step_id,
-		       sizeof(step_info.step_id));
-		job_limits_ptr = list_find_first(job_limits_list,
-						 _step_limits_match,
-						 &step_info);
-		if (!job_limits_ptr) {
-			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			memcpy(&job_limits_ptr->step_id, &req->step_id,
-			       sizeof(job_limits_ptr->step_id));
-			job_limits_ptr->job_mem  = req->job_mem_lim;
-			job_limits_ptr->step_mem = req->step_mem_lim;
-#if _LIMIT_INFO
-			info("AddLim %ps job_mem:%"PRIu64" "
-			     "step_mem:%"PRIu64"",
-			     &job_limits_ptr->step_id,
-			     job_limits_ptr->job_mem,
-			     job_limits_ptr->step_mem);
-#endif
-			list_append(job_limits_list, job_limits_ptr);
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
-	}
+	job_mem_limit_register(req->step_id.job_id, req->job_mem_lim);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
@@ -2049,42 +2010,13 @@ static int _convert_job_mem(slurm_msg_t *msg)
 static int _make_prolog_mem_container(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = msg->data;
-	job_mem_limits_t *job_limits_ptr;
-	step_loc_t step_info;
 	int rc = SLURM_SUCCESS;
 
 	/* Convert per-CPU mem limit */
 	if ((rc = _convert_job_mem(msg)) != SLURM_SUCCESS)
 		return rc;
 
-	if (req->job_mem_limit) {
-		slurm_mutex_lock(&job_limits_mutex);
-		if (!job_limits_list)
-			job_limits_list = list_create(xfree_ptr);
-		step_info.step_id.job_id  = req->job_id;
-		step_info.step_id.step_id = SLURM_EXTERN_CONT;
-		step_info.step_id.step_het_comp = NO_VAL;
-		job_limits_ptr = list_find_first(job_limits_list,
-						 _step_limits_match,
-						 &step_info);
-		if (!job_limits_ptr) {
-			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			job_limits_ptr->step_id.job_id   = req->job_id;
-			job_limits_ptr->job_mem  = req->job_mem_limit;
-			job_limits_ptr->step_id.step_id  = SLURM_EXTERN_CONT;
-			job_limits_ptr->step_id.step_het_comp = NO_VAL;
-			job_limits_ptr->step_mem = req->job_mem_limit;
-#if _LIMIT_INFO
-			info("AddLim %ps job_mem:%"PRIu64""
-			     " step_mem:%"PRIu64"",
-			     &job_limits_ptr->step_id,
-			     job_limits_ptr->job_mem,
-			     job_limits_ptr->step_mem);
-#endif
-			list_append(job_limits_list, job_limits_ptr);
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
-	}
+	job_mem_limit_register(req->job_id, req->job_mem_limit);
 
 	return rc;
 }
@@ -2894,279 +2826,12 @@ _rpc_reboot(slurm_msg_t *msg)
 	/* slurm_send_rc_msg(msg, rc); */
 }
 
-static int _job_limits_match(void *x, void *key)
-{
-	job_mem_limits_t *job_limits_ptr = (job_mem_limits_t *) x;
-	uint32_t *job_id = (uint32_t *) key;
-	if (job_limits_ptr->step_id.job_id == *job_id)
-		return 1;
-	return 0;
-}
-
-static int _step_limits_match(void *x, void *key)
-{
-	job_mem_limits_t *job_limits_ptr = (job_mem_limits_t *) x;
-	step_loc_t *step_ptr = (step_loc_t *) key;
-
-	if ((job_limits_ptr->step_id.job_id  == step_ptr->step_id.job_id) &&
-	    (job_limits_ptr->step_id.step_id == step_ptr->step_id.step_id))
-		return 1;
-	return 0;
-}
-
 static int _find_step_loc(void *x, void *key)
 {
 	step_loc_t *step_loc = (step_loc_t *) x;
 	slurm_step_id_t *step_id = (slurm_step_id_t *) key;
 
 	return verify_step_id(&step_loc->step_id, step_id);
-}
-
-/* Call only with job_limits_mutex locked */
-static void
-_load_job_limits(void)
-{
-	list_t *steps;
-	list_itr_t *step_iter;
-	step_loc_t *stepd;
-	int fd;
-	job_mem_limits_t *job_limits_ptr;
-	slurmstepd_mem_info_t stepd_mem_info;
-
-	if (!job_limits_list)
-		job_limits_list = list_create(xfree_ptr);
-	job_limits_loaded = true;
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	step_iter = list_iterator_create(steps);
-	while ((stepd = list_next(step_iter))) {
-		job_limits_ptr = list_find_first(job_limits_list,
-						 _step_limits_match, stepd);
-		if (job_limits_ptr)	/* already processed */
-			continue;
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1)
-			continue;	/* step completed */
-
-		if (stepd_get_mem_limits(fd, stepd->protocol_version,
-					 &stepd_mem_info) != SLURM_SUCCESS) {
-			error("Error reading %ps memory limits from slurmstepd",
-			      &stepd->step_id);
-			close(fd);
-			continue;
-		}
-
-
-		if ((stepd_mem_info.job_mem_limit
-		     || stepd_mem_info.step_mem_limit)) {
-			/* create entry for this job */
-			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
-			memcpy(&job_limits_ptr->step_id, &stepd->step_id,
-			       sizeof(job_limits_ptr->step_id));
-			job_limits_ptr->job_mem  =
-				stepd_mem_info.job_mem_limit;
-			job_limits_ptr->step_mem =
-				stepd_mem_info.step_mem_limit;
-#if _LIMIT_INFO
-			info("RecLim %ps job_mem:%"PRIu64""
-			     " step_mem:%"PRIu64"",
-			     &job_limits_ptr->step_id,
-			     job_limits_ptr->job_mem,
-			     job_limits_ptr->step_mem);
-#endif
-			list_append(job_limits_list, job_limits_ptr);
-		}
-		close(fd);
-	}
-	list_iterator_destroy(step_iter);
-	FREE_NULL_LIST(steps);
-}
-
-static void
-_cancel_step_mem_limit(uint32_t job_id, uint32_t step_id)
-{
-	slurm_msg_t msg;
-	job_notify_msg_t notify_req;
-	job_step_kill_msg_t kill_req;
-
-	/* NOTE: Batch jobs may have no srun to get this message */
-	slurm_msg_t_init(&msg);
-	memset(&notify_req, 0, sizeof(notify_req));
-	notify_req.step_id.job_id = job_id;
-	notify_req.step_id.step_id = step_id;
-	notify_req.step_id.step_het_comp = NO_VAL;
-	notify_req.message     = "Exceeded job memory limit";
-	msg.msg_type    = REQUEST_JOB_NOTIFY;
-	msg.data        = &notify_req;
-	slurm_send_only_controller_msg(&msg, working_cluster_rec);
-
-	memset(&kill_req, 0, sizeof(kill_req));
-	memcpy(&kill_req.step_id, &notify_req, sizeof(kill_req.step_id));
-	kill_req.signal      = SIGKILL;
-	kill_req.flags       = KILL_OOM;
-	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
-	msg.data        = &kill_req;
-	slurm_send_only_controller_msg(&msg, working_cluster_rec);
-}
-
-/* Enforce job memory limits here in slurmd. Step memory limits are
- * enforced within slurmstepd (using jobacct_gather plugin). */
-static void
-_enforce_job_mem_limit(void)
-{
-	list_t *steps;
-	list_itr_t *step_iter, *job_limits_iter;
-	job_mem_limits_t *job_limits_ptr;
-	step_loc_t *stepd;
-	int fd, i, job_inx, job_cnt;
-	uint64_t step_rss, step_vsize;
-	slurm_step_id_t step_id = { 0 };
-	job_step_stat_t *resp = NULL;
-	struct job_mem_info {
-		uint32_t job_id;
-		uint64_t mem_limit;	/* MB */
-		uint64_t mem_used;	/* MB */
-		uint64_t vsize_limit;	/* MB */
-		uint64_t vsize_used;	/* MB */
-	};
-	struct job_mem_info *job_mem_info_ptr = NULL;
-
-	if (!slurm_conf.job_acct_oom_kill)
-		return;
-
-	slurm_mutex_lock(&job_limits_mutex);
-	if (!job_limits_loaded)
-		_load_job_limits();
-	if (list_count(job_limits_list) == 0) {
-		slurm_mutex_unlock(&job_limits_mutex);
-		return;
-	}
-
-	/* Build table of job limits, use highest mem limit recorded */
-	job_mem_info_ptr = xmalloc((list_count(job_limits_list) + 1) *
-				   sizeof(struct job_mem_info));
-	job_cnt = 0;
-	job_limits_iter = list_iterator_create(job_limits_list);
-	while ((job_limits_ptr = list_next(job_limits_iter))) {
-		if (job_limits_ptr->job_mem == 0) 	/* no job limit */
-			continue;
-		for (i=0; i<job_cnt; i++) {
-			if (job_mem_info_ptr[i].job_id !=
-			    job_limits_ptr->step_id.job_id)
-				continue;
-			job_mem_info_ptr[i].mem_limit = MAX(
-				job_mem_info_ptr[i].mem_limit,
-				job_limits_ptr->job_mem);
-			break;
-		}
-		if (i < job_cnt)	/* job already found & recorded */
-			continue;
-		job_mem_info_ptr[job_cnt].job_id =
-			job_limits_ptr->step_id.job_id;
-		job_mem_info_ptr[job_cnt].mem_limit = job_limits_ptr->job_mem;
-		job_cnt++;
-	}
-	list_iterator_destroy(job_limits_iter);
-	slurm_mutex_unlock(&job_limits_mutex);
-
-	for (i=0; i<job_cnt; i++) {
-		job_mem_info_ptr[i].vsize_limit = job_mem_info_ptr[i].
-			mem_limit;
-		job_mem_info_ptr[i].vsize_limit *=
-			(slurm_conf.vsize_factor / 100.0);
-	}
-
-	steps = stepd_available(conf->spooldir, conf->node_name);
-	step_iter = list_iterator_create(steps);
-	while ((stepd = list_next(step_iter))) {
-		for (job_inx=0; job_inx<job_cnt; job_inx++) {
-			if (job_mem_info_ptr[job_inx].job_id ==
-			    stepd->step_id.job_id)
-				break;
-		}
-		if (job_inx >= job_cnt)
-			continue;	/* job/step not being tracked */
-
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   &stepd->step_id, &stepd->protocol_version);
-		if (fd == -1)
-			continue;	/* step completed */
-
-		memcpy(&step_id, &stepd->step_id, sizeof(step_id));
-
-		resp = xmalloc(sizeof(job_step_stat_t));
-
-		if ((!stepd_stat_jobacct(fd, stepd->protocol_version,
-					 &step_id, resp)) &&
-		    (resp->jobacct)) {
-			/* resp->jobacct is NULL if account is disabled */
-			jobacctinfo_getinfo((struct jobacctinfo *)
-					    resp->jobacct,
-					    JOBACCT_DATA_TOT_RSS,
-					    &step_rss,
-					    stepd->protocol_version);
-			jobacctinfo_getinfo((struct jobacctinfo *)
-					    resp->jobacct,
-					    JOBACCT_DATA_TOT_VSIZE,
-					    &step_vsize,
-					    stepd->protocol_version);
-#if _LIMIT_INFO
-			info("%ps RSS:%"PRIu64" B VSIZE:%"PRIu64" B",
-			     &stepd->step_id, step_rss, step_vsize);
-#endif
-			if (step_rss != INFINITE64) {
-				step_rss /= 1048576;	/* B to MB */
-				step_rss = MAX(step_rss, 1);
-				job_mem_info_ptr[job_inx].mem_used += step_rss;
-			}
-			if (step_vsize != INFINITE64) {
-				step_vsize /= 1048576;	/* B to MB */
-				step_vsize = MAX(step_vsize, 1);
-				job_mem_info_ptr[job_inx].vsize_used +=
-					step_vsize;
-			}
-		}
-		slurm_free_job_step_stat(resp);
-		close(fd);
-	}
-	list_iterator_destroy(step_iter);
-	FREE_NULL_LIST(steps);
-
-	for (i=0; i<job_cnt; i++) {
-		if (job_mem_info_ptr[i].mem_used == 0) {
-			/* no steps found,
-			 * purge records for all steps of this job */
-			slurm_mutex_lock(&job_limits_mutex);
-			list_delete_all(job_limits_list, _job_limits_match,
-					&job_mem_info_ptr[i].job_id);
-			slurm_mutex_unlock(&job_limits_mutex);
-			break;
-		}
-
-		if ((job_mem_info_ptr[i].mem_limit != 0) &&
-		    (job_mem_info_ptr[i].mem_used >
-		     job_mem_info_ptr[i].mem_limit)) {
-			info("Job %u exceeded memory limit "
-			     "(%"PRIu64">%"PRIu64"), cancelling it",
-			     job_mem_info_ptr[i].job_id,
-			     job_mem_info_ptr[i].mem_used,
-			     job_mem_info_ptr[i].mem_limit);
-			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
-					       NO_VAL);
-		} else if ((job_mem_info_ptr[i].vsize_limit != 0) &&
-			   (job_mem_info_ptr[i].vsize_used >
-			    job_mem_info_ptr[i].vsize_limit)) {
-			info("Job %u exceeded virtual memory limit "
-			     "(%"PRIu64">%"PRIu64"), cancelling it",
-			     job_mem_info_ptr[i].job_id,
-			     job_mem_info_ptr[i].vsize_used,
-			     job_mem_info_ptr[i].vsize_limit);
-			_cancel_step_mem_limit(job_mem_info_ptr[i].job_id,
-					       NO_VAL);
-		}
-	}
-	xfree(job_mem_info_ptr);
 }
 
 static void _rpc_ping(slurm_msg_t *msg)
@@ -3182,7 +2847,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 	slurm_send_node_msg(msg->conn, &resp_msg);
 
 	/* Take this opportunity to enforce any job memory limits */
-	_enforce_job_mem_limit();
+	job_mem_limit_enforce();
 	/* Clear up any stalled file transfers as well */
 	_file_bcast_cleanup();
 
@@ -3209,7 +2874,7 @@ static void _rpc_health_check(slurm_msg_t *msg)
 	run_script_health_check();
 
 	/* Take this opportunity to enforce any job memory limits */
-	_enforce_job_mem_limit();
+	job_mem_limit_enforce();
 	/* Clear up any stalled file transfers as well */
 	_file_bcast_cleanup();
 }
@@ -5884,12 +5549,6 @@ extern void slurmd_req(slurm_msg_t *msg)
 		slurm_mutex_lock(&waiter_mutex);
 		FREE_NULL_LIST(waiters);
 		slurm_mutex_unlock(&waiter_mutex);
-		slurm_mutex_lock(&job_limits_mutex);
-		if (job_limits_list) {
-			FREE_NULL_LIST(job_limits_list);
-			job_limits_loaded = false;
-		}
-		slurm_mutex_unlock(&job_limits_mutex);
 		return;
 	}
 

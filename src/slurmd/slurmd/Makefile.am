@@ -25,10 +25,16 @@ slurmd_LDADD = $(depend_libs) $(LIB_SLURM) $(NUMA_LIBS) \
 slurmd_LDFLAGS = $(CMD_LDFLAGS) $(depend_ldflags)
 
 SLURMD_SOURCES = \
-	slurmd.c slurmd.h \
-	cred_context.c cred_context.h \
-	req.c req.h \
-	get_mach_stat.c get_mach_stat.h
+	cred_context.c \
+	cred_context.h \
+	get_mach_stat.c \
+	get_mach_stat.h \
+	job_mem_limit.c \
+	job_mem_limit.h \
+	req.c \
+	req.h \
+	slurmd.c \
+	slurmd.h
 
 slurmd_SOURCES = $(SLURMD_SOURCES)
 
