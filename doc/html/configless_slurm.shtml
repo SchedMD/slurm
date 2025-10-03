@@ -110,6 +110,16 @@ adjacent to slurm.conf.
 
 <h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
 
+<p>Starting from Slurm 25.11, there's a new
+<b>SlurmctldParameters=reconfig_on_restart</b> option that will make every
+restart of slurmctld (process restart not triggered by "scontrol reconfigure")
+to trigger a reconfiguration request to all slurmd and sackd daemons. For
+"configless" systems this will ensure all processes are running the current
+configuration. Some caution should be taken if you intend to perform rolling
+upgrades on the cluster as this could lead to the daemons being upgraded sooner
+than expected.
+</p>
+
 <p>The order of precedence for determining what configuration source to use
 is as follows:</p>
 <ol>
@@ -150,6 +160,6 @@ is as follows:</p>
 <li>topology.yaml</li>
 </ul>
 
-<p style="text-align:center;">Last modified 09 September 2025</p>
+<p style="text-align:center;">Last modified 25 September 2025</p>
 
 <!--#include virtual="footer.txt"-->
