@@ -127,6 +127,12 @@ extern void timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 		return;
 	}
 
+	if (timespec_is_infinite(ts)) {
+		snprintf(buffer, buffer_len, "%s",
+			 (abs_time ? "now+INFINITE" : "INFINITE"));
+		return;
+	}
+
 	ts = timespec_normalize(ts);
 
 	if (abs_time)
