@@ -92,6 +92,9 @@ typedef struct timespec timespec_t;
 		.tv_nsec = 0, \
 	})
 
+/* True if X is equal to or after TIMESPEC_INFINITE */
+extern bool timespec_is_infinite(timespec_t x);
+
 /* Get timespec for current timestamp from UNIX Epoch */
 extern timespec_t timespec_now(void);
 

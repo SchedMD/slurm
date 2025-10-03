@@ -32,6 +32,7 @@
 \*****************************************************************************/
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -283,4 +284,20 @@ extern int timeval_tot_wait(struct timeval *start_time)
 	msec_delay = (end_time.tv_sec - start_time->tv_sec) * 1000;
 	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
 	return msec_delay;
+}
+
+extern bool timespec_is_infinite(timespec_t x)
+{
+	static const timespec_t inf = TIMESPEC_INFINITE;
+
+	if (x.tv_sec == inf.tv_sec)
+		return true;
+
+	/*
+	 * normalize the timespec as tv_nsec may hold a non-negligible number of
+	 * seconds and then check if tv_sec is infinite
+	 */
+	x = timespec_normalize(x);
+
+	return (x.tv_sec == inf.tv_sec);
 }
