@@ -183,6 +183,8 @@ typedef enum {
 	DATA_PARSER_JOB_PTR, /* slurmdb_job_rec_t* */
 	DATA_PARSER_JOB_MODIFY, /* slurmdb_job_rec_t */
 	DATA_PARSER_JOB_MODIFY_PTR, /* slurmdb_job_rec_t */
+	DATA_PARSER_OPENAPI_JOB_MODIFY_REQ, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOB_MODIFY_REQ_PTR, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_JOB_MODIFY_RESP, /* list of strings in openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_JOB_MODIFY_RESP_PTR, /* list of strings in openapi_resp_single_t */
 	DATA_PARSER_JOB_ASSOC_ID, /* slurmdb_job_rec_t->associd,cluster */

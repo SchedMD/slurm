@@ -67,46 +67,91 @@ static void _dump_jobs(ctxt_t *ctxt, slurmdb_job_cond_t *job_cond)
 		FREE_NULL_LIST(job_cond->cluster_list);
 }
 
+static void _jobs_post_update(ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+	list_t *ret_list = NULL;
+	openapi_job_modify_req_t modify_req = { 0 };
+	slurmdb_job_cond_t job_cond = { 0 };
+
+	job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
+	job_cond.flags = JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_MODIFY_REQ, modify_req,
+		       ctxt->query, ctxt->parent_path)) {
+		resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Failure parsing job update request.");
+		goto cleanup;
+	}
+
+	job_cond.step_list = modify_req.job_id_list;
+
+	if (db_modify_list(ctxt, &ret_list, &job_cond, modify_req.job_rec,
+			   slurmdb_job_modify)) {
+		resp_error(ctxt, rc, "slurmdb_job_modify()",
+			   "Job update requested failed");
+		goto cleanup;
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_MODIFY_RESP, ret_list, ctxt);
+
+cleanup:
+	FREE_NULL_LIST(ret_list);
+	FREE_NULL_LIST(modify_req.job_id_list);
+	slurmdb_destroy_job_rec(modify_req.job_rec);
+}
+
 /* based on get_data() in sacct/options.c */
 extern int op_handler_jobs(ctxt_t *ctxt)
 {
-	if (ctxt->method != HTTP_REQUEST_GET) {
+	if ((ctxt->method != HTTP_REQUEST_GET) &&
+	    (ctxt->method != HTTP_REQUEST_POST)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
-	} else if (ctxt->query && data_get_dict_length(ctxt->query)) {
-		slurmdb_job_cond_t *job_cond = NULL;
+	}
 
-		if (DATA_PARSE(ctxt->parser, JOB_CONDITION_PTR, job_cond,
-			       ctxt->query, ctxt->parent_path)) {
-			return resp_error(ctxt, ESLURM_REST_INVALID_QUERY,
-					  __func__,
-					  "Rejecting request. Failure parsing query parameters");
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		if (ctxt->query && data_get_dict_length(ctxt->query)) {
+			slurmdb_job_cond_t *job_cond = NULL;
+
+			if (DATA_PARSE(ctxt->parser, JOB_CONDITION_PTR,
+				       job_cond, ctxt->query,
+				       ctxt->parent_path)) {
+				return resp_error(
+					ctxt, ESLURM_REST_INVALID_QUERY,
+					__func__,
+					"Rejecting request. Failure parsing query parameters");
+			}
+
+			/*
+			 * default to grabbing all information based on
+			 * _init_params()
+			 */
+			if (!job_cond->db_flags)
+				job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
+			if (!job_cond->flags)
+				job_cond->flags = (JOBCOND_FLAG_DUP |
+						   JOBCOND_FLAG_NO_TRUNC);
+
+			slurmdb_job_cond_def_start_end(job_cond);
+
+			if (!job_cond->cluster_list)
+				job_cond->cluster_list = list_create(xfree_ptr);
+
+			if (list_is_empty(job_cond->cluster_list))
+				list_append(job_cond->cluster_list,
+					    xstrdup(slurm_conf.cluster_name));
+
+			_dump_jobs(ctxt, job_cond);
+
+			slurmdb_destroy_job_cond(job_cond);
+		} else {
+			_dump_jobs(ctxt, NULL);
 		}
-
-		/*
-		 * default to grabbing all information based on _init_params()
-		 */
-		if (!job_cond->db_flags)
-			job_cond->db_flags = SLURMDB_JOB_FLAG_NOTSET;
-		if (!job_cond->flags)
-			job_cond->flags =
-				(JOBCOND_FLAG_DUP | JOBCOND_FLAG_NO_TRUNC);
-
-		slurmdb_job_cond_def_start_end(job_cond);
-
-		if (!job_cond->cluster_list)
-			job_cond->cluster_list = list_create(xfree_ptr);
-
-		if (list_is_empty(job_cond->cluster_list))
-			list_append(job_cond->cluster_list,
-				    xstrdup(slurm_conf.cluster_name));
-
-		_dump_jobs(ctxt, job_cond);
-
-		slurmdb_destroy_job_cond(job_cond);
-	} else {
-		_dump_jobs(ctxt, NULL);
+	} else if (ctxt->method == HTTP_REQUEST_POST) {
+		_jobs_post_update(ctxt);
 	}
 
 	return SLURM_SUCCESS;

@@ -666,6 +666,19 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.query = DATA_PARSER_JOB_CONDITION,
 			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "Update jobs",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOB_MODIFY_RESP,
+					.description = "Job update results",
+				},
+				.body = {
+					.type = DATA_PARSER_OPENAPI_JOB_MODIFY_REQ,
+					.description = "Job update description",
+				},
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,

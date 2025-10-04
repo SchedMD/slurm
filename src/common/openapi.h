@@ -455,4 +455,12 @@ typedef struct {
 	list_t *job_id_list; /* list of slurm_selected_step_t* */
 } openapi_job_state_query_t;
 
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *job_id_list; /* list of slurm_selected_step_t* */
+	slurmdb_job_rec_t *job_rec;
+} openapi_job_modify_req_t;
+
 #endif /* SLURM_OPENAPI_H */
