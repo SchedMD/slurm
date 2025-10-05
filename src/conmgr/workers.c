@@ -136,8 +136,10 @@ static int _detect_cpu_count(void)
 
 extern void workers_init(int count)
 {
+	const int detected_cpus = _detect_cpu_count();
+
 	if (!count) {
-		count = _detect_cpu_count() * CPU_THREAD_MULTIPLIER;
+		count = detected_cpus * CPU_THREAD_MULTIPLIER;
 
 		if (count > CONMGR_THREAD_COUNT_MAX)
 			count = CONMGR_THREAD_COUNT_MAX;
