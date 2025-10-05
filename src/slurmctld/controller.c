@@ -98,6 +98,7 @@
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/http_parser.h"
 #include "src/interfaces/job_submit.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
@@ -112,13 +113,16 @@
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/site_factor.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
+#include "src/interfaces/url_parser.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/heartbeat.h"
+#include "src/slurmctld/http.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -595,7 +599,7 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	int error_code;
+	int error_code = EINVAL;
 	struct timeval start, now;
 	struct stat stat_buf;
 	struct rlimit rlim;
@@ -758,6 +762,34 @@ int main(int argc, char **argv)
 
 	rate_limit_init();
 	rpc_queue_init();
+
+	/* Load plugins required for incoming HTTP requests */
+	if ((slurm_conf.conf_flags & CONF_FLAG_DISABLE_HTTP)) {
+		debug("Listening for HTTP requests disabled: CommunicationParameters=disable_http in slurm.conf");
+	} else if ((error_code = http_parser_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load http_parser plugin: %s",
+		  slurm_strerror(error_code));
+	} else if ((error_code = url_parser_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load url_parser plugin: %s",
+		  slurm_strerror(error_code));
+	} else if ((error_code = tls_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load TLS plugin: %s",
+		  slurm_strerror(error_code));
+	} else {
+		http_init();
+
+		if (!tls_available()) {
+			debug("Listening for TLS HTTP requests disabled: TLS plugin not loaded");
+		} else if (conn_tls_enabled()) {
+			debug("Listening for TLS HTTP requests: TLS RPCs enabled");
+		} else if ((error_code =
+				    tls_g_load_own_cert(NULL, 0, NULL, 0))) {
+			debug("Listening for TLS HTTP requests disabled: loading certificate failed: %s",
+			      slurm_strerror(error_code));
+		} else {
+			debug("Listening for TLS HTTP requests enabled via server certificate");
+		}
+	}
 
 	/* open ports must happen after become_slurm_user() */
 	 _open_ports();
@@ -1206,6 +1238,10 @@ int main(int argc, char **argv)
 
 	conmgr_request_shutdown();
 	conmgr_fini();
+	http_fini();
+	http_parser_g_fini();
+	url_parser_g_fini();
+	tls_g_fini();
 
 	rate_limit_shutdown();
 	log_fini();
