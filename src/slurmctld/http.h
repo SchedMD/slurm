@@ -39,4 +39,14 @@
 #ifndef _SLURMCTLD_HTTP_H
 #define _SLURMCTLD_HTTP_H
 
+#include <stdbool.h>
+
+#include "src/conmgr/conmgr.h"
+
+/* Setup incoming HTTP connection */
+extern int on_http_connection(conmgr_fd_t *con);
+
+extern void http_init(void);
+extern void http_fini(void);
+
 #endif
