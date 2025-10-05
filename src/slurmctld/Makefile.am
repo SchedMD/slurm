@@ -24,6 +24,8 @@ slurmctld_SOURCES =     \
 	groups.h	\
 	heartbeat.c	\
 	heartbeat.h	\
+	http.c	\
+	http.h	\
 	job_mgr.c 	\
 	job_scheduler.c	\
 	job_scheduler.h	\
