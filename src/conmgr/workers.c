@@ -52,6 +52,8 @@
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
+/* Limit automatically set default thread count */
+#define THREAD_AUTO_MAX 32
 /* Threads to create per kernel reported CPU */
 #define CPU_THREAD_MULTIPLIER 2
 
@@ -137,12 +139,15 @@ static int _detect_cpu_count(void)
 extern void workers_init(int count)
 {
 	const int detected_cpus = _detect_cpu_count();
+	const int auto_threads_max = (detected_cpus * CPU_THREAD_MULTIPLIER);
+	const int auto_threads = MIN(THREAD_AUTO_MAX, auto_threads_max);
 
 	if (!count) {
-		count = detected_cpus * CPU_THREAD_MULTIPLIER;
+		count = auto_threads;
 
-		if (count > CONMGR_THREAD_COUNT_MAX)
-			count = CONMGR_THREAD_COUNT_MAX;
+		log_flag(CONMGR, "%s: Setting thread count to %d/%d for %d available CPUs",
+			 __func__, auto_threads, auto_threads_max,
+			 detected_cpus);
 	}
 
 	if (!count) {
