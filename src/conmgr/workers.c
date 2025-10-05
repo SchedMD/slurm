@@ -148,12 +148,14 @@ extern void workers_init(int count)
 	if (!count) {
 		count = CONMGR_THREAD_COUNT_DEFAULT;
 	} else if (count < CONMGR_THREAD_COUNT_MIN) {
-		error("%s: thread count=%d too low, increasing to %d",
-		      __func__, count, CONMGR_THREAD_COUNT_MIN);
+		error("%s: %s%d too low, increasing to %d",
+		      __func__, CONMGR_PARAM_THREADS, count,
+		      CONMGR_THREAD_COUNT_MIN);
 		count = CONMGR_THREAD_COUNT_MIN;
 	} else if (count > CONMGR_THREAD_COUNT_MAX) {
-		error("%s: thread count=%d too high, decreasing to %d",
-		      __func__, count, CONMGR_THREAD_COUNT_MAX);
+		error("%s: %s%d too high, decreasing to %d",
+		      __func__, CONMGR_PARAM_THREADS, count,
+		      CONMGR_THREAD_COUNT_MAX);
 		count = CONMGR_THREAD_COUNT_MAX;
 	}
 
