@@ -107,7 +107,6 @@ typedef struct {
 	bool stdin_socket; /* running with a socket for stdin */
 	bool stderr_tty; /* running with a TTY for stderr */
 	bool stdout_tty; /* running with a TTY for stdout */
-	bool stdout_socket; /* running with a socket for stdout */
 	bool listen; /* running in listening daemon mode aka not INET mode */
 } run_mode_t;
 
@@ -296,9 +295,6 @@ static void _examine_stdout(void)
 
 	if (fstat(STDOUT_FILENO, &status))
 		fatal("unable to stat STDOUT: %m");
-
-	if ((status.st_mode & S_IFMT) == S_IFSOCK)
-		run_mode.stdout_socket = true;
 
 	if (isatty(STDOUT_FILENO))
 		run_mode.stdout_tty = true;
