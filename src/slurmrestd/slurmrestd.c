@@ -330,6 +330,9 @@ static void _setup_logging(int argc, char **argv)
 
 	if (log_init(xbasename(argv[0]), logopt, fac, NULL))
 		fatal("Unable to setup logging: %m");
+
+	if (run_mode.stderr_tty)
+		debug("Interactive mode activated (TTY detected on STDERR)");
 }
 
 /*
@@ -823,9 +826,6 @@ int main(int argc, char **argv)
 		xfree(in);
 		xfree(out);
 	}
-
-	if (run_mode.stdin_tty)
-		debug("Interactive mode activated (TTY detected on STDIN)");
 
 	if (!run_mode.listen) {
 		inetd_mode = true;
