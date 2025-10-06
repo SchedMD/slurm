@@ -433,8 +433,8 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] TLS disabled: Unable to secure connection. Closing connection.",
 			 __func__, con->name);
 
-		close_con(true, con);
-		close_con_output(true, con);
+		close_con(false, con);
+		close_con_output(false, con);
 		return;
 	}
 
