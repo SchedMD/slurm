@@ -5,6 +5,7 @@ import atf
 import pytest
 import pexpect
 import re
+import json
 
 suser = atf.properties["slurm-user"]
 
@@ -15,7 +16,7 @@ def setup():
     atf.require_slurm_running()
 
 
-def test_env_variables():
+def test_env_variables(printenv):
     """Verify the appropriate job environment variables are set."""
 
     env_vars = []
@@ -39,20 +40,19 @@ def test_env_variables():
     env_vars_g0.append("SLURM_TASKS_PER_NODE")
     env_vars_g0.append("SLURM_TASK_PID")
 
-    env_vars_list = atf.run_job_output(
-        "-N1 -n1 --cpus-per-task=1 env", user=suser
-    ).splitlines()
+    output = atf.run_job_output(f"-N1 -n1 --cpus-per-task=1 {printenv}", user=suser)
+    env_dict = json.loads(output)
+
     env_var_count = 0
     env_var_g0_count = 0
-    for env_var in env_vars_list:
-        name_val = env_var.split("=")
-        name = name_val[0]
-        env_value = name_val[1]
+
+    for name, env_value in env_dict.items():
         if name in env_vars:
             env_var_count += 1
         elif name in env_vars_g0:
             if int(env_value) > 0:
                 env_var_g0_count += 1
+
     assert env_var_count == len(
         env_vars
     ), f"Not all environment variables are set missing {len(env_vars) - env_var_count}"
