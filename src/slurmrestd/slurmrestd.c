@@ -103,7 +103,6 @@ decl_static_data(usage_txt);
 uint32_t slurm_daemon = IS_SLURMRESTD;
 
 typedef struct {
-	bool stdin_tty; /* running with a TTY for stdin */
 	bool stdin_socket; /* running with a socket for stdin */
 	bool stderr_tty; /* running with a TTY for stderr */
 	bool stdout_tty; /* running with a TTY for stdout */
@@ -273,9 +272,6 @@ static void _examine_stdin(void)
 
 	if ((status.st_mode & S_IFMT) == S_IFSOCK)
 		run_mode.stdin_socket = true;
-
-	if (isatty(STDIN_FILENO))
-		run_mode.stdin_tty = true;
 }
 
 static void _examine_stderr(void)
