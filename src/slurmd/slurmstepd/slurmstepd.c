@@ -842,6 +842,17 @@ static void _process_cmdline(int argc, char **argv)
 		(void) poll(NULL, 0, -1);
 		exit(0);
 	}
+	if ((argc == 3) && !xstrcmp(argv[1], "ns_infinity")) {
+		char *buf;
+		init_setproctitle(argc, argv);
+		buf = xstrdup_printf("[%s:%s]", argv[2], "namespace");
+		setproctitle("%s", buf);
+		xfree(buf);
+		set_oom_adj(STEPD_OOM_ADJ);
+		(void) poll(NULL, 0, -1);
+		fini_setproctitle();
+		exit(0);
+	}
 	if ((argc == 3) && !xstrcmp(argv[1], "spank")) {
 		if (_handle_spank_mode(argc, argv) < 0)
 			exit(1);

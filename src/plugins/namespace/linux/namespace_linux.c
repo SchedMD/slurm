@@ -57,6 +57,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -401,6 +402,7 @@ static pid_t sys_clone(unsigned long flags, int *parent_tid, int *child_tid,
 static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 			     char *job_mount, sem_t *sem1, sem_t *sem2)
 {
+	char *argv[4] = { (char *) conf->stepd_loc, "ns_infinity", NULL, NULL };
 	int rc = 0;
 
 	if (sem_post(sem1) < 0) {
@@ -473,6 +475,18 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 		error("%s: could not mount private shm", __func__);
 		goto child_exit;
 	}
+
+	sem_destroy(sem1);
+	munmap(sem1, sizeof(*sem1));
+	sem_destroy(sem2);
+	munmap(sem2, sizeof(*sem2));
+
+	/* become an infinity process */
+	xstrfmtcat(argv[2], "%u", step->step_id.job_id);
+
+	execvp(argv[0], argv);
+	error("execvp of slurmstepd infinity failed: %m");
+	_exit(127);
 
 child_exit:
 	sem_destroy(sem1);
@@ -608,10 +622,11 @@ static int _create_ns(stepd_step_rec_t *step)
 		rc = -1;
 		goto exit1;
 	} else if (cpid == 0) {
-		/* child process exits on its own */
 		_create_ns_child(step, src_bind, job_mount, sem1, sem2);
 	} else {
+		/*
 		int wstatus;
+		*/
 		char *proc_path = NULL;
 
 		if (sem_wait(sem1) < 0) {
@@ -647,8 +662,9 @@ static int _create_ns(stepd_step_rec_t *step)
 			goto exit1;
 		}
 
-		if ((waitpid(cpid, &wstatus, 0) != cpid) || WEXITSTATUS(wstatus)) {
-			error("%s: waitpid failed", __func__);
+		if (proctrack_g_add(step, cpid) != SLURM_SUCCESS) {
+			error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.",
+			      __func__, step->step_id.job_id, cpid);
 			rc = SLURM_ERROR;
 			goto exit1;
 		}
