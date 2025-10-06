@@ -102,6 +102,8 @@ static void _parse_args(int argc, char **argv)
 		LONG_OPT_CA_CERT_FILE,
 		LONG_OPT_CONF_SERVER,
 		LONG_OPT_DISABLE_RECONFIG,
+		LONG_OPT_JWKS_FILE,
+		LONG_OPT_KEY_FILE,
 		LONG_OPT_PORT,
 		LONG_OPT_SYSTEMD,
 	};
@@ -110,6 +112,8 @@ static void _parse_args(int argc, char **argv)
 		{"ca-cert-file", required_argument, 0, LONG_OPT_CA_CERT_FILE},
 		{"conf-server", required_argument, 0, LONG_OPT_CONF_SERVER},
 		{ "disable-reconfig", no_argument, 0, LONG_OPT_DISABLE_RECONFIG },
+		{ "jwks-file", required_argument, 0, LONG_OPT_JWKS_FILE },
+		{ "key-file", required_argument, 0, LONG_OPT_KEY_FILE },
 		{ "port", required_argument, 0, LONG_OPT_PORT },
 		{"systemd", no_argument, 0, LONG_OPT_SYSTEMD},
 		{NULL, no_argument, 0, 'v'},
@@ -189,6 +193,12 @@ static void _parse_args(int argc, char **argv)
 			break;
 		case LONG_OPT_DISABLE_RECONFIG:
 			disable_reconfig = true;
+			break;
+		case LONG_OPT_JWKS_FILE:
+			setenv("SLURM_SACK_JWKS", optarg, 0);
+			break;
+		case LONG_OPT_KEY_FILE:
+			setenv("SLURM_SACK_KEY", optarg, 0);
 			break;
 		case LONG_OPT_PORT:
 			if (parse_uint16(optarg, &port))

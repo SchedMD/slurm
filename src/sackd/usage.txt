@@ -4,6 +4,8 @@ usage:	sackd [OPTIONS]
     -D                          Run daemon in foreground.
     -f config                   Read configuration from the specified file.
     -h                          Print this help message.
+    --jwks-file                 Read JWKS information from this file.
+    --key-file                  Read authentication key from this file.
     -p port                     Listening port for configuration updates.
     --systemd                   Started from a systemd unit file.
     -v                          Verbose mode. Multiple -v's increase verbosity.
