@@ -359,6 +359,16 @@ variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .TP
+\fBSLURM_DEBUG\fR
+Set debug level explicitly. Valid values are 0\-9, or the same string values as
+the debug options such as SlurmctldDebug in slurm.conf(5). Increased if
+\fB\-v\fR passed as argument during invocation. Ignored if
+\fBSLURMRESTD_DEBUG\fR or \fBSLURMRESTD_DEBUG_STDERR\fR or
+\fBSLURMRESTD_DEBUG_SYSLOG\fR are set in environment. See
+\fBSLURMRESTD_DEBUG\fR for description of logging targets.
+.IP
+
+.TP
 \fBSLURMRESTD_JSON\fR or \fBSLURM_JSON\fR
 Control JSON serialization:
 .IP

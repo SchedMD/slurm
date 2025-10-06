@@ -171,11 +171,13 @@ static void _parse_env(void)
 {
 	char *buffer = NULL;
 
-	if ((buffer = getenv("SLURMRESTD_DEBUG")) != NULL) {
+	if ((buffer = getenv("SLURMRESTD_DEBUG")) ||
+	    (buffer = getenv("SLURM_DEBUG"))) {
 		debug_level = log_string2num(buffer);
 
 		if ((debug_level < 0) || (debug_level == NO_VAL16))
-			fatal("Invalid env SLURMRESTD_DEBUG: %s", buffer);
+			fatal("Invalid env SLURMRESTD_DEBUG or SLURM_DEBUG: %s",
+			      buffer);
 	}
 
 	if ((buffer = getenv("SLURMRESTD_DEBUG_SYSLOG")) != NULL) {
