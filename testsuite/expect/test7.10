@@ -69,6 +69,8 @@ exec $bin_echo "int getuid(void)  { return ID; }" >>${ld_preload}.c
 exec $bin_echo "int geteuid(void) { return ID; }" >>${ld_preload}.c
 exec $bin_echo "int getgid(void)  { return ID; }" >>${ld_preload}.c
 exec $bin_echo "int getegid(void) { return ID; }" >>${ld_preload}.c
+exec $bin_echo "int setresgid (int rgid, int egid, int sgid) { return 0; }" >>${ld_preload}.c
+exec $bin_echo "int setresuid (int ruid, int euid, int suid) { return 0; }" >>${ld_preload}.c
 exec $bin_cc -c -fPIC -o ${ld_preload}.lo ${ld_preload}.c
 exec $bin_cc -shared -o ${ld_preload}.so ${ld_preload}.lo
 
