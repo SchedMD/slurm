@@ -542,7 +542,7 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 extern int http_con_send_response(http_con_t *hcon,
 				  http_status_code_t status_code,
 				  list_t *headers, bool close_header,
-				  buf_t *body, const char *body_encoding)
+				  const buf_t *body, const char *body_encoding)
 {
 	int rc = SLURM_SUCCESS;
 	http_con_request_t *request = &hcon->request;
