@@ -1751,6 +1751,19 @@ extern bool listeners_quiesced(void)
 	return quiesced;
 }
 
+extern bool is_primary(void)
+{
+	bool primary;
+
+	slurm_mutex_lock(&listeners.mutex);
+
+	primary = !listeners.standby_mode;
+
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return primary;
+}
+
 /*
  * _open_ports - Open all ports for the slurmctld to listen on.
  */
