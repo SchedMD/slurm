@@ -16004,6 +16004,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	job_record_t *job_ptr = x;
 	foreach_purge_missing_jobs_t *foreach_purge_missing_jobs = arg;
 	time_t startup_time = foreach_purge_missing_jobs->batch_startup_time;
+	slurm_step_id_t step_id;
 
 	if ((IS_JOB_CONFIGURING(job_ptr) ||
 	     (!IS_JOB_RUNNING(job_ptr) &&
@@ -16018,6 +16019,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	     foreach_purge_missing_jobs->node_boot_time))
 		startup_time -= slurm_conf.resume_timeout;
 
+	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	if (job_ptr->batch_flag &&
 	    !job_ptr->het_job_offset &&
 	    (job_ptr->time_last_active < startup_time) &&
@@ -16026,7 +16028,6 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	     find_node_record(job_ptr->batch_host))) {
 		bool requeue = false;
 		char *requeue_msg = "";
-		slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		if (job_ptr->details && job_ptr->details->requeue) {
 			requeue = true;
 			requeue_msg = ", Requeuing job";
@@ -16043,6 +16044,29 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		(void) list_for_each(job_ptr->step_list,
 				     _foreach_notify_srun_missing_step,
 				     foreach_purge_missing_jobs);
+
+		/*
+		 * The RPC agent for REQUEST_LAUNCH_PROLOG is now able to cancel
+		 * an interactive job if some slurmd never received that RPC.
+		 *
+		 * But if we restart slurmctld we never hit that logic, so we
+		 * need this block here to clean up these jobs too.
+		 *
+		 * Note: There's still a chance for this cleanup to be delayed.
+		 * If slurmd is restarted after slurmctld, but before
+		 * prolog_timeout, this logic is skipped. And we need to wait
+		 * the ping logic to cycle over MAX_REG_FREQUENCY before
+		 * triggering this logic again in the worst case.
+		 */
+		if ((job_ptr->state_reason == WAIT_PROLOG) &&
+		    !job_ptr->batch_flag &&
+		    (difftime(time(NULL), job_ptr->prolog_launch_time) >
+		     slurm_conf.prolog_timeout)) {
+			error("%s: Revoking job %pI due to nodes not responding",
+			      __func__, &step_id);
+			job_complete(&step_id, slurm_conf.slurm_user_id, false,
+				     true, 1);
+		}
 	}
 	return 0;
 }
