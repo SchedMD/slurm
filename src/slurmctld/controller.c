@@ -1491,6 +1491,11 @@ rwfail:
 	(void) close(fd);
 }
 
+extern bool is_reconfiguring(void)
+{
+	return reconfig || !list_is_empty(reconfig_reqs);
+}
+
 extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	xassert(msg);

@@ -2273,6 +2273,9 @@ extern int set_part_topology_idx(void *x, void *arg);
 
 extern void reconfigure_slurm(slurm_msg_t *msg);
 
+/* True if slurmctld has a pending reconfigure request */
+extern bool is_reconfiguring(void);
+
 extern void notify_parent_of_success(void);
 
 /*
