@@ -110,6 +110,8 @@ typedef struct {
 
 /* Debug level to use */
 static int debug_level = 0;
+static int debug_level_syslog = 0;
+static int debug_level_stderr = 0;
 static int debug_increase = 0;
 /* detected run mode */
 static run_mode_t run_mode = { 0 };
@@ -174,6 +176,24 @@ static void _parse_env(void)
 
 		if ((debug_level < 0) || (debug_level == NO_VAL16))
 			fatal("Invalid env SLURMRESTD_DEBUG: %s", buffer);
+	}
+
+	if ((buffer = getenv("SLURMRESTD_DEBUG_SYSLOG")) != NULL) {
+		debug_level_syslog = log_string2num(buffer);
+
+		if ((debug_level_syslog < 0) ||
+		    (debug_level_syslog == NO_VAL16))
+			fatal("Invalid env SLURMRESTD_DEBUG_SYSLOG: %s",
+			      buffer);
+	}
+
+	if ((buffer = getenv("SLURMRESTD_DEBUG_STDERR")) != NULL) {
+		debug_level_stderr = log_string2num(buffer);
+
+		if ((debug_level_stderr < 0) ||
+		    (debug_level_stderr == NO_VAL16))
+			fatal("Invalid env SLURMRESTD_DEBUG_STDERR: %s",
+			      buffer);
 	}
 
 	if ((buffer = getenv("SLURMRESTD_LISTEN")) != NULL) {
@@ -284,38 +304,54 @@ static void _examine_stderr(void)
 		run_mode.stderr_tty = true;
 }
 
+static int _add_log_level(int base, int increase)
+{
+	return MIN((base + increase), (LOG_LEVEL_END - 1));
+}
+
 static void _setup_logging(int argc, char **argv)
 {
 	/* Default to logging as a daemon */
 	log_options_t logopt = LOG_OPTS_INITIALIZER;
 	log_facility_t fac = SYSLOG_FACILITY_DAEMON;
+	bool interactive_mode = false;
+
+	if (debug_level_syslog)
+		logopt.syslog_level =
+			_add_log_level(debug_level_syslog, debug_increase);
+	if (debug_level_stderr)
+		logopt.stderr_level =
+			_add_log_level(debug_level_stderr, debug_increase);
 
 	/*
-	 * Set debug level as requested.
-	 * debug_level is set to the value of SLURMRESTD_DEBUG.
-	 * SLURMRESTD_DEBUG sets the debug level if -v's are not given.
-	 * debug_increase is the command line option -v, which applies on top
-	 * of the default log level (info).
+	 * Only activate interactive mode to log to TTY if syslog and
+	 * stderr were not explicitly set
 	 */
-	if (debug_increase)
-		debug_level = MIN((LOG_LEVEL_INFO + debug_increase),
-				  (LOG_LEVEL_END - 1));
-	else if (!debug_level)
-		debug_level = LOG_LEVEL_INFO;
+	if (!debug_level_syslog && !debug_level_stderr) {
+		if (!debug_level)
+			debug_level =
+				_add_log_level(LOG_LEVEL_INFO, debug_increase);
+		else
+			debug_level =
+				_add_log_level(debug_level, debug_increase);
 
-	logopt.syslog_level = debug_level;
+		if (run_mode.stderr_tty) {
+			logopt = (log_options_t) LOG_OPTS_STDERR_ONLY;
+			fac = SYSLOG_FACILITY_USER;
+			logopt.stderr_level = debug_level;
 
-	if (run_mode.stderr_tty) {
-		/* Log to stderr if it is a tty */
-		logopt = (log_options_t) LOG_OPTS_STDERR_ONLY;
-		fac = SYSLOG_FACILITY_USER;
-		logopt.stderr_level = debug_level;
+			interactive_mode = true;
+		} else {
+			/* Default to only logging to syslog */
+			logopt.syslog_level =
+				_add_log_level(debug_level, debug_increase);
+		}
 	}
 
 	if (log_init(xbasename(argv[0]), logopt, fac, NULL))
 		fatal("Unable to setup logging: %m");
 
-	if (run_mode.stderr_tty)
+	if (interactive_mode)
 		debug("Interactive mode activated (TTY detected on STDERR)");
 }
 
