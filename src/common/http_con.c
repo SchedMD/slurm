@@ -429,11 +429,18 @@ static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 /*
  * Send HTTP close notification header
  *	Warns the client that we are about to close the connection.
+ *	Requests the connection close as this reply is done.
  * IN hcon - http connection
  * RET SLURM_SUCCESS or error
  */
 static int _send_http_connection_close(http_con_t *hcon)
 {
+	/*
+	 * Ensure connection gets closed as we just told the client the
+	 * connection is closing
+	 */
+	conmgr_con_queue_close(hcon->con);
+
 	return _write_fmt_header(hcon->con, "Connection", "Close");
 }
 
