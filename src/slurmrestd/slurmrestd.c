@@ -105,7 +105,6 @@ uint32_t slurm_daemon = IS_SLURMRESTD;
 typedef struct {
 	bool stdin_socket; /* running with a socket for stdin */
 	bool stderr_tty; /* running with a TTY for stderr */
-	bool stdout_tty; /* running with a TTY for stdout */
 	bool listen; /* running in listening daemon mode aka not INET mode */
 } run_mode_t;
 
@@ -283,17 +282,6 @@ static void _examine_stderr(void)
 
 	if (isatty(STDERR_FILENO))
 		run_mode.stderr_tty = true;
-}
-
-static void _examine_stdout(void)
-{
-	struct stat status = { 0 };
-
-	if (fstat(STDOUT_FILENO, &status))
-		fatal("unable to stat STDOUT: %m");
-
-	if (isatty(STDOUT_FILENO))
-		run_mode.stdout_tty = true;
 }
 
 static void _setup_logging(int argc, char **argv)
@@ -708,7 +696,6 @@ int main(int argc, char **argv)
 
 	_examine_stdin();
 	_examine_stderr();
-	_examine_stdout();
 	_setup_logging(argc, argv);
 
 	run_mode.listen = !list_is_empty(socket_listen);
