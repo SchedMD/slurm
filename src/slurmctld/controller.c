@@ -1738,6 +1738,19 @@ extern void listeners_unquiesce(void)
 	slurm_mutex_unlock(&listeners.mutex);
 }
 
+extern bool listeners_quiesced(void)
+{
+	bool quiesced;
+
+	slurm_mutex_lock(&listeners.mutex);
+
+	quiesced = listeners.quiesced;
+
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return quiesced;
+}
+
 /*
  * _open_ports - Open all ports for the slurmctld to listen on.
  */

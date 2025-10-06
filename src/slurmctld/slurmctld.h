@@ -2316,4 +2316,7 @@ extern void listeners_unquiesce(void);
 /* Stop listener sockets from accept()ing new incoming requests */
 extern void listeners_quiesce(void);
 
+/* True if listeners are quiesced */
+extern bool listeners_quiesced(void);
+
 #endif /* !_HAVE_SLURMCTLD_H */
