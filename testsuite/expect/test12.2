@@ -225,6 +225,7 @@ set job_id [submit_job -fail "-n$num_tasks --mem-per-cpu=$job_mem_limit --output
 # Wait for job to run
 #
 wait_for_job -fail $job_id "RUNNING"
+set job_start [clock seconds]
 
 wait_and_subtest _get_mem       $sstat
 wait_and_subtest _get_file_size $sstat
@@ -233,6 +234,8 @@ wait_and_subtest _get_file_size $sstat
 # Wait for job to complete
 #
 wait_for_job -fail $job_id "DONE"
+set job_end [clock seconds]
+set job_elapsed [expr {$job_end - $job_start}]
 
 wait_and_subtest _get_mem       $sacct
 wait_and_subtest _get_file_size $sacct
@@ -251,7 +254,10 @@ subtest {[regexp "$job_id\\.$step_id.$file_prog.$expected_state.$expected_ret_co
 #
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format elapsed --starttime=00:00"]
 set value  [convert_time_str $output "secs"]
-subtest {[tolerance $sleep_time $value +$max_time_error]} "Elapsed time reported by sacct should be close to $sleep_time" "$value too different from $sleep_time"
+# On busy systems job_elapsed may be a bit bigger than sleep_time if job
+# was completing for a while
+subtest {[tolerance $sleep_time $value +$max_time_error] || \
+         [tolerance $job_elapsed $value $max_time_error]} "Elapsed time reported by sacct should be close to $sleep_time" "$value too different from $sleep_time"
 
 #
 # Report the sacct accounting info: TotalCPU
