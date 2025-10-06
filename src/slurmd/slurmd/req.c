@@ -2746,6 +2746,7 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
 	static bool first_msg = true;
+	static bool first_error = true;
 	static uint32_t req_cnt = 0;
 	static pthread_mutex_t req_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_mutex_t last_poll_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -2772,7 +2773,13 @@ static void _rpc_acct_gather_energy(slurm_msg_t *msg)
 		req_cnt++;
 		req_added = true;
 	} else {
-		error("%s: Too many pending requests", __func__);
+		if (first_error) {
+			error("%s: Too many pending requests", __func__);
+			first_error = false;
+		} else {
+			debug("%s: Too many pending requests", __func__);
+		}
+
 		rc = ESLURMD_TOO_MANY_RPCS;
 	}
 	slurm_mutex_unlock(&req_cnt_mutex);
@@ -2839,6 +2846,7 @@ end:
 	if (req_added) {
 		slurm_mutex_lock(&req_cnt_mutex);
 		req_cnt--;
+		first_error = true;
 		slurm_mutex_unlock(&req_cnt_mutex);
 	}
 }
