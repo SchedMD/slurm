@@ -756,20 +756,48 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 
 	/* Notify slurmctld of non-responding nodes */
 	if (no_resp_cnt) {
+		/* Locks: Write job, write node, read federation */
+		slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK,
+						    .node = WRITE_LOCK,
+						    .fed = READ_LOCK };
 		/* Update node table data for non-responding nodes */
 		if (agent_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 			/* Requeue the request */
 			batch_job_launch_msg_t *launch_msg_ptr =
-					*agent_ptr->msg_args_pptr;
-			/* Locks: Write job, write node, read federation */
-			slurmctld_lock_t job_write_lock =
-				{ .job  = WRITE_LOCK,
-				  .node = WRITE_LOCK,
-				  .fed  = READ_LOCK };
+				*agent_ptr->msg_args_pptr;
 
 			lock_slurmctld(job_write_lock);
 			job_complete(&launch_msg_ptr->step_id,
 				     slurm_conf.slurm_user_id, true, false, 0);
+			unlock_slurmctld(job_write_lock);
+		} else if (agent_ptr->msg_type == REQUEST_LAUNCH_PROLOG) {
+			prolog_launch_msg_t *prolog_msg_ptr =
+				*agent_ptr->msg_args_pptr;
+			job_record_t *job_ptr;
+
+			lock_slurmctld(job_write_lock);
+			job_ptr = find_job_record(
+				prolog_msg_ptr->deprecated.job_id);
+			/*
+			 * We are about to give up on sending this RPC because
+			 * the receiver never ACK.
+			 *
+			 * In this extreme situation we assume slurmd never
+			 * realized it has to run a prolog, so the whole job,
+			 * if not batch, can be cancelled directly. Batch jobs
+			 * are requeued later, so we don't need to worry here.
+			 */
+			if (job_ptr && (job_ptr->state_reason == WAIT_PROLOG) &&
+			    job_ptr->prolog_launch_time &&
+			    !job_ptr->batch_flag) {
+				slurm_step_id_t step_id =
+					STEP_ID_FROM_JOB_RECORD(job_ptr);
+
+				error("%s: Revoking job %pI due to nodes not responding",
+				      __func__, &step_id);
+				job_complete(&step_id, slurm_conf.slurm_user_id,
+					     false, true, 1);
+			}
 			unlock_slurmctld(job_write_lock);
 		}
 	}
