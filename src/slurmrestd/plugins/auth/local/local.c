@@ -54,11 +54,12 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
-#include "src/interfaces/auth.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
 
 #include "src/slurmrestd/rest_auth.h"
 
