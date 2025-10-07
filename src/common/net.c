@@ -574,9 +574,5 @@ extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	if (*cred_gid == SLURM_AUTH_NOBODY)
 		return ESLURM_AUTH_NOBODY;
 
-	/* Catch invalid process ID of -1, 0 which should never happen */
-	if (*cred_pid < 1)
-		return ESRCH;
-
 	return SLURM_SUCCESS;
 }
