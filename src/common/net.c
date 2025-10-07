@@ -532,8 +532,11 @@ extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	};
 	socklen_t len = sizeof(cred);
 
-	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len))
-		return errno;
+	if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) {
+		log_flag(NET, "%s: [fd:%d] getsockopt(SO_PEERCRED) failed: %m",
+			 __func__, fd);
+		return ESLURM_AUTH_SOCKET_INVALID_PEER;
+	}
 
 	*cred_uid = cred.uid;
 	*cred_gid = cred.gid;
@@ -546,8 +549,11 @@ extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	};
 	socklen_t len = sizeof(cred);
 
-	if (getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len))
-		return errno;
+	if (getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len)) {
+		log_flag(NET, "%s: [fd:%d] getsockopt(SO_PEERCRED) failed: %m",
+			 __func__, fd);
+		return ESLURM_AUTH_SOCKET_INVALID_PEER;
+	}
 
 	*cred_uid = cred.cr_uid;
 	*cred_gid = cred.cr_groups[0];
