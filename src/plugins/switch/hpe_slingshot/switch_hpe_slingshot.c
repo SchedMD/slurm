@@ -289,7 +289,7 @@ error:
 	return SLURM_ERROR;
 }
 
-extern void switch_p_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
+extern void switch_p_jobinfo_pack(void *switch_jobinfo, buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	slingshot_jobinfo_t *jobinfo = switch_jobinfo;
@@ -308,7 +308,7 @@ extern void switch_p_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
 	}
 }
 
-extern int switch_p_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
+extern int switch_p_jobinfo_unpack(void **switch_jobinfo, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	bool tmp_bool;
@@ -349,7 +349,7 @@ unpack_error:
 }
 
 /* Used to free switch_jobinfo when switch_p_job_complete can't be used */
-extern void switch_p_free_jobinfo(job_record_t *job_ptr)
+extern void switch_p_jobinfo_free(job_record_t *job_ptr)
 {
 	slingshot_free_jobinfo(job_ptr->switch_jobinfo);
 	job_ptr->switch_jobinfo = NULL;

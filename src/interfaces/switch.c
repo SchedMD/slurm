@@ -58,13 +58,13 @@ typedef struct slurm_switch_ops {
 	uint32_t     (*plugin_id);
 	int          (*state_save)        ( void );
 	int          (*state_restore)     ( bool recover );
-	void         (*pack_jobinfo)      ( void *switch_jobinfo,
+	void         (*jobinfo_pack)      ( void *switch_jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
-	int          (*unpack_jobinfo)    ( void **switch_jobinfo,
+	int          (*jobinfo_unpack)    ( void **switch_jobinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
-	void (*free_jobinfo)(void *switch_jobinfo);
+	void (*jobinfo_free)(void *switch_jobinfo);
 	int          (*build_stepinfo)    ( switch_stepinfo_t **stepinfo,
 					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
@@ -102,9 +102,9 @@ static const char *syms[] = {
 	"plugin_id",
 	"switch_p_save",
 	"switch_p_restore",
-	"switch_p_pack_jobinfo",
-	"switch_p_unpack_jobinfo",
-	"switch_p_free_jobinfo",
+	"switch_p_jobinfo_pack",
+	"switch_p_jobinfo_unpack",
+	"switch_p_jobinfo_free",
 	"switch_p_build_stepinfo",
 	"switch_p_duplicate_stepinfo",
 	"switch_p_free_stepinfo",
@@ -272,7 +272,7 @@ extern int switch_g_restore(bool recover)
  * These are designed so that the payload will be skipped if the plugin
  * is unavailable.
  */
-extern void switch_g_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
+extern void switch_g_jobinfo_pack(void *switch_jobinfo, buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	dynamic_plugin_data_t plugin_data = {
@@ -287,7 +287,7 @@ extern void switch_g_pack_jobinfo(void *switch_jobinfo, buf_t *buffer,
 	plugin_data.plugin_id = *ops[switch_context_default].plugin_id;
 
 	dynamic_plugin_data_pack(&plugin_data,
-				 *(ops[switch_context_default].pack_jobinfo),
+				 *(ops[switch_context_default].jobinfo_pack),
 				 buffer, protocol_version);
 }
 
@@ -297,10 +297,10 @@ static dynamic_plugin_data_unpack_func _get_unpack_func(
 	if (plugin_id != *(ops[switch_context_default].plugin_id))
 		return NULL;
 
-	return *(ops[switch_context_default].unpack_jobinfo);
+	return *(ops[switch_context_default].jobinfo_unpack);
 }
 
-extern int switch_g_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
+extern int switch_g_jobinfo_unpack(void **switch_jobinfo, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *plugin_data = NULL;
@@ -324,13 +324,13 @@ extern int switch_g_unpack_jobinfo(void **switch_jobinfo, buf_t *buffer,
 }
 
 /* Free switch_jobinfo struct when switch_g_job_complete can't be used */
-extern void switch_g_free_jobinfo(job_record_t *job_ptr)
+extern void switch_g_jobinfo_free(job_record_t *job_ptr)
 {
 	xassert(switch_context_cnt >= 0);
 	if (!switch_context_cnt)
 		return;
 
-	(*(ops[switch_context_default].free_jobinfo))(job_ptr);
+	(*(ops[switch_context_default].jobinfo_free))(job_ptr);
 }
 
 extern int switch_g_build_stepinfo(dynamic_plugin_data_t **stepinfo,

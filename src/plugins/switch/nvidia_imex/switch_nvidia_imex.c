@@ -269,7 +269,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
+extern void switch_p_jobinfo_pack(switch_info_t *switch_info, buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
@@ -304,7 +304,7 @@ extern void switch_p_pack_jobinfo(switch_info_t *switch_info, buf_t *buffer,
 	}
 }
 
-extern int switch_p_unpack_jobinfo(switch_info_t **switch_info, buf_t *buffer,
+extern int switch_p_jobinfo_unpack(switch_info_t **switch_info, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	xassert(switch_info);
@@ -347,7 +347,7 @@ unpack_error:
 }
 
 /* Used to free switch_jobinfo when switch_p_job_complete can't be used */
-extern void switch_p_free_jobinfo(job_record_t *job_ptr)
+extern void switch_p_jobinfo_free(job_record_t *job_ptr)
 {
 	if (job_ptr->switch_jobinfo) {
 		switch_info_t *switch_jobinfo = job_ptr->switch_jobinfo;
@@ -435,13 +435,13 @@ extern void switch_p_free_stepinfo(switch_info_t *switch_step)
 extern void switch_p_pack_stepinfo(switch_info_t *switch_step, buf_t *buffer,
 				   uint16_t protocol_version)
 {
-	switch_p_pack_jobinfo(switch_step, buffer, protocol_version);
+	switch_p_jobinfo_pack(switch_step, buffer, protocol_version);
 }
 
 extern int switch_p_unpack_stepinfo(switch_info_t **switch_step, buf_t *buffer,
 				    uint16_t protocol_version)
 {
-	return switch_p_unpack_jobinfo(switch_step, buffer, protocol_version);
+	return switch_p_jobinfo_unpack(switch_step, buffer, protocol_version);
 }
 
 extern int switch_p_job_preinit(stepd_step_rec_t *step)

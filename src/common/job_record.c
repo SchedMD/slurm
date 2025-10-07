@@ -305,7 +305,7 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->step_list);
 	/* switch_g_job_complete() should have already been called if needed */
 	if (job_ptr->switch_jobinfo)
-		switch_g_free_jobinfo(job_ptr);
+		switch_g_jobinfo_free(job_ptr);
 	xfree(job_ptr->system_comment);
 	topology_g_jobinfo_free(job_ptr->topo_jobinfo);
 	xfree(job_ptr->tres_alloc_cnt);
@@ -2523,7 +2523,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->partition, buffer);
 		packstr(dump_job_ptr->lic_req, buffer);
 
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		topology_g_jobinfo_pack(dump_job_ptr->topo_jobinfo, buffer,
 					protocol_version);
@@ -2643,7 +2643,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->partition, buffer);
 		packstr(dump_job_ptr->lic_req, buffer);
 
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
@@ -2761,7 +2761,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->lic_req, buffer);
 
 		select_plugin_id_pack(buffer);
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
@@ -2935,7 +2935,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->system_comment, buffer);
 
 		select_plugin_id_pack(buffer);
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
@@ -3111,7 +3111,7 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (topology_g_jobinfo_unpack(&job_ptr->topo_jobinfo, buffer,
@@ -3273,7 +3273,7 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
@@ -3432,7 +3432,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
@@ -3651,7 +3651,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->system_comment, buffer);
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
