@@ -69,7 +69,6 @@ test1.2    Confirm that a job executes with the proper task count (--nprocs
 test1.8    Confirm that basic srun stdin, stdout, and stderr options work
 	   (--input, --output, and --error option respectively).
 test1.9    Test of srun verbose mode (--verbose option).
-test1.10   Test of srun/slurmd debug mode (--slurmd-debug option).
 test1.11   Test job name option (--job-name).
 test1.12   Test srun --overlap
 test1.13   Test of immediate allocation option (--immediate option).
