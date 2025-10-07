@@ -70,7 +70,6 @@ test1.8    Confirm that basic srun stdin, stdout, and stderr options work
 	   (--input, --output, and --error option respectively).
 test1.9    Test of srun verbose mode (--verbose option).
 test1.12   Test srun --overlap
-test1.13   Test of immediate allocation option (--immediate option).
 test1.14   Test exclusive resource allocation for a step (--exclusive option).
 test1.15   Test of wait option (--wait option).
 test1.16   Confirm that srun buffering can be disabled (--unbuffered option).
