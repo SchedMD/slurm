@@ -1103,6 +1103,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_AUTH_NOBODY),
 		"Rejecting authentication of user nobody or group nobody",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_AUTH_SOCKET_INVALID_PEER),
+		"Unable to query kernel for socket peer credential",
+	},
 
 	/* accounting errors */
 	{
