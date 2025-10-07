@@ -64,7 +64,6 @@ A summary of each expect test is shown below.
 
 test1.#    Testing of srun options.
 ===================================
-test1.1    Confirm that a job executes with appropriate user id and group id.
 test1.2    Confirm that a job executes with the proper task count (--nprocs
 	   and --overcommit options).
 test1.3    Confirm that srun reports a proper version number (--version option).
