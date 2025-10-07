@@ -178,7 +178,8 @@ static void _on_signal(int signal)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *str = sig_num2name(signal);
 		log_flag(CONMGR, "%s: [%s] got signal: %s(%d)",
-			 __func__, signal_con->name, str, signal);
+			 __func__, (signal_con ? signal_con->name : "INVALID"),
+			 str, signal);
 		xfree(str);
 	}
 
