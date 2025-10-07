@@ -57,6 +57,7 @@
 #include <unistd.h>
 
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xrandom.h"
 
 #if defined(__FreeBSD__) || defined(__NetBSD__)
@@ -524,6 +525,11 @@ extern slurm_addr_t sockaddr_from_unix_path(const char *path)
 extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 			pid_t *cred_pid)
 {
+	/* set all pointers to invalid defaults */
+	*cred_uid = SLURM_AUTH_NOBODY;
+	*cred_gid = SLURM_AUTH_NOBODY;
+	*cred_pid = 0;
+
 #if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
 	struct ucred cred = {
 		.uid = SLURM_AUTH_NOBODY,
