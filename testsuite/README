@@ -66,7 +66,6 @@ test1.#    Testing of srun options.
 ===================================
 test1.2    Confirm that a job executes with the proper task count (--nprocs
 	   and --overcommit options).
-test1.5    Confirm that srun help option works (--help option).
 test1.6    Confirm that srun sets appropriate working directory (--chdir
 	   option).
 test1.7    Confirm that job time limit function works (--time option).
