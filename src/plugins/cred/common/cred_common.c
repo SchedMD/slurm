@@ -78,7 +78,7 @@ static void _packstr_and_switch(char *string, void *switch_step, buf_t *buffer,
 
 	start = get_buf_offset(buffer);
 	packstr(string, buffer);
-	switch_g_pack_stepinfo(switch_step, buffer, protocol_version);
+	switch_g_stepinfo_pack(switch_step, buffer, protocol_version);
 	pack8(0, buffer); /* ensure trailing NUL */
 	end = get_buf_offset(buffer);
 	set_buf_offset(buffer, start);
@@ -109,10 +109,10 @@ static int _unpackstr_and_switch(char **string, void **switch_step,
 		/* Second hidden field */
 		uint32_t end = get_buf_offset(buffer);
 		set_buf_offset(buffer, start + string_len + 4);
-		if (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+		if (switch_g_stepinfo_unpack(&switch_tmp, buffer,
 					     protocol_version)) {
-			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(switch_tmp);
+			error("switch_g_stepinfo_unpack: %m");
+			switch_g_stepinfo_free(switch_tmp);
 			goto unpack_error;
 		}
 		*switch_step = switch_tmp;
@@ -219,7 +219,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 				     buffer);
 		}
 		packstr(cred->job_selinux_context, buffer);
-		switch_g_pack_stepinfo(cred->switch_step, buffer,
+		switch_g_stepinfo_pack(cred->switch_step, buffer,
 				       protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
@@ -420,9 +420,9 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		}
 
 		safe_unpackstr(&cred_arg->job_selinux_context, buffer);
-		if (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+		if (switch_g_stepinfo_unpack(&switch_tmp, buffer,
 					     protocol_version)) {
-			switch_g_free_stepinfo(switch_tmp);
+			switch_g_stepinfo_free(switch_tmp);
 			goto unpack_error;
 		}
 		cred_arg->switch_step = switch_tmp;

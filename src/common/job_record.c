@@ -38,10 +38,11 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"
 
-#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/topology.h"
 
 #include "src/stepmgr/stepmgr.h"
 
@@ -91,7 +92,7 @@ extern void free_step_record(void *x)
 			switch_g_job_step_complete(
 				step_ptr->switch_step,
 				step_ptr->step_layout->node_list);
-		switch_g_free_stepinfo(step_ptr->switch_step);
+		switch_g_stepinfo_free(step_ptr->switch_step);
 	}
 	resv_port_step_free(step_ptr);
 
@@ -304,8 +305,9 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_LIST(job_ptr->step_list);
 	/* switch_g_job_complete() should have already been called if needed */
 	if (job_ptr->switch_jobinfo)
-		switch_g_free_jobinfo(job_ptr);
+		switch_g_jobinfo_free(job_ptr);
 	xfree(job_ptr->system_comment);
+	topology_g_jobinfo_free(job_ptr->topo_jobinfo);
 	xfree(job_ptr->tres_alloc_cnt);
 	xfree(job_ptr->tres_alloc_str);
 	xfree(job_ptr->tres_bind);
@@ -818,7 +820,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 
 		if (step_ptr->switch_step) {
 			pack8(1, buffer);
-			switch_g_pack_stepinfo(step_ptr->switch_step, buffer,
+			switch_g_stepinfo_pack(step_ptr->switch_step, buffer,
 					       protocol_version);
 		} else
 			pack8(0, buffer);
@@ -908,7 +910,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 
 		if (step_ptr->switch_step) {
 			pack8(1, buffer);
-			switch_g_pack_stepinfo(step_ptr->switch_step, buffer,
+			switch_g_stepinfo_pack(step_ptr->switch_step, buffer,
 					       protocol_version);
 		} else
 			pack8(0, buffer);
@@ -1054,7 +1056,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp &&
-		    (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+		    (switch_g_stepinfo_unpack(&switch_tmp, buffer,
 					      protocol_version)))
 			goto unpack_error;
 
@@ -1136,7 +1138,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp &&
-		    (switch_g_unpack_stepinfo(&switch_tmp, buffer,
+		    (switch_g_stepinfo_unpack(&switch_tmp, buffer,
 					      protocol_version)))
 			goto unpack_error;
 
@@ -1214,7 +1216,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->step_layout  = step_layout;
 
 	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) && switch_tmp) {
-		switch_g_free_stepinfo(switch_tmp);
+		switch_g_stepinfo_free(switch_tmp);
 		switch_tmp = NULL;
 	} else
 		step_ptr->switch_step = switch_tmp;
@@ -1311,7 +1313,7 @@ unpack_error:
 		jobacctinfo_destroy(jobacct);
 	xfree(core_job);
 	if (switch_tmp)
-		switch_g_free_stepinfo(switch_tmp);
+		switch_g_stepinfo_free(switch_tmp);
 	slurm_step_layout_destroy(step_layout);
 	xfree(tres_alloc_str);
 	xfree(tres_fmt_alloc_str);
@@ -2446,7 +2448,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 	if (dump_job_ptr->job_id == NO_VAL)
 		return 0;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
 
@@ -2521,7 +2523,127 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->partition, buffer);
 		packstr(dump_job_ptr->lic_req, buffer);
 
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
+				      protocol_version);
+		topology_g_jobinfo_pack(dump_job_ptr->topo_jobinfo, buffer,
+					protocol_version);
+		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
+				   protocol_version);
+
+		packstr_array(dump_job_ptr->spank_job_env,
+			      dump_job_ptr->spank_job_env_size, buffer);
+
+		(void) gres_job_state_pack(dump_job_ptr->gres_list_req, buffer,
+					   dump_job_ptr->job_id, true,
+					   protocol_version);
+
+		(void) gres_job_state_pack(dump_job_ptr->gres_list_alloc,
+					   buffer, dump_job_ptr->job_id,
+					   true, protocol_version);
+
+		/* Dump job details, if available */
+		detail_ptr = dump_job_ptr->details;
+		if (detail_ptr) {
+			xassert(detail_ptr->magic == DETAILS_MAGIC);
+			packbool(true, buffer);
+			_dump_job_details(detail_ptr, buffer, protocol_version);
+		} else
+			packbool(false, buffer); /* no details */
+
+		/* Dump job steps */
+		(void) slurm_pack_list(dump_job_ptr->step_list,
+				       _pack_step_state, buffer,
+				       protocol_version);
+
+		packstr(dump_job_ptr->tres_alloc_str, buffer);
+		packstr(dump_job_ptr->tres_req_str, buffer);
+		packstr(dump_job_ptr->clusters, buffer);
+
+		packstr(dump_job_ptr->origin_cluster, buffer);
+
+		if (dump_job_ptr->id) {
+			packbool(true, buffer);
+			pack_identity(dump_job_ptr->id, buffer,
+				      protocol_version);
+		} else {
+			packbool(false, buffer);
+		}
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		job_record_pack_common(dump_job_ptr, true, buffer,
+				       protocol_version);
+
+		if (dump_job_ptr->array_recs) {
+			if (dump_job_ptr->array_recs->task_id_bitmap) {
+				tmp_32 = bit_size(dump_job_ptr->array_recs->
+						  task_id_bitmap);
+			} else
+				tmp_32 = 0;
+			pack32(tmp_32, buffer);
+			if (tmp_32)
+				packstr(dump_job_ptr->array_recs->task_id_str,
+					buffer);
+			pack32(dump_job_ptr->array_recs->array_flags, buffer);
+			pack32(dump_job_ptr->array_recs->max_run_tasks, buffer);
+			pack32(dump_job_ptr->array_recs->tot_run_tasks, buffer);
+			pack32(dump_job_ptr->array_recs->min_exit_code, buffer);
+			pack32(dump_job_ptr->array_recs->max_exit_code, buffer);
+			pack32(dump_job_ptr->array_recs->tot_comp_tasks,
+			       buffer);
+		} else {
+			tmp_32 = NO_VAL;
+			pack32(tmp_32, buffer);
+		}
+
+		pack32(dump_job_ptr->time_limit, buffer);
+		pack32(dump_job_ptr->total_cpus, buffer);
+		if (dump_job_ptr->total_nodes)
+			pack32(dump_job_ptr->total_nodes, buffer);
+		else
+			pack32(dump_job_ptr->node_cnt_wag, buffer);
+		pack32(dump_job_ptr->cpu_cnt, buffer);
+		pack64(dump_job_ptr->db_index, buffer);
+		pack32(dump_job_ptr->resv_id, buffer);
+		pack32(dump_job_ptr->next_step_id, buffer);
+		pack32(dump_job_ptr->qos_id, buffer);
+		pack32(dump_job_ptr->db_flags, buffer);
+
+		pack_time(dump_job_ptr->prolog_launch_time, buffer);
+		pack_time(dump_job_ptr->start_time, buffer);
+		pack_time(dump_job_ptr->end_time, buffer);
+		pack_time(dump_job_ptr->end_time_exp, buffer);
+		pack_time(dump_job_ptr->tot_sus_time, buffer);
+
+		pack16(dump_job_ptr->direct_set_prio, buffer);
+		pack16(dump_job_ptr->kill_on_node_fail, buffer);
+		pack32(dump_job_ptr->state_reason_prev_db, buffer);
+		pack16(dump_job_ptr->wait_all_nodes, buffer);
+		pack16(dump_job_ptr->warn_flags, buffer);
+		pack16(dump_job_ptr->warn_signal, buffer);
+		pack16(dump_job_ptr->warn_time, buffer);
+
+		_pack_acct_policy_limit(&dump_job_ptr->limit_set, buffer,
+					tres_cnt, protocol_version);
+
+		packstr(dump_job_ptr->resp_host, buffer);
+
+		pack16(dump_job_ptr->alloc_resp_port, buffer);
+		packstr(dump_job_ptr->alloc_tls_cert, buffer);
+		pack16(dump_job_ptr->other_port, buffer);
+		pack16(dump_job_ptr->resv_port_cnt, buffer);
+
+		if (IS_JOB_COMPLETING(dump_job_ptr))
+			packstr(dump_job_ptr->nodes_completing, buffer);
+		if (dump_job_ptr->state_reason == WAIT_PROLOG)
+			packstr(dump_job_ptr->nodes_pr, buffer);
+		packstr(dump_job_ptr->nodes, buffer);
+		pack32(dump_job_ptr->node_cnt, buffer);
+
+		pack_bit_str_hex(dump_job_ptr->node_bitmap, buffer);
+
+		packstr(dump_job_ptr->partition, buffer);
+		packstr(dump_job_ptr->lic_req, buffer);
+
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
@@ -2639,7 +2761,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->lic_req, buffer);
 
 		select_plugin_id_pack(buffer);
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
@@ -2813,7 +2935,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->system_comment, buffer);
 
 		select_plugin_id_pack(buffer);
-		switch_g_pack_jobinfo(dump_job_ptr->switch_jobinfo, buffer,
+		switch_g_jobinfo_pack(dump_job_ptr->switch_jobinfo, buffer,
 				      protocol_version);
 		pack_job_resources(dump_job_ptr->job_resrcs, buffer,
 				   protocol_version);
@@ -2892,7 +3014,7 @@ extern int job_record_unpack(job_record_t **out,
 	job_record_t *job_ptr = job_record_create();
 	*out = job_ptr;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
 
 		/* validity test as possible */
@@ -2989,7 +3111,169 @@ extern int job_record_unpack(job_record_t **out,
 		}
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
+					    buffer, protocol_version))
+			goto unpack_error;
+		if (topology_g_jobinfo_unpack(&job_ptr->topo_jobinfo, buffer,
+					      protocol_version))
+			goto unpack_error;
+		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
+					 protocol_version))
+			goto unpack_error;
+
+		safe_unpackstr_array(&job_ptr->spank_job_env,
+				     &job_ptr->spank_job_env_size, buffer);
+
+		if (gres_job_state_unpack(&job_ptr->gres_list_req, buffer,
+					  job_ptr->job_id, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_job_state_log(job_ptr->gres_list_req, job_ptr->job_id);
+
+		if (gres_job_state_unpack(&job_ptr->gres_list_alloc, buffer,
+					  job_ptr->job_id, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
+
+		safe_unpackbool(&need_unpack, buffer);
+		if (need_unpack &&
+		    (_load_job_details(job_ptr, buffer, protocol_version) !=
+		     SLURM_SUCCESS)) {
+			goto unpack_error;
+		}
+
+		/*
+		 * slurm_list_pack was used here but the step needs the job_ptr
+		 * so we have to make a copy of slurm_unpack_list logic so we
+		 * can deal with the extra pointer.
+		 */
+		safe_unpack32(&count, buffer);
+
+		if (count > NO_VAL)
+			goto unpack_error;
+
+		if (count != NO_VAL) {
+			for (int i = 0; i < count; i++) {
+				if (load_step_state(job_ptr, buffer,
+						    protocol_version) !=
+				    SLURM_SUCCESS)
+					goto unpack_error;
+			}
+		}
+
+		safe_unpackstr(&job_ptr->tres_alloc_str, buffer);
+		safe_unpackstr(&job_ptr->tres_req_str, buffer);
+		safe_unpackstr(&job_ptr->clusters, buffer);
+
+		safe_unpackstr(&job_ptr->origin_cluster, buffer);
+
+		safe_unpackbool(&need_unpack, buffer);
+		if (need_unpack) {
+			if (unpack_identity(&job_ptr->id, buffer,
+					    protocol_version))
+				goto unpack_error;
+			assoc_mgr_set_uid(job_ptr->user_id,
+					  job_ptr->id->pw_name);
+		}
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		job_record_unpack_common(job_ptr, buffer, protocol_version);
+
+		/* validity test as possible */
+		if (job_ptr->job_id == 0) {
+			verbose("Invalid job_id %u", job_ptr->job_id);
+			goto unpack_error;
+		}
+
+		/* Job Array record */
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			job_ptr->array_recs =
+				xmalloc(sizeof(job_array_struct_t));
+			if (count) {
+				job_ptr->array_recs->task_id_bitmap =
+					bit_alloc(count);
+				safe_unpackstr(
+					&job_ptr->array_recs->task_id_str,
+					buffer);
+				if (job_ptr->array_recs->task_id_str) {
+					if (bit_unfmt_hexmask(
+						    job_ptr->array_recs->
+						    task_id_bitmap,
+						    job_ptr->array_recs->
+						    task_id_str) == -1)
+						error("%s: bit_unfmt_hexmask error on '%s'",
+						      __func__,
+						      job_ptr->array_recs->
+						      task_id_str);
+				}
+				job_ptr->array_recs->task_cnt =
+					bit_set_count(job_ptr->array_recs->
+						      task_id_bitmap);
+			}
+			safe_unpack32(&job_ptr->array_recs->array_flags,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_run_tasks,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->min_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->max_exit_code,
+				      buffer);
+			safe_unpack32(&job_ptr->array_recs->tot_comp_tasks,
+				      buffer);
+		}
+
+		safe_unpack32(&job_ptr->time_limit, buffer);
+		safe_unpack32(&job_ptr->total_cpus, buffer);
+		safe_unpack32(&job_ptr->total_nodes, buffer);
+		safe_unpack32(&job_ptr->cpu_cnt, buffer);
+		safe_unpack64(&job_ptr->db_index, buffer);
+		safe_unpack32(&job_ptr->resv_id, buffer);
+		safe_unpack32(&job_ptr->next_step_id, buffer);
+		safe_unpack32(&job_ptr->qos_id, buffer);
+		safe_unpack32(&job_ptr->db_flags, buffer);
+
+		safe_unpack_time(&job_ptr->prolog_launch_time, buffer);
+		safe_unpack_time(&job_ptr->start_time, buffer);
+		safe_unpack_time(&job_ptr->end_time, buffer);
+		safe_unpack_time(&job_ptr->end_time_exp, buffer);
+		safe_unpack_time(&job_ptr->tot_sus_time, buffer);
+
+		safe_unpack16(&job_ptr->direct_set_prio, buffer);
+		safe_unpack16(&job_ptr->kill_on_node_fail, buffer);
+		safe_unpack32(&job_ptr->state_reason_prev_db, buffer);
+		safe_unpack16(&job_ptr->wait_all_nodes, buffer);
+		safe_unpack16(&job_ptr->warn_flags, buffer);
+		safe_unpack16(&job_ptr->warn_signal, buffer);
+		safe_unpack16(&job_ptr->warn_time, buffer);
+
+		_unpack_acct_policy_limit_members(&job_ptr->limit_set, tres_cnt,
+						  buffer, protocol_version);
+
+		safe_unpackstr(&job_ptr->resp_host, buffer);
+
+		safe_unpack16(&job_ptr->alloc_resp_port, buffer);
+		safe_unpackstr(&job_ptr->alloc_tls_cert, buffer);
+		safe_unpack16(&job_ptr->other_port, buffer);
+		safe_unpack16(&job_ptr->resv_port_cnt, buffer);
+
+		if (job_ptr->job_state & JOB_COMPLETING)
+			safe_unpackstr(&job_ptr->nodes_completing, buffer);
+		if (job_ptr->state_reason == WAIT_PROLOG)
+			safe_unpackstr(&job_ptr->nodes_pr, buffer);
+		safe_unpackstr(&job_ptr->nodes, buffer);
+		safe_unpack32(&job_ptr->node_cnt, buffer);
+		unpack_bit_str_hex(&job_ptr->node_bitmap, buffer);
+		safe_unpackstr(&job_ptr->partition, buffer);
+		if (job_ptr->partition == NULL) {
+			error("No partition for JobId=%u", job_ptr->job_id);
+			goto unpack_error;
+		}
+		safe_unpackstr(&job_ptr->lic_req, buffer);
+
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
@@ -3148,7 +3432,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->lic_req, buffer);
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,
@@ -3367,7 +3651,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpackstr(&job_ptr->system_comment, buffer);
 
 		safe_unpack32(&uint32_tmp, buffer); /* was select_jobinfo */
-		if (switch_g_unpack_jobinfo(&job_ptr->switch_jobinfo,
+		if (switch_g_jobinfo_unpack(&job_ptr->switch_jobinfo,
 					    buffer, protocol_version))
 			goto unpack_error;
 		if (unpack_job_resources(&job_ptr->job_resrcs, buffer,

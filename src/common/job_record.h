@@ -35,6 +35,7 @@
 #define _SLURM_JOB_RECORD_H
 
 #include "src/common/cron.h"
+#include "src/common/dynamic_plugin_data.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/part_record.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -466,6 +467,10 @@ struct job_record {
 	uint32_t time_min;		/* minimum time_limit minutes or
 					 * INFINITE,
 					 * zero implies same as time_limit */
+	dynamic_plugin_data_t *topo_jobinfo; /* topology plugin job info
+					      * available after eval_nodes is
+					      * successfully run on this job.
+					      */
 	time_t tot_sus_time;		/* total time in suspend state */
 	uint32_t total_cpus;		/* number of allocated cpus,
 					 * for accounting */

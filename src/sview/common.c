@@ -615,6 +615,7 @@ extern int get_topo_conf(void)
 	switch_record_bitmaps_t sw_nodes_bitmaps;
 	switch_record_bitmaps_t *sw_nodes_bitmaps_ptr;
 	topoinfo_tree_t *topo_info;
+	dynamic_plugin_data_t *topo_info_plugin_data;
 
 	if (!g_topo_info_msg_ptr &&
 	    slurm_load_topo(&g_topo_info_msg_ptr, NULL)) {
@@ -628,7 +629,9 @@ extern int get_topo_conf(void)
 		return SLURM_ERROR;
 	}
 
-	if (g_topo_info_msg_ptr->topo_info->plugin_id != TOPOLOGY_PLUGIN_TREE) {
+	topo_info_plugin_data = g_topo_info_msg_ptr->topo_info;
+
+	if (topo_info_plugin_data->plugin_id != TOPOLOGY_PLUGIN_TREE) {
 		slurm_free_topo_info_msg(g_topo_info_msg_ptr);
 		g_topo_info_msg_ptr = NULL;
 		return SLURM_ERROR;
@@ -636,7 +639,7 @@ extern int get_topo_conf(void)
 
 	if (g_switch_nodes_maps)
 		free_switch_nodes_maps(g_switch_nodes_maps);
-	topo_info = g_topo_info_msg_ptr->topo_info->data;
+	topo_info = topo_info_plugin_data->data;
 
 	g_switch_nodes_maps =
 		xmalloc(sizeof(sw_nodes_bitmaps) * topo_info->record_count);

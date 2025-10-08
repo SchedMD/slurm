@@ -2858,6 +2858,13 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		goto cleanup;
 	}
 
+	if (switch_g_job_start(job_ptr, true) != SLURM_SUCCESS) {
+		error_code = ESLURM_NODES_BUSY;
+		/* switch_g_job_start should set job_ptr->state_reason */
+		xfree(job_ptr->state_desc);
+		goto cleanup;
+	}
+
 	if (test_only) {	/* set if job not highest priority */
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
@@ -3022,7 +3029,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	jobcomp_g_record_job_start(job_ptr);
-	switch_g_job_start(job_ptr);
+	(void) switch_g_job_start(job_ptr, false);
 	prolog_slurmctld(job_ptr);
 	reboot_job_nodes(job_ptr);
 	gs_job_start(job_ptr);
@@ -3321,7 +3328,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	prolog_msg_ptr->cred = slurm_cred_create(&cred_arg, false,
 						 protocol_version);
-	switch_g_free_stepinfo(cred_arg.switch_step);
+	switch_g_stepinfo_free(cred_arg.switch_step);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
 

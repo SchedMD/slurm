@@ -43,6 +43,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -257,6 +258,12 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 		topo_eval->trump_others = true;
 	}
 
+	xassert(!topo_eval->job_ptr->topo_jobinfo);
+
+	topo_eval->job_ptr->topo_jobinfo =
+		xmalloc(sizeof(*topo_eval->job_ptr->topo_jobinfo));
+	topo_eval->job_ptr->topo_jobinfo->plugin_id = plugin_id;
+
 	return common_topo_choose_nodes(topo_eval);
 }
 
@@ -368,23 +375,6 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 		hl, sp_hl, count, tree_width);
 }
 
-extern int topology_p_topology_free(void *topoinfo_ptr)
-{
-	int i = 0;
-	topoinfo_block_t *topoinfo = topoinfo_ptr;
-	if (topoinfo) {
-		if (topoinfo->topo_array) {
-			for (i = 0; i < topoinfo->record_count; i++) {
-				xfree(topoinfo->topo_array[i].name);
-				xfree(topoinfo->topo_array[i].nodes);
-			}
-			xfree(topoinfo->topo_array);
-		}
-		xfree(topoinfo);
-	}
-	return SLURM_SUCCESS;
-}
-
 extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
 	int rc = SLURM_SUCCESS;
@@ -444,7 +434,24 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	return rc;
 }
 
-extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
+extern int topology_p_topoinfo_free(void *topoinfo_ptr)
+{
+	int i = 0;
+	topoinfo_block_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		if (topoinfo->topo_array) {
+			for (i = 0; i < topoinfo->record_count; i++) {
+				xfree(topoinfo->topo_array[i].name);
+				xfree(topoinfo->topo_array[i].nodes);
+			}
+			xfree(topoinfo->topo_array);
+		}
+		xfree(topoinfo);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	int i;
@@ -473,7 +480,7 @@ extern int topology_p_topology_pack(void *topoinfo_ptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
+extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 				     char *unit, char **out)
 {
 	int i, match, match_cnt = 0;;
@@ -527,7 +534,7 @@ extern int topology_p_topology_print(void *topoinfo_ptr, char *nodes_list,
 	return SLURM_SUCCESS;
 }
 
-extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
+extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
 	int i = 0;
@@ -573,8 +580,85 @@ extern int topology_p_topology_unpack(void **topoinfo_pptr, buf_t *buffer,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	topology_p_topology_free(topoinfo_ptr);
+	topology_p_topoinfo_free(topoinfo_ptr);
 	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
+}
+
+extern void topology_p_jobinfo_free(
+	topology_jobinfo_t *topo_jobinfo)
+{
+	if (!topo_jobinfo)
+		return;
+
+	FREE_NULL_LIST(topo_jobinfo->segment_list);
+	xfree(topo_jobinfo);
+
+	return;
+}
+
+extern void topology_p_jobinfo_pack(
+	topology_jobinfo_t *topo_jobinfo,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	xassert(topo_jobinfo);
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		list_t *segment_list = NULL;
+
+		if (topo_jobinfo)
+			segment_list = topo_jobinfo->segment_list;
+
+		slurm_pack_list(segment_list, packstr_with_version, buffer,
+				protocol_version);
+	}
+}
+
+extern int topology_p_jobinfo_unpack(
+	topology_jobinfo_t **topo_jobinfo,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	xassert(topo_jobinfo);
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		*topo_jobinfo = xmalloc(sizeof(**topo_jobinfo));
+		if (slurm_unpack_list(&((*topo_jobinfo)->segment_list),
+				      unpackstr_with_version, xfree_ptr, buffer,
+				      protocol_version))
+			goto unpack_error;
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+unpack_error:
+	error("%s: unpack error", __func__);
+	xfree(*topo_jobinfo);
+
+	return SLURM_ERROR;
+}
+
+extern int topology_p_jobinfo_get(
+	topology_jobinfo_type_t type,
+	topology_jobinfo_t *topo_jobinfo,
+	void *data)
+{
+	if (!topo_jobinfo)
+		return SLURM_ERROR;
+
+	switch (type) {
+	case TOPO_JOBINFO_SEGMENT_LIST:
+		*(list_t **) data = topo_jobinfo->segment_list;
+		return SLURM_SUCCESS;
+	default:
+		error("Unknown topology_jobinfo_type_t: %u", type);
+		break;
+	}
+
 	return SLURM_ERROR;
 }
 

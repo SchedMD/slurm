@@ -284,7 +284,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->step_mem_alloc);
 	xfree(arg->step_mem_alloc_rep_count);
 
-	switch_g_free_stepinfo(arg->switch_step);
+	switch_g_stepinfo_free(arg->switch_step);
 
 	xfree(arg);
 }

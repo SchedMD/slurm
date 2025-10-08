@@ -2872,7 +2872,7 @@ static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 				       smsg->protocol_version);
 		packstr(msg->stepmgr, buffer);
 		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
-		switch_g_pack_stepinfo(msg->switch_step, buffer,
+		switch_g_stepinfo_pack(msg->switch_step, buffer,
 				       smsg->protocol_version);
 		pack16(msg->use_protocol_ver, buffer);
 	}
@@ -2918,10 +2918,10 @@ static int _unpack_job_step_create_response_msg(
 							protocol_version)))
 			goto unpack_error;
 
-		if (switch_g_unpack_stepinfo(&tmp_ptr->switch_step, buffer,
+		if (switch_g_stepinfo_unpack(&tmp_ptr->switch_step, buffer,
 					     protocol_version)) {
-			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(tmp_ptr->switch_step);
+			error("switch_g_stepinfo_unpack: %m");
+			switch_g_stepinfo_free(tmp_ptr->switch_step);
 			goto unpack_error;
 		}
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
@@ -8677,7 +8677,7 @@ static void _pack_launch_tasks_request_msg(const slurm_msg_t *smsg,
 		packstr(msg->task_prolog, buffer);
 		packstr(msg->task_epilog, buffer);
 		pack16(msg->slurmd_debug, buffer);
-		switch_g_pack_stepinfo(msg->switch_step, buffer,
+		switch_g_stepinfo_pack(msg->switch_step, buffer,
 				       smsg->protocol_version);
 		job_options_pack(msg->options, buffer);
 
@@ -9153,13 +9153,13 @@ static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->task_epilog, buffer);
 		safe_unpack16(&msg->slurmd_debug, buffer);
 
-		if (switch_g_unpack_stepinfo(&tmp_switch, buffer,
+		if (switch_g_stepinfo_unpack(&tmp_switch, buffer,
 					     smsg->protocol_version) < 0) {
-			error("switch_g_unpack_stepinfo: %m");
-			switch_g_free_stepinfo(tmp_switch);
+			error("switch_g_stepinfo_unpack: %m");
+			switch_g_stepinfo_free(tmp_switch);
 			goto unpack_error;
 		}
-		switch_g_free_stepinfo(tmp_switch);
+		switch_g_stepinfo_free(tmp_switch);
 		msg->options = job_options_create();
 		if (job_options_unpack(msg->options, buffer) < 0) {
 			error("Unable to unpack extra job options: %m");
@@ -12385,7 +12385,7 @@ static void _pack_topo_info_msg(topo_info_response_msg_t *msg, buf_t *buffer,
 				uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		topology_g_topology_pack(msg->topo_info, buffer,
+		topology_g_topoinfo_pack(msg->topo_info, buffer,
 					 protocol_version);
 	}
 }
@@ -12399,8 +12399,9 @@ static int _unpack_topo_info_msg(topo_info_response_msg_t **msg,
 
 	*msg = msg_ptr;
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		topology_g_topology_unpack(&msg_ptr->topo_info, buffer,
-					   protocol_version);
+		topology_g_topoinfo_unpack(
+			(dynamic_plugin_data_t **) &msg_ptr->topo_info,
+			buffer, protocol_version);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

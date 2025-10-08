@@ -73,14 +73,21 @@ typedef struct slurm_topo_ops {
 					       	);
 	int (*split_hostlist)(hostlist_t *hl, hostlist_t ***sp_hl, int *count,
 			      uint16_t tree_width, void *tctx);
-	int (*topoinfo_free) (void *topoinfo_ptr);
 	int (*get)(topology_data_t type, void *data, void *tctx);
+	int (*topoinfo_free) (void *topoinfo_ptr);
 	int (*topoinfo_pack) (void *topoinfo_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 	int (*topoinfo_print)(void *topoinfo_ptr, char *nodes_list, char *unit,
 			      char **out);
 	int (*topoinfo_unpack) (void **topoinfo_pptr, buf_t *buffer,
 				uint16_t protocol_version);
+	void (*jobinfo_free)(void *topo_jobinfo);
+	void (*jobinfo_pack)(void *topo_jobinfo, buf_t *buffer,
+			     uint16_t protocol_version);
+	int (*jobinfo_unpack)(void **topo_jobinfo, buf_t *buffer,
+			      uint16_t protocol_version);
+	int (*jobinfo_get)(topology_jobinfo_type_t type, void *topo_jobinfo,
+			   void *data);
 	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
 } slurm_topo_ops_t;
 
@@ -100,11 +107,15 @@ static const char *syms[] = {
 	"topology_p_generate_node_ranking",
 	"topology_p_get_node_addr",
 	"topology_p_split_hostlist",
-	"topology_p_topology_free",
 	"topology_p_get",
-	"topology_p_topology_pack",
-	"topology_p_topology_print",
-	"topology_p_topology_unpack",
+	"topology_p_topoinfo_free",
+	"topology_p_topoinfo_pack",
+	"topology_p_topoinfo_print",
+	"topology_p_topoinfo_unpack",
+	"topology_p_jobinfo_free",
+	"topology_p_jobinfo_pack",
+	"topology_p_jobinfo_unpack",
+	"topology_p_jobinfo_get",
 	"topology_p_get_fragmentation",
 };
 
@@ -407,6 +418,13 @@ extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 	xassert((idx >= 0) && (idx < tctx_num));
 
+	/*
+	 * topo_jobinfo needs to be reset in interface before entering plugin in
+	 * case it was set by a different topology plugin.
+	 */
+	topology_g_jobinfo_free(topo_eval->job_ptr->topo_jobinfo);
+	topo_eval->job_ptr->topo_jobinfo = NULL;
+
 	topo_eval->tctx = &(tctx[idx]);
 
 	return (*(ops[tctx[idx].idx].eval_nodes))(topo_eval);
@@ -607,7 +625,23 @@ extern int topology_g_get(topology_data_t type, char *name, void *data)
 						tctx[tctx_idx].plugin_ctx);
 }
 
-extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (topoinfo) {
+		int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+
+		if (topoinfo->data)
+			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
+		xfree(topoinfo);
+	}
+	return rc;
+}
+
+extern int topology_g_topoinfo_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
 	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
@@ -626,7 +660,7 @@ extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
 						  protocol_version);
 }
 
-extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char *unit, char **out)
 {
 	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
@@ -640,7 +674,7 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
 							     out);
 }
 
-extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
+extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer, uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *topoinfo_ptr = NULL;
@@ -678,26 +712,105 @@ extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
 	return SLURM_SUCCESS;
 
 unpack_error:
-	topology_g_topology_free(topoinfo_ptr);
+	topology_g_topoinfo_free(topoinfo_ptr);
 	*topoinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
 
-extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo)
+extern void topology_g_jobinfo_free(
+	dynamic_plugin_data_t *jobinfo_plugin_data)
 {
-	int rc = SLURM_SUCCESS;
+	int plugin_index;
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
-	if (topoinfo) {
-		int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+	if (!jobinfo_plugin_data)
+		return;
 
-		if (topoinfo->data)
-			rc = (*(ops[plugin_inx].topoinfo_free))(topoinfo->data);
-		xfree(topoinfo);
+	plugin_index = _get_plugin_index(jobinfo_plugin_data->plugin_id);
+	if (plugin_index < 0)
+		return;
+
+	(*(ops[plugin_index].jobinfo_free))(jobinfo_plugin_data->data);
+
+	xfree(jobinfo_plugin_data);
+
+	return;
+}
+
+extern void topology_g_jobinfo_pack(
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	int plugin_index;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (!jobinfo_plugin_data)
+		goto pack_no_plugin;
+
+	plugin_index = _get_plugin_index(jobinfo_plugin_data->plugin_id);
+	if (plugin_index < 0)
+		goto pack_no_plugin;
+
+	dynamic_plugin_data_pack(jobinfo_plugin_data,
+				 *(ops[plugin_index].jobinfo_pack), buffer,
+				 protocol_version);
+	return;
+
+pack_no_plugin:
+	dynamic_plugin_data_pack(NULL, NULL, buffer, protocol_version);
+	return;
+}
+
+static dynamic_plugin_data_unpack_func _get_unpack_func(
+	uint32_t plugin_id)
+{
+	int plugin_index = _get_plugin_index(plugin_id);
+
+	if (plugin_index < 0)
+		return NULL;
+
+	return *(ops[plugin_index].jobinfo_unpack);
+}
+
+extern int topology_g_jobinfo_unpack(
+	dynamic_plugin_data_t **jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version)
+{
+	xassert(jobinfo_plugin_data);
+
+	if (plugin_inited != PLUGIN_INITED) {
+		return dynamic_plugin_data_unpack(NULL, NULL, buffer,
+						  protocol_version);
 	}
-	return rc;
+
+	return dynamic_plugin_data_unpack(jobinfo_plugin_data, _get_unpack_func,
+					  buffer, protocol_version);
+}
+
+extern int topology_g_jobinfo_get(
+	topology_jobinfo_type_t type,
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	void *data)
+{
+	int plugin_index;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (!jobinfo_plugin_data)
+		return SLURM_ERROR;
+
+	plugin_index = _get_plugin_index(jobinfo_plugin_data->plugin_id);
+	if (plugin_index < 0)
+		return SLURM_ERROR;
+
+	return (*(ops[plugin_index].jobinfo_get))(type,
+						  jobinfo_plugin_data->data,
+						  data);
 }
 
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)

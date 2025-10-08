@@ -57,11 +57,12 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/dynamic_plugin_data.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/msg_type.h"
-#include "src/common/persist_conn.h"
 #include "src/common/part_record.h"
+#include "src/common/persist_conn.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/slurmdb_defs.h"

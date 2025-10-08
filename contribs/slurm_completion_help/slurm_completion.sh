@@ -1385,6 +1385,7 @@ function __slurm_comp_common_flags() {
 	local network_types=(
 		"blade"
 		"system"
+		"unique-channel-per-segment"
 	)
 	local open_modes=(
 		"append"

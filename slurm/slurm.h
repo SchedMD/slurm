@@ -359,7 +359,8 @@ enum job_state_reason {
 	WAIT_RESERVATION,	/* reservation not available */
 	WAIT_NODE_NOT_AVAIL,	/* required node is DOWN or DRAINED */
 	WAIT_HELD_USER,		/* job is held by user */
-	DEFUNCT_WAIT_17, /* free for reuse */
+	WAIT_NVIDIA_IMEX_CHANNELS, /* NVIDIA IMEX channels are being used by
+				    * other jobs */
 	FAIL_DEFER,		/* individual submit time sched deferred */
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */
 	FAIL_DOWN_NODE,		/* some node in the allocation failed */
@@ -1578,11 +1579,6 @@ typedef bitstr_t bitoff_t;
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
-typedef struct dynamic_plugin_data {
-	void *data;
-	uint32_t plugin_id;
-} dynamic_plugin_data_t;
-
 typedef struct acct_gather_energy {
 	uint32_t ave_watts;	  /* average power consump of node, in watts */
 	uint64_t base_consumed_energy;
@@ -2454,7 +2450,7 @@ typedef struct topo_info_request_msg {
 } topo_info_request_msg_t;
 
 typedef struct topo_info_response_msg {
-	dynamic_plugin_data_t *topo_info;
+	void *topo_info;
 } topo_info_response_msg_t;
 
 typedef struct topo_config_response_msg {

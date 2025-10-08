@@ -39,6 +39,7 @@
 
 #include "../common/eval_nodes.h"
 #include "../common/gres_sched.h"
+#include "src/common/xstring.h"
 
 static int _cmp_bblock(const void *a, const void *b)
 {
@@ -170,6 +171,58 @@ static void _choose_best_bblock(bitstr_t *bblock_required, int llblock_level,
 	}
 }
 
+static void _jobinfo_init(
+	job_record_t *job_ptr)
+{
+	topology_jobinfo_t *topo_jobinfo;
+
+	xassert(job_ptr->topo_jobinfo);
+
+	/*
+	 * Currently segment info is only used when using the
+	 * --network=unique-channel-per-segment option. If that option is not
+	 *  specified, no segment data needs to be collected here.
+	 */
+	if (!xstrstr("unique-channel-per-segment", job_ptr->network)) {
+		log_flag(SELECT_TYPE, "Not recording segment information for %pJ",
+			 job_ptr);
+		return;
+	}
+
+	log_flag(SELECT_TYPE, "Recording segment information for %pJ",
+		 job_ptr);
+
+	/* Must be free'd by topology_g_jobinfo_free() */
+	topo_jobinfo = xmalloc(sizeof(*topo_jobinfo));
+	topo_jobinfo->segment_list = list_create(xfree_ptr);
+
+	job_ptr->topo_jobinfo->data = topo_jobinfo;
+
+	return;
+}
+
+static void _jobinfo_add_segment(
+	job_record_t *job_ptr,
+	bitstr_t *node_bitmap)
+{
+	topology_jobinfo_t *topo_jobinfo;
+	char *node_list;
+
+	xassert(job_ptr->topo_jobinfo);
+
+	/* not tracking segment info */
+	if (!(topo_jobinfo = job_ptr->topo_jobinfo->data))
+		return;
+
+	node_list = bitmap2node_name(node_bitmap);
+	list_append(topo_jobinfo->segment_list, node_list);
+
+	log_flag(SELECT_TYPE, "Added segment with nodelist %s to %pJ",
+		 node_list, job_ptr);
+
+	return;
+}
+
 extern int eval_nodes_block(topology_eval_t *topo_eval)
 {
 	bitstr_t **block_node_bitmap = NULL;	/* nodes on this block */
@@ -228,6 +281,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	/* Always use min_nodes */
 	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
 	rem_nodes = MIN(min_nodes, req_nodes);
+
+	_jobinfo_init(job_ptr);
 
 	if (details_ptr->segment_size &&
 	    (rem_nodes % details_ptr->segment_size)) {
@@ -891,13 +946,16 @@ next_segment:
 
 fini:
 	if (rem_segment_cnt && !rc ) {
+		int segment_index = segment_cnt - rem_segment_cnt;
+
 		if (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 			char *node_names;
 			node_names = bitmap2node_name(topo_eval->node_map);
-			info("Segment:%d nodes:%s",
-			     segment_cnt - rem_segment_cnt, node_names);
+			info("Segment:%d nodes:%s", segment_index, node_names);
 			xfree(node_names);
 		}
+
+		_jobinfo_add_segment(job_ptr, topo_eval->node_map);
 
 		if (--rem_segment_cnt > 0) {
 			if (alloc_node_map)

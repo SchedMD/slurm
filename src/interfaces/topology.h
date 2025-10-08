@@ -43,6 +43,8 @@
 #include "slurm/slurm.h"
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/common/dynamic_plugin_data.h"
+
 #include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 
@@ -52,6 +54,10 @@ typedef enum {
 	TOPO_DATA_EXCLUSIVE_TOPO,
 	TOPO_DATA_TCTX_IDX,
 } topology_data_t;
+
+typedef enum {
+	TOPO_JOBINFO_SEGMENT_LIST,
+} topology_jobinfo_type_t;
 
 typedef struct slurm_conf_block {
 	char *block_name; /* name of this block */
@@ -224,22 +230,28 @@ extern int topology_g_split_hostlist(hostlist_t *hl,
  * IN - topology name
  * OUT data
  *     type = TOPO_DATA_TOPOLOGY_PTR - the system topology - Returned value must
- *                                     be freed using topology_g_topology_free.
+ *                                     be freed using topology_g_topoinfo_free.
  * RET         - slurm error code
- * NOTE: returned value must be freed using topology_g_topology_free
+ * NOTE: returned value must be freed using topology_g_topoinfo_free
  */
 extern int topology_g_get(topology_data_t type, char *name, void *data);
+
+/* free storage previously allocated for a system topology
+ * IN jobinfo  - the system topology to be freed
+ * RET         - slurm error code
+ */
+extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo);
 
 /* pack a mchine independent form system topology
  * OUT buffer  - buffer with node topology appended
  * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  */
-extern int topology_g_topology_pack(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer,
 				    uint16_t protocol_version);
 
-extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
+extern int topology_g_topoinfo_print(dynamic_plugin_data_t *topoinfo,
 				     char *nodes_list, char *unit, char **out);
 
 /* unpack a system topology from a buffer
@@ -247,16 +259,50 @@ extern int topology_g_topology_print(dynamic_plugin_data_t *topoinfo,
  * IN  buffer  - buffer with system topology read from current pointer loc
  * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
- * NOTE: returned value must be freed using topology_g_topology_free
+ * NOTE: returned value must be freed using topology_g_topoinfo_free
  */
-extern int topology_g_topology_unpack(dynamic_plugin_data_t **topoinfo,
+extern int topology_g_topoinfo_unpack(dynamic_plugin_data_t **topoinfo,
 				      buf_t *buffer,
 				      uint16_t protocol_version);
-/* free storage previously allocated for a system topology
- * IN jobinfo  - the system topology to be freed
- * RET         - slurm error code
+
+/* free storage allocated for topology job info
+ * IN jobinfo_plugin_data - pointer to topology job info to free
  */
-extern int topology_g_topology_free(dynamic_plugin_data_t *topoinfo);
+extern void topology_g_jobinfo_free(
+	dynamic_plugin_data_t *jobinfo_plugin_data);
+
+/* pack topology job info into buffer
+ * IN jobinfo_plugin_data - pointer to topology job info to pack
+ * IN buffer - data will be packed into this preexisting buffer
+ * IN protocol_version - job's version
+ */
+extern void topology_g_jobinfo_pack(
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/* unpack topology job info from buffer
+ * IN jobinfo_plugin_data - address of pointer to new job info data. Must be
+ *	free'd with topology_g_jobinfo_free()
+ * IN buffer - data will be packed into this pre-existing buffer
+ * IN protocol_version - job's version
+ * RET - SLURM_SUCCESS or error.
+ */
+extern int topology_g_jobinfo_unpack(
+	dynamic_plugin_data_t **jobinfo_plugin_data,
+	buf_t *buffer,
+	uint16_t protocol_version);
+
+/* Get data from topology job info
+ * IN type - specify the type of data to be retrieved
+ * IN jobinfo_plugin_data - get data from this job info
+ * OUT data - pointer to new data
+ * RET - SLURM_SUCCESS means data points to the requested data, otherwise error.
+ */
+extern int topology_g_jobinfo_get(
+	topology_jobinfo_type_t type,
+	dynamic_plugin_data_t *jobinfo_plugin_data,
+	void *data);
 
 /* Return fragmentation score of given bitmap
  * IN node_mask - aviabled nodes
