@@ -10,9 +10,8 @@ slurmrestd \- Interface to Slurm via REST API.
 .PP
 \fBInetd Mode\fR: slurmrestd will read and write to STDIO. If STDIN is a socket
 file descriptor, then slurmrestd will detect this and use relevant
-functionality. If a controlling TTY is detected, interactive mode will
-automatically activate to provide additional logging information. This mode is
-designed to work with piped input, inetd, xinetd or systemd socket activation.
+functionality. This mode is designed to work with piped input, inetd, xinetd or
+systemd socket activation.
 
 .PP
 \fBListen Mode\fR: slurmrestd will open a listening socket on each requested
@@ -269,7 +268,8 @@ or root or the daemon won't start with the default settings.
 \fB\-v\fR
 Verbose operation. Multiple \fBv\fR's can be specified, with each '\fBv\fR'
 beyond the first increasing verbosity, up to 6 times (i.e. \-vvvvvv).
-Higher verbosity levels will have significant performance impact.
+Higher verbosity levels will have significant performance impact. See
+\fBSLURMRESTD_DEBUG\fR for description of logging targets.
 .IP
 
 .TP
@@ -359,6 +359,16 @@ variable takes precedence over the setting in the slurm.conf.
 .IP
 
 .TP
+\fBSLURM_DEBUG\fR
+Set debug level explicitly. Valid values are 0\-9, or the same string values as
+the debug options such as SlurmctldDebug in slurm.conf(5). Increased if
+\fB\-v\fR passed as argument during invocation. Ignored if
+\fBSLURMRESTD_DEBUG\fR or \fBSLURMRESTD_DEBUG_STDERR\fR or
+\fBSLURMRESTD_DEBUG_SYSLOG\fR are set in environment. See
+\fBSLURMRESTD_DEBUG\fR for description of logging targets.
+.IP
+
+.TP
 \fBSLURMRESTD_JSON\fR or \fBSLURM_JSON\fR
 Control JSON serialization:
 .IP
@@ -387,8 +397,26 @@ Set allowed authentication types. See \fB\-a\fR
 .TP
 \fBSLURMRESTD_DEBUG\fR
 Set debug level explicitly. Valid values are 0\-9, or the same string values as
-the debug options such as SlurmctldDebug in slurm.conf(5).
-Ignored if \fB\-v\fR passed as argument during invocation.
+the debug options such as SlurmctldDebug in slurm.conf(5). If a controlling
+TTY is detected, interactive mode will automatically activate to provide
+additional logging information to stderr. If a controlling TTY is not detected,
+then logs are sent to syslog. Increased if \fB\-v\fR passed as argument during
+invocation. Ignored if \fBSLURMRESTD_DEBUG_STDERR\fR or
+\fBSLURMRESTD_DEBUG_SYSLOG\fR are set in environment.
+.IP
+
+.TP
+\fBSLURMRESTD_DEBUG_STDERR\fR
+Set debug level explicitly for logging to STDERR. Valid values are 0\-9, or the
+same string values as the debug options such as SlurmctldDebug in
+slurm.conf(5). Increased if \fB\-v\fR passed as argument during invocation.
+.IP
+
+.TP
+\fBSLURMRESTD_DEBUG_SYSLOG\fR
+Set debug level explicitly for logging to syslog. Valid values are 0\-9, or the
+same string values as the debug options such as SlurmctldDebug in
+slurm.conf(5). Increased if \fB\-v\fR passed as argument during invocation.
 .IP
 
 .TP
