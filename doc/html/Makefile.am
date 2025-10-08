@@ -132,8 +132,6 @@ html_DATA = \
 	slurm_logo.png \
 	schedmd.png \
 	slurm.css \
-	Slurm_Entity.pdf \
-	Slurm_Individual.pdf \
 	squeue_color.png \
 	style.css \
 	topo_ex1.gif \
