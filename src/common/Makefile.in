@@ -173,13 +173,13 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	log.lo msg_type.lo net.lo node_conf.lo node_features.lo \
 	oci_config.lo openapi.lo optz.lo pack.lo parse_config.lo \
 	parse_time.lo parse_value.lo part_record.lo persist_conn.lo \
-	plugin.lo plugrack.lo port_mgr.lo print_fields.lo proc_args.lo \
-	read_config.lo reverse_tree.lo run_command.lo run_in_daemon.lo \
-	sack_api.lo setproctitle.lo sluid.lo slurm_errno.lo \
-	slurm_opt.lo slurm_protocol_api.lo slurm_protocol_defs.lo \
-	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket.lo slurm_resolv.lo \
-	slurm_resource_info.lo slurm_rlimits_info.lo \
+	plugin.lo plugrack.lo port_mgr.lo print_fields.lo probes.lo \
+	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo sack_api.lo setproctitle.lo sluid.lo \
+	slurm_errno.lo slurm_opt.lo slurm_protocol_api.lo \
+	slurm_protocol_defs.lo slurm_protocol_pack.lo \
+	slurm_protocol_util.lo slurm_protocol_socket.lo \
+	slurm_resolv.lo slurm_resource_info.lo slurm_rlimits_info.lo \
 	slurm_step_layout.lo slurm_time.lo slurmdb_defs.lo \
 	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
 	state_save.lo stepd_api.lo stepd_proxy.lo strlcpy.lo \
@@ -240,12 +240,12 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/part_record.Plo ./$(DEPDIR)/persist_conn.Plo \
 	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
 	./$(DEPDIR)/port_mgr.Plo ./$(DEPDIR)/print_fields.Plo \
-	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
-	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/sack_api.Plo \
-	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/sluid.Plo \
-	./$(DEPDIR)/slurm_errno.Plo ./$(DEPDIR)/slurm_opt.Plo \
-	./$(DEPDIR)/slurm_protocol_api.Plo \
+	./$(DEPDIR)/probes.Plo ./$(DEPDIR)/proc_args.Plo \
+	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/reverse_tree.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/sack_api.Plo ./$(DEPDIR)/setproctitle.Plo \
+	./$(DEPDIR)/sluid.Plo ./$(DEPDIR)/slurm_errno.Plo \
+	./$(DEPDIR)/slurm_opt.Plo ./$(DEPDIR)/slurm_protocol_api.Plo \
 	./$(DEPDIR)/slurm_protocol_defs.Plo \
 	./$(DEPDIR)/slurm_protocol_pack.Plo \
 	./$(DEPDIR)/slurm_protocol_socket.Plo \
@@ -678,6 +678,8 @@ libcommon_la_SOURCES = \
 	port_mgr.h				\
 	print_fields.c				\
 	print_fields.h				\
+	probes.c				\
+	probes.h				\
 	proc_args.c				\
 	proc_args.h				\
 	read_config.c				\
@@ -893,6 +895,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_mgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print_fields.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/probes.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree.Plo@am__quote@ # am--include-marker
@@ -1118,6 +1121,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/plugrack.Plo
 	-rm -f ./$(DEPDIR)/port_mgr.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
+	-rm -f ./$(DEPDIR)/probes.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
@@ -1263,6 +1267,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/plugrack.Plo
 	-rm -f ./$(DEPDIR)/port_mgr.Plo
 	-rm -f ./$(DEPDIR)/print_fields.Plo
+	-rm -f ./$(DEPDIR)/probes.Plo
 	-rm -f ./$(DEPDIR)/proc_args.Plo
 	-rm -f ./$(DEPDIR)/read_config.Plo
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
