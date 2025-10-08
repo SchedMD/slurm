@@ -316,6 +316,4 @@ slurmd: TLS: Successfully got signed certificate from slurmctld:
 to show less verbose logs of certificate renewal.
 </p>
 
-<p style="text-align:center;">Last modified 06 July 2025</p>
-
 <!--#include virtual="footer.txt"-->

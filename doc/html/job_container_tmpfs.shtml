@@ -65,6 +65,4 @@ container in the following functions:</p>
 <p>In addition to the job itself, the TaskProlog will also be executed inside
 the container.</p>
 
-<p style="text-align:center;">Last modified 29 November 2023</p>
-
 <!--#include virtual="footer.txt"-->

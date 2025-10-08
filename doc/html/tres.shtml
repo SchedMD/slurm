@@ -186,6 +186,5 @@ more information.
   If TRESBillingWeights is not defined on any partition for a node then the
   Billing TRES will be equal to the number of CPUs on the node.
 </p>
-<p style="text-align:center;">Last modified 16 August 2024</p>
 
 <!--#include virtual="footer.txt"-->

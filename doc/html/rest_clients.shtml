@@ -400,6 +400,4 @@ be possible to continue using any client from a prior release while the plugins
 are still supported, sites should always <b>recompile</b> any generated OpenAPI
 clients and <b>test thoroughly</b> before upgrading.</p>
 
-<p style="text-align:center;">Last modified 19 September 2025</p>
-
 <!--#include virtual="footer.txt"-->

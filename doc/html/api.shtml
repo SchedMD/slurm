@@ -11,6 +11,4 @@ significantly &mdash; between each major release.</p>
 <p>Developers are encouraged to target Slurm's <a href="rest_api.html">REST API
 </a> which provides for broader cross-version compatibility.</a>
 
-<p style="text-align:center;">Last modified 12 February 2024</p>
-
 <!--#include virtual="footer.txt"-->

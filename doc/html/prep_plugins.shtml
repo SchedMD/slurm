@@ -177,6 +177,4 @@ that must complete before the job is marked complete<br />
 <span class="commandline">SLURM_ERROR</span> on failure, will cause job failure.
 </p>
 
-<p style="text-align:center;">Last modified 18 April 2023</p>
-
 <!--#include virtual="footer.txt"-->

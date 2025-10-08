@@ -478,6 +478,4 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
-
 <!--#include virtual="footer.txt"-->

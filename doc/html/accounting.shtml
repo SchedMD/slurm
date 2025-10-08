@@ -1053,6 +1053,4 @@ Profiling works similarly, and we provide
 and InfluxDB that can help to visualize accounting data in other ways.
 </p>
 
-<p style="text-align:center;">Last modified 28 July 2025</p>
-
 <!--#include virtual="footer.txt"-->

@@ -382,6 +382,4 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 11 June 2025</p>
-
 <!--#include virtual="footer.txt"-->

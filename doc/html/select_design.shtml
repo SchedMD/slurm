@@ -67,6 +67,4 @@ jobs, shrinking job allocations, un/packing job state information,
 un/packing node state information, etc. The operation of those functions is
 relatively straightforward and not detailed here.</p>
 
-<p style="text-align:center;">Last modified 29 January 2024</p>
-
 <!--#include virtual="footer.txt"-->

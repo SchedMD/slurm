@@ -187,6 +187,4 @@ to determine if it can respond to that request. The login shell spawned with
 and therefore its own pgid, so nss_slurm will not respond to requests in an
 interactive session.</p>
 
-<p style="text-align:center;">Last modified 22 May 2025</p>
-
 <!--#include virtual="footer.txt"-->

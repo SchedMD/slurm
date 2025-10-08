@@ -885,6 +885,4 @@ for each job it reads the burst buffer state and does one of the following:</li>
 state. This document focuses on burst buffers and does not attempt to address
 all possible job state transitions.</p>
 
-<p style="text-align:center;">Last modified 21 August 2023</p>
-
 <!--#include virtual="footer.txt"-->

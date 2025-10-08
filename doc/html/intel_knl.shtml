@@ -276,7 +276,4 @@ Nodename=default Sockets=1 CoresPerSocket=68 ThreadsPerCore=4 RealMemory=128000 
 NodeName=nid[00000-00127] State=UNKNOWN
 </pre>
 
-
-<p style="text-align:center;">Last modified 13 March 2024</p>
-
 <!--#include virtual="footer.txt"-->

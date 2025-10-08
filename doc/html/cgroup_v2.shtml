@@ -790,6 +790,5 @@ The cpu controller can be enabled in system.conf by setting
 <code>DefaultCpuAccounting=yes</code>. For the cpuset controller, you need to
 set <code>EnableControllers=yes</code> in cgroup.conf.
 </p>
-<p style="text-align:center;">Last modified 11 October 2024</p>
 
 <!--#include virtual="footer.txt"-->

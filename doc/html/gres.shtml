@@ -687,6 +687,4 @@ which would be the same as if it were a GPU.
 <p>Steps with shards have<code class="commandline">SLURM_SHARDS_ON_NODE</code>
 set indicating the number of shards allocated.</p>
 
-<p style="text-align: center;">Last modified 10 April 2025</p>
-
 <!--#include virtual="footer.txt"-->

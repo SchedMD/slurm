@@ -235,6 +235,4 @@ sbatch:*:partition = high
 srun:*:partition = short
 </pre></p>
 
-<p style="text-align:center;">Last modified 19 February 2024</p>
-
 <!--#include virtual="footer.txt"-->

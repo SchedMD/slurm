@@ -329,6 +329,4 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 30 October 2024</p>
-
 <!--#include virtual="footer.txt"-->

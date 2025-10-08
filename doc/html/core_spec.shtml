@@ -144,6 +144,4 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourcesUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 4 April 2025</p>
-
 <!--#include virtual="footer.txt"-->
