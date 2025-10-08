@@ -95,6 +95,10 @@ typedef struct {
 	void (*on_close)(const char *name, void *arg);
 } http_con_server_events_t;
 
+/* Declare alias for http_con_server_events_t->on_request */
+typedef STRUCT_FIELD_TYPEOF(http_con_server_events_t,
+			    on_request) http_con_on_request_event_t;
+
 /* Get number of bytes needed to hold http_con_t instance */
 extern const size_t http_con_bytes(void);
 
