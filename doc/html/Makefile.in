@@ -558,7 +558,6 @@ html_DATA = \
 	${generated_html} \
 	allocation_pies.gif \
 	arch.gif \
-	coding_style.pdf \
 	configurator.html \
 	configurator.easy.html \
 	cg_hierarchy.jpg \
