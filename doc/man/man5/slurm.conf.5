@@ -4530,16 +4530,19 @@ period of time.
 
 .TP
 \fBmax_sched_time\fR=\#
-How long, in seconds, that the main scheduling loop will execute for before
-exiting.
-If a value is configured, be aware that all other Slurm operations will be
-deferred during this time period.
-Make certain the value is lower than \fBMessageTimeout\fR.
-If a value is not explicitly configured, the default value is half of
-\fBMessageTimeout\fR with a minimum default value of 1 second and a maximum
-default value of 2 seconds.
-For example if MessageTimeout=10, the time limit will be 2 seconds
-(i.e. MIN(10/2, 2) = 2).
+How long, in seconds, the main scheduling loop will run before exiting.
+Note that all other Slurm operations, including responses to RPCs, will be
+deferred while the scheduling loop is running.
+
+Defaults to 2 seconds in most cases, or 1 second if \fBMessageTimeout\fR is set
+to 3 or less. The maximum value is half of \fBMessageTimeout\fR. Larger values
+will be replaced with the applicable default value.
+
+
+\fBNOTE\fR: A higher value will allow the main scheduler to evaluate more
+pending jobs per cycle. If this timeout is reached, some low priority pending
+jobs will not be evaluated, which can leave their reason for pending as 'None'
+until they can be evaluated in a future scheduling cycle.
 .IP
 
 .TP
