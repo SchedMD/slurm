@@ -1137,7 +1137,92 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(dump_node_ptr->name, buffer);
+		packstr(dump_node_ptr->node_hostname, buffer);
+		packstr(dump_node_ptr->comm_name, buffer);
+		packstr(dump_node_ptr->bcast_address, buffer);
+
+		/* turns into cert_flags field on remote */
+		if (dump_node_ptr->cert_token) {
+			pack16(NODE_CERT_TOKEN_SET, buffer);
+		} else {
+			pack16(0, buffer);
+		}
+
+		pack16(dump_node_ptr->port, buffer);
+		pack32(dump_node_ptr->next_state, buffer);
+		pack32(dump_node_ptr->node_state, buffer);
+		packstr(dump_node_ptr->version, buffer);
+
+		/* Only data from config_record used for scheduling */
+		pack16(dump_node_ptr->config_ptr->cpus, buffer);
+		pack16(dump_node_ptr->config_ptr->boards, buffer);
+		pack16(dump_node_ptr->config_ptr->tot_sockets, buffer);
+		pack16(dump_node_ptr->config_ptr->cores, buffer);
+		pack16(dump_node_ptr->config_ptr->threads, buffer);
+		pack64(dump_node_ptr->config_ptr->real_memory, buffer);
+		pack32(dump_node_ptr->config_ptr->tmp_disk, buffer);
+
+		packstr(dump_node_ptr->gpu_spec, buffer);
+		packstr(dump_node_ptr->mcs_label, buffer);
+		pack32(dump_node_ptr->owner, buffer);
+		pack16(dump_node_ptr->core_spec_cnt, buffer);
+		pack32(dump_node_ptr->cpu_bind, buffer);
+		pack64(dump_node_ptr->mem_spec_limit, buffer);
+		packstr(dump_node_ptr->cpu_spec_list, buffer);
+		pack16(dump_node_ptr->cpus_efctv, buffer);
+
+		pack32(dump_node_ptr->cpu_load, buffer);
+		pack64(dump_node_ptr->free_mem, buffer);
+		pack32(dump_node_ptr->config_ptr->weight, buffer);
+		pack16(dump_node_ptr->res_cores_per_gpu, buffer);
+		pack32(dump_node_ptr->reason_uid, buffer);
+
+		pack_time(dump_node_ptr->boot_time, buffer);
+		pack_time(dump_node_ptr->last_busy, buffer);
+		pack_time(dump_node_ptr->reason_time, buffer);
+		pack_time(dump_node_ptr->resume_after, buffer);
+		pack_time(dump_node_ptr->slurmd_start_time, buffer);
+		pack_time(dump_node_ptr->cert_last_renewal, buffer);
+
+		pack16(dump_node_ptr->alloc_cpus, buffer);
+		pack64(dump_node_ptr->alloc_memory, buffer);
+		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+
+		packstr(dump_node_ptr->arch, buffer);
+		packstr(dump_node_ptr->features, buffer);
+		packstr(dump_node_ptr->features_act, buffer);
+		if (dump_node_ptr->gres)
+			packstr(dump_node_ptr->gres, buffer);
+		else
+			packstr(dump_node_ptr->config_ptr->gres, buffer);
+
+		/* Gathering GRES details is slow, so don't by default */
+		if (show_flags & SHOW_DETAIL) {
+			gres_drain =
+				gres_get_node_drain(dump_node_ptr->gres_list);
+			gres_used =
+				gres_get_node_used(dump_node_ptr->gres_list);
+		}
+		packstr(gres_drain, buffer);
+		packstr(gres_used, buffer);
+		xfree(gres_drain);
+		xfree(gres_used);
+
+		packstr(dump_node_ptr->os, buffer);
+		packstr(dump_node_ptr->comment, buffer);
+		packstr(dump_node_ptr->extra, buffer);
+		packstr(dump_node_ptr->instance_id, buffer);
+		packstr(dump_node_ptr->instance_type, buffer);
+		packstr(dump_node_ptr->reason, buffer);
+		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
+					protocol_version);
+
+		packstr(dump_node_ptr->tres_fmt_str, buffer);
+		packstr(dump_node_ptr->resv_name, buffer);
+		packstr(dump_node_ptr->topology_str, buffer);
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(dump_node_ptr->name, buffer);
 		packstr(dump_node_ptr->node_hostname, buffer);
 		packstr(dump_node_ptr->comm_name, buffer);
