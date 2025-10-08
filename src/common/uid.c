@@ -71,6 +71,11 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 {
 	DEF_TIMERS;
 
+	if (uid == SLURM_AUTH_NOBODY) {
+		*result = NULL;
+		return;
+	}
+
 	START_TIMER;
 	while (true) {
 		int rc = getpwuid_r(uid, pwd, *curr_buf, *bufsize, result);
@@ -109,6 +114,9 @@ int uid_from_string(const char *name, uid_t *uidp)
 
 	if (!name)
 		return SLURM_ERROR;
+
+	if (!xstrcmp(name, SLURM_AUTH_NOBODY_NAME))
+		return SLURM_AUTH_NOBODY;
 
 	/*
 	 *  Check to see if name is a valid username first.
@@ -186,6 +194,9 @@ char *uid_to_string_or_null(uid_t uid)
 	if (uid == 0)
 		return xstrdup("root");
 
+	if (uid == SLURM_AUTH_NOBODY)
+		return xstrdup(SLURM_AUTH_NOBODY_NAME);
+
 	slurm_getpwuid_r(uid, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (result)
 		ustring = xstrdup(result->pw_name);
@@ -221,6 +232,9 @@ extern char *uid_to_string_cached(uid_t uid)
 {
 	uid_cache_entry_t *entry;
 	uid_cache_entry_t target = {uid, NULL};
+
+	if (uid == SLURM_AUTH_NOBODY)
+		return SLURM_AUTH_NOBODY_NAME;
 
 	slurm_mutex_lock(&uid_lock);
 	/*
@@ -399,9 +413,12 @@ int gid_from_string(const char *name, gid_t *gidp)
 
 extern char *gid_to_string(gid_t gid)
 {
-	char *result = gid_to_string_or_null(gid);
+	char *result = NULL;
 
-	if (!result)
+	if (gid == SLURM_AUTH_NOBODY)
+		return xstrdup(SLURM_AUTH_NOBODY_NAME);
+
+	if (!(result = gid_to_string_or_null(gid)))
 		return xstrdup_printf("%u", gid);
 
 	return result;
@@ -420,6 +437,9 @@ char *gid_to_string_or_null(gid_t gid)
 	size_t bufsize = PW_BUF_SIZE;
 	char *curr_buf = buf_stack;
 	char *name = NULL;
+
+	if (gid == SLURM_AUTH_NOBODY)
+		return NULL;
 
 	START_TIMER;
 	while (true) {
