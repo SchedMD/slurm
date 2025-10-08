@@ -28,7 +28,8 @@ modifications for it operation and is relatively self-contained.
 
 <p>Slurm is written in the C language and uses a GNU <b>autoconf</b> configuration
 engine. While initially written for Linux, other UNIX-like operating systems should
-be easy porting targets. Code should adhere to the <a href="coding_style.pdf">
+be easy porting targets. Code should adhere to the
+<a href="https://www.kernel.org/doc/html/latest/process/coding-style.html">
 Linux kernel coding style</a>. <i>(Some components of Slurm have been taken from
 various sources. Some of these components do not conform to the Linux kernel
 coding style. However, new code written for Slurm should follow these standards.)</i>
