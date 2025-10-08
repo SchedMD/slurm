@@ -45,7 +45,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 
-#define CONMGR_THREAD_COUNT_DEFAULT 8
 #define CONMGR_THREAD_COUNT_MIN 2
 #define CONMGR_THREAD_COUNT_MAX 256
 

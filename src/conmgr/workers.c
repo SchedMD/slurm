@@ -163,9 +163,7 @@ extern void workers_init(int count)
 			warn_max_threads, detected_cpus, auto_threads);
 	}
 
-	if (!count) {
-		count = CONMGR_THREAD_COUNT_DEFAULT;
-	} else if (count < CONMGR_THREAD_COUNT_MIN) {
+	if (count < CONMGR_THREAD_COUNT_MIN) {
 		error("%s: %s%d too low, increasing to %d",
 		      __func__, CONMGR_PARAM_THREADS, count,
 		      CONMGR_THREAD_COUNT_MIN);
