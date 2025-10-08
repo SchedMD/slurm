@@ -392,6 +392,4 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 17 March 2025</p>
-
 <!--#include virtual="footer.txt"-->

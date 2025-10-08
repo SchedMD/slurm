@@ -363,6 +363,4 @@ Each task of the job array will share the same ArrayJobId but will have their
 own unique ArrayTaskId. In addition to the ArrayJobId, each job will have a
 unique JobId that gets assigned as the tasks are started.</p>
 
-<p style="text-align:center;">Last modified 01 January 2024</p>
-
 <!--#include virtual="footer.txt"-->

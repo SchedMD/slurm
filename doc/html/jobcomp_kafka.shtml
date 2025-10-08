@@ -155,6 +155,4 @@ log to syslog instead. The library logging level and debug contexts are also
 configurable via the file referenced by JobCompLoc, as well as the rest of the
 library configuration parameters.</p>
 
-<p style="text-align:center;">Last modified 03 February 2025</p>
-
 <!--#include virtual="footer.txt"-->

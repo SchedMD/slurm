@@ -273,6 +273,4 @@ options are mutually exclusive when used at job submission. If both options are
 set when submitting a job, the job submission command used will fatal.
 </P>
 
-<p style="text-align:center;">Last modified 09 July 2025</p>
-
 <!--#include virtual="footer.txt"-->

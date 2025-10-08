@@ -323,6 +323,4 @@ allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
 
-<p style="text-align:center;">Last modified 31 July 2025</p>
-
 <!--#include virtual="footer.txt"-->

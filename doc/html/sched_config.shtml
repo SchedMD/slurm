@@ -178,6 +178,4 @@ the locks are relinquished in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 04 June 2024</p>
-
 <!--#include virtual="footer.txt"-->

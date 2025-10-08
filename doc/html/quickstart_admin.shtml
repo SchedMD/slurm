@@ -915,6 +915,4 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 05 June 2025</p>
-
 <!--#include virtual="footer.txt"-->

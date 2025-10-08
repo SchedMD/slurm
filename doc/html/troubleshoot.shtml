@@ -215,6 +215,4 @@ releases (e.g. a version 17.11.x SlurmDBD will support slurmctld daemons and
 commands with a version of 17.11.x, 17.02.x or 16.05.x).</li>
 </ol>
 
-<p style="text-align:center;">Last modified 28 May 2020</p>
-
 <!--#include virtual="footer.txt"-->
