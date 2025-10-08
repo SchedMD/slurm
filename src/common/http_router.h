@@ -36,4 +36,30 @@
 #ifndef SLURM_HTTP_ROUTER_H
 #define SLURM_HTTP_ROUTER_H
 
+#include "src/common/http.h"
+#include "src/common/http_con.h"
+
+/*
+ * Initialize HTTP router
+ * IN on_not_found - callback for when request doesn't match any bound paths
+ */
+extern void http_router_init(http_con_on_request_event_t on_not_found);
+
+/* Cleanup HTTP router */
+extern void http_router_fini(void);
+
+/*
+ * Bind to path in HTTP router
+ * IN hrouter - http router to bind path events
+ * IN method - HTTP method to bind at path
+ * IN path - string HTTP URL path to bind
+ * IN on_request - callbacks for on_request() event
+ */
+extern void http_router_bind(http_request_method_t method, const char *path,
+			     http_con_on_request_event_t on_request);
+
+/* Callback to have HTTP router match method and path to a bound callback */
+extern int http_router_on_request(http_con_t *hcon, const char *name,
+				  const http_con_request_t *request, void *arg);
+
 #endif
