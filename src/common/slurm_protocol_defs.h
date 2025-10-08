@@ -352,14 +352,16 @@ typedef struct slurm_msg {
 	list_t *ret_list;
 } slurm_msg_t;
 
-#define SLURM_MSG_INITIALIZER                     \
-	((slurm_msg_t) {                          \
-		.auth_uid = SLURM_AUTH_NOBODY,    \
-		.auth_gid = SLURM_AUTH_NOBODY,    \
-		.msg_type = NO_VAL16,             \
-		.protocol_version = NO_VAL16,     \
+#define SLURM_MSG_INITIALIZER \
+	((slurm_msg_t) { \
+		.auth_index = AUTH_DEFAULT_INDEX, \
+		.auth_uid = SLURM_AUTH_NOBODY, \
+		.auth_gid = SLURM_AUTH_NOBODY, \
+		.restrict_uid = SLURM_AUTH_NOBODY, \
+		.msg_type = NO_VAL16, \
+		.protocol_version = NO_VAL16, \
 		.flags = SLURM_PROTOCOL_NO_FLAGS, \
-		.forward = FORWARD_INITIALIZER,   \
+		.forward = FORWARD_INITIALIZER, \
 	})
 
 typedef struct ret_data_info {
