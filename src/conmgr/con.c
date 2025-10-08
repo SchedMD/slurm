@@ -2135,7 +2135,7 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 {
 	int rc = EINVAL;
 
-	if (!ref)
+	if (!ref || !ref->con)
 		return rc;
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -2146,9 +2146,7 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
 
 	/* Reject changing connections in process of cleaning up */
-	if (!ref->con) {
-		rc = EINVAL;
-	} else if ((ref->con->input_fd >= 0) || (ref->con->output_fd >= 0)) {
+	if ((ref->con->input_fd >= 0) || (ref->con->output_fd >= 0)) {
 		log_flag(CONMGR, "%s->%s: [%s] changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR,
 			 caller, __func__, ref->con->name,
 			 (uintptr_t) ref->con->events, (uintptr_t) events,
