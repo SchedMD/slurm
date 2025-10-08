@@ -252,6 +252,15 @@ allocations.
 .IP
 
 .TP
+\fB\-\-consolidate\-segments\fR
+Ensure that all segments from the allocation will be consolidated
+into one higher-level aggregated block.
+
+This option applies to job allocations.
+\fBNOTE\fR: This option will only work with the \fBtopology/block\fR plugin.
+.IP
+
+.TP
 \fB\-C\fR, \fB\-\-constraint\fR=<\fIlist\fR>
 Nodes can have \fBfeatures\fR assigned to them by the Slurm administrator.
 Users can specify which of these \fBfeatures\fR are required by their job

@@ -1232,6 +1232,7 @@ typedef enum {
 #define STEPMGR_ENABLED SLURM_BIT(41) /* enable(d) stepmgr or not */
 #define HETJOB_PURGE SLURM_BIT(42) /* purge the hetjob component */
 #define SPREAD_SEGMENTS SLURM_BIT(43) /* Spread segments across blocks*/
+#define CONSOLIDATE_SEGMENTS SLURM_BIT(44) /* Consolidate segments */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

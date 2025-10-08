@@ -789,6 +789,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		xstrfmtcat(out, "SegmentSize=%u", job_ptr->segment_size);
 		if (job_ptr->bitflags & SPREAD_SEGMENTS)
 			xstrcat(out, " SpreadSegments=Yes");
+		if (job_ptr->bitflags & CONSOLIDATE_SEGMENTS)
+			xstrcat(out, " ConsolidateSegments=Yes");
 		xstrcat(out, line_end);
 	}
 
