@@ -935,8 +935,6 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			return;
 
 		while (!(conn = slurm_accept_msg_conn(fd, &addr))) {
-			if (errno == EINTR)
-				continue;
 			if (errno == EAGAIN)	/* No more connections */
 				return;
 			if ((errno == ECONNABORTED) ||
