@@ -6168,9 +6168,12 @@ parameters are supported:
 Number of channels that can be configured. Channels allow nodes to create a
 secure method of sharing memory. The default value is 2048.
 
-\fBNOTE\fR: The batch and interactive steps will not have imex channels
-created since they run on a single node. Once you start creating job steps
-that span nodes you will see the channels created.
+By default, each job is allocated one IMEX channel that is accessible by the
+batch, interactive, and normal job steps on all nodes within the job. If using
+\fB\-\-network=unique-channel-per-segment\fR on job submission and
+\fBtopology/block\fR is configured, then each segment will be allocated one
+IMEX channel that is accessible by the batch, interactive, and normal job steps
+on all nodes within that particular segment.
 .RE
 .IP
 
