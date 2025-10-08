@@ -73,6 +73,8 @@
 
 #include "src/scrun/scrun.h"
 
+#define THREAD_COUNT 3
+
 static void _open_pty();
 static int _kill_job(conmgr_fd_t *con, int signal);
 static void _notify_started(void);
@@ -1437,7 +1439,7 @@ static int _anchor_child(int pipe_fd[2])
 	_populate_pidfile();
 
 	/* must init conmgr after calling fork() in _daemonize() */
-	conmgr_init(0, 0);
+	conmgr_init(THREAD_COUNT, 0);
 
 	change_status_force(CONTAINER_ST_CREATING);
 
