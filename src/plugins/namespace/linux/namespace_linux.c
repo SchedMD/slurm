@@ -413,7 +413,8 @@ static pid_t sys_clone(unsigned long flags, int *parent_tid, int *child_tid,
 }
 
 static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
-			     char *job_mount, sem_t *sem1, sem_t *sem2)
+			     char *job_mount, sem_t *sem1, sem_t *sem2,
+			     sem_t *sem3)
 {
 	char *argv[4] = { (char *) conf->stepd_loc, "ns_infinity", NULL, NULL };
 	int rc = 0;
@@ -494,10 +495,17 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 		goto child_exit;
 	}
 
+	if (sem_post(sem3) < 0) {
+		error("%s: sem_post failed: %m", __func__);
+		goto child_exit;
+	}
+
 	sem_destroy(sem1);
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	sem_destroy(sem3);
+	munmap(sem3, sizeof(*sem3));
 
 	/* become an infinity process */
 	xstrfmtcat(argv[2], "%u", step->step_id.job_id);
@@ -507,10 +515,14 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 	_exit(127);
 
 child_exit:
+	/* Do a final post to prevent from waiting on errors */
+	sem_post(sem3);
 	sem_destroy(sem1);
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	sem_destroy(sem3);
+	munmap(sem3, sizeof(*sem3));
 
 	exit(rc);
 }
@@ -595,6 +607,7 @@ static int _create_ns(stepd_step_rec_t *step)
 	unsigned long tls = 0;
 	sem_t *sem1 = NULL;
 	sem_t *sem2 = NULL;
+	sem_t *sem3 = NULL;
 	pid_t cpid;
 
 	_create_paths(step->step_id.job_id, &job_mount, &ns_base, &src_bind);
@@ -691,12 +704,29 @@ static int _create_ns(stepd_step_rec_t *step)
 		goto exit2;
 	}
 
+	sem3 = mmap(NULL, sizeof(*sem3), PROT_READ | PROT_WRITE,
+		    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (sem3 == MAP_FAILED) {
+		error("%s: mmap failed: %m", __func__);
+		sem_destroy(sem1);
+		munmap(sem1, sizeof(*sem1));
+		sem_destroy(sem2);
+		munmap(sem1, sizeof(*sem2));
+		rc = -1;
+		goto exit2;
+	}
+
 	rc = sem_init(sem1, 1, 0);
 	if (rc) {
 		error("%s: sem_init: %m", __func__);
 		goto exit1;
 	}
 	rc = sem_init(sem2, 1, 0);
+	if (rc) {
+		error("%s: sem_init: %m", __func__);
+		goto exit1;
+	}
+	rc = sem_init(sem3, 1, 0);
 	if (rc) {
 		error("%s: sem_init: %m", __func__);
 		goto exit1;
@@ -710,7 +740,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		rc = -1;
 		goto exit1;
 	} else if (cpid == 0) {
-		_create_ns_child(step, src_bind, job_mount, sem1, sem2);
+		_create_ns_child(step, src_bind, job_mount, sem1, sem2, sem3);
 	} else {
 		/*
 		int wstatus;
@@ -759,6 +789,13 @@ static int _create_ns(stepd_step_rec_t *step)
 			goto exit1;
 		}
 
+		/* Wait for container to be setup */
+		if (sem_wait(sem3) < 0) {
+			error("%s: sem_Wait failed: %m", __func__);
+			rc = -1;
+			goto exit1;
+		}
+
 		if (proctrack_g_add(step, cpid) != SLURM_SUCCESS) {
 			error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.",
 			      __func__, step->step_id.job_id, cpid);
@@ -802,6 +839,8 @@ exit1:
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	sem_destroy(sem3);
+	munmap(sem3, sizeof(*sem3));
 
 exit2:
 	if (rc) {
