@@ -785,7 +785,4 @@ a heterogeneous job with 3 components.
 Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
-
-<p style="text-align:center;">Last modified 04 January 2024</p>
-
 <!--#include virtual="footer.txt"-->

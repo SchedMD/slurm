@@ -178,6 +178,4 @@ slurmstepd created per node in the step and each instance of slurmstepd can
 run multiple tasks in the same step.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 1 August 2022</p>
-
 <!--#include virtual="footer.txt"-->

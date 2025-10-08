@@ -393,6 +393,4 @@ with Slurm are provided below.
 <li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
-
 <!--#include virtual="footer.txt"-->

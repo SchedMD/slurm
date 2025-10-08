@@ -529,6 +529,4 @@ Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.</P>
 
-<p style="text-align:center;">Last modified 29 January 2024</p>
-
 <!--#include virtual="footer.txt"-->

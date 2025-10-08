@@ -223,6 +223,4 @@ purposes. This is configured with the AuthAltType parameter and is used only
 for client to server communication. You can read more about this authentication
 mechanism and how to install it <a href="jwt.html">here</a>.</p>
 
-<p style="text-align:center;">Last modified 30 July 2025</p>
-
 <!--#include virtual="footer.txt"-->

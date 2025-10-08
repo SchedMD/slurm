@@ -89,6 +89,4 @@ scontrol update PartitionName=debug CpuBind=cores
 <a href="slurm.conf.html#OPT_TaskPluginParam">TaskPluginParam</a>
 configuration parameter from the slurm.conf file.</p>
 
-<p style="text-align:center;">Last modified 23 September 2025</p>
-
 <!--#include virtual="footer.txt"-->

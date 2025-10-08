@@ -676,9 +676,5 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 <input type=button value="Submit" onClick="javascript:displayfile()">
 <input type=reset value="Reset Form">
 </form>
-<hr>
-<p>
-<a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 24 June 2025</p>
 </body>
 </html>

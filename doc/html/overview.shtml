@@ -239,6 +239,4 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 6 August 2021</p>
-
 <!--#include virtual="footer.txt"-->

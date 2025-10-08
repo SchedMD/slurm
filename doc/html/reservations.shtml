@@ -537,6 +537,4 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 17 September 2025</p>
-
 <!--#include virtual="footer.txt"-->

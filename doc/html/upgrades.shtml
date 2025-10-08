@@ -537,6 +537,4 @@ period as well as easily switch between versions should you need to roll
 back for any reason. It also avoids potential problems with library conflicts
 that might arise from installing different versions to the same directory.</p>
 
-<p style="text-align:center;">Last modified 19 September 2025</p>
-
 <!--#include virtual="footer.txt"-->
