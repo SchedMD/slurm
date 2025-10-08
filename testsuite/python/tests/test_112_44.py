@@ -39,7 +39,7 @@ def setup():
     atf.require_config_parameter("TrackWCKey", "Yes")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
-    atf.require_slurmrestd("slurmctld,slurmdbd", "v0.0.44")
+    atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.44")
     atf.require_version((25, 11), "sbin/slurmdbd")
     atf.require_version((25, 11), "sbin/slurmctld")
     atf.require_version((25, 11), "sbin/slurmrestd")
@@ -1424,3 +1424,42 @@ def test_reservations(slurm, flags, admin_level):
     assert resv_name not in [
         r.name for r in slurm.slurm_v0044_get_reservations().reservations
     ], f"Reservation {resv_name} should be deleted"
+
+
+# Test until endpoints
+@pytest.fixture
+def util_api(setup):
+    yield atf.openapi_util()
+
+
+def test_util_hostnames(util_api):
+    from openapi_client.models.v0044_openapi_hostlist_req_resp import (
+        V0044OpenapiHostlistReqResp,
+    )
+
+    hostnames = ["node01", "node02", "node03"]
+    request_body = V0044OpenapiHostlistReqResp(hostlist="node[01-03]")
+
+    response = util_api.util_v0044_post_hostnames(
+        v0044_openapi_hostlist_req_resp=request_body
+    )
+    assert response.hostnames is not None
+    assert isinstance(response.hostnames, list)
+    assert all(isinstance(host, str) for host in response.hostnames)
+    assert hostnames == response.hostnames
+
+
+def test_util_hostlist(util_api):
+    from openapi_client.models.v0044_openapi_hostnames_req_resp import (
+        V0044OpenapiHostnamesReqResp,
+    )
+
+    request_body = V0044OpenapiHostnamesReqResp(
+        hostnames=["node01", "node02", "node03"]
+    )
+    response = util_api.util_v0044_post_hostlist(
+        v0044_openapi_hostnames_req_resp=request_body
+    )
+    assert response.hostlist is not None
+    assert isinstance(response.hostlist, str)
+    assert "node[01-03]" == response.hostlist
