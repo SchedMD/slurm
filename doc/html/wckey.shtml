@@ -75,6 +75,5 @@ just remove the cluster= option.
 <p>Information about reports available for WCKeys can be
   found on the <a href="sreport.html">sreport manpage</a>.
 </p>
-<p style="text-align:center;">Last modified 14 November 2014</p>
 
 <!--#include virtual="footer.txt"-->

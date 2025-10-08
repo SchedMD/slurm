@@ -491,6 +491,4 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 03 August 2023</p>
-
 <!--#include virtual="footer.txt"-->

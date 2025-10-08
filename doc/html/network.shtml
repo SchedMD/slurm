@@ -260,6 +260,4 @@ debug logging in your slurmctld.log.</p>
 <p>If IPv4 and IPv6 are enabled, the loopback interface may still resolve to
 127.0.0.1. This is not necessarily an indication of a problem.</p>
 
-<p style="text-align:center;">Last modified 25 November 2020</p>
-
 <!--#include virtual="footer.txt"-->

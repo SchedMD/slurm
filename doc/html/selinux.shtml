@@ -132,6 +132,4 @@ to get this working. Note that that when using this feature and
 pam_slurm_adopt at the same time that the ssh session may not land in the same
 context as the job.</p>
 
-<p style="text-align:center;">Last modified 22 September 2023</p>
-
 <!--#include virtual="footer.txt"-->

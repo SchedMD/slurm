@@ -323,6 +323,4 @@ systemctl start/stop/restart slurmd@nodeXYZ
 
 </p>
 
-<p style="text-align:center;">Last modified 21 May 2025</p>
-
 <!--#include virtual="footer.txt"-->

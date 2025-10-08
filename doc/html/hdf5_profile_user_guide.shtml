@@ -366,8 +366,4 @@ correlate activity with other sources such as logs.</DD>
 <DD>Number of megabytes written to local disk.</DD>
 </DL>
 
-
-
-<p style="text-align:center;">Last modified 17 October 2022</p>
-
 <!--#include virtual="footer.txt"-->

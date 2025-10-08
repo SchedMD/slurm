@@ -348,7 +348,4 @@ This is to accommodate users who might have mpi/threaded/openMP
 programs that will take advantage of all the CPUs on a node but only need
 one mpi process per node.</p>
 
-
-<p style="text-align:center;">Last modified 09 July 2025</p>
-
 <!--#include virtual="footer.txt"-->

@@ -3536,6 +3536,4 @@ used with the task/cgroup plugin:
 </p>
 <pre>TaskPlugin=task/cgroup,task/affinity</pre>
 
-<p style="text-align:center;">Last modified 04 January 2024</p>
-
 <!--#include virtual="footer.txt"-->

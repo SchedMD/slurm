@@ -324,6 +324,5 @@ Account A's effective usage is therefore equal to .45.  Account D's effective us
 <P> Based on the fair-share factor alone, if all 5 users were to submit a job charging their respective accounts, user 5's job would be granted the highest scheduling priority.</P>
 
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 11 June 2019</p>
 
 <!--#include virtual="footer.txt"-->

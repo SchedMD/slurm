@@ -343,6 +343,4 @@ place of the problematic character (e.g., <b>/</b> = <b>%2F</b>).
 authentication, causing failures. This can be fixed by clearing the variable:
 <pre>unset SLURM_JWT</pre></p>
 
-<p style="text-align:center;">Last modified 23 September 2025</p>
-
 <!--#include virtual="footer.txt"-->

@@ -107,6 +107,4 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 	<td>Slurm Plug-in Architecture for Node and job (K)control.</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 23 September 2025</p>
-
 <!--#include virtual="footer.txt"-->

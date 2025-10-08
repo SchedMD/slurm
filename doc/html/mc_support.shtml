@@ -935,7 +935,5 @@ NodeName=dualcore[01-16] CoresPerSocket=2 ThreadsPerCore=1
 
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
-<!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 09 July 2025</p>
 
 <!--#include virtual="footer.txt"-->

@@ -284,6 +284,4 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
    CurrentWatts=0 AveWatts=0
 </pre>
 
-<p style="text-align:center;">Last modified 20 January 2025</p>
-
 <!--#include virtual="footer.txt"-->
