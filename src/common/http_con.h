@@ -81,8 +81,6 @@ typedef struct {
 	 * IN hcon - pointer to http connection
 	 * IN name - connection name for logging
 	 * IN request - pointer to parsed request
-	 * IN body - buffer containing body received and retained from last
-	 *	on_request()
 	 * IN arg - arbitrary pointer handed to http_con_assign_server()
 	 * RET SLURM_SUCCESS to continue parsing to error to stop
 	 */
