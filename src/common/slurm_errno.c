@@ -1295,7 +1295,7 @@ slurm_errtab_t slurm_errtab[] = {
 	},
 	{
 		ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL),
-		"Unable to find requested URL endpoint. Please query the '/openapi/v3' endpoint or visit 'https://slurm.schedmd.com/rest_api.html' for the OpenAPI specification which includes a list of all possible slurmrestd endpoints.",
+		"Unable to find requested URL endpoint.",
 	},
 	{
 		ERRTAB_ENTRY(ESLURM_REST_UNKNOWN_URL_METHOD),
