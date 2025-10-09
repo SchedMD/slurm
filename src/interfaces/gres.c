@@ -10646,6 +10646,7 @@ static void _gres_device_pack(
 	pack32(gres_device->dev_desc.minor, buffer);
 	packstr(gres_device->path, buffer);
 	packstr(gres_device->unique_id, buffer);
+	pack32(gres_device->flags, buffer);
 }
 
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices)
@@ -10672,6 +10673,7 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 	gres_device->dev_desc.minor = uint32_tmp;
 	safe_unpackstr(&gres_device->path, buffer);
 	safe_unpackstr(&gres_device->unique_id, buffer);
+	safe_unpack32(&gres_device->flags, buffer);
 	/* info("adding %d %s %s", gres_device->dev_num, */
 	/*      gres_device->major, gres_device->path); */
 
