@@ -213,7 +213,7 @@ Display a description of scontrol options and commands.
 .TP
 \fBhold\fR <\fIjob_list\fR>
 Prevent a pending job from being started (sets its priority to 0).
-The job_list argument is a comma separated list of job IDs OR
+The job_list argument is a space separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to hold all jobs having
 that name.
 
@@ -389,7 +389,7 @@ or authentication mechanism.
 .TP
 \fBrelease\fR <\fIjob_list\fR>
 Release a previously held job to begin execution.
-The job_list argument is a comma separated list of job IDs OR
+The job_list argument is a space separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to release all jobs having
 that name.
 Note that a privileged user may release an admin-hold or a user-hold.
