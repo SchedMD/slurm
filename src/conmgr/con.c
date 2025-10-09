@@ -444,6 +444,9 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	if (con->type == CON_TYPE_RPC)
 		con_set_flag(con, FLAG_TCP_NODELAY);
 
+	/* New mode should run on_data() if there is anything pending */
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
+
 	con->type = type;
 
 	if (con_flag(con, FLAG_IS_SOCKET) && con_flag(con, FLAG_TCP_NODELAY) &&
