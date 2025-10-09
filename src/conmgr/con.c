@@ -447,6 +447,9 @@ extern int fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	/* New mode should run on_data() if there is anything pending */
 	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
+	/* Reset polling to trigger re-evaluation */
+	con_set_polling(con, PCTL_TYPE_NONE, __func__);
+
 	con->type = type;
 
 	if (con_flag(con, FLAG_IS_SOCKET) && con_flag(con, FLAG_TCP_NODELAY) &&
