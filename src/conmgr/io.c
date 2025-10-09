@@ -337,6 +337,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	buf_t shadow_buffer = { 0 };
 	buf_t *in = NULL, *buf = &shadow_buffer;
 	const conmgr_events_t *events = NULL;
+	conmgr_con_type_t type = CON_TYPE_INVALID;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
@@ -344,6 +345,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(con->in->magic == BUF_MAGIC);
 	in = con->in;
+	type = con->type;
 
 	/*
 	 * Create shadow buffer to point to the data owned by the con->in
@@ -366,10 +368,10 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	con_arg = con->arg;
 	events = con->events;
 
-	if (con->type == CON_TYPE_RAW) {
+	if (type == CON_TYPE_RAW) {
 		callback = events->on_data;
 		callback_string = XSTRINGIFY(events->on_data);
-	} else if (con->type == CON_TYPE_RPC) {
+	} else if (type == CON_TYPE_RPC) {
 		callback = on_rpc_connection_data;
 		callback_string = XSTRINGIFY(on_rpc_connection_data);
 	} else {
@@ -436,10 +438,11 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(get_buf_offset(buf) <= size_buf(buf));
 
 	/*
-	 * Catch if events callbacks changed during callback and read was not
-	 * complete
+	 * Catch if events callbacks or type changed during callback and read
+	 * was not complete
 	 */
-	if ((events != con->events) && (get_buf_offset(buf) < size_buf(buf)))
+	if (((events != con->events) || (type != con->type)) &&
+	    (get_buf_offset(buf) < size_buf(buf)))
 		callback = NULL;
 
 	if (!get_buf_offset(buf)) {
