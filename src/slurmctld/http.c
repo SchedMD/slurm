@@ -41,6 +41,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/http.h"
+#include "src/slurmctld/slurmctld.h"
 
 static int _reply_error(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, int err)
@@ -70,9 +71,55 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 	return _reply_error(hcon, name, request, ESLURM_REST_UNKNOWN_URL);
 }
 
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg)
+{
+	static const char body[] =
+		"slurmctld index of endpoints:\n"
+		"  '/readyz': check slurmctld is servicing RPCs\n"
+		"  '/livez': check slurmctld is running\n"
+		"  '/healthz': check slurmctld is running\n";
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, true,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	if (!listeners_quiesced() && is_primary() && !is_reconfiguring())
+		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+
+	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+}
+
+static int _req_livez(http_con_t *hcon, const char *name,
+		      const http_con_request_t *request, void *arg)
+{
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, true, NULL, NULL);
+}
+
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg)
+{
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, true, NULL, NULL);
+}
+
 extern void http_init(void)
 {
 	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
 }
 
 extern void http_fini(void)
