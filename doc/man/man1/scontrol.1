@@ -213,14 +213,15 @@ Display a description of scontrol options and commands.
 .TP
 \fBhold\fR <\fIjob_list\fR>
 Prevent a pending job from being started (sets its priority to 0).
-Use the \fIrelease\fP command to permit the job to be scheduled.
 The job_list argument is a comma separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to hold all jobs having
 that name.
-Note that when a job is held by a privileged user using the \fBhold\fP
-command, only a privileged user may release the job for execution (also
-see the \fBuhold\fP command). When a job is held by its owner, it may also
-be released by its owner.
+
+Only a privileged user, account coordinator, or job owner may hold jobs. If
+issued by a privileged user an admin-hold will be placed on the job, otherwise
+a user-hold will be placed on the job. The hold type determines which users may
+remove the hold with the \fBrelease\fR command (also see \fBuhold\fR).
+
 Additionally, attempting to hold a running job will not suspend or cancel
 it. But, it will set the job priority to 0 and update the job reason field,
 which would hold the job if it was requeued at a later time.
@@ -391,6 +392,8 @@ Release a previously held job to begin execution.
 The job_list argument is a comma separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to release all jobs having
 that name.
+Note that a privileged user may release an admin-hold or a user-hold.
+An unprivileged job owner or coordinator may only release a user-hold.
 Also see \fBhold\fR.
 .IP
 
@@ -753,12 +756,9 @@ longer lived tokens.
 
 .TP
 \fBuhold\fR <\fIjob_list\fR>
-Prevent a pending job from being started (sets its priority to 0).
-The job_list argument is a space separated list of job IDs or job names.
-Use the \fIrelease\fP command to permit the job to be scheduled.
-This command is designed for a privileged user to hold a job so that
-the job owner may release it rather than requiring the intervention of a
-privileged user (also see the \fBhold\fP command).
+Similar to \fBhold\fR, but places a user-hold on the job even if the \fBuhold\fR
+command was issued by a privileged user. This allows the job owner or a
+coordinator to \fBrelease\fR the job without admin intervention.
 .IP
 
 .TP
