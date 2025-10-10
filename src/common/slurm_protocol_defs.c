@@ -1952,6 +1952,7 @@ extern void slurm_free_node_registration_status_msg(
 		FREE_NULL_BUFFER(msg->gres_info);
 		xfree(msg->node_name);
 		xfree(msg->os);
+		xfree(msg->parameters);
 		xfree(msg->step_id);
 		xfree(msg->version);
 		xfree(msg);

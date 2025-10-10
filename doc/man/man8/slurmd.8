@@ -36,7 +36,8 @@ abnormally.
 Print the actual hardware configuration (not the configuration from the
 slurm.conf file) and exit.
 The format of output is the same as used in \fBslurm.conf\fR to describe a node's
-configuration plus its uptime.
+configuration plus its uptime. You may use \fB\--parameters\fR to specify
+options such as 'l3cache_as_socket' which may alter the reported node topology.
 .IP
 
 .TP
@@ -171,6 +172,14 @@ Also note the \fBPropagatePrioProcess\fR configuration parameter.
 Run the daemon with the given nodename. Used to emulate a larger system
 with more than one slurmd daemon per node. Requires that Slurm be built using
 the \-\-enable\-multiple\-slurmd configure option.
+.IP
+
+.TP
+\fB\--parameters <slurmd parameters>\fR
+Allows for temporary node\-specific changes to SlurmdParameters. Can be used
+alongside \fB\-C\fR to specify options such as 'l3cache_as_socket' which may
+alter the reported node topology. These parameters are appended to any
+node\-specific Parameters defined in slurm.conf.
 .IP
 
 .TP

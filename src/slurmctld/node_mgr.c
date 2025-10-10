@@ -660,6 +660,9 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->instance_type);
 			node_ptr->instance_type = node_state_rec->instance_type;
 			node_state_rec->instance_type = NULL;
+			xfree(node_ptr->parameters);
+			node_ptr->parameters = node_state_rec->parameters;
+			node_state_rec->parameters = NULL;
 			xfree(node_ptr->reason);
 			node_ptr->reason = node_state_rec->reason;
 			node_state_rec->reason = NULL;
@@ -1215,6 +1218,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		packstr(dump_node_ptr->extra, buffer);
 		packstr(dump_node_ptr->instance_id, buffer);
 		packstr(dump_node_ptr->instance_type, buffer);
+		packstr(dump_node_ptr->parameters, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
@@ -3386,6 +3390,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	xfree(node_ptr->os);
 	node_ptr->os = reg_msg->os;
 	reg_msg->os = NULL;	/* Nothing left to free */
+
+	xfree(node_ptr->parameters);
+	node_ptr->parameters = reg_msg->parameters;
+	reg_msg->parameters = NULL;
 
 	if (node_ptr->cpu_load != reg_msg->cpu_load) {
 		node_ptr->cpu_load = reg_msg->cpu_load;

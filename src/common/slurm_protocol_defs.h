@@ -1147,6 +1147,7 @@ typedef struct slurm_node_registration_status_msg {
 	char *node_name;
 	uint16_t boards;
 	char *os;
+	char *parameters;
 	uint64_t real_memory;
 	time_t slurmd_start_time;
 	uint32_t status;	/* node status code, same as return codes */

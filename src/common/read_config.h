@@ -186,6 +186,7 @@ typedef struct slurm_conf_node {
 	uint16_t threads;       /* number of threads per core */
 	uint64_t real_memory;	/* MB real memory on the node */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
+	char *parameters; /* node-specific additions to SlurmdParameters */
 	char *reason;
 	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
 				     * to only GPU jobs */
@@ -609,6 +610,11 @@ extern char *reconfig_flags2str(uint16_t reconfig_flags);
  * Returns NO_VAL if invalid
  */
 extern uint16_t reconfig_str2flags(char *reconfig_flags);
+
+/*
+ * Parse flags from provided string, will alter slurm_conf.conf_flags.
+ */
+extern void parse_slurmd_params(const char *slurmd_params);
 
 extern void destroy_config_plugin_params(void *object);
 extern void pack_config_plugin_params(void *in, uint16_t protocol_version,

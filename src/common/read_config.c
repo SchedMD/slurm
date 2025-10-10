@@ -518,6 +518,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		{"MemSpecLimit", S_P_UINT64},
 		{"NodeAddr", S_P_STRING},
 		{"NodeHostname", S_P_STRING},
+		{"Parameters", S_P_STRING},
 		{"Port", S_P_STRING},
 		{"Procs", S_P_UINT16},
 		{"RealMemory", S_P_UINT64},
@@ -624,6 +625,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit", tbl))
 			s_p_get_uint64(&n->mem_spec_limit, "MemSpecLimit",
 				       dflt);
+
+		if (!s_p_get_string(&n->parameters, "Parameters", tbl))
+			s_p_get_string(&n->parameters, "Parameters", dflt);
 
 		if (!s_p_get_string(&n->port_str, "Port", tbl) &&
 		    !s_p_get_string(&n->port_str, "Port", dflt)) {
@@ -878,6 +882,7 @@ static void _destroy_nodename(void *ptr)
 	xfree(n->hostnames);
 	xfree(n->gres);
 	xfree(n->nodenames);
+	xfree(n->parameters);
 	xfree(n->port_str);
 	xfree(n->reason);
 	xfree(n->state);
@@ -4951,27 +4956,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
 
 	(void) s_p_get_string(&conf->slurmd_params, "SlurmdParameters", hashtbl);
-	/* This also matches documented "config_overrides" */
-	if (xstrcasestr(conf->slurmd_params, "config_override"))
-		conf->conf_flags |= CONF_FLAG_OR;
-
-	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket"))
-		conf->conf_flags |= CONF_FLAG_L3CSOCK;
-	else if (xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
-		conf->conf_flags |= CONF_FLAG_NNSOCK;
-
-	if (xstrcasestr(conf->slurmd_params, "l3cache_as_socket") &&
-	    xstrcasestr(conf->slurmd_params, "numa_node_as_socket"))
-		error_in_daemon("SlurmdParameters l3cache_as_socket and numa_node_as_socket are mutually exclusive. Ignoring numa_node_as_socket.");
-
-	if (xstrcasestr(conf->slurmd_params, "allow_ecores"))
-		conf->conf_flags |= CONF_FLAG_ECORE;
-
-	if (xstrcasestr(conf->slurmd_params, "shutdown_on_reboot"))
-		conf->conf_flags |= CONF_FLAG_SHR;
-
-	if (xstrcasestr(conf->slurmd_params, "contain_spank"))
-		conf->conf_flags |= CONF_FLAG_CONTAIN_SPANK;
+	parse_slurmd_params(conf->slurmd_params);
 
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
 		conf->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
@@ -5939,6 +5924,37 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags)
 	xfree(tmp_str);
 
 	return rc;
+}
+
+extern void parse_slurmd_params(const char *slurmd_params)
+{
+	if (!slurmd_params)
+		return;
+
+	/* This also matches documented "config_overrides" */
+	if (xstrcasestr(slurmd_params, "config_override"))
+		slurm_conf.conf_flags |= CONF_FLAG_OR;
+
+	if (xstrcasestr(slurmd_params, "l3cache_as_socket"))
+		slurm_conf.conf_flags |= CONF_FLAG_L3CSOCK;
+
+	if (xstrcasestr(slurmd_params, "numa_node_as_socket"))
+		slurm_conf.conf_flags |= CONF_FLAG_NNSOCK;
+
+	if ((slurm_conf.conf_flags & CONF_FLAG_L3CSOCK) &&
+	    (slurm_conf.conf_flags & CONF_FLAG_NNSOCK)) {
+		slurm_conf.conf_flags &= ~CONF_FLAG_NNSOCK;
+		error_in_daemon("SlurmdParameters l3cache_as_socket and numa_node_as_socket are mutually exclusive. Ignoring numa_node_as_socket.");
+	}
+
+	if (xstrcasestr(slurmd_params, "allow_ecores"))
+		slurm_conf.conf_flags |= CONF_FLAG_ECORE;
+
+	if (xstrcasestr(slurmd_params, "shutdown_on_reboot"))
+		slurm_conf.conf_flags |= CONF_FLAG_SHR;
+
+	if (xstrcasestr(slurmd_params, "contain_spank"))
+		slurm_conf.conf_flags |= CONF_FLAG_CONTAIN_SPANK;
 }
 
 extern void destroy_config_plugin_params(void *object)

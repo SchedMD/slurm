@@ -2,22 +2,23 @@ Usage: slurmd [OPTIONS]
    -b                         Report node reboot now.
    -c                         Force cleanup of slurmd shared memory.
    -C                         Print node configuration information and exit.
-   --ca-cert-file             Absolute path to CA cert for configless TLS
-   --conf                     Dynamic node configuration, works with -Z.
+   --ca-cert-file file        Absolute path to CA cert for configless TLS
+   --conf params              Dynamic node configuration, works with -Z.
    --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.
    -d stepd                   Pathname to the slurmstepd program.
    -D                         Run daemon in foreground.
-   --extra                    Arbitrary descriptive string.
+   --extra string             Arbitrary descriptive string.
    -f config                  Read configuration from the specified file.
    -F[feature]                Start as Dynamic Future node w/optional Feature.
    -G                         Print node's GRES configuration and exit.
    -h                         Print this help message.
-   --instance-id              Cloud instance ID of node.
-   --instance-type            Cloud instance type of node.
+   --instance-id id           Cloud instance ID of node.
+   --instance-type type       Cloud instance type of node.
    -L logfile                 Log messages to the file `logfile'.
    -M                         Use mlock() to lock slurmd pages into memory.
    -n value                   Run the daemon at the specified nice value.
    -N node                    Run the daemon for specified nodename.
+   --parameters params        Allows local additions to SlurmdParameters
    -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.
    --systemd                  Started from a systemd unit file.
    -v                         Verbose mode. Multiple -v's increase verbosity.

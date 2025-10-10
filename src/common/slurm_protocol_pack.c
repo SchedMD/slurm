@@ -1001,6 +1001,7 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 		packstr(msg->cpu_spec_list, buffer);
 		pack64(msg->mem_spec_limit, buffer);
 		packstr(msg->os, buffer);
+		packstr(msg->parameters, buffer);
 		pack16(msg->cpus, buffer);
 		pack16(msg->boards, buffer);
 		pack16(msg->sockets, buffer);
@@ -1161,6 +1162,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpackstr(&node_reg_ptr->cpu_spec_list, buffer);
 		safe_unpack64(&node_reg_ptr->mem_spec_limit, buffer);
 		safe_unpackstr(&node_reg_ptr->os, buffer);
+		safe_unpackstr(&node_reg_ptr->parameters, buffer);
 		safe_unpack16(&node_reg_ptr->cpus, buffer);
 		safe_unpack16(&node_reg_ptr->boards, buffer);
 		safe_unpack16(&node_reg_ptr->sockets, buffer);
@@ -1823,6 +1825,7 @@ _unpack_node_info_members(node_info_t * node, buf_t *buffer,
 		safe_unpackstr(&node->extra, buffer);
 		safe_unpackstr(&node->instance_id, buffer);
 		safe_unpackstr(&node->instance_type, buffer);
+		safe_unpackstr(&node->parameters, buffer);
 		safe_unpackstr(&node->reason, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
 					      protocol_version,

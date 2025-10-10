@@ -8,6 +8,7 @@
 <li><a href="#Configuration">Configuration</a></li>
 <li><a href="#Running_Jobs">Running Jobs</a></li>
 <li><a href="#AutoDetect">AutoDetect</a></li>
+<li><a href="#Socket_Affinity">Socket Affinity</a></li>
 <li><a href="#Accounting">Accounting</a></li>
 <li><a href="#GPU_Management">GPU Management</a></li>
 <li><a href="#MPS_Management">MPS Management</a></li>
@@ -256,6 +257,88 @@ device <code class="commandline">geforce_rtx_2060</code>.
 To check your configuration you may run: <code class="commandline">slurmd -G
 </code> This will test and print the gres setup based on the current
 configuration, including any autodetected gres that are being ignored.
+
+<h2 id="Socket_Affinity">Socket Affinity Configuration
+<a class="slurm_link" href="#Socket_Affinity"></a>
+</h2>
+
+<p>Slurm's job scheduler handles GRES affinity on a socket basis internally.
+However, the <I>gres.conf</I> interface allows administrators to specify <code
+class="commandline">Cores</code> for GPU affinity configuration. This creates
+a common misconception that Slurm will respect core-level affinity during job
+scheduling, which it does not and never has. This can lead to issues where job
+allocations and job steps don't align correctly, since job steps examine cores
+while jobs use sockets.</p>
+
+<p>To prevent administrators from specify a core affinity for the device that
+Slurm cannot currently respect, Slurm validates that any specified <code
+class="commandline">Cores</code> align with socket boundaries and will generate
+errors if they do not.</p>
+
+<p>When using <code class="commandline">AutoDetect=nvml</code> or other GPU
+autodetection methods, GPU core affinity is automatically detected based on the
+hardware topology reported by the GPU driver. On many modern systems with
+complex cache hierarchies, the autodetected GPU affinity may not align with
+Slurm's socket boundaries.</p>
+
+<p>When this mismatch occurs, you'll see errors like:</p>
+<pre>
+error: _check_core_range_matches_sock: gres/gpu GRES autodetected core affinity 0-7 on node node0 doesn't match socket boundaries. (Socket 0 is cores 0-1)
+</pre>
+
+<p>The recommended solution is to configure Slurm to align its socket definition
+with the hardware topology using topology parameters such as
+<code class="commandline">l3cache_as_socket</code> or
+<code class="commandline">numa_node_as_socket</code> and changing
+SocketsPerBoard and CoresPerSocket to match.</p>
+
+<p>Before making permanent changes, test how your hardware will be detected with
+the parameter:</p>
+
+<pre>
+$ slurmd -C --parameters=l3cache_as_socket
+NodeName=node0 CPUs=32 Boards=1 SocketsPerBoard=8 CoresPerSocket=2 ThreadsPerCore=2 RealMemory=128762 Parameters=l3cache_as_socket Gres=gpu:nvidia_a100-pcie-40gb:2
+</pre>
+
+<p>This command shows how Slurm will detect the hardware with the parameter
+applied. The socket count and cores per socket may differ from the physical
+hardware, but will match the GPU affinity boundaries. You can compare the
+output with <code class="commandline">nvidia-smi topo -m</code> to verify which
+topology parameter aligns with your GPU affinity.</p>
+
+<p>Add the parameter to your node configuration in <i>slurm.conf</i>. You can
+apply it globally via <code class="commandline">SlurmdParameters</code> or
+per-node using the <code class="commandline">Parameters</code> option:</p>
+
+<pre>
+# Global configuration
+SlurmdParameters=l3cache_as_socket
+
+# Per-node configuration (recommended when only some nodes need this)
+NodeName=node0 CPUs=32 Boards=1 SocketsPerBoard=8 CoresPerSocket=2 ThreadsPerCore=2 Parameters=l3cache_as_socket Gres=gpu:a100:2
+</pre>
+
+<p>With that parameter set, use autodetection in <i>gres.conf</i>:</p>
+
+<pre>
+AutoDetect=nvml
+</pre>
+
+<p>The GPU core affinity will now align with Slurm's socket boundaries, and the
+node should come online without errors.</p>
+
+<p>As an alternative, you can manually specify core affinity in <i>gres.conf</i>
+that aligns with your actual socket boundaries. However, this requires disabling
+autodetect:</p>
+
+<pre>
+# Manually specify cores for each GPU
+NodeName=node0 Autodetect=off Name=gpu Type=a100 File=/dev/nvidia0 Cores=0-15
+NodeName=node0 Autodetect=off Name=gpu Type=a100 File=/dev/nvidia1 Cores=16-31
+</pre>
+
+<p><b>NOTE</b>: Manual configuration must still align with socket boundaries or
+it will be rejected.</p>
 
 <h2 id="Accounting">Accounting
 <a class="slurm_link" href="#Accounting"></a>

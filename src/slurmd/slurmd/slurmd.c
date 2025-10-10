@@ -984,6 +984,8 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			   buf.sysname, buf.release, buf.version);
 	}
 
+	msg->parameters = xstrdup(conf->parameters);
+
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	msg->job_count = list_count(steps);
 	msg->step_id = xmalloc(msg->job_count * sizeof(*msg->step_id));
@@ -1088,7 +1090,6 @@ _read_config(void)
 	int cc;
 	bool cgroup_mem_confinement = false;
 	node_record_t *node_ptr;
-	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -1120,16 +1121,6 @@ _read_config(void)
 		xfree(tmp_task_epilog);
 	}
 
-	/*
-	 * We can't call running_cons_tres() because we don't load the select
-	 * plugin here.
-	 */
-	if (!xstrcmp(cf->select_type, "select/cons_tres"))
-		cr_flag = true;
-
-	if (cf->preempt_mode & PREEMPT_MODE_GANG)
-		gang_flag = true;
-
 	slurm_conf_unlock();
 
 	if ((bcast_address = slurm_conf_get_bcast_address(conf->node_name))) {
@@ -1143,6 +1134,12 @@ _read_config(void)
 		      conf->node_name);
 		exit(1);
 	}
+
+	if (conf->parameters && node_ptr->parameters)
+		xstrfmtcat(conf->parameters, ",%s", node_ptr->parameters);
+	else if (node_ptr->parameters)
+		conf->parameters = xstrdup(node_ptr->parameters);
+	parse_slurmd_params(conf->parameters);
 
 	conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;
@@ -1222,23 +1219,6 @@ _read_config(void)
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
-	} else if (!config_overrides && (cr_flag || gang_flag) &&
-		   (conf->actual_sockets != conf->conf_sockets) &&
-		   (conf->actual_cores != conf->conf_cores) &&
-		   ((conf->actual_sockets * conf->actual_cores) ==
-		    (conf->conf_sockets * conf->conf_cores))) {
-		/* Socket and core count can be changed when KNL node reboots
-		 * in a different NUMA configuration */
-		info("Node reconfigured socket/core boundaries "
-		     "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw)",
-		     (conf->conf_sockets / conf->conf_boards),
-		     (conf->actual_sockets / conf->actual_boards),
-		     conf->conf_cores, conf->actual_cores);
-		conf->cpus    = conf->conf_cpus;
-		conf->boards  = conf->conf_boards;
-		conf->sockets = conf->actual_sockets;
-		conf->cores   = conf->actual_cores;
-		conf->threads = conf->conf_threads;
 	} else {
 		conf->cpus    = conf->conf_cpus;
 		conf->boards  = conf->conf_boards;
@@ -1648,6 +1628,7 @@ _destroy_conf(void)
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
+		xfree(conf->parameters);
 		xfree(conf->pidfile);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
@@ -1686,6 +1667,8 @@ _print_config(void)
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
 
+	parse_slurmd_params(conf->parameters);
+
 	gethostname_short(name, sizeof(name));
 	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 				&conf->actual_boards,
@@ -1708,10 +1691,12 @@ _print_config(void)
 
 	get_memory(&conf->physical_memory_size);
 
-	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"%s%s\n",
+	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"%s%s%s%s\n",
 	       name, conf->actual_cpus, conf->actual_boards,
 	       (conf->actual_sockets / conf->actual_boards), conf->actual_cores,
 	       conf->actual_threads, conf->physical_memory_size,
+	       conf->parameters ? " Parameters=" : "",
+	       conf->parameters ? conf->parameters : "",
 	       gres_str ? " Gres=" : "", gres_str ? gres_str : "");
 	if (autodetect_str)
 		printf("%s\n", autodetect_str);
@@ -1758,6 +1743,7 @@ _process_cmdline(int ac, char **av)
 		LONG_OPT_EXTRA,
 		LONG_OPT_INSTANCE_ID,
 		LONG_OPT_INSTANCE_TYPE,
+		LONG_OPT_PARAMETERS,
 		LONG_OPT_SYSTEMD,
 	};
 
@@ -1769,6 +1755,7 @@ _process_cmdline(int ac, char **av)
 		{"extra",		required_argument, 0, LONG_OPT_EXTRA},
 		{"instance-id",		required_argument, 0, LONG_OPT_INSTANCE_ID},
 		{"instance-type",	required_argument, 0, LONG_OPT_INSTANCE_TYPE},
+		{"parameters",		required_argument, 0, LONG_OPT_PARAMETERS},
 		{"systemd",		no_argument,       0, LONG_OPT_SYSTEMD},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
@@ -1890,6 +1877,10 @@ _process_cmdline(int ac, char **av)
 		case LONG_OPT_INSTANCE_TYPE:
 			xfree(conf->instance_type);
 			conf->instance_type = xstrdup(optarg);
+			break;
+		case LONG_OPT_PARAMETERS:
+			xfree(conf->parameters);
+			conf->parameters = xstrdup(optarg);
 			break;
 		case LONG_OPT_SYSTEMD:
 			under_systemd = true;

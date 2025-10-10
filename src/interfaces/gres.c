@@ -3852,7 +3852,7 @@ static int _check_core_range_matches_sock(bitstr_t *tmp_bitmap,
 		if (gres_slurmd_conf->config_flags & GRES_CONF_AUTODETECT) {
 			tmp = xstrdup_printf(
 				"%s GRES autodetected core affinity %s on node %s doesn't match socket boundaries. (Socket %d is cores %d-%d). "
-				"Consider setting SlurmdParameters=l3cache_as_socket (recommended) or override this by manually specifying core affinity in gres.conf.",
+				"Consider setting Parameters=l3cache_as_socket as part of the Node configuration.",
 				gres_ctx->gres_type, gres_cores_str,
 				rebuild_topo->node_name, i, first, (last - 1));
 		} else {
