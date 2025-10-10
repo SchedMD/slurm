@@ -268,6 +268,7 @@ static int _check_callback(char *alias, char *hostname,
 	node_rec->cpu_bind  = node_ptr->cpu_bind;
 	node_rec->node_hostname = xstrdup(hostname);
 	node_rec->bcast_address = xstrdup(bcast_address);
+	node_rec->parameters = xstrdup(node_ptr->parameters);
 	node_rec->port      = port;
 	node_rec->features  = xstrdup(node_ptr->feature);
 	node_rec->reason    = xstrdup(node_ptr->reason);
@@ -1362,6 +1363,7 @@ extern void purge_node_rec(void *in)
 	xfree(node_ptr->node_hostname);
 	FREE_NULL_BITMAP(node_ptr->node_spec_bitmap);
 	xfree(node_ptr->os);
+	xfree(node_ptr->parameters);
 	xfree(node_ptr->part_pptr);
 	xfree(node_ptr->reason);
 	xfree(node_ptr->resv_name);
@@ -1677,6 +1679,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack_time(object->power_save_req_time, buffer);
 		pack_time(object->last_busy, buffer);
 		pack_time(object->last_response, buffer);
+		packstr(object->parameters, buffer);
 		pack16(object->port, buffer);
 		pack16(object->protocol_version, buffer);
 		pack16(object->tpc, buffer);
@@ -1883,6 +1886,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack_time(&object->power_save_req_time, buffer);
 		safe_unpack_time(&object->last_busy, buffer);
 		safe_unpack_time(&object->last_response, buffer);
+		safe_unpackstr(&object->parameters, buffer);
 		safe_unpack16(&object->port, buffer);
 		safe_unpack16(&object->protocol_version, buffer);
 		safe_unpack16(&object->tpc, buffer);

@@ -71,6 +71,7 @@ typedef struct {
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this configuration */
 	char *nodes;		/* name of nodes with this configuration */
+	char *parameters;	/* additional node-specific SlurmdParameters */
 	uint64_t real_memory;	/* MB real memory on the node */
 	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
 				     * to only GPU jobs */
@@ -161,6 +162,8 @@ struct node_record {
 	char *os;			/* operating system now running */
 	uint32_t owner;			/* User allowed to use node or NO_VAL */
 	uint16_t owner_job_cnt;		/* Count of exclusive jobs by "owner" */
+	char *parameters;		/* additional node-specific
+					 * SlurmdParameters */
 	uint16_t part_cnt;		/* number of associated partitions */
 	void **part_pptr;		/* array of pointers to partitions
 					 * associated with this node*/

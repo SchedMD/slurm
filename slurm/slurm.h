@@ -2404,6 +2404,7 @@ typedef struct node_info {
 	uint32_t node_state;	/* see enum node_states */
 	char *os;		/* operating system currently running */
 	uint32_t owner;		/* User allowed to use this node or NO_VAL */
+	char *parameters;	/* node-specific SlurmdParameters */
 	char *partitions;	/* Comma separated list of partitions containing
 				 * this node, NOT supplied by slurmctld, but
 				 * populated by scontrol */

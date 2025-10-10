@@ -984,6 +984,8 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			   buf.sysname, buf.release, buf.version);
 	}
 
+	msg->parameters = xstrdup(conf->parameters);
+
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	msg->job_count = list_count(steps);
 	msg->step_id = xmalloc(msg->job_count * sizeof(*msg->step_id));
@@ -1143,6 +1145,12 @@ _read_config(void)
 		      conf->node_name);
 		exit(1);
 	}
+
+	if (conf->parameters && node_ptr->parameters)
+		xstrfmtcat(conf->parameters, ",%s", node_ptr->parameters);
+	else if (node_ptr->parameters)
+		conf->parameters = xstrdup(node_ptr->parameters);
+	parse_slurmd_params(conf->parameters);
 
 	conf->port = node_ptr->port;
 	slurm_conf.slurmd_port = conf->port;

@@ -186,6 +186,7 @@ typedef struct slurm_conf_node {
 	uint16_t threads;       /* number of threads per core */
 	uint64_t real_memory;	/* MB real memory on the node */
 	uint64_t mem_spec_limit; /* MB real memory for memory specialization */
+	char *parameters; /* node-specific additions to SlurmdParameters */
 	char *reason;
 	uint16_t res_cores_per_gpu; /* number of cores per GPU to allow
 				     * to only GPU jobs */

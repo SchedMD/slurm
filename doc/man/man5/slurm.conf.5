@@ -5544,6 +5544,9 @@ See the section \fBLOGGING\fR if a pathname is specified.
 \fBSlurmdParameters\fR
 Parameters specific to the Slurmd.
 Multiple options may be comma separated.
+
+\fBNOTE\fR: Additional node\-specific parameters can be specified using the
+\fBParameters\fR option in individual node definitions.
 .IP
 .RS
 .TP
@@ -7028,6 +7031,12 @@ The daemons will not be killed if they exhaust the memory allocation
 (i.e. the Out\-Of\-Memory Killer is disabled for the daemon's memory cgroup).
 If the task/cgroup plugin is not configured, the specified memory will only be
 unavailable for user allocations.
+.IP
+
+.TP
+\fBParameters\fR
+Allows for node\-specific additions to the global \fBSlurmdParameters\fR.
+Options are appended, and cannot override global options.
 .IP
 
 .TP
