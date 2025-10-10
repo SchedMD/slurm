@@ -1695,6 +1695,8 @@ _print_config(void)
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_USER, NULL);
 
+	parse_slurmd_params(conf->parameters);
+
 	gethostname_short(name, sizeof(name));
 	xcpuinfo_hwloc_topo_get(&conf->actual_cpus,
 				&conf->actual_boards,
@@ -1717,10 +1719,12 @@ _print_config(void)
 
 	get_memory(&conf->physical_memory_size);
 
-	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"%s%s\n",
+	printf("NodeName=%s CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u ThreadsPerCore=%u RealMemory=%"PRIu64"%s%s%s%s\n",
 	       name, conf->actual_cpus, conf->actual_boards,
 	       (conf->actual_sockets / conf->actual_boards), conf->actual_cores,
 	       conf->actual_threads, conf->physical_memory_size,
+	       conf->parameters ? " Parameters=" : "",
+	       conf->parameters ? conf->parameters : "",
 	       gres_str ? " Gres=" : "", gres_str ? gres_str : "");
 	if (autodetect_str)
 		printf("%s\n", autodetect_str);

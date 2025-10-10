@@ -492,6 +492,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrfmtcat(out, "Topology=%s", node_ptr->topology_str);
 	}
 
+	/****** Line (optional) ******/
+	if (node_ptr->parameters) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "Parameters=%s", node_ptr->parameters);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else
