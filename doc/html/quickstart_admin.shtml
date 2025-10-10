@@ -191,13 +191,12 @@ package of the same name.</td>
 <td><i>readline</i></td>
 </tr>
 <tr>
-<td><code>slurmrestd</code>
-<br>Provides support for Slurm's <a href="rest_quickstart.html">REST API</a>
-	(optional prerequisites will enable additional functionality)</td>
-<td><i>http-parser</i>
-<br><i>json-c</i>
-<br><i>yaml</i> (opt.)
-<br><i>jwt</i> (opt.)</td>
+<td><code>slurmrestd</code>(<a href="#restd">restd node</a>)</td>
+<td><i><a href="related_software.html#httpparser">http_parser</a></i>
+<br><i><a href="related_software.html#json">json-c</a></i>
+<br><i><a href="related_software.html#yaml">yaml</a></i> (optional)
+<br><i><a href="related_software.html#jwt">jwt</a></i> (optional)
+<br><i><a href="tls.html#s2n">s2n</a></i> (optional)</td>
 </tr>
 <tr>
 <td><code>sview</code> (<a href="sview.html">man page</a>)</td>
@@ -483,15 +482,12 @@ should be running to provide authentication. If running in
 manage your configuration files.</p>
 
 <h3 id="restd">Restd Node<a class="slurm_link" href="#restd"></a></h3>
-<p>The <a href="slurmrestd.html">slurmrestd</a> daemon was introduced in version
-20.02 and provides a <a href="rest_quickstart.html">REST API</a> that can be
-used to interact with the Slurm cluster. This is installed by default for
-<a href="#manual_build">manual builds</a>, assuming
-the <a href="rest.html#prereq">prerequisites</a> are met, but must be enabled
-for <a href="#rpmbuild">RPM builds</a>. It has two
-<a href="slurmrestd.html#SECTION_DESCRIPTION">run modes</a>, allowing you to
-have it run as a traditional Unix service and always listen for TCP connections,
-or you can have it run as an Inet service and only have it active when in use.</p>
+<p>The <a href="slurmrestd.html">slurmrestd</a> daemon can be deployed to
+provide a <a href="rest.html">REST API</a> that can be used to interact with the
+Slurm cluster programmatically. See detailed
+<a href="rest_quickstart.html#prereq">prerequisite</a>,
+<a href="rest_quickstart.html#quick_start">installation</a>, and
+<a href="rest_quickstart.html#systemd">systemd configuration</a> guides.
 
 <h2 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h2>
 
