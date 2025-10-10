@@ -606,13 +606,10 @@ extern int http_con_send_response(http_con_t *hcon,
 		if ((rc = conmgr_con_queue_write_data(con, get_buf_data(body),
 						      body_length)))
 			return rc;
-	} else if (((status_code >= HTTP_STATUS_INFO_BEGIN) &&
-		    (status_code <= HTTP_STATUS_INFO_END)) ||
-		   (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT) ||
-		   (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)) {
+	} else {
 		/*
-		 * RFC2616 requires empty line after headers for return code
-		 * that "MUST NOT" include a message body
+		 * RFC2616 Section 6 Response always requires empty line after
+		 * headers in the HTTP Response message
 		 */
 		if ((rc = conmgr_con_queue_write_data(con, CRLF, strlen(CRLF))))
 			return rc;
