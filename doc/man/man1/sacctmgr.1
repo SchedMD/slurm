@@ -3151,13 +3151,11 @@ sacctmgr has the capability to load and dump Slurm association data to and
 from a file. This method can easily add a new cluster or copy an
 existing cluster's associations into a new cluster with similar
 accounts. Each file contains Slurm association data for a single
-cluster. Be aware that QOS information is not currently included in the
-information that can be dumped to a file. QOS information can be retrieved
-and loaded using the REST API or it must be transferred to a new cluster
-manually. Comments can be put into the file with the # character.
-Each line of information must begin with one of the four titles; \fBCluster\fP,
-\fBParent\fP, \fBAccount\fP or \fBUser\fP. Following the title is a space,
-dash, space, entity value, then specifications. Specifications are
+cluster. Beginning with version 25.05, QOS information is included in the
+dump file. Comments can be put into the file with the # character.
+Each line of information must begin with one of the five titles; \fBQOS\fP,
+\fBCluster\fP, \fBParent\fP, \fBAccount\fP or \fBUser\fP. Following the title
+is a space, dash, space, entity value, then specifications. Specifications are
 colon\-separated. If any variable, such as an Organization name, has a space in
 it, surround the name with single or double quotes.
 
