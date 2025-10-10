@@ -18,6 +18,7 @@ Usage: slurmd [OPTIONS]
    -M                         Use mlock() to lock slurmd pages into memory.
    -n value                   Run the daemon at the specified nice value.
    -N node                    Run the daemon for specified nodename.
+   --parameters               Allows local additions to SlurmdParameters
    -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.
    --systemd                  Started from a systemd unit file.
    -v                         Verbose mode. Multiple -v's increase verbosity.

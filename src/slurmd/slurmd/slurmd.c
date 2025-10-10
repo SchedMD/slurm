@@ -1648,6 +1648,7 @@ _destroy_conf(void)
 		xfree(conf->node_name);
 		xfree(conf->node_topo_addr);
 		xfree(conf->node_topo_pattern);
+		xfree(conf->parameters);
 		xfree(conf->pidfile);
 		xfree(conf->spooldir);
 		xfree(conf->stepd_loc);
@@ -1758,6 +1759,7 @@ _process_cmdline(int ac, char **av)
 		LONG_OPT_EXTRA,
 		LONG_OPT_INSTANCE_ID,
 		LONG_OPT_INSTANCE_TYPE,
+		LONG_OPT_PARAMETERS,
 		LONG_OPT_SYSTEMD,
 	};
 
@@ -1769,6 +1771,7 @@ _process_cmdline(int ac, char **av)
 		{"extra",		required_argument, 0, LONG_OPT_EXTRA},
 		{"instance-id",		required_argument, 0, LONG_OPT_INSTANCE_ID},
 		{"instance-type",	required_argument, 0, LONG_OPT_INSTANCE_TYPE},
+		{"parameters",		required_argument, 0, LONG_OPT_PARAMETERS},
 		{"systemd",		no_argument,       0, LONG_OPT_SYSTEMD},
 		{"version",		no_argument,       0, 'V'},
 		{NULL,			0,                 0, 0}
@@ -1890,6 +1893,10 @@ _process_cmdline(int ac, char **av)
 		case LONG_OPT_INSTANCE_TYPE:
 			xfree(conf->instance_type);
 			conf->instance_type = xstrdup(optarg);
+			break;
+		case LONG_OPT_PARAMETERS:
+			xfree(conf->parameters);
+			conf->parameters = xstrdup(optarg);
 			break;
 		case LONG_OPT_SYSTEMD:
 			under_systemd = true;
