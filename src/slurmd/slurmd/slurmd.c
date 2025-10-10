@@ -1090,7 +1090,6 @@ _read_config(void)
 	int cc;
 	bool cgroup_mem_confinement = false;
 	node_record_t *node_ptr;
-	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -1121,16 +1120,6 @@ _read_config(void)
 		cf->task_epilog = get_extra_conf_path(tmp_task_epilog);
 		xfree(tmp_task_epilog);
 	}
-
-	/*
-	 * We can't call running_cons_tres() because we don't load the select
-	 * plugin here.
-	 */
-	if (!xstrcmp(cf->select_type, "select/cons_tres"))
-		cr_flag = true;
-
-	if (cf->preempt_mode & PREEMPT_MODE_GANG)
-		gang_flag = true;
 
 	slurm_conf_unlock();
 
@@ -1230,23 +1219,6 @@ _read_config(void)
 		conf->sockets = conf->actual_sockets;
 		conf->cores   = conf->actual_cores;
 		conf->threads = conf->actual_threads;
-	} else if (!config_overrides && (cr_flag || gang_flag) &&
-		   (conf->actual_sockets != conf->conf_sockets) &&
-		   (conf->actual_cores != conf->conf_cores) &&
-		   ((conf->actual_sockets * conf->actual_cores) ==
-		    (conf->conf_sockets * conf->conf_cores))) {
-		/* Socket and core count can be changed when KNL node reboots
-		 * in a different NUMA configuration */
-		info("Node reconfigured socket/core boundaries "
-		     "SocketsPerBoard=%u:%u(hw) CoresPerSocket=%u:%u(hw)",
-		     (conf->conf_sockets / conf->conf_boards),
-		     (conf->actual_sockets / conf->actual_boards),
-		     conf->conf_cores, conf->actual_cores);
-		conf->cpus    = conf->conf_cpus;
-		conf->boards  = conf->conf_boards;
-		conf->sockets = conf->actual_sockets;
-		conf->cores   = conf->actual_cores;
-		conf->threads = conf->conf_threads;
 	} else {
 		conf->cpus    = conf->conf_cpus;
 		conf->boards  = conf->conf_boards;
