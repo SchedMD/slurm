@@ -2922,6 +2922,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 
 		case NODE_STATE_IDLE:
 			if (!(node_flags & NODE_STATE_INVALID_REG) &&
+			    !(node_flags & NODE_STATE_REBOOT_ISSUED) &&
 			    ((base_state == NODE_STATE_DOWN) ||
 			     (base_state == NODE_STATE_IDLE)))
 				return true;
