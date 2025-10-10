@@ -610,6 +610,11 @@ extern char *reconfig_flags2str(uint16_t reconfig_flags);
  */
 extern uint16_t reconfig_str2flags(char *reconfig_flags);
 
+/*
+ * Parse flags from provided string, will alter slurm_conf.conf_flags.
+ */
+extern void parse_slurmd_params(const char *slurmd_params);
+
 extern void destroy_config_plugin_params(void *object);
 extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
 				      buf_t *buff);
