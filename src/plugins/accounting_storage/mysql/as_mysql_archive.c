@@ -5192,14 +5192,12 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_JOB_SCRIPT:
 		query = xstrdup_printf("update \"%s_%s\" e "
 				       "inner join (select distinct %s from "
-				       "\"%s_%s\" where %s <= %ld && "
-				       "time_end != 0 "
+				       "\"%s_%s\" where deleted = 1 "
 				       "order by %s asc LIMIT %d) as j "
 				       "on e.hash_inx = j.%s set "
 				       "e.deleted = 1",
 				       cluster_name, sql_table, hash_col,
 				       cluster_name, parent_table, col_name,
-				       period_end, col_name,
 				       slurmdbd_conf->max_purge_limit,
 				       hash_col);
 		break;
