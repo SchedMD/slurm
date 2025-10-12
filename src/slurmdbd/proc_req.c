@@ -697,6 +697,13 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		goto end_it;
 	}
 
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS) {
+		rc = ESLURM_DISABLED;
+		comment = "Dumping archived data is disabled";
+		error("Request to dump archived data, but DisableArchiveCommands is set");
+		goto end_it;
+	}
+
 	arch_cond = (slurmdb_archive_cond_t *)get_msg->cond;
 	/* set up some defaults */
 	if (!arch_cond->archive_dir)
@@ -743,6 +750,13 @@ static int _archive_load(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	if (!_validate_super_user(slurmdbd_conn)) {
 		rc = ESLURM_ACCESS_DENIED;
 		comment = _internal_rc_to_str(rc, slurmdbd_conn, false);
+		goto end_it;
+	}
+
+	if (slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS) {
+		rc = ESLURM_DISABLED;
+		comment = "Loading archived data is disabled";
+		error("Request to load archived data, but DisableArchiveCommands is set");
 		goto end_it;
 	}
 
