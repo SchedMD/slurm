@@ -61,6 +61,7 @@
 #define DBD_CONF_FLAG_ALL_RES_ABS SLURM_BIT(1)
 #define DBD_CONF_FLAG_DISABLE_COORD_DBD SLURM_BIT(2)
 #define DBD_CONF_FLAG_GET_DBVER SLURM_BIT(3)
+#define DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS SLURM_BIT(4)
 
 /* SlurmDBD configuration parameters */
 typedef struct {
