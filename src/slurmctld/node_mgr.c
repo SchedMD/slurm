@@ -1826,25 +1826,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 
 		if (update_node_msg->topology_str) {
-			char *topology_str_old = node_ptr->topology_str;
-
-			node_ptr->topology_str = NULL;
-			if (*update_node_msg->topology_str) {
-				node_ptr->topology_str =
-					xstrdup(update_node_msg->topology_str);
-			}
-
-			if (topology_g_add_rm_node(node_ptr)) {
-				info("Invalid node topology specified %s",
-				     node_ptr->topology_str);
-				xfree(node_ptr->topology_str);
-				node_ptr->topology_str = topology_str_old;
-				topology_g_add_rm_node(node_ptr);
-				error_code =
-					ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-			} else {
-				xfree(topology_str_old);
-			}
+			int rc = SLURM_SUCCESS;
+			if ((rc = node_mgr_set_node_topology(
+				     node_ptr, update_node_msg->topology_str)))
+				error_code = rc;
 		}
 
 		state_val = update_node_msg->node_state;
@@ -5195,4 +5180,29 @@ extern void set_node_reason(node_record_t *node_ptr,
 		node_ptr->reason_time = 0;
 		node_ptr->reason_uid = NO_VAL;
 	}
+}
+
+extern int node_mgr_set_node_topology(node_record_t *node_ptr,
+				      char *new_topology_str)
+{
+	int rc = SLURM_SUCCESS;
+	char *topology_str_old = node_ptr->topology_str;
+
+	node_ptr->topology_str = NULL;
+	if (*new_topology_str) {
+		node_ptr->topology_str = xstrdup(new_topology_str);
+	}
+
+	if (topology_g_add_rm_node(node_ptr)) {
+		info("Invalid node topology specified %s",
+		     node_ptr->topology_str);
+		xfree(node_ptr->topology_str);
+		node_ptr->topology_str = topology_str_old;
+		topology_g_add_rm_node(node_ptr);
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+	} else {
+		xfree(topology_str_old);
+	}
+
+	return rc;
 }
