@@ -204,7 +204,7 @@ extern int shutdown_x11_forward(stepd_step_rec_t *step)
  * IN: job
  * OUT: SLURM_SUCCESS or SLURM_ERROR
  */
-extern int setup_x11_forward(stepd_step_rec_t *step)
+extern int setup_x11_forward(void)
 {
 	int listen_socket = -1;
 	uint16_t port;

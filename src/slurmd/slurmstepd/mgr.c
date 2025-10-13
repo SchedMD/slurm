@@ -1382,7 +1382,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			error ("Unable to drop privileges");
 			return SLURM_ERROR;
 		}
-		if (setup_x11_forward(step) != SLURM_SUCCESS) {
+		if (setup_x11_forward() != SLURM_SUCCESS) {
 			/* ssh forwarding setup failed */
 			error("x11 port forwarding setup failed");
 			_exit(127);
