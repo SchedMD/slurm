@@ -172,8 +172,7 @@ static int _setup_normal_io(void);
 static void _send_launch_resp(int rc);
 static int _slurmd_job_log_init(void);
 static void _wait_for_io(void);
-static int  _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n,
-			   int status);
+static int _send_exit_msg(uint32_t *tid, int n, int status);
 static void _wait_for_all_tasks(stepd_step_rec_t *step);
 static int  _wait_for_any_task(stepd_step_rec_t *step, bool waitflag);
 
@@ -585,8 +584,7 @@ _random_sleep(stepd_step_rec_t *step)
  * Send task exit message for n tasks. tid is the list of _global_
  * task ids that have exited
  */
-static int
-_send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n, int status)
+static int _send_exit_msg(uint32_t *tid, int n, int status)
 {
 	slurm_msg_t     resp;
 	task_exit_msg_t msg;
@@ -2479,7 +2477,7 @@ extern int stepd_send_pending_exit_msgs(void)
 	if (nsent) {
 		debug2("%s: aggregated %d task exit messages (rc=[0x%x]:%s)",
 		       __func__, nsent, status, slurm_strerror(status));
-		_send_exit_msg(step, tid, nsent, status);
+		_send_exit_msg(tid, nsent, status);
 	}
 	xfree(tid);
 
