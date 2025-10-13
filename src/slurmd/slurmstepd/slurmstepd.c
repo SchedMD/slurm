@@ -103,7 +103,7 @@ static void _send_fail_to_slurmd(int sock, int rc);
 static void _got_ack_from_slurmd(int);
 static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
-static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
+static void _step_cleanup(slurm_msg_t *msg, int rc);
 #endif
 static void _process_cmdline(int argc, char **argv);
 
@@ -576,7 +576,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 		node_features_free_lists();
 	}
 
-	_step_cleanup(step, msg, rc);
+	_step_cleanup(msg, rc);
 
 	fini_setproctitle();
 
@@ -1236,8 +1236,7 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 }
 
 #ifdef MEMORY_LEAK_DEBUG
-static void
-_step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc)
+static void _step_cleanup(slurm_msg_t *msg, int rc)
 {
 	if (step) {
 		jobacctinfo_destroy(step->jobacct);
