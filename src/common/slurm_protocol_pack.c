@@ -11334,7 +11334,7 @@ static void _pack_srun_user_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	srun_user_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t) msg->job_id,  buffer);
+		pack32(msg->job_id, buffer);
 		packstr(msg->msg, buffer);
 	}
 }
