@@ -372,7 +372,7 @@ static bool _match_env(const data_t *data, void *needle)
 	return match;
 }
 
-static int _modify_config(stepd_step_rec_t *step, stepd_step_task_info_t *task)
+static int _modify_config(stepd_step_task_info_t *task)
 {
 	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
@@ -1135,7 +1135,7 @@ extern void container_run(stepd_step_task_info_t *task)
 		/* create new config.json in spooldir */
 		xstrfmtcat(jconfig, "%s/config.json", c->task_spool_dir);
 
-		if ((rc = _modify_config(step, task)))
+		if ((rc = _modify_config(task)))
 			fatal("%s: configuring container failed: %s",
 			      __func__, slurm_strerror(rc));
 
