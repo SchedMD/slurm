@@ -11605,10 +11605,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_forward_data_msg(forward_data_msg_t *msg,
-				   buf_t *buffer, uint16_t protocol_version)
+static void _pack_forward_data_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	forward_data_msg_t *msg = smsg->data;
+
 	packstr(msg->address, buffer);
 	pack32(msg->len, buffer);
 	packmem(msg->data, msg->len, buffer);
@@ -13998,10 +13998,8 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_stats_request_msg(msg, buffer);
 		break;
 	case REQUEST_FORWARD_DATA:
-		_pack_forward_data_msg((forward_data_msg_t *)msg->data,
-				       buffer, msg->protocol_version);
+		_pack_forward_data_msg(msg, buffer);
 		break;
-
 	case RESPONSE_PING_SLURMD:
 		_pack_ping_slurmd_resp((ping_slurmd_resp_msg_t *)msg->data,
 				       buffer, msg->protocol_version);
