@@ -1697,8 +1697,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
  * Create a new eio client object and wake up the eio engine so that
  * it can see the new object.
  */
-int
-io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
+extern int io_client_connect(srun_info_t *srun)
 {
 	int sock = -1;
 	struct client_io_info *client;

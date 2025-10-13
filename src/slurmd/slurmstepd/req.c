@@ -1170,7 +1170,7 @@ static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 	}
 
 	list_prepend(step->sruns, srun);
-	rc = io_client_connect(srun, step);
+	rc = io_client_connect(srun);
 	srun = NULL;
 	debug("  back from io_client_connect, rc = %d", rc);
 done:
