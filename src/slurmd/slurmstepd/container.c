@@ -1108,8 +1108,7 @@ static void _generate_patterns(stepd_step_rec_t *step,
 	}
 }
 
-extern void container_run(stepd_step_rec_t *step,
-			  stepd_step_task_info_t *task)
+extern void container_run(stepd_step_task_info_t *task)
 {
 	step_container_t *c = step->container;
 	int rc;

@@ -519,7 +519,7 @@ extern void exec_task(int local_proc_id)
 	}
 
 	if (step->container)
-		container_run(step, task);
+		container_run(task);
 
 	execve(task->argv[0], task->argv, step->env);
 	saved_errno = errno;
