@@ -886,14 +886,6 @@ static int _handle_signal_container(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("_handle_signal_container for %ps uid=%u signal=%d flag=0x%x",
 	      &step->step_id, req_uid, sig, flag);
-	/* verify uid off uid instead of req_uid as we can trust that one */
-	if ((uid != step->uid) && !_slurm_authorized_user(uid)) {
-		error("signal container req from uid %u for %ps owned by uid %u",
-		      req_uid, &step->step_id, step->uid);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
 
 	if (flag & KILL_NO_SIG_FAIL)
 		step->flags |= LAUNCH_NO_SIG_FAIL;
@@ -1085,17 +1077,9 @@ static int _handle_notify_job(int fd, uid_t uid, pid_t remote_pid)
 		safe_read(fd, message, len);
 	}
 
-	debug3("  uid = %u", uid);
-	if ((uid != step->uid) && !_slurm_authorized_user(uid)) {
-		debug("notify req from uid %u for %ps owned by uid %u",
-		      uid, &step->step_id, step->uid);
-		rc = EPERM;
-		goto done;
-	}
 	error("%s", message);
 	xfree(message);
 
-done:
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
 	xfree(message);
@@ -1113,13 +1097,6 @@ static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 	stepd_step_task_info_t *task;
 	uint32_t i;
 
-	if (uid != step->uid && !_slurm_authorized_user(uid)) {
-		debug("terminate req from uid %u for %ps owned by uid %u",
-		      uid, &step->step_id, step->uid);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
 	debug("_handle_terminate for %ps uid=%u", &step->step_id, uid);
 	step_terminate_monitor_start(step);
 
@@ -1216,17 +1193,6 @@ static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 	 */
 	if (step->state != SLURMSTEPD_STEP_RUNNING) {
 		rc = ESLURMD_STEP_NOTRUNNING;
-		goto done;
-	}
-
-	/*
-	 * At the moment, it only makes sense for the slurmd to make this
-	 * call, so only _slurm_authorized_user is allowed.
-	 */
-	if (!_slurm_authorized_user(uid)) {
-		error("uid %u attempt to attach to %ps owned by %u",
-		      uid, &step->step_id, step->uid);
-		rc = EPERM;
 		goto done;
 	}
 
@@ -1516,12 +1482,7 @@ static int _handle_add_extern_pid(int fd, uid_t uid, pid_t remote_pid)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	if (!_slurm_authorized_user(uid)) {
-		error("uid %u attempt to add pid %u to %ps",
-		      uid, pid, &step->step_id);
-		rc = SLURM_ERROR;
-	} else
-		rc = _handle_add_extern_pid_internal(step, pid);
+	rc = _handle_add_extern_pid_internal(step, pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
@@ -1837,14 +1798,6 @@ static int _handle_suspend(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
-	if (!_slurm_authorized_user(uid)) {
-		debug("job step suspend request from uid %u for %ps",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
-
 	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
@@ -1925,14 +1878,6 @@ static int _handle_resume(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
-	if (!_slurm_authorized_user(uid)) {
-		debug("job step resume request from uid %u for %ps",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
-
 	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
@@ -1991,18 +1936,6 @@ static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 	uint32_t step_id;
 
 	debug("_handle_completion for %ps", &step->step_id);
-
-	debug3("  uid = %u", uid);
-	if (!_slurm_authorized_user(uid)) {
-		debug("step completion message from uid %u for %ps ",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		/* Send the return code and errno */
-		safe_write(fd, &rc, sizeof(int));
-		safe_write(fd, &errnum, sizeof(int));
-		return SLURM_SUCCESS;
-	}
 
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
@@ -2156,16 +2089,6 @@ static int _handle_stat_jobacct(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("_handle_stat_jobacct for %ps", &step->step_id);
 
-	debug3("  uid = %u", uid);
-	if (uid != step->uid && !_slurm_authorized_user(uid)) {
-		debug("stat jobacct from uid %u for %ps owned by uid %u",
-		      uid, &step->step_id, step->uid);
-		/* Send NULL */
-		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
-				    SLURM_PROTOCOL_VERSION);
-		return SLURM_ERROR;
-	}
-
 	jobacct = jobacctinfo_create(NULL);
 	debug3("num tasks = %d", step->node_tasks);
 
@@ -2274,14 +2197,6 @@ static int _handle_reconfig(int fd, uid_t uid, pid_t remote_pid)
 	buf_t *buffer = NULL;
 	int errnum = 0;
 
-	if (!_slurm_authorized_user(uid)) {
-		debug("job step reconfigure request from uid %u for %ps",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
-
 	/*
 	 * Pull in any needed configuration changes.
 	 * len = 0 indicates we're just going for a log rotate.
@@ -2302,7 +2217,6 @@ static int _handle_reconfig(int fd, uid_t uid, pid_t remote_pid)
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	debug("_handle_reconfigure for %ps successful", &step->step_id);
 
-done:
 	/* Send the return code and errno */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errnum, sizeof(int));
@@ -2365,6 +2279,7 @@ typedef struct {
 slurmstepd_rpc_t stepd_rpcs[] = {
 	{
 		.msg_type = REQUEST_SIGNAL_CONTAINER,
+		.from_job_owner = true,
 		.func = _handle_signal_container,
 	},
 	{
@@ -2385,6 +2300,7 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_ATTACH,
+		.from_slurmd = true,
 		.func = _handle_attach,
 	},
 	{
@@ -2397,18 +2313,22 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_STEP_SUSPEND,
+		.from_slurmd = true,
 		.func = _handle_suspend,
 	},
 	{
 		.msg_type = REQUEST_STEP_RESUME,
+		.from_slurmd = true,
 		.func = _handle_resume,
 	},
 	{
 		.msg_type = REQUEST_STEP_TERMINATE,
+		.from_job_owner = true,
 		.func = _handle_terminate,
 	},
 	{
 		.msg_type = REQUEST_STEP_COMPLETION,
+		.from_slurmd = true,
 		.func = _handle_completion,
 	},
 	{
@@ -2417,6 +2337,7 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_STEP_STAT,
+		.from_job_owner = true,
 		.func = _handle_stat_jobacct,
 	},
 	{
@@ -2425,6 +2346,7 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_STEP_RECONFIGURE,
+		.from_slurmd = true,
 		.func = _handle_reconfig,
 	},
 	{
@@ -2437,14 +2359,17 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_JOB_NOTIFY,
+		.from_job_owner = true,
 		.func = _handle_notify_job,
 	},
 	{
 		.msg_type = REQUEST_ADD_EXTERN_PID,
+		.from_slurmd = true,
 		.func = _handle_add_extern_pid,
 	},
 	{
 		.msg_type = REQUEST_X11_DISPLAY,
+		.from_job_owner = true,
 		.func = _handle_x11_display,
 	},
 	{
@@ -2457,6 +2382,7 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	},
 	{
 		.msg_type = REQUEST_GET_NS_FD,
+		.from_job_owner = true,
 		.func = _handle_get_ns_fd,
 	},
 	{
