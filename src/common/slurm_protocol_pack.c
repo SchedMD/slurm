@@ -10965,8 +10965,8 @@ static void _pack_job_id_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_id_response_msg_t *msg = smsg->data;
 
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->return_code, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->return_code, buffer);
 }
 
 static int
