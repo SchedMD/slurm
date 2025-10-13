@@ -1993,8 +1993,9 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int exec_wait_signal (struct exec_wait_info *e, stepd_step_rec_t *step)
+static int _exec_wait_signal(void *x, void *arg)
 {
+	struct exec_wait_info *e = x;
 	debug3 ("Unblocking %ps task %d, writefd = %d",
 		&step->step_id, e->id, e->parentfd);
 
@@ -2393,8 +2394,8 @@ static int _fork_all_tasks(bool *io_initialized)
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
 	 */
-	list_for_each (exec_wait_list, (ListForF) exec_wait_signal, step);
-	FREE_NULL_LIST (exec_wait_list);
+	list_for_each(exec_wait_list, _exec_wait_signal, NULL);
+	FREE_NULL_LIST(exec_wait_list);
 
 	for (i = 0; i < step->node_tasks; i++) {
 		/*
