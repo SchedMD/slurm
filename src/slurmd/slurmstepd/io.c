@@ -224,7 +224,7 @@ static void _free_incoming_msg(struct io_buf *msg);
 static void _free_all_outgoing_msgs(list_t *msg_queue);
 static bool _incoming_buf_free(void);
 static bool _outgoing_buf_free(void);
-static int  _send_connection_okay_response(stepd_step_rec_t *step);
+static int _send_connection_okay_response(void);
 static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *step);
 
 /**********************************************************************
@@ -356,7 +356,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 			client->in_msg = NULL;
 			return SLURM_ERROR;
 		}
-		if (_send_connection_okay_response(client->step)) {
+		if (_send_connection_okay_response()) {
 			/*
 			 * If we get here because of a failed
 			 * _send_connection_okay_response, it's because of a
@@ -1328,10 +1328,7 @@ static void _shrink_msg_cache(list_t *cache, stepd_step_rec_t *step)
 	}
 }
 
-
-
-static int
-_send_connection_okay_response(stepd_step_rec_t *step)
+static int _send_connection_okay_response(void)
 {
 	eio_obj_t *eio;
 	list_itr_t *clients;
