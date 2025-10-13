@@ -274,7 +274,7 @@ cleanup:
 	return rc;
 }
 
-static int _load_config(stepd_step_rec_t *step)
+static int _load_config(void)
 {
 	step_container_t *c = step->container;
 	int rc;
@@ -787,7 +787,7 @@ extern int setup_container(void)
 	serializer_required(MIME_TYPE_JSON);
 
 	if (!oci_conf->ignore_config_json) {
-		if ((rc = _load_config(step)))
+		if ((rc = _load_config()))
 			goto error;
 
 		if ((rc = _merge_step_config_env(step)))
