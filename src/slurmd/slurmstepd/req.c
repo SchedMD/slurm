@@ -1282,7 +1282,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static void _block_on_pid(pid_t pid, stepd_step_rec_t *step)
+static void _block_on_pid(pid_t pid)
 {
 	struct timespec ts = { 0, 0 };
 
@@ -1321,7 +1321,7 @@ static void *_wait_extern_pid(void *args)
 	xfree(extern_pid);
 
 	//info("waiting on pid %d", pid);
-	_block_on_pid(pid, step);
+	_block_on_pid(pid);
 	//info("done with pid %d %d: %m", pid, rc);
 	jobacct = jobacct_gather_remove_task(pid);
 	if (jobacct) {
