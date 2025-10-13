@@ -123,8 +123,7 @@ extern void pack_multi_core_data(multi_core_data_t *multi_core, buf_t *buffer,
 extern int unpack_multi_core_data(multi_core_data_t **multi_core, buf_t *buffer,
 				  uint16_t protocol_version);
 
-extern void pack_config_response_msg(config_response_msg_t *msg,
-				     buf_t *buffer, uint16_t protocol_version);
+extern void pack_config_response_msg(const slurm_msg_t *smsg, buf_t *buffer);
 extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 				      buf_t *buffer, uint16_t protocol_version);
 

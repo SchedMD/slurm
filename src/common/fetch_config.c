@@ -137,6 +137,9 @@ rwfail:
 static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 			 char *ca_cert_file)
 {
+	slurm_msg_t msg_wrap = {
+		.protocol_version = SLURM_PROTOCOL_VERSION,
+	};
 	config_response_msg_t *config;
 	ctl_entry_t *ctl = NULL;
 	buf_t *buffer = init_buf(1024 * 1024);
@@ -190,7 +193,8 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 		_exit(1);
 	}
 
-	pack_config_response_msg(config, buffer, SLURM_PROTOCOL_VERSION);
+	msg_wrap.data = config;
+	pack_config_response_msg(&msg_wrap, buffer);
 
 	len = buffer->processed;
 	safe_write(to_parent[1], &len, sizeof(int));

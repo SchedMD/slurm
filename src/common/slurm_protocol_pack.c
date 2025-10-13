@@ -11057,14 +11057,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_config_response_msg(config_response_msg_t *msg,
-				     buf_t *buffer, uint16_t protocol_version)
+extern void pack_config_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	config_response_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		slurm_pack_list(msg->config_files, pack_config_file, buffer,
-				protocol_version);
+				smsg->protocol_version);
 		packstr(msg->slurmd_spooldir, buffer);
 	}
 }
@@ -13867,8 +13866,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
-		pack_config_response_msg((config_response_msg_t *) msg->data,
-					 buffer, msg->protocol_version);
+		pack_config_response_msg(msg, buffer);
 		break;
 	case SRUN_NODE_FAIL:
 		_pack_srun_node_fail_msg(msg, buffer);
