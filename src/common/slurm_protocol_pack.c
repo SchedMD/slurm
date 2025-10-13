@@ -12855,14 +12855,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_buf_list_msg(ctld_list_msg_t *msg, buf_t *buffer,
-			       uint16_t protocol_version)
+static void _pack_buf_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	ctld_list_msg_t *msg = smsg->data;
 	list_itr_t *iter = NULL;
 	buf_t *req_buf;
 	uint32_t size;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		size = list_count(msg->my_list);
 		pack32(size, buffer);
 		iter = list_iterator_create(msg->my_list);
@@ -14011,8 +14011,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
-		_pack_buf_list_msg((ctld_list_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
+		_pack_buf_list_msg(msg, buffer);
 		break;
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		_pack_set_fs_dampening_factor_msg(msg, buffer);
