@@ -690,8 +690,7 @@ static char *_generate_spooldir(stepd_step_rec_t *step,
 	return path;
 }
 
-extern void container_task_init(stepd_step_rec_t *step,
-				stepd_step_task_info_t *task)
+extern void container_task_init(stepd_step_task_info_t *task)
 {
 	int rc;
 	step_container_t *c = step->container;

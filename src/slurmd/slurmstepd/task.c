@@ -321,7 +321,7 @@ extern void exec_task(int local_proc_id)
 	uint32_t node_offset = 0, task_offset = 0;
 
 	if (step->container)
-		container_task_init(step, task);
+		container_task_init(task);
 
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;
