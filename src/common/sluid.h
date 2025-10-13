@@ -102,6 +102,12 @@ extern sluid_t generate_sluid(void);
 extern char *sluid2str(const sluid_t sluid);
 
 /*
+ * Directly print into an existing buffer.
+ * Must have at least 15 bytes free or nothing will be printed.
+ */
+extern void print_sluid(const sluid_t sluid, char *buffer, size_t size);
+
+/*
  * Parse the string representation.
  * Must be "s", followed by 13 digits encoding the SLUID, then NUL.
  * Returns 0 on error.

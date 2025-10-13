@@ -109,15 +109,23 @@ extern uint16_t generate_cluster_id(void)
 extern char *sluid2str(const sluid_t sluid)
 {
 	char *str = xmalloc(15);
-	str[0] = 's';
+	print_sluid(sluid, str, 15);
+	return str;
+}
+
+extern void print_sluid(const sluid_t sluid, char *buffer, size_t size)
+{
+	if (size < 15)
+		return;
+
+	buffer[0] = 's';
+	buffer[14] = '\0';
 
 	for (int i = 0; i < 13; i++) {
 		uint64_t shift = 5 * i;
 		uint64_t mask = (uint64_t) 0x1f << shift;
-		str[13 - i] = cb32map[(sluid & mask) >> shift];
+		buffer[13 - i] = cb32map[(sluid & mask) >> shift];
 	}
-
-	return str;
 }
 
 extern sluid_t str2sluid(const char *string)
