@@ -5172,9 +5172,9 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_TXN:
 		query = xstrdup_printf("update \"%s\" set deleted = 1 where "
 				       "%s <= %ld && cluster='%s' "
-				       "order by %s asc LIMIT %d",
-				       sql_table,col_name, period_end,
-				       cluster_name, col_name,
+				       "LIMIT %d",
+				       sql_table, col_name, period_end,
+				       cluster_name,
 				       slurmdbd_conf->max_purge_limit);
 
 		break;
@@ -5182,9 +5182,9 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_USAGE:
 	case PURGE_CLUSTER_USAGE:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "%s <= %ld order by %s asc LIMIT %d",
+				       "%s <= %ld LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end, col_name,
+				       period_end,
 				       slurmdbd_conf->max_purge_limit);
 		break;
 
@@ -5192,23 +5192,21 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_JOB_SCRIPT:
 		query = xstrdup_printf("update \"%s_%s\" e "
 				       "inner join (select distinct %s from "
-				       "\"%s_%s\" where %s <= %ld && "
-				       "time_end != 0 "
-				       "order by %s asc LIMIT %d) as j "
+				       "\"%s_%s\" where deleted = 1 "
+				       "LIMIT %d) as j "
 				       "on e.hash_inx = j.%s set "
 				       "e.deleted = 1",
 				       cluster_name, sql_table, hash_col,
-				       cluster_name, parent_table, col_name,
-				       period_end, col_name,
+				       cluster_name, parent_table,
 				       slurmdbd_conf->max_purge_limit,
 				       hash_col);
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
 				       "%s <= %ld && time_end != 0 "
-				       "order by %s asc LIMIT %d",
+				       "LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end, col_name,
+				       period_end,
 				       slurmdbd_conf->max_purge_limit);
 
 		break;
