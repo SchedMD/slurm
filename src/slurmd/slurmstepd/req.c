@@ -1556,7 +1556,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _send_one_struct_group(int fd, stepd_step_rec_t *step, int offset)
+static int _send_one_struct_group(int fd, int offset)
 {
 	int len;
 
@@ -1625,11 +1625,11 @@ static int _handle_getgr(int fd, uid_t uid, pid_t remote_pid)
 		return SLURM_SUCCESS;
 
 	if (mode == GETGR_MATCH_GROUP_AND_PID) {
-		if (_send_one_struct_group(fd, step, offset))
+		if (_send_one_struct_group(fd, offset))
 			goto rwfail;
 	} else {
 		for (int i = 0; i < step->ngids; i++) {
-			if (_send_one_struct_group(fd, step, i))
+			if (_send_one_struct_group(fd, i))
 				goto rwfail;
 		}
 	}
