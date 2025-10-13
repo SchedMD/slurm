@@ -185,8 +185,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
  * Batch step management prototypes:
  */
 static char * _make_batch_dir(stepd_step_rec_t *step);
-static int _make_batch_script(batch_job_launch_msg_t *msg,
-			      stepd_step_rec_t *step);
+static int _make_batch_script(batch_job_launch_msg_t *msg);
 static int _send_complete_batch_script_msg(int err, int status);
 
 /*
@@ -405,7 +404,7 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 
 	xfree(step->argv[0]);
 
-	if (_make_batch_script(msg, step))
+	if (_make_batch_script(msg))
 		goto cleanup;
 
 	env_array_for_batch_job(&step->env, msg, conf->node_name);
@@ -2775,8 +2774,7 @@ error:
 	return NULL;
 }
 
-static int _make_batch_script(batch_job_launch_msg_t *msg,
-			      stepd_step_rec_t *step)
+static int _make_batch_script(batch_job_launch_msg_t *msg)
 {
 	int flags = O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC;
 	int fd, length;
