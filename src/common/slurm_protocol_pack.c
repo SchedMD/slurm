@@ -12350,12 +12350,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_topo_info_msg(topo_info_response_msg_t *msg, buf_t *buffer,
-				uint16_t protocol_version)
+static void _pack_topo_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	topo_info_response_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		topology_g_topoinfo_pack(msg->topo_info, buffer,
-					 protocol_version);
+					 smsg->protocol_version);
 	}
 }
 
@@ -13981,9 +13982,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_topo_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_TOPO_INFO:
-		_pack_topo_info_msg(
-			(topo_info_response_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_topo_info_msg(msg, buffer);
 		break;
 	case RESPONSE_TOPO_CONFIG:
 		_pack_topo_config_msg(msg, buffer);
