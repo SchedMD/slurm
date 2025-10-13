@@ -402,7 +402,6 @@ static void *_handle_accept(void *arg)
 {
 	struct request_params *param = arg;
 	int fd = param->fd;
-	stepd_step_rec_t *step = param->step;
 	int req;
 	int client_protocol_ver;
 	buf_t *buffer = NULL;
