@@ -70,8 +70,8 @@
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static void _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
-				char *ifname, char *ofname, char *efname);
+static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
+				char *efname);
 static void _srun_info_destructor(void *arg);
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
 						 char *ifname, char *ofname,
@@ -113,9 +113,8 @@ _expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *step)
 		return xstrdup("/dev/null");
 }
 
-static void
-_job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
-		    char *ifname, char *ofname, char *efname)
+static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
+				char *efname)
 {
 	int          i, node_id = step->nodeid;
 	char        *in, *out, *err;
@@ -480,8 +479,8 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	list_append(step->sruns, (void *) srun);
 
-	_job_init_task_info(step, msg->global_task_ids,
-			    msg->ifname, msg->ofname, msg->efname);
+	_job_init_task_info(msg->global_task_ids, msg->ifname, msg->ofname,
+			    msg->efname);
 
 	return SLURM_SUCCESS;
 }
