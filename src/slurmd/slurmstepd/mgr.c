@@ -1821,7 +1821,9 @@ fail2:
 	 * Notify srun of completion AFTER frequency reset to avoid race
 	 * condition starting another job on these CPUs.
 	 */
-	while (stepd_send_pending_exit_msgs(step)) {;}
+	while (stepd_send_pending_exit_msgs()) {
+		;
+	}
 
 	debug2("Before call to spank_fini()");
 	if (spank_fini(step))
@@ -2467,7 +2469,7 @@ fail1:
  * the client) Aggregate these tasks into a single task exit message.
  *
  */
-extern int stepd_send_pending_exit_msgs(stepd_step_rec_t *step)
+extern int stepd_send_pending_exit_msgs(void)
 {
 	int  i;
 	int  nsent  = 0;
@@ -2716,7 +2718,9 @@ _wait_for_all_tasks(stepd_step_rec_t *step)
 			/* Send partial completion message only.
 			 * The full completion message can only be sent
 			 * after resetting CPU frequencies */
-			while (stepd_send_pending_exit_msgs(step)) {;}
+			while (stepd_send_pending_exit_msgs()) {
+				;
+			}
 		}
 	}
 }

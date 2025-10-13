@@ -162,7 +162,9 @@ static void *_monitor(void *ignored)
 		if (!step->batch) {
 			/* Notify waiting sruns */
 			if (step->step_id.step_id != SLURM_EXTERN_CONT)
-				while (stepd_send_pending_exit_msgs(step)) {;}
+				while (stepd_send_pending_exit_msgs()) {
+					;
+				}
 
 			if ((step_complete.rank > -1)) {
 				if (step->aborted)
