@@ -274,8 +274,7 @@ static char *_build_path(char *fname, char **prog_env)
 	return file_name;
 }
 
-static int
-_setup_mpi(stepd_step_rec_t *step, int ltaskid)
+static int _setup_mpi(int ltaskid)
 {
 	mpi_task_info_t info[1];
 
@@ -401,7 +400,7 @@ extern void exec_task(int local_proc_id)
 			_exit(1);
 		}
 
-		if (_setup_mpi(step, local_proc_id) != SLURM_SUCCESS) {
+		if (_setup_mpi(local_proc_id) != SLURM_SUCCESS) {
 			error("Unable to configure MPI plugin: %m");
 			log_fini();
 			_exit(1);
