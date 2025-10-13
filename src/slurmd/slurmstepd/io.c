@@ -115,7 +115,6 @@ struct io_operations client_ops = {
 #define CLIENT_IO_MAGIC 0x10102
 struct client_io_info {
 	int                   magic;
-	stepd_step_rec_t *step; /* pointer back to step data */
 
 	/* incoming variables */
 	io_hdr_t header;
@@ -283,14 +282,14 @@ _client_writable(eio_obj_t *obj)
 		list_itr_t *msgs;
 		struct io_buf *msg;
 		client->msg_queue = list_create(NULL); /* need destructor */
-		msgs = list_iterator_create(client->step->outgoing_cache);
+		msgs = list_iterator_create(step->outgoing_cache);
 		while ((msg = list_next(msgs))) {
 			msg->ref_count++;
 			list_enqueue(client->msg_queue, msg);
 		}
 		list_iterator_destroy(msgs);
 		/* and now make this object visible to tasks */
-		list_append(client->step->clients, (void *)obj);
+		list_append(step->clients, (void *) obj);
 	}
 
 	if (client->out_msg != NULL)
@@ -321,8 +320,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 	 */
 	if (client->in_msg == NULL) {
 		if (_incoming_buf_free()) {
-			client->in_msg =
-				list_dequeue(client->step->free_incoming);
+			client->in_msg = list_dequeue(step->free_incoming);
 		} else {
 			debug5("  _client_read free_incoming is empty");
 			return SLURM_SUCCESS;
@@ -331,8 +329,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 		if (n <= 0) { /* got eof or fatal error */
 			debug5("  got eof or error _client_read header, n=%d", n);
 			client->in_eof = true;
-			list_enqueue(client->step->free_incoming,
-				     client->in_msg);
+			list_enqueue(step->free_incoming, client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -350,8 +347,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 	if (client->header.type == SLURM_IO_CONNECTION_TEST) {
 		if (client->header.length != 0) {
 			debug5("  error in _client_read: bad connection test");
-			list_enqueue(client->step->free_incoming,
-				     client->in_msg);
+			list_enqueue(step->free_incoming, client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_ERROR;
 		}
@@ -365,7 +361,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 			 */
 			return SLURM_SUCCESS;
 		}
-		list_enqueue(client->step->free_incoming, client->in_msg);
+		list_enqueue(step->free_incoming, client->in_msg);
 		client->in_msg = NULL;
 		return SLURM_SUCCESS;
 	} else if (client->header.length == 0) { /* zero length is an eof message */
@@ -392,8 +388,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 		if (n <= 0) { /* got eof (or unhandled error) */
 			debug5("  got eof on _client_read body");
 			client->in_eof = true;
-			list_enqueue(client->step->free_incoming,
-				     client->in_msg);
+			list_enqueue(step->free_incoming, client->in_msg);
 			client->in_msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -419,16 +414,16 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 
 		client->in_msg->ref_count = 0;
 		if (client->header.type == SLURM_IO_ALLSTDIN) {
-			for (i = 0; i < client->step->node_tasks; i++) {
-				task = client->step->task[i];
+			for (i = 0; i < step->node_tasks; i++) {
+				task = step->task[i];
 				io = (struct task_write_info *)task->in->arg;
 				client->in_msg->ref_count++;
 				list_enqueue(io->msg_queue, client->in_msg);
 			}
 			debug5("  message ref_count = %d", client->in_msg->ref_count);
 		} else {
-			for (i = 0; i < client->step->node_tasks; i++) {
-				task = client->step->task[i];
+			for (i = 0; i < step->node_tasks; i++) {
+				task = step->task[i];
 				if (task->in == NULL)
 					continue;
 				io = (struct task_write_info *)task->in->arg;
@@ -584,9 +579,9 @@ static int _local_file_write(eio_obj_t *obj, list_t *objs)
 	buf = client->out_msg->data +
 		(client->out_msg->length - client->out_remaining);
 	n = write_labelled_message(obj->fd, buf, client->out_remaining,
-				   header.gtaskid, client->step->het_job_offset,
-				   client->step->het_job_task_offset,
-				   client->labelio, client->taskid_width);
+				   header.gtaskid, step->het_job_offset,
+				   step->het_job_task_offset, client->labelio,
+				   client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
 		_free_all_outgoing_msgs(client->msg_queue);
@@ -1596,7 +1591,6 @@ extern int io_create_local_client(const char *filename, int file_flags,
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-	client->step = step;
 	client->msg_queue = list_create(NULL); /* FIXME - destructor */
 
 	client->ltaskid_stdout = stdout_tasks;
@@ -1665,7 +1659,6 @@ extern int io_initial_client_connect(srun_info_t *srun, int stdout_tasks,
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-	client->step = step;
 	client->msg_queue = list_create(NULL); /* FIXME - destructor */
 
 	client->ltaskid_stdout = stdout_tasks;
@@ -1722,7 +1715,6 @@ extern int io_client_connect(srun_info_t *srun)
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
 	client->magic = CLIENT_IO_MAGIC;
-	client->step = step;
 	client->msg_queue = NULL; /* initialized in _client_writable */
 
 	client->ltaskid_stdout = -1;     /* accept from all tasks */
