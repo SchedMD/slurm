@@ -86,8 +86,7 @@ static char *start_argv[] = {
 
 static char *_get_config_path(void);
 static char *_generate_spooldir(stepd_step_task_info_t *task);
-static void _generate_patterns(stepd_step_rec_t *step,
-			       stepd_step_task_info_t *task);
+static void _generate_patterns(stepd_step_task_info_t *task);
 
 static void _dump_command_args(run_command_args_t *args, const char *caller)
 {
@@ -1035,8 +1034,7 @@ static void _create_start(stepd_step_rec_t *step,
 	_exit(rc);
 }
 
-static void _generate_patterns(stepd_step_rec_t *step,
-			       stepd_step_task_info_t *task)
+static void _generate_patterns(stepd_step_task_info_t *task)
 {
 	char *gen;
 	int id = -1;
@@ -1209,7 +1207,7 @@ extern void container_run(stepd_step_task_info_t *task)
 	xfree(step->cwd);
 	step->cwd = xstrdup(c->task_spool_dir);
 
-	_generate_patterns(step, task);
+	_generate_patterns(task);
 
 	if (oci_conf->runtime_run)
 		_run(step, task);
@@ -1231,7 +1229,7 @@ extern void cleanup_container(void)
 
 	/* cleanup may be called without ever setting up container */
 
-	_generate_patterns(step, NULL);
+	_generate_patterns(NULL);
 	_kill_container();
 
 	if (oci_conf->disable_cleanup)
@@ -1246,7 +1244,7 @@ extern void cleanup_container(void)
 			xfree(c->task_spool_dir);
 			c->task_spool_dir = _generate_spooldir(step->task[i]);
 
-			_generate_patterns(step, step->task[i]);
+			_generate_patterns(step->task[i]);
 
 			if (!oci_conf->ignore_config_json) {
 				char *jconfig = NULL;
