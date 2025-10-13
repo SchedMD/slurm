@@ -430,8 +430,6 @@ cleanup:
 		error("rmdir(%s): %m",  step->batchdir);
 	xfree(step->batchdir);
 
-	errno = ESLURMD_CREATE_BATCH_DIR_ERROR;
-
 	return SLURM_ERROR;
 }
 
