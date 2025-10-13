@@ -2747,7 +2747,7 @@ _wait_for_io(stepd_step_rec_t *step)
 	slurm_mutex_unlock(&step->io_mutex);
 
 	/* Close any files for stdout/stderr opened by the stepd */
-	io_close_local_fds(step);
+	io_close_local_fds();
 
 	return;
 }

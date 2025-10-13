@@ -1535,8 +1535,7 @@ extern void io_close_all(void)
 	eio_signal_shutdown(step->eio);
 }
 
-void
-io_close_local_fds(stepd_step_rec_t *step)
+extern void io_close_local_fds(void)
 {
 	list_itr_t *clients;
 	eio_obj_t *eio;

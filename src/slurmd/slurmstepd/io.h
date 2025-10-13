@@ -112,8 +112,7 @@ extern void io_close_task_fds(void);
 
 extern void io_close_all(void);
 
-void io_close_local_fds(stepd_step_rec_t *step);
-
+extern void io_close_local_fds(void);
 
 /*
  *  Look for a pattern in the stdout and stderr file names, and see
