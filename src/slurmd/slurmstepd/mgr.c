@@ -168,7 +168,7 @@ static void _send_launch_failure(launch_tasks_request_msg_t *,
 static int _fork_all_tasks(bool *io_initialized);
 static int _become_user(struct priv_state *ps);
 static void _set_prio_process(void);
-static int  _setup_normal_io(stepd_step_rec_t *step);
+static int _setup_normal_io(void);
 static void _send_launch_resp(stepd_step_rec_t *step, int rc);
 static int  _slurmd_job_log_init(stepd_step_rec_t *step);
 static void _wait_for_io(stepd_step_rec_t *step);
@@ -432,8 +432,7 @@ cleanup:
 	return SLURM_ERROR;
 }
 
-static int
-_setup_normal_io(stepd_step_rec_t *step)
+static int _setup_normal_io(void)
 {
 	int rc = 0, ii = 0;
 	struct priv_state sprivs;
@@ -2143,7 +2142,7 @@ static int _fork_all_tasks(bool *io_initialized)
 		goto fail1; /* pam_setup error */
 
 	set_umask(); /* set umask for stdout/err files */
-	rc = _setup_normal_io(step);
+	rc = _setup_normal_io();
 	/*
 	 * Initialize log facility to copy errors back to srun
 	 */
