@@ -12754,19 +12754,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-/* _pack_assoc_mgr_info_request_msg()
- */
-static void
-_pack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t *msg,
-				 buf_t *buffer,
-				 uint16_t protocol_version)
+static void _pack_assoc_mgr_info_request_msg(const slurm_msg_t *smsg,
+					     buf_t *buffer)
 {
+	assoc_mgr_info_request_msg_t *msg = smsg->data;
 	uint32_t count = NO_VAL;
 	char *tmp_info = NULL;
 	list_itr_t *itr = NULL;
-
-	xassert(msg);
 
 	if (!msg->acct_list || !(count = list_count(msg->acct_list)))
 		count = NO_VAL;
@@ -14007,9 +14001,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_array_resp_msg(msg, buffer);
 		break;
 	case REQUEST_ASSOC_MGR_INFO:
-		_pack_assoc_mgr_info_request_msg(
-			(assoc_mgr_info_request_msg_t *)msg->data,
-			buffer, msg->protocol_version);
+		_pack_assoc_mgr_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_NETWORK_CALLERID:
 		_pack_network_callerid_msg(msg, buffer);
