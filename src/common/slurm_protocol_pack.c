@@ -712,23 +712,10 @@ static void _pack_priority_factors_response_msg(const slurm_msg_t *smsg,
 						buf_t *buffer)
 {
 	priority_factors_response_msg_t *msg = smsg->data;
-	list_itr_t *itr = NULL;
-	priority_factors_object_t *factors = NULL;
-	uint32_t count = NO_VAL;
 
-	xassert(msg);
-	if (msg->priority_factors_list)
-		count = list_count(msg->priority_factors_list);
-	pack32(count, buffer);
-	if (count && (count != NO_VAL)) {
-		itr = list_iterator_create(msg->priority_factors_list);
-		while ((factors = list_next(itr))) {
-			_pack_priority_factors_object(factors,
-						      smsg->protocol_version,
-						      buffer);
-		}
-		list_iterator_destroy(itr);
-	}
+	slurm_pack_list(msg->priority_factors_list,
+			_pack_priority_factors_object, buffer,
+			smsg->protocol_version);
 }
 
 static int
