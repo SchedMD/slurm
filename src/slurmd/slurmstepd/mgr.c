@@ -1113,12 +1113,11 @@ static void _shutdown_x11_forward(void)
 		error("%s: Unable to reclaim privileges", __func__);
 }
 
-static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *arg)
+static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *ignored)
 {
 	static bool run_once = false;
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	bool bail = false;
-	stepd_step_rec_t *step = (stepd_step_rec_t *) arg;
 	pid_t cpid, pid;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
@@ -1361,7 +1360,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			return SLURM_ERROR;
 		}
 
-		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, step);
+		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, NULL);
 
 		/*
 		 * When using job_container/tmpfs we need to get into
@@ -1521,7 +1520,7 @@ x11_fail:
 	auth_setuid_unlock();
 
 fail1:
-	conmgr_add_work_fifo(_x11_signal_handler, step);
+	conmgr_add_work_fifo(_x11_signal_handler, NULL);
 
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(step))
