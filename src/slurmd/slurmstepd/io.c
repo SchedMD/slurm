@@ -216,7 +216,7 @@ static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun,
 			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *step, cbuf_t *cbuf);
+					  cbuf_t *cbuf);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg);
@@ -1403,7 +1403,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 	/* Pack task output into messages for transfer to a client */
 	while ((cbuf_used(out->buf) > 0) && _outgoing_buf_free()) {
 		debug5("cbuf_used = %d", cbuf_used(out->buf));
-		msg = _task_build_message(out, out->step, out->buf);
+		msg = _task_build_message(out, out->buf);
 		if (msg == NULL)
 			return;
 
@@ -1882,10 +1882,8 @@ _send_eof_msg(struct task_read_info *out)
 	debug4("Leaving  _send_eof_msg");
 }
 
-
-
 static struct io_buf *_task_build_message(struct task_read_info *out,
-					  stepd_step_rec_t *step, cbuf_t *cbuf)
+					  cbuf_t *cbuf)
 {
 	struct io_buf *msg;
 	char *ptr;
