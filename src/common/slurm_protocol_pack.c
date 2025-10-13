@@ -11749,11 +11749,10 @@ unpack_error:
 static void _pack_trigger_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	trigger_info_msg_t *msg = smsg->data;
-	int i;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->record_count, buffer);
-		for (i = 0; i < msg->record_count; i++) {
+		for (int i = 0; i < msg->record_count; i++) {
 			pack16(msg->trigger_array[i].flags, buffer);
 			pack32(msg->trigger_array[i].trig_id, buffer);
 			pack16(msg->trigger_array[i].res_type, buffer);
