@@ -79,4 +79,9 @@ int job_manager(stepd_step_rec_t *step);
 
 extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
 
+extern void stepd_drain_node(char *reason);
+extern int stepd_send_pending_exit_msgs(void);
+extern void stepd_send_step_complete_msgs(void);
+extern void stepd_wait_for_children_slurmstepd(void);
+
 #endif

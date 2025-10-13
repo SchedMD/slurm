@@ -39,6 +39,7 @@
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/job_container.h"
+#include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 
