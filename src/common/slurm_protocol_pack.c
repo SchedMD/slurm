@@ -12582,13 +12582,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* _pack_license_info_request_msg()
- */
-static void
-_pack_license_info_request_msg(license_info_request_msg_t *msg,
-			       buf_t *buffer,
-			       uint16_t protocol_version)
+static void _pack_license_info_request_msg(const slurm_msg_t *smsg,
+					   buf_t *buffer)
 {
+	license_info_request_msg_t *msg = smsg->data;
+
 	pack_time(msg->last_update, buffer);
 	pack16((uint16_t)msg->show_flags, buffer);
 }
@@ -14003,10 +14001,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_ping_slurmd_resp(msg, buffer);
 		break;
 	case REQUEST_LICENSE_INFO:
-		_pack_license_info_request_msg((license_info_request_msg_t *)
-					       msg->data,
-					       buffer,
-					       msg->protocol_version);
+		_pack_license_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
