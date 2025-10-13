@@ -204,7 +204,7 @@ struct window_info {
 	void *conn;
 };
 #ifdef HAVE_PTY_H
-static void  _spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step);
+static void _spawn_window_manager(stepd_step_task_info_t *task);
 static void *_window_manager(void *arg);
 #endif
 
@@ -879,8 +879,7 @@ static void *_window_manager(void *arg)
 	return NULL;
 }
 
-static void
-_spawn_window_manager(stepd_step_task_info_t *task, stepd_step_rec_t *step)
+static void _spawn_window_manager(stepd_step_task_info_t *task)
 {
 	void *conn = NULL;
 	char *tls_cert = NULL;
@@ -991,7 +990,7 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
 			fd_set_close_on_exec(task->stdin_fd);
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
-			_spawn_window_manager(task, step);
+			_spawn_window_manager(task);
 			task->in = _create_task_in_eio(task->to_stdin, step);
 			eio_new_initial_obj(step->eio, (void *)task->in);
 		} else {
