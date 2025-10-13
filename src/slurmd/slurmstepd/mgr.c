@@ -198,9 +198,7 @@ extern stepd_step_rec_t *
 mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 		       uint16_t protocol_version)
 {
-	stepd_step_rec_t *step = NULL;
-
-	if (!(step = stepd_step_rec_create(msg, protocol_version))) {
+	if (stepd_step_rec_create(msg, protocol_version)) {
 		/*
 		 * We want to send back to the slurmd the reason we
 		 * failed so keep track of it since errno could be

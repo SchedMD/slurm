@@ -67,6 +67,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/multi_prog.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 static void _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
@@ -242,10 +243,9 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 }
 
 /* create a slurmd step structure from a launch tasks message */
-extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
-					       uint16_t protocol_version)
+extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
+				 uint16_t protocol_version)
 {
-	stepd_step_rec_t *step = NULL;
 	srun_info_t   *srun = NULL;
 	slurm_addr_t     resp_addr;
 	slurm_addr_t     io_addr;
@@ -256,7 +256,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	debug3("entering stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
-		return NULL;
+		return SLURM_ERROR;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 	step->msg = msg;
@@ -267,7 +267,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		error("couldn't find node %s in %s",
 		      step->node_name, msg->complete_nodelist);
 		stepd_step_rec_destroy(step);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	step->state = SLURMSTEPD_STEP_STARTING;
@@ -285,7 +285,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
 		stepd_step_rec_destroy(step);
-		return NULL;
+		return SLURM_ERROR;
 	}
 	/*
 	 * Favor the group info in the launch cred if available - fall back
@@ -483,7 +483,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	_job_init_task_info(step, msg->global_task_ids,
 			    msg->ifname, msg->ofname, msg->efname);
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
 extern stepd_step_rec_t *
