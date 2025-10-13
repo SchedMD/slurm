@@ -1515,7 +1515,7 @@ x11_fail:
 	 * the cgroup hierarchy.
 	 */
 	set_job_state(step, SLURMSTEPD_STEP_ENDING);
-	step_terminate_monitor_start(step);
+	step_terminate_monitor_start();
 	proctrack_g_signal(step->cont_id, SIGKILL);
 	proctrack_g_wait(step->cont_id);
 	step_terminate_monitor_stop();
@@ -1759,7 +1759,7 @@ fail2:
 	 * switch_g_job_postfini().
 	 */
 	set_job_state(step, SLURMSTEPD_STEP_ENDING);
-	step_terminate_monitor_start(step);
+	step_terminate_monitor_start();
 	if (step->cont_id != 0) {
 		proctrack_g_signal(step->cont_id, SIGKILL);
 		proctrack_g_wait(step->cont_id);

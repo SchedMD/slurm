@@ -54,7 +54,7 @@ static uint32_t recorded_stepid = NO_VAL;
 static void *_monitor(void *);
 static int _call_external_program(void);
 
-void step_terminate_monitor_start(stepd_step_rec_t *step)
+extern void step_terminate_monitor_start(void)
 {
 	slurm_conf_t *conf;
 

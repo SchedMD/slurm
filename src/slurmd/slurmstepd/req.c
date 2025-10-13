@@ -1073,7 +1073,7 @@ static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 	uint32_t i;
 
 	debug("_handle_terminate for %ps uid=%u", &step->step_id, uid);
-	step_terminate_monitor_start(step);
+	step_terminate_monitor_start();
 
 	/*
 	 * Sanity checks
