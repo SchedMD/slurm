@@ -12440,12 +12440,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_stats_request_msg(stats_info_request_msg_t *msg, buf_t *buffer,
-				    uint16_t protocol_version)
+static void _pack_stats_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	stats_info_request_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->command_id, buffer);
 	}
 }
@@ -13996,8 +13995,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 			msg->protocol_version, buffer);
 		break;
 	case REQUEST_STATS_INFO:
-		_pack_stats_request_msg((stats_info_request_msg_t *)msg->data,
-					buffer, msg->protocol_version);
+		_pack_stats_request_msg(msg, buffer);
 		break;
 	case REQUEST_FORWARD_DATA:
 		_pack_forward_data_msg((forward_data_msg_t *)msg->data,
