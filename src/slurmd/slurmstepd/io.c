@@ -721,9 +721,8 @@ again:
 /*
  * Create an eio_obj_t for handling a task's stdout or stderr traffic
  */
-static eio_obj_t *
-_create_task_out_eio(int fd, uint16_t type,
-		     stepd_step_rec_t *step, stepd_step_task_info_t *task)
+static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
+				       stepd_step_task_info_t *task)
 {
 	struct task_read_info *out = xmalloc(sizeof(*out));
 	eio_obj_t *eio = NULL;
@@ -1064,7 +1063,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			fd_set_close_on_exec(task->from_stdout);
 			fd_set_nonblocking(task->from_stdout);
 			task->out = _create_task_out_eio(task->from_stdout,
-						 SLURM_IO_STDOUT, step, task);
+							 SLURM_IO_STDOUT, task);
 			list_append(step->stdout_eio_objs, (void *)task->out);
 			eio_new_initial_obj(step->eio, (void *)task->out);
 		} else {
@@ -1177,7 +1176,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		fd_set_close_on_exec(task->from_stdout);
 		fd_set_nonblocking(task->from_stdout);
 		task->out = _create_task_out_eio(task->from_stdout,
-						 SLURM_IO_STDOUT, step, task);
+						 SLURM_IO_STDOUT, task);
 		list_append(step->stdout_eio_objs, (void *)task->out);
 		eio_new_initial_obj(step->eio, (void *)task->out);
 	}
@@ -1278,7 +1277,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		fd_set_close_on_exec(task->from_stderr);
 		fd_set_nonblocking(task->from_stderr);
 		task->err = _create_task_out_eio(task->from_stderr,
-						 SLURM_IO_STDERR, step, task);
+						 SLURM_IO_STDERR, task);
 		list_append(step->stderr_eio_objs, (void *)task->err);
 		eio_new_initial_obj(step->eio, (void *)task->err);
 	}
