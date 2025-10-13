@@ -12034,12 +12034,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_slurmd_status(slurmd_status_t *msg, buf_t *buffer,
-				uint16_t protocol_version)
+static void _pack_slurmd_status(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	slurmd_status_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_time(msg->booted, buffer);
 		pack_time(msg->last_slurmctld_msg, buffer);
 
@@ -13957,8 +13956,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_trigger_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURMD_STATUS:
-		_pack_slurmd_status((slurmd_status_t *) msg->data, buffer,
-				    msg->protocol_version);
+		_pack_slurmd_status(msg, buffer);
 		break;
 	case REQUEST_JOB_NOTIFY:
 		_pack_job_notify((job_notify_msg_t *) msg->data, buffer,
