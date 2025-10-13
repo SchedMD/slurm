@@ -2208,7 +2208,7 @@ extern void wait_for_resumed(uint16_t msg_type)
 	}
 }
 
-extern void set_msg_node_id(stepd_step_rec_t *step)
+extern void set_msg_node_id(void)
 {
 	char *ptr = getenvp(step->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
 	if (ptr)

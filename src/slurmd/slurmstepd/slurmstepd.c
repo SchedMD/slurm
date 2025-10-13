@@ -1230,7 +1230,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 		return NULL;
 	}
 
-	set_msg_node_id(step);
+	set_msg_node_id();
 
 	return step;
 }
