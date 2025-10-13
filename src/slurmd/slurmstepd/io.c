@@ -219,7 +219,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 					  stepd_step_rec_t *step, cbuf_t *cbuf);
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
-static void _free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step);
+static void _free_outgoing_msg(struct io_buf *msg);
 static void _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step);
 static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step);
 static bool _incoming_buf_free(stepd_step_rec_t *step);
@@ -510,7 +510,7 @@ again:
 	if (client->out_remaining > 0)
 		return SLURM_SUCCESS;
 
-	_free_outgoing_msg(client->out_msg, client->step);
+	_free_outgoing_msg(client->out_msg);
 	client->out_msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -578,7 +578,7 @@ static int _local_file_write(eio_obj_t *obj, list_t *objs)
 	 * of the tasks.  Just free the message and return.
 	 */
 	if (header.length == 0) {
-		_free_outgoing_msg(client->out_msg, client->step);
+		_free_outgoing_msg(client->out_msg);
 		client->out_msg = NULL;
 		return SLURM_SUCCESS;
 	}
@@ -598,7 +598,7 @@ static int _local_file_write(eio_obj_t *obj, list_t *objs)
 
 	client->out_remaining -= n;
 	if (client->out_remaining == 0) {
-		_free_outgoing_msg(client->out_msg, client->step);
+		_free_outgoing_msg(client->out_msg);
 		client->out_msg = NULL;
 	}
 	return SLURM_SUCCESS;
@@ -1326,7 +1326,7 @@ static void _shrink_msg_cache(list_t *cache, stepd_step_rec_t *step)
 	for (i = 0; i < over; i++) {
 		msg = list_dequeue(cache);
 		/* FIXME - following call MIGHT lead to too much recursion */
-		_free_outgoing_msg(msg, step);
+		_free_outgoing_msg(msg);
 	}
 }
 
@@ -1464,8 +1464,7 @@ _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step)
 	}
 }
 
-static void
-_free_outgoing_msg(struct io_buf *msg, stepd_step_rec_t *step)
+static void _free_outgoing_msg(struct io_buf *msg)
 {
 	int i;
 
@@ -1501,7 +1500,7 @@ static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step)
 
 	msgs = list_iterator_create(msg_queue);
 	while((msg = list_next(msgs))) {
-		_free_outgoing_msg(msg, step);
+		_free_outgoing_msg(msg);
 	}
 	list_iterator_destroy(msgs);
 }
