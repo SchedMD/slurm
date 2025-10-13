@@ -947,7 +947,7 @@ static void _spawn_window_manager(stepd_step_task_info_t *task)
  */
 static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 {
-	int file_flags = io_get_file_flags(step);
+	int file_flags = io_get_file_flags();
 
 	/*
 	 *  Initialize stdin
@@ -2123,9 +2123,7 @@ io_find_filename_pattern( stepd_step_rec_t *step,
 	}
 }
 
-
-int
-io_get_file_flags(stepd_step_rec_t *step)
+extern int io_get_file_flags(void)
 {
 	int file_flags;
 

@@ -494,7 +494,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 
 			io_find_filename_pattern(step, &outpattern, &errpattern,
 						 &same);
-			file_flags = io_get_file_flags(step);
+			file_flags = io_get_file_flags();
 
 			/* Make eio objects to write from the slurmstepd */
 			if (outpattern == SLURMD_ALL_UNIQUE) {

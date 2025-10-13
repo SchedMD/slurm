@@ -128,6 +128,6 @@ void io_find_filename_pattern(  stepd_step_rec_t *step,
 /*
  *  Get the flags to be used with the open call to create output files.
  */
-int io_get_file_flags(stepd_step_rec_t *step);
+extern int io_get_file_flags(void);
 
 #endif /* !_IO_H */
