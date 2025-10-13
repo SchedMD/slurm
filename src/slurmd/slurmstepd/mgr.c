@@ -1313,7 +1313,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _spawn_job_container(stepd_step_rec_t *step)
+static int _spawn_job_container(void)
 {
 	jobacctinfo_t *jobacct = NULL;
 	struct rusage rusage;
@@ -1625,7 +1625,7 @@ extern int job_manager(void)
 	}
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT)
-		return _spawn_job_container(step);
+		return _spawn_job_container();
 
 	debug2("Before call to spank_init()");
 	if ((rc = spank_init(step))) {
