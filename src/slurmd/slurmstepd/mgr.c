@@ -173,7 +173,7 @@ static void _send_launch_resp(int rc);
 static int _slurmd_job_log_init(void);
 static void _wait_for_io(void);
 static int _send_exit_msg(uint32_t *tid, int n, int status);
-static void _wait_for_all_tasks(stepd_step_rec_t *step);
+static void _wait_for_all_tasks(void);
 static int  _wait_for_any_task(stepd_step_rec_t *step, bool waitflag);
 
 static void _random_sleep(stepd_step_rec_t *step);
@@ -1719,7 +1719,7 @@ extern int job_manager(void)
 	 * task_g_post_term() needs to be called before
 	 * acct_gather_profile_fini() and task_g_post_step().
 	 */
-	_wait_for_all_tasks(step);
+	_wait_for_all_tasks();
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
 	set_job_state(SLURMSTEPD_STEP_ENDING);
@@ -2655,8 +2655,7 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 	return completed;
 }
 
-static void
-_wait_for_all_tasks(stepd_step_rec_t *step)
+static void _wait_for_all_tasks(void)
 {
 	int tasks_left = 0;
 	int i;
