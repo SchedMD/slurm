@@ -223,7 +223,7 @@ static void _free_outgoing_msg(struct io_buf *msg);
 static void _free_incoming_msg(struct io_buf *msg);
 static void _free_all_outgoing_msgs(list_t *msg_queue);
 static bool _incoming_buf_free(void);
-static bool _outgoing_buf_free(stepd_step_rec_t *step);
+static bool _outgoing_buf_free(void);
 static int  _send_connection_okay_response(stepd_step_rec_t *step);
 static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *step);
 
@@ -1370,7 +1370,7 @@ _build_connection_okay_message(stepd_step_rec_t *step)
 	buf_t *packbuf;
 	io_hdr_t header;
 
-	if (_outgoing_buf_free(step)) {
+	if (_outgoing_buf_free()) {
 		msg = list_dequeue(step->free_outgoing);
 	} else {
 		return NULL;
@@ -1409,8 +1409,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 	list_itr_t *clients;
 
 	/* Pack task output into messages for transfer to a client */
-	while (cbuf_used(out->buf) > 0
-	       && _outgoing_buf_free(out->step)) {
+	while ((cbuf_used(out->buf) > 0) && _outgoing_buf_free()) {
 		debug5("cbuf_used = %d", cbuf_used(out->buf));
 		msg = _task_build_message(out, out->step, out->buf);
 		if (msg == NULL)
@@ -1476,12 +1475,12 @@ static void _free_outgoing_msg(struct io_buf *msg)
 		for (i = 0; i < step->node_tasks; i++) {
 			if (step->task[i]->err != NULL) {
 				_route_msg_task_to_client(step->task[i]->err);
-				if (!_outgoing_buf_free(step))
+				if (!_outgoing_buf_free())
 					break;
 			}
 			if (step->task[i]->out != NULL) {
 				_route_msg_task_to_client(step->task[i]->out);
-				if (!_outgoing_buf_free(step))
+				if (!_outgoing_buf_free())
 					break;
 			}
 		}
@@ -1843,7 +1842,7 @@ _send_eof_msg(struct task_read_info *out)
 	debug4("Entering _send_eof_msg");
 	out->eof_msg_sent = true;
 
-	if (_outgoing_buf_free(out->step)) {
+	if (_outgoing_buf_free()) {
 		msg = list_dequeue(out->step->free_outgoing);
 	} else {
 		/* eof message must be allowed to allocate new memory
@@ -1908,7 +1907,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 
 	debug4("%s: Entering...", __func__);
 
-	if (_outgoing_buf_free(step)) {
+	if (_outgoing_buf_free()) {
 		msg = list_dequeue(step->free_outgoing);
 	} else {
 		return NULL;
@@ -2008,8 +2007,7 @@ static bool _incoming_buf_free(void)
 	return false;
 }
 
-static bool
-_outgoing_buf_free(stepd_step_rec_t *step)
+static bool _outgoing_buf_free(void)
 {
 	struct io_buf *buf;
 
