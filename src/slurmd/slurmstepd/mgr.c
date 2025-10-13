@@ -921,9 +921,8 @@ extern void set_job_state(slurmstepd_state_t new_state)
  * any plugins that registered their own fini() hooks will wreck the parent.
  */
 #if defined(__linux__)
-static int _spank_user_child(void *arg)
+static int _spank_user_child(void *ignored)
 {
-	stepd_step_rec_t *step = arg;
 	struct priv_state sprivs;
 	int rc = 0;
 
@@ -1035,8 +1034,8 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id,
 			}
 
 			stack = xmalloc(STACK_SIZE);
-			pid = clone(_spank_user_child,
-				    stack + STACK_SIZE, flags, step);
+			pid = clone(_spank_user_child, stack + STACK_SIZE,
+				    flags, NULL);
 		} else {
 			/* no action required */
 			return rc;
