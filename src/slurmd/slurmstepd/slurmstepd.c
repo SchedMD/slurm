@@ -386,7 +386,7 @@ static void _main_thread_init()
 /*
  * Validate step record before initialization
  */
-static int _validate_step(stepd_step_rec_t *step)
+static int _validate_step(void)
 {
 	/*
 	 * --wait-for-children is only supported by the cgroup proctrack plugin.
@@ -455,7 +455,7 @@ extern int main(int argc, char **argv)
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
 	 * the new stepd_step_rec_t before continuing
 	 */
-	if (_step_setup(cli, msg) || _validate_step(step)) {
+	if (_step_setup(cli, msg) || _validate_step()) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
