@@ -9765,6 +9765,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_step_id_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	pack_step_id(smsg->data, buffer, smsg->protocol_version);
+}
+
 static void _pack_job_step_pids(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_step_pids_t *msg = smsg->data;
@@ -13795,8 +13800,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_STEP_LAYOUT:
 	case REQUEST_JOB_STEP_STAT:
 	case REQUEST_JOB_STEP_PIDS:
-		pack_step_id((slurm_step_id_t *)msg->data, buffer,
-			     msg->protocol_version);
+		_pack_step_id_msg(msg, buffer);
 		break;
 	case RESPONSE_STEP_LAYOUT:
 		pack_slurm_step_layout((slurm_step_layout_t *)msg->data,
