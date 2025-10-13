@@ -150,6 +150,7 @@ typedef struct {
 #define GRES_CONF_GLOBAL_INDEX SLURM_BIT(14) /* devices use global index */
 #define GRES_CONF_AUTODETECT SLURM_BIT(15) /* Conf was made with Autodetect */
 #define GRES_CONF_UPDATE_CONFIG SLURM_BIT(16) /* Flag to update gres config */
+#define GRES_CONF_MIG SLURM_BIT(17) /* GRES configuration is for NVIDIA MIG */
 
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */

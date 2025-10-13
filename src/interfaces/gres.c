@@ -11062,6 +11062,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 		sep = ",";
 	}
 
+	if (config_flags & GRES_CONF_MIG) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "MIG");
+		sep = ",";
+	}
+
 	return flag_str;
 }
 

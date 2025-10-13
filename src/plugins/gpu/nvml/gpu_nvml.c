@@ -1489,6 +1489,8 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 			if (mig_count == 0)
 				error("MIG mode is enabled, but no MIG devices were found. Please either create MIG instances, disable MIG mode, remove AutoDetect=nvml, or remove GPUs from the configuration completely.");
 
+			gres_slurmd_conf.config_flags |= GRES_CONF_MIG;
+
 			for (unsigned int j = 0; j < mig_count; j++) {
 				nvml_mig_t nvml_mig = { 0 };
 				nvml_mig.files = xstrdup(device_file);
