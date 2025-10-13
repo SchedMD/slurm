@@ -1222,7 +1222,7 @@ extern void container_run(stepd_step_rec_t *step,
 		_create_start(step, task);
 }
 
-extern void cleanup_container(stepd_step_rec_t *step)
+extern void cleanup_container(void)
 {
 	step_container_t *c = step->container;
 

@@ -549,7 +549,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	proctrack_g_destroy(step->cont_id);
 
 	if (step->container)
-		cleanup_container(step);
+		cleanup_container();
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (container_g_stepd_delete(step->step_id.job_id))
