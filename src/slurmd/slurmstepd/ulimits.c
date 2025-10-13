@@ -57,7 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 
 /*
  * Prototypes:
@@ -111,7 +111,7 @@ static int _prlimit(pid_t pid, int resource, const struct rlimit *new_limit,
  * Run as normal user to disable setuid() and permit a core file to be written.
  */
 
-extern void set_user_limits(stepd_step_rec_t *step, pid_t pid)
+extern void set_user_limits(pid_t pid)
 {
 #ifdef RLIMIT_AS
 #define SLURM_RLIMIT_VSIZE RLIMIT_AS

@@ -1428,7 +1428,7 @@ static int _handle_add_extern_pid_internal(pid_t pid)
 	}
 
 	if (xstrcasestr(slurm_conf.launch_params, "ulimit_pam_adopt"))
-		set_user_limits(step, pid);
+		set_user_limits(pid);
 
 	/* spawn a thread that will wait on the pid given */
 	_wait_extern_thr_create(extern_pid);
