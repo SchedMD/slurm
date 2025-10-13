@@ -12812,10 +12812,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 		assoc_mgr_lock(&qos_read_lock);
 
+		/*
+		 * Provide NULL to _get_qos_info in case of empty string
+		 * so the QoS gets reverted to the user's default one.
+		 */
 		error_code =
-			_get_qos_info(job_desc->qos, 0, &new_qos_list,
-				      &new_qos_ptr, resv_name, use_assoc_ptr,
-				      privileged, true, LOG_LEVEL_ERROR);
+			_get_qos_info((job_desc->qos[0] ? job_desc->qos : NULL),
+				      0, &new_qos_list, &new_qos_ptr, resv_name,
+				      use_assoc_ptr, privileged, true,
+				      LOG_LEVEL_ERROR);
 		if ((error_code == SLURM_SUCCESS) && new_qos_ptr) {
 			if (!new_qos_list &&
 			    (job_ptr->qos_ptr == new_qos_ptr)) {
@@ -13543,8 +13548,16 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		job_ptr->qos_list = new_qos_list;
 		new_qos_list = NULL;
 		xfree(detail_ptr->qos_req);
-		detail_ptr->qos_req = job_desc->qos;
-		job_desc->qos = NULL;
+		/*
+		 * Assign the name of the new QoS directly if the user
+		 * provided an empty string
+		 */
+		if (job_desc->qos[0]) {
+			detail_ptr->qos_req = job_desc->qos;
+			job_desc->qos = NULL;
+		} else {
+			detail_ptr->qos_req = xstrdup(new_qos_ptr->name);
+		}
 
 		job_ptr->limit_set.qos = acct_policy_limit_set.qos;
 
