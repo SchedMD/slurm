@@ -90,8 +90,7 @@ static void _task_info_array_destroy(void);
  * object will be used.  If is a valid number, but it does not match
  * "taskid", then the file descriptor will be connected to /dev/null.
  */
-static char *
-_expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *step)
+static char *_expand_stdio_filename(char *filename, int gtaskid)
 {
 	int id;
 
@@ -133,15 +132,12 @@ static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
 		xmalloc(step->node_tasks * sizeof(stepd_step_task_info_t *));
 
 	for (i = 0; i < step->node_tasks; i++) {
-		in  = _expand_stdio_filename(ifname,
-					     gtid[node_id][i] + het_job_offset,
-					     step);
+		in = _expand_stdio_filename(ifname,
+					    gtid[node_id][i] + het_job_offset);
 		out = _expand_stdio_filename(ofname,
-					     gtid[node_id][i] + het_job_offset,
-					     step);
+					     gtid[node_id][i] + het_job_offset);
 		err = _expand_stdio_filename(efname,
-					     gtid[node_id][i] + het_job_offset,
-					     step);
+					     gtid[node_id][i] + het_job_offset);
 		step->task[i] = _task_info_create(i, gtid[node_id][i], in, out,
 						 err);
 		if ((step->flags & LAUNCH_MULTI_PROG) == 0) {
