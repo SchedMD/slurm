@@ -654,8 +654,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_priority_factors_object(void *in, buf_t *buffer,
-					  uint16_t protocol_version)
+static void _pack_priority_factors_object(void *in, uint16_t protocol_version,
+					  buf_t *buffer)
 {
 	priority_factors_object_t *object = in;
 
@@ -723,8 +723,9 @@ static void _pack_priority_factors_response_msg(const slurm_msg_t *smsg,
 	if (count && (count != NO_VAL)) {
 		itr = list_iterator_create(msg->priority_factors_list);
 		while ((factors = list_next(itr))) {
-			_pack_priority_factors_object(factors, buffer,
-						      smsg->protocol_version);
+			_pack_priority_factors_object(factors,
+						      smsg->protocol_version,
+						      buffer);
 		}
 		list_iterator_destroy(itr);
 	}
