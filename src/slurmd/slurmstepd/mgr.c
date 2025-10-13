@@ -170,7 +170,7 @@ static int _become_user(struct priv_state *ps);
 static void _set_prio_process(void);
 static int _setup_normal_io(void);
 static void _send_launch_resp(int rc);
-static int  _slurmd_job_log_init(stepd_step_rec_t *step);
+static int _slurmd_job_log_init(void);
 static void _wait_for_io(stepd_step_rec_t *step);
 static int  _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n,
 			   int status);
@@ -2147,7 +2147,7 @@ static int _fork_all_tasks(bool *io_initialized)
 	 * Initialize log facility to copy errors back to srun
 	 */
 	if (!rc)
-		rc = _slurmd_job_log_init(step);
+		rc = _slurmd_job_log_init();
 
 	if (rc) {
 		error("%s: IO setup failed: %s", __func__, slurm_strerror(rc));
@@ -2995,8 +2995,7 @@ _send_complete_batch_script_msg(stepd_step_rec_t *step, int err, int status)
 	return SLURM_SUCCESS;
 }
 
-static int
-_slurmd_job_log_init(stepd_step_rec_t *step)
+static int _slurmd_job_log_init(void)
 {
 	char argv0[64];
 
