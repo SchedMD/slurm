@@ -221,7 +221,7 @@ static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg);
 static void _free_incoming_msg(struct io_buf *msg);
-static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step);
+static void _free_all_outgoing_msgs(list_t *msg_queue);
 static bool _incoming_buf_free(stepd_step_rec_t *step);
 static bool _outgoing_buf_free(stepd_step_rec_t *step);
 static int  _send_connection_okay_response(stepd_step_rec_t *step);
@@ -496,8 +496,7 @@ again:
 			return SLURM_SUCCESS;
 		} else {
 			client->out_eof = true;
-			_free_all_outgoing_msgs(client->msg_queue,
-						client->step);
+			_free_all_outgoing_msgs(client->msg_queue);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -592,7 +591,7 @@ static int _local_file_write(eio_obj_t *obj, list_t *objs)
 				   client->labelio, client->taskid_width);
 	if (n < 0) {
 		client->out_eof = true;
-		_free_all_outgoing_msgs(client->msg_queue, client->step);
+		_free_all_outgoing_msgs(client->msg_queue);
 		return SLURM_ERROR;
 	}
 
@@ -1492,7 +1491,7 @@ static void _free_outgoing_msg(struct io_buf *msg)
 	}
 }
 
-static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step)
+static void _free_all_outgoing_msgs(list_t *msg_queue)
 {
 	list_itr_t *msgs;
 	struct io_buf *msg;
