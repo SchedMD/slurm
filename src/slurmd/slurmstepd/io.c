@@ -220,7 +220,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg);
-static void _free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step);
+static void _free_incoming_msg(struct io_buf *msg);
 static void _free_all_outgoing_msgs(list_t *msg_queue, stepd_step_rec_t *step);
 static bool _incoming_buf_free(stepd_step_rec_t *step);
 static bool _outgoing_buf_free(stepd_step_rec_t *step);
@@ -683,7 +683,7 @@ static int _task_write(eio_obj_t *obj, list_t *objs)
 		if (in->msg->length == 0) { /* eof message */
 			close(obj->fd);
 			obj->fd = -1;
-			_free_incoming_msg(in->msg, in->step);
+			_free_incoming_msg(in->msg);
 			in->msg = NULL;
 			return SLURM_SUCCESS;
 		}
@@ -703,7 +703,7 @@ again:
 		else {
 			close(obj->fd);
 			obj->fd = -1;
-			_free_incoming_msg(in->msg, in->step);
+			_free_incoming_msg(in->msg);
 			in->msg = NULL;
 			return SLURM_ERROR;
 		}
@@ -712,7 +712,7 @@ again:
 	if (in->remaining > 0)
 		return SLURM_SUCCESS;
 
-	_free_incoming_msg(in->msg, in->step);
+	_free_incoming_msg(in->msg);
 	in->msg = NULL;
 
 	return SLURM_SUCCESS;
@@ -1451,8 +1451,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 	}
 }
 
-static void
-_free_incoming_msg(struct io_buf *msg, stepd_step_rec_t *step)
+static void _free_incoming_msg(struct io_buf *msg)
 {
 	msg->ref_count--;
 	if (msg->ref_count == 0) {
