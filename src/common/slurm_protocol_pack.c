@@ -11457,12 +11457,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_token_request_msg(token_request_msg_t *msg, buf_t *buffer,
-				    uint16_t protocol_version)
+static void _pack_token_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	token_request_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->lifespan, buffer);
 		packstr(msg->username, buffer);
 	}
@@ -13926,9 +13925,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_top_job_msg(msg, buffer);
 		break;
 	case REQUEST_AUTH_TOKEN:
-		_pack_token_request_msg((token_request_msg_t *) msg->data,
-					buffer,
-					msg->protocol_version);
+		_pack_token_request_msg(msg, buffer);
 		break;
 	case RESPONSE_AUTH_TOKEN:
 		_pack_token_response_msg((token_response_msg_t *) msg->data,
