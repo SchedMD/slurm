@@ -89,7 +89,7 @@
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, uid_t uid, pid_t remote_pid);
 static void *_wait_extern_pid(void *args);
-static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid);
+static int _handle_add_extern_pid_internal(pid_t pid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
 
@@ -1374,7 +1374,7 @@ static void *_wait_extern_pid(void *args)
 			if (ppid == 1) {
 				debug2("adding tracking of orphaned process %d",
 				       pids[i]);
-				_handle_add_extern_pid_internal(step, pids[i]);
+				_handle_add_extern_pid_internal(pids[i]);
 			}
 		}
 	next_pid:
@@ -1396,7 +1396,7 @@ static void _wait_extern_thr_create(extern_pid_t *extern_pid)
 	slurm_mutex_unlock(&extern_thread_lock);
 }
 
-static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
+static int _handle_add_extern_pid_internal(pid_t pid)
 {
 	extern_pid_t *extern_pid;
 	jobacct_id_t jobacct_id;
@@ -1461,7 +1461,7 @@ static int _handle_add_extern_pid(int fd, uid_t uid, pid_t remote_pid)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	rc = _handle_add_extern_pid_internal(step, pid);
+	rc = _handle_add_extern_pid_internal(pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
