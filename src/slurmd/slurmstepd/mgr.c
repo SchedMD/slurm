@@ -149,12 +149,6 @@ typedef struct kill_thread {
 	int       secs;
 } kill_thread_t;
 
-#if defined(__linux__)
-typedef struct {
-	int id;
-} spank_task_args_t;
-#endif
-
 /*
  * Prototypes
  */
@@ -953,14 +947,14 @@ static int _spank_user_child(void *ignored)
 
 static int _spank_task_post_fork_child(void *arg)
 {
-	spank_task_args_t *args = arg;
+	int id = *(int *) arg;
 
 	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
 
-	if (spank_task_post_fork(step, args->id))
+	if (spank_task_post_fork(step, id))
 		_exit(1);
 
 	_exit(0);
@@ -968,14 +962,14 @@ static int _spank_task_post_fork_child(void *arg)
 
 static int _spank_task_exit_child(void *arg)
 {
-	spank_task_args_t *args = arg;
+	int id = *(int *) arg;
 
 	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
 
-	if (spank_task_exit(step, args->id))
+	if (spank_task_exit(step, id))
 		_exit(1);
 
 	_exit(0);
@@ -993,7 +987,7 @@ static int _run_spank_func(step_fn_t spank_func, int id,
 		int flags = CLONE_VM | SIGCHLD;
 		char *stack = NULL;
 		int status = 0;
-		spank_task_args_t *args = NULL;
+		int *arg = NULL;
 
 		/*
 		 * To enter the container, the process cannot share CLONE_FS
@@ -1008,18 +1002,18 @@ static int _run_spank_func(step_fn_t spank_func, int id,
 		 */
 		if ((spank_func == SPANK_STEP_TASK_EXIT) &&
 		    spank_has_task_exit()) {
-			args = xmalloc(sizeof(*args));
-			args->id = id;
+			arg = xmalloc(sizeof(*arg));
+			*arg = id;
 			stack = xmalloc(STACK_SIZE);
-			pid = clone(_spank_task_exit_child,
-				    stack + STACK_SIZE, flags, args);
+			pid = clone(_spank_task_exit_child, stack + STACK_SIZE,
+				    flags, arg);
 		} else if ((spank_func == SPANK_STEP_TASK_POST_FORK) &&
 			   spank_has_task_post_fork()) {
-			args = xmalloc(sizeof(*args));
-			args->id = id;
+			arg = xmalloc(sizeof(*arg));
+			*arg = id;
 			stack = xmalloc(STACK_SIZE);
 			pid = clone(_spank_task_post_fork_child,
-				    stack + STACK_SIZE, flags, args);
+				    stack + STACK_SIZE, flags, arg);
 		} else if ((spank_func == SPANK_STEP_USER_INIT) &&
 			   spank_has_user_init()) {
 			/*
@@ -1058,7 +1052,7 @@ static int _run_spank_func(step_fn_t spank_func, int id,
 		}
 
 fail:
-		xfree(args);
+		xfree(arg);
 		xfree(stack);
 		return rc;
 	}
