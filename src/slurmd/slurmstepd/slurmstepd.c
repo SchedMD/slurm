@@ -1174,7 +1174,7 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 			error("%s: drop_priviledges failed", __func__);
 			return SLURM_ERROR;
 		}
-		rc = setup_container(step);
+		rc = setup_container();
 		if (reclaim_privileges(&sprivs) < 0) {
 			error("%s: reclaim_priviledges failed", __func__);
 			return SLURM_ERROR;

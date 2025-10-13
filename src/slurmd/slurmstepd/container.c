@@ -770,7 +770,7 @@ static int _merge_step_config_env(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern int setup_container(stepd_step_rec_t *step)
+extern int setup_container(void)
 {
 	step_container_t *c = step->container;
 	int rc;
