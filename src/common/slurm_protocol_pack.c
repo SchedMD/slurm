@@ -12166,10 +12166,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_set_debug_level_msg(set_debug_level_msg_t * msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_set_debug_level_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	set_debug_level_msg_t *msg = smsg->data;
+
 	pack32(msg->debug_level, buffer);
 }
 
@@ -13965,9 +13965,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 	case REQUEST_SET_SCHEDLOG_LEVEL:
-		_pack_set_debug_level_msg(
-			(set_debug_level_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_set_debug_level_msg(msg, buffer);
 		break;
 	case REQUEST_SET_SUSPEND_EXC_NODES:
 	case REQUEST_SET_SUSPEND_EXC_PARTS:
