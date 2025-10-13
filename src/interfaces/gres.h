@@ -156,6 +156,7 @@ typedef struct {
 					   * GRES_CONF_ENV_* are set. */
 
 /* GRES_DEV_* flags for gres_device_t */
+#define GRES_DEV_MIG SLURM_BIT(0) /* GRES device is an NVIDIA MIG */
 
 /* GRES AutoDetect options */
 #define GRES_AUTODETECT_UNSET     0x00000000 /* Not set */

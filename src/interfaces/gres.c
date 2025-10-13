@@ -2709,6 +2709,9 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 				fill_in_gres_devices->max_dev_num =
 					gres_device->dev_num;
 
+			if (gres_slurmd_conf->config_flags & GRES_CONF_MIG)
+				gres_device->flags |= GRES_DEV_MIG;
+
 			list_append(*fill_in_gres_devices->gres_devices,
 				    gres_device);
 		}
