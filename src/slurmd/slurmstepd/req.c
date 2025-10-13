@@ -2350,14 +2350,6 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.func = _handle_reconfig,
 	},
 	{
-		.msg_type = REQUEST_JOB_STEP_CREATE,
-		.func = _handle_step_create,
-	},
-	{
-		.msg_type = REQUEST_JOB_STEP_INFO,
-		.func = _handle_job_step_get_info,
-	},
-	{
 		.msg_type = REQUEST_JOB_NOTIFY,
 		.from_job_owner = true,
 		.func = _handle_notify_job,
@@ -2388,6 +2380,22 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	{
 		.msg_type = REQUEST_GETHOST,
 		.func = _handle_gethost,
+	},
+	{
+		/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
+slurmstepd_rpc_t stepd_proxy_rpcs[] = {
+	{
+		.msg_type = REQUEST_JOB_STEP_CREATE,
+		.func = _handle_step_create,
+	},
+	{
+		.msg_type = REQUEST_JOB_STEP_INFO,
+		.func = _handle_job_step_get_info,
 	},
 	{
 		.msg_type = REQUEST_CANCEL_JOB_STEP,
@@ -2449,6 +2457,22 @@ static int _handle_request(int fd, uid_t uid, pid_t remote_pid)
 	for (this_rpc = stepd_rpcs; this_rpc->msg_type; this_rpc++) {
 		if (this_rpc->msg_type == req)
 			break;
+	}
+
+	/* Check through proxy RPCs if we're an extern step running stepmgr */
+	if (!this_rpc->msg_type && job_step_ptr) {
+		for (this_rpc = stepd_proxy_rpcs; this_rpc->msg_type;
+		     this_rpc++) {
+			if (this_rpc->msg_type == req)
+				break;
+		}
+
+		/* all proxy rpcs must come through slurmd */
+		if (this_rpc->msg_type && !_slurm_authorized_user(uid)) {
+			error("Rejecting proxied %s from uid %u",
+			      rpc_num2string(req), uid);
+			return EPERM;
+		}
 	}
 
 	if (!this_rpc->msg_type) {
