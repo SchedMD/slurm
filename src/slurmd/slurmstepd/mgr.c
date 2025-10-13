@@ -2052,7 +2052,7 @@ static int exec_wait_kill_children(list_t *exec_wait_list)
 	return (rc);
 }
 
-static void prepare_stdio (stepd_step_rec_t *step, stepd_step_task_info_t *task)
+static void _prepare_stdio(stepd_step_task_info_t *task)
 {
 #ifdef HAVE_PTY_H
 	if ((step->flags & LAUNCH_PTY) && (task->gtid == 0)) {
@@ -2272,7 +2272,7 @@ static int _fork_all_tasks(bool *io_initialized)
 			 *   must be called before setpgid() or it is
 			 *   effectively disabled).
 			 */
-			prepare_stdio(step, step->task[i]);
+			_prepare_stdio(step->task[i]);
 
 			/* Close profiling file descriptors */
 			acct_gather_profile_g_child_forked();
