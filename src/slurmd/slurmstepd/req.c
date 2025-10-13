@@ -87,33 +87,9 @@
 #include "src/stepmgr/stepmgr.h"
 
 static void *_handle_accept(void *arg);
-static int _handle_request(int fd, stepd_step_rec_t *step,
-			   uid_t uid, pid_t remote_pid);
-static int _handle_state(int fd, stepd_step_rec_t *step);
-static int _handle_mem_limits(int fd, stepd_step_rec_t *step);
-static int _handle_uid(int fd, stepd_step_rec_t *step);
-static int _handle_nodeid(int fd, stepd_step_rec_t *step);
-static int _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_pid_in_container(int fd, stepd_step_rec_t *step);
+static int _handle_request(int fd, uid_t uid, pid_t remote_pid);
 static void *_wait_extern_pid(void *args);
-static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid);
-static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_x11_display(int fd, stepd_step_rec_t *step);
-static int _handle_getpw(int fd, stepd_step_rec_t *step, pid_t remote_pid);
-static int _handle_getgr(int fd, stepd_step_rec_t *step, pid_t remote_pid);
-static int _handle_gethost(int fd, stepd_step_rec_t *step, pid_t remote_pid);
-static int _handle_daemon_pid(int fd, stepd_step_rec_t *step);
-static int _handle_notify_job(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_resume(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_terminate(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_completion(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_task_info(int fd, stepd_step_rec_t *step);
-static int _handle_list_pids(int fd, stepd_step_rec_t *step);
-static int _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid);
-static int _handle_get_ns_fd(int fd, stepd_step_rec_t *step);
+static int _handle_add_extern_pid_internal(pid_t pid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
 
@@ -130,17 +106,6 @@ static int extern_thread_cnt = 0;
 static pthread_t *extern_threads = NULL;
 static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
-
-struct request_params {
-	int fd;
-	stepd_step_rec_t *step;
-};
-
-typedef struct {
-	stepd_step_rec_t *step;
-	pid_t pid;
-} extern_pid_t;
-
 
 pthread_mutex_t stepmgr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -270,7 +235,7 @@ _domain_socket_destroy(int fd)
 }
 
 /* Wait for the job to be running (pids added) before continuing. */
-static int _wait_for_job_running(stepd_step_rec_t *step)
+static int _wait_for_job_running(void)
 {
 	struct timespec ts = {0, 0};
 	int count = 0;
@@ -299,11 +264,8 @@ static int _wait_for_job_running(stepd_step_rec_t *step)
 	return rc;
 }
 
-static void *
-_msg_thr_internal(void *step_arg)
+static void *_msg_thr_internal(void *ignored)
 {
-	stepd_step_rec_t *step = step_arg;
-
 	debug("Message thread started pid = %lu", (unsigned long) getpid());
 	eio_handle_mainloop(step->msg_handle);
 	debug("Message thread exited");
@@ -311,8 +273,7 @@ _msg_thr_internal(void *step_arg)
 	return NULL;
 }
 
-int
-msg_thr_create(stepd_step_rec_t *step)
+extern int msg_thr_create(void)
 {
 	int fd;
 	eio_obj_t *eio_obj;
@@ -328,7 +289,7 @@ msg_thr_create(stepd_step_rec_t *step)
 	step->msg_handle = eio_handle_create(0);
 	eio_new_initial_obj(step->msg_handle, eio_obj);
 
-	slurm_thread_create(&step->msgid, _msg_thr_internal, step);
+	slurm_thread_create(&step->msgid, _msg_thr_internal, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -382,11 +343,9 @@ _msg_socket_readable(eio_obj_t *obj)
 
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 {
-	stepd_step_rec_t *step = obj->arg;
-	int fd;
+	int fd, *param = NULL;
 	struct sockaddr_un addr;
 	int len = sizeof(addr);
-	struct request_params *param = NULL;
 
 	debug3("Called _msg_socket_accept");
 
@@ -416,9 +375,8 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 	fd_set_blocking(fd);
 
-	param = xmalloc(sizeof(struct request_params));
-	param->fd = fd;
-	param->step = step;
+	param = xmalloc(sizeof(int));
+	*param = fd;
 	slurm_thread_create_detached(_handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
@@ -427,9 +385,7 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 static void *_handle_accept(void *arg)
 {
-	struct request_params *param = arg;
-	int fd = param->fd;
-	stepd_step_rec_t *step = param->step;
+	int fd = *(int *) arg;
 	int req;
 	int client_protocol_ver;
 	buf_t *buffer = NULL;
@@ -469,7 +425,7 @@ static void *_handle_accept(void *arg)
 	safe_write(fd, &rc, sizeof(int));
 
 	while (1) {
-		rc = _handle_request(fd, step, uid, remote_pid);
+		rc = _handle_request(fd, uid, remote_pid);
 		if (rc != SLURM_SUCCESS)
 			break;
 	}
@@ -522,25 +478,6 @@ static int _handle_stepmgr_relay_msg(int fd,
 	rc = unpack_msg(msg, buffer);
 	FREE_NULL_BUFFER(buffer);
 	if (rc) {
-		goto done;
-	}
-
-	if (!_slurm_authorized_user(uid)) {
-		error("Security violation, %s RPC from uid=%u",
-		      rpc_num2string(msg->msg_type), uid);
-		rc = ESLURM_USER_ID_MISSING;
-		goto done;
-	}
-
-	if (!job_step_ptr) {
-		error("%s on a non-step mgr stepd",
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
-		goto done;
-	}
-
-done:
-	if (rc) {
 		if (reply) {
 			rc_msg.return_code = rc;
 			stepd_proxy_send_resp_to_slurmd(fd, msg,
@@ -557,7 +494,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_step_create(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_step_create(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -585,7 +522,7 @@ done:
 	return SLURM_ERROR;
 }
 
-static int _handle_job_step_get_info(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_job_step_get_info(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	buf_t *buffer;
@@ -621,7 +558,7 @@ done:
 	return rc;
 }
 
-static int _handle_cancel_job_step(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_cancel_job_step(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -647,7 +584,7 @@ done:
 	return rc;
 }
 
-static int _handle_srun_job_complete(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_srun_job_complete(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -670,7 +607,7 @@ done:
 	return rc;
 }
 
-static int _handle_srun_node_fail(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_srun_node_fail(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -691,7 +628,7 @@ done:
 	return rc;
 }
 
-static int _handle_srun_timeout(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_srun_timeout(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -714,8 +651,7 @@ done:
 	return rc;
 }
 
-
-static int _handle_update_step(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_update_step(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -740,7 +676,7 @@ done:
 	return rc;
 }
 
-static int _handle_step_layout(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_step_layout(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -774,7 +710,7 @@ done:
 	return rc;
 }
 
-static int _handle_job_sbcast_cred(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_job_sbcast_cred(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -819,7 +755,7 @@ static void _het_job_alloc_list_del(void *x)
 	slurm_free_resource_allocation_response_msg(job_info_resp_msg);
 }
 
-static int _handle_het_job_alloc_info(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_het_job_alloc_info(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -867,159 +803,7 @@ done:
 	return rc;
 }
 
-int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid, pid_t remote_pid)
-{
-	int rc = SLURM_SUCCESS;
-	int req;
-
-	debug3("%s: entering", __func__);
-	if ((rc = read(fd, &req, sizeof(int))) != sizeof(int)) {
-		if (rc == 0) { /* EOF, normal */
-			return -1;
-		} else {
-			debug3("%s: leaving on read error: %m", __func__);
-			return SLURM_ERROR;
-		}
-	}
-
-	switch (req) {
-	case REQUEST_SIGNAL_CONTAINER:
-		debug("Handling REQUEST_SIGNAL_CONTAINER");
-		rc = _handle_signal_container(fd, step, uid);
-		break;
-	case REQUEST_STATE:
-		debug("Handling REQUEST_STATE");
-		rc = _handle_state(fd, step);
-		break;
-	case REQUEST_STEP_MEM_LIMITS:
-		debug("Handling REQUEST_STEP_MEM_LIMITS");
-		rc = _handle_mem_limits(fd, step);
-		break;
-	case REQUEST_STEP_UID:
-		debug("Handling REQUEST_STEP_UID");
-		rc = _handle_uid(fd, step);
-		break;
-	case REQUEST_STEP_NODEID:
-		debug("Handling REQUEST_STEP_NODEID");
-		rc = _handle_nodeid(fd, step);
-		break;
-	case REQUEST_ATTACH:
-		debug("Handling REQUEST_ATTACH");
-		rc = _handle_attach(fd, step, uid);
-		break;
-	case REQUEST_PID_IN_CONTAINER:
-		debug("Handling REQUEST_PID_IN_CONTAINER");
-		rc = _handle_pid_in_container(fd, step);
-		break;
-	case REQUEST_DAEMON_PID:
-		debug("Handling REQUEST_DAEMON_PID");
-		rc = _handle_daemon_pid(fd, step);
-		break;
-	case REQUEST_STEP_SUSPEND:
-		debug("Handling REQUEST_STEP_SUSPEND");
-		rc = _handle_suspend(fd, step, uid);
-		break;
-	case REQUEST_STEP_RESUME:
-		debug("Handling REQUEST_STEP_RESUME");
-		rc = _handle_resume(fd, step, uid);
-		break;
-	case REQUEST_STEP_TERMINATE:
-		debug("Handling REQUEST_STEP_TERMINATE");
-		rc = _handle_terminate(fd, step, uid);
-		break;
-	case REQUEST_STEP_COMPLETION:
-		debug("Handling REQUEST_STEP_COMPLETION");
-		rc = _handle_completion(fd, step, uid);
-		break;
-	case REQUEST_STEP_TASK_INFO:
-		debug("Handling REQUEST_STEP_TASK_INFO");
-		rc = _handle_task_info(fd, step);
-		break;
-	case REQUEST_STEP_STAT:
-		debug("Handling REQUEST_STEP_STAT");
-		rc = _handle_stat_jobacct(fd, step, uid);
-		break;
-	case REQUEST_STEP_LIST_PIDS:
-		debug("Handling REQUEST_STEP_LIST_PIDS");
-		rc = _handle_list_pids(fd, step);
-		break;
-	case REQUEST_STEP_RECONFIGURE:
-		debug("Handling REQUEST_STEP_RECONFIGURE");
-		rc = _handle_reconfig(fd, step, uid);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		debug("Handling REQUEST_STEP_CREATE");
-		rc = _handle_step_create(fd, step, uid);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		rc = _handle_job_step_get_info(fd, step, uid);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		debug("Handling REQUEST_JOB_NOTIFY");
-		rc = _handle_notify_job(fd, step, uid);
-		break;
-	case REQUEST_ADD_EXTERN_PID:
-		debug("Handling REQUEST_ADD_EXTERN_PID");
-		rc = _handle_add_extern_pid(fd, step, uid);
-		break;
-	case REQUEST_X11_DISPLAY:
-		debug("Handling REQUEST_X11_DISPLAY");
-		rc = _handle_x11_display(fd, step);
-		break;
-	case REQUEST_GETPW:
-		debug("Handling REQUEST_GETPW");
-		rc = _handle_getpw(fd, step, remote_pid);
-		break;
-	case REQUEST_GETGR:
-		debug("Handling REQUEST_GETGR");
-		rc = _handle_getgr(fd, step, remote_pid);
-		break;
-	case REQUEST_GET_NS_FD:
-		debug("Handling REQUEST_GET_NS_FD");
-		rc = _handle_get_ns_fd(fd, step);
-		break;
-	case REQUEST_GETHOST:
-		debug("Handling REQUEST_GETHOST");
-		rc = _handle_gethost(fd, step, remote_pid);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		debug("Handling REQUEST_CANCEL_JOB_STEP");
-		rc = _handle_cancel_job_step(fd, step, uid);
-		break;
-	case SRUN_JOB_COMPLETE:
-		_handle_srun_job_complete(fd, step, uid);
-		break;
-	case SRUN_NODE_FAIL:
-		_handle_srun_node_fail(fd, step, uid);
-		break;
-	case SRUN_TIMEOUT:
-		_handle_srun_timeout(fd, step, uid);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		debug("Handling REQUEST_UPDATE_JOB_STEP");
-		rc = _handle_update_step(fd, step, uid);
-		break;
-	case REQUEST_STEP_LAYOUT:
-		_handle_step_layout(fd, step, uid);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_handle_job_sbcast_cred(fd, step, uid);
-		break;
-	case REQUEST_HET_JOB_ALLOC_INFO:
-		_handle_het_job_alloc_info(fd, step, uid);
-		break;
-	default:
-		error("Unrecognized request: %d", req);
-		rc = SLURM_ERROR;
-		break;
-	}
-
-	debug3("%s: leaving with rc: %d", __func__, rc);
-	return rc;
-}
-
-static int
-_handle_state(int fd, stepd_step_rec_t *step)
+static int _handle_state(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->state, sizeof(slurmstepd_state_t));
 
@@ -1028,8 +812,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_mem_limits(int fd, stepd_step_rec_t *step)
+static int _handle_mem_limits(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->job_mem, sizeof(uint64_t));
 	safe_write(fd, &step->step_mem, sizeof(uint64_t));
@@ -1039,8 +822,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_uid(int fd, stepd_step_rec_t *step)
+static int _handle_uid(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->uid, sizeof(uid_t));
 
@@ -1049,8 +831,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_nodeid(int fd, stepd_step_rec_t *step)
+static int _handle_nodeid(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->nodeid, sizeof(uid_t));
 
@@ -1059,8 +840,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_signal_container(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
@@ -1081,14 +861,6 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	debug("_handle_signal_container for %ps uid=%u signal=%d flag=0x%x",
 	      &step->step_id, req_uid, sig, flag);
-	/* verify uid off uid instead of req_uid as we can trust that one */
-	if ((uid != step->uid) && !_slurm_authorized_user(uid)) {
-		error("signal container req from uid %u for %ps owned by uid %u",
-		      req_uid, &step->step_id, step->uid);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
 
 	if (flag & KILL_NO_SIG_FAIL)
 		step->flags |= LAUNCH_NO_SIG_FAIL;
@@ -1096,7 +868,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	/*
 	 * Sanity checks
 	 */
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -1199,7 +971,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	if (sig == SIG_DEBUG_WAKE) {
 		for (int i = 0; i < step->node_tasks; i++)
-			pdebug_wake_process(step, step->task[i]->pid);
+			pdebug_wake_process(step->task[i]->pid);
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
 	}
@@ -1252,7 +1024,7 @@ _handle_signal_container(int fd, stepd_step_rec_t *step, uid_t uid)
 	slurm_mutex_unlock(&suspend_mutex);
 
 	if ((sig == SIGTERM) || (sig == SIGKILL))
-		set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
+		set_job_state(SLURMSTEPD_STEP_CANCELLED);
 
 done:
 	xfree(details);
@@ -1266,8 +1038,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_notify_job(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_notify_job(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int len;
@@ -1281,17 +1052,9 @@ _handle_notify_job(int fd, stepd_step_rec_t *step, uid_t uid)
 		safe_read(fd, message, len);
 	}
 
-	debug3("  uid = %u", uid);
-	if ((uid != step->uid) && !_slurm_authorized_user(uid)) {
-		debug("notify req from uid %u for %ps owned by uid %u",
-		      uid, &step->step_id, step->uid);
-		rc = EPERM;
-		goto done;
-	}
 	error("%s", message);
 	xfree(message);
 
-done:
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
 	xfree(message);
@@ -1302,28 +1065,20 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_terminate(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 	stepd_step_task_info_t *task;
 	uint32_t i;
 
-	if (uid != step->uid && !_slurm_authorized_user(uid)) {
-		debug("terminate req from uid %u for %ps owned by uid %u",
-		      uid, &step->step_id, step->uid);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
 	debug("_handle_terminate for %ps uid=%u", &step->step_id, uid);
-	step_terminate_monitor_start(step);
+	step_terminate_monitor_start();
 
 	/*
 	 * Sanity checks
 	 */
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -1367,7 +1122,7 @@ _handle_terminate(int fd, stepd_step_rec_t *step, uid_t uid)
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
-	set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
+	set_job_state(SLURMSTEPD_STEP_CANCELLED);
 
 done:
 	/* Send the return code and errnum */
@@ -1378,8 +1133,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 {
 	srun_info_t *srun;
 	int rc = SLURM_SUCCESS;
@@ -1391,8 +1145,6 @@ _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	srun       = xmalloc(sizeof(srun_info_t));
 
-	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr_t) = %d",
-	      (int) sizeof(srun_info_t), (int) sizeof(slurm_addr_t));
 	safe_read(fd, &cert_len, sizeof(uint32_t));
 	if (cert_len) {
 		srun->tls_cert = xmalloc(cert_len);
@@ -1417,19 +1169,8 @@ _handle_attach(int fd, stepd_step_rec_t *step, uid_t uid)
 		goto done;
 	}
 
-	/*
-	 * At the moment, it only makes sense for the slurmd to make this
-	 * call, so only _slurm_authorized_user is allowed.
-	 */
-	if (!_slurm_authorized_user(uid)) {
-		error("uid %u attempt to attach to %ps owned by %u",
-		      uid, &step->step_id, step->uid);
-		rc = EPERM;
-		goto done;
-	}
-
 	list_prepend(step->sruns, srun);
-	rc = io_client_connect(srun, step);
+	rc = io_client_connect(srun);
 	srun = NULL;
 	debug("  back from io_client_connect, rc = %d", rc);
 done:
@@ -1489,8 +1230,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_pid_in_container(int fd, stepd_step_rec_t *step)
+static int _handle_pid_in_container(int fd, uid_t uid, pid_t remote_pid)
 {
 	bool rc = false;
 	pid_t pid;
@@ -1510,7 +1250,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_get_ns_fd(int fd, stepd_step_rec_t *step)
+static int _handle_get_ns_fd(int fd, uid_t uid, pid_t remote_pid)
 {
 	int ns_fd = -1;
 
@@ -1536,7 +1276,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static void _block_on_pid(pid_t pid, stepd_step_rec_t *step)
+static void _block_on_pid(pid_t pid)
 {
 	struct timespec ts = { 0, 0 };
 
@@ -1558,11 +1298,7 @@ static void _block_on_pid(pid_t pid, stepd_step_rec_t *step)
  */
 static void *_wait_extern_pid(void *args)
 {
-	extern_pid_t *extern_pid = args;
-
-	stepd_step_rec_t *step = extern_pid->step;
-	pid_t pid = extern_pid->pid;
-
+	pid_t pid = *(pid_t *) args;
 	jobacctinfo_t *jobacct = NULL;
 	pid_t *pids = NULL;
 	int npids = 0, i;
@@ -1572,10 +1308,10 @@ static void *_wait_extern_pid(void *args)
 	char sbuf[256], *tmp, state[1];
 	int num_read, ppid;
 
-	xfree(extern_pid);
+	xfree(args);
 
 	//info("waiting on pid %d", pid);
-	_block_on_pid(pid, step);
+	_block_on_pid(pid);
 	//info("done with pid %d %d: %m", pid, rc);
 	jobacct = jobacct_gather_remove_task(pid);
 	if (jobacct) {
@@ -1628,7 +1364,7 @@ static void *_wait_extern_pid(void *args)
 			if (ppid == 1) {
 				debug2("adding tracking of orphaned process %d",
 				       pids[i]);
-				_handle_add_extern_pid_internal(step, pids[i]);
+				_handle_add_extern_pid_internal(pids[i]);
 			}
 		}
 	next_pid:
@@ -1639,7 +1375,7 @@ end:
 	return NULL;
 }
 
-static void _wait_extern_thr_create(extern_pid_t *extern_pid)
+static void _wait_extern_thr_create(pid_t *extern_pid)
 {
 	/* Lock as several RPC can write to the same variable. */
 	slurm_mutex_lock(&extern_thread_lock);
@@ -1650,9 +1386,9 @@ static void _wait_extern_thr_create(extern_pid_t *extern_pid)
 	slurm_mutex_unlock(&extern_thread_lock);
 }
 
-static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
+static int _handle_add_extern_pid_internal(pid_t pid)
 {
-	extern_pid_t *extern_pid;
+	pid_t *extern_pid;
 	jobacct_id_t jobacct_id;
 
 	if (step->step_id.step_id != SLURM_EXTERN_CONT) {
@@ -1663,9 +1399,8 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 
 	debug("%s: for %ps, pid %d", __func__, &step->step_id, pid);
 
-	extern_pid = xmalloc(sizeof(extern_pid_t));
-	extern_pid->step = step;
-	extern_pid->pid = pid;
+	extern_pid = xmalloc(sizeof(*extern_pid));
+	*extern_pid = pid;
 
 	/* track pid: add outside of the below thread so that the pam module
 	 * waits until the parent pid is added, before letting the parent spawn
@@ -1693,7 +1428,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 	}
 
 	if (xstrcasestr(slurm_conf.launch_params, "ulimit_pam_adopt"))
-		set_user_limits(step, pid);
+		set_user_limits(pid);
 
 	/* spawn a thread that will wait on the pid given */
 	_wait_extern_thr_create(extern_pid);
@@ -1701,7 +1436,7 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid)
 	return SLURM_SUCCESS;
 }
 
-static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_add_extern_pid(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	pid_t pid;
@@ -1715,12 +1450,7 @@ static int _handle_add_extern_pid(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	if (!_slurm_authorized_user(uid)) {
-		error("uid %u attempt to add pid %u to %ps",
-		      uid, pid, &step->step_id);
-		rc = SLURM_ERROR;
-	} else
-		rc = _handle_add_extern_pid_internal(step, pid);
+	rc = _handle_add_extern_pid_internal(pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
@@ -1733,7 +1463,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_x11_display(int fd, stepd_step_rec_t *step)
+static int _handle_x11_display(int fd, uid_t uid, pid_t remote_pid)
 {
 	int len = 0;
 	/* Send the display number. zero indicates no display setup */
@@ -1753,7 +1483,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_getpw(int fd, stepd_step_rec_t *step, pid_t remote_pid)
+static int _handle_getpw(int fd, uid_t socket_uid, pid_t remote_pid)
 {
 	uid_t uid;
 	int mode = 0;
@@ -1826,7 +1556,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _send_one_struct_group(int fd, stepd_step_rec_t *step, int offset)
+static int _send_one_struct_group(int fd, int offset)
 {
 	int len;
 
@@ -1851,7 +1581,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_getgr(int fd, stepd_step_rec_t *step, pid_t remote_pid)
+static int _handle_getgr(int fd, uid_t uid, pid_t remote_pid)
 {
 	gid_t gid;
 	int mode = 0;
@@ -1895,11 +1625,11 @@ static int _handle_getgr(int fd, stepd_step_rec_t *step, pid_t remote_pid)
 		return SLURM_SUCCESS;
 
 	if (mode == GETGR_MATCH_GROUP_AND_PID) {
-		if (_send_one_struct_group(fd, step, offset))
+		if (_send_one_struct_group(fd, offset))
 			goto rwfail;
 	} else {
 		for (int i = 0; i < step->ngids; i++) {
-			if (_send_one_struct_group(fd, step, i))
+			if (_send_one_struct_group(fd, i))
 				goto rwfail;
 		}
 	}
@@ -1912,7 +1642,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_gethost(int fd, stepd_step_rec_t *step, pid_t remote_pid)
+static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 {
 	int mode = 0;
 	int len = 0;
@@ -2018,8 +1748,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_daemon_pid(int fd, stepd_step_rec_t *step)
+static int _handle_daemon_pid(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->jmgr_pid, sizeof(pid_t));
 
@@ -2028,8 +1757,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_suspend(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
@@ -2038,15 +1766,7 @@ _handle_suspend(int fd, stepd_step_rec_t *step, uid_t uid)
 
 	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
-	if (!_slurm_authorized_user(uid)) {
-		debug("job step suspend request from uid %u for %ps",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
-
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -2119,23 +1839,14 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_resume(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_resume(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
 
 	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
-	if (!_slurm_authorized_user(uid)) {
-		debug("job step resume request from uid %u for %ps",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
-
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -2178,8 +1889,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_completion(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_completion(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int errnum = 0;
@@ -2194,18 +1904,6 @@ _handle_completion(int fd, stepd_step_rec_t *step, uid_t uid)
 	uint32_t step_id;
 
 	debug("_handle_completion for %ps", &step->step_id);
-
-	debug3("  uid = %u", uid);
-	if (!_slurm_authorized_user(uid)) {
-		debug("step completion message from uid %u for %ps ",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		/* Send the return code and errno */
-		safe_write(fd, &rc, sizeof(int));
-		safe_write(fd, &errnum, sizeof(int));
-		return SLURM_SUCCESS;
-	}
 
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
@@ -2347,8 +2045,7 @@ rwfail:	if (lock_set) {
 	return SLURM_ERROR;
 }
 
-static int
-_handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_stat_jobacct(int fd, uid_t uid, pid_t remote_pid)
 {
 	bool update_data = true;
 	jobacctinfo_t *jobacct = NULL;
@@ -2359,16 +2056,6 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *step, uid_t uid)
 	START_TIMER;
 
 	debug("_handle_stat_jobacct for %ps", &step->step_id);
-
-	debug3("  uid = %u", uid);
-	if (uid != step->uid && !_slurm_authorized_user(uid)) {
-		debug("stat jobacct from uid %u for %ps owned by uid %u",
-		      uid, &step->step_id, step->uid);
-		/* Send NULL */
-		jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
-				    SLURM_PROTOCOL_VERSION);
-		return SLURM_ERROR;
-	}
 
 	jobacct = jobacctinfo_create(NULL);
 	debug3("num tasks = %d", step->node_tasks);
@@ -2426,8 +2113,7 @@ rwfail:
 }
 
 /* We don't check the uid in this function, anyone may list the task info. */
-static int
-_handle_task_info(int fd, stepd_step_rec_t *step)
+static int _handle_task_info(int fd, uid_t uid, pid_t remote_pid)
 {
 	stepd_step_task_info_t *task;
 
@@ -2449,8 +2135,7 @@ rwfail:
 }
 
 /* We don't check the uid in this function, anyone may list the task info. */
-static int
-_handle_list_pids(int fd, stepd_step_rec_t *step)
+static int _handle_list_pids(int fd, uid_t uid, pid_t remote_pid)
 {
 	pid_t *pids = NULL;
 	int npids = 0;
@@ -2473,21 +2158,12 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int
-_handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid)
+static int _handle_reconfig(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int len;
 	buf_t *buffer = NULL;
 	int errnum = 0;
-
-	if (!_slurm_authorized_user(uid)) {
-		debug("job step reconfigure request from uid %u for %ps",
-		      uid, &step->step_id);
-		rc = -1;
-		errnum = EPERM;
-		goto done;
-	}
 
 	/*
 	 * Pull in any needed configuration changes.
@@ -2509,7 +2185,6 @@ _handle_reconfig(int fd, stepd_step_rec_t *step, uid_t uid)
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 	debug("_handle_reconfigure for %ps successful", &step->step_id);
 
-done:
 	/* Send the return code and errno */
 	safe_write(fd, &rc, sizeof(int));
 	safe_write(fd, &errnum, sizeof(int));
@@ -2533,7 +2208,7 @@ extern void wait_for_resumed(uint16_t msg_type)
 	}
 }
 
-extern void set_msg_node_id(stepd_step_rec_t *step)
+extern void set_msg_node_id(void)
 {
 	char *ptr = getenvp(step->env, "SLURM_STEP_KILLED_MSG_NODE_ID");
 	if (ptr)
@@ -2560,4 +2235,225 @@ extern void join_extern_threads()
 	slurm_mutex_unlock(&extern_thread_lock);
 
 	debug2("Done joining extern pid threads");
+}
+
+typedef struct {
+	uint16_t msg_type;
+	bool from_slurmd;
+	bool from_job_owner;
+	int (*func)(int fd, uid_t uid, pid_t remote_pid);
+} slurmstepd_rpc_t;
+
+slurmstepd_rpc_t stepd_rpcs[] = {
+	{
+		.msg_type = REQUEST_SIGNAL_CONTAINER,
+		.from_job_owner = true,
+		.func = _handle_signal_container,
+	},
+	{
+		.msg_type = REQUEST_STATE,
+		.func = _handle_state,
+	},
+	{
+		.msg_type = REQUEST_STEP_MEM_LIMITS,
+		.func = _handle_mem_limits,
+	},
+	{
+		.msg_type = REQUEST_STEP_UID,
+		.func = _handle_uid,
+	},
+	{
+		.msg_type = REQUEST_STEP_NODEID,
+		.func = _handle_nodeid,
+	},
+	{
+		.msg_type = REQUEST_ATTACH,
+		.from_slurmd = true,
+		.func = _handle_attach,
+	},
+	{
+		.msg_type = REQUEST_PID_IN_CONTAINER,
+		.func = _handle_pid_in_container,
+	},
+	{
+		.msg_type = REQUEST_DAEMON_PID,
+		.func = _handle_daemon_pid,
+	},
+	{
+		.msg_type = REQUEST_STEP_SUSPEND,
+		.from_slurmd = true,
+		.func = _handle_suspend,
+	},
+	{
+		.msg_type = REQUEST_STEP_RESUME,
+		.from_slurmd = true,
+		.func = _handle_resume,
+	},
+	{
+		.msg_type = REQUEST_STEP_TERMINATE,
+		.from_job_owner = true,
+		.func = _handle_terminate,
+	},
+	{
+		.msg_type = REQUEST_STEP_COMPLETION,
+		.from_slurmd = true,
+		.func = _handle_completion,
+	},
+	{
+		.msg_type = REQUEST_STEP_TASK_INFO,
+		.func = _handle_task_info,
+	},
+	{
+		.msg_type = REQUEST_STEP_STAT,
+		.from_job_owner = true,
+		.func = _handle_stat_jobacct,
+	},
+	{
+		.msg_type = REQUEST_STEP_LIST_PIDS,
+		.func = _handle_list_pids,
+	},
+	{
+		.msg_type = REQUEST_STEP_RECONFIGURE,
+		.from_slurmd = true,
+		.func = _handle_reconfig,
+	},
+	{
+		.msg_type = REQUEST_JOB_NOTIFY,
+		.from_job_owner = true,
+		.func = _handle_notify_job,
+	},
+	{
+		.msg_type = REQUEST_ADD_EXTERN_PID,
+		.from_slurmd = true,
+		.func = _handle_add_extern_pid,
+	},
+	{
+		.msg_type = REQUEST_X11_DISPLAY,
+		.from_job_owner = true,
+		.func = _handle_x11_display,
+	},
+	{
+		.msg_type = REQUEST_GETPW,
+		.func = _handle_getpw,
+	},
+	{
+		.msg_type = REQUEST_GETGR,
+		.func = _handle_getgr,
+	},
+	{
+		.msg_type = REQUEST_GET_NS_FD,
+		.from_job_owner = true,
+		.func = _handle_get_ns_fd,
+	},
+	{
+		.msg_type = REQUEST_GETHOST,
+		.func = _handle_gethost,
+	},
+	{
+		/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
+slurmstepd_rpc_t stepd_proxy_rpcs[] = {
+	{
+		.msg_type = REQUEST_JOB_STEP_CREATE,
+		.func = _handle_step_create,
+	},
+	{
+		.msg_type = REQUEST_JOB_STEP_INFO,
+		.func = _handle_job_step_get_info,
+	},
+	{
+		.msg_type = REQUEST_CANCEL_JOB_STEP,
+		.func = _handle_cancel_job_step,
+	},
+	{
+		.msg_type = SRUN_JOB_COMPLETE,
+		.func = _handle_srun_job_complete,
+	},
+	{
+		.msg_type = SRUN_NODE_FAIL,
+		.func = _handle_srun_node_fail,
+	},
+	{
+		.msg_type = SRUN_TIMEOUT,
+		.func = _handle_srun_timeout,
+	},
+	{
+		.msg_type = REQUEST_UPDATE_JOB_STEP,
+		.func = _handle_update_step,
+	},
+	{
+		.msg_type = REQUEST_STEP_LAYOUT,
+		.func = _handle_step_layout,
+	},
+	{
+		.msg_type = REQUEST_JOB_SBCAST_CRED,
+		.func = _handle_job_sbcast_cred,
+	},
+	{
+		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
+		.func = _handle_het_job_alloc_info,
+	},
+	{
+		/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
+static int _handle_request(int fd, uid_t uid, pid_t remote_pid)
+{
+	slurmstepd_rpc_t *this_rpc = NULL;
+	int rc = SLURM_SUCCESS;
+	int req;
+
+	debug3("%s: entering", __func__);
+	if ((rc = read(fd, &req, sizeof(int))) != sizeof(int)) {
+		if (rc == 0) { /* EOF, normal */
+			return -1;
+		} else {
+			debug3("%s: leaving on read error: %m", __func__);
+			return SLURM_ERROR;
+		}
+	}
+
+	debug("Handling %s", rpc_num2string(req));
+
+	for (this_rpc = stepd_rpcs; this_rpc->msg_type; this_rpc++) {
+		if (this_rpc->msg_type == req)
+			break;
+	}
+
+	/* Check through proxy RPCs if we're an extern step running stepmgr */
+	if (!this_rpc->msg_type && job_step_ptr) {
+		for (this_rpc = stepd_proxy_rpcs; this_rpc->msg_type;
+		     this_rpc++) {
+			if (this_rpc->msg_type == req)
+				break;
+		}
+
+		/* all proxy rpcs must come through slurmd */
+		if (this_rpc->msg_type && !_slurm_authorized_user(uid)) {
+			error("Rejecting proxied %s from uid %u",
+			      rpc_num2string(req), uid);
+			return EPERM;
+		}
+	}
+
+	if (!this_rpc->msg_type) {
+		error("Unrecognized request: %d", req);
+		return SLURM_ERROR;
+	}
+
+	if ((this_rpc->from_slurmd && !_slurm_authorized_user(uid)) ||
+	    (this_rpc->from_job_owner && (uid != step->uid) &&
+	     !_slurm_authorized_user(uid))) {
+		error("Rejecting %s from uid %u", rpc_num2string(req), uid);
+		return EPERM;
+	}
+
+	return this_rpc->func(fd, uid, remote_pid);
 }

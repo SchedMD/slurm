@@ -41,12 +41,12 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-extern int msg_thr_create(stepd_step_rec_t *step);
+extern int msg_thr_create(void);
 
 /* Delay until a job is resumed */
 extern void wait_for_resumed(uint16_t msg_type);
 
-extern void set_msg_node_id(stepd_step_rec_t *step);
+extern void set_msg_node_id(void);
 
 extern void join_extern_threads();
 

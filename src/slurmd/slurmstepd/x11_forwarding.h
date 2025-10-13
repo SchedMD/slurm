@@ -36,7 +36,7 @@
 #ifndef _X11_FORWARDING_H_
 #define _X11_FORWARDING_H_
 
-extern int setup_x11_forward(stepd_step_rec_t *step);
-extern int shutdown_x11_forward(stepd_step_rec_t *step);
+extern int setup_x11_forward(void);
+extern int shutdown_x11_forward(void);
 
 #endif /* _X11_FORWARDING_H_ */

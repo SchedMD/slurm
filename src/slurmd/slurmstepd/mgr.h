@@ -47,36 +47,35 @@
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
-void batch_finish(stepd_step_rec_t *step, int rc);
+extern void batch_finish(int rc);
 
 /*
  * Initialize a stepd_step_rec_t structure for a launch tasks
  */
-stepd_step_rec_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
-					 slurm_addr_t *cli,
-					 uint16_t protocol_version);
+extern int mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
+				  slurm_addr_t *cli, uint16_t protocol_version);
 
 /*
  * Initialize a stepd_step_rec_t structure for a batch job
  */
-stepd_step_rec_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
-					     slurm_addr_t *client);
+extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
+				      slurm_addr_t *client);
 
 /*
- * Finalize a batch job.
- */
-void mgr_launch_batch_job_cleanup(stepd_step_rec_t *step, int rc);
-
-/*
- * Executes the functions of the slurmd job manager process,
+ * Executes the functions of the slurmstepd job manager process,
  * which runs as root and performs shared memory and interconnect
  * initialization, etc.
  *
  * Returns 0 if job ran and completed successfully.
  * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
-int job_manager(stepd_step_rec_t *step);
+extern int job_manager(void);
 
-extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
+extern void set_job_state(slurmstepd_state_t new_state);
+
+extern void stepd_drain_node(char *reason);
+extern int stepd_send_pending_exit_msgs(void);
+extern void stepd_send_step_complete_msgs(void);
+extern void stepd_wait_for_children_slurmstepd(void);
 
 #endif

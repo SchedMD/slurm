@@ -87,16 +87,16 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
 
 /*
  * Static prototype definitions.
  */
-static void  _make_tmpdir(stepd_step_rec_t *step);
-static int   _run_script_and_set_env(const char *name, const char *path,
-				     stepd_step_rec_t *step);
-static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
+static void _make_tmpdir(void);
+static int _run_script_and_set_env(const char *name, const char *path);
+static void _proc_stdout(char *buf);
 
 /*
  * Process TaskProlog output
@@ -104,7 +104,7 @@ static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
  * "unset  NAME"	clears an environment variable
  * "print  <whatever>"	writes that to the step's stdout
  */
-static void _proc_stdout(char *buf, stepd_step_rec_t *step)
+static void _proc_stdout(char *buf)
 {
 	bool end_buf = false;
 	int len;
@@ -182,9 +182,7 @@ rwfail:		 /* process rest of script output */
  *	if prolog
  * RET the exit status of the script or 1 on generic error and 0 on success
  */
-static int
-_run_script_and_set_env(const char *name, const char *path,
-			stepd_step_rec_t *step)
+static int _run_script_and_set_env(const char *name, const char *path)
 {
 	int status = 0, rc = 0;
 	char *argv[2];
@@ -215,7 +213,7 @@ _run_script_and_set_env(const char *name, const char *path,
 
 	if (WIFEXITED(status)) {
 		if (buf)
-			_proc_stdout(buf, step);
+			_proc_stdout(buf);
 		rc = WEXITSTATUS(status);
 	} else {
 		error("%s did not exit normally. reason: %s", name, buf);
@@ -276,8 +274,7 @@ static char *_build_path(char *fname, char **prog_env)
 	return file_name;
 }
 
-static int
-_setup_mpi(stepd_step_rec_t *step, int ltaskid)
+static int _setup_mpi(int ltaskid)
 {
 	mpi_task_info_t info[1];
 
@@ -315,7 +312,7 @@ _setup_mpi(stepd_step_rec_t *step, int ltaskid)
 /*
  *  Current process is running as the user when this is called.
  */
-extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
+extern void exec_task(int local_proc_id)
 {
 	int fd, j;
 	stepd_step_task_info_t *task = step->task[local_proc_id];
@@ -324,7 +321,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	uint32_t node_offset = 0, task_offset = 0;
 
 	if (step->container)
-		container_task_init(step, task);
+		container_task_init(task);
 
 	if (step->het_job_node_offset != NO_VAL)
 		node_offset = step->het_job_node_offset;
@@ -403,7 +400,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 			_exit(1);
 		}
 
-		if (_setup_mpi(step, local_proc_id) != SLURM_SUCCESS) {
+		if (_setup_mpi(local_proc_id) != SLURM_SUCCESS) {
 			error("Unable to configure MPI plugin: %m");
 			log_fini();
 			_exit(1);
@@ -458,7 +455,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 
 	if (slurm_conf.task_prolog) {
 		status = _run_script_and_set_env("slurm task_prolog",
-						 slurm_conf.task_prolog, step);
+						 slurm_conf.task_prolog);
 		if (status) {
 			error("TaskProlog failed status=%d", status);
 			_exit(status);
@@ -466,7 +463,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	}
 	if (step->task_prolog) {
 		status = _run_script_and_set_env("user task_prolog",
-						 step->task_prolog, step);
+						 step->task_prolog);
 		if (status) {
 			error("--task-prolog failed status=%d", status);
 			_exit(status);
@@ -478,10 +475,10 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	 * might be set or changed in one of the prolog scripts.
 	 */
 	if (local_proc_id == 0)
-		_make_tmpdir(step);
+		_make_tmpdir();
 
 	if (!step->batch)
-		pdebug_stop_current(step);
+		pdebug_stop_current();
 	if (step->env == NULL) {
 		debug("step->env is NULL");
 		step->env = (char **)xmalloc(sizeof(char *));
@@ -508,7 +505,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	/* Do this last so you don't worry too much about the users
 	   limits including the slurmstepd in with it.
 	*/
-	set_user_limits(step, 0);
+	set_user_limits(0);
 
 	/*
 	 * If argv[0] ends with '/' it indicates that srun was called with
@@ -522,7 +519,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	}
 
 	if (step->container)
-		container_run(step, task);
+		container_run(task);
 
 	execve(task->argv[0], task->argv, step->env);
 	saved_errno = errno;
@@ -550,8 +547,7 @@ extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
 	_exit(errno);
 }
 
-static void
-_make_tmpdir(stepd_step_rec_t *step)
+static void _make_tmpdir(void)
 {
 	char *tmpdir;
 

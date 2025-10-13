@@ -47,13 +47,30 @@
 #include <sys/types.h>
 #include <signal.h>
 
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif
+
+#include "src/slurmd/slurmstepd/slurmstepd.h"
+
+#ifdef HAVE_PTRACE64
+#define _PTRACE(r, p, a, d) \
+	ptrace64((r), (long long) (p), (long long) (a), (d), NULL)
+#else
+#ifdef PTRACE_FIVE_ARGS
+#define _PTRACE(r, p, a, d) ptrace((r), (p), (a), (d), NULL)
+#elif defined BSD
+#define _PTRACE(r, p, a, d) ptrace((r), (p), (a), (d))
+#else
+#define _PTRACE(r, p, a, d) ptrace((r), (p), (a), (void *) (d))
+#endif
+#endif
 
 /*
  * Prepare task for parallel debugger attach
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
-int
-pdebug_trace_process(stepd_step_rec_t *step, pid_t pid)
+extern int pdebug_trace_process(pid_t pid)
 {
 	/*  If task to be debugged, wait for it to stop via
 	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and
@@ -112,8 +129,7 @@ pdebug_trace_process(stepd_step_rec_t *step, pid_t pid)
 /*
  * Stop current task on exec() for connection from a parallel debugger
  */
-void
-pdebug_stop_current(stepd_step_rec_t *step)
+extern void pdebug_stop_current(void)
 {
 	/*
 	 * Stop the task on exec for TotalView to connect
@@ -176,7 +192,7 @@ static bool _pid_to_wake(pid_t pid)
 /*
  * Wake tasks currently stopped for parallel debugger attach
  */
-void pdebug_wake_process(stepd_step_rec_t *step, pid_t pid)
+extern void pdebug_wake_process(pid_t pid)
 {
 	if ((step->flags & LAUNCH_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
 		if (_pid_to_wake(pid)) {

@@ -39,6 +39,7 @@
 #include "src/common/xstring.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/job_container.h"
+#include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 
@@ -52,9 +53,9 @@ static uint32_t recorded_jobid = NO_VAL;
 static uint32_t recorded_stepid = NO_VAL;
 
 static void *_monitor(void *);
-static int _call_external_program(stepd_step_rec_t *step);
+static int _call_external_program(void);
 
-void step_terminate_monitor_start(stepd_step_rec_t *step)
+extern void step_terminate_monitor_start(void)
 {
 	slurm_conf_t *conf;
 
@@ -70,7 +71,7 @@ void step_terminate_monitor_start(stepd_step_rec_t *step)
 	program_name = xstrdup(conf->unkillable_program);
 	slurm_conf_unlock();
 
-	slurm_thread_create(&tid, _monitor, step);
+	slurm_thread_create(&tid, _monitor, NULL);
 
 	recorded_jobid = step->step_id.job_id;
 	recorded_stepid = step->step_id.step_id;
@@ -99,10 +100,8 @@ void step_terminate_monitor_stop(void)
 	xfree(program_name);
 }
 
-
-static void *_monitor(void *arg)
+static void *_monitor(void *ignored)
 {
-	stepd_step_rec_t *step = (stepd_step_rec_t *)arg;
 	struct timespec ts = {0, 0};
 	int rc = 0;
 
@@ -119,7 +118,7 @@ static void *_monitor(void *arg)
 		char stepid_str[33];
 		time_t now = time(NULL);
 
-		_call_external_program(step);
+		_call_external_program();
 
 		if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			snprintf(entity, sizeof(entity),
@@ -164,20 +163,21 @@ static void *_monitor(void *arg)
 		if (!step->batch) {
 			/* Notify waiting sruns */
 			if (step->step_id.step_id != SLURM_EXTERN_CONT)
-				while (stepd_send_pending_exit_msgs(step)) {;}
+				while (stepd_send_pending_exit_msgs()) {
+					;
+				}
 
 			if ((step_complete.rank > -1)) {
 				if (step->aborted)
 					info("unkillable stepd exiting with aborted job");
 				else
-					stepd_wait_for_children_slurmstepd(
-						step);
+					stepd_wait_for_children_slurmstepd();
 			}
 			/* Notify parent stepd or ctld directly */
-			stepd_send_step_complete_msgs(step);
+			stepd_send_step_complete_msgs();
 		}
 
-		stepd_cleanup(NULL, step, NULL, rc, false);
+		stepd_cleanup(NULL, NULL, rc, false);
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}
@@ -187,8 +187,7 @@ static void *_monitor(void *arg)
 	return NULL;
 }
 
-
-static int _call_external_program(stepd_step_rec_t *step)
+static int _call_external_program(void)
 {
 	int status, rc, opt;
 	pid_t cpid;

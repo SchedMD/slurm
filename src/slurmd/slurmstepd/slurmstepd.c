@@ -101,9 +101,9 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock, int rc);
 static void _got_ack_from_slurmd(int);
-static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
+static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
-static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
+static void _step_cleanup(slurm_msg_t *msg, int rc);
 #endif
 static void _process_cmdline(int argc, char **argv);
 
@@ -111,6 +111,7 @@ static pthread_mutex_t cleanup_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* global variable */
 uint32_t slurm_daemon = IS_SLURMSTEPD;
+stepd_step_rec_t *step = NULL;
 slurmd_conf_t * conf;
 extern char  ** environ;
 
@@ -385,7 +386,7 @@ static void _main_thread_init()
 /*
  * Validate step record before initialization
  */
-static int _validate_step(stepd_step_rec_t *step)
+static int _validate_step(void)
 {
 	/*
 	 * --wait-for-children is only supported by the cgroup proctrack plugin.
@@ -412,7 +413,6 @@ extern int main(int argc, char **argv)
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	slurm_addr_t *cli;
 	slurm_msg_t *msg;
-	stepd_step_rec_t *step;
 	int rc = SLURM_SUCCESS;
 	bool only_mem = true;
 
@@ -455,7 +455,7 @@ extern int main(int argc, char **argv)
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
 	 * the new stepd_step_rec_t before continuing
 	 */
-	if (!(step = _step_setup(cli, msg)) || _validate_step(step)) {
+	if (_step_setup(cli, msg) || _validate_step()) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
@@ -468,7 +468,7 @@ extern int main(int argc, char **argv)
 	slurm_conf_install_fork_handlers();
 
 	/* sets step->msg_handle and step->msgid */
-	if (msg_thr_create(step) == SLURM_ERROR) {
+	if (msg_thr_create() == SLURM_ERROR) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
@@ -495,18 +495,18 @@ extern int main(int argc, char **argv)
 
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */
-	rc = job_manager(step);
+	rc = job_manager();
 
 	only_mem = false;
 ending:
-	stepd_cleanup(msg, step, cli, rc, only_mem);
+	stepd_cleanup(msg, cli, rc, only_mem);
 
 	conmgr_fini();
 	return rc;
 }
 
-extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
-			  slurm_addr_t *cli, int rc, bool only_mem)
+extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
+			  bool only_mem)
 {
 	static bool cleanup = false;
 
@@ -523,7 +523,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	}
 
 	if (!only_mem && step->batch)
-		batch_finish(step, rc); /* sends batch complete message */
+		batch_finish(rc); /* sends batch complete message */
 
 	/*
 	 * Call auth_setuid_lock after sending the batch_finish message as in
@@ -549,7 +549,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 	proctrack_g_destroy(step->cont_id);
 
 	if (step->container)
-		cleanup_container(step);
+		cleanup_container();
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (container_g_stepd_delete(step->step_id.job_id))
@@ -576,7 +576,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
 		node_features_free_lists();
 	}
 
-	_step_cleanup(step, msg, rc);
+	_step_cleanup(msg, rc);
 
 	fini_setproctitle();
 
@@ -1144,28 +1144,28 @@ rwfail:
 	exit(1);
 }
 
-static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
+static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 {
-	stepd_step_rec_t *step = NULL;
+	int rc = SLURM_SUCCESS;
 
 	switch (msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("setup for a batch_job");
-		step = mgr_launch_batch_job_setup(msg->data, cli);
+		rc = mgr_launch_batch_job_setup(msg->data, cli);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
-		step = mgr_launch_tasks_setup(msg->data, cli,
-					      msg->protocol_version);
+		rc = mgr_launch_tasks_setup(msg->data, cli,
+					    msg->protocol_version);
 		break;
 	default:
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
 
-	if (!step) {
-		error("_step_setup: no job returned");
-		return NULL;
+	if (rc) {
+		error("%s: %s", __func__, slurm_strerror(rc));
+		return rc;
 	}
 
 	if (step->container) {
@@ -1174,12 +1174,12 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 
 		if (drop_privileges(step, false, &sprivs, true) < 0) {
 			error("%s: drop_priviledges failed", __func__);
-			return NULL;
+			return SLURM_ERROR;
 		}
-		rc = setup_container(step);
+		rc = setup_container();
 		if (reclaim_privileges(&sprivs) < 0) {
 			error("%s: reclaim_priviledges failed", __func__);
-			return NULL;
+			return SLURM_ERROR;
 		}
 
 		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
@@ -1188,8 +1188,8 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 		} else if (rc) {
 			error("%s: container setup failed: %s",
 			      __func__, slurm_strerror(rc));
-			stepd_step_rec_destroy(step);
-			return NULL;
+			stepd_step_rec_destroy();
+			return SLURM_ERROR;
 		} else {
 			debug2("%s: container %s successfully setup",
 			       __func__, step->container->bundle);
@@ -1228,23 +1228,22 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
 		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
-		stepd_step_rec_destroy(step);
-		return NULL;
+		stepd_step_rec_destroy();
+		return SLURM_ERROR;
 	}
 
-	set_msg_node_id(step);
+	set_msg_node_id();
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
 #ifdef MEMORY_LEAK_DEBUG
-static void
-_step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc)
+static void _step_cleanup(slurm_msg_t *msg, int rc)
 {
 	if (step) {
 		jobacctinfo_destroy(step->jobacct);
 		if (!step->batch)
-			stepd_step_rec_destroy(step);
+			stepd_step_rec_destroy();
 	}
 
 	/*

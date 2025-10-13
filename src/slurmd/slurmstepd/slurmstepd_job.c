@@ -67,16 +67,17 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/multi_prog.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-static void _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
-				char *ifname, char *ofname, char *efname);
+static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
+				char *efname);
 static void _srun_info_destructor(void *arg);
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
 						 char *ifname, char *ofname,
 						 char *efname);
 static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
-static void _task_info_array_destroy(stepd_step_rec_t *step);
+static void _task_info_array_destroy(void);
 
 /*
  * Expand a stdio file name.
@@ -89,8 +90,7 @@ static void _task_info_array_destroy(stepd_step_rec_t *step);
  * object will be used.  If is a valid number, but it does not match
  * "taskid", then the file descriptor will be connected to /dev/null.
  */
-static char *
-_expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *step)
+static char *_expand_stdio_filename(char *filename, int gtaskid)
 {
 	int id;
 
@@ -112,9 +112,8 @@ _expand_stdio_filename(char *filename, int gtaskid, stepd_step_rec_t *step)
 		return xstrdup("/dev/null");
 }
 
-static void
-_job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
-		    char *ifname, char *ofname, char *efname)
+static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
+				char *efname)
 {
 	int          i, node_id = step->nodeid;
 	char        *in, *out, *err;
@@ -133,15 +132,12 @@ _job_init_task_info(stepd_step_rec_t *step, uint32_t **gtid,
 		xmalloc(step->node_tasks * sizeof(stepd_step_task_info_t *));
 
 	for (i = 0; i < step->node_tasks; i++) {
-		in  = _expand_stdio_filename(ifname,
-					     gtid[node_id][i] + het_job_offset,
-					     step);
+		in = _expand_stdio_filename(ifname,
+					    gtid[node_id][i] + het_job_offset);
 		out = _expand_stdio_filename(ofname,
-					     gtid[node_id][i] + het_job_offset,
-					     step);
+					     gtid[node_id][i] + het_job_offset);
 		err = _expand_stdio_filename(efname,
-					     gtid[node_id][i] + het_job_offset,
-					     step);
+					     gtid[node_id][i] + het_job_offset);
 		step->task[i] = _task_info_create(i, gtid[node_id][i], in, out,
 						 err);
 		if ((step->flags & LAUNCH_MULTI_PROG) == 0) {
@@ -184,7 +180,7 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 	xfree(t);
 }
 
-static void _task_info_array_destroy(stepd_step_rec_t *step)
+static void _task_info_array_destroy(void)
 {
 	uint16_t multi_prog = 0;
 
@@ -200,7 +196,7 @@ static void _task_info_array_destroy(stepd_step_rec_t *step)
 	xfree(step->task);
 }
 
-static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
+static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 {
 	slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
 
@@ -242,10 +238,9 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
 }
 
 /* create a slurmd step structure from a launch tasks message */
-extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
-					       uint16_t protocol_version)
+extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
+				 uint16_t protocol_version)
 {
-	stepd_step_rec_t *step = NULL;
 	srun_info_t   *srun = NULL;
 	slurm_addr_t     resp_addr;
 	slurm_addr_t     io_addr;
@@ -256,7 +251,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	debug3("entering stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem_lim, msg->acctg_freq))
-		return NULL;
+		return SLURM_ERROR;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 	step->msg = msg;
@@ -266,8 +261,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	if (nodeid < 0) {
 		error("couldn't find node %s in %s",
 		      step->node_name, msg->complete_nodelist);
-		stepd_step_rec_destroy(step);
-		return NULL;
+		stepd_step_rec_destroy();
+		return SLURM_ERROR;
 	}
 
 	step->state = SLURMSTEPD_STEP_STARTING;
@@ -280,12 +275,12 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->ntasks	= msg->ntasks;
 	memcpy(&step->step_id, &msg->step_id, sizeof(step->step_id));
 
-	_slurm_cred_to_step_rec(msg->cred, step);
+	_slurm_cred_to_step_rec(msg->cred);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
-		stepd_step_rec_destroy(step);
-		return NULL;
+		stepd_step_rec_destroy();
+		return SLURM_ERROR;
 	}
 	/*
 	 * Favor the group info in the launch cred if available - fall back
@@ -480,16 +475,14 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	list_append(step->sruns, (void *) srun);
 
-	_job_init_task_info(step, msg->global_task_ids,
-			    msg->ifname, msg->ofname, msg->efname);
+	_job_init_task_info(msg->global_task_ids, msg->ifname, msg->ofname,
+			    msg->efname);
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
-extern stepd_step_rec_t *
-batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
+extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
-	stepd_step_rec_t *step;
 	srun_info_t  *srun = NULL;
 	char *in_name;
 
@@ -498,7 +491,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	debug3("entering batch_stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
-		return NULL;
+		return SLURM_ERROR;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 
@@ -527,11 +520,11 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->batch   = true;
 	step->node_name  = xstrdup(conf->node_name);
 
-	_slurm_cred_to_step_rec(msg->cred, step);
+	_slurm_cred_to_step_rec(msg->cred);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
-		return NULL;
+		return SLURM_ERROR;
 	}
 	/*
 	 * Favor the group info in the launch cred if available - fall back
@@ -629,11 +622,10 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->task[0]->argv = step->argv;
 	step->oom_kill_step = msg->oom_kill_step;
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
-extern void
-stepd_step_rec_destroy(stepd_step_rec_t *step)
+extern void stepd_step_rec_destroy(void)
 {
 	int i;
 
@@ -642,7 +634,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	env_array_free(step->argv);
 	step->argv = NULL;
 
-	_task_info_array_destroy(step);
+	_task_info_array_destroy();
 	if (step->eio) {
 		eio_handle_destroy(step->eio);
 		step->eio = NULL;
