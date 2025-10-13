@@ -187,8 +187,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 static char * _make_batch_dir(stepd_step_rec_t *step);
 static int _make_batch_script(batch_job_launch_msg_t *msg,
 			      stepd_step_rec_t *step);
-static int    _send_complete_batch_script_msg(stepd_step_rec_t *step,
-					      int err, int status);
+static int _send_complete_batch_script_msg(int err, int status);
 
 /*
  * Launch an step step on the current node
@@ -372,8 +371,7 @@ extern void batch_finish(int rc)
 		if (!step_complete.step_rc && rc)
 			step_complete.step_rc = rc;
 
-		_send_complete_batch_script_msg(
-			step, rc, step_complete.step_rc);
+		_send_complete_batch_script_msg(rc, step_complete.step_rc);
 	} else {
 		stepd_wait_for_children_slurmstepd();
 		verbose("%ps completed with slurm_rc = %d, job_rc = %d",
@@ -2949,9 +2947,7 @@ static void _send_launch_resp(int rc)
 	xfree(resp.node_name);
 }
 
-
-static int
-_send_complete_batch_script_msg(stepd_step_rec_t *step, int err, int status)
+static int _send_complete_batch_script_msg(int err, int status)
 {
 	int rc;
 	slurm_msg_t	req_msg;
