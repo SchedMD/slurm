@@ -96,7 +96,7 @@
  */
 static void _make_tmpdir(void);
 static int _run_script_and_set_env(const char *name, const char *path);
-static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
+static void _proc_stdout(char *buf);
 
 /*
  * Process TaskProlog output
@@ -104,7 +104,7 @@ static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
  * "unset  NAME"	clears an environment variable
  * "print  <whatever>"	writes that to the step's stdout
  */
-static void _proc_stdout(char *buf, stepd_step_rec_t *step)
+static void _proc_stdout(char *buf)
 {
 	bool end_buf = false;
 	int len;
@@ -213,7 +213,7 @@ static int _run_script_and_set_env(const char *name, const char *path)
 
 	if (WIFEXITED(status)) {
 		if (buf)
-			_proc_stdout(buf, step);
+			_proc_stdout(buf);
 		rc = WEXITSTATUS(status);
 	} else {
 		error("%s did not exit normally. reason: %s", name, buf);
