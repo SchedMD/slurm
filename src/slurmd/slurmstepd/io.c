@@ -947,8 +947,7 @@ static void _spawn_window_manager(stepd_step_task_info_t *task)
  * io_dup_stdio will remove the close-on-exec flags for just one task's
  * file descriptors.
  */
-static int
-_init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *step)
+static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 {
 	int file_flags = io_get_file_flags(step);
 
@@ -1294,7 +1293,7 @@ io_init_tasks_stdio(stepd_step_rec_t *step)
 	int i, rc = SLURM_SUCCESS, tmprc;
 
 	for (i = 0; i < step->node_tasks; i++) {
-		tmprc = _init_task_stdio_fds(step->task[i], step);
+		tmprc = _init_task_stdio_fds(step->task[i]);
 		if (tmprc != SLURM_SUCCESS)
 			rc = tmprc;
 	}
