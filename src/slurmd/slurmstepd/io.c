@@ -611,8 +611,7 @@ static int _local_file_write(eio_obj_t *obj, list_t *objs)
 /*
  * Create an eio_obj_t for handling a task's stdin traffic
  */
-static eio_obj_t *
-_create_task_in_eio(int fd, stepd_step_rec_t *step)
+static eio_obj_t *_create_task_in_eio(int fd)
 {
 	struct task_write_info *t = xmalloc(sizeof(*t));
 	eio_obj_t *eio = NULL;
@@ -988,7 +987,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
 			_spawn_window_manager(task);
-			task->in = _create_task_in_eio(task->to_stdin, step);
+			task->in = _create_task_in_eio(task->to_stdin);
 			eio_new_initial_obj(step->eio, (void *)task->in);
 		} else {
 			xfree(task->ifname);
@@ -1000,7 +999,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 			}
 			task->to_stdin = dup(task->stdin_fd);
 			fd_set_nonblocking(task->to_stdin);
-			task->in = _create_task_in_eio(task->to_stdin, step);
+			task->in = _create_task_in_eio(task->to_stdin);
 			eio_new_initial_obj(step->eio, (void *)task->in);
 		}
 	} else if (task->ifname != NULL) {
@@ -1049,7 +1048,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 		task->stdin_fd = pin[0];
 		task->to_stdin = pin[1];
 		fd_set_nonblocking(task->to_stdin);
-		task->in = _create_task_in_eio(task->to_stdin, step);
+		task->in = _create_task_in_eio(task->to_stdin);
 		eio_new_initial_obj(step->eio, (void *)task->in);
 	}
 
