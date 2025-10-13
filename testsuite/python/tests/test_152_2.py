@@ -63,9 +63,30 @@ channel_per_segment_params = [
     ("-N8 --segment=2", 1),
     ("-N8 --segment=4", 1),
     ("-N8 --segment=8", 1),
-    ("-N8 --segment=1 --network=unique-channel-per-segment", 8),
-    ("-N8 --segment=2 --network=unique-channel-per-segment", 4),
-    ("-N8 --segment=4 --network=unique-channel-per-segment", 2),
+    pytest.param(
+        "-N8 --segment=1 --network=unique-channel-per-segment",
+        8,
+        marks=pytest.mark.xfail(
+            atf.get_version("bin/scontrol") < (25, 11),
+            reason="Dev #50642: Unique IMEX channel per segment",
+        ),
+    ),
+    pytest.param(
+        "-N8 --segment=2 --network=unique-channel-per-segment",
+        4,
+        marks=pytest.mark.xfail(
+            atf.get_version("bin/scontrol") < (25, 11),
+            reason="Dev #50642: Unique IMEX channel per segment",
+        ),
+    ),
+    pytest.param(
+        "-N8 --segment=4 --network=unique-channel-per-segment",
+        2,
+        marks=pytest.mark.xfail(
+            atf.get_version("bin/scontrol") < (25, 11),
+            reason="Dev #50642: Unique IMEX channel per segment",
+        ),
+    ),
     ("-N8 --segment=8 --network=unique-channel-per-segment", 1),
 ]
 
@@ -73,7 +94,6 @@ channel_per_segment_params = [
 @pytest.mark.parametrize(
     "job_args,expected_channel_count",
     channel_per_segment_params,
-    ids=[p[0] for p in channel_per_segment_params],
 )
 def test_channel_per_segment(job_args, expected_channel_count):
     num_channels = _simple_channel_job(job_args)
