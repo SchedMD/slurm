@@ -187,7 +187,6 @@ struct task_read_info {
 	uint16_t         type;           /* type of IO object          */
 	uint16_t         gtaskid;
 	uint16_t         ltaskid;
-	stepd_step_rec_t *step; /* pointer back to step data */
 	cbuf_t          *buf;
 	bool		 eof;
 	bool		 eof_msg_sent;
@@ -723,7 +722,6 @@ static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
 	out->type = type;
 	out->gtaskid = task->gtid;
 	out->ltaskid = task->id;
-	out->step = step;
 	out->buf = cbuf_create(SLURM_IO_MAX_MSG_LEN,
 			       (SLURM_IO_MAX_MSG_LEN * 4));
 	out->eof = false;
@@ -1398,7 +1396,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 			return;
 
 		/* Add message to the msg_queue of all clients */
-		clients = list_iterator_create(out->step->clients);
+		clients = list_iterator_create(step->clients);
 		while ((eio = list_next(clients))) {
 			client = eio->arg;
 			if (client->out_eof == true)
@@ -1424,9 +1422,9 @@ _route_msg_task_to_client(eio_obj_t *obj)
 		list_iterator_destroy(clients);
 
 		/* Update the outgoing message cache */
-		list_enqueue(out->step->outgoing_cache, msg);
+		list_enqueue(step->outgoing_cache, msg);
 		msg->ref_count++;
-		_shrink_msg_cache(out->step->outgoing_cache);
+		_shrink_msg_cache(step->outgoing_cache);
 	}
 }
 
@@ -1811,7 +1809,7 @@ _send_eof_msg(struct task_read_info *out)
 	out->eof_msg_sent = true;
 
 	if (_outgoing_buf_free()) {
-		msg = list_dequeue(out->step->free_outgoing);
+		msg = list_dequeue(step->free_outgoing);
 	} else {
 		/* eof message must be allowed to allocate new memory
 		   because _task_readable() will return "true" until
@@ -1842,7 +1840,7 @@ _send_eof_msg(struct task_read_info *out)
 	FREE_NULL_BUFFER(packbuf);
 
 	/* Add eof message to the msg_queue of all clients */
-	clients = list_iterator_create(out->step->clients);
+	clients = list_iterator_create(step->clients);
 	while ((eio = list_next(clients))) {
 		client = eio->arg;
 		debug5("======================== Enqueued eof message");
