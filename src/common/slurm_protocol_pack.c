@@ -11329,14 +11329,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_srun_user_msg(srun_user_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_srun_user_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	srun_user_msg_t *msg = smsg->data;
 
-	pack32((uint32_t)msg->job_id,  buffer);
-	packstr(msg->msg, buffer);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32((uint32_t) msg->job_id,  buffer);
+		packstr(msg->msg, buffer);
+	}
 }
 
 static int
@@ -13912,8 +13912,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_srun_timeout_msg(msg, buffer);
 		break;
 	case SRUN_USER_MSG:
-		_pack_srun_user_msg((srun_user_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
+		_pack_srun_user_msg(msg, buffer);
 		break;
 	case SRUN_NET_FORWARD:
 		_pack_net_forward_msg((net_forward_msg_t *)msg->data,
