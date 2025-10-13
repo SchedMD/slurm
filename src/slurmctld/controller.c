@@ -3875,30 +3875,8 @@ static void *_assoc_cache_mgr(void *no_data)
 		{ .assoc = READ_LOCK, .qos = WRITE_LOCK, .tres = WRITE_LOCK,
 		  .user = READ_LOCK };
 
-	if (running_cache != RUNNING_CACHE_STATE_RUNNING) {
-		slurm_mutex_lock(&assoc_cache_mutex);
+	if (running_cache != RUNNING_CACHE_STATE_RUNNING)
 		lock_slurmctld(job_write_lock);
-		/*
-		 * It is ok to have the job_write_lock here as long as
-		 * running_cache != RUNNING_CACHE_STATE_NOTRUNNING. This short
-		 * circuits the association manager to not call callbacks. If
-		 * we come out of cache we need the job_write_lock locked until
-		 * the end to prevent a race condition on the job_list (some
-		 * running without new info and some running with the cached
-		 * info).
-		 *
-		 * Make sure not to have the assoc_mgr or the
-		 * slurmdbd_lock locked when refresh_lists is called or you may
-		 * get deadlock.
-		 */
-		assoc_mgr_refresh_lists(acct_db_conn, 0);
-		if (g_tres_count != slurmctld_tres_cnt) {
-			info("TRES in database does not match cache (%u != %u).  Updating...",
-			     g_tres_count, slurmctld_tres_cnt);
-			_init_tres();
-		}
-		slurm_mutex_unlock(&assoc_cache_mutex);
-	}
 
 	while (running_cache == RUNNING_CACHE_STATE_RUNNING) {
 		slurm_mutex_lock(&assoc_cache_mutex);
