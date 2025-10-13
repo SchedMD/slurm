@@ -7809,22 +7809,18 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* _pack_job_info_list_msg
- * packs a list of job_alloc_info_msg_t structs
- * IN job_resp_list - pointer to the job allocation descriptor to pack
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-static void _pack_job_info_list_msg(list_t *job_resp_list, buf_t *buffer,
-				    uint16_t protocol_version)
+static void _pack_job_info_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	slurm_msg_t msg = { .protocol_version = protocol_version };
+	list_t *job_resp_list = smsg->data;
+	slurm_msg_t msg = { .protocol_version = smsg->protocol_version };
 	resource_allocation_response_msg_t *resp;
 	list_itr_t *iter;
 	uint16_t cnt = 0;
 
 	if (job_resp_list)
 		cnt = list_count(job_resp_list);
+
+	/* WARNING - this cannot be converted to slurm_pack_list() */
 	pack16(cnt, buffer);
 	if (cnt == 0)
 		return;
@@ -13643,8 +13639,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 					msg->protocol_version);
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
-		_pack_job_info_list_msg(msg->data, buffer,
-					msg->protocol_version);
+		_pack_job_info_list_msg(msg, buffer);
 		break;
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
