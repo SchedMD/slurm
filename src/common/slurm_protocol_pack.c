@@ -12947,10 +12947,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_control_status_msg(control_status_msg_t *msg,
-				     buf_t *buffer, uint16_t protocol_version)
+static void _pack_control_status_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	control_status_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->backup_inx, buffer);
 		pack_time(msg->control_time, buffer);
 	}
@@ -14017,8 +14018,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_set_fs_dampening_factor_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTROL_STATUS:
-		_pack_control_status_msg((control_status_msg_t *)(msg->data),
-					 buffer, msg->protocol_version);
+		_pack_control_status_msg(msg, buffer);
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
 		_pack_bb_status_req_msg((bb_status_req_msg_t *)(msg->data),
