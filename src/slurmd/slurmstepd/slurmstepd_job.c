@@ -196,7 +196,7 @@ static void _task_info_array_destroy(void)
 	xfree(step->task);
 }
 
-static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *step)
+static void _slurm_cred_to_step_rec(slurm_cred_t *cred)
 {
 	slurm_cred_arg_t *cred_arg = slurm_cred_get_args(cred);
 
@@ -275,7 +275,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	step->ntasks	= msg->ntasks;
 	memcpy(&step->step_id, &msg->step_id, sizeof(step->step_id));
 
-	_slurm_cred_to_step_rec(msg->cred, step);
+	_slurm_cred_to_step_rec(msg->cred);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
@@ -520,7 +520,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->batch   = true;
 	step->node_name  = xstrdup(conf->node_name);
 
-	_slurm_cred_to_step_rec(msg->cred, step);
+	_slurm_cred_to_step_rec(msg->cred);
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
