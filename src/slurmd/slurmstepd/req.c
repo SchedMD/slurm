@@ -484,25 +484,6 @@ static int _handle_stepmgr_relay_msg(int fd,
 	rc = unpack_msg(msg, buffer);
 	FREE_NULL_BUFFER(buffer);
 	if (rc) {
-		goto done;
-	}
-
-	if (!_slurm_authorized_user(uid)) {
-		error("Security violation, %s RPC from uid=%u",
-		      rpc_num2string(msg->msg_type), uid);
-		rc = ESLURM_USER_ID_MISSING;
-		goto done;
-	}
-
-	if (!job_step_ptr) {
-		error("%s on a non-step mgr stepd",
-		      rpc_num2string(msg->msg_type));
-		rc = ESLURM_USER_ID_MISSING; /* or bad in this case */
-		goto done;
-	}
-
-done:
-	if (rc) {
 		if (reply) {
 			rc_msg.return_code = rc;
 			stepd_proxy_send_resp_to_slurmd(fd, msg,
