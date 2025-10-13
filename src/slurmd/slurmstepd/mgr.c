@@ -389,7 +389,7 @@ batch_finish(stepd_step_rec_t *step, int rc)
 		stepd_wait_for_children_slurmstepd(step);
 		verbose("%ps completed with slurm_rc = %d, job_rc = %d",
 			&step->step_id, rc, step_complete.step_rc);
-		stepd_send_step_complete_msgs(step);
+		stepd_send_step_complete_msgs();
 	}
 
 	/* Do not purge directory until slurmctld is notified of batch job
@@ -890,7 +890,7 @@ _bit_getrange(int start, int size, int *first, int *last)
  * not yet signaled their completion, so there will be gaps in the
  * completed node bitmap, requiring that more than one message be sent.
  */
-extern void stepd_send_step_complete_msgs(stepd_step_rec_t *step)
+extern void stepd_send_step_complete_msgs(void)
 {
 	int start, size;
 	int first = -1, last = -1;
@@ -1573,7 +1573,7 @@ fail1:
 	if (rc && !step_complete.step_rc)
 		step_complete.step_rc = rc;
 
-	stepd_send_step_complete_msgs(step);
+	stepd_send_step_complete_msgs();
 
 	switch_g_extern_step_fini(jobid);
 
@@ -1864,7 +1864,7 @@ fail1:
 		if (rc && !step_complete.step_rc)
 			step_complete.step_rc = rc;
 
-		stepd_send_step_complete_msgs(step);
+		stepd_send_step_complete_msgs();
 	}
 
 	return(rc);

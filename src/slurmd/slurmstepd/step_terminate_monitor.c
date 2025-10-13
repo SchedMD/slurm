@@ -174,7 +174,7 @@ static void *_monitor(void *ignored)
 						step);
 			}
 			/* Notify parent stepd or ctld directly */
-			stepd_send_step_complete_msgs(step);
+			stepd_send_step_complete_msgs();
 		}
 
 		stepd_cleanup(NULL, NULL, rc, false);

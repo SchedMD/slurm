@@ -74,7 +74,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 			  bool only_mem);
 extern void stepd_drain_node(char *reason);
 extern int stepd_send_pending_exit_msgs(void);
-extern void stepd_send_step_complete_msgs(stepd_step_rec_t *step);
+extern void stepd_send_step_complete_msgs(void);
 extern void stepd_wait_for_children_slurmstepd(stepd_step_rec_t *step);
 
 extern void close_slurmd_conn(int rc);
