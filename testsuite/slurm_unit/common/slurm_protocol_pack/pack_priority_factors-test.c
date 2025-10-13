@@ -11,7 +11,6 @@
 priority_factors_object_t pack_req = {0};
 priority_factors_t pack_f_req = {0};
 
-#ifndef NDEBUG
 START_TEST(pack_null_resp)
 {
 	buf_t *buf = init_buf(1024);
@@ -23,8 +22,8 @@ START_TEST(pack_null_resp)
 
 	free_buf(buf);
 }
+
 END_TEST
-#endif
 
 void setup()
 {
@@ -180,12 +179,8 @@ Suite *suite(SRunner *sr)
 	Suite *s = suite_create("Pack priority_factors_objects_t");
 	TCase *tc_core = tcase_create("Pack priority_factors_objects_t");
 	tcase_add_unchecked_fixture(tc_core, setup, teardown);
-#ifdef NDEBUG
-       printf("Can't perform pack_null_resp test with NDEBUG set.\n");
-#else
-       if (srunner_fork_status(sr) != CK_NOFORK)
-               tcase_add_test_raise_signal(tc_core, pack_null_resp, SIGABRT);
-#endif
+	if (srunner_fork_status(sr) != CK_NOFORK)
+		tcase_add_test_raise_signal(tc_core, pack_null_resp, SIGSEGV);
 	tcase_add_test(tc_core, current_version);
 	tcase_add_test(tc_core, one_back);
 	tcase_add_test(tc_core, min_version);
