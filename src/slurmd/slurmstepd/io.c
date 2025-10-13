@@ -211,13 +211,12 @@ static void *_window_manager(void *arg);
 /**********************************************************************
  * General declarations
  **********************************************************************/
-static void *_io_thr(void *);
+static void *_io_thr(void *ignored);
 static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun,
 			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
 					  cbuf_t *cbuf);
-static void *_io_thr(void *arg);
 static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg);
 static void _free_incoming_msg(struct io_buf *msg);
@@ -1301,7 +1300,7 @@ extern int io_init_tasks_stdio(void)
 extern void io_thread_start(void)
 {
 	slurm_mutex_lock(&step->io_mutex);
-	slurm_thread_create_detached(_io_thr, step);
+	slurm_thread_create_detached(_io_thr, NULL);
 	step->io_running = true;
 	slurm_mutex_unlock(&step->io_mutex);
 }
@@ -1560,12 +1559,8 @@ extern void io_close_local_fds(void)
 	list_iterator_destroy(clients);
 }
 
-
-
-static void *
-_io_thr(void *arg)
+static void *_io_thr(void *ignored)
 {
-	stepd_step_rec_t *step = (stepd_step_rec_t *) arg;
 	int rc;
 
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
