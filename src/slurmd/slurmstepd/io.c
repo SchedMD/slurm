@@ -164,7 +164,6 @@ struct io_operations task_write_ops = {
 #define TASK_IN_MAGIC 0x10103
 struct task_write_info {
 	int              magic;
-	stepd_step_rec_t *step; /* pointer back to step data */
 
 	list_t *msg_queue;
 	struct io_buf *msg;
@@ -611,7 +610,6 @@ static eio_obj_t *_create_task_in_eio(int fd)
 	eio_obj_t *eio = NULL;
 
 	t->magic = TASK_IN_MAGIC;
-	t->step = step;
 	t->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	t->msg = NULL;
 	t->remaining = 0;
