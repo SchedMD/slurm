@@ -2404,108 +2404,85 @@ static int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid,
 		}
 	}
 
+	debug("Handling %s", rpc_num2string(req));
+
 	switch (req) {
 	case REQUEST_SIGNAL_CONTAINER:
-		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, step, uid);
 		break;
 	case REQUEST_STATE:
-		debug("Handling REQUEST_STATE");
 		rc = _handle_state(fd, step);
 		break;
 	case REQUEST_STEP_MEM_LIMITS:
-		debug("Handling REQUEST_STEP_MEM_LIMITS");
 		rc = _handle_mem_limits(fd, step);
 		break;
 	case REQUEST_STEP_UID:
-		debug("Handling REQUEST_STEP_UID");
 		rc = _handle_uid(fd, step);
 		break;
 	case REQUEST_STEP_NODEID:
-		debug("Handling REQUEST_STEP_NODEID");
 		rc = _handle_nodeid(fd, step);
 		break;
 	case REQUEST_ATTACH:
-		debug("Handling REQUEST_ATTACH");
 		rc = _handle_attach(fd, step, uid);
 		break;
 	case REQUEST_PID_IN_CONTAINER:
-		debug("Handling REQUEST_PID_IN_CONTAINER");
 		rc = _handle_pid_in_container(fd, step);
 		break;
 	case REQUEST_DAEMON_PID:
-		debug("Handling REQUEST_DAEMON_PID");
 		rc = _handle_daemon_pid(fd, step);
 		break;
 	case REQUEST_STEP_SUSPEND:
-		debug("Handling REQUEST_STEP_SUSPEND");
 		rc = _handle_suspend(fd, step, uid);
 		break;
 	case REQUEST_STEP_RESUME:
-		debug("Handling REQUEST_STEP_RESUME");
 		rc = _handle_resume(fd, step, uid);
 		break;
 	case REQUEST_STEP_TERMINATE:
-		debug("Handling REQUEST_STEP_TERMINATE");
 		rc = _handle_terminate(fd, step, uid);
 		break;
 	case REQUEST_STEP_COMPLETION:
-		debug("Handling REQUEST_STEP_COMPLETION");
 		rc = _handle_completion(fd, step, uid);
 		break;
 	case REQUEST_STEP_TASK_INFO:
-		debug("Handling REQUEST_STEP_TASK_INFO");
 		rc = _handle_task_info(fd, step);
 		break;
 	case REQUEST_STEP_STAT:
-		debug("Handling REQUEST_STEP_STAT");
 		rc = _handle_stat_jobacct(fd, step, uid);
 		break;
 	case REQUEST_STEP_LIST_PIDS:
-		debug("Handling REQUEST_STEP_LIST_PIDS");
 		rc = _handle_list_pids(fd, step);
 		break;
 	case REQUEST_STEP_RECONFIGURE:
-		debug("Handling REQUEST_STEP_RECONFIGURE");
 		rc = _handle_reconfig(fd, step, uid);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		debug("Handling REQUEST_STEP_CREATE");
 		rc = _handle_step_create(fd, step, uid);
 		break;
 	case REQUEST_JOB_STEP_INFO:
 		rc = _handle_job_step_get_info(fd, step, uid);
 		break;
 	case REQUEST_JOB_NOTIFY:
-		debug("Handling REQUEST_JOB_NOTIFY");
 		rc = _handle_notify_job(fd, step, uid);
 		break;
 	case REQUEST_ADD_EXTERN_PID:
-		debug("Handling REQUEST_ADD_EXTERN_PID");
 		rc = _handle_add_extern_pid(fd, step, uid);
 		break;
 	case REQUEST_X11_DISPLAY:
-		debug("Handling REQUEST_X11_DISPLAY");
 		rc = _handle_x11_display(fd, step);
 		break;
 	case REQUEST_GETPW:
-		debug("Handling REQUEST_GETPW");
 		rc = _handle_getpw(fd, step, remote_pid);
 		break;
 	case REQUEST_GETGR:
-		debug("Handling REQUEST_GETGR");
 		rc = _handle_getgr(fd, step, remote_pid);
 		break;
 	case REQUEST_GET_NS_FD:
-		debug("Handling REQUEST_GET_NS_FD");
 		rc = _handle_get_ns_fd(fd, step);
 		break;
 	case REQUEST_GETHOST:
-		debug("Handling REQUEST_GETHOST");
 		rc = _handle_gethost(fd, step, remote_pid);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
-		debug("Handling REQUEST_CANCEL_JOB_STEP");
 		rc = _handle_cancel_job_step(fd, step, uid);
 		break;
 	case SRUN_JOB_COMPLETE:
@@ -2518,7 +2495,6 @@ static int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid,
 		_handle_srun_timeout(fd, step, uid);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
-		debug("Handling REQUEST_UPDATE_JOB_STEP");
 		rc = _handle_update_step(fd, step, uid);
 		break;
 	case REQUEST_STEP_LAYOUT:
