@@ -746,7 +746,7 @@ static data_for_each_cmd_t _foreach_config_env(const data_t *data,
 	return (rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT);
 }
 
-static int _merge_step_config_env(stepd_step_rec_t *step)
+static int _merge_step_config_env(void)
 {
 	step_container_t *c = step->container;
 	data_t *env = data_resolve_dict_path(c->config, "/process/env/");
@@ -789,7 +789,7 @@ extern int setup_container(void)
 		if ((rc = _load_config()))
 			goto error;
 
-		if ((rc = _merge_step_config_env(step)))
+		if ((rc = _merge_step_config_env()))
 			goto error;
 	}
 
