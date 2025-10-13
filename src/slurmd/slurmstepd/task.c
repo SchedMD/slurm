@@ -478,7 +478,7 @@ extern void exec_task(int local_proc_id)
 		_make_tmpdir();
 
 	if (!step->batch)
-		pdebug_stop_current(step);
+		pdebug_stop_current();
 	if (step->env == NULL) {
 		debug("step->env is NULL");
 		step->env = (char **)xmalloc(sizeof(char *));

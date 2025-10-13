@@ -55,7 +55,7 @@
 /*
  * Stop current task on exec() for connection from a parallel debugger
  */
-void pdebug_stop_current(stepd_step_rec_t *step);
+extern void pdebug_stop_current(void);
 
 /*
  * Prepare task for parallel debugger attach

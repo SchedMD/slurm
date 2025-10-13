@@ -111,8 +111,7 @@ extern int pdebug_trace_process(pid_t pid)
 /*
  * Stop current task on exec() for connection from a parallel debugger
  */
-void
-pdebug_stop_current(stepd_step_rec_t *step)
+extern void pdebug_stop_current(void)
 {
 	/*
 	 * Stop the task on exec for TotalView to connect
