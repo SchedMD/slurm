@@ -169,7 +169,7 @@ static int _fork_all_tasks(bool *io_initialized);
 static int _become_user(struct priv_state *ps);
 static void _set_prio_process(void);
 static int _setup_normal_io(void);
-static void _send_launch_resp(stepd_step_rec_t *step, int rc);
+static void _send_launch_resp(int rc);
 static int  _slurmd_job_log_init(stepd_step_rec_t *step);
 static void _wait_for_io(stepd_step_rec_t *step);
 static int  _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n,
@@ -1713,7 +1713,7 @@ extern int job_manager(void)
 		jobacct_gather_stat_task(0, true);
 
 	/* Send step launch response with list of pids */
-	_send_launch_resp(step, 0);
+	_send_launch_resp(0);
 	set_job_state(SLURMSTEPD_STEP_RUNNING);
 
 #ifdef PR_SET_DUMPABLE
@@ -1831,7 +1831,7 @@ fail1:
 	if (rc != 0) {
 		error("%s: exiting abnormally: %s",
 		      __func__, slurm_strerror(rc));
-		_send_launch_resp(step, rc);
+		_send_launch_resp(rc);
 	}
 
 	if (!step->batch && (step_complete.rank > -1)) {
@@ -2905,8 +2905,7 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	return;
 }
 
-static void
-_send_launch_resp(stepd_step_rec_t *step, int rc)
+static void _send_launch_resp(int rc)
 {
 	int i;
 	slurm_msg_t resp_msg;
