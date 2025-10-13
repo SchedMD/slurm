@@ -46,9 +46,12 @@ def _job_expect_pending():
     job_id = atf.submit_job_sbatch(
         f'--wrap="srun ls {IMEX_CHANNEL_PATH}; sleep 30"', fatal=True
     )
-    atf.wait_for_job_state(
-        job_id, "PENDING", desired_reason="NvidiaImexChannels", fatal=True
-    )
+    if atf.get_version("bin/scontrol") >= (25, 11):
+        # Dev #50642: Unique IMEX channel per segment
+        reason = "NvidiaImexChannels"
+    else:
+        reason = None
+    atf.wait_for_job_state(job_id, "PENDING", desired_reason=reason, fatal=True)
 
     return job_id
 
@@ -70,6 +73,10 @@ def _allocate_single_channel():
     return job_id
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (25, 11),
+    reason="Dev #50642: Unique IMEX channel per segment",
+)
 def test_multiple_channels():
     """Test channel creation for multiple jobs"""
 
