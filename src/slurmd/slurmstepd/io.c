@@ -197,7 +197,6 @@ struct task_read_info {
  **********************************************************************/
 struct window_info {
 	stepd_step_task_info_t *task;
-	stepd_step_rec_t *step;
 	void *conn;
 };
 #ifdef HAVE_PTY_H
@@ -920,7 +919,6 @@ static void _spawn_window_manager(stepd_step_task_info_t *task)
 
 	win_info = xmalloc(sizeof(struct window_info));
 	win_info->task   = task;
-	win_info->step    = step;
 	win_info->conn = conn;
 	slurm_thread_create_detached(_window_manager, win_info);
 }
