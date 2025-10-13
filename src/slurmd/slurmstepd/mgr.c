@@ -1716,7 +1716,7 @@ job_manager(stepd_step_rec_t *step)
 	if ((rc != SLURM_SUCCESS) || !io_initialized)
 		goto fail2;
 
-	io_close_task_fds(step);
+	io_close_task_fds();
 
 	/* Attach slurmstepd to system cgroups, if configured */
 	attach_system_cgroup_pid(getpid());
@@ -2453,7 +2453,7 @@ fail3:
 	}
 fail2:
 	FREE_NULL_LIST(exec_wait_list);
-	io_close_task_fds(step);
+	io_close_task_fds();
 fail1:
 	pam_finish();
 	END_TIMER2(__func__);

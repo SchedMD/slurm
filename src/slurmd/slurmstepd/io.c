@@ -1493,8 +1493,7 @@ static void _free_all_outgoing_msgs(list_t *msg_queue)
 
 /* Close I/O file descriptors created by slurmstepd. The connections have
  * all been moved to the spawned tasks stdin/out/err file descriptors. */
-extern void
-io_close_task_fds(stepd_step_rec_t *step)
+extern void io_close_task_fds(void)
 {
 	int i;
 

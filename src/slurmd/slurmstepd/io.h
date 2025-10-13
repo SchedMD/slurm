@@ -108,7 +108,7 @@ int io_dup_stdio(stepd_step_task_info_t *t);
  *  Presumably the tasks have already been started, and
  *  have their copies of these file descriptors.
  */
-void io_close_task_fds(stepd_step_rec_t *step);
+extern void io_close_task_fds(void);
 
 void io_close_all(stepd_step_rec_t *step);
 
