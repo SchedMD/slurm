@@ -85,8 +85,7 @@ static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'RunTimeStart never configured in oci.conf'; exit 1", NULL };
 
 static char *_get_config_path(void);
-static char *_generate_spooldir(stepd_step_rec_t *step,
-				stepd_step_task_info_t *task);
+static char *_generate_spooldir(stepd_step_task_info_t *task);
 static void _generate_patterns(stepd_step_rec_t *step,
 			       stepd_step_task_info_t *task);
 
@@ -562,11 +561,11 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 			_generate_pattern(oci_conf->mount_spool_dir, step,
 					  step->task[0]->id, NULL);
 	} else {
-		c->mount_spool_dir = _generate_spooldir(step, NULL);
+		c->mount_spool_dir = _generate_spooldir(NULL);
 	}
 
 	if (!c->spool_dir)
-		c->spool_dir = _generate_spooldir(step, NULL);
+		c->spool_dir = _generate_spooldir(NULL);
 
 	if ((rc = _mkpath(c->spool_dir, step->uid, step->gid)))
 		fatal("%s: unable to create spool directory %s: %s",
@@ -636,8 +635,7 @@ static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
 	return pattern;
 }
 
-static char *_generate_spooldir(stepd_step_rec_t *step,
-				stepd_step_task_info_t *task)
+static char *_generate_spooldir(stepd_step_task_info_t *task)
 {
 	int id = -1;
 	char **argv = NULL, *path = NULL;
@@ -705,7 +703,7 @@ extern void container_task_init(stepd_step_task_info_t *task)
 		fatal_abort("task spool dir already set or spool dir not set");
 
 	/* generate the task_spool_dir now we know the task */
-	c->task_spool_dir = _generate_spooldir(step, task);
+	c->task_spool_dir = _generate_spooldir(task);
 
 	if ((rc = _mkpath(c->task_spool_dir, step->uid, step->gid)))
 		fatal("%s: unable to create spool directory %s: %s",
@@ -1241,14 +1239,13 @@ extern void cleanup_container(void)
 		goto done;
 
 	if (!c->spool_dir)
-		c->spool_dir = _generate_spooldir(step, NULL);
+		c->spool_dir = _generate_spooldir(NULL);
 
 	if (step->node_tasks > 0) {
 		/* clear every config.json and task dir */
 		for (int i = 0; i < step->node_tasks; i++) {
 			xfree(c->task_spool_dir);
-			c->task_spool_dir =
-				_generate_spooldir(step, step->task[i]);
+			c->task_spool_dir = _generate_spooldir(step->task[i]);
 
 			_generate_patterns(step, step->task[i]);
 
