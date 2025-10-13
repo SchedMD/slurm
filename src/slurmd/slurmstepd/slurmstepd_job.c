@@ -77,7 +77,7 @@ static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
 						 char *ifname, char *ofname,
 						 char *efname);
 static void _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog);
-static void _task_info_array_destroy(stepd_step_rec_t *step);
+static void _task_info_array_destroy(void);
 
 /*
  * Expand a stdio file name.
@@ -184,7 +184,7 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 	xfree(t);
 }
 
-static void _task_info_array_destroy(stepd_step_rec_t *step)
+static void _task_info_array_destroy(void)
 {
 	uint16_t multi_prog = 0;
 
@@ -639,7 +639,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *step)
 	env_array_free(step->argv);
 	step->argv = NULL;
 
-	_task_info_array_destroy(step);
+	_task_info_array_destroy();
 	if (step->eio) {
 		eio_handle_destroy(step->eio);
 		step->eio = NULL;
