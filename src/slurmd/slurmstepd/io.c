@@ -2009,11 +2009,9 @@ static bool _outgoing_buf_free(void)
 	return false;
 }
 
-void
-io_find_filename_pattern( stepd_step_rec_t *step,
-			  slurmd_filename_pattern_t *outpattern,
-			  slurmd_filename_pattern_t *errpattern,
-			  bool *same_out_err_files )
+extern void io_find_filename_pattern(slurmd_filename_pattern_t *outpattern,
+				     slurmd_filename_pattern_t *errpattern,
+				     bool *same_out_err_files)
 {
 	int ii, jj;
 	int of_num_null = 0, ef_num_null = 0;

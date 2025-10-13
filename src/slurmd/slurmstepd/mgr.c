@@ -492,7 +492,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 			bool same = false;
 			int file_flags;
 
-			io_find_filename_pattern(step, &outpattern, &errpattern,
+			io_find_filename_pattern(&outpattern, &errpattern,
 						 &same);
 			file_flags = io_get_file_flags();
 

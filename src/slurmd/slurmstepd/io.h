@@ -120,10 +120,9 @@ void io_close_local_fds(stepd_step_rec_t *step);
  *  if stdout and stderr point to the same file(s).
  *  See comments above for slurmd_filename_pattern_t.
  */
-void io_find_filename_pattern(  stepd_step_rec_t *step,
-				slurmd_filename_pattern_t *outpattern,
-				slurmd_filename_pattern_t *errpattern,
-				bool *same_out_err_files );
+extern void io_find_filename_pattern(slurmd_filename_pattern_t *outpattern,
+				     slurmd_filename_pattern_t *errpattern,
+				     bool *same_out_err_files);
 
 /*
  *  Get the flags to be used with the open call to create output files.
