@@ -1287,8 +1287,7 @@ static int _init_task_stdio_fds(stepd_step_task_info_t *task)
 	return SLURM_SUCCESS;
 }
 
-int
-io_init_tasks_stdio(stepd_step_rec_t *step)
+extern int io_init_tasks_stdio(void)
 {
 	int i, rc = SLURM_SUCCESS, tmprc;
 

@@ -91,7 +91,7 @@ io_create_local_client(const char *filename, int file_flags,
  * Initialize each task's standard I/O file descriptors.  The file descriptors
  * may be files, or may be the end of a pipe which is handled by an eio_obj_t.
  */
-int io_init_tasks_stdio(stepd_step_rec_t *step);
+extern int io_init_tasks_stdio(void);
 
 /*
  * Start IO handling thread.

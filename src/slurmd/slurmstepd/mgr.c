@@ -462,7 +462,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 	if (drop_privileges(step, true, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
-	if (io_init_tasks_stdio(step) != SLURM_SUCCESS) {
+	if (io_init_tasks_stdio() != SLURM_SUCCESS) {
 		rc = ESLURMD_IO_ERROR;
 		goto claim;
 	}
