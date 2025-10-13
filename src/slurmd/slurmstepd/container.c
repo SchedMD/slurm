@@ -84,7 +84,7 @@ static char *run_argv[] = {
 static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'RunTimeStart never configured in oci.conf'; exit 1", NULL };
 
-static char *_get_config_path(stepd_step_rec_t *step);
+static char *_get_config_path(void);
 static char *_generate_spooldir(stepd_step_rec_t *step,
 				stepd_step_task_info_t *task);
 static void _generate_patterns(stepd_step_rec_t *step,
@@ -281,7 +281,7 @@ static int _load_config(stepd_step_rec_t *step)
 	step_container_t *c = step->container;
 	int rc;
 	buf_t *buffer = NULL;
-	char *path = _get_config_path(step);
+	char *path = _get_config_path();
 
 	xassert(c->magic == STEP_CONTAINER_MAGIC);
 	xassert(!c->config);
@@ -712,7 +712,7 @@ extern void container_task_init(stepd_step_task_info_t *task)
 		      __func__, c->task_spool_dir, slurm_strerror(rc));
 }
 
-static char *_get_config_path(stepd_step_rec_t *step)
+static char *_get_config_path(void)
 {
 	step_container_t *c = step->container;
 	char *path = NULL;
