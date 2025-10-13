@@ -241,7 +241,7 @@ _domain_socket_destroy(int fd)
 }
 
 /* Wait for the job to be running (pids added) before continuing. */
-static int _wait_for_job_running(stepd_step_rec_t *step)
+static int _wait_for_job_running(void)
 {
 	struct timespec ts = {0, 0};
 	int count = 0;
@@ -874,7 +874,7 @@ static int _handle_signal_container(int fd, uid_t uid, pid_t remote_pid)
 	/*
 	 * Sanity checks
 	 */
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -1084,7 +1084,7 @@ static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 	/*
 	 * Sanity checks
 	 */
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -1777,7 +1777,7 @@ static int _handle_suspend(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
@@ -1857,7 +1857,7 @@ static int _handle_resume(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("%s for %ps uid:%u", __func__, &step->step_id, uid);
 
-	if ((errnum = _wait_for_job_running(step)) != SLURM_SUCCESS) {
+	if ((errnum = _wait_for_job_running()) != SLURM_SUCCESS) {
 		rc = -1;
 		goto done;
 	}
