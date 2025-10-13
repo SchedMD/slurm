@@ -2355,8 +2355,154 @@ extern void join_extern_threads()
 	debug2("Done joining extern pid threads");
 }
 
+typedef struct {
+	uint16_t msg_type;
+	int (*func)(int fd, uid_t uid, pid_t remote_pid);
+} slurmstepd_rpc_t;
+
+slurmstepd_rpc_t stepd_rpcs[] = {
+	{
+		.msg_type = REQUEST_SIGNAL_CONTAINER,
+		.func = _handle_signal_container,
+	},
+	{
+		.msg_type = REQUEST_STATE,
+		.func = _handle_state,
+	},
+	{
+		.msg_type = REQUEST_STEP_MEM_LIMITS,
+		.func = _handle_mem_limits,
+	},
+	{
+		.msg_type = REQUEST_STEP_UID,
+		.func = _handle_uid,
+	},
+	{
+		.msg_type = REQUEST_STEP_NODEID,
+		.func = _handle_nodeid,
+	},
+	{
+		.msg_type = REQUEST_ATTACH,
+		.func = _handle_attach,
+	},
+	{
+		.msg_type = REQUEST_PID_IN_CONTAINER,
+		.func = _handle_pid_in_container,
+	},
+	{
+		.msg_type = REQUEST_DAEMON_PID,
+		.func = _handle_daemon_pid,
+	},
+	{
+		.msg_type = REQUEST_STEP_SUSPEND,
+		.func = _handle_suspend,
+	},
+	{
+		.msg_type = REQUEST_STEP_RESUME,
+		.func = _handle_resume,
+	},
+	{
+		.msg_type = REQUEST_STEP_TERMINATE,
+		.func = _handle_terminate,
+	},
+	{
+		.msg_type = REQUEST_STEP_COMPLETION,
+		.func = _handle_completion,
+	},
+	{
+		.msg_type = REQUEST_STEP_TASK_INFO,
+		.func = _handle_task_info,
+	},
+	{
+		.msg_type = REQUEST_STEP_STAT,
+		.func = _handle_stat_jobacct,
+	},
+	{
+		.msg_type = REQUEST_STEP_LIST_PIDS,
+		.func = _handle_list_pids,
+	},
+	{
+		.msg_type = REQUEST_STEP_RECONFIGURE,
+		.func = _handle_reconfig,
+	},
+	{
+		.msg_type = REQUEST_JOB_STEP_CREATE,
+		.func = _handle_step_create,
+	},
+	{
+		.msg_type = REQUEST_JOB_STEP_INFO,
+		.func = _handle_job_step_get_info,
+	},
+	{
+		.msg_type = REQUEST_JOB_NOTIFY,
+		.func = _handle_notify_job,
+	},
+	{
+		.msg_type = REQUEST_ADD_EXTERN_PID,
+		.func = _handle_add_extern_pid,
+	},
+	{
+		.msg_type = REQUEST_X11_DISPLAY,
+		.func = _handle_x11_display,
+	},
+	{
+		.msg_type = REQUEST_GETPW,
+		.func = _handle_getpw,
+	},
+	{
+		.msg_type = REQUEST_GETGR,
+		.func = _handle_getgr,
+	},
+	{
+		.msg_type = REQUEST_GET_NS_FD,
+		.func = _handle_get_ns_fd,
+	},
+	{
+		.msg_type = REQUEST_GETHOST,
+		.func = _handle_gethost,
+	},
+	{
+		.msg_type = REQUEST_CANCEL_JOB_STEP,
+		.func = _handle_cancel_job_step,
+	},
+	{
+		.msg_type = SRUN_JOB_COMPLETE,
+		.func = _handle_srun_job_complete,
+	},
+	{
+		.msg_type = SRUN_NODE_FAIL,
+		.func = _handle_srun_node_fail,
+	},
+	{
+		.msg_type = SRUN_TIMEOUT,
+		.func = _handle_srun_timeout,
+	},
+	{
+		.msg_type = REQUEST_UPDATE_JOB_STEP,
+		.func = _handle_update_step,
+	},
+	{
+		.msg_type = REQUEST_STEP_LAYOUT,
+		.func = _handle_step_layout,
+	},
+	{
+		.msg_type = REQUEST_JOB_SBCAST_CRED,
+		.func = _handle_job_sbcast_cred,
+	},
+	{
+		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
+		.func = _handle_het_job_alloc_info,
+	},
+	{
+		/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
 static int _handle_request(int fd, uid_t uid, pid_t remote_pid)
 {
+	slurmstepd_rpc_t *this_rpc = NULL;
 	int rc = SLURM_SUCCESS;
 	int req;
 
@@ -2372,112 +2518,15 @@ static int _handle_request(int fd, uid_t uid, pid_t remote_pid)
 
 	debug("Handling %s", rpc_num2string(req));
 
-	switch (req) {
-	case REQUEST_SIGNAL_CONTAINER:
-		rc = _handle_signal_container(fd, uid, remote_pid);
-		break;
-	case REQUEST_STATE:
-		rc = _handle_state(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_MEM_LIMITS:
-		rc = _handle_mem_limits(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_UID:
-		rc = _handle_uid(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_NODEID:
-		rc = _handle_nodeid(fd, uid, remote_pid);
-		break;
-	case REQUEST_ATTACH:
-		rc = _handle_attach(fd, uid, remote_pid);
-		break;
-	case REQUEST_PID_IN_CONTAINER:
-		rc = _handle_pid_in_container(fd, uid, remote_pid);
-		break;
-	case REQUEST_DAEMON_PID:
-		rc = _handle_daemon_pid(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_SUSPEND:
-		rc = _handle_suspend(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_RESUME:
-		rc = _handle_resume(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_TERMINATE:
-		rc = _handle_terminate(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_COMPLETION:
-		rc = _handle_completion(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_TASK_INFO:
-		rc = _handle_task_info(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_STAT:
-		rc = _handle_stat_jobacct(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_LIST_PIDS:
-		rc = _handle_list_pids(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_RECONFIGURE:
-		rc = _handle_reconfig(fd, uid, remote_pid);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		rc = _handle_step_create(fd, uid, remote_pid);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		rc = _handle_job_step_get_info(fd, uid, remote_pid);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		rc = _handle_notify_job(fd, uid, remote_pid);
-		break;
-	case REQUEST_ADD_EXTERN_PID:
-		rc = _handle_add_extern_pid(fd, uid, remote_pid);
-		break;
-	case REQUEST_X11_DISPLAY:
-		rc = _handle_x11_display(fd, uid, remote_pid);
-		break;
-	case REQUEST_GETPW:
-		rc = _handle_getpw(fd, uid, remote_pid);
-		break;
-	case REQUEST_GETGR:
-		rc = _handle_getgr(fd, uid, remote_pid);
-		break;
-	case REQUEST_GET_NS_FD:
-		rc = _handle_get_ns_fd(fd, uid, remote_pid);
-		break;
-	case REQUEST_GETHOST:
-		rc = _handle_gethost(fd, uid, remote_pid);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		rc = _handle_cancel_job_step(fd, uid, remote_pid);
-		break;
-	case SRUN_JOB_COMPLETE:
-		_handle_srun_job_complete(fd, uid, remote_pid);
-		break;
-	case SRUN_NODE_FAIL:
-		_handle_srun_node_fail(fd, uid, remote_pid);
-		break;
-	case SRUN_TIMEOUT:
-		_handle_srun_timeout(fd, uid, remote_pid);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		rc = _handle_update_step(fd, uid, remote_pid);
-		break;
-	case REQUEST_STEP_LAYOUT:
-		_handle_step_layout(fd, uid, remote_pid);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_handle_job_sbcast_cred(fd, uid, remote_pid);
-		break;
-	case REQUEST_HET_JOB_ALLOC_INFO:
-		_handle_het_job_alloc_info(fd, uid, remote_pid);
-		break;
-	default:
-		error("Unrecognized request: %d", req);
-		rc = SLURM_ERROR;
-		break;
+	for (this_rpc = stepd_rpcs; this_rpc->msg_type; this_rpc++) {
+		if (this_rpc->msg_type == req)
+			break;
 	}
 
-	debug3("%s: leaving with rc: %d", __func__, rc);
-	return rc;
+	if (!this_rpc->msg_type) {
+		error("Unrecognized request: %d", req);
+		return SLURM_ERROR;
+	}
+
+	return this_rpc->func(fd, uid, remote_pid);
 }
