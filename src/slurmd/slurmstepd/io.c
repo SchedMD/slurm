@@ -1306,7 +1306,7 @@ extern void io_thread_start(void)
 	slurm_mutex_unlock(&step->io_mutex);
 }
 
-static void _shrink_msg_cache(list_t *cache, stepd_step_rec_t *step)
+static void _shrink_msg_cache(list_t *cache)
 {
 	struct io_buf *msg;
 	int over = 0;
@@ -1434,7 +1434,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 		/* Update the outgoing message cache */
 		list_enqueue(out->step->outgoing_cache, msg);
 		msg->ref_count++;
-		_shrink_msg_cache(out->step->outgoing_cache, out->step);
+		_shrink_msg_cache(out->step->outgoing_cache);
 	}
 }
 
