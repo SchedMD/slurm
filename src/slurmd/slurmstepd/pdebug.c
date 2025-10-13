@@ -47,7 +47,24 @@
 #include <sys/types.h>
 #include <signal.h>
 
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif
+
 #include "src/slurmd/slurmstepd/slurmstepd.h"
+
+#ifdef HAVE_PTRACE64
+#define _PTRACE(r, p, a, d) \
+	ptrace64((r), (long long) (p), (long long) (a), (d), NULL)
+#else
+#ifdef PTRACE_FIVE_ARGS
+#define _PTRACE(r, p, a, d) ptrace((r), (p), (a), (d), NULL)
+#elif defined BSD
+#define _PTRACE(r, p, a, d) ptrace((r), (p), (a), (d))
+#else
+#define _PTRACE(r, p, a, d) ptrace((r), (p), (a), (void *) (d))
+#endif
+#endif
 
 /*
  * Prepare task for parallel debugger attach

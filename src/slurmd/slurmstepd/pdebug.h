@@ -40,15 +40,7 @@
 #ifndef _PDEBUG_H
 #define _PDEBUG_H
 
-#include "config.h"
-
-#include <sys/param.h>
-#include <sys/wait.h>
 #include <unistd.h>
-
-#ifdef HAVE_SYS_PTRACE_H
-#  include <sys/ptrace.h>
-#endif
 
 /*
  * Stop current task on exec() for connection from a parallel debugger
@@ -65,17 +57,5 @@ extern int pdebug_trace_process(pid_t pid);
  * Wake tasks currently stopped for parallel debugger attach
  */
 extern void pdebug_wake_process(pid_t pid);
-
-#ifdef HAVE_PTRACE64
-#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
-#else
-#  ifdef PTRACE_FIVE_ARGS
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
-#  elif defined BSD
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d))
-#  else
-#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
-#  endif
-#endif
 
 #endif
