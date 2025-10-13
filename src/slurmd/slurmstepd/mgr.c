@@ -1210,7 +1210,7 @@ endit:
 	return rc;
 }
 
-static int _run_prolog_epilog(stepd_step_rec_t *step, bool is_epilog)
+static int _run_prolog_epilog(bool is_epilog)
 {
 	int rc = SLURM_SUCCESS;
 	job_env_t job_env;
@@ -1427,7 +1427,7 @@ x11_fail:
 		error("spank extern task post-fork failed");
 		rc = SLURM_ERROR;
 	} else if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
-		rc = _run_prolog_epilog(step, false);
+		rc = _run_prolog_epilog(false);
 	}
 
 	if (rc != SLURM_SUCCESS) {
@@ -1548,7 +1548,7 @@ fail1:
 		/* Force all other steps to end before epilog starts */
 		pause_for_job_completion(jobid, 0, true);
 
-		int epilog_rc = _run_prolog_epilog(step, true);
+		int epilog_rc = _run_prolog_epilog(true);
 		epilog_complete(step->step_id.job_id, step->node_list,
 				epilog_rc);
 	}
