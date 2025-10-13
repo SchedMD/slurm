@@ -11635,12 +11635,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg,
-				   buf_t *buffer, uint16_t protocol_version)
+static void _pack_ping_slurmd_resp(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	ping_slurmd_resp_msg_t *msg = smsg->data;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->cpu_load, buffer);
 		pack64(msg->free_mem, buffer);
 	}
@@ -14001,8 +14000,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_forward_data_msg(msg, buffer);
 		break;
 	case RESPONSE_PING_SLURMD:
-		_pack_ping_slurmd_resp((ping_slurmd_resp_msg_t *)msg->data,
-				       buffer, msg->protocol_version);
+		_pack_ping_slurmd_resp(msg, buffer);
 		break;
 	case REQUEST_LICENSE_INFO:
 		_pack_license_info_request_msg((license_info_request_msg_t *)
