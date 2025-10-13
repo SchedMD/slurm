@@ -167,7 +167,7 @@ static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int, uint16_t);
 static int _fork_all_tasks(bool *io_initialized);
 static int _become_user(struct priv_state *ps);
-static void  _set_prio_process (stepd_step_rec_t *step);
+static void _set_prio_process(void);
 static int  _setup_normal_io(stepd_step_rec_t *step);
 static void _send_launch_resp(stepd_step_rec_t *step, int rc);
 static int  _slurmd_job_log_init(stepd_step_rec_t *step);
@@ -2263,7 +2263,7 @@ static int _fork_all_tasks(bool *io_initialized)
 			 * closing jobacct files here causes deadlock */
 
 			if (slurm_conf.propagate_prio_process)
-				_set_prio_process(step);
+				_set_prio_process();
 
 			/*
 			 * Reclaim privileges for the child and call any plugin
@@ -3061,7 +3061,7 @@ _slurmd_job_log_init(stepd_step_rec_t *step)
  * the process that launched the job on the submit node.
  * In support of the "PropagatePrioProcess" config keyword.
  */
-static void _set_prio_process (stepd_step_rec_t *step)
+static void _set_prio_process(void)
 {
 	char *env_name = "SLURM_PRIO_PROCESS";
 	char *env_val;
