@@ -50,7 +50,7 @@
 #  include <sys/ptrace.h>
 #endif
 
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 
 /*
  * Stop current task on exec() for connection from a parallel debugger
@@ -61,7 +61,7 @@ void pdebug_stop_current(stepd_step_rec_t *step);
  * Prepare task for parallel debugger attach
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
-int pdebug_trace_process(stepd_step_rec_t *step, pid_t pid);
+extern int pdebug_trace_process(pid_t pid);
 
 /*
  * Wake tasks currently stopped for parallel debugger attach

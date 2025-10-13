@@ -52,8 +52,7 @@
  * Prepare task for parallel debugger attach
  * Returns SLURM_SUCCESS or SLURM_ERROR.
  */
-int
-pdebug_trace_process(stepd_step_rec_t *step, pid_t pid)
+extern int pdebug_trace_process(pid_t pid)
 {
 	/*  If task to be debugged, wait for it to stop via
 	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and

@@ -2434,8 +2434,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 		 * Prepare process for attach by parallel debugger
 		 * (if specified and able)
 		 */
-		if (pdebug_trace_process(step, step->task[i]->pid)
-		    == SLURM_ERROR) {
+		if (pdebug_trace_process(step->task[i]->pid) == SLURM_ERROR) {
 			rc = SLURM_ERROR;
 			goto fail2;
 		}
