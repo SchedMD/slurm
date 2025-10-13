@@ -523,7 +523,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	}
 
 	if (!only_mem && step->batch)
-		batch_finish(step, rc); /* sends batch complete message */
+		batch_finish(rc); /* sends batch complete message */
 
 	/*
 	 * Call auth_setuid_lock after sending the batch_finish message as in

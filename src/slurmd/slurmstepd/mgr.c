@@ -351,8 +351,7 @@ static char *_batch_script_path(stepd_step_rec_t *step)
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
-extern void
-batch_finish(stepd_step_rec_t *step, int rc)
+extern void batch_finish(int rc)
 {
 	char *script = _batch_script_path(step);
 	step_complete.step_rc = _get_exit_code(step);

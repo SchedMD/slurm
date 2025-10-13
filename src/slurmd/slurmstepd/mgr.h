@@ -47,7 +47,7 @@
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
-void batch_finish(stepd_step_rec_t *step, int rc);
+extern void batch_finish(int rc);
 
 /*
  * Initialize a stepd_step_rec_t structure for a launch tasks
