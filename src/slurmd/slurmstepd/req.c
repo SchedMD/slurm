@@ -107,12 +107,6 @@ static pthread_t *extern_threads = NULL;
 static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
 
-typedef struct {
-	stepd_step_rec_t *step;
-	pid_t pid;
-} extern_pid_t;
-
-
 pthread_mutex_t stepmgr_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -1304,11 +1298,7 @@ static void _block_on_pid(pid_t pid)
  */
 static void *_wait_extern_pid(void *args)
 {
-	extern_pid_t *extern_pid = args;
-
-	stepd_step_rec_t *step = extern_pid->step;
-	pid_t pid = extern_pid->pid;
-
+	pid_t pid = *(pid_t *) args;
 	jobacctinfo_t *jobacct = NULL;
 	pid_t *pids = NULL;
 	int npids = 0, i;
@@ -1318,7 +1308,7 @@ static void *_wait_extern_pid(void *args)
 	char sbuf[256], *tmp, state[1];
 	int num_read, ppid;
 
-	xfree(extern_pid);
+	xfree(args);
 
 	//info("waiting on pid %d", pid);
 	_block_on_pid(pid);
@@ -1385,7 +1375,7 @@ end:
 	return NULL;
 }
 
-static void _wait_extern_thr_create(extern_pid_t *extern_pid)
+static void _wait_extern_thr_create(pid_t *extern_pid)
 {
 	/* Lock as several RPC can write to the same variable. */
 	slurm_mutex_lock(&extern_thread_lock);
@@ -1398,7 +1388,7 @@ static void _wait_extern_thr_create(extern_pid_t *extern_pid)
 
 static int _handle_add_extern_pid_internal(pid_t pid)
 {
-	extern_pid_t *extern_pid;
+	pid_t *extern_pid;
 	jobacct_id_t jobacct_id;
 
 	if (step->step_id.step_id != SLURM_EXTERN_CONT) {
@@ -1409,9 +1399,8 @@ static int _handle_add_extern_pid_internal(pid_t pid)
 
 	debug("%s: for %ps, pid %d", __func__, &step->step_id, pid);
 
-	extern_pid = xmalloc(sizeof(extern_pid_t));
-	extern_pid->step = step;
-	extern_pid->pid = pid;
+	extern_pid = xmalloc(sizeof(*extern_pid));
+	*extern_pid = pid;
 
 	/* track pid: add outside of the below thread so that the pam module
 	 * waits until the parent pid is added, before letting the parent spawn
