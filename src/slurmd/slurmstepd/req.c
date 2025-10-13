@@ -108,11 +108,6 @@ static pthread_t *extern_threads = NULL;
 static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
 
-struct request_params {
-	int fd;
-	stepd_step_rec_t *step;
-};
-
 typedef struct {
 	stepd_step_rec_t *step;
 	pid_t pid;
@@ -355,11 +350,9 @@ _msg_socket_readable(eio_obj_t *obj)
 
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 {
-	stepd_step_rec_t *step = obj->arg;
-	int fd;
+	int fd, *param = NULL;
 	struct sockaddr_un addr;
 	int len = sizeof(addr);
-	struct request_params *param = NULL;
 
 	debug3("Called _msg_socket_accept");
 
@@ -389,9 +382,8 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 	fd_set_blocking(fd);
 
-	param = xmalloc(sizeof(struct request_params));
-	param->fd = fd;
-	param->step = step;
+	param = xmalloc(sizeof(int));
+	*param = fd;
 	slurm_thread_create_detached(_handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
@@ -400,8 +392,7 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 static void *_handle_accept(void *arg)
 {
-	struct request_params *param = arg;
-	int fd = param->fd;
+	int fd = *(int *) arg;
 	int req;
 	int client_protocol_ver;
 	buf_t *buffer = NULL;
