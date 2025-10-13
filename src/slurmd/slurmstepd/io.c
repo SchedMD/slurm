@@ -213,7 +213,7 @@ static void *_window_manager(void *arg);
  **********************************************************************/
 static void *_io_thr(void *);
 static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun,
-			     stepd_step_rec_t *step, bool init);
+			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
 					  stepd_step_rec_t *step, cbuf_t *cbuf);
@@ -1669,7 +1669,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
 	sock = conn_g_get_fd(conn);
 
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, conn, srun, step, true);
+	_send_io_init_msg(sock, conn, srun, true);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1727,7 +1727,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 	sock = conn_g_get_fd(conn);
 
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, conn, srun, step, false);
+	_send_io_init_msg(sock, conn, srun, false);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1755,8 +1755,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun,
-			     stepd_step_rec_t *step, bool init)
+static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun, bool init)
 {
 	io_init_msg_t msg;
 
