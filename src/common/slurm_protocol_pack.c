@@ -11668,14 +11668,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
-			     uint16_t protocol_version)
+static void _pack_file_bcast(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	file_bcast_msg_t *msg = smsg->data;
 
 	grow_buf(buffer,  msg->block_len);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->block_no, buffer);
 		pack16(msg->compress, buffer);
 		pack16(msg->flags, buffer);
@@ -11695,7 +11694,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
 		pack64(msg->block_offset, buffer);
 		pack64(msg->file_size, buffer);
 		packmem(msg->block, msg->block_len, buffer);
-		pack_sbcast_cred(msg->cred, buffer, protocol_version);
+		pack_sbcast_cred(msg->cred, buffer, smsg->protocol_version);
 	}
 }
 
@@ -13941,8 +13940,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_priority_factors_response_msg(msg, buffer);
 		break;
 	case REQUEST_FILE_BCAST:
-		_pack_file_bcast((file_bcast_msg_t *) msg->data, buffer,
-				 msg->protocol_version);
+		_pack_file_bcast(msg, buffer);
 		break;
 	case PMI_KVS_PUT_REQ:
 	case PMI_KVS_GET_RESP:
