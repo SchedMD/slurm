@@ -7718,15 +7718,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* _pack_job_desc_list_msg
- * packs a list of job_desc structs
- * IN job_req_list - pointer to the job descriptor to pack
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-static void _pack_job_desc_list_msg(list_t *job_req_list, buf_t *buffer,
-				    uint16_t protocol_version)
+static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	list_t *job_req_list = smsg->data;
 	job_desc_msg_t *req;
 	list_itr_t *iter;
 	uint16_t cnt = 0;
@@ -7739,7 +7733,7 @@ static void _pack_job_desc_list_msg(list_t *job_req_list, buf_t *buffer,
 
 	iter = list_iterator_create(job_req_list);
 	while ((req = list_next(iter))) {
-		_pack_job_desc_msg(req, buffer, protocol_version);
+		_pack_job_desc_msg(req, buffer, smsg->protocol_version);
 	}
 	list_iterator_destroy(iter);
 }
@@ -13081,9 +13075,13 @@ static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
 	crontab_update_request_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		slurm_msg_t msg_wrapper = {
+			.data = msg->jobs,
+			.protocol_version = smsg->protocol_version,
+		};
+
 		packstr(msg->crontab, buffer);
-		_pack_job_desc_list_msg(msg->jobs, buffer,
-					smsg->protocol_version);
+		_pack_job_desc_list_msg(&msg_wrapper, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
 	}
@@ -13635,8 +13633,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		_pack_job_desc_list_msg(msg->data, buffer,
-					msg->protocol_version);
+		_pack_job_desc_list_msg(msg, buffer);
 		break;
 	case RESPONSE_HET_JOB_ALLOCATION:
 		_pack_job_info_list_msg(msg, buffer);
