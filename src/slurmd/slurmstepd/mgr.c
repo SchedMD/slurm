@@ -165,7 +165,7 @@ typedef struct {
  */
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int, uint16_t);
-static int  _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized);
+static int _fork_all_tasks(bool *io_initialized);
 static int  _become_user(stepd_step_rec_t *step, struct priv_state *ps);
 static void  _set_prio_process (stepd_step_rec_t *step);
 static int  _setup_normal_io(stepd_step_rec_t *step);
@@ -1687,7 +1687,7 @@ extern int job_manager(void)
 	 * successful.  Only check for < 0 here since other slurm
 	 * error codes could come that are more descriptive.
 	 */
-	if ((rc = _fork_all_tasks(step, &io_initialized)) < 0) {
+	if ((rc = _fork_all_tasks(&io_initialized)) < 0) {
 		debug("_fork_all_tasks failed");
 		rc = ESLURMD_EXECVE_FAILED;
 		goto fail2;
@@ -2089,8 +2089,7 @@ static void prepare_stdio (stepd_step_rec_t *step, stepd_step_task_info_t *task)
 /*
  * fork and exec N tasks
  */
-static int
-_fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
+static int _fork_all_tasks(bool *io_initialized)
 {
 	int rc = SLURM_SUCCESS;
 	int i;
