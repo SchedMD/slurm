@@ -11928,16 +11928,17 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_kvs_get(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	kvs_get_msg_t *msg_ptr = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32((uint32_t) msg_ptr->task_id, buffer);
 		pack32((uint32_t) msg_ptr->size, buffer);
 		pack16((uint16_t) msg_ptr->port, buffer);
 		packstr(msg_ptr->hostname, buffer);
 		packstr(msg_ptr->tls_cert, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32((uint32_t) msg_ptr->task_id, buffer);
 		pack32((uint32_t) msg_ptr->size, buffer);
 		pack16((uint16_t) msg_ptr->port, buffer);
@@ -13945,8 +13946,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_kvs_data(msg, buffer);
 		break;
 	case PMI_KVS_GET_REQ:
-		_pack_kvs_get((kvs_get_msg_t *) msg->data, buffer,
-			      msg->protocol_version);
+		_pack_kvs_get(msg, buffer);
 		break;
 	case RESPONSE_FORWARD_FAILED:
 		break;
