@@ -64,6 +64,8 @@ typedef struct {
 	jobacctinfo_t *jobacct;
 } step_complete_t;
 
+extern stepd_step_rec_t *step;
+
 extern step_complete_t step_complete;
 
 extern slurmd_conf_t *conf;
