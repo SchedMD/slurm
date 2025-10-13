@@ -87,8 +87,7 @@
 #include "src/stepmgr/stepmgr.h"
 
 static void *_handle_accept(void *arg);
-static int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid,
-			   pid_t remote_pid);
+static int _handle_request(int fd, uid_t uid, pid_t remote_pid);
 static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *step, pid_t pid);
 static bool _msg_socket_readable(eio_obj_t *obj);
@@ -432,7 +431,7 @@ static void *_handle_accept(void *arg)
 	safe_write(fd, &rc, sizeof(int));
 
 	while (1) {
-		rc = _handle_request(fd, step, uid, remote_pid);
+		rc = _handle_request(fd, uid, remote_pid);
 		if (rc != SLURM_SUCCESS)
 			break;
 	}
@@ -2374,8 +2373,7 @@ extern void join_extern_threads()
 	debug2("Done joining extern pid threads");
 }
 
-static int _handle_request(int fd, stepd_step_rec_t *step, uid_t uid,
-			   pid_t remote_pid)
+static int _handle_request(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc = SLURM_SUCCESS;
 	int req;
