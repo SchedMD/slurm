@@ -268,6 +268,9 @@ extern int get_sched_log_level(void);
 #define STEP_ID_FLAG_NO_PREFIX 0x0004
 #define STEP_ID_FLAG_SPACE     0x0008
 
+/* Print slurm_step_id_t as "JobId=... SLUID=..." */
+extern char *log_build_job_id_str(slurm_step_id_t *step_id, char *buf,
+				  int buf_size);
 /*
  * log_build_step_id_str() - print a slurm_step_id_t as " StepId=...", with
  * Batch and Extern used as appropriate.

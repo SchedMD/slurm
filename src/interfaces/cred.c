@@ -198,6 +198,8 @@ extern slurm_cred_t *slurm_cred_create(slurm_cred_arg_t *arg, bool sign_it,
 	xassert(arg);
 	xassert(g_context);
 
+	debug("%s: creating credential for %pI", __func__, &arg->step_id);
+
 	if (arg->uid == SLURM_AUTH_NOBODY) {
 		error("%s: refusing to create job %u credential for invalid user nobody",
 		      __func__, arg->step_id.job_id);

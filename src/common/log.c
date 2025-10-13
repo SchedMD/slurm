@@ -73,6 +73,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xmalloc.h"
@@ -881,6 +882,7 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 				case 'A':
 				case 'd':
 				case 'D':
+				case 'I':
 				case 'J':
 				case 's':
 				case 'S':
@@ -978,6 +980,30 @@ extern char *vxstrfmt(const char *fmt, va_list ap)
 						&intermediate_pos,
 						_print_data_t(
 							d,
+							substitute_on_stack,
+							sizeof(substitute_on_stack)));
+					va_end(ap_copy);
+					break;
+				}
+				/*
+				 * "%pI" => "JobID=... SLUID=..." on a
+				 * slurm_step_id_t
+				 */
+				case 'I':
+				{
+					void *ptr = NULL;
+					slurm_step_id_t *step_id = NULL;
+					va_list ap_copy;
+
+					va_copy(ap_copy, ap);
+					for (int i = 0; i < cnt; i++)
+						ptr = va_arg(ap_copy, void *);
+					step_id = ptr;
+					xstrcatat(
+						intermediate_fmt,
+						&intermediate_pos,
+						log_build_job_id_str(
+							step_id,
 							substitute_on_stack,
 							sizeof(substitute_on_stack)));
 					va_end(ap_copy);
@@ -1630,6 +1656,34 @@ extern int get_log_level(void)
 extern int get_sched_log_level(void)
 {
 	return MAX(highest_log_level, highest_sched_log_level);
+}
+
+extern char *log_build_job_id_str(slurm_step_id_t *step_id, char *buf,
+				  int buf_size)
+{
+	int pos = 0;
+
+	xassert(buf);
+	xassert(buf_size > 1);
+
+	buf[pos] = '\0';
+
+	if (!step_id || !step_id->job_id)
+		pos += snprintf(buf + pos, buf_size - pos,
+				"%%.0sJobId=Invalid SLUID=");
+	else
+		pos += snprintf(buf + pos, buf_size - pos,
+				"%%.0sJobId=%u SLUID=", step_id->job_id);
+
+	if (pos >= buf_size)
+		return buf;
+
+	if (!step_id || !step_id->sluid)
+		snprintf(buf + pos, buf_size - pos, "Invalid");
+	else
+		print_sluid(step_id->sluid, buf + pos, buf_size - pos);
+
+	return buf;
 }
 
 /*
