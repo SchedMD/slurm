@@ -122,8 +122,8 @@ static void _pattern_argv(char **buffer, char **offset, char **cmd_args)
 	}
 }
 
-static char *_generate_pattern(const char *pattern, stepd_step_rec_t *step,
-			       int task_id, char **cmd_args)
+static char *_generate_pattern(const char *pattern, int task_id,
+			       char **cmd_args)
 {
 	step_container_t *c = step->container;
 	char *buffer = NULL, *offset = NULL;
@@ -557,7 +557,7 @@ static int _generate_container_paths(stepd_step_rec_t *step)
 	/* generate step's spool_dir */
 	if (oci_conf->mount_spool_dir) {
 		c->mount_spool_dir =
-			_generate_pattern(oci_conf->mount_spool_dir, step,
+			_generate_pattern(oci_conf->mount_spool_dir,
 					  step->task[0]->id, NULL);
 	} else {
 		c->mount_spool_dir = _generate_spooldir(NULL);
@@ -679,7 +679,7 @@ static char *_generate_spooldir(stepd_step_task_info_t *task)
 	}
 
 	xassert((id != -1) || !xstrstr(pattern, "%t"));
-	path = _generate_pattern(pattern, step, id, argv);
+	path = _generate_pattern(pattern, id, argv);
 	debug3("%s: task:%d pattern:%s path:%s", __func__, id, pattern, path);
 	xfree(pattern);
 
@@ -1048,7 +1048,7 @@ static void _generate_patterns(stepd_step_task_info_t *task)
 		argv = task->argv;
 	}
 
-	gen = _generate_pattern(oci_conf->runtime_create, step, id, argv);
+	gen = _generate_pattern(oci_conf->runtime_create, id, argv);
 	if (gen) {
 		static bool set = false;
 		if (set)
@@ -1057,7 +1057,7 @@ static void _generate_patterns(stepd_step_task_info_t *task)
 		set = true;
 	}
 
-	gen = _generate_pattern(oci_conf->runtime_delete, step, id, argv);
+	gen = _generate_pattern(oci_conf->runtime_delete, id, argv);
 	if (gen) {
 		static bool set = false;
 		if (set)
@@ -1066,7 +1066,7 @@ static void _generate_patterns(stepd_step_task_info_t *task)
 		set = true;
 	}
 
-	gen = _generate_pattern(oci_conf->runtime_kill, step, id, argv);
+	gen = _generate_pattern(oci_conf->runtime_kill, id, argv);
 	if (gen) {
 		static bool set = false;
 		if (set)
@@ -1075,7 +1075,7 @@ static void _generate_patterns(stepd_step_task_info_t *task)
 		set = true;
 	}
 
-	gen = _generate_pattern(oci_conf->runtime_query, step, id, argv);
+	gen = _generate_pattern(oci_conf->runtime_query, id, argv);
 	if (gen) {
 		static bool set = false;
 		if (set)
@@ -1084,7 +1084,7 @@ static void _generate_patterns(stepd_step_task_info_t *task)
 		set = true;
 	}
 
-	gen = _generate_pattern(oci_conf->runtime_run, step, id, argv);
+	gen = _generate_pattern(oci_conf->runtime_run, id, argv);
 	if (gen) {
 		static bool set = false;
 		if (set)
@@ -1093,7 +1093,7 @@ static void _generate_patterns(stepd_step_task_info_t *task)
 		set = true;
 	}
 
-	gen = _generate_pattern(oci_conf->runtime_start, step, id, argv);
+	gen = _generate_pattern(oci_conf->runtime_start, id, argv);
 	if (gen) {
 		static bool set = false;
 		if (set)
