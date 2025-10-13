@@ -2357,6 +2357,8 @@ extern void join_extern_threads()
 
 typedef struct {
 	uint16_t msg_type;
+	bool from_slurmd;
+	bool from_job_owner;
 	int (*func)(int fd, uid_t uid, pid_t remote_pid);
 } slurmstepd_rpc_t;
 
@@ -2526,6 +2528,13 @@ static int _handle_request(int fd, uid_t uid, pid_t remote_pid)
 	if (!this_rpc->msg_type) {
 		error("Unrecognized request: %d", req);
 		return SLURM_ERROR;
+	}
+
+	if ((this_rpc->from_slurmd && !_slurm_authorized_user(uid)) ||
+	    (this_rpc->from_job_owner && (uid != step->uid) &&
+	     !_slurm_authorized_user(uid))) {
+		error("Rejecting %s from uid %u", rpc_num2string(req), uid);
+		return EPERM;
 	}
 
 	return this_rpc->func(fd, uid, remote_pid);
