@@ -173,7 +173,7 @@ shutdown:
 	return SLURM_ERROR;
 }
 
-extern int shutdown_x11_forward(stepd_step_rec_t *step)
+extern int shutdown_x11_forward(void)
 {
 	int rc = SLURM_SUCCESS;
 

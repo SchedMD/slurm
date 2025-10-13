@@ -1137,7 +1137,7 @@ static void _shutdown_x11_forward(stepd_step_rec_t *step)
 		return;
 	}
 
-	if (shutdown_x11_forward(step) != SLURM_SUCCESS)
+	if (shutdown_x11_forward() != SLURM_SUCCESS)
 		error("%s: x11 forward shutdown failed", __func__);
 
 	if (reclaim_privileges(&sprivs) < 0)
