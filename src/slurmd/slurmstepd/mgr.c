@@ -171,7 +171,7 @@ static void _set_prio_process(void);
 static int _setup_normal_io(void);
 static void _send_launch_resp(int rc);
 static int _slurmd_job_log_init(void);
-static void _wait_for_io(stepd_step_rec_t *step);
+static void _wait_for_io(void);
 static int  _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n,
 			   int status);
 static void _wait_for_all_tasks(stepd_step_rec_t *step);
@@ -1769,7 +1769,7 @@ fail2:
 	 * Wait for io thread to complete (if there is one)
 	 */
 	if (!step->batch && io_initialized)
-		_wait_for_io(step);
+		_wait_for_io();
 
 	/*
 	 * Warn task plugin that the user's step have terminated
@@ -2703,11 +2703,7 @@ _wait_for_all_tasks(stepd_step_rec_t *step)
 	}
 }
 
-/*
- * Wait for IO
- */
-static void
-_wait_for_io(stepd_step_rec_t *step)
+static void _wait_for_io(void)
 {
 	debug("Waiting for IO");
 	io_close_all();
