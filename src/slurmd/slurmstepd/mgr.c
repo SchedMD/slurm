@@ -198,14 +198,7 @@ extern int mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
 				  slurm_addr_t *cli, uint16_t protocol_version)
 {
 	if (stepd_step_rec_create(msg, protocol_version)) {
-		/*
-		 * We want to send back to the slurmd the reason we
-		 * failed so keep track of it since errno could be
-		 * reset in _send_launch_failure.
-		 */
-		int fail = errno;
 		_send_launch_failure(msg, cli, errno, protocol_version);
-		errno = fail;
 		return SLURM_ERROR;
 	}
 
