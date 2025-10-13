@@ -12134,13 +12134,13 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_set_debug_flags_msg(set_debug_flags_msg_t * msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_set_debug_flags_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	set_debug_flags_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack64(msg->debug_flags_minus, buffer);
-		pack64(msg->debug_flags_plus,  buffer);
+		pack64(msg->debug_flags_plus, buffer);
 	}
 }
 
@@ -13961,9 +13961,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_notify(msg, buffer);
 		break;
 	case REQUEST_SET_DEBUG_FLAGS:
-		_pack_set_debug_flags_msg(
-			(set_debug_flags_msg_t *)msg->data, buffer,
-			msg->protocol_version);
+		_pack_set_debug_flags_msg(msg, buffer);
 		break;
 	case REQUEST_SET_DEBUG_LEVEL:
 	case REQUEST_SET_SCHEDLOG_LEVEL:
