@@ -287,7 +287,7 @@ static void _local_jobacctinfo_aggregate(
 /*
  * Find the maximum task return code
  */
-static uint32_t _get_exit_code(stepd_step_rec_t *step)
+static uint32_t _get_exit_code(void)
 {
 	uint32_t i;
 	uint32_t step_rc = NO_VAL;
@@ -350,7 +350,7 @@ static char *_batch_script_path(stepd_step_rec_t *step)
 extern void batch_finish(int rc)
 {
 	char *script = _batch_script_path(step);
-	step_complete.step_rc = _get_exit_code(step);
+	step_complete.step_rc = _get_exit_code();
 
 	if (unlink(script) < 0)
 		error("unlink(%s): %m", script);
@@ -677,7 +677,7 @@ extern void stepd_wait_for_children_slurmstepd(void)
 		       step_complete.rank);
 	}
 
-	step_complete.step_rc = _get_exit_code(step);
+	step_complete.step_rc = _get_exit_code();
 	step_complete.wait_children = false;
 
 	slurm_mutex_unlock(&step_complete.lock);
