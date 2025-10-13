@@ -95,8 +95,7 @@
  * Static prototype definitions.
  */
 static void _make_tmpdir(void);
-static int   _run_script_and_set_env(const char *name, const char *path,
-				     stepd_step_rec_t *step);
+static int _run_script_and_set_env(const char *name, const char *path);
 static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
 
 /*
@@ -183,9 +182,7 @@ rwfail:		 /* process rest of script output */
  *	if prolog
  * RET the exit status of the script or 1 on generic error and 0 on success
  */
-static int
-_run_script_and_set_env(const char *name, const char *path,
-			stepd_step_rec_t *step)
+static int _run_script_and_set_env(const char *name, const char *path)
 {
 	int status = 0, rc = 0;
 	char *argv[2];
@@ -459,7 +456,7 @@ extern void exec_task(int local_proc_id)
 
 	if (slurm_conf.task_prolog) {
 		status = _run_script_and_set_env("slurm task_prolog",
-						 slurm_conf.task_prolog, step);
+						 slurm_conf.task_prolog);
 		if (status) {
 			error("TaskProlog failed status=%d", status);
 			_exit(status);
@@ -467,7 +464,7 @@ extern void exec_task(int local_proc_id)
 	}
 	if (step->task_prolog) {
 		status = _run_script_and_set_env("user task_prolog",
-						 step->task_prolog, step);
+						 step->task_prolog);
 		if (status) {
 			error("--task-prolog failed status=%d", status);
 			_exit(status);
