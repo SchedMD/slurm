@@ -305,8 +305,7 @@ cleanup:
 	return rc;
 }
 
-static int _write_config(const stepd_step_rec_t *step, const char *jconfig,
-			 const char *out)
+static int _write_config(const char *jconfig, const char *out)
 {
 	int outfd = -1;
 	int rc = SLURM_SUCCESS;
@@ -1149,7 +1148,7 @@ extern void container_run(stepd_step_task_info_t *task)
 
 		FREE_NULL_DATA(c->config);
 
-		if ((rc = _write_config(step, jconfig, out)))
+		if ((rc = _write_config(jconfig, out)))
 			fatal("%s: unable to write %s: %s",
 			      __func__, jconfig, slurm_strerror(rc));
 
