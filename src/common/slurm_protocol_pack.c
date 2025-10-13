@@ -12191,10 +12191,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_suspend_exc_update_msg(suspend_exc_update_msg_t *msg,
-				         buf_t *buffer,
-					 uint16_t protocol_version)
+static void _pack_suspend_exc_update_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	suspend_exc_update_msg_t *msg = smsg->data;
+
 	packstr(msg->update_str, buffer);
 	pack32(msg->mode, buffer);
 }
@@ -13970,9 +13970,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_SET_SUSPEND_EXC_NODES:
 	case REQUEST_SET_SUSPEND_EXC_PARTS:
 	case REQUEST_SET_SUSPEND_EXC_STATES:
-		_pack_suspend_exc_update_msg(
-			(suspend_exc_update_msg_t *) msg->data, buffer,
-			msg->protocol_version);
+		_pack_suspend_exc_update_msg(msg, buffer);
 		break;
 	case REQUEST_DBD_RELAY:
 		_pack_dbd_relay(msg, buffer);
