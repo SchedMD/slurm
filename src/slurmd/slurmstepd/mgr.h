@@ -62,11 +62,6 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 				      slurm_addr_t *client);
 
 /*
- * Finalize a batch job.
- */
-void mgr_launch_batch_job_cleanup(stepd_step_rec_t *step, int rc);
-
-/*
  * Executes the functions of the slurmd job manager process,
  * which runs as root and performs shared memory and interconnect
  * initialization, etc.
