@@ -176,7 +176,7 @@ static int _send_exit_msg(uint32_t *tid, int n, int status);
 static void _wait_for_all_tasks(void);
 static int _wait_for_any_task(bool waitflag);
 
-static void _random_sleep(stepd_step_rec_t *step);
+static void _random_sleep(void);
 static int _run_script_as_user(const char *name, const char *path, int max_wait,
 			       char **env);
 
@@ -565,8 +565,7 @@ claim:
 	return rc;
 }
 
-static void
-_random_sleep(stepd_step_rec_t *step)
+static void _random_sleep(void)
 {
 	long int delay = 0;
 	long int max = (slurm_conf.tcp_timeout * step->nnodes);
@@ -616,7 +615,7 @@ static int _send_exit_msg(uint32_t *tid, int n, int status)
 	 *  termination. Delay a random amount if step->nnodes > 500
 	 */
 	if (step->nnodes > 500)
-		_random_sleep(step);
+		_random_sleep();
 
 	/*
 	 * Notify each srun and sattach.
