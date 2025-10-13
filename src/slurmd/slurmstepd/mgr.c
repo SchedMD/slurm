@@ -339,7 +339,7 @@ static uint32_t _get_exit_code(void)
 	return step_rc;
 }
 
-static char *_batch_script_path(stepd_step_rec_t *step)
+static char *_batch_script_path(void)
 {
 	return xstrdup_printf("%s/%s", step->batchdir, "slurm_script");
 }
@@ -349,7 +349,7 @@ static char *_batch_script_path(stepd_step_rec_t *step)
  */
 extern void batch_finish(int rc)
 {
-	char *script = _batch_script_path(step);
+	char *script = _batch_script_path();
 	step_complete.step_rc = _get_exit_code();
 
 	if (unlink(script) < 0)
@@ -2782,7 +2782,7 @@ static int _make_batch_script(batch_job_launch_msg_t *msg)
 		return SLURM_ERROR;
 	}
 
-	script = _batch_script_path(step);
+	script = _batch_script_path();
 
 	if ((fd = open(script, flags, S_IRWXU)) < 0) {
 		error("couldn't open `%s': %m", script);
