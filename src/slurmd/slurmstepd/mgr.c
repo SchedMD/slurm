@@ -166,7 +166,7 @@ typedef struct {
 static void _send_launch_failure(launch_tasks_request_msg_t *,
 				 slurm_addr_t *, int, uint16_t);
 static int _fork_all_tasks(bool *io_initialized);
-static int  _become_user(stepd_step_rec_t *step, struct priv_state *ps);
+static int _become_user(struct priv_state *ps);
 static void  _set_prio_process (stepd_step_rec_t *step);
 static int  _setup_normal_io(stepd_step_rec_t *step);
 static void _send_launch_resp(stepd_step_rec_t *step, int rc);
@@ -2277,11 +2277,11 @@ static int _fork_all_tasks(bool *io_initialized)
 				fatal("%s: _pre_task_child_privileged() failed: %s",
 				      __func__, slurm_strerror(rc));
 
- 			if (_become_user(step, &sprivs) < 0) {
- 				error("_become_user failed: %m");
+			if (_become_user(&sprivs) < 0) {
+				error("_become_user failed: %m");
 				/* child process, should not return */
 				_exit(1);
- 			}
+			}
 
 			/* log_fini(); */ /* note: moved into exec_task() */
 
@@ -3089,8 +3089,7 @@ static void _set_prio_process (stepd_step_rec_t *step)
 	}
 }
 
-static int
-_become_user(stepd_step_rec_t *step, struct priv_state *ps)
+static int _become_user(struct priv_state *ps)
 {
 	/*
 	 * First reclaim the effective uid and gid
@@ -3195,7 +3194,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
 			_exit(127);
 		}
 
-		if (_become_user(step, &sprivs) < 0) {
+		if (_become_user(&sprivs) < 0) {
 			error("run_script_as_user _become_user failed: %m");
 			/* child process, should not return */
 			_exit(127);
