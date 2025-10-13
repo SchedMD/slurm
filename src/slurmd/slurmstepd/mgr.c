@@ -982,7 +982,7 @@ static int _spank_task_exit_child(void *arg)
 }
 #endif
 
-static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id,
+static int _run_spank_func(step_fn_t spank_func, int id,
 			   struct priv_state *sprivs)
 {
 	int rc = SLURM_SUCCESS;
@@ -1424,7 +1424,7 @@ x11_fail:
 	if (!slurm_conf.job_acct_gather_freq)
 		jobacct_gather_stat_task(0, true);
 
-	if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, -1, NULL) < 0) {
+	if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, -1, NULL) < 0) {
 		error("spank extern task post-fork failed");
 		rc = SLURM_ERROR;
 	} else if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
@@ -2191,7 +2191,7 @@ static int _fork_all_tasks(bool *io_initialized)
 		}
 	}
 
-	if ((rc = _run_spank_func(SPANK_STEP_USER_INIT, step, -1, &sprivs))) {
+	if ((rc = _run_spank_func(SPANK_STEP_USER_INIT, -1, &sprivs))) {
 		if (rc < 0) {
 			error("spank_user failed.");
 			rc = SLURM_ERROR;
@@ -2367,7 +2367,7 @@ static int _fork_all_tasks(bool *io_initialized)
 			goto fail2;
 		}
 
-		if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, step, i, NULL) < 0) {
+		if (_run_spank_func(SPANK_STEP_TASK_POST_FORK, i, NULL) < 0) {
 			error ("spank task %d post-fork failed", i);
 			rc = SLURM_ERROR;
 
@@ -2621,8 +2621,8 @@ static int _wait_for_any_task(bool waitflag)
 					error("--task-epilog failed status=%d",
 					      rc);
 			}
-			if (_run_spank_func(SPANK_STEP_TASK_EXIT, step, t->id,
-					    NULL) < 0)
+			if (_run_spank_func(SPANK_STEP_TASK_EXIT, t->id, NULL) <
+			    0)
 				error ("Unable to spank task %d at exit",
 				       t->id);
 			rc = task_g_post_term(step, t);
