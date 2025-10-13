@@ -11202,14 +11202,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_ready_msg(job_id_msg_t * msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_job_ready_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	job_id_msg_t *msg = smsg->data;
 
-	pack32(msg->job_id  , buffer ) ;
-	pack16(msg->show_flags, buffer);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack16(msg->show_flags, buffer);
+	}
 }
 
 static int
@@ -13937,10 +13937,8 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
-		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer,
-				    msg->protocol_version);
+		_pack_job_ready_msg(msg, buffer);
 		break;
-
 	case REQUEST_JOB_REQUEUE:
 		_pack_job_requeue_msg((requeue_msg_t *)msg->data,
 				      buffer,
