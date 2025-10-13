@@ -174,7 +174,7 @@ static int _slurmd_job_log_init(void);
 static void _wait_for_io(void);
 static int _send_exit_msg(uint32_t *tid, int n, int status);
 static void _wait_for_all_tasks(void);
-static int  _wait_for_any_task(stepd_step_rec_t *step, bool waitflag);
+static int _wait_for_any_task(bool waitflag);
 
 static void _random_sleep(stepd_step_rec_t *step);
 static int _run_script_as_user(const char *name, const char *path, int max_wait,
@@ -2527,8 +2527,7 @@ _log_task_exit(unsigned long taskid, unsigned long pid, int status)
  * Returns the number of tasks for which a wait3() was successfully
  * performed, or -1 if there are no child tasks.
  */
-static int
-_wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
+static int _wait_for_any_task(bool waitflag)
 {
 	pid_t pid;
 	int completed = 0;
@@ -2671,7 +2670,7 @@ static void _wait_for_all_tasks(void)
 
 	for (i = 0; i < tasks_left; ) {
 		int rc;
-		if ((rc = _wait_for_any_task(step, true)) == -1) {
+		if ((rc = _wait_for_any_task(true)) == -1) {
 			error("%s: No child processes. node_tasks:%u, expected:%d, reaped:%d",
 			      __func__, step->node_tasks, tasks_left, i);
 			break;
@@ -2684,7 +2683,7 @@ static void _wait_for_all_tasks(void)
 			 * have most if not all the tasks
 			 * completed before we return */
 			usleep(100000);	/* 100 msec */
-			rc = _wait_for_any_task(step, false);
+			rc = _wait_for_any_task(false);
 			if (rc != -1)
 				i += rc;
 		}
