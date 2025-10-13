@@ -1584,10 +1584,9 @@ _io_thr(void *arg)
  *  a file is created per node or per task, and the output needs to be
  *  modified in some way, like labelling lines with the task number.
  */
-int
-io_create_local_client(const char *filename, int file_flags,
-		       stepd_step_rec_t *step, bool labelio,
-		       int stdout_tasks, int stderr_tasks)
+extern int io_create_local_client(const char *filename, int file_flags,
+				  bool labelio, int stdout_tasks,
+				  int stderr_tasks)
 {
 	int fd = -1;
 	struct client_io_info *client;

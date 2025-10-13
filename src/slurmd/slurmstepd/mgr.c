@@ -502,7 +502,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 				for (ii = 0; ii < step->node_tasks; ii++) {
 					rc = io_create_local_client(
 						step->task[ii]->ofname,
-						file_flags, step, 1,
+						file_flags, 1,
 						step->task[ii]->id,
 						same ? step->task[ii]->id : -2);
 					if (rc != SLURM_SUCCESS) {
@@ -517,9 +517,10 @@ _setup_normal_io(stepd_step_rec_t *step)
 					srun_stderr_tasks = -2;
 			} else if (outpattern == SLURMD_ALL_SAME) {
 				/* Open a file for all tasks */
-				rc = io_create_local_client(
-					step->task[0]->ofname, file_flags,
-					step, 1, -1, same ? -1 : -2);
+				rc = io_create_local_client(step->task[0]
+								    ->ofname,
+							    file_flags, 1, -1,
+							    same ? -1 : -2);
 				if (rc != SLURM_SUCCESS) {
 					error("Could not open output file %s: %m",
 					      step->task[0]->ofname);
@@ -538,8 +539,8 @@ _setup_normal_io(stepd_step_rec_t *step)
 					     ii < step->node_tasks; ii++) {
 						rc = io_create_local_client(
 							step->task[ii]->efname,
-							file_flags, step, 1,
-							-2, step->task[ii]->id);
+							file_flags, 1, -2,
+							step->task[ii]->id);
 						if (rc != SLURM_SUCCESS) {
 							error("Could not open error file %s: %m",
 							      step->task[ii]->
@@ -553,7 +554,7 @@ _setup_normal_io(stepd_step_rec_t *step)
 					/* Open a file for all tasks */
 					rc = io_create_local_client(
 						step->task[0]->efname,
-						file_flags, step, 1, -2, -1);
+						file_flags, 1, -2, -1);
 					if (rc != SLURM_SUCCESS) {
 						error("Could not open error file %s: %m",
 						      step->task[0]->efname);

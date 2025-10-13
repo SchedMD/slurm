@@ -81,10 +81,9 @@ extern int io_client_connect(srun_info_t *srun);
  * Open a local file and create and eio object for files written
  * from the slurmstepd, probably with labelled output.
  */
-int
-io_create_local_client(const char *filename, int file_flags,
-		       stepd_step_rec_t *step, bool labelio,
-		       int stdout_tasks, int stderr_tasks);
+extern int io_create_local_client(const char *filename, int file_flags,
+				  bool labelio, int stdout_tasks,
+				  int stderr_tasks);
 
 /*
  * Initialize each task's standard I/O file descriptors.  The file descriptors
