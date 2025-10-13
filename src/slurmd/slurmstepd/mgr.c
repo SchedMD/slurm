@@ -184,7 +184,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 /*
  * Batch step management prototypes:
  */
-static char *_make_batch_dir(void);
+static int _make_batch_dir(void);
 static int _make_batch_script(batch_job_launch_msg_t *msg);
 static int _send_complete_batch_script_msg(int err, int status);
 
@@ -398,9 +398,8 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 		return SLURM_ERROR;
 	}
 
-	if (!(step->batchdir = _make_batch_dir())) {
+	if (_make_batch_dir())
 		goto cleanup;
-	}
 
 	xfree(step->argv[0]);
 
@@ -2736,7 +2735,7 @@ _wait_for_io(stepd_step_rec_t *step)
 	return;
 }
 
-static char *_make_batch_dir(void)
+static int _make_batch_dir(void)
 {
 	char path[PATH_MAX];
 
@@ -2766,10 +2765,11 @@ static char *_make_batch_dir(void)
 		goto error;
 	}
 
-	return xstrdup(path);
+	step->batchdir = xstrdup(path);
+	return SLURM_SUCCESS;
 
 error:
-	return NULL;
+	return SLURM_ERROR;
 }
 
 static int _make_batch_script(batch_job_launch_msg_t *msg)
