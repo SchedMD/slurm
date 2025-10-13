@@ -225,7 +225,7 @@ static void _free_all_outgoing_msgs(list_t *msg_queue);
 static bool _incoming_buf_free(void);
 static bool _outgoing_buf_free(void);
 static int _send_connection_okay_response(void);
-static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *step);
+static struct io_buf *_build_connection_okay_message(void);
 
 /**********************************************************************
  * IO client socket functions
@@ -1335,7 +1335,7 @@ static int _send_connection_okay_response(void)
 	struct io_buf *msg;
 	struct client_io_info *client;
 
-	msg = _build_connection_okay_message(step);
+	msg = _build_connection_okay_message();
 	if (!msg) {
 		error(  "Could not send connection okay message because of "
 			"lack of buffer space.");
@@ -1358,10 +1358,7 @@ static int _send_connection_okay_response(void)
 	return SLURM_SUCCESS;
 }
 
-
-
-static struct io_buf *
-_build_connection_okay_message(stepd_step_rec_t *step)
+static struct io_buf *_build_connection_okay_message(void)
 {
 	struct io_buf *msg;
 	buf_t *packbuf;
