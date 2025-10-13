@@ -565,8 +565,8 @@ _setup_normal_io(stepd_step_rec_t *step)
 			}
 		}
 
-		if (io_initial_client_connect(srun, step, srun_stdout_tasks,
-					     srun_stderr_tasks) < 0) {
+		if (io_initial_client_connect(srun, srun_stdout_tasks,
+					      srun_stderr_tasks) < 0) {
 			rc = ESLURMD_IO_ERROR;
 			goto claim;
 		}

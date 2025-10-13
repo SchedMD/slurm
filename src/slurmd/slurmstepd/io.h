@@ -66,8 +66,8 @@ typedef enum {
  * yet started, we initialize the msg_queue as an empty list and
  * directly add the eio_obj_t to the eio handle with eio_new_initial_handle.
  */
-int io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
-			      int stdout_tasks, int stderr_tasks);
+extern int io_initial_client_connect(srun_info_t *srun, int stdout_tasks,
+				     int stderr_tasks);
 
 /*
  * Initiate a TCP connection back to a waiting client (e.g. srun).

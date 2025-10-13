@@ -1634,9 +1634,8 @@ io_create_local_client(const char *filename, int file_flags,
  * We assume that if the port is zero the client does not wish us to connect
  * an IO stream.
  */
-int
-io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *step,
-			  int stdout_tasks, int stderr_tasks)
+extern int io_initial_client_connect(srun_info_t *srun, int stdout_tasks,
+				     int stderr_tasks)
 {
 	int sock = -1;
 	struct client_io_info *client;
