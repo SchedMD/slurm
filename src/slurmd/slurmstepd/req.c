@@ -276,11 +276,8 @@ static int _wait_for_job_running(stepd_step_rec_t *step)
 	return rc;
 }
 
-static void *
-_msg_thr_internal(void *step_arg)
+static void *_msg_thr_internal(void *ignored)
 {
-	stepd_step_rec_t *step = step_arg;
-
 	debug("Message thread started pid = %lu", (unsigned long) getpid());
 	eio_handle_mainloop(step->msg_handle);
 	debug("Message thread exited");
@@ -304,7 +301,7 @@ extern int msg_thr_create(void)
 	step->msg_handle = eio_handle_create(0);
 	eio_new_initial_obj(step->msg_handle, eio_obj);
 
-	slurm_thread_create(&step->msgid, _msg_thr_internal, step);
+	slurm_thread_create(&step->msgid, _msg_thr_internal, NULL);
 
 	return SLURM_SUCCESS;
 }
