@@ -267,7 +267,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 				 uint16_t protocol_version);
 extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
-void stepd_step_rec_destroy(stepd_step_rec_t *step);
+extern void stepd_step_rec_destroy(void);
 
 srun_info_t *srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
 			      slurm_addr_t *respaddr, slurm_addr_t *ioaddr,

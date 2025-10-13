@@ -1188,7 +1188,7 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 		} else if (rc) {
 			error("%s: container setup failed: %s",
 			      __func__, slurm_strerror(rc));
-			stepd_step_rec_destroy(step);
+			stepd_step_rec_destroy();
 			return SLURM_ERROR;
 		} else {
 			debug2("%s: container %s successfully setup",
@@ -1228,7 +1228,7 @@ static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 	    add_remote_nodes_to_conf_tbls(step->node_list, step->node_addrs)) {
 		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
-		stepd_step_rec_destroy(step);
+		stepd_step_rec_destroy();
 		return SLURM_ERROR;
 	}
 
@@ -1243,7 +1243,7 @@ static void _step_cleanup(slurm_msg_t *msg, int rc)
 	if (step) {
 		jobacctinfo_destroy(step->jobacct);
 		if (!step->batch)
-			stepd_step_rec_destroy(step);
+			stepd_step_rec_destroy();
 	}
 
 	/*

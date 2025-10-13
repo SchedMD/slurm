@@ -261,7 +261,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	if (nodeid < 0) {
 		error("couldn't find node %s in %s",
 		      step->node_name, msg->complete_nodelist);
-		stepd_step_rec_destroy(step);
+		stepd_step_rec_destroy();
 		return SLURM_ERROR;
 	}
 
@@ -279,7 +279,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
-		stepd_step_rec_destroy(step);
+		stepd_step_rec_destroy();
 		return SLURM_ERROR;
 	}
 	/*
@@ -625,8 +625,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	return SLURM_SUCCESS;
 }
 
-extern void
-stepd_step_rec_destroy(stepd_step_rec_t *step)
+extern void stepd_step_rec_destroy(void)
 {
 	int i;
 
