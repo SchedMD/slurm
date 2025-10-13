@@ -12977,9 +12977,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_bb_status_req_msg(bb_status_req_msg_t *msg, buf_t *buffer,
-				    uint16_t protocol_version)
+static void _pack_bb_status_req_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	bb_status_req_msg_t *msg = smsg->data;
+
 	packstr_array(msg->argv, msg->argc, buffer);
 }
 
@@ -14021,8 +14022,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_control_status_msg(msg, buffer);
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
-		_pack_bb_status_req_msg((bb_status_req_msg_t *)(msg->data),
-					buffer, msg->protocol_version);
+		_pack_bb_status_req_msg(msg, buffer);
 		break;
 	case RESPONSE_BURST_BUFFER_STATUS:
 		_pack_bb_status_resp_msg((bb_status_resp_msg_t *)(msg->data),
