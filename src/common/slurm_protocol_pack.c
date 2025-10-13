@@ -10961,11 +10961,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_id_response_msg(job_id_response_msg_t * msg, buf_t *buffer,
-			  uint16_t protocol_version)
+static void _pack_job_id_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	job_id_response_msg_t *msg = smsg->data;
 
 	pack32((uint32_t)msg->job_id, buffer);
 	pack32((uint32_t)msg->return_code, buffer);
@@ -13898,10 +13896,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_id_request_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ID:
-		_pack_job_id_response_msg(
-			(job_id_response_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
+		_pack_job_id_response_msg(msg, buffer);
 		break;
 	case REQUEST_CONFIG:
 		_pack_config_request_msg((config_request_msg_t *) msg->data,
