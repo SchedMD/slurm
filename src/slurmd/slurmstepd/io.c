@@ -233,7 +233,7 @@ static struct io_buf *_build_connection_okay_message(void);
 static bool
 _client_readable(eio_obj_t *obj)
 {
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct client_io_info *client = obj->arg;
 
 	debug5("Called _client_readable");
 	xassert(client->magic == CLIENT_IO_MAGIC);
@@ -266,7 +266,7 @@ _client_readable(eio_obj_t *obj)
 static bool
 _client_writable(eio_obj_t *obj)
 {
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct client_io_info *client = obj->arg;
 
 	debug5("Called _client_writable");
 	xassert(client->magic == CLIENT_IO_MAGIC);
@@ -310,7 +310,7 @@ _client_writable(eio_obj_t *obj)
 
 static int _client_read(eio_obj_t *obj, list_t *objs)
 {
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct client_io_info *client = obj->arg;
 	void *buf;
 	int n;
 
@@ -451,7 +451,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
  */
 static int _client_write(eio_obj_t *obj, list_t *objs)
 {
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct client_io_info *client = obj->arg;
 	void *buf;
 	int n;
 
@@ -518,7 +518,7 @@ again:
 static bool
 _local_file_writable(eio_obj_t *obj)
 {
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct client_io_info *client = obj->arg;
 
 	xassert(client->magic == CLIENT_IO_MAGIC);
 
@@ -537,7 +537,7 @@ _local_file_writable(eio_obj_t *obj)
  */
 static int _local_file_write(eio_obj_t *obj, list_t *objs)
 {
-	struct client_io_info *client = (struct client_io_info *) obj->arg;
+	struct client_io_info *client = obj->arg;
 	void *buf;
 	int n;
 	io_hdr_t header;
@@ -1344,7 +1344,7 @@ static int _send_connection_okay_response(void)
 
 	clients = list_iterator_create(step->clients);
 	while ((eio = list_next(clients))) {
-		client = (struct client_io_info *)eio->arg;
+		client = eio->arg;
 		if (client->out_eof || client->is_local_file)
 			continue;
 
@@ -1412,7 +1412,7 @@ _route_msg_task_to_client(eio_obj_t *obj)
 		/* Add message to the msg_queue of all clients */
 		clients = list_iterator_create(out->step->clients);
 		while ((eio = list_next(clients))) {
-			client = (struct client_io_info *)eio->arg;
+			client = eio->arg;
 			if (client->out_eof == true)
 				continue;
 
@@ -1554,7 +1554,7 @@ io_close_local_fds(stepd_step_rec_t *step)
 
 	clients = list_iterator_create(step->clients);
 	while((eio = list_next(clients))) {
-		client = (struct client_io_info *)eio->arg;
+		client = eio->arg;
 		if (client->is_local_file) {
 			if (eio->fd >= 0) {
 				do {
@@ -1870,7 +1870,7 @@ _send_eof_msg(struct task_read_info *out)
 	/* Add eof message to the msg_queue of all clients */
 	clients = list_iterator_create(out->step->clients);
 	while ((eio = list_next(clients))) {
-		client = (struct client_io_info *)eio->arg;
+		client = eio->arg;
 		debug5("======================== Enqueued eof message");
 		xassert(client->magic == CLIENT_IO_MAGIC);
 
