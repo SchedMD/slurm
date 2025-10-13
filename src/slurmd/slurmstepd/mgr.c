@@ -1128,7 +1128,7 @@ static bool _need_join_container()
 	return false;
 }
 
-static void _shutdown_x11_forward(stepd_step_rec_t *step)
+static void _shutdown_x11_forward(void)
 {
 	struct priv_state sprivs = { 0 };
 
@@ -1175,7 +1175,7 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *arg)
 	debug("Terminate signal (SIGTERM) received");
 
 	if (!_need_join_container()) {
-		_shutdown_x11_forward(step);
+		_shutdown_x11_forward();
 		return;
 	}
 	if ((cpid = fork()) == 0) {
@@ -1185,7 +1185,7 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *arg)
 			      __func__);
 			_exit(1);
 		}
-		_shutdown_x11_forward(step);
+		_shutdown_x11_forward();
 		_exit(0);
 	} else if (cpid < 0) {
 		error("%s: fork: %m", __func__);
