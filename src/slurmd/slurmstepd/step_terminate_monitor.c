@@ -175,7 +175,7 @@ static void *_monitor(void *ignored)
 			stepd_send_step_complete_msgs(step);
 		}
 
-		stepd_cleanup(NULL, step, NULL, rc, false);
+		stepd_cleanup(NULL, NULL, rc, false);
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}

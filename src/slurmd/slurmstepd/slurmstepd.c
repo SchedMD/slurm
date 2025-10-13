@@ -499,14 +499,14 @@ extern int main(int argc, char **argv)
 
 	only_mem = false;
 ending:
-	stepd_cleanup(msg, step, cli, rc, only_mem);
+	stepd_cleanup(msg, cli, rc, only_mem);
 
 	conmgr_fini();
 	return rc;
 }
 
-extern void stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *step,
-			  slurm_addr_t *cli, int rc, bool only_mem)
+extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
+			  bool only_mem)
 {
 	static bool cleanup = false;
 
