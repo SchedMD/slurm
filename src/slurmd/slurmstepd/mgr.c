@@ -1258,7 +1258,7 @@ static int _run_prolog_epilog(bool is_epilog)
 	return rc;
 }
 
-static void _setup_x11_child(int to_parent[2], stepd_step_rec_t *step)
+static void _setup_x11_child(int to_parent[2])
 {
 	uint32_t len = 0;
 
@@ -1385,7 +1385,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			 */
 			pid = fork();
 			if (pid == 0) {
-				_setup_x11_child(to_parent, step);
+				_setup_x11_child(to_parent);
 			} else if (pid > 0) {
 				char *tmp = NULL;
 				rc = _setup_x11_parent(to_parent, pid, &tmp);
