@@ -70,7 +70,7 @@ void step_terminate_monitor_start(stepd_step_rec_t *step)
 	program_name = xstrdup(conf->unkillable_program);
 	slurm_conf_unlock();
 
-	slurm_thread_create(&tid, _monitor, step);
+	slurm_thread_create(&tid, _monitor, NULL);
 
 	recorded_jobid = step->step_id.job_id;
 	recorded_stepid = step->step_id.step_id;
@@ -99,10 +99,8 @@ void step_terminate_monitor_stop(void)
 	xfree(program_name);
 }
 
-
-static void *_monitor(void *arg)
+static void *_monitor(void *ignored)
 {
-	stepd_step_rec_t *step = (stepd_step_rec_t *)arg;
 	struct timespec ts = {0, 0};
 	int rc = 0;
 
