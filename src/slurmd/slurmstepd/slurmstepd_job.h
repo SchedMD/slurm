@@ -265,7 +265,7 @@ typedef struct {
 
 extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 				 uint16_t protocol_version);
-stepd_step_rec_t * batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
+extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
 void stepd_step_rec_destroy(stepd_step_rec_t *step);
 

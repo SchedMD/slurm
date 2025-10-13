@@ -486,10 +486,8 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	return SLURM_SUCCESS;
 }
 
-extern stepd_step_rec_t *
-batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
+extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
-	stepd_step_rec_t *step;
 	srun_info_t  *srun = NULL;
 	char *in_name;
 
@@ -498,7 +496,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	debug3("entering batch_stepd_step_rec_create");
 
 	if (acct_gather_check_acct_freq_task(msg->job_mem, msg->acctg_freq))
-		return NULL;
+		return SLURM_ERROR;
 
 	step = xmalloc(sizeof(stepd_step_rec_t));
 
@@ -531,7 +529,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	if (!step->user_name) {
 		error("Failed to look up username for uid=%u, cannot continue with launch",
 		      step->uid);
-		return NULL;
+		return SLURM_ERROR;
 	}
 	/*
 	 * Favor the group info in the launch cred if available - fall back
@@ -629,7 +627,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	step->task[0]->argv = step->argv;
 	step->oom_kill_step = msg->oom_kill_step;
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
 extern void

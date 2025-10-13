@@ -405,9 +405,7 @@ batch_finish(stepd_step_rec_t *step, int rc)
 stepd_step_rec_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 {
-	stepd_step_rec_t *step = NULL;
-
-	if (!(step = batch_stepd_step_rec_create(msg))) {
+	if (batch_stepd_step_rec_create(msg)) {
 		error("batch_stepd_step_rec_create() failed for job %u on %s: %s",
 		      msg->job_id, conf->hostname, slurm_strerror(errno));
 		return NULL;
