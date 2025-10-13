@@ -12588,7 +12588,7 @@ static void _pack_license_info_request_msg(const slurm_msg_t *smsg,
 	license_info_request_msg_t *msg = smsg->data;
 
 	pack_time(msg->last_update, buffer);
-	pack16((uint16_t)msg->show_flags, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 /* _unpack_license_info_request_msg()
