@@ -11746,12 +11746,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_trigger_msg(trigger_info_msg_t *msg, buf_t *buffer,
-			      uint16_t protocol_version)
+static void _pack_trigger_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	trigger_info_msg_t *msg = smsg->data;
 	int i;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->record_count, buffer);
 		for (i = 0; i < msg->record_count; i++) {
 			pack16(msg->trigger_array[i].flags, buffer);
@@ -13955,8 +13955,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_TRIGGER_SET:
 	case REQUEST_TRIGGER_CLEAR:
 	case REQUEST_TRIGGER_PULL:
-		_pack_trigger_msg((trigger_info_msg_t *) msg->data, buffer,
-				  msg->protocol_version);
+		_pack_trigger_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURMD_STATUS:
 		_pack_slurmd_status((slurmd_status_t *) msg->data, buffer,
