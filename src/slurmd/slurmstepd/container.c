@@ -593,8 +593,7 @@ static bool _pattern_has_taskid(const char *pattern)
 	return false;
 }
 
-static char *_generate_spooldir_pattern(stepd_step_rec_t *step,
-					stepd_step_task_info_t *task)
+static char *_generate_spooldir_pattern(stepd_step_task_info_t *task)
 {
 	const char *step_id = NULL;
 	const char *task_id = NULL;
@@ -639,7 +638,7 @@ static char *_generate_spooldir(stepd_step_task_info_t *task)
 {
 	int id = -1;
 	char **argv = NULL, *path = NULL;
-	char *pattern = _generate_spooldir_pattern(step, task);
+	char *pattern = _generate_spooldir_pattern(task);
 
 	if (task) {
 		id = task->id;
