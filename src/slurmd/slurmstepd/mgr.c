@@ -178,9 +178,8 @@ static void _wait_for_all_tasks(stepd_step_rec_t *step);
 static int  _wait_for_any_task(stepd_step_rec_t *step, bool waitflag);
 
 static void _random_sleep(stepd_step_rec_t *step);
-static int  _run_script_as_user(const char *name, const char *path,
-				stepd_step_rec_t *step,
-				int max_wait, char **env);
+static int _run_script_as_user(const char *name, const char *path, int max_wait,
+			       char **env);
 
 /*
  * Batch step management prototypes:
@@ -2625,8 +2624,8 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 
 			if (step->task_epilog) {
 				rc = _run_script_as_user("user task_epilog",
-							 step->task_epilog,
-							 step, 5, step->env);
+							 step->task_epilog, 5,
+							 step->env);
 				if (rc)
 					error("TaskEpilog failed status=%d",
 					      rc);
@@ -2634,7 +2633,7 @@ _wait_for_any_task(stepd_step_rec_t *step, bool waitflag)
 			if (slurm_conf.task_epilog) {
 				rc = _run_script_as_user("slurm task_epilog",
 							 slurm_conf.task_epilog,
-							 step, -1, step->env);
+							 -1, step->env);
 				if (rc)
 					error("--task-epilog failed status=%d",
 					      rc);
@@ -3133,9 +3132,8 @@ static int _become_user(struct priv_state *ps)
  *
  * RET 0 on success, -1 on early failure, or the return from execve().
  */
-int
-_run_script_as_user(const char *name, const char *path, stepd_step_rec_t *step,
-		    int max_wait, char **env)
+static int _run_script_as_user(const char *name, const char *path, int max_wait,
+			       char **env)
 {
 	int status, rc, opt;
 	pid_t cpid;
