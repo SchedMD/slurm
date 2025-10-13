@@ -724,10 +724,10 @@ static char *_get_config_path(void)
 	return path;
 }
 
-static data_for_each_cmd_t _foreach_config_env(const data_t *data, void *arg)
+static data_for_each_cmd_t _foreach_config_env(const data_t *data,
+					       void *ignored)
 {
 	int rc;
-	stepd_step_rec_t *step = arg;
 	char *name = NULL, *value;
 
 	if (data_get_string_converted(data, &name))
@@ -759,7 +759,7 @@ static int _merge_step_config_env(stepd_step_rec_t *step)
 
 	xassert(!oci_conf->ignore_config_json);
 
-	if (data_list_for_each_const(env, _foreach_config_env, step) < 0)
+	if (data_list_for_each_const(env, _foreach_config_env, NULL) < 0)
 		return ESLURM_DATA_CONV_FAILED;
 
 	return SLURM_SUCCESS;
