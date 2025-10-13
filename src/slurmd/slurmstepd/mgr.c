@@ -2727,7 +2727,7 @@ static void
 _wait_for_io(stepd_step_rec_t *step)
 {
 	debug("Waiting for IO");
-	io_close_all(step);
+	io_close_all();
 
 	slurm_mutex_lock(&step->io_mutex);
 	if (step->io_running) {

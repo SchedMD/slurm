@@ -110,7 +110,7 @@ int io_dup_stdio(stepd_step_task_info_t *t);
  */
 extern void io_close_task_fds(void);
 
-void io_close_all(stepd_step_rec_t *step);
+extern void io_close_all(void);
 
 void io_close_local_fds(stepd_step_rec_t *step);
 

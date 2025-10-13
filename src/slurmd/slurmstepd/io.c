@@ -1504,8 +1504,7 @@ extern void io_close_task_fds(void)
 	}
 }
 
-void
-io_close_all(stepd_step_rec_t *step)
+extern void io_close_all(void)
 {
 	int devnull;
 #if 0
