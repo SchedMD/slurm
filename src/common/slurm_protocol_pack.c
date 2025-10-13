@@ -11877,16 +11877,16 @@ unpack_error:
 
 static void _pack_kvs_data(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	kvs_comm_set_t *msg_ptr = smsg->data;
+	kvs_comm_set_t *msg = smsg->data;
 
-	pack16(msg_ptr->host_cnt, buffer);
-	for (int i = 0; i < msg_ptr->host_cnt; i++)
-		_pack_kvs_host_rec(&msg_ptr->kvs_host_ptr[i], buffer,
+	pack16(msg->host_cnt, buffer);
+	for (int i = 0; i < msg->host_cnt; i++)
+		_pack_kvs_host_rec(&msg->kvs_host_ptr[i], buffer,
 				   smsg->protocol_version);
 
-	pack16(msg_ptr->kvs_comm_recs, buffer);
-	for (int i = 0; i < msg_ptr->kvs_comm_recs; i++)
-		_pack_kvs_rec(msg_ptr->kvs_comm_ptr[i], buffer,
+	pack16(msg->kvs_comm_recs, buffer);
+	for (int i = 0; i < msg->kvs_comm_recs; i++)
+		_pack_kvs_rec(msg->kvs_comm_ptr[i], buffer,
 			      smsg->protocol_version);
 }
 
