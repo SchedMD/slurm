@@ -413,7 +413,6 @@ extern int main(int argc, char **argv)
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 	slurm_addr_t *cli;
 	slurm_msg_t *msg;
-	stepd_step_rec_t *step;
 	int rc = SLURM_SUCCESS;
 	bool only_mem = true;
 
@@ -469,7 +468,7 @@ extern int main(int argc, char **argv)
 	slurm_conf_install_fork_handlers();
 
 	/* sets step->msg_handle and step->msgid */
-	if (msg_thr_create(step) == SLURM_ERROR) {
+	if (msg_thr_create() == SLURM_ERROR) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;

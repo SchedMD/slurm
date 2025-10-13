@@ -288,8 +288,7 @@ _msg_thr_internal(void *step_arg)
 	return NULL;
 }
 
-int
-msg_thr_create(stepd_step_rec_t *step)
+extern int msg_thr_create(void)
 {
 	int fd;
 	eio_obj_t *eio_obj;
