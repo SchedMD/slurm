@@ -688,8 +688,7 @@ extern void stepd_wait_for_children_slurmstepd(void)
  * of complete job step nodes.
  */
 /* caller is holding step_complete.lock */
-static void
-_one_step_complete_msg(stepd_step_rec_t *step, int first, int last)
+static void _one_step_complete_msg(int first, int last)
 {
 	slurm_msg_t req;
 	step_complete_msg_t msg;
@@ -882,8 +881,7 @@ extern void stepd_send_step_complete_msgs(void)
 
 	/* If no children, send message and return early */
 	if (size == 0) {
-		_one_step_complete_msg(step, step_complete.rank,
-				       step_complete.rank);
+		_one_step_complete_msg(step_complete.rank, step_complete.rank);
 		slurm_mutex_unlock(&step_complete.lock);
 		return;
 	}
@@ -896,14 +894,13 @@ extern void stepd_send_step_complete_msgs(void)
 			first = -1;
 		}
 
-		_one_step_complete_msg(step, (first + step_complete.rank + 1),
-	      			       (last + step_complete.rank + 1));
+		_one_step_complete_msg((first + step_complete.rank + 1),
+				       (last + step_complete.rank + 1));
 		start = last + 1;
 	}
 
 	if (!sent_own_comp_msg) {
-		_one_step_complete_msg(step, step_complete.rank,
-				       step_complete.rank);
+		_one_step_complete_msg(step_complete.rank, step_complete.rank);
 	}
 
 	slurm_mutex_unlock(&step_complete.lock);
