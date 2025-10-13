@@ -1151,8 +1151,6 @@ static int _handle_attach(int fd, uid_t uid, pid_t remote_pid)
 
 	srun       = xmalloc(sizeof(srun_info_t));
 
-	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr_t) = %d",
-	      (int) sizeof(srun_info_t), (int) sizeof(slurm_addr_t));
 	safe_read(fd, &cert_len, sizeof(uint32_t));
 	if (cert_len) {
 		srun->tls_cert = xmalloc(cert_len);
