@@ -1024,7 +1024,7 @@ static int _handle_signal_container(int fd, uid_t uid, pid_t remote_pid)
 	slurm_mutex_unlock(&suspend_mutex);
 
 	if ((sig == SIGTERM) || (sig == SIGKILL))
-		set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
+		set_job_state(SLURMSTEPD_STEP_CANCELLED);
 
 done:
 	xfree(details);
@@ -1122,7 +1122,7 @@ static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 	}
 	slurm_mutex_unlock(&suspend_mutex);
 
-	set_job_state(step, SLURMSTEPD_STEP_CANCELLED);
+	set_job_state(SLURMSTEPD_STEP_CANCELLED);
 
 done:
 	/* Send the return code and errnum */
