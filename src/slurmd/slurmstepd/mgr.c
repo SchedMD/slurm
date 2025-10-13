@@ -1576,15 +1576,14 @@ fail1:
 }
 
 /*
- * Executes the functions of the slurmd job manager process,
+ * Executes the functions of the slurmstepd job manager process,
  * which runs as root and performs shared memory and interconnect
  * initialization, etc.
  *
  * Returns 0 if job ran and completed successfully.
  * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
-int
-job_manager(stepd_step_rec_t *step)
+extern int job_manager(void)
 {
 	int  rc = SLURM_SUCCESS;
 	bool io_initialized = false;

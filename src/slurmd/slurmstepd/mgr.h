@@ -62,14 +62,14 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 				      slurm_addr_t *client);
 
 /*
- * Executes the functions of the slurmd job manager process,
+ * Executes the functions of the slurmstepd job manager process,
  * which runs as root and performs shared memory and interconnect
  * initialization, etc.
  *
  * Returns 0 if job ran and completed successfully.
  * Returns errno if job startup failed. NOTE: This will DRAIN the node.
  */
-int job_manager(stepd_step_rec_t *step);
+extern int job_manager(void);
 
 extern void set_job_state(stepd_step_rec_t *step, slurmstepd_state_t new_state);
 

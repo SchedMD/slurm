@@ -495,7 +495,7 @@ extern int main(int argc, char **argv)
 
 	/* This does most of the stdio setup, then launches all the tasks,
 	 * and blocks until the step is complete */
-	rc = job_manager(step);
+	rc = job_manager();
 
 	only_mem = false;
 ending:
