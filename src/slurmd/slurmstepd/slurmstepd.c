@@ -101,7 +101,7 @@ static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 static void _send_ok_to_slurmd(int sock);
 static void _send_fail_to_slurmd(int sock, int rc);
 static void _got_ack_from_slurmd(int);
-static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
+static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg);
 #ifdef MEMORY_LEAK_DEBUG
 static void _step_cleanup(stepd_step_rec_t *step, slurm_msg_t *msg, int rc);
 #endif
@@ -455,7 +455,7 @@ extern int main(int argc, char **argv)
 	 * launch_tasks_request_msg_t or a batch_job_launch_msg_t, and validate
 	 * the new stepd_step_rec_t before continuing
 	 */
-	if (!(step = _step_setup(cli, msg)) || _validate_step(step)) {
+	if (_step_setup(cli, msg) || _validate_step(step)) {
 		rc = SLURM_ERROR;
 		_send_fail_to_slurmd(STDOUT_FILENO, rc);
 		goto ending;
@@ -1144,7 +1144,7 @@ rwfail:
 	exit(1);
 }
 
-static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
+static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 {
 	switch (msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
@@ -1163,7 +1163,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 
 	if (!step) {
 		error("_step_setup: no job returned");
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	if (step->container) {
@@ -1172,12 +1172,12 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 
 		if (drop_privileges(step, false, &sprivs, true) < 0) {
 			error("%s: drop_priviledges failed", __func__);
-			return NULL;
+			return SLURM_ERROR;
 		}
 		rc = setup_container(step);
 		if (reclaim_privileges(&sprivs) < 0) {
 			error("%s: reclaim_priviledges failed", __func__);
-			return NULL;
+			return SLURM_ERROR;
 		}
 
 		if (rc == ESLURM_CONTAINER_NOT_CONFIGURED) {
@@ -1187,7 +1187,7 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 			error("%s: container setup failed: %s",
 			      __func__, slurm_strerror(rc));
 			stepd_step_rec_destroy(step);
-			return NULL;
+			return SLURM_ERROR;
 		} else {
 			debug2("%s: container %s successfully setup",
 			       __func__, step->container->bundle);
@@ -1227,12 +1227,12 @@ static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 		error("%s: failed to add node addrs: %s", __func__,
 		      step->alias_list);
 		stepd_step_rec_destroy(step);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	set_msg_node_id();
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
 #ifdef MEMORY_LEAK_DEBUG
