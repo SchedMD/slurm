@@ -1979,7 +1979,7 @@ static int _exec_wait_child_wait_for_parent (struct exec_wait_info *e)
 	return (0);
 }
 
-static int exec_wait_signal_child (struct exec_wait_info *e)
+static int _exec_wait_signal_child(struct exec_wait_info *e)
 {
 	char c = '\0';
 
@@ -1999,7 +1999,7 @@ static int _exec_wait_signal(void *x, void *arg)
 	debug3 ("Unblocking %ps task %d, writefd = %d",
 		&step->step_id, e->id, e->parentfd);
 
-	if (exec_wait_signal_child(e) != SLURM_SUCCESS) {
+	if (_exec_wait_signal_child(e) != SLURM_SUCCESS) {
 		/*
 		 * can't unblock the task so it must have errored out already
 		 */
@@ -3196,7 +3196,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 		_exit(127);
 	}
 
-	if (exec_wait_signal_child (ei) != SLURM_SUCCESS)
+	if (_exec_wait_signal_child(ei) != SLURM_SUCCESS)
 		error ("run_script_as_user: Failed to wakeup %s", name);
 	_exec_wait_info_destroy (ei);
 
