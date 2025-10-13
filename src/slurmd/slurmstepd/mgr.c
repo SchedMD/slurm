@@ -1173,7 +1173,7 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *ignore
 	}
 }
 
-static int _set_xauthority(stepd_step_rec_t *step)
+static int _set_xauthority(void)
 {
 	struct priv_state sprivs = { 0 };
 	int rc = SLURM_SUCCESS;
@@ -1268,7 +1268,7 @@ static void _setup_x11_child(int to_parent[2], stepd_step_rec_t *step)
 		_exit(1);
 	}
 
-	if (_set_xauthority(step) != SLURM_SUCCESS) {
+	if (_set_xauthority() != SLURM_SUCCESS) {
 		safe_write(to_parent[1], &len, sizeof(len));
 		_exit(1);
 	}
@@ -1399,7 +1399,7 @@ static int _spawn_job_container(stepd_step_rec_t *step)
 			close(to_parent[0]);
 			close(to_parent[1]);
 		} else {
-			rc = _set_xauthority(step);
+			rc = _set_xauthority();
 		}
 x11_fail:
 		if (rc != SLURM_SUCCESS) {
