@@ -12702,12 +12702,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_array_resp_msg(job_array_resp_msg_t *msg, buf_t *buffer,
-				     uint16_t protocol_version)
+static void _pack_job_array_resp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_array_resp_msg_t *msg = smsg->data;
 	uint32_t i, cnt = 0;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!msg) {
 			pack32(cnt, buffer);
 			return;
@@ -14004,8 +14004,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_license_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
-		_pack_job_array_resp_msg((job_array_resp_msg_t *) msg->data,
-					 buffer, msg->protocol_version);
+		_pack_job_array_resp_msg(msg, buffer);
 		break;
 	case REQUEST_ASSOC_MGR_INFO:
 		_pack_assoc_mgr_info_request_msg(
