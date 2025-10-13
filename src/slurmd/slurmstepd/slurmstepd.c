@@ -1146,8 +1146,6 @@ rwfail:
 
 static stepd_step_rec_t *_step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 {
-	stepd_step_rec_t *step = NULL;
-
 	switch (msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("setup for a batch_job");
