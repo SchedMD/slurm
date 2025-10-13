@@ -971,7 +971,7 @@ static int _handle_signal_container(int fd, uid_t uid, pid_t remote_pid)
 
 	if (sig == SIG_DEBUG_WAKE) {
 		for (int i = 0; i < step->node_tasks; i++)
-			pdebug_wake_process(step, step->task[i]->pid);
+			pdebug_wake_process(step->task[i]->pid);
 		slurm_mutex_unlock(&suspend_mutex);
 		goto done;
 	}

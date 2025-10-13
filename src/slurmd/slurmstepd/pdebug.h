@@ -50,8 +50,6 @@
 #  include <sys/ptrace.h>
 #endif
 
-#include "src/slurmd/slurmstepd/slurmstepd.h"
-
 /*
  * Stop current task on exec() for connection from a parallel debugger
  */
@@ -66,7 +64,7 @@ extern int pdebug_trace_process(pid_t pid);
 /*
  * Wake tasks currently stopped for parallel debugger attach
  */
-void pdebug_wake_process(stepd_step_rec_t *step, pid_t pid);
+extern void pdebug_wake_process(pid_t pid);
 
 #ifdef HAVE_PTRACE64
 #  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)

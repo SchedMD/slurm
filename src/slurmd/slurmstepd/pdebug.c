@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <signal.h>
 
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 
 /*
  * Prepare task for parallel debugger attach
@@ -174,7 +175,7 @@ static bool _pid_to_wake(pid_t pid)
 /*
  * Wake tasks currently stopped for parallel debugger attach
  */
-void pdebug_wake_process(stepd_step_rec_t *step, pid_t pid)
+extern void pdebug_wake_process(pid_t pid)
 {
 	if ((step->flags & LAUNCH_PARALLEL_DEBUG) && (pid > (pid_t) 0)) {
 		if (_pid_to_wake(pid)) {
