@@ -525,7 +525,7 @@ static int _modify_config(stepd_step_task_info_t *task)
 	return rc;
 }
 
-static int _generate_container_paths(stepd_step_rec_t *step)
+static int _generate_container_paths(void)
 {
 	step_container_t *c = step->container;
 	int rc = SLURM_SUCCESS;
@@ -793,7 +793,7 @@ extern int setup_container(void)
 			goto error;
 	}
 
-	if ((rc = _generate_container_paths(step)))
+	if ((rc = _generate_container_paths()))
 		goto error;
 
 error:
