@@ -5868,7 +5868,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, fd = -1;
 	char *comment = NULL;
 	buf_t *ret_buf;
 	persist_conn_t *persist_conn = NULL, p_tmp;
@@ -5894,6 +5894,16 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 		      msg->auth_uid);
 		goto end_it;
 	}
+
+	if ((fd = conn_g_get_fd(msg->conn)) < 0)
+		goto end_it;
+
+	/*
+	 * Persistent connection handlers expect file descriptor to be already
+	 * configured as nonblocking with keepalive activated
+	 */
+	fd_set_nonblocking(fd);
+	net_set_keep_alive(fd);
 
 	persist_conn = xmalloc(sizeof(persist_conn_t));
 
@@ -5933,16 +5943,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	if (persist_init->persist_type == PERSIST_TYPE_FED)
 		rc = fed_mgr_add_sibling_conn(persist_conn, &comment);
 	else if (persist_init->persist_type == PERSIST_TYPE_ACCT_UPDATE) {
-		const int fd = conn_g_get_fd(persist_conn->conn);
-
 		persist_conn->flags |= PERSIST_FLAG_ALREADY_INITED;
-
-		/* Persistent connection handlers expect file descriptor to be
-		 * already configured as nonblocking with keepalive activated
-		 */
-		xassert(fd >= 0);
-		fd_set_nonblocking(fd);
-		net_set_keep_alive(fd);
 
 		slurm_persist_conn_recv_thread_init(
 			persist_conn, conn_g_get_fd(persist_conn->conn), -1,
