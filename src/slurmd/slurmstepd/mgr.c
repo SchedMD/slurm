@@ -2155,7 +2155,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 	if (rc)
 		goto fail1; /* pam_setup error */
 
-	set_umask(step);		/* set umask for stdout/err files */
+	set_umask(); /* set umask for stdout/err files */
 	rc = _setup_normal_io(step);
 	/*
 	 * Initialize log facility to copy errors back to srun

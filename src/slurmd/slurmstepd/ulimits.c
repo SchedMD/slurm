@@ -211,8 +211,7 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 }
 
 /* Set umask using value of env var SLURM_UMASK */
-extern int
-set_umask(stepd_step_rec_t *step)
+extern int set_umask(void)
 {
 	mode_t mask;
 	char *val;
