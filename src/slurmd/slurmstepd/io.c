@@ -630,7 +630,7 @@ static eio_obj_t *_create_task_in_eio(int fd)
 static bool
 _task_writable(eio_obj_t *obj)
 {
-	struct task_write_info *t = (struct task_write_info *) obj->arg;
+	struct task_write_info *t = obj->arg;
 
 	debug5("Called _task_writable");
 
@@ -660,7 +660,7 @@ static int _task_write_error(eio_obj_t *obj, list_t *objs)
 
 static int _task_write(eio_obj_t *obj, list_t *objs)
 {
-	struct task_write_info *in = (struct task_write_info *) obj->arg;
+	struct task_write_info *in = obj->arg;
 	void *buf;
 	int n;
 
@@ -748,7 +748,7 @@ _create_task_out_eio(int fd, uint16_t type,
 static bool
 _task_readable(eio_obj_t *obj)
 {
-	struct task_read_info *out = (struct task_read_info *)obj->arg;
+	struct task_read_info *out = obj->arg;
 
 	debug5("Called _task_readable, task %d, %s", out->gtaskid,
 	       out->type == SLURM_IO_STDOUT ? "STDOUT" : "STDERR");
@@ -773,7 +773,7 @@ _task_readable(eio_obj_t *obj)
  */
 static int _task_read(eio_obj_t *obj, list_t *objs)
 {
-	struct task_read_info *out = (struct task_read_info *)obj->arg;
+	struct task_read_info *out = obj->arg;
 	int len;
 	int rc = -1;
 
@@ -1393,7 +1393,7 @@ static struct io_buf *_build_connection_okay_message(void)
 static void
 _route_msg_task_to_client(eio_obj_t *obj)
 {
-	struct task_read_info *out = (struct task_read_info *)obj->arg;
+	struct task_read_info *out = obj->arg;
 	struct client_io_info *client;
 	struct io_buf *msg = NULL;
 	eio_obj_t *eio;
