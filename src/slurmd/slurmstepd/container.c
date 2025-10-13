@@ -926,7 +926,7 @@ static void _kill_container()
 	}
 }
 
-static void _run(stepd_step_rec_t *step, stepd_step_task_info_t *task)
+static void _run(stepd_step_task_info_t *task)
 {
 	debug3("%s: executing: %s", __func__, run_argv[2]);
 	if (oci_conf->create_env_file)
@@ -1209,7 +1209,7 @@ extern void container_run(stepd_step_task_info_t *task)
 	_generate_patterns(task);
 
 	if (oci_conf->runtime_run)
-		_run(step, task);
+		_run(task);
 	else
 		_create_start(step, task);
 }
