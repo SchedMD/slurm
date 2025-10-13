@@ -114,7 +114,7 @@ struct io_operations client_ops = {
 
 #define CLIENT_IO_MAGIC 0x10102
 struct client_io_info {
-	int                   magic;
+	int magic;
 
 	/* incoming variables */
 	io_hdr_t header;
@@ -130,9 +130,10 @@ struct client_io_info {
 
 	/* For clients that only write stdout or stderr, and/or only
 	   write for one task. -1 means accept output from any task. */
-	int  ltaskid_stdout, ltaskid_stderr;
+	int ltaskid_stdout;
+	int ltaskid_stderr;
 	bool labelio;
-	int  taskid_width;
+	int taskid_width;
 
 	/* true if writing to a file, false if writing to a socket */
 	bool is_local_file;
@@ -163,8 +164,7 @@ struct io_operations task_write_ops = {
 
 #define TASK_IN_MAGIC 0x10103
 struct task_write_info {
-	int              magic;
-
+	int magic;
 	list_t *msg_queue;
 	struct io_buf *msg;
 	int32_t remaining;
@@ -183,13 +183,13 @@ struct io_operations task_read_ops = {
 
 #define TASK_OUT_MAGIC  0x10103
 struct task_read_info {
-	int              magic;
-	uint16_t         type;           /* type of IO object          */
-	uint16_t         gtaskid;
-	uint16_t         ltaskid;
-	cbuf_t          *buf;
-	bool		 eof;
-	bool		 eof_msg_sent;
+	int magic;
+	uint16_t type;
+	uint16_t gtaskid;
+	uint16_t ltaskid;
+	cbuf_t *buf;
+	bool eof;
+	bool eof_msg_sent;
 };
 
 /**********************************************************************
