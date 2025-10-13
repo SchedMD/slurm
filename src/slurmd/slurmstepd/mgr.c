@@ -2737,15 +2737,15 @@ _wait_for_io(stepd_step_rec_t *step)
 
 static int _make_batch_dir(void)
 {
-	char path[PATH_MAX];
+	char *path = NULL;
 
-	if (step->step_id.step_id == SLURM_BATCH_SCRIPT)
-		snprintf(path, sizeof(path), "%s/job%05u",
-			 conf->spooldir, step->step_id.job_id);
-	else {
-		snprintf(path, sizeof(path), "%s/job%05u.%05u",
-			 conf->spooldir, step->step_id.job_id,
-			 step->step_id.step_id);
+	if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		xstrfmtcat(path, "%s/job%05u",
+			   conf->spooldir, step->step_id.job_id);
+	} else {
+		xstrfmtcat(path, "%s/job%05u.%05u",
+			   conf->spooldir, step->step_id.job_id,
+			   step->step_id.step_id);
 	}
 
 	if ((mkdir(path, 0750) < 0) && (errno != EEXIST)) {
@@ -2765,10 +2765,11 @@ static int _make_batch_dir(void)
 		goto error;
 	}
 
-	step->batchdir = xstrdup(path);
+	step->batchdir = path;
 	return SLURM_SUCCESS;
 
 error:
+	xfree(path);
 	return SLURM_ERROR;
 }
 
