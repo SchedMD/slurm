@@ -11261,13 +11261,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_user_msg(job_user_id_msg_t * msg, buf_t *buffer,
-		   uint16_t protocol_version)
+static void _pack_job_user_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	job_user_id_msg_t *msg = smsg->data;
 
-	pack32(msg->user_id  , buffer ) ;
+	pack32(msg->user_id, buffer);
 	pack16(msg->show_flags, buffer);
 }
 
@@ -13942,10 +13940,8 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_requeue_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_USER_INFO:
-		_pack_job_user_msg((job_user_id_msg_t *)msg->data, buffer,
-				   msg->protocol_version);
+		_pack_job_user_msg(msg, buffer);
 		break;
-
 	case REQUEST_SHARE_INFO:
 		_pack_shares_request_msg(msg, buffer);
 		break;
