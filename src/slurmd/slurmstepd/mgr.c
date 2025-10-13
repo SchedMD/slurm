@@ -194,9 +194,8 @@ static int    _send_complete_batch_script_msg(stepd_step_rec_t *step,
 /*
  * Launch an step step on the current node
  */
-extern stepd_step_rec_t *
-mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
-		       uint16_t protocol_version)
+extern int mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
+				  slurm_addr_t *cli, uint16_t protocol_version)
 {
 	if (stepd_step_rec_create(msg, protocol_version)) {
 		/*
@@ -207,7 +206,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 		int fail = errno;
 		_send_launch_failure(msg, cli, errno, protocol_version);
 		errno = fail;
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	step->envtp->cli = cli;
@@ -216,7 +215,7 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr_t *cli,
 	step->tres_freq = xstrdup(msg->tres_freq);
 	step->stepmgr = xstrdup(msg->stepmgr);
 
-	return step;
+	return SLURM_SUCCESS;
 }
 
 inline static int
@@ -402,13 +401,13 @@ batch_finish(stepd_step_rec_t *step, int rc)
 /*
  * Launch a batch job script on the current node
  */
-stepd_step_rec_t *
-mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
+extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
+				      slurm_addr_t *cli)
 {
 	if (batch_stepd_step_rec_create(msg)) {
 		error("batch_stepd_step_rec_create() failed for job %u on %s: %s",
 		      msg->job_id, conf->hostname, slurm_strerror(errno));
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	if ((step->batchdir = _make_batch_dir(step)) == NULL) {
@@ -422,7 +421,7 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 
 	env_array_for_batch_job(&step->env, msg, conf->node_name);
 
-	return step;
+	return SLURM_SUCCESS;
 
 cleanup:
 	error("batch script setup failed for job %u on %s: %s",
@@ -440,7 +439,7 @@ cleanup:
 
 	errno = ESLURMD_CREATE_BATCH_DIR_ERROR;
 
-	return NULL;
+	return SLURM_ERROR;
 }
 
 static int

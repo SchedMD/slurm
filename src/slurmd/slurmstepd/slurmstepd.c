@@ -1146,24 +1146,26 @@ rwfail:
 
 static int _step_setup(slurm_addr_t *cli, slurm_msg_t *msg)
 {
+	int rc = SLURM_SUCCESS;
+
 	switch (msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		debug2("setup for a batch_job");
-		step = mgr_launch_batch_job_setup(msg->data, cli);
+		rc = mgr_launch_batch_job_setup(msg->data, cli);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		debug2("setup for a launch_task");
-		step = mgr_launch_tasks_setup(msg->data, cli,
-					      msg->protocol_version);
+		rc = mgr_launch_tasks_setup(msg->data, cli,
+					    msg->protocol_version);
 		break;
 	default:
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
 
-	if (!step) {
-		error("_step_setup: no job returned");
-		return SLURM_ERROR;
+	if (rc) {
+		error("%s: %s", __func__, slurm_strerror(rc));
+		return rc;
 	}
 
 	if (step->container) {

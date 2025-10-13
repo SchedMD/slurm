@@ -52,15 +52,14 @@ void batch_finish(stepd_step_rec_t *step, int rc);
 /*
  * Initialize a stepd_step_rec_t structure for a launch tasks
  */
-stepd_step_rec_t *mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
-					 slurm_addr_t *cli,
-					 uint16_t protocol_version);
+extern int mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg,
+				  slurm_addr_t *cli, uint16_t protocol_version);
 
 /*
  * Initialize a stepd_step_rec_t structure for a batch job
  */
-stepd_step_rec_t *mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
-					     slurm_addr_t *client);
+extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
+				      slurm_addr_t *client);
 
 /*
  * Finalize a batch job.
