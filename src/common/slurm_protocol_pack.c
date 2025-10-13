@@ -11875,21 +11875,20 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_kvs_data(kvs_comm_set_t *msg_ptr, buf_t *buffer,
-			   uint16_t protocol_version)
+static void _pack_kvs_data(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	kvs_comm_set_t *msg_ptr = smsg->data;
 	int i;
-	xassert(msg_ptr);
 
 	pack16(msg_ptr->host_cnt, buffer);
 	for (i = 0; i < msg_ptr->host_cnt; i++)
 		_pack_kvs_host_rec(&msg_ptr->kvs_host_ptr[i], buffer,
-				   protocol_version);
+				   smsg->protocol_version);
 
 	pack16(msg_ptr->kvs_comm_recs, buffer);
 	for (i = 0; i < msg_ptr->kvs_comm_recs; i++)
 		_pack_kvs_rec(msg_ptr->kvs_comm_ptr[i], buffer,
-			      protocol_version);
+			      smsg->protocol_version);
 }
 
 static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, buf_t *buffer,
@@ -13944,8 +13943,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		break;
 	case PMI_KVS_PUT_REQ:
 	case PMI_KVS_GET_RESP:
-		_pack_kvs_data((kvs_comm_set_t *) msg->data, buffer,
-			       msg->protocol_version);
+		_pack_kvs_data(msg, buffer);
 		break;
 	case PMI_KVS_GET_REQ:
 		_pack_kvs_get((kvs_get_msg_t *) msg->data, buffer,
