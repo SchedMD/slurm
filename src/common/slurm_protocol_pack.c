@@ -11933,15 +11933,15 @@ static void _pack_kvs_get(const slurm_msg_t *smsg, buf_t *buffer)
 	kvs_get_msg_t *msg_ptr = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32((uint32_t) msg_ptr->task_id, buffer);
-		pack32((uint32_t) msg_ptr->size, buffer);
-		pack16((uint16_t) msg_ptr->port, buffer);
+		pack32(msg_ptr->task_id, buffer);
+		pack32(msg_ptr->size, buffer);
+		pack16(msg_ptr->port, buffer);
 		packstr(msg_ptr->hostname, buffer);
 		packstr(msg_ptr->tls_cert, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t) msg_ptr->task_id, buffer);
-		pack32((uint32_t) msg_ptr->size, buffer);
-		pack16((uint16_t) msg_ptr->port, buffer);
+		pack32(msg_ptr->task_id, buffer);
+		pack32(msg_ptr->size, buffer);
+		pack16(msg_ptr->port, buffer);
 		packstr(msg_ptr->hostname, buffer);
 	}
 }
