@@ -579,7 +579,7 @@ claim:
 	}
 
 	if (!rc && !step->batch)
-		io_thread_start(step);
+		io_thread_start();
 
 	debug2("Leaving  _setup_normal_io");
 	return rc;

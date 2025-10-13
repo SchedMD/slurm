@@ -99,7 +99,7 @@ extern int io_init_tasks_stdio(void);
  * and opens 2*ntask initial connections for stdout/err, also appending these
  * to job->objs list.
  */
-extern void io_thread_start(stepd_step_rec_t *step);
+extern void io_thread_start(void);
 
 int io_dup_stdio(stepd_step_task_info_t *t);
 

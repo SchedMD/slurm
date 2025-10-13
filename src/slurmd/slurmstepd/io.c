@@ -1298,7 +1298,7 @@ extern int io_init_tasks_stdio(void)
 	return rc;
 }
 
-extern void io_thread_start(stepd_step_rec_t *step)
+extern void io_thread_start(void)
 {
 	slurm_mutex_lock(&step->io_mutex);
 	slurm_thread_create_detached(_io_thr, step);
