@@ -94,7 +94,7 @@
 /*
  * Static prototype definitions.
  */
-static void  _make_tmpdir(stepd_step_rec_t *step);
+static void _make_tmpdir(void);
 static int   _run_script_and_set_env(const char *name, const char *path,
 				     stepd_step_rec_t *step);
 static void  _proc_stdout(char *buf, stepd_step_rec_t *step);
@@ -479,7 +479,7 @@ extern void exec_task(int local_proc_id)
 	 * might be set or changed in one of the prolog scripts.
 	 */
 	if (local_proc_id == 0)
-		_make_tmpdir(step);
+		_make_tmpdir();
 
 	if (!step->batch)
 		pdebug_stop_current(step);
@@ -551,8 +551,7 @@ extern void exec_task(int local_proc_id)
 	_exit(errno);
 }
 
-static void
-_make_tmpdir(stepd_step_rec_t *step)
+static void _make_tmpdir(void)
 {
 	char *tmpdir;
 
