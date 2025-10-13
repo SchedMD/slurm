@@ -936,8 +936,7 @@ static void _run(stepd_step_task_info_t *task)
 	fatal("execv(%s) failed: %m", run_argv[0]);
 }
 
-static void _create_start(stepd_step_rec_t *step,
-			  stepd_step_task_info_t *task)
+static void _create_start(stepd_step_task_info_t *task)
 {
 	int stime = 250, rc = SLURM_ERROR;
 	char *out;
@@ -1211,7 +1210,7 @@ extern void container_run(stepd_step_task_info_t *task)
 	if (oci_conf->runtime_run)
 		_run(task);
 	else
-		_create_start(step, task);
+		_create_start(task);
 }
 
 extern void cleanup_container(void)
