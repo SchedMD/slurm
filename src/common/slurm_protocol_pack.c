@@ -6713,15 +6713,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/* _pack_job_desc_msg
- * packs a job_desc struct
- * IN job_desc_ptr - pointer to the job descriptor to pack
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
-			       uint16_t protocol_version)
+static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_desc_msg_t *job_desc_ptr = smsg->data;
+
 	if (job_desc_ptr->script_buf) {
 		buf_t *buf = (buf_t *) job_desc_ptr->script_buf;
 		job_desc_ptr->script = buf->head;
@@ -6737,8 +6732,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 	if (!job_desc_ptr->wckey)
 		job_desc_ptr->bitflags |= USE_DEFAULT_WCKEY;
 
-	/* load the data values */
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->site_factor, buffer);
 		packstr(job_desc_ptr->batch_features, buffer);
 		packstr(job_desc_ptr->cluster_features, buffer);
@@ -6874,10 +6868,10 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->tres_per_node, buffer);
 		packstr(job_desc_ptr->tres_per_socket, buffer);
 		packstr(job_desc_ptr->tres_per_task, buffer);
-		pack_cron_entry(job_desc_ptr->crontab_entry, protocol_version,
-				buffer);
+		pack_cron_entry(job_desc_ptr->crontab_entry,
+				smsg->protocol_version, buffer);
 		pack16(job_desc_ptr->segment_size, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->site_factor, buffer);
 		packstr(job_desc_ptr->batch_features, buffer);
 		packstr(job_desc_ptr->cluster_features, buffer);
@@ -7012,10 +7006,10 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->tres_per_node, buffer);
 		packstr(job_desc_ptr->tres_per_socket, buffer);
 		packstr(job_desc_ptr->tres_per_task, buffer);
-		pack_cron_entry(job_desc_ptr->crontab_entry, protocol_version,
-				buffer);
+		pack_cron_entry(job_desc_ptr->crontab_entry,
+				smsg->protocol_version, buffer);
 		pack16(job_desc_ptr->segment_size, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->site_factor, buffer);
 		packstr(job_desc_ptr->batch_features, buffer);
 		packstr(job_desc_ptr->cluster_features, buffer);
@@ -7150,8 +7144,8 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->tres_per_node, buffer);
 		packstr(job_desc_ptr->tres_per_socket, buffer);
 		packstr(job_desc_ptr->tres_per_task, buffer);
-		pack_cron_entry(job_desc_ptr->crontab_entry, protocol_version,
-				buffer);
+		pack_cron_entry(job_desc_ptr->crontab_entry,
+				smsg->protocol_version, buffer);
 		pack16(job_desc_ptr->segment_size, buffer);
 	}
 
@@ -7733,7 +7727,12 @@ static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	iter = list_iterator_create(job_req_list);
 	while ((req = list_next(iter))) {
-		_pack_job_desc_msg(req, buffer, smsg->protocol_version);
+		slurm_msg_t msg_wrapper = {
+			.data = req,
+			.protocol_version = smsg->protocol_version,
+		};
+
+		_pack_job_desc_msg(&msg_wrapper, buffer);
 	}
 	list_iterator_destroy(iter);
 }
@@ -13628,8 +13627,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_UPDATE_JOB:
-		_pack_job_desc_msg((job_desc_msg_t *) msg->data, buffer,
-				   msg->protocol_version);
+		_pack_job_desc_msg(msg, buffer);
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
