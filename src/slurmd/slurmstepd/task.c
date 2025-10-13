@@ -87,6 +87,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
 
@@ -315,7 +316,7 @@ _setup_mpi(stepd_step_rec_t *step, int ltaskid)
 /*
  *  Current process is running as the user when this is called.
  */
-extern void exec_task(stepd_step_rec_t *step, int local_proc_id)
+extern void exec_task(int local_proc_id)
 {
 	int fd, j;
 	stepd_step_task_info_t *task = step->task[local_proc_id];

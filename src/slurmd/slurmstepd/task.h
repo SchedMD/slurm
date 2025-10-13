@@ -39,8 +39,6 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-void exec_task(stepd_step_rec_t *step, int i);
+void exec_task(int i);
 
 #endif /* !_TASK_H */

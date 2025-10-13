@@ -2318,7 +2318,7 @@ _fork_all_tasks(stepd_step_rec_t *step, bool *io_initialized)
 			if (_exec_wait_child_wait_for_parent(ei) < 0)
 				_exit(1);
 
-			exec_task(step, i);
+			exec_task(i);
 		}
 
 		/*
