@@ -222,7 +222,7 @@ static void _route_msg_task_to_client(eio_obj_t *obj);
 static void _free_outgoing_msg(struct io_buf *msg);
 static void _free_incoming_msg(struct io_buf *msg);
 static void _free_all_outgoing_msgs(list_t *msg_queue);
-static bool _incoming_buf_free(stepd_step_rec_t *step);
+static bool _incoming_buf_free(void);
 static bool _outgoing_buf_free(stepd_step_rec_t *step);
 static int  _send_connection_okay_response(stepd_step_rec_t *step);
 static struct io_buf *_build_connection_okay_message(stepd_step_rec_t *step);
@@ -256,8 +256,7 @@ _client_readable(eio_obj_t *obj)
 		return false;
 	}
 
-	if (client->in_msg != NULL
-	    || _incoming_buf_free(client->step))
+	if (client->in_msg || _incoming_buf_free())
 		return true;
 
 	debug5("  false");
@@ -322,7 +321,7 @@ static int _client_read(eio_obj_t *obj, list_t *objs)
 	 * Read the header, if a message read is not already in progress
 	 */
 	if (client->in_msg == NULL) {
-		if (_incoming_buf_free(client->step)) {
+		if (_incoming_buf_free()) {
 			client->in_msg =
 				list_dequeue(client->step->free_incoming);
 		} else {
@@ -1993,8 +1992,7 @@ static void _free_io_buf(struct io_buf *buf)
 }
 
 /* This just determines if there's space to hold more of the stdin stream */
-static bool
-_incoming_buf_free(stepd_step_rec_t *step)
+static bool _incoming_buf_free(void)
 {
 	struct io_buf *buf;
 
