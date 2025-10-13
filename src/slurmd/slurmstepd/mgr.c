@@ -1836,8 +1836,7 @@ fail1:
 	return(rc);
 }
 
-static int _pre_task_child_privileged(
-	stepd_step_rec_t *step, int taskid, struct priv_state *sp)
+static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
 {
 	int setwd = 0; /* set working dir */
 	int rc = 0;
@@ -2254,7 +2253,7 @@ static int _fork_all_tasks(bool *io_initialized)
 			 * NOTE: Only put things in here that are self contained
 			 * and belong in the child.
 			 */
-			if ((rc = _pre_task_child_privileged(step, i, &sprivs)))
+			if ((rc = _pre_task_child_privileged(i, &sprivs)))
 				fatal("%s: _pre_task_child_privileged() failed: %s",
 				      __func__, slurm_strerror(rc));
 
