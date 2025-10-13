@@ -12291,15 +12291,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
-					buf_t *buffer,
-					uint16_t protocol_version)
+static void _pack_accounting_update_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	accounting_update_msg_t *msg = smsg->data;
 	uint32_t count = 0;
 	list_itr_t *itr = NULL;
 	slurmdb_update_object_t *rec = NULL;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg->update_list)
 			count = list_count(msg->update_list);
 
@@ -12309,7 +12308,7 @@ static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 			itr = list_iterator_create(msg->update_list);
 			while ((rec = list_next(itr))) {
 				slurmdb_pack_update_object(
-					rec, protocol_version, buffer);
+					rec, smsg->protocol_version, buffer);
 			}
 			list_iterator_destroy(itr);
 		}
@@ -13976,10 +13975,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_dbd_relay(msg, buffer);
 		break;
 	case ACCOUNTING_UPDATE_MSG:
-		_pack_accounting_update_msg(
-			(accounting_update_msg_t *)msg->data,
-			buffer,
-			msg->protocol_version);
+		_pack_accounting_update_msg(msg, buffer);
 		break;
 	case REQUEST_TOPO_INFO:
 		_pack_topo_info_request_msg((topo_info_request_msg_t *)
