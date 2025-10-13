@@ -386,7 +386,7 @@ batch_finish(stepd_step_rec_t *step, int rc)
 		_send_complete_batch_script_msg(
 			step, rc, step_complete.step_rc);
 	} else {
-		stepd_wait_for_children_slurmstepd(step);
+		stepd_wait_for_children_slurmstepd();
 		verbose("%ps completed with slurm_rc = %d, job_rc = %d",
 			&step->step_id, rc, step_complete.step_rc);
 		stepd_send_step_complete_msgs();
@@ -665,7 +665,7 @@ _send_exit_msg(stepd_step_rec_t *step, uint32_t *tid, int n, int status)
 	return SLURM_SUCCESS;
 }
 
-extern void stepd_wait_for_children_slurmstepd(stepd_step_rec_t *step)
+extern void stepd_wait_for_children_slurmstepd(void)
 {
 	int left = 0;
 	int rc;
@@ -1563,7 +1563,7 @@ fail1:
 	set_job_state(step, SLURMSTEPD_STEP_ENDING);
 
 	if (step_complete.rank > -1)
-		stepd_wait_for_children_slurmstepd(step);
+		stepd_wait_for_children_slurmstepd();
 
 	/*
 	 * Step failed outside of the exec()ed tasks, make sure to tell
@@ -1854,7 +1854,7 @@ fail1:
 		if (step->aborted)
 			info("job_manager exiting with aborted job");
 		else
-			stepd_wait_for_children_slurmstepd(step);
+			stepd_wait_for_children_slurmstepd();
 
 		/*
 		 * Step failed outside of the exec()ed tasks, make sure to tell

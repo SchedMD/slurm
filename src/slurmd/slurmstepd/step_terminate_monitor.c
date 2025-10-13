@@ -170,8 +170,7 @@ static void *_monitor(void *ignored)
 				if (step->aborted)
 					info("unkillable stepd exiting with aborted job");
 				else
-					stepd_wait_for_children_slurmstepd(
-						step);
+					stepd_wait_for_children_slurmstepd();
 			}
 			/* Notify parent stepd or ctld directly */
 			stepd_send_step_complete_msgs();
