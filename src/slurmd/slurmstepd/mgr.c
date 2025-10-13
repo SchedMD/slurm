@@ -151,7 +151,6 @@ typedef struct kill_thread {
 
 #if defined(__linux__)
 typedef struct {
-	stepd_step_rec_t *step;
 	int id;
 } spank_task_args_t;
 #endif
@@ -956,7 +955,6 @@ static int _spank_user_child(void *arg)
 static int _spank_task_post_fork_child(void *arg)
 {
 	spank_task_args_t *args = arg;
-	stepd_step_rec_t *step = args->step;
 
 	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
@@ -972,7 +970,6 @@ static int _spank_task_post_fork_child(void *arg)
 static int _spank_task_exit_child(void *arg)
 {
 	spank_task_args_t *args = arg;
-	stepd_step_rec_t *step = args->step;
 
 	if (container_g_join(&step->step_id, step->uid, false)) {
 		error("container_g_join(%u): %m", step->step_id.job_id);
@@ -1013,7 +1010,6 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id,
 		if ((spank_func == SPANK_STEP_TASK_EXIT) &&
 		    spank_has_task_exit()) {
 			args = xmalloc(sizeof(*args));
-			args->step = step;
 			args->id = id;
 			stack = xmalloc(STACK_SIZE);
 			pid = clone(_spank_task_exit_child,
@@ -1021,7 +1017,6 @@ static int _run_spank_func(step_fn_t spank_func, stepd_step_rec_t *step, int id,
 		} else if ((spank_func == SPANK_STEP_TASK_POST_FORK) &&
 			   spank_has_task_post_fork()) {
 			args = xmalloc(sizeof(*args));
-			args->step = step;
 			args->id = id;
 			stack = xmalloc(STACK_SIZE);
 			pid = clone(_spank_task_post_fork_child,
