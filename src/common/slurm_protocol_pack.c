@@ -97,8 +97,7 @@ static int _unpack_partition_info_members(partition_info_t *part,
 static int _unpack_reserve_info_members(reserve_info_t *resv, buf_t *buffer,
 					uint16_t protocol_version);
 
-static void _pack_job_step_pids(job_step_pids_t *msg, buf_t *buffer,
-				uint16_t protocol_version);
+static void _pack_job_step_pids(const slurm_msg_t *smsg, buf_t *buffer);
 static int _unpack_job_step_pids(job_step_pids_t **msg, buf_t *buffer,
 				 uint16_t protocol_version);
 
@@ -9727,12 +9726,16 @@ unpack_error:
 static void _pack_job_step_stat(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_step_stat_t *msg = smsg->data;
+	slurm_msg_t msg_wrapper = {
+		.data = msg->step_pids,
+		.protocol_version = smsg->protocol_version,
+	};
 
 	pack32(msg->return_code, buffer);
 	pack32(msg->num_tasks, buffer);
 	jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 			 PROTOCOL_TYPE_SLURM, buffer);
-	_pack_job_step_pids(msg->step_pids, buffer, smsg->protocol_version);
+	_pack_job_step_pids(&msg_wrapper, buffer);
 }
 
 
@@ -9762,10 +9765,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_job_step_pids(job_step_pids_t *msg, buf_t *buffer,
-		    uint16_t protocol_version)
+static void _pack_job_step_pids(const slurm_msg_t *smsg, buf_t *buffer)
 {
+	job_step_pids_t *msg = smsg->data;
+
 	if (!msg) {
 		packnull(buffer);
 		pack32(0, buffer);
@@ -13801,9 +13804,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 				       msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_PIDS:
-		_pack_job_step_pids((job_step_pids_t *)msg->data,
-				    buffer,
-				    msg->protocol_version);
+		_pack_job_step_pids(msg, buffer);
 		break;
 	case REQUEST_ABORT_JOB:
 	case REQUEST_KILL_PREEMPTED:
