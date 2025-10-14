@@ -1464,6 +1464,16 @@ def require_openapi_generator(version="7.3.0"):
     ]
 
 
+def openapi_util():
+    """
+    Returns a UtilApi client from OpenAPI.
+    It needs require_openapi_generator() to be run first.
+    """
+    return openapi_client.UtilApi(
+        openapi_client.ApiClient(properties["openapi_config"])
+    )
+
+
 def openapi_slurm():
     """
     Returns a SlurmApi client from OpenAPI.

@@ -168,7 +168,7 @@ static const struct {
 	struct {
 		char *name;
 		char *desc;
-	} tags[3];
+	} tags[4];
 	struct {
 		char *url;
 	} servers[1];
@@ -208,6 +208,10 @@ static const struct {
 		{
 			.name = "slurmdb",
 			.desc = "methods that query slurmdbd",
+		},
+		{
+			.name = "util",
+			.desc = "utilities available directly through slurmrestd",
 		},
 		{
 			.name = "openapi",
