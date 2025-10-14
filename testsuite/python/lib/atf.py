@@ -728,9 +728,11 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
                 )
 
         # Verify that the slurmd is registered correctly
+        timeout = 30 + 5 * len(slurmd_list)
         if not repeat_until(
             lambda: get_nodes(quiet=True),
             lambda nodes: all(nodes[name]["state"] == ["IDLE"] for name in slurmd_list),
+            timeout=timeout,
         ):
             nodes = get_nodes(quiet=True)
             non_idle = [
