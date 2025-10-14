@@ -43,22 +43,15 @@ def test_env_variables(printenv):
     output = atf.run_job_output(f"-N1 -n1 --cpus-per-task=1 {printenv}", user=suser)
     env_dict = json.loads(output)
 
-    env_var_count = 0
-    env_var_g0_count = 0
+    missing = [k for k in env_vars if k not in env_dict]
+    assert (
+        len(missing) == 0
+    ), f"All environment variables should be printed, but these were missing: {missing}"
 
-    for name, env_value in env_dict.items():
-        if name in env_vars:
-            env_var_count += 1
-        elif name in env_vars_g0:
-            if int(env_value) > 0:
-                env_var_g0_count += 1
-
-    assert env_var_count == len(
-        env_vars
-    ), f"Not all environment variables are set missing {len(env_vars) - env_var_count}"
-    assert env_var_g0_count == len(
-        env_vars_g0
-    ), f"Not all environment variables are set and greater than zero missing {len(env_vars_g0) - env_var_g0_count}"
+    missing = [k for k in env_vars_g0 if k not in env_dict or int(env_dict[k]) <= 0]
+    assert (
+        len(missing) == 0
+    ), f"All environment variables should be printed and greater than 0, but these were not: {missing}"
 
 
 def test_user_env_variables():
