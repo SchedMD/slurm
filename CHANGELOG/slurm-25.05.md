@@ -1,3 +1,21 @@
+## Changes in 25.05.4
+
+* scontrol/sacct/sacctmgr - Prevent hitting a double free when slurm is compiled with --enable-memory-leak-debug and using the --json or --yaml options.
+* Prevent possible truncation of the CPU_IDs list in "scontrol --details show job" on high-core-count systems.
+* slurmd - Fix potential memory leak when incoming RPC is rejected or fails to unpack successfully.
+* Demote certain plugin loading "error" messages to "debug" messages. This prevents unnecessary errors from being logged when slurmrestd tries to load the tls/s2n plugin to handle https requests. Failures to load any other plugins will still result in informative "error" messages being logged.
+* Respect time_min_as_soft_limit when calculating the projected job end time.
+* Fix a regression added in 25.05.2 that broke compatibility with PMIx v2.x through v3.1.0rc1.
+* slurmrestd - Fix a bug in the "GET /slurm/v0.0.4*/node/{node_name}" endpoint where the node's `partitions` field would be incorrectly populated.
+* Fix regression that caused slurmctld to wait forever on shutdown until all powersave scripts completed. Now the slurmctld waits up to 10 seconds, as documented.
+* Improve consistency of invalid node name errors.
+* Prevent potential memory corruption while forwarding messages that require addresses to be packed.
+* slurmctld - Increased the default maximum number of incoming connections from 50 to 512 as configured in slurm.conf with SlurmctldParameters=conmgr_max_connections=512 to reduce amount of connections getting deferred responses.
+* Avoid allowing one extra connection above the configured conmgr_max_connections limit.
+* Docs - Change man page footer to display the current Slurm release instead of the last-changed "Month Year".
+* Docs - Remove "Last modified" dates from HTML documentation.
+* slurmstepd - Fix deadlock when PMIx receives an event during step termination, which caused stuck stepd processes after job completion.
+
 ## Changes in 25.05.3
 
 * slurmctld.service - Set LimitMEMLOCK=infinity by default to avoid slurmctld crashes due to default for locked memory being too low.
