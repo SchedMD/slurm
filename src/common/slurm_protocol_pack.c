@@ -1116,22 +1116,16 @@ static void _pack_node_registration_status_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int
-_unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
-				     ** msg, buf_t *buffer,
-				     uint16_t protocol_version)
+static int _unpack_node_registration_status_msg(slurm_msg_t *smsg,
+						buf_t *buffer)
 {
 	char *gres_info = NULL;
 	uint32_t gres_info_size, uint32_tmp;
 	int i;
-	slurm_node_registration_status_msg_t *node_reg_ptr;
+	slurm_node_registration_status_msg_t *node_reg_ptr =
+		xmalloc(sizeof(*node_reg_ptr));
 
-	/* alloc memory for structure */
-	xassert(msg);
-	node_reg_ptr = xmalloc(sizeof(slurm_node_registration_status_msg_t));
-	*msg = node_reg_ptr;
-
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
@@ -1168,7 +1162,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			     sizeof(*node_reg_ptr->step_id));
 		for (i = 0; i < node_reg_ptr->job_count; i++)
 			if (unpack_step_id_members(&node_reg_ptr->step_id[i],
-						   buffer, protocol_version))
+						   buffer,
+						   smsg->protocol_version))
 				goto unpack_error;
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
@@ -1183,7 +1178,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			gres_info = NULL;
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version,
+					      smsg->protocol_version,
 					      1) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&node_reg_ptr->version, buffer);
@@ -1191,7 +1186,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack8(&node_reg_ptr->dynamic_type, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_conf, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
-	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
@@ -1227,7 +1222,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			     sizeof(*node_reg_ptr->step_id));
 		for (i = 0; i < node_reg_ptr->job_count; i++)
 			if (unpack_step_id_members(&node_reg_ptr->step_id[i],
-						   buffer, protocol_version))
+						   buffer,
+						   smsg->protocol_version))
 				goto unpack_error;
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
@@ -1242,7 +1238,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			gres_info = NULL;
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version,
+					      smsg->protocol_version,
 					      1) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&node_reg_ptr->version, buffer);
@@ -1250,7 +1246,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpack8(&node_reg_ptr->dynamic_type, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_conf, buffer);
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 		safe_unpack_time(&node_reg_ptr->slurmd_start_time, buffer);
@@ -1285,7 +1281,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			     sizeof(*node_reg_ptr->step_id));
 		for (i = 0; i < node_reg_ptr->job_count; i++)
 			if (unpack_step_id_members(&node_reg_ptr->step_id[i],
-						   buffer, protocol_version))
+						   buffer,
+						   smsg->protocol_version))
 				goto unpack_error;
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
@@ -1300,8 +1297,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 			gres_info = NULL;
 		}
 		if (acct_gather_energy_unpack(&node_reg_ptr->energy, buffer,
-					      protocol_version, 1)
-		    != SLURM_SUCCESS)
+					      smsg->protocol_version,
+					      1) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&node_reg_ptr->version, buffer);
 
@@ -1310,12 +1307,12 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 		safe_unpackstr(&node_reg_ptr->dynamic_feature, buffer);
 	}
 
+	smsg->data = node_reg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(gres_info);
 	slurm_free_node_registration_status_msg(node_reg_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14106,10 +14103,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_node_info_msg(msg, buffer);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
-		rc = _unpack_node_registration_status_msg(
-			(slurm_node_registration_status_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_node_registration_status_msg(msg, buffer);
 		break;
 	case RESPONSE_ACCT_GATHER_UPDATE:
 	case RESPONSE_ACCT_GATHER_ENERGY:
