@@ -175,32 +175,24 @@ typedef struct {
 
 /* Slurm cgroup plugins configuration parameters */
 typedef struct {
-	char *cgroup_mountpoint;
-
-	char *cgroup_prepend;
-
-	bool constrain_cores;
-
-	bool constrain_ram_space;
 	float allowed_ram_space;
-	float max_ram_percent;		/* Upper bound on memory as % of RAM */
-
-	uint64_t min_ram_space;		/* Lower bound on memory limit (MB) */
-
-	bool constrain_swap_space;
 	float allowed_swap_space;
-	float max_swap_percent;		/* Upper bound on swap as % of RAM  */
-	uint64_t memory_swappiness;
-
-	bool constrain_devices;
+	char *cgroup_mountpoint;
 	char *cgroup_plugin;
-
-	bool ignore_systemd;
-	bool ignore_systemd_on_failure;
-
+	char *cgroup_prepend;
+	char *cgroup_slice;
+	bool constrain_cores;
+	bool constrain_devices;
+	bool constrain_ram_space;
+	bool constrain_swap_space;
 	bool enable_controllers;
 	char *enable_extra_controllers;
-
+	bool ignore_systemd;
+	bool ignore_systemd_on_failure;
+	float max_ram_percent; /* Upper bound on memory as % of RAM */
+	float max_swap_percent; /* Upper bound on swap as % of RAM  */
+	uint64_t memory_swappiness;
+	uint64_t min_ram_space; /* Lower bound on memory limit (MB) */
 	bool signal_children_processes;
 	uint64_t systemd_timeout; /* How much time to wait on systemd operations (msec)*/
 } cgroup_conf_t;

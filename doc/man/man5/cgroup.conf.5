@@ -46,6 +46,15 @@ It is recommended that you switch to cgroup/v2 at your earliest convenience.
 .IP
 
 .TP
+\fBCgroupSlice\fR=\fISLICE_NAME\fR
+Start slurmd and the slurmstepd scope in the specified slice. If starting
+slurmd with systemd, you should also add the Slice= property under the [Service]
+section of slurmd.service file. Changing this parameter requires to stop all
+the slurmstepd scopes in the node and restart slurmd. Applies only to cgroup v2.
+The default is system.slice.
+.IP
+
+.TP
 \fBSystemdTimeout\fR=\fI<number>\fR
 On slow systems like virtual machines or when systemd is busy, it can take
 a lot of time to initialize and prepare the scope for slurmd during startup.

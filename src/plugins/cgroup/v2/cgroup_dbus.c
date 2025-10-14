@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/plugins/cgroup/v2/cgroup_dbus.h"
+#include "src/plugins/cgroup/common/cgroup_common.h"
 
 /*
  * This is how systemd code understand you're asking for the max. of some
@@ -60,7 +61,7 @@ static int _process_and_close_reply_msg(DBusMessage *msg)
 		case DBUS_TYPE_SIGNATURE:
 			rc = SLURM_ERROR;
 			dbus_message_iter_get_basic(&itr, &tmp_str);
-			log_flag(CGROUP, "The unit may already exist or we got an error: %s",
+			error("The unit may already exist or we got an error: %s",
 				 tmp_str);
 			break;
 		default:
@@ -82,10 +83,14 @@ static bool _set_scope_properties(DBusMessageIter *main_itr, pid_t *p,
 	const char *pid_prop_name = "PIDs";
 	const char *dlg_prop_name = "Delegate";
 	const char *tasksmax_prop_name = "TasksMax";
+	const char *slice_prop_name = "Slice";
 	const char pid_prop_sig[] = { DBUS_TYPE_ARRAY, DBUS_TYPE_UINT32, '\0' };
 	const char dlg_prop_sig [] = { DBUS_TYPE_BOOLEAN, '\0' };
 	const char tasksmax_prop_sig [] = { DBUS_TYPE_UINT64, '\0' };
-	char sig[5];
+	const char slice_prop_sig[] = { DBUS_TYPE_STRING, '\0' };
+	const char *slice_name = slurm_cgroup_conf.cgroup_slice;
+
+	char sig[6];
 	int dlg = delegate ? 1 : 0;
 	uint64_t tasksmax_val = SYSTEMD_CGROUP_LIMIT_MAX;
 
@@ -160,6 +165,31 @@ static bool _set_scope_properties(DBusMessageIter *main_itr, pid_t *p,
 	 */
 	if (!dbus_message_iter_close_container(&it[1], &it[2])
 	    || !dbus_message_iter_close_container(&it[0], &it[1]))
+		goto abandon;
+
+	/*
+	 * Add the property of Slice = <slice>. We are into the array (it1) and
+	 * we need to open a new struct (it2) to put the string and the boolean.
+	 */
+	if (!dbus_message_iter_open_container(&it[0], DBUS_TYPE_STRUCT, NULL,
+					      &it[1]))
+		goto abandon;
+	if (!dbus_message_iter_append_basic(&it[1], DBUS_TYPE_STRING,
+					    &slice_prop_name))
+		goto abandon;
+	if (!dbus_message_iter_open_container(&it[1], DBUS_TYPE_VARIANT,
+					      slice_prop_sig, &it[2]))
+		goto abandon;
+	if (!dbus_message_iter_append_basic(&it[2], *(slice_prop_sig),
+					    &slice_name))
+		goto abandon;
+
+	/*
+	 * At this point we have the Slice=<name> inserted, let's close this
+	 * block: Close variant, Close struct.
+	 */
+	if (!dbus_message_iter_close_container(&it[1], &it[2]) ||
+	    !dbus_message_iter_close_container(&it[0], &it[1]))
 		goto abandon;
 
 	/*
@@ -252,8 +282,8 @@ extern int cgroup_dbus_attach_to_scope(pid_t stepd_pid, char *full_path)
 	pid_t pids[] = { stepd_pid };
 	int npids = 1;
 
-	log_flag(CGROUP, "Creating Slurm scope %s into system slice and adding pid %d.",
-		 scope_name, stepd_pid);
+	log_flag(CGROUP, "Creating Slurm scope %s into %s and adding pid %d.",
+		 scope_name, slurm_cgroup_conf.cgroup_slice, stepd_pid);
 
 	dbus_error_init(&err);
 
