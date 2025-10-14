@@ -80,11 +80,6 @@ static int _client_connected(const pmix_proc_t *proc, void *server_object,
 	return PMIX_SUCCESS;
 }
 
-static void _op_callbk(pmix_status_t status, void *cbdata)
-{
-	PMIXP_DEBUG("op callback is called with status=%d", status);
-}
-
 static void _errhandler_reg_callbk(pmix_status_t status,
 				   size_t errhandler_ref, void *cbdata)
 {
@@ -299,8 +294,6 @@ int pmixp_lib_init(void)
 int pmixp_lib_finalize(void)
 {
 	int rc = SLURM_SUCCESS;
-	/* deregister the errhandler */
-	PMIx_Deregister_event_handler(0, _op_callbk, NULL);
 
 	if (PMIX_SUCCESS != PMIx_server_finalize()) {
 		rc = SLURM_ERROR;
