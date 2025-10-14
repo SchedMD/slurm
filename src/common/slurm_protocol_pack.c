@@ -1688,60 +1688,53 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _unpack_node_info_msg(node_info_msg_t **msg, buf_t *buffer,
-				 uint16_t protocol_version)
+static int _unpack_node_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	int i;
-	node_info_msg_t *tmp_ptr;
 	bitstr_t *hidden_nodes = NULL;
+	node_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(node_info_msg_t));
-	*msg = tmp_ptr;
-
-	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpack32(&tmp_ptr->record_count, buffer);
-		safe_unpack_time(&tmp_ptr->last_update, buffer);
+	if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->record_count, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
 		unpack_bit_str_hex(&hidden_nodes, buffer);
 
-		safe_xcalloc(tmp_ptr->node_array, tmp_ptr->record_count,
+		safe_xcalloc(msg->node_array, msg->record_count,
 			     sizeof(node_info_t));
 
 		/* load individual job info */
-		for (i = 0; i < tmp_ptr->record_count; i++) {
+		for (int i = 0; i < msg->record_count; i++) {
 			if (hidden_nodes && bit_test(hidden_nodes, i)) {
 				/* Nothing to unpack */
 			} else if (_unpack_node_info_members(
-					   &tmp_ptr->node_array[i], buffer,
-					   protocol_version)) {
+					   &msg->node_array[i], buffer,
+					   smsg->protocol_version)) {
 				goto unpack_error;
 			}
 		}
 
 		FREE_NULL_BITMAP(hidden_nodes);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&tmp_ptr->record_count, buffer);
-		safe_unpack_time(&tmp_ptr->last_update, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->record_count, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
 
-		safe_xcalloc(tmp_ptr->node_array, tmp_ptr->record_count,
+		safe_xcalloc(msg->node_array, msg->record_count,
 			     sizeof(node_info_t));
 
 		/* load individual job info */
-		for (i = 0; i < tmp_ptr->record_count; i++) {
-			if (_unpack_node_info_members(&tmp_ptr->node_array[i],
+		for (int i = 0; i < msg->record_count; i++) {
+			if (_unpack_node_info_members(&msg->node_array[i],
 						      buffer,
-						      protocol_version))
+						      smsg->protocol_version))
 				goto unpack_error;
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	FREE_NULL_BITMAP(hidden_nodes);
-	slurm_free_node_info_msg(tmp_ptr);
-	*msg = NULL;
+	slurm_free_node_info_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14110,9 +14103,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_partition_info_msg(msg, buffer);
 		break;
 	case RESPONSE_NODE_INFO:
-		rc = _unpack_node_info_msg((node_info_msg_t **) &
-					   (msg->data), buffer,
-					   msg->protocol_version);
+		rc = _unpack_node_info_msg(msg, buffer);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		rc = _unpack_node_registration_status_msg(
