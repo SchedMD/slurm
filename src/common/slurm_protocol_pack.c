@@ -3383,18 +3383,17 @@ static void _pack_job_script_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	packstr(msg->head, buffer);
 }
 
-static int _unpack_job_script_msg(char **msg, buf_t *buffer,
-				  uint16_t protocol_version)
+static int _unpack_job_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	xassert(msg);
+	char *msg = NULL;
 
-	safe_unpackstr(msg, buffer);
+	safe_unpackstr(&msg, buffer);
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(*msg);
-	*msg = NULL;
+	xfree(msg);
 	return SLURM_ERROR;
 }
 
@@ -14113,9 +14112,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_info_msg(msg, buffer);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
-		rc = _unpack_job_script_msg((char **) &(msg->data),
-					    buffer,
-					    msg->protocol_version);
+		rc = _unpack_job_script_msg(msg, buffer);
 		break;
 	case RESPONSE_PARTITION_INFO:
 		rc = _unpack_partition_info_msg((partition_info_msg_t **) &
