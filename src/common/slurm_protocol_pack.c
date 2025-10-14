@@ -10273,7 +10273,7 @@ static void _pack_part_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	part_info_request_msg_t *msg = smsg->data;
 
 	pack_time(msg->last_update, buffer);
-	pack16((uint16_t)msg->show_flags, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 static int _unpack_part_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
