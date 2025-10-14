@@ -272,9 +272,9 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 	debug3("%s %s called", plugin_type, __func__);
 
 	s_p_options_t options[] = {
-		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
+		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
 		{"ProfileInfluxDBTimeout", S_P_UINT32},
@@ -293,7 +293,6 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 
 	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
 	if (tbl) {
-		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		if (s_p_get_string(&tmp, "ProfileInfluxDBDefault", tbl)) {
 			influxdb_conf.def =
 				acct_gather_profile_from_string(tmp);
@@ -304,6 +303,7 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database,
 			       "ProfileInfluxDBDatabase", tbl);
+		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		s_p_get_string(&influxdb_conf.password,
 			       "ProfileInfluxDBPass", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
@@ -518,14 +518,14 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 
 extern void acct_gather_profile_p_conf_values(list_t **data)
 {
-	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
-		     influxdb_conf.host);
-
 	add_key_pair(*data, "ProfileInfluxDBDatabase", "%s",
 		     influxdb_conf.database);
 
 	add_key_pair(*data, "ProfileInfluxDBDefault", "%s",
 		     acct_gather_profile_to_string(influxdb_conf.def));
+
+	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
+		     influxdb_conf.host);
 
 	/* skip over ProfileInfluxDBPass for security reasons */
 
