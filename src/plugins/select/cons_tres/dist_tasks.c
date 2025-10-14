@@ -195,12 +195,12 @@ static int _get_task_count(job_record_t *job_ptr)
 	 * originally calculate off min_nodes if ntasks_per_node is given we
 	 * will not have the right num_tasks, so recalculate.
 	 */
-	if (job_ptr->details->num_tasks &&
-	    (job_ptr->bit_flags & JOB_NTASKS_SET)) {
-		maxtasks = job_ptr->details->num_tasks;
-	} else if (job_ptr->details->ntasks_per_node) {
+	if (job_ptr->details->ntasks_per_node) {
 		maxtasks = job_ptr->details->ntasks_per_node *
 			   job_ptr->job_resrcs->nhosts;
+	} else if (job_ptr->details->num_tasks &&
+		   (job_ptr->bit_flags & JOB_NTASKS_SET)) {
+		maxtasks = job_ptr->details->num_tasks;
 	} else {
 		maxtasks = job_ptr->job_resrcs->ncpus;
 		if (job_ptr->details->cpus_per_task > 1)
