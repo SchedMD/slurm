@@ -613,20 +613,38 @@ extern int slurm_accept_conn(int fd, slurm_addr_t *addr)
 
 extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
-	socklen_t len = sizeof(*addr);
 	int sock = -1;
 	void *conn = NULL;
 	conn_args_t conn_args = {
 		.mode = CONN_SERVER,
 	};
 
-	sock = accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
+	do {
+		socklen_t len = sizeof(*addr);
+		int err = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
 
-	if (sock < 0) {
+		if ((sock = accept4(fd, (struct sockaddr *) addr, &len,
+				    SOCK_CLOEXEC)) >= 0) {
+			log_flag(NET, "%s: [fd:%d] accept()ed: fd:%d -> %pA",
+				 __func__, fd, sock, addr);
+			break;
+		}
+
+		/* Preserve errno for caller */
+		if (errno)
+			err = errno;
+
+		if (err == EINTR) {
+			log_flag(NET, "%s: [fd:%d] retry accept4() due to interrupt: %s",
+				 __func__, fd, slurm_strerror(err));
+			continue;
+		}
+
 		error("%s: Unable to accept() connection to address %pA: %m",
 		      __func__, addr);
+		errno = err;
 		return NULL;
-	}
+	} while (true);
 
 	conn_args.input_fd = conn_args.output_fd = sock;
 	net_set_nodelay(sock, true, NULL);
