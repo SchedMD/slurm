@@ -10298,21 +10298,17 @@ static void _pack_resv_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	pack_time(msg->last_update, buffer);
 }
 
-static int
-_unpack_resv_info_request_msg(resv_info_request_msg_t ** msg, buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_resv_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	resv_info_request_msg_t* resv_info;
-
-	resv_info = xmalloc(sizeof(resv_info_request_msg_t));
-	*msg = resv_info;
+	resv_info_request_msg_t *resv_info = xmalloc(sizeof(*resv_info));
 
 	safe_unpack_time(&resv_info->last_update, buffer);
+
+	smsg->data = resv_info;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_resv_info_request_msg(resv_info);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14107,9 +14103,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_part_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_RESERVATION_INFO:
-		rc = _unpack_resv_info_request_msg((resv_info_request_msg_t **)
-						   & (msg->data), buffer,
-						   msg->protocol_version);
+		rc = _unpack_resv_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_BUILD_INFO:
 		rc = _unpack_last_update_msg((last_update_msg_t **) &
