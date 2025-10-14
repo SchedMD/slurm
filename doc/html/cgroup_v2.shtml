@@ -337,10 +337,11 @@ Slurm should work normally.</p>
 task) which use cgroup, call init() function of cgroup/v2 plugin. What happens
 immediately is that slurmd does a call to dbus using libdbus, and creates
 a new systemd "Scope". The scope name is predefined and set depending on an
-internal constant SYSTEM_CGSCOPE under SYSTEM_CGSLICE. It basically ends up
-with the name "slurmstepd.scope" or "nodename_slurmstepd.scope" depending on
-whether Slurm is compiled with <i>--enable-multiple-slurmd</i> (prefixes node
-name) or not. The cgroup directory associated with this scope will be fixed as:
+internal constant SYSTEM_CGSCOPE. This constant name is either
+"slurmstepd.scope" or "nodename_slurmstepd.scope" depending on whether Slurm was
+compiled with <i>--enable-multiple-slurmd</i> (prefixes node name) or not. By
+default, this scope will be placed under system.slice and the cgroup directory
+associated with this scope will be:
 "/sys/fs/cgroup/system.slice/slurmstepd.scope" or
 "/sys/fs/cgroup/system.slice/nodename_slurmstepd.scope".
 </p>
