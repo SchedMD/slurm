@@ -131,7 +131,8 @@ extern void feature_list_delete(void *x);
  * Return a pointer to the dependency in job_ptr's dependency list that
  * matches dep_ptr, or NULL if none is found.
  *
- * A dependency "matches" when the job_id and depend_type are the same.
+ * A dependency "matches" when the array_task_id, job_id and depend_type
+ * are the same.
  */
 extern depend_spec_t *find_dependency(job_record_t *job_ptr,
 				      depend_spec_t *dep_ptr);
@@ -258,9 +259,13 @@ extern int test_job_dependency(job_record_t *job_ptr, bool *was_changed);
  * new format (e.g. "afterok:123:124,after:128").
  * IN job_ptr - job record to have dependency and depend_list updated
  * IN new_depend - new dependency description
+ * IN is_remote_cluster = if true, then this is a remote cluster. Do not
+ *    discard invalid dependencies. Instead, update the dependency like normal,
+ *    but return an error code.
  * RET returns an error code from slurm_errno.h
  */
-extern int update_job_dependency(job_record_t *job_ptr, char *new_depend);
+extern int update_job_dependency(job_record_t *job_ptr, char *new_depend,
+				 bool is_remote_cluster);
 
 /*
  * new_depend_list is a dependency list that came from a sibling cluster. It

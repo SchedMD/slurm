@@ -3410,7 +3410,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	}
 	xfree(job_ptr_pend->array_recs->task_id_str);
 	if (job_ptr_pend->array_recs->task_cnt) {
-		job_ptr_pend->array_recs->task_cnt--;
+		/* Note job_array_post_sched decrements task_cnt if non-zero */
 		if (job_ptr_pend->array_recs->task_cnt <= 1) {
 			/*
 			 * This is the last task of the job array, so we need to
@@ -3431,6 +3431,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 			}
 		} else {
 			/* Still have tasks left to split off in the array */
+			job_ptr_pend->array_recs->task_cnt--;
 			job_ptr_pend->array_task_id = NO_VAL;
 		}
 	} else {
@@ -7488,7 +7489,8 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if (job_desc->site_factor != NO_VAL)
 		job_ptr->site_factor = job_desc->site_factor;
 
-	error_code = update_job_dependency(job_ptr, job_desc->dependency);
+	error_code =
+		update_job_dependency(job_ptr, job_desc->dependency, false);
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 	job_ptr->details->orig_dependency = xstrdup(job_ptr->details->
@@ -14716,7 +14718,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		} else {
 			int rc;
 			rc = update_job_dependency(job_ptr,
-						   job_desc->dependency);
+						   job_desc->dependency, false);
 			if (rc != SLURM_SUCCESS)
 				error_code = rc;
 			/*

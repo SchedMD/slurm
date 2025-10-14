@@ -382,6 +382,25 @@ proc test_local_aftercorr { } {
 	log_info "# Test local aftercorr"
 	log_info "#############################################################"
 
+	# Dependency on non-array job behaves like afterok:
+	log_info "aftercorr: test that dependency on a non-array job behaves like afterok:"
+	set job1 [submit_job "-M$c1" $c1 $file_in_short]
+	set job_array2 [submit_job "--depend=aftercorr:$job1 -M$c1 \
+		--array=1-2" $c1 $file_in_long]
+	my_wait_for_fed_job "$job1" "RUNNING" $c1
+	my_wait_for_fed_job "$job_array2\_1" "PENDING" $c1
+	my_wait_for_fed_job "$job_array2\_2" "PENDING" $c1
+	wait_for_depend "$job_array2\_1" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	wait_for_depend "$job_array2\_2" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	my_wait_for_fed_job "$job1" "DONE" $c1
+	wait_for_depend "$job_array2\_1" "None" "(null)"
+	wait_for_depend "$job_array2\_2" "None" "(null)"
+	my_wait_for_fed_job "$job_array2\_1" "RUNNING" $c1
+	my_wait_for_fed_job "$job_array2\_2" "RUNNING" $c1
+	cancel_job $job_array2 $c1
+
 	# Local dependency succeeds
 	log_info "aftercorr: test that local dependency succeeds:"
 	set job_array1 [submit_job "-M$c1 --array=1-2" $c1 $file_in_short]
@@ -437,6 +456,25 @@ proc test_remote_aftercorr { } {
 	log_info "#############################################################"
 	log_info "# Test remote aftercorr"
 	log_info "#############################################################"
+
+	# Dependency on non-array job behaves like afterok:
+	log_info "aftercorr: test that remote dependency on a non-array job behaves like afterok:"
+	set job1 [submit_job "-M$c1" $c1 $file_in_short]
+	set job_array2 [submit_job "--depend=aftercorr:$job1 -M$c2 \
+		--array=1-2" $c2 $file_in_long]
+	my_wait_for_fed_job "$job1" "RUNNING" $c1
+	my_wait_for_fed_job "$job_array2\_1" "PENDING" $c2
+	my_wait_for_fed_job "$job_array2\_2" "PENDING" $c2
+	wait_for_depend "$job_array2\_1" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	wait_for_depend "$job_array2\_2" "Dependency" \
+		"aftercorr:$job1\(unfulfilled\)"
+	my_wait_for_fed_job "$job1" "DONE" $c1
+	wait_for_depend "$job_array2\_1" "None" "(null)"
+	wait_for_depend "$job_array2\_2" "None" "(null)"
+	my_wait_for_fed_job "$job_array2\_1" "RUNNING" $c2
+	my_wait_for_fed_job "$job_array2\_2" "RUNNING" $c2
+	cancel_job $job_array2 $c2
 
 	# Remote dependency succeeds
 	log_info "aftercorr: test that remote dependency succeeds:"
@@ -908,6 +946,21 @@ proc test_remote_or_dependencies { } {
 	if { !$kill_invalid_depend } {
 		cancel_job $job_id3 $c1
 	}
+
+	log_info "OR dependencies: Test that a dependency on non-existent remote job fails:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set fake_job_id [expr $job_id1 + 123]
+	set job_id2 [submit_job "--depend=afternotok:$job_id1?afternotok:$fake_job_id \
+		-M$c2" $c2 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "PENDING" $c2
+	wait_for_depend $job_id2 "Dependency" \
+		"afternotok:$job_id1\(unfulfilled\)?afternotok:$fake_job_id\(failed\)"
+
+	cancel_job $job_id1 $c1
+	wait_for_depend $job_id2 "None" "(null)"
+	cancel_job $job_id2 $c2
 }
 
 proc test_local_and_dependencies { } {
@@ -1006,6 +1059,48 @@ proc test_remote_and_dependencies { } {
 		cancel_job $job_id3 $c1
 	}
 	cancel_job $job_id1 $c1
+
+	log_info "AND dependencies: Test that a dependency on non-existent remote job fails:"
+	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+	set fake_job_id [expr $job_id1 + 123]
+	set job_id2 [submit_job "--depend=afternotok:$job_id1,afternotok:$fake_job_id \
+		-M$c2" $c2 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c1
+	my_wait_for_fed_job $job_id2 "PENDING" $c2
+	wait_for_depend $job_id2 "DependencyNeverSatisfied" \
+		"afternotok:$job_id1\(unfulfilled\),afternotok:$fake_job_id\(failed\)"
+	if { !$kill_invalid_depend } {
+		cancel_job $job_id2 $c2
+	}
+	cancel_job $job_id1 $c1
+
+	# Only the remote cluster knows that these are duplicate dependencies
+	log_info "AND dependencies: Test that remote dependencies with both array syntaxes are fulfilled:"
+	set job_id1 [submit_job "-M$c2 --array=1-2" $c2 $file_in_long]
+	# Order should have no effect
+	set job_id2 [submit_job \
+		"--depend=afternotok:$job_id1,afternotok:$job_id1\_* -M$c1" \
+		$c1 $file_in_long]
+	set job_id3 [submit_job \
+		"--depend=afternotok:$job_id1\_*,afternotok:$job_id1 -M$c1" \
+		$c1 $file_in_long]
+
+	my_wait_for_fed_job $job_id1 "RUNNING" $c2
+	my_wait_for_fed_job $job_id2 "PENDING" $c1
+	my_wait_for_fed_job $job_id3 "PENDING" $c1
+	wait_for_depend $job_id2 "Dependency" \
+		"afternotok:$job_id1\(unfulfilled\),afternotok:$job_id1\_*\(unfulfilled\)"
+	wait_for_depend $job_id3 "Dependency" \
+		"afternotok:$job_id1\_*\(unfulfilled\),afternotok:$job_id1\(unfulfilled\)"
+
+	cancel_job $job_id1 $c2
+	wait_for_depend $job_id2 "None" "(null)"
+	wait_for_depend $job_id3 "None" "(null)"
+	my_wait_for_fed_job $job_id2 "RUNNING" $c1
+	my_wait_for_fed_job $job_id3 "RUNNING" $c1
+	cancel_job $job_id2 $c1
+	cancel_job $job_id3 $c1
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {

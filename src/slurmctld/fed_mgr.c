@@ -2217,11 +2217,19 @@ static int _foreach_fed_job_update_info(fed_job_update_info_t *job_update_info)
 	return SLURM_SUCCESS;
 }
 
+static int _restore_array_task_id(void *x, void *arg)
+{
+	depend_spec_t *dep_ptr = x;
+	dep_ptr->array_task_id = dep_ptr->parsed_array_task_id;
+	return SLURM_SUCCESS;
+}
+
 static void _update_origin_job_dep(job_record_t *job_ptr,
 				   slurmdb_cluster_rec_t *origin)
 {
 	slurm_msg_t req_msg;
 	dep_update_origin_msg_t dep_update_msg = { 0 };
+	list_t *depend_list;
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -2234,7 +2242,11 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 		return;
 	}
 
-	dep_update_msg.depend_list = job_ptr->details->depend_list;
+	/* Respond with the original array_task_id */
+	depend_list = depended_list_copy(job_ptr->details->depend_list);
+	list_for_each(depend_list, _restore_array_task_id, NULL);
+
+	dep_update_msg.depend_list = depend_list;
 	dep_update_msg.job_id = job_ptr->job_id;
 
 	slurm_msg_t_init(&req_msg);
@@ -2244,6 +2256,8 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	if (_queue_rpc(origin, &req_msg, 0, false))
 		error("%s: Failed to send dependency update for %pJ",
 		      __func__, job_ptr);
+
+	FREE_NULL_LIST(depend_list);
 }
 
 static int _find_local_dep(void *arg, void *key)
@@ -2269,6 +2283,8 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	int rc, tmp;
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK, .fed = READ_LOCK };
 	job_record_t *job_ptr = xmalloc(sizeof *job_ptr);
+	job_record_t *tmp_job;
+	list_itr_t *itr;
 
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
@@ -2310,47 +2326,62 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 
 	/* Create and validate the dependency. */
 	lock_slurmctld(job_read_lock);
-	rc = update_job_dependency(job_ptr, remote_dep_info->dependency);
+	/*
+	 * The dependency string syntax should never be invalid here, because
+	 * it was verified by the local cluster. Any errors returned by
+	 * update_job_dependency() are the result of some other problem causing
+	 * an invalid dependency. We need to update the dependency list here
+	 * with those failures and send that back to the origin so the origin
+	 * cluster can evaluate the job accordingly. Otherwise, the job would
+	 * stay indefinitely in the pending state with an unfulilled dependency.
+	 */
+	rc = update_job_dependency(job_ptr, remote_dep_info->dependency, true);
 	unlock_slurmctld(job_read_lock);
 
-	if (rc) {
-		error("%s: Invalid dependency %s for %pJ: %s",
-		      __func__, remote_dep_info->dependency, job_ptr,
-		      slurm_strerror(rc));
-		_destroy_dep_job(job_ptr);
-	} else {
-		job_record_t *tmp_job;
-		list_itr_t *itr;
-
-		/*
-		 * Remove the old reference to this job from remote_dep_job_list
-		 * so that we don't continue testing the old dependencies.
-		 */
-		slurm_mutex_lock(&dep_job_list_mutex);
-		itr = list_iterator_create(remote_dep_job_list);
-		while ((tmp_job = list_next(itr))) {
-			if (tmp_job->job_id == job_ptr->job_id) {
-				list_delete_item(itr);
-				break;
-			}
+	/*
+	 * Remove the old reference to this job from remote_dep_job_list
+	 * so that we don't continue testing the old dependencies.
+	 */
+	slurm_mutex_lock(&dep_job_list_mutex);
+	itr = list_iterator_create(remote_dep_job_list);
+	while ((tmp_job = list_next(itr))) {
+		if (tmp_job->job_id == job_ptr->job_id) {
+			list_delete_item(itr);
+			break;
 		}
-		list_iterator_destroy(itr);
-
-		/*
-		 * If we were sent a list of 0 dependencies, that means
-		 * the dependency was updated and cleared, so don't
-		 * add it to the list to test. Also only add it if
-		 * there are dependencies local to this cluster.
-		 */
-		if (list_count(job_ptr->details->depend_list) &&
-		    list_find_first(job_ptr->details->depend_list,
-				    _find_local_dep, &tmp))
-			list_append(remote_dep_job_list, job_ptr);
-		else
-			_destroy_dep_job(job_ptr);
-
-		slurm_mutex_unlock(&dep_job_list_mutex);
 	}
+	list_iterator_destroy(itr);
+
+	/*
+	 * Tell the origin about invalid dependencies (update_job_dependency()
+	 * failed.)
+	 */
+	if (rc) {
+		uint32_t origin_id = fed_mgr_get_cluster_id(job_ptr->job_id);
+		slurmdb_cluster_rec_t *origin =
+			fed_mgr_get_cluster_by_id(origin_id);
+
+		if (!origin) {
+			log_flag(FEDR, "%s: Couldn't find the origin cluster (id %u) for %pJ; it probably left the federation.",
+				 __func__, origin_id, job_ptr);
+		} else {
+			_update_origin_job_dep(job_ptr, origin);
+		}
+	}
+
+	/*
+	 * If we were sent a list of 0 dependencies, that means the dependency
+	 * was updated and cleared, so don't add it to the list to test. Also
+	 * only add it if there are dependencies local to this cluster.
+	 */
+	if (list_count(job_ptr->details->depend_list) &&
+	    list_find_first(job_ptr->details->depend_list, _find_local_dep,
+			    &tmp))
+		list_append(remote_dep_job_list, job_ptr);
+	else
+		_destroy_dep_job(job_ptr);
+
+	slurm_mutex_unlock(&dep_job_list_mutex);
 	_destroy_dep_msg(remote_dep_info);
 }
 

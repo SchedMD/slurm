@@ -158,7 +158,7 @@ static void *_dep_agent(void *args)
 	    job_ptr->comment && strstr(job_ptr->comment, "on:")) {
 		char *new_depend = job_ptr->details->dependency;
 		job_ptr->details->dependency = NULL;
-		update_job_dependency(job_ptr, new_depend);
+		update_job_dependency(job_ptr, new_depend, false);
 		xfree(new_depend);
 		tok = strstr(job_ptr->comment, "on:");
 		cnt = strtol(tok + 3, &end_ptr, 10);
