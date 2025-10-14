@@ -535,6 +535,14 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 		batch_finish(rc); /* sends batch complete message */
 
 	/*
+	 * We must de-register any error handlers that might call
+	 * slurm_kill_jobstep() before auth_setuid_lock(), or we could get
+	 * deadlocked with an incoming PMIx error, as PMIx_Finalize() will
+         * wait for any thread.
+         */
+	mpi_fini();
+
+	/*
 	 * Call auth_setuid_lock after sending the batch_finish message as in
 	 * there the auth_g_create function is called, and that function uses
 	 * the lock. The lock is needed to ensure that the privileges are not
@@ -548,8 +556,6 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 			eio_signal_shutdown(step->msg_handle);
 		slurm_thread_join(step->msgid);
 	}
-
-	mpi_fini();
 
 	/*
 	 * This call is only done once per step since stepd_cleanup is protected
