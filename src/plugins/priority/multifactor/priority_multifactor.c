@@ -1312,6 +1312,39 @@ static int _decay_apply_new_usage_and_weighted_factors(job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+static void _set_assoc_fs_factor(
+	slurmdb_assoc_rec_t *assoc_ptr)
+{
+	slurmdb_assoc_rec_t *fs_assoc = assoc_ptr;
+
+	xassert(assoc_ptr);
+
+	/* Use values from parent when FairShare=SLURMDB_FS_USE_PARENT */
+	if (assoc_ptr->shares_raw == SLURMDB_FS_USE_PARENT)
+		fs_assoc = assoc_ptr->usage->fs_assoc_ptr;
+
+	/* Set the original assoc_ptr->usage->fs_factor */
+	assoc_ptr->usage->fs_factor = priority_p_calc_fs_factor(
+		fs_assoc->usage->usage_efctv,
+		(long double)fs_assoc->usage->shares_norm);
+}
+
+static int _set_non_fair_tree_fs_factor(
+	void *x,
+	void *args)
+{
+	job_record_t *job_ptr = x;
+
+	if (!job_ptr->assoc_ptr) {
+		error("Job %pJ has no association. Unable to compute fairshare.",
+		      job_ptr);
+		return 0;
+	}
+
+	_set_assoc_fs_factor(job_ptr->assoc_ptr);
+
+	return 0;
+}
 
 static void *_decay_thread(void *no_data)
 {
@@ -1453,6 +1486,11 @@ static void *_decay_thread(void *no_data)
 	get_usage:
 		if (flags & PRIORITY_FLAGS_FAIR_TREE)
 			fair_tree_decay(job_list, start_time);
+		else if (calc_fairshare)
+			list_for_each(
+				job_list,
+				_set_non_fair_tree_fs_factor,
+				NULL);
 
 		g_last_ran = start_time;
 
@@ -1922,6 +1960,9 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 
 	set_assoc_usage_norm(assoc);
 	_set_assoc_usage_efctv(assoc);
+
+	if (!(flags & PRIORITY_FLAGS_FAIR_TREE))
+		_set_assoc_fs_factor(assoc);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO)
 		_priority_p_set_assoc_usage_debug(assoc);

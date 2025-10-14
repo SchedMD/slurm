@@ -3535,7 +3535,6 @@ extern void assoc_mgr_get_shares(void *db_conn,
 		memcpy(share->tres_run_secs,
 		       assoc->usage->grp_used_tres_run_secs,
 		       sizeof(uint64_t) * g_tres_count);
-		share->fs_factor = assoc->usage->fs_factor;
 		share->level_fs = assoc->usage->level_fs;
 
 		if (assoc->partition) {
@@ -3563,8 +3562,11 @@ extern void assoc_mgr_get_shares(void *db_conn,
 			else
 				share->parent = xstrdup(assoc->parent_acct);
 		}
+
+		/* These can all be set in priority_g_set_assoc_usage */
 		share->usage_norm = (double)assoc->usage->usage_norm;
 		share->usage_efctv = (double)assoc->usage->usage_efctv;
+		share->fs_factor = assoc->usage->fs_factor;
 	}
 	list_iterator_destroy(itr);
 	assoc_mgr_unlock(&locks);
