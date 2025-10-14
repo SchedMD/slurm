@@ -401,6 +401,26 @@ def use_memory_program(module_setup):
 
 
 @pytest.fixture(scope="module")
+def printenv(module_setup):
+    """
+    Returns the bin path of a program that emulates printenv in a JSON format.
+    """
+
+    atf.require_tool("python3")
+
+    src_path = atf.properties["testsuite_scripts_dir"] + "/printenv.py"
+    bin_path = os.getcwd() + "/printenv.py"
+
+    # Ensure x permissions
+    atf.run_command(f"cp {src_path} {bin_path}")
+    atf.run_command(f"chmod a+x {bin_path}")
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
+
+
+@pytest.fixture(scope="module")
 def spank_fail_lib(module_setup):
     """
     Returns the bin path of the spank .so that will fail if configured.
