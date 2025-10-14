@@ -10276,22 +10276,18 @@ static void _pack_part_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	pack16((uint16_t)msg->show_flags, buffer);
 }
 
-static int
-_unpack_part_info_request_msg(part_info_request_msg_t ** msg, buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_part_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	part_info_request_msg_t* part_info;
-
-	part_info = xmalloc(sizeof(part_info_request_msg_t));
-	*msg = part_info;
+	part_info_request_msg_t *part_info = xmalloc(sizeof(*part_info));
 
 	safe_unpack_time(&part_info->last_update, buffer);
 	safe_unpack16(&part_info->show_flags, buffer);
+
+	smsg->data = part_info;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_part_info_request_msg(part_info);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14108,9 +14104,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_hostlist_expansion_response(msg, buffer);
 		break;
 	case REQUEST_PARTITION_INFO:
-		rc = _unpack_part_info_request_msg((part_info_request_msg_t **)
-						   & (msg->data), buffer,
-						   msg->protocol_version);
+		rc = _unpack_part_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_RESERVATION_INFO:
 		rc = _unpack_resv_info_request_msg((resv_info_request_msg_t **)
