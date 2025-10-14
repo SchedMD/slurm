@@ -5308,10 +5308,6 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint16_t uint16_tmp = 0;
 	slurm_ctl_conf_info_msg_t *build_ptr = xmalloc(sizeof(*build_ptr));
 
-	/* initialize this so we don't check for those not sending it */
-	build_ptr->hash_val = NO_VAL;
-
-	/* load the data values */
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
 		safe_unpack_time(&build_ptr->last_update, buffer);
