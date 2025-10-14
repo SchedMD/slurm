@@ -182,11 +182,94 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 	xfree(fmtstr);
 }
 
-extern void wrap_work(work_t *work)
+static work_t *_find_con_work(conmgr_fd_t *con, work_t *work)
 {
-	conmgr_fd_t *con = fd_get_ref(work->ref);
+	work_t *test = NULL, *next = NULL;
+
+	/* Only try running if in RUN status */
+	if (work->status != CONMGR_WORK_STATUS_RUN)
+		return NULL;
+
+	if (!con->work || list_is_empty(con->work))
+		return NULL;
+
+	if (!(test = list_peek(con->work)))
+		return NULL;
+
+	xassert(test->magic == MAGIC_WORK);
+	xassert(test->control.depend_type != CONMGR_WORK_DEP_INVALID);
+	xassert(test->ref->con == con);
+	xassert(test->status == CONMGR_WORK_STATUS_PENDING);
+
+	if (test->control.schedule_type != CONMGR_WORK_SCHED_FIFO)
+		return NULL;
+
+	/* Work must not have any dependencies that could require ordering */
+	if (test->control.depend_type != CONMGR_WORK_DEP_NONE)
+		return NULL;
+
+	next = list_pop(con->work);
+	xassert(next == test);
+
+	return next;
+}
+
+static work_t *_con_all_work_complete(conmgr_fd_t *con, work_t *work)
+{
+	work_t *next = NULL;
+	/*
+	 * All connection work has completed and we will call
+	 * handle_connection() to check the connection. In most cases,
+	 * handle_connection() will add more connection work which can be
+	 * executed next.
+	 */
+	con_unset_flag(con, FLAG_WORK_ACTIVE);
+
+	handle_connection(true, con);
+
+	if (!con_flag(con, FLAG_WORK_ACTIVE) &&
+	    (next = _find_con_work(con, work))) {
+		con_set_flag(con, FLAG_WORK_ACTIVE);
+		return next;
+	}
+
+	/*
+	 * No new eligible work was queued that can be run now, wake up watch to
+	 * see if other work can be done instead
+	 */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+	return NULL;
+}
+
+static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
+{
+	work_t *next = NULL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	/* con may be xfree()ed any time once lock is released */
+
+	if ((next = _find_con_work(con, work)) ||
+	    (next = _con_all_work_complete(con, work)))
+		work->status = CONMGR_WORK_STATUS_RUN;
+
+	fd_free_ref(&work->ref);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return next;
+}
+
+static work_t *_run_work(work_t *work)
+{
+	conmgr_fd_t *con = NULL;
+	work_t *next = NULL;
 
 	xassert(work->magic == MAGIC_WORK);
+
+	if (work->ref) {
+		con = fd_get_ref(work->ref);
+		xassert(con->magic == MAGIC_CON_MGR_FD);
+	}
 
 	_log_work(work, __func__, "BEGIN");
 
@@ -199,20 +282,19 @@ extern void wrap_work(work_t *work)
 
 	_log_work(work, __func__, "END");
 
-	if (con) {
-		slurm_mutex_lock(&mgr.mutex);
-		con_unset_flag(con, FLAG_WORK_ACTIVE);
-		/* con may be xfree()ed any time once lock is released */
-
-		EVENT_SIGNAL(&mgr.watch_sleep);
-		handle_connection(true, con);
-
-		fd_free_ref(&work->ref);
-		slurm_mutex_unlock(&mgr.mutex);
-	}
+	if (con)
+		next = _on_con_work_complete(con, work);
 
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
+
+	return next;
+}
+
+extern void wrap_work(work_t *work)
+{
+	while ((work = _run_work(work)))
+		/* do nothing */;
 }
 
 /*
