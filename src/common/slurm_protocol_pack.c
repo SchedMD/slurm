@@ -7982,22 +7982,17 @@ static void _pack_last_update_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	pack_time(msg->last_update, buffer);
 }
 
-static int
-_unpack_last_update_msg(last_update_msg_t ** msg, buf_t *buffer,
-			uint16_t protocol_version)
+static int _unpack_last_update_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	last_update_msg_t *last_update_msg;
-
-	xassert(msg);
-	last_update_msg = xmalloc(sizeof(last_update_msg_t));
-	*msg = last_update_msg;
+	last_update_msg_t *last_update_msg = xmalloc(sizeof(*last_update_msg));
 
 	safe_unpack_time(&last_update_msg->last_update, buffer);
+
+	smsg->data = last_update_msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_last_update_msg(last_update_msg);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14106,9 +14101,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_resv_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_BUILD_INFO:
-		rc = _unpack_last_update_msg((last_update_msg_t **) &
-					     (msg->data), buffer,
-					     msg->protocol_version);
+		rc = _unpack_last_update_msg(msg, buffer);
 		break;
 	case RESPONSE_BUILD_INFO:
 		rc = _unpack_slurm_ctl_conf_msg((slurm_ctl_conf_info_msg_t
