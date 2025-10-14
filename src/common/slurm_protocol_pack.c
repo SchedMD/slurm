@@ -2924,39 +2924,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int
-_unpack_partition_info_msg(partition_info_msg_t ** msg, buf_t *buffer,
-			   uint16_t protocol_version)
+static int _unpack_partition_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	int i;
-	partition_info_t *partition = NULL;
+	partition_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg);
-	*msg = xmalloc(sizeof(partition_info_msg_t));
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->record_count, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
 
-	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&((*msg)->record_count), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
-
-		safe_xcalloc((*msg)->partition_array, (*msg)->record_count,
+		safe_xcalloc(msg->partition_array, msg->record_count,
 			     sizeof(partition_info_t));
-		partition = (*msg)->partition_array;
 
 		/* load individual partition info */
-		for (i = 0; i < (*msg)->record_count; i++) {
-			if (_unpack_partition_info_members(&partition[i],
-							   buffer,
-							   protocol_version))
+		for (int i = 0; i < msg->record_count; i++) {
+			if (_unpack_partition_info_members(
+				    &msg->partition_array[i], buffer,
+				    smsg->protocol_version))
 				goto unpack_error;
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_partition_info_msg(*msg);
-	*msg = NULL;
+	slurm_free_partition_info_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14115,9 +14107,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_script_msg(msg, buffer);
 		break;
 	case RESPONSE_PARTITION_INFO:
-		rc = _unpack_partition_info_msg((partition_info_msg_t **) &
-						(msg->data), buffer,
-						msg->protocol_version);
+		rc = _unpack_partition_info_msg(msg, buffer);
 		break;
 	case RESPONSE_NODE_INFO:
 		rc = _unpack_node_info_msg((node_info_msg_t **) &
