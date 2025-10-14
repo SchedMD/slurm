@@ -52,8 +52,12 @@
 #include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
+/* Limit automatically set default thread count */
+#define THREAD_AUTO_MAX 32
 /* Threads to create per kernel reported CPU */
 #define CPU_THREAD_MULTIPLIER 2
+#define CPU_THREAD_HIGH 2
+#define CPU_THREAD_LOW 2
 
 /*
  * From man prctl:
@@ -136,22 +140,38 @@ static int _detect_cpu_count(void)
 
 extern void workers_init(int count)
 {
-	if (!count) {
-		count = _detect_cpu_count() * CPU_THREAD_MULTIPLIER;
+	const int detected_cpus = _detect_cpu_count();
+	const int auto_threads_max = (detected_cpus * CPU_THREAD_MULTIPLIER);
+	const int auto_threads = MIN(THREAD_AUTO_MAX, auto_threads_max);
+	const int detected_threads_high = (detected_cpus * CPU_THREAD_HIGH);
+	const int detected_threads_low = (detected_cpus / CPU_THREAD_LOW);
+	const int warn_max_threads =
+		MIN(CONMGR_THREAD_COUNT_MAX, detected_threads_high);
+	const int warn_min_threads =
+		MAX(CONMGR_THREAD_COUNT_MIN,
+		    MIN(detected_threads_low, THREAD_AUTO_MAX));
 
-		if (count > CONMGR_THREAD_COUNT_MAX)
-			count = CONMGR_THREAD_COUNT_MAX;
+	if (!count) {
+		count = auto_threads;
+
+		log_flag(CONMGR, "%s: Setting thread count to %d/%d for %d available CPUs",
+			 __func__, auto_threads, auto_threads_max,
+			 detected_cpus);
+	} else if (((count > warn_max_threads) || (count < warn_min_threads))) {
+		warning("%s%d is configured outside of the suggested range of [%d, %d] for %d CPUs. Performance will be negatively impacted, potentially causing difficult to debug hangs. Please keep within the suggested range or use the automatically detected thread count of %d threads.",
+			CONMGR_PARAM_THREADS, count, warn_min_threads,
+			warn_max_threads, detected_cpus, auto_threads);
 	}
 
-	if (!count) {
-		count = CONMGR_THREAD_COUNT_DEFAULT;
-	} else if (count < CONMGR_THREAD_COUNT_MIN) {
-		error("%s: thread count=%d too low, increasing to %d",
-		      __func__, count, CONMGR_THREAD_COUNT_MIN);
+	if (count < CONMGR_THREAD_COUNT_MIN) {
+		error("%s: %s%d too low, increasing to %d",
+		      __func__, CONMGR_PARAM_THREADS, count,
+		      CONMGR_THREAD_COUNT_MIN);
 		count = CONMGR_THREAD_COUNT_MIN;
 	} else if (count > CONMGR_THREAD_COUNT_MAX) {
-		error("%s: thread count=%d too high, decreasing to %d",
-		      __func__, count, CONMGR_THREAD_COUNT_MAX);
+		error("%s: %s%d too high, decreasing to %d",
+		      __func__, CONMGR_PARAM_THREADS, count,
+		      CONMGR_THREAD_COUNT_MAX);
 		count = CONMGR_THREAD_COUNT_MAX;
 	}
 
