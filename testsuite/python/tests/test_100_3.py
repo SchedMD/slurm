@@ -217,10 +217,6 @@ def run_command_bg(command, result, index, **run_command_kwargs):
     result[index] = atf.run_command(command, **run_command_kwargs)
 
 
-@pytest.mark.xfail(
-    atf.get_version("sbin/slurmdbd") < (25, 5),
-    reason="Fixed in !856 - Add index on the deleted column for use with archive and purge",
-)
 def test_purge_slurm_db_tables(sql_statement_repeat):
     """Test purging large number of rows"""
 
