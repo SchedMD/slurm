@@ -648,4 +648,37 @@ extern void handle_connection(bool locked, conmgr_fd_t *con);
  */
 extern void queue_on_connection(conmgr_fd_t *con);
 
+/*
+ * Log all connections to info()
+ * NOTE: caller must hold conmgr global lock
+ */
+extern void conmgr_log_connections(void);
+
+/* Min buffer size to call printf_work() */
+#define PRINTF_WORK_CHARS 512
+
+/*
+ * Create string description of work
+ * IN work - ptr to work to describe
+ * IN buffer - memory to populate
+ * IN len - number of bytes in buffer to populate (PRINTF_WORK_CHARS)
+ * IN include_connection - true to include con->name (if present)
+ * NOTE: caller must hold conmgr global lock
+ * RET number of bytes written
+ */
+extern size_t printf_work(const work_t *work, char *buffer, size_t len,
+			  bool include_connection);
+
+/*
+ * Log mgr.work and mgr.delayed_work to info()
+ * NOTE: caller must hold conmgr global lock
+ */
+extern void conmgr_log_work(void);
+
+/*
+ * Log mgr.workers to info()
+ * NOTE: caller must hold conmgr global lock
+ */
+extern void conmgr_log_workers(void);
+
 #endif /* _CONMGR_MGR_H */

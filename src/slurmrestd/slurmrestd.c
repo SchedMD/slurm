@@ -157,6 +157,11 @@ static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
 	debug5("%s: received SIGPIPE", __func__);
 }
 
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_log_diagnostics();
+}
+
 static void _set_max_connections(const char *buffer)
 {
 	max_connections = slurm_atoul(buffer);
@@ -775,6 +780,7 @@ int main(int argc, char **argv)
 
 	conmgr_add_work_signal(SIGINT, _on_signal_interrupt, NULL);
 	conmgr_add_work_signal(SIGPIPE, _sigpipe_handler, NULL);
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
 	auth_rack = plugrack_create("rest_auth");
 	plugrack_read_dir(auth_rack, slurm_conf.plugindir);

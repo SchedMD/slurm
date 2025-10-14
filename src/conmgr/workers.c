@@ -312,3 +312,11 @@ extern void workers_shutdown(void)
 		}
 	} while (mgr.workers.total);
 }
+
+extern void conmgr_log_workers(void)
+{
+	info("workers: threads:%d/%d active:%d/%d shutdown_requested:%c",
+	     list_count(mgr.workers.workers), mgr.workers.threads,
+	     mgr.workers.active, mgr.workers.total,
+	     BOOL_CHARIFY(mgr.workers.shutdown_requested));
+}
