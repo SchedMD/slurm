@@ -9652,7 +9652,8 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		debug("%s: job failed to specify group", __func__);
 		return ESLURM_GROUP_ID_MISSING;
 	}
-	if (!job_desc_msg->container_id && !job_desc_msg->container &&
+	if (!(job_desc_msg->bitflags & EXTERNAL_JOB) &&
+	    !job_desc_msg->container_id && !job_desc_msg->container &&
 	    (!job_desc_msg->work_dir || !job_desc_msg->work_dir[0])) {
 		debug("%s: job working directory has to be set", __func__);
 		return ESLURM_MISSING_WORK_DIR;
