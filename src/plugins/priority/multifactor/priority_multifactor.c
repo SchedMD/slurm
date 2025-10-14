@@ -1304,9 +1304,15 @@ static void _set_assoc_fs_factor(
 		fs_assoc = assoc_ptr->usage->fs_assoc_ptr;
 
 	/* Set the original assoc_ptr->usage->fs_factor */
-	assoc_ptr->usage->fs_factor = priority_p_calc_fs_factor(
-		fs_assoc->usage->usage_efctv,
-		(long double)fs_assoc->usage->shares_norm);
+	if (fuzzy_equal(fs_assoc->usage->usage_efctv, NO_VAL) ||
+	    (fs_assoc->usage->shares_norm <= 0))
+		assoc_ptr->usage->fs_factor = 0.0;
+	else
+		assoc_ptr->usage->fs_factor = pow(
+			2.0,
+			-((fs_assoc->usage->usage_efctv /
+			   fs_assoc->usage->shares_norm) /
+			  damp_factor));
 }
 
 static int _set_non_fair_tree_fs_factor(
@@ -1946,23 +1952,6 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO)
 		_priority_p_set_assoc_usage_debug(assoc);
-}
-
-
-extern double priority_p_calc_fs_factor(long double usage_efctv,
-					long double shares_norm)
-{
-	double priority_fs = 0.0;
-
-	if (fuzzy_equal(usage_efctv, NO_VAL))
-		return priority_fs;
-
-	if (shares_norm <= 0)
-		return priority_fs;
-
-	priority_fs = pow(2.0, -((usage_efctv/shares_norm) / damp_factor));
-
-	return priority_fs;
 }
 
 extern list_t *priority_p_get_priority_factors_list(uid_t uid)
