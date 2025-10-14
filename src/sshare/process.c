@@ -248,29 +248,12 @@ extern int process(shares_response_msg_t *resp, uint16_t options)
 						     (curr_inx == field_count));
 				break;
 			case PRINT_FSFACTOR:
-				if (flags & PRIORITY_FLAGS_FAIR_TREE) {
-					tmp_double = (double)NO_VAL64;
-					if(share->user)
-						field->print_routine(
-						field,
-						&share->fs_factor,
-						(curr_inx == field_count));
-					else
-						field->print_routine(
-							field,
-							&tmp_double,
-							(curr_inx ==
-							 field_count)
-						);
-				} else {
-					tmp_double = priority_g_calc_fs_factor(
-							     share->usage_efctv,
-							     share->
-							     shares_norm),
-					field->print_routine(field,
-						&tmp_double,
-						(curr_inx == field_count));
-				}
+				tmp_double = share->user ?
+					share->fs_factor : (double)NO_VAL64;
+				field->print_routine(
+					field,
+					&tmp_double,
+					(curr_inx == field_count));
 				break;
 			case PRINT_LEVELFS:
 				tmp_double = (double)NO_VAL64;
