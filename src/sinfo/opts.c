@@ -578,6 +578,10 @@ _node_state_list (void)
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWERING_UP));
 	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_POWER_UP));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_INVALID_REG));
+	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_FAIL));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_MAINT));
@@ -585,6 +589,12 @@ _node_state_list (void)
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_REQUESTED));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_ISSUED));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_EXTERNAL));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_DYNAMIC_FUTURE));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_DYNAMIC_NORM));
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
@@ -638,6 +648,9 @@ _node_state_id (char *str)
 	if ((xstrncasecmp("BLOCKED", str, len) == 0) ||
 	    (xstrncasecmp("BLOCK", str, len) == 0))
 		return NODE_STATE_BLOCKED;
+	if ((xstrncasecmp("INVALID_REG", str, len) == 0) ||
+	    (xstrncasecmp("INVAL", str, len) == 0))
+		return NODE_STATE_INVALID_REG;
 	if ((xstrncasecmp("PLANNED", str, len) == 0) ||
 	    (xstrncasecmp("PLND", str, len) == 0))
 		return NODE_STATE_PLANNED;
@@ -651,10 +664,16 @@ _node_state_id (char *str)
 	if ((xstrncasecmp("DRAINING", str, len) == 0) ||
 	    (xstrncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
+	if (_node_state_equal(NODE_STATE_DYNAMIC_FUTURE, str))
+		return NODE_STATE_DYNAMIC_FUTURE;
+	if (_node_state_equal(NODE_STATE_DYNAMIC_NORM, str))
+		return NODE_STATE_DYNAMIC_NORM;
 	if (_node_state_equal (NODE_STATE_COMPLETING, str))
 		return NODE_STATE_COMPLETING;
 	if (xstrncasecmp("NO_RESPOND", str, len) == 0)
 		return NODE_STATE_NO_RESPOND;
+	if (_node_state_equal(NODE_STATE_POWER_UP, str))
+		return NODE_STATE_POWER_UP;
 	if (_node_state_equal (NODE_STATE_POWERING_DOWN, str))
 		return NODE_STATE_POWERING_DOWN;
 	if (_node_state_equal (NODE_STATE_POWERED_DOWN, str))
@@ -673,6 +692,8 @@ _node_state_id (char *str)
 		return NODE_STATE_REBOOT_ISSUED;
 	if (_node_state_equal(NODE_STATE_CLOUD, str))
 		return NODE_STATE_CLOUD;
+	if (_node_state_equal(NODE_STATE_EXTERNAL, str))
+		return NODE_STATE_EXTERNAL;
 
 	return (-1);
 }
