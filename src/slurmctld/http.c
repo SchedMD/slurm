@@ -45,6 +45,7 @@
 #include "src/interfaces/metrics.h"
 
 #include "src/slurmctld/http.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 static int _reply_error(http_con_t *hcon, const char *name,
@@ -84,7 +85,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 		"  '/livez': check slurmctld is running\n"
 		"  '/healthz': check slurmctld is running\n"
 		"  '/metrics/jobs': get job metrics\n"
-		"  '/metrics/nodes': get node metrics\n";
+		"  '/metrics/nodes': get node metrics\n"
+		"  '/metrics/partitions': get partition metrics\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -178,6 +180,39 @@ extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
 	return _send_metrics_resp(hcon, stats_str);
 }
 
+extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
+				   const http_con_request_t *request, void *arg)
+{
+	jobs_stats_t *jobs_stats;
+	nodes_stats_t *nodes_stats;
+	partitions_stats_t *parts_stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+	slurmctld_lock_t part_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK,
+	};
+
+	if (!_check_metrics_authorized(hcon, &rc))
+		return rc;
+
+	lock_slurmctld(part_read_lock);
+	nodes_stats = statistics_get_nodes(false);
+	jobs_stats = statistics_get_jobs(false);
+	parts_stats = statistics_get_parts(nodes_stats, jobs_stats, false);
+	unlock_slurmctld(part_read_lock);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_PARTS, parts_stats);
+
+	statistics_free_nodes(nodes_stats);
+	statistics_free_parts(parts_stats);
+	statistics_free_jobs(jobs_stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
 static int _req_livez(http_con_t *hcon, const char *name,
 		      const http_con_request_t *request, void *arg)
 {
@@ -202,6 +237,8 @@ extern void http_init(void)
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes",
 			 _req_metrics_nodes);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/partitions",
+			 _req_metrics_partitions);
 }
 
 extern void http_fini(void)
