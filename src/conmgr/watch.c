@@ -1592,11 +1592,14 @@ static int _get_quiesced_waiter_count(void)
 	return waiters;
 }
 
-/* NOTE: must hold mgr.mutex */
+/* NOTE: must hold mgr.mutex except signal connection */
 static int _close_con_for_each(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
-	close_con(true, con);
+
+	if (!is_signal_connection(con))
+		close_con(true, con);
+
 	return 1;
 }
 
