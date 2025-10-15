@@ -359,6 +359,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Association Usage";
 		break;
+	case DBD_GET_ASSOC_NG_USAGE:
+		if (get_enum) {
+			return "DBD_GET_ASSOC_NG_USAGE";
+		} else
+			return "Get Association Non-Grouped Usage";
+		break;
 	case DBD_GET_CLUSTERS:
 		if (get_enum) {
 			return "DBD_GET_CLUSTERS";
