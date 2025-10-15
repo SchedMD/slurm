@@ -4167,6 +4167,9 @@ extern int slurm_load_job(job_info_msg_t **resp,
 			  uint32_t job_id,
 			  uint16_t show_flags);
 
+extern int slurm_load_job_sluid(job_info_msg_t **resp, sluid_t sluid,
+				uint16_t show_flags);
+
 /*
  * slurm_load_job_prio - issue RPC to get job priority information for jobs
  * OUT factors_resp - job priority factors
