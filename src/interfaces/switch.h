@@ -93,14 +93,14 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr);
 
 /*
  * create a step's switch credential
- * OUT jobinfo  - storage for a switch job credential
+ * OUT stepinfo - storage for a step switch credential
  * IN  step_layout - the layout of the step with at least the nodes,
  *                   tasks_per_node and tids set
  * IN  step_ptr    - step_record_t for this step
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
  * NOTE: storage must be freed using switch_g_stepinfo_free
  */
-extern int switch_g_stepinfo_build(dynamic_plugin_data_t **jobinfo,
+extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr);
 
