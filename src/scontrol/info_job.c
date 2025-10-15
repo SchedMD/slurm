@@ -48,6 +48,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/openapi.h"
 #include "src/common/proc_args.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
 #include "src/common/stepd_api.h"
 
@@ -1004,6 +1005,9 @@ extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
 			if (quiet_flag == -1)
  				printf ("slurm_load_jobs no change in data\n");
 		}
+	} else if (sluid) {
+		error_code =
+			slurm_load_job_sluid(&job_info_ptr, sluid, show_flags);
 	} else if (job_id) {
 		error_code = slurm_load_job(&job_info_ptr, job_id, show_flags);
 	} else {
@@ -1182,13 +1186,17 @@ static bool _task_id_in_job(job_info_t *job_ptr, uint32_t array_id)
 extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
+	sluid_t sluid = 0;
 	uint32_t job_id = 0;
 	uint32_t array_id = NO_VAL, het_job_offset = NO_VAL;
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
 
-	if (job_id_str) {
+	/* check for valid SLUID first */
+	sluid = str2sluid(job_id_str);
+
+	if (job_id_str && !sluid) {
 		char *tmp_job_ptr = job_id_str;
 		/*
 		 * Check that the input is a valid job id (i.e. 123 or 123_456).
@@ -1211,7 +1219,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			het_job_offset = strtol(end_ptr + 1, &end_ptr, 10);
 	}
 
-	error_code = scontrol_load_job(&job_buffer_ptr, 0, job_id);
+	error_code = scontrol_load_job(&job_buffer_ptr, sluid, job_id);
 
 	if (mime_type) {
 		openapi_resp_job_info_msg_t resp = {
