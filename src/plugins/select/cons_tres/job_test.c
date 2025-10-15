@@ -521,7 +521,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		.gpu_spec_bitmap = node_ptr->gpu_spec_bitmap,
 		.job_gres_list = job_ptr->gres_list_req,
 		.node_gres_list = node_usage[node_i].gres_list ?
-		node_usage[node_i].gres_list : node_ptr->gres_list,
+					  node_usage[node_i].gres_list :
+					  node_ptr->gres_list,
 		.node_inx = node_i,
 		.node_name = node_ptr->name,
 		.resv_exc_ptr = resv_exc_ptr,
