@@ -2666,7 +2666,6 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		else
 			pack32(dump_job_ptr->node_cnt_wag, buffer);
 		pack32(dump_job_ptr->cpu_cnt, buffer);
-		pack64(dump_job_ptr->db_index, buffer);
 		pack32(dump_job_ptr->resv_id, buffer);
 		pack32(dump_job_ptr->next_step_id, buffer);
 		pack32(dump_job_ptr->qos_id, buffer);
@@ -3252,7 +3251,6 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->total_cpus, buffer);
 		safe_unpack32(&job_ptr->total_nodes, buffer);
 		safe_unpack32(&job_ptr->cpu_cnt, buffer);
-		safe_unpack64(&job_ptr->db_index, buffer);
 		safe_unpack32(&job_ptr->resv_id, buffer);
 		safe_unpack32(&job_ptr->next_step_id, buffer);
 		safe_unpack32(&job_ptr->qos_id, buffer);
