@@ -10292,8 +10292,8 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
  * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  */
-extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
-			   uint16_t protocol_version)
+extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
+			   uid_t uid, uint16_t protocol_version)
 {
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
@@ -10310,7 +10310,10 @@ extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
-	job_ptr = find_job_record(job_id);
+	if (sluid)
+		job_ptr = find_sluid(sluid);
+	else
+		job_ptr = find_job_record(job_id);
 
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
@@ -10358,7 +10361,12 @@ extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
 			}
 		}
 
-		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		/* When querying by SLUID do not return job array records. */
+		if (sluid)
+			job_ptr = NULL;
+		else
+			job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+
 		while (job_ptr) {
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
