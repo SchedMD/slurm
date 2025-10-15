@@ -513,6 +513,7 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 }
 
 extern int switch_p_stepinfo_build(switch_stepinfo_t **stepinfo,
+				   void *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
 	slingshot_stepinfo_t *job = NULL;

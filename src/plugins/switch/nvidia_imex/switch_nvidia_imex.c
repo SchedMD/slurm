@@ -387,6 +387,7 @@ static int _log_channel_step(
 }
 
 extern int switch_p_stepinfo_build(switch_info_t **switch_step,
+				   switch_info_t *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
 	switch_info_t *jobinfo;
