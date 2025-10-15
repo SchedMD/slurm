@@ -390,25 +390,22 @@ extern int switch_p_stepinfo_build(switch_info_t **switch_step,
 				   switch_info_t *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
-	switch_info_t *jobinfo;
-
-	if (!step_ptr->job_ptr ||
-	    !(jobinfo = step_ptr->job_ptr->switch_jobinfo)) {
+	if (!switch_jobinfo) {
 		log_flag(SWITCH, "no channels for %pS", step_ptr);
 		return SLURM_SUCCESS;
 	}
 
-	if (!jobinfo->channel_list)
+	if (!switch_jobinfo->channel_list)
 		return SLURM_SUCCESS;
 
 	log_flag(SWITCH, "%s: Creating step info for %pS",
 		 __func__, step_ptr);
 
 	/* Copy job channel list to step switch info */
-	*switch_step = _create_info(jobinfo->channel_list);
+	*switch_step = _create_info(switch_jobinfo->channel_list);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		list_for_each(jobinfo->channel_list, _log_channel_step,
+		list_for_each(switch_jobinfo->channel_list, _log_channel_step,
 			      step_ptr);
 	}
 
