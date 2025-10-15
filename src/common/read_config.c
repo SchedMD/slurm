@@ -5613,6 +5613,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "License");
 	}
+	if (debug_flags & DEBUG_FLAG_METRICS) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Metrics");
+	}
 	if (debug_flags & DEBUG_FLAG_MPI) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5806,6 +5811,8 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
 		else if (xstrcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
+		else if (xstrcasecmp(tok, "Metrics") == 0)
+			(*flags_out) |= DEBUG_FLAG_METRICS;
 		else if (xstrcasecmp(tok, "MPI") == 0)
 			(*flags_out) |= DEBUG_FLAG_MPI;
 		else if (xstrcasecmp(tok, "Network") == 0 ||
