@@ -94,7 +94,6 @@ typedef struct {
 
 typedef struct {
 	list_t *channel_list;
-	uint32_t flags;
 	uint32_t magic;
 } switch_info_t;
 
