@@ -83,7 +83,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 		"  '/readyz': check slurmctld is servicing RPCs\n"
 		"  '/livez': check slurmctld is running\n"
 		"  '/healthz': check slurmctld is running\n"
-		"  '/metrics/jobs': get job metrics\n";
+		"  '/metrics/jobs': get job metrics\n"
+		"  '/metrics/nodes': get node metrics\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -158,6 +159,25 @@ extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
 	return _send_metrics_resp(hcon, stats_str);
 }
 
+extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
+			      const http_con_request_t *request, void *arg)
+{
+	nodes_stats_t *stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+
+	if (!_check_metrics_authorized(hcon, &rc))
+		return rc;
+
+	stats = statistics_get_nodes(true);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_NODES, stats);
+
+	statistics_free_nodes(stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
 static int _req_livez(http_con_t *hcon, const char *name,
 		      const http_con_request_t *request, void *arg)
 {
@@ -180,6 +200,8 @@ extern void http_init(void)
 	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
 	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes",
+			 _req_metrics_nodes);
 }
 
 extern void http_fini(void)
