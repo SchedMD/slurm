@@ -87,7 +87,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 		"  '/metrics/jobs': get job metrics\n"
 		"  '/metrics/nodes': get node metrics\n"
 		"  '/metrics/partitions': get partition metrics\n"
-		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n";
+		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n"
+		"  '/metrics/scheduler': get scheduler metrics\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -236,6 +237,25 @@ extern int _req_metrics_ua(http_con_t *hcon, const char *name,
 	return _send_metrics_resp(hcon, stats_str);
 }
 
+extern int _req_metrics_sched(http_con_t *hcon, const char *name,
+			      const http_con_request_t *request, void *arg)
+{
+	scheduling_stats_t *stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+
+	if (!_check_metrics_authorized(hcon, &rc))
+		return rc;
+
+	stats = statistics_get_sched();
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_SCHED, stats);
+
+	statistics_free_sched(stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
 static int _req_livez(http_con_t *hcon, const char *name,
 		      const http_con_request_t *request, void *arg)
 {
@@ -262,6 +282,8 @@ extern void http_init(void)
 			 _req_metrics_nodes);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/partitions",
 			 _req_metrics_partitions);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/scheduler",
+			 _req_metrics_sched);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs-users-accts",
 			 _req_metrics_ua);
 }
