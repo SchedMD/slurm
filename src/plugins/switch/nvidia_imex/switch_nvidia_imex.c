@@ -373,41 +373,19 @@ static int _log_channel_job(
 	return 1;
 }
 
-static int _log_channel_step(
-	void *x,
-	void *arg)
-{
-	channel_t *channel = x;
-	step_record_t *step_ptr = arg;
-
-	log_flag(SWITCH, "using channel id %u for %pS",
-		 channel->id, step_ptr);
-
-	return 1;
-}
-
 extern int switch_p_stepinfo_build(switch_info_t **switch_step,
 				   switch_info_t *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
 	if (!switch_jobinfo) {
-		log_flag(SWITCH, "no channels for %pS", step_ptr);
 		return SLURM_SUCCESS;
 	}
 
 	if (!switch_jobinfo->channel_list)
 		return SLURM_SUCCESS;
 
-	log_flag(SWITCH, "%s: Creating step info for %pS",
-		 __func__, step_ptr);
-
 	/* Copy job channel list to step switch info */
 	*switch_step = _create_info(switch_jobinfo->channel_list);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		list_for_each(switch_jobinfo->channel_list, _log_channel_step,
-			      step_ptr);
-	}
 
 	return SLURM_SUCCESS;
 }
