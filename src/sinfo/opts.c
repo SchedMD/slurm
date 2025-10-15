@@ -465,6 +465,7 @@ static list_t *_build_state_list(char *state_str)
 {
 	list_t *state_ids;
 	char *orig, *str, *state;
+	int node_state_id;
 
 	if (state_str == NULL)
 		return NULL;
@@ -486,13 +487,14 @@ static list_t *_build_state_list(char *state_str)
 			state = state + 1;
 		}
 
-		if ((id->state = _node_state_id(state)) < 0) {
+		if ((node_state_id = _node_state_id(state)) < 0) {
 			error ("Bad state string: \"%s\"", state);
 			xfree(orig);
 			xfree(id);
 			FREE_NULL_LIST(state_ids);
 			return (NULL);
 		}
+		id->state = node_state_id;
 		list_append (state_ids, id);
 		state = strtok_r(NULL, ",&+", &str);
 	}
