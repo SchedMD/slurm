@@ -740,6 +740,8 @@ extern job_record_t *find_het_job_record(uint32_t job_id, uint32_t het_job_id);
  */
 extern job_record_t *find_job_record(uint32_t job_id);
 
+extern job_record_t *find_sluid(sluid_t sluid);
+
 /*
  * find_part_record - find a record for partition with specified name
  * IN name - name of the desired partition

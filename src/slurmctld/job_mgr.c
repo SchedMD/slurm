@@ -2543,6 +2543,21 @@ extern job_record_t *find_job_record(uint32_t job_id)
 	return NULL;
 }
 
+extern job_record_t *find_sluid(sluid_t sluid)
+{
+	job_record_t *job_ptr;
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+
+	job_ptr = job_hash_sluid[JOB_HASH_INX(sluid)];
+	while (job_ptr) {
+		if (job_ptr->db_index == sluid)
+			return job_ptr;
+		job_ptr = job_ptr->job_next_sluid;
+	}
+
+	return NULL;
+}
+
 /*
  * Set a requeued job to PENDING and COMPLETING if all the nodes are completed
  * and the EpilogSlurmctld is not running
