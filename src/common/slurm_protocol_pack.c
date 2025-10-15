@@ -3504,6 +3504,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpackstr(&job->selinux_context, buffer);
 		safe_unpack32(&job->site_factor, buffer);
+		safe_unpack64(&job->sluid, buffer);
 		safe_unpack16(&job->start_protocol_ver, buffer);
 		safe_unpackstr(&job->state_desc, buffer);
 		safe_unpack32(&job->state_reason, buffer);
@@ -11193,28 +11194,33 @@ static void _pack_job_ready_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_id_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack16(msg->show_flags, buffer);
+		pack64(msg->sluid, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack16(msg->show_flags, buffer);
 	}
 }
 
-static int
-_unpack_job_ready_msg(job_id_msg_t ** msg_ptr, buf_t *buffer,
-		      uint16_t protocol_version)
+static int _unpack_job_ready_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_id_msg_t * msg;
-	xassert(msg_ptr);
+	job_id_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc ( sizeof (job_id_msg_t) );
-	*msg_ptr = msg ;
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack16(&msg->show_flags, buffer);
+		safe_unpack64(&msg->sluid, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack16(&msg->show_flags, buffer);
+	}
 
-	safe_unpack32(&msg->job_id  , buffer ) ;
-	safe_unpack16(&msg->show_flags, buffer);
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_job_id_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14526,11 +14532,8 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
-		rc = _unpack_job_ready_msg((job_id_msg_t **)
-					   & msg->data, buffer,
-					   msg->protocol_version);
+		rc = _unpack_job_ready_msg(msg, buffer);
 		break;
-
 	case REQUEST_JOB_REQUEUE:
 		rc = _unpack_job_requeue_msg(msg, buffer);
 		break;

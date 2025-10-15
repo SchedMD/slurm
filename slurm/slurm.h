@@ -1929,6 +1929,7 @@ typedef struct job_info {
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint32_t site_factor;	/* factor to consider in priority */
+	sluid_t sluid;
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
 	time_t start_time;	/* time execution begins, actual or expected */
@@ -4165,6 +4166,9 @@ extern int slurm_job_node_ready(uint32_t job_id);
 extern int slurm_load_job(job_info_msg_t **resp,
 			  uint32_t job_id,
 			  uint16_t show_flags);
+
+extern int slurm_load_job_sluid(job_info_msg_t **resp, sluid_t sluid,
+				uint16_t show_flags);
 
 /*
  * slurm_load_job_prio - issue RPC to get job priority information for jobs

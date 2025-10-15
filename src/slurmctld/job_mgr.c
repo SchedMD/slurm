@@ -132,6 +132,7 @@
 
 typedef enum {
 	JOB_HASH_JOB,
+	JOB_HASH_SLUID,
 	JOB_HASH_ARRAY_JOB,
 	JOB_HASH_ARRAY_TASK,
 } job_hash_type_t;
@@ -345,6 +346,7 @@ static int      hash_table_size = 0;
 static int      job_count = 0;		/* job's in the system */
 static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
 static struct   job_record **job_hash = NULL;
+static struct job_record **job_hash_sluid = NULL;
 static struct   job_record **job_array_hash_j = NULL;
 static struct   job_record **job_array_hash_t = NULL;
 static bool     kill_invalid_dep;
@@ -360,6 +362,7 @@ static void _signal_pending_job_array_tasks(job_record_t *job_ptr, bitstr_t
 					    uid_t uid, int32_t i_last,
 					    time_t now, int *rc);
 static void _add_job_hash(job_record_t *job_ptr);
+static void _add_job_hash_sluid(job_record_t *job_ptr);
 static void _add_job_array_hash(job_record_t *job_ptr);
 static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller);
 static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
@@ -1595,6 +1598,7 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 	}
 
 	_add_job_hash(job_ptr);
+	_add_job_hash_sluid(job_ptr);
 	_add_job_array_hash(job_ptr);
 
 	memset(&assoc_rec, 0, sizeof(assoc_rec));
@@ -1733,6 +1737,20 @@ static void _add_job_hash(job_record_t *job_ptr)
 	job_hash[inx] = job_ptr;
 }
 
+static void _add_job_hash_sluid(job_record_t *job_ptr)
+{
+	int inx;
+
+	if (!job_ptr->db_index) {
+		debug("%s: JobId=%pJ has no SLUID?", __func__, job_ptr);
+		return;
+	}
+
+	inx = JOB_HASH_INX(job_ptr->db_index);
+	job_ptr->job_next_sluid = job_hash_sluid[inx];
+	job_hash_sluid[inx] = job_ptr;
+}
+
 /* _remove_job_hash - remove a job hash entry for given job record, job_id must
  *	already be set
  * IN job_ptr - pointer to job record
@@ -1747,9 +1765,17 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 
 	on_job_state_change(job_entry, NO_VAL);
 
+	if ((type == JOB_HASH_SLUID) && !job_entry->db_index) {
+		debug("%s: JobId=%pJ has no SLUID?", __func__, job_entry);
+		return;
+	}
+
 	switch (type) {
 	case JOB_HASH_JOB:
 		job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
+		break;
+	case JOB_HASH_SLUID:
+		job_pptr = &job_hash_sluid[JOB_HASH_INX(job_entry->db_index)];
 		break;
 	case JOB_HASH_ARRAY_JOB:
 		job_pptr = &job_array_hash_j[
@@ -1772,6 +1798,9 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 		case JOB_HASH_JOB:
 			job_pptr = &job_ptr->job_next;
 			break;
+		case JOB_HASH_SLUID:
+			job_pptr = &job_ptr->job_next_sluid;
+			break;
 		case JOB_HASH_ARRAY_JOB:
 			job_pptr = &job_ptr->job_array_next_j;
 			break;
@@ -1790,6 +1819,11 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 			error("%s: Could not find hash entry for JobId=%u",
 			      __func__, job_entry->job_id);
 			break;
+		case JOB_HASH_SLUID:
+		{
+			error("%s: Could not find hash entry for SLUID=%"PRIu64,
+			      __func__, job_entry->db_index);
+			break;
 		case JOB_HASH_ARRAY_JOB:
 			error("%s: job array hash error %u", __func__,
 			      job_entry->array_job_id);
@@ -1801,6 +1835,7 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 			      job_entry->array_task_id);
 			break;
 		}
+		}
 		return;
 	}
 
@@ -1808,6 +1843,10 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 	case JOB_HASH_JOB:
 		*job_pptr = job_entry->job_next;
 		job_entry->job_next = NULL;
+		break;
+	case JOB_HASH_SLUID:
+		*job_pptr = job_entry->job_next_sluid;
+		job_entry->job_next_sluid = NULL;
 		break;
 	case JOB_HASH_ARRAY_JOB:
 		*job_pptr = job_entry->job_array_next_j;
@@ -2499,6 +2538,21 @@ extern job_record_t *find_job_record(uint32_t job_id)
 		if (job_ptr->job_id == job_id)
 			return job_ptr;
 		job_ptr = job_ptr->job_next;
+	}
+
+	return NULL;
+}
+
+extern job_record_t *find_sluid(sluid_t sluid)
+{
+	job_record_t *job_ptr;
+	xassert(verify_lock(JOB_LOCK, READ_LOCK));
+
+	job_ptr = job_hash_sluid[JOB_HASH_INX(sluid)];
+	while (job_ptr) {
+		if (job_ptr->db_index == sluid)
+			return job_ptr;
+		job_ptr = job_ptr->job_next_sluid;
 	}
 
 	return NULL;
@@ -3331,6 +3385,8 @@ extern void rehash_jobs(void)
 	if (job_hash == NULL) {
 		hash_table_size = slurm_conf.max_job_cnt;
 		job_hash = xcalloc(hash_table_size, sizeof(job_record_t *));
+		job_hash_sluid =
+			xcalloc(hash_table_size, sizeof(job_record_t *));
 		job_array_hash_j = xcalloc(hash_table_size,
 					   sizeof(job_record_t *));
 		job_array_hash_t = xcalloc(hash_table_size,
@@ -3366,6 +3422,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend = _create_job_record(0, list_add);
 
 	_remove_job_hash(job_ptr, JOB_HASH_JOB);
+	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
 	job_ptr_pend->job_id = job_ptr->job_id;
 	if (_set_job_id(job_ptr) != SLURM_SUCCESS)
 		fatal("%s: _set_job_id error", __func__);
@@ -3467,6 +3524,8 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 
 	_add_job_hash(job_ptr);		/* Sets job_next */
 	_add_job_hash(job_ptr_pend);	/* Sets job_next */
+	_add_job_hash_sluid(job_ptr);
+	_add_job_hash_sluid(job_ptr_pend);
 	_add_job_array_hash(job_ptr);
 	job_ptr_pend->job_resrcs = NULL;
 
@@ -8532,6 +8591,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_desc->tres_req_cnt = NULL;
 	set_job_tres_req_str(job_ptr, false);
 	_add_job_hash(job_ptr);
+	_add_job_hash_sluid(job_ptr);
 
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
@@ -9845,6 +9905,7 @@ static void _delete_job_common(job_record_t *job_ptr)
 
 	/* Remove the record from job hash table */
 	_remove_job_hash(job_ptr, JOB_HASH_JOB);
+	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
 
 	/* Remove the record from job array hash tables, if applicable */
 	if (job_ptr->array_task_id != NO_VAL) {
@@ -10231,8 +10292,8 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
  * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  */
-extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
-			   uint16_t protocol_version)
+extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
+			   uid_t uid, uint16_t protocol_version)
 {
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
@@ -10249,7 +10310,10 @@ extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
-	job_ptr = find_job_record(job_id);
+	if (sluid)
+		job_ptr = find_sluid(sluid);
+	else
+		job_ptr = find_job_record(job_id);
 
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
@@ -10297,7 +10361,12 @@ extern buf_t *pack_one_job(uint32_t job_id, uint16_t show_flags, uid_t uid,
 			}
 		}
 
-		job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+		/* When querying by SLUID do not return job array records. */
+		if (sluid)
+			job_ptr = NULL;
+		else
+			job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+
 		while (job_ptr) {
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
@@ -15609,7 +15678,9 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	/*
 	 * Get new sluid now that we are basically a new job.
 	 */
+	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
 	job_record_set_sluid(job_ptr);
+	_add_job_hash_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_state_unset_flag(job_ptr, JOB_RESIZING);
@@ -16585,7 +16656,9 @@ void batch_requeue_fini(job_record_t *job_ptr)
 
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
+	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
 	job_record_set_sluid(job_ptr);
+	_add_job_hash_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	/* Submit new sibling jobs for fed jobs */
@@ -16603,6 +16676,7 @@ void job_fini (void)
 {
 	FREE_NULL_LIST(job_list);
 	xfree(job_hash);
+	xfree(job_hash_sluid);
 	xfree(job_array_hash_j);
 	xfree(job_array_hash_t);
 	FREE_NULL_LIST(purge_jobs_list);

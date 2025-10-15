@@ -111,8 +111,8 @@ extern void scontrol_list_jobs(int argc, char **argv);
 extern void scontrol_list_pids(int argc, char **argv);
 extern void scontrol_list_steps(int argc, char **argv);
 extern void	scontrol_getent(const char *node_name);
-extern int	scontrol_load_job(job_info_msg_t ** job_buffer_pptr,
-				  uint32_t job_id);
+extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
+			     uint32_t job_id);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr,
 				     uint16_t show_flags);
 extern int 	scontrol_load_partitions (partition_info_msg_t **

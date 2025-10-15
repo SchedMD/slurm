@@ -603,6 +603,47 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 	return rc;
 }
 
+extern int slurm_load_job_sluid(job_info_msg_t **job_info_msg_pptr,
+				sluid_t sluid, uint16_t show_flags)
+{
+	slurm_msg_t req_msg;
+	job_id_msg_t req;
+	void *fed = NULL;
+	int rc;
+
+	if (!(show_flags & SHOW_LOCAL)) {
+		if (slurm_load_federation(&fed) ||
+		    !cluster_in_federation(fed, slurm_conf.cluster_name)) {
+			/* Not in federation */
+			show_flags |= SHOW_LOCAL;
+		}
+	}
+
+	memset(&req, 0, sizeof(req));
+	slurm_msg_t_init(&req_msg);
+	req.sluid = sluid;
+	req.show_flags = show_flags;
+	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
+	req_msg.data = &req;
+
+	/*
+	 * With -M option, working_cluster_rec is set and  we only get
+	 * information for that cluster.
+	 */
+	if (working_cluster_rec || !fed || (show_flags & SHOW_LOCAL)) {
+		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
+					working_cluster_rec);
+	} else {
+		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
+				    slurm_conf.cluster_name, fed);
+	}
+
+	if (fed)
+		slurm_destroy_federation_rec(fed);
+
+	return rc;
+}
+
 extern int slurm_load_job_state(int job_id_count,
 				slurm_selected_step_t *job_ids,
 				job_state_response_msg_t **jsr_pptr)

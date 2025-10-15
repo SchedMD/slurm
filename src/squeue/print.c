@@ -42,22 +42,24 @@
 #include <pwd.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/acct_gather_profile.h"
+#include "src/common/print_fields.h"
+#include "src/common/sluid.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/select.h"
+
 #include "src/squeue/print.h"
-#include "src/common/print_fields.h"
 #include "src/squeue/squeue.h"
 
 static void _combine_pending_array_tasks(list_t *l);
@@ -1325,6 +1327,21 @@ int _print_pn_min_cpus(job_info_t * job, int width, bool right_justify,
 				 params.convert_flags);
 		_print_str(tmp_char, width, right_justify, true);
 	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_sluid(job_info_t *job, int width, bool right_justify, char *suffix)
+{
+	if (!job) {
+		_print_str("SLUID", width, right_justify, true);
+	} else {
+		char *sluid = sluid2str(job->sluid);
+		_print_str(sluid, width, right_justify, true);
+		xfree(sluid);
+	}
+
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
