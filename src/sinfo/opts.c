@@ -488,6 +488,9 @@ static list_t *_build_state_list(char *state_str)
 
 		if ((id->state = _node_state_id(state)) < 0) {
 			error ("Bad state string: \"%s\"", state);
+			xfree(orig);
+			xfree(id);
+			FREE_NULL_LIST(state_ids);
 			return (NULL);
 		}
 		list_append (state_ids, id);
