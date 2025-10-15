@@ -2115,6 +2115,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		packstr(dump_job_ptr->selinux_context, buffer);
 		pack32(dump_job_ptr->site_factor, buffer);
+		pack64(dump_job_ptr->db_index, buffer);
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
 		pack32(dump_job_ptr->state_reason, buffer);
@@ -2398,6 +2399,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 
 		safe_unpackstr(&job_ptr->selinux_context, buffer);
 		safe_unpack32(&job_ptr->site_factor, buffer);
+		safe_unpack64(&job_ptr->db_index, buffer);
 		safe_unpack16(&job_ptr->start_protocol_ver, buffer);
 		safe_unpackstr(&job_ptr->state_desc, buffer);
 		safe_unpack32(&job_ptr->state_reason, buffer);

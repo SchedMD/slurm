@@ -3504,6 +3504,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpackstr(&job->selinux_context, buffer);
 		safe_unpack32(&job->site_factor, buffer);
+		safe_unpack64(&job->sluid, buffer);
 		safe_unpack16(&job->start_protocol_ver, buffer);
 		safe_unpackstr(&job->state_desc, buffer);
 		safe_unpack32(&job->state_reason, buffer);
