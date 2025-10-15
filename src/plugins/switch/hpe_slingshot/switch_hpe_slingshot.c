@@ -512,7 +512,7 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 	return node_cnt;
 }
 
-extern int switch_p_stepinfo_build(switch_stepinfo_t **switch_job,
+extern int switch_p_stepinfo_build(switch_stepinfo_t **stepinfo,
 				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
@@ -532,7 +532,7 @@ extern int switch_p_stepinfo_build(switch_stepinfo_t **switch_job,
 
 	job = xmalloc(sizeof(*job));
 	job->version = SLURM_PROTOCOL_VERSION;
-	*switch_job = (switch_stepinfo_t *) job;
+	*stepinfo = (switch_stepinfo_t *) job;
 
 	/*
 	 * If this is a homogeneous step, or the first component in a
