@@ -38,21 +38,22 @@
 \*****************************************************************************/
 
 #include <arpa/inet.h>
-#include <grp.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <pwd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "scontrol.h"
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/openapi.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_time.h"
 #include "src/common/stepd_api.h"
 
 #include "src/interfaces/data_parser.h"
-#include "src/common/openapi.h"
+
+#include "scontrol.h"
 
 #define CONTAINER_ID_TAG "containerid="
 #define POLL_SLEEP	3	/* retry interval in seconds  */
