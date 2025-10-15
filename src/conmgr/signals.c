@@ -277,7 +277,7 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	xassert(fd != -1);
 	fd_close(&fd);
 
-	xassert((con == signal_con) || !signal_con);
+	xassert(con == signal_con);
 	signal_con = NULL;
 
 	slurm_rwlock_unlock(&lock);
@@ -353,10 +353,8 @@ extern void signal_mgr_stop(void)
 {
 	slurm_rwlock_wrlock(&lock);
 
-	if (signal_con) {
+	if (signal_con)
 		close_con(true, signal_con);
-		signal_con = NULL;
-	}
 
 	slurm_rwlock_unlock(&lock);
 }
