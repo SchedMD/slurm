@@ -1304,6 +1304,8 @@ extern uint32_t hres_get_capacity(hres_select_t *hres_select, int leaf_idx)
 {
 	uint32_t min = INFINITE;
 
+	if (leaf_idx < 0)
+		return 0;
 	for (int j = 0; j < hres_select->depth; j++) {
 		uint16_t idx = hres_select->leaf[leaf_idx].path_idx[j];
 		if (min > hres_select->avail_hres[idx])
