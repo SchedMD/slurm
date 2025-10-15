@@ -86,7 +86,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 		"  '/healthz': check slurmctld is running\n"
 		"  '/metrics/jobs': get job metrics\n"
 		"  '/metrics/nodes': get node metrics\n"
-		"  '/metrics/partitions': get partition metrics\n";
+		"  '/metrics/partitions': get partition metrics\n"
+		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -213,6 +214,28 @@ extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
 	return _send_metrics_resp(hcon, stats_str);
 }
 
+extern int _req_metrics_ua(http_con_t *hcon, const char *name,
+			   const http_con_request_t *request, void *arg)
+{
+	jobs_stats_t *jobs_stats;
+	users_accts_stats_t *ua_stats;
+	char *stats_str;
+	int rc = SLURM_SUCCESS;
+
+	if (!_check_metrics_authorized(hcon, &rc))
+		return rc;
+
+	jobs_stats = statistics_get_jobs(true);
+	ua_stats = statistics_get_users_accounts(jobs_stats);
+
+	stats_str = metrics_serialize_struct(METRICS_CTLD_UA, ua_stats);
+
+	statistics_free_jobs(jobs_stats);
+	statistics_free_users_accounts(ua_stats);
+
+	return _send_metrics_resp(hcon, stats_str);
+}
+
 static int _req_livez(http_con_t *hcon, const char *name,
 		      const http_con_request_t *request, void *arg)
 {
@@ -239,6 +262,8 @@ extern void http_init(void)
 			 _req_metrics_nodes);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/partitions",
 			 _req_metrics_partitions);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs-users-accts",
+			 _req_metrics_ua);
 }
 
 extern void http_fini(void)
