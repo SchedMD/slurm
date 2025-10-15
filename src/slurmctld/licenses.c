@@ -997,6 +997,19 @@ extern int hres_init()
 		fatal("Can't set base");
 
 	_licenses_print("hres_init", cluster_license_list, NULL);
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_LICENSE)) {
+		char *dump_str = NULL;
+		int rc = SLURM_SUCCESS;
+		DATA_DUMP_TO_STR(H_RESOURCES_AS_LICENSE_LIST,
+				 cluster_license_list, dump_str, NULL,
+				 MIME_TYPE_YAML, SER_FLAGS_NO_TAG, rc);
+		if (rc)
+			error("Hierarchical resources dump failed");
+		verbose("%s: Dump hierarchical resources:\n %s", __func__,
+			dump_str);
+		xfree(dump_str);
+	}
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
