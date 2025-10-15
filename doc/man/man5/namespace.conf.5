@@ -1,24 +1,31 @@
 .TH "namespace.conf" "5" "Slurm Configuration File" "Slurm 25.11" "Slurm Configuration File"
 
 .SH "NAME"
-namespace.conf \- Slurm configuration file for namespace/tmpfs plugin
+namespace.conf \- Slurm configuration file for namespace plugins
 
 .SH "DESCRIPTION"
 
 \fBnamespace.conf\fP is an ASCII file which defines parameters used by
-Slurm's namespace/tmpfs plugin. The plugin reads the
-namespace.conf file to find out the configuration settings. Based on them it
-constructs a private (or optionally shared) filesystem namespace for the job and
-mounts a list of directories (defaults to /tmp and /dev/shm) inside it. This
-gives the job a private view of these directories. These paths are mounted
-inside the location specified by 'BasePath' in the \fBnamespace.conf\fR
-file. When the job completes, the private namespace is unmounted and all
-files therein are automatically removed.
-To make use of this plugin, 'PrologFlags=Contain' must also be present in
+Slurm's namespace plugins. Based on these parameters, the plugin will create the
+appropriate job-specifc namespace(s).
+
+The namespace/tmpfs plugin only creates a filesystem namespace and will
+construct a private (or optionally shared) filesystem namespace and mount a list
+of directories (defaults to /tmp and /dev/shm) inside it, giving the job a
+private view of these directories. These paths are mounted inside the location
+specified by 'BasePath' in the \fBnamespace.conf\fR file.
+
+The namespace/linux plugin operates very similarly to the namespace/tmpfs
+plugin, however optionally can create new User and PID namespaces for the job.
+
+When the job completes, the namespace is unmounted and all files therein are
+automatically removed.
+
+To make use of these plugins, 'PrologFlags=Contain' must also be present in
 your \fBslurm.conf\fR file, as shown:
 
 .nf
-NamespaceType=namespace/tmpfs
+NamespaceType=namespace/linux
 PrologFlags=Contain
 .fi
 
@@ -38,7 +45,7 @@ Changes to the configuration file take effect upon restart of Slurm daemons.
 
 .LP
 The following namespace.conf parameters are defined to control the behavior
-of the namespace/tmpfs plugin.
+of the namespace plugins.
 
 .TP
 \fBAutoBasePath\fR
@@ -102,20 +109,34 @@ considering the script failed. The default value is 10 seconds.
 .IP
 
 .TP
+\fBCloneNSFlags\fR
+This option is only valid for the namespace/linux plugin. This parameter
+defines what additional namespaces should be created for the job. Valid values
+are "CLONE_NEWPID" and "CLONE_NEWUSER" to create new PID and USER namespaces
+respectively. "CLONE_NEWNS" will also be accepted, but is always on.
+\fBNOTE\fR: When CLONE_NEWUSER is specified, bpf token support is also required
+if using ConstrainDevices in \fBcgroup.conf\fR.
+.IP
+
+.TP
 \fBDirs\fR
 A list of mount points separated with commas to create private mounts for.
 This parameter is optional and if not specified it defaults to "/tmp,/dev/shm".
 
 \fBNOTE\fR: /dev/shm has special handling, and instead of a bind mount is always
 a fresh tmpfs filesystem.
+
+\fBNOTE\fR: When CLONE_NEWPID is specified, a unique /proc filesystem for the
+container will be mounted automatically.
 .IP
 
 .TP
 \fBEntireStepInNS\fR
-Specifying EntireStepInNS=true will pivot all slurmstepd processes (excluding
-the external step, which is tasked with creating the namespace) into the
-constructed namespace. This will cause issues if certain paths such as
-SlurmdSpoolDir are inaccessible. This parameter is optional.
+This parameter is only valid for namespace/tmpfs, and is the only behavior for
+namespace/linux .Specifying EntireStepInNS=true will pivot all slurmstepd
+processes (excluding the external step, which is tasked with creating the
+namespace) into the constructed namespace. This will cause issues if certain
+paths such as SlurmdSpoolDir are inaccessible. This parameter is optional.
 .IP
 
 .TP
@@ -141,6 +162,16 @@ the example below. This parameter is optional.
 Specifying Shared=true will propagate new mounts between the job specific
 filesystem namespace and the root filesystem namespace, enable using autofs on
 the node. This parameter is optional.
+.IP
+
+.TP
+\fBUserNSScript\fR
+This parameter is only valid for the namespace/linux plugin. Specifies the
+location of a script that will perform the user namespace setup.  This script
+runs first when setting up the namespace.  The environment variable
+"SLURM_NS_PID" is provided to allow constructing the path to the various map
+files that this script could write to.  If not specified, every user and group
+will be mapped.
 .IP
 
 .SH "NOTES"
