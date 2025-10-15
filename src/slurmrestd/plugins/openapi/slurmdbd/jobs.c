@@ -105,13 +105,6 @@ cleanup:
 /* based on get_data() in sacct/options.c */
 extern int op_handler_jobs(ctxt_t *ctxt)
 {
-	if ((ctxt->method != HTTP_REQUEST_GET) &&
-	    (ctxt->method != HTTP_REQUEST_POST)) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-	}
-
 	if (ctxt->method == HTTP_REQUEST_GET) {
 		if (ctxt->query && data_get_dict_length(ctxt->query)) {
 			slurmdb_job_cond_t *job_cond = NULL;
@@ -152,6 +145,10 @@ extern int op_handler_jobs(ctxt_t *ctxt)
 		}
 	} else if (ctxt->method == HTTP_REQUEST_POST) {
 		_jobs_post_update(ctxt);
+	} else {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
 	}
 
 	return SLURM_SUCCESS;
