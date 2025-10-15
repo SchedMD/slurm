@@ -66,7 +66,6 @@ typedef struct slurm_switch_ops {
 					    uint16_t protocol_version );
 	void (*jobinfo_free)(void *switch_jobinfo);
 	int          (*stepinfo_build)    ( switch_stepinfo_t **stepinfo,
-					    slurm_step_layout_t *step_layout,
 					    step_record_t *step_ptr );
 	void         (*stepinfo_duplicate)( switch_stepinfo_t *source,
 					    switch_stepinfo_t **dest);
@@ -334,7 +333,6 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr)
 }
 
 extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
-				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
 	void **data = NULL;
@@ -349,7 +347,7 @@ extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
 	data = &(*stepinfo)->data;
 
 	return (*(ops[plugin_id].stepinfo_build))((switch_stepinfo_t **) data,
-						  step_layout, step_ptr);
+						  step_ptr);
 }
 
 extern void switch_g_stepinfo_duplicate(dynamic_plugin_data_t *source,

@@ -513,7 +513,6 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 }
 
 extern int switch_p_stepinfo_build(switch_stepinfo_t **stepinfo,
-				   slurm_step_layout_t *step_layout,
 				   step_record_t *step_ptr)
 {
 	slingshot_stepinfo_t *job = NULL;
@@ -561,7 +560,7 @@ extern int switch_p_stepinfo_build(switch_stepinfo_t **stepinfo,
 		job_id = job_ptr->job_id;
 	} else {
 		/* This is a non-het step in a non-het job */
-		node_cnt = step_layout->node_cnt;
+		node_cnt = step_ptr->step_layout->node_cnt;
 		job_id = job_ptr->job_id;
 	}
 
