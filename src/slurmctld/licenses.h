@@ -137,6 +137,8 @@ extern bool hres_select_check(hres_select_t *hres_select, int node_inx);
 
 extern void hres_create_select(job_record_t *job_ptr);
 
+extern uint32_t hres_get_capacity(hres_select_t *hres_select, int leaf_idx);
+
 extern uint16_t hres_select_find_leaf(hres_select_t *hres_select, int node_inx);
 
 extern void hres_select_free(job_record_t *job_ptr);
