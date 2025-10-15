@@ -299,7 +299,7 @@ scontrol_hold(char *op, char *job_str)
 	}
 
 	if (last_job_id != job_id) {
-		if (scontrol_load_job(&jobs, job_id)) {
+		if (scontrol_load_job(&jobs, 0, job_id)) {
 			if (quiet_flag == -1)
 				slurm_perror ("slurm_load_job error");
 			return 1;
@@ -1480,7 +1480,7 @@ static char *_job_name2id(char *job_name, uint32_t job_uid)
 
 	xassert(job_name);
 
-	rc = scontrol_load_job(&resp, 0);
+	rc = scontrol_load_job(&resp, 0, 0);
 	if (rc == SLURM_SUCCESS) {
 		if (resp->record_count == 0) {
 			error("JobName %s not found", job_name);
