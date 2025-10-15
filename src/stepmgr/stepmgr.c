@@ -4736,8 +4736,7 @@ static step_record_t *_build_interactive_step(
 			     &step_ptr->step_node_bitmap, NULL)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
-		delete_step_record(job_ptr, step_ptr);
-		return NULL;
+		goto fail;
 	}
 
 	step_ptr->time_last_active = time(NULL);
@@ -4746,6 +4745,10 @@ static step_record_t *_build_interactive_step(
 	jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn, step_ptr);
 
 	return step_ptr;
+
+fail:
+	delete_step_record(job_ptr, step_ptr);
+	return NULL;
 }
 
 /*
