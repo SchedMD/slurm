@@ -548,6 +548,7 @@ extern int set_usage_information(char **usage_table,
 	} else if (start_tm.tm_mday == 1 && end_tm.tm_mday == 1
 		  && (end-start > 86400)) {
 		switch (type) {
+		case DBD_GET_ASSOC_NG_USAGE:
 		case DBD_GET_ASSOC_USAGE:
 			my_usage_table = assoc_month_table;
 			break;
