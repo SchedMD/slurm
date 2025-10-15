@@ -335,7 +335,7 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr)
 extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
 				   step_record_t *step_ptr)
 {
-	void **data = NULL;
+	void **stepinfo_data = NULL;
 	uint32_t plugin_id = switch_context_default;
 
 	xassert(switch_context_cnt >= 0);
@@ -344,10 +344,10 @@ extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
 		return SLURM_SUCCESS;
 
 	*stepinfo = _create_dynamic_plugin_data(plugin_id);
-	data = &(*stepinfo)->data;
+	stepinfo_data = &(*stepinfo)->data;
 
-	return (*(ops[plugin_id].stepinfo_build))((switch_stepinfo_t **) data,
-						  step_ptr);
+	return (*(ops[plugin_id].stepinfo_build))(
+		(switch_stepinfo_t **) stepinfo_data, step_ptr);
 }
 
 extern void switch_g_stepinfo_duplicate(dynamic_plugin_data_t *source,
