@@ -559,8 +559,11 @@ _node_state_list (void)
 
 	all_states = xstrdup (node_state_string(0));
 	for (i = 1; i < NODE_STATE_END; i++) {
-		xstrcat (all_states, ",");
-		xstrcat (all_states, node_state_string(i));
+		/* Skip NODE_STATE_ERROR */
+		if (i != NODE_STATE_ERROR) {
+			xstrcat(all_states, ",");
+			xstrcat(all_states, node_state_string(i));
+		}
 	}
 
 	xstrcat(all_states,
