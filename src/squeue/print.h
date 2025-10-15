@@ -184,6 +184,7 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 			  char* suffix);
 int _print_pn_min_cpus(job_info_t * job, int width, bool right_justify,
 		       char* suffix);
+int _print_sluid(job_info_t *job, int width, bool right_justify, char *suffix);
 int _print_sockets(job_info_t * job, int width, bool right_justify,
 		   char* suffix);
 int _print_cores(job_info_t * job, int width, bool right_justify, char* suffix);

@@ -741,6 +741,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"SiblingsViable", 0, _print_job_fed_siblings_viable, 0},
 	{"SiblingsViableRaw", 0, _print_job_fed_siblings_viable_raw, 0},
 	{"Shared", 'h', _print_job_over_subscribe, FMT_FLAG_HIDDEN},
+	{"SLUID", 's', _print_sluid, 0},
 	{"Sockets", 'H', _print_sockets, 0},
 	{"SPerBoard", 0, _print_job_sockets_per_board, 0},
 	{"StartTime", 'S', _print_job_time_start, 0},
