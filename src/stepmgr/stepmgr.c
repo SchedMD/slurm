@@ -4730,6 +4730,11 @@ static step_record_t *_build_interactive_step(
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 
+	if (switch_g_setup_special_steps()) {
+		if (_switch_setup(step_ptr) != SLURM_SUCCESS)
+			goto fail;
+	}
+
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
 
 	if (node_name2bitmap(job_ptr->batch_host, false,
