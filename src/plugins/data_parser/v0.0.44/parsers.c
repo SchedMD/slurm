@@ -7014,6 +7014,18 @@ static void FREE_FUNC(H_RESOURCE)(void *ptr)
 	xfree(resource);
 }
 
+static void FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)(void *ptr)
+{
+	openapi_job_modify_req_t *req = ptr;
+
+	if (!req)
+		return;
+
+	FREE_NULL_LIST(req->job_id_list);
+	slurmdb_destroy_job_rec(req->job_rec);
+	xfree(req);
+}
+
 static int _foreach_layer(void *x, void *arg)
 {
 	hierarchy_layer_t *layer = x;
@@ -7613,6 +7625,98 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_parse(WCKEY_TAG, wckey, "wckey", "Workload characterization key"),
 	add_skip(wckeyid),
 	add_parse(STRING, work_dir, "working_directory", "Path to current working directory"),
+};
+#undef add_cparse
+#undef add_parse
+#undef add_skip
+#undef add_parse_overload
+
+
+#define add_skip(field)					\
+	add_parser_skip(slurmdb_job_rec_t, field)
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(slurmdb_job_rec_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc)		\
+	add_parser(slurmdb_job_rec_t, mtype, false, field, overloads, path, desc)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(slurmdb_job_rec_t, mtype, false, path, desc)
+/*
+ * A subset of supported slurmdb_job_rec_t fields for modifying job in the
+ * database -- mirrors as_mysql_modify_job() and
+ * sacctmgr/job_functions.c:_set_rec().
+ */
+static const parser_t PARSER_ARRAY(JOB_MODIFY)[] = {
+	add_skip(account),
+	add_parse(STRING, admin_comment, "comment/administrator", "Arbitrary comment made by administrator"),
+	add_skip(alloc_nodes),
+	add_skip(array_job_id),
+	add_skip(array_max_tasks),
+	add_skip(array_task_id),
+	add_skip(array_task_str),
+	add_skip(blockid),
+	add_skip(cluster),
+	add_skip(constraints),
+	add_skip(container),
+	add_skip(db_index),
+	add_parse(PROCESS_EXIT_CODE, derived_ec, "derived_exit_code", "Highest exit code of all job steps"),
+	add_parse(STRING, derived_es, "comment/job", "Arbitrary comment made by user"),
+	add_skip(elapsed),
+	add_skip(eligible),
+	add_skip(end),
+	add_skip(env),
+	add_skip(exitcode),
+	add_parse(STRING, extra, "extra", "Arbitrary string used for node filtering if extra constraints are enabled"),
+	add_skip(failed_node),
+	add_skip(flags),
+	add_skip(first_step_ptr),
+	add_skip(gid),
+	add_skip(het_job_id),
+	add_skip(het_job_offset),
+	add_skip(jobid),
+	add_skip(jobname),
+	add_skip(licenses),
+	add_skip(mcs_label),
+	add_skip(nodes),
+	add_skip(partition),
+	add_skip(priority),
+	add_skip(qosid),
+	add_skip(qos_req),
+	add_skip(req_cpus),
+	add_skip(req_mem),
+	add_skip(requid),
+	add_skip(restart_cnt),
+	add_skip(resvid),
+	add_skip(resv_name),
+	add_skip(resv_req),
+	add_skip(script),
+	add_skip(segment_size),
+	add_skip(std_out),
+	add_skip(std_err),
+	add_skip(std_in),
+	add_skip(show_full),
+	add_skip(start),
+	add_skip(state),
+	add_skip(state_reason_prev),
+	add_skip(steps),
+	add_skip(submit),
+	add_skip(submit_line),
+	add_skip(suspended),
+	add_parse(STRING, system_comment, "comment/system", "Arbitrary comment from slurmctld"),
+	add_skip(sys_cpu_sec),
+	add_skip(sys_cpu_usec),
+	add_skip(timelimit),
+	add_skip(tot_cpu_sec),
+	add_skip(tot_cpu_usec),
+	add_parse(TRES_STR, tres_alloc_str, "tres/allocated", "Trackable resources allocated to the job"),
+	add_skip(tres_req_str),
+	add_skip(uid),
+	add_skip(used_gres),
+	add_skip(user),
+	add_skip(user_cpu_sec),
+	add_skip(user_cpu_usec),
+	add_parse(STRING, wckey, "wckey", "Workload characterization key"),
+	add_skip(wckeyid),
+	add_skip(work_dir),
 };
 #undef add_cparse
 #undef add_parse
@@ -10276,6 +10380,7 @@ add_openapi_response_single(OPENAPI_KILL_JOB_RESP, KILL_JOBS_RESP_MSG_PTR, "stat
 add_openapi_response_single(OPENAPI_RESERVATION_MOD_RESP, RESERVATION_DESC_MSG_LIST, "reservations", "Reservation descriptions");
 add_openapi_response_single(OPENAPI_HOSTLIST_REQ_RESP, HOSTLIST_STRING_TO_STRING, "hostlist", "Hostlist expression string");
 add_openapi_response_single(OPENAPI_HOSTNAMES_REQ_RESP, HOSTLIST_STRING, "hostnames", "Array of host names");
+add_openapi_response_single(OPENAPI_JOB_MODIFY_RESP, STRING_LIST, "results", "Job modify results");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -10465,6 +10570,17 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_ALLOC_RESP)[] = {
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
 	add_openapi_response_warnings(openapi_job_submit_response_t),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(openapi_job_modify_req_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_MODIFY_REQ)[] = {
+	add_parse(SELECTED_STEP_LIST, job_id_list, "job_id_list", "CSV list of Job IDs to modify"),
+	add_parse(JOB_MODIFY_PTR, job_rec, "job_rec", "Job modify message"),
+	add_openapi_response_meta(openapi_job_modify_req_t),
+	add_openapi_response_errors(openapi_job_modify_req_t),
+	add_openapi_response_warnings(openapi_job_modify_req_t),
 };
 #undef add_parse
 
@@ -10907,7 +11023,7 @@ static const parser_t parsers[] = {
 	addpp(LISTSTEPS_INFO_PTR, liststeps_info_t *, LISTSTEPS_INFO, false, NULL, NULL),
 	addpp(PARTITION_INFO_MSG_PTR, partition_info_msg_t *, PARTITION_INFO_MSG, false, NULL, NULL),
 	addpp(RESERVATION_INFO_MSG_PTR, reserve_info_msg_t *, RESERVATION_INFO_MSG, false, NULL, NULL),
-	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false, NULL, NULL),
+	addpp(SELECTED_STEP_PTR, slurm_selected_step_t *, SELECTED_STEP, false, NULL, slurm_destroy_selected_step),
 	addpp(SLURM_STEP_ID_STRING_PTR, slurm_step_id_t *, SLURM_STEP_ID_STRING, false, NULL, NULL),
 	addpp(STEP_INFO_MSG_PTR, job_step_info_response_msg_t *, STEP_INFO_MSG, false, NULL, NULL),
 	addpp(BITSTR_PTR, bitstr_t *, BITSTR, false, NULL, NULL),
@@ -10925,6 +11041,8 @@ static const parser_t parsers[] = {
 	addpap(USER, slurmdb_user_rec_t, NEW_FUNC(USER), slurmdb_destroy_user_rec),
 	addpap(USER_SHORT, slurmdb_user_rec_t, NULL, slurmdb_destroy_user_rec),
 	addpap(JOB, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
+	addpap(JOB_MODIFY, slurmdb_job_rec_t, (parser_new_func_t) slurmdb_create_job_rec, slurmdb_destroy_job_rec),
+	addpap(OPENAPI_JOB_MODIFY_REQ, openapi_job_modify_req_t, NULL, FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)),
 	addpap(STEP, slurmdb_step_rec_t, (parser_new_func_t) slurmdb_create_step_rec, slurmdb_destroy_step_rec),
 	addpap(ACCOUNT, slurmdb_account_rec_t, NEW_FUNC(ACCOUNT), slurmdb_destroy_account_rec),
 	addpap(ACCOUNT_SHORT, slurmdb_account_rec_t, NULL, slurmdb_destroy_account_rec),
@@ -11079,6 +11197,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_RESERVATION_MOD_RESP),
 	addoar(OPENAPI_HOSTNAMES_REQ_RESP),
 	addoar(OPENAPI_HOSTLIST_REQ_RESP),
+	addoar(OPENAPI_JOB_MODIFY_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),

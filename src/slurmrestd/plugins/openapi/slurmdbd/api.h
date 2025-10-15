@@ -62,6 +62,11 @@ typedef int (*db_rc_query_func_t)(void *db_conn, list_t *list);
  * Generic typedef for the DB modify functions that takes an object record and
  * returns an List if the query was successful or NULL on error
  */
+typedef list_t *(*db_list_modify_func_t)(void *db_conn, void *cond, void *obj);
+/*
+ * Generic typedef for the DB modify functions that takes an object record and
+ * returns an rc if the query was successful.
+ */
 typedef list_t *(*db_rc_modify_func_t)(void *db_conn, void **cond, void *obj);
 
 /* ------------ handlers for slurmdbd queries --------------- */
@@ -112,6 +117,40 @@ extern int db_query_list_funcname(ctxt_t *ctxt, list_t **list,
 extern int db_query_rc_funcname(ctxt_t *ctxt, list_t *list,
 				db_rc_query_func_t func, const char *func_name,
 				const char *caller);
+
+/*
+ * Macro helper for modify database API for List output.
+ * Converts the function name to string.
+ */
+#define db_modify_list(ctxt, list, cond, obj, func) \
+	db_modify_list_funcname(ctxt, list, cond, obj, \
+				(db_list_modify_func_t) func, \
+				XSTRINGIFY(func), __func__, false)
+
+/*
+ * Macro helper for modify database API for List output, avoids empty results.
+ * Converts the function name to string.
+ */
+#define db_modify_list_xempty(ctxt, list, cond, obj, func) \
+	db_modify_list_funcname(ctxt, list, cond, obj, \
+				(db_list_modify_func_t) func, \
+				XSTRINGIFY(func), __func__, true)
+
+/*
+ * Modify object in database API with list output
+ * IN ctxt - connection context
+ * IN/OUT list - ptr to List ptr to populate with result (on success)
+ * IN cond - ptr to filter conditional to pass to func
+ * IN obj - ptr to obj to pass to func
+ * IN func - function ptr to call
+ * IN func_name - string of func name (for errors)
+ * IN ignore_empty_result - do not error/warn on empty results
+ * RET SLURM_SUCCESS or error
+ */
+extern int db_modify_list_funcname(ctxt_t *ctxt, list_t **list, void *cond,
+				   void *obj, db_list_modify_func_t func,
+				   const char *func_name, const char *caller,
+				   bool ignore_empty_result);
 
 /*
  * Macro helper for modify database API for List output.
