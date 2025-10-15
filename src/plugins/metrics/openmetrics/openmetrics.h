@@ -36,4 +36,26 @@
 #ifndef _OPENMETRICS_H
 #define _OPENMETRICS_H
 
+static const char* openmetrics_type_str[] = {
+	"unknown",
+	"counter",
+	"gauge",
+	"gaugehistogram",
+	"histogram",
+	"info",
+	"stateset",
+	"summary"
+};
+
+typedef enum openmetrics_type {
+	METRIC_TYPE_UNKNOWN,
+	METRIC_TYPE_COUNTER,
+	METRIC_TYPE_GAUGE,
+	METRIC_TYPE_GAUGE_HISTOGRAM,
+	METRIC_TYPE_HISTOGRAM,
+	METRIC_TYPE_INFO,
+	METRIC_TYPE_STATESET,
+	METRIC_TYPE_SUMMARY,
+} openmetrics_type_t;
+
 #endif
