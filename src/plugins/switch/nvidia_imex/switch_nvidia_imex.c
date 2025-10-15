@@ -682,27 +682,6 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 	return _stepd_setup_imex_channel(step);
 }
 
-extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
-				     job_record_t *job_ptr)
-{
-	switch_info_t *jobinfo;
-
-	if (!(jobinfo = job_ptr->switch_jobinfo) || !(jobinfo->channel_list)) {
-		log_flag(SWITCH, "no channels for %pJ", job_ptr);
-		return;
-	}
-
-	log_flag(SWITCH, "%s: Creating extern step info for %pJ",
-		 __func__, job_ptr);
-
-	/* Copy job channel list to step switch info */
-	*stepinfo = _create_info(jobinfo->channel_list);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		list_for_each(jobinfo->channel_list, _log_channel_job, job_ptr);
-	}
-}
-
 extern void switch_p_extern_step_fini(int job_id)
 {
 	/* not supported */
