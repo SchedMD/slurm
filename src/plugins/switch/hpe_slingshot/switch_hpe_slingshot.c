@@ -866,6 +866,16 @@ error:
 	return SLURM_ERROR;
 }
 
+extern bool switch_p_setup_special_steps(void)
+{
+	/*
+	 * Do not setup switch access for batch, interactive, or extern steps.
+	 *
+	 * Switch access is limited to normal job steps started with srun.
+	 */
+	return false;
+}
+
 /*
  * Set up CXI Services for each of the CXI NICs on this host
  */

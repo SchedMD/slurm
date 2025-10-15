@@ -140,6 +140,12 @@ extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **jobinfo,
 				    buf_t *buffer, uint16_t protocol_version);
 
 /*
+ * Return true if switch plugin should be setup on special steps
+ * (batch/interactive/extern steps), otherwise return false.
+ */
+extern bool switch_g_setup_special_steps(void);
+
+/*
  * Note that the job step associated with the specified nodelist
  * has completed execution.
  */

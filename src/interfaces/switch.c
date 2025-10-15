@@ -77,6 +77,7 @@ typedef struct slurm_switch_ops {
 	int          (*stepinfo_unpack)   ( switch_stepinfo_t **stepinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
+	bool (*setup_special_steps)(void);
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_init)          ( stepd_step_rec_t *step );
 	int          (*job_postfini)      ( stepd_step_rec_t *step);
@@ -110,6 +111,7 @@ static const char *syms[] = {
 	"switch_p_stepinfo_free",
 	"switch_p_stepinfo_pack",
 	"switch_p_stepinfo_unpack",
+	"switch_p_setup_special_steps",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
 	"switch_p_job_postfini",
@@ -504,6 +506,16 @@ unpack_error:
 	*stepinfo = NULL;
 	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
+}
+
+extern bool switch_g_setup_special_steps(void)
+{
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return false;
+
+	return (*(ops[switch_context_default].setup_special_steps))();
 }
 
 extern int switch_g_job_preinit(stepd_step_rec_t *step)

@@ -416,6 +416,15 @@ extern int switch_p_stepinfo_unpack(switch_info_t **switch_step, buf_t *buffer,
 	return switch_p_jobinfo_unpack(switch_step, buffer, protocol_version);
 }
 
+extern bool switch_p_setup_special_steps(void)
+{
+	/*
+	 * Every step needs to have access to IMEX channels, including normal,
+	 * batch, extern, and interactive steps.
+	 */
+	return true;
+}
+
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
