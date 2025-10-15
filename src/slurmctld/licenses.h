@@ -85,6 +85,7 @@ typedef struct {
 	uint16_t level; /* level - 0 for leaf */
 	uint16_t parent_id; /* lic_id of parent - NO_VAL16 for root */
 	path_idx_t path_idx;
+	char *topology_name;
 	uint32_t total;
 	list_t *variables; /* list of hres_variable_t */
 } hres_rec_t;

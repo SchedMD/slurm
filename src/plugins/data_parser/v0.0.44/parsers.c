@@ -488,6 +488,7 @@ typedef struct {
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
+	char *topology_name;
 	list_t *variables; /* list of hres_variable_t */
 } hierarchical_resource_t;
 
@@ -7017,6 +7018,7 @@ static void FREE_FUNC(H_RESOURCE)(void *ptr)
 
 	xfree(resource->name);
 	FREE_NULL_LIST(resource->layers);
+	xfree(resource->topology_name);
 	FREE_NULL_LIST(resource->variables);
 	xfree(resource);
 }
@@ -7073,6 +7075,8 @@ static int _foreach_layer(void *x, void *arg)
 		license->hres_rec.variables = list_create(hres_variable_free);
 		list_for_each(args->resource->variables, _foreach_variable,
 			      license->hres_rec.variables);
+		license->hres_rec.topology_name =
+			xstrdup(args->resource->topology_name);
 		args->first_layer = false;
 	}
 
@@ -7161,6 +7165,9 @@ static int _foreach_license(void *x, void *arg)
 	layer = xmalloc(sizeof(*layer));
 	layer->nodes = xstrdup(license->nodes);
 	layer->count = license->hres_rec.total;
+	if (!resource->topology_name)
+		resource->topology_name =
+			xstrdup(license->hres_rec.topology_name);
 	if (hres_variable_free && list_count(license->hres_rec.base)) {
 		layer->base = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.base, _foreach_variable,
@@ -10390,6 +10397,7 @@ static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
 	add_parse_req(STRING, name, "resource", "Name of hierarchical resource"),
 	add_parse_req(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
 	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+	add_parse(STRING, topology_name, "topology", "Name of topology associated to hierarchical resource"),
 	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
 };
 #undef add_parse_req
