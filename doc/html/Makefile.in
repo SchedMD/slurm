@@ -510,6 +510,7 @@ generated_html = \
 	man_index.html \
 	mc_support.html \
 	mcs.html \
+	metrics.html \
 	mpi_guide.html \
 	multi_cluster.html \
 	network.html \
