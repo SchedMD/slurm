@@ -2046,7 +2046,97 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 				   buf_t *buffer,
 				   uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(dump_job_ptr->account, buffer);
+		packstr(dump_job_ptr->admin_comment, buffer);
+		packstr(dump_job_ptr->alloc_node, buffer);
+		pack32(dump_job_ptr->alloc_sid, buffer);
+		pack32(dump_job_ptr->array_job_id, buffer);
+		pack32(dump_job_ptr->array_task_id, buffer);
+		pack32(dump_job_ptr->assoc_id, buffer);
+
+		packstr(dump_job_ptr->batch_features, buffer);
+		pack16(dump_job_ptr->batch_flag, buffer);
+		packstr(dump_job_ptr->batch_host, buffer);
+		pack64(dump_job_ptr->bit_flags, buffer);
+		packstr(dump_job_ptr->burst_buffer, buffer);
+		packstr(dump_job_ptr->burst_buffer_state, buffer);
+		packdouble(dump_job_ptr->billable_tres, buffer);
+
+		packstr(dump_job_ptr->comment, buffer);
+		packstr(dump_job_ptr->container, buffer);
+		packstr(dump_job_ptr->container_id, buffer);
+		packstr(dump_job_ptr->cpus_per_tres, buffer);
+
+		pack_time(dump_job_ptr->deadline, buffer);
+		pack32(dump_job_ptr->delay_boot, buffer);
+		pack32(dump_job_ptr->derived_ec, buffer);
+
+		pack32(dump_job_ptr->exit_code, buffer);
+		packstr(dump_job_ptr->extra, buffer);
+
+		packstr(dump_job_ptr->failed_node, buffer);
+		_dump_job_fed_details(dump_job_ptr->fed_details, for_state,
+				      buffer, protocol_version);
+
+		packstr(dump_job_ptr->gres_used, buffer);
+		pack32(dump_job_ptr->group_id, buffer);
+
+		pack32(dump_job_ptr->het_job_id, buffer);
+		packstr(dump_job_ptr->het_job_id_set, buffer);
+		pack32(dump_job_ptr->het_job_offset, buffer);
+
+		pack32(dump_job_ptr->job_id, buffer);
+		pack32(dump_job_ptr->job_state, buffer);
+
+		pack_time(dump_job_ptr->last_sched_eval, buffer);
+		packstr(dump_job_ptr->licenses, buffer);
+		packstr(dump_job_ptr->licenses_allocated, buffer);
+
+		pack16(dump_job_ptr->mail_type, buffer);
+		packstr(dump_job_ptr->mail_user, buffer);
+		packstr(dump_job_ptr->mcs_label, buffer);
+		packstr(dump_job_ptr->mem_per_tres, buffer);
+
+		packstr(dump_job_ptr->name, buffer);
+		packstr(dump_job_ptr->network, buffer);
+
+		pack_time(dump_job_ptr->preempt_time, buffer);
+		pack_time(dump_job_ptr->pre_sus_time, buffer);
+		pack32(dump_job_ptr->priority, buffer);
+		pack32(dump_job_ptr->profile, buffer);
+
+		pack8(dump_job_ptr->reboot, buffer);
+		pack32(dump_job_ptr->req_switch, buffer);
+		pack_time(dump_job_ptr->resize_time, buffer);
+		pack16(dump_job_ptr->restart_cnt, buffer);
+		packstr(dump_job_ptr->resv_name, buffer);
+		packstr(dump_job_ptr->resv_ports, buffer);
+
+		packstr(dump_job_ptr->selinux_context, buffer);
+		pack32(dump_job_ptr->site_factor, buffer);
+		pack16(dump_job_ptr->start_protocol_ver, buffer);
+		packstr(dump_job_ptr->state_desc, buffer);
+		pack32(dump_job_ptr->state_reason, buffer);
+		pack_time(dump_job_ptr->suspend_time, buffer);
+		packstr(dump_job_ptr->system_comment, buffer);
+
+		pack32(dump_job_ptr->time_min, buffer);
+		packstr(dump_job_ptr->tres_bind, buffer);
+		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
+		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
+		packstr(dump_job_ptr->tres_freq, buffer);
+		packstr(dump_job_ptr->tres_per_job, buffer);
+		packstr(dump_job_ptr->tres_per_node, buffer);
+		packstr(dump_job_ptr->tres_per_socket, buffer);
+		packstr(dump_job_ptr->tres_per_task, buffer);
+
+		pack32(dump_job_ptr->user_id, buffer);
+		packstr(dump_job_ptr->user_name, buffer);
+
+		pack32(dump_job_ptr->wait4switch, buffer);
+		packstr(dump_job_ptr->wckey, buffer);
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->alloc_node, buffer);
@@ -2236,7 +2326,100 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 				    buf_t *buffer,
 				    uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&job_ptr->account, buffer);
+		safe_unpackstr(&job_ptr->admin_comment, buffer);
+		safe_unpackstr(&job_ptr->alloc_node, buffer);
+		safe_unpack32(&job_ptr->alloc_sid, buffer);
+		safe_unpack32(&job_ptr->array_job_id, buffer);
+		safe_unpack32(&job_ptr->array_task_id, buffer);
+		safe_unpack32(&job_ptr->assoc_id, buffer);
+
+		safe_unpackstr(&job_ptr->batch_features, buffer);
+		safe_unpack16(&job_ptr->batch_flag, buffer);
+		safe_unpackstr(&job_ptr->batch_host, buffer);
+		safe_unpack64(&job_ptr->bit_flags, buffer);
+		job_ptr->bit_flags &= ~BACKFILL_TEST;
+		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		safe_unpackstr(&job_ptr->burst_buffer, buffer);
+		safe_unpackstr(&job_ptr->burst_buffer_state, buffer);
+		safe_unpackdouble(&job_ptr->billable_tres, buffer);
+
+		safe_unpackstr(&job_ptr->comment, buffer);
+		safe_unpackstr(&job_ptr->container, buffer);
+		safe_unpackstr(&job_ptr->container_id, buffer);
+		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
+
+		safe_unpack_time(&job_ptr->deadline, buffer);
+		safe_unpack32(&job_ptr->delay_boot, buffer);
+		safe_unpack32(&job_ptr->derived_ec, buffer);
+
+		safe_unpack32(&job_ptr->exit_code, buffer);
+		safe_unpackstr(&job_ptr->extra, buffer);
+
+		safe_unpackstr(&job_ptr->failed_node, buffer);
+		if (_load_job_fed_details(&job_ptr->fed_details, buffer,
+					  protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+
+		safe_unpackstr(&job_ptr->gres_used, buffer);
+		safe_unpack32(&job_ptr->group_id, buffer);
+
+		safe_unpack32(&job_ptr->het_job_id, buffer);
+		safe_unpackstr(&job_ptr->het_job_id_set, buffer);
+		safe_unpack32(&job_ptr->het_job_offset, buffer);
+
+		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpack32(&job_ptr->job_state, buffer);
+
+		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
+		safe_unpackstr(&job_ptr->licenses, buffer);
+		safe_unpackstr(&job_ptr->licenses_allocated, buffer);
+
+		safe_unpack16(&job_ptr->mail_type, buffer);
+		safe_unpackstr(&job_ptr->mail_user, buffer);
+		safe_unpackstr(&job_ptr->mcs_label, buffer);
+		safe_unpackstr(&job_ptr->mem_per_tres, buffer);
+
+		safe_unpackstr(&job_ptr->name, buffer);
+		safe_unpackstr(&job_ptr->network, buffer);
+
+		safe_unpack_time(&job_ptr->preempt_time, buffer);
+		safe_unpack_time(&job_ptr->pre_sus_time, buffer);
+		safe_unpack32(&job_ptr->priority, buffer);
+		safe_unpack32(&job_ptr->profile, buffer);
+
+		safe_unpack8(&job_ptr->reboot, buffer);
+		safe_unpack32(&job_ptr->req_switch, buffer);
+		safe_unpack_time(&job_ptr->resize_time, buffer);
+		safe_unpack16(&job_ptr->restart_cnt, buffer);
+		safe_unpackstr(&job_ptr->resv_name, buffer);
+		safe_unpackstr(&job_ptr->resv_ports, buffer);
+
+		safe_unpackstr(&job_ptr->selinux_context, buffer);
+		safe_unpack32(&job_ptr->site_factor, buffer);
+		safe_unpack16(&job_ptr->start_protocol_ver, buffer);
+		safe_unpackstr(&job_ptr->state_desc, buffer);
+		safe_unpack32(&job_ptr->state_reason, buffer);
+		safe_unpack_time(&job_ptr->suspend_time, buffer);
+		safe_unpackstr(&job_ptr->system_comment, buffer);
+
+		safe_unpack32(&job_ptr->time_min, buffer);
+		safe_unpackstr(&job_ptr->tres_bind, buffer);
+		safe_unpackstr(&job_ptr->tres_fmt_alloc_str, buffer);
+		safe_unpackstr(&job_ptr->tres_fmt_req_str, buffer);
+		safe_unpackstr(&job_ptr->tres_freq, buffer);
+		safe_unpackstr(&job_ptr->tres_per_job, buffer);
+		safe_unpackstr(&job_ptr->tres_per_node, buffer);
+		safe_unpackstr(&job_ptr->tres_per_socket, buffer);
+		safe_unpackstr(&job_ptr->tres_per_task, buffer);
+
+		safe_unpack32(&job_ptr->user_id, buffer);
+		safe_unpackstr(&job_ptr->user_name, buffer);
+
+		safe_unpack32(&job_ptr->wait4switch, buffer);
+		safe_unpackstr(&job_ptr->wckey, buffer);
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpackstr(&job_ptr->alloc_node, buffer);
