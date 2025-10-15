@@ -173,10 +173,17 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	safe_unpack32(&j->jobid, buffer);
-	safe_unpack_time(&j->revoked, buffer);
-	safe_unpack_time(&j->ctime, buffer);
-	safe_unpack_time(&j->expiration, buffer);
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&j->jobid, buffer);
+		safe_unpack_time(&j->revoked, buffer);
+		safe_unpack_time(&j->ctime, buffer);
+		safe_unpack_time(&j->expiration, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&j->jobid, buffer);
+		safe_unpack_time(&j->revoked, buffer);
+		safe_unpack_time(&j->ctime, buffer);
+		safe_unpack_time(&j->expiration, buffer);
+	}
 
 	debug3("cred_unpack: job %u ctime:%ld revoked:%ld expires:%ld",
 	       j->jobid, j->ctime, j->revoked, j->expiration);
