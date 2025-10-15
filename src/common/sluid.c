@@ -132,7 +132,7 @@ extern sluid_t str2sluid(const char *string)
 {
 	sluid_t sluid = 0;
 
-	if (strlen(string) != 14)
+	if (!string || (strlen(string) != 14))
 		return 0;
 
 	if (string[0] != 's' && string[0] != 'S')
