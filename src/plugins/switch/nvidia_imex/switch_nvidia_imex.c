@@ -377,11 +377,7 @@ extern int switch_p_stepinfo_build(switch_info_t **switch_step,
 				   switch_info_t *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
-	if (!switch_jobinfo) {
-		return SLURM_SUCCESS;
-	}
-
-	if (!switch_jobinfo->channel_list)
+	if (!switch_jobinfo || !switch_jobinfo->channel_list)
 		return SLURM_SUCCESS;
 
 	/* Copy job channel list to step switch info */
