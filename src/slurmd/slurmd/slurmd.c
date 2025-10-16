@@ -496,8 +496,6 @@ main (int argc, char **argv)
 
 	plugins_registered = true;
 
-	_create_msg_socket();
-
 	conf->pid = getpid();
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
@@ -526,6 +524,8 @@ main (int argc, char **argv)
 			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
 		}
 	}
+
+	_create_msg_socket();
 
 	conmgr_run(false);
 
