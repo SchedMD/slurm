@@ -3,6 +3,7 @@
 ############################################################################
 import atf
 import pytest
+import re
 
 IMEX_CHANNEL_PATH = "/dev/nvidia-caps-imex-channels"
 NUM_NODES = 8
@@ -52,9 +53,16 @@ def _simple_channel_job(job_args):
         fatal=False,
     )
     assert output["exit_code"] == 0, "Expected srun to run successfully"
+    lines = output["stdout"].strip().splitlines()
+
+    pattern = re.compile(r"^channel\d+$")
+
+    for line in lines:
+        assert line, "Empty line found"
+        assert pattern.match(line), f"Invalid line format: {line}"
 
     # Convert ls output into a list of unique channels
-    return len(set(output["stdout"].strip().splitlines()))
+    return len(set(lines))
 
 
 channel_per_segment_params = [
