@@ -3,7 +3,8 @@ Usage: slurmd [OPTIONS]
    -c                         Force cleanup of slurmd shared memory.
    -C                         Print node configuration information and exit.
    --ca-cert-file file        Absolute path to CA cert for configless TLS
-   --conf params              Dynamic node configuration, works with -Z.
+   --conf params              Dynamic node configuration, works with -Z
+                              and can be used to specify cloud node topology.
    --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.
    -d stepd                   Pathname to the slurmstepd program.
    -D                         Run daemon in foreground.

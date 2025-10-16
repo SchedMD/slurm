@@ -938,4 +938,12 @@ $ curl -k -s \
 ]
 </pre>
 
+<h2 id="topology">Topology
+<a class="slurm_link" href="#topology"></a>
+</h2>
+
+<p>Cloud nodes can have topologies defined statically in the config files, or
+can be dynamically added to and removed from topologies as described in the
+<a href="topology.html">Topology Guide</a>.</p>
+
 <!--#include virtual="footer.txt"-->

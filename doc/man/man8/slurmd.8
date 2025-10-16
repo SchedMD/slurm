@@ -54,6 +54,9 @@ used to define nodes in the slurm.conf. Specifying any of \fBCPUs\fR,
 \fBBoards\fR, \fBSocketsPerBoard\fR, \fBCoresPerSocket\fR or
 \fBThreadsPerCore\fR will override the defaults defined by the \fB\-C\fR
 option. \fBNodeName\fR and \fBPort\fR are not supported.
+This can also be used to specify a cloud node's topology, in which case
+the \fB\-Z\fR flag should not be used (e.g.,
+\-\-conf="topology=topo-switch:s1")
 
 .br
 For example if \fIslurmd \-C\fR reports
