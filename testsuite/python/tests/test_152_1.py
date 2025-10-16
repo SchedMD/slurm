@@ -25,7 +25,6 @@ def setup():
 def _simple_channel_job():
     output = atf.run_command(
         f"srun ls {IMEX_CHANNEL_PATH}",
-        timeout=5,
         fatal=False,
     )
     assert output["exit_code"] == 0, "Expected srun to run successfully"
