@@ -180,7 +180,7 @@ static void *_rpc_queue_worker(void *arg)
 
 			END_TIMER;
 			record_rpc_stats(msg, DELTA_TIMER);
-			slurm_free_msg(msg);
+			FREE_NULL_MSG(msg);
 			processed++;
 			processed_usec += DELTA_TIMER;
 		}
