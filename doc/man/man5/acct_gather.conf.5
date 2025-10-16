@@ -309,6 +309,16 @@ Task (I/O, Memory, ...) data is collected.
 .IP
 
 .TP
+\fBProfileInfluxDBFrequency\fR=<seconds>
+How often in seconds data should be sent to the InfluxDB server. Note that in
+practice, profile data will be sent no more often than every
+JobAcctGatherFrequency seconds. A value of 0 disables buffering in the plugin
+so that data is sent to the InfluxDB server as soon it is collected. In all
+cases, data is sent to InfluxDB whenever the plugin's internal buffer is full
+and at the end of each job step. Default is 30 seconds.
+.IP
+
+.TP
 \fBProfileInfluxDBHost\fR=<hostname>:<port>
 The hostname of the machine where the \fIInfluxDB\fR instance is executed and
 the port used by the HTTP API. The port used by the HTTP API is the one

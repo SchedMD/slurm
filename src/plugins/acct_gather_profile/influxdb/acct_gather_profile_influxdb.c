@@ -68,6 +68,7 @@
 #include "src/curl/slurm_curl.h"
 #include "src/interfaces/proctrack.h"
 
+#define DEFAULT_INFLUXDB_FREQUENCY 30
 #define DEFAULT_INFLUXDB_TIMEOUT 10
 
 /*
@@ -105,6 +106,7 @@ typedef struct {
 	uint32_t def;
 	char *password;
 	char *rt_policy;
+	uint32_t frequency;
 	uint32_t timeout;
 	char *username;
 } slurm_influxdb_conf_t;
@@ -131,6 +133,8 @@ static int datastrlen = 0;
 static table_t *tables = NULL;
 static size_t tables_max_len = 0;
 static size_t tables_cur_len = 0;
+
+static time_t last_send = 0;
 
 static void _free_tables(void)
 {
@@ -176,8 +180,19 @@ static int _send_data(const char *data)
 	long response_code = 0;
 	char *url = NULL, *response_str = NULL;
 	size_t length;
+	time_t now = time(NULL);
+	bool send_now = false;
 
 	debug3("%s %s called", plugin_type, __func__);
+
+	/*
+	 * Send data to InfluxDB immediately if buffering is disabled, the send
+	 * interval has elapsed, or a job step has ended (indicated by data ==
+	 * NULL).
+	 */
+	if ((!influxdb_conf.frequency) ||
+	    ((now - last_send) >= (time_t) influxdb_conf.frequency) || (!data))
+		send_now = true;
 
 	/*
 	 * Every compute node which is sampling data will try to establish a
@@ -187,7 +202,7 @@ static int _send_data(const char *data)
 	 * try to open the connection and send this buffer, instead of opening
 	 * one per sample.
 	 */
-	if (data && ((datastrlen + strlen(data)) <= BUF_SIZE)) {
+	if ((!send_now) && ((datastrlen + strlen(data)) <= BUF_SIZE)) {
 		xstrcat(datastr, data);
 		length = strlen(data);
 		datastrlen += length;
@@ -234,6 +249,8 @@ static int _send_data(const char *data)
 		xstrcat(datastr, data);
 	datastrlen = strlen(datastr);
 
+	last_send = now;
+
 	return rc;
 }
 
@@ -248,6 +265,7 @@ extern int init(void)
 		return SLURM_ERROR;
 
 	datastr = xmalloc(BUF_SIZE);
+	last_send = time(NULL);
 	return SLURM_SUCCESS;
 }
 
@@ -272,9 +290,10 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 	debug3("%s %s called", plugin_type, __func__);
 
 	s_p_options_t options[] = {
-		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
+		{"ProfileInfluxDBFrequency", S_P_UINT32},
+		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
 		{"ProfileInfluxDBTimeout", S_P_UINT32},
@@ -293,7 +312,6 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 
 	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
 	if (tbl) {
-		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		if (s_p_get_string(&tmp, "ProfileInfluxDBDefault", tbl)) {
 			influxdb_conf.def =
 				acct_gather_profile_from_string(tmp);
@@ -304,6 +322,10 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database,
 			       "ProfileInfluxDBDatabase", tbl);
+		if (!s_p_get_uint32(&influxdb_conf.frequency,
+				    "ProfileInfluxDBFrequency", tbl))
+			influxdb_conf.frequency = DEFAULT_INFLUXDB_FREQUENCY;
+		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		s_p_get_string(&influxdb_conf.password,
 			       "ProfileInfluxDBPass", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
@@ -518,14 +540,17 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 
 extern void acct_gather_profile_p_conf_values(list_t **data)
 {
-	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
-		     influxdb_conf.host);
-
 	add_key_pair(*data, "ProfileInfluxDBDatabase", "%s",
 		     influxdb_conf.database);
 
 	add_key_pair(*data, "ProfileInfluxDBDefault", "%s",
 		     acct_gather_profile_to_string(influxdb_conf.def));
+
+	add_key_pair(*data, "ProfileInfluxDBFrequency", "%u",
+		     influxdb_conf.frequency);
+
+	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
+		     influxdb_conf.host);
 
 	/* skip over ProfileInfluxDBPass for security reasons */
 
