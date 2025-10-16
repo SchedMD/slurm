@@ -513,6 +513,34 @@ extern void send_fd_over_socket(int socket, int fd)
 		error("%s: failed to send fd: %m", __func__);
 }
 
+extern void send_fd_over_socket_payload(int socket, int fd, char *payload)
+{
+	struct msghdr msg = { 0 };
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(fd))];
+	struct iovec iov[1];
+
+	memset(buf, '\0', sizeof(buf));
+
+	iov[0].iov_base = payload;
+	iov[0].iov_len = strlen(payload);
+	msg.msg_iov = iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+	cmsg->cmsg_level = SOL_SOCKET;
+	cmsg->cmsg_type = SCM_RIGHTS;
+	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+
+	memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+	msg.msg_controllen = cmsg->cmsg_len;
+
+	if (sendmsg(socket, &msg, 0) < 0)
+		error("%s: failed to send fd and payload: %m", __func__);
+}
+
 /* receive an open file descriptor over unix socket */
 extern int receive_fd_over_socket(int socket)
 {

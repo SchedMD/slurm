@@ -33,14 +33,57 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+#include <fcntl.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+void _xsystemd_notify_barrier(int fd)
+{
+	char *payload = NULL;
+	struct pollfd ufd;
+	int timeout = (slurm_conf.msg_timeout / 2) * MSEC_IN_SEC;
+
+	/* We add the payload */
+	xstrfmtcat(payload, "BARRIER=1");
+
+	/* Need to create the pipe here */
+	int pipe_fd[2] = { -1, -1 };
+	if (pipe2(pipe_fd, O_CLOEXEC))
+		goto fail;
+
+	/* send the pipe over the socket */
+	send_fd_over_socket_payload(fd, pipe_fd[1], payload);
+
+	/* we close the fd */
+	close(pipe_fd[1]);
+
+	/* We are interested in POLLHUP for pipe_fd[0] */
+	ufd.fd = pipe_fd[0];
+	ufd.events = 0;
+	if (poll(&ufd, 1, timeout))
+		debug2("Received closing event");
+	else
+		error("poll timed out: PID on systemd might not be updated");
+
+	close(pipe_fd[0]);
+	return;
+
+fail:
+	error("%s: failed to open pipe: %m", __func__);
+	xfree(payload);
+	return;
+}
 
 extern void xsystemd_change_mainpid(pid_t pid)
 {
@@ -73,7 +116,9 @@ extern void xsystemd_change_mainpid(pid_t pid)
 	xstrfmtcat(payload, "READY=1\nMAINPID=%d", pid);
 	safe_write(fd, payload, strlen(payload));
 	xfree(payload);
+	_xsystemd_notify_barrier(fd);
 	close(fd);
+
 	return;
 
 rwfail:
