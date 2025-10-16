@@ -617,7 +617,7 @@ int main(int argc, char **argv)
 	bool backup_has_control = false;
 	bool slurmscriptd_mode = false;
 	char *conf_file;
-	stepmgr_ops_t stepmgr_ops = {0};
+	stepmgr_ops_t stepmgr_ops = { 0 };
 	bool listen_http = false, listen_http_tls = false;
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
