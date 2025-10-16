@@ -188,8 +188,8 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am__objects_1 = cred_context.$(OBJEXT) get_mach_stat.$(OBJEXT) \
-	job_mem_limit.$(OBJEXT) launch_state.$(OBJEXT) req.$(OBJEXT) \
-	slurmd.$(OBJEXT)
+	http.$(OBJEXT) job_mem_limit.$(OBJEXT) launch_state.$(OBJEXT) \
+	req.$(OBJEXT) slurmd.$(OBJEXT)
 am_slurmd_OBJECTS = $(am__objects_1)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -216,9 +216,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cred_context.Po \
-	./$(DEPDIR)/get_mach_stat.Po ./$(DEPDIR)/job_mem_limit.Po \
-	./$(DEPDIR)/launch_state.Po ./$(DEPDIR)/req.Po \
-	./$(DEPDIR)/slurmd.Po
+	./$(DEPDIR)/get_mach_stat.Po ./$(DEPDIR)/http.Po \
+	./$(DEPDIR)/job_mem_limit.Po ./$(DEPDIR)/launch_state.Po \
+	./$(DEPDIR)/req.Po ./$(DEPDIR)/slurmd.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -542,6 +542,8 @@ SLURMD_SOURCES = \
 	cred_context.h \
 	get_mach_stat.c \
 	get_mach_stat.h \
+	http.c \
+	http.h \
 	job_mem_limit.c \
 	job_mem_limit.h \
 	launch_state.c \
@@ -666,6 +668,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred_context.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_mach_stat.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mem_limit.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch_state.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@ # am--include-marker
@@ -801,6 +804,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cred_context.Po
 	-rm -f ./$(DEPDIR)/get_mach_stat.Po
+	-rm -f ./$(DEPDIR)/http.Po
 	-rm -f ./$(DEPDIR)/job_mem_limit.Po
 	-rm -f ./$(DEPDIR)/launch_state.Po
 	-rm -f ./$(DEPDIR)/req.Po
@@ -852,6 +856,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cred_context.Po
 	-rm -f ./$(DEPDIR)/get_mach_stat.Po
+	-rm -f ./$(DEPDIR)/http.Po
 	-rm -f ./$(DEPDIR)/job_mem_limit.Po
 	-rm -f ./$(DEPDIR)/launch_state.Po
 	-rm -f ./$(DEPDIR)/req.Po
