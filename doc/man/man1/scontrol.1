@@ -2451,9 +2451,8 @@ See the slurm.conf man page for more information.
 .TP
 \fBReservationName\fR=<\fIname\fR>
 Identify the name of the reservation to be created or updated.
-This parameter is required for update.
-For create, if you do not want to give a reservation name, use
-"scontrol create reservation ..." and a name will be created automatically.
+This parameter is required for update. If omitted when creating a reservation,
+a name will be created automatically (e.g., "scontrol create reservation ...").
 .IP
 
 .TP
