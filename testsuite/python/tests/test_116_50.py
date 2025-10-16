@@ -36,7 +36,9 @@ def allocation():
     global job_id, task_cnt
 
     # Create allocation with exclusive access to node
-    job_id = atf.submit_job_salloc("-N1 --exclusive -t5", background=True, fatal=True)
+    job_id = atf.submit_job_sbatch(
+        "-N1 --exclusive -t5 --wrap 'sleep infinity'", fatal=True
+    )
 
     # Wait for the job to be running
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
