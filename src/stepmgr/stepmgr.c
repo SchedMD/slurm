@@ -2264,6 +2264,23 @@ static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
 	}
 }
 
+static void _convert_step_cpus_to_job_cpus(uint16_t cr_type, uint16_t req_tpc,
+					   uint16_t job_tpc, uint16_t vpus,
+					   int *core_alloc, int *cpus_alloc)
+{
+	xassert(core_alloc && cpus_alloc);
+
+	/* SELECT_CPU's job_resrcs->cpus is based on job_tpc */
+	if ((cr_type & SELECT_CPU) && (req_tpc != NO_VAL16)) {
+		*core_alloc = ROUNDUP(*cpus_alloc, req_tpc);
+		*cpus_alloc = *core_alloc *
+			((job_tpc != NO_VAL16) ? job_tpc : vpus);
+	} else {
+		*core_alloc = ROUNDUP(*cpus_alloc, vpus);
+		*cpus_alloc = *core_alloc * vpus;
+	}
+}
+
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
@@ -2552,8 +2569,12 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		 * --overlap=force
 		 */
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
-			cpus_alloc = ROUNDUP(cpus_alloc, vpus);
-			cpus_alloc *= vpus;
+			int core_alloc;
+			_convert_step_cpus_to_job_cpus(
+				job_resrcs_ptr->cr_type, req_tpc,
+				job_ptr->details->mc_ptr->threads_per_core,
+				vpus, &core_alloc, &cpus_alloc);
+
 			if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
 			    (vpus > 1) &&
 			    (job_resrcs_ptr->cpus_used[job_node_inx] +
@@ -2748,9 +2769,13 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	int cpus_alloc;
+	int core_alloc;
 	int job_node_inx = -1, step_node_inx = -1;
 	uint32_t step_id = step_ptr->step_id.step_id;
 	node_record_t *node_ptr;
+	uint16_t job_tpc = job_ptr->details->mc_ptr->threads_per_core;
+	uint16_t req_tpc =
+		_get_threads_per_core(step_ptr->threads_per_core, job_ptr);
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2824,16 +2849,19 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			step_ptr->cpu_alloc_reps,
 			step_ptr->cpu_alloc_array_cnt,
 			step_node_inx);
-		cpus_alloc = ROUNDUP(step_ptr->cpu_alloc_values[inx], vpus);
-		cpus_alloc *= vpus;
+
+		cpus_alloc = step_ptr->cpu_alloc_values[inx];
+		_convert_step_cpus_to_job_cpus(job_resrcs_ptr->cr_type, req_tpc,
+					       job_tpc, vpus, &core_alloc,
+					       &cpus_alloc);
 
 		if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
 		    (node_ptr->tpc > 1)) {
-			int core_alloc = ROUNDUP(cpus_alloc, vpus);
+			/* SELECT_CPU's job_resrcs->cpus is based on job_tpc */
+			uint16_t tpc = (job_tpc != NO_VAL16) ? job_tpc : vpus;
 			int used_cores =
 				ROUNDUP(job_resrcs_ptr->cpus_used[job_node_inx],
-					vpus);
-
+					tpc);
 			/*
 			 * If SELECT_CPU is used with a thread count > 1 the
 			 * cpus recorded being allocated to a job don't have to
@@ -2844,12 +2872,12 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			if (used_cores >= core_alloc) {
 				used_cores -= core_alloc;
 				job_resrcs_ptr->cpus_used[job_node_inx] =
-					MIN(used_cores * vpus,
+					MIN(used_cores * tpc,
 					    job_resrcs_ptr->cpus[job_node_inx]);
 			} else {
 				error("%s: CPU underflow for %pS (%u<%u on job node %d)",
-					__func__, step_ptr, used_cores * vpus,
-					core_alloc * vpus, job_node_inx);
+					__func__, step_ptr, used_cores * tpc,
+					core_alloc * tpc, job_node_inx);
 				job_resrcs_ptr->cpus_used[job_node_inx] = 0;
 			}
 		} else if (job_resrcs_ptr->cpus_used[job_node_inx] >=
