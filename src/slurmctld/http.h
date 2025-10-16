@@ -39,8 +39,6 @@
 #ifndef _SLURMCTLD_HTTP_H
 #define _SLURMCTLD_HTTP_H
 
-#include <stdbool.h>
-
 #include "src/conmgr/conmgr.h"
 
 /* Setup incoming HTTP connection */
