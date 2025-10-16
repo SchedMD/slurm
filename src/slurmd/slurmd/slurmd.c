@@ -338,6 +338,20 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
+extern bool listener_quiesced(void)
+{
+	bool quiesced;
+
+	slurm_mutex_lock(&listen_mutex);
+	if (_shutdown || !listener)
+		quiesced = true;
+	else
+		quiesced = conmgr_con_is_quiesced(listener);
+	slurm_mutex_unlock(&listen_mutex);
+
+	return quiesced;
+}
+
 static void _unquiesce_fd_listener(void)
 {
 	conmgr_fd_t *con = NULL;
