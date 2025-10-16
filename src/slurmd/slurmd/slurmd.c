@@ -207,9 +207,9 @@ bool refresh_cached_features = true;
 pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Reference to active listening socket */
-pthread_mutex_t listen_mutex = PTHREAD_MUTEX_INITIALIZER;
-conmgr_fd_ref_t *listener = NULL;
-bool unquiesce_listener = false;
+static pthread_mutex_t listen_mutex = PTHREAD_MUTEX_INITIALIZER;
+static conmgr_fd_ref_t *listener = NULL;
+static bool unquiesce_listener = false;
 
 static char *ca_cert_file = NULL;
 
