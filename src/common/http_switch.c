@@ -34,3 +34,123 @@
 \*****************************************************************************/
 
 #include "src/common/http_switch.h"
+#include "src/common/http.h"
+#include "src/common/http_con.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_util.h"
+
+#include "src/conmgr/conmgr.h"
+
+#include "src/interfaces/conn.h"
+#include "src/interfaces/http_parser.h"
+#include "src/interfaces/tls.h"
+#include "src/interfaces/url_parser.h"
+
+static struct {
+	bool loaded;
+	bool http;
+	bool tls;
+} status = { 0 };
+
+extern bool http_switch_http_enabled(void)
+{
+	return (status.loaded && status.http);
+}
+
+extern bool http_switch_tls_enabled(void)
+{
+	return (status.loaded && status.http && status.tls);
+}
+
+extern conmgr_con_type_t http_switch_con_type(void)
+{
+	return (http_switch_http_enabled() ? CON_TYPE_RAW : CON_TYPE_RPC);
+}
+
+extern conmgr_con_flags_t http_switch_con_flags(void)
+{
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
+
+	if (http_switch_tls_enabled())
+		flags |= CON_FLAG_TLS_FINGERPRINT;
+	else if (conn_tls_enabled())
+		flags |= CON_FLAG_TLS_SERVER;
+
+	return flags;
+}
+
+extern int http_switch_on_data(conmgr_fd_t *con,
+			       int (*on_http)(conmgr_fd_t *con))
+{
+	buf_t *buffer = conmgr_fd_shadow_in_buffer(con);
+	rpc_fingerprint_t status = rpc_fingerprint(buffer);
+	int rc = SLURM_SUCCESS;
+
+	if (status == RPC_FINGERPRINT_NOT_FOUND) {
+		rc = on_http(con);
+	} else if (status == RPC_FINGERPRINT_FOUND) {
+		if (conn_tls_enabled()) {
+			conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
+
+			if (!conmgr_fd_is_tls(ref))
+				rc = ESLURM_TLS_REQUIRED;
+
+			conmgr_fd_free_ref(&ref);
+		}
+
+		if (!rc)
+			rc = conmgr_fd_change_mode(con, CON_TYPE_RPC);
+	} else {
+		xassert(status == RPC_FINGERPRINT_NEED_MORE_BYTES);
+		rc = SLURM_SUCCESS;
+	}
+
+	FREE_NULL_BUFFER(buffer);
+	return rc;
+}
+
+extern void http_switch_init(void)
+{
+	int rc = EINVAL;
+	xassert(!status.loaded);
+
+	xassert(conmgr_enabled());
+
+	/* Load plugins required for incoming HTTP requests */
+	if ((slurm_conf.conf_flags & CONF_FLAG_DISABLE_HTTP)) {
+		debug("Listening for HTTP requests disabled: CommunicationParameters=disable_http in slurm.conf");
+	} else if ((rc = http_parser_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load http_parser plugin: %s",
+		      slurm_strerror(rc));
+	} else if ((rc = url_parser_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load url_parser plugin: %s",
+		      slurm_strerror(rc));
+	} else if ((rc = tls_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load TLS plugin: %s",
+		      slurm_strerror(rc));
+	} else {
+		status.http = true;
+
+		if (!tls_available()) {
+			debug("Listening for TLS HTTP requests disabled: TLS plugin not loaded");
+		} else if (conn_tls_enabled()) {
+			debug("Listening for TLS HTTP requests: TLS RPCs enabled");
+		} else if ((rc = tls_g_load_own_cert(NULL, 0, NULL, 0))) {
+			status.tls = true;
+			debug("Listening for TLS HTTP requests disabled: loading certificate failed: %s",
+			      slurm_strerror(rc));
+		} else {
+			status.tls = true;
+			debug("Listening for TLS HTTP requests enabled via server certificate");
+		}
+	}
+
+	status.loaded = true;
+}
+
+extern void http_switch_fini(void)
+{
+	http_parser_g_fini();
+	url_parser_g_fini();
+	tls_g_fini();
+}
