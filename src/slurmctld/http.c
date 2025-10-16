@@ -40,6 +40,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/slurmctld/http.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -93,7 +95,8 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
-	if (!listeners_quiesced() && is_primary() && !is_reconfiguring())
+	if (!listeners_quiesced() && is_primary() && !is_reconfiguring() &&
+	    !conmgr_is_quiesced())
 		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
 
 	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
