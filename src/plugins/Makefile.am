@@ -19,6 +19,7 @@ SUBDIRS = \
 	jobcomp			\
 	job_container		\
 	job_submit		\
+	metrics			\
 	mcs			\
 	mpi			\
 	node_features		\

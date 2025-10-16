@@ -14,27 +14,7 @@
 
 @SET_MAKE@
 
-#
-# Makefile for slurmctld
-
-# This is common code for a Makefile.am and creates $(LIB_REF) to be used
-# afterwards in noinst_LTLIBRARIES and EXTRA_slurmrestd_DEPENDENCIES
-#
-# usage
-#
-# REF = usage.txt
-# include $(top_srcdir)/make_ref.include
-# noinst_LTLIBRARIES [+]= $(LIB_REF)
-# EXTRA_$PROGRAMNAME_DEPENDENCIES [+]= $(LIB_REF)
-# $PROGRAMNAME_LDADD += $(LIB_REF)
-#
-# What the above lines do is include this file in a Makefile.am
-# It will insert usage.txt as a variable that the calling program can access
-# with the calls in src/common/ref.h.
-#
-# If I where doing this for the slurmrestd I would put 'slurmrestd' in for
-# $PROGRAMNAME i.e. EXTRA_slurmrestd_DEPENDENCIES, slurmrestd_LDADD.
-
+# Makefile for OpenMetrics plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -113,8 +93,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-sbin_PROGRAMS = slurmctld$(EXEEXT)
-subdir = src/slurmctld
+subdir = src/plugins/metrics/openmetrics
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -177,36 +156,46 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(sbindir)"
-PROGRAMS = $(sbin_PROGRAMS)
-LTLIBRARIES = $(noinst_LTLIBRARIES)
-lib_ref_la_DEPENDENCIES = lib_ref.lo
-am_lib_ref_la_OBJECTS =
-lib_ref_la_OBJECTS = $(am_lib_ref_la_OBJECTS)
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+  || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+       $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
+  }
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
+LTLIBRARIES = $(pkglib_LTLIBRARIES)
+metrics_openmetrics_la_LIBADD =
+am__objects_1 = openmetrics.lo
+am_metrics_openmetrics_la_OBJECTS = $(am__objects_1)
+metrics_openmetrics_la_OBJECTS = $(am_metrics_openmetrics_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
-	backup.$(OBJEXT) controller.$(OBJEXT) crontab.$(OBJEXT) \
-	fed_mgr.$(OBJEXT) gang.$(OBJEXT) groups.$(OBJEXT) \
-	heartbeat.$(OBJEXT) http.$(OBJEXT) job_mgr.$(OBJEXT) \
-	job_scheduler.$(OBJEXT) job_state.$(OBJEXT) licenses.$(OBJEXT) \
-	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
-	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	power_save.$(OBJEXT) prep_slurmctld.$(OBJEXT) \
-	proc_req.$(OBJEXT) rate_limit.$(OBJEXT) read_config.$(OBJEXT) \
-	reservation.$(OBJEXT) rpc_queue.$(OBJEXT) sackd_mgr.$(OBJEXT) \
-	slurmscriptd.$(OBJEXT) slurmscriptd_protocol_defs.$(OBJEXT) \
-	slurmscriptd_protocol_pack.$(OBJEXT) state_save.$(OBJEXT) \
-	statistics.$(OBJEXT) trigger_mgr.$(OBJEXT)
-slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
-am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/stepmgr/libstepmgr.la
-slurmctld_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(slurmctld_LDFLAGS) $(LDFLAGS) -o $@
+metrics_openmetrics_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(metrics_openmetrics_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -222,24 +211,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
-	./$(DEPDIR)/backup.Po ./$(DEPDIR)/controller.Po \
-	./$(DEPDIR)/crontab.Po ./$(DEPDIR)/fed_mgr.Po \
-	./$(DEPDIR)/gang.Po ./$(DEPDIR)/groups.Po \
-	./$(DEPDIR)/heartbeat.Po ./$(DEPDIR)/http.Po \
-	./$(DEPDIR)/job_mgr.Po ./$(DEPDIR)/job_scheduler.Po \
-	./$(DEPDIR)/job_state.Po ./$(DEPDIR)/licenses.Po \
-	./$(DEPDIR)/locks.Po ./$(DEPDIR)/node_mgr.Po \
-	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
-	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/power_save.Po \
-	./$(DEPDIR)/prep_slurmctld.Po ./$(DEPDIR)/proc_req.Po \
-	./$(DEPDIR)/rate_limit.Po ./$(DEPDIR)/read_config.Po \
-	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
-	./$(DEPDIR)/sackd_mgr.Po ./$(DEPDIR)/slurmscriptd.Po \
-	./$(DEPDIR)/slurmscriptd_protocol_defs.Po \
-	./$(DEPDIR)/slurmscriptd_protocol_pack.Po \
-	./$(DEPDIR)/state_save.Po ./$(DEPDIR)/statistics.Po \
-	./$(DEPDIR)/trigger_mgr.Po
+am__depfiles_remade = ./$(DEPDIR)/openmetrics.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -259,7 +231,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(lib_ref_la_SOURCES) $(slurmctld_SOURCES)
+SOURCES = $(metrics_openmetrics_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -543,91 +515,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir)
-
-# noinst_LTLIBRARIES = libslurmctld.la
-# libslurmctld_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
-# libslurmctld_la_SOURCES =
-slurmctld_SOURCES = \
-	acct_policy.c	\
-	acct_policy.h	\
-	agent.c  	\
-	agent.h		\
-	backup.c	\
-	controller.c 	\
-	crontab.c 	\
-	fed_mgr.c 	\
-	fed_mgr.h 	\
-	gang.c		\
-	gang.h		\
-	groups.c	\
-	groups.h	\
-	heartbeat.c	\
-	heartbeat.h	\
-	http.c	\
-	http.h	\
-	job_mgr.c 	\
-	job_scheduler.c	\
-	job_scheduler.h	\
-	job_state.c	\
-	licenses.c	\
-	licenses.h	\
-	locks.c   	\
-	locks.h  	\
-	node_mgr.c 	\
-	node_scheduler.c \
-	node_scheduler.h \
-	partition_mgr.c \
-	ping_nodes.c	\
-	ping_nodes.h	\
-	power_save.c	\
-	power_save.h	\
-	prep_slurmctld.c \
-	proc_req.c	\
-	proc_req.h	\
-	rate_limit.c	\
-	rate_limit.h	\
-	read_config.c	\
-	read_config.h	\
-	reservation.c	\
-	reservation.h	\
-	rpc_queue.c	\
-	rpc_queue.h	\
-	sackd_mgr.c	\
-	sackd_mgr.h	\
-	slurmctld.h	\
-	slurmscriptd.c \
-	slurmscriptd.h \
-	slurmscriptd_protocol_defs.c \
-	slurmscriptd_protocol_defs.h \
-	slurmscriptd_protocol_pack.c \
-	slurmscriptd_protocol_pack.h \
-	state_save.c	\
-	state_save.h	\
-	statistics.c	\
-	statistics.h	\
-	trigger_mgr.c	\
-	trigger_mgr.h
-
-dependencies = $(SLURMCTLD_INTERFACES) $(top_builddir)/src/stepmgr/libstepmgr.la
-slurmctld_LDADD = $(LIB_SLURM) $(dependencies) $(LIB_REF)
-slurmctld_LDFLAGS = $(CMD_LDFLAGS)
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(dependencies)
-REF = usage.txt
-CLEANFILES = *.bino
-BIN_REF = $(REF:.txt=.bino)
-LIB_REF = lib_ref.la
-
-# a blank lib_ref_la_SOURCES is needed for 'make cscope' to work correctly.
-lib_ref_la_SOURCES = 
-lib_ref_la_LIBADD = lib_ref.lo
-noinst_LTLIBRARIES = $(LIB_REF)
-EXTRA_slurmctld_DEPENDENCIES = $(LIB_REF)
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
+OPENMETRICS_SOURCES = openmetrics.h openmetrics.c
+pkglib_LTLIBRARIES = metrics_openmetrics.la
+metrics_openmetrics_la_SOURCES = $(OPENMETRICS_SOURCES)
+metrics_openmetrics_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .lo .o .obj
-$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/make_ref.include $(am__configure_deps)
+$(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -636,9 +534,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/slurmctld/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/metrics/openmetrics/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/slurmctld/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/metrics/openmetrics/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -647,7 +545,6 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__maybe_remake_depfiles);; \
 	esac;
-$(top_srcdir)/make_ref.include $(am__empty):
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
@@ -657,66 +554,42 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-sbinPROGRAMS: $(sbin_PROGRAMS)
+
+install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
-	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(sbindir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(sbindir)" || exit 1; \
-	fi; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p \
-	 || test -f $$p1 \
-	  ; then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' \
-	    -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(sbindir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(sbindir)$$dir" || exit $$?; \
-	    } \
-	; done
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pkglibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pkglibdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(pkglibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(pkglibdir)"; \
+	}
 
-uninstall-sbinPROGRAMS:
+uninstall-pkglibLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)
-	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' \
-	`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(sbindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(sbindir)" && $(am__rm_f) $$files
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pkglibdir)/$$f"; \
+	done
 
-clean-sbinPROGRAMS:
-	$(am__rm_f) $(sbin_PROGRAMS)
-	test -z "$(EXEEXT)" || $(am__rm_f) $(sbin_PROGRAMS:$(EXEEXT)=)
-
-clean-noinstLTLIBRARIES:
-	-$(am__rm_f) $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; \
+clean-pkglibLTLIBRARIES:
+	-$(am__rm_f) $(pkglib_LTLIBRARIES)
+	@list='$(pkglib_LTLIBRARIES)'; \
 	locs=`for p in $$list; do echo $$p; done | \
 	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
 	      sort -u`; \
 	echo rm -f $${locs}; \
 	$(am__rm_f) $${locs}
 
-lib_ref.la: $(lib_ref_la_OBJECTS) $(lib_ref_la_DEPENDENCIES) $(EXTRA_lib_ref_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(lib_ref_la_OBJECTS) $(lib_ref_la_LIBADD) $(LIBS)
-
-slurmctld$(EXEEXT): $(slurmctld_OBJECTS) $(slurmctld_DEPENDENCIES) $(EXTRA_slurmctld_DEPENDENCIES) 
-	@rm -f slurmctld$(EXEEXT)
-	$(AM_V_CCLD)$(slurmctld_LINK) $(slurmctld_OBJECTS) $(slurmctld_LDADD) $(LIBS)
+metrics_openmetrics.la: $(metrics_openmetrics_la_OBJECTS) $(metrics_openmetrics_la_DEPENDENCIES) $(EXTRA_metrics_openmetrics_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(metrics_openmetrics_la_LINK) -rpath $(pkglibdir) $(metrics_openmetrics_la_OBJECTS) $(metrics_openmetrics_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -724,39 +597,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_policy.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crontab.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fed_mgr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groups.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heartbeat.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_scheduler.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_state.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/licenses.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locks.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_mgr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_scheduler.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_mgr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping_nodes.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep_slurmctld.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rate_limit.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservation.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_queue.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sackd_mgr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_defs.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmscriptd_protocol_pack.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statistics.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/trigger_mgr.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openmetrics.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -844,9 +685,9 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
-	for dir in "$(DESTDIR)$(sbindir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -871,7 +712,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-$(am__rm_f) $(CLEANFILES)
 
 distclean-generic:
 	-$(am__rm_f) $(CONFIG_CLEAN_FILES)
@@ -882,43 +722,11 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-sbinPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/acct_policy.Po
-	-rm -f ./$(DEPDIR)/agent.Po
-	-rm -f ./$(DEPDIR)/backup.Po
-	-rm -f ./$(DEPDIR)/controller.Po
-	-rm -f ./$(DEPDIR)/crontab.Po
-	-rm -f ./$(DEPDIR)/fed_mgr.Po
-	-rm -f ./$(DEPDIR)/gang.Po
-	-rm -f ./$(DEPDIR)/groups.Po
-	-rm -f ./$(DEPDIR)/heartbeat.Po
-	-rm -f ./$(DEPDIR)/http.Po
-	-rm -f ./$(DEPDIR)/job_mgr.Po
-	-rm -f ./$(DEPDIR)/job_scheduler.Po
-	-rm -f ./$(DEPDIR)/job_state.Po
-	-rm -f ./$(DEPDIR)/licenses.Po
-	-rm -f ./$(DEPDIR)/locks.Po
-	-rm -f ./$(DEPDIR)/node_mgr.Po
-	-rm -f ./$(DEPDIR)/node_scheduler.Po
-	-rm -f ./$(DEPDIR)/partition_mgr.Po
-	-rm -f ./$(DEPDIR)/ping_nodes.Po
-	-rm -f ./$(DEPDIR)/power_save.Po
-	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
-	-rm -f ./$(DEPDIR)/proc_req.Po
-	-rm -f ./$(DEPDIR)/rate_limit.Po
-	-rm -f ./$(DEPDIR)/read_config.Po
-	-rm -f ./$(DEPDIR)/reservation.Po
-	-rm -f ./$(DEPDIR)/rpc_queue.Po
-	-rm -f ./$(DEPDIR)/sackd_mgr.Po
-	-rm -f ./$(DEPDIR)/slurmscriptd.Po
-	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
-	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
-	-rm -f ./$(DEPDIR)/state_save.Po
-	-rm -f ./$(DEPDIR)/statistics.Po
-	-rm -f ./$(DEPDIR)/trigger_mgr.Po
+	-rm -f ./$(DEPDIR)/openmetrics.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -941,7 +749,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-sbinPROGRAMS
+install-exec-am: install-pkglibLTLIBRARIES
 
 install-html: install-html-am
 
@@ -964,39 +772,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/acct_policy.Po
-	-rm -f ./$(DEPDIR)/agent.Po
-	-rm -f ./$(DEPDIR)/backup.Po
-	-rm -f ./$(DEPDIR)/controller.Po
-	-rm -f ./$(DEPDIR)/crontab.Po
-	-rm -f ./$(DEPDIR)/fed_mgr.Po
-	-rm -f ./$(DEPDIR)/gang.Po
-	-rm -f ./$(DEPDIR)/groups.Po
-	-rm -f ./$(DEPDIR)/heartbeat.Po
-	-rm -f ./$(DEPDIR)/http.Po
-	-rm -f ./$(DEPDIR)/job_mgr.Po
-	-rm -f ./$(DEPDIR)/job_scheduler.Po
-	-rm -f ./$(DEPDIR)/job_state.Po
-	-rm -f ./$(DEPDIR)/licenses.Po
-	-rm -f ./$(DEPDIR)/locks.Po
-	-rm -f ./$(DEPDIR)/node_mgr.Po
-	-rm -f ./$(DEPDIR)/node_scheduler.Po
-	-rm -f ./$(DEPDIR)/partition_mgr.Po
-	-rm -f ./$(DEPDIR)/ping_nodes.Po
-	-rm -f ./$(DEPDIR)/power_save.Po
-	-rm -f ./$(DEPDIR)/prep_slurmctld.Po
-	-rm -f ./$(DEPDIR)/proc_req.Po
-	-rm -f ./$(DEPDIR)/rate_limit.Po
-	-rm -f ./$(DEPDIR)/read_config.Po
-	-rm -f ./$(DEPDIR)/reservation.Po
-	-rm -f ./$(DEPDIR)/rpc_queue.Po
-	-rm -f ./$(DEPDIR)/sackd_mgr.Po
-	-rm -f ./$(DEPDIR)/slurmscriptd.Po
-	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_defs.Po
-	-rm -f ./$(DEPDIR)/slurmscriptd_protocol_pack.Po
-	-rm -f ./$(DEPDIR)/state_save.Po
-	-rm -f ./$(DEPDIR)/statistics.Po
-	-rm -f ./$(DEPDIR)/trigger_mgr.Po
+	-rm -f ./$(DEPDIR)/openmetrics.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -1013,50 +789,27 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-sbinPROGRAMS
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-sbinPROGRAMS cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-sbinPROGRAMS install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-sbinPROGRAMS
+	clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
+	html html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-
-%.bino: %.txt
-	$(AM_V_GEN)curr_dir=$(shell pwd); cd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; cd $$curr_dir
-	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
-
-lib_ref.lo: $(BIN_REF)
-	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
-	$(AM_V_at)echo "# Generated by libtool" >>"$@"
-	$(AM_V_at)echo "# (Not really... but we need libtool to believe it was.)" >>"$@"
-	$(AM_V_at)echo "#" >>"$@"
-	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
-	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
-	$(AM_V_at)echo >>"$@"
-	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
-	$(AM_V_at)echo "pic_object='$(BIN_REF)'" >>"$@"
-	$(AM_V_at)echo >>"$@"
-	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
-	$(AM_V_at)echo "non_pic_object=''" >>"$@"
-	$(AM_V_at)echo >>"$@"
-
-force:
-$(slurmctld_DEPENDENCIES) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

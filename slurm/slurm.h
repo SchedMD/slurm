@@ -2880,6 +2880,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_JAG		SLURM_BIT(54) /* Job Account Gather debug */
 #define DEBUG_FLAG_CGROUP	SLURM_BIT(55) /* cgroup debug */
 #define DEBUG_FLAG_SCRIPT	SLURM_BIT(56) /* slurmscriptd debug */
+#define DEBUG_FLAG_METRICS	SLURM_BIT(57) /* metrics debug */
 
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
@@ -3078,6 +3079,7 @@ typedef struct {
 	uint16_t max_tasks_per_node; /* maximum tasks per node */
 	char *mcs_plugin; /* mcs plugin type */
 	char *mcs_plugin_params; /* mcs plugin parameters */
+	char *metrics_type; /* metrics plugin type */
 	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */
 	void *mpi_conf;		/* MPI support config file */

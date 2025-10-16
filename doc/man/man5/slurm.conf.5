@@ -1197,6 +1197,11 @@ License management details
 .IP
 
 .TP
+\fBMetrics\fR
+Metrics plugin details
+.IP
+
+.TP
 \fBNetwork\fR
 Network details. \fBWarning\fR: activating this flag may cause logging of
 passwords, tokens or other authentication credentials.
@@ -2669,6 +2674,19 @@ Time permitted for a round\-trip communication to complete
 in seconds. Default value is 10 seconds. For systems with
 shared nodes, the slurmd daemon could be paged out and
 necessitate higher values.
+.IP
+
+.TP
+\fBMetricsType\fR
+Specify the metrics plugin to be used to dump statistics from the slurmctld
+socket. Gathering of metrics is disabled when PrivateData is set.
+Configurable values at present are:
+.IP
+.RS
+.TP
+\fBmetrics/openmetrics\fR
+Use the OpenMetrics based plugin.
+.RE
 .IP
 
 .TP

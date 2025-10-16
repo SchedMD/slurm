@@ -511,6 +511,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mcs/group/Makefile
 		 src/plugins/mcs/label/Makefile
 		 src/plugins/mcs/user/Makefile
+		 src/plugins/metrics/Makefile
+		 src/plugins/metrics/openmetrics/Makefile
 		 src/plugins/mpi/Makefile
 		 src/plugins/mpi/cray_shasta/Makefile
 		 src/plugins/mpi/pmi2/Makefile
