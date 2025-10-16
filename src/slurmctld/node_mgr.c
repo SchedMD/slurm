@@ -1944,6 +1944,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 					reset_node_active_features(node_ptr);
 					reset_node_instance(node_ptr);
+					reset_node_topology(node_ptr);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
@@ -2649,6 +2650,25 @@ extern void reset_node_instance(node_record_t *node_ptr)
 
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
+}
+
+extern void reset_node_topology(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+
+	char *old_topo = NULL;
+
+	if (node_ptr->config_ptr->topology_str)
+		old_topo = node_ptr->config_ptr->topology_str;
+	else
+		old_topo = node_ptr->topology_orig_str;
+
+	node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+
+	if (old_topo == node_ptr->topology_orig_str) {
+		xfree(node_ptr->topology_str);
+	}
+	xfree(node_ptr->topology_orig_str);
 }
 
 /*
@@ -5229,17 +5249,23 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 	int rc = SLURM_SUCCESS;
 	char *topology_str_old;
 	bool from_config = false;
+	bool stored_orig = false;
 
 	if (!node_ptr->topology_str && !node_ptr->topology_orig_str) {
 		node_ptr->topology_orig_str =
 			topology_g_get_topology_str(node_ptr);
+		stored_orig = true;
 	}
 
 	if (node_ptr->topology_str) {
 		topology_str_old = node_ptr->topology_str;
 		node_ptr->topology_str = NULL;
 	} else {
-		topology_str_old = topology_g_get_topology_str(node_ptr);
+		if (stored_orig)
+			topology_str_old = xstrdup(node_ptr->topology_orig_str);
+		else
+			topology_str_old =
+				topology_g_get_topology_str(node_ptr);
 		from_config = true;
 	}
 
@@ -5256,6 +5282,8 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		if (from_config)
 			xfree(node_ptr->topology_str);
+		if (stored_orig)
+			xfree(node_ptr->topology_orig_str);
 	} else {
 		xfree(topology_str_old);
 	}
