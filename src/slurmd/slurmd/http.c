@@ -33,4 +33,111 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/http.h"
+#include "src/common/http_con.h"
+#include "src/common/http_router.h"
+#include "src/common/pack.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/slurmd/slurmd/http.h"
+#include "src/slurmd/slurmd/slurmd.h"
+
+static int _reply_error(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, int err)
+{
+	char *body = NULL, *at = NULL;
+	int rc = EINVAL;
+
+	xstrfmtcatat(body, &at, "slurmd HTTP server request for '%s %s':\n",
+		     get_http_method_string(request->method),
+		     request->url.path);
+
+	if (err)
+		xstrfmtcatat(body, &at, "Failed: %s\n", slurm_strerror(err));
+
+	rc = http_con_send_response(hcon, http_status_from_error(err), NULL,
+				    true,
+				    &SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				    MIME_TYPE_TEXT);
+
+	xfree(body);
+	return rc;
+}
+
+static int _req_not_found(http_con_t *hcon, const char *name,
+			  const http_con_request_t *request, void *arg)
+{
+	return _reply_error(hcon, name, request, ESLURM_REST_UNKNOWN_URL);
+}
+
+static int _req_root(http_con_t *hcon, const char *name,
+		     const http_con_request_t *request, void *arg)
+{
+	static const char body[] =
+		"slurmd index of endpoints:\n"
+		"  '/readyz': check slurmd is servicing RPCs\n"
+		"  '/livez': check slurmd is running\n"
+		"  '/healthz': check slurmd is running\n";
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, true,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
+static int _req_readyz(http_con_t *hcon, const char *name,
+		       const http_con_request_t *request, void *arg)
+{
+	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+	if (!listener_quiesced() && !conmgr_is_quiesced())
+		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+
+	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+}
+
+static int _req_livez(http_con_t *hcon, const char *name,
+		      const http_con_request_t *request, void *arg)
+{
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, true, NULL, NULL);
+}
+
+static int _req_healthz(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg)
+{
+	return http_con_send_response(hcon, HTTP_STATUS_CODE_SUCCESS_NO_CONTENT,
+				      NULL, true, NULL, NULL);
+}
+
+extern void http_init(void)
+{
+	http_router_init(_req_not_found);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
+}
+
+extern void http_fini(void)
+{
+	http_router_fini();
+}
+
+extern int on_http_connection(conmgr_fd_t *con)
+{
+	static const http_con_server_events_t events = {
+		.on_request = http_router_on_request,
+	};
+	int rc = EINVAL;
+	conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
+
+	rc = http_con_assign_server(ref, NULL, &events, NULL);
+
+	conmgr_fd_free_ref(&ref);
+
+	return rc;
+}
