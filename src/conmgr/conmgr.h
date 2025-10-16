@@ -996,6 +996,13 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con);
 extern int conmgr_unquiesce_fd(conmgr_fd_t *con);
 
 /*
+ * True if connection is quiesced.
+ * False if connection is closed (or invalid)
+ * Does not check if conmgr is globally quiesced.
+ */
+extern bool conmgr_con_is_quiesced(conmgr_fd_ref_t *con);
+
+/*
  * Block until conmgr is quiesced
  * IN caller - __func__ from caller for logging
  */
