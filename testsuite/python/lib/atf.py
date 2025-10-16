@@ -772,8 +772,10 @@ def start_slurmdbd(clean=False, quiet=False):
         run_command_exit(
             "sacctmgr show cluster", user=properties["slurm-user"], quiet=quiet
         )
-        != 0
+        == 0
     ):
+        logging.warning("slurmdbd was already running")
+    else:
         # Start slurmdbd
         results = run_command(
             f"{properties['slurm-sbin-dir']}/slurmdbd",
