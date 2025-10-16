@@ -48,7 +48,7 @@ def overwrite_topology_conf():
 
 def _simple_channel_job(job_args):
     output = atf.run_command(
-        f"srun {job_args} ls {IMEX_CHANNEL_PATH}",
+        f"srun --quiet {job_args} ls {IMEX_CHANNEL_PATH}",
         fatal=False,
     )
     assert output["exit_code"] == 0, "Expected srun to run successfully"
