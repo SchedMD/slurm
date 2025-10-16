@@ -39,6 +39,14 @@
 #include "src/interfaces/data_parser.h"
 #include "src/slurmctld/statistics.h"
 
+typedef enum metrics_structs {
+	METRICS_CTLD_JOBS,
+	METRICS_CTLD_NODES,
+	METRICS_CTLD_PARTS,
+	METRICS_CTLD_SCHED,
+	METRICS_CTLD_UA,
+} metrics_structs_t;
+
 typedef struct metric_keyval {
 	char *key;
 	char *val;
@@ -67,6 +75,7 @@ extern metric_t *metrics_create_metric(metric_set_t *set,
 				       ssize_t sz_data, char *name, char *desc,
 				       int attr, metric_keyval_t **kv);
 extern void metrics_free_metric(metric_t *metric);
+extern char *metrics_serialize_struct(metrics_structs_t t, void *st);
 
 extern int metrics_g_init(void);
 extern void metrics_g_fini(void);

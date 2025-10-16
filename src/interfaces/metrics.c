@@ -67,6 +67,34 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
 
+typedef struct {
+	metrics_structs_t type;
+	metric_set_t *(*parse_fn)(void *st);
+} metrics_parse_struct_ops_t;
+
+static const metrics_parse_struct_ops_t parse_struct_ops[] = {
+	{
+		METRICS_CTLD_JOBS,
+		(metric_set_t * (*) (void *) ) metrics_g_parse_jobs_metrics,
+	},
+	{
+		METRICS_CTLD_NODES,
+		(metric_set_t * (*) (void *) ) metrics_g_parse_nodes_metrics,
+	},
+	{
+		METRICS_CTLD_PARTS,
+		(metric_set_t * (*) (void *) ) metrics_g_parse_parts_metrics,
+	},
+	{
+		METRICS_CTLD_SCHED,
+		(metric_set_t * (*) (void *) ) metrics_g_parse_sched_metrics,
+	},
+	{
+		METRICS_CTLD_UA,
+		(metric_set_t * (*) (void *) ) metrics_g_parse_ua_metrics,
+	},
+};
+
 extern int metrics_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -186,6 +214,25 @@ extern void metrics_free_metric(metric_t *m)
 	xfree(m->name);
 	m->set = NULL; /* Do not free */
 	xfree(m);
+}
+
+extern char *metrics_serialize_struct(metrics_structs_t t, void *st)
+{
+	for (size_t i = 0; i < ARRAY_SIZE(parse_struct_ops); i++) {
+		if (parse_struct_ops[i].type == t) {
+			metric_set_t *set = parse_struct_ops[i].parse_fn(st);
+			char *stats_str = NULL;
+
+			if (!set)
+				return NULL;
+
+			metrics_g_dump(set, &stats_str);
+			metrics_g_free_set(set);
+
+			return stats_str;
+		}
+	}
+	return NULL;
 }
 
 extern int metrics_g_dump(metric_set_t *set, char **buf)
