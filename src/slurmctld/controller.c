@@ -313,7 +313,7 @@ static void _send_reconfig_replies(void)
 
 		(void) slurm_send_rc_msg(msg, reconfig_rc);
 		conn_g_destroy(msg->conn, true);
-		slurm_free_msg(msg);
+		FREE_NULL_MSG(msg);
 	}
 }
 
@@ -1653,7 +1653,7 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	 */
 	if (rate_limit_exceeded(msg)) {
 		rc = slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
-		slurm_free_msg(msg);
+		FREE_NULL_MSG(msg);
 	} else {
 		/*
 		 * The fd will be extracted from conmgr, so the conmgr
@@ -1742,13 +1742,13 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 		 */
 		msg->flags |= SLURM_NO_AUTH_CRED;
 		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		slurm_free_msg(msg);
+		FREE_NULL_MSG(msg);
 		return SLURM_SUCCESS;
 	} else if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_fd_get_name(con),
 		      slurm_strerror(unpack_rc));
-		slurm_free_msg(msg);
+		FREE_NULL_MSG(msg);
 		return unpack_rc;
 	}
 
@@ -1967,7 +1967,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 		FREE_NULL_CONN(msg->conn);
 		log_flag(TLS, "[%s] Destroyed server TLS connection for incoming RPC",
 			 conmgr_fd_get_name(conmgr_args.con));
-		slurm_free_msg(msg);
+		FREE_NULL_MSG(msg);
 	}
 
 	server_thread_decr();
@@ -1976,7 +1976,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 invalid:
 	/* Cleanup for invalid RPC */
 	FREE_NULL_CONN(msg->conn);
-	slurm_free_msg(msg);
+	FREE_NULL_MSG(msg);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
