@@ -79,6 +79,27 @@ contains 24, that is the maximum that can be allocated, even though a larger
 total is available on lower levels. This example allows a fixed set of resources
 to have some flexibility in where they are used.</p>
 
+<h3 id="mode3">Mode 3<a class="slurm_link" href="#mode3"></a></h3>
+
+<p>In <b>Mode 3</b>, resources are allocated on a per-node basis,
+with the total consumption being calculated from the most granular layer and
+summed up into the successively higher layers.
+This mode is specifically designed for consumable resources like power,
+where the total usage at a higher level (e.g., cluster-wide)
+is the sum of the usage of its components (e.g., chassis level,
+then rack level summing multiple chassis, then datacenter row ).
+
+The scheduler ensures that the total summed resources at every layer
+in the hierarchy do not exceed that layer's defined count.
+
+<p>For example, consider the <b>power</b> resource defined in the example
+<a href="#resources_yaml">resources.yaml</a> file below. A job that requests
+1000 of the <b>power</b> resource and is allocated <code>node[01-16]</code>
+will pull from all levels that include those nodes.
+So it would pull 8000 from <code>node[01-08]</code>,
+8000 from <code>node[09-16]</code>, 16000 from  <code>node[01-16]</code>, and
+16000 from <code>node[01-32]</code>.
+
 <h2 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a></h2>
 
 <ul>
@@ -147,7 +168,50 @@ node list present available through that layer</li>
     - nodes:
         - "node[17-32]"
       count: 100
-
+- resource: power
+  mode: MODE_3
+  topology: blok1
+  variables:
+    - name: full_node
+      value: 1000
+    - name: full_gpu_node
+      value: 2000
+  layers:
+    - nodes:
+        - "node[01-08]"
+      count: 40000
+      base:
+        - name: storage
+          value: 5000
+    - nodes:
+        - "node[17-24]"
+      count: 40000
+    - nodes:
+        - "node[09-16]"
+      count: 40000
+    - nodes:
+        - "node[25-32]"
+      count: 40000
+    - nodes:
+        - "node[01-16]"
+      count: 60000
+      base:
+        - name: network1
+          value: 3000
+    - nodes:
+        - "node[17-32]"
+      count: 80000
+      base:
+        - name: network2
+          value: 2000
+    - nodes:
+        - "node[01-32]"
+      count: 130000
+      base:
+        - name: acUnit1
+          value: 10000
+        - name: acUnit2
+          value: 8000
 </pre>
 
 <!--#include virtual="footer.txt"-->
