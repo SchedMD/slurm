@@ -13,7 +13,6 @@ max_mem_cpu = 2
 max_mem_node = 1
 min_num_nodes = 2
 max_num_nodes = 1
-max_time = 1
 node_list = []
 current_policy = ""
 previous_limit = ""
@@ -47,7 +46,12 @@ limits_dict = {
         "pass": max_num_nodes,
         "_set": max_num_nodes,
     },
-    "MaxTime": {"flag": "-t", "fail": max_time + 1, "pass": max_time, "_set": max_time},
+    "MaxTime": {
+        "flag": "-t",
+        "fail": "00:02:00",
+        "pass": "00:01:00",
+        "_set": "00:01:00",
+    },
     "AllowAccounts": {
         "flag": "",
         "fail": "--account=bad_account",
@@ -133,6 +137,13 @@ def set_enforce_part_limits_policy(policy):
         atf.set_config_parameter("EnforcePartLimits", policy)
         current_policy = policy
 
+    # Ensure that policy is active now
+    atf.repeat_until(
+        lambda: atf.get_config_parameter("EnforcePartLimits", quiet=True),
+        lambda config: config.lower() == policy.lower(),
+        fatal=True,
+    )
+
 
 def set_partition_limit(limit_name, limit_value):
     global previous_limit
@@ -142,9 +153,17 @@ def set_partition_limit(limit_name, limit_value):
     atf.set_partition_parameter("p1", limit_name, limit_value)
     previous_limit = limit_name
 
+    # Ensure that partition limit is active now
+    atf.repeat_until(
+        lambda: atf.get_partitions(),
+        lambda partitions: "p1" in partitions
+        and partitions["p1"][limit_name] == limit_value,
+        fatal=True,
+    )
+
 
 def satisfy_pending_job_limit(job_id, limit_name, val_pass):
-    atf.wait_for_job_state(job_id, "PENDING", poll_interval=0.1, fatal=True, quiet=True)
+    atf.wait_for_job_state(job_id, "PENDING", poll_interval=0.1, fatal=True)
 
     # Update partition limit to comply
     atf.run_command(
@@ -393,7 +412,7 @@ def test_ANY(limit_name, setup_account, cancel_jobs):
 
 @pytest.mark.parametrize("limit_name", limits_dict.keys())
 def test_NO(limit_name, setup_account, cancel_jobs):
-    """Verify jobs are accepted and rejected with EnforePartLimits=NO"""
+    """Verify jobs are accepted and rejected with EnforcePartLimits=NO"""
 
     set_enforce_part_limits_policy("NO")
     value = limits_dict[limit_name]
