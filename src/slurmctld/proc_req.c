@@ -3146,7 +3146,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		conn_g_destroy(msg->conn, true);
 		msg->conn = NULL;
-		slurm_free_msg(msg);
+		FREE_NULL_MSG(msg);
 		return;
 	} else
 		info("Processing Reconfiguration Request");
