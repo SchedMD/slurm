@@ -1868,6 +1868,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 	int rc;
 	slurm_msg_t *msg = arg;
 	slurmctld_rpc_t *this_rpc = NULL;
+	conmgr_fd_ref_t *conmgr_con = NULL;
 
 	/* Set connection into message for replies */
 	xassert(!msg->conn || (msg->conn == conn));
@@ -1883,11 +1884,12 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 	 * The fd was extracted from conmgr, so the conmgr connection is
 	 * invalid.
 	 */
-	conmgr_fd_free_ref(&msg->conmgr_con);
+	SWAP(conmgr_con, msg->conmgr_con);
 
 	server_thread_incr();
 
 	if (!(rc = rpc_enqueue(msg))) {
+		conmgr_fd_free_ref(&conmgr_con);
 		server_thread_decr();
 		return;
 	}
@@ -1911,6 +1913,7 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 		FREE_NULL_MSG(msg);
 	}
 
+	conmgr_fd_free_ref(&conmgr_con);
 	server_thread_decr();
 	return;
 
@@ -1918,6 +1921,7 @@ invalid:
 	/* Cleanup for invalid RPC */
 	FREE_NULL_CONN(msg->conn);
 	FREE_NULL_MSG(msg);
+	conmgr_fd_free_ref(&conmgr_con);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
