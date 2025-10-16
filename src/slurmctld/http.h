@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  slurm_protocol_util.h - communication infrastructure functions
+ *  http.h - Header for HTTP related functionality
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  CODE-OCEC-09-009. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
@@ -36,55 +36,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_PROTOCOL_UTIL_H
-#define _SLURM_PROTOCOL_UTIL_H
+#ifndef _SLURMCTLD_HTTP_H
+#define _SLURMCTLD_HTTP_H
 
-#include <inttypes.h>
+#include <stdbool.h>
 
-#include "src/common/pack.h"
-#include "src/common/slurm_protocol_defs.h"
+#include "src/conmgr/conmgr.h"
 
-/*
- * init_header - simple function to create a header, always insuring that
- * an accurate version string is inserted
- * OUT header - the message header to be send
- * IN msg_type - type of message to be send
- * IN flags - message flags to be send
- */
-extern void
-init_header(header_t * header, slurm_msg_t *msg, uint16_t flags);
+/* Setup incoming HTTP connection */
+extern int on_http_connection(conmgr_fd_t *con);
 
+extern void http_init(void);
+extern void http_fini(void);
 
-/*
- * update_header - update a message header with the message len
- * OUT header - the message header to update
- * IN msg_length - length of message to be send
- */
-extern void
-update_header(header_t * header, uint32_t msg_length);
-
-/* Get the port number from a slurm_addr_t */
-extern uint16_t slurm_get_port(slurm_addr_t *addr);
-
-/* Set the port number in a slurm_addr_t */
-extern void slurm_set_port(slurm_addr_t *addr, uint16_t port);
-
-/* Check if slurm_addr_t has an unspecified address type */
-extern bool slurm_addr_is_unspec(slurm_addr_t *addr);
-
-typedef enum {
-	RPC_FINGERPRINT_INVALID = 0,
-	RPC_FINGERPRINT_FOUND,
-	RPC_FINGERPRINT_NOT_FOUND,
-	RPC_FINGERPRINT_NEED_MORE_BYTES,
-	RPC_FINGERPRINT_INVALID_MAX,
-} rpc_fingerprint_t;
-
-/*
- * Fingerprint buffer for RPC
- * IN buffer - buffer to check
- * RET fingerprinting status
- */
-extern rpc_fingerprint_t rpc_fingerprint(const buf_t *buffer);
-
-#endif /* !_SLURM_PROTOCOL_UTIL_H */
+#endif

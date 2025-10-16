@@ -80,6 +80,16 @@ typedef struct {
 #define remaining_buf(__buf)		(__buf->size - __buf->processed)
 #define size_buf(__buf)			(__buf->size)
 
+/* Initialize shadow buffer to point at data with size of bytes */
+#define SHADOW_BUF_INITIALIZER(data, bytes) \
+	(buf_t) { \
+		.magic = BUF_MAGIC, \
+		.head = (char *) (data), \
+		.size = (bytes), \
+		.processed = (bytes), \
+		.shadow = true, \
+	}
+
 typedef struct {
 	buf_t *header;
 	buf_t *auth;

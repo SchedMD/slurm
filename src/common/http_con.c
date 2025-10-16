@@ -429,11 +429,18 @@ static int _write_fmt_header(conmgr_fd_ref_t *con, const char *name,
 /*
  * Send HTTP close notification header
  *	Warns the client that we are about to close the connection.
+ *	Requests the connection close as this reply is done.
  * IN hcon - http connection
  * RET SLURM_SUCCESS or error
  */
 static int _send_http_connection_close(http_con_t *hcon)
 {
+	/*
+	 * Ensure connection gets closed as we just told the client the
+	 * connection is closing
+	 */
+	conmgr_con_queue_close(hcon->con);
+
 	return _write_fmt_header(hcon->con, "Connection", "Close");
 }
 
@@ -535,7 +542,7 @@ static int _send_content_length(http_con_t *hcon, conmgr_fd_ref_t *con,
 extern int http_con_send_response(http_con_t *hcon,
 				  http_status_code_t status_code,
 				  list_t *headers, bool close_header,
-				  buf_t *body, const char *body_encoding)
+				  const buf_t *body, const char *body_encoding)
 {
 	int rc = SLURM_SUCCESS;
 	http_con_request_t *request = &hcon->request;
@@ -599,13 +606,10 @@ extern int http_con_send_response(http_con_t *hcon,
 		if ((rc = conmgr_con_queue_write_data(con, get_buf_data(body),
 						      body_length)))
 			return rc;
-	} else if (((status_code >= HTTP_STATUS_INFO_BEGIN) &&
-		    (status_code <= HTTP_STATUS_INFO_END)) ||
-		   (status_code == HTTP_STATUS_CODE_SUCCESS_NO_CONTENT) ||
-		   (status_code == HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED)) {
+	} else {
 		/*
-		 * RFC2616 requires empty line after headers for return code
-		 * that "MUST NOT" include a message body
+		 * RFC2616 Section 6 Response always requires empty line after
+		 * headers in the HTTP Response message
 		 */
 		if ((rc = conmgr_con_queue_write_data(con, CRLF, strlen(CRLF))))
 			return rc;

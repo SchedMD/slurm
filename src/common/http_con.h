@@ -81,8 +81,6 @@ typedef struct {
 	 * IN hcon - pointer to http connection
 	 * IN name - connection name for logging
 	 * IN request - pointer to parsed request
-	 * IN body - buffer containing body received and retained from last
-	 *	on_request()
 	 * IN arg - arbitrary pointer handed to http_con_assign_server()
 	 * RET SLURM_SUCCESS to continue parsing to error to stop
 	 */
@@ -96,6 +94,10 @@ typedef struct {
 	 */
 	void (*on_close)(const char *name, void *arg);
 } http_con_server_events_t;
+
+/* Declare alias for http_con_server_events_t->on_request */
+typedef STRUCT_FIELD_TYPEOF(http_con_server_events_t,
+			    on_request) http_con_on_request_event_t;
 
 /* Get number of bytes needed to hold http_con_t instance */
 extern const size_t http_con_bytes(void);
@@ -124,6 +126,6 @@ extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 extern int http_con_send_response(http_con_t *hcon,
 				  http_status_code_t status_code,
 				  list_t *headers, bool close_header,
-				  buf_t *body, const char *body_encoding);
+				  const buf_t *body, const char *body_encoding);
 
 #endif

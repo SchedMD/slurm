@@ -125,6 +125,35 @@ Specify debug flags for the scheduler to use. See DebugFlags in the
 variable takes precedence over the setting in the slurm.conf.
 .IP
 
+.SH "HTTP server"
+
+Unless disabled via \fICommunicationParameters=disable_http\fR in
+\fBslurm.conf\fR, \fBslurmctld\fR will accept incoming HTTP/1.1 compliant
+requests to any socket listening as configured by \fBSlurmctldPort\fR in
+\fBslurm.conf\fR. Authentication of HTTP requests is not supported. TLS
+wrapping optionally supported without requiring \fBTLSType\fR in
+\fBslurm.conf\fR. The following endpoints are currently supported:
+
+.TP
+\fBGET /\fR
+Get list of endpoints.
+.IP
+
+.TP
+\fBGET /healthz\fR
+Test if \fBslurmctld\fR loaded successfully.
+.IP
+
+.TP
+\fBGET /livez\fR
+Test if \fBslurmctld\fR loaded successfully.
+.IP
+
+.TP
+\fBGET /readyz\fR
+Test if \fBslurmctld\fR is ready to accept incoming RPCs.
+.IP
+
 .SH "CORE FILE LOCATION"
 If slurmctld is started with the \fB\-D\fR option then the core file will be
 written to the current working directory.

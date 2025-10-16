@@ -37,11 +37,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "src/common/log.h"
+#include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
@@ -113,4 +115,47 @@ void slurm_set_port(slurm_addr_t *addr, uint16_t port)
 bool slurm_addr_is_unspec(slurm_addr_t *addr)
 {
 	return (addr->ss_family == AF_UNSPEC);
+}
+
+static bool is_valid_version(uint16_t version)
+{
+	return (version == SLURM_PROTOCOL_VERSION) ||
+	       (version == SLURM_ONE_BACK_PROTOCOL_VERSION) ||
+	       (version == SLURM_TWO_BACK_PROTOCOL_VERSION) ||
+	       (version == SLURM_MIN_PROTOCOL_VERSION);
+}
+
+extern rpc_fingerprint_t rpc_fingerprint(const buf_t *buffer)
+{
+	const size_t bytes = size_buf(buffer);
+	const void *data = get_buf_data(buffer);
+	uint32_t msglen;
+	uint16_t version;
+
+	if (bytes < (sizeof(msglen) + (2 * sizeof(version))))
+		return RPC_FINGERPRINT_NEED_MORE_BYTES;
+
+	msglen = ntohl(*(uint32_t *) data);
+
+	if (msglen > MAX_MSG_SIZE)
+		return RPC_FINGERPRINT_NOT_FOUND;
+	/* Header is at least this big */
+	if (msglen < sizeof(uint32_t) * 3)
+		return RPC_FINGERPRINT_NOT_FOUND;
+
+	version = ntohs(*(uint16_t *) (data + sizeof(msglen)));
+
+	if (!is_valid_version(version)) {
+		/*
+		 * Check if this is a slurmdbd RPC with version after msg_type
+		 * before rejecting
+		 */
+		version = ntohs(*(uint16_t *) (data + sizeof(msglen) +
+					       sizeof(version)));
+
+		if (!is_valid_version(version))
+			return RPC_FINGERPRINT_NOT_FOUND;
+	}
+
+	return RPC_FINGERPRINT_FOUND;
 }

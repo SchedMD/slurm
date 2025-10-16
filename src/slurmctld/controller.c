@@ -78,6 +78,7 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
+#include "src/common/slurm_protocol_util.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/state_save.h"
 #include "src/common/timers.h"
@@ -98,6 +99,7 @@
 #include "src/interfaces/conn.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
+#include "src/interfaces/http_parser.h"
 #include "src/interfaces/job_submit.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/jobcomp.h"
@@ -112,13 +114,16 @@
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/site_factor.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/tls.h"
 #include "src/interfaces/topology.h"
+#include "src/interfaces/url_parser.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/gang.h"
 #include "src/slurmctld/heartbeat.h"
+#include "src/slurmctld/http.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -270,7 +275,7 @@ static void         _init_config(void);
 static void         _init_pidfile(void);
 static int          _init_tres(void);
 static void         _kill_old_slurmctld(void);
-static void _open_ports(void);
+static void _open_ports(bool listen_http, bool listen_http_tls);
 static void         _parse_commandline(int argc, char **argv);
 static void _post_reconfig(void);
 static void *       _purge_files_thread(void *no_data);
@@ -595,7 +600,7 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
-	int error_code;
+	int error_code = EINVAL;
 	struct timeval start, now;
 	struct stat stat_buf;
 	struct rlimit rlim;
@@ -611,6 +616,7 @@ int main(int argc, char **argv)
 	bool slurmscriptd_mode = false;
 	char *conf_file;
 	stepmgr_ops_t stepmgr_ops = {0};
+	bool listen_http = false, listen_http_tls = false;
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
 	stepmgr_ops.find_job_array_rec = find_job_array_rec;
@@ -759,8 +765,39 @@ int main(int argc, char **argv)
 	rate_limit_init();
 	rpc_queue_init();
 
+	/* Load plugins required for incoming HTTP requests */
+	if ((slurm_conf.conf_flags & CONF_FLAG_DISABLE_HTTP)) {
+		debug("Listening for HTTP requests disabled: CommunicationParameters=disable_http in slurm.conf");
+	} else if ((error_code = http_parser_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load http_parser plugin: %s",
+		  slurm_strerror(error_code));
+	} else if ((error_code = url_parser_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load url_parser plugin: %s",
+		  slurm_strerror(error_code));
+	} else if ((error_code = tls_g_init())) {
+		debug("Listening for HTTP requests disabled: Unable to load TLS plugin: %s",
+		  slurm_strerror(error_code));
+	} else {
+		http_init();
+		listen_http = true;
+
+		if (!tls_available()) {
+			debug("Listening for TLS HTTP requests disabled: TLS plugin not loaded");
+		} else if (conn_tls_enabled()) {
+			debug("Listening for TLS HTTP requests: TLS RPCs enabled");
+		} else if ((error_code =
+				    tls_g_load_own_cert(NULL, 0, NULL, 0))) {
+			listen_http_tls = true;
+			debug("Listening for TLS HTTP requests disabled: loading certificate failed: %s",
+			      slurm_strerror(error_code));
+		} else {
+			listen_http_tls = true;
+			debug("Listening for TLS HTTP requests enabled via server certificate");
+		}
+	}
+
 	/* open ports must happen after become_slurm_user() */
-	 _open_ports();
+	_open_ports(listen_http, listen_http_tls);
 
 	/*
 	 * Create StateSaveLocation directory if necessary.
@@ -1206,6 +1243,10 @@ int main(int argc, char **argv)
 
 	conmgr_request_shutdown();
 	conmgr_fini();
+	http_fini();
+	http_parser_g_fini();
+	url_parser_g_fini();
+	tls_g_fini();
 
 	rate_limit_shutdown();
 	log_fini();
@@ -1491,6 +1532,11 @@ rwfail:
 	(void) close(fd);
 }
 
+extern bool is_reconfiguring(void)
+{
+	return reconfig || !list_is_empty(reconfig_reqs);
+}
+
 extern void reconfigure_slurm(slurm_msg_t *msg)
 {
 	xassert(msg);
@@ -1649,6 +1695,35 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 		return on_backup_finish(con, arg);
 }
 
+static int _on_data(conmgr_fd_t *con, void *arg)
+{
+	buf_t *buffer = conmgr_fd_shadow_in_buffer(con);
+	rpc_fingerprint_t status = rpc_fingerprint(buffer);
+	int rc = SLURM_SUCCESS;
+
+	if (status == RPC_FINGERPRINT_NOT_FOUND) {
+		rc = on_http_connection(con);
+	} else if (status == RPC_FINGERPRINT_FOUND) {
+		if (conn_tls_enabled()) {
+			conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
+
+			if (!conmgr_fd_is_tls(ref))
+				rc = ESLURM_TLS_REQUIRED;
+
+			conmgr_fd_free_ref(&ref);
+		}
+
+		if (!rc)
+			rc = conmgr_fd_change_mode(con, CON_TYPE_RPC);
+	} else {
+		xassert(status == RPC_FINGERPRINT_NEED_MORE_BYTES);
+		rc = SLURM_SUCCESS;
+	}
+
+	FREE_NULL_BUFFER(buffer);
+	return rc;
+}
+
 static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 {
 	bool standby_mode;
@@ -1738,18 +1813,46 @@ extern void listeners_unquiesce(void)
 	slurm_mutex_unlock(&listeners.mutex);
 }
 
+extern bool listeners_quiesced(void)
+{
+	bool quiesced;
+
+	slurm_mutex_lock(&listeners.mutex);
+
+	quiesced = listeners.quiesced;
+
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return quiesced;
+}
+
+extern bool is_primary(void)
+{
+	bool primary;
+
+	slurm_mutex_lock(&listeners.mutex);
+
+	primary = !listeners.standby_mode;
+
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return primary;
+}
+
 /*
  * _open_ports - Open all ports for the slurmctld to listen on.
  */
-static void _open_ports(void)
+static void _open_ports(bool listen_http, bool listen_http_tls)
 {
 	static const conmgr_events_t events = {
 		.on_listen_connect = _on_listen_connect,
 		.on_listen_finish = _on_listen_finish,
 		.on_connection = _on_connection,
+		.on_data = _on_data,
 		.on_msg = _on_msg,
 		.on_finish = _on_finish,
 	};
+	conmgr_con_type_t type = (listen_http ? CON_TYPE_RAW : CON_TYPE_RPC);
 
 	slurm_mutex_lock(&listeners.mutex);
 
@@ -1787,11 +1890,13 @@ static void _open_ports(void)
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
 
-		if (conn_tls_enabled())
+		if (listen_http_tls)
+			flags |= CON_FLAG_TLS_FINGERPRINT;
+		else if (conn_tls_enabled())
 			flags |= CON_FLAG_TLS_SERVER;
 
-		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
-						   CON_TYPE_RPC, &events, flags,
+		if ((rc = conmgr_process_fd_listen(listeners.fd[i], type,
+						   &events, flags,
 						   index_ptr))) {
 			if (rc == SLURM_COMMUNICATIONS_INVALID_FD)
 				fatal("%s: Unable to listen to file descriptors. Existing slurmctld process likely already is listening on the ports.",

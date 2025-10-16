@@ -51,6 +51,8 @@ libcommon_la_SOURCES =				\
 	http.c					\
 	http_con.h				\
 	http_con.c				\
+	http_router.h				\
+	http_router.c				\
 	identity.h				\
 	identity.c				\
 	id_util.h				\

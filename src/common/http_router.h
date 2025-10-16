@@ -1,10 +1,7 @@
 /*****************************************************************************\
- *  slurm_protocol_util.h - communication infrastructure functions
+ *  http_router.h - Route HTTP requests
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,55 +33,33 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_PROTOCOL_UTIL_H
-#define _SLURM_PROTOCOL_UTIL_H
+#ifndef SLURM_HTTP_ROUTER_H
+#define SLURM_HTTP_ROUTER_H
 
-#include <inttypes.h>
-
-#include "src/common/pack.h"
-#include "src/common/slurm_protocol_defs.h"
+#include "src/common/http.h"
+#include "src/common/http_con.h"
 
 /*
- * init_header - simple function to create a header, always insuring that
- * an accurate version string is inserted
- * OUT header - the message header to be send
- * IN msg_type - type of message to be send
- * IN flags - message flags to be send
+ * Initialize HTTP router
+ * IN on_not_found - callback for when request doesn't match any bound paths
  */
-extern void
-init_header(header_t * header, slurm_msg_t *msg, uint16_t flags);
+extern void http_router_init(http_con_on_request_event_t on_not_found);
 
+/* Cleanup HTTP router */
+extern void http_router_fini(void);
 
 /*
- * update_header - update a message header with the message len
- * OUT header - the message header to update
- * IN msg_length - length of message to be send
+ * Bind to path in HTTP router
+ * IN hrouter - http router to bind path events
+ * IN method - HTTP method to bind at path
+ * IN path - string HTTP URL path to bind
+ * IN on_request - callbacks for on_request() event
  */
-extern void
-update_header(header_t * header, uint32_t msg_length);
+extern void http_router_bind(http_request_method_t method, const char *path,
+			     http_con_on_request_event_t on_request);
 
-/* Get the port number from a slurm_addr_t */
-extern uint16_t slurm_get_port(slurm_addr_t *addr);
+/* Callback to have HTTP router match method and path to a bound callback */
+extern int http_router_on_request(http_con_t *hcon, const char *name,
+				  const http_con_request_t *request, void *arg);
 
-/* Set the port number in a slurm_addr_t */
-extern void slurm_set_port(slurm_addr_t *addr, uint16_t port);
-
-/* Check if slurm_addr_t has an unspecified address type */
-extern bool slurm_addr_is_unspec(slurm_addr_t *addr);
-
-typedef enum {
-	RPC_FINGERPRINT_INVALID = 0,
-	RPC_FINGERPRINT_FOUND,
-	RPC_FINGERPRINT_NOT_FOUND,
-	RPC_FINGERPRINT_NEED_MORE_BYTES,
-	RPC_FINGERPRINT_INVALID_MAX,
-} rpc_fingerprint_t;
-
-/*
- * Fingerprint buffer for RPC
- * IN buffer - buffer to check
- * RET fingerprinting status
- */
-extern rpc_fingerprint_t rpc_fingerprint(const buf_t *buffer);
-
-#endif /* !_SLURM_PROTOCOL_UTIL_H */
+#endif

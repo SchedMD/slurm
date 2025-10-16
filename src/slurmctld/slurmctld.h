@@ -2273,6 +2273,9 @@ extern int set_part_topology_idx(void *x, void *arg);
 
 extern void reconfigure_slurm(slurm_msg_t *msg);
 
+/* True if slurmctld has a pending reconfigure request */
+extern bool is_reconfiguring(void);
+
 extern void notify_parent_of_success(void);
 
 /*
@@ -2315,5 +2318,11 @@ extern void listeners_unquiesce(void);
 
 /* Stop listener sockets from accept()ing new incoming requests */
 extern void listeners_quiesce(void);
+
+/* True if listeners are quiesced */
+extern bool listeners_quiesced(void);
+
+/* True if slurmctld process running as primary controller */
+extern bool is_primary(void);
 
 #endif /* !_HAVE_SLURMCTLD_H */

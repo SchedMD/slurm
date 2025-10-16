@@ -3789,6 +3789,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	    xstrcasestr(conf->comm_params, "NoAddrCache"))
 		error("The CommunicationParameters option \"NoAddrCache\" is defunct, please remove it from slurm.conf.");
 
+	if (xstrcasestr(slurm_conf.comm_params, "disable_http"))
+		conf->conf_flags |= CONF_FLAG_DISABLE_HTTP;
+
 	/*
 	 * IPv4 on by default, can be disabled.
 	 * IPv6 off by default, can be turned on.
