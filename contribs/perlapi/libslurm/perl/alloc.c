@@ -206,38 +206,6 @@ free_job_desc_msg_memory(job_desc_msg_t *msg)
 }
 
 /*
- * convert resource_allocation_resource_msg_t to perl HV
- */
-int
-resource_allocation_response_msg_to_hv(resource_allocation_response_msg_t *resp_msg, HV *hv)
-{
-	AV *av;
-	int i;
-
-	STORE_FIELD(hv, resp_msg, job_id, uint32_t);
-	if(resp_msg->node_list)
-		STORE_FIELD(hv, resp_msg, node_list, charp);
-	STORE_FIELD(hv, resp_msg, num_cpu_groups, uint16_t);
-	if(resp_msg->num_cpu_groups) {
-		av = newAV();
-		for(i = 0; i < resp_msg->num_cpu_groups; i ++) {
-			av_store_uint16_t(av, i, resp_msg->cpus_per_node[i]);
-		}
-		hv_store_sv(hv, "cpus_per_node", newRV_noinc((SV*)av));
-
-		av = newAV();
-		for(i = 0; i < resp_msg->num_cpu_groups; i ++) {
-			av_store_uint32_t(av, i, resp_msg->cpu_count_reps[i]);
-		}
-		hv_store_sv(hv, "cpu_count_reps", newRV_noinc((SV*)av));
-	}
-	STORE_FIELD(hv, resp_msg, node_cnt, uint32_t);
-	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
-
-	return 0;
-}
-
-/*
  * convert submit_response_msg_t to perl HV
  */
 int
