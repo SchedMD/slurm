@@ -81,6 +81,22 @@ def admin_level(setup):
         fatal=True,
     )
     yield
+    atf.cancel_all_jobs()
+    atf.run_command(
+        f"sacctmgr -i delete user {local_cluster_name}",
+        user=atf.properties["slurm-user"],
+    )
+
+
+@pytest.fixture(scope="function")
+def non_admin(setup):
+    atf.run_command(
+        f"sacctmgr -i add user {local_cluster_name} defaultaccount=root",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    yield
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {local_cluster_name}",
         user=atf.properties["slurm-user"],
@@ -124,6 +140,7 @@ def create_users(create_accounts):
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} account={account_name}",
         user=atf.properties["slurm-user"],
@@ -141,6 +158,7 @@ def create_coords(create_users):
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {coord_name} cluster={local_cluster_name} account={account2_name}",
         user=atf.properties["slurm-user"],
@@ -163,6 +181,7 @@ def create_wckeys():
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
         user=atf.properties["slurm-user"],
@@ -1026,7 +1045,7 @@ def test_db_config(slurmdb, admin_level):
     assert len(resp.errors) == 0
 
 
-def test_jobs(slurm, slurmdb):
+def test_jobs(slurm, slurmdb, non_admin):
     from openapi_client.models.v0044_job_submit_req import V0044JobSubmitReq
     from openapi_client.models.v0044_job_desc_msg import V0044JobDescMsg
     from openapi_client.models.v0044_job_info import V0044JobInfo
@@ -1047,13 +1066,6 @@ def test_jobs(slurm, slurmdb):
     )
     from openapi_client.models.v0044_openapi_job_modify_req import (
         V0044OpenapiJobModifyReq,
-    )
-
-    # Create non-admin association
-    atf.run_command(
-        f"sacctmgr -i add user {local_cluster_name} defaultaccount=root",
-        user=atf.properties["slurm-user"],
-        fatal=True,
     )
 
     script = "#!/bin/bash\n/bin/true"
@@ -1301,11 +1313,6 @@ def test_jobs(slurm, slurmdb):
                 tres == job_modify.tres.allocated[0]
         found_tres = True
         assert job.wckey.wckey == job_modify.wckey
-
-    atf.run_command(
-        f"sacctmgr -i delete user {local_cluster_name}",
-        user=atf.properties["slurm-user"],
-    )
 
 
 @pytest.fixture(scope="function")
