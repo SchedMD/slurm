@@ -230,7 +230,10 @@ def test_loaded_versions():
     assert "/slurmdb/v0.0.43/jobs/" in spec["paths"].keys()
 
 
-@pytest.mark.xfail(reason="Ticket 23807: Schema changed")
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmrestd") >= (25, 11),
+    reason="Ticket 23807: Schema changed",
+)
 def test_specification():
     atf.assert_openapi_spec(os.path.splitext(__file__)[0] + ".json")
 
