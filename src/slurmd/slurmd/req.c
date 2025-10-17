@@ -4234,21 +4234,21 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* now we can focus on performing the requested action,
 	 * which could take a few seconds to complete */
-	debug("%s jobid=%u uid=%u action=%s",
-	      __func__, req->job_id, msg->auth_uid,
+	debug("%s: %pI uid=%u action=%s",
+	      __func__, &req->step_id, msg->auth_uid,
 	      (req->op == SUSPEND_JOB ? "suspend" : "resume"));
 
 	/* Try to get a thread lock for this job. If the lock
 	 * is not available then sleep and try again */
-	while (!_get_suspend_job_lock(req->job_id)) {
-		debug3("suspend lock sleep for %u", req->job_id);
+	while (!_get_suspend_job_lock(req->step_id.job_id)) {
+		debug3("suspend lock sleep for %pI", &req->step_id);
 		usleep(10000);
 	}
 	START_TIMER;
 
 	/* Defer suspend until job prolog and launch complete */
 	if (req->op == SUSPEND_JOB)
-		_launch_complete_wait(req->job_id);
+		_launch_complete_wait(req->step_id.job_id);
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
@@ -4264,11 +4264,10 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 		fdi = 0;
 		while ((stepd = list_next(i))) {
-			if (stepd->step_id.job_id != req->job_id) {
+			if (stepd->step_id.job_id != req->step_id.job_id) {
 				/* multiple jobs expected on shared nodes */
-				debug3("Step from other job: jobid=%u "
-				       "(this jobid=%u)",
-				       stepd->step_id.job_id, req->job_id);
+				debug3("Step from other job: jobid=%pI (this jobid=%pI)",
+				       &stepd->step_id, &req->step_id);
 				continue;
 			}
 			step_cnt++;
@@ -4325,8 +4324,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 						    protocol_version[x],
 						    req, 1) >= 0)
 						continue;
-					debug("Suspend of job %u failed: %m",
-					      req->job_id);
+					debug("Suspend of %pI failed: %m",
+					      &req);
 				}
 			}
 		} else {
@@ -4341,8 +4340,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 				if (stepd_resume(fd[x],
 						 protocol_version[x],
 						 req, 1) < 0) {
-					debug("Resume of job %u failed: %m",
-					      req->job_id);
+					debug("Resume of %pI failed: %m",
+					      &req->step_id);
 				}
 			}
 		}
@@ -4359,23 +4358,21 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
 
-	_unlock_suspend_job(req->job_id);
+	_unlock_suspend_job(req->step_id.job_id);
 
 	END_TIMER;
 	if (DELTA_TIMER >= (long)(slurm_conf.sched_time_slice * USEC_IN_SEC)) {
 		if (req->op == SUSPEND_JOB) {
-			info("Suspend time for job_id %u was %s. "
-			     "Configure SchedulerTimeSlice higher.",
-			     req->job_id, TIME_STR);
+			info("Suspend time for %pI was %s. Configure SchedulerTimeSlice higher.",
+			     &req->step_id, TIME_STR);
 		} else {
-			info("Resume time for job_id %u was %s. "
-			     "Configure SchedulerTimeSlice higher.",
-			     req->job_id, TIME_STR);
+			info("Resume time for %pI was %s. Configure SchedulerTimeSlice higher.",
+			     &req->step_id, TIME_STR);
 		}
 	}
 
 	if (step_cnt == 0) {
-		debug2("No steps in jobid %u to suspend/resume", req->job_id);
+		debug2("No steps in %pI to suspend/resume", &req->step_id);
 	}
 }
 

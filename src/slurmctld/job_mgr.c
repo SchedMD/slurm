@@ -17091,7 +17091,10 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create(NULL);
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
-	sus_ptr->job_id = job_ptr->job_id;
+	sus_ptr->step_id.job_id = job_ptr->job_id;
+	sus_ptr->step_id.sluid = job_ptr->db_index;
+	sus_ptr->step_id.step_het_comp = NO_VAL;
+	sus_ptr->step_id.step_id = NO_VAL;
 	sus_ptr->op = op;
 
 	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;

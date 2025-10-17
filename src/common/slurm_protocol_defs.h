@@ -1074,7 +1074,7 @@ typedef struct forward_data_msg {
 
 /* suspend_msg_t variant for internal slurm daemon communications */
 typedef struct suspend_int_msg {
-	uint32_t job_id;        /* slurm job_id */
+	slurm_step_id_t step_id;
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
 } suspend_int_msg_t;
 
