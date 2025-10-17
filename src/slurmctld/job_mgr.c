@@ -17233,7 +17233,7 @@ static int _foreach_job_resume_test(void *x, void *arg)
 	    bit_overlap_any(test_job_ptr->node_bitmap, job_ptr->node_bitmap)) {
 		return -1;
 	}
-/* FIXME: Also test for ESLURM_INTERCONNECT_BUSY */
+
 	return 0;
 }
 
