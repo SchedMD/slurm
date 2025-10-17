@@ -504,8 +504,8 @@ typedef struct resv_info_request_msg {
 } resv_info_request_msg_t;
 
 typedef struct complete_job_allocation {
-	uint32_t job_id;
 	uint32_t job_rc;
+	slurm_step_id_t step_id;
 } complete_job_allocation_msg_t;
 
 typedef struct complete_batch_script {

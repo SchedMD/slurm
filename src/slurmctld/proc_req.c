@@ -1907,21 +1907,21 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 
 	/* init */
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_COMPLETE_JOB_ALLOCATION for JobId=%u rc=%d",
-	       comp_msg->job_id, comp_msg->job_rc);
+	debug3("Processing RPC details: REQUEST_COMPLETE_JOB_ALLOCATION for %pI rc=%d",
+	       &comp_msg->step_id, comp_msg->job_rc);
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(comp_msg->job_id);
+	job_ptr = find_job_record(comp_msg->step_id.job_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
-	error_code = job_complete(comp_msg->job_id, msg->auth_uid,
+	error_code = job_complete(comp_msg->step_id.job_id, msg->auth_uid,
 				  false, false, comp_msg->job_rc);
 	if (error_code) {
 		if (error_code == ESLURM_INVALID_JOB_ID) {
-			info("%s: JobId=%d error %s",
-			     __func__, comp_msg->job_id,
+			info("%s: %pI error %s",
+			     __func__, &comp_msg->step_id,
 			     slurm_strerror(error_code));
 		} else {
 			info("%s: %pJ error %s",
