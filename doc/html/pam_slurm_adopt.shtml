@@ -89,9 +89,9 @@ and SSH sessions will persist even after the job ends. See
 <a class="slurm_link" href="#PAM_CONFIG"></a>
 </h2>
 
-<p>Add the following line to the appropriate file in /etc/pam.d, such as
-system-auth or sshd (you may use either the "required" or "sufficient" PAM
-control flag):</p>
+<p>For initial testing (see <b>warning</b> below), add the following line to the
+appropriate file in /etc/pam.d, such as system-auth or sshd (you may use either
+the "required" or "sufficient" PAM control flag):</p>
 
 <pre>
 account    required      pam_slurm_adopt.so
@@ -120,6 +120,14 @@ proctrack/cgroup proctrack plugin.
 The pam_systemd module will conflict with pam_slurm_adopt, so you need to
 disable it in all files that are included in sshd or system-auth (e.g.
 password-auth, common-session, etc.).</p>
+
+<p><b>WARNING</b>: The default configuration for pam_slurm_adopt is meant to
+ensure an admin is not locked out of a node during testing. Production
+environments should consider setting both
+<a href="#action_adopt_failure">action_adopt_failure</a> and
+<a href="#action_generic_failure">action_generic_failure</a> to <b>deny</b>
+after successful testing; otherwise, plugin failures may allow users to log in
+unconfined. Future examples on this page will include these flags.</p>
 
 <p>If you need the user management features from pam_systemd, such as
 handling user runtime directory /run/user/$UID, you can have the prolog script
@@ -203,7 +211,7 @@ message.
 </p>
 
 <pre>
-account    sufficient    pam_slurm_adopt.so
+account    sufficient    pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
 account    required      pam_access.so
 </pre>
 
@@ -215,7 +223,7 @@ pam_slurm_adopt entirely.
 
 <pre>
 account    sufficient    pam_access.so
-account    required      pam_slurm_adopt.so
+account    required      pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
 </pre>
 
 <p>
@@ -228,7 +236,7 @@ implications.
 
 <pre>
 account    sufficient    pam_listfile.so item=user sense=allow onerr=fail file=/path/to/allowed_users_file
-account    required      pam_slurm_adopt.so
+account    required      pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
 </pre>
 
 <p>
@@ -244,7 +252,7 @@ example.
 </p>
 <pre>
 account    sufficient                    pam_listfile.so item=group sense=allow onerr=fail file=/path/to/allowed_users_file
--account   required                      pam_slurm_adopt.so
+-account   required                      pam_slurm_adopt.so action_adopt_failure=deny action_generic_failure=deny
 
 session    [default=1 success=ignore]    pam_listfile.so item=group sense=allow onerr=fail file=/etc/groupfile
 -session   optional                      pam_systemd.so
@@ -365,9 +373,11 @@ one job will result in this action being taken. Configurable values are:
   <b id="action_adopt_failure_allow">allow</b> (default)
   <a class="slurm_link" href="#action_adopt_failure_allow"></a>
 </dt>
-<dd>Let the connection through without adoption. <b>WARNING: This value is
-insecure and is recommended for testing purposes only. We recommend using
-"deny."</b></dd>
+<dd>Let the connection through without adoption.
+<br><b>WARNING</b>: This value allows connections that were not able to be
+adopted into a job, which could allow users complete access to a node, not just
+to their allocated resources. This value is recommended for testing purposes
+only, we recommend using "deny" in production systems.</dd>
 <dt>
   <b id="action_adopt_failure_deny">deny</b>
   <a class="slurm_link" href="#action_adopt_failure_deny"></a>
@@ -395,14 +405,21 @@ the correct facilities. Configurable values are:
   <b id="action_generic_failure_ignore">ignore</b> (default)
   <a class="slurm_link" href="#action_generic_failure_ignore"></a>
 </dt>
-<dd>Do nothing. Fall through to the next pam module. <b>WARNING: This value is
-insecure and is recommended for testing purposes only. We recommend using
-"deny."</b></dd>
+<dd>Do nothing. Fall through to the next PAM module, even if this module is set
+as "required" or "requisite".
+<br><b>WARNING</b>: This value does not deny connections pam_slurm_adopt was
+unable to handle normally, which could allow users complete access to a node,
+not just to their allocated resources. This value is recommended for testing
+purposes only, we recommend using "deny" in production systems.</dd>
 <dt>
   <b id="action_generic_failure_allow">allow</b>
   <a class="slurm_link" href="#action_generic_failure_allow"></a>
 </dt>
-<dd>Let the connection through without adoption.</dd>
+<dd>Let the connection through without adoption.
+<br><b>WARNING</b>: This value explicitly allows connections pam_slurm_adopt was
+unable to handle normally, which could allow users complete access to a node,
+not just to their allocated resources. This value is recommended for testing
+purposes only, we recommend using "deny" in production systems.</dd>
 <dt>
   <b id="action_generic_failure_deny">deny</b>
   <a class="slurm_link" href="#action_generic_failure_deny"></a>
