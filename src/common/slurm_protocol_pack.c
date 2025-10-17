@@ -9692,7 +9692,15 @@ static void _pack_complete_batch_script_msg(const slurm_msg_t *smsg,
 {
 	complete_batch_script_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
+				 PROTOCOL_TYPE_SLURM, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_rc, buffer);
+		pack32(msg->slurm_rc, buffer);
+		pack32(msg->user_id, buffer);
+		packstr(msg->node_name, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
 		pack32(msg->job_id, buffer);
@@ -9707,7 +9715,17 @@ static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	complete_batch_script_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		if (jobacctinfo_unpack(&msg->jobacct, smsg->protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer,
+				       1) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_rc, buffer);
+		safe_unpack32(&msg->slurm_rc, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpackstr(&msg->node_name, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (jobacctinfo_unpack(&msg->jobacct, smsg->protocol_version,
 				       PROTOCOL_TYPE_SLURM, buffer,
 				       1) != SLURM_SUCCESS)
