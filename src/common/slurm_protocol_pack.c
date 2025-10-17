@@ -9388,23 +9388,20 @@ static void _pack_complete_job_allocation_msg(const slurm_msg_t *smsg,
 	pack32(msg->job_rc, buffer);
 }
 
-static int
-_unpack_complete_job_allocation_msg(
-	complete_job_allocation_msg_t ** msg_ptr, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_complete_job_allocation_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	complete_job_allocation_msg_t *msg;
+	complete_job_allocation_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(complete_job_allocation_msg_t));
-	*msg_ptr = msg;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_rc, buffer);
+	}
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->job_rc, buffer);
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_complete_job_allocation_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14376,9 +14373,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					       msg->protocol_version);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		rc = _unpack_complete_job_allocation_msg(
-			(complete_job_allocation_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_complete_job_allocation_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
 		rc = _unpack_complete_prolog_msg(
