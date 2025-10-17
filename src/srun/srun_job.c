@@ -63,6 +63,7 @@
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
@@ -165,6 +166,9 @@ job_create_noalloc(void)
 	slurm_opt_t *opt_local = &opt;
 	hostlist_t *hl = hostlist_create(opt_local->nodelist);
 
+	/* Use the reserved slurmdbd cluster_id */
+	sluid_init(0x001, 0);
+
 	if (!hl) {
 		error("Invalid node list `%s' specified", opt_local->nodelist);
 		goto error;
@@ -173,6 +177,7 @@ job_create_noalloc(void)
 	ai->step_id.job_id = MIN_NOALLOC_JOBID +
 		((uint32_t) lrand48() %
 		 (MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
+	ai->step_id.sluid = generate_sluid();
 	ai->step_id.step_id = (uint32_t) (lrand48());
 	ai->step_id.step_het_comp = NO_VAL;
 	ai->nodelist       = opt_local->nodelist;
