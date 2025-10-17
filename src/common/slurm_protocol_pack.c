@@ -9703,20 +9703,14 @@ static void _pack_complete_batch_script_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int
-_unpack_complete_batch_script_msg(
-	complete_batch_script_msg_t ** msg_ptr, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	complete_batch_script_msg_t *msg;
+	complete_batch_script_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(complete_batch_script_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-				       PROTOCOL_TYPE_SLURM, buffer, 1)
-		    != SLURM_SUCCESS)
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (jobacctinfo_unpack(&msg->jobacct, smsg->protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer,
+				       1) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_rc, buffer);
@@ -9725,11 +9719,11 @@ _unpack_complete_batch_script_msg(
 		safe_unpackstr(&msg->node_name, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_complete_batch_script_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14371,9 +14365,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		rc = _unpack_complete_batch_script_msg(
-			(complete_batch_script_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_complete_batch_script_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_COMPLETE:
 		rc = _unpack_step_complete_msg((step_complete_msg_t
