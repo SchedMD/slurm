@@ -5109,6 +5109,7 @@ properties["slurm-prefix"] = "/usr/local"
 properties["testsuite_scripts_dir"] = (
     properties["testsuite_base_dir"] + "/python/scripts"
 )
+properties["testsuite_data_dir"] = properties["testsuite_base_dir"] + "/python/data"
 properties["testsuite_check_dir"] = properties["testsuite_base_dir"] + "/python/check"
 properties["influxdb_host"] = "localhost"
 properties["influxdb_port"] = 8086

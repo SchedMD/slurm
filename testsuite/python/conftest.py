@@ -16,6 +16,8 @@ import sys
 
 from pathlib import Path
 
+import json
+
 sys.path.append(sys.path[0] + "/lib")
 import atf
 
@@ -749,3 +751,20 @@ def sql_statement_repeat(module_setup):
         logging.debug(f"Slurm accounting database ({database_name}) is not present")
 
     return mysql_command_base
+
+
+@pytest.fixture(scope="module")
+def openapi_spec(request, module_setup):
+    """
+    Returns the given version of the OpenAPI specs saved in testsuite_data_dir
+    """
+    openapi_specs = None
+    version = request.param
+    json_file = f"{atf.properties['testsuite_data_dir']}/openapi_spec_v{version}.json"
+    with open(json_file, "r") as f:
+        openapi_specs = json.load(f)
+        f.close()
+    if openapi_specs is None:
+        pytest.fail(f"Error parsing OpenAPI specs from: {json_file}")
+
+    yield openapi_specs
