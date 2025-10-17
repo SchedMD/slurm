@@ -1393,7 +1393,7 @@ def request_slurmrestd(request):
     )
 
 
-def assert_openapi_spec(path_tagged_spec):
+def assert_openapi_spec(tagged_spec):
     """
     Generates an OpenAPI specification and verifies that it hasn't changed.
 
@@ -1409,12 +1409,6 @@ def assert_openapi_spec(path_tagged_spec):
     Returns:
         None
     """
-
-    with open(path_tagged_spec, "r") as f:
-        tagged_spec = json.load(f)
-        f.close()
-    if tagged_spec is None:
-        pytest.fail(f"Error parsing JSON openapi specs: {path_tagged_spec}")
 
     r = request_slurmrestd("openapi/v3")
     if r.status_code != 200:

@@ -249,8 +249,9 @@ def test_loaded_versions():
 @pytest.mark.skipif(
     atf.get_version() <= (25, 11, 0), reason="Specs may change until .0 is released"
 )
-def test_specification():
-    atf.assert_openapi_spec(os.path.splitext(__file__)[0] + ".json")
+@pytest.mark.parametrize("openapi_spec", ["44"], indirect=True)
+def test_specification(openapi_spec):
+    atf.assert_openapi_spec(openapi_spec)
 
 
 def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
