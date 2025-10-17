@@ -293,6 +293,7 @@ extern srun_job_t *job_step_create_allocation(
 	xassert(srun_opt);
 
 	ai->step_id.job_id          = job_id;
+	ai->step_id.sluid = resp->step_id.sluid;
 	ai->step_id.step_id         = NO_VAL;
 	ai->step_id.step_het_comp = NO_VAL;
 	if (srun_opt->alloc_nodelist)
