@@ -52,8 +52,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "src/api/step_launch.h"
+
 #include "src/common/bitstring.h"
-#include "src/interfaces/cli_filter.h"
 #include "src/common/cbuf.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
@@ -71,14 +72,14 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/api/step_launch.h"
+#include "src/interfaces/cli_filter.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/debugger.h"
 #include "src/srun/fname.h"
 #include "src/srun/launch.h"
-#include "src/srun/opt.h"
 #include "src/srun/multi_prog.h"
+#include "src/srun/opt.h"
 #include "src/srun/srun_job.h"
 
 /*
