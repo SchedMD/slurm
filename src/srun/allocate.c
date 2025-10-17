@@ -236,7 +236,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	int is_ready = 0, i = 0, rc;
 	bool job_killed = false;
 
-	pending_job_id = alloc->job_id;
+	pending_job_id = alloc->step_id.job_id;
 
 	while (true) {
 		if (i) {
@@ -260,7 +260,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 		i += 1;
 
-		rc = slurm_job_node_ready(alloc->job_id);
+		rc = slurm_job_node_ready(alloc->step_id.job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 		if (destroy_job || revoke_job)
@@ -283,7 +283,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	} else if (!destroy_job) {
 		if (job_killed) {
 			error("Job allocation %u has been revoked",
-			      alloc->job_id);
+			      alloc->step_id.job_id);
 			destroy_job = true;
 		} else
 			error("Nodes %s are still not ready", alloc->node_list);
@@ -410,7 +410,7 @@ extern resource_allocation_response_msg_t *allocate_nodes(
 		/*
 		 * Allocation granted!
 		 */
-		pending_job_id = resp->job_id;
+		pending_job_id = resp->step_id.job_id;
 
 		/*
 		 * These values could be changed while the job was
@@ -455,7 +455,7 @@ extern resource_allocation_response_msg_t *allocate_nodes(
 relinquish:
 	if (resp) {
 		if (destroy_job || revoke_job)
-			slurm_complete_job(resp->job_id, 1);
+			slurm_complete_job(resp->step_id.job_id, 1);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 	exit(error_exit);
@@ -576,9 +576,9 @@ list_t *allocate_het_job_nodes(void)
 				break;
 
 			if (pending_job_id == 0)
-				pending_job_id = resp->job_id;
+				pending_job_id = resp->step_id.job_id;
 			if (my_job_id == 0) {
-				my_job_id = resp->job_id;
+				my_job_id = resp->step_id.job_id;
 				i = list_count(opt_list);
 				k = list_count(job_resp_list);
 				if (i != k) {
@@ -632,7 +632,7 @@ relinquish:
 		if (my_job_id == 0) {
 			resp = (resource_allocation_response_msg_t *)
 			       list_peek(job_resp_list);
-			my_job_id = resp->job_id;
+			my_job_id = resp->step_id.job_id;
 		}
 
 		if (destroy_job && my_job_id) {

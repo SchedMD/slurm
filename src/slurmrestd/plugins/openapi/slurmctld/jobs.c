@@ -601,20 +601,21 @@ static int _foreach_alloc_job_resp(void *x, void *arg)
 
 	xassert(args->magic == FOREACH_ALLOC_JOB_ARGS_MAGIC);
 
-	xassert(!oas_resp->job_id || (oas_resp->job_id == resp->job_id) ||
-		(oas_resp->job_id == (resp->job_id - args->component)));
-	oas_resp->job_id = resp->job_id;
+	xassert(!oas_resp->job_id ||
+		(oas_resp->job_id == resp->step_id.job_id) ||
+		(oas_resp->job_id == (resp->step_id.job_id - args->component)));
+	oas_resp->job_id = resp->step_id.job_id;
 
 	if (!oas_resp->job_submit_user_msg)
 		oas_resp->job_submit_user_msg = resp->job_submit_user_msg;
 
 	if (args->component == NO_VAL) {
 		debug3("%s:[%s] Job submitted -> JobId=%d rc:%d message:%s",
-		       __func__, ctxt->id, resp->job_id,
+		       __func__, ctxt->id, resp->step_id.job_id,
 		       resp->error_code, resp->job_submit_user_msg);
 	} else {
 		debug3("%s:[%s] HetJob submitted -> JobId=%d+%d rc:%d message:%s",
-		       __func__, ctxt->id, resp->job_id, args->component,
+		       __func__, ctxt->id, resp->step_id.job_id, args->component,
 		       resp->error_code, resp->job_submit_user_msg);
 		args->component++;
 	}

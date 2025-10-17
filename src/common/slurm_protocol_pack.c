@@ -1327,7 +1327,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		pack32(msg->node_cnt, buffer);
 
 		packstr(msg->node_list, buffer);
@@ -1371,7 +1371,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		pack32(msg->node_cnt, buffer);
 
 		packstr(msg->node_list, buffer);
@@ -1416,7 +1416,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		pack32(msg->gid, buffer);
 		packstr(msg->group_name, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		pack32(msg->node_cnt, buffer);
 
 		pack8(0, buffer);
@@ -1471,7 +1471,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpack32(&tmp_ptr->gid, buffer);
 		safe_unpackstr(&tmp_ptr->group_name, buffer);
 		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
-		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->step_id.job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
 
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
@@ -1518,7 +1518,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpack32(&tmp_ptr->gid, buffer);
 		safe_unpackstr(&tmp_ptr->group_name, buffer);
 		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
-		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->step_id.job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
 
 		safe_unpackstr(&tmp_ptr->node_list, buffer);
@@ -1566,7 +1566,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpack32(&tmp_ptr->gid, buffer);
 		safe_unpackstr(&tmp_ptr->group_name, buffer);
 		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
-		safe_unpack32(&tmp_ptr->job_id, buffer);
+		safe_unpack32(&tmp_ptr->step_id.job_id, buffer);
 		safe_unpack32(&tmp_ptr->node_cnt, buffer);
 
 		safe_unpack8(&uint8_tmp, buffer);

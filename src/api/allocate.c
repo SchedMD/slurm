@@ -240,7 +240,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
 		resp = (resource_allocation_response_msg_t *) resp_msg.data;
-		verbose("JobId=%u returned by the controller", resp->job_id);
+		verbose("JobId=%u returned by the controller", resp->step_id.job_id);
 		if (resp->node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_SUCCESS;
@@ -253,7 +253,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			print_multi_line_string(resp->job_submit_user_msg,
 						-1, LOG_LEVEL_INFO);
 
-			job_id = resp->job_id;
+			job_id = resp->step_id.job_id;
 			slurm_free_resource_allocation_response_msg(resp);
 			if (pending_callback != NULL)
 				pending_callback(job_id);
@@ -449,7 +449,7 @@ static void _het_job_alloc_test(list_t *resp, uint32_t *node_cnt,
 	while ((alloc = (resource_allocation_response_msg_t *)list_next(iter))){
 		het_job_node_cnt += alloc->node_cnt;
 		if (het_job_id == 0)
-			het_job_id = alloc->job_id;
+			het_job_id = alloc->step_id.job_id;
 		print_multi_line_string(alloc->job_submit_user_msg,
 					inx, LOG_LEVEL_INFO);
 		inx++;
