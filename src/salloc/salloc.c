@@ -403,11 +403,12 @@ int main(int argc, char **argv)
 		iter_resp = list_iterator_create(job_resp_list);
 		while ((alloc = list_next(iter_resp))) {
 			if (i == 0) {
-				my_job_id = alloc->job_id;
+				my_job_id = alloc->step_id.job_id;
 				info("Granted job allocation %u", my_job_id);
 			}
 			log_flag(HETJOB, "Hetjob ID %u+%u (%u) on nodes %s",
-			         my_job_id, i, alloc->job_id, alloc->node_list);
+			         my_job_id, i, alloc->step_id.job_id,
+				 alloc->node_list);
 			i++;
 			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
 				list_iterator_destroy(iter_resp);
@@ -417,7 +418,7 @@ int main(int argc, char **argv)
 		list_iterator_destroy(iter_resp);
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
-		my_job_id = alloc->job_id;
+		my_job_id = alloc->step_id.job_id;
 
 		print_multi_line_string(alloc->job_submit_user_msg,
 					-1, LOG_LEVEL_INFO);
@@ -439,7 +440,7 @@ int main(int argc, char **argv)
 		exit(0);
 	if (allocation_interrupted) {
 		if (alloc)
-			my_job_id = alloc->job_id;
+			my_job_id = alloc->step_id.job_id;
 		/* salloc process received a signal after
 		 * slurm_allocate_resources_blocking returned with the
 		 * allocation, but before the new signal handlers were
@@ -1037,7 +1038,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 		i += 1;
 
-		rc = slurm_job_node_ready(alloc->job_id);
+		rc = slurm_job_node_ready(alloc->step_id.job_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 		if (allocation_interrupted || allocation_revoked)
@@ -1060,7 +1061,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	} else if (!allocation_interrupted) {
 		if (job_killed || allocation_revoked) {
 			error("Job allocation %u has been revoked",
-			      alloc->job_id);
+			      alloc->step_id.job_id);
 			allocation_interrupted = true;
 		} else
 			error("Nodes %s are still not ready", alloc->node_list);

@@ -714,14 +714,16 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 	} else if (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION) {
 		resource_allocation_response_msg_t *msg =
 			*agent_ptr->msg_args_pptr;
-		step_id.job_id = msg->job_id;
+		step_id.job_id = msg->step_id.job_id;
+		step_id.sluid = msg->step_id.sluid;
 	} else if (agent_ptr->msg_type == RESPONSE_HET_JOB_ALLOCATION) {
 		list_t *het_alloc_list = *agent_ptr->msg_args_pptr;
 		resource_allocation_response_msg_t *msg;
 		if (!het_alloc_list || (list_count(het_alloc_list) == 0))
 			return;
 		msg = list_peek(het_alloc_list);
-		step_id.job_id  = msg->job_id;
+		step_id.job_id = msg->step_id.job_id;
+		step_id.sluid = msg->step_id.sluid;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)		||
 		   (agent_ptr->msg_type == SRUN_REQUEST_SUSPEND)	||
 		   (agent_ptr->msg_type == SRUN_STEP_MISSING)		||
@@ -1116,7 +1118,7 @@ static void *_thread_per_group_rpc(void *args)
 			 * behind on the allocated nodes. */
 			resource_allocation_response_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
-			job_id = msg_ptr->job_id;
+			job_id = msg_ptr->step_id.job_id;
 			info("Killing interactive JobId=%u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
@@ -1136,7 +1138,7 @@ static void *_thread_per_group_rpc(void *args)
 			    (list_count(het_alloc_list) == 0))
 				continue;
 			msg_ptr = list_peek(het_alloc_list);
-			job_id = msg_ptr->job_id;
+			job_id = msg_ptr->step_id.job_id;
 			info("Killing interactive JobId=%u: %s",
 			     job_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;

@@ -777,7 +777,10 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 
 	alloc_msg->error_code     = error_code;
 	alloc_msg->job_submit_user_msg = xstrdup(job_submit_user_msg);
-	alloc_msg->job_id         = job_ptr->job_id;
+	alloc_msg->step_id.job_id = job_ptr->job_id;
+	alloc_msg->step_id.sluid = job_ptr->db_index;
+	alloc_msg->step_id.step_id = NO_VAL;
+	alloc_msg->step_id.step_het_comp = NO_VAL;
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
 	if (job_ptr->part_ptr)
@@ -1907,21 +1910,21 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 
 	/* init */
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_COMPLETE_JOB_ALLOCATION for JobId=%u rc=%d",
-	       comp_msg->job_id, comp_msg->job_rc);
+	debug3("Processing RPC details: REQUEST_COMPLETE_JOB_ALLOCATION for %pI rc=%d",
+	       &comp_msg->step_id, comp_msg->job_rc);
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(comp_msg->job_id);
+	job_ptr = find_job_record(comp_msg->step_id.job_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
-	error_code = job_complete(comp_msg->job_id, msg->auth_uid,
+	error_code = job_complete(comp_msg->step_id.job_id, msg->auth_uid,
 				  false, false, comp_msg->job_rc);
 	if (error_code) {
 		if (error_code == ESLURM_INVALID_JOB_ID) {
-			info("%s: JobId=%d error %s",
-			     __func__, comp_msg->job_id,
+			info("%s: %pI error %s",
+			     __func__, &comp_msg->step_id,
 			     slurm_strerror(error_code));
 		} else {
 			info("%s: %pJ error %s",
@@ -2002,12 +2005,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 
 	/* init */
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_COMPLETE_BATCH_SCRIPT for JobId=%u",
-	       comp_msg->job_id);
+	debug3("Processing RPC details: REQUEST_COMPLETE_BATCH_SCRIPT for %pI",
+	       &comp_msg->step_id);
 
 	if (!validate_slurm_user(msg->auth_uid)) {
-		error("A non superuser %u tried to complete batch JobId=%u",
-		      msg->auth_uid, comp_msg->job_id);
+		error("A non superuser %u tried to complete batch %pI",
+		      msg->auth_uid, &comp_msg->step_id);
 		/* Only the slurmstepd can complete a batch script */
 		END_TIMER2(__func__);
 		return;
@@ -2018,7 +2021,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	job_ptr = find_job_record(comp_msg->job_id);
+	job_ptr = find_job_record(comp_msg->step_id.job_id);
 
 	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
 	    xstrcmp(job_ptr->batch_host, comp_msg->node_name)) {
@@ -2026,9 +2029,9 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		 * failing, but the slurmstepd continuing to run. Then the
 		 * batch job is requeued and started on a different node.
 		 * The end result is one batch complete RPC from each node. */
-		error("Batch completion for JobId=%u sent from wrong node (%s rather than %s). Was the job requeued due to node failure?",
-		      comp_msg->job_id,
-		      comp_msg->node_name, job_ptr->batch_host);
+		error("Batch completion for %pI sent from wrong node (%s rather than %s). Was the job requeued due to node failure?",
+		      &comp_msg->step_id, comp_msg->node_name,
+		      job_ptr->batch_host);
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 			unlock_slurmctld(job_write_lock);
 			_throttle_fini(&active_rpc_cnt);
@@ -2091,8 +2094,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 	    (comp_msg->slurm_rc == ESLURM_ALREADY_DONE) ||
 	    (comp_msg->slurm_rc == ESLURMD_CREDENTIAL_REVOKED)) {
 		/* race condition on job termination, not a real error */
-		info("slurmd error running JobId=%u from Node(s)=%s: %s",
-		     comp_msg->job_id, nodes,
+		info("slurmd error running %pI from Node(s)=%s: %s",
+		     &comp_msg->step_id, nodes,
 		     slurm_strerror(comp_msg->slurm_rc));
 		comp_msg->slurm_rc = SLURM_SUCCESS;
 	} else if ((comp_msg->slurm_rc == SLURM_COMMUNICATIONS_SEND_ERROR) ||
@@ -2100,12 +2103,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		   (comp_msg->slurm_rc == ESLURMD_INVALID_ACCT_FREQ) ||
 		   (comp_msg->slurm_rc == ESPANK_JOB_FAILURE)) {
 		/* Handle non-fatal errors here. All others drain the node. */
-		error("Slurmd error running JobId=%u on Node(s)=%s: %s",
-		      comp_msg->job_id, nodes,
+		error("Slurmd error running %pI on Node(s)=%s: %s",
+		      &comp_msg->step_id, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 	} else if (comp_msg->slurm_rc != SLURM_SUCCESS) {
-		error("slurmd error running JobId=%u on Node(s)=%s: %s",
-		      comp_msg->job_id, nodes,
+		error("slurmd error running %pI on Node(s)=%s: %s",
+		      &comp_msg->step_id, nodes,
 		      slurm_strerror(comp_msg->slurm_rc));
 		slurmctld_diag_stats.jobs_failed++;
 		if (error_code == SLURM_SUCCESS) {
@@ -2132,8 +2135,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		job_requeue = true;
 
 	/* Mark job allocation complete */
-	i = job_complete(comp_msg->job_id, msg->auth_uid, job_requeue, false,
-			 comp_msg->job_rc);
+	i = job_complete(comp_msg->step_id.job_id, msg->auth_uid, job_requeue,
+			 false, comp_msg->job_rc);
 	error_code = MAX(error_code, i);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
@@ -2146,11 +2149,12 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 
 	/* return result */
 	if (error_code) {
-		debug2("%s JobId=%u: %s ",
-		       __func__, comp_msg->job_id, slurm_strerror(error_code));
+		debug2("%s: %pI: %s ",
+		       __func__, &comp_msg->step_id,
+		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s JobId=%u %s", __func__, comp_msg->job_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);

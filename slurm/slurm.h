@@ -2591,7 +2591,6 @@ typedef struct delete_partition_msg {
 
 typedef struct resource_allocation_response_msg {
 	char *account;          /* allocation account */
-	uint32_t job_id;	/* assigned job id */
 	char *batch_host;	/* host executing batch script */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
@@ -2620,6 +2619,7 @@ typedef struct resource_allocation_response_msg {
 	char *qos;               /* allocation qos */
 	char *resv_name;         /* allocation reservation */
 	uint16_t segment_size; /* requested segment size */
+	slurm_step_id_t step_id;
 	char *tres_per_node; /* comma delimited list of TRES=# values */
 	char *tres_per_task; /* comma delimited list of TRES=# values */
 	uid_t uid; /* resolved user id of job */

@@ -1005,10 +1005,10 @@ extern int env_array_for_job(char ***dest,
 
 	if (het_job_offset < 1) {
 		env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u",
-					alloc->job_id);
+					alloc->step_id.job_id);
 	}
-	env_array_overwrite_het_fmt(dest, "SLURM_JOB_ID", het_job_offset,
-				    "%u", alloc->job_id);
+	env_array_overwrite_het_fmt(dest, "SLURM_JOB_ID", het_job_offset, "%u",
+				    alloc->step_id.job_id);
 	env_array_overwrite_het_fmt(dest, "SLURM_JOB_NAME", het_job_offset,
 				    "%s", desc->name);
 	env_array_overwrite_het_fmt(dest, "SLURM_JOB_NUM_NODES", het_job_offset,
@@ -1055,7 +1055,7 @@ extern int env_array_for_job(char ***dest,
 
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_het_fmt(dest, "SLURM_JOBID", het_job_offset, "%u",
-				    alloc->job_id);
+				    alloc->step_id.job_id);
 	env_array_overwrite_het_fmt(dest, "SLURM_NNODES", het_job_offset, "%u",
 				    step_layout_req.num_hosts);
 	env_array_overwrite_het_fmt(dest, "SLURM_NODELIST", het_job_offset, "%s",

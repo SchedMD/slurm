@@ -552,14 +552,14 @@ static void _alloc_job(void)
 		char *group = gid_to_string(alloc->gid);
 
 		debug("allocated jobId=%u user[%u]=%s group[%u]=%s",
-		      alloc->job_id, alloc->uid, user, alloc->uid, group);
+		      alloc->step_id.job_id, alloc->uid, user, alloc->uid, group);
 
 		xfree(user);
 		xfree(group);
 	}
 
 	write_lock_state();
-	state.jobid = alloc->job_id;
+	state.jobid = alloc->step_id.job_id;
 
 	/* take job env (if any) for srun calls later */
 	SWAP(state.job_env, alloc->environment);

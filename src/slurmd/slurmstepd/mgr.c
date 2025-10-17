@@ -2926,7 +2926,6 @@ static int _send_complete_batch_script_msg(int err, int status)
 	complete_batch_script_msg_t req;
 
 	memset(&req, 0, sizeof(req));
-	req.job_id	= step->step_id.job_id;
 	if (step->oom_error)
 		req.job_rc = SIG_OOM;
 	else
@@ -2934,6 +2933,7 @@ static int _send_complete_batch_script_msg(int err, int status)
 	req.jobacct	= step->jobacct;
 	req.node_name	= step->node_name;
 	req.slurm_rc	= err;
+	req.step_id = step->step_id;
 	req.user_id	= (uint32_t) step->uid;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type= REQUEST_COMPLETE_BATCH_SCRIPT;

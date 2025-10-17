@@ -282,7 +282,7 @@ extern srun_job_t *job_step_create_allocation(
 			slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
-	uint32_t job_id = resp->job_id;
+	uint32_t job_id = resp->step_id.job_id;
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
 	hostlist_t *hl = NULL;
@@ -293,6 +293,7 @@ extern srun_job_t *job_step_create_allocation(
 	xassert(srun_opt);
 
 	ai->step_id.job_id          = job_id;
+	ai->step_id.sluid = resp->step_id.sluid;
 	ai->step_id.step_id         = NO_VAL;
 	ai->step_id.step_het_comp = NO_VAL;
 	if (srun_opt->alloc_nodelist)
@@ -501,7 +502,7 @@ extern srun_job_t *job_create_allocation(
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->partition      = resp->partition;
-	i->step_id.job_id          = resp->job_id;
+	i->step_id.job_id = resp->step_id.job_id;
 	i->step_id.step_id         = NO_VAL;
 	i->step_id.step_het_comp = NO_VAL;
 	i->num_cpu_groups = resp->num_cpu_groups;
@@ -1284,7 +1285,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 		while ((resp = list_next(resp_iter))) {
 			bool merge_nodelist = true;
 			if (my_job_id == 0) {
-				my_job_id = resp->job_id;
+				my_job_id = resp->step_id.job_id;
 				if (resp->working_cluster_rec)
 					slurm_setup_remote_working_cluster(resp);
 			}
@@ -1449,7 +1450,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 				slurm_opt_t *opt_local;
 
 				if (my_job_id == 0) {
-					my_job_id = resp->job_id;
+					my_job_id = resp->step_id.job_id;
 					*got_alloc = true;
 				}
 				opt_local = list_next(opt_iter);
@@ -1486,11 +1487,11 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			if (!(resp = allocate_nodes(&opt)))
 				exit(error_exit);
 			*got_alloc = true;
-			my_job_id = resp->job_id;
+			my_job_id = resp->step_id.job_id;
 			_print_job_information(resp);
 			_set_env_vars(resp, -1);
 			if (_validate_relative(resp, &opt)) {
-				slurm_complete_job(resp->job_id, 1);
+				slurm_complete_job(resp->step_id.job_id, 1);
 				exit(error_exit);
 			}
 			job = job_create_allocation(resp, &opt);
@@ -1832,7 +1833,7 @@ static void _print_job_information(resource_allocation_response_msg_t *resp)
 		return;
 
 	xstrfmtcat(str, "jobid %u: nodes(%u):`%s', cpu counts: ",
-		   resp->job_id, resp->node_cnt, resp->node_list);
+		   resp->step_id.job_id, resp->node_cnt, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
 		xstrfmtcat(str, "%s%u(x%u)",
@@ -2025,7 +2026,7 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 
 	key = _build_key("SLURM_JOB_ID", het_job_offset);
 	if (!getenv(key) &&
-	    (setenvf(NULL, key, "%u", resp->job_id) < 0)) {
+	    (setenvf(NULL, key, "%u", resp->step_id.job_id) < 0)) {
 		error("unable to set %s in environment", key);
 	}
 	xfree(key);
