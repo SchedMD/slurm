@@ -82,6 +82,7 @@ def admin_level(setup):
         fatal=True,
     )
     yield
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {local_cluster_name}",
         user=atf.properties["slurm-user"],
@@ -125,6 +126,7 @@ def create_users(create_accounts):
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} account={account_name}",
         user=atf.properties["slurm-user"],
@@ -142,6 +144,7 @@ def create_coords(create_users):
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {coord_name} cluster={local_cluster_name} account={account2_name}",
         user=atf.properties["slurm-user"],
@@ -164,6 +167,7 @@ def create_wckeys():
 
     yield
 
+    atf.cancel_all_jobs()
     atf.run_command(
         f"sacctmgr -i delete user {user_name} cluster={local_cluster_name} wckey={wckey_name}",
         user=atf.properties["slurm-user"],
