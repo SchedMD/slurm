@@ -9679,6 +9679,13 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 	}
 
+	if (msg->cred) {
+		slurm_cred_arg_t *cred_arg = NULL;
+		cred_arg = slurm_cred_get_args(msg->cred);
+		msg->step_id = cred_arg->step_id;
+		slurm_cred_unlock_args(msg->cred);
+	}
+
 	smsg->data = msg;
 	return SLURM_SUCCESS;
 
