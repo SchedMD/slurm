@@ -965,6 +965,9 @@ typedef struct batch_job_launch_msg {
 	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	bool oom_kill_step;
+
+	/* DO NOT PACK. Extracted from the cred automatically. */
+	slurm_step_id_t step_id;
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
