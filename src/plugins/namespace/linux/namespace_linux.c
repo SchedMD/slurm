@@ -1100,3 +1100,9 @@ rwfail:
 	error("%s: failed", __func__);
 	return SLURM_ERROR;
 }
+
+extern bool namespace_p_can_bpf(void)
+{
+	//TODO this is just a placeholder, do the actual check.
+	return false;
+}

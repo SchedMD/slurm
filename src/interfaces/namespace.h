@@ -84,4 +84,7 @@ extern int namespace_g_send_stepd(int fd);
 /* Receive namespace config from slurmd on the provided file descriptor */
 extern int namespace_g_recv_stepd(int fd);
 
+/* Checks whether bpf syscalls can be done from the namespace */
+extern bool namespace_g_can_bpf(void);
+
 #endif

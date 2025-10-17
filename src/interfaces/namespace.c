@@ -56,6 +56,7 @@ typedef struct namespace_ops {
 	int (*namespace_p_stepd_delete)(slurm_step_id_t *step_id);
 	int (*namespace_p_send_stepd)(int fd);
 	int (*namespace_p_recv_stepd)(int fd);
+	bool (*namespace_p_can_bpf)(void);
 } namespace_ops_t;
 
 /*
@@ -69,6 +70,7 @@ static const char *syms[] = {
 	"namespace_p_stepd_delete",
 	"namespace_p_send_stepd",
 	"namespace_p_recv_stepd",
+	"namespace_p_can_bpf",
 };
 
 static namespace_ops_t *ops = NULL;
@@ -270,6 +272,19 @@ extern int namespace_g_recv_stepd(int fd)
 
 	for (i = 0; (i < g_namespace_context_num) && (rc == SLURM_SUCCESS); i++)
 		rc = (*(ops[i].namespace_p_recv_stepd))(fd);
+
+	return rc;
+}
+
+extern bool namespace_g_can_bpf(void)
+{
+	int i;
+	bool rc = true;
+
+	xassert(g_namespace_context_num >= 0);
+
+	for (i = 0; (i < g_namespace_context_num) && rc; i++)
+		rc = (*(ops[i].namespace_p_can_bpf))();
 
 	return rc;
 }
