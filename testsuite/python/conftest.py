@@ -84,27 +84,29 @@ def color_log_level(level: int, **color_kwargs):
     for handler in logging.getLogger().handlers:
         if isinstance(handler, _pytest.logging.LogCaptureHandler):
             formatter = handler.formatter
-            if match := formatter.LEVELNAME_FMT_REGEX.search(formatter._fmt):
-                levelname_fmt = match.group()
-                formatted_levelname = levelname_fmt % {
-                    "levelname": logging.getLevelName(level)
-                }
+            # Avoid errors if --color=no is used:
+            if hasattr(formatter, "LEVELNAME_FMT_REGEX"):
+                if match := formatter.LEVELNAME_FMT_REGEX.search(formatter._fmt):
+                    levelname_fmt = match.group()
+                    formatted_levelname = levelname_fmt % {
+                        "levelname": logging.getLevelName(level)
+                    }
 
-                esc = []
-                for option in color_kwargs:
-                    esc.append(_esctable[option])
+                    esc = []
+                    for option in color_kwargs:
+                        esc.append(_esctable[option])
 
-                colorized_formatted_levelname = (
-                    "".join(["\x1b[%sm" % cod for cod in esc])
-                    + formatted_levelname
-                    + "\x1b[0m"
-                )
-
-                formatter._level_to_fmt_mapping[level] = (
-                    formatter.LEVELNAME_FMT_REGEX.sub(
-                        colorized_formatted_levelname, formatter._fmt
+                    colorized_formatted_levelname = (
+                        "".join(["\x1b[%sm" % cod for cod in esc])
+                        + formatted_levelname
+                        + "\x1b[0m"
                     )
-                )
+
+                    formatter._level_to_fmt_mapping[level] = (
+                        formatter.LEVELNAME_FMT_REGEX.sub(
+                            colorized_formatted_levelname, formatter._fmt
+                        )
+                    )
 
 
 @pytest.fixture(scope="session", autouse=True)
