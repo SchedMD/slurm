@@ -3311,6 +3311,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	job_resrcs_ptr = job_ptr->job_resrcs;
 	setup_cred_arg(&cred_arg, job_ptr);
 	cred_arg.step_id.job_id = job_ptr->job_id;
+	cred_arg.step_id.sluid = job_ptr->db_index;
 	cred_arg.step_id.step_id = SLURM_EXTERN_CONT;
 	cred_arg.step_id.step_het_comp = NO_VAL;
 	if (job_resrcs_ptr->memory_allocated) {
