@@ -888,6 +888,9 @@ typedef struct prolog_launch_msg {
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 
+	/* DO NOT PACK. Extracted from the cred automatically. */
+	slurm_step_id_t step_id;
+
 	/* To send to stepmgr */
 	job_record_t *job_ptr;
 	buf_t *job_ptr_buf;
