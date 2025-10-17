@@ -840,3 +840,43 @@ extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tcxt)
 {
 	return 0;
 }
+
+extern void topology_p_get_topology_str(node_record_t *node_ptr,
+					char **topology_str_ptr,
+					topology_ctx_t *tctx)
+{
+	tree_context_t *ctx = tctx->plugin_ctx;
+	int idx = -1;
+
+	for (int i = 0; i < ctx->switch_count; i++) {
+		if (SWITCH_NO_PARENT != ctx->switch_table[i].parent)
+			continue;
+
+		if (bit_test(ctx->switch_table[i].node_bitmap,
+			     node_ptr->index)) {
+			idx = i;
+			break;
+		}
+	}
+
+	if (idx < 0)
+		return;
+
+	xstrfmtcat(*topology_str_ptr, "%s%s:%s", *topology_str_ptr ? "," : "",
+		   tctx->name, ctx->switch_table[idx].name);
+	while (ctx->switch_table[idx].num_desc_switches) {
+		int num_desc = ctx->switch_table[idx].num_desc_switches;
+		for (int i = 0; i < num_desc; i++) {
+			int child = ctx->switch_table[idx].switch_desc_index[i];
+			if (bit_test(ctx->switch_table[child].node_bitmap,
+				     node_ptr->index)) {
+				xstrfmtcat(*topology_str_ptr, ":%s",
+					   ctx->switch_table[child].name);
+				idx = child;
+				break;
+			}
+		}
+	}
+
+	return;
+}

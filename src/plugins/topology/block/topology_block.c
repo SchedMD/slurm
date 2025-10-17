@@ -717,3 +717,21 @@ extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tctx)
 
 	return frag;
 }
+
+extern void topology_p_get_topology_str(node_record_t *node_ptr,
+					char **topology_str_ptr,
+					topology_ctx_t *tctx)
+{
+	block_context_t *ctx = tctx->plugin_ctx;
+
+	for (int i = 0; i < ctx->block_count; i++) {
+		if (bit_test(ctx->block_record_table[i].node_bitmap,
+			     node_ptr->index)) {
+			xstrfmtcat(*topology_str_ptr, "%s%s:%s",
+				   *topology_str_ptr ? "," : "", tctx->name,
+				   ctx->block_record_table[i].name);
+			break;
+		}
+	}
+	return;
+}

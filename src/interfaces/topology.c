@@ -89,6 +89,8 @@ typedef struct slurm_topo_ops {
 	int (*jobinfo_get)(topology_jobinfo_type_t type, void *topo_jobinfo,
 			   void *data);
 	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
+	void (*get_topology_str)(node_record_t *node_ptr,
+				 char **topology_str_ptr, topology_ctx_t *tctx);
 } slurm_topo_ops_t;
 
 /*
@@ -117,6 +119,7 @@ static const char *syms[] = {
 	"topology_p_jobinfo_unpack",
 	"topology_p_jobinfo_get",
 	"topology_p_get_fragmentation",
+	"topology_p_get_topology_str",
 };
 
 static slurm_topo_ops_t *ops = NULL;
@@ -491,6 +494,17 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 	xfree(topology_str);
 
 	return rc;
+}
+
+extern char *topology_g_get_topology_str(node_record_t *node_ptr)
+{
+	char *topology_str = NULL;
+
+	for (int i = 0; i < tctx_num; i++) {
+		(*(ops[tctx[i].idx].get_topology_str))(node_ptr, &topology_str,
+						       &(tctx[i]));
+	}
+	return topology_str;
 }
 
 /*
