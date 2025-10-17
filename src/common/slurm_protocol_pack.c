@@ -10924,6 +10924,13 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->tres_freq, buffer);
 	}
 
+	if (msg->cred) {
+		slurm_cred_arg_t *cred_arg = NULL;
+		cred_arg = slurm_cred_get_args(msg->cred);
+		msg->step_id = cred_arg->step_id;
+		slurm_cred_unlock_args(msg->cred);
+	}
+
 	smsg->data = msg;
 	return SLURM_SUCCESS;
 
