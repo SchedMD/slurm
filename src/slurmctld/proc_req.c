@@ -778,6 +778,9 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->error_code     = error_code;
 	alloc_msg->job_submit_user_msg = xstrdup(job_submit_user_msg);
 	alloc_msg->step_id.job_id = job_ptr->job_id;
+	alloc_msg->step_id.sluid = job_ptr->db_index;
+	alloc_msg->step_id.step_id = NO_VAL;
+	alloc_msg->step_id.step_het_comp = NO_VAL;
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
 	if (job_ptr->part_ptr)

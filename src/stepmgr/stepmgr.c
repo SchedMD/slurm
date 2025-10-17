@@ -5409,6 +5409,9 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	job_info_resp_msg->account        = xstrdup(job_ptr->account);
 	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
 	job_info_resp_msg->step_id.job_id = job_ptr->job_id;
+	job_info_resp_msg->step_id.sluid = job_ptr->db_index;
+	job_info_resp_msg->step_id.step_het_comp = NO_VAL;
+	job_info_resp_msg->step_id.step_id = NO_VAL;
 	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
 	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);
 	if (job_ptr->part_ptr)
