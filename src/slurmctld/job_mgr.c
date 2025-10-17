@@ -398,6 +398,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
 static void _purge_missing_jobs(int node_inx, time_t now);
+static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
+			       char *node_name);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t *size, job_record_t *job_ptr);
 static void _remove_job_hash(job_record_t *job_ptr, job_hash_type_t type);
@@ -15719,7 +15721,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 	}
 
 	/*
-	 * Set protocol_version now because abort_job_on_node() needs to know
+	 * Set protocol_version now because _abort_job_on_node() needs to know
 	 * the node's correct version. validate_node_specs() sets it but that's
 	 * too late.
 	 */
@@ -15761,8 +15763,8 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			error("Orphan %ps reported on node %s",
 			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			abort_job_on_node(reg_msg->step_id[i].job_id,
-					  job_ptr, node_ptr->name);
+			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
+					   node_ptr->name);
 		}
 
 		else if (IS_JOB_RUNNING(job_ptr) ||
@@ -15793,9 +15795,8 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 				info("%s: job nodes %s count %d inx %d",
 				     __func__, job_ptr->nodes,
 				     job_ptr->node_cnt, node_ptr->index);
-				abort_job_on_node(reg_msg->step_id[i].job_id,
-						  job_ptr,
-						  node_ptr->name);
+				_abort_job_on_node(reg_msg->step_id[i].job_id,
+						   job_ptr, node_ptr->name);
 			}
 		}
 
@@ -15815,8 +15816,8 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			      job_ptr,
 			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			abort_job_on_node(reg_msg->step_id[i].job_id,
-					  job_ptr, node_ptr->name);
+			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
+					   node_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
 			/* Race condition */
@@ -15982,7 +15983,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 }
 
 /*
- * abort_job_on_node - Kill the specific job_id on a specific node,
+ * _abort_job_on_node - Kill the specific job_id on a specific node,
  *	the request is not processed immediately, but queued.
  *	This is to prevent a flood of pthreads if slurmctld restarts
  *	without saved state and slurmd daemons register with a
@@ -15995,8 +15996,8 @@ static void _purge_missing_jobs(int node_inx, time_t now)
  *		slurmctld)
  * IN node_name - name of the node on which the job resides
  */
-extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
-			      char *node_name)
+static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
+			       char *node_name)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
