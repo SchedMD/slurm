@@ -803,6 +803,15 @@ done:
 	return rc;
 }
 
+static int _handle_sluid(int fd, uid_t uid, pid_t remote_pid)
+{
+	safe_write(fd, &step->step_id.sluid, sizeof(sluid_t));
+
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
 static int _handle_state(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->state, sizeof(slurmstepd_state_t));
@@ -2245,6 +2254,10 @@ typedef struct {
 } slurmstepd_rpc_t;
 
 slurmstepd_rpc_t stepd_rpcs[] = {
+	{
+		.msg_type = REQUEST_SLUID,
+		.func = _handle_sluid,
+	},
 	{
 		.msg_type = REQUEST_SIGNAL_CONTAINER,
 		.from_job_owner = true,

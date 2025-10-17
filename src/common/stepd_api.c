@@ -260,6 +260,16 @@ fail1:
 	return fd;
 }
 
+extern sluid_t stepd_sluid(int fd, uint16_t protocol_version)
+{
+	int req = REQUEST_SLUID;
+	sluid_t sluid = 0;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_read(fd, &sluid, sizeof(sluid_t));
+rwfail:
+	return sluid;
+}
 
 /*
  * Retrieve a job step's current state.
