@@ -56,7 +56,7 @@
  * The cluster field is established by slurmdbd for each slurmctld.
  * This does limit a slurmdbd installation to 4093 distinct clusters.
  * - 0x000 is reserved to avoid collisions with db_index values.
- * - 0x001 is reserved for slurmdbd.
+ * - 0x001 is reserved for slurmdbd. Also used for --no-allocate.
  * - 0xfff is reserved for future use.
  *
  * The timestamp is milliseconds since the unix epoch. It is stored in the job

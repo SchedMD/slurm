@@ -52,7 +52,7 @@
 
 typedef enum {
 	REQUEST_CONNECT = 0,
-	REQUEST_STEP_DEFUNCT_1,
+	REQUEST_SLUID,
 	REQUEST_STEP_DEFUNCT_2,
 	REQUEST_STEP_DEFUNCT_3,
 	REQUEST_SIGNAL_CONTAINER,
@@ -154,6 +154,11 @@ int stepd_terminate(int fd, uint16_t protocol_version);
 extern int stepd_connect(const char *directory, const char *nodename,
 			 slurm_step_id_t *step_id,
 			 uint16_t *protocol_version);
+
+/*
+ * Returns SLUID for running step, or 0 on failure.
+ */
+extern sluid_t stepd_sluid(int fd, uint16_t protocol_version);
 
 /*
  * Retrieve a job step's current state.

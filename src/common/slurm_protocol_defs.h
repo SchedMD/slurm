@@ -888,6 +888,9 @@ typedef struct prolog_launch_msg {
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
 
+	/* DO NOT PACK. Extracted from the cred automatically. */
+	slurm_step_id_t step_id;
+
 	/* To send to stepmgr */
 	job_record_t *job_ptr;
 	buf_t *job_ptr_buf;
@@ -962,6 +965,9 @@ typedef struct batch_job_launch_msg {
 	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	bool oom_kill_step;
+
+	/* DO NOT PACK. Extracted from the cred automatically. */
+	slurm_step_id_t step_id;
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {
@@ -1068,7 +1074,7 @@ typedef struct forward_data_msg {
 
 /* suspend_msg_t variant for internal slurm daemon communications */
 typedef struct suspend_int_msg {
-	uint32_t job_id;        /* slurm job_id */
+	slurm_step_id_t step_id;
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
 } suspend_int_msg_t;
 

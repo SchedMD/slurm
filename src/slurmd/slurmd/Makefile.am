@@ -31,6 +31,8 @@ SLURMD_SOURCES = \
 	get_mach_stat.h \
 	job_mem_limit.c \
 	job_mem_limit.h \
+	launch_state.c \
+	launch_state.h \
 	req.c \
 	req.h \
 	slurmd.c \
