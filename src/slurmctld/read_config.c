@@ -1268,8 +1268,10 @@ void _sync_jobs_to_conf(void)
 	part_record_t *part_ptr;
 	list_t *part_ptr_list = NULL;
 	bool job_fail = false;
+	bool part_missing = false;
 	time_t now = time(NULL);
 	bool gang_flag = false;
+	bool rebuild_part;
 
 	xassert(job_list);
 
@@ -1280,6 +1282,8 @@ void _sync_jobs_to_conf(void)
 	while ((job_ptr = list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_fail = false;
+		part_missing = false;
+		rebuild_part = false;
 
 		/*
 		 * This resets the req/exc node bitmaps, so even if the job is
@@ -1308,25 +1312,69 @@ void _sync_jobs_to_conf(void)
 		if (job_ptr->partition == NULL) {
 			error("No partition for %pJ", job_ptr);
 			part_ptr = NULL;
-			job_fail = true;
+			part_missing = true;
 		} else {
 			char *err_part = NULL;
+			bool first_part_valid;
+
 			get_part_list(job_ptr->partition, &part_ptr_list,
-				      &part_ptr, &err_part);
-			if (part_ptr == NULL) {
+				      &part_ptr, &err_part, &first_part_valid);
+
+			if ((part_ptr == NULL) && !IS_JOB_RUNNING(job_ptr) &&
+			    !IS_JOB_SUSPENDED(job_ptr)) {
+				/* No valid partitions were found */
 				error("Invalid partition (%s) for %pJ",
 				      err_part, job_ptr);
-				xfree(err_part);
-				job_fail = true;
-			}
-		}
-		job_ptr->part_ptr = part_ptr;
-		FREE_NULL_LIST(job_ptr->part_ptr_list);
-		if (part_ptr_list) {
-			job_ptr->part_ptr_list = part_ptr_list;
-			part_ptr_list = NULL;	/* clear for next job */
-		}
+				part_missing = true;
+			} else if ((IS_JOB_RUNNING(job_ptr) ||
+				    IS_JOB_SUSPENDED(job_ptr)) &&
+				   (!first_part_valid || (part_ptr == NULL))) {
+				char sep = ',';
+				char *sep_pos = xstrchr(err_part, sep);
+				if (sep_pos)
+					*sep_pos = '\0';
+				/*
+				 * We removed the primary partition for a
+				 * running or suspended job. We need to
+				 * terminate the job.
+				 */
+				error("Killing %pJ on defunct partition %s",
+				      job_ptr, err_part);
+				part_missing = true;
 
+				if (sep_pos)
+					*sep_pos = sep;
+			}
+
+			if (err_part)
+				rebuild_part = true;
+			xfree(err_part);
+		}
+		/*
+		 * If we are cancelling a job that lost the partition after a
+		 * reconfigure we don't need to do this.
+		 */
+		if (!part_missing) {
+			job_ptr->part_ptr = part_ptr;
+			FREE_NULL_LIST(job_ptr->part_ptr_list);
+			if (part_ptr_list) {
+				job_ptr->part_ptr_list = part_ptr_list;
+				part_ptr_list = NULL; /* clear for next job */
+			}
+			/*
+			 * Rebuild the partition string if it contains an
+			 * invalid partition.
+			 */
+			if (rebuild_part)
+				rebuild_job_part_list(job_ptr);
+		} else {
+			job_ptr->details->requeue = false;
+			job_state_unset_flag(job_ptr, JOB_REQUEUE);
+			job_fail = true;
+			job_ptr->part_ptr = NULL;
+			FREE_NULL_LIST(job_ptr->part_ptr_list);
+			FREE_NULL_LIST(part_ptr_list);
+		}
 		/*
 		 * If the job is finished there is no reason to do anything
 		 * below this.
@@ -1421,7 +1469,10 @@ void _sync_jobs_to_conf(void)
 							      job_ptr);
 				was_running = true;
 			}
-			job_ptr->state_reason = FAIL_DOWN_NODE;
+			if (part_missing)
+				job_ptr->state_reason = FAIL_DOWN_PARTITION;
+			else
+				job_ptr->state_reason = FAIL_DOWN_NODE;
 			xfree(job_ptr->state_desc);
 			job_ptr->exit_code = 1;
 			job_completion_logger(job_ptr, false);
