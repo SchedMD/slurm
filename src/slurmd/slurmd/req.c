@@ -1742,10 +1742,8 @@ static int _get_user_env(batch_job_launch_msg_t *req, char *user_name)
 /* The RPC currently contains a memory size limit, but we load the
  * value from the job credential to be certain it has not been
  * altered by the user */
-static void
-_set_batch_job_limits(slurm_msg_t *msg)
+static void _set_batch_job_limits(batch_job_launch_msg_t *req)
 {
-	batch_job_launch_msg_t *req = msg->data;
 	slurm_cred_arg_t *arg = slurm_cred_get_args(req->cred);
 
 	req->job_core_spec = arg->job_core_spec; /* Prevent user reset */
@@ -2261,7 +2259,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		rc = ESLURMD_SETUP_ENVIRONMENT_ERROR;
 		goto done;
 	}
-	_set_batch_job_limits(msg);
+	_set_batch_job_limits(msg->data);
 
 	/* Since job could have been killed while the prolog was
 	 * running (especially on BlueGene, which can take minutes
