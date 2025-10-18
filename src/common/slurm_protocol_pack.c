@@ -11390,14 +11390,11 @@ static void _pack_kill_jobs_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_kill_jobs_msg(kill_jobs_msg_t **msg_ptr, buf_t *buffer,
-				 uint16_t protocol_version)
+static int _unpack_kill_jobs_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	kill_jobs_msg_t *msg = xmalloc(sizeof(*msg));
-	xassert(msg_ptr);
-	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->account, buffer);
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpackstr(&msg->job_name, buffer);
@@ -11413,10 +11410,10 @@ static int _unpack_kill_jobs_msg(kill_jobs_msg_t **msg_ptr, buf_t *buffer,
 		safe_unpackstr(&msg->nodelist, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_kill_jobs_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14281,8 +14278,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_token_response_msg(msg, buffer);
 		break;
 	case REQUEST_KILL_JOBS:
-		rc = _unpack_kill_jobs_msg((kill_jobs_msg_t **) &msg->data,
-					   buffer, msg->protocol_version);
+		rc = _unpack_kill_jobs_msg(msg, buffer);
 		break;
 	case RESPONSE_KILL_JOBS:
 		rc = _unpack_kill_jobs_resp_msg(
