@@ -7893,22 +7893,10 @@ static void _pack_step_alloc_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_step_alloc_info_msg(step_alloc_info_msg_t **
-			    job_desc_buffer_ptr, buf_t *buffer,
-			    uint16_t protocol_version)
+static int _unpack_step_alloc_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	/* load the data values */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (slurm_unpack_selected_step(
-			    job_desc_buffer_ptr, protocol_version, buffer) !=
-		    SLURM_SUCCESS)
-			return SLURM_ERROR;
-	} else {
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
+	slurm_selected_step_t **msg = (slurm_selected_step_t **) &smsg->data;
+	return slurm_unpack_selected_step(msg, smsg->protocol_version, buffer);
 }
 
 static void _pack_sbcast_cred_no_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
@@ -14238,9 +14226,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_alloc_info_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
-		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
-						 (msg->data), buffer,
-						 msg->protocol_version);
+		rc = _unpack_step_alloc_info_msg(msg, buffer);
 		break;
 	case REQUEST_SBCAST_CRED_NO_JOB:
 		rc = _unpack_sbcast_cred_no_job_msg(
