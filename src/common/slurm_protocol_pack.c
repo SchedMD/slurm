@@ -11898,16 +11898,11 @@ static void _pack_slurmd_status(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_slurmd_status(slurmd_status_t **msg_ptr, buf_t *buffer,
-				 uint16_t protocol_version)
+static int _unpack_slurmd_status(slurm_msg_t *smsg, buf_t *buffer)
 {
-	slurmd_status_t *msg;
+	slurmd_status_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-
-	msg = xmalloc(sizeof(slurmd_status_t));
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&msg->booted, buffer);
 		safe_unpack_time(&msg->last_slurmctld_msg, buffer);
 
@@ -11928,12 +11923,11 @@ static int _unpack_slurmd_status(slurmd_status_t **msg_ptr, buf_t *buffer,
 		safe_unpackstr(&msg->version, buffer);
 	}
 
-	*msg_ptr = msg;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_slurmd_status(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14301,9 +14295,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_trigger_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURMD_STATUS:
-		rc = _unpack_slurmd_status((slurmd_status_t **)
-					   &msg->data, buffer,
-					   msg->protocol_version);
+		rc = _unpack_slurmd_status(msg, buffer);
 		break;
 	case REQUEST_JOB_NOTIFY:
 		rc =  _unpack_job_notify((job_notify_msg_t **)
