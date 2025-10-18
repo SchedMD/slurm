@@ -11030,16 +11030,26 @@ static void _pack_job_id_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_id_response_msg_t *msg = smsg->data;
 
-	pack32(msg->job_id, buffer);
-	pack32(msg->return_code, buffer);
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->return_code, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->return_code, buffer);
+	}
 }
 
 static int _unpack_job_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_id_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->return_code, buffer);
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+	}
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
