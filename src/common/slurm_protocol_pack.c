@@ -9258,21 +9258,17 @@ static void _pack_shutdown_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	pack16(msg->options, buffer);
 }
 
-static int
-_unpack_shutdown_msg(shutdown_msg_t ** msg_ptr, buf_t *buffer,
-		     uint16_t protocol_version)
+static int _unpack_shutdown_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	shutdown_msg_t *msg;
-
-	msg = xmalloc(sizeof(shutdown_msg_t));
-	*msg_ptr = msg;
+	shutdown_msg_t *msg = xmalloc(sizeof(*msg));
 
 	safe_unpack16(&msg->options, buffer);
+
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_shutdown_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14246,9 +14242,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_reboot_msg(msg, buffer);
 		break;
 	case REQUEST_SHUTDOWN:
-		rc = _unpack_shutdown_msg((shutdown_msg_t **) & (msg->data),
-					  buffer,
-					  msg->protocol_version);
+		rc = _unpack_shutdown_msg(msg, buffer);
 		break;
 	case RESPONSE_SUBMIT_BATCH_JOB:
 		rc = _unpack_submit_response_msg(msg, buffer);
