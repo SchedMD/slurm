@@ -1446,160 +1446,157 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
 	char *tmp_char = NULL;
-	resource_allocation_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	resource_allocation_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->account, buffer);
-		safe_unpackstr(&tmp_ptr->batch_host, buffer);
-		safe_unpackstr_array(&tmp_ptr->environment,
-				     &tmp_ptr->env_size, buffer);
-		safe_unpack32(&tmp_ptr->error_code, buffer);
-		safe_unpack32(&tmp_ptr->gid, buffer);
-		safe_unpackstr(&tmp_ptr->group_name, buffer);
-		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
-		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->batch_host, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
+		safe_unpack32(&msg->error_code, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpackstr(&msg->group_name, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
 
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_socket, buffer);
-		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
-		if (tmp_ptr->num_cpu_groups > 0) {
-			safe_unpack16_array(&tmp_ptr->cpus_per_node,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack32(&msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups > 0) {
+			safe_unpack16_array(&msg->cpus_per_node, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
-			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			safe_unpack32_array(&msg->cpu_count_reps, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
 		} else {
-			tmp_ptr->cpus_per_node = NULL;
-			tmp_ptr->cpu_count_reps = NULL;
+			msg->cpus_per_node = NULL;
+			msg->cpu_count_reps = NULL;
 		}
-		safe_unpackstr(&tmp_ptr->partition, buffer);
-		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
-		safe_unpackstr(&tmp_ptr->qos, buffer);
-		safe_unpackstr(&tmp_ptr->resv_name, buffer);
-		safe_unpack16(&tmp_ptr->segment_size, buffer);
-		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->resv_name, buffer);
+		safe_unpack16(&msg->segment_size, buffer);
+		if (unpack_step_id_members(&msg->step_id, buffer,
 					   smsg->protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
-		safe_unpack32(&tmp_ptr->uid, buffer);
-		safe_unpackstr(&tmp_ptr->user_name, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
-				(void **)&tmp_ptr->working_cluster_rec,
+				(void **) &msg->working_cluster_rec,
 				smsg->protocol_version, buffer);
 		}
 	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->account, buffer);
-		safe_unpackstr(&tmp_ptr->batch_host, buffer);
-		safe_unpackstr_array(&tmp_ptr->environment,
-				     &tmp_ptr->env_size, buffer);
-		safe_unpack32(&tmp_ptr->error_code, buffer);
-		safe_unpack32(&tmp_ptr->gid, buffer);
-		safe_unpackstr(&tmp_ptr->group_name, buffer);
-		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
-		safe_unpack32(&tmp_ptr->step_id.job_id, buffer);
-		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->batch_host, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
+		safe_unpack32(&msg->error_code, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpackstr(&msg->group_name, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
 
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_socket, buffer);
-		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
-		if (tmp_ptr->num_cpu_groups > 0) {
-			safe_unpack16_array(&tmp_ptr->cpus_per_node,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack32(&msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups > 0) {
+			safe_unpack16_array(&msg->cpus_per_node, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
-			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			safe_unpack32_array(&msg->cpu_count_reps, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
 		} else {
-			tmp_ptr->cpus_per_node = NULL;
-			tmp_ptr->cpu_count_reps = NULL;
+			msg->cpus_per_node = NULL;
+			msg->cpu_count_reps = NULL;
 		}
-		safe_unpackstr(&tmp_ptr->partition, buffer);
-		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
-		safe_unpackstr(&tmp_ptr->qos, buffer);
-		safe_unpackstr(&tmp_ptr->resv_name, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
-		safe_unpack32(&tmp_ptr->uid, buffer);
-		safe_unpackstr(&tmp_ptr->user_name, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->resv_name, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
-				(void **)&tmp_ptr->working_cluster_rec,
+				(void **) &msg->working_cluster_rec,
 				smsg->protocol_version, buffer);
 		}
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->account, buffer);
+		safe_unpackstr(&msg->account, buffer);
 		safe_unpackstr(&tmp_char, buffer);
 		xfree(tmp_char);
-		safe_unpackstr(&tmp_ptr->batch_host, buffer);
-		safe_unpackstr_array(&tmp_ptr->environment,
-				     &tmp_ptr->env_size, buffer);
-		safe_unpack32(&tmp_ptr->error_code, buffer);
-		safe_unpack32(&tmp_ptr->gid, buffer);
-		safe_unpackstr(&tmp_ptr->group_name, buffer);
-		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
-		safe_unpack32(&tmp_ptr->step_id.job_id, buffer);
-		safe_unpack32(&tmp_ptr->node_cnt, buffer);
+		safe_unpackstr(&msg->batch_host, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
+		safe_unpack32(&msg->error_code, buffer);
+		safe_unpack32(&msg->gid, buffer);
+		safe_unpackstr(&msg->group_name, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
 
 		safe_unpack8(&uint8_tmp, buffer);
 
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_socket, buffer);
-		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
-		if (tmp_ptr->num_cpu_groups > 0) {
-			safe_unpack16_array(&tmp_ptr->cpus_per_node,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack32(&msg->num_cpu_groups, buffer);
+		if (msg->num_cpu_groups > 0) {
+			safe_unpack16_array(&msg->cpus_per_node, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
-			safe_unpack32_array(&tmp_ptr->cpu_count_reps,
-					    &uint32_tmp, buffer);
-			if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			safe_unpack32_array(&msg->cpu_count_reps, &uint32_tmp,
+					    buffer);
+			if (msg->num_cpu_groups != uint32_tmp)
 				goto unpack_error;
 		} else {
-			tmp_ptr->cpus_per_node = NULL;
-			tmp_ptr->cpu_count_reps = NULL;
+			msg->cpus_per_node = NULL;
+			msg->cpu_count_reps = NULL;
 		}
-		safe_unpackstr(&tmp_ptr->partition, buffer);
-		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
-		safe_unpackstr(&tmp_ptr->qos, buffer);
-		safe_unpackstr(&tmp_ptr->resv_name, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
-		safe_unpack32(&tmp_ptr->uid, buffer);
-		safe_unpackstr(&tmp_ptr->user_name, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->resv_name, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
 
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
-				(void **)&tmp_ptr->working_cluster_rec,
+				(void **) &msg->working_cluster_rec,
 				smsg->protocol_version, buffer);
 		}
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_resource_allocation_response_msg(tmp_ptr);
+	slurm_free_resource_allocation_response_msg(msg);
 	return SLURM_ERROR;
 }
 
