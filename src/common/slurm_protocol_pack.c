@@ -9231,17 +9231,11 @@ static void _pack_reboot_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_reboot_msg(reboot_msg_t ** msg_ptr, buf_t *buffer,
-		   uint16_t protocol_version)
+static int _unpack_reboot_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	reboot_msg_t *msg;
+	reboot_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(reboot_msg_t));
-	slurm_init_reboot_msg(msg, false);
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpack32(&msg->next_state, buffer);
@@ -9249,11 +9243,11 @@ _unpack_reboot_msg(reboot_msg_t ** msg_ptr, buf_t *buffer,
 		safe_unpackstr(&msg->reason, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_reboot_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14249,8 +14243,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			buffer, msg->protocol_version);
 		break;
 	case REQUEST_REBOOT_NODES:
-		rc = _unpack_reboot_msg((reboot_msg_t **) & (msg->data),
-					buffer, msg->protocol_version);
+		rc = _unpack_reboot_msg(msg, buffer);
 		break;
 	case REQUEST_SHUTDOWN:
 		rc = _unpack_shutdown_msg((shutdown_msg_t **) & (msg->data),
