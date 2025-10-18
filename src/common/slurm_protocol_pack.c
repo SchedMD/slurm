@@ -6724,27 +6724,22 @@ static void _pack_dep_update_origin_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_dep_update_origin_msg(dep_update_origin_msg_t **msg_pptr,
-					 buf_t *buffer, uint16_t protocol_version)
+static int _unpack_dep_update_origin_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	dep_update_origin_msg_t *msg_ptr = NULL;
+	dep_update_origin_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
 
-	xassert(msg_pptr);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		msg_ptr = xmalloc(sizeof *msg_ptr);
-		*msg_pptr = msg_ptr;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_dep_list(&msg_ptr->depend_list,
-				    buffer, protocol_version))
+				    buffer, smsg->protocol_version))
 			goto unpack_error;
 		safe_unpack32(&msg_ptr->job_id, buffer);
 	}
 
+	smsg->data = msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_dep_update_origin_msg(msg_ptr);
-	*msg_pptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14245,9 +14240,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_dep_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_ORIGIN_DEP:
-		rc = _unpack_dep_update_origin_msg(
-			(dep_update_origin_msg_t **) &(msg->data),
-			buffer, msg->protocol_version);
+		rc = _unpack_dep_update_origin_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
 		rc = _unpack_update_job_step_msg(
