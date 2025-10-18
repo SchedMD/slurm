@@ -2259,27 +2259,19 @@ static void _pack_resv_name_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_resv_name_msg(reservation_name_msg_t ** msg, buf_t *buffer,
-		      uint16_t protocol_version)
+static int _unpack_resv_name_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	reservation_name_msg_t *tmp_ptr;
+	reservation_name_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 
-	xassert(msg);
-
-	/* alloc memory for structure */
-	tmp_ptr = xmalloc(sizeof(reservation_name_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->name, buffer);
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_resv_name_msg(tmp_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14231,9 +14223,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_DELETE_RESERVATION:
 	case RESPONSE_CREATE_RESERVATION:
-		rc = _unpack_resv_name_msg((reservation_name_msg_t **)
-					   &(msg->data), buffer,
-					   msg->protocol_version);
+		rc = _unpack_resv_name_msg(msg, buffer);
 		break;
 	case RESPONSE_RESERVATION_INFO:
 		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
