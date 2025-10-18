@@ -2813,27 +2813,21 @@ static void _pack_epilog_comp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, buf_t *buffer,
-			uint16_t protocol_version)
+static int _unpack_epilog_comp_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	epilog_complete_msg_t *tmp_ptr;
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(epilog_complete_msg_t));
-	*msg = tmp_ptr;
+	epilog_complete_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&(tmp_ptr->job_id), buffer);
 		safe_unpack32(&(tmp_ptr->return_code), buffer);
 		safe_unpackstr(&(tmp_ptr->node_name), buffer);
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_epilog_complete_msg(tmp_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14454,9 +14448,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_kill_job_msg(msg, buffer);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
-		rc = _unpack_epilog_comp_msg((epilog_complete_msg_t **)
-					     & (msg->data), buffer,
-					     msg->protocol_version);
+		rc = _unpack_epilog_comp_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_INFO:
 		rc = _unpack_job_step_info_response_msg(
