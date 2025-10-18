@@ -8000,33 +8000,26 @@ static void _pack_reroute_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_reroute_msg(reroute_msg_t **msg, buf_t *buffer, uint16_t protocol_version)
+static int _unpack_reroute_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	reroute_msg_t *reroute_msg;
 	uint8_t uint8_tmp = 0;
+	reroute_msg_t *reroute_msg = xmalloc(sizeof(*reroute_msg));
 
-	xassert(buffer);
-	xassert(msg);
-
-	reroute_msg = xmalloc(sizeof(reroute_msg_t));
-	*msg = reroute_msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
 			slurmdb_unpack_cluster_rec(
-				(void **)&reroute_msg->working_cluster_rec,
-				protocol_version, buffer);
+				(void **) &reroute_msg->working_cluster_rec,
+				smsg->protocol_version, buffer);
 		}
 		safe_unpackstr(&reroute_msg->stepmgr, buffer);
 	}
 
+	smsg->data = reroute_msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_reroute_msg(reroute_msg);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14263,8 +14256,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_return_code2_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURM_REROUTE_MSG:
-		rc = _unpack_reroute_msg((reroute_msg_t **)&(msg->data), buffer,
-					 msg->protocol_version);
+		rc = _unpack_reroute_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
 		rc = _unpack_job_step_create_response_msg(msg, buffer);
