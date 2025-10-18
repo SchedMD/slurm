@@ -6433,7 +6433,40 @@ static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	sib_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg->cluster_id, buffer);
+		pack16(msg->data_type, buffer);
+		pack16(msg->data_version, buffer);
+		pack64(msg->fed_siblings, buffer);
+		pack32(msg->group_id, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_state, buffer);
+		pack32(msg->return_code, buffer);
+		pack_time(msg->start_time, buffer);
+		packstr(msg->resp_host, buffer);
+		pack32(msg->req_uid, buffer);
+		pack16(msg->sib_msg_type, buffer);
+		packstr(msg->submit_host, buffer);
+		pack16(msg->submit_proto_ver, buffer);
+		pack32(msg->user_id, buffer);
+
+		/* add already packed data_buffer to buffer */
+		if (msg->data_buffer && size_buf(msg->data_buffer)) {
+			buf_t *dbuf = msg->data_buffer;
+			uint32_t grow_size =
+				get_buf_offset(dbuf) - msg->data_offset;
+
+			pack16(1, buffer);
+
+			grow_buf(buffer, grow_size);
+			memcpy(&buffer->head[get_buf_offset(buffer)],
+			       &dbuf->head[msg->data_offset], grow_size);
+			set_buf_offset(buffer,
+				       get_buf_offset(buffer) + grow_size);
+		} else {
+			pack16(0, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->cluster_id, buffer);
 		pack16(msg->data_type, buffer);
 		pack16(msg->data_version, buffer);
@@ -6474,7 +6507,38 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint16_t tmp_uint16;
 	sib_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->cluster_id, buffer);
+		safe_unpack16(&msg->data_type, buffer);
+		safe_unpack16(&msg->data_version, buffer);
+		safe_unpack64(&msg->fed_siblings, buffer);
+		safe_unpack32(&msg->group_id, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->job_state, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpackstr(&msg->resp_host, buffer);
+		safe_unpack32(&msg->req_uid, buffer);
+		safe_unpack16(&msg->sib_msg_type, buffer);
+		safe_unpackstr(&msg->submit_host, buffer);
+		safe_unpack16(&msg->submit_proto_ver, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+
+		safe_unpack16(&tmp_uint16, buffer);
+		if (tmp_uint16) {
+			slurm_msg_t tmp_msg;
+			slurm_msg_t_init(&tmp_msg);
+			tmp_msg.msg_type = msg->data_type;
+			tmp_msg.protocol_version = msg->data_version;
+
+			if (unpack_msg(&tmp_msg, buffer))
+				goto unpack_error;
+
+			msg->data = tmp_msg.data;
+			tmp_msg.data = NULL;
+			slurm_free_msg_members(&tmp_msg);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->cluster_id, buffer);
 		safe_unpack16(&msg->data_type, buffer);
 		safe_unpack16(&msg->data_version, buffer);
