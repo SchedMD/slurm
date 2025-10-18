@@ -10816,15 +10816,15 @@ static void _pack_job_id_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_job_id_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_id_request_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	job_id_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	safe_unpack32(&tmp_ptr->job_pid, buffer);
+	safe_unpack32(&msg->job_pid, buffer);
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_id_request_msg(tmp_ptr);
+	slurm_free_job_id_request_msg(msg);
 	return SLURM_ERROR;
 }
 
