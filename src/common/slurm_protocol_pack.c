@@ -12160,29 +12160,22 @@ static void _pack_topo_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_topo_info_msg(topo_info_response_msg_t **msg,
-				 buf_t *buffer,
-				 uint16_t protocol_version)
+static int _unpack_topo_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	topo_info_response_msg_t *msg_ptr =
-		xmalloc(sizeof(topo_info_response_msg_t));
+	topo_info_response_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
 
-	*msg = msg_ptr;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		topology_g_topoinfo_unpack(
-			(dynamic_plugin_data_t **) &msg_ptr->topo_info,
-			buffer, protocol_version);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		goto unpack_error;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (topology_g_topoinfo_unpack((dynamic_plugin_data_t *
+							*) &msg_ptr->topo_info,
+					       buffer, smsg->protocol_version))
+			goto unpack_error;
 	}
 
+	smsg->data = msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_topo_info_msg(msg_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14291,9 +14284,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_topo_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_TOPO_INFO:
-		rc = _unpack_topo_info_msg(
-			(topo_info_response_msg_t **)&msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_topo_info_msg(msg, buffer);
 		break;
 	case RESPONSE_TOPO_CONFIG:
 		rc = _unpack_topo_config_msg(msg, buffer);
