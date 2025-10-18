@@ -11327,22 +11327,19 @@ static void _pack_token_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_token_request_msg(token_request_msg_t **msg_ptr, buf_t *buffer,
-				     uint16_t protocol_version)
+static int _unpack_token_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	token_request_msg_t *msg = xmalloc(sizeof(*msg));
-	xassert(msg_ptr);
-	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->lifespan, buffer);
 		safe_unpackstr(&msg->username, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_token_request_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14282,9 +14279,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_top_job_msg(msg, buffer);
 		break;
 	case REQUEST_AUTH_TOKEN:
-		rc = _unpack_token_request_msg((token_request_msg_t **)
-					       &msg->data,
-					       buffer, msg->protocol_version);
+		rc = _unpack_token_request_msg(msg, buffer);
 		break;
 	case RESPONSE_AUTH_TOKEN:
 		rc = _unpack_token_response_msg((token_response_msg_t **)
