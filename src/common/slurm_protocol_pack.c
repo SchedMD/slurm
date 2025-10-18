@@ -12017,24 +12017,18 @@ static void _pack_suspend_exc_update_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	pack32(msg->mode, buffer);
 }
 
-static int _unpack_suspend_exc_update_msg(suspend_exc_update_msg_t **msg_ptr,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
+static int _unpack_suspend_exc_update_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	suspend_exc_update_msg_t *msg;
-
-	msg = xmalloc(sizeof(*msg));
-	*msg_ptr = msg;
+	suspend_exc_update_msg_t *msg = xmalloc(sizeof(*msg));
 
 	safe_unpackstr(&msg->update_str, buffer);
 	safe_unpack32(&msg->mode, buffer);
-	*msg_ptr = msg;
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_suspend_exc_update_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14296,9 +14290,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_SET_SUSPEND_EXC_NODES:
 	case REQUEST_SET_SUSPEND_EXC_PARTS:
 	case REQUEST_SET_SUSPEND_EXC_STATES:
-		rc = _unpack_suspend_exc_update_msg(
-			(suspend_exc_update_msg_t **) &(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_suspend_exc_update_msg(msg, buffer);
 		break;
 	case REQUEST_DBD_RELAY:
 		rc = _unpack_dbd_relay(msg, buffer);
