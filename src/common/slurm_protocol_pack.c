@@ -12287,7 +12287,27 @@ static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	will_run_response_msg_t *msg = smsg->data;
 	uint32_t count = NO_VAL, *job_id_ptr;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		packstr(msg->job_submit_user_msg, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->part_name, buffer);
+
+		if (msg->preemptee_job_id)
+			count = list_count(msg->preemptee_job_id);
+		pack32(count, buffer);
+		if (count && (count != NO_VAL)) {
+			list_itr_t *itr =
+				list_iterator_create(msg->preemptee_job_id);
+			while ((job_id_ptr = list_next(itr)))
+				pack32(job_id_ptr[0], buffer);
+			list_iterator_destroy(itr);
+		}
+
+		pack32(msg->proc_cnt, buffer);
+		pack_time(msg->start_time, buffer);
+		packdouble(0, buffer); /* was sys_usage_per */
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
@@ -12316,7 +12336,29 @@ static int _unpack_will_run_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	double double_tmp;
 	will_run_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->part_name, buffer);
+
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count && (count != NO_VAL)) {
+			msg->preemptee_job_id = list_create(xfree_ptr);
+			for (int i = 0; i < count; i++) {
+				safe_unpack32(&uint32_tmp, buffer);
+				job_id_ptr = xmalloc(sizeof(uint32_t));
+				job_id_ptr[0] = uint32_tmp;
+				list_append(msg->preemptee_job_id, job_id_ptr);
+			}
+		}
+
+		safe_unpack32(&msg->proc_cnt, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpackdouble(&double_tmp, buffer); /* was sys_usage_per */
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
