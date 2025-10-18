@@ -1621,35 +1621,33 @@ static void _pack_job_sbcast_cred_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_job_sbcast_cred_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_sbcast_cred_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	job_sbcast_cred_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&tmp_ptr->job_id, buffer);
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		tmp_ptr->sbcast_cred =
-			unpack_sbcast_cred(buffer, NULL,
-					   smsg->protocol_version);
-		if (tmp_ptr->sbcast_cred == NULL)
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		msg->sbcast_cred = unpack_sbcast_cred(buffer, NULL,
+						      smsg->protocol_version);
+		if (msg->sbcast_cred == NULL)
 			goto unpack_error;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint32_t uint32_tmp;
-		safe_unpack32(&tmp_ptr->job_id, buffer);
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
 
 		safe_unpack32(&uint32_tmp, buffer); /* was node_cnt */
 
-		tmp_ptr->sbcast_cred =
-			unpack_sbcast_cred(buffer, NULL,
-					   smsg->protocol_version);
-		if (tmp_ptr->sbcast_cred == NULL)
+		msg->sbcast_cred = unpack_sbcast_cred(buffer, NULL,
+						      smsg->protocol_version);
+		if (msg->sbcast_cred == NULL)
 			goto unpack_error;
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_sbcast_cred_msg(tmp_ptr);
+	slurm_free_sbcast_cred_msg(msg);
 	return SLURM_ERROR;
 }
 
