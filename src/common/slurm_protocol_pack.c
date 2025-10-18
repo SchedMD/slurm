@@ -11495,25 +11495,20 @@ static void _pack_ping_slurmd_resp(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_ping_slurmd_resp(ping_slurmd_resp_msg_t **msg_ptr,
-				    buf_t *buffer, uint16_t protocol_version)
+static int _unpack_ping_slurmd_resp(slurm_msg_t *smsg, buf_t *buffer)
 {
-	ping_slurmd_resp_msg_t *msg;
+	ping_slurmd_resp_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(ping_slurmd_resp_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->cpu_load, buffer);
 		safe_unpack64(&msg->free_mem, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_ping_slurmd_resp(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14297,9 +14292,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_forward_data_msg(msg, buffer);
 		break;
 	case RESPONSE_PING_SLURMD:
-		rc = _unpack_ping_slurmd_resp((ping_slurmd_resp_msg_t **)
-					      &msg->data, buffer,
-					      msg->protocol_version);
+		rc = _unpack_ping_slurmd_resp(msg, buffer);
 		break;
 	case RESPONSE_LICENSE_INFO:
 		rc = _unpack_license_info_msg((license_info_msg_t **)&(msg->data),
