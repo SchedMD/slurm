@@ -11040,28 +11040,23 @@ static void _pack_srun_step_missing_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_srun_step_missing_msg(srun_step_missing_msg_t ** msg_ptr, buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_srun_step_missing_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	srun_step_missing_msg_t * msg;
-	xassert(msg_ptr);
+	srun_step_missing_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc ( sizeof (srun_step_missing_msg_t) ) ;
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg->nodelist, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_srun_step_missing_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14272,9 +14267,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_srun_node_fail_msg(msg, buffer);
 		break;
 	case SRUN_STEP_MISSING:
-		rc = _unpack_srun_step_missing_msg((srun_step_missing_msg_t **)
-						   & msg->data, buffer,
-						   msg->protocol_version);
+		rc = _unpack_srun_step_missing_msg(msg, buffer);
 		break;
 	case SRUN_TIMEOUT:
 		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
