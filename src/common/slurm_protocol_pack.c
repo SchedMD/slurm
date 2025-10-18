@@ -2508,20 +2508,14 @@ static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int _unpack_job_step_create_request_msg(
-	job_step_create_request_msg_t **msg, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_create_request_msg_t *tmp_ptr;
+	job_step_create_request_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(job_step_create_request_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&tmp_ptr->array_task_id, buffer);
 		safe_unpack32(&tmp_ptr->user_id, buffer);
@@ -2571,9 +2565,10 @@ static int _unpack_job_step_create_request_msg(
 		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_socket, buffer);
 		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack32(&tmp_ptr->array_task_id, buffer);
 		safe_unpack32(&tmp_ptr->user_id, buffer);
@@ -2621,11 +2616,11 @@ static int _unpack_job_step_create_request_msg(
 		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_step_create_request_msg(tmp_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14262,9 +14257,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_request_msg(
-			(job_step_create_request_msg_t **) & msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_job_step_create_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ID:
 		rc = _unpack_job_id_request_msg(
