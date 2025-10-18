@@ -11299,25 +11299,20 @@ static void _pack_top_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_top_job_msg(top_job_msg_t **msg_ptr, buf_t *buffer,
-			       uint16_t protocol_version)
+static int _unpack_top_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	top_job_msg_t *msg;
-	xassert(msg_ptr);
+	top_job_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(top_job_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->op, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_top_job_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14284,8 +14279,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_suspend_int_msg(msg, buffer);
 		break;
 	case REQUEST_TOP_JOB:
-		rc = _unpack_top_job_msg((top_job_msg_t **) &msg->data, buffer,
-					 msg->protocol_version);
+		rc = _unpack_top_job_msg(msg, buffer);
 		break;
 	case REQUEST_AUTH_TOKEN:
 		rc = _unpack_token_request_msg((token_request_msg_t **)
