@@ -10109,23 +10109,22 @@ static void _pack_job_step_info_req_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_job_step_info_req_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_info_request_msg_t *job_step_info =
-		xmalloc(sizeof(*job_step_info));
+	job_step_info_request_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack_time(&job_step_info->last_update, buffer);
-		if (unpack_step_id_members(&job_step_info->step_id, buffer,
+		safe_unpack_time(&msg->last_update, buffer);
+		if (unpack_step_id_members(&msg->step_id, buffer,
 					   smsg->protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack16(&job_step_info->show_flags, buffer);
+		safe_unpack16(&msg->show_flags, buffer);
 	}
 
-	smsg->data = job_step_info;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_info_request_msg(job_step_info);
+	slurm_free_job_step_info_request_msg(msg);
 	return SLURM_ERROR;
 }
 
