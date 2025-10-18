@@ -12480,14 +12480,11 @@ static void _pack_job_array_resp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, buf_t *buffer,
-				       uint16_t protocol_version)
+static int _unpack_job_array_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_array_resp_msg_t *resp = NULL;
-	uint32_t i;
+	job_array_resp_msg_t *resp = xmalloc(sizeof(*resp));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		resp = xmalloc(sizeof(job_array_resp_msg_t));
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&resp->job_array_count, buffer);
 		if (resp->job_array_count > NO_VAL)
 			goto unpack_error;
@@ -12497,19 +12494,18 @@ static int  _unpack_job_array_resp_msg(job_array_resp_msg_t **msg, buf_t *buffer
 			     sizeof(char *));
 		safe_xcalloc(resp->err_msg, resp->job_array_count,
 			     sizeof(char *));
-		for (i = 0; i < resp->job_array_count; i++) {
+		for (int i = 0; i < resp->job_array_count; i++) {
 			safe_unpack32(&resp->error_code[i], buffer);
 			safe_unpackstr(&resp->job_array_id[i], buffer);
 			safe_unpackstr(&resp->err_msg[i], buffer);
 		}
 	}
 
-	*msg = resp;
+	smsg->data = resp;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_array_resp(resp);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14287,9 +14283,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_license_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
-		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
-						&(msg->data), buffer,
-						msg->protocol_version);
+		rc = _unpack_job_array_resp_msg(msg, buffer);
 		break;
 	case REQUEST_ASSOC_MGR_INFO:
 		rc = _unpack_assoc_mgr_info_request_msg(
