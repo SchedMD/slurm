@@ -11192,23 +11192,20 @@ static void _pack_srun_user_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_srun_user_msg(srun_user_msg_t ** msg_ptr, buf_t *buffer,
-		      uint16_t protocol_version)
+static int _unpack_srun_user_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	srun_user_msg_t * msg_user;
-	xassert(msg_ptr);
+	srun_user_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg_user = xmalloc(sizeof (srun_user_msg_t)) ;
-	*msg_ptr = msg_user;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->msg, buffer);
+	}
 
-	safe_unpack32(&msg_user->job_id, buffer);
-	safe_unpackstr(&msg_user->msg, buffer);
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_srun_user_msg(msg_user);
-	*msg_ptr = NULL;
+	slurm_free_srun_user_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14268,9 +14265,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_srun_timeout_msg(msg, buffer);
 		break;
 	case SRUN_USER_MSG:
-		rc = _unpack_srun_user_msg((srun_user_msg_t **)
-					   & msg->data, buffer,
-					   msg->protocol_version);
+		rc = _unpack_srun_user_msg(msg, buffer);
 		break;
 	case REQUEST_SUSPEND:
 	case SRUN_REQUEST_SUSPEND:
