@@ -9821,20 +9821,13 @@ static void _pack_job_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_job_info_request_msg(job_info_request_msg_t** msg,
-			     buf_t *buffer,
-			     uint16_t protocol_version)
+static int _unpack_job_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	int       i;
 	uint32_t  count;
 	uint32_t *uint32_ptr = NULL;
-	job_info_request_msg_t *job_info;
+	job_info_request_msg_t *job_info = xmalloc(sizeof(*job_info));
 
-	job_info = xmalloc(sizeof(job_info_request_msg_t));
-	*msg = job_info;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&job_info->last_update, buffer);
 		safe_unpack16(&job_info->show_flags, buffer);
 
@@ -9843,7 +9836,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 			goto unpack_error;
 		if (count != NO_VAL) {
 			job_info->job_ids = list_create(xfree_ptr);
-			for (i = 0; i < count; i++) {
+			for (int i = 0; i < count; i++) {
 				uint32_ptr = xmalloc(sizeof(uint32_t));
 				safe_unpack32(uint32_ptr, buffer);
 				list_append(job_info->job_ids, uint32_ptr);
@@ -9852,12 +9845,12 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 		}
 	}
 
+	smsg->data = job_info;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(uint32_ptr);
 	slurm_free_job_info_request_msg(job_info);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14223,9 +14216,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_step_info_req_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_INFO:
-		rc = _unpack_job_info_request_msg((job_info_request_msg_t**)
-						  & (msg->data), buffer,
-						  msg->protocol_version);
+		rc = _unpack_job_info_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STATE:
 		rc = _unpack_job_state_request_msg(msg, buffer);
