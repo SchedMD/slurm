@@ -1666,20 +1666,20 @@ static void _pack_submit_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_submit_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	submit_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	submit_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&tmp_ptr->job_id, buffer);
-		safe_unpack32(&tmp_ptr->step_id, buffer);
-		safe_unpack32(&tmp_ptr->error_code, buffer);
-		safe_unpackstr(&tmp_ptr->job_submit_user_msg, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->error_code, buffer);
+		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_submit_response_response_msg(tmp_ptr);
+	slurm_free_submit_response_response_msg(msg);
 	return SLURM_ERROR;
 }
 
