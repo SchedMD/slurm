@@ -11613,17 +11613,15 @@ static void _pack_trigger_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , buf_t *buffer,
-				uint16_t protocol_version)
+static int _unpack_trigger_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	int i;
-	trigger_info_msg_t *msg = xmalloc(sizeof(trigger_info_msg_t));
+	trigger_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->record_count, buffer);
 		safe_xcalloc(msg->trigger_array, msg->record_count,
 			     sizeof(trigger_info_t));
-		for (i = 0; i < msg->record_count; i++) {
+		for (int i = 0; i < msg->record_count; i++) {
 			safe_unpack16(&msg->trigger_array[i].flags, buffer);
 			safe_unpack32(&msg->trigger_array[i].trig_id, buffer);
 			safe_unpack16(&msg->trigger_array[i].res_type, buffer);
@@ -11636,12 +11634,11 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , buf_t *buffer,
 		}
 	}
 
-	*msg_ptr = msg;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_trigger_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14301,9 +14298,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_TRIGGER_SET:
 	case REQUEST_TRIGGER_CLEAR:
 	case REQUEST_TRIGGER_PULL:
-		rc = _unpack_trigger_msg((trigger_info_msg_t **)
-					 &msg->data, buffer,
-					 msg->protocol_version);
+		rc = _unpack_trigger_msg(msg, buffer);
 		break;
 	case RESPONSE_SLURMD_STATUS:
 		rc = _unpack_slurmd_status((slurmd_status_t **)
