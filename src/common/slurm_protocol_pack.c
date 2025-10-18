@@ -12264,17 +12264,13 @@ static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_will_run_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	will_run_response_msg_t *msg;
-	uint32_t count, i, uint32_tmp, *job_id_ptr;
+	uint32_t count, uint32_tmp, *job_id_ptr;
 	double double_tmp;
+	will_run_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(will_run_response_msg_t));
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
@@ -12285,7 +12281,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
 			goto unpack_error;
 		if (count && (count != NO_VAL)) {
 			msg->preemptee_job_id = list_create(xfree_ptr);
-			for (i = 0; i < count; i++) {
+			for (int i = 0; i < count; i++) {
 				safe_unpack32(&uint32_tmp, buffer);
 				job_id_ptr = xmalloc(sizeof(uint32_t));
 				job_id_ptr[0] = uint32_tmp;
@@ -12298,12 +12294,11 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, buf_t *buffer,
 		safe_unpackdouble(&double_tmp, buffer); /* was sys_usage_per */
 	}
 
-	*msg_ptr = msg;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_will_run_response_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14252,9 +14247,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_resource_allocation_response_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_WILL_RUN:
-		rc = _unpack_will_run_response_msg((will_run_response_msg_t **)
-						   &(msg->data), buffer,
-						   msg->protocol_version);
+		rc = _unpack_will_run_response_msg(msg, buffer);
 		break;
 	case REQUEST_CREATE_NODE:
 	case REQUEST_UPDATE_NODE:
