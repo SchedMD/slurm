@@ -11162,27 +11162,22 @@ static void _pack_srun_timeout_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, buf_t *buffer,
-			 uint16_t protocol_version)
+static int _unpack_srun_timeout_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	srun_timeout_msg_t * msg;
-	xassert(msg_ptr);
+	srun_timeout_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc ( sizeof (srun_timeout_msg_t) ) ;
-	*msg_ptr = msg ;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack_time(&msg->timeout, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_srun_timeout_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14270,9 +14265,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_srun_step_missing_msg(msg, buffer);
 		break;
 	case SRUN_TIMEOUT:
-		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
-					      & msg->data, buffer,
-					      msg->protocol_version);
+		rc = _unpack_srun_timeout_msg(msg, buffer);
 		break;
 	case SRUN_USER_MSG:
 		rc = _unpack_srun_user_msg((srun_user_msg_t **)
