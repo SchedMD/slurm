@@ -11132,22 +11132,19 @@ static void _pack_job_user_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	pack16(msg->show_flags, buffer);
 }
 
-static int
-_unpack_job_user_msg(job_user_id_msg_t ** msg_ptr, buf_t *buffer,
-		     uint16_t protocol_version)
+static int _unpack_job_user_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_user_id_msg_t * msg;
-	xassert(msg_ptr);
+	job_user_id_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc ( sizeof (job_user_id_msg_t) );
-	*msg_ptr = msg ;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack16(&msg->show_flags, buffer);
+	}
 
-	safe_unpack32(&msg->user_id  , buffer ) ;
-	safe_unpack16(&msg->show_flags, buffer);
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_job_user_id_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14288,13 +14285,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_JOB_REQUEUE:
 		rc = _unpack_job_requeue_msg(msg, buffer);
 		break;
-
 	case REQUEST_JOB_USER_INFO:
-		rc = _unpack_job_user_msg((job_user_id_msg_t **)
-					  &msg->data, buffer,
-					  msg->protocol_version);
+		rc = _unpack_job_user_msg(msg, buffer);
 		break;
-
 	case REQUEST_SHARE_INFO:
 		rc = _unpack_shares_request_msg(msg, buffer);
 		break;
