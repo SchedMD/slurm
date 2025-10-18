@@ -12553,27 +12553,18 @@ static void _pack_assoc_mgr_info_request_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int
-_unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
-				   buf_t *buffer,
-				   uint16_t protocol_version)
+static int _unpack_assoc_mgr_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
-	int i;
 	char *tmp_info = NULL;
-	assoc_mgr_info_request_msg_t *object_ptr = NULL;
-
-	xassert(msg);
-
-	object_ptr = xmalloc(sizeof(assoc_mgr_info_request_msg_t));
-	*msg = object_ptr;
+	assoc_mgr_info_request_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
 
 	safe_unpack32(&count, buffer);
 	if (count > NO_VAL)
 		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->acct_list = list_create(xfree_ptr);
-		for (i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
 			safe_unpackstr(&tmp_info, buffer);
 			list_append(object_ptr->acct_list, tmp_info);
 		}
@@ -12586,7 +12577,7 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->qos_list = list_create(xfree_ptr);
-		for (i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
 			safe_unpackstr(&tmp_info, buffer);
 			list_append(object_ptr->qos_list, tmp_info);
 		}
@@ -12597,16 +12588,17 @@ _unpack_assoc_mgr_info_request_msg(assoc_mgr_info_request_msg_t **msg,
 		goto unpack_error;
 	if (count != NO_VAL) {
 		object_ptr->user_list = list_create(xfree_ptr);
-		for (i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
 			safe_unpackstr(&tmp_info, buffer);
 			list_append(object_ptr->user_list, tmp_info);
 		}
 	}
+
+	smsg->data = object_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_assoc_mgr_info_request_msg(object_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14286,9 +14278,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_array_resp_msg(msg, buffer);
 		break;
 	case REQUEST_ASSOC_MGR_INFO:
-		rc = _unpack_assoc_mgr_info_request_msg(
-			(assoc_mgr_info_request_msg_t **)&(msg->data),
-			buffer, msg->protocol_version);
+		rc = _unpack_assoc_mgr_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_ASSOC_MGR_INFO:
 		rc = assoc_mgr_info_unpack_msg((assoc_mgr_info_msg_t **)
