@@ -10863,25 +10863,22 @@ static void _pack_config_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_config_request_msg(config_request_msg_t **msg_ptr,
-				      buf_t *buffer, uint16_t protocol_version)
+static int _unpack_config_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	config_request_msg_t *msg = xmalloc(sizeof(*msg));
-	xassert(msg_ptr);
-	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->flags, buffer);
 		safe_unpack16(&msg->port, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->flags, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_config_request_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14252,9 +14249,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_id_response_msg(msg, buffer);
 		break;
 	case REQUEST_CONFIG:
-		_unpack_config_request_msg(
-			(config_request_msg_t **) &msg->data,
-			buffer, msg->protocol_version);
+		_unpack_config_request_msg(msg, buffer);
 		break;
 	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
