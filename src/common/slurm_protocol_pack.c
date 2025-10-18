@@ -7214,24 +7214,12 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		msg->script = NULL;
 }
 
-/* _unpack_job_desc_msg
- * unpacks a job_desc struct
- * OUT job_desc_buffer_ptr - place to put pointer to allocated job desc struct
- * IN/OUT buffer - source of the unpack, contains pointers that are
- *			automatically updated
- */
-static int
-_unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
-		     uint16_t protocol_version)
+static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t start, script_len;
-	job_desc_msg_t *job_desc_ptr = NULL;
+	job_desc_msg_t *job_desc_ptr = xmalloc(sizeof(*job_desc_ptr));
 
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
-		*job_desc_buffer_ptr = job_desc_ptr;
-
-		/* load the data values */
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack32(&job_desc_ptr->site_factor, buffer);
 		safe_unpackstr(&job_desc_ptr->batch_features, buffer);
 		safe_unpackstr(&job_desc_ptr->cluster_features, buffer);
@@ -7403,14 +7391,10 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		slurm_format_tres_string(&job_desc_ptr->tres_per_task, "gres");
 
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
-				      protocol_version, buffer))
+				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&job_desc_ptr->segment_size, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
-		*job_desc_buffer_ptr = job_desc_ptr;
-
-		/* load the data values */
+	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job_desc_ptr->site_factor, buffer);
 		safe_unpackstr(&job_desc_ptr->batch_features, buffer);
 		safe_unpackstr(&job_desc_ptr->cluster_features, buffer);
@@ -7581,15 +7565,11 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		slurm_format_tres_string(&job_desc_ptr->tres_per_task, "gres");
 
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
-				      protocol_version, buffer))
+				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&job_desc_ptr->segment_size, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
-		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
-		*job_desc_buffer_ptr = job_desc_ptr;
-
-		/* load the data values */
 		safe_unpack32(&job_desc_ptr->site_factor, buffer);
 		safe_unpackstr(&job_desc_ptr->batch_features, buffer);
 		safe_unpackstr(&job_desc_ptr->cluster_features, buffer);
@@ -7760,16 +7740,16 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		slurm_format_tres_string(&job_desc_ptr->tres_per_task, "gres");
 
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
-				      protocol_version, buffer))
+				      smsg->protocol_version, buffer))
 			goto unpack_error;
 		safe_unpack16(&job_desc_ptr->segment_size, buffer);
 	}
 
+	smsg->data = job_desc_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_desc_msg(job_desc_ptr);
-	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -7801,7 +7781,6 @@ static void _pack_job_desc_list_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_job_desc_list_msg(list_t **job_req_list, buf_t *buffer,
 				     uint16_t protocol_version)
 {
-	job_desc_msg_t *req;
 	uint16_t cnt = 0;
 	int i;
 
@@ -7815,11 +7794,12 @@ static int _unpack_job_desc_list_msg(list_t **job_req_list, buf_t *buffer,
 
 	*job_req_list = list_create((ListDelF) slurm_free_job_desc_msg);
 	for (i = 0; i < cnt; i++) {
-		req = NULL;
-		if (_unpack_job_desc_msg(&req, buffer, protocol_version) !=
-		    SLURM_SUCCESS)
+		slurm_msg_t tmp_msg = {
+			.protocol_version = protocol_version,
+		};
+		if (_unpack_job_desc_msg(&tmp_msg, buffer))
 			goto unpack_error;
-		list_append(*job_req_list, req);
+		list_append(*job_req_list, tmp_msg.data);
 	}
 	return SLURM_SUCCESS;
 
@@ -13980,8 +13960,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_SUBMIT_BATCH_JOB:
 	case REQUEST_JOB_WILL_RUN:
 	case REQUEST_UPDATE_JOB:
-		rc = _unpack_job_desc_msg((job_desc_msg_t **) & (msg->data),
-					  buffer, msg->protocol_version);
+		rc = _unpack_job_desc_msg(msg, buffer);
 		break;
 	case REQUEST_HET_JOB_ALLOCATION:
 	case REQUEST_SUBMIT_BATCH_HET_JOB:
