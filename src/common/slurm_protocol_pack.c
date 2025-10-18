@@ -8069,22 +8069,15 @@ static void _pack_reattach_tasks_request_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int
-_unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
-				   buf_t *buffer,
-				   uint16_t protocol_version)
+static int _unpack_reattach_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	reattach_tasks_request_msg_t *msg;
-	int i;
+	reattach_tasks_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(*msg));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->tls_cert, buffer);
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg->io_key, buffer);
 		safe_unpack16(&msg->num_resp_port, buffer);
@@ -8093,7 +8086,7 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 		if (msg->num_resp_port > 0) {
 			safe_xcalloc(msg->resp_port, msg->num_resp_port,
 				     sizeof(uint16_t));
-			for (i = 0; i < msg->num_resp_port; i++)
+			for (int i = 0; i < msg->num_resp_port; i++)
 				safe_unpack16(&msg->resp_port[i], buffer);
 		}
 		safe_unpack16(&msg->num_io_port, buffer);
@@ -8102,12 +8095,13 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 		if (msg->num_io_port > 0) {
 			safe_xcalloc(msg->io_port, msg->num_io_port,
 				     sizeof(uint16_t));
-			for (i = 0; i < msg->num_io_port; i++)
+			for (int i = 0; i < msg->num_io_port; i++)
 				safe_unpack16(&msg->io_port[i], buffer);
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg->io_key, buffer);
 		safe_unpack16(&msg->num_resp_port, buffer);
@@ -8116,7 +8110,7 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 		if (msg->num_resp_port > 0) {
 			safe_xcalloc(msg->resp_port, msg->num_resp_port,
 				     sizeof(uint16_t));
-			for (i = 0; i < msg->num_resp_port; i++)
+			for (int i = 0; i < msg->num_resp_port; i++)
 				safe_unpack16(&msg->resp_port[i], buffer);
 		}
 		safe_unpack16(&msg->num_io_port, buffer);
@@ -8125,16 +8119,16 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 		if (msg->num_io_port > 0) {
 			safe_xcalloc(msg->io_port, msg->num_io_port,
 				     sizeof(uint16_t));
-			for (i = 0; i < msg->num_io_port; i++)
+			for (int i = 0; i < msg->num_io_port; i++)
 				safe_unpack16(&msg->io_port[i], buffer);
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_reattach_tasks_request_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14228,10 +14222,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_launch_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_REATTACH_TASKS:
-		rc = _unpack_reattach_tasks_request_msg(
-			(reattach_tasks_request_msg_t **) & msg->data,
-			buffer,
-			msg->protocol_version);
+		rc = _unpack_reattach_tasks_request_msg(msg, buffer);
 		break;
 	case RESPONSE_REATTACH_TASKS:
 		rc = _unpack_reattach_tasks_response_msg(
