@@ -503,23 +503,23 @@ static void _pack_shares_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_shares_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	shares_request_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
+	shares_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (slurm_unpack_list(&object_ptr->acct_list, unpackstr_with_version,
-			      xfree_ptr, buffer, smsg->protocol_version) !=
-	    SLURM_SUCCESS)
+	if (slurm_unpack_list(&msg->acct_list, unpackstr_with_version,
+			      xfree_ptr, buffer,
+			      smsg->protocol_version) != SLURM_SUCCESS)
 		goto unpack_error;
 
-	if (slurm_unpack_list(&object_ptr->user_list, unpackstr_with_version,
-			      xfree_ptr, buffer, smsg->protocol_version) !=
-	    SLURM_SUCCESS)
+	if (slurm_unpack_list(&msg->user_list, unpackstr_with_version,
+			      xfree_ptr, buffer,
+			      smsg->protocol_version) != SLURM_SUCCESS)
 		goto unpack_error;
 
-	smsg->data = object_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_shares_request_msg(object_ptr);
+	slurm_free_shares_request_msg(msg);
 	return SLURM_ERROR;
 }
 
