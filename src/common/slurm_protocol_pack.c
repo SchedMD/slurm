@@ -10014,7 +10014,31 @@ static void _pack_job_state_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_state_response_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg->jobs_count, buffer);
+		for (int i = 0; i < msg->jobs_count; i++) {
+			/*
+			 * Do not use slurm_pack_selected_step to avoid
+			 * packing the step id which is unused in this rpc.
+			 */
+			job_state_response_job_t *job = &msg->jobs[i];
+			pack32(job->job_id, buffer);
+			pack32(job->array_job_id, buffer);
+			if (job->array_job_id) {
+				pack32(job->array_task_id, buffer);
+				pack_bit_str_hex(job->array_task_id_bitmap,
+						 buffer);
+
+				xassert(!job->het_job_id);
+			} else {
+				pack32(job->het_job_id, buffer);
+
+				xassert(job->array_task_id == NO_VAL);
+				xassert(!job->array_task_id_bitmap);
+			}
+			pack32(job->state, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->jobs_count, buffer);
 		for (int i = 0; i < msg->jobs_count; i++) {
 			/*
@@ -10045,7 +10069,32 @@ static int _unpack_job_state_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_state_response_msg_t *jsr = xmalloc(sizeof(*jsr));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&jsr->jobs_count, buffer);
+
+		if (jsr->jobs_count >= MAX_JOB_ID)
+			goto unpack_error;
+
+		if (jsr->jobs_count &&
+		    !(jsr->jobs =
+			      try_xcalloc(jsr->jobs_count, sizeof(*jsr->jobs))))
+			goto unpack_error;
+
+		for (int i = 0; i < jsr->jobs_count; i++) {
+			job_state_response_job_t *job = &jsr->jobs[i];
+			safe_unpack32(&job->job_id, buffer);
+			safe_unpack32(&job->array_job_id, buffer);
+			if (job->array_job_id) {
+				safe_unpack32(&job->array_task_id, buffer);
+				unpack_bit_str_hex(&job->array_task_id_bitmap,
+						   buffer);
+			} else {
+				safe_unpack32(&job->het_job_id, buffer);
+				job->array_task_id = NO_VAL;
+			}
+			safe_unpack32(&job->state, buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&jsr->jobs_count, buffer);
 
 		if (jsr->jobs_count >= MAX_JOB_ID)
