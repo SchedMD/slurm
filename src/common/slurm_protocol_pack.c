@@ -9220,24 +9220,14 @@ static void _pack_job_step_kill_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-/* _unpack_job_step_kill_msg
- * unpacks a slurm job step signal message
- * OUT msg_ptr - pointer to the job step signal message buffer
- * IN/OUT buffer - source of the unpack, contains pointers that are
- *			automatically updated
- */
-static int
-_unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, buf_t *buffer,
-			  uint16_t protocol_version)
+static int _unpack_job_step_kill_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_kill_msg_t *msg;
+	job_step_kill_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(job_step_kill_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg->sjob_id, buffer);
 		safe_unpackstr(&msg->sibling, buffer);
@@ -9245,11 +9235,11 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, buf_t *buffer,
 		safe_unpack16(&msg->flags, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_step_kill_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14227,9 +14217,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_CANCEL_JOB_STEP:
 	case REQUEST_KILL_JOB:
 	case SRUN_STEP_SIGNAL:
-		rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
-					       & (msg->data), buffer,
-					       msg->protocol_version);
+		rc = _unpack_job_step_kill_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		rc = _unpack_complete_job_allocation_msg(msg, buffer);
