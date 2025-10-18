@@ -6471,22 +6471,12 @@ static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
-		uint16_t protocol_version)
+static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	sib_msg_t *sib_msg_ptr = NULL;
-	slurm_msg_t tmp_msg;
 	uint16_t tmp_uint16;
+	sib_msg_t *sib_msg_ptr = xmalloc(sizeof(*sib_msg_ptr));
 
-	xassert(sib_msg_buffer_ptr);
-
-	/* alloc memory for structure */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		sib_msg_ptr = xmalloc(sizeof(sib_msg_t));
-		*sib_msg_buffer_ptr = sib_msg_ptr;
-
-		/* load the data values */
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&sib_msg_ptr->cluster_id, buffer);
 		safe_unpack16(&sib_msg_ptr->data_type, buffer);
 		safe_unpack16(&sib_msg_ptr->data_version, buffer);
@@ -6505,6 +6495,7 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
 
 		safe_unpack16(&tmp_uint16, buffer);
 		if (tmp_uint16) {
+			slurm_msg_t tmp_msg;
 			slurm_msg_t_init(&tmp_msg);
 			tmp_msg.msg_type = sib_msg_ptr->data_type;
 			tmp_msg.protocol_version = sib_msg_ptr->data_version;
@@ -6518,11 +6509,11 @@ _unpack_sib_msg(sib_msg_t **sib_msg_buffer_ptr, buf_t *buffer,
 		}
 	}
 
+	smsg->data = sib_msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_sib_msg(sib_msg_ptr);
-	*sib_msg_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13921,8 +13912,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_SIB_JOB_LOCK:
 	case REQUEST_SIB_JOB_UNLOCK:
 	case REQUEST_SIB_MSG:
-		rc = _unpack_sib_msg((sib_msg_t **)&(msg->data), buffer,
-				     msg->protocol_version);
+		rc = _unpack_sib_msg(msg, buffer);
 		break;
 	case REQUEST_SEND_DEP:
 		rc = _unpack_dep_msg(msg, buffer);
