@@ -2162,66 +2162,66 @@ static void _pack_update_resv_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_update_resv_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
-	resv_desc_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	resv_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->name, buffer);
-		safe_unpack_time(&tmp_ptr->start_time, buffer);
-		safe_unpack_time(&tmp_ptr->end_time,   buffer);
-		safe_unpack32(&tmp_ptr->duration,      buffer);
-		safe_unpack64(&tmp_ptr->flags,         buffer);
-		safe_unpack32(&tmp_ptr->node_cnt, buffer);
-		safe_unpack32(&tmp_ptr->core_cnt, buffer);
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpackstr(&tmp_ptr->licenses, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack32(&msg->duration, buffer);
+		safe_unpack64(&msg->flags, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
+		safe_unpack32(&msg->core_cnt, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->licenses, buffer);
 
-		safe_unpack32(&tmp_ptr->max_start_delay, buffer);
+		safe_unpack32(&msg->max_start_delay, buffer);
 
-		safe_unpackstr(&tmp_ptr->partition, buffer);
-		safe_unpack32(&tmp_ptr->purge_comp_time, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->purge_comp_time, buffer);
 
-		safe_unpackstr(&tmp_ptr->allowed_parts, buffer);
-		safe_unpackstr(&tmp_ptr->qos, buffer);
-		safe_unpackstr(&tmp_ptr->users, buffer);
-		safe_unpackstr(&tmp_ptr->accounts, buffer);
-		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
-		safe_unpackstr(&tmp_ptr->groups, buffer);
-		safe_unpackstr(&tmp_ptr->comment, buffer);
-		safe_unpackstr(&tmp_ptr->tres_str, buffer);
+		safe_unpackstr(&msg->allowed_parts, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->users, buffer);
+		safe_unpackstr(&msg->accounts, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpackstr(&msg->groups, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpackstr(&msg->tres_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->name, buffer);
-		safe_unpack_time(&tmp_ptr->start_time, buffer);
-		safe_unpack_time(&tmp_ptr->end_time,   buffer);
-		safe_unpack32(&tmp_ptr->duration,      buffer);
-		safe_unpack64(&tmp_ptr->flags,         buffer);
-		safe_unpack32(&tmp_ptr->node_cnt, buffer);
-		safe_unpack32(&tmp_ptr->core_cnt, buffer);
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpackstr(&tmp_ptr->licenses, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack32(&msg->duration, buffer);
+		safe_unpack64(&msg->flags, buffer);
+		safe_unpack32(&msg->node_cnt, buffer);
+		safe_unpack32(&msg->core_cnt, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->licenses, buffer);
 
-		safe_unpack32(&tmp_ptr->max_start_delay, buffer);
+		safe_unpack32(&msg->max_start_delay, buffer);
 
-		safe_unpackstr(&tmp_ptr->partition, buffer);
-		safe_unpack32(&tmp_ptr->purge_comp_time, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->purge_comp_time, buffer);
 		safe_unpack32(&uint32_tmp, buffer); /* was resv_watts */
-		safe_unpackstr(&tmp_ptr->users, buffer);
-		safe_unpackstr(&tmp_ptr->accounts, buffer);
-		safe_unpackstr(&tmp_ptr->burst_buffer, buffer);
-		safe_unpackstr(&tmp_ptr->groups, buffer);
-		safe_unpackstr(&tmp_ptr->comment, buffer);
-		safe_unpackstr(&tmp_ptr->tres_str, buffer);
+		safe_unpackstr(&msg->users, buffer);
+		safe_unpackstr(&msg->accounts, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpackstr(&msg->groups, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpackstr(&msg->tres_str, buffer);
 	}
 
-	if (!tmp_ptr->core_cnt)
-		tmp_ptr->core_cnt = NO_VAL;
+	if (!msg->core_cnt)
+		msg->core_cnt = NO_VAL;
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_resv_desc_msg(tmp_ptr);
+	slurm_free_resv_desc_msg(msg);
 	return SLURM_ERROR;
 }
 
