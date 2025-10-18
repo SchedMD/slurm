@@ -11219,7 +11219,11 @@ static void _pack_suspend_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	suspend_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack16(msg->op, buffer);
+		pack32(msg->job_id, buffer);
+		packstr(msg->job_id_str, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->op, buffer);
 		pack32(msg->job_id, buffer);
 		packstr(msg->job_id_str, buffer);
@@ -11230,7 +11234,11 @@ static int _unpack_suspend_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	suspend_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->op, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_id_str, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->op, buffer);
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
