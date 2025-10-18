@@ -2026,19 +2026,11 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
-			     uint16_t protocol_version)
+static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	update_part_msg_t *tmp_ptr;
+	update_part_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 
-	xassert(msg);
-
-	/* alloc memory for structure */
-	tmp_ptr = xmalloc(sizeof(update_part_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
 		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
@@ -2073,7 +2065,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->qos_char, buffer);
 		safe_unpack16(&tmp_ptr->state_up, buffer);
 		safe_unpackstr(&tmp_ptr->topology_name, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
 		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
 		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
@@ -2109,11 +2101,11 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, buf_t *buffer,
 		safe_unpack16(&tmp_ptr->state_up, buffer);
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_update_part_msg(tmp_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14244,9 +14236,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
-		rc = _unpack_update_partition_msg((update_part_msg_t **) &
-						  (msg->data), buffer,
-						  msg->protocol_version);
+		rc = _unpack_update_partition_msg(msg, buffer);
 		break;
 	case REQUEST_DELETE_PARTITION:
 		rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
