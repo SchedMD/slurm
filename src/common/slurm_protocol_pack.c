@@ -11468,24 +11468,20 @@ static void _pack_forward_data_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	packmem(msg->data, msg->len, buffer);
 }
 
-static int _unpack_forward_data_msg(forward_data_msg_t **msg_ptr,
-				    buf_t *buffer, uint16_t protocol_version)
+static int _unpack_forward_data_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	forward_data_msg_t *msg;
-	uint32_t temp32;
+	uint32_t uint32_tmp;
+	forward_data_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(forward_data_msg_t));
-	*msg_ptr = msg;
 	safe_unpackstr(&msg->address, buffer);
 	safe_unpack32(&msg->len, buffer);
-	safe_unpackmem_xmalloc(&msg->data, &temp32, buffer);
+	safe_unpackmem_xmalloc(&msg->data, &uint32_tmp, buffer);
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_forward_data_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14297,12 +14293,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 						&msg->data, buffer,
 						msg->protocol_version);
 		break;
-
 	case REQUEST_FORWARD_DATA:
-		rc = _unpack_forward_data_msg((forward_data_msg_t **)&msg->data,
-					      buffer, msg->protocol_version);
+		rc = _unpack_forward_data_msg(msg, buffer);
 		break;
-
 	case RESPONSE_PING_SLURMD:
 		rc = _unpack_ping_slurmd_resp((ping_slurmd_resp_msg_t **)
 					      &msg->data, buffer,
