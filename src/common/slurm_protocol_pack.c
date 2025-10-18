@@ -12195,23 +12195,19 @@ static void _pack_topo_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_topo_info_request_msg(topo_info_request_msg_t **msg,
-					 buf_t *buffer,
-					 uint16_t protocol_version)
+static int _unpack_topo_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	topo_info_request_msg_t *msg_ptr =
-		xmalloc(sizeof(topo_info_request_msg_t));
+	topo_info_request_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
 
-	*msg = msg_ptr;
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg_ptr->name, buffer);
 	}
 
+	smsg->data = msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_topo_request_msg(msg_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14292,10 +14288,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_accounting_update_msg(msg, buffer);
 		break;
 	case REQUEST_TOPO_INFO:
-		rc = _unpack_topo_info_request_msg((topo_info_request_msg_t *
-							    *) &msg->data,
-						   buffer,
-						   msg->protocol_version);
+		rc = _unpack_topo_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_TOPO_INFO:
 		rc = _unpack_topo_info_msg(
