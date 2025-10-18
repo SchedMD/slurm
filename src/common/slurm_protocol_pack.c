@@ -7908,27 +7908,19 @@ static void _pack_sbcast_cred_no_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_sbcast_cred_no_job_msg(sbcast_cred_req_msg_t **msg,
-					  buf_t *buffer,
-					  uint16_t protocol_version)
+static int _unpack_sbcast_cred_no_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	sbcast_cred_req_msg_t *cred_msg;
+	sbcast_cred_req_msg_t *cred_msg = xmalloc(sizeof(*cred_msg));
 
-	xassert(buffer);
-	xassert(msg);
-
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		cred_msg = xmalloc(sizeof(*cred_msg));
-		*msg = cred_msg;
-
+	if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpackstr(&cred_msg->node_list, buffer);
 	}
 
+	smsg->data = cred_msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_sbcast_cred_req_msg(cred_msg);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14229,9 +14221,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_step_alloc_info_msg(msg, buffer);
 		break;
 	case REQUEST_SBCAST_CRED_NO_JOB:
-		rc = _unpack_sbcast_cred_no_job_msg(
-			(sbcast_cred_req_msg_t **) &(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_sbcast_cred_no_job_msg(msg, buffer);
 		break;
 	case RESPONSE_NODE_REGISTRATION:
 		rc = _unpack_node_reg_resp(
