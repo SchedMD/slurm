@@ -6592,17 +6592,11 @@ static void _pack_dep_msg(const slurm_msg_t *smsg, buf_t *buffer)
  * If this changes, then _unpack_remote_dep_job() in fed_mgr.c probably
  * needs to change.
  */
-static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, buf_t *buffer,
-			   uint16_t protocol_version)
+static int _unpack_dep_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	dep_msg_t *dep_msg_ptr = NULL;
+	dep_msg_t *dep_msg_ptr = xmalloc(sizeof(*dep_msg_ptr));
 
-	xassert(dep_msg_buffer_ptr);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		dep_msg_ptr = xmalloc(sizeof(*dep_msg_ptr));
-		*dep_msg_buffer_ptr = dep_msg_ptr;
-
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&dep_msg_ptr->array_job_id, buffer);
 		safe_unpack32(&dep_msg_ptr->array_task_id, buffer);
 		safe_unpackstr(&dep_msg_ptr->dependency, buffer);
@@ -6612,11 +6606,11 @@ static int _unpack_dep_msg(dep_msg_t **dep_msg_buffer_ptr, buf_t *buffer,
 		safe_unpack32(&dep_msg_ptr->user_id, buffer);
 	}
 
+	smsg->data = dep_msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_dep_msg(dep_msg_ptr);
-	*dep_msg_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14248,8 +14242,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 				     msg->protocol_version);
 		break;
 	case REQUEST_SEND_DEP:
-		rc = _unpack_dep_msg((dep_msg_t **)&(msg->data), buffer,
-				     msg->protocol_version);
+		rc = _unpack_dep_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_ORIGIN_DEP:
 		rc = _unpack_dep_update_origin_msg(
