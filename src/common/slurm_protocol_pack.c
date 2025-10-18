@@ -10962,7 +10962,12 @@ static void _pack_net_forward_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	net_forward_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->flags, buffer);
+		pack16(msg->port, buffer);
+		packstr(msg->target, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->flags, buffer);
 		pack16(msg->port, buffer);
@@ -10974,7 +10979,12 @@ static int _unpack_net_forward_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	net_forward_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->flags, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpackstr(&msg->target, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->flags, buffer);
 		safe_unpack16(&msg->port, buffer);
