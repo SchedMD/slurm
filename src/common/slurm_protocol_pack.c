@@ -938,27 +938,20 @@ static void _pack_acct_gather_energy_req(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_acct_gather_energy_req(acct_gather_energy_req_msg_t **msg,
-			       buf_t *buffer, uint16_t protocol_version)
+static int _unpack_acct_gather_energy_req(slurm_msg_t *smsg, buf_t *buffer)
 {
-	acct_gather_energy_req_msg_t *msg_ptr;
+	acct_gather_energy_req_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
 
-	xassert(msg);
-
-	msg_ptr = xmalloc(sizeof(acct_gather_energy_req_msg_t));
-	*msg = msg_ptr;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg_ptr->context_id, buffer);
 		safe_unpack16(&msg_ptr->delta, buffer);
 	}
 
+	smsg->data = msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_acct_gather_energy_req_msg(msg_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14242,9 +14235,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		/* Message contains no body/information */
 		break;
 	case REQUEST_ACCT_GATHER_ENERGY:
-		rc = _unpack_acct_gather_energy_req(
-			(acct_gather_energy_req_msg_t **) & (msg->data),
-			buffer, msg->protocol_version);
+		rc = _unpack_acct_gather_energy_req(msg, buffer);
 		break;
 	case REQUEST_PERSIST_INIT:
 		/* the version is contained in the data so use that instead of
