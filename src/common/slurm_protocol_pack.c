@@ -2028,84 +2028,84 @@ static void _pack_update_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_update_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	update_part_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	update_part_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
-		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
-		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
-		safe_unpackstr(&tmp_ptr->allow_qos, buffer);
-		safe_unpackstr(&tmp_ptr->alternate, buffer);
-		safe_unpackstr(&tmp_ptr->billing_weights_str, buffer);
+		safe_unpackstr(&msg->allow_accounts, buffer);
+		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
+		safe_unpackstr(&msg->allow_groups, buffer);
+		safe_unpackstr(&msg->allow_qos, buffer);
+		safe_unpackstr(&msg->alternate, buffer);
+		safe_unpackstr(&msg->billing_weights_str, buffer);
 
-		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
-		safe_unpack64(&tmp_ptr->def_mem_per_cpu, buffer);
-		safe_unpack32(&tmp_ptr->default_time, buffer);
-		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
-		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
-		safe_unpack32(&tmp_ptr->flags, buffer);
-		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
-		safe_unpack32(&tmp_ptr->grace_time, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpack64(&msg->def_mem_per_cpu, buffer);
+		safe_unpack32(&msg->default_time, buffer);
+		safe_unpackstr(&msg->deny_accounts, buffer);
+		safe_unpackstr(&msg->deny_qos, buffer);
+		safe_unpack32(&msg->flags, buffer);
+		safe_unpackstr(&msg->job_defaults_str, buffer);
+		safe_unpack32(&msg->grace_time, buffer);
 
-		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
-		safe_unpack32(&tmp_ptr->max_cpus_per_socket, buffer);
-		safe_unpack64(&tmp_ptr->max_mem_per_cpu, buffer);
-		safe_unpack32(&tmp_ptr->max_nodes, buffer);
-		safe_unpack16(&tmp_ptr->max_share, buffer);
-		safe_unpack32(&tmp_ptr->max_time, buffer);
-		safe_unpack32(&tmp_ptr->min_nodes, buffer);
+		safe_unpack32(&msg->max_cpus_per_node, buffer);
+		safe_unpack32(&msg->max_cpus_per_socket, buffer);
+		safe_unpack64(&msg->max_mem_per_cpu, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpack16(&msg->max_share, buffer);
+		safe_unpack32(&msg->max_time, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
 
-		safe_unpackstr(&tmp_ptr->name, buffer);
-		safe_unpackstr(&tmp_ptr->nodes, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
 
-		safe_unpack16(&tmp_ptr->over_time_limit, buffer);
-		safe_unpack16(&tmp_ptr->preempt_mode, buffer);
-		safe_unpack16(&tmp_ptr->priority_job_factor, buffer);
-		safe_unpack16(&tmp_ptr->priority_tier, buffer);
-		safe_unpackstr(&tmp_ptr->qos_char, buffer);
-		safe_unpack16(&tmp_ptr->state_up, buffer);
-		safe_unpackstr(&tmp_ptr->topology_name, buffer);
+		safe_unpack16(&msg->over_time_limit, buffer);
+		safe_unpack16(&msg->preempt_mode, buffer);
+		safe_unpack16(&msg->priority_job_factor, buffer);
+		safe_unpack16(&msg->priority_tier, buffer);
+		safe_unpackstr(&msg->qos_char, buffer);
+		safe_unpack16(&msg->state_up, buffer);
+		safe_unpackstr(&msg->topology_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->allow_accounts, buffer);
-		safe_unpackstr(&tmp_ptr->allow_alloc_nodes, buffer);
-		safe_unpackstr(&tmp_ptr->allow_groups, buffer);
-		safe_unpackstr(&tmp_ptr->allow_qos, buffer);
-		safe_unpackstr(&tmp_ptr->alternate, buffer);
-		safe_unpackstr(&tmp_ptr->billing_weights_str, buffer);
+		safe_unpackstr(&msg->allow_accounts, buffer);
+		safe_unpackstr(&msg->allow_alloc_nodes, buffer);
+		safe_unpackstr(&msg->allow_groups, buffer);
+		safe_unpackstr(&msg->allow_qos, buffer);
+		safe_unpackstr(&msg->alternate, buffer);
+		safe_unpackstr(&msg->billing_weights_str, buffer);
 
-		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
-		safe_unpack64(&tmp_ptr->def_mem_per_cpu, buffer);
-		safe_unpack32(&tmp_ptr->default_time, buffer);
-		safe_unpackstr(&tmp_ptr->deny_accounts, buffer);
-		safe_unpackstr(&tmp_ptr->deny_qos, buffer);
-		safe_unpack32(&tmp_ptr->flags, buffer);
-		safe_unpackstr(&tmp_ptr->job_defaults_str, buffer);
-		safe_unpack32(&tmp_ptr->grace_time, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpack64(&msg->def_mem_per_cpu, buffer);
+		safe_unpack32(&msg->default_time, buffer);
+		safe_unpackstr(&msg->deny_accounts, buffer);
+		safe_unpackstr(&msg->deny_qos, buffer);
+		safe_unpack32(&msg->flags, buffer);
+		safe_unpackstr(&msg->job_defaults_str, buffer);
+		safe_unpack32(&msg->grace_time, buffer);
 
-		safe_unpack32(&tmp_ptr->max_cpus_per_node, buffer);
-		safe_unpack32(&tmp_ptr->max_cpus_per_socket, buffer);
-		safe_unpack64(&tmp_ptr->max_mem_per_cpu, buffer);
-		safe_unpack32(&tmp_ptr->max_nodes, buffer);
-		safe_unpack16(&tmp_ptr->max_share, buffer);
-		safe_unpack32(&tmp_ptr->max_time, buffer);
-		safe_unpack32(&tmp_ptr->min_nodes, buffer);
+		safe_unpack32(&msg->max_cpus_per_node, buffer);
+		safe_unpack32(&msg->max_cpus_per_socket, buffer);
+		safe_unpack64(&msg->max_mem_per_cpu, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpack16(&msg->max_share, buffer);
+		safe_unpack32(&msg->max_time, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
 
-		safe_unpackstr(&tmp_ptr->name, buffer);
-		safe_unpackstr(&tmp_ptr->nodes, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->nodes, buffer);
 
-		safe_unpack16(&tmp_ptr->over_time_limit, buffer);
-		safe_unpack16(&tmp_ptr->preempt_mode, buffer);
-		safe_unpack16(&tmp_ptr->priority_job_factor, buffer);
-		safe_unpack16(&tmp_ptr->priority_tier, buffer);
-		safe_unpackstr(&tmp_ptr->qos_char, buffer);
-		safe_unpack16(&tmp_ptr->state_up, buffer);
+		safe_unpack16(&msg->over_time_limit, buffer);
+		safe_unpack16(&msg->preempt_mode, buffer);
+		safe_unpack16(&msg->priority_job_factor, buffer);
+		safe_unpack16(&msg->priority_tier, buffer);
+		safe_unpackstr(&msg->qos_char, buffer);
+		safe_unpack16(&msg->state_up, buffer);
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_update_part_msg(tmp_ptr);
+	slurm_free_update_part_msg(msg);
 	return SLURM_ERROR;
 }
 
