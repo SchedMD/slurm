@@ -12364,23 +12364,18 @@ static void _pack_license_info_request_msg(const slurm_msg_t *smsg,
 	pack16(msg->show_flags, buffer);
 }
 
-/* _unpack_license_info_request_msg()
- */
-static int
-_unpack_license_info_request_msg(license_info_request_msg_t **msg,
-				 buf_t *buffer,
-				 uint16_t protocol_version)
+static int _unpack_license_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	*msg = xmalloc(sizeof(license_info_msg_t));
+	license_info_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	safe_unpack_time(&(*msg)->last_update, buffer);
-	safe_unpack16(&(*msg)->show_flags, buffer);
+	safe_unpack_time(&msg->last_update, buffer);
+	safe_unpack16(&msg->show_flags, buffer);
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_license_info_request_msg(*msg);
-	*msg = NULL;
+	slurm_free_license_info_request_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14289,10 +14284,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_license_info_msg(msg, buffer);
 		break;
 	case REQUEST_LICENSE_INFO:
-		rc = _unpack_license_info_request_msg((license_info_request_msg_t **)
-						      &(msg->data),
-						      buffer,
-						      msg->protocol_version);
+		rc = _unpack_license_info_request_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		rc = _unpack_job_array_resp_msg((job_array_resp_msg_t **)
