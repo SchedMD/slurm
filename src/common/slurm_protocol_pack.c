@@ -8147,34 +8147,30 @@ static void _pack_reattach_tasks_response_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int
-_unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
-				    buf_t *buffer,
-				    uint16_t protocol_version)
+static int _unpack_reattach_tasks_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t ntasks;
 	reattach_tasks_response_msg_t *msg = xmalloc(sizeof(*msg));
-	int i;
 
-	xassert(msg_ptr);
-	*msg_ptr = msg;
-
-	safe_unpackstr(&msg->node_name, buffer);
-	safe_unpack32(&msg->return_code,  buffer);
-	safe_unpack32(&msg->ntasks,       buffer);
-	safe_unpack32_array(&msg->gtids,      &ntasks, buffer);
-	safe_unpack32_array(&msg->local_pids, &ntasks, buffer);
-	if (msg->ntasks != ntasks)
-		goto unpack_error;
-	safe_xcalloc(msg->executable_names, msg->ntasks, sizeof(char *));
-	for (i = 0; i < msg->ntasks; i++) {
-		safe_unpackstr(&(msg->executable_names[i]), buffer);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->node_name, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpack32(&msg->ntasks, buffer);
+		safe_unpack32_array(&msg->gtids, &ntasks, buffer);
+		safe_unpack32_array(&msg->local_pids, &ntasks, buffer);
+		if (msg->ntasks != ntasks)
+			goto unpack_error;
+		safe_xcalloc(msg->executable_names, msg->ntasks,
+			     sizeof(char *));
+		for (int i = 0; i < msg->ntasks; i++)
+			safe_unpackstr(&msg->executable_names[i], buffer);
 	}
+
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_reattach_tasks_response_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14225,10 +14221,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_reattach_tasks_request_msg(msg, buffer);
 		break;
 	case RESPONSE_REATTACH_TASKS:
-		rc = _unpack_reattach_tasks_response_msg(
-			(reattach_tasks_response_msg_t **)
-			& msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_reattach_tasks_response_msg(msg, buffer);
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
