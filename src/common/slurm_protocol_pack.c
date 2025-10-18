@@ -11551,18 +11551,12 @@ static void _pack_file_bcast(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_file_bcast(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
-	file_bcast_msg_t *msg ;
+	file_bcast_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-
-	msg = xmalloc ( sizeof (file_bcast_msg_t) ) ;
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->block_no, buffer);
 		safe_unpack16(&msg->compress, buffer);
 		safe_unpack16(&msg->flags, buffer);
@@ -11585,17 +11579,17 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 		if (uint32_tmp != msg->block_len)
 			goto unpack_error;
 
-		msg->cred = unpack_sbcast_cred(buffer, msg,
-					       protocol_version);
+		msg->cred =
+			unpack_sbcast_cred(buffer, msg, smsg->protocol_version);
 		if (msg->cred == NULL)
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_file_bcast_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14297,9 +14291,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_burst_buffer_info_msg(msg, buffer);
 		break;
 	case REQUEST_FILE_BCAST:
-		rc = _unpack_file_bcast( (file_bcast_msg_t **)
-					 & msg->data, buffer,
-					 msg->protocol_version);
+		rc = _unpack_file_bcast(msg, buffer);
 		break;
 	case PMI_KVS_PUT_REQ:
 	case PMI_KVS_GET_RESP:
