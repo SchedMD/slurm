@@ -3024,38 +3024,31 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int
-_unpack_reserve_info_msg(reserve_info_msg_t ** msg, buf_t *buffer,
-			 uint16_t protocol_version)
+static int _unpack_reserve_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	int i;
-	reserve_info_t *reserve = NULL;
+	reserve_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg);
-	*msg = xmalloc(sizeof(reserve_info_msg_t));
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->record_count, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
 
-	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&((*msg)->record_count), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
-
-		safe_xcalloc((*msg)->reservation_array, (*msg)->record_count,
+		safe_xcalloc(msg->reservation_array, msg->record_count,
 			     sizeof(reserve_info_t));
-		reserve = (*msg)->reservation_array;
 
 		/* load individual reservation records */
-		for (i = 0; i < (*msg)->record_count; i++) {
-			if (_unpack_reserve_info_members(&reserve[i], buffer,
-							 protocol_version))
+		for (int i = 0; i < msg->record_count; i++) {
+			if (_unpack_reserve_info_members(
+				    &msg->reservation_array[i], buffer,
+				    smsg->protocol_version))
 				goto unpack_error;
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_reservation_info_msg(*msg);
-	*msg = NULL;
+	slurm_free_reservation_info_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14226,9 +14219,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_resv_name_msg(msg, buffer);
 		break;
 	case RESPONSE_RESERVATION_INFO:
-		rc = _unpack_reserve_info_msg((reserve_info_msg_t **)
-					      &(msg->data), buffer,
-					      msg->protocol_version);
+		rc = _unpack_reserve_info_msg(msg, buffer);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		rc = _unpack_launch_tasks_request_msg(msg, buffer);
