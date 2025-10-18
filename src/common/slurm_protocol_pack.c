@@ -12238,26 +12238,18 @@ static void _pack_stats_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int  _unpack_stats_request_msg(stats_info_request_msg_t **msg_ptr,
-				      buf_t *buffer, uint16_t protocol_version)
+static int _unpack_stats_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	stats_info_request_msg_t * msg;
-	xassert(msg_ptr);
+	stats_info_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc ( sizeof(stats_info_request_msg_t) );
-	*msg_ptr = msg ;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->command_id, buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*msg_ptr = NULL;
 	slurm_free_stats_info_request_msg(msg);
 	return SLURM_ERROR;
 }
@@ -14298,11 +14290,8 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 						   buffer);
 		break;
 	case REQUEST_STATS_INFO:
-		rc = _unpack_stats_request_msg((stats_info_request_msg_t **)
-					       &msg->data, buffer,
-					       msg->protocol_version);
+		rc = _unpack_stats_request_msg(msg, buffer);
 		break;
-
 	case RESPONSE_STATS_INFO:
 		rc = _unpack_stats_response_msg((stats_info_response_msg_t **)
 						&msg->data, buffer,
