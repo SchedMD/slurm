@@ -12629,25 +12629,19 @@ static void _ctld_free_list_msg(void *x)
 	FREE_NULL_BUFFER(x);
 }
 
-static int _unpack_buf_list_msg(ctld_list_msg_t **msg, buf_t *buffer,
-				uint16_t protocol_version)
+static int _unpack_buf_list_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	ctld_list_msg_t *object_ptr = NULL;
-	uint32_t i, list_size = 0, buf_size = 0, read_size = 0;
+	uint32_t list_size = 0, buf_size = 0, read_size = 0;
 	char *data = NULL;
 	buf_t *req_buf;
+	ctld_list_msg_t *object_ptr = xmalloc(sizeof(*object_ptr));
 
-	xassert(msg);
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		object_ptr = xmalloc(sizeof(ctld_list_msg_t));
-		*msg = object_ptr;
-
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&list_size, buffer);
 		if (list_size >= NO_VAL)
 			goto unpack_error;
 		object_ptr->my_list = list_create(_ctld_free_list_msg);
-		for (i = 0; i < list_size; i++) {
+		for (int i = 0; i < list_size; i++) {
 			safe_unpack32(&buf_size, buffer);
 			safe_unpackmem_xmalloc(&data, &read_size, buffer);
 			if (buf_size != read_size)
@@ -12659,12 +12653,12 @@ static int _unpack_buf_list_msg(ctld_list_msg_t **msg, buf_t *buffer,
 		}
 	}
 
+	smsg->data = object_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(data);
 	slurm_free_ctld_multi_msg(object_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14294,8 +14288,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
-		rc = _unpack_buf_list_msg((ctld_list_msg_t **) &(msg->data),
-					  buffer, msg->protocol_version);
+		rc = _unpack_buf_list_msg(msg, buffer);
 		break;
 	case REQUEST_SET_FS_DAMPENING_FACTOR:
 		rc = _unpack_set_fs_dampening_factor_msg(msg, buffer);
