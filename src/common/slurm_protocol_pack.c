@@ -814,68 +814,68 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	update_node_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	update_node_msg_t *msg = xmalloc(sizeof(*msg));
 
-	slurm_init_update_node_msg(tmp_ptr);
+	slurm_init_update_node_msg(msg);
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->cert_token, buffer);
-		safe_unpackstr(&tmp_ptr->comment, buffer);
-		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
-		safe_unpackstr(&tmp_ptr->extra, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpackstr(&tmp_ptr->features_act, buffer);
-		safe_unpackstr(&tmp_ptr->gres, buffer);
-		safe_unpackstr(&tmp_ptr->instance_id, buffer);
-		safe_unpackstr(&tmp_ptr->instance_type, buffer);
-		safe_unpackstr(&tmp_ptr->node_addr, buffer);
-		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
-		safe_unpackstr(&tmp_ptr->node_names, buffer);
-		safe_unpack32(&tmp_ptr->node_state, buffer);
-		safe_unpackstr(&tmp_ptr->reason, buffer);
-		safe_unpack32(&tmp_ptr->resume_after, buffer);
-		safe_unpackstr(&tmp_ptr->topology_str, buffer);
-		safe_unpack32(&tmp_ptr->weight, buffer);
+		safe_unpackstr(&msg->cert_token, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->features_act, buffer);
+		safe_unpackstr(&msg->gres, buffer);
+		safe_unpackstr(&msg->instance_id, buffer);
+		safe_unpackstr(&msg->instance_type, buffer);
+		safe_unpackstr(&msg->node_addr, buffer);
+		safe_unpackstr(&msg->node_hostname, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpack32(&msg->node_state, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack32(&msg->resume_after, buffer);
+		safe_unpackstr(&msg->topology_str, buffer);
+		safe_unpack32(&msg->weight, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->cert_token, buffer);
-		safe_unpackstr(&tmp_ptr->comment, buffer);
-		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
-		safe_unpackstr(&tmp_ptr->extra, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpackstr(&tmp_ptr->features_act, buffer);
-		safe_unpackstr(&tmp_ptr->gres, buffer);
-		safe_unpackstr(&tmp_ptr->instance_id, buffer);
-		safe_unpackstr(&tmp_ptr->instance_type, buffer);
-		safe_unpackstr(&tmp_ptr->node_addr, buffer);
-		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
-		safe_unpackstr(&tmp_ptr->node_names, buffer);
-		safe_unpack32(&tmp_ptr->node_state, buffer);
-		safe_unpackstr(&tmp_ptr->reason, buffer);
-		safe_unpack32(&tmp_ptr->resume_after, buffer);
-		safe_unpack32(&tmp_ptr->weight, buffer);
+		safe_unpackstr(&msg->cert_token, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->features_act, buffer);
+		safe_unpackstr(&msg->gres, buffer);
+		safe_unpackstr(&msg->instance_id, buffer);
+		safe_unpackstr(&msg->instance_type, buffer);
+		safe_unpackstr(&msg->node_addr, buffer);
+		safe_unpackstr(&msg->node_hostname, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpack32(&msg->node_state, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack32(&msg->resume_after, buffer);
+		safe_unpack32(&msg->weight, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->comment, buffer);
-		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
-		safe_unpackstr(&tmp_ptr->extra, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpackstr(&tmp_ptr->features_act, buffer);
-		safe_unpackstr(&tmp_ptr->gres, buffer);
-		safe_unpackstr(&tmp_ptr->instance_id, buffer);
-		safe_unpackstr(&tmp_ptr->instance_type, buffer);
-		safe_unpackstr(&tmp_ptr->node_addr, buffer);
-		safe_unpackstr(&tmp_ptr->node_hostname, buffer);
-		safe_unpackstr(&tmp_ptr->node_names, buffer);
-		safe_unpack32(&tmp_ptr->node_state, buffer);
-		safe_unpackstr(&tmp_ptr->reason, buffer);
-		safe_unpack32(&tmp_ptr->resume_after, buffer);
-		safe_unpack32(&tmp_ptr->weight, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->features_act, buffer);
+		safe_unpackstr(&msg->gres, buffer);
+		safe_unpackstr(&msg->instance_id, buffer);
+		safe_unpackstr(&msg->instance_type, buffer);
+		safe_unpackstr(&msg->node_addr, buffer);
+		safe_unpackstr(&msg->node_hostname, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpack32(&msg->node_state, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack32(&msg->resume_after, buffer);
+		safe_unpack32(&msg->weight, buffer);
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_update_node_msg(tmp_ptr);
+	slurm_free_update_node_msg(msg);
 	return SLURM_ERROR;
 }
 
