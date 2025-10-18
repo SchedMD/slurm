@@ -11736,41 +11736,38 @@ static void _pack_kvs_data(const slurm_msg_t *smsg, buf_t *buffer)
 			      smsg->protocol_version);
 }
 
-static int  _unpack_kvs_data(kvs_comm_set_t **msg_ptr, buf_t *buffer,
-			     uint16_t protocol_version)
+static int _unpack_kvs_data(slurm_msg_t *smsg, buf_t *buffer)
 {
-	kvs_comm_set_t *msg;
-	int i;
+	kvs_comm_set_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(kvs_comm_set_t));
-	*msg_ptr = msg;
-
-	safe_unpack16(&msg->host_cnt, buffer);
-	if (msg->host_cnt > NO_VAL16)
-		goto unpack_error;
-	safe_xcalloc(msg->kvs_host_ptr, msg->host_cnt,
-		     sizeof(struct kvs_hosts));
-	for (i = 0; i < msg->host_cnt; i++) {
-		if (_unpack_kvs_host_rec(&msg->kvs_host_ptr[i], buffer,
-					 protocol_version))
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&msg->host_cnt, buffer);
+		if (msg->host_cnt > NO_VAL16)
 			goto unpack_error;
-	}
+		safe_xcalloc(msg->kvs_host_ptr, msg->host_cnt,
+			     sizeof(struct kvs_hosts));
+		for (int i = 0; i < msg->host_cnt; i++) {
+			if (_unpack_kvs_host_rec(&msg->kvs_host_ptr[i], buffer,
+						 smsg->protocol_version))
+				goto unpack_error;
+		}
 
-	safe_unpack16(&msg->kvs_comm_recs, buffer);
-	if (msg->kvs_comm_recs > NO_VAL16)
-		goto unpack_error;
-	safe_xcalloc(msg->kvs_comm_ptr, msg->kvs_comm_recs,
-		     sizeof(struct kvs_comm *));
-	for (i = 0; i < msg->kvs_comm_recs; i++) {
-		if (_unpack_kvs_rec(&msg->kvs_comm_ptr[i], buffer,
-				    protocol_version))
+		safe_unpack16(&msg->kvs_comm_recs, buffer);
+		if (msg->kvs_comm_recs > NO_VAL16)
 			goto unpack_error;
+		safe_xcalloc(msg->kvs_comm_ptr, msg->kvs_comm_recs,
+			     sizeof(struct kvs_comm *));
+		for (int i = 0; i < msg->kvs_comm_recs; i++) {
+			if (_unpack_kvs_rec(&msg->kvs_comm_ptr[i], buffer,
+					    smsg->protocol_version))
+				goto unpack_error;
+		}
 	}
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_kvs_comm_set(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14295,9 +14292,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case PMI_KVS_PUT_REQ:
 	case PMI_KVS_GET_RESP:
-		rc = _unpack_kvs_data((kvs_comm_set_t **) &msg->data,
-				      buffer,
-				      msg->protocol_version);
+		rc = _unpack_kvs_data(msg, buffer);
 		break;
 	case PMI_KVS_GET_REQ:
 		rc = _unpack_kvs_get((kvs_get_msg_t **) &msg->data, buffer,
