@@ -6431,38 +6431,36 @@ unpack_error:
 
 static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	sib_msg_t *sib_msg_ptr = smsg->data;
+	sib_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(sib_msg_ptr->cluster_id, buffer);
-		pack16(sib_msg_ptr->data_type, buffer);
-		pack16(sib_msg_ptr->data_version, buffer);
-		pack64(sib_msg_ptr->fed_siblings, buffer);
-		pack32(sib_msg_ptr->group_id, buffer);
-		pack32(sib_msg_ptr->job_id, buffer);
-		pack32(sib_msg_ptr->job_state, buffer);
-		pack32(sib_msg_ptr->return_code, buffer);
-		pack_time(sib_msg_ptr->start_time, buffer);
-		packstr(sib_msg_ptr->resp_host, buffer);
-		pack32(sib_msg_ptr->req_uid, buffer);
-		pack16(sib_msg_ptr->sib_msg_type, buffer);
-		packstr(sib_msg_ptr->submit_host, buffer);
-		pack16(sib_msg_ptr->submit_proto_ver, buffer);
-		pack32(sib_msg_ptr->user_id, buffer);
+		pack32(msg->cluster_id, buffer);
+		pack16(msg->data_type, buffer);
+		pack16(msg->data_version, buffer);
+		pack64(msg->fed_siblings, buffer);
+		pack32(msg->group_id, buffer);
+		pack32(msg->job_id, buffer);
+		pack32(msg->job_state, buffer);
+		pack32(msg->return_code, buffer);
+		pack_time(msg->start_time, buffer);
+		packstr(msg->resp_host, buffer);
+		pack32(msg->req_uid, buffer);
+		pack16(msg->sib_msg_type, buffer);
+		packstr(msg->submit_host, buffer);
+		pack16(msg->submit_proto_ver, buffer);
+		pack32(msg->user_id, buffer);
 
 		/* add already packed data_buffer to buffer */
-		if (sib_msg_ptr->data_buffer &&
-		    size_buf(sib_msg_ptr->data_buffer)) {
-			buf_t *dbuf = sib_msg_ptr->data_buffer;
+		if (msg->data_buffer && size_buf(msg->data_buffer)) {
+			buf_t *dbuf = msg->data_buffer;
 			uint32_t grow_size =
-				get_buf_offset(dbuf) - sib_msg_ptr->data_offset;
+				get_buf_offset(dbuf) - msg->data_offset;
 
 			pack16(1, buffer);
 
 			grow_buf(buffer, grow_size);
 			memcpy(&buffer->head[get_buf_offset(buffer)],
-			       &dbuf->head[sib_msg_ptr->data_offset],
-			       grow_size);
+			       &dbuf->head[msg->data_offset], grow_size);
 			set_buf_offset(buffer,
 				       get_buf_offset(buffer) + grow_size);
 		} else {
