@@ -3232,7 +3232,17 @@ unpack_error:
 static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 				 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(job_ptr->array_job_id, buffer);
+		pack32(job_ptr->array_task_id, buffer);
+		pack_dep_list(job_ptr->details->depend_list, buffer,
+			      protocol_version);
+		packstr(job_ptr->details->dependency, buffer);
+		packbool(job_ptr->array_recs ? true : false, buffer);
+		pack32(job_ptr->job_id, buffer);
+		packstr(job_ptr->name, buffer);
+		pack32(job_ptr->user_id, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
 		pack32(job_ptr->array_task_id, buffer);
 		pack_dep_list(job_ptr->details->depend_list, buffer,
@@ -3267,7 +3277,20 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 	*job_pptr = job_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&job_ptr->array_job_id, buffer);
+		safe_unpack32(&job_ptr->array_task_id, buffer);
+		unpack_dep_list(&job_ptr->details->depend_list, buffer,
+				protocol_version);
+		safe_unpackstr(&job_ptr->details->dependency, buffer);
+		safe_unpackbool(&is_array, buffer);
+		if (is_array)
+			job_ptr->array_recs =
+				xmalloc(sizeof *(job_ptr->array_recs));
+		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpackstr(&job_ptr->name, buffer);
+		safe_unpack32(&job_ptr->user_id, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 		unpack_dep_list(&job_ptr->details->depend_list, buffer,
