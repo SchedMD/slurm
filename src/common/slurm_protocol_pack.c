@@ -9925,23 +9925,21 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _unpack_burst_buffer_info_msg(
-	burst_buffer_info_msg_t **burst_buffer_info, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_burst_buffer_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	int i, j;
-	burst_buffer_info_msg_t *bb_msg_ptr = NULL;
 	burst_buffer_info_t *bb_info_ptr;
 	burst_buffer_resv_t *bb_resv_ptr;
 	burst_buffer_use_t  *bb_use_ptr;
+	burst_buffer_info_msg_t *bb_msg_ptr = xmalloc(sizeof(*bb_msg_ptr));
 
-	bb_msg_ptr = xmalloc(sizeof(burst_buffer_info_msg_t));
 	safe_unpack32(&bb_msg_ptr->record_count, buffer);
 	if (bb_msg_ptr->record_count >= NO_VAL)
 		goto unpack_error;
 	safe_xcalloc(bb_msg_ptr->burst_buffer_array, bb_msg_ptr->record_count,
 		     sizeof(burst_buffer_info_t));
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		for (i = 0, bb_info_ptr = bb_msg_ptr->burst_buffer_array;
 		     i < bb_msg_ptr->record_count; i++, bb_info_ptr++) {
 			safe_unpackstr(&bb_info_ptr->name, buffer);
@@ -10031,12 +10029,11 @@ static int _unpack_burst_buffer_info_msg(
 		}
 	}
 
-	*burst_buffer_info = bb_msg_ptr;
+	smsg->data = bb_msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_burst_buffer_info_msg(bb_msg_ptr);
-	*burst_buffer_info = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14297,9 +14294,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_priority_factors_response_msg(msg, buffer);
 		break;
 	case RESPONSE_BURST_BUFFER_INFO:
-		rc = _unpack_burst_buffer_info_msg(
-			(burst_buffer_info_msg_t **) &(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_burst_buffer_info_msg(msg, buffer);
 		break;
 	case REQUEST_FILE_BCAST:
 		rc = _unpack_file_bcast( (file_bcast_msg_t **)
