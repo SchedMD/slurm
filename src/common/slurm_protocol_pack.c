@@ -6726,20 +6726,20 @@ static void _pack_dep_update_origin_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_dep_update_origin_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	dep_update_origin_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
+	dep_update_origin_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (unpack_dep_list(&msg_ptr->depend_list,
-				    buffer, smsg->protocol_version))
+		if (unpack_dep_list(&msg->depend_list, buffer,
+				    smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&msg_ptr->job_id, buffer);
+		safe_unpack32(&msg->job_id, buffer);
 	}
 
-	smsg->data = msg_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_dep_update_origin_msg(msg_ptr);
+	slurm_free_dep_update_origin_msg(msg);
 	return SLURM_ERROR;
 }
 
