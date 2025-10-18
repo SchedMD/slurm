@@ -12384,20 +12384,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-/*
- * Decode the array of licenses as it comes from the
- * controller and build the API licenses structures.
- */
-static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
-				    buf_t *buffer,
-				    uint16_t protocol_version)
+static int _unpack_license_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	license_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);
 		safe_unpack_time(&msg->last_update, buffer);
 
@@ -12433,7 +12424,7 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 			safe_unpack8(&msg->lic_array[i].mode, buffer);
 			safe_unpackstr(&msg->lic_array[i].nodes, buffer);
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->num_lic, buffer);
 		safe_unpack_time(&msg->last_update, buffer);
 
@@ -12467,11 +12458,11 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 		}
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_license_info_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14295,9 +14286,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_ping_slurmd_resp(msg, buffer);
 		break;
 	case RESPONSE_LICENSE_INFO:
-		rc = _unpack_license_info_msg((license_info_msg_t **)&(msg->data),
-					      buffer,
-					      msg->protocol_version);
+		rc = _unpack_license_info_msg(msg, buffer);
 		break;
 	case REQUEST_LICENSE_INFO:
 		rc = _unpack_license_info_request_msg((license_info_request_msg_t **)
