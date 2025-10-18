@@ -3300,7 +3300,10 @@ extern void slurm_pack_stepmgr_job_info(void *in, uint16_t protocol_version,
 {
 	stepmgr_job_info_t *object = in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack32(object->job_id, buffer);
+		packstr(object->stepmgr, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(object->job_id, buffer);
 		packstr(object->stepmgr, buffer);
 	}
@@ -3313,7 +3316,10 @@ extern int slurm_unpack_stepmgr_job_info(void **out,
 	stepmgr_job_info_t *object = xmalloc(sizeof(*object));
 	*out = object;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&object->job_id, buffer);
+		safe_unpackstr(&object->stepmgr, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&object->job_id, buffer);
 		safe_unpackstr(&object->stepmgr, buffer);
 	}
