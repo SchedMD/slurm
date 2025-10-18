@@ -9124,28 +9124,24 @@ static void _pack_cancel_tasks_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_cancel_tasks_msg(signal_tasks_msg_t **msg_ptr, buf_t *buffer,
-			 uint16_t protocol_version)
+static int _unpack_cancel_tasks_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	signal_tasks_msg_t *msg;
+	signal_tasks_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(signal_tasks_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpack16(&msg->signal, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_signal_tasks_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14225,9 +14221,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
-		rc = _unpack_cancel_tasks_msg((signal_tasks_msg_t **) &
-					      (msg->data), buffer,
-					      msg->protocol_version);
+		rc = _unpack_cancel_tasks_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_INFO:
 		rc = _unpack_job_step_info_req_msg(
