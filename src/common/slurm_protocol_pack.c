@@ -3248,41 +3248,34 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int
-_unpack_job_step_info_response_msg(job_step_info_response_msg_t** msg,
-				   buf_t *buffer,
-				   uint16_t protocol_version)
+static int _unpack_job_step_info_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	int i = 0;
-	job_step_info_t *step;
+	job_step_info_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg);
-	*msg = xmalloc(sizeof(job_step_info_response_msg_t));
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_step_count, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&(*msg)->job_step_count, buffer);
-		safe_unpack_time(&(*msg)->last_update, buffer);
-
-		safe_xcalloc((*msg)->job_steps, (*msg)->job_step_count,
+		safe_xcalloc(msg->job_steps, msg->job_step_count,
 			     sizeof(job_step_info_t));
-		step = (*msg)->job_steps;
 
-		for (i = 0; i < (*msg)->job_step_count; i++)
-			if (_unpack_job_step_info_members(&step[i], buffer,
-							  protocol_version))
+		for (int i = 0; i < msg->job_step_count; i++)
+			if (_unpack_job_step_info_members(
+				    &msg->job_steps[i], buffer,
+				    smsg->protocol_version))
 				goto unpack_error;
 
-		if (slurm_unpack_list(&(*msg)->stepmgr_jobs,
-				      slurm_unpack_stepmgr_job_info,
-				       xfree_ptr, buffer, protocol_version))
+		if (slurm_unpack_list(&msg->stepmgr_jobs,
+				      slurm_unpack_stepmgr_job_info, xfree_ptr,
+				      buffer, smsg->protocol_version))
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_info_response_msg(*msg);
-	*msg = NULL;
+	slurm_free_job_step_info_response_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14254,10 +14247,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_epilog_comp_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_INFO:
-		rc = _unpack_job_step_info_response_msg(
-			(job_step_info_response_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_job_step_info_response_msg(msg, buffer);
 		break;
 	case MESSAGE_TASK_EXIT:
 		rc = _unpack_task_exit_msg((task_exit_msg_t **)
