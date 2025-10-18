@@ -717,40 +717,37 @@ static void _pack_priority_factors_response_msg(const slurm_msg_t *smsg,
 			smsg->protocol_version);
 }
 
-static int
-_unpack_priority_factors_response_msg(priority_factors_response_msg_t ** msg,
-				      buf_t *buffer,
-				      uint16_t protocol_version)
+static int _unpack_priority_factors_response_msg(slurm_msg_t *smsg,
+						 buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
-	int i = 0;
 	void *tmp_info = NULL;
-	priority_factors_response_msg_t *object_ptr = NULL;
-	xassert(msg);
+	priority_factors_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	object_ptr = xmalloc(sizeof(priority_factors_response_msg_t));
-	*msg = object_ptr;
-
-	safe_unpack32(&count, buffer);
-	if (count > NO_VAL)
-		goto unpack_error;
-	if (count != NO_VAL) {
-		object_ptr->priority_factors_list =
-			list_create(slurm_destroy_priority_factors_object);
-		for (i = 0; i < count; i++) {
-			if (_unpack_priority_factors_object(&tmp_info, buffer,
-							    protocol_version)
-			    != SLURM_SUCCESS)
-				goto unpack_error;
-			list_append(object_ptr->priority_factors_list,
-				    tmp_info);
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			msg->priority_factors_list = list_create(
+				slurm_destroy_priority_factors_object);
+			for (int i = 0; i < count; i++) {
+				if (_unpack_priority_factors_object(
+					    &tmp_info, buffer,
+					    smsg->protocol_version) !=
+				    SLURM_SUCCESS)
+					goto unpack_error;
+				list_append(msg->priority_factors_list,
+					    tmp_info);
+			}
 		}
 	}
+
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_priority_factors_response_msg(object_ptr);
-	*msg = NULL;
+	slurm_free_priority_factors_response_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14297,10 +14294,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_PRIORITY_FACTORS:
 		break;
 	case RESPONSE_PRIORITY_FACTORS:
-		rc = _unpack_priority_factors_response_msg(
-			(priority_factors_response_msg_t**)&msg->data,
-			buffer,
-			msg->protocol_version);
+		rc = _unpack_priority_factors_response_msg(msg, buffer);
 		break;
 	case RESPONSE_BURST_BUFFER_INFO:
 		rc = _unpack_burst_buffer_info_msg(
