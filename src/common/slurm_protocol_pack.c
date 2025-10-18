@@ -12126,28 +12126,27 @@ static int _unpack_accounting_update_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t count = 0;
 	slurmdb_update_object_t *rec = NULL;
-	accounting_update_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
+	accounting_update_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
-		msg_ptr->update_list = list_create(
-			slurmdb_destroy_update_object);
+		msg->update_list = list_create(slurmdb_destroy_update_object);
 		for (int i = 0; i < count; i++) {
 			if ((slurmdb_unpack_update_object(
 				    &rec, smsg->protocol_version, buffer)) ==
 			    SLURM_ERROR)
 				goto unpack_error;
-			list_append(msg_ptr->update_list, rec);
+			list_append(msg->update_list, rec);
 		}
 	}
 
-	smsg->data = msg_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_accounting_update_msg(msg_ptr);
+	slurm_free_accounting_update_msg(msg);
 	return SLURM_ERROR;
 }
 
