@@ -7938,15 +7938,15 @@ static void _pack_return_code_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_return_code_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	return_code_msg_t *return_code_msg = xmalloc(sizeof(*return_code_msg));
+	return_code_msg_t *msg = xmalloc(sizeof(*msg));
 
-	safe_unpack32(&return_code_msg->return_code, buffer);
+	safe_unpack32(&msg->return_code, buffer);
 
-	smsg->data = return_code_msg;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_return_code_msg(return_code_msg);
+	slurm_free_return_code_msg(msg);
 	return SLURM_ERROR;
 }
 
