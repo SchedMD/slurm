@@ -7951,30 +7951,25 @@ static void _pack_node_reg_resp(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_node_reg_resp(
-	slurm_node_reg_resp_msg_t **msg,
-	buf_t *buffer, uint16_t protocol_version)
+static int _unpack_node_reg_resp(slurm_msg_t *smsg, buf_t *buffer)
 {
-	slurm_node_reg_resp_msg_t *msg_ptr;
+	slurm_node_reg_resp_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		xassert(msg);
-		msg_ptr = xmalloc(sizeof(slurm_node_reg_resp_msg_t));
-		*msg = msg_ptr;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&msg_ptr->tres_list,
 				      slurmdb_unpack_tres_rec,
 				      slurmdb_destroy_tres_rec, buffer,
-				      protocol_version) != SLURM_SUCCESS)
+				      smsg->protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 
 		safe_unpackstr(&msg_ptr->node_name, buffer);
 	}
 
+	smsg->data = msg_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_node_reg_resp_msg(msg_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14224,9 +14219,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_sbcast_cred_no_job_msg(msg, buffer);
 		break;
 	case RESPONSE_NODE_REGISTRATION:
-		rc = _unpack_node_reg_resp(
-			(slurm_node_reg_resp_msg_t **)&msg->data,
-			buffer, msg->protocol_version);
+		rc = _unpack_node_reg_resp(msg, buffer);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 	case REQUEST_RECONFIGURE:
