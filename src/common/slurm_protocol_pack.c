@@ -9670,30 +9670,27 @@ static void _pack_job_step_stat(const slurm_msg_t *smsg, buf_t *buffer)
 	_pack_job_step_pids(&msg_wrapper, buffer);
 }
 
-
-static int
-_unpack_job_step_stat(job_step_stat_t ** msg_ptr, buf_t *buffer,
-		      uint16_t protocol_version)
+static int _unpack_job_step_stat(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_stat_t *msg;
-	int rc = SLURM_SUCCESS;
+	job_step_stat_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(job_step_stat_t));
-	*msg_ptr = msg;
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->return_code, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+		if (jobacctinfo_unpack(&msg->jobacct, smsg->protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer,
+				       1) != SLURM_SUCCESS)
+			goto unpack_error;
+		if (_unpack_job_step_pids(&msg->step_pids, buffer,
+					  smsg->protocol_version))
+			goto unpack_error;
+	}
 
-	safe_unpack32(&msg->return_code, buffer);
-	safe_unpack32(&msg->num_tasks, buffer);
-	if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
-			       PROTOCOL_TYPE_SLURM, buffer, 1)
-	    != SLURM_SUCCESS)
-		goto unpack_error;
-	rc = _unpack_job_step_pids(&msg->step_pids, buffer, protocol_version);
-
-	return rc;
+	smsg->data = msg;
+	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_step_stat(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14228,9 +14225,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_step_complete_msg(msg, buffer);
 		break;
 	case RESPONSE_JOB_STEP_STAT:
-		rc = _unpack_job_step_stat(
-			(job_step_stat_t **) &(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_job_step_stat(msg, buffer);
 		break;
 		/********  slurm_step_id_t Messages  ********/
 	case SRUN_JOB_COMPLETE:
