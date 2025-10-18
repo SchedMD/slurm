@@ -10838,16 +10838,16 @@ static void _pack_job_id_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_job_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_id_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	job_id_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	safe_unpack32(&tmp_ptr->job_id, buffer);
-	safe_unpack32(&tmp_ptr->return_code, buffer);
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->return_code, buffer);
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_id_response_msg(tmp_ptr);
+	slurm_free_job_id_response_msg(msg);
 	return SLURM_ERROR;
 }
 
