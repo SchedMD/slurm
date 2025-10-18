@@ -12743,21 +12743,17 @@ static void _pack_bb_status_resp_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	packstr(msg->status_resp, buffer);
 }
 
-static int _unpack_bb_status_resp_msg(bb_status_resp_msg_t **msg_ptr,
-				      buf_t *buffer, uint16_t protocol_version)
+static int _unpack_bb_status_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	bb_status_resp_msg_t *msg;
-	xassert(msg_ptr);
-
-	msg = xmalloc(sizeof(bb_status_resp_msg_t));
-	*msg_ptr = msg;
+	bb_status_resp_msg_t *msg = xmalloc(sizeof(*msg));
 
 	safe_unpackstr(&msg->status_resp, buffer);
+
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_bb_status_resp_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14293,9 +14289,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_bb_status_req_msg(msg, buffer);
 		break;
 	case RESPONSE_BURST_BUFFER_STATUS:
-		rc = _unpack_bb_status_resp_msg(
-			(bb_status_resp_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_bb_status_resp_msg(msg, buffer);
 		break;
 	case REQUEST_CRONTAB:
 		rc = _unpack_crontab_request_msg(msg, buffer);
