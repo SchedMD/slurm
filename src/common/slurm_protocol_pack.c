@@ -12162,20 +12162,20 @@ static void _pack_topo_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_topo_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	topo_info_response_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
+	topo_info_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (topology_g_topoinfo_unpack((dynamic_plugin_data_t *
-							*) &msg_ptr->topo_info,
+		if (topology_g_topoinfo_unpack((dynamic_plugin_data_t **) &msg
+						       ->topo_info,
 					       buffer, smsg->protocol_version))
 			goto unpack_error;
 	}
 
-	smsg->data = msg_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_topo_info_msg(msg_ptr);
+	slurm_free_topo_info_msg(msg);
 	return SLURM_ERROR;
 }
 
