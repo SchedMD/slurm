@@ -9379,26 +9379,21 @@ static void _pack_update_job_step_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, buf_t *buffer,
-			    uint16_t protocol_version)
+static int _unpack_update_job_step_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	step_update_request_msg_t *msg;
+	step_update_request_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(step_update_request_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->step_id, buffer);
 		safe_unpack32(&msg->time_limit, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_update_step_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14243,9 +14238,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_dep_update_origin_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_JOB_STEP:
-		rc = _unpack_update_job_step_msg(
-			(step_update_request_msg_t **) & (msg->data),
-			buffer, msg->protocol_version);
+		rc = _unpack_update_job_step_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
