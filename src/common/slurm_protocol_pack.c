@@ -2510,117 +2510,117 @@ static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 
 static int _unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_create_request_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	job_step_create_request_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
+		if (unpack_step_id_members(&msg->step_id, buffer,
 					   smsg->protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&tmp_ptr->array_task_id, buffer);
-		safe_unpack32(&tmp_ptr->user_id, buffer);
-		safe_unpack32(&tmp_ptr->min_nodes, buffer);
-		safe_unpack32(&tmp_ptr->max_nodes, buffer);
-		safe_unpackstr(&tmp_ptr->container, buffer);
-		safe_unpackstr(&tmp_ptr->container_id, buffer);
-		safe_unpack32(&tmp_ptr->cpu_count, buffer);
-		safe_unpack32(&tmp_ptr->cpu_freq_min, buffer);
-		safe_unpack32(&tmp_ptr->cpu_freq_max, buffer);
-		safe_unpack32(&tmp_ptr->cpu_freq_gov, buffer);
-		safe_unpack32(&tmp_ptr->num_tasks, buffer);
-		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
-		safe_unpack32(&tmp_ptr->time_limit, buffer);
-		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
+		safe_unpack32(&msg->array_task_id, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack32(&msg->cpu_count, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
 
-		safe_unpack16(&tmp_ptr->relative, buffer);
-		safe_unpack32(&tmp_ptr->task_dist, buffer);
-		safe_unpack16(&tmp_ptr->plane_size, buffer);
-		safe_unpack16(&tmp_ptr->port, buffer);
-		safe_unpack16(&tmp_ptr->immediate, buffer);
-		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
-		safe_unpack32(&tmp_ptr->srun_pid, buffer);
-		safe_unpack32(&tmp_ptr->flags, buffer);
+		safe_unpack16(&msg->relative, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpack32(&msg->srun_pid, buffer);
+		safe_unpack32(&msg->flags, buffer);
 
-		safe_unpackstr(&tmp_ptr->host, buffer);
-		safe_unpackstr(&tmp_ptr->name, buffer);
-		safe_unpackstr(&tmp_ptr->network, buffer);
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpackstr(&tmp_ptr->exc_nodes, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpack32(&tmp_ptr->step_het_comp_cnt, buffer);
-		safe_unpackstr(&tmp_ptr->step_het_grps, buffer);
+		safe_unpackstr(&msg->host, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack32(&msg->step_het_comp_cnt, buffer);
+		safe_unpackstr(&msg->step_het_grps, buffer);
 
-		safe_unpackstr(&tmp_ptr->cpus_per_tres, buffer);
-		safe_unpackstr(&tmp_ptr->mem_per_tres, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
-		safe_unpackstr(&tmp_ptr->cwd, buffer);
-		safe_unpackstr(&tmp_ptr->std_err, buffer);
-		safe_unpackstr(&tmp_ptr->std_in, buffer);
-		safe_unpackstr(&tmp_ptr->std_out, buffer);
-		safe_unpackstr(&tmp_ptr->submit_line, buffer);
-		safe_unpackstr(&tmp_ptr->tres_bind, buffer);
-		safe_unpackstr(&tmp_ptr->tres_freq, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_step, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_socket, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpackstr(&msg->cwd, buffer);
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_in, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_step, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
+		if (unpack_step_id_members(&msg->step_id, buffer,
 					   smsg->protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack32(&tmp_ptr->array_task_id, buffer);
-		safe_unpack32(&tmp_ptr->user_id, buffer);
-		safe_unpack32(&tmp_ptr->min_nodes, buffer);
-		safe_unpack32(&tmp_ptr->max_nodes, buffer);
-		safe_unpackstr(&tmp_ptr->container, buffer);
-		safe_unpackstr(&tmp_ptr->container_id, buffer);
-		safe_unpack32(&tmp_ptr->cpu_count, buffer);
-		safe_unpack32(&tmp_ptr->cpu_freq_min, buffer);
-		safe_unpack32(&tmp_ptr->cpu_freq_max, buffer);
-		safe_unpack32(&tmp_ptr->cpu_freq_gov, buffer);
-		safe_unpack32(&tmp_ptr->num_tasks, buffer);
-		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
-		safe_unpack32(&tmp_ptr->time_limit, buffer);
-		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
+		safe_unpack32(&msg->array_task_id, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack32(&msg->cpu_count, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
 
-		safe_unpack16(&tmp_ptr->relative, buffer);
-		safe_unpack32(&tmp_ptr->task_dist, buffer);
-		safe_unpack16(&tmp_ptr->plane_size, buffer);
-		safe_unpack16(&tmp_ptr->port, buffer);
-		safe_unpack16(&tmp_ptr->immediate, buffer);
-		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
-		safe_unpack32(&tmp_ptr->srun_pid, buffer);
-		safe_unpack32(&tmp_ptr->flags, buffer);
+		safe_unpack16(&msg->relative, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->port, buffer);
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpack32(&msg->srun_pid, buffer);
+		safe_unpack32(&msg->flags, buffer);
 
-		safe_unpackstr(&tmp_ptr->host, buffer);
-		safe_unpackstr(&tmp_ptr->name, buffer);
-		safe_unpackstr(&tmp_ptr->network, buffer);
-		safe_unpackstr(&tmp_ptr->node_list, buffer);
-		safe_unpackstr(&tmp_ptr->exc_nodes, buffer);
-		safe_unpackstr(&tmp_ptr->features, buffer);
-		safe_unpack32(&tmp_ptr->step_het_comp_cnt, buffer);
-		safe_unpackstr(&tmp_ptr->step_het_grps, buffer);
+		safe_unpackstr(&msg->host, buffer);
+		safe_unpackstr(&msg->name, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack32(&msg->step_het_comp_cnt, buffer);
+		safe_unpackstr(&msg->step_het_grps, buffer);
 
-		safe_unpackstr(&tmp_ptr->cpus_per_tres, buffer);
-		safe_unpackstr(&tmp_ptr->mem_per_tres, buffer);
-		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
-		safe_unpackstr(&tmp_ptr->submit_line, buffer);
-		safe_unpackstr(&tmp_ptr->tres_bind, buffer);
-		safe_unpackstr(&tmp_ptr->tres_freq, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_step, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_node, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_socket, buffer);
-		safe_unpackstr(&tmp_ptr->tres_per_task, buffer);
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_step, buffer);
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		safe_unpackstr(&msg->tres_per_task, buffer);
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_step_create_request_msg(tmp_ptr);
+	slurm_free_job_step_create_request_msg(msg);
 	return SLURM_ERROR;
 }
 
