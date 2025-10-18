@@ -6594,23 +6594,23 @@ static void _pack_dep_msg(const slurm_msg_t *smsg, buf_t *buffer)
  */
 static int _unpack_dep_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	dep_msg_t *dep_msg_ptr = xmalloc(sizeof(*dep_msg_ptr));
+	dep_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&dep_msg_ptr->array_job_id, buffer);
-		safe_unpack32(&dep_msg_ptr->array_task_id, buffer);
-		safe_unpackstr(&dep_msg_ptr->dependency, buffer);
-		safe_unpackbool(&dep_msg_ptr->is_array, buffer);
-		safe_unpack32(&dep_msg_ptr->job_id, buffer);
-		safe_unpackstr(&dep_msg_ptr->job_name, buffer);
-		safe_unpack32(&dep_msg_ptr->user_id, buffer);
+		safe_unpack32(&msg->array_job_id, buffer);
+		safe_unpack32(&msg->array_task_id, buffer);
+		safe_unpackstr(&msg->dependency, buffer);
+		safe_unpackbool(&msg->is_array, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_name, buffer);
+		safe_unpack32(&msg->user_id, buffer);
 	}
 
-	smsg->data = dep_msg_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_dep_msg(dep_msg_ptr);
+	slurm_free_dep_msg(msg);
 	return SLURM_ERROR;
 }
 
