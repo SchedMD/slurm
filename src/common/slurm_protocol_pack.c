@@ -2244,17 +2244,17 @@ static void _pack_delete_partition_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_delete_partition_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	delete_part_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	delete_part_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&tmp_ptr->name, buffer);
+		safe_unpackstr(&msg->name, buffer);
 	}
 
-	smsg->data = tmp_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_delete_part_msg(tmp_ptr);
+	slurm_free_delete_part_msg(msg);
 	return SLURM_ERROR;
 }
 
