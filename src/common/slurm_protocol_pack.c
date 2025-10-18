@@ -7807,28 +7807,20 @@ static void _pack_job_alloc_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_job_alloc_info_msg(job_alloc_info_msg_t **job_desc_buffer_ptr,
-			   buf_t *buffer, uint16_t protocol_version)
+static int _unpack_job_alloc_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_alloc_info_msg_t *job_desc_ptr;
+	job_alloc_info_msg_t *job_desc_ptr = xmalloc(sizeof(*job_desc_ptr));
 
-	/* alloc memory for structure */
-	xassert(job_desc_buffer_ptr);
-	job_desc_ptr = xmalloc(sizeof(job_alloc_info_msg_t));
-	*job_desc_buffer_ptr = job_desc_ptr;
-
-	/* load the data values */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_desc_ptr->job_id, buffer);
 		safe_unpackstr(&job_desc_ptr->req_cluster, buffer);
 	}
 
+	smsg->data = job_desc_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_alloc_info_msg(job_desc_ptr);
-	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14243,9 +14235,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_JOB_ALLOCATION_INFO:
 	case REQUEST_JOB_END_TIME:
 	case REQUEST_HET_JOB_ALLOC_INFO:
-		rc = _unpack_job_alloc_info_msg((job_alloc_info_msg_t **) &
-						(msg->data), buffer,
-						msg->protocol_version);
+		rc = _unpack_job_alloc_info_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_SBCAST_CRED:
 		rc = _unpack_step_alloc_info_msg((step_alloc_info_msg_t **) &
