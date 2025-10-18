@@ -7217,539 +7217,521 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t start, script_len;
-	job_desc_msg_t *job_desc_ptr = xmalloc(sizeof(*job_desc_ptr));
+	job_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpack32(&job_desc_ptr->site_factor, buffer);
-		safe_unpackstr(&job_desc_ptr->batch_features, buffer);
-		safe_unpackstr(&job_desc_ptr->cluster_features, buffer);
-		safe_unpackstr(&job_desc_ptr->clusters, buffer);
-		safe_unpack16(&job_desc_ptr->contiguous, buffer);
-		safe_unpackstr(&job_desc_ptr->container, buffer);
-		safe_unpackstr(&job_desc_ptr->container_id, buffer);
-		safe_unpack16(&job_desc_ptr->core_spec, buffer);
-		safe_unpack32(&job_desc_ptr->task_dist, buffer);
-		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
-		safe_unpackstr(&job_desc_ptr->features, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings_active, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings_viable, buffer);
-		safe_unpack32(&job_desc_ptr->job_id, buffer);
-		safe_unpackstr(&job_desc_ptr->job_id_str, buffer);
-		safe_unpackstr(&job_desc_ptr->name, buffer);
+		safe_unpack32(&msg->site_factor, buffer);
+		safe_unpackstr(&msg->batch_features, buffer);
+		safe_unpackstr(&msg->cluster_features, buffer);
+		safe_unpackstr(&msg->clusters, buffer);
+		safe_unpack16(&msg->contiguous, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack16(&msg->core_spec, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->kill_on_node_fail, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack64(&msg->fed_siblings_active, buffer);
+		safe_unpack64(&msg->fed_siblings_viable, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_id_str, buffer);
+		safe_unpackstr(&msg->name, buffer);
 
-		safe_unpackstr(&job_desc_ptr->alloc_node, buffer);
-		safe_unpack32(&job_desc_ptr->alloc_sid, buffer);
-		safe_unpackstr(&job_desc_ptr->array_inx, buffer);
-		safe_unpackstr(&job_desc_ptr->burst_buffer, buffer);
-		safe_unpack16(&job_desc_ptr->pn_min_cpus, buffer);
-		safe_unpack64(&job_desc_ptr->pn_min_memory, buffer);
-		safe_unpack16(&job_desc_ptr->oom_kill_step, buffer);
-		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
+		safe_unpackstr(&msg->alloc_node, buffer);
+		safe_unpack32(&msg->alloc_sid, buffer);
+		safe_unpackstr(&msg->array_inx, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpack16(&msg->pn_min_cpus, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack16(&msg->oom_kill_step, buffer);
+		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
-		safe_unpackstr(&job_desc_ptr->prefer, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_min, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_max, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_gov, buffer);
+		safe_unpackstr(&msg->prefer, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
 
-		safe_unpackstr(&job_desc_ptr->partition, buffer);
-		safe_unpack32(&job_desc_ptr->priority, buffer);
-		safe_unpackstr(&job_desc_ptr->dependency, buffer);
-		safe_unpackstr(&job_desc_ptr->account, buffer);
-		safe_unpackstr(&job_desc_ptr->admin_comment, buffer);
-		safe_unpackstr(&job_desc_ptr->comment, buffer);
-		safe_unpack32(&job_desc_ptr->nice, buffer);
-		safe_unpack32(&job_desc_ptr->profile, buffer);
-		safe_unpackstr(&job_desc_ptr->qos, buffer);
-		safe_unpackstr(&job_desc_ptr->mcs_label, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->priority, buffer);
+		safe_unpackstr(&msg->dependency, buffer);
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->admin_comment, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->nice, buffer);
+		safe_unpack32(&msg->profile, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->mcs_label, buffer);
 
-		safe_unpackstr(&job_desc_ptr->origin_cluster, buffer);
-		safe_unpack8(&job_desc_ptr->open_mode, buffer);
-		safe_unpack8(&job_desc_ptr->overcommit, buffer);
-		safe_unpackstr(&job_desc_ptr->acctg_freq, buffer);
-		safe_unpack32(&job_desc_ptr->num_tasks, buffer);
+		safe_unpackstr(&msg->origin_cluster, buffer);
+		safe_unpack8(&msg->open_mode, buffer);
+		safe_unpack8(&msg->overcommit, buffer);
+		safe_unpackstr(&msg->acctg_freq, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
 
-		safe_unpackstr(&job_desc_ptr->req_context, buffer);
-		safe_unpackstr(&job_desc_ptr->req_nodes, buffer);
-		safe_unpackstr(&job_desc_ptr->exc_nodes, buffer);
+		safe_unpackstr(&msg->req_context, buffer);
+		safe_unpackstr(&msg->req_nodes, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
 		start = buffer->processed;
-		safe_unpackstr_array(&job_desc_ptr->environment,
-				     &job_desc_ptr->env_size, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
 
-		if (job_desc_ptr->env_size) {
-			job_desc_ptr->env_hash.type = HASH_PLUGIN_K12;
+		if (msg->env_size) {
+			msg->env_hash.type = HASH_PLUGIN_K12;
 			(void) hash_g_compute(&buffer->head[start],
-					      buffer->processed - start,
-					      NULL, 0, &job_desc_ptr->env_hash);
+					      buffer->processed - start, NULL,
+					      0, &msg->env_hash);
 		}
 
-		if (envcount(job_desc_ptr->environment)
-		    != job_desc_ptr->env_size)
+		if (envcount(msg->environment) != msg->env_size)
 			goto unpack_error;
-		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
-				     &job_desc_ptr->spank_job_env_size,
-				     buffer);
-		if (envcount(job_desc_ptr->spank_job_env)
-		    != job_desc_ptr->spank_job_env_size)
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		if (envcount(msg->spank_job_env) != msg->spank_job_env_size)
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&job_desc_ptr->script,
-				       &script_len, buffer);
+		safe_unpackstr_xmalloc(&msg->script, &script_len, buffer);
 
-		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
-		(void) hash_g_compute(job_desc_ptr->script, script_len,
-				      NULL, 0, &job_desc_ptr->script_hash);
+		msg->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(msg->script, script_len, NULL, 0,
+				      &msg->script_hash);
 
-		safe_unpackstr_array(&job_desc_ptr->argv,
-				     &job_desc_ptr->argc, buffer);
+		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 
-		safe_unpackstr(&job_desc_ptr->std_err, buffer);
-		safe_unpackstr(&job_desc_ptr->std_in, buffer);
-		safe_unpackstr(&job_desc_ptr->std_out, buffer);
-		safe_unpackstr(&job_desc_ptr->submit_line, buffer);
-		safe_unpackstr(&job_desc_ptr->work_dir, buffer);
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_in, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
 
-		safe_unpack16(&job_desc_ptr->immediate, buffer);
-		safe_unpack16(&job_desc_ptr->reboot, buffer);
-		safe_unpack16(&job_desc_ptr->requeue, buffer);
-		safe_unpack16(&job_desc_ptr->shared, buffer);
-		safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_board, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_socket, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_core, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->reboot, buffer);
+		safe_unpack16(&msg->requeue, buffer);
+		safe_unpack16(&msg->shared, buffer);
+		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->ntasks_per_node, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
 
-		safe_unpack16(&job_desc_ptr->plane_size, buffer);
-		safe_unpack16(&job_desc_ptr->cpu_bind_type, buffer);
-		safe_unpack16(&job_desc_ptr->mem_bind_type, buffer);
-		safe_unpackstr(&job_desc_ptr->cpu_bind, buffer);
-		safe_unpackstr(&job_desc_ptr->mem_bind, buffer);
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->cpu_bind_type, buffer);
+		safe_unpack16(&msg->mem_bind_type, buffer);
+		safe_unpackstr(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->mem_bind, buffer);
 
-		safe_unpack32(&job_desc_ptr->time_limit, buffer);
-		safe_unpack32(&job_desc_ptr->time_min, buffer);
-		safe_unpack32(&job_desc_ptr->min_cpus, buffer);
-		safe_unpack32(&job_desc_ptr->max_cpus, buffer);
-		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
-		safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-		safe_unpackstr(&job_desc_ptr->job_size_str, buffer);
-		safe_unpack16(&job_desc_ptr->boards_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->sockets_per_board, buffer);
-		safe_unpack16(&job_desc_ptr->sockets_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->cores_per_socket, buffer);
-		safe_unpack16(&job_desc_ptr->threads_per_core, buffer);
-		safe_unpack32(&job_desc_ptr->user_id, buffer);
-		safe_unpack32(&job_desc_ptr->group_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack32(&msg->time_min, buffer);
+		safe_unpack32(&msg->min_cpus, buffer);
+		safe_unpack32(&msg->max_cpus, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpackstr(&msg->job_size_str, buffer);
+		safe_unpack16(&msg->boards_per_node, buffer);
+		safe_unpack16(&msg->sockets_per_board, buffer);
+		safe_unpack16(&msg->sockets_per_node, buffer);
+		safe_unpack16(&msg->cores_per_socket, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->group_id, buffer);
 
-		safe_unpack16(&job_desc_ptr->alloc_resp_port, buffer);
-		safe_unpackstr(&job_desc_ptr->alloc_tls_cert, buffer);
-		safe_unpackstr(&job_desc_ptr->resp_host, buffer);
-		safe_unpack16(&job_desc_ptr->other_port, buffer);
-		safe_unpack16(&job_desc_ptr->resv_port_cnt, buffer);
-		safe_unpackstr(&job_desc_ptr->network, buffer);
-		safe_unpack_time(&job_desc_ptr->begin_time, buffer);
-		safe_unpack_time(&job_desc_ptr->end_time, buffer);
-		safe_unpack_time(&job_desc_ptr->deadline, buffer);
+		safe_unpack16(&msg->alloc_resp_port, buffer);
+		safe_unpackstr(&msg->alloc_tls_cert, buffer);
+		safe_unpackstr(&msg->resp_host, buffer);
+		safe_unpack16(&msg->other_port, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpack_time(&msg->begin_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack_time(&msg->deadline, buffer);
 
-		safe_unpackstr(&job_desc_ptr->licenses, buffer);
-		safe_unpack16(&job_desc_ptr->mail_type, buffer);
-		safe_unpackstr(&job_desc_ptr->mail_user, buffer);
-		safe_unpackstr(&job_desc_ptr->reservation, buffer);
-		safe_unpack16(&job_desc_ptr->restart_cnt, buffer);
-		safe_unpack16(&job_desc_ptr->warn_flags, buffer);
-		safe_unpack16(&job_desc_ptr->warn_signal, buffer);
-		safe_unpack16(&job_desc_ptr->warn_time, buffer);
-		safe_unpackstr(&job_desc_ptr->wckey, buffer);
-		safe_unpack32(&job_desc_ptr->req_switch, buffer);
-		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
+		safe_unpackstr(&msg->licenses, buffer);
+		safe_unpack16(&msg->mail_type, buffer);
+		safe_unpackstr(&msg->mail_user, buffer);
+		safe_unpackstr(&msg->reservation, buffer);
+		safe_unpack16(&msg->restart_cnt, buffer);
+		safe_unpack16(&msg->warn_flags, buffer);
+		safe_unpack16(&msg->warn_signal, buffer);
+		safe_unpack16(&msg->warn_time, buffer);
+		safe_unpackstr(&msg->wckey, buffer);
+		safe_unpack32(&msg->req_switch, buffer);
+		safe_unpack32(&msg->wait4switch, buffer);
 
-		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
-		safe_unpack64(&job_desc_ptr->bitflags, buffer);
-		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
-		safe_unpackstr(&job_desc_ptr->extra, buffer);
-		safe_unpack16(&job_desc_ptr->x11, buffer);
-		safe_unpackstr(&job_desc_ptr->x11_magic_cookie, buffer);
-		safe_unpackstr(&job_desc_ptr->x11_target, buffer);
-		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
+		safe_unpack16(&msg->wait_all_nodes, buffer);
+		safe_unpack64(&msg->bitflags, buffer);
+		safe_unpack32(&msg->delay_boot, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
 
-		safe_unpackstr(&job_desc_ptr->cpus_per_tres, buffer);
-		slurm_format_tres_string(&job_desc_ptr->cpus_per_tres, "gres");
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		slurm_format_tres_string(&msg->cpus_per_tres, "gres");
 
-		safe_unpackstr(&job_desc_ptr->mem_per_tres, buffer);
-		slurm_format_tres_string(&job_desc_ptr->mem_per_tres, "gres");
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		slurm_format_tres_string(&msg->mem_per_tres, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_bind, buffer);
-		safe_unpackstr(&job_desc_ptr->tres_freq, buffer);
-		safe_unpackstr(&job_desc_ptr->tres_per_job, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_job, "gres");
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_job, buffer);
+		slurm_format_tres_string(&msg->tres_per_job, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_node, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_node, "gres");
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		slurm_format_tres_string(&msg->tres_per_node, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_socket, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_socket, "gres");
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		slurm_format_tres_string(&msg->tres_per_socket, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_task, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_task, "gres");
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		slurm_format_tres_string(&msg->tres_per_task, "gres");
 
-		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
+		if (unpack_cron_entry(&msg->crontab_entry,
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
-		safe_unpack16(&job_desc_ptr->segment_size, buffer);
+		safe_unpack16(&msg->segment_size, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpack32(&job_desc_ptr->site_factor, buffer);
-		safe_unpackstr(&job_desc_ptr->batch_features, buffer);
-		safe_unpackstr(&job_desc_ptr->cluster_features, buffer);
-		safe_unpackstr(&job_desc_ptr->clusters, buffer);
-		safe_unpack16(&job_desc_ptr->contiguous, buffer);
-		safe_unpackstr(&job_desc_ptr->container, buffer);
-		safe_unpackstr(&job_desc_ptr->container_id, buffer);
-		safe_unpack16(&job_desc_ptr->core_spec, buffer);
-		safe_unpack32(&job_desc_ptr->task_dist, buffer);
-		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
-		safe_unpackstr(&job_desc_ptr->features, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings_active, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings_viable, buffer);
-		safe_unpack32(&job_desc_ptr->job_id, buffer);
-		safe_unpackstr(&job_desc_ptr->job_id_str, buffer);
-		safe_unpackstr(&job_desc_ptr->name, buffer);
+		safe_unpack32(&msg->site_factor, buffer);
+		safe_unpackstr(&msg->batch_features, buffer);
+		safe_unpackstr(&msg->cluster_features, buffer);
+		safe_unpackstr(&msg->clusters, buffer);
+		safe_unpack16(&msg->contiguous, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack16(&msg->core_spec, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->kill_on_node_fail, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack64(&msg->fed_siblings_active, buffer);
+		safe_unpack64(&msg->fed_siblings_viable, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_id_str, buffer);
+		safe_unpackstr(&msg->name, buffer);
 
-		safe_unpackstr(&job_desc_ptr->alloc_node, buffer);
-		safe_unpack32(&job_desc_ptr->alloc_sid, buffer);
-		safe_unpackstr(&job_desc_ptr->array_inx, buffer);
-		safe_unpackstr(&job_desc_ptr->burst_buffer, buffer);
-		safe_unpack16(&job_desc_ptr->pn_min_cpus, buffer);
-		safe_unpack64(&job_desc_ptr->pn_min_memory, buffer);
-		safe_unpack16(&job_desc_ptr->oom_kill_step, buffer);
-		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
+		safe_unpackstr(&msg->alloc_node, buffer);
+		safe_unpack32(&msg->alloc_sid, buffer);
+		safe_unpackstr(&msg->array_inx, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpack16(&msg->pn_min_cpus, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack16(&msg->oom_kill_step, buffer);
+		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
-		safe_unpackstr(&job_desc_ptr->prefer, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_min, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_max, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_gov, buffer);
+		safe_unpackstr(&msg->prefer, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
 
-		safe_unpackstr(&job_desc_ptr->partition, buffer);
-		safe_unpack32(&job_desc_ptr->priority, buffer);
-		safe_unpackstr(&job_desc_ptr->dependency, buffer);
-		safe_unpackstr(&job_desc_ptr->account, buffer);
-		safe_unpackstr(&job_desc_ptr->admin_comment, buffer);
-		safe_unpackstr(&job_desc_ptr->comment, buffer);
-		safe_unpack32(&job_desc_ptr->nice, buffer);
-		safe_unpack32(&job_desc_ptr->profile, buffer);
-		safe_unpackstr(&job_desc_ptr->qos, buffer);
-		safe_unpackstr(&job_desc_ptr->mcs_label, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->priority, buffer);
+		safe_unpackstr(&msg->dependency, buffer);
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->admin_comment, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->nice, buffer);
+		safe_unpack32(&msg->profile, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->mcs_label, buffer);
 
-		safe_unpackstr(&job_desc_ptr->origin_cluster, buffer);
-		safe_unpack8(&job_desc_ptr->open_mode, buffer);
-		safe_unpack8(&job_desc_ptr->overcommit, buffer);
-		safe_unpackstr(&job_desc_ptr->acctg_freq, buffer);
-		safe_unpack32(&job_desc_ptr->num_tasks, buffer);
+		safe_unpackstr(&msg->origin_cluster, buffer);
+		safe_unpack8(&msg->open_mode, buffer);
+		safe_unpack8(&msg->overcommit, buffer);
+		safe_unpackstr(&msg->acctg_freq, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
 
-		safe_unpackstr(&job_desc_ptr->req_context, buffer);
-		safe_unpackstr(&job_desc_ptr->req_nodes, buffer);
-		safe_unpackstr(&job_desc_ptr->exc_nodes, buffer);
+		safe_unpackstr(&msg->req_context, buffer);
+		safe_unpackstr(&msg->req_nodes, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
 		start = buffer->processed;
-		safe_unpackstr_array(&job_desc_ptr->environment,
-				     &job_desc_ptr->env_size, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
 
-		if (job_desc_ptr->env_size) {
-			job_desc_ptr->env_hash.type = HASH_PLUGIN_K12;
+		if (msg->env_size) {
+			msg->env_hash.type = HASH_PLUGIN_K12;
 			(void) hash_g_compute(&buffer->head[start],
-					      buffer->processed - start,
-					      NULL, 0, &job_desc_ptr->env_hash);
+					      buffer->processed - start, NULL,
+					      0, &msg->env_hash);
 		}
 
-		if (envcount(job_desc_ptr->environment)
-		    != job_desc_ptr->env_size)
+		if (envcount(msg->environment) != msg->env_size)
 			goto unpack_error;
-		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
-				     &job_desc_ptr->spank_job_env_size,
-				     buffer);
-		if (envcount(job_desc_ptr->spank_job_env)
-		    != job_desc_ptr->spank_job_env_size)
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		if (envcount(msg->spank_job_env) != msg->spank_job_env_size)
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&job_desc_ptr->script,
-				       &script_len, buffer);
+		safe_unpackstr_xmalloc(&msg->script, &script_len, buffer);
 
-		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
-		(void) hash_g_compute(job_desc_ptr->script, script_len,
-				      NULL, 0, &job_desc_ptr->script_hash);
+		msg->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(msg->script, script_len, NULL, 0,
+				      &msg->script_hash);
 
-		safe_unpackstr_array(&job_desc_ptr->argv,
-				     &job_desc_ptr->argc, buffer);
+		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 
-		safe_unpackstr(&job_desc_ptr->std_err, buffer);
-		safe_unpackstr(&job_desc_ptr->std_in, buffer);
-		safe_unpackstr(&job_desc_ptr->std_out, buffer);
-		safe_unpackstr(&job_desc_ptr->submit_line, buffer);
-		safe_unpackstr(&job_desc_ptr->work_dir, buffer);
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_in, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
 
-		safe_unpack16(&job_desc_ptr->immediate, buffer);
-		safe_unpack16(&job_desc_ptr->reboot, buffer);
-		safe_unpack16(&job_desc_ptr->requeue, buffer);
-		safe_unpack16(&job_desc_ptr->shared, buffer);
-		safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_board, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_socket, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_core, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->reboot, buffer);
+		safe_unpack16(&msg->requeue, buffer);
+		safe_unpack16(&msg->shared, buffer);
+		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->ntasks_per_node, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
 
-		safe_unpack16(&job_desc_ptr->plane_size, buffer);
-		safe_unpack16(&job_desc_ptr->cpu_bind_type, buffer);
-		safe_unpack16(&job_desc_ptr->mem_bind_type, buffer);
-		safe_unpackstr(&job_desc_ptr->cpu_bind, buffer);
-		safe_unpackstr(&job_desc_ptr->mem_bind, buffer);
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->cpu_bind_type, buffer);
+		safe_unpack16(&msg->mem_bind_type, buffer);
+		safe_unpackstr(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->mem_bind, buffer);
 
-		safe_unpack32(&job_desc_ptr->time_limit, buffer);
-		safe_unpack32(&job_desc_ptr->time_min, buffer);
-		safe_unpack32(&job_desc_ptr->min_cpus, buffer);
-		safe_unpack32(&job_desc_ptr->max_cpus, buffer);
-		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
-		safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-		safe_unpackstr(&job_desc_ptr->job_size_str, buffer);
-		safe_unpack16(&job_desc_ptr->boards_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->sockets_per_board, buffer);
-		safe_unpack16(&job_desc_ptr->sockets_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->cores_per_socket, buffer);
-		safe_unpack16(&job_desc_ptr->threads_per_core, buffer);
-		safe_unpack32(&job_desc_ptr->user_id, buffer);
-		safe_unpack32(&job_desc_ptr->group_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack32(&msg->time_min, buffer);
+		safe_unpack32(&msg->min_cpus, buffer);
+		safe_unpack32(&msg->max_cpus, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpackstr(&msg->job_size_str, buffer);
+		safe_unpack16(&msg->boards_per_node, buffer);
+		safe_unpack16(&msg->sockets_per_board, buffer);
+		safe_unpack16(&msg->sockets_per_node, buffer);
+		safe_unpack16(&msg->cores_per_socket, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->group_id, buffer);
 
-		safe_unpack16(&job_desc_ptr->alloc_resp_port, buffer);
-		safe_unpackstr(&job_desc_ptr->resp_host, buffer);
-		safe_unpack16(&job_desc_ptr->other_port, buffer);
-		safe_unpack16(&job_desc_ptr->resv_port_cnt, buffer);
-		safe_unpackstr(&job_desc_ptr->network, buffer);
-		safe_unpack_time(&job_desc_ptr->begin_time, buffer);
-		safe_unpack_time(&job_desc_ptr->end_time, buffer);
-		safe_unpack_time(&job_desc_ptr->deadline, buffer);
+		safe_unpack16(&msg->alloc_resp_port, buffer);
+		safe_unpackstr(&msg->resp_host, buffer);
+		safe_unpack16(&msg->other_port, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpack_time(&msg->begin_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack_time(&msg->deadline, buffer);
 
-		safe_unpackstr(&job_desc_ptr->licenses, buffer);
-		safe_unpack16(&job_desc_ptr->mail_type, buffer);
-		safe_unpackstr(&job_desc_ptr->mail_user, buffer);
-		safe_unpackstr(&job_desc_ptr->reservation, buffer);
-		safe_unpack16(&job_desc_ptr->restart_cnt, buffer);
-		safe_unpack16(&job_desc_ptr->warn_flags, buffer);
-		safe_unpack16(&job_desc_ptr->warn_signal, buffer);
-		safe_unpack16(&job_desc_ptr->warn_time, buffer);
-		safe_unpackstr(&job_desc_ptr->wckey, buffer);
-		safe_unpack32(&job_desc_ptr->req_switch, buffer);
-		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
+		safe_unpackstr(&msg->licenses, buffer);
+		safe_unpack16(&msg->mail_type, buffer);
+		safe_unpackstr(&msg->mail_user, buffer);
+		safe_unpackstr(&msg->reservation, buffer);
+		safe_unpack16(&msg->restart_cnt, buffer);
+		safe_unpack16(&msg->warn_flags, buffer);
+		safe_unpack16(&msg->warn_signal, buffer);
+		safe_unpack16(&msg->warn_time, buffer);
+		safe_unpackstr(&msg->wckey, buffer);
+		safe_unpack32(&msg->req_switch, buffer);
+		safe_unpack32(&msg->wait4switch, buffer);
 
-		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
-		safe_unpack64(&job_desc_ptr->bitflags, buffer);
-		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
-		safe_unpackstr(&job_desc_ptr->extra, buffer);
-		safe_unpack16(&job_desc_ptr->x11, buffer);
-		safe_unpackstr(&job_desc_ptr->x11_magic_cookie, buffer);
-		safe_unpackstr(&job_desc_ptr->x11_target, buffer);
-		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
+		safe_unpack16(&msg->wait_all_nodes, buffer);
+		safe_unpack64(&msg->bitflags, buffer);
+		safe_unpack32(&msg->delay_boot, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
 
-		safe_unpackstr(&job_desc_ptr->cpus_per_tres, buffer);
-		slurm_format_tres_string(&job_desc_ptr->cpus_per_tres, "gres");
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		slurm_format_tres_string(&msg->cpus_per_tres, "gres");
 
-		safe_unpackstr(&job_desc_ptr->mem_per_tres, buffer);
-		slurm_format_tres_string(&job_desc_ptr->mem_per_tres, "gres");
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		slurm_format_tres_string(&msg->mem_per_tres, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_bind, buffer);
-		safe_unpackstr(&job_desc_ptr->tres_freq, buffer);
-		safe_unpackstr(&job_desc_ptr->tres_per_job, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_job, "gres");
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_job, buffer);
+		slurm_format_tres_string(&msg->tres_per_job, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_node, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_node, "gres");
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		slurm_format_tres_string(&msg->tres_per_node, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_socket, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_socket, "gres");
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		slurm_format_tres_string(&msg->tres_per_socket, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_task, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_task, "gres");
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		slurm_format_tres_string(&msg->tres_per_task, "gres");
 
-		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
+		if (unpack_cron_entry(&msg->crontab_entry,
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
-		safe_unpack16(&job_desc_ptr->segment_size, buffer);
+		safe_unpack16(&msg->segment_size, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint8_t uint8_tmp;
-		safe_unpack32(&job_desc_ptr->site_factor, buffer);
-		safe_unpackstr(&job_desc_ptr->batch_features, buffer);
-		safe_unpackstr(&job_desc_ptr->cluster_features, buffer);
-		safe_unpackstr(&job_desc_ptr->clusters, buffer);
-		safe_unpack16(&job_desc_ptr->contiguous, buffer);
-		safe_unpackstr(&job_desc_ptr->container, buffer);
-		safe_unpackstr(&job_desc_ptr->container_id, buffer);
-		safe_unpack16(&job_desc_ptr->core_spec, buffer);
-		safe_unpack32(&job_desc_ptr->task_dist, buffer);
-		safe_unpack16(&job_desc_ptr->kill_on_node_fail, buffer);
-		safe_unpackstr(&job_desc_ptr->features, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings_active, buffer);
-		safe_unpack64(&job_desc_ptr->fed_siblings_viable, buffer);
-		safe_unpack32(&job_desc_ptr->job_id, buffer);
-		safe_unpackstr(&job_desc_ptr->job_id_str, buffer);
-		safe_unpackstr(&job_desc_ptr->name, buffer);
+		safe_unpack32(&msg->site_factor, buffer);
+		safe_unpackstr(&msg->batch_features, buffer);
+		safe_unpackstr(&msg->cluster_features, buffer);
+		safe_unpackstr(&msg->clusters, buffer);
+		safe_unpack16(&msg->contiguous, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack16(&msg->core_spec, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->kill_on_node_fail, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack64(&msg->fed_siblings_active, buffer);
+		safe_unpack64(&msg->fed_siblings_viable, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_id_str, buffer);
+		safe_unpackstr(&msg->name, buffer);
 
-		safe_unpackstr(&job_desc_ptr->alloc_node, buffer);
-		safe_unpack32(&job_desc_ptr->alloc_sid, buffer);
-		safe_unpackstr(&job_desc_ptr->array_inx, buffer);
-		safe_unpackstr(&job_desc_ptr->burst_buffer, buffer);
-		safe_unpack16(&job_desc_ptr->pn_min_cpus, buffer);
-		safe_unpack64(&job_desc_ptr->pn_min_memory, buffer);
-		safe_unpack32(&job_desc_ptr->pn_min_tmp_disk, buffer);
+		safe_unpackstr(&msg->alloc_node, buffer);
+		safe_unpack32(&msg->alloc_sid, buffer);
+		safe_unpackstr(&msg->array_inx, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpack16(&msg->pn_min_cpus, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 		safe_unpack8(&uint8_tmp, buffer); /* was power_flags */
 
-		safe_unpackstr(&job_desc_ptr->prefer, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_min, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_max, buffer);
-		safe_unpack32(&job_desc_ptr->cpu_freq_gov, buffer);
+		safe_unpackstr(&msg->prefer, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
 
-		safe_unpackstr(&job_desc_ptr->partition, buffer);
-		safe_unpack32(&job_desc_ptr->priority, buffer);
-		safe_unpackstr(&job_desc_ptr->dependency, buffer);
-		safe_unpackstr(&job_desc_ptr->account, buffer);
-		safe_unpackstr(&job_desc_ptr->admin_comment, buffer);
-		safe_unpackstr(&job_desc_ptr->comment, buffer);
-		safe_unpack32(&job_desc_ptr->nice, buffer);
-		safe_unpack32(&job_desc_ptr->profile, buffer);
-		safe_unpackstr(&job_desc_ptr->qos, buffer);
-		safe_unpackstr(&job_desc_ptr->mcs_label, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->priority, buffer);
+		safe_unpackstr(&msg->dependency, buffer);
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->admin_comment, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->nice, buffer);
+		safe_unpack32(&msg->profile, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->mcs_label, buffer);
 
-		safe_unpackstr(&job_desc_ptr->origin_cluster, buffer);
-		safe_unpack8(&job_desc_ptr->open_mode, buffer);
-		safe_unpack8(&job_desc_ptr->overcommit, buffer);
-		safe_unpackstr(&job_desc_ptr->acctg_freq, buffer);
-		safe_unpack32(&job_desc_ptr->num_tasks, buffer);
+		safe_unpackstr(&msg->origin_cluster, buffer);
+		safe_unpack8(&msg->open_mode, buffer);
+		safe_unpack8(&msg->overcommit, buffer);
+		safe_unpackstr(&msg->acctg_freq, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
 
-		safe_unpackstr(&job_desc_ptr->req_context, buffer);
-		safe_unpackstr(&job_desc_ptr->req_nodes, buffer);
-		safe_unpackstr(&job_desc_ptr->exc_nodes, buffer);
+		safe_unpackstr(&msg->req_context, buffer);
+		safe_unpackstr(&msg->req_nodes, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
 		start = buffer->processed;
-		safe_unpackstr_array(&job_desc_ptr->environment,
-				     &job_desc_ptr->env_size, buffer);
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
 
-		if (job_desc_ptr->env_size) {
-			job_desc_ptr->env_hash.type = HASH_PLUGIN_K12;
+		if (msg->env_size) {
+			msg->env_hash.type = HASH_PLUGIN_K12;
 			(void) hash_g_compute(&buffer->head[start],
-					      buffer->processed - start,
-					      NULL, 0, &job_desc_ptr->env_hash);
+					      buffer->processed - start, NULL,
+					      0, &msg->env_hash);
 		}
 
-		if (envcount(job_desc_ptr->environment)
-		    != job_desc_ptr->env_size)
+		if (envcount(msg->environment) != msg->env_size)
 			goto unpack_error;
-		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
-				     &job_desc_ptr->spank_job_env_size,
-				     buffer);
-		if (envcount(job_desc_ptr->spank_job_env)
-		    != job_desc_ptr->spank_job_env_size)
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		if (envcount(msg->spank_job_env) != msg->spank_job_env_size)
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&job_desc_ptr->script,
-				       &script_len, buffer);
+		safe_unpackstr_xmalloc(&msg->script, &script_len, buffer);
 
-		job_desc_ptr->script_hash.type = HASH_PLUGIN_K12;
-		(void) hash_g_compute(job_desc_ptr->script, script_len,
-				      NULL, 0, &job_desc_ptr->script_hash);
+		msg->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(msg->script, script_len, NULL, 0,
+				      &msg->script_hash);
 
-		safe_unpackstr_array(&job_desc_ptr->argv,
-				     &job_desc_ptr->argc, buffer);
+		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
 
-		safe_unpackstr(&job_desc_ptr->std_err, buffer);
-		safe_unpackstr(&job_desc_ptr->std_in, buffer);
-		safe_unpackstr(&job_desc_ptr->std_out, buffer);
-		safe_unpackstr(&job_desc_ptr->submit_line, buffer);
-		safe_unpackstr(&job_desc_ptr->work_dir, buffer);
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_in, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
 
-		safe_unpack16(&job_desc_ptr->immediate, buffer);
-		safe_unpack16(&job_desc_ptr->reboot, buffer);
-		safe_unpack16(&job_desc_ptr->requeue, buffer);
-		safe_unpack16(&job_desc_ptr->shared, buffer);
-		safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_board, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_socket, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_core, buffer);
-		safe_unpack16(&job_desc_ptr->ntasks_per_tres, buffer);
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->reboot, buffer);
+		safe_unpack16(&msg->requeue, buffer);
+		safe_unpack16(&msg->shared, buffer);
+		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->ntasks_per_node, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
 
-		safe_unpack16(&job_desc_ptr->plane_size, buffer);
-		safe_unpack16(&job_desc_ptr->cpu_bind_type, buffer);
-		safe_unpack16(&job_desc_ptr->mem_bind_type, buffer);
-		safe_unpackstr(&job_desc_ptr->cpu_bind, buffer);
-		safe_unpackstr(&job_desc_ptr->mem_bind, buffer);
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->cpu_bind_type, buffer);
+		safe_unpack16(&msg->mem_bind_type, buffer);
+		safe_unpackstr(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->mem_bind, buffer);
 
-		safe_unpack32(&job_desc_ptr->time_limit, buffer);
-		safe_unpack32(&job_desc_ptr->time_min, buffer);
-		safe_unpack32(&job_desc_ptr->min_cpus, buffer);
-		safe_unpack32(&job_desc_ptr->max_cpus, buffer);
-		safe_unpack32(&job_desc_ptr->min_nodes, buffer);
-		safe_unpack32(&job_desc_ptr->max_nodes, buffer);
-		safe_unpackstr(&job_desc_ptr->job_size_str, buffer);
-		safe_unpack16(&job_desc_ptr->boards_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->sockets_per_board, buffer);
-		safe_unpack16(&job_desc_ptr->sockets_per_node, buffer);
-		safe_unpack16(&job_desc_ptr->cores_per_socket, buffer);
-		safe_unpack16(&job_desc_ptr->threads_per_core, buffer);
-		safe_unpack32(&job_desc_ptr->user_id, buffer);
-		safe_unpack32(&job_desc_ptr->group_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack32(&msg->time_min, buffer);
+		safe_unpack32(&msg->min_cpus, buffer);
+		safe_unpack32(&msg->max_cpus, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpackstr(&msg->job_size_str, buffer);
+		safe_unpack16(&msg->boards_per_node, buffer);
+		safe_unpack16(&msg->sockets_per_board, buffer);
+		safe_unpack16(&msg->sockets_per_node, buffer);
+		safe_unpack16(&msg->cores_per_socket, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->group_id, buffer);
 
-		safe_unpack16(&job_desc_ptr->alloc_resp_port, buffer);
-		safe_unpackstr(&job_desc_ptr->resp_host, buffer);
-		safe_unpack16(&job_desc_ptr->other_port, buffer);
-		safe_unpack16(&job_desc_ptr->resv_port_cnt, buffer);
-		safe_unpackstr(&job_desc_ptr->network, buffer);
-		safe_unpack_time(&job_desc_ptr->begin_time, buffer);
-		safe_unpack_time(&job_desc_ptr->end_time, buffer);
-		safe_unpack_time(&job_desc_ptr->deadline, buffer);
+		safe_unpack16(&msg->alloc_resp_port, buffer);
+		safe_unpackstr(&msg->resp_host, buffer);
+		safe_unpack16(&msg->other_port, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpack_time(&msg->begin_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack_time(&msg->deadline, buffer);
 
-		safe_unpackstr(&job_desc_ptr->licenses, buffer);
-		safe_unpack16(&job_desc_ptr->mail_type, buffer);
-		safe_unpackstr(&job_desc_ptr->mail_user, buffer);
-		safe_unpackstr(&job_desc_ptr->reservation, buffer);
-		safe_unpack16(&job_desc_ptr->restart_cnt, buffer);
-		safe_unpack16(&job_desc_ptr->warn_flags, buffer);
-		safe_unpack16(&job_desc_ptr->warn_signal, buffer);
-		safe_unpack16(&job_desc_ptr->warn_time, buffer);
-		safe_unpackstr(&job_desc_ptr->wckey, buffer);
-		safe_unpack32(&job_desc_ptr->req_switch, buffer);
-		safe_unpack32(&job_desc_ptr->wait4switch, buffer);
+		safe_unpackstr(&msg->licenses, buffer);
+		safe_unpack16(&msg->mail_type, buffer);
+		safe_unpackstr(&msg->mail_user, buffer);
+		safe_unpackstr(&msg->reservation, buffer);
+		safe_unpack16(&msg->restart_cnt, buffer);
+		safe_unpack16(&msg->warn_flags, buffer);
+		safe_unpack16(&msg->warn_signal, buffer);
+		safe_unpack16(&msg->warn_time, buffer);
+		safe_unpackstr(&msg->wckey, buffer);
+		safe_unpack32(&msg->req_switch, buffer);
+		safe_unpack32(&msg->wait4switch, buffer);
 
-		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
-		safe_unpack64(&job_desc_ptr->bitflags, buffer);
-		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
-		safe_unpackstr(&job_desc_ptr->extra, buffer);
-		safe_unpack16(&job_desc_ptr->x11, buffer);
-		safe_unpackstr(&job_desc_ptr->x11_magic_cookie, buffer);
-		safe_unpackstr(&job_desc_ptr->x11_target, buffer);
-		safe_unpack16(&job_desc_ptr->x11_target_port, buffer);
+		safe_unpack16(&msg->wait_all_nodes, buffer);
+		safe_unpack64(&msg->bitflags, buffer);
+		safe_unpack32(&msg->delay_boot, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
 
-		safe_unpackstr(&job_desc_ptr->cpus_per_tres, buffer);
-		slurm_format_tres_string(&job_desc_ptr->cpus_per_tres, "gres");
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		slurm_format_tres_string(&msg->cpus_per_tres, "gres");
 
-		safe_unpackstr(&job_desc_ptr->mem_per_tres, buffer);
-		slurm_format_tres_string(&job_desc_ptr->mem_per_tres, "gres");
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		slurm_format_tres_string(&msg->mem_per_tres, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_bind, buffer);
-		safe_unpackstr(&job_desc_ptr->tres_freq, buffer);
-		safe_unpackstr(&job_desc_ptr->tres_per_job, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_job, "gres");
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_job, buffer);
+		slurm_format_tres_string(&msg->tres_per_job, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_node, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_node, "gres");
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		slurm_format_tres_string(&msg->tres_per_node, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_socket, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_socket, "gres");
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		slurm_format_tres_string(&msg->tres_per_socket, "gres");
 
-		safe_unpackstr(&job_desc_ptr->tres_per_task, buffer);
-		slurm_format_tres_string(&job_desc_ptr->tres_per_task, "gres");
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		slurm_format_tres_string(&msg->tres_per_task, "gres");
 
-		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
+		if (unpack_cron_entry(&msg->crontab_entry,
 				      smsg->protocol_version, buffer))
 			goto unpack_error;
-		safe_unpack16(&job_desc_ptr->segment_size, buffer);
+		safe_unpack16(&msg->segment_size, buffer);
 	}
 
-	smsg->data = job_desc_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_job_desc_msg(job_desc_ptr);
+	slurm_free_job_desc_msg(msg);
 	return SLURM_ERROR;
 }
 
