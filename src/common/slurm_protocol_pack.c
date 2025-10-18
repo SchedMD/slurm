@@ -12197,17 +12197,17 @@ static void _pack_topo_info_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_topo_info_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	topo_info_request_msg_t *msg_ptr = xmalloc(sizeof(*msg_ptr));
+	topo_info_request_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpackstr(&msg_ptr->name, buffer);
+		safe_unpackstr(&msg->name, buffer);
 	}
 
-	smsg->data = msg_ptr;
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_topo_request_msg(msg_ptr);
+	slurm_free_topo_request_msg(msg);
 	return SLURM_ERROR;
 }
 
