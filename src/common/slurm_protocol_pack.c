@@ -8180,33 +8180,28 @@ static void _pack_task_exit_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, buf_t *buffer,
-		      uint16_t protocol_version)
+static int _unpack_task_exit_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	task_exit_msg_t *msg;
 	uint32_t uint32_tmp;
+	task_exit_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg_ptr);
-	msg = xmalloc(sizeof(task_exit_msg_t));
-	*msg_ptr = msg;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->return_code, buffer);
 		safe_unpack32(&msg->num_tasks, buffer);
 		safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
 		if (msg->num_tasks != uint32_tmp)
 			goto unpack_error;
 		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_task_exit_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14250,9 +14245,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_step_info_response_msg(msg, buffer);
 		break;
 	case MESSAGE_TASK_EXIT:
-		rc = _unpack_task_exit_msg((task_exit_msg_t **)
-					   & (msg->data), buffer,
-					   msg->protocol_version);
+		rc = _unpack_task_exit_msg(msg, buffer);
 		break;
 	case REQUEST_BATCH_JOB_LAUNCH:
 		rc = _unpack_batch_job_launch_msg(msg, buffer);
