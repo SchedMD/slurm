@@ -12698,23 +12698,20 @@ static void _pack_control_status_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_control_status_msg(control_status_msg_t **msg_ptr,
-				      buf_t *buffer, uint16_t protocol_version)
+static int _unpack_control_status_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	control_status_msg_t *msg;
+	control_status_msg_t *msg = xmalloc(sizeof(*msg));
 
-	msg = xmalloc(sizeof(control_status_msg_t));
-	*msg_ptr = msg;
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->backup_inx, buffer);
 		safe_unpack_time(&msg->control_time, buffer);
 	}
 
+	smsg->data = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_control_status_msg(msg);
-	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14294,9 +14291,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_set_fs_dampening_factor_msg(msg, buffer);
 		break;
 	case RESPONSE_CONTROL_STATUS:
-		rc = _unpack_control_status_msg(
-			(control_status_msg_t **)&(msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_control_status_msg(msg, buffer);
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
 		rc = _unpack_bb_status_req_msg(
