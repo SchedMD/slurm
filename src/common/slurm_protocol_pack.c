@@ -10107,28 +10107,25 @@ static void _pack_job_step_info_req_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int
-_unpack_job_step_info_req_msg(job_step_info_request_msg_t ** msg, buf_t *buffer,
-			      uint16_t protocol_version)
+static int _unpack_job_step_info_req_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	job_step_info_request_msg_t *job_step_info;
+	job_step_info_request_msg_t *job_step_info =
+		xmalloc(sizeof(*job_step_info));
 
-	job_step_info = xmalloc(sizeof(job_step_info_request_msg_t));
-	*msg = job_step_info;
-
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&job_step_info->last_update, buffer);
 		if (unpack_step_id_members(&job_step_info->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
+					   smsg->protocol_version) !=
+		    SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpack16(&job_step_info->show_flags, buffer);
 	}
 
+	smsg->data = job_step_info;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_step_info_request_msg(job_step_info);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14224,10 +14221,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_cancel_tasks_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_INFO:
-		rc = _unpack_job_step_info_req_msg(
-			(job_step_info_request_msg_t **)
-			& (msg->data), buffer,
-			msg->protocol_version);
+		rc = _unpack_job_step_info_req_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_INFO:
 		rc = _unpack_job_info_request_msg((job_info_request_msg_t**)
