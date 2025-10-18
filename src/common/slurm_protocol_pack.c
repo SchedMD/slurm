@@ -2861,48 +2861,44 @@ static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int _unpack_job_step_create_response_msg(
-	job_step_create_response_msg_t **msg, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
+						buf_t *buffer)
 {
-	job_step_create_response_msg_t *tmp_ptr = NULL;
+	job_step_create_response_msg_t *tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 
-	/* alloc memory for structure */
-	xassert(msg);
-	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
-	*msg = tmp_ptr;
-
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
 		safe_unpackstr(&tmp_ptr->resv_ports, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->job_step_id, buffer);
 		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
-					     protocol_version))
+					     smsg->protocol_version))
 			goto unpack_error;
 		safe_unpackstr(&tmp_ptr->stepmgr, buffer);
 
-		if (!(tmp_ptr->cred = slurm_cred_unpack(buffer,
-							protocol_version)))
+		if (!(tmp_ptr->cred =
+			      slurm_cred_unpack(buffer,
+						smsg->protocol_version)))
 			goto unpack_error;
 
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->def_cpu_bind_type, buffer);
 		safe_unpackstr(&tmp_ptr->resv_ports, buffer);
 		safe_unpack32(&tmp_ptr->job_id, buffer);
 		safe_unpack32(&tmp_ptr->job_step_id, buffer);
 		if (unpack_slurm_step_layout(&tmp_ptr->step_layout, buffer,
-					     protocol_version))
+					     smsg->protocol_version))
 			goto unpack_error;
 		safe_unpackstr(&tmp_ptr->stepmgr, buffer);
 
-		if (!(tmp_ptr->cred = slurm_cred_unpack(buffer,
-							protocol_version)))
+		if (!(tmp_ptr->cred =
+			      slurm_cred_unpack(buffer,
+						smsg->protocol_version)))
 			goto unpack_error;
 
 		if (switch_g_stepinfo_unpack(&tmp_ptr->switch_step, buffer,
-					     protocol_version)) {
+					     smsg->protocol_version)) {
 			error("switch_g_stepinfo_unpack: %m");
 			switch_g_stepinfo_free(tmp_ptr->switch_step);
 			goto unpack_error;
@@ -2910,11 +2906,11 @@ static int _unpack_job_step_create_response_msg(
 		safe_unpack16(&tmp_ptr->use_protocol_ver, buffer);
 	}
 
+	smsg->data = tmp_ptr;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	slurm_free_job_step_create_response_msg(tmp_ptr);
-	*msg = NULL;
 	return SLURM_ERROR;
 }
 
@@ -14488,10 +14484,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 					 msg->protocol_version);
 		break;
 	case RESPONSE_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_response_msg(
-			(job_step_create_response_msg_t **)
-			& msg->data, buffer,
-			msg->protocol_version);
+		rc = _unpack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
 		rc = _unpack_job_step_create_request_msg(
