@@ -9418,7 +9418,6 @@ static void _pack_prolog_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->alloc_tls_cert, buffer);
 		slurm_pack_list(msg->job_gres_prep, gres_prep_pack, buffer,
 				smsg->protocol_version);
-		pack32(msg->deprecated.job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
@@ -9522,7 +9521,6 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&msg->deprecated.job_id, buffer);
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
