@@ -5356,7 +5356,6 @@ extern int stepmgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
 	}
 
 	job_info_resp_msg = xmalloc(sizeof(*job_info_resp_msg));
-	job_info_resp_msg->job_id = job_ptr->job_id;
 	job_info_resp_msg->node_list = xstrdup(node_list);
 	job_info_resp_msg->sbcast_cred = sbcast_cred;
 

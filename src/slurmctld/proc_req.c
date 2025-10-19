@@ -3074,7 +3074,6 @@ static void _slurm_rpc_sbcast_cred_no_job(slurm_msg_t *msg)
 	END_TIMER2(__func__);
 
 	cred_resp_msg = xmalloc(sizeof(*cred_resp_msg));
-	cred_resp_msg->job_id = NO_VAL;
 	cred_resp_msg->node_list = xstrdup(cred_req_msg->node_list);
 	cred_resp_msg->sbcast_cred = sbcast_cred;
 
