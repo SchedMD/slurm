@@ -43,6 +43,7 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/sluid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -66,6 +67,12 @@ extern char *encode_sbcast(sbcast_cred_arg_t *cred)
 	data_set_int(data_key_set(data_sbcast, "step_id"),
 		     cred->step_id.step_id);
 
+	if (cred->step_id.sluid) {
+		char *sluid = sluid2str(cred->step_id.sluid);
+		data_set_string(data_key_set(data_sbcast, "sluid"), sluid);
+		xfree(sluid);
+	}
+
 	serialize_g_data_to_string(&json, NULL, data, MIME_TYPE_JSON,
 				   SER_FLAGS_COMPACT);
 
@@ -77,6 +84,7 @@ extern sbcast_cred_t *extract_sbcast(char *json)
 {
 	data_t *data = NULL;
 	sbcast_cred_t *cred = NULL;
+	const char *sluid = NULL;
 
 	if (serialize_g_string_to_data(&data, json, strlen(json),
 				       MIME_TYPE_JSON)) {
@@ -89,6 +97,10 @@ extern sbcast_cred_t *extract_sbcast(char *json)
 	cred->arg.step_id.job_id = data_get_int(data_key_set(data, "job_id"));
 	cred->arg.het_job_id = data_get_int(data_key_set(data, "het_job_id"));
 	cred->arg.step_id.step_id = data_get_int(data_key_set(data, "step_id"));
+	cred->arg.step_id.step_het_comp = NO_VAL;
+
+	if ((sluid = data_get_string(data_key_set(data, "sluid"))))
+		cred->arg.step_id.sluid = str2sluid(sluid);
 
 	FREE_NULL_DATA(data);
 	return cred;
