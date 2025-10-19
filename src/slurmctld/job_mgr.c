@@ -2631,23 +2631,23 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 
 		/* return result */
 		if (error_code) {
-			log_flag(STEPS, "Signal %u of JobId=%u StepId=%u by UID=%u: %s",
+			log_flag(STEPS, "Signal %u of %pI StepId=%u by UID=%u: %s",
 				 job_step_kill_msg->signal,
-				 job_step_kill_msg->step_id.job_id,
+				 &job_step_kill_msg->step_id,
 				 job_step_kill_msg->step_id.step_id, uid,
 				 slurm_strerror(error_code));
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL)
-				log_flag(STEPS, "%s: Cancel of JobId=%u StepId=%u by UID=%u %s",
+				log_flag(STEPS, "%s: Cancel of %pI StepId=%u by UID=%u %s",
 					 __func__,
-					 job_step_kill_msg->step_id.job_id,
+					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
 					 uid,
 					 TIME_STR);
 			else
-				log_flag(STEPS, "%s: Signal %u of JobId=%u StepId=%u by UID=%u %s",
+				log_flag(STEPS, "%s: Signal %u of %pI StepId=%u by UID=%u %s",
 					 __func__, job_step_kill_msg->signal,
-					 job_step_kill_msg->step_id.job_id,
+					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
 					 uid,
 					 TIME_STR);
@@ -2702,8 +2702,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
 
 	if (!job_ptr) {
-		info("%s: invalid JobId=%u",
-		     __func__, job_step_kill_msg->step_id.job_id);
+		info("%s: invalid %pI", __func__, &job_step_kill_msg->step_id);
 		error_code = ESLURM_INVALID_JOB_ID;
 		goto endit;
 	}
