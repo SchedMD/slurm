@@ -4769,10 +4769,7 @@ _add_starting_step(uint16_t type, void *req)
 
 	switch (type) {
 	case LAUNCH_BATCH_JOB:
-		starting_step->job_id =
-			((batch_job_launch_msg_t *)req)->job_id;
-		starting_step->step_id = SLURM_BATCH_SCRIPT;
-		starting_step->step_het_comp = NO_VAL;
+		*starting_step = ((batch_job_launch_msg_t *) req)->step_id;
 		break;
 	case LAUNCH_TASKS:
 		memcpy(starting_step,
@@ -4802,10 +4799,7 @@ _remove_starting_step(uint16_t type, void *req)
 
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
-		starting_step.job_id =
-			((batch_job_launch_msg_t *)req)->job_id;
-		starting_step.step_id = SLURM_BATCH_SCRIPT;
-		starting_step.step_het_comp = NO_VAL;
+		starting_step = ((batch_job_launch_msg_t *) req)->step_id;
 		break;
 	case LAUNCH_TASKS:
 		memcpy(&starting_step,
