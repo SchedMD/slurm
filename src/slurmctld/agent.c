@@ -1102,8 +1102,8 @@ static void *_thread_per_group_rpc(void *args)
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
 			job_id = launch_msg_ptr->job_id;
-			info("Killing non-startable batch JobId=%u: %s",
-			     job_id, slurm_strerror(rc));
+			info("Killing non-startable batch %pI: %s",
+			     &launch_msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
@@ -2298,8 +2298,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	job_ptr = find_job_record(launch_msg_ptr->job_id);
 	if ((job_ptr == NULL) ||
 	    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
-		info("agent(batch_launch): removed pending request for cancelled JobId=%u",
-		     launch_msg_ptr->job_id);
+		info("agent(batch_launch): removed pending request for cancelled %pI",
+		     &launch_msg_ptr->step_id);
 		return -1;	/* job cancelled while waiting */
 	}
 
@@ -2324,8 +2324,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 					agent_arg_ptr->hostlist);
 		node_ptr = find_node_record(hostname);
 		if (node_ptr == NULL) {
-			error("agent(batch_launch) removed pending request for JobId=%u, missing node %s",
-			      launch_msg_ptr->job_id, hostname);
+			error("agent(batch_launch) removed pending request for %pI, missing node %s",
+			      &launch_msg_ptr->step_id, hostname);
 			xfree(hostname);
 			return -1;	/* invalid request?? */
 		}
