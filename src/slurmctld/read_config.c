@@ -725,7 +725,8 @@ extern list_t *accounts_list_build(char *accounts, bool locked)
 }
 
 /* Convert a comma delimited list of QOS names into a bitmap */
-extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
+extern int qos_list_build(char *qos, bool locked, bool ignore_invalid,
+			  bitstr_t **qos_bits)
 {
 	char *tmp_qos, *one_qos_name, *name_ptr = NULL;
 	slurmdb_qos_rec_t qos_rec, *qos_ptr = NULL;
@@ -733,23 +734,22 @@ extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 	int rc;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
-	if (!qos) {
+	if (!qos || !qos[0] || !xstrcasecmp(qos, "ALL")) {
 		FREE_NULL_BITMAP(*qos_bits);
-		return;
+		return SLURM_SUCCESS;
 	}
 
 	/* Lock here to avoid g_qos_count changing under us */
 	if (!locked)
 		assoc_mgr_lock(&locks);
 	if (!g_qos_count) {
-		error("We have no QOS on the system Ignoring invalid "
-		      "Allow/DenyQOS value(s) %s",
+		error("Invalid Allow/DenyQOS value(s) %s: We have no QOS on the system",
 		      qos);
 		if (!locked)
 			assoc_mgr_unlock(&locks);
 		FREE_NULL_BITMAP(*qos_bits);
 		*qos_bits = NULL;
-		return;
+		return SLURM_ERROR;
 	}
 
 	tmp_qos_bitstr = bit_alloc(g_qos_count);
@@ -761,9 +761,21 @@ extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 		rc = assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
 					   accounting_enforce,
 					   &qos_ptr, 1);
-		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count)) {
-			error("Ignoring invalid Allow/DenyQOS value: %s",
-			      one_qos_name);
+		if ((rc != SLURM_SUCCESS) || (qos_rec.id >= g_qos_count) ||
+		    (!qos_ptr)) {
+			if (ignore_invalid) {
+				error("Ignoring invalid Allow/DenyQOS value: %s",
+				      one_qos_name);
+			} else {
+				error("Invalid Allow/DenyQOS value: %s",
+				      one_qos_name);
+				if (!locked)
+					assoc_mgr_unlock(&locks);
+				xfree(tmp_qos);
+				FREE_NULL_BITMAP(tmp_qos_bitstr);
+				FREE_NULL_BITMAP(*qos_bits);
+				return SLURM_ERROR;
+			}
 		} else {
 			bit_set(tmp_qos_bitstr, qos_rec.id);
 		}
@@ -774,6 +786,8 @@ extern void qos_list_build(char *qos, bool locked, bitstr_t **qos_bits)
 	xfree(tmp_qos);
 	FREE_NULL_BITMAP(*qos_bits);
 	*qos_bits = tmp_qos_bitstr;
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -887,9 +901,14 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 
 	if (part->allow_qos) {
-		part_ptr->allow_qos = xstrdup(part->allow_qos);
-		qos_list_build(part_ptr->allow_qos, false,
-			       &part_ptr->allow_qos_bitstr);
+		if (qos_list_build(part->allow_qos, false, false,
+				   &part_ptr->allow_qos_bitstr) ==
+		    SLURM_SUCCESS) {
+			part_ptr->allow_qos = xstrdup(part->allow_qos);
+		} else {
+			fatal("Partition %s has an invalid AllowQOS (%s), please check your configuration",
+			      part_ptr->name, part->allow_qos);
+		}
 	}
 
 	if (part->deny_accounts) {
@@ -899,9 +918,14 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	}
 
 	if (part->deny_qos) {
-		part_ptr->deny_qos = xstrdup(part->deny_qos);
-		qos_list_build(part_ptr->deny_qos, false,
-			       &part_ptr->deny_qos_bitstr);
+		if (qos_list_build(part->deny_qos, false, false,
+				   &part_ptr->deny_qos_bitstr) ==
+		    SLURM_SUCCESS) {
+			part_ptr->deny_qos = xstrdup(part->deny_qos);
+		} else {
+			fatal("Partition %s has an invalid DenyQOS (%s), please check your configuration",
+			      part_ptr->name, part->deny_qos);
+		}
 	}
 
 	if (part->qos_char) {
@@ -910,10 +934,11 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 
 		memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
 		qos_rec.name = part_ptr->qos_char;
-		if (assoc_mgr_fill_in_qos(
-			    acct_db_conn, &qos_rec, accounting_enforce,
-			    (slurmdb_qos_rec_t **)&part_ptr->qos_ptr, 0)
-		    != SLURM_SUCCESS) {
+		if ((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					   accounting_enforce,
+					   &part_ptr->qos_ptr,
+					   0) != SLURM_SUCCESS) ||
+		    !part_ptr->qos_ptr) {
 			fatal("Partition %s has an invalid qos (%s), "
 			      "please check your configuration",
 			      part_ptr->name, qos_rec.name);

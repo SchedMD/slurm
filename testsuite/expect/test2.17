@@ -38,13 +38,15 @@ if {[get_admin_level] ne "Administrator"} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-proc set_part_val {part_type part_val} {
+proc set_part_val {part_type part_val expected_err} {
 	global scontrol part_name
 
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
-		-re "Error" {
-			fail "$part_type was not set"
+		-re "error" {
+			if {!$expected_err} {
+				fail "$part_type was not set"
+			}
 		}
 		timeout {
 			fail "scontrol is not responding"
@@ -158,7 +160,7 @@ if {$create_qos != 1} {
 #
 # Set AllowQos
 #
-set_part_val AllowQos $qos_name
+set_part_val AllowQos $qos_name 0
 
 #
 # Check that AllowQos is set
@@ -168,7 +170,7 @@ check_part AllowQos $qos_name
 #
 # Set AllowQos to ALL
 #
-set_part_val AllowQos ALL
+set_part_val AllowQos ALL 0
 
 #
 # Check that Qos is set
@@ -178,7 +180,7 @@ check_part AllowQos ALL
 #
 # Set DenyQos
 #
-set_part_val DenyQos $qos_name
+set_part_val DenyQos $qos_name 0
 
 #
 # Check that DenyQos is set
@@ -186,11 +188,11 @@ set_part_val DenyQos $qos_name
 check_part DenyQos $qos_name
 
 #
-# set DenyQos to none
+# set DenyQos to an invalid qos name
 #
-set_part_val DenyQos none
+set_part_val DenyQos invalid_qos 1
 
 #
-# Check that DenyQos is set to none
+# Check that DenyQos is still set to previous set name
 #
-check_part DenyQos none
+check_part DenyQos $qos_name

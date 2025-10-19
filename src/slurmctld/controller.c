@@ -2125,11 +2125,11 @@ static int _foreach_part_resize_qos(void *x, void *arg)
 	part_record_t *part_ptr = x;
 
 	if (part_ptr->allow_qos)
-		qos_list_build(part_ptr->allow_qos, false,
+		qos_list_build(part_ptr->allow_qos, false, true,
 			       &part_ptr->allow_qos_bitstr);
 
 	if (part_ptr->deny_qos)
-		qos_list_build(part_ptr->deny_qos, false,
+		qos_list_build(part_ptr->deny_qos, false, true,
 			       &part_ptr->deny_qos_bitstr);
 	return 0;
 }
@@ -3835,11 +3835,11 @@ static int _foreach_cache_update_part(void *x, void *arg)
 	part_record_t *part_ptr = x;
 
 	if (part_ptr->allow_qos)
-		qos_list_build(part_ptr->allow_qos, true,
+		qos_list_build(part_ptr->allow_qos, true, true,
 			       &part_ptr->allow_qos_bitstr);
 
 	if (part_ptr->deny_qos)
-		qos_list_build(part_ptr->deny_qos, true,
+		qos_list_build(part_ptr->deny_qos, true, true,
 			       &part_ptr->deny_qos_bitstr);
 
 	if (part_ptr->qos_char) {
@@ -3848,10 +3848,11 @@ static int _foreach_cache_update_part(void *x, void *arg)
 		};
 
 		part_ptr->qos_ptr = NULL;
-		if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
-					  accounting_enforce,
-					  &part_ptr->qos_ptr,
-					  true) != SLURM_SUCCESS) {
+		if ((assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec,
+					   accounting_enforce,
+					   &part_ptr->qos_ptr,
+					   true) != SLURM_SUCCESS) ||
+		    !part_ptr->qos_ptr) {
 			fatal("Partition %s has an invalid qos (%s), "
 			      "please check your configuration",
 			      part_ptr->name, qos_rec.name);
