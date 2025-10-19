@@ -228,6 +228,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 	step_ptr->host		= xstrdup(step_specs->host);
 	step_ptr->state		= JOB_PENDING;
 	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.sluid = job_ptr->db_index;
 	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->cwd = xstrdup(step_specs->cwd);
@@ -434,8 +435,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	log_flag(CPU_FREQ, "StepDesc: user_id=%u JobId=%u cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
-		 step_spec->user_id, step_spec->step_id.job_id,
+	log_flag(CPU_FREQ, "StepDesc: user_id=%u %pI cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
+		 step_spec->user_id, &step_spec->step_id,
 		 step_spec->cpu_freq_gov,
 		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
 	debug3("StepDesc: user_id=%u %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
@@ -3428,6 +3429,8 @@ extern int step_create(job_record_t *job_ptr,
 	memcpy(&step_ptr->step_id, &step_specs->step_id,
 	       sizeof(step_ptr->step_id));
 
+	step_ptr->step_id.sluid = job_ptr->db_index;
+
 	if (step_specs->array_task_id != NO_VAL)
 		step_ptr->step_id.job_id = job_ptr->job_id;
 
@@ -3988,7 +3991,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	/* find the job, step, and validate input */
 	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		info("%s: JobId=%u invalid", __func__, req->step_id.job_id);
+		info("%s: %pI invalid", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -4435,6 +4438,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	}
 
 	step_id.job_id = job_ptr->job_id;
+	step_id.sluid = job_ptr->db_index;
 	step_id.step_id = req->step_id;
 	step_id.step_het_comp = NO_VAL;
 
@@ -4602,6 +4606,7 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
 	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.sluid = job_ptr->db_index;
 	step_ptr->step_id.step_id = SLURM_EXTERN_CONT;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	if (job_ptr->node_bitmap)
@@ -4649,6 +4654,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
 	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.sluid = job_ptr->db_index;
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->container = xstrdup(job_ptr->container);
@@ -4689,6 +4695,7 @@ static step_record_t *_build_interactive_step(
 		job_ptr = job_ptr_in;
 
 	step_id.job_id = job_ptr->job_id;
+	step_id.sluid = job_ptr->db_index;
 	step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_id.step_het_comp = NO_VAL;
 	step_ptr = find_step_record(job_ptr, &step_id);
@@ -4720,6 +4727,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
 	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.sluid = job_ptr->db_index;
 	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->container = xstrdup(job_ptr->container);
@@ -4837,6 +4845,8 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	/* Set the step id */
 	memcpy(&step_ptr->step_id, &step_specs->step_id,
 	       sizeof(step_ptr->step_id));
+
+	step_ptr->step_id.sluid = job_ptr->db_index;
 
 	if (step_specs->array_task_id != NO_VAL)
 		step_ptr->step_id.job_id = job_ptr->job_id;

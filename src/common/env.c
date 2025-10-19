@@ -1299,7 +1299,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
 	                        slurm_conf.cluster_name);
 
-	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u",
+				batch->step_id.job_id);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
 				step_layout_req.num_hosts);
 	if (batch->array_task_id != NO_VAL) {
@@ -1323,7 +1324,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		env_array_overwrite_fmt(dest, "HOSTNAME", "%s", node_name);
 
 	/* OBSOLETE, but needed by MPI, do not remove */
-	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
+	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u",
+				batch->step_id.job_id);
 	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u",
 				step_layout_req.num_hosts);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);

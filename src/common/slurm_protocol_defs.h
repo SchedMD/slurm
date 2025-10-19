@@ -873,7 +873,6 @@ typedef struct prolog_launch_msg {
 	uint32_t gid;
 	uint32_t het_job_id;		/* HetJob id or NO_VAL */
 	list_t *job_gres_prep;		/* Used to set Prolog env vars */
-	uint32_t job_id;		/* slurm job_id */
 	uint64_t job_mem_limit;		/* job's memory limit, passed via cred */
 	uint32_t nnodes;			/* count of nodes, passed via cred */
 	char *nodes;			/* list of nodes allocated to job_step */
@@ -887,6 +886,11 @@ typedef struct prolog_launch_msg {
 	char *x11_magic_cookie;		/* X11 auth cookie to abuse */
 	char *x11_target;		/* X11 target host, or unix socket */
 	uint16_t x11_target_port;	/* X11 target port */
+
+	/* remove in the future. should not be used in slurmd/slurmstepd */
+	struct {
+		uint32_t job_id;
+	} deprecated;
 
 	/* DO NOT PACK. Extracted from the cred automatically. */
 	slurm_step_id_t step_id;
@@ -913,7 +917,6 @@ typedef struct batch_job_launch_msg {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t het_job_id;
-	uint32_t job_id;
 	uint32_t ngids;
 	uint32_t *gids;
 	uint32_t ntasks;	/* number of tasks in this job         */
@@ -965,6 +968,11 @@ typedef struct batch_job_launch_msg {
 	char *tres_freq;	/* frequency/power for TRES (e.g. GPUs) */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	bool oom_kill_step;
+
+	/* remove in the future. should not be used in slurmd/slurmstepd */
+	struct {
+		uint32_t job_id;
+	} deprecated;
 
 	/* DO NOT PACK. Extracted from the cred automatically. */
 	slurm_step_id_t step_id;

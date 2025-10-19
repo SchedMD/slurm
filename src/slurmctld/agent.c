@@ -762,7 +762,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			/* Requeue the request */
 			batch_job_launch_msg_t *launch_msg_ptr =
 					*agent_ptr->msg_args_pptr;
-			uint32_t job_id = launch_msg_ptr->job_id;
 			/* Locks: Write job, write node, read federation */
 			slurmctld_lock_t job_write_lock =
 				{ .job  = WRITE_LOCK,
@@ -770,8 +769,8 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				  .fed  = READ_LOCK };
 
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurm_conf.slurm_user_id,
-				     true, false, 0);
+			job_complete(launch_msg_ptr->step_id.job_id,
+				     slurm_conf.slurm_user_id, true, false, 0);
 			unlock_slurmctld(job_write_lock);
 		}
 	}
@@ -1101,14 +1100,14 @@ static void *_thread_per_group_rpc(void *args)
 		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
-			job_id = launch_msg_ptr->job_id;
-			info("Killing non-startable batch JobId=%u: %s",
-			     job_id, slurm_strerror(rc));
+			info("Killing non-startable batch %pI: %s",
+			     &launch_msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurm_conf.slurm_user_id,
-			             false, false, _wif_status());
+			job_complete(launch_msg_ptr->step_id.job_id,
+				     slurm_conf.slurm_user_id, false, false,
+				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
@@ -2295,11 +2294,11 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
-	job_ptr = find_job_record(launch_msg_ptr->job_id);
+	job_ptr = find_job_record(launch_msg_ptr->step_id.job_id);
 	if ((job_ptr == NULL) ||
 	    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
-		info("agent(batch_launch): removed pending request for cancelled JobId=%u",
-		     launch_msg_ptr->job_id);
+		info("agent(batch_launch): removed pending request for cancelled %pI",
+		     &launch_msg_ptr->step_id);
 		return -1;	/* job cancelled while waiting */
 	}
 
@@ -2311,7 +2310,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	if (job_ptr->wait_all_nodes) {
-		(void) job_node_ready(launch_msg_ptr->job_id, &tmp);
+		(void) job_node_ready(launch_msg_ptr->step_id.job_id, &tmp);
 		if (tmp ==
 		    (READY_JOB_STATE | READY_NODE_STATE | READY_PROLOG_STATE)) {
 			nodes_ready = 1;
@@ -2324,8 +2323,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 					agent_arg_ptr->hostlist);
 		node_ptr = find_node_record(hostname);
 		if (node_ptr == NULL) {
-			error("agent(batch_launch) removed pending request for JobId=%u, missing node %s",
-			      launch_msg_ptr->job_id, hostname);
+			error("agent(batch_launch) removed pending request for %pI, missing node %s",
+			      &launch_msg_ptr->step_id, hostname);
 			xfree(hostname);
 			return -1;	/* invalid request?? */
 		}

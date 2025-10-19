@@ -180,8 +180,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 			req->cpu_bind_type |= CPU_BIND_VERBOSE;
 		xfree(req->cpu_bind);
 		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
-		info("job %u CPU input mask for node: %s",
-		     req->job_id, req->cpu_bind);
+		info("%pI CPU input mask for node: %s",
+		     &req->step_id, req->cpu_bind);
 		/* translate abstract masks to actual hardware layout */
 		_lllp_map_abstract_masks(1, &hw_map);
 #ifdef HAVE_NUMA
@@ -191,11 +191,10 @@ void batch_bind(batch_job_launch_msg_t *req)
 #endif
 		xfree(req->cpu_bind);
 		req->cpu_bind = (char *)bit_fmt_hexmask(hw_map);
-		info("job %u CPU final HW mask for node: %s",
-		     req->job_id, req->cpu_bind);
+		info("%pI CPU final HW mask for node: %s",
+		     &req->step_id, req->cpu_bind);
 	} else {
-		error("job %u allocated no CPUs",
-		      req->job_id);
+		error("%pI allocated no CPUs", &req->step_id);
 	}
 	FREE_NULL_BITMAP(hw_map);
 }
