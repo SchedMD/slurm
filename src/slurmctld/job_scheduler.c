@@ -2351,6 +2351,12 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 
+	/* not packed, but set for use routing this message within slurmctld */
+	launch_msg_ptr->step_id.job_id = job_ptr->job_id;
+	launch_msg_ptr->step_id.sluid = job_ptr->db_index;
+	launch_msg_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
+	launch_msg_ptr->step_id.step_het_comp = NO_VAL;
+
 	if (!(launch_msg_ptr->script_buf = get_job_script(job_ptr))) {
 		fail_why = "Unable to load job batch script";
 		goto job_failed;
