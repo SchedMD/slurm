@@ -104,7 +104,7 @@ extern void fini(void)
  */
 extern int task_p_slurmd_batch_request (batch_job_launch_msg_t *req)
 {
-	info("task_p_slurmd_batch_request: %u", req->job_id);
+	info("%s: %pI", __func__, &req->step_id);
 	batch_bind(req);
 	return SLURM_SUCCESS;
 }
