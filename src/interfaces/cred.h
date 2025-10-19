@@ -154,9 +154,8 @@ typedef struct {
 } slurm_cred_t;
 
 typedef struct {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	uint32_t het_job_id;
-	uint32_t step_id;
 	identity_t *id;
 
 	time_t expiration;

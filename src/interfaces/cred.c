@@ -732,9 +732,9 @@ extern sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, void *msg,
 
 extern void print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
-	info("Sbcast_cred: JobId   %u", sbcast_cred->arg.job_id);
+	info("Sbcast_cred: JobId   %u", sbcast_cred->arg.step_id.job_id);
 	info("Sbcast_cred: HetJobId %u", sbcast_cred->arg.het_job_id);
-	info("Sbcast_cred: StepId  %u", sbcast_cred->arg.step_id);
+	info("Sbcast_cred: StepId  %u", sbcast_cred->arg.step_id.step_id);
 	info("Sbcast_cred: Nodes   %s", sbcast_cred->arg.nodes);
 	info("Sbcast_cred: ctime   %s", slurm_ctime2(&sbcast_cred->ctime));
 	info("Sbcast_cred: Expire  %s", slurm_ctime2(&sbcast_cred->arg.expiration));

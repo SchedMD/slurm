@@ -61,9 +61,10 @@ extern char *encode_sbcast(sbcast_cred_arg_t *cred)
 	data_sbcast = data_set_dict(data_key_set(data, "sbcast"));
 
 	data_set_string(data_key_set(data_sbcast, "nodes"), cred->nodes);
-	data_set_int(data_key_set(data_sbcast, "job_id"), cred->job_id);
+	data_set_int(data_key_set(data_sbcast, "job_id"), cred->step_id.job_id);
 	data_set_int(data_key_set(data_sbcast, "het_job_id"), cred->het_job_id);
-	data_set_int(data_key_set(data_sbcast, "step_id"), cred->step_id);
+	data_set_int(data_key_set(data_sbcast, "step_id"),
+		     cred->step_id.step_id);
 
 	serialize_g_data_to_string(&json, NULL, data, MIME_TYPE_JSON,
 				   SER_FLAGS_COMPACT);
@@ -85,9 +86,9 @@ extern sbcast_cred_t *extract_sbcast(char *json)
 
 	cred = xmalloc(sizeof(*cred));
 	cred->arg.nodes = xstrdup(data_get_string(data_key_set(data, "nodes")));
-	cred->arg.job_id = data_get_int(data_key_set(data, "job_id"));
+	cred->arg.step_id.job_id = data_get_int(data_key_set(data, "job_id"));
 	cred->arg.het_job_id = data_get_int(data_key_set(data, "het_job_id"));
-	cred->arg.step_id = data_get_int(data_key_set(data, "step_id"));
+	cred->arg.step_id.step_id = data_get_int(data_key_set(data, "step_id"));
 
 	FREE_NULL_DATA(data);
 	return cred;

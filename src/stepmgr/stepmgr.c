@@ -5339,12 +5339,12 @@ extern int stepmgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
 	 * structures to avoid copy overhead. Do not free them!
 	 */
 	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
-	sbcast_arg.job_id = job_ptr->job_id;
+	sbcast_arg.step_id.job_id = job_ptr->job_id;
 	sbcast_arg.het_job_id = job_ptr->het_job_id;
 	if (step_ptr)
-		sbcast_arg.step_id = step_ptr->step_id.step_id;
+		sbcast_arg.step_id.step_id = step_ptr->step_id.step_id;
 	else
-		sbcast_arg.step_id = job_ptr->next_step_id;
+		sbcast_arg.step_id.step_id = job_ptr->next_step_id;
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
 	sbcast_arg.expiration = job_ptr->end_time;
 
