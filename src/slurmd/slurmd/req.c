@@ -2133,8 +2133,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
 
 	if (_launch_job_test(req->job_id, true)) {
-		error("Job %u already running, do not launch second copy",
-		      req->job_id);
+		error("%pI already running, do not launch second copy",
+		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
 		_launch_job_fail(
 		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
@@ -2145,8 +2145,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 	cred_handle_reissue(req->cred, false);
 	if (cred_revoked(req->cred)) {
-		error("Job %u already killed, do not launch batch job",
-		      req->job_id);
+		error("%pI already killed, do not launch batch job",
+		      &req->step_id);
 		rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
 		goto done;
 	}
@@ -2186,8 +2186,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		 * This typically indicates that the slurmd was
 		 * blocked from memory and/or CPUs and the slurmctld
 		 * has requeued the batch job request. */
-		error("Could not confirm batch launch for job %u, "
-		      "aborting request", req->job_id);
+		error("Could not confirm batch launch for %pI, aborting request",
+		      &req->step_id);
 		rc = SLURM_COMMUNICATIONS_SEND_ERROR;
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
@@ -2243,8 +2243,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				term_sig    = WTERMSIG(rc);
 			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-			error("[job %u] prolog failed status=%d:%d",
-			      req->job_id, exit_status, term_sig);
+			error("%pI prolog failed status=%d:%d",
+			      &req->step_id, exit_status, term_sig);
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
@@ -2264,13 +2264,13 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 * for partition booting). Test if the credential has since
 	 * been revoked and exit as needed. */
 	if (cred_revoked(req->cred)) {
-		info("Job %u already killed, do not launch batch job",
-		     req->job_id);
+		info("%pI already killed, do not launch batch job",
+		     &req->step_id.job_id);
 		rc = SLURM_SUCCESS;     /* job already ran */
 		goto done;
 	}
 
-	info("Launching batch job %u for UID %u", req->job_id, batch_uid);
+	info("Launching batch %pI for UID %u", &req->step_id, batch_uid);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, batch_uid,
@@ -2294,8 +2294,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		revoked = false;
 	}
 	if (revoked) {
-		info("Job %u killed while launch was in progress",
-		     req->job_id);
+		info("%pI killed while launch was in progress",
+		     &req->step_id);
 		sleep(1);	/* give slurmstepd time to create
 				 * the communication socket */
 		terminate_all_steps(req->job_id, true,
@@ -2312,8 +2312,8 @@ done:
 			 * This typically indicates that the slurmd was
 			 * blocked from memory and/or CPUs and the slurmctld
 			 * has requeued the batch job request. */
-			error("Could not confirm batch launch for job %u, "
-			      "aborting request", req->job_id);
+			error("Could not confirm batch launch for %pI, aborting request",
+			      &req->step_id);
 			rc = SLURM_COMMUNICATIONS_SEND_ERROR;
 		} else {
 			/* No need to initiate separate reply below */
@@ -3126,8 +3126,8 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	 */
 	if ((msg->auth_uid != uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("stat_jobacct from uid %u for job %u owned by uid %u",
-		      msg->auth_uid, req->job_id, uid);
+		error("stat_jobacct from uid %u for %pI owned by uid %u",
+		      msg->auth_uid, &req->step_id, uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		/* or bad in this case */
 		return;
