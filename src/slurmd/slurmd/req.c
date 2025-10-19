@@ -1458,8 +1458,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	 * test if the credential has since been revoked and exit as needed.
 	 */
 	if (cred_revoked(req->cred)) {
-		info("Job %u already killed, do not launch %ps",
-		     req->step_id.job_id, &req->step_id);
+		info("%pI already killed, do not launch %ps",
+		     &req->step_id, &req->step_id);
 		errnum = SLURM_SUCCESS;
 		goto done;
 	}
