@@ -9556,11 +9556,12 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 				goto unpack_error;
 		}
 	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpackstr(&msg->alloc_tls_cert, buffer);
 		if (gres_prep_unpack_list(&msg->job_gres_prep, buffer,
 					  smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&msg->deprecated.job_id, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was job_id */
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
@@ -9597,10 +9598,11 @@ static int _unpack_prolog_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 				goto unpack_error;
 		}
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		if (gres_prep_unpack_legacy(&msg->job_gres_prep, buffer,
 					    smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&msg->deprecated.job_id, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was job_id */
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32(&msg->uid, buffer);
 		safe_unpack32(&msg->gid, buffer);
