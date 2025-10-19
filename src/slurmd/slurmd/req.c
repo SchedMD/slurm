@@ -1757,7 +1757,7 @@ static void _set_batch_job_limits(batch_job_launch_msg_t *req)
 	 */
 	if ((arg->job_x11 & X11_FORWARD_ALL) ||
 	    (arg->job_x11 & X11_FORWARD_BATCH))
-		_setup_x11_display(req->job_id, SLURM_BATCH_SCRIPT,
+		_setup_x11_display(req->step_id.job_id, SLURM_BATCH_SCRIPT,
 				   &req->environment, &req->envc);
 
 	slurm_cred_unlock_args(req->cred);
@@ -2132,13 +2132,13 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	uid_t batch_uid = SLURM_AUTH_NOBODY;
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
 
-	if (_launch_job_test(req->job_id, true)) {
+	if (_launch_job_test(req->step_id.job_id, true)) {
 		error("%pI already running, do not launch second copy",
 		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
 		_launch_job_fail(
 		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->job_id,
+		    req->het_job_id : req->step_id.job_id,
 		    rc);
 		goto done;
 	}
@@ -2173,7 +2173,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
 	slurm_mutex_lock(&prolog_mutex);
-	first_job_run = !cred_jobid_cached(req->job_id);
+	first_job_run = !cred_jobid_cached(req->step_id.job_id);
 
 	/* BlueGene prolog waits for partition boot and is very slow.
 	 * On any system we might need to load environment variables
@@ -2193,7 +2193,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	rc = _wait_for_request_launch_prolog(req->job_id, &first_job_run);
+	rc = _wait_for_request_launch_prolog(req->step_id.job_id, &first_job_run);
 	if (rc != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
@@ -2207,8 +2207,8 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
 
-		cred_insert_jobid(req->job_id);
-		_add_job_running_prolog(req->job_id);
+		cred_insert_jobid(req->step_id.job_id);
+		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
 		node_id = nodelist_find(req->nodes, conf->node_name);
@@ -2220,7 +2220,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		gres_g_prep_set_env(&job_env.gres_job_env,
 				    gres_prep_env_list, node_id);
 		FREE_NULL_LIST(gres_prep_env_list);
-		job_env.jobid = req->job_id;
+		job_env.jobid = req->step_id.job_id;
 		job_env.step_id = SLURM_BATCH_SCRIPT;
 		job_env.node_list = req->nodes;
 		job_env.het_job_id = req->het_job_id;
@@ -2250,7 +2250,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
-		_wait_for_job_running_prolog(req->job_id);
+		_wait_for_job_running_prolog(req->step_id.job_id);
 	}
 
 	if (_get_user_env(req, user_name) < 0) {
@@ -2274,19 +2274,19 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	rc = _forkexec_slurmstepd(LAUNCH_BATCH_JOB, (void *)req, cli, batch_uid,
-				  req->job_id, SLURM_BATCH_SCRIPT,
+				  req->step_id.job_id, SLURM_BATCH_SCRIPT,
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("%s: return from _forkexec_slurmstepd: %d", __func__, rc);
 
-	_launch_complete_add(req->job_id, true);
+	_launch_complete_add(req->step_id.job_id, true);
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
 	 * abort logic below. */
 	revoked = cred_revoked(req->cred);
 	if (revoked)
-		_launch_complete_rm(req->job_id);
-	if (revoked && _is_batch_job_finished(req->job_id)) {
+		_launch_complete_rm(req->step_id.job_id);
+	if (revoked && _is_batch_job_finished(req->step_id.job_id)) {
 		/* If configured with select/serial and the batch job already
 		 * completed, consider the job successfully launched and do
 		 * not repeat termination logic below, which in the worst case
@@ -2298,7 +2298,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		     &req->step_id);
 		sleep(1);	/* give slurmstepd time to create
 				 * the communication socket */
-		terminate_all_steps(req->job_id, true,
+		terminate_all_steps(req->step_id.job_id, true,
 				    !(slurm_conf.prolog_flags &
 				      PROLOG_FLAG_RUN_IN_JOB));
 		rc = ESLURMD_CREDENTIAL_REVOKED;
@@ -2325,7 +2325,7 @@ done:
 		 * tell slurmctld that the job failed */
 		_launch_job_fail(
 		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->job_id,
+		    req->het_job_id : req->step_id.job_id,
 		    rc);
 	}
 
