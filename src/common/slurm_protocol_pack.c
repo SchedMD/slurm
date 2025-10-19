@@ -74,6 +74,12 @@
 
 #include "src/stepmgr/stepmgr.h"
 
+#define safe_unpack_step_id_members(step, buf, version) \
+	do { \
+		if (unpack_step_id_members(step, buf, version)) \
+			goto unpack_error; \
+	} while (0)
+
 typedef struct {
 	buf_t *buffer;
 	int count;
