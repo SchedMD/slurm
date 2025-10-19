@@ -184,6 +184,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
 		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.sluid = job_ptr->db_index;
 		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
@@ -207,6 +208,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
 		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.sluid = job_ptr->db_index;
 		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->nodelist = xstrdup(node_name);
@@ -314,6 +316,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
 		msg_arg->step_id.job_id = job_ptr->job_id;
+		msg_arg->step_id.sluid = job_ptr->db_index;
 		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->timeout = job_ptr->end_time;
@@ -333,6 +336,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->step_id.job_id   = job_ptr->job_id;
+		msg_arg->step_id.sluid = job_ptr->db_index;
 		msg_arg->step_id.step_id  = NO_VAL;
 		msg_arg->step_id.step_het_comp = NO_VAL;
 		msg_arg->timeout  = job_ptr->end_time;
@@ -398,6 +402,7 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		notify_msg_ptr = (job_notify_msg_t *)
 				 xmalloc(sizeof(job_notify_msg_t));
 		notify_msg_ptr->step_id.job_id = job_ptr->job_id;
+		notify_msg_ptr->step_id.sluid = job_ptr->db_index;
 		notify_msg_ptr->step_id.step_id = NO_VAL;
 		notify_msg_ptr->step_id.step_het_comp = NO_VAL;
 		notify_msg_ptr->message = xstrdup(msg);
