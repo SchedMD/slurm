@@ -3240,7 +3240,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 		}
 	}
 
-	resp->job_id = job_id;
+	resp->step_id.job_id = job_id;
 	resp->node_name = xstrdup(conf->node_name);
 
 	resp_msg.msg_type = RESPONSE_NETWORK_CALLERID;
@@ -3629,8 +3629,8 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		goto done;
 	}
 
-	key.job_id = cred_arg->job_id;
-	key.step_id = cred_arg->step_id;
+	key.job_id = cred_arg->step_id.job_id;
+	key.step_id = cred_arg->step_id.step_id;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -3662,9 +3662,9 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 			 * the search key so this shared object is associated
 			 * with the correct libdir entry.
 			 */
-			xstrfmtcat(libdir_args.exe_fname,
-				   BCAST_FILE_FMT, cred_arg->job_id,
-				   cred_arg->step_id, conf->node_name);
+			xstrfmtcat(libdir_args.exe_fname, BCAST_FILE_FMT,
+				   cred_arg->step_id.job_id,
+				   cred_arg->step_id.step_id, conf->node_name);
 
 		slurm_rwlock_rdlock(&file_bcast_lock);
 		libdir = list_find_first(bcast_libdir_list, _find_libdir_record,
@@ -3690,9 +3690,8 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 		 * req->fname. This same file name has to be recreated by
 		 * exec_task().
 		 */
-		xstrfmtcat(req->fname, BCAST_FILE_FMT,
-			   cred_arg->job_id, cred_arg->step_id,
-			   conf->node_name);
+		xstrfmtcat(req->fname, BCAST_FILE_FMT, cred_arg->step_id.job_id,
+			   cred_arg->step_id.step_id, conf->node_name);
 	}
 	key.fname = req->fname;
 

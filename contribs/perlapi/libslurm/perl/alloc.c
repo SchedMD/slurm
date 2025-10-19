@@ -217,19 +217,6 @@ submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV* hv)
 	return 0;
 }
 
-/*
- * convert job_sbcast_cred_msg_t to perl HV
- */
-int
-job_sbcast_cred_msg_to_hv(job_sbcast_cred_msg_t *msg, HV *hv)
-{
-	STORE_FIELD(hv, msg, job_id, uint32_t);
-	if (msg->node_list)
-		STORE_FIELD(hv, msg, node_list, charp);
-	STORE_PTR_FIELD(hv, msg, sbcast_cred, "Slurm::sbcast_cred_t");
-	return 0;
-}
-
 int
 srun_job_complete_msg_to_hv(srun_job_complete_msg_t *msg, HV *hv)
 {

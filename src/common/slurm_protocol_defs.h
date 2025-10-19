@@ -799,7 +799,7 @@ typedef struct network_callerid_msg {
 } network_callerid_msg_t; */
 
 typedef struct network_callerid_resp {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	uint32_t return_code;
 	char *node_name;
 } network_callerid_resp_t;
