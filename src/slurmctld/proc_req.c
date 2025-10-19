@@ -3024,7 +3024,7 @@ static void _slurm_rpc_sbcast_cred_no_job(slurm_msg_t *msg)
 {
 	job_sbcast_cred_msg_t *cred_resp_msg = NULL;
 	sbcast_cred_req_msg_t *cred_req_msg = msg->data;
-	sbcast_cred_arg_t sbcast_arg = { 0 };
+	sbcast_cred_arg_t sbcast_arg = { { 0 } };
 	sbcast_cred_t *sbcast_cred;
 	hostlist_t *req_node_list;
 	char *node_name;
