@@ -12508,7 +12508,90 @@ static int _unpack_stats_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t uint32_tmp = 0;
 	stats_info_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->parts_packed, buffer);
+		safe_unpack_time(&msg->req_time, buffer);
+		safe_unpack_time(&msg->req_time_start, buffer);
+		safe_unpack32(&msg->server_thread_count, buffer);
+		safe_unpack32(&msg->agent_queue_size, buffer);
+		safe_unpack32(&msg->agent_count, buffer);
+		safe_unpack32(&msg->agent_thread_count, buffer);
+		safe_unpack32(&msg->dbd_agent_queue_size, buffer);
+		safe_unpack32(&msg->gettimeofday_latency, buffer);
+		safe_unpack32(&msg->jobs_submitted, buffer);
+		safe_unpack32(&msg->jobs_started, buffer);
+		safe_unpack32(&msg->jobs_completed, buffer);
+		safe_unpack32(&msg->jobs_canceled, buffer);
+		safe_unpack32(&msg->jobs_failed, buffer);
+		safe_unpack32(&msg->jobs_pending, buffer);
+		safe_unpack32(&msg->jobs_running, buffer);
+		safe_unpack_time(&msg->job_states_ts, buffer);
+
+		safe_unpack32(&msg->schedule_cycle_max, buffer);
+		safe_unpack32(&msg->schedule_cycle_last, buffer);
+		safe_unpack32(&msg->schedule_cycle_sum, buffer);
+		safe_unpack32(&msg->schedule_cycle_counter, buffer);
+		safe_unpack32(&msg->schedule_cycle_depth, buffer);
+		safe_unpack32_array(&msg->schedule_exit,
+				    &msg->schedule_exit_cnt, buffer);
+		safe_unpack32(&msg->schedule_queue_len, buffer);
+
+		safe_unpack32(&msg->bf_backfilled_jobs, buffer);
+		safe_unpack32(&msg->bf_last_backfilled_jobs, buffer);
+		safe_unpack32(&msg->bf_cycle_counter, buffer);
+		safe_unpack64(&msg->bf_cycle_sum, buffer);
+		safe_unpack32(&msg->bf_cycle_last, buffer);
+		safe_unpack32(&msg->bf_last_depth, buffer);
+		safe_unpack32(&msg->bf_last_depth_try, buffer);
+
+		safe_unpack32(&msg->bf_queue_len, buffer);
+		safe_unpack32(&msg->bf_cycle_max, buffer);
+		safe_unpack_time(&msg->bf_when_last_cycle, buffer);
+		safe_unpack32(&msg->bf_depth_sum, buffer);
+		safe_unpack32(&msg->bf_depth_try_sum, buffer);
+		safe_unpack32(&msg->bf_queue_len_sum, buffer);
+		safe_unpack32(&msg->bf_table_size, buffer);
+		safe_unpack32(&msg->bf_table_size_sum, buffer);
+
+		safe_unpack32(&msg->bf_active, buffer);
+		safe_unpack32(&msg->bf_backfilled_het_jobs, buffer);
+		safe_unpack32_array(&msg->bf_exit, &msg->bf_exit_cnt, buffer);
+
+		safe_unpack32(&msg->rpc_type_size, buffer);
+		safe_unpack16_array(&msg->rpc_type_id, &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_type_cnt, &uint32_tmp, buffer);
+		safe_unpack64_array(&msg->rpc_type_time, &uint32_tmp, buffer);
+
+		safe_unpack8(&msg->rpc_queue_enabled, buffer);
+		if (msg->rpc_queue_enabled) {
+			safe_unpack16_array(&msg->rpc_type_queued, &uint32_tmp,
+					    buffer);
+			safe_unpack64_array(&msg->rpc_type_dropped, &uint32_tmp,
+					    buffer);
+			safe_unpack16_array(&msg->rpc_type_cycle_last,
+					    &uint32_tmp, buffer);
+			safe_unpack16_array(&msg->rpc_type_cycle_max,
+					    &uint32_tmp, buffer);
+		}
+
+		safe_unpack32(&msg->rpc_user_size, buffer);
+		safe_unpack32_array(&msg->rpc_user_id, &uint32_tmp, buffer);
+		safe_unpack32_array(&msg->rpc_user_cnt, &uint32_tmp, buffer);
+		safe_unpack64_array(&msg->rpc_user_time, &uint32_tmp, buffer);
+
+		safe_unpack32_array(&msg->rpc_queue_type_id,
+				    &msg->rpc_queue_type_count, buffer);
+		safe_unpack32_array(&msg->rpc_queue_count, &uint32_tmp, buffer);
+		if (uint32_tmp != msg->rpc_queue_type_count)
+			goto unpack_error;
+
+		safe_unpack32_array(&msg->rpc_dump_types, &msg->rpc_dump_count,
+				    buffer);
+		safe_unpackstr_array(&msg->rpc_dump_hostlist, &uint32_tmp,
+				     buffer);
+		if (uint32_tmp != msg->rpc_dump_count)
+			goto unpack_error;
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->parts_packed, buffer);
 		safe_unpack_time(&msg->req_time, buffer);
 		safe_unpack_time(&msg->req_time_start, buffer);
