@@ -385,8 +385,8 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 				      slurm_addr_t *cli)
 {
 	if (batch_stepd_step_rec_create(msg)) {
-		error("batch_stepd_step_rec_create() failed for job %u on %s: %s",
-		      msg->job_id, conf->hostname, slurm_strerror(errno));
+		error("batch_stepd_step_rec_create() failed for %pI on %s: %s",
+		      &msg->step_id, conf->hostname, slurm_strerror(errno));
 		return SLURM_ERROR;
 	}
 
@@ -403,11 +403,11 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 	return SLURM_SUCCESS;
 
 cleanup:
-	error("batch script setup failed for job %u on %s: %s",
-	      msg->job_id, conf->hostname, slurm_strerror(errno));
+	error("batch script setup failed for %pI on %s: %s",
+	      &msg->step_id, conf->hostname, slurm_strerror(errno));
 
 	if (step->aborted)
-		verbose("job %u abort complete", step->step_id.job_id);
+		verbose("%pI abort complete", &step->step_id);
 
 	/* Do not purge directory until slurmctld is notified of batch job
 	 * completion to avoid race condition with slurmd registering missing
