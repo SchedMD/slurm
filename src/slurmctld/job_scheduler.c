@@ -2880,10 +2880,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 
 	setup_cred_arg(&cred_arg, job_ptr);
 
-	cred_arg.step_id.job_id = launch_msg_ptr->job_id;
-	cred_arg.step_id.sluid = job_ptr->db_index;
-	cred_arg.step_id.step_id = SLURM_BATCH_SCRIPT;
-	cred_arg.step_id.step_het_comp = NO_VAL;
+	cred_arg.step_id = launch_msg_ptr->step_id;
+
 	if (job_resrcs_ptr->memory_allocated) {
 		int batch_inx = job_get_node_inx(
 			job_ptr->batch_host, job_ptr->node_bitmap);
