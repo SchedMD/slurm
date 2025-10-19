@@ -2346,7 +2346,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
 		xmalloc(sizeof(batch_job_launch_msg_t));
-	launch_msg_ptr->job_id = job_ptr->job_id;
+	launch_msg_ptr->deprecated.job_id = job_ptr->job_id;
 	launch_msg_ptr->het_job_id = job_ptr->het_job_id;
 	launch_msg_ptr->array_job_id = job_ptr->array_job_id;
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;

@@ -10465,7 +10465,7 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		msg->script = msg->script_buf->head;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack32(msg->deprecated.job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
 		pack32_array(msg->gids, msg->ngids, buffer);
@@ -10528,7 +10528,7 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack32(msg->deprecated.job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
 		pack32_array(msg->gids, msg->ngids, buffer);
@@ -10591,7 +10591,7 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack32(msg->deprecated.job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
 		pack32_array(msg->gids, msg->ngids, buffer);
@@ -10653,7 +10653,7 @@ static void _pack_batch_job_launch_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(msg->cpu_freq_gov, buffer);
 		packbool(msg->oom_kill_step, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack32(msg->deprecated.job_id, buffer);
 		pack32(msg->het_job_id, buffer);
 
 		pack32_array(msg->gids, msg->ngids, buffer);
@@ -10725,7 +10725,7 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 	batch_job_launch_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->deprecated.job_id, buffer);
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
@@ -10792,7 +10792,7 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackbool(&msg->oom_kill_step, buffer);
 	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->deprecated.job_id, buffer);
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
@@ -10859,7 +10859,7 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackbool(&msg->oom_kill_step, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->deprecated.job_id, buffer);
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
@@ -10925,7 +10925,7 @@ static int _unpack_batch_job_launch_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->cpu_freq_gov, buffer);
 		safe_unpackbool(&msg->oom_kill_step, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->deprecated.job_id, buffer);
 		safe_unpack32(&msg->het_job_id, buffer);
 		safe_unpack32_array(&msg->gids, &msg->ngids, buffer);
 
