@@ -502,9 +502,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 		step->cpus    = msg->cpus_per_node[0];
 	step->node_tasks  = 1;
 	step->ntasks  = msg->ntasks;
-	step->step_id.job_id   = msg->job_id;
-	step->step_id.step_id  = SLURM_BATCH_SCRIPT;
-	step->step_id.step_het_comp  = NO_VAL;
+	step->step_id = msg->step_id;
 	step->array_job_id  = msg->array_job_id;
 	step->array_task_id = msg->array_task_id;
 	step->het_job_step_cnt = NO_VAL;
