@@ -7330,7 +7330,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_parse(UINT32, gettimeofday_latency, "gettimeofday_latency", "Latency of 1000 calls to the gettimeofday() syscall in microseconds, as measured at controller startup"),
 	add_parse(UINT32, schedule_cycle_max, "schedule_cycle_max", "Max time of any scheduling cycle in microseconds since last reset"),
 	add_parse(UINT32, schedule_cycle_last, "schedule_cycle_last", "Time in microseconds for last scheduling cycle"),
-	add_parse(UINT32, schedule_cycle_sum, "schedule_cycle_sum", "Total run time in microseconds for all scheduling cycles since last reset"),
+	add_parse(UINT64, schedule_cycle_sum, "schedule_cycle_sum", "Total run time in microseconds for all scheduling cycles since last reset"),
 	add_parse(UINT32, schedule_cycle_counter, "schedule_cycle_total", "Number of scheduling cycles since last reset"),
 	add_cparse(STATS_MSG_CYCLE_MEAN, "schedule_cycle_mean", "Mean time in microseconds for all scheduling cycles since last reset"),
 	add_cparse(STATS_MSG_CYCLE_MEAN_DEPTH, "schedule_cycle_mean_depth", "Mean of the number of jobs processed in a scheduling cycle"),

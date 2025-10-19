@@ -12528,7 +12528,7 @@ static int _unpack_stats_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpack32(&msg->schedule_cycle_max, buffer);
 		safe_unpack32(&msg->schedule_cycle_last, buffer);
-		safe_unpack32(&msg->schedule_cycle_sum, buffer);
+		safe_unpack64(&msg->schedule_cycle_sum, buffer);
 		safe_unpack32(&msg->schedule_cycle_counter, buffer);
 		safe_unpack32(&msg->schedule_cycle_depth, buffer);
 		safe_unpack32_array(&msg->schedule_exit,
@@ -12611,7 +12611,8 @@ static int _unpack_stats_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 		safe_unpack32(&msg->schedule_cycle_max, buffer);
 		safe_unpack32(&msg->schedule_cycle_last, buffer);
-		safe_unpack32(&msg->schedule_cycle_sum, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		msg->schedule_cycle_sum = uint32_tmp;
 		safe_unpack32(&msg->schedule_cycle_counter, buffer);
 		safe_unpack32(&msg->schedule_cycle_depth, buffer);
 		safe_unpack32_array(&msg->schedule_exit,

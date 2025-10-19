@@ -104,7 +104,7 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 
 		pack32(slurmctld_diag_stats.schedule_cycle_max, buffer);
 		pack32(slurmctld_diag_stats.schedule_cycle_last, buffer);
-		pack32(slurmctld_diag_stats.schedule_cycle_sum, buffer);
+		pack64(slurmctld_diag_stats.schedule_cycle_sum, buffer);
 		pack32(slurmctld_diag_stats.schedule_cycle_counter, buffer);
 		pack32(slurmctld_diag_stats.schedule_cycle_depth, buffer);
 		pack32_array(slurmctld_diag_stats.schedule_exit,

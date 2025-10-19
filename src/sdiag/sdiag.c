@@ -161,7 +161,7 @@ static int _print_stats(void)
 	printf("\tMax cycle:    %u\n", buf->schedule_cycle_max);
 	printf("\tTotal cycles: %u\n", buf->schedule_cycle_counter);
 	if (buf->schedule_cycle_counter > 0) {
-		printf("\tMean cycle:   %u\n",
+		printf("\tMean cycle:   %"PRIu64"\n",
 		       buf->schedule_cycle_sum / buf->schedule_cycle_counter);
 		printf("\tMean depth cycle:  %u\n",
 		       buf->schedule_cycle_depth / buf->schedule_cycle_counter);
