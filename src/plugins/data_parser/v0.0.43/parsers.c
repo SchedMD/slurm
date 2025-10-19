@@ -7995,8 +7995,10 @@ static const parser_t PARSER_ARRAY(ASSOC_USAGE)[] = {
 	add_parser(stats_info_response_msg_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc) \
 	add_complex_parser(stats_info_response_msg_t, mtype, false, path, desc)
+#define add_removed(mtype, path, desc, deprec) \
+	add_parser_removed(stats_info_response_msg_t, mtype, false, path, desc, deprec)
 static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
-	add_parse(UINT32, parts_packed, "parts_packed", "Zero if only RPC statistic included"),
+	add_removed(UINT32, "parts_packed", "Zero if only RPC statistic included", SLURM_25_11_PROTOCOL_VERSION),
 	add_parse(TIMESTAMP_NO_VAL, req_time, "req_time", "When the request was made (UNIX timestamp)"),
 	add_parse(TIMESTAMP_NO_VAL, req_time_start, "req_time_start", "When the data in the report started (UNIX timestamp)"),
 	add_parse(UINT32, server_thread_count, "server_thread_count", "Number of current active slurmctld threads"),
@@ -8069,6 +8071,7 @@ static const parser_t PARSER_ARRAY(STATS_MSG)[] = {
 	add_skip(rpc_dump_types), /* handled by STATS_MSG_RPCS_DUMP */
 	add_skip(rpc_dump_hostlist), /* handled by STATS_MSG_RPCS_DUMP */
 };
+#undef add_removed
 #undef add_parse
 #undef add_cparse
 #undef add_skip
