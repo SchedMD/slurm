@@ -12509,7 +12509,6 @@ static int _unpack_stats_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	stats_info_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->parts_packed, buffer);
 		safe_unpack_time(&msg->req_time, buffer);
 		safe_unpack_time(&msg->req_time_start, buffer);
 		safe_unpack32(&msg->server_thread_count, buffer);
@@ -12592,7 +12591,7 @@ static int _unpack_stats_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (uint32_tmp != msg->rpc_dump_count)
 			goto unpack_error;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->parts_packed, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was parts_packed */
 		safe_unpack_time(&msg->req_time, buffer);
 		safe_unpack_time(&msg->req_time_start, buffer);
 		safe_unpack32(&msg->server_thread_count, buffer);

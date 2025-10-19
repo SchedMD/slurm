@@ -73,8 +73,6 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 
 	buffer = init_buf(BUF_SIZE);
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(1, buffer); /* please remove on next version */
-
 		pack_time(now, buffer);
 		debug3("%s: time = %lu", __func__, last_proc_req_start);
 		pack_time(last_proc_req_start, buffer);

@@ -3309,7 +3309,6 @@ typedef struct stats_info_request_msg {
 } stats_info_request_msg_t;
 
 typedef struct stats_info_response_msg {
-	uint32_t parts_packed;
 	time_t req_time;
 	time_t req_time_start;
 	uint32_t server_thread_count;
