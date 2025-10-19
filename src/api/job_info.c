@@ -1005,7 +1005,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 	switch (resp_msg.msg_type) {
 		case RESPONSE_NETWORK_CALLERID:
 			resp = (network_callerid_resp_t*)resp_msg.data;
-			*job_id = resp->job_id;
+			*job_id = resp->step_id.job_id;
 			strlcpy(node_name, resp->node_name, node_name_size);
 			break;
 		case RESPONSE_SLURM_RC:
