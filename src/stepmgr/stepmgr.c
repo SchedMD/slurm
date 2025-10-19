@@ -435,8 +435,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		mem_type   = "cpu";
 	}
 
-	log_flag(CPU_FREQ, "StepDesc: user_id=%u JobId=%u cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
-		 step_spec->user_id, step_spec->step_id.job_id,
+	log_flag(CPU_FREQ, "StepDesc: user_id=%u %pI cpu_freq_gov=%u cpu_freq_max=%u cpu_freq_min=%u",
+		 step_spec->user_id, &step_spec->step_id,
 		 step_spec->cpu_freq_gov,
 		 step_spec->cpu_freq_max, step_spec->cpu_freq_min);
 	debug3("StepDesc: user_id=%u %ps node_count=%u-%u cpu_count=%u num_tasks=%u",
@@ -3991,7 +3991,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	/* find the job, step, and validate input */
 	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		info("%s: JobId=%u invalid", __func__, req->step_id.job_id);
+		info("%s: %pI invalid", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
