@@ -72,7 +72,67 @@ extern buf_t *pack_all_stat(uint16_t protocol_version)
 		slurmdbd_queue_size = 0;
 
 	buffer = init_buf(BUF_SIZE);
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack_time(now, buffer);
+		debug3("%s: time = %lu", __func__, last_proc_req_start);
+		pack_time(last_proc_req_start, buffer);
+
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+		debug3("%s: server_thread_count = %u",
+		       __func__, slurmctld_config.server_thread_count);
+		pack32(slurmctld_config.server_thread_count, buffer);
+		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+		agent_queue_size = retry_list_size();
+		pack32(agent_queue_size, buffer);
+		agent_count = get_agent_count();
+		pack32(agent_count, buffer);
+		agent_thread_count = get_agent_thread_count();
+		pack32(agent_thread_count, buffer);
+		pack32(slurmdbd_queue_size, buffer);
+		pack32(slurmctld_diag_stats.latency, buffer);
+
+		pack32(slurmctld_diag_stats.jobs_submitted, buffer);
+		pack32(slurmctld_diag_stats.jobs_started, buffer);
+		pack32(slurmctld_diag_stats.jobs_completed, buffer);
+		pack32(slurmctld_diag_stats.jobs_canceled, buffer);
+		pack32(slurmctld_diag_stats.jobs_failed, buffer);
+
+		pack32(slurmctld_diag_stats.jobs_pending, buffer);
+		pack32(slurmctld_diag_stats.jobs_running, buffer);
+		pack_time(slurmctld_diag_stats.job_states_ts, buffer);
+
+		pack32(slurmctld_diag_stats.schedule_cycle_max, buffer);
+		pack32(slurmctld_diag_stats.schedule_cycle_last, buffer);
+		pack64(slurmctld_diag_stats.schedule_cycle_sum, buffer);
+		pack32(slurmctld_diag_stats.schedule_cycle_counter, buffer);
+		pack32(slurmctld_diag_stats.schedule_cycle_depth, buffer);
+		pack32_array(slurmctld_diag_stats.schedule_exit,
+			     SCHEDULE_EXIT_COUNT, buffer);
+		pack32(slurmctld_diag_stats.schedule_queue_len, buffer);
+
+		pack32(slurmctld_diag_stats.backfilled_jobs, buffer);
+		pack32(slurmctld_diag_stats.last_backfilled_jobs, buffer);
+		pack32(slurmctld_diag_stats.bf_cycle_counter, buffer);
+		pack64(slurmctld_diag_stats.bf_cycle_sum, buffer);
+		pack32(slurmctld_diag_stats.bf_cycle_last, buffer);
+		pack32(slurmctld_diag_stats.bf_last_depth, buffer);
+		pack32(slurmctld_diag_stats.bf_last_depth_try, buffer);
+
+		pack32(slurmctld_diag_stats.bf_queue_len, buffer);
+		pack32(slurmctld_diag_stats.bf_cycle_max, buffer);
+		pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
+		pack32(slurmctld_diag_stats.bf_depth_sum, buffer);
+		pack32(slurmctld_diag_stats.bf_depth_try_sum, buffer);
+		pack32(slurmctld_diag_stats.bf_queue_len_sum, buffer);
+		pack32(slurmctld_diag_stats.bf_table_size, buffer);
+		pack32(slurmctld_diag_stats.bf_table_size_sum, buffer);
+
+		pack32(slurmctld_diag_stats.bf_active, buffer);
+		pack32(slurmctld_diag_stats.backfilled_het_jobs, buffer);
+		pack32_array(slurmctld_diag_stats.bf_exit, BF_EXIT_COUNT,
+			     buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(1, buffer); /* please remove on next version */
 
 		pack_time(now, buffer);

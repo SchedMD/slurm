@@ -182,7 +182,7 @@ typedef struct diag_stats {
 
 	uint32_t schedule_cycle_max;
 	uint32_t schedule_cycle_last;
-	uint32_t schedule_cycle_sum;
+	uint64_t schedule_cycle_sum;
 	uint32_t schedule_cycle_counter;
 	uint32_t schedule_cycle_depth;
 	uint32_t schedule_exit[SCHEDULE_EXIT_COUNT];

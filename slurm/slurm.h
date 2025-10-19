@@ -3309,7 +3309,6 @@ typedef struct stats_info_request_msg {
 } stats_info_request_msg_t;
 
 typedef struct stats_info_response_msg {
-	uint32_t parts_packed;
 	time_t req_time;
 	time_t req_time_start;
 	uint32_t server_thread_count;
@@ -3321,7 +3320,7 @@ typedef struct stats_info_response_msg {
 
 	uint32_t schedule_cycle_max;
 	uint32_t schedule_cycle_last;
-	uint32_t schedule_cycle_sum;
+	uint64_t schedule_cycle_sum;
 	uint32_t schedule_cycle_counter;
 	uint32_t schedule_cycle_depth;
 	uint32_t *schedule_exit;
