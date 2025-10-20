@@ -3584,6 +3584,10 @@ extern char *node_state_string(uint32_t inx)
 		return "POWERING_UP";
 	if (inx == NODE_STATE_UNDRAIN)
 		return "UNDRAIN";
+	if (inx == NODE_STATE_DYNAMIC_FUTURE)
+		return "DYNAMIC_FUTURE";
+	if (inx == NODE_STATE_DYNAMIC_NORM)
+		return "DYNAMIC_NORM";
 	if (base == NODE_STATE_DOWN) {
 		if (maint_flag)
 			return "DOWN$";
