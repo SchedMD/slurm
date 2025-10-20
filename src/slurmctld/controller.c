@@ -1875,8 +1875,8 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 	msg->conn = conn;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [%s] connection work cancelled",
-		       __func__, conmgr_fd_get_name(conmgr_args.con));
+		log_flag(NET, "%s: [%s] connection work cancelled",
+			 __func__, conmgr_con_get_name(msg->conmgr_con));
 		goto invalid;
 	}
 
