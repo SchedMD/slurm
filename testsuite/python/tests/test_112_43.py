@@ -236,7 +236,7 @@ def test_loaded_versions():
 )
 @pytest.mark.parametrize("openapi_spec", ["43"], indirect=True)
 def test_specification(openapi_spec):
-    atf.assert_openapi_specs_eq(openapi_spec, atf.properties["openapi_specs"])
+    atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
 
 
 def test_db_accounts(slurm, slurmdb, create_wckeys, admin_level):
