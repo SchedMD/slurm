@@ -138,7 +138,7 @@ static int _detect_cpu_count(void)
 	return count;
 }
 
-extern void workers_init(int count)
+extern void workers_init(int count, int default_count)
 {
 	const int detected_cpus = _detect_cpu_count();
 	const int auto_threads_max = (detected_cpus * CPU_THREAD_MULTIPLIER);
@@ -152,11 +152,21 @@ extern void workers_init(int count)
 		    MIN(detected_threads_low, THREAD_AUTO_MAX));
 
 	if (!count) {
-		count = auto_threads;
-
-		log_flag(CONMGR, "%s: Setting thread count to %d/%d for %d available CPUs",
-			 __func__, auto_threads, auto_threads_max,
-			 detected_cpus);
+		if ((mgr.workers.conf_threads > 0)) {
+			count = mgr.workers.conf_threads;
+			log_flag(CONMGR, "%s: Setting thread count to %s%d threads",
+				 __func__, CONMGR_PARAM_THREADS,
+				 mgr.workers.conf_threads);
+		} else if ((default_count > 0)) {
+			count = default_count;
+			log_flag(CONMGR, "%s: Setting thread count to default %d threads",
+				 __func__, default_count);
+		} else {
+			count = auto_threads;
+			log_flag(CONMGR, "%s: Setting thread count to %d/%d for %d available CPUs",
+				 __func__, auto_threads, auto_threads_max,
+				 detected_cpus);
+		}
 	} else if (((count > warn_max_threads) || (count < warn_min_threads))) {
 		warning("%s%d is configured outside of the suggested range of [%d, %d] for %d CPUs. Performance will be negatively impacted, potentially causing difficult to debug hangs. Please keep within the suggested range or use the automatically detected thread count of %d threads.",
 			CONMGR_PARAM_THREADS, count, warn_min_threads,

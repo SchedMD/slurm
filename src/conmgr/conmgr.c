@@ -152,7 +152,8 @@ extern void conmgr_log_diagnostics(void)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void conmgr_init(int thread_count, int max_connections)
+extern void conmgr_init(int thread_count, int default_thread_count,
+			int max_connections)
 {
 	int rc = EINVAL;
 
@@ -176,9 +177,7 @@ extern void conmgr_init(int thread_count, int max_connections)
 	enabled_status = true;
 	mgr.shutdown_requested = false;
 
-	if (mgr.workers.conf_threads > 0)
-		thread_count = mgr.workers.conf_threads;
-	workers_init(thread_count);
+	workers_init(thread_count, default_thread_count);
 
 	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
 		fatal_abort("%s: pthread_atfork() failed: %s",

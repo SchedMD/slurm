@@ -98,15 +98,15 @@ END_TEST
 START_TEST(test_reinit)
 {
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
-	conmgr_init(0, 0);
+	conmgr_init(0, 0, 0);
 	ck_assert(conmgr_enabled());
-	conmgr_init(0, 0);
+	conmgr_init(0, 0, 0);
 	ck_assert(conmgr_enabled());
 	conmgr_fini();
 	ck_assert(conmgr_enabled());
 	conmgr_request_shutdown();
 	ck_assert(conmgr_enabled());
-	conmgr_init(0, 0);
+	conmgr_init(0, 0, 0);
 	ck_assert(conmgr_enabled());
 	conmgr_fini();
 	ck_assert(conmgr_enabled());

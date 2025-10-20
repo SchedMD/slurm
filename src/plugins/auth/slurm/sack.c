@@ -286,7 +286,7 @@ extern void init_sack_conmgr(void)
 	const char *path = NULL;
 	const char *env_fd = NULL;
 
-	conmgr_init(0, 0);
+	conmgr_init(0, 0, 0);
 
 	if (sack_fd >= 0) {
 		/* already have the FD -> do nothing */

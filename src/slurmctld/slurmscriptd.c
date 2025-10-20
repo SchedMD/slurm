@@ -1186,7 +1186,7 @@ static void _init_slurmscriptd_conmgr(void)
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
-	conmgr_init(0, 0);
+	conmgr_init(0, 0, 0);
 
 	/*
 	 * Ignore signals. slurmscriptd should only handle requests directly

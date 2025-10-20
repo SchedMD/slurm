@@ -760,7 +760,8 @@ int main(int argc, char **argv)
 		      slurm_strerror(rc));
 
 	/* This checks if slurmrestd is running in inetd mode */
-	conmgr_init((run_mode.listen ? thread_count : CONMGR_THREAD_COUNT_MIN),
+	conmgr_init(thread_count,
+		    (run_mode.listen ? 0 : CONMGR_THREAD_COUNT_MIN),
 		    max_connections);
 
 	/*
