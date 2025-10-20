@@ -161,8 +161,7 @@ extern int conn_g_init(void)
 
 	if (tls_enabled_bool) {
 		/* Load CA cert now, wait until later in configless */
-		if (!running_in_slurmstepd() && slurm_conf.last_update &&
-		    conn_g_load_ca_cert(NULL)) {
+		if (slurm_conf.last_update && conn_g_load_ca_cert(NULL)) {
 			error("Could not load trusted certificates for s2n");
 			rc = SLURM_ERROR;
 			goto done;
@@ -179,8 +178,12 @@ extern int conn_g_init(void)
 			goto done;
 		}
 
-		/* Load self-signed certificate in client commands */
-		if (!running_in_daemon() && conn_g_load_self_signed_cert()) {
+		/*
+		 * Load self-signed certificate in client commands and
+		 * slurmstepd
+		 */
+		if ((!running_in_daemon() && !running_in_slurmstepd()) &&
+		    conn_g_load_self_signed_cert()) {
 			error("Could not load self-signed TLS certificate");
 			rc = SLURM_ERROR;
 			goto done;

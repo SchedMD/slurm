@@ -520,14 +520,6 @@ main (int argc, char **argv)
 
 	record_launched_jobs();
 
-	/*
-	 * When using TLS, slurmstepd messages bound to other nodes are relayed
-	 * through slurmd. This creates slurmd.socket which slurmstepd will use
-	 * to send its messages.
-	 */
-	if (conn_tls_enabled())
-		stepd_proxy_slurmd_init(conf->spooldir);
-
 	slurm_thread_create_detached(_registration_engine, NULL);
 
 	/* Allow listening socket to start accept()ing incoming */
