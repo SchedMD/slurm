@@ -578,8 +578,9 @@ extern int read_slurmdbd_conf(void)
 			    SLURM_SUCCESS)
 				fatal("failed to look up SlurmUser uid");
 
-			if (conf_path_uid != uid)
-				fatal("slurmdbd.conf owned by %u not SlurmUser(%u)",
+			/* Validate slurmdbd.conf owner is SlurmUser or root */
+			if ((conf_path_uid != uid) && conf_path_uid)
+				fatal("slurmdbd.conf owned by %u not SlurmUser(%u) or root",
 				      conf_path_uid, uid);
 		}
 
