@@ -239,8 +239,8 @@ extern partitions_stats_t *statistics_get_parts(nodes_stats_t *ns,
 extern scheduling_stats_t *statistics_get_sched(void);
 
 /*
- * Get a struct with all nodes statistics
- * IN lock - whether to lock the controller or not to get nodes
+ * Get a struct with all users and accounts statistics
+ * IN js - jobs statistics from where to count stats for users and accounts
  * RET - pointer to a struct with consolidated statistics or NULL
  */
 extern users_accts_stats_t *statistics_get_users_accounts(jobs_stats_t *js);
