@@ -20,6 +20,7 @@ import subprocess
 import sys
 import time
 import traceback
+import copy
 
 # slurmrestd
 import requests
@@ -1393,7 +1394,7 @@ def request_slurmrestd(request):
     )
 
 
-def assert_openapi_spec(tagged_spec):
+def assert_openapi_spec_eq(spec_a, spec_b):
     """
     Generates an OpenAPI specification and verifies that it hasn't changed.
 
@@ -1410,20 +1411,16 @@ def assert_openapi_spec(tagged_spec):
         None
     """
 
-    r = request_slurmrestd("openapi/v3")
-    if r.status_code != 200:
-        pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
-
-    gen_spec = json.loads(r.text)
-    if gen_spec is None:
-        pytest.fail(f"Error parsing JSON openapi specs from slurmrestd: {r.text}")
+    # Copy specs so we can change some things
+    _spec_a = copy.deepcopy(spec_a)
+    _spec_b = copy.deepcopy(spec_b)
 
     # Avoid checking versions that change with each new release
-    tagged_spec["info"]["x-slurm"] = None
-    gen_spec["info"]["x-slurm"] = None
+    _spec_a["info"]["x-slurm"] = None
+    _spec_b["info"]["x-slurm"] = None
 
-    tagged_spec["info"]["version"] = None
-    gen_spec["info"]["version"] = None
+    _spec_a["info"]["version"] = None
+    _spec_b["info"]["version"] = None
 
     # Recursively remove all description fields
     def _strip_descriptions(oas):
@@ -1444,13 +1441,13 @@ def assert_openapi_spec(tagged_spec):
 
         return oas
 
-    tagged_spec = _strip_descriptions(tagged_spec)
-    gen_spec = _strip_descriptions(gen_spec)
+    _spec_a = _strip_descriptions(_spec_a)
+    _spec_b = _strip_descriptions(_spec_b)
 
-    d = jsondiff.diff(tagged_spec, gen_spec)
+    d = jsondiff.diff(_spec_a, _spec_b)
     assert (
         len(d) == 0
-    ), f"Openapi specification should not change, but these differences were found: {d}"
+    ), f"OpenAPI specs should be equal(equivalent, but these differences were found: {d}"
 
 
 def require_openapi_generator(version="7.3.0"):
@@ -1497,6 +1494,10 @@ def require_openapi_generator(version="7.3.0"):
         r = request_slurmrestd("openapi/v3")
         if r.status_code != 200:
             pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
+
+        properties["openapi_specs"] = json.loads(r.text)
+        if properties["openapi_specs"] is None:
+            pytest.fail(f"Error parsing OpenAPI specs from slurmrestd: {r.text}")
 
         with open(spec_path, "w") as f:
             f.write(r.text)
