@@ -72,9 +72,9 @@ static int sack_fd = -1;
 /*
  * Loosely inspired by MUNGE.
  *
- * Listen on a UNIX socket for connections. Use SO_PEERCRED to establish the
- * identify of the connecting process, and generate a credential from their
- * requested payload.
+ * Listen on a UNIX socket for connections. Use getsockopt(SO_PEERCRED) via
+ * conmgr_get_fd_auth_creds() to establish the identity of the connecting
+ * process, and generate a credential from their requested payload.
  */
 
 static void _prepare_run_dir(const char *subdir, bool slurm_user)

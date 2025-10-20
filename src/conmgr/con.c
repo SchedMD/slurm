@@ -33,7 +33,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#define _GNU_SOURCE
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -42,11 +41,6 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-#include <sys/param.h>
-#include <sys/ucred.h>
-#endif
 
 #if defined(__linux__)
 #include <sys/sysmacros.h>
@@ -63,6 +57,7 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_time.h"
 #include "src/common/util-net.h"
@@ -1278,49 +1273,75 @@ again:
 			      false, NULL, NULL, arg);
 }
 
-extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con,
-				     uid_t *cred_uid, gid_t *cred_gid,
-				     pid_t *cred_pid)
+/* WARNING: caller must not hold mgr.mutex lock */
+static int _get_auth_creds(conmgr_fd_t *con, uid_t *cred_uid, gid_t *cred_gid,
+			   pid_t *cred_pid)
 {
-	int fd, rc = ESLURM_NOT_SUPPORTED;
+	int rc = EINVAL, input_fd = -1, output_fd = -1;
 
 	xassert(cred_uid);
 	xassert(cred_gid);
 	xassert(cred_pid);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (!con || !cred_uid || !cred_gid || !cred_pid)
+	if (!cred_uid || !cred_gid || !cred_pid)
+		return rc;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (con_flag(con, FLAG_IS_SOCKET)) {
+		if (!con_flag(con, FLAG_READ_EOF))
+			input_fd = con->input_fd;
+
+		output_fd = con->output_fd;
+	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	if ((input_fd < 0) || (output_fd < 0)) {
+		/* Both sockets must be open to authenticate */
+		return SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+	} else if ((rc = net_get_peer(input_fd, cred_uid, cred_gid,
+				      cred_pid))) {
+		return rc;
+	}
+
+	if (!rc) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Catch connection state changing during kernel queries */
+		if ((input_fd != con->input_fd) ||
+		    (output_fd != con->output_fd) ||
+		    con_flag(con, FLAG_READ_EOF))
+			rc = SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR;
+
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+
+	return rc;
+}
+
+extern int conmgr_get_fd_auth_creds(conmgr_fd_t *con, uid_t *cred_uid,
+				    gid_t *cred_gid, pid_t *cred_pid)
+{
+	if (!con)
 		return EINVAL;
 
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (((fd = con->input_fd) == -1) && ((fd = con->output_fd) == -1))
-		return SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR;
+	return _get_auth_creds(con, cred_uid, cred_gid, cred_pid);
+}
 
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__NetBSD__)
-	struct ucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.uid;
-		*cred_gid = cred.gid;
-		*cred_pid = cred.pid;
-		return SLURM_SUCCESS;
-	} else {
-		rc = errno;
-	}
-#else
-	struct xucred cred = { 0 };
-	socklen_t len = sizeof(cred);
-	if (!getsockopt(fd, 0, LOCAL_PEERCRED, &cred, &len)) {
-		*cred_uid = cred.cr_uid;
-		*cred_gid = cred.cr_groups[0];
-		*cred_pid = cred.cr_pid;
-		return SLURM_SUCCESS;
-	} else {
-		rc = errno;
-	}
-#endif
+extern int conmgr_con_get_auth_creds(conmgr_fd_ref_t *con, uid_t *cred_uid,
+				     gid_t *cred_gid, pid_t *cred_pid)
+{
+	if (!con || !con->con)
+		return EINVAL;
 
-	return rc;
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	return _get_auth_creds(con->con, cred_uid, cred_gid, cred_pid);
 }
 
 extern const char *conmgr_fd_get_name(const conmgr_fd_t *con)

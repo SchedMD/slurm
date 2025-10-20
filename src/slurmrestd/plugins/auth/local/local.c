@@ -54,11 +54,13 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
-#include "src/interfaces/auth.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/auth.h"
 
 #include "src/slurmrestd/rest_auth.h"
 
@@ -136,9 +138,9 @@ static int _auth_socket(on_http_request_args_t *args,
 	int rc;
 	const char *name = args->name;
 	conmgr_fd_t *con = conmgr_fd_get_ref(args->con);
-	uid_t cred_uid;
-	gid_t cred_gid;
-	pid_t cred_pid;
+	uid_t cred_uid = SLURM_AUTH_NOBODY;
+	gid_t cred_gid = SLURM_AUTH_NOBODY;
+	pid_t cred_pid = 0;
 
 	xassert(!ctxt->user_name);
 
