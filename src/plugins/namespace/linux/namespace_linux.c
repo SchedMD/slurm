@@ -356,6 +356,19 @@ static int _mount_private_shm(void)
 	return rc;
 }
 
+static int _mount_private_proc(void)
+{
+	if (!ns_l_enabled[NS_L_PID].enabled)
+		return SLURM_SUCCESS;
+
+	if (mount("proc", "/proc", "proc", 0, NULL)) {
+		error("%s: /proc mount failed: %m", __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 				char *src_bind, char *ns_base)
 {
@@ -438,6 +451,11 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 			rc = -1;
 			goto child_exit;
 		}
+	}
+
+	if (_mount_private_proc() == SLURM_ERROR) {
+		rc = -1;
+		goto child_exit;
 	}
 
 	/*
