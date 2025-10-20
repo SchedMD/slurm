@@ -5912,8 +5912,10 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 		goto end_it;
 	}
 
-	if ((fd = conn_g_get_fd(msg->conn)) < 0)
+	if ((fd = conn_g_get_fd(msg->conn)) < 0) {
+		rc = EBADF;
 		goto end_it;
+	}
 
 	/*
 	 * Persistent connection handlers expect file descriptor to be already
