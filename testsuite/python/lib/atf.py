@@ -1396,19 +1396,20 @@ def request_slurmrestd(request):
 
 def assert_openapi_spec_eq(spec_a, spec_b):
     """
-    Generates an OpenAPI specification and verifies that it hasn't changed.
+    Asserts that two OpenAPI specifications are equal, ignoring some info and
+    description fields.
 
-    Test newly generated OpenAPI specification against this officially tagged
-    specification of the specification for changes to catch inadvertent
-    changes.
-
-    It needs slurmrestd to be running (see require_slurmrestd()).
+    Note that atf.properties["openapi_spec"] saves the specs used to generate
+    the python openapi_client from slurmrestd and we have some json specs in
+    the testsuite_data_dir that can be read with the openapi_spec feature.
+    Usually we want to assert both are equal.
 
     Args:
-            path_tagged_spec: path to openapi.json to compare
+        spec_a: one loaded json spec
+        spec_b: the other loaded json spec
 
     Returns:
-        None
+        None, but a pytest assert call.
     """
 
     # Copy specs so we can change some things
@@ -1495,8 +1496,8 @@ def require_openapi_generator(version="7.3.0"):
         if r.status_code != 200:
             pytest.fail(f"Error requesting openapi specs from slurmrestd: {r}")
 
-        properties["openapi_specs"] = json.loads(r.text)
-        if properties["openapi_specs"] is None:
+        properties["openapi_spec"] = json.loads(r.text)
+        if properties["openapi_spec"] is None:
             pytest.fail(f"Error parsing OpenAPI specs from slurmrestd: {r.text}")
 
         with open(spec_path, "w") as f:
