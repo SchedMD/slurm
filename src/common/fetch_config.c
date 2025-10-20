@@ -282,8 +282,14 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags,
 	list_for_each(controllers, _get_controller_addr_type, NULL);
 
 	/* If the slurm.key file exists, assume we're using auth/slurm */
-	sack_jwks = get_extra_conf_path("slurm.jwks");
-	sack_key = get_extra_conf_path("slurm.key");
+	sack_jwks = xstrdup(getenv("SLURM_SACK_JWKS"));
+	sack_key = xstrdup(getenv("SLURM_SACK_KEY"));
+
+	if (!sack_jwks)
+		sack_jwks = get_extra_conf_path("slurm.jwks");
+	if (!sack_key)
+		sack_key = get_extra_conf_path("slurm.key");
+
 	if (!stat(sack_jwks, &statbuf))
 		setenv("SLURM_SACK_JWKS", sack_jwks, 1);
 	else if (!stat(sack_key, &statbuf))
