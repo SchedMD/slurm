@@ -662,8 +662,12 @@ static int _get_users_accts(void *x, void *args)
 
 extern jobs_stats_t *statistics_get_jobs(bool lock)
 {
-	slurmctld_lock_t job_read_lock = { READ_LOCK, READ_LOCK, NO_LOCK,
-					   READ_LOCK, READ_LOCK };
+	slurmctld_lock_t job_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+	};
 	jobs_stats_t *s = xmalloc(sizeof(*s));
 
 	s->jobs = list_create((ListDelF) _free_job_stats);
@@ -804,9 +808,10 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 extern partitions_stats_t *statistics_get_parts(nodes_stats_t *ns,
 						jobs_stats_t *js, bool lock)
 {
-	/* Locks: Read configuration and partition */
-	slurmctld_lock_t part_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK,
-					    READ_LOCK, NO_LOCK };
+	slurmctld_lock_t part_read_lock = {
+		.conf = READ_LOCK,
+		.part = READ_LOCK,
+	};
 	foreach_part_gen_stats_t p = { 0 };
 	partitions_stats_t *ps = xmalloc(sizeof(*ps));
 
