@@ -5186,9 +5186,17 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 				      char *new_topology_str)
 {
 	int rc = SLURM_SUCCESS;
-	char *topology_str_old = node_ptr->topology_str;
+	char *topology_str_old;
+	bool from_config = false;
 
-	node_ptr->topology_str = NULL;
+	if (node_ptr->topology_str) {
+		topology_str_old = node_ptr->topology_str;
+		node_ptr->topology_str = NULL;
+	} else {
+		topology_str_old = topology_g_get_topology_str(node_ptr);
+		from_config = true;
+	}
+
 	if (*new_topology_str) {
 		node_ptr->topology_str = xstrdup(new_topology_str);
 	}
@@ -5200,6 +5208,8 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 		node_ptr->topology_str = topology_str_old;
 		topology_g_add_rm_node(node_ptr);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		if (from_config)
+			xfree(node_ptr->topology_str);
 	} else {
 		xfree(topology_str_old);
 	}
