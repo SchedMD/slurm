@@ -137,10 +137,13 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 		}
 
 		/*
-		 * If unique_id is set for the device, assume that we
-		 * want to use it for the env var
+		 * NVIDIA MIG devices require the CUDA_VISIBLE_DEVICES
+		 * environment variable to be the device's UUID, not a local
+		 * index. For this reason, 'unique_id' is used here instead of
+		 * 'index'.
 		 */
-		if (gres_device->unique_id)
+		if ((gres_device->flags & GRES_DEV_MIG) &&
+		    gres_device->unique_id)
 			xstrfmtcat(new_local_list, "%s%s%s", local_prefix,
 				   gres_env->prefix, gres_device->unique_id);
 		else

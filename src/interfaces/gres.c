@@ -2709,6 +2709,9 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 				fill_in_gres_devices->max_dev_num =
 					gres_device->dev_num;
 
+			if (gres_slurmd_conf->config_flags & GRES_CONF_MIG)
+				gres_device->flags |= GRES_DEV_MIG;
+
 			list_append(*fill_in_gres_devices->gres_devices,
 				    gres_device);
 		}
@@ -10646,6 +10649,7 @@ static void _gres_device_pack(
 	pack32(gres_device->dev_desc.minor, buffer);
 	packstr(gres_device->path, buffer);
 	packstr(gres_device->unique_id, buffer);
+	pack32(gres_device->flags, buffer);
 }
 
 extern void gres_send_stepd(buf_t *buffer, list_t *gres_devices)
@@ -10672,6 +10676,7 @@ static int _gres_device_unpack(void **object, uint16_t protocol_version,
 	gres_device->dev_desc.minor = uint32_tmp;
 	safe_unpackstr(&gres_device->path, buffer);
 	safe_unpackstr(&gres_device->unique_id, buffer);
+	safe_unpack32(&gres_device->flags, buffer);
 	/* info("adding %d %s %s", gres_device->dev_num, */
 	/*      gres_device->major, gres_device->path); */
 
@@ -11057,6 +11062,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_ONE_SHARING) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "ONE_SHARING");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_MIG) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "MIG");
 		sep = ",";
 	}
 

@@ -85,6 +85,7 @@ typedef struct {
 	int alloc;
 	gres_device_id_t dev_desc;
 	int dev_num; /* Number at the end of the device filename */
+	uint32_t flags; /* See GRES_DEV_* */
 	char *path;
 	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
@@ -149,9 +150,13 @@ typedef struct {
 #define GRES_CONF_GLOBAL_INDEX SLURM_BIT(14) /* devices use global index */
 #define GRES_CONF_AUTODETECT SLURM_BIT(15) /* Conf was made with Autodetect */
 #define GRES_CONF_UPDATE_CONFIG SLURM_BIT(16) /* Flag to update gres config */
+#define GRES_CONF_MIG SLURM_BIT(17) /* GRES configuration is for NVIDIA MIG */
 
 #define GRES_CONF_ENV_SET    0x000008E0   /* Easy check if any of
 					   * GRES_CONF_ENV_* are set. */
+
+/* GRES_DEV_* flags for gres_device_t */
+#define GRES_DEV_MIG SLURM_BIT(0) /* GRES device is an NVIDIA MIG */
 
 /* GRES AutoDetect options */
 #define GRES_AUTODETECT_UNSET     0x00000000 /* Not set */
