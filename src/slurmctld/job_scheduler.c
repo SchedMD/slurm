@@ -78,6 +78,7 @@
 #include "src/interfaces/preempt.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/switch.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -2904,8 +2905,17 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.step_hostlist       = job_ptr->batch_host;
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
 
-	launch_msg_ptr->cred = slurm_cred_create(&cred_arg, false,
-						 protocol_version);
+	if (!switch_g_setup_special_steps() ||
+	    (switch_g_stepinfo_build(
+		    (dynamic_plugin_data_t **) &cred_arg.switch_step,
+		    job_ptr->switch_jobinfo,
+		    NULL) == SLURM_SUCCESS)) {
+		launch_msg_ptr->cred = slurm_cred_create(
+			&cred_arg, false,
+			protocol_version);
+	}
+
+	switch_g_stepinfo_free(cred_arg.switch_step);
 	xfree(cred_arg.job_mem_alloc);
 	xfree(cred_arg.job_mem_alloc_rep_count);
 

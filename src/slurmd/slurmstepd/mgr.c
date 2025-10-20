@@ -1629,7 +1629,9 @@ extern int job_manager(void)
 	debug2("After call to spank_init()");
 
 	/* Call switch_g_job_init() before becoming user */
-	if (!step->batch && (step->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	if (((!step->batch &&
+	      (step->step_id.step_id != SLURM_INTERACTIVE_STEP)) ||
+	     switch_g_setup_special_steps()) &&
 	    step->argv && (switch_g_job_init(step) < 0)) {
 		/* error("switch_g_job_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;

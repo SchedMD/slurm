@@ -94,7 +94,6 @@ typedef struct {
 
 typedef struct {
 	list_t *channel_list;
-	uint32_t flags;
 	uint32_t magic;
 } switch_info_t;
 
@@ -374,44 +373,15 @@ static int _log_channel_job(
 	return 1;
 }
 
-static int _log_channel_step(
-	void *x,
-	void *arg)
-{
-	channel_t *channel = x;
-	step_record_t *step_ptr = arg;
-
-	log_flag(SWITCH, "using channel id %u for %pS",
-		 channel->id, step_ptr);
-
-	return 1;
-}
-
 extern int switch_p_stepinfo_build(switch_info_t **switch_step,
-				   slurm_step_layout_t *step_layout,
+				   switch_info_t *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
-	switch_info_t *jobinfo;
-
-	if (!step_ptr->job_ptr ||
-	    !(jobinfo = step_ptr->job_ptr->switch_jobinfo)) {
-		log_flag(SWITCH, "no channels for %pS", step_ptr);
+	if (!switch_jobinfo || !switch_jobinfo->channel_list)
 		return SLURM_SUCCESS;
-	}
-
-	if (!jobinfo->channel_list)
-		return SLURM_SUCCESS;
-
-	log_flag(SWITCH, "%s: Creating step info for %pS",
-		 __func__, step_ptr);
 
 	/* Copy job channel list to step switch info */
-	*switch_step = _create_info(jobinfo->channel_list);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		list_for_each(jobinfo->channel_list, _log_channel_step,
-			      step_ptr);
-	}
+	*switch_step = _create_info(switch_jobinfo->channel_list);
 
 	return SLURM_SUCCESS;
 }
@@ -444,6 +414,15 @@ extern int switch_p_stepinfo_unpack(switch_info_t **switch_step, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	return switch_p_jobinfo_unpack(switch_step, buffer, protocol_version);
+}
+
+extern bool switch_p_setup_special_steps(void)
+{
+	/*
+	 * Every step needs to have access to IMEX channels, including normal,
+	 * batch, extern, and interactive steps.
+	 */
+	return true;
 }
 
 extern int switch_p_job_preinit(stepd_step_rec_t *step)
@@ -701,27 +680,6 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 	log_flag(SWITCH, "%s: Running IMEX channel setup", __func__);
 
 	return _stepd_setup_imex_channel(step);
-}
-
-extern void switch_p_extern_stepinfo(switch_info_t **stepinfo,
-				     job_record_t *job_ptr)
-{
-	switch_info_t *jobinfo;
-
-	if (!(jobinfo = job_ptr->switch_jobinfo) || !(jobinfo->channel_list)) {
-		log_flag(SWITCH, "no channels for %pJ", job_ptr);
-		return;
-	}
-
-	log_flag(SWITCH, "%s: Creating extern step info for %pJ",
-		 __func__, job_ptr);
-
-	/* Copy job channel list to step switch info */
-	*stepinfo = _create_info(jobinfo->channel_list);
-
-	if (slurm_conf.debug_flags & DEBUG_FLAG_SWITCH) {
-		list_for_each(jobinfo->channel_list, _log_channel_job, job_ptr);
-	}
 }
 
 extern void switch_p_extern_step_fini(int job_id)

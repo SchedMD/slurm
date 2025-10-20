@@ -500,10 +500,6 @@ slurm_errtab_t slurm_errtab[] = {
 		"Job can not start immediately",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_INTERCONNECT_BUSY),
-		"Switch resources currently not available",
-	},
-	{
 		ERRTAB_ENTRY(ESLURM_RESERVATION_EMPTY),
 		"Reservation request lacks users, groups or accounts",
 	},

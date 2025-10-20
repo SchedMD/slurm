@@ -101,3 +101,24 @@ def test_multiple_channels():
 
         # Previously pending job should start running
         atf.wait_for_job_state(pending_jobid, "RUNNING", fatal=True)
+
+
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmd") < (25, 11),
+    reason="Dev #50642: Unique IMEX channel per segment",
+)
+def test_batch_channel():
+    """Test channel creation for batch step"""
+
+    output_file = "output.txt"
+
+    job_id = atf.submit_job_sbatch(
+        f'--wrap="ls {IMEX_CHANNEL_PATH}" --output={output_file}', fatal=True
+    )
+    atf.wait_for_job_state(job_id, "DONE", fatal=True)
+
+    # Now check the output file
+    with open(output_file, "r") as f:
+        contents = f.read().strip()
+
+    assert contents == "channel1", f"Expected 'channel1' but got: {contents!r}"

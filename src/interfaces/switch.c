@@ -66,7 +66,7 @@ typedef struct slurm_switch_ops {
 					    uint16_t protocol_version );
 	void (*jobinfo_free)(void *switch_jobinfo);
 	int          (*stepinfo_build)    ( switch_stepinfo_t **stepinfo,
-					    slurm_step_layout_t *step_layout,
+					    void *switch_jobinfo,
 					    step_record_t *step_ptr );
 	void         (*stepinfo_duplicate)( switch_stepinfo_t *source,
 					    switch_stepinfo_t **dest);
@@ -77,6 +77,7 @@ typedef struct slurm_switch_ops {
 	int          (*stepinfo_unpack)   ( switch_stepinfo_t **stepinfo,
 					    buf_t *buffer,
 					    uint16_t protocol_version );
+	bool (*setup_special_steps)(void);
 	int          (*job_preinit)       ( stepd_step_rec_t *step );
 	int          (*job_init)          ( stepd_step_rec_t *step );
 	int          (*job_postfini)      ( stepd_step_rec_t *step);
@@ -89,8 +90,6 @@ typedef struct slurm_switch_ops {
 	int (*job_start)(job_record_t *job_ptr, bool test_only);
 	void         (*job_complete)      ( job_record_t *job_ptr );
 	int          (*fs_init)           ( stepd_step_rec_t *step );
-	void         (*extern_stepinfo)   ( switch_stepinfo_t **stepinfo,
-					    job_record_t *job_ptr );
 	void	     (*extern_step_fini)  ( uint32_t job_id);
 } slurm_switch_ops_t;
 
@@ -110,6 +109,7 @@ static const char *syms[] = {
 	"switch_p_stepinfo_free",
 	"switch_p_stepinfo_pack",
 	"switch_p_stepinfo_unpack",
+	"switch_p_setup_special_steps",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
 	"switch_p_job_postfini",
@@ -118,7 +118,6 @@ static const char *syms[] = {
 	"switch_p_job_start",
 	"switch_p_job_complete",
 	"switch_p_fs_init",
-	"switch_p_extern_stepinfo",
 	"switch_p_extern_step_fini",
 };
 
@@ -334,10 +333,10 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr)
 }
 
 extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
-				   slurm_step_layout_t *step_layout,
+				   void *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
-	void **data = NULL;
+	void **stepinfo_data = NULL;
 	uint32_t plugin_id = switch_context_default;
 
 	xassert(switch_context_cnt >= 0);
@@ -346,10 +345,10 @@ extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
 		return SLURM_SUCCESS;
 
 	*stepinfo = _create_dynamic_plugin_data(plugin_id);
-	data = &(*stepinfo)->data;
+	stepinfo_data = &(*stepinfo)->data;
 
-	return (*(ops[plugin_id].stepinfo_build))((switch_stepinfo_t **) data,
-						  step_layout, step_ptr);
+	return (*(ops[plugin_id].stepinfo_build))(
+		(switch_stepinfo_t **) stepinfo_data, switch_jobinfo, step_ptr);
 }
 
 extern void switch_g_stepinfo_duplicate(dynamic_plugin_data_t *source,
@@ -506,6 +505,16 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern bool switch_g_setup_special_steps(void)
+{
+	xassert(switch_context_cnt >= 0);
+
+	if (!switch_context_cnt)
+		return false;
+
+	return (*(ops[switch_context_default].setup_special_steps))();
+}
+
 extern int switch_g_job_preinit(stepd_step_rec_t *step)
 {
 	xassert(switch_context_cnt >= 0);
@@ -606,25 +615,6 @@ extern int switch_g_fs_init(stepd_step_rec_t *step)
 		return SLURM_SUCCESS;
 
 	return (*(ops[switch_context_default].fs_init))(step);
-}
-
-extern void switch_g_extern_stepinfo(void **stepinfo, job_record_t *job_ptr)
-{
-	switch_stepinfo_t *tmp = NULL;
-	dynamic_plugin_data_t *dest_ptr = NULL;
-
-	xassert(switch_context_cnt >= 0);
-
-	if (!switch_context_cnt)
-		return;
-
-	(*(ops[switch_context_default].extern_stepinfo))(&tmp, job_ptr);
-
-	if (tmp) {
-		dest_ptr = _create_dynamic_plugin_data(switch_context_default);
-		dest_ptr->data = tmp;
-		*stepinfo = dest_ptr;
-	}
 }
 
 extern void switch_g_extern_step_fini(uint32_t job_id)

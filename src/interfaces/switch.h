@@ -93,15 +93,14 @@ extern void switch_g_jobinfo_free(job_record_t *job_ptr);
 
 /*
  * create a step's switch credential
- * OUT jobinfo  - storage for a switch job credential
- * IN  step_layout - the layout of the step with at least the nodes,
- *                   tasks_per_node and tids set
+ * OUT stepinfo - storage for a step switch credential
+ * IN  jobinfo - build stepinfo from this switch jobinfo
  * IN  step_ptr    - step_record_t for this step
  * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
  * NOTE: storage must be freed using switch_g_stepinfo_free
  */
-extern int switch_g_stepinfo_build(dynamic_plugin_data_t **jobinfo,
-				   slurm_step_layout_t *step_layout,
+extern int switch_g_stepinfo_build(dynamic_plugin_data_t **stepinfo,
+				   void *switch_jobinfo,
 				   step_record_t *step_ptr);
 
 /*
@@ -139,6 +138,12 @@ extern void switch_g_stepinfo_pack(dynamic_plugin_data_t *jobinfo,
  */
 extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **jobinfo,
 				    buf_t *buffer, uint16_t protocol_version);
+
+/*
+ * Return true if switch plugin should be setup on special steps
+ * (batch/interactive/extern steps), otherwise return false.
+ */
+extern bool switch_g_setup_special_steps(void);
 
 /*
  * Note that the job step associated with the specified nodelist
@@ -213,8 +218,6 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank);
 
 extern int switch_g_fs_init(stepd_step_rec_t *step);
-
-extern void switch_g_extern_stepinfo(void **stepinfo, job_record_t *job_ptr);
 
 extern void switch_g_extern_step_fini(uint32_t job_id);
 

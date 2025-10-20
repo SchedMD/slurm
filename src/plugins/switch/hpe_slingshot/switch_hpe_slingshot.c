@@ -512,8 +512,8 @@ static uint32_t _get_het_job_node_cnt(step_record_t *step_ptr)
 	return node_cnt;
 }
 
-extern int switch_p_stepinfo_build(switch_stepinfo_t **switch_job,
-				   slurm_step_layout_t *step_layout,
+extern int switch_p_stepinfo_build(switch_stepinfo_t **stepinfo,
+				   void *switch_jobinfo,
 				   step_record_t *step_ptr)
 {
 	slingshot_stepinfo_t *job = NULL;
@@ -532,7 +532,7 @@ extern int switch_p_stepinfo_build(switch_stepinfo_t **switch_job,
 
 	job = xmalloc(sizeof(*job));
 	job->version = SLURM_PROTOCOL_VERSION;
-	*switch_job = (switch_stepinfo_t *) job;
+	*stepinfo = (switch_stepinfo_t *) job;
 
 	/*
 	 * If this is a homogeneous step, or the first component in a
@@ -561,7 +561,7 @@ extern int switch_p_stepinfo_build(switch_stepinfo_t **switch_job,
 		job_id = job_ptr->job_id;
 	} else {
 		/* This is a non-het step in a non-het job */
-		node_cnt = step_layout->node_cnt;
+		node_cnt = step_ptr->step_layout->node_cnt;
 		job_id = job_ptr->job_id;
 	}
 
@@ -866,6 +866,16 @@ error:
 	return SLURM_ERROR;
 }
 
+extern bool switch_p_setup_special_steps(void)
+{
+	/*
+	 * Do not setup switch access for batch, interactive, or extern steps.
+	 *
+	 * Switch access is limited to normal job steps started with srun.
+	 */
+	return false;
+}
+
 /*
  * Set up CXI Services for each of the CXI NICs on this host
  */
@@ -1024,12 +1034,6 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
-}
-
-extern void switch_p_extern_stepinfo(switch_stepinfo_t **stepinfo,
-				     job_record_t *job_ptr)
-{
-	/* not supported */
 }
 
 extern void switch_p_extern_step_fini(int job_id)

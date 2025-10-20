@@ -1124,7 +1124,6 @@ extern bool launch_common_step_retry_errno(int rc)
 {
 	if ((rc == EAGAIN) ||
 	    (rc == ESLURM_DISABLED) ||
-	    (rc == ESLURM_INTERCONNECT_BUSY) ||
 	    (rc == ESLURM_NODES_BUSY) ||
 	    (rc == ESLURM_PORTS_BUSY) ||
 	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))

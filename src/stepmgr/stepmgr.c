@@ -3195,12 +3195,9 @@ static int _switch_setup(step_record_t *step_ptr)
 	if (!step_ptr->step_layout)
 		return SLURM_SUCCESS;
 
-	errno = 0;
 	if (switch_g_stepinfo_build(&step_ptr->switch_step,
-				    step_ptr->step_layout,
+				    step_ptr->job_ptr->switch_jobinfo,
 				    step_ptr) < 0) {
-		if (errno == ESLURM_INTERCONNECT_BUSY)
-			return errno;
 		return ESLURM_INTERCONNECT_FAILURE;
 	}
 	return SLURM_SUCCESS;
@@ -3396,8 +3393,7 @@ extern int step_create(job_record_t *job_ptr,
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
 		if ((ret_code == ESLURM_NODES_BUSY) ||
-		    (ret_code == ESLURM_PORTS_BUSY) ||
-		    (ret_code == ESLURM_INTERCONNECT_BUSY))
+		    (ret_code == ESLURM_PORTS_BUSY))
 			_build_pending_step(job_ptr, step_specs);
 		return ret_code;
 	}
@@ -4738,14 +4734,18 @@ static step_record_t *_build_interactive_step(
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 
+	if (switch_g_setup_special_steps()) {
+		if (_switch_setup(step_ptr) != SLURM_SUCCESS)
+			goto fail;
+	}
+
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
 
 	if (node_name2bitmap(job_ptr->batch_host, false,
 			     &step_ptr->step_node_bitmap, NULL)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
-		delete_step_record(job_ptr, step_ptr);
-		return NULL;
+		goto fail;
 	}
 
 	step_ptr->time_last_active = time(NULL);
@@ -4754,6 +4754,10 @@ static step_record_t *_build_interactive_step(
 	jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn, step_ptr);
 
 	return step_ptr;
+
+fail:
+	delete_step_record(job_ptr, step_ptr);
+	return NULL;
 }
 
 /*
