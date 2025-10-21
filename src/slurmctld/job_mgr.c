@@ -10285,12 +10285,12 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
- * IN job_id - ID of job that we want info for
+ * IN step_id - ID of job that we want info for
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  */
-extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
+extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 			   uid_t uid, uint16_t protocol_version)
 {
 	job_record_t *job_ptr;
@@ -10308,10 +10308,10 @@ extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
-	if (sluid)
-		job_ptr = find_sluid(sluid);
+	if (step_id->sluid)
+		job_ptr = find_sluid(step_id->sluid);
 	else
-		job_ptr = find_job_record(job_id);
+		job_ptr = find_job_record(step_id->job_id);
 
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
@@ -10360,13 +10360,15 @@ extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
 		}
 
 		/* When querying by SLUID do not return job array records. */
-		if (sluid)
+		if (step_id->sluid)
 			job_ptr = NULL;
 		else
-			job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+			job_ptr =
+				job_array_hash_j[JOB_HASH_INX(step_id->job_id)];
 
 		while (job_ptr) {
-			if ((job_ptr->job_id == job_id) && packed_head) {
+			if ((job_ptr->job_id == step_id->job_id) &&
+			    packed_head) {
 				;	/* Already packed */
 			} else if (!(show_flags & SHOW_ALL) &&
 				   IS_JOB_REVOKED(job_ptr)) {
@@ -10375,7 +10377,7 @@ extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
 				 * consistent and future proof, don't pack
 				 * revoked array jobs.
 				 */
-			} else if (job_ptr->array_job_id == job_id) {
+			} else if (job_ptr->array_job_id == step_id->job_id) {
 				if (valid_operator ||
 				    !_hide_job_user_rec(job_ptr, &user_rec,
 							show_flags)) {
