@@ -114,6 +114,7 @@
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/job_mem_limit.h"
+#include "src/slurmd/slurmd/launch_state.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
@@ -131,11 +132,6 @@ typedef struct {
 } libdir_rec_t;
 
 typedef struct {
-	bool batch_step;
-	uint32_t job_id;
-} active_job_t;
-
-typedef struct {
 	uint32_t uid;
 	uint32_t job_id;
 	uint32_t step_id;
@@ -147,13 +143,8 @@ static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, int flags,
 				   char *details, bool batch, uid_t req_uid);
-static void _launch_complete_add(uint32_t job_id, bool btch_step);
-static void _launch_complete_log(char *type, uint32_t job_id);
-static void _launch_complete_rm(uint32_t job_id);
-static void _launch_complete_wait(uint32_t job_id);
 static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
 			    uint32_t slurm_rc);
-static bool _launch_job_test(uint32_t job_id, bool batch_step);
 static void _note_batch_job_finished(uint32_t job_id);
 static int _prolog_is_running(uint32_t jobid);
 static void _rpc_terminate_job(slurm_msg_t *msg);
@@ -205,11 +196,6 @@ static int next_fini_job_inx = 0;
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS] = {0};
 static int job_suspend_size = 0;
-
-#define JOB_STATE_CNT 64
-static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
-static active_job_t active_job_id[JOB_STATE_CNT] = {{0}};
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1467,7 +1453,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
-	_launch_complete_add(req->step_id.job_id, false);
+	launch_complete_add(req->step_id.job_id, false);
 
 done:
 	FREE_NULL_HOSTLIST(step_hset);
@@ -2122,7 +2108,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	uid_t batch_uid = SLURM_AUTH_NOBODY;
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
 
-	if (_launch_job_test(req->step_id.job_id, true)) {
+	if (launch_job_test(req->step_id.job_id, true)) {
 		error("%pI already running, do not launch second copy",
 		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
@@ -2265,14 +2251,14 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("%s: return from _forkexec_slurmstepd: %d", __func__, rc);
 
-	_launch_complete_add(req->step_id.job_id, true);
+	launch_complete_add(req->step_id.job_id, true);
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
 	 * abort logic below. */
 	revoked = cred_revoked(req->cred);
 	if (revoked)
-		_launch_complete_rm(req->step_id.job_id);
+		launch_complete_rm(req->step_id.job_id);
 	if (revoked && _is_batch_job_finished(req->step_id.job_id)) {
 		/* If configured with select/serial and the batch job already
 		 * completed, consider the job successfully launched and do
@@ -4177,9 +4163,9 @@ extern void record_launched_jobs(void)
 		if (fd == -1)
 			continue; /* step gone */
 		close(fd);
-		_launch_complete_add(stepd->step_id.job_id,
-				     (stepd->step_id.step_id ==
-				      SLURM_BATCH_SCRIPT));
+		launch_complete_add(stepd->step_id.job_id,
+				    (stepd->step_id.step_id ==
+				     SLURM_BATCH_SCRIPT));
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
@@ -4230,7 +4216,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* Defer suspend until job prolog and launch complete */
 	if (req->op == SUSPEND_JOB)
-		_launch_complete_wait(req->step_id.job_id);
+		launch_complete_wait(req->step_id.job_id);
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
@@ -4429,7 +4415,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		_free_job_env(&job_env);
 	}
 
-	_launch_complete_rm(req->step_id.job_id);
+	launch_complete_rm(req->step_id.job_id);
 }
 
 static void _rpc_terminate_job(slurm_msg_t *msg)
@@ -4584,7 +4570,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			epilog_complete(req->step_id.job_id, req->nodes, rc);
 		}
 
-		_launch_complete_rm(req->step_id.job_id);
+		launch_complete_rm(req->step_id.job_id);
 		return;
 	}
 
@@ -4666,7 +4652,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			debug("completed epilog for jobid %u",
 			      req->step_id.job_id);
 	}
-	_launch_complete_rm(req->step_id.job_id);
+	launch_complete_rm(req->step_id.job_id);
 
 done:
 	_wait_state_completed(req->step_id.job_id, 5);
@@ -5019,145 +5005,6 @@ rwfail:
 	if (fd >= 0)
 		close(fd);
 	slurm_send_rc_msg(msg, rc);
-}
-
-static void _launch_complete_add(uint32_t job_id, bool batch_step)
-{
-	int j, empty;
-
-	slurm_mutex_lock(&job_state_mutex);
-	empty = -1;
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id) {
-			if (batch_step)
-				active_job_id[j].batch_step = batch_step;
-			break;
-		}
-		if ((active_job_id[j].job_id == 0) && (empty == -1))
-			empty = j;
-	}
-	if (j >= JOB_STATE_CNT || job_id != active_job_id[j].job_id) {
-		if (empty == -1)	/* Discard oldest job */
-			empty = 0;
-		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
-			active_job_id[j - 1] = active_job_id[j];
-		}
-		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
-		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = job_id;
-				active_job_id[j].batch_step = batch_step;
-				break;
-			}
-		}
-	}
-	slurm_cond_signal(&job_state_cond);
-	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job add", job_id);
-}
-
-static void _launch_complete_log(char *type, uint32_t job_id)
-{
-#if 0
-	int j;
-
-	info("active %s %u", type, job_id);
-	slurm_mutex_lock(&job_state_mutex);
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (active_job_id[j].job_id != 0) {
-			info("active_job_id[%d]=%u", j,
-			     active_job_id[j].job_id);
-		}
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-#endif
-}
-
-/* Test if we have a specific job ID still running */
-static bool _launch_job_test(uint32_t job_id, bool batch_step)
-{
-	bool found = false;
-	int j;
-
-	slurm_mutex_lock(&job_state_mutex);
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id) {
-			if (!batch_step || active_job_id[j].batch_step)
-				found = true;
-			break;
-		}
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-	return found;
-}
-
-
-static void _launch_complete_rm(uint32_t job_id)
-{
-	int j;
-
-	slurm_mutex_lock(&job_state_mutex);
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id)
-			break;
-	}
-	if (j < JOB_STATE_CNT && job_id == active_job_id[j].job_id) {
-		for (j = j + 1; j < JOB_STATE_CNT; j++) {
-			active_job_id[j - 1] = active_job_id[j];
-		}
-		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job remove", job_id);
-}
-
-static void _launch_complete_wait(uint32_t job_id)
-{
-	int j, empty;
-	time_t start = time(NULL);
-	struct timeval now;
-	struct timespec timeout;
-
-	slurm_mutex_lock(&job_state_mutex);
-	while (true) {
-		empty = -1;
-		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (job_id == active_job_id[j].job_id)
-				break;
-			if ((active_job_id[j].job_id == 0) && (empty == -1))
-				empty = j;
-		}
-		if (j < JOB_STATE_CNT)	/* Found job, ready to return */
-			break;
-		if (difftime(time(NULL), start) <= 9) {  /* Retry for 9 secs */
-			debug2("wait for launch of job %u before suspending it",
-			       job_id);
-			gettimeofday(&now, NULL);
-			timeout.tv_sec  = now.tv_sec + 1;
-			timeout.tv_nsec = now.tv_usec * 1000;
-			slurm_cond_timedwait(&job_state_cond,&job_state_mutex,
-					     &timeout);
-			continue;
-		}
-		if (empty == -1)	/* Discard oldest job */
-			empty = 0;
-		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
-			active_job_id[j - 1] = active_job_id[j];
-		}
-		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
-		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = job_id;
-				break;
-			}
-		}
-		break;
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job wait", job_id);
 }
 
 typedef struct {
