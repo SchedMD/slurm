@@ -2677,6 +2677,7 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	int rc;
 
 	job_step_kill_msg->step_id.job_id = het_job_ptr->job_id;
+	job_step_kill_msg->step_id.sluid = het_job_ptr->db_index;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
 			    foreach_kill_hetjob_step->uid);
 
@@ -4547,6 +4548,8 @@ static void _slurm_selected_step_init(job_record_t *job_ptr,
 		id->step_id.job_id = job_ptr->het_job_id;
 	else
 		id->step_id.job_id = job_ptr->job_id;
+
+	id->step_id.sluid = job_ptr->db_index;
 
 	if (job_ptr->het_job_offset)
 		id->het_job_offset = job_ptr->het_job_offset;
@@ -17058,6 +17061,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(signal_tasks_msg_t));
 	signal_job_msg->step_id.job_id = job_ptr->job_id;
+	signal_job_msg->step_id.sluid = job_ptr->db_index;
 
 	/*
 	 * We don't ever want to kill a step with this message.  The flags below
@@ -18361,6 +18365,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
 	timeout_msg->step_id.job_id = time_req_msg->job_id;
+	timeout_msg->step_id.sluid = job_ptr->db_index;
 	timeout_msg->step_id.step_id = NO_VAL;
 	timeout_msg->step_id.step_het_comp = NO_VAL;
 	timeout_msg->timeout = job_ptr->end_time;
