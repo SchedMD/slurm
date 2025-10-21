@@ -2264,23 +2264,6 @@ static void _modify_cpus_alloc_for_tpc(uint16_t cr_type, uint16_t req_tpc,
 	}
 }
 
-static void _convert_step_cpus_to_job_cpus(uint16_t cr_type, uint16_t req_tpc,
-					   uint16_t job_tpc, uint16_t vpus,
-					   int *core_alloc, int *cpus_alloc)
-{
-	xassert(core_alloc && cpus_alloc);
-
-	/* SELECT_CPU's job_resrcs->cpus is based on job_tpc */
-	if ((cr_type & SELECT_CPU) && (req_tpc != NO_VAL16)) {
-		*core_alloc = ROUNDUP(*cpus_alloc, req_tpc);
-		*cpus_alloc = *core_alloc *
-			((job_tpc != NO_VAL16) ? job_tpc : vpus);
-	} else {
-		*core_alloc = ROUNDUP(*cpus_alloc, vpus);
-		*cpus_alloc = *core_alloc * vpus;
-	}
-}
-
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
 static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 {
@@ -2569,12 +2552,18 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		 * --overlap=force
 		 */
 		if (!(step_ptr->flags & SSF_OVERLAP_FORCE)) {
-			int core_alloc;
-			_convert_step_cpus_to_job_cpus(
-				job_resrcs_ptr->cr_type, req_tpc,
-				job_ptr->details->mc_ptr->threads_per_core,
-				vpus, &core_alloc, &cpus_alloc);
-
+			/* SELECT_CPU's job_resrcs->cpus is based on job_tpc */
+			uint16_t job_tpc =
+				job_ptr->details->mc_ptr->threads_per_core;
+			if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
+			    (req_tpc != NO_VAL16)) {
+				cpus_alloc = ROUNDUP(cpus_alloc, req_tpc);
+				cpus_alloc *=
+					(job_tpc != NO_VAL16) ? job_tpc : vpus;
+			} else {
+				cpus_alloc = ROUNDUP(cpus_alloc, vpus);
+				cpus_alloc *= vpus;
+			}
 			if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
 			    (vpus > 1) &&
 			    (job_resrcs_ptr->cpus_used[job_node_inx] +
@@ -2851,9 +2840,15 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			step_node_inx);
 
 		cpus_alloc = step_ptr->cpu_alloc_values[inx];
-		_convert_step_cpus_to_job_cpus(job_resrcs_ptr->cr_type, req_tpc,
-					       job_tpc, vpus, &core_alloc,
-					       &cpus_alloc);
+		if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
+		    (req_tpc != NO_VAL16)) {
+			core_alloc = ROUNDUP(cpus_alloc, req_tpc);
+			cpus_alloc = core_alloc *
+				((job_tpc != NO_VAL16) ? job_tpc : vpus);
+		} else {
+			core_alloc = ROUNDUP(cpus_alloc, vpus);
+			cpus_alloc = core_alloc * vpus;
+		}
 
 		if ((job_resrcs_ptr->cr_type & SELECT_CPU) &&
 		    (node_ptr->tpc > 1)) {
