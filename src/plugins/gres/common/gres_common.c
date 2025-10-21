@@ -358,7 +358,7 @@ extern bool gres_common_prep_set_env(char ***prep_env_ptr,
 	if (gres_prep->node_cnt == 0)	/* no_consume */
 		return 1;
 
-	if (node_inx > gres_prep->node_cnt) {
+	if (node_inx >= gres_prep->node_cnt) {
 		error("bad node index (%d > %u)",
 		      node_inx, gres_prep->node_cnt);
 		return 1;
