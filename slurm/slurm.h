@@ -2140,9 +2140,7 @@ typedef struct {
 	char *target;		/* target host or UNIX socket */
 } net_forward_msg_t;
 
-typedef struct srun_ping_msg {
-	uint32_t job_id;	/* slurm job_id */
-} srun_ping_msg_t;
+typedef slurm_step_id_t srun_ping_msg_t;
 
 typedef slurm_step_id_t srun_job_complete_msg_t;
 
