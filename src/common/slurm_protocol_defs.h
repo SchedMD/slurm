@@ -1227,7 +1227,7 @@ typedef struct {
 
 typedef struct {
 	list_t *depend_list;
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 } dep_update_origin_msg_t;
 
 typedef struct {

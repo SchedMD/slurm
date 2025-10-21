@@ -6740,10 +6740,10 @@ static void _pack_dep_update_origin_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_dep_list(msg->depend_list, buffer, smsg->protocol_version);
-		pack32(msg->job_id, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack_dep_list(msg->depend_list, buffer, smsg->protocol_version);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 	}
 }
 
@@ -6755,12 +6755,13 @@ static int _unpack_dep_update_origin_msg(slurm_msg_t *smsg, buf_t *buffer)
 		if (unpack_dep_list(&msg->depend_list, buffer,
 				    smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (unpack_dep_list(&msg->depend_list, buffer,
 				    smsg->protocol_version))
 			goto unpack_error;
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 	}
 
 	smsg->data = msg;

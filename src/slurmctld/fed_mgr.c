@@ -2247,7 +2247,7 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	list_for_each(depend_list, _restore_array_task_id, NULL);
 
 	dep_update_msg.depend_list = depend_list;
-	dep_update_msg.job_id = job_ptr->job_id;
+	dep_update_msg.step_id.job_id = job_ptr->job_id;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_UPDATE_ORIGIN_DEP;
@@ -2398,7 +2398,8 @@ static void _handle_dep_update_origin_msgs(void)
 
 	lock_slurmctld(job_write_lock);
 	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
-		if (!(job_ptr = find_job_record(dep_update_msg->job_id))) {
+		if (!(job_ptr = find_job_record(dep_update_msg->step_id
+							.job_id))) {
 			/*
 			 * Maybe the job was cancelled and purged before
 			 * the dependency update got here or was able
@@ -2406,8 +2407,8 @@ static void _handle_dep_update_origin_msgs(void)
 			 * exist here, so we have to throw out this
 			 * dependency update message.
 			 */
-			log_flag(DEPENDENCY, "%s: Could not find job %u, cannot process dependency update. Perhaps the jobs was purged before we got here.",
-				 __func__, dep_update_msg->job_id);
+			log_flag(DEPENDENCY, "%s: Could not find %pI, cannot process dependency update. Perhaps the jobs was purged before we got here.",
+				 __func__, &dep_update_msg->step_id);
 			slurm_free_dep_update_origin_msg(dep_update_msg);
 			continue;
 		} else if (!job_ptr->details ||
@@ -6063,13 +6064,13 @@ extern int fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg)
 	dep_update_origin_msg_t *update_deps;
 	dep_update_origin_msg_t *update_msg = msg->data;
 
-	log_flag(FEDR, "%s: Got %s: Job %u",
-		 __func__, rpc_num2string(msg->msg_type), update_msg->job_id);
+	log_flag(FEDR, "%s: Got %s: %pI",
+		 __func__, rpc_num2string(msg->msg_type), &update_msg->step_id);
 
 	/* update_msg will get free'd, so copy it */
 	update_deps = xmalloc(sizeof *update_deps);
 	update_deps->depend_list = update_msg->depend_list;
-	update_deps->job_id = update_msg->job_id;
+	update_deps->step_id = update_msg->step_id;
 	/*
 	 * NULL update_msg->depend_list so it doesn't get free'd; we're
 	 * using it later.
