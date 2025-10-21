@@ -411,12 +411,8 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
 {
 	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id = { 0 };
 
-	step_id.job_id = request->job_id;
-	step_id.step_id = request->step_id;
-
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER, true);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
 static void _slurm_rpc_step_layout(slurm_msg_t *msg)

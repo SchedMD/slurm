@@ -4455,22 +4455,22 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	update_step_args_t args = { .mod_cnt = 0 };
 	slurm_step_id_t step_id = { 0 };
 
-	job_ptr = stepmgr_ops->find_job_record(req->job_id);
+	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		error("%s: invalid JobId=%u", __func__, req->job_id);
+		error("%s: invalid %pI", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	step_id.job_id = job_ptr->job_id;
 	step_id.sluid = job_ptr->db_index;
-	step_id.step_id = req->step_id;
+	step_id.step_id = req->step_id.step_id;
 	step_id.step_het_comp = NO_VAL;
 
 	/*
 	 * No need to limit step time limit as job time limit will kill
 	 * any steps with any time limit
 	 */
-	if (req->step_id == NO_VAL) {
+	if (req->step_id.step_id == NO_VAL) {
 		args.time_limit = req->time_limit;
 		list_for_each(job_ptr->step_list, _update_step, &args);
 	} else {
@@ -4499,7 +4499,6 @@ stepmgr:
 		step_update_request_msg_t *agent_update_msg = NULL;
 
 		agent_update_msg = xmalloc(sizeof(*agent_update_msg));
-		agent_update_msg->job_id = req->job_id;
 		agent_update_msg->step_id = req->step_id;
 		agent_update_msg->time_limit = req->time_limit;
 

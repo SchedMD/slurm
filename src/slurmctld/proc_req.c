@@ -3474,9 +3474,9 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 
-	job_ptr = find_job_record(req->job_id);
+	job_ptr = find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		error("%s: invalid JobId=%u", __func__, req->job_id);
+		error("%s: invalid %pI", __func__, &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto fail;
 	}

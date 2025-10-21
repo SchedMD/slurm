@@ -2057,8 +2057,7 @@ typedef struct {
 } job_state_response_msg_t;
 
 typedef struct step_update_request_msg {
-	uint32_t job_id;
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 	uint32_t time_limit;	/* In minutes */
 } step_update_request_msg_t;
 
