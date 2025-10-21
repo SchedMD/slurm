@@ -1401,7 +1401,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
 
-		cred_insert_jobid(req->step_id.job_id);
+		cred_insert_job(&req->step_id);
 		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -2059,7 +2059,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		return;
 	}
 
-	cred_insert_jobid(req->step_id.job_id);
+	cred_insert_job(&req->step_id);
 	_add_job_running_prolog(req->step_id.job_id);
 	/* signal just in case the batch rpc got here before we did */
 	slurm_cond_broadcast(&conf->prolog_running_cond);
@@ -2201,7 +2201,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
 
-		cred_insert_jobid(req->step_id.job_id);
+		cred_insert_job(&req->step_id);
 		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 

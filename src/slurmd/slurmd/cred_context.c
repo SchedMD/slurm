@@ -378,15 +378,15 @@ extern bool cred_job_cached(slurm_step_id_t *step_id)
 	return retval;
 }
 
-extern int cred_insert_jobid(uint32_t jobid)
+extern int cred_insert_job(slurm_step_id_t *step_id)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 	_clear_expired_job_states();
-	if (_find_job_state(jobid)) {
-		debug2("%s: we already have a job state for job %u.",
-		       __func__, jobid);
+	if (_find_job_state(step_id->job_id)) {
+		debug2("%s: we already have a job state for %pI",
+		       __func__, step_id);
 	} else {
-		job_state_t *j = _job_state_create(jobid);
+		job_state_t *j = _job_state_create(step_id->job_id);
 		list_append(cred_job_list, j);
 	}
 	slurm_mutex_unlock(&cred_cache_mutex);
