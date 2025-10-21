@@ -49,6 +49,18 @@ Help; print a brief summary of command options.
 .IP
 
 .TP
+\fB\-\-jwks\-file <file>\fR
+Read auth/slurm JWKS information from the specified file. Default value is
+slurm.jwks located in the same directory as slurm.conf.
+.IP
+
+.TP
+\fB\-\-key\-file <file>\fR
+Read auth/slurm authentication key from the specified file. Default value is
+slurm.key located in the same directory as slurm.conf.
+.IP
+
+.TP
 \fB\-\-port number\fR
 Port socket number to listen for reconfiguration updates. This can be useful
 when multiple sackds co-exist on the same login node. The default value is
