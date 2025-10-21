@@ -182,8 +182,8 @@ static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
-static int _wait_for_request_launch_prolog(uint32_t job_id,
-					    bool *first_job_run);
+static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
+					   bool *first_job_run);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -1374,7 +1374,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	first_job_run = !cred_jobid_cached(req->step_id.job_id);
 
 	if (!(req->flags & LAUNCH_NO_ALLOC))
-		errnum = _wait_for_request_launch_prolog(req->step_id.job_id,
+		errnum = _wait_for_request_launch_prolog(&req->step_id,
 							 &first_job_run);
 	if (errnum != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&prolog_mutex);
@@ -2187,7 +2187,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	rc = _wait_for_request_launch_prolog(req->step_id.job_id, &first_job_run);
+	rc = _wait_for_request_launch_prolog(&req->step_id, &first_job_run);
 	if (rc != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
@@ -4935,7 +4935,7 @@ static void _wait_for_job_running_prolog(uint32_t job_id)
 }
 
 /* Wait for the job's prolog launch request */
-static int _wait_for_request_launch_prolog(uint32_t job_id,
+static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 					   bool *first_job_run)
 {
 	struct timespec ts = {0, 0};
@@ -4951,7 +4951,7 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 	 * we don't have to unlock to wait on the
 	 * conf->prolog_running_cond.
 	 */
-	debug("Waiting for job %d's prolog launch request", job_id);
+	debug("Waiting for %pI prolog launch request", step_id);
 	gettimeofday(&timeout, NULL);
 	timeout.tv_sec += slurm_conf.msg_timeout * 2;
 	while (*first_job_run) {
@@ -4967,16 +4967,16 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 		ts.tv_sec = now.tv_sec + 1;
 		ts.tv_nsec = now.tv_usec * 1000;
 		if (now.tv_sec > timeout.tv_sec) {
-			error("Waiting for JobId=%u REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
-			      job_id, slurm_conf.msg_timeout * 2);
+			error("Waiting for %pI REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
+			      step_id, slurm_conf.msg_timeout * 2);
 			return ESLURMD_PROLOG_FAILED;
 		}
 
 		slurm_cond_timedwait(&conf->prolog_running_cond,
 				     &prolog_mutex, &ts);
-		*first_job_run = !cred_jobid_cached(job_id);
+		*first_job_run = !cred_jobid_cached(step_id->job_id);
 	}
-	debug("Finished wait for job %d's prolog launch request", job_id);
+	debug("Finished wait for %pI prolog launch request", step_id);
 
 	return SLURM_SUCCESS;
 }
