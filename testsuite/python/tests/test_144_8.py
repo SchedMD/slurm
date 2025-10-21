@@ -202,6 +202,29 @@ enforce_binding_parameters = [
             reason="MR !1713: Socket binding fixed in 25.11",
         ),
     ),
+    pytest.param(
+        "case13 - 2tasks_2cpuspertask_6gpu",
+        "The job should have one core on each socket, not over-allocate CPUs.",
+        "-n2 -c2 --gpus=6",
+        "0-1,16-17",
+        "gpu:6(IDX:0-5)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 20647: Fixed CPU over-allocation with enforce-binding when ntasks is specified",
+        ),
+    ),
+    # Same as case13, but without -c2. With enforce-binding, it needs one core on each socket.
+    pytest.param(
+        "case14 - 2tasks_6gpu",
+        "The job should have one core on each socket, not over-allocate CPUs.",
+        "-n2 --gpus=6",
+        "0-1,16-17",
+        "gpu:6(IDX:0-5)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 20647: Fixed CPU over-allocation with enforce-binding when ntasks is specified",
+        ),
+    ),
 ]
 
 

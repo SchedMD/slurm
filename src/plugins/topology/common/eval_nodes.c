@@ -1911,6 +1911,15 @@ extern void eval_nodes_select_cores(topology_eval_t *topo_eval,
 			max_tasks_this_node = alloc_tasks;
 	}
 
+	/* Ensure max_tasks doesn't exceed total job tasks. */
+	if (details_ptr &&
+	    (details_ptr->num_tasks != NO_VAL) &&
+	    (details_ptr->num_tasks != 0) &&
+	    ((max_tasks_this_node == NO_VAL) ||
+	     (details_ptr->num_tasks < max_tasks_this_node))) {
+		max_tasks_this_node = details_ptr->num_tasks;
+	}
+
 	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
 	/*
 	 * _allocate_sc() filters available cpus and cores if the job does
