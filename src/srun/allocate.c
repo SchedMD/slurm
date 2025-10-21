@@ -139,8 +139,8 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg)
 {
 	if (!is_het_job && (pending_job_id.job_id != NO_VAL) &&
 	    (pending_job_id.job_id != msg->job_id)) {
-		error("Ignoring job_complete for job %u because we are %pI",
-		      msg->job_id, &pending_job_id);
+		error("Ignoring job_complete for %pI because we are %pI",
+		      msg, &pending_job_id);
 		return;
 	}
 

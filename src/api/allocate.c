@@ -1375,8 +1375,8 @@ static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
 		if (job_comp_msg->job_id == job_id) {
 			info("Job has been cancelled");
 		} else {
-			verbose("Ignoring SRUN_JOB_COMPLETE message for JobId=%u (our JobId=%u)",
-				job_comp_msg->job_id, job_id);
+			verbose("Ignoring SRUN_JOB_COMPLETE message for %pI (our JobId=%u)",
+				job_comp_msg, job_id);
 			rc = 2;
 		}
 	} else {

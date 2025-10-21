@@ -1143,10 +1143,9 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	}
 
 	if (step_msg->step_id == NO_VAL) {
-		verbose("Complete job %u received",
-			step_msg->job_id);
+		verbose("Complete %pI received", step_msg);
 	} else {
-		verbose("Complete %ps received", step_msg);
+		verbose("Complete %pI %ps received", step_msg, step_msg);
 	}
 
 	if (sls->callback.step_complete)
