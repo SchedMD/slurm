@@ -1371,7 +1371,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req->envc = envcount(req->env);
 
 	slurm_mutex_lock(&prolog_mutex);
-	first_job_run = !cred_jobid_cached(req->step_id.job_id);
+	first_job_run = !cred_job_cached(&req->step_id);
 
 	if (!(req->flags & LAUNCH_NO_ALLOC))
 		errnum = _wait_for_request_launch_prolog(&req->step_id,
@@ -2043,7 +2043,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 	slurm_mutex_lock(&prolog_mutex);
 
-	if (cred_jobid_cached(req->step_id.job_id)) {
+	if (cred_job_cached(&req->step_id)) {
 		/* prolog has already run */
 		slurm_mutex_unlock(&prolog_mutex);
 		_notify_result_rpc_prolog(req, rc);
@@ -2167,7 +2167,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
 	slurm_mutex_lock(&prolog_mutex);
-	first_job_run = !cred_jobid_cached(req->step_id.job_id);
+	first_job_run = !cred_job_cached(&req->step_id);
 
 	/* BlueGene prolog waits for partition boot and is very slow.
 	 * On any system we might need to load environment variables
@@ -4974,7 +4974,7 @@ static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 
 		slurm_cond_timedwait(&conf->prolog_running_cond,
 				     &prolog_mutex, &ts);
-		*first_job_run = !cred_jobid_cached(step_id->job_id);
+		*first_job_run = !cred_job_cached(step_id);
 	}
 	debug("Finished wait for %pI prolog launch request", step_id);
 

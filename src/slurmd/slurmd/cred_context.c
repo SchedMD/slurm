@@ -366,13 +366,13 @@ extern void cred_state_fini(void)
 	FREE_NULL_LIST(cred_state_list);
 }
 
-extern bool cred_jobid_cached(uint32_t jobid)
+extern bool cred_job_cached(slurm_step_id_t *step_id)
 {
 	bool retval = false;
 
 	slurm_mutex_lock(&cred_cache_mutex);
 	_clear_expired_job_states();
-	retval = (_find_job_state(jobid) != NULL);
+	retval = (_find_job_state(step_id->job_id) != NULL);
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return retval;

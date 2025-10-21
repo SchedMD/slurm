@@ -41,7 +41,7 @@ extern void cred_state_fini(void);
 
 extern void save_cred_state(void);
 
-extern bool cred_jobid_cached(uint32_t jobid);
+extern bool cred_job_cached(slurm_step_id_t *step_id);
 
 /*
  * Add a jobid to the credential context without a credential state.
