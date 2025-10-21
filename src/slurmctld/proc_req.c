@@ -4764,7 +4764,8 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(fed_read_lock);
-	if (!_route_msg_to_origin(msg, req_ptr->job_id_str, req_ptr->job_id)) {
+	if (!_route_msg_to_origin(msg, req_ptr->job_id_str,
+				  req_ptr->step_id.job_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4775,15 +4776,16 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	if (req_ptr->job_id_str) {
 		error_code = job_requeue2(msg->auth_uid, req_ptr, msg, false);
 	} else {
-		error_code = job_requeue(msg->auth_uid, req_ptr->job_id, msg,
-					 false, req_ptr->flags);
+		error_code = job_requeue(msg->auth_uid, req_ptr->step_id.job_id,
+					 msg, false, req_ptr->flags);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
 
 	if (error_code) {
 		if (!req_ptr->job_id_str)
-			xstrfmtcat(req_ptr->job_id_str, "%u", req_ptr->job_id);
+			xstrfmtcat(req_ptr->job_id_str, "%u",
+				   req_ptr->step_id.job_id);
 
 		info("%s: Requeue of JobId=%s returned an error: %s",
 		     __func__, req_ptr->job_id_str, slurm_strerror(error_code));

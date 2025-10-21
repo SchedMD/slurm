@@ -1201,7 +1201,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 
 	xassert(conn);
 
-	requeue_req.job_id     = job_id;
+	requeue_req.step_id.job_id = job_id;
 	requeue_req.job_id_str = NULL;
 	requeue_req.flags      = flags;
 
@@ -6005,7 +6005,7 @@ static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
 		xmalloc(sizeof(fed_job_update_info_t));
 
 	job_update_info->type   = FED_JOB_REQUEUE;
-	job_update_info->job_id = req_ptr->job_id;
+	job_update_info->job_id = req_ptr->step_id.job_id;
 	job_update_info->flags  = req_ptr->flags;
 	job_update_info->uid    = uid;
 

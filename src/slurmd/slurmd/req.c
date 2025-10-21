@@ -2426,7 +2426,7 @@ static uint32_t _kill_fail_job(uint32_t job_id)
 static int
 _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 {
-	struct requeue_msg req_msg = {0};
+	requeue_msg_t req_msg = { { 0 } };
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
 
@@ -2438,7 +2438,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 		return _kill_fail_job(job_id);
 
 	/* Try to requeue the job. If that doesn't work, kill the job. */
-	req_msg.job_id = job_id;
+	req_msg.step_id.job_id = job_id;
 	req_msg.job_id_str = NULL;
 	req_msg.flags = JOB_LAUNCH_FAILED;
 	if (slurm_rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)
