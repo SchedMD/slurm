@@ -1531,9 +1531,10 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	buffer = pack_one_job(job_id_msg->sluid, job_id_msg->job_id,
-			      job_id_msg->show_flags, msg->auth_uid,
-			      msg->protocol_version);
+	buffer =
+		pack_one_job(job_id_msg->step_id.sluid,
+			     job_id_msg->step_id.job_id, job_id_msg->show_flags,
+			     msg->auth_uid, msg->protocol_version);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
@@ -2178,11 +2179,11 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_BATCH_SCRIPT for JobId=%u",
-	       job_id_msg->job_id);
+	debug3("Processing RPC details: REQUEST_BATCH_SCRIPT for %pI",
+	       &job_id_msg->step_id);
 	lock_slurmctld(job_read_lock);
 
-	if ((job_ptr = find_job_record(job_id_msg->job_id))) {
+	if ((job_ptr = find_job_record(job_id_msg->step_id.job_id))) {
 		if (!validate_operator(msg->auth_uid) &&
 		    (job_ptr->user_id != msg->auth_uid)) {
 			rc = ESLURM_USER_ID_MISSING;
@@ -4474,7 +4475,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_node_ready(id_msg->job_id, &result);
+	error_code = job_node_ready(id_msg->step_id.job_id, &result);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 
@@ -4486,10 +4487,10 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 			.return_code = result,
 		};
 
-		debug2("%s(%u)=%d %s",
-		       __func__, id_msg->job_id, result, TIME_STR);
+		debug2("%s: %pI result %d in %s",
+		       __func__, &id_msg->step_id, result, TIME_STR);
 
-		if (!_is_prolog_finished(id_msg->job_id))
+		if (!_is_prolog_finished(id_msg->step_id.job_id))
 			(void) send_msg_response(msg, RESPONSE_PROLOG_EXECUTING,
 						 &rc_msg);
 		else

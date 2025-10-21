@@ -420,7 +420,7 @@ extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
 	slurm_msg_t_init(&resp);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.job_id = jobid;
+	msg.step_id.job_id = jobid;
 	req.msg_type = REQUEST_BATCH_SCRIPT;
 	req.data = &msg;
 
@@ -581,7 +581,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 
 	memset(&req, 0, sizeof(req));
 	slurm_msg_t_init(&req_msg);
-	req.job_id       = job_id;
+	req.step_id.job_id = job_id;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
@@ -621,7 +621,7 @@ extern int slurm_load_job_sluid(job_info_msg_t **job_info_msg_pptr,
 
 	memset(&req, 0, sizeof(req));
 	slurm_msg_t_init(&req_msg);
-	req.sluid = sluid;
+	req.step_id.sluid = sluid;
 	req.show_flags = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data = &req;
@@ -874,7 +874,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	}
 
 	memset(&job_msg, 0, sizeof(job_msg));
-	job_msg.job_id     = jobid;
+	job_msg.job_id = jobid;
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
 
@@ -925,7 +925,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	slurm_msg_t_init(&resp);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.job_id   = job_id;
+	msg.step_id.job_id = job_id;
 	req.msg_type = REQUEST_JOB_READY;
 	req.data     = &msg;
 
