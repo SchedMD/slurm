@@ -2090,6 +2090,14 @@ typedef struct slurm_step_layout {
 	uint32_t **tids;	/* host id => task id mapping */
 } slurm_step_layout_t;
 
+#define SLURM_STEP_ID_INITIALIZER \
+{ \
+	.sluid = 0, \
+	.job_id = NO_VAL, \
+	.step_het_comp = NO_VAL, \
+	.step_id = NO_VAL, \
+}
+
 typedef struct slurm_step_id_msg {
 	sluid_t sluid;
 	uint32_t job_id;
