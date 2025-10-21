@@ -103,11 +103,10 @@ take place. Defaults to 300 seconds.
 
 .TP
 \fBPMIxTlsUCX\fR=<\fItl1\fR>[,<\fItl2\fR>...]
-Sets the UCX_TLS variable which restricts the transports to use. This
-environment variable will be set in both slurmstepd and job step environments.
-The accepted values are defined in the UCX documentation and may vary between
-installations. Multiple values can be set and must be separated by commas. If
-not set, UCX tries to use all available transports and selects the best ones
+Sets the UCX_TLS variable which restricts the transports to use. The accepted
+values are defined in the UCX documentation and may vary between installations.
+Multiple values can be set and must be separated by commas.
+If not set, UCX tries to use all available transports and selects the best ones
 according to their performance capabilities and scale.
 Defaults to not being set.
 .IP
