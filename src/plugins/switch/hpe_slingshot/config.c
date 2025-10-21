@@ -1213,6 +1213,8 @@ static bool _parse_network_token(const char *token, bool is_job,
 	size_t hwcoll_siz = sizeof(hwcoll_siz) - 1;
 	char tcs_str[] = "tcs";
 	size_t tcs_siz = sizeof(tcs_str) - 1;
+	char nic_dist_count_str[] = "nic_distribution_count";
+	size_t nic_dist_count_siz = sizeof(nic_dist_count_str) - 1;
 
 	char *arg = xstrchr(token, '=');
 	if (arg != NULL)
@@ -1261,6 +1263,9 @@ static bool _parse_network_token(const char *token, bool is_job,
 	} else if (!xstrncmp(token, tcs_str, tcs_siz)) {
 		if (is_job)
 			return _config_tcs(token, arg, &job->tcs);
+	} else if (!xstrncmp(token, nic_dist_count_str, nic_dist_count_siz)) {
+		if (!(job->nic_dist_cnt = _parse_nic_dist_cnt(token, arg)))
+			return false;
 	} else if (!_config_limits(token, &job->limits)) {
 		return false;
 	}
