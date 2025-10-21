@@ -448,7 +448,7 @@ extern bool cred_revoked(slurm_cred_t *cred)
 	return rc;
 }
 
-extern int cred_begin_expiration(uint32_t jobid)
+extern int cred_begin_expiration(slurm_step_id_t *step_id)
 {
 	job_state_t *j = NULL;
 
@@ -456,7 +456,7 @@ extern int cred_begin_expiration(uint32_t jobid)
 
 	_clear_expired_job_states();
 
-	if (!(j = _find_job_state(jobid))) {
+	if (!(j = _find_job_state(step_id->job_id))) {
 		errno = ESRCH;
 		goto error;
 	}

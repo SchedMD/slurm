@@ -68,7 +68,7 @@ extern bool cred_revoked(slurm_cred_t *cred);
  *  EEXIST if expiration period has already begun for jobid.
  *
  */
-extern int cred_begin_expiration(uint32_t jobid);
+extern int cred_begin_expiration(slurm_step_id_t *step_id);
 
 /*
  * Check to see if this credential is a reissue of an existing credential
