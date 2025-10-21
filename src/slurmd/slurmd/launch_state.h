@@ -39,6 +39,6 @@
 extern void launch_complete_add(slurm_step_id_t *step_id);
 extern void launch_complete_rm(slurm_step_id_t *step_id);
 extern void launch_complete_wait(slurm_step_id_t *step_id);
-extern bool launch_job_test(slurm_step_id_t *step_id, bool batch_step);
+extern bool launch_job_test(slurm_step_id_t *step_id);
 
 #endif
