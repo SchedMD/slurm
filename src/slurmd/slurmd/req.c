@@ -1799,7 +1799,7 @@ static int _notify_slurmctld_prolog_fini(
 {
 	int rc, ret_c;
 	slurm_msg_t req_msg;
-	complete_prolog_msg_t req;
+	prolog_complete_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));

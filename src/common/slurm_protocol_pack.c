@@ -9349,9 +9349,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_complete_prolog_msg(const slurm_msg_t *smsg, buf_t *buffer)
+static void _pack_prolog_complete_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	complete_prolog_msg_t *msg = smsg->data;
+	prolog_complete_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -9364,9 +9364,9 @@ static void _pack_complete_prolog_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_complete_prolog_msg(slurm_msg_t *smsg, buf_t *buffer)
+static int _unpack_prolog_complete_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	complete_prolog_msg_t *msg = xmalloc(sizeof(*msg));
+	prolog_complete_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&msg->step_id, buffer,
@@ -9385,7 +9385,7 @@ static int _unpack_complete_prolog_msg(slurm_msg_t *smsg, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_complete_prolog_msg(msg);
+	slurm_free_prolog_complete_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -13855,7 +13855,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_complete_job_allocation_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
-		_pack_complete_prolog_msg(msg, buffer);
+		_pack_prolog_complete_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		_pack_complete_batch_script_msg(msg, buffer);
@@ -14363,7 +14363,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_complete_job_allocation_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
-		rc = _unpack_complete_prolog_msg(msg, buffer);
+		rc = _unpack_prolog_complete_msg(msg, buffer);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		rc = _unpack_complete_batch_script_msg(msg, buffer);

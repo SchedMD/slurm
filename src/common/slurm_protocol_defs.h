@@ -516,11 +516,11 @@ typedef struct complete_batch_script {
 	uint32_t user_id;	/* user the job runs as */
 } complete_batch_script_msg_t;
 
-typedef struct complete_prolog {
+typedef struct {
 	char *node_name;
 	uint32_t prolog_rc;
 	slurm_step_id_t step_id;
-} complete_prolog_msg_t;
+} prolog_complete_msg_t;
 
 typedef struct step_complete_msg {
 	uint32_t range_first;	/* First node rank within job step's alloc */
@@ -1587,8 +1587,7 @@ extern void slurm_free_complete_job_allocation_msg(
 extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg);
 extern void slurm_free_complete_batch_script_msg(
 		complete_batch_script_msg_t * msg);
-extern void slurm_free_complete_prolog_msg(
-		complete_prolog_msg_t * msg);
+extern void slurm_free_prolog_complete_msg(prolog_complete_msg_t *msg);
 extern void slurm_free_launch_tasks_request_msg(
 		launch_tasks_request_msg_t * msg);
 extern void slurm_free_launch_tasks_response_msg(
