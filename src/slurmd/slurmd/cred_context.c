@@ -163,7 +163,7 @@ static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	job_state_t *j = x;
 
-	pack32(j->step_id.job_id, buffer);
+	pack_step_id(&j->step_id, buffer, protocol_version);
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
@@ -175,7 +175,9 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&j->step_id.job_id, buffer);
+		if (unpack_step_id_members(&j->step_id, buffer,
+					   protocol_version))
+			goto unpack_error;
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
