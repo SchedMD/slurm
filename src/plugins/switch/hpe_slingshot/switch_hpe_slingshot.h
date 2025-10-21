@@ -173,6 +173,7 @@ typedef struct slingshot_config {
 	char *fm_mtls_cert; /* fabric manager client public certificate path */
 	char *fm_mtls_key; /* fabric manager client private key path */
 	char *fm_mtls_url; /* fabric manager REST interface URL for mtls */
+	uint16_t nic_dist_cnt; /* Num of NICs that tasks will distribute over */
 } slingshot_config_t;
 
 /* Values for slingshot_config_t.single_node_vni */
@@ -245,6 +246,7 @@ typedef struct slingshot_stepinfo {
 	uint32_t flags;        /* Configuration flags */
 	uint32_t num_nics;     /* Number of entries in 'nics' array */
 	slingshot_hsn_nic_t *nics; /* HSN NIC information for instant on */
+	uint16_t nic_dist_cnt; /* Num of NICs that tasks will distribute over */
 	slingshot_hwcoll_t *hwcoll; /* HSN HW collectives info */
 } slingshot_stepinfo_t;
 

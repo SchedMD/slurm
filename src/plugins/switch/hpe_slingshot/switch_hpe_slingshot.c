@@ -785,6 +785,7 @@ extern void switch_p_stepinfo_pack(switch_stepinfo_t *switch_job, buf_t *buffer,
 		for (pidx = 0; pidx < stepinfo->num_nics; pidx++) {
 			_pack_hsn_nic(&stepinfo->nics[pidx], buffer);
 		}
+		pack16(stepinfo->nic_dist_cnt, buffer);
 		_pack_hwcoll(stepinfo->hwcoll, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* nothing to pack, pack special "null" version number */
@@ -882,6 +883,7 @@ extern int switch_p_stepinfo_unpack(switch_stepinfo_t **switch_job,
 			if (!_unpack_hsn_nic(&stepinfo->nics[pidx], buffer))
 				goto unpack_error;
 		}
+		safe_unpack16(&stepinfo->nic_dist_cnt, buffer);
 		_unpack_hwcoll(&stepinfo->hwcoll, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&stepinfo->version, buffer);

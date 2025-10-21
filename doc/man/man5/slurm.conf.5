@@ -6101,6 +6101,15 @@ See also \fBfm_mtls_ca\fR and \fBfm_mtls_cert\fR.
 .IP
 
 .TP
+\fBnic_distribution_count\fR=<\fIval\fR>
+The default number of NICs users will evenly distribute their tasks over.
+Users can override this value by using
+\fB\-\-network=nic_distribution_count\fR=<\fIval\fR> option or the
+\fBSLURM_NETWORK=nic_distribution_count\fR=<\fIval\fR> environment variable.
+Defaults to the number of NICs on each node.
+.IP
+
+.TP
 \fBdef_<rsrc>\fR=<\fIval\fR>
 Per-CPU reserved allocation for this resource.
 .IP
