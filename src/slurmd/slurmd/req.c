@@ -1775,8 +1775,8 @@ static void _note_batch_job_finished(uint32_t job_id)
 /* Send notification to slurmctld we are finished running the prolog.
  * This is needed on system that don't use srun to launch their tasks.
  */
-static int _notify_slurmctld_prolog_fini(
-	uint32_t job_id, uint32_t prolog_return_code)
+static int _notify_slurmctld_prolog_fini(slurm_step_id_t *step_id,
+					 uint32_t prolog_return_code)
 {
 	int rc, ret_c;
 	slurm_msg_t req_msg;
@@ -1786,7 +1786,7 @@ static int _notify_slurmctld_prolog_fini(
 	memset(&req, 0, sizeof(req));
 	req.node_name	= conf->node_name;
 	req.prolog_rc	= prolog_return_code;
-	req.step_id.job_id = job_id;
+	req.step_id = *step_id;
 
 	req_msg.msg_type = REQUEST_COMPLETE_PROLOG;
 	req_msg.data	= &req;
@@ -1990,7 +1990,7 @@ static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 	 */
 	while (alt_rc != SLURM_SUCCESS) {
 		if (!(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
-			alt_rc = _notify_slurmctld_prolog_fini(req->step_id.job_id, rc);
+			alt_rc = _notify_slurmctld_prolog_fini(&req->step_id, rc);
 		else
 			alt_rc = SLURM_SUCCESS;
 
