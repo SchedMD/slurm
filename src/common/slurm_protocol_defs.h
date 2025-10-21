@@ -517,9 +517,9 @@ typedef struct complete_batch_script {
 } complete_batch_script_msg_t;
 
 typedef struct complete_prolog {
-	uint32_t job_id;
 	char *node_name;
 	uint32_t prolog_rc;
+	slurm_step_id_t step_id;
 } complete_prolog_msg_t;
 
 typedef struct step_complete_msg {

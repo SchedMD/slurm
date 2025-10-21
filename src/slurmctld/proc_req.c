@@ -1963,13 +1963,13 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 
 	/* init */
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from JobId=%u",
-	       comp_msg->job_id);
+	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from %pI",
+	       &comp_msg->step_id);
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_write_lock);
-	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc,
-				     comp_msg->node_name);
+	error_code = prolog_complete(comp_msg->step_id.job_id,
+				     comp_msg->prolog_rc, comp_msg->node_name);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_write_lock);
 
@@ -1977,11 +1977,11 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 
 	/* return result */
 	if (error_code) {
-		info("%s JobId=%u: %s ",
-		     __func__, comp_msg->job_id, slurm_strerror(error_code));
+		info("%s: %pI: %s ",
+		     __func__, &comp_msg->step_id, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s JobId=%u %s", __func__, comp_msg->job_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }

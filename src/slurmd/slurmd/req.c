@@ -1803,9 +1803,9 @@ static int _notify_slurmctld_prolog_fini(
 
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));
-	req.job_id	= job_id;
 	req.node_name	= conf->node_name;
 	req.prolog_rc	= prolog_return_code;
+	req.step_id.job_id = job_id;
 
 	req_msg.msg_type = REQUEST_COMPLETE_PROLOG;
 	req_msg.data	= &req;
