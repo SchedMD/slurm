@@ -72,7 +72,6 @@ extern int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv);
 extern int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf);
 extern int slurmd_status_to_hv(slurmd_status_t *status, HV *hv);
 extern int hv_to_slurmd_status(HV *hv, slurmd_status_t *status);
-extern int hv_to_step_update_request_msg(HV *hv, step_update_request_msg_t *update_msg);
 
 /********** reservation info conversion functions **********/
 extern int reserve_info_to_hv(reserve_info_t *reserve_info, HV *hv);

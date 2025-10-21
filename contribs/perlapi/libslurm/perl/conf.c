@@ -615,18 +615,3 @@ hv_to_slurmd_status(HV *hv, slurmd_status_t *status)
 
 	return 0;
 }
-
-/*
- * convert perl HV to step_update_request_msg_t
- */
-int
-hv_to_step_update_request_msg(HV *hv, step_update_request_msg_t *update_msg)
-{
-	slurm_init_update_step_msg(update_msg);
-
-	FETCH_FIELD(hv, update_msg, job_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, update_msg, step_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, update_msg, time_limit, uint32_t, TRUE);
-
-	return 0;
-}

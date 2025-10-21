@@ -573,24 +573,6 @@ slurm_print_key_pairs(slurm_t self, FILE *out, list_t *key_pairs, char *title)
 	C_ARGS:
 		out, key_pairs, title
 
-int
-slurm_update_step(slurm_t self, HV *step_msg)
-	PREINIT:
-		step_update_request_msg_t su_msg;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (hv_to_step_update_request_msg(step_msg, &su_msg) < 0) {
-			RETVAL = SLURM_ERROR;
-		} else {
-			RETVAL = slurm_update_step(&su_msg);
-		}
-	OUTPUT:
-		RETVAL
-
 ######################################################################
 #	SLURM JOB CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
