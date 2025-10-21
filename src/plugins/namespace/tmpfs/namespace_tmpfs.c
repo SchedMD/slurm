@@ -916,7 +916,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern bool namespace_p_can_bpf(void)
+extern bool namespace_p_can_bpf(stepd_step_rec_t *step)
 {
 	/* tmpfs plugin has nothing that could make the bpf call fail */
 	return true;

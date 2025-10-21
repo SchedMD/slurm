@@ -1101,8 +1101,24 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern bool namespace_p_can_bpf(void)
+extern bool namespace_p_can_bpf(stepd_step_rec_t *step)
 {
-	//TODO this is just a placeholder, do the actual check.
-	return false;
+	if (plugin_disabled)
+		return true;
+
+	/*
+	 * Only special parts of the extern step are run in the namespace.
+	 * The calls ebpf in the extern step are not in the namespace.
+	 */
+	if (step->step_id.step_id == SLURM_EXTERN_CONT)
+		return true;
+
+	/*
+	 * bpf programs cannot be directly loaded from inside the user namespace
+	 * unless a token is created.
+	 */
+	if (ns_conf->clonensflags & CLONE_NEWUSER)
+		return false;
+
+	return true;
 }

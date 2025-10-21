@@ -56,7 +56,7 @@ typedef struct namespace_ops {
 	int (*namespace_p_stepd_delete)(slurm_step_id_t *step_id);
 	int (*namespace_p_send_stepd)(int fd);
 	int (*namespace_p_recv_stepd)(int fd);
-	bool (*namespace_p_can_bpf)(void);
+	bool (*namespace_p_can_bpf)(stepd_step_rec_t *step);
 } namespace_ops_t;
 
 /*
@@ -276,7 +276,7 @@ extern int namespace_g_recv_stepd(int fd)
 	return rc;
 }
 
-extern bool namespace_g_can_bpf(void)
+extern bool namespace_g_can_bpf(stepd_step_rec_t *step)
 {
 	int i;
 	bool rc = true;
@@ -284,7 +284,7 @@ extern bool namespace_g_can_bpf(void)
 	xassert(g_namespace_context_num >= 0);
 
 	for (i = 0; (i < g_namespace_context_num) && rc; i++)
-		rc = (*(ops[i].namespace_p_can_bpf))();
+		rc = (*(ops[i].namespace_p_can_bpf))(step);
 
 	return rc;
 }
