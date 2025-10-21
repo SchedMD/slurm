@@ -1300,8 +1300,10 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 						      rem_max_cpus,
 						      min_rem_nodes, &maxtasks,
 						      true);
-			if (topo_eval->avail_cpus == 0)
+			if (topo_eval->avail_cpus == 0) {
+				bit_clear(nwt->node_bitmap, i);
 				continue;
+			}
 
 			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += topo_eval->avail_cpus;
