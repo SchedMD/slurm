@@ -5128,17 +5128,16 @@ DNS, this step can be avoided by configuring this option.
 \fBconmgr_max_connections\fR=\fI<connection_count>\fR
 Specify the maximum number of connections to be processed at any given time.
 This does not influence the maximum number of pending connections as that is
-controlled by the kernel. Defaults to 512.
+controlled by the kernel. Increasing this value will increase \fBslurmctld\fR's
+memory footprint. Sites are advised to monitor memory consumption when
+increasing this value. Defaults to 512.
 .IP
 
 .TP
 \fBconmgr_threads\fR=\fI<thread_count>\fR
-The number of process threads in thread pool used to for receiving and
-processing connections on the listening sockets. While increasing this
-value may improve the capacity of conmgr to handle a larger number of
-connections, it does not generally improve the speed at which RPCs are
-processed. It is highly recommended that benchmarking be conducted when
-this value is changed to ensure optimal performance.
+The number of process threads in thread pool used for receiving and
+processing connections on the listening sockets. In most cases, you should
+decrease \fBconmgr_threads\fR to improve scheduling performance.
 .IP
 
 .TP
@@ -5571,13 +5570,16 @@ Equivalent to the now deprecated FastSchedule=2 option.
 \fBconmgr_max_connections\fR=\fI<connection_count>\fR
 Specify the maximum number of connections to be processed at any given time.
 This does not influence the maximum number of pending connections as that is
-controlled by the kernel.
+controlled by the kernel. Increasing this value will increase \fBslurmd\fR's
+memory footprint. Sites are advised to monitor memory consumption when
+increasing this value. Defaults to 150.
 .IP
 
 .TP
 \fBconmgr_threads\fR=\fI<thread_count>\fR
-The number of process threads to use for the receiving connections on the
-listening socket.
+The number of process threads in thread pool used for receiving and
+processing connections on the listening sockets. In most cases you should
+decrease \fBconmgr_threads\fR to improve scheduling performance.
 .IP
 
 .TP
