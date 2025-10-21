@@ -85,9 +85,8 @@ typedef struct job_cancel_info {
 	bool     array_flag;
 /* Note: Either set job_id_str OR job_id */
 	char *   job_id_str;
-	uint32_t job_id;
-	uint32_t step_id;
 	uint16_t sig;
+	slurm_step_id_t step_id;
 	int    * rc;
 	int             *num_active_threads;
 	pthread_mutex_t *num_active_threads_lock;
@@ -719,8 +718,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 				else
 					opt.job_id[j] = 0;
 			} else {
-				cancel_info->job_id = job_ptr->job_id;
-				cancel_info->step_id = opt.step_id[j];
+				cancel_info->step_id.job_id = job_ptr->job_id;
+				cancel_info->step_id.step_id = opt.step_id[j];
 				slurm_thread_create_detached(_cancel_step_id,
 							     cancel_info);
 			}
@@ -899,7 +898,7 @@ _cancel_job_id (void *ci)
 				   cancel_info->array_task_id);
 		} else {
 			xstrfmtcat(cancel_info->job_id_str, "%u",
-				   cancel_info->job_id);
+				   cancel_info->step_id.job_id);
 		}
 	}
 
@@ -978,33 +977,41 @@ _cancel_step_id (void *ci)
 				   cancel_info->array_task_id);
 		} else {
 			xstrfmtcat(cancel_info->job_id_str, "%u",
-				   cancel_info->job_id);
+				   cancel_info->step_id.job_id);
 		}
 	}
 
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		if (cancel_info->sig == SIGKILL) {
 			verbose("Terminating step %s.%u",
-				cancel_info->job_id_str, cancel_info->step_id);
+				cancel_info->job_id_str,
+				cancel_info->step_id.step_id);
 		} else {
 			verbose("Signal %u to step %s.%u",
 				cancel_info->sig,
-				cancel_info->job_id_str, cancel_info->step_id);
+				cancel_info->job_id_str,
+				cancel_info->step_id.step_id);
 		}
 
 		_add_delay();
 		START_TIMER;
 		if ((!sig_set) || opt.ctld)
-			error_code = slurm_kill_job_step(cancel_info->job_id,
-							 cancel_info->step_id,
-							 cancel_info->sig, 0);
+			error_code =
+				slurm_kill_job_step(cancel_info->step_id.job_id,
+						    cancel_info->step_id
+							    .step_id,
+						    cancel_info->sig, 0);
 		else if (cancel_info->sig == SIGKILL)
 			error_code =
-				slurm_terminate_job_step(cancel_info->job_id,
-							 cancel_info->step_id);
+				slurm_terminate_job_step(cancel_info->step_id
+								 .job_id,
+							 cancel_info->step_id
+								 .step_id);
 		else
-			error_code = slurm_signal_job_step(cancel_info->job_id,
-							   cancel_info->step_id,
+			error_code = slurm_signal_job_step(cancel_info->step_id
+								   .job_id,
+							   cancel_info->step_id
+								   .step_id,
 							   cancel_info->sig);
 		END_TIMER;
 		slurm_mutex_lock(&max_delay_lock);
