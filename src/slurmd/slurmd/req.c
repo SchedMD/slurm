@@ -1453,7 +1453,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
-	launch_complete_add(req->step_id.job_id, false);
+	launch_complete_add(&req->step_id, false);
 
 done:
 	FREE_NULL_HOSTLIST(step_hset);
@@ -2251,7 +2251,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("%s: return from _forkexec_slurmstepd: %d", __func__, rc);
 
-	launch_complete_add(req->step_id.job_id, true);
+	launch_complete_add(&req->step_id, true);
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
@@ -4163,7 +4163,7 @@ extern void record_launched_jobs(void)
 		if (fd == -1)
 			continue; /* step gone */
 		close(fd);
-		launch_complete_add(stepd->step_id.job_id,
+		launch_complete_add(&stepd->step_id,
 				    (stepd->step_id.step_id ==
 				     SLURM_BATCH_SCRIPT));
 	}

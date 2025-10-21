@@ -69,14 +69,14 @@ static void _launch_complete_log(char *type, uint32_t job_id)
 #endif
 }
 
-extern void launch_complete_add(uint32_t job_id, bool batch_step)
+extern void launch_complete_add(slurm_step_id_t *step_id, bool batch_step)
 {
 	int j, empty;
 
 	slurm_mutex_lock(&job_state_mutex);
 	empty = -1;
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id) {
+		if (step_id->job_id == active_job_id[j].job_id) {
 			if (batch_step)
 				active_job_id[j].batch_step = batch_step;
 			break;
@@ -84,7 +84,7 @@ extern void launch_complete_add(uint32_t job_id, bool batch_step)
 		if ((active_job_id[j].job_id == 0) && (empty == -1))
 			empty = j;
 	}
-	if (j >= JOB_STATE_CNT || job_id != active_job_id[j].job_id) {
+	if (j >= JOB_STATE_CNT || (step_id->job_id != active_job_id[j].job_id)) {
 		if (empty == -1) /* Discard oldest job */
 			empty = 0;
 		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
@@ -94,7 +94,7 @@ extern void launch_complete_add(uint32_t job_id, bool batch_step)
 		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
 			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = job_id;
+				active_job_id[j].job_id = step_id->job_id;
 				active_job_id[j].batch_step = batch_step;
 				break;
 			}
@@ -102,7 +102,7 @@ extern void launch_complete_add(uint32_t job_id, bool batch_step)
 	}
 	slurm_cond_signal(&job_state_cond);
 	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job add", job_id);
+	_launch_complete_log("job add", step_id->job_id);
 }
 
 /* Test if we have a specific job ID still running */
