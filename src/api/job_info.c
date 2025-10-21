@@ -758,7 +758,8 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		auth_g_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
-		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;
+		*jobid = ((job_id_response_msg_t *) resp_msg.data)
+				 ->step_id.job_id;
 		slurm_free_job_id_response_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:

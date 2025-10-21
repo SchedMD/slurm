@@ -3403,7 +3403,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		    || req->job_pid == stepd_daemon_pid(
 			    fd, stepd->protocol_version)) {
 			slurm_msg_t_copy(&resp_msg, msg);
-			resp.job_id = stepd->step_id.job_id;
+			resp.step_id = stepd->step_id;
 			resp.return_code = SLURM_SUCCESS;
 			found = true;
 			close(fd);
@@ -3415,8 +3415,8 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	FREE_NULL_LIST(steps);
 
 	if (found) {
-		debug3("_rpc_pid2jid: pid(%u) found in %u",
-		       req->job_pid, resp.job_id);
+		debug3("%s: pid(%u) found in %pI",
+		       __func__, req->job_pid, &resp.step_id);
 		resp_msg.address      = msg->address;
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;

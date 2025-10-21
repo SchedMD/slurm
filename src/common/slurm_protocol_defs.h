@@ -981,7 +981,7 @@ typedef struct job_id_request_msg {
 } job_id_request_msg_t;
 
 typedef struct job_id_response_msg {
-	uint32_t job_id;	/* slurm job_id */
+	slurm_step_id_t step_id;
 	uint32_t return_code;	/* slurm return code */
 } job_id_response_msg_t;
 
