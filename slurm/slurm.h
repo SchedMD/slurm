@@ -2471,7 +2471,7 @@ typedef struct job_alloc_info_msg {
 } job_alloc_info_msg_t;
 
 #define SLURM_SELECTED_STEP_INITIALIZER \
-	{ NULL, NO_VAL, NO_VAL, { NO_VAL, NO_VAL, NO_VAL } }
+{ NULL, NO_VAL, NO_VAL, SLURM_STEP_ID_INITIALIZER }
 
 typedef struct {
 	bitstr_t *array_bitmap; /* Set with slurm_array_str2bitmap(). */
