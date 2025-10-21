@@ -398,7 +398,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
 static void _purge_missing_jobs(int node_inx, time_t now);
-static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
+static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 			       char *node_name);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t *size, job_record_t *job_ptr);
@@ -15790,7 +15790,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			error("Orphan %pI %ps reported on node %s",
 			      &reg_msg->step_id[i], &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
+			_abort_job_on_node(&reg_msg->step_id[i], job_ptr,
 					   node_ptr->name);
 		}
 
@@ -15822,7 +15822,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 				info("%s: job nodes %s count %d inx %d",
 				     __func__, job_ptr->nodes,
 				     job_ptr->node_cnt, node_ptr->index);
-				_abort_job_on_node(reg_msg->step_id[i].job_id,
+				_abort_job_on_node(&reg_msg->step_id[i],
 						   job_ptr, node_ptr->name);
 			}
 		}
@@ -15843,7 +15843,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			      job_ptr,
 			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
+			_abort_job_on_node(&reg_msg->step_id[i], job_ptr,
 					   node_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
@@ -16020,13 +16020,13 @@ static void _purge_missing_jobs(int node_inx, time_t now)
  *	multitude of running jobs. Slurmctld will not recognize
  *	these jobs and use this function to kill them - one
  *	agent request per node as they register.
- * IN job_id - id of the job to be killed
+ * IN step_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. job reported
  *		by slurmd on some node, but job records already purged from
  *		slurmctld)
  * IN node_name - name of the node on which the job resides
  */
-static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
+static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 			       char *node_name)
 {
 	agent_arg_t *agent_info;
@@ -16042,14 +16042,15 @@ static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	if (job_ptr)
 		debug("Aborting %pJ on node %s", job_ptr, node_name);
 	else
-		debug("Aborting JobId=%u on node %s", job_id, node_name);
+		debug("Aborting %pI on node %s", step_id, node_name);
 
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req = create_kill_job_msg(job_ptr,
 					       agent_info->protocol_version);
 	} else {
 		kill_req = xmalloc(sizeof(*kill_req));
-		kill_req->step_id.job_id = job_id;
+		kill_req->step_id.job_id = step_id->job_id;
+		kill_req->step_id.sluid = step_id->sluid;
 		kill_req->step_id.step_id = NO_VAL;
 		kill_req->step_id.step_het_comp = NO_VAL;
 		kill_req->time = time(NULL);
