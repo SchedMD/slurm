@@ -143,7 +143,7 @@ extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
 	slurm_msg_t_init(&msg);
 	memset(&req, 0, sizeof(req));
 
-	req.job_id = jobid;
+	req.step_id.job_id = jobid;
 	req.return_code = rc;
 	req.node_name = conf->node_name;
 

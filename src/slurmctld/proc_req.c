@@ -1830,14 +1830,14 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	log_flag(ROUTE, "%s: node_name = %s, JobId=%u",
-		 __func__, epilog_msg->node_name, epilog_msg->job_id);
+	log_flag(ROUTE, "%s: node_name = %s, %pI",
+		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
-				epilog_msg->return_code))
+	if (job_epilog_complete(epilog_msg->step_id.job_id,
+				epilog_msg->node_name, epilog_msg->return_code))
 		run_scheduler = true;
 
-	job_ptr = find_job_record(epilog_msg->job_id);
+	job_ptr = find_job_record(epilog_msg->step_id.job_id);
 
 	if (epilog_msg->return_code)
 		error("%s: epilog error %pJ Node=%s Err=%s %s",

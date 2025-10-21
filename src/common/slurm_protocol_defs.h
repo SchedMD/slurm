@@ -538,7 +538,7 @@ typedef struct signal_tasks_msg {
 } signal_tasks_msg_t;
 
 typedef struct epilog_complete_msg {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	uint32_t return_code;
 	char    *node_name;
 } epilog_complete_msg_t;
