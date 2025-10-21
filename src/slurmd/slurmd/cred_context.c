@@ -117,9 +117,10 @@ static int _list_find_job_state(void *x, void *key)
 	return 0;
 }
 
-static job_state_t *_find_job_state(uint32_t jobid)
+static job_state_t *_find_job_state(slurm_step_id_t *step_id)
 {
-	return list_find_first(cred_job_list, _list_find_job_state, &jobid);
+	return list_find_first(cred_job_list, _list_find_job_state,
+			       &step_id->job_id);
 }
 
 static void _clear_expired_job_states(void)
@@ -372,7 +373,7 @@ extern bool cred_job_cached(slurm_step_id_t *step_id)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 	_clear_expired_job_states();
-	retval = (_find_job_state(step_id->job_id) != NULL);
+	retval = (_find_job_state(step_id) != NULL);
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return retval;
@@ -382,7 +383,7 @@ extern int cred_insert_job(slurm_step_id_t *step_id)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 	_clear_expired_job_states();
-	if (_find_job_state(step_id->job_id)) {
+	if (_find_job_state(step_id)) {
 		debug2("%s: we already have a job state for %pI",
 		       __func__, step_id);
 	} else {
@@ -402,7 +403,7 @@ extern int cred_revoke(slurm_step_id_t *step_id, time_t time, time_t start_time)
 
 	_clear_expired_job_states();
 
-	if (!(j = _find_job_state(step_id->job_id))) {
+	if (!(j = _find_job_state(step_id))) {
 		/*
 		 * This node has not yet seen a job step for this job.
 		 * Insert a job state object so that we can revoke any future
@@ -438,7 +439,7 @@ extern bool cred_revoked(slurm_cred_t *cred)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	j = _find_job_state(cred->arg->step_id.job_id);
+	j = _find_job_state(&cred->arg->step_id);
 
 	if (j && (j->revoked != (time_t) 0) && (cred->ctime <= j->revoked))
 		rc = true;
@@ -456,7 +457,7 @@ extern int cred_begin_expiration(slurm_step_id_t *step_id)
 
 	_clear_expired_job_states();
 
-	if (!(j = _find_job_state(step_id->job_id))) {
+	if (!(j = _find_job_state(step_id))) {
 		errno = ESRCH;
 		goto error;
 	}
@@ -484,7 +485,7 @@ extern void cred_handle_reissue(slurm_cred_t *cred, bool locked)
 	if (!locked)
 		slurm_mutex_lock(&cred_cache_mutex);
 
-	j = _find_job_state(cred->arg->step_id.job_id);
+	j = _find_job_state(&cred->arg->step_id);
 
 	if (j && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
@@ -502,7 +503,7 @@ static bool _credential_revoked(slurm_cred_t *cred)
 {
 	job_state_t *j = NULL;
 
-	if (!(j = _find_job_state(cred->arg->step_id.job_id))) {
+	if (!(j = _find_job_state(&cred->arg->step_id))) {
 		j = _job_state_create(&cred->arg->step_id);
 		list_append(cred_job_list, j);
 		return false;
