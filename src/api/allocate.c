@@ -89,7 +89,7 @@ typedef struct {
 static int _handle_rc_msg(slurm_msg_t *msg);
 static listen_t *_create_allocation_response_socket(void);
 static void _destroy_allocation_response_socket(listen_t *listen);
-static void _wait_for_allocation_response(uint32_t job_id,
+static void _wait_for_allocation_response(slurm_step_id_t *step_id,
 					  const listen_t *listen,
 					  uint16_t msg_type, int timeout,
 					  void **resp);
@@ -256,9 +256,10 @@ resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 			slurm_free_resource_allocation_response_msg(resp);
 			if (pending_callback != NULL)
 				pending_callback(&resp->step_id);
-			_wait_for_allocation_response(job_id, listen,
-						RESPONSE_RESOURCE_ALLOCATION,
-						timeout, (void **) &resp);
+			_wait_for_allocation_response(
+				&resp->step_id, listen,
+				RESPONSE_RESOURCE_ALLOCATION, timeout,
+				(void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			   the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
@@ -572,9 +573,8 @@ list_t *slurm_allocate_het_job_blocking(
 			if (pending_callback != NULL)
 				pending_callback(&step_id);
 			_wait_for_allocation_response(
-				step_id.job_id, listen,
-				RESPONSE_HET_JOB_ALLOCATION, timeout,
-				(void **) &resp);
+				&step_id, listen, RESPONSE_HET_JOB_ALLOCATION,
+				timeout, (void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			 * the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
@@ -1479,21 +1479,21 @@ static int _wait_for_alloc_rpc(const listen_t *listen, int sleep_time)
 	return 0;
 }
 
-static void _wait_for_allocation_response(uint32_t job_id,
+static void _wait_for_allocation_response(slurm_step_id_t *step_id,
 					  const listen_t *listen,
 					  uint16_t msg_type, int timeout,
 					  void **resp)
 {
 	int errnum, rc;
 
-	info("job %u queued and waiting for resources", job_id);
+	info("job %u queued and waiting for resources", step_id->job_id);
 	*resp = NULL;
 	while (true) {
 		if ((rc = _wait_for_alloc_rpc(listen, timeout)) != 1)
 			break;
 
 		if ((rc = _accept_msg_connection(listen->fd, msg_type, resp,
-						 job_id)) != 2)
+						 step_id->job_id)) != 2)
 			break;
 	}
 	if (rc <= 0) {
@@ -1504,12 +1504,14 @@ static void _wait_for_allocation_response(uint32_t job_id,
 		 * has been granted.
 		 */
 		if (msg_type == RESPONSE_RESOURCE_ALLOCATION) {
-			if (slurm_allocation_lookup(job_id,
-					(resource_allocation_response_msg_t **)
-					resp) >= 0)
+			if (slurm_allocation_lookup(
+				    step_id->job_id,
+				    (resource_allocation_response_msg_t **)
+					    resp) >= 0)
 				return;
 		} else if (msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-			if (slurm_het_job_lookup(job_id, (list_t **) resp) >= 0)
+			if (slurm_het_job_lookup(step_id->job_id,
+						 (list_t **) resp) >= 0)
 				return;
 		} else {
 			error("%s: Invalid msg_type (%u)", __func__, msg_type);
@@ -1520,11 +1522,11 @@ static void _wait_for_allocation_response(uint32_t job_id,
 			errno = errnum;
 			return;
 		} else {
-			debug3("Unable to confirm allocation for job %u: %m",
-			       job_id);
+			debug3("Unable to confirm allocation for %pI: %m",
+			       step_id);
 			return;
 		}
 	}
-	info("job %u has been allocated resources", job_id);
+	info("job %u has been allocated resources", step_id->job_id);
 	return;
 }
