@@ -4214,7 +4214,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* Defer suspend until job prolog and launch complete */
 	if (req->op == SUSPEND_JOB)
-		launch_complete_wait(req->step_id.job_id);
+		launch_complete_wait(&req->step_id);
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume

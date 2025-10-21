@@ -144,7 +144,7 @@ extern void launch_complete_rm(slurm_step_id_t *step_id)
 	_launch_complete_log("job remove", step_id->job_id);
 }
 
-extern void launch_complete_wait(uint32_t job_id)
+extern void launch_complete_wait(slurm_step_id_t *step_id)
 {
 	int j, empty;
 	time_t start = time(NULL);
@@ -155,7 +155,7 @@ extern void launch_complete_wait(uint32_t job_id)
 	while (true) {
 		empty = -1;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (job_id == active_job_id[j].job_id)
+			if (step_id->job_id == active_job_id[j].job_id)
 				break;
 			if ((active_job_id[j].job_id == 0) && (empty == -1))
 				empty = j;
@@ -163,8 +163,8 @@ extern void launch_complete_wait(uint32_t job_id)
 		if (j < JOB_STATE_CNT) /* Found job, ready to return */
 			break;
 		if (difftime(time(NULL), start) <= 9) { /* Retry for 9 secs */
-			debug2("wait for launch of job %u before suspending it",
-			       job_id);
+			debug2("wait for launch of %pI before suspending it",
+			       step_id);
 			gettimeofday(&now, NULL);
 			timeout.tv_sec = now.tv_sec + 1;
 			timeout.tv_nsec = now.tv_usec * 1000;
@@ -181,12 +181,12 @@ extern void launch_complete_wait(uint32_t job_id)
 		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
 			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = job_id;
+				active_job_id[j].job_id = step_id->job_id;
 				break;
 			}
 		}
 		break;
 	}
 	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job wait", job_id);
+	_launch_complete_log("job wait", step_id->job_id);
 }
