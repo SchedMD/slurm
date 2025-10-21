@@ -346,6 +346,14 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 		data_set_string(data_key_set(record, "account"),
 				job_ptr->account);
 
+	if (job_ptr->admin_comment)
+		data_set_string(data_key_set(record, "admin_comment"),
+				job_ptr->admin_comment);
+
+	if (job_ptr->comment)
+		data_set_string(data_key_set(record, "comment"),
+				job_ptr->comment);
+
 	if (send_script && (script = get_job_script(job_ptr))) {
 		data_set_string(data_key_set(record, "script"),
 				get_buf_data(script));
