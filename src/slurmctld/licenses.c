@@ -1769,6 +1769,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	static bool first_run = 1;
 	static slurmdb_tres_rec_t tres_req;
 	int tres_pos;
+	bool has_mode3 = false;
 
 	/* Init all the license TRES to 0 */
 	if (tres_req_cnt) {
@@ -1841,6 +1842,15 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 		license_entry->id.lic_id = match->id.lic_id;
 		license_entry->id.hres_id = match->id.hres_id;
 		license_entry->mode = match->mode;
+
+		if (license_entry->mode == HRES_MODE_3) {
+			if (has_mode3) {
+				debug("Only one HRes Mode 3 can be used per job");
+				*valid = false;
+				break;
+			}
+			has_mode3 = true;
+		}
 
 		if (tres_req_cnt) {
 			tres_req.name = license_entry->name;
