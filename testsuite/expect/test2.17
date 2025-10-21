@@ -195,4 +195,10 @@ set_part_val DenyQos invalid_qos 1
 #
 # Check that DenyQos is still set to previous set name
 #
-check_part DenyQos $qos_name
+if {[get_version] >= "25.11"} {
+	# Ticket 22792: Properly handling/ignoring nonexistent QOS
+	set expected_qos $qos_name
+} else {
+	set expected_qos invalid_qos
+}
+check_part DenyQos $expected_qos
