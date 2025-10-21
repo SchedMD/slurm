@@ -3920,12 +3920,12 @@ extern int slurm_complete_job(uint32_t job_id, uint32_t job_return_code);
  *	calls slurm_complete_job_step() after verifying that all
  *	nodes in the job step no longer have running tasks from the job
  *	step.  (May take over 35 seconds to return.)
- * IN job_id  - the job's id
- * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
+ * IN step_id.job_id  - the job's id
+ * IN step_id.step_id - the job step's id - use SLURM_BATCH_SCRIPT
  *              to terminate a job's batch script
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_terminate_job_step(uint32_t job_id, uint32_t step_id);
+extern int slurm_terminate_job_step(slurm_step_id_t *step_id);
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS

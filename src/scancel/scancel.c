@@ -1003,10 +1003,7 @@ _cancel_step_id (void *ci)
 						    cancel_info->sig, 0);
 		else if (cancel_info->sig == SIGKILL)
 			error_code =
-				slurm_terminate_job_step(cancel_info->step_id
-								 .job_id,
-							 cancel_info->step_id
-								 .step_id);
+				slurm_terminate_job_step(&cancel_info->step_id);
 		else
 			error_code = slurm_signal_job_step(cancel_info->step_id
 								   .job_id,

@@ -298,8 +298,7 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *step)
 		 * step, the step gets terminated in all other nodes.
 		 */
 		if (step->oom_kill_step) {
-			slurm_terminate_job_step(step->step_id.job_id,
-						 step->step_id.step_id);
+			slurm_terminate_job_step(&step->step_id);
 		}
 		rc = ENOMEM;
 	}
