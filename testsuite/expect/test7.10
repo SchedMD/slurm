@@ -30,12 +30,20 @@ source ./globals
 
 set ld_preload  "ld_preload"
 set output_file "$test_dir/output.log"
+set conf_path [get_conf_path]
+set ca_cert_path "$conf_path/ca_cert.pem"
+set using_tls false
 
 proc cleanup {} {
 	global bin_rm ld_preload test_name sacctmgr testsuite_user
+	global orig_ca_owner ca_cert_path using_tls
 
 	run_command -none "$sacctmgr -vi delete user name=$testsuite_user"
 	run_command -none "$sacctmgr -vi delete account name=$test_name"
+
+	if {$using_tls} {
+		run_command -user "root" "chown $orig_ca_owner $ca_cert_path"
+	}
 
 	exec $bin_rm -f ${ld_preload}.c ${ld_preload}.lo ${ld_preload}.so
 }
@@ -43,6 +51,16 @@ proc cleanup {} {
 if {[param_contains [get_config_param "AuthType"] "*none"]} {
 	skip "This test is incompatible with auth/none"
 }
+
+if {[param_contains [get_config_param "TLSType"] "*s2n"]} {
+    if {![file exists $ca_cert_path]} {
+        skip "TLSType=tls/s2n is configured, but ca_cert.pem needs to exist in the default location for this test. Is it set with 'TLSParameters=ca_cert_file=<path>'?"
+    }
+
+    set orig_ca_owner [file attributes $ca_cert_path -owner]
+    set using_tls true
+}
+
 
 if {![check_run_as_user $testsuite_user]} {
 	skip "This test needs testsuite_user configured in globals.local"
@@ -86,9 +104,17 @@ subtest {[regexp "(uid=0)" $output]} "Verify that user namespaces allows uid 0"
 #
 # Submit a job while faking uid=0; verify slurm doesn't submit the job as actual root
 #
+if {$using_tls} {
+	run_command -fail -user "root" "chown $testsuite_user $ca_cert_path"
+}
+
 set output [run_command_output -user $testsuite_user "$bin_unshare -ru $srun $bin_id"]
 subtest {[regexp $testsuite_user $output]} "Verify slurm user is job user"
 subtest {![regexp "(uid=0)" $output]} "Verify slurm user isn't able to escalate to root"
+
+if {$using_tls} {
+	run_command -fail -user "root"  "chown $orig_ca_owner $ca_cert_path"
+}
 
 #
 # Submit a job that fakes uid=0; verify job is not actually root
