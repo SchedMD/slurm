@@ -255,7 +255,6 @@ test4.3    Test partition information, both long and short (--long and
 	   --summarize options) and partition filtering (--partition option).
 test4.4    Test node information, both regular and long (--Node, --long,
 	   and --exact options).
-test4.5    Test sinfo node information filtering (--state and --nodes options).
 test4.6    Test sinfo iteration (--iterate option).
 test4.7    Confirm that sinfo verbose option works (--verbose option).
 test4.8    Check sinfo output without header (--noheader option).
@@ -852,6 +851,7 @@ test_111_#   Testing of sinfo options.
 test_111_1   /commands/sinfo/test_--help.py
 test_111_2   /commands/sinfo/test_--usage.py
 test_111_3   /commands/sinfo/test_--json.py
+test_111_4   Test --state and --nodes filtering
 
 test_112_#   Testing of slurmrestd options.
 ===========================================
