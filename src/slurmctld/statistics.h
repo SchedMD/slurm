@@ -94,6 +94,8 @@ typedef struct partition_statistics {
 	uint16_t jobs_cpus_alloc;
 	uint32_t jobs_deadline;
 	uint32_t jobs_failed;
+	uint32_t jobs_fed_requeued;
+	uint32_t jobs_finished;
 	uint32_t jobs_hold;
 	uint16_t jobs_max_job_nodes; /* max of max num of nodes requested among
 				      * all pending jobs in the partition. */
@@ -108,8 +110,12 @@ typedef struct partition_statistics {
 	uint32_t jobs_powerup_node;
 	uint32_t jobs_preempted;
 	uint32_t jobs_requeued;
+	uint32_t jobs_resizing;
+	uint32_t jobs_revoked;
 	uint32_t jobs_running;
+	uint32_t jobs_signaling;
 	uint32_t jobs_stageout;
+	uint32_t jobs_started;
 	uint32_t jobs_suspended;
 	uint32_t jobs_timeout;
 	uint32_t jobs_wait_part_node_limit;
@@ -199,6 +205,8 @@ typedef struct jobs_statistics {
 	uint16_t cpus_alloc;
 	uint32_t deadline;
 	uint32_t failed;
+	uint32_t fed_requeued;
+	uint32_t finished;
 	uint32_t hold;
 	uint32_t job_cnt;
 	list_t *jobs;
@@ -210,8 +218,12 @@ typedef struct jobs_statistics {
 	uint32_t powerup_node;
 	uint32_t preempted;
 	uint32_t requeued;
+	uint32_t resizing;
+	uint32_t revoked;
 	uint32_t running;
+	uint32_t signaling;
 	uint32_t stageout;
+	uint32_t started;
 	uint32_t suspended;
 	uint32_t timeout;
 } jobs_stats_t;

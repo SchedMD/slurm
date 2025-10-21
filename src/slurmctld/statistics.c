@@ -315,12 +315,24 @@ static int _statistics_part_aggregate_job(void *x, void *arg)
 		ps->jobs_completing++;
 	if (IS_JOB_CONFIGURING(j))
 		ps->jobs_configuring++;
+	if (IS_JOB_FED_REQUEUED(j))
+		ps->jobs_fed_requeued++;
+	if (IS_JOB_FINISHED(j))
+		ps->jobs_finished++;
 	if (IS_JOB_POWER_UP_NODE(j))
 		ps->jobs_powerup_node++;
 	if (IS_JOB_REQUEUED(j))
 		ps->jobs_requeued++;
+	if (IS_JOB_RESIZING(j))
+		ps->jobs_resizing++;
+	if (IS_JOB_REVOKED(j))
+		ps->jobs_revoked++;
+	if (IS_JOB_SIGNALING(j))
+		ps->jobs_signaling++;
 	if (IS_JOB_STAGE_OUT(j))
 		ps->jobs_stageout++;
+	if (IS_JOB_STARTED(j))
+		ps->jobs_started++;
 
 	/* Custom metric for Slinky */
 	if (j->state_reason & WAIT_PART_NODE_LIMIT)
@@ -501,12 +513,24 @@ static int _fill_jobs_statistics(void *x, void *arg)
 		js->completing++;
 	if (IS_JOB_CONFIGURING(j))
 		js->configuring++;
+	if (IS_JOB_FED_REQUEUED(j))
+		js->fed_requeued++;
+	if (IS_JOB_FINISHED(j))
+		js->finished++;
 	if (IS_JOB_POWER_UP_NODE(j))
 		js->powerup_node++;
 	if (IS_JOB_REQUEUED(j))
 		js->requeued++;
+	if (IS_JOB_RESIZING(j))
+		js->resizing++;
+	if (IS_JOB_REVOKED(j))
+		js->revoked++;
+	if (IS_JOB_SIGNALING(j))
+		js->signaling++;
 	if (IS_JOB_STAGE_OUT(j))
 		js->stageout++;
+	if (IS_JOB_STARTED(j))
+		js->started++;
 
 	/* Store individual records */
 	new->job_id = j->job_id;
@@ -580,12 +604,24 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 		s->completing++;
 	if (IS_JOB_CONFIGURING(j))
 		s->configuring++;
+	if (IS_JOB_FED_REQUEUED(j))
+		s->fed_requeued++;
+	if (IS_JOB_FINISHED(j))
+		s->finished++;
 	if (IS_JOB_POWER_UP_NODE(j))
 		s->powerup_node++;
 	if (IS_JOB_REQUEUED(j))
 		s->requeued++;
+	if (IS_JOB_RESIZING(j))
+		s->resizing++;
+	if (IS_JOB_REVOKED(j))
+		s->revoked++;
+	if (IS_JOB_SIGNALING(j))
+		s->signaling++;
 	if (IS_JOB_STAGE_OUT(j))
 		s->stageout++;
+	if (IS_JOB_STARTED(j))
+		s->started++;
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		s->cpus_alloc += j->cpus_alloc;
