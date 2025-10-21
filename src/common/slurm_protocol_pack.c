@@ -8656,6 +8656,7 @@ static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 	int i = 0;
 	dynamic_plugin_data_t *tmp_switch = NULL;
 	launch_tasks_request_msg_t *msg = xmalloc(sizeof(*msg));
+	slurm_cred_arg_t *cred_arg = NULL;
 
 	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
@@ -9130,6 +9131,10 @@ static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 				goto unpack_error;
 		}
 	}
+
+	cred_arg = slurm_cred_get_args(msg->cred);
+	msg->step_id = cred_arg->step_id;
+	slurm_cred_unlock_args(msg->cred);
 
 	smsg->data = msg;
 	return SLURM_SUCCESS;
