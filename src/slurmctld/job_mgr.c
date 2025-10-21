@@ -15593,6 +15593,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->job_gid = job_ptr->group_id;
 	msg->start_time = job_ptr->start_time;
 	msg->step_id.job_id = job_ptr->job_id;
+	msg->step_id.sluid = job_ptr->db_index;
 	msg->step_id.step_het_comp = NO_VAL;
 	msg->step_id.step_id = NO_VAL;
 	msg->spank_job_env = xduparray(job_ptr->spank_job_env_size,
