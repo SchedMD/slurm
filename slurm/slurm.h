@@ -247,6 +247,21 @@ typedef struct {
 
 #define SLURM_BIT(offset) ((uint64_t)1 << offset)
 
+#define SLURM_STEP_ID_INITIALIZER \
+{ \
+	.sluid = 0, \
+	.job_id = NO_VAL, \
+	.step_het_comp = NO_VAL, \
+	.step_id = NO_VAL, \
+}
+
+typedef struct {
+	sluid_t sluid;
+	uint32_t job_id;
+	uint32_t step_het_comp;
+	uint32_t step_id;
+} slurm_step_id_t;
+
 /* last entry must be JOB_END, keep in sync with job_state_string and
  *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS
  *	below.  */
@@ -2089,21 +2104,6 @@ typedef struct slurm_step_layout {
 	 * the tasks array. */
 	uint32_t **tids;	/* host id => task id mapping */
 } slurm_step_layout_t;
-
-#define SLURM_STEP_ID_INITIALIZER \
-{ \
-	.sluid = 0, \
-	.job_id = NO_VAL, \
-	.step_het_comp = NO_VAL, \
-	.step_id = NO_VAL, \
-}
-
-typedef struct slurm_step_id_msg {
-	sluid_t sluid;
-	uint32_t job_id;
-	uint32_t step_het_comp;
-	uint32_t step_id;
-} slurm_step_id_t;
 
 typedef struct slurm_step_io_fds {
 	struct {
