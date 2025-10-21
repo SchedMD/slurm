@@ -54,8 +54,8 @@ typedef struct {
 typedef struct {
 	time_t ctime;		/* Time that this entry was created         */
 	time_t expiration;	/* Time at which credentials can be purged  */
-	uint32_t jobid;		/* Slurm job id for this credential         */
 	time_t revoked;		/* Time at which credentials were revoked   */
+	slurm_step_id_t step_id;
 } job_state_t;
 
 static pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -89,7 +89,7 @@ static job_state_t *_job_state_create(slurm_step_id_t *step_id)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	j->jobid = step_id->job_id;
+	j->step_id = *step_id;
 	j->revoked = (time_t) 0;
 	j->ctime = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
@@ -112,7 +112,7 @@ static int _list_find_job_state(void *x, void *key)
 	job_state_t *j = x;
 	slurm_step_id_t *step_id = key;
 
-	if (j->jobid == step_id->job_id)
+	if (j->step_id.job_id == step_id->job_id)
 		return 1;
 	return 0;
 }
@@ -163,7 +163,7 @@ static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	job_state_t *j = x;
 
-	pack32(j->jobid, buffer);
+	pack32(j->step_id.job_id, buffer);
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
@@ -175,22 +175,22 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&j->jobid, buffer);
+		safe_unpack32(&j->step_id.job_id, buffer);
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&j->jobid, buffer);
+		safe_unpack32(&j->step_id.job_id, buffer);
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
 	}
 
-	debug3("cred_unpack: job %u ctime:%ld revoked:%ld expires:%ld",
-	       j->jobid, j->ctime, j->revoked, j->expiration);
+	debug3("cred_unpack: %pI ctime:%ld revoked:%ld expires:%ld",
+	       &j->step_id, j->ctime, j->revoked, j->expiration);
 
 	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
-		warning("revoke on job %u has no expiration", j->jobid);
+		warning("revoke on %pI has no expiration", &j->step_id);
 		j->expiration = j->revoked + 600;
 	}
 
@@ -468,8 +468,8 @@ extern int cred_begin_expiration(slurm_step_id_t *step_id)
 	}
 
 	j->expiration = time(NULL) + cred_expiration();
-	debug2("set revoke expiration for jobid %u to %ld UTS",
-	       j->jobid, j->expiration);
+	debug2("set revoke expiration for %pI to %ld UTS",
+	       &j->step_id, j->expiration);
 	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_SUCCESS;
 
@@ -491,7 +491,7 @@ extern void cred_handle_reissue(slurm_cred_t *cred, bool locked)
 		/* The credential has been reissued.  Purge the
 		 * old record so that "cred" will look like a new
 		 * credential to any ensuing commands. */
-		info("reissued job credential for job %u", j->jobid);
+		info("reissued job credential for %pI", &j->step_id);
 		list_delete_ptr(cred_job_list, j);
 	}
 
@@ -510,8 +510,8 @@ static bool _credential_revoked(slurm_cred_t *cred)
 	}
 
 	if (cred->ctime <= j->revoked) {
-		debug3("cred for %u revoked. expires at %ld UTS",
-		       j->jobid, j->expiration);
+		debug3("cred for %pI revoked. expires at %ld UTS",
+		       &j->step_id, j->expiration);
 		return true;
 	}
 
