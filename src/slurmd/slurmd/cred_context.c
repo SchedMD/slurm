@@ -85,11 +85,11 @@ static cred_state_t *_cred_state_create(slurm_cred_t *cred)
 	return s;
 }
 
-static job_state_t *_job_state_create(uint32_t jobid)
+static job_state_t *_job_state_create(slurm_step_id_t *step_id)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	j->jobid = jobid;
+	j->jobid = step_id->job_id;
 	j->revoked = (time_t) 0;
 	j->ctime = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
@@ -386,7 +386,7 @@ extern int cred_insert_job(slurm_step_id_t *step_id)
 		debug2("%s: we already have a job state for %pI",
 		       __func__, step_id);
 	} else {
-		job_state_t *j = _job_state_create(step_id->job_id);
+		job_state_t *j = _job_state_create(step_id);
 		list_append(cred_job_list, j);
 	}
 	slurm_mutex_unlock(&cred_cache_mutex);
@@ -408,7 +408,7 @@ extern int cred_revoke(slurm_step_id_t *step_id, time_t time, time_t start_time)
 		 * Insert a job state object so that we can revoke any future
 		 * credentials.
 		 */
-		j = _job_state_create(step_id->job_id);
+		j = _job_state_create(step_id);
 		list_append(cred_job_list, j);
 	}
 	if (j->revoked) {
@@ -503,7 +503,7 @@ static bool _credential_revoked(slurm_cred_t *cred)
 	job_state_t *j = NULL;
 
 	if (!(j = _find_job_state(cred->arg->step_id.job_id))) {
-		j = _job_state_create(cred->arg->step_id.job_id);
+		j = _job_state_create(&cred->arg->step_id);
 		list_append(cred_job_list, j);
 		return false;
 	}
