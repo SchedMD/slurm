@@ -2620,18 +2620,16 @@ static int _step_alloc_type(gres_state_t *gres_state_job,
 	return 0;
 }
 
-extern int gres_stepmgr_step_alloc(
-	list_t *step_gres_list,
-	list_t **step_gres_list_alloc,
-	list_t *job_gres_list,
-	int node_offset, bool first_step_node,
-	uint16_t tasks_on_node, uint32_t rem_nodes,
-	uint32_t job_id, uint32_t step_id,
-	bool decr_job_alloc,
-	uint64_t *step_node_mem_alloc,
-	list_t *node_gres_list,
-	bitstr_t *core_bitmap,
-	int *total_gres_cpu_cnt)
+extern int gres_stepmgr_step_alloc(list_t *step_gres_list,
+				   list_t **step_gres_list_alloc,
+				   list_t *job_gres_list, int node_offset,
+				   bool first_step_node, uint16_t tasks_on_node,
+				   uint32_t rem_nodes, job_record_t *job_ptr,
+				   uint32_t step_id, bool decr_job_alloc,
+				   uint64_t *step_node_mem_alloc,
+				   list_t *node_gres_list,
+				   bitstr_t *core_bitmap,
+				   int *total_gres_cpu_cnt)
 {
 	int rc = SLURM_SUCCESS;
 	list_itr_t *step_gres_iter;
@@ -2641,8 +2639,8 @@ extern int gres_stepmgr_step_alloc(
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
 	if (job_gres_list == NULL) {
-		error("%s: step allocates GRES, but job %u has none",
-		      __func__, job_id);
+		error("%s: step allocates GRES, but %pJ has none",
+		      __func__, job_ptr);
 		return ESLURM_INSUFFICIENT_GRES;
 	}
 
@@ -2652,7 +2650,8 @@ extern int gres_stepmgr_step_alloc(
 	xassert(step_node_mem_alloc);
 	*step_node_mem_alloc = 0;
 
-	tmp_step_id.job_id = job_id;
+	tmp_step_id.job_id = job_ptr->job_id;
+	tmp_step_id.sluid = job_ptr->db_index;
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
 

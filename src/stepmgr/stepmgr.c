@@ -2415,18 +2415,17 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		bit_and_not(unused_core_bitmap,
 			    job_resrcs_ptr->core_bitmap_used);
 		rc = gres_stepmgr_step_alloc(step_ptr->gres_list_req,
-					  &step_ptr->gres_list_alloc,
-					  job_ptr->gres_list_alloc,
-					  job_node_inx, first_step_node,
-					  task_cnt,
-					  rem_nodes, job_ptr->job_id,
-					  step_ptr->step_id.step_id,
-					  !(step_ptr->flags &
-					    SSF_OVERLAP_FORCE),
-					  &gres_step_node_mem_alloc,
-					  node_ptr->gres_list,
-					  unused_core_bitmap,
-					  &gres_cpus_alloc);
+					     &step_ptr->gres_list_alloc,
+					     job_ptr->gres_list_alloc,
+					     job_node_inx, first_step_node,
+					     task_cnt, rem_nodes, job_ptr,
+					     step_ptr->step_id.step_id,
+					     !(step_ptr->flags &
+					       SSF_OVERLAP_FORCE),
+					     &gres_step_node_mem_alloc,
+					     node_ptr->gres_list,
+					     unused_core_bitmap,
+					     &gres_cpus_alloc);
 		FREE_NULL_BITMAP(unused_core_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
