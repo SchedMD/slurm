@@ -701,6 +701,10 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->topology_str);
 			node_ptr->topology_str = node_state_rec->topology_str;
 			node_state_rec->topology_str = NULL;
+			xfree(node_ptr->topology_orig_str);
+			node_ptr->topology_orig_str =
+				node_state_rec->topology_orig_str;
+			node_state_rec->topology_orig_str = NULL;
 		}
 
 		if (node_ptr) {
@@ -5054,6 +5058,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		return ESLURM_NODES_BUSY;
 	}
 
+	xfree(node_ptr->topology_orig_str);
 	xfree(node_ptr->topology_str);
 	topology_g_add_rm_node(node_ptr);
 
@@ -5188,6 +5193,11 @@ extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 	int rc = SLURM_SUCCESS;
 	char *topology_str_old;
 	bool from_config = false;
+
+	if (!node_ptr->topology_str && !node_ptr->topology_orig_str) {
+		node_ptr->topology_orig_str =
+			topology_g_get_topology_str(node_ptr);
+	}
 
 	if (node_ptr->topology_str) {
 		topology_str_old = node_ptr->topology_str;
