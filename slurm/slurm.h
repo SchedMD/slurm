@@ -2150,7 +2150,7 @@ typedef struct srun_timeout_msg {
 } srun_timeout_msg_t;
 
 typedef struct srun_user_msg {
-	uint32_t job_id;	/* slurm job_id */
+	slurm_step_id_t step_id;
 	char *msg;		/* message to user's srun */
 } srun_user_msg_t;
 

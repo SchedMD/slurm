@@ -299,8 +299,8 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 	{
 		srun_user_msg_t *um = msg->data;
 
-		debug("%s:[%s] JobId=%u srun user message RPC",
-		      __func__, conmgr_fd_get_name(con), um->job_id);
+		debug("%s:[%s] %pI srun user message RPC",
+		      __func__, conmgr_fd_get_name(con), &um->step_id);
 
 		print_multi_line_string(um->msg, -1, LOG_LEVEL_INFO);
 		break;

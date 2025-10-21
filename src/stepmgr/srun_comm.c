@@ -384,7 +384,7 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_user_msg_t));
-		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->step_id.job_id = job_ptr->job_id;
 		msg_arg->msg    = xstrdup(msg);
 		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
 				   job_ptr->resp_host, SRUN_USER_MSG, msg_arg,
