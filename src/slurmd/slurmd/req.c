@@ -1317,6 +1317,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	hostlist_t *step_hset = NULL;
 	int node_id = 0;
 
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
+
 	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
@@ -2012,6 +2015,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (req == NULL)
 		return;
 
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
+
 	/*
 	 * Send message back to the slurmctld so it knows we got the rpc.  A
 	 * prolog could easily run way longer than a MessageTimeout or we would
@@ -2107,6 +2113,9 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	slurm_addr_t *cli = &msg->orig_addr;
 	uid_t batch_uid = SLURM_AUTH_NOBODY;
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
+
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
 
 	if (launch_job_test(&req->step_id)) {
 		error("%pI already running, do not launch second copy",
@@ -4424,7 +4433,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	bool send_response = true;
 
-	debug("%s: %ps", __func__, &req->step_id);
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
 
 	/*
 	 * This function is also used within _rpc_timelimit() which does not
