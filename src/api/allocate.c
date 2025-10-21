@@ -163,10 +163,9 @@ slurm_allocate_resources (job_desc_msg_t *req,
  *      with no allocation granted)
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-resource_allocation_response_msg_t *
-slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
-				   time_t timeout,
-				   void(*pending_callback)(uint32_t job_id))
+resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
+	const job_desc_msg_t *user_req, time_t timeout,
+	void (*pending_callback)(slurm_step_id_t *step_id))
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -256,7 +255,7 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			job_id = resp->step_id.job_id;
 			slurm_free_resource_allocation_response_msg(resp);
 			if (pending_callback != NULL)
-				pending_callback(job_id);
+				pending_callback(&resp->step_id);
 			_wait_for_allocation_response(job_id, listen,
 						RESPONSE_RESOURCE_ALLOCATION,
 						timeout, (void **) &resp);
@@ -480,7 +479,7 @@ static void _het_job_alloc_test(list_t *resp, uint32_t *node_cnt,
  */
 list_t *slurm_allocate_het_job_blocking(
 	list_t *job_req_list, time_t timeout,
-	void (*pending_callback) (uint32_t job_id))
+	void (*pending_callback)(slurm_step_id_t *step_id))
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -571,7 +570,7 @@ list_t *slurm_allocate_het_job_blocking(
 			/* no, logs user messages and wait for a response */
 			FREE_NULL_LIST(resp);
 			if (pending_callback != NULL)
-				pending_callback(step_id.job_id);
+				pending_callback(&step_id);
 			_wait_for_allocation_response(
 				step_id.job_id, listen,
 				RESPONSE_HET_JOB_ALLOCATION, timeout,

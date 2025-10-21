@@ -82,7 +82,7 @@ static slurm_step_id_t pending_job_id = SLURM_STEP_ID_INITIALIZER;
  * Static Prototypes
  */
 static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local);
-static void _set_pending_job_id(uint32_t job_id);
+static void _set_pending_job_id(slurm_step_id_t *step_id);
 static void _signal_while_allocating(int signo);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 
@@ -90,10 +90,10 @@ static sig_atomic_t destroy_job = 0;
 static bool is_het_job = false;
 static bool revoke_job = false;
 
-static void _set_pending_job_id(uint32_t job_id)
+static void _set_pending_job_id(slurm_step_id_t *step_id)
 {
-	debug2("Pending job allocation %u", job_id);
-	pending_job_id.job_id = job_id;
+	debug2("Pending job allocation %pI", step_id);
+	pending_job_id = *step_id;
 }
 
 static void *_safe_signal_while_allocating(void *in_data)

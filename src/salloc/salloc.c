@@ -110,7 +110,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
 static void _match_job_name(job_desc_msg_t *desc_last, list_t *job_req_list);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
-static void _pending_callback(uint32_t job_id);
+static void _pending_callback(slurm_step_id_t *step_id);
 static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
 static void _ring_terminal_bell(void);
 static int  _set_cluster_name(void *x, void *arg);
@@ -852,10 +852,10 @@ static pid_t _fork_command(char **command)
 	return pid;
 }
 
-static void _pending_callback(uint32_t job_id)
+static void _pending_callback(slurm_step_id_t *step_id)
 {
-	info("Pending job allocation %u", job_id);
-	my_job_id.job_id = job_id;
+	info("Pending job allocation %u", step_id->job_id);
+	my_job_id = *step_id;
 
 	/* call cli_filter post_submit here so it runs while allocating */
 	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);

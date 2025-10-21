@@ -3561,9 +3561,8 @@ extern int slurm_allocate_resources(job_desc_msg_t *job_desc_msg,
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
-	const job_desc_msg_t *user_req,
-	time_t timeout,
-	void (*pending_callback)(uint32_t job_id));
+	const job_desc_msg_t *user_req, time_t timeout,
+	void (*pending_callback)(slurm_step_id_t *step_id));
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
@@ -3593,9 +3592,8 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  * NOTE: free the response using list_destroy()
  */
 extern list_t *slurm_allocate_het_job_blocking(
-	list_t *job_req_list,
-	time_t timeout,
-	void(*pending_callback)(uint32_t job_id));
+	list_t *job_req_list, time_t timeout,
+	void (*pending_callback)(slurm_step_id_t *step_id));
 
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource

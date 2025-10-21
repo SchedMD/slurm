@@ -393,9 +393,9 @@ static uint32_t _setup_listener(void)
 	return port;
 }
 
-static void _pending_callback(uint32_t job_id)
+static void _pending_callback(slurm_step_id_t *step_id)
 {
-	info("waiting on pending job allocation %u", job_id);
+	info("waiting on pending job allocation %pI", step_id);
 }
 
 /* check allocation has all nodes ready */
