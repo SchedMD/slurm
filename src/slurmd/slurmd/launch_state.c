@@ -69,7 +69,7 @@ static void _launch_complete_log(char *type, uint32_t job_id)
 #endif
 }
 
-extern void launch_complete_add(slurm_step_id_t *step_id, bool batch_step)
+extern void launch_complete_add(slurm_step_id_t *step_id)
 {
 	int j, empty;
 
@@ -77,8 +77,8 @@ extern void launch_complete_add(slurm_step_id_t *step_id, bool batch_step)
 	empty = -1;
 	for (j = 0; j < JOB_STATE_CNT; j++) {
 		if (step_id->job_id == active_job_id[j].job_id) {
-			if (batch_step)
-				active_job_id[j].batch_step = batch_step;
+			if (step_id->step_id == SLURM_BATCH_SCRIPT)
+				active_job_id[j].batch_step = 1;
 			break;
 		}
 		if ((active_job_id[j].job_id == 0) && (empty == -1))
@@ -95,7 +95,8 @@ extern void launch_complete_add(slurm_step_id_t *step_id, bool batch_step)
 		for (j = 0; j < JOB_STATE_CNT; j++) {
 			if (active_job_id[j].job_id == 0) {
 				active_job_id[j].job_id = step_id->job_id;
-				active_job_id[j].batch_step = batch_step;
+				if (step_id->step_id == SLURM_BATCH_SCRIPT)
+					active_job_id[j].batch_step = 1;
 				break;
 			}
 		}
