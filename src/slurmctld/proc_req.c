@@ -6033,7 +6033,7 @@ static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
 		return;
 	}
 
-	rc = fed_mgr_job_lock_set(sib_msg->job_id, sib_msg->cluster_id);
+	rc = fed_mgr_job_lock_set(sib_msg->step_id.job_id, sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
 }
@@ -6050,7 +6050,8 @@ static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 		return;
 	}
 
-	rc = fed_mgr_job_lock_unset(sib_msg->job_id, sib_msg->cluster_id);
+	rc = fed_mgr_job_lock_unset(sib_msg->step_id.job_id,
+				    sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
 }

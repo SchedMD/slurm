@@ -6431,13 +6431,13 @@ static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->data_version, buffer);
 		pack64(msg->fed_siblings, buffer);
 		pack32(msg->group_id, buffer);
-		pack32(msg->job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->return_code, buffer);
 		pack_time(msg->start_time, buffer);
 		packstr(msg->resp_host, buffer);
 		pack32(msg->req_uid, buffer);
 		pack16(msg->sib_msg_type, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->submit_host, buffer);
 		pack16(msg->submit_proto_ver, buffer);
 		pack32(msg->user_id, buffer);
@@ -6464,7 +6464,7 @@ static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->data_version, buffer);
 		pack64(msg->fed_siblings, buffer);
 		pack32(msg->group_id, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		pack32(msg->job_state, buffer);
 		pack32(msg->return_code, buffer);
 		pack_time(msg->start_time, buffer);
@@ -6505,13 +6505,14 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->data_version, buffer);
 		safe_unpack64(&msg->fed_siblings, buffer);
 		safe_unpack32(&msg->group_id, buffer);
-		safe_unpack32(&msg->job_id, buffer);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackstr(&msg->resp_host, buffer);
 		safe_unpack32(&msg->req_uid, buffer);
 		safe_unpack16(&msg->sib_msg_type, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpackstr(&msg->submit_host, buffer);
 		safe_unpack16(&msg->submit_proto_ver, buffer);
 		safe_unpack32(&msg->user_id, buffer);
@@ -6536,7 +6537,7 @@ static int _unpack_sib_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->data_version, buffer);
 		safe_unpack64(&msg->fed_siblings, buffer);
 		safe_unpack32(&msg->group_id, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_state, buffer);
 		safe_unpack32(&msg->return_code, buffer);
 		safe_unpack_time(&msg->start_time, buffer);

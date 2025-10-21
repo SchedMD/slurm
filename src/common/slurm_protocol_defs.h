@@ -1200,8 +1200,6 @@ typedef struct {
 	uint16_t data_version;	/* Version that data is packed with */
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t group_id;      /* gid of submitted job */
-	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
-				 * side */
 	uint32_t job_state;     /* state of job */
 	uint32_t return_code;   /* return code of job */
 	time_t   start_time;    /* time sibling job started */
@@ -1211,6 +1209,7 @@ typedef struct {
 				   passed to a remote then the uid will be the
 				   user and not the SlurmUser. */
 	uint16_t sib_msg_type; /* fed_job_update_type */
+	slurm_step_id_t step_id;
 	char    *submit_host;   /* node job was submitted from */
 	uint16_t submit_proto_ver; /* protocol version of submission client */
 	uint32_t user_id;       /* uid of submitted job */
