@@ -959,8 +959,6 @@ _cancel_step_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
 	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
-	uint32_t job_id  = cancel_info->job_id;
-	uint32_t step_id = cancel_info->step_id;
 	bool sig_set = true;
 	DEF_TIMERS;
 
@@ -987,22 +985,26 @@ _cancel_step_id (void *ci)
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		if (cancel_info->sig == SIGKILL) {
 			verbose("Terminating step %s.%u",
-				cancel_info->job_id_str, step_id);
+				cancel_info->job_id_str, cancel_info->step_id);
 		} else {
 			verbose("Signal %u to step %s.%u",
 				cancel_info->sig,
-				cancel_info->job_id_str, step_id);
+				cancel_info->job_id_str, cancel_info->step_id);
 		}
 
 		_add_delay();
 		START_TIMER;
 		if ((!sig_set) || opt.ctld)
-			error_code = slurm_kill_job_step(job_id, step_id,
+			error_code = slurm_kill_job_step(cancel_info->job_id,
+							 cancel_info->step_id,
 							 cancel_info->sig, 0);
 		else if (cancel_info->sig == SIGKILL)
-			error_code = slurm_terminate_job_step(job_id, step_id);
+			error_code =
+				slurm_terminate_job_step(cancel_info->job_id,
+							 cancel_info->step_id);
 		else
-			error_code = slurm_signal_job_step(job_id, step_id,
+			error_code = slurm_signal_job_step(cancel_info->job_id,
+							   cancel_info->step_id,
 							   cancel_info->sig);
 		END_TIMER;
 		slurm_mutex_lock(&max_delay_lock);
