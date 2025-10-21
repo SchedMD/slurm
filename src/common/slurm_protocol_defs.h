@@ -637,9 +637,8 @@ typedef struct job_step_specs {
 
 typedef struct job_step_create_response_msg {
 	uint32_t def_cpu_bind_type;	/* Default CPU bind type */
-	uint32_t job_id;		/* assigned job id */
-	uint32_t job_step_id;		/* assigned job step id */
 	char *resv_ports;		/* reserved ports */
+	slurm_step_id_t step_id;
 	slurm_step_layout_t *step_layout; /* information about how the
                                            * step is laid out */
 	char *stepmgr;
