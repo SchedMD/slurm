@@ -6585,15 +6585,15 @@ static void _pack_dep_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack32(dep_msg->array_task_id, buffer);
 		packstr(dep_msg->dependency, buffer);
 		packbool(dep_msg->is_array, buffer);
-		pack32(dep_msg->job_id, buffer);
 		packstr(dep_msg->job_name, buffer);
+		pack_step_id(&dep_msg->step_id, buffer, smsg->protocol_version);
 		pack32(dep_msg->user_id, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(dep_msg->array_job_id, buffer);
 		pack32(dep_msg->array_task_id, buffer);
 		packstr(dep_msg->dependency, buffer);
 		packbool(dep_msg->is_array, buffer);
-		pack32(dep_msg->job_id, buffer);
+		pack32(dep_msg->step_id.job_id, buffer);
 		packstr(dep_msg->job_name, buffer);
 		pack32(dep_msg->user_id, buffer);
 	}
@@ -6612,15 +6612,16 @@ static int _unpack_dep_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->array_task_id, buffer);
 		safe_unpackstr(&msg->dependency, buffer);
 		safe_unpackbool(&msg->is_array, buffer);
-		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_name, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpack32(&msg->user_id, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->array_job_id, buffer);
 		safe_unpack32(&msg->array_task_id, buffer);
 		safe_unpackstr(&msg->dependency, buffer);
 		safe_unpackbool(&msg->is_array, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_name, buffer);
 		safe_unpack32(&msg->user_id, buffer);
 	}

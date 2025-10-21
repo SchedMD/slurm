@@ -1220,8 +1220,8 @@ typedef struct {
 	uint32_t array_task_id;
 	char *dependency;
 	bool is_array;
-	uint32_t job_id;
 	char *job_name;
+	slurm_step_id_t step_id;
 	uint32_t user_id;
 } dep_msg_t;
 

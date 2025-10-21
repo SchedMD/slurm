@@ -2289,7 +2289,7 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
 	job_ptr->details->magic = DETAILS_MAGIC;
-	job_ptr->job_id = remote_dep_info->job_id;
+	job_ptr->job_id = remote_dep_info->step_id.job_id;
 	job_ptr->name = remote_dep_info->job_name;
 	job_ptr->user_id = remote_dep_info->user_id;
 
@@ -2315,8 +2315,8 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 */
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 
-	log_flag(FEDR, "%s: Got job_id: %u, name: \"%s\", array_task_id: %u, dependency: \"%s\", is_array? %s, user_id: %u",
-		 __func__, remote_dep_info->job_id, remote_dep_info->job_name,
+	log_flag(FEDR, "%s: Got %pI, name: \"%s\", array_task_id: %u, dependency: \"%s\", is_array? %s, user_id: %u",
+		 __func__, &remote_dep_info->step_id, remote_dep_info->job_name,
 		 remote_dep_info->array_task_id, remote_dep_info->dependency,
 		 remote_dep_info->is_array ? "yes" : "no",
 		 remote_dep_info->user_id);
@@ -3232,6 +3232,10 @@ unpack_error:
 static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 				 uint16_t protocol_version)
 {
+	slurm_step_id_t step_id = {
+		.job_id = job_ptr->job_id,
+	};
+
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
 		pack32(job_ptr->array_task_id, buffer);
@@ -3239,8 +3243,8 @@ static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 			      protocol_version);
 		packstr(job_ptr->details->dependency, buffer);
 		packbool(job_ptr->array_recs ? true : false, buffer);
-		pack32(job_ptr->job_id, buffer);
 		packstr(job_ptr->name, buffer);
+		pack_step_id(&step_id, buffer, protocol_version);
 		pack32(job_ptr->user_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
@@ -3267,6 +3271,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 {
 	bool is_array;
 	job_record_t *job_ptr;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	xassert(job_pptr);
 
@@ -3287,8 +3292,9 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		if (is_array)
 			job_ptr->array_recs =
 				xmalloc(sizeof *(job_ptr->array_recs));
-		safe_unpack32(&job_ptr->job_id, buffer);
 		safe_unpackstr(&job_ptr->name, buffer);
+		if (unpack_step_id_members(&step_id, buffer, protocol_version))
+			goto unpack_error;
 		safe_unpack32(&job_ptr->user_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
@@ -3300,7 +3306,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		if (is_array)
 			job_ptr->array_recs =
 				xmalloc(sizeof *(job_ptr->array_recs));
-		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpack32(&step_id.job_id, buffer);
 		safe_unpackstr(&job_ptr->name, buffer);
 		safe_unpack32(&job_ptr->user_id, buffer);
 	} else {
@@ -3308,6 +3314,8 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
+
+	job_ptr->job_id = step_id.job_id;
 
 	return SLURM_SUCCESS;
 
@@ -4234,11 +4242,11 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 
 	xassert(job_ptr->details);
 
-	dep_msg.job_id = job_ptr->job_id;
 	dep_msg.job_name = job_ptr->name;
 	dep_msg.array_job_id = job_ptr->array_job_id;
 	dep_msg.array_task_id = job_ptr->array_task_id;
 	dep_msg.is_array = job_ptr->array_recs ? true : false;
+	dep_msg.step_id.job_id = job_ptr->job_id;
 	dep_msg.user_id = job_ptr->user_id;
 
 	if (!job_ptr->details->dependency || clear_dependencies)
@@ -6081,12 +6089,11 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	dep_msg_t *remote_dependency;
 	dep_msg_t *dep_msg = msg->data;
 
-	log_flag(FEDR, "%s: Got %s: Job %u",
-		 __func__, rpc_num2string(msg->msg_type), dep_msg->job_id);
+	log_flag(FEDR, "%s: Got %s: %pI",
+		 __func__, rpc_num2string(msg->msg_type), &dep_msg->step_id);
 
 	/* dep_msg will get free'd, so copy it */
 	remote_dependency = xmalloc(sizeof *remote_dependency);
-	remote_dependency->job_id = dep_msg->job_id;
 	remote_dependency->job_name = dep_msg->job_name;
 	remote_dependency->dependency = dep_msg->dependency;
 	/* NULL strings so they don't get free'd */
@@ -6095,6 +6102,7 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	remote_dependency->array_task_id = dep_msg->array_task_id;
 	remote_dependency->array_job_id = dep_msg->array_job_id;
 	remote_dependency->is_array = dep_msg->is_array;
+	remote_dependency->step_id = dep_msg->step_id;
 	remote_dependency->user_id = dep_msg->user_id;
 
 	list_append(remote_dep_recv_list, remote_dependency);
