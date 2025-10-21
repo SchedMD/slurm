@@ -384,27 +384,52 @@ static void _statistics_part_aggregate_node(partition_stats_t *ps,
 		ps->nodes_unknown++;
 
 	/* Derived node states */
-	else if (IS_NODE_MAINT(ns))
-		ps->nodes_maint++;
+	if (IS_NODE_COMPLETING(ns))
+		ps->nodes_cg++;
+	if (IS_NODE_BLOCKED(ns))
+		ps->nodes_blocked++;
+	if (IS_NODE_CLOUD(ns))
+		ps->nodes_cloud++;
 
 	if (IS_NODE_DRAINING(ns))
 		ps->nodes_draining++;
 	else if (IS_NODE_DRAIN(ns))
 		ps->nodes_drain++;
 
-	if (IS_NODE_RES(ns))
-		ps->nodes_resv++;
-	if (IS_NODE_COMPLETING(ns))
-		ps->nodes_cg++;
-
+	if (IS_NODE_DRAINED(ns))
+		ps->nodes_drained++;
+	if (IS_NODE_DYNAMIC_FUTURE(ns))
+		ps->nodes_dyn_future++;
+	if (IS_NODE_DYNAMIC_NORM(ns))
+		ps->nodes_dyn_normal++;
+	if (IS_NODE_EXTERNAL(ns))
+		ps->nodes_external++;
 	if (IS_NODE_FAIL(ns))
 		ps->nodes_fail++;
+	if (IS_NODE_INVALID_REG(ns))
+		ps->nodes_invalid_reg++;
+	if (IS_NODE_MAINT(ns))
+		ps->nodes_maint++;
 	if (IS_NODE_NO_RESPOND(ns))
 		ps->nodes_no_resp++;
 	if (IS_NODE_PLANNED(ns))
 		ps->nodes_planned++;
+	if (IS_NODE_POWER_DOWN(ns))
+		ps->nodes_power_down++;
+	if (IS_NODE_POWER_UP(ns))
+		ps->nodes_power_up++;
+	if (IS_NODE_POWERED_DOWN(ns))
+		ps->nodes_powered_down++;
+	if (IS_NODE_POWERING_DOWN(ns))
+		ps->nodes_powering_down++;
+	if (IS_NODE_POWERING_UP(ns))
+		ps->nodes_powering_up++;
+	if (IS_NODE_REBOOT_ISSUED(ns))
+		ps->nodes_reboot_issued++;
 	if (IS_NODE_REBOOT_REQUESTED(ns))
 		ps->nodes_reboot_requested++;
+	if (IS_NODE_RES(ns))
+		ps->nodes_resv++;
 }
 
 static int _get_part_statistics(void *x, void *arg)
@@ -689,12 +714,24 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 		/* Derived node states */
 		if (IS_NODE_COMPLETING(node_ptr))
 			s->cg++;
+		if (IS_NODE_BLOCKED(node_ptr))
+			s->blocked++;
+		if (IS_NODE_CLOUD(node_ptr))
+			s->cloud++;
 
 		if (IS_NODE_DRAINING(node_ptr))
 			s->draining++;
 		else if (IS_NODE_DRAIN(node_ptr))
 			s->drain++;
 
+		if (IS_NODE_DRAINED(node_ptr))
+			s->drained++;
+		if (IS_NODE_DYNAMIC_FUTURE(node_ptr))
+			s->dyn_future++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr))
+			s->dyn_normal++;
+		if (IS_NODE_EXTERNAL(node_ptr))
+			s->external++;
 		if (IS_NODE_FAIL(node_ptr))
 			s->fail++;
 		if (IS_NODE_INVALID_REG(node_ptr))
@@ -705,6 +742,18 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 			s->no_resp++;
 		if (IS_NODE_PLANNED(node_ptr))
 			s->planned++;
+		if (IS_NODE_POWER_DOWN(node_ptr))
+			s->power_down++;
+		if (IS_NODE_POWER_UP(node_ptr))
+			s->power_up++;
+		if (IS_NODE_POWERED_DOWN(node_ptr))
+			s->powered_down++;
+		if (IS_NODE_POWERING_DOWN(node_ptr))
+			s->powering_down++;
+		if (IS_NODE_POWERING_UP(node_ptr))
+			s->powering_up++;
+		if (IS_NODE_REBOOT_ISSUED(node_ptr))
+			s->reboot_issued++;
 		if (IS_NODE_REBOOT_REQUESTED(node_ptr))
 			s->reboot_requested++;
 		if (IS_NODE_RES(node_ptr))

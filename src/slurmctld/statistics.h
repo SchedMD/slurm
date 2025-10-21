@@ -53,10 +53,16 @@ typedef struct node_stats {
 
 typedef struct nodes_statistics {
 	uint16_t alloc;
+	uint16_t blocked;
 	uint16_t cg;
+	uint16_t cloud;
 	uint16_t down;
 	uint16_t drain;
+	uint16_t drained;
 	uint16_t draining;
+	uint16_t dyn_future;
+	uint16_t dyn_normal;
+	uint16_t external;
 	uint16_t fail;
 	uint16_t future;
 	uint16_t idle;
@@ -67,6 +73,12 @@ typedef struct nodes_statistics {
 	uint32_t node_stats_count;
 	node_stats_t **node_stats_table;
 	uint16_t planned;
+	uint16_t power_down;
+	uint16_t power_up;
+	uint16_t powered_down;
+	uint16_t powering_down;
+	uint16_t powering_up;
+	uint16_t reboot_issued;
 	uint16_t reboot_requested;
 	uint16_t resv;
 	uint16_t unknown;
@@ -103,16 +115,23 @@ typedef struct partition_statistics {
 	uint32_t jobs_wait_part_node_limit;
 	char *name; /* name of the partition */
 	uint16_t nodes_alloc;
+	uint16_t nodes_blocked;
 	uint16_t nodes_cg;
+	uint16_t nodes_cloud;
 	uint16_t nodes_cpus_alloc;
 	uint16_t nodes_cpus_efctv;
 	uint16_t nodes_cpus_idle;
 	uint16_t nodes_down;
 	uint16_t nodes_drain;
+	uint16_t nodes_drained;
 	uint16_t nodes_draining;
+	uint16_t nodes_dyn_future;
+	uint16_t nodes_dyn_normal;
+	uint16_t nodes_external;
 	uint16_t nodes_fail;
 	uint16_t nodes_future;
 	uint16_t nodes_idle;
+	uint16_t nodes_invalid_reg;
 	uint16_t nodes_maint;
 	uint64_t nodes_mem_alloc;
 	uint64_t nodes_mem_avail;
@@ -121,6 +140,12 @@ typedef struct partition_statistics {
 	uint16_t nodes_mixed;
 	uint16_t nodes_no_resp;
 	uint16_t nodes_planned;
+	uint16_t nodes_power_down;
+	uint16_t nodes_power_up;
+	uint16_t nodes_powered_down;
+	uint16_t nodes_powering_down;
+	uint16_t nodes_powering_up;
+	uint16_t nodes_reboot_issued;
 	uint16_t nodes_reboot_requested;
 	uint16_t nodes_resv;
 	uint16_t nodes_unknown;
