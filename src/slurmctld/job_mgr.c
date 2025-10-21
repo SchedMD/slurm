@@ -15780,7 +15780,11 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			continue;
 		}
 
-		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
+		if (reg_msg->step_id[i].sluid)
+			job_ptr = find_sluid(reg_msg->step_id[i].sluid);
+		else
+			job_ptr = find_job_record(reg_msg->step_id[i].job_id);
+
 		if (job_ptr == NULL) {
 			error("Orphan %pI %ps reported on node %s",
 			      &reg_msg->step_id[i], &reg_msg->step_id[i],
