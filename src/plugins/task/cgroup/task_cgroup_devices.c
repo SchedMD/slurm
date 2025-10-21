@@ -49,6 +49,7 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/cgroup.h"
 #include "src/interfaces/gres.h"
+#include "src/interfaces/namespace.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -139,6 +140,15 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 		is_first_task = false;
 	}
 
+	/*
+	 * If we cannot do bpf calls because we are in a user namespace and we
+	 * do not have a BPF token.
+	 */
+	if (!namespace_g_can_bpf(step) && cgroup_g_bpf_get_token() <= 0) {
+		log_flag(CGROUP, "Skipping job and step device constrain as we are in a user namespace without a BPF token available");
+		goto bpf_unavailable;
+	}
+
 	/* Allow or deny access to devices according to job GRES permissions. */
 	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0, step);
 
@@ -194,6 +204,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *step)
 		}
 	}
 
+bpf_unavailable:
 	/* attach the slurmstepd to the step devices cgroup */
 	pid = getpid();
 	rc = cgroup_g_step_addto(CG_DEVICES, &pid, 1);
@@ -227,6 +238,15 @@ extern int task_cgroup_devices_constrain(stepd_step_rec_t *step,
 	    (step->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
 	    (step->flags & LAUNCH_EXT_LAUNCHER))
 		return SLURM_SUCCESS;
+	/*
+	 * If we cannot do bpf calls because we are in a user namespace and we
+	 * do not have a BPF token.
+	 */
+	if (!namespace_g_can_bpf(step) && cgroup_g_bpf_get_token() <= 0) {
+		log_flag(CGROUP,"Skipping task %d device constrain as we are in a user namespace without a BPF token available",
+			 global_tid);
+		return SLURM_SUCCESS;
+	}
 
 	/*
 	 * Apply gres constrains by getting the allowed devices for this task
