@@ -15774,15 +15774,16 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 
 		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate %ps reported on node %s",
-			     &reg_msg->step_id[i], reg_msg->node_name);
+			info("NoAllocate %pI %ps reported on node %s",
+			     &reg_msg->step_id[i], &reg_msg->step_id[i],
+			     reg_msg->node_name);
 			continue;
 		}
 
 		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
 		if (job_ptr == NULL) {
-			error("Orphan %ps reported on node %s",
-			      &reg_msg->step_id[i],
+			error("Orphan %pI %ps reported on node %s",
+			      &reg_msg->step_id[i], &reg_msg->step_id[i],
 			      reg_msg->node_name);
 			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
 					   node_ptr->name);
