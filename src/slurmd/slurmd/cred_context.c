@@ -110,9 +110,9 @@ static int _list_find_expired_job_state(void *x, void *key)
 static int _list_find_job_state(void *x, void *key)
 {
 	job_state_t *j = x;
-	uint32_t jobid = *(uint32_t *) key;
+	slurm_step_id_t *step_id = key;
 
-	if (j->jobid == jobid)
+	if (j->jobid == step_id->job_id)
 		return 1;
 	return 0;
 }
@@ -120,7 +120,7 @@ static int _list_find_job_state(void *x, void *key)
 static job_state_t *_find_job_state(slurm_step_id_t *step_id)
 {
 	return list_find_first(cred_job_list, _list_find_job_state,
-			       &step_id->job_id);
+			       step_id);
 }
 
 static void _clear_expired_job_states(void)
