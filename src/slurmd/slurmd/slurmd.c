@@ -77,6 +77,7 @@
 #include "src/common/forward.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
+#include "src/common/http_switch.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -130,6 +131,7 @@
 
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/slurmd/http.h"
 #include "src/slurmd/slurmd/job_mem_limit.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -207,9 +209,9 @@ bool refresh_cached_features = true;
 pthread_mutex_t cached_features_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Reference to active listening socket */
-pthread_mutex_t listen_mutex = PTHREAD_MUTEX_INITIALIZER;
-conmgr_fd_ref_t *listener = NULL;
-bool unquiesce_listener = false;
+static pthread_mutex_t listen_mutex = PTHREAD_MUTEX_INITIALIZER;
+static conmgr_fd_ref_t *listener = NULL;
+static bool unquiesce_listener = false;
 
 static char *ca_cert_file = NULL;
 
@@ -336,6 +338,20 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("Caught SIGPIPE. Ignoring.");
+}
+
+extern bool listener_quiesced(void)
+{
+	bool quiesced;
+
+	slurm_mutex_lock(&listen_mutex);
+	if (_shutdown || !listener)
+		quiesced = true;
+	else
+		quiesced = conmgr_con_is_quiesced(listener);
+	slurm_mutex_unlock(&listen_mutex);
+
+	return quiesced;
 }
 
 static void _unquiesce_fd_listener(void)
@@ -482,8 +498,6 @@ main (int argc, char **argv)
 
 	plugins_registered = true;
 
-	_create_msg_socket();
-
 	conf->pid = getpid();
 
 	rfc2822_timestamp(time_stamp, sizeof(time_stamp));
@@ -512,6 +526,13 @@ main (int argc, char **argv)
 			fatal("No static TLS certificate key pair loaded, and the certmgr plugin is not enabled to get signed certificates.");
 		}
 	}
+
+	/* Load HTTP switching plugins and handlers */
+	http_switch_init();
+	if (http_switch_http_enabled())
+		http_init();
+
+	_create_msg_socket();
 
 	conmgr_run(false);
 
@@ -574,6 +595,7 @@ main (int argc, char **argv)
 	info("Slurmd shutdown completing");
 
 	conmgr_fini();
+	http_switch_fini();
 	log_fini();
 
 	return SLURM_SUCCESS;
@@ -2114,6 +2136,11 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	       __func__, conmgr_fd_get_name(con));
 }
 
+static int _on_data(conmgr_fd_t *con, void *arg)
+{
+	return http_switch_on_data(con, on_http_connection);
+}
+
 static void _create_msg_socket(void)
 {
 	static const conmgr_events_t events = {
@@ -2121,10 +2148,11 @@ static void _create_msg_socket(void)
 		.on_listen_finish = _on_listen_finish,
 		.on_connection = _on_connection,
 		.on_msg = _on_msg,
+		.on_data = _on_data,
 		.on_finish = _on_finish,
 	};
 	int rc;
-	static conmgr_con_flags_t flags =
+	static const conmgr_con_flags_t flags =
 		(CON_FLAG_RPC_RECV_FORWARD | CON_FLAG_RPC_KEEP_BUFFER |
 		 CON_FLAG_QUIESCE | CON_FLAG_WATCH_WRITE_TIMEOUT |
 		 CON_FLAG_WATCH_READ_TIMEOUT | CON_FLAG_WATCH_CONNECT_TIMEOUT);
@@ -2136,11 +2164,10 @@ static void _create_msg_socket(void)
 		fatal("Unable to bind listen port (%u): %m", conf->port);
 	}
 
-	if (conn_tls_enabled())
-		flags |= CON_FLAG_TLS_SERVER;
-
-	if ((rc = conmgr_process_fd_listen(conf->lfd, CON_TYPE_RPC, &events,
-					   flags, NULL)))
+	if ((rc = conmgr_process_fd_listen(conf->lfd, http_switch_con_type(),
+					   &events,
+					   (flags | http_switch_con_flags()),
+					   NULL)))
 		fatal("%s: unable to process fd:%d error:%s",
 		      __func__, conf->lfd, slurm_strerror(rc));
 }

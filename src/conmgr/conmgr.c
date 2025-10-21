@@ -529,3 +529,14 @@ extern void conmgr_unquiesce(const char *caller)
 
 	slurm_mutex_unlock(&mgr.mutex);
 }
+
+extern bool conmgr_is_quiesced(void)
+{
+	bool quiesced;
+
+	slurm_mutex_lock(&mgr.mutex);
+	quiesced = mgr.quiesce.requested;
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return quiesced;
+}

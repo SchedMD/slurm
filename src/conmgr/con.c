@@ -1953,6 +1953,23 @@ extern int conmgr_unquiesce_fd(conmgr_fd_t *con)
 	return rc;
 }
 
+extern bool conmgr_con_is_quiesced(conmgr_fd_ref_t *con)
+{
+	bool quiesced;
+
+	if (!con || !con->con)
+		return false;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	slurm_mutex_lock(&mgr.mutex);
+	quiesced = con_flag(con->con, FLAG_QUIESCE);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return quiesced;
+}
+
 static int _quiesce_fd(conmgr_fd_t *con)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);

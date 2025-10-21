@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMCTLD_HTTP_H
-#define _SLURMCTLD_HTTP_H
+#ifndef _SLURMD_HTTP_H
+#define _SLURMD_HTTP_H
 
 #include "src/conmgr/conmgr.h"
 

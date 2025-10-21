@@ -53,6 +53,8 @@ libcommon_la_SOURCES =				\
 	http_con.c				\
 	http_router.h				\
 	http_router.c				\
+	http_switch.h				\
+	http_switch.c				\
 	identity.h				\
 	identity.c				\
 	id_util.h				\

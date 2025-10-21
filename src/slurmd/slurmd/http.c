@@ -40,10 +40,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/conmgr/conmgr.h"
-
-#include "src/slurmctld/http.h"
-#include "src/slurmctld/slurmctld.h"
+#include "src/slurmd/slurmd/http.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 static int _reply_error(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, int err)
@@ -51,7 +49,7 @@ static int _reply_error(http_con_t *hcon, const char *name,
 	char *body = NULL, *at = NULL;
 	int rc = EINVAL;
 
-	xstrfmtcatat(body, &at, "slurmctld HTTP server request for '%s %s':\n",
+	xstrfmtcatat(body, &at, "slurmd HTTP server request for '%s %s':\n",
 		     get_http_method_string(request->method),
 		     request->url.path);
 
@@ -77,10 +75,10 @@ static int _req_root(http_con_t *hcon, const char *name,
 		     const http_con_request_t *request, void *arg)
 {
 	static const char body[] =
-		"slurmctld index of endpoints:\n"
-		"  '/readyz': check slurmctld is servicing RPCs\n"
-		"  '/livez': check slurmctld is running\n"
-		"  '/healthz': check slurmctld is running\n";
+		"slurmd index of endpoints:\n"
+		"  '/readyz': check slurmd is servicing RPCs\n"
+		"  '/livez': check slurmd is running\n"
+		"  '/healthz': check slurmd is running\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -95,8 +93,7 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
-	if (!listeners_quiesced() && is_primary() && !is_reconfiguring() &&
-	    !conmgr_is_quiesced())
+	if (!listener_quiesced() && !conmgr_is_quiesced())
 		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
 
 	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);

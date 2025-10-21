@@ -29,6 +29,8 @@ SLURMD_SOURCES = \
 	cred_context.h \
 	get_mach_stat.c \
 	get_mach_stat.h \
+	http.c \
+	http.h \
 	job_mem_limit.c \
 	job_mem_limit.h \
 	launch_state.c \

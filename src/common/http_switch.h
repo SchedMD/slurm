@@ -1,10 +1,7 @@
 /*****************************************************************************\
- *  http.h - Header for HTTP related functionality
+ *  http_switch.h - Auto switch between HTTP and RPC requests
  *****************************************************************************
- *  Copyright (C) 2010 Lawrence Livermore National Security.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,15 +33,40 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMCTLD_HTTP_H
-#define _SLURMCTLD_HTTP_H
+#ifndef SLURM_HTTP_SWITCH_H
+#define SLURM_HTTP_SWITCH_H
+
+#include "stdbool.h"
 
 #include "src/conmgr/conmgr.h"
 
-/* Setup incoming HTTP connection */
-extern int on_http_connection(conmgr_fd_t *con);
+/* True if plugins for HTTP loaded */
+extern bool http_switch_http_enabled(void);
 
-extern void http_init(void);
-extern void http_fini(void);
+/* True if plugins for TLS wrapped HTTP loaded */
+extern bool http_switch_tls_enabled(void);
+
+/* Get connection type to switch between HTTP and Slurm RPCs */
+extern conmgr_con_type_t http_switch_con_type(void);
+
+/* Get connection flags needed to switch including TLS wrapping */
+extern conmgr_con_flags_t http_switch_con_flags(void);
+
+/*
+ * Handle switching between HTTP and Slurm RPCs in on_data() callback.
+ *
+ * Changes mode to CON_TYPE_RPC when fingerprints as Slurm RPC.
+ * Calls on_http() when fingerprint matches HTTP.
+ *
+ * IN con - connection to fingerprint
+ * IN on_http - callback to call when fingerprint for HTTP matches
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_switch_on_data(conmgr_fd_t *con,
+			       int (*on_http)(conmgr_fd_t *con));
+
+/* Initialize all plugins and state needed for HTTP switching */
+extern void http_switch_init(void);
+extern void http_switch_fini(void);
 
 #endif
