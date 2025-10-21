@@ -141,6 +141,7 @@ decl_static_data(usage_txt);
 uint32_t slurm_daemon = IS_SLURMD;
 
 #define MAX_THREADS		256
+#define DEF_CONMGR_THREAD_COUNT 6
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
 #define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
@@ -442,7 +443,8 @@ main (int argc, char **argv)
 	info("slurmd version %s started", SLURM_VERSION_STRING);
 	debug3("finished daemonize");
 
-	conmgr_init(0, 0, SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
+	conmgr_init(0, DEF_CONMGR_THREAD_COUNT,
+		    SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
