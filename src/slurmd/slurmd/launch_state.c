@@ -107,14 +107,14 @@ extern void launch_complete_add(slurm_step_id_t *step_id)
 }
 
 /* Test if we have a specific job ID still running */
-extern bool launch_job_test(uint32_t job_id, bool batch_step)
+extern bool launch_job_test(slurm_step_id_t *step_id, bool batch_step)
 {
 	bool found = false;
 	int j;
 
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id) {
+		if (step_id->job_id == active_job_id[j].job_id) {
 			if (!batch_step || active_job_id[j].batch_step)
 				found = true;
 			break;

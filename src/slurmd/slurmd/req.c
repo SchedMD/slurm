@@ -2108,7 +2108,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	uid_t batch_uid = SLURM_AUTH_NOBODY;
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
 
-	if (launch_job_test(req->step_id.job_id, true)) {
+	if (launch_job_test(&req->step_id, true)) {
 		error("%pI already running, do not launch second copy",
 		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
