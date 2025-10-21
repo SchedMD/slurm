@@ -438,25 +438,24 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 
 /* Get total node count and lead job ID from RESPONSE_HET_JOB_ALLOCATION */
 static void _het_job_alloc_test(list_t *resp, uint32_t *node_cnt,
-				uint32_t *job_id)
+				slurm_step_id_t *step_id)
 {
 	resource_allocation_response_msg_t *alloc;
-	uint32_t inx = 0, het_job_node_cnt = 0, het_job_id = 0;
+	uint32_t inx = 0, het_job_node_cnt = 0;
 	list_itr_t *iter;
 
 	xassert(resp);
 	iter = list_iterator_create(resp);
 	while ((alloc = (resource_allocation_response_msg_t *)list_next(iter))){
 		het_job_node_cnt += alloc->node_cnt;
-		if (het_job_id == 0)
-			het_job_id = alloc->step_id.job_id;
+		if (step_id->job_id == NO_VAL)
+			*step_id = alloc->step_id;
 		print_multi_line_string(alloc->job_submit_user_msg,
 					inx, LOG_LEVEL_INFO);
 		inx++;
 	}
 	list_iterator_destroy(iter);
 
-	*job_id   = het_job_id;
 	*node_cnt = het_job_node_cnt;
 }
 
@@ -492,9 +491,10 @@ list_t *slurm_allocate_het_job_blocking(
 	int errnum = SLURM_SUCCESS;
 	list_itr_t *iter;
 	bool immediate_flag = false;
-	uint32_t node_cnt = 0, job_id = 0;
+	uint32_t node_cnt = 0;
 	bool already_done = false;
 	char *alloc_tls_cert = NULL;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -561,7 +561,7 @@ list_t *slurm_allocate_het_job_blocking(
 		/* Yay, the controller has acknowledged our request!
 		 * Test if we have an allocation yet? */
 		resp = resp_msg.data;
-		_het_job_alloc_test(resp, &node_cnt, &job_id);
+		_het_job_alloc_test(resp, &node_cnt, &step_id);
 		if (node_cnt > 0) {
 			/* yes, allocation has been granted */
 			errno = SLURM_SUCCESS;
@@ -571,15 +571,16 @@ list_t *slurm_allocate_het_job_blocking(
 			/* no, logs user messages and wait for a response */
 			FREE_NULL_LIST(resp);
 			if (pending_callback != NULL)
-				pending_callback(job_id);
-			_wait_for_allocation_response(job_id, listen,
-						RESPONSE_HET_JOB_ALLOCATION,
-						timeout, (void **) &resp);
+				pending_callback(step_id.job_id);
+			_wait_for_allocation_response(
+				step_id.job_id, listen,
+				RESPONSE_HET_JOB_ALLOCATION, timeout,
+				(void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			 * the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
-				slurm_complete_job(job_id, -1);
+				slurm_complete_job(step_id.job_id, -1);
 			}
 			if ((resp == NULL) && (errno == ESLURM_ALREADY_DONE))
 				already_done = true;
