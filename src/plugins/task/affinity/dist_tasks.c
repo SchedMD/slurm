@@ -378,7 +378,8 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id,
 	if (only_one_thread_per_core)
 		req->cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
 
-	if (req->cpu_bind_type & bind_mode) {
+	if ((req->cpu_bind_type & bind_mode) &&
+	    (req->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		/* Explicit step binding specified by user */
 		char *avail_mask = _alloc_mask(req,
 					       &whole_nodes,  &whole_sockets,
