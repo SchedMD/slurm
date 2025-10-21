@@ -151,7 +151,8 @@ static void _launch_complete_add(uint32_t job_id, bool btch_step);
 static void _launch_complete_log(char *type, uint32_t job_id);
 static void _launch_complete_rm(uint32_t job_id);
 static void _launch_complete_wait(uint32_t job_id);
-static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
+static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
+			    uint32_t slurm_rc);
 static bool _launch_job_test(uint32_t job_id, bool batch_step);
 static void _note_batch_job_finished(uint32_t job_id);
 static int _prolog_is_running(uint32_t jobid);
@@ -1482,10 +1483,7 @@ done:
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED) {
-		_launch_job_fail(
-		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->step_id.job_id,
-		    errnum);
+		_launch_job_fail(req->step_id.job_id, req->het_job_id, errnum);
 		send_registration_msg(errnum);
 	}
 
@@ -1969,10 +1967,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		       __func__, forkexec_rc);
 
 		if (forkexec_rc != SLURM_SUCCESS) {
-			_launch_job_fail(
-			    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-			    req->het_job_id : req->step_id.job_id,
-			    forkexec_rc);
+			_launch_job_fail(req->step_id.job_id, req->het_job_id,
+					 forkexec_rc);
 
 			if (forkexec_rc == ESLURMD_PROLOG_FAILED)
 				rc = forkexec_rc;
@@ -2010,7 +2006,7 @@ static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 			alt_rc = SLURM_SUCCESS;
 
 		if (rc != SLURM_SUCCESS) {
-			alt_rc = _launch_job_fail(jobid, rc);
+			alt_rc = _launch_job_fail(jobid, NO_VAL, rc);
 			send_registration_msg(rc);
 		}
 
@@ -2130,10 +2126,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		error("%pI already running, do not launch second copy",
 		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
-		_launch_job_fail(
-		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->step_id.job_id,
-		    rc);
+		_launch_job_fail(req->step_id.job_id, req->het_job_id, rc);
 		goto done;
 	}
 
@@ -2317,10 +2310,7 @@ done:
 	if (rc != SLURM_SUCCESS) {
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
-		_launch_job_fail(
-		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->step_id.job_id,
-		    rc);
+		_launch_job_fail(req->step_id.job_id, req->het_job_id, rc);
 	}
 
 	/*
@@ -2417,12 +2407,15 @@ static uint32_t _kill_fail_job(uint32_t job_id)
 	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK | KILL_FAIL_JOB);
 }
 
-static int
-_launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
+static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
+			    uint32_t slurm_rc)
 {
 	requeue_msg_t req_msg = { { 0 } };
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
+
+	if (het_job_id && (het_job_id != NO_VAL))
+		job_id = het_job_id;
 
 	slurm_msg_t_init(&resp_msg);
 
