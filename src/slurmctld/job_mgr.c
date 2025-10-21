@@ -15768,6 +15768,10 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < reg_msg->job_count; i++) {
+		debug2("%s: registered %pI %ps on node %s",
+		       __func__, &reg_msg->step_id[i], &reg_msg->step_id[i],
+		       reg_msg->node_name);
+
 		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
 			info("NoAllocate %ps reported on node %s",
