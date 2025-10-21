@@ -147,9 +147,10 @@ extern void workers_init(int count, int default_count)
 	const int detected_threads_low = (detected_cpus / CPU_THREAD_LOW);
 	const int warn_max_threads =
 		MIN(CONMGR_THREAD_COUNT_MAX, detected_threads_high);
-	const int warn_min_threads =
-		MAX(CONMGR_THREAD_COUNT_MIN,
-		    MIN(detected_threads_low, THREAD_AUTO_MAX));
+	const int min_def_threads =
+		MIN(THREAD_AUTO_MAX,
+		    MAX(CONMGR_THREAD_COUNT_MIN, default_count));
+	const int warn_min_threads = MIN(detected_threads_low, min_def_threads);
 
 	if (!count) {
 		if ((mgr.workers.conf_threads > 0)) {
