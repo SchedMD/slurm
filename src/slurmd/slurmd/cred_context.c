@@ -394,7 +394,7 @@ extern int cred_insert_job(slurm_step_id_t *step_id)
 	return SLURM_SUCCESS;
 }
 
-extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time)
+extern int cred_revoke(slurm_step_id_t *step_id, time_t time, time_t start_time)
 {
 	job_state_t  *j = NULL;
 
@@ -402,18 +402,18 @@ extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 
 	_clear_expired_job_states();
 
-	if (!(j = _find_job_state(jobid))) {
+	if (!(j = _find_job_state(step_id->job_id))) {
 		/*
 		 * This node has not yet seen a job step for this job.
 		 * Insert a job state object so that we can revoke any future
 		 * credentials.
 		 */
-		j = _job_state_create(jobid);
+		j = _job_state_create(step_id->job_id);
 		list_append(cred_job_list, j);
 	}
 	if (j->revoked) {
 		if (start_time && (j->revoked < start_time)) {
-			debug("job %u requeued, but started no tasks", jobid);
+			debug("%pI requeued, but started no tasks", step_id);
 			j->expiration = (time_t) MAX_TIME;
 		} else {
 			errno = EEXIST;

@@ -2107,7 +2107,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	 * the return code.
 	 */
 	if (rc)
-		cred_revoke(req->step_id.job_id, time(NULL), time(NULL));
+		cred_revoke(&req->step_id, time(NULL), time(NULL));
 
 	_remove_job_running_prolog(req->step_id.job_id);
 
@@ -4374,7 +4374,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (cred_revoke(req->step_id.job_id, req->time, req->start_time) < 0) {
+	if (cred_revoke(&req->step_id, req->time, req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
 		save_cred_state();
@@ -4482,7 +4482,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (cred_revoke(req->step_id.job_id, req->time, req->start_time) < 0) {
+	if (cred_revoke(&req->step_id, req->time, req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
 		save_cred_state();

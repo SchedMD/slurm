@@ -51,7 +51,8 @@ extern bool cred_job_cached(slurm_step_id_t *step_id);
  */
 extern int cred_insert_job(slurm_step_id_t *step_id);
 
-extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time);
+extern int cred_revoke(slurm_step_id_t *step_id, time_t time,
+		       time_t start_time);
 
 extern bool cred_revoked(slurm_cred_t *cred);
 
