@@ -147,7 +147,7 @@ static void         _create_het_job_id_set(hostset_t *jobid_hostset,
 					    char **het_job_id_set);
 static void         _fill_ctld_conf(slurm_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
-static int          _is_prolog_finished(uint32_t job_id);
+static int _is_prolog_finished(slurm_step_id_t *step_id);
 static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
 					 uint32_t job_id);
 static void         _throttle_fini(int *active_rpc_cnt);
@@ -4488,7 +4488,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 		debug2("%s: %pI result %d in %s",
 		       __func__, &id_msg->step_id, result, TIME_STR);
 
-		if (!_is_prolog_finished(id_msg->step_id.job_id))
+		if (!_is_prolog_finished(&id_msg->step_id))
 			(void) send_msg_response(msg, RESPONSE_PROLOG_EXECUTING,
 						 &rc_msg);
 		else
@@ -4498,7 +4498,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 }
 
 /* Check if prolog has already finished */
-static int _is_prolog_finished(uint32_t job_id)
+static int _is_prolog_finished(slurm_step_id_t *step_id)
 {
 	int is_running = 0;
 	job_record_t *job_ptr;
@@ -4506,10 +4506,8 @@ static int _is_prolog_finished(uint32_t job_id)
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(job_id);
-	if (job_ptr) {
+	if ((job_ptr = find_job_record(step_id->job_id)))
 		is_running = (job_ptr->state_reason != WAIT_PROLOG);
-	}
 	unlock_slurmctld(job_read_lock);
 	return is_running;
 }
