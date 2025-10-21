@@ -47,17 +47,16 @@ static pthread_mutex_t job_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t job_state_cond = PTHREAD_COND_INITIALIZER;
 static slurm_step_id_t active_job_id[JOB_STATE_CNT] = { { 0 } };
 
-static void _launch_complete_log(char *type, uint32_t job_id)
+static void _launch_complete_log(char *type, slurm_step_id_t *step_id)
 {
 #if 0
 	int j;
 
-	info("active %s %u", type, job_id);
+	info("active %s %pI", type, step_id);
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
 		if (active_job_id[j].job_id != 0) {
-			info("active_job_id[%d]=%u", j,
-			     active_job_id[j].job_id);
+			info("active_job_id[%d]=%pI", j, &active_job_id[j]);
 		}
 	}
 	slurm_mutex_unlock(&job_state_mutex);
@@ -96,7 +95,7 @@ extern void launch_complete_add(slurm_step_id_t *step_id)
 	}
 	slurm_cond_signal(&job_state_cond);
 	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job add", step_id->job_id);
+	_launch_complete_log("job add", step_id);
 }
 
 /* Test if we have a specific job ID still running */
@@ -134,7 +133,7 @@ extern void launch_complete_rm(slurm_step_id_t *step_id)
 		active_job_id[JOB_STATE_CNT - 1].step_id = 0;
 	}
 	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job remove", step_id->job_id);
+	_launch_complete_log("job remove", step_id);
 }
 
 extern void launch_complete_wait(slurm_step_id_t *step_id)
@@ -181,5 +180,5 @@ extern void launch_complete_wait(slurm_step_id_t *step_id)
 		break;
 	}
 	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job wait", step_id->job_id);
+	_launch_complete_log("job wait", step_id);
 }
