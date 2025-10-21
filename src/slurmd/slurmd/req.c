@@ -2258,7 +2258,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 * abort logic below. */
 	revoked = cred_revoked(req->cred);
 	if (revoked)
-		launch_complete_rm(req->step_id.job_id);
+		launch_complete_rm(&req->step_id);
 	if (revoked && _is_batch_job_finished(req->step_id.job_id)) {
 		/* If configured with select/serial and the batch job already
 		 * completed, consider the job successfully launched and do
@@ -4413,7 +4413,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		_free_job_env(&job_env);
 	}
 
-	launch_complete_rm(req->step_id.job_id);
+	launch_complete_rm(&req->step_id);
 }
 
 static void _rpc_terminate_job(slurm_msg_t *msg)
@@ -4568,7 +4568,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			epilog_complete(req->step_id.job_id, req->nodes, rc);
 		}
 
-		launch_complete_rm(req->step_id.job_id);
+		launch_complete_rm(&req->step_id);
 		return;
 	}
 
@@ -4650,7 +4650,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			debug("completed epilog for jobid %u",
 			      req->step_id.job_id);
 	}
-	launch_complete_rm(req->step_id.job_id);
+	launch_complete_rm(&req->step_id);
 
 done:
 	_wait_state_completed(req->step_id.job_id, 5);

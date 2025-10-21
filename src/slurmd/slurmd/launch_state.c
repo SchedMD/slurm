@@ -124,16 +124,16 @@ extern bool launch_job_test(uint32_t job_id, bool batch_step)
 	return found;
 }
 
-extern void launch_complete_rm(uint32_t job_id)
+extern void launch_complete_rm(slurm_step_id_t *step_id)
 {
 	int j;
 
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id)
+		if (step_id->job_id == active_job_id[j].job_id)
 			break;
 	}
-	if (j < JOB_STATE_CNT && job_id == active_job_id[j].job_id) {
+	if (j < JOB_STATE_CNT && (step_id->job_id == active_job_id[j].job_id)) {
 		for (j = j + 1; j < JOB_STATE_CNT; j++) {
 			active_job_id[j - 1] = active_job_id[j];
 		}
@@ -141,7 +141,7 @@ extern void launch_complete_rm(uint32_t job_id)
 		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
 	}
 	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job remove", job_id);
+	_launch_complete_log("job remove", step_id->job_id);
 }
 
 extern void launch_complete_wait(uint32_t job_id)
