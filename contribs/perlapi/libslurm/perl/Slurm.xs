@@ -383,18 +383,6 @@ slurm_complete_job(slurm_t self, uint32_t job_id, uint32_t job_rc=0)
 	C_ARGS:
 		job_id, job_rc
 
-int
-slurm_terminate_job_step(slurm_t self, uint32_t job_id, uint32_t step_id)
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-	C_ARGS:
-		job_id, step_id
-
-
 ######################################################################
 #	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
