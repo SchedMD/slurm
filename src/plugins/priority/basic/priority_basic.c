@@ -163,25 +163,6 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	return;
 }
 
-extern double priority_p_calc_fs_factor(long double usage_efctv,
-					long double shares_norm)
-{
-	/* This calculation is needed for sshare when ran from a
-	 * non-multifactor machine to a multifactor machine.  It
-	 * doesn't do anything on regular systems, it should always
-	 * return 0 since shares_norm will always be NO_VAL. */
-	double priority_fs;
-
-	xassert(!fuzzy_equal(usage_efctv, NO_VAL));
-
-	if ((shares_norm <= 0.0) || fuzzy_equal(shares_norm, NO_VAL))
-		priority_fs = 0.0;
-	else
-		priority_fs = pow(2.0, -(usage_efctv / shares_norm));
-
-	return priority_fs;
-}
-
 extern list_t *priority_p_get_priority_factors_list(uid_t uid)
 {
 	return(list_create(NULL));

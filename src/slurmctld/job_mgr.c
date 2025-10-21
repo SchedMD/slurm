@@ -7017,10 +7017,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			if (fuzzy_equal(assoc_ptr->usage->usage_efctv, NO_VAL))
 				priority_g_set_assoc_usage(assoc_ptr);
 			job_ptr->prio_factors->priority_fs =
-				priority_g_calc_fs_factor(
-					assoc_ptr->usage->usage_efctv,
-					(long double)assoc_ptr->usage->
-					shares_norm);
+				assoc_ptr->usage->fs_factor;
 		}
 		if (job_ptr->prio_factors->priority_fs < qos_ptr->usage_thres){
 			debug2("%pJ exceeds usage threshold", job_ptr);

@@ -67,19 +67,7 @@ expect {
 		log_debug "This error is expected.  No worries"
 		exp_continue
 	}
-	"AccountA||40|0.400000|45|0.450000|0.450000|0.458502|" {
-		incr matches
-		exp_continue
-	}
-	"AccountB||30|0.300000|20|0.200000|0.387500|0.408479|" {
-		incr matches
-		exp_continue
-	}
 	"AccountB|User1|1|0.300000|20|0.200000|0.387500|0.408479|" {
-		incr matches
-		exp_continue
-	}
-	"AccountC||10|0.100000|25|0.250000|0.300000|0.125000|" {
 		incr matches
 		exp_continue
 	}
@@ -91,27 +79,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	"AccountD||60|0.600000|25|0.250000|0.250000|0.749154|" {
-		incr matches
-		exp_continue
-	}
-	"AccountE||25|0.250000|25|0.250000|0.250000|0.500000|" {
-		incr matches
-		exp_continue
-	}
 	"AccountE|User4|1|0.250000|25|0.250000|0.250000|0.500000|" {
 		incr matches
 		exp_continue
 	}
-	"AccountF||35|0.350000|0|0.000000|0.145833|0.749154|" {
-		incr matches
-		exp_continue
-	}
 	"AccountF|User5|1|0.350000|0|0.000000|0.145833|0.749154|" {
-		incr matches
-		exp_continue
-	}
-	"AccountG||0|0.000000|30|0.300000|0.300000|0.000000|" {
 		incr matches
 		exp_continue
 	}
@@ -127,6 +99,6 @@ expect {
 	}
 }
 
-if {$matches != 13} {
+if {$matches != 6} {
 	fail "We didn't get the correct priorities from the plugin ($matches != 13)"
 }

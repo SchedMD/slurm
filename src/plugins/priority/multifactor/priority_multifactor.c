@@ -391,7 +391,6 @@ static int _set_children_usage_efctv(list_t *children_list)
 static double _get_fairshare_priority(job_record_t *job_ptr)
 {
 	slurmdb_assoc_rec_t *job_assoc;
-	slurmdb_assoc_rec_t *fs_assoc = NULL;
 	double priority_fs = 0.0;
 	assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
@@ -410,30 +409,11 @@ static double _get_fairshare_priority(job_record_t *job_ptr)
 		return 0;
 	}
 
-	/* Use values from parent when FairShare=SLURMDB_FS_USE_PARENT */
-	if (job_assoc->shares_raw == SLURMDB_FS_USE_PARENT)
-		fs_assoc = job_assoc->usage->fs_assoc_ptr;
-	else
-		fs_assoc = job_assoc;
-
-	if (fuzzy_equal(fs_assoc->usage->usage_efctv, NO_VAL))
-		priority_p_set_assoc_usage(fs_assoc);
+	if (fuzzy_equal(job_assoc->usage->usage_efctv, NO_VAL))
+		priority_p_set_assoc_usage(job_assoc);
 
 	/* Priority is 0 -> 1 */
-	if (flags & PRIORITY_FLAGS_FAIR_TREE) {
-		priority_fs = job_assoc->usage->fs_factor;
-		log_flag(PRIO, "Fairshare priority of job %u for user %s in acct %s is %f",
-			 job_ptr->job_id, job_assoc->user, job_assoc->acct,
-			 priority_fs);
-	} else {
-		priority_fs = priority_p_calc_fs_factor(
-			fs_assoc->usage->usage_efctv,
-			(long double)fs_assoc->usage->shares_norm);
-		log_flag(PRIO, "Fairshare priority of job %u for user %s in acct %s is 2**(-%Lf/%f) = %f",
-			 job_ptr->job_id, job_assoc->user, job_assoc->acct,
-			 fs_assoc->usage->usage_efctv,
-			 fs_assoc->usage->shares_norm, priority_fs);
-	}
+	priority_fs = job_assoc->usage->fs_factor;
 	assoc_mgr_unlock(&locks);
 
 	return priority_fs;
@@ -1312,6 +1292,45 @@ static int _decay_apply_new_usage_and_weighted_factors(job_record_t *job_ptr,
 	return SLURM_SUCCESS;
 }
 
+static void _set_assoc_fs_factor(
+	slurmdb_assoc_rec_t *assoc_ptr)
+{
+	slurmdb_assoc_rec_t *fs_assoc = assoc_ptr;
+
+	xassert(assoc_ptr);
+
+	/* Use values from parent when FairShare=SLURMDB_FS_USE_PARENT */
+	if (assoc_ptr->shares_raw == SLURMDB_FS_USE_PARENT)
+		fs_assoc = assoc_ptr->usage->fs_assoc_ptr;
+
+	/* Set the original assoc_ptr->usage->fs_factor */
+	if (fuzzy_equal(fs_assoc->usage->usage_efctv, NO_VAL) ||
+	    (fs_assoc->usage->shares_norm <= 0))
+		assoc_ptr->usage->fs_factor = 0.0;
+	else
+		assoc_ptr->usage->fs_factor = pow(
+			2.0,
+			-((fs_assoc->usage->usage_efctv /
+			   fs_assoc->usage->shares_norm) /
+			  damp_factor));
+}
+
+static int _set_non_fair_tree_fs_factor(
+	void *x,
+	void *args)
+{
+	job_record_t *job_ptr = x;
+
+	if (!job_ptr->assoc_ptr) {
+		error("Job %pJ has no association. Unable to compute fairshare.",
+		      job_ptr);
+		return 0;
+	}
+
+	_set_assoc_fs_factor(job_ptr->assoc_ptr);
+
+	return 0;
+}
 
 static void *_decay_thread(void *no_data)
 {
@@ -1453,6 +1472,11 @@ static void *_decay_thread(void *no_data)
 	get_usage:
 		if (flags & PRIORITY_FLAGS_FAIR_TREE)
 			fair_tree_decay(job_list, start_time);
+		else if (calc_fairshare)
+			list_for_each(
+				job_list,
+				_set_non_fair_tree_fs_factor,
+				NULL);
 
 		g_last_ran = start_time;
 
@@ -1923,25 +1947,11 @@ extern void priority_p_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 	set_assoc_usage_norm(assoc);
 	_set_assoc_usage_efctv(assoc);
 
+	if (!(flags & PRIORITY_FLAGS_FAIR_TREE))
+		_set_assoc_fs_factor(assoc);
+
 	if (slurm_conf.debug_flags & DEBUG_FLAG_PRIO)
 		_priority_p_set_assoc_usage_debug(assoc);
-}
-
-
-extern double priority_p_calc_fs_factor(long double usage_efctv,
-					long double shares_norm)
-{
-	double priority_fs = 0.0;
-
-	if (fuzzy_equal(usage_efctv, NO_VAL))
-		return priority_fs;
-
-	if (shares_norm <= 0)
-		return priority_fs;
-
-	priority_fs = pow(2.0, -((usage_efctv/shares_norm) / damp_factor));
-
-	return priority_fs;
 }
 
 extern list_t *priority_p_get_priority_factors_list(uid_t uid)
