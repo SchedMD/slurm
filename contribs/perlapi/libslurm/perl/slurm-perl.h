@@ -25,12 +25,6 @@ extern int submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV *hv);
 extern int srun_job_complete_msg_to_hv(srun_job_complete_msg_t *msg, HV *hv);
 extern int srun_timeout_msg_to_hv(srun_timeout_msg_t *msg, HV *hv);
 
-/********** resource allocation callback functions **********/
-extern void set_sarb_cb(SV *callback);
-extern void sarb_cb(uint32_t job_id);
-extern void set_sacb(HV *callbacks);
-extern slurm_allocation_callbacks_t sacb;
-
 /********** job info conversion functions **********/
 extern int job_info_to_hv(job_info_t *job_info, HV *hv);
 extern int job_info_msg_to_hv(job_info_msg_t *job_info_msg, HV *hv);

@@ -273,30 +273,6 @@ slurm_read_hostfile(slurm_t self, char *filename, int n)
 	OUTPUT:
 		RETVAL
 
-allocation_msg_thread_t *
-slurm_allocation_msg_thr_create(slurm_t self, OUT uint16_t port, HV *callbacks)
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		set_sacb(callbacks);
-	C_ARGS:
-		&port, &sacb
-
-void
-slurm_allocation_msg_thr_destroy(slurm_t self, allocation_msg_thread_t * msg_thr)
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-
-	C_ARGS:
-		msg_thr
-
 HV *
 slurm_submit_batch_job(slurm_t self, HV *job_desc)
 	PREINIT:
