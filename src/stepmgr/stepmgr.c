@@ -5045,6 +5045,7 @@ static int _send_msg(slurm_msg_t *msg, int slurmd_fd, slurm_msg_type_t type,
 	}
 
 	if (running_in_slurmstepd()) {
+		xassert(slurmd_fd != -1);
 		if ((stepd_proxy_send_resp_to_slurmd(slurmd_fd, msg, type,
 						     data))) {
 			return SLURM_ERROR;
