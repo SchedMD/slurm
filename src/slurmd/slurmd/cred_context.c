@@ -112,6 +112,13 @@ static int _list_find_job_state(void *x, void *key)
 	job_state_t *j = x;
 	slurm_step_id_t *step_id = key;
 
+	/*
+	 * Backwards compatibility hack: only check that the SLUID matches
+	 * if both the cred_cache and the lookup have it set.
+	 */
+	if (j->step_id.sluid && step_id->sluid)
+		return (j->step_id.sluid == step_id->sluid);
+
 	if (j->step_id.job_id == step_id->job_id)
 		return 1;
 	return 0;
@@ -526,6 +533,11 @@ static int _list_find_cred_state(void *x, void *key)
 	slurm_cred_t *cred = key;
 
 	if (s->ctime != cred->ctime)
+		return 0;
+
+	/* If the SLUID is set on both, then reject if they're not equal. */
+	if (s->step_id.sluid && cred->arg->step_id.sluid &&
+	    (s->step_id.sluid != cred->arg->step_id.sluid))
 		return 0;
 
 	return verify_step_id(&s->step_id, &cred->arg->step_id);
