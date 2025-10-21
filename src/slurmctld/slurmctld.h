@@ -1079,7 +1079,7 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 
 /*
  * job_complete - note the normal termination the specified job
- * IN job_id - id of the job which completed
+ * IN step_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
  * IN node_fail - true if job terminated due to node failure
@@ -1088,7 +1088,7 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
+extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code);
 
 /*

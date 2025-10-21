@@ -720,11 +720,14 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+	slurm_step_id_t step_id = {
+		.job_id = job_id,
+	};
 
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
 	lock_slurmctld(job_write_lock);
-	job_complete(job_id, slurm_conf.slurm_user_id, false, false, SIGTERM);
+	job_complete(&step_id, slurm_conf.slurm_user_id, false, false, SIGTERM);
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -1918,8 +1921,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
-	error_code = job_complete(comp_msg->step_id.job_id, msg->auth_uid,
-				  false, false, comp_msg->job_rc);
+	error_code = job_complete(&comp_msg->step_id, msg->auth_uid, false,
+				  false, comp_msg->job_rc);
 	if (error_code) {
 		if (error_code == ESLURM_INVALID_JOB_ID) {
 			info("%s: %pI error %s",
@@ -2134,8 +2137,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		job_requeue = true;
 
 	/* Mark job allocation complete */
-	i = job_complete(comp_msg->step_id.job_id, msg->auth_uid, job_requeue,
-			 false, comp_msg->job_rc);
+	i = job_complete(&comp_msg->step_id, msg->auth_uid, job_requeue, false,
+			 comp_msg->job_rc);
 	error_code = MAX(error_code, i);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);

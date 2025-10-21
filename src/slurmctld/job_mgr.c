@@ -6281,7 +6281,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 
 /*
  * job_complete - note the normal termination the specified job
- * IN job_id - id of the job which completed
+ * IN step_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
  * IN node_fail - true if job terminated due to node failure
@@ -6290,7 +6290,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
+extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code)
 {
 	job_record_t *job_ptr;
@@ -6299,9 +6299,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("%s: invalid JobId=%u", __func__, job_id);
+	if (!(job_ptr = find_job_record(step_id->job_id))) {
+		info("%s: invalid %pI", __func__, &step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -15939,6 +15938,9 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	     find_node_record(job_ptr->batch_host))) {
 		bool requeue = false;
 		char *requeue_msg = "";
+		slurm_step_id_t step_id = {
+			.job_id = job_ptr->job_id,
+		};
 		if (job_ptr->details && job_ptr->details->requeue) {
 			requeue = true;
 			requeue_msg = ", Requeuing job";
@@ -15947,8 +15949,8 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		     job_ptr, job_ptr->batch_host, requeue_msg);
 		xfree(job_ptr->failed_node);
 		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-			     requeue, true, 1);
+		job_complete(&step_id, slurm_conf.slurm_user_id, requeue, true,
+			     1);
 	} else {
 		foreach_purge_missing_jobs->job_ptr = job_ptr;
 
@@ -19687,9 +19689,12 @@ extern void sort_all_jobs_partition_lists()
 
 extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 {
+	slurm_step_id_t step_id = {
+		.job_id = job_ptr->job_id,
+	};
 	job_ptr->priority = 0; /* Hold job */
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");
-	job_complete(job_ptr->job_id, slurm_conf.slurm_user_id, true, false, 0);
+	job_complete(&step_id, slurm_conf.slurm_user_id, true, false, 0);
 }
