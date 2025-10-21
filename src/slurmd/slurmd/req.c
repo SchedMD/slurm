@@ -387,9 +387,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id = { 0 };
-
-	step_id.job_id = request->job_id;
+	slurm_step_id_t step_id = *request;
 
 	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER, false);
 }
