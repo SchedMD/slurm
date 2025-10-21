@@ -42,15 +42,10 @@
 
 #include "src/slurmd/slurmd/launch_state.h"
 
-typedef struct {
-	bool batch_step;
-	uint32_t job_id;
-} active_job_t;
-
 #define JOB_STATE_CNT 64
 static pthread_mutex_t job_state_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t job_state_cond = PTHREAD_COND_INITIALIZER;
-static active_job_t active_job_id[JOB_STATE_CNT] = { { 0 } };
+static slurm_step_id_t active_job_id[JOB_STATE_CNT] = { { 0 } };
 
 static void _launch_complete_log(char *type, uint32_t job_id)
 {
@@ -78,7 +73,7 @@ extern void launch_complete_add(slurm_step_id_t *step_id)
 	for (j = 0; j < JOB_STATE_CNT; j++) {
 		if (step_id->job_id == active_job_id[j].job_id) {
 			if (step_id->step_id == SLURM_BATCH_SCRIPT)
-				active_job_id[j].batch_step = 1;
+				active_job_id[j].step_id = SLURM_BATCH_SCRIPT;
 			break;
 		}
 		if ((active_job_id[j].job_id == 0) && (empty == -1))
@@ -91,12 +86,10 @@ extern void launch_complete_add(slurm_step_id_t *step_id)
 			active_job_id[j - 1] = active_job_id[j];
 		}
 		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
+		active_job_id[JOB_STATE_CNT - 1].step_id = 0;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
 			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = step_id->job_id;
-				if (step_id->step_id == SLURM_BATCH_SCRIPT)
-					active_job_id[j].batch_step = 1;
+				active_job_id[j] = *step_id;
 				break;
 			}
 		}
@@ -115,7 +108,7 @@ extern bool launch_job_test(slurm_step_id_t *step_id)
 	slurm_mutex_lock(&job_state_mutex);
 	for (j = 0; j < JOB_STATE_CNT; j++) {
 		if (step_id->job_id == active_job_id[j].job_id) {
-			if (active_job_id[j].batch_step)
+			if (active_job_id[j].step_id == SLURM_BATCH_SCRIPT)
 				found = true;
 			break;
 		}
@@ -138,7 +131,7 @@ extern void launch_complete_rm(slurm_step_id_t *step_id)
 			active_job_id[j - 1] = active_job_id[j];
 		}
 		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
+		active_job_id[JOB_STATE_CNT - 1].step_id = 0;
 	}
 	slurm_mutex_unlock(&job_state_mutex);
 	_launch_complete_log("job remove", step_id->job_id);
@@ -178,7 +171,7 @@ extern void launch_complete_wait(slurm_step_id_t *step_id)
 			active_job_id[j - 1] = active_job_id[j];
 		}
 		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
+		active_job_id[JOB_STATE_CNT - 1].step_id = 0;
 		for (j = 0; j < JOB_STATE_CNT; j++) {
 			if (active_job_id[j].job_id == 0) {
 				active_job_id[j].job_id = step_id->job_id;
