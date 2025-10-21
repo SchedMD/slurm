@@ -6938,7 +6938,8 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 
 	/* Debug the protocol layer.
 	 */
-	START_TIMER;
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		START_TIMER;
 
 	if (msg->conn) {
 		fd = conn_g_get_fd(msg->conn);
@@ -6984,8 +6985,11 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 		return;
 
 	(*(this_rpc->func))(msg);
-	END_TIMER;
-	record_rpc_stats(msg, DELTA_TIMER);
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		END_TIMER;
+		record_rpc_stats(msg, DELTA_TIMER);
+	}
 }
 
 static void _srun_agent_launch(slurm_addr_t *addr, char *tls_cert, char *host,
