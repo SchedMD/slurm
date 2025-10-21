@@ -2134,7 +2134,7 @@ typedef struct task_ext_msg {
 } task_exit_msg_t;
 
 typedef struct {
-	uint32_t job_id;	/* slurm job_id */
+	slurm_step_id_t step_id;
 	uint32_t flags;		/* flags */
 	uint16_t port;		/* target TCP port */
 	char *target;		/* target host or UNIX socket */
