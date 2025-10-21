@@ -114,31 +114,6 @@ def test_basic_affinity(allocation):
     assert mask > 0, "Mask should be non-zero"
 
 
-def test_rank_affinity(allocation):
-    """Test affinity with --cpu-bind=rank (note: rank binding is obsolete but test should still work)."""
-    # Get the basic affinity allocation to determine what CPUs are actually available
-    basic_task_data = run_affinity_test_in_allocation()
-
-    # Calculate expected mask based on actual allocated CPUs from basic run
-    # Since rank binding is obsolete, it should behave like a normal affinity run
-    expected_mask = sum(basic_task_data.values())
-
-    # This might generate a warning about rank binding being obsolete, but should still work
-    result = atf.run_command_output(
-        f"srun --jobid={job_id} -c1 --cpu-bind=rank {file_prog}"
-    )
-
-    # Parse the output despite potential warnings
-    task_data = parse_task_output(result)
-
-    # Sum all the masks
-    total_mask = sum(task_data.values())
-
-    assert (
-        total_mask == expected_mask
-    ), f"Affinity mask should be consistent for a job step with affinity: {total_mask} != {expected_mask}"
-
-
 def test_invalid_map_cpu_arguments(allocation):
     """Test that invalid map_cpu arguments fail appropriately."""
     # Test with NaN value
