@@ -1888,7 +1888,10 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(NET, "%s: [%s] connection work cancelled",
 			 __func__, conmgr_con_get_name(msg->conmgr_con));
-		goto invalid;
+		FREE_NULL_CONN(msg->conn);
+		FREE_NULL_MSG(msg);
+		conmgr_fd_free_ref(&conmgr_con);
+		return;
 	}
 
 	/*
@@ -1925,13 +1928,6 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 
 	conmgr_fd_free_ref(&conmgr_con);
 	server_thread_decr();
-	return;
-
-invalid:
-	/* Cleanup for invalid RPC */
-	FREE_NULL_CONN(msg->conn);
-	FREE_NULL_MSG(msg);
-	conmgr_fd_free_ref(&conmgr_con);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
