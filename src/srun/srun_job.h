@@ -129,6 +129,9 @@ typedef struct srun_job {
 	char *user_name; /* resolved user name of job */
 	gid_t gid; /* resolved group id of job */
 	char *group_name; /* resolved group name of job */
+	uint16_t use_protocol_ver; /* Slurm version the allocation was started
+				    * with or the lowest slurmd version
+				    * it needs to talk to */
 } srun_job_t;
 
 void    update_job_state(srun_job_t *job, srun_job_state_t newstate);

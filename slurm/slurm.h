@@ -2624,6 +2624,9 @@ typedef struct resource_allocation_response_msg {
 	char *qos;               /* allocation qos */
 	char *resv_name;         /* allocation reservation */
 	uint16_t segment_size; /* requested segment size */
+	uint16_t start_protocol_ver; /* Slurm version the allocation was started
+				      *	with or the lowest slurmd version
+				      *	it needs to talk to */
 	slurm_step_id_t step_id;
 	char *tres_per_node; /* comma delimited list of TRES=# values */
 	char *tres_per_task; /* comma delimited list of TRES=# values */

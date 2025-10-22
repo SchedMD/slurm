@@ -824,6 +824,8 @@ slurm_job_step_create (job_step_create_request_msg_t *req,
 	slurm_msg_t_init(&resp_msg);
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = req;
+	if (req->use_protocol_ver)
+		req_msg.protocol_version = req->use_protocol_ver;
 
 re_send:
 	/* xstrdup() to be consistent with reroute and be able to free. */

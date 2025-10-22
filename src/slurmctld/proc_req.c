@@ -853,6 +853,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 	alloc_msg->user_name = user_from_job(job_ptr);
 	alloc_msg->gid = job_ptr->group_id;
 	alloc_msg->group_name = group_from_job(job_ptr);
+	alloc_msg->start_protocol_ver = job_ptr->start_protocol_ver;
 
 	return alloc_msg;
 }

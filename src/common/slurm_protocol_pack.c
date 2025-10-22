@@ -1342,6 +1342,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
 		pack16(msg->segment_size, buffer);
+		pack16(msg->start_protocol_ver, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_task, buffer);
@@ -1490,6 +1491,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpackstr(&msg->qos, buffer);
 		safe_unpackstr(&msg->resv_name, buffer);
 		safe_unpack16(&msg->segment_size, buffer);
+		safe_unpack16(&msg->start_protocol_ver, buffer);
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpackstr(&msg->tres_per_node, buffer);
