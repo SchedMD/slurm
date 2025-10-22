@@ -5939,7 +5939,6 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	bitoff_t i;
 	signal_tasks_msg_t *signal_tasks_msg = NULL;
 	agent_arg_t *agent_args = NULL;
-	node_record_t *node_ptr;
 
 	xassert(job_ptr);
 	xassert(job_ptr->batch_host);
@@ -5953,8 +5952,7 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 	agent_args->msg_type	= REQUEST_SIGNAL_TASKS;
 	agent_args->retry	= 1;
 	agent_args->node_count  = 1;
-	if ((node_ptr = find_node_record(job_ptr->batch_host)))
-		agent_args->protocol_version = node_ptr->protocol_version;
+	agent_args->protocol_version = job_ptr->start_protocol_ver;
 	agent_args->hostlist	= hostlist_create(job_ptr->batch_host);
 	signal_tasks_msg = xmalloc(sizeof(signal_tasks_msg_t));
 	signal_tasks_msg->step_id.job_id      = job_ptr->job_id;
@@ -15642,12 +15640,9 @@ static void _send_job_kill(job_record_t *job_ptr)
 
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
-	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	agent_args->protocol_version = job_ptr->start_protocol_ver;
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(job_ptr->node_bitmap_cg, &i)); i++) {
-		if (agent_args->protocol_version > node_ptr->protocol_version)
-			agent_args->protocol_version =
-				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 		if (PACK_FANOUT_ADDRS(node_ptr))
@@ -17104,12 +17099,9 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 
 	signal_job_msg->signal = signal;
 
-	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	agent_args->protocol_version = job_ptr->start_protocol_ver;
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
-		if (agent_args->protocol_version > node_ptr->protocol_version)
-			agent_args->protocol_version =
-				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 		if (PACK_FANOUT_ADDRS(node_ptr))
@@ -17152,12 +17144,9 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 	sus_ptr->step_id.step_id = NO_VAL;
 	sus_ptr->op = op;
 
-	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
+	agent_args->protocol_version = job_ptr->start_protocol_ver;
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
-		if (agent_args->protocol_version > node_ptr->protocol_version)
-			agent_args->protocol_version =
-				node_ptr->protocol_version;
 		hostlist_push_host(agent_args->hostlist, node_ptr->name);
 		agent_args->node_count++;
 		if (PACK_FANOUT_ADDRS(node_ptr))
