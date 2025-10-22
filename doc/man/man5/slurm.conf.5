@@ -2034,6 +2034,11 @@ Optional comma-separated list for \fBjobcomp/elasticsearch\fR:
 .IP
 
 .TP
+\fBsend_comment\fR
+Sends the job comment as part of jobcomp messages.
+.IP
+
+.TP
 \fBsend_script\fR
 Sends the job script as part of jobcomp messages.
 .IP
@@ -2087,6 +2092,11 @@ Instruct the delivery report callback to requeue messages that failed delivery
 because their time waiting for successful delivery reached the \fBlibrdkafka\fR
 property \fBmessage.timeout.ms\fR.
 Defaults to not set (don't requeue and thus discard these messages).
+.IP
+
+.TP
+\fBsend_comment\fR
+Sends the job comment as part of jobcomp messages.
 .IP
 
 .TP
