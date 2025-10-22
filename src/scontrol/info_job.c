@@ -198,6 +198,13 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
+	if (detail_flag && job_ptr->sluid) {
+		print_sluid(job_ptr->sluid, tmp1, sizeof(tmp1));
+		xstrfmtcat(out, "SLUID=%s", tmp1);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	if (job_ptr->het_job_id_set) {
 		xstrfmtcat(out, "HetJobIdSet=%s", job_ptr->het_job_id_set);
 		xstrcat(out, line_end);
