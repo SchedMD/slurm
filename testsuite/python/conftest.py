@@ -377,6 +377,7 @@ def module_setup(request, tmp_path_factory):
     # The daemons coredumps since then may explain a failure of any test of the
     # module, see known_issues._related_coredumps()
     atf.properties["module-start-time"] = time.time()
+    atf.properties.pop("cls-modulefiles-dir", None)
     if "old-slurm-prefix" in atf.properties.keys():
         del atf.properties["old-slurm-prefix"]
     if "new-slurm-prefix" in atf.properties.keys():
@@ -504,8 +505,9 @@ def module_teardown():
 
         if atf.properties["slurm-started"] is True:
             # Cancel all jobs
-            if not atf.cancel_all_jobs(quiet=True):
-                teardown_failures.append(known_issues.JOBS_NOT_CANCELLED)
+            for _ in atf.foreach_cluster():
+                if not atf.cancel_all_jobs(quiet=True):
+                    teardown_failures.append(known_issues.JOBS_NOT_CANCELLED)
 
             # TODO: Remove once t23622 and t24793 are fixed
             job_states = {}
@@ -541,7 +543,9 @@ def module_teardown():
             )
 
         # Restore the Slurm database, only if the module saved it.
+        # In multi-cluster setups the slurmdbd is the one of cluster 1.
         if atf.properties["accounting"] == "db-saved":
+            atf.select_cluster(1)
             teardown_failures += atf.restore_accounting_database(
                 atf.properties["sql-db-backup"]
             )
@@ -593,17 +597,18 @@ def final_cleanup():
     atf.properties["final-cleanup-pending"] = False
 
     # Restore StateSaveLocation for auto-config
-    atf.run_command(
-        f"rm -rf {atf.properties['cluster'].statesaveloc}", user="root", quiet=True
-    )
-    if os.path.exists(
-        atf.properties["cluster"].statesaveloc + atf.properties["test_name"]
-    ):
+    for _ in atf.foreach_cluster():
         atf.run_command(
-            f"mv {atf.properties['cluster'].statesaveloc+atf.properties['test_name']} {atf.properties['cluster'].statesaveloc}",
-            user="root",
-            quiet=True,
+            f"rm -rf {atf.properties['cluster'].statesaveloc}", user="root", quiet=True
         )
+        if os.path.exists(
+            atf.properties["cluster"].statesaveloc + atf.properties["test_name"]
+        ):
+            atf.run_command(
+                f"mv {atf.properties['cluster'].statesaveloc+atf.properties['test_name']} {atf.properties['cluster'].statesaveloc}",
+                user="root",
+                quiet=True,
+            )
 
     # Save logs dir for the test and restore the original
     atf.run_command(
@@ -622,31 +627,48 @@ def final_cleanup():
         quiet=True,
     )
 
-    # Restore SysConfigDir
-    atf.run_command(
-        f"rm -rf {atf.properties['cluster'].config_dir}", user="root", quiet=True
-    )
-    if os.path.exists(
-        atf.properties["cluster"].config_dir + atf.properties["test_name"]
-    ):
+    # Save also the logs of the other clusters of a multi-cluster setup, as
+    # their var-dir clones are removed below
+    for cluster in atf.properties["all-clusters"][1:]:
         atf.run_command(
-            f"mv {atf.properties['cluster'].config_dir+atf.properties['test_name']} {atf.properties['cluster'].config_dir}",
+            f"rsync -a --sparse {cluster.var_dir}/log/ {atf.properties['slurm-logs-dir']}_{atf.properties['test_name']}/cls{cluster.number}/",
             user="root",
             quiet=True,
         )
-    else:
-        logging.warning(
-            "SysConfDir backup doesn't exists, but it should be created in the module_setup fixture."
+
+    # Restore SysConfigDir
+    for _ in atf.foreach_cluster():
+        atf.run_command(
+            f"rm -rf {atf.properties['cluster'].config_dir}", user="root", quiet=True
         )
+        if os.path.exists(
+            atf.properties["cluster"].config_dir + atf.properties["test_name"]
+        ):
+            atf.run_command(
+                f"mv {atf.properties['cluster'].config_dir+atf.properties['test_name']} {atf.properties['cluster'].config_dir}",
+                user="root",
+                quiet=True,
+            )
+        elif atf.properties["cluster"].number == 1:
+            # The other clusters of a multi-cluster setup have no backup, as
+            # they are cloned from the first one by the test module
+            logging.warning(
+                "SysConfDir backup doesn't exists, but it should be created in the module_setup fixture."
+            )
 
     # Remove Nodes directories:
     if "nodes" not in atf.properties:
         atf.properties["nodes"] = ["node0"]
-    for node_name in atf.properties["nodes"]:
-        spool_dir = atf.properties["cluster"].spool_dir.replace("%n", node_name)
-        tmpfs_dir = atf.properties["cluster"].tmpfs.replace("%n", node_name)
-        atf.run_command(f"sudo rm -rf {spool_dir}", quiet=True)
-        atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
+    for _ in atf.foreach_cluster():
+        for node_name in atf.properties["nodes"]:
+            spool_dir = atf.properties["cluster"].spool_dir.replace("%n", node_name)
+            tmpfs_dir = atf.properties["cluster"].tmpfs.replace("%n", node_name)
+            atf.run_command(f"sudo rm -rf {spool_dir}", quiet=True)
+            atf.run_command(f"sudo rm -rf {tmpfs_dir}", quiet=True)
+
+    # Remove the multi-cluster clones of the prefix and the var-dir
+    for cluster in atf.properties["all-clusters"][1:]:
+        atf.run_command(f"sudo rm -rf {cluster.prefix} {cluster.var_dir}", quiet=True)
 
     # Only the directories atf.start_slurmd() itself created
     for path in atf.properties["slurmd-dirs-created"]:
@@ -675,6 +697,16 @@ def final_cleanup():
                         f"{result['stderr'] or result['stdout']}"
                     )
 
+    # Remove the environment modules of the multi-cluster clones
+    if atf.properties.get("cls-modulefiles-dir"):
+        shutil.rmtree(atf.properties.pop("cls-modulefiles-dir"), ignore_errors=True)
+
+    # Leave the properties and SLURM_CONF pointing to cluster 1, as the
+    # multi-cluster loops above leave them pointing to deleted dirs.
+    atf.select_cluster(1)
+    os.environ.clear()
+    os.environ.update(atf.properties["orig-environment"])
+
     return failures
 
 
@@ -690,9 +722,13 @@ def function_setup(request, monkeypatch, tmp_path):
 
     yield
 
+    # Every test starts and ends on cluster 1, whatever it did to the selection
+    atf.select_cluster(1)
+
     if atf.properties["auto-config"]:
         if atf.properties["slurm-started"] is True:
-            atf.cancel_all_jobs(quiet=True)
+            for _ in atf.foreach_cluster():
+                atf.cancel_all_jobs(quiet=True)
     else:
         atf.cancel_jobs(atf.properties["submitted-jobs"])
 
