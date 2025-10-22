@@ -1868,14 +1868,15 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 	int rc;
 	slurm_msg_t *msg = arg;
 	slurmctld_rpc_t *this_rpc = NULL;
+	conmgr_fd_ref_t *conmgr_con = NULL;
 
 	/* Set connection into message for replies */
 	xassert(!msg->conn || (msg->conn == conn));
 	msg->conn = conn;
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
-		debug3("%s: [%s] connection work cancelled",
-		       __func__, conmgr_fd_get_name(conmgr_args.con));
+		log_flag(NET, "%s: [%s] connection work cancelled",
+			 __func__, conmgr_con_get_name(msg->conmgr_con));
 		goto invalid;
 	}
 
@@ -1883,11 +1884,12 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 	 * The fd was extracted from conmgr, so the conmgr connection is
 	 * invalid.
 	 */
-	conmgr_fd_free_ref(&msg->conmgr_con);
+	SWAP(conmgr_con, msg->conmgr_con);
 
 	server_thread_incr();
 
 	if (!(rc = rpc_enqueue(msg))) {
+		conmgr_fd_free_ref(&conmgr_con);
 		server_thread_decr();
 		return;
 	}
@@ -1900,17 +1902,22 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 		/* directly process the request */
 		slurmctld_req(msg, this_rpc);
 	} else {
-		error("invalid RPC msg_type=%s", rpc_num2string(msg->msg_type));
+		error("[%s] Received invalid RPC msg_type[0x%x]=%s",
+		      conmgr_con_get_name(conmgr_con), (uint32_t) msg->msg_type,
+		      rpc_num2string(msg->msg_type));
 		slurm_send_rc_msg(msg, EINVAL);
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
 		FREE_NULL_CONN(msg->conn);
-		log_flag(TLS, "[%s] Destroyed server TLS connection for incoming RPC",
-			 conmgr_fd_get_name(conmgr_args.con));
+		log_flag(NET, "%s: [%s] destroyed connection for incoming RPC msg_type[0x%x]=%s",
+			__func__, conmgr_con_get_name(conmgr_con),
+			(uint32_t) msg->msg_type,
+			rpc_num2string(msg->msg_type));
 		FREE_NULL_MSG(msg);
 	}
 
+	conmgr_fd_free_ref(&conmgr_con);
 	server_thread_decr();
 	return;
 
@@ -1918,6 +1925,7 @@ invalid:
 	/* Cleanup for invalid RPC */
 	FREE_NULL_CONN(msg->conn);
 	FREE_NULL_MSG(msg);
+	conmgr_fd_free_ref(&conmgr_con);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
