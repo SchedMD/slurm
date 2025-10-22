@@ -81,8 +81,8 @@ Default is "false". See also \fBPMIxCollFence\fR.
 .TP
 \fBPMIxNetDevicesUCX\fR=<\fIdevice type\fR>
 Type of network device to use for communication. This will set the
-UCX_NET_DEVICES environment variable in both slurmstepd and job step
-environments. Defaults to not being set.
+UCX_NET_DEVICES environment variable in only the slurmstepd environment.
+Defaults to not being set.
 .IP
 
 .TP
@@ -104,12 +104,11 @@ take place. Defaults to 300 seconds.
 
 .TP
 \fBPMIxTlsUCX\fR=<\fItl1\fR>[,<\fItl2\fR>...]
-Sets the UCX_TLS variable which restricts the transports to use. This
-environment variable will be set in both slurmstepd and job step environments.
-The accepted values are defined in the UCX documentation and may vary between
-installations. Multiple values can be set and must be separated by commas. If
-not set, UCX tries to use all available transports and selects the best ones
-according to their performance capabilities and scale.
+Sets the UCX_TLS variable, which restricts the transports to use, in the
+slurmstepd environment. The accepted values are defined in the UCX documentation
+and may vary between installations. Multiple values can be set and must be
+separated by commas. If not set, UCX tries to use all available transports and
+selects the best ones according to their performance capabilities and scale.
 Defaults to not being set.
 .IP
 
