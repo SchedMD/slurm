@@ -1894,6 +1894,7 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 	} else {
 		/* directly process the request */
 		slurmctld_req(msg, this_rpc);
+		rc = SLURM_SUCCESS;
 	}
 
 	if (!this_rpc->keep_msg) {
