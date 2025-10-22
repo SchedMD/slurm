@@ -154,6 +154,31 @@ Test if \fBslurmctld\fR loaded successfully.
 Test if \fBslurmctld\fR is ready to accept incoming RPCs.
 .IP
 
+.TP
+\fBGET /metrics/jobs\fR
+Get job metrics.
+.IP
+
+.TP
+\fBGET /metrics/nodes\fR
+Get node metrics.
+.IP
+
+.TP
+\fBGET /metrics/partitions\fR
+Get partition metrics.
+.IP
+
+.TP
+\fBGET /metrics/scheduler\fR
+Return scheduler metrics.
+.IP
+
+.TP
+\fBGET /metrics/jobs-users-accts\fR
+Return user and account job metrics.
+.IP
+
 .SH "CORE FILE LOCATION"
 If slurmctld is started with the \fB\-D\fR option then the core file will be
 written to the current working directory.

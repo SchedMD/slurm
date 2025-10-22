@@ -401,10 +401,16 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 	ADD_METRIC(set, UINT16, total_node_cnt, nodes, "Total number of nodes", GAUGE);
 
 	ADD_METRIC(set, UINT16, stats->alloc, nodes_alloc, "Number of nodes in Allocated state", GAUGE);
+	ADD_METRIC(set, UINT16, stats->blocked, nodes_blocked, "Number of nodes in Blocked state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->cg, nodes_completing, "Number of nodes with Completing flag", GAUGE);
+	ADD_METRIC(set, UINT16, stats->cloud, nodes_cloud, "Number of Cloud nodes", GAUGE);
 	ADD_METRIC(set, UINT16, stats->down, nodes_down, "Number of nodes in Down state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->drain, nodes_drain, "Number of nodes with Drain flag", GAUGE);
+	ADD_METRIC(set, UINT16, stats->drained, nodes_drained, "Number of drained nodes", GAUGE);
 	ADD_METRIC(set, UINT16, stats->draining, nodes_draining, "Number of nodes in draining condition (Drain state with active jobs)", GAUGE);
+	ADD_METRIC(set, UINT16, stats->dyn_future, nodes_dyn_future, "Number of future dynamic nodes", GAUGE);
+	ADD_METRIC(set, UINT16, stats->dyn_normal, nodes_dyn_normal, "Number of dynamic nodes", GAUGE);
+	ADD_METRIC(set, UINT16, stats->external, nodes_external, "Number of external nodes", GAUGE);
 	ADD_METRIC(set, UINT16, stats->fail, nodes_fail, "Number of nodes with Fail flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->future, nodes_future, "Number of nodes in Future state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->idle, nodes_idle, "Number of nodes in Idle state", GAUGE);
@@ -413,6 +419,11 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 	ADD_METRIC(set, UINT16, stats->mixed, nodes_mixed, "Number of nodes in Mixed state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->no_resp, nodes_noresp, "Number of nodes with Not Responding flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->planned, nodes_planned, "Number of nodes with Planned flag", GAUGE);
+	ADD_METRIC(set, UINT16, stats->power_down, nodes_power_down, "Number of nodes marked to be powered down", GAUGE);
+	ADD_METRIC(set, UINT16, stats->power_up, nodes_power_up, "Number of nodes marked to be powered up", GAUGE);
+	ADD_METRIC(set, UINT16, stats->powered_down, nodes_powered_down, "Number of nodes powered down", GAUGE);
+	ADD_METRIC(set, UINT16, stats->powering_down, nodes_powering_up, "Number of nodes powering up", GAUGE);
+	ADD_METRIC(set, UINT16, stats->reboot_issued, nodes_reboot_issued, "Number of nodes with Reboot Issued flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->reboot_requested, nodes_reboot_req, "Number of nodes with Reboot Requested flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->resv, nodes_resv, "Number of nodes with Reserved flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->unknown, nodes_unknown, "Number of nodes in Unknown state", GAUGE);
@@ -432,6 +443,8 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT16, stats->cpus_alloc, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->deadline, jobs_deadline, "Number of jobs in Deadline state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->failed, jobs_failed, "Number of jobs in Failed state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->fed_requeued, jobs_fed_requeued, "Number of jobs requeued in a federation", GAUGE);
+	ADD_METRIC(set, UINT32, stats->finished, jobs_finished, "Number of finished jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->hold, jobs_hold, "Number of jobs in Hold state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->job_cnt, jobs, "Total number of jobs", GAUGE);
 	ADD_METRIC(set, UINT64, stats->memory_alloc, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE);
@@ -442,8 +455,12 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT32, stats->powerup_node, jobs_powerup_node, "Number of jobs in PowerUp Node state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->preempted, jobs_preempted, "Number of jobs in Preempted state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->requeued, jobs_requeued, "Number of jobs in Requeued state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->resizing, jobs_resizing, "Number of jobs in Resizing state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->revoked, jobs_revoked, "Number of jobs in Rvoked state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->running, jobs_running, "Number of jobs in Running state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->signaling, jobs_signaling, "Number of jobs being signaled", GAUGE);
 	ADD_METRIC(set, UINT32, stats->stageout, jobs_stageout, "Number of jobs in StageOut state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->started, jobs_started, "Number of started jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->suspended, jobs_suspended, "Number of jobs in Suspended state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->timeout, jobs_timeout, "Number of jobs in Timeout state", GAUGE);
 
@@ -464,6 +481,8 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT16, ps->jobs_cpus_alloc, partition_jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_deadline, partition_jobs_deadline, "Number of jobs in Deadline state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_failed, partition_jobs_failed, "Number of jobs in Failed state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_fed_requeued, partition_jobs_fed_requeued, "Number of jobs requeued in a federation", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_finished, partition_jobs_finished, "Number of jobs in Finished", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_hold, partition_jobs_hold, "Number of jobs in Hold state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->jobs_max_job_nodes, partition_jobs_max_job_nodes, "Max of the max_nodes required of all pending jobs in that partition", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->jobs_max_job_nodes_nohold, partition_jobs_max_job_nodes_nohold, "Max of the max_nodes required of all pending jobs in that partition excluding Held jobs", GAUGE, "partition", ps->name);
@@ -476,22 +495,33 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_powerup_node, partition_jobs_powerup_node, "Number of jobs in PowerUp Node state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_preempted, partition_jobs_preempted, "Number of jobs in Preempted state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_requeued, partition_jobs_requeued, "Number of jobs in Requeued state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_resizing, partition_jobs_resizing, "Number of jobs in Resizing state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_revoked, partition_jobs_revoked, "Number of revoked jobs", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_running, partition_jobs_running, "Number of jobs in Running state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_signaling, partition_jobs_signaling, "Number of jobs in Signaling state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_stageout, partition_jobs_stageout, "Number of jobs in StageOut state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_started, partition_jobs_started, "Number of jobs started", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_suspended, partition_jobs_suspended, "Number of jobs in Suspended state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_timeout, partition_jobs_timeout, "Number of jobs in Timeout state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_wait_part_node_limit, partition_jobs_wait_part_node_limit, "Jobs wait partition node limit", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_alloc, partition_nodes_alloc, "Nodes allocated", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_blocked, partition_nodes_blocked, "Nodes blocked", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_cg, partition_nodes_cg, "Nodes in completing state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_cloud, partition_nodes_cloud, "Cloud nodes", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_cpus_efctv, partition_nodes_cpus_efctv, "Number of effective CPUs on all nodes, excludes CoreSpec", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_cpus_idle, partition_nodes_cpus_idle, "Number of idle CPUs on all nodes", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_cpus_alloc,partition_nodes_cpus_alloc, "Number of allocated cpus", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_down, partition_nodes_down, "Nodes in Down state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_drain, partition_nodes_drain, "Nodes in Drain state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_drained, partition_nodes_drained, "Nodes in Drained state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_draining, partition_nodes_draining, "Number of nodes in draining condition (Drain state with active jobs)", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_dyn_future, partition_nodes_dyn_future, "Dynamic nodes in Future state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_dyn_normal, partition_nodes_dyn_normal, "Dynamic nodes", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_external, partition_nodes_external, "External nodes", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_fail, partition_nodes_fail, "Nodes in Fail state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_future, partition_nodes_future, "Nodes in Future state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_idle, partition_nodes_idle, "Nodes in Idle state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_invalid_reg, partition_nodes_invalid_reg, "Number of nodes with Invalid Registration flag", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_maint, partition_nodes_maint, "Nodes in maintenance state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_alloc, partition_nodes_mem_alloc, "Amount of allocated memory of all nodes", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT64, ps->nodes_mem_avail, partition_nodes_mem_avail, "Amount of available memory of all nodes", GAUGE, "partition", ps->name);
@@ -500,6 +530,12 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_mixed, partition_nodes_mixed, "Nodes in Mixed state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_no_resp, partition_nodes_no_resp, "Nodes in Not Responding state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_planned, partition_nodes_planned, "Nodes in Planned state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_power_down, partition_nodes_power_down, "Nodes marked to Power Down", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_power_up, partition_nodes_power_up, "Nodes marked to Power Up", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_powered_down, partition_nodes_powered_down, "Powered down nodes", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_powering_down, partition_nodes_powering_down, "Powering down nodes", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_powering_up, partition_nodes_powering_up, "Powering up nodes", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_reboot_issued, partition_nodes_reboot_issued, "Nodes which initiated reboot", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_reboot_requested, partition_nodes_reboot_requested, "Nodes with Reboot Requested flag", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_resv, partition_nodes_resv, "Nodes with Reserved flag", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_unknown, partition_nodes_unknown, "Nodes in Unknown state", GAUGE, "partition", ps->name);
@@ -536,6 +572,8 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT16, js->cpus_alloc, pfx, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->deadline, pfx, jobs_deadline, "Number of jobs in Deadline state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->failed, pfx, jobs_failed, "Number of jobs in Failed state", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->fed_requeued, pfx, jobs_fed_requeued, "Number of jobs requeued in a federation", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->finished, pfx, jobs_finished, "Number of finished jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->hold, pfx, jobs_hold, "Number of jobs in Hold state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->job_cnt, pfx, jobs, "Total number of jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->memory_alloc, pfx, jobs_memory_alloc, "Total memory bytes allocated by jobs", GAUGE, key, ua->name);
@@ -546,8 +584,12 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->powerup_node, pfx, jobs_powerup_node, "Number of jobs in PowerUp Node state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->preempted, pfx, jobs_preempted, "Number of jobs in Preempted state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->requeued, pfx, jobs_requeued, "Number of jobs in Requeued state", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->resizing, pfx, jobs_resizing, "Number of jobs in Resizing state", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->revoked, pfx, jobs_revoked, "Number of jobs revoked", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->running, pfx, jobs_running, "Number of jobs in Running state", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->signaling, pfx, jobs_signaling, "Number of jobs being signaled", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->stageout, pfx, jobs_stageout, "Number of jobs in StageOut state", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->started, pfx, jobs_started, "Number of started jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->suspended, pfx, jobs_suspended, "Number of jobs in Suspended state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->timeout, pfx, jobs_timeout, "Number of jobs in Timeout state", GAUGE, key, ua->name);
 

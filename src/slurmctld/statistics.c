@@ -315,12 +315,24 @@ static int _statistics_part_aggregate_job(void *x, void *arg)
 		ps->jobs_completing++;
 	if (IS_JOB_CONFIGURING(j))
 		ps->jobs_configuring++;
+	if (IS_JOB_FED_REQUEUED(j))
+		ps->jobs_fed_requeued++;
+	if (IS_JOB_FINISHED(j))
+		ps->jobs_finished++;
 	if (IS_JOB_POWER_UP_NODE(j))
 		ps->jobs_powerup_node++;
 	if (IS_JOB_REQUEUED(j))
 		ps->jobs_requeued++;
+	if (IS_JOB_RESIZING(j))
+		ps->jobs_resizing++;
+	if (IS_JOB_REVOKED(j))
+		ps->jobs_revoked++;
+	if (IS_JOB_SIGNALING(j))
+		ps->jobs_signaling++;
 	if (IS_JOB_STAGE_OUT(j))
 		ps->jobs_stageout++;
+	if (IS_JOB_STARTED(j))
+		ps->jobs_started++;
 
 	/* Custom metric for Slinky */
 	if (j->state_reason & WAIT_PART_NODE_LIMIT)
@@ -384,27 +396,52 @@ static void _statistics_part_aggregate_node(partition_stats_t *ps,
 		ps->nodes_unknown++;
 
 	/* Derived node states */
-	else if (IS_NODE_MAINT(ns))
-		ps->nodes_maint++;
+	if (IS_NODE_COMPLETING(ns))
+		ps->nodes_cg++;
+	if (IS_NODE_BLOCKED(ns))
+		ps->nodes_blocked++;
+	if (IS_NODE_CLOUD(ns))
+		ps->nodes_cloud++;
 
 	if (IS_NODE_DRAINING(ns))
 		ps->nodes_draining++;
 	else if (IS_NODE_DRAIN(ns))
 		ps->nodes_drain++;
 
-	if (IS_NODE_RES(ns))
-		ps->nodes_resv++;
-	if (IS_NODE_COMPLETING(ns))
-		ps->nodes_cg++;
-
+	if (IS_NODE_DRAINED(ns))
+		ps->nodes_drained++;
+	if (IS_NODE_DYNAMIC_FUTURE(ns))
+		ps->nodes_dyn_future++;
+	if (IS_NODE_DYNAMIC_NORM(ns))
+		ps->nodes_dyn_normal++;
+	if (IS_NODE_EXTERNAL(ns))
+		ps->nodes_external++;
 	if (IS_NODE_FAIL(ns))
 		ps->nodes_fail++;
+	if (IS_NODE_INVALID_REG(ns))
+		ps->nodes_invalid_reg++;
+	if (IS_NODE_MAINT(ns))
+		ps->nodes_maint++;
 	if (IS_NODE_NO_RESPOND(ns))
 		ps->nodes_no_resp++;
 	if (IS_NODE_PLANNED(ns))
 		ps->nodes_planned++;
+	if (IS_NODE_POWER_DOWN(ns))
+		ps->nodes_power_down++;
+	if (IS_NODE_POWER_UP(ns))
+		ps->nodes_power_up++;
+	if (IS_NODE_POWERED_DOWN(ns))
+		ps->nodes_powered_down++;
+	if (IS_NODE_POWERING_DOWN(ns))
+		ps->nodes_powering_down++;
+	if (IS_NODE_POWERING_UP(ns))
+		ps->nodes_powering_up++;
+	if (IS_NODE_REBOOT_ISSUED(ns))
+		ps->nodes_reboot_issued++;
 	if (IS_NODE_REBOOT_REQUESTED(ns))
 		ps->nodes_reboot_requested++;
+	if (IS_NODE_RES(ns))
+		ps->nodes_resv++;
 }
 
 static int _get_part_statistics(void *x, void *arg)
@@ -476,12 +513,24 @@ static int _fill_jobs_statistics(void *x, void *arg)
 		js->completing++;
 	if (IS_JOB_CONFIGURING(j))
 		js->configuring++;
+	if (IS_JOB_FED_REQUEUED(j))
+		js->fed_requeued++;
+	if (IS_JOB_FINISHED(j))
+		js->finished++;
 	if (IS_JOB_POWER_UP_NODE(j))
 		js->powerup_node++;
 	if (IS_JOB_REQUEUED(j))
 		js->requeued++;
+	if (IS_JOB_RESIZING(j))
+		js->resizing++;
+	if (IS_JOB_REVOKED(j))
+		js->revoked++;
+	if (IS_JOB_SIGNALING(j))
+		js->signaling++;
 	if (IS_JOB_STAGE_OUT(j))
 		js->stageout++;
+	if (IS_JOB_STARTED(j))
+		js->started++;
 
 	/* Store individual records */
 	new->job_id = j->job_id;
@@ -555,12 +604,24 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 		s->completing++;
 	if (IS_JOB_CONFIGURING(j))
 		s->configuring++;
+	if (IS_JOB_FED_REQUEUED(j))
+		s->fed_requeued++;
+	if (IS_JOB_FINISHED(j))
+		s->finished++;
 	if (IS_JOB_POWER_UP_NODE(j))
 		s->powerup_node++;
 	if (IS_JOB_REQUEUED(j))
 		s->requeued++;
+	if (IS_JOB_RESIZING(j))
+		s->resizing++;
+	if (IS_JOB_REVOKED(j))
+		s->revoked++;
+	if (IS_JOB_SIGNALING(j))
+		s->signaling++;
 	if (IS_JOB_STAGE_OUT(j))
 		s->stageout++;
+	if (IS_JOB_STARTED(j))
+		s->started++;
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		s->cpus_alloc += j->cpus_alloc;
@@ -601,8 +662,12 @@ static int _get_users_accts(void *x, void *args)
 
 extern jobs_stats_t *statistics_get_jobs(bool lock)
 {
-	slurmctld_lock_t job_read_lock = { READ_LOCK, READ_LOCK, NO_LOCK,
-					   READ_LOCK, READ_LOCK };
+	slurmctld_lock_t job_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+	};
 	jobs_stats_t *s = xmalloc(sizeof(*s));
 
 	s->jobs = list_create((ListDelF) _free_job_stats);
@@ -620,17 +685,16 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 
 extern nodes_stats_t *statistics_get_nodes(bool lock)
 {
-	/*
-	 * Locks: Read config, write node (reset allocated CPU count in some
-	 * select plugins), read part (for part_is_visible)
-	 */
-	slurmctld_lock_t node_write_lock = { READ_LOCK, NO_LOCK, WRITE_LOCK,
-					     READ_LOCK, NO_LOCK };
+	slurmctld_lock_t node_read_lock = {
+		.conf = READ_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK,
+	};
 	node_record_t *node_ptr;
 	nodes_stats_t *s = xmalloc(sizeof(*s));
 
 	if (lock)
-		lock_slurmctld(node_write_lock);
+		lock_slurmctld(node_read_lock);
 
 	select_g_select_nodeinfo_set_all();
 
@@ -689,12 +753,24 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 		/* Derived node states */
 		if (IS_NODE_COMPLETING(node_ptr))
 			s->cg++;
+		if (IS_NODE_BLOCKED(node_ptr))
+			s->blocked++;
+		if (IS_NODE_CLOUD(node_ptr))
+			s->cloud++;
 
 		if (IS_NODE_DRAINING(node_ptr))
 			s->draining++;
 		else if (IS_NODE_DRAIN(node_ptr))
 			s->drain++;
 
+		if (IS_NODE_DRAINED(node_ptr))
+			s->drained++;
+		if (IS_NODE_DYNAMIC_FUTURE(node_ptr))
+			s->dyn_future++;
+		if (IS_NODE_DYNAMIC_NORM(node_ptr))
+			s->dyn_normal++;
+		if (IS_NODE_EXTERNAL(node_ptr))
+			s->external++;
 		if (IS_NODE_FAIL(node_ptr))
 			s->fail++;
 		if (IS_NODE_INVALID_REG(node_ptr))
@@ -705,6 +781,18 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 			s->no_resp++;
 		if (IS_NODE_PLANNED(node_ptr))
 			s->planned++;
+		if (IS_NODE_POWER_DOWN(node_ptr))
+			s->power_down++;
+		if (IS_NODE_POWER_UP(node_ptr))
+			s->power_up++;
+		if (IS_NODE_POWERED_DOWN(node_ptr))
+			s->powered_down++;
+		if (IS_NODE_POWERING_DOWN(node_ptr))
+			s->powering_down++;
+		if (IS_NODE_POWERING_UP(node_ptr))
+			s->powering_up++;
+		if (IS_NODE_REBOOT_ISSUED(node_ptr))
+			s->reboot_issued++;
 		if (IS_NODE_REBOOT_REQUESTED(node_ptr))
 			s->reboot_requested++;
 		if (IS_NODE_RES(node_ptr))
@@ -712,7 +800,7 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 	}
 
 	if (lock)
-		unlock_slurmctld(node_write_lock);
+		unlock_slurmctld(node_read_lock);
 
 	return s;
 }
@@ -720,9 +808,10 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 extern partitions_stats_t *statistics_get_parts(nodes_stats_t *ns,
 						jobs_stats_t *js, bool lock)
 {
-	/* Locks: Read configuration and partition */
-	slurmctld_lock_t part_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK,
-					    READ_LOCK, NO_LOCK };
+	slurmctld_lock_t part_read_lock = {
+		.conf = READ_LOCK,
+		.part = READ_LOCK,
+	};
 	foreach_part_gen_stats_t p = { 0 };
 	partitions_stats_t *ps = xmalloc(sizeof(*ps));
 
