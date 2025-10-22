@@ -2102,8 +2102,10 @@ extern void scontrol_list_pids(int argc, char **argv)
 	} else if (_parse_stepid(jobid_str, &step_id))
 		_list_pids_all_steps(node_name, &step_id, listpids_list, argc,
 				     argv);
-	if (exit_code)
+
+	if (exit_code && list_count(listpids_list) == 0) {
 		goto cleanup;
+	}
 
 	if (mime_type) {
 		_dump_listpids(listpids_list, argc, argv);
