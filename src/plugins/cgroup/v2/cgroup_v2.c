@@ -80,6 +80,7 @@ static bpf_program_t p[CG_LEVEL_CNT];
 static char *stepd_scope_path = NULL;
 static uint32_t task_special_id = NO_VAL;
 static char *invoc_id;
+static int token_fd = -1;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
@@ -2419,7 +2420,8 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t ctl, cgroup_level_t level,
 			 * last cgroup in the hierarchy.
 			 */
 			return load_ebpf_prog(program, cgroup_path,
-					      (level != CG_LEVEL_TASK));
+					      (level != CG_LEVEL_TASK),
+					      token_fd);
 		} else {
 			log_flag(CGROUP, "EBPF Not loading the program into %s because it is a noop",
 				 cgroup_path);

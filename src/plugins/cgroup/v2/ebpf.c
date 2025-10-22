@@ -224,7 +224,7 @@ extern void close_ebpf_prog(bpf_program_t *program, bool def_action)
 }
 
 extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
-			  bool override_flag)
+			  bool override_flag, int token_fd)
 {
 	int dirfd, ret, fd = -1;
 	union bpf_attr attr;
@@ -255,6 +255,15 @@ extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 	attr.log_level = 0;
 	attr.log_buf = (size_t) NULL;
 	attr.log_size = 0;
+	if (token_fd > -1) {
+#ifndef HAVE_BPF_TOKENS
+		error("I have a BPF token to use but have not been compiled with token support, this should never happen!");
+		return SLURM_ERROR;
+#else
+		attr.prog_token_fd = token_fd;
+		attr.prog_flags = BPF_F_TOKEN_FD;
+#endif
+	}
 
 	/* Call the load syscall */
 	fd = bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
