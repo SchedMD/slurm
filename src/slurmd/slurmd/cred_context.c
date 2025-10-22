@@ -54,8 +54,8 @@ typedef struct {
 typedef struct {
 	time_t ctime;		/* Time that this entry was created         */
 	time_t expiration;	/* Time at which credentials can be purged  */
-	uint32_t jobid;		/* Slurm job id for this credential         */
 	time_t revoked;		/* Time at which credentials were revoked   */
+	slurm_step_id_t step_id;
 } job_state_t;
 
 static pthread_mutex_t cred_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -85,11 +85,11 @@ static cred_state_t *_cred_state_create(slurm_cred_t *cred)
 	return s;
 }
 
-static job_state_t *_job_state_create(uint32_t jobid)
+static job_state_t *_job_state_create(slurm_step_id_t *step_id)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	j->jobid = jobid;
+	j->step_id = *step_id;
 	j->revoked = (time_t) 0;
 	j->ctime = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
@@ -110,16 +110,24 @@ static int _list_find_expired_job_state(void *x, void *key)
 static int _list_find_job_state(void *x, void *key)
 {
 	job_state_t *j = x;
-	uint32_t jobid = *(uint32_t *) key;
+	slurm_step_id_t *step_id = key;
 
-	if (j->jobid == jobid)
+	/*
+	 * Backwards compatibility hack: only check that the SLUID matches
+	 * if both the cred_cache and the lookup have it set.
+	 */
+	if (j->step_id.sluid && step_id->sluid)
+		return (j->step_id.sluid == step_id->sluid);
+
+	if (j->step_id.job_id == step_id->job_id)
 		return 1;
 	return 0;
 }
 
-static job_state_t *_find_job_state(uint32_t jobid)
+static job_state_t *_find_job_state(slurm_step_id_t *step_id)
 {
-	return list_find_first(cred_job_list, _list_find_job_state, &jobid);
+	return list_find_first(cred_job_list, _list_find_job_state,
+			       step_id);
 }
 
 static void _clear_expired_job_states(void)
@@ -162,7 +170,7 @@ static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 {
 	job_state_t *j = x;
 
-	pack32(j->jobid, buffer);
+	pack_step_id(&j->step_id, buffer, protocol_version);
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
@@ -174,22 +182,24 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&j->jobid, buffer);
+		if (unpack_step_id_members(&j->step_id, buffer,
+					   protocol_version))
+			goto unpack_error;
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&j->jobid, buffer);
+		safe_unpack32(&j->step_id.job_id, buffer);
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
 	}
 
-	debug3("cred_unpack: job %u ctime:%ld revoked:%ld expires:%ld",
-	       j->jobid, j->ctime, j->revoked, j->expiration);
+	debug3("cred_unpack: %pI ctime:%ld revoked:%ld expires:%ld",
+	       &j->step_id, j->ctime, j->revoked, j->expiration);
 
 	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
-		warning("revoke on job %u has no expiration", j->jobid);
+		warning("revoke on %pI has no expiration", &j->step_id);
 		j->expiration = j->revoked + 600;
 	}
 
@@ -366,27 +376,27 @@ extern void cred_state_fini(void)
 	FREE_NULL_LIST(cred_state_list);
 }
 
-extern bool cred_jobid_cached(uint32_t jobid)
+extern bool cred_job_cached(slurm_step_id_t *step_id)
 {
 	bool retval = false;
 
 	slurm_mutex_lock(&cred_cache_mutex);
 	_clear_expired_job_states();
-	retval = (_find_job_state(jobid) != NULL);
+	retval = (_find_job_state(step_id) != NULL);
 	slurm_mutex_unlock(&cred_cache_mutex);
 
 	return retval;
 }
 
-extern int cred_insert_jobid(uint32_t jobid)
+extern int cred_insert_job(slurm_step_id_t *step_id)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
 	_clear_expired_job_states();
-	if (_find_job_state(jobid)) {
-		debug2("%s: we already have a job state for job %u.",
-		       __func__, jobid);
+	if (_find_job_state(step_id)) {
+		debug2("%s: we already have a job state for %pI",
+		       __func__, step_id);
 	} else {
-		job_state_t *j = _job_state_create(jobid);
+		job_state_t *j = _job_state_create(step_id);
 		list_append(cred_job_list, j);
 	}
 	slurm_mutex_unlock(&cred_cache_mutex);
@@ -394,7 +404,7 @@ extern int cred_insert_jobid(uint32_t jobid)
 	return SLURM_SUCCESS;
 }
 
-extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time)
+extern int cred_revoke(slurm_step_id_t *step_id, time_t time, time_t start_time)
 {
 	job_state_t  *j = NULL;
 
@@ -402,18 +412,18 @@ extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time)
 
 	_clear_expired_job_states();
 
-	if (!(j = _find_job_state(jobid))) {
+	if (!(j = _find_job_state(step_id))) {
 		/*
 		 * This node has not yet seen a job step for this job.
 		 * Insert a job state object so that we can revoke any future
 		 * credentials.
 		 */
-		j = _job_state_create(jobid);
+		j = _job_state_create(step_id);
 		list_append(cred_job_list, j);
 	}
 	if (j->revoked) {
 		if (start_time && (j->revoked < start_time)) {
-			debug("job %u requeued, but started no tasks", jobid);
+			debug("%pI requeued, but started no tasks", step_id);
 			j->expiration = (time_t) MAX_TIME;
 		} else {
 			errno = EEXIST;
@@ -438,7 +448,7 @@ extern bool cred_revoked(slurm_cred_t *cred)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	j = _find_job_state(cred->arg->step_id.job_id);
+	j = _find_job_state(&cred->arg->step_id);
 
 	if (j && (j->revoked != (time_t) 0) && (cred->ctime <= j->revoked))
 		rc = true;
@@ -448,7 +458,7 @@ extern bool cred_revoked(slurm_cred_t *cred)
 	return rc;
 }
 
-extern int cred_begin_expiration(uint32_t jobid)
+extern int cred_begin_expiration(slurm_step_id_t *step_id)
 {
 	job_state_t *j = NULL;
 
@@ -456,7 +466,7 @@ extern int cred_begin_expiration(uint32_t jobid)
 
 	_clear_expired_job_states();
 
-	if (!(j = _find_job_state(jobid))) {
+	if (!(j = _find_job_state(step_id))) {
 		errno = ESRCH;
 		goto error;
 	}
@@ -467,8 +477,8 @@ extern int cred_begin_expiration(uint32_t jobid)
 	}
 
 	j->expiration = time(NULL) + cred_expiration();
-	debug2("set revoke expiration for jobid %u to %ld UTS",
-	       j->jobid, j->expiration);
+	debug2("set revoke expiration for %pI to %ld UTS",
+	       &j->step_id, j->expiration);
 	slurm_mutex_unlock(&cred_cache_mutex);
 	return SLURM_SUCCESS;
 
@@ -484,13 +494,13 @@ extern void cred_handle_reissue(slurm_cred_t *cred, bool locked)
 	if (!locked)
 		slurm_mutex_lock(&cred_cache_mutex);
 
-	j = _find_job_state(cred->arg->step_id.job_id);
+	j = _find_job_state(&cred->arg->step_id);
 
 	if (j && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
 		 * old record so that "cred" will look like a new
 		 * credential to any ensuing commands. */
-		info("reissued job credential for job %u", j->jobid);
+		info("reissued job credential for %pI", &j->step_id);
 		list_delete_ptr(cred_job_list, j);
 	}
 
@@ -502,15 +512,15 @@ static bool _credential_revoked(slurm_cred_t *cred)
 {
 	job_state_t *j = NULL;
 
-	if (!(j = _find_job_state(cred->arg->step_id.job_id))) {
-		j = _job_state_create(cred->arg->step_id.job_id);
+	if (!(j = _find_job_state(&cred->arg->step_id))) {
+		j = _job_state_create(&cred->arg->step_id);
 		list_append(cred_job_list, j);
 		return false;
 	}
 
 	if (cred->ctime <= j->revoked) {
-		debug3("cred for %u revoked. expires at %ld UTS",
-		       j->jobid, j->expiration);
+		debug3("cred for %pI revoked. expires at %ld UTS",
+		       &j->step_id, j->expiration);
 		return true;
 	}
 
@@ -523,6 +533,11 @@ static int _list_find_cred_state(void *x, void *key)
 	slurm_cred_t *cred = key;
 
 	if (s->ctime != cred->ctime)
+		return 0;
+
+	/* If the SLUID is set on both, then reject if they're not equal. */
+	if (s->step_id.sluid && cred->arg->step_id.sluid &&
+	    (s->step_id.sluid != cred->arg->step_id.sluid))
 		return 0;
 
 	return verify_step_id(&s->step_id, &cred->arg->step_id);

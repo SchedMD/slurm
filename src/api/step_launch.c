@@ -620,8 +620,9 @@ static void _step_abort(slurm_step_ctx_t *ctx)
 	struct step_launch_state *sls = ctx->launch_state;
 
 	if (!sls->abort_action_taken) {
-		slurm_kill_job_step(ctx->job_id, ctx->step_resp->job_step_id,
-				    SIGKILL, 0);
+		slurm_kill_job_step(ctx->job_id,
+				    ctx->step_resp->step_id.step_id, SIGKILL,
+				    0);
 		sls->abort_action_taken = true;
 	}
 }
@@ -687,8 +688,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 		} else {
 			if (!sls->abort_action_taken) {
 				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->
-						    job_step_id,
+						    ctx->step_resp->step_id
+							    .step_id,
 						    SIGKILL, 0);
 				sls->abort_action_taken = true;
 			}
@@ -719,7 +720,8 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				 *   that a killed step never starts.
 				 */
 				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->job_step_id,
+						    ctx->step_resp->step_id
+							    .step_id,
 						    SIGKILL, 0);
 				client_io_handler_abort(sls->io);
 				break;
@@ -1141,10 +1143,9 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	}
 
 	if (step_msg->step_id == NO_VAL) {
-		verbose("Complete job %u received",
-			step_msg->job_id);
+		verbose("Complete %pI received", step_msg);
 	} else {
-		verbose("Complete %ps received", step_msg);
+		verbose("Complete %pI %ps received", step_msg, step_msg);
 	}
 
 	if (sls->callback.step_complete)

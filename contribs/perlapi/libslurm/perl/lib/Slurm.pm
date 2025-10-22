@@ -662,18 +662,6 @@ Output the contents of key_pairs which is a list of opaque data type C<config_ke
 
 =back
 
-=head3 $rc = $slurm->update_step($step_msg);
-
-Update the time limit of a job step.
-
-=over 2
-
-=item * IN $step_msg: step update message descriptor, with structure of C<step_update_request_msg_t>.
-
-=item * RET: 0 or -1 on error.
-
-=back
-
 
 
 

@@ -273,30 +273,6 @@ slurm_read_hostfile(slurm_t self, char *filename, int n)
 	OUTPUT:
 		RETVAL
 
-allocation_msg_thread_t *
-slurm_allocation_msg_thr_create(slurm_t self, OUT uint16_t port, HV *callbacks)
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		set_sacb(callbacks);
-	C_ARGS:
-		&port, &sacb
-
-void
-slurm_allocation_msg_thr_destroy(slurm_t self, allocation_msg_thread_t * msg_thr)
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-
-	C_ARGS:
-		msg_thr
-
 HV *
 slurm_submit_batch_job(slurm_t self, HV *job_desc)
 	PREINIT:
@@ -406,18 +382,6 @@ slurm_complete_job(slurm_t self, uint32_t job_id, uint32_t job_rc=0)
 			    */
 	C_ARGS:
 		job_id, job_rc
-
-int
-slurm_terminate_job_step(slurm_t self, uint32_t job_id, uint32_t step_id)
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-	C_ARGS:
-		job_id, step_id
-
 
 ######################################################################
 #	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -572,24 +536,6 @@ slurm_print_key_pairs(slurm_t self, FILE *out, list_t *key_pairs, char *title)
 			    */
 	C_ARGS:
 		out, key_pairs, title
-
-int
-slurm_update_step(slurm_t self, HV *step_msg)
-	PREINIT:
-		step_update_request_msg_t su_msg;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (hv_to_step_update_request_msg(step_msg, &su_msg) < 0) {
-			RETVAL = SLURM_ERROR;
-		} else {
-			RETVAL = slurm_update_step(&su_msg);
-		}
-	OUTPUT:
-		RETVAL
 
 ######################################################################
 #	SLURM JOB CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

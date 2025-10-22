@@ -1470,7 +1470,8 @@ env_array_for_step(char ***dest,
 		return;
 
 	node_cnt = step->step_layout->node_cnt;
-	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
+	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u",
+				step->step_id.step_id);
 
 	if (launch->het_job_node_list) {
 		tmp = launch->het_job_node_list;
@@ -1517,7 +1518,8 @@ env_array_for_step(char ***dest,
 	}
 
 	/* OBSOLETE, but needed by some MPI implementations, do not remove */
-	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
+	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u",
+				step->step_id.step_id);
 	if (!preserve_env) {
 		env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", node_cnt);
 		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u", task_cnt);

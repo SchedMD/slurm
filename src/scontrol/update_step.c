@@ -98,10 +98,12 @@ extern int scontrol_update_step (int argc, char **argv)
 
 		if (xstrncasecmp(tag, "StepId", MAX(taglen, 4)) == 0) {
 			char *end_ptr;
-			step_msg.job_id = (uint32_t) strtol(val, &end_ptr, 10);
+			step_msg.step_id.job_id =
+				(uint32_t) strtol(val, &end_ptr, 10);
 			if (end_ptr[0] == '.') {
-				step_msg.step_id = (uint32_t)
-					strtol(end_ptr+1, (char **) NULL, 10);
+				step_msg.step_id.step_id =
+					(uint32_t) strtol(end_ptr + 1,
+							  (char **) NULL, 10);
 			} else if (end_ptr[0] != '\0') {
 				exit_code = 1;
 				fprintf (stderr, "Invalid StepID parameter: "
@@ -124,9 +126,10 @@ extern int scontrol_update_step (int argc, char **argv)
 				return 0;
 			}
 			if (incr || decr) {
-				step_current_time = _get_step_time(
-							step_msg.job_id,
-							step_msg.step_id);
+				step_current_time =
+					_get_step_time(step_msg.step_id.job_id,
+						       step_msg.step_id
+							       .step_id);
 				if (step_current_time == NO_VAL) {
 					exit_code = 1;
 					return 0;

@@ -147,7 +147,7 @@ static void         _create_het_job_id_set(hostset_t *jobid_hostset,
 					    char **het_job_id_set);
 static void         _fill_ctld_conf(slurm_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
-static int          _is_prolog_finished(uint32_t job_id);
+static int _is_prolog_finished(slurm_step_id_t *step_id);
 static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
 					 uint32_t job_id);
 static void         _throttle_fini(int *active_rpc_cnt);
@@ -720,11 +720,14 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+	slurm_step_id_t step_id = {
+		.job_id = job_id,
+	};
 
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
 	lock_slurmctld(job_write_lock);
-	job_complete(job_id, slurm_conf.slurm_user_id, false, false, SIGTERM);
+	job_complete(&step_id, slurm_conf.slurm_user_id, false, false, SIGTERM);
 	unlock_slurmctld(job_write_lock);
 }
 
@@ -1531,9 +1534,8 @@ static void _slurm_rpc_dump_job_single(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	buffer = pack_one_job(job_id_msg->sluid, job_id_msg->job_id,
-			      job_id_msg->show_flags, msg->auth_uid,
-			      msg->protocol_version);
+	buffer = pack_one_job(&job_id_msg->step_id, job_id_msg->show_flags,
+			      msg->auth_uid, msg->protocol_version);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
@@ -1831,14 +1833,14 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	log_flag(ROUTE, "%s: node_name = %s, JobId=%u",
-		 __func__, epilog_msg->node_name, epilog_msg->job_id);
+	log_flag(ROUTE, "%s: node_name = %s, %pI",
+		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
-				epilog_msg->return_code))
+	if (job_epilog_complete(epilog_msg->step_id.job_id,
+				epilog_msg->node_name, epilog_msg->return_code))
 		run_scheduler = true;
 
-	job_ptr = find_job_record(epilog_msg->job_id);
+	job_ptr = find_job_record(epilog_msg->step_id.job_id);
 
 	if (epilog_msg->return_code)
 		error("%s: epilog error %pJ Node=%s Err=%s %s",
@@ -1919,8 +1921,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
-	error_code = job_complete(comp_msg->step_id.job_id, msg->auth_uid,
-				  false, false, comp_msg->job_rc);
+	error_code = job_complete(&comp_msg->step_id, msg->auth_uid, false,
+				  false, comp_msg->job_rc);
 	if (error_code) {
 		if (error_code == ESLURM_INVALID_JOB_ID) {
 			info("%s: %pI error %s",
@@ -1957,20 +1959,20 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	complete_prolog_msg_t *comp_msg = msg->data;
+	prolog_complete_msg_t *comp_msg = msg->data;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	/* init */
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from JobId=%u",
-	       comp_msg->job_id);
+	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from %pI",
+	       &comp_msg->step_id);
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_write_lock);
-	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc,
-				     comp_msg->node_name);
+	error_code = prolog_complete(comp_msg->step_id.job_id,
+				     comp_msg->prolog_rc, comp_msg->node_name);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_write_lock);
 
@@ -1978,11 +1980,11 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 
 	/* return result */
 	if (error_code) {
-		info("%s JobId=%u: %s ",
-		     __func__, comp_msg->job_id, slurm_strerror(error_code));
+		info("%s: %pI: %s ",
+		     __func__, &comp_msg->step_id, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s JobId=%u %s", __func__, comp_msg->job_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
@@ -2135,8 +2137,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		job_requeue = true;
 
 	/* Mark job allocation complete */
-	i = job_complete(comp_msg->step_id.job_id, msg->auth_uid, job_requeue,
-			 false, comp_msg->job_rc);
+	i = job_complete(&comp_msg->step_id, msg->auth_uid, job_requeue, false,
+			 comp_msg->job_rc);
 	error_code = MAX(error_code, i);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
@@ -2178,11 +2180,11 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	START_TIMER;
-	debug3("Processing RPC details: REQUEST_BATCH_SCRIPT for JobId=%u",
-	       job_id_msg->job_id);
+	debug3("Processing RPC details: REQUEST_BATCH_SCRIPT for %pI",
+	       &job_id_msg->step_id);
 	lock_slurmctld(job_read_lock);
 
-	if ((job_ptr = find_job_record(job_id_msg->job_id))) {
+	if ((job_ptr = find_job_record(job_id_msg->step_id.job_id))) {
 		if (!validate_operator(msg->auth_uid) &&
 		    (job_ptr->user_id != msg->auth_uid)) {
 			rc = ESLURM_USER_ID_MISSING;
@@ -3475,9 +3477,9 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 
-	job_ptr = find_job_record(req->job_id);
+	job_ptr = find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		error("%s: invalid JobId=%u", __func__, req->job_id);
+		error("%s: invalid %pI", __func__, &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto fail;
 	}
@@ -4474,7 +4476,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_node_ready(id_msg->job_id, &result);
+	error_code = job_node_ready(id_msg->step_id.job_id, &result);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 
@@ -4486,10 +4488,10 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 			.return_code = result,
 		};
 
-		debug2("%s(%u)=%d %s",
-		       __func__, id_msg->job_id, result, TIME_STR);
+		debug2("%s: %pI result %d in %s",
+		       __func__, &id_msg->step_id, result, TIME_STR);
 
-		if (!_is_prolog_finished(id_msg->job_id))
+		if (!_is_prolog_finished(&id_msg->step_id))
 			(void) send_msg_response(msg, RESPONSE_PROLOG_EXECUTING,
 						 &rc_msg);
 		else
@@ -4499,7 +4501,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 }
 
 /* Check if prolog has already finished */
-static int _is_prolog_finished(uint32_t job_id)
+static int _is_prolog_finished(slurm_step_id_t *step_id)
 {
 	int is_running = 0;
 	job_record_t *job_ptr;
@@ -4507,10 +4509,8 @@ static int _is_prolog_finished(uint32_t job_id)
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(job_id);
-	if (job_ptr) {
+	if ((job_ptr = find_job_record(step_id->job_id)))
 		is_running = (job_ptr->state_reason != WAIT_PROLOG);
-	}
 	unlock_slurmctld(job_read_lock);
 	return is_running;
 }
@@ -4765,7 +4765,8 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(fed_read_lock);
-	if (!_route_msg_to_origin(msg, req_ptr->job_id_str, req_ptr->job_id)) {
+	if (!_route_msg_to_origin(msg, req_ptr->job_id_str,
+				  req_ptr->step_id.job_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4776,15 +4777,16 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	if (req_ptr->job_id_str) {
 		error_code = job_requeue2(msg->auth_uid, req_ptr, msg, false);
 	} else {
-		error_code = job_requeue(msg->auth_uid, req_ptr->job_id, msg,
-					 false, req_ptr->flags);
+		error_code = job_requeue(msg->auth_uid, req_ptr->step_id.job_id,
+					 msg, false, req_ptr->flags);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
 
 	if (error_code) {
 		if (!req_ptr->job_id_str)
-			xstrfmtcat(req_ptr->job_id_str, "%u", req_ptr->job_id);
+			xstrfmtcat(req_ptr->job_id_str, "%u",
+				   req_ptr->step_id.job_id);
 
 		info("%s: Requeue of JobId=%s returned an error: %s",
 		     __func__, req_ptr->job_id_str, slurm_strerror(error_code));
@@ -6032,7 +6034,7 @@ static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
 		return;
 	}
 
-	rc = fed_mgr_job_lock_set(sib_msg->job_id, sib_msg->cluster_id);
+	rc = fed_mgr_job_lock_set(sib_msg->step_id.job_id, sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
 }
@@ -6049,7 +6051,8 @@ static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 		return;
 	}
 
-	rc = fed_mgr_job_lock_unset(sib_msg->job_id, sib_msg->cluster_id);
+	rc = fed_mgr_job_lock_unset(sib_msg->step_id.job_id,
+				    sib_msg->cluster_id);
 
 	slurm_send_rc_msg(msg, rc);
 }

@@ -1777,7 +1777,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 	}
 }
 
-extern void slurm_free_complete_prolog_msg(complete_prolog_msg_t * msg)
+extern void slurm_free_prolog_complete_msg(prolog_complete_msg_t *msg)
 {
 	xfree(msg->node_name);
 	xfree(msg);
@@ -4967,7 +4967,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_complete_job_allocation_msg(data);
 		break;
 	case REQUEST_COMPLETE_PROLOG:
-		slurm_free_complete_prolog_msg(data);
+		slurm_free_prolog_complete_msg(data);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
 		slurm_free_complete_batch_script_msg(data);

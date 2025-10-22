@@ -918,7 +918,7 @@ static int _persist_update_job(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	sib_msg.data_type    = tmp_msg.msg_type;
 	sib_msg.data_version = tmp_msg.protocol_version;
 	sib_msg.req_uid      = uid;
-	sib_msg.job_id       = job_id;
+	sib_msg.step_id.job_id = job_id;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type         = REQUEST_SIB_MSG;
@@ -943,7 +943,7 @@ static int _persist_update_job_resp(slurmdb_cluster_rec_t *conn,
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_UPDATE_RESPONSE;
-	sib_msg.job_id       = job_id;
+	sib_msg.step_id.job_id = job_id;
 	sib_msg.return_code  = return_code;
 
 	slurm_msg_t_init(&req_msg);
@@ -981,9 +981,9 @@ static int _persist_fed_job_revoke(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_COMPLETE;
-	sib_msg.job_id       = job_id;
 	sib_msg.job_state    = job_state;
 	sib_msg.start_time   = start_time;
+	sib_msg.step_id.job_id = job_id;
 	sib_msg.return_code  = return_code;
 
 	slurm_msg_t_init(&req_msg);
@@ -1007,7 +1007,7 @@ static int _persist_fed_job_response(slurmdb_cluster_rec_t *conn, uint32_t job_i
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_SUBMIT_RESP;
-	sib_msg.job_id       = job_id;
+	sib_msg.step_id.job_id = job_id;
 	sib_msg.return_code  = return_code;
 
 	slurm_msg_t_init(&req_msg);
@@ -1043,8 +1043,8 @@ static int _persist_fed_job_lock_bool(slurmdb_cluster_rec_t *conn,
 
 	sib_msg_t sib_msg;
 	memset(&sib_msg, 0, sizeof(sib_msg_t));
-	sib_msg.job_id     = job_id;
 	sib_msg.cluster_id = cluster_id;
+	sib_msg.step_id.job_id = job_id;
 
 	if (do_lock)
 		req_msg.msg_type = REQUEST_SIB_JOB_LOCK;
@@ -1115,9 +1115,9 @@ static int _persist_fed_job_start(slurmdb_cluster_rec_t *conn,
 	sib_msg_t sib_msg;
 	memset(&sib_msg, 0, sizeof(sib_msg_t));
 	sib_msg.sib_msg_type = FED_JOB_START;
-	sib_msg.job_id       = job_id;
 	sib_msg.cluster_id   = cluster_id;
 	sib_msg.start_time   = start_time;
+	sib_msg.step_id.job_id = job_id;
 
 	req_msg.msg_type         = REQUEST_SIB_MSG;
 	req_msg.protocol_version = conn->rpc_version;
@@ -1201,7 +1201,7 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 
 	xassert(conn);
 
-	requeue_req.job_id     = job_id;
+	requeue_req.step_id.job_id = job_id;
 	requeue_req.job_id_str = NULL;
 	requeue_req.flags      = flags;
 
@@ -1215,10 +1215,10 @@ static int _persist_fed_job_requeue(slurmdb_cluster_rec_t *conn,
 
 	memset(&sib_msg, 0, sizeof(sib_msg));
 	sib_msg.sib_msg_type = FED_JOB_REQUEUE;
-	sib_msg.job_id       = job_id;
 	sib_msg.data_buffer  = buffer;
 	sib_msg.data_type    = tmp_msg.msg_type;
 	sib_msg.data_version = tmp_msg.protocol_version;
+	sib_msg.step_id.job_id = job_id;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type         = REQUEST_SIB_MSG;
@@ -2247,7 +2247,7 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	list_for_each(depend_list, _restore_array_task_id, NULL);
 
 	dep_update_msg.depend_list = depend_list;
-	dep_update_msg.job_id = job_ptr->job_id;
+	dep_update_msg.step_id.job_id = job_ptr->job_id;
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_UPDATE_ORIGIN_DEP;
@@ -2289,7 +2289,7 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
 	job_ptr->details->magic = DETAILS_MAGIC;
-	job_ptr->job_id = remote_dep_info->job_id;
+	job_ptr->job_id = remote_dep_info->step_id.job_id;
 	job_ptr->name = remote_dep_info->job_name;
 	job_ptr->user_id = remote_dep_info->user_id;
 
@@ -2315,8 +2315,8 @@ static void _handle_recv_remote_dep(dep_msg_t *remote_dep_info)
 	 */
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 
-	log_flag(FEDR, "%s: Got job_id: %u, name: \"%s\", array_task_id: %u, dependency: \"%s\", is_array? %s, user_id: %u",
-		 __func__, remote_dep_info->job_id, remote_dep_info->job_name,
+	log_flag(FEDR, "%s: Got %pI, name: \"%s\", array_task_id: %u, dependency: \"%s\", is_array? %s, user_id: %u",
+		 __func__, &remote_dep_info->step_id, remote_dep_info->job_name,
 		 remote_dep_info->array_task_id, remote_dep_info->dependency,
 		 remote_dep_info->is_array ? "yes" : "no",
 		 remote_dep_info->user_id);
@@ -2398,7 +2398,8 @@ static void _handle_dep_update_origin_msgs(void)
 
 	lock_slurmctld(job_write_lock);
 	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
-		if (!(job_ptr = find_job_record(dep_update_msg->job_id))) {
+		if (!(job_ptr = find_job_record(dep_update_msg->step_id
+							.job_id))) {
 			/*
 			 * Maybe the job was cancelled and purged before
 			 * the dependency update got here or was able
@@ -2406,8 +2407,8 @@ static void _handle_dep_update_origin_msgs(void)
 			 * exist here, so we have to throw out this
 			 * dependency update message.
 			 */
-			log_flag(DEPENDENCY, "%s: Could not find job %u, cannot process dependency update. Perhaps the jobs was purged before we got here.",
-				 __func__, dep_update_msg->job_id);
+			log_flag(DEPENDENCY, "%s: Could not find %pI, cannot process dependency update. Perhaps the jobs was purged before we got here.",
+				 __func__, &dep_update_msg->step_id);
 			slurm_free_dep_update_origin_msg(dep_update_msg);
 			continue;
 		} else if (!job_ptr->details ||
@@ -3232,6 +3233,10 @@ unpack_error:
 static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 				 uint16_t protocol_version)
 {
+	slurm_step_id_t step_id = {
+		.job_id = job_ptr->job_id,
+	};
+
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
 		pack32(job_ptr->array_task_id, buffer);
@@ -3239,8 +3244,8 @@ static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 			      protocol_version);
 		packstr(job_ptr->details->dependency, buffer);
 		packbool(job_ptr->array_recs ? true : false, buffer);
-		pack32(job_ptr->job_id, buffer);
 		packstr(job_ptr->name, buffer);
+		pack_step_id(&step_id, buffer, protocol_version);
 		pack32(job_ptr->user_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
@@ -3267,6 +3272,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 {
 	bool is_array;
 	job_record_t *job_ptr;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	xassert(job_pptr);
 
@@ -3287,8 +3293,9 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		if (is_array)
 			job_ptr->array_recs =
 				xmalloc(sizeof *(job_ptr->array_recs));
-		safe_unpack32(&job_ptr->job_id, buffer);
 		safe_unpackstr(&job_ptr->name, buffer);
+		if (unpack_step_id_members(&step_id, buffer, protocol_version))
+			goto unpack_error;
 		safe_unpack32(&job_ptr->user_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
@@ -3300,7 +3307,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		if (is_array)
 			job_ptr->array_recs =
 				xmalloc(sizeof *(job_ptr->array_recs));
-		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpack32(&step_id.job_id, buffer);
 		safe_unpackstr(&job_ptr->name, buffer);
 		safe_unpack32(&job_ptr->user_id, buffer);
 	} else {
@@ -3308,6 +3315,8 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
+
+	job_ptr->job_id = step_id.job_id;
 
 	return SLURM_SUCCESS;
 
@@ -3760,8 +3769,8 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.data_type    = msg->msg_type;
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
 	sib_msg.group_id = job_desc->group_id;
-	sib_msg.job_id       = job_desc->job_id;
 	sib_msg.resp_host    = job_desc->resp_host;
+	sib_msg.step_id.job_id = job_desc->job_id;
 	sib_msg.submit_host  = job_desc->alloc_node;
 	sib_msg.user_id = job_desc->user_id;
 	sib_msg.submit_proto_ver = start_protocol_version;
@@ -4234,11 +4243,11 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 
 	xassert(job_ptr->details);
 
-	dep_msg.job_id = job_ptr->job_id;
 	dep_msg.job_name = job_ptr->name;
 	dep_msg.array_job_id = job_ptr->array_job_id;
 	dep_msg.array_task_id = job_ptr->array_task_id;
 	dep_msg.is_array = job_ptr->array_recs ? true : false;
+	dep_msg.step_id.job_id = job_ptr->job_id;
 	dep_msg.user_id = job_ptr->user_id;
 
 	if (!job_ptr->details->dependency || clear_dependencies)
@@ -4696,7 +4705,7 @@ static void _q_sib_job_start(slurm_msg_t *msg)
 	/* add todo to remove remote siblings if the origin job */
 	job_update_info = xmalloc(sizeof(fed_job_update_info_t));
 	job_update_info->type         = FED_JOB_START;
-	job_update_info->job_id       = sib_msg->job_id;
+	job_update_info->job_id = sib_msg->step_id.job_id;
 	job_update_info->start_time   = sib_msg->start_time;
 	job_update_info->cluster_lock = sib_msg->cluster_id;
 
@@ -5843,7 +5852,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	fed_job_update_info_t *job_update_info = NULL;
 	sib_msg_t *sib_msg            = msg->data;
 	job_desc_msg_t *job_desc      = sib_msg->data;
-	job_desc->job_id              = sib_msg->job_id;
+	job_desc->job_id = sib_msg->step_id.job_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node          = sib_msg->submit_host;
 	job_desc->user_id = sib_msg->user_id;
@@ -5895,12 +5904,12 @@ static int _q_sib_submit_response(slurm_msg_t *msg)
 
 	/* if failure then remove from active siblings */
 	if (sib_msg && sib_msg->return_code) {
-		log_flag(FEDR, "%s: cluster %s failed to submit sibling JobId=%u. Removing from active_sibs. (error:%d)",
-			 __func__, msg->pcon->cluster_name, sib_msg->job_id,
+		log_flag(FEDR, "%s: cluster %s failed to submit sibling %pI. Removing from active_sibs. (error:%d)",
+			 __func__, msg->pcon->cluster_name, &sib_msg->step_id,
 			 sib_msg->return_code);
 
 		job_update_info = xmalloc(sizeof(fed_job_update_info_t));
-		job_update_info->job_id       = sib_msg->job_id;
+		job_update_info->job_id = sib_msg->step_id.job_id;
 		job_update_info->type         = FED_JOB_REMOVE_ACTIVE_SIB_BIT;
 		job_update_info->siblings_str =
 			xstrdup(msg->pcon->cluster_name);
@@ -5923,7 +5932,7 @@ static int _q_sib_job_update(slurm_msg_t *msg, uint32_t uid)
 
 	job_update_info->type           = FED_JOB_UPDATE;
 	job_update_info->submit_desc    = job_desc;
-	job_update_info->job_id         = sib_msg->job_id;
+	job_update_info->job_id = sib_msg->step_id.job_id;
 	job_update_info->uid            = uid;
 	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
@@ -5968,7 +5977,7 @@ static int _q_sib_job_complete(slurm_msg_t *msg)
 		xmalloc(sizeof(fed_job_update_info_t));
 
 	job_update_info->type        = FED_JOB_COMPLETE;
-	job_update_info->job_id      = sib_msg->job_id;
+	job_update_info->job_id = sib_msg->step_id.job_id;
 	job_update_info->job_state   = sib_msg->job_state;
 	job_update_info->start_time  = sib_msg->start_time;
 	job_update_info->return_code = sib_msg->return_code;
@@ -5987,7 +5996,7 @@ static int _q_sib_job_update_response(slurm_msg_t *msg)
 		xmalloc(sizeof(fed_job_update_info_t));
 
 	job_update_info->type           = FED_JOB_UPDATE_RESPONSE;
-	job_update_info->job_id         = sib_msg->job_id;
+	job_update_info->job_id = sib_msg->step_id.job_id;
 	job_update_info->return_code    = sib_msg->return_code;
 	job_update_info->submit_cluster = xstrdup(msg->pcon->cluster_name);
 
@@ -6005,7 +6014,7 @@ static int _q_sib_job_requeue(slurm_msg_t *msg, uint32_t uid)
 		xmalloc(sizeof(fed_job_update_info_t));
 
 	job_update_info->type   = FED_JOB_REQUEUE;
-	job_update_info->job_id = req_ptr->job_id;
+	job_update_info->job_id = req_ptr->step_id.job_id;
 	job_update_info->flags  = req_ptr->flags;
 	job_update_info->uid    = uid;
 
@@ -6055,13 +6064,13 @@ extern int fed_mgr_q_update_origin_dep_msg(slurm_msg_t *msg)
 	dep_update_origin_msg_t *update_deps;
 	dep_update_origin_msg_t *update_msg = msg->data;
 
-	log_flag(FEDR, "%s: Got %s: Job %u",
-		 __func__, rpc_num2string(msg->msg_type), update_msg->job_id);
+	log_flag(FEDR, "%s: Got %s: %pI",
+		 __func__, rpc_num2string(msg->msg_type), &update_msg->step_id);
 
 	/* update_msg will get free'd, so copy it */
 	update_deps = xmalloc(sizeof *update_deps);
 	update_deps->depend_list = update_msg->depend_list;
-	update_deps->job_id = update_msg->job_id;
+	update_deps->step_id = update_msg->step_id;
 	/*
 	 * NULL update_msg->depend_list so it doesn't get free'd; we're
 	 * using it later.
@@ -6081,12 +6090,11 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	dep_msg_t *remote_dependency;
 	dep_msg_t *dep_msg = msg->data;
 
-	log_flag(FEDR, "%s: Got %s: Job %u",
-		 __func__, rpc_num2string(msg->msg_type), dep_msg->job_id);
+	log_flag(FEDR, "%s: Got %s: %pI",
+		 __func__, rpc_num2string(msg->msg_type), &dep_msg->step_id);
 
 	/* dep_msg will get free'd, so copy it */
 	remote_dependency = xmalloc(sizeof *remote_dependency);
-	remote_dependency->job_id = dep_msg->job_id;
 	remote_dependency->job_name = dep_msg->job_name;
 	remote_dependency->dependency = dep_msg->dependency;
 	/* NULL strings so they don't get free'd */
@@ -6095,6 +6103,7 @@ extern int fed_mgr_q_dep_msg(slurm_msg_t *msg)
 	remote_dependency->array_task_id = dep_msg->array_task_id;
 	remote_dependency->array_job_id = dep_msg->array_job_id;
 	remote_dependency->is_array = dep_msg->is_array;
+	remote_dependency->step_id = dep_msg->step_id;
 	remote_dependency->user_id = dep_msg->user_id;
 
 	list_append(remote_dep_recv_list, remote_dependency);

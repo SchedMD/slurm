@@ -299,8 +299,8 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 	{
 		srun_user_msg_t *um = msg->data;
 
-		debug("%s:[%s] JobId=%u srun user message RPC",
-		      __func__, conmgr_fd_get_name(con), um->job_id);
+		debug("%s:[%s] %pI srun user message RPC",
+		      __func__, conmgr_fd_get_name(con), &um->step_id);
 
 		print_multi_line_string(um->msg, -1, LOG_LEVEL_INFO);
 		break;
@@ -393,9 +393,9 @@ static uint32_t _setup_listener(void)
 	return port;
 }
 
-static void _pending_callback(uint32_t job_id)
+static void _pending_callback(slurm_step_id_t *step_id)
 {
-	info("waiting on pending job allocation %u", job_id);
+	info("waiting on pending job allocation %pI", step_id);
 }
 
 /* check allocation has all nodes ready */

@@ -41,7 +41,7 @@ extern void cred_state_fini(void);
 
 extern void save_cred_state(void);
 
-extern bool cred_jobid_cached(uint32_t jobid);
+extern bool cred_job_cached(slurm_step_id_t *step_id);
 
 /*
  * Add a jobid to the credential context without a credential state.
@@ -49,9 +49,10 @@ extern bool cred_jobid_cached(uint32_t jobid);
  * but not necessarily received a credential for.
  * E.g., if the prolog or batch were the first related RPCS to be processed.
  */
-extern int cred_insert_jobid(uint32_t jobid);
+extern int cred_insert_job(slurm_step_id_t *step_id);
 
-extern int cred_revoke(uint32_t jobid, time_t time, time_t start_time);
+extern int cred_revoke(slurm_step_id_t *step_id, time_t time,
+		       time_t start_time);
 
 extern bool cred_revoked(slurm_cred_t *cred);
 
@@ -68,7 +69,7 @@ extern bool cred_revoked(slurm_cred_t *cred);
  *  EEXIST if expiration period has already begun for jobid.
  *
  */
-extern int cred_begin_expiration(uint32_t jobid);
+extern int cred_begin_expiration(slurm_step_id_t *step_id);
 
 /*
  * Check to see if this credential is a reissue of an existing credential

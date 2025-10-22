@@ -122,7 +122,7 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 
 	*remote = conn_g_get_fd(conn);
 
-	rpc.job_id = job_id;
+	rpc.step_id.job_id = job_id;
 	rpc.flags = 0;
 	rpc.port = x11_target_port;
 	rpc.target = x11_target;

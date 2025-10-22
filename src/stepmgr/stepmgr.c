@@ -2415,18 +2415,17 @@ static int _step_alloc_lps(step_record_t *step_ptr, char **err_msg)
 		bit_and_not(unused_core_bitmap,
 			    job_resrcs_ptr->core_bitmap_used);
 		rc = gres_stepmgr_step_alloc(step_ptr->gres_list_req,
-					  &step_ptr->gres_list_alloc,
-					  job_ptr->gres_list_alloc,
-					  job_node_inx, first_step_node,
-					  task_cnt,
-					  rem_nodes, job_ptr->job_id,
-					  step_ptr->step_id.step_id,
-					  !(step_ptr->flags &
-					    SSF_OVERLAP_FORCE),
-					  &gres_step_node_mem_alloc,
-					  node_ptr->gres_list,
-					  unused_core_bitmap,
-					  &gres_cpus_alloc);
+					     &step_ptr->gres_list_alloc,
+					     job_ptr->gres_list_alloc,
+					     job_node_inx, first_step_node,
+					     task_cnt, rem_nodes, job_ptr,
+					     step_ptr->step_id.step_id,
+					     !(step_ptr->flags &
+					       SSF_OVERLAP_FORCE),
+					     &gres_step_node_mem_alloc,
+					     node_ptr->gres_list,
+					     unused_core_bitmap,
+					     &gres_cpus_alloc);
 		FREE_NULL_BITMAP(unused_core_bitmap);
 		if (rc != SLURM_SUCCESS) {
 			log_flag(STEPS, "unable to allocate step GRES for job node %d (%s): %s",
@@ -4455,22 +4454,22 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	update_step_args_t args = { .mod_cnt = 0 };
 	slurm_step_id_t step_id = { 0 };
 
-	job_ptr = stepmgr_ops->find_job_record(req->job_id);
+	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
 	if (job_ptr == NULL) {
-		error("%s: invalid JobId=%u", __func__, req->job_id);
+		error("%s: invalid %pI", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	step_id.job_id = job_ptr->job_id;
 	step_id.sluid = job_ptr->db_index;
-	step_id.step_id = req->step_id;
+	step_id.step_id = req->step_id.step_id;
 	step_id.step_het_comp = NO_VAL;
 
 	/*
 	 * No need to limit step time limit as job time limit will kill
 	 * any steps with any time limit
 	 */
-	if (req->step_id == NO_VAL) {
+	if (req->step_id.step_id == NO_VAL) {
 		args.time_limit = req->time_limit;
 		list_for_each(job_ptr->step_list, _update_step, &args);
 	} else {
@@ -4499,7 +4498,6 @@ stepmgr:
 		step_update_request_msg_t *agent_update_msg = NULL;
 
 		agent_update_msg = xmalloc(sizeof(*agent_update_msg));
-		agent_update_msg->job_id = req->job_id;
 		agent_update_msg->step_id = req->step_id;
 		agent_update_msg->time_limit = req->time_limit;
 
@@ -5178,8 +5176,7 @@ end_it:
 			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
-		job_step_resp.job_id = step_rec->step_id.job_id;
-		job_step_resp.job_step_id = step_rec->step_id.step_id;
+		job_step_resp.step_id = step_rec->step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
 
 		step_layout = slurm_step_layout_copy(step_rec->step_layout);

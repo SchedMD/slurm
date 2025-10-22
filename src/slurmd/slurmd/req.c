@@ -114,6 +114,7 @@
 #include "src/slurmd/slurmd/cred_context.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
 #include "src/slurmd/slurmd/job_mem_limit.h"
+#include "src/slurmd/slurmd/launch_state.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
@@ -131,11 +132,6 @@ typedef struct {
 } libdir_rec_t;
 
 typedef struct {
-	bool batch_step;
-	uint32_t job_id;
-} active_job_t;
-
-typedef struct {
 	uint32_t uid;
 	uint32_t job_id;
 	uint32_t step_id;
@@ -147,12 +143,8 @@ static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, int flags,
 				   char *details, bool batch, uid_t req_uid);
-static void _launch_complete_add(uint32_t job_id, bool btch_step);
-static void _launch_complete_log(char *type, uint32_t job_id);
-static void _launch_complete_rm(uint32_t job_id);
-static void _launch_complete_wait(uint32_t job_id);
-static int  _launch_job_fail(uint32_t job_id, uint32_t slurm_rc);
-static bool _launch_job_test(uint32_t job_id, bool batch_step);
+static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
+			    uint32_t slurm_rc);
 static void _note_batch_job_finished(uint32_t job_id);
 static int _prolog_is_running(uint32_t jobid);
 static void _rpc_terminate_job(slurm_msg_t *msg);
@@ -182,8 +174,8 @@ static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
-static int _wait_for_request_launch_prolog(uint32_t job_id,
-					    bool *first_job_run);
+static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
+					   bool *first_job_run);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -204,11 +196,6 @@ static int next_fini_job_inx = 0;
 static pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t job_suspend_array[NUM_PARALLEL_SUSP_JOBS] = {0};
 static int job_suspend_size = 0;
-
-#define JOB_STATE_CNT 64
-static pthread_mutex_t job_state_mutex   = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  job_state_cond    = PTHREAD_COND_INITIALIZER;
-static active_job_t active_job_id[JOB_STATE_CNT] = {{0}};
 
 static pthread_mutex_t prolog_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -387,9 +374,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 static void _slurm_rpc_srun_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *request = msg->data;
-	slurm_step_id_t step_id = { 0 };
-
-	step_id.job_id = request->job_id;
+	slurm_step_id_t step_id = *request;
 
 	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER, false);
 }
@@ -411,12 +396,8 @@ static void _slurm_rpc_srun_timeout(slurm_msg_t *msg)
 static void _slurm_rpc_update_step(slurm_msg_t *msg)
 {
 	step_update_request_msg_t *request = msg->data;
-	slurm_step_id_t step_id = { 0 };
 
-	step_id.job_id = request->job_id;
-	step_id.step_id = request->step_id;
-
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_SLURM_USER, true);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_SLURM_USER, true);
 }
 
 static void _slurm_rpc_step_layout(slurm_msg_t *msg)
@@ -1336,6 +1317,9 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	hostlist_t *step_hset = NULL;
 	int node_id = 0;
 
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
+
 	node_id = nodelist_find(req->complete_nodelist, conf->node_name);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr_t));
 
@@ -1377,10 +1361,10 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req->envc = envcount(req->env);
 
 	slurm_mutex_lock(&prolog_mutex);
-	first_job_run = !cred_jobid_cached(req->step_id.job_id);
+	first_job_run = !cred_job_cached(&req->step_id);
 
 	if (!(req->flags & LAUNCH_NO_ALLOC))
-		errnum = _wait_for_request_launch_prolog(req->step_id.job_id,
+		errnum = _wait_for_request_launch_prolog(&req->step_id,
 							 &first_job_run);
 	if (errnum != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&prolog_mutex);
@@ -1407,7 +1391,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
 
-		cred_insert_jobid(req->step_id.job_id);
+		cred_insert_job(&req->step_id);
 		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -1472,7 +1456,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 				      step_hset, msg->protocol_version);
 	debug3("%s: return from _forkexec_slurmstepd", __func__);
 
-	_launch_complete_add(req->step_id.job_id, false);
+	launch_complete_add(&req->step_id);
 
 done:
 	FREE_NULL_HOSTLIST(step_hset);
@@ -1488,10 +1472,7 @@ done:
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED) {
-		_launch_job_fail(
-		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->step_id.job_id,
-		    errnum);
+		_launch_job_fail(req->step_id.job_id, req->het_job_id, errnum);
 		send_registration_msg(errnum);
 	}
 
@@ -1794,18 +1775,18 @@ static void _note_batch_job_finished(uint32_t job_id)
 /* Send notification to slurmctld we are finished running the prolog.
  * This is needed on system that don't use srun to launch their tasks.
  */
-static int _notify_slurmctld_prolog_fini(
-	uint32_t job_id, uint32_t prolog_return_code)
+static int _notify_slurmctld_prolog_fini(slurm_step_id_t *step_id,
+					 uint32_t prolog_return_code)
 {
 	int rc, ret_c;
 	slurm_msg_t req_msg;
-	complete_prolog_msg_t req;
+	prolog_complete_msg_t req;
 
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));
-	req.job_id	= job_id;
 	req.node_name	= conf->node_name;
 	req.prolog_rc	= prolog_return_code;
+	req.step_id = *step_id;
 
 	req_msg.msg_type = REQUEST_COMPLETE_PROLOG;
 	req_msg.data	= &req;
@@ -1975,10 +1956,8 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		       __func__, forkexec_rc);
 
 		if (forkexec_rc != SLURM_SUCCESS) {
-			_launch_job_fail(
-			    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-			    req->het_job_id : req->step_id.job_id,
-			    forkexec_rc);
+			_launch_job_fail(req->step_id.job_id, req->het_job_id,
+					 forkexec_rc);
 
 			if (forkexec_rc == ESLURMD_PROLOG_FAILED)
 				rc = forkexec_rc;
@@ -2011,12 +1990,12 @@ static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 	 */
 	while (alt_rc != SLURM_SUCCESS) {
 		if (!(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
-			alt_rc = _notify_slurmctld_prolog_fini(req->step_id.job_id, rc);
+			alt_rc = _notify_slurmctld_prolog_fini(&req->step_id, rc);
 		else
 			alt_rc = SLURM_SUCCESS;
 
 		if (rc != SLURM_SUCCESS) {
-			alt_rc = _launch_job_fail(jobid, rc);
+			alt_rc = _launch_job_fail(jobid, NO_VAL, rc);
 			send_registration_msg(rc);
 		}
 
@@ -2036,6 +2015,9 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (req == NULL)
 		return;
 
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
+
 	/*
 	 * Send message back to the slurmctld so it knows we got the rpc.  A
 	 * prolog could easily run way longer than a MessageTimeout or we would
@@ -2049,7 +2031,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 
 	slurm_mutex_lock(&prolog_mutex);
 
-	if (cred_jobid_cached(req->step_id.job_id)) {
+	if (cred_job_cached(&req->step_id)) {
 		/* prolog has already run */
 		slurm_mutex_unlock(&prolog_mutex);
 		_notify_result_rpc_prolog(req, rc);
@@ -2065,7 +2047,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		return;
 	}
 
-	cred_insert_jobid(req->step_id.job_id);
+	cred_insert_job(&req->step_id);
 	_add_job_running_prolog(req->step_id.job_id);
 	/* signal just in case the batch rpc got here before we did */
 	slurm_cond_broadcast(&conf->prolog_running_cond);
@@ -2113,7 +2095,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	 * the return code.
 	 */
 	if (rc)
-		cred_revoke(req->step_id.job_id, time(NULL), time(NULL));
+		cred_revoke(&req->step_id, time(NULL), time(NULL));
 
 	_remove_job_running_prolog(req->step_id.job_id);
 
@@ -2132,14 +2114,14 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	uid_t batch_uid = SLURM_AUTH_NOBODY;
 	gid_t batch_gid = SLURM_AUTH_NOBODY;
 
-	if (_launch_job_test(req->step_id.job_id, true)) {
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
+
+	if (launch_job_test(&req->step_id)) {
 		error("%pI already running, do not launch second copy",
 		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
-		_launch_job_fail(
-		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->step_id.job_id,
-		    rc);
+		_launch_job_fail(req->step_id.job_id, req->het_job_id, rc);
 		goto done;
 	}
 
@@ -2173,7 +2155,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	task_g_slurmd_batch_request(req);	/* determine task affinity */
 
 	slurm_mutex_lock(&prolog_mutex);
-	first_job_run = !cred_jobid_cached(req->step_id.job_id);
+	first_job_run = !cred_job_cached(&req->step_id);
 
 	/* BlueGene prolog waits for partition boot and is very slow.
 	 * On any system we might need to load environment variables
@@ -2193,7 +2175,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	rc = _wait_for_request_launch_prolog(req->step_id.job_id, &first_job_run);
+	rc = _wait_for_request_launch_prolog(&req->step_id, &first_job_run);
 	if (rc != SLURM_SUCCESS) {
 		slurm_mutex_unlock(&prolog_mutex);
 		goto done;
@@ -2207,7 +2189,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		job_env_t job_env;
 		list_t *job_gres_list, *gres_prep_env_list;
 
-		cred_insert_jobid(req->step_id.job_id);
+		cred_insert_job(&req->step_id);
 		_add_job_running_prolog(req->step_id.job_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
@@ -2278,14 +2260,14 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 				  NULL, SLURM_PROTOCOL_VERSION);
 	debug3("%s: return from _forkexec_slurmstepd: %d", __func__, rc);
 
-	_launch_complete_add(req->step_id.job_id, true);
+	launch_complete_add(&req->step_id);
 
 	/* On a busy system, slurmstepd may take a while to respond,
 	 * if the job was cancelled in the interim, run through the
 	 * abort logic below. */
 	revoked = cred_revoked(req->cred);
 	if (revoked)
-		_launch_complete_rm(req->step_id.job_id);
+		launch_complete_rm(&req->step_id);
 	if (revoked && _is_batch_job_finished(req->step_id.job_id)) {
 		/* If configured with select/serial and the batch job already
 		 * completed, consider the job successfully launched and do
@@ -2323,10 +2305,7 @@ done:
 	if (rc != SLURM_SUCCESS) {
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
-		_launch_job_fail(
-		    (req->het_job_id && (req->het_job_id != NO_VAL)) ?
-		    req->het_job_id : req->step_id.job_id,
-		    rc);
+		_launch_job_fail(req->step_id.job_id, req->het_job_id, rc);
 	}
 
 	/*
@@ -2423,12 +2402,15 @@ static uint32_t _kill_fail_job(uint32_t job_id)
 	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK | KILL_FAIL_JOB);
 }
 
-static int
-_launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
+static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
+			    uint32_t slurm_rc)
 {
-	struct requeue_msg req_msg = {0};
+	requeue_msg_t req_msg = { { 0 } };
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
+
+	if (het_job_id && (het_job_id != NO_VAL))
+		job_id = het_job_id;
 
 	slurm_msg_t_init(&resp_msg);
 
@@ -2438,7 +2420,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 		return _kill_fail_job(job_id);
 
 	/* Try to requeue the job. If that doesn't work, kill the job. */
-	req_msg.job_id = job_id;
+	req_msg.step_id.job_id = job_id;
 	req_msg.job_id_str = NULL;
 	req_msg.flags = JOB_LAUNCH_FAILED;
 	if (slurm_rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)
@@ -3403,7 +3385,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 		    || req->job_pid == stepd_daemon_pid(
 			    fd, stepd->protocol_version)) {
 			slurm_msg_t_copy(&resp_msg, msg);
-			resp.job_id = stepd->step_id.job_id;
+			resp.step_id = stepd->step_id;
 			resp.return_code = SLURM_SUCCESS;
 			found = true;
 			close(fd);
@@ -3415,8 +3397,8 @@ static void  _rpc_pid2jid(slurm_msg_t *msg)
 	FREE_NULL_LIST(steps);
 
 	if (found) {
-		debug3("_rpc_pid2jid: pid(%u) found in %u",
-		       req->job_pid, resp.job_id);
+		debug3("%s: pid(%u) found in %pI",
+		       __func__, req->job_pid, &resp.step_id);
 		resp_msg.address      = msg->address;
 		resp_msg.msg_type     = RESPONSE_JOB_ID;
 		resp_msg.data         = &resp;
@@ -4190,9 +4172,7 @@ extern void record_launched_jobs(void)
 		if (fd == -1)
 			continue; /* step gone */
 		close(fd);
-		_launch_complete_add(stepd->step_id.job_id,
-				     (stepd->step_id.step_id ==
-				      SLURM_BATCH_SCRIPT));
+		launch_complete_add(&stepd->step_id);
 	}
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
@@ -4243,7 +4223,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/* Defer suspend until job prolog and launch complete */
 	if (req->op == SUSPEND_JOB)
-		_launch_complete_wait(req->step_id.job_id);
+		launch_complete_wait(&req->step_id);
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
@@ -4380,7 +4360,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (cred_revoke(req->step_id.job_id, req->time, req->start_time) < 0) {
+	if (cred_revoke(&req->step_id, req->time, req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
 		save_cred_state();
@@ -4411,7 +4391,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *   the epilog again, as that script has already been executed
 	 *   for this job.
 	 */
-	if (cred_begin_expiration(req->step_id.job_id) < 0) {
+	if (cred_begin_expiration(&req->step_id) < 0) {
 		debug("Not running epilog for jobid %d: %m", req->step_id.job_id);
 		return;
 	}
@@ -4442,7 +4422,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		_free_job_env(&job_env);
 	}
 
-	_launch_complete_rm(req->step_id.job_id);
+	launch_complete_rm(&req->step_id);
 }
 
 static void _rpc_terminate_job(slurm_msg_t *msg)
@@ -4453,7 +4433,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	int		delay;
 	bool send_response = true;
 
-	debug("%s: %ps", __func__, &req->step_id);
+	debug("%s: starting for %pI %ps",
+	      __func__, &req->step_id, &req->step_id);
 
 	/*
 	 * This function is also used within _rpc_timelimit() which does not
@@ -4488,7 +4469,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (cred_revoke(req->step_id.job_id, req->time, req->start_time) < 0) {
+	if (cred_revoke(&req->step_id, req->time, req->start_time) < 0) {
 		debug("revoking cred for job %u: %m", req->step_id.job_id);
 	} else {
 		save_cred_state();
@@ -4580,7 +4561,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg,
 					  ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		}
-		cred_begin_expiration(req->step_id.job_id);
+		cred_begin_expiration(&req->step_id);
 		save_cred_state();
 		_waiter_complete(req->step_id.job_id);
 
@@ -4597,7 +4578,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			epilog_complete(req->step_id.job_id, req->nodes, rc);
 		}
 
-		_launch_complete_rm(req->step_id.job_id);
+		launch_complete_rm(&req->step_id);
 		return;
 	}
 
@@ -4635,7 +4616,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 *   the epilog again, as that script has already been executed
 	 *   for this job.
 	 */
-	if (cred_begin_expiration(req->step_id.job_id) < 0) {
+	if (cred_begin_expiration(&req->step_id) < 0) {
 		debug("Not running epilog for jobid %d: %m", req->step_id.job_id);
 		goto done;
 	}
@@ -4679,7 +4660,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			debug("completed epilog for jobid %u",
 			      req->step_id.job_id);
 	}
-	_launch_complete_rm(req->step_id.job_id);
+	launch_complete_rm(&req->step_id);
 
 done:
 	_wait_state_completed(req->step_id.job_id, 5);
@@ -4941,7 +4922,7 @@ static void _wait_for_job_running_prolog(uint32_t job_id)
 }
 
 /* Wait for the job's prolog launch request */
-static int _wait_for_request_launch_prolog(uint32_t job_id,
+static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 					   bool *first_job_run)
 {
 	struct timespec ts = {0, 0};
@@ -4957,7 +4938,7 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 	 * we don't have to unlock to wait on the
 	 * conf->prolog_running_cond.
 	 */
-	debug("Waiting for job %d's prolog launch request", job_id);
+	debug("Waiting for %pI prolog launch request", step_id);
 	gettimeofday(&timeout, NULL);
 	timeout.tv_sec += slurm_conf.msg_timeout * 2;
 	while (*first_job_run) {
@@ -4973,16 +4954,16 @@ static int _wait_for_request_launch_prolog(uint32_t job_id,
 		ts.tv_sec = now.tv_sec + 1;
 		ts.tv_nsec = now.tv_usec * 1000;
 		if (now.tv_sec > timeout.tv_sec) {
-			error("Waiting for JobId=%u REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
-			      job_id, slurm_conf.msg_timeout * 2);
+			error("Waiting for %pI REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
+			      step_id, slurm_conf.msg_timeout * 2);
 			return ESLURMD_PROLOG_FAILED;
 		}
 
 		slurm_cond_timedwait(&conf->prolog_running_cond,
 				     &prolog_mutex, &ts);
-		*first_job_run = !cred_jobid_cached(job_id);
+		*first_job_run = !cred_job_cached(step_id);
 	}
-	debug("Finished wait for job %d's prolog launch request", job_id);
+	debug("Finished wait for %pI prolog launch request", step_id);
 
 	return SLURM_SUCCESS;
 }
@@ -5032,145 +5013,6 @@ rwfail:
 	if (fd >= 0)
 		close(fd);
 	slurm_send_rc_msg(msg, rc);
-}
-
-static void _launch_complete_add(uint32_t job_id, bool batch_step)
-{
-	int j, empty;
-
-	slurm_mutex_lock(&job_state_mutex);
-	empty = -1;
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id) {
-			if (batch_step)
-				active_job_id[j].batch_step = batch_step;
-			break;
-		}
-		if ((active_job_id[j].job_id == 0) && (empty == -1))
-			empty = j;
-	}
-	if (j >= JOB_STATE_CNT || job_id != active_job_id[j].job_id) {
-		if (empty == -1)	/* Discard oldest job */
-			empty = 0;
-		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
-			active_job_id[j - 1] = active_job_id[j];
-		}
-		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
-		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = job_id;
-				active_job_id[j].batch_step = batch_step;
-				break;
-			}
-		}
-	}
-	slurm_cond_signal(&job_state_cond);
-	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job add", job_id);
-}
-
-static void _launch_complete_log(char *type, uint32_t job_id)
-{
-#if 0
-	int j;
-
-	info("active %s %u", type, job_id);
-	slurm_mutex_lock(&job_state_mutex);
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (active_job_id[j].job_id != 0) {
-			info("active_job_id[%d]=%u", j,
-			     active_job_id[j].job_id);
-		}
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-#endif
-}
-
-/* Test if we have a specific job ID still running */
-static bool _launch_job_test(uint32_t job_id, bool batch_step)
-{
-	bool found = false;
-	int j;
-
-	slurm_mutex_lock(&job_state_mutex);
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id) {
-			if (!batch_step || active_job_id[j].batch_step)
-				found = true;
-			break;
-		}
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-	return found;
-}
-
-
-static void _launch_complete_rm(uint32_t job_id)
-{
-	int j;
-
-	slurm_mutex_lock(&job_state_mutex);
-	for (j = 0; j < JOB_STATE_CNT; j++) {
-		if (job_id == active_job_id[j].job_id)
-			break;
-	}
-	if (j < JOB_STATE_CNT && job_id == active_job_id[j].job_id) {
-		for (j = j + 1; j < JOB_STATE_CNT; j++) {
-			active_job_id[j - 1] = active_job_id[j];
-		}
-		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job remove", job_id);
-}
-
-static void _launch_complete_wait(uint32_t job_id)
-{
-	int j, empty;
-	time_t start = time(NULL);
-	struct timeval now;
-	struct timespec timeout;
-
-	slurm_mutex_lock(&job_state_mutex);
-	while (true) {
-		empty = -1;
-		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (job_id == active_job_id[j].job_id)
-				break;
-			if ((active_job_id[j].job_id == 0) && (empty == -1))
-				empty = j;
-		}
-		if (j < JOB_STATE_CNT)	/* Found job, ready to return */
-			break;
-		if (difftime(time(NULL), start) <= 9) {  /* Retry for 9 secs */
-			debug2("wait for launch of job %u before suspending it",
-			       job_id);
-			gettimeofday(&now, NULL);
-			timeout.tv_sec  = now.tv_sec + 1;
-			timeout.tv_nsec = now.tv_usec * 1000;
-			slurm_cond_timedwait(&job_state_cond,&job_state_mutex,
-					     &timeout);
-			continue;
-		}
-		if (empty == -1)	/* Discard oldest job */
-			empty = 0;
-		for (j = empty + 1; j < JOB_STATE_CNT; j++) {
-			active_job_id[j - 1] = active_job_id[j];
-		}
-		active_job_id[JOB_STATE_CNT - 1].job_id = 0;
-		active_job_id[JOB_STATE_CNT - 1].batch_step = false;
-		for (j = 0; j < JOB_STATE_CNT; j++) {
-			if (active_job_id[j].job_id == 0) {
-				active_job_id[j].job_id = job_id;
-				break;
-			}
-		}
-		break;
-	}
-	slurm_mutex_unlock(&job_state_mutex);
-	_launch_complete_log("job wait", job_id);
 }
 
 typedef struct {

@@ -446,9 +446,8 @@ typedef struct job_notify_msg {
 } job_notify_msg_t;
 
 typedef struct job_id_msg {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	uint16_t show_flags;
-	sluid_t sluid;
 } job_id_msg_t;
 
 typedef struct job_user_id_msg {
@@ -517,11 +516,11 @@ typedef struct complete_batch_script {
 	uint32_t user_id;	/* user the job runs as */
 } complete_batch_script_msg_t;
 
-typedef struct complete_prolog {
-	uint32_t job_id;
+typedef struct {
 	char *node_name;
 	uint32_t prolog_rc;
-} complete_prolog_msg_t;
+	slurm_step_id_t step_id;
+} prolog_complete_msg_t;
 
 typedef struct step_complete_msg {
 	uint32_t range_first;	/* First node rank within job step's alloc */
@@ -539,7 +538,7 @@ typedef struct signal_tasks_msg {
 } signal_tasks_msg_t;
 
 typedef struct epilog_complete_msg {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	uint32_t return_code;
 	char    *node_name;
 } epilog_complete_msg_t;
@@ -638,9 +637,8 @@ typedef struct job_step_specs {
 
 typedef struct job_step_create_response_msg {
 	uint32_t def_cpu_bind_type;	/* Default CPU bind type */
-	uint32_t job_id;		/* assigned job id */
-	uint32_t job_step_id;		/* assigned job step id */
 	char *resv_ports;		/* reserved ports */
+	slurm_step_id_t step_id;
 	slurm_step_layout_t *step_layout; /* information about how the
                                            * step is laid out */
 	char *stepmgr;
@@ -983,7 +981,7 @@ typedef struct job_id_request_msg {
 } job_id_request_msg_t;
 
 typedef struct job_id_response_msg {
-	uint32_t job_id;	/* slurm job_id */
+	slurm_step_id_t step_id;
 	uint32_t return_code;	/* slurm return code */
 } job_id_response_msg_t;
 
@@ -1185,7 +1183,7 @@ typedef struct slurm_node_reg_resp_msg {
 } slurm_node_reg_resp_msg_t;
 
 typedef struct requeue_msg {
-	uint32_t job_id;	/* slurm job ID (number) */
+	slurm_step_id_t step_id;
 	char *   job_id_str;	/* slurm job ID (string) */
 	uint32_t flags;         /* JobExitRequeue | Hold | JobFailed | etc. */
 } requeue_msg_t;
@@ -1202,8 +1200,6 @@ typedef struct {
 	uint16_t data_version;	/* Version that data is packed with */
 	uint64_t fed_siblings;	/* sibling bitmap of job */
 	uint32_t group_id;      /* gid of submitted job */
-	uint32_t job_id;	/* job_id of job - set in job_desc on receiving
-				 * side */
 	uint32_t job_state;     /* state of job */
 	uint32_t return_code;   /* return code of job */
 	time_t   start_time;    /* time sibling job started */
@@ -1213,6 +1209,7 @@ typedef struct {
 				   passed to a remote then the uid will be the
 				   user and not the SlurmUser. */
 	uint16_t sib_msg_type; /* fed_job_update_type */
+	slurm_step_id_t step_id;
 	char    *submit_host;   /* node job was submitted from */
 	uint16_t submit_proto_ver; /* protocol version of submission client */
 	uint32_t user_id;       /* uid of submitted job */
@@ -1223,14 +1220,14 @@ typedef struct {
 	uint32_t array_task_id;
 	char *dependency;
 	bool is_array;
-	uint32_t job_id;
 	char *job_name;
+	slurm_step_id_t step_id;
 	uint32_t user_id;
 } dep_msg_t;
 
 typedef struct {
 	list_t *depend_list;
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 } dep_update_origin_msg_t;
 
 typedef struct {
@@ -1590,8 +1587,7 @@ extern void slurm_free_complete_job_allocation_msg(
 extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg);
 extern void slurm_free_complete_batch_script_msg(
 		complete_batch_script_msg_t * msg);
-extern void slurm_free_complete_prolog_msg(
-		complete_prolog_msg_t * msg);
+extern void slurm_free_prolog_complete_msg(prolog_complete_msg_t *msg);
 extern void slurm_free_launch_tasks_request_msg(
 		launch_tasks_request_msg_t * msg);
 extern void slurm_free_launch_tasks_response_msg(

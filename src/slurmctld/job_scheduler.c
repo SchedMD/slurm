@@ -2343,6 +2343,9 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 {
 	char *fail_why = NULL;
 	batch_job_launch_msg_t *launch_msg_ptr;
+	slurm_step_id_t step_id = {
+		.job_id = job_ptr->job_id,
+	};
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -2473,8 +2476,7 @@ job_failed:
 	last_job_update = time(NULL);
 	slurm_free_job_launch_msg(launch_msg_ptr);
 	/* ignore the return as job is in an unknown state anyway */
-	job_complete(job_ptr->job_id, slurm_conf.slurm_user_id, false, false,
-	             1);
+	job_complete(&step_id, slurm_conf.slurm_user_id, false, false, 1);
 	return NULL;
 }
 

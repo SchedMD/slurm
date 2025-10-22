@@ -247,6 +247,21 @@ typedef struct {
 
 #define SLURM_BIT(offset) ((uint64_t)1 << offset)
 
+#define SLURM_STEP_ID_INITIALIZER \
+{ \
+	.sluid = 0, \
+	.job_id = NO_VAL, \
+	.step_het_comp = NO_VAL, \
+	.step_id = NO_VAL, \
+}
+
+typedef struct {
+	sluid_t sluid;
+	uint32_t job_id;
+	uint32_t step_het_comp;
+	uint32_t step_id;
+} slurm_step_id_t;
+
 /* last entry must be JOB_END, keep in sync with job_state_string and
  *	job_state_string_compact. values may be ORed with JOB_STATE_FLAGS
  *	below.  */
@@ -2042,8 +2057,7 @@ typedef struct {
 } job_state_response_msg_t;
 
 typedef struct step_update_request_msg {
-	uint32_t job_id;
-	uint32_t step_id;
+	slurm_step_id_t step_id;
 	uint32_t time_limit;	/* In minutes */
 } step_update_request_msg_t;
 
@@ -2090,13 +2104,6 @@ typedef struct slurm_step_layout {
 	uint32_t **tids;	/* host id => task id mapping */
 } slurm_step_layout_t;
 
-typedef struct slurm_step_id_msg {
-	sluid_t sluid;
-	uint32_t job_id;
-	uint32_t step_het_comp;
-	uint32_t step_id;
-} slurm_step_id_t;
-
 typedef struct slurm_step_io_fds {
 	struct {
 		int fd;
@@ -2127,15 +2134,13 @@ typedef struct task_ext_msg {
 } task_exit_msg_t;
 
 typedef struct {
-	uint32_t job_id;	/* slurm job_id */
+	slurm_step_id_t step_id;
 	uint32_t flags;		/* flags */
 	uint16_t port;		/* target TCP port */
 	char *target;		/* target host or UNIX socket */
 } net_forward_msg_t;
 
-typedef struct srun_ping_msg {
-	uint32_t job_id;	/* slurm job_id */
-} srun_ping_msg_t;
+typedef slurm_step_id_t srun_ping_msg_t;
 
 typedef slurm_step_id_t srun_job_complete_msg_t;
 
@@ -2145,7 +2150,7 @@ typedef struct srun_timeout_msg {
 } srun_timeout_msg_t;
 
 typedef struct srun_user_msg {
-	uint32_t job_id;	/* slurm job_id */
+	slurm_step_id_t step_id;
 	char *msg;		/* message to user's srun */
 } srun_user_msg_t;
 
@@ -2466,7 +2471,7 @@ typedef struct job_alloc_info_msg {
 } job_alloc_info_msg_t;
 
 #define SLURM_SELECTED_STEP_INITIALIZER \
-	{ NULL, NO_VAL, NO_VAL, { NO_VAL, NO_VAL, NO_VAL } }
+{ NULL, NO_VAL, NO_VAL, SLURM_STEP_ID_INITIALIZER }
 
 typedef struct {
 	bitstr_t *array_bitmap; /* Set with slurm_array_str2bitmap(). */
@@ -3556,9 +3561,8 @@ extern int slurm_allocate_resources(job_desc_msg_t *job_desc_msg,
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
 extern resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
-	const job_desc_msg_t *user_req,
-	time_t timeout,
-	void (*pending_callback)(uint32_t job_id));
+	const job_desc_msg_t *user_req, time_t timeout,
+	void (*pending_callback)(slurm_step_id_t *step_id));
 
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
@@ -3588,9 +3592,8 @@ extern void slurm_free_resource_allocation_response_msg(resource_allocation_resp
  * NOTE: free the response using list_destroy()
  */
 extern list_t *slurm_allocate_het_job_blocking(
-	list_t *job_req_list,
-	time_t timeout,
-	void(*pending_callback)(uint32_t job_id));
+	list_t *job_req_list, time_t timeout,
+	void (*pending_callback)(slurm_step_id_t *step_id));
 
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource
@@ -3915,12 +3918,12 @@ extern int slurm_complete_job(uint32_t job_id, uint32_t job_return_code);
  *	calls slurm_complete_job_step() after verifying that all
  *	nodes in the job step no longer have running tasks from the job
  *	step.  (May take over 35 seconds to return.)
- * IN job_id  - the job's id
- * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
+ * IN step_id.job_id  - the job's id
+ * IN step_id.step_id - the job step's id - use SLURM_BATCH_SCRIPT
  *              to terminate a job's batch script
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_terminate_job_step(uint32_t job_id, uint32_t step_id);
+extern int slurm_terminate_job_step(slurm_step_id_t *step_id);
 
 /*****************************************************************************\
  *	SLURM TASK SPAWNING FUNCTIONS

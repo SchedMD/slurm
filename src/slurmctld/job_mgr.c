@@ -398,7 +398,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 static void _pack_pending_job_details(job_details_t *detail_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
 static void _purge_missing_jobs(int node_inx, time_t now);
-static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
+static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 			       char *node_name);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
 				       uint32_t *size, job_record_t *job_ptr);
@@ -2560,6 +2560,13 @@ extern job_record_t *find_sluid(sluid_t sluid)
 	return NULL;
 }
 
+extern job_record_t *find_job(slurm_step_id_t *step_id)
+{
+	if (step_id->sluid && (step_id->sluid != NO_VAL))
+		return find_sluid(step_id->sluid);
+	return find_job_record(step_id->job_id);
+}
+
 /*
  * Set a requeued job to PENDING and COMPLETING if all the nodes are completed
  * and the EpilogSlurmctld is not running
@@ -2670,6 +2677,7 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	int rc;
 
 	job_step_kill_msg->step_id.job_id = het_job_ptr->job_id;
+	job_step_kill_msg->step_id.sluid = het_job_ptr->db_index;
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
 			    foreach_kill_hetjob_step->uid);
 
@@ -4541,6 +4549,8 @@ static void _slurm_selected_step_init(job_record_t *job_ptr,
 	else
 		id->step_id.job_id = job_ptr->job_id;
 
+	id->step_id.sluid = job_ptr->db_index;
+
 	if (job_ptr->het_job_offset)
 		id->het_job_offset = job_ptr->het_job_offset;
 	else
@@ -6274,7 +6284,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
 
 /*
  * job_complete - note the normal termination the specified job
- * IN job_id - id of the job which completed
+ * IN step_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
  * IN node_fail - true if job terminated due to node failure
@@ -6283,7 +6293,7 @@ static int _foreach_het_job_complete(void *x, void *arg)
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
+extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code)
 {
 	job_record_t *job_ptr;
@@ -6292,9 +6302,8 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("%s: invalid JobId=%u", __func__, job_id);
+	if (!(job_ptr = find_job_record(step_id->job_id))) {
+		info("%s: invalid %pI", __func__, &step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -10285,12 +10294,12 @@ extern buf_t *pack_spec_jobs(list_t *job_ids, uint16_t show_flags, uid_t uid,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
- * IN job_id - ID of job that we want info for
+ * IN step_id - ID of job that we want info for
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  */
-extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
+extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 			   uid_t uid, uint16_t protocol_version)
 {
 	job_record_t *job_ptr;
@@ -10308,10 +10317,10 @@ extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
-	if (sluid)
-		job_ptr = find_sluid(sluid);
+	if (step_id->sluid)
+		job_ptr = find_sluid(step_id->sluid);
 	else
-		job_ptr = find_job_record(job_id);
+		job_ptr = find_job_record(step_id->job_id);
 
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
@@ -10360,13 +10369,15 @@ extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
 		}
 
 		/* When querying by SLUID do not return job array records. */
-		if (sluid)
+		if (step_id->sluid)
 			job_ptr = NULL;
 		else
-			job_ptr = job_array_hash_j[JOB_HASH_INX(job_id)];
+			job_ptr =
+				job_array_hash_j[JOB_HASH_INX(step_id->job_id)];
 
 		while (job_ptr) {
-			if ((job_ptr->job_id == job_id) && packed_head) {
+			if ((job_ptr->job_id == step_id->job_id) &&
+			    packed_head) {
 				;	/* Already packed */
 			} else if (!(show_flags & SHOW_ALL) &&
 				   IS_JOB_REVOKED(job_ptr)) {
@@ -10375,7 +10386,7 @@ extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
 				 * consistent and future proof, don't pack
 				 * revoked array jobs.
 				 */
-			} else if (job_ptr->array_job_id == job_id) {
+			} else if (job_ptr->array_job_id == step_id->job_id) {
 				if (valid_operator ||
 				    !_hide_job_user_rec(job_ptr, &user_rec,
 							show_flags)) {
@@ -15585,6 +15596,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->job_gid = job_ptr->group_id;
 	msg->start_time = job_ptr->start_time;
 	msg->step_id.job_id = job_ptr->job_id;
+	msg->step_id.sluid = job_ptr->db_index;
 	msg->step_id.step_het_comp = NO_VAL;
 	msg->step_id.step_id = NO_VAL;
 	msg->spank_job_env = xduparray(job_ptr->spank_job_env_size,
@@ -15760,19 +15772,28 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < reg_msg->job_count; i++) {
+		debug2("%s: registered %pI %ps on node %s",
+		       __func__, &reg_msg->step_id[i], &reg_msg->step_id[i],
+		       reg_msg->node_name);
+
 		if ( (reg_msg->step_id[i].job_id >= MIN_NOALLOC_JOBID) &&
 		     (reg_msg->step_id[i].job_id <= MAX_NOALLOC_JOBID) ) {
-			info("NoAllocate %ps reported on node %s",
-			     &reg_msg->step_id[i], reg_msg->node_name);
+			info("NoAllocate %pI %ps reported on node %s",
+			     &reg_msg->step_id[i], &reg_msg->step_id[i],
+			     reg_msg->node_name);
 			continue;
 		}
 
-		job_ptr = find_job_record(reg_msg->step_id[i].job_id);
+		if (reg_msg->step_id[i].sluid)
+			job_ptr = find_sluid(reg_msg->step_id[i].sluid);
+		else
+			job_ptr = find_job_record(reg_msg->step_id[i].job_id);
+
 		if (job_ptr == NULL) {
-			error("Orphan %ps reported on node %s",
-			      &reg_msg->step_id[i],
+			error("Orphan %pI %ps reported on node %s",
+			      &reg_msg->step_id[i], &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
+			_abort_job_on_node(&reg_msg->step_id[i], job_ptr,
 					   node_ptr->name);
 		}
 
@@ -15804,7 +15825,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 				info("%s: job nodes %s count %d inx %d",
 				     __func__, job_ptr->nodes,
 				     job_ptr->node_cnt, node_ptr->index);
-				_abort_job_on_node(reg_msg->step_id[i].job_id,
+				_abort_job_on_node(&reg_msg->step_id[i],
 						   job_ptr, node_ptr->name);
 			}
 		}
@@ -15825,7 +15846,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			      job_ptr,
 			      &reg_msg->step_id[i],
 			      reg_msg->node_name);
-			_abort_job_on_node(reg_msg->step_id[i].job_id, job_ptr,
+			_abort_job_on_node(&reg_msg->step_id[i], job_ptr,
 					   node_ptr->name);
 		} else if (difftime(now, job_ptr->end_time) <
 		           slurm_conf.msg_timeout) {
@@ -15930,6 +15951,9 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	     find_node_record(job_ptr->batch_host))) {
 		bool requeue = false;
 		char *requeue_msg = "";
+		slurm_step_id_t step_id = {
+			.job_id = job_ptr->job_id,
+		};
 		if (job_ptr->details && job_ptr->details->requeue) {
 			requeue = true;
 			requeue_msg = ", Requeuing job";
@@ -15938,8 +15962,8 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		     job_ptr, job_ptr->batch_host, requeue_msg);
 		xfree(job_ptr->failed_node);
 		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-		job_complete(job_ptr->job_id, slurm_conf.slurm_user_id,
-			     requeue, true, 1);
+		job_complete(&step_id, slurm_conf.slurm_user_id, requeue, true,
+			     1);
 	} else {
 		foreach_purge_missing_jobs->job_ptr = job_ptr;
 
@@ -15999,13 +16023,13 @@ static void _purge_missing_jobs(int node_inx, time_t now)
  *	multitude of running jobs. Slurmctld will not recognize
  *	these jobs and use this function to kill them - one
  *	agent request per node as they register.
- * IN job_id - id of the job to be killed
+ * IN step_id - id of the job to be killed
  * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. job reported
  *		by slurmd on some node, but job records already purged from
  *		slurmctld)
  * IN node_name - name of the node on which the job resides
  */
-static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
+static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 			       char *node_name)
 {
 	agent_arg_t *agent_info;
@@ -16021,14 +16045,15 @@ static void _abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	if (job_ptr)
 		debug("Aborting %pJ on node %s", job_ptr, node_name);
 	else
-		debug("Aborting JobId=%u on node %s", job_id, node_name);
+		debug("Aborting %pI on node %s", step_id, node_name);
 
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req = create_kill_job_msg(job_ptr,
 					       agent_info->protocol_version);
 	} else {
 		kill_req = xmalloc(sizeof(*kill_req));
-		kill_req->step_id.job_id = job_id;
+		kill_req->step_id.job_id = step_id->job_id;
+		kill_req->step_id.sluid = step_id->sluid;
 		kill_req->step_id.step_id = NO_VAL;
 		kill_req->step_id.step_het_comp = NO_VAL;
 		kill_req->time = time(NULL);
@@ -17036,6 +17061,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(signal_tasks_msg_t));
 	signal_job_msg->step_id.job_id = job_ptr->job_id;
+	signal_job_msg->step_id.sluid = job_ptr->db_index;
 
 	/*
 	 * We don't ever want to kill a step with this message.  The flags below
@@ -18339,6 +18365,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
 	timeout_msg->step_id.job_id = time_req_msg->job_id;
+	timeout_msg->step_id.sluid = job_ptr->db_index;
 	timeout_msg->step_id.step_id = NO_VAL;
 	timeout_msg->step_id.step_het_comp = NO_VAL;
 	timeout_msg->timeout = job_ptr->end_time;
@@ -19678,9 +19705,12 @@ extern void sort_all_jobs_partition_lists()
 
 extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 {
+	slurm_step_id_t step_id = {
+		.job_id = job_ptr->job_id,
+	};
 	job_ptr->priority = 0; /* Hold job */
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");
-	job_complete(job_ptr->job_id, slurm_conf.slurm_user_id, true, false, 0);
+	job_complete(&step_id, slurm_conf.slurm_user_id, true, false, 0);
 }

@@ -769,7 +769,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				  .fed  = READ_LOCK };
 
 			lock_slurmctld(job_write_lock);
-			job_complete(launch_msg_ptr->step_id.job_id,
+			job_complete(&launch_msg_ptr->step_id,
 				     slurm_conf.slurm_user_id, true, false, 0);
 			unlock_slurmctld(job_write_lock);
 		}
@@ -1105,7 +1105,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(launch_msg_ptr->step_id.job_id,
+			job_complete(&launch_msg_ptr->step_id,
 				     slurm_conf.slurm_user_id, false, false,
 				     _wif_status());
 			unlock_slurmctld(job_write_lock);
@@ -1117,13 +1117,13 @@ static void *_thread_per_group_rpc(void *args)
 			 * behind on the allocated nodes. */
 			resource_allocation_response_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
-			job_id = msg_ptr->step_id.job_id;
-			info("Killing interactive JobId=%u: %s",
-			     job_id, slurm_strerror(rc));
+			info("Killing interactive %pI: %s",
+			     &msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurm_conf.slurm_user_id,
-			             false, false, _wif_status());
+			job_complete(&msg_ptr->step_id,
+				     slurm_conf.slurm_user_id, false, false,
+				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_HET_JOB_ALLOCATION) &&
@@ -1137,13 +1137,13 @@ static void *_thread_per_group_rpc(void *args)
 			    (list_count(het_alloc_list) == 0))
 				continue;
 			msg_ptr = list_peek(het_alloc_list);
-			job_id = msg_ptr->step_id.job_id;
-			info("Killing interactive JobId=%u: %s",
-			     job_id, slurm_strerror(rc));
+			info("Killing interactive %pI: %s",
+			     &msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, slurm_conf.slurm_user_id,
-			             false, false, _wif_status());
+			job_complete(&msg_ptr->step_id,
+				     slurm_conf.slurm_user_id, false, false,
+				     _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}

@@ -96,7 +96,7 @@ static bool allocation_revoked = false;
 static bool exit_flag = false;
 static bool is_het_job = false;
 static bool suspend_flag = false;
-static uint32_t my_job_id = 0;
+static slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
 static int het_job_limit = 0;
@@ -110,7 +110,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
 static void _match_job_name(job_desc_msg_t *desc_last, list_t *job_req_list);
 static void _node_fail_handler(srun_node_fail_msg_t *msg);
-static void _pending_callback(uint32_t job_id);
+static void _pending_callback(slurm_step_id_t *step_id);
 static int  _proc_alloc(resource_allocation_response_msg_t *alloc);
 static void _ring_terminal_bell(void);
 static int  _set_cluster_name(void *x, void *arg);
@@ -403,11 +403,11 @@ int main(int argc, char **argv)
 		iter_resp = list_iterator_create(job_resp_list);
 		while ((alloc = list_next(iter_resp))) {
 			if (i == 0) {
-				my_job_id = alloc->step_id.job_id;
-				info("Granted job allocation %u", my_job_id);
+				my_job_id = alloc->step_id;
+				info("Granted job allocation %u", my_job_id.job_id);
 			}
-			log_flag(HETJOB, "Hetjob ID %u+%u (%u) on nodes %s",
-			         my_job_id, i, alloc->step_id.job_id,
+			log_flag(HETJOB, "Hetjob ID %u+%u (%pI) on nodes %s",
+			         my_job_id.job_id, i, &alloc->step_id,
 				 alloc->node_list);
 			i++;
 			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
@@ -418,17 +418,17 @@ int main(int argc, char **argv)
 		list_iterator_destroy(iter_resp);
 	} else if (!allocation_interrupted) {
 		/* Allocation granted to regular job */
-		my_job_id = alloc->step_id.job_id;
+		my_job_id = alloc->step_id;
 
 		print_multi_line_string(alloc->job_submit_user_msg,
 					-1, LOG_LEVEL_INFO);
-		info("Granted job allocation %u", my_job_id);
+		info("Granted job allocation %u", my_job_id.job_id);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
 	}
 
-	_salloc_cli_filter_post_submit(my_job_id, NO_VAL);
+	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);
 
 	after = time(NULL);
 	if ((saopt.bell == BELL_ALWAYS) ||
@@ -440,7 +440,7 @@ int main(int argc, char **argv)
 		exit(0);
 	if (allocation_interrupted) {
 		if (alloc)
-			my_job_id = alloc->step_id.job_id;
+			my_job_id = alloc->step_id;
 		/* salloc process received a signal after
 		 * slurm_allocate_resources_blocking returned with the
 		 * allocation, but before the new signal handlers were
@@ -535,13 +535,13 @@ int main(int argc, char **argv)
 	env_array_free(env);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
-		error("Allocation was revoked for job %u before command could be run",
-		      my_job_id);
+		error("Allocation was revoked for %pI before command could be run",
+		      &my_job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
-		if (slurm_complete_job(my_job_id, status) != 0) {
-			error("Unable to clean up allocation for job %u: %m",
-			      my_job_id);
+		if (slurm_complete_job(my_job_id.job_id, status) != 0) {
+			error("Unable to clean up allocation for %pI: %m",
+			      &my_job_id);
 		}
 		return 1;
  	}
@@ -602,11 +602,11 @@ relinquish:
 	if (allocation_state != REVOKED) {
 		slurm_mutex_unlock(&allocation_state_lock);
 
-		info("Relinquishing job allocation %u", my_job_id);
-		if ((slurm_complete_job(my_job_id, status) != 0) &&
+		info("Relinquishing job allocation %u", my_job_id.job_id);
+		if ((slurm_complete_job(my_job_id.job_id, status) != 0) &&
 		    (errno != ESLURM_ALREADY_DONE))
-			error("Unable to clean up job allocation %u: %m",
-			      my_job_id);
+			error("Unable to clean up job allocation %pI: %m",
+			      &my_job_id);
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
@@ -852,13 +852,13 @@ static pid_t _fork_command(char **command)
 	return pid;
 }
 
-static void _pending_callback(uint32_t job_id)
+static void _pending_callback(slurm_step_id_t *step_id)
 {
-	info("Pending job allocation %u", job_id);
-	my_job_id = job_id;
+	info("Pending job allocation %u", step_id->job_id);
+	my_job_id = *step_id;
 
 	/* call cli_filter post_submit here so it runs while allocating */
-	_salloc_cli_filter_post_submit(my_job_id, NO_VAL);
+	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);
 }
 
 /*
@@ -892,17 +892,18 @@ static void _forward_signal(int signo)
 static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
-	if (my_job_id != 0) {
-		slurm_complete_job(my_job_id, 128 + signo);
+	if (my_job_id.job_id != NO_VAL) {
+		slurm_complete_job(my_job_id.job_id, 128 + signo);
 	}
 }
 
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
-	if (!is_het_job && my_job_id && (my_job_id != comp->job_id)) {
-		error("Ignoring job_complete for job %u because our job ID is %u",
-		      comp->job_id, my_job_id);
+	if (!is_het_job && (my_job_id.job_id != NO_VAL) &&
+	    (my_job_id.job_id != comp->job_id)) {
+		error("Ignoring job_complete for job %u because we are %pI",
+		      comp->job_id, &my_job_id);
 		return;
 	}
 

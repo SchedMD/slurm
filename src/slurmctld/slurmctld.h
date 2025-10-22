@@ -727,6 +727,8 @@ extern job_record_t *find_job_record(uint32_t job_id);
 
 extern job_record_t *find_sluid(sluid_t sluid);
 
+extern job_record_t *find_job(slurm_step_id_t *step_id);
+
 /*
  * find_part_record - find a record for partition with specified name
  * IN name - name of the desired partition
@@ -1077,7 +1079,7 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 
 /*
  * job_complete - note the normal termination the specified job
- * IN job_id - id of the job which completed
+ * IN step_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
  * IN node_fail - true if job terminated due to node failure
@@ -1086,7 +1088,7 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
+extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 			bool node_fail, uint32_t job_return_code);
 
 /*
@@ -1429,15 +1431,14 @@ extern void pack_part(part_record_t *part_ptr, buf_t *buffer,
 /*
  * pack_one_job - dump information for one jobs in
  *	machine independent form (for network transmission)
- * IN sluid
- * IN job_id - ID of job that we want info for
+ * IN step_id
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
  * OUT buffer
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	whenever the data format changes
  */
-extern buf_t *pack_one_job(sluid_t sluid, uint32_t job_id, uint16_t show_flags,
+extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 			   uid_t uid, uint16_t protocol_version);
 
 /*

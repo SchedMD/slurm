@@ -108,8 +108,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 extern void slurm_init_update_step_msg (step_update_request_msg_t * step_msg)
 {
 	memset(step_msg, 0, sizeof(step_update_request_msg_t));
-	step_msg->job_id     = NO_VAL;
-	step_msg->step_id    = NO_VAL;
+	step_msg->step_id = (slurm_step_id_t) SLURM_STEP_ID_INITIALIZER;
 	step_msg->time_limit = NO_VAL;
 }
 

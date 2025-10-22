@@ -1041,11 +1041,11 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		       sizeof(msg->step_id[n]));
 
 		if (stepd->step_id.step_id == SLURM_BATCH_SCRIPT) {
-			debug("%s: found apparently running job %u",
-			      __func__, stepd->step_id.job_id);
-		} else {
-			debug("%s: found apparently running %ps",
+			debug("%s: found apparently running %pI",
 			      __func__, &stepd->step_id);
+		} else {
+			debug("%s: found apparently running %pI %ps",
+			      __func__, &stepd->step_id, &stepd->step_id);
 		}
 		n++;
 	}

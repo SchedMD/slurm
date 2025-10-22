@@ -211,11 +211,11 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 		 * need to to send to the slurmd.
 		 */
 		if (step_req->step_id.step_id == NO_VAL)
-			step_req->step_id.step_id = step_resp->job_step_id;
+			step_req->step_id.step_id = step_resp->step_id.step_id;
 
 		if (step_req->array_task_id != NO_VAL) {
-			step_req->step_id.job_id = step_resp->job_id;
-			ctx->job_id = step_resp->job_id;
+			step_req->step_id.job_id = step_resp->step_id.job_id;
+			ctx->job_id = step_resp->step_id.job_id;
 		}
 
 		ctx->step_resp	= step_resp;
@@ -271,7 +271,7 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 		step_req->num_tasks,
 		0);
 
-	step_resp->job_step_id = step_id;
+	step_resp->step_id.step_id = step_id;
 
 	ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 	ctx->launch_state = NULL;
@@ -284,7 +284,7 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 	 * need to to send to the slurmd.
 	 */
 	if (step_req->step_id.step_id == NO_VAL)
-		step_req->step_id.step_id = step_resp->job_step_id;
+		step_req->step_id.step_id = step_resp->step_id.step_id;
 
 	ctx->step_resp	= step_resp;
 	ctx->launch_state = step_launch_state_create(ctx);
