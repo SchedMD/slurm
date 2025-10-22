@@ -231,3 +231,10 @@ extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask)
 {
 	return 0;
 }
+
+extern void topology_p_get_topology_str(node_record_t *node_ptr,
+					char **topology_str_ptr,
+					topology_ctx_t *tctx)
+{
+	return;
+}

@@ -32,6 +32,7 @@ allocated to the job.</p>
 </ul></li>
 <li><a href="#env_vars">Environment Variables</a></li>
 <li><a href="#multi_topo">Multiple Topologies</a></li>
+<li><a href="#dynamic_topo">Dynamic Topology</a></li>
 </ul>
 
 <h2 id="topo_3d">Three-dimensional Topology
@@ -322,5 +323,56 @@ The Slurm controller will use the selected topology to optimize resource
 allocation for jobs submitted to that partition.
 If no topology is explicitly specified for a partition,
 Slurm will default to the cluster_default topology.</p>
+
+<h2 id="dynamic_topo">Dynamic Topology
+<a class="slurm_link" href="#dynamic_topo"></a>
+</h2>
+
+<p>Nodes can be dynamically added to and removed from topologies, defined in
+either <i>topology.conf</i> or <i>topology.yaml</i>, by either using
+<b>scontrol</b> to update the node's topology or by using the slurmd's
+<b>--conf</b> option to specify the node's topology for dynamic or cloud
+nodes.</p>
+
+<p>This is done by specifying the <b>Topology</b> option and providing the list
+of topology names and units. Note that the topology defined in the
+<b>topology.conf</b> file will always have the name "default".
+A <b>topology unit</b> is the block name or the name of a leaf switch.
+Intermediate switch names (':' delimited) can be provided and will be created
+if needed (e.g. Topology=topo-tree:sw_root:s1:s2).</p>
+
+<p>For <b>cloud nodes</b>, the only field that can be set with the
+<b>--conf</b> flag is <b>Topology</b>, and when the node is powered down the
+topology will be restored to what is defined in the configuration files.</p>
+
+<p>Examples using <code>scontrol</code>:</p>
+
+<pre>
+scontrol create NodeName=d[1-100] ... Topology=topo-switch:s1,topo-block:b1"
+</pre>
+
+<pre>
+scontrol update NodeName=d[1-2] Topology=topo-switch:s2,topo-block:b2"
+</pre>
+
+<pre>
+# Remove nodes from all topology
+scontrol update NodeName=d100 Topology=
+</pre>
+
+<p>Examples using <code>slurmd --conf</code>:</p>
+
+<pre>
+slurmd -Z --conf "... Topology=topo-switch:s1,topo-block:b1"
+</pre>
+
+<pre>
+slurmd -Z --conf "... Topology=default:b1"
+</pre>
+
+<pre>
+# Omit -Z for cloud nodes
+slurmd --conf "Topology=topo-cloud:s1"
+</pre>
 
 <!--#include virtual="footer.txt"-->

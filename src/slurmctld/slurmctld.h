@@ -2224,6 +2224,11 @@ extern void reset_node_active_features(node_record_t *node_ptr);
 extern void reset_node_instance(node_record_t *node_ptr);
 
 /*
+ * Reset a node's topology to the configured topology or clear.
+ */
+extern void reset_node_topology(node_record_t *node_ptr);
+
+/*
  * Return a hostlist with expanded node specification.
  *
  * Handles node range expressions, nodesets and ALL keyword.
@@ -2305,5 +2310,9 @@ extern bool listeners_quiesced(void);
 
 /* True if slurmctld process running as primary controller */
 extern bool is_primary(void);
+
+/* Set/update a node's topology */
+extern int node_mgr_set_node_topology(node_record_t *node_ptr,
+				      char *new_topology_str);
 
 #endif /* !_HAVE_SLURMCTLD_H */

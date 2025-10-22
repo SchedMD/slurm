@@ -310,6 +310,15 @@ extern int topology_g_jobinfo_get(
  */
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask);
 
+/*
+ * topology_g_get_topology_str - return the node's topology_str according to
+ * the current topology configuration
+ *
+ * IN node_ptr
+ * RET topology_str
+ */
+extern char *topology_g_get_topology_str(node_record_t *node_ptr);
+
 /* Note this does not free tctx->tctx */
 extern void free_topology_ctx(topology_ctx_t *tctx_ptr);
 

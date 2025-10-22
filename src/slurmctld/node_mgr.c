@@ -493,6 +493,19 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->node_state =
 					node_state | NODE_STATE_CLOUD;
 
+				/* Preserve dynamic topology for cloud nodes */
+				if (node_state_rec->topology_str) {
+					xfree(node_ptr->topology_str);
+					node_ptr->topology_str =
+						node_state_rec->topology_str;
+					node_state_rec->topology_str = NULL;
+
+					xfree(node_ptr->topology_orig_str);
+					node_ptr->topology_orig_str =
+						node_state_rec->topology_orig_str;
+					node_state_rec->topology_orig_str = NULL;
+				}
+
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags = node_ptr->node_state &
@@ -701,6 +714,10 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->topology_str);
 			node_ptr->topology_str = node_state_rec->topology_str;
 			node_state_rec->topology_str = NULL;
+			xfree(node_ptr->topology_orig_str);
+			node_ptr->topology_orig_str =
+				node_state_rec->topology_orig_str;
+			node_state_rec->topology_orig_str = NULL;
 		}
 
 		if (node_ptr) {
@@ -1826,25 +1843,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 
 		if (update_node_msg->topology_str) {
-			char *topology_str_old = node_ptr->topology_str;
-
-			node_ptr->topology_str = NULL;
-			if (*update_node_msg->topology_str) {
-				node_ptr->topology_str =
-					xstrdup(update_node_msg->topology_str);
-			}
-
-			if (topology_g_add_rm_node(node_ptr)) {
-				info("Invalid node topology specified %s",
-				     node_ptr->topology_str);
-				xfree(node_ptr->topology_str);
-				node_ptr->topology_str = topology_str_old;
-				topology_g_add_rm_node(node_ptr);
-				error_code =
-					ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-			} else {
-				xfree(topology_str_old);
-			}
+			int rc = SLURM_SUCCESS;
+			if ((rc = node_mgr_set_node_topology(
+				     node_ptr, update_node_msg->topology_str)))
+				error_code = rc;
 		}
 
 		state_val = update_node_msg->node_state;
@@ -1942,6 +1944,7 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 					reset_node_active_features(node_ptr);
 					reset_node_instance(node_ptr);
+					reset_node_topology(node_ptr);
 
 					clusteracct_storage_g_node_down(
 						acct_db_conn,
@@ -2647,6 +2650,25 @@ extern void reset_node_instance(node_record_t *node_ptr)
 
 	xfree(node_ptr->instance_id);
 	xfree(node_ptr->instance_type);
+}
+
+extern void reset_node_topology(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+
+	char *old_topo = NULL;
+
+	if (node_ptr->config_ptr->topology_str)
+		old_topo = node_ptr->config_ptr->topology_str;
+	else
+		old_topo = node_ptr->topology_orig_str;
+
+	node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+
+	if (old_topo == node_ptr->topology_orig_str) {
+		xfree(node_ptr->topology_str);
+	}
+	xfree(node_ptr->topology_orig_str);
 }
 
 /*
@@ -3500,6 +3522,29 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	if (update_db)
 		clusteracct_storage_g_node_update(acct_db_conn, node_ptr);
+
+	if (IS_NODE_CLOUD(node_ptr) && (was_powering_up || was_powered_down) &&
+	    xstrstr(reg_msg->dynamic_conf, "topology=")) {
+		int rc = SLURM_SUCCESS;
+		char *tmp_conf = NULL;
+		slurm_conf_node_t *conf_node = NULL;
+		s_p_hashtbl_t *node_hashtbl = NULL;
+
+		tmp_conf = xstrdup_printf("NodeName=%s %s", node_ptr->name,
+					  reg_msg->dynamic_conf);
+		if (!(conf_node = slurm_conf_parse_nodeline(tmp_conf,
+							    &node_hashtbl))) {
+			error("Failed to parse dynamic nodeline '%s'",
+			      reg_msg->dynamic_conf);
+			error_code = EINVAL;
+		} else if (conf_node->topology_str &&
+			   ((rc = node_mgr_set_node_topology(
+				     node_ptr, conf_node->topology_str)))) {
+			error_code = rc;
+		}
+		s_p_hashtbl_destroy(node_hashtbl);
+		xfree(tmp_conf);
+	}
 
 	was_invalid_reg = IS_NODE_INVALID_REG(node_ptr);
 	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
@@ -5069,6 +5114,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		return ESLURM_NODES_BUSY;
 	}
 
+	xfree(node_ptr->topology_orig_str);
 	xfree(node_ptr->topology_str);
 	topology_g_add_rm_node(node_ptr);
 
@@ -5195,4 +5241,52 @@ extern void set_node_reason(node_record_t *node_ptr,
 		node_ptr->reason_time = 0;
 		node_ptr->reason_uid = NO_VAL;
 	}
+}
+
+extern int node_mgr_set_node_topology(node_record_t *node_ptr,
+				      char *new_topology_str)
+{
+	int rc = SLURM_SUCCESS;
+	char *topology_str_old;
+	bool from_config = false;
+	bool stored_orig = false;
+
+	if (!node_ptr->topology_str && !node_ptr->topology_orig_str) {
+		node_ptr->topology_orig_str =
+			topology_g_get_topology_str(node_ptr);
+		stored_orig = true;
+	}
+
+	if (node_ptr->topology_str) {
+		topology_str_old = node_ptr->topology_str;
+		node_ptr->topology_str = NULL;
+	} else {
+		if (stored_orig)
+			topology_str_old = xstrdup(node_ptr->topology_orig_str);
+		else
+			topology_str_old =
+				topology_g_get_topology_str(node_ptr);
+		from_config = true;
+	}
+
+	if (*new_topology_str) {
+		node_ptr->topology_str = xstrdup(new_topology_str);
+	}
+
+	if (topology_g_add_rm_node(node_ptr)) {
+		info("Invalid node topology specified %s",
+		     node_ptr->topology_str);
+		xfree(node_ptr->topology_str);
+		node_ptr->topology_str = topology_str_old;
+		topology_g_add_rm_node(node_ptr);
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		if (from_config)
+			xfree(node_ptr->topology_str);
+		if (stored_orig)
+			xfree(node_ptr->topology_orig_str);
+	} else {
+		xfree(topology_str_old);
+	}
+
+	return rc;
 }
