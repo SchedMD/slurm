@@ -1028,7 +1028,7 @@ proc check_user_id user {
 #		command exits with a non-zero exit code.
 #	-timeout <float_number>
 #		Time in seconds to wait for the command to complete before
-#		timing out (default is 60.0)
+#		timing out (default is max_job_delay)
 #	-nolog
 #		Logging for this command will occur at trace threshold only
 #	-stdin
@@ -1053,14 +1053,14 @@ proc check_user_id user {
 #
 ################################################################
 proc run_command args {
-	global bin_bash bin_sudo
+	global bin_bash bin_sudo max_job_delay
 
 	set alt_user ""
 	set exit_status 0
 	set timedout false
 	set output ""
 	set action "warn"
-	set timeout 60
+	set timeout $max_job_delay
 	set expect_failure false
 	set log_at_trace_level false
 	set stdin ""
@@ -1224,7 +1224,7 @@ proc run_command args {
 #		times out.
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
-#		timing out (default is 60.0)
+#		timing out (default is max_job_delay)
 #	-stdin
 #		Provide standard in to be piped into command
 #
@@ -1282,7 +1282,7 @@ proc run_command_output args {
 #		times out.
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
-#		timing out (default is 60.0)
+#		timing out (default is max_job_delay)
 #	-stdin
 #		Provide standard in to be piped into command
 #
@@ -1747,7 +1747,7 @@ proc kill_srun {  } {
 #		call subfail
 #	-timeout <float_number>
 #		time in seconds to wait for the condition to be met before
-#		timing out (default is 60.0)
+#		timing out (default is max_job_delay)
 #	-pollinterval <float_number>
 #		time in seconds between each loop execution and condition check
 #		(default is 1.0)
@@ -1765,9 +1765,11 @@ proc kill_srun {  } {
 ################################################################
 
 proc wait_for args {
+	global max_job_delay
+
 	set action          "none"
 	set subtest         false
-	set timeout         60
+	set timeout         $max_job_delay
 	set poll_interval   1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -1850,7 +1852,7 @@ proc wait_for args {
 #		call subfail
 #	-timeout <float_number>
 #		time in seconds to wait for the condition to be met before
-#		timing out (default is 60.0)
+#		timing out (default is max_job_delay)
 #	-pollinterval <float_number>
 #		time in seconds between each loop execution and condition
 #		check (default is 1.0)
@@ -1874,8 +1876,10 @@ proc wait_for args {
 ################################################################
 
 proc wait_for_command args {
+	global max_job_delay
+
 	set action          "none"
-	set timeout         60
+	set timeout         $max_job_delay
 	set poll_interval   1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -1967,7 +1971,7 @@ proc wait_for_command args {
 #		call subfail
 #	-timeout <float_number>
 #		time in seconds to wait for the pattern to be matched before
-#		timing out (default is 60.0)
+#		timing out (default is max_job_delay)
 #	-pollinterval <float_number>
 #		time in seconds between each loop execution and match check
 #		(default is 1.0)
@@ -2013,7 +2017,7 @@ proc wait_for_command_match args {
 #		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
 #		time in seconds to wait for the file to exist before
-#		timing out (default is 90)
+#		timing out (default is max_job_delay)
 #	-pollinterval <integer_number>
 #		time in seconds between each file existence test (default is 1)
 #
@@ -2029,10 +2033,10 @@ proc wait_for_command_match args {
 ################################################################
 
 proc wait_for_file args {
-	global bin_sleep
+	global bin_sleep max_job_delay
 
 	set fatal         false
-	set timeout       90
+	set timeout       $max_job_delay
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -2281,7 +2285,7 @@ proc _wait_for_single_job args {
 #		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
 #		time in seconds to wait for the job to be in the desired state
-#		before timing out (default is 90)
+#		before timing out (default is max_job_delay)
 #	-pollinterval <integer_number>
 #		time in seconds between each job state check (default is 1)
 #
@@ -2381,7 +2385,7 @@ proc wait_for_job args {
 #		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
 #		time in seconds to wait for the job's field to be populated
-#		before timing out (default is 90)
+#		before timing out (default is max_job_delay)
 #	-pollinterval <integer_number>
 #		time in seconds between each field check (default is 1)
 #
@@ -2399,10 +2403,10 @@ proc wait_for_job args {
 ################################################################
 
 proc wait_for_job_acct args {
-	global sacct
+	global sacct max_job_delay
 
 	set options [list]
-	set timeout 10
+	set timeout $max_job_delay
 	set pollinterval .2
 	set field End
 
@@ -2642,7 +2646,7 @@ proc wait_for_part_done args {
 # OPTIONS
 #	-timeout <integer_number>
 #		time in seconds to wait for the job step to be found before
-#		timing out (default is 30)
+#		timing out (default is max_job_delay)
 #	-pollinterval <integer_number>
 #		time in seconds between each step existence check (default is 1)
 #
@@ -2656,9 +2660,9 @@ proc wait_for_part_done args {
 ################################################################
 
 proc wait_for_step args {
-	global scontrol
+	global scontrol max_job_delay
 
-	set timeout       30
+	set timeout       $max_job_delay
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -4073,7 +4077,7 @@ proc check_config_node_mem { } {
 # OPTIONS
 #	-timeout <integer_number>
 #		time in seconds to wait for the node state before
-#		timing out (default is 3)
+#		timing out (default is max_job_delay)
 #	-pollinterval <integer_number>
 #		time in seconds between each node state check (default is 1)
 #
@@ -4091,10 +4095,10 @@ proc check_config_node_mem { } {
 ################################################################
 
 proc wait_for_node args {
-	global sinfo number
+	global sinfo number max_job_delay
 
 	set partition     ""
-	set timeout       3
+	set timeout       $max_job_delay
 	set poll_interval 1
 	set desired_state "PENDING"
 	set desired_reason_list ""
