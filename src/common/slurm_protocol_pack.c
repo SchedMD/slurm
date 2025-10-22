@@ -1274,7 +1274,6 @@ static int _unpack_node_registration_status_msg(slurm_msg_t *smsg,
 			safe_unpack_step_id_members(&node_reg_ptr->step_id[i],
 						    buffer,
 						    smsg->protocol_version);
-				goto unpack_error;
 
 		safe_unpack16(&node_reg_ptr->flags, buffer);
 
