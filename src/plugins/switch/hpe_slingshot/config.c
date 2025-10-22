@@ -741,6 +741,9 @@ extern bool slingshot_stepd_init(const char *switch_params)
 
 	slingshot_config.destroy_retries = SLINGSHOT_CXI_DESTROY_RETRIES;
 
+	if (!switch_params)
+		return true;
+
 	params = xstrdup(switch_params);
 	for (token = strtok_r(params, ",", &save_ptr); token;
 	     token = strtok_r(NULL, ",", &save_ptr)) {
