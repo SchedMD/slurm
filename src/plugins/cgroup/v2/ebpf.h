@@ -100,6 +100,11 @@ extern void close_ebpf_prog(bpf_program_t *close_ebpf_prog, bool def_action);
 extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 			  bool override_flag, int token_fd);
 
+/* BPF token section */
+extern int bpf_fsopen(void);
+extern int bpf_fsconfig(int fd);
+extern int bpf_create_token(int bpf_fs_fd);
+
 /*
  * free_ebpf_prog -Frees the memory allocated by the program
  * OUT program - Pointer to the bpf_program_t to free

@@ -2999,3 +2999,44 @@ extern int cgroup_p_is_task_empty(uint32_t taskid)
 
 	return _is_cgroup_empty(&cg);
 }
+
+extern int cgroup_p_bpf_fsopen(void)
+{
+	return bpf_fsopen();
+}
+
+extern int cgroup_p_bpf_fsconfig(int fd)
+{
+	return bpf_fsconfig(fd);
+}
+
+extern int cgroup_p_bpf_create_token(int fd)
+{
+	int tok_fd;
+	/*
+	 * The token should only be generated once. If the static is already
+	 * set, something strange happened.
+	 */
+	if (token_fd != -1) {
+		error("The BPF token is already generated, this should not happen");
+		return token_fd;
+	}
+
+	tok_fd = bpf_create_token(fd);
+	if (tok_fd < 0) {
+		error("Error generating BPF token");
+		return SLURM_ERROR;
+	}
+
+	return tok_fd;
+}
+
+extern void cgroup_p_bpf_set_token(int fd)
+{
+	token_fd = fd;
+}
+
+extern int cgroup_p_bpf_get_token()
+{
+	return token_fd;
+}

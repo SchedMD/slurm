@@ -434,4 +434,11 @@ extern char *cgroup_g_get_task_empty_event_path(uint32_t taskid,
 
 extern int cgroup_g_is_task_empty(uint32_t taskid);
 
+/* BPF token functions */
+extern int cgroup_g_bpf_fsopen();
+extern int cgroup_g_bpf_fsconfig(int fd);
+extern int cgroup_g_bpf_create_token(int fd);
+extern int cgroup_g_bpf_get_token();
+extern void cgroup_g_bpf_set_token(int fd);
+
 #endif
