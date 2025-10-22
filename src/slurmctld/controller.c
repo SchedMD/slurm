@@ -1890,6 +1890,8 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 	} else if ((rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) ||
 		   (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP)) {
 		rc = slurm_send_rc_msg(msg, rc);
+		FREE_NULL_CONN(msg->conn);
+		FREE_NULL_MSG(msg);
 	} else {
 		/* directly process the request */
 		slurmctld_req(msg, this_rpc);
