@@ -1885,8 +1885,7 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 	server_thread_incr();
 
 	if (!(rc = rpc_enqueue(this_rpc, msg))) {
-		server_thread_decr();
-		return rc;
+		/* do nothing */
 	} else if ((rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) ||
 		   (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP)) {
 		rc = slurm_send_rc_msg(msg, rc);
@@ -1896,18 +1895,19 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 		/* directly process the request */
 		slurmctld_req(msg, this_rpc);
 		rc = SLURM_SUCCESS;
-	}
 
-	if (!this_rpc->keep_msg) {
-		if (msg->conmgr_con)
-			log_flag(NET, "%s: [%s] destroyed connection for incoming RPC msg_type[0x%x]=%s rc=%s",
-				__func__, conmgr_con_get_name(msg->conmgr_con),
-				(uint32_t) msg->msg_type,
-				rpc_num2string(msg->msg_type),
-				slurm_strerror(rc));
+		if (!this_rpc->keep_msg) {
+			if (msg->conmgr_con)
+				log_flag(NET, "%s: [%s] destroyed connection for incoming RPC msg_type[0x%x]=%s rc=%s",
+					__func__,
+					conmgr_con_get_name(msg->conmgr_con),
+					(uint32_t) msg->msg_type,
+					rpc_num2string(msg->msg_type),
+					slurm_strerror(rc));
 
-		FREE_NULL_CONN(msg->conn);
-		FREE_NULL_MSG(msg);
+			FREE_NULL_CONN(msg->conn);
+			FREE_NULL_MSG(msg);
+		}
 	}
 
 	server_thread_decr();
