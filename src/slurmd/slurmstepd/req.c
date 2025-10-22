@@ -68,6 +68,7 @@
 
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/auth.h"
+#include "src/interfaces/cgroup.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/namespace.h"
 #include "src/interfaces/proctrack.h"
@@ -1335,6 +1336,79 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_get_bpf_token(int fd, uid_t uid, pid_t remote_pid)
+{
+	int rc = SLURM_ERROR;
+	int bpf_fd, token_fd = -1;
+
+	/* If I am not the extern step do not reply */
+	if (step->step_id.step_id != SLURM_EXTERN_CONT) {
+		safe_write(fd, &rc, sizeof(int));
+		return SLURM_ERROR;
+	}
+
+	token_fd = cgroup_g_bpf_get_token();
+
+	/* BPF token is already generated, just send it */
+	if (token_fd != -1) {
+		rc = 0;
+		safe_write(fd, &rc, sizeof(int));
+		send_fd_over_socket(fd, token_fd);
+	} else { /* Generate BPF token */
+		rc = 1;
+		safe_write(fd, &rc, sizeof(int));
+
+		/* Receive fsopen rc*/
+		safe_read(fd, &rc, sizeof(int));
+		if (rc != SLURM_SUCCESS) {
+			error("bpf fsopen failure");
+			goto fini;
+		}
+
+		/* Receive the fd for fsopen */
+		bpf_fd = receive_fd_over_socket(fd);
+		if (bpf_fd < 0) {
+			rc = SLURM_ERROR;
+			error("Problems receiving the bpf fsopen fd");
+			safe_write(fd, &rc, sizeof(int));
+			goto fini;
+		}
+
+		/* Do the fsconfig for the bpf fs and send the rc */
+		rc = cgroup_g_bpf_fsconfig(bpf_fd);
+		close(bpf_fd);
+		safe_write(fd, &rc, sizeof(int));
+		if (rc != SLURM_SUCCESS) {
+			error("bpf fsconfig failure");
+			goto fini;
+		}
+
+		/* Receive token_creation rc*/
+		safe_read(fd, &rc, sizeof(int));
+		if (rc != SLURM_SUCCESS) {
+			error("bpf token creation failure");
+			goto fini;
+		}
+
+		/* BPF token fd reception*/
+		token_fd = receive_fd_over_socket(fd);
+		if (token_fd < 0) {
+			rc = SLURM_ERROR;
+			error("Problems receiving the bpf token fd");
+		} else {
+			rc = SLURM_SUCCESS;
+			/* Save the token in the cgroup plugin */
+			cgroup_g_bpf_set_token(token_fd);
+		}
+		/* Send rc for the reception of the token fd*/
+		safe_write(fd, &rc, sizeof(int));
+	}
+fini:
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
 static void _block_on_pid(pid_t pid)
 {
 	struct timespec ts = { 0, 0 };
@@ -2333,6 +2407,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_ATTACH,
 		.from_slurmd = true,
 		.func = _handle_attach,
+	},
+	{
+		.msg_type = REQUEST_GET_BPF_TOKEN,
+		.from_slurmd = true,
+		.func = _handle_get_bpf_token,
 	},
 	{
 		.msg_type = REQUEST_PID_IN_CONTAINER,

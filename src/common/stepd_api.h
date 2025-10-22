@@ -80,6 +80,7 @@ typedef enum {
 	REQUEST_GET_NS_FD,
 	REQUEST_GETHOST,
 	REQUEST_GET_NS_FDS,
+	REQUEST_GET_BPF_TOKEN,
 } step_msg_t;
 
 typedef enum {
@@ -350,6 +351,15 @@ extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version);
  */
 extern int stepd_get_namespace_fds(int fd, list_t *fd_map,
 				   uint16_t protocol_version);
+
+/*
+ * Request to get the BPF token for a step in a user namespace.
+ *
+ * fd needs to be a connection to the socket of the extern slurmstepd.
+ * On success returns the bpf token fd.
+ * Returns SLURM_ERROR on failure.
+ */
+extern int stepd_get_bpf_token(int fd, uint16_t protocol_version);
 
 /*
  * Relay message to stepd.
