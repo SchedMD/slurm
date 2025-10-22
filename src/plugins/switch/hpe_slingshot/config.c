@@ -604,6 +604,35 @@ static int _config_destroy_retries(const char *token, char *arg)
 }
 
 /*
+ * Parse SwithParameters and --network 'nic_distribution_count=<value>' token.
+ * return value, or 0 on error
+ */
+static uint16_t _parse_nic_dist_cnt(
+	const char *token,
+	const char *nic_dist_arg)
+{
+	long ret; /* cast to uint16_t */
+	char *end_ptr = NULL;
+	if (!nic_dist_arg)
+		goto err;
+
+	ret = strtol(nic_dist_arg, &end_ptr, 10);
+
+	/* Validate that the value is a valid number and between 1 and 65535 */
+	if (*end_ptr || (ret <= 0) || (ret > UINT16_MAX))
+		goto err;
+
+	log_flag(SWITCH, "[token=%s]: nic_distribution_count %ld", token, ret);
+
+	return ret;
+err:
+	error("Invalid nic_distribution_count token '%s' (valid range %d-%d)",
+	      token, 1, UINT16_MAX);
+
+	return 0;
+}
+
+/*
  * Mapping between Slingshot limit names, slingshot_limits_set_t offset, maximum
  * values
  */
@@ -803,6 +832,8 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_fm_mtls_key = sizeof(fm_mtls_key) - 1;
 	const char fm_mtls_url[] = "fm_mtls_url";
 	const size_t size_fm_mtls_url = sizeof(fm_mtls_url) - 1;
+	char nic_dist_count[] = "nic_distribution_count";
+	size_t size_nic_dist_count = sizeof(nic_dist_count) - 1;
 	/* Will be default size when SwitchParameters is not set */
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
@@ -927,6 +958,11 @@ extern bool slingshot_setup_config(const char *switch_params)
 		} else if (!xstrncasecmp(token, destroy_retries,
 					 size_destroy_retries)) {
 			if (_config_destroy_retries(token, arg))
+				goto err;
+		} else if (!xstrncasecmp(token, nic_dist_count,
+					 size_nic_dist_count)) {
+			if (!(slingshot_config.nic_dist_cnt =
+				      _parse_nic_dist_cnt(token, arg)))
 				goto err;
 		} else {
 			if (!_config_limits(token, &slingshot_config.limits))
@@ -1180,6 +1216,8 @@ static bool _parse_network_token(const char *token, bool is_job,
 	size_t hwcoll_siz = sizeof(hwcoll_siz) - 1;
 	char tcs_str[] = "tcs";
 	size_t tcs_siz = sizeof(tcs_str) - 1;
+	char nic_dist_count_str[] = "nic_distribution_count";
+	size_t nic_dist_count_siz = sizeof(nic_dist_count_str) - 1;
 
 	char *arg = xstrchr(token, '=');
 	if (arg != NULL)
@@ -1228,6 +1266,9 @@ static bool _parse_network_token(const char *token, bool is_job,
 	} else if (!xstrncmp(token, tcs_str, tcs_siz)) {
 		if (is_job)
 			return _config_tcs(token, arg, &job->tcs);
+	} else if (!xstrncmp(token, nic_dist_count_str, nic_dist_count_siz)) {
+		if (!(job->nic_dist_cnt = _parse_nic_dist_cnt(token, arg)))
+			return false;
 	} else if (!_config_limits(token, &job->limits)) {
 		return false;
 	}
@@ -1255,6 +1296,7 @@ static bool _setup_network_params(const char *network_params,
 	job->limits = slingshot_config.limits;
 	job->tcs = slingshot_config.tcs;
 	job->flags = slingshot_config.flags;
+	job->nic_dist_cnt = slingshot_config.nic_dist_cnt;
 
 	/* no_vni disabled by default */
 	*no_vni = false;

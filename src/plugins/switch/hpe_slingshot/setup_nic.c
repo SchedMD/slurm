@@ -661,6 +661,7 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 	struct cxi_svc_fail_info failinfo;
 	slingshot_comm_profile_t *profile;
 	int max_lnis_per_rgid = 0, lnis_per_rgid = 1;
+	int nic_dist_cnt;
 
 	xassert(job);
 
@@ -684,6 +685,11 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 			job->num_profiles++;
 	}
 	job->profiles = xcalloc(job->num_profiles, sizeof(*job->profiles));
+
+	nic_dist_cnt = job->nic_dist_cnt ? job->nic_dist_cnt : cxi_ndevs;
+	if (nic_dist_cnt > cxi_ndevs)
+		warning("Requested NIC distribution count (%d) is larger than detected NIC count (%d)",
+			nic_dist_cnt, cxi_ndevs);
 
 	/* Create a Service for each NIC */
 	prof = 0;
@@ -729,9 +735,10 @@ extern bool slingshot_create_services(slingshot_stepinfo_t *job, uint32_t uid,
 				_max_lnis_per_rgid(dev->info.device_name);
 			if (max_lnis_per_rgid > 0)
 				lnis_per_rgid =
-					ROUNDUP(step_cpus, max_lnis_per_rgid);
-			log_flag(SWITCH, "device %s step_cpus %hu max_lnis_per_rgid %d lnis_per_rgid %d",
-			         dev->info.device_name, step_cpus,
+					ROUNDUP(step_cpus, (nic_dist_cnt *
+							    max_lnis_per_rgid));
+			log_flag(SWITCH, "device %s step_cpus %hu nic_dist_cnt %d max_lnis_per_rgid %d lnis_per_rgid %d",
+			         dev->info.device_name, step_cpus, nic_dist_cnt,
 			         max_lnis_per_rgid, lnis_per_rgid);
 
 			if (lnis_per_rgid > 1) {
