@@ -1607,6 +1607,7 @@ static void _on_primary_finish(conmgr_fd_t *con, void *arg)
 static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
 	int rc = SLURM_SUCCESS;
+	slurmctld_rpc_t *this_rpc = NULL;
 
 	if (!msg->auth_ids_set)
 		fatal_abort("this should never happen");
@@ -1622,6 +1623,13 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	if (rate_limit_exceeded(msg)) {
 		rc = slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 		FREE_NULL_MSG(msg);
+	} else if (!(this_rpc = find_rpc(msg->msg_type))) {
+		error("[%s] Received invalid RPC msg_type[0x%x]=%s",
+		      conmgr_fd_get_name(con), (uint32_t) msg->msg_type,
+		      rpc_num2string(msg->msg_type));
+		rc = slurm_send_rc_msg(msg, EINVAL);
+		FREE_NULL_MSG(msg);
+		return rc;
 	} else {
 		/*
 		 * The fd will be extracted from conmgr, so the conmgr
@@ -1867,8 +1875,11 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 {
 	int rc;
 	slurm_msg_t *msg = arg;
-	slurmctld_rpc_t *this_rpc = NULL;
+	slurmctld_rpc_t *this_rpc = find_rpc(msg->msg_type);
 	conmgr_fd_ref_t *conmgr_con = NULL;
+
+	/* _on_primary_msg() already verified resolving msg_type */
+	xassert(this_rpc);
 
 	/* Set connection into message for replies */
 	xassert(!msg->conn || (msg->conn == conn));
@@ -1898,14 +1909,9 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 	} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
 		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
-	} else if ((this_rpc = find_rpc(msg->msg_type))) {
+	} else {
 		/* directly process the request */
 		slurmctld_req(msg, this_rpc);
-	} else {
-		error("[%s] Received invalid RPC msg_type[0x%x]=%s",
-		      conmgr_con_get_name(conmgr_con), (uint32_t) msg->msg_type,
-		      rpc_num2string(msg->msg_type));
-		slurm_send_rc_msg(msg, EINVAL);
 	}
 
 	if (!this_rpc || !this_rpc->keep_msg) {
