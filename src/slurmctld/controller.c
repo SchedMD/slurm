@@ -1887,10 +1887,9 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 	if (!(rc = rpc_enqueue(this_rpc, msg))) {
 		server_thread_decr();
 		return rc;
-	} else if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
-		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
-	} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
-		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
+	} else if ((rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) ||
+		   (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP)) {
+		slurm_send_rc_msg(msg, rc);
 	} else {
 		/* directly process the request */
 		slurmctld_req(msg, this_rpc);
