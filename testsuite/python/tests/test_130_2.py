@@ -12,23 +12,9 @@ def setup():
     atf.require_config_parameter("FairShareDampeningFactor", 1)
 
 
-@pytest.fixture(scope="function")
-def compiled_program(tmp_path):
-    """Compile test program that uses plugin"""
-    test_program = str(tmp_path / "test.exe")
-    source_file = re.sub(r"\.py$", ".c", __file__)
-    atf.compile_against_libslurm(
-        source_file,
-        test_program,
-        full=True,
-        build_args=f"-ldl -lm -export-dynamic {atf.properties['slurm-build-dir']}/src/slurmctld/locks.o {atf.properties['slurm-build-dir']}/src/sshare/process.o",
-    )
-    return test_program
-
-
-def test_shares(compiled_program):
+def test_shares(prio_multifactor):
     """Verify that shares return the expected values"""
-    output = atf.run_command_output(compiled_program, fatal=True)
+    output = atf.run_command_output(prio_multifactor, fatal=True)
     assert (
         re.search(
             r"AccountB\|User1\|1\|0.200000\|20\|0.095238\|0.184524\|0.527550\|\|cpu=0\|",
