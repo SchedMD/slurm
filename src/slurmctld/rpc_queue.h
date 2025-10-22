@@ -36,12 +36,14 @@
 #ifndef _RPC_QUEUE_H_
 #define _RPC_QUEUE_H_
 
+#include "src/slurmctld/proc_req.h"
+
 extern void rpc_queue_init(void);
 
 extern void rpc_queue_shutdown(void);
 
 extern bool rpc_queue_enabled(void);
 
-extern int rpc_enqueue(slurm_msg_t *msg);
+extern int rpc_enqueue(slurmctld_rpc_t *q, slurm_msg_t *msg);
 
 #endif

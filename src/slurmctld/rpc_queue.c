@@ -363,40 +363,45 @@ extern bool rpc_queue_enabled(void)
 	return enabled;
 }
 
-extern int rpc_enqueue(slurm_msg_t *msg)
+extern int rpc_enqueue(slurmctld_rpc_t *q, slurm_msg_t *msg)
 {
 	if (!enabled)
 		return ESLURM_NOT_SUPPORTED;
 
-	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
-		if (q->msg_type == msg->msg_type) {
-			if (!q->queue_enabled)
-				break;
+	xassert(q);
+	xassert(msg);
+	xassert(q->msg_type == msg->msg_type);
 
-			if (q->max_queued) {
-				slurm_mutex_lock(&q->mutex);
-				if (q->queued >= q->max_queued) {
-					q->dropped++;
-					record_rpc_queue_stats(q);
-					slurm_mutex_unlock(&q->mutex);
-					if (q->hard_drop)
-						return SLURMCTLD_COMMUNICATIONS_HARD_DROP;
-					else
-						return SLURMCTLD_COMMUNICATIONS_BACKOFF;
-				}
-				q->queued++;
-				record_rpc_queue_stats(q);
-				slurm_mutex_unlock(&q->mutex);
-			}
+	/* check if RPC does not have a dedicated queue */
+	if (!q->queue_enabled)
+		return ESLURM_NOT_SUPPORTED;
 
-			list_enqueue(q->work, msg);
-			slurm_mutex_lock(&q->mutex);
-			slurm_cond_signal(&q->cond);
+	if (q->max_queued) {
+		slurm_mutex_lock(&q->mutex);
+
+		if (q->queued >= q->max_queued) {
+			q->dropped++;
+			record_rpc_queue_stats(q);
+
 			slurm_mutex_unlock(&q->mutex);
-			return SLURM_SUCCESS;
+
+			if (q->hard_drop)
+				return SLURMCTLD_COMMUNICATIONS_HARD_DROP;
+			else
+				return SLURMCTLD_COMMUNICATIONS_BACKOFF;
 		}
+
+		q->queued++;
+		record_rpc_queue_stats(q);
+
+		slurm_mutex_unlock(&q->mutex);
 	}
 
-	/* RPC does not have a dedicated queue */
-	return ESLURM_NOT_SUPPORTED;
+	list_enqueue(q->work, msg);
+
+	slurm_mutex_lock(&q->mutex);
+	slurm_cond_signal(&q->cond);
+	slurm_mutex_unlock(&q->mutex);
+
+	return SLURM_SUCCESS;
 }

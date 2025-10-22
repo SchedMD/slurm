@@ -1884,7 +1884,7 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 
 	server_thread_incr();
 
-	if (!(rc = rpc_enqueue(msg))) {
+	if (!(rc = rpc_enqueue(this_rpc, msg))) {
 		server_thread_decr();
 		return rc;
 	}
