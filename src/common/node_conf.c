@@ -651,7 +651,6 @@ extern config_record_t *create_config_record(void)
  */
 extern void node_conf_convert_cpu_spec_list(node_record_t *node_ptr)
 {
-	uint16_t i;
 	bitstr_t *cpu_spec_bitmap;
 
 	/* Nothing to convert if threads per core is 1 */
@@ -661,11 +660,21 @@ extern void node_conf_convert_cpu_spec_list(node_record_t *node_ptr)
 	/* create CPU bitmap from input CPU list */
 	cpu_spec_bitmap = bit_alloc(node_ptr->cpus);
 
-	/* Expand CPU bitmap to reserve whole cores */
-	for (i = 0; i < node_ptr->tot_cores; i++) {
+	/*
+	 * Expand CPU bitmap to reserve whole cores
+	 *
+	 * Use uint64_t for i instead of the same type as node_ptr->tpc
+	 * (uint16_t) because multiplying two uint16_t values is promoted to a
+	 * signed int. This implicit promotion can lead to unintended sign
+	 * extension when the result is later converted to int64_t in bit_nset()
+	 * arguments.
+	 */
+	for (uint64_t i = 0; i < node_ptr->tot_cores; i++) {
 		if (!bit_test(node_ptr->node_spec_bitmap, i)) {
-			bit_nset(cpu_spec_bitmap, (i * node_ptr->tpc),
-				 ((i + 1) * node_ptr->tpc) - 1);
+			/* typecast to avoid coverity error */
+			bitoff_t start = (bitoff_t) (i * node_ptr->tpc);
+			bitoff_t end = (bitoff_t) ((i + 1) * node_ptr->tpc - 1);
+			bit_nset(cpu_spec_bitmap, start, end);
 		}
 	}
 	xfree(node_ptr->cpu_spec_list);
