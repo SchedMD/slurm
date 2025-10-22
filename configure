@@ -708,6 +708,8 @@ WITH_DBUS_FALSE
 WITH_DBUS_TRUE
 dbus_LIBS
 dbus_CFLAGS
+WITH_BPF_TOKENS_FALSE
+WITH_BPF_TOKENS_TRUE
 WITH_BPF_FALSE
 WITH_BPF_TRUE
 BPF_CPPFLAGS
@@ -27354,11 +27356,43 @@ printf "%s\n" "#define HAVE_BPF 1" >>confdefs.h
       else
         if test "x$x_ac_cgroupv2" = "xyes"; then
           as_fn_error $? "unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2" "$LINENO" 5
-	else
+        else
           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2" >&5
 printf "%s\n" "$as_me: WARNING: unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2" >&2;}
-	fi
-	BPF_CPPFLAGS=""
+        fi
+        BPF_CPPFLAGS=""
+      fi
+
+      # Check for bpf token support
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <linux/bpf.h>
+int
+main (void)
+{
+int def_test;
+	    def_test = BPF_TOKEN_CREATE;
+	    def_test = BPF_F_TOKEN_FD;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_bpf_token_support=yes
+else case e in #(
+  e) ac_bpf_token_support=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+      if test "x$ac_bpf_token_support" = "xyes"; then
+
+printf "%s\n" "#define HAVE_BPF_TOKENS 1" >>confdefs.h
+
+      else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to link against a bpf.h from kernel-headers, version >= 6.9 required for cgroup/v2" >&5
+printf "%s\n" "$as_me: WARNING: unable to link against a bpf.h from kernel-headers, version >= 6.9 required for cgroup/v2" >&2;}
       fi
     fi
 
@@ -27371,6 +27405,14 @@ printf "%s\n" "$as_me: WARNING: unable to link against a bpf.h from kernel-heade
 else
   WITH_BPF_TRUE='#'
   WITH_BPF_FALSE=
+fi
+
+   if test -n "$x_ac_cv_bpf_dir" && test "$ac_bpf_token_support" = "yes"; then
+  WITH_BPF_TOKENS_TRUE=
+  WITH_BPF_TOKENS_FALSE='#'
+else
+  WITH_BPF_TOKENS_TRUE='#'
+  WITH_BPF_TOKENS_FALSE=
 fi
 
 
@@ -30591,6 +30633,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_BPF_TRUE}" && test -z "${WITH_BPF_FALSE}"; then
   as_fn_error $? "conditional \"WITH_BPF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_BPF_TOKENS_TRUE}" && test -z "${WITH_BPF_TOKENS_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_BPF_TOKENS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_DBUS_TRUE}" && test -z "${WITH_DBUS_FALSE}"; then

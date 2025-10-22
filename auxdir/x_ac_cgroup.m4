@@ -99,10 +99,24 @@ AC_DEFUN([X_AC_BPF], [
       else
         if test "x$x_ac_cgroupv2" = "xyes"; then
           AC_MSG_ERROR([unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2])
-	else
+        else
           AC_MSG_WARN([unable to link against a bpf.h from kernel-headers, version >= 5.7 required for cgroup/v2])
-	fi
-	BPF_CPPFLAGS=""
+        fi
+        BPF_CPPFLAGS=""
+      fi
+
+      # Check for bpf token support
+      AC_LINK_IFELSE(
+	[AC_LANG_PROGRAM([[#include <linux/bpf.h>]],
+	  [[int def_test;
+	    def_test = BPF_TOKEN_CREATE;
+	    def_test = BPF_F_TOKEN_FD;]])],
+	  [ac_bpf_token_support=yes],
+	  [ac_bpf_token_support=no])
+      if test "x$ac_bpf_token_support" = "xyes"; then
+        AC_DEFINE([HAVE_BPF_TOKENS], [1], [Define if you are compiling with bpf tokens.])
+      else
+        AC_MSG_WARN([unable to link against a bpf.h from kernel-headers, version >= 6.9 required for cgroup/v2])
       fi
     fi
 
@@ -110,6 +124,7 @@ AC_DEFUN([X_AC_BPF], [
   fi
 
   AM_CONDITIONAL(WITH_BPF, test -n "$x_ac_cv_bpf_dir" && test "$ac_bpf_define_presence" = "yes")
+  AM_CONDITIONAL(WITH_BPF_TOKENS, test -n "$x_ac_cv_bpf_dir" && test "$ac_bpf_token_support" = "yes")
 ])
 
 AC_DEFUN([X_AC_DBUS],
