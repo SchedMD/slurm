@@ -470,6 +470,14 @@ extern int main(int argc, char **argv)
 		goto ending;
 	}
 
+	/* Setup the bp token if needed */
+	if (slurm_cgroup_conf.constrain_devices &&
+	    namespace_g_setup_bpf_token(step)) {
+		rc = SLURM_ERROR;
+		_send_fail_to_slurmd(STDOUT_FILENO, rc);
+		goto ending;
+	}
+
 	_init_stepd_stepmgr();
 
 	/* fork handlers cause mutexes on some global data structures
