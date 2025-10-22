@@ -877,8 +877,8 @@ RESEND:	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_SIGNAL_TASKS;
 	req.data     = &msg;
 
-	if (ctx->step_resp->use_protocol_ver)
-		req.protocol_version = ctx->step_resp->use_protocol_ver;
+	if (ctx->step_req->use_protocol_ver)
+		req.protocol_version = ctx->step_req->use_protocol_ver;
 
 	debug2("sending signal %d to %ps on hosts %s",
 	       signo, &ctx->step_req->step_id, name);
@@ -1519,8 +1519,8 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	req.msg_type = REQUEST_STEP_COMPLETE;
 	req.data = &msg;
 
-	if (ctx->step_resp->use_protocol_ver)
-		req.protocol_version = ctx->step_resp->use_protocol_ver;
+	if (ctx->step_req->use_protocol_ver)
+		req.protocol_version = ctx->step_req->use_protocol_ver;
 
 	if (slurm_send_recv_controller_rc_msg(&req, &rc,
 					      working_cluster_rec) < 0)
@@ -1567,8 +1567,8 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	msg.data = launch_msg;
 	msg.forward.tree_width = tree_width;
 
-	if (ctx->step_resp->use_protocol_ver)
-		msg.protocol_version = ctx->step_resp->use_protocol_ver;
+	if (ctx->step_req->use_protocol_ver)
+		msg.protocol_version = ctx->step_req->use_protocol_ver;
 	else
 		msg.protocol_version = SLURM_PROTOCOL_VERSION;
 
