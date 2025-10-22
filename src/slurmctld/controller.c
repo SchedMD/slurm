@@ -1929,6 +1929,9 @@ static void _on_extract(conmgr_callback_args_t conmgr_args, void *conn,
 	/* _on_primary_msg() already verified resolving msg_type */
 	xassert(this_rpc);
 
+	/* should never be a persistent connection */
+	xassert(!msg->pcon);
+
 	/* already released in _on_primary_msg() */
 	xassert(!msg->conmgr_con);
 
