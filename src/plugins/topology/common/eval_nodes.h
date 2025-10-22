@@ -74,6 +74,7 @@ extern int eval_nodes(topology_eval_t *topo_eval);
  * This also check as the gres gets laid out that if restricted gpu cores are
  * removed their are still enough cpus on the node. It returns true if the Gres
  * requirement could be satisfied or false if not
+ * This also checks if HRes will be available for nodes.
  */
 extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 				   int64_t rem_max_cpus, int rem_nodes,

@@ -84,9 +84,9 @@ static int _cmp_res(const void *x, const void *y)
 {
 	const _sort_choose_nodes_t *r1 = x, *r2 = y;
 
-	if (r1->avail_res->avail_res_cnt > r2->avail_res->avail_res_cnt)
+	if (r1->avail_res->avail_res_prod > r2->avail_res->avail_res_prod)
 		return 1;
-	else if (r1->avail_res->avail_res_cnt < r2->avail_res->avail_res_cnt)
+	else if (r1->avail_res->avail_res_prod < r2->avail_res->avail_res_prod)
 		return -1;
 	return 0;
 }
@@ -323,7 +323,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 
 	/*
 	 * This nodeset didn't work. To avoid a possible knapsack problem,
-	 * incrementally remove nodes with low resource counts (sum of CPU and
+	 * incrementally remove nodes with low resource (product of CPU and
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
 	topo_eval->first_pass = false;

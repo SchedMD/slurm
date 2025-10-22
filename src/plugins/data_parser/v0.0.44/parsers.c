@@ -75,6 +75,8 @@
 #include "src/sinfo/sinfo.h" /* provides sinfo_data_t */
 #include "src/slurmctld/licenses.h" /* provides licenses_t - don't use funcs */
 
+extern void __attribute__((weak)) hres_variable_free(void *x);
+
 #define IS_INFINITE(x) is_overloaded_INFINITE(&(x), sizeof(x))
 #define IS_NO_VAL(x) is_overloaded_NO_VAL(&(x), sizeof(x), false)
 /* Force evaluation against (32bit) NO_VAL cast to value */
@@ -477,6 +479,7 @@ typedef struct {
 } foreach_topo_array_args_t;
 
 typedef struct {
+	list_t *base; /* list of hres_variable_t */
 	uint32_t count;
 	char *nodes;
 } hierarchy_layer_t;
@@ -485,11 +488,14 @@ typedef struct {
 	list_t *layers; /* list of hierarchy_layer_t */
 	uint8_t mode;
 	char *name;
+	char *topology_name;
+	list_t *variables; /* list of hres_variable_t */
 } hierarchical_resource_t;
 
 typedef struct {
 	list_t *licenses;
 	hierarchical_resource_t *resource;
+	bool first_layer;
 } resource_as_licenses_args_t;
 
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
@@ -6998,6 +7004,7 @@ static void FREE_FUNC(H_LAYER)(void *ptr)
 	if (!layer)
 		return;
 
+	FREE_NULL_LIST(layer->base);
 	xfree(layer->nodes);
 	xfree(layer);
 }
@@ -7011,6 +7018,8 @@ static void FREE_FUNC(H_RESOURCE)(void *ptr)
 
 	xfree(resource->name);
 	FREE_NULL_LIST(resource->layers);
+	xfree(resource->topology_name);
+	FREE_NULL_LIST(resource->variables);
 	xfree(resource);
 }
 
@@ -7026,6 +7035,20 @@ static void FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)(void *ptr)
 	xfree(req);
 }
 
+static int _foreach_variable(void *x, void *arg)
+{
+	hres_variable_t *var = x, *var_cpy;
+	list_t *variables = arg;
+
+	var_cpy = xmalloc(sizeof(*var_cpy));
+	var_cpy->value = var->value;
+	var_cpy->name = xstrdup(var->name);
+
+	list_append(variables, var_cpy);
+
+	return SLURM_SUCCESS;
+}
+
 static int _foreach_layer(void *x, void *arg)
 {
 	hierarchy_layer_t *layer = x;
@@ -7039,7 +7062,24 @@ static int _foreach_layer(void *x, void *arg)
 	license->name = xstrdup(args->resource->name);
 	license->mode = args->resource->mode;
 	license->nodes = xstrdup(layer->nodes);
-	license->total = layer->count;
+	license->hres_rec.total = layer->count;
+
+	if (hres_variable_free && list_count(layer->base)) {
+		license->hres_rec.base = list_create(hres_variable_free);
+		list_for_each(layer->base, _foreach_variable,
+			      license->hres_rec.base);
+	}
+
+	if (hres_variable_free && args->first_layer &&
+	    list_count(args->resource->variables)) {
+		license->hres_rec.variables = list_create(hres_variable_free);
+		list_for_each(args->resource->variables, _foreach_variable,
+			      license->hres_rec.variables);
+		license->hres_rec.topology_name =
+			xstrdup(args->resource->topology_name);
+		args->first_layer = false;
+	}
+
 	list_append(args->licenses, license);
 
 	return SLURM_SUCCESS;
@@ -7050,6 +7090,7 @@ static int _foreach_resource(void *x, void *arg)
 	resource_as_licenses_args_t *args = arg;
 
 	args->resource = x;
+	args->first_layer = true;
 	xassert(args->resource && args->resource->layers);
 	list_for_each(args->resource->layers, _foreach_layer, args);
 
@@ -7112,12 +7153,26 @@ static int _foreach_license(void *x, void *arg)
 		list_append(*resources, resource);
 	}
 
+	if (!resource->variables && hres_variable_free &&
+	    list_count(license->hres_rec.variables)) {
+		resource->variables = list_create(hres_variable_free);
+		list_for_each(license->hres_rec.variables, _foreach_variable,
+			      resource->variables);
+	}
+
 	if (!resource->layers)
 		resource->layers = list_create(FREE_FUNC(H_LAYER));
 	layer = xmalloc(sizeof(*layer));
 	layer->nodes = xstrdup(license->nodes);
-	layer->count = license->total;
-
+	layer->count = license->hres_rec.total;
+	if (!resource->topology_name)
+		resource->topology_name =
+			xstrdup(license->hres_rec.topology_name);
+	if (hres_variable_free && list_count(license->hres_rec.base)) {
+		layer->base = list_create(hres_variable_free);
+		list_for_each(license->hres_rec.base, _foreach_variable,
+			      layer->base);
+	}
 	list_append(resource->layers, layer);
 
 	return SLURM_SUCCESS;
@@ -8376,6 +8431,7 @@ static const parser_t PARSER_ARRAY(LICENSE)[] = {
 	add_parse(UINT32, last_consumed, "LastConsumed", "Last known number of licenses that were consumed in the license manager (Remote Only)"),
 	add_parse(UINT32, last_deficit, "LastDeficit", "Number of \"missing licenses\" from the cluster's perspective"),
 	add_parse(TIMESTAMP, last_update, "LastUpdate", "When the license information was last updated (UNIX Timestamp)"),
+	add_parse(STRING, nodes, "Nodes", "HRes nodes"),
 };
 #undef add_parse
 
@@ -10309,24 +10365,42 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 static const flag_bit_t PARSER_FLAG_ARRAY(H_RESOURCE_MODE_FLAG)[] = {
 	add_flag_eq(HRES_MODE_1, "MODE_1", NULL),
 	add_flag_eq(HRES_MODE_2, "MODE_2", NULL),
+	add_flag_eq(HRES_MODE_3, "MODE_3", NULL),
 };
 #undef add_flag_eq
 
 #define add_parse(mtype, field, path, desc)				\
-	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
-static const parser_t PARSER_ARRAY(H_LAYER)[] = {
-	add_parse(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
-	add_parse(UINT32_NO_VAL, count, "count", "Resource quantity"),
+	add_parser(hres_variable_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(H_VARIABLE)[] = {
+	add_parse(STRING, name, "name", "Variable name"),
+	add_parse(UINT32_NO_VAL, value, "value", "Variable value"),
 };
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(hierarchy_layer_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(hierarchy_layer_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(H_LAYER)[] = {
+	add_parse_req(HOSTLIST_STRING, nodes, "nodes", "Multiple node names may be specified using simple node range expressions"),
+	add_parse(H_VARIABLE_LIST, base, "base", "Resource consumption that will be factored into the current system state"),
+	add_parse_req(UINT32_NO_VAL, count, "count", "Resource quantity"),
+};
+#undef add_parse
+#undef add_parse_req
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(hierarchical_resource_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
 	add_parser(hierarchical_resource_t, mtype, true, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
-	add_parse(STRING, name, "resource", "Name of hierarchical resource"),
-	add_parse(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
-	add_parse(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+	add_parse_req(STRING, name, "resource", "Name of hierarchical resource"),
+	add_parse_req(H_RESOURCE_MODE_FLAG, mode, "mode", "Hierarchical resource mode"),
+	add_parse_req(H_LAYER_LIST, layers, "layers", "Hierarchical resource layers"),
+	add_parse(STRING, topology_name, "topology", "Name of topology associated to hierarchical resource"),
+	add_parse(H_VARIABLE_LIST, variables, "variables", "Hierarchical resource variables"),
 };
+#undef add_parse_req
 #undef add_parse
 
 #define add_openapi_response_meta(rtype)				\
@@ -11155,6 +11229,7 @@ static const parser_t parsers[] = {
 	addpap(BLOCK_CONFIG, slurm_conf_block_t, NULL, (parser_free_func_t) free_block_conf),
 	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
+	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -11285,6 +11360,7 @@ static const parser_t parsers[] = {
 	addpl(INT32_LIST, INT32_PTR, NEED_NONE),
 	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
+	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps

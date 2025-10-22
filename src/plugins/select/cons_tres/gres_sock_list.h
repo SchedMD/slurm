@@ -50,6 +50,7 @@ typedef struct {
 	bitstr_t *gpu_spec_bitmap; /* IN - bitmap of reserved gpu cores */
 	list_t *job_gres_list; /* IN - job's gres_list built by
 				* gres_job_state_validate() */
+	bool need_gpu; /* OUT - true if job request GPU */
 	list_t *node_gres_list; /* IN - node's gres_list built by
 				 * gres_node_config_validate() */
 	uint32_t node_inx; /* IN - index of node to be evaluated */

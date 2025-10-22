@@ -2014,6 +2014,18 @@ reservation used will replace it.
 .IP
 
 .TP
+\fB\-\-resources\fR=<\fIresource_names\fR>
+Specification of hierarchical resources which must be allocated to this job.
+Resources names can be followed by a colon and count (the default count is one).
+Multiple resources in Mode 1 and Mode 2 can be requested
+in a comma separated list but only one of Mode 3 can be requested.
+For example, "\-\-resources=flat:2,natural:1".
+
+See \fIhttps://slurm.schedmd.com/hres.html\fR
+for more information on use of Hierarchical Resource with Slurm.
+.IP
+
+.TP
 \fB\-\-resv\-ports\fR[=\fIcount\fR]
 Reserve communication ports for this job. Users can specify the number
 of port they want to reserve. The parameter MpiParams=ports=12000\-12999

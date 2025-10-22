@@ -3232,6 +3232,17 @@ static slurm_cli_opt_t slurm_opt_reservation = {
 	.reset_func = arg_reset_reservation,
 };
 
+COMMON_STRING_OPTION(resources);
+static slurm_cli_opt_t slurm_opt_resources = {
+	.name = "resources",
+	.has_arg = required_argument,
+	.val = LONG_OPT_RESOURCES,
+	.set_func = arg_set_resources,
+	.get_func = arg_get_resources,
+	.reset_func = arg_reset_resources,
+	.reset_each_pass = true,
+};
+
 static int arg_set_resv_port_cnt(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg)
@@ -4312,6 +4323,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_reboot,
 	&slurm_opt_relative,
 	&slurm_opt_requeue,
+	&slurm_opt_resources,
 	&slurm_opt_reservation,
 	&slurm_opt_resv_ports,
 	&slurm_opt_segment_size,
@@ -5731,6 +5743,12 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		job_desc->kill_on_node_fail = 0;
 
 	job_desc->licenses = xstrdup(opt_local->licenses);
+	if (opt_local->resources) {
+		char *sep = job_desc->licenses ? "," : "";
+
+		xstrfmtcat(job_desc->licenses, "%s%s", sep,
+			   opt_local->resources);
+	}
 
 	if (set_defaults || slurm_option_isset(opt_local, "mail_type"))
 		job_desc->mail_type = opt_local->mail_type;

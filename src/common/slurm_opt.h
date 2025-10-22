@@ -168,6 +168,7 @@ enum {
 	LONG_OPT_REBOOT,
 	LONG_OPT_REQUEUE,
 	LONG_OPT_RESERVATION,
+	LONG_OPT_RESOURCES,
 	LONG_OPT_RESV_PORTS,
 	LONG_OPT_SEGMENT_SIZE,
 	LONG_OPT_SEND_LIBS,
@@ -409,6 +410,7 @@ typedef struct {
 	bool get_user_env;		/* --get-user-env		*/
 	char *wckey;			/* workload characterization key */
 	char *reservation;		/* --reservation		*/
+	char *resources; /* --resources	*/
 	int resv_port_cnt;		/* --resv_ports			*/
 	int req_switch;			/* min number of switches	*/
 	int wait4switch;		/* max time to wait for min switches */

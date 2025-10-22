@@ -969,8 +969,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. But if the gres's cpu requirement
-				 * can not be satisfied due to gres layout try
-				 * next node.
+				 * can not be satisfied due to HRes or gres
+				 * layout try next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
 							    rem_max_cpus,
@@ -1005,8 +1005,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. But if the gres's cpu requirement
-				 * can not be satisfied due to gres layout try
-				 * next node.
+				 * can not be satisfied due to HRes or gres
+				 * layout try next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
 							    rem_max_cpus,
@@ -1092,8 +1092,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				 * requested nodes here we will still give
 				 * them and then the step layout will sort
 				 * things out. But if the gres's cpu requirement
-				 * can not be satisfied due to gres layout try
-				 * next node.
+				 * can not be satisfied due to HRes or
+				 * gres layout try next node.
 				 */
 				if (!eval_nodes_cpus_to_use(topo_eval, i,
 							    rem_max_cpus,
@@ -1300,8 +1300,10 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 						      rem_max_cpus,
 						      min_rem_nodes, &maxtasks,
 						      true);
-			if (topo_eval->avail_cpus == 0)
+			if (topo_eval->avail_cpus == 0) {
+				bit_clear(nwt->node_bitmap, i);
 				continue;
+			}
 
 			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += topo_eval->avail_cpus;
@@ -1723,6 +1725,8 @@ fini:
 extern int eval_nodes(topology_eval_t *topo_eval)
 {
 	job_details_t *details_ptr = topo_eval->job_ptr->details;
+	hres_select_t *hres_select = topo_eval->job_ptr->hres_select;
+
 	static bool pack_serial_at_end = false;
 
 	static bool set = false;
@@ -1734,6 +1738,10 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 			pack_serial_at_end = false;
 		set = true;
 	}
+	if (hres_select)
+		memcpy(hres_select->avail_hres, hres_select->avail_hres_orgi,
+		       hres_select->layers_cnt *
+			       sizeof(*hres_select->avail_hres));
 
 	xassert(topo_eval->node_map);
 	if (bit_set_count(topo_eval->node_map) < topo_eval->min_nodes)
@@ -1796,9 +1804,14 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 {
 	job_record_t *job_ptr = topo_eval->job_ptr;
 	job_details_t *details_ptr = job_ptr->details;
+	hres_select_t *hres_select = job_ptr->hres_select;
 	avail_res_t *avail_res = topo_eval->avail_res_array[node_inx];
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 
+	if (hres_select && !hres_select_check(hres_select, node_inx)) {
+		topo_eval->avail_cpus = 0;
+		return false;
+	}
 	/* Use all resources on node */
 	if (details_ptr->whole_node & WHOLE_NODE_REQUIRED)
 		goto check_gres_per_job;

@@ -656,6 +656,9 @@ typedef enum {
 	DATA_PARSER_H_LAYER_PTR, /* hierarchy_layer_t* */
 	DATA_PARSER_H_LAYER_LIST, /* list_t* hierarchy_layer_t* */
 	DATA_PARSER_H_RESOURCES_AS_LICENSE_LIST, /* parse H_RESOURCE_LIST to list_t* of licenses_t*  */
+	DATA_PARSER_H_VARIABLE, /* hierarchy_layer_t */
+	DATA_PARSER_H_VARIABLE_PTR, /* hierarchy_layer_t* */
+	DATA_PARSER_H_VARIABLE_LIST, /* list_t* hierarchy_layer_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

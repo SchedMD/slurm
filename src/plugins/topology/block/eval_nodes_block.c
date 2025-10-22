@@ -245,6 +245,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	bitstr_t **bblock_node_bitmap = NULL;	/* nodes on this base block */
 	uint32_t block_node_cnt = 0;	/* total nodes on block */
 	uint32_t *nodes_on_bblock = NULL;	/* total nodes on bblock */
+	uint32_t *nodes_on_block = NULL; /* total nodes on block */
 	bitstr_t *req_nodes_bitmap = NULL;	/* required node bitmap */
 	bitstr_t *req2_nodes_bitmap = NULL;	/* required+lowest prio nodes */
 	bitstr_t *best_nodes_bitmap = NULL;	/* required+low prio nodes */
@@ -291,6 +292,10 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	int asblock_inx = -1;
 	uint32_t *nodes_on_asblock = NULL; /* total nodes on asblock */
 	int block_per_asblock = 0;
+
+	hres_select_t *hres_select = topo_eval->job_ptr->hres_select;
+	bool hres_match_topo = false;
+	int *bblock_hres_inx = NULL;
 
 	topo_eval->avail_cpus = 0;
 
@@ -410,6 +415,27 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		}
 	}
 
+	if (hres_select &&
+	    (hres_select->topology_idx == topo_eval->tctx->idx)) {
+		hres_match_topo = true;
+		bblock_hres_inx =
+			xcalloc(ctx->block_count, sizeof(*bblock_hres_inx));
+		for (i = 0; i < ctx->block_count; i++) {
+			bblock_hres_inx[i] = -1;
+			for (int n = 0;
+			     (n = bit_ffs_from_bit(ctx->block_record_table[i]
+							   .node_bitmap,
+						   n)) >= 0;
+			     n++) {
+				if (avail_res_array[n]) {
+					bblock_hres_inx[i] =
+						avail_res_array[n]
+							->hres_leaf_idx;
+					break;
+				}
+			}
+		}
+	}
 next_segment:
 	/*
 	 * Add required nodes to job allocation and
@@ -510,9 +536,15 @@ next_segment:
 		bblock_block_inx = xcalloc(ctx->block_count, sizeof(int));
 	}
 
+	if (!nodes_on_block)
+		nodes_on_block = xcalloc(block_cnt, sizeof(*nodes_on_block));
+	else
+		memset(nodes_on_block, 0, block_cnt * sizeof(*nodes_on_block));
+
 	for (i = 0, block_ptr = ctx->block_record_table; i < ctx->block_count;
 	     i++, block_ptr++) {
 		int block_inx_tmp = i / bblock_per_block;
+		uint32_t nodes_on_bblock_tmp;
 		if (alloc_node_map)
 			;
 		else if (block_node_bitmap[block_inx_tmp])
@@ -522,11 +554,22 @@ next_segment:
 			block_node_bitmap[block_inx_tmp] =
 				bit_copy(block_ptr->node_bitmap);
 		bblock_block_inx[i] = block_inx_tmp;
+
+		nodes_on_bblock_tmp = bit_overlap(block_ptr->node_bitmap,
+						  topo_eval->node_map);
+		if (hres_match_topo) {
+			uint32_t tmp_cap =
+				hres_get_capacity(hres_select,
+						  bblock_hres_inx[i]);
+			tmp_cap /= hres_select->hres_per_node;
+			nodes_on_bblock_tmp = MIN(tmp_cap, nodes_on_bblock_tmp);
+		}
+
+		nodes_on_block[block_inx_tmp] += nodes_on_bblock_tmp;
+
 		if (nodes_on_llblock) {
 			int llblock_inx = i / bblock_per_llblock;
-			nodes_on_llblock[llblock_inx] +=
-				bit_overlap(block_ptr->node_bitmap,
-					    topo_eval->node_map);
+			nodes_on_llblock[llblock_inx] += nodes_on_bblock_tmp;
 		}
 	}
 
@@ -534,9 +577,7 @@ next_segment:
 		nodes_on_asblock = xcalloc(asblock_cnt, sizeof(uint32_t));
 		for (i = 0; i < block_cnt; i++) {
 			int asb_inx = i / block_per_asblock;
-			nodes_on_asblock[asb_inx] +=
-				bit_overlap(block_node_bitmap[i],
-					    topo_eval->node_map);
+			nodes_on_asblock[asb_inx] += nodes_on_block[i];
 		}
 	}
 
@@ -554,7 +595,8 @@ next_segment:
 
 		bit_and(block_node_bitmap[i], topo_eval->node_map);
 
-		bnc = bit_set_count(block_node_bitmap[i]);
+		bnc = nodes_on_block[i];
+
 		if (!nodes_on_llblock) {
 			avail_bnc = bnc;
 		} else {
@@ -797,7 +839,7 @@ next_segment:
 						    &maxtasks, true)) {
 				/*
 				 * To many restricted gpu cores were removed
-				 * due to gres layout.
+				 * due to gres or hres layout.
 				 */
 				bit_clear(req2_nodes_bitmap, i);
 				continue;
@@ -923,6 +965,13 @@ next_segment:
 		bit_and(bblock_node_bitmap[i], block_node_bitmap[block_inx]);
 		bit_and(bblock_node_bitmap[i], best_nodes_bitmap);
 		nodes_on_bblock[i] = bit_set_count(bblock_node_bitmap[i]);
+		if (hres_match_topo) {
+			uint32_t tmp_cap =
+				hres_get_capacity(hres_select,
+						  bblock_hres_inx[i]);
+			tmp_cap /= hres_select->hres_per_node;
+			nodes_on_bblock[i] = MIN(tmp_cap, nodes_on_bblock[i]);
+		}
 		if (nodes_on_llblock) {
 			int llblock_inx = i / bblock_per_llblock;
 			nodes_on_llblock[llblock_inx] += nodes_on_bblock[i];
@@ -1081,9 +1130,11 @@ fini:
 			FREE_NULL_BITMAP(bblock_node_bitmap[i]);
 		xfree(bblock_node_bitmap);
 	}
+	xfree(nodes_on_block);
 	xfree(nodes_on_bblock);
 	xfree(nodes_on_llblock);
 	xfree(nodes_on_asblock);
+	xfree(bblock_hres_inx);
 	FREE_NULL_BITMAP(bblock_required);
 	return rc;
 }

@@ -329,6 +329,7 @@ struct job_record {
 	uint32_t het_job_offset;	/* HetJob component index */
 	list_t *het_job_list;		/* List of job pointers to all
 					 * components */
+	void *hres_select; /* DON'T PACK. */
 	uint32_t job_id;		/* job ID */
 	identity_t *id;			/* job identity */
 	job_record_t *job_next;		/* next entry with same hash index */

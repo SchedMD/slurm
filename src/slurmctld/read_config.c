@@ -2376,6 +2376,7 @@ static void _restore_job_licenses(job_record_t *job_ptr)
 		job_ptr->license_list = license_list;
 		xfree(job_ptr->licenses);
 		job_ptr->licenses = license_list_to_string(license_list);
+		hres_create_select(job_ptr);
 	}
 
 	/*

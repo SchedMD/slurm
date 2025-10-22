@@ -114,8 +114,8 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 		return;
 	}
 
-	log_flag(SELECT_TYPE, "Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u ThreadsPerCore:%u",
-		 node_name, avail_res->sock_cnt, avail_res->spec_threads,
+	log_flag(SELECT_TYPE, "Node:%s ResProd:%"PRIu64" Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u ThreadsPerCore:%u",
+		 node_name, avail_res->avail_res_prod, avail_res->sock_cnt, avail_res->spec_threads,
 		 avail_res->min_cpus, avail_res->max_cpus,
 		 avail_res->avail_cpus, avail_res->tpc);
 	gres_info = gres_sock_str(avail_res->sock_gres_list, -1);
@@ -513,6 +513,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	avail_res_t *avail_res = NULL;
 	list_t *sock_gres_list = NULL;
 	uint16_t min_cpus_per_node, ntasks_per_node = 1;
+	uint16_t hres_leaf_idx = NO_VAL16;
+	hres_select_t *hres_select = job_ptr->hres_select;
 	gres_sock_list_create_t create_args = {
 		.cores_per_sock = node_ptr->cores,
 		.core_bitmap = NULL,
@@ -520,8 +522,10 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		.enforce_binding = false,
 		.gpu_spec_bitmap = node_ptr->gpu_spec_bitmap,
 		.job_gres_list = job_ptr->gres_list_req,
+		.need_gpu = false,
 		.node_gres_list = node_usage[node_i].gres_list ?
-		node_usage[node_i].gres_list : node_ptr->gres_list,
+					  node_usage[node_i].gres_list :
+					  node_ptr->gres_list,
 		.node_inx = node_i,
 		.node_name = node_ptr->name,
 		.resv_exc_ptr = resv_exc_ptr,
@@ -564,6 +568,14 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		}
 	}
 
+	if (hres_select) {
+		hres_leaf_idx = hres_select_find_leaf(hres_select, node_i);
+		if (hres_leaf_idx == NO_VAL16) {
+			log_flag(SELECT_TYPE, "Test fail on node %s: hres_select_find_leaf",
+				 node_ptr->name);
+			return NULL;
+		}
+	}
 	/* Identify available CPUs */
 	avail_res = _allocate(job_ptr, core_map[node_i],
 			      part_core_map_ptr, node_i,
@@ -709,7 +721,14 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 	         node_ptr->real_memory);
 
 	avail_res->avail_cpus = cpus;
-	avail_res->avail_res_cnt = cpus + avail_res->avail_gpus;
+	avail_res->avail_res_prod = cpus;
+	if (create_args.need_gpu)
+		avail_res->avail_res_prod *= avail_res->avail_gpus;
+
+	avail_res->hres_leaf_idx = hres_leaf_idx;
+	if (hres_select)
+		avail_res->avail_res_prod *=
+			hres_select->leaf[hres_leaf_idx].capacity;
 	_avail_res_log(avail_res, node_ptr->name);
 
 	return avail_res;
@@ -2213,6 +2232,8 @@ static int _test_only(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	list_t *license_list = cluster_license_copy();
 
+	hres_pre_select(job_ptr, true);
+
 	rc = _job_test(job_ptr, node_bitmap, min_nodes, max_nodes, req_nodes,
 		       SELECT_MODE_TEST_ONLY, tmp_cr_type, job_node_req,
 		       select_part_record, select_node_usage, license_list,
@@ -2420,27 +2441,6 @@ static void _set_sched_weight(bitstr_t *node_bitmap, bool future)
 	}
 }
 
-/*
- * Find a license_t record by license id (for use by list_find_first)
- */
-static int _license_find_rec_by_id(void *x, void *key)
-{
-	licenses_t *license_entry = x;
-	licenses_id_t *id = key;
-
-	xassert(id->lic_id != NO_VAL16);
-
-	if (license_entry->id.lic_id == id->lic_id)
-		return 1;
-	return 0;
-}
-
-static licenses_t *_find_license_in_list(list_t *license_list,
-					 licenses_id_t *id)
-{
-	return list_find_first(license_list, _license_find_rec_by_id, id);
-}
-
 /* Return true if the removed job's end time can not be safely ignored */
 static int _is_job_relevant(void *x, void *key)
 {
@@ -2468,8 +2468,9 @@ static int _is_job_relevant(void *x, void *key)
 	if (running_job_ptr->license_list && args->needed_licenses) {
 		for (uint32_t i = 0; i < args->license_cnt; i++) {
 			license_req_t *needed_lic = &args->needed_licenses[i];
-			match = _find_license_in_list(
-				running_job_ptr->license_list, needed_lic->id);
+			match = license_find_rec_by_id(running_job_ptr
+							       ->license_list,
+						       *(needed_lic->id));
 			if (!match)
 				continue;
 
@@ -2509,8 +2510,8 @@ static int _set_license_req(void *x, void *arg)
 	 * hierarchal resources.
 	 */
 	if ((job_license->id.hres_id == NO_VAL16) &&
-	    (future_license = _find_license_in_list(args->future_license_list,
-						    &job_license->id))) {
+	    (future_license = license_find_rec_by_id(args->future_license_list,
+						     job_license->id))) {
 		args->needed_licenses[args->license_cnt].id =
 			&future_license->id;
 		args->needed_licenses[args->license_cnt].required =
@@ -2930,6 +2931,8 @@ static int _run_now(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	uint16_t mode = NO_VAL16;
 	uint16_t tmp_cr_type = _setup_cr_type(job_ptr);
 	bool preempt_mode = false;
+
+	hres_pre_select(job_ptr, false);
 
 	save_node_map = bit_copy(node_bitmap);
 top:	orig_node_map = bit_copy(save_node_map);

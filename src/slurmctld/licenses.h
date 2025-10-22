@@ -48,10 +48,54 @@
 #define HRES_MODE_2 0x02
 #define HRES_MODE_3 0x03
 
+#define MAX_HIERARCHY_DEPTH 16
+
 typedef struct {
 	uint16_t lic_id;
 	uint16_t hres_id;
 } licenses_id_t;
+
+typedef uint16_t path_idx_t[MAX_HIERARCHY_DEPTH];
+
+typedef struct {
+	uint32_t capacity;
+	bitstr_t *node_bitmap;
+	path_idx_t path_idx;
+} hres_leaf_t;
+
+typedef struct {
+	int *avail_hres;
+	int *avail_hres_orgi;
+	uint16_t depth;
+	uint16_t hres_per_node;
+	uint16_t layers_cnt; /* size of avail_hres */
+	hres_leaf_t *leaf;
+	uint16_t leaf_cnt; /* size of leaf */
+	licenses_id_t root_id;
+	bool test_only;
+	int topology_idx;
+} hres_select_t;
+
+typedef struct {
+	list_t *base;
+	uint32_t base_usage;
+	uint16_t depth; /* depth of layout */
+	uint16_t idx; /* internal index in hres_select_t -> avail_hres array */
+	uint16_t layers_cnt; /* count of layers, set only for root*/
+	uint16_t leaf_cnt; /* count of leafs, set only for root*/
+	uint16_t level; /* level - 0 for leaf */
+	uint16_t parent_id; /* lic_id of parent - NO_VAL16 for root */
+	path_idx_t path_idx;
+	int topology_idx;
+	char *topology_name;
+	uint32_t total;
+	list_t *variables; /* list of hres_variable_t */
+} hres_rec_t;
+
+typedef struct {
+	char *name;
+	uint32_t value;
+} hres_variable_t;
 
 typedef struct {
 	licenses_id_t id;
@@ -67,6 +111,7 @@ typedef struct {
 	bitstr_t *node_bitmap;
 	char *nodes;
 	uint8_t mode;
+	hres_rec_t hres_rec; /* mode_3 specific structure*/
 } licenses_t;
 
 /*
@@ -87,6 +132,26 @@ extern int license_init(char *licenses);
 
 extern int hres_init(void);
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
+
+extern bool hres_select_check(hres_select_t *hres_select, int node_inx);
+
+extern void hres_create_select(job_record_t *job_ptr);
+
+extern uint32_t hres_get_capacity(hres_select_t *hres_select, int leaf_idx);
+
+extern uint16_t hres_select_find_leaf(hres_select_t *hres_select, int node_inx);
+
+extern void hres_select_free(job_record_t *job_ptr);
+
+extern void hres_select_print(hres_select_t *hres_select);
+
+extern void hres_pre_select(job_record_t *job_ptr, bool test_only);
+
+extern void hres_variable_free(void *x);
+
+extern void slurm_bf_hres_pre_select(job_record_t *job_ptr,
+				     bf_licenses_t *bf_licenses);
+
 extern int hres_filter_with_list(job_record_t *job_ptr, bitstr_t *node_bitmap,
 				 list_t *license_list);
 extern void slurm_bf_hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap,

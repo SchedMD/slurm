@@ -44,13 +44,14 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/list.h"
 #include "src/common/plugrack.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct avail_res {	/* Per-node resource availability */
 	uint16_t avail_cpus;	/* Count of available CPUs for this job
 				   limited by options like --ntasks-per-node */
 	uint16_t avail_gpus;	/* Count of available GPUs */
-	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
+	uint64_t avail_res_prod; /* Product of available CPUs and  GPUs */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
 	uint32_t gres_min_cpus; /* Minimum required cpus for gres */
 	uint32_t gres_max_tasks; /* Maximum tasks for gres */
@@ -60,6 +61,7 @@ typedef struct avail_res {	/* Per-node resource availability */
 	list_t *sock_gres_list;	/* Per-socket GRES availability, sock_gres_t */
 	uint16_t spec_threads;	/* Specialized threads to be reserved */
 	uint16_t tpc;		/* Threads/cpus per core */
+	uint16_t hres_leaf_idx;
 } avail_res_t;
 
 typedef struct will_run_data {

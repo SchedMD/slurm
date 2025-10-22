@@ -300,6 +300,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->ifname = xstrdup(opt.ifname);
 	opt_dup->job_name = xstrdup(opt.job_name);
 	opt.licenses = NULL;		/* Moved by memcpy */
+	opt.resources = NULL; /* Moved by memcpy */
 	opt.mail_user = NULL;		/* Moved by memcpy */
 	opt_dup->mcs_label = xstrdup(opt.mcs_label);
 	opt.mem_bind = NULL;		/* Moved by memcpy */
