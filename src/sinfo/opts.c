@@ -465,6 +465,7 @@ static list_t *_build_state_list(char *state_str)
 {
 	list_t *state_ids;
 	char *orig, *str, *state;
+	int node_state_id;
 
 	if (state_str == NULL)
 		return NULL;
@@ -486,10 +487,14 @@ static list_t *_build_state_list(char *state_str)
 			state = state + 1;
 		}
 
-		if ((id->state = _node_state_id(state)) < 0) {
+		if ((node_state_id = _node_state_id(state)) < 0) {
 			error ("Bad state string: \"%s\"", state);
+			xfree(orig);
+			xfree(id);
+			FREE_NULL_LIST(state_ids);
 			return (NULL);
 		}
+		id->state = node_state_id;
 		list_append (state_ids, id);
 		state = strtok_r(NULL, ",&+", &str);
 	}
@@ -559,8 +564,11 @@ _node_state_list (void)
 
 	all_states = xstrdup (node_state_string(0));
 	for (i = 1; i < NODE_STATE_END; i++) {
-		xstrcat (all_states, ",");
-		xstrcat (all_states, node_state_string(i));
+		/* Skip NODE_STATE_ERROR */
+		if (i != NODE_STATE_ERROR) {
+			xstrcat(all_states, ",");
+			xstrcat(all_states, node_state_string(i));
+		}
 	}
 
 	xstrcat(all_states,
@@ -578,6 +586,10 @@ _node_state_list (void)
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWERING_UP));
 	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_POWER_UP));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_INVALID_REG));
+	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_FAIL));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_MAINT));
@@ -585,6 +597,12 @@ _node_state_list (void)
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_REQUESTED));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_ISSUED));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_EXTERNAL));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_DYNAMIC_FUTURE));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_DYNAMIC_NORM));
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
@@ -638,6 +656,9 @@ _node_state_id (char *str)
 	if ((xstrncasecmp("BLOCKED", str, len) == 0) ||
 	    (xstrncasecmp("BLOCK", str, len) == 0))
 		return NODE_STATE_BLOCKED;
+	if ((xstrncasecmp("INVALID_REG", str, len) == 0) ||
+	    (xstrncasecmp("INVAL", str, len) == 0))
+		return NODE_STATE_INVALID_REG;
 	if ((xstrncasecmp("PLANNED", str, len) == 0) ||
 	    (xstrncasecmp("PLND", str, len) == 0))
 		return NODE_STATE_PLANNED;
@@ -651,10 +672,16 @@ _node_state_id (char *str)
 	if ((xstrncasecmp("DRAINING", str, len) == 0) ||
 	    (xstrncasecmp("DRNG", str, len) == 0))
 		return NODE_STATE_DRAIN | NODE_STATE_ALLOCATED;
+	if (_node_state_equal(NODE_STATE_DYNAMIC_FUTURE, str))
+		return NODE_STATE_DYNAMIC_FUTURE;
+	if (_node_state_equal(NODE_STATE_DYNAMIC_NORM, str))
+		return NODE_STATE_DYNAMIC_NORM;
 	if (_node_state_equal (NODE_STATE_COMPLETING, str))
 		return NODE_STATE_COMPLETING;
 	if (xstrncasecmp("NO_RESPOND", str, len) == 0)
 		return NODE_STATE_NO_RESPOND;
+	if (_node_state_equal(NODE_STATE_POWER_UP, str))
+		return NODE_STATE_POWER_UP;
 	if (_node_state_equal (NODE_STATE_POWERING_DOWN, str))
 		return NODE_STATE_POWERING_DOWN;
 	if (_node_state_equal (NODE_STATE_POWERED_DOWN, str))
@@ -673,6 +700,8 @@ _node_state_id (char *str)
 		return NODE_STATE_REBOOT_ISSUED;
 	if (_node_state_equal(NODE_STATE_CLOUD, str))
 		return NODE_STATE_CLOUD;
+	if (_node_state_equal(NODE_STATE_EXTERNAL, str))
+		return NODE_STATE_EXTERNAL;
 
 	return (-1);
 }
