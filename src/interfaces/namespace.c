@@ -57,6 +57,7 @@ typedef struct namespace_ops {
 	int (*namespace_p_send_stepd)(int fd);
 	int (*namespace_p_recv_stepd)(int fd);
 	bool (*namespace_p_can_bpf)(stepd_step_rec_t *step);
+	int (*namespace_p_setup_bpf_token)(stepd_step_rec_t *step);
 } namespace_ops_t;
 
 /*
@@ -71,6 +72,7 @@ static const char *syms[] = {
 	"namespace_p_send_stepd",
 	"namespace_p_recv_stepd",
 	"namespace_p_can_bpf",
+	"namespace_p_setup_bpf_token",
 };
 
 static namespace_ops_t *ops = NULL;
@@ -285,6 +287,18 @@ extern bool namespace_g_can_bpf(stepd_step_rec_t *step)
 
 	for (i = 0; (i < g_namespace_context_num) && rc; i++)
 		rc = (*(ops[i].namespace_p_can_bpf))(step);
+
+	return rc;
+}
+
+extern int namespace_g_setup_bpf_token(stepd_step_rec_t *step)
+{
+	int i, rc = SLURM_SUCCESS;
+
+	xassert(g_namespace_context_num >= 0);
+
+	for (i = 0; (i < g_namespace_context_num) && (rc == SLURM_SUCCESS); i++)
+		rc = (*(ops[i].namespace_p_setup_bpf_token))(step);
 
 	return rc;
 }

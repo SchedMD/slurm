@@ -87,4 +87,7 @@ extern int namespace_g_recv_stepd(int fd);
 /* Checks whether bpf syscalls can be done from the namespace */
 extern bool namespace_g_can_bpf(stepd_step_rec_t *step);
 
+/* Setups the bpf token */
+extern int namespace_g_setup_bpf_token(stepd_step_rec_t *step);
+
 #endif

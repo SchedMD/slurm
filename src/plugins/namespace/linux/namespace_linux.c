@@ -57,6 +57,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/cgroup.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -1121,4 +1122,46 @@ extern bool namespace_p_can_bpf(stepd_step_rec_t *step)
 		return false;
 
 	return true;
+}
+
+extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
+{
+	int rc = SLURM_ERROR;
+	int fd = -1;
+	int token_fd = SLURM_ERROR;
+	uint16_t prot_ver;
+	slurm_step_id_t con = step->step_id;
+
+	/*
+	 * This indicates that either this is a extern step or that the plugin
+	 * is not configured to use user namespaces. In both cases we do not
+	 * need to get a bpf token. Also if we already have one do not setup
+	 * another.
+	 */
+	if (namespace_p_can_bpf(step) || cgroup_g_bpf_get_token() != -1)
+		return SLURM_SUCCESS;
+
+#ifndef HAVE_BPF_TOKENS
+	error("Slurm is not compiled with BPF token support");
+	return SLURM_ERROR;
+#endif
+
+	con.step_id = SLURM_EXTERN_CONT;
+	con.step_het_comp = NO_VAL;
+
+	if ((fd = stepd_connect(conf->spooldir, conf->node_name, &con,
+				&prot_ver)) == -1) {
+		error("%s: Connect to %ps external failed: %m",
+		      __func__, &con.job_id);
+		goto end;
+	}
+
+	token_fd = stepd_get_bpf_token(fd, prot_ver);
+	if (token_fd != SLURM_ERROR) {
+		cgroup_g_bpf_set_token(token_fd);
+		rc = SLURM_SUCCESS;
+	}
+end:
+	close(fd);
+	return rc;
 }

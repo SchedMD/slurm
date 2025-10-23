@@ -921,3 +921,9 @@ extern bool namespace_p_can_bpf(stepd_step_rec_t *step)
 	/* tmpfs plugin has nothing that could make the bpf call fail */
 	return true;
 }
+
+extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
+{
+	/* As we do not need the bpf token just return success */
+	return SLURM_SUCCESS;
+}
