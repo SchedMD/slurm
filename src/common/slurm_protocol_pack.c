@@ -3403,6 +3403,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		/* job_record_pack_common */
+		safe_unpack_step_id_members(&job->step_id, buffer,
+					    protocol_version);
 		safe_unpackstr(&job->account, buffer);
 		safe_unpackstr(&job->admin_comment, buffer);
 		safe_unpackstr(&job->alloc_node, buffer);
