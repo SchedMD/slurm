@@ -781,7 +781,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 			job->elapsed = job->end - job->start;
 
-			if (row[JOB_REQ_SUSPENDED]) {
+			if (slurm_atoul(row[JOB_REQ_SUSPENDED])) {
 				MYSQL_RES *result2 = NULL;
 				MYSQL_ROW row2;
 				/* get the suspended time for this job */
