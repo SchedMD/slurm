@@ -2444,7 +2444,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
-			if (job_desc_msg->job_id == NO_VAL) {
+			if (job_desc_msg->step_id.job_id == NO_VAL) {
 				job_desc_msg->het_job_offset = NO_VAL;
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
@@ -2452,8 +2452,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 							  &job_ptr,
 							  &err_msg,
 							  msg->protocol_version);
-			} else {	/* existing job test */
-				job_ptr = find_job_record(job_desc_msg->job_id);
+			} else { /* existing job test */
+				job_ptr = find_job_record(job_desc_msg->step_id
+								  .job_id);
 				error_code = job_start_data(job_ptr, &resp);
 			}
 			unlock_slurmctld(job_write_lock);
@@ -2480,7 +2481,7 @@ send_reply:
 		debug2("%s success %s", __func__, TIME_STR);
 	} else {
 		debug2("%s success %s", __func__, TIME_STR);
-		if (job_desc_msg->job_id == NO_VAL)
+		if (job_desc_msg->step_id.job_id == NO_VAL)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
@@ -3979,7 +3980,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
-				  job_desc_msg->job_id)) {
+				  job_desc_msg->step_id.job_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4032,8 +4033,8 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 			     __func__, job_desc_msg->job_id_str, uid,
 			     slurm_strerror(error_code));
 		} else {
-			info("%s: JobId=%u uid=%u: %s",
-			     __func__, job_desc_msg->job_id, uid,
+			info("%s: %pI uid=%u: %s",
+			     __func__, &job_desc_msg->step_id, uid,
 			     slurm_strerror(error_code));
 		}
 	} else {
@@ -4041,8 +4042,8 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 			info("%s: complete JobId=%s uid=%u %s",
 			     __func__, job_desc_msg->job_id_str, uid, TIME_STR);
 		} else {
-			info("%s: complete JobId=%u uid=%u %s",
-			     __func__, job_desc_msg->job_id, uid, TIME_STR);
+			info("%s: complete %pI uid=%u %s",
+			     __func__, &job_desc_msg->step_id, uid, TIME_STR);
 		}
 		/* Below functions provide their own locking */
 		schedule_job_save();

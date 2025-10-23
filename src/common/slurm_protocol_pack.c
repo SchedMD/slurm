@@ -6805,7 +6805,6 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -6943,7 +6942,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -7081,7 +7080,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -7218,7 +7217,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -7368,7 +7367,6 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 
@@ -7537,7 +7535,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 
@@ -7706,7 +7704,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 
@@ -7875,7 +7873,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 

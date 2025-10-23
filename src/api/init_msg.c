@@ -65,7 +65,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->cpus_per_task	= NO_VAL16;
 	job_desc_msg->delay_boot	= NO_VAL;
 	job_desc_msg->group_id = SLURM_AUTH_NOBODY;
-	job_desc_msg->job_id		= NO_VAL;
 	job_desc_msg->kill_on_node_fail = NO_VAL16;
 	job_desc_msg->max_cpus		= NO_VAL;
 	job_desc_msg->max_nodes		= NO_VAL;

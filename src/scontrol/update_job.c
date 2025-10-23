@@ -1133,8 +1133,9 @@ extern int scontrol_update_job(int argc, char **argv)
 			rc2 = slurm_update_job2(&job_msg, &resp);
 			if (update_size && (rc2 == SLURM_SUCCESS)) {
 				/* See check above for one job ID */
-				job_msg.job_id = slurm_atoul(job_msg.job_id_str);
-				_update_job_size(job_msg.job_id);
+				job_msg.step_id.job_id =
+					slurm_atoul(job_msg.job_id_str);
+				_update_job_size(job_msg.step_id.job_id);
 			}
 			if (rc2 != SLURM_SUCCESS) {
 				rc2 = errno;

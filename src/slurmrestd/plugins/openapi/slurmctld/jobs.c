@@ -280,7 +280,7 @@ static void _job_post_update(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	}
 
 	if (job_id->step_id.job_id != NO_VAL)
-		job->job_id = job_id->step_id.job_id;
+		job->step_id.job_id = job_id->step_id.job_id;
 
 	if (job_id->het_job_offset != NO_VAL)
 		job->het_job_offset = job_id->het_job_offset;

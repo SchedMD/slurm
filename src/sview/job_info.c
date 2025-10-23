@@ -1121,11 +1121,10 @@ static gboolean _admin_focus_out_job(GtkEntry *entry,
 		if (global_edit_error) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
-			global_edit_error_msg = g_strdup_printf(
-				"Job %d %s can't be set to %s",
-				job_msg->job_id,
-				col_name,
-				name);
+			global_edit_error_msg =
+				g_strdup_printf("Job %d %s can't be set to %s",
+						job_msg->step_id.job_id,
+						col_name, name);
 		}
 		global_entry_changed = 0;
 	}
@@ -3664,7 +3663,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		offset++;
 	else
 		offset = tmp_jobid;
-	job_msg->job_id = atoi(offset);
+	job_msg->step_id.job_id = atoi(offset);
 	g_free(tmp_jobid);
 
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
@@ -3672,9 +3671,9 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	if (stepid)
 		stepid = NO_VAL;
 	else {
-		stepid = job_msg->job_id;
-		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
-				   SORTID_POS, &job_msg->job_id, -1);
+		stepid = job_msg->step_id.job_id;
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, SORTID_POS,
+				   &job_msg->step_id.job_id, -1);
 	}
 
 	type = _set_job_msg(job_msg, new_text, column);
@@ -3695,19 +3694,14 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		   == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
-				       job_msg->job_id,
-				       type,
-				       new_text);
+				       job_msg->step_id.job_id, type, new_text);
 	} else if (errno == ESLURM_DISABLED) {
 		temp = g_strdup_printf(
 			"Can only edit %s on pending jobs.", type);
 	} else {
-	print_error:
-		temp = g_strdup_printf("Job %d %s can't be "
-				       "set to %s",
-				       job_msg->job_id,
-				       type,
-				       new_text);
+print_error:
+		temp = g_strdup_printf("Job %d %s can't be set to %s",
+				       job_msg->step_id.job_id, type, new_text);
 	}
 
 	display_edit_note(temp);
@@ -4581,7 +4575,7 @@ static void _edit_each_job(GtkTreeModel *model, GtkTreeIter *iter,
 
 		job_msg = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(job_msg);
-		job_msg->job_id = job_foreach->step_id.job_id;
+		job_msg->step_id.job_id = job_foreach->step_id.job_id;
 		entry = _admin_full_edit_job(job_msg, model, iter);
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 				   label, false, false, 0);
