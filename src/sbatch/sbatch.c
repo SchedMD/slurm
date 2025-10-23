@@ -328,17 +328,17 @@ int main(int argc, char **argv)
 
 	/* run cli_filter post_submit */
 	for (i = 0; i < het_job_limit; i++)
-		cli_filter_g_post_submit(i, resp->job_id, NO_VAL);
+		cli_filter_g_post_submit(i, resp->step_id.job_id, NO_VAL);
 
 	if (!quiet) {
 		if (!sbopt.parsable) {
-			printf("Submitted batch job %u", resp->job_id);
+			printf("Submitted batch job %u", resp->step_id.job_id);
 			if (working_cluster_rec)
 				printf(" on cluster %s",
 				       working_cluster_rec->name);
 			printf("\n");
 		} else {
-			printf("%u", resp->job_id);
+			printf("%u", resp->step_id.job_id);
 			if (working_cluster_rec)
 				printf(";%s", working_cluster_rec->name);
 			printf("\n");
@@ -346,7 +346,7 @@ int main(int argc, char **argv)
 	}
 
 	if (sbopt.wait)
-		rc = _job_wait(resp->job_id);
+		rc = _job_wait(resp->step_id.job_id);
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();

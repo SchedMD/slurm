@@ -3255,8 +3255,7 @@ typedef struct slurmd_status_msg {
 } slurmd_status_t;
 
 typedef struct submit_response_msg {
-	uint32_t job_id;	/* job ID */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t error_code;	/* error code for warning message */
 	char *job_submit_user_msg; /* job submit plugin user_msg */
 } submit_response_msg_t;

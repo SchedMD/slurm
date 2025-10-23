@@ -369,8 +369,9 @@ static void _job_post_submit(ctxt_t *ctxt, job_desc_msg_t *job, char *script)
 		};
 
 		debug3("%s:[%s] job submitted -> job_id:%d step_id:%d rc:%d message:%s",
-		       __func__, ctxt->id, resp->job_id, resp->step_id,
-		       resp->error_code, resp->job_submit_user_msg);
+		       __func__, ctxt->id, resp->step_id.job_id,
+		       resp->step_id.step_id, resp->error_code,
+		       resp->job_submit_user_msg);
 
 		if (resp->error_code)
 			resp_warn(ctxt, "slurm_submit_batch_job()",
@@ -429,8 +430,9 @@ static void _job_post_het_submit(ctxt_t *ctxt, list_t *jobs, char *script)
 		};
 
 		debug3("%s:[%s] HetJob submitted -> job_id:%d step_id:%d rc:%d message:%s",
-		       __func__, ctxt->id, resp->job_id, resp->step_id,
-		       resp->error_code, resp->job_submit_user_msg);
+		       __func__, ctxt->id, resp->step_id.job_id,
+		       resp->step_id.step_id, resp->error_code,
+		       resp->job_submit_user_msg);
 
 		if (resp->error_code)
 			resp_warn(ctxt, "slurm_submit_batch_het_job()",

@@ -9234,8 +9234,8 @@ static const parser_t PARSER_ARRAY(RESERVATION_MOD_REQ)[] = {
 #define add_parse_overload(mtype, field, overloads, path, desc)		\
 	add_parser(submit_response_msg_t, mtype, false, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
-	add_parse(UINT32, job_id, "job_id", "New job ID"),
-	add_parse(STEP_ID, step_id, "step_id", "New job step ID"),
+	add_parse(UINT32, step_id.job_id, "job_id", "New job ID"),
+	add_parse(STEP_ID, step_id.step_id, "step_id", "New job step ID"),
 	add_parse_overload(UINT32, error_code, 1, "error_code", "Error code"),
 	add_parse_overload(ERROR, error_code, 1, "error", "Error message"),
 	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "Message to user from job_submit plugin"),
@@ -10568,8 +10568,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec)	\
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
-	add_parse(UINT32, resp.job_id, "job_id", "submitted Job ID"),
-	add_parse(STEP_ID, resp.step_id, "step_id", "submitted Step ID"),
+	add_parse(UINT32, resp.step_id.job_id, "job_id", "submitted Job ID"),
+	add_parse(STEP_ID, resp.step_id.step_id, "step_id", "submitted Step ID"),
 	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "Job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
