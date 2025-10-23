@@ -2171,8 +2171,8 @@ enum suspend_opts {
 /* NOTE: Set either job_id_str (NULL by default) or job_id */
 typedef struct suspend_msg {
 	uint16_t op;		/* suspend operation, see enum suspend_opts */
-	uint32_t job_id;	/* slurm job ID (number) */
 	char *   job_id_str;	/* slurm job ID (string) */
+	slurm_step_id_t step_id;
 } suspend_msg_t;
 
 /* NOTE: Set either job_id_str (NULL by default) or job_id */

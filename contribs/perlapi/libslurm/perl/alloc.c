@@ -211,8 +211,8 @@ free_job_desc_msg_memory(job_desc_msg_t *msg)
 int
 submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV* hv)
 {
-	STORE_FIELD(hv, resp_msg, job_id, uint32_t);
-	STORE_FIELD(hv, resp_msg, step_id, uint32_t);
+	STORE_FIELD_NAME(hv, resp_msg, step_id.job_id, job_id, uint32_t);
+	STORE_FIELD_NAME(hv, resp_msg, step_id.step_id, step_id, uint32_t);
 	STORE_FIELD(hv, resp_msg, error_code, uint32_t);
 	return 0;
 }

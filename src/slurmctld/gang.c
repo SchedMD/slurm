@@ -503,7 +503,7 @@ static int _suspend_job(job_record_t *job_ptr)
 	suspend_msg_t msg;
 
 	memset(&msg, 0, sizeof(msg));
-	msg.job_id = job_ptr->job_id;
+	msg.step_id.job_id = job_ptr->job_id;
 	msg.job_id_str = NULL;
 	msg.op = SUSPEND_JOB;
 	rc = job_suspend(NULL, &msg, 0, false, NO_VAL16);
@@ -525,7 +525,7 @@ static void _resume_job(job_record_t *job_ptr)
 	suspend_msg_t msg;
 
 	memset(&msg, 0, sizeof(msg));
-	msg.job_id = job_ptr->job_id;
+	msg.step_id.job_id = job_ptr->job_id;
 	msg.job_id_str = NULL;
 	msg.op = RESUME_JOB;
 	rc = job_suspend(NULL, &msg, 0, false, NO_VAL16);

@@ -4576,18 +4576,19 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	 * in a federation, job arrays only run on the origin cluster so we just
 	 * want to find if the array, not a specific task, is on the origin
 	 * cluster. */
-	if ((sus_ptr->job_id == NO_VAL) && sus_ptr->job_id_str)
-		sus_ptr->job_id = strtol(sus_ptr->job_id_str, NULL, 10);
+	if ((sus_ptr->step_id.job_id == NO_VAL) && sus_ptr->job_id_str)
+		sus_ptr->step_id.job_id = strtol(sus_ptr->job_id_str, NULL, 10);
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(sus_ptr->job_id);
+	job_ptr = find_job_record(sus_ptr->step_id.job_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin, otherwise try to suspend the job. If it's
 	 * pending an error should be returned. If it's running then it should
 	 * suspend the job. */
-	if (!job_ptr && !_route_msg_to_origin(msg, NULL, sus_ptr->job_id)) {
+	if (!job_ptr &&
+	    !_route_msg_to_origin(msg, NULL, sus_ptr->step_id.job_id)) {
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
@@ -4624,7 +4625,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	END_TIMER2(__func__);
 
 	if (!sus_ptr->job_id_str)
-		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
+		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	if (error_code) {
 		info("%s(%s) for %s %s",

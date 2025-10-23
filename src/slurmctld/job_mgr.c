@@ -17462,10 +17462,10 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	job_record_t *job_ptr = NULL;
 
 	xfree(sus_ptr->job_id_str);
-	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
+	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	/* find the job */
-	job_ptr = find_job_record (sus_ptr->job_id);
+	job_ptr = find_job_record(sus_ptr->step_id.job_id);
 	if (job_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
