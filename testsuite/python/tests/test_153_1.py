@@ -7,10 +7,6 @@ import atf
 import pytest
 
 
-HTTP_HOST = "127.0.0.1"
-HTTP_PORT = 6817
-
-
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     # Dev 50538: Metrics added in 25.11
@@ -38,12 +34,6 @@ def setup():
     atf.require_slurm_running()
 
 
-def _curl(path: str) -> str:
-    cmd = f"curl http://{HTTP_HOST}:{HTTP_PORT}/{path}"
-    res = atf.run_command(cmd, user=atf.properties["slurm-user"], fatal=True)
-    return res["stdout"]
-
-
 def _get_metric_value(lines: str, name: str) -> str | None:
     for line in lines.splitlines():
         if line.startswith(name + " "):
@@ -69,25 +59,27 @@ def test_http_metrics_openmetrics_endpoints():
 
     # Allow slurmctld to update metrics after job submission
     atf.repeat_until(
-        lambda: _get_metric_value(_curl("metrics/jobs"), "slurm_jobs"),
+        lambda: _get_metric_value(
+            atf.request_slurmctld("metrics/jobs").text, "slurm_jobs"
+        ),
         lambda val: val and int(val) >= 1,
         fatal=True,
     )
 
     # partitions endpoint: expect slurm_partitions 2
-    parts_output = _curl("metrics/partitions")
+    parts_output = atf.request_slurmctld("metrics/partitions").text
     parts_val = _get_metric_value(parts_output, "slurm_partitions")
     assert parts_val is not None, f"Missing slurm_partitions in output:\n{parts_output}"
     assert int(parts_val) == 2, f"Expected slurm_partitions 2, got {parts_val}"
 
     # nodes endpoint: expect slurm_nodes 3
-    nodes_output = _curl("metrics/nodes")
+    nodes_output = atf.request_slurmctld("metrics/nodes").text
     nodes_val = _get_metric_value(nodes_output, "slurm_nodes")
     assert nodes_val is not None, f"Missing slurm_nodes in output:\n{nodes_output}"
     assert int(nodes_val) == 3, f"Expected slurm_nodes 3, got {nodes_val}"
 
     # scheduler endpoint: expect a timestamp value
-    sched_output = _curl("metrics/scheduler")
+    sched_output = atf.request_slurmctld("metrics/scheduler").text
     sched_val = _get_metric_value(sched_output, "slurm_sched_stats_timestamp")
     assert (
         sched_val is not None
@@ -95,13 +87,13 @@ def test_http_metrics_openmetrics_endpoints():
     assert int(sched_val) > 0, f"Expected positive timestamp, got {sched_val}"
 
     # jobs endpoint: expect total jobs >= 1
-    jobs_output = _curl("metrics/jobs")
+    jobs_output = atf.request_slurmctld("metrics/jobs").text
     jobs_val = _get_metric_value(jobs_output, "slurm_jobs")
     assert jobs_val is not None, f"Missing slurm_jobs in output:\n{jobs_output}"
     assert int(jobs_val) >= 1, f"Expected slurm_jobs >= 1, got {jobs_val}"
 
     # jobs-users-accts endpoint: expect current slurm-user shows 1 job
-    jobs_ua_output = _curl("metrics/jobs-users-accts")
+    jobs_ua_output = atf.request_slurmctld("metrics/jobs-users-accts").text
     username = atf.properties["test-user"]
     jobs_ua_val = _get_labeled_metric_value(
         jobs_ua_output, "slurm_user_jobs", "username", username
