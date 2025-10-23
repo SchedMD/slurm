@@ -2735,6 +2735,15 @@ Acceptable values at present include:
 \fBnamespace/tmpfs\fR
 Used to create a private namespace on the filesystem for jobs, which houses
 temporary file systems (/tmp and /dev/shm) for each job.
+.IP
+.TP
+\fBnamespace/linux\fR
+Used to create a private filesystem namespace and optionally user and pid
+namespaces. The filesystem namespace houses temporary filesystems (/tmp and
+/dev/shm) for each job.
+\fBNOTE\fR: This plugin requires cgroup/v2 to operate correctly.
+\fBNOTE\fR: When using user namespaces, bpf token support (added in kernel 6.9)
+is required to use ConstrainDevices in \fBcgroup.conf\fR.
 .RE
 .IP
 
