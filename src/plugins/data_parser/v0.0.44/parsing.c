@@ -1665,8 +1665,8 @@ extern int dump(void *src, ssize_t src_bytes,
 		 * they are only used to OpenAPI typing and are ignored here.
 		 */
 
-		rc = parser->dump(parser, src, dst, args);
-		_check_dump(parser, dst, args);
+		if (!(rc = parser->dump(parser, src, dst, args)))
+			_check_dump(parser, dst, args);
 		break;
 	case PARSER_MODEL_ALIAS:
 		rc = dump(src, src_bytes, NULL,
