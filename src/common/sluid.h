@@ -76,6 +76,9 @@
  * - https://www.rfc-editor.org/rfc/rfc9562.html
  */
 
+/* Bytes required to hold a stringified sluid_t including NUL termination. */
+#define SLUID_STR_BYTES 15
+
 /*
  * Initialize generator.
  */
