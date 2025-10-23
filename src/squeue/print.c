@@ -1337,7 +1337,7 @@ int _print_sluid(job_info_t *job, int width, bool right_justify, char *suffix)
 	if (!job) {
 		_print_str("SLUID", width, right_justify, true);
 	} else {
-		char *sluid = sluid2str(job->sluid);
+		char *sluid = sluid2str(job->step_id.sluid);
 		_print_str(sluid, width, right_justify, true);
 		xfree(sluid);
 	}
