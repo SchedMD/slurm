@@ -5191,6 +5191,12 @@ Disable the ability to register new triggers.
 .IP
 
 .TP
+\fBenable_async_reply\fR
+Enable \fBslurmctld\fR to reply to incoming (supported) RPCs asynchronously
+without blocking a thread in the conmgr thread pool.
+.IP
+
+.TP
 \fBenable_configless\fR
 Permit "configless" operation by the slurmd, slurmstepd, and user commands.
 When enabled the slurmd will be permitted to retrieve config files and

@@ -249,6 +249,7 @@ static list_t *reconfig_reqs = NULL;
 static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
+static bool reply_async = false;
 
 /* Array of listening sockets */
 static struct {
@@ -768,6 +769,12 @@ int main(int argc, char **argv)
 	http_switch_init();
 	if (http_switch_http_enabled())
 		http_init();
+
+	/* Check if asynchronous reples are enabled */
+	if (xstrcasestr(slurm_conf.slurmctld_params, "enable_async_reply")) {
+		reply_async = true;
+		log_flag(NET, "Asynchronous replies are enabled");
+	}
 
 	/* open ports must happen after become_slurm_user() */
 	_open_ports();
