@@ -12565,7 +12565,7 @@ static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t count = NO_VAL, *job_id_ptr;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
 		packstr(msg->part_name, buffer);
@@ -12585,7 +12585,7 @@ static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack_time(msg->start_time, buffer);
 		packdouble(0, buffer); /* was sys_usage_per */
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
 		packstr(msg->part_name, buffer);
@@ -12614,7 +12614,8 @@ static int _unpack_will_run_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	will_run_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
 		safe_unpackstr(&msg->part_name, buffer);
@@ -12636,7 +12637,7 @@ static int _unpack_will_run_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackdouble(&double_tmp, buffer); /* was sys_usage_per */
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
 		safe_unpackstr(&msg->part_name, buffer);

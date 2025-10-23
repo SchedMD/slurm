@@ -489,8 +489,8 @@ static will_run_response_msg_t *_job_will_run(job_desc_msg_t *req)
 			char buf[256];
 			slurm_make_time_str(&will_run_resp->start_time, buf,
 					    sizeof(buf));
-			debug("Job %u to start at %s on cluster %s using %u processors on nodes %s in partition %s",
-			      will_run_resp->job_id, buf,
+			debug("%pI to start at %s on cluster %s using %u processors on nodes %s in partition %s",
+			      &will_run_resp->step_id, buf,
 			      working_cluster_rec->name,
 			      will_run_resp->proc_cnt, will_run_resp->node_list,
 			      will_run_resp->part_name);

@@ -2644,12 +2644,12 @@ typedef struct partition_info_msg {
 
 typedef struct will_run_response_msg {
 	char *cluster_name; /* cluster giving response, set by client */
-	uint32_t job_id;	/* ID of job to start */
 	char *job_submit_user_msg; /* job submit plugin user_msg */
 	char *node_list;	/* nodes where job will start */
 	char *part_name;	/* partition where job will start */
 	list_t *preemptee_job_id; /* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
+	slurm_step_id_t step_id;
 	time_t start_time;	/* time when job will start */
 } will_run_response_msg_t;
 
