@@ -155,6 +155,28 @@ done:
 	slurm_free_node_info_msg(node_info_ptr);
 }
 
+static void _create_node(ctxt_t *ctxt)
+{
+	openapi_resp_single_t req = { 0 };
+	openapi_resp_single_t *req_ptr = &req; /* needed for free macro */
+	update_node_msg_t node_msg;
+
+	slurm_init_update_node_msg(&node_msg);
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_CREATE_NODE_REQ, req, ctxt->query,
+		       ctxt->parent_path))
+		goto cleanup;
+
+	SWAP(node_msg.extra, req.response);
+
+	if (slurm_create_node(&node_msg))
+		resp_error(ctxt, errno, __func__, "Failure to create node");
+cleanup:
+	FREE_OPENAPI_RESP_COMMON_CONTENTS(req_ptr);
+	xfree(req.response);
+	xfree(node_msg.extra);
+}
+
 extern int op_handler_nodes(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
@@ -170,6 +192,16 @@ extern int op_handler_nodes(openapi_ctxt_t *ctxt)
 	}
 
 	return rc;
+}
+
+extern int op_handler_create_node(openapi_ctxt_t *ctxt)
+{
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	_create_node(ctxt);
+	return SLURM_SUCCESS;
 }
 
 extern int op_handler_node(openapi_ctxt_t *ctxt)
