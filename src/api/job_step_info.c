@@ -110,26 +110,8 @@ static int _sort_stats_by_name(void *x, void *y)
  * IN job_ptr - an individual job step information record pointer
  * IN one_liner - print as a single line if true
  */
-void
-slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
-			    int one_liner )
-{
-	char *print_this = slurm_sprint_job_step_info(job_step_ptr, one_liner);
-	fprintf ( out, "%s", print_this);
-	xfree(print_this);
-}
-
-/*
- * slurm_sprint_job_step_info - output information about a specific Slurm
- *	job step based upon message as loaded using slurm_get_job_steps
- * IN job_ptr - an individual job step information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-char *
-slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
-			    int one_liner )
+extern void slurm_print_job_step_info(FILE *fp, job_step_info_t *job_step_ptr,
+				      int one_liner)
 {
 	char tmp_node_cnt[40];
 	char time_str[256];
@@ -304,7 +286,9 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrcat(out, "\n");
 	else
 		xstrcat(out, "\n\n");
-	return out;
+
+	fprintf(fp, "%s", out);
+	xfree(out);
 }
 
 static int _get_stepmgr_steps(void *x, void *arg)

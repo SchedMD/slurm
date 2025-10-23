@@ -4326,17 +4326,6 @@ extern void slurm_print_job_step_info(FILE *out,
 extern slurm_step_layout_t *slurm_job_step_layout_get(slurm_step_id_t *step_id);
 
 /*
- * slurm_sprint_job_step_info - output information about a specific Slurm
- *	job step based upon message as loaded using slurm_get_job_steps
- * IN job_ptr - an individual job step information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_job_step_info(job_step_info_t *step_ptr,
-					int one_liner);
-
-/*
  * slurm_job_step_stat - status a current step
  *
  * IN step_id
