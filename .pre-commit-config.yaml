@@ -41,7 +41,12 @@ repos:
   - id: gitlint
     args: [--config, tools/gitlint, --msg-filename]
   - id: gitlint-ci
+    alias: gitlint-ci-draft
     args: [--config, tools/gitlint]
+  # Enforce no-fixup/amend commits
+  - id: gitlint-ci
+    alias: gitlint-ci-nodraft
+    args: [--config, tools/gitlint, --contrib, CC2]
 
 - repo: https://github.com/pecigonzalo/pre-commit-shfmt
   rev: v2.2.0
