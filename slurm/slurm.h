@@ -4305,17 +4305,6 @@ extern int slurm_find_step_ids_by_container_id(uint16_t show_flags, uid_t uid,
 extern void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *msg);
 
 /*
- * slurm_print_job_step_info - output information about a specific Slurm
- *	job step based upon message as loaded using slurm_get_job_steps
- * IN out - file to write to
- * IN job_ptr - an individual job step information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_step_info(FILE *out,
-				      job_step_info_t *step_ptr,
-				      int one_liner);
-
-/*
  * slurm_job_step_layout_get - get the slurm_step_layout_t structure for
  *      a particular job step
  *
