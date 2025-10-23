@@ -1136,6 +1136,10 @@ def require_slurm_running():
     # As a side effect, build up initial nodes dictionary
     nodes = get_nodes(quiet=True)
 
+    config = get_config()
+    properties["slurmctld_host"] = config["SlurmctldHost[0]"].split("(")[0]
+    properties["slurmctld_port"] = config["SlurmctldPort"]
+
 
 def is_upgrade_setup(
     old_slurm_prefix="/opt/slurm-old",
@@ -1382,6 +1386,17 @@ def require_version(version, component="sbin/slurmctld", slurm_prefix="", reason
         if not reason:
             reason = f"The version of {component} is {component_version}, required is {version}"
         pytest.skip(reason)
+
+
+def request_slurmctld(request):
+    """
+    Returns the slurmctld response of a given request.
+    It needs slurmctld >= 25.11 listening HTTP requests.
+    """
+
+    return requests.get(
+        f"http://{properties['slurmctld_host']}:{properties['slurmctld_port']}/{request}",
+    )
 
 
 def request_slurmrestd(request):
