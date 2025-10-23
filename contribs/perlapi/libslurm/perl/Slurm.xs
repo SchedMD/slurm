@@ -743,27 +743,6 @@ slurm_get_job_steps(slurm_t self, time_t update_time=0, uint32_t job_id=NO_VAL, 
 		RETVAL
 
 void
-slurm_print_job_step_info_msg(slurm_t self, FILE *out, HV *step_info_msg, int one_liner=0)
-	PREINIT:
-		job_step_info_response_msg_t si_msg;
-	INIT:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		if (out == NULL) {
-			Perl_croak (aTHX_ "Invalid output stream specified: FILE not found");
-		}
-		if(hv_to_job_step_info_response_msg(step_info_msg, &si_msg) < 0) {
-			XSRETURN_UNDEF;
-		}
-	C_ARGS:
-		out, &si_msg, one_liner
-	CLEANUP:
-		xfree(si_msg.job_steps);
-
-void
 slurm_print_job_step_info(slurm_t self, FILE *out, HV *step_info, int one_liner=0)
 	PREINIT:
 		job_step_info_t si;
