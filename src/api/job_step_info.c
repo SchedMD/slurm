@@ -104,34 +104,6 @@ static int _sort_stats_by_name(void *x, void *y)
 }
 
 /*
- * slurm_print_job_step_info_msg - output information about all Slurm
- *	job steps based upon message as loaded using slurm_get_job_steps
- * IN out - file to write to
- * IN job_step_info_msg_ptr - job step information message pointer
- * IN one_liner - print as a single line if true
- */
-void
-slurm_print_job_step_info_msg ( FILE* out,
-		job_step_info_response_msg_t * job_step_info_msg_ptr,
-		int one_liner )
-{
-	int i;
-	job_step_info_t *job_step_ptr = job_step_info_msg_ptr->job_steps ;
-	char time_str[256];
-
-	slurm_make_time_str ((time_t *)&job_step_info_msg_ptr->last_update,
-			time_str, sizeof(time_str));
-	fprintf( out, "Job step data as of %s, record count %d\n",
-		time_str, job_step_info_msg_ptr->job_step_count);
-
-	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++)
-	{
-		slurm_print_job_step_info ( out, & job_step_ptr[i],
-					    one_liner ) ;
-	}
-}
-
-/*
  * slurm_print_job_step_info - output information about a specific Slurm
  *	job step based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
