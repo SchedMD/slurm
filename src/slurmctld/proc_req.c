@@ -2317,7 +2317,7 @@ fini:
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
-		sji->job_id = job_ptr->job_id;
+		sji->step_id.job_id = job_ptr->job_id;
 		sji->stepmgr = job_ptr->batch_host;
 		list_append(args->stepmgr_jobs, sji);
 	}

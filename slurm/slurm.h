@@ -2334,7 +2334,7 @@ typedef struct {
 } job_step_info_t;
 
 typedef struct {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	char *stepmgr;
 } stepmgr_job_info_t;
 
