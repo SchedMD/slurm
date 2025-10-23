@@ -102,7 +102,7 @@ def test_http_metrics_openmetrics_endpoints():
 
     # jobs-users-accts endpoint: expect current slurm-user shows 1 job
     jobs_ua_output = _curl("metrics/jobs-users-accts")
-    username = "atf"
+    username = atf.properties["test-user"]
     jobs_ua_val = _get_labeled_metric_value(
         jobs_ua_output, "slurm_user_jobs", "username", username
     )
