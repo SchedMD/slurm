@@ -1,6 +1,8 @@
 [general]
 extra-path=tools/
 ignore=body-is-missing
+ignore-fixup-commits=false
+ignore-fixup-amend-commits=false
 
 [title-max-length]
 line-length=72
