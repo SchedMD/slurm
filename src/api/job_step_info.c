@@ -46,10 +46,11 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/forward.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/select.h"
 
 /* Data structures for pthreads used to gather step information from multiple
  * clusters in parallel */
