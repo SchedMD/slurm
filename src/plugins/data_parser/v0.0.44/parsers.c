@@ -10034,6 +10034,7 @@ static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(slurm_step_id_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
+	add_parse(SLUID, sluid, "sluid", "SLUID"),
 	add_parse(UINT32_NO_VAL, job_id, "job_id", "Job ID"),
 	add_parse(UINT32_NO_VAL, step_het_comp, "step_het_component", "HetJob component"),
 	add_parse(STEP_ID, step_id, "step_id", "Job step ID"),
