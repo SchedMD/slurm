@@ -7064,7 +7064,7 @@ static int _foreach_layer(void *x, void *arg)
 	license->nodes = xstrdup(layer->nodes);
 	license->hres_rec.total = layer->count;
 
-	if (hres_variable_free && list_count(layer->base)) {
+	if ((hres_variable_free != NULL) && list_count(layer->base)) {
 		license->hres_rec.base = list_create(hres_variable_free);
 		list_for_each(layer->base, _foreach_variable,
 			      license->hres_rec.base);
@@ -7153,7 +7153,7 @@ static int _foreach_license(void *x, void *arg)
 		list_append(*resources, resource);
 	}
 
-	if (!resource->variables && hres_variable_free &&
+	if (!resource->variables && (hres_variable_free != NULL) &&
 	    list_count(license->hres_rec.variables)) {
 		resource->variables = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.variables, _foreach_variable,
