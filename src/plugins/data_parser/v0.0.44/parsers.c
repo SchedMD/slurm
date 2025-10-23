@@ -8751,6 +8751,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT16, segment_size, "segment_size", "Requested segment size"),
 	add_parse(STRING, selinux_context, "selinux_context", "SELinux context"),
 	add_parse(JOB_SHARED, shared, "shared", "How the job can share resources with other jobs, if at all"),
+	add_parse(SLURM_STEP_ID, step_id, "step_id", "Job step ID"),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board", "Number of sockets per board required"),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node", "Number of sockets per node required"),
 	add_parse(TIMESTAMP_NO_VAL, start_time, "start_time", "Time execution began, or is expected to begin (UNIX timestamp)"),
