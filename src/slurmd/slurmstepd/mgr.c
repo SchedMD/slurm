@@ -2163,7 +2163,6 @@ static int _fork_all_tasks(bool *io_initialized)
 
 		if (step->tres_freq && (getuid() == (uid_t) 0)) {
 			gres_g_step_hardware_init(step->step_gres_list,
-						  step->nodeid,
 						  step->tres_freq);
 		} else if (step->tres_freq) {
 			error("%s: invalid permissions: cannot initialize GRES hardware unless Slurmd was started as root",

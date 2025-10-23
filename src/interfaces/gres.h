@@ -987,11 +987,10 @@ extern uint64_t gres_step_count(list_t *step_gres_list, char *gres_name);
  * Configure the GRES hardware allocated to the current step while privileged
  *
  * IN step_gres_list - Step's GRES specification
- * IN node_id        - relative position of this node in step
  * IN settings       - string containing configuration settings for the hardware
  */
 extern void gres_g_step_hardware_init(list_t *step_gres_list,
-				      uint32_t node_id, char *settings);
+				      char *settings);
 
 /*
  * Optionally undo GRES hardware configuration while privileged

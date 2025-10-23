@@ -9854,11 +9854,10 @@ static bitstr_t *_get_single_usable_gres(int context_inx,
  * Configure the GRES hardware allocated to the current step while privileged
  *
  * IN step_gres_list - Step's GRES specification
- * IN node_id        - relative position of this node in step
  * IN settings       - string containing configuration settings for the hardware
  */
 extern void gres_g_step_hardware_init(list_t *step_gres_list,
-				      uint32_t node_id, char *settings)
+				      char *settings)
 {
 	int i;
 	gres_state_t *gres_state_step;
