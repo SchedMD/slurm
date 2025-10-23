@@ -68,13 +68,11 @@ def test_http_metrics_openmetrics_endpoints():
     atf.wait_for_job_state(job_id, "RUNNING")
 
     # Allow slurmctld to update metrics after job submission
-    retries = 2
-    for _ in range(retries):
-        jobs_output = _curl("metrics/jobs")
-        val = _get_metric_value(jobs_output, "slurm_jobs")
-        if val and int(val) >= 1:
-            break
-        time.sleep(0.2)
+    atf.repeat_until(
+        lambda: _get_metric_value(_curl("metrics/jobs"), "slurm_jobs"),
+        lambda val: val and int(val) >= 1,
+        fatal=True,
+    )
 
     # partitions endpoint: expect slurm_partitions 2
     parts_output = _curl("metrics/partitions")
