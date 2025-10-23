@@ -631,6 +631,9 @@ typedef struct job_step_specs {
 	char *tres_per_socket;	/* semicolon delimited list of TRES=# values */
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	uint32_t user_id;	/* user the job runs as */
+	uint16_t use_protocol_ver; /* Slurm version the allocation was started
+				    * with or the lowest slurmd version
+				    * it needs to talk to - NO NEED TO PACK */
 } job_step_create_request_msg_t;
 
 typedef struct job_step_create_response_msg {
@@ -643,9 +646,9 @@ typedef struct job_step_create_response_msg {
 	slurm_cred_t *cred;    	  /* slurm job credential */
 	dynamic_plugin_data_t *switch_step; /* switch opaque data type
 					     * Remove 3 versions after 24.11 */
-	uint16_t use_protocol_ver;   /* Lowest protocol version running on
-				      * the slurmd's in this step.
-				      */
+	uint16_t use_protocol_ver;   /* This is no longer used and can be
+				      * removed when 25.05 is no longer
+				      * supported. */
 } job_step_create_response_msg_t;
 
 #define LAUNCH_PARALLEL_DEBUG	SLURM_BIT(0)

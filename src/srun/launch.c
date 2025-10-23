@@ -677,7 +677,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	int rc;
 
 	xassert(srun_opt);
-
+	step_req->use_protocol_ver = job->use_protocol_ver;
 	step_req->host = xshort_hostname();
 	step_req->cpu_freq_min = opt_local->cpu_freq_min;
 	step_req->cpu_freq_max = opt_local->cpu_freq_max;

@@ -1953,6 +1953,11 @@ alloc_job:
 		int first_core = 0, last_core = node_ptr->tot_cores;
 		bitstr_t *use_free_cores = free_cores[i];
 
+		/* Set the start lower if any nodes have a lower version */
+		if (job_ptr->start_protocol_ver > node_ptr->protocol_version)
+			job_ptr->start_protocol_ver =
+				node_ptr->protocol_version;
+
 		for (j = first_core; j < last_core; j++, c++) {
 			if (!bit_test(use_free_cores, j))
 				continue;

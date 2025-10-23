@@ -482,6 +482,10 @@ extern srun_job_t *job_step_create_allocation(
 	 * Create job
 	 */
 	job = _job_create_structure(ai, opt_local);
+
+	if (job) {
+		job->use_protocol_ver = resp->start_protocol_ver;
+	}
 error:
 	xfree(ai->nodelist);
    	xfree(ai);
@@ -522,6 +526,7 @@ extern srun_job_t *job_create_allocation(
 		job->account = xstrdup(resp->account);
 		job->qos = xstrdup(resp->qos);
 		job->resv_name = xstrdup(resp->resv_name);
+		job->use_protocol_ver = resp->start_protocol_ver;
 	}
 
 	xfree(i->nodelist);

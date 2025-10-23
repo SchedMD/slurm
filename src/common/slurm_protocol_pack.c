@@ -1342,6 +1342,7 @@ static void _pack_resource_allocation_response_msg(const slurm_msg_t *smsg,
 		packstr(msg->qos, buffer);
 		packstr(msg->resv_name, buffer);
 		pack16(msg->segment_size, buffer);
+		pack16(msg->start_protocol_ver, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->tres_per_node, buffer);
 		packstr(msg->tres_per_task, buffer);
@@ -1490,6 +1491,7 @@ static int _unpack_resource_allocation_response_msg(slurm_msg_t *smsg,
 		safe_unpackstr(&msg->qos, buffer);
 		safe_unpackstr(&msg->resv_name, buffer);
 		safe_unpack16(&msg->segment_size, buffer);
+		safe_unpack16(&msg->start_protocol_ver, buffer);
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpackstr(&msg->tres_per_node, buffer);
@@ -2804,7 +2806,6 @@ static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 				       smsg->protocol_version);
 		packstr(msg->stepmgr, buffer);
 		slurm_cred_pack(msg->cred, buffer, smsg->protocol_version);
-		pack16(msg->use_protocol_ver, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
@@ -2848,8 +2849,6 @@ static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 		if (!(msg->cred = slurm_cred_unpack(buffer,
 						    smsg->protocol_version)))
 			goto unpack_error;
-
-		safe_unpack16(&msg->use_protocol_ver, buffer);
 	} else if (smsg->protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->def_cpu_bind_type, buffer);
 		safe_unpackstr(&msg->resv_ports, buffer);
