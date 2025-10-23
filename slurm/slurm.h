@@ -1750,6 +1750,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size; /* element count in spank_env */
+	slurm_step_id_t step_id;
 	char *submit_line;      /* The command issued with all it's options in a
 				 * string */
 	uint32_t task_dist;	/* see enum task_dist_state */
