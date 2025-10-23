@@ -6791,6 +6791,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		msg->bitflags |= USE_DEFAULT_WCKEY;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->site_factor, buffer);
 		packstr(msg->batch_features, buffer);
 		packstr(msg->cluster_features, buffer);
@@ -7352,6 +7353,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 	job_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpack32(&msg->site_factor, buffer);
 		safe_unpackstr(&msg->batch_features, buffer);
 		safe_unpackstr(&msg->cluster_features, buffer);
