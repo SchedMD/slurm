@@ -2,7 +2,6 @@
 # Copyright (C) SchedMD LLC.
 ############################################################################
 import re
-import time
 
 import atf
 import pytest
@@ -16,8 +15,6 @@ HTTP_PORT = 6817
 def setup():
     # Dev 50538: Metrics added in 25.11
     atf.require_version((25, 11))
-
-    atf.require_auto_config("Needs to configure metrics/openmetrics and partitions")
 
     # Ensure exactly 3 nodes exist
     atf.require_nodes(3)
@@ -39,14 +36,6 @@ def setup():
 
     # Start/reconfigure Slurm
     atf.require_slurm_running()
-
-    # Give slurmctld a moment to initialize metrics
-    time.sleep(1)
-
-    yield
-
-    # Teardown: cancel all jobs
-    atf.cancel_all_jobs()
 
 
 def _curl(path: str) -> str:
@@ -125,6 +114,3 @@ def test_http_metrics_openmetrics_endpoints():
     assert (
         int(jobs_ua_val) >= 1
     ), f'Expected slurm_user_jobs{{username="{username}"}} >= 1, got {jobs_ua_val}'
-
-    # Cleanup
-    atf.cancel_all_jobs(quiet=True)
