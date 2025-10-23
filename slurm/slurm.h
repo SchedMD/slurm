@@ -2463,7 +2463,7 @@ typedef struct topo_config_response_msg {
 } topo_config_response_msg_t;
 
 typedef struct job_alloc_info_msg {
-	uint32_t job_id;	/* job ID */
+	slurm_step_id_t step_id;
 	char    *req_cluster;   /* requesting cluster */
 } job_alloc_info_msg_t;
 

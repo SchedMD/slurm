@@ -913,7 +913,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
 	slurm_msg_t resp_msg;
 
 	memset(&req, 0, sizeof(req));
-	req.job_id = jobid;
+	req.step_id.job_id = jobid;
 	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -961,7 +961,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, list_t **info)
 	char *stepmgr_nodename = NULL;
 
 	memset(&req, 0, sizeof(req));
-	req.job_id = jobid;
+	req.step_id.job_id = jobid;
 	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

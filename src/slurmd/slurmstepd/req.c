@@ -766,9 +766,9 @@ static int _handle_het_job_alloc_info(int fd, uid_t uid, pid_t remote_pid)
 
 	request = msg.data;
 
-	if (request->job_id != job_step_ptr->job_id) {
-		error("attempting to get job information for jobid %u from a different stepmgr jobid %u: %s RPC from uid=%u",
-		      request->job_id, job_step_ptr->job_id,
+	if (request->step_id.job_id != job_step_ptr->job_id) {
+		error("attempting to get job information for %pI from a different stepmgr jobid %u: %s RPC from uid=%u",
+		      &request->step_id, job_step_ptr->job_id,
 		      rpc_num2string(msg.msg_type), uid);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto resp;

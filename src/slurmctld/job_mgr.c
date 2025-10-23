@@ -18366,12 +18366,12 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	job_record_t *job_ptr;
 	xassert(timeout_msg);
 
-	job_ptr = find_job_record(time_req_msg->job_id);
+	job_ptr = find_job_record(time_req_msg->step_id.job_id);
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
-	timeout_msg->step_id.job_id = time_req_msg->job_id;
+	timeout_msg->step_id.job_id = job_ptr->job_id;
 	timeout_msg->step_id.sluid = job_ptr->db_index;
 	timeout_msg->step_id.step_id = NO_VAL;
 	timeout_msg->step_id.step_het_comp = NO_VAL;

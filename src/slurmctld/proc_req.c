@@ -1655,7 +1655,7 @@ static void _slurm_rpc_end_time(slurm_msg_t *msg)
 	} else {
 		(void) send_msg_response(msg, SRUN_TIMEOUT, &timeout_msg);
 	}
-	debug2("%s JobId=%u %s", __func__, time_req_msg->job_id, TIME_STR);
+	debug2("%s %pI %s", __func__, &time_req_msg->step_id, TIME_STR);
 }
 
 /* _slurm_rpc_get_fd - process RPC for federation state information */
@@ -2801,20 +2801,21 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->job_id,
+	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
 				    &job_ptr);
 	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		unlock_slurmctld(job_read_lock);
-		debug2("%s: JobId=%u, uid=%u: %s",
-		       __func__, job_info_msg->job_id, msg->auth_uid,
+		debug2("%s: %pI, uid=%u: %s",
+		       __func__, &job_info_msg->step_id, msg->auth_uid,
 		      slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug("%s: JobId=%u NodeList=%s %s", __func__,
-		      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+		debug("%s: %pI NodeList=%s %s",
+		      __func__, &job_info_msg->step_id, job_ptr->nodes,
+		      TIME_STR);
 
 		job_info_resp_msg = build_job_info_resp(job_ptr);
 		set_remote_working_response(job_info_resp_msg, job_ptr,
@@ -2863,7 +2864,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->job_id,
+	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
 				    &job_ptr);
 	END_TIMER2(__func__);
 
@@ -2874,15 +2875,15 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
-		debug2("%s: JobId=%u, uid=%u: %s",
-		       __func__, job_info_msg->job_id, msg->auth_uid,
+		debug2("%s: %pI, uid=%u: %s",
+		       __func__, &job_info_msg->step_id, msg->auth_uid,
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 		return;
 	}
 
-	debug2("%s: JobId=%u NodeList=%s %s", __func__,
-	       job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+	debug2("%s: %pI NodeList=%s %s", __func__,
+	       &job_info_msg->step_id, job_ptr->nodes, TIME_STR);
 
 	if (!job_ptr->het_job_list) {
 		resp = list_create(_het_job_alloc_list_del);
@@ -2899,7 +2900,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 				      __func__, job_ptr);
 				continue;
 			}
-			if (het_job->job_id != job_info_msg->job_id)
+			if (het_job->job_id != job_info_msg->step_id.job_id)
 				(void) job_alloc_info_ptr(msg->auth_uid,
 							  het_job);
 			job_info_resp_msg = build_job_info_resp(het_job);

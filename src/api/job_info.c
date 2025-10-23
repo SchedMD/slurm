@@ -876,7 +876,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	}
 
 	memset(&job_msg, 0, sizeof(job_msg));
-	job_msg.job_id = jobid;
+	job_msg.step_id.job_id = jobid;
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
 
