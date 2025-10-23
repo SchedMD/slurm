@@ -104,7 +104,7 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 
 	jobs = (*job_info_msg)->job_array;
 
-	if (jobs->job_id != jobs->het_job_id)
+	if (jobs->step_id.job_id != jobs->het_job_id)
 		return false;
 
 	if ((*job_info_msg)->record_count < 2)

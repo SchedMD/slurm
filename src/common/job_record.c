@@ -2091,7 +2091,6 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->het_job_id_set, buffer);
 		pack32(dump_job_ptr->het_job_offset, buffer);
 
-		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->job_state, buffer);
 
 		pack_time(dump_job_ptr->last_sched_eval, buffer);
@@ -2380,7 +2379,6 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->het_job_id_set, buffer);
 		safe_unpack32(&job_ptr->het_job_offset, buffer);
 
-		safe_unpack32(&job_ptr->job_id, buffer);
 		safe_unpack32(&job_ptr->job_state, buffer);
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);

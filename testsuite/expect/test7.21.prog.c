@@ -86,7 +86,7 @@ int run_test(spank_t sp, const char *caller)
 		slurm_job_info_t *job = job_info->job_array + i;
 
 		fprintf(fp, "%s load_job: step_id=%u job_id=%u array_job_id=%u array_task_id=%u\n",
-			caller, step_id, job->job_id, job->array_job_id,
+			caller, step_id, job->step_id.job_id, job->array_job_id,
 			job->array_task_id);
 	}
 

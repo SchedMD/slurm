@@ -329,7 +329,7 @@ scontrol_hold(char *op, char *job_str)
 				   job_ptr->array_job_id,
 				   job_ptr->array_task_id);
 		} else {
-			xstrfmtcat(job_id_str, "%u", job_ptr->job_id);
+			xstrfmtcat(job_id_str, "%u", job_ptr->step_id.job_id);
 		}
 		job_msg.job_id_str = job_id_str;
 		rc2 = slurm_update_job2(&job_msg, &resp);
@@ -1397,7 +1397,7 @@ static uint32_t _get_job_time(const char *job_id_str)
 			return time_limit;
 		}
 		for (i = 0; i < resp->record_count; i++) {
-			if ((resp->job_array[i].job_id == job_id) &&
+			if ((resp->job_array[i].step_id.job_id == job_id) &&
 			    (resp->job_array[i].array_task_id == NO_VAL) &&
 			    (resp->job_array[i].array_bitmap == NULL)) {
 				/* Regular job match */
@@ -1501,7 +1501,7 @@ static char *_job_name2id(char *job_name, uint32_t job_uid)
 					   job_ptr->array_task_id);
 			} else {
 				xstrfmtcat(job_id_str, "%s%u", sep,
-					   job_ptr->job_id);
+					   job_ptr->step_id.job_id);
 			}
 			sep = ",";
 		}

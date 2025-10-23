@@ -557,7 +557,7 @@ int _print_job_array_job_id(job_info_t * job, int width, bool right,
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->array_job_id);
 		_print_str(id, width, right, true);
 	} else {
-		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->step_id.job_id);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -721,7 +721,7 @@ int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 			 job->het_job_id, job->het_job_offset);
 		_print_str(id, width, right, true);
 	} else {
-		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->step_id.job_id);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -735,7 +735,7 @@ int _print_job_job_id2(job_info_t * job, int width, bool right, char* suffix)
 		_print_str("JOBID", width, right, true);
 	} else {
 		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->step_id.job_id);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -1863,7 +1863,7 @@ int _print_job_fed_origin_raw(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)
 		_print_str("ORIGIN_RAW", width, right_justify, true);
 	else {
-		int id = job->job_id >> 26;
+		int id = job->step_id.job_id >> 26;
 		if (id)
 			_print_int(id, width, right_justify, true);
 		else
@@ -3026,18 +3026,18 @@ static bool _filter_job(job_info_t *job)
 	squeue_job_step_t *job_step_id;
 	bool partial_array = false;
 
-	if (job->job_id == 0)
+	if (job->step_id.job_id == 0)
 		return true;
 
 	if (params.job_list) {
 		bool filter = true;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
-			if (((job_step_id->array_id == NO_VAL)             &&
+			if (((job_step_id->array_id == NO_VAL) &&
 			     ((job_step_id->step_id.job_id ==
 			       job->array_job_id) ||
 			      (job_step_id->step_id.job_id ==
-			       job->job_id))) ||
+			       job->step_id.job_id))) ||
 			    ((job_step_id->array_id == job->array_task_id) &&
 			     (job_step_id->step_id.job_id ==
 			      job->array_job_id))) {

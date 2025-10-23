@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 	for (i = 0; i < job_info_msg->record_count; i++) {
 		job_ptr = job_info_msg->job_array + i;
 		printf("job_id:%u name:%s user_id:%u\n",
-		       job_ptr->job_id, job_ptr->name, job_ptr->user_id);
+		       job_ptr->step_id.job_id, job_ptr->name, job_ptr->user_id);
 	}
 	slurm_free_job_info_msg(job_info_msg);
 

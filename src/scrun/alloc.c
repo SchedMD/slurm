@@ -645,7 +645,7 @@ extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* grab the first job */
-	xassert(jobs->job_array->job_id == job_id);
+	xassert(jobs->job_array->step_id.job_id == job_id);
 
 	write_lock_state();
 	if (existing_allocation) {

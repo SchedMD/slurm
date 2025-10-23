@@ -230,7 +230,7 @@ static int _purge_known_jobs(void *x, void *key)
 	if (clus_jobs->record_count > 0) {
 		job_info_t *clus_job  = clus_jobs->job_array;
 		for (int i = 0; i < clus_jobs->record_count; i++, clus_job++) {
-			if ((db_job->jobid == clus_job->job_id) &&
+			if ((db_job->jobid == clus_job->step_id.job_id) &&
 			    ((db_job->submit == clus_job->submit_time) ||
 			     (db_job->submit == clus_job->resize_time))) {
 				debug5("%s: matched known JobId=%u SubmitTime=%"PRIu64,

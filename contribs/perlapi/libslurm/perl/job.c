@@ -225,7 +225,7 @@ job_info_to_hv(job_info_t *job_info, HV *hv)
 	if (job_info->tres_per_node)
 		STORE_FIELD(hv, job_info, tres_per_node, charp);
 	STORE_FIELD(hv, job_info, group_id, uint32_t);
-	STORE_FIELD(hv, job_info, job_id, uint32_t);
+	STORE_FIELD_NAME(hv, job_info, step_id.job_id, job_id, uint32_t);
 	STORE_FIELD(hv, job_info, job_state, uint32_t);
 	if(job_info->licenses)
 		STORE_FIELD(hv, job_info, licenses, charp);
@@ -358,7 +358,7 @@ hv_to_job_info(HV *hv, job_info_t *job_info)
 	FETCH_FIELD(hv, job_info, features, charp, FALSE);
 	FETCH_FIELD(hv, job_info, tres_per_node, charp, FALSE);
 	FETCH_FIELD(hv, job_info, group_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, job_info, job_id, uint32_t, TRUE);
+	FETCH_FIELD_NAME(hv, job_info, step_id.job_id, job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, job_state, uint32_t, TRUE);
 	FETCH_FIELD(hv, job_info, licenses, charp, FALSE);
 	FETCH_FIELD(hv, job_info, max_cpus, uint32_t, TRUE);

@@ -416,7 +416,7 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 	} else if (!xstrcmp(name, "het_job_offset")) {
 		lua_pushinteger(L, job_info->het_job_offset);
 	} else if (!xstrcmp(name, "job_id")) {
-		lua_pushinteger(L, job_info->job_id);
+		lua_pushinteger(L, job_info->step_id.job_id);
 	/* Ignore job_resrcs */
 	} else if (!xstrcmp(name, "job_state")) {
 		lua_pushinteger(L, job_info->job_state);

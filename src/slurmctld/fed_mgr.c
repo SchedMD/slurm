@@ -5535,7 +5535,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 
 	for (i = 0; i < remote_jobs_ptr->record_count; i++) {
 		remote_job = &remote_jobs_ptr->job_array[i];
-		if (job_ptr->job_id == remote_job->job_id) {
+		if (job_ptr->job_id == remote_job->step_id.job_id) {
 			found_job = true;
 			break;
 		}

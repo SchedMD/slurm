@@ -96,7 +96,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, tres_per_task, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, group_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, immediate, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc, job_id, uint32_t, FALSE);
+	FETCH_FIELD_NAME(hv, job_desc, step_id.job_id, job_id, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc, kill_on_node_fail, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, licenses, charp, FALSE);
 	FETCH_FIELD(hv, job_desc, mail_type, uint16_t, FALSE);

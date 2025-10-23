@@ -3452,7 +3452,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->het_job_id_set, buffer);
 		safe_unpack32(&job->het_job_offset, buffer);
 
-		safe_unpack32(&job->job_id, buffer);
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
@@ -3659,7 +3658,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->het_job_id_set, buffer);
 		safe_unpack32(&job->het_job_offset, buffer);
 
-		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->step_id.job_id, buffer);
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
@@ -3865,7 +3864,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->het_job_id_set, buffer);
 		safe_unpack32(&job->het_job_offset, buffer);
 
-		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->step_id.job_id, buffer);
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
@@ -4038,7 +4037,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->container_id, buffer);
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpackstr(&job->failed_node, buffer);
-		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->step_id.job_id, buffer);
 		safe_unpack32(&job->user_id, buffer);
 		safe_unpack32(&job->group_id, buffer);
 		safe_unpack32(&job->het_job_id, buffer);
