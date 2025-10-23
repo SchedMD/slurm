@@ -972,6 +972,201 @@ static void _print_job_info(FILE *out, job_info_t *job_ptr)
 	}
 }
 
+static int _nodes_in_list(char *node_list)
+{
+	hostset_t *host_set = hostset_create(node_list);
+	int count = hostset_count(host_set);
+	hostset_destroy(host_set);
+	return count;
+}
+
+static char *_sprint_step_info(job_step_info_t *job_step_ptr)
+{
+	char tmp_node_cnt[40];
+	char time_str[256];
+	char limit_str[32];
+	char tmp_line[128];
+	char *out = NULL;
+	char *line_end = (one_liner) ? " " : "\n   ";
+	char *sorted_nodelist = NULL;
+	uint16_t flags = STEP_ID_FLAG_NONE;
+
+	/****** Line 1 ******/
+	slurm_make_time_str((time_t *) &job_step_ptr->start_time, time_str,
+			    sizeof(time_str));
+	if (job_step_ptr->time_limit == INFINITE)
+		snprintf(limit_str, sizeof(limit_str), "UNLIMITED");
+	else
+		secs2time_str((time_t) job_step_ptr->time_limit * 60, limit_str,
+			      sizeof(limit_str));
+
+	if (job_step_ptr->array_job_id) {
+		xstrfmtcat(out, "StepId=%u_%u.", job_step_ptr->array_job_id,
+			   job_step_ptr->array_task_id);
+		flags = STEP_ID_FLAG_NO_PREFIX | STEP_ID_FLAG_NO_JOB;
+	}
+
+	log_build_step_id_str(&job_step_ptr->step_id, tmp_line,
+			      sizeof(tmp_line), flags);
+	xstrfmtcat(out, "%s ", tmp_line);
+
+	xstrfmtcat(out, "UserId=%u StartTime=%s TimeLimit=%s",
+		   job_step_ptr->user_id, time_str, limit_str);
+
+	/****** Line ******/
+	xstrcat(out, line_end);
+	sorted_nodelist = slurm_sort_node_list_str(job_step_ptr->nodes);
+	xstrfmtcat(out, "State=%s Partition=%s NodeList=%s",
+		   job_state_string(job_step_ptr->state),
+		   job_step_ptr->partition, sorted_nodelist);
+	xfree(sorted_nodelist);
+
+	/****** Line ******/
+	convert_num_unit((float) _nodes_in_list(job_step_ptr->nodes),
+			 tmp_node_cnt, sizeof(tmp_node_cnt), UNIT_NONE, NO_VAL,
+			 CONVERT_NUM_UNIT_EXACT);
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "Nodes=%s CPUs=%u Tasks=%u Name=%s Network=%s",
+		   tmp_node_cnt, job_step_ptr->num_cpus,
+		   job_step_ptr->num_tasks, job_step_ptr->name,
+		   job_step_ptr->network);
+
+	/****** Line ******/
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "TRES=%s", job_step_ptr->tres_fmt_alloc_str);
+
+	/****** Line ******/
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "ResvPorts=%s", job_step_ptr->resv_ports);
+
+	/****** Line ******/
+	xstrcat(out, line_end);
+	if (cpu_freq_debug(NULL, NULL, tmp_line, sizeof(tmp_line),
+			   job_step_ptr->cpu_freq_gov,
+			   job_step_ptr->cpu_freq_min,
+			   job_step_ptr->cpu_freq_max, NO_VAL) != 0) {
+		xstrcat(out, tmp_line);
+	} else {
+		xstrcat(out, "CPUFreqReq=Default");
+	}
+
+	if (job_step_ptr->task_dist) {
+		char *name =
+			slurm_step_layout_type_name(job_step_ptr->task_dist);
+		xstrfmtcat(out, " Dist=%s", name);
+		xfree(name);
+	}
+
+	/****** Line ******/
+	xstrcat(out, line_end);
+	xstrfmtcat(out, "SrunHost:Pid=%s:%u", job_step_ptr->srun_host,
+		   job_step_ptr->srun_pid);
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->cpus_per_tres) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "CpusPerTres=%s", job_step_ptr->cpus_per_tres);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->mem_per_tres) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "MemPerTres=%s", job_step_ptr->mem_per_tres);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_bind) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresBind=%s", job_step_ptr->tres_bind);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_freq) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresFreq=%s", job_step_ptr->tres_freq);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_step) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerStep=%s", job_step_ptr->tres_per_step);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_node) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerNode=%s", job_step_ptr->tres_per_node);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_socket) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerSocket=%s",
+			   job_step_ptr->tres_per_socket);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->tres_per_task) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "TresPerTask=%s", job_step_ptr->tres_per_task);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->container || job_step_ptr->container_id) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "Container=%s ContainerID=%s",
+			   job_step_ptr->container, job_step_ptr->container_id);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->std_in) {
+		char *tmp_path;
+		xstrcat(out, line_end);
+		tmp_path = slurm_expand_step_stdio_fields(job_step_ptr->std_in,
+							  job_step_ptr);
+		xstrfmtcat(out, "StdIn=%s", tmp_path);
+		xfree(tmp_path);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->std_err) {
+		char *tmp_path;
+		xstrcat(out, line_end);
+		tmp_path = slurm_expand_step_stdio_fields(job_step_ptr->std_err,
+							  job_step_ptr);
+		xstrfmtcat(out, "StdErr=%s", tmp_path);
+		xfree(tmp_path);
+	}
+
+	/****** Line (optional) ******/
+	if (job_step_ptr->std_out) {
+		char *tmp_path;
+		xstrcat(out, line_end);
+		tmp_path = slurm_expand_step_stdio_fields(job_step_ptr->std_out,
+							  job_step_ptr);
+		xstrfmtcat(out, "StdOut=%s", tmp_path);
+		xfree(tmp_path);
+	}
+
+	/****** END OF JOB RECORD ******/
+	if (one_liner)
+		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
+
+	return out;
+}
+
+static void _print_step_info(job_step_info_t *job_step_ptr)
+{
+	char *print_this;
+
+	if ((print_this = _sprint_step_info(job_step_ptr))) {
+		fprintf(stdout, "%s", print_this);
+		xfree(print_this);
+	}
+}
+
 /* Load current job table information into *job_buffer_pptr */
 extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
 			     uint32_t job_id)
@@ -1469,7 +1664,7 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		int i = 0;
 
 		for (; steps[i]; i++)
-			slurm_print_job_step_info(stdout, steps[i], one_liner);
+			_print_step_info(steps[i]);
 
 		print_cnt = i;
 	}
