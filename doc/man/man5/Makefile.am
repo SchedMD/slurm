@@ -9,6 +9,7 @@ man5_MANS = \
 	job_container.conf.5 \
 	mpi.conf.5 \
 	oci.conf.5 \
+	resources.yaml.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
 	topology.conf.5 \
@@ -25,6 +26,7 @@ html_DATA = \
 	job_container.conf.html \
 	mpi.conf.html \
 	oci.conf.html \
+	resources.yaml.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
 	topology.conf.html \
