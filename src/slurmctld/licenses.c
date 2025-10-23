@@ -923,6 +923,7 @@ static int _foreach_license_set_base(void *x, void *key)
 		licenses_t *parent =
 			list_find_first_ro(cluster_license_list,
 					   _license_find_parent, license);
+		xassert(parent);
 		parent->hres_rec.base_usage += license->hres_rec.base_usage;
 	}
 
