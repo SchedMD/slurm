@@ -18625,6 +18625,9 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_details_t *details = job_ptr->details;
 	multi_core_data_t *mc_ptr = details->mc_ptr;
 	int i;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_ptr->job_id;
+	step_id.sluid = job_ptr->db_index;
 
 	/* construct a job_desc_msg_t from job */
 	job_desc = xmalloc(sizeof(job_desc_msg_t));
@@ -18713,6 +18716,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->std_err           = xstrdup(details->std_err);
 	job_desc->std_in            = xstrdup(details->std_in);
 	job_desc->std_out           = xstrdup(details->std_out);
+	job_desc->step_id = step_id;
 	job_desc->submit_line       = xstrdup(details->submit_line);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
