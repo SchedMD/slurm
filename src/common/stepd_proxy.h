@@ -46,6 +46,14 @@ extern void stepd_proxy_slurmd_init(char *spooldir);
  */
 extern void stepd_proxy_stepd_init(char *spooldir);
 
+/*******************************************************************************
+ * slurmstepd -> slurmd functions
+ *
+ * NOTE: Currently no configuration of Slurm will use these functions to proxy
+ * outbound slurmstepd messages through slurmd. These functions may be used in
+ * the future.
+ ******************************************************************************/
+
 /*
  * Send message to slurmctld via slurmd. Do not get response.
  *
@@ -74,6 +82,10 @@ extern int stepd_proxy_send_only_node_msg(slurm_msg_t *req);
  */
 extern int stepd_proxy_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp,
 					  int timeout);
+
+/*******************************************************************************
+ * slurmd -> slurmstepd functions
+ ******************************************************************************/
 
 /*
  * Send message to slurmstepd, and receive response

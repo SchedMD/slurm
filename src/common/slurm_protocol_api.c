@@ -2244,11 +2244,6 @@ extern int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	request_msg->forward_struct = NULL;
 	slurm_msg_set_r_uid(request_msg, SLURM_AUTH_UID_ANY);
 
-	if (conn_tls_enabled() && running_in_slurmstepd()) {
-		return stepd_proxy_send_recv_ctld_msg(request_msg,
-						      response_msg);
-	}
-
 tryagain:
 	if (comm_cluster_rec)
 		request_msg->flags |= SLURM_GLOBAL_AUTH_KEY;
@@ -2367,10 +2362,6 @@ int slurm_send_recv_node_msg(slurm_msg_t *req, slurm_msg_t *resp, int timeout)
 
 	resp->auth_cred = NULL;
 
-	if (conn_tls_enabled() && running_in_slurmstepd()) {
-		return stepd_proxy_send_recv_node_msg(req, resp, timeout);
-	}
-
 	if (!(conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",
 			 __func__, &req->address);
@@ -2398,10 +2389,6 @@ extern int slurm_send_only_controller_msg(slurm_msg_t *req,
 	void *conn = NULL;
 	int rc = SLURM_SUCCESS;
 	int index = 0;
-
-	if (conn_tls_enabled() && running_in_slurmstepd()) {
-		return stepd_proxy_send_only_ctld_msg(req);
-	}
 
 	/*
 	 *  Open connection to Slurm controller:
@@ -2462,10 +2449,6 @@ int slurm_send_only_node_msg(slurm_msg_t *req)
 	struct pollfd pfd;
 	int value = -1;
 	int pollrc;
-
-	if (conn_tls_enabled() && running_in_slurmstepd()) {
-		return stepd_proxy_send_only_node_msg(req);
-	}
 
 	if (!(conn = slurm_open_msg_conn(&req->address, req->tls_cert))) {
 		log_flag(NET, "%s: slurm_open_msg_conn(%pA): %m",

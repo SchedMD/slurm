@@ -350,6 +350,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	pack32(slurm_conf.task_plugin_param, buffer);
 	packstr(slurm_conf.task_prolog, buffer);
 	pack16(slurm_conf.tcp_timeout, buffer);
+	packstr(slurm_conf.tls_params, buffer);
 	packstr(slurm_conf.tls_type, buffer);
 	packstr(slurm_conf.tmp_fs, buffer);
 	packstr(slurm_conf.topology_param, buffer);
@@ -584,6 +585,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	safe_unpack32(&slurm_conf.task_plugin_param, buffer);
 	safe_unpackstr(&slurm_conf.task_prolog, buffer);
 	safe_unpack16(&slurm_conf.tcp_timeout, buffer);
+	safe_unpackstr(&slurm_conf.tls_params, buffer);
 	safe_unpackstr(&slurm_conf.tls_type, buffer);
 	safe_unpackstr(&slurm_conf.tmp_fs, buffer);
 	safe_unpackstr(&slurm_conf.topology_param, buffer);
