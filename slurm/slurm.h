@@ -1944,6 +1944,7 @@ typedef struct job_info {
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint32_t site_factor;	/* factor to consider in priority */
+	slurm_step_id_t step_id;
 	sluid_t sluid;
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
