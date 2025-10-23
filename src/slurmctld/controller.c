@@ -1638,6 +1638,8 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		rc = slurm_send_rc_msg(msg, EINVAL);
 		FREE_NULL_MSG(msg);
 		return rc;
+	} else if (reply_async && !this_rpc->keep_msg) {
+		rc = _service_connection(this_rpc, msg);
 	} else {
 		/*
 		 * The fd will be extracted from conmgr, so the conmgr
