@@ -333,6 +333,19 @@ static inline void * SV2ptr(SV *sv)
 		} \
 	} while (0)
 
+#define FETCH_FIELD_NAME(hv, ptr, cfield, pfield, type, required) \
+	do { \
+		SV **svp; \
+		if ((svp = hv_fetch(hv, #pfield, strlen(#pfield), FALSE))) { \
+			ptr->cfield = (type) (SV2##type(*svp)); \
+		} else if (required) { \
+			Perl_warn(aTHX_ "Required field \"" #pfield \
+					"\" missing in HV at %s:%d", \
+				  __FILE__, __LINE__); \
+			return -1; \
+		} \
+	} while (0)
+
 #define FETCH_PTR_FIELD(hv, ptr, field, classname, required) \
 	do { \
 		SV** svp; \
@@ -355,6 +368,15 @@ static inline void * SV2ptr(SV *sv)
 	do { \
 		if (hv_store_##type(hv, #field, ptr->field)) { \
 			Perl_warn (aTHX_ "Failed to store field \"" #field "\""); \
+			return -1; \
+		} \
+	} while (0)
+
+#define STORE_FIELD_NAME(hv, ptr, cfield, pfield, type) \
+	do { \
+		if (hv_store_##type(hv, #pfield, ptr->cfield)) { \
+			Perl_warn(aTHX_ "Failed to store field \"" #pfield \
+					"\""); \
 			return -1; \
 		} \
 	} while (0)
