@@ -14,6 +14,9 @@ HTTP_PORT = 6817
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    # Dev 50538: Metrics added in 25.11
+    atf.require_version((25, 11))
+
     atf.require_auto_config("Needs to configure metrics/openmetrics and partitions")
 
     # Ensure exactly 3 nodes exist
