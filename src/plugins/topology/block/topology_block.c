@@ -144,8 +144,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  topology_ctx_t *tctx)
 {
 	block_context_t *ctx = tctx->plugin_ctx;
-	int *change =
-		xcalloc(ctx->block_count + ctx->ablock_count, sizeof(int));
+	int *change;
 
 	bit_clear(ctx->blocks_nodes_bitmap, node_ptr->index);
 
@@ -166,6 +165,8 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			return SLURM_ERROR;
 		}
 	}
+
+	change = xcalloc(ctx->block_count + ctx->ablock_count, sizeof(int));
 
 	for (int i = 0; i < ctx->block_count; i++) {
 		bool in_block = bit_test(ctx->block_record_table[i].node_bitmap,
