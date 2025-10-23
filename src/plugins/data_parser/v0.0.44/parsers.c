@@ -9433,6 +9433,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_cparse(JOB_DESC_MSG_SPANK_ENV, "spank_environment", "Environment variables for job prolog/epilog scripts as set by SPANK plugins"),
 	add_skip(spank_job_env),
 	add_skip(spank_job_env_size),
+	add_parse(SLURM_STEP_ID, step_id, "step_id", "Job step ID"),
 	add_skip(submit_line),
 	add_cparse(JOB_DESC_MSG_TASK_DISTRIBUTION, "distribution", "Layout"),
 	add_skip(task_dist),
