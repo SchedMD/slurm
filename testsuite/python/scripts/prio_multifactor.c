@@ -1,9 +1,6 @@
 /*****************************************************************************\
- *  test_130_2.c - Test of priority multifactor combined with
- *	Fairshare=parent. A failure of this test but a success of test24.3 is
- *	indicative of a problem with SLURMDB_FS_USE_PARENT.
- *
- *  Usage: test_130_2
+ *  prio_multifactor.c - Test of priority multifactor combined with
+ *	Fairshare=parent. See test_130_2 using it.
  *****************************************************************************
  *  Modified by Brigham Young University
  *      Ryan Cox <ryan_cox@byu.edu> and Levi Morrison <levi_morrison@byu.edu>

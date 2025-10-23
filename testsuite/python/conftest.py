@@ -768,3 +768,31 @@ def openapi_spec(request, module_setup):
         pytest.fail(f"Error parsing OpenAPI specs from: {json_file}")
 
     yield openapi_specs
+
+
+@pytest.fixture(scope="module")
+def prio_multifactor(module_setup):
+    """
+    Compiles the prio_multifactor.c in scripts directory.
+    Returns the bin path of it.
+    """
+
+    # Check for compiler
+    atf.require_tool("gcc")
+
+    # Use the external C source file
+    src_path = atf.properties["testsuite_scripts_dir"] + "/prio_multifactor.c"
+    bin_path = os.getcwd() + "/prio_multifactor"
+
+    # Compile the program
+    atf.compile_against_libslurm(
+        src_path,
+        bin_path,
+        full=True,
+        build_args=f"-ldl -lm -export-dynamic {atf.properties['slurm-build-dir']}/src/slurmctld/locks.o {atf.properties['slurm-build-dir']}/src/sshare/process.o",
+        fatal=True,
+    )
+
+    yield bin_path
+
+    atf.run_command(f"rm -f {bin_path}", fatal=True)
