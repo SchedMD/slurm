@@ -1897,10 +1897,19 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 		rc = SLURM_SUCCESS;
 
 		if (!this_rpc->keep_msg) {
+			xassert(!msg->pcon);
+
 			if (msg->conmgr_con)
 				log_flag(NET, "%s: [%s] destroyed connection for incoming RPC msg_type[0x%x]=%s rc=%s",
 					__func__,
 					conmgr_con_get_name(msg->conmgr_con),
+					(uint32_t) msg->msg_type,
+					rpc_num2string(msg->msg_type),
+					slurm_strerror(rc));
+			else if (msg->conn)
+				log_flag(NET, "%s: [fd:%d] destroyed connection for incoming RPC msg_type[0x%x]=%s rc=%s",
+					__func__,
+					conn_g_get_fd(msg->conn),
 					(uint32_t) msg->msg_type,
 					rpc_num2string(msg->msg_type),
 					slurm_strerror(rc));
