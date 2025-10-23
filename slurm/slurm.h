@@ -248,12 +248,12 @@ typedef struct {
 #define SLURM_BIT(offset) ((uint64_t)1 << offset)
 
 #define SLURM_STEP_ID_INITIALIZER \
-{ \
+((slurm_step_id_t) { \
 	.sluid = 0, \
 	.job_id = NO_VAL, \
 	.step_het_comp = NO_VAL, \
 	.step_id = NO_VAL, \
-}
+})
 
 typedef struct {
 	sluid_t sluid;
