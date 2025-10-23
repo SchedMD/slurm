@@ -1013,6 +1013,14 @@ static char *_sprint_step_info(job_step_info_t *job_step_ptr)
 	xstrfmtcat(out, "UserId=%u StartTime=%s TimeLimit=%s",
 		   job_step_ptr->user_id, time_str, limit_str);
 
+	/****** Line (optional) ******/
+	if (detail_flag && (job_step_ptr->step_id.sluid)) {
+		char sluid[SLUID_STR_BYTES];
+		print_sluid(job_step_ptr->step_id.sluid, sluid, sizeof(sluid));
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "SLUID=%s", sluid);
+	}
+
 	/****** Line ******/
 	xstrcat(out, line_end);
 	sorted_nodelist = slurm_sort_node_list_str(job_step_ptr->nodes);
