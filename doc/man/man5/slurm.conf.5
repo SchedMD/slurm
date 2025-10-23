@@ -2725,7 +2725,8 @@ performed as usual.
 
 .TP
 \fBNamespaceType\fR
-Identifies the plugin to be used for job isolation through namespaces.
+Identifies the plugin to be used for job isolation through namespaces. To use
+these plugins, 'PrologFlags=Contain' must be set.
 \fBNOTE\fR: See \fBProctrackType\fR for resource containment and usage tracking.
 Acceptable values at present include:
 .IP
@@ -2733,8 +2734,7 @@ Acceptable values at present include:
 .TP 20
 \fBnamespace/tmpfs\fR
 Used to create a private namespace on the filesystem for jobs, which houses
-temporary file systems (/tmp and /dev/shm) for each job. 'PrologFlags=Contain'
-must be set to use this plugin.
+temporary file systems (/tmp and /dev/shm) for each job.
 .RE
 .IP
 
