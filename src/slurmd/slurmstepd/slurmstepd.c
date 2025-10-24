@@ -95,6 +95,8 @@
 
 #include "src/stepmgr/stepmgr.h"
 
+#define DEF_CONMGR_THREAD_COUNT 4
+
 static int _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			    slurm_msg_t **_msg);
 
@@ -438,7 +440,7 @@ extern int main(int argc, char **argv)
 	/* Receive job parameters from the slurmd */
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &msg);
 
-	conmgr_init(0, 0);
+	conmgr_init(0, DEF_CONMGR_THREAD_COUNT, 0);
 
 	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);

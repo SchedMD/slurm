@@ -396,10 +396,12 @@ typedef enum {
 /*
  * Initialise global connection manager
  * IN thread_count - number of thread workers to run
+ * IN default_thread_count - number of default thread workers to run
  * IN max_connections - max number of connections or 0 for default
  * WARNING: Never queue as work for conmgr or call from work run by conmgr.
  */
-extern void conmgr_init(int thread_count, int max_connections);
+extern void conmgr_init(int thread_count, int default_thread_count,
+			int max_connections);
 /* WARNING: Never queue as work for conmgr or call from work run by conmgr. */
 extern void conmgr_fini(void);
 

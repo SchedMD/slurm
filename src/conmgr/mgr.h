@@ -588,9 +588,10 @@ extern void workers_shutdown(void);
 /*
  * Initialize worker threads
  * IN count - number of workers to add
+ * IN default_count - default number of workers to add
  * Note: Caller must hold conmgr lock
  */
-extern void workers_init(int count);
+extern void workers_init(int count, int default_count);
 
 /*
  * Release worker threads
