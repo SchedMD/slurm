@@ -3017,6 +3017,115 @@ extern int gres_node_config_pack(buf_t *buffer)
 	return rc;
 }
 
+static int _add_to_gres_conf_list(gres_slurmd_conf_t *conf, char *node_name)
+{
+	slurm_gres_context_t *gres_ctx;
+	bool new_has_file;
+	bool orig_has_file;
+
+	if (!conf->count)
+		goto empty;
+
+	log_flag(GRES, "Node:%s Gres:%s Type:%s UniqueId:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+		 node_name, conf->name, conf->type_name, conf->unique_id,
+		 gres_flags2str(conf->config_flags), conf->cpus, conf->cpu_cnt,
+		 conf->count, conf->links);
+
+	if (!(gres_ctx = _find_context_by_id(conf->plugin_id))) {
+		/*
+		 * GresPlugins is inconsistently configured.
+		 * Not a fatal error, but skip this data.
+		 */
+		error("%s: No plugin configured to process GRES data from node %s (Name:%s Type:%s PluginID:%u Count:%"PRIu64")",
+		      __func__, node_name, conf->name, conf->type_name,
+		      conf->plugin_id, conf->count);
+		return SLURM_ERROR;
+	}
+
+	if (xstrcmp(gres_ctx->gres_name, conf->name)) {
+		/*
+		 * Should have been caught in
+		 * gres_init()
+		 */
+		error("%s: gres/%s duplicate plugin ID with %s, unable to process",
+		      __func__, conf->name,
+		      gres_ctx->gres_name);
+		return SLURM_ERROR;
+	}
+	new_has_file = conf->config_flags & GRES_CONF_HAS_FILE;
+	orig_has_file = gres_ctx->config_flags & GRES_CONF_HAS_FILE;
+	if (orig_has_file && !new_has_file && conf->count) {
+		error("%s: gres/%s lacks \"File=\" parameter for node %s",
+		      __func__, conf->name, node_name);
+		conf->config_flags |= GRES_CONF_HAS_FILE;
+	}
+	if (new_has_file && (conf->count > MAX_GRES_BITMAP) &&
+	    !gres_id_shared(conf->config_flags)) {
+		/*
+		 * Avoid over-subscribing memory with
+		 * huge bitmaps
+		 */
+		error("%s: gres/%s has \"File=\" plus very large "
+		      "\"Count\" (%"PRIu64") for node %s, "
+		      "resetting value to %d",
+		      __func__, conf->name, conf->count,
+		      node_name, MAX_GRES_BITMAP);
+		conf->count = MAX_GRES_BITMAP;
+	}
+
+	/*
+	 * If one node in the bunch said a gres has removed
+	 * GRES_CONF_ONE_SHARING then remove it from the
+	 * context.
+	 */
+	if ((gres_ctx->config_flags & GRES_CONF_LOADED) &&
+	    gres_id_shared(conf->config_flags)) {
+		bool gc_one_sharing =
+			gres_ctx->config_flags & GRES_CONF_ONE_SHARING;
+		bool got_one_sharing =
+			conf->config_flags & GRES_CONF_ONE_SHARING;
+		if (gc_one_sharing == got_one_sharing) {
+		} else if (!gc_one_sharing && got_one_sharing) {
+			log_flag(GRES, "gres/%s was already set up to share all ignoring one_sharing from %s",
+				 conf->name, node_name);
+			conf->config_flags &= ~GRES_CONF_ONE_SHARING;
+		} else if (!got_one_sharing) {
+			log_flag(GRES, "gres/%s was already set up to only share one, but we just found the opposite from %s. Removing flag.",
+				 conf->name, node_name);
+			gres_ctx->config_flags &= ~GRES_CONF_ONE_SHARING;
+		}
+	}
+
+	/*
+	 * If we read in from state we want to take the slurmd's view
+	 * over our state.
+	 */
+	if (gres_ctx->config_flags & GRES_CONF_FROM_STATE)
+		gres_ctx->config_flags = conf->config_flags;
+	else
+		gres_ctx->config_flags |= conf->config_flags;
+
+	/*
+	 * On the slurmctld we need to load the plugins to
+	 * correctly set env vars.  We want to call this only
+	 * after we have the config_flags so we can tell if we
+	 * are CountOnly or not.
+	 */
+	if (!(gres_ctx->config_flags & GRES_CONF_LOADED)) {
+		(void) _load_plugin(gres_ctx);
+		gres_ctx->config_flags |= GRES_CONF_LOADED;
+	}
+empty:
+	if (gres_links_validate(conf->links) < -1) {
+		error("%s: Ignoring invalid Links=%s for Name=%s",
+		      __func__, conf->links, conf->name);
+		xfree(conf->links);
+	}
+	list_append(gres_conf_list, conf);
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Unpack this node's configuration from a buffer (built/packed by slurmd)
  * IN/OUT buffer - message buffer to unpack
@@ -3025,16 +3134,10 @@ extern int gres_node_config_pack(buf_t *buffer)
 extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 {
 	int i, rc = SLURM_SUCCESS;
-	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0;
-	uint64_t count64 = 0;
+	uint32_t magic = 0;
 	uint16_t rec_cnt = 0, protocol_version = 0;
-	uint32_t config_flags = 0;
-	char *tmp_cpus = NULL, *tmp_links = NULL, *tmp_name = NULL;
-	char *tmp_type = NULL;
-	char *tmp_unique_id = NULL;
-	gres_slurmd_conf_t *p;
+	gres_slurmd_conf_t *conf = NULL;
 	bool locked = false;
-	slurm_gres_context_t *gres_ctx;
 
 	xassert(gres_context_cnt >= 0);
 
@@ -3057,147 +3160,26 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		goto unpack_error;
 	}
 	for (i = 0; i < rec_cnt; i++) {
-		bool new_has_file;
-		bool orig_has_file;
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 
-			safe_unpack64(&count64, buffer);
-			safe_unpack32(&cpu_cnt, buffer);
-			safe_unpack32(&config_flags, buffer);
-			safe_unpack32(&plugin_id, buffer);
-			safe_unpackstr(&tmp_cpus, buffer);
-			safe_unpackstr(&tmp_links, buffer);
-			safe_unpackstr(&tmp_name, buffer);
-			safe_unpackstr(&tmp_type, buffer);
-			safe_unpackstr(&tmp_unique_id, buffer);
+			conf = xmalloc(sizeof(gres_slurmd_conf_t));
+			safe_unpack64(&conf->count, buffer);
+			safe_unpack32(&conf->cpu_cnt, buffer);
+			safe_unpack32(&conf->config_flags, buffer);
+			safe_unpack32(&conf->plugin_id, buffer);
+			safe_unpackstr(&conf->cpus, buffer);
+			safe_unpackstr(&conf->links, buffer);
+			safe_unpackstr(&conf->name, buffer);
+			safe_unpackstr(&conf->type_name, buffer);
+			safe_unpackstr(&conf->unique_id, buffer);
 		}
 
-		if (!count64)
-			goto empty;
-
-		log_flag(GRES, "Node:%s Gres:%s Type:%s UniqueId:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
-			 node_name, tmp_name, tmp_type, tmp_unique_id,
-			 gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
-			 count64, tmp_links);
-
-		if (!(gres_ctx = _find_context_by_id(plugin_id))) {
-			/*
-			 * GresPlugins is inconsistently configured.
-			 * Not a fatal error, but skip this data.
-			 */
-			error("%s: No plugin configured to process GRES data from node %s (Name:%s Type:%s PluginID:%u Count:%"PRIu64")",
-			      __func__, node_name, tmp_name, tmp_type,
-			      plugin_id, count64);
-			xfree(tmp_cpus);
-			xfree(tmp_links);
-			xfree(tmp_name);
-			xfree(tmp_type);
-			xfree(tmp_unique_id);
-			continue;
-		}
-
-		if (xstrcmp(gres_ctx->gres_name, tmp_name)) {
-			/*
-			 * Should have been caught in
-			 * gres_init()
-			 */
-			error("%s: gres/%s duplicate plugin ID with %s, unable to process",
-			      __func__, tmp_name,
-			      gres_ctx->gres_name);
-			continue;
-		}
-		new_has_file = config_flags & GRES_CONF_HAS_FILE;
-		orig_has_file = gres_ctx->config_flags &
-			GRES_CONF_HAS_FILE;
-		if (orig_has_file && !new_has_file && count64) {
-			error("%s: gres/%s lacks \"File=\" parameter for node %s",
-			      __func__, tmp_name, node_name);
-			config_flags |= GRES_CONF_HAS_FILE;
-		}
-		if (new_has_file && (count64 > MAX_GRES_BITMAP) &&
-		    !gres_id_shared(config_flags)) {
-			/*
-			 * Avoid over-subscribing memory with
-			 * huge bitmaps
-			 */
-			error("%s: gres/%s has \"File=\" plus very large "
-			      "\"Count\" (%"PRIu64") for node %s, "
-			      "resetting value to %d",
-			      __func__, tmp_name, count64,
-			      node_name, MAX_GRES_BITMAP);
-			count64 = MAX_GRES_BITMAP;
-		}
-
-		/*
-		 * If one node in the bunch said a gres has removed
-		 * GRES_CONF_ONE_SHARING then remove it from the
-		 * context.
-		 */
-		if ((gres_ctx->config_flags & GRES_CONF_LOADED) &&
-		    gres_id_shared(config_flags))  {
-			bool gc_one_sharing =
-				gres_ctx->config_flags &
-				GRES_CONF_ONE_SHARING;
-			bool got_one_sharing =
-				config_flags & GRES_CONF_ONE_SHARING;
-			if (gc_one_sharing == got_one_sharing) {
-			} else if (!gc_one_sharing && got_one_sharing) {
-				log_flag(GRES, "gres/%s was already set up to share all ignoring one_sharing from %s",
-					 tmp_name, node_name);
-				config_flags &= ~GRES_CONF_ONE_SHARING;
-			} else if (!got_one_sharing) {
-				log_flag(GRES, "gres/%s was already set up to only share one, but we just found the opposite from %s. Removing flag.",
-					 tmp_name, node_name);
-				gres_ctx->config_flags &=
-					~GRES_CONF_ONE_SHARING;
-			}
-		}
-
-		/*
-		 * If we read in from state we want to take the slurmd's view
-		 * over our state.
-		 */
-		if (gres_ctx->config_flags & GRES_CONF_FROM_STATE)
-			gres_ctx->config_flags = config_flags;
-		else
-			gres_ctx->config_flags |= config_flags;
-
-		/*
-		 * On the slurmctld we need to load the plugins to
-		 * correctly set env vars.  We want to call this only
-		 * after we have the config_flags so we can tell if we
-		 * are CountOnly or not.
-		 */
-		if (!(gres_ctx->config_flags &
-		      GRES_CONF_LOADED)) {
-			(void)_load_plugin(gres_ctx);
-			gres_ctx->config_flags |=
-				GRES_CONF_LOADED;
-		}
-	empty:
-		p = xmalloc(sizeof(gres_slurmd_conf_t));
-		p->config_flags = config_flags;
-		p->count = count64;
-		p->cpu_cnt = cpu_cnt;
-		p->cpus = tmp_cpus;
-		tmp_cpus = NULL;	/* Nothing left to xfree */
-		p->links = tmp_links;
-		tmp_links = NULL;	/* Nothing left to xfree */
-		p->name = tmp_name;     /* Preserve for accounting! */
-		p->type_name = tmp_type;
-		tmp_type = NULL;	/* Nothing left to xfree */
-		p->plugin_id = plugin_id;
-		p->unique_id = tmp_unique_id;
-		tmp_unique_id = NULL;
-		if (gres_links_validate(p->links) < -1) {
-			error("%s: Ignoring invalid Links=%s for Name=%s",
-			      __func__, p->links, p->name);
-			xfree(p->links);
-		}
-		list_append(gres_conf_list, p);
+		if (conf && _add_to_gres_conf_list(conf, node_name))
+			destroy_gres_slurmd_conf(conf);
+		conf = NULL;
 	}
 
 	slurm_mutex_unlock(&gres_context_lock);
@@ -3205,10 +3187,9 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 
 unpack_error:
 	error("%s: unpack error from node %s", __func__, node_name);
-	xfree(tmp_cpus);
-	xfree(tmp_links);
-	xfree(tmp_name);
-	xfree(tmp_type);
+	if (conf)
+		destroy_gres_slurmd_conf(conf);
+
 	if (locked)
 		slurm_mutex_unlock(&gres_context_lock);
 	return SLURM_ERROR;
