@@ -921,7 +921,7 @@ Arbitrary descriptive string.
 \fBContiguous\fR={yes|no}
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
-Only the Slurm administrator or root can change this parameter.
+Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
@@ -938,21 +938,30 @@ Change the CPUsPerTask job's value.
 
 .TP
 \fBDeadline\fR=<\fItime_spec\fR>
-It accepts times of the form \fIHH:MM:SS\fR to specify a deadline to a job at
-a specific time of day (seconds are optional).
-You may also specify \fImidnight\fR, \fInoon\fR, \fIelevenses\fR (11 AM),
-\fIfika\fR (3 PM) or \fIteatime\fR (4 PM) and you can have a time\-of\-day
-suffixed with \fIAM\fR or \fIPM\fR for a deadline in the morning or the evening.
-You can specify a deadline for the job with
-a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR or \fIMM.DD.YY\fR,
-or a date and time as \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR. You can also
-give times like \fInow + count time\-units\fR, where the time\-units
-can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, \fIdays\fR,
-or \fIweeks\fR and you can tell Slurm to put a deadline for tomorrow with
-the keyword \fItomorrow\fR.
-The specified deadline must be later than the current time.
-Only pending jobs can have the deadline updated.
-Only the Slurm administrator or root can change this parameter.
+Remove the job if no ending is possible before this deadline
+(start > (deadline \- time[\-min])). Note that if neither \fBDefaultTime\fR nor
+\fBMaxTime\fR are configured on the partition the job is in, the job will
+need to specify some form of time limit (TimeMin/TimeLimit) if a deadline
+is to be used. The specified deadline must be later than
+the current time. Only pending jobs can have the deadline updated. Only a
+Slurm administrator or root can change this parameter.
+
+Valid time formats are:
+.br
+HH:MM[:SS] [AM|PM]
+.br
+MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
+.br
+MM/DD[/YY]\-HH:MM[:SS]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
+.br
+now[+\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.br
+midnight, elevenses (11 AM), noon, fika (3 PM), teatime (4 PM), or tomorrow
+
+One or more time strings may be specified (e.g., 'tomorrow18:00'). If there is
+a conflict between them, the last one will silently take precedence.
 .IP
 
 .TP
@@ -1143,7 +1152,7 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
 \fBMinTmpDiskNode\fR=<\fImegabytes\fR>
 Set the job's minimum temporary disk space required per node to the specified value.
-Only the Slurm administrator or root can change this parameter.
+Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
@@ -1242,7 +1251,7 @@ Explicitly setting a job's priority clears any previously set nice value and
 removes the priority/multifactor plugin's ability to manage a job's priority.
 In order to restore the priority/multifactor plugin's ability to manage a
 job's priority, hold and then release the job.
-Only the Slurm administrator or root can increase job's priority.
+Only a Slurm administrator or root can increase job's priority.
 .IP
 
 .TP
@@ -1429,7 +1438,7 @@ the current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
 Note that incrementing or decrementing the time limit for a job array is only
 allowed before the job array has been split into more than one job record.
-Only the Slurm administrator or root can increase job's TimeLimit.
+Only a Slurm administrator or root can increase job's TimeLimit.
 .IP
 
 .TP

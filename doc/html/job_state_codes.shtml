@@ -38,7 +38,7 @@ For more visibility into the job states and flags, set
 <tr><td><code>COMPLETED</code></td><td>completed execution successfully;
 	finished with an <a href="job_exit_code.html">exit code</a> of zero on all nodes</td></tr>
 <tr><td><code>DEADLINE</code></td><td>terminated due to reaching the latest
-	acceptable start time specified for the job</td></tr>
+	start time that allows the job to reach its deadline given its TimeLimit</td></tr>
 <tr><td><code>FAILED</code></td><td>completed execution unsuccessfully;
 	non-zero <a href="job_exit_code.html">exit code</a> or other failure condition</td></tr>
 <tr><td><code>NODE_FAIL</code></td><td>terminated due to node failure</td></tr>
