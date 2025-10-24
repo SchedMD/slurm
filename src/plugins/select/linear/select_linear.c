@@ -444,6 +444,11 @@ static void _build_select_struct(job_record_t *job_ptr, bitstr_t *bitmap)
 		job_resrcs_ptr->cpus[j] = node_cpus;
 		total_cpus += node_cpus;
 
+		/* Set the start lower if any nodes have a lower version */
+		if (job_ptr->start_protocol_ver > node_ptr->protocol_version)
+			job_ptr->start_protocol_ver =
+				node_ptr->protocol_version;
+
 		/*
 		 * Get the usable cpu count for cpu_array_value and memory
 		 * allocation. Steps in the job will use this to know how
