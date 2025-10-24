@@ -82,7 +82,7 @@ static pthread_mutex_t g_namespace_context_lock = PTHREAD_MUTEX_INITIALIZER;
  *
  * RET - slurm error code
  */
-extern int namespace_init(void)
+extern int namespace_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "namespace";
@@ -131,7 +131,7 @@ done:
 	xfree(type);
 
 	if (retval != SLURM_SUCCESS)
-		namespace_fini();
+		namespace_g_fini();
 
 	return retval;
 }
@@ -141,7 +141,7 @@ done:
  *
  * RET - slurm error code
  */
-extern int namespace_fini(void)
+extern int namespace_g_fini(void)
 {
 	int i, rc = SLURM_SUCCESS;
 

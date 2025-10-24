@@ -1100,7 +1100,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (task_g_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
-	    (namespace_init() != SLURM_SUCCESS) ||
+	    (namespace_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 

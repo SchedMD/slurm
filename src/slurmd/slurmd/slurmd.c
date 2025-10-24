@@ -475,7 +475,7 @@ main (int argc, char **argv)
 		fatal("Unable to initialize acct_gather_conf");
 	if (jobacct_gather_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize jobacct_gather");
-	if (namespace_init() < 0)
+	if (namespace_g_init() < 0)
 		fatal("Unable to initialize job_container plugin.");
 	if (namespace_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
@@ -2793,7 +2793,7 @@ _slurmd_fini(void)
 	}
 	cpu_freq_fini();
 	_resource_spec_fini();
-	namespace_fini();
+	namespace_g_fini();
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	cgroup_g_fini();

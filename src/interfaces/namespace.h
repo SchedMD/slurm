@@ -44,14 +44,14 @@
  *
  * RET - slurm error code
  */
-extern int namespace_init(void);
+extern int namespace_g_init(void);
 
 /*
  * Terminate the job namespace plugin, free memory.
  *
  * RET - slurm error code
  */
-extern int namespace_fini(void);
+extern int namespace_g_fini(void);
 
 /*
  **************************************************************************
