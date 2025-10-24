@@ -174,6 +174,8 @@ typedef struct slurm_conf_node {
 	char *addresses;
 	char *bcast_addresses;
 	char *gres;		/* arbitrary list of node's generic resources */
+	char *gres_conf; /* '+' delimited gres_slurmd_conf_t's as
+			  * comma-separated key=value pairs. */
 	char *feature;		/* arbitrary list of node's features */
 	char *port_str;
 	uint32_t cpu_bind;	/* default CPU bind type */
