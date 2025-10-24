@@ -249,6 +249,7 @@ static list_t *reconfig_reqs = NULL;
 static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
+static bool reply_async = false;
 
 /* Array of listening sockets */
 static struct {
@@ -284,8 +285,9 @@ static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void         _send_future_cloud_to_db();
-static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
-				void *arg);
+static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg);
+static void _on_extract(conmgr_callback_args_t conmgr_args, void *conn,
+			void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
 static void *       _slurmctld_background(void *no_data);
@@ -767,6 +769,12 @@ int main(int argc, char **argv)
 	http_switch_init();
 	if (http_switch_http_enabled())
 		http_init();
+
+	/* Check if asynchronous reples are enabled */
+	if (xstrcasestr(slurm_conf.slurmctld_params, "enable_async_reply")) {
+		reply_async = true;
+		log_flag(NET, "Asynchronous replies are enabled");
+	}
 
 	/* open ports must happen after become_slurm_user() */
 	_open_ports();
@@ -1607,6 +1615,7 @@ static void _on_primary_finish(conmgr_fd_t *con, void *arg)
 static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 {
 	int rc = SLURM_SUCCESS;
+	slurmctld_rpc_t *this_rpc = NULL;
 
 	if (!msg->auth_ids_set)
 		fatal_abort("this should never happen");
@@ -1622,6 +1631,15 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	if (rate_limit_exceeded(msg)) {
 		rc = slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
 		FREE_NULL_MSG(msg);
+	} else if (!(this_rpc = find_rpc(msg->msg_type))) {
+		error("[%s] Received invalid RPC msg_type[0x%x]=%s",
+		      conmgr_fd_get_name(con), (uint32_t) msg->msg_type,
+		      rpc_num2string(msg->msg_type));
+		rc = slurm_send_rc_msg(msg, EINVAL);
+		FREE_NULL_MSG(msg);
+		return rc;
+	} else if (reply_async && !this_rpc->keep_msg) {
+		rc = _service_connection(this_rpc, msg);
 	} else {
 		/*
 		 * The fd will be extracted from conmgr, so the conmgr
@@ -1629,9 +1647,9 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		 */
 		conmgr_fd_free_ref(&msg->conmgr_con);
 
-		if ((rc = conmgr_queue_extract_con_fd(
-			     con, _service_connection,
-			     XSTRINGIFY(_service_connection), msg)))
+		if ((rc = conmgr_queue_extract_con_fd(con, _on_extract,
+						      XSTRINGIFY(_on_extract),
+								 msg)))
 			error("%s: [%s] Extracting FDs failed: %s",
 			      __func__, conmgr_fd_get_name(con),
 			      slurm_strerror(rc));
@@ -1857,18 +1875,83 @@ static void _open_ports(void)
 }
 
 /*
- * _service_connection - service the RPC
- * IN/OUT arg - really just the connection's file descriptor, freed
- *	upon completion
- * RET - NULL
+ * Service connection msg
+ * IN this_rpc - resolve RPC type
+ * IN msg - message to service (takes ownership)
  */
-static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
-				void *arg)
+static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
 {
-	int rc;
+	int rc = EINVAL;
+
+	xassert(this_rpc);
+	xassert(msg);
+	xassert(msg->msg_type == this_rpc->msg_type);
+	/* msg must only have 1 connection pointer populated */
+	xassert((((uint64_t) (bool) msg->conmgr_con) +
+		 ((uint64_t) (bool) msg->pcon) +
+		 ((uint64_t) (bool) msg->conn)) == 1);
+
+	server_thread_incr();
+
+	if (!(rc = rpc_enqueue(this_rpc, msg))) {
+		/* do nothing */
+	} else if ((rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) ||
+		   (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP)) {
+		rc = slurm_send_rc_msg(msg, rc);
+		FREE_NULL_CONN(msg->conn);
+		FREE_NULL_MSG(msg);
+	} else {
+		/* directly process the request */
+		slurmctld_req(msg, this_rpc);
+		rc = SLURM_SUCCESS;
+
+		if (!this_rpc->keep_msg) {
+			xassert(!msg->pcon);
+
+			if (msg->conmgr_con)
+				log_flag(NET, "%s: [%s] destroyed connection for incoming RPC msg_type[0x%x]=%s rc=%s",
+					__func__,
+					conmgr_con_get_name(msg->conmgr_con),
+					(uint32_t) msg->msg_type,
+					rpc_num2string(msg->msg_type),
+					slurm_strerror(rc));
+			else if (msg->conn)
+				log_flag(NET, "%s: [fd:%d] destroyed connection for incoming RPC msg_type[0x%x]=%s rc=%s",
+					__func__,
+					conn_g_get_fd(msg->conn),
+					(uint32_t) msg->msg_type,
+					rpc_num2string(msg->msg_type),
+					slurm_strerror(rc));
+
+			FREE_NULL_CONN(msg->conn);
+			FREE_NULL_MSG(msg);
+		}
+	}
+
+	server_thread_decr();
+	return rc;
+}
+
+/*
+ * Handle post-extracted connection
+ * IN conmgr_args - conmgr work callback args
+ * IN conn - pointer to extracted connection
+ * IN/OUT arg - pointer to slurm_msg_t
+ */
+static void _on_extract(conmgr_callback_args_t conmgr_args, void *conn,
+			void *arg)
+{
 	slurm_msg_t *msg = arg;
-	slurmctld_rpc_t *this_rpc = NULL;
-	conmgr_fd_ref_t *conmgr_con = NULL;
+	slurmctld_rpc_t *this_rpc = find_rpc(msg->msg_type);
+
+	/* _on_primary_msg() already verified resolving msg_type */
+	xassert(this_rpc);
+
+	/* should never be a persistent connection */
+	xassert(!msg->pcon);
+
+	/* already released in _on_primary_msg() */
+	xassert(!msg->conmgr_con);
 
 	/* Set connection into message for replies */
 	xassert(!msg->conn || (msg->conn == conn));
@@ -1876,56 +1959,13 @@ static void _service_connection(conmgr_callback_args_t conmgr_args, void *conn,
 
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
 		log_flag(NET, "%s: [%s] connection work cancelled",
-			 __func__, conmgr_con_get_name(msg->conmgr_con));
-		goto invalid;
-	}
-
-	/*
-	 * The fd was extracted from conmgr, so the conmgr connection is
-	 * invalid.
-	 */
-	SWAP(conmgr_con, msg->conmgr_con);
-
-	server_thread_incr();
-
-	if (!(rc = rpc_enqueue(msg))) {
-		conmgr_fd_free_ref(&conmgr_con);
-		server_thread_decr();
+			 __func__, conmgr_fd_get_name(conmgr_args.con));
+		FREE_NULL_CONN(msg->conn);
+		FREE_NULL_MSG(msg);
 		return;
 	}
 
-	if (rc == SLURMCTLD_COMMUNICATIONS_BACKOFF) {
-		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_BACKOFF);
-	} else if (rc == SLURMCTLD_COMMUNICATIONS_HARD_DROP) {
-		slurm_send_rc_msg(msg, SLURMCTLD_COMMUNICATIONS_HARD_DROP);
-	} else if ((this_rpc = find_rpc(msg->msg_type))) {
-		/* directly process the request */
-		slurmctld_req(msg, this_rpc);
-	} else {
-		error("[%s] Received invalid RPC msg_type[0x%x]=%s",
-		      conmgr_con_get_name(conmgr_con), (uint32_t) msg->msg_type,
-		      rpc_num2string(msg->msg_type));
-		slurm_send_rc_msg(msg, EINVAL);
-	}
-
-	if (!this_rpc || !this_rpc->keep_msg) {
-		FREE_NULL_CONN(msg->conn);
-		log_flag(NET, "%s: [%s] destroyed connection for incoming RPC msg_type[0x%x]=%s",
-			__func__, conmgr_con_get_name(conmgr_con),
-			(uint32_t) msg->msg_type,
-			rpc_num2string(msg->msg_type));
-		FREE_NULL_MSG(msg);
-	}
-
-	conmgr_fd_free_ref(&conmgr_con);
-	server_thread_decr();
-	return;
-
-invalid:
-	/* Cleanup for invalid RPC */
-	FREE_NULL_CONN(msg->conn);
-	FREE_NULL_MSG(msg);
-	conmgr_fd_free_ref(&conmgr_con);
+	(void) _service_connection(this_rpc, msg);
 }
 
 /* Decrement slurmctld thread count (as applies to thread limit) */
