@@ -150,13 +150,38 @@ COMPLETING or DOWN state.
 
 .TP
 \fBdelete\fR <\fISPECIFICATION\fR>
-Delete the entry with the specified \fISPECIFICATION\fP.
-The three \fISPECIFICATION\fP choices are \fINodeName=<nodelist>\fP,
-\fIPartitionName=<name>\fP and \fIReservationName=<name>\fP. Only dynamic nodes
-that have no running jobs and that are not part of a reservation can be
-deleted. Reservations and partitions should have no associated jobs at the time
-of their deletion (modify the jobs first). If the specified partition is in
-use, the request is denied.
+Delete the entry with the specified \fISPECIFICATION\fR. The following
+\fISPECIFICATION\fR choices are available:
+.IP
+
+.RS
+.TP
+\fBNodeName\fR=<\fInodelist\fR>
+Node name or list of node names to delete. Only dynamic nodes that have no
+running jobs and that are not part of a reservation can be deleted.
+
+Multiple node names may be specified using simple node range expressions
+(e.g., "lx[10\-20]"). Nodesets can also be specified by themselves or mixed with
+node range expressions, using a comma as a list separator. If the keyword "ALL"
+is specified alone, then the delete will be attempted against all the nodes in
+the local cluster (and will fail on nodes ineligible for deletion).
+.IP
+.TP
+\fBPartitionName\fR=<\fIname\fR>
+Name of partition to delete. The partition must have no associated jobs running
+or pending, otherwise the request is denied. It may be helpful to modify pending
+jobs or to change the partition state ahead of time.
+Note that if this partition is present in the \fBslurm.conf\fR file, it will be
+recreated the next time the controller is restarted or reconfigured.
+.IP
+.TP
+\fBReservationName\fR=<\fIname\fR>
+Name of reservation to delete. The reservation must have no associated jobs,
+otherwise the request is denied. It may be helpful to modify pending jobs to not
+use the reservation. You can also plan the reservation's deletion ahead of time
+by setting an \fBEndTime\fR or \fBDuration\fR.
+.IP
+.RE
 .IP
 
 .TP
@@ -1866,18 +1891,6 @@ Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 .IP
 
-.SH "NODES \- SPECIFICATIONS FOR DELETE COMMAND"
-
-.TP
-\fBNodeName\fR=<\fInodes\fR>
-Identify the node(s) to be deleted. Multiple node names may be specified using
-simple node range expressions (e.g. "lx[10\-20]"). Nodesets can also be
-specified by themselves or mixed with node range expressions, using a comma as
-a list separator. If the keyword "ALL" is specified alone, then the update
-will be attempted against all the nodes in the local cluster. This specification
-is required.
-.IP
-
 .SH "NODES \- SPECIFICATIONS FOR SHOW COMMAND"
 
 .TP
@@ -2090,7 +2103,7 @@ configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, ene
 accounting for nodes is disabled.
 .RE
 
-.SH "PARTITIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS"
+.SH "PARTITIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
 .TP
 \fBAllocNodes\fR=<\fIname\fR>
@@ -2443,14 +2456,13 @@ Updates affect new jobs and not existing jobs.
 See the slurm.conf man page for more information.
 .IP
 
-.SH "RESERVATIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS"
+.SH "RESERVATIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
 .TP
 \fBReservationName\fR=<\fIname\fR>
-Identify the name of the reservation to be created, updated, or deleted.
-This parameter is required for update and is the only parameter for delete.
-For create, if you do not want to give a reservation name, use
-"scontrol create reservation ..." and a name will be created automatically.
+Identify the name of the reservation to be created or updated.
+This parameter is required for update. If omitted when creating a reservation,
+a name will be created automatically (e.g., "scontrol create reservation ...").
 .IP
 
 .TP
