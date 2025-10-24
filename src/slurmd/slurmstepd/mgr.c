@@ -1213,7 +1213,11 @@ static int _run_prolog_epilog(bool is_epilog)
 	memset(&job_env, 0, sizeof(job_env));
 
 	tmp_list = gres_g_prep_build_env(step->job_gres_list, step->node_list);
-	gres_g_prep_set_env(&job_env.gres_job_env, tmp_list, step->nodeid);
+	/*
+	 * When ran in the stepd we only have gres information from the cred
+	 * about this node so all index's should be 0
+	 */
+	gres_g_prep_set_env(&job_env.gres_job_env, tmp_list, 0);
 	FREE_NULL_LIST(tmp_list);
 
 	job_env.jobid = step->step_id.job_id;
@@ -2159,7 +2163,6 @@ static int _fork_all_tasks(bool *io_initialized)
 
 		if (step->tres_freq && (getuid() == (uid_t) 0)) {
 			gres_g_step_hardware_init(step->step_gres_list,
-						  step->nodeid,
 						  step->tres_freq);
 		} else if (step->tres_freq) {
 			error("%s: invalid permissions: cannot initialize GRES hardware unless Slurmd was started as root",
