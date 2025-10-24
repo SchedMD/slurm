@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_jcconf.c - parse job_container.conf configuration file.
+ *  read_jcconf.c - parse namespace.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
@@ -48,7 +48,9 @@
 
 #include "read_jcconf.h"
 
-char *tmpfs_conf_file = "job_container.conf";
+char *tmpfs_conf_file = NULL;
+char *job_container_conf_file = "job_container.conf";
+char *namespace_conf_file = "namespace.conf";
 
 static slurm_jc_conf_t slurm_jc_conf;
 static buf_t *slurm_jc_conf_buf = NULL;
@@ -80,21 +82,21 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 
 static void _dump_jc_conf(void)
 {
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_JOB_CONT))
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NAMESPACE))
 		return;
 
-	log_flag(JOB_CONT, "AutoBasePath=%d", slurm_jc_conf.auto_basepath);
-	log_flag(JOB_CONT, "BasePath=%s", slurm_jc_conf.basepath);
-	log_flag(JOB_CONT, "Dirs=%s", slurm_jc_conf.dirs);
-	log_flag(JOB_CONT, "EntireStepInNS=%d",
+	log_flag(NAMESPACE, "AutoBasePath=%d", slurm_jc_conf.auto_basepath);
+	log_flag(NAMESPACE, "BasePath=%s", slurm_jc_conf.basepath);
+	log_flag(NAMESPACE, "Dirs=%s", slurm_jc_conf.dirs);
+	log_flag(NAMESPACE, "EntireStepInNS=%d",
 		 slurm_jc_conf.entire_step_in_ns);
-	log_flag(JOB_CONT, "Shared=%d", slurm_jc_conf.shared);
-	log_flag(JOB_CONT, "InitScript=%s", slurm_jc_conf.initscript);
-	log_flag(JOB_CONT, "CloneNSScript=%s", slurm_jc_conf.clonensscript);
-	log_flag(JOB_CONT, "CloneNSEpilog=%s", slurm_jc_conf.clonensepilog);
-	log_flag(JOB_CONT, "CloneNSScript_Wait=%u",
+	log_flag(NAMESPACE, "Shared=%d", slurm_jc_conf.shared);
+	log_flag(NAMESPACE, "InitScript=%s", slurm_jc_conf.initscript);
+	log_flag(NAMESPACE, "CloneNSScript=%s", slurm_jc_conf.clonensscript);
+	log_flag(NAMESPACE, "CloneNSEpilog=%s", slurm_jc_conf.clonensepilog);
+	log_flag(NAMESPACE, "CloneNSScript_Wait=%u",
 		 slurm_jc_conf.clonensscript_wait);
-	log_flag(JOB_CONT, "CloneNSEpilog_Wait=%u",
+	log_flag(NAMESPACE, "CloneNSEpilog_Wait=%u",
 		 slurm_jc_conf.clonensepilog_wait);
 }
 
@@ -227,20 +229,33 @@ static int _read_slurm_jc_conf(void)
 
 	xassert(conf->node_name);
 
-	conf_path = get_extra_conf_path(tmpfs_conf_file);
+	conf_path = get_extra_conf_path(namespace_conf_file);
 
-	if ((!conf_path) || (stat(conf_path, &buf) == -1)) {
-		error("No %s file", tmpfs_conf_file);
-		rc = ENOENT;
-		goto end_it;
+	if (stat(conf_path, &buf) == -1) {
+		warning("Could not find %s file", namespace_conf_file);
+		xfree(conf_path);
+		conf_path = get_extra_conf_path(job_container_conf_file);
+		if (stat(conf_path, &buf) == -1) {
+			error("Could not find %s or %s file",
+				namespace_conf_file, job_container_conf_file);
+			rc = ENOENT;
+			goto end_it;
+		} else {
+			tmpfs_conf_file = job_container_conf_file;
+			warning("Found %s file, please rename to %s.",
+				job_container_conf_file, namespace_conf_file);
+		}
+	} else {
+		tmpfs_conf_file = namespace_conf_file;
 	}
 
 	debug("Reading %s file %s", tmpfs_conf_file, conf_path);
 	tbl = s_p_hashtbl_create(options);
-	if (s_p_parse_file(tbl, NULL, conf_path, 0, NULL) == SLURM_ERROR) {
+
+	if (s_p_parse_file(tbl, NULL, conf_path, 0, NULL)) {
 		fatal("Could not open/read/parse %s file %s",
 		      tmpfs_conf_file, conf_path);
-		goto end_it;
+			goto end_it;
 	}
 
 	/* If AutoBasePath wasn't set on the line see if it was on the global */

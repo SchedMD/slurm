@@ -68,8 +68,9 @@
 
 #include "src/interfaces/acct_gather.h"
 #include "src/interfaces/auth.h"
-#include "src/interfaces/job_container.h"
+#include "src/interfaces/cgroup.h"
 #include "src/interfaces/jobacct_gather.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
@@ -1255,27 +1256,154 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_get_ns_fd_helper(void *object, void *arg)
+{
+	ns_fd_map_t *entry = (ns_fd_map_t *) object;
+	int *fd = (int *) arg;
+
+#if defined(__linux__)
+	if (entry->type != CLONE_NEWNS)
+		return SLURM_SUCCESS;
+#endif
+
+	safe_write(*fd, &entry->fd, sizeof(entry->fd));
+	send_fd_over_socket(*fd, entry->fd);
+
+	debug("sent fd: %d", entry->fd);
+	return SLURM_SUCCESS;
+
+rwfail:
+	return SLURM_ERROR;
+}
+
 static int _handle_get_ns_fd(int fd, uid_t uid, pid_t remote_pid)
 {
-	int ns_fd = -1;
+	list_t *ns_map = list_create(NULL);
 
 	debug("%s: for job %u:%u",
 	      __func__, step->step_id.job_id, step->step_id.step_id);
 
-	ns_fd = container_g_join_external(step->step_id.job_id);
+	if (namespace_g_join_external(step->step_id.job_id, ns_map) < 0)
+		goto rwfail;
 
-	/*
-	 * We need to send the ns_fd as an int first to let the receiver know if
-	 * we have a valid fd or not as receive_fd_over_socket() will always
-	 * try to set up the fd no matter if it is valid or not.
-	 */
-	safe_write(fd, &ns_fd, sizeof(ns_fd));
-	if (ns_fd > 0)
-		send_fd_over_socket(fd, ns_fd);
+	list_for_each_ro(ns_map, _handle_get_ns_fd_helper, &fd);
 
-	debug("sent fd: %d", ns_fd);
 	debug("leaving %s", __func__);
 
+	list_destroy(ns_map);
+	return SLURM_SUCCESS;
+rwfail:
+	list_destroy(ns_map);
+	return SLURM_ERROR;
+}
+
+static int _handle_get_ns_fds_helper(void *object, void *arg)
+{
+	ns_fd_map_t *entry = (ns_fd_map_t *) object;
+	int *fd = (int *) arg;
+
+	safe_write(*fd, &entry->type, sizeof(entry->type));
+	send_fd_over_socket(*fd, entry->fd);
+
+	debug("sent fd: %d", entry->fd);
+	return SLURM_SUCCESS;
+
+rwfail:
+	return SLURM_ERROR;
+}
+
+static int _handle_get_ns_fds(int fd, uid_t uid, pid_t remote_pid)
+{
+	list_t *ns_map = list_create(NULL);
+	int ns_count = 0;
+
+	debug("%s: for job %u:%u",
+	      __func__, step->step_id.job_id, step->step_id.step_id);
+
+	if (namespace_g_join_external(step->step_id.job_id, ns_map) < 0)
+		goto rwfail;
+
+	ns_count = list_count(ns_map);
+	safe_write(fd, &ns_count, sizeof(ns_count));
+	list_for_each_ro(ns_map, _handle_get_ns_fds_helper, &fd);
+
+	debug("leaving %s", __func__);
+
+	list_destroy(ns_map);
+	return SLURM_SUCCESS;
+rwfail:
+	list_destroy(ns_map);
+	return SLURM_ERROR;
+}
+
+static int _handle_get_bpf_token(int fd, uid_t uid, pid_t remote_pid)
+{
+	int rc = SLURM_ERROR;
+	int bpf_fd, token_fd = -1;
+
+	/* If I am not the extern step do not reply */
+	if (step->step_id.step_id != SLURM_EXTERN_CONT) {
+		safe_write(fd, &rc, sizeof(int));
+		return SLURM_ERROR;
+	}
+
+	token_fd = cgroup_g_bpf_get_token();
+
+	/* BPF token is already generated, just send it */
+	if (token_fd != -1) {
+		rc = 0;
+		safe_write(fd, &rc, sizeof(int));
+		send_fd_over_socket(fd, token_fd);
+	} else { /* Generate BPF token */
+		rc = 1;
+		safe_write(fd, &rc, sizeof(int));
+
+		/* Receive fsopen rc*/
+		safe_read(fd, &rc, sizeof(int));
+		if (rc != SLURM_SUCCESS) {
+			error("bpf fsopen failure");
+			goto fini;
+		}
+
+		/* Receive the fd for fsopen */
+		bpf_fd = receive_fd_over_socket(fd);
+		if (bpf_fd < 0) {
+			rc = SLURM_ERROR;
+			error("Problems receiving the bpf fsopen fd");
+			safe_write(fd, &rc, sizeof(int));
+			goto fini;
+		}
+
+		/* Do the fsconfig for the bpf fs and send the rc */
+		rc = cgroup_g_bpf_fsconfig(bpf_fd);
+		close(bpf_fd);
+		safe_write(fd, &rc, sizeof(int));
+		if (rc != SLURM_SUCCESS) {
+			error("bpf fsconfig failure");
+			goto fini;
+		}
+
+		/* Receive token_creation rc*/
+		safe_read(fd, &rc, sizeof(int));
+		if (rc != SLURM_SUCCESS) {
+			error("bpf token creation failure");
+			goto fini;
+		}
+
+		/* BPF token fd reception*/
+		token_fd = receive_fd_over_socket(fd);
+		if (token_fd < 0) {
+			rc = SLURM_ERROR;
+			error("Problems receiving the bpf token fd");
+		} else {
+			rc = SLURM_SUCCESS;
+			/* Save the token in the cgroup plugin */
+			cgroup_g_bpf_set_token(token_fd);
+		}
+		/* Send rc for the reception of the token fd*/
+		safe_write(fd, &rc, sizeof(int));
+	}
+fini:
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;
@@ -2281,6 +2409,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.func = _handle_attach,
 	},
 	{
+		.msg_type = REQUEST_GET_BPF_TOKEN,
+		.from_slurmd = true,
+		.func = _handle_get_bpf_token,
+	},
+	{
 		.msg_type = REQUEST_PID_IN_CONTAINER,
 		.func = _handle_pid_in_container,
 	},
@@ -2353,6 +2486,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_GET_NS_FD,
 		.from_job_owner = true,
 		.func = _handle_get_ns_fd,
+	},
+	{
+		.msg_type = REQUEST_GET_NS_FDS,
+		.from_job_owner = true,
+		.func = _handle_get_ns_fds,
 	},
 	{
 		.msg_type = REQUEST_GETHOST,

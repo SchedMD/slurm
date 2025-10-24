@@ -383,7 +383,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->job_comp_port       = conf->job_comp_port;
 	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
 	conf_ptr->job_comp_user       = xstrdup(conf->job_comp_user);
-	conf_ptr->job_container_plugin = xstrdup(conf->job_container_plugin);
+	conf_ptr->namespace_plugin = xstrdup(conf->namespace_plugin);
 
 	conf_ptr->job_defaults_list   =
 		job_defaults_copy(conf->job_defaults_list);

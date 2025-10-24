@@ -51,7 +51,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/job_container.h"
+#include "src/interfaces/namespace.h"
 #include "src/slurmd/slurmd/req.h"
 
 #include "prep_script.h"

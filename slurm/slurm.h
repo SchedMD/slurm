@@ -2651,6 +2651,11 @@ typedef struct will_run_response_msg {
 	time_t start_time;	/* time when job will start */
 } will_run_response_msg_t;
 
+typedef struct {
+	int type;
+	int fd;
+} ns_fd_map_t;
+
 /*********************************/
 
 /*
@@ -2850,7 +2855,7 @@ typedef struct reservation_name_msg {
 #define DEBUG_FLAG_INTERCONNECT	SLURM_BIT(22) /* AcctGatherInterconnect
 						    * plugin */
 #define DEBUG_FLAG_GLOB_SILENCE SLURM_BIT(23) /* Suppresses the glob error */
-#define DEBUG_FLAG_JOB_CONT 	SLURM_BIT(24) /* JobContainer plugin */
+#define DEBUG_FLAG_NAMESPACE SLURM_BIT(24) /* Namespace plugin */
 #define	DEBUG_FLAG_AUDIT_RPCS	SLURM_BIT(25) /* Audit RPCs */
 #define DEBUG_FLAG_PROTOCOL	SLURM_BIT(26) /* Communication protocol */
 #define DEBUG_FLAG_BACKFILL_MAP	SLURM_BIT(27) /* Backfill scheduler node
@@ -3054,7 +3059,7 @@ typedef struct {
 	uint32_t job_comp_port;	/* job completion storage port */
 	char *job_comp_type;	/* job completion storage type */
 	char *job_comp_user;	/* job completion storage user */
-	char *job_container_plugin; /* job container plugin type */
+	char *namespace_plugin; /* job container plugin type */
 	list_t *job_defaults_list; /* list of job_defaults_t elements */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failure */

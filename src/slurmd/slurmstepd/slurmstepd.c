@@ -73,9 +73,9 @@
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
-#include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/select.h"
@@ -472,6 +472,14 @@ extern int main(int argc, char **argv)
 		goto ending;
 	}
 
+	/* Setup the bp token if needed */
+	if (slurm_cgroup_conf.constrain_devices &&
+	    namespace_g_setup_bpf_token(step)) {
+		rc = SLURM_ERROR;
+		_send_fail_to_slurmd(STDOUT_FILENO, rc);
+		goto ending;
+	}
+
 	_init_stepd_stepmgr();
 
 	/* fork handlers cause mutexes on some global data structures
@@ -569,8 +577,8 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 		cleanup_container();
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
-		if (container_g_stepd_delete(step->step_id.job_id))
-			error("container_g_stepd_delete(%u): %m",
+		if (namespace_g_stepd_delete(&step->step_id))
+			error("namespace_g_stepd_delete(%u): %m",
 			      step->step_id.job_id);
 	}
 
@@ -844,6 +852,17 @@ static void _process_cmdline(int argc, char **argv)
 		(void) poll(NULL, 0, -1);
 		exit(0);
 	}
+	if ((argc == 3) && !xstrcmp(argv[1], "ns_infinity")) {
+		char *buf;
+		init_setproctitle(argc, argv);
+		buf = xstrdup_printf("[%s:%s]", argv[2], "namespace");
+		setproctitle("%s", buf);
+		xfree(buf);
+		set_oom_adj(STEPD_OOM_ADJ);
+		(void) poll(NULL, 0, -1);
+		fini_setproctitle();
+		exit(0);
+	}
 	if ((argc == 3) && !xstrcmp(argv[1], "spank")) {
 		if (_handle_spank_mode(argc, argv) < 0)
 			exit(1);
@@ -1102,7 +1121,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	    (task_g_init() != SLURM_SUCCESS) ||
 	    (jobacct_gather_init() != SLURM_SUCCESS) ||
 	    (acct_gather_profile_init() != SLURM_SUCCESS) ||
-	    (job_container_init() != SLURM_SUCCESS) ||
+	    (namespace_g_init() != SLURM_SUCCESS) ||
 	    (topology_g_init() != SLURM_SUCCESS))
 		fatal("Couldn't load all plugins");
 
@@ -1119,7 +1138,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		fatal("Failed to read acct_gather conf from slurmd");
 
 	/* Receive job_container information from slurmd */
-	if (container_g_recv_stepd(sock) != SLURM_SUCCESS)
+	if (namespace_g_recv_stepd(sock) != SLURM_SUCCESS)
 		fatal("Failed to read job_container.conf from slurmd.");
 
 	/* Receive GRES information from slurmd */

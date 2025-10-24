@@ -531,6 +531,33 @@ extern char *cgroup_p_get_scope_path(void)
 	return NULL;
 }
 
+extern int cgroup_p_bpf_fsopen(void)
+{
+	error("BPF functions not supported with cgroup/v1");
+	return SLURM_ERROR;
+}
+
+extern int cgroup_p_bpf_fsconfig(int fd)
+{
+	error("BPF functions not supported with cgroup/v1");
+	return SLURM_ERROR;
+}
+
+extern int cgroup_p_bpf_create_token(int fd)
+{
+	error("BPF functions not supported with cgroup/v1");
+	return SLURM_ERROR;
+}
+
+extern void cgroup_p_bpf_set_token(int fd)
+{
+}
+
+extern int cgroup_p_bpf_get_token()
+{
+	return SLURM_SUCCESS;
+}
+
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;

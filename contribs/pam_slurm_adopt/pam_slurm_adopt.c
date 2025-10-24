@@ -110,6 +110,17 @@ static void _init_opts(void)
 	opts.join_container = true;
 }
 
+static int _join_ns_helper(void *object, void *arg)
+{
+	ns_fd_map_t *entry = (ns_fd_map_t *) object;
+
+	if (setns(entry->fd, entry->type)) {
+		error("setns(%d, %d) failed: %m", entry->fd, entry->type);
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+
 /* Adopts a process into the given step. Returns SLURM_SUCCESS if
  * opts.action_adopt_failure == CALLERID_ACTION_ALLOW or if the process was
  * successfully adopted.
@@ -165,22 +176,18 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 	}
 
 	if (opts.join_container) {
-		int ns_fd = stepd_get_namespace_fd(fd, protocol_version);
-		if (ns_fd == -1) {
-			error("stepd_get_ns_fd failed");
+		list_t *fd_map = list_create(NULL);
+		int rc = stepd_get_namespace_fd(fd, protocol_version);
+		if (rc == -1) {
+			error("stepd_get_ns_fds failed");
 			rc = SLURM_ERROR;
-		} else if (ns_fd == 0) {
+		} else if (rc == 0) {
 			debug2("No ns_fd given back, expected if not running with a job_container plugin that supports namespace mounting");
 		} else {
-			/*
-			 * No need to specify the type of namespace, rely on
-			 * slurm to give us the right one
-			 */
-			if (setns(ns_fd, 0)) {
-				error("setns() failed: %m");
+			if (list_for_each(fd_map, _join_ns_helper, NULL))
 				rc = SLURM_ERROR;
-			}
 		}
+		list_destroy(fd_map);
 	}
 
 	close(fd);

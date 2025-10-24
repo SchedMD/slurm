@@ -1561,7 +1561,7 @@ extern int read_slurm_conf(int recover)
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
 	char *old_cred_type = xstrdup(slurm_conf.cred_type);
-	char *old_job_container_type = xstrdup(slurm_conf.job_container_plugin);
+	char *old_namespace_type = xstrdup(slurm_conf.namespace_plugin);
 	char *old_preempt_type = xstrdup(slurm_conf.preempt_type);
 	char *old_sched_type = xstrdup(slurm_conf.schedtype);
 	char *old_select_type = xstrdup(slurm_conf.select_type);
@@ -1814,11 +1814,11 @@ extern int read_slurm_conf(int recover)
 		rc = ESLURM_INVALID_CRED_TYPE_CHANGE;
 	}
 
-	if (xstrcmp(old_job_container_type, slurm_conf.job_container_plugin)) {
-		xfree(slurm_conf.job_container_plugin);
-		slurm_conf.job_container_plugin = old_job_container_type;
-		old_job_container_type = NULL;
-		rc =  ESLURM_INVALID_JOB_CONTAINER_CHANGE;
+	if (xstrcmp(old_namespace_type, slurm_conf.namespace_plugin)) {
+		xfree(slurm_conf.namespace_plugin);
+		slurm_conf.namespace_plugin = old_namespace_type;
+		old_namespace_type = NULL;
+		rc = ESLURM_INVALID_NAMESPACE_CHANGE;
 	}
 
 	if (xstrcmp(old_sched_type, slurm_conf.schedtype)) {
@@ -1887,7 +1887,7 @@ end_it:
 	xfree(old_auth_type);
 	xfree(old_bb_type);
 	xfree(old_cred_type);
-	xfree(old_job_container_type);
+	xfree(old_namespace_type);
 	xfree(old_preempt_type);
 	xfree(old_sched_type);
 	xfree(old_select_type);

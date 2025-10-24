@@ -98,9 +98,9 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
-#include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/switch.h"
@@ -920,8 +920,8 @@ static int _spank_user_child(void *ignored)
 	struct priv_state sprivs;
 	int rc = 0;
 
-	if (container_g_join(&step->step_id, step->uid, false)) {
-		error("container_g_join(%u): %m", step->step_id.job_id);
+	if (namespace_g_join(&step->step_id, step->uid, false)) {
+		error("namespace_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
 
@@ -949,8 +949,8 @@ static int _spank_task_post_fork_child(void *arg)
 {
 	int id = *(int *) arg;
 
-	if (container_g_join(&step->step_id, step->uid, false)) {
-		error("container_g_join(%u): %m", step->step_id.job_id);
+	if (namespace_g_join(&step->step_id, step->uid, false)) {
+		error("namespace_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
 
@@ -964,8 +964,8 @@ static int _spank_task_exit_child(void *arg)
 {
 	int id = *(int *) arg;
 
-	if (container_g_join(&step->step_id, step->uid, false)) {
-		error("container_g_join(%u): %m", step->step_id.job_id);
+	if (namespace_g_join(&step->step_id, step->uid, false)) {
+		error("namespace_g_join(%u): %m", step->step_id.job_id);
 		_exit(-1);
 	}
 
@@ -1079,11 +1079,11 @@ fail:
 static bool _need_join_container()
 {
 	/*
-	 * To avoid potential problems with the job_container/tmpfs and
-	 * home_xauthority, don't join the container to create the xauthority
+	 * To avoid potential problems with namespace plugins and
+	 * home_xauthority, don't join the namespace to create the xauthority
 	 * file when it is set.
 	 */
-	if ((xstrcasestr(slurm_conf.job_container_plugin, "tmpfs")) &&
+	if ((slurm_conf.namespace_plugin) &&
 	    (!xstrcasestr(slurm_conf.x11_params, "home_xauthority"))) {
 		return true;
 	}
@@ -1141,7 +1141,7 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *ignore
 		return;
 	}
 	if ((cpid = fork()) == 0) {
-		if (container_g_join(&step->step_id, step->uid, false) !=
+		if (namespace_g_join(&step->step_id, step->uid, false) !=
 		    SLURM_SUCCESS) {
 			error("%s: cannot join container",
 			      __func__);
@@ -1260,7 +1260,7 @@ static void _setup_x11_child(int to_parent[2])
 {
 	uint32_t len = 0;
 
-	if (container_g_join(&step->step_id, step->uid, false) !=
+	if (namespace_g_join(&step->step_id, step->uid, false) !=
 	    SLURM_SUCCESS) {
 		safe_write(to_parent[1], &len, sizeof(len));
 		_exit(1);
@@ -1319,8 +1319,8 @@ static int _spawn_job_container(void)
 	int rc = SLURM_SUCCESS;
 	uint32_t jobid = step->step_id.job_id;
 
-	if (container_g_stepd_create(jobid, step)) {
-		error("%s: container_g_stepd_create(%u): %m", __func__, jobid);
+	if (namespace_g_stepd_create(step)) {
+		error("%s: namespace_g_stepd_create(%u): %m", __func__, jobid);
 		return SLURM_ERROR;
 	}
 
@@ -1848,8 +1848,8 @@ static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
 
 	if (!(step->flags & LAUNCH_NO_ALLOC)) {
 		/* Add job's pid to job container, if a normal job */
-		if (container_g_join(&step->step_id, step->uid, false)) {
-			error("container_g_join failed: %u",
+		if (namespace_g_join(&step->step_id, step->uid, false)) {
+			error("namespace_g_join failed: %u",
 			      step->step_id.job_id);
 			exit(1);
 		}
@@ -3127,7 +3127,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 		struct priv_state sprivs;
 		char *argv[2];
 
-		/* container_g_join needs to be called in the
+		/* namespace_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
 		   condition where if this process makes a file or
 		   detacts itself from a child before we add the pid
@@ -3136,8 +3136,8 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 		/* Ignore system processes */
 		if ((step->step_id.job_id != 0) &&
 		    !(step->flags & LAUNCH_NO_ALLOC) &&
-		    (container_g_join(&step->step_id, step->uid, false)))
-			error("container_g_join(%u): %m", step->step_id.job_id);
+		    (namespace_g_join(&step->step_id, step->uid, false)))
+			error("namespace_g_join(%u): %m", step->step_id.job_id);
 
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;

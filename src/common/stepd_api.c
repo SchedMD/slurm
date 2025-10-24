@@ -66,6 +66,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
+#include "src/interfaces/cgroup.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/jobacct_gather.h"
@@ -375,6 +376,147 @@ extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version)
 
 rwfail:
 	return -1;
+}
+
+/*
+ * Request to get required information to enter the namespace of a job.
+ *
+ * On success returns number of elements in the fd_map list and populates the
+ * list.
+ * Returns SLURM_ERROR on failure
+ */
+extern int stepd_get_namespace_fds(int fd, list_t *fd_map,
+				   uint16_t protocol_version)
+{
+	int req = REQUEST_GET_NS_FDS;
+	unsigned int fd_count = 0;
+
+	xassert(fd_map);
+
+	debug("entering %s", __func__);
+	safe_write(fd, &req, sizeof(req));
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_read(fd, &fd_count, sizeof(fd_count));
+		if (fd_count == 0)
+			return fd_count;
+
+		for (int i = 0; i < fd_count; i++) {
+			ns_fd_map_t *tmp_map = xmalloc(sizeof(*tmp_map));
+			safe_read(fd, &tmp_map->type, sizeof(tmp_map->type));
+			tmp_map->fd = receive_fd_over_socket(fd);
+			list_append(fd_map, tmp_map);
+			tmp_map = NULL;
+		}
+	} else {
+		error("%s: bad protocol version %hu",
+		      __func__, protocol_version);
+		goto rwfail;
+	}
+
+	return fd_count;
+
+rwfail:
+	list_destroy(fd_map);
+	return SLURM_ERROR;
+}
+
+/*
+ * Retrieves the BPF token fd from the connected socket, this socket needs to be
+ * connected to the external slurmstepd as it is the only one capable of
+ * providing it.
+ *
+ * Return SLURM_ERROR on failure and the BPF token fd on success.
+ */
+extern int stepd_get_bpf_token(int fd, uint16_t protocol_version)
+{
+	int req = REQUEST_GET_BPF_TOKEN;
+	int token_fd = -1, bpf_fd = -1;
+	int rc;
+
+#ifndef HAVE_BPF_TOKENS
+	error("Cannot request a BPF token as slurm is not compiled with support for it");
+	return SLURM_ERROR;
+#endif
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_write(fd, &req, sizeof(req));
+
+		/*
+		 * Receive rc that indicates whether token needs to be
+		 * generated or not.
+		 */
+		safe_read(fd, &rc, sizeof(rc));
+		if (rc == SLURM_ERROR) {
+			error("Contacted a non-external step");
+			goto rwfail;
+		}
+
+		if (rc == 0) { /* BPF token is generated */
+			/* Receive bpf token fd */
+			token_fd = receive_fd_over_socket(fd);
+			if (token_fd < 0) {
+				error("Problems receiving the BPF token fd");
+				goto rwfail;
+			}
+		} else { /* Generate BPF token */
+
+			/* Call fsopen for "bpf" */
+			bpf_fd = cgroup_g_bpf_fsopen();
+			if (bpf_fd < 0) {
+				rc = SLURM_ERROR;
+				safe_write(fd, &rc, sizeof(int));
+				error("bpf fsopen failure");
+				goto rwfail;
+			}
+
+			/* Send rc for fsopen and the fd itself */
+			rc = SLURM_SUCCESS;
+			safe_write(fd, &rc, sizeof(int));
+			send_fd_over_socket(fd, bpf_fd);
+
+			/* Receive rc indicating fsconfig success */
+			safe_read(fd, &rc, sizeof(rc));
+			if (rc != SLURM_SUCCESS) {
+				error("bpf fsconfig failure");
+				goto rwfail;
+			}
+
+			/* BPF token generation */
+			token_fd = cgroup_g_bpf_create_token(bpf_fd);
+			if (token_fd == SLURM_ERROR) {
+				rc = SLURM_ERROR;
+				safe_write(fd, &rc, sizeof(int));
+				goto rwfail;
+			}
+
+			/* Send RC for token create as well as the token fd */
+			rc = SLURM_SUCCESS;
+			safe_write(fd, &rc, sizeof(int));
+			send_fd_over_socket(fd, token_fd);
+
+			/* This indicates proper token fd receive */
+			safe_read(fd, &rc, sizeof(rc));
+			if (rc != SLURM_SUCCESS) {
+				error("Problems sending the bpf token fd");
+				goto rwfail;
+			}
+		}
+	} else {
+		error("%s: bad protocol version %hu",
+		      __func__, protocol_version);
+		goto rwfail;
+	}
+
+	close(bpf_fd);
+	return token_fd;
+
+rwfail:
+	if (bpf_fd > 0)
+		close(bpf_fd);
+	if (token_fd > 0)
+		close(token_fd);
+	return SLURM_ERROR;
 }
 
 /*

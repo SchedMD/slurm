@@ -27,6 +27,9 @@
 /* Define if you are compiling with bpf. */
 #undef HAVE_BPF
 
+/* Define if you are compiling with bpf tokens. */
+#undef HAVE_BPF_TOKENS
+
 /* Define to 1 if you have the 'cfmakeraw' function. */
 #undef HAVE_CFMAKERAW
 

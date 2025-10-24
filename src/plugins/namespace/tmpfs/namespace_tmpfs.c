@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_container_tmpfs.c - Define job container plugin for creating a
+ *  namespace_tmpfs.c - Define job namespace plugin for creating a
  *			    temporary mount namespace for the job, to provide
  *			    quota based access to node local memory.
  *****************************************************************************
@@ -64,7 +64,7 @@
 
 #include "read_jcconf.h"
 
-static int _create_ns(uint32_t job_id, stepd_step_rec_t *step);
+static int _create_ns(stepd_step_rec_t *step);
 static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
@@ -73,8 +73,8 @@ extern slurmd_conf_t *conf __attribute__((weak_import));
 slurmd_conf_t *conf = NULL;
 #endif
 
-const char plugin_name[]        = "job_container tmpfs plugin";
-const char plugin_type[]        = "job_container/tmpfs";
+const char plugin_name[]        = "namespace tmpfs plugin";
+const char plugin_type[]        = "namespace/tmpfs";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static slurm_jc_conf_t *jc_conf = NULL;
@@ -119,8 +119,8 @@ static int _restore_ns(list_t *steps, const char *d_name)
 		return SLURM_SUCCESS;
 	}
 
-	/* here we think this is a job container */
-	log_flag(JOB_CONT, "determine if job %lu is still running", job_id);
+	/* here we think this is a job namespace */
+	log_flag(NAMESPACE, "determine if job %lu is still running", job_id);
 	stepd = list_find_first(steps, (ListFindF)_find_step_in_list, &job_id);
 	if (!stepd) {
 		debug("%s: Job %lu not found, deleting the namespace",
@@ -154,7 +154,7 @@ extern int init(void)
 			return SLURM_ERROR;
 		}
 		plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
-		debug("job_container.conf read successfully");
+		debug("namespace.conf read successfully");
 	}
 
 	debug("%s loaded", plugin_name);
@@ -176,7 +176,7 @@ extern void fini(void)
 #endif
 }
 
-extern int container_p_restore(char *dir_name, bool recover)
+extern int namespace_p_restore(char *dir_name, bool recover)
 {
 	DIR *dp;
 	struct dirent *ep;
@@ -232,7 +232,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 	FREE_NULL_LIST(steps);
 
 	if (rc)
-		error("Encountered an error while restoring job containers.");
+		error("Encountered an error while restoring job namespaces.");
 
 	return rc;
 }
@@ -338,7 +338,7 @@ static int _clean_job_basepath(uint32_t job_id)
 				   jc_conf->basepath, ep->d_name);
 			/* it is not important if this fails */
 			if (umount2(path, MNT_DETACH))
-				log_flag(JOB_CONT, "failed to unmount %s for job %u",
+				log_flag(NAMESPACE, "failed to unmount %s for job %u",
 					 path, job_id);
 			xfree(path);
 		}
@@ -385,7 +385,7 @@ static char **_setup_script_env(uint32_t job_id,
 	return env;
 }
 
-static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
+static int _create_ns(stepd_step_rec_t *step)
 {
 	char *job_mount = NULL, *ns_holder = NULL, *src_bind = NULL;
 	char *result = NULL;
@@ -395,7 +395,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 	sem_t *sem2 = NULL;
 	pid_t cpid;
 
-	_create_paths(job_id, &job_mount, &ns_holder, &src_bind);
+	_create_paths(step->step_id.job_id, &job_mount, &ns_holder, &src_bind);
 
 	if (mkdir(job_mount, 0700)) {
 		error("%s: mkdir %s failed: %m", __func__, job_mount);
@@ -437,12 +437,12 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			.script_type = "initscript",
 			.status = &rc,
 		};
-		run_command_args.env = _setup_script_env(job_id, step,
-							 src_bind, NULL);
+		run_command_args.env = _setup_script_env(step->step_id.job_id,
+							 step, src_bind, NULL);
 
-		log_flag(JOB_CONT, "Running InitScript");
+		log_flag(NAMESPACE, "Running InitScript");
 		result = run_command(&run_command_args);
-		log_flag(JOB_CONT, "InitScript rc: %d, stdout: %s", rc, result);
+		log_flag(NAMESPACE, "InitScript rc: %d, stdout: %s", rc, result);
 		env_array_free(run_command_args.env);
 		xfree(result);
 
@@ -575,7 +575,7 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 		 * but not the basepath mount.
 		 */
 		if (jc_conf->shared)
-			rc = _clean_job_basepath(job_id);
+			rc = _clean_job_basepath(step->step_id.job_id);
 		else
 			rc = umount2(job_mount, MNT_DETACH);
 		if (rc) {
@@ -642,12 +642,13 @@ static int _create_ns(uint32_t job_id, stepd_step_rec_t *step)
 			.script_type = "clonensscript",
 			.status = &rc,
 		};
-		run_command_args.env = _setup_script_env(job_id, step,
-							 src_bind, ns_holder);
+		run_command_args.env = _setup_script_env(step->step_id.job_id,
+							 step, src_bind,
+							 ns_holder);
 
-		log_flag(JOB_CONT, "Running CloneNSScript");
+		log_flag(NAMESPACE, "Running CloneNSScript");
 		result = run_command(&run_command_args);
-		log_flag(JOB_CONT, "CloneNSScript rc: %d, stdout: %s",
+		log_flag(NAMESPACE, "CloneNSScript rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);
 		env_array_free(run_command_args.env);
@@ -690,12 +691,12 @@ end_it:
 	return rc;
 }
 
-extern int container_p_join_external(uint32_t job_id)
+extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 
 	if (plugin_disabled)
-		return SLURM_SUCCESS;
+		return 0;
 
 	_create_paths(job_id, &job_mount, &ns_holder, NULL);
 
@@ -705,13 +706,20 @@ extern int container_p_join_external(uint32_t job_id)
 			error("%s: %m", __func__);
 	}
 
+	if (step_ns_fd) {
+		ns_fd_map_t *tmp_map = xmalloc(sizeof(ns_fd_map_t));
+		tmp_map->type = CLONE_NEWNS;
+		tmp_map->fd = step_ns_fd;
+		list_append(ns_map, tmp_map);
+	}
+
 	xfree(job_mount);
 	xfree(ns_holder);
 
-	return step_ns_fd;
+	return list_count(ns_map);
 }
 
-extern int container_p_join(slurm_step_id_t *step_id, uid_t uid,
+extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 			    bool step_create)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
@@ -760,7 +768,7 @@ extern int container_p_join(slurm_step_id_t *step_id, uid_t uid,
 		xfree(ns_holder);
 		return SLURM_ERROR;
 	} else {
-		log_flag(JOB_CONT, "job %u entered namespace", step_id->job_id);
+		log_flag(NAMESPACE, "job %u entered namespace", step_id->job_id);
 	}
 
 	close(fd);
@@ -789,10 +797,10 @@ static int _delete_ns(uint32_t job_id)
 		};
 		run_command_args.env = _setup_script_env(job_id, NULL,
 							 NULL, ns_holder);
-		log_flag(JOB_CONT, "Running CloneNSEpilog");
+		log_flag(NAMESPACE, "Running CloneNSEpilog");
 		result = run_command(&run_command_args);
 		env_array_free(run_command_args.env);
-		log_flag(JOB_CONT, "CloneNSEpilog rc: %d, stdout: %s",
+		log_flag(NAMESPACE, "CloneNSEpilog rc: %d, stdout: %s",
 			 rc, result);
 		xfree(result);
 
@@ -811,7 +819,7 @@ static int _delete_ns(uint32_t job_id)
 	 */
 	if (step_ns_fd != -1) {
 		if (close(step_ns_fd))
-			log_flag(JOB_CONT, "job %u close step_ns_fd(%d) failed: %m",
+			log_flag(NAMESPACE, "job %u close step_ns_fd(%d) failed: %m",
 				 job_id, step_ns_fd);
 
 		else
@@ -826,7 +834,7 @@ static int _delete_ns(uint32_t job_id)
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
 		if ((errno == EINVAL) || (errno == ENOENT)) {
-			log_flag(JOB_CONT, "%s: umount2 %s failed: %m",
+			log_flag(NAMESPACE, "%s: umount2 %s failed: %m",
 				 __func__, ns_holder);
 		} else {
 			error("%s: umount2 %s failed: %m",
@@ -841,7 +849,7 @@ static int _delete_ns(uint32_t job_id)
 		error("%s: failed to remove %d files from %s",
 		      __func__, failures, job_mount);
 	if (umount2(job_mount, MNT_DETACH))
-		log_flag(JOB_CONT, "umount2: %s failed: %m", job_mount);
+		log_flag(NAMESPACE, "umount2: %s failed: %m", job_mount);
 	if (rmdir(job_mount))
 		error("rmdir %s failed: %m", job_mount);
 
@@ -851,23 +859,23 @@ static int _delete_ns(uint32_t job_id)
 	return SLURM_SUCCESS;
 }
 
-extern int container_p_stepd_create(uint32_t job_id, stepd_step_rec_t *step)
+extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
-	return _create_ns(job_id, step);
+	return _create_ns(step);
 }
 
-extern int container_p_stepd_delete(uint32_t job_id)
+extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
-	return _delete_ns(job_id);
+	return _delete_ns(step_id->job_id);
 }
 
-extern int container_p_send_stepd(int fd)
+extern int namespace_p_send_stepd(int fd)
 {
 	int len;
 	buf_t *buf;
@@ -887,7 +895,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int container_p_recv_stepd(int fd)
+extern int namespace_p_recv_stepd(int fd)
 {
 	int len;
 	buf_t *buf;
@@ -906,4 +914,16 @@ extern int container_p_recv_stepd(int fd)
 rwfail:
 	error("%s: failed", __func__);
 	return SLURM_ERROR;
+}
+
+extern bool namespace_p_can_bpf(stepd_step_rec_t *step)
+{
+	/* tmpfs plugin has nothing that could make the bpf call fail */
+	return true;
+}
+
+extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
+{
+	/* As we do not need the bpf token just return success */
+	return SLURM_SUCCESS;
 }

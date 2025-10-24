@@ -112,10 +112,10 @@
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 #include "src/interfaces/hash.h"
-#include "src/interfaces/job_container.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/mpi.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
@@ -477,9 +477,9 @@ main (int argc, char **argv)
 		fatal("Unable to initialize acct_gather_conf");
 	if (jobacct_gather_init() != SLURM_SUCCESS)
 		fatal("Unable to initialize jobacct_gather");
-	if (job_container_init() < 0)
-		fatal("Unable to initialize job_container plugin.");
-	if (container_g_restore(conf->spooldir, !conf->cleanstart))
+	if (namespace_g_init() < 0)
+		fatal("Unable to initialize namespace plugin.");
+	if (namespace_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
 	if (prep_g_init(NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize prep plugin");
@@ -2795,7 +2795,7 @@ _slurmd_fini(void)
 	}
 	cpu_freq_fini();
 	_resource_spec_fini();
-	job_container_fini();
+	namespace_g_fini();
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
 	cgroup_g_fini();

@@ -806,9 +806,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "JobCompUser", "%s", conf->job_comp_user);
 
-	add_key_pair(ret_list, "JobContainerType", "%s",
-		     conf->job_container_plugin);
-
 	add_key_pair_own(ret_list, "JobDefaults",
 			 job_defaults_str(conf->job_defaults_list));
 
@@ -879,6 +876,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	if (cluster_flags & CLUSTER_FLAG_MULTSD)
 		add_key_pair_bool(ret_list, "MULTIPLE_SLURMD", true);
+
+	add_key_pair(ret_list, "NamespaceType", "%s", conf->namespace_plugin);
 
 	add_key_pair(ret_list, "NEXT_JOB_ID", "%u", conf->next_job_id);
 

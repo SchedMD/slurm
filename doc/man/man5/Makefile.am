@@ -6,8 +6,8 @@ man5_MANS = \
 	cgroup.conf.5 \
 	gres.conf.5 \
 	helpers.conf.5 \
-	job_container.conf.5 \
 	mpi.conf.5 \
+	namespace.conf.5 \
 	oci.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
@@ -22,8 +22,8 @@ html_DATA = \
 	cgroup.conf.html \
 	gres.conf.html \
 	helpers.conf.html \
-	job_container.conf.html \
 	mpi.conf.html \
+	namespace.conf.html \
 	oci.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \

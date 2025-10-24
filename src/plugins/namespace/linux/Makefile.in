@@ -14,8 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for common/interfaces
-
+# Makefile for namespace/linux plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -94,10 +93,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-noinst_PROGRAMS = libcommon_interfaces.o$(EXEEXT) \
-	libslurmctld_interfaces.o$(EXEEXT) \
-	libslurmd_interfaces.o$(EXEEXT)
-subdir = src/interfaces
+subdir = src/plugins/namespace/linux
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -160,42 +156,45 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-PROGRAMS = $(noinst_PROGRAMS)
-LTLIBRARIES = $(noinst_LTLIBRARIES)
-libcommon_interfaces_la_LIBADD =
-am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
-	acct_gather.lo acct_gather_energy.lo acct_gather_filesystem.lo \
-	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
-	certgen.lo certmgr.lo cgroup.lo cli_filter.lo conn.lo cred.lo \
-	data_parser.lo gpu.lo gres.lo hash.lo http_parser.lo \
-	jobacct_gather.lo jobcomp.lo mcs.lo metrics.lo mpi.lo \
-	node_features.lo prep.lo priority.lo select.lo serializer.lo \
-	site_factor.lo switch.lo tls.lo topology.lo url_parser.lo
-libcommon_interfaces_la_OBJECTS =  \
-	$(am_libcommon_interfaces_la_OBJECTS)
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
+am__install_max = 40
+am__nobase_strip_setup = \
+  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
+am__nobase_strip = \
+  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
+am__nobase_list = $(am__nobase_strip_setup); \
+  for p in $$list; do echo "$$p $$p"; done | \
+  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
+  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
+    if (++n[$$2] == $(am__install_max)) \
+      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
+    END { for (dir in files) print dir, files[dir] }'
+am__base_list = \
+  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
+  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+am__uninstall_files_from_dir = { \
+  { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
+  || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
+       $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
+  }
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
+LTLIBRARIES = $(pkglib_LTLIBRARIES)
+namespace_linux_la_LIBADD =
+am_namespace_linux_la_OBJECTS = namespace_linux.lo read_nsconf.lo
+namespace_linux_la_OBJECTS = $(am_namespace_linux_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libslurmctld_interfaces_la_LIBADD =
-am_libslurmctld_interfaces_la_OBJECTS = burst_buffer.lo job_submit.lo \
-	preempt.lo sched_plugin.lo
-libslurmctld_interfaces_la_OBJECTS =  \
-	$(am_libslurmctld_interfaces_la_OBJECTS)
-libslurmd_interfaces_la_LIBADD =
-am_libslurmd_interfaces_la_OBJECTS = namespace.lo proctrack.lo task.lo
-libslurmd_interfaces_la_OBJECTS =  \
-	$(am_libslurmd_interfaces_la_OBJECTS)
-am_libcommon_interfaces_o_OBJECTS =
-libcommon_interfaces_o_OBJECTS = $(am_libcommon_interfaces_o_OBJECTS)
-libcommon_interfaces_o_LDADD = $(LDADD)
-am_libslurmctld_interfaces_o_OBJECTS =
-libslurmctld_interfaces_o_OBJECTS =  \
-	$(am_libslurmctld_interfaces_o_OBJECTS)
-libslurmctld_interfaces_o_LDADD = $(LDADD)
-am_libslurmd_interfaces_o_OBJECTS =
-libslurmd_interfaces_o_OBJECTS = $(am_libslurmd_interfaces_o_OBJECTS)
-libslurmd_interfaces_o_LDADD = $(LDADD)
+namespace_linux_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(namespace_linux_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -211,27 +210,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
-	./$(DEPDIR)/acct_gather.Plo ./$(DEPDIR)/acct_gather_energy.Plo \
-	./$(DEPDIR)/acct_gather_filesystem.Plo \
-	./$(DEPDIR)/acct_gather_interconnect.Plo \
-	./$(DEPDIR)/acct_gather_profile.Plo ./$(DEPDIR)/auth.Plo \
-	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/certgen.Plo \
-	./$(DEPDIR)/certmgr.Plo ./$(DEPDIR)/cgroup.Plo \
-	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/conn.Plo \
-	./$(DEPDIR)/cred.Plo ./$(DEPDIR)/data_parser.Plo \
-	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
-	./$(DEPDIR)/http_parser.Plo ./$(DEPDIR)/job_submit.Plo \
-	./$(DEPDIR)/jobacct_gather.Plo ./$(DEPDIR)/jobcomp.Plo \
-	./$(DEPDIR)/mcs.Plo ./$(DEPDIR)/metrics.Plo \
-	./$(DEPDIR)/mpi.Plo ./$(DEPDIR)/namespace.Plo \
-	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/preempt.Plo \
-	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/priority.Plo \
-	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/sched_plugin.Plo \
-	./$(DEPDIR)/select.Plo ./$(DEPDIR)/serializer.Plo \
-	./$(DEPDIR)/site_factor.Plo ./$(DEPDIR)/switch.Plo \
-	./$(DEPDIR)/task.Plo ./$(DEPDIR)/tls.Plo \
-	./$(DEPDIR)/topology.Plo ./$(DEPDIR)/url_parser.Plo
+am__depfiles_remade = ./$(DEPDIR)/namespace_linux.Plo \
+	./$(DEPDIR)/read_nsconf.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -251,12 +231,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libcommon_interfaces_la_SOURCES) \
-	$(libslurmctld_interfaces_la_SOURCES) \
-	$(libslurmd_interfaces_la_SOURCES) \
-	$(libcommon_interfaces_o_SOURCES) \
-	$(libslurmctld_interfaces_o_SOURCES) \
-	$(libslurmd_interfaces_o_SOURCES)
+SOURCES = $(namespace_linux_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -540,110 +515,11 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir)
-noinst_LTLIBRARIES = \
-	libcommon_interfaces.la \
-	libslurmctld_interfaces.la \
-	libslurmd_interfaces.la
-
-libcommon_interfaces_la_SOURCES = \
-	accounting_storage.c			\
-	accounting_storage.h			\
-	acct_gather.c				\
-	acct_gather.h				\
-	acct_gather_energy.c			\
-	acct_gather_energy.h			\
-	acct_gather_filesystem.c		\
-	acct_gather_filesystem.h		\
-	acct_gather_interconnect.c		\
-	acct_gather_interconnect.h		\
-	acct_gather_profile.c			\
-	acct_gather_profile.h			\
-	auth.c					\
-	auth.h					\
-	certgen.c				\
-	certgen.h				\
-	certmgr.c				\
-	certmgr.h				\
-	cgroup.c				\
-	cgroup.h				\
-	cli_filter.c				\
-	cli_filter.h				\
-	conn.c					\
-	conn.h					\
-	cred.h					\
-	cred.c					\
-	data_parser.c				\
-	data_parser.h				\
-	gpu.c					\
-	gpu.h					\
-	gres.c					\
-	gres.h					\
-	hash.c					\
-	hash.h					\
-	http_parser.c				\
-	http_parser.h				\
-	jobacct_gather.c			\
-	jobacct_gather.h			\
-	jobcomp.c				\
-	jobcomp.h				\
-	mcs.c					\
-	mcs.h					\
-	metrics.c				\
-	metrics.h				\
-	mpi.c					\
-	mpi.h					\
-	node_features.c				\
-	node_features.h				\
-	prep.c					\
-	prep.h					\
-	priority.c				\
-	priority.h				\
-	select.c				\
-	select.h				\
-	serializer.c				\
-	serializer.h				\
-	site_factor.c				\
-	site_factor.h				\
-	switch.c				\
-	switch.h				\
-	tls.c				        \
-	tls.h				        \
-	topology.c				\
-	topology.h                              \
-	url_parser.c                            \
-	url_parser.h
-
-libslurmctld_interfaces_la_SOURCES = \
-	burst_buffer.c	\
-	burst_buffer.h	\
-	job_submit.c	\
-	job_submit.h	\
-	preempt.c	\
-	preempt.h	\
-	sched_plugin.c	\
-	sched_plugin.h
-
-libslurmd_interfaces_la_SOURCES = \
-	namespace.c \
-	namespace.h \
-	proctrack.c \
-	proctrack.h \
-	task.c \
-	task.h
-
-
-# This was made so we could export all symbols from libcommon_interfaces
-# on multiple platforms
-libcommon_interfaces_o_SOURCES = 
-
-# This was made so we could export all symbols from libslurmctld_interfaces
-# on multiple platforms
-libslurmctld_interfaces_o_SOURCES = 
-
-# This was made so we could export all symbols from libslurmd_interfaces
-# on multiple platforms
-libslurmd_interfaces_o_SOURCES = 
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
+pkglib_LTLIBRARIES = namespace_linux.la
+namespace_linux_la_SOURCES = namespace_linux.c read_nsconf.c read_nsconf.h
+namespace_linux_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -657,9 +533,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/interfaces/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/namespace/linux/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/interfaces/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/namespace/linux/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -678,27 +554,41 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
-clean-noinstPROGRAMS:
-	$(am__rm_f) $(noinst_PROGRAMS)
-	test -z "$(EXEEXT)" || $(am__rm_f) $(noinst_PROGRAMS:$(EXEEXT)=)
+install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pkglibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pkglibdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(pkglibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(pkglibdir)"; \
+	}
 
-clean-noinstLTLIBRARIES:
-	-$(am__rm_f) $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; \
+uninstall-pkglibLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkglib_LTLIBRARIES)'; test -n "$(pkglibdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(pkglibdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(pkglibdir)/$$f"; \
+	done
+
+clean-pkglibLTLIBRARIES:
+	-$(am__rm_f) $(pkglib_LTLIBRARIES)
+	@list='$(pkglib_LTLIBRARIES)'; \
 	locs=`for p in $$list; do echo $$p; done | \
 	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
 	      sort -u`; \
 	echo rm -f $${locs}; \
 	$(am__rm_f) $${locs}
 
-libcommon_interfaces.la: $(libcommon_interfaces_la_OBJECTS) $(libcommon_interfaces_la_DEPENDENCIES) $(EXTRA_libcommon_interfaces_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libcommon_interfaces_la_OBJECTS) $(libcommon_interfaces_la_LIBADD) $(LIBS)
-
-libslurmctld_interfaces.la: $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_DEPENDENCIES) $(EXTRA_libslurmctld_interfaces_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_LIBADD) $(LIBS)
-
-libslurmd_interfaces.la: $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_DEPENDENCIES) $(EXTRA_libslurmd_interfaces_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_LIBADD) $(LIBS)
+namespace_linux.la: $(namespace_linux_la_OBJECTS) $(namespace_linux_la_DEPENDENCIES) $(EXTRA_namespace_linux_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(namespace_linux_la_LINK) -rpath $(pkglibdir) $(namespace_linux_la_OBJECTS) $(namespace_linux_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -706,46 +596,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_filesystem.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_interconnect.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_profile.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auth.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/certgen.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/certmgr.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conn.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gpu.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_parser.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_submit.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mcs.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/metrics.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/namespace.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/preempt.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prep.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/priority.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serializer.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tls.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/url_parser.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/namespace_linux.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_nsconf.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -833,8 +685,11 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -867,50 +722,12 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-noinstPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/accounting_storage.Plo
-	-rm -f ./$(DEPDIR)/acct_gather.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_energy.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_filesystem.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_interconnect.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_profile.Plo
-	-rm -f ./$(DEPDIR)/auth.Plo
-	-rm -f ./$(DEPDIR)/burst_buffer.Plo
-	-rm -f ./$(DEPDIR)/certgen.Plo
-	-rm -f ./$(DEPDIR)/certmgr.Plo
-	-rm -f ./$(DEPDIR)/cgroup.Plo
-	-rm -f ./$(DEPDIR)/cli_filter.Plo
-	-rm -f ./$(DEPDIR)/conn.Plo
-	-rm -f ./$(DEPDIR)/cred.Plo
-	-rm -f ./$(DEPDIR)/data_parser.Plo
-	-rm -f ./$(DEPDIR)/gpu.Plo
-	-rm -f ./$(DEPDIR)/gres.Plo
-	-rm -f ./$(DEPDIR)/hash.Plo
-	-rm -f ./$(DEPDIR)/http_parser.Plo
-	-rm -f ./$(DEPDIR)/job_submit.Plo
-	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
-	-rm -f ./$(DEPDIR)/jobcomp.Plo
-	-rm -f ./$(DEPDIR)/mcs.Plo
-	-rm -f ./$(DEPDIR)/metrics.Plo
-	-rm -f ./$(DEPDIR)/mpi.Plo
-	-rm -f ./$(DEPDIR)/namespace.Plo
-	-rm -f ./$(DEPDIR)/node_features.Plo
-	-rm -f ./$(DEPDIR)/preempt.Plo
-	-rm -f ./$(DEPDIR)/prep.Plo
-	-rm -f ./$(DEPDIR)/priority.Plo
-	-rm -f ./$(DEPDIR)/proctrack.Plo
-	-rm -f ./$(DEPDIR)/sched_plugin.Plo
-	-rm -f ./$(DEPDIR)/select.Plo
-	-rm -f ./$(DEPDIR)/serializer.Plo
-	-rm -f ./$(DEPDIR)/site_factor.Plo
-	-rm -f ./$(DEPDIR)/switch.Plo
-	-rm -f ./$(DEPDIR)/task.Plo
-	-rm -f ./$(DEPDIR)/tls.Plo
-	-rm -f ./$(DEPDIR)/topology.Plo
-	-rm -f ./$(DEPDIR)/url_parser.Plo
+	-rm -f ./$(DEPDIR)/namespace_linux.Plo
+	-rm -f ./$(DEPDIR)/read_nsconf.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -933,7 +750,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am:
+install-exec-am: install-pkglibLTLIBRARIES
 
 install-html: install-html-am
 
@@ -956,46 +773,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/accounting_storage.Plo
-	-rm -f ./$(DEPDIR)/acct_gather.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_energy.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_filesystem.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_interconnect.Plo
-	-rm -f ./$(DEPDIR)/acct_gather_profile.Plo
-	-rm -f ./$(DEPDIR)/auth.Plo
-	-rm -f ./$(DEPDIR)/burst_buffer.Plo
-	-rm -f ./$(DEPDIR)/certgen.Plo
-	-rm -f ./$(DEPDIR)/certmgr.Plo
-	-rm -f ./$(DEPDIR)/cgroup.Plo
-	-rm -f ./$(DEPDIR)/cli_filter.Plo
-	-rm -f ./$(DEPDIR)/conn.Plo
-	-rm -f ./$(DEPDIR)/cred.Plo
-	-rm -f ./$(DEPDIR)/data_parser.Plo
-	-rm -f ./$(DEPDIR)/gpu.Plo
-	-rm -f ./$(DEPDIR)/gres.Plo
-	-rm -f ./$(DEPDIR)/hash.Plo
-	-rm -f ./$(DEPDIR)/http_parser.Plo
-	-rm -f ./$(DEPDIR)/job_submit.Plo
-	-rm -f ./$(DEPDIR)/jobacct_gather.Plo
-	-rm -f ./$(DEPDIR)/jobcomp.Plo
-	-rm -f ./$(DEPDIR)/mcs.Plo
-	-rm -f ./$(DEPDIR)/metrics.Plo
-	-rm -f ./$(DEPDIR)/mpi.Plo
-	-rm -f ./$(DEPDIR)/namespace.Plo
-	-rm -f ./$(DEPDIR)/node_features.Plo
-	-rm -f ./$(DEPDIR)/preempt.Plo
-	-rm -f ./$(DEPDIR)/prep.Plo
-	-rm -f ./$(DEPDIR)/priority.Plo
-	-rm -f ./$(DEPDIR)/proctrack.Plo
-	-rm -f ./$(DEPDIR)/sched_plugin.Plo
-	-rm -f ./$(DEPDIR)/select.Plo
-	-rm -f ./$(DEPDIR)/serializer.Plo
-	-rm -f ./$(DEPDIR)/site_factor.Plo
-	-rm -f ./$(DEPDIR)/switch.Plo
-	-rm -f ./$(DEPDIR)/task.Plo
-	-rm -f ./$(DEPDIR)/tls.Plo
-	-rm -f ./$(DEPDIR)/topology.Plo
-	-rm -f ./$(DEPDIR)/url_parser.Plo
+	-rm -f ./$(DEPDIR)/namespace_linux.Plo
+	-rm -f ./$(DEPDIR)/read_nsconf.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -1012,32 +791,27 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	clean-noinstPROGRAMS cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
+	clean-generic clean-libtool clean-pkglibLTLIBRARIES \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags dvi dvi-am \
+	html html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-libcommon_interfaces.o$(EXEEXT) :  $(libcommon_interfaces_la_OBJECTS) $(libcommon_interfaces_la_DEPENDENCIES)
-	$(LINK)  $(libcommon_interfaces_la_OBJECTS)
-libslurmctld_interfaces.o$(EXEEXT) :  $(libslurmctld_interfaces_la_OBJECTS) $(libslurmctld_interfaces_la_DEPENDENCIES)
-	$(LINK)  $(libslurmctld_interfaces_la_OBJECTS)
-libslurmd_interfaces.o$(EXEEXT) :  $(libslurmd_interfaces_la_OBJECTS) $(libslurmd_interfaces_la_DEPENDENCIES)
-	$(LINK)  $(libslurmd_interfaces_la_OBJECTS)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

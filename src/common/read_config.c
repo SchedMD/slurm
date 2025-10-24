@@ -326,6 +326,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
 	{"MpiParams", S_P_STRING},
+	{"NamespaceType", S_P_STRING},
 	{"NodeFeaturesPlugins", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
 	{"PluginDir", S_P_STRING},
@@ -2639,7 +2640,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
-	xfree (ctl_conf_ptr->job_container_plugin);
+	xfree (ctl_conf_ptr->namespace_plugin);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	xfree (ctl_conf_ptr->job_submit_plugins);
 	xfree (ctl_conf_ptr->launch_params);
@@ -2801,7 +2802,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_comp_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
-	xfree (ctl_conf_ptr->job_container_plugin);
+	xfree (ctl_conf_ptr->namespace_plugin);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
 	ctl_conf_ptr->job_file_append		= NO_VAL16;
 	ctl_conf_ptr->job_requeue		= NO_VAL16;
@@ -3682,7 +3683,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	uint64_t uint64_tmp;
 	uint32_t default_unkillable_timeout;
 	job_defaults_t *job_defaults;
-	int i;
+	int i, found_plugin = 0;
 
 	if (!s_p_get_uint16(&conf->batch_start_timeout, "BatchStartTimeout",
 			    hashtbl))
@@ -4054,10 +4055,21 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
 	}
 
-	(void) s_p_get_string(&conf->job_container_plugin, "JobContainerType",
-			      hashtbl);
-	if (xstrcasestr(conf->job_container_plugin, "none"))
-		xfree(conf->job_container_plugin);
+	found_plugin = s_p_get_string(&conf->namespace_plugin, "NamespaceType",
+				      hashtbl);
+	if (s_p_get_string(&temp_str, "JobContainerType", hashtbl)) {
+		if (running_in_slurmctld())
+			warning("JobContainerType has been replaced with NamespaceType and will be removed in a future release, please update your config.");
+		if (!found_plugin) {
+			xfree(conf->namespace_plugin);
+			conf->namespace_plugin = temp_str;
+			temp_str = NULL;
+		} else {
+			xfree(temp_str);
+		}
+	}
+	if (xstrcasestr(conf->namespace_plugin, "none"))
+		xfree(conf->namespace_plugin);
 
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;
@@ -4717,9 +4729,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->tls_type, "TLSType", hashtbl))
 		conf->tls_type = xstrdup(DEFAULT_TLS_TYPE);
 
-	if (xstrstr(conf->job_container_plugin, "tmpfs") &&
+	if (conf->namespace_plugin &&
 	    !(conf->prolog_flags & PROLOG_FLAG_CONTAIN))
-		fatal("PrologFlags=Contain is required for use with job_container/tmpfs");
+		fatal("PrologFlags=Contain is required for use with %s", conf->namespace_plugin);
 
 	if (!s_p_get_uint16(&conf->propagate_prio_process,
 			"PropagatePrioProcess", hashtbl)) {
@@ -5601,10 +5613,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "JobComp");
 	}
-	if (debug_flags & DEBUG_FLAG_JOB_CONT) {
+	if (debug_flags & DEBUG_FLAG_NAMESPACE) {
 		if (rc)
 			xstrcat(rc, ",");
-		xstrcat(rc, "JobContainer");
+		xstrcat(rc, "Namespace");
 	}
 	if (debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 		if (rc)
@@ -5811,13 +5823,16 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			 !xstrcasecmp(tok, "Elasticsearch"))
 			(*flags_out) |= DEBUG_FLAG_JOBCOMP;
 		else if (xstrcasecmp(tok, "JobContainer") == 0)
-			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
+			/* Compat for JobContainer name change */
+			(*flags_out) |= DEBUG_FLAG_NAMESPACE;
 		else if (xstrcasecmp(tok, "License") == 0)
 			(*flags_out) |= DEBUG_FLAG_LICENSE;
 		else if (xstrcasecmp(tok, "Metrics") == 0)
 			(*flags_out) |= DEBUG_FLAG_METRICS;
 		else if (xstrcasecmp(tok, "MPI") == 0)
 			(*flags_out) |= DEBUG_FLAG_MPI;
+		else if (xstrcasecmp(tok, "Namespace") == 0)
+			(*flags_out) |= DEBUG_FLAG_NAMESPACE;
 		else if (xstrcasecmp(tok, "Network") == 0 ||
 			 xstrcasecmp(tok, "Net") == 0)
 			(*flags_out) |= DEBUG_FLAG_NET;

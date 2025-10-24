@@ -3934,7 +3934,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	/*
 	 * Do not kill the extern step on all nodes, only on the nodes that
 	 * failed. Otherwise things that rely on the extern step such as x11
-	 * or job_container/tmpfs won't work on the remaining nodes in the
+	 * or namespace plugins won't work on the remaining nodes in the
 	 * allocation.
 	 */
 	if (args->node_fail && !(step_ptr->flags & SSF_NO_KILL) &&

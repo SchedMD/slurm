@@ -80,6 +80,7 @@ static bpf_program_t p[CG_LEVEL_CNT];
 static char *stepd_scope_path = NULL;
 static uint32_t task_special_id = NO_VAL;
 static char *invoc_id;
+static int token_fd = -1;
 static char *ctl_names[] = {
 	[CG_TRACK] = "freezer",
 	[CG_CPUS] = "cpuset",
@@ -2419,7 +2420,8 @@ extern int cgroup_p_constrain_apply(cgroup_ctl_type_t ctl, cgroup_level_t level,
 			 * last cgroup in the hierarchy.
 			 */
 			return load_ebpf_prog(program, cgroup_path,
-					      (level != CG_LEVEL_TASK));
+					      (level != CG_LEVEL_TASK),
+					      token_fd);
 		} else {
 			log_flag(CGROUP, "EBPF Not loading the program into %s because it is a noop",
 				 cgroup_path);
@@ -2996,4 +2998,45 @@ extern int cgroup_p_is_task_empty(uint32_t taskid)
 	cg = task_cg_info->task_cg;
 
 	return _is_cgroup_empty(&cg);
+}
+
+extern int cgroup_p_bpf_fsopen(void)
+{
+	return bpf_fsopen();
+}
+
+extern int cgroup_p_bpf_fsconfig(int fd)
+{
+	return bpf_fsconfig(fd);
+}
+
+extern int cgroup_p_bpf_create_token(int fd)
+{
+	int tok_fd;
+	/*
+	 * The token should only be generated once. If the static is already
+	 * set, something strange happened.
+	 */
+	if (token_fd != -1) {
+		error("The BPF token is already generated, this should not happen");
+		return token_fd;
+	}
+
+	tok_fd = bpf_create_token(fd);
+	if (tok_fd < 0) {
+		error("Error generating BPF token");
+		return SLURM_ERROR;
+	}
+
+	return tok_fd;
+}
+
+extern void cgroup_p_bpf_set_token(int fd)
+{
+	token_fd = fd;
+}
+
+extern int cgroup_p_bpf_get_token()
+{
+	return token_fd;
 }

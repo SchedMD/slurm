@@ -35,8 +35,11 @@
 
 #define _GNU_SOURCE
 #include "ebpf.h"
+#include <linux/mount.h>
 
 #define bpf(cmd, attr, size) (int) syscall(__NR_bpf, cmd, attr, size);
+#define fsconfig(fs_fd, cmd, key, val, aux) \
+	(int) syscall(__NR_fsconfig, fs_fd, cmd, key, val, aux)
 
 /* Macros inspired from libcrun. */
 #define BPF_ALU32_IMM(OP, DST, IMM)					\
@@ -224,7 +227,7 @@ extern void close_ebpf_prog(bpf_program_t *program, bool def_action)
 }
 
 extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
-			  bool override_flag)
+			  bool override_flag, int token_fd)
 {
 	int dirfd, ret, fd = -1;
 	union bpf_attr attr;
@@ -255,6 +258,15 @@ extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 	attr.log_level = 0;
 	attr.log_buf = (size_t) NULL;
 	attr.log_size = 0;
+	if (token_fd > -1) {
+#ifndef HAVE_BPF_TOKENS
+		error("I have a BPF token to use but have not been compiled with token support, this should never happen!");
+		return SLURM_ERROR;
+#else
+		attr.prog_token_fd = token_fd;
+		attr.prog_flags = BPF_F_TOKEN_FD;
+#endif
+	}
 
 	/* Call the load syscall */
 	fd = bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
@@ -289,6 +301,94 @@ extern int load_ebpf_prog(bpf_program_t *program, const char cgroup_path[],
 
 	close(dirfd);
 	return SLURM_SUCCESS;
+}
+
+extern int bpf_fsopen(void)
+{
+	int ret = SLURM_ERROR;
+
+#ifndef HAVE_BPF_TOKENS
+	error("Slurm has not been compiled with BPF token support");
+#else
+	ret = syscall(__NR_fsopen, "bpf", 0);
+	if (ret < 0) {
+		error("Error in fsopen syscall: %m");
+		return SLURM_ERROR;
+	}
+#endif
+
+	return ret;
+}
+
+extern int bpf_fsconfig(int fd)
+{
+	int rc = SLURM_ERROR;
+
+#ifndef HAVE_BPF_TOKENS
+	error("Slurm has not been compiled with BPF token support");
+#else
+
+	if (fsconfig(fd, FSCONFIG_SET_STRING, "delegate_cmds", "any", 0)) {
+		error("Cannot set delegate_cmds=any for fd=%d %m", fd);
+		return SLURM_ERROR;
+	}
+
+	if (fsconfig(fd, FSCONFIG_SET_STRING, "delegate_progs", "any", 0)) {
+		error("Cannot set delegate_progs=any for fd=%d %m", fd);
+		return SLURM_ERROR;
+	}
+
+	if (fsconfig(fd, FSCONFIG_SET_STRING, "delegate_attachs", "any", 0)) {
+		error("Cannot set delegate_attachs=any for fd=%d %m", fd);
+		return SLURM_ERROR;
+	}
+
+	if (fsconfig(fd, FSCONFIG_CMD_CREATE, NULL, NULL, 0)) {
+		error("Cannot create FSCONFIG for fd=%d %m", fd);
+		return SLURM_ERROR;
+	}
+	rc = SLURM_SUCCESS;
+#endif
+	return rc;
+}
+
+extern int bpf_create_token(int bpf_fs_fd)
+{
+#ifndef HAVE_BPF_TOKENS
+	error("Slurm has not been compiled with BPF token support");
+	return SLURM_ERROR;
+#else
+
+	int token_fd = SLURM_ERROR, mount_fd = -1, bpffs_fd = -1;
+	union bpf_attr attr = { 0 };
+
+	mount_fd = syscall(__NR_fsmount, bpf_fs_fd, FSMOUNT_CLOEXEC, 0);
+	if (mount_fd < 0) {
+		error("Error calling fsmount for fd=%d %m", bpf_fs_fd);
+		return SLURM_ERROR;
+	}
+
+	bpffs_fd = openat(mount_fd, ".", 0, O_RDWR);
+	if (bpffs_fd < 0) {
+		error("Error calling openat for fsmount with fd=%d", mount_fd);
+		goto fini;
+	}
+
+	attr.token_create.bpffs_fd = bpffs_fd;
+	token_fd = bpf(BPF_TOKEN_CREATE, &attr, sizeof(attr));
+	if (token_fd < 0) {
+		error("Cannot create a BPF token for bpffs_fd %d %m", bpffs_fd);
+		token_fd = SLURM_ERROR;
+	}
+
+fini:
+	if (bpffs_fd < 0)
+		close(bpffs_fd);
+	if (mount_fd < 0)
+		close(mount_fd);
+
+	return token_fd;
+#endif
 }
 
 extern void free_ebpf_prog(bpf_program_t *program)
