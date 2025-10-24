@@ -291,8 +291,8 @@ static int _foreach_log_will_run_resp(void *x, void *key)
 	will_run_response_msg_t *will_run_resp = x;
 	char buf[256];
 	slurm_make_time_str(&will_run_resp->start_time, buf, sizeof(buf));
-	debug("Job %u to start at %s on cluster %s using %u processors on nodes %s in partition %s",
-	      will_run_resp->job_id, buf, will_run_resp->cluster_name,
+	debug("%pI to start at %s on cluster %s using %u processors on nodes %s in partition %s",
+	      &will_run_resp->step_id, buf, will_run_resp->cluster_name,
 	      will_run_resp->proc_cnt, will_run_resp->node_list,
 	      will_run_resp->part_name);
 
@@ -639,7 +639,7 @@ int slurm_job_will_run(job_desc_msg_t *req)
 			cluster_name = will_run_resp->cluster_name;
 
 		info("Job %u to start at %s%s%s a using %u processors on nodes %s in partition %s",
-		     will_run_resp->job_id, buf,
+		     will_run_resp->step_id.job_id, buf,
 		     cluster_name ? " on cluster " : "",
 		     cluster_name ? cluster_name : "",
 		     will_run_resp->proc_cnt,
@@ -706,7 +706,7 @@ extern int slurm_het_job_will_run(list_t *job_req_list)
 
 		if ((rc == SLURM_SUCCESS) && will_run_resp) {
 			if (first_job_id == 0)
-				first_job_id = will_run_resp->job_id;
+				first_job_id = will_run_resp->step_id.job_id;
 			if ((first_start == 0) ||
 			    (first_start < will_run_resp->start_time))
 				first_start = will_run_resp->start_time;
@@ -913,7 +913,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
 	slurm_msg_t resp_msg;
 
 	memset(&req, 0, sizeof(req));
-	req.job_id = jobid;
+	req.step_id.job_id = jobid;
 	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -961,7 +961,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, list_t **info)
 	char *stepmgr_nodename = NULL;
 
 	memset(&req, 0, sizeof(req));
-	req.job_id = jobid;
+	req.step_id.job_id = jobid;
 	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

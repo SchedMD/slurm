@@ -88,7 +88,7 @@ int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	       uint32_t submit_uid, char **err_msg)
 {
 	if (job_desc->time_limit == INFINITE) {
-		info("Bad replacement time limit for %u", job_desc->job_id);
+		info("Bad replacement time limit for %u", job_desc->step_id.job_id);
 		return ESLURM_INVALID_TIME_LIMIT;
 	}
 

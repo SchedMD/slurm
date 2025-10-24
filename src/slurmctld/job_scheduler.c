@@ -4518,7 +4518,7 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	if (job_start_data->rc == SLURM_SUCCESS) {
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
-		resp_data->job_id     = job_ptr->job_id;
+		resp_data->step_id.job_id = job_ptr->job_id;
 		resp_data->proc_cnt = job_ptr->total_cpus;
 		_delayed_job_start_time(job_ptr);
 		resp_data->start_time = MAX(job_ptr->start_time,

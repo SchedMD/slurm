@@ -2046,7 +2046,12 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 				   buf_t *buffer,
 				   uint16_t protocol_version)
 {
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = dump_job_ptr->job_id;
+	step_id.sluid = dump_job_ptr->db_index;
+
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack_step_id(&step_id, buffer, protocol_version);
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->alloc_node, buffer);
@@ -2086,7 +2091,6 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->het_job_id_set, buffer);
 		pack32(dump_job_ptr->het_job_offset, buffer);
 
-		pack32(dump_job_ptr->job_id, buffer);
 		pack32(dump_job_ptr->job_state, buffer);
 
 		pack_time(dump_job_ptr->last_sched_eval, buffer);
@@ -2115,7 +2119,6 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 
 		packstr(dump_job_ptr->selinux_context, buffer);
 		pack32(dump_job_ptr->site_factor, buffer);
-		pack64(dump_job_ptr->db_index, buffer);
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
 		pack32(dump_job_ptr->state_reason, buffer);
@@ -2327,7 +2330,13 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 				    buf_t *buffer,
 				    uint16_t protocol_version)
 {
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&step_id, buffer, protocol_version))
+			goto unpack_error;
+		job_ptr->job_id = step_id.job_id;
+		job_ptr->db_index = step_id.sluid;
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpackstr(&job_ptr->alloc_node, buffer);
@@ -2370,7 +2379,6 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->het_job_id_set, buffer);
 		safe_unpack32(&job_ptr->het_job_offset, buffer);
 
-		safe_unpack32(&job_ptr->job_id, buffer);
 		safe_unpack32(&job_ptr->job_state, buffer);
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
@@ -2399,7 +2407,6 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 
 		safe_unpackstr(&job_ptr->selinux_context, buffer);
 		safe_unpack32(&job_ptr->site_factor, buffer);
-		safe_unpack64(&job_ptr->db_index, buffer);
 		safe_unpack16(&job_ptr->start_protocol_ver, buffer);
 		safe_unpackstr(&job_ptr->state_desc, buffer);
 		safe_unpack32(&job_ptr->state_reason, buffer);
@@ -2609,6 +2616,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpackstr(&job_ptr->wckey, buffer);
 	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

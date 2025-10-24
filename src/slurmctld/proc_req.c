@@ -1655,7 +1655,7 @@ static void _slurm_rpc_end_time(slurm_msg_t *msg)
 	} else {
 		(void) send_msg_response(msg, SRUN_TIMEOUT, &timeout_msg);
 	}
-	debug2("%s JobId=%u %s", __func__, time_req_msg->job_id, TIME_STR);
+	debug2("%s %pI %s", __func__, &time_req_msg->step_id, TIME_STR);
 }
 
 /* _slurm_rpc_get_fd - process RPC for federation state information */
@@ -2317,7 +2317,7 @@ fini:
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
-		sji->job_id = job_ptr->job_id;
+		sji->step_id.job_id = job_ptr->job_id;
 		sji->stepmgr = job_ptr->batch_host;
 		list_append(args->stepmgr_jobs, sji);
 	}
@@ -2444,7 +2444,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
-			if (job_desc_msg->job_id == NO_VAL) {
+			if (job_desc_msg->step_id.job_id == NO_VAL) {
 				job_desc_msg->het_job_offset = NO_VAL;
 				error_code = job_allocate(job_desc_msg, false,
 							  true, &resp, true,
@@ -2452,8 +2452,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 							  &job_ptr,
 							  &err_msg,
 							  msg->protocol_version);
-			} else {	/* existing job test */
-				job_ptr = find_job_record(job_desc_msg->job_id);
+			} else { /* existing job test */
+				job_ptr = find_job_record(job_desc_msg->step_id
+								  .job_id);
 				error_code = job_start_data(job_ptr, &resp);
 			}
 			unlock_slurmctld(job_write_lock);
@@ -2480,7 +2481,7 @@ send_reply:
 		debug2("%s success %s", __func__, TIME_STR);
 	} else {
 		debug2("%s success %s", __func__, TIME_STR);
-		if (job_desc_msg->job_id == NO_VAL)
+		if (job_desc_msg->step_id.job_id == NO_VAL)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
@@ -2800,20 +2801,21 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->job_id,
+	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
 				    &job_ptr);
 	END_TIMER2(__func__);
 
 	/* return result */
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		unlock_slurmctld(job_read_lock);
-		debug2("%s: JobId=%u, uid=%u: %s",
-		       __func__, job_info_msg->job_id, msg->auth_uid,
+		debug2("%s: %pI, uid=%u: %s",
+		       __func__, &job_info_msg->step_id, msg->auth_uid,
 		      slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug("%s: JobId=%u NodeList=%s %s", __func__,
-		      job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+		debug("%s: %pI NodeList=%s %s",
+		      __func__, &job_info_msg->step_id, job_ptr->nodes,
+		      TIME_STR);
 
 		job_info_resp_msg = build_job_info_resp(job_ptr);
 		set_remote_working_response(job_info_resp_msg, job_ptr,
@@ -2862,7 +2864,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->job_id,
+	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
 				    &job_ptr);
 	END_TIMER2(__func__);
 
@@ -2873,15 +2875,15 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
-		debug2("%s: JobId=%u, uid=%u: %s",
-		       __func__, job_info_msg->job_id, msg->auth_uid,
+		debug2("%s: %pI, uid=%u: %s",
+		       __func__, &job_info_msg->step_id, msg->auth_uid,
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 		return;
 	}
 
-	debug2("%s: JobId=%u NodeList=%s %s", __func__,
-	       job_info_msg->job_id, job_ptr->nodes, TIME_STR);
+	debug2("%s: %pI NodeList=%s %s", __func__,
+	       &job_info_msg->step_id, job_ptr->nodes, TIME_STR);
 
 	if (!job_ptr->het_job_list) {
 		resp = list_create(_het_job_alloc_list_del);
@@ -2898,7 +2900,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 				      __func__, job_ptr);
 				continue;
 			}
-			if (het_job->job_id != job_info_msg->job_id)
+			if (het_job->job_id != job_info_msg->step_id.job_id)
 				(void) job_alloc_info_ptr(msg->auth_uid,
 							  het_job);
 			job_info_resp_msg = build_job_info_resp(het_job);
@@ -3510,7 +3512,8 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	uint32_t job_id = 0, priority = 0;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	uint32_t priority = 0;
 	job_record_t *job_ptr = NULL;
 	job_desc_msg_t *job_desc_msg = msg->data;
 	/* Locks: Read config, read job, read node, read partition */
@@ -3587,8 +3590,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 
 	if (fed_mgr_fed_rec) {
 		if (fed_mgr_job_allocate(msg, job_desc_msg, false,
-					 &job_id, &error_code, &err_msg))
+					 &step_id.job_id, &error_code,
+					 &err_msg))
 			reject_job = true;
+		step_id.step_id = SLURM_BATCH_SCRIPT;
 	} else {
 		/* Create new job allocation */
 		job_desc_msg->het_job_offset = NO_VAL;
@@ -3601,7 +3606,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		    (error_code && job_ptr->job_state == JOB_FAILED))
 			reject_job = true;
 		else {
-			job_id = job_ptr->job_id;
+			step_id.sluid = job_ptr->db_index;
+			step_id.job_id = job_ptr->job_id;
+			step_id.step_id = SLURM_BATCH_SCRIPT;
 			priority = job_ptr->priority;
 		}
 
@@ -3643,13 +3650,12 @@ send_msg:
 			slurm_send_rc_msg(msg, error_code);
 	} else {
 		submit_response_msg_t submit_msg = {
-			.job_id = job_id,
-			.step_id = SLURM_BATCH_SCRIPT,
+			.step_id = step_id,
 			.error_code = error_code,
 			.job_submit_user_msg = job_submit_user_msg,
 		};
-		info("%s: JobId=%u InitPrio=%u %s",
-		     __func__, job_id, priority, TIME_STR);
+		info("%s: %pI InitPrio=%u %s",
+		     __func__, &step_id, priority, TIME_STR);
 		/* send job_ID */
 		(void) send_msg_response(msg, RESPONSE_SUBMIT_BATCH_JOB,
 					 &submit_msg);
@@ -3669,7 +3675,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	list_itr_t *iter;
 	int error_code = SLURM_SUCCESS, alloc_only = 0;
 	DEF_TIMERS;
-	uint32_t het_job_id = 0, het_job_offset = 0;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	uint32_t het_job_offset = 0;
 	job_record_t *job_ptr = NULL, *first_job_ptr = NULL;
 	job_desc_msg_t *job_desc_msg;
 	char *script = NULL;
@@ -3819,7 +3826,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			script = xstrdup(job_desc_msg->script);
 		if (het_job_offset && job_desc_msg->script) {
 			info("%s: Hetjob %u offset %u has script, being ignored",
-			     __func__, het_job_id, het_job_offset);
+			     __func__, step_id.job_id, het_job_offset);
 			xfree(job_desc_msg->script);
 
 		}
@@ -3851,8 +3858,10 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		    (error_code && job_ptr->job_state == JOB_FAILED)) {
 			reject_job = true;
 		} else {
-			if (het_job_id == 0) {
-				het_job_id = job_ptr->job_id;
+			if (step_id.job_id == NO_VAL) {
+				step_id.sluid = job_ptr->db_index;
+				step_id.job_id = job_ptr->job_id;
+				step_id.step_id = SLURM_BATCH_SCRIPT;
 				first_job_ptr = job_ptr;
 				alloc_only = 1;
 			}
@@ -3862,7 +3871,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 				hostset_insert(jobid_hostset, tmp_str);
 			else
 				jobid_hostset = hostset_create(tmp_str);
-			job_ptr->het_job_id     = het_job_id;
+			job_ptr->het_job_id = step_id.job_id;
 			job_ptr->het_job_offset = het_job_offset++;
 			job_ptr->batch_flag      = 1;
 			on_job_state_change(job_ptr, job_ptr->job_state);
@@ -3880,7 +3889,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	list_iterator_destroy(iter);
 	xfree(script);
 
-	if ((het_job_id == 0) && !reject_job) {
+	if ((step_id.job_id == NO_VAL) && !reject_job) {
 		info("%s: No error, but no het_job_id", __func__);
 		error_code = SLURM_ERROR;
 		reject_job = true;
@@ -3890,8 +3899,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	if (!reject_job &&
 	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
 	    !acct_policy_validate_het_job(submit_job_list)) {
-		info("Hetjob JobId=%u exceeded association/QOS limit for user %u",
-		     het_job_id, job_uid);
+		info("Hetjob %pI exceeded association/QOS limit for user %u",
+		     &step_id, job_uid);
 		error_code = ESLURM_ACCOUNTING_POLICY;
 		reject_job = true;
 	}
@@ -3944,12 +3953,11 @@ send_msg:
 			slurm_send_rc_msg(msg, error_code);
 	} else {
 		submit_response_msg_t submit_msg = {
-			.job_id = het_job_id,
-			.step_id = SLURM_BATCH_SCRIPT,
+			.step_id = step_id,
 			.error_code = error_code,
 			.job_submit_user_msg = job_submit_user_msg,
 		};
-		info("%s: JobId=%u %s", __func__, het_job_id, TIME_STR);
+		info("%s: %pI %s", __func__, &step_id, TIME_STR);
 		/* send job_ID */
 		(void) send_msg_response(msg, RESPONSE_SUBMIT_BATCH_JOB,
 					 &submit_msg);
@@ -3979,7 +3987,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
-				  job_desc_msg->job_id)) {
+				  job_desc_msg->step_id.job_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4032,8 +4040,8 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 			     __func__, job_desc_msg->job_id_str, uid,
 			     slurm_strerror(error_code));
 		} else {
-			info("%s: JobId=%u uid=%u: %s",
-			     __func__, job_desc_msg->job_id, uid,
+			info("%s: %pI uid=%u: %s",
+			     __func__, &job_desc_msg->step_id, uid,
 			     slurm_strerror(error_code));
 		}
 	} else {
@@ -4041,8 +4049,8 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 			info("%s: complete JobId=%s uid=%u %s",
 			     __func__, job_desc_msg->job_id_str, uid, TIME_STR);
 		} else {
-			info("%s: complete JobId=%u uid=%u %s",
-			     __func__, job_desc_msg->job_id, uid, TIME_STR);
+			info("%s: complete %pI uid=%u %s",
+			     __func__, &job_desc_msg->step_id, uid, TIME_STR);
 		}
 		/* Below functions provide their own locking */
 		schedule_job_save();
@@ -4569,18 +4577,19 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	 * in a federation, job arrays only run on the origin cluster so we just
 	 * want to find if the array, not a specific task, is on the origin
 	 * cluster. */
-	if ((sus_ptr->job_id == NO_VAL) && sus_ptr->job_id_str)
-		sus_ptr->job_id = strtol(sus_ptr->job_id_str, NULL, 10);
+	if ((sus_ptr->step_id.job_id == NO_VAL) && sus_ptr->job_id_str)
+		sus_ptr->step_id.job_id = strtol(sus_ptr->job_id_str, NULL, 10);
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(sus_ptr->job_id);
+	job_ptr = find_job_record(sus_ptr->step_id.job_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin, otherwise try to suspend the job. If it's
 	 * pending an error should be returned. If it's running then it should
 	 * suspend the job. */
-	if (!job_ptr && !_route_msg_to_origin(msg, NULL, sus_ptr->job_id)) {
+	if (!job_ptr &&
+	    !_route_msg_to_origin(msg, NULL, sus_ptr->step_id.job_id)) {
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
@@ -4617,7 +4626,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	END_TIMER2(__func__);
 
 	if (!sus_ptr->job_id_str)
-		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
+		xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	if (error_code) {
 		info("%s(%s) for %s %s",

@@ -248,12 +248,12 @@ typedef struct {
 #define SLURM_BIT(offset) ((uint64_t)1 << offset)
 
 #define SLURM_STEP_ID_INITIALIZER \
-{ \
+((slurm_step_id_t) { \
 	.sluid = 0, \
 	.job_id = NO_VAL, \
 	.step_het_comp = NO_VAL, \
 	.step_id = NO_VAL, \
-}
+})
 
 typedef struct {
 	sluid_t sluid;
@@ -1690,7 +1690,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	void *id;		/* actually identity_t. DO NOT PACK */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
-	uint32_t job_id;	/* job ID, default set by Slurm */
 	char * job_id_str;      /* string representation of the jobid */
 	char *job_size_str;
 	uint16_t kill_on_node_fail; /* 1 if node failure to kill job,
@@ -1750,6 +1749,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char **spank_job_env;	/* environment variables for job prolog/epilog
 				 * scripts as set by SPANK plugins */
 	uint32_t spank_job_env_size; /* element count in spank_env */
+	slurm_step_id_t step_id;
 	char *submit_line;      /* The command issued with all it's options in a
 				 * string */
 	uint32_t task_dist;	/* see enum task_dist_state */
@@ -1885,7 +1885,6 @@ typedef struct job_info {
 	uint32_t het_job_id;	/* job ID of hetjob leader */
 	char *het_job_id_set;	/* job IDs for all components */
 	uint32_t het_job_offset; /* HetJob component offset from leader */
-	uint32_t job_id;	/* job ID */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */
@@ -1944,7 +1943,7 @@ typedef struct job_info {
 	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint32_t site_factor;	/* factor to consider in priority */
-	sluid_t sluid;
+	slurm_step_id_t step_id;
 	uint16_t sockets_per_board;/* sockets per board required by job */
 	uint16_t sockets_per_node; /* sockets per node required by job  */
 	time_t start_time;	/* time execution begins, actual or expected */
@@ -2172,14 +2171,12 @@ enum suspend_opts {
 /* NOTE: Set either job_id_str (NULL by default) or job_id */
 typedef struct suspend_msg {
 	uint16_t op;		/* suspend operation, see enum suspend_opts */
-	uint32_t job_id;	/* slurm job ID (number) */
 	char *   job_id_str;	/* slurm job ID (string) */
+	slurm_step_id_t step_id;
 } suspend_msg_t;
 
-/* NOTE: Set either job_id_str (NULL by default) or job_id */
 typedef struct top_job_msg {
 	uint16_t op;		/* suspend operation, see enum suspend_opts */
-	uint32_t job_id;	/* slurm job ID (number) */
 	char *   job_id_str;	/* slurm job ID (string) */
 } top_job_msg_t;
 
@@ -2335,7 +2332,7 @@ typedef struct {
 } job_step_info_t;
 
 typedef struct {
-	uint32_t job_id;
+	slurm_step_id_t step_id;
 	char *stepmgr;
 } stepmgr_job_info_t;
 
@@ -2466,7 +2463,7 @@ typedef struct topo_config_response_msg {
 } topo_config_response_msg_t;
 
 typedef struct job_alloc_info_msg {
-	uint32_t job_id;	/* job ID */
+	slurm_step_id_t step_id;
 	char    *req_cluster;   /* requesting cluster */
 } job_alloc_info_msg_t;
 
@@ -2645,12 +2642,12 @@ typedef struct partition_info_msg {
 
 typedef struct will_run_response_msg {
 	char *cluster_name; /* cluster giving response, set by client */
-	uint32_t job_id;	/* ID of job to start */
 	char *job_submit_user_msg; /* job submit plugin user_msg */
 	char *node_list;	/* nodes where job will start */
 	char *part_name;	/* partition where job will start */
 	list_t *preemptee_job_id; /* jobs preempted to start this job */
 	uint32_t proc_cnt;	/* CPUs allocated to job at start */
+	slurm_step_id_t step_id;
 	time_t start_time;	/* time when job will start */
 } will_run_response_msg_t;
 
@@ -3256,8 +3253,7 @@ typedef struct slurmd_status_msg {
 } slurmd_status_t;
 
 typedef struct submit_response_msg {
-	uint32_t job_id;	/* job ID */
-	uint32_t step_id;	/* step ID */
+	slurm_step_id_t step_id;
 	uint32_t error_code;	/* error code for warning message */
 	char *job_submit_user_msg; /* job submit plugin user_msg */
 } submit_response_msg_t;

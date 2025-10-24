@@ -414,13 +414,14 @@ static int _verify_job_ids(void)
 		 * by the user. */
 		job_ptr->assoc_id = 0;
 		if (IS_JOB_FINISHED(job_ptr))
-			job_ptr->job_id = 0;
-		if (job_ptr->job_id == 0)
+			job_ptr->step_id.job_id = 0;
+		if (job_ptr->step_id.job_id == 0)
 			continue;
 
 		for (j = 0; j < opt.job_cnt; j++) {
 			if (opt.array_id[j] == NO_VAL) {
-				if ((opt.job_id[j] == job_ptr->job_id) ||
+				if ((opt.job_id[j] ==
+				     job_ptr->step_id.job_id) ||
 				    ((opt.job_id[j] == job_ptr->array_job_id) &&
 				     (opt.step_id[j] == SLURM_BATCH_SCRIPT))) {
 					opt.job_found[j] = true;
@@ -441,7 +442,7 @@ static int _verify_job_ids(void)
 			}
 		}
 		if (job_ptr->assoc_id == 0)
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 	}
 
 	for (j = 0; j < opt.job_cnt; j++) {
@@ -495,63 +496,63 @@ static void _filter_job_records(void)
 			het_leader = job_ptr;
 
 		if (IS_JOB_FINISHED(job_ptr))
-			job_ptr->job_id = 0;
-		if (job_ptr->job_id == 0)
+			job_ptr->step_id.job_id = 0;
+		if (job_ptr->step_id.job_id == 0)
 			continue;
 
 		job_base_state = job_ptr->job_state & JOB_STATE_BASE;
 		if ((job_base_state != JOB_PENDING) &&
 		    (job_base_state != JOB_RUNNING) &&
 		    (job_base_state != JOB_SUSPENDED)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (opt.account &&
 		    xstrcmp(job_ptr->account, opt.account)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (opt.job_name &&
 		    xstrcmp(job_ptr->name, opt.job_name)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (opt.partition &&
 		    xstrcmp(job_ptr->partition, opt.partition)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (opt.qos && xstrcmp(job_ptr->qos, opt.qos)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (opt.reservation &&
 		    xstrcmp(job_ptr->resv_name, opt.reservation)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if ((opt.state != JOB_END) &&
 		    (job_base_state != opt.state)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if ((opt.user_name) &&
 		    (job_ptr->user_id != opt.user_id)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (opt.nodelist) {
 			hostset_t *hs = hostset_create(job_ptr->nodes);
 			if (!hostset_intersects(hs, opt.nodelist)) {
-				job_ptr->job_id = 0;
+				job_ptr->step_id.job_id = 0;
 				hostset_destroy(hs);
 				continue;
 			} else {
@@ -573,12 +574,12 @@ static void _filter_job_records(void)
 				job_key++;
 
 			if (xstrcmp(job_key, opt.wckey) != 0) {
-				job_ptr->job_id = 0;
+				job_ptr->step_id.job_id = 0;
 				continue;
 			}
 		}
 
-		if (het_leader && het_leader->job_id &&
+		if (het_leader && het_leader->step_id.job_id &&
 		    job_ptr->het_job_offset &&
 		    (job_ptr->het_job_id == het_leader->het_job_id)) {
 			/*
@@ -598,7 +599,7 @@ static void _filter_job_records(void)
 			 * job creation time (always leader first) and HetJobs
 			 * are created in a row.
 			 */
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
@@ -625,7 +626,7 @@ static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id)
 		xstrfmtcat(result, "%u_%u",
 			   job_ptr->array_job_id, job_ptr->array_task_id);
 	} else {
-		xstrfmtcat(result, "%u", job_ptr->job_id);
+		xstrfmtcat(result, "%u", job_ptr->step_id.job_id);
 	}
 
 	return result;
@@ -649,8 +650,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 		job_ptr = job_buffer_ptr->job_array;
 		for (i = 0; i < job_buffer_ptr->record_count; i++, job_ptr++) {
 			if (IS_JOB_FINISHED(job_ptr))
-				job_ptr->job_id = 0;
-			if (job_ptr->job_id == 0)
+				job_ptr->step_id.job_id = 0;
+			if (job_ptr->step_id.job_id == 0)
 				continue;
 			if ((opt.step_id[j] != SLURM_BATCH_SCRIPT) &&
 			    IS_JOB_PENDING(job_ptr)) {
@@ -662,7 +663,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 
 			opt.job_found[j] = false;
 			if (opt.array_id[j] == NO_VAL) {
-				if ((opt.job_id[j] == job_ptr->job_id) ||
+				if ((opt.job_id[j] ==
+				     job_ptr->step_id.job_id) ||
 				    ((opt.job_id[j] == job_ptr->array_job_id) &&
 				     (opt.step_id[j] == SLURM_BATCH_SCRIPT))) {
 					opt.job_found[j] = true;
@@ -714,11 +716,12 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 
 				if (opt.array_id[j] == NO_VAL ||
 				    opt.array_id[j] == INFINITE)
-					job_ptr->job_id = 0;
+					job_ptr->step_id.job_id = 0;
 				else
 					opt.job_id[j] = 0;
 			} else {
-				cancel_info->step_id.job_id = job_ptr->job_id;
+				cancel_info->step_id.job_id =
+					job_ptr->step_id.job_id;
 				cancel_info->step_id.step_id = opt.step_id[j];
 				slurm_thread_create_detached(_cancel_step_id,
 							     cancel_info);
@@ -754,8 +757,8 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 
 	for (i = 0; i < job_buffer_ptr->record_count; i++, job_ptr++) {
 		if (IS_JOB_FINISHED(job_ptr))
-			job_ptr->job_id = 0;
-		if (job_ptr->job_id == 0)
+			job_ptr->step_id.job_id = 0;
+		if (job_ptr->step_id.job_id == 0)
 			continue;
 
 		if ((job_state < JOB_END) &&
@@ -764,7 +767,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 
 		if (opt.interactive &&
 		    (_confirmation(job_ptr, SLURM_BATCH_SCRIPT, NO_VAL) == 0)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
@@ -788,7 +791,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 		slurm_mutex_unlock(&num_active_threads_lock);
 
 		slurm_thread_create_detached(_cancel_job_id, cancel_info);
-		job_ptr->job_id = 0;
+		job_ptr->step_id.job_id = 0;
 
 		if (opt.interactive) {
 			/* Print any error message for first job before

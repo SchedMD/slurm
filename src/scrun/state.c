@@ -200,7 +200,7 @@ static int _get_job_step_state(slurm_job_info_t *job)
 	int rc;
 	job_step_info_response_msg_t *resp = NULL;
 
-	rc = slurm_get_job_steps(0, job->job_id, 0, &resp, 0);
+	rc = slurm_get_job_steps(0, job->step_id.job_id, 0, &resp, 0);
 
 	if (rc) {
 		/* query failed...job may have just died */
@@ -285,7 +285,7 @@ static int _get_job_state()
 	xassert(!xstrcmp(job->name, state.id));
 
 	/* note the job id in case we want to kill the job */
-	state.jobid = job->job_id;
+	state.jobid = job->step_id.job_id;
 
 	switch (job->job_state)
 	{
@@ -311,8 +311,8 @@ static int _get_job_state()
 		xassert(false);
 	}
 
-	debug2("%s: query slurmctld for %pS for %s found JobId=%u: %s -> %s",
-	       __func__, &step, state.id, job->job_id,
+	debug2("%s: query slurmctld for %pS for %s found %pI: %s -> %s",
+	       __func__, &step, state.id, &job->step_id,
 	       job_state_string(job->job_state),
 	       slurm_container_status_to_str(state.status));
 

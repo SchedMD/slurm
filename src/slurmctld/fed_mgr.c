@@ -1720,7 +1720,8 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 send_msg:
 	/* Send response back about origin jobid if an error occurred. */
 	if (reject_job)
-		_persist_fed_job_response(sibling, job_desc->job_id, error_code);
+		_persist_fed_job_response(sibling, job_desc->step_id.job_id,
+					  error_code);
 	else {
 		if (!(job_ptr->fed_details->siblings_viable &
 		      FED_SIBLING_BIT(fed_mgr_cluster_rec->fed.id)))
@@ -1969,11 +1970,10 @@ static void _handle_fed_job_submission(fed_job_update_info_t *job_update_info)
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
-	log_flag(FEDR, "%s: submitting %s sibling JobId=%u from %s",
+	log_flag(FEDR, "%s: submitting %s sibling %pI from %s",
 		 __func__, (interactive_job) ? "interactive" : "batch",
-		 job_update_info->submit_desc->job_id,
+		 &job_update_info->submit_desc->step_id,
 		 job_update_info->submit_cluster);
-
 
 	/* do this outside the job write lock */
 	delete_job_desc_files(job_update_info->job_id);
@@ -2019,7 +2019,7 @@ static void _handle_fed_job_update(fed_job_update_info_t *job_update_info)
 	xassert(job_desc);
 
 	/* scontrol always sets job_id_str */
-	job_desc->job_id = job_update_info->job_id;
+	job_desc->step_id.job_id = job_update_info->job_id;
 	msg.data = job_desc;
 
 	lock_slurmctld(job_write_lock);
@@ -3770,7 +3770,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
 	sib_msg.group_id = job_desc->group_id;
 	sib_msg.resp_host    = job_desc->resp_host;
-	sib_msg.step_id.job_id = job_desc->job_id;
+	sib_msg.step_id.job_id = job_desc->step_id.job_id;
 	sib_msg.submit_host  = job_desc->alloc_node;
 	sib_msg.user_id = job_desc->user_id;
 	sib_msg.submit_proto_ver = start_protocol_version;
@@ -4318,10 +4318,9 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	xassert(alloc_code);
 	xassert(err_msg);
 
-	if (job_desc->job_id != NO_VAL) {
-		error("attempt by uid %u to set JobId=%u. "
-		      "specifying a job_id is not allowed when in a federation",
-		      msg->auth_uid, job_desc->job_id);
+	if (job_desc->step_id.job_id != NO_VAL) {
+		error("attempt by uid %u to set %pI. specifying a job_id is not allowed when in a federation",
+		      msg->auth_uid, &job_desc->step_id);
 		*alloc_code = ESLURM_INVALID_JOB_ID;
 		return SLURM_ERROR;
 	}
@@ -4334,7 +4333,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
-	job_desc->job_id = get_next_job_id(false);
+	job_desc->step_id.job_id = get_next_job_id(false);
 
 	/* Set viable siblings */
 	job_desc->fed_siblings_viable =
@@ -5536,7 +5535,7 @@ static int _reconcile_fed_job(job_record_t *job_ptr, reconcile_sib_t *rec_sib)
 
 	for (i = 0; i < remote_jobs_ptr->record_count; i++) {
 		remote_job = &remote_jobs_ptr->job_array[i];
-		if (job_ptr->job_id == remote_job->job_id) {
+		if (job_ptr->job_id == remote_job->step_id.job_id) {
 			found_job = true;
 			break;
 		}
@@ -5852,7 +5851,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	fed_job_update_info_t *job_update_info = NULL;
 	sib_msg_t *sib_msg            = msg->data;
 	job_desc_msg_t *job_desc      = sib_msg->data;
-	job_desc->job_id = sib_msg->step_id.job_id;
+	job_desc->step_id.job_id = sib_msg->step_id.job_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node          = sib_msg->submit_host;
 	job_desc->user_id = sib_msg->user_id;
@@ -5876,7 +5875,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	 * not the calling controllers. */
 	job_update_info = xmalloc(sizeof(fed_job_update_info_t));
 
-	job_update_info->job_id           = job_desc->job_id;
+	job_update_info->job_id = job_desc->step_id.job_id;
 	job_update_info->submit_cluster   = xstrdup(msg->pcon->cluster_name);
 	job_update_info->submit_desc      = job_desc;
 	job_update_info->submit_proto_ver = sib_msg->submit_proto_ver;

@@ -264,7 +264,7 @@ static int _query_job_states(int argc, char **argv)
 			job_state_response_job_t *src = &jsr->jobs[i];
 			slurm_job_info_t *job = &job_msg->job_array[i];
 
-			job->job_id = src->job_id;
+			job->step_id.job_id = src->job_id;
 
 			if (src->array_job_id) {
 				_populate_array_job_states(src, job);

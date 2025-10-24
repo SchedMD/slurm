@@ -170,11 +170,12 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	char *line_end = (one_liner) ? " " : "\n   ";
 	char *indent = (one_liner) ? "" : "  ";
 
-	if (job_ptr->job_id == 0)	/* Duplicated sibling job record */
+	/* Duplicated sibling job record */
+	if (job_ptr->step_id.job_id == 0)
 		return NULL;
 
 	/****** Line 1 ******/
-	xstrfmtcat(out, "JobId=%u ", job_ptr->job_id);
+	xstrfmtcat(out, "JobId=%u ", job_ptr->step_id.job_id);
 
 	if (job_ptr->array_job_id) {
 		if (job_ptr->array_task_str) {
@@ -198,8 +199,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	if (detail_flag && job_ptr->sluid) {
-		print_sluid(job_ptr->sluid, tmp1, sizeof(tmp1));
+	if (detail_flag && job_ptr->step_id.sluid) {
+		print_sluid(job_ptr->step_id.sluid, tmp1, sizeof(tmp1));
 		xstrfmtcat(out, "SLUID=%s", tmp1);
 		xstrcat(out, line_end);
 	}
@@ -1336,7 +1337,7 @@ scontrol_print_completing_job(job_info_t *job_ptr,
 		}
 	}
 
-	fprintf(stdout, "JobId=%u ", job_ptr->job_id);
+	fprintf(stdout, "JobId=%u ", job_ptr->step_id.job_id);
 
 	slurm_make_time_str(&job_ptr->end_time, time_str, sizeof(time_str));
 	fprintf(stdout, "EndTime=%s ", time_str);

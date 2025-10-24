@@ -291,7 +291,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	} else	/* allocation_interrupted and slurmctld not responing */
 		is_ready = 0;
 
-	pending_job_id = (slurm_step_id_t) SLURM_STEP_ID_INITIALIZER;
+	pending_job_id = SLURM_STEP_ID_INITIALIZER;
 
 	return is_ready;
 }

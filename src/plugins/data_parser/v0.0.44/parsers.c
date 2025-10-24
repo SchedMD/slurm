@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/cpu_frequency.h"
 #include "src/common/data.h"
@@ -52,6 +53,7 @@
 #include "src/common/print_fields.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
@@ -7203,6 +7205,91 @@ static int DUMP_FUNC(H_RESOURCES_AS_LICENSE_LIST)(const parser_t *const parser,
 	return rc;
 }
 
+static int DUMP_FUNC(SLUID)(const parser_t *const parser, void *obj,
+			    data_t *dst, args_t *args)
+{
+	sluid_t *sluid_ptr = obj;
+	char str[SLUID_STR_BYTES] = { 0 };
+
+	if (!*sluid_ptr) {
+		if (is_complex_mode(args))
+			data_set_null(dst);
+		else
+			data_set_string(dst, "");
+		return SLURM_SUCCESS;
+	}
+
+	print_sluid(*sluid_ptr, str, sizeof(str));
+
+	if (!str[0])
+		return ESLURM_INVALID_SLUID;
+
+	data_set_string(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int PARSE_FUNC(SLUID)(const parser_t *const parser, void *obj,
+			     data_t *src, args_t *args, data_t *parent_path)
+{
+	sluid_t *sluid_ptr = obj;
+
+	switch (data_get_type(src)) {
+	case DATA_TYPE_NULL:
+		*sluid_ptr = 0;
+		return SLURM_SUCCESS;
+	case DATA_TYPE_BOOL:
+		if (!data_get_type(src)) {
+			*sluid_ptr = 0;
+			return SLURM_SUCCESS;
+		} else {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_INVALID_SLUID,
+					   "Unable to parse true as SLUID");
+		}
+	case DATA_TYPE_FLOAT:
+		/* Treat 0 as valid unset SLUID */
+		if (!data_get_float(src)) {
+			*sluid_ptr = 0;
+			return SLURM_SUCCESS;
+		} else {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_INVALID_SLUID,
+					   "Unable to parse %lf as SLUID",
+					   data_get_float(src));
+		}
+	case DATA_TYPE_INT_64:
+		/* Treat 0 as valid unset SLUID */
+		if (!data_get_int(src)) {
+			*sluid_ptr = 0;
+			return SLURM_SUCCESS;
+		} else {
+			return parse_error(parser, args, parent_path,
+					   ESLURM_INVALID_SLUID,
+					   "Unable to parse %" PRId64
+					   " as SLUID",
+					   data_get_int(src));
+		}
+	case DATA_TYPE_STRING:
+		if ((*sluid_ptr = str2sluid(data_get_string(src))))
+			return SLURM_SUCCESS;
+		else
+			return parse_error(
+				parser, args, parent_path, ESLURM_INVALID_SLUID,
+				"Unable to convert string \"%s\" to SLUID",
+				data_get_string(src));
+	case DATA_TYPE_LIST:
+	case DATA_TYPE_DICT:
+		return parse_error(
+			parser, args, parent_path, ESLURM_DATA_CONV_FAILED,
+			"Unable to convert %pd to string to parse SLUID", src);
+	case DATA_TYPE_NONE:
+	case DATA_TYPE_MAX:
+		fatal_abort("invalid type");
+	}
+
+	fatal_abort("should never run");
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -8608,7 +8695,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, het_job_id, "het_job_id", "Heterogeneous job ID, if applicable"),
 	add_parse(STRING, het_job_id_set, "het_job_id_set", "Job ID range for all heterogeneous job components"),
 	add_parse(UINT32_NO_VAL, het_job_offset, "het_job_offset", "Unique sequence number applied to this component of the heterogeneous job"),
-	add_parse(UINT32, job_id, "job_id", "Job ID"),
+	add_parse(UINT32, step_id.job_id, "job_id", "Job ID"),
 	add_parse(JOB_RES_PTR, job_resrcs, "job_resources", "Resources used by the job"),
 	add_parse(CSV_STRING, job_size_str, "job_size_str", "Number of nodes (in a range) required for this job"),
 	add_parse(JOB_STATE, job_state, "job_state", "Current state"),
@@ -8664,6 +8751,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT16, segment_size, "segment_size", "Requested segment size"),
 	add_parse(STRING, selinux_context, "selinux_context", "SELinux context"),
 	add_parse(JOB_SHARED, shared, "shared", "How the job can share resources with other jobs, if at all"),
+	add_parse(SLURM_STEP_ID, step_id, "step_id", "Job step ID"),
 	add_parse(UINT16, sockets_per_board, "sockets_per_board", "Number of sockets per board required"),
 	add_parse(UINT16_NO_VAL, sockets_per_node, "sockets_per_node", "Number of sockets per node required"),
 	add_parse(TIMESTAMP_NO_VAL, start_time, "start_time", "Time execution began, or is expected to begin (UNIX timestamp)"),
@@ -9146,8 +9234,8 @@ static const parser_t PARSER_ARRAY(RESERVATION_MOD_REQ)[] = {
 #define add_parse_overload(mtype, field, overloads, path, desc)		\
 	add_parser(submit_response_msg_t, mtype, false, field, overloads, path, desc)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
-	add_parse(UINT32, job_id, "job_id", "New job ID"),
-	add_parse(STEP_ID, step_id, "step_id", "New job step ID"),
+	add_parse(UINT32, step_id.job_id, "job_id", "New job ID"),
+	add_parse(STEP_ID, step_id.step_id, "step_id", "New job step ID"),
 	add_parse_overload(UINT32, error_code, 1, "error_code", "Error code"),
 	add_parse_overload(ERROR, error_code, 1, "error", "Error message"),
 	add_parse(STRING, job_submit_user_msg, "job_submit_user_msg", "Message to user from job_submit plugin"),
@@ -9303,7 +9391,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(GROUP_ID, group_id, "group_id", "Group ID of the user that owns the job"),
 	add_parse(UINT32, het_job_offset, "hetjob_group", "Unique sequence number applied to this component of the heterogeneous job"),
 	add_parse(BOOL16, immediate, "immediate", "If true, exit if resources are not available within the time period specified"),
-	add_parse(UINT32, job_id, "job_id", "Job ID"),
+	add_parse(UINT32, step_id.job_id, "job_id", "Job ID"),
 	add_skip(job_id_str),
 	add_parse(BOOL16, kill_on_node_fail, "kill_on_node_fail", "If true, kill job on node failure"),
 	add_parse(STRING, licenses, "licenses", "License(s) required by the job"),
@@ -9346,6 +9434,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_cparse(JOB_DESC_MSG_SPANK_ENV, "spank_environment", "Environment variables for job prolog/epilog scripts as set by SPANK plugins"),
 	add_skip(spank_job_env),
 	add_skip(spank_job_env_size),
+	add_parse(SLURM_STEP_ID, step_id, "step_id", "Job step ID"),
 	add_skip(submit_line),
 	add_cparse(JOB_DESC_MSG_TASK_DISTRIBUTION, "distribution", "Layout"),
 	add_skip(task_dist),
@@ -9947,6 +10036,7 @@ static const parser_t PARSER_ARRAY(PROCESS_EXIT_CODE_VERBOSE)[] = {
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(slurm_step_id_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(SLURM_STEP_ID)[] = {
+	add_parse(SLUID, sluid, "sluid", "SLUID"),
 	add_parse(UINT32_NO_VAL, job_id, "job_id", "Job ID"),
 	add_parse(UINT32_NO_VAL, step_het_comp, "step_het_component", "HetJob component"),
 	add_parse(STEP_ID, step_id, "step_id", "Job step ID"),
@@ -9962,6 +10052,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(STEP_NAMES)[] = {
 	add_flag_eq(SLURM_EXTERN_CONT, INFINITE, "extern", false, "External step"),
 	add_flag_eq(SLURM_BATCH_SCRIPT, INFINITE, "batch", false, "Batch step"),
 	add_flag_eq(SLURM_INTERACTIVE_STEP, INFINITE, "interactive", false, "Interactive step"),
+	add_flag_eq(NO_VAL, INFINITE, "entire", false, "Entire job (not a specific step)"),
 };
 #undef add_flag_eq
 
@@ -10477,8 +10568,8 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_POST_RESPONSE)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec)	\
 	add_parser_deprec(openapi_job_submit_response_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(OPENAPI_JOB_SUBMIT_RESPONSE)[] = {
-	add_parse(UINT32, resp.job_id, "job_id", "submitted Job ID"),
-	add_parse(STEP_ID, resp.step_id, "step_id", "submitted Step ID"),
+	add_parse(UINT32, resp.step_id.job_id, "job_id", "submitted Job ID"),
+	add_parse(STEP_ID, resp.step_id.step_id, "step_id", "submitted Step ID"),
 	add_parse(STRING, resp.job_submit_user_msg, "job_submit_user_msg", "Job submission user message"),
 	add_openapi_response_meta(openapi_job_submit_response_t),
 	add_openapi_response_errors(openapi_job_submit_response_t),
@@ -10992,6 +11083,7 @@ static const parser_t parsers[] = {
 	addpsa(KILL_JOBS_RESP_MSG, KILL_JOBS_RESP_JOB, kill_jobs_resp_msg_t, NEED_NONE, "List of jobs signal responses"),
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 	addpsp(H_RESOURCES_AS_LICENSE_LIST, H_RESOURCE_LIST, list_t *, NEED_NONE, "List of hierarchical resources"),
+	addps(SLUID, sluid_t, NEED_NONE, STRING, NULL, NULL, "Slurm Lexicographically-sortable Unique ID"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
@@ -11109,6 +11201,7 @@ static const parser_t parsers[] = {
 	addpp(POWER_MGMT_DATA_PTR, void *, POWER_MGMT_DATA, true, NULL, NULL),
 	addpp(KILL_JOBS_RESP_MSG_PTR, kill_jobs_resp_msg_t *, KILL_JOBS_RESP_MSG, false, NULL, FREE_FUNC(KILL_JOBS_RESP_MSG)),
 	addpp(INT32_PTR, int32_t *, INT32, false, NULL, xfree_ptr),
+	addpp(SLUID_PTR, sluid_t *, STRING, true, NULL, xfree_ptr),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),

@@ -168,7 +168,7 @@ extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
 	job_stp.array_task_id = job->array_task_id;
 	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
 	job_stp.first_step_node = job->batch_host;
-	job_stp.jobid = job->job_id;
+	job_stp.jobid = job->step_id.job_id;
 	job_stp.jobname = job->name;
 	job_stp.user = uid_to_string_cached((uid_t) job->user_id);
 	job_stp.work_dir = job->work_dir;
@@ -369,32 +369,33 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 		 * Only show non-federated jobs that are local. Non-federated
 		 * jobs will not have a fed_origin_str.
 		 */
-		if (_test_local_job(job_ptr->job_id) &&
+		if (_test_local_job(job_ptr->step_id.job_id) &&
 		    !job_ptr->fed_origin_str &&
 		    xstrcmp(job_ptr->cluster, cluster_name)) {
-			job_ptr->job_id = 0;
+			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		if (show_flags & SHOW_SIBLING)
 			continue;
-		hash_inx = job_ptr->job_id % JOB_HASH_SIZE;
+		hash_inx = job_ptr->step_id.job_id % JOB_HASH_SIZE;
 		for (j = 0;
 		     (j < hash_tbl_size[hash_inx] && hash_job_id[hash_inx][j]);
 		     j++) {
-			if (job_ptr->job_id == hash_job_id[hash_inx][j]) {
-				job_ptr->job_id = 0;
+			if (job_ptr->step_id.job_id ==
+			    hash_job_id[hash_inx][j]) {
+				job_ptr->step_id.job_id = 0;
 				break;
 			}
 		}
-		if (job_ptr->job_id == 0) {
+		if (job_ptr->step_id.job_id == 0) {
 			continue;	/* Duplicate */
 		} else if (j >= hash_tbl_size[hash_inx]) {
 			hash_tbl_size[hash_inx] *= 2;
 			xrealloc(hash_job_id[hash_inx],
 				 sizeof(uint32_t) * hash_tbl_size[hash_inx]);
 		}
-		hash_job_id[hash_inx][j] = job_ptr->job_id;
+		hash_job_id[hash_inx][j] = job_ptr->step_id.job_id;
 	}
 	if ((show_flags & SHOW_SIBLING) == 0) {
 		for (i = 0; i < JOB_HASH_SIZE; i++)
@@ -875,7 +876,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	}
 
 	memset(&job_msg, 0, sizeof(job_msg));
-	job_msg.job_id = jobid;
+	job_msg.step_id.job_id = jobid;
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
 

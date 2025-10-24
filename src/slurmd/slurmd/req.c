@@ -415,11 +415,8 @@ static void _slurm_rpc_sbcast_cred(slurm_msg_t *msg)
 static void _slurm_het_job_alloc_info(slurm_msg_t *msg)
 {
 	job_alloc_info_msg_t *request = msg->data;
-	slurm_step_id_t step_id = { 0 };
 
-	step_id.job_id = request->job_id;
-
-	_relay_stepd_msg(&step_id, msg, RELAY_AUTH_PRIVATE_DATA, true);
+	_relay_stepd_msg(&request->step_id, msg, RELAY_AUTH_PRIVATE_DATA, true);
 }
 
 extern int send_slurmd_conf_lite(int fd, slurmd_conf_t *cf)

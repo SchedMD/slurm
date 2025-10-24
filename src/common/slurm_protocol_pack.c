@@ -1662,13 +1662,12 @@ static void _pack_submit_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	submit_response_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
-		pack32(msg->step_id, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->error_code, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
-		pack32(msg->step_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
+		pack32(msg->step_id.step_id, buffer);
 		pack32(msg->error_code, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 	}
@@ -1679,13 +1678,13 @@ static int _unpack_submit_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	submit_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
-		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpack32(&msg->error_code, buffer);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
-		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
+		safe_unpack32(&msg->step_id.step_id, buffer);
 		safe_unpack32(&msg->error_code, buffer);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 	}
@@ -3292,10 +3291,10 @@ extern void slurm_pack_stepmgr_job_info(void *in, uint16_t protocol_version,
 	stepmgr_job_info_t *object = in;
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(object->job_id, buffer);
+		pack_step_id(&object->step_id, buffer, protocol_version);
 		packstr(object->stepmgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(object->job_id, buffer);
+		pack32(object->step_id.job_id, buffer);
 		packstr(object->stepmgr, buffer);
 	}
 }
@@ -3308,10 +3307,11 @@ extern int slurm_unpack_stepmgr_job_info(void **out,
 	*out = object;
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&object->job_id, buffer);
+		safe_unpack_step_id_members(&object->step_id, buffer,
+					    protocol_version);
 		safe_unpackstr(&object->stepmgr, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&object->job_id, buffer);
+		safe_unpack32(&object->step_id.job_id, buffer);
 		safe_unpackstr(&object->stepmgr, buffer);
 	}
 
@@ -3403,6 +3403,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		/* job_record_pack_common */
+		safe_unpack_step_id_members(&job->step_id, buffer,
+					    protocol_version);
 		safe_unpackstr(&job->account, buffer);
 		safe_unpackstr(&job->admin_comment, buffer);
 		safe_unpackstr(&job->alloc_node, buffer);
@@ -3450,7 +3452,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->het_job_id_set, buffer);
 		safe_unpack32(&job->het_job_offset, buffer);
 
-		safe_unpack32(&job->job_id, buffer);
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
@@ -3479,7 +3480,6 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpackstr(&job->selinux_context, buffer);
 		safe_unpack32(&job->site_factor, buffer);
-		safe_unpack64(&job->sluid, buffer);
 		safe_unpack16(&job->start_protocol_ver, buffer);
 		safe_unpackstr(&job->state_desc, buffer);
 		safe_unpack32(&job->state_reason, buffer);
@@ -3658,7 +3658,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->het_job_id_set, buffer);
 		safe_unpack32(&job->het_job_offset, buffer);
 
-		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->step_id.job_id, buffer);
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
@@ -3864,7 +3864,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->het_job_id_set, buffer);
 		safe_unpack32(&job->het_job_offset, buffer);
 
-		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->step_id.job_id, buffer);
 		safe_unpack32(&job->job_state, buffer);
 
 		safe_unpack_time(&job->last_sched_eval, buffer);
@@ -4037,7 +4037,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->container_id, buffer);
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpackstr(&job->failed_node, buffer);
-		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->step_id.job_id, buffer);
 		safe_unpack32(&job->user_id, buffer);
 		safe_unpack32(&job->group_id, buffer);
 		safe_unpack32(&job->het_job_id, buffer);
@@ -6790,7 +6790,8 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	if (!msg->wckey)
 		msg->bitflags |= USE_DEFAULT_WCKEY;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->site_factor, buffer);
 		packstr(msg->batch_features, buffer);
 		packstr(msg->cluster_features, buffer);
@@ -6804,7 +6805,144 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
+		packstr(msg->job_id_str, buffer);
+		packstr(msg->name, buffer);
+
+		packstr(msg->alloc_node, buffer);
+		pack32(msg->alloc_sid, buffer);
+		packstr(msg->array_inx, buffer);
+		packstr(msg->burst_buffer, buffer);
+		pack16(msg->pn_min_cpus, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		pack16(msg->oom_kill_step, buffer);
+		pack32(msg->pn_min_tmp_disk, buffer);
+		packstr(msg->prefer, buffer);
+
+		pack32(msg->cpu_freq_min, buffer);
+		pack32(msg->cpu_freq_max, buffer);
+		pack32(msg->cpu_freq_gov, buffer);
+
+		packstr(msg->partition, buffer);
+		pack32(msg->priority, buffer);
+		packstr(msg->dependency, buffer);
+		packstr(msg->account, buffer);
+		packstr(msg->admin_comment, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->nice, buffer);
+		pack32(msg->profile, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->mcs_label, buffer);
+
+		packstr(msg->origin_cluster, buffer);
+		pack8(msg->open_mode, buffer);
+		pack8(msg->overcommit, buffer);
+		packstr(msg->acctg_freq, buffer);
+		pack32(msg->num_tasks, buffer);
+
+		packstr(msg->req_context, buffer);
+		packstr(msg->req_nodes, buffer);
+		packstr(msg->exc_nodes, buffer);
+		packstr_array(msg->environment, msg->env_size, buffer);
+		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
+			      buffer);
+		packstr(msg->script, buffer);
+		packstr_array(msg->argv, msg->argc, buffer);
+
+		packstr(msg->std_err, buffer);
+		packstr(msg->std_in, buffer);
+		packstr(msg->std_out, buffer);
+		packstr(msg->submit_line, buffer);
+		packstr(msg->work_dir, buffer);
+
+		pack16(msg->immediate, buffer);
+		pack16(msg->reboot, buffer);
+		pack16(msg->requeue, buffer);
+		pack16(msg->shared, buffer);
+		pack16(msg->cpus_per_task, buffer);
+		pack16(msg->ntasks_per_node, buffer);
+		pack16(msg->ntasks_per_board, buffer);
+		pack16(msg->ntasks_per_socket, buffer);
+		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+
+		pack16(msg->plane_size, buffer);
+		pack16(msg->cpu_bind_type, buffer);
+		pack16(msg->mem_bind_type, buffer);
+		packstr(msg->cpu_bind, buffer);
+		packstr(msg->mem_bind, buffer);
+
+		pack32(msg->time_limit, buffer);
+		pack32(msg->time_min, buffer);
+		pack32(msg->min_cpus, buffer);
+		pack32(msg->max_cpus, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->max_nodes, buffer);
+		packstr(msg->job_size_str, buffer);
+		pack16(msg->boards_per_node, buffer);
+		pack16(msg->sockets_per_board, buffer);
+		pack16(msg->sockets_per_node, buffer);
+		pack16(msg->cores_per_socket, buffer);
+		pack16(msg->threads_per_core, buffer);
+		pack32(msg->user_id, buffer);
+		pack32(msg->group_id, buffer);
+
+		pack16(msg->alloc_resp_port, buffer);
+		packstr(msg->alloc_tls_cert, buffer);
+		packstr(msg->resp_host, buffer);
+		pack16(msg->other_port, buffer);
+		pack16(msg->resv_port_cnt, buffer);
+		packstr(msg->network, buffer);
+		pack_time(msg->begin_time, buffer);
+		pack_time(msg->end_time, buffer);
+		pack_time(msg->deadline, buffer);
+
+		packstr(msg->licenses, buffer);
+		pack16(msg->mail_type, buffer);
+		packstr(msg->mail_user, buffer);
+		packstr(msg->reservation, buffer);
+		pack16(msg->restart_cnt, buffer);
+		pack16(msg->warn_flags, buffer);
+		pack16(msg->warn_signal, buffer);
+		pack16(msg->warn_time, buffer);
+		packstr(msg->wckey, buffer);
+		pack32(msg->req_switch, buffer);
+		pack32(msg->wait4switch, buffer);
+
+		pack16(msg->wait_all_nodes, buffer);
+		pack64(msg->bitflags, buffer);
+		pack32(msg->delay_boot, buffer);
+		packstr(msg->extra, buffer);
+		pack16(msg->x11, buffer);
+		packstr(msg->x11_magic_cookie, buffer);
+		packstr(msg->x11_target, buffer);
+		pack16(msg->x11_target_port, buffer);
+
+		packstr(msg->cpus_per_tres, buffer);
+		packstr(msg->mem_per_tres, buffer);
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
+		packstr(msg->tres_per_job, buffer);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_socket, buffer);
+		packstr(msg->tres_per_task, buffer);
+		pack_cron_entry(msg->crontab_entry, smsg->protocol_version,
+				buffer);
+		pack16(msg->segment_size, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack32(msg->site_factor, buffer);
+		packstr(msg->batch_features, buffer);
+		packstr(msg->cluster_features, buffer);
+		packstr(msg->clusters, buffer);
+		pack16(msg->contiguous, buffer);
+		packstr(msg->container, buffer);
+		packstr(msg->container_id, buffer);
+		pack16(msg->core_spec, buffer);
+		pack32(msg->task_dist, buffer);
+		pack16(msg->kill_on_node_fail, buffer);
+		packstr(msg->features, buffer);
+		pack64(msg->fed_siblings_active, buffer);
+		pack64(msg->fed_siblings_viable, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -6942,7 +7080,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -7079,7 +7217,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->features, buffer);
 		pack64(msg->fed_siblings_active, buffer);
 		pack64(msg->fed_siblings_viable, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 		packstr(msg->name, buffer);
 
@@ -7213,7 +7351,9 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t start, script_len;
 	job_desc_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpack32(&msg->site_factor, buffer);
 		safe_unpackstr(&msg->batch_features, buffer);
 		safe_unpackstr(&msg->cluster_features, buffer);
@@ -7227,7 +7367,175 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr(&msg->job_id_str, buffer);
+		safe_unpackstr(&msg->name, buffer);
+
+		safe_unpackstr(&msg->alloc_node, buffer);
+		safe_unpack32(&msg->alloc_sid, buffer);
+		safe_unpackstr(&msg->array_inx, buffer);
+		safe_unpackstr(&msg->burst_buffer, buffer);
+		safe_unpack16(&msg->pn_min_cpus, buffer);
+		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack16(&msg->oom_kill_step, buffer);
+		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
+
+		safe_unpackstr(&msg->prefer, buffer);
+		safe_unpack32(&msg->cpu_freq_min, buffer);
+		safe_unpack32(&msg->cpu_freq_max, buffer);
+		safe_unpack32(&msg->cpu_freq_gov, buffer);
+
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpack32(&msg->priority, buffer);
+		safe_unpackstr(&msg->dependency, buffer);
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpackstr(&msg->admin_comment, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->nice, buffer);
+		safe_unpack32(&msg->profile, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->mcs_label, buffer);
+
+		safe_unpackstr(&msg->origin_cluster, buffer);
+		safe_unpack8(&msg->open_mode, buffer);
+		safe_unpack8(&msg->overcommit, buffer);
+		safe_unpackstr(&msg->acctg_freq, buffer);
+		safe_unpack32(&msg->num_tasks, buffer);
+
+		safe_unpackstr(&msg->req_context, buffer);
+		safe_unpackstr(&msg->req_nodes, buffer);
+		safe_unpackstr(&msg->exc_nodes, buffer);
+		start = buffer->processed;
+		safe_unpackstr_array(&msg->environment, &msg->env_size, buffer);
+
+		if (msg->env_size) {
+			msg->env_hash.type = HASH_PLUGIN_K12;
+			(void) hash_g_compute(&buffer->head[start],
+					      buffer->processed - start, NULL,
+					      0, &msg->env_hash);
+		}
+
+		if (envcount(msg->environment) != msg->env_size)
+			goto unpack_error;
+		safe_unpackstr_array(&msg->spank_job_env,
+				     &msg->spank_job_env_size, buffer);
+		if (envcount(msg->spank_job_env) != msg->spank_job_env_size)
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&msg->script, &script_len, buffer);
+
+		msg->script_hash.type = HASH_PLUGIN_K12;
+		(void) hash_g_compute(msg->script, script_len, NULL, 0,
+				      &msg->script_hash);
+
+		safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
+
+		safe_unpackstr(&msg->std_err, buffer);
+		safe_unpackstr(&msg->std_in, buffer);
+		safe_unpackstr(&msg->std_out, buffer);
+		safe_unpackstr(&msg->submit_line, buffer);
+		safe_unpackstr(&msg->work_dir, buffer);
+
+		safe_unpack16(&msg->immediate, buffer);
+		safe_unpack16(&msg->reboot, buffer);
+		safe_unpack16(&msg->requeue, buffer);
+		safe_unpack16(&msg->shared, buffer);
+		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->ntasks_per_node, buffer);
+		safe_unpack16(&msg->ntasks_per_board, buffer);
+		safe_unpack16(&msg->ntasks_per_socket, buffer);
+		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
+
+		safe_unpack16(&msg->plane_size, buffer);
+		safe_unpack16(&msg->cpu_bind_type, buffer);
+		safe_unpack16(&msg->mem_bind_type, buffer);
+		safe_unpackstr(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->mem_bind, buffer);
+
+		safe_unpack32(&msg->time_limit, buffer);
+		safe_unpack32(&msg->time_min, buffer);
+		safe_unpack32(&msg->min_cpus, buffer);
+		safe_unpack32(&msg->max_cpus, buffer);
+		safe_unpack32(&msg->min_nodes, buffer);
+		safe_unpack32(&msg->max_nodes, buffer);
+		safe_unpackstr(&msg->job_size_str, buffer);
+		safe_unpack16(&msg->boards_per_node, buffer);
+		safe_unpack16(&msg->sockets_per_board, buffer);
+		safe_unpack16(&msg->sockets_per_node, buffer);
+		safe_unpack16(&msg->cores_per_socket, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpack32(&msg->group_id, buffer);
+
+		safe_unpack16(&msg->alloc_resp_port, buffer);
+		safe_unpackstr(&msg->alloc_tls_cert, buffer);
+		safe_unpackstr(&msg->resp_host, buffer);
+		safe_unpack16(&msg->other_port, buffer);
+		safe_unpack16(&msg->resv_port_cnt, buffer);
+		safe_unpackstr(&msg->network, buffer);
+		safe_unpack_time(&msg->begin_time, buffer);
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack_time(&msg->deadline, buffer);
+
+		safe_unpackstr(&msg->licenses, buffer);
+		safe_unpack16(&msg->mail_type, buffer);
+		safe_unpackstr(&msg->mail_user, buffer);
+		safe_unpackstr(&msg->reservation, buffer);
+		safe_unpack16(&msg->restart_cnt, buffer);
+		safe_unpack16(&msg->warn_flags, buffer);
+		safe_unpack16(&msg->warn_signal, buffer);
+		safe_unpack16(&msg->warn_time, buffer);
+		safe_unpackstr(&msg->wckey, buffer);
+		safe_unpack32(&msg->req_switch, buffer);
+		safe_unpack32(&msg->wait4switch, buffer);
+
+		safe_unpack16(&msg->wait_all_nodes, buffer);
+		safe_unpack64(&msg->bitflags, buffer);
+		safe_unpack32(&msg->delay_boot, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpack16(&msg->x11, buffer);
+		safe_unpackstr(&msg->x11_magic_cookie, buffer);
+		safe_unpackstr(&msg->x11_target, buffer);
+		safe_unpack16(&msg->x11_target_port, buffer);
+
+		safe_unpackstr(&msg->cpus_per_tres, buffer);
+		slurm_format_tres_string(&msg->cpus_per_tres, "gres");
+
+		safe_unpackstr(&msg->mem_per_tres, buffer);
+		slurm_format_tres_string(&msg->mem_per_tres, "gres");
+
+		safe_unpackstr(&msg->tres_bind, buffer);
+		safe_unpackstr(&msg->tres_freq, buffer);
+		safe_unpackstr(&msg->tres_per_job, buffer);
+		slurm_format_tres_string(&msg->tres_per_job, "gres");
+
+		safe_unpackstr(&msg->tres_per_node, buffer);
+		slurm_format_tres_string(&msg->tres_per_node, "gres");
+
+		safe_unpackstr(&msg->tres_per_socket, buffer);
+		slurm_format_tres_string(&msg->tres_per_socket, "gres");
+
+		safe_unpackstr(&msg->tres_per_task, buffer);
+		slurm_format_tres_string(&msg->tres_per_task, "gres");
+
+		if (unpack_cron_entry(&msg->crontab_entry,
+				      smsg->protocol_version, buffer))
+			goto unpack_error;
+		safe_unpack16(&msg->segment_size, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->site_factor, buffer);
+		safe_unpackstr(&msg->batch_features, buffer);
+		safe_unpackstr(&msg->cluster_features, buffer);
+		safe_unpackstr(&msg->clusters, buffer);
+		safe_unpack16(&msg->contiguous, buffer);
+		safe_unpackstr(&msg->container, buffer);
+		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpack16(&msg->core_spec, buffer);
+		safe_unpack32(&msg->task_dist, buffer);
+		safe_unpack16(&msg->kill_on_node_fail, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack64(&msg->fed_siblings_active, buffer);
+		safe_unpack64(&msg->fed_siblings_viable, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 
@@ -7396,7 +7704,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 
@@ -7565,7 +7873,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack64(&msg->fed_siblings_active, buffer);
 		safe_unpack64(&msg->fed_siblings_viable, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 		safe_unpackstr(&msg->name, buffer);
 
@@ -7789,10 +8097,11 @@ static void _pack_job_alloc_info_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	job_alloc_info_msg_t *job_desc_ptr = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(job_desc_ptr->job_id, buffer);
+		pack_step_id(&job_desc_ptr->step_id, buffer,
+			     smsg->protocol_version);
 		packstr(job_desc_ptr->req_cluster, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(job_desc_ptr->job_id, buffer);
+		pack32(job_desc_ptr->step_id.job_id, buffer);
 		packstr(job_desc_ptr->req_cluster, buffer);
 	}
 }
@@ -7802,10 +8111,11 @@ static int _unpack_job_alloc_info_msg(slurm_msg_t *smsg, buf_t *buffer)
 	job_alloc_info_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpackstr(&msg->req_cluster, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->req_cluster, buffer);
 	}
 
@@ -11405,12 +11715,12 @@ static void _pack_suspend_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	suspend_msg_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack16(msg->op, buffer);
-		pack32(msg->job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->op, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 	}
 }
@@ -11420,12 +11730,13 @@ static int _unpack_suspend_msg(slurm_msg_t *smsg, buf_t *buffer)
 	suspend_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpack16(&msg->op, buffer);
-		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->op, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 	}
 
@@ -11477,11 +11788,10 @@ static void _pack_top_job_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack16(msg->op, buffer);
-		pack32(msg->job_id, buffer);
 		packstr(msg->job_id_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(msg->op, buffer);
-		pack32(msg->job_id, buffer);
+		pack32(0, buffer);
 		packstr(msg->job_id_str, buffer);
 	}
 }
@@ -11492,11 +11802,11 @@ static int _unpack_top_job_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack16(&msg->op, buffer);
-		safe_unpack32(&msg->job_id, buffer);
 		safe_unpackstr(&msg->job_id_str, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp;
 		safe_unpack16(&msg->op, buffer);
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&uint32_tmp, buffer); /* was job_id */
 		safe_unpackstr(&msg->job_id_str, buffer);
 	}
 
@@ -12256,7 +12566,7 @@ static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	uint32_t count = NO_VAL, *job_id_ptr;
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
 		packstr(msg->part_name, buffer);
@@ -12276,7 +12586,7 @@ static void _pack_will_run_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack_time(msg->start_time, buffer);
 		packdouble(0, buffer); /* was sys_usage_per */
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32(msg->job_id, buffer);
+		pack32(msg->step_id.job_id, buffer);
 		packstr(msg->job_submit_user_msg, buffer);
 		packstr(msg->node_list, buffer);
 		packstr(msg->part_name, buffer);
@@ -12305,7 +12615,8 @@ static int _unpack_will_run_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 	will_run_response_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
 		safe_unpackstr(&msg->part_name, buffer);
@@ -12327,7 +12638,7 @@ static int _unpack_will_run_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpackdouble(&double_tmp, buffer); /* was sys_usage_per */
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpackstr(&msg->job_submit_user_msg, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
 		safe_unpackstr(&msg->part_name, buffer);

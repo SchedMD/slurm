@@ -1121,11 +1121,10 @@ static gboolean _admin_focus_out_job(GtkEntry *entry,
 		if (global_edit_error) {
 			if (global_edit_error_msg)
 				g_free(global_edit_error_msg);
-			global_edit_error_msg = g_strdup_printf(
-				"Job %d %s can't be set to %s",
-				job_msg->job_id,
-				col_name,
-				name);
+			global_edit_error_msg =
+				g_strdup_printf("Job %d %s can't be set to %s",
+						job_msg->step_id.job_id,
+						col_name, name);
 		}
 		global_entry_changed = 0;
 	}
@@ -1470,18 +1469,18 @@ static void _layout_job_record(GtkTreeView *treeview,
 	if (job_ptr->array_task_str) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u_[%s] (%u)",
 			 job_ptr->array_job_id, job_ptr->array_task_str,
-			 job_ptr->job_id);
+			 job_ptr->step_id.job_id);
 	} else if (job_ptr->array_task_id != NO_VAL) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u_%u (%u)",
 			 job_ptr->array_job_id, job_ptr->array_task_id,
-			 job_ptr->job_id);
+			 job_ptr->step_id.job_id);
 	} else if (job_ptr->het_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u+%u (%u)",
-			 job_ptr->het_job_id,
-			 job_ptr->het_job_offset,
-			 job_ptr->job_id);
+			 job_ptr->het_job_id, job_ptr->het_job_offset,
+			 job_ptr->step_id.job_id);
 	} else {
-		snprintf(tmp_char, sizeof(tmp_char), "%u", job_ptr->job_id);
+		snprintf(tmp_char, sizeof(tmp_char), "%u",
+			 job_ptr->step_id.job_id);
 	}
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
@@ -2928,10 +2927,10 @@ static void _update_info_step(sview_job_info_t *sview_job_info_ptr,
 			}
 		}
 	adding:
-		_append_step_record(step_ptr, GTK_TREE_STORE(model),
-				    iter, sview_job_info_ptr->job_ptr->job_id,
-				    IS_JOB_SUSPENDED(
-					    sview_job_info_ptr->job_ptr));
+			_append_step_record(
+				step_ptr, GTK_TREE_STORE(model), iter,
+				sview_job_info_ptr->job_ptr->step_id.job_id,
+				IS_JOB_SUSPENDED(sview_job_info_ptr->job_ptr));
 	found:
 		;
 	}
@@ -2993,9 +2992,9 @@ static void _update_info_job(list_t *info_list, GtkTreeView *tree_view)
 			jobid = atoi(offset);
 			g_free(tmp_jobid);
 
-			if ((jobid != job_ptr->job_id)
-			    && (jobid != job_ptr->array_job_id) &&
-				(jobid != job_ptr->het_job_id)) {
+			if ((jobid != job_ptr->step_id.job_id) &&
+			    (jobid != job_ptr->array_job_id) &&
+			    (jobid != job_ptr->het_job_id)) {
 				/* Bad pointer */
 				sview_job_info->iter_set = false;
 			}
@@ -3101,7 +3100,7 @@ static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
 		bool added_task = false;
 
 		job_ptr = &(job_info_ptr->job_array[i]);
-		if (job_ptr->job_id == 0)
+		if (job_ptr->step_id.job_id == 0)
 			continue;
 
 		sview_job_info_ptr = NULL;
@@ -3110,7 +3109,7 @@ static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
 			while ((sview_job_info_ptr =
 				list_next(last_list_itr))) {
 				if (sview_job_info_ptr->job_id ==
-				    job_ptr->job_id) {
+				    job_ptr->step_id.job_id) {
 					list_remove(last_list_itr);
 					_job_info_free(sview_job_info_ptr);
 					break;
@@ -3123,7 +3122,7 @@ static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
 			sview_job_info_ptr = xmalloc(sizeof(sview_job_info_t));
 
 		sview_job_info_ptr->job_ptr = job_ptr;
-		sview_job_info_ptr->job_id = job_ptr->job_id;
+		sview_job_info_ptr->job_id = job_ptr->step_id.job_id;
 
 		if (job_ptr->array_task_str ||
 		    (job_ptr->array_task_id != NO_VAL)) {
@@ -3170,15 +3169,15 @@ static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
 			if (job_ptr->array_task_str) {
 				sview_job_info_ptr->job_id_str =
 					xstrdup_printf("%u_[%s] (%u)",
-					 job_ptr->array_job_id,
-					 job_ptr->array_task_str,
-					 job_ptr->job_id);
+						       job_ptr->array_job_id,
+						       job_ptr->array_task_str,
+						       job_ptr->step_id.job_id);
 			} else {
 				sview_job_info_ptr->job_id_str =
 					xstrdup_printf("%u_%u (%u)",
-					 job_ptr->array_job_id,
-					 job_ptr->array_task_id,
-					 job_ptr->job_id);
+						       job_ptr->array_job_id,
+						       job_ptr->array_task_id,
+						       job_ptr->step_id.job_id);
 			}
 		} else if (job_ptr->het_job_id) {
 			char comp_str[64];
@@ -3203,24 +3202,25 @@ static list_t *_create_job_info_list(job_info_msg_t *job_info_ptr,
 					    sview_job_info_ptr);
 			sview_job_info_ptr->job_id_str =
 				xstrdup_printf("%u+%u (%u)",
-				 job_ptr->het_job_id,
-				 job_ptr->het_job_offset,
-				 job_ptr->job_id);
+					       job_ptr->het_job_id,
+					       job_ptr->het_job_offset,
+					       job_ptr->step_id.job_id);
 		} else
 			sview_job_info_ptr->job_id_str =
-				xstrdup_printf("%u", job_ptr->job_id);
+				xstrdup_printf("%u", job_ptr->step_id.job_id);
 
 		sview_job_info_ptr->step_list = list_create(NULL);
 		sview_job_info_ptr->pos = i;
 		sview_job_info_ptr->node_cnt = 0;
 		sview_job_info_ptr->color_inx =
-			job_ptr->job_id % sview_colors_cnt;
+			job_ptr->step_id.job_id % sview_colors_cnt;
 		sview_job_info_ptr->nodes = xstrdup(job_ptr->nodes);
 		sview_job_info_ptr->node_cnt = job_ptr->num_nodes;
 
 		for (j = 0; j < step_info_ptr->job_step_count; j++) {
 			step_ptr = &(step_info_ptr->job_steps[j]);
-			if ((step_ptr->step_id.job_id == job_ptr->job_id) &&
+			if ((step_ptr->step_id.job_id ==
+			     job_ptr->step_id.job_id) &&
 			    (step_ptr->state == JOB_RUNNING)) {
 				list_append(sview_job_info_ptr->step_list,
 					    step_ptr);
@@ -3287,13 +3287,13 @@ need_refresh:
 
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info = list_next(itr))) {
-		if (sview_job_info->job_ptr->job_id ==
+		if (sview_job_info->job_ptr->step_id.job_id ==
 		    spec_info->search_info->int_data)
 			break;
 		if (sview_job_info->task_list) {
 			itr2 = list_iterator_create(sview_job_info->task_list);
 			while ((sview_job_info2 = list_next(itr2))) {
-				if (sview_job_info2->job_ptr->job_id ==
+				if (sview_job_info2->job_ptr->step_id.job_id ==
 				    spec_info->search_info->int_data)
 					break;
 			}
@@ -3307,7 +3307,7 @@ need_refresh:
 			itr2 = list_iterator_create(
 				sview_job_info->task_pending_list);
 			while ((sview_job_info2 = list_next(itr2))) {
-				if (sview_job_info2->job_ptr->job_id ==
+				if (sview_job_info2->job_ptr->step_id.job_id ==
 				    spec_info->search_info->int_data)
 					break;
 			}
@@ -3664,7 +3664,7 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		offset++;
 	else
 		offset = tmp_jobid;
-	job_msg->job_id = atoi(offset);
+	job_msg->step_id.job_id = atoi(offset);
 	g_free(tmp_jobid);
 
 	gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
@@ -3672,9 +3672,9 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 	if (stepid)
 		stepid = NO_VAL;
 	else {
-		stepid = job_msg->job_id;
-		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
-				   SORTID_POS, &job_msg->job_id, -1);
+		stepid = job_msg->step_id.job_id;
+		gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter, SORTID_POS,
+				   &job_msg->step_id.job_id, -1);
 	}
 
 	type = _set_job_msg(job_msg, new_text, column);
@@ -3695,19 +3695,14 @@ extern void admin_edit_job(GtkCellRendererText *cell,
 		   == SLURM_SUCCESS) {
 		gtk_tree_store_set(treestore, &iter, column, new_text, -1);
 		temp = g_strdup_printf("Job %d %s changed to %s",
-				       job_msg->job_id,
-				       type,
-				       new_text);
+				       job_msg->step_id.job_id, type, new_text);
 	} else if (errno == ESLURM_DISABLED) {
 		temp = g_strdup_printf(
 			"Can only edit %s on pending jobs.", type);
 	} else {
-	print_error:
-		temp = g_strdup_printf("Job %d %s can't be "
-				       "set to %s",
-				       job_msg->job_id,
-				       type,
-				       new_text);
+print_error:
+		temp = g_strdup_printf("Job %d %s can't be set to %s",
+				       job_msg->step_id.job_id, type, new_text);
 	}
 
 	display_edit_note(temp);
@@ -4041,7 +4036,8 @@ display_it:
 						&search_info->int_data,
 						&search_info->int_data2);
 				}
-				if (job_ptr->job_id != search_info->int_data) {
+				if (job_ptr->step_id.job_id !=
+				    search_info->int_data) {
 					continue;
 				}
 #if 0
@@ -4581,7 +4577,7 @@ static void _edit_each_job(GtkTreeModel *model, GtkTreeIter *iter,
 
 		job_msg = xmalloc(sizeof(job_desc_msg_t));
 		slurm_init_job_desc_msg(job_msg);
-		job_msg->job_id = job_foreach->step_id.job_id;
+		job_msg->step_id.job_id = job_foreach->step_id.job_id;
 		entry = _admin_full_edit_job(job_msg, model, iter);
 		gtk_box_pack_start(GTK_BOX(GTK_DIALOG(popup)->vbox),
 				   label, false, false, 0);

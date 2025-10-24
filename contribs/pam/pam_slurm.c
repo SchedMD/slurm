@@ -348,12 +348,12 @@ _slurm_match_allocation(uid_t uid)
 		job_info_t *j = &msg->job_array[i];
 
 		if (j->job_state == JOB_RUNNING) {
-
-			DBG ("jobid %ld: nodes=\"%s\"", j->job_id, j->nodes);
+			DBG("jobid %ld: nodes=\"%s\"", j->step_id.job_id,
+			    j->nodes);
 
 			if (_hostrange_member(nodename, j->nodes) ) {
-				DBG ("user %ld allocated node %s in job %ld",
-				     uid, nodename, j->job_id);
+				DBG("user %ld allocated node %s in job %ld",
+				    uid, nodename, j->step_id.job_id);
 				authorized = 1;
 				break;
 			} else {
@@ -362,8 +362,9 @@ _slurm_match_allocation(uid_t uid)
 				if (nodename) {
 					if (_hostrange_member(nodename,
 							      j->nodes)) {
-						DBG ("user %ld allocated node %s in job %ld",
-						     uid, nodename, j->job_id);
+						DBG("user %ld allocated node %s in job %ld",
+						    uid, nodename,
+						    j->step_id.job_id);
 						authorized = 1;
 						xfree(nodename);
 						break;

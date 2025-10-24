@@ -3142,10 +3142,10 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 
 	if (job_desc->job_id_str)
 		job_id = job_desc->job_id_str;
-	else if (job_desc->job_id == NO_VAL)
+	else if (job_desc->step_id.job_id == NO_VAL)
 		job_id = "N/A";
 	else {
-		snprintf(buf, sizeof(buf), "%u", job_desc->job_id);
+		snprintf(buf, sizeof(buf), "%u", job_desc->step_id.job_id);
 		job_id = buf;
 	}
 	debug3("JobDesc: user_id=%u JobId=%s partition=%s name=%s",
@@ -7073,7 +7073,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			job_desc.ntasks_per_node = detail_ptr->ntasks_per_node;
 		job_desc.ntasks_per_tres = detail_ptr->ntasks_per_tres;
 		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
-		job_desc.job_id = job_ptr->job_id;
+		job_desc.step_id.job_id = job_ptr->job_id;
 		job_desc.bitflags = job_ptr->bit_flags;
 		job_desc.tres_per_task = xstrdup(job_ptr->tres_per_task);
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
@@ -8581,8 +8581,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	if (job_desc->profile != ACCT_GATHER_PROFILE_NOT_SET)
 		job_ptr->profile = job_desc->profile;
 
-	if (job_desc->job_id != NO_VAL) {	/* already confirmed unique */
-		job_ptr->job_id = job_desc->job_id;
+	if (job_desc->step_id.job_id != NO_VAL) { /* already confirmed unique */
+		job_ptr->job_id = job_desc->step_id.job_id;
 	} else {
 		error_code = _set_job_id(job_ptr);
 		if (error_code)
@@ -8926,8 +8926,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
 		mem_ratio = ROUNDUP(job_mem_limit, sys_mem_limit);
-		debug("JobId=%u: increasing cpus_per_task and decreasing mem_per_cpu by factor of %"PRIu64" based upon mem_per_cpu limits",
-		      job_desc_msg->job_id, mem_ratio);
+		debug("%pI: increasing cpus_per_task and decreasing mem_per_cpu by factor of %"PRIu64" based upon mem_per_cpu limits",
+		      &job_desc_msg->step_id, mem_ratio);
 		if (job_desc_msg->cpus_per_task == NO_VAL16)
 			job_desc_msg->cpus_per_task = mem_ratio;
 		else
@@ -8965,8 +8965,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 	    ((sys_mem_limit & MEM_PER_CPU) == 0)) {
 		if (job_mem_limit <= sys_mem_limit)
 			return true;
-		debug2("JobId=%u mem=%"PRIu64"M > MaxMemPerNode=%"PRIu64"M in partition %s",
-		       job_desc_msg->job_id, job_mem_limit, sys_mem_limit,
+		debug2("%pI mem=%"PRIu64"M > MaxMemPerNode=%"PRIu64"M in partition %s",
+		       &job_desc_msg->step_id, job_mem_limit, sys_mem_limit,
 		       (part_ptr && part_ptr->name) ? part_ptr->name : "N/A");
 		return false;
 	}
@@ -9064,8 +9064,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 					MAX(job_desc_msg->pn_min_cpus,
 					    job_desc_msg->cpus_per_task);
 			}
-			debug("JobId=%u: Setting job's pn_min_cpus to %u due to memory limit",
-			      job_desc_msg->job_id,
+			debug("%pI: Setting job's pn_min_cpus to %u due to memory limit",
+			      &job_desc_msg->step_id,
 			      job_desc_msg->pn_min_cpus);
 		}
 		sys_mem_limit *= cpus_per_node;
@@ -9074,8 +9074,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 	if (job_mem_limit <= sys_mem_limit)
 		return true;
 
-	debug2("JobId=%u mem=%"PRIu64"M > MaxMemPer%s=%"PRIu64"M in partition:%s",
-	       job_desc_msg->job_id, job_mem_limit,
+	debug2("%pI mem=%"PRIu64"M > MaxMemPer%s=%"PRIu64"M in partition:%s",
+	       &job_desc_msg->step_id, job_mem_limit,
 	       (job_mem_limit & MEM_PER_CPU) ? "CPU" : "Node", sys_mem_limit,
 	       (part_ptr && part_ptr->name) ? part_ptr->name : "N/A");
 
@@ -9748,21 +9748,21 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 	if (job_desc_msg->kill_on_node_fail == NO_VAL16)
 		job_desc_msg->kill_on_node_fail = 1;
 
-	if (job_desc_msg->job_id != NO_VAL) {
+	if (job_desc_msg->step_id.job_id != NO_VAL) {
 		job_record_t *dup_job_ptr;
 		if (!fed_mgr_fed_rec &&
 		    (submit_uid != 0) &&
 		    (submit_uid != slurm_conf.slurm_user_id)) {
-			info("attempt by uid %u to set JobId=%u",
-			     submit_uid, job_desc_msg->job_id);
+			info("attempt by uid %u to set %pI",
+			     submit_uid, &job_desc_msg->step_id);
 			return ESLURM_INVALID_JOB_ID;
 		}
-		if (job_desc_msg->job_id == 0) {
+		if (job_desc_msg->step_id.job_id == 0) {
 			info("attempt by uid %u to set JobId=0",
 			     submit_uid);
 			return ESLURM_INVALID_JOB_ID;
 		}
-		dup_job_ptr = find_job_record(job_desc_msg->job_id);
+		dup_job_ptr = find_job_record(job_desc_msg->step_id.job_id);
 		if (dup_job_ptr) {
 			info("attempt to reuse active %pJ", dup_job_ptr);
 			return ESLURM_DUPLICATE_JOB_ID;
@@ -15319,17 +15319,16 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 	int rc;
 
 	xfree(job_desc->job_id_str);
-	xstrfmtcat(job_desc->job_id_str, "%u", job_desc->job_id);
+	xstrfmtcat(job_desc->job_id_str, "%u", job_desc->step_id.job_id);
 
 	if (hostname) {
 		xfree(job_desc->alloc_node);
 		job_desc->alloc_node = hostname;
 	}
 
-	job_ptr = find_job_record(job_desc->job_id);
+	job_ptr = find_job_record(job_desc->step_id.job_id);
 	if (job_ptr == NULL) {
-		info("%s: JobId=%u does not exist",
-		     __func__, job_desc->job_id);
+		info("%s: %pI does not exist", __func__, &job_desc->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
 		if (job_ptr->array_recs && job_ptr->array_recs->task_id_bitmap)
@@ -17463,10 +17462,10 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	job_record_t *job_ptr = NULL;
 
 	xfree(sus_ptr->job_id_str);
-	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->job_id);
+	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	/* find the job */
-	job_ptr = find_job_record (sus_ptr->job_id);
+	job_ptr = find_job_record(sus_ptr->step_id.job_id);
 	if (job_ptr == NULL) {
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
@@ -18367,12 +18366,12 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	job_record_t *job_ptr;
 	xassert(timeout_msg);
 
-	job_ptr = find_job_record(time_req_msg->job_id);
+	job_ptr = find_job_record(time_req_msg->step_id.job_id);
 	if (!job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
-	timeout_msg->step_id.job_id = time_req_msg->job_id;
+	timeout_msg->step_id.job_id = job_ptr->job_id;
 	timeout_msg->step_id.sluid = job_ptr->db_index;
 	timeout_msg->step_id.step_id = NO_VAL;
 	timeout_msg->step_id.step_het_comp = NO_VAL;
@@ -18625,6 +18624,9 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_details_t *details = job_ptr->details;
 	multi_core_data_t *mc_ptr = details->mc_ptr;
 	int i;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_ptr->job_id;
+	step_id.sluid = job_ptr->db_index;
 
 	/* construct a job_desc_msg_t from job */
 	job_desc = xmalloc(sizeof(job_desc_msg_t));
@@ -18666,7 +18668,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->cluster_features  = xstrdup(details->cluster_features);
 	job_desc->group_id          = job_ptr->group_id;
 	job_desc->immediate         = 0; /* nowhere to get this value */
-	job_desc->job_id            = job_ptr->job_id;
 	job_desc->kill_on_node_fail = job_ptr->kill_on_node_fail;
 	job_desc->licenses          = xstrdup(job_ptr->lic_req);
 	job_desc->mail_type         = job_ptr->mail_type;
@@ -18713,6 +18714,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->std_err           = xstrdup(details->std_err);
 	job_desc->std_in            = xstrdup(details->std_in);
 	job_desc->std_out           = xstrdup(details->std_out);
+	job_desc->step_id = step_id;
 	job_desc->submit_line       = xstrdup(details->submit_line);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;

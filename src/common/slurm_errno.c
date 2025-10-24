@@ -905,6 +905,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_RETRY_EVAL_HINT),
 		"Remove one node and retry eval_nodes",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_SLUID),
+		"SLUID is invalid",
+	},
 
 	/* SPANK errors */
 	{

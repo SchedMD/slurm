@@ -111,7 +111,7 @@ extern int job_modify(job_desc_msg_t *job_desc, job_record_t *job_ptr,
 	     "time_limit:%u",
 	     job_desc->account, (long)job_desc->begin_time,
 	     job_desc->dependency,
-	     job_desc->job_id, job_desc->name, job_desc->partition,
+	     job_desc->step_id.job_id, job_desc->name, job_desc->partition,
 	     job_desc->qos, submit_uid, job_desc->time_limit);
 
 	return SLURM_SUCCESS;

@@ -496,7 +496,7 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op)
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(suspend_msg_t));
-		msg_arg->job_id  = job_ptr->job_id;
+		msg_arg->step_id.job_id = job_ptr->job_id;
 		msg_arg->op     = op;
 		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
 				   job_ptr->alloc_node, SRUN_REQUEST_SUSPEND,
