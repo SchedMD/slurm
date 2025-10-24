@@ -26,6 +26,8 @@ wckey2_name = f"{wckey_name}-2"
 qos_name = f"test-qos-{random.randrange(0, 99999999999)}"
 qos2_name = f"{qos_name}-2"
 resv_name = f"test-reservation-{random.randrange(0, 99999999999)}"
+nonexistent_node_name = "nonexistent_node"  # Use fixture nonexistent_node
+req_node_count = 10
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -34,7 +36,8 @@ def setup():
     global local_cluster_name, partition_name
 
     atf.require_accounting(modify=True)
-    atf.require_nodes(10)
+    atf.require_nodes(req_node_count)
+    atf.require_config_parameter("MaxNodeCount", str(req_node_count + 1))
     atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes")
@@ -216,6 +219,24 @@ def create_qos(create_coords):
     )
     atf.run_command(
         f"sacctmgr -i delete qos {qos2_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+
+@pytest.fixture(scope="function")
+def nonexistent_node(setup):
+    # Make sure this node doesn't exist before and after
+    atf.run_command(
+        f"scontrol delete node {nonexistent_node_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+    )
+
+    yield
+
+    atf.run_command(
+        f"scontrol delete node {nonexistent_node_name}",
         user=atf.properties["slurm-user"],
         fatal=False,
     )
@@ -1591,6 +1612,76 @@ def test_reservations(slurm, flags, admin_level):
     assert resv_name not in [
         r.name for r in slurm.slurm_v0044_get_reservations().reservations
     ], f"Reservation {resv_name} should be deleted"
+
+
+@pytest.mark.parametrize("legal_state", ["CLOUD", "FUTURE", "EXTERNAL"])
+def test_legal_node_creation(slurm, admin_level, legal_state, nonexistent_node):
+    from openapi_client.models.v0044_openapi_create_node_req import (
+        V0044OpenapiCreateNodeReq,
+    )
+
+    request_body = V0044OpenapiCreateNodeReq(
+        node_conf=f"nodename={nonexistent_node_name} State={legal_state}"
+    )
+
+    response = slurm.slurm_v0044_post_new_node(
+        v0044_openapi_create_node_req=request_body
+    )
+
+    # Validate there are no errors or warnings, and the meta data exits
+    assert not response.errors
+    assert not response.warnings
+    assert response.meta
+
+    # Validate the node exists and is in the correct state
+    node_states = atf.get_node_parameter(nonexistent_node_name, "state")
+    assert (
+        legal_state in node_states
+    ), f"Dynamic node should have {legal_state} in its state only has {node_states}"
+    assert (
+        "DYNAMIC_NORM" in node_states
+    ), "Dynamic node should have DYNAMIC_NORM in its state"
+
+
+@pytest.mark.parametrize(
+    "illegal_state", ["DOWN", "DRAIN", "FAIL", "FAILING", "UNKNOWN"]
+)
+def test_illegal_node_creation(slurm, admin_level, illegal_state, nonexistent_node):
+    from openapi_client.api_response import ApiResponse
+    from openapi_client.exceptions import ApiException
+    from openapi_client.models.v0044_openapi_create_node_req import (
+        V0044OpenapiCreateNodeReq,
+    )
+
+    request_body = V0044OpenapiCreateNodeReq(
+        node_conf=f"nodename={nonexistent_node_name} State={illegal_state}"
+    )
+
+    try:
+        # This should throw an exception
+        slurm.slurm_v0044_post_new_node_with_http_info(
+            v0044_openapi_create_node_req=request_body
+        )
+        assert (
+            False
+        ), "slurm_v0044_post_new_node_with_http_info should have raised an exception"
+    except ApiException as e:
+        response = slurm.api_client.deserialize(
+            response=ApiResponse(data=e.body), response_type="V0044OpenapiResp"
+        )
+        # Validate there is an error and no warnings
+        assert e.status != 200
+        assert len(response.errors) == 1  # error about wrong state
+        assert not response.warnings
+        assert response.meta
+
+    # Validate the node doesn't exist
+    atf.run_command(
+        f"scontrol show NodeName={nonexistent_node_name}",
+        user="slurm",
+        xfail=True,
+        fatal=True,
+    )
 
 
 # Test until endpoints
