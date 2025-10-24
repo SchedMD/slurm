@@ -193,7 +193,7 @@ extern int op_handler_node(openapi_ctxt_t *ctxt)
 
 		if (slurm_delete_node(node_msg)) {
 			resp_error(ctxt, errno, __func__,
-				   "Failure to update node %s",
+				   "Failure to delete node %s",
 				   node_msg->node_names);
 		}
 
