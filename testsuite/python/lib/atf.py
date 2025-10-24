@@ -232,17 +232,15 @@ def run_command(
             if xfail:
                 pytest.fail("Unsupported: xfail cannot be used with background=True")
             if "input" in background_run_kwargs:
-                stdin = subprocess.PIPE
                 input_str = background_run_kwargs.pop("input")
             else:
-                stdin = None
                 input_str = None
 
             # Run command differently depending on if using sudo for security
             if isinstance(cmd, list):
                 process = subprocess.Popen(
                     cmd,
-                    stdin=stdin,
+                    stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
@@ -253,7 +251,7 @@ def run_command(
                     cmd,
                     shell=True,
                     executable="/bin/bash",
-                    stdin=stdin,
+                    stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
