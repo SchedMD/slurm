@@ -4308,28 +4308,6 @@ extern int slurm_find_step_ids_by_container_id(uint16_t show_flags, uid_t uid,
 extern void slurm_free_job_step_info_response_msg(job_step_info_response_msg_t *msg);
 
 /*
- * slurm_print_job_step_info_msg - output information about all Slurm
- *	job steps based upon message as loaded using slurm_get_job_steps
- * IN out - file to write to
- * IN job_step_info_msg_ptr - job step information message pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_step_info_msg(FILE *out,
-					  job_step_info_response_msg_t *job_step_info_msg_ptr,
-					  int one_liner);
-
-/*
- * slurm_print_job_step_info - output information about a specific Slurm
- *	job step based upon message as loaded using slurm_get_job_steps
- * IN out - file to write to
- * IN job_ptr - an individual job step information record pointer
- * IN one_liner - print as a single line if true
- */
-extern void slurm_print_job_step_info(FILE *out,
-				      job_step_info_t *step_ptr,
-				      int one_liner);
-
-/*
  * slurm_job_step_layout_get - get the slurm_step_layout_t structure for
  *      a particular job step
  *
@@ -4338,17 +4316,6 @@ extern void slurm_print_job_step_info(FILE *out,
  *   slurm_free_step_layout) on success, and NULL on error.
  */
 extern slurm_step_layout_t *slurm_job_step_layout_get(slurm_step_id_t *step_id);
-
-/*
- * slurm_sprint_job_step_info - output information about a specific Slurm
- *	job step based upon message as loaded using slurm_get_job_steps
- * IN job_ptr - an individual job step information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-extern char *slurm_sprint_job_step_info(job_step_info_t *step_ptr,
-					int one_liner);
 
 /*
  * slurm_job_step_stat - status a current step
