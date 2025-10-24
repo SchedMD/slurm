@@ -3,6 +3,7 @@
 ############################################################################
 import atf
 import pytest
+import re
 
 IMEX_CHANNEL_PATH = "/dev/nvidia-caps-imex-channels"
 NUM_NODES = 4
@@ -24,16 +25,20 @@ def setup():
 
 def _simple_channel_job():
     output = atf.run_command(
-        f"srun ls {IMEX_CHANNEL_PATH}",
-        timeout=5,
+        f"srun --quiet ls {IMEX_CHANNEL_PATH}",
         fatal=False,
     )
     assert output["exit_code"] == 0, "Expected srun to run successfully"
 
-    # Convert ls output into a list channels
-    channel_list = output["stdout"].strip().splitlines()
+    lines = output["stdout"].strip().splitlines()
 
-    return channel_list
+    pattern = re.compile(r"^channel\d+$")
+
+    for line in lines:
+        assert line, "Empty line found"
+        assert pattern.match(line), f"Invalid line format: {line}"
+
+    return lines
 
 
 def _job_expect_channel(channel):
