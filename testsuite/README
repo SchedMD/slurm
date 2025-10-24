@@ -749,6 +749,7 @@ test_105_11  Test sbatch --parsable output format
 test_105_12  Test JobAcctGatherParams=OverMemoryKill enforcement
 test_105_15  Test sbatch --wait (-W) blocking and exit code propagation for normal and array jobs
 test_105_16  Test --layout validation, display, update, scripts, and accounting
+test_105_17  Test WCKey specification on job submit (sbatch --wckey)
 
 test_106_#   Testing of sbcast options.
 =======================================
