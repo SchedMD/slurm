@@ -11909,7 +11909,21 @@ static void _pack_kill_jobs_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	kill_jobs_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(msg->account, buffer);
+		pack16(msg->flags, buffer);
+		packstr(msg->job_name, buffer);
+		packstr_array(msg->jobs_array, msg->jobs_cnt, buffer);
+		packstr(msg->partition, buffer);
+		packstr(msg->qos, buffer);
+		packstr(msg->reservation, buffer);
+		pack16(msg->signal, buffer);
+		pack32(msg->state, buffer);
+		pack32(msg->user_id, buffer);
+		packstr(msg->user_name, buffer);
+		packstr(msg->wckey, buffer);
+		packstr(msg->nodelist, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack16(msg->flags, buffer);
 		packstr(msg->job_name, buffer);
@@ -11930,7 +11944,21 @@ static int _unpack_kill_jobs_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	kill_jobs_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->account, buffer);
+		safe_unpack16(&msg->flags, buffer);
+		safe_unpackstr(&msg->job_name, buffer);
+		safe_unpackstr_array(&msg->jobs_array, &msg->jobs_cnt, buffer);
+		safe_unpackstr(&msg->partition, buffer);
+		safe_unpackstr(&msg->qos, buffer);
+		safe_unpackstr(&msg->reservation, buffer);
+		safe_unpack16(&msg->signal, buffer);
+		safe_unpack32(&msg->state, buffer);
+		safe_unpack32(&msg->user_id, buffer);
+		safe_unpackstr(&msg->user_name, buffer);
+		safe_unpackstr(&msg->wckey, buffer);
+		safe_unpackstr(&msg->nodelist, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->account, buffer);
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpackstr(&msg->job_name, buffer);
