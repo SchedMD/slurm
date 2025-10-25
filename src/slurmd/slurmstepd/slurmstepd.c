@@ -194,6 +194,11 @@ static void _agent_queue_request(agent_arg_t *agent_arg_ptr)
 	slurm_thread_create_detached(_rpc_thread, agent_arg_ptr);
 }
 
+extern job_record_t *find_job(const slurm_step_id_t *step_id)
+{
+	return job_step_ptr;
+}
+
 extern job_record_t *find_job_record(uint32_t job_id)
 {
 	xassert(job_step_ptr);
@@ -220,9 +225,10 @@ static void *_step_time_limit_thread(void *data)
 }
 
 stepmgr_ops_t stepd_stepmgr_ops = {
+	.find_job = find_job,
 	.find_job_record = find_job_record,
 	.last_job_update = &last_job_update,
-	.agent_queue_request = _agent_queue_request
+	.agent_queue_request = _agent_queue_request,
 };
 
 static int _foreach_job_node_array(void *x, void *arg)

@@ -48,6 +48,7 @@ typedef struct {
 	bitstr_t *up_node_bitmap;
 
 	void (*job_config_fini)(job_record_t *job_ptr);
+	job_record_t *(*find_job)(const slurm_step_id_t *step_id);
 	job_record_t *(*find_job_record)(uint32_t job_id);
 	job_record_t *(*find_job_array_rec)(uint32_t array_job_id,
 					    uint32_t array_task_id);
