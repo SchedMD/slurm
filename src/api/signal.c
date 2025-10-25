@@ -121,17 +121,13 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 
 static int _signal_job_step(const job_step_info_t *step, uint16_t signal)
 {
-	signal_tasks_msg_t rpc;
-	int rc = SLURM_SUCCESS;
+	signal_tasks_msg_t rpc = {
+		.step_id = step->step_id,
+		.signal = signal,
+	};
 
-	/* same remote procedure call for each node */
-	memset(&rpc, 0, sizeof(rpc));
-	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
-	rpc.signal = signal;
-
-	rc = _local_send_recv_rc_msgs(step->nodes,
-				      REQUEST_SIGNAL_TASKS, &rpc);
-	return rc;
+	return _local_send_recv_rc_msgs(step->nodes, REQUEST_SIGNAL_TASKS,
+					&rpc);
 }
 
 static int _terminate_batch_script_step(const resource_allocation_response_msg_t
