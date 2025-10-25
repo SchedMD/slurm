@@ -62,8 +62,7 @@
 
 #define PMIXP_ABORT(format, args...) {				\
 	PMIXP_ERROR(format, ##args);				\
-	slurm_kill_job_step(pmixp_info_jobid(),			\
-			    pmixp_info_stepid(), SIGKILL, 0);	\
+	slurm_kill_job_step(pmixp_info_step_id(), SIGKILL, 0);	\
 }
 
 #define PMIXP_ERROR_NO(err, format, args...) {			\

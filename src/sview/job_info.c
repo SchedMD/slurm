@@ -626,7 +626,7 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		/* NOTE: RPC always sent to slurmctld rather than directly
 		 * to slurmd daemons */
-		error_code = slurm_kill_job_step(job_id, step_id, signal, 0);
+		error_code = slurm_kill_job_step(&step_id_tmp, signal, 0);
 
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
@@ -3547,9 +3547,8 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	if (g_step_info_ptr) {
 		/* Use a last_update time of NULL so that we can get an updated
 		 * run_time for jobs rather than just its start_time */
-		error_code = slurm_get_job_steps((time_t) NULL,
-						 NO_VAL, NO_VAL, &new_step_ptr,
-						 show_flags);
+		error_code =
+			slurm_get_job_steps(NULL, &new_step_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_step_info_response_msg(g_step_info_ptr);
 			changed = 1;
@@ -3560,8 +3559,8 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 		}
 	} else {
 		new_step_ptr = NULL;
-		error_code = slurm_get_job_steps((time_t) NULL, NO_VAL, NO_VAL,
-						 &new_step_ptr, show_flags);
+		error_code =
+			slurm_get_job_steps(NULL, &new_step_ptr, show_flags);
 		changed = 1;
 	}
 

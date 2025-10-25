@@ -620,9 +620,7 @@ static void _step_abort(slurm_step_ctx_t *ctx)
 	struct step_launch_state *sls = ctx->launch_state;
 
 	if (!sls->abort_action_taken) {
-		slurm_kill_job_step(ctx->job_id,
-				    ctx->step_resp->step_id.step_id, SIGKILL,
-				    0);
+		slurm_kill_job_step(&ctx->step_resp->step_id, SIGKILL, 0);
 		sls->abort_action_taken = true;
 	}
 }
@@ -687,9 +685,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 			slurm_cond_wait(&sls->cond, &sls->lock);
 		} else {
 			if (!sls->abort_action_taken) {
-				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->step_id
-							    .step_id,
+				slurm_kill_job_step(&ctx->step_resp->step_id,
 						    SIGKILL, 0);
 				sls->abort_action_taken = true;
 			}
@@ -719,9 +715,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 				 *   be made smart enough to really ensure
 				 *   that a killed step never starts.
 				 */
-				slurm_kill_job_step(ctx->job_id,
-						    ctx->step_resp->step_id
-							    .step_id,
+				slurm_kill_job_step(&ctx->step_resp->step_id,
 						    SIGKILL, 0);
 				client_io_handler_abort(sls->io);
 				break;

@@ -714,6 +714,12 @@ extern int pmixp_info_abort_agent_port()
 	return _pmixp_job_info.abort_agent_port;
 }
 
+extern slurm_step_id_t *pmixp_info_step_id(void)
+{
+	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);
+	return &_pmixp_job_info.step_id;
+}
+
 extern uint32_t pmixp_info_stepid()
 {
 	xassert(_pmixp_job_info.magic == PMIXP_INFO_MAGIC);

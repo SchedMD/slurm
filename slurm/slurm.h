@@ -3855,14 +3855,13 @@ extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step
- * IN job_id  - the job's id
- * IN step_id - the job step's id
+ * IN step_id
  * IN signal  - signal number
  * IN flags - see KILL_* or 0 for no flags
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_kill_job_step(uint32_t job_id, uint32_t step_id,
-			       uint16_t signal, uint16_t flags);
+extern int slurm_kill_job_step(slurm_step_id_t *step_id, uint16_t signal,
+			       uint16_t flags);
 /*
  * slurm_kill_job2 - send REQUEST_KILL_JOB msg to an existing job or step.
  * IN job_id - the job's id (in a string format)
@@ -3893,16 +3892,12 @@ extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
 
 /*
  * slurm_signal_job_step - send the specified signal to an existing job step
- * IN job_id  - the job's id
- * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
- *              to send a signal to a job's batch script
+ * IN step_id.job_id  - the job's id
+ * IN step_id.step_id - use SLURM_BATCH_SCRIPT to send to the batch step
  * IN signal  - signal number
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_signal_job_step(uint32_t job_id,
-				 uint32_t step_id,
-				 uint32_t signal);
-
+extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal);
 
 /*****************************************************************************\
  *	JOB/STEP COMPLETION FUNCTIONS
@@ -4274,19 +4269,15 @@ extern int slurm_update_job2(job_desc_msg_t *job_msg,
  *	configuration information if changed since update_time.
  *	a job_id value of NO_VAL implies all jobs, a step_id value of
  *	NO_VAL implies all steps
- * IN update_time - time of current configuration data
- * IN job_id - get information for specific job id, NO_VAL for all jobs
- * IN step_id - get information for specific job step id, NO_VAL for all
+ * IN step_id - get information for specific job step id, NULL for all
  *	job steps
  * IN step_response_pptr - place to store a step response pointer
  * IN show_flags - job step filtering options
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
-extern int slurm_get_job_steps(time_t update_time,
-			       uint32_t job_id,
-			       uint32_t step_id,
-			       job_step_info_response_msg_t **step_response_pptr,
+extern int slurm_get_job_steps(slurm_step_id_t *step_id,
+			       job_step_info_response_msg_t **resp,
 			       uint16_t show_flags);
 
 /*

@@ -188,8 +188,7 @@ _handle_abort(int fd, int lrank, client_req_t *req)
 	client_req_get_bool(req, ISWORLD_KEY, &is_world);
 	/* no response needed. just cancel the job step if required */
 	if (is_world) {
-		slurm_kill_job_step(job_info.step_id.job_id,
-				    job_info.step_id.step_id, SIGKILL, 0);
+		slurm_kill_job_step(&job_info.step_id, SIGKILL, 0);
 	}
 	return rc;
 }
@@ -307,9 +306,7 @@ _handle_kvs_fence(int fd, int lrank, client_req_t *req)
 				rc,
 				"mpi/pmi2: failed to send temp kvs");
 			/* cancel the step to avoid tasks hang */
-			slurm_kill_job_step(job_info.step_id.job_id,
-					    job_info.step_id.step_id,
-					    SIGKILL, 0);
+			slurm_kill_job_step(&job_info.step_id, SIGKILL, 0);
 		} else {
 			waiting_kvs_resp = 1;
 		}

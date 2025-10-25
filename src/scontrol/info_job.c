@@ -1521,9 +1521,6 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	};
 	uint32_t array_id = NO_VAL;
 	job_step_info_response_msg_t *job_step_info_ptr = NULL;
-	static uint32_t last_job_id = 0, last_array_id, last_step_id = 0;
-	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
-	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
 	job_step_info_t **steps = NULL;
 
@@ -1565,35 +1562,9 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 
 	if (!step_id.job_id || error_code) {
 		/* step lookup failed already - skip trying again */
-	} else if ((old_job_step_info_ptr) && (last_job_id == step_id.job_id) &&
-	    (last_array_id == array_id) && (last_step_id == step_id.step_id)) {
-		if (last_show_flags != show_flags)
-			old_job_step_info_ptr->last_update = (time_t) 0;
-		error_code = slurm_get_job_steps(
-			old_job_step_info_ptr->last_update,
-			step_id.job_id, step_id.step_id, &job_step_info_ptr,
-			show_flags);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_job_step_info_response_msg (
-				old_job_step_info_ptr);
-		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			job_step_info_ptr = old_job_step_info_ptr;
-			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf("slurm_get_job_steps no change in data\n");
-		} else {
-			error_code = errno;
-		}
 	} else {
-		if (old_job_step_info_ptr) {
-			slurm_free_job_step_info_response_msg (
-				old_job_step_info_ptr);
-			old_job_step_info_ptr = NULL;
-		}
-		error_code = slurm_get_job_steps ( (time_t) 0, step_id.job_id,
-						   step_id.step_id,
-						   &job_step_info_ptr,
-						   show_flags);
+		error_code = slurm_get_job_steps(&step_id, &job_step_info_ptr,
+						 show_flags);
 		if ((error_code == SLURM_ERROR) && errno)
 			error_code = errno;
 	}
@@ -1627,11 +1598,6 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		}
 		return;
 	}
-
-	old_job_step_info_ptr = job_step_info_ptr;
-	last_show_flags = show_flags;
-	last_job_id = step_id.job_id;
-	last_step_id = step_id.step_id;
 
 	if (!mime_type && (quiet_flag == -1)) {
 		char time_str[256];
@@ -1701,6 +1667,8 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	}
 
 	xfree(steps);
+
+	slurm_free_job_step_info_response_msg(job_step_info_ptr);
 }
 
 static int _add_to_listjobs_list(void *x, void *arg)

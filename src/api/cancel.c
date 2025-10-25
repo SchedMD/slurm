@@ -135,16 +135,8 @@ extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,
 	return rc;
 }
 
-/*
- * Kill a job step with job id "job_id" and step id "step_id", optionally
- *	sending the processes in the job step a signal "signal"
- * IN job_id     - the job's id
- * IN step_id    - the job step's id
- * IN signal     - signal number
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-extern int slurm_kill_job_step(uint32_t job_id, uint32_t step_id,
-			       uint16_t signal, uint16_t flags)
+extern int slurm_kill_job_step(slurm_step_id_t *step_id, uint16_t signal,
+			       uint16_t flags)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -155,10 +147,8 @@ extern int slurm_kill_job_step(uint32_t job_id, uint32_t step_id,
 	 * Request message:
 	 */
 	memset(&req, 0, sizeof(job_step_kill_msg_t));
-	req.step_id.job_id = job_id;
-	req.sjob_id     = NULL;
-	req.step_id.step_id = step_id;
-	req.step_id.step_het_comp = NO_VAL;
+	req.step_id = *step_id;
+	req.sjob_id = NULL;
 	req.signal      = signal;
 	req.flags = flags;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;

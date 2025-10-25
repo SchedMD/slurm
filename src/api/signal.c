@@ -121,17 +121,13 @@ static int _signal_batch_script_step(const resource_allocation_response_msg_t
 
 static int _signal_job_step(const job_step_info_t *step, uint16_t signal)
 {
-	signal_tasks_msg_t rpc;
-	int rc = SLURM_SUCCESS;
+	signal_tasks_msg_t rpc = {
+		.step_id = step->step_id,
+		.signal = signal,
+	};
 
-	/* same remote procedure call for each node */
-	memset(&rpc, 0, sizeof(rpc));
-	memcpy(&rpc.step_id, &step->step_id, sizeof(rpc.step_id));
-	rpc.signal = signal;
-
-	rc = _local_send_recv_rc_msgs(step->nodes,
-				      REQUEST_SIGNAL_TASKS, &rpc);
-	return rc;
+	return _local_send_recv_rc_msgs(step->nodes, REQUEST_SIGNAL_TASKS,
+					&rpc);
 }
 
 static int _terminate_batch_script_step(const resource_allocation_response_msg_t
@@ -237,16 +233,7 @@ fail1:
 	}
 }
 
-/*
- * slurm_signal_job_step - send the specified signal to an existing job step
- * IN job_id  - the job's id
- * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
- *              to send a signal to a job's batch script
- * IN signal  - signal number
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-extern int
-slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
+extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal)
 {
 	job_step_info_response_msg_t *step_info = NULL;
 	int rc;
@@ -257,9 +244,9 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 	 * The controller won't give us info about the batch script job step,
 	 * so we need to handle that separately.
 	 */
-	if (step_id == SLURM_BATCH_SCRIPT) {
+	if (step_id->step_id == SLURM_BATCH_SCRIPT) {
 		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(job_id, &alloc_info))
+		if (slurm_allocation_lookup(step_id->job_id, &alloc_info))
 			return -1;
 
 		rc = _signal_batch_script_step(alloc_info, signal);
@@ -272,25 +259,25 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 	 * Otherwise, look through the list of job step info and find
 	 * the one matching step_id.  Signal that step.
 	 */
-	rc = slurm_get_job_steps((time_t)0, job_id, step_id,
-				 &step_info, SHOW_ALL);
- 	if (rc != 0) {
- 		save_errno = errno;
- 		goto fail;
- 	}
+	rc = slurm_get_job_steps(step_id, &step_info, SHOW_ALL);
+	if (rc != 0) {
+		save_errno = errno;
+		goto fail;
+	}
 	for (i = 0; i < step_info->job_step_count; i++) {
-		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
-		    (step_info->job_steps[i].step_id.step_id == step_id)) {
- 			rc = _signal_job_step(&step_info->job_steps[i],
- 					      signal);
- 			save_errno = rc;
+		if ((step_info->job_steps[i].step_id.job_id ==
+		     step_id->job_id) &&
+		    (step_info->job_steps[i].step_id.step_id ==
+		     step_id->step_id)) {
+			rc = _signal_job_step(&step_info->job_steps[i], signal);
+			save_errno = rc;
 			break;
 		}
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
- 	errno = save_errno;
- 	return rc ? -1 : 0;
+	errno = save_errno;
+	return rc ? -1 : 0;
 }
 
 /*
@@ -327,8 +314,7 @@ extern int slurm_terminate_job_step(slurm_step_id_t *step_id)
 	 * Otherwise, look through the list of job step info and find
 	 * the one matching step_id.  Terminate that step.
 	 */
-	rc = slurm_get_job_steps((time_t)0, step_id->job_id, step_id->step_id,
-				 &step_info, SHOW_ALL);
+	rc = slurm_get_job_steps(step_id, &step_info, SHOW_ALL);
 	if (rc != 0) {
 		save_errno = errno;
 		goto fail;
