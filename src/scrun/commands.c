@@ -222,7 +222,7 @@ extern int command_start(void)
 		container_started_msg_t *st_msg = resp->data;
 
 		rc = st_msg->rc;
-		step = st_msg->step;
+		step = st_msg->step_id;
 	} else {
 		fatal("%s: unexpected RPC=%u response",
 		      __func__, resp->msg_type);

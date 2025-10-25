@@ -1336,7 +1336,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t rc;
-	slurm_step_id_t step;
+	slurm_step_id_t step_id;
 } container_started_msg_t;
 
 typedef struct {

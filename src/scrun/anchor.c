@@ -691,11 +691,11 @@ static int _send_start_response(conmgr_fd_t *con, slurm_msg_t *req_msg, int rc)
 	st_msg->rc = rc;
 
 	read_lock_state();
-	st_msg->step.job_id = state.jobid;
+	st_msg->step_id.job_id = state.jobid;
 	unlock_state();
 
-	st_msg->step.step_id = 0;
-	st_msg->step.step_het_comp = NO_VAL;
+	st_msg->step_id.step_id = 0;
+	st_msg->step_id.step_het_comp = NO_VAL;
 	rc = conmgr_queue_write_msg(con, msg);
 	slurm_free_msg(msg);
 
