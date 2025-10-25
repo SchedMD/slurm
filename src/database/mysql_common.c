@@ -59,6 +59,11 @@ typedef struct {
 	bool non_unique;
 } db_key_t;
 
+static char *_current_password(mysql_db_info_t *db_info)
+{
+	return xstrdup(db_info->pass);
+}
+
 static void _destroy_db_key(void *arg)
 {
 	db_key_t *db_key = (db_key_t *)arg;
@@ -742,17 +747,17 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 	char *db_host = NULL;
 
 	while (rc == SLURM_ERROR) {
+		char *pass = NULL;
 		rc = SLURM_SUCCESS;
 		if (!(mysql_db = mysql_init(mysql_db)))
 			fatal("mysql_init failed: %s", mysql_error(mysql_db));
 
 		_set_mysql_ssl_opts(mysql_db, db_info->params);
+		pass = _current_password(db_info);
 
 		db_host = db_info->host;
-		db_ptr = mysql_real_connect(mysql_db,
-					    db_host, db_info->user,
-					    db_info->pass, NULL,
-					    db_info->port, NULL, 0);
+		db_ptr = mysql_real_connect(mysql_db, db_host, db_info->user,
+					    pass, NULL, db_info->port, NULL, 0);
 
 		if (!db_ptr && db_info->backup) {
 			info("Connection failed to host = %s "
@@ -761,8 +766,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			     db_info->port);
 			db_host = db_info->backup;
 			db_ptr = mysql_real_connect(mysql_db, db_host,
-						    db_info->user,
-						    db_info->pass, NULL,
+						    db_info->user, pass, NULL,
 						    db_info->port, NULL, 0);
 		}
 
@@ -790,6 +794,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		}
 		if (rc == SLURM_ERROR)
 			sleep(3);
+		xfree(pass);
 	}
 	return rc;
 }
@@ -873,6 +878,7 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
 	char *db_host = db_info->host;
+	char *pass = NULL;
 	unsigned int my_timeout = 30;
 
 	xassert(mysql_conn);
@@ -899,9 +905,13 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	while (!storage_init) {
 		debug2("Attempting to connect to %s:%d", db_host,
 		       db_info->port);
+
+		xfree(pass);
+		pass = _current_password(db_info);
+
 		if (!mysql_real_connect(mysql_conn->db_conn, db_host,
-					db_info->user, db_info->pass,
-					db_name, db_info->port, NULL,
+					db_info->user, pass, db_name,
+					db_info->port, NULL,
 					CLIENT_MULTI_STATEMENTS)) {
 			const char *err_str = NULL;
 			int err = mysql_errno(mysql_conn->db_conn);
@@ -946,6 +956,7 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 					   "NO_ENGINE_SUBSTITUTION';");
 	}
 	slurm_mutex_unlock(&mysql_conn->lock);
+	xfree(pass);
 	errno = rc;
 	return rc;
 }
