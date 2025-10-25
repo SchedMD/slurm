@@ -145,7 +145,7 @@ static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
 				  char *details, bool batch, uid_t req_uid);
 static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 			    uint32_t slurm_rc);
-static void _note_batch_job_finished(uint32_t job_id);
+static void _note_batch_job_finished(slurm_step_id_t *step_id);
 static bool _prolog_is_running(slurm_step_id_t *step_id);
 static void _rpc_terminate_job(slurm_msg_t *msg);
 static void _file_bcast_cleanup(void);
@@ -1760,10 +1760,10 @@ static bool _is_batch_job_finished(slurm_step_id_t *step_id)
 	return found_job;
 }
 
-static void _note_batch_job_finished(uint32_t job_id)
+static void _note_batch_job_finished(slurm_step_id_t *step_id)
 {
 	slurm_mutex_lock(&fini_job_mutex);
-	fini_job_id[next_fini_job_inx] = job_id;
+	fini_job_id[next_fini_job_inx] = step_id->job_id;
 	if (++next_fini_job_inx >= fini_job_cnt)
 		next_fini_job_inx = 0;
 	slurm_mutex_unlock(&fini_job_mutex);
@@ -4460,7 +4460,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 * Note the job is finishing to avoid a race condition for batch jobs
 	 * that finish before the slurmd knows it finished launching.
 	 */
-	_note_batch_job_finished(req->step_id.job_id);
+	_note_batch_job_finished(&req->step_id);
+
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
