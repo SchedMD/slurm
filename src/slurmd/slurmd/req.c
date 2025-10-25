@@ -146,7 +146,7 @@ static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
 static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 			    uint32_t slurm_rc);
 static void _note_batch_job_finished(uint32_t job_id);
-static int _prolog_is_running(uint32_t jobid);
+static bool _prolog_is_running(slurm_step_id_t *step_id);
 static void _rpc_terminate_job(slurm_msg_t *msg);
 static void _file_bcast_cleanup(void);
 static int  _file_bcast_register_file(slurm_msg_t *msg,
@@ -2834,7 +2834,7 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	 * There will be no stepd if the prolog is still running
 	 * Return failure so caller can retry.
 	 */
-	if (_prolog_is_running(step_id->job_id)) {
+	if (_prolog_is_running(step_id)) {
 		info("signal %d req for %ps while prolog is running. Returning failure.",
 		     signal, step_id);
 		return ESLURM_TRANSITION_STATE_NO_UPDATE;
@@ -4470,7 +4470,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		debug("credential for job %u revoked", req->step_id.job_id);
 	}
 
-	if (_prolog_is_running(req->step_id.job_id)) {
+	if (_prolog_is_running(&req->step_id)) {
 		if (send_response) {
 			/* If the step hasn't finished running the prolog
 			 * (or finished starting the extern step) yet just send
@@ -4881,14 +4881,13 @@ static int _match_jobid(void *listentry, void *key)
 	return (*job0 == *job1);
 }
 
-static int _prolog_is_running (uint32_t jobid)
+static bool _prolog_is_running(slurm_step_id_t *step_id)
 {
-	int rc = 0;
 	if (conf->prolog_running_jobs &&
-	    list_find_first(conf->prolog_running_jobs,
-			    _match_jobid, &jobid))
-		rc = 1;
-	return (rc);
+	    list_find_first(conf->prolog_running_jobs, _match_jobid,
+			    &step_id->job_id))
+		return true;
+	return false;
 }
 
 /* Wait for the job's prolog to complete */
@@ -4900,7 +4899,7 @@ static void _wait_for_job_running_prolog(slurm_step_id_t *step_id)
 
 	debug("Waiting for %pI prolog to complete", step_id);
 
-	while (_prolog_is_running(step_id->job_id)) {
+	while (_prolog_is_running(step_id)) {
 		gettimeofday(&now, NULL);
 		ts.tv_sec = now.tv_sec+1;
 		ts.tv_nsec = now.tv_usec * 1000;
