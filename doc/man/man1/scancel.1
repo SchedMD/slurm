@@ -36,6 +36,12 @@ Restrict the scancel operation to jobs under this charge account.
 .IP
 
 .TP
+\fB\-\-admin\-comment\fR=\fIcomment\fR
+Set the AdminComment on the job while canceling jobs. User must have
+Administrator privileges on the system.
+.IP
+
+.TP
 \fB\-b\fR, \fB\-\-batch\fR
 By default, signals other than SIGKILL are not sent to the batch step (the shell
 script). With this option \fBscancel\fR signals only the batch step, but not

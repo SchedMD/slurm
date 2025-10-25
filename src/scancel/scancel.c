@@ -234,6 +234,7 @@ static int _ctld_signal_jobs(void)
 	char *job_type = "";
 	kill_jobs_msg_t kill_msg = {
 		.account = opt.account,
+		.admin_comment = opt.admin_comment,
 		.job_name = opt.job_name,
 		.jobs_array = opt.job_list,
 		.partition = opt.partition,
