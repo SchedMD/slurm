@@ -173,7 +173,7 @@ static bool _step_is_starting(slurm_step_id_t *step_id);
 static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
-static void _wait_for_job_running_prolog(uint32_t job_id);
+static void _wait_for_job_running_prolog(slurm_step_id_t *step_id);
 static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 					   bool *first_job_run);
 
@@ -1425,7 +1425,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
-		_wait_for_job_running_prolog(req->step_id.job_id);
+		_wait_for_job_running_prolog(&req->step_id);
 
 		if (req->x11)
 			_setup_x11_display(req->step_id.job_id,
@@ -2225,7 +2225,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		}
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
-		_wait_for_job_running_prolog(req->step_id.job_id);
+		_wait_for_job_running_prolog(&req->step_id);
 	}
 
 	if (_get_user_env(req, user_name) < 0) {
@@ -4411,7 +4411,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		job_env.work_dir = req->work_dir;
 		job_env.uid = req->job_uid;
 		job_env.gid = req->job_gid;
-		_wait_for_job_running_prolog(job_env.jobid);
+		_wait_for_job_running_prolog(&req->step_id);
 		run_epilog(&job_env, req->cred);
 		_free_job_env(&job_env);
 	}
@@ -4482,7 +4482,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			send_response = false;
 		}
-		_wait_for_job_running_prolog(req->step_id.job_id);
+		_wait_for_job_running_prolog(&req->step_id);
 	}
 
 	/*
@@ -4638,7 +4638,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		job_env.uid = req->job_uid;
 		job_env.gid = req->job_gid;
 
-		_wait_for_job_running_prolog(job_env.jobid);
+		_wait_for_job_running_prolog(&req->step_id);
 		rc = run_epilog(&job_env, req->cred);
 		_free_job_env(&job_env);
 		if (rc) {
@@ -4892,16 +4892,15 @@ static int _prolog_is_running (uint32_t jobid)
 }
 
 /* Wait for the job's prolog to complete */
-static void _wait_for_job_running_prolog(uint32_t job_id)
+static void _wait_for_job_running_prolog(slurm_step_id_t *step_id)
 {
 	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
 	struct timespec ts = {0, 0};
 	struct timeval now;
 
-	debug("Waiting for job %d's prolog to complete", job_id);
+	debug("Waiting for %pI prolog to complete", step_id);
 
-	while (_prolog_is_running (job_id)) {
-
+	while (_prolog_is_running(step_id->job_id)) {
 		gettimeofday(&now, NULL);
 		ts.tv_sec = now.tv_sec+1;
 		ts.tv_nsec = now.tv_usec * 1000;
@@ -4912,7 +4911,7 @@ static void _wait_for_job_running_prolog(uint32_t job_id)
 		slurm_mutex_unlock(&dummy_lock);
 	}
 
-	debug("Finished wait for job %d's prolog to complete", job_id);
+	debug("Finished wait for %pI prolog to complete", step_id);
 }
 
 /* Wait for the job's prolog launch request */
