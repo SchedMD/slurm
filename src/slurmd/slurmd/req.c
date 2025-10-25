@@ -140,7 +140,7 @@ typedef struct {
 } foreach_libdir_args_t;
 
 static void _free_job_env(job_env_t *env_ptr);
-static bool _is_batch_job_finished(uint32_t job_id);
+static bool _is_batch_job_finished(slurm_step_id_t *step_id);
 static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
 				  char *details, bool batch, uid_t req_uid);
 static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
@@ -1743,14 +1743,14 @@ static void _set_batch_job_limits(batch_job_launch_msg_t *req)
 /* These functions prevent a possible race condition if the batch script's
  * complete RPC is processed before it's launch_successful response. This
  *  */
-static bool _is_batch_job_finished(uint32_t job_id)
+static bool _is_batch_job_finished(slurm_step_id_t *step_id)
 {
 	bool found_job = false;
 	int i;
 
 	slurm_mutex_lock(&fini_job_mutex);
 	for (i = 0; i < fini_job_cnt; i++) {
-		if (fini_job_id[i] == job_id) {
+		if (fini_job_id[i] == step_id->job_id) {
 			found_job = true;
 			break;
 		}
@@ -1759,6 +1759,7 @@ static bool _is_batch_job_finished(uint32_t job_id)
 
 	return found_job;
 }
+
 static void _note_batch_job_finished(uint32_t job_id)
 {
 	slurm_mutex_lock(&fini_job_mutex);
@@ -2261,7 +2262,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	revoked = cred_revoked(req->cred);
 	if (revoked)
 		launch_complete_rm(&req->step_id);
-	if (revoked && _is_batch_job_finished(req->step_id.job_id)) {
+	if (revoked && _is_batch_job_finished(&req->step_id)) {
 		/* If configured with select/serial and the batch job already
 		 * completed, consider the job successfully launched and do
 		 * not repeat termination logic below, which in the worst case
