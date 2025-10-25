@@ -157,7 +157,7 @@ static bool _slurm_authorized_user(uid_t uid);
 static int _waiter_init(slurm_step_id_t *step_id);
 static void _waiter_complete(slurm_step_id_t *step_id);
 
-static bool _steps_completed_now(uint32_t jobid);
+static bool _steps_completed_now(slurm_step_id_t *step_id);
 static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     uid_t req_uid,
 					     gid_t req_gid,
@@ -4056,7 +4056,7 @@ static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay)
 	int i;
 
 	for (i=0; i<max_delay; i++) {
-		if (_steps_completed_now(step_id->job_id))
+		if (_steps_completed_now(step_id))
 			break;
 		sleep(1);
 	}
@@ -4065,8 +4065,7 @@ static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay)
 		      __func__, step_id);
 }
 
-static bool
-_steps_completed_now(uint32_t jobid)
+static bool _steps_completed_now(slurm_step_id_t *step_id)
 {
 	list_t *steps;
 	list_itr_t *i;
@@ -4076,7 +4075,7 @@ _steps_completed_now(uint32_t jobid)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
-		if (stepd->step_id.job_id == jobid) {
+		if (stepd->step_id.job_id == step_id->job_id) {
 			int fd;
 			fd = stepd_connect(stepd->directory, stepd->nodename,
 					   &stepd->step_id,
