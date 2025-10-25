@@ -103,7 +103,7 @@ extern void check_state(void)
 			xassert(state.anchor_socket && state.anchor_socket[0]);
 			break;
 		case CONTAINER_ST_CREATED :
-			xassert(state.jobid > 0);
+			xassert(state.step_id.job_id != NO_VAL);
 			xassert(!stat(state.root_path, &statbuf));
 			xassert(!stat(state.anchor_socket, &statbuf));
 			xassert(!stat(state.config_file, &statbuf));
@@ -119,7 +119,7 @@ extern void check_state(void)
 			/* fall through */
 		case CONTAINER_ST_RUNNING :
 			xassert(state.user_id != SLURM_AUTH_NOBODY);
-			xassert(state.jobid > 0);
+			xassert(state.step_id.job_id != NO_VAL);
 			xassert(!state.srun_rc);
 			xassert(!state.srun_exited);
 			xassert(!state.spool_dir ||
@@ -159,6 +159,8 @@ extern void init_state(void)
 
 	state.status = CONTAINER_ST_UNKNOWN;
 	state.pid_file_fd = -1;
+
+	state.step_id = SLURM_STEP_ID_INITIALIZER;
 }
 
 extern void destroy_state(void)
@@ -289,7 +291,7 @@ static int _get_job_state()
 	xassert(!xstrcmp(job->name, state.id));
 
 	/* note the job id in case we want to kill the job */
-	state.jobid = job->step_id.job_id;
+	state.step_id = job->step_id;
 
 	switch (job->job_state)
 	{

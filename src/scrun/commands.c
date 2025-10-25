@@ -356,26 +356,26 @@ extern int command_kill(void)
 	debug("%s: requesting signal %s be sent to %s",
 	      __func__, strsignal(signal), state.id);
 	if ((rc = send_rpc(&req, &resp, state.id, NULL))) {
-		if (state.jobid) {
+		if (state.step_id.job_id) {
 			debug("%s: unable to connect to anchor to signal %s container %s directly: %s",
 			      __func__, strsignal(signal), state.id,
 			      slurm_strerror(rc));
 
-			rc = slurm_signal_job(state.jobid, signal);
+			rc = slurm_signal_job(state.step_id.job_id, signal);
 			if ((rc == SLURM_ERROR) && errno)
 				rc = errno;
 
 			if (rc == ESLURM_ALREADY_DONE) {
-				info("%s: JobId=%u with container %s already complete",
-				     __func__, state.jobid, state.id);
+				info("%s: %pI with container %s already complete",
+				     __func__, &state.step_id, state.id);
 				rc = SLURM_SUCCESS;
 			} else if (rc) {
-				error("%s: unable to signal %s container %s or signal JobId=%u: %m",
+				error("%s: unable to signal %s container %s or signal %pI: %m",
 				      __func__, strsignal(signal), state.id,
-				      state.jobid);
+				      &state.step_id);
 			} else {
-				info("%s: JobId=%u running container %s has been sent signal %s",
-				     __func__, state.jobid, state.id,
+				info("%s: %pI running container %s has been sent signal %s",
+				     __func__, &state.step_id, state.id,
 				     strsignal(signal));
 				rc = SLURM_SUCCESS;
 			}
@@ -442,18 +442,18 @@ extern int command_delete(void)
 	if ((rc = send_rpc(&req, &resp, state.id, NULL))) {
 		int signal = SIGTERM;
 
-		if (state.jobid) {
+		if (state.step_id.job_id != NO_VAL) {
 			debug("%s: unable to connect to anchor to delete container %s directly: %s",
 			      __func__, state.id, slurm_strerror(rc));
 
-			if (slurm_signal_job(state.jobid, signal)) {
+			if (slurm_signal_job(state.step_id.job_id, signal)) {
 				rc = errno;
-				error("%s: unable to signal %s container %s or signal JobId=%u: %m",
+				error("%s: unable to signal %s container %s or signal %pI: %m",
 				      __func__, strsignal(signal), state.id,
-				      state.jobid);
+				      &state.step_id);
 			} else {
-				info("%s: JobId=%u running container %s has been sent signal %s",
-				     __func__, state.jobid, state.id,
+				info("%s: %pI running container %s has been sent signal %s",
+				     __func__, &state.step_id, state.id,
 				     strsignal(signal));
 				rc = SLURM_SUCCESS;
 			}
