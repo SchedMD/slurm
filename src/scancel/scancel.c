@@ -1005,11 +1005,9 @@ _cancel_step_id (void *ci)
 			error_code =
 				slurm_terminate_job_step(&cancel_info->step_id);
 		else
-			error_code = slurm_signal_job_step(cancel_info->step_id
-								   .job_id,
-							   cancel_info->step_id
-								   .step_id,
-							   cancel_info->sig);
+			error_code =
+				slurm_signal_job_step(&cancel_info->step_id,
+						      cancel_info->sig);
 		END_TIMER;
 		slurm_mutex_lock(&max_delay_lock);
 		max_resp_time = MAX(max_resp_time, DELTA_TIMER);

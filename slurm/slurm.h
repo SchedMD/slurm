@@ -3892,16 +3892,12 @@ extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
 
 /*
  * slurm_signal_job_step - send the specified signal to an existing job step
- * IN job_id  - the job's id
- * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
- *              to send a signal to a job's batch script
+ * IN step_id.job_id  - the job's id
+ * IN step_id.step_id - use SLURM_BATCH_SCRIPT to send to the batch step
  * IN signal  - signal number
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_signal_job_step(uint32_t job_id,
-				 uint32_t step_id,
-				 uint32_t signal);
-
+extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal);
 
 /*****************************************************************************\
  *	JOB/STEP COMPLETION FUNCTIONS

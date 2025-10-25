@@ -237,16 +237,7 @@ fail1:
 	}
 }
 
-/*
- * slurm_signal_job_step - send the specified signal to an existing job step
- * IN job_id  - the job's id
- * IN step_id - the job step's id - use SLURM_BATCH_SCRIPT as the step_id
- *              to send a signal to a job's batch script
- * IN signal  - signal number
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-extern int
-slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
+extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal)
 {
 	job_step_info_response_msg_t *step_info = NULL;
 	int rc;
@@ -257,9 +248,9 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 	 * The controller won't give us info about the batch script job step,
 	 * so we need to handle that separately.
 	 */
-	if (step_id == SLURM_BATCH_SCRIPT) {
+	if (step_id->step_id == SLURM_BATCH_SCRIPT) {
 		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(job_id, &alloc_info))
+		if (slurm_allocation_lookup(step_id->job_id, &alloc_info))
 			return -1;
 
 		rc = _signal_batch_script_step(alloc_info, signal);
@@ -272,16 +263,18 @@ slurm_signal_job_step (uint32_t job_id, uint32_t step_id, uint32_t signal)
 	 * Otherwise, look through the list of job step info and find
 	 * the one matching step_id.  Signal that step.
 	 */
-	rc = slurm_get_job_steps((time_t)0, job_id, step_id,
+	rc = slurm_get_job_steps((time_t)0, step_id->job_id, step_id->step_id,
 				 &step_info, SHOW_ALL);
  	if (rc != 0) {
  		save_errno = errno;
  		goto fail;
  	}
 	for (i = 0; i < step_info->job_step_count; i++) {
-		if ((step_info->job_steps[i].step_id.job_id == job_id) &&
-		    (step_info->job_steps[i].step_id.step_id == step_id)) {
- 			rc = _signal_job_step(&step_info->job_steps[i],
+		if ((step_info->job_steps[i].step_id.job_id ==
+		     step_id->job_id) &&
+		    (step_info->job_steps[i].step_id.step_id ==
+		     step_id->step_id)) {
+			rc = _signal_job_step(&step_info->job_steps[i],
  					      signal);
  			save_errno = rc;
 			break;
