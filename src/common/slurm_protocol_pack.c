@@ -9682,10 +9682,8 @@ static int _unpack_prolog_complete_msg(slurm_msg_t *smsg, buf_t *buffer)
 	prolog_complete_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&msg->step_id, buffer,
-					   smsg->protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
 		safe_unpackstr(&msg->node_name, buffer);
 		safe_unpack32(&msg->prolog_rc, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -15081,16 +15079,14 @@ extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
 	step_ptr->array_task_id = NO_VAL;
 
 	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&step_ptr->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack_step_id_members(&step_ptr->step_id, buffer,
+					    protocol_version);
 		safe_unpack32(&step_ptr->array_task_id, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
 		unpack_bit_str_hex(&step_ptr->array_bitmap, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&step_ptr->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack_step_id_members(&step_ptr->step_id, buffer,
+					    protocol_version);
 		safe_unpack32(&step_ptr->array_task_id, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
 	} else
