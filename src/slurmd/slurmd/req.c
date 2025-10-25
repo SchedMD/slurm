@@ -2837,7 +2837,7 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	 */
 	if (_prolog_is_running(step_id->job_id)) {
 		info("signal %d req for %ps while prolog is running. Returning failure.",
-		     signal, &step_id->job_id);
+		     signal, step_id);
 		return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
 
@@ -2845,7 +2845,7 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 			   step_id, &protocol_version);
 	if (fd == -1) {
 		debug("signal for nonexistent %ps stepd_connect failed: %m",
-		      &step_id->job_id);
+		      step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
