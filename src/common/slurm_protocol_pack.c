@@ -10055,8 +10055,16 @@ static void _pack_step_id_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 static int _unpack_step_id_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
-	return unpack_step_id((slurm_step_id_t **) &smsg->data, buffer,
-			      smsg->protocol_version);
+	slurm_step_id_t *msg = xmalloc(sizeof(*msg));
+
+	safe_unpack_step_id_members(msg, buffer, smsg->protocol_version);
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_step_id(msg);
+	return SLURM_ERROR;
 }
 
 static void _pack_job_step_pids(const slurm_msg_t *smsg, buf_t *buffer)
