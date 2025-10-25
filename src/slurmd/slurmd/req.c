@@ -162,7 +162,7 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     uid_t req_uid,
 					     gid_t req_gid,
 					     uint16_t protocol_version);
-static void _wait_state_completed(uint32_t jobid, int max_delay);
+static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
 
 static int  _add_starting_step(uint16_t type, void *req);
@@ -4051,18 +4051,18 @@ static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
  * This indicates that switch_g_job_postfini has completed and
  * freed the switch windows (as needed only for Federation switch).
  */
-static void
-_wait_state_completed(uint32_t jobid, int max_delay)
+static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay)
 {
 	int i;
 
 	for (i=0; i<max_delay; i++) {
-		if (_steps_completed_now(jobid))
+		if (_steps_completed_now(step_id->job_id))
 			break;
 		sleep(1);
 	}
 	if (i >= max_delay)
-		error("timed out waiting for job %u to complete", jobid);
+		error("%s: timed out waiting for %pI to complete",
+		      __func__, step_id);
 }
 
 static bool
@@ -4658,7 +4658,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	launch_complete_rm(&req->step_id);
 
 done:
-	_wait_state_completed(req->step_id.job_id, 5);
+	_wait_state_completed(&req->step_id, 5);
 	_waiter_complete(&req->step_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB))
