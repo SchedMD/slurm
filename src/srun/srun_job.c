@@ -1211,7 +1211,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 	srun_job_t *job = NULL;
 	int i, max_list_offset, max_het_job_offset, het_job_offset = -1,
 		het_step_offset = -1;
-	uint32_t my_job_id = 0, het_job_id = 0;
+	slurm_step_id_t my_step_id = SLURM_STEP_ID_INITIALIZER;
+	uint32_t het_job_id = 0;
 	char *het_job_nodelist = NULL;
 	bool begin_error_logged = false;
 	bool core_spec_error_logged = false;
@@ -1289,8 +1290,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 		resp_iter = list_iterator_create(job_resp_list);
 		while ((resp = list_next(resp_iter))) {
 			bool merge_nodelist = true;
-			if (my_job_id == 0) {
-				my_job_id = resp->step_id.job_id;
+			if (my_step_id.job_id == NO_VAL) {
+				my_step_id = resp->step_id;
 				if (resp->working_cluster_rec)
 					slurm_setup_remote_working_cluster(resp);
 			}
@@ -1418,8 +1419,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			FREE_NULL_LIST(srun_job_list);	/* Just use "job" */
 		if (list_count(job_resp_list) > 1) {
 			/* only set if actually a hetjob */
-			if (!local_het_step && my_job_id)
-				het_job_id = my_job_id;
+			if (!local_het_step && (my_step_id.job_id != NO_VAL))
+				het_job_id = my_step_id.job_id;
 			het_job_nodelist =
 				_compress_het_job_nodelist(used_resp_list);
 		}
@@ -1427,7 +1428,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 		if (_create_job_step(job, false, srun_job_list, het_job_id,
 				     het_job_nodelist) < 0) {
 			if (*got_alloc)
-				slurm_complete_job(my_job_id, 1);
+				slurm_complete_job(my_step_id.job_id, 1);
 			else
 				_cancel_steps(srun_job_list);
 			exit(error_exit);
@@ -1454,8 +1455,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			while ((resp = list_next(resp_iter))) {
 				slurm_opt_t *opt_local;
 
-				if (my_job_id == 0) {
-					my_job_id = resp->step_id.job_id;
+				if (my_step_id.job_id == NO_VAL) {
+					my_step_id = resp->step_id;
 					*got_alloc = true;
 				}
 				opt_local = list_next(opt_iter);
@@ -1465,7 +1466,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 				_set_env_vars(resp, ++het_job_offset);
 				_set_env_vars2(resp, het_job_offset);
 				if (_validate_relative(resp, opt_local)) {
-					slurm_complete_job(my_job_id, 1);
+					slurm_complete_job(my_step_id.job_id,
+							   1);
 					exit(error_exit);
 				}
 				job = job_create_allocation(resp, opt_local);
@@ -1492,7 +1494,7 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			if (!(resp = allocate_nodes(&opt)))
 				exit(error_exit);
 			*got_alloc = true;
-			my_job_id = resp->step_id.job_id;
+			my_step_id = resp->step_id;
 			_print_job_information(resp);
 			_set_env_vars(resp, -1);
 			if (_validate_relative(resp, &opt)) {
@@ -1503,17 +1505,18 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 			_set_step_opts(&opt, resp);
 		}
 		if (srun_job_list && (list_count(srun_job_list) > 1) &&
-		    opt_list && (list_count(opt_list) > 1) && my_job_id) {
+		    opt_list && (list_count(opt_list) > 1) &&
+		    (my_step_id.job_id != NO_VAL)) {
 			/* only set if actually a hetjob */
 			if (!local_het_step)
-				het_job_id = my_job_id;
+				het_job_id = my_step_id.job_id;
 			het_job_nodelist =
 				_compress_het_job_nodelist(job_resp_list);
 		}
 
 		if (_create_job_step(job, true, srun_job_list, het_job_id,
 				     het_job_nodelist) < 0) {
-			slurm_complete_job(my_job_id, 1);
+			slurm_complete_job(my_step_id.job_id, 1);
 			exit(error_exit);
 		}
 		xfree(het_job_nodelist);
@@ -1542,7 +1545,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 		*p_job = (void *) job;
 
 	if (job)
-	        _srun_cli_filter_post_submit(my_job_id, job->step_id.step_id);
+		_srun_cli_filter_post_submit(my_step_id.job_id,
+					     job->step_id.step_id);
 }
 
 extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
