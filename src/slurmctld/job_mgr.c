@@ -7193,6 +7193,20 @@ static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 	}
 }
 
+static bool _expedited_requeue_enabled(void)
+{
+	static bool first_time = true;
+	static bool enabled = false;
+
+	if (first_time) {
+		first_time = false;
+		enabled = xstrstr(slurm_conf.slurmctld_params,
+				  "enable_expedited_requeue");
+	}
+
+	return enabled;
+}
+
 /*
  * _job_create - create a job table record for the supplied specifications.
  *	This performs only basic tests for request validity (access to
@@ -7998,6 +8012,13 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	if (job_desc->wckey && (job_desc->wckey[0] == '*')) {
 		rc = ESLURM_INVALID_WCKEY;
+		goto fini;
+	}
+
+	if ((job_desc->bitflags & EXPEDITED_REQUEUE) &&
+	    !_expedited_requeue_enabled()) {
+		error("Expedited requeue requested but not enabled");
+		rc = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
 
@@ -12592,6 +12613,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 
 	if ((job_ptr->job_state & JOB_EXPEDITING) && !privileged) {
 		error("Blocking update of expediting job from uid %u", uid);
+		return ESLURM_NOT_SUPPORTED;
+	}
+
+	if ((job_desc->bitflags & EXPEDITED_REQUEUE) &&
+	    !_expedited_requeue_enabled()) {
+		error("Expedited requeue requested but not enabled");
 		return ESLURM_NOT_SUPPORTED;
 	}
 
