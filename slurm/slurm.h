@@ -3056,6 +3056,7 @@ typedef struct {
 	char *job_comp_loc;	/* job completion logging location */
 	char *job_comp_params;	/* job completion parameters for plugin */
 	char *job_comp_pass;	/* job completion storage password */
+	char *job_comp_pass_script; /* job completion storage password */
 	uint32_t job_comp_port;	/* job completion storage port */
 	char *job_comp_type;	/* job completion storage type */
 	char *job_comp_user;	/* job completion storage user */

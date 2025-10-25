@@ -2083,6 +2083,24 @@ different Kafka topic than the topic configured for job finish event records.
 .RE
 .IP
 
+.TP
+Optional comma-separated list for \fBjobcomp/mysql\fR:
+.RS
+.IP
+
+.TP
+\fBtoken_duration\fR
+Duration in seconds to cache generated database passwords before requesting a
+new one from the StoragePassScript. Typically the token should refresh prior
+to actual expiration; upon token generation failure the cached token will
+continue to be used to avoid transient generation failures from causing
+connection failures.
+Default value is 300 seconds (5 minutes).
+.IP
+
+.RE
+.IP
+
 .RE
 .IP
 
@@ -2091,6 +2109,38 @@ different Kafka topic than the topic configured for job finish event records.
 The password used to gain access to the database to store the job
 completion data.
 Only used for database type storage plugins, ignored otherwise.
+.IP
+
+.TP
+\fBJobCompPassScript\fR
+Absolute path to an executable script that generates ephemeral authentication
+tokens for database connections which are used instead of \fBJobCompPass\fR.
+The script must output the password/token to stdout and exit with status 0 on
+success. This allows dynamic password generation, instead of storing static
+credentials in configuration files.
+The script must be owned and executable by SlurmUser.
+.IP
+Environment variables provided to the script:
+.RS
+.TP
+\fBSLURM_STORAGE_HOSTNAME\fR
+Database hostname
+.TP
+\fBSLURM_STORAGE_PORT\fR
+Database port number
+.TP
+\fBSLURM_STORAGE_USER\fR
+Database username
+.RE
+.IP
+Expected output format:
+.br
+\fBTOKEN=\fR\fI<authentication_token>\fR
+.IP
+The script must exit with status 0 on success, non-zero on failure.
+Any output to stderr will be logged as an error. If there is a backup
+host specified, the script will still be provided the main hostname and
+the same token is used for both hosts.
 .IP
 
 .TP

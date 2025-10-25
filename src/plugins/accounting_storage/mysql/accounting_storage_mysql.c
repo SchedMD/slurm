@@ -3790,6 +3790,11 @@ extern int acct_storage_p_flush_jobs_on_cluster(
 
 extern int acct_storage_p_reconfig(mysql_conn_t *mysql_conn, bool dbd)
 {
+	debug2("Reloading mysql_db_info based on reconfig request");
+	/* Destroy old database info and create new one with updated config */
+	destroy_mysql_db_info(mysql_db_info);
+	mysql_db_info = create_mysql_db_info(SLURM_MYSQL_PLUGIN_AS);
+
 	return SLURM_SUCCESS;
 }
 

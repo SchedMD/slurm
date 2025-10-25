@@ -78,6 +78,10 @@ typedef struct {
 	char *user;
 	char *params;
 	char *pass;
+	char *pass_script;
+	time_t token_expires;
+	uint32_t token_duration;
+	pthread_mutex_t token_lock;
 } mysql_db_info_t;
 
 typedef struct {

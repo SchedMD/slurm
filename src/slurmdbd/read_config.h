@@ -104,6 +104,7 @@ typedef struct {
 	uint32_t        purge_usage;    /* purge usage data older
 					 * than this in months or days	*/
 	char *		storage_loc;	/* database name		*/
+	char *storage_pass_script;
 	char *storage_user;
 	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
 	uint16_t        track_wckey;    /* Whether or not to track wckey*/
