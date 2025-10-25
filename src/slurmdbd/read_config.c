@@ -112,6 +112,7 @@ static void _clear_slurmdbd_conf(void)
 		slurmdbd_conf->purge_txn = 0;
 		slurmdbd_conf->purge_usage = 0;
 		xfree(slurmdbd_conf->storage_loc);
+		xfree(slurmdbd_conf->storage_pass_script);
 		xfree(slurmdbd_conf->storage_user);
 		slurmdbd_conf->track_wckey = 0;
 		slurmdbd_conf->track_ctld = 0;
@@ -185,6 +186,7 @@ extern int read_slurmdbd_conf(void)
 		{"StorageLoc", S_P_STRING},
 		{"StorageParameters", S_P_STRING},
 		{"StoragePass", S_P_STRING},
+		{"StoragePassScript", S_P_STRING},
 		{"StoragePort", S_P_UINT16},
 		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
@@ -603,6 +605,8 @@ extern int read_slurmdbd_conf(void)
 			       "StorageParameters", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_pass,
 			       "StoragePass", tbl);
+		s_p_get_string(&slurmdbd_conf->storage_pass_script,
+			       "StoragePassScript", tbl);
 		s_p_get_uint16(&slurm_conf.accounting_storage_port,
 		               "StoragePort", tbl);
 		s_p_get_string(&slurm_conf.accounting_storage_type,
@@ -967,6 +971,9 @@ extern list_t *dump_config(void)
 		     slurm_conf.accounting_storage_params);
 
 	/* StoragePass should NOT be passed due to security reasons */
+
+	add_key_pair(my_list, "StoragePassScript", "%s",
+		     slurmdbd_conf->storage_pass_script);
 
 	add_key_pair(my_list, "StoragePort", "%u",
 		     slurm_conf.accounting_storage_port);
