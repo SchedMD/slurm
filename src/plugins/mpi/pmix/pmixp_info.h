@@ -123,6 +123,7 @@ extern uint32_t pmixp_info_jobid();
 extern uint32_t pmixp_info_job_offset(int i);
 extern char *pmixp_info_srun_ip();
 extern int pmixp_info_abort_agent_port();
+extern slurm_step_id_t *pmixp_info_step_id(void);
 extern uint32_t pmixp_info_stepid();
 extern char *pmixp_info_namespace();
 extern uint32_t pmixp_info_nodeid();
