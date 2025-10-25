@@ -8567,6 +8567,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_FLAGS)[] = {
 	add_flag_bit(STEPMGR_ENABLED, "STEPMGR_ENABLED"),
 	add_flag_bit(SPREAD_SEGMENTS, "SPREAD_SEGMENTS"),
 	add_flag_bit(CONSOLIDATE_SEGMENTS, "CONSOLIDATE_SEGMENTS"),
+	add_flag_bit(EXPEDITED_REQUEUE, "EXPEDITED_REQUEUE"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(JOB_SHOW_FLAGS)[] = {

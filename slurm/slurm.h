@@ -1248,6 +1248,7 @@ typedef enum {
 #define HETJOB_PURGE SLURM_BIT(42) /* purge the hetjob component */
 #define SPREAD_SEGMENTS SLURM_BIT(43) /* Spread segments across blocks*/
 #define CONSOLIDATE_SEGMENTS SLURM_BIT(44) /* Consolidate segments */
+#define EXPEDITED_REQUEUE SLURM_BIT(45) /* expedited requeue requested */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

@@ -853,6 +853,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 		_add_to_line(&out, &is_new_line, "KillOnInvalidDependent=No");
 	if (job_ptr->bitflags & SPREAD_JOB)
 		_add_to_line(&out, &is_new_line, "SpreadJob=Yes");
+	if (job_ptr->bitflags & EXPEDITED_REQUEUE)
+		_add_to_line(&out, &is_new_line, "ExpeditedRequeue=Yes");
 
 	if (!is_new_line)
 		xstrcat(out, line_end);
