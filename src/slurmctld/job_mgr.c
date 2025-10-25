@@ -2562,7 +2562,7 @@ extern job_record_t *find_sluid(sluid_t sluid)
 	return NULL;
 }
 
-extern job_record_t *find_job(slurm_step_id_t *step_id)
+extern job_record_t *find_job(const slurm_step_id_t *step_id)
 {
 	if (step_id->sluid && (step_id->sluid != NO_VAL))
 		return find_sluid(step_id->sluid);
