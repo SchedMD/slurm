@@ -4269,19 +4269,15 @@ extern int slurm_update_job2(job_desc_msg_t *job_msg,
  *	configuration information if changed since update_time.
  *	a job_id value of NO_VAL implies all jobs, a step_id value of
  *	NO_VAL implies all steps
- * IN update_time - time of current configuration data
- * IN job_id - get information for specific job id, NO_VAL for all jobs
- * IN step_id - get information for specific job step id, NO_VAL for all
+ * IN step_id - get information for specific job step id, NULL for all
  *	job steps
  * IN step_response_pptr - place to store a step response pointer
  * IN show_flags - job step filtering options
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
-extern int slurm_get_job_steps(time_t update_time,
-			       uint32_t job_id,
-			       uint32_t step_id,
-			       job_step_info_response_msg_t **step_response_pptr,
+extern int slurm_get_job_steps(slurm_step_id_t *step_id,
+			       job_step_info_response_msg_t **resp,
 			       uint16_t show_flags);
 
 /*

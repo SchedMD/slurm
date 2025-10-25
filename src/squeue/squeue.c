@@ -430,8 +430,8 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 			old_step_ptr->last_update = 0;
 		/* Use a last_update time of 0 so that we can get an updated
 		 * run_time for jobs rather than just its start_time */
-		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
-						 &new_step_ptr, show_flags);
+		error_code =
+			slurm_get_job_steps(NULL, &new_step_ptr, show_flags);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
@@ -439,8 +439,8 @@ static int _print_job_steps(bool clear_old, int argc, char **argv)
 			new_step_ptr = old_step_ptr;
 		}
 	} else {
-		error_code = slurm_get_job_steps((time_t) 0, NO_VAL, NO_VAL,
-						 &new_step_ptr, show_flags);
+		error_code =
+			slurm_get_job_steps(NULL, &new_step_ptr, show_flags);
 	}
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error");

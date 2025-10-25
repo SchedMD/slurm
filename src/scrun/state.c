@@ -199,8 +199,12 @@ static int _get_job_step_state(slurm_job_info_t *job)
 	/* job is running so we must see if there is a step */
 	int rc;
 	job_step_info_response_msg_t *resp = NULL;
+	slurm_step_id_t step_id = job->step_id;
 
-	rc = slurm_get_job_steps(0, job->step_id.job_id, 0, &resp, 0);
+	/* maintain existing behavior of always querying step 0 */
+	step_id.step_id = 0;
+
+	rc = slurm_get_job_steps(&step_id, &resp, 0);
 
 	if (rc) {
 		/* query failed...job may have just died */

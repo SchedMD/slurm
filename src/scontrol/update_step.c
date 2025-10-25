@@ -48,8 +48,7 @@ static uint32_t _get_step_time(slurm_step_id_t *step_id)
 	int i, rc;
 	job_step_info_response_msg_t *resp;
 
-	rc = slurm_get_job_steps((time_t) 0, step_id->job_id, step_id->step_id,
-				 &resp, SHOW_ALL);
+	rc = slurm_get_job_steps(step_id, &resp, SHOW_ALL);
 	if (rc == SLURM_SUCCESS) {
 		for (i = 0; i < resp->job_step_count; i++) {
 			if ((resp->job_steps[i].step_id.job_id !=

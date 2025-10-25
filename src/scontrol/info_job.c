@@ -1563,10 +1563,8 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 	if (!step_id.job_id || error_code) {
 		/* step lookup failed already - skip trying again */
 	} else {
-		error_code = slurm_get_job_steps ( (time_t) 0, step_id.job_id,
-						   step_id.step_id,
-						   &job_step_info_ptr,
-						   show_flags);
+		error_code = slurm_get_job_steps(&step_id, &job_step_info_ptr,
+						 show_flags);
 		if ((error_code == SLURM_ERROR) && errno)
 			error_code = errno;
 	}
