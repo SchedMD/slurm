@@ -5791,6 +5791,13 @@ static void _slurm_rpc_kill_jobs(slurm_msg_t *msg)
 	    (slurm_conf.slurmctld_debug >= LOG_LEVEL_DEBUG2))
 		_log_kill_jobs_rpc(kill_msg);
 
+	if (!validate_super_user(msg->auth_uid) && kill_msg->admin_comment) {
+		error("%s: attempt to set AdminComment by %u",
+		      __func__, msg->auth_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
+	}
+
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		lock_slurmctld(lock);
