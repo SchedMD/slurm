@@ -12590,6 +12590,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	if ((job_ptr->job_state & JOB_EXPEDITING) && !privileged) {
+		error("Blocking update of expediting job from uid %u", uid);
+		return ESLURM_NOT_SUPPORTED;
+	}
+
 	if (job_desc->burst_buffer) {
 		/*
 		 * burst_buffer contents are validated at job submit time and
