@@ -13656,14 +13656,14 @@ static int _unpack_each_container_id(void **object, uint16_t protocol_version,
 {
 	slurm_step_id_t *step = xmalloc(sizeof(*step));
 
-	if (unpack_step_id_members(step, buffer, protocol_version)) {
-		slurm_free_step_id(step);
-		return SLURM_ERROR;
-	}
+	safe_unpack_step_id_members(step, buffer, protocol_version);
 
 	*object = step;
-
 	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_step_id(step);
+	return SLURM_ERROR;
 }
 
 static int _unpack_container_id_response_msg(slurm_msg_t *smsg, buf_t *buffer)
