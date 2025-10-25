@@ -1021,6 +1021,8 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 		db_info->host = xstrdup(slurm_conf.job_comp_host);
 		db_info->user = xstrdup(slurm_conf.job_comp_user);
 		db_info->pass = xstrdup(slurm_conf.job_comp_pass);
+		db_info->pass_script =
+			xstrdup(slurm_conf.job_comp_pass_script);
 		db_info->params = xstrdup(slurm_conf.accounting_storage_params);
 		break;
 	default:
