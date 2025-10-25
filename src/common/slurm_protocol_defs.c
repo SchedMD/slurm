@@ -1531,6 +1531,7 @@ extern void slurm_free_kill_jobs_msg(kill_jobs_msg_t *msg)
 		return;
 
 	xfree(msg->account);
+	xfree(msg->admin_comment);
 	xfree(msg->job_name);
 	xfree(msg->partition);
 	xfree(msg->qos);
