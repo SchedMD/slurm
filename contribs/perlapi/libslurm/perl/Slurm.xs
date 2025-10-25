@@ -695,32 +695,6 @@ slurm_update_job(slurm_t self, HV *job_info)
 ######################################################################
 
 HV *
-slurm_get_job_steps(slurm_t self, time_t update_time=0, uint32_t job_id=NO_VAL, uint32_t step_id=NO_VAL, uint16_t show_flags=0)
-	PREINIT:
-		int rc;
-		job_step_info_response_msg_t *resp_msg;
-	CODE:
-		if (self); /* this is needed to avoid a warning about
-			      unused variables.  But if we take slurm_t self
-			      out of the mix Slurm-> doesn't work,
-			      only Slurm::
-			    */
-		rc = slurm_get_job_steps(update_time, job_id, step_id, &resp_msg, show_flags);
-		if(rc == SLURM_SUCCESS) {
-			RETVAL = newHV();
-			sv_2mortal((SV*)RETVAL);
-			rc = job_step_info_response_msg_to_hv(resp_msg, RETVAL);
-			slurm_free_job_step_info_response_msg(resp_msg);
-			if (rc < 0) {
-				XSRETURN_UNDEF;
-			}
-		} else {
-			XSRETURN_UNDEF;
-		}
-	OUTPUT:
-		RETVAL
-
-HV *
 slurm_job_step_layout_get(slurm_t self, uint32_t job_id, uint32_t step_id_in)
 	PREINIT:
 		int rc;
