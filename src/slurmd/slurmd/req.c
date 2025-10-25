@@ -221,8 +221,7 @@ static int _stepmgr_connect(slurm_step_id_t *step_id,
 	step_id->step_het_comp = NO_VAL;
 	if ((fd = stepd_connect(conf->spooldir, conf->node_name, step_id,
 				protocol_version)) == -1) {
-		error("%s to %ps failed: %m",
-		      __func__, &step_id->job_id);
+		error("%s to %ps failed: %m", __func__, step_id);
 	}
 
 	return fd;
