@@ -263,27 +263,26 @@ extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal)
 	 * Otherwise, look through the list of job step info and find
 	 * the one matching step_id.  Signal that step.
 	 */
-	rc = slurm_get_job_steps((time_t)0, step_id->job_id, step_id->step_id,
+	rc = slurm_get_job_steps((time_t) 0, step_id->job_id, step_id->step_id,
 				 &step_info, SHOW_ALL);
- 	if (rc != 0) {
- 		save_errno = errno;
- 		goto fail;
- 	}
+	if (rc != 0) {
+		save_errno = errno;
+		goto fail;
+	}
 	for (i = 0; i < step_info->job_step_count; i++) {
 		if ((step_info->job_steps[i].step_id.job_id ==
 		     step_id->job_id) &&
 		    (step_info->job_steps[i].step_id.step_id ==
 		     step_id->step_id)) {
-			rc = _signal_job_step(&step_info->job_steps[i],
- 					      signal);
- 			save_errno = rc;
+			rc = _signal_job_step(&step_info->job_steps[i], signal);
+			save_errno = rc;
 			break;
 		}
 	}
 	slurm_free_job_step_info_response_msg(step_info);
 fail:
- 	errno = save_errno;
- 	return rc ? -1 : 0;
+	errno = save_errno;
+	return rc ? -1 : 0;
 }
 
 /*
