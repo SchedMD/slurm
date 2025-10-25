@@ -291,6 +291,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCompLoc", S_P_STRING},
 	{"JobCompParams", S_P_STRING},
 	{"JobCompPass", S_P_STRING},
+	{"JobCompPassScript", S_P_STRING},
 	{"JobCompPort", S_P_UINT32},
 	{"JobCompType", S_P_STRING},
 	{"JobCompUser", S_P_STRING},
@@ -2638,6 +2639,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree(ctl_conf_ptr->job_comp_loc);
 	xfree(ctl_conf_ptr->job_comp_params);
 	xfree(ctl_conf_ptr->job_comp_pass);
+	xfree(ctl_conf_ptr->job_comp_pass_script);
 	xfree(ctl_conf_ptr->job_comp_type);
 	xfree(ctl_conf_ptr->job_comp_user);
 	FREE_NULL_LIST(ctl_conf_ptr->job_defaults_list);
@@ -2798,7 +2800,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree(ctl_conf_ptr->job_acct_gather_params);
 	xfree(ctl_conf_ptr->job_comp_loc);
 	xfree(ctl_conf_ptr->job_comp_params);
-	xfree(ctl_conf_ptr->job_comp_pass);
+	xfree(ctl_conf_ptr->job_comp_pass_script);
 	ctl_conf_ptr->job_comp_port = 0;
 	xfree(ctl_conf_ptr->job_comp_type);
 	xfree(ctl_conf_ptr->job_comp_user);
@@ -4045,6 +4047,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
 	s_p_get_string(&conf->job_comp_params, "JobCompParams", hashtbl);
 	s_p_get_string(&conf->job_comp_pass, "JobCompPass", hashtbl);
+	s_p_get_string(&conf->job_comp_pass_script, "JobCompPassScript",
+		       hashtbl);
 	if (!s_p_get_uint32(&conf->job_comp_port, "JobCompPort",
 			    hashtbl)) {
 		if (!xstrcmp(conf->job_comp_type, "job_comp/mysql"))

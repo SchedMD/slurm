@@ -800,6 +800,10 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "JobCompParams", "%s", conf->job_comp_params);
 
+	/* JobCompPass intentionally omitted */
+
+	add_key_pair(ret_list, "JobCompPass", "%s", conf->job_comp_pass_script);
+
 	add_key_pair(ret_list, "JobCompPort", "%u", conf->job_comp_port);
 
 	add_key_pair(ret_list, "JobCompType", "%s", conf->job_comp_type);
