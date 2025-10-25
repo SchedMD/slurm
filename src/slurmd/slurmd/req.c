@@ -171,7 +171,7 @@ static int  _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
 static void _add_job_running_prolog(slurm_step_id_t *step_id);
-static void _remove_job_running_prolog(uint32_t job_id);
+static void _remove_job_running_prolog(slurm_step_id_t *step_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(slurm_step_id_t *step_id);
 static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
@@ -1410,7 +1410,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.uid = msg->auth_uid;
 		job_env.gid = msg->auth_gid;
 		rc = run_prolog(&job_env, req->cred);
-		_remove_job_running_prolog(job_env.jobid);
+		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -2091,7 +2091,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	if (rc)
 		cred_revoke(&req->step_id, time(NULL), time(NULL));
 
-	_remove_job_running_prolog(req->step_id.job_id);
+	_remove_job_running_prolog(&req->step_id);
 
 	_notify_result_rpc_prolog(req, rc);
 }
@@ -2211,7 +2211,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 	 */
 
 		rc = run_prolog(&job_env, req->cred);
-		_remove_job_running_prolog(job_env.jobid);
+		_remove_job_running_prolog(&req->step_id);
 		_free_job_env(&job_env);
 		if (rc) {
 			int term_sig = 0, exit_status = 0;
@@ -4867,11 +4867,11 @@ static void _add_job_running_prolog(slurm_step_id_t *step_id)
 }
 
 /* Remove this job from the list of jobs currently running their prolog */
-static void _remove_job_running_prolog(uint32_t job_id)
+static void _remove_job_running_prolog(slurm_step_id_t *step_id)
 {
-	if (!list_delete_all(conf->prolog_running_jobs,
-			     _match_jobid, &job_id))
-		error("_remove_job_running_prolog: job not found");
+	if (!list_delete_all(conf->prolog_running_jobs, _match_jobid,
+			     &step_id->job_id))
+		error("%s: %pI not found", __func__, step_id);
 	slurm_cond_broadcast(&conf->prolog_running_cond);
 }
 
