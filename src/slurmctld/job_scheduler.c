@@ -2870,6 +2870,12 @@ extern void launch_job(job_record_t *job_ptr)
 
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);
+
+	/* Reset expedited requeue flags now that the job is running again */
+	if (job_ptr->job_state & JOB_EXPEDITING) {
+		job_ptr->epilog_failed = false;
+		job_state_unset_flag(job_ptr, JOB_EXPEDITING);
+	}
 }
 
 /*
