@@ -50,7 +50,8 @@
 typedef struct namespace_ops {
 	int (*namespace_p_join)(slurm_step_id_t *step_id, uid_t uid,
 				bool step_create);
-	int (*namespace_p_join_external)(uint32_t job_id, list_t *fd_map);
+	int (*namespace_p_join_external)(slurm_step_id_t *step_id,
+					 list_t *fd_map);
 	int (*namespace_p_restore)(char *dir_name, bool recover);
 	int (*namespace_p_stepd_create)(stepd_step_rec_t *step);
 	int (*namespace_p_stepd_delete)(slurm_step_id_t *step_id);
@@ -191,7 +192,7 @@ extern int namespace_g_join(slurm_step_id_t *step_id, uid_t uid,
 /*
  * Allow external processes (eg. via PAM) to join the job namespace.
  */
-extern int namespace_g_join_external(uint32_t job_id, list_t *fd_map)
+extern int namespace_g_join_external(slurm_step_id_t *step_id, list_t *fd_map)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -199,7 +200,7 @@ extern int namespace_g_join_external(uint32_t job_id, list_t *fd_map)
 
 	for (i = 0; ((i < g_namespace_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].namespace_p_join_external))(job_id, fd_map);
+		rc = (*(ops[i].namespace_p_join_external))(step_id, fd_map);
 	}
 
 	return rc;
