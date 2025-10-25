@@ -45,6 +45,7 @@
 
 typedef struct scancel_options {
 	char *account;		/* --account=n, -a		*/
+	char *admin_comment;
 	bool batch;		/* --batch, -b			*/
 	char *sibling;		/* --sibling=<sib_name>		*/
 	bool ctld;		/* --ctld			*/
