@@ -588,6 +588,8 @@ static const char *_job_state_list(void)
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_CONFIGURING));
 	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_EXPEDITING));
+	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_RESIZING));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_RESV_DEL_HOLD));

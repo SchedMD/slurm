@@ -230,6 +230,7 @@ static const struct {
 	T(JOB_RESV_DEL_HOLD),
 	T(JOB_SIGNALING),
 	T(JOB_STAGE_OUT),
+	T(JOB_EXPEDITING),
 };
 
 static void _check_job_state(const uint32_t state)

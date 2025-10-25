@@ -2707,6 +2707,8 @@ extern char *job_state_string(uint32_t inx)
 		return "STAGE_OUT";
 	if (inx & JOB_CONFIGURING)
 		return "CONFIGURING";
+	if (inx & JOB_EXPEDITING)
+		return "EXPEDITING";
 	if (inx & JOB_RESIZING)
 		return "RESIZING";
 	if (inx & JOB_REQUEUE)
@@ -2878,6 +2880,8 @@ extern char *job_state_string_complete(uint32_t state)
 		xstrcat(state_str, ",COMPLETING");
 	if (state & JOB_CONFIGURING)
 		xstrcat(state_str, ",CONFIGURING");
+	if (state & JOB_EXPEDITING)
+		xstrcat(state_str, ",EXPEDITING");
 	if (state & JOB_POWER_UP_NODE)
 		xstrcat(state_str, ",POWER_UP_NODE");
 	if (state & JOB_RECONFIG_FAIL)
@@ -2928,6 +2932,8 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_COMPLETING;
 	if (_job_name_test(JOB_CONFIGURING, state_name))
 		return JOB_CONFIGURING;
+	if (_job_name_test(JOB_EXPEDITING, state_name))
+		return JOB_EXPEDITING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
 	if (_job_name_test(JOB_RESV_DEL_HOLD, state_name))

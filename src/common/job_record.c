@@ -2686,6 +2686,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		pack_time(dump_job_ptr->tot_sus_time, buffer);
 
 		pack16(dump_job_ptr->direct_set_prio, buffer);
+		pack16(dump_job_ptr->epilog_failed, buffer);
 		pack16(dump_job_ptr->kill_on_node_fail, buffer);
 		pack32(dump_job_ptr->state_reason_prev_db, buffer);
 		pack16(dump_job_ptr->wait_all_nodes, buffer);
@@ -3271,6 +3272,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack_time(&job_ptr->tot_sus_time, buffer);
 
 		safe_unpack16(&job_ptr->direct_set_prio, buffer);
+		safe_unpack16(&job_ptr->epilog_failed, buffer);
 		safe_unpack16(&job_ptr->kill_on_node_fail, buffer);
 		safe_unpack32(&job_ptr->state_reason_prev_db, buffer);
 		safe_unpack16(&job_ptr->wait_all_nodes, buffer);

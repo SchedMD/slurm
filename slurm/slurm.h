@@ -311,6 +311,7 @@ enum job_states {
 #define JOB_RESV_DEL_HOLD SLURM_BIT(21) /* Job is hold */
 #define JOB_SIGNALING     SLURM_BIT(22) /* Outgoing signal is pending */
 #define JOB_STAGE_OUT     SLURM_BIT(23) /* Staging out data (burst buffer) */
+#define JOB_EXPEDITING SLURM_BIT(24) /* checking for expedited requeue */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
@@ -1248,6 +1249,7 @@ typedef enum {
 #define HETJOB_PURGE SLURM_BIT(42) /* purge the hetjob component */
 #define SPREAD_SEGMENTS SLURM_BIT(43) /* Spread segments across blocks*/
 #define CONSOLIDATE_SEGMENTS SLURM_BIT(44) /* Consolidate segments */
+#define EXPEDITED_REQUEUE SLURM_BIT(45) /* expedited requeue requested */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */

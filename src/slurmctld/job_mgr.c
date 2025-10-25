@@ -2575,14 +2575,16 @@ extern job_record_t *find_job(slurm_step_id_t *step_id)
  */
 static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 {
+	uint32_t expediting = job_ptr->job_state & JOB_EXPEDITING;
+
 	/* do this after the epilog complete, setting it here is too early */
 	//job_record_set_sluid(job_ptr);
 	//job_ptr->details->submit_time = now;
 
 	if (job_ptr->node_cnt || job_ptr->epilog_running)
-		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
+		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING | expediting));
 	else
-		job_state_set(job_ptr, JOB_PENDING);
+		job_state_set(job_ptr, JOB_PENDING | expediting);
 }
 
 /*
@@ -3032,6 +3034,11 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 			_set_requeued_job_pending_completing(job_ptr);
 
 			job_ptr->restart_cnt++;
+
+			if (job_ptr->bit_flags & EXPEDITED_REQUEUE) {
+				job_state_set_flag(job_ptr, JOB_EXPEDITING);
+				job_ptr->epilog_failed = true;
+			}
 
 			/* clear signal sent flag on requeue */
 			job_ptr->warn_flags &= ~WARN_SENT;
@@ -6158,6 +6165,9 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 			job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->restart_cnt++;
 
+		if (job_ptr->bit_flags & EXPEDITED_REQUEUE)
+			job_state_set_flag(job_ptr, JOB_EXPEDITING);
+
 		/* clear signal sent flag on requeue */
 		job_ptr->warn_flags &= ~WARN_SENT;
 
@@ -7183,6 +7193,20 @@ static void _enable_stepmgr(job_record_t *job_ptr, job_desc_msg_t *job_desc)
 	}
 }
 
+static bool _expedited_requeue_enabled(void)
+{
+	static bool first_time = true;
+	static bool enabled = false;
+
+	if (first_time) {
+		first_time = false;
+		enabled = xstrstr(slurm_conf.slurmctld_params,
+				  "enable_expedited_requeue");
+	}
+
+	return enabled;
+}
+
 /*
  * _job_create - create a job table record for the supplied specifications.
  *	This performs only basic tests for request validity (access to
@@ -7988,6 +8012,13 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	if (job_desc->wckey && (job_desc->wckey[0] == '*')) {
 		rc = ESLURM_INVALID_WCKEY;
+		goto fini;
+	}
+
+	if ((job_desc->bitflags & EXPEDITED_REQUEUE) &&
+	    !_expedited_requeue_enabled()) {
+		error("Expedited requeue requested but not enabled");
+		rc = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
 
@@ -12580,6 +12611,17 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
+	if ((job_ptr->job_state & JOB_EXPEDITING) && !privileged) {
+		error("Blocking update of expediting job from uid %u", uid);
+		return ESLURM_NOT_SUPPORTED;
+	}
+
+	if ((job_desc->bitflags & EXPEDITED_REQUEUE) &&
+	    !_expedited_requeue_enabled()) {
+		error("Expedited requeue requested but not enabled");
+		return ESLURM_NOT_SUPPORTED;
+	}
+
 	if (job_desc->burst_buffer) {
 		/*
 		 * burst_buffer contents are validated at job submit time and
@@ -16573,6 +16615,7 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		      __func__, job_ptr, node_name);
 		drain_nodes(node_name, "Epilog error",
 		            slurm_conf.slurm_user_id);
+		job_ptr->epilog_failed = true;
 	}
 	/* Change job from completing to completed */
 	node_ptr = find_node_record(node_name);
@@ -16592,9 +16635,41 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(job_record_t *job_ptr)
 {
+	/*
+	 * make_node_idle() will have skipped decrementing the comp_job_cnt
+	 * on prior calls for this job in order to prevent the nodes from
+	 * being claimed by other jobs.
+	 * Do that now that this job will be ready in the queue to re-claim
+	 * them as needed.
+	 */
+	if (job_ptr->job_state & JOB_EXPEDITING) {
+		node_record_t *node_ptr;
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+		     i++) {
+			if (node_ptr->comp_job_cnt)
+				(node_ptr->comp_job_cnt)--;
+			make_node_idle(node_ptr, NULL);
+		}
+	}
+
 	if (IS_JOB_COMPLETING(job_ptr) ||
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
+
+	if (job_ptr->job_state & JOB_EXPEDITING) {
+		if (!job_ptr->epilog_failed) {
+			job_state_unset_flag(job_ptr, JOB_EXPEDITING);
+			job_state_set_flag(job_ptr, JOB_REQUEUE_HOLD);
+			job_ptr->state_reason = WAIT_HELD_USER;
+			xfree(job_ptr->state_desc);
+			job_ptr->state_desc =
+				xstrdup("job requeued in held state");
+			sched_info("%s: holding expedited requeue %pJ as no epilogs failed",
+				   __func__, job_ptr);
+			job_ptr->priority = 0;
+		}
+	}
 
 	info("Requeuing %pJ", job_ptr);
 
@@ -16626,6 +16701,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 
 	job_resv_clear_magnetic_flag(job_ptr);
+	job_ptr->epilog_failed = false;
 
 	if (job_ptr->details) {
 		time_t now = time(NULL);
@@ -16650,7 +16726,10 @@ void batch_requeue_fini(job_record_t *job_ptr)
 				error("Missing cron details for %pJ. This should never happen. Clearing CRON_JOB flag and skipping requeue.",
 				      job_ptr);
 				job_ptr->bit_flags &= ~CRON_JOB;
+			} else if (job_ptr->bit_flags & EXPEDITED_REQUEUE) {
+				begin_time = 0;
 			}
+
 			job_ptr->details->begin_time = begin_time;
 		}
 
@@ -19016,6 +19095,12 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 		return;
 
 	exit_code = WEXITSTATUS(job_ptr->exit_code);
+
+	if (job_ptr->bit_flags & EXPEDITED_REQUEUE) {
+		verbose("%s: %pJ starting expedited requeue", __func__, job_ptr);
+		job_state_set_flag(job_ptr, JOB_REQUEUE | JOB_EXPEDITING);
+		return;
+	}
 
 	if (requeue_exit && bit_test(requeue_exit, exit_code)) {
 		debug2("%s: %pJ exit code %d state JOB_REQUEUE",

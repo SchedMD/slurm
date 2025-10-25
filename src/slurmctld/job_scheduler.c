@@ -2158,6 +2158,7 @@ extern int sort_job_queue2(void *x, void *y)
 {
 	job_queue_rec_t *job_rec1 = *(job_queue_rec_t **) x;
 	job_queue_rec_t *job_rec2 = *(job_queue_rec_t **) y;
+	bool expedited1 = false, expedited2 = false;
 	het_job_details_t *details = NULL;
 	bool has_resv1, has_resv2;
 	static time_t config_update = 0;
@@ -2171,6 +2172,19 @@ extern int sort_job_queue2(void *x, void *y)
 		preemption_enabled = slurm_preemption_enabled();
 		config_update = slurm_conf.last_update;
 	}
+
+	/*
+	 * Expedited Requeue jobs are defined as "infinite" priority.
+	 * If, somehow, both have that state, then fall back to "normal"
+	 * sorting between the jobs.
+	 */
+	if (job_rec1->job_ptr->job_state & JOB_EXPEDITING)
+		expedited1 = true;
+	if (job_rec2->job_ptr->job_state & JOB_EXPEDITING)
+		expedited2 = true;
+	if (expedited1 != expedited2)
+		return (expedited1 ? -1 : 1);
+
 	if (preemption_enabled) {
 		if (preempt_g_job_preempt_check(job_rec1, job_rec2))
 			return -1;
@@ -2856,6 +2870,12 @@ extern void launch_job(job_record_t *job_ptr)
 
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);
+
+	/* Reset expedited requeue flags now that the job is running again */
+	if (job_ptr->job_state & JOB_EXPEDITING) {
+		job_ptr->epilog_failed = false;
+		job_state_unset_flag(job_ptr, JOB_EXPEDITING);
+	}
 }
 
 /*

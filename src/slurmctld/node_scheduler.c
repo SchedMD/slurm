@@ -1785,17 +1785,19 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (shared) {
 					bit_and(node_set_ptr[i].my_bitmap,
 						share_node_bitmap);
-					bit_and_not(node_set_ptr[i].my_bitmap,
-						    cg_node_bitmap);
 				} else {
 					bit_and(node_set_ptr[i].my_bitmap,
 						idle_node_bitmap);
-					/* IDLE nodes are not COMPLETING */
 				}
-			} else {
-				bit_and_not(node_set_ptr[i].my_bitmap,
-					    cg_node_bitmap);
 			}
+
+			/*
+			 * Always exclude completing nodes. Some nodes may be
+			 * idle, but still completing if a job with expedited
+			 * requeue enabled is waiting for additional epilog
+			 * completions before deciding to requeue or not.
+			 */
+			bit_and_not(node_set_ptr[i].my_bitmap, cg_node_bitmap);
 
 			/*
 			 * We must skip the node *only* in the case it is
