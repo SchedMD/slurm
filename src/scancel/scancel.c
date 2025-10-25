@@ -697,8 +697,7 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 			}
 			slurm_mutex_unlock(&num_active_threads_lock);
 
-			cancel_info = (job_cancel_info_t *)
-				      xmalloc(sizeof(job_cancel_info_t));
+			cancel_info = xmalloc(sizeof(*cancel_info));
 			cancel_info->rc      = rc;
 			cancel_info->sig     = opt.signal;
 			cancel_info->num_active_threads = &num_active_threads;
@@ -771,8 +770,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 			continue;
 		}
 
-		cancel_info = (job_cancel_info_t *)
-			xmalloc(sizeof(job_cancel_info_t));
+		cancel_info = xmalloc(sizeof(*cancel_info));
 		cancel_info->job_id_str = _build_jobid_str(job_ptr, NO_VAL);
 		cancel_info->rc      = rc;
 		cancel_info->sig     = opt.signal;
@@ -880,7 +878,7 @@ static void *
 _cancel_job_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
-	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
+	job_cancel_info_t *cancel_info = ci;
 	uint16_t flags = 0;
 	char *job_type = "";
 	DEF_TIMERS;
@@ -960,7 +958,7 @@ static void *
 _cancel_step_id (void *ci)
 {
 	int error_code = SLURM_SUCCESS, i;
-	job_cancel_info_t *cancel_info = (job_cancel_info_t *)ci;
+	job_cancel_info_t *cancel_info = ci;
 	bool sig_set = true;
 	DEF_TIMERS;
 
@@ -1089,8 +1087,7 @@ static int _signal_job_by_str(void)
 	slurm_cond_init(&num_active_threads_cond, NULL);
 
 	for (i = 0; opt.job_list[i]; i++) {
-		cancel_info = (job_cancel_info_t *)
-			xmalloc(sizeof(job_cancel_info_t));
+		cancel_info = xmalloc(sizeof(*cancel_info));
 		cancel_info->job_id_str = xstrdup(opt.job_list[i]);
 		cancel_info->rc      = &rc;
 		cancel_info->sig     = opt.signal;
