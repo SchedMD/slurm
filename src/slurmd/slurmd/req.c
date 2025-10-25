@@ -170,7 +170,7 @@ static int  _remove_starting_step(uint16_t type, void *req);
 static int  _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
-static void _add_job_running_prolog(uint32_t job_id);
+static void _add_job_running_prolog(slurm_step_id_t *step_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(slurm_step_id_t *step_id);
@@ -1388,7 +1388,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		list_t *job_gres_list, *gres_prep_env_list;
 
 		cred_insert_job(&req->step_id);
-		_add_job_running_prolog(req->step_id.job_id);
+		_add_job_running_prolog(&req->step_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
 		memset(&job_env, 0, sizeof(job_env));
@@ -2042,7 +2042,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 	}
 
 	cred_insert_job(&req->step_id);
-	_add_job_running_prolog(req->step_id.job_id);
+	_add_job_running_prolog(&req->step_id);
 	/* signal just in case the batch rpc got here before we did */
 	slurm_cond_broadcast(&conf->prolog_running_cond);
 	slurm_mutex_unlock(&prolog_mutex);
@@ -2184,7 +2184,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		list_t *job_gres_list, *gres_prep_env_list;
 
 		cred_insert_job(&req->step_id);
-		_add_job_running_prolog(req->step_id.job_id);
+		_add_job_running_prolog(&req->step_id);
 		slurm_mutex_unlock(&prolog_mutex);
 
 		node_id = nodelist_find(req->nodes, conf->node_name);
@@ -4855,13 +4855,13 @@ static bool _step_is_starting(slurm_step_id_t *step_id)
 }
 
 /* Add this job to the list of jobs currently running their prolog */
-static void _add_job_running_prolog(uint32_t job_id)
+static void _add_job_running_prolog(slurm_step_id_t *step_id)
 {
 	uint32_t *job_running_prolog;
 
 	/* Add the job to a list of jobs whose prologs are running */
 	job_running_prolog = xmalloc(sizeof(uint32_t));
-	*job_running_prolog = job_id;
+	*job_running_prolog = step_id->job_id;
 
 	list_append(conf->prolog_running_jobs, job_running_prolog);
 }
