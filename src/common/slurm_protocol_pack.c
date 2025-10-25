@@ -4214,6 +4214,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 	_set_min_memory_tres(job->mem_per_tres, &job->pn_min_memory);
 
+	/* set automatically for external applications */
+	job->job_id = job->step_id.job_id;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
