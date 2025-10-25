@@ -3781,6 +3781,7 @@ typedef struct job_step_kill_msg {
 
 typedef struct {
 	char *account;
+	char *admin_comment;
 	uint16_t flags; /* KILL_* flags below */
 	char *job_name;
 	char **jobs_array;
