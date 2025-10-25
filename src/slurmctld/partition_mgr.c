@@ -714,8 +714,10 @@ extern void get_part_list(char *name, list_t **part_ptr_list,
 					     part_ptr))
 				list_append(*part_ptr_list, part_ptr);
 		} else {
-			xstrfmtcat(*err_part, "%s%s", *err_part ? "," : "",
-				   token);
+			if (err_part)
+				xstrfmtcat(*err_part, "%s%s",
+					   *err_part ? "," : "",
+					   token);
 			if (first_iteration && first_valid)
 				*first_valid = false;
 		}

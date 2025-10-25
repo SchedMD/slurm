@@ -1048,12 +1048,6 @@ extern int data_parser_p_populate_parameters(args_t *args,
 	xassert(!query_type || (query_type < DATA_PARSER_TYPE_MAX));
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
-	data_set_list(dst);
-
-	get_parsers(&sargs.parsers, &sargs.parser_count);
-
-	sargs.path_params = data_set_dict(data_new());
-
 	if (parameter_type &&
 	    !(param_parser =
 		      unalias_parser(find_parser_by_type(parameter_type))))
@@ -1061,6 +1055,12 @@ extern int data_parser_p_populate_parameters(args_t *args,
 	if (query_type &&
 	    !(query_parser = unalias_parser(find_parser_by_type(query_type))))
 		return ESLURM_DATA_INVALID_PARSER;
+
+	data_set_list(dst);
+
+	get_parsers(&sargs.parsers, &sargs.parser_count);
+
+	sargs.path_params = data_set_dict(data_new());
 
 	if (param_parser) {
 		if (param_parser->model != PARSER_MODEL_ARRAY)

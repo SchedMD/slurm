@@ -298,6 +298,8 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int) 's':
 			if (optarg) {
+				xfree(params.steps);
+				FREE_NULL_LIST(params.step_list);
 				params.steps = xstrdup(optarg);
 				params.step_list =
 					_build_step_list(params.steps);
@@ -439,9 +441,13 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (optind < argc) {
 		if (params.job_flag) {
+			xfree(params.jobs);
+			FREE_NULL_LIST(params.job_list);
 			params.jobs = xstrdup(argv[optind++]);
 			params.job_list = _build_job_list(params.jobs);
 		} else if (params.step_flag) {
+			xfree(params.steps);
+			FREE_NULL_LIST(params.step_list);
 			params.steps = xstrdup(argv[optind++]);
 			params.step_list = _build_step_list(params.steps);
 		}

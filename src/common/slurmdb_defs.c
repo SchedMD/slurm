@@ -3370,10 +3370,10 @@ static will_run_response_msg_t *_het_job_will_run(list_t *job_req_list)
 		}
 		if (!ret_resp) {
 			ret_resp = tmp_resp;
-			ret_resp = NULL;
+			tmp_resp = NULL;
 		} else if (ret_resp->start_time < tmp_resp->start_time)
 			ret_resp->start_time = tmp_resp->start_time;
-		xfree(ret_resp);
+		slurm_free_will_run_response_msg(tmp_resp);
 	}
 	list_iterator_destroy(iter);
 

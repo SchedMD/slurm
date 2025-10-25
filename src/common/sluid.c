@@ -123,6 +123,12 @@ extern void print_sluid(const sluid_t sluid, char *buffer, size_t size)
 
 	for (int i = 0; i < 13; i++) {
 		uint64_t shift = 5 * i;
+		/*
+		 * The shift beyond the 64 bits here is intentional. This is
+		 * chopping it into 5-bit pieces, but the top 4-bits still
+		 * need to be translated. So the shift does overflow,
+		 * but it doesn't matter since we are only looking at bits.
+		 */
 		uint64_t mask = (uint64_t) 0x1f << shift;
 		buffer[13 - i] = cb32map[(sluid & mask) >> shift];
 	}

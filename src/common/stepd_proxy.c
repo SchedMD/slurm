@@ -210,6 +210,7 @@ static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
 		log_flag(TLS, "incomplete message, only %u bytes available of %u bytes",
 			 size_buf(in), length);
 		FREE_NULL_BUFFER(in);
+		xfree(req_tls_cert);
 		/* Do not close connection */
 		return SLURM_SUCCESS;
 	}

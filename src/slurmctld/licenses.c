@@ -718,6 +718,14 @@ static int _foreach_license_set_hres(void *x, void *key)
 	licenses_t *hres_head =
 		list_find_first_ro(cluster_license_list, _license_find_rec,
 				   license->name);
+
+	if (!hres_head) {
+		error("%s:_license_find_rec: %s not in cluster_license_list",
+		      __func__,
+		      license->name);
+		return -1;
+	}
+
 	if (license->nodes) {
 		if (hres_head->mode != license->mode) {
 			error("%s HRES Mode mismatch %s", __func__,
@@ -733,6 +741,14 @@ static int _foreach_license_set_hres(void *x, void *key)
 				list_find_first_ro(cluster_license_list,
 						   _license_find_rec_by_nodes,
 						   &args);
+			if (!hres_dup) {
+				error("%s:_license_find_rec_by_nodes: %s not in cluster_license_list (%s)",
+				      __func__,
+				      license->name,
+				      license->nodes);
+				return -1;
+			}
+
 			if (hres_dup != license) {
 				error("%s HRes %s duplicate layer", __func__,
 				      license->name);
@@ -1064,7 +1080,11 @@ static int _foreach_bf_hres_filter_mode1(void *x, void *arg)
 		licenses_t *match =
 			list_find_first(cluster_license_list,
 					_license_find_rec_by_id, &bf_lic->id);
-		bit_or(args->node_mask, match->node_bitmap);
+		if (match)
+			bit_or(args->node_mask, match->node_bitmap);
+		else
+			error("license id %d not found in cluster_license_list",
+			      bf_lic->id.lic_id);
 	}
 
 	return 0;
@@ -1084,7 +1104,11 @@ static int _foreach_bf_hres_filter_mode2(void *x, void *arg)
 		licenses_t *match =
 			list_find_first(cluster_license_list,
 					_license_find_rec_by_id, &bf_lic->id);
-		bit_and_not(args->node_mask, match->node_bitmap);
+		if (match)
+			bit_and_not(args->node_mask, match->node_bitmap);
+		else
+			error("license id %d not found in cluster_license_list",
+			      bf_lic->id.lic_id);
 	}
 
 	return 0;

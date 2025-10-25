@@ -156,7 +156,11 @@ static void _set_basic_info(node_config_load_t *node_conf, char *bus_id,
 	const char whitespace[] = " \f\n\r\t\v";
 
 	path = xstrdup_printf(NVIDIA_INFORMATION_PREFIX, bus_id);
-	f = fopen(path, "r");
+	if (!(f = fopen(path, "r"))) {
+		error("Unable to open %s", path);
+		xfree(path);
+		return;
+	}
 
 	while (fgets(buffer, sizeof(buffer), f) != NULL) {
 		if (!xstrncmp("Device Minor:", buffer, 13)) {

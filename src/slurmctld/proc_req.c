@@ -5889,7 +5889,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS, fd = -1;
 	char *comment = NULL;
 	buf_t *ret_buf;
-	persist_conn_t *persist_conn = NULL, p_tmp;
+	persist_conn_t *persist_conn = NULL, p_tmp = { 0 };
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
 
@@ -5901,20 +5901,21 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
 		persist_init->version = SLURM_PROTOCOL_VERSION;
 
-	if (!validate_slurm_user(msg->auth_uid)) {
-		memset(&p_tmp, 0, sizeof(p_tmp));
-		p_tmp.cluster_name = persist_init->cluster_name;
-		p_tmp.version = persist_init->version;
-		p_tmp.shutdown = &slurmctld_config.shutdown_time;
+	p_tmp.cluster_name = persist_init->cluster_name;
+	p_tmp.version = persist_init->version;
+	p_tmp.shutdown = &slurmctld_config.shutdown_time;
 
+	if (!validate_slurm_user(msg->auth_uid)) {
 		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, REQUEST_PERSIST_INIT RPC from uid=%u",
 		      msg->auth_uid);
 		goto end_it;
 	}
 
-	if ((fd = conn_g_get_fd(msg->conn)) < 0)
+	if ((fd = conn_g_get_fd(msg->conn)) < 0) {
+		rc = EBADF;
 		goto end_it;
+	}
 
 	/*
 	 * Persistent connection handlers expect file descriptor to be already

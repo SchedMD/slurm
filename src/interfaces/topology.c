@@ -658,15 +658,15 @@ extern int topology_g_topoinfo_free(dynamic_plugin_data_t *topoinfo)
 extern int topology_g_topoinfo_pack(dynamic_plugin_data_t *topoinfo,
 				    buf_t *buffer, uint16_t protocol_version)
 {
-	int plugin_inx = _get_plugin_index(topoinfo->plugin_id);
+	int plugin_inx;
 
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	xassert(topoinfo);
 
 	/* Always pack the plugin_id */
 	pack32(topoinfo->plugin_id, buffer);
-	if (!topoinfo)
-		return SLURM_SUCCESS;
 
+	plugin_inx = _get_plugin_index(topoinfo->plugin_id);
 	if (plugin_inx < 0)
 		return SLURM_ERROR;
 
