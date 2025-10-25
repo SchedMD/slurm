@@ -487,7 +487,7 @@ list_t *allocate_het_job_nodes(void)
 	list_itr_t *opt_iter, *resp_iter;
 	slurm_opt_t *opt_local, *first_opt = NULL;
 	list_t *job_req_list = NULL, *job_resp_list = NULL;
-	uint32_t my_job_id = 0;
+	slurm_step_id_t my_step_id = SLURM_STEP_ID_INITIALIZER;
 	int i, k;
 
 	job_req_list = list_create(NULL);
@@ -578,8 +578,8 @@ list_t *allocate_het_job_nodes(void)
 
 			if (pending_job_id.job_id == NO_VAL)
 				pending_job_id = resp->step_id;
-			if (my_job_id == 0) {
-				my_job_id = resp->step_id.job_id;
+			if (my_step_id.job_id == NO_VAL) {
+				my_step_id = resp->step_id;
 				i = list_count(opt_list);
 				k = list_count(job_resp_list);
 				if (i != k) {
@@ -630,14 +630,13 @@ list_t *allocate_het_job_nodes(void)
 
 relinquish:
 	if (job_resp_list) {
-		if (my_job_id == 0) {
-			resp = (resource_allocation_response_msg_t *)
-			       list_peek(job_resp_list);
-			my_job_id = resp->step_id.job_id;
+		if (my_step_id.job_id == NO_VAL) {
+			resp = list_peek(job_resp_list);
+			my_step_id = resp->step_id;
 		}
 
-		if (destroy_job && my_job_id) {
-			slurm_complete_job(my_job_id, 1);
+		if (destroy_job && (my_step_id.job_id != NO_VAL)) {
+			slurm_complete_job(my_step_id.job_id, 1);
 		}
 		FREE_NULL_LIST(job_resp_list);
 	}
