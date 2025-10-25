@@ -1634,8 +1634,7 @@ job_force_termination(srun_job_t *job)
 		}
 		if (kill_sent == 1) {
 			/* Try sending SIGKILL through slurmctld */
-			slurm_kill_job_step(job->step_id.job_id,
-					    job->step_id.step_id, SIGKILL, 0);
+			slurm_kill_job_step(&job->step_id, SIGKILL, 0);
 		}
 	}
 	kill_sent++;
@@ -2236,15 +2235,13 @@ static int _shepherd_spawn(srun_job_t *job, list_t *srun_job_list,
 		list_itr_t *job_iter;
 		job_iter  = list_iterator_create(srun_job_list);
 		while ((job = list_next(job_iter))) {
-			(void) slurm_kill_job_step(job->step_id.job_id, job->step_id.step_id,
-						   SIGKILL, 0);
+			(void) slurm_kill_job_step(&job->step_id, SIGKILL, 0);
 			if (got_alloc)
 				slurm_complete_job(job->step_id.job_id, NO_VAL);
 		}
 		list_iterator_destroy(job_iter);
 	} else {
-		(void) slurm_kill_job_step(job->step_id.job_id,
-					   job->step_id.step_id, SIGKILL, 0);
+		(void) slurm_kill_job_step(&job->step_id, SIGKILL, 0);
 		if (got_alloc)
 			slurm_complete_job(job->step_id.job_id, NO_VAL);
 	}

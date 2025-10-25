@@ -100,9 +100,7 @@ static int _step_signal(int signal)
 	iter = list_iterator_create(local_job_list);
 	while ((my_srun_job = (srun_job_t *) list_next(iter))) {
 		info("Terminating %ps", &my_srun_job->step_id);
-		rc2 = slurm_kill_job_step(my_srun_job->step_id.job_id,
-					  my_srun_job->step_id.step_id, signal,
-					  0);
+		rc2 = slurm_kill_job_step(&my_srun_job->step_id, signal, 0);
 		if (rc2)
 			rc = rc2;
 	}
@@ -257,7 +255,6 @@ static void
 _handle_openmpi_port_error(const char *tasks, const char *hosts,
 			   slurm_step_ctx_t *step_ctx)
 {
-	slurm_step_id_t step_id = step_ctx->step_req->step_id;
 	char *msg = "retrying";
 
 	if (!retry_step_begin) {
@@ -270,8 +267,8 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	error("%s: tasks %s unable to claim reserved port, %s.",
 	      hosts, tasks, msg);
 
-	info("Terminating job step %ps", &step_id);
-	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL, 0);
+	info("Terminating job step %ps", &step_ctx->step_req->step_id);
+	slurm_kill_job_step(&step_ctx->step_req->step_id, SIGKILL, 0);
 }
 
 static char *_mpir_get_host_name(char *node_name)

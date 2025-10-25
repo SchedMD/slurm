@@ -624,8 +624,7 @@ int pmixp_coll_ring_check(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr)
 		PMIXP_ERROR("Bad collective seq. #%d from %s:%u, current is %d",
 			    hdr->seq, nodename, hdr->nodeid, coll->seq);
 		pmixp_debug_hang(0); /* enable hang to debug this! */
-		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+		slurm_kill_job_step(pmixp_info_step_id(), SIGKILL, 0);
 		xfree(nodename);
 		return SLURM_SUCCESS;
 	} else if (PMIXP_COLL_REQ_SKIP == rc) {

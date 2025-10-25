@@ -246,8 +246,7 @@ static inline int pmixp_dconn_connect(
 			    nodename, dconn->nodeid);
 		xfree(nodename);
 		pmixp_debug_hang(0); /* enable hang to debug this! */
-		slurm_kill_job_step(pmixp_info_jobid(),
-				    pmixp_info_stepid(), SIGKILL, 0);
+		slurm_kill_job_step(pmixp_info_step_id(), SIGKILL, 0);
 	}
 	return rc;
 }

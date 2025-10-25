@@ -234,8 +234,7 @@ extern int mpi_p_slurmstepd_prefork(const stepd_step_rec_t *step, char ***env)
 
 err_ext:
 	/* Abort the whole job if error! */
-	slurm_kill_job_step(step->step_id.job_id,
-			    step->step_id.step_id, SIGKILL, 0);
+	slurm_kill_job_step((slurm_step_id_t *) &step->step_id, SIGKILL, 0);
 	return ret;
 }
 
