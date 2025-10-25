@@ -780,10 +780,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 
 	alloc_msg->error_code     = error_code;
 	alloc_msg->job_submit_user_msg = xstrdup(job_submit_user_msg);
-	alloc_msg->step_id.job_id = job_ptr->job_id;
-	alloc_msg->step_id.sluid = job_ptr->db_index;
-	alloc_msg->step_id.step_id = NO_VAL;
-	alloc_msg->step_id.step_het_comp = NO_VAL;
+	alloc_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	alloc_msg->node_cnt       = job_ptr->node_cnt;
 	alloc_msg->node_list      = xstrdup(job_ptr->nodes);
 	if (job_ptr->part_ptr)
@@ -2063,11 +2060,11 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 	if (slurm_with_slurmdbd() && job_ptr &&
 	    (job_ptr->job_state != JOB_PENDING)) {
 		/* This logic was taken from _slurm_rpc_step_complete() */
-		slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
-					    .step_id = SLURM_BATCH_SCRIPT,
-					    .step_het_comp = NO_VAL };
-		step_record_t *step_ptr = find_step_record(job_ptr, &step_id);
-		if (!step_ptr) {
+		slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+		step_record_t *step_ptr = NULL;
+
+		step_id.step_id = SLURM_BATCH_SCRIPT;
+		if (!(step_ptr = find_step_record(job_ptr, &step_id))) {
 			/* Ignore duplicate or late batch complete RPCs */
 			debug("%s: Ignoring late or duplicate REQUEST_COMPLETE_BATCH_SCRIPT received for job %pJ",
 			      __func__, job_ptr);
@@ -2317,7 +2314,7 @@ fini:
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
-		sji->step_id.job_id = job_ptr->job_id;
+		sji->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		sji->stepmgr = job_ptr->batch_host;
 		list_append(args->stepmgr_jobs, sji);
 	}
@@ -2950,7 +2947,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 		job_ptr = find_het_job_record(job_info_msg->step_id.job_id,
 					      job_info_msg->het_job_offset);
 		if (job_ptr) {
-			job_info_msg->step_id.job_id = job_ptr->job_id;
+			job_info_msg->step_id =
+				STEP_ID_FROM_JOB_RECORD(job_ptr);
 			error_code = job_alloc_info(
 				msg->auth_uid, job_info_msg->step_id.job_id,
 				&job_ptr);
@@ -3606,8 +3604,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		    (error_code && job_ptr->job_state == JOB_FAILED))
 			reject_job = true;
 		else {
-			step_id.sluid = job_ptr->db_index;
-			step_id.job_id = job_ptr->job_id;
+			step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 			step_id.step_id = SLURM_BATCH_SCRIPT;
 			priority = job_ptr->priority;
 		}
@@ -3859,8 +3856,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			reject_job = true;
 		} else {
 			if (step_id.job_id == NO_VAL) {
-				step_id.sluid = job_ptr->db_index;
-				step_id.job_id = job_ptr->job_id;
+				step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 				step_id.step_id = SLURM_BATCH_SCRIPT;
 				first_job_ptr = job_ptr;
 				alloc_only = 1;

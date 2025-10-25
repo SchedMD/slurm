@@ -2680,8 +2680,7 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 		foreach_kill_hetjob_step->job_step_kill_msg;
 	int rc;
 
-	job_step_kill_msg->step_id.job_id = het_job_ptr->job_id;
-	job_step_kill_msg->step_id.sluid = het_job_ptr->db_index;
+	job_step_kill_msg->step_id = STEP_ID_FROM_JOB_RECORD(het_job_ptr);
 	rc = _kill_job_step(job_step_kill_msg, het_job_ptr,
 			    foreach_kill_hetjob_step->uid);
 
@@ -4551,22 +4550,17 @@ static void _slurm_selected_step_init(job_record_t *job_ptr,
 
 	id->array_bitmap = NULL;
 	id->array_task_id = job_ptr->array_task_id;
+	id->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+
 	if (job_ptr->array_task_id != NO_VAL)
 		id->step_id.job_id = job_ptr->array_job_id;
 	else if (job_ptr->het_job_offset)
 		id->step_id.job_id = job_ptr->het_job_id;
-	else
-		id->step_id.job_id = job_ptr->job_id;
-
-	id->step_id.sluid = job_ptr->db_index;
 
 	if (job_ptr->het_job_offset)
 		id->het_job_offset = job_ptr->het_job_offset;
 	else
 		id->het_job_offset = NO_VAL;
-
-	id->step_id.step_het_comp = NO_VAL;
-	id->step_id.step_id = NO_VAL;
 }
 
 static void _handle_signal_filter_mismatch(job_record_t *job_ptr,
@@ -7093,7 +7087,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			job_desc.ntasks_per_node = detail_ptr->ntasks_per_node;
 		job_desc.ntasks_per_tres = detail_ptr->ntasks_per_tres;
 		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
-		job_desc.step_id.job_id = job_ptr->job_id;
+		job_desc.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		job_desc.bitflags = job_ptr->bit_flags;
 		job_desc.tres_per_task = xstrdup(job_ptr->tres_per_task);
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
@@ -15646,10 +15640,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 
 	setup_cred_arg(&cred_arg, job_ptr);
 
-	cred_arg.step_id.job_id = job_ptr->job_id;
-	cred_arg.step_id.sluid = job_ptr->db_index;
-	cred_arg.step_id.step_het_comp = NO_VAL;
-	cred_arg.step_id.step_id = NO_VAL;
+	cred_arg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	msg->cred = slurm_cred_create(&cred_arg, false, protocol_version);
 
@@ -15663,10 +15654,7 @@ extern kill_job_msg_t *create_kill_job_msg(job_record_t *job_ptr,
 	msg->job_uid = job_ptr->user_id;
 	msg->job_gid = job_ptr->group_id;
 	msg->start_time = job_ptr->start_time;
-	msg->step_id.job_id = job_ptr->job_id;
-	msg->step_id.sluid = job_ptr->db_index;
-	msg->step_id.step_het_comp = NO_VAL;
-	msg->step_id.step_id = NO_VAL;
+	msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	msg->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 				       job_ptr->spank_job_env);
 	msg->spank_job_env_size = job_ptr->spank_job_env_size;
@@ -16016,9 +16004,7 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 	     find_node_record(job_ptr->batch_host))) {
 		bool requeue = false;
 		char *requeue_msg = "";
-		slurm_step_id_t step_id = {
-			.job_id = job_ptr->job_id,
-		};
+		slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		if (job_ptr->details && job_ptr->details->requeue) {
 			requeue = true;
 			requeue_msg = ", Requeuing job";
@@ -17162,8 +17148,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	agent_args->retry = 1;
 	agent_args->hostlist = hostlist_create(NULL);
 	signal_job_msg = xmalloc(sizeof(signal_tasks_msg_t));
-	signal_job_msg->step_id.job_id = job_ptr->job_id;
-	signal_job_msg->step_id.sluid = job_ptr->db_index;
+	signal_job_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	/*
 	 * We don't ever want to kill a step with this message.  The flags below
@@ -17171,7 +17156,6 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags)
 	 * step_id to an impossible number.
 	 */
 	signal_job_msg->step_id.step_id = slurm_conf.max_step_cnt + 1;
-	signal_job_msg->step_id.step_het_comp = NO_VAL;
 
 	/*
 	 * Encode the flags for slurm stepd to know what steps get signaled
@@ -17226,10 +17210,7 @@ static void _suspend_job(job_record_t *job_ptr, uint16_t op)
 				 * of agent.c RPCs */
 	agent_args->hostlist = hostlist_create(NULL);
 	sus_ptr = xmalloc(sizeof(suspend_int_msg_t));
-	sus_ptr->step_id.job_id = job_ptr->job_id;
-	sus_ptr->step_id.sluid = job_ptr->db_index;
-	sus_ptr->step_id.step_het_comp = NO_VAL;
-	sus_ptr->step_id.step_id = NO_VAL;
+	sus_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	sus_ptr->op = op;
 
 	agent_args->protocol_version = job_ptr->start_protocol_ver;
@@ -18460,10 +18441,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 		return ESLURM_INVALID_JOB_ID;
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));
-	timeout_msg->step_id.job_id = job_ptr->job_id;
-	timeout_msg->step_id.sluid = job_ptr->db_index;
-	timeout_msg->step_id.step_id = NO_VAL;
-	timeout_msg->step_id.step_het_comp = NO_VAL;
+	timeout_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	timeout_msg->timeout = job_ptr->end_time;
 	return SLURM_SUCCESS;
 }
@@ -18713,9 +18691,6 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_details_t *details = job_ptr->details;
 	multi_core_data_t *mc_ptr = details->mc_ptr;
 	int i;
-	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
-	step_id.job_id = job_ptr->job_id;
-	step_id.sluid = job_ptr->db_index;
 
 	/* construct a job_desc_msg_t from job */
 	job_desc = xmalloc(sizeof(job_desc_msg_t));
@@ -18803,7 +18778,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->std_err           = xstrdup(details->std_err);
 	job_desc->std_in            = xstrdup(details->std_in);
 	job_desc->std_out           = xstrdup(details->std_out);
-	job_desc->step_id = step_id;
+	job_desc->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	job_desc->submit_line       = xstrdup(details->submit_line);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
@@ -19810,9 +19785,8 @@ extern void sort_all_jobs_partition_lists()
 
 extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 {
-	slurm_step_id_t step_id = {
-		.job_id = job_ptr->job_id,
-	};
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+
 	job_ptr->priority = 0; /* Hold job */
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
