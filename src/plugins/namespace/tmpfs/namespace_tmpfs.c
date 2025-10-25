@@ -691,14 +691,14 @@ end_it:
 	return rc;
 }
 
-extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
+extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 {
 	char *job_mount = NULL, *ns_holder = NULL;
 
 	if (plugin_disabled)
 		return 0;
 
-	_create_paths(job_id, &job_mount, &ns_holder, NULL);
+	_create_paths(step_id->job_id, &job_mount, &ns_holder, NULL);
 
 	if (step_ns_fd == -1) {
 		step_ns_fd = open(ns_holder, O_RDONLY);

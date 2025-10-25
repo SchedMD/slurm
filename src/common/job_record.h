@@ -48,6 +48,13 @@ typedef struct slurmctld_resv slurmctld_resv_t;
 extern time_t last_job_update;	/* time of last update to job records */
 extern list_t *purge_files_list; /* list of job ids to purge files of */
 
+#define STEP_ID_FROM_JOB_RECORD(job_ptr) \
+	(slurm_step_id_t) \
+	{ \
+		.job_id = job_ptr->job_id, .sluid = job_ptr->db_index, \
+		.step_id = NO_VAL, .step_het_comp = NO_VAL, \
+	}
+
 #define DETAILS_MAGIC	0xdea84e7
 #define JOB_MAGIC	0xf0b7392c
 

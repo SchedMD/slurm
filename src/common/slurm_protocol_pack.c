@@ -13837,7 +13837,7 @@ static void _pack_container_started_msg(const slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->rc, buffer);
-		pack_step_id(&msg->step, buffer, smsg->protocol_version);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 	}
 }
 
@@ -13847,7 +13847,7 @@ static int _unpack_container_started_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->rc, buffer);
-		safe_unpack_step_id_members(&msg->step, buffer,
+		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 	}
 

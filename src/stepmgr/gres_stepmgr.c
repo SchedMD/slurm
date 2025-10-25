@@ -2650,9 +2650,7 @@ extern int gres_stepmgr_step_alloc(list_t *step_gres_list,
 	xassert(step_node_mem_alloc);
 	*step_node_mem_alloc = 0;
 
-	tmp_step_id.job_id = job_ptr->job_id;
-	tmp_step_id.sluid = job_ptr->db_index;
-	tmp_step_id.step_het_comp = NO_VAL;
+	tmp_step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	tmp_step_id.step_id = step_id;
 
 	step_gres_iter = list_iterator_create(step_gres_list);
@@ -3424,10 +3422,10 @@ extern void gres_stepmgr_step_test_per_step(
 {
 	list_itr_t *step_gres_iter;
 	gres_state_t *gres_state_step;
-	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;
 	bitstr_t *node_bitmap = job_ptr->job_resrcs->node_bitmap;
 	int i_first, bit_len;
+	slurm_step_id_t tmp_step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	if (!step_gres_list)
 		return;
@@ -3439,10 +3437,6 @@ extern void gres_stepmgr_step_test_per_step(
 	bit_len = bit_fls(node_bitmap) + 1;
 	if (i_first >= bit_len)
 		i_first = 0;
-
-	tmp_step_id.job_id = job_ptr->job_id;
-	tmp_step_id.step_het_comp = NO_VAL;
-	tmp_step_id.step_id = NO_VAL;
 
 	memset(&foreach_gres_cnt, 0, sizeof(foreach_gres_cnt));
 	foreach_gres_cnt.ignore_alloc = false;

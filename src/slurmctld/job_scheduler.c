@@ -2357,9 +2357,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 {
 	char *fail_why = NULL;
 	batch_job_launch_msg_t *launch_msg_ptr;
-	slurm_step_id_t step_id = {
-		.job_id = job_ptr->job_id,
-	};
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *)
@@ -2370,10 +2368,8 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->array_task_id = job_ptr->array_task_id;
 
 	/* not packed, but set for use routing this message within slurmctld */
-	launch_msg_ptr->step_id.job_id = job_ptr->job_id;
-	launch_msg_ptr->step_id.sluid = job_ptr->db_index;
+	launch_msg_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	launch_msg_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
-	launch_msg_ptr->step_id.step_het_comp = NO_VAL;
 
 	if (!(launch_msg_ptr->script_buf = get_job_script(job_ptr))) {
 		fail_why = "Unable to load job batch script";
@@ -4538,7 +4534,7 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	if (job_start_data->rc == SLURM_SUCCESS) {
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
-		resp_data->step_id.job_id = job_ptr->job_id;
+		resp_data->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		resp_data->proc_cnt = job_ptr->total_cpus;
 		_delayed_job_start_time(job_ptr);
 		resp_data->start_time = MAX(job_ptr->start_time,

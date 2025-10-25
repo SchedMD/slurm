@@ -227,10 +227,8 @@ static void _build_pending_step(job_record_t *job_ptr,
 	step_ptr->srun_pid	= step_specs->srun_pid;
 	step_ptr->host		= xstrdup(step_specs->host);
 	step_ptr->state		= JOB_PENDING;
-	step_ptr->step_id.job_id = job_ptr->job_id;
-	step_ptr->step_id.sluid = job_ptr->db_index;
+	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
-	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->cwd = xstrdup(step_specs->cwd);
 	step_ptr->std_err = xstrdup(step_specs->std_err);
 	step_ptr->std_in = xstrdup(step_specs->std_in);
@@ -507,8 +505,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 
 	memcpy(&step_signal.step_id, step_id, sizeof(step_signal.step_id));
 
-	job_ptr = stepmgr_ops->find_job_record(step_id->job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = stepmgr_ops->find_job(step_id))) {
 		error("job_step_signal: invalid JobId=%u", step_id->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -4012,8 +4009,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	xassert(rem);
 
 	/* find the job, step, and validate input */
-	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = stepmgr_ops->find_job(&req->step_id))) {
 		info("%s: %pI invalid", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -4452,18 +4448,15 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	job_record_t *job_ptr;
 	step_record_t *step_ptr = NULL;
 	update_step_args_t args = { .mod_cnt = 0 };
-	slurm_step_id_t step_id = { 0 };
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
-	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = stepmgr_ops->find_job(&req->step_id))) {
 		error("%s: invalid %pI", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	step_id.job_id = job_ptr->job_id;
-	step_id.sluid = job_ptr->db_index;
+	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	step_id.step_id = req->step_id.step_id;
-	step_id.step_het_comp = NO_VAL;
 
 	/*
 	 * No need to limit step time limit as job time limit will kill
@@ -4627,10 +4620,8 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	step_ptr->name = xstrdup("extern");
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
-	step_ptr->step_id.job_id = job_ptr->job_id;
-	step_ptr->step_id.sluid = job_ptr->db_index;
+	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	step_ptr->step_id.step_id = SLURM_EXTERN_CONT;
-	step_ptr->step_id.step_het_comp = NO_VAL;
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap =
 			bit_copy(job_ptr->node_bitmap);
@@ -4675,10 +4666,8 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->name = xstrdup("batch");
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
-	step_ptr->step_id.job_id = job_ptr->job_id;
-	step_ptr->step_id.sluid = job_ptr->db_index;
+	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
-	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
 
@@ -4704,7 +4693,7 @@ static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 	char *host = NULL;
-	slurm_step_id_t step_id = {0};
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (job_ptr_in->het_job_id) {
 		job_ptr = stepmgr_ops->find_job_record(job_ptr_in->het_job_id);
@@ -4716,10 +4705,9 @@ static step_record_t *_build_interactive_step(
 	} else
 		job_ptr = job_ptr_in;
 
-	step_id.job_id = job_ptr->job_id;
-	step_id.sluid = job_ptr->db_index;
+	step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	step_id.step_id = SLURM_INTERACTIVE_STEP;
-	step_id.step_het_comp = NO_VAL;
+
 	step_ptr = find_step_record(job_ptr, &step_id);
 	if (step_ptr) {
 		debug("%s: interactive step for %pJ already exists",
@@ -4748,10 +4736,8 @@ static step_record_t *_build_interactive_step(
 	step_ptr->name = xstrdup("interactive");
 	step_ptr->state = JOB_RUNNING;
 	step_ptr->start_time = job_ptr->start_time;
-	step_ptr->step_id.job_id = job_ptr->job_id;
-	step_ptr->step_id.sluid = job_ptr->db_index;
+	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
-	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
 
@@ -5103,8 +5089,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 			req_step_msg->step_id.job_id,
 			req_step_msg->array_task_id);
 	else
-		job_ptr = stepmgr_ops->find_job_record(
-			req_step_msg->step_id.job_id);
+		job_ptr = stepmgr_ops->find_job(&req_step_msg->step_id);
 
 	if (job_ptr == NULL) {
 		error_code = ESLURM_INVALID_JOB_ID ;
@@ -5394,7 +5379,7 @@ extern int stepmgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
 	 * structures to avoid copy overhead. Do not free them!
 	 */
 	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
-	sbcast_arg.step_id.job_id = job_ptr->job_id;
+	sbcast_arg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	sbcast_arg.het_job_id = job_ptr->het_job_id;
 	if (step_ptr)
 		sbcast_arg.step_id.step_id = step_ptr->step_id.step_id;
@@ -5472,10 +5457,7 @@ extern resource_allocation_response_msg_t *build_job_info_resp(
 	}
 	job_info_resp_msg->account        = xstrdup(job_ptr->account);
 	job_info_resp_msg->batch_host = xstrdup(job_ptr->batch_host);
-	job_info_resp_msg->step_id.job_id = job_ptr->job_id;
-	job_info_resp_msg->step_id.sluid = job_ptr->db_index;
-	job_info_resp_msg->step_id.step_het_comp = NO_VAL;
-	job_info_resp_msg->step_id.step_id = NO_VAL;
+	job_info_resp_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	job_info_resp_msg->node_cnt       = job_ptr->node_cnt;
 	job_info_resp_msg->node_list      = xstrdup(job_ptr->nodes);
 	if (job_ptr->part_ptr)

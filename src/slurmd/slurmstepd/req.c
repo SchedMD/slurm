@@ -1283,7 +1283,7 @@ static int _handle_get_ns_fd(int fd, uid_t uid, pid_t remote_pid)
 	debug("%s: for job %u:%u",
 	      __func__, step->step_id.job_id, step->step_id.step_id);
 
-	if (namespace_g_join_external(step->step_id.job_id, ns_map) < 0)
+	if (namespace_g_join_external(&step->step_id, ns_map) < 0)
 		goto rwfail;
 
 	list_for_each_ro(ns_map, _handle_get_ns_fd_helper, &fd);
@@ -1320,7 +1320,7 @@ static int _handle_get_ns_fds(int fd, uid_t uid, pid_t remote_pid)
 	debug("%s: for job %u:%u",
 	      __func__, step->step_id.job_id, step->step_id.step_id);
 
-	if (namespace_g_join_external(step->step_id.job_id, ns_map) < 0)
+	if (namespace_g_join_external(&step->step_id, ns_map) < 0)
 		goto rwfail;
 
 	ns_count = list_count(ns_map);

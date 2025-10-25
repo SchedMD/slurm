@@ -1778,10 +1778,9 @@ static void _handle_fed_job_complete(fed_job_update_info_t *job_update_info)
 
 		/* Build and pack a kill_req msg to put in a sib_msg */
 		kill_req = xmalloc(sizeof(job_step_kill_msg_t));
-		kill_req->step_id.job_id = job_update_info->job_id;
 		kill_req->sjob_id     = NULL;
+		kill_req->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		kill_req->step_id.step_id = SLURM_BATCH_SCRIPT;
-		kill_req->step_id.step_het_comp = NO_VAL;
 		kill_req->signal      = SIGKILL;
 		kill_req->flags       = 0;
 
@@ -2247,7 +2246,7 @@ static void _update_origin_job_dep(job_record_t *job_ptr,
 	list_for_each(depend_list, _restore_array_task_id, NULL);
 
 	dep_update_msg.depend_list = depend_list;
-	dep_update_msg.step_id.job_id = job_ptr->job_id;
+	dep_update_msg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_UPDATE_ORIGIN_DEP;
@@ -3233,9 +3232,7 @@ unpack_error:
 static void _pack_remote_dep_job(job_record_t *job_ptr, buf_t *buffer,
 				 uint16_t protocol_version)
 {
-	slurm_step_id_t step_id = {
-		.job_id = job_ptr->job_id,
-	};
+	slurm_step_id_t step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
@@ -4247,7 +4244,7 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
 	dep_msg.array_job_id = job_ptr->array_job_id;
 	dep_msg.array_task_id = job_ptr->array_task_id;
 	dep_msg.is_array = job_ptr->array_recs ? true : false;
-	dep_msg.step_id.job_id = job_ptr->job_id;
+	dep_msg.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 	dep_msg.user_id = job_ptr->user_id;
 
 	if (!job_ptr->details->dependency || clear_dependencies)

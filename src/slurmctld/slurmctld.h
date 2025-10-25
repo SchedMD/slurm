@@ -727,7 +727,7 @@ extern job_record_t *find_job_record(uint32_t job_id);
 
 extern job_record_t *find_sluid(sluid_t sluid);
 
-extern job_record_t *find_job(slurm_step_id_t *step_id);
+extern job_record_t *find_job(const slurm_step_id_t *step_id);
 
 /*
  * find_part_record - find a record for partition with specified name

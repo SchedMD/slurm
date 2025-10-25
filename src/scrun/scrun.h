@@ -81,7 +81,7 @@ typedef struct {
 	char *pid_file; /* full path for pid file */
 	int pid_file_fd; /* file descriptor for pid file */
 	bool existing_allocation; /* running an existing job allocation */
-	uint32_t jobid; /* assigned jobID */
+	slurm_step_id_t step_id; /* assigned job_id / sluid */
 	bool job_completed; /* has job been completed */
 	bool staged_out; /* stage out done */
 	bool staged_in; /* true if stage_in() called */

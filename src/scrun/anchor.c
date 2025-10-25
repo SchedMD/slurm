@@ -376,7 +376,8 @@ static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _finish_job(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	int jobid, rc;
+	int rc;
+	slurm_step_id_t step_id;
 	bool existing_allocation;
 
 	xassert(!arg);
@@ -385,31 +386,31 @@ static void _finish_job(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(state.status >= CONTAINER_ST_STOPPING);
 	xassert(!state.job_completed);
 
-	jobid = state.jobid;
+	step_id = state.step_id;
 	rc = state.srun_rc;
 	existing_allocation = state.existing_allocation;
 	unlock_state();
 
 	if (existing_allocation) {
-		debug("%s: skipping slurm_complete_job(jobId=%u)",
-		      __func__, jobid);
+		debug("%s: skipping slurm_complete_job(%pI)",
+		      __func__, &step_id);
 		goto done;
-	} else if (!jobid) {
+	} else if (step_id.job_id == NO_VAL) {
 		debug("%s: no Job to complete", __func__);
 		return;
 	}
 
-	rc = slurm_complete_job(jobid, rc);
+	rc = slurm_complete_job(step_id.job_id, rc);
 	if ((rc == SLURM_ERROR) && errno)
 		rc = errno;
 
 	if (rc == ESLURM_ALREADY_DONE) {
-		debug("%s: jobId=%u already complete", __func__, jobid);
+		debug("%s: %pI already complete", __func__, &step_id);
 	} else if (rc) {
-		error("%s: slurm_complete_job(jobId=%u) failed: %s",
-		      __func__, jobid, slurm_strerror(rc));
+		error("%s: slurm_complete_job(%pI) failed: %s",
+		      __func__, &step_id, slurm_strerror(rc));
 	} else {
-		debug("%s: jobId=%u released successfully", __func__, jobid);
+		debug("%s: %pI released successfully", __func__, &step_id);
 	}
 
 done:
@@ -691,11 +692,11 @@ static int _send_start_response(conmgr_fd_t *con, slurm_msg_t *req_msg, int rc)
 	st_msg->rc = rc;
 
 	read_lock_state();
-	st_msg->step.job_id = state.jobid;
+	st_msg->step_id = state.step_id;
 	unlock_state();
 
-	st_msg->step.step_id = 0;
-	st_msg->step.step_het_comp = NO_VAL;
+	st_msg->step_id.step_id = 0;
+	st_msg->step_id.step_het_comp = NO_VAL;
 	rc = conmgr_queue_write_msg(con, msg);
 	slurm_free_msg(msg);
 
@@ -832,20 +833,21 @@ static int _start(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 static int _kill_job(conmgr_fd_t *con, int signal)
 {
-	int rc = SLURM_SUCCESS, jobid;
+	int rc = SLURM_SUCCESS;
+	slurm_step_id_t step_id;
 	container_state_msg_status_t status;
 
 	read_lock_state();
-	jobid = state.jobid;
+	step_id = state.step_id;
 	status = state.status;
 	unlock_state();
 
-	if (jobid && (status <= CONTAINER_ST_STOPPING)) {
-		rc = slurm_kill_job(jobid, signal, KILL_FULL_JOB);
+	if ((step_id.job_id != NO_VAL) && (status <= CONTAINER_ST_STOPPING)) {
+		rc = slurm_kill_job(step_id.job_id, signal, KILL_FULL_JOB);
 
-		debug("%s: [%s] slurm_kill_job(JobID=%d, Signal[%d]=%s, 0) = %s",
+		debug("%s: [%s] slurm_kill_job(%pI, Signal[%d]=%s, 0) = %s",
 		      __func__, (con ? conmgr_fd_get_name(con) : "self"),
-		      jobid, signal, strsignal(signal), slurm_strerror(rc));
+		      &step_id, signal, strsignal(signal), slurm_strerror(rc));
 	} else {
 		debug("%s: [%s] job already dead",
 		      __func__, conmgr_fd_get_name(con));
@@ -1092,7 +1094,7 @@ extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(!arg);
 
 	write_lock_state();
-	if (state.jobid <= 0) {
+	if (state.step_id.job_id == NO_VAL) {
 		unlock_state();
 		debug("%s: waiting for job allocation", __func__);
 		return;
@@ -1332,8 +1334,8 @@ static void *_on_startup_con(conmgr_fd_t *con, void *arg)
 	 * job may already be allocated at this point so see if we need to mark
 	 * as created
 	 */
-	if ((state.status == CONTAINER_ST_CREATING) && (state.jobid > 0) &&
-	    !state.existing_allocation)
+	if ((state.status == CONTAINER_ST_CREATING) &&
+	    (state.step_id.job_id != NO_VAL) && !state.existing_allocation)
 		queue = true;
 	unlock_state();
 

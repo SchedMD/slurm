@@ -868,7 +868,7 @@ end_it:
 	return rc;
 }
 
-extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
+extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 {
 	char *job_mount = NULL, *ns_base = NULL;
 	ns_fd_map_t *tmp_map = NULL;
@@ -878,7 +878,7 @@ extern int namespace_p_join_external(uint32_t job_id, list_t *ns_map)
 	if (plugin_disabled)
 		return 0;
 
-	_create_paths(job_id, &job_mount, &ns_base, NULL);
+	_create_paths(step_id->job_id, &job_mount, &ns_base, NULL);
 
 	for (int i = 0; i < NS_L_END; i++) {
 		if (!ns_l_enabled[i].enabled)

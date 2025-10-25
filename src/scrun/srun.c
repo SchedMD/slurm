@@ -134,10 +134,10 @@ extern void exec_srun_container(void)
 
 	read_lock_state();
 
-	if (!state.jobid)
+	if (state.step_id.job_id == NO_VAL)
 		fatal("Unable to start step without a JobId");
 
-	jobid = xstrdup_printf("%u", state.jobid);
+	jobid = xstrdup_printf("%u", state.step_id.job_id);
 
 	_exec_add(args, "/bin/sh");
 	_exec_add(args, "-c");

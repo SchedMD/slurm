@@ -128,11 +128,15 @@ _handle_stray_socket(const char *socket_name)
 	}
 }
 
-static void _handle_stray_script(const char *directory, uint32_t job_id)
+static void _handle_stray_script(const char *directory,
+				 slurm_step_id_t *step_id)
 {
 	char *dir_path = NULL, *file_path = NULL;
 
-	xstrfmtcat(dir_path, "%s/job%05u", directory, job_id);
+	if (step_id->step_id != SLURM_BATCH_SCRIPT)
+		return;
+
+	xstrfmtcat(dir_path, "%s/job%05u", directory, step_id->job_id);
 	xstrfmtcat(file_path, "%s/slurm_script", dir_path);
 	info("%s: Purging vestigial job script %s", __func__, file_path);
 	(void) unlink(file_path);
@@ -149,10 +153,9 @@ _step_connect(const char *directory, const char *nodename,
 	int fd;
 	int rc;
 	char *name = NULL, *pos = NULL;
-	uint32_t stepid = step_id->step_id;
 
-	xstrfmtcatat(name, &pos, "%s/%s_%u.%u",
-		     directory, nodename, step_id->job_id, stepid);
+	xstrfmtcatat(name, &pos, "%s/%s_%u.%u", directory, nodename,
+		     step_id->job_id, step_id->step_id);
 	if (step_id->step_het_comp != NO_VAL)
 		xstrfmtcatat(name, &pos, ".%u", step_id->step_het_comp);
 
@@ -162,10 +165,7 @@ _step_connect(const char *directory, const char *nodename,
 		      __func__, name, slurm_strerror(rc));
 		if (errno == ECONNREFUSED && running_in_slurmd()) {
 			_handle_stray_socket(name);
-
-			if (step_id->step_id == SLURM_BATCH_SCRIPT)
-				_handle_stray_script(directory,
-						     step_id->job_id);
+			_handle_stray_script(directory, step_id);
 		}
 
 		xfree(name);
