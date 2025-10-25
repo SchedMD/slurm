@@ -2575,14 +2575,16 @@ extern job_record_t *find_job(slurm_step_id_t *step_id)
  */
 static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 {
+	uint32_t expediting = job_ptr->job_state & JOB_EXPEDITING;
+
 	/* do this after the epilog complete, setting it here is too early */
 	//job_record_set_sluid(job_ptr);
 	//job_ptr->details->submit_time = now;
 
 	if (job_ptr->node_cnt || job_ptr->epilog_running)
-		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
+		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING | expediting));
 	else
-		job_state_set(job_ptr, JOB_PENDING);
+		job_state_set(job_ptr, JOB_PENDING | expediting);
 }
 
 /*
