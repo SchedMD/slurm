@@ -15054,24 +15054,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-
-extern int unpack_step_id(slurm_step_id_t **msg_ptr, buf_t *buffer,
-			  uint16_t protocol_version)
-{
-	slurm_step_id_t *msg;
-
-	msg = xmalloc(sizeof(*msg));
-	*msg_ptr = msg;
-
-	if (unpack_step_id_members(msg, buffer, protocol_version) ==
-	    SLURM_SUCCESS)
-		return SLURM_SUCCESS;
-
-	slurm_free_step_id(msg);
-	*msg_ptr = NULL;
-	return SLURM_ERROR;
-}
-
 extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
 				     buf_t *buffer)
 {
