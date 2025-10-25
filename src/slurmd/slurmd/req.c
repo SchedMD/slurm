@@ -155,7 +155,7 @@ static int  _file_bcast_register_file(slurm_msg_t *msg,
 
 static bool _slurm_authorized_user(uid_t uid);
 static int _waiter_init(slurm_step_id_t *step_id);
-static void _waiter_complete(uint32_t jobid);
+static void _waiter_complete(slurm_step_id_t *step_id);
 
 static bool _steps_completed_now(uint32_t jobid);
 static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
@@ -4558,7 +4558,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		}
 		cred_begin_expiration(&req->step_id);
 		save_cred_state();
-		_waiter_complete(req->step_id.job_id);
+		_waiter_complete(&req->step_id);
 
 		/*
 		 * The controller needs to get MESSAGE_EPILOG_COMPLETE to bring
@@ -4659,7 +4659,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 
 done:
 	_wait_state_completed(req->step_id.job_id, 5);
-	_waiter_complete(req->step_id.job_id);
+	_waiter_complete(&req->step_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB))
 		epilog_complete(&req->step_id, req->nodes, rc);
@@ -4713,11 +4713,11 @@ static int _waiter_init(slurm_step_id_t *step_id)
 	return rc;
 }
 
-static void _waiter_complete(uint32_t jobid)
+static void _waiter_complete(slurm_step_id_t *step_id)
 {
 	slurm_mutex_lock(&waiter_mutex);
 	if (waiters)
-		list_delete_all(waiters, _find_waiter, &jobid);
+		list_delete_all(waiters, _find_waiter, &step_id->job_id);
 	slurm_mutex_unlock(&waiter_mutex);
 }
 
