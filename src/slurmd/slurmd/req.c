@@ -154,7 +154,7 @@ static int  _file_bcast_register_file(slurm_msg_t *msg,
 				      file_bcast_info_t *key);
 
 static bool _slurm_authorized_user(uid_t uid);
-static int  _waiter_init (uint32_t jobid);
+static int _waiter_init(slurm_step_id_t *step_id);
 static void _waiter_complete(uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
@@ -4444,7 +4444,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 *   notify slurmctld that we recvd the message successfully,
 	 *   then exit this thread.
 	 */
-	if (_waiter_init(req->step_id.job_id) == SLURM_ERROR) {
+	if (_waiter_init(&req->step_id) == SLURM_ERROR) {
 		if (send_response) {
 			/* No matter if the step hasn't started yet or
 			 * not just send a success to let the
@@ -4692,7 +4692,7 @@ static int _find_waiter(void *x, void *y)
 	return (*w == *jp);
 }
 
-static int _waiter_init (uint32_t jobid)
+static int _waiter_init(slurm_step_id_t *step_id)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -4703,10 +4703,10 @@ static int _waiter_init (uint32_t jobid)
 	/*
 	 *  Exit this thread if another thread is waiting on job
 	 */
-	if (list_find_first(waiters, _find_waiter, &jobid))
+	if (list_find_first(waiters, _find_waiter, &step_id->job_id))
 		rc = SLURM_ERROR;
 	else
-		list_append(waiters, _waiter_create(jobid));
+		list_append(waiters, _waiter_create(step_id->job_id));
 
 	slurm_mutex_unlock(&waiter_mutex);
 
