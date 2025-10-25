@@ -172,7 +172,6 @@ static bool _step_is_starting(slurm_step_id_t *step_id);
 
 static void _add_job_running_prolog(slurm_step_id_t *step_id);
 static void _remove_job_running_prolog(slurm_step_id_t *step_id);
-static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(slurm_step_id_t *step_id);
 static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 					   bool *first_job_run);
@@ -4854,40 +4853,35 @@ static bool _step_is_starting(slurm_step_id_t *step_id)
 			       step_id);
 }
 
+static int _match_job(void *x, void *key)
+{
+	slurm_step_id_t *step1 = x, *step2 = key;
+
+	return (step1->job_id == step2->job_id);
+}
+
 /* Add this job to the list of jobs currently running their prolog */
 static void _add_job_running_prolog(slurm_step_id_t *step_id)
 {
-	uint32_t *job_running_prolog;
+	slurm_step_id_t *new_id = xmalloc(sizeof(*step_id));
 
-	/* Add the job to a list of jobs whose prologs are running */
-	job_running_prolog = xmalloc(sizeof(uint32_t));
-	*job_running_prolog = step_id->job_id;
+	*new_id = *step_id;
 
-	list_append(conf->prolog_running_jobs, job_running_prolog);
+	list_append(conf->prolog_running_jobs, new_id);
 }
 
 /* Remove this job from the list of jobs currently running their prolog */
 static void _remove_job_running_prolog(slurm_step_id_t *step_id)
 {
-	if (!list_delete_all(conf->prolog_running_jobs, _match_jobid,
-			     &step_id->job_id))
+	if (!list_delete_all(conf->prolog_running_jobs, _match_job, step_id))
 		error("%s: %pI not found", __func__, step_id);
 	slurm_cond_broadcast(&conf->prolog_running_cond);
-}
-
-static int _match_jobid(void *listentry, void *key)
-{
-	uint32_t *job0 = (uint32_t *)listentry;
-	uint32_t *job1 = (uint32_t *)key;
-
-	return (*job0 == *job1);
 }
 
 static bool _prolog_is_running(slurm_step_id_t *step_id)
 {
 	if (conf->prolog_running_jobs &&
-	    list_find_first(conf->prolog_running_jobs, _match_jobid,
-			    &step_id->job_id))
+	    list_find_first(conf->prolog_running_jobs, _match_job, step_id))
 		return true;
 	return false;
 }
