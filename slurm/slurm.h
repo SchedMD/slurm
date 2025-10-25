@@ -1982,6 +1982,9 @@ typedef struct job_info {
 	uint32_t wait4switch;   /* Maximum time to wait for minimum switches */
 	char *wckey;            /* wckey for job */
 	char *work_dir;		/* pathname of working directory */
+
+	/* Set for backwards compatibility only */
+	uint32_t job_id;
 } slurm_job_info_t;
 
 typedef slurm_job_info_t job_info_t;
