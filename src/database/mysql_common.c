@@ -2,6 +2,7 @@
  *  mysql_common.c - common functions for the mysql storage plugin.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright Amazon.com, Inc. or its affiliates. All rights reserved
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -40,10 +41,16 @@
 
 #include "config.h"
 
+#include <sys/stat.h>
+#include <limits.h>
+
 #include "mysql_common.h"
 
+#include "src/common/env.h"
 #include "src/common/log.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -52,6 +59,10 @@
 #include "src/slurmdbd/read_config.h"
 
 #define MAX_DEADLOCK_ATTEMPTS 10
+#define PW_SCRIPT_MAX_OUTPUT 8192
+#define PW_SCRIPT_TIMEOUT_SECONDS 10
+#define PW_SCRIPT_DEFAULT_REFRESH_SECONDS 300
+#define PW_SCRIPT_TOKEN_PREFIX "TOKEN="
 
 static char *table_defs_table = "table_defs_table";
 
@@ -61,9 +72,144 @@ typedef struct {
 	bool non_unique;
 } db_key_t;
 
+static void _check_storage_pass_script_permissions(mysql_db_info_t *db_info)
+{
+	struct stat statbuf;
+
+	if (stat(db_info->pass_script, &statbuf))
+		fatal("mysql_common: Cannot stat pass_script '%s': %m",
+		      db_info->pass_script);
+
+	/* Must be owned by root or SlurmUser */
+	if ((statbuf.st_uid != 0) &&
+	    (statbuf.st_uid != slurm_conf.slurm_user_id))
+		fatal("mysql_common: pass_script '%s' owned by uid=%u, must be owned by SlurmUser(%u) or root",
+		      db_info->pass_script, statbuf.st_uid,
+		      slurm_conf.slurm_user_id);
+
+	/* Must not be writable by others */
+	if (statbuf.st_mode & S_IWOTH)
+		fatal("mysql_common: pass_script '%s' is writable by others (mode=0%o), please fix",
+		      db_info->pass_script, statbuf.st_mode & 0777);
+
+	/* Must be executable by owner */
+	if (!(statbuf.st_mode & S_IXUSR))
+		fatal("mysql_common: pass_script '%s' is not executable by owner",
+		      db_info->pass_script);
+}
+
+/* Execute script to get database password */
+static char *_execute_pw_script(mysql_db_info_t *db_info)
+{
+	char *result = NULL, *output = NULL, *token_start = NULL;
+	char **env = NULL;
+	char **script_argv = NULL;
+	int status = 0;
+	bool timed_out = false;
+	run_command_args_t run_command_args = {
+		.script_path = db_info->pass_script,
+		.script_type = "token_script",
+		.max_wait = PW_SCRIPT_TIMEOUT_SECONDS * 1000,
+		.status = &status,
+		.timed_out = &timed_out,
+	};
+
+	debug3("mysql_common: Executing token_script for %s@%s:%u",
+	       db_info->user, db_info->host, db_info->port);
+
+	env = env_array_create();
+	env_array_append(&env, "SLURM_STORAGE_HOSTNAME", db_info->host);
+	env_array_append(&env, "SLURM_STORAGE_USER", db_info->user);
+	env_array_append_fmt(&env, "SLURM_STORAGE_PORT", "%u", db_info->port);
+
+	script_argv = xcalloc(2, sizeof(char *));
+	script_argv[0] = xstrdup(db_info->pass_script);
+	script_argv[1] = NULL;
+
+	run_command_args.env = env;
+	run_command_args.script_argv = script_argv;
+
+	output = run_command(&run_command_args);
+
+	if (timed_out) {
+		error("mysql_common: token_script execution timed out");
+		goto cleanup;
+	}
+
+	if (status != 0) {
+		error("mysql_common: token_script exited with status %d",
+		      status);
+		goto cleanup;
+	}
+
+	if (!(token_start = xstrstr(output, PW_SCRIPT_TOKEN_PREFIX))) {
+		error("mysql_common: token prefix not found in output from token_script");
+		goto cleanup;
+	}
+
+	token_start += strlen(PW_SCRIPT_TOKEN_PREFIX);
+	xstrtrim(token_start);
+
+	if (!strlen(token_start)) {
+		error("mysql_common: Empty token returned from token_script");
+		goto cleanup;
+	}
+
+	result = xstrdup(token_start);
+	debug("mysql_common: token_script execution completed successfully");
+
+cleanup:
+	xfree(output);
+	env_array_free(env);
+	xfree_array(script_argv);
+
+	return result;
+}
+
+/* Attempt refresh on next access, regardless of expiration */
+static void _invalidate_db_token(mysql_db_info_t *db_info)
+{
+	if (!db_info->pass_script)
+		return;
+
+	slurm_mutex_lock(&db_info->token_lock);
+	db_info->token_expires = 0;
+	slurm_mutex_unlock(&db_info->token_lock);
+
+	debug("mysql_common: token invalidated, will attempt refresh on next access");
+}
+
 static char *_current_password(mysql_db_info_t *db_info)
 {
-	return xstrdup(db_info->pass);
+	char *pass = NULL;
+
+	if (!db_info->pass_script)
+		return xstrdup(db_info->pass);
+
+	slurm_mutex_lock(&db_info->token_lock);
+	if (!db_info->pass || (db_info->token_expires < time(NULL))) {
+		char *new_token = _execute_pw_script(db_info);
+
+		if (new_token && strlen(new_token)) {
+			xfree(db_info->pass);
+			db_info->pass = new_token;
+			db_info->token_expires =
+				time(NULL) + db_info->token_duration;
+			info("mysql_common: storage token refreshed for %s@%s:%u",
+			     db_info->user, db_info->host, db_info->port);
+		} else {
+			xfree(new_token);
+			error("mysql_common: token_script execution failed; will use previous cached token if available");
+		}
+	} else {
+		debug("mysql_common: Using cached token (expires at %ld)",
+		      db_info->token_expires);
+	}
+
+	pass = xstrdup(db_info->pass);
+	slurm_mutex_unlock(&db_info->token_lock);
+
+	return pass;
 }
 
 static void _destroy_db_key(void *arg)
@@ -726,7 +872,10 @@ void _set_mysql_ssl_opts(MYSQL *db_conn, const char *options)
 			key = val_str;
 		else if (!xstrcasecmp(opt_str, "SSL_CIPHER"))
 			cipher = val_str;
-		else {
+		else if (!xstrncasecmp(opt_str, "token_", 6)) {
+			/* Skip token_ parameters - handled elsewhere */
+			goto next;
+		} else {
 			error("Invalid storage option '%s'", opt_str);
 			goto next;
 		}
@@ -792,6 +941,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			error("mysql_real_connect failed: %d %s",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
+			_invalidate_db_token(db_info);
 			rc = SLURM_ERROR;
 		}
 		if (rc == SLURM_ERROR)
@@ -832,9 +982,25 @@ extern int destroy_mysql_conn(mysql_conn_t *mysql_conn)
 	return SLURM_SUCCESS;
 }
 
+/* Parse token parameters from parameter string */
+static void _parse_token_params(mysql_db_info_t *db_info)
+{
+	char *duration = NULL;
+
+	if ((duration = conf_get_opt_str(db_info->params, "token_duration=")))
+		db_info->token_duration =
+			parse_int("token_duration", duration, true);
+	else
+		db_info->token_duration = PW_SCRIPT_DEFAULT_REFRESH_SECONDS;
+
+	xfree(duration);
+}
+
 extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 {
 	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
+
+	slurm_mutex_init(&db_info->token_lock);
 
 	switch (type) {
 	case SLURM_MYSQL_PLUGIN_AS:
@@ -844,6 +1010,8 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 			xstrdup(slurm_conf.accounting_storage_backup_host);
 		db_info->user = xstrdup(slurmdbd_conf->storage_user);
 		db_info->pass = xstrdup(slurm_conf.accounting_storage_pass);
+		db_info->pass_script =
+			xstrdup(slurmdbd_conf->storage_pass_script);
 		db_info->params = xstrdup(slurm_conf.accounting_storage_params);
 		break;
 	case SLURM_MYSQL_PLUGIN_JC:
@@ -859,6 +1027,15 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 		xfree(db_info);
 		fatal("Unknown mysql_db_info %d", type);
 	}
+
+	if (db_info->pass_script) {
+		_parse_token_params(db_info);
+		_check_storage_pass_script_permissions(db_info);
+
+		debug2("mysql_common: Script-based authentication enabled for %s",
+		       db_info->pass_script);
+	}
+
 	return db_info;
 }
 
@@ -869,6 +1046,7 @@ extern int destroy_mysql_db_info(mysql_db_info_t *db_info)
 		xfree(db_info->host);
 		xfree(db_info->user);
 		xfree(db_info->pass);
+		slurm_mutex_destroy(&db_info->token_lock);
 		xfree(db_info);
 	}
 	return SLURM_SUCCESS;
@@ -947,6 +1125,7 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 			rc = ESLURM_DB_CONNECTION;
 			mysql_close(mysql_conn->db_conn);
 			mysql_conn->db_conn = NULL;
+			_invalidate_db_token(db_info);
 			break;
 		}
 
