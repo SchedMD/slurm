@@ -297,6 +297,7 @@ struct job_record {
 					 * state, this is time suspend began */
 	time_t end_time_exp;		/* when we believe the job is
 					   going to end. */
+	uint16_t epilog_failed;		/* true if any Epilog failed */
 	bool epilog_running;		/* true of EpilogSlurmctld is running */
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
