@@ -507,8 +507,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 
 	memcpy(&step_signal.step_id, step_id, sizeof(step_signal.step_id));
 
-	job_ptr = stepmgr_ops->find_job_record(step_id->job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = stepmgr_ops->find_job(step_id))) {
 		error("job_step_signal: invalid JobId=%u", step_id->job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -4012,8 +4011,7 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	xassert(rem);
 
 	/* find the job, step, and validate input */
-	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = stepmgr_ops->find_job(&req->step_id))) {
 		info("%s: %pI invalid", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -4454,8 +4452,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	update_step_args_t args = { .mod_cnt = 0 };
 	slurm_step_id_t step_id = { 0 };
 
-	job_ptr = stepmgr_ops->find_job_record(req->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = stepmgr_ops->find_job(&req->step_id))) {
 		error("%s: invalid %pI", __func__, &req->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -5103,8 +5100,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 			req_step_msg->step_id.job_id,
 			req_step_msg->array_task_id);
 	else
-		job_ptr = stepmgr_ops->find_job_record(
-			req_step_msg->step_id.job_id);
+		job_ptr = stepmgr_ops->find_job(&req_step_msg->step_id);
 
 	if (job_ptr == NULL) {
 		error_code = ESLURM_INVALID_JOB_ID ;

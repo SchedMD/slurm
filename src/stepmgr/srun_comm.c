@@ -587,7 +587,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
  */
 extern void srun_response(slurm_step_id_t *step_id)
 {
-	job_record_t *job_ptr = stepmgr_ops->find_job_record(step_id->job_id);
+	job_record_t *job_ptr = stepmgr_ops->find_job(step_id);
 	step_record_t *step_ptr;
 	time_t now = time(NULL);
 
