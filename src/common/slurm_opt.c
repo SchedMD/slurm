@@ -2549,6 +2549,8 @@ static char *arg_get_requeue(slurm_opt_t *opt)
 		return xstrdup("unset");
 	else if (opt->sbatch_opt->requeue == 0)
 		return xstrdup("no-requeue");
+	else if (opt->job_flags & EXPEDITED_REQUEUE)
+		return xstrdup("expedite");
 	return xstrdup("requeue");
 }
 static void arg_reset_requeue(slurm_opt_t *opt)
@@ -3210,12 +3212,15 @@ static int arg_set_requeue(slurm_opt_t *opt, const char *arg)
 
 	opt->sbatch_opt->requeue = 1;
 
+	if (!xstrcasecmp(arg, "expedite"))
+		opt->job_flags |= EXPEDITED_REQUEUE;
+
 	return SLURM_SUCCESS;
 }
 /* arg_get_requeue and arg_reset_requeue defined before with --no-requeue */
 static slurm_cli_opt_t slurm_opt_requeue = {
 	.name = "requeue",
-	.has_arg = no_argument,
+	.has_arg = optional_argument,
 	.val = LONG_OPT_REQUEUE,
 	.set_func_sbatch = arg_set_requeue,
 	.get_func = arg_get_requeue,
