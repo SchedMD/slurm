@@ -311,6 +311,7 @@ enum job_states {
 #define JOB_RESV_DEL_HOLD SLURM_BIT(21) /* Job is hold */
 #define JOB_SIGNALING     SLURM_BIT(22) /* Outgoing signal is pending */
 #define JOB_STAGE_OUT     SLURM_BIT(23) /* Staging out data (burst buffer) */
+#define JOB_EXPEDITING SLURM_BIT(24) /* checking for expedited requeue */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
