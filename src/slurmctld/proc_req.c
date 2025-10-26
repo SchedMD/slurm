@@ -1834,10 +1834,10 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	log_flag(ROUTE, "%s: node_name = %s, %pI",
 		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	job_ptr = find_job_record(epilog_msg->step_id.job_id);
-
-	if (job_epilog_complete(job_ptr, epilog_msg->node_name,
-				epilog_msg->return_code))
+	if (!(job_ptr = find_job_record(epilog_msg->step_id.job_id)))
+		error("%s: could not find %pI", __func__, &epilog_msg->step_id);
+	else if (job_epilog_complete(job_ptr, epilog_msg->node_name,
+				     epilog_msg->return_code))
 		run_scheduler = true;
 
 	if (epilog_msg->return_code)
