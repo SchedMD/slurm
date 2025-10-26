@@ -18019,8 +18019,8 @@ extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-		       bool preempt, uint32_t flags)
+extern int job_requeue_external(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
+				bool preempt, uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr = NULL;

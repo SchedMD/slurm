@@ -1121,8 +1121,8 @@ extern int job_req_node_filter(job_record_t *job_ptr, bitstr_t *avail_bitmap,
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-		       bool preempt, uint32_t flags);
+extern int job_requeue_external(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
+				bool preempt, uint32_t flags);
 
 /*
  * job_requeue2 - Requeue a running or pending batch job
