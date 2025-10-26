@@ -18014,13 +18014,12 @@ extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
  * job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
- * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue_external(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-				bool preempt, uint32_t flags)
+extern int job_requeue_external(uid_t uid, uint32_t job_id, bool preempt,
+				uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	job_record_t *job_ptr = NULL;
@@ -18032,10 +18031,6 @@ extern int job_requeue_external(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
 	} else {
 		/* _job_requeue already handles het jobs */
 		rc = job_requeue_internal(uid, job_ptr, preempt, flags);
-	}
-
-	if (msg) {
-		slurm_send_rc_msg(msg, rc);
 	}
 
 	return rc;
