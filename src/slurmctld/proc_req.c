@@ -4481,7 +4481,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_node_ready(id_msg->step_id.job_id, &result);
+	error_code = job_node_ready(&id_msg->step_id, &result);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 

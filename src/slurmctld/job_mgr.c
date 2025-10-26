@@ -17090,15 +17090,14 @@ extern bool job_independent(job_record_t *job_ptr)
  * OUT ready - 1 if job is ready to execute 0 otherwise
  * RET Slurm error code
  */
-extern int job_node_ready(uint32_t job_id, int *ready)
+extern int job_node_ready(slurm_step_id_t *step_id, int *ready)
 {
 	int rc;
 	job_record_t *job_ptr;
 	xassert(ready);
 
 	*ready = 0;
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL)
+	if (!(job_ptr = find_job_record(step_id->job_id)))
 		return ESLURM_INVALID_JOB_ID;
 
 	/*

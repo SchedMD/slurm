@@ -1002,7 +1002,7 @@ extern bool job_hold_requeue(job_record_t *job_ptr);
  * OUT ready - 1 if job is ready to execute 0 otherwise
  * RET Slurm error code
  */
-extern int job_node_ready(uint32_t job_id, int *ready);
+extern int job_node_ready(slurm_step_id_t *step_id, int *ready);
 
 /* Record accounting information for a job immediately before changing size */
 extern void job_pre_resize_acctg(job_record_t *job_ptr);
