@@ -2344,7 +2344,7 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 		args->job_ptr = find_job_record(filter->step_id.job_id +
 						filter->het_job_offset);
 	else /* not array task or het component */
-		args->job_ptr = find_job_record(filter->step_id.job_id);
+		args->job_ptr = find_job(&filter->step_id);
 
 	if (!args->job_ptr) {
 		if (!args->null_callback) {
@@ -2712,7 +2712,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	int error_code = SLURM_SUCCESS;
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
+	job_ptr = find_job(&job_step_kill_msg->step_id);
 
 	if (!job_ptr) {
 		info("%s: invalid %pI", __func__, &job_step_kill_msg->step_id);
@@ -6314,7 +6314,7 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
-	if (!(job_ptr = find_job_record(step_id->job_id))) {
+	if (!(job_ptr = find_job(step_id))) {
 		info("%s: invalid %pI", __func__, step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -9797,7 +9797,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 			     submit_uid);
 			return ESLURM_INVALID_JOB_ID;
 		}
-		dup_job_ptr = find_job_record(job_desc_msg->step_id.job_id);
+		dup_job_ptr = find_job(&job_desc_msg->step_id);
 		if (dup_job_ptr) {
 			info("attempt to reuse active %pJ", dup_job_ptr);
 			return ESLURM_DUPLICATE_JOB_ID;
@@ -10353,10 +10353,7 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
-	if (step_id->sluid)
-		job_ptr = find_sluid(step_id->sluid);
-	else
-		job_ptr = find_job_record(step_id->job_id);
+	job_ptr = find_job(step_id);
 
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
@@ -15375,8 +15372,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 		job_desc->alloc_node = hostname;
 	}
 
-	job_ptr = find_job_record(job_desc->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = find_job(&job_desc->step_id))) {
 		info("%s: %pI does not exist", __func__, &job_desc->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
@@ -15839,10 +15835,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			continue;
 		}
 
-		if (reg_msg->step_id[i].sluid)
-			job_ptr = find_sluid(reg_msg->step_id[i].sluid);
-		else
-			job_ptr = find_job_record(reg_msg->step_id[i].job_id);
+		job_ptr = find_job(&reg_msg->step_id[i]);
 
 		if (job_ptr == NULL) {
 			error("Orphan %pI %ps reported on node %s",
@@ -17092,7 +17085,7 @@ extern int job_node_ready(slurm_step_id_t *step_id, int *ready)
 	xassert(ready);
 
 	*ready = 0;
-	if (!(job_ptr = find_job_record(step_id->job_id)))
+	if (!(job_ptr = find_job(step_id)))
 		return ESLURM_INVALID_JOB_ID;
 
 	/*
@@ -17529,8 +17522,7 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	/* find the job */
-	job_ptr = find_job_record(sus_ptr->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = find_job(&sus_ptr->step_id))) {
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
@@ -18430,8 +18422,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	job_record_t *job_ptr;
 	xassert(timeout_msg);
 
-	job_ptr = find_job_record(time_req_msg->step_id.job_id);
-	if (!job_ptr)
+	if (!(job_ptr = find_job(&time_req_msg->step_id)))
 		return ESLURM_INVALID_JOB_ID;
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));

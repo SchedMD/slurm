@@ -1834,7 +1834,7 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	log_flag(ROUTE, "%s: node_name = %s, %pI",
 		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	if (!(job_ptr = find_job_record(epilog_msg->step_id.job_id)))
+	if (!(job_ptr = find_job(&epilog_msg->step_id)))
 		error("%s: could not find %pI", __func__, &epilog_msg->step_id);
 	else if (job_epilog_complete(job_ptr, epilog_msg->node_name,
 				     epilog_msg->return_code))
@@ -1915,7 +1915,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(comp_msg->step_id.job_id);
+	job_ptr = find_job(&comp_msg->step_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
@@ -2020,7 +2020,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	job_ptr = find_job_record(comp_msg->step_id.job_id);
+	job_ptr = find_job(&comp_msg->step_id);
 
 	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
 	    xstrcmp(job_ptr->batch_host, comp_msg->node_name)) {
@@ -2181,7 +2181,7 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	       &job_id_msg->step_id);
 	lock_slurmctld(job_read_lock);
 
-	if ((job_ptr = find_job_record(job_id_msg->step_id.job_id))) {
+	if ((job_ptr = find_job(&job_id_msg->step_id))) {
 		if (!validate_operator(msg->auth_uid) &&
 		    (job_ptr->user_id != msg->auth_uid)) {
 			rc = ESLURM_USER_ID_MISSING;
@@ -2449,8 +2449,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 							  &err_msg,
 							  msg->protocol_version);
 			} else { /* existing job test */
-				job_ptr = find_job_record(job_desc_msg->step_id
-								  .job_id);
+				job_ptr = find_job(&job_desc_msg->step_id);
 				error_code = job_start_data(job_ptr, &resp);
 			}
 			unlock_slurmctld(job_write_lock);
@@ -3477,8 +3476,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 
-	job_ptr = find_job_record(req->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = find_job(&req->step_id))) {
 		error("%s: invalid %pI", __func__, &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto fail;
@@ -4513,7 +4511,7 @@ static int _is_prolog_finished(slurm_step_id_t *step_id)
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	lock_slurmctld(job_read_lock);
-	if ((job_ptr = find_job_record(step_id->job_id)))
+	if ((job_ptr = find_job(step_id)))
 		is_running = (job_ptr->state_reason != WAIT_PROLOG);
 	unlock_slurmctld(job_read_lock);
 	return is_running;
@@ -4576,7 +4574,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		sus_ptr->step_id.job_id = strtol(sus_ptr->job_id_str, NULL, 10);
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(sus_ptr->step_id.job_id);
+	job_ptr = find_job(&sus_ptr->step_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
@@ -4951,7 +4949,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(notify_msg->step_id.job_id);
+	job_ptr = find_job(&notify_msg->step_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then

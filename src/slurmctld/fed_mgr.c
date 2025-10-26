@@ -2397,8 +2397,7 @@ static void _handle_dep_update_origin_msgs(void)
 
 	lock_slurmctld(job_write_lock);
 	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
-		if (!(job_ptr = find_job_record(dep_update_msg->step_id
-							.job_id))) {
+		if (!(job_ptr = find_job(&dep_update_msg->step_id))) {
 			/*
 			 * Maybe the job was cancelled and purged before
 			 * the dependency update got here or was able
