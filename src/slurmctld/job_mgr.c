@@ -16546,22 +16546,15 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
  *	given job
- * IN job_id      - id of the job for which the epilog was executed
+ * IN job_ptr
  * IN node_name   - name of the node on which the epilog was executed
  * IN return_code - return code from epilog script
  * RET true if job is COMPLETED, otherwise false
  */
-extern bool job_epilog_complete(uint32_t job_id, char *node_name,
+extern bool job_epilog_complete(job_record_t *job_ptr, char *node_name,
 				uint32_t return_code)
 {
-	job_record_t *job_ptr = find_job_record(job_id);
 	node_record_t *node_ptr;
-
-	if (job_ptr == NULL) {
-		debug("%s: unable to find JobId=%u for node=%s with return_code=%u.",
-		      __func__, job_id, node_name, return_code);
-		return true;
-	}
 
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 

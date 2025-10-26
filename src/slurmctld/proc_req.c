@@ -1834,11 +1834,11 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	log_flag(ROUTE, "%s: node_name = %s, %pI",
 		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	if (job_epilog_complete(epilog_msg->step_id.job_id,
-				epilog_msg->node_name, epilog_msg->return_code))
-		run_scheduler = true;
-
 	job_ptr = find_job_record(epilog_msg->step_id.job_id);
+
+	if (job_epilog_complete(job_ptr, epilog_msg->node_name,
+				epilog_msg->return_code))
+		run_scheduler = true;
 
 	if (epilog_msg->return_code)
 		error("%s: epilog error %pJ Node=%s Err=%s %s",

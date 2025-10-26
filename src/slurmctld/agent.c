@@ -1076,10 +1076,16 @@ static void *_thread_per_group_rpc(void *args)
 			kill_job_msg_t *kill_job;
 			kill_job = (kill_job_msg_t *)
 				task_ptr->msg_args_ptr;
+			job_record_t *job_ptr = NULL;
 			rc = SLURM_SUCCESS;
 			lock_slurmctld(job_write_lock);
-			if (job_epilog_complete(kill_job->step_id.job_id,
-						ret_data_info->node_name, rc))
+			if (!(job_ptr = find_job(&kill_job->step_id)))
+				debug("%s: unable to find %pI to mark epilog completed on node=%s with return_code=%u",
+				      __func__, &kill_job->step_id,
+				      ret_data_info->node_name, rc);
+			else if (job_epilog_complete(job_ptr,
+						     ret_data_info->node_name,
+						     rc))
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
 		}
