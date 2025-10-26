@@ -2410,8 +2410,8 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->first_attempt = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
 	           (2 * slurm_conf.batch_start_timeout)) {
-		error("agent waited too long for nodes to respond, abort signal of JobId=%u",
-		      job_ptr->job_id);
+		error("agent waited too long for nodes to respond, abort signal of %pJ",
+		      job_ptr);
 		return -1;
 	}
 
