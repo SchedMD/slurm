@@ -2568,6 +2568,14 @@ extern job_record_t *find_sluid(sluid_t sluid)
 
 extern job_record_t *find_job(const slurm_step_id_t *step_id)
 {
+	if (step_id->sluid) {
+		job_record_t *job_ptr = find_sluid(step_id->sluid);
+		if (!job_ptr && (job_ptr = find_job_record(step_id->job_id)))
+			error("%s: could not find %pI by SLUID but could by job_id",
+			      __func__, step_id);
+		return job_ptr;
+	}
+
 	return find_job_record(step_id->job_id);
 }
 
