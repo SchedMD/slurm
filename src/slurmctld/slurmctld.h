@@ -1534,15 +1534,11 @@ extern int pick_batch_host(job_record_t *job_ptr);
 
 /*
  * prolog_complete - note the normal termination of the prolog
- * IN job_id - id of the job which completed
- * IN prolog_return_code - prolog's return code,
- *    if set then set job state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
-			   char *node_name);
+extern int prolog_complete(prolog_complete_msg_t *msg);
 
 /*
  * If the job or slurm.conf requests to not kill on invalid dependency,

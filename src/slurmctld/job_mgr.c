@@ -5980,46 +5980,42 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 
 /*
  * prolog_complete - note the normal termination of the prolog
- * IN job_id - id of the job which completed
- * IN prolog_return_code - prolog's return code,
- *    if set then set job state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
-			   char *node_name)
+extern int prolog_complete(prolog_complete_msg_t *msg)
 {
 	job_record_t *job_ptr;
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("prolog_complete: invalid JobId=%u", job_id);
+	if (!(job_ptr = find_job(&msg->step_id))) {
+		info("prolog_complete: invalid %pI", &msg->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;
 
-	if (prolog_return_code) {
+	if (msg->prolog_rc) {
 		error("Prolog launch failure, %pJ", job_ptr);
-		job_ptr->exit_code = prolog_return_code;
+		job_ptr->exit_code = msg->prolog_rc;
 	}
+
 	/*
 	 * job_ptr->node_bitmap_pr is always NULL for front end systems
 	 */
 	if (job_ptr->node_bitmap_pr) {
 		node_record_t *node_ptr = NULL;
 
-		if (node_name)
-			node_ptr = find_node_record(node_name);
+		if (msg->node_name)
+			node_ptr = find_node_record(msg->node_name);
 
 		if (node_ptr) {
 			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
-			if (node_name)
+			if (msg->node_name)
 				error("%s: can't find node:%s",
-				      __func__, node_name);
+				      __func__, msg->node_name);
 			bit_clear_all(job_ptr->node_bitmap_pr);
 		}
 	}
