@@ -4063,6 +4063,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if (IS_NODE_EXTERNAL(node_ptr))
+			continue;
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
