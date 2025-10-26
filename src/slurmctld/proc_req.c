@@ -148,8 +148,8 @@ static void         _create_het_job_id_set(hostset_t *jobid_hostset,
 static void         _fill_ctld_conf(slurm_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int _is_prolog_finished(slurm_step_id_t *step_id);
-static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
-					 uint32_t job_id);
+static int _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
+				slurm_step_id_t *step_id);
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
 
@@ -3979,7 +3979,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
-				  job_desc_msg->step_id.job_id)) {
+				  &job_desc_msg->step_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4580,8 +4580,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	 * route it to the origin, otherwise try to suspend the job. If it's
 	 * pending an error should be returned. If it's running then it should
 	 * suspend the job. */
-	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, sus_ptr->step_id.job_id)) {
+	if (!job_ptr && !_route_msg_to_origin(msg, NULL, &sus_ptr->step_id)) {
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
@@ -4768,7 +4767,7 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, req_ptr->job_id_str,
-				  req_ptr->step_id.job_id)) {
+				  &req_ptr->step_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4958,7 +4957,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin. */
 	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, notify_msg->step_id.job_id)) {
+	    !_route_msg_to_origin(msg, NULL, &notify_msg->step_id)) {
 		unlock_slurmctld(job_read_lock);
 		return;
 	}
@@ -6217,7 +6216,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
  * RET returns SLURM_SUCCESS if the msg was routed.
  */
 static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
-				uint32_t src_job_id)
+				slurm_step_id_t *step_id)
 {
 	xassert(msg);
 
@@ -6230,7 +6229,7 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 		if (src_job_id_str)
 			job_id = strtol(src_job_id_str, NULL, 10);
 		else
-			job_id = src_job_id;
+			job_id = step_id->job_id;
 		origin_id = fed_mgr_get_cluster_id(job_id);
 
 		if (origin_id && (origin_id != fed_mgr_cluster_rec->fed.id)) {
