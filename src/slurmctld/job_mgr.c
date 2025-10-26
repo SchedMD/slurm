@@ -16098,10 +16098,7 @@ static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 					       agent_info->protocol_version);
 	} else {
 		kill_req = xmalloc(sizeof(*kill_req));
-		kill_req->step_id.job_id = step_id->job_id;
-		kill_req->step_id.sluid = step_id->sluid;
-		kill_req->step_id.step_id = NO_VAL;
-		kill_req->step_id.step_het_comp = NO_VAL;
+		kill_req->step_id = *step_id;
 		kill_req->time = time(NULL);
 		/* kill_req->start_time = 0;  Default value */
 	}
