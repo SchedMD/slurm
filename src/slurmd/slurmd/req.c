@@ -982,8 +982,8 @@ static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
 		host_index = _get_host_index(cred->job_hostlist);
 
 		if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
-			error("job cr credential invalid host_index %d for job %u",
-			      host_index, cred->step_id.job_id);
+			error("job cr credential invalid host_index %d for %pI",
+			      host_index, &cred->step_id);
 			return SLURM_ERROR;
 		}
 	}
