@@ -720,9 +720,9 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	slurm_step_id_t step_id = {
-		.job_id = job_id,
-	};
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
+	step_id.job_id = job_id;
 
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
