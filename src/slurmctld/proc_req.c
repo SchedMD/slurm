@@ -1834,11 +1834,11 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	log_flag(ROUTE, "%s: node_name = %s, %pI",
 		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	if (job_epilog_complete(epilog_msg->step_id.job_id,
-				epilog_msg->node_name, epilog_msg->return_code))
-		run_scheduler = true;
-
 	job_ptr = find_job_record(epilog_msg->step_id.job_id);
+
+	if (job_epilog_complete(job_ptr, epilog_msg->node_name,
+				epilog_msg->return_code))
+		run_scheduler = true;
 
 	if (epilog_msg->return_code)
 		error("%s: epilog error %pJ Node=%s Err=%s %s",
@@ -1969,8 +1969,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_write_lock);
-	error_code = prolog_complete(comp_msg->step_id.job_id,
-				     comp_msg->prolog_rc, comp_msg->node_name);
+	error_code = prolog_complete(comp_msg);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_write_lock);
 
@@ -4481,7 +4480,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_node_ready(id_msg->step_id.job_id, &result);
+	error_code = job_node_ready(&id_msg->step_id, &result);
 	unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
 

@@ -141,9 +141,9 @@ typedef struct {
 
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
-static int  _kill_all_active_steps(uint32_t jobid, int sig, int flags,
-				   char *details, bool batch, uid_t req_uid);
-static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
+static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
+				  char *details, bool batch, uid_t req_uid);
+static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 			    uint32_t slurm_rc);
 static void _note_batch_job_finished(uint32_t job_id);
 static int _prolog_is_running(uint32_t jobid);
@@ -1468,7 +1468,7 @@ done:
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED) {
-		_launch_job_fail(req->step_id.job_id, req->het_job_id, errnum);
+		_launch_job_fail(&req->step_id, req->het_job_id, errnum);
 		send_registration_msg(errnum);
 	}
 
@@ -1952,7 +1952,7 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		       __func__, forkexec_rc);
 
 		if (forkexec_rc != SLURM_SUCCESS) {
-			_launch_job_fail(req->step_id.job_id, req->het_job_id,
+			_launch_job_fail(&req->step_id, req->het_job_id,
 					 forkexec_rc);
 
 			if (forkexec_rc == ESLURMD_PROLOG_FAILED)
@@ -1974,10 +1974,6 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 {
 	int alt_rc = SLURM_ERROR;
-	uint32_t jobid = req->step_id.job_id;
-
-	if (req->het_job_id && (req->het_job_id != NO_VAL))
-		jobid = req->het_job_id;
 
 	/*
 	 * We need the slurmctld to know we are done or we can get into a
@@ -1991,7 +1987,8 @@ static void _notify_result_rpc_prolog(prolog_launch_msg_t *req, int rc)
 			alt_rc = SLURM_SUCCESS;
 
 		if (rc != SLURM_SUCCESS) {
-			alt_rc = _launch_job_fail(jobid, NO_VAL, rc);
+			alt_rc = _launch_job_fail(&req->step_id,
+						  req->het_job_id, rc);
 			send_registration_msg(rc);
 		}
 
@@ -2117,7 +2114,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		error("%pI already running, do not launch second copy",
 		      &req->step_id);
 		rc = ESLURM_DUPLICATE_JOB_ID;	/* job already running */
-		_launch_job_fail(req->step_id.job_id, req->het_job_id, rc);
+		_launch_job_fail(&req->step_id, req->het_job_id, rc);
 		goto done;
 	}
 
@@ -2301,7 +2298,7 @@ done:
 	if (rc != SLURM_SUCCESS) {
 		/* prolog or job launch failure,
 		 * tell slurmctld that the job failed */
-		_launch_job_fail(req->step_id.job_id, req->het_job_id, rc);
+		_launch_job_fail(&req->step_id, req->het_job_id, rc);
 	}
 
 	/*
@@ -2398,12 +2395,13 @@ static uint32_t _kill_fail_job(uint32_t job_id)
 	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK | KILL_FAIL_JOB);
 }
 
-static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
+static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 			    uint32_t slurm_rc)
 {
 	requeue_msg_t req_msg = { { 0 } };
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
+	uint32_t job_id = step_id->job_id;
 
 	if (het_job_id && (het_job_id != NO_VAL))
 		job_id = het_job_id;
@@ -2416,6 +2414,7 @@ static int _launch_job_fail(uint32_t job_id, uint32_t het_job_id,
 		return _kill_fail_job(job_id);
 
 	/* Try to requeue the job. If that doesn't work, kill the job. */
+	req_msg.step_id = *step_id;
 	req_msg.step_id.job_id = job_id;
 	req_msg.job_id_str = NULL;
 	req_msg.flags = JOB_LAUNCH_FAILED;
@@ -2886,13 +2885,13 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	if ((req->flags & KILL_FULL_JOB) || (req->flags & KILL_JOB_BATCH)) {
 		debug("%s: sending signal %u to entire job %u flag %u",
 		      __func__, req->signal, req->step_id.job_id, req->flags);
-		_kill_all_active_steps(req->step_id.job_id, req->signal,
-				       req->flags, NULL, true, msg->auth_uid);
+		_kill_all_active_steps(&req->step_id, req->signal, req->flags,
+				       NULL, true, msg->auth_uid);
 	} else if (req->flags & KILL_STEPS_ONLY) {
 		debug("%s: sending signal %u to all steps job %u flag %u",
 		      __func__, req->signal, req->step_id.job_id, req->flags);
-		_kill_all_active_steps(req->step_id.job_id, req->signal,
-				       req->flags, NULL, false, msg->auth_uid);
+		_kill_all_active_steps(&req->step_id, req->signal, req->flags,
+				       NULL, false, msg->auth_uid);
 	} else {
 		debug("%s: sending signal %u to %ps flag %u", __func__,
 		      req->signal, &req->step_id, req->flags);
@@ -3342,13 +3341,13 @@ _rpc_timelimit(slurm_msg_t *msg)
 	}
 
 	if (msg->msg_type == REQUEST_KILL_TIMELIMIT)
-		_kill_all_active_steps(req->step_id.job_id, SIG_TIME_LIMIT, 0,
+		_kill_all_active_steps(&req->step_id, SIG_TIME_LIMIT, 0,
 				       req->details, true, msg->auth_uid);
 	else /* (msg->type == REQUEST_KILL_PREEMPTED) */
-		_kill_all_active_steps(req->step_id.job_id, SIG_PREEMPTED, 0,
+		_kill_all_active_steps(&req->step_id, SIG_PREEMPTED, 0,
 				       req->details, true, msg->auth_uid);
-	nsteps = _kill_all_active_steps(req->step_id.job_id, SIGTERM, 0,
-					req->details, false, msg->auth_uid);
+	nsteps = _kill_all_active_steps(&req->step_id, SIGTERM, 0, req->details,
+					false, msg->auth_uid);
 	verbose("Job %u: timeout: sent SIGTERM to %d active steps",
 		req->step_id.job_id, nsteps);
 
@@ -3985,15 +3984,14 @@ static uid_t _get_job_uid(uint32_t jobid)
 
 /*
  * _kill_all_active_steps - signals the container of all steps of a job
- * jobid IN - id of job to signal
+ * step_id IN - id of job to signal
  * sig   IN - signal to send
  * flags IN - to decide if batch step must be signaled, if its children too, etc
  * batch IN - if true signal batch script, otherwise skip it
  * RET count of signaled job steps (plus batch script, if applicable)
  */
-static int
-_kill_all_active_steps(uint32_t jobid, int sig, int flags, char *details,
-		       bool batch, uid_t req_uid)
+static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
+				  char *details, bool batch, uid_t req_uid)
 {
 	list_t *steps;
 	list_itr_t *i;
@@ -4013,10 +4011,10 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, char *details,
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
-		if (stepd->step_id.job_id != jobid) {
+		if (stepd->step_id.job_id != step_id->job_id) {
 			/* multiple jobs expected on shared nodes */
-			debug3("%s: Looking for job %u, found step from job %u",
-			       __func__, jobid, stepd->step_id.job_id);
+			debug3("%s: Looking for %pI, found step from %pI",
+			       __func__, step_id, &stepd->step_id);
 			continue;
 		}
 		if ((sig_all_steps &&
@@ -4040,8 +4038,8 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, char *details,
 	FREE_NULL_LIST(steps);
 
 	if (step_cnt == 0)
-		debug2("No steps in jobid %u %s %d",
-		       jobid, (rc == SLURM_SUCCESS) ?
+		debug2("No steps in %pI %s %d",
+		       step_id, (rc == SLURM_SUCCESS) ?
 		       "to send signal" : "were able to be signaled with",
 		       sig);
 
@@ -4371,12 +4369,12 @@ _rpc_abort_job(slurm_msg_t *msg)
 	conn_g_destroy(msg->conn, true);
 	msg->conn = NULL;
 
-	if (_kill_all_active_steps(req->step_id.job_id, SIG_ABORT, 0,
-				   req->details, true, msg->auth_uid)) {
+	if (_kill_all_active_steps(&req->step_id, SIG_ABORT, 0, req->details,
+				   true, msg->auth_uid)) {
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(req->step_id.job_id, 0,
+		pause_for_job_completion(&req->step_id, 0,
 					 (slurm_conf.prolog_flags &
 					  PROLOG_FLAG_RUN_IN_JOB));
 	}
@@ -4514,21 +4512,21 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	}
 
 	if (IS_JOB_NODE_FAILED(req))
-		_kill_all_active_steps(req->step_id.job_id, SIG_NODE_FAIL, 0,
+		_kill_all_active_steps(&req->step_id, SIG_NODE_FAIL, 0,
 				       req->details, true, msg->auth_uid);
 	if (IS_JOB_PENDING(req))
-		_kill_all_active_steps(req->step_id.job_id, SIG_REQUEUED, 0,
+		_kill_all_active_steps(&req->step_id, SIG_REQUEUED, 0,
 				       req->details, true, msg->auth_uid);
 	else if (IS_JOB_FAILED(req))
-		_kill_all_active_steps(req->step_id.job_id, SIG_FAILURE, 0,
+		_kill_all_active_steps(&req->step_id, SIG_FAILURE, 0,
 				       req->details, true, msg->auth_uid);
 
 	/*
 	 * Tasks might be stopped (possibly by a debugger)
 	 * so send SIGCONT first.
 	 */
-	_kill_all_active_steps(req->step_id.job_id, SIGCONT, 0, req->details,
-			       true, msg->auth_uid);
+	_kill_all_active_steps(&req->step_id, SIGCONT, 0, req->details, true,
+			       msg->auth_uid);
 	if (errno == ESLURMD_STEP_SUSPENDED) {
 		/*
 		 * If the job step is currently suspended, we don't
@@ -4539,7 +4537,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 					     !(slurm_conf.prolog_flags &
 					       PROLOG_FLAG_RUN_IN_JOB));
 	} else {
-		nsteps = _kill_all_active_steps(req->step_id.job_id, SIGTERM, 0,
+		nsteps = _kill_all_active_steps(&req->step_id, SIGTERM, 0,
 						req->details, true,
 						msg->auth_uid);
 	}
@@ -4571,7 +4569,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			/* The epilog complete message processing on
 			 * slurmctld is equivalent to that of a
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
-			epilog_complete(req->step_id.job_id, req->nodes, rc);
+			epilog_complete(&req->step_id, req->nodes, rc);
 		}
 
 		launch_complete_rm(&req->step_id);
@@ -4592,7 +4590,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 *  Check for corpses
 	 */
 	delay = MAX(slurm_conf.kill_wait, 5);
-	if (!pause_for_job_completion(req->step_id.job_id, delay,
+	if (!pause_for_job_completion(&req->step_id, delay,
 				      (slurm_conf.prolog_flags &
 				       PROLOG_FLAG_RUN_IN_JOB)) &&
 	    terminate_all_steps(req->step_id.job_id, true,
@@ -4601,7 +4599,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(req->step_id.job_id, 0,
+		pause_for_job_completion(&req->step_id, 0,
 					 (slurm_conf.prolog_flags &
 					  PROLOG_FLAG_RUN_IN_JOB));
 	}
@@ -4663,7 +4661,7 @@ done:
 	_waiter_complete(req->step_id.job_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB))
-		epilog_complete(req->step_id.job_id, req->nodes, rc);
+		epilog_complete(&req->step_id, req->nodes, rc);
 }
 
 /*

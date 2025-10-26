@@ -965,13 +965,13 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
  *	given job
- * IN job_id      - id of the job for which the epilog was executed
+ * IN job_ptr
  * IN node_name   - name of the node on which the epilog was executed
  * IN return_code - return code from epilog script
  * RET true if job is COMPLETED, otherwise false
  */
-extern bool job_epilog_complete(uint32_t job_id, char *node_name,
-		uint32_t return_code);
+extern bool job_epilog_complete(job_record_t *job_ptr, char *node_name,
+				uint32_t return_code);
 
 /*
  * job_end_time - Process JOB_END_TIME
@@ -1002,7 +1002,7 @@ extern bool job_hold_requeue(job_record_t *job_ptr);
  * OUT ready - 1 if job is ready to execute 0 otherwise
  * RET Slurm error code
  */
-extern int job_node_ready(uint32_t job_id, int *ready);
+extern int job_node_ready(slurm_step_id_t *step_id, int *ready);
 
 /* Record accounting information for a job immediately before changing size */
 extern void job_pre_resize_acctg(job_record_t *job_ptr);
@@ -1534,15 +1534,11 @@ extern int pick_batch_host(job_record_t *job_ptr);
 
 /*
  * prolog_complete - note the normal termination of the prolog
- * IN job_id - id of the job which completed
- * IN prolog_return_code - prolog's return code,
- *    if set then set job state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
-			   char *node_name);
+extern int prolog_complete(prolog_complete_msg_t *msg);
 
 /*
  * If the job or slurm.conf requests to not kill on invalid dependency,

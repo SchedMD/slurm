@@ -133,7 +133,7 @@ fini:
  * Returns SLURM_SUCCESS if message sent successfully,
  *         SLURM_ERROR if epilog complete message fails to be sent.
  */
-extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
+extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc)
 {
 	slurm_msg_t msg;
 	epilog_complete_msg_t req;
@@ -143,7 +143,7 @@ extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
 	slurm_msg_t_init(&msg);
 	memset(&req, 0, sizeof(req));
 
-	req.step_id.job_id = jobid;
+	req.step_id = *step_id;
 	req.return_code = rc;
 	req.node_name = conf->node_name;
 
@@ -161,7 +161,7 @@ extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
 		return SLURM_ERROR;
 	}
 
-	debug("JobId=%u: sent epilog complete msg: rc = %d", jobid, rc);
+	debug("%pI: sent epilog complete msg: rc = %d", &step_id, rc);
 
 	return SLURM_SUCCESS;
 }
@@ -207,7 +207,7 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern)
  *
  *  Returns true if all job processes are gone
  */
-extern bool pause_for_job_completion(uint32_t job_id, int max_time,
+extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 				     bool ignore_extern)
 {
 	int sec = 0;
@@ -216,11 +216,12 @@ extern bool pause_for_job_completion(uint32_t job_id, int max_time,
 	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = is_job_running(job_id, ignore_extern);
+		rc = is_job_running(step_id->job_id, ignore_extern);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {
-			terminate_all_steps(job_id, true, !ignore_extern);
+			terminate_all_steps(step_id->job_id, true,
+					    !ignore_extern);
 		}
 		if (sec > 10) {
 			/* Reduce logging frequency about unkillable tasks */

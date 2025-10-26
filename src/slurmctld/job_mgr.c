@@ -5980,46 +5980,42 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
 
 /*
  * prolog_complete - note the normal termination of the prolog
- * IN job_id - id of the job which completed
- * IN prolog_return_code - prolog's return code,
- *    if set then set job state to FAILED
  * RET - 0 on success, otherwise ESLURM error code
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
-			   char *node_name)
+extern int prolog_complete(prolog_complete_msg_t *msg)
 {
 	job_record_t *job_ptr;
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		info("prolog_complete: invalid JobId=%u", job_id);
+	if (!(job_ptr = find_job(&msg->step_id))) {
+		info("prolog_complete: invalid %pI", &msg->step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if (IS_JOB_COMPLETING(job_ptr))
 		return SLURM_SUCCESS;
 
-	if (prolog_return_code) {
+	if (msg->prolog_rc) {
 		error("Prolog launch failure, %pJ", job_ptr);
-		job_ptr->exit_code = prolog_return_code;
+		job_ptr->exit_code = msg->prolog_rc;
 	}
+
 	/*
 	 * job_ptr->node_bitmap_pr is always NULL for front end systems
 	 */
 	if (job_ptr->node_bitmap_pr) {
 		node_record_t *node_ptr = NULL;
 
-		if (node_name)
-			node_ptr = find_node_record(node_name);
+		if (msg->node_name)
+			node_ptr = find_node_record(msg->node_name);
 
 		if (node_ptr) {
 			bit_clear(job_ptr->node_bitmap_pr, node_ptr->index);
 		} else {
-			if (node_name)
+			if (msg->node_name)
 				error("%s: can't find node:%s",
-				      __func__, node_name);
+				      __func__, msg->node_name);
 			bit_clear_all(job_ptr->node_bitmap_pr);
 		}
 	}
@@ -16546,22 +16542,15 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
  *	given job
- * IN job_id      - id of the job for which the epilog was executed
+ * IN job_ptr
  * IN node_name   - name of the node on which the epilog was executed
  * IN return_code - return code from epilog script
  * RET true if job is COMPLETED, otherwise false
  */
-extern bool job_epilog_complete(uint32_t job_id, char *node_name,
+extern bool job_epilog_complete(job_record_t *job_ptr, char *node_name,
 				uint32_t return_code)
 {
-	job_record_t *job_ptr = find_job_record(job_id);
 	node_record_t *node_ptr;
-
-	if (job_ptr == NULL) {
-		debug("%s: unable to find JobId=%u for node=%s with return_code=%u.",
-		      __func__, job_id, node_name, return_code);
-		return true;
-	}
 
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
@@ -17090,15 +17079,14 @@ extern bool job_independent(job_record_t *job_ptr)
  * OUT ready - 1 if job is ready to execute 0 otherwise
  * RET Slurm error code
  */
-extern int job_node_ready(uint32_t job_id, int *ready)
+extern int job_node_ready(slurm_step_id_t *step_id, int *ready)
 {
 	int rc;
 	job_record_t *job_ptr;
 	xassert(ready);
 
 	*ready = 0;
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL)
+	if (!(job_ptr = find_job_record(step_id->job_id)))
 		return ESLURM_INVALID_JOB_ID;
 
 	/*

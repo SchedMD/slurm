@@ -1459,8 +1459,8 @@ x11_fail:
 	join_extern_threads();
 	slurm_mutex_unlock(&step->state_mutex);
 	/* Wait for all steps other than extern (this one) to complete */
-	if (!pause_for_job_completion(jobid, MAX(slurm_conf.kill_wait, 5),
-				      true)) {
+	if (!pause_for_job_completion(&step->step_id,
+				      MAX(slurm_conf.kill_wait, 5), true)) {
 		warning("steps did not complete quickly");
 	}
 
@@ -1544,11 +1544,10 @@ fail1:
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
 		/* Force all other steps to end before epilog starts */
-		pause_for_job_completion(jobid, 0, true);
+		pause_for_job_completion(&step->step_id, 0, true);
 
 		int epilog_rc = _run_prolog_epilog(true);
-		epilog_complete(step->step_id.job_id, step->node_list,
-				epilog_rc);
+		epilog_complete(&step->step_id, step->node_list, epilog_rc);
 	}
 
 	return rc;

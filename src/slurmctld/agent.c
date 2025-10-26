@@ -1076,10 +1076,16 @@ static void *_thread_per_group_rpc(void *args)
 			kill_job_msg_t *kill_job;
 			kill_job = (kill_job_msg_t *)
 				task_ptr->msg_args_ptr;
+			job_record_t *job_ptr = NULL;
 			rc = SLURM_SUCCESS;
 			lock_slurmctld(job_write_lock);
-			if (job_epilog_complete(kill_job->step_id.job_id,
-						ret_data_info->node_name, rc))
+			if (!(job_ptr = find_job(&kill_job->step_id)))
+				debug("%s: unable to find %pI to mark epilog completed on node=%s with return_code=%u",
+				      __func__, &kill_job->step_id,
+				      ret_data_info->node_name, rc);
+			else if (job_epilog_complete(job_ptr,
+						     ret_data_info->node_name,
+						     rc))
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
 		}
@@ -2310,7 +2316,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	if (job_ptr->wait_all_nodes) {
-		(void) job_node_ready(launch_msg_ptr->step_id.job_id, &tmp);
+		(void) job_node_ready(&launch_msg_ptr->step_id, &tmp);
 		if (tmp ==
 		    (READY_JOB_STATE | READY_NODE_STATE | READY_PROLOG_STATE)) {
 			nodes_ready = 1;
@@ -2404,8 +2410,8 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 		queued_req_ptr->first_attempt = now;
 	} else if (difftime(now, queued_req_ptr->first_attempt) >=
 	           (2 * slurm_conf.batch_start_timeout)) {
-		error("agent waited too long for nodes to respond, abort signal of JobId=%u",
-		      job_ptr->job_id);
+		error("agent waited too long for nodes to respond, abort signal of %pJ",
+		      job_ptr);
 		return -1;
 	}
 

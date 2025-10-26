@@ -408,8 +408,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 				     (node_ptr = next_node_bitmap(
 					     job_ptr->node_bitmap_cg, &i));
 			     i++) {
-				job_epilog_complete(job_ptr->job_id,
-						    node_ptr->name, 0);
+				job_epilog_complete(job_ptr, node_ptr->name, 0);
 			}
 		}
 

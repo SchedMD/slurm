@@ -637,6 +637,7 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
 	int rc;
 
 	xassert(step_id);
+	*step_id = SLURM_STEP_ID_INITIALIZER;
 
 	memset(pmatch, 0, sizeof(regmatch_t)*nmatch);
 	if ((rc = regexec(re, filename, nmatch, pmatch, 0))) {
@@ -660,8 +661,7 @@ _sockname_regex(regex_t *re, const char *filename, slurm_step_id_t *step_id)
 		match = xstrndup(filename + pmatch[3].rm_so, my_size);
 		step_id->step_het_comp = slurm_atoul(match);
 		xfree(match);
-	} else
-		step_id->step_het_comp = NO_VAL;
+	}
 
 	return 0;
 }
