@@ -4376,7 +4376,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(req->step_id.job_id, 0,
+		pause_for_job_completion(&req->step_id, 0,
 					 (slurm_conf.prolog_flags &
 					  PROLOG_FLAG_RUN_IN_JOB));
 	}
@@ -4592,7 +4592,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 *  Check for corpses
 	 */
 	delay = MAX(slurm_conf.kill_wait, 5);
-	if (!pause_for_job_completion(req->step_id.job_id, delay,
+	if (!pause_for_job_completion(&req->step_id, delay,
 				      (slurm_conf.prolog_flags &
 				       PROLOG_FLAG_RUN_IN_JOB)) &&
 	    terminate_all_steps(req->step_id.job_id, true,
@@ -4601,7 +4601,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		/*
 		 *  Block until all user processes are complete.
 		 */
-		pause_for_job_completion(req->step_id.job_id, 0,
+		pause_for_job_completion(&req->step_id, 0,
 					 (slurm_conf.prolog_flags &
 					  PROLOG_FLAG_RUN_IN_JOB));
 	}

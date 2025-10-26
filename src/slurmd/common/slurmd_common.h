@@ -55,7 +55,7 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern);
  *
  *  Returns true if all job processes are gone
  */
-extern bool pause_for_job_completion(uint32_t job_id, int max_time,
+extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 				     bool ignore_extern);
 
 /*

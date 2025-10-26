@@ -207,7 +207,7 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern)
  *
  *  Returns true if all job processes are gone
  */
-extern bool pause_for_job_completion(uint32_t job_id, int max_time,
+extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 				     bool ignore_extern)
 {
 	int sec = 0;
@@ -216,11 +216,12 @@ extern bool pause_for_job_completion(uint32_t job_id, int max_time,
 	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = is_job_running(job_id, ignore_extern);
+		rc = is_job_running(step_id->job_id, ignore_extern);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {
-			terminate_all_steps(job_id, true, !ignore_extern);
+			terminate_all_steps(step_id->job_id, true,
+					    !ignore_extern);
 		}
 		if (sec > 10) {
 			/* Reduce logging frequency about unkillable tasks */
