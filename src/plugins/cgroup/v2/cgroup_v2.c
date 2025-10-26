@@ -1873,14 +1873,13 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 	xstrfmtcat(new_path, "/job_%u", step->step_id.job_id);
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_JOB],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
-		error("unable to create job %u cgroup", step->step_id.job_id);
+		error("unable to create %pI cgroup", &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
 	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_JOB]) != SLURM_SUCCESS) {
 		common_cgroup_destroy(&int_cg[CG_LEVEL_JOB]);
-		error("unable to instantiate job %u cgroup",
-		      step->step_id.job_id);
+		error("unable to instantiate %pI cgroup", &step->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
 	}
