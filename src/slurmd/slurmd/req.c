@@ -1395,8 +1395,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 				    gres_prep_env_list, node_id);
 		FREE_NULL_LIST(gres_prep_env_list);
 
-		job_env.jobid = req->step_id.job_id;
-		job_env.step_id = req->step_id.step_id;
+		job_env.step_id = req->step_id;
 		job_env.node_list = req->complete_nodelist;
 		job_env.het_job_id = req->het_job_id;
 		job_env.spank_job_env = req->spank_job_env;
@@ -2050,8 +2049,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
 				    node_id);
 
-		job_env.jobid = req->step_id.job_id;
-		job_env.step_id = 0; /* not available */
+		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
 		job_env.het_job_id = req->het_job_id;
 		job_env.spank_job_env = req->spank_job_env;
@@ -2191,8 +2189,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		gres_g_prep_set_env(&job_env.gres_job_env,
 				    gres_prep_env_list, node_id);
 		FREE_NULL_LIST(gres_prep_env_list);
-		job_env.jobid = req->step_id.job_id;
-		job_env.step_id = SLURM_BATCH_SCRIPT;
+		job_env.step_id = req->step_id;
 		job_env.node_list = req->nodes;
 		job_env.het_job_id = req->het_job_id;
 		job_env.partition = req->partition;
@@ -4396,7 +4393,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 		memset(&job_env, 0, sizeof(job_env));
 		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
 				    node_id);
-		job_env.jobid = req->step_id.job_id;
+		job_env.step_id = req->step_id;
 		job_env.derived_ec = req->derived_ec;
 		job_env.exit_code = req->exit_code;
 		job_env.node_list = req->nodes;
@@ -4623,7 +4620,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		gres_g_prep_set_env(&job_env.gres_job_env, req->job_gres_prep,
 				    node_id);
 
-		job_env.jobid = req->step_id.job_id;
+		job_env.step_id = req->step_id;
 		job_env.derived_ec = req->derived_ec;
 		job_env.exit_code = req->exit_code;
 		job_env.node_list = req->nodes;

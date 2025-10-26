@@ -1220,8 +1220,7 @@ static int _run_prolog_epilog(bool is_epilog)
 	gres_g_prep_set_env(&job_env.gres_job_env, tmp_list, 0);
 	FREE_NULL_LIST(tmp_list);
 
-	job_env.jobid = step->step_id.job_id;
-	job_env.step_id = SLURM_EXTERN_CONT;
+	job_env.step_id = step->step_id;
 	job_env.node_list = step->node_list;
 	job_env.het_job_id = step->het_job_id;
 	job_env.partition = step->msg->cred->arg->job_partition;

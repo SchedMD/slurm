@@ -380,7 +380,7 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 		script_lock = true;
 	}
 
-	timer_struct.job_id      = job_env->jobid;
+	timer_struct.job_id = job_env->step_id.job_id;
 	timer_struct.msg_timeout = slurm_conf.msg_timeout;
 	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
@@ -396,8 +396,8 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
-		info("prolog for job %u ran for %d seconds",
-		     job_env->jobid, diff_time);
+		info("prolog for %pI ran for %d seconds",
+		     &job_env->step_id, diff_time);
 	}
 
 	slurm_thread_join(timer_id);
@@ -435,8 +435,8 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (slurm_conf.msg_timeout / 2)) {
-		info("epilog for job %u ran for %d seconds",
-		     job_env->jobid, diff_time);
+		info("epilog for %pI ran for %d seconds",
+		     &job_env->step_id, diff_time);
 	}
 
 	if (script_lock)

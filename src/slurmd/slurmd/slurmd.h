@@ -58,12 +58,11 @@ extern bool refresh_cached_features;
 extern pthread_mutex_t cached_features_mutex;
 
 typedef struct {
+	slurm_step_id_t step_id;
 	uint32_t derived_ec;
 	uint32_t exit_code;
 	char **gres_job_env;
 	uint32_t het_job_id;
-	uint32_t jobid;
-	uint32_t step_id;
 	char *node_aliases;
 	char *node_list;
 	char *partition;
