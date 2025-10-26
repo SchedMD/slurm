@@ -4856,6 +4856,11 @@ static int _match_job(void *x, void *key)
 {
 	slurm_step_id_t *step1 = x, *step2 = key;
 
+	/* Only compare if both have sluid set */
+	if (step1->sluid && step2->sluid)
+		return (step1->sluid == step2->sluid);
+
+	/* Otherwise fall back to the job_id */
 	return (step1->job_id == step2->job_id);
 }
 
