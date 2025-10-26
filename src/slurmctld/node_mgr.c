@@ -4063,6 +4063,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	kill_agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
 
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		if (IS_NODE_EXTERNAL(node_ptr))
+			continue;
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
@@ -4802,11 +4804,16 @@ static int _build_node_callback(char *alias, char *hostname, char *address,
 			bit_set(external_node_bitmap, node_ptr->index);
 		}
 
-		if ((rc = gres_g_node_config_load(node_ptr->config_ptr->cpus,
-						  node_ptr->name,
-						  node_ptr->gres_list, NULL,
-						  NULL)))
+		if (conf_node->gres_conf) {
+			gres_add_dynamic_gres(conf_node->gres_conf,
+					      node_ptr->name);
+		} else if ((rc = gres_g_node_config_load(node_ptr->config_ptr
+								 ->cpus,
+							 node_ptr->name,
+							 node_ptr->gres_list,
+							 NULL, NULL))) {
 			goto fini;
+		}
 
 		rc = gres_node_config_validate(node_ptr,
 					       node_ptr->config_ptr->threads,

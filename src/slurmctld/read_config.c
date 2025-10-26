@@ -464,6 +464,8 @@ static void _validate_slurmd_addr(void)
 		if ((node_ptr->name == NULL) ||
 		    (node_ptr->name[0] == '\0'))
 			continue;
+		if (IS_NODE_EXTERNAL(node_ptr))
+			continue;
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&

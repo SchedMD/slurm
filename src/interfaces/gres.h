@@ -1219,4 +1219,11 @@ extern uint32_t gres_get_gpu_plugin_id(void);
  */
 extern bool gres_valid_name(char *name);
 
+/*
+ * Parse a '+' delimited list of gres_slurmd_conf_t's in comman-separated
+ * key=value format.
+ *
+ * Clears and adds to gres_conf_list.
+ */
+extern void gres_add_dynamic_gres(char *gres_str, char *node_name);
 #endif
