@@ -4571,7 +4571,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			/* The epilog complete message processing on
 			 * slurmctld is equivalent to that of a
 			 * ESLURMD_KILL_JOB_ALREADY_COMPLETE reply above */
-			epilog_complete(req->step_id.job_id, req->nodes, rc);
+			epilog_complete(&req->step_id, req->nodes, rc);
 		}
 
 		launch_complete_rm(&req->step_id);
@@ -4663,7 +4663,7 @@ done:
 	_waiter_complete(req->step_id.job_id);
 
 	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB))
-		epilog_complete(req->step_id.job_id, req->nodes, rc);
+		epilog_complete(&req->step_id, req->nodes, rc);
 }
 
 /*

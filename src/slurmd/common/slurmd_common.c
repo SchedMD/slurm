@@ -133,7 +133,7 @@ fini:
  * Returns SLURM_SUCCESS if message sent successfully,
  *         SLURM_ERROR if epilog complete message fails to be sent.
  */
-extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
+extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc)
 {
 	slurm_msg_t msg;
 	epilog_complete_msg_t req;
@@ -143,7 +143,7 @@ extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
 	slurm_msg_t_init(&msg);
 	memset(&req, 0, sizeof(req));
 
-	req.step_id.job_id = jobid;
+	req.step_id = *step_id;
 	req.return_code = rc;
 	req.node_name = conf->node_name;
 
@@ -161,7 +161,7 @@ extern int epilog_complete(uint32_t jobid, char *node_list, int rc)
 		return SLURM_ERROR;
 	}
 
-	debug("JobId=%u: sent epilog complete msg: rc = %d", jobid, rc);
+	debug("%pI: sent epilog complete msg: rc = %d", &step_id, rc);
 
 	return SLURM_SUCCESS;
 }

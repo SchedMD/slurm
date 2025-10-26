@@ -1547,8 +1547,7 @@ fail1:
 		pause_for_job_completion(jobid, 0, true);
 
 		int epilog_rc = _run_prolog_epilog(true);
-		epilog_complete(step->step_id.job_id, step->node_list,
-				epilog_rc);
+		epilog_complete(&step->step_id, step->node_list, epilog_rc);
 	}
 
 	return rc;
