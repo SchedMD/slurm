@@ -220,8 +220,7 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {
-			terminate_all_steps(step_id->job_id, true,
-					    !ignore_extern);
+			terminate_all_steps(step_id, true, !ignore_extern);
 		}
 		if (sec > 10) {
 			/* Reduce logging frequency about unkillable tasks */
@@ -262,13 +261,14 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 
 /*
  * terminate_all_steps - signals the container of all steps of a job
- * jobid IN - id of job to signal
+ * step_id IN - id of job to signal
  * batch IN - if true signal batch script, otherwise skip it
  * extern_step IN - if true signal extern step, otherwise skip it
 
  * RET count of signaled job steps (plus batch script, if applicable)
  */
-extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step)
+extern int terminate_all_steps(slurm_step_id_t *step_id, bool batch,
+			       bool extern_step)
 {
 	list_t *steps;
 	list_itr_t *i;
@@ -279,10 +279,10 @@ extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
-		if (stepd->step_id.job_id != jobid) {
+		if (stepd->step_id.job_id != step_id->job_id) {
 			/* multiple jobs expected on shared nodes */
-			debug3("Step from other job: jobid=%u (this jobid=%u)",
-			       stepd->step_id.job_id, jobid);
+			debug3("Step from other job: %pI (this %pI)",
+			       &stepd->step_id, step_id);
 			continue;
 		}
 
@@ -309,7 +309,7 @@ extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step)
 	list_iterator_destroy(i);
 	FREE_NULL_LIST(steps);
 	if (step_cnt == 0)
-		debug2("No steps in job %u to terminate", jobid);
+		debug2("No steps in %pI to terminate", step_id);
 	return step_cnt;
 }
 

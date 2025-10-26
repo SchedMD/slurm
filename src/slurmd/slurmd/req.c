@@ -2266,7 +2266,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		     &req->step_id);
 		sleep(1);	/* give slurmstepd time to create
 				 * the communication socket */
-		terminate_all_steps(req->step_id.job_id, true,
+		terminate_all_steps(&req->step_id, true,
 				    !(slurm_conf.prolog_flags &
 				      PROLOG_FLAG_RUN_IN_JOB));
 		rc = ESLURMD_CREDENTIAL_REVOKED;
@@ -4526,7 +4526,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 		 * bother with a "nice" termination.
 		 */
 		debug2("Job is currently suspended, terminating");
-		nsteps = terminate_all_steps(req->step_id.job_id, true,
+		nsteps = terminate_all_steps(&req->step_id, true,
 					     !(slurm_conf.prolog_flags &
 					       PROLOG_FLAG_RUN_IN_JOB));
 	} else {
@@ -4586,7 +4586,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	if (!pause_for_job_completion(&req->step_id, delay,
 				      (slurm_conf.prolog_flags &
 				       PROLOG_FLAG_RUN_IN_JOB)) &&
-	    terminate_all_steps(req->step_id.job_id, true,
+	    terminate_all_steps(&req->step_id, true,
 				!(slurm_conf.prolog_flags &
 				  PROLOG_FLAG_RUN_IN_JOB))) {
 		/*
