@@ -45,6 +45,7 @@
 #include "src/common/macros.h"
 #include "src/interfaces/prep.h"
 #include "src/common/run_command.h"
+#include "src/common/sluid.h"
 #include "src/common/spank.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
@@ -253,6 +254,12 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	setenvf(&env, "SLURM_JOB_GID", "%u", job_env->gid);
 	setenvf(&env, "SLURM_JOB_WORK_DIR", "%s", job_env->work_dir);
 	setenvf(&env, "SLURM_JOBID", "%u", job_env->step_id.job_id);
+
+	if (job_env->step_id.sluid) {
+		char sluid[15] = "";
+		print_sluid(job_env->step_id.sluid, sluid, sizeof(sluid));
+		setenvf(&env, "SLURM_SLUID", "%s", sluid);
+	}
 
 	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL)) {
 		/* Continue support for old hetjob terminology. */
