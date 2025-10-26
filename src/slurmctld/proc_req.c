@@ -2074,8 +2074,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			return;
 		} else if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
-			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
-			      __func__, job_ptr, step_ptr->step_id.step_id);
+			error("%s: %pJ Didn't find batch step, found %ps. This should never happen.",
+			      __func__, job_ptr, &step_ptr->step_id);
 		} else {
 			step_ptr->exit_code = comp_msg->job_rc;
 			jobacctinfo_destroy(step_ptr->jobacct);
