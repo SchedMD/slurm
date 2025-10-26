@@ -103,7 +103,7 @@ static void *_safe_signal_while_allocating(void *in_data)
 	debug("Got signal %d", signo);
 	xfree(in_data);
 	if (pending_job_id.job_id != NO_VAL) {
-		slurm_complete_job(pending_job_id.job_id, 128 + signo);
+		slurm_complete_job(&pending_job_id, 128 + signo);
 	}
 
 	return NULL;
@@ -456,7 +456,7 @@ extern resource_allocation_response_msg_t *allocate_nodes(
 relinquish:
 	if (resp) {
 		if (destroy_job || revoke_job)
-			slurm_complete_job(resp->step_id.job_id, 1);
+			slurm_complete_job(&resp->step_id, 1);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 	exit(error_exit);
@@ -636,7 +636,7 @@ relinquish:
 		}
 
 		if (destroy_job && (my_step_id.job_id != NO_VAL)) {
-			slurm_complete_job(my_step_id.job_id, 1);
+			slurm_complete_job(&my_step_id, 1);
 		}
 		FREE_NULL_LIST(job_resp_list);
 	}

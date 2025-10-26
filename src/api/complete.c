@@ -45,13 +45,8 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 
-/*
- * slurm_complete_job - note the completion of a job allocation
- * IN job_id - the job's id
- * IN job_return_code - the highest exit code of any task of the job
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- */
-extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
+extern int slurm_complete_job(slurm_step_id_t *step_id,
+			      uint32_t job_return_code)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -59,7 +54,7 @@ extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code)
 
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));
-	req.step_id.job_id = job_id;
+	req.step_id = *step_id;
 	req.job_rc       = job_return_code;
 	req_msg.msg_type = REQUEST_COMPLETE_JOB_ALLOCATION;
 	req_msg.data	 = &req;
