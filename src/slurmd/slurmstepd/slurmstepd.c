@@ -958,11 +958,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	uint16_t proto;
 	slurm_addr_t *cli = NULL;
 	slurm_msg_t *msg = NULL;
-	slurm_step_id_t step_id = {
-		.job_id = 0,
-		.step_id = NO_VAL,
-		.step_het_comp = NO_VAL,
-	};
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	/* receive conf from slurmd */
 	if (!(conf = _read_slurmd_conf_lite(sock)))
