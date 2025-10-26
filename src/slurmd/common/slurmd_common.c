@@ -166,7 +166,7 @@ extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc)
 	return SLURM_SUCCESS;
 }
 
-extern bool is_job_running(uint32_t job_id, bool ignore_extern)
+static bool _is_job_running(slurm_step_id_t *step_id, bool ignore_extern)
 {
 	bool retval = false;
 	list_t *steps;
@@ -177,7 +177,7 @@ extern bool is_job_running(uint32_t job_id, bool ignore_extern)
 	i = list_iterator_create(steps);
 	while ((s = list_next(i))) {
 		int fd;
-		if (s->step_id.job_id != job_id)
+		if (s->step_id.job_id != step_id->job_id)
 			continue;
 		if (ignore_extern && (s->step_id.step_id == SLURM_EXTERN_CONT))
 			continue;
@@ -216,7 +216,7 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 	int count = 0;
 
 	while ((sec < max_time) || (max_time == 0)) {
-		rc = is_job_running(step_id->job_id, ignore_extern);
+		rc = _is_job_running(step_id, ignore_extern);
 		if (!rc)
 			break;
 		if ((max_time == 0) && (sec > 1)) {

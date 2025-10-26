@@ -46,9 +46,6 @@
  */
 extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc);
 
-/* Connect to the slurmd and determine if the requested job has running steps */
-extern bool is_job_running(uint32_t job_id, bool ignore_extern);
-
 /*
  *  Wait for up to max_time seconds.
  *  If max_time == 0, send SIGKILL to tasks repeatedly
