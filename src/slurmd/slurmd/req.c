@@ -242,9 +242,8 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 
 	job_uid = _get_job_uid(step_id->job_id);
 	if (job_uid == INFINITE) {
-		error("No stepd for jobid %u from uid %u for rpc %s",
-		      step_id->job_id, msg->auth_uid,
-		      rpc_num2string(msg->msg_type));
+		error("No stepd for %pI from uid %u for rpc %s",
+		      step_id, msg->auth_uid, rpc_num2string(msg->msg_type));
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
@@ -1109,14 +1108,14 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	}
 
 	if (arg->uid == SLURM_AUTH_NOBODY) {
-		error("%s: rejecting job %u credential for invalid user nobody",
-		      __func__, arg->step_id.job_id);
+		error("%s: rejecting %pI credential for invalid user nobody",
+		      __func__, &arg->step_id);
 		goto fail;
 	}
 
 	if (arg->gid == SLURM_AUTH_NOBODY) {
-		error("%s: rejecting job %u credential for invalid group nobody",
-		      __func__, arg->step_id.job_id);
+		error("%s: rejecting %pI credential for invalid group nobody",
+		      __func__, &arg->step_id);
 		goto fail;
 	}
 
@@ -1160,8 +1159,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 
 		host_index = _get_host_index(arg->job_hostlist);
 		if ((host_index < 0) || (host_index >= arg->job_nhosts)) {
-			error("job cr credential invalid host_index %d for job %u",
-			      host_index, arg->step_id.job_id);
+			error("job cr credential invalid host_index %d for %pI",
+			      host_index, &arg->step_id);
 			goto fail;
 		}
 
@@ -1412,8 +1411,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 				term_sig    = WTERMSIG(rc);
 			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-			error("[job %u] prolog failed status=%d:%d",
-			      req->step_id.job_id, exit_status, term_sig);
+			error("%pI prolog failed status=%d:%d",
+			      &req->step_id, exit_status, term_sig);
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
@@ -2066,8 +2065,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 				term_sig = WTERMSIG(rc);
 			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-			error("[job %u] prolog failed status=%d:%d",
-			      req->step_id.job_id, exit_status, term_sig);
+			error("%pI prolog failed status=%d:%d",
+			      &req->step_id, exit_status, term_sig);
 			rc = ESLURMD_PROLOG_FAILED;
 		}
 	}
@@ -2329,8 +2328,8 @@ _rpc_job_notify(slurm_msg_t *msg)
 	 */
 	if ((msg->auth_uid != job_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
-		error("Security violation: job_notify(%u) from uid %u",
-		      req->step_id.job_id, msg->auth_uid);
+		error("Security violation: job_notify for %pIfrom uid %u",
+		      &req->step_id, msg->auth_uid);
 		return;
 	}
 
@@ -2354,8 +2353,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 		info("send notification to %ps", &stepd->step_id);
 		if (stepd_notify_job(fd, stepd->protocol_version,
 				     req->message) < 0)
-			debug("notify jobid=%u failed: %m",
-			      stepd->step_id.job_id);
+			debug("notify %pI failed: %m", &stepd->step_id);
 		close(fd);
 	}
 	list_iterator_destroy(i);
@@ -2363,8 +2361,8 @@ _rpc_job_notify(slurm_msg_t *msg)
 
 no_job:
 	if (step_cnt == 0) {
-		debug2("No steps running for jobid %u to send notification message",
-		       req->step_id.job_id);
+		debug2("No steps running for %pI to send notification message",
+		       &req->step_id);
 	}
 }
 
@@ -2419,8 +2417,8 @@ static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 						   working_cluster_rec);
 
 	if ((rc == ESLURM_DISABLED) || (rc == ESLURM_BATCH_ONLY)) {
-		info("Could not launch job %u and not able to requeue it, "
-		     "cancelling job", job_id);
+		info("Could not launch %pI and not able to requeue it, cancelling job",
+		     step_id);
 
 		if (slurm_rc == ESLURMD_PROLOG_FAILED) {
 			/*
@@ -2860,29 +2858,29 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 
 	job_uid = _get_job_uid(req->step_id.job_id);
 	if (job_uid == INFINITE) {
-		debug("%s: failed to get job_uid for job %u",
-		      __func__, req->step_id.job_id);
+		debug("%s: failed to get job_uid for %pI",
+		      __func__, &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	}
 
 	if ((msg->auth_uid != job_uid) &&
 	    !_slurm_authorized_user(msg->auth_uid)) {
-		debug("%s: from uid %u for job %u owned by uid %u",
-		      __func__, msg->auth_uid, req->step_id.job_id, job_uid);
+		debug("%s: from uid %u for %pI owned by uid %u",
+		      __func__, msg->auth_uid, &req->step_id, job_uid);
 		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
 		goto done;
 	}
 
 	/* security is handled when communicating with the stepd */
 	if ((req->flags & KILL_FULL_JOB) || (req->flags & KILL_JOB_BATCH)) {
-		debug("%s: sending signal %u to entire job %u flag %u",
-		      __func__, req->signal, req->step_id.job_id, req->flags);
+		debug("%s: sending signal %u to entire %pI flag %u",
+		      __func__, req->signal, &req->step_id, req->flags);
 		_kill_all_active_steps(&req->step_id, req->signal, req->flags,
 				       NULL, true, msg->auth_uid);
 	} else if (req->flags & KILL_STEPS_ONLY) {
-		debug("%s: sending signal %u to all steps job %u flag %u",
-		      __func__, req->signal, req->step_id.job_id, req->flags);
+		debug("%s: sending signal %u to all steps %pI flag %u",
+		      __func__, req->signal, &req->step_id, req->flags);
 		_kill_all_active_steps(&req->step_id, req->signal, req->flags,
 				       NULL, false, msg->auth_uid);
 	} else {
@@ -3341,8 +3339,8 @@ _rpc_timelimit(slurm_msg_t *msg)
 				       req->details, true, msg->auth_uid);
 	nsteps = _kill_all_active_steps(&req->step_id, SIGTERM, 0, req->details,
 					false, msg->auth_uid);
-	verbose("Job %u: timeout: sent SIGTERM to %d active steps",
-		req->step_id.job_id, nsteps);
+	verbose("%pI: timeout: sent SIGTERM to %d active steps",
+		&req->step_id, nsteps);
 
 	/* Revoke credential, send SIGKILL, run epilog, etc. */
 	_rpc_terminate_job(msg);
@@ -4022,9 +4020,9 @@ static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
 			}
 			step_cnt++;
 		} else {
-			debug3("%s: No signaling. Job: %u, Step: %u. Flags: %u",
-			       __func__, stepd->step_id.job_id,
-			       stepd->step_id.step_id, flags);
+			debug3("%s: No signaling. %pI %ps Flags: %u",
+			       __func__, &stepd->step_id, &stepd->step_id,
+			       flags);
 		}
 	}
 	list_iterator_destroy(i);
@@ -4227,7 +4225,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 		while ((stepd = list_next(i))) {
 			if (stepd->step_id.job_id != req->step_id.job_id) {
 				/* multiple jobs expected on shared nodes */
-				debug3("Step from other job: jobid=%pI (this jobid=%pI)",
+				debug3("Step from other job: %pI (this %pI)",
 				       &stepd->step_id, &req->step_id);
 				continue;
 			}
@@ -4347,10 +4345,10 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 * "revoke" all future credentials for this jobid
 	 */
 	if (cred_revoke(&req->step_id, req->time, req->start_time) < 0) {
-		debug("revoking cred for job %u: %m", req->step_id.job_id);
+		debug("revoking cred for %pI: %m", &req->step_id);
 	} else {
 		save_cred_state();
-		debug("credential for job %u revoked", req->step_id.job_id);
+		debug("credential for %pI revoked", &req->step_id);
 	}
 
 	/*
@@ -4378,7 +4376,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	 *   for this job.
 	 */
 	if (cred_begin_expiration(&req->step_id) < 0) {
-		debug("Not running epilog for jobid %d: %m", req->step_id.job_id);
+		debug("Not running epilog for %pI: %m", &req->step_id);
 		return;
 	}
 
@@ -4457,10 +4455,10 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 * "revoke" all future credentials for this jobid
 	 */
 	if (cred_revoke(&req->step_id, req->time, req->start_time) < 0) {
-		debug("revoking cred for job %u: %m", req->step_id.job_id);
+		debug("revoking cred for %pI: %m", &req->step_id);
 	} else {
 		save_cred_state();
-		debug("credential for job %u revoked", req->step_id.job_id);
+		debug("credential for %pI revoked", &req->step_id);
 	}
 
 	if (_prolog_is_running(&req->step_id)) {
@@ -4470,8 +4468,8 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			 * a success to let the controller know we got
 			 * this request.
 			 */
-			debug("%s: sent SUCCESS for %u, waiting for prolog to finish",
-			      __func__, req->step_id.job_id);
+			debug("%s: sent SUCCESS for %pI, waiting for prolog to finish",
+			      __func__, &req->step_id);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			send_response = false;
 		}
@@ -4604,7 +4602,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 	 *   for this job.
 	 */
 	if (cred_begin_expiration(&req->step_id) < 0) {
-		debug("Not running epilog for jobid %d: %m", req->step_id.job_id);
+		debug("Not running epilog for %pI: %m", &req->step_id);
 		goto done;
 	}
 
@@ -4640,12 +4638,11 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 				term_sig = WTERMSIG(rc);
 			else if (WIFEXITED(rc))
 				exit_status = WEXITSTATUS(rc);
-			error("[job %u] epilog failed status=%d:%d",
-			req->step_id.job_id, exit_status, term_sig);
+			error("%pI epilog failed status=%d:%d",
+			      &req->step_id, exit_status, term_sig);
 			rc = ESLURMD_EPILOG_FAILED;
 		} else
-			debug("completed epilog for jobid %u",
-			      req->step_id.job_id);
+			debug("completed epilog for %pI", &req->step_id);
 	}
 	launch_complete_rm(&req->step_id);
 

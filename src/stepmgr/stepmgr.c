@@ -506,7 +506,7 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 	memcpy(&step_signal.step_id, step_id, sizeof(step_signal.step_id));
 
 	if (!(job_ptr = stepmgr_ops->find_job(step_id))) {
-		error("job_step_signal: invalid JobId=%u", step_id->job_id);
+		error("%s: invalid %pI", __func__, step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
