@@ -1437,7 +1437,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	job_mem_limit_register(req->step_id.job_id, req->job_mem_lim);
+	job_mem_limit_register(&req->step_id, req->job_mem_lim);
 
 	debug3("%s: call to _forkexec_slurmstepd", __func__);
 	errnum = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)req, cli, msg->auth_uid,
@@ -1823,7 +1823,7 @@ static int _make_prolog_mem_container(slurm_msg_t *msg)
 	if ((rc = _convert_job_mem(msg)) != SLURM_SUCCESS)
 		return rc;
 
-	job_mem_limit_register(req->step_id.job_id, req->job_mem_limit);
+	job_mem_limit_register(&req->step_id, req->job_mem_limit);
 
 	return rc;
 }
