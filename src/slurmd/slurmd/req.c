@@ -1512,7 +1512,8 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	pid_t child;
 	int pipe[2];
 	int rc = 0;
-	slurm_step_id_t tmp_step_id = { NO_VAL64, jobid, NO_VAL, NO_VAL };
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
 
 	*fd = -1;
 
@@ -1549,7 +1550,7 @@ static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
 	 * condition where if this process makes a file or
 	 * detacts itself from a child before we add the pid
 	 * to the container in the parent of the fork. */
-	if (namespace_g_join(&tmp_step_id, uid, false)) {
+	if (namespace_g_join(&step_id, uid, false)) {
 		error("%s namespace_g_join(%u): %m", __func__, jobid);
 		_exit(SLURM_ERROR);
 	}
