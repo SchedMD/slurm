@@ -18018,17 +18018,14 @@ extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue_external(uid_t uid, uint32_t job_id, bool preempt,
-				uint32_t flags)
+extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
+				bool preempt, uint32_t flags)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = ESLURM_INVALID_JOB_ID;
 	job_record_t *job_ptr = NULL;
 
 	/* find the job */
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		rc = ESLURM_INVALID_JOB_ID;
-	} else {
+	if ((job_ptr = find_job(step_id))) {
 		/* _job_requeue already handles het jobs */
 		rc = job_requeue_internal(uid, job_ptr, preempt, flags);
 	}
