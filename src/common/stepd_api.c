@@ -729,7 +729,7 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 			loc = xmalloc(sizeof(step_loc_t));
 			loc->directory = xstrdup(directory);
 			loc->nodename = xstrdup(nodename);
-			memcpy(&loc->step_id, &step_id, sizeof(loc->step_id));
+			loc->step_id = step_id;
 			list_append(l, (void *)loc);
 		}
 	}

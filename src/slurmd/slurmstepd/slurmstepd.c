@@ -1071,7 +1071,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		launch_tasks_request_msg_t *task_msg;
 		task_msg = (launch_tasks_request_msg_t *)msg->data;
 
-		memcpy(&step_id, &task_msg->step_id, sizeof(step_id));
+		step_id = task_msg->step_id;
 
 		if (task_msg->job_ptr &&
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {
