@@ -2796,8 +2796,8 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
-				    &job_ptr);
+	error_code =
+		job_alloc_info(msg->auth_uid, &job_info_msg->step_id, &job_ptr);
 	END_TIMER2(__func__);
 
 	/* return result */
@@ -2859,8 +2859,8 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
-				    &job_ptr);
+	error_code =
+		job_alloc_info(msg->auth_uid, &job_info_msg->step_id, &job_ptr);
 	END_TIMER2(__func__);
 
 	/* return result */
@@ -2939,17 +2939,16 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	if (job_info_msg->het_job_offset == NO_VAL) {
 		error_code = job_alloc_info(msg->auth_uid,
-					    job_info_msg->step_id.job_id,
-					    &job_ptr);
+					    &job_info_msg->step_id, &job_ptr);
 	} else {
 		job_ptr = find_het_job_record(job_info_msg->step_id.job_id,
 					      job_info_msg->het_job_offset);
 		if (job_ptr) {
 			job_info_msg->step_id =
 				STEP_ID_FROM_JOB_RECORD(job_ptr);
-			error_code = job_alloc_info(
-				msg->auth_uid, job_info_msg->step_id.job_id,
-				&job_ptr);
+			error_code = job_alloc_info(msg->auth_uid,
+						    &job_info_msg->step_id,
+						    &job_ptr);
 		} else {
 			error_code = ESLURM_INVALID_JOB_ID;
 		}
@@ -3426,7 +3425,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, req->job_id, &job_ptr);
+	error_code = job_alloc_info(msg->auth_uid, req, &job_ptr);
 	END_TIMER2(__func__);
 	/* return result */
 	if (error_code || (job_ptr == NULL)) {

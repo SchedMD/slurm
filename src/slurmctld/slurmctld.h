@@ -857,11 +857,11 @@ extern void delete_job_desc_files(uint32_t job_id);
 /*
  * job_alloc_info - get details about an existing job allocation
  * IN uid - job issuing the code
- * IN job_id - ID of job for which info is requested
+ * IN step_id - ID of job for which info is requested
  * OUT job_pptr - set to pointer to job record
  * NOTE: See job_alloc_info_ptr() if job pointer is known
  */
-extern int job_alloc_info(uint32_t uid, uint32_t job_id,
+extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
 			  job_record_t **job_pptr);
 
 /*
