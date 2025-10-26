@@ -584,8 +584,8 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (namespace_g_stepd_delete(&step->step_id))
-			error("namespace_g_stepd_delete(%u): %m",
-			      step->step_id.job_id);
+			error("namespace_g_stepd_delete(%pI): %m",
+			      &step->step_id);
 	}
 
 	auth_setuid_unlock();

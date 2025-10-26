@@ -1280,8 +1280,7 @@ static int _handle_get_ns_fd(int fd, uid_t uid, pid_t remote_pid)
 {
 	list_t *ns_map = list_create(NULL);
 
-	debug("%s: for job %u:%u",
-	      __func__, step->step_id.job_id, step->step_id.step_id);
+	debug("%s: for %pI %ps", __func__, &step->step_id, &step->step_id);
 
 	if (namespace_g_join_external(&step->step_id, ns_map) < 0)
 		goto rwfail;
@@ -1317,8 +1316,7 @@ static int _handle_get_ns_fds(int fd, uid_t uid, pid_t remote_pid)
 	list_t *ns_map = list_create(NULL);
 	int ns_count = 0;
 
-	debug("%s: for job %u:%u",
-	      __func__, step->step_id.job_id, step->step_id.step_id);
+	debug("%s: for %pI %ps", __func__, &step->step_id, &step->step_id);
 
 	if (namespace_g_join_external(&step->step_id, ns_map) < 0)
 		goto rwfail;
@@ -1525,8 +1523,8 @@ static int _handle_add_extern_pid_internal(pid_t pid)
 	jobacct_id_t jobacct_id;
 
 	if (step->step_id.step_id != SLURM_EXTERN_CONT) {
-		error("%s: non-extern step (%u) given for job %u.",
-		      __func__, step->step_id.step_id, step->step_id.job_id);
+		error("%s: non-extern step (%ps) given for %pI",
+		      __func__, &step->step_id, &step->step_id);
 		return SLURM_ERROR;
 	}
 
@@ -1543,20 +1541,20 @@ static int _handle_add_extern_pid_internal(pid_t pid)
 	jobacct_id.step = step;
 
 	if (proctrack_g_add(step, pid) != SLURM_SUCCESS) {
-		error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.",
-		      __func__, step->step_id.job_id, pid);
+		error("%s: %pI can't add pid %d to proctrack plugin in the extern_step.",
+		      __func__, &step->step_id, pid);
 		return SLURM_ERROR;
 	}
 
 	if (task_g_add_pid(pid) != SLURM_SUCCESS) {
-		error("%s: Job %u can't add pid %d to task plugin in the extern_step.",
-		      __func__, step->step_id.job_id, pid);
+		error("%s: %pI can't add pid %d to task plugin in the extern_step.",
+		      __func__, &step->step_id, pid);
 		return SLURM_ERROR;
 	}
 
 	if (jobacct_gather_add_task(pid, &jobacct_id, 1) != SLURM_SUCCESS) {
-		error("%s: Job %u can't add pid %d to jobacct_gather plugin in the extern_step.",
-		      __func__, step->step_id.job_id, pid);
+		error("%s: %pI can't add pid %d to jobacct_gather plugin in the extern_step.",
+		      __func__, &step->step_id, pid);
 		return SLURM_ERROR;
 	}
 
