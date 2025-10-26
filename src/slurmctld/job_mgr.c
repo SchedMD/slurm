@@ -17975,16 +17975,16 @@ static int _foreach_hetjob_requeue(void *x, void *arg)
 }
 
 /*
- * _job_requeue - Requeue a running or pending batch job, if the specified
- *		  job records is a hetjob leader, perform the operation on all
- *		  components of the hetjob
+ * job_requeue_internal - Requeue a running or pending batch job.
+ * 	If the specified job record is a hetjob leader, perform the operation
+ *	on all components of the hetjob
  * IN uid - user id of user issuing the RPC
  * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-static int _job_requeue(uid_t uid, job_record_t *job_ptr, bool preempt,
-			uint32_t flags)
+extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
+				uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -18031,7 +18031,7 @@ extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
 		/* _job_requeue already handles het jobs */
-		rc = _job_requeue(uid, job_ptr, preempt, flags);
+		rc = job_requeue_internal(uid, job_ptr, preempt, flags);
 	}
 
 	if (msg) {
@@ -18087,14 +18087,15 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = _job_requeue(uid, job_ptr, preempt, flags);
+			rc = job_requeue_internal(uid, job_ptr, preempt, flags);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc2 = _job_requeue(uid, job_ptr, preempt, flags);
+			rc2 = job_requeue_internal(uid, job_ptr, preempt,
+						   flags);
 			_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 		}
 
@@ -18107,7 +18108,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _job_requeue(uid, job_ptr, preempt,flags);
+				rc2 = job_requeue_internal(uid, job_ptr,
+							   preempt, flags);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						NULL);
 			}
@@ -18133,7 +18135,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			continue;
 		}
 
-		rc2 = _job_requeue(uid, job_ptr, preempt, flags);
+		rc2 = job_requeue_internal(uid, job_ptr, preempt, flags);
 		_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 	}
 
