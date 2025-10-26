@@ -828,8 +828,10 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		}
 
 		if (step_id != SLURM_EXTERN_CONT) {
-			slurm_step_id_t tmp_step_id = { NO_VAL64, job_id,
-							step_id, NO_VAL };
+			slurm_step_id_t tmp_step_id = SLURM_STEP_ID_INITIALIZER;
+			tmp_step_id.job_id = job_id;
+			tmp_step_id.step_id = step_id;
+
 			if (namespace_g_join(&tmp_step_id, uid, true)) {
 				error("%s namespace_g_join(%u): %m",
 				      __func__, job_id);
