@@ -899,24 +899,25 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 	}
 }
 
-static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
-			       char ***env, uint32_t *envc)
+static void _setup_x11_display(slurm_step_id_t *step_id, char ***env,
+			       uint32_t *envc)
 {
 	int display = 0, fd;
 	char *xauthority = NULL;
 	uint16_t protocol_version;
-	slurm_step_id_t step_id = { .job_id = job_id,
-				    .step_id = SLURM_EXTERN_CONT,
-				    .step_het_comp = NO_VAL,
+	slurm_step_id_t extern_step_id = {
+		.job_id = step_id->job_id,
+		.sluid = step_id->sluid,
+		.step_id = SLURM_EXTERN_CONT,
+		.step_het_comp = NO_VAL,
 	};
 
-	fd = stepd_connect(conf->spooldir, conf->node_name,
-			   &step_id,
+	fd = stepd_connect(conf->spooldir, conf->node_name, &extern_step_id,
 			   &protocol_version);
 
 	if (fd == -1) {
-		error("Cannot connect to slurmstepd. Could not get x11 forwarding display for job %u step %u, x11 forwarding disabled",
-		      job_id, step_id_in);
+		error("Cannot connect to slurmstepd. Could not get x11 forwarding display for %pI %ps, x11 forwarding disabled",
+		      step_id, step_id);
 		return;
 	}
 
@@ -924,15 +925,15 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 	close(fd);
 
 	if (!display) {
-		error("Didn't get display. Could not get x11 forwarding display for job %u step %u, x11 forwarding disabled",
-		      job_id, step_id_in);
+		error("Didn't get display. Could not get x11 forwarding display for %pI %ps, x11 forwarding disabled",
+		      step_id, step_id);
 		env_array_overwrite(env, "DISPLAY", "SLURM_X11_SETUP_FAILED");
 		*envc = envcount(*env);
 		return;
 	}
 
-	debug2("%s: setting DISPLAY=localhost:%d:0 for job %u step %u",
-	       __func__, display, job_id, step_id_in);
+	debug2("%s: setting DISPLAY=localhost:%d:0 for %pI %ps",
+	       __func__, display, step_id, step_id);
 	env_array_overwrite_fmt(env, "DISPLAY", "localhost:%d.0", display);
 
 	if (xauthority) {
@@ -1421,9 +1422,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		_wait_for_job_running_prolog(&req->step_id);
 
 		if (req->x11)
-			_setup_x11_display(req->step_id.job_id,
-					   req->step_id.step_id,
-					   &req->env, &req->envc);
+			_setup_x11_display(&req->step_id, &req->env,
+					   &req->envc);
 	}
 
 	/*
@@ -1727,8 +1727,8 @@ static void _set_batch_job_limits(batch_job_launch_msg_t *req)
 	 */
 	if ((arg->job_x11 & X11_FORWARD_ALL) ||
 	    (arg->job_x11 & X11_FORWARD_BATCH))
-		_setup_x11_display(req->step_id.job_id, SLURM_BATCH_SCRIPT,
-				   &req->environment, &req->envc);
+		_setup_x11_display(&req->step_id, &req->environment,
+				   &req->envc);
 
 	slurm_cred_unlock_args(req->cred);
 }
