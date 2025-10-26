@@ -1061,8 +1061,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	hostlist_t *s_hset = NULL;
 	int		host_index = -1;
 	slurm_cred_t    *cred = req->cred;
-	uint32_t	jobid = req->step_id.job_id;
-	uint32_t	stepid = req->step_id.step_id;
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	step_cpus = 0;
 
@@ -1106,7 +1104,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 
 	xassert(arg->job_mem_alloc);
 
-	if ((arg->step_id.job_id != jobid) || (arg->step_id.step_id != stepid)) {
+	if ((arg->step_id.job_id != req->step_id.job_id) ||
+	    (arg->step_id.step_id != req->step_id.step_id)) {
 		error("job credential for %ps, expected %ps",
 		      &arg->step_id, &req->step_id);
 		goto fail;
