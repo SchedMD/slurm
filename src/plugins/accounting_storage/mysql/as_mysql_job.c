@@ -492,7 +492,7 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		if (!(job_ptr->db_index = _get_db_index(mysql_conn,
 							submit_time,
 							job_ptr->job_id)))
-			job_record_set_sluid(job_ptr);
+			job_record_set_sluid(job_ptr, false);
 	}
 
 	if (!IS_JOB_IN_DB(job_ptr)) {

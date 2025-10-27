@@ -804,7 +804,7 @@ extern void update_job_limit_set_tres(uint16_t **tres_limits, int tres_cnt);
 /*
  * Set a new sluid on the job_ptr
  */
-extern void job_record_set_sluid(job_record_t *job_ptr);
+extern void job_record_set_sluid(job_record_t *job_ptr, bool requeue);
 
 /*
  * Allocate and initialize multicore data block

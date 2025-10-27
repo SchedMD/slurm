@@ -11853,7 +11853,7 @@ static int _set_job_id(job_record_t *job_ptr)
 		/* When we get a new job id might as well make sure
 		 * the db_index is set since there is no way it will be
 		 * correct otherwise :). */
-		job_record_set_sluid(job_ptr);
+		job_record_set_sluid(job_ptr, false);
 		return SLURM_SUCCESS;
 	}
 
@@ -15749,10 +15749,10 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	resv_replace_update(job_ptr);
 
 	/*
-	 * Get new sluid now that we are basically a new job.
+	 * Get new db_index/sluid now that we are basically a new job.
 	 */
 	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
-	job_record_set_sluid(job_ptr);
+	job_record_set_sluid(job_ptr, false);
 	_add_job_hash_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
@@ -16770,7 +16770,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
 	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
-	job_record_set_sluid(job_ptr);
+	job_record_set_sluid(job_ptr, true);
 	_add_job_hash_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 

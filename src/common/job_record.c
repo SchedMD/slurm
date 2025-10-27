@@ -4011,9 +4011,39 @@ extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)
 	}
 }
 
-extern void job_record_set_sluid(job_record_t *job_ptr)
+extern void job_record_set_sluid(job_record_t *job_ptr, bool requeue)
 {
-	job_ptr->db_index = generate_sluid();
+	sluid_t new_sluid = generate_sluid();
+
+	if (job_ptr->step_id.sluid) {
+		char orig[SLUID_STR_BYTES], new[SLUID_STR_BYTES];
+
+		print_sluid(job_ptr->step_id.sluid, orig, sizeof(orig));
+		print_sluid(new_sluid, new, sizeof(new));
+
+		if (requeue)
+			debug("%s: changing from %s to %s due to requeue",
+			      __func__, orig, new);
+		else
+			debug("%s: changing db_index from %s to %s due to resize",
+			      __func__, orig, new);
+	}
+
+	/*
+	 * Only change sluid on a requeue or when not yet set.
+	 *
+	 * If a job is resized - due to explicit user request, or when using
+	 * --no-kill - do not change it as we need to maintain the same sluid
+	 * until all processes terminate.
+	 *
+	 * The db_index does need to change in these cases, as the accounting
+	 * record will need to be split off and we cannot repeat db_index
+	 * values in the table.
+	 */
+	if (!job_ptr->step_id.sluid || requeue)
+		job_ptr->step_id.sluid = new_sluid;
+
+	job_ptr->db_index = new_sluid;
 	job_ptr->db_flags &= ~SLURMDB_JOB_FLAG_START_R;
 }
 
