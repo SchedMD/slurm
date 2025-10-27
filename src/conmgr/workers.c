@@ -152,13 +152,15 @@ extern void workers_init(int count, int default_count)
 		    MAX(CONMGR_THREAD_COUNT_MIN, default_count));
 	const int warn_min_threads = MIN(detected_threads_low, min_def_threads);
 
+	if (!count && (mgr.workers.conf_threads > 0)) {
+		count = mgr.workers.conf_threads;
+		log_flag(CONMGR, "%s: Setting thread count to %s%d threads",
+			 __func__, CONMGR_PARAM_THREADS,
+			 mgr.workers.conf_threads);
+	}
+
 	if (!count) {
-		if ((mgr.workers.conf_threads > 0)) {
-			count = mgr.workers.conf_threads;
-			log_flag(CONMGR, "%s: Setting thread count to %s%d threads",
-				 __func__, CONMGR_PARAM_THREADS,
-				 mgr.workers.conf_threads);
-		} else if ((default_count > 0)) {
+		if ((default_count > 0)) {
 			count = default_count;
 			log_flag(CONMGR, "%s: Setting thread count to default %d threads",
 				 __func__, default_count);
