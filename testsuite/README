@@ -73,7 +73,6 @@ test1.12   Test srun --overlap
 test1.14   Test exclusive resource allocation for a step (--exclusive option).
 test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
-test1.24   Verify node configuration specification (--constraint option).
 test1.25   Submit job to not be killed on node failure (--no-kill option).
 	   NOTE: We need to actually kill slurmd daemons to fully test this.
 test1.26   Submit job directly to slurmd without use of slurmctld scheduler.
