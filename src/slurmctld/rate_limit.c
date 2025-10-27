@@ -36,6 +36,7 @@
 #include <stdbool.h>
 
 #include "src/common/macros.h"
+#include "src/common/parse_value.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 
@@ -54,17 +55,32 @@ typedef struct {
 	uid_t uid;
 } user_bucket_t;
 
-static int table_size = 8192;
+static uint32_t table_size = 8192;
 static user_bucket_t *user_buckets = NULL;
 
 static bool rate_limit_enabled = false;
 static pthread_mutex_t rate_limit_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* 30 tokens max, bucket refills 2 tokens per 1 second */
-static int bucket_size = 30;
+static uint32_t bucket_size = 30;
 static int log_freq = 0;
-static int refill_rate = 2;
-static int refill_period = 1;
+static uint32_t refill_rate = 2;
+static uint32_t refill_period = 1;
+
+static uint32_t _set_positive_rl_param(char *key, char *value_str)
+{
+	uint32_t value = 0;
+	int len = strlen(key);
+
+	/* take off '=' char */
+	key[len - 1] = '\0';
+
+	if (s_p_handle_uint32(&value, key, value_str) || !value) {
+		fatal("%s=%s is invalid, must be a positive non-zero integer",
+		      key, value_str);
+	}
+	return value;
+}
 
 extern void rate_limit_init(void)
 {
@@ -80,31 +96,38 @@ extern void rate_limit_init(void)
 
 	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
 					rl_table_size_str))) {
-		table_size = atoi(tmp_ptr);
+		table_size = _set_positive_rl_param(rl_table_size_str, tmp_ptr);
 		xfree(tmp_ptr);
 	}
 
 	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
 					rl_bucket_size_str))) {
-		bucket_size = atoi(tmp_ptr);
+		bucket_size =
+			_set_positive_rl_param(rl_bucket_size_str, tmp_ptr);
 		xfree(tmp_ptr);
 	}
 
 	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
 					rl_log_freq_str))) {
 		log_freq = atoi(tmp_ptr);
+		if (log_freq < -1) {
+			fatal("%s%s is invalid, must be -1, 0, or a positive integer",
+			      rl_log_freq_str, tmp_ptr);
+		}
 		xfree(tmp_ptr);
 	}
 
 	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
 					rl_refill_rate_str))) {
-		refill_rate = atoi(tmp_ptr);
+		refill_rate =
+			_set_positive_rl_param(rl_refill_rate_str, tmp_ptr);
 		xfree(tmp_ptr);
 	}
 
 	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
 					rl_refill_period_str))) {
-		refill_period = atoi(tmp_ptr);
+		refill_period =
+			_set_positive_rl_param(rl_refill_period_str, tmp_ptr);
 		xfree(tmp_ptr);
 	}
 
@@ -112,7 +135,7 @@ extern void rate_limit_init(void)
 	user_buckets = xcalloc(table_size, sizeof(user_bucket_t));
 
 	info("RPC rate limiting enabled");
-	info("%s: rl_table_size=%d,rl_bucket_size=%d,rl_refill_rate=%d,rl_refill_period=%d",
+	info("%s: rl_table_size=%u,rl_bucket_size=%u,rl_refill_rate=%u,rl_refill_period=%u",
 	     __func__, table_size, bucket_size, refill_rate, refill_period);
 }
 
