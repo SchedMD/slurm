@@ -2511,7 +2511,9 @@ extern job_record_t *find_het_job_record(uint32_t job_id,
 					 uint32_t het_job_offset)
 {
 	job_record_t *het_job_leader = find_job_record(job_id);
-	job_record_t search_job_rec = { 0 };
+	job_record_t search_job_rec = {
+		.step_id = SLURM_STEP_ID_INITIALIZER,
+	};
 
 	if (!het_job_leader)
 		return NULL;
