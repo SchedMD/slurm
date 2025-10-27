@@ -1421,7 +1421,7 @@ static void *_decay_thread(void *no_data)
 
 		/* Calculate all the normalized usage unless this is Fair Tree;
 		 * it handles these calculations during its tree traversal */
-		if (!(flags & PRIORITY_FLAGS_FAIR_TREE)) {
+		if (calc_fairshare && !(flags & PRIORITY_FLAGS_FAIR_TREE)) {
 			assoc_mgr_lock(&locks);
 			_set_children_usage_efctv(
 				assoc_mgr_root_assoc->usage->children_list);
