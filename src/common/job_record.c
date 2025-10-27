@@ -2639,6 +2639,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 	if (dump_job_ptr->job_id == NO_VAL)
 		return 0;
 
+	xassert(dump_job_ptr->job_id == dump_job_ptr->step_id.job_id);
+
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
 				       protocol_version);
@@ -3928,6 +3930,8 @@ extern int job_record_unpack(job_record_t **out,
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
+
+	xassert(job_ptr->step_id.job_id == job_ptr->job_id);
 
 	return SLURM_SUCCESS;
 
