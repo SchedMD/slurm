@@ -932,7 +932,11 @@ static int _foreach_license_set_base(void *x, void *key)
 		      license->name);
 		return -1;
 	}
-	license->total = license->hres_rec.total - license->hres_rec.base_usage;
+
+	license->total = license->hres_rec.total;
+
+	if (license->total != INFINITE)
+		license->total -= license->hres_rec.base_usage;
 
 	if ((license->mode == HRES_MODE_3) &&
 	    (license->hres_rec.parent_id != NO_VAL16)) {
@@ -1351,8 +1355,13 @@ static int _foreach_hres_pre_select(void *x, void *key)
 
 	hres_select->avail_hres[license->hres_rec.idx] = license->total;
 
-	if (!hres_select->test_only)
-		hres_select->avail_hres[license->hres_rec.idx] -= license->used;
+	if (!hres_select->test_only && (license->total != INFINITE)) {
+		if (license->total > license->used)
+			hres_select->avail_hres[license->hres_rec.idx] -=
+				license->used;
+		else
+			hres_select->avail_hres[license->hres_rec.idx] = 0;
+	}
 
 	hres_select->avail_hres_orig[license->hres_rec.idx] =
 		hres_select->avail_hres[license->hres_rec.idx];
@@ -1491,7 +1500,9 @@ extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
 
 	for (int j = 0; j < hres_select->depth; j++) {
 		uint16_t idx = hres_select->leaf[i].path_idx[j];
-		if (hres_select->avail_hres[idx] < hres_select->hres_per_node) {
+		if ((hres_select->avail_hres[idx] != INFINITE) &&
+		    (hres_select->avail_hres[idx] <
+		     hres_select->hres_per_node)) {
 			can_run = false;
 			break;
 		}
@@ -1500,8 +1511,9 @@ extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
 	if (can_run) {
 		for (int j = 0; j < hres_select->depth; j++) {
 			uint16_t idx = hres_select->leaf[i].path_idx[j];
-			hres_select->avail_hres[idx] -=
-				hres_select->hres_per_node;
+			if (hres_select->avail_hres[idx] != INFINITE)
+				hres_select->avail_hres[idx] -=
+					hres_select->hres_per_node;
 		}
 	}
 
