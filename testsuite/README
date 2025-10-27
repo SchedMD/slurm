@@ -73,9 +73,6 @@ test1.12   Test srun --overlap
 test1.14   Test exclusive resource allocation for a step (--exclusive option).
 test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
-test1.31   Verify that Slurm directed environment variables are processed:
-	   SLURM_DEBUG, SLURM_NNODES, SLURM_NPROCS, SLURM_OVERCOMMIT,
-	   SLURM_STDOUTMODE.
 test1.32   Test of srun signal forwarding
 test1.33   Test of srun application exit code reporting
 test1.34   Test of task signal abort message
