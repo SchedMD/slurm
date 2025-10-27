@@ -250,8 +250,21 @@ typedef struct {
  */
 typedef struct job_record job_record_t;
 struct job_record {
-	uint32_t magic;			/* magic cookie for data integrity */
-					/* DO NOT ALPHABETIZE */
+	/*
+	 * DO NOT REORDER THE STEP_ID.
+	 * Having it at the start of the struct allows job_ptr to be cast
+	 * as slurm_step_id_t. This is (ab)used in the logging code to make
+	 * %pI and %pJ interchangeable.
+	 */
+	slurm_step_id_t step_id;
+	/*
+	 * The magic value would usually be at the start of the struct, but
+	 * in this specific struct it has to come second.
+	 */
+	uint32_t magic;
+
+	/* "Normal" structure definition starts here: */
+
 	char    *account;		/* account number to charge */
 	char    *admin_comment;		/* administrator's arbitrary comment */
 	char	*alias_list;		/* node name to address aliases */
