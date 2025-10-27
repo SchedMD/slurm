@@ -230,7 +230,8 @@ def test_loaded_versions():
 
 
 @pytest.mark.xfail(
-    atf.get_version("sbin/slurmrestd") >= (25, 11),
+    atf.get_version("sbin/slurmrestd") >= (25, 11)
+    or atf.get_version("sbin/slurmrestd") <= (24, 11, 6),
     reason="Ticket 23807: Schema changed",
 )
 @pytest.mark.parametrize("openapi_spec", ["42"], indirect=True)
