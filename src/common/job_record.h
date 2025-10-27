@@ -51,7 +51,7 @@ extern list_t *purge_files_list; /* list of job ids to purge files of */
 #define STEP_ID_FROM_JOB_RECORD(job_ptr) \
 	(slurm_step_id_t) \
 	{ \
-		.job_id = job_ptr->job_id, .sluid = job_ptr->db_index, \
+		.job_id = job_ptr->job_id, .sluid = job_ptr->step_id.sluid, \
 		.step_id = NO_VAL, .step_het_comp = NO_VAL, \
 	}
 
