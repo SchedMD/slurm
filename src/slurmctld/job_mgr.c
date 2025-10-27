@@ -1745,12 +1745,12 @@ static void _add_job_hash_sluid(job_record_t *job_ptr)
 {
 	int inx;
 
-	if (!job_ptr->db_index) {
+	if (!job_ptr->step_id.sluid) {
 		debug("%s: JobId=%pJ has no SLUID?", __func__, job_ptr);
 		return;
 	}
 
-	inx = JOB_HASH_INX(job_ptr->db_index);
+	inx = JOB_HASH_INX(job_ptr->step_id.sluid);
 	job_ptr->job_next_sluid = job_hash_sluid[inx];
 	job_hash_sluid[inx] = job_ptr;
 }
@@ -1769,7 +1769,7 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 
 	on_job_state_change(job_entry, NO_VAL);
 
-	if ((type == JOB_HASH_SLUID) && !job_entry->db_index) {
+	if ((type == JOB_HASH_SLUID) && !job_entry->step_id.sluid) {
 		debug("%s: JobId=%pJ has no SLUID?", __func__, job_entry);
 		return;
 	}
@@ -1779,7 +1779,8 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 		job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
 		break;
 	case JOB_HASH_SLUID:
-		job_pptr = &job_hash_sluid[JOB_HASH_INX(job_entry->db_index)];
+		job_pptr =
+			&job_hash_sluid[JOB_HASH_INX(job_entry->step_id.sluid)];
 		break;
 	case JOB_HASH_ARRAY_JOB:
 		job_pptr = &job_array_hash_j[
@@ -1826,7 +1827,7 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 		case JOB_HASH_SLUID:
 		{
 			error("%s: Could not find hash entry for SLUID=%"PRIu64,
-			      __func__, job_entry->db_index);
+			      __func__, job_entry->step_id.sluid);
 			break;
 		case JOB_HASH_ARRAY_JOB:
 			error("%s: job array hash error %u", __func__,
@@ -2554,7 +2555,7 @@ extern job_record_t *find_sluid(sluid_t sluid)
 
 	job_ptr = job_hash_sluid[JOB_HASH_INX(sluid)];
 	while (job_ptr) {
-		if (job_ptr->db_index == sluid)
+		if (job_ptr->step_id.sluid == sluid)
 			return job_ptr;
 		job_ptr = job_ptr->job_next_sluid;
 	}
@@ -15756,9 +15757,8 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	/*
 	 * Get new db_index/sluid now that we are basically a new job.
 	 */
-	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
+	xassert(job_ptr->step_id.sluid);
 	job_record_set_sluid(job_ptr, false);
-	_add_job_hash_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_state_unset_flag(job_ptr, JOB_RESIZING);
