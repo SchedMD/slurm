@@ -98,7 +98,6 @@
 /* Global variables */
 bool slurmctld_init_db = true;
 
-static void _acct_restore_active_jobs(void);
 static void _build_bitmaps(void);
 static void _gres_reconfig(void);
 static void _init_all_slurm_conf(void);
@@ -1559,7 +1558,7 @@ extern int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
 	int error_code = SLURM_SUCCESS;
-	int rc = 0, load_job_ret = SLURM_SUCCESS;
+	int rc = 0;
 	char *old_auth_type = xstrdup(slurm_conf.authtype);
 	char *old_bb_type = xstrdup(slurm_conf.bb_type);
 	char *old_cred_type = xstrdup(slurm_conf.cred_type);
@@ -1698,10 +1697,10 @@ extern int read_slurm_conf(int recover)
 		reset_first_job_id();
 		controller_reconfig_scheduling();
 	} else if (recover == 1) {	/* Load job & node state files */
-		load_job_ret = load_all_job_state();
+		load_all_job_state();
 	} else if (recover > 1) {	/* Load node, part & job state files */
 		reconfig_flags |= RECONFIG_KEEP_PART_INFO;
-		load_job_ret = load_all_job_state();
+		load_all_job_state();
 	}
 	(void) load_all_part_state(reconfig_flags);
 
@@ -1861,13 +1860,6 @@ extern int read_slurm_conf(int recover)
 	/* Update plugin parameters as possible */
 	rc = _preserve_select_type_param(&slurm_conf, old_select_type_p);
 	error_code = MAX(error_code, rc);	/* not fatal */
-
-	/*
-	 * Restore job accounting info if file missing or corrupted,
-	 * an extremely rare situation
-	 */
-	if (load_job_ret)
-		_acct_restore_active_jobs();
 
 	/* Sync select plugin with synchronized job/node/part data */
 	gres_reconfig();		/* Clear gres/mps counters */
@@ -2462,37 +2454,6 @@ static void _restore_job_accounting(void)
 			}
 		}
 		_restore_job_licenses(job_ptr);
-	}
-	list_iterator_destroy(job_iterator);
-}
-
-/* Flush accounting information on this cluster, then for each running or
- * suspended job, restore its state in the accounting system */
-static void _acct_restore_active_jobs(void)
-{
-	job_record_t *job_ptr;
-	list_itr_t *job_iterator;
-	step_record_t *step_ptr;
-	list_itr_t *step_iterator;
-
-	info("Reinitializing job accounting state");
-	acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
-					     time(NULL));
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if (IS_JOB_SUSPENDED(job_ptr))
-			jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
-		if (IS_JOB_SUSPENDED(job_ptr) || IS_JOB_RUNNING(job_ptr)) {
-			if (job_ptr->db_index != NO_VAL64)
-				job_ptr->db_index = 0;
-			step_iterator = list_iterator_create(
-				job_ptr->step_list);
-			while ((step_ptr = list_next(step_iterator))) {
-				jobacct_storage_g_step_start(acct_db_conn,
-							     step_ptr);
-			}
-			list_iterator_destroy (step_iterator);
-		}
 	}
 	list_iterator_destroy(job_iterator);
 }
