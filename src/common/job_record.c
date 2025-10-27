@@ -60,6 +60,7 @@ extern job_record_t *job_record_create(void)
 	job_record_t *job_ptr = xmalloc(sizeof(*job_ptr));
 	job_details_t *detail_ptr = xmalloc(sizeof(*detail_ptr));
 
+	job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->array_task_id = NO_VAL;
 	job_ptr->details = detail_ptr;
@@ -2046,12 +2047,8 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 				   buf_t *buffer,
 				   uint16_t protocol_version)
 {
-	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
-	step_id.job_id = dump_job_ptr->job_id;
-	step_id.sluid = dump_job_ptr->db_index;
-
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack_step_id(&step_id, buffer, protocol_version);
+		pack_step_id(&dump_job_ptr->step_id, buffer, protocol_version);
 		packstr(dump_job_ptr->account, buffer);
 		packstr(dump_job_ptr->admin_comment, buffer);
 		packstr(dump_job_ptr->alloc_node, buffer);
@@ -2330,13 +2327,10 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 				    buf_t *buffer,
 				    uint16_t protocol_version)
 {
-	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
-
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		if (unpack_step_id_members(&step_id, buffer, protocol_version))
+		if (unpack_step_id_members(&job_ptr->step_id, buffer,
+					   protocol_version))
 			goto unpack_error;
-		job_ptr->job_id = step_id.job_id;
-		job_ptr->db_index = step_id.sluid;
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpackstr(&job_ptr->alloc_node, buffer);
@@ -2429,6 +2423,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpackstr(&job_ptr->wckey, buffer);
 	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpackstr(&job_ptr->alloc_node, buffer);
@@ -2472,7 +2467,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->het_job_id_set, buffer);
 		safe_unpack32(&job_ptr->het_job_offset, buffer);
 
-		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpack32(&job_ptr->step_id.job_id, buffer);
 		safe_unpack32(&job_ptr->job_state, buffer);
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
@@ -2523,6 +2518,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->wait4switch, buffer);
 		safe_unpackstr(&job_ptr->wckey, buffer);
 	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpackstr(&job_ptr->alloc_node, buffer);
@@ -2566,7 +2562,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->het_job_id_set, buffer);
 		safe_unpack32(&job_ptr->het_job_offset, buffer);
 
-		safe_unpack32(&job_ptr->job_id, buffer);
+		safe_unpack32(&job_ptr->step_id.job_id, buffer);
 		safe_unpack32(&job_ptr->job_state, buffer);
 
 		safe_unpack_time(&job_ptr->last_sched_eval, buffer);
@@ -2617,6 +2613,8 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->wckey, buffer);
 	}
 
+	job_ptr->job_id = job_ptr->step_id.job_id;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2640,6 +2638,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 	/* Don't pack "unlinked" job. */
 	if (dump_job_ptr->job_id == NO_VAL)
 		return 0;
+
+	xassert(dump_job_ptr->job_id == dump_job_ptr->step_id.job_id);
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		job_record_pack_common(dump_job_ptr, true, buffer,
@@ -2674,6 +2674,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 		else
 			pack32(dump_job_ptr->node_cnt_wag, buffer);
 		pack32(dump_job_ptr->cpu_cnt, buffer);
+		pack64(dump_job_ptr->db_index, buffer);
 		pack32(dump_job_ptr->resv_id, buffer);
 		pack32(dump_job_ptr->next_step_id, buffer);
 		pack32(dump_job_ptr->qos_id, buffer);
@@ -3209,6 +3210,7 @@ extern int job_record_unpack(job_record_t **out,
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		job_record_unpack_common(job_ptr, buffer, protocol_version);
+		job_ptr->db_index = job_ptr->step_id.sluid;
 
 		/* validity test as possible */
 		if (job_ptr->job_id == 0) {
@@ -3260,6 +3262,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->total_cpus, buffer);
 		safe_unpack32(&job_ptr->total_nodes, buffer);
 		safe_unpack32(&job_ptr->cpu_cnt, buffer);
+		safe_unpack64(&job_ptr->db_index, buffer);
 		safe_unpack32(&job_ptr->resv_id, buffer);
 		safe_unpack32(&job_ptr->next_step_id, buffer);
 		safe_unpack32(&job_ptr->qos_id, buffer);
@@ -3423,6 +3426,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->total_nodes, buffer);
 		safe_unpack32(&job_ptr->cpu_cnt, buffer);
 		safe_unpack64(&job_ptr->db_index, buffer);
+		job_ptr->step_id.sluid = job_ptr->db_index;
 		safe_unpack32(&job_ptr->resv_id, buffer);
 		safe_unpack32(&job_ptr->next_step_id, buffer);
 		safe_unpack32(&job_ptr->qos_id, buffer);
@@ -3582,6 +3586,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->total_nodes, buffer);
 		safe_unpack32(&job_ptr->cpu_cnt, buffer);
 		safe_unpack64(&job_ptr->db_index, buffer);
+		job_ptr->step_id.sluid = job_ptr->db_index;
 		safe_unpack32(&job_ptr->resv_id, buffer);
 		safe_unpack32(&job_ptr->next_step_id, buffer);
 		safe_unpack32(&job_ptr->qos_id, buffer);
@@ -3738,6 +3743,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->delay_boot, buffer);
 		safe_unpackstr(&job_ptr->failed_node, buffer);
 		safe_unpack32(&job_ptr->job_id, buffer);
+		job_ptr->step_id.job_id = job_ptr->job_id;
 
 		/* validity test as possible */
 		if (job_ptr->job_id == 0) {
@@ -3757,6 +3763,7 @@ extern int job_record_unpack(job_record_t **out,
 		safe_unpack32(&job_ptr->exit_code, buffer);
 		safe_unpack32(&job_ptr->derived_ec, buffer);
 		safe_unpack64(&job_ptr->db_index, buffer);
+		job_ptr->step_id.sluid = job_ptr->db_index;
 		safe_unpack32(&job_ptr->resv_id, buffer);
 		safe_unpack32(&job_ptr->next_step_id, buffer);
 		safe_unpack32(&job_ptr->het_job_id, buffer);
@@ -3924,6 +3931,8 @@ extern int job_record_unpack(job_record_t **out,
 		goto unpack_error;
 	}
 
+	xassert(job_ptr->step_id.job_id == job_ptr->job_id);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -4006,9 +4015,39 @@ extern void update_job_limit_set_tres(uint16_t **limits_pptr, int tres_cnt)
 	}
 }
 
-extern void job_record_set_sluid(job_record_t *job_ptr)
+extern void job_record_set_sluid(job_record_t *job_ptr, bool requeue)
 {
-	job_ptr->db_index = generate_sluid();
+	sluid_t new_sluid = generate_sluid();
+
+	if (job_ptr->step_id.sluid) {
+		char orig[SLUID_STR_BYTES], new[SLUID_STR_BYTES];
+
+		print_sluid(job_ptr->step_id.sluid, orig, sizeof(orig));
+		print_sluid(new_sluid, new, sizeof(new));
+
+		if (requeue)
+			debug("%s: changing from %s to %s due to requeue",
+			      __func__, orig, new);
+		else
+			debug("%s: changing db_index from %s to %s due to resize",
+			      __func__, orig, new);
+	}
+
+	/*
+	 * Only change sluid on a requeue or when not yet set.
+	 *
+	 * If a job is resized - due to explicit user request, or when using
+	 * --no-kill - do not change it as we need to maintain the same sluid
+	 * until all processes terminate.
+	 *
+	 * The db_index does need to change in these cases, as the accounting
+	 * record will need to be split off and we cannot repeat db_index
+	 * values in the table.
+	 */
+	if (!job_ptr->step_id.sluid || requeue)
+		job_ptr->step_id.sluid = new_sluid;
+
+	job_ptr->db_index = new_sluid;
 	job_ptr->db_flags &= ~SLURMDB_JOB_FLAG_START_R;
 }
 

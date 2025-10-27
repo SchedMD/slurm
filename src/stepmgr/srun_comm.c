@@ -94,10 +94,7 @@ extern void srun_allocate_abort(job_record_t *job_ptr)
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			       job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-		msg_arg->job_id = job_ptr->job_id;
-		msg_arg->sluid = job_ptr->db_index;
-		msg_arg->step_id = NO_VAL;
-		msg_arg->step_het_comp = NO_VAL;
+		*msg_arg = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
 				   job_ptr->alloc_node, SRUN_JOB_COMPLETE,
 				   msg_arg, job_ptr->user_id,
@@ -430,10 +427,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		srun_job_complete_msg_t *msg_arg;
 
 		msg_arg = xmalloc(sizeof(*msg_arg));
-		msg_arg->job_id = job_ptr->job_id;
-		msg_arg->sluid = job_ptr->db_index;
-		msg_arg->step_id = NO_VAL;
-		msg_arg->step_het_comp = NO_VAL;
+		*msg_arg = STEP_ID_FROM_JOB_RECORD(job_ptr);
 
 		_srun_agent_launch(NULL, NULL, job_ptr->batch_host,
 				   SRUN_JOB_COMPLETE, msg_arg,
@@ -452,10 +446,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
-		msg_arg->job_id = job_ptr->job_id;
-		msg_arg->sluid = job_ptr->db_index;
-		msg_arg->step_id = NO_VAL;
-		msg_arg->step_het_comp = NO_VAL;
+		*msg_arg = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		_srun_agent_launch(addr, job_ptr->alloc_tls_cert,
 				   job_ptr->alloc_node, SRUN_JOB_COMPLETE,
 				   msg_arg, job_ptr->user_id,

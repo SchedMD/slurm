@@ -3274,6 +3274,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 	xassert(job_pptr);
 
 	job_ptr = xmalloc(sizeof *job_ptr);
+	job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
 	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = xmalloc(sizeof *(job_ptr->details));
 	job_ptr->details->magic = DETAILS_MAGIC;
@@ -3314,6 +3315,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, buf_t *buffer,
 	}
 
 	job_ptr->job_id = step_id.job_id;
+	job_ptr->step_id.job_id = step_id.job_id;
 
 	return SLURM_SUCCESS;
 

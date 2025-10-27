@@ -1515,7 +1515,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		goto unpack_error;
 	}
 
-	if (find_job_record(job_ptr->job_id) || find_sluid(job_ptr->db_index)) {
+	if (find_job_record(job_ptr->job_id) ||
+	    find_sluid(job_ptr->step_id.sluid)) {
 		error("duplicate job state record found for %pJ", job_ptr);
 		goto unpack_error;
 	} else if (_add_job_record(job_ptr, 1)) {
@@ -1745,12 +1746,12 @@ static void _add_job_hash_sluid(job_record_t *job_ptr)
 {
 	int inx;
 
-	if (!job_ptr->db_index) {
+	if (!job_ptr->step_id.sluid) {
 		debug("%s: JobId=%pJ has no SLUID?", __func__, job_ptr);
 		return;
 	}
 
-	inx = JOB_HASH_INX(job_ptr->db_index);
+	inx = JOB_HASH_INX(job_ptr->step_id.sluid);
 	job_ptr->job_next_sluid = job_hash_sluid[inx];
 	job_hash_sluid[inx] = job_ptr;
 }
@@ -1769,7 +1770,7 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 
 	on_job_state_change(job_entry, NO_VAL);
 
-	if ((type == JOB_HASH_SLUID) && !job_entry->db_index) {
+	if ((type == JOB_HASH_SLUID) && !job_entry->step_id.sluid) {
 		debug("%s: JobId=%pJ has no SLUID?", __func__, job_entry);
 		return;
 	}
@@ -1779,7 +1780,8 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 		job_pptr = &job_hash[JOB_HASH_INX(job_entry->job_id)];
 		break;
 	case JOB_HASH_SLUID:
-		job_pptr = &job_hash_sluid[JOB_HASH_INX(job_entry->db_index)];
+		job_pptr =
+			&job_hash_sluid[JOB_HASH_INX(job_entry->step_id.sluid)];
 		break;
 	case JOB_HASH_ARRAY_JOB:
 		job_pptr = &job_array_hash_j[
@@ -1826,7 +1828,7 @@ static void _remove_job_hash(job_record_t *job_entry, job_hash_type_t type)
 		case JOB_HASH_SLUID:
 		{
 			error("%s: Could not find hash entry for SLUID=%"PRIu64,
-			      __func__, job_entry->db_index);
+			      __func__, job_entry->step_id.sluid);
 			break;
 		case JOB_HASH_ARRAY_JOB:
 			error("%s: job array hash error %u", __func__,
@@ -2509,7 +2511,9 @@ extern job_record_t *find_het_job_record(uint32_t job_id,
 					 uint32_t het_job_offset)
 {
 	job_record_t *het_job_leader = find_job_record(job_id);
-	job_record_t search_job_rec = { 0 };
+	job_record_t search_job_rec = {
+		.step_id = SLURM_STEP_ID_INITIALIZER,
+	};
 
 	if (!het_job_leader)
 		return NULL;
@@ -2554,7 +2558,7 @@ extern job_record_t *find_sluid(sluid_t sluid)
 
 	job_ptr = job_hash_sluid[JOB_HASH_INX(sluid)];
 	while (job_ptr) {
-		if (job_ptr->db_index == sluid)
+		if (job_ptr->step_id.sluid == sluid)
 			return job_ptr;
 		job_ptr = job_ptr->job_next_sluid;
 	}
@@ -3432,6 +3436,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_details_t *job_details, *details_new, *save_details;
 	uint32_t save_job_id, save_db_flags = job_ptr->db_flags;
 	uint64_t save_db_index = job_ptr->db_index;
+	slurm_step_id_t save_step_id = job_ptr->step_id;
 	priority_factors_t *save_prio_factors;
 	list_t *save_step_list = NULL;
 	int i;
@@ -3463,6 +3468,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->db_flags = save_db_flags;
 	job_ptr_pend->step_list = save_step_list;
 	job_ptr_pend->db_index = save_db_index;
+	job_ptr_pend->step_id = save_step_id;
 
 	job_ptr_pend->prio_factors = save_prio_factors;
 	slurm_copy_priority_factors(job_ptr_pend->prio_factors,
@@ -11848,12 +11854,15 @@ static int _set_job_id(job_record_t *job_ptr)
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 
+	job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
+
 	if ((new_id = get_next_job_id(false)) != SLURM_ERROR) {
 		job_ptr->job_id = new_id;
+		job_ptr->step_id.job_id = new_id;
 		/* When we get a new job id might as well make sure
 		 * the db_index is set since there is no way it will be
 		 * correct otherwise :). */
-		job_record_set_sluid(job_ptr);
+		job_record_set_sluid(job_ptr, false);
 		return SLURM_SUCCESS;
 	}
 
@@ -15749,11 +15758,10 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	resv_replace_update(job_ptr);
 
 	/*
-	 * Get new sluid now that we are basically a new job.
+	 * Get new db_index/sluid now that we are basically a new job.
 	 */
-	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
-	job_record_set_sluid(job_ptr);
-	_add_job_hash_sluid(job_ptr);
+	xassert(job_ptr->step_id.sluid);
+	job_record_set_sluid(job_ptr, false);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_state_unset_flag(job_ptr, JOB_RESIZING);
@@ -16770,7 +16778,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
 	_remove_job_hash(job_ptr, JOB_HASH_SLUID);
-	job_record_set_sluid(job_ptr);
+	job_record_set_sluid(job_ptr, true);
 	_add_job_hash_sluid(job_ptr);
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 

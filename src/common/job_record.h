@@ -51,7 +51,7 @@ extern list_t *purge_files_list; /* list of job ids to purge files of */
 #define STEP_ID_FROM_JOB_RECORD(job_ptr) \
 	(slurm_step_id_t) \
 	{ \
-		.job_id = job_ptr->job_id, .sluid = job_ptr->db_index, \
+		.job_id = job_ptr->job_id, .sluid = job_ptr->step_id.sluid, \
 		.step_id = NO_VAL, .step_het_comp = NO_VAL, \
 	}
 
@@ -250,8 +250,21 @@ typedef struct {
  */
 typedef struct job_record job_record_t;
 struct job_record {
-	uint32_t magic;			/* magic cookie for data integrity */
-					/* DO NOT ALPHABETIZE */
+	/*
+	 * DO NOT REORDER THE STEP_ID.
+	 * Having it at the start of the struct allows job_ptr to be cast
+	 * as slurm_step_id_t. This is (ab)used in the logging code to make
+	 * %pI and %pJ interchangeable.
+	 */
+	slurm_step_id_t step_id;
+	/*
+	 * The magic value would usually be at the start of the struct, but
+	 * in this specific struct it has to come second.
+	 */
+	uint32_t magic;
+
+	/* "Normal" structure definition starts here: */
+
 	char    *account;		/* account number to charge */
 	char    *admin_comment;		/* administrator's arbitrary comment */
 	char	*alias_list;		/* node name to address aliases */
@@ -791,7 +804,7 @@ extern void update_job_limit_set_tres(uint16_t **tres_limits, int tres_cnt);
 /*
  * Set a new sluid on the job_ptr
  */
-extern void job_record_set_sluid(job_record_t *job_ptr);
+extern void job_record_set_sluid(job_record_t *job_ptr, bool requeue);
 
 /*
  * Allocate and initialize multicore data block
