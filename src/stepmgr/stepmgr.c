@@ -3446,10 +3446,13 @@ extern int step_create(job_record_t *job_ptr,
 	step_ptr->start_time = time(NULL);
 	step_ptr->state      = JOB_RUNNING;
 
-	memcpy(&step_ptr->step_id, &step_specs->step_id,
-	       sizeof(step_ptr->step_id));
-
-	step_ptr->step_id.sluid = job_ptr->db_index;
+	/*
+	 * Do not use STEP_ID_FROM_JOB_PTR here.
+	 * The step_specs layout is already set up in the exact
+	 * way required for HetStep launches.
+	 */
+	step_ptr->step_id = step_specs->step_id;
+	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
 
 	if (step_specs->array_task_id != NO_VAL)
 		step_ptr->step_id.job_id = job_ptr->job_id;
@@ -4858,11 +4861,13 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	/* Needed for not considering it in _mark_busy_nodes */
 	step_ptr->flags |= SSF_EXT_LAUNCHER;
 
-	/* Set the step id */
-	memcpy(&step_ptr->step_id, &step_specs->step_id,
-	       sizeof(step_ptr->step_id));
-
-	step_ptr->step_id.sluid = job_ptr->db_index;
+	/*
+	 * Do not use STEP_ID_FROM_JOB_PTR here.
+	 * The step_specs layout is already set up in the exact
+	 * way required for HetStep launches.
+	 */
+	step_ptr->step_id = step_specs->step_id;
+	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
 
 	if (step_specs->array_task_id != NO_VAL)
 		step_ptr->step_id.job_id = job_ptr->job_id;
