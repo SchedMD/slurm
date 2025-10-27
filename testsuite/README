@@ -73,7 +73,6 @@ test1.12   Test srun --overlap
 test1.14   Test exclusive resource allocation for a step (--exclusive option).
 test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
-test1.27   Verify the appropriate job environment variables are set.
 test1.28   Verify that user environment variables are propagated to the job.
 test1.29   Verify that user user limits are propagated to the job.
 test1.30   Test of increasing job sizes.
