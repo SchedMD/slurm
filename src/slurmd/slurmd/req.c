@@ -2240,7 +2240,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	 * been revoked and exit as needed. */
 	if (cred_revoked(req->cred)) {
 		info("%pI already killed, do not launch batch job",
-		     &req->step_id.job_id);
+		     &req->step_id);
 		rc = SLURM_SUCCESS;     /* job already ran */
 		goto done;
 	}

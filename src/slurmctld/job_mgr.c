@@ -6311,7 +6311,7 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (!(job_ptr = find_job_record(step_id->job_id))) {
-		info("%s: invalid %pI", __func__, &step_id);
+		info("%s: invalid %pI", __func__, step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 

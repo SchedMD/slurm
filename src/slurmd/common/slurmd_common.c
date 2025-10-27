@@ -161,7 +161,7 @@ extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc)
 		return SLURM_ERROR;
 	}
 
-	debug("%pI: sent epilog complete msg: rc = %d", &step_id, rc);
+	debug("%pI: sent epilog complete msg: rc = %d", step_id, rc);
 
 	return SLURM_SUCCESS;
 }
