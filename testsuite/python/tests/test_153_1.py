@@ -9,8 +9,8 @@ import pytest
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    # Dev 50538: Metrics added in 25.11
-    atf.require_version((25, 11))
+    # Dev 50538: MetricsType added in 25.11
+    atf.require_version((25, 11), component="bin/scontrol")
 
     # Ensure exactly 3 nodes exist
     atf.require_nodes(3)
