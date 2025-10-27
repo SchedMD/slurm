@@ -11850,8 +11850,11 @@ static int _set_job_id(job_record_t *job_ptr)
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 
+	job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
+
 	if ((new_id = get_next_job_id(false)) != SLURM_ERROR) {
 		job_ptr->job_id = new_id;
+		job_ptr->step_id.job_id = new_id;
 		/* When we get a new job id might as well make sure
 		 * the db_index is set since there is no way it will be
 		 * correct otherwise :). */
