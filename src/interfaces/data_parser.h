@@ -392,6 +392,8 @@ typedef enum {
 	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* DEPRECATED v43: was removed field node_info_t->select_nodeinfo  */
 	DATA_PARSER_UPDATE_NODE_MSG, /* update_node_msg_t */
 	DATA_PARSER_UPDATE_NODE_MSG_PTR, /* update_node_msg_t* */
+	DATA_PARSER_OPENAPI_CREATE_NODE_REQ, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_CREATE_NODE_REQ_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_LICENSES_RESP, /* openapi_resp_license_info_msg_t */
 	DATA_PARSER_OPENAPI_LICENSES_RESP_PTR, /* openapi_resp_license_info_msg_t* */
 	DATA_PARSER_LICENSES, /* license_info_msg_t */

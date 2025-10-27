@@ -58,6 +58,7 @@ extern int op_handler_alloc_job(openapi_ctxt_t *ctxt);
 extern int op_handler_job(openapi_ctxt_t *ctxt);
 extern int op_handler_jobs(openapi_ctxt_t *ctxt);
 extern int op_handler_job_states(openapi_ctxt_t *ctxt);
+extern int op_handler_create_node(openapi_ctxt_t *ctxt);
 extern int op_handler_nodes(openapi_ctxt_t *ctxt);
 extern int op_handler_node(openapi_ctxt_t *ctxt);
 extern int op_handler_partitions(openapi_ctxt_t *ctxt);
