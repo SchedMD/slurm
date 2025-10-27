@@ -1515,7 +1515,8 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		goto unpack_error;
 	}
 
-	if (find_job_record(job_ptr->job_id) || find_sluid(job_ptr->db_index)) {
+	if (find_job_record(job_ptr->job_id) ||
+	    find_sluid(job_ptr->step_id.sluid)) {
 		error("duplicate job state record found for %pJ", job_ptr);
 		goto unpack_error;
 	} else if (_add_job_record(job_ptr, 1)) {
