@@ -3432,6 +3432,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_details_t *job_details, *details_new, *save_details;
 	uint32_t save_job_id, save_db_flags = job_ptr->db_flags;
 	uint64_t save_db_index = job_ptr->db_index;
+	slurm_step_id_t save_step_id = job_ptr->step_id;
 	priority_factors_t *save_prio_factors;
 	list_t *save_step_list = NULL;
 	int i;
@@ -3463,6 +3464,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->db_flags = save_db_flags;
 	job_ptr_pend->step_list = save_step_list;
 	job_ptr_pend->db_index = save_db_index;
+	job_ptr_pend->step_id = save_step_id;
 
 	job_ptr_pend->prio_factors = save_prio_factors;
 	slurm_copy_priority_factors(job_ptr_pend->prio_factors,
