@@ -11194,19 +11194,26 @@ static void _parse_gres_conf_values(char *gres_str, char *node_name)
 			s_p_handle_uint32(&gsc->cpu_cnt, key, val);
 		else if (!xstrncasecmp(key, "flags", strlen("flags")))
 			s_p_handle_uint32(&gsc->config_flags, key, val);
-		else if (!xstrncasecmp(key, "cpus", strlen("cpus")))
+		else if (!xstrncasecmp(key, "cpus", strlen("cpus"))) {
+			xfree(gsc->cpus);
 			gsc->cpus = xstrdup(val);
-		else if (!xstrncasecmp(key, "file", strlen("file")))
+		} else if (!xstrncasecmp(key, "file", strlen("file"))) {
+			xfree(gsc->file);
 			gsc->file = xstrdup(val);
-		else if (!xstrncasecmp(key, "links", strlen("links")))
+		} else if (!xstrncasecmp(key, "links", strlen("links"))) {
+			xfree(gsc->links);
 			gsc->links = xstrdup(val);
-		else if (!xstrncasecmp(key, "name", strlen("name")))
+		} else if (!xstrncasecmp(key, "name", strlen("name"))) {
+			xfree(gsc->name);
 			gsc->name = xstrdup(val);
-		else if (!xstrncasecmp(key, "type", strlen("type_name")))
+		} else if (!xstrncasecmp(key, "type", strlen("type_name"))) {
+			xfree(gsc->type_name);
 			gsc->type_name = xstrdup(val);
-		else if (!xstrncasecmp(key, "unique_id", strlen("unique_id")))
+		} else if (!xstrncasecmp(key, "unique_id",
+					 strlen("unique_id"))) {
+			xfree(gsc->unique_id);
 			gsc->unique_id = xstrdup(val);
-		else if (!xstrncasecmp(key, "plugin_id", strlen("plugin_id")))
+		} else if (!xstrncasecmp(key, "plugin_id", strlen("plugin_id")))
 			s_p_handle_uint32(&gsc->plugin_id, key, val);
 		else
 			error("invalid key: %s", key);
