@@ -2344,7 +2344,7 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 		args->job_ptr = find_job_record(filter->step_id.job_id +
 						filter->het_job_offset);
 	else /* not array task or het component */
-		args->job_ptr = find_job_record(filter->step_id.job_id);
+		args->job_ptr = find_job(&filter->step_id);
 
 	if (!args->job_ptr) {
 		if (!args->null_callback) {
@@ -2568,8 +2568,14 @@ extern job_record_t *find_sluid(sluid_t sluid)
 
 extern job_record_t *find_job(const slurm_step_id_t *step_id)
 {
-	if (step_id->sluid && (step_id->sluid != NO_VAL))
-		return find_sluid(step_id->sluid);
+	if (step_id->sluid) {
+		job_record_t *job_ptr = find_sluid(step_id->sluid);
+		if (!job_ptr && (job_ptr = find_job_record(step_id->job_id)))
+			error("%s: could not find %pI by SLUID but could by job_id",
+			      __func__, step_id);
+		return job_ptr;
+	}
+
 	return find_job_record(step_id->job_id);
 }
 
@@ -2714,7 +2720,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	int error_code = SLURM_SUCCESS;
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
+	job_ptr = find_job(&job_step_kill_msg->step_id);
 
 	if (!job_ptr) {
 		info("%s: invalid %pI", __func__, &job_step_kill_msg->step_id);
@@ -6316,7 +6322,7 @@ extern int job_complete(slurm_step_id_t *step_id, uid_t uid, bool requeue,
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
-	if (!(job_ptr = find_job_record(step_id->job_id))) {
+	if (!(job_ptr = find_job(step_id))) {
 		info("%s: invalid %pI", __func__, step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
@@ -9799,7 +9805,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 			     submit_uid);
 			return ESLURM_INVALID_JOB_ID;
 		}
-		dup_job_ptr = find_job_record(job_desc_msg->step_id.job_id);
+		dup_job_ptr = find_job(&job_desc_msg->step_id);
 		if (dup_job_ptr) {
 			info("attempt to reuse active %pJ", dup_job_ptr);
 			return ESLURM_DUPLICATE_JOB_ID;
@@ -10355,10 +10361,7 @@ extern buf_t *pack_one_job(slurm_step_id_t *step_id, uint16_t show_flags,
 	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
 			       accounting_enforce, NULL, true);
 
-	if (step_id->sluid)
-		job_ptr = find_sluid(step_id->sluid);
-	else
-		job_ptr = find_job_record(step_id->job_id);
+	job_ptr = find_job(step_id);
 
 	if (!(valid_operator = validate_operator_user_rec(&user_rec)))
 		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
@@ -15377,8 +15380,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 		job_desc->alloc_node = hostname;
 	}
 
-	job_ptr = find_job_record(job_desc->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = find_job(&job_desc->step_id))) {
 		info("%s: %pI does not exist", __func__, &job_desc->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 	} else {
@@ -15841,10 +15843,7 @@ extern void validate_jobs_on_node(slurm_msg_t *slurm_msg)
 			continue;
 		}
 
-		if (reg_msg->step_id[i].sluid)
-			job_ptr = find_sluid(reg_msg->step_id[i].sluid);
-		else
-			job_ptr = find_job_record(reg_msg->step_id[i].job_id);
+		job_ptr = find_job(&reg_msg->step_id[i]);
 
 		if (job_ptr == NULL) {
 			error("Orphan %pI %ps reported on node %s",
@@ -16107,10 +16106,7 @@ static void _abort_job_on_node(slurm_step_id_t *step_id, job_record_t *job_ptr,
 					       agent_info->protocol_version);
 	} else {
 		kill_req = xmalloc(sizeof(*kill_req));
-		kill_req->step_id.job_id = step_id->job_id;
-		kill_req->step_id.sluid = step_id->sluid;
-		kill_req->step_id.step_id = NO_VAL;
-		kill_req->step_id.step_het_comp = NO_VAL;
+		kill_req->step_id = *step_id;
 		kill_req->time = time(NULL);
 		/* kill_req->start_time = 0;  Default value */
 	}
@@ -16273,13 +16269,12 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr)
  * OUT job_pptr - set to pointer to job record
  * NOTE: See job_alloc_info_ptr() if job pointer is known
  */
-extern int job_alloc_info(uint32_t uid, uint32_t job_id,
+extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
 			  job_record_t **job_pptr)
 {
 	job_record_t *job_ptr;
 
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL)
+	if (!(job_ptr = find_job(step_id)))
 		return ESLURM_INVALID_JOB_ID;
 	if (job_pptr)
 		*job_pptr = job_ptr;
@@ -17094,7 +17089,7 @@ extern int job_node_ready(slurm_step_id_t *step_id, int *ready)
 	xassert(ready);
 
 	*ready = 0;
-	if (!(job_ptr = find_job_record(step_id->job_id)))
+	if (!(job_ptr = find_job(step_id)))
 		return ESLURM_INVALID_JOB_ID;
 
 	/*
@@ -17531,8 +17526,7 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
 	/* find the job */
-	job_ptr = find_job_record(sus_ptr->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = find_job(&sus_ptr->step_id))) {
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	}
@@ -17985,16 +17979,16 @@ static int _foreach_hetjob_requeue(void *x, void *arg)
 }
 
 /*
- * _job_requeue - Requeue a running or pending batch job, if the specified
- *		  job records is a hetjob leader, perform the operation on all
- *		  components of the hetjob
+ * job_requeue_internal - Requeue a running or pending batch job.
+ * 	If the specified job record is a hetjob leader, perform the operation
+ *	on all components of the hetjob
  * IN uid - user id of user issuing the RPC
  * IN job_ptr - job to be requeued
  * IN preempt - true if job being preempted
  * RET 0 on success, otherwise ESLURM error code
  */
-static int _job_requeue(uid_t uid, job_record_t *job_ptr, bool preempt,
-			uint32_t flags)
+extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
+				uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -18024,28 +18018,20 @@ static int _job_requeue(uid_t uid, job_record_t *job_ptr, bool preempt,
  * job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
- * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-		       bool preempt, uint32_t flags)
+extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
+				bool preempt, uint32_t flags)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = ESLURM_INVALID_JOB_ID;
 	job_record_t *job_ptr = NULL;
 
 	/* find the job */
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		rc = ESLURM_INVALID_JOB_ID;
-	} else {
+	if ((job_ptr = find_job(step_id))) {
 		/* _job_requeue already handles het jobs */
-		rc = _job_requeue(uid, job_ptr, preempt, flags);
-	}
-
-	if (msg) {
-		slurm_send_rc_msg(msg, rc);
+		rc = job_requeue_internal(uid, job_ptr, preempt, flags);
 	}
 
 	return rc;
@@ -18097,14 +18083,15 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		     ((job_ptr->array_task_id != NO_VAL) &&
 		      (job_ptr->array_job_id  != job_id)))) {
 			/* This is a regular job or single task of job array */
-			rc = _job_requeue(uid, job_ptr, preempt, flags);
+			rc = job_requeue_internal(uid, job_ptr, preempt, flags);
 			goto reply;
 		}
 
 		if (job_ptr && job_ptr->array_recs) {
 			/* This is a job array */
 			job_ptr_done = job_ptr;
-			rc2 = _job_requeue(uid, job_ptr, preempt, flags);
+			rc2 = job_requeue_internal(uid, job_ptr, preempt,
+						   flags);
 			_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 		}
 
@@ -18117,7 +18104,8 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 		while (job_ptr) {
 			if ((job_ptr->array_job_id == job_id) &&
 			    (job_ptr != job_ptr_done)) {
-				rc2 = _job_requeue(uid, job_ptr, preempt,flags);
+				rc2 = job_requeue_internal(uid, job_ptr,
+							   preempt, flags);
 				_resp_array_add(&resp_array, job_ptr, rc2,
 						NULL);
 			}
@@ -18143,7 +18131,7 @@ extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			continue;
 		}
 
-		rc2 = _job_requeue(uid, job_ptr, preempt, flags);
+		rc2 = job_requeue_internal(uid, job_ptr, preempt, flags);
 		_resp_array_add(&resp_array, job_ptr, rc2, NULL);
 	}
 
@@ -18432,8 +18420,7 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	job_record_t *job_ptr;
 	xassert(timeout_msg);
 
-	job_ptr = find_job_record(time_req_msg->step_id.job_id);
-	if (!job_ptr)
+	if (!(job_ptr = find_job(&time_req_msg->step_id)))
 		return ESLURM_INVALID_JOB_ID;
 
 	memset(timeout_msg, 0, sizeof(srun_timeout_msg_t));

@@ -2793,9 +2793,9 @@ static int _step_dealloc(gres_state_t *gres_state_step, list_t *job_gres_list,
 	    (gres_ss->gres_bit_alloc[node_offset] == NULL))
 		return SLURM_SUCCESS;
 	if (gres_js->gres_bit_alloc[node_offset] == NULL) {
-		error("gres/%s: %s job %u gres_bit_alloc[%d] is NULL",
-		      gres_state_job->gres_name, __func__,
-		      step_id->job_id, node_offset);
+		error("gres/%s: %s %pI gres_bit_alloc[%d] is NULL",
+		      gres_state_job->gres_name, __func__, &step_id,
+		      node_offset);
 		return SLURM_SUCCESS;
 	}
 	len_j = bit_size(gres_js->gres_bit_alloc[node_offset]);
@@ -3145,9 +3145,8 @@ static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 			mem_avail -= job_resrcs_ptr->memory_used[node_offset];
 
 		if (mem_avail < mem_req) {
-			log_flag(STEPS, "%s: JobId=%u: Usable memory on node: %"PRIu64" is less than requested %"PRIu64", skipping the node",
-				 __func__, step_id->job_id, mem_avail,
-				 mem_req);
+			log_flag(STEPS, "%s: %pI: Usable memory on node: %"PRIu64" is less than requested %"PRIu64", skipping the node",
+				 __func__, &step_id, mem_avail, mem_req);
 			cpu_cnt = 0;
 			*err_code = ESLURM_INVALID_TASK_MEMORY;
 		}

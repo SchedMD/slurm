@@ -584,8 +584,8 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
 		if (namespace_g_stepd_delete(&step->step_id))
-			error("namespace_g_stepd_delete(%u): %m",
-			      step->step_id.job_id);
+			error("namespace_g_stepd_delete(%pI): %m",
+			      &step->step_id);
 	}
 
 	auth_setuid_unlock();
@@ -958,11 +958,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 	uint16_t proto;
 	slurm_addr_t *cli = NULL;
 	slurm_msg_t *msg = NULL;
-	slurm_step_id_t step_id = {
-		.job_id = 0,
-		.step_id = NO_VAL,
-		.step_het_comp = NO_VAL,
-	};
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	/* receive conf from slurmd */
 	if (!(conf = _read_slurmd_conf_lite(sock)))
@@ -1071,7 +1067,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 		launch_tasks_request_msg_t *task_msg;
 		task_msg = (launch_tasks_request_msg_t *)msg->data;
 
-		memcpy(&step_id, &task_msg->step_id, sizeof(step_id));
+		step_id = task_msg->step_id;
 
 		if (task_msg->job_ptr &&
 		    !xstrcmp(conf->node_name, task_msg->job_ptr->batch_host)) {

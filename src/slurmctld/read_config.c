@@ -1033,15 +1033,14 @@ static int _foreach_requeue_job_node_failed(void *x, void *arg)
 	    het_job_leader->part_ptr) {
 		info("Requeue het job leader %pJ due to node failure on %pJ",
 		     het_job_leader, job_ptr);
-		if ((rc = job_requeue(0, het_job_leader->job_id, NULL, false,
-				      0)))
+		if ((rc = job_requeue_internal(0, het_job_leader, false, 0)))
 			error("Unable to requeue %pJ: %s",
 			      het_job_leader, slurm_strerror(rc));
 	} else if (job_ptr->batch_flag && job_ptr->details &&
 		   job_ptr->details->requeue && job_ptr->part_ptr) {
 		info("Requeue job %pJ due to node failure",
 		     job_ptr);
-		if ((rc = job_requeue(0, job_ptr->job_id, NULL, false, 0)))
+		if ((rc = job_requeue_internal(0, job_ptr, false, 0)))
 			error("Unable to requeue %pJ: %s",
 			      job_ptr, slurm_strerror(rc));
 	}

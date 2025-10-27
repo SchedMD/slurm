@@ -46,9 +46,6 @@
  */
 extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc);
 
-/* Connect to the slurmd and determine if the requested job has running steps */
-extern bool is_job_running(uint32_t job_id, bool ignore_extern);
-
 /*
  *  Wait for up to max_time seconds.
  *  If max_time == 0, send SIGKILL to tasks repeatedly
@@ -60,12 +57,12 @@ extern bool pause_for_job_completion(slurm_step_id_t *step_id, int max_time,
 
 /*
  * terminate_all_steps - signals the container of all steps of a job
- * jobid IN - id of job to signal
+ * step_id IN - id of job to signal
  * batch IN - if true signal batch script, otherwise skip it
  * RET count of signaled job steps (plus batch script, if applicable)
  */
-extern int terminate_all_steps(uint32_t jobid, bool batch, bool extern_step);
-
+extern int terminate_all_steps(slurm_step_id_t *step_id, bool batch,
+			       bool extern_step);
 
 extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred);
 

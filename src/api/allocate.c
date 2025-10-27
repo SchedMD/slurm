@@ -171,7 +171,6 @@ resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	resource_allocation_response_msg_t *resp = NULL;
-	uint32_t job_id;
 	job_desc_msg_t *req;
 	listen_t *listen = NULL;
 	int errnum = SLURM_SUCCESS;
@@ -244,6 +243,7 @@ resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 			/* yes, allocation has been granted */
 			errno = SLURM_SUCCESS;
 		} else if (!req->immediate) {
+			slurm_step_id_t step_id = resp->step_id;
 			if (resp->error_code != SLURM_SUCCESS)
 				info("%s", slurm_strerror(resp->error_code));
 			/* no, we need to wait for a response */
@@ -252,19 +252,19 @@ resource_allocation_response_msg_t *slurm_allocate_resources_blocking(
 			print_multi_line_string(resp->job_submit_user_msg,
 						-1, LOG_LEVEL_INFO);
 
-			job_id = resp->step_id.job_id;
 			slurm_free_resource_allocation_response_msg(resp);
+			resp = NULL;
+
 			if (pending_callback != NULL)
-				pending_callback(&resp->step_id);
+				pending_callback(&step_id);
 			_wait_for_allocation_response(
-				&resp->step_id, listen,
-				RESPONSE_RESOURCE_ALLOCATION, timeout,
-				(void **) &resp);
+				&step_id, listen, RESPONSE_RESOURCE_ALLOCATION,
+				timeout, (void **) &resp);
 			/* If NULL, we didn't get the allocation in
 			   the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
-				slurm_complete_job(job_id, -1);
+				slurm_complete_job(&step_id, -1);
 			}
 			if ((resp == NULL) && (errno == ESLURM_ALREADY_DONE))
 				already_done = true;
@@ -579,7 +579,7 @@ list_t *slurm_allocate_het_job_blocking(
 			 * the time desired, so just free the job id */
 			if ((resp == NULL) && (errno != ESLURM_ALREADY_DONE)) {
 				errnum = errno;
-				slurm_complete_job(step_id.job_id, -1);
+				slurm_complete_job(&step_id, -1);
 			}
 			if ((resp == NULL) && (errno == ESLURM_ALREADY_DONE))
 				already_done = true;

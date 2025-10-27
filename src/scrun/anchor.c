@@ -400,7 +400,7 @@ static void _finish_job(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 	}
 
-	rc = slurm_complete_job(step_id.job_id, rc);
+	rc = slurm_complete_job(&step_id, rc);
 	if ((rc == SLURM_ERROR) && errno)
 		rc = errno;
 

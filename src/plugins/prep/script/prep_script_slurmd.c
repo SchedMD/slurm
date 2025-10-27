@@ -45,6 +45,7 @@
 #include "src/common/macros.h"
 #include "src/interfaces/prep.h"
 #include "src/common/run_command.h"
+#include "src/common/sluid.h"
 #include "src/common/spank.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
@@ -167,7 +168,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 	    (!is_epilog && spank_has_prolog())) {
 		if (!env)
 			env = _build_env(job_env, cred, is_epilog);
-		rc = _run_spank_job_script(name, env, job_env->jobid,
+		rc = _run_spank_job_script(name, env, job_env->step_id.job_id,
 					   is_epilog);
 	}
 
@@ -178,7 +179,7 @@ extern int slurmd_script(job_env_t *job_env, slurm_cred_t *cred,
 		char *cmd_argv[2] = {0};
 		list_t *path_list = NULL;
 		run_command_args_t run_command_args = {
-			.job_id = job_env->jobid,
+			.job_id = job_env->step_id.job_id,
 			.script_argv = cmd_argv,
 			.script_type = name,
 			.status = &status,
@@ -248,11 +249,17 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	setenvf(&env, "SLURMD_NODENAME", "%s", conf->node_name);
 	setenvf(&env, "SLURM_CONF", "%s", conf->conffile);
 	setenvf(&env, "SLURM_CLUSTER_NAME", "%s", slurm_conf.cluster_name);
-	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->jobid);
+	setenvf(&env, "SLURM_JOB_ID", "%u", job_env->step_id.job_id);
 	setenvf(&env, "SLURM_JOB_UID", "%u", job_env->uid);
 	setenvf(&env, "SLURM_JOB_GID", "%u", job_env->gid);
 	setenvf(&env, "SLURM_JOB_WORK_DIR", "%s", job_env->work_dir);
-	setenvf(&env, "SLURM_JOBID", "%u", job_env->jobid);
+	setenvf(&env, "SLURM_JOBID", "%u", job_env->step_id.job_id);
+
+	if (job_env->step_id.sluid) {
+		char sluid[15] = "";
+		print_sluid(job_env->step_id.sluid, sluid, sizeof(sluid));
+		setenvf(&env, "SLURM_SLUID", "%s", sluid);
+	}
 
 	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL)) {
 		/* Continue support for old hetjob terminology. */

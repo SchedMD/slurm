@@ -539,7 +539,7 @@ int main(int argc, char **argv)
 		      &my_job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
-		if (slurm_complete_job(my_job_id.job_id, status) != 0) {
+		if (slurm_complete_job(&my_job_id, status) != 0) {
 			error("Unable to clean up allocation for %pI: %m",
 			      &my_job_id);
 		}
@@ -603,7 +603,7 @@ relinquish:
 		slurm_mutex_unlock(&allocation_state_lock);
 
 		info("Relinquishing job allocation %u", my_job_id.job_id);
-		if ((slurm_complete_job(my_job_id.job_id, status) != 0) &&
+		if ((slurm_complete_job(&my_job_id, status) != 0) &&
 		    (errno != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %pI: %m",
 			      &my_job_id);
@@ -893,7 +893,7 @@ static void _signal_while_allocating(int signo)
 {
 	allocation_interrupted = true;
 	if (my_job_id.job_id != NO_VAL) {
-		slurm_complete_job(my_job_id.job_id, 128 + signo);
+		slurm_complete_job(&my_job_id, 128 + signo);
 	}
 }
 

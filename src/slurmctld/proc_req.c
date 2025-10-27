@@ -148,8 +148,8 @@ static void         _create_het_job_id_set(hostset_t *jobid_hostset,
 static void         _fill_ctld_conf(slurm_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int _is_prolog_finished(slurm_step_id_t *step_id);
-static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
-					 uint32_t job_id);
+static int _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
+				slurm_step_id_t *step_id);
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
 
@@ -720,9 +720,9 @@ static void _kill_job_on_msg_fail(uint32_t job_id)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
-	slurm_step_id_t step_id = {
-		.job_id = job_id,
-	};
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
+	step_id.job_id = job_id;
 
 	error("Job allocate response msg send failure, killing JobId=%u",
 	      job_id);
@@ -1834,7 +1834,7 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	log_flag(ROUTE, "%s: node_name = %s, %pI",
 		 __func__, epilog_msg->node_name, &epilog_msg->step_id);
 
-	if (!(job_ptr = find_job_record(epilog_msg->step_id.job_id)))
+	if (!(job_ptr = find_job(&epilog_msg->step_id)))
 		error("%s: could not find %pI", __func__, &epilog_msg->step_id);
 	else if (job_epilog_complete(job_ptr, epilog_msg->node_name,
 				     epilog_msg->return_code))
@@ -1915,7 +1915,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 
 	_throttle_start(&active_rpc_cnt);
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(comp_msg->step_id.job_id);
+	job_ptr = find_job(&comp_msg->step_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
 	/* Mark job and/or job step complete */
@@ -2020,7 +2020,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		lock_slurmctld(job_write_lock);
 	}
 
-	job_ptr = find_job_record(comp_msg->step_id.job_id);
+	job_ptr = find_job(&comp_msg->step_id);
 
 	if (job_ptr && job_ptr->batch_host && comp_msg->node_name &&
 	    xstrcmp(job_ptr->batch_host, comp_msg->node_name)) {
@@ -2074,8 +2074,8 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			return;
 		} else if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
-			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
-			      __func__, job_ptr, step_ptr->step_id.step_id);
+			error("%s: %pJ Didn't find batch step, found %ps. This should never happen.",
+			      __func__, job_ptr, &step_ptr->step_id);
 		} else {
 			step_ptr->exit_code = comp_msg->job_rc;
 			jobacctinfo_destroy(step_ptr->jobacct);
@@ -2181,7 +2181,7 @@ static void _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	       &job_id_msg->step_id);
 	lock_slurmctld(job_read_lock);
 
-	if ((job_ptr = find_job_record(job_id_msg->step_id.job_id))) {
+	if ((job_ptr = find_job(&job_id_msg->step_id))) {
 		if (!validate_operator(msg->auth_uid) &&
 		    (job_ptr->user_id != msg->auth_uid)) {
 			rc = ESLURM_USER_ID_MISSING;
@@ -2449,8 +2449,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
 							  &err_msg,
 							  msg->protocol_version);
 			} else { /* existing job test */
-				job_ptr = find_job_record(job_desc_msg->step_id
-								  .job_id);
+				job_ptr = find_job(&job_desc_msg->step_id);
 				error_code = job_start_data(job_ptr, &resp);
 			}
 			unlock_slurmctld(job_write_lock);
@@ -2797,8 +2796,8 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
-				    &job_ptr);
+	error_code =
+		job_alloc_info(msg->auth_uid, &job_info_msg->step_id, &job_ptr);
 	END_TIMER2(__func__);
 
 	/* return result */
@@ -2860,8 +2859,8 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	START_TIMER;
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, job_info_msg->step_id.job_id,
-				    &job_ptr);
+	error_code =
+		job_alloc_info(msg->auth_uid, &job_info_msg->step_id, &job_ptr);
 	END_TIMER2(__func__);
 
 	/* return result */
@@ -2940,17 +2939,16 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	lock_slurmctld(job_read_lock);
 	if (job_info_msg->het_job_offset == NO_VAL) {
 		error_code = job_alloc_info(msg->auth_uid,
-					    job_info_msg->step_id.job_id,
-					    &job_ptr);
+					    &job_info_msg->step_id, &job_ptr);
 	} else {
 		job_ptr = find_het_job_record(job_info_msg->step_id.job_id,
 					      job_info_msg->het_job_offset);
 		if (job_ptr) {
 			job_info_msg->step_id =
 				STEP_ID_FROM_JOB_RECORD(job_ptr);
-			error_code = job_alloc_info(
-				msg->auth_uid, job_info_msg->step_id.job_id,
-				&job_ptr);
+			error_code = job_alloc_info(msg->auth_uid,
+						    &job_info_msg->step_id,
+						    &job_ptr);
 		} else {
 			error_code = ESLURM_INVALID_JOB_ID;
 		}
@@ -3427,7 +3425,7 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	error_code = job_alloc_info(msg->auth_uid, req->job_id, &job_ptr);
+	error_code = job_alloc_info(msg->auth_uid, req, &job_ptr);
 	END_TIMER2(__func__);
 	/* return result */
 	if (error_code || (job_ptr == NULL)) {
@@ -3477,8 +3475,7 @@ static void _slurm_rpc_step_update(slurm_msg_t *msg)
 	START_TIMER;
 	lock_slurmctld(job_write_lock);
 
-	job_ptr = find_job_record(req->step_id.job_id);
-	if (job_ptr == NULL) {
+	if (!(job_ptr = find_job(&req->step_id))) {
 		error("%s: invalid %pI", __func__, &req->step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto fail;
@@ -3982,7 +3979,7 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
-				  job_desc_msg->step_id.job_id)) {
+				  &job_desc_msg->step_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4513,7 +4510,7 @@ static int _is_prolog_finished(slurm_step_id_t *step_id)
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	lock_slurmctld(job_read_lock);
-	if ((job_ptr = find_job_record(step_id->job_id)))
+	if ((job_ptr = find_job(step_id)))
 		is_running = (job_ptr->state_reason != WAIT_PROLOG);
 	unlock_slurmctld(job_read_lock);
 	return is_running;
@@ -4576,15 +4573,14 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		sus_ptr->step_id.job_id = strtol(sus_ptr->job_id_str, NULL, 10);
 
 	lock_slurmctld(job_write_lock);
-	job_ptr = find_job_record(sus_ptr->step_id.job_id);
+	job_ptr = find_job(&sus_ptr->step_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin, otherwise try to suspend the job. If it's
 	 * pending an error should be returned. If it's running then it should
 	 * suspend the job. */
-	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, sus_ptr->step_id.job_id)) {
+	if (!job_ptr && !_route_msg_to_origin(msg, NULL, &sus_ptr->step_id)) {
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
@@ -4771,7 +4767,7 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, req_ptr->job_id_str,
-				  req_ptr->step_id.job_id)) {
+				  &req_ptr->step_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4782,11 +4778,15 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 	if (req_ptr->job_id_str) {
 		error_code = job_requeue2(msg->auth_uid, req_ptr, msg, false);
 	} else {
-		error_code = job_requeue(msg->auth_uid, req_ptr->step_id.job_id,
-					 msg, false, req_ptr->flags);
+		error_code =
+			job_requeue_external(msg->auth_uid, &req_ptr->step_id,
+					     false, req_ptr->flags);
 	}
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
+
+	if (!req_ptr->job_id_str)
+		slurm_send_rc_msg(msg, error_code);
 
 	if (error_code) {
 		if (!req_ptr->job_id_str)
@@ -4951,13 +4951,13 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
-	job_ptr = find_job_record(notify_msg->step_id.job_id);
+	job_ptr = find_job(&notify_msg->step_id);
 
 	/* If job is found on the cluster, it could be pending, the origin
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin. */
 	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, notify_msg->step_id.job_id)) {
+	    !_route_msg_to_origin(msg, NULL, &notify_msg->step_id)) {
 		unlock_slurmctld(job_read_lock);
 		return;
 	}
@@ -6216,7 +6216,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
  * RET returns SLURM_SUCCESS if the msg was routed.
  */
 static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
-				uint32_t src_job_id)
+				slurm_step_id_t *step_id)
 {
 	xassert(msg);
 
@@ -6229,7 +6229,7 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 		if (src_job_id_str)
 			job_id = strtol(src_job_id_str, NULL, 10);
 		else
-			job_id = src_job_id;
+			job_id = step_id->job_id;
 		origin_id = fed_mgr_get_cluster_id(job_id);
 
 		if (origin_id && (origin_id != fed_mgr_cluster_rec->fed.id)) {

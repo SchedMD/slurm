@@ -1853,13 +1853,16 @@ _handle_fed_job_remove_active_sib_bit(fed_job_update_info_t *job_update_info)
 
 static void _handle_fed_job_requeue(fed_job_update_info_t *job_update_info)
 {
-	int rc;
+	int rc = ESLURM_INVALID_JOB_ID;
+	job_record_t *job_ptr = NULL;
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(job_write_lock);
-	if ((rc = job_requeue(job_update_info->uid, job_update_info->job_id,
-			      NULL, false, job_update_info->flags)))
+	job_ptr = find_job_record(job_update_info->job_id);
+	if (!job_ptr ||
+	    (rc = job_requeue_internal(job_update_info->uid, job_ptr, false,
+				       job_update_info->flags)))
 		error("failed to requeue fed JobId=%u - rc:%d",
 		      job_update_info->job_id, rc);
 	unlock_slurmctld(job_write_lock);
@@ -2397,8 +2400,7 @@ static void _handle_dep_update_origin_msgs(void)
 
 	lock_slurmctld(job_write_lock);
 	while ((dep_update_msg = list_pop(origin_dep_update_list))) {
-		if (!(job_ptr = find_job_record(dep_update_msg->step_id
-							.job_id))) {
+		if (!(job_ptr = find_job(&dep_update_msg->step_id))) {
 			/*
 			 * Maybe the job was cancelled and purged before
 			 * the dependency update got here or was able

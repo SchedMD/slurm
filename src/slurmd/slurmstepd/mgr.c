@@ -353,10 +353,10 @@ extern void batch_finish(int rc)
 		if (step->step_id.step_id != SLURM_BATCH_SCRIPT)
 			info("%ps abort completed", &step->step_id);
 		else
-			info("job %u abort completed", step->step_id.job_id);
+			info("%pI abort completed", &step->step_id);
 	} else if (step->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
-			step->step_id.job_id, rc, step_complete.step_rc);
+		verbose("%pI completed with slurm_rc = %d, job_rc = %d",
+			&step->step_id, rc, step_complete.step_rc);
 
 		/* if launch failed, make sure to tag step as failed too */
 		if (!step_complete.step_rc && rc)
@@ -921,7 +921,7 @@ static int _spank_user_child(void *ignored)
 	int rc = 0;
 
 	if (namespace_g_join(&step->step_id, step->uid, false)) {
-		error("namespace_g_join(%u): %m", step->step_id.job_id);
+		error("namespace_g_join(%pI): %m", &step->step_id);
 		_exit(-1);
 	}
 
@@ -950,7 +950,7 @@ static int _spank_task_post_fork_child(void *arg)
 	int id = *(int *) arg;
 
 	if (namespace_g_join(&step->step_id, step->uid, false)) {
-		error("namespace_g_join(%u): %m", step->step_id.job_id);
+		error("namespace_g_join(%pI): %m", &step->step_id);
 		_exit(-1);
 	}
 
@@ -965,7 +965,7 @@ static int _spank_task_exit_child(void *arg)
 	int id = *(int *) arg;
 
 	if (namespace_g_join(&step->step_id, step->uid, false)) {
-		error("namespace_g_join(%u): %m", step->step_id.job_id);
+		error("namespace_g_join(%pI): %m", &step->step_id);
 		_exit(-1);
 	}
 
@@ -1220,8 +1220,7 @@ static int _run_prolog_epilog(bool is_epilog)
 	gres_g_prep_set_env(&job_env.gres_job_env, tmp_list, 0);
 	FREE_NULL_LIST(tmp_list);
 
-	job_env.jobid = step->step_id.job_id;
-	job_env.step_id = SLURM_EXTERN_CONT;
+	job_env.step_id = step->step_id;
 	job_env.node_list = step->node_list;
 	job_env.het_job_id = step->het_job_id;
 	job_env.partition = step->msg->cred->arg->job_partition;
@@ -1248,8 +1247,9 @@ static int _run_prolog_epilog(bool is_epilog)
 			term_sig = WTERMSIG(rc);
 		else if (WIFEXITED(rc))
 			exit_status = WEXITSTATUS(rc);
-		error("[job %u] %s failed status=%d:%d", step->step_id.job_id,
-		      is_epilog ? "epilog" : "prolog", exit_status, term_sig);
+		error("%pI %s failed status=%d:%d",
+		      &step->step_id, is_epilog ? "epilog" : "prolog",
+		      exit_status, term_sig);
 		rc = is_epilog ? ESLURMD_EPILOG_FAILED : ESLURMD_PROLOG_FAILED;
 	}
 
@@ -1317,10 +1317,10 @@ static int _spawn_job_container(void)
 	struct rusage rusage;
 	jobacct_id_t jobacct_id;
 	int rc = SLURM_SUCCESS;
-	uint32_t jobid = step->step_id.job_id;
 
 	if (namespace_g_stepd_create(step)) {
-		error("%s: namespace_g_stepd_create(%u): %m", __func__, jobid);
+		error("%s: namespace_g_stepd_create(%pI): %m",
+		      __func__, &step->step_id);
 		return SLURM_ERROR;
 	}
 
@@ -1540,7 +1540,7 @@ fail1:
 
 	stepd_send_step_complete_msgs();
 
-	switch_g_extern_step_fini(jobid);
+	switch_g_extern_step_fini(step->step_id.job_id);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
 		/* Force all other steps to end before epilog starts */
@@ -1848,8 +1848,7 @@ static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
 	if (!(step->flags & LAUNCH_NO_ALLOC)) {
 		/* Add job's pid to job container, if a normal job */
 		if (namespace_g_join(&step->step_id, step->uid, false)) {
-			error("namespace_g_join failed: %u",
-			      step->step_id.job_id);
+			error("namespace_g_join(%pI) failed", &step->step_id);
 			exit(1);
 		}
 
@@ -3115,8 +3114,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
-	debug("[job %u] attempting to run %s [%s]",
-	      step->step_id.job_id, name, path);
+	debug("%pI attempting to run %s [%s]", &step->step_id, name, path);
 
 	if ((ei = _fork_child_with_wait_info(0)) == NULL) {
 		error ("executing %s: fork: %m", name);
@@ -3136,7 +3134,7 @@ static int _run_script_as_user(const char *name, const char *path, int max_wait,
 		if ((step->step_id.job_id != 0) &&
 		    !(step->flags & LAUNCH_NO_ALLOC) &&
 		    (namespace_g_join(&step->step_id, step->uid, false)))
-			error("namespace_g_join(%u): %m", step->step_id.job_id);
+			error("namespace_g_join(%pI): %m", &step->step_id);
 
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;

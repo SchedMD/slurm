@@ -857,11 +857,11 @@ extern void delete_job_desc_files(uint32_t job_id);
 /*
  * job_alloc_info - get details about an existing job allocation
  * IN uid - job issuing the code
- * IN job_id - ID of job for which info is requested
+ * IN step_id - ID of job for which info is requested
  * OUT job_pptr - set to pointer to job record
  * NOTE: See job_alloc_info_ptr() if job pointer is known
  */
-extern int job_alloc_info(uint32_t uid, uint32_t job_id,
+extern int job_alloc_info(uint32_t uid, slurm_step_id_t *step_id,
 			  job_record_t **job_pptr);
 
 /*
@@ -1116,13 +1116,12 @@ extern int job_req_node_filter(job_record_t *job_ptr, bitstr_t *avail_bitmap,
  * job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
- * IN msg - slurm_msg to send response back on
  * IN preempt - true if job being preempted
  * IN flags - JobExitRequeue | Hold | JobFailed | etc.
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
-		       bool preempt, uint32_t flags);
+extern int job_requeue_external(uid_t uid, slurm_step_id_t *step_id,
+				bool preempt, uint32_t flags);
 
 /*
  * job_requeue2 - Requeue a running or pending batch job
@@ -1134,6 +1133,9 @@ extern int job_requeue(uid_t uid, uint32_t job_id, slurm_msg_t *msg,
  */
 extern int job_requeue2(uid_t uid, requeue_msg_t *req_ptr, slurm_msg_t *msg,
 			bool preempt);
+
+extern int job_requeue_internal(uid_t uid, job_record_t *job_ptr, bool preempt,
+				uint32_t flags);
 
 /*
  * job_set_top - Move the specified job to the top of the queue (at least

@@ -2300,7 +2300,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 	}
 
 	launch_msg_ptr = (batch_job_launch_msg_t *)agent_arg_ptr->msg_args;
-	job_ptr = find_job_record(launch_msg_ptr->step_id.job_id);
+	job_ptr = find_job(&launch_msg_ptr->step_id);
 	if ((job_ptr == NULL) ||
 	    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) {
 		info("agent(batch_launch): removed pending request for cancelled %pI",
@@ -2395,11 +2395,10 @@ static int _signal_defer(queued_request_t *queued_req_ptr)
 
 	agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 	signal_msg_ptr = (signal_tasks_msg_t *)agent_arg_ptr->msg_args;
-	job_ptr = find_job_record(signal_msg_ptr->step_id.job_id);
 
-	if (job_ptr == NULL) {
-		info("agent(signal_task): removed pending request for cancelled JobId=%u",
-		     signal_msg_ptr->step_id.job_id);
+	if (!(job_ptr = find_job(&signal_msg_ptr->step_id))) {
+		info("agent(signal_task): removed pending request for cancelled %pI",
+		     &signal_msg_ptr->step_id);
 		return -1;	/* job cancelled while waiting */
 	}
 

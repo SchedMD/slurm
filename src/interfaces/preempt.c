@@ -497,8 +497,7 @@ extern uint32_t slurm_job_preempt(job_record_t *job_ptr,
 		}
 	} else if (mode == PREEMPT_MODE_REQUEUE) {
 		/* job_requeue already handles het jobs */
-		rc = job_requeue(0, job_ptr->job_id,
-				 NULL, true, 0);
+		rc = job_requeue_internal(0, job_ptr, true, 0);
 		if (rc == SLURM_SUCCESS) {
 			info("preempted %pJ has been requeued to reclaim resources for %pJ",
 			     job_ptr, preemptor_ptr);
