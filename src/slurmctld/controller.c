@@ -246,8 +246,6 @@ static char *	slurm_conf_filename;
 static int reconfig_rc = SLURM_SUCCESS;
 static bool reconfig = false;
 static list_t *reconfig_reqs = NULL;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
 static bool under_systemd = false;
 static bool reply_async = false;
 
@@ -580,9 +578,10 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 		struct timespec ts = timespec_now();
 		ts.tv_sec += 2;
 
-		slurm_mutex_lock(&shutdown_mutex);
-		slurm_cond_timedwait(&shutdown_cond, &shutdown_mutex, &ts);
-		slurm_mutex_unlock(&shutdown_mutex);
+		slurm_mutex_lock(&slurmctld_config.shutdown_lock);
+		slurm_cond_timedwait(&slurmctld_config.shutdown_cond,
+				     &slurmctld_config.shutdown_lock, &ts);
+		slurm_mutex_unlock(&slurmctld_config.shutdown_lock);
 
 		if (slurmctld_config.shutdown_time)
 			fatal("slurmdbd must be up at slurmctld start time");
@@ -1346,12 +1345,15 @@ static void  _init_config(void)
 	slurm_mutex_init(&slurmctld_config.acct_update_lock);
 	slurm_mutex_init(&slurmctld_config.thread_count_lock);
 	slurm_mutex_init(&slurmctld_config.backup_finish_lock);
+	slurm_mutex_init(&slurmctld_config.shutdown_lock);
 	slurm_mutex_lock(&slurmctld_config.acct_update_lock);
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 	slurm_mutex_lock(&slurmctld_config.backup_finish_lock);
+	slurm_mutex_lock(&slurmctld_config.shutdown_lock);
 
 	slurm_cond_init(&slurmctld_config.acct_update_cond, NULL);
 	slurm_cond_init(&slurmctld_config.backup_finish_cond, NULL);
+	slurm_cond_init(&slurmctld_config.shutdown_cond, NULL);
 	slurm_cond_init(&slurmctld_config.thread_count_cond, NULL);
 	slurmctld_config.boot_time      = time(NULL);
 	slurmctld_config.resume_backup  = false;
@@ -1362,6 +1364,7 @@ static void  _init_config(void)
 	slurmctld_config.submissions_disabled = false;
 	track_script_init();
 	slurmctld_config.thread_id_main    = (pthread_t) 0;
+	slurm_mutex_unlock(&slurmctld_config.shutdown_lock);
 	slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 	slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
@@ -2562,7 +2565,7 @@ static void *_slurmctld_background(void *no_data)
 	while (1) {
 		bool call_schedule = false, full_queue = false;
 
-		slurm_mutex_lock(&shutdown_mutex);
+		slurm_mutex_lock(&slurmctld_config.shutdown_lock);
 		if (!slurmctld_config.shutdown_time) {
 			struct timespec ts = {0, 0};
 
@@ -2570,10 +2573,11 @@ static void *_slurmctld_background(void *no_data)
 			listeners_unquiesce();
 
 			ts.tv_sec = time(NULL) + 1;
-			slurm_cond_timedwait(&shutdown_cond, &shutdown_mutex,
+			slurm_cond_timedwait(&slurmctld_config.shutdown_cond,
+					     &slurmctld_config.shutdown_lock,
 					     &ts);
 		}
-		slurm_mutex_unlock(&shutdown_mutex);
+		slurm_mutex_unlock(&slurmctld_config.shutdown_lock);
 
 		now = time(NULL);
 		START_TIMER;
@@ -3187,7 +3191,7 @@ int slurmctld_shutdown(void)
 {
 	sched_debug("slurmctld terminating");
 	slurmctld_config.shutdown_time = time(NULL);
-	slurm_cond_signal(&shutdown_cond);
+	slurm_cond_signal(&slurmctld_config.shutdown_cond);
 	pthread_kill(pthread_self(), SIGUSR1);
 	return SLURM_SUCCESS;
 }
