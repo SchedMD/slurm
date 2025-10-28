@@ -242,3 +242,4 @@
 * Add support for database password rotation in slurmdbd through new StoragePassScript option.
 * Add support for database password rotation for jobcomp/mysql through new JobCompPassScript option.
 * Add interactive_step_set_cpu_freq parameter to the list of LaunchParameters in slurm.conf. This allows for the default cpu freq governor to be set on interactive steps.
+* Removed testsuite from the release branch. The testsuite is available on master, and can be used against different releases now.
