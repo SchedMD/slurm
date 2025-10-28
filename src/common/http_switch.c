@@ -34,8 +34,6 @@
 \*****************************************************************************/
 
 #include "src/common/http_switch.h"
-#include "src/common/http.h"
-#include "src/common/http_con.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_util.h"
 
