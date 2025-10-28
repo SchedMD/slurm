@@ -1092,7 +1092,6 @@ int main(int argc, char **argv)
 		_slurmctld_background(NULL);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
-		rpc_queue_shutdown();
 		agent_fini();
 
 		/* termination of controller */
@@ -2526,6 +2525,13 @@ static void _flush_rpcs(void)
 	}
 
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+	/*
+	 * Now that no incoming RPCs are still getting processed by
+	 * _service_connection, wait for any still enqueued RPCs to be
+	 * processed, if queues are enabled.
+	 */
+	rpc_queue_shutdown();
 }
 
 /*
