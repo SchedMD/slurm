@@ -75,7 +75,6 @@ test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
 test1.32   Test of srun signal forwarding
 test1.33   Test of srun application exit code reporting
-test1.36   Test parallel launch of srun (e.g. "srun srun hostname")
 test1.37   Test of srun --ntasks-per-node option.
 test1.38   Test srun handling of SIGINT to get task status or kill the job
 	   (--quit-on-interrupt option).
