@@ -77,6 +77,35 @@ extern conmgr_con_flags_t http_switch_con_flags(void)
 	return flags;
 }
 
+/* Tell the client TLS is required and close their connection immediately */
+static int _reply_tls_required(conmgr_fd_ref_t *con)
+{
+	int rc = EINVAL;
+	slurm_msg_t msg = SLURM_MSG_INITIALIZER;
+
+	error("%s: [%s] rejecting non-TLS RPC connection",
+	      __func__, conmgr_con_get_name(con));
+
+	/* Fake request message to construct a reply */
+	msg.conmgr_con = conmgr_con_link(con);
+	msg.protocol_version = SLURM_PROTOCOL_VERSION;
+
+	/* Notify client that TLS is required */
+	rc = slurm_send_rc_msg(&msg, ESLURM_TLS_REQUIRED);
+	conmgr_con_queue_close(con);
+
+	/*
+	 * Switch back to raw connection mode after sending reply to avoid any
+	 * callbacks to on_msg()
+	 */
+	if (!rc)
+		rc = conmgr_fd_change_mode(conmgr_fd_get_ref(con),
+					   CON_TYPE_RAW);
+
+	slurm_free_msg_members(&msg);
+	return rc;
+}
+
 static int _on_match_rpc(conmgr_fd_t *con)
 {
 	int rc = EINVAL;
@@ -94,7 +123,7 @@ static int _on_match_rpc(conmgr_fd_t *con)
 
 	/* TLS is required for RPCs */
 	if (!conmgr_fd_is_tls(ref))
-		rc = ESLURM_TLS_REQUIRED;
+		rc = _reply_tls_required(ref);
 
 	conmgr_fd_free_ref(&ref);
 	return rc;
