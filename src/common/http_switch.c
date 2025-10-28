@@ -35,6 +35,8 @@
 
 #include "src/common/http_switch.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_util.h"
 
 #include "src/conmgr/conmgr.h"
@@ -75,6 +77,29 @@ extern conmgr_con_flags_t http_switch_con_flags(void)
 	return flags;
 }
 
+static int _on_match_rpc(conmgr_fd_t *con)
+{
+	int rc = EINVAL;
+	conmgr_fd_ref_t *ref = NULL;
+
+	/* Always switch to RPC mode */
+	if ((rc = conmgr_fd_change_mode(con, CON_TYPE_RPC)))
+		return rc;
+
+	/* TLS is not enabled -> Skip TLS checks */
+	if (!conn_tls_enabled())
+		return rc;
+
+	ref = conmgr_fd_new_ref(con);
+
+	/* TLS is required for RPCs */
+	if (!conmgr_fd_is_tls(ref))
+		rc = ESLURM_TLS_REQUIRED;
+
+	conmgr_fd_free_ref(&ref);
+	return rc;
+}
+
 extern int http_switch_on_data(conmgr_fd_t *con,
 			       int (*on_http)(conmgr_fd_t *con))
 {
@@ -85,17 +110,7 @@ extern int http_switch_on_data(conmgr_fd_t *con,
 	if (status == RPC_FINGERPRINT_NOT_FOUND) {
 		rc = on_http(con);
 	} else if (status == RPC_FINGERPRINT_FOUND) {
-		if (conn_tls_enabled()) {
-			conmgr_fd_ref_t *ref = conmgr_fd_new_ref(con);
-
-			if (!conmgr_fd_is_tls(ref))
-				rc = ESLURM_TLS_REQUIRED;
-
-			conmgr_fd_free_ref(&ref);
-		}
-
-		if (!rc)
-			rc = conmgr_fd_change_mode(con, CON_TYPE_RPC);
+		rc = _on_match_rpc(con);
 	} else {
 		xassert(status == RPC_FINGERPRINT_NEED_MORE_BYTES);
 		rc = SLURM_SUCCESS;
