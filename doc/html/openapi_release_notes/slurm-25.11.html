@@ -1,3 +1,2393 @@
 <h2 id="25110">Slurm 25.11.0<a class="slurm_link" href="#25110"></a></h2>
 <h3>data_parser/v0.0.44</h3>
 <h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job"].properties.flags.items.enum[7] = "JOB_ALTERED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job"].properties.script.description = "Job batch script contents; only the first component in a HetJob is populated or honored";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job"].properties.state.properties.current.items.enum[27] = "EXPEDITING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.flags.items.enum[34] = "SPREAD_SEGMENTS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.flags.items.enum[35] = "CONSOLIDATE_SEGMENTS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.flags.items.enum[36] = "EXPEDITED_REQUEUE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.script.description = "Job batch script contents; only the first component in a HetJob is populated or honored";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.step_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.step_id.$ref = "#/components/schemas/v0.0.44_slurm_step_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_desc_msg"].properties.step_id.description = "Job step ID";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.flags.items.enum[34] = "SPREAD_SEGMENTS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.flags.items.enum[35] = "CONSOLIDATE_SEGMENTS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.flags.items.enum[36] = "EXPEDITED_REQUEUE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.job_state.items.enum[27] = "EXPEDITING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.step_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.step_id.$ref = "#/components/schemas/v0.0.44_slurm_step_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.step_id.description = "Job step ID";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.submit_line = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.submit_line.description = "Job submit line (e.g. 'sbatch -N3 job.sh job_arg'";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_info"].properties.submit_line.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.administrator = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.administrator.description = "Arbitrary comment made by administrator";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.administrator.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.job = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.job.description = "Arbitrary comment made by user";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.job.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.system = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.system.description = "Arbitrary comment from slurmctld";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.properties.system.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.comment.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.derived_exit_code = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.derived_exit_code.$ref = "#/components/schemas/v0.0.44_process_exit_code_verbose";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.derived_exit_code.description = "Highest exit code of all job steps (return code returned by process)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.extra = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.extra.description = "Arbitrary string used for node filtering if extra constraints are enabled";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.extra.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.tres = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.tres.properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.tres.properties.allocated = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.tres.properties.allocated.$ref = "#/components/schemas/v0.0.44_tres_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.tres.properties.allocated.description = "Trackable resources allocated to the job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.tres.type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.wckey = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.wckey.description = "Workload characterization key";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].properties.wckey.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_modify"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_job_res"].properties.select_type.items.enum[9] = "LINEAR";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_kill_jobs_msg"].properties.job_state.items.enum[27] = "EXPEDITING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_license"].properties.Nodes = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_license"].properties.Nodes.description = "HRes nodes";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_license"].properties.Nodes.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[8] = "RESERVED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[9] = "UNDRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[10] = "CLOUD";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[11] = "RESUME";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[12] = "DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[13] = "COMPLETING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[14] = "NOT_RESPONDING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[15] = "POWERED_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[16] = "FAIL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[17] = "POWERING_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[18] = "MAINTENANCE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[19] = "REBOOT_REQUESTED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[20] = "REBOOT_CANCELED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[21] = "POWERING_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[22] = "DYNAMIC_FUTURE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[23] = "REBOOT_ISSUED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[24] = "PLANNED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[25] = "INVALID_REG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[26] = "POWER_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[27] = "POWER_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[28] = "POWER_DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[8] = "EXTERNAL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[9] = "RESERVED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[10] = "UNDRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[11] = "CLOUD";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[12] = "RESUME";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[13] = "DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[14] = "COMPLETING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[15] = "NOT_RESPONDING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[16] = "POWERED_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[17] = "FAIL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[18] = "POWERING_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[19] = "MAINTENANCE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[20] = "REBOOT_REQUESTED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[21] = "REBOOT_CANCELED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[22] = "POWERING_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[23] = "DYNAMIC_FUTURE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[24] = "REBOOT_ISSUED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[25] = "PLANNED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[26] = "INVALID_REG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[27] = "POWER_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[28] = "POWER_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[29] = "POWER_DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[30] = "DYNAMIC_NORM";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.next_state_after_reboot.items.enum[31] = "BLOCKED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[8] = "RESERVED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[9] = "UNDRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[10] = "CLOUD";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[11] = "RESUME";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[12] = "DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[13] = "COMPLETING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[14] = "NOT_RESPONDING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[15] = "POWERED_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[16] = "FAIL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[17] = "POWERING_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[18] = "MAINTENANCE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[19] = "REBOOT_REQUESTED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[20] = "REBOOT_CANCELED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[21] = "POWERING_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[22] = "DYNAMIC_FUTURE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[23] = "REBOOT_ISSUED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[24] = "PLANNED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[25] = "INVALID_REG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[26] = "POWER_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[27] = "POWER_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[28] = "POWER_DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[8] = "EXTERNAL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[9] = "RESERVED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[10] = "UNDRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[11] = "CLOUD";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[12] = "RESUME";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[13] = "DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[14] = "COMPLETING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[15] = "NOT_RESPONDING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[16] = "POWERED_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[17] = "FAIL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[18] = "POWERING_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[19] = "MAINTENANCE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[20] = "REBOOT_REQUESTED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[21] = "REBOOT_CANCELED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[22] = "POWERING_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[23] = "DYNAMIC_FUTURE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[24] = "REBOOT_ISSUED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[25] = "PLANNED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[26] = "INVALID_REG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[27] = "POWER_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[28] = "POWER_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[29] = "POWER_DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[30] = "DYNAMIC_NORM";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_node"].properties.state.items.enum[31] = "BLOCKED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_accounts_add_cond_resp"].required[0] = "association_condition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.errors = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.errors.$ref = "#/components/schemas/v0.0.44_openapi_errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.errors.description = "Query errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.meta = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.meta.$ref = "#/components/schemas/v0.0.44_openapi_meta";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.meta.description = "Slurm meta values";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.node_conf = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.node_conf.description = "Node configuration line";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.node_conf.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.warnings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.warnings.$ref = "#/components/schemas/v0.0.44_openapi_warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].properties.warnings.description = "Query warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].required[0] = "node_conf";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_create_node_req"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.errors = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.errors.$ref = "#/components/schemas/v0.0.44_openapi_errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.errors.description = "Query errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.job_id_list = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.job_id_list.$ref = "#/components/schemas/v0.0.44_selected_step_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.job_id_list.description = "CSV list of Job IDs to modify";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.job_rec = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.job_rec.$ref = "#/components/schemas/v0.0.44_job_modify";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.job_rec.description = "Job modify message";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.meta = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.meta.$ref = "#/components/schemas/v0.0.44_openapi_meta";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.meta.description = "Slurm meta values";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.warnings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.warnings.$ref = "#/components/schemas/v0.0.44_openapi_warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].properties.warnings.description = "Query warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_req"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.errors = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.errors.$ref = "#/components/schemas/v0.0.44_openapi_errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.errors.description = "Query errors";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.meta = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.meta.$ref = "#/components/schemas/v0.0.44_openapi_meta";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.meta.description = "Slurm meta values";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.results = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.results.$ref = "#/components/schemas/v0.0.44_string_list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.results.description = "Job modify results";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.warnings = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.warnings.$ref = "#/components/schemas/v0.0.44_openapi_warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].properties.warnings.description = "Query warnings";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].required[0] = "results";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_openapi_job_modify_resp"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_partition_info"].properties.select_type.items.enum[9] = "LINEAR";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[9] = "STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[10] = "NO_STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[11] = "PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[12] = "NO_PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[13] = "OVERLAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[14] = "SPEC_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[15] = "TIME_FLOAT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[16] = "REPLACE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[17] = "ALL_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[18] = "PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[19] = "WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[20] = "NO_WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[21] = "WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[22] = "NO_WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[23] = "FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[24] = "NO_FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[25] = "DURATION_PLUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[26] = "DURATION_MINUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[27] = "NO_HOLD_JOBS_AFTER_END";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[28] = "NO_PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[29] = "MAGNETIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[30] = "SKIP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[31] = "HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[32] = "NO_HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[33] = "USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[34] = "NO_USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[9] = "NO_ANY_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[10] = "STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[11] = "NO_STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[12] = "PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[13] = "NO_PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[14] = "OVERLAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[15] = "SPEC_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[16] = "TIME_FLOAT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[17] = "REPLACE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[18] = "ALL_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[19] = "PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[20] = "WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[21] = "NO_WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[22] = "WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[23] = "NO_WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[24] = "FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[25] = "NO_FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[26] = "DURATION_PLUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[27] = "DURATION_MINUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[28] = "NO_HOLD_JOBS_AFTER_END";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[29] = "REPLACE_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[30] = "NO_PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[31] = "MAGNETIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[32] = "NO_MAGNETIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[33] = "SKIP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[34] = "HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[35] = "NO_HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[36] = "USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[37] = "FORCE_START";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[38] = "NO_USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[39] = "REOCCURRING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_desc_msg"].properties.flags.items.enum[40] = "TRES_PER_NODE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[9] = "STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[10] = "NO_STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[11] = "PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[12] = "NO_PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[13] = "OVERLAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[14] = "SPEC_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[15] = "TIME_FLOAT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[16] = "REPLACE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[17] = "ALL_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[18] = "PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[19] = "WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[20] = "NO_WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[21] = "WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[22] = "NO_WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[23] = "FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[24] = "NO_FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[25] = "DURATION_PLUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[26] = "DURATION_MINUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[27] = "NO_HOLD_JOBS_AFTER_END";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[28] = "NO_PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[29] = "MAGNETIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[30] = "SKIP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[31] = "HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[32] = "NO_HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[33] = "USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[34] = "NO_USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[9] = "NO_ANY_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[10] = "STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[11] = "NO_STATIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[12] = "PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[13] = "NO_PART_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[14] = "OVERLAP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[15] = "SPEC_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[16] = "TIME_FLOAT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[17] = "REPLACE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[18] = "ALL_NODES";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[19] = "PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[20] = "WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[21] = "NO_WEEKDAY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[22] = "WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[23] = "NO_WEEKEND";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[24] = "FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[25] = "NO_FLEX";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[26] = "DURATION_PLUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[27] = "DURATION_MINUS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[28] = "NO_HOLD_JOBS_AFTER_END";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[29] = "REPLACE_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[30] = "NO_PURGE_COMP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[31] = "MAGNETIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[32] = "NO_MAGNETIC";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[33] = "SKIP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[34] = "HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[35] = "NO_HOURLY";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[36] = "USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[37] = "FORCE_START";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[38] = "NO_USER_DELETE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[39] = "REOCCURRING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_reservation_info"].properties.flags.items.enum[40] = "TRES_PER_NODE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_selected_step_list"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_selected_step_list"].items = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_selected_step_list"].items.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_selected_step_list"].type = "array";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.job_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.job_id.$ref = "#/components/schemas/v0.0.44_uint32_no_val_struct";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.job_id.description = "Job ID (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.sluid = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.sluid.description = "SLUID (Slurm Lexicographically-sortable Unique ID)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.sluid.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.step_het_component = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.step_het_component.$ref = "#/components/schemas/v0.0.44_uint32_no_val_struct";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.step_het_component.description = "HetJob component (32 bit integer number with flags)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.step_id = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.step_id.description = "Job step ID";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].properties.step_id.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].required = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_slurm_step_id"].type = "object";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_stats_msg"].properties.parts_packed.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_stats_msg"].properties.schedule_cycle_sum.format = "int64";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_step"].properties.state.items.enum[27] = "EXPEDITING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[8] = "RESERVED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[9] = "UNDRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[10] = "CLOUD";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[11] = "RESUME";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[12] = "DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[13] = "COMPLETING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[14] = "NOT_RESPONDING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[15] = "POWERED_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[16] = "FAIL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[17] = "POWERING_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[18] = "MAINTENANCE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[19] = "REBOOT_REQUESTED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[20] = "REBOOT_CANCELED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[21] = "POWERING_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[22] = "DYNAMIC_FUTURE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[23] = "REBOOT_ISSUED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[24] = "PLANNED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[25] = "INVALID_REG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[26] = "POWER_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[27] = "POWER_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[28] = "POWER_DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[8] = "EXTERNAL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[9] = "RESERVED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[10] = "UNDRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[11] = "CLOUD";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[12] = "RESUME";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[13] = "DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[14] = "COMPLETING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[15] = "NOT_RESPONDING";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[16] = "POWERED_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[17] = "FAIL";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[18] = "POWERING_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[19] = "MAINTENANCE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[20] = "REBOOT_REQUESTED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[21] = "REBOOT_CANCELED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[22] = "POWERING_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[23] = "DYNAMIC_FUTURE";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[24] = "REBOOT_ISSUED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[25] = "PLANNED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[26] = "INVALID_REG";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[27] = "POWER_DOWN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[28] = "POWER_UP";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[29] = "POWER_DRAIN";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[30] = "DYNAMIC_NORM";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_update_node_msg"].properties.state.items.enum[31] = "BLOCKED";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user"].properties["default"].properties.qos = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user"].properties["default"].properties.qos.description = "Default QOS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user"].properties["default"].properties.qos.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user"].properties["default"].properties.qos.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user_short"].properties.defaultqos = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user_short"].properties.defaultqos.description = "Default QOS";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user_short"].properties.defaultqos.format = "int32";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.44_user_short"].properties.defaultqos.type = "integer";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.operationId = "slurm_v0044_post_new_node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_create_node_req";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.requestBody.description = "node create request";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["200"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["200"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["200"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["200"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["200"].description = "node create request result";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["default"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["default"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["default"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["default"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.responses["default"].description = "node create request result";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.summary = "create node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.tags = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.44/new/node/"].post.tags[0] = "slurm";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.operationId = "slurmdb_v0044_post_job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].description = "Job ID";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].name = "job_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].required = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0].style = "simple";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.parameters[0]["in"] = "path";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_job_modify";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.requestBody.description = "Job update description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["200"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["200"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["200"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["200"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_job_modify_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["200"].description = "Job update results";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["default"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["default"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["default"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["default"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_job_modify_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.responses["default"].description = "Job update results";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.summary = "Update job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.tags = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/job/{job_id}"].post.tags[0] = "slurmdb";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[9].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[9].description = "Job record has been altered";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[9].name = "job_altered";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[10].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[10].description = "Job exit code (numeric)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[10].name = "exit_code";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[11].description = "Include duplicate job entries";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[11].name = "show_duplicates";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[12].description = "Exclude job step details";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[12].name = "skip_steps";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[13].description = "Do not truncate the time to usage_start and usage_end";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[13].name = "disable_truncate_usage_time";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[14].description = "Include details on all hetjob components";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[14].name = "whole_hetjob";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[15].description = "Only show details on specified hetjob components";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[15].name = "disable_whole_hetjob";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[16].description = "Tell dbd not to wait for the result";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[16].name = "disable_wait_for_result";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[17].description = "Use usage_time as the submit_time of the job";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[17].name = "usage_time_as_submit_time";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[18].description = "Include job script";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[18].name = "show_batch_script";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[19].allowEmptyValue = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[19].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[19].description = "Include job environment";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[19].name = "show_job_environment";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[20].deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[20].description = "Ignored; process JSON manually to control output format";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[20].name = "format";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[21].description = "CSV group list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[21].name = "groups";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[22].description = "CSV job name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[22].name = "job_name";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[23].description = "CSV partition name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[23].name = "partition";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[24].description = "CSV QOS name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[24].name = "qos";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[25].description = "CSV reason list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[25].name = "reason";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[26].description = "CSV reservation name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[26].name = "reservation";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[27].description = "CSV reservation ID list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[27].name = "reservation_id";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[28].description = "CSV state list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[28].name = "state";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[29].description = "CSV step id list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[29].name = "step";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[30].description = "Usage end (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[30].name = "end_time";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[31].description = "Usage start (UNIX timestamp)";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[31].name = "start_time";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[32].description = "Ranged node string where jobs ran";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[32].name = "node";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[33].description = "CSV user name list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[33].name = "users";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].allowEmptyValue = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].allowReserved = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].description = "CSV WCKey list";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].explode = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].name = "wckey";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].required = false;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].schema.type = "string";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34].style = "form";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].get.parameters[34]["in"] = "query";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.operationId = "slurmdb_v0044_post_jobs";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.requestBody = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.requestBody.content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.requestBody.content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.requestBody.content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.requestBody.content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_job_modify_req";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.requestBody.description = "Job update description";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["200"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["200"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["200"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["200"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["200"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_job_modify_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["200"].description = "Job update results";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["default"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["default"].content = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["default"].content["application/json"] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["default"].content["application/json"].schema = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["default"].content["application/json"].schema.$ref = "#/components/schemas/v0.0.44_openapi_job_modify_resp";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.responses["default"].description = "Job update results";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.summary = "Update jobs";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.tags = [];</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurmdb/v0.0.44/jobs/"].post.tags[0] = "slurmdb";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.tags[2].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.tags[2].description = "utilities available directly through slurmrestd";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[2].name = "util";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].name = "openapi";</td>
+</tr>
+</table>
+<h3>data_parser/v0.0.43</h3>
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_job_desc_msg"].properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.parts_packed.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.43_stats_msg"].properties.schedule_cycle_sum.format = "int64";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.tags[2].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.tags[2].description = "utilities available directly through slurmrestd";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[2].name = "util";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].name = "openapi";</td>
+</tr>
+</table>
+<h3>data_parser/v0.0.42</h3>
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.components.schemas["v0.0.42_memory_binding_type"].items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.42_memory_binding_type"].items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.components.schemas["v0.0.42_stats_msg"].properties.parts_packed.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.components.schemas["v0.0.42_stats_msg"].properties.schedule_cycle_sum.format = "int64";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.tags[2].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.tags[2].description = "utilities available directly through slurmrestd";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[2].name = "util";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].name = "openapi";</td>
+</tr>
+</table>
+<h3>data_parser/v0.0.41</h3>
+<h4>Modified Fields</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/diag/"].get.responses["200"].content["application/json"].schema.properties.statistics.properties.parts_packed.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/diag/"].get.responses["200"].content["application/json"].schema.properties.statistics.properties.schedule_cycle_sum.format = "int64";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/diag/"].get.responses["default"].content["application/json"].schema.properties.statistics.properties.parts_packed.deprecated = true;</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/diag/"].get.responses["default"].content["application/json"].schema.properties.statistics.properties.schedule_cycle_sum.format = "int64";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/allocate"].post.requestBody.content["application/json"].schema.properties.hetjob.items.properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/allocate"].post.requestBody.content["application/json"].schema.properties.hetjob.items.properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/allocate"].post.requestBody.content["application/json"].schema.properties.job.properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/allocate"].post.requestBody.content["application/json"].schema.properties.job.properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/submit"].post.requestBody.content["application/json"].schema.properties.job.properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/submit"].post.requestBody.content["application/json"].schema.properties.job.properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/submit"].post.requestBody.content["application/json"].schema.properties.jobs.items.properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/submit"].post.requestBody.content["application/json"].schema.properties.jobs.items.properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/{job_id}"].post.requestBody.content["application/json"].schema.properties.memory_binding_type.items.enum[6] = "SORT";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.paths["/slurm/v0.0.41/job/{job_id}"].post.requestBody.content["application/json"].schema.properties.memory_binding_type.items.enum[6] = "PREFER";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Removed</td>
+	<td class="tdchange">.tags[2].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Replaced</td>
+	<td class="tdchange">.tags[2].description = "utilities available directly through slurmrestd";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[2].name = "util";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3] = {};</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].description = "methods that query for generated OpenAPI specifications";</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">Added</td>
+	<td class="tdchange">.tags[3].name = "openapi";</td>
+</tr>
+</table>
+
+<h4>Deprecation notice</h4>
+The v0.0.41 plugin has now been marked as deprecated.
+
+<h3>data_parser/v0.0.40</h3>
+
+<h4>Removal notice</h4>
+The v0.0.40 plugin has now been removed.
