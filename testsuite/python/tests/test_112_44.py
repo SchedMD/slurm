@@ -26,7 +26,6 @@ wckey2_name = f"{wckey_name}-2"
 qos_name = f"test-qos-{random.randrange(0, 99999999999)}"
 qos2_name = f"{qos_name}-2"
 resv_name = f"test-reservation-{random.randrange(0, 99999999999)}"
-nonexistent_node_name = "nonexistent_node"  # Use fixture nonexistent_node
 req_node_count = 10
 
 
@@ -37,7 +36,6 @@ def setup():
 
     atf.require_accounting(modify=True)
     atf.require_nodes(req_node_count)
-    atf.require_config_parameter("MaxNodeCount", str(req_node_count + 1))
     atf.require_config_parameter("AllowNoDefAcct", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes", source="slurmdbd")
     atf.require_config_parameter("TrackWCKey", "Yes")
@@ -225,21 +223,39 @@ def create_qos(create_coords):
 
 
 @pytest.fixture(scope="function")
-def nonexistent_node(setup):
-    # Make sure this node doesn't exist before and after
+def dynamic_node(setup):
+    """
+    Sets the required MaxNodeCount + cons_tres, and returns a non-existing node.
+    """
+    nonexistent_node_name = "nonexistent_node"
+    config = atf.get_config()
+
+    atf.stop_slurm()
+    atf.require_config_parameter("SelectType", "select/cons_tres")
+    atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
+    atf.require_config_parameter("MaxNodeCount", str(req_node_count + 1))
+    atf.start_slurm()
+
+    atf.run_command(
+        f"scontrol delete node {nonexistent_node_name}",
+        user=atf.properties["slurm-user"],
+        fatal=False,
+        xfail=True,
+    )
+
+    yield nonexistent_node_name
+
     atf.run_command(
         f"scontrol delete node {nonexistent_node_name}",
         user=atf.properties["slurm-user"],
         fatal=False,
     )
 
-    yield
-
-    atf.run_command(
-        f"scontrol delete node {nonexistent_node_name}",
-        user=atf.properties["slurm-user"],
-        fatal=False,
-    )
+    atf.stop_slurm()
+    atf.require_config_parameter("SelectType", config["SelectType"])
+    atf.require_config_parameter("SelectTypeParameters", config["SelectTypeParameters"])
+    atf.require_config_parameter("MaxNodeCount", None)
+    atf.start_slurm()
 
 
 def test_loaded_versions():
@@ -1615,13 +1631,13 @@ def test_reservations(slurm, flags, admin_level):
 
 
 @pytest.mark.parametrize("legal_state", ["CLOUD", "FUTURE", "EXTERNAL"])
-def test_legal_node_creation(slurm, admin_level, legal_state, nonexistent_node):
+def test_legal_node_creation(slurm, admin_level, legal_state, dynamic_node):
     from openapi_client.models.v0044_openapi_create_node_req import (
         V0044OpenapiCreateNodeReq,
     )
 
     request_body = V0044OpenapiCreateNodeReq(
-        node_conf=f"nodename={nonexistent_node_name} State={legal_state}"
+        node_conf=f"nodename={dynamic_node} State={legal_state}"
     )
 
     response = slurm.slurm_v0044_post_new_node(
@@ -1634,7 +1650,7 @@ def test_legal_node_creation(slurm, admin_level, legal_state, nonexistent_node):
     assert response.meta
 
     # Validate the node exists and is in the correct state
-    node_states = atf.get_node_parameter(nonexistent_node_name, "state")
+    node_states = atf.get_node_parameter(dynamic_node, "state")
     assert (
         legal_state in node_states
     ), f"Dynamic node should have {legal_state} in its state only has {node_states}"
@@ -1646,7 +1662,7 @@ def test_legal_node_creation(slurm, admin_level, legal_state, nonexistent_node):
 @pytest.mark.parametrize(
     "illegal_state", ["DOWN", "DRAIN", "FAIL", "FAILING", "UNKNOWN"]
 )
-def test_illegal_node_creation(slurm, admin_level, illegal_state, nonexistent_node):
+def test_illegal_node_creation(slurm, admin_level, illegal_state, dynamic_node):
     from openapi_client.api_response import ApiResponse
     from openapi_client.exceptions import ApiException
     from openapi_client.models.v0044_openapi_create_node_req import (
@@ -1654,7 +1670,7 @@ def test_illegal_node_creation(slurm, admin_level, illegal_state, nonexistent_no
     )
 
     request_body = V0044OpenapiCreateNodeReq(
-        node_conf=f"nodename={nonexistent_node_name} State={illegal_state}"
+        node_conf=f"nodename={dynamic_node} State={illegal_state}"
     )
 
     try:
@@ -1677,7 +1693,7 @@ def test_illegal_node_creation(slurm, admin_level, illegal_state, nonexistent_no
 
     # Validate the node doesn't exist
     atf.run_command(
-        f"scontrol show NodeName={nonexistent_node_name}",
+        f"scontrol show NodeName={dynamic_node}",
         user="slurm",
         xfail=True,
         fatal=True,

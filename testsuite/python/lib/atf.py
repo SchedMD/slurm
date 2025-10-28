@@ -2477,7 +2477,10 @@ def start_slurmrestd():
         )
 
     while not port and attempts < 15:
-        port = get_open_port()
+        if "slurmrestd_port" not in properties or attempts > 0:
+            port = get_open_port()
+        else:
+            port = properties["slurmrestd_port"]
         attempts += 1
         args = [
             "slurmrestd",
@@ -2525,6 +2528,7 @@ def start_slurmrestd():
 
     del os.environ["SLURM_JWT"]
 
+    properties["slurmrestd_port"] = port
     properties["slurmrestd_url"] = f"http://localhost:{port}/"
 
     # Setup auth token
