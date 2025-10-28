@@ -394,33 +394,30 @@ extern void switch_g_stepinfo_pack(dynamic_plugin_data_t *stepinfo,
 		length_position = get_buf_offset(buffer);
 		pack32(0, buffer);
 		start = get_buf_offset(buffer);
-	}
 
-	if (!switch_context_cnt) {
-		return;
-	}
+		if (!switch_context_cnt) {
+			return;
+		}
 
-	if (stepinfo) {
-		data = stepinfo->data;
-		plugin_id = stepinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
+		if (stepinfo) {
+			data = stepinfo->data;
+			plugin_id = stepinfo->plugin_id;
+		} else
+			plugin_id = switch_context_default;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(*(ops[plugin_id].plugin_id), buffer);
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, protocol_version);
-		return;
-	}
 
-	(*(ops[plugin_id].stepinfo_pack))(data, buffer, protocol_version);
+		(*(ops[plugin_id].stepinfo_pack))(
+			data, buffer, protocol_version);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		end = get_buf_offset(buffer);
 		set_buf_offset(buffer, length_position);
 		pack32(end - start, buffer);
 		set_buf_offset(buffer, end);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		return;
 	}
 }
 
@@ -445,23 +442,19 @@ extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **stepinfo,
 
 		if (remaining_buf(buffer) < length)
 			return SLURM_ERROR;
-	} else if (!switch_context_cnt) {
-		return SLURM_SUCCESS;
-	}
 
-	stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
-	*stepinfo = stepinfo_ptr;
+		stepinfo_ptr = xmalloc(sizeof(dynamic_plugin_data_t));
+		*stepinfo = stepinfo_ptr;
 
-	safe_unpack32(&plugin_id, buffer);
-	for (i = 0; i < switch_context_cnt; i++) {
-		if (*(ops[i].plugin_id) == plugin_id) {
-			stepinfo_ptr->plugin_id = i;
-			break;
+		safe_unpack32(&plugin_id, buffer);
+		for (i = 0; i < switch_context_cnt; i++) {
+			if (*(ops[i].plugin_id) == plugin_id) {
+				stepinfo_ptr->plugin_id = i;
+				break;
+			}
 		}
-	}
 
-	if (i >= switch_context_cnt) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (i >= switch_context_cnt) {
 			/*
 			 * We were sent a plugin that we don't know how to
 			 * handle so skip it if possible.
@@ -469,14 +462,12 @@ extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **stepinfo,
 			debug("we don't have switch plugin type %u", plugin_id);
 			goto skip_buf;
 		}
-		error("we don't have switch plugin type %u", plugin_id);
-		goto unpack_error;
-	}
 
-	if ((*(ops[stepinfo_ptr->plugin_id].stepinfo_unpack))
-	     ((switch_stepinfo_t **) &stepinfo_ptr->data, buffer,
-	      protocol_version))
-		goto unpack_error;
+		if ((*(ops[stepinfo_ptr->plugin_id].stepinfo_unpack))
+		    ((switch_stepinfo_t **) &stepinfo_ptr->data, buffer,
+		     protocol_version))
+			goto unpack_error;
+	}
 
 	/*
 	 * Free nodeinfo_ptr if it is different from local cluster as it is not
