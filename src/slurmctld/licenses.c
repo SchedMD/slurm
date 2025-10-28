@@ -1307,10 +1307,11 @@ extern void hres_create_select(job_record_t *job_ptr)
 
 	hres_select->leaf =
 		xcalloc(match->hres_rec.leaf_cnt, sizeof(hres_leaf_t));
-	hres_select->avail_hres =
-		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
+	hres_select->avail_hres = xcalloc(match->hres_rec.layers_cnt,
+					  sizeof(*hres_select->avail_hres));
 	hres_select->avail_hres_orig =
-		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
+		xcalloc(match->hres_rec.layers_cnt,
+			sizeof(*hres_select->avail_hres_orig));
 	list_for_each_ro(cluster_license_list, _foreach_hres_create_select,
 			 hres_select);
 
