@@ -1574,6 +1574,19 @@ extern void agent_fini(void)
 	struct timespec ts = {0, 0};
 	int rc = 0;
 
+	/*
+	 * Wait until we know that slurmctld_config.shutdown_time set. This way,
+	 * each helper thread that is checking slurmctld_config.shutdown_time to
+	 * know when to shutdown can immediately end its slurm_cond_timedwait()
+	 * loop rather than waiting for the next loop.
+	 */
+	slurm_mutex_lock(&slurmctld_config.shutdown_lock);
+	while (!slurmctld_config.shutdown_time) {
+		slurm_cond_wait(&slurmctld_config.shutdown_cond,
+				&slurmctld_config.shutdown_lock);
+	}
+	slurm_mutex_unlock(&slurmctld_config.shutdown_lock);
+
 	agent_trigger(999, true, true);
 
 	slurm_mutex_lock(&update_nodes_mutex);
