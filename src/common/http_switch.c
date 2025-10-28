@@ -69,10 +69,8 @@ extern conmgr_con_flags_t http_switch_con_flags(void)
 {
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
-	if (http_switch_tls_enabled())
+	if (http_switch_tls_enabled() || conn_tls_enabled())
 		flags |= CON_FLAG_TLS_FINGERPRINT;
-	else if (conn_tls_enabled())
-		flags |= CON_FLAG_TLS_SERVER;
 
 	return flags;
 }
