@@ -241,7 +241,7 @@ typedef enum {
 	DATA_PARSER_QOS_PREEMPT_MODES, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_* */
 	DATA_PARSER_QOS_CONDITION, /* slurmdb_qos_cond_t */
 	DATA_PARSER_QOS_CONDITION_PTR, /* slurmdb_qos_cond_t* */
-	DATA_PARSER_QOS_CONDITION_WITH_DELETED_OLD, /* slurmdb_qos_cond_t->flags&QOS_COND_FLAG_WITH_DELETED - TODO: Remove with v0.0.42 */
+	DATA_PARSER_QOS_CONDITION_WITH_DELETED_OLD, /* Remove when 24.11 is no longer supported: slurmdb_qos_cond_t->flags&QOS_COND_FLAG_WITH_DELETED */
 	DATA_PARSER_QOS_CONDITION_FLAGS, /* slurmdb_qos_cond_t->flags & QOS_FLAG_COND_* */
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP_PTR, /* openapi_resp_single_t* */
@@ -386,7 +386,7 @@ typedef enum {
 	DATA_PARSER_NODE_STATES, /* uint32_t & NODE_STATE_* */
 	DATA_PARSER_NODE_STATES_NO_VAL, /* uint32_t & NODE_STATE_* or NO_VAL */
 	DATA_PARSER_NODE_SELECT_ALLOC_IDLE_CPUS, /* node_info_t->select_nodeinfo  */
-	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* DEPRECATED v43: was removed field node_info_t->select_nodeinfo  */
+	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* Remove when 25.05 is no longer supported: was removed field node_info_t->select_nodeinfo */
 	DATA_PARSER_UPDATE_NODE_MSG, /* update_node_msg_t */
 	DATA_PARSER_UPDATE_NODE_MSG_PTR, /* update_node_msg_t* */
 	DATA_PARSER_OPENAPI_CREATE_NODE_REQ, /* openapi_resp_single_t */
