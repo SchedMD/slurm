@@ -1,5 +1,6 @@
 # CHANGELOG.md contains a list of all available changelogs.
 
+- [slurm-25.11.md](./CHANGELOG/slurm-25.11.md)
 - [slurm-25.05.md](./CHANGELOG/slurm-25.05.md)
 - [slurm-24.11.md](./CHANGELOG/slurm-24.11.md)
 - [slurm-24.05.md](./CHANGELOG/slurm-24.05.md)
