@@ -1019,7 +1019,7 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 	buf_t *buffer;
 	time_t now = time(NULL);
 	node_record_t *node_ptr;
-	bool hidden, privileged = validate_operator(uid);
+	bool privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {
 		.uid = uid,
 		.visible_parts = build_visible_parts(uid, privileged)
@@ -1044,19 +1044,11 @@ extern buf_t *pack_one_node(uint16_t show_flags, uid_t uid, char *node_name,
 		else
 			node_ptr = node_record_table_ptr[0];
 		if (node_ptr) {
-			hidden = false;
-			if (((show_flags & SHOW_ALL) == 0) &&
-			    !privileged &&
-			    (_node_is_hidden(node_ptr, &pack_info)))
-				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr) &&
-				 (!(show_flags & SHOW_FUTURE)))
-				hidden = true;
-			else if ((node_ptr->name == NULL) ||
-				 (node_ptr->name[0] == '\0'))
-				hidden = true;
-
-			if (!hidden) {
+			if (!_determine_if_node_is_hidden(
+				    node_ptr,
+				    &pack_info,
+				    show_flags,
+				    privileged)) {
 				_pack_node(node_ptr, buffer, protocol_version,
 					   show_flags);
 				nodes_packed++;
