@@ -390,7 +390,7 @@ extern void switch_g_stepinfo_pack(dynamic_plugin_data_t *stepinfo,
 
 	xassert(switch_context_cnt >= 0);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		length_position = get_buf_offset(buffer);
 		pack32(0, buffer);
 		start = get_buf_offset(buffer);
@@ -416,7 +416,7 @@ extern void switch_g_stepinfo_pack(dynamic_plugin_data_t *stepinfo,
 
 	(*(ops[plugin_id].stepinfo_pack))(data, buffer, protocol_version);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		end = get_buf_offset(buffer);
 		set_buf_offset(buffer, length_position);
 		pack32(end - start, buffer);
@@ -436,7 +436,7 @@ extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **stepinfo,
 	if (protocol_version < SLURM_MIN_PROTOCOL_VERSION)
 		goto unpack_error;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&length, buffer);
 		switch_stepinfo_end = get_buf_offset(buffer) + length;
 		if (!(running_in_slurmstepd() || running_in_slurmctld()) ||
@@ -461,7 +461,7 @@ extern int switch_g_stepinfo_unpack(dynamic_plugin_data_t **stepinfo,
 	}
 
 	if (i >= switch_context_cnt) {
-		if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			/*
 			 * We were sent a plugin that we don't know how to
 			 * handle so skip it if possible.

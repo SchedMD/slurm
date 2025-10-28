@@ -33,7 +33,10 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurmdb.h"
+
 #include "src/common/data.h"
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
@@ -53,6 +56,10 @@ typedef struct {
 	char *pos;
 	char *str;
 } list_to_str_args_t;
+
+static int _slurmdb_query_failed(parse_op_t op, const parser_t *const parser,
+				 args_t *args, int rc, const char *source,
+				 const char *what, const char *func_name);
 
 extern int db_query_list_funcname(parse_op_t op, data_parser_type_t type,
 				  args_t *args, list_t **list,
@@ -238,6 +245,77 @@ done:
 	return SLURM_SUCCESS;
 }
 
+extern int resolve_assoc(parse_op_t op, const parser_t *const parser,
+			 slurmdb_assoc_rec_t **assoc_ptr,
+			 slurmdb_assoc_rec_t *key, args_t *args,
+			 data_t *parent_path, const char *caller,
+			 bool ignore_failure)
+{
+	slurmdb_assoc_cond_t cond = {
+		.flags = ASSOC_COND_FLAG_WITH_DELETED,
+	};
+	slurmdb_qos_rec_t *qos = NULL;
+	list_t *assoc_list = NULL;
+	int rc;
+
+	assoc_list = list_create(slurmdb_destroy_assoc_rec);
+
+	cond.acct_list = list_create(xfree_ptr);
+	if (key->acct && key->acct[0])
+		list_append(cond.acct_list, xstrdup(key->acct));
+	else
+		list_append(cond.acct_list, xstrdup(""));
+
+	cond.cluster_list = list_create(xfree_ptr);
+	if (key->cluster && key->cluster[0])
+		list_append(cond.acct_list, xstrdup(key->cluster));
+	else
+		list_append(cond.acct_list, xstrdup(slurm_conf.cluster_name));
+
+	if ((key->id > 0) && (key->id != NO_VAL)) {
+		cond.id_list = list_create(xfree_ptr);
+		list_append(cond.id_list, xstrdup_printf("%u", key->id));
+	}
+
+	cond.partition_list = list_create(xfree_ptr);
+	if (key->partition && key->partition[0])
+		list_append(cond.partition_list, xstrdup(key->partition));
+	else
+		list_append(cond.partition_list, xstrdup(""));
+
+	cond.qos_list = list_create(xfree_ptr);
+	if (key->qos_list && !list_is_empty(key->qos_list)) {
+		list_append(cond.qos_list, xstrdup(list_peek(key->qos_list)));
+	} else if ((key->def_qos_id > 0) && (key->def_qos_id != NO_VAL) &&
+		   args->qos_list &&
+		   (qos = list_find_first(args->qos_list,
+					  slurmdb_find_qos_in_list,
+					  &key->def_qos_id))) {
+		list_append(cond.partition_list, xstrdup(qos->name));
+	} else {
+		list_append(cond.partition_list, xstrdup(""));
+	}
+
+	cond.user_list = list_create(xfree_ptr);
+	if (key->user && key->user[0])
+		list_append(cond.partition_list, xstrdup(key->user));
+	else
+		list_append(cond.partition_list, xstrdup(""));
+
+	if (!(rc = _db_query_list(QUERYING, parser->type, args, &assoc_list,
+				  slurmdb_associations_get, &cond)) &&
+	    !list_is_empty(assoc_list))
+		*assoc_ptr = list_pop(assoc_list);
+
+	FREE_NULL_LIST(assoc_list);
+
+	if (rc)
+		return _slurmdb_query_failed(op, parser, args, rc,
+					     "slurmdb_associations_get",
+					     "Associations", caller);
+	return rc;
+}
+
 static data_for_each_cmd_t _concat_data_to_str(data_t *data, void *arg)
 {
 	list_to_str_args_t *args = arg;
@@ -269,8 +347,6 @@ static int _prereqs_placeholder(const parser_t *const parser,
 {
 	if (!args->tres_list && (parser->needs & NEED_TRES))
 		args->tres_list = list_create(NULL);
-	if (!args->assoc_list && (parser->needs & NEED_ASSOC))
-		args->assoc_list = list_create(NULL);
 	if (!args->qos_list && (parser->needs & NEED_QOS))
 		args->qos_list = list_create(NULL);
 
@@ -366,23 +442,6 @@ extern int load_prereqs_funcname(parse_op_t op, const parser_t *const parser,
 
 		log_flag(DATA, "loaded %u QOS for parser 0x%" PRIxPTR,
 			 list_count(args->qos_list), (uintptr_t) args);
-	}
-
-	if ((parser->needs & NEED_ASSOC) && !args->assoc_list) {
-		slurmdb_assoc_cond_t cond = {
-			.flags = ASSOC_COND_FLAG_WITH_DELETED,
-		};
-
-		if ((rc = _db_query_list(QUERYING, parser->type, args,
-					 &args->assoc_list,
-					 slurmdb_associations_get, &cond))) {
-			return _slurmdb_query_failed(op, parser, args, errno,
-						     "slurmdb_associations_get",
-						     "Associations", func_name);
-		}
-
-		log_flag(DATA, "loaded %u ASSOCS for parser 0x%" PRIxPTR,
-			 list_count(args->assoc_list), (uintptr_t) args);
 	}
 
 	return SLURM_SUCCESS;

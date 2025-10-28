@@ -1106,7 +1106,7 @@ typedef enum {
 	SELECT_PACK_NODES = SLURM_BIT(9),
 	/* Prefer least-loaded device for shared GRES */
 	SELECT_LL_SHARED_GRES = SLURM_BIT(10),
-	/* was SELECT_OTHER_CONS_TRES = SLURM_BIT(11), removed v24.05 */
+	/* SLURM_BIT(11), empty */
 	/*
 	 * By default, distribute cores using a block approach inside the
 	 * nodes

@@ -253,7 +253,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_QUERY_PTR, /* openapi_qos_query_t* */
 	DATA_PARSER_RPC_ID, /* slurm_msg_type_t - uint16_t */
 	DATA_PARSER_SLURMDB_RPC_ID, /* slurmdbd_msg_type_t */
-	DATA_PARSER_SELECT_PLUGIN_ID, /* DEPRECATED v41: int (SELECT_PLUGIN_*) -> string */
+	DATA_PARSER_SELECT_PLUGIN_ID, /* Remove when 24.11 is no longer supported: int (SELECT_PLUGIN_*) -> string */
 	DATA_PARSER_STATS_REC_PTR, /* slurmdb_stats_rec_t* */
 	DATA_PARSER_STATS_REC, /* slurmdb_stats_rec_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_STATS_RESP, /* openapi_resp_single_t */
@@ -457,8 +457,6 @@ typedef enum {
 	DATA_PARSER_JOB_SHARED, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_JOB_EXCLUSIVE, /* uint16_t - JOB_SHARED_* */
 	DATA_PARSER_JOB_EXCLUSIVE_FLAGS, /* uint16_t - JOB_SHARED_* */
-	DATA_PARSER_ALLOCATED_CORES, /* DEPRECATED v41: uint32_t if slurm_conf.select_type_param & (SELECT_CORE|SELECT_SOCKET) */
-	DATA_PARSER_ALLOCATED_CPUS, /* DEPRECATED v41: uint32_t if slurm_conf.select_type_param & SELECT_CPU */
 	DATA_PARSER_HOSTLIST, /* hostlist_t* */
 	DATA_PARSER_HOSTLIST_STRING, /* char * - acts like hostlist_t* */
 	DATA_PARSER_HOSTLIST_STRING_TO_STRING, /* char * - parse/dump string */
@@ -466,7 +464,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_HOSTNAMES_REQ_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_HOSTLIST_REQ_RESP_PTR, /* openapi_resp_single_t* */
-	DATA_PARSER_POWER_FLAGS, /* REMOVED 24.05: uint8_t & SLURM_POWER_FLAGS_* */
+	DATA_PARSER_POWER_FLAGS, /* Remove when 24.11 is no longer supported: uint8_t & SLURM_POWER_FLAGS_* */
 	DATA_PARSER_PARTITION_INFO, /* partition_info_t */
 	DATA_PARSER_PARTITION_INFO_PTR, /* partition_info_t* */
 	DATA_PARSER_PARTITION_INFO_MSG, /* partition_info_msg_t */
@@ -479,10 +477,10 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PARTITION_PARAM_PTR, /* openapi_partition_param_t* */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY, /* openapi_partitions_query_t */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY_PTR, /* openapi_partitions_query_t* */
-	DATA_PARSER_EXT_SENSORS_DATA, /* REMOVED 24.05: ext_sensors_data_t */
-	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* REMOVED 24.05: ext_sensors_data_t* */
-	DATA_PARSER_POWER_MGMT_DATA, /* REMOVED 24.05: power_mgmt_data_t */
-	DATA_PARSER_POWER_MGMT_DATA_PTR, /* REMOVED 24.05: power_mgmt_data_t* */
+	DATA_PARSER_EXT_SENSORS_DATA, /* Remove when 24.11 is no longer supported: ext_sensors_data_t */
+	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* Remove when 24.11 is no longer supported: ext_sensors_data_t* */
+	DATA_PARSER_POWER_MGMT_DATA, /* Remove when 24.11 is no longer supported: power_mgmt_data_t */
+	DATA_PARSER_POWER_MGMT_DATA_PTR, /* Remove when 24.11 is no longer supported: power_mgmt_data_t* */
 	DATA_PARSER_RESERVATION_INFO, /* reserve_info_t */
 	DATA_PARSER_RESERVATION_INFO_PTR, /* reserve_info_t* */
 	DATA_PARSER_RESERVATION_FLAGS, /* uint64_t & RESERVE_FLAG_* */

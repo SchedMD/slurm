@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "Slurm 25.11" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "Slurm 26.05" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -3168,7 +3168,7 @@ To remove a limit, assign \-1 to the TRES type whose limit should be removed,
 e.g., "GrpTRES=cpu=\-1" would remove only the cpu TRES limit, resulting in
 "GrpTRES=mem=32G,gres/gpu=2" on that entity.
 
-Starting in Slurm 25.11, a TRES assignment can use a += or \-= operator to add
+Starting in Slurm 26.05, a TRES assignment can use a += or \-= operator to add
 to or remove from the previously set value for that TRES, e.g.,
 "GrpTRES=mem-=8G,gres/gpu+=2" would result in "GrpTRES=mem=24G,gres/gpu=4" on
 that entity.
