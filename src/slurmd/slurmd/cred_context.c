@@ -258,24 +258,7 @@ static void _cred_context_unpack(buf_t *buffer)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	/*
-	 * Pre-24.11 files had no version header.
-	 * The first two bytes of those files will usually be 0x0000 - the top
-	 * half of the four byte length of the cred_job_list, which should
-	 * usually be under 65k records. Even if there are enough records set
-	 * to spill into these bytes, the check against the min protocol
-	 * version means we're safe unless the state file had 654 million
-	 * records.
-	 */
-
 	safe_unpack16(&version, buffer);
-
-	/* This can be removed when 24.05 is no longer supported */
-	if (version < SLURM_24_11_PROTOCOL_VERSION) {
-		/* rewind by 2 bytes */
-		buffer->processed -= 2;
-		version = SLURM_24_05_PROTOCOL_VERSION;
-	}
 
 	FREE_NULL_LIST(cred_job_list);
 	if (slurm_unpack_list(&cred_job_list, _job_state_unpack,

@@ -49,9 +49,10 @@
 #define REF_PATH OPENAPI_PATH_REL OPENAPI_SCHEMAS_PATH
 #define TYPE_PREFIX "DATA_PARSER_"
 #define KEY_PREFIX XSTRINGIFY(DATA_VERSION) "_"
-#define IS_FLAG_BIT_DEPRECATED(bit) (bit->deprecated || IS_PLUGIN_DEPRECATED)
-#define IS_PARSER_DEPRECATED(parser) \
-	(parser->deprecated || IS_PLUGIN_DEPRECATED)
+#define IS_FLAG_BIT_DEPRECATED(bit, args) \
+	(bit->deprecated || data_parser_p_is_deprecated(args->args))
+#define IS_PARSER_DEPRECATED(parser, args) \
+	(parser->deprecated || data_parser_p_is_deprecated(args->args))
 
 typedef struct {
 	int magic; /* MAGIC_SPEC_ARGS */
@@ -133,11 +134,11 @@ static char *_get_parser_path(const parser_t *parser)
  * Populate OpenAPI specification field
  * IN obj - data_t ptr to specific field in OpenAPI schema
  * IN format - OpenAPI format to use
- * IN desc - Description of field to use
+ * IN desc - Description of field to use (will take ownership)
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
-				  const char *desc)
+				  char *desc)
 {
 	data_t *dtype;
 	const char *format_str;
@@ -164,7 +165,7 @@ static data_t *_set_openapi_props(data_t *obj, openapi_type_format_t format,
 	}
 
 	if (desc)
-		data_set_string(data_key_set(obj, "description"), desc);
+		data_set_string_own(data_key_set(obj, "description"), desc);
 
 	if (format == OPENAPI_FORMAT_ARRAY)
 		return data_set_dict(data_key_set(obj, "items"));
@@ -204,7 +205,8 @@ static bool _should_be_ref(const parser_t *parser, spec_args_t *sargs)
 	}
 
 	if ((parser->obj_openapi == OPENAPI_FORMAT_OBJECT) ||
-	    (parser->obj_openapi == OPENAPI_FORMAT_ARRAY))
+	    ((parser->obj_openapi == OPENAPI_FORMAT_ARRAY) &&
+	     (parser->model != PARSER_MODEL_FLAG_ARRAY)))
 		return true;
 
 	if (parser->array_type || parser->pointer_type || parser->list_type ||
@@ -266,6 +268,25 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
 					parser->flag_bit_array[i].name);
 }
 
+static void _gen_desc(char **desc_ptr, char **desc_at_ptr,
+		      const parser_t *parser)
+{
+	bool has_key = (parser && parser->key && parser->key[0]);
+	bool has_parser = (parser && parser->obj_desc && parser->obj_desc[0]);
+
+	xassert(parser);
+
+	if (!has_parser)
+		return;
+
+	if (has_key)
+		_xstrfmtcatat(desc_ptr, desc_at_ptr, "%s", parser->obj_desc);
+	else
+		_xstrfmtcatat(desc_ptr, desc_at_ptr, "%s%s%s",
+			      (*desc_ptr ? " (" : ""), parser->obj_desc,
+			      (*desc_ptr ? ")" : ""));
+}
+
 /*
  * Populate OpenAPI specification field using parser
  * IN obj - data_t ptr to specific field in OpenAPI schema
@@ -276,7 +297,7 @@ static void _add_param_flag_enum(data_t *param, const parser_t *parser)
  * RET ptr to "items" for ARRAY or "properties" for OBJECT or NULL
  */
 static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
-				  spec_args_t *sargs, const char *desc,
+				  spec_args_t *sargs, char *desc,
 				  bool deprecated)
 {
 	data_t *props;
@@ -306,8 +327,10 @@ static data_t *_set_openapi_parse(data_t *obj, const parser_t *parser,
 	xassert(format > OPENAPI_FORMAT_INVALID);
 	xassert(format < OPENAPI_FORMAT_MAX);
 
-	if (parser->obj_desc && !desc)
-		desc = parser->obj_desc;
+	if (!desc) {
+		char *desc_at = NULL;
+		_gen_desc(&desc, &desc_at, parser);
+	}
 
 	if ((props = _set_openapi_props(obj, format, desc))) {
 		if (parser->array_type) {
@@ -344,19 +367,14 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 		     const parser_t *parser, spec_args_t *sargs)
 {
 	char *str, *key;
-	const char *desc = NULL;
+	char *desc = NULL, *desc_at = NULL;
 	bool deprecated = (parent && parent->deprecated);
 
 	xassert(sargs->magic == MAGIC_SPEC_ARGS);
 	xassert(sargs->args->magic == MAGIC_ARGS);
 
 	while (true) {
-		if (desc)
-			/* do nothing */;
-		else if (parent && parent->obj_desc)
-			desc = parent->obj_desc;
-		else if (parser->obj_desc)
-			desc = parser->obj_desc;
+		_gen_desc(&desc, &desc_at, parser);
 
 		/* All children are deprecated once the parent is */
 		if (parser->deprecated)
@@ -405,8 +423,10 @@ extern void _set_ref(data_t *obj, const parser_t *parent,
 	str = _get_parser_path(parser);
 	data_set_string_own(data_key_set(obj, "$ref"), str);
 
-	if (desc && !data_key_get(obj, "description"))
-		data_set_string(data_key_set(obj, "description"), desc);
+	if (desc) {
+		xassert(!data_key_get(obj, "description"));
+		data_set_string_own(data_key_set(obj, "description"), desc);
+	}
 
 	if (deprecated)
 		data_set_bool(data_key_set(obj, "deprecated"), true);
@@ -627,30 +647,6 @@ static void _count_refs(data_t *data, spec_args_t *sargs)
 		(void) data_list_for_each(data, _count_list_entry, sargs);
 }
 
-static void _count_parser_refs(spec_args_t *sargs)
-{
-	xassert(sargs->magic == MAGIC_SPEC_ARGS);
-	xassert(sargs->args->magic == MAGIC_ARGS);
-	xassert(sargs->parsers);
-	xassert(sargs->parser_count > 0);
-
-	for (int ip = 0; ip < sargs->parser_count; ip++) {
-		const parser_t *parser = &sargs->parsers[ip];
-
-		if ((parser->model != PARSER_MODEL_ARRAY) ||
-		    !parser->field_count)
-			continue;
-
-		for (int i = 0; i < parser->field_count; i++) {
-			const parser_t *pchild =
-				find_parser_by_type(parser->fields[i].type);
-
-			if (pchild)
-				_increment_ref(parser, pchild, sargs);
-		}
-	}
-}
-
 static data_t *_add_param(data_t *param, const char *name,
 			  openapi_type_format_t format, bool allow_empty,
 			  const char *desc, bool deprecated, bool required,
@@ -695,7 +691,8 @@ static void _add_param_eflags(data_t *params, const parser_t *parser,
 			_add_param(data_set_dict(data_list_append(params)),
 				   bit->name, OPENAPI_FORMAT_BOOL, true,
 				   bit->description,
-				   IS_FLAG_BIT_DEPRECATED(bit), false, args);
+				   IS_FLAG_BIT_DEPRECATED(bit, args),
+				   false, args);
 	}
 }
 
@@ -728,7 +725,7 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 	schema = _add_param(data_set_dict(data_list_append(params)), fp->key,
 			    OPENAPI_FORMAT_STRING,
 			    (p->obj_openapi == OPENAPI_FORMAT_BOOL),
-			    fp->obj_desc, IS_PARSER_DEPRECATED(fp),
+			    fp->obj_desc, IS_PARSER_DEPRECATED(fp, args),
 			    fp->required, args);
 
 	if (fp->model == PARSER_MODEL_ARRAY_LINKED_FIELD)
@@ -736,187 +733,6 @@ static void _add_param_linked(data_t *params, const parser_t *fp,
 
 	if (fp->flag_bit_array)
 		_add_param_flag_enum(schema, fp);
-}
-
-static data_for_each_cmd_t _foreach_path_method_ref(data_t *ref, void *arg)
-{
-	spec_args_t *args = arg;
-	const parser_t *parser;
-
-	if (!(parser = _resolve_parser(data_get_string(ref), args))) {
-		error("%s: Unable to find parser for $ref = %s",
-		      __func__, data_get_string(ref));
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	/* auto-dereference pointers to avoid unneeded resolution failures */
-	parser = unalias_parser(parser);
-
-	if (parser->model != PARSER_MODEL_ARRAY) {
-		error("$ref parameters must be an array parser");
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	debug3("$ref=%s found parser %s(0x%"PRIxPTR")=%s",
-	       data_get_string(ref), parser->type_string, (uintptr_t) parser,
-	       parser->obj_type_string);
-
-	for (int i = 0; i < parser->field_count; i++)
-		_add_param_linked(args->params, &parser->fields[i], args);
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static data_for_each_cmd_t _foreach_path_method(const char *key, data_t *data,
-						void *arg)
-{
-	spec_args_t *args = arg;
-	data_t *params, *ref, *refs;
-	int rc = DATA_FOR_EACH_CONT;
-
-	if (data_get_type(data) != DATA_TYPE_DICT)
-		return DATA_FOR_EACH_CONT;
-
-	if (!(params = data_key_get(data, OPENAPI_PATH_PARAMS_FIELD)))
-		return DATA_FOR_EACH_CONT;
-
-	if (data_get_type(params) != DATA_TYPE_DICT)
-		return DATA_FOR_EACH_CONT;
-
-	if (!(ref = data_key_get(params, OPENAPI_REF_TAG)))
-		return DATA_FOR_EACH_CONT;
-
-	refs = data_new();
-	data_move(refs, ref);
-	args->params = data_set_list(params);
-
-	if (data_get_type(refs) == DATA_TYPE_LIST) {
-		if (data_list_for_each(refs, _foreach_path_method_ref,
-				       args) < 0)
-			rc = DATA_FOR_EACH_FAIL;
-	} else if (data_get_type(refs) == DATA_TYPE_STRING) {
-		rc = _foreach_path_method_ref(refs, args);
-	} else {
-		error("$ref must be string or dict");
-		return DATA_FOR_EACH_FAIL;
-	}
-
-	FREE_NULL_DATA(refs);
-	return rc;
-}
-
-static data_for_each_cmd_t _foreach_path_entry(data_t *data, void *arg)
-{
-	spec_args_t *args = arg;
-	char *path, *path2;
-
-	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
-		return DATA_FOR_EACH_FAIL;
-
-	path = xstrdup(data_get_string(data));
-
-	if (path[0] != '{') {
-		xfree(path);
-		return DATA_FOR_EACH_CONT;
-	}
-
-	if ((path2 = xstrstr(path, "}")))
-		*path2 = '\0';
-
-	data_key_set(args->path_params, (path + 1));
-
-	xfree(path);
-
-	return DATA_FOR_EACH_CONT;
-}
-
-static data_for_each_cmd_t _foreach_path(const char *key, data_t *data,
-					 void *arg)
-{
-	int rc = SLURM_SUCCESS;
-	char *param, *start, *end, *replaced;
-	spec_args_t *args = arg;
-	data_t *n, *path;
-
-	param = xstrdup(key);
-
-	if (!(start = xstrstr(param, OPENAPI_DATA_PARSER_PARAM))) {
-		xfree(param);
-		return DATA_FOR_EACH_CONT;
-	}
-
-	*start = '\0';
-	end = start + strlen(OPENAPI_DATA_PARSER_PARAM);
-	replaced = xstrdup_printf("%s%s%s", param, XSTRINGIFY(DATA_VERSION),
-				  end);
-	xfree(param);
-
-	if (!args->new_paths)
-		args->new_paths = data_set_dict(data_new());
-
-	n = data_key_set(args->new_paths, replaced);
-
-	data_copy(n, data);
-
-	args->path_params = data_set_dict(data_new());
-	path = parse_url_path(replaced, false, true);
-	if (data_list_for_each(path, _foreach_path_entry, args) < 0)
-		rc = SLURM_ERROR;
-	FREE_NULL_DATA(path);
-
-	if (!rc && (data_dict_for_each(n, _foreach_path_method, args) < 0))
-		rc = SLURM_ERROR;
-
-	xfree(replaced);
-	FREE_NULL_DATA(args->path_params);
-
-	return rc ? DATA_FOR_EACH_FAIL : DATA_FOR_EACH_CONT;
-}
-
-static data_for_each_cmd_t _foreach_join_path(const char *key, data_t *data,
-					      void *arg)
-{
-	spec_args_t *args = arg;
-	data_t *path = data_key_set(args->paths, key);
-
-	data_move(path, data);
-	_count_refs(path, args);
-	_count_parser_refs(args);
-	_replace_refs(path, args);
-
-	return DATA_FOR_EACH_CONT;
-}
-
-extern int data_parser_p_specify(args_t *args, data_t *spec)
-{
-	spec_args_t sargs = {
-		.magic = MAGIC_SPEC_ARGS,
-		.args = args,
-		.spec = spec,
-	};
-
-	xassert(args->magic == MAGIC_ARGS);
-
-	if (!spec || (data_get_type(spec) != DATA_TYPE_DICT))
-		return error("OpenAPI specification invalid");
-
-	sargs.schemas = data_resolve_dict_path(spec, OPENAPI_SCHEMAS_PATH);
-	sargs.paths = data_resolve_dict_path(spec, OPENAPI_PATHS_PATH);
-
-	if (!sargs.schemas || (data_get_type(sargs.schemas) != DATA_TYPE_DICT))
-		return error("%s not found or invalid type",
-			     OPENAPI_SCHEMAS_PATH);
-
-	get_parsers(&sargs.parsers, &sargs.parser_count);
-	sargs.references = xcalloc(sargs.parser_count,
-				   sizeof(*sargs.references));
-
-	(void) data_dict_for_each(sargs.paths, _foreach_path, &sargs);
-	(void) data_dict_for_each(sargs.new_paths, _foreach_join_path, &sargs);
-	FREE_NULL_DATA(sargs.new_paths);
-	xfree(sargs.references);
-
-	return SLURM_SUCCESS;
 }
 
 extern void set_openapi_schema(data_t *dst, const parser_t *parser,
@@ -1020,6 +836,7 @@ extern int data_parser_p_populate_parameters(args_t *args,
 		.references = (*references_ptr)->references,
 	};
 	const parser_t *param_parser = NULL, *query_parser = NULL;
+	int rc = SLURM_SUCCESS;
 
 	xassert(refs && refs->magic == MAGIC_REFS_PTR);
 	xassert(args->magic == MAGIC_ARGS);
@@ -1029,19 +846,23 @@ extern int data_parser_p_populate_parameters(args_t *args,
 	xassert(!query_type || (query_type < DATA_PARSER_TYPE_MAX));
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 
+	if (parameter_type &&
+	    !(param_parser =
+	      unalias_parser(find_parser_by_type(parameter_type)))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		goto endit;
+	}
+	if (query_type &&
+	    !(query_parser = unalias_parser(find_parser_by_type(query_type)))) {
+		rc = ESLURM_DATA_INVALID_PARSER;
+		goto endit;
+	}
+
 	data_set_list(dst);
 
 	get_parsers(&sargs.parsers, &sargs.parser_count);
 
 	sargs.path_params = data_set_dict(data_new());
-
-	if (parameter_type &&
-	    !(param_parser =
-		      unalias_parser(find_parser_by_type(parameter_type))))
-		return ESLURM_DATA_INVALID_PARSER;
-	if (query_type &&
-	    !(query_parser = unalias_parser(find_parser_by_type(query_type))))
-		return ESLURM_DATA_INVALID_PARSER;
 
 	if (param_parser) {
 		if (param_parser->model != PARSER_MODEL_ARRAY)
@@ -1074,9 +895,10 @@ extern int data_parser_p_populate_parameters(args_t *args,
 					  &sargs);
 	}
 
+endit:
 	FREE_NULL_DATA(sargs.path_params);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern void data_parser_p_release_references(args_t *args,

@@ -483,18 +483,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	else if (job_ptr->partition)
 		partition = job_ptr->partition;
 
-	/*
-	 * Only jobs < 24.11 will not have a db_index here. This would also be
-	 * likely the first time we have seen this.
-	 * When 24.05 is no longer supported this can be removed.
-	 */
-	if (!job_ptr->db_index) {
-		if (!(job_ptr->db_index = _get_db_index(mysql_conn,
-							submit_time,
-							job_ptr->job_id)))
-			job_record_set_sluid(job_ptr, false);
-	}
-
 	if (!IS_JOB_IN_DB(job_ptr)) {
 		uint64_t env_hash_inx = 0, script_hash_inx = 0;
 

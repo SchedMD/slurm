@@ -28,8 +28,6 @@ START_TEST(pack_back2_null_rec)
 	buf_t *buf = init_buf(1024);
 
 	slurmdb_init_cluster_rec(&pack_rec, false);
-	pack_rec.fed.state        = 0;
-	pack_rec.dimensions       = 1;
 
 	slurmdb_pack_cluster_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
@@ -46,9 +44,8 @@ START_TEST(pack_back2_null_rec)
 	ck_assert(pack_rec.fed.send        == unpack_rec->fed.send);
 	/* 17.11 */
 	ck_assert(pack_rec.fed.feature_list == unpack_rec->fed.feature_list);
-
-	/* root_assoc gets unpacked into a empty structure */
-	ck_assert(unpack_rec->root_assoc != NULL);
+	/* NULL pack leaves root_assoc as NULL */
+	ck_assert(unpack_rec->root_assoc == NULL);
 
 	ck_assert(pack_rec.classification   == unpack_rec->classification);
 	ck_assert(pack_rec.dimensions       == unpack_rec->dimensions);

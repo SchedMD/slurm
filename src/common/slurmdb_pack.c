@@ -616,7 +616,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 	persist_conn_t *persist_conn;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packbool(0, buffer);
 			return;
@@ -657,68 +657,6 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 		persist_conn = object->fed.send;
 		pack8((persist_conn && persist_conn->conn) ? 1 : 0, buffer);
 		packstr(object->tres_str, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!object) {
-			pack32(NO_VAL, buffer);		/* count */
-			pack16(0, buffer);
-			packnull(buffer);
-			pack32(0, buffer);
-			pack16(1, buffer);
-
-			pack32(NO_VAL, buffer);		/* count */
-			packnull(buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-			pack8(0, buffer);
-			pack8(0, buffer);
-
-			pack32(NO_VAL, buffer);		/* flags */
-
-			packnull(buffer);
-			packnull(buffer);
-
-			slurmdb_pack_assoc_rec(NULL, protocol_version, buffer);
-
-			pack16(0, buffer);
-			pack8(0, buffer);
-			pack8(0, buffer);
-			packnull(buffer);
-			return;
-		}
-
-		slurm_pack_list(object->accounting_list,
-				slurmdb_pack_cluster_accounting_rec,
-				buffer, protocol_version);
-
-		pack16(object->classification, buffer);
-		packstr(object->control_host, buffer);
-		pack32(object->control_port, buffer);
-		pack16(object->dimensions, buffer);
-
-		slurm_pack_list(object->fed.feature_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		packstr(object->fed.name, buffer);
-		pack32(object->fed.id, buffer);
-		pack32(object->fed.state, buffer);
-		pack8((uint8_t)object->fed.sync_recvd, buffer);
-		pack8((uint8_t)object->fed.sync_sent, buffer);
-
-		pack32(object->flags, buffer);
-
-		packstr(object->name, buffer);
-		packstr(object->nodes, buffer);
-
-		slurmdb_pack_assoc_rec(object->root_assoc,
-				       protocol_version, buffer);
-
-		pack16(object->rpc_version, buffer);
-		persist_conn = object->fed.recv;
-		pack8((persist_conn && persist_conn->conn) ? 1 : 0, buffer);
-		persist_conn = object->fed.send;
-		pack8((persist_conn && persist_conn->conn) ? 1 : 0, buffer);
-		packstr(object->tres_str, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -737,7 +675,7 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 
 	slurmdb_init_cluster_rec(object_ptr, 0);
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackbool(&need_unpack, buffer);
 		if (!need_unpack)
 			goto end_unpack;
@@ -771,56 +709,6 @@ extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack16(&object_ptr->id, buffer);
-
-		safe_unpackstr(&object_ptr->name, buffer);
-		safe_unpackstr(&object_ptr->nodes, buffer);
-
-		if (slurmdb_unpack_assoc_rec(
-			    (void **)&object_ptr->root_assoc,
-			    protocol_version, buffer)
-		    == SLURM_ERROR)
-			goto unpack_error;
-
-		safe_unpack16(&object_ptr->rpc_version, buffer);
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp) {
-			pcon = xmalloc(sizeof(*pcon));
-			object_ptr->fed.recv = pcon;
-		}
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp) {
-			pcon = xmalloc(sizeof(*pcon));
-			object_ptr->fed.send = pcon;
-		}
-		safe_unpackstr(&object_ptr->tres_str, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (slurm_unpack_list(&object_ptr->accounting_list,
-				      slurmdb_unpack_cluster_accounting_rec,
-				      slurmdb_destroy_cluster_accounting_rec,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&object_ptr->classification, buffer);
-		safe_unpackstr(&object_ptr->control_host, buffer);
-		safe_unpack32(&object_ptr->control_port, buffer);
-		safe_unpack16(&object_ptr->dimensions, buffer);
-
-		if (slurm_unpack_list(&object_ptr->fed.feature_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpackstr(&object_ptr->fed.name, buffer);
-		safe_unpack32(&object_ptr->fed.id, buffer);
-		safe_unpack32(&object_ptr->fed.state, buffer);
-		safe_unpack8(&uint8_tmp, buffer);
-		object_ptr->fed.sync_recvd = uint8_tmp;
-		safe_unpack8(&uint8_tmp, buffer);
-		object_ptr->fed.sync_sent = uint8_tmp;
-
-		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpackstr(&object_ptr->name, buffer);
 		safe_unpackstr(&object_ptr->nodes, buffer);
@@ -936,7 +824,7 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_accounting_rec_t *object = (slurmdb_accounting_rec_t *)in;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack64(0, buffer);
 			slurmdb_pack_tres_rec(NULL, protocol_version, buffer);
@@ -951,20 +839,6 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
 				      protocol_version, buffer);
 		pack32(object->id, buffer);
 		pack32(object->id_alt, buffer);
-		pack_time(object->period_start, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!object) {
-			pack64(0, buffer);
-			slurmdb_pack_tres_rec(NULL, protocol_version, buffer);
-			pack32(0, buffer);
-			pack_time(0, buffer);
-			return;
-		}
-
-		pack64(object->alloc_secs, buffer);
-		slurmdb_pack_tres_rec(&object->tres_rec,
-				      protocol_version, buffer);
-		pack32(object->id, buffer);
 		pack_time(object->period_start, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -981,7 +855,7 @@ extern int slurmdb_unpack_accounting_rec(void **object,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack64(&object_ptr->alloc_secs, buffer);
 		if (slurmdb_unpack_tres_rec_noalloc(
 			    &object_ptr->tres_rec, protocol_version, buffer) !=
@@ -989,14 +863,6 @@ extern int slurmdb_unpack_accounting_rec(void **object,
 			goto unpack_error;
 		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack32(&object_ptr->id_alt, buffer);
-		safe_unpack_time(&object_ptr->period_start, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack64(&object_ptr->alloc_secs, buffer);
-		if (slurmdb_unpack_tres_rec_noalloc(
-			    &object_ptr->tres_rec, protocol_version, buffer)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-		safe_unpack32(&object_ptr->id, buffer);
 		safe_unpack_time(&object_ptr->period_start, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -1499,100 +1365,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		if (!object) {
-			packnull(buffer);
-			pack32(0, buffer);
-
-			pack32(QOS_FLAG_NOTSET, buffer);
-
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			packnull(buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			packnull(buffer);
-
-			packnull(buffer);
-
-			pack_bit_str_hex(NULL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack32(0, buffer);
-			pack32(0, buffer);
-
-			packdouble((double) NO_VAL64, buffer);
-			packdouble((double) NO_VAL64, buffer);
-			return;
-		}
-		packstr(object->description, buffer);
-		pack32(object->id, buffer);
-
-		pack32(object->flags, buffer);
-
-		pack32(object->grace_time, buffer);
-		packstr(object->grp_tres_mins, buffer);
-		packstr(object->grp_tres_run_mins, buffer);
-		packstr(object->grp_tres, buffer);
-		pack32(object->grp_jobs, buffer);
-		pack32(object->grp_jobs_accrue, buffer);
-		pack32(object->grp_submit_jobs, buffer);
-		pack32(object->grp_wall, buffer);
-
-		packstr(object->max_tres_mins_pj, buffer);
-		packstr(object->max_tres_run_mins_pa, buffer);
-		packstr(object->max_tres_run_mins_pu, buffer);
-		packstr(object->max_tres_pa, buffer);
-		packstr(object->max_tres_pj, buffer);
-		packstr(object->max_tres_pn, buffer);
-		packstr(object->max_tres_pu, buffer);
-		pack32(object->max_jobs_pa, buffer);
-		pack32(object->max_jobs_pu, buffer);
-		pack32(object->max_jobs_accrue_pa, buffer);
-		pack32(object->max_jobs_accrue_pu, buffer);
-		pack32(object->min_prio_thresh, buffer);
-		pack32(object->max_submit_jobs_pa, buffer);
-		pack32(object->max_submit_jobs_pu, buffer);
-		pack32(object->max_wall_pj, buffer);
-		packstr(object->min_tres_pj, buffer);
-
-		packstr(object->name, buffer);
-
-		pack_bit_str_hex(object->preempt_bitstr, buffer);
-
-		slurm_pack_list(object->preempt_list,
-				packstr_func,
-				buffer, protocol_version);
-
-
-		pack16(object->preempt_mode, buffer);
-		pack32(object->preempt_exempt_time, buffer);
-		pack32(object->priority, buffer);
-
-		packdouble(object->usage_factor, buffer);
-		packdouble(object->usage_thres, buffer);
-		packdouble(object->limit_factor, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
 			pack32(0, buffer);
@@ -1700,57 +1473,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 
 	slurmdb_init_qos_rec(object_ptr, 0, NO_VAL);
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
-		safe_unpackstr(&object_ptr->description, buffer);
-		safe_unpack32(&object_ptr->id, buffer);
-
-		safe_unpack32(&object_ptr->flags, buffer);
-
-		safe_unpack32(&object_ptr->grace_time, buffer);
-		safe_unpackstr(&object_ptr->grp_tres_mins, buffer);
-		safe_unpackstr(&object_ptr->grp_tres_run_mins, buffer);
-		safe_unpackstr(&object_ptr->grp_tres, buffer);
-		safe_unpack32(&object_ptr->grp_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_jobs_accrue, buffer);
-		safe_unpack32(&object_ptr->grp_submit_jobs, buffer);
-		safe_unpack32(&object_ptr->grp_wall, buffer);
-
-		safe_unpackstr(&object_ptr->max_tres_mins_pj, buffer);
-		safe_unpackstr(&object_ptr->max_tres_run_mins_pa, buffer);
-		safe_unpackstr(&object_ptr->max_tres_run_mins_pu, buffer);
-		safe_unpackstr(&object_ptr->max_tres_pa, buffer);
-		safe_unpackstr(&object_ptr->max_tres_pj, buffer);
-		safe_unpackstr(&object_ptr->max_tres_pn, buffer);
-		safe_unpackstr(&object_ptr->max_tres_pu, buffer);
-		safe_unpack32(&object_ptr->max_jobs_pa, buffer);
-		safe_unpack32(&object_ptr->max_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_jobs_accrue_pa, buffer);
-		safe_unpack32(&object_ptr->max_jobs_accrue_pu, buffer);
-		safe_unpack32(&object_ptr->min_prio_thresh, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs_pa, buffer);
-		safe_unpack32(&object_ptr->max_submit_jobs_pu, buffer);
-		safe_unpack32(&object_ptr->max_wall_pj, buffer);
-		safe_unpackstr(&object_ptr->min_tres_pj, buffer);
-
-		safe_unpackstr(&object_ptr->name, buffer);
-
-		unpack_bit_str_hex(&object_ptr->preempt_bitstr, buffer);
-
-		if (slurm_unpack_list(&object_ptr->preempt_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack32(&object_ptr->preempt_exempt_time, buffer);
-		safe_unpack32(&object_ptr->priority, buffer);
-
-		safe_unpackdouble(&object_ptr->usage_factor, buffer);
-		safe_unpackdouble(&object_ptr->usage_thres, buffer);
-		safe_unpackdouble(&object_ptr->limit_factor, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object_ptr->description, buffer);
 		safe_unpack32(&object_ptr->id, buffer);
 
@@ -3073,7 +2796,7 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_assoc_cond_t *object = (slurmdb_assoc_cond_t *)in;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packbool(0, buffer);
 			return;
@@ -3121,94 +2844,6 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 		slurm_pack_list(object->user_list,
 				packstr_func,
 				buffer, protocol_version);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack_time(0, buffer);
-			pack_time(0, buffer);
-
-			pack32(NO_VAL, buffer);
-
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		slurm_pack_list(object->acct_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->cluster_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->def_qos_id_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->format_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->id_list,
-				packstr_func,
-				buffer, protocol_version);
-
-
-		pack16((object->flags & ASSOC_COND_FLAG_ONLY_DEFS) ? 1 : 0,
-		       buffer);
-
-		slurm_pack_list(object->partition_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->parent_acct_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->qos_list,
-				packstr_func,
-				buffer, protocol_version);
-
-
-		pack_time(object->usage_end, buffer);
-		pack_time(object->usage_start, buffer);
-
-		slurm_pack_list(object->user_list,
-				packstr_func,
-				buffer, protocol_version);
-
-
-		pack16((object->flags & ASSOC_COND_FLAG_WITH_USAGE) ? 1 : 0,
-		       buffer);
-		pack16((object->flags & ASSOC_COND_FLAG_WITH_DELETED) ? 1 : 0,
-		       buffer);
-		pack16((object->flags & ASSOC_COND_FLAG_RAW_QOS) ? 1 : 0,
-		       buffer);
-		pack16((object->flags & ASSOC_COND_FLAG_SUB_ACCTS) ? 1 : 0,
-		       buffer);
-		pack16((object->flags & ASSOC_COND_FLAG_WOPI) ? 1 : 0,
-		       buffer);
-		pack16((object->flags & ASSOC_COND_FLAG_WOPL) ? 1 : 0,
-		       buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -3223,7 +2858,7 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 	bool need_unpack = false;
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackbool(&need_unpack, buffer);
 		if (!need_unpack)
 			goto end_unpack;
@@ -3298,99 +2933,6 @@ extern int slurmdb_unpack_assoc_cond(void **object,
 				      buffer, protocol_version) !=
 		    SLURM_SUCCESS)
 			goto unpack_error;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint16_t tmp16;
-		if (slurm_unpack_list(&object_ptr->acct_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->cluster_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->def_qos_id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->format_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		if (object_ptr->format_list &&
-		    !list_count(object_ptr->format_list))
-			FREE_NULL_LIST(object_ptr->format_list);
-
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_ONLY_DEFS;
-
-		if (slurm_unpack_list(&object_ptr->partition_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->parent_acct_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->qos_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack_time(&object_ptr->usage_end, buffer);
-		safe_unpack_time(&object_ptr->usage_start, buffer);
-
-		if (slurm_unpack_list(&object_ptr->user_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_WITH_USAGE;
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_WITH_DELETED;
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_RAW_QOS;
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_SUB_ACCTS;
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_WOPI;
-		safe_unpack16(&tmp16, buffer);
-		if (tmp16)
-			object_ptr->flags |= ASSOC_COND_FLAG_WOPL;
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -4001,7 +3543,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->wckey, buffer);
 		pack32(job->wckeyid, buffer);
 		packstr(job->work_dir, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(job->account, buffer);
 		packstr(job->admin_comment, buffer);
 		pack32(job->alloc_nodes, buffer);
@@ -4046,94 +3588,6 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack64(job->req_mem, buffer);
 		pack32(job->requid, buffer);
 		pack16(job->restart_cnt, buffer);
-		packstr(job->resv_name, buffer);
-		pack32(job->resvid, buffer);
-		packstr(job->script, buffer);
-		pack32(job->show_full, buffer);
-		pack_time(job->start, buffer);
-		pack32(job->state, buffer);
-		pack32(job->state_reason_prev, buffer);
-
-		if (job->steps)
-			count = list_count(job->steps);
-		else
-			count = 0;
-
-		pack32(count, buffer);
-		if (count) {
-			itr = list_iterator_create(job->steps);
-			while ((step = list_next(itr))) {
-				slurmdb_pack_step_rec(step, protocol_version,
-						      buffer);
-			}
-			list_iterator_destroy(itr);
-		}
-		packstr(job->std_err, buffer);
-		packstr(job->std_in, buffer);
-		packstr(job->std_out, buffer);
-		pack_time(job->submit, buffer);
-		packstr(job->submit_line, buffer);
-		pack32(job->suspended, buffer);
-		packstr(job->system_comment, buffer);
-		pack64(job->sys_cpu_sec, buffer);
-		pack64(job->sys_cpu_usec, buffer);
-		pack32(job->timelimit, buffer);
-		pack64(job->tot_cpu_sec, buffer);
-		pack64(job->tot_cpu_usec, buffer);
-
-		packstr(job->tres_alloc_str, buffer);
-		packstr(job->tres_req_str, buffer);
-
-		pack32(job->uid, buffer);
-		packstr(job->user, buffer);
-		pack64(job->user_cpu_sec, buffer);
-		pack64(job->user_cpu_usec, buffer);
-		packstr(job->wckey, buffer);
-		pack32(job->wckeyid, buffer);
-		packstr(job->work_dir, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		packstr(job->account, buffer);
-		packstr(job->admin_comment, buffer);
-		pack32(job->alloc_nodes, buffer);
-		pack32(job->array_job_id, buffer);
-		pack32(job->array_max_tasks, buffer);
-		pack32(job->array_task_id, buffer);
-		packstr(job->array_task_str, buffer);
-
-		pack32(job->associd, buffer);
-		packstr(job->blockid, buffer);
-		packstr(job->cluster, buffer);
-		packstr(job->constraints, buffer);
-		packstr(job->container, buffer);
-		pack64(job->db_index, buffer);
-		pack32((uint32_t)job->derived_ec, buffer);
-		packstr(job->derived_es, buffer);
-		pack32(job->elapsed, buffer);
-		pack_time(job->eligible, buffer);
-		pack_time(job->end, buffer);
-		packstr(job->env, buffer);
-		pack32((uint32_t)job->exitcode, buffer);
-		packstr(job->extra, buffer);
-		packstr(job->failed_node, buffer);
-		pack32(job->flags, buffer);
-		/* the first_step_ptr
-		   is set up on the client side so does
-		   not need to be packed */
-		pack32(job->gid, buffer);
-		pack32(job->jobid, buffer);
-		packstr(job->jobname, buffer);
-		packstr(job->licenses, buffer);
-		packstr(job->lineage, buffer);
-		packstr(job->mcs_label, buffer);
-		packstr(job->nodes, buffer);
-		pack32(job->het_job_id, buffer);
-		pack32(job->het_job_offset, buffer);
-		packstr(job->partition, buffer);
-		pack32(job->priority, buffer);
-		pack32(job->qosid, buffer);
-		pack32(job->req_cpus, buffer);
-		pack64(job->req_mem, buffer);
-		pack32(job->requid, buffer);
 		packstr(job->resv_name, buffer);
 		pack32(job->resvid, buffer);
 		packstr(job->script, buffer);
@@ -4285,7 +3739,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->wckey, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr(&job_ptr->work_dir, buffer);
-	} else if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&job_ptr->account, buffer);
 		safe_unpackstr(&job_ptr->admin_comment, buffer);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
@@ -4372,91 +3826,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->wckey, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr(&job_ptr->work_dir, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&job_ptr->account, buffer);
-		safe_unpackstr(&job_ptr->admin_comment, buffer);
-		safe_unpack32(&job_ptr->alloc_nodes, buffer);
-		safe_unpack32(&job_ptr->array_job_id, buffer);
-		safe_unpack32(&job_ptr->array_max_tasks, buffer);
-		safe_unpack32(&job_ptr->array_task_id, buffer);
-		safe_unpackstr(&job_ptr->array_task_str, buffer);
-		safe_unpack32(&job_ptr->associd, buffer);
-		safe_unpackstr(&job_ptr->blockid, buffer);
-		safe_unpackstr(&job_ptr->cluster, buffer);
-		safe_unpackstr(&job_ptr->constraints, buffer);
-		safe_unpackstr(&job_ptr->container, buffer);
-		safe_unpack64(&job_ptr->db_index, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->derived_ec = (int32_t)uint32_tmp;
-		safe_unpackstr(&job_ptr->derived_es, buffer);
-		safe_unpack32(&job_ptr->elapsed, buffer);
-		safe_unpack_time(&job_ptr->eligible, buffer);
-		safe_unpack_time(&job_ptr->end, buffer);
-		safe_unpackstr(&job_ptr->env, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->exitcode = (int32_t)uint32_tmp;
-		safe_unpackstr(&job_ptr->extra, buffer);
-		safe_unpackstr(&job_ptr->failed_node, buffer);
-		safe_unpack32(&job_ptr->flags, buffer);
-
-		safe_unpack32(&job_ptr->gid, buffer);
-		safe_unpack32(&job_ptr->jobid, buffer);
-		safe_unpackstr(&job_ptr->jobname, buffer);
-		safe_unpackstr(&job_ptr->licenses, buffer);
-		safe_unpackstr(&job_ptr->lineage, buffer);
-		safe_unpackstr(&job_ptr->mcs_label, buffer);
-		safe_unpackstr(&job_ptr->nodes, buffer);
-		safe_unpack32(&job_ptr->het_job_id, buffer);
-		safe_unpack32(&job_ptr->het_job_offset, buffer);
-		safe_unpackstr(&job_ptr->partition, buffer);
-		safe_unpack32(&job_ptr->priority, buffer);
-		safe_unpack32(&job_ptr->qosid, buffer);
-		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpack64(&job_ptr->req_mem, buffer);
-		safe_unpack32(&job_ptr->requid, buffer);
-		safe_unpackstr(&job_ptr->resv_name, buffer);
-		safe_unpack32(&job_ptr->resvid, buffer);
-		safe_unpackstr(&job_ptr->script, buffer);
-		safe_unpack32(&job_ptr->show_full, buffer);
-		safe_unpack_time(&job_ptr->start, buffer);
-		safe_unpack32(&uint32_tmp, buffer);
-		job_ptr->state = uint32_tmp;
-		safe_unpack32(&job_ptr->state_reason_prev, buffer);
-
-		safe_unpack32(&count, buffer);
-		job_ptr->steps = list_create(slurmdb_destroy_step_rec);
-		for (i = 0; i < count; i++) {
-			if (slurmdb_unpack_step_rec(&step, protocol_version,
-						    buffer)
-			    == SLURM_ERROR)
-				goto unpack_error;
-
-			step->job_ptr = job_ptr;
-			if (!job_ptr->first_step_ptr)
-				job_ptr->first_step_ptr = step;
-			list_append(job_ptr->steps, step);
-		}
-		safe_unpackstr(&job_ptr->std_err, buffer);
-		safe_unpackstr(&job_ptr->std_in, buffer);
-		safe_unpackstr(&job_ptr->std_out, buffer);
-		safe_unpack_time(&job_ptr->submit, buffer);
-		safe_unpackstr(&job_ptr->submit_line, buffer);
-		safe_unpack32(&job_ptr->suspended, buffer);
-		safe_unpackstr(&job_ptr->system_comment, buffer);
-		safe_unpack64(&job_ptr->sys_cpu_sec, buffer);
-		safe_unpack64(&job_ptr->sys_cpu_usec, buffer);
-		safe_unpack32(&job_ptr->timelimit, buffer);
-		safe_unpack64(&job_ptr->tot_cpu_sec, buffer);
-		safe_unpack64(&job_ptr->tot_cpu_usec, buffer);
-		safe_unpackstr(&job_ptr->tres_alloc_str, buffer);
-		safe_unpackstr(&job_ptr->tres_req_str, buffer);
-		safe_unpack32(&job_ptr->uid, buffer);
-		safe_unpackstr(&job_ptr->user, buffer);
-		safe_unpack64(&job_ptr->user_cpu_sec, buffer);
-		safe_unpack64(&job_ptr->user_cpu_usec, buffer);
-		safe_unpackstr(&job_ptr->wckey, buffer);
-		safe_unpack32(&job_ptr->wckeyid, buffer);
-		safe_unpackstr(&job_ptr->work_dir, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -4476,7 +3845,7 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 {
 	slurmdb_qos_cond_t *object = (slurmdb_qos_cond_t *)in;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packbool(0, buffer);
 			return;
@@ -4502,44 +3871,6 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 				buffer, protocol_version);
 
 		pack16(object->preempt_mode, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint32_t uint16_tmp;
-
-		if (!object) {
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack32(NO_VAL, buffer);
-			pack16(0, buffer);
-			pack16(0, buffer);
-			return;
-		}
-
-		slurm_pack_list(object->description_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->format_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->id_list,
-				packstr_func,
-				buffer, protocol_version);
-
-		slurm_pack_list(object->name_list,
-				packstr_func,
-				buffer, protocol_version);
-
-
-		pack16(object->preempt_mode, buffer);
-
-		if (object->flags & QOS_COND_FLAG_WITH_DELETED)
-			uint16_tmp = 1;
-		else
-			uint16_tmp = 0;
-
-		pack16(uint16_tmp, buffer);
 	}
 }
 
@@ -4551,7 +3882,7 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_24_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackbool(&need_unpack, buffer);
 		if (!need_unpack)
 			goto end_unpack;
@@ -4590,44 +3921,6 @@ extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
 			goto unpack_error;
 
 		safe_unpack16(&object_ptr->preempt_mode, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint16_t uint16_tmp;
-
-		if (slurm_unpack_list(&object_ptr->description_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->format_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-		if (object_ptr->format_list &&
-		    !list_count(object_ptr->format_list))
-			FREE_NULL_LIST(object_ptr->format_list);
-
-		if (slurm_unpack_list(&object_ptr->id_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		if (slurm_unpack_list(&object_ptr->name_list,
-				      safe_unpackstr_func,
-				      xfree_ptr,
-				      buffer, protocol_version) !=
-		    SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&object_ptr->preempt_mode, buffer);
-		safe_unpack16(&uint16_tmp, buffer);
-		if (uint16_tmp)
-			object_ptr->flags |= QOS_COND_FLAG_WITH_DELETED;
 	} else
 		goto unpack_error;
 

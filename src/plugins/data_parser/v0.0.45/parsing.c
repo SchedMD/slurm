@@ -353,20 +353,21 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 {
 	int rc = SLURM_SUCCESS;
 	char *path = NULL;
-	list_t **list = dst;
+	list_t **list_ptr = dst;
 	foreach_list_t list_args = {
 		.magic = MAGIC_FOREACH_LIST,
 		.dlist = NULL,
-		.list = *list,
 		.args = args,
 		.parser = parser,
 		.parent_path = parent_path,
 		.index = -1,
 	};
 
-	xassert(!*list || (list_count(*list) >= 0));
+	xassert(!*list_ptr || (list_count(*list_ptr) >= 0));
 	xassert(args->magic == MAGIC_ARGS);
 	check_parser(parser);
+
+	SWAP(*list_ptr, list_args.list);
 
 	log_flag(DATA, "%s: BEGIN: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR")",
 		__func__, set_source_path(&path, args, parent_path),
@@ -399,10 +400,10 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 			      data_get_type_string(src));
 	}
 
-	if (!rc) {
-		*list = list_args.list;
-		list_args.list = NULL;
-	}
+	if (!rc)
+		SWAP(*list_ptr, list_args.list);
+	else
+		FREE_NULL_LIST(list_args.list);
 
 	log_flag(DATA, "%s: END: list parsing %s{%s(0x%"PRIxPTR")} to List 0x%"PRIxPTR" via parser %s(0x%"PRIxPTR") rc[%d]:%s",
 		__func__, path, data_get_type_string(src),
@@ -410,9 +411,6 @@ static int _parse_list(const parser_t *const parser, void *dst, data_t *src,
 		(uintptr_t) parser, rc, slurm_strerror(rc)
 	);
 
-	if (rc)
-		*list = NULL;
-	FREE_NULL_LIST(list_args.list);
 	xfree(path);
 	return rc;
 }
@@ -438,7 +436,7 @@ static int _parse_pointer(const parser_t *const parser, void *dst, data_t *src,
 		 * Detect work around for OpenAPI clients being unable to handle
 		 * a null in place of a object/array by placing an empty
 		 * dict/array. Place the default allocated object pointer but
-		 * skip attempting to parse.
++                * skip attempting to parse.
 		 */
 		return SLURM_SUCCESS;
 	}
@@ -1330,7 +1328,7 @@ static int _dump_pointer(const parser_t *const field_parser,
 		    (field_parser && !field_parser->required)) {
 			xassert(data_get_type(dst) == DATA_TYPE_NULL);
 		} else if ((pt->model == PARSER_MODEL_ARRAY) ||
-			   (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
+		    (pt->obj_openapi == OPENAPI_FORMAT_OBJECT)) {
 			/*
 			 * OpenAPI clients can't handle a null instead of an
 			 * object. Work around by placing an empty dictionary
@@ -1370,8 +1368,8 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 			return SLURM_SUCCESS;
 
 		for (int i = 0; !rc && array[i]; i++) {
-			rc = dump(array[i], NO_VAL, NULL,
-				  find_parser_by_type(parser->array_type),
+			rc = dump(array[i], NO_VAL,
+				  NULL, find_parser_by_type(parser->array_type),
 				  data_list_append(dst), args);
 		}
 	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
@@ -1667,8 +1665,8 @@ extern int dump(void *src, ssize_t src_bytes,
 		 * they are only used to OpenAPI typing and are ignored here.
 		 */
 
-		rc = parser->dump(parser, src, dst, args);
-		_check_dump(parser, dst, args);
+		if (!(rc = parser->dump(parser, src, dst, args)))
+			_check_dump(parser, dst, args);
 		break;
 	case PARSER_MODEL_ALIAS:
 		rc = dump(src, src_bytes, NULL,
