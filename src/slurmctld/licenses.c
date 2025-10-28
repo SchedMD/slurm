@@ -1475,7 +1475,7 @@ extern void hres_select_print(hres_select_t *hres_select)
 			hres_select->leaf[i].capacity);
 		for (int j = 0; j < hres_select->depth; j++) {
 			uint16_t idx = hres_select->leaf[i].path_idx[j];
-			verbose("\t\t %u %d", idx,
+			verbose("\t\t %u %u", idx,
 				hres_select->avail_hres[idx]);
 		}
 	}
