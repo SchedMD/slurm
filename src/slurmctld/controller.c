@@ -2616,8 +2616,6 @@ static void *_slurmctld_background(void *no_data)
 			/* Always stop listening when shutdown requested */
 			listeners_quiesce();
 
-			_flush_rpcs();
-
 			/*
 			 * Wait for all already accepted connection work to
 			 * finish before continuing on with control loop that
@@ -2625,6 +2623,14 @@ static void *_slurmctld_background(void *no_data)
 			 * no active RPCs.
 			 */
 			conmgr_quiesce(__func__);
+
+			/*
+			 * Flush incoming RPCs after pausing ConMgr
+			 * communication. We need to ensure that any ongoing
+			 * connection gets completed before this, to be sure no
+			 * RPC is lost.
+			 */
+			_flush_rpcs();
 
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
