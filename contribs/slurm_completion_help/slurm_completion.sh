@@ -1413,6 +1413,9 @@ function __slurm_comp_common_flags() {
 		"rss"
 		"stack"
 	)
+	local requeue_types=(
+		"expedite"
+	)
 	local slurmd_levels=(
 		"quiet"
 		"fatal"
@@ -1491,6 +1494,7 @@ function __slurm_comp_common_flags() {
 	--propagate?(s)) __slurm_compreply_list "${propagate_types[*]}" ;;
 	-q | --qos?(s)) __slurm_compreply "$(__slurm_qos)" ;;
 	--reservation?(s)) __slurm_compreply_list "$(__slurm_reservations)" ;;
+	--requeue) __slurm_compreply "${requeue_types[*]}" ;;
 	--send-lib?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
 	--signal) __slurm_compreply "$(__slurm_signals)" ;;
 	--slurmd-debug) __slurm_compreply "${slurmd_levels[*]}" ;;
