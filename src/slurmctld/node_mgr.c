@@ -891,6 +891,36 @@ static void _free_pack_node_info_members(pack_node_info_t *pack_info)
 	xfree(pack_info->visible_parts);
 }
 
+static bool _determine_if_node_is_hidden(
+	node_record_t *node_ptr,
+	pack_node_info_t *pack_info,
+	uint16_t show_flags,
+	bool privileged)
+{
+	if (!node_ptr)
+		return true;
+
+	xassert(node_ptr->magic == NODE_MAGIC);
+	xassert(node_ptr->config_ptr->magic == CONFIG_MAGIC);
+
+	/*
+	 * We can't avoid packing node records without breaking
+	 * the node index pointers. So pack a node with a name
+	 * of NULL and let the caller deal with it.
+	 */
+	if (!(show_flags & SHOW_ALL) &&
+	    !privileged &&
+	    (_node_is_hidden(node_ptr, pack_info)))
+		return true;
+	else if (IS_NODE_FUTURE(node_ptr) &&
+		 (!(show_flags & SHOW_FUTURE)))
+		return true;
+	else if (!node_ptr->name || (node_ptr->name[0] == '\0'))
+		return true;
+
+	return false;
+}
+
 /*
  * pack_all_nodes - dump all configuration and node information for all nodes
  *	in machine independent form (for network transmission)
@@ -908,8 +938,7 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 	uint32_t nodes_packed, tmp_offset;
 	buf_t *buffer;
 	time_t now = time(NULL);
-	node_record_t *node_ptr;
-	bool hidden, privileged = validate_operator(uid);
+	bool privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {
 		.uid = uid,
 		.visible_parts = build_visible_parts(uid, privileged)
@@ -934,35 +963,16 @@ extern buf_t *pack_all_nodes(uint16_t show_flags, uid_t uid,
 
 		/* write node records */
 		for (inx = 0; inx < node_record_count; inx++) {
-			if (!node_record_table_ptr[inx])
-				goto pack_empty_SLURM_24_11_PROTOCOL_VERSION;
-			node_ptr = node_record_table_ptr[inx];
-			xassert(node_ptr->magic == NODE_MAGIC);
-			xassert(node_ptr->config_ptr->magic == CONFIG_MAGIC);
-
-			/*
-			 * We can't avoid packing node records without breaking
-			 * the node index pointers. So pack a node with a name
-			 * of NULL and let the caller deal with it.
-			 */
-			hidden = false;
-			if (((show_flags & SHOW_ALL) == 0) &&
-			    !privileged &&
-			    (_node_is_hidden(node_ptr, &pack_info)))
-				hidden = true;
-			else if (IS_NODE_FUTURE(node_ptr) &&
-				 (!(show_flags & SHOW_FUTURE)))
-				hidden = true;
-			else if ((node_ptr->name == NULL) ||
-				 (node_ptr->name[0] == '\0'))
-				hidden = true;
-
-			if (hidden) {
-pack_empty_SLURM_24_11_PROTOCOL_VERSION:
+			if (_determine_if_node_is_hidden(
+				    node_record_table_ptr[inx],
+				    &pack_info,
+				    show_flags,
+				    privileged)) {
 				bit_set(hidden_nodes, inx);
 				repack_hidden = true;
 			} else {
-				_pack_node(node_ptr, buffer, protocol_version,
+				_pack_node(node_record_table_ptr[inx],
+					   buffer, protocol_version,
 					   show_flags);
 			}
 			nodes_packed++;
