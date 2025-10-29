@@ -1336,7 +1336,7 @@ static bool _validate_tres_limits_for_qos(
 	uint16_t *admin_set_limit_tres_array,
 	bool strict_checking, bool max_limit)
 {
-	uint64_t max_tres_limit, out_max_tres_limit;
+	uint64_t max_tres_limit;
 	int i;
 	uint64_t job_tres;
 
@@ -1345,34 +1345,27 @@ static bool _validate_tres_limits_for_qos(
 
 	for (i = 0; i < g_tres_count; i++) {
 		(*tres_pos) = i;
-		if (grp_tres_array) {
-			max_tres_limit = MIN(grp_tres_array[i],
-					     max_tres_array[i]);
-			out_max_tres_limit = MIN(out_grp_tres_array[i],
-						 out_max_tres_array[i]);
-		} else {
-			max_tres_limit = max_tres_array[i];
-			out_max_tres_limit = out_max_tres_array[i];
-		}
+		max_tres_limit = grp_tres_array ? MIN(grp_tres_array[i],
+						      max_tres_array[i]) :
+						  max_tres_array[i];
 
 		/* we don't need to look at this limit */
-		if ((admin_set_limit_tres_array[i] == ADMIN_SET_LIMIT)
-		    || (out_max_tres_limit != INFINITE64)
-		    || (max_tres_limit == INFINITE64)
-		    || (job_tres_array[i] && (job_tres_array[i] == NO_VAL64)))
+		if ((admin_set_limit_tres_array[i] == ADMIN_SET_LIMIT) ||
+		    ((out_max_tres_array[i] != INFINITE64) &&
+		     ((!out_grp_tres_array) ||
+		      (out_grp_tres_array[i] != INFINITE64))) ||
+		    (max_tres_limit == INFINITE64) ||
+		    (job_tres_array[i] == NO_VAL64))
 			continue;
-
-		out_max_tres_array[i] = max_tres_array[i];
 
 		job_tres = job_tres_array[i];
 
 		if (divisor)
 			job_tres /= divisor;
 
-		if (out_grp_tres_array && grp_tres_array) {
-			if (out_grp_tres_array[i] == INFINITE64)
-				out_grp_tres_array[i] = grp_tres_array[i];
-
+		if (out_grp_tres_array && grp_tres_array &&
+		    (out_grp_tres_array[i] == INFINITE64)) {
+			out_grp_tres_array[i] = grp_tres_array[i];
 			if (max_limit) {
 				if (job_tres > grp_tres_array[i])
 					return false;
@@ -1380,11 +1373,14 @@ static bool _validate_tres_limits_for_qos(
 				return false;
 		}
 
-		if (max_limit) {
-			if (job_tres > max_tres_array[i])
+		if (out_max_tres_array[i] == INFINITE64) {
+			out_max_tres_array[i] = max_tres_array[i];
+			if (max_limit) {
+				if (job_tres > max_tres_array[i])
+					return false;
+			} else if (job_tres < max_tres_array[i])
 				return false;
-		} else if (job_tres < max_tres_array[i])
-			return false;
+		}
 	}
 
 	return true;
