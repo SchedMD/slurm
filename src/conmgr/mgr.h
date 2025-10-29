@@ -166,8 +166,9 @@ typedef enum {
  */
 extern char *con_flags_string(const con_flags_t flags);
 
-typedef struct conmgr_fd_ref_s {
 #define MAGIC_CON_MGR_FD_REF 0xA2F4B4EF
+
+typedef struct conmgr_fd_ref_s {
 	int magic; /* MAGIC_CON_MGR_FD_REF */
 	conmgr_fd_t *con;
 } conmgr_fd_ref_t;
