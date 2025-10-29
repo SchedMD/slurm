@@ -289,6 +289,8 @@ extern timespec_t conmgr_calc_work_time_delay(time_t delay_seconds,
 typedef struct conmgr_callback_args_s {
 	/* ptr to relevant connection (or NULL) */
 	conmgr_fd_t *con;
+	/* connection reference (or NULL) */
+	conmgr_fd_ref_t *ref;
 	/*
 	 * Work status
 	 * Note: Always check status for CONMGR_WORK_STATUS_CANCELLED to know
