@@ -4334,7 +4334,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 
 	/* get job_id now. Can't submit job to get job_id as job_allocate will
 	 * change the job_desc. */
-	job_desc->step_id.job_id = get_next_job_id(false);
+	if (!(job_desc->step_id.job_id = get_next_job_id(false)))
+		return SLURM_ERROR;
 
 	/* Set viable siblings */
 	job_desc->fed_siblings_viable =
