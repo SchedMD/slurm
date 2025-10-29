@@ -221,20 +221,6 @@ which would hold the job if it was requeued at a later time.
 .IP
 
 .TP
-\fBnotify\fR <\fIjob_id\fR> <\fImessage\fR>
-Send a message to standard error of the salloc or srun command or batch job
-associated with the specified \fIjob_id\fP.
-.IP
-
-.TP
-\fBpidinfo\fR <\fIproc_id\fR>
-Print the Slurm job id and scheduled termination time corresponding to the
-supplied process id, \fIproc_id\fP, on the current node. This will work only
-with processes on node on which scontrol is run, and only for those processes
-spawned by Slurm and their descendants.
-.IP
-
-.TP
 \fBlistjobs\fR [<\fINodeName\fR>]
 Print jobs running on the host that runs this. This contacts any slurmstepd's
 running locally, and does not contact slurmctld
@@ -264,6 +250,20 @@ Print steps running on the host that runs this. This contacts any slurmstepd's
 running locally, and does not contact slurmctld
 
 Use <\fINodeName\fR> if using --enable-multiple-slurmd.
+.IP
+
+.TP
+\fBnotify\fR <\fIjob_id\fR> <\fImessage\fR>
+Send a message to standard error of the salloc or srun command or batch job
+associated with the specified \fIjob_id\fP.
+.IP
+
+.TP
+\fBpidinfo\fR <\fIproc_id\fR>
+Print the Slurm job id and scheduled termination time corresponding to the
+supplied process id, \fIproc_id\fP, on the current node. This will work only
+with processes on node on which scontrol is run, and only for those processes
+spawned by Slurm and their descendants.
 .IP
 
 .TP
@@ -899,6 +899,15 @@ changed automatically as changes made by the Administrators are allowed to
 violate these restrictions.
 
 .TP
+\fBJobName\fR=<\fIname\fR>
+Identify the name of jobs to be modified or set the job's name to the
+specified value.
+When used to identify jobs to be modified, all jobs belonging to all users
+are modified unless the \fIUserID\fP option is used to identify a specific user.
+Either \fIJobId\fP or \fIJobName\fP is required.
+.IP
+
+.TP
 \fBAccount\fR=<\fIaccount\fR>
 Account name to be changed for this job's resource use.
 Value may be cleared with blank data value, "Account=".
@@ -1183,20 +1192,6 @@ Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
-\fBTimeMin\fR=<\fItimespec\fR>
-Change TimeMin value which specifies the minimum time limit minutes of the job.
-.IP
-
-.TP
-\fBJobName\fR=<\fIname\fR>
-Identify the name of jobs to be modified or set the job's name to the
-specified value.
-When used to identify jobs to be modified, all jobs belonging to all users
-are modified unless the \fIUserID\fP option is used to identify a specific user.
-Either \fIJobId\fP or \fIJobName\fP is required.
-.IP
-
-.TP
 \fBName\fR[=<\fIname\fR>]
 See JobName.
 .IP
@@ -1433,11 +1428,6 @@ Also see \fIwait\-for\-switch\fP.
 .IP
 
 .TP
-\fBwait\-for\-switch\fR=<\fIseconds\fR>
-Change max time to wait for a switch <seconds> secs.
-.IP
-
-.TP
 \fBTasksPerNode\fR=<\fIcount\fR>
 Change the job's requested TasksPerNode.
 .IP
@@ -1469,9 +1459,19 @@ Only a Slurm administrator or root can increase job's TimeLimit.
 .IP
 
 .TP
+\fBTimeMin\fR=<\fItimespec\fR>
+Change TimeMin value which specifies the minimum time limit minutes of the job.
+.IP
+
+.TP
 \fBUserID\fR=<\fIUID\fR or \fIname\fR>
 Used with the \fIJobName\fP option to identify jobs to be modified.
 Either a user name or numeric ID (UID), may be specified.
+.IP
+
+.TP
+\fBwait\-for\-switch\fR=<\fIseconds\fR>
+Change max time to wait for a switch <seconds> secs.
 .IP
 
 .TP
@@ -2108,6 +2108,11 @@ accounting for nodes is disabled.
 .SH "PARTITIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
 .TP
+\fBPartitionName\fR=<\fIname\fR>
+Identify the partition to be updated. This specification is required.
+.IP
+
+.TP
 \fBAllocNodes\fR=<\fIname\fR>
 Comma separated list of nodes from which users can execute jobs in the
 partition.
@@ -2243,14 +2248,20 @@ Default memory limit (in megabytes) per allocated GPU.
 .IP
 
 .TP
+\fBLLN\fR={yes|no}
+Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
+.IP
+
+.TP
 \fBMaxCPUsPerNode\fR=<\fIcount\fR>
 Set the maximum number of CPUs that can be allocated per node to all jobs
 in this partition.
 .IP
 
 .TP
-\fBLLN\fR={yes|no}
-Schedule jobs on the least loaded nodes (based on the number of idle CPUs).
+\fBMaxCPUsPerSocket\fR=<\fIcount\fR>
+Set the maximum number of CPUs that can be allocated per socket to all jobs
+in this partition.
 .IP
 
 .TP
@@ -2298,12 +2309,6 @@ pending job using the scontrol command will allow that job to be scheduled.
 .IP
 
 .TP
-\fBMaxCPUsPerSocket\fR=<\fIcount\fR>
-Set the maximum number of CPUs that can be allocated per socket to all jobs
-in this partition.
-.IP
-
-.TP
 \fBNodes\fR=<\fIname\fR>
 Identify the node(s) to be associated with this partition. Multiple node names
 may be specified using simple node range expressions (e.g. "lx[10\-20]").
@@ -2341,11 +2346,6 @@ If not specified, the global \fIOverTimeLimit\fP value will take precedence.
 May not exceed 65533 minutes.
 An input value of "UNLIMITED" will clear any previously configured
 partition\-specific \fIOverTimeLimit\fP value.
-.IP
-
-.TP
-\fBPartitionName\fR=<\fIname\fR>
-Identify the partition to be updated. This specification is required.
 .IP
 
 .TP
@@ -2460,6 +2460,12 @@ See the slurm.conf man page for more information.
 
 .SH "RESERVATIONS \- SPECIFICATIONS FOR CREATE AND UPDATE COMMANDS"
 
+A new reservation must specify at least one access control field: \fBUsers\fR,
+\fBGroups\fR, \fBAccounts\fR, \fBQOS\fR, and \fBAllowedPartitions\fR.
+However, Users and Groups are mutually exclusive. If multiple access control
+fields are specified, a job must be approved by all of them to use the
+reservation.
+
 .TP
 \fBReservationName\fR=<\fIname\fR>
 Identify the name of the reservation to be created or updated.
@@ -2472,10 +2478,8 @@ a name will be created automatically (e.g., "scontrol create reservation ...").
 List of accounts permitted to use the reserved nodes, for example
 "Accounts=physcode1,physcode2".
 A user in any of the specified accounts or subaccounts may use the reserved
-nodes. A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+nodes. Refer to the start of this section for general details about access
+control fields.
 Accounts can also be denied access to reservations by preceding all of the
 account names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "Accounts=\-physcode1,\-physcode2" or "Accounts\-=physcode1,physcode2"
@@ -2494,21 +2498,19 @@ accounts set here.
 List of Partitions permitted to use the reserved resources, for example
 "Partition=debug,low".
 A user using any of the specified Partition may use the reserved
-resources. A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
+resources. Refer to the start of this section for general details about access
+control fields.
 Partition can also be denied access to reservations by preceding all of the
-Partition names with '\-'. Alternately precede the equal sign with '\-'.
-For example, "Partition=\-debug,\-low" or "Partition\-=debug,low"
-will permit any Partition except debug and low to use the reservation.
-You can add or remove individual Partition from an existing reservation by
+partition names with '\-'. Alternately precede the equal sign with '\-'.
+For example, "AllowedPartitions=\-debug,\-low" or "AllowedPartitions\-=debug,low"
+will permit any partition except debug and low to use the reservation.
+You can add or remove individual partitions from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
-If Partition are denied access to a reservation (Partition name preceded
-by a '\-'), then all other Partition are implicitly allowed to use the
-reservation and it is not possible to also explicitly specify allowed Partition.
+If any partitions are denied access to a reservation (partition name preceded
+by a '\-'), then all other partitions are implicitly allowed to use the
+reservation and it is not possible to also explicitly specify allowed partitions.
 Root and the SlurmUser are given access to all reservations, regardless of the
-Partition set here.
+partition(s) set here.
 .IP
 
 .TP
@@ -2545,89 +2547,6 @@ where cores per node is CoreCnt/NodeCnt.
 .IP
 
 .TP
-\fBLicenses\fR=<\fIlicense\fR>
-Specification of licenses (or other resources available on all
-nodes of the cluster) which are to be reserved.
-License names can be followed by a colon and count
-(the default count is one).
-Multiple license names should be comma separated (e.g. "Licenses=foo:4,bar").
-A new reservation must specify one or more resource to be included: NodeCnt,
-Nodes and/or Licenses.
-If a reservation includes Licenses, but no NodeCnt or Nodes, then the option
-\fIFlags=LICENSE_ONLY\fP must also be specified.
-Jobs using this reservation are not restricted to these licenses, but may
-use these reserved licenses plus any which are generally available.
-.IP
-
-.TP
-\fBMaxStartDelay\fR[=<\fItimespec\fR>]
-Change MaxStartDelay value which specifies the maximum time an eligible job not
-requesting this reservation can delay a job requesting it. Default is none.
-Valid formats are minutes, minutes:seconds,
-hours:minutes:seconds, days\-hours, days\-hours:minutes,
-days\-hours:minutes:seconds. Time resolution is one minute and
-second values are rounded up to the next minute. Output format is always
-[days\-]hours:minutes:seconds.
-.IP
-
-.TP
-\fBNodeCnt\fR=<\fInum\fR>[,<\fInum\fR>,...]
-Identify number of nodes to be reserved. The number can include a suffix of
-"k" or "K", in which case the number specified is multiplied by 1024.
-A new reservation must specify one or more resource to be included: NodeCnt,
-Nodes and/or Licenses.
-.IP
-
-.TP
-\fBNodes\fR=<\fIname\fR>
-Identify the node(s) to be reserved. Multiple node names
-may be specified using simple node range expressions (e.g. "Nodes=lx[10\-20]").
-When using \fBNodes\fR to specify more or fewer nodes, \fBNodeCnt\fR will be
-updated to honor the new number of nodes. However, when setting an empty
-list ("Nodes="), the nodelist will be filled with random nodes to
-fulfill the previous nodecnt and the \fISPEC_NODES\fR flag will be removed.
-A new reservation must specify one or more resource to be included: NodeCnt,
-Nodes and/or Licenses. A specification of "ALL" will reserve all nodes. Set
-\fIFlags=PART_NODES\fP and \fIPartitionName=\fP in order for changes in the
-nodes associated with a partition to also be reflected in the nodes associated
-with a reservation. You can add or remove nodes from an existing reservation by
-adding a '+' or '\-' sign before the '=' sign. It also works to do
-nodes=+lx0,\-lx[2\-4] if you want to remove lx[2\-4] and add lx0 at the same
-time.
-
-\fBNOTE\fR: When updating a reservation, if Nodes and Nodecnt are set
-simultaneously, nodecnt will always be honored. The reservation will get a
-subset of nodes if nodes > nodecnt, or it will add extra nodes to the list
-when nodes < nodecnt.
-.IP
-
-.TP
-\fBStartTime\fR=<\fItime_spec\fR>
-The start time for the reservation. A new reservation must specify a start
-time. It accepts times of the form \fIHH:MM:SS\fR for
-a specific time of day (seconds are optional).
-(If that time is already past, the next day is assumed.)
-You may also specify \fImidnight\fR, \fInoon\fR, \fIelevenses\fR (11 AM),
-\fIfika\fR (3 PM) or \fIteatime\fR (4 PM) and you can have a time\-of\-day
-suffixed with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
-You can also say what day the job will be run, by specifying
-a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR or \fIMM.DD.YY\fR,
-or a date and time as \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR. You can also
-give times like \fInow + count time\-units\fR, where the time\-units
-can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, \fIdays\fR,
-or \fIweeks\fR and you can tell Slurm to run the job today with the keyword
-\fItoday\fR and to run the job tomorrow with the keyword
-\fItomorrow\fR. You cannot update the \fIStartTime\fP of a reservation
-in \fIACTIVE\fP state.
-.IP
-
-.TP
-\fBEndTime\fR=<\fItime_spec\fR>
-The end time for the reservation. A new reservation must specify an end
-time or a duration. Valid formats are the same as for StartTime.
-.IP
-
-.TP
 \fBDuration\fR=<\fItime\fR>
 The length of a reservation. A new reservation must specify an end
 time or a duration. Valid formats are minutes, minutes:seconds,
@@ -2638,17 +2557,9 @@ second values are rounded up to the next minute. Output format is always
 .IP
 
 .TP
-\fBPartitionName\fR=<\fIname\fR>
-Partition used to reserve nodes from. This will attempt to allocate all
-nodes in the specified partition unless you request fewer resources than
-are available with \fICoreCnt\fR, \fINodeCnt\fR or \fITRES\fR. If no partition
-is specified at submit time, this partition will override the job's default
-partition. Jobs explicitly requesting a different partition will still be
-allowed to use this reservation as long as there are enough overlapping nodes
-between both partitions to allocate the job.
-\fBNOTE\fR: If \fIAllowedPartitions\fR is used and \fIPartitionName\fR is not
-given, the first partition in \fIAllowedPartitions\fR is what is used as
-\fIPartitionName\fR.
+\fBEndTime\fR=<\fItime_spec\fR>
+The end time for the reservation. A new reservation must specify an end
+time or a duration. Valid formats are the same as for StartTime.
 .IP
 
 .TP
@@ -2696,15 +2607,15 @@ used with a reoccurring reservation flag.
 .IP
 
 .TP
+\fBHOURLY\fR
+Repeat the reservation at the same time every hour.
+.IP
+
+.TP
 \fBIGNORE_JOBS\fR
 Ignore currently running jobs when creating the reservation.
 This can be especially useful when reserving all nodes in the system
 for maintenance.
-.IP
-
-.TP
-\fBHOURLY\fR
-Repeat the reservation at the same time every hour.
 .IP
 
 .TP
@@ -2713,17 +2624,17 @@ See \fIANY_NODES\fR.
 .IP
 
 .TP
+\fBMAGNETIC\fR
+This flag allows jobs to be considered for this reservation even if they didn't
+request it.
+.IP
+
+.TP
 \fBMAINT\fR
 Maintenance mode, receives special accounting treatment.
 This reservation is permitted to use resources that are already in another
 reservation. The MAINT flag behaves similar to STATIC_ALLOC (see below) in
 that it will not replace nodes once they are set.
-.IP
-
-.TP
-\fBMAGNETIC\fR
-This flag allows jobs to be considered for this reservation even if they didn't
-request it.
 .IP
 
 .TP
@@ -2846,10 +2757,8 @@ Value may be cleared with blank data value, "Features=".
 \fBGroups\fR=<\fIgroup list\fR>
 List of groups permitted to use the reserved nodes, for example
 "Group=bio,chem".
-A new reservation must specify Users or Groups and/or Accounts, with Users and
-Groups being mutually exclusive.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+Refer to the start of this section for general details about access control
+fields.
 Unlike users, you cannot deny access to reservations based on group membership.
 Root and the SlurmUser are given access to all reservations, regardless of the
 groups set here.
@@ -2869,9 +2778,74 @@ outages.
 .IP
 
 .TP
-\fBSkip\fR
-Used on a reoccurring reservation, skip to the next reservation iteration.
-\fBNOTE\fR: Only available for update.
+\fBLicenses\fR=<\fIlicense\fR>
+Specification of licenses (or other resources available on all
+nodes of the cluster) which are to be reserved.
+License names can be followed by a colon and count
+(the default count is one).
+Multiple license names should be comma separated (e.g. "Licenses=foo:4,bar").
+A new reservation must specify one or more resource to be included: NodeCnt,
+Nodes and/or Licenses.
+If a reservation includes Licenses, but no NodeCnt or Nodes, then the option
+\fIFlags=LICENSE_ONLY\fP must also be specified.
+Jobs using this reservation are not restricted to these licenses, but may
+use these reserved licenses plus any which are generally available.
+.IP
+
+.TP
+\fBMaxStartDelay\fR[=<\fItimespec\fR>]
+Change MaxStartDelay value which specifies the maximum time an eligible job not
+requesting this reservation can delay a job requesting it. Default is none.
+Valid formats are minutes, minutes:seconds,
+hours:minutes:seconds, days\-hours, days\-hours:minutes,
+days\-hours:minutes:seconds. Time resolution is one minute and
+second values are rounded up to the next minute. Output format is always
+[days\-]hours:minutes:seconds.
+.IP
+
+.TP
+\fBNodeCnt\fR=<\fInum\fR>[,<\fInum\fR>,...]
+Identify number of nodes to be reserved. The number can include a suffix of
+"k" or "K", in which case the number specified is multiplied by 1024.
+A new reservation must specify one or more resource to be included: NodeCnt,
+Nodes and/or Licenses.
+.IP
+
+.TP
+\fBNodes\fR=<\fIname\fR>
+Identify the node(s) to be reserved. Multiple node names
+may be specified using simple node range expressions (e.g. "Nodes=lx[10\-20]").
+When using \fBNodes\fR to specify more or fewer nodes, \fBNodeCnt\fR will be
+updated to honor the new number of nodes. However, when setting an empty
+list ("Nodes="), the nodelist will be filled with random nodes to
+fulfill the previous nodecnt and the \fISPEC_NODES\fR flag will be removed.
+A new reservation must specify one or more resource to be included: NodeCnt,
+Nodes and/or Licenses. A specification of "ALL" will reserve all nodes. Set
+\fIFlags=PART_NODES\fP and \fIPartitionName=\fP in order for changes in the
+nodes associated with a partition to also be reflected in the nodes associated
+with a reservation. You can add or remove nodes from an existing reservation by
+adding a '+' or '\-' sign before the '=' sign. It also works to do
+nodes=+lx0,\-lx[2\-4] if you want to remove lx[2\-4] and add lx0 at the same
+time.
+
+\fBNOTE\fR: When updating a reservation, if Nodes and Nodecnt are set
+simultaneously, nodecnt will always be honored. The reservation will get a
+subset of nodes if nodes > nodecnt, or it will add extra nodes to the list
+when nodes < nodecnt.
+.IP
+
+.TP
+\fBPartitionName\fR=<\fIname\fR>
+Partition used to reserve nodes from. This will attempt to allocate all
+nodes in the specified partition unless you request fewer resources than
+are available with \fICoreCnt\fR, \fINodeCnt\fR or \fITRES\fR. If no partition
+is specified at submit time, this partition will override the job's default
+partition. Jobs explicitly requesting a different partition will still be
+allowed to use this reservation as long as there are enough overlapping nodes
+between both partitions to allocate the job.
+\fBNOTE\fR: If \fIAllowedPartitions\fR is used and \fIPartitionName\fR is not
+given, the first partition in \fIAllowedPartitions\fR is what is used as
+\fIPartitionName\fR.
 .IP
 
 .TP
@@ -2879,10 +2853,8 @@ Used on a reoccurring reservation, skip to the next reservation iteration.
 List of QOS permitted to use the reserved resources, for example
 "QOS=normal,standby".
 A user using any of the specified QOS may use the reserved
-resources. A new reservation must specify Users or Groups and/or QOS and/or
-AllowedPartitions and/or Accounts.
-If Users/Groups and/or Accounts and/or Partitions and/or QOS are specified, a
-job must match all in order to use the reservation.
+resources. Refer to the start of this section for general details about access
+control fields.
 QOS can also be denied access to reservations by preceding all of the
 QOS names with '\-'. Alternately precede the equal sign with '\-'.
 For example, "QOS=\-normal,\-standby" or "QOS\-=normal,standby"
@@ -2897,55 +2869,29 @@ QOS set here.
 .IP
 
 .TP
-\fBUsers\fR=<\fIuser list\fR>
-List of users permitted to use the reserved nodes, for example
-"User=jones1,smith2". Users can also be denied access to a reservation,
-indicated by having a '-' sign before their name, e.g. "User=-jones1,-smith2".
-A new reservation must specify Users or Groups and/or Accounts, with Users and
-Groups being mutually exclusive.
-If both Users/Groups and Accounts are specified, a job must match both in order
-to use the reservation.
+\fBSkip\fR
+Used on a reoccurring reservation, skip to the next reservation iteration.
+\fBNOTE\fR: Only available for update.
+.IP
 
-Root and the SlurmUser are given access to all reservations, regardless of the
-users set here.
-
-Each user in the system may be in one of three states in a reservation:
- - Explicitly allowed
- - Unspecified
- - Explicitly denied
-
-If any users are explicitly allowed to use a reservation, all other users are
-implicitly denied access. If any users are explicitly denied access to a
-reservation, all other users are implicitly allowed access to the reservation.
-
-When updating existing reservations, you may use the '+=' and '-=' operators to
-move users up (+) or down (-) on the list of states. However, you cannot have a
-mix of explicitly allowed and explicitly denied users on the same reservation,
-and an update command that would result in that state will result in an error.
-The '+' or '\-' sign can also be placed directly before the username.
-For example, the following are equivalent:
-.nf
-User\-=jones1,smith2
-.fi
-.nf
-User=\-jones1,\-smith2
-.fi
-
-In these examples, if the users were explicitly allowed before, this assignment
-would remove their names from the allowed list and place them in the unspecified
-state. If the command was repeated again the users would be explicitly denied
-from the reservation.
-
-You can also unset the Users field (reverting all to a neutral/unspecified
-state) by updating the reservation with an empty string:
-.nf
-user=''
-.fi
-
-Prior to version 25.05, if a reservation used user- or group-based access
-controls and slurmctld ever failed to validate the user(s) or group(s), it would
-delete the reservation. Reservations are now resilient to temporary validation
-outages.
+.TP
+\fBStartTime\fR=<\fItime_spec\fR>
+The start time for the reservation. A new reservation must specify a start
+time. It accepts times of the form \fIHH:MM:SS\fR for
+a specific time of day (seconds are optional).
+(If that time is already past, the next day is assumed.)
+You may also specify \fImidnight\fR, \fInoon\fR, \fIelevenses\fR (11 AM),
+\fIfika\fR (3 PM) or \fIteatime\fR (4 PM) and you can have a time\-of\-day
+suffixed with \fIAM\fR or \fIPM\fR for running in the morning or the evening.
+You can also say what day the job will be run, by specifying
+a date of the form \fIMMDDYY\fR or \fIMM/DD/YY\fR or \fIMM.DD.YY\fR,
+or a date and time as \fIYYYY\-MM\-DD[THH:MM[:SS]]\fR. You can also
+give times like \fInow + count time\-units\fR, where the time\-units
+can be \fIseconds\fR (default), \fIminutes\fR, \fIhours\fR, \fIdays\fR,
+or \fIweeks\fR and you can tell Slurm to run the job today with the keyword
+\fItoday\fR and to run the job tomorrow with the keyword
+\fItomorrow\fR. You cannot update the \fIStartTime\fP of a reservation
+in \fIACTIVE\fP state.
 .IP
 
 .TP
@@ -2995,6 +2941,56 @@ Comma\-separated list of TRES required per node for the reservation. See
 TRESPerNode=gres/gpu:a100=2
 
 Above will allocate 2 gpu:a100 per node as specified in nodecnt.
+.IP
+
+.TP
+\fBUsers\fR=<\fIuser list\fR>
+List of users permitted to use the reserved nodes, for example
+"User=jones1,smith2". Users can also be denied access to a reservation,
+indicated by having a '-' sign before their name, e.g. "User=-jones1,-smith2".
+Refer to the start of this section for general details about access control
+fields.
+
+Root and the SlurmUser are given access to all reservations, regardless of the
+users set here.
+
+Each user in the system may be in one of three states in a reservation:
+ - Explicitly allowed
+ - Unspecified
+ - Explicitly denied
+
+If any users are explicitly allowed to use a reservation, all other users are
+implicitly denied access. If any users are explicitly denied access to a
+reservation, all other users are implicitly allowed access to the reservation.
+
+When updating existing reservations, you may use the '+=' and '-=' operators to
+move users up (+) or down (-) on the list of states. However, you cannot have a
+mix of explicitly allowed and explicitly denied users on the same reservation,
+and an update command that would result in that state will result in an error.
+The '+' or '\-' sign can also be placed directly before the username.
+For example, the following are equivalent:
+.nf
+User\-=jones1,smith2
+.fi
+.nf
+User=\-jones1,\-smith2
+.fi
+
+In these examples, if the users were explicitly allowed before, this assignment
+would remove their names from the allowed list and place them in the unspecified
+state. If the command was repeated again the users would be explicitly denied
+from the reservation.
+
+You can also unset the Users field (reverting all to a neutral/unspecified
+state) by updating the reservation with an empty string:
+.nf
+user=''
+.fi
+
+Prior to version 25.05, if a reservation used user- or group-based access
+controls and slurmctld ever failed to validate the user(s) or group(s), it would
+delete the reservation. Reservations are now resilient to temporary validation
+outages.
 
 .IP
 
