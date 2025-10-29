@@ -445,7 +445,7 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con)
-		work->ref = fd_new_ref(con);
+		fd_new_ref(con, &work->ref);
 
 	work_mask_depend(work, depend_mask);
 

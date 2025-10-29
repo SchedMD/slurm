@@ -624,7 +624,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg);
  * Create new connection reference
  * WARNING: caller must hold mgr.mutex
  */
-extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con);
+extern void fd_new_ref(conmgr_fd_t *src, conmgr_fd_ref_t **dst_ptr);
 
 /*
  * Release and free connection reference
