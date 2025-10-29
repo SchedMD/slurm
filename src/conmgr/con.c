@@ -2075,6 +2075,8 @@ extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con)
 	conmgr_fd_ref_t *ref = NULL;
 
 	xassert(con);
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
 	ref = fd_new_ref(con->con);
