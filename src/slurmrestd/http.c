@@ -126,7 +126,7 @@ static int _on_request(http_con_t *hcon, const char *name,
 
 	xassert(ctxt->magic == MAGIC);
 
-	args.con = conmgr_con_link(ctxt->con);
+	CONMGR_CON_LINK(ctxt->con, args.con);
 
 	rc = operations_router(&args);
 

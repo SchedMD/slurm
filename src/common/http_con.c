@@ -820,8 +820,7 @@ extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 	if ((rc = conmgr_con_get_events(con, &prior_events, &prior_arg)))
 		goto failed;
 
-	if (!(hcon->con = conmgr_con_link(con)))
-		goto failed;
+	CONMGR_CON_LINK(con, hcon->con);
 
 	if ((rc = conmgr_con_set_events(con, &http_events, hcon, __func__)))
 		goto failed;
