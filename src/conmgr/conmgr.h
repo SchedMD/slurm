@@ -1020,6 +1020,26 @@ extern void conmgr_unquiesce(const char *caller);
 extern bool conmgr_is_quiesced(void);
 
 /*
+ * Link new reference to conmgr connection
+ * Will ensure that connection will remain valid until released.
+ * IN src - connection to assign to dst
+ * IN/OUT dst - destination to assign with reference to src
+ */
+#define CONMGR_CON_LINK(src, dst) \
+	do { \
+		(dst) = conmgr_con_link(src); \
+	} while (false); \
+/*
+ * Release reference to conmgr connection
+ * WARNING: Connection may not exist after this called
+ * IN con - connection to release (will be set to NULL)
+ */
+#define CONMGR_CON_UNLINK(con) \
+	do { \
+		conmgr_fd_free_ref(&(con)); \
+	} while (false);
+
+/*
  * Create new reference to conmgr connection
  * Will ensure that conmgr_fd_t will remain valid until released.
  * IN con - connection to create reference
@@ -1027,16 +1047,18 @@ extern bool conmgr_is_quiesced(void);
  */
 extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con);
 /*
- * Link newq reference to conmgr connection
+ * Link new reference to conmgr connection
  * Will ensure that connection will remain valid until released.
  * IN con - connection reference
  * RET ptr to new reference (must be released by conmgr_fd_free_ref())
+ * NOTE: Use CONMGR_CON_LINK() instead of calling directly
  */
 extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con);
 /*
  * Release reference to conmgr connection
  * WARNING: Connection may not exist after this called
  * IN ref_ptr - ptr to reference to release (will be set to NULL)
+ * NOTE: Use CONMGR_CON_UNLINK() instead of calling directly
  */
 extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
 /*
