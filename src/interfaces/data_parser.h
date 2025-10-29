@@ -134,7 +134,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_ASSOC_CONDITION, /* slurmdb_assoc_cond_t */
 	DATA_PARSER_ASSOC_CONDITION_PTR, /* slurmdb_assoc_cond_t* */
-	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
+	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* - REMOVED: v0.0.45 */
 	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_PTR, /* slurmdb_cluster_accounting_rec_t* */
 	DATA_PARSER_CLUSTER_CLASSIFICATION, /* uint16_t joined with slurmdb_classification_type_t */
@@ -218,12 +218,12 @@ typedef enum {
 	DATA_PARSER_JOB_USER, /* user/uid from slurmdb_job_rec_t* */
 	DATA_PARSER_NEED_PREREQS_FLAGS, /* need_t */
 	DATA_PARSER_QOS_ID, /* uint32_t of QOS->name or stringified QOS->id if name unresolvable */
-	DATA_PARSER_QOS_ID_LIST, /* List of char* of QOS ids */
+	DATA_PARSER_QOS_ID_LIST, /* List of char* of QOS ids - REMOVED: v0.0.45 */
 	DATA_PARSER_QOS_STRING_ID_LIST, /* List of char* of QOS ids */
 	DATA_PARSER_QOS_ID_STRING_CSV_LIST, /* List of char* of QOS ids */
 	DATA_PARSER_QOS_ID_STRING, /* char* of QOS id */
 	DATA_PARSER_QOS_NAME, /* char * of QOS name */
-	DATA_PARSER_QOS_NAME_LIST, /* List of char* of QOS names */
+	DATA_PARSER_QOS_NAME_LIST, /* List of char* of QOS names - REMOVED: v0.0.45 */
 	DATA_PARSER_QOS_NAME_CSV_LIST, /* List of char* of QOS names */
 	DATA_PARSER_QOS_PREEMPT_LIST, /* slurmdb_qos_rec_t->preempt_bitstr & preempt_list */
 	DATA_PARSER_QOS, /* slurmdb_qos_rec_t */
@@ -261,7 +261,7 @@ typedef enum {
 	DATA_PARSER_SLURM_STEP_ID_PTR, /* slurm_step_id_t* */
 	DATA_PARSER_SLURM_STEP_ID_STRING, /* slurm_step_id_t -> SELECTED_STEP */
 	DATA_PARSER_SLURM_STEP_ID_STRING_PTR, /* slurm_step_id_t* -> SLURM_STEP_ID_STRING */
-	DATA_PARSER_SLURM_STEP_ID_STRING_LIST, /* list_t of slurm_step_id_t* */
+	DATA_PARSER_SLURM_STEP_ID_STRING_LIST, /* list_t of slurm_step_id_t* - REMOVED: v0.0.45 */
 	DATA_PARSER_STEP_ID, /* uint32_t of job step id */
 	DATA_PARSER_STEP_ID_PTR, /* uint32_t* of job step id */
 	DATA_PARSER_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
