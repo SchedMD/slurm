@@ -2712,8 +2712,7 @@ static void *_slurmctld_background(void *no_data)
 				info("Saving all slurm state");
 				save_all_state();
 			} else {
-				error("Semaphores still set after %d seconds, "
-				      "can not save state", CONTROL_TIMEOUT);
+				error("Semaphores still set after flushing RPCs, and finish scheduling. Can not save state");
 			}
 
 			/* Unblock main sched thread, so that it can shutdown */
