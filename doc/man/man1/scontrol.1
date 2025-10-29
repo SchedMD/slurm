@@ -716,7 +716,9 @@ directly switches to controller mode. This can be used to speed up the Slurm
 controller fail\-over mechanism when the primary node is down.
 This can be used to minimize disruption if the computer executing the
 primary Slurm controller is scheduled down.
-(Note: Slurm's primary controller will take the control back at startup.)
+
+\fBNOTE\fR: The primary controller daemon will shut down to allow the secondary
+to take control. It will take control back at startup.
 .IP
 
 .TP
