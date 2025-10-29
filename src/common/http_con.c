@@ -779,7 +779,7 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	if (hcon_events->on_close)
 		hcon_events->on_close(conmgr_con_get_name(hcon_con), hcon_arg);
 
-	conmgr_fd_free_ref(&hcon_con);
+	CONMGR_CON_UNLINK(hcon_con);
 }
 
 extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
@@ -830,7 +830,7 @@ extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 
 	return rc;
 failed:
-	conmgr_fd_free_ref(&hcon->con);
+	CONMGR_CON_UNLINK(hcon->con);
 	hcon->magic = ~MAGIC;
 
 	/* Attempt to revert changes */

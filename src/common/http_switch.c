@@ -125,7 +125,7 @@ static int _on_match_rpc(conmgr_fd_t *con)
 	if (!conmgr_fd_is_tls(ref))
 		rc = _reply_tls_required(ref);
 
-	conmgr_fd_free_ref(&ref);
+	CONMGR_CON_UNLINK(ref);
 	return rc;
 }
 

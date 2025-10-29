@@ -725,7 +725,7 @@ static void *_service_msg(void *arg)
 		 msg->auth_uid, addr, msg->protocol_version);
 
 	/* Release conmgr connection as it will have been closed */
-	conmgr_fd_free_ref(&msg->conmgr_con);
+	CONMGR_CON_UNLINK(msg->conmgr_con);
 	slurmd_req(msg);
 
 	conn_g_destroy(msg->conn, true);
@@ -736,7 +736,7 @@ static void *_service_msg(void *arg)
 		 (uint32_t) msg->msg_type, rpc_num2string(msg->msg_type));
 
 	/* Release conmgr connection as it will have been closed */
-	conmgr_fd_free_ref(&conmgr_con);
+	CONMGR_CON_UNLINK(conmgr_con);
 
 	slurm_free_msg(msg);
 
@@ -1997,7 +1997,7 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	xassert(con == arg);
 
 	slurm_mutex_lock(&listen_mutex);
-	conmgr_fd_free_ref(&listener);
+	CONMGR_CON_UNLINK(listener);
 	slurm_mutex_unlock(&listen_mutex);
 
 	debug3("%s: [%s] closed RPC listener. Queuing up cleanup.",
@@ -2817,7 +2817,7 @@ extern void slurmd_shutdown(void)
 	_shutdown = 1;
 
 	slurm_mutex_lock(&listen_mutex);
-	conmgr_fd_free_ref(&listener);
+	CONMGR_CON_UNLINK(listener);
 	slurm_mutex_unlock(&listen_mutex);
 
 	conmgr_request_shutdown();

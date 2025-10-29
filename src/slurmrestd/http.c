@@ -85,7 +85,7 @@ static void _connection_finish(http_context_t *ctxt)
 {
 	xassert(ctxt->magic == MAGIC);
 
-	conmgr_fd_free_ref(&ctxt->con);
+	CONMGR_CON_UNLINK(ctxt->con);
 
 	/* auth should have been released long before now */
 	xassert(!ctxt->auth);
@@ -130,7 +130,7 @@ static int _on_request(http_con_t *hcon, const char *name,
 
 	rc = operations_router(&args);
 
-	conmgr_fd_free_ref(&args.con);
+	CONMGR_CON_UNLINK(args.con);
 	FREE_NULL_REST_AUTH(ctxt->auth);
 
 	return rc;

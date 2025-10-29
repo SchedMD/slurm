@@ -1649,7 +1649,7 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 		 * The fd will be extracted from conmgr, so the conmgr
 		 * connection ref should be removed from msg first.
 		 */
-		conmgr_fd_free_ref(&msg->conmgr_con);
+		CONMGR_CON_UNLINK(msg->conmgr_con);
 
 		if ((rc = conmgr_queue_extract_con_fd(con, _on_extract,
 						      XSTRINGIFY(_on_extract),
