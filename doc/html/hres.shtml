@@ -93,6 +93,9 @@ then rack level summing multiple chassis, then datacenter row ).</p>
 <p>The scheduler ensures that the total summed resources at every layer
 in the hierarchy do not exceed that layer's defined count.</p>
 
+<p><b>Important Note:</b> Layers defined under <b>Mode 3</b> must be able to be
+represented as a <b>rooted uniform depth tree</b>.
+
 <p>For example, consider the <b>power</b> resource defined in the example
 <a href="#resources_yaml">resources.yaml</a> file below. A job that requests
 1000 of the <b>power</b> resource and is allocated <code>node[01-16]</code>
