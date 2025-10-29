@@ -680,7 +680,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name,
 			 (uintptr_t) con->events->on_listen_connect);
 
-		arg = con->events->on_listen_connect(con, con->new_arg);
+		arg = con->events->on_listen_connect(conmgr_args, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
@@ -691,7 +691,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name,
 			 (uintptr_t) con->events->on_connection);
 
-		arg = con->events->on_connection(con, con->new_arg);
+		arg = con->events->on_connection(conmgr_args, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,

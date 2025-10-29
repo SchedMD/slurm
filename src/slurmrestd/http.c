@@ -145,12 +145,13 @@ static void _on_close(const char *name, void *arg)
 	_connection_finish(ctxt);
 }
 
-static void *_on_connection(conmgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	static const http_con_server_events_t events = {
 		.on_request = _on_request,
 		.on_close = _on_close,
 	};
+	conmgr_fd_t *con = conmgr_args.con;
 	http_context_t *ctxt = NULL;
 
 	ctxt = xmalloc(sizeof(*ctxt) + http_con_bytes());
@@ -170,7 +171,7 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	return _ctxt_get_hcon(ctxt);
 }
 
-static int _on_data(conmgr_fd_t *con, void *arg)
+static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	fatal_abort("this should never happen");
 }

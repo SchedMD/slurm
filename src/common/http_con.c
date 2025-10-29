@@ -682,8 +682,9 @@ static int _on_content_complete(void *arg)
 	return rc;
 }
 
-extern int _on_data(conmgr_fd_t *con, void *arg)
+extern int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	http_con_t *hcon = arg;
 	static const http_parser_callbacks_t callbacks = {
 		.on_request = _on_request,
@@ -745,8 +746,9 @@ cleanup:
 	return rc;
 }
 
-static void _on_finish(conmgr_fd_t *con, void *arg)
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	http_con_t *hcon = arg;
 	void *hcon_arg = hcon->arg;
 	conmgr_fd_ref_t *hcon_con = NULL;

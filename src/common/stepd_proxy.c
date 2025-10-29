@@ -153,8 +153,9 @@ static int _slurmd_send_recv_msg(conmgr_fd_t *con, slurm_msg_t *req,
 	return rc;
 }
 
-static int _on_data_local_socket(conmgr_fd_t *con, void *arg)
+static int _on_data_local_socket(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	buf_t *in = NULL;
 	uint32_t length, timeout, r_uid;
 	uint16_t msg_type, protocol_version, proxy_type;

@@ -58,11 +58,11 @@ extern conmgr_con_flags_t http_switch_con_flags(void);
  * Changes mode to CON_TYPE_RPC when fingerprints as Slurm RPC.
  * Calls on_http() when fingerprint matches HTTP.
  *
- * IN con - connection to fingerprint
+ * IN conmgr_args - Args containing connection to fingerprint
  * IN on_http - callback to call when fingerprint for HTTP matches
  * RET SLURM_SUCCESS or error
  */
-extern int http_switch_on_data(conmgr_fd_t *con,
+extern int http_switch_on_data(conmgr_callback_args_t conmgr_args,
 			       int (*on_http)(conmgr_fd_t *con));
 
 /* Initialize all plugins and state needed for HTTP switching */

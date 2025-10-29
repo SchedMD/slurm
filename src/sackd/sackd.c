@@ -302,8 +302,11 @@ static void _establish_config_source(void)
 	xstrfmtcat(conf_file, "%s/slurm.conf", dir);
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_fd_get_name(con),

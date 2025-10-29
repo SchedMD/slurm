@@ -564,7 +564,8 @@ extern int add_connection(conmgr_con_type_t type,
 
 extern void close_all_connections(void);
 
-extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
+extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args,
+				  void *arg);
 
 /*
  * Find connection by a given file descriptor

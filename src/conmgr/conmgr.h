@@ -137,49 +137,50 @@ typedef struct {
 	/*
 	 * Call back for new listener for setup
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
 	 * RET arg ptr to hand to events
 	 */
-	void *(*on_listen_connect)(conmgr_fd_t *con, void *arg);
+	void *(*on_listen_connect)(conmgr_callback_args_t conmgr_args,
+				   void *arg);
 
 	/*
 	 * Call back when listener ended.
 	 * Called once per connection right before connection is xfree()ed.
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - ptr to be handed return of on_connection().
 	 * 	Ownership of arg pointer returned to caller as it will not be
 	 * 	used anymore.
 	 */
-	void (*on_listen_finish)(conmgr_fd_t *con, void *arg);
+	void (*on_listen_finish)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back for new connection for setup
 	 *
-	 * IN fd file descriptor of new connection
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
 	 * RET arg ptr to hand to events
 	 */
-	void *(*on_connection)(conmgr_fd_t *con, void *arg);
+	void *(*on_connection)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when there is data ready in "in" buffer
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RAW.
 	 *
-	 * IN con connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
-	int (*on_data)(conmgr_fd_t *con, void *arg);
+	int (*on_data)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when there is new RPC msg ready
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RPC.
 	 *
-	 * IN con connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN msg ptr to new msg (call must slurm_free_msg())
 	 * IN unpack_rc return code from unpacking RPC
 	 * WARNING: always check unpack_rc and msg->auth_ids_set before
@@ -187,19 +188,19 @@ typedef struct {
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
-	int (*on_msg)(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
-		      void *arg);
+	int (*on_msg)(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		      int unpack_rc, void *arg);
 
 	/*
 	 * Call back when connection ended.
 	 * Called once per connection right before connection is xfree()ed.
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - ptr to be handed return of on_connection().
 	 * 	Ownership of arg pointer returned to caller as it will not be
 	 * 	used anymore.
 	 */
-	void (*on_finish)(conmgr_fd_t *con, void *arg);
+	void (*on_finish)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when read timeout occurs
@@ -208,11 +209,11 @@ typedef struct {
 	 * If on_read_timeout=NULL is treated same as returning
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
-	int (*on_read_timeout)(conmgr_fd_t *con, void *arg);
+	int (*on_read_timeout)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when write timeout occurs
@@ -221,11 +222,11 @@ typedef struct {
 	 * If on_read_timeout=NULL is treated same as returning
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
-	int (*on_write_timeout)(conmgr_fd_t *con, void *arg);
+	int (*on_write_timeout)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when connect timeout occurs
@@ -234,11 +235,12 @@ typedef struct {
 	 * If on_read_timeout=NULL is treated same as returning
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
-	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
+	int (*on_connect_timeout)(conmgr_callback_args_t conmgr_args,
+				  void *arg);
 } conmgr_events_t;
 
 typedef enum {

@@ -1972,8 +1972,10 @@ _process_cmdline(int ac, char **av)
 	}
 }
 
-static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
+static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	debug3("%s: [%s] Successfully opened slurm listen port %u",
 	       __func__, conmgr_fd_get_name(con), conf->port);
 
@@ -1992,8 +1994,10 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 	return con;
 }
 
-static void _on_listen_finish(conmgr_fd_t *con, void *arg)
+static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	xassert(con == arg);
 
 	slurm_mutex_lock(&listen_mutex);
@@ -2072,16 +2076,20 @@ static void _on_extract_fd(conmgr_callback_args_t conmgr_args, void *conn,
 	_try_service_msg(conmgr_args, args);
 }
 
-static void *_on_connection(conmgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	debug3("%s: [%s] New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
 
 	return con;
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int rc = SLURM_SUCCESS;
 
 	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
@@ -2122,17 +2130,19 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 	return rc;
 }
 
-static void _on_finish(conmgr_fd_t *con, void *arg)
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	xassert(arg == con);
 
 	debug3("%s: [%s] RPC connection closed",
 	       __func__, conmgr_fd_get_name(con));
 }
 
-static int _on_data(conmgr_fd_t *con, void *arg)
+static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	return http_switch_on_data(con, on_http_connection);
+	return http_switch_on_data(conmgr_args, on_http_connection);
 }
 
 static void _create_msg_socket(void)

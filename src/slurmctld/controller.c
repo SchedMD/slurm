@@ -1550,8 +1550,9 @@ extern void queue_job_scheduler(void)
 	slurm_mutex_unlock(&sched_cnt_mutex);
 }
 
-static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
+static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	const int *i_ptr = arg;
 	const int i = *i_ptr;
 	int rc = EINVAL;
@@ -1575,8 +1576,9 @@ static void *_on_listen_connect(conmgr_fd_t *con, void *arg)
 	return arg;
 }
 
-static void _on_listen_finish(conmgr_fd_t *con, void *arg)
+static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int *i_ptr = arg;
 	const int i = *i_ptr;
 
@@ -1591,16 +1593,21 @@ static void _on_listen_finish(conmgr_fd_t *con, void *arg)
 	xfree(i_ptr);
 }
 
-static void *_on_primary_connection(conmgr_fd_t *con, void *arg)
+static void *_on_primary_connection(conmgr_callback_args_t conmgr_args,
+				    void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	debug3("%s: [%s] PRIMARY: New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
 
 	return con;
 }
 
-static void _on_primary_finish(conmgr_fd_t *con, void *arg)
+static void _on_primary_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	debug3("%s: [%s] PRIMARY: RPC connection closed",
 	       __func__, conmgr_fd_get_name(con));
 }
@@ -1616,8 +1623,10 @@ static void _on_primary_finish(conmgr_fd_t *con, void *arg)
  * currently does not appear to be an issue but may be one in the future until
  * all of the RPC handlers are converted to conmgr fully.
  */
-static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+static int _on_primary_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+			   void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int rc = SLURM_SUCCESS;
 	slurmctld_rpc_t *this_rpc = NULL;
 
@@ -1662,7 +1671,7 @@ static int _on_primary_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
 	return rc;
 }
 
-static void *_on_connection(conmgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool standby_mode;
 
@@ -1671,12 +1680,12 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	slurm_mutex_unlock(&listeners.mutex);
 
 	if (!standby_mode)
-		return _on_primary_connection(con, arg);
+		return _on_primary_connection(conmgr_args, arg);
 	else
-		return on_backup_connection(con, arg);
+		return on_backup_connection(conmgr_args, arg);
 }
 
-static void _on_finish(conmgr_fd_t *con, void *arg)
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	bool standby_mode;
 
@@ -1685,18 +1694,20 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	slurm_mutex_unlock(&listeners.mutex);
 
 	if (!standby_mode)
-		return _on_primary_finish(con, arg);
+		return _on_primary_finish(conmgr_args, arg);
 	else
-		return on_backup_finish(con, arg);
+		return on_backup_finish(conmgr_args, arg);
 }
 
-static int _on_data(conmgr_fd_t *con, void *arg)
+static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	return http_switch_on_data(con, on_http_connection);
+	return http_switch_on_data(conmgr_args, on_http_connection);
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	bool standby_mode;
 
 	if ((unpack_rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) ||
@@ -1723,9 +1734,9 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 	slurm_mutex_unlock(&listeners.mutex);
 
 	if (!standby_mode)
-		return _on_primary_msg(con, msg, arg);
+		return _on_primary_msg(conmgr_args, msg, arg);
 	else
-		return on_backup_msg(con, msg, arg);
+		return on_backup_msg(conmgr_args, msg, arg);
 }
 
 extern void listeners_quiesce(void)

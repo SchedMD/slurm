@@ -129,9 +129,10 @@ static int _on_match_rpc(conmgr_fd_t *con)
 	return rc;
 }
 
-extern int http_switch_on_data(conmgr_fd_t *con,
+extern int http_switch_on_data(conmgr_callback_args_t conmgr_args,
 			       int (*on_http)(conmgr_fd_t *con))
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	buf_t *buffer = conmgr_fd_shadow_in_buffer(con);
 	rpc_fingerprint_t status = rpc_fingerprint(buffer);
 	int rc = SLURM_SUCCESS;
