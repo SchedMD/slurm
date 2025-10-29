@@ -7067,13 +7067,13 @@ static int _foreach_layer(void *x, void *arg)
 	license->nodes = xstrdup(layer->nodes);
 	license->hres_rec.total = layer->count;
 
-	if ((hres_variable_free != NULL) && list_count(layer->base)) {
+	if (((void *) hres_variable_free) && list_count(layer->base)) {
 		license->hres_rec.base = list_create(hres_variable_free);
 		list_for_each(layer->base, _foreach_variable,
 			      license->hres_rec.base);
 	}
 
-	if (hres_variable_free && args->first_layer &&
+	if (((void *) hres_variable_free) && args->first_layer &&
 	    list_count(args->resource->variables)) {
 		license->hres_rec.variables = list_create(hres_variable_free);
 		list_for_each(args->resource->variables, _foreach_variable,
@@ -7156,7 +7156,7 @@ static int _foreach_license(void *x, void *arg)
 		list_append(*resources, resource);
 	}
 
-	if (!resource->variables && (hres_variable_free != NULL) &&
+	if (!resource->variables && ((void *) hres_variable_free) &&
 	    list_count(license->hres_rec.variables)) {
 		resource->variables = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.variables, _foreach_variable,
@@ -7171,7 +7171,8 @@ static int _foreach_license(void *x, void *arg)
 	if (!resource->topology_name)
 		resource->topology_name =
 			xstrdup(license->hres_rec.topology_name);
-	if (hres_variable_free && list_count(license->hres_rec.base)) {
+	if (((void *) hres_variable_free) &&
+	    list_count(license->hres_rec.base)) {
 		layer->base = list_create(hres_variable_free);
 		list_for_each(license->hres_rec.base, _foreach_variable,
 			      layer->base);
