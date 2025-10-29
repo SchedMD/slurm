@@ -5858,7 +5858,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	job_desc_msg_t *job_desc      = sib_msg->data;
 	job_desc->step_id = sib_msg->step_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
-	job_desc->alloc_node          = sib_msg->submit_host;
+	job_desc->alloc_node = xstrdup(sib_msg->submit_host);
 	job_desc->user_id = sib_msg->user_id;
 	job_desc->group_id = sib_msg->group_id;
 
