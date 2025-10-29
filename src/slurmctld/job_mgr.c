@@ -8625,7 +8625,16 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		job_ptr->profile = job_desc->profile;
 
 	if (job_desc->step_id.job_id != NO_VAL) { /* already confirmed unique */
-		job_ptr->job_id = job_desc->step_id.job_id;
+		job_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
+		job_ptr->job_id = job_ptr->step_id.job_id =
+			job_desc->step_id.job_id;
+
+		if (!job_desc->step_id.sluid) {
+			job_record_set_sluid(job_ptr, false);
+		} else {
+			job_ptr->db_index = job_ptr->step_id.sluid =
+				job_desc->step_id.sluid;
+		}
 	} else {
 		error_code = _set_job_id(job_ptr);
 		if (error_code)

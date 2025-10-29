@@ -3771,7 +3771,7 @@ static int _submit_sibling_jobs(job_desc_msg_t *job_desc, slurm_msg_t *msg,
 	sib_msg.fed_siblings = job_desc->fed_siblings_viable;
 	sib_msg.group_id = job_desc->group_id;
 	sib_msg.resp_host    = job_desc->resp_host;
-	sib_msg.step_id.job_id = job_desc->step_id.job_id;
+	sib_msg.step_id = job_desc->step_id;
 	sib_msg.submit_host  = job_desc->alloc_node;
 	sib_msg.user_id = job_desc->user_id;
 	sib_msg.submit_proto_ver = start_protocol_version;
@@ -4403,6 +4403,9 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 * viable siblings and potentially active local job */
 	job_ptr->fed_details->siblings_active = job_desc->fed_siblings_active;
 	update_job_fed_details(job_ptr);
+
+	/* Copy job_ptr->step_id to pass jobid and sluid to sibling clusters */
+	job_desc->step_id = job_ptr->step_id;
 
 	if (!job_held && _submit_sibling_jobs(
 				job_desc, msg, alloc_only,
@@ -5853,7 +5856,7 @@ static int _q_sib_job_submission(slurm_msg_t *msg, bool interactive_job)
 	fed_job_update_info_t *job_update_info = NULL;
 	sib_msg_t *sib_msg            = msg->data;
 	job_desc_msg_t *job_desc      = sib_msg->data;
-	job_desc->step_id.job_id = sib_msg->step_id.job_id;
+	job_desc->step_id = sib_msg->step_id;
 	job_desc->fed_siblings_viable = sib_msg->fed_siblings;
 	job_desc->alloc_node          = sib_msg->submit_host;
 	job_desc->user_id = sib_msg->user_id;
