@@ -127,6 +127,8 @@ typedef struct conmgr_fd_s conmgr_fd_t;
  */
 typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
+typedef struct conmgr_callback_args_s conmgr_callback_args_t;
+
 /*
  * Struct of call backs to call on events
  * of a given connection.
@@ -282,7 +284,7 @@ extern char *conmgr_work_depend_string(conmgr_work_depend_t type);
 extern timespec_t conmgr_calc_work_time_delay(time_t delay_seconds,
 					      long delay_nanoseconds);
 
-typedef struct {
+typedef struct conmgr_callback_args_s {
 	/* ptr to relevant connection (or NULL) */
 	conmgr_fd_t *con;
 	/*
