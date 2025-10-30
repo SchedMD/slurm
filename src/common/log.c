@@ -1661,27 +1661,28 @@ extern int get_sched_log_level(void)
 extern char *log_build_job_id_str(slurm_step_id_t *step_id, char *buf,
 				  int buf_size)
 {
-	int pos = 0;
-
 	xassert(buf);
 	xassert(buf_size > 1);
 
-	buf[pos] = '\0';
+	buf[0] = '\0';
 
-	if (!step_id || !step_id->job_id)
-		pos += snprintf(buf + pos, buf_size - pos,
-				"%%.0sJobId=Invalid SLUID=");
-	else
-		pos += snprintf(buf + pos, buf_size - pos,
-				"%%.0sJobId=%u SLUID=", step_id->job_id);
-
-	if (pos >= buf_size)
-		return buf;
-
-	if (!step_id || !step_id->sluid)
-		snprintf(buf + pos, buf_size - pos, "Invalid");
-	else
-		print_sluid(step_id->sluid, buf + pos, buf_size - pos);
+	if (!step_id) {
+		snprintf(buf, buf_size, "%%.0sJobId=Invalid SLUID=Invalid");
+	} else if (step_id->job_id && (step_id->job_id != NO_VAL) &&
+		   !step_id->sluid) {
+		snprintf(buf, buf_size, "%%.0sJobId=%u", step_id->job_id);
+	} else if (step_id->job_id && (step_id->job_id != NO_VAL)) {
+		int pos = snprintf(buf, buf_size,
+				   "%%.0sJobId=%u SLUID=", step_id->job_id);
+		if (pos > 0)
+			print_sluid(step_id->sluid, buf + pos, buf_size - pos);
+	} else if (step_id->sluid) {
+		int pos = snprintf(buf, buf_size, "%%.0sSLUID=");
+		if (pos > 0)
+			print_sluid(step_id->sluid, buf + pos, buf_size - pos);
+	} else {
+		snprintf(buf, buf_size, "%%.0sJobId=Invalid SLUID=Invalid");
+	}
 
 	return buf;
 }
