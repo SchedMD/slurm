@@ -699,6 +699,7 @@ static int _send_start_response(conmgr_fd_t *con, slurm_msg_t *req_msg, int rc)
 	st_msg->step_id.step_het_comp = NO_VAL;
 	rc = conmgr_queue_write_msg(con, msg);
 	slurm_free_msg(msg);
+	FREE_NULL_MSG(req_msg);
 
 	conmgr_queue_close_fd(con);
 	return rc;
@@ -1225,11 +1226,13 @@ static int _on_connection_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
 		error("%s: [%s] rejecting %s RPC with missing user auth",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type));
+		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	} else if (msg->auth_uid != user_id) {
 		error("%s: [%s] rejecting %s RPC with user:%u != owner:%u",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type), msg->auth_uid, user_id);
+		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
@@ -1508,7 +1511,6 @@ static int _anchor_child(int pipe_fd[2])
 	slurm_mutex_lock(&state.debug_lock);
 	xassert(!state.locked);
 	xassert(state.needs_lock);
-	state.needs_lock = false;
 	debug4("%s: END conmgr_run()", __func__);
 	slurm_mutex_unlock(&state.debug_lock);
 #endif
