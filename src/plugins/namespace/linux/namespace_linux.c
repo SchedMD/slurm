@@ -567,7 +567,8 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	close(fd);
+	if (fd >= 0)
+		close(fd);
 	xfree(tmpstr);
 
 	xstrfmtcat(tmpstr, "/proc/%d/gid_map", pid);
@@ -584,7 +585,7 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 	}
 
 end_it:
-	if (fd)
+	if (fd >= 0)
 		close(fd);
 	xfree(tmpstr);
 	return rc;
@@ -1124,6 +1125,7 @@ extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
 		rc = SLURM_SUCCESS;
 	}
 end:
-	close(fd);
+	if (fd >= 0)
+		close(fd);
 	return rc;
 }
