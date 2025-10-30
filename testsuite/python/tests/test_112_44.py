@@ -50,6 +50,12 @@ def setup():
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
     atf.require_openapi_generator("7.3.0")
 
+    # Uncomment the following two lines to generate a new openapi_spec.json
+    # file, then it could be moved to the testsuite_data_dir if we really
+    # want to change the OpenAPI specs after .0.
+    # with open("openapi_spec_v44.json", "w") as f:
+    #     json.dump(atf.properties["openapi_spec"], f, indent=2)
+
     # Conf reliant variables (put here to avert --auto-config errors)
     local_cluster_name = atf.get_config_parameter("ClusterName")
 
@@ -283,9 +289,6 @@ def test_loaded_versions():
     assert "/slurmdb/v0.0.44/jobs/" in spec["paths"].keys()
 
 
-@pytest.mark.skipif(
-    atf.get_version() <= (25, 11, 0), reason="Specs may change until .0 is released"
-)
 @pytest.mark.parametrize("openapi_spec", ["44"], indirect=True)
 def test_specification(openapi_spec):
     atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
