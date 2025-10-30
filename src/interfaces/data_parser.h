@@ -134,14 +134,6 @@ typedef enum {
 	DATA_PARSER_OPENAPI_ASSOCS_REMOVED_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_ASSOC_CONDITION, /* slurmdb_assoc_cond_t */
 	DATA_PARSER_ASSOC_CONDITION_PTR, /* slurmdb_assoc_cond_t* */
-	DATA_PARSER_ASSOC_CONDITION_WITH_DELETED_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_FLAG_WITH_DELETED */
-	DATA_PARSER_ASSOC_CONDITION_WITH_USAGE_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_FLAG_WITH_USAGE */
-	DATA_PARSER_ASSOC_CONDITION_ONLY_DEFS_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_ONLY_DEFS */
-	DATA_PARSER_ASSOC_CONDITION_RAW_QOS_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_RAW_QOS */
-	DATA_PARSER_ASSOC_CONDITION_SUB_ACCTS_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_SUB_ACCTS */
-	DATA_PARSER_ASSOC_CONDITION_WOPI_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_WOPI */
-	DATA_PARSER_ASSOC_CONDITION_WOPL_OLD, /* slurmdb_assoc_cond_t->flags&ASSOC_COND_WOPL */
-	DATA_PARSER_CLASSIFICATION_TYPE, /* slurmdb_classification_type_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_LIST, /* list of slurmdb_cluster_accounting_rec_t* */
 	DATA_PARSER_CLUSTER_ACCT_REC, /* slurmdb_cluster_accounting_rec_t */
 	DATA_PARSER_CLUSTER_ACCT_REC_PTR, /* slurmdb_cluster_accounting_rec_t* */
@@ -241,7 +233,6 @@ typedef enum {
 	DATA_PARSER_QOS_PREEMPT_MODES, /* slurmdb_qos_rec_t->preempt_mode & QOS_FLAG_* */
 	DATA_PARSER_QOS_CONDITION, /* slurmdb_qos_cond_t */
 	DATA_PARSER_QOS_CONDITION_PTR, /* slurmdb_qos_cond_t* */
-	DATA_PARSER_QOS_CONDITION_WITH_DELETED_OLD, /* Remove when 24.11 is no longer supported: slurmdb_qos_cond_t->flags&QOS_COND_FLAG_WITH_DELETED */
 	DATA_PARSER_QOS_CONDITION_FLAGS, /* slurmdb_qos_cond_t->flags & QOS_FLAG_COND_* */
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_QOS_RESP_PTR, /* openapi_resp_single_t* */
@@ -275,7 +266,6 @@ typedef enum {
 	DATA_PARSER_STEP_ID_PTR, /* uint32_t* of job step id */
 	DATA_PARSER_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
 	DATA_PARSER_TRES_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES type/name instead of ID */
-	DATA_PARSER_TRES_ID_STR, /* List of slurmdb_tres_rec_t* combined into a TRES string with TRES id# instead of type/name */
 	DATA_PARSER_TRES_STR_BY_TYPE, /* List of slurmdb_tres_rec_t* combined into a TRES string with  TRES type/name=#,... format */
 	DATA_PARSER_TRES_LIST, /* List of slurmdb_tres_rec_t* */
 	DATA_PARSER_TRES, /* slurmdb_tres_rec_t */
@@ -370,8 +360,6 @@ typedef enum {
 	DATA_PARSER_SLURMDBD_PING_ARRAY, /* controller_ping_t (NULL terminated array) */
 	DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_PING_RESP_PTR, /* openapi_resp_single_t* */
-	DATA_PARSER_SLURMDBD_PING_MODE, /* char * - verbose slurmdbd mode */
-	DATA_PARSER_SLURMDBD_PING_RESULT, /* bool - "UP" or "DOWN" */
 	DATA_PARSER_NODE, /* node_info_t */
 	DATA_PARSER_NODE_PTR, /* node_info_t* */
 	DATA_PARSER_NODE_ARRAY, /* node_info_t** (NULL terminated) */
@@ -384,7 +372,6 @@ typedef enum {
 	DATA_PARSER_OPENAPI_NODES_QUERY, /* openapi_nodes_query_t */
 	DATA_PARSER_OPENAPI_NODES_QUERY_PTR, /* openapi_nodes_query_t* */
 	DATA_PARSER_NODE_STATES, /* uint32_t & NODE_STATE_* */
-	DATA_PARSER_NODE_STATES_NO_VAL, /* uint32_t & NODE_STATE_* or NO_VAL */
 	DATA_PARSER_NODE_SELECT_ALLOC_IDLE_CPUS, /* node_info_t->select_nodeinfo  */
 	DATA_PARSER_NODE_SELECT_TRES_WEIGHTED, /* Remove when 25.05 is no longer supported: was removed field node_info_t->select_nodeinfo */
 	DATA_PARSER_UPDATE_NODE_MSG, /* update_node_msg_t */
@@ -556,7 +543,6 @@ typedef enum {
 	DATA_PARSER_HOLD, /* uint32_t (priority) --hold */
 	DATA_PARSER_OPENAPI_META, /* openapi_resp_meta_t */
 	DATA_PARSER_OPENAPI_META_PTR, /* openapi_resp_meta_t* */
-	DATA_PARSER_OPENAPI_META_COMMAND, /* openapi_resp_meta_t->command */
 	DATA_PARSER_OPENAPI_ERROR, /* openapi_resp_error_t */
 	DATA_PARSER_OPENAPI_ERROR_PTR, /* openapi_resp_error_t* */
 	DATA_PARSER_OPENAPI_ERRORS, /* list_t of openapi_resp_error_t* */
