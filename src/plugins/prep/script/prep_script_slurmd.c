@@ -348,6 +348,9 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_restart_cnt != INFINITE16)
 			setenvf(&env, "SLURM_JOB_RESTART_COUNT", "%u",
 				cred_arg->job_restart_cnt);
+		if (cred_arg->job_selinux_context)
+			setenvf(&env, "SLURM_JOB_SELINUX_CONTEXT", "%s",
+				cred_arg->job_selinux_context);
 		if (cred_arg->job_start_time)
 			setenvf(&env, "SLURM_JOB_START_TIME", "%lu",
 				cred_arg->job_start_time);
