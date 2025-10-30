@@ -699,6 +699,7 @@ static int _send_start_response(conmgr_fd_t *con, slurm_msg_t *req_msg, int rc)
 	st_msg->step_id.step_het_comp = NO_VAL;
 	rc = conmgr_queue_write_msg(con, msg);
 	slurm_free_msg(msg);
+	FREE_NULL_MSG(req_msg);
 
 	conmgr_queue_close_fd(con);
 	return rc;
