@@ -209,6 +209,8 @@ extern void fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	for (int i = 0; i < NS_L_END; i++) {
 		xfree(ns_l_enabled[i].path);
+		if (ns_l_enabled[i].fd >= 0)
+			close(ns_l_enabled[i].fd);
 	}
 	free_ns_conf();
 #endif
