@@ -1225,11 +1225,13 @@ static int _on_connection_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
 		error("%s: [%s] rejecting %s RPC with missing user auth",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type));
+		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	} else if (msg->auth_uid != user_id) {
 		error("%s: [%s] rejecting %s RPC with user:%u != owner:%u",
 		      __func__, conmgr_fd_get_name(con),
 		      rpc_num2string(msg->msg_type), msg->auth_uid, user_id);
+		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
