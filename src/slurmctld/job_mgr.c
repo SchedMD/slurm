@@ -19099,6 +19099,10 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 
 	setenvf(&my_env, "SLURM_JOB_RESTART_COUNT", "%d", job_ptr->restart_cnt);
 
+	if (job_ptr->selinux_context)
+		setenvf(&my_env, "SLURM_JOB_SELINUX_CONTEXT", "%s",
+			job_ptr->selinux_context);
+
 	setenvf(&my_env, "SLURM_JOB_START_TIME", "%lu", job_ptr->start_time);
 
 	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
