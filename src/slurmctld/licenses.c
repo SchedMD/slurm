@@ -1490,16 +1490,16 @@ extern void hres_select_print(hres_select_t *hres_select)
 	}
 }
 
-extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
+extern bool hres_select_check(hres_select_t *hres_select,
+			      uint16_t hres_leaf_idx)
 {
 	bool can_run = true;
-	uint16_t i = hres_select_find_leaf(hres_select, node_inx);
 
-	if (i == NO_VAL16)
+	if (hres_leaf_idx == NO_VAL16)
 		return false;
 
 	for (int j = 0; j < hres_select->depth; j++) {
-		uint16_t idx = hres_select->leaf[i].path_idx[j];
+		uint16_t idx = hres_select->leaf[hres_leaf_idx].path_idx[j];
 		if ((hres_select->avail_hres[idx] != INFINITE) &&
 		    (hres_select->avail_hres[idx] <
 		     hres_select->hres_per_node)) {
@@ -1510,7 +1510,8 @@ extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
 
 	if (can_run) {
 		for (int j = 0; j < hres_select->depth; j++) {
-			uint16_t idx = hres_select->leaf[i].path_idx[j];
+			uint16_t idx =
+				hres_select->leaf[hres_leaf_idx].path_idx[j];
 			if (hres_select->avail_hres[idx] != INFINITE)
 				hres_select->avail_hres[idx] -=
 					hres_select->hres_per_node;
