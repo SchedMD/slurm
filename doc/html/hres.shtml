@@ -15,7 +15,8 @@ the CHANGELOGs when <a href="upgrades.html">upgrading</a>.</p>
 resources to be defined as part of independent hierarchical topologies and
 associated with specific nodes. Jobs may request any integer count of that
 resource. Multiple resources may be defined in the configuration (in a
-<b>resources.yaml</b> file), and will use independently defined hierarchies.</p>
+<a href="resources.yaml.html">resources.yaml</a> file), and will use
+independently defined hierarchies.</p>
 
 <p>Although these hierarchical topologies have some similarities to
 <a href="topology.html">network topologies</a>, the definitions for each are
@@ -23,7 +24,7 @@ completely separate.</p>
 
 <h2 id="modes">Planning Modes<a class="slurm_link" href="#modes"></a></h2>
 
-<p>Two modes of resource planning are provided. In either case, a layer may be
+<p>Three modes of resource planning are provided. In either case, a layer may be
 defined with a count of zero or infinite (<code>count: -1</code>) resources,
 with the impact of this depending on the mode used.</p>
 
@@ -87,10 +88,13 @@ summed up into the successively higher layers.
 This mode is specifically designed for consumable resources like power,
 where the total usage at a higher level (e.g., cluster-wide)
 is the sum of the usage of its components (e.g., chassis level,
-then rack level summing multiple chassis, then datacenter row ).
+then rack level summing multiple chassis, then datacenter row ).</p>
 
-The scheduler ensures that the total summed resources at every layer
-in the hierarchy do not exceed that layer's defined count.
+<p>The scheduler ensures that the total summed resources at every layer
+in the hierarchy do not exceed that layer's defined count.</p>
+
+<p><b>Important Note:</b> Layers defined under <b>Mode 3</b> must be able to be
+represented as a <b>rooted uniform depth tree</b>.
 
 <p>For example, consider the <b>power</b> resource defined in the example
 <a href="#resources_yaml">resources.yaml</a> file below. A job that requests
@@ -98,7 +102,7 @@ in the hierarchy do not exceed that layer's defined count.
 will pull from all levels that include those nodes.
 So it would pull 8000 from <code>node[01-08]</code>,
 8000 from <code>node[09-16]</code>, 16000 from  <code>node[01-16]</code>, and
-16000 from <code>node[01-32]</code>.
+16000 from <code>node[01-32]</code>.</p>
 
 <h2 id="limitations">Limitations<a class="slurm_link" href="#limitations"></a></h2>
 
