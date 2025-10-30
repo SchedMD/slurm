@@ -249,7 +249,7 @@ extern void *conn_g_create(const conn_args_t *conn_args)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 
-	log_flag(TLS, "%s: fd:%d->%d mode:%d",
+	log_flag(NET, "%s: fd:%d->%d mode:%d",
 		 __func__, conn_args->input_fd, conn_args->output_fd,
 		 conn_args->mode);
 

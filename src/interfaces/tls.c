@@ -137,7 +137,7 @@ extern void *tls_g_create_conn(const conn_args_t *tls_conn_args)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 
-	log_flag(TLS, "%s: fd:%d->%d mode:%d",
+	log_flag(NET, "%s: fd:%d->%d mode:%d",
 		 __func__, tls_conn_args->input_fd, tls_conn_args->output_fd,
 		 tls_conn_args->mode);
 
