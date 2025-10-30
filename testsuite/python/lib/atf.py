@@ -28,6 +28,7 @@ import signal
 
 import json
 import jsondiff
+import yaml
 
 # This module will be (un)imported in require_openapi_generator()
 openapi_client = None
@@ -1574,29 +1575,29 @@ def openapi_slurmdb():
     )
 
 
-def backup_config_file(config="slurm"):
+def backup_config_file(config="slurm.conf"):
     """Backs up a configuration file.
 
     This function may only be used in auto-config mode.
 
     Args:
-        config (string): Name of the config file to back up (without the .conf suffix).
+        config (string): Name of the config file to back up.
 
     Returns:
         None
 
     Example:
-        >>> backup_config_file('slurm')
-        >>> backup_config_file('gres')
-        >>> backup_config_file('cgroup')
+        >>> backup_config_file('slurm.conf')
+        >>> backup_config_file('gres.conf')
+        >>> backup_config_file('cgroup.conf')
     """
 
     if not properties["auto-config"]:
-        require_auto_config(f"wants to modify the {config} configuration file")
+        require_auto_config(f"wants to modify the {config} file")
 
     properties["configurations-modified"].add(config)
 
-    config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+    config_file = f"{properties['slurm-config-dir']}/{config}"
     backup_config_file = f"{config_file}.orig-atf"
 
     # If a backup already exists, issue a warning and return (honor existing backup)
@@ -1630,24 +1631,24 @@ def backup_config_file(config="slurm"):
         )
 
 
-def restore_config_file(config="slurm"):
+def restore_config_file(config="slurm.conf"):
     """Restores a configuration file.
 
     This function may only be used in auto-config mode.
 
     Args:
-        config (string): Name of config file to restore (without the .conf suffix).
+        config (string): Name of config file to restore.
 
     Returns:
         None
 
     Example:
-        >>> restore_config_file('slurm')
-        >>> restore_config_file('gres')
-        >>> restore_config_file('cgroup')
+        >>> restore_config_file('slurm.conf')
+        >>> restore_config_file('gres.conf')
+        >>> restore_config_file('cgroup.conf')
     """
 
-    config_file = f"{properties['slurm-config-dir']}/{config}.conf"
+    config_file = f"{properties['slurm-config-dir']}/{config}"
     backup_config_file = f"{config_file}.orig-atf"
 
     properties["configurations-modified"].remove(config)
@@ -1912,7 +1913,7 @@ def set_config_parameter(
     config_file = f"{properties['slurm-config-dir']}/{config}.conf"
 
     # This has the side-effect of adding config to configurations-modified
-    backup_config_file(config)
+    backup_config_file(f"{config}.conf")
 
     # Remove all matching parameters and append the new parameter
     lines = []
@@ -2192,6 +2193,83 @@ def require_whereami():
         f"gcc {source_file} -o {dest_file}", fatal=True, user=properties["slurm-user"]
     )
     properties["whereami"] = dest_file
+
+
+def require_config_file(
+    filename,
+    content,
+):
+    """
+    Ensures that a configuration file exists with the required content.
+
+    In local-config mode, the test is skipped if the required config file
+    doesn't exists or is not equivalent.
+    In auto-config mode, save current config file if exists and creates the
+    required one.
+
+    Note that it cannot be used with some base config files like slurm.conf,
+    use require_config_parameter() for those config files instead.
+
+    Supported extensions for local-config are .conf and .yaml.
+
+    Args:
+        filename (string): The filename of the config path (e.g. "resources.yaml").
+        content (string): The desired content of the config file.
+
+    Returns:
+        None
+        It will fail or skip the test if required config file cannot be set.
+    """
+
+    # Some config files need to be modified, cannot be created from scratch
+    if filename in {
+        "slurm.conf",
+        "slurmdbd.conf",
+        "gres.conf",
+        "cgroup.conf",
+        "testsuite.conf",
+    }:
+        pytest.fail(f"Use require_config_param() for file {filename}")
+
+    file_path = f"{properties['slurm-config-dir']}/{filename}"
+
+    # If not auto-condig:
+    if not properties["auto-config"]:
+        supported_ext = {".conf", ".yaml"}
+        file, ext = os.path.splitext(filename)
+        match ext:
+            case ".yaml":
+                desired_yaml = yaml.safe_load(content)
+                local_yaml = None
+                if os.path.exists(file_path):
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        local_yaml = yaml.safe_load(f)
+                if desired_yaml != local_yaml:
+                    pytest.skip(f"{filename} is not as required by the test")
+                else:
+                    logging.debug(f"Found compatible required {filename}")
+                    return
+            case ".conf":
+                # TODO: Ignore blank or commented lines
+                with open(file_path, "r", encoding="utf-8") as f:
+                    local_content = f.read()
+                if content != local_content:
+                    pytest.skip(f"{filename} is not as required by the test")
+                else:
+                    logging.debug(f"Found compatible required {filename}")
+                    return
+            case _:
+                pytest.fail(f"Supported config files are only {supported_ext}")
+
+        pytest.fail(
+            "Internal error: function should already skip, fail or return in local-config"
+        )
+
+    # In auto-config
+    backup_config_file(filename)
+    run_command(
+        f"cat > {file_path}", input=content, user=properties["slurm-user"], fatal=True
+    )
 
 
 def require_config_parameter(
@@ -2919,7 +2997,7 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
         )
 
     # Write the config file back out with the modifications
-    backup_config_file("slurm")
+    backup_config_file("slurm.conf")
     new_config_string = "\n".join(new_config_lines)
     run_command(
         f"echo '{new_config_string}' > {config_file}",
@@ -4230,7 +4308,7 @@ def create_node(node_dict):
     new_config_lines.insert(last_node_line_index + 1, node_line)
 
     # Write the config file back out with the modifications
-    backup_config_file("slurm")
+    backup_config_file("slurm.conf")
     new_config_string = "\n".join(new_config_lines)
     run_command(
         f"echo '{new_config_string}' > {config_file}",
@@ -5003,7 +5081,7 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
         )
 
     # Write the config file back out with the modifications
-    backup_config_file("slurm")
+    backup_config_file("slurm.conf")
     new_config_string = "\n".join(new_config_lines)
     run_command(
         f"echo '{new_config_string}' > {config_file}",
