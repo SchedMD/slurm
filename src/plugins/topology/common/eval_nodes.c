@@ -1839,8 +1839,12 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 check_gres_per_job:
 	if (check_gres && topo_eval->gres_per_job && topo_eval->avail_cpus) {
 		node_record_t *node_ptr = node_record_table_ptr[node_inx];
-		return eval_nodes_gres(topo_eval, max_tasks, job_ptr, node_ptr,
-				       rem_nodes, node_inx, 0);
+		bool ret = eval_nodes_gres(topo_eval, max_tasks, job_ptr,
+					   node_ptr, rem_nodes, node_inx, 0);
+		if (!ret && hres_select)
+			hres_select_return(hres_select,
+					   avail_res->hres_leaf_idx);
+		return ret;
 	}
 
 	return true;
