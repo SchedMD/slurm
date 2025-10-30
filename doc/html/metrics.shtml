@@ -11,6 +11,7 @@
 <li><a href="#configuration">Configuration</a></li>
 <li><a href="#endpoints">HTTP Endpoints</a></li>
 <li><a href="#openmetrics">OpenMetrics Plugin</a></li>
+<li><a href="#categories">Metric Categories Provided by Slurm</a></li>
 <li><a href="#security">Security Considerations</a></li>
 <li><a href="#performance">Performance Impact</a></li>
 <li><a href="#examples">Usage Examples</a></li>
@@ -43,16 +44,15 @@ Prometheus, Grafana, and other observability tools.</p>
 <i>PrivateData</i> parameter is configured in slurm.conf. This is a security
 requirement to prevent exposure of sensitive information through metrics.</li>
 
-<li><b>MetricsType parameter</b>: Set the <i>MetricsType</i> parameter to
-specify which metrics plugin to use. Currently, only the OpenMetrics plugin is
+<li><b>MetricsType parameter</b>: Set the
+<a href="slurm.conf.html#OPT_MetricsType">MetricsType</a> parameter to specify
+which metrics plugin to use. Currently, only the OpenMetrics plugin is
 supported:
 <pre>
 MetricsType=metrics/openmetrics
 </pre>
 </li>
 </ul>
-
-<p>See also <a href="slurm.conf.html#OPT_Metrics">slurm.conf</a> man page.</p>
 
 <h3 id="plugin_loading">Plugin Loading
 <a class="slurm_link" href="#plugin_loading"></a>
@@ -66,20 +66,22 @@ MetricsType=metrics/openmetrics
 </h2>
 
 <p>Slurm exposes metrics through HTTP GET endpoints on the slurmctld daemon's
-network interface. By default, slurmctld listens on port 6817, and the metrics
-endpoints are available at:</p>
+listening port (default 6817). The following endpoints are available:</p>
 
 <ul>
 <li><b>GET /metrics/jobs</b> - Job-related metrics including counts by state,
-resource allocation, and job statistics</li>
+resource allocation, and job statistics (<a href="#job_metrics">examples</a>)
+</li>
 <li><b>GET /metrics/jobs-users-accts</b> - User- and account-specific job
-metrics</li>
+metrics (<a href="#ua_job_metrics">examples</a>)</li>
 <li><b>GET /metrics/nodes</b> - Node-related metrics including resource counts,
-states, and utilization</li>
+states, and utilization (<a href="#node_metrics">examples</a>)</li>
 <li><b>GET /metrics/partitions</b> - Partition-related metrics including job
-counts per partition and resource allocation</li>
+counts per partition and resource allocation
+(<a href="#partition_metrics">examples</a>)</li>
 <li><b>GET /metrics/scheduler</b> - Scheduler performance metrics including
-cycle times, backfill statistics, and queue lengths</li>
+cycle times, backfill statistics, and queue lengths
+(<a href="#scheduler_metrics">examples</a>)</li>
 </ul>
 
 <p>All endpoints return data in UTF-8 text format making them compatible with
@@ -101,123 +103,116 @@ other monitoring systems that consume metrics in this format.</p>
 
 <ul>
 <li><b>Metric name</b>: A descriptive name prefixed with "slurm_"</li>
-<li><b>Metric type</b>: Only "gauge" or "counter" metrics are exposed
-</li>
+<li><b>Metric type</b>: Only "gauge" metrics are exposed</li>
 <li><b>Metric value</b>: The actual numeric value</li>
 <li><b>Labels</b>: Optional key-value pairs for additional context</li>
 <li><b>Help text</b>: Human-readable description of the metric</li>
 </ul>
 
-<h3 id="metric_categories">Metric Categories provided by Slurm
-<a class="slurm_link" href="#metric_categories"></a>
-</h3>
+<h2 id="categories">Metric Categories Provided by Slurm
+<a class="slurm_link" href="#categories"></a>
+</h2>
 
-<h4 id="job_metrics">Job Metrics
+<p>Each endpoint provides a set of metrics related to the same general category.
+Numerous metrics are provided so they are not all documented on this page.
+A few examples are provided for each category in the following subsections.</p>
+
+<h3 id="job_metrics">Job Metrics
 <a class="slurm_link" href="#job_metrics"></a>
-</h4>
+</h3>
 
 <p>Job metrics provide information about job states, resource allocation, and
 job counts. Examples include:</p>
 
 <ul>
-<li><span class="commandline">slurm_jobs</span> - Total number of jobs</li>
-<li><span class="commandline">slurm_jobs_running</span> - Number of running jobs
-</li>
-<li><span class="commandline">slurm_jobs_pending</span> - Number of pending jobs
-</li>
-<li><span class="commandline">slurm_jobs_cpus_alloc</span>
- - Total CPUs allocated to jobs</li>
-<li><span class="commandline">slurm_jobs_memory_alloc</span>
- - Total memory allocated to jobs</li>
+<li><code>slurm_jobs</code> - Total number of jobs</li>
+<li><code>slurm_jobs_running</code> - Number of running jobs</li>
+<li><code>slurm_jobs_pending</code> - Number of pending jobs (see note)</li>
+<li><code>slurm_jobs_cpus_alloc</code> - Total CPUs allocated to jobs</li>
+<li><code>slurm_jobs_memory_alloc</code> - Total memory allocated to jobs</li>
 </ul>
 
-<p><b>Note</b>: In Slurm, pending jobs include both jobs waiting for resources
-and held jobs. Held jobs are jobs that have been placed in a hold state and will
-not be scheduled until the hold is released.</p>
+<p><b>NOTE</b>: In Slurm, pending jobs include both jobs waiting for resources
+and held jobs. Held jobs will not be scheduled until the hold is released.</p>
 
-<h4 id="node_metrics">Node Metrics
-<a class="slurm_link" href="#node_metrics"></a>
-</h4>
-
-<p>Node metrics track resource availability, node states, and utilization:</p>
-
-<ul>
-<li><span class="commandline">slurm_nodes</span> - Total number of nodes</li>
-<li><span class="commandline">slurm_nodes_idle</span>
- - Number of idle nodes</li>
-<li><span class="commandline">slurm_nodes_alloc</span>
- - Number of allocated nodes</li>
-<li><span class="commandline">slurm_node_cpus{node="nodename"}</span>
- - CPUs on the specified node</li>
-<li><span class="commandline">slurm_node_memory_bytes{node="nodename"}</span>
- - Memory on the specified node (bytes)</li>
-</ul>
-
-<h4 id="partition_metrics">Partition Metrics
-<a class="slurm_link" href="#partition_metrics"></a>
-</h4>
-
-<p>Partition metrics show job distribution and resource allocation across partitions:</p>
-
-<ul>
-<li><span class="commandline">slurm_partitions</span>
- - Total number of partitions</li>
-<li><span class="commandline">slurm_partition_jobs{partition="name"}</span>
- - Jobs on the specified partition</li>
-<li><span class="commandline">slurm_partition_nodes{partition="name"}</span>
- - Nodes on the specified partition</li>
-</ul>
-
-<h4 id="scheduler_metrics">Scheduler Metrics
-<a class="slurm_link" href="#scheduler_metrics"></a>
-</h4>
-
-<p>Scheduler metrics provide insights into scheduling performance and behavior:
-</p>
-
-<ul>
-<li><span class="commandline">slurm_sched_cycle_cnt</span>
- - Scheduling cycle count</li>
-<li><span class="commandline">slurm_sched_cycle_last</span>
- - Last scheduling cycle time</li>
-<li><span class="commandline">slurm_bf_cycle_cnt</span>
- - Backfill cycle count</li>
-<li><span class="commandline">slurm_bf_active</span>
- - Whether the backfill scheduler is currently running</li>
-</ul>
-
-<h4 id="ua_job_metrics">Jobs per User/Account Metrics
+<h3 id="ua_job_metrics">User- and Account-Specific Job Metrics
 <a class="slurm_link" href="#ua_job_metrics"></a>
-</h4>
+</h3>
 
 <p>Job metrics for user and accounts provide a count of jobs in each state for
 each active user and account in the system. It stores each entity under a
-key-value pair. Remember that every unique combination of key-value label pairs
-represents a new time series, which can dramatically increase the amount of data
-stored.
-</p>
+key-value pair. Remember that every unique key-value pair represents a new time
+series, which can dramatically increase the amount of data stored.
+Examples include:</p>
 
 <ul>
-<li><span class="commandline">slurm_user_jobs_pending{username="john"}</span>
+<li><code>slurm_user_jobs_pending{username="john"}</code>
  - Pending jobs for user "john"</li>
-<li><span class="commandline">slurm_account_jobs_pending{account="smith"}</span>
+<li><code>slurm_account_jobs_pending{account="smith"}</code>
  - Pending jobs for account "smith"</li>
 </ul>
 
-<p>Metrics for Slinky or another autoscaler:</p>
+<h3 id="node_metrics">Node Metrics
+<a class="slurm_link" href="#node_metrics"></a>
+</h3>
+
+<p>Node metrics track resource availability, node states, and utilization.
+Examples include:</p>
+
+<ul>
+<li><code>slurm_nodes</code> - Total number of nodes</li>
+<li><code>slurm_nodes_idle</code> - Number of idle nodes</li>
+<li><code>slurm_nodes_alloc</code> - Number of allocated nodes</li>
+<li><code>slurm_node_cpus{node="nodename"}</code> - CPUs on the specified node
+</li>
+<li><code>slurm_node_memory_bytes{node="nodename"}</code>
+ - Memory on the specified node (bytes)</li>
+</ul>
+
+<h3 id="partition_metrics">Partition Metrics
+<a class="slurm_link" href="#partition_metrics"></a>
+</h3>
+
+<p>Partition metrics show job distribution and resource allocation across
+partitions. Examples include:</p>
+
+<ul>
+<li><code>slurm_partitions</code> - Total number of partitions</li>
+<li><code>slurm_partition_jobs{partition="name"}</code>
+ - Jobs on the specified partition</li>
+<li><code>slurm_partition_nodes{partition="name"}</code>
+ - Nodes on the specified partition</li>
+</ul>
 
 <p>The following metrics might be useful for
-<a href="https://slurm.schedmd.com/slinky.html"> Slinky</a> or other systems
+<a href="https://slurm.schedmd.com/slinky.html">Slinky</a> or other systems
 which have an auto-scale feature. By knowing the maximum number of nodes that a
 job requested in a partition, the decision to extend the nodes of the partition
-by this number can be considered. Moreover nodes which are held, even pending,
-are not considered in this metric.</p> <ul>
-<li><span class="commandline">slurm_partition_jobs_max_job_nodes_nohold</span>
+by this number can be considered. Jobs which are held are not included in these
+metrics.</p>
+
+<ul>
+<li><code>slurm_partition_jobs_max_job_nodes_nohold</code>
  - Gives the maximum number of nodes requested by any job from all pending jobs
-that are not held in the partition. </li>
-<li><span class="commandline">slurm_partition_jobs_min_job_nodes_nohold</span>
+that are not held in the partition.</li>
+<li><code>slurm_partition_jobs_min_job_nodes_nohold</code>
 - Gives the maximum of the minimum number of nodes requested by any job from all
-pending jobs that are not held in the partition. </li>
+pending jobs that are not held in the partition.</li>
+</ul>
+
+<h3 id="scheduler_metrics">Scheduler Metrics
+<a class="slurm_link" href="#scheduler_metrics"></a>
+</h3>
+
+<p>Scheduler metrics provide insights into scheduling performance and behavior.
+Examples include:</p>
+
+<ul>
+<li><code>slurm_sched_cycle_cnt</code> - Scheduling cycle count</li>
+<li><code>slurm_sched_cycle_last</code> - Last scheduling cycle time</li>
+<li><code>slurm_bf_cycle_cnt</code> - Backfill cycle count</li>
+<li><code>slurm_bf_active</code>
+ - Whether the backfill scheduler is currently running</li>
 </ul>
 
 <h2 id="security">Security Considerations
@@ -236,8 +231,7 @@ when any <i>PrivateData</i> parameter is set in slurm.conf to prevent exposure
 of sensitive information.</li>
 
 <li><b>Network access</b>: Metrics are exposed through the slurmctld network
-interface. Consider firewall rules and network segmentation to control access.
-</li>
+interface. Consider firewall rules and network segmentation to control access.</li>
 
 <li><b>Information disclosure</b>: Metrics may reveal information about cluster
 utilization, job patterns, and user activity that could be considered sensitive
@@ -261,11 +255,10 @@ slurmctld's internal data structures, which adds computational overhead.</li>
 <li><b>Data processing overhead in the external monitoring system</b>: We
 provide endpoints for unbounded entities like users and accounts metrics.
 A monitoring system may treat each entity as a new time series, which can
-dramatically increase the amount of data stored.
-</li>
+dramatically increase the amount of data stored.</li>
 
 <li><b>Network I/O</b>: Frequent metric queries generate network traffic and
-consume slurmctld's network I/O capacity, specially on systems with thousands
+consume slurmctld's network I/O capacity, especially on systems with thousands
 of jobs, users or accounts.</li>
 </ul>
 
@@ -289,6 +282,7 @@ store data in your monitoring system</li>
 </h3>
 
 <p>Query job metrics:</p>
+
 <pre>
 $ curl http://slurmctld.example.com:6817/metrics/jobs
 # HELP slurm_jobs Total number of jobs
@@ -304,6 +298,7 @@ slurm_jobs_pending 27
 </pre>
 
 <p>Query node metrics:</p>
+
 <pre>
 $ curl http://slurmctld.example.com:6817/metrics/nodes
 # HELP slurm_nodes Total number of nodes
@@ -350,7 +345,7 @@ scrape_configs:
   - job_name: 'slurm_useracct'
     static_configs:
       - targets: ['slurm.example.com:6817']
-    metrics_path: '/metrics/user-accts'
+    metrics_path: '/metrics/jobs-users-accts'
 </pre>
 
 <!--#include virtual="footer.txt"-->
