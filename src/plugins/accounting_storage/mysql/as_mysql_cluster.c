@@ -1669,15 +1669,13 @@ extern list_t *as_mysql_get_instances(mysql_conn_t *mysql_conn, uint32_t uid,
 			    mysql_conn,
 			    (char *) list_peek(use_cluster_list),
 			    &dims)) {
-			xfree(where_clause);
-			return NULL;
+			goto end_it;
 		}
 
 		temp_hl = hostlist_create_dims(instance_cond->node_list, dims);
 		if (hostlist_count(temp_hl) <= 0) {
-			xfree(where_clause);
 			error("we didn't get any real hosts to look for.");
-			return NULL;
+			goto end_it;
 		}
 
 		set = 0;
@@ -1741,6 +1739,8 @@ empty:
 		mysql_free_result(result);
 	}
 	list_iterator_destroy(itr);
+
+end_it:
 	xfree(tmp);
 	xfree(where_clause);
 
