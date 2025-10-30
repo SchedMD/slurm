@@ -1808,7 +1808,8 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 	avail_res_t *avail_res = topo_eval->avail_res_array[node_inx];
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 
-	if (hres_select && !hres_select_check(hres_select, node_inx)) {
+	if (hres_select &&
+	    !hres_select_check(hres_select, avail_res->hres_leaf_idx)) {
 		topo_eval->avail_cpus = 0;
 		return false;
 	}
