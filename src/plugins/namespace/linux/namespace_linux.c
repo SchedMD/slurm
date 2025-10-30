@@ -714,9 +714,6 @@ static int _create_ns(stepd_step_rec_t *step)
 	} else if (cpid == 0) {
 		_create_ns_child(step, src_bind, job_mount, sem1, sem2);
 	} else {
-		/*
-		int wstatus;
-		*/
 		char *proc_path = NULL;
 
 		/*
