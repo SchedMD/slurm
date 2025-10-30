@@ -136,6 +136,9 @@ extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 extern bool hres_select_check(hres_select_t *hres_select,
 			      uint16_t hres_leaf_idx);
 
+extern void hres_select_return(hres_select_t *hres_select,
+			       uint16_t hres_leaf_idx);
+
 extern void hres_create_select(job_record_t *job_ptr);
 
 extern uint32_t hres_get_capacity(hres_select_t *hres_select, int leaf_idx);

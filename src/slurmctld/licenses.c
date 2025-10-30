@@ -1521,6 +1521,20 @@ extern bool hres_select_check(hres_select_t *hres_select,
 	return can_run;
 }
 
+extern void hres_select_return(hres_select_t *hres_select,
+			       uint16_t hres_leaf_idx)
+{
+	if (hres_leaf_idx == NO_VAL16)
+		return;
+
+	for (int j = 0; j < hres_select->depth; j++) {
+		uint16_t idx = hres_select->leaf[hres_leaf_idx].path_idx[j];
+		if (hres_select->avail_hres[idx] != INFINITE)
+			hres_select->avail_hres[idx] +=
+				hres_select->hres_per_node;
+	}
+}
+
 extern void hres_variable_free(void *x)
 {
 	hres_variable_t *variable = x;
