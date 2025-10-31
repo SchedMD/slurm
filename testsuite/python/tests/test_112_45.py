@@ -42,13 +42,19 @@ def setup():
     atf.require_config_parameter("AuthAltTypes", "auth/jwt")
     atf.require_config_parameter("AuthAltTypes", "auth/jwt", source="slurmdbd")
     atf.require_slurmrestd("slurmctld,slurmdbd,util", "v0.0.45")
-    atf.require_version((25, 11), "sbin/slurmdbd")
-    atf.require_version((25, 11), "sbin/slurmctld")
-    atf.require_version((25, 11), "sbin/slurmrestd")
+    atf.require_version((26, 5), "sbin/slurmdbd")
+    atf.require_version((26, 5), "sbin/slurmctld")
+    atf.require_version((26, 5), "sbin/slurmrestd")
     atf.require_slurm_running()
 
     # Setup OpenAPI client with OpenAPI-Generator once Slurm(restd) is running
     atf.require_openapi_generator("7.3.0")
+
+    # Uncomment the following two lines to generate a new openapi_spec.json
+    # file, then it could be moved to the testsuite_data_dir if we really
+    # want to change the OpenAPI specs after .0.
+    # with open("openapi_spec.json", "w") as f:
+    #     json.dump(atf.properties["openapi_spec"], f, indent=2)
 
     # Conf reliant variables (put here to avert --auto-config errors)
     local_cluster_name = atf.get_config_parameter("ClusterName")
@@ -285,7 +291,7 @@ def test_loaded_versions():
 
 
 @pytest.mark.skipif(
-    atf.get_version() <= (25, 11, 0), reason="Specs may change until .0 is released"
+    atf.get_version() <= (26, 5, 0), reason="Specs may change until .0 is released"
 )
 @pytest.mark.parametrize("openapi_spec", ["45"], indirect=True)
 def test_specification(openapi_spec):
