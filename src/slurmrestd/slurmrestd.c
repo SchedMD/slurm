@@ -159,6 +159,9 @@ static void _sigpipe_handler(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
 	conmgr_log_diagnostics();
 }
 
