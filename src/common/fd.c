@@ -138,6 +138,7 @@ extern void closeall_except(int fd, int *skipped)
 {
 	char *name = "/proc/self/fd";
 	DIR *d;
+	int fd_of_d = -1;
 	struct dirent *dir;
 	log_closeall_skip_t log_skip = log_closeall_pre();
 
@@ -155,17 +156,25 @@ extern void closeall_except(int fd, int *skipped)
 		return;
 	}
 
+	/*
+	 * Do not close fd_of_d during the loop, or successive readdir() calls
+	 * will fail, and the loop will terminate prematurely leaking fds to
+	 * the child process.
+	 */
+	fd_of_d = dirfd(d);
+
 	while ((dir = readdir(d))) {
 		/* Ignore "." and ".." entries */
 		if (dir->d_type != DT_DIR) {
 			int open_fd = atoi(dir->d_name);
 
-			if ((open_fd >= fd) &&
+			if ((open_fd >= fd) && (open_fd != fd_of_d) &&
 			    !_is_fd_skipped(open_fd, skipped, log_skip))
 				close(open_fd);
 		}
 	}
 	closedir(d);
+	/* dirfd(3) says fd_of_d is closed automatically by closedir() */
 
 	log_closeall_post();
 }
