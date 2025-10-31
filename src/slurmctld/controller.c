@@ -72,6 +72,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/port_mgr.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -616,6 +617,8 @@ int main(int argc, char **argv)
 	bool slurmscriptd_mode = false;
 	char *conf_file;
 	stepmgr_ops_t stepmgr_ops = { 0 };
+
+	probe_init();
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
 	stepmgr_ops.find_job = find_job;
@@ -1230,6 +1233,7 @@ int main(int argc, char **argv)
 	http_switch_fini();
 
 	rate_limit_shutdown();
+	probe_fini();
 	log_fini();
 	sched_log_fini();
 
