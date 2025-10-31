@@ -467,6 +467,12 @@ extern void *watch_thread(void *arg);
 extern void wait_for_watch(void);
 
 /*
+ * True if connection count is >= max connection count.
+ * NOTE: Caller must hold mgr->mutex lock
+ */
+extern bool mgr_is_accept_deferred(void);
+
+/*
  * Stop reading from connection but write out the remaining buffer and finish
  * any queued work
  */

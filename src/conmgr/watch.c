@@ -541,8 +541,7 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	add_work_con_fifo(true, con, _wrap_on_read_timeout, NULL);
 }
 
-/* Caller must hold mgr->mutex lock */
-static bool _is_accept_deferred(void)
+extern bool mgr_is_accept_deferred(void)
 {
 	return (list_count(mgr.connections) > mgr.max_connections);
 }
@@ -913,7 +912,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		con_set_polling(con, PCTL_TYPE_CONNECTED, __func__);
 		con_unset_flag(con, FLAG_CAN_READ);
 
-		if (_is_accept_deferred()) {
+		if (mgr_is_accept_deferred()) {
 			warning("%s: [%s] Deferring incoming connection due to %d/%d connections",
 				__func__, con->name,
 				list_count(mgr.connections),
@@ -998,7 +997,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 		/* must wait until poll allows read from this socket */
 		if (con_flag(con, FLAG_IS_LISTEN)) {
-			if (_is_accept_deferred()) {
+			if (mgr_is_accept_deferred()) {
 				warning("%s: [%s] Deferring polling for new connections due to %d/%d connections",
 					__func__, con->name,
 					list_count(mgr.connections),
@@ -1173,7 +1172,7 @@ static bool _attempt_accept(conmgr_fd_t *con)
 		log_flag(CONMGR, "%s: [%s] skipping accept on quiesced connection",
 			 __func__, con->name);
 		return false;
-	} else if (_is_accept_deferred()) {
+	} else if (mgr_is_accept_deferred()) {
 		warning("%s: [%s] Deferring to attempt to accept new incoming connection due to %d/%d connections",
 			 __func__, con->name, list_count(mgr.connections),
 			 mgr.max_connections);
@@ -1305,8 +1304,8 @@ static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
 
 	/*
 	 * Always check mgr.connections list first to avoid
-	 * _is_accept_deferred() returning a different answer which could result
-	 * in listeners not being set to PCTL_TYPE_LISTEN after enough
+	 * mgr_is_accept_deferred() returning a different answer which could
+	 * result in listeners not being set to PCTL_TYPE_LISTEN after enough
 	 * connections were closed to fall below the max connection count.
 	 */
 
