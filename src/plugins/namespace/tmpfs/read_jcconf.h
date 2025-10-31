@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_jcconf.h - parse namespace.conf configuration file.
+ *  read_jcconf.h - parse job_container.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
