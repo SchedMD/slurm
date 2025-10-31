@@ -315,6 +315,8 @@ static int _statistics_part_aggregate_job(void *x, void *arg)
 		ps->jobs_completing++;
 	if (IS_JOB_CONFIGURING(j))
 		ps->jobs_configuring++;
+	if (IS_JOB_EXPEDITING(j))
+		ps->jobs_expediting++;
 	if (IS_JOB_FED_REQUEUED(j))
 		ps->jobs_fed_requeued++;
 	if (IS_JOB_FINISHED(j))
@@ -513,6 +515,8 @@ static int _fill_jobs_statistics(void *x, void *arg)
 		js->completing++;
 	if (IS_JOB_CONFIGURING(j))
 		js->configuring++;
+	if (IS_JOB_EXPEDITING(j))
+		js->expediting++;
 	if (IS_JOB_FED_REQUEUED(j))
 		js->fed_requeued++;
 	if (IS_JOB_FINISHED(j))
@@ -604,6 +608,8 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 		s->completing++;
 	if (IS_JOB_CONFIGURING(j))
 		s->configuring++;
+	if (IS_JOB_EXPEDITING(j))
+		s->expediting++;
 	if (IS_JOB_FED_REQUEUED(j))
 		s->fed_requeued++;
 	if (IS_JOB_FINISHED(j))

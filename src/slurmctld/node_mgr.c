@@ -4368,7 +4368,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 				error("%s: %pJ node %s run_job_cnt underflow",
 				      __func__, job_ptr, node_ptr->name);
 		} else {
-			if (job_ptr->job_state & JOB_EXPEDITING) {
+			if (IS_JOB_EXPEDITING(job_ptr)) {
 				debug("%s: deferring decrement of comp_job_cnt on %s",
 				      __func__, node_ptr->name);
 			} else if (node_ptr->comp_job_cnt) {
