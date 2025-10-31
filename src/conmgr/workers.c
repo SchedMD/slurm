@@ -42,6 +42,7 @@
 #include <pthread.h>
 
 #include "src/common/macros.h"
+#include "src/common/probes.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
@@ -138,6 +139,29 @@ static int _detect_cpu_count(void)
 	return count;
 }
 
+static probe_status_t _probe(probe_log_t *log)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	probe_log(log, "workers: threads:%d/%d active:%d/%d shutdown_requested:%c",
+	     list_count(mgr.workers.workers), mgr.workers.threads,
+	     mgr.workers.active, mgr.workers.total,
+	     BOOL_CHARIFY(mgr.workers.shutdown_requested));
+
+	if (!mgr.workers.workers)
+		status = PROBE_RC_DOWN;
+	else if (mgr.workers.shutdown_requested)
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return status;
+}
+
 extern void workers_init(int count, int default_count)
 {
 	const int detected_cpus = _detect_cpu_count();
@@ -205,6 +229,8 @@ extern void workers_init(int count, int default_count)
 
 		list_append(mgr.workers.workers, worker);
 	}
+
+	probe_register("conmgr->workers", _probe);
 }
 
 extern void workers_fini(void)
@@ -344,12 +370,4 @@ extern void workers_shutdown(void)
 			EVENT_WAIT(&mgr.worker_return, &mgr.mutex);
 		}
 	} while (mgr.workers.total);
-}
-
-extern void conmgr_log_workers(void)
-{
-	info("workers: threads:%d/%d active:%d/%d shutdown_requested:%c",
-	     list_count(mgr.workers.workers), mgr.workers.threads,
-	     mgr.workers.active, mgr.workers.total,
-	     BOOL_CHARIFY(mgr.workers.shutdown_requested));
 }

@@ -54,6 +54,7 @@ typedef struct {
 	int magic; /* MAGIC_LOG_WORK_ARGS */
 	const char *type;
 	int index;
+	probe_log_t *log;
 } log_work_args_t;
 
 static struct {
@@ -503,6 +504,7 @@ static int _foreach_log_work(void *x, void *arg)
 {
 	const work_t *work = x;
 	log_work_args_t *args = arg;
+	probe_log_t *log = args->log;
 	char str[PRINTF_WORK_CHARS];
 
 	xassert(args->magic == MAGIC_LOG_WORK_ARGS);
@@ -510,22 +512,24 @@ static int _foreach_log_work(void *x, void *arg)
 
 	printf_work(work, str, sizeof(str), true);
 
-	info("%s[%d]: %s", args->type, args->index, str);
+	probe_log(log, "%s[%d]: %s", args->type, args->index, str);
 
 	args->index++;
 
 	return SLURM_SUCCESS;
 }
 
-extern void conmgr_log_work(void)
+/* Caller must hold mgr.mutex lock */
+static void _probe_verbose(probe_log_t *log)
 {
 	log_work_args_t args = {
 		.magic = MAGIC_LOG_WORK_ARGS,
 		.type = "delayed_work",
+		.log = log,
 	};
 
-	info("work queues: work:%d delayed_work:%d",
-	     list_count(mgr.work), list_count(mgr.delayed_work));
+	probe_log(log, "work queues: work:%d delayed_work:%d",
+		  list_count(mgr.work), list_count(mgr.delayed_work));
 
 	(void) list_for_each_ro(mgr.delayed_work, _foreach_log_work, &args);
 
@@ -533,4 +537,25 @@ extern void conmgr_log_work(void)
 	args.type = "work";
 
 	(void) list_for_each_ro(mgr.work, _foreach_log_work, &args);
+}
+
+extern probe_status_t probe_work(probe_log_t *log)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (log)
+		_probe_verbose(log);
+
+	if (!mgr.initialized)
+		status = PROBE_RC_UNKNOWN;
+	else if (!mgr.work || !mgr.delayed_work)
+		status = PROBE_RC_DOWN;
+	else
+		status = PROBE_RC_READY;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return status;
 }

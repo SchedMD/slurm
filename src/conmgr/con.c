@@ -55,6 +55,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/pack.h"
+#include "src/common/probes.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -149,6 +150,7 @@ typedef struct {
 	int magic; /* MAGIC_CON_LOG_WORK_ARGS */
 	const char *type;
 	int index;
+	probe_log_t *log;
 } log_con_work_args_t;
 
 static void _validate_pctl_type(pollctl_fd_type_t type)
@@ -2249,6 +2251,7 @@ static int _foreach_log_work(void *x, void *arg)
 {
 	const work_t *work = x;
 	log_con_work_args_t *args = arg;
+	probe_log_t *log = args->log;
 	char str[PRINTF_WORK_CHARS];
 
 	xassert(args->magic == MAGIC_CON_LOG_WORK_ARGS);
@@ -2257,7 +2260,7 @@ static int _foreach_log_work(void *x, void *arg)
 	/* logging connection would be redundant */
 	printf_work(work, str, sizeof(str), false);
 
-	info("%s[%d]: %s", args->type, args->index, str);
+	probe_log(log, "%s[%d]: %s", args->type, args->index, str);
 
 	args->index++;
 
@@ -2267,6 +2270,7 @@ static int _foreach_log_work(void *x, void *arg)
 static int _foreach_log_connection(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
+	probe_log_t *log = arg;
 	list_buffer_stats_t out_stats = {
 		.magic = MAGIC_LIST_BUFFER_STATS,
 	};
@@ -2299,8 +2303,8 @@ static int _foreach_log_connection(void *x, void *arg)
 		(void) list_for_each_ro(con->tls_out, _foreach_count_buffer,
 					&tls_out_stats);
 
-	info("connection: [%s]+%d flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
-	     con->name, con->refs, flags, conmgr_con_type_string(con->type),
+	probe_log(log, "connection: [%s]+%d flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
+		  con->name, con->refs, flags, conmgr_con_type_string(con->type),
 	     con->input_fd, con->output_fd, &con->address,
 	     BOOL_CHARIFY(con->tls),
 	     (con->tls_in ? get_buf_offset(con->tls_in) : 0),
@@ -2321,6 +2325,7 @@ static int _foreach_log_connection(void *x, void *arg)
 		log_con_work_args_t args = {
 			.magic = MAGIC_CON_LOG_WORK_ARGS,
 			.type = "work",
+			.log = log,
 		};
 
 		(void) list_for_each_ro(con->work, _foreach_log_work, &args);
@@ -2329,6 +2334,7 @@ static int _foreach_log_connection(void *x, void *arg)
 		log_con_work_args_t args = {
 			.magic = MAGIC_CON_LOG_WORK_ARGS,
 			.type = "write_complete_work",
+			.log = log,
 		};
 
 		(void) list_for_each_ro(con->write_complete_work,
@@ -2338,13 +2344,35 @@ static int _foreach_log_connection(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
-extern void conmgr_log_connections(void)
+/* Caller must hold mgr.mutex lock */
+static void _probe_verbose(probe_log_t *log)
 {
-	info("connections:%d/%d listeners:%d complete:%d",
-	      list_count(mgr.connections), mgr.max_connections,
-	      list_count(mgr.listen_conns), list_count(mgr.complete_conns));
+	probe_log(log, "connections:%d/%d listeners:%d complete:%d",
+		  list_count(mgr.connections), mgr.max_connections,
+		  list_count(mgr.listen_conns), list_count(mgr.complete_conns));
 
 	(void) list_for_each_ro(mgr.listen_conns, _foreach_log_connection,
-				NULL);
-	(void) list_for_each_ro(mgr.connections, _foreach_log_connection, NULL);
+				log);
+	(void) list_for_each_ro(mgr.connections, _foreach_log_connection, log);
+}
+
+extern probe_status_t probe_connections(probe_log_t *log)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	if (log)
+		_probe_verbose(log);
+
+	if (!mgr.connections || !mgr.listen_conns || !mgr.complete_conns)
+		status = PROBE_RC_DOWN;
+	else if (mgr_is_accept_deferred())
+		status = PROBE_RC_BUSY;
+	else
+		status = PROBE_RC_READY;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return status;
 }

@@ -51,6 +51,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/pack.h"
+#include "src/common/probes.h"
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/events.h"
@@ -658,10 +659,10 @@ extern void handle_connection(bool locked, conmgr_fd_t *con);
 extern void queue_on_connection(conmgr_fd_t *con);
 
 /*
- * Log all connections to info()
- * NOTE: caller must hold conmgr global lock
+ * Probe all connections to info()
+ * NOTE: caller must not hold conmgr global lock
  */
-extern void conmgr_log_connections(void);
+extern probe_status_t probe_connections(probe_log_t *log);
 
 /* Min buffer size to call printf_work() */
 #define PRINTF_WORK_CHARS 512
@@ -679,15 +680,9 @@ extern size_t printf_work(const work_t *work, char *buffer, size_t len,
 			  bool include_connection);
 
 /*
- * Log mgr.work and mgr.delayed_work to info()
- * NOTE: caller must hold conmgr global lock
+ * Probe all work
+ * NOTE: caller must not hold conmgr global lock
  */
-extern void conmgr_log_work(void);
-
-/*
- * Log mgr.workers to info()
- * NOTE: caller must hold conmgr global lock
- */
-extern void conmgr_log_workers(void);
+extern probe_status_t probe_work(probe_log_t *log);
 
 #endif /* _CONMGR_MGR_H */
