@@ -2178,9 +2178,9 @@ extern int sort_job_queue2(void *x, void *y)
 	 * If, somehow, both have that state, then fall back to "normal"
 	 * sorting between the jobs.
 	 */
-	if (job_rec1->job_ptr->job_state & JOB_EXPEDITING)
+	if (IS_JOB_EXPEDITING(job_rec1->job_ptr))
 		expedited1 = true;
-	if (job_rec2->job_ptr->job_state & JOB_EXPEDITING)
+	if (IS_JOB_EXPEDITING(job_rec2->job_ptr))
 		expedited2 = true;
 	if (expedited1 != expedited2)
 		return (expedited1 ? -1 : 1);
@@ -2868,7 +2868,7 @@ extern void launch_job(job_record_t *job_ptr)
 	agent_queue_request(agent_arg_ptr);
 
 	/* Reset expedited requeue flags now that the job is running again */
-	if (job_ptr->job_state & JOB_EXPEDITING) {
+	if (IS_JOB_EXPEDITING(job_ptr)) {
 		job_ptr->epilog_failed = false;
 		job_state_unset_flag(job_ptr, JOB_EXPEDITING);
 	}

@@ -130,6 +130,8 @@
 	(_X->job_state & JOB_SIGNALING)
 #define IS_JOB_STAGE_OUT(_X)		\
 	(_X->job_state & JOB_STAGE_OUT)
+#define IS_JOB_EXPEDITING(_X)		\
+	(_X->job_state & JOB_EXPEDITING)
 
 /* DB FLAG state */
 #define IS_JOB_IN_DB(_X) \

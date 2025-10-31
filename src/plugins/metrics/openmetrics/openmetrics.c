@@ -442,6 +442,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT32, stats->configuring, jobs_configuring, "Number of jobs in Configuring state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->cpus_alloc, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->deadline, jobs_deadline, "Number of jobs in Deadline state", GAUGE);
+	ADD_METRIC(set, UINT32, stats->expediting, jobs_expediting, "Number of jobs in Expediting state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->failed, jobs_failed, "Number of jobs in Failed state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->fed_requeued, jobs_fed_requeued, "Number of jobs requeued in a federation", GAUGE);
 	ADD_METRIC(set, UINT32, stats->finished, jobs_finished, "Number of finished jobs", GAUGE);
@@ -480,6 +481,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_configuring, partition_jobs_configuring, "Number of jobs in Configuring state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->jobs_cpus_alloc, partition_jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_deadline, partition_jobs_deadline, "Number of jobs in Deadline state", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_expediting, partition_jobs_expediting, "Number of jobs in Expediting state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_failed, partition_jobs_failed, "Number of jobs in Failed state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_fed_requeued, partition_jobs_fed_requeued, "Number of jobs requeued in a federation", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_finished, partition_jobs_finished, "Number of jobs in Finished", GAUGE, "partition", ps->name);
@@ -571,6 +573,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->configuring, pfx, jobs_configuring, "Number of jobs in Configuring state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT16, js->cpus_alloc, pfx, jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->deadline, pfx, jobs_deadline, "Number of jobs in Deadline state", GAUGE, key, ua->name);
+	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->expediting, pfx, jobs_expediting, "Number of jobs in Expediting state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->failed, pfx, jobs_failed, "Number of jobs in Failed state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->fed_requeued, pfx, jobs_fed_requeued, "Number of jobs requeued in a federation", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->finished, pfx, jobs_finished, "Number of finished jobs", GAUGE, key, ua->name);

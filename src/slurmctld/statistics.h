@@ -93,6 +93,7 @@ typedef struct partition_statistics {
 	uint32_t jobs_configuring;
 	uint16_t jobs_cpus_alloc;
 	uint32_t jobs_deadline;
+	uint32_t jobs_expediting;
 	uint32_t jobs_failed;
 	uint32_t jobs_fed_requeued;
 	uint32_t jobs_finished;
@@ -204,6 +205,7 @@ typedef struct jobs_statistics {
 	uint32_t configuring;
 	uint16_t cpus_alloc;
 	uint32_t deadline;
+	uint32_t expediting;
 	uint32_t failed;
 	uint32_t fed_requeued;
 	uint32_t finished;
