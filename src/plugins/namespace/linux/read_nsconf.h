@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.h - parse namespace.conf configuration file.
+ *  read_nsconf.h - parse namespace.yaml configuration file.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -37,25 +37,13 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
+#include "src/interfaces/namespace.h"
+
 #define SLURM_NEWNS_DEF_DIRS "/tmp,/dev/shm"
 
 /*
  * Slurm linux namespace plugin initialization parameters
  */
-typedef struct ns_conf {
-	bool auto_basepath;
-	char *basepath;
-	char *clonensscript;
-	char *clonensflags_str;
-	char *clonensepilog;
-	uint32_t clonensscript_wait;
-	uint32_t clonensflags;
-	uint32_t clonensepilog_wait;
-	char *dirs;
-	char *initscript;
-	bool shared;
-	char *usernsscript;
-} ns_conf_t;
 
 extern char *ns_conf_file;
 

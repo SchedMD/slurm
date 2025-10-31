@@ -64,7 +64,7 @@ static char *slurmd_config_files[] = {
 	"helpers.conf",
 	"job_container.conf",
 	"mpi.conf",
-	"namespace.conf",
+	"namespace.yaml",
 	"oci.conf",
 	"plugstack.conf",
 	"scrun.lua",
