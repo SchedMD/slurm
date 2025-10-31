@@ -170,6 +170,8 @@ proc submit_fed_srun_job { cname expected_origin expected_sib extra_args check_e
 				wait
 			}
 		}
+	} else {
+		set submit_cluster $expected_origin
 	}
 
 	if {$job_id == 0} {
@@ -231,6 +233,8 @@ proc submit_fed_salloc_job { cname expected_origin expected_sib extra_args check
 				wait
 			}
 		}
+	} else {
+		set submit_cluster $expected_origin
 	}
 
 	if {$job_id == 0} {
@@ -453,21 +457,23 @@ set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc1 "-M$fedc1" PENDING]
 incr job_counts($ret_sib)
 
 # Submit job to only fed1,fed2
-# Will go to fed2 since fed1 is full and third job should go to both
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" RUNNING]
+# Should choose origin fed2 because the jobs can start sooner there
+# The first two start, but the third will pend on active siblings fed1,fed2
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc2 "-M$fedc1,$fedc2" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" RUNNING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc2 "-M$fedc1,$fedc2" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc2 "$fedc1,$fedc2" "-M$fedc1,$fedc2" PENDING]
 incr job_counts($ret_sib)
 
 # Submit job to fed2,fed3.
-# Should choose fed2 to be origin and submit
-set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" RUNNING]
+# Should choose origin fed3 because the jobs can start sooner there
+# The first two start, but the third will pend on active siblings fed2,fed3
+set ret_sib [submit_fed_batch_job $fedc1 $fedc3 $fedc3 "-M$fedc2,$fedc3" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" RUNNING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc3 $fedc3 "-M$fedc2,$fedc3" RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_batch_job $fedc1 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" PENDING]
+set ret_sib [submit_fed_batch_job $fedc1 $fedc3 "$fedc2,$fedc3" "-M$fedc2,$fedc3" PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
@@ -507,21 +513,23 @@ set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0 PENDING]
 incr job_counts($ret_sib)
 
 # Submit job to only fed1,fed2
-# Will go to fed2 since fed1 is full and third job should go to both
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
+# Should choose origin fed2 because the jobs can start sooner there
+# The first two start, but the third will pend on active siblings fed1,fed2
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc2 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0 PENDING]
 incr job_counts($ret_sib)
 
 # Submit job to fed2,fed3.
-# Should choose fed2 to be origin and submit
-set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
+# Should choose origin fed3 because the jobs can start sooner there
+# The first two start, but the third will pend on active siblings fed2,fed3
+set ret_sib [submit_fed_srun_job $fedc1 $fedc3 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc3 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_srun_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0 PENDING]
+set ret_sib [submit_fed_srun_job $fedc1 $fedc3 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0 PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts
@@ -562,21 +570,23 @@ set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc1 "-M$fedc1" 0 PENDING]
 incr job_counts($ret_sib)
 
 # Submit job to only fed1,fed2
-# Will go to fed2 since fed1 is full and third job should go to both
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
+# Should choose origin fed2 because the jobs can start sooner there
+# The first two start, but the third will pend on active siblings fed1,fed2
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc2 "-M$fedc1,$fedc2" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc1 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 "$fedc1,$fedc2" "-M$fedc1,$fedc2" 0 PENDING]
 incr job_counts($ret_sib)
 
 # Submit job to fed2,fed3.
-# Should choose fed2 to be origin and submit
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
+# Should choose origin fed3 because the jobs can start sooner there
+# The first two start, but the third will pend on active siblings fed2,fed3
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc3 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc1 $fedc2 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc3 $fedc3 "-M$fedc2,$fedc3" 1 RUNNING]
 incr job_counts($ret_sib)
-set ret_sib [submit_fed_salloc_job $fedc2 $fedc2 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0 PENDING]
+set ret_sib [submit_fed_salloc_job $fedc1 $fedc3 "$fedc2,$fedc3" "-M$fedc2,$fedc3" 0 PENDING]
 incr job_counts($ret_sib)
 
 parray job_counts

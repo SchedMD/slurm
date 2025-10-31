@@ -444,7 +444,7 @@ proc wait_for_fed_job args {
 			gets $fd line
 			catch {close $fd}
 			if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
-				log_error "$desired_state not found on cluster $cluster"
+				log_warn "Unable to determine the state of job $job_id on cluster $cluster"
 				continue
 			}
 

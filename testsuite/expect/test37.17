@@ -684,24 +684,45 @@ proc test_remote_afternotok { } {
 }
 
 proc test_local_singleton { } {
-	global c1 disable_remote_singleton file_in_long
+	global my_scontrol c1 disable_remote_singleton file_in_long
 
-	log_info "#############################################################"
-	log_info "# Test local singleton"
-	log_info "#############################################################"
+	# Verify that all clusters involved are responsive
+	set can_test true
+	if { $disable_remote_singleton eq "false" } {
+		spawn $my_scontrol show fed
+		expect {
+			"PersistConnSend/Recv:No/No" {
+				set can_test false
+			}
+			timeout {
+				fail "scontrol not responding"
+			}
+			eof {
+				wait
+			}
+		}
+	}
 
-	# Test one cluster
-	log_info "singleton: test on one cluster"
-	set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
-	set job_id2 [submit_job "--depend=singleton -M$c1" $c1 $file_in_long]
+	if { $can_test } {
+		log_info "#############################################################"
+		log_info "# Test local singleton"
+		log_info "#############################################################"
 
-	my_wait_for_fed_job $job_id1 "RUNNING" $c1
-	my_wait_for_fed_job $job_id2 "PENDING" $c1
-	wait_for_depend $job_id2 "Dependency" "singleton(unfulfilled)"
-	cancel_job $job_id1 $c1
-	wait_for_depend $job_id2 "None" "(null)"
-	my_wait_for_fed_job $job_id2 "RUNNING" $c1
-	cancel_job $job_id2 $c1
+		# Test one cluster
+		log_info "singleton: test on one cluster"
+		set job_id1 [submit_job "-M$c1" $c1 $file_in_long]
+		set job_id2 [submit_job "--depend=singleton -M$c1" $c1 $file_in_long]
+
+		my_wait_for_fed_job $job_id1 "RUNNING" $c1
+		my_wait_for_fed_job $job_id2 "PENDING" $c1
+		wait_for_depend $job_id2 "Dependency" "singleton(unfulfilled)"
+		cancel_job $job_id1 $c1
+		wait_for_depend $job_id2 "None" "(null)"
+		my_wait_for_fed_job $job_id2 "RUNNING" $c1
+		cancel_job $job_id2 $c1
+	} else {
+		log_warn "Sibling cluster disconnected, skipping local singleton tests"
+	}
 
 }
 
@@ -831,14 +852,22 @@ proc test_submit_to_all_clusters { } {
 		--begin=now+60" $c1 $file_in_long]
 
 	my_wait_for_fed_job $job_id1 "RUNNING" $c2
-	my_wait_for_fed_job $job_id2 "PENDING" $c1
+	set job2_cluster [wait_for_fed_job $job_id2 "PENDING" "$c1,$c2,$c3"]
 	wait_for_depend $job_id2 "Dependency" \
 		"afternotok:$job_id1\(unfulfilled\)"
 
-	log_info "Test that job $job_id2 is not on clusters $c2 or $c3."
-	if { [is_job_on_cluster $job_id2 $c2] || \
-		[is_job_on_cluster $job_id2 $c3] } {
-			fail "Job ($job_id2) is in cluster ($c2 and/or $c3) when it shouldn't be."
+	log_info "Test that job $job_id2 is only on origin cluster $job2_cluster."
+	set non_origin [lmap cluster [list $c1 $c2 $c3] {
+		if { $cluster ne $job2_cluster && [is_job_on_cluster $job_id2 $cluster] } {
+			string cat $cluster
+		} else {
+			continue
+		}
+	}]
+
+	if { [llength $non_origin] } {
+		set cluster_str [join $non_origin ", "]
+		fail "Job ($job_id2) is in non-origin cluster(s) <$cluster_str> when it shouldn't be."
 	}
 
 	log_info "Test that job $job_id2 is submitted to all sibling clusters $c2 and $c3 when its dependency is fulfilled."

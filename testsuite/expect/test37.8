@@ -97,15 +97,13 @@ proc scontrol { option job_id regex args } {
 
 proc sbatch { } {
 	global number bin_sleep node_count my_sbatch
-	global fedc1 fedc2 fedc3
 
 
 	set script "\"sleep 35\""
 	set matches 0
 	set job_id 0
 	set command "$my_sbatch -N$node_count --exclusive --output=/dev/null \
-		--error=/dev/null -t300 --requeue --wrap $script \
-		-M$fedc1,$fedc2,$fedc3"
+		--error=/dev/null -t300 --requeue --wrap $script"
 	set regex "Submitted batch job ($number)"
 	set collect 1
 
