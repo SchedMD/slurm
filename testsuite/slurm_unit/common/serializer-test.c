@@ -567,19 +567,28 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 	double fastest_read_rate_bytes, fastest_write_rate_bytes;
 	double fastest_read_rate, fastest_write_rate;
 	mem_track_t read_mem = {0}, write_mem = {0};
+	latency_metric_t read_latency_metric = LATENCY_METRIC_INITIALIZER;
+	timespec_t read_latency_metric_start = { 0, 0 };
+	latency_metric_t write_latency_metric = LATENCY_METRIC_INITIALIZER;
+	timespec_t write_latency_metric_start = { 0, 0 };
+	char labels_histogram[LATENCY_METRIC_HISTOGRAM_STR_LEN] = { 0 };
+	char read_histogram[LATENCY_METRIC_HISTOGRAM_STR_LEN] = { 0 };
+	char write_histogram[LATENCY_METRIC_HISTOGRAM_STR_LEN] = { 0 };
 
 	for (int i = 0; i < run_count; i++) {
-		DECL_LATENCY_TIMER;
 		latency_metric_rc_t timer_rc;
 
 		FREE_NULL_DATA(data);
 
 		_track_mem(&read_mem);
 
-		START_LATENCY_TIMER();
+		latency_metric_begin(&read_latency_metric,
+				     &read_latency_metric_start);
 		rc = serialize_g_string_to_data(&data, source,
 						test_json_len, MIME_TYPE_JSON);
-		timer_rc = END_LATENCY_TIMER(interval);
+		timer_rc = latency_metric_end(&read_latency_metric,
+					      &read_latency_metric_start,
+					      timespec_now(), interval);
 
 		_track_mem(&read_mem);
 
@@ -593,16 +602,18 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 	}
 
 	for (int i = 0; i < run_count; i++) {
-		DECL_LATENCY_TIMER;
 		latency_metric_rc_t timer_rc;
 
 		_track_mem(&write_mem);
 
-		START_LATENCY_TIMER();
+		latency_metric_begin(&write_latency_metric,
+				     &write_latency_metric_start);
 		rc = serialize_g_data_to_string(&output, &output_len, data,
 						MIME_TYPE_JSON,
 						SER_FLAGS_PRETTY);
-		timer_rc = END_LATENCY_TIMER(interval);
+		timer_rc = latency_metric_end(&write_latency_metric,
+					      &write_latency_metric_start,
+					      timespec_now(), interval);
 
 		_track_mem(&write_mem);
 
@@ -637,6 +648,14 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 	fastest_read_rate = fastest_read_rate_bytes / BYTES_IN_MiB;
 	fastest_write_rate = fastest_write_rate_bytes / BYTES_IN_MiB;
 
+	(void) latency_histogram_print(&read_latency_metric.histogram,
+				       read_histogram, sizeof(read_histogram));
+	(void) latency_histogram_print(&write_latency_metric.histogram,
+				       write_histogram,
+				       sizeof(write_histogram));
+	(void) latency_histogram_print_labels(labels_histogram,
+					      sizeof(labels_histogram));
+
 	printf("%s: %u runs:\n", tag, run_count);
 
 	printf("\tfastest read=%lf sec\n\tfastest write=%lf sec\n\n",
@@ -650,6 +669,10 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 
 	printf("\tavg read=%f MiB/sec \n\tavg write=%f MiB/sec\n\n",
 	       read_rate, write_rate);
+
+	printf("\thistogram:\n\t%s\n\n", labels_histogram);
+	printf("\tread histogram:\n\t%s\n\n", read_histogram);
+	printf("\twrite histogram:\n\t%s\n\n", write_histogram);
 
 	_print_tracked_mem(&read_mem, "read");
 	_print_tracked_mem(&write_mem, "write");
