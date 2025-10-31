@@ -57,6 +57,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -742,6 +743,7 @@ int main(int argc, char **argv)
 
 	_examine_stdin();
 	_examine_stderr();
+	probe_init();
 	_setup_logging(argc, argv);
 
 	run_mode.listen = !list_is_empty(socket_listen);
@@ -920,6 +922,7 @@ int main(int argc, char **argv)
 	conn_g_fini();
 	cred_g_fini();
 	auth_g_fini();
+	probe_fini();
 	getnameinfo_cache_purge();
 	log_fini();
 
