@@ -1381,23 +1381,33 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
     return tuple(int(part) if part.isdigit() else 0 for part in version_str.split("."))
 
 
-def require_version(version, component="sbin/slurmctld", slurm_prefix="", reason=None):
+def require_version(
+    min_version,
+    component="sbin/slurmctld",
+    slurm_prefix="",
+    reason=None,
+    max_version=None,
+):
     """Checks if the component is at least the required version, or skips.
 
     Args:
-        version (tuple): The tuple representing the version.
+        min_version (tuple): The tuple representing the minimal version required, version should be >=.
+        max_version (tuple): The tuple representing the maximal version required, version should be <.
         component (string): The bin/ or sbin/ component of Slurm to check.
         slurm_prefix (string): The path where the component is. By default the defined in testsuite.conf.
         reason (string): The reason why the version of the component is required.
-
-    Returns:
-        A tuple representing the version. E.g. (25.05.0).
     """
     component_version = get_version(component, slurm_prefix)
-    if component_version < version:
-        if not reason:
-            reason = f"The version of {component} is {component_version}, required is {version}"
-        pytest.skip(reason)
+    if component_version >= min_version and (
+        max_version is None or component_version < max_version
+    ):
+        return
+
+    if not reason:
+        reason = f"The version of {component} is {component_version}, required is {min_version}"
+        if max_version:
+            reason += f" up to {max_version} (not included)"
+    pytest.skip(reason)
 
 
 def request_slurmctld(request):
