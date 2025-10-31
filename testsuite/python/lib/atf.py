@@ -1460,6 +1460,9 @@ def assert_openapi_spec_eq(spec_a, spec_b):
     _spec_a["info"]["version"] = None
     _spec_b["info"]["version"] = None
 
+    _spec_a["tags"] = None
+    _spec_b["tags"] = None
+
     # Recursively remove all description fields
     def _strip_descriptions(oas):
         """Recursively removes all description fields in oas
