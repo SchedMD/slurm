@@ -864,8 +864,7 @@ next_segment:
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = SLURM_ERROR;
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_RETRY_EVAL_HINT;
 			debug("%pJ reached maximum node limit",
 			      job_ptr);
 			goto fini;
