@@ -1303,24 +1303,28 @@ static bool _validate_tres_limits_for_assoc(
 	return true;
 }
 
-
 /*
  * _validate_tres_limits_for_qos - validate the tres requested against limits
- * of a QOS as well as qos skipping any limit an admin set
+ * of a QOS, as well as qos skipping any limit an admin set. If the tres limit
+ * was already set, it will not be overridden even if the new limit is less
+ * restrictive, this is a "first one wins" policy.
  *
- * OUT - tres_pos - if false is returned position in array of failed limit
+ * OUT - tres_pos - if false is returned, position in array of failed limit
  * IN - job_tres_array - count of various TRES requested by the job
- * IN - divisor - divide the job_tres_array TRES by this variable, 0 if none
- * IN - grp_tres_array - Grp TRES limits from QOS
+ * IN - divisor - divide the job_tres_array TRES by this variable, 0 if none.
+ *                This is typically used to normalize the value per node.
+ * IN - grp_tres_array - Grp TRES limits from QOS (can be NULL)
  * IN - max_tres_array - Max/Min TRES limits from QOS
  * IN/OUT - out_grp_tres_array - Grp TRES limits QOS has imposed already,
- *                               if a new limit is found the limit is filled in.
+ *                               if a new limit is found the limit is filled in
+ *                               (can be NULL).
  * IN/OUT - out_max_tres_array - Max/Min TRES limits QOS has imposed already,
  *                               if a new limit is found the limit is filled in.
- * IN - acct_policy_limit_set_array - limits that have been overridden
- *                                    by an admin
+ * IN - admin_set_limit_tres_array - limits that have been overridden by an
+ *                                   admin.
  * IN strict_checking - If a limit needs to be enforced now or not.
- * IN max_limit - Limits are for MAX else, the limits are MIN.
+ * IN max_limit - true means we're enforcing upper bounds (MAX),
+ *                false means lower bounds (MIN).
  *
  * RET - True if no limit is violated, false otherwise with tres_pos
  * being set to the position of the failed limit.
