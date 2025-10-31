@@ -196,7 +196,7 @@ extern int init(void)
 			return SLURM_ERROR;
 		}
 		plugin_disabled = _is_plugin_disabled(ns_conf->basepath);
-		debug("namespace.conf read successfully");
+		debug("namespace.yaml read successfully");
 	}
 
 	debug("%s loaded", plugin_name);
