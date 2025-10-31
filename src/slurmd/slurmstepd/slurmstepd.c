@@ -52,6 +52,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
+#include "src/common/probes.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
@@ -432,6 +433,8 @@ extern int main(int argc, char **argv)
 	int rc = SLURM_SUCCESS;
 	bool only_mem = true;
 
+	probe_init();
+
 	_main_thread_init();
 
 	_process_cmdline(argc, argv);
@@ -527,6 +530,7 @@ ending:
 	stepd_cleanup(msg, cli, rc, only_mem);
 
 	conmgr_fini();
+	probe_fini();
 	return rc;
 }
 
