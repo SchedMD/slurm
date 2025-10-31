@@ -154,7 +154,7 @@ extern int init(void)
 			return SLURM_ERROR;
 		}
 		plugin_disabled = _is_plugin_disabled(jc_conf->basepath);
-		debug("namespace.conf read successfully");
+		debug("job_container.conf read successfully");
 	}
 
 	debug("%s loaded", plugin_name);
