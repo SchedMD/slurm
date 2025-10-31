@@ -55,6 +55,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
 #include "src/common/msg_type.h"
+#include "src/common/probes.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -1178,7 +1179,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
-	conmgr_log_diagnostics();
+	(void) probe_run(true, NULL, NULL, __func__);
 }
 
 static void _init_slurmscriptd_conmgr(void)
