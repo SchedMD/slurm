@@ -2585,7 +2585,7 @@ extern job_record_t *find_job(const slurm_step_id_t *step_id)
  */
 static void _set_requeued_job_pending_completing(job_record_t *job_ptr)
 {
-	uint32_t expediting = job_ptr->job_state & JOB_EXPEDITING;
+	uint32_t expediting = IS_JOB_EXPEDITING(job_ptr);
 
 	/* do this after the epilog complete, setting it here is too early */
 	//job_record_set_sluid(job_ptr);
@@ -12613,7 +12613,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		}
 	}
 
-	if ((job_ptr->job_state & JOB_EXPEDITING) && !privileged) {
+	if (IS_JOB_EXPEDITING(job_ptr) && !privileged) {
 		error("Blocking update of expediting job from uid %u", uid);
 		return ESLURM_NOT_SUPPORTED;
 	}
@@ -16620,7 +16620,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	 * Do that now that this job will be ready in the queue to re-claim
 	 * them as needed.
 	 */
-	if (job_ptr->job_state & JOB_EXPEDITING) {
+	if (IS_JOB_EXPEDITING(job_ptr)) {
 		node_record_t *node_ptr;
 		for (int i = 0;
 		     (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
@@ -16635,7 +16635,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
 
-	if (job_ptr->job_state & JOB_EXPEDITING) {
+	if (IS_JOB_EXPEDITING(job_ptr)) {
 		if (!job_ptr->epilog_failed) {
 			job_state_unset_flag(job_ptr, JOB_EXPEDITING);
 			job_state_set_flag(job_ptr, JOB_REQUEUE_HOLD);
