@@ -18989,6 +18989,8 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	}
 
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
+	if (job_ptr->qos_ptr)
+		setenvf(&my_env, "SLURM_JOB_QOS", "%s", job_ptr->qos_ptr->name);
 
 	if (is_complete) {
 		exit_code = signal = 0;
