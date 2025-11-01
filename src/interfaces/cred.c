@@ -279,6 +279,7 @@ extern void slurm_cred_free_args(slurm_cred_arg_t *arg)
 	xfree(arg->job_mem_alloc_rep_count);
 	xfree(arg->job_node_addrs);
 	xfree(arg->job_partition);
+	xfree(arg->job_qos);
 	xfree(arg->job_reservation);
 	xfree(arg->job_std_err);
 	xfree(arg->job_std_in);
@@ -811,4 +812,7 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 
 	if (job_ptr->part_ptr)
 		cred_arg->job_partition = job_ptr->part_ptr->name;
+
+	if (job_ptr->qos_ptr)
+		cred_arg->job_qos = job_ptr->qos_ptr->name;
 }
