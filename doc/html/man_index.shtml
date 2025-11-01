@@ -74,6 +74,8 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 	plugin.</td></tr>
 <tr><td><a href="mpi.conf.html">mpi.conf</a></td>
 	<td>Slurm configuration file to allow the configuration of MPI plugins.</td></tr>
+<tr><td><a href="namespace.yaml.html">namespace.yaml</a></td>
+	<td>Slurm configuration file for the namespace/linux plugin.</td></tr>
 <tr><td><a href="oci.conf.html">oci.conf</a></td>
 	<td>Slurm configuration file for OCI Containers.</td></tr>
 <tr><td><a href="spank.html#SECTION_CONFIGURATION">plugstack.conf</a></td>
