@@ -118,6 +118,7 @@ typedef struct {
 	uint16_t job_oversubscribe;	/* shared/oversubscribe status */
 	list_t *job_gres_list;		/* Generic resources allocated to JOB */
 	char *job_partition;		/* partition */
+	char *job_qos;
 	char *job_reservation;		/* Reservation, if applicable */
 	uint16_t job_restart_cnt;	/* restart count */
 	char *job_selinux_context;

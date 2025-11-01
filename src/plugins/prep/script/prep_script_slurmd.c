@@ -342,6 +342,8 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 		if (cred_arg->job_partition)
 			setenvf(&env, "SLURM_JOB_PARTITION", "%s",
 				cred_arg->job_partition);
+		if (cred_arg->job_qos)
+			setenvf(&env, "SLURM_JOB_QOS", "%s", cred_arg->job_qos);
 		if (cred_arg->job_reservation)
 			setenvf(&env, "SLURM_JOB_RESERVATION", "%s",
 				cred_arg->job_reservation);
