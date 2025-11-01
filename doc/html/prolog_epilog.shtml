@@ -563,8 +563,8 @@ Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
 Partition that job runs in.</li>
 
 <li><b>SLURM_JOB_QOS</b>
-QOS assigned to job. Available in SrunProlog, TaskProlog, SrunEpilog
-and TaskEpilog.</li>
+QOS assigned to job. Available in PrologSlurmctld, EpilogSlurmctld, SrunProlog,
+TaskProlog, SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_RESERVATION</b>
 Reservation requested for the job.</li>
