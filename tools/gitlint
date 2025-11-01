@@ -3,6 +3,7 @@ extra-path=tools/
 ignore=body-is-missing
 ignore-fixup-commits=false
 ignore-fixup-amend-commits=false
+regex-style-search=True
 
 [title-max-length]
 line-length=72
