@@ -382,9 +382,9 @@ extern int bpf_create_token(int bpf_fs_fd)
 	}
 
 fini:
-	if (bpffs_fd < 0)
+	if (bpffs_fd >= 0)
 		close(bpffs_fd);
-	if (mount_fd < 0)
+	if (mount_fd >= 0)
 		close(mount_fd);
 
 	return token_fd;
