@@ -63,6 +63,7 @@
 #include "src/common/xstring.h"
 
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/namespace.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/topology.h" /* provides topology config structs */
 
@@ -7290,6 +7291,46 @@ static int PARSE_FUNC(SLUID)(const parser_t *const parser, void *obj,
 	fatal_abort("should never run");
 }
 
+static int PARSE_FUNC(NAMESPACE_NODE_CONF_COMPLEX)(const parser_t *const parser,
+						   void *obj, data_t *src,
+						   args_t *args,
+						   data_t *parent_path)
+{
+	ns_node_conf_t *ns_node_conf = obj;
+	int rc;
+
+	xassert(ns_node_conf);
+
+	if (data_get_type(src) != DATA_TYPE_DICT)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_EXPECTED_DICT,
+				   "Rejecting %s when dictionary expected",
+				   data_get_type_string(src));
+
+	/* Keep track of if the node conf is overriding global defaults */
+	ns_node_conf->set_auto_basepath =
+		data_key_get_const(src, "auto_base_path");
+	ns_node_conf->set_clonensscript_wait =
+		data_key_get_const(src, "clone_ns_script_wait");
+	ns_node_conf->set_clonensepilog_wait =
+		data_key_get_const(src, "clone_ns_epilog_wait");
+	ns_node_conf->set_shared = data_key_get_const(src, "shared");
+
+	rc = PARSE(NAMESPACE_CONF_PTR, ns_node_conf->ns_conf, src, parent_path,
+		   args);
+	return rc;
+};
+
+static int DUMP_FUNC(NAMESPACE_NODE_CONF_COMPLEX)(const parser_t *const parser,
+						  void *obj, data_t *dst,
+						  args_t *args)
+{
+	ns_node_conf_t *ns_node_conf = obj;
+	xassert(ns_node_conf);
+
+	return DUMP(NAMESPACE_CONF_PTR, ns_node_conf->ns_conf, dst, args);
+};
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -10526,6 +10567,47 @@ static const parser_t PARSER_ARRAY(NODE_GRES_LAYOUT)[] = {
 #undef add_parse_req
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(ns_full_conf_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NAMESPACE_FULL_CONF)[] = {
+	add_parse(NAMESPACE_CONF_PTR, defaults, "defaults", "Default namespace configuration"),
+	add_parse(NAMESPACE_NODE_CONF_LIST, node_confs, "node_confs", "List of node namespace configurations"),
+};
+#undef add_parse
+
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(ns_node_conf_t, mtype, true, field, 0, path, desc)
+#define add_cparse_req(mtype, path, desc)				\
+	add_complex_parser(ns_conf_t, mtype, true, path, desc)
+static const parser_t PARSER_ARRAY(NAMESPACE_NODE_CONF)[] = {
+	add_parse_req(HOSTLIST, nodes, "nodes", "List of node names the options will be applied to"),
+	add_cparse_req(NAMESPACE_NODE_CONF_COMPLEX, "options", "Namespace configuration options. Specified options will override those set by defaults."),
+};
+#undef add_cparse_req
+#undef add_parse_req
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(ns_conf_t, mtype, false, field, 0, path, desc)
+#define add_skip(field)					\
+	add_parser_skip(ns_conf_t, field)
+static const parser_t PARSER_ARRAY(NAMESPACE_CONF)[] = {
+	add_parse(BOOL, auto_basepath, "auto_base_path", "This determines if plugin should create the BasePath directory or not. Set it to 'true' if directory is not pre-created before slurm startup. If set to true, the directory is created with permission 0755. Directory is not deleted during slurm shutdown. If set to 'false' or not specified, plugin would expect directory to exist. This option can be used on a global or per-line basis. This parameter is optional."),
+	add_parse(STRING, basepath, "base_path", "Specify the PATH that the tmpfs plugin should use as a base to mount the private directories. This path must be readable and writable by the plugin. The plugin constructs a directory for each job inside this path, which is then used for mounting. The base_path gets mounted as 'private' during slurmd start and remains mounted until shutdown. The first \"%h\" within the name is replaced with the hostname on which the slurmd is running. The first \"%n\" within the name is replaced with the Slurm node name on which the slurmd is running. Set PATH to 'none' to disable the namespace/linux plugin on node subsets when there is a global setting in defaults. NOTE: The base_path must be unique to each node. If base_path is on a shared filesystem, you can use \"%h\" or \"%n\" to create node-unique directories. NOTE: The base_path parameter cannot be set to any of the paths specified by dirs. Using these directories will cause conflicts when trying to mount and unmount the private directories for the job."),
+	add_parse(STRING, clonensscript, "clone_ns_script", "Specify fully qualified pathname of an optional initialization script. This script is run after the namespace construction of a job. This script will be provided the SLURM_NS environment variable containing the path to the namespace that can be used by the nsenter command. This variable will allow the script to join the newly created namespace and do further setup work. This parameter is optional."),
+	add_skip(clonensflags), /* Flags don't exist in freebsd set later */
+	add_parse(CSV_STRING, clonensflags_str, "clone_ns_flags", "This contains a list of string flag values. This parameter defines what additional namespaces should be created for the job. Valid values are \"CLONE_NEWPID\" and \"CLONE_NEWUSER\" to create new PID and USER namespaces respectively. \"CLONE_NEWNS\" will also be accepted, but is always on. NOTE: When CLONE_NEWUSER is specified, bpf token support is also required if using ConstrainDevices in cgroup.conf."),
+	add_parse(STRING, clonensepilog, "clone_ns_epilog", "Specify fully qualified pathname of an optional epilog script. This script runs just before the namespace is torn down. This script will be provided the SLURM_NS environment variable containing the path to the namespace that can be used by the nsenter command. This variable will allow the script to join the soon to be removed namespace and do any cleanup work. This parameter is optional."),
+	add_parse(UINT32, clonensscript_wait, "clone_ns_script_wait", "The number of seconds to wait for the clone_ns_script to complete before considering the script failed. The default value is 10 seconds."),
+	add_parse(UINT32, clonensepilog_wait, "clone_ns_epilog_wait", "The number of seconds to wait for the clone_ns_epilog to complete before considering the script failed. The default value is 10 seconds."),
+	add_parse(STRING, dirs, "dirs", "A list of mount points separated with commas to create private mounts for. This parameter is optional and if not specified it defaults to \"/tmp,/dev/shm\". NOTE: /dev/shm has special handling, and instead of a bind mount is always a fresh tmpfs filesystem. NOTE: When CLONE_NEWPID is specified, a unique /proc filesystem for the container will be mounted automatically."),
+	add_parse(STRING, initscript, "init_script", "Specify fully qualified pathname of an optional initialization script. This script is run before the namespace construction of a job. It can be used to make the job join additional namespaces prior to the construction of /tmp namespace or it can be used for any site-specific setup. This parameter is optional. "),
+	add_parse(BOOL, shared, "shared", "Specifying Shared=true will propagate new mounts between the job specific filesystem namespace and the root filesystem namespace, enable using autofs on the node. This parameter is optional. "),
+	add_parse(STRING, usernsscript, "user_ns_script", "Specifies the location of a script that will perform the user namespace setup. This script runs first when setting up the namespace. The environment variable \"SLURM_NS_PID\" is provided to allow constructing the path to the various map files that this script could write to. If not specified, every user and group will be mapped."),
+	/* Keep non-pointer fields synced with NAMESPACE_NODE_CONF_COMPLEX */
+};
+#undef add_skip
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -11198,6 +11280,7 @@ static const parser_t parsers[] = {
 	addpcp(TOPOLOGY_FLAT, BOOL, bool, NEED_NONE, "topology/flat plugin"),
 	addpca(TOPOLOGY_TREE_CONFIG_ARRAY, SWITCH_CONFIG, topology_tree_config_t, NEED_NONE, "Array of switch configurations"),
 	addpca(TOPOLOGY_BLOCK_CONFIG_ARRAY, BLOCK_CONFIG, topology_block_config_t, NEED_NONE, "Array of block configurations"),
+	addpcp(NAMESPACE_NODE_CONF_COMPLEX, NAMESPACE_CONF_PTR, ns_node_conf_t, NEED_NONE, "Namespace node specific configuration"),
 
 	/* Removed parsers */
 	addr(SELECT_PLUGIN_ID, STRING, SLURM_MIN_PROTOCOL_VERSION),
@@ -11359,6 +11442,9 @@ static const parser_t parsers[] = {
 	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
 	addpap(NODE_RESOURCE_LAYOUT, node_resource_layout_t, NULL, slurm_free_node_resource_layout),
 	addpap(NODE_GRES_LAYOUT, node_gres_layout_t, NULL, slurm_free_node_gres_layout),
+	addpap(NAMESPACE_FULL_CONF, ns_full_conf_t, NULL, (parser_free_func_t) slurm_free_ns_full_conf),
+	addpap(NAMESPACE_NODE_CONF, ns_node_conf_t, NULL, (parser_free_func_t) slurm_free_ns_node_conf),
+	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -11494,6 +11580,7 @@ static const parser_t parsers[] = {
 	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
+	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps

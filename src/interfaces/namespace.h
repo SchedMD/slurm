@@ -39,6 +39,35 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+typedef struct ns_conf {
+	bool auto_basepath;
+	char *basepath;
+	char *clonensscript;
+	char *clonensflags_str;
+	char *clonensepilog;
+	uint32_t clonensscript_wait;
+	uint32_t clonensflags;
+	uint32_t clonensepilog_wait;
+	char *dirs;
+	char *initscript;
+	bool shared;
+	char *usernsscript;
+} ns_conf_t;
+
+typedef struct ns_node_conf_t {
+	hostlist_t *nodes;
+	ns_conf_t *ns_conf;
+	bool set_auto_basepath;
+	bool set_clonensscript_wait;
+	bool set_clonensepilog_wait;
+	bool set_shared;
+} ns_node_conf_t;
+
+typedef struct {
+	ns_conf_t *defaults;
+	list_t *node_confs; /* list of slurm_ns_node_conf_t* */
+} ns_full_conf_t;
+
 /*
  * Initialize the job namespace plugin.
  *
@@ -89,5 +118,10 @@ extern bool namespace_g_can_bpf(stepd_step_rec_t *step);
 
 /* Setups the bpf token */
 extern int namespace_g_setup_bpf_token(stepd_step_rec_t *step);
+
+extern void slurm_free_ns_conf_members(ns_conf_t *ns_conf);
+extern void slurm_free_ns_conf(ns_conf_t *ns_conf);
+extern void slurm_free_ns_full_conf(ns_full_conf_t *ns_full_conf);
+extern void slurm_free_ns_node_conf(ns_node_conf_t *ns_node_conf);
 
 #endif
