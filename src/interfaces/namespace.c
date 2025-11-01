@@ -303,3 +303,42 @@ extern int namespace_g_setup_bpf_token(stepd_step_rec_t *step)
 
 	return rc;
 }
+
+extern void slurm_free_ns_conf_members(ns_conf_t *ns_conf)
+{
+	if (ns_conf) {
+		xfree(ns_conf->basepath);
+		xfree(ns_conf->clonensepilog);
+		xfree(ns_conf->clonensflags_str);
+		xfree(ns_conf->clonensscript);
+		xfree(ns_conf->dirs);
+		xfree(ns_conf->initscript);
+		xfree(ns_conf->usernsscript);
+	}
+}
+
+extern void slurm_free_ns_conf(ns_conf_t *ns_conf)
+{
+	if (ns_conf) {
+		slurm_free_ns_conf_members(ns_conf);
+		xfree(ns_conf);
+	}
+}
+
+extern void slurm_free_ns_node_conf(ns_node_conf_t *ns_node_conf)
+{
+	if (ns_node_conf) {
+		FREE_NULL_HOSTLIST(ns_node_conf->nodes);
+		slurm_free_ns_conf(ns_node_conf->ns_conf);
+		xfree(ns_node_conf);
+	}
+}
+
+extern void slurm_free_ns_full_conf(ns_full_conf_t *ns_full_conf)
+{
+	if (ns_full_conf) {
+		slurm_free_ns_conf(ns_full_conf->defaults);
+		FREE_NULL_LIST(ns_full_conf->node_confs);
+		xfree(ns_full_conf);
+	}
+}
