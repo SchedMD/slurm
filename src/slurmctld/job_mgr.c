@@ -16170,6 +16170,27 @@ extern bool job_epilog_complete(job_record_t *job_ptr, char *node_name,
 		return false;
 }
 
+static int _requeue_delay(void)
+{
+	static bool set = false;
+	static int delay = 0;
+
+	if (!set) {
+		char *tmp_str = NULL;
+		if ((tmp_str = conf_get_opt_str(slurm_conf.sched_params,
+						"requeue_delay="))) {
+			delay = atoi(tmp_str);
+			xfree(tmp_str);
+		} else {
+			delay = cred_expiration();
+		}
+
+		set = true;
+	}
+
+	return delay;
+}
+
 /* Complete a batch job requeue logic after all steps complete so that
  * subsequent jobs appear in a separate accounting record. */
 void batch_requeue_fini(job_record_t *job_ptr)
@@ -16249,10 +16270,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		 * I/O must be all cleared out, the named socket purged and
 		 * the job credential purged by slurmd. */
 		if (job_ptr->details->begin_time <= now) {
-			int cred_lifetime = DEFAULT_EXPIRATION_WINDOW;
-			time_t begin_time;
-			cred_lifetime = cred_expiration();
-			begin_time = now + cred_lifetime + 1;
+			time_t begin_time = now + _requeue_delay() + 1;
 			if ((job_ptr->bit_flags & CRON_JOB) &&
 			    job_ptr->details->crontab_entry) {
 				begin_time = calc_next_cron_start(
