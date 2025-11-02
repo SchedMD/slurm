@@ -4691,6 +4691,13 @@ the backfill scheduler.
 .IP
 
 .TP
+\fBrequeue_delay=\fR
+Delay before a non\-Expedited Requeue job is eligible to run after being
+requeued. Defaults to the AuthInfo=cred_expire setting, which itself defaults
+to 120 seconds.
+.IP
+
+.TP
 \fBrequeue_on_resume_failure\fR
 In the event that nodes fail to resume by \fBResumeTimeout\fR, all batch jobs
 will be requeued -- even if the jobs requested not to be requeued. This is
