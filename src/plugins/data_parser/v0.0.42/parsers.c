@@ -1387,6 +1387,7 @@ static void _fill_job_stp(job_std_pattern_t *job_stp, slurmdb_job_rec_t *job)
 	job_stp->array_task_id = job->array_task_id;
 	job_stp->first_step_node = step ? step->nodes : NULL;
 	job_stp->jobname = job->jobname;
+	job_stp->restart_cnt = job->restart_cnt;
 	job_stp->step_id = SLURM_STEP_ID_INITIALIZER;
 	job_stp->step_id.job_id = job->jobid;
 	job_stp->step_id.sluid = job->db_index;

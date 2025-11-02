@@ -72,6 +72,7 @@ typedef struct {
 	bool io_per_task;
 	char *jobname;
 	uint32_t nodeid;
+	uint16_t restart_cnt;
 	slurm_step_id_t step_id;
 	uint32_t taskid;
 	char *user;
