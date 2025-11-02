@@ -489,6 +489,7 @@ static bool _is_wildcard(char *ptr, job_std_pattern_t *job)
 	case 'b': /* Array task ID modulo 10 */
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
+	case 'r': /* Restart count */
 	case 'S': /* SLUID */
 	case 's': /* Stepid of the running job */
 	case 'x': /* Job name */
@@ -542,6 +543,9 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 		break;
 	case 'N': /* Short hostname */
 		xstrfmtcatat(*expanded, pos, "%s", job->first_step_node);
+		break;
+	case 'r':
+		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->restart_cnt);
 		break;
 	case 'S': /* SLUID */
 	{

@@ -167,6 +167,7 @@ extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
 	job_stp.array_task_id = job->array_task_id;
 	job_stp.first_step_node = job->batch_host;
 	job_stp.jobname = job->name;
+	job_stp.restart_cnt = job->restart_cnt;
 	job_stp.step_id = job->step_id;
 	job_stp.step_id.step_id = SLURM_BATCH_SCRIPT;
 	job_stp.user = uid_to_string_cached((uid_t) job->user_id);
