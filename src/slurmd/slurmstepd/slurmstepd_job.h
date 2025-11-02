@@ -241,6 +241,7 @@ typedef struct {
 	char          *tres_freq;	/* TRES frequency */
 	time_t job_end_time;            /* job end time */
 	char *job_licenses;		/* Licenses allocated to job */
+	uint16_t job_restart_cnt;
 	time_t job_start_time;          /* job start time */
 	launch_tasks_request_msg_t *msg; /* When a non-batch step this
 					  * is the message sent.  DO
