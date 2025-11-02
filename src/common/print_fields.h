@@ -67,7 +67,6 @@ struct print_field {
 typedef struct {
 	uint32_t array_job_id;
 	uint32_t array_task_id;
-	uint32_t first_step_id;
 	char *first_step_node;
 	bool is_srun;
 	bool io_per_task;
