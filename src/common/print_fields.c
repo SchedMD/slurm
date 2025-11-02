@@ -489,6 +489,7 @@ static bool _is_wildcard(char *ptr, job_std_pattern_t *job)
 	case 'b': /* Array task ID modulo 10 */
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
+	case 'S': /* SLUID */
 	case 's': /* Stepid of the running job */
 	case 'x': /* Job name */
 		return true;
@@ -542,6 +543,13 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 	case 'N': /* Short hostname */
 		xstrfmtcatat(*expanded, pos, "%s", job->first_step_node);
 		break;
+	case 'S': /* SLUID */
+	{
+		char sluid[SLUID_STR_BYTES];
+		print_sluid(job->step_id.sluid, sluid, sizeof(sluid));
+		xstrfmtcatat(*expanded, pos, "%s", sluid);
+		break;
+	}
 	case 's': /* Stepid of the running job */
 		if (job->step_id.step_id == SLURM_BATCH_SCRIPT)
 			xstrcatat(*expanded, pos, "batch");
