@@ -47,6 +47,10 @@ repos:
   - id: gitlint-ci
     alias: gitlint-ci-nodraft
     args: [--config, tools/gitlint, --contrib, CC2]
+  # Enforce schedmd email addresses
+  - id: gitlint-ci
+    alias: gitlint-ci-schedmd-email
+    args: [--config, tools/gitlint, -c, "M1.regex=[^@]+@schedmd.com"]
 
 - repo: https://github.com/pecigonzalo/pre-commit-shfmt
   rev: v2.2.0

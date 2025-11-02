@@ -16,6 +16,11 @@ class IgnoreConfigurationRule(ConfigurationRule):
     def apply(self, config, commit):
         for rule in config.rules:
             self.log.debug(f"rule id:{rule.id} name:{rule.name}")
-            if rule.id != "T3" and rule.id != "CC2" and not rule.id.startswith("UC"):
+            if (
+                rule.id != "T3"  # title-trailing-punctuation
+                and rule.id != "M1"  # author-valid-emai
+                and rule.id != "CC2"  # contrib-disallow-cleanup-commits
+                and not rule.id.startswith("UC")
+            ):
                 self.log.debug(f"ignoring rule id:{rule.id} name:{rule.name}")
                 config.ignore.append(rule.name)
