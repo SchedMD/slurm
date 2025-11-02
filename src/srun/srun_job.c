@@ -282,7 +282,6 @@ extern srun_job_t *job_step_create_allocation(
 			slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
-	uint32_t job_id = resp->step_id.job_id;
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(allocation_info_t));
 	hostlist_t *hl = NULL;
@@ -292,10 +291,10 @@ extern srun_job_t *job_step_create_allocation(
 	char *step_nodelist = NULL;
 	xassert(srun_opt);
 
-	ai->step_id.job_id          = job_id;
-	ai->step_id.sluid = resp->step_id.sluid;
-	ai->step_id.step_id         = NO_VAL;
-	ai->step_id.step_het_comp = NO_VAL;
+	ai->step_id = resp->step_id;
+	xassert(ai->step_id.step_id == NO_VAL);
+	xassert(ai->step_id.step_het_comp == NO_VAL);
+
 	if (srun_opt->alloc_nodelist)
 		ai->nodelist = xstrdup(srun_opt->alloc_nodelist);
 	else
@@ -503,12 +502,13 @@ extern srun_job_t *job_create_allocation(
 	srun_job_t *job;
 	allocation_info_t *i = xmalloc(sizeof(allocation_info_t));
 
+	i->step_id = resp->step_id;
+	xassert(i->step_id.step_id == NO_VAL);
+	xassert(i->step_id.step_het_comp == NO_VAL);
+
 	i->nodelist       = _normalize_hostlist(resp->node_list);
 	i->nnodes	  = resp->node_cnt;
 	i->partition      = resp->partition;
-	i->step_id.job_id = resp->step_id.job_id;
-	i->step_id.step_id         = NO_VAL;
-	i->step_id.step_het_comp = NO_VAL;
 	i->num_cpu_groups = resp->num_cpu_groups;
 	i->cpus_per_node  = resp->cpus_per_node;
 	i->cpu_count_reps = resp->cpu_count_reps;
