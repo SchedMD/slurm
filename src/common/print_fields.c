@@ -489,6 +489,8 @@ static bool _is_wildcard(char *ptr, job_std_pattern_t *job)
 	case 'b': /* Array task ID modulo 10 */
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
+	case 'r': /* Restart count */
+	case 'S': /* SLUID */
 	case 's': /* Stepid of the running job */
 	case 'x': /* Job name */
 		return true;
@@ -519,14 +521,17 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 				     job->array_job_id);
 		} else {
 			xstrfmtcatat(*expanded, pos, "%0*u", padding,
-				     job->jobid);
+				     job->step_id.job_id);
 		}
 		break;
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
-		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->jobid);
-		if ((*ptr == 'J') && (job->first_step_id != SLURM_BATCH_SCRIPT))
-			xstrfmtcatat(*expanded, pos, ".%d", job->first_step_id);
+		xstrfmtcatat(*expanded, pos, "%0*u", padding,
+			     job->step_id.job_id);
+		if ((*ptr == 'J') &&
+		    (job->step_id.step_id != SLURM_BATCH_SCRIPT))
+			xstrfmtcatat(*expanded, pos, ".%d",
+				     job->step_id.step_id);
 		break;
 	case 'a': /* Array task ID */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding,
@@ -539,12 +544,22 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 	case 'N': /* Short hostname */
 		xstrfmtcatat(*expanded, pos, "%s", job->first_step_node);
 		break;
+	case 'r':
+		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->restart_cnt);
+		break;
+	case 'S': /* SLUID */
+	{
+		char sluid[SLUID_STR_BYTES];
+		print_sluid(job->step_id.sluid, sluid, sizeof(sluid));
+		xstrfmtcatat(*expanded, pos, "%s", sluid);
+		break;
+	}
 	case 's': /* Stepid of the running job */
-		if (job->first_step_id == SLURM_BATCH_SCRIPT)
+		if (job->step_id.step_id == SLURM_BATCH_SCRIPT)
 			xstrcatat(*expanded, pos, "batch");
 		else
 			xstrfmtcatat(*expanded, pos, "%0*u", padding,
-				     job->first_step_id);
+				     job->step_id.step_id);
 		break;
 	case 'n': /* Node id relative to current job */
 		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->nodeid);

@@ -60,11 +60,11 @@ extern char *fname_create(stepd_step_rec_t *step, char *stdio_path, int taskid)
 
 	job_stp.array_job_id = step->array_job_id;
 	job_stp.array_task_id = step->array_task_id;
-	job_stp.first_step_id = step->step_id.step_id;
 	job_stp.first_step_node = conf->node_name;
-	job_stp.jobid = step->step_id.job_id;
 	job_stp.jobname = getenvp(step->env, "SLURM_JOB_NAME");
 	job_stp.nodeid = step->nodeid;
+	job_stp.restart_cnt = step->job_restart_cnt;
+	job_stp.step_id = step->step_id;
 	job_stp.taskid = taskid;
 	job_stp.user = step->user_name;
 	job_stp.work_dir = step->cwd;

@@ -104,10 +104,9 @@ extern fname_t *fname_create(srun_job_t *job, char *format, int task_count)
 	array_task_id = getenv("SLURM_ARRAY_TASK_ID");
 	job_stp.array_task_id =
 		array_task_id ? strtoul(array_task_id, NULL, 10) : 0;
-	job_stp.first_step_id = job->step_id.step_id;
-	job_stp.jobid = job->step_id.job_id;
 	job_stp.jobname = getenv("SLURM_JOB_NAME");
 	job_stp.is_srun = true;
+	job_stp.step_id = job->step_id;
 
 	fname->name = expand_stdio_fields(format, &job_stp);
 	if (job_stp.io_per_task)
