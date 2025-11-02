@@ -4836,9 +4836,12 @@ extern char *slurmdb_expand_job_stdio_fields(char *path, slurmdb_job_rec_t *job)
 
 	job_stp.array_job_id = job->array_job_id;
 	job_stp.array_task_id = job->array_task_id;
-	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
-	job_stp.jobid = job->jobid;
 	job_stp.jobname = job->jobname;
+	job_stp.restart_cnt = job->restart_cnt;
+	job_stp.step_id = SLURM_STEP_ID_INITIALIZER;
+	job_stp.step_id.job_id = job->jobid;
+	job_stp.step_id.sluid = job->db_index;
+	job_stp.step_id.step_id = SLURM_BATCH_SCRIPT;
 	job_stp.user = job->user;
 	job_stp.work_dir = job->work_dir;
 
@@ -4863,10 +4866,9 @@ extern char *slurmdb_expand_step_stdio_fields(char *path,
 
 	job_stp.array_job_id = job->array_job_id;
 	job_stp.array_task_id = job->array_task_id;
-	job_stp.first_step_id = step->step_id.step_id;
 	job_stp.first_step_node = hostlist_shift(nodes);
-	job_stp.jobid = step->step_id.job_id;
 	job_stp.jobname = job->jobname;
+	job_stp.step_id = step->step_id;
 	job_stp.user = job->user;
 	job_stp.work_dir = step->cwd;
 
