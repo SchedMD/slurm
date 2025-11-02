@@ -519,12 +519,13 @@ static void _expand_wildcard(char **expanded, char **pos, char *ptr,
 				     job->array_job_id);
 		} else {
 			xstrfmtcatat(*expanded, pos, "%0*u", padding,
-				     job->jobid);
+				     job->step_id.job_id);
 		}
 		break;
 	case 'J': /* Jobid.stepid */
 	case 'j': /* Job ID */
-		xstrfmtcatat(*expanded, pos, "%0*u", padding, job->jobid);
+		xstrfmtcatat(*expanded, pos, "%0*u", padding,
+			     job->step_id.job_id);
 		if ((*ptr == 'J') && (job->first_step_id != SLURM_BATCH_SCRIPT))
 			xstrfmtcatat(*expanded, pos, ".%d", job->first_step_id);
 		break;

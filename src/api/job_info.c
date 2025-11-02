@@ -146,8 +146,8 @@ extern char *slurm_expand_step_stdio_fields(char *path, job_step_info_t *step)
 	job_stp.array_task_id = step->array_task_id;
 	job_stp.first_step_id = step->step_id.step_id;
 	job_stp.first_step_node = hostlist_shift(nodes);
-	job_stp.jobid = step->step_id.job_id;
 	job_stp.jobname = step->job_name;
+	job_stp.step_id = step->step_id;
 	job_stp.user = uid_to_string_cached((uid_t) step->user_id);
 	job_stp.work_dir = step->cwd;
 
@@ -168,8 +168,8 @@ extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job)
 	job_stp.array_task_id = job->array_task_id;
 	job_stp.first_step_id = SLURM_BATCH_SCRIPT;
 	job_stp.first_step_node = job->batch_host;
-	job_stp.jobid = job->step_id.job_id;
 	job_stp.jobname = job->name;
+	job_stp.step_id = job->step_id;
 	job_stp.user = uid_to_string_cached((uid_t) job->user_id);
 	job_stp.work_dir = job->work_dir;
 
