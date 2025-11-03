@@ -11,8 +11,10 @@ Currently supported distributions include:
 <ul>
 <li>Debian 11 (Bullseye)</li>
 <li>Debian 12 (Bookworm)</li>
+<li>Debian 13 (Trixie)</li>
 <li>RedHat Enterprise Linux 8 (RHEL8) and RHEL8 derivatives</li>
 <li>RedHat Enterprise Linux 9 (RHEL9) and RHEL9 derivatives</li>
+<li>RedHat Enterprise Linux 10 (RHEL10) and RHEL10 derivatives</li>
 <li>SUSE Linux Enterprise Server (SLES) 12</li>
 <li>SUSE Linux Enterprise Server (SLES) 15</li>
 <li>Ubuntu 20.04</li>
