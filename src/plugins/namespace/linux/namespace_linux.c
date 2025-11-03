@@ -307,15 +307,48 @@ static int _mount_private_dirs(char *path, uid_t uid)
 			      __func__, mount_path);
 			goto private_mounts_exit;
 		}
+		if (mount(mount_path, token, NULL, MS_BIND, NULL)) {
+			error("%s: %s mount failed, %m", __func__, token);
+			rc = -1;
+			goto private_mounts_exit;
+		}
+		token = strtok_r(NULL, ",", &save_ptr);
+		xfree(mount_path);
+	}
+
+private_mounts_exit:
+	xfree(buffer);
+	xfree(mount_path);
+	return rc;
+}
+
+static int _chown_private_dirs(char *path, uid_t uid)
+{
+	char *buffer = NULL, *mount_path = NULL, *save_ptr = NULL, *token;
+	int rc = 0;
+
+	if (!path) {
+		error("%s: no path to private directories specified.",
+		      __func__);
+		return -1;
+	}
+	buffer = xstrdup(ns_conf->dirs);
+	token = strtok_r(buffer, ",", &save_ptr);
+	while (token) {
+		/* skip /dev/shm, this is handled elsewhere */
+		if (!xstrcmp(token, "/dev/shm")) {
+			token = strtok_r(NULL, ",", &save_ptr);
+			continue;
+		}
+		xstrfmtcat(mount_path, "%s/%s", path, token);
+		for (char *t = mount_path + strlen(path) + 1; *t; t++) {
+			if (*t == '/')
+				*t = '_';
+		}
 		rc = lchown(mount_path, uid, -1);
 		if (rc) {
 			error("%s: lchown failed for %s: %m",
 			      __func__, mount_path);
-			goto private_mounts_exit;
-		}
-		if (mount(mount_path, token, NULL, MS_BIND, NULL)) {
-			error("%s: %s mount failed, %m", __func__, token);
-			rc = -1;
 			goto private_mounts_exit;
 		}
 		token = strtok_r(NULL, ",", &save_ptr);
@@ -461,18 +494,6 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 	 * Mount private directories inside the namespace.
 	 */
 	if (_mount_private_dirs(src_bind, step->uid) == -1) {
-		rc = -1;
-		goto child_exit;
-	}
-
-	/*
-	 * this happens when restarting the slurmd, the ownership should
-	 * already be correct here.
-	 */
-	rc = chown(src_bind, step->uid, -1);
-	if (rc) {
-		error("%s: chown failed for %s: %m",
-		      __func__, src_bind);
 		rc = -1;
 		goto child_exit;
 	}
@@ -679,6 +700,13 @@ static int _create_ns(stepd_step_rec_t *step)
 		goto exit2;
 	}
 
+	if (chown(src_bind, step->uid, -1)) {
+		error("%s: chown failed for %s: %m",
+		      __func__, src_bind);
+		rc = -1;
+		goto exit2;
+	}
+
 	sem1 = mmap(NULL, sizeof(*sem1), PROT_READ | PROT_WRITE,
 		    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	if (sem1 == MAP_FAILED) {
@@ -766,6 +794,11 @@ static int _create_ns(stepd_step_rec_t *step)
 			error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.",
 			      __func__, step->step_id.job_id, cpid);
 			rc = SLURM_ERROR;
+			goto exit1;
+		}
+
+		if (_chown_private_dirs(src_bind, step->uid) == -1) {
+			rc = -1;
 			goto exit1;
 		}
 
