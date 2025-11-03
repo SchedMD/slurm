@@ -675,6 +675,21 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	list_for_each(switch_jobinfo->channel_list, _release_channel, job_ptr);
 }
 
+extern uint32_t switch_p_job_channel(job_record_t *job_ptr, char *node_name)
+{
+	switch_info_t *switch_info = job_ptr->switch_jobinfo;
+	channel_t *channel = NULL;
+
+	if (!switch_info || !switch_info->channel_list)
+		return NO_VAL;
+
+	if (!(channel = list_find_first(switch_info->channel_list,
+					_find_channel, node_name)))
+		return NO_VAL;
+
+	return channel->id;
+}
+
 extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
 	log_flag(SWITCH, "%s: Running IMEX channel setup", __func__);

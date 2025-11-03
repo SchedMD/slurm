@@ -10060,6 +10060,76 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _unpack_node_gres_layout(void **out, uint16_t protocol_version,
+				    buf_t *buffer)
+{
+	bool pack_index = false;
+	node_gres_layout_t *gres = xmalloc(sizeof(*gres));
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&gres->name, buffer);
+		safe_unpackstr(&gres->type, buffer);
+		safe_unpack64(&gres->count, buffer);
+		safe_unpackbool(&pack_index, buffer);
+		if (pack_index)
+			unpack_bit_str_hex(&gres->index, buffer);
+	}
+
+	*out = gres;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_gres_layout(gres);
+	return SLURM_ERROR;
+}
+
+static int _unpack_node_layout(void **out, uint16_t protocol_version,
+			       buf_t *buffer)
+{
+	node_resource_layout_t *this_node = xmalloc(sizeof(*this_node));
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpackstr(&this_node->node, buffer);
+		safe_unpack64(&this_node->mem_alloc, buffer);
+		safe_unpack16(&this_node->sockets_per_node, buffer);
+		safe_unpack16(&this_node->cores_per_socket, buffer);
+		safe_unpack32(&this_node->channel, buffer);
+		safe_unpackstr(&this_node->core_bitmap, buffer);
+
+		if (slurm_unpack_list(&this_node->gres,
+				      _unpack_node_gres_layout,
+				      slurm_free_node_gres_layout, buffer,
+				      protocol_version))
+			goto unpack_error;
+	}
+
+	*out = this_node;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_node_resource_layout(this_node);
+	return SLURM_ERROR;
+}
+
+extern int _unpack_resource_layout_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	resource_layout_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		if (slurm_unpack_list(&msg->nodes, _unpack_node_layout,
+				      slurm_free_node_resource_layout, buffer,
+				      smsg->protocol_version))
+			goto unpack_error;
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_resource_layout_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_job_requeue_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	requeue_msg_t *msg = smsg->data;
@@ -12492,6 +12562,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_PARTITION_INFO:
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_STATS_INFO:
+	case RESPONSE_RESOURCE_LAYOUT:
 		_pack_buf_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO:
@@ -12800,6 +12871,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
+	case REQUEST_RESOURCE_LAYOUT:
 		_pack_job_ready_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_REQUEUE:
@@ -13317,7 +13389,11 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
+	case REQUEST_RESOURCE_LAYOUT:
 		rc = _unpack_job_ready_msg(msg, buffer);
+		break;
+	case RESPONSE_RESOURCE_LAYOUT:
+		rc = _unpack_resource_layout_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_REQUEUE:
 		rc = _unpack_job_requeue_msg(msg, buffer);

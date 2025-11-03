@@ -4110,6 +4110,8 @@ extern int slurm_reset_statistics(stats_info_request_msg_t *req);
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
+extern int slurm_get_resource_layout(slurm_step_id_t *step_id, void **response);
+
 /*
  * slurm_free_job_info_msg - free the job information response message
  * IN msg - pointer to job information response message

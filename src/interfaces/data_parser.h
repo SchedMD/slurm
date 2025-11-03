@@ -644,6 +644,14 @@ typedef enum {
 	DATA_PARSER_H_VARIABLE_LIST, /* list_t* hierarchy_layer_t* */
 	DATA_PARSER_SLUID, /* sluid_t */
 	DATA_PARSER_SLUID_PTR, /* sluid_t* */
+	DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP, /* openapi_resp_resource_layout_t */
+	DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP_PTR, /* openapi_resp_resource_layout_t* */
+	DATA_PARSER_NODE_RESOURCE_LAYOUT, /* node_resource_layout_t */
+	DATA_PARSER_NODE_RESOURCE_LAYOUT_PTR, /* node_resource_layout_t* */
+	DATA_PARSER_NODE_RESOURCE_LAYOUT_LIST, /* list_t* node_resource_layout_t* */
+	DATA_PARSER_NODE_GRES_LAYOUT, /* node_gres_layout_t */
+	DATA_PARSER_NODE_GRES_LAYOUT_PTR, /* node_gres_layout_t* */
+	DATA_PARSER_NODE_GRES_LAYOUT_LIST, /* list_t* node_gres_layout_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
