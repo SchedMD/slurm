@@ -72,6 +72,7 @@ typedef struct foreach_stats_parse_metric {
 	metric_set_t *set;
 } foreach_stats_parse_metric_t;
 
+// clang-format off
 #define ADD_METRIC_KEYVAL_PFX(set, type, data, pfx, name, desc, otype, key, val) \
 	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
 			   sizeof(data), pfx, XSTRINGIFY(name), desc, \
@@ -86,6 +87,7 @@ typedef struct foreach_stats_parse_metric {
 	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
 			   sizeof(data), NULL, "slurm_" XSTRINGIFY(name), \
 			   desc, METRIC_TYPE_##otype, NULL, NULL)
+// clang-format on
 
 extern int init(void)
 {
@@ -388,6 +390,7 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		if (!stats->node_stats_table[i])
 			continue;
 		node_stats_t *n = stats->node_stats_table[i];
+		// clang-format off
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_total, node_cpus, "Total number of cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_alloc, node_cpus_alloc, "Allocated cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_efctv, node_cpus_effective, "CPUs allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
@@ -396,10 +399,12 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_avail, node_memory_effective_bytes, "Memory allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_free, node_memory_free_bytes, "Free memory in bytes of the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_total, node_memory_bytes, "Total memory in bytes of the node", GAUGE, "node", n->name);
+		// clang-format on
 		total_node_cnt++;
 	}
-	ADD_METRIC(set, UINT16, total_node_cnt, nodes, "Total number of nodes", GAUGE);
 
+	// clang-format off
+	ADD_METRIC(set, UINT16, total_node_cnt, nodes, "Total number of nodes", GAUGE);
 	ADD_METRIC(set, UINT16, stats->alloc, nodes_alloc, "Number of nodes in Allocated state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->blocked, nodes_blocked, "Number of nodes in Blocked state", GAUGE);
 	ADD_METRIC(set, UINT16, stats->cg, nodes_completing, "Number of nodes with Completing flag", GAUGE);
@@ -427,6 +432,7 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 	ADD_METRIC(set, UINT16, stats->reboot_requested, nodes_reboot_req, "Number of nodes with Reboot Requested flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->resv, nodes_resv, "Number of nodes with Reserved flag", GAUGE);
 	ADD_METRIC(set, UINT16, stats->unknown, nodes_unknown, "Number of nodes in Unknown state", GAUGE);
+	// clang-format on
 
 	return set;
 }
@@ -435,6 +441,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 {
 	metric_set_t *set = _metrics_new_set();
 
+	// clang-format off
 	ADD_METRIC(set, UINT32, stats->bootfail, jobs_bootfail, "Number of jobs in BootFail state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->cancelled, jobs_cancelled, "Number of jobs in Cancelled state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->completed, jobs_completed, "Number of jobs in Completed state", GAUGE);
@@ -464,6 +471,7 @@ extern metric_set_t *metrics_p_parse_jobs_metrics(jobs_stats_t *stats)
 	ADD_METRIC(set, UINT32, stats->started, jobs_started, "Number of started jobs", GAUGE);
 	ADD_METRIC(set, UINT32, stats->suspended, jobs_suspended, "Number of jobs in Suspended state", GAUGE);
 	ADD_METRIC(set, UINT32, stats->timeout, jobs_timeout, "Number of jobs in Timeout state", GAUGE);
+	// clang-format on
 
 	return set;
 }
@@ -473,6 +481,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	partition_stats_t *ps = x;
 	metric_set_t *set = (metric_set_t *) arg;
 
+	// clang-format off
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs, partition_jobs, "Number of jobs in this partition", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_bootfail, partition_jobs_bootfail, "Number of jobs in BootFail state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_cancelled, partition_jobs_cancelled, "Number of jobs in Cancelled state", GAUGE, "partition", ps->name);
@@ -543,6 +552,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_unknown, partition_nodes_unknown, "Nodes in Unknown state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->total_cpus, partition_cpus, "Partition total cpus", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->total_nodes, partition_nodes, "Partition total nodes", GAUGE, "partition", ps->name);
+	// clang-format on
 
 	return SLURM_SUCCESS;
 }
@@ -566,6 +576,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	char *key = ((foreach_stats_parse_metric_t *) arg)->str;
 	char *pfx = ((foreach_stats_parse_metric_t *) arg)->pfx;
 
+	// clang-format off
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->bootfail, pfx, jobs_bootfail, "Number of jobs in BootFail state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->cancelled, pfx, jobs_cancelled, "Number of jobs in Cancelled state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->completed, pfx, jobs_completed, "Number of jobs in Completed state", GAUGE, key, ua->name);
@@ -595,6 +606,7 @@ static int _ua_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->started, pfx, jobs_started, "Number of started jobs", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->suspended, pfx, jobs_suspended, "Number of jobs in Suspended state", GAUGE, key, ua->name);
 	ADD_METRIC_KEYVAL_PFX(set, UINT32, js->timeout, pfx, jobs_timeout, "Number of jobs in Timeout state", GAUGE, key, ua->name);
+	// clang-format on
 
 	return SLURM_SUCCESS;
 }
@@ -621,6 +633,7 @@ extern metric_set_t *metrics_p_parse_sched_metrics(scheduling_stats_t *s)
 {
 	metric_set_t *set = _metrics_new_set();
 
+	// clang-format off
 	ADD_METRIC(set, UINT32, s->agent_count, agent_cnt, "Number of agent threads", GAUGE);
 	ADD_METRIC(set, UINT32, s->agent_queue_size, agent_queue_size, "Outgoing RPC retry queue length", GAUGE);
 	ADD_METRIC(set, UINT32, s->agent_thread_count, agent_thread_cnt, "Total active agent-created threads", GAUGE);
@@ -679,6 +692,7 @@ extern metric_set_t *metrics_p_parse_sched_metrics(scheduling_stats_t *s)
 	ADD_METRIC(set, UINT32, s->slurmdbd_queue_size, slurmdbd_queue_size, "Queued messages to SlurmDBD", GAUGE);
 	ADD_METRIC(set, UINT64, s->last_proc_req_start, last_proc_req_start, "Timestamp of last process request start", GAUGE);
 	ADD_METRIC(set, TIMESTAMP, s->time, sched_stats_timestamp, "Statistics snapshot timestamp", GAUGE);
+	// clang-format on
 
 	return set;
 }
