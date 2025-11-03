@@ -73,17 +73,17 @@ typedef struct foreach_stats_parse_metric {
 } foreach_stats_parse_metric_t;
 
 #define ADD_METRIC_KEYVAL_PFX(set, type, data, pfx, name, desc, otype, key, val) \
-	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data),	\
-			   sizeof(data), pfx, XSTRINGIFY(name), desc,	\
+	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
+			   sizeof(data), pfx, XSTRINGIFY(name), desc, \
 			   METRIC_TYPE_##otype, key, val)
 
-#define ADD_METRIC_KEYVAL(set, type, data, name, desc, otype, key, val)	\
-	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data),	\
+#define ADD_METRIC_KEYVAL(set, type, data, name, desc, otype, key, val) \
+	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
 			   sizeof(data), NULL, "slurm_" XSTRINGIFY(name), \
 			   desc, METRIC_TYPE_##otype, key, val)
 
-#define ADD_METRIC(set, type, data, name, desc, otype)			\
-	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data),	\
+#define ADD_METRIC(set, type, data, name, desc, otype) \
+	_metrics_create_kv(set, DATA_PARSER_##type, (void *) &(data), \
 			   sizeof(data), NULL, "slurm_" XSTRINGIFY(name), \
 			   desc, METRIC_TYPE_##otype, NULL, NULL)
 
