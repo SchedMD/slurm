@@ -13620,6 +13620,15 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			xfree(job_ptr->state_desc);
 		}
 
+		/*
+		 * The update did not explicit a time limit, but did
+		 * explicit a new QoS. Now that we have changed the QoS, we are
+		 * sure that we can use whatever is set in its QoS limits to set
+		 * the final job's time limit later.
+		 */
+		if (job_desc->time_limit == NO_VAL)
+			job_desc->time_limit = new_qos_ptr->max_wall_pj;
+
 		info("%s: setting QOS to %s for %pJ",
 		     __func__, detail_ptr->qos_req, job_ptr);
 	}
