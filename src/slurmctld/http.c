@@ -117,11 +117,24 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 		       const http_con_request_t *request, void *arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+	buf_t *body = NULL;
+	int rc = EINVAL;
 
-	if (probe_run(false, NULL, NULL, __func__) >= PROBE_RC_READY)
-		status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	if (!xstrcasecmp(request->url.query, "verbose") &&
+	    !slurm_conf.private_data)
+		body = init_buf(BUF_SIZE);
 
-	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
+	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
+		if (body && (get_buf_offset(body) > 0))
+			status = HTTP_STATUS_CODE_SUCCESS_OK;
+		else
+			status = HTTP_STATUS_CODE_SUCCESS_NO_CONTENT;
+	}
+
+	rc = http_con_send_response(hcon, status, NULL, true, body,
+				    MIME_TYPE_TEXT);
+	FREE_NULL_BUFFER(body);
+	return rc;
 }
 
 static int _send_metrics_resp(http_con_t *hcon, char *stats_str)
