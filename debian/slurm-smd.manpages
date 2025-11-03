@@ -6,6 +6,7 @@ debian/tmp/usr/share/man/man5/gres.conf.5
 debian/tmp/usr/share/man/man5/helpers.conf.5
 debian/tmp/usr/share/man/man5/job_container.conf.5
 debian/tmp/usr/share/man/man5/mpi.conf.5
+debian/tmp/usr/share/man/man5/namespace.yaml.5
 debian/tmp/usr/share/man/man5/oci.conf.5
 debian/tmp/usr/share/man/man5/slurm.conf.5
 debian/tmp/usr/share/man/man5/topology.conf.5
