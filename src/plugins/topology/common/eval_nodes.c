@@ -325,7 +325,7 @@ extern bool eval_nodes_gres(topology_eval_t *topo_eval,
 
 	if (!job_ptr->details->overcommit)
 		min_cpus = job_ptr->details->cpus_per_task * used_tasks;
-	else if (use_node)
+	else
 		min_cpus = job_ptr->details->cpus_per_task;
 	if (min_cpus < job_ptr->details->pn_min_cpus)
 		min_cpus = job_ptr->details->pn_min_cpus;
