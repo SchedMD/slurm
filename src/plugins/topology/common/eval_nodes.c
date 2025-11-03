@@ -669,6 +669,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			if (arbitrary_tpn) {
 				int req_cpus = arbitrary_tpn[count++];
+				hres_select_t *hres_select =
+					topo_eval->job_ptr->hres_select;
 				if ((details_ptr->cpus_per_task != NO_VAL16) &&
 				    (details_ptr->cpus_per_task != 0))
 					req_cpus *= details_ptr->cpus_per_task;
@@ -689,7 +691,13 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 
 				avail_res_array[i]->avail_cpus =
 					topo_eval->avail_cpus;
-
+				if (hres_select &&
+				    !hres_select_check(
+					    hres_select,
+					    avail_res_array[i]
+						    ->hres_leaf_idx)) {
+					topo_eval->avail_cpus = 0;
+				}
 				if (topo_eval->gres_per_job) {
 					eval_nodes_gres(topo_eval, &maxtasks,
 							job_ptr, node_ptr,
