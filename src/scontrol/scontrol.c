@@ -1829,6 +1829,8 @@ static void _show_it(int argc, char **argv)
 	} else if (xstrncasecmp(tag, "reservations", MAX(tag_len, 1)) == 0 ||
 		   xstrncasecmp(tag, "reservationname", MAX(tag_len, 1)) == 0) {
 		scontrol_print_res(val, argc, argv);
+	} else if (!xstrncasecmp(tag, "resources", MAX(tag_len, 4))) {
+		scontrol_print_resources(argc, argv);
 	} else if (xstrncasecmp(tag, "slurmd", MAX(tag_len, 2)) == 0) {
 		_print_slurmd (val);
 	} else if (xstrncasecmp(tag, "steps", MAX(tag_len, 2)) == 0) {

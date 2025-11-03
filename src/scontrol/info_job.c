@@ -2614,3 +2614,67 @@ extern int scontrol_batch_script(int argc, char **argv)
 	xfree(filename);
 	return exit_code;
 }
+
+static int _print_node_gres(void *x, void *ignored)
+{
+	node_gres_layout_t *gres = x;
+	char *index = NULL;
+
+	if (gres->index)
+		index = bit_fmt_full(gres->index);
+
+	printf(" Gres=%s%s%s Count=%"PRIu64" %s%s\n",
+	       gres->name, gres->type ? " Type=" : "",
+	       gres->type ? gres->type : "",
+	       gres->count, index ? "Index=" : "", index ? index : "");
+
+	xfree(index);
+	return 1;
+}
+
+static int _print_node_resources(void *x, void *ignored)
+{
+	node_resource_layout_t *this_node = x;
+
+	printf("Node=%s AbstractCores=%s Memory=%"PRIu64,
+	       this_node->node, this_node->core_bitmap, this_node->mem_alloc);
+
+	if (this_node->channel != NO_VAL)
+		printf(" Channel=%u", this_node->channel);
+
+	printf("\n");
+
+	if (this_node->gres)
+		list_for_each(this_node->gres, _print_node_gres, NULL);
+
+	return 1;
+}
+
+extern void scontrol_print_resources(int argc, char **argv)
+{
+	int error_code = SLURM_SUCCESS;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	resource_layout_msg_t *resp = NULL;
+
+	if (argc < 3) {
+		slurm_perror("missing JobId");
+		return;
+	}
+
+	step_id.job_id = atoll(argv[2]);
+
+	error_code = slurm_get_resource_layout(&step_id, (void **) &resp);
+
+	if (error_code) {
+		if (error_code == ESLURM_JOB_NOT_RUNNING)
+			error("%pI not running", &step_id);
+		else
+			error("%pI lookup failed: %s",
+			      &step_id, slurm_strerror(error_code));
+		exit_code = 1;
+		return;
+	}
+
+	list_for_each(resp->nodes, _print_node_resources, NULL);
+	slurm_free_resource_layout_msg(resp);
+}
