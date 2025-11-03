@@ -12562,6 +12562,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case RESPONSE_PARTITION_INFO:
 	case RESPONSE_RESERVATION_INFO:
 	case RESPONSE_STATS_INFO:
+	case RESPONSE_RESOURCE_LAYOUT:
 		_pack_buf_msg(msg, buffer);
 		break;
 	case REQUEST_NODE_INFO:

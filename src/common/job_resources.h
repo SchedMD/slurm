@@ -304,4 +304,7 @@ extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
 					       int job_node_inx,
 					       int sys_node_inx);
 
+extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
+				 uint16_t protocol_version);
+
 #endif /* !_JOB_RESOURCES_H */
