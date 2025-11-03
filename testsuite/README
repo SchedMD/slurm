@@ -75,8 +75,6 @@ test1.17   Test of srun --open-mode (truncate or append) option.
 test1.18   Test of --licenses option
 test1.32   Test of srun signal forwarding
 test1.33   Test of srun application exit code reporting
-test1.38   Test srun handling of SIGINT to get task status or kill the job
-	   (--quit-on-interrupt option).
 test1.41   Validate Slurm debugger infrastructure (--debugger-test option).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.
