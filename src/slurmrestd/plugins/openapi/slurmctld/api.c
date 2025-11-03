@@ -539,6 +539,24 @@ const openapi_path_binding_t openapi_paths[] = {
 		},
 		.flags = OP_FLAGS,
 	},
+	{
+		.path = "/slurm/{data_parser}/resources/{job_id}",
+		.callback = op_handler_resources,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get resource layout info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESOURCE_LAYOUT_RESP,
+					.description = "resource layout information",
+				},
+				.parameters = DATA_PARSER_OPENAPI_JOB_INFO_PARAM,
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
 	{0}
 };
 

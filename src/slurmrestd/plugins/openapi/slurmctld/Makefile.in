@@ -186,7 +186,8 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 openapi_slurmctld_la_LIBADD =
 am_openapi_slurmctld_la_OBJECTS = api.lo assoc_mgr.lo control.lo \
-	diag.lo jobs.lo nodes.lo partitions.lo reservations.lo
+	diag.lo jobs.lo nodes.lo partitions.lo reservations.lo \
+	resources.lo
 openapi_slurmctld_la_OBJECTS = $(am_openapi_slurmctld_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -214,7 +215,8 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/api.Plo ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/control.Plo ./$(DEPDIR)/diag.Plo \
 	./$(DEPDIR)/jobs.Plo ./$(DEPDIR)/nodes.Plo \
-	./$(DEPDIR)/partitions.Plo ./$(DEPDIR)/reservations.Plo
+	./$(DEPDIR)/partitions.Plo ./$(DEPDIR)/reservations.Plo \
+	./$(DEPDIR)/resources.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -526,7 +528,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 pkglib_LTLIBRARIES = openapi_slurmctld.la
 openapi_slurmctld_la_SOURCES = \
 	api.c api.h assoc_mgr.c control.c diag.c jobs.c nodes.c partitions.c \
-	reservations.c
+	reservations.c resources.c
 
 openapi_slurmctld_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
@@ -613,6 +615,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodes.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partitions.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservations.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -750,6 +753,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/nodes.Plo
 	-rm -f ./$(DEPDIR)/partitions.Plo
 	-rm -f ./$(DEPDIR)/reservations.Plo
+	-rm -f ./$(DEPDIR)/resources.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -803,6 +807,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/nodes.Plo
 	-rm -f ./$(DEPDIR)/partitions.Plo
 	-rm -f ./$(DEPDIR)/reservations.Plo
+	-rm -f ./$(DEPDIR)/resources.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

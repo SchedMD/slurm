@@ -12,6 +12,6 @@ pkglib_LTLIBRARIES = openapi_slurmctld.la
 
 openapi_slurmctld_la_SOURCES = \
 	api.c api.h assoc_mgr.c control.c diag.c jobs.c nodes.c partitions.c \
-	reservations.c
+	reservations.c resources.c
 
 openapi_slurmctld_la_LDFLAGS = $(PLUGIN_FLAGS)
