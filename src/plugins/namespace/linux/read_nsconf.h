@@ -40,6 +40,7 @@
 #include "src/interfaces/namespace.h"
 
 #define SLURM_NEWNS_DEF_DIRS "/tmp,/dev/shm"
+#define SLURM_NS_WAIT_DEF 10
 
 /*
  * Slurm linux namespace plugin initialization parameters
