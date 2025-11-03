@@ -70,6 +70,7 @@
 #include "src/common/node_features.h"
 #include "src/common/parse_time.h"
 #include "src/common/port_mgr.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/state_save.h"
 #include "src/common/timers.h"
@@ -19579,6 +19580,12 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	if (job_ptr->selinux_context)
 		setenvf(&my_env, "SLURM_JOB_SELINUX_CONTEXT", "%s",
 			job_ptr->selinux_context);
+
+	if (job_ptr->step_id.sluid) {
+		char sluid[15] = "";
+		print_sluid(job_ptr->step_id.sluid, sluid, sizeof(sluid));
+		setenvf(&my_env, "SLURM_JOB_SLUID", "%s", sluid);
+	}
 
 	setenvf(&my_env, "SLURM_JOB_START_TIME", "%lu", job_ptr->start_time);
 
