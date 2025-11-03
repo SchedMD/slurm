@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.h - parse namespace.conf configuration file.
+ *  read_nsconf.h - parse namespace.yaml configuration file.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -37,25 +37,14 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 
+#include "src/interfaces/namespace.h"
+
 #define SLURM_NEWNS_DEF_DIRS "/tmp,/dev/shm"
+#define SLURM_NS_WAIT_DEF 10
 
 /*
  * Slurm linux namespace plugin initialization parameters
  */
-typedef struct slurm_ns_conf {
-	bool auto_basepath;
-	char *basepath;
-	char *clonensscript;
-	char *clonensflags_str;
-	char *clonensepilog;
-	uint32_t clonensscript_wait;
-	uint32_t clonensflags;
-	uint32_t clonensepilog_wait;
-	char *dirs;
-	char *initscript;
-	bool shared;
-	char *usernsscript;
-} slurm_ns_conf_t;
 
 extern char *ns_conf_file;
 
@@ -64,13 +53,13 @@ extern char *ns_conf_file;
  *
  * Return a pointer to the config structure if successful or NULL on error.
  */
-extern slurm_ns_conf_t *init_slurm_ns_conf(void);
+extern ns_conf_t *init_slurm_ns_conf(void);
 
 /* Set slurm_ns_conf based on the provided buffer. */
-extern slurm_ns_conf_t *set_slurm_ns_conf(buf_t *buf);
+extern ns_conf_t *set_slurm_ns_conf(buf_t *buf);
 
 /* Return pointer to the slurm_ns_conf */
-extern slurm_ns_conf_t *get_slurm_ns_conf(void);
+extern ns_conf_t *get_slurm_ns_conf(void);
 
 /* Return pointer to the the slurm_ns_conf_buf */
 extern buf_t *get_slurm_ns_conf_buf(void);

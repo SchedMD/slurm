@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_jcconf.c - parse namespace.conf configuration file.
+ *  read_jcconf.c - parse job_container.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
@@ -48,9 +48,7 @@
 
 #include "read_jcconf.h"
 
-char *tmpfs_conf_file = NULL;
-char *job_container_conf_file = "job_container.conf";
-char *namespace_conf_file = "namespace.conf";
+char *tmpfs_conf_file = "job_container.conf";
 
 static slurm_jc_conf_t slurm_jc_conf;
 static buf_t *slurm_jc_conf_buf = NULL;
@@ -229,33 +227,20 @@ static int _read_slurm_jc_conf(void)
 
 	xassert(conf->node_name);
 
-	conf_path = get_extra_conf_path(namespace_conf_file);
+	conf_path = get_extra_conf_path(tmpfs_conf_file);
 
-	if (stat(conf_path, &buf) == -1) {
-		warning("Could not find %s file", namespace_conf_file);
-		xfree(conf_path);
-		conf_path = get_extra_conf_path(job_container_conf_file);
-		if (stat(conf_path, &buf) == -1) {
-			error("Could not find %s or %s file",
-				namespace_conf_file, job_container_conf_file);
-			rc = ENOENT;
-			goto end_it;
-		} else {
-			tmpfs_conf_file = job_container_conf_file;
-			warning("Found %s file, please rename to %s.",
-				job_container_conf_file, namespace_conf_file);
-		}
-	} else {
-		tmpfs_conf_file = namespace_conf_file;
+	if ((!conf_path) || (stat(conf_path, &buf) == -1)) {
+		error("No %s file", tmpfs_conf_file);
+		rc = ENOENT;
+		goto end_it;
 	}
 
 	debug("Reading %s file %s", tmpfs_conf_file, conf_path);
 	tbl = s_p_hashtbl_create(options);
-
-	if (s_p_parse_file(tbl, NULL, conf_path, 0, NULL)) {
+	if (s_p_parse_file(tbl, NULL, conf_path, 0, NULL) == SLURM_ERROR) {
 		fatal("Could not open/read/parse %s file %s",
 		      tmpfs_conf_file, conf_path);
-			goto end_it;
+		goto end_it;
 	}
 
 	/* If AutoBasePath wasn't set on the line see if it was on the global */

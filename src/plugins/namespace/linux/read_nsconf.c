@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.c - parse namespace.conf configuration file.
+ *  read_nsconf.c - parse namespace.yaml configuration file.
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -44,40 +44,22 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/data_parser.h"
+#include "src/interfaces/serializer.h"
+
 #include "read_nsconf.h"
 
-char *ns_conf_file = NULL;
-char *job_container_conf_file = "job_container.conf";
-char *namespace_conf_file = "namespace.conf";
+#define SWAP_IF_SET(str_dst, str_src) \
+	do { \
+		if (str_src && str_src[0]) \
+			SWAP(str_dst, str_src); \
+	} while (0);
 
-static slurm_ns_conf_t slurm_ns_conf;
+char *ns_conf_file = "namespace.yaml";
+
+static ns_conf_t slurm_ns_conf;
 static buf_t *slurm_ns_conf_buf = NULL;
 static bool slurm_ns_conf_inited = false;
-static bool auto_basepath_set = false;
-static bool shared_set = false;
-static bool clonensscript_wait_set = false;
-static bool clonensepilog_wait_set = false;
-static bool clonensflags_set = false;
-
-static s_p_hashtbl_t *_create_ns_hashtbl(void)
-{
-	static s_p_options_t ns_options[] = {
-		{ "AutoBasePath", S_P_BOOLEAN },
-		{ "BasePath", S_P_STRING },
-		{ "CloneNSEpilog", S_P_STRING },
-		{ "CloneNSFlags", S_P_STRING },
-		{ "CloneNSScript", S_P_STRING },
-		{ "CloneNSEpilog_Wait", S_P_UINT32 },
-		{ "CloneNSScript_Wait", S_P_UINT32 },
-		{ "Dirs", S_P_STRING },
-		{ "InitScript", S_P_STRING },
-		{ "Shared", S_P_BOOLEAN },
-		{ "UserNSScript", S_P_STRING },
-		{ NULL }
-	};
-
-	return s_p_hashtbl_create(ns_options);
-}
 
 static void _dump_ns_conf(void)
 {
@@ -99,21 +81,6 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "UserNSScript=%s", slurm_ns_conf.usernsscript);
 }
 
-static void _set_clonensflags(void)
-{
-	/* Always set CLONE_NEWNS */
-	slurm_ns_conf.clonensflags = CLONE_NEWNS;
-
-	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWNS"))
-		slurm_ns_conf.clonensflags |= CLONE_NEWNS;
-	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWPID"))
-		slurm_ns_conf.clonensflags |= CLONE_NEWPID;
-	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWUSER"))
-		slurm_ns_conf.clonensflags |= CLONE_NEWUSER;
-
-	clonensflags_set = true;
-}
-
 static void _pack_slurm_ns_conf_buf(void)
 {
 	if (slurm_ns_conf_buf)
@@ -133,155 +100,134 @@ static void _pack_slurm_ns_conf_buf(void)
 	packstr(slurm_ns_conf.usernsscript, slurm_ns_conf_buf);
 }
 
-static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
-				   const char *key, const char *value,
-				   const char *line, char **leftover)
+static void _swap_slurm_ns_conf(ns_node_conf_t *ns_node_conf)
 {
-	char *basepath = NULL;
-	int rc = 1;
-	s_p_hashtbl_t *tbl = _create_ns_hashtbl();
-	s_p_parse_line(tbl, *leftover, leftover);
-	if (value) {
-		basepath = xstrdup(value);
-	} else if (!s_p_get_string(&basepath, "BasePath", tbl)) {
-		fatal("empty basepath detected, please verify %s is correct",
-		      ns_conf_file);
-		rc = 0;
-		goto end_it;
-	}
+	ns_conf_t *ns_conf = ns_node_conf->ns_conf;
 
-	slurm_ns_conf.basepath =
-		slurm_conf_expand_slurmd_path(basepath, conf->node_name, NULL);
-	xfree(basepath);
+	if (!ns_conf)
+		return;
 
-#ifdef MULTIPLE_SLURMD
-	xstrfmtcat(slurm_ns_conf.basepath, "/%s", conf->node_name);
-#endif
+	if (ns_node_conf->set_auto_basepath)
+		slurm_ns_conf.auto_basepath = ns_conf->auto_basepath;
+	if (ns_node_conf->set_clonensepilog_wait)
+		slurm_ns_conf.clonensepilog_wait = ns_conf->clonensepilog_wait;
+	if (ns_node_conf->set_clonensscript_wait)
+		slurm_ns_conf.clonensscript_wait = ns_conf->clonensscript_wait;
+	if (ns_node_conf->set_shared)
+		slurm_ns_conf.shared = ns_conf->shared;
 
-	if (s_p_get_boolean(&slurm_ns_conf.auto_basepath, "AutoBasePath", tbl))
-		auto_basepath_set = true;
-
-	if (!s_p_get_string(&slurm_ns_conf.dirs, "Dirs", tbl))
-		debug3("empty Dirs detected");
-
-	if (!s_p_get_string(&slurm_ns_conf.initscript, "InitScript", tbl))
-		debug3("empty init script detected");
-
-	if (s_p_get_boolean(&slurm_ns_conf.shared, "Shared", tbl))
-		shared_set = true;
-
-	if (!s_p_get_string(&slurm_ns_conf.usernsscript, "UserNSScript", tbl))
-		debug3("empty user ns script detected");
-
-	if (!s_p_get_string(&slurm_ns_conf.clonensscript, "CloneNSScript", tbl))
-		debug3("empty post clone ns script detected");
-
-	if (!s_p_get_string(&slurm_ns_conf.clonensepilog, "CloneNSEpilog", tbl))
-		debug3("empty post clone ns epilog script detected");
-
-	if (s_p_get_uint32(&slurm_ns_conf.clonensscript_wait,
-			   "CloneNSScript_Wait", tbl))
-		clonensscript_wait_set = true;
-
-	if (s_p_get_uint32(&slurm_ns_conf.clonensepilog_wait,
-			   "CloneNSEpilog_Wait", tbl))
-		clonensepilog_wait_set = true;
-
-	if (s_p_get_string(&slurm_ns_conf.clonensflags_str, "CloneNSFlags",
-			   tbl))
-		_set_clonensflags();
-
-end_it:
-	s_p_hashtbl_destroy(tbl);
-
-	/* Nothing to free on this line in parse_config.c when freeing table. */
-	*dest = NULL;
-	return rc;
+	SWAP_IF_SET(slurm_ns_conf.basepath, ns_conf->basepath);
+	SWAP_IF_SET(slurm_ns_conf.clonensepilog, ns_conf->clonensepilog);
+	SWAP_IF_SET(slurm_ns_conf.clonensflags_str, ns_conf->clonensflags_str);
+	SWAP_IF_SET(slurm_ns_conf.clonensscript, ns_conf->clonensscript);
+	SWAP_IF_SET(slurm_ns_conf.dirs, ns_conf->dirs);
+	SWAP_IF_SET(slurm_ns_conf.initscript, ns_conf->initscript);
+	SWAP_IF_SET(slurm_ns_conf.usernsscript, ns_conf->usernsscript);
 }
 
-static int _parse_ns_conf(void **dest, slurm_parser_enum_t type,
-			  const char *key, const char *value, const char *line,
-			  char **leftover)
+static int _find_node_conf(void *x, void *key)
 {
-	if (value) {
-		bool match = false;
-		hostlist_t *hl = hostlist_create(value);
-		if (hl) {
-			match = (hostlist_find(hl, conf->node_name) >= 0);
-			hostlist_destroy(hl);
-		}
-		if (!match) {
-			s_p_hashtbl_t *tbl = _create_ns_hashtbl();
-			s_p_parse_line(tbl, *leftover, leftover);
-			s_p_hashtbl_destroy(tbl);
-			debug("skipping NS for NodeName=%s %s", value, line);
-			return 0;
-		}
-	}
+	ns_node_conf_t *ns_node_conf = x;
+	char *node_name = key;
 
-	return _parse_ns_conf_internal(dest, type, key, NULL, line, leftover);
+	xassert(ns_node_conf && ns_node_conf->nodes);
+
+	if (hostlist_find(ns_node_conf->nodes, node_name) >= 0)
+		return true;
+	return false;
+}
+
+static void _set_clonensflags(void)
+{
+	/* Always set CLONE_NEWNS */
+	slurm_ns_conf.clonensflags = CLONE_NEWNS;
+
+	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWNS"))
+		slurm_ns_conf.clonensflags |= CLONE_NEWNS;
+	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWPID"))
+		slurm_ns_conf.clonensflags |= CLONE_NEWPID;
+	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWUSER"))
+		slurm_ns_conf.clonensflags |= CLONE_NEWUSER;
+}
+
+static void _set_slurm_ns_conf_defaults()
+{
+	if (!slurm_ns_conf.dirs)
+		slurm_ns_conf.dirs = xstrdup(SLURM_NEWNS_DEF_DIRS);
+	if (!slurm_ns_conf.clonensepilog_wait)
+		slurm_ns_conf.clonensepilog_wait = SLURM_NS_WAIT_DEF;
+	if (!slurm_ns_conf.clonensscript_wait)
+		slurm_ns_conf.clonensscript_wait = SLURM_NS_WAIT_DEF;
 }
 
 static int _read_slurm_ns_conf(void)
 {
 	char *conf_path = NULL;
-	s_p_hashtbl_t *tbl = NULL;
-	struct stat buf;
+	struct stat stat_buf;
+	buf_t *conf_buf = NULL;
 	int rc = SLURM_SUCCESS;
-
-	static s_p_options_t options[] = {
-		{ "AutoBasePath", S_P_BOOLEAN },
-		{ "BasePath", S_P_ARRAY, _parse_ns_conf_internal, NULL },
-		{ "CloneNSEpilog", S_P_STRING },
-		{ "CloneNSFlags", S_P_STRING },
-		{ "CloneNSScript", S_P_STRING },
-		{ "CloneNSEpilog_Wait", S_P_UINT32 },
-		{ "CloneNSScript_Wait", S_P_UINT32 },
-		{ "Dirs", S_P_STRING },
-		{ "NodeName", S_P_ARRAY, _parse_ns_conf, NULL },
-		{ "Shared", S_P_BOOLEAN },
-		{ "UserNSScript", S_P_STRING },
-		{ NULL }
-	};
+	ns_full_conf_t *ns_full_conf = NULL;
 
 	xassert(conf->node_name);
 
-	conf_path = get_extra_conf_path(namespace_conf_file);
+	conf_path = get_extra_conf_path(ns_conf_file);
 
-	if (stat(conf_path, &buf) == -1) {
-		warning("Could not find %s file", namespace_conf_file);
-		xfree(conf_path);
-		conf_path = get_extra_conf_path(job_container_conf_file);
-		if (stat(conf_path, &buf) == -1) {
-			error("Could not find %s or %s file",
-				namespace_conf_file, job_container_conf_file);
-			rc = ENOENT;
-			goto end_it;
-		} else {
-			ns_conf_file = job_container_conf_file;
-			warning("Found %s file, please rename to %s.",
-				job_container_conf_file, namespace_conf_file);
-		}
-	} else {
-		ns_conf_file = namespace_conf_file;
+	if (stat(conf_path, &stat_buf) == -1) {
+		error("Could not find %s file", ns_conf_file);
+		rc = ENOENT;
+		goto end_it;
 	}
 
 	debug("Reading %s file %s", ns_conf_file, conf_path);
-	tbl = s_p_hashtbl_create(options);
 
-	if (s_p_parse_file(tbl, NULL, conf_path, 0, NULL)) {
-		fatal("Could not open/read/parse %s file %s",
-		      ns_conf_file, conf_path);
+	serializer_required(MIME_TYPE_YAML);
+
+	if (!(conf_buf = create_mmap_buf(conf_path))) {
+		error("could not load %s, and thus cannot create namespace context",
+		      conf_path);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
-	/* If AutoBasePath wasn't set on the line see if it was on the global */
-	if (!auto_basepath_set)
-		s_p_get_boolean(&slurm_ns_conf.auto_basepath, "AutoBasePath",
-				tbl);
+	DATA_PARSE_FROM_STR(NAMESPACE_FULL_CONF_PTR, conf_buf->head,
+			    conf_buf->size, ns_full_conf, NULL, MIME_TYPE_YAML,
+			    rc);
+	if (!ns_full_conf ||
+	    (!ns_full_conf->defaults && !ns_full_conf->node_confs))
+		goto end_it;
+	if (ns_full_conf->defaults) {
+		ns_node_conf_t tmp_ns_node_conf = {
+			.ns_conf = ns_full_conf->defaults,
+			.set_auto_basepath = true,
+			.set_clonensepilog_wait = true,
+			.set_clonensscript_wait = true,
+			.set_shared = true,
+		};
 
-	if (!slurm_ns_conf.dirs &&
-	    !s_p_get_string(&slurm_ns_conf.dirs, "Dirs", tbl))
-		slurm_ns_conf.dirs = xstrdup(SLURM_NEWNS_DEF_DIRS);
+		_swap_slurm_ns_conf(&tmp_ns_node_conf);
+	}
+	if (ns_full_conf->node_confs) {
+		ns_node_conf_t *ns_node_conf =
+			list_find_first(ns_full_conf->node_confs,
+					_find_node_conf, conf->node_name);
+		if (ns_node_conf)
+			_swap_slurm_ns_conf(ns_node_conf);
+	}
+
+	if (!slurm_ns_conf.dirs)
+		debug3("empty Dirs detected");
+
+	if (!slurm_ns_conf.initscript)
+		debug3("empty init script detected");
+
+	if (!slurm_ns_conf.usernsscript)
+		debug3("empty user ns script detected");
+
+	if (!slurm_ns_conf.clonensscript)
+		debug3("empty post clone ns script detected");
+
+	if (!slurm_ns_conf.clonensepilog)
+		debug3("empty post clone ns epilog script detected");
 
 	if (!slurm_ns_conf.basepath) {
 		debug("Config not found in %s. Disabling plugin on this node",
@@ -289,47 +235,33 @@ static int _read_slurm_ns_conf(void)
 	} else if (!xstrncasecmp(slurm_ns_conf.basepath, "none", 4)) {
 		debug("Plugin is disabled on this node per %s.",
 		      ns_conf_file);
+	} else {
+		char *tmp_basepath = slurm_ns_conf.basepath;
+		slurm_ns_conf.basepath =
+			slurm_conf_expand_slurmd_path(tmp_basepath,
+						      conf->node_name, NULL);
+		xfree(tmp_basepath);
+#ifdef MULTIPLE_SLURMD
+		xstrfmtcat(slurm_ns_conf.basepath, "/%s", conf->node_name);
+#endif
 	}
-
-	if (!shared_set)
-		s_p_get_boolean(&slurm_ns_conf.shared, "Shared", tbl);
-
-	if (!slurm_ns_conf.usernsscript)
-		s_p_get_string(&slurm_ns_conf.usernsscript, "UserNSScript",
-			       tbl);
-
-	if (!clonensscript_wait_set) {
-		if (!s_p_get_uint32(&slurm_ns_conf.clonensscript_wait,
-				    "CloneNSScript_Wait", tbl))
-			slurm_ns_conf.clonensscript_wait = 10;
-	}
-
-	if (!clonensepilog_wait_set) {
-		if (!s_p_get_uint32(&slurm_ns_conf.clonensepilog_wait,
-				    "CloneNSEpilog_Wait", tbl))
-			slurm_ns_conf.clonensepilog_wait = 10;
-	}
-
-	if (!slurm_ns_conf.clonensflags_str)
-		s_p_get_string(&slurm_ns_conf.clonensflags_str, "CloneNSFlags",
-			       tbl);
 
 	_set_clonensflags();
+	_set_slurm_ns_conf_defaults();
 
 end_it:
-
-	s_p_hashtbl_destroy(tbl);
 	xfree(conf_path);
-
+	FREE_NULL_BUFFER(conf_buf);
+	slurm_free_ns_full_conf(ns_full_conf);
 	return rc;
 }
 
-extern slurm_ns_conf_t *init_slurm_ns_conf(void)
+extern ns_conf_t *init_slurm_ns_conf(void)
 {
 	int rc;
 	if (!slurm_ns_conf_inited) {
 		char *save_ptr = NULL, *token, *buffer;
-		memset(&slurm_ns_conf, 0, sizeof(slurm_ns_conf_t));
+		memset(&slurm_ns_conf, 0, sizeof(slurm_ns_conf));
 		rc = _read_slurm_ns_conf();
 		if (rc != SLURM_SUCCESS)
 			return NULL;
@@ -358,7 +290,7 @@ extern slurm_ns_conf_t *init_slurm_ns_conf(void)
 	return &slurm_ns_conf;
 }
 
-extern slurm_ns_conf_t *set_slurm_ns_conf(buf_t *buf)
+extern ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 {
 	xassert(buf);
 
@@ -380,7 +312,7 @@ unpack_error:
 	return NULL;
 }
 
-extern slurm_ns_conf_t *get_slurm_ns_conf(void)
+extern ns_conf_t *get_slurm_ns_conf(void)
 {
 	if (!slurm_ns_conf_inited)
 		return NULL;
@@ -395,13 +327,7 @@ extern buf_t *get_slurm_ns_conf_buf(void)
 extern void free_ns_conf(void)
 {
 	if (slurm_ns_conf_inited) {
-		xfree(slurm_ns_conf.basepath);
-		xfree(slurm_ns_conf.clonensepilog);
-		xfree(slurm_ns_conf.clonensflags_str);
-		xfree(slurm_ns_conf.clonensscript);
-		xfree(slurm_ns_conf.dirs);
-		xfree(slurm_ns_conf.initscript);
-		xfree(slurm_ns_conf.usernsscript);
+		slurm_free_ns_conf_members(&slurm_ns_conf);
 		FREE_NULL_BUFFER(slurm_ns_conf_buf);
 		slurm_ns_conf_inited = false;
 	}

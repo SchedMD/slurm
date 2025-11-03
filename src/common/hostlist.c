@@ -1880,7 +1880,8 @@ int hostlist_push(hostlist_t *hl, const char *hosts)
 	int retval;
 	if (!hosts || !hl)
 		return 0;
-	new = hostlist_create(hosts);
+	if (!(new = hostlist_create(hosts)))
+		return 0;
 	LOCK_HOSTLIST(new);
 	retval = new->nhosts;
 	UNLOCK_HOSTLIST(new);

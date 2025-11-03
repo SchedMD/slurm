@@ -652,6 +652,14 @@ typedef enum {
 	DATA_PARSER_NODE_GRES_LAYOUT, /* node_gres_layout_t */
 	DATA_PARSER_NODE_GRES_LAYOUT_PTR, /* node_gres_layout_t* */
 	DATA_PARSER_NODE_GRES_LAYOUT_LIST, /* list_t* node_gres_layout_t* */
+	DATA_PARSER_NAMESPACE_FULL_CONF, /* ns_full_conf_t */
+	DATA_PARSER_NAMESPACE_FULL_CONF_PTR, /* ns_full_conf_t* */
+	DATA_PARSER_NAMESPACE_NODE_CONF, /* ns_node_conf_t */
+	DATA_PARSER_NAMESPACE_NODE_CONF_PTR, /* ns_node_conf_t* */
+	DATA_PARSER_NAMESPACE_NODE_CONF_LIST, /* list_t * of ns_node_conf_t* */
+	DATA_PARSER_NAMESPACE_NODE_CONF_COMPLEX, /* ns_node_conf_t* */
+	DATA_PARSER_NAMESPACE_CONF, /* ns_conf_t */
+	DATA_PARSER_NAMESPACE_CONF_PTR, /* ns_conf_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
