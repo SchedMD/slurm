@@ -2309,9 +2309,6 @@ extern void listeners_unquiesce(void);
 /* Stop listener sockets from accept()ing new incoming requests */
 extern void listeners_quiesce(void);
 
-/* True if slurmctld process running as primary controller */
-extern bool is_primary(void);
-
 /* Set/update a node's topology */
 extern int node_mgr_set_node_topology(node_record_t *node_ptr,
 				      char *new_topology_str);

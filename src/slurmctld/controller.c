@@ -301,6 +301,7 @@ static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
 static void _verify_clustername(void);
 static probe_status_t _probe_listeners(probe_log_t *log);
+static probe_status_t _probe_primary(probe_log_t *log);
 
 static void _send_reconfig_replies(void)
 {
@@ -621,6 +622,7 @@ int main(int argc, char **argv)
 
 	probe_init();
 	probe_register("rpc-listeners", _probe_listeners);
+	probe_register("primary", _probe_primary);
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
 	stepmgr_ops.find_job = find_job;
@@ -1819,17 +1821,22 @@ static probe_status_t _probe_listeners(probe_log_t *log)
 	return status;
 }
 
-extern bool is_primary(void)
+static probe_status_t _probe_primary(probe_log_t *log)
 {
-	bool primary;
+	probe_status_t status = PROBE_RC_UNKNOWN;
 
 	slurm_mutex_lock(&listeners.mutex);
 
-	primary = !listeners.standby_mode;
+	probe_log(log, "primary:%c", BOOL_CHARIFY(!listeners.standby_mode));
+
+	if (listeners.standby_mode)
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
 
 	slurm_mutex_unlock(&listeners.mutex);
 
-	return primary;
+	return status;
 }
 
 /*
