@@ -9,4 +9,5 @@ debian/tmp/usr/share/man/man5/mpi.conf.5
 debian/tmp/usr/share/man/man5/oci.conf.5
 debian/tmp/usr/share/man/man5/slurm.conf.5
 debian/tmp/usr/share/man/man5/topology.conf.5
+debian/tmp/usr/share/man/man5/topology.yaml.5
 debian/tmp/usr/share/man/man8/spank.8
