@@ -1935,6 +1935,43 @@ extern void slurm_free_acct_gather_energy_req_msg(
 	}
 }
 
+extern void slurm_free_node_gres_layout(void *in)
+{
+	node_gres_layout_t *msg = in;
+
+	if (!msg)
+		return;
+
+	xfree(msg->name);
+	xfree(msg->type);
+	FREE_NULL_BITMAP(msg->index);
+	xfree(msg);
+}
+
+extern void slurm_free_node_resource_layout(void *in)
+{
+	node_resource_layout_t *msg = in;
+
+	if (!msg)
+		return;
+
+	xfree(msg->node);
+	xfree(msg->core_bitmap);
+	FREE_NULL_LIST(msg->gres);
+	xfree(msg);
+}
+
+extern void slurm_free_resource_layout_msg(void *in)
+{
+	resource_layout_msg_t *msg = in;
+
+	if (!msg)
+		return;
+
+	FREE_NULL_LIST(msg->nodes);
+	xfree(msg);
+}
+
 extern void slurm_free_node_registration_status_msg(
 	slurm_node_registration_status_msg_t * msg)
 {
