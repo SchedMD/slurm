@@ -69,6 +69,7 @@ MetricsType=metrics/openmetrics
 listening port (default 6817). The following endpoints are available:</p>
 
 <ul>
+<li><b>GET /metrics</b> - Print available metric endpoints</li>
 <li><b>GET /metrics/jobs</b> - Job-related metrics including counts by state,
 resource allocation, and job statistics (<a href="#job_metrics">examples</a>)
 </li>
