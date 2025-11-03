@@ -258,7 +258,7 @@ static char **_build_env(job_env_t *job_env, slurm_cred_t *cred,
 	if (job_env->step_id.sluid) {
 		char sluid[15] = "";
 		print_sluid(job_env->step_id.sluid, sluid, sizeof(sluid));
-		setenvf(&env, "SLURM_SLUID", "%s", sluid);
+		setenvf(&env, "SLURM_JOB_SLUID", "%s", sluid);
 	}
 
 	if (job_env->het_job_id && (job_env->het_job_id != NO_VAL)) {
