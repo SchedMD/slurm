@@ -12800,6 +12800,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
+	case REQUEST_RESOURCE_LAYOUT:
 		_pack_job_ready_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_REQUEUE:
@@ -13317,6 +13318,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
+	case REQUEST_RESOURCE_LAYOUT:
 		rc = _unpack_job_ready_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_REQUEUE:

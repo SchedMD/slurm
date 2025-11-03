@@ -5135,6 +5135,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_BATCH_SCRIPT:
 	case REQUEST_JOB_READY:
 	case REQUEST_JOB_INFO_SINGLE:
+	case REQUEST_RESOURCE_LAYOUT:
 		slurm_free_job_id_msg(data);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
