@@ -342,18 +342,22 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
-extern bool listener_quiesced(void)
+static probe_status_t _probe_listener(probe_log_t *log)
 {
-	bool quiesced;
+	probe_status_t status = PROBE_RC_UNKNOWN;
 
 	slurm_mutex_lock(&listen_mutex);
-	if (_shutdown || !listener)
-		quiesced = true;
+
+	if (!listener)
+		status = PROBE_RC_DOWN;
+	else if (_shutdown)
+		status = PROBE_RC_BUSY;
 	else
-		quiesced = conmgr_con_is_quiesced(listener);
+		status = PROBE_RC_READY;
+
 	slurm_mutex_unlock(&listen_mutex);
 
-	return quiesced;
+	return status;
 }
 
 static void _unquiesce_fd_listener(void)
@@ -387,6 +391,7 @@ main (int argc, char **argv)
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
 	probe_init();
+	probe_register("rpc-listeners", _probe_listener);
 
 	if (original) {
 		/*
