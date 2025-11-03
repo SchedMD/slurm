@@ -76,6 +76,25 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 	return _reply_error(hcon, name, request, ESLURM_REST_UNKNOWN_URL);
 }
 
+static int _req_metrics(http_con_t *hcon, const char *name,
+			const http_con_request_t *request, void *arg)
+{
+	static const char body[] =
+		"slurmctld index of metrics endpoints:\n"
+		"  '/metrics/jobs': get job metrics\n"
+		"  '/metrics/nodes': get node metrics\n"
+		"  '/metrics/partitions': get partition metrics\n"
+		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n"
+		"  '/metrics/scheduler': get scheduler metrics\n";
+
+	return http_con_send_response(hcon,
+				      http_status_from_error(SLURM_SUCCESS),
+				      NULL, true,
+				      &SHADOW_BUF_INITIALIZER(body,
+							      strlen(body)),
+				      MIME_TYPE_TEXT);
+}
+
 static int _req_root(http_con_t *hcon, const char *name,
 		     const http_con_request_t *request, void *arg)
 {
@@ -84,11 +103,7 @@ static int _req_root(http_con_t *hcon, const char *name,
 		"  '/readyz': check slurmctld is servicing RPCs\n"
 		"  '/livez': check slurmctld is running\n"
 		"  '/healthz': check slurmctld is running\n"
-		"  '/metrics/jobs': get job metrics\n"
-		"  '/metrics/nodes': get node metrics\n"
-		"  '/metrics/partitions': get partition metrics\n"
-		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n"
-		"  '/metrics/scheduler': get scheduler metrics\n";
+		"  '/metrics': print available metric endpoints\n";
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -277,6 +292,7 @@ extern void http_init(void)
 	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
 	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
 	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics", _req_metrics);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes",
 			 _req_metrics_nodes);
