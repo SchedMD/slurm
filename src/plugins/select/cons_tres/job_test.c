@@ -2823,6 +2823,8 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			break;
 		}
 		do {
+			if (time_window > YEAR_SECONDS)
+				break;
 			if (bf_window_scale)
 				time_window += bf_window_scale;
 			else
