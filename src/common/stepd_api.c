@@ -508,13 +508,14 @@ extern int stepd_get_bpf_token(int fd, uint16_t protocol_version)
 		goto rwfail;
 	}
 
-	close(bpf_fd);
+	if (bpf_fd >= 0)
+		close(bpf_fd);
 	return token_fd;
 
 rwfail:
-	if (bpf_fd > 0)
+	if (bpf_fd >= 0)
 		close(bpf_fd);
-	if (token_fd > 0)
+	if (token_fd >= 0)
 		close(token_fd);
 	return SLURM_ERROR;
 }
