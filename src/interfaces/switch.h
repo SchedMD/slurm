@@ -217,6 +217,8 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
 			       uint32_t nodeid, uint32_t procid,
 			       uint32_t nnodes, uint32_t nprocs, uint32_t rank);
 
+extern uint32_t switch_g_job_channel(job_record_t *job_ptr, char *node_name);
+
 extern int switch_g_fs_init(stepd_step_rec_t *step);
 
 extern void switch_g_extern_step_fini(uint32_t job_id);

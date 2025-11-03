@@ -1108,6 +1108,11 @@ extern void switch_p_job_complete(job_record_t *job_ptr)
 	job_ptr->switch_jobinfo = NULL;
 }
 
+extern uint32_t switch_p_job_channel(job_record_t *job_ptr, char *node_name)
+{
+	return NO_VAL;
+}
+
 extern int switch_p_fs_init(stepd_step_rec_t *step)
 {
 	return SLURM_SUCCESS;
