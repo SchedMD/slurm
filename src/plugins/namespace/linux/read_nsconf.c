@@ -150,6 +150,16 @@ static void _set_clonensflags(void)
 		slurm_ns_conf.clonensflags |= CLONE_NEWUSER;
 }
 
+static void _set_slurm_ns_conf_defaults()
+{
+	if (!slurm_ns_conf.dirs)
+		slurm_ns_conf.dirs = xstrdup(SLURM_NEWNS_DEF_DIRS);
+	if (!slurm_ns_conf.clonensepilog_wait)
+		slurm_ns_conf.clonensepilog_wait = SLURM_NS_WAIT_DEF;
+	if (!slurm_ns_conf.clonensscript_wait)
+		slurm_ns_conf.clonensscript_wait = SLURM_NS_WAIT_DEF;
+}
+
 static int _read_slurm_ns_conf(void)
 {
 	char *conf_path = NULL;
@@ -204,10 +214,8 @@ static int _read_slurm_ns_conf(void)
 			_swap_slurm_ns_conf(ns_node_conf);
 	}
 
-	if (!slurm_ns_conf.dirs) {
+	if (!slurm_ns_conf.dirs)
 		debug3("empty Dirs detected");
-		slurm_ns_conf.dirs = xstrdup(SLURM_NEWNS_DEF_DIRS);
-	}
 
 	if (!slurm_ns_conf.initscript)
 		debug3("empty init script detected");
@@ -239,6 +247,7 @@ static int _read_slurm_ns_conf(void)
 	}
 
 	_set_clonensflags();
+	_set_slurm_ns_conf_defaults();
 
 end_it:
 	xfree(conf_path);
