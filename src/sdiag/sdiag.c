@@ -280,9 +280,15 @@ static int _print_stats(void)
 	}
 
 	for (i = 0; i < buf->rpc_dump_count; i++) {
+		/* Truncate to 80 characters only if needed */
+		int len = strlen(buf->rpc_dump_hostlist[i]);
+
+		if (!params.no_trunc && (len > MAX_HOSTLIST_LEN))
+			len = MAX_HOSTLIST_LEN;
+
 		printf("\t%2u: %-36s %.*s\n", (i + 1),
-		       rpc_num2string(buf->rpc_dump_types[i]), MAX_HOSTLIST_LEN,
- 		       buf->rpc_dump_hostlist[i]);
+		       rpc_num2string(buf->rpc_dump_types[i]), len,
+		       buf->rpc_dump_hostlist[i]);
 	}
 
 	return 0;

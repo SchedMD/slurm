@@ -41,6 +41,7 @@
 struct sdiag_parameters {
 	int mode;
 	int sort;
+	bool no_trunc;
 	list_t *clusters;
 	char *cluster_names;
 	char *mimetype; /* --yaml or --json */
