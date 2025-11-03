@@ -577,6 +577,10 @@ Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
 Selinux context for the job in available.
 Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
 
+<li><b>SLURM_JOB_SLUID</b>
+SLUID for the current run of the job.
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
 <li><b>SLURM_JOB_START_TIME</b>
 The UNIX timestamp of a job's start time.</li>
 
