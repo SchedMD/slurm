@@ -302,6 +302,7 @@ static void _usage(void);
 static void _verify_clustername(void);
 static probe_status_t _probe_listeners(probe_log_t *log);
 static probe_status_t _probe_primary(probe_log_t *log);
+static probe_status_t _probe_reconfig(probe_log_t *log);
 
 static void _send_reconfig_replies(void)
 {
@@ -623,6 +624,7 @@ int main(int argc, char **argv)
 	probe_init();
 	probe_register("rpc-listeners", _probe_listeners);
 	probe_register("primary", _probe_primary);
+	probe_register("reconfiguring", _probe_reconfig);
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
 	stepmgr_ops.find_job = find_job;
@@ -1525,9 +1527,19 @@ rwfail:
 	(void) close(fd);
 }
 
-extern bool is_reconfiguring(void)
+static probe_status_t _probe_reconfig(probe_log_t *log)
 {
-	return reconfig || !list_is_empty(reconfig_reqs);
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	probe_log(log, "reconfiguring:%c requests:%d",
+		  BOOL_CHARIFY(reconfig), list_count(reconfig_reqs));
+
+	if (reconfig || !list_is_empty(reconfig_reqs))
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
+
+	return status;
 }
 
 extern void reconfigure_slurm(slurm_msg_t *msg)
