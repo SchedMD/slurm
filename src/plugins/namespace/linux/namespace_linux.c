@@ -430,6 +430,9 @@ static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 		if (step->cwd)
 			env_array_overwrite_fmt(&env, "SLURM_JOB_WORK_DIR",
 						"%s", step->cwd);
+		if (step->job_mem)
+			env_array_overwrite_fmt(&env, "SLURM_JOB_MEM",
+						"%" PRIu64, step->job_mem);
 	}
 
 	if (ns_base)
