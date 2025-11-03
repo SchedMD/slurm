@@ -47,9 +47,14 @@
 #include "src/common/job_resources.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/gres.h"
+#include "src/interfaces/switch.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 
@@ -1698,4 +1703,109 @@ extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
 	}
 
 	return cpu_count;
+}
+
+static void _pack_node_gres_layout(void *in, uint16_t protocol_version,
+				   buf_t *buffer)
+{
+	gres_state_t *gres = in;
+	gres_job_state_t *gres_js = gres->gres_data;
+	bool pack_index = false;
+
+	if (gres_js->gres_bit_alloc && gres_js->gres_bit_alloc[0])
+		pack_index = true;
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(gres->gres_name, buffer);
+		packstr(gres_js->type_name, buffer);
+		pack64(gres_js->gres_cnt_node_alloc[0], buffer);
+		packbool(pack_index, buffer);
+		if (pack_index)
+			pack_bit_str_hex(gres_js->gres_bit_alloc[0], buffer);
+	}
+}
+
+static void _pack_node_layout(void *in, uint16_t protocol_version,
+			      buf_t *buffer)
+{
+	node_resource_layout_t *this_node = in;
+
+	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		packstr(this_node->node, buffer);
+		pack64(this_node->mem_alloc, buffer);
+		pack16(this_node->sockets_per_node, buffer);
+		pack16(this_node->cores_per_socket, buffer);
+		pack32(this_node->channel, buffer);
+		packstr(this_node->core_bitmap, buffer);
+		slurm_pack_list(this_node->gres, _pack_node_gres_layout, buffer,
+				protocol_version);
+	}
+}
+
+extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
+				 uint16_t protocol_version)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	hostlist_t *hl = NULL;
+	int array_size = 0;
+	int sock_inx = 0, sock_reps = 0;
+	int bit_inx = 0, bit_reps = 0;
+
+	if (!job_res)
+		return;
+
+	list_t *node_layouts = list_create(slurm_free_node_resource_layout);
+
+	array_size = bit_size(job_res->core_bitmap);
+
+	hl = hostlist_create(job_res->nodes);
+
+	for (int node_inx = 0; node_inx < job_res->nhosts; node_inx++) {
+		bitstr_t *core_bitmap = NULL;
+		node_resource_layout_t *this_node = xmalloc(sizeof(*this_node));
+		this_node->node = hostlist_shift(hl);
+		if (job_res->memory_allocated)
+			this_node->mem_alloc =
+				job_res->memory_allocated[node_inx];
+
+		if (sock_reps >= job_res->sock_core_rep_count[sock_inx]) {
+			sock_inx++;
+			sock_reps = 0;
+		}
+		sock_reps++;
+
+		this_node->sockets_per_node =
+			job_res->sockets_per_node[sock_inx];
+		this_node->cores_per_socket =
+			job_res->cores_per_socket[sock_inx];
+
+		bit_reps = this_node->sockets_per_node *
+			   this_node->cores_per_socket;
+
+		core_bitmap = bit_alloc(bit_reps);
+		for (int i = 0; i < bit_reps; i++) {
+			if (bit_inx >= array_size) {
+				error("%s: array size wrong", __func__);
+				break;
+			}
+
+			if (bit_test(job_res->core_bitmap, bit_inx))
+				bit_set(core_bitmap, i);
+
+			bit_inx++;
+		}
+		this_node->core_bitmap = bit_fmt_hexmask(core_bitmap);
+		FREE_NULL_BITMAP(core_bitmap);
+
+		this_node->channel =
+			switch_g_job_channel(job_ptr, this_node->node);
+		this_node->gres =
+			gres_job_state_extract(job_ptr->gres_list_alloc,
+					       node_inx);
+
+		list_append(node_layouts, this_node);
+	}
+
+	slurm_pack_list(node_layouts, _pack_node_layout, buffer,
+			protocol_version);
 }
