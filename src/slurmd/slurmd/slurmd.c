@@ -84,6 +84,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -385,6 +386,8 @@ main (int argc, char **argv)
 	/* NOTE: logfile is NULL at this point */
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
 
+	probe_init();
+
 	if (original) {
 		/*
 		 * Make sure we have no extra open files which
@@ -590,6 +593,7 @@ main (int argc, char **argv)
 
 	conmgr_fini();
 	http_switch_fini();
+	probe_fini();
 	log_fini();
 
 	return SLURM_SUCCESS;
