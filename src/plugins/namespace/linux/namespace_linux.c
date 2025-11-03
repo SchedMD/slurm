@@ -77,7 +77,7 @@ const char plugin_name[] = "namespace linux plugin";
 const char plugin_type[] = "namespace/linux";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static slurm_ns_conf_t *ns_conf = NULL;
+static ns_conf_t *ns_conf = NULL;
 static bool plugin_disabled = false;
 
 /* NS_L_NS must be last */

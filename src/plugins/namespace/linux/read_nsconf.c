@@ -50,7 +50,7 @@ char *ns_conf_file = NULL;
 char *job_container_conf_file = "job_container.conf";
 char *namespace_conf_file = "namespace.conf";
 
-static slurm_ns_conf_t slurm_ns_conf;
+static ns_conf_t slurm_ns_conf;
 static buf_t *slurm_ns_conf_buf = NULL;
 static bool slurm_ns_conf_inited = false;
 static bool auto_basepath_set = false;
@@ -324,12 +324,12 @@ end_it:
 	return rc;
 }
 
-extern slurm_ns_conf_t *init_slurm_ns_conf(void)
+extern ns_conf_t *init_slurm_ns_conf(void)
 {
 	int rc;
 	if (!slurm_ns_conf_inited) {
 		char *save_ptr = NULL, *token, *buffer;
-		memset(&slurm_ns_conf, 0, sizeof(slurm_ns_conf_t));
+		memset(&slurm_ns_conf, 0, sizeof(slurm_ns_conf));
 		rc = _read_slurm_ns_conf();
 		if (rc != SLURM_SUCCESS)
 			return NULL;
@@ -358,7 +358,7 @@ extern slurm_ns_conf_t *init_slurm_ns_conf(void)
 	return &slurm_ns_conf;
 }
 
-extern slurm_ns_conf_t *set_slurm_ns_conf(buf_t *buf)
+extern ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 {
 	xassert(buf);
 
@@ -380,7 +380,7 @@ unpack_error:
 	return NULL;
 }
 
-extern slurm_ns_conf_t *get_slurm_ns_conf(void)
+extern ns_conf_t *get_slurm_ns_conf(void)
 {
 	if (!slurm_ns_conf_inited)
 		return NULL;
