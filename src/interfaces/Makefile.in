@@ -169,8 +169,9 @@ am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	certgen.lo certmgr.lo cgroup.lo cli_filter.lo conn.lo cred.lo \
 	data_parser.lo gpu.lo gres.lo hash.lo http_parser.lo \
 	jobacct_gather.lo jobcomp.lo mcs.lo metrics.lo mpi.lo \
-	node_features.lo prep.lo priority.lo select.lo serializer.lo \
-	site_factor.lo switch.lo tls.lo topology.lo url_parser.lo
+	namespace.lo node_features.lo prep.lo priority.lo select.lo \
+	serializer.lo site_factor.lo switch.lo tls.lo topology.lo \
+	url_parser.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -183,7 +184,7 @@ am_libslurmctld_interfaces_la_OBJECTS = burst_buffer.lo job_submit.lo \
 libslurmctld_interfaces_la_OBJECTS =  \
 	$(am_libslurmctld_interfaces_la_OBJECTS)
 libslurmd_interfaces_la_LIBADD =
-am_libslurmd_interfaces_la_OBJECTS = namespace.lo proctrack.lo task.lo
+am_libslurmd_interfaces_la_OBJECTS = proctrack.lo task.lo
 libslurmd_interfaces_la_OBJECTS =  \
 	$(am_libslurmd_interfaces_la_OBJECTS)
 am_libcommon_interfaces_o_OBJECTS =
@@ -593,6 +594,8 @@ libcommon_interfaces_la_SOURCES = \
 	metrics.h				\
 	mpi.c					\
 	mpi.h					\
+	namespace.c \
+	namespace.h \
 	node_features.c				\
 	node_features.h				\
 	prep.c					\
@@ -625,8 +628,6 @@ libslurmctld_interfaces_la_SOURCES = \
 	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES = \
-	namespace.c \
-	namespace.h \
 	proctrack.c \
 	proctrack.h \
 	task.c \

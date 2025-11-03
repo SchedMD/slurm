@@ -63,6 +63,8 @@ libcommon_interfaces_la_SOURCES =    \
 	metrics.h				\
 	mpi.c					\
 	mpi.h					\
+	namespace.c \
+	namespace.h \
 	node_features.c				\
 	node_features.h				\
 	prep.c					\
@@ -95,8 +97,6 @@ libslurmctld_interfaces_la_SOURCES =    \
 	sched_plugin.h
 
 libslurmd_interfaces_la_SOURCES =    \
-	namespace.c \
-	namespace.h \
 	proctrack.c \
 	proctrack.h \
 	task.c \
