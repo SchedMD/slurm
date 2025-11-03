@@ -2665,6 +2665,20 @@ extern void scontrol_print_resources(int argc, char **argv)
 
 	error_code = slurm_get_resource_layout(&step_id, (void **) &resp);
 
+	if (mime_type) {
+		list_t *nodes = (resp ? resp->nodes : NULL);
+
+		DATA_DUMP_CLI_SINGLE(OPENAPI_RESOURCE_LAYOUT_RESP, nodes, argc,
+				     argv, NULL, mime_type, data_parser,
+				     error_code);
+
+		slurm_free_resource_layout_msg(resp);
+
+		if (error_code)
+			exit_code = 1;
+		return;
+	}
+
 	if (error_code) {
 		if (error_code == ESLURM_JOB_NOT_RUNNING)
 			error("%pI not running", &step_id);
