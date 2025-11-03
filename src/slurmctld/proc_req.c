@@ -2381,6 +2381,44 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t *msg)
 	FREE_NULL_BUFFER(buffer);
 }
 
+static void _slurm_rpc_request_resource_layout(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_step_id_t *step_id = msg->data;
+	slurmctld_lock_t job_read_lock = {
+		.job = READ_LOCK,
+		.part = READ_LOCK,
+	};
+	job_record_t *job_ptr = NULL;
+	buf_t *buffer = NULL;
+	bool operator = validate_operator(msg->auth_uid);
+
+	lock_slurmctld(job_read_lock);
+	if (!(job_ptr = find_job(step_id))) {
+		error("%s: invalid %pI", __func__, step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+	} else if (!operator && (job_ptr->user_id != msg->auth_uid)) {
+		verbose("%s: denied request for %pI by %u",
+			__func__, step_id, msg->auth_uid);
+		rc = ESLURM_USER_ID_MISSING;
+	} else if (!IS_JOB_RUNNING(job_ptr)) {
+		verbose("%s: %pI not running", __func__, step_id);
+		rc = ESLURM_JOB_NOT_RUNNING;
+	} else {
+		buffer = init_buf(0);
+		pack_resource_layout(job_ptr, buffer, msg->protocol_version);
+		verbose("%s: %pI running!", __func__, step_id);
+	}
+	unlock_slurmctld(job_read_lock);
+
+	if (buffer)
+		(void) send_msg_response(msg, RESPONSE_RESOURCE_LAYOUT, buffer);
+	else
+		slurm_send_rc_msg(msg, rc);
+
+	FREE_NULL_BUFFER(buffer);
+}
+
 /* _slurm_rpc_job_will_run - process RPC to determine if job with given
  *	configuration can be initiated */
 static void _slurm_rpc_job_will_run(slurm_msg_t *msg)
@@ -6610,6 +6648,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_STEP_INFO,
 		.func = _slurm_rpc_job_step_get_info,
+	},{
+		.msg_type = REQUEST_RESOURCE_LAYOUT,
+		.func = _slurm_rpc_request_resource_layout,
 	},{
 		.msg_type = REQUEST_JOB_WILL_RUN,
 		.func = _slurm_rpc_job_will_run,

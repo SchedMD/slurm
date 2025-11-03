@@ -10497,6 +10497,35 @@ static const parser_t PARSER_ARRAY(H_RESOURCE)[] = {
 #undef add_parse_req
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(node_resource_layout_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(node_resource_layout_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NODE_RESOURCE_LAYOUT)[] = {
+	add_parse_req(STRING, node, "node", "Node name"),
+	add_parse(UINT16, sockets_per_node, "sockets_per_node", "Sockets per node"),
+	add_parse(UINT16, cores_per_socket, "cores_per_socket", "Cores per socket"),
+	add_parse(UINT64, mem_alloc, "mem_alloc", "Allocated memory"),
+	add_parse(STRING, core_bitmap, "core_bitmap", "Abstract core bitmap"),
+	add_parse(UINT32_NO_VAL, channel, "channel", "IMEX channel"),
+	add_parse(NODE_GRES_LAYOUT_LIST, gres, "gres", "Allocated GRES"),
+};
+#undef add_parse_req
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(node_gres_layout_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(node_gres_layout_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NODE_GRES_LAYOUT)[] = {
+	add_parse_req(STRING, name, "name", "GRES name"),
+	add_parse(STRING, type, "type", "GRES type (optional)"),
+	add_parse(UINT64, count, "count", "Count"),
+	add_parse(BITSTR_PTR, index, "index", "Index"),
+};
+#undef add_parse_req
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -10553,6 +10582,7 @@ add_openapi_response_single(OPENAPI_HOSTLIST_REQ_RESP, HOSTLIST_STRING_TO_STRING
 add_openapi_response_single(OPENAPI_HOSTNAMES_REQ_RESP, HOSTLIST_STRING, "hostnames", "Array of host names");
 add_openapi_response_single(OPENAPI_JOB_MODIFY_RESP, STRING_LIST, "results", "Job modify results");
 add_openapi_response_single(OPENAPI_CREATE_NODE_REQ, STRING, "node_conf", "Node configuration line");
+add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_LIST, "nodes", "Node resource layouts");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -11327,6 +11357,8 @@ static const parser_t parsers[] = {
 	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
 	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
+	addpap(NODE_RESOURCE_LAYOUT, node_resource_layout_t, NULL, slurm_free_node_resource_layout),
+	addpap(NODE_GRES_LAYOUT, node_gres_layout_t, NULL, slurm_free_node_gres_layout),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -11374,6 +11406,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_HOSTLIST_REQ_RESP),
 	addoar(OPENAPI_JOB_MODIFY_RESP),
 	addoar(OPENAPI_CREATE_NODE_REQ),
+	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -11459,6 +11492,8 @@ static const parser_t parsers[] = {
 	addpl(H_RESOURCE_LIST, H_RESOURCE_PTR, NEED_NONE),
 	addpl(H_LAYER_LIST, H_LAYER_PTR, NEED_NONE),
 	addpl(H_VARIABLE_LIST, H_VARIABLE_PTR, NEED_NONE),
+	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
+	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps

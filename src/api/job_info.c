@@ -1325,3 +1325,30 @@ slurm_load_job_prio(priority_factors_response_msg_t **factors_resp,
 
 	return rc;
 }
+
+extern int slurm_get_resource_layout(slurm_step_id_t *step_id, void **response)
+{
+	int rc = SLURM_SUCCESS;
+	slurm_msg_t req, resp;
+
+	slurm_msg_t_init(&req);
+	slurm_msg_t_init(&resp);
+
+	req.msg_type = REQUEST_RESOURCE_LAYOUT;
+	req.data = step_id;
+
+	if (slurm_send_recv_controller_msg(&req, &resp, working_cluster_rec) <
+	    0)
+		return SLURM_ERROR;
+
+	if (resp.msg_type == RESPONSE_SLURM_RC) {
+		/* Most likely ESLURM_JOB_NOT_RUNNING */
+		rc = ((return_code_msg_t *) resp.data)->return_code;
+		slurm_free_return_code_msg(resp.data);
+	} else if (resp.msg_type == RESPONSE_RESOURCE_LAYOUT) {
+		/* resource_layout_msg_t */
+		*response = resp.data;
+	}
+
+	return rc;
+}

@@ -133,6 +133,7 @@ extern void	scontrol_print_node (char *node_name,
 extern void scontrol_print_node_list(char *node_list, int argc, char **argv);
 extern void scontrol_print_part(char *partition_name, int argc, char **argv);
 extern void scontrol_print_res(char *reservation_name, int argc, char **argv);
+extern void scontrol_print_resources(int argc, char **argv);
 extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv);
 extern void scontrol_print_topo(int argc, char **argv);
 extern void scontrol_print_topo_conf(void);

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  api.h - Slurm REST API openapi operations handlers
+ *  jobs.c - Slurm REST API jobs http operations handlers
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,39 +33,68 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef OPENAPI_SLURMCTLD
-#define OPENAPI_SLURMCTLD
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
 
-#include "src/common/data.h"
-#include "src/interfaces/data_parser.h"
-#include "src/slurmrestd/openapi.h"
+#include "src/slurmrestd/operations.h"
 
-typedef openapi_ctxt_t ctxt_t;
+#include "api.h"
 
-#define resp_error(ctxt, error_code, source, why, ...) \
-	openapi_resp_error(ctxt, error_code, source, why, ##__VA_ARGS__)
-#define resp_warn(ctxt, source, why, ...) \
-	openapi_resp_warn(ctxt, source, why, ##__VA_ARGS__)
+static void _handle_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
+{
+	int rc = SLURM_SUCCESS;
+	resource_layout_msg_t *resp = NULL;
+	list_t *nodes = NULL;
 
-extern const openapi_path_binding_t openapi_paths[];
-extern int op_handler_shares(openapi_ctxt_t *ctxt);
-extern int op_handler_reconfigure(openapi_ctxt_t *ctxt);
-extern int op_handler_diag(openapi_ctxt_t *ctxt);
-extern int op_handler_ping(openapi_ctxt_t *ctxt);
-extern int op_handler_licenses(openapi_ctxt_t *ctxt);
-extern int op_handler_submit_job(openapi_ctxt_t *ctxt);
-extern int op_handler_alloc_job(openapi_ctxt_t *ctxt);
-extern int op_handler_job(openapi_ctxt_t *ctxt);
-extern int op_handler_jobs(openapi_ctxt_t *ctxt);
-extern int op_handler_job_states(openapi_ctxt_t *ctxt);
-extern int op_handler_create_node(openapi_ctxt_t *ctxt);
-extern int op_handler_nodes(openapi_ctxt_t *ctxt);
-extern int op_handler_node(openapi_ctxt_t *ctxt);
-extern int op_handler_partitions(openapi_ctxt_t *ctxt);
-extern int op_handler_partition(openapi_ctxt_t *ctxt);
-extern int op_handler_reservations(openapi_ctxt_t *ctxt);
-extern int op_handler_reservation(openapi_ctxt_t *ctxt);
-extern int op_handler_reservations_update(openapi_ctxt_t *ctxt);
-extern int op_handler_resources(openapi_ctxt_t *ctxt);
+	if ((rc = slurm_get_resource_layout(&job_id->step_id,
+					    (void **) &resp))) {
+		char *id = NULL;
 
-#endif
+		fmt_job_id_string(job_id, &id);
+		resp_error(ctxt, rc, __func__, "Unable to query JobId=%s", id);
+
+		xfree(id);
+	}
+
+	if (resp)
+		nodes = resp->nodes;
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_RESOURCE_LAYOUT_RESP, nodes, ctxt);
+
+	slurm_free_resource_layout_msg(resp);
+}
+
+extern int op_handler_resources(openapi_ctxt_t *ctxt)
+{
+	openapi_job_info_param_t params = { { 0 } };
+	slurm_selected_step_t *job_id;
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		return resp_error(
+			ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			"Rejecting request. Failure parsing parameters");
+	}
+
+	job_id = &params.job_id;
+
+	if ((job_id->step_id.job_id == NO_VAL) ||
+	    (job_id->step_id.job_id <= 0) ||
+	    (job_id->step_id.job_id >= MAX_JOB_ID)) {
+		return resp_error(ctxt, ESLURM_INVALID_JOB_ID, __func__,
+				  "Invalid JobID=%u rejected",
+				  job_id->step_id.job_id);
+	}
+
+	if (ctxt->method == HTTP_REQUEST_GET) {
+		_handle_get(ctxt, job_id);
+	} else {
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	}
+
+	return SLURM_SUCCESS;
+}
