@@ -1605,11 +1605,12 @@ extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
 	int array_size = 0;
 	int sock_inx = 0, sock_reps = 0;
 	int bit_inx = 0, bit_reps = 0;
+	list_t *node_layouts = NULL;
 
 	if (!job_res)
 		return;
 
-	list_t *node_layouts = list_create(slurm_free_node_resource_layout);
+	node_layouts = list_create((ListDelF) slurm_free_node_resource_layout);
 
 	array_size = bit_size(job_res->core_bitmap);
 

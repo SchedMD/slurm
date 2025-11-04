@@ -1948,10 +1948,8 @@ extern void slurm_free_node_gres_layout(void *in)
 	xfree(msg);
 }
 
-extern void slurm_free_node_resource_layout(void *in)
+extern void slurm_free_node_resource_layout(node_resource_layout_t *msg)
 {
-	node_resource_layout_t *msg = in;
-
 	if (!msg)
 		return;
 
