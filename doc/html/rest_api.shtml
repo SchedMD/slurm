@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-25.11.0-0rc1</div>
+    <div class="app-desc">Version: Slurm-25.11.0-0rc2</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -38,6 +38,7 @@
   <li><a href="#slurmV0044GetReconfigure"><code><span class="http-method">get</span> /slurm/v0.0.44/reconfigure/</code></a></li>
   <li><a href="#slurmV0044GetReservation"><code><span class="http-method">get</span> /slurm/v0.0.44/reservation/{reservation_name}</code></a></li>
   <li><a href="#slurmV0044GetReservations"><code><span class="http-method">get</span> /slurm/v0.0.44/reservations/</code></a></li>
+  <li><a href="#slurmV0044GetResources"><code><span class="http-method">get</span> /slurm/v0.0.44/resources/{job_id}</code></a></li>
   <li><a href="#slurmV0044GetShares"><code><span class="http-method">get</span> /slurm/v0.0.44/shares</code></a></li>
   <li><a href="#slurmV0044PostJob"><code><span class="http-method">post</span> /slurm/v0.0.44/job/{job_id}</code></a></li>
   <li><a href="#slurmV0044PostJobAllocate"><code><span class="http-method">post</span> /slurm/v0.0.44/job/allocate</code></a></li>
@@ -5621,6 +5622,140 @@
     <h4 class="field-label">default</h4>
     reservation information
         <a href="#v0.0.44_openapi_reservation_resp">v0.0.44_openapi_reservation_resp</a>
+  </div> <!-- method -->
+  <hr>
+  <div class="method"><a name="slurmV0044GetResources">
+    </a><div class="method-path"><a name="slurmV0044GetResources">
+    </a><a class="up" href="#__Methods">Up</a>
+    <pre class="get"><code class="huge"><span class="http-method">get</span> /slurm/v0.0.44/resources/{job_id}</code></pre></div>
+    <div class="method-summary">get resource layout info (<span class="nickname">slurmV0044GetResources</span>)</div>
+    <div class="method-notes"></div>
+
+    <h3 class="field-label">Path parameters</h3>
+    <div class="field-items">
+      <div class="param">job_id (required)</div>
+
+      <div class="param-desc"><span class="param-type">Path Parameter</span> — Job ID default: null </div>
+    </div>  <!-- field-items -->
+
+
+
+
+
+
+    <h3 class="field-label">Return type</h3>
+    <div class="return-type">
+      <a href="#v0.0.44_openapi_resource_layout_resp">v0.0.44_openapi_resource_layout_resp</a>
+
+    </div>
+
+    <!--Todo: process Response Object and its headers, schema, examples -->
+
+    <h3 class="field-label">Example data</h3>
+    <div class="example-data-content-type">Content-Type: application/json</div>
+    <pre class="example"><code>{
+  "nodes" : [ {
+    "node" : "node",
+    "channel" : {
+      "number" : 5,
+      "set" : true,
+      "infinite" : true
+    },
+    "gres" : [ {
+      "name" : "name",
+      "count" : 5,
+      "index" : "index",
+      "type" : "type"
+    }, {
+      "name" : "name",
+      "count" : 5,
+      "index" : "index",
+      "type" : "type"
+    } ],
+    "cores_per_socket" : 6,
+    "mem_alloc" : 1,
+    "core_bitmap" : "core_bitmap",
+    "sockets_per_node" : 0
+  }, {
+    "node" : "node",
+    "channel" : {
+      "number" : 5,
+      "set" : true,
+      "infinite" : true
+    },
+    "gres" : [ {
+      "name" : "name",
+      "count" : 5,
+      "index" : "index",
+      "type" : "type"
+    }, {
+      "name" : "name",
+      "count" : 5,
+      "index" : "index",
+      "type" : "type"
+    } ],
+    "cores_per_socket" : 6,
+    "mem_alloc" : 1,
+    "core_bitmap" : "core_bitmap",
+    "sockets_per_node" : 0
+  } ],
+  "meta" : {
+    "slurm" : {
+      "cluster" : "cluster",
+      "release" : "release",
+      "version" : {
+        "major" : "major",
+        "minor" : "minor",
+        "micro" : "micro"
+      }
+    },
+    "plugin" : {
+      "accounting_storage" : "accounting_storage",
+      "name" : "name",
+      "type" : "type",
+      "data_parser" : "data_parser"
+    },
+    "client" : {
+      "source" : "source",
+      "user" : "user",
+      "group" : "group"
+    },
+    "command" : [ "command", "command" ]
+  },
+  "warnings" : [ {
+    "description" : "description",
+    "source" : "source"
+  }, {
+    "description" : "description",
+    "source" : "source"
+  } ],
+  "errors" : [ {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 7
+  }, {
+    "description" : "description",
+    "source" : "source",
+    "error" : "error",
+    "error_number" : 7
+  } ]
+}</code></pre>
+
+    <h3 class="field-label">Produces</h3>
+    This API call produces the following media types according to the <span class="header">Accept</span> request header;
+    the media type will be conveyed by the <span class="header">Content-Type</span> response header.
+    <ul>
+      <li><code>application/json</code></li>
+    </ul>
+
+    <h3 class="field-label">Responses</h3>
+    <h4 class="field-label">200</h4>
+    resource layout information
+        <a href="#v0.0.44_openapi_resource_layout_resp">v0.0.44_openapi_resource_layout_resp</a>
+    <h4 class="field-label">default</h4>
+    resource layout information
+        <a href="#v0.0.44_openapi_resource_layout_resp">v0.0.44_openapi_resource_layout_resp</a>
   </div> <!-- method -->
   <hr>
   <div class="method"><a name="slurmV0044GetShares">
@@ -17239,6 +17374,8 @@
     <li><a href="#v0.0.44_kill_jobs_resp_job"><code>v0.0.44_kill_jobs_resp_job</code> - </a></li>
     <li><a href="#v0.0.44_license"><code>v0.0.44_license</code> - </a></li>
     <li><a href="#v0.0.44_node"><code>v0.0.44_node</code> - </a></li>
+    <li><a href="#v0.0.44_node_gres_layout"><code>v0.0.44_node_gres_layout</code> - </a></li>
+    <li><a href="#v0.0.44_node_resource_layout"><code>v0.0.44_node_resource_layout</code> - </a></li>
     <li><a href="#v0.0.44_openapi_accounts_add_cond_resp"><code>v0.0.44_openapi_accounts_add_cond_resp</code> - </a></li>
     <li><a href="#v0.0.44_openapi_accounts_add_cond_resp_str"><code>v0.0.44_openapi_accounts_add_cond_resp_str</code> - </a></li>
     <li><a href="#v0.0.44_openapi_accounts_removed_resp"><code>v0.0.44_openapi_accounts_removed_resp</code> - </a></li>
@@ -17266,6 +17403,7 @@
     <li><a href="#v0.0.44_openapi_ping_array_resp"><code>v0.0.44_openapi_ping_array_resp</code> - </a></li>
     <li><a href="#v0.0.44_openapi_reservation_mod_resp"><code>v0.0.44_openapi_reservation_mod_resp</code> - </a></li>
     <li><a href="#v0.0.44_openapi_reservation_resp"><code>v0.0.44_openapi_reservation_resp</code> - </a></li>
+    <li><a href="#v0.0.44_openapi_resource_layout_resp"><code>v0.0.44_openapi_resource_layout_resp</code> - </a></li>
     <li><a href="#v0.0.44_openapi_resp"><code>v0.0.44_openapi_resp</code> - </a></li>
     <li><a href="#v0.0.44_openapi_shares_resp"><code>v0.0.44_openapi_shares_resp</code> - </a></li>
     <li><a href="#v0.0.44_openapi_slurmdbd_config_resp"><code>v0.0.44_openapi_slurmdbd_config_resp</code> - </a></li>
@@ -18190,6 +18328,29 @@
     </div>  <!-- field-items -->
   </div>
   <div class="model">
+    <h3><a name="v0.0.44_node_gres_layout"><code>v0.0.44_node_gres_layout</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">name </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> GRES name </div>
+<div class="param">type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> GRES type (optional) </div>
+<div class="param">count (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Count format: int64</div>
+<div class="param">index (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Index </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0.0.44_node_resource_layout"><code>v0.0.44_node_resource_layout</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">node </div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Node name </div>
+<div class="param">sockets_per_node (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Sockets per node format: int32</div>
+<div class="param">cores_per_socket (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Cores per socket format: int32</div>
+<div class="param">mem_alloc (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Allocated memory format: int64</div>
+<div class="param">core_bitmap (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Abstract core bitmap </div>
+<div class="param">channel (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_uint32_no_val_struct">v0.0.44_uint32_no_val_struct</a></span>  </div>
+<div class="param">gres (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_node_gres_layout">array[v0.0.44_node_gres_layout]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
     <h3><a name="v0.0.44_openapi_accounts_add_cond_resp"><code>v0.0.44_openapi_accounts_add_cond_resp</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
@@ -18465,6 +18626,16 @@
     <div class="field-items">
       <div class="param">reservations </div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_reservation_info">array[v0.0.44_reservation_info]</a></span>  </div>
 <div class="param">last_update </div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_uint64_no_val_struct">v0.0.44_uint64_no_val_struct</a></span>  </div>
+<div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_openapi_meta">v0.0.44_openapi_meta</a></span>  </div>
+<div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_openapi_error">array[v0.0.44_openapi_error]</a></span>  </div>
+<div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_openapi_warning">array[v0.0.44_openapi_warning]</a></span>  </div>
+    </div>  <!-- field-items -->
+  </div>
+  <div class="model">
+    <h3><a name="v0.0.44_openapi_resource_layout_resp"><code>v0.0.44_openapi_resource_layout_resp</code> - </a> <a class="up" href="#__Models">Up</a></h3>
+    <div class="model-description"></div>
+    <div class="field-items">
+      <div class="param">nodes </div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_node_resource_layout">array[v0.0.44_node_resource_layout]</a></span>  </div>
 <div class="param">meta (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_openapi_meta">v0.0.44_openapi_meta</a></span>  </div>
 <div class="param">errors (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_openapi_error">array[v0.0.44_openapi_error]</a></span>  </div>
 <div class="param">warnings (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_openapi_warning">array[v0.0.44_openapi_warning]</a></span>  </div>
