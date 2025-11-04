@@ -430,6 +430,9 @@ static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 		if (step->cwd)
 			env_array_overwrite_fmt(&env, "SLURM_JOB_WORK_DIR",
 						"%s", step->cwd);
+		if (step->job_mem)
+			env_array_overwrite_fmt(&env, "SLURM_JOB_MEM",
+						"%" PRIu64, step->job_mem);
 	}
 
 	if (ns_base)
@@ -670,6 +673,20 @@ static int _create_ns(stepd_step_rec_t *step)
 		close(fd);
 	}
 
+	/* Create location for bind mounts to go */
+	rc = mkdir(src_bind, 0700);
+	if (rc && (errno != EEXIST)) {
+		error("%s: mkdir failed %s, %m", __func__, src_bind);
+		goto exit2;
+	}
+
+	if (chown(src_bind, step->uid, -1)) {
+		error("%s: chown failed for %s: %m",
+		      __func__, src_bind);
+		rc = -1;
+		goto exit2;
+	}
+
 	/* run any initialization script- if any*/
 	if (ns_conf->initscript) {
 		run_command_args_t run_command_args = {
@@ -692,19 +709,6 @@ static int _create_ns(stepd_step_rec_t *step)
 			      __func__, ns_conf->initscript, rc);
 			goto exit2;
 		}
-	}
-
-	rc = mkdir(src_bind, 0700);
-	if (rc && (errno != EEXIST)) {
-		error("%s: mkdir failed %s, %m", __func__, src_bind);
-		goto exit2;
-	}
-
-	if (chown(src_bind, step->uid, -1)) {
-		error("%s: chown failed for %s: %m",
-		      __func__, src_bind);
-		rc = -1;
-		goto exit2;
 	}
 
 	sem1 = mmap(NULL, sizeof(*sem1), PROT_READ | PROT_WRITE,
