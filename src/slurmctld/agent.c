@@ -110,7 +110,6 @@
 #define MAX_RPC_PACK_CNT	100
 #define RPC_PACK_MAX_AGE	1	/* Rebuild data over 1 seconds old */
 #define DUMP_RPC_COUNT 		25
-#define HOSTLIST_MAX_SIZE 	80
 #define MAIL_PROG_TIMEOUT 120 /* Timeout in seconds */
 #define AGENT_SHUTDOWN_WAIT 3
 
@@ -1673,6 +1672,13 @@ extern void agent_pack_pending_rpc_stats(buf_t *buffer)
 		memset(rpc_stat_types,  0, sizeof(uint32_t) * MAX_RPC_PACK_CNT);
 
 		rpc_count = 0;
+
+		/* Free any hostlist strings */
+		if (rpc_host_list) {
+			for (i = 0; i < DUMP_RPC_COUNT; i++)
+				xfree(rpc_host_list[i]);
+		}
+
 		/* the other variables need not be cleared */
 	} else {		/* Allocate buffers for data */
 		stat_type_count = 0;
@@ -1681,9 +1687,6 @@ extern void agent_pack_pending_rpc_stats(buf_t *buffer)
 
 		rpc_count = 0;
 		rpc_host_list = xcalloc(DUMP_RPC_COUNT, sizeof(char *));
-		for (i = 0; i < DUMP_RPC_COUNT; i++) {
-			rpc_host_list[i] = xmalloc(HOSTLIST_MAX_SIZE);
-		}
 		rpc_type_list = xcalloc(DUMP_RPC_COUNT, sizeof(uint32_t));
 	}
 
@@ -1694,11 +1697,11 @@ extern void agent_pack_pending_rpc_stats(buf_t *buffer)
 		while ((queued_req_ptr = list_next(list_iter))) {
 			agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 			if (rpc_count < DUMP_RPC_COUNT) {
+				hostlist_t *hl = agent_arg_ptr->hostlist;
 				rpc_type_list[rpc_count] =
 						agent_arg_ptr->msg_type;
-				hostlist_ranged_string(agent_arg_ptr->hostlist,
-						HOSTLIST_MAX_SIZE,
-						rpc_host_list[rpc_count]);
+				rpc_host_list[rpc_count] =
+					hostlist_ranged_string_xmalloc(hl);
 				rpc_count++;
 			}
 			for (i = 0; i < MAX_RPC_PACK_CNT; i++) {
