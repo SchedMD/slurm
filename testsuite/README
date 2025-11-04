@@ -78,7 +78,6 @@ test1.33   Test of srun application exit code reporting
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
-test1.50   Test of running non-existent job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
 test1.53   Test of --signal option.
 test1.54   Test of MPMD (--multi-prog option).
