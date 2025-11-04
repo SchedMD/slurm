@@ -10117,8 +10117,9 @@ extern int _unpack_resource_layout_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&msg->nodes, _unpack_node_layout,
-				      slurm_free_node_resource_layout, buffer,
-				      smsg->protocol_version))
+				      (ListDelF)
+					      slurm_free_node_resource_layout,
+				      buffer, smsg->protocol_version))
 			goto unpack_error;
 	}
 
