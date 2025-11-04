@@ -52,6 +52,8 @@
 
 #include "sdiag.h"
 
+#define MAX_HOSTLIST_LEN 80
+
 /********************
  * Global Variables *
  ********************/
@@ -278,10 +280,9 @@ static int _print_stats(void)
 	}
 
 	for (i = 0; i < buf->rpc_dump_count; i++) {
-		printf("\t%2u: %-36s %s\n",
-		       i+1,
-		       rpc_num2string(buf->rpc_dump_types[i]),
-		       buf->rpc_dump_hostlist[i]);
+		printf("\t%2u: %-36s %.*s\n", (i + 1),
+		       rpc_num2string(buf->rpc_dump_types[i]), MAX_HOSTLIST_LEN,
+ 		       buf->rpc_dump_hostlist[i]);
 	}
 
 	return 0;
