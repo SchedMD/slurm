@@ -57,6 +57,7 @@ resources_yaml = """
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version((25, 11), component="bin/sacctmgr")
     atf.require_nodes(32)
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_CPU")
