@@ -1,3 +1,34 @@
+## Changes in 25.11.0rc2
+
+* Avoid deadlock that occurs on a failed reconfigure when there are issues with slurmdbd connections and AccountingStoreFlags is set with job_script or job_env.
+* Use rename() to atomically replace the heartbeat state file.
+* scrun - Fix memory leak from invalid incoming messages.
+* scrun - Avoid regressoion that would cause shutdown to hang.
+* scrun - Fix race condition that could cause scrun to crash during shutdown.
+* Set SLURM_JOB_SELINUX_CONTEXT in Prolog, Epilog, PrologSlurmctld, and EpilogSlurmctld with the selinux_context.
+* Avoid printing "JobID=Invalid" or "SLUID=Invalid" to the logs. Print both when both are set, otherwise print whichever is set.
+* slurmctld - Avoid regression that caused POSIX signals to be ignored after quiesce timeout triggers.
+* Fix potential file descriptor leak to child processes.
+* Add expediting state to job metrics.
+* Fix federated jobs not getting SLUID set.
+* Fix memory corruption on federated sibling submissions.
+* Add SLURM_JOB_QOS to PrologSlurmctld/EpilogSlurmctld environment.
+* namespace/linux - fix potential error with chown at job startup.
+* Fix use after free in namespace/linux on an error condition.
+* namespace/linux - fix potential invalid close() of file descriptors.
+* slurmctld,slurmd - Reject incoming RPC connections with TLS required error to help misconfigured clients.
+* Add requeue_delay option to SchedulerParameters.
+* RPCs that are keyed by SLUID no longer fall-back to looking up the job by JobId. This should avoid (rare) edge cases where a node reconnects to the cluster and attempts to cancel requeued jobs.
+* Add %S as a filename replacement pattern for SLUID.
+* Add %r as a filename replacement pattern for restart count for batch jobs.
+* Add topology.yaml manpage to debian packages.
+* Add GET /metrics endpoint to list all metric-related endpoints.
+* Export SLURM_JOB_SLUID in the environment for Prolog/Epilog. Remove the undocumented SLURM_SLUID environment variable.
+* Export SLURM_JOB_SLUID in the environment for PrologSlurmctld/EpilogSlurmctld.
+* namespace/linux - Default to 10 seconds for clone_ns_script_wait and clone_ns_epilog_wait if their values are not configured.
+* namespace/linux - The namespace/linux plugin no longer reads job_container.conf. Instead it parses namespace.yaml.
+* Prevent potential segfault when providing hostlist_push() with an incorrectly formatted hostlist string.
+
 ## Changes in 25.11.0rc1
 
 * slurmd - Avoid segfault during startup when /sys/ is not mounted correctly and gpu/nvidia plugin is configured.
