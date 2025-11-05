@@ -52,15 +52,16 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/acct_gather_filesystem.h"
-#include "src/interfaces/acct_gather_interconnect.h"
-#include "src/interfaces/acct_gather_profile.h"
-#include "src/interfaces/acct_gather_energy.h"
-#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/acct_gather_energy.h"
+#include "src/interfaces/acct_gather_filesystem.h"
+#include "src/interfaces/acct_gather_interconnect.h"
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/jobacct_gather.h"
 
 /* These 2 should remain the same. */
 #define SLEEP_TIME 1

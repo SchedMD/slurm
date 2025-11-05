@@ -39,13 +39,16 @@
 \*****************************************************************************/
 
 #include "slurm/slurmdb.h"
-#include "src/common/xstring.h"
+
 #include "src/common/macros.h"
-#include "src/interfaces/select.h"
 #include "src/common/slurm_time.h"
-#include "src/sinfo/sinfo.h"
-#include "src/sinfo/print.h"
+#include "src/common/xstring.h"
+
 #include "src/interfaces/data_parser.h"
+#include "src/interfaces/select.h"
+
+#include "src/sinfo/print.h"
+#include "src/sinfo/sinfo.h"
 
 /********************
  * Global Variables *

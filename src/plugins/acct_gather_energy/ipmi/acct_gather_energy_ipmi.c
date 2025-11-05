@@ -55,15 +55,19 @@
 #include <signal.h>
 
 #include "src/common/slurm_xlator.h"
-#include "src/interfaces/acct_gather_energy.h"
+
+#include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/node_conf.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/fd.h"
 #include "src/common/xstring.h"
-#include "src/common/node_conf.h"
+
+#include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/proctrack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
+
 #include "acct_gather_energy_ipmi_config.h"
 
 /*

@@ -42,8 +42,6 @@
 
 #include "slurm/slurm.h"
 
-#include "src/api/step_io.h"
-
 #include "src/common/bitstring.h"
 #include "src/common/eio.h"
 #include "src/common/fd.h"
@@ -52,16 +50,18 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
 
+#include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/conn.h"
+
+#include "src/api/step_io.h"
 
 #include "src/sattach/attach.h"
 #include "src/sattach/opt.h"

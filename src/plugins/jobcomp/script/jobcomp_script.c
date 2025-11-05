@@ -94,16 +94,19 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/fd.h"
 #include "src/common/id_util.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/jobcomp.h"
+#include "src/interfaces/select.h"
+
 #include "src/slurmctld/slurmctld.h"
 
 /* Required Slurm plugin symbols: */

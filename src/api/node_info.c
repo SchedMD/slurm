@@ -50,14 +50,15 @@
 #include "slurm/slurm.h"
 
 #include "src/common/parse_time.h"
-#include "src/interfaces/select.h"
-#include "src/interfaces/acct_gather_energy.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/acct_gather_energy.h"
+#include "src/interfaces/auth.h"
+#include "src/interfaces/select.h"
 
 /* Data structures for pthreads used to gather node information from multiple
  * clusters in parallel */

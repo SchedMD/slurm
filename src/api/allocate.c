@@ -53,6 +53,7 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #endif
 
 #include "slurm/slurm.h"
+
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"

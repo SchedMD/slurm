@@ -49,21 +49,26 @@
 #include <unistd.h>
 
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/parse_time.h"
-#include "src/interfaces/jobcomp.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/state_save.h"
 #include "src/common/xstring.h"
+
 #include "src/curl/slurm_curl.h"
+
+#include "src/interfaces/jobcomp.h"
 #include "src/interfaces/serializer.h"
-#include "src/plugins/jobcomp/common/jobcomp_common.h"
+
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
+
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
 
 #define MAX_STR_LEN 10240	/* 10 KB */
 #define MAX_JOBS 1000000

@@ -66,12 +66,14 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/acct_gather_profile.h"
-#include "src/interfaces/jobacct_gather.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/jobacct_gather.h"
+
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmdbd/read_config.h"
 

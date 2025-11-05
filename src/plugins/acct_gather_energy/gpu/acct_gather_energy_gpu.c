@@ -40,9 +40,10 @@
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
-#include "src/interfaces/cgroup.h"
+
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/acct_gather_profile.h"
+#include "src/interfaces/cgroup.h"
 #include "src/interfaces/gpu.h"
 #include "src/interfaces/gres.h"
 

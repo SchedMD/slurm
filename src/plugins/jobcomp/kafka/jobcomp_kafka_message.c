@@ -44,7 +44,9 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/jobcomp.h"
+
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_message.h"

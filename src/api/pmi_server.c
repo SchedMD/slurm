@@ -30,15 +30,16 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/timers.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/common/xmalloc.h"
+
+#include "src/api/slurm_pmi.h"
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
 #define _DEBUG_TIMING    0	/* non-zero for KVS timing details */

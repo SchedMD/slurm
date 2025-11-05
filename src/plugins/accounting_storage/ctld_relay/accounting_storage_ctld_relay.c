@@ -45,8 +45,8 @@
 #include <sys/types.h>
 
 #include "slurm/slurm_errno.h"
-
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"

@@ -38,15 +38,17 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/sacctmgr/sacctmgr.h"
+#include <termios.h>
+#include <unistd.h>
+
 #include "src/common/macros.h"
 #include "src/common/parse_value.h"
-#include "src/common/slurmdbd_defs.h"
-#include "src/interfaces/auth.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdbd_defs.h"
 
-#include <unistd.h>
-#include <termios.h>
+#include "src/interfaces/auth.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 static bool warn_needed = false;
 static pthread_mutex_t warn_mutex = PTHREAD_MUTEX_INITIALIZER;

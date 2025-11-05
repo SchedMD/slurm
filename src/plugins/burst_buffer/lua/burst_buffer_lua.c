@@ -54,8 +54,11 @@
 #include "src/common/state_save.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/serializer.h"
+
 #include "src/lua/slurm_lua.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
@@ -63,6 +66,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
+
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 /* Script directive */
