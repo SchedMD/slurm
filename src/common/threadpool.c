@@ -43,6 +43,7 @@
 #include <stdint.h>
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
@@ -69,16 +70,6 @@ typedef struct {
 	const char *func_name;
 	void *arg;
 } thread_t;
-
-#define slurm_attr_destroy(attr) \
-	do { \
-		int err = pthread_attr_destroy(attr); \
-		if (err) { \
-			errno = err; \
-			error("pthread_attr_destroy failed, " \
-			      "possible memory leak!: %m"); \
-		} \
-	} while (0)
 
 extern int threadpool_join(const pthread_t id, const char *caller)
 {
@@ -182,6 +173,15 @@ static void *_thread(void *arg)
 	return ret;
 }
 
+static void _free_attr(pthread_attr_t *attr)
+{
+	int rc = EINVAL;
+
+	if ((rc = pthread_attr_destroy(attr)))
+		fatal("%s: pthread_attr_destroy failed: %s",
+		      __func__, slurm_strerror(rc));
+}
+
 extern int threadpool_create(threadpool_func_t func, const char *func_name,
 			     void *arg, const bool detached,
 			     const char *thread_name, pthread_t *id_ptr,
@@ -227,7 +227,7 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 			 (uint64_t) id, func_name);
 	}
 
-	slurm_attr_destroy(&attr);
+	_free_attr(&attr);
 
 	if (id_ptr)
 		*id_ptr = id;
