@@ -22,8 +22,11 @@ def setup():
         reason="Creating reservations with qos= added in scontrol 25.11",
     )
     atf.require_accounting(True)
-    atf.require_slurm_running()
     atf.require_config_parameter_includes("AccountingStorageEnforce", "qos")
+
+    # Last atf.require call
+    atf.require_slurm_running()
+
     local_cluster_name = atf.get_config_parameter("ClusterName")
 
     # Create test QOS and User that can use it
