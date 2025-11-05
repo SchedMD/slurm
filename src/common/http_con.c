@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/http_con.h"
 #include "src/common/http.h"
 #include "src/common/pack.h"
@@ -622,6 +624,9 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 {
 	http_con_request_t *request = &hcon->request;
 	bool close_header = false;
+	const char *error = slurm_strerror(error_number);
+	const size_t error_len = strlen(error);
+	const buf_t body = SHADOW_BUF_INITIALIZER(error, error_len);
 
 	xassert(hcon->magic == MAGIC);
 
@@ -641,7 +646,8 @@ static int _send_reject(http_con_t *hcon, slurm_err_t error_number)
 
 	(void) http_con_send_response(hcon,
 				      http_status_from_error(error_number),
-				      NULL, close_header, NULL, NULL);
+				      NULL, close_header, &body,
+				      MIME_TYPE_TEXT);
 
 	/* ensure connection gets closed */
 	conmgr_con_queue_close(hcon->con);

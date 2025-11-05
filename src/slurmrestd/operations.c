@@ -232,8 +232,8 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
-		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
-		.body_length = (err ? strlen(err) : 0),
+		.body_encoding =
+			(body_encoding ? body_encoding : MIME_TYPE_TEXT),
 	};
 	http_header_t close = {
 		.magic = HTTP_HEADER_MAGIC,
@@ -248,6 +248,8 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		send_args.body = slurm_strerror(error_code);
 	else
 		send_args.body = err;
+
+	send_args.body_length = strlen(send_args.body);
 
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
@@ -279,7 +281,7 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 
 	if (*path_tag == -1)
 		return _operations_router_reject(args, NULL,
-						 ESLURM_URL_INVALID_PATH, NULL);
+						 ESLURM_REST_UNKNOWN_URL, NULL);
 	else if (*path_tag == -2)
 		return _operations_router_reject(args, NULL,
 						 ESLURM_REST_UNKNOWN_URL_METHOD,
