@@ -2597,7 +2597,7 @@ additional jobs will fail. The default value is 10000 jobs.
 \fBNOTE\fR: Each task of a job array counts as one job even though they will not
 occupy separate job records until modified or initiated.
 Performance can suffer with more than a few hundred thousand jobs.
-Setting per MaxSubmitJobs per user is generally valuable to prevent a single
+Setting MaxSubmitJobs per user is generally valuable to prevent a single
 user from filling the system with jobs.
 This is accomplished using Slurm's database and configuring enforcement of
 resource limits.
