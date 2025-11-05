@@ -325,7 +325,7 @@ extern bool eval_nodes_gres(topology_eval_t *topo_eval,
 
 	if (!job_ptr->details->overcommit)
 		min_cpus = job_ptr->details->cpus_per_task * used_tasks;
-	else if (use_node)
+	else
 		min_cpus = job_ptr->details->cpus_per_task;
 	if (min_cpus < job_ptr->details->pn_min_cpus)
 		min_cpus = job_ptr->details->pn_min_cpus;
@@ -669,6 +669,8 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			eval_nodes_select_cores(topo_eval, i, min_rem_nodes);
 			if (arbitrary_tpn) {
 				int req_cpus = arbitrary_tpn[count++];
+				hres_select_t *hres_select =
+					topo_eval->job_ptr->hres_select;
 				if ((details_ptr->cpus_per_task != NO_VAL16) &&
 				    (details_ptr->cpus_per_task != 0))
 					req_cpus *= details_ptr->cpus_per_task;
@@ -689,7 +691,13 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 
 				avail_res_array[i]->avail_cpus =
 					topo_eval->avail_cpus;
-
+				if (hres_select &&
+				    !hres_select_check(
+					    hres_select,
+					    avail_res_array[i]
+						    ->hres_leaf_idx)) {
+					topo_eval->avail_cpus = 0;
+				}
 				if (topo_eval->gres_per_job) {
 					eval_nodes_gres(topo_eval, &maxtasks,
 							job_ptr, node_ptr,
@@ -1739,7 +1747,7 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 		set = true;
 	}
 	if (hres_select)
-		memcpy(hres_select->avail_hres, hres_select->avail_hres_orgi,
+		memcpy(hres_select->avail_hres, hres_select->avail_hres_orig,
 		       hres_select->layers_cnt *
 			       sizeof(*hres_select->avail_hres));
 
@@ -1808,7 +1816,8 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 	avail_res_t *avail_res = topo_eval->avail_res_array[node_inx];
 	int resv_cpus;	/* CPUs to be allocated on other nodes */
 
-	if (hres_select && !hres_select_check(hres_select, node_inx)) {
+	if (hres_select &&
+	    !hres_select_check(hres_select, avail_res->hres_leaf_idx)) {
 		topo_eval->avail_cpus = 0;
 		return false;
 	}
@@ -1838,8 +1847,12 @@ extern bool eval_nodes_cpus_to_use(topology_eval_t *topo_eval, int node_inx,
 check_gres_per_job:
 	if (check_gres && topo_eval->gres_per_job && topo_eval->avail_cpus) {
 		node_record_t *node_ptr = node_record_table_ptr[node_inx];
-		return eval_nodes_gres(topo_eval, max_tasks, job_ptr, node_ptr,
-				       rem_nodes, node_inx, 0);
+		bool ret = eval_nodes_gres(topo_eval, max_tasks, job_ptr,
+					   node_ptr, rem_nodes, node_inx, 0);
+		if (!ret && hres_select)
+			hres_select_return(hres_select,
+					   avail_res->hres_leaf_idx);
+		return ret;
 	}
 
 	return true;

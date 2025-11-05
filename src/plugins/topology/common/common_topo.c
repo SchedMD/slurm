@@ -381,7 +381,8 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			idx = 0;
 		}
 
-		if (ec == ESLURM_RETRY_EVAL_HINT) {
+		if (ec == ESLURM_RETRY_EVAL_HINT &&
+		    (bit_ffs(topo_eval->node_map) >= 0)) {
 			int tmp_idx = idx;
 
 			while ((tmp_idx < res_cnt) &&
