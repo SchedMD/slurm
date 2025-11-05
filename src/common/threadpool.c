@@ -59,6 +59,42 @@
 #define DEFAULT_THREAD_NAME "thread"
 #define CTIME_STR_LEN 72
 
+#ifdef PTHREAD_SCOPE_SYSTEM
+#define slurm_attr_init(attr) \
+	do { \
+		int err = pthread_attr_init(attr); \
+		if (err) { \
+			errno = err; \
+			fatal("pthread_attr_init: %m"); \
+		} \
+		/* we want 1:1 threads if there is a choice */ \
+		err = pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM); \
+		if (err) { \
+			errno = err; \
+			error("pthread_attr_setscope: %m"); \
+		} \
+		err = pthread_attr_setstacksize(attr, STACK_SIZE); \
+		if (err) { \
+			errno = err; \
+			error("pthread_attr_setstacksize: %m"); \
+		} \
+	} while (0)
+#else
+#define slurm_attr_init(attr) \
+	do { \
+		int err = pthread_attr_init(attr); \
+		if (err) { \
+			errno = err; \
+			fatal("pthread_attr_init: %m"); \
+		} \
+		err = pthread_attr_setstacksize(attr, STACK_SIZE); \
+		if (err) { \
+			errno = err; \
+			error("pthread_attr_setstacksize: %m"); \
+		} \
+	} while (0)
+#endif
+
 #define THREAD_MAGIC 0xA434F4D2
 
 typedef struct {
