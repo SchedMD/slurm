@@ -64,8 +64,8 @@ typedef struct {
 } hres_leaf_t;
 
 typedef struct {
-	int *avail_hres;
-	int *avail_hres_orgi;
+	uint32_t *avail_hres;
+	uint32_t *avail_hres_orig;
 	uint16_t depth;
 	uint16_t hres_per_node;
 	uint16_t layers_cnt; /* size of avail_hres */
@@ -133,7 +133,11 @@ extern int license_init(char *licenses);
 extern int hres_init(void);
 extern int hres_filter(job_record_t *job_ptr, bitstr_t *node_bitmap);
 
-extern bool hres_select_check(hres_select_t *hres_select, int node_inx);
+extern bool hres_select_check(hres_select_t *hres_select,
+			      uint16_t hres_leaf_idx);
+
+extern void hres_select_return(hres_select_t *hres_select,
+			       uint16_t hres_leaf_idx);
 
 extern void hres_create_select(job_record_t *job_ptr);
 

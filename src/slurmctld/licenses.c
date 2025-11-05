@@ -932,7 +932,11 @@ static int _foreach_license_set_base(void *x, void *key)
 		      license->name);
 		return -1;
 	}
-	license->total = license->hres_rec.total - license->hres_rec.base_usage;
+
+	license->total = license->hres_rec.total;
+
+	if (license->total != INFINITE)
+		license->total -= license->hres_rec.base_usage;
 
 	if ((license->mode == HRES_MODE_3) &&
 	    (license->hres_rec.parent_id != NO_VAL16)) {
@@ -1307,10 +1311,11 @@ extern void hres_create_select(job_record_t *job_ptr)
 
 	hres_select->leaf =
 		xcalloc(match->hres_rec.leaf_cnt, sizeof(hres_leaf_t));
-	hres_select->avail_hres =
-		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
-	hres_select->avail_hres_orgi =
-		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
+	hres_select->avail_hres = xcalloc(match->hres_rec.layers_cnt,
+					  sizeof(*hres_select->avail_hres));
+	hres_select->avail_hres_orig =
+		xcalloc(match->hres_rec.layers_cnt,
+			sizeof(*hres_select->avail_hres_orig));
 	list_for_each_ro(cluster_license_list, _foreach_hres_create_select,
 			 hres_select);
 
@@ -1350,10 +1355,15 @@ static int _foreach_hres_pre_select(void *x, void *key)
 
 	hres_select->avail_hres[license->hres_rec.idx] = license->total;
 
-	if (!hres_select->test_only)
-		hres_select->avail_hres[license->hres_rec.idx] -= license->used;
+	if (!hres_select->test_only && (license->total != INFINITE)) {
+		if (license->total > license->used)
+			hres_select->avail_hres[license->hres_rec.idx] -=
+				license->used;
+		else
+			hres_select->avail_hres[license->hres_rec.idx] = 0;
+	}
 
-	hres_select->avail_hres_orgi[license->hres_rec.idx] =
+	hres_select->avail_hres_orig[license->hres_rec.idx] =
 		hres_select->avail_hres[license->hres_rec.idx];
 
 	return 0;
@@ -1405,7 +1415,7 @@ static int _foreach_bf_hres_pre_select(void *x, void *key)
 
 	hres_select->avail_hres[license->hres_rec.idx] = bf_lic->remaining;
 
-	hres_select->avail_hres_orgi[license->hres_rec.idx] =
+	hres_select->avail_hres_orig[license->hres_rec.idx] =
 		hres_select->avail_hres[license->hres_rec.idx];
 
 	return 0;
@@ -1458,7 +1468,7 @@ extern void hres_select_free(job_record_t *job_ptr)
 
 	xfree(hres_select->leaf);
 	xfree(hres_select->avail_hres);
-	xfree(hres_select->avail_hres_orgi);
+	xfree(hres_select->avail_hres_orig);
 
 	xfree(job_ptr->hres_select);
 }
@@ -1474,23 +1484,25 @@ extern void hres_select_print(hres_select_t *hres_select)
 			hres_select->leaf[i].capacity);
 		for (int j = 0; j < hres_select->depth; j++) {
 			uint16_t idx = hres_select->leaf[i].path_idx[j];
-			verbose("\t\t %u %d", idx,
+			verbose("\t\t %u %u", idx,
 				hres_select->avail_hres[idx]);
 		}
 	}
 }
 
-extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
+extern bool hres_select_check(hres_select_t *hres_select,
+			      uint16_t hres_leaf_idx)
 {
 	bool can_run = true;
-	uint16_t i = hres_select_find_leaf(hres_select, node_inx);
 
-	if (i == NO_VAL16)
+	if (hres_leaf_idx == NO_VAL16)
 		return false;
 
 	for (int j = 0; j < hres_select->depth; j++) {
-		uint16_t idx = hres_select->leaf[i].path_idx[j];
-		if (hres_select->avail_hres[idx] < hres_select->hres_per_node) {
+		uint16_t idx = hres_select->leaf[hres_leaf_idx].path_idx[j];
+		if ((hres_select->avail_hres[idx] != INFINITE) &&
+		    (hres_select->avail_hres[idx] <
+		     hres_select->hres_per_node)) {
 			can_run = false;
 			break;
 		}
@@ -1498,13 +1510,29 @@ extern bool hres_select_check(hres_select_t *hres_select, int node_inx)
 
 	if (can_run) {
 		for (int j = 0; j < hres_select->depth; j++) {
-			uint16_t idx = hres_select->leaf[i].path_idx[j];
-			hres_select->avail_hres[idx] -=
-				hres_select->hres_per_node;
+			uint16_t idx =
+				hres_select->leaf[hres_leaf_idx].path_idx[j];
+			if (hres_select->avail_hres[idx] != INFINITE)
+				hres_select->avail_hres[idx] -=
+					hres_select->hres_per_node;
 		}
 	}
 
 	return can_run;
+}
+
+extern void hres_select_return(hres_select_t *hres_select,
+			       uint16_t hres_leaf_idx)
+{
+	if (hres_leaf_idx == NO_VAL16)
+		return;
+
+	for (int j = 0; j < hres_select->depth; j++) {
+		uint16_t idx = hres_select->leaf[hres_leaf_idx].path_idx[j];
+		if (hres_select->avail_hres[idx] != INFINITE)
+			hres_select->avail_hres[idx] +=
+				hres_select->hres_per_node;
+	}
 }
 
 extern void hres_variable_free(void *x)
