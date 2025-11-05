@@ -232,7 +232,8 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
-		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
+		.body_encoding =
+			(body_encoding ? body_encoding : MIME_TYPE_TEXT),
 		.body_length = (err ? strlen(err) : 0),
 	};
 	http_header_t close = {
