@@ -136,25 +136,15 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
  */
 #define slurm_thread_create_detached(func, arg) \
 	do { \
-		pthread_t id_local; \
-		pthread_attr_t attr; \
-		int err; \
-		slurm_attr_init(&attr); \
-		err = pthread_attr_setdetachstate(&attr, \
-						  PTHREAD_CREATE_DETACHED); \
-		if (err) { \
-			errno = err; \
-			fatal("%s: pthread_attr_setdetachstate %m", \
-			      __func__); \
-		} \
-		err = pthread_create(&id_local, &attr, func, arg); \
-		if (err) { \
-			errno = err; \
-			fatal("%s: pthread_create error %m", __func__); \
-		} \
-		slurm_attr_destroy(&attr); \
-	} while (0)
-
+		int thread_err = SLURM_SUCCESS; \
+		if ((thread_err = \
+			     threadpool_create(func, XSTRINGIFY(func), arg, \
+								true, NULL, \
+								NULL, \
+								__func__))) \
+			fatal("%s: threadpool_create() failed: %s", \
+			      __func__, slurm_strerror(thread_err)); \
+	} while (false)
 /*
  * Wait for pthread to exit.
  * See pthread_join() for use cases.
