@@ -41,6 +41,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/slurmdbd_pack.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
 #include "slurmdbd_agent.h"

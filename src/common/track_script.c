@@ -41,6 +41,7 @@
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/threadpool.h"
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 

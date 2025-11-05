@@ -40,6 +40,7 @@
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/threadpool.h"
 
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/acct_gather_profile.h"

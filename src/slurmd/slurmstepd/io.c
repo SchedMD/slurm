@@ -68,6 +68,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/threadpool.h"
 #include "src/common/write_labelled_message.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

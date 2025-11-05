@@ -96,6 +96,7 @@
 #include "src/common/spank.h"
 #include "src/common/stepd_api.h"
 #include "src/common/stepd_proxy.h"
+#include "src/common/threadpool.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsched.h"

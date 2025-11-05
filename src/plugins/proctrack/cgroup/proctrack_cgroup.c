@@ -54,6 +54,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/cgroup.h"

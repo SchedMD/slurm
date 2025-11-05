@@ -35,6 +35,7 @@
 
 #include "src/common/read_config.h"
 #include "src/common/stepd_api.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/prep.h"

@@ -62,6 +62,7 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/state_save.h"
 #include "src/common/strnatcmp.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/burst_buffer.h"

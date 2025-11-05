@@ -53,6 +53,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/threadpool.h"
 #include "src/common/write_labelled_message.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"

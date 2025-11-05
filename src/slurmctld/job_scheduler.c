@@ -64,6 +64,7 @@
 #include "src/common/node_features.h"
 #include "src/common/parse_time.h"
 #include "src/common/strlcpy.h"
+#include "src/common/threadpool.h"
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"

@@ -47,6 +47,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
+#include "src/common/threadpool.h"
 
 #include "src/slurmctld/slurmctld.h"
 

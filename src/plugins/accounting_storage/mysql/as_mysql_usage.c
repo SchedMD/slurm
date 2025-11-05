@@ -42,6 +42,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
+#include "src/common/threadpool.h"
 
 time_t global_last_rollup = 0;
 pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;

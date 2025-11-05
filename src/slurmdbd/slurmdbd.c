@@ -63,6 +63,7 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/slurm_time.h"
+#include "src/common/threadpool.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
