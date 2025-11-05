@@ -580,8 +580,9 @@ static void _catch_sigchld(conmgr_callback_args_t conmgr_args, void *arg)
 	} while (pid > 0);
 }
 
-static void *_on_cs_connection(conmgr_fd_t *con, void *arg)
+static void *_on_cs_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int tty;
 	xassert(!arg);
 
@@ -618,7 +619,7 @@ static void *_on_cs_connection(conmgr_fd_t *con, void *arg)
 	return &state;
 }
 
-static int _on_cs_data(conmgr_fd_t *con, void *arg)
+static int _on_cs_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	xassert(!arg);
 
@@ -633,7 +634,7 @@ static int _on_cs_data(conmgr_fd_t *con, void *arg)
 	return EINVAL;
 }
 
-static void _on_cs_finish(conmgr_fd_t *con, void *arg)
+static void _on_cs_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -1139,8 +1140,10 @@ extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 		_try_start();
 }
 
-static void *_on_connection(conmgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	/* may or may not need to be locked for this one */
 	check_state();
 	xassert(!arg);
@@ -1150,7 +1153,7 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	return &state;
 }
 
-static void _on_connection_finish(conmgr_fd_t *con, void *arg)
+static void _on_connection_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -1194,9 +1197,10 @@ static int _send_state(conmgr_fd_t *con, slurm_msg_t *req_msg)
 	return rc;
 }
 
-static int _on_connection_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
-			      void *arg)
+static int _on_connection_msg(conmgr_callback_args_t conmgr_args,
+			      slurm_msg_t *msg, int unpack_rc, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int rc;
 	uid_t user_id;
 
@@ -1312,7 +1316,7 @@ static void _open_pty(void)
 	state.pts = pts;
 }
 
-static int _on_startup_con_data(conmgr_fd_t *con, void *arg)
+static int _on_startup_con_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	xassert(arg == &state);
 	check_state();
@@ -1320,8 +1324,9 @@ static int _on_startup_con_data(conmgr_fd_t *con, void *arg)
 	fatal("%s: unexpected data", __func__);
 }
 
-static void *_on_startup_con(conmgr_fd_t *con, void *arg)
+static void *_on_startup_con(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	bool queue = false;
 
 	xassert(!arg);
@@ -1349,8 +1354,9 @@ static void *_on_startup_con(conmgr_fd_t *con, void *arg)
 	return &state;
 }
 
-static void _on_startup_con_fin(conmgr_fd_t *con, void *arg)
+static void _on_startup_con_fin(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	xassert(arg == &state);
 
 	write_lock_state();

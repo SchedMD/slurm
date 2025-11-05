@@ -682,8 +682,9 @@ static int _on_content_complete(void *arg)
 	return rc;
 }
 
-extern int _on_data(conmgr_fd_t *con, void *arg)
+extern int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	http_con_t *hcon = arg;
 	static const http_parser_callbacks_t callbacks = {
 		.on_request = _on_request,
@@ -745,8 +746,9 @@ cleanup:
 	return rc;
 }
 
-static void _on_finish(conmgr_fd_t *con, void *arg)
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	http_con_t *hcon = arg;
 	void *hcon_arg = hcon->arg;
 	conmgr_fd_ref_t *hcon_con = NULL;
@@ -779,7 +781,7 @@ static void _on_finish(conmgr_fd_t *con, void *arg)
 	if (hcon_events->on_close)
 		hcon_events->on_close(conmgr_con_get_name(hcon_con), hcon_arg);
 
-	conmgr_fd_free_ref(&hcon_con);
+	CONMGR_CON_UNLINK(hcon_con);
 }
 
 extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
@@ -820,8 +822,7 @@ extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 	if ((rc = conmgr_con_get_events(con, &prior_events, &prior_arg)))
 		goto failed;
 
-	if (!(hcon->con = conmgr_con_link(con)))
-		goto failed;
+	CONMGR_CON_LINK(con, hcon->con);
 
 	if ((rc = conmgr_con_set_events(con, &http_events, hcon, __func__)))
 		goto failed;
@@ -830,7 +831,7 @@ extern int http_con_assign_server(conmgr_fd_ref_t *con, http_con_t *hcon,
 
 	return rc;
 failed:
-	conmgr_fd_free_ref(&hcon->con);
+	CONMGR_CON_UNLINK(hcon->con);
 	hcon->magic = ~MAGIC;
 
 	/* Attempt to revert changes */

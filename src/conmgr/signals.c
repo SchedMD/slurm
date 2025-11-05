@@ -226,8 +226,10 @@ extern void add_work_signal(work_t *work)
 	slurm_rwlock_unlock(&lock);
 }
 
-static void *_on_connection(conmgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	slurm_rwlock_wrlock(&lock);
 
 	_init_signal_handler();
@@ -238,9 +240,10 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	return con;
 }
 
-static int _on_data(conmgr_fd_t *con, void *arg)
+static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	const void *data = NULL;
+	conmgr_fd_t *con = conmgr_args.con;
 	size_t bytes = 0, read = 0;
 	int signo;
 
@@ -263,8 +266,9 @@ static int _on_data(conmgr_fd_t *con, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static void _on_finish(conmgr_fd_t *con, void *arg)
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int fd;
 
 	xassert(arg == con);

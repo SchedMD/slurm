@@ -331,7 +331,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	int rc = EINVAL;
-	int (*callback)(conmgr_fd_t *con, void *arg) = NULL;
+	STRUCT_FIELD_TYPEOF(conmgr_events_t, on_data) callback = NULL;
 	const char *callback_string = NULL;
 	void *con_arg = NULL;
 	buf_t shadow_buffer = { 0 };
@@ -384,7 +384,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		 __func__, con->name, callback_string, (uintptr_t) con_arg,
 		 (uintptr_t) callback);
 
-	rc = callback(con, con_arg);
+	rc = callback(conmgr_args, con_arg);
 
 	log_flag(CONMGR, "%s: [%s] END func=%s(arg=0x%"PRIxPTR")@0x%"PRIxPTR"=[%d]%s",
 		 __func__, con->name, callback_string, (uintptr_t) con_arg,

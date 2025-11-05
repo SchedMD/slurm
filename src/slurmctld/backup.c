@@ -339,16 +339,20 @@ void run_backup(void)
 	unlock_slurmctld(config_write_lock);
 }
 
-extern void *on_backup_connection(conmgr_fd_t *con, void *arg)
+extern void *on_backup_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	debug3("%s: [%s] BACKUP: New RPC connection",
 	       __func__, conmgr_fd_get_name(con));
 
 	return con;
 }
 
-extern void on_backup_finish(conmgr_fd_t *con, void *arg)
+extern void on_backup_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	xassert(arg == con);
 
 	debug3("%s: [%s] BACKUP: finish RPC connection",
@@ -356,8 +360,10 @@ extern void on_backup_finish(conmgr_fd_t *con, void *arg)
 }
 
 /* process an RPC to the backup_controller */
-extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg)
+extern int on_backup_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+			 void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int error_code = SLURM_SUCCESS;
 	bool send_rc = true;
 

@@ -244,8 +244,10 @@ static int _stage_in()
 	return rc;
 }
 
-static void *_on_connection(conmgr_fd_t *con, void *arg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	debug("%s:[%s] new srun connection",
 	      __func__, conmgr_fd_get_name(con));
 
@@ -253,8 +255,10 @@ static void *_on_connection(conmgr_fd_t *con, void *arg)
 	return con;
 }
 
-static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int rc = SLURM_SUCCESS;
 	xassert(arg == con);
 
@@ -341,8 +345,10 @@ static int _on_msg(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc, void *arg)
 	return rc;
 }
 
-static void _on_finish(conmgr_fd_t *con, void *arg)
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
+
 	xassert(con == arg);
 
 	if (get_log_level() > LOG_LEVEL_DEBUG) {

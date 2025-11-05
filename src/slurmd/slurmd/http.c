@@ -137,7 +137,7 @@ extern int on_http_connection(conmgr_fd_t *con)
 
 	rc = http_con_assign_server(ref, NULL, &events, NULL);
 
-	conmgr_fd_free_ref(&ref);
+	CONMGR_CON_UNLINK(ref);
 
 	return rc;
 }

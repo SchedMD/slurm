@@ -261,30 +261,30 @@ static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
 
 static work_t *_run_work(work_t *work)
 {
-	conmgr_fd_t *con = NULL;
 	work_t *next = NULL;
+	conmgr_callback_args_t args = {
+		.status = work->status,
+	};
 
 	xassert(work->magic == MAGIC_WORK);
 
 	if (work->ref) {
-		con = fd_get_ref(work->ref);
-		xassert(con->magic == MAGIC_CON_MGR_FD);
+		CONMGR_CON_LINK(work->ref, args.ref);
+		xassert(args.ref->magic == MAGIC_CON_MGR_FD_REF);
+		args.con = fd_get_ref(work->ref);
+		xassert(args.con->magic == MAGIC_CON_MGR_FD);
 	}
 
 	_log_work(work, __func__, "BEGIN");
 
-	work->callback.func(
-		(conmgr_callback_args_t) {
-			.con = con,
-			.status = work->status,
-		},
-		work->callback.arg);
+	work->callback.func(args, work->callback.arg);
 
 	_log_work(work, __func__, "END");
 
-	if (con)
-		next = _on_con_work_complete(con, work);
+	if (args.con)
+		next = _on_con_work_complete(args.con, work);
 
+	CONMGR_CON_UNLINK(args.ref);
 	work->magic = ~MAGIC_WORK;
 	xfree(work);
 
@@ -445,7 +445,7 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 		slurm_mutex_lock(&mgr.mutex);
 
 	if (con)
-		work->ref = fd_new_ref(con);
+		fd_new_ref(con, &work->ref);
 
 	work_mask_depend(work, depend_mask);
 

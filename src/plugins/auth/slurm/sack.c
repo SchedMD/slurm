@@ -217,8 +217,9 @@ static int _sack_verify(conmgr_fd_t *con, buf_t *in)
 	return rc;
 }
 
-static int _on_connection_data(conmgr_fd_t *con, void *arg)
+static int _on_connection_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
+	conmgr_fd_t *con = conmgr_args.con;
 	int rc = SLURM_ERROR;
 	uint16_t version = 0;
 	uint32_t length = 0, rpc = 0;

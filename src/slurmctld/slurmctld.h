@@ -70,6 +70,8 @@
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/cred.h"
 
 /*****************************************************************************\
@@ -1608,9 +1610,11 @@ extern void restore_node_features(int recover);
 extern void run_backup(void);
 
 /* conmgr RPC connection callbacks */
-extern void *on_backup_connection(conmgr_fd_t *con, void *arg);
-extern void on_backup_finish(conmgr_fd_t *con, void *arg);
-extern int on_backup_msg(conmgr_fd_t *con, slurm_msg_t *msg, void *arg);
+extern void *on_backup_connection(conmgr_callback_args_t conmgr_args,
+				  void *arg);
+extern void on_backup_finish(conmgr_callback_args_t conmgr_args, void *arg);
+extern int on_backup_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+			 void *arg);
 
 /*
  * ping_controllers - ping other controllers in HA configuration.

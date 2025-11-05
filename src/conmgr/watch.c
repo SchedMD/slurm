@@ -156,9 +156,9 @@ static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
 
 	if (con_flag(con, FLAG_IS_LISTEN)) {
 		if (con->events->on_listen_finish)
-			con->events->on_listen_finish(con, arg);
+			con->events->on_listen_finish(conmgr_args, arg);
 	} else if (con->events->on_finish) {
-		con->events->on_finish(con, arg);
+		con->events->on_finish(conmgr_args, arg);
 	}
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -355,7 +355,7 @@ static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 	int rc;
 
 	if (con->events->on_connect_timeout)
-		rc = con->events->on_connect_timeout(con, con->new_arg);
+		rc = con->events->on_connect_timeout(conmgr_args, con->new_arg);
 	else
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 
@@ -418,7 +418,7 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 	int rc;
 
 	if (con->events->on_write_timeout)
-		rc = con->events->on_write_timeout(con, con->arg);
+		rc = con->events->on_write_timeout(conmgr_args, con->arg);
 	else
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 
@@ -486,7 +486,7 @@ static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
 	int rc;
 
 	if (con->events->on_read_timeout)
-		rc = con->events->on_read_timeout(con, con->arg);
+		rc = con->events->on_read_timeout(conmgr_args, con->arg);
 	else
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 

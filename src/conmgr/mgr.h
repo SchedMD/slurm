@@ -166,8 +166,9 @@ typedef enum {
  */
 extern char *con_flags_string(const con_flags_t flags);
 
-typedef struct conmgr_fd_ref_s {
 #define MAGIC_CON_MGR_FD_REF 0xA2F4B4EF
+
+typedef struct conmgr_fd_ref_s {
 	int magic; /* MAGIC_CON_MGR_FD_REF */
 	conmgr_fd_t *con;
 } conmgr_fd_ref_t;
@@ -563,7 +564,8 @@ extern int add_connection(conmgr_con_type_t type,
 
 extern void close_all_connections(void);
 
-extern int on_rpc_connection_data(conmgr_fd_t *con, void *arg);
+extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args,
+				  void *arg);
 
 /*
  * Find connection by a given file descriptor
@@ -623,7 +625,7 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg);
  * Create new connection reference
  * WARNING: caller must hold mgr.mutex
  */
-extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con);
+extern void fd_new_ref(conmgr_fd_t *src, conmgr_fd_ref_t **dst_ptr);
 
 /*
  * Release and free connection reference

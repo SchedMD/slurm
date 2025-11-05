@@ -127,6 +127,8 @@ typedef struct conmgr_fd_s conmgr_fd_t;
  */
 typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
+typedef struct conmgr_callback_args_s conmgr_callback_args_t;
+
 /*
  * Struct of call backs to call on events
  * of a given connection.
@@ -135,49 +137,50 @@ typedef struct {
 	/*
 	 * Call back for new listener for setup
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
 	 * RET arg ptr to hand to events
 	 */
-	void *(*on_listen_connect)(conmgr_fd_t *con, void *arg);
+	void *(*on_listen_connect)(conmgr_callback_args_t conmgr_args,
+				   void *arg);
 
 	/*
 	 * Call back when listener ended.
 	 * Called once per connection right before connection is xfree()ed.
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - ptr to be handed return of on_connection().
 	 * 	Ownership of arg pointer returned to caller as it will not be
 	 * 	used anymore.
 	 */
-	void (*on_listen_finish)(conmgr_fd_t *con, void *arg);
+	void (*on_listen_finish)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back for new connection for setup
 	 *
-	 * IN fd file descriptor of new connection
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
 	 * RET arg ptr to hand to events
 	 */
-	void *(*on_connection)(conmgr_fd_t *con, void *arg);
+	void *(*on_connection)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when there is data ready in "in" buffer
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RAW.
 	 *
-	 * IN con connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
-	int (*on_data)(conmgr_fd_t *con, void *arg);
+	int (*on_data)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when there is new RPC msg ready
 	 * This may be called several times in the same connection.
 	 * Only called when type = CON_TYPE_RPC.
 	 *
-	 * IN con connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN msg ptr to new msg (call must slurm_free_msg())
 	 * IN unpack_rc return code from unpacking RPC
 	 * WARNING: always check unpack_rc and msg->auth_ids_set before
@@ -185,19 +188,19 @@ typedef struct {
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS or error to kill connection
 	 */
-	int (*on_msg)(conmgr_fd_t *con, slurm_msg_t *msg, int unpack_rc,
-		      void *arg);
+	int (*on_msg)(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		      int unpack_rc, void *arg);
 
 	/*
 	 * Call back when connection ended.
 	 * Called once per connection right before connection is xfree()ed.
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - ptr to be handed return of on_connection().
 	 * 	Ownership of arg pointer returned to caller as it will not be
 	 * 	used anymore.
 	 */
-	void (*on_finish)(conmgr_fd_t *con, void *arg);
+	void (*on_finish)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when read timeout occurs
@@ -206,11 +209,11 @@ typedef struct {
 	 * If on_read_timeout=NULL is treated same as returning
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
-	int (*on_read_timeout)(conmgr_fd_t *con, void *arg);
+	int (*on_read_timeout)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when write timeout occurs
@@ -219,11 +222,11 @@ typedef struct {
 	 * If on_read_timeout=NULL is treated same as returning
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg ptr to be handed return of on_connection() callback.
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
-	int (*on_write_timeout)(conmgr_fd_t *con, void *arg);
+	int (*on_write_timeout)(conmgr_callback_args_t conmgr_args, void *arg);
 
 	/*
 	 * Call back when connect timeout occurs
@@ -232,11 +235,12 @@ typedef struct {
 	 * If on_read_timeout=NULL is treated same as returning
 	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
 	 *
-	 * IN con - connection handler
+	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions
 	 * RET SLURM_SUCCESS to wait timeout again or error to kill connection
 	 */
-	int (*on_connect_timeout)(conmgr_fd_t *con, void *arg);
+	int (*on_connect_timeout)(conmgr_callback_args_t conmgr_args,
+				  void *arg);
 } conmgr_events_t;
 
 typedef enum {
@@ -282,9 +286,11 @@ extern char *conmgr_work_depend_string(conmgr_work_depend_t type);
 extern timespec_t conmgr_calc_work_time_delay(time_t delay_seconds,
 					      long delay_nanoseconds);
 
-typedef struct {
+typedef struct conmgr_callback_args_s {
 	/* ptr to relevant connection (or NULL) */
 	conmgr_fd_t *con;
+	/* connection reference (or NULL) */
+	conmgr_fd_ref_t *ref;
 	/*
 	 * Work status
 	 * Note: Always check status for CONMGR_WORK_STATUS_CANCELLED to know
@@ -1020,6 +1026,26 @@ extern void conmgr_unquiesce(const char *caller);
 extern bool conmgr_is_quiesced(void);
 
 /*
+ * Link new reference to conmgr connection
+ * Will ensure that connection will remain valid until released.
+ * IN src - connection to assign to dst
+ * IN/OUT dst - destination to assign with reference to src
+ */
+#define CONMGR_CON_LINK(src, dst) \
+	do { \
+		(dst) = conmgr_con_link(src); \
+	} while (false); \
+/*
+ * Release reference to conmgr connection
+ * WARNING: Connection may not exist after this called
+ * IN con - connection to release (will be set to NULL)
+ */
+#define CONMGR_CON_UNLINK(con) \
+	do { \
+		conmgr_fd_free_ref(&(con)); \
+	} while (false);
+
+/*
  * Create new reference to conmgr connection
  * Will ensure that conmgr_fd_t will remain valid until released.
  * IN con - connection to create reference
@@ -1027,16 +1053,18 @@ extern bool conmgr_is_quiesced(void);
  */
 extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con);
 /*
- * Link newq reference to conmgr connection
+ * Link new reference to conmgr connection
  * Will ensure that connection will remain valid until released.
  * IN con - connection reference
  * RET ptr to new reference (must be released by conmgr_fd_free_ref())
+ * NOTE: Use CONMGR_CON_LINK() instead of calling directly
  */
 extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con);
 /*
  * Release reference to conmgr connection
  * WARNING: Connection may not exist after this called
  * IN ref_ptr - ptr to reference to release (will be set to NULL)
+ * NOTE: Use CONMGR_CON_UNLINK() instead of calling directly
  */
 extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
 /*

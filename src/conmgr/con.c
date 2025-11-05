@@ -680,7 +680,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name,
 			 (uintptr_t) con->events->on_listen_connect);
 
-		arg = con->events->on_listen_connect(con, con->new_arg);
+		arg = con->events->on_listen_connect(conmgr_args, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
@@ -691,7 +691,7 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name,
 			 (uintptr_t) con->events->on_connection);
 
-		arg = con->events->on_connection(con, con->new_arg);
+		arg = con->events->on_connection(conmgr_args, con->new_arg);
 
 		log_flag(CONMGR, "%s: [%s] END func=0x%"PRIxPTR" arg=0x%"PRIxPTR,
 			 __func__, con->name,
@@ -2037,23 +2037,21 @@ extern bool conmgr_con_is_output_open(conmgr_fd_ref_t *ref)
 	return open;
 }
 
-extern conmgr_fd_ref_t *fd_new_ref(conmgr_fd_t *con)
+extern void fd_new_ref(conmgr_fd_t *src, conmgr_fd_ref_t **dst_ptr)
 {
-	conmgr_fd_ref_t *ref;
+	xassert(src->magic == MAGIC_CON_MGR_FD);
+	xassert(dst_ptr);
+	xassert(!*dst_ptr);
 
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-
-	ref = xmalloc(sizeof(*ref));
-	*ref = (conmgr_fd_ref_t) {
+	*dst_ptr = xmalloc(sizeof(**dst_ptr));
+	**dst_ptr = (conmgr_fd_ref_t) {
 		.magic = MAGIC_CON_MGR_FD_REF,
-		.con = con,
+		.con = src,
 	};
 
-	con->refs++;
-	xassert(con->refs < INT_MAX);
-	xassert(con->refs > 0);
-
-	return ref;
+	src->refs++;
+	xassert(src->refs < INT_MAX);
+	xassert(src->refs > 0);
 }
 
 extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
@@ -2064,7 +2062,7 @@ extern conmgr_fd_ref_t *conmgr_fd_new_ref(conmgr_fd_t *con)
 		fatal_abort("con must not be null");
 
 	slurm_mutex_lock(&mgr.mutex);
-	ref = fd_new_ref(con);
+	fd_new_ref(con, &ref);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return ref;
@@ -2075,9 +2073,11 @@ extern conmgr_fd_ref_t *conmgr_con_link(conmgr_fd_ref_t *con)
 	conmgr_fd_ref_t *ref = NULL;
 
 	xassert(con);
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
 
 	slurm_mutex_lock(&mgr.mutex);
-	ref = fd_new_ref(con->con);
+	fd_new_ref(con->con, &ref);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return ref;
