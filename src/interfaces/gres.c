@@ -11221,6 +11221,8 @@ static void _parse_gres_conf_values(char *gres_str, char *node_name)
 
 	if (gsc->file)
 		gsc->config_flags |= GRES_CONF_HAS_FILE;
+	if (gsc->type_name)
+		gsc->config_flags |= GRES_CONF_HAS_TYPE;
 
 	if (!gsc->plugin_id) {
 		for (int i = 0; i < gres_context_cnt; i++) {
