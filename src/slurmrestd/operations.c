@@ -234,7 +234,6 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		.http_minor = args->http_minor,
 		.body_encoding =
 			(body_encoding ? body_encoding : MIME_TYPE_TEXT),
-		.body_length = (err ? strlen(err) : 0),
 	};
 	http_header_t close = {
 		.magic = HTTP_HEADER_MAGIC,
@@ -249,6 +248,8 @@ static int _operations_router_reject(on_http_request_args_t *args,
 		send_args.body = slurm_strerror(error_code);
 	else
 		send_args.body = err;
+
+	send_args.body_length = strlen(send_args.body);
 
 	/* Always warn that connection will be closed after the body is sent */
 	list_append(send_args.headers, &close);
