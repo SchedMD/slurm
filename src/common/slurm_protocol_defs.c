@@ -1957,10 +1957,8 @@ extern void slurm_free_node_resource_layout(node_resource_layout_t *msg)
 	xfree(msg);
 }
 
-extern void slurm_free_resource_layout_msg(void *in)
+extern void slurm_free_resource_layout_msg(resource_layout_msg_t *msg)
 {
-	resource_layout_msg_t *msg = in;
-
 	if (!msg)
 		return;
 
