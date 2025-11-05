@@ -1762,8 +1762,13 @@ extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
 
 	for (int node_inx = 0; node_inx < job_res->nhosts; node_inx++) {
 		bitstr_t *core_bitmap = NULL;
+		char *node_tmp = NULL;
 		node_resource_layout_t *this_node = xmalloc(sizeof(*this_node));
-		this_node->node = hostlist_shift(hl);
+
+		node_tmp = hostlist_shift(hl);
+		this_node->node = xstrdup(node_tmp);
+		free(node_tmp);
+
 		if (job_res->memory_allocated)
 			this_node->mem_alloc =
 				job_res->memory_allocated[node_inx];
@@ -1806,6 +1811,10 @@ extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
 		list_append(node_layouts, this_node);
 	}
 
+	FREE_NULL_HOSTLIST(hl);
+
 	slurm_pack_list(node_layouts, _pack_node_layout, buffer,
 			protocol_version);
+
+	FREE_NULL_LIST(node_layouts);
 }
