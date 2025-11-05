@@ -35,13 +35,12 @@
 
 #include <pthread.h>
 
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include <time.h>
-
-#include "src/conmgr/events.h"
 
 static void _wait_pending(event_signal_t *event, const char *caller)
 {

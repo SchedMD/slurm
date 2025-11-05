@@ -41,6 +41,7 @@
 
 #include <pthread.h>
 
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
@@ -49,7 +50,6 @@
 #include "src/common/xsched.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
 /* Limit automatically set default thread count */
