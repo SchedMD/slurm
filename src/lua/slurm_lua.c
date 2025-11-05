@@ -422,10 +422,10 @@ static int _get_qos_priority(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_Reg slurm_functions [] = {
+static const struct luaL_Reg slurm_functions[] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
-	{ "time_str2mins", _time_str2mins},
+	{ "time_str2mins", _time_str2mins },
 	{ "get_qos_priority", _get_qos_priority },
 	{ NULL, NULL }
 };
