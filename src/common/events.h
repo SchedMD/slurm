@@ -37,8 +37,8 @@
  * Named event based signaling and waiting
  */
 
-#ifndef _CONMGR_EVENTS_H
-#define _CONMGR_EVENTS_H
+#ifndef _SLURM_EVENTS_H
+#define _SLURM_EVENTS_H
 
 #include <pthread.h>
 #include <stdbool.h>
@@ -131,4 +131,4 @@ extern void event_signal_now(bool broadcast, event_signal_t *event,
 #define EVENT_BROADCAST(event) \
 	event_signal_now(true, event, __func__)
 
-#endif /* _CONMGR_EVENTS_H */
+#endif
