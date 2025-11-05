@@ -1309,7 +1309,7 @@ extern void hres_create_select(job_record_t *job_ptr)
 		xcalloc(match->hres_rec.leaf_cnt, sizeof(hres_leaf_t));
 	hres_select->avail_hres =
 		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
-	hres_select->avail_hres_orgi =
+	hres_select->avail_hres_orig =
 		xcalloc(match->hres_rec.layers_cnt, sizeof(int));
 	list_for_each_ro(cluster_license_list, _foreach_hres_create_select,
 			 hres_select);
@@ -1353,7 +1353,7 @@ static int _foreach_hres_pre_select(void *x, void *key)
 	if (!hres_select->test_only)
 		hres_select->avail_hres[license->hres_rec.idx] -= license->used;
 
-	hres_select->avail_hres_orgi[license->hres_rec.idx] =
+	hres_select->avail_hres_orig[license->hres_rec.idx] =
 		hres_select->avail_hres[license->hres_rec.idx];
 
 	return 0;
@@ -1405,7 +1405,7 @@ static int _foreach_bf_hres_pre_select(void *x, void *key)
 
 	hres_select->avail_hres[license->hres_rec.idx] = bf_lic->remaining;
 
-	hres_select->avail_hres_orgi[license->hres_rec.idx] =
+	hres_select->avail_hres_orig[license->hres_rec.idx] =
 		hres_select->avail_hres[license->hres_rec.idx];
 
 	return 0;
@@ -1458,7 +1458,7 @@ extern void hres_select_free(job_record_t *job_ptr)
 
 	xfree(hres_select->leaf);
 	xfree(hres_select->avail_hres);
-	xfree(hres_select->avail_hres_orgi);
+	xfree(hres_select->avail_hres_orig);
 
 	xfree(job_ptr->hres_select);
 }
