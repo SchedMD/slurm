@@ -5,12 +5,15 @@
 <h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>Job arrays offer a mechanism for submitting and managing collections of
-similar jobs quickly and easily; job arrays with millions of tasks can be
-submitted in milliseconds (subject to configured size limits).
-All jobs must have the same initial options (e.g. size, time limit, etc.),
-however it is possible to change some of these options after the job has begun
-execution using the scontrol command specifying the <i>JobID</i> of the array or individual
-<i>ArrayJobID</i>.</p>
+similar jobs quickly and easily, useful for repetitive workloads that follow a
+common job pattern. This greatly improves overall performance, since job arrays
+with millions of tasks can be submitted in milliseconds (subject to configured
+size limits) and the scheduler can quickly identify cases when no more array
+tasks are eligible to start.
+All jobs must have the same initial options (e.g., size, time limit), however,
+it is possible to change some of these options after the job has begun
+execution using the scontrol command specifying the <i>JobID</i> of the array or
+individual <i>ArrayJobID</i>.</p>
 
 <pre>
 $ scontrol update job=101 ...
@@ -42,6 +45,9 @@ $ sbatch --array=1-7:2   -N1 tmp
 specified using a "%" separator.
 For example "--array=0-15%4" will limit the number of simultaneously
 running tasks from this job array to 4.</p>
+
+<p><b>NOTE</b>: Job array tasks still act like regular jobs, including in the
+enforcement of job-related limits (e.g., <b>MaxJobs</b>, <b>MaxSubmitJobs</b>).</p>
 
 <h2 id="env_vars">Job ID and Environment Variables
 <a class="slurm_link" href="#env_vars"></a>
