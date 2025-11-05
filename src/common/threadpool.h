@@ -37,8 +37,15 @@
 #define SLURM_THREAD_POOL_H
 
 #include <pthread.h>
+#include <stdbool.h>
 
 #include "slurm/slurm_errno.h"
+
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/read_config.h"
+
+typedef void *(*threadpool_func_t)(void *arg);
 
 #ifdef PTHREAD_SCOPE_SYSTEM
 #define slurm_attr_init(attr) \
@@ -85,6 +92,26 @@
 			      "possible memory leak!: %m"); \
 		} \
 	} while (0)
+
+/*
+ * Create new pthread
+ * See pthread_create() for use cases.
+ * IN func - function for thread to call
+ * IN func_name - function name (for logging)
+ * IN thread_name - thread name (assigned to thread via prctl())
+ * IN arg - arg to pass to function
+ * IN detached
+ *	True: create detached thread.
+ *	False: create joinable thread.
+ *		Thread that must be cleaned up with threadpool_join().
+ * IN id_ptr - Populate pointer with new thread's ID or 0 on failure
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int threadpool_create(threadpool_func_t func, const char *func_name,
+			     void *arg, const bool detached,
+			     const char *thread_name, pthread_t *id_ptr,
+			     const char *caller);
 
 /*
  * Note that the attr argument is intentionally omitted, as it will
