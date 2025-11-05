@@ -10098,8 +10098,8 @@ static int _unpack_node_layout(void **out, uint16_t protocol_version,
 
 		if (slurm_unpack_list(&this_node->gres,
 				      _unpack_node_gres_layout,
-				      slurm_free_node_gres_layout, buffer,
-				      protocol_version))
+				      (ListDelF) slurm_free_node_gres_layout,
+				      buffer, protocol_version))
 			goto unpack_error;
 	}
 

@@ -1572,7 +1572,7 @@ extern void slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
 extern void slurm_free_job_desc_msg(job_desc_msg_t * msg);
 
-extern void slurm_free_node_gres_layout(void *in);
+extern void slurm_free_node_gres_layout(node_gres_layout_t *msg);
 extern void slurm_free_node_resource_layout(node_resource_layout_t *msg);
 extern void slurm_free_resource_layout_msg(void *in);
 

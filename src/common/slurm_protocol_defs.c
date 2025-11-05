@@ -1935,10 +1935,8 @@ extern void slurm_free_acct_gather_energy_req_msg(
 	}
 }
 
-extern void slurm_free_node_gres_layout(void *in)
+extern void slurm_free_node_gres_layout(node_gres_layout_t *msg)
 {
-	node_gres_layout_t *msg = in;
-
 	if (!msg)
 		return;
 
