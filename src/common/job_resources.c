@@ -1662,6 +1662,8 @@ extern void pack_resource_layout(job_record_t *job_ptr, buf_t *buffer,
 		list_append(node_layouts, this_node);
 	}
 
+	FREE_NULL_HOSTLIST(hl);
+
 	slurm_pack_list(node_layouts, _pack_node_layout, buffer,
 			protocol_version);
 }
