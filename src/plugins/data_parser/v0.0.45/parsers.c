@@ -11428,7 +11428,7 @@ static const parser_t parsers[] = {
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
 	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),
 	addpap(NODE_RESOURCE_LAYOUT, node_resource_layout_t, NULL, (parser_free_func_t) slurm_free_node_resource_layout),
-	addpap(NODE_GRES_LAYOUT, node_gres_layout_t, NULL, slurm_free_node_gres_layout),
+	addpap(NODE_GRES_LAYOUT, node_gres_layout_t, NULL, (parser_free_func_t) slurm_free_node_gres_layout),
 	addpap(NAMESPACE_FULL_CONF, ns_full_conf_t, NULL, (parser_free_func_t) slurm_free_ns_full_conf),
 	addpap(NAMESPACE_NODE_CONF, ns_node_conf_t, NULL, (parser_free_func_t) slurm_free_ns_node_conf),
 	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
