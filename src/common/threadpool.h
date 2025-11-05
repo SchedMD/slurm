@@ -119,16 +119,15 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
  */
 #define slurm_thread_create(id, func, arg) \
 	do { \
-		pthread_attr_t attr; \
-		int err; \
-		slurm_attr_init(&attr); \
-		err = pthread_create(id, &attr, func, arg); \
-		if (err) { \
-			errno = err; \
-			fatal("%s: pthread_create error %m", __func__); \
-		} \
-		slurm_attr_destroy(&attr); \
-	} while (0)
+		int thread_err = SLURM_SUCCESS; \
+		if ((thread_err = \
+			     threadpool_create((func), \
+					       XSTRINGIFY(func), (arg), false, \
+							  NULL, (id), \
+							  __func__))) \
+			fatal("%s: threadpool_create() failed: %s", \
+			      __func__, slurm_strerror(thread_err)); \
+	} while (false)
 
 /*
  * Both the thread and attr arguments are intentionally omitted. There
