@@ -552,12 +552,26 @@ static int _to_json(lua_State *L)
 
 static int _from_yaml(lua_State *L)
 {
-	return 0;
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_YAML);
+		load_once = true;
+	}
+
+	return _parse(L, MIME_TYPE_YAML);
 }
 
 static int _to_yaml(lua_State *L)
 {
-	return 0;
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_YAML);
+		load_once = true;
+	}
+
+	return _dump(L, MIME_TYPE_YAML);
 }
 
 static const struct luaL_Reg slurm_functions[] = {
