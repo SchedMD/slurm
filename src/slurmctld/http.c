@@ -73,7 +73,7 @@ static int _reply_error(http_con_t *hcon, const char *name,
 static int _req_not_found(http_con_t *hcon, const char *name,
 			  const http_con_request_t *request, void *arg)
 {
-	return _reply_error(hcon, name, request, ESLURM_REST_UNKNOWN_URL);
+	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH);
 }
 
 static int _req_metrics(http_con_t *hcon, const char *name,
