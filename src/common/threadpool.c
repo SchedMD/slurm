@@ -240,7 +240,20 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD)
 		thread->requested = timespec_now();
 
-	slurm_attr_init(&attr);
+	if ((rc = pthread_attr_init(&attr)))
+		fatal("%s->%s: pthread_attr_init() failed: %s",
+		      caller, __func__, slurm_strerror(rc));
+
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	if ((rc = pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM)))
+		fatal("%s->%s: pthread_attr_setscope(PTHREAD_SCOPE_SYSTEM) failed: %s",
+		      caller, __func__, slurm_strerror(rc));
+#endif
+
+	if ((rc = pthread_attr_setstacksize(&attr, STACK_SIZE)))
+		fatal("%s->%s: pthread_attr_setstacksize(%u) failed: %s",
+		      caller, __func__, STACK_SIZE, slurm_strerror(rc));
 
 	if (id_ptr)
 		*id_ptr = 0;
