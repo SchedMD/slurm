@@ -176,6 +176,8 @@ libcommon_la_SOURCES =				\
 	strlcpy.h				\
 	strnatcmp.c				\
 	strnatcmp.h				\
+	threadpool.c				\
+	threadpool.h				\
 	timers.c				\
 	timers.h				\
 	track_script.c				\
