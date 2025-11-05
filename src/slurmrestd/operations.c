@@ -281,7 +281,7 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 
 	if (*path_tag == -1)
 		return _operations_router_reject(args, NULL,
-						 ESLURM_URL_INVALID_PATH, NULL);
+						 ESLURM_REST_UNKNOWN_URL, NULL);
 	else if (*path_tag == -2)
 		return _operations_router_reject(args, NULL,
 						 ESLURM_REST_UNKNOWN_URL_METHOD,
