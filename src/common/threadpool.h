@@ -83,16 +83,6 @@ typedef void *(*threadpool_func_t)(void *arg);
 	} while (0)
 #endif
 
-#define slurm_attr_destroy(attr) \
-	do { \
-		int err = pthread_attr_destroy(attr); \
-		if (err) { \
-			errno = err; \
-			error("pthread_attr_destroy failed, " \
-			      "possible memory leak!: %m"); \
-		} \
-	} while (0)
-
 /*
  * Create new pthread
  * See pthread_create() for use cases.

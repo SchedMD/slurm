@@ -70,6 +70,16 @@ typedef struct {
 	void *arg;
 } thread_t;
 
+#define slurm_attr_destroy(attr) \
+	do { \
+		int err = pthread_attr_destroy(attr); \
+		if (err) { \
+			errno = err; \
+			error("pthread_attr_destroy failed, " \
+			      "possible memory leak!: %m"); \
+		} \
+	} while (0)
+
 extern int threadpool_join(const pthread_t id, const char *caller)
 {
 	int rc = EINVAL;
