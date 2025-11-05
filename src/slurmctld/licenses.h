@@ -65,7 +65,7 @@ typedef struct {
 
 typedef struct {
 	int *avail_hres;
-	int *avail_hres_orgi;
+	int *avail_hres_orig;
 	uint16_t depth;
 	uint16_t hres_per_node;
 	uint16_t layers_cnt; /* size of avail_hres */

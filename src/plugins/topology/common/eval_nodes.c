@@ -1739,7 +1739,7 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 		set = true;
 	}
 	if (hres_select)
-		memcpy(hres_select->avail_hres, hres_select->avail_hres_orgi,
+		memcpy(hres_select->avail_hres, hres_select->avail_hres_orig,
 		       hres_select->layers_cnt *
 			       sizeof(*hres_select->avail_hres));
 
