@@ -33,4 +33,36 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <pthread.h>
+#include <stdint.h>
+
+#include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/threadpool.h"
+
+extern int threadpool_join(const pthread_t id, const char *caller)
+{
+	int rc = EINVAL;
+	void *ret = 0;
+
+	if (!id) {
+		log_flag(THREAD, "%s->%s: Ignoring invalid pthread id=0x0",
+		       caller, __func__);
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = pthread_join(id, &ret))) {
+		error("%s->%s: pthread_join(id=0x%"PRIx64") failed: %m",
+		      caller, __func__, (uint64_t) id);
+		return rc;
+	}
+
+	if (ret == PTHREAD_CANCELED)
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" was cancelled",
+		       caller, __func__, (uint64_t) id);
+	else
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
+		       caller, __func__, (uint64_t) id, (uintptr_t) ret);
+
+	return rc;
+}

@@ -38,6 +38,8 @@
 
 #include <pthread.h>
 
+#include "slurm/slurm_errno.h"
+
 #ifdef PTHREAD_SCOPE_SYSTEM
 #define slurm_attr_init(attr) \
 	do { \
@@ -128,19 +130,22 @@
 	} while (0)
 
 /*
- * The retval argument is intentionally omitted. We never use it.
+ * Wait for pthread to exit.
+ * See pthread_join() for use cases.
+ * NOTE: can only be called once per thread.
+ * IN id - thread ID
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
  */
+extern int threadpool_join(const pthread_t id, const char *caller);
+
 #define slurm_thread_join(id) \
 	do { \
-		int err = 0; \
-		if (id) { \
-			err = pthread_join(id, NULL); \
-			id = (pthread_t) 0; \
-		} \
-		if (err) { \
-			errno = err; \
-			error("%s: pthread_join(): %m", __func__); \
-		} \
-	} while (0)
+		int thread_err = SLURM_SUCCESS; \
+		if ((thread_err = threadpool_join(id, __func__))) \
+			errno = thread_err; \
+		else \
+			id = 0; \
+	} while (false)
 
 #endif
