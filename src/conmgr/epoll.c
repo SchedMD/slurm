@@ -42,6 +42,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/events.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -52,7 +53,6 @@
 #include "src/common/xstring.h"
 
 #include "src/conmgr/polling.h"
-#include "src/conmgr/events.h"
 
 /*
  * Size event count for 1 input and 1 output per connection and

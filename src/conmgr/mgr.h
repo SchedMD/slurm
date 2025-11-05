@@ -50,11 +50,11 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/events.h"
 #include "src/common/pack.h"
 #include "src/common/probes.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/events.h"
 #include "src/conmgr/polling.h"
 
 /* Default buffer to 1 page */
