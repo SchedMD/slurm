@@ -1459,9 +1459,11 @@ static int _foreach_table_row(lua_State *L, data_t *dst, const int index,
 			xstrfmtcat(label, "%s[" LUA_NUMBER_FMT "]", parent,
 				   lua_tonumber(L, -2));
 
+#if LUA_VERSION_NUM >= 503
 		/* Skip conversion to string */
 		if (lua_isinteger(L, -2))
 			child = data_key_set_int(dst, lua_tointeger(L, -2));
+#endif
 	}
 
 	if (!child) {
@@ -1585,9 +1587,11 @@ static int _lua_to_data(lua_State *L, data_t *dst, const int index,
 	case LUA_TNUMBER:
 		log_flag(SCRIPT, "%s: number=" LUA_NUMBER_FMT,
 			 label, lua_tonumber(L, index));
+#if LUA_VERSION_NUM >= 503
 		if (lua_isinteger(L, index))
 			data_set_int(dst, lua_tointeger(L, index));
 		else
+#endif
 			data_set_float(dst, lua_tonumber(L, index));
 		return SLURM_SUCCESS;
 	case LUA_TBOOLEAN:
