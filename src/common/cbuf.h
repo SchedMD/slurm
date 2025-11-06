@@ -36,6 +36,8 @@
 #ifndef LSD_CBUF_H
 #define LSD_CBUF_H
 
+#include <stdbool.h>
+
 /*
  *  Cbuf is a circular-buffer capable of dynamically resizing itself.
  *  Unread data in the buffer will be overwritten once the cbuf has
@@ -58,10 +60,6 @@
 
 typedef struct cbuf cbuf_t;		/* circular-buffer opaque data type  */
 
-typedef enum {                          /* cbuf option names                 */
-    CBUF_OPT_OVERWRITE
-} cbuf_opt_t;
-
 typedef enum {                          /* CBUF_OPT_OVERWRITE values:        */
     CBUF_NO_DROP,                       /* -never drop data, ENOSPC if full  */
     CBUF_WRAP_ONCE,                     /* -drop data, wrapping at most once */
@@ -77,7 +75,7 @@ typedef enum {                          /* CBUF_OPT_OVERWRITE values:        */
  *  The default overwrite option behavior is CBUF_WRAP_MANY.
  *  Abandoning a cbuf without calling cbuf_destroy() will cause a memory leak.
  */
-extern cbuf_t *cbuf_create(int size);
+extern cbuf_t *cbuf_create(int size, bool overwrite);
 
 /*
  *  Destroys the circular buffer [cb].
@@ -94,12 +92,6 @@ extern int cbuf_free(cbuf_t *cb);
  *  Returns the number of bytes in [cb] available for reading.
  */
 extern int cbuf_used(cbuf_t *cb);
-
-/*
- *  Sets the [name] option for [cb] to [value].
- *  Returns 0 on success, or -1 on error (with errno set).
- */
-extern int cbuf_opt_set(cbuf_t *cb, cbuf_opt_t name, int value);
 
 /*
  *  Reads up to [len] bytes of data from the [src] cbuf into [dstbuf].

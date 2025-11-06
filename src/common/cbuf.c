@@ -107,7 +107,7 @@ static int _cbuf_mutex_is_locked(cbuf_t *cb);
  *  Functions  *
  ***************/
 
-cbuf_t *cbuf_create(int size)
+cbuf_t *cbuf_create(int size, bool overwrite)
 {
     int alloc;
     cbuf_t *cb = xmalloc(sizeof(struct cbuf));
@@ -127,7 +127,7 @@ cbuf_t *cbuf_create(int size)
     slurm_mutex_init(&cb->mutex);
     cb->size = size;
     cb->used = 0;
-    cb->overwrite = CBUF_WRAP_MANY;
+    cb->overwrite = overwrite ? CBUF_WRAP_MANY : CBUF_NO_DROP;
     cb->got_wrap = 0;
     cb->i_in = cb->i_out = cb->i_rep = 0;
 
@@ -203,36 +203,6 @@ int cbuf_used(cbuf_t *cb)
     slurm_mutex_unlock(&cb->mutex);
     return(used);
 }
-
-
-int cbuf_opt_set(cbuf_t *cb, cbuf_opt_t name, int value)
-{
-    int rc = 0;
-
-    assert(cb != NULL);
-
-    slurm_mutex_lock(&cb->mutex);
-    assert(_cbuf_is_valid(cb));
-    if (name == CBUF_OPT_OVERWRITE) {
-        if  (  (value == CBUF_NO_DROP)
-            || (value == CBUF_WRAP_ONCE)
-            || (value == CBUF_WRAP_MANY) ) {
-            cb->overwrite = value;
-        }
-        else {
-            errno = EINVAL;
-            rc = -1;
-        }
-    }
-    else {
-        errno = EINVAL;
-        rc = -1;
-    }
-    assert(_cbuf_is_valid(cb));
-    slurm_mutex_unlock(&cb->mutex);
-    return(rc);
-}
-
 
 int cbuf_read(cbuf_t *src, void *dstbuf, int len)
 {
