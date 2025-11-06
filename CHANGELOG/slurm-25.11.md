@@ -1,3 +1,16 @@
+## Changes in 25.11.0
+
+* namespace/linux - move directory creation for bind mounts to before the init script is called.
+* namespace/linux - add SLURM_JOB_MEM to script environments when able.
+* Fix an error when printing sdiag rpc stats in json format when hostlists strings are too long.
+* Add --no-trunc argument to sdiag. That will output long hostlists that default to being truncated to 80 characters.
+* Add infinite (-1) layer support to HRes mode 3.
+* Fix ESLURM_RETRY_EVAL handling in common_topo_choose_nodes().
+* Fix HRes MODE_3 when using with --gpus.
+* Fix enforcing of MODE_3 with --distribution=arbitrary.
+* slurmrestd - Fix regression that caused rejected HTTP requests to not include an descriptive error message.
+* slurmrestd - Fix regression that caused requests for unknown or unsupported URL paths to not include a descriptive error.
+
 ## Changes in 25.11.0rc2
 
 * Avoid deadlock that occurs on a failed reconfigure when there are issues with slurmdbd connections and AccountingStoreFlags is set with job_script or job_env.
