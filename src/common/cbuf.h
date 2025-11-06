@@ -60,12 +60,6 @@
 
 typedef struct cbuf cbuf_t;		/* circular-buffer opaque data type  */
 
-typedef enum {                          /* CBUF_OPT_OVERWRITE values:        */
-    CBUF_NO_DROP,                       /* -never drop data, ENOSPC if full  */
-    CBUF_WRAP_ONCE,                     /* -drop data, wrapping at most once */
-    CBUF_WRAP_MANY                      /* -drop data, wrapping as needed    */
-} cbuf_overwrite_t;
-
 /***************
  *  Functions  *
  ***************/
