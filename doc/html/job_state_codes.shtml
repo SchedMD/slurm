@@ -72,6 +72,8 @@ For more visibility into the job states and flags, set
 	<a href="prolog_epilog.html">epilog</a> script if present</td></tr>
 <tr><td><code>CONFIGURING</code></td><td>job has been allocated nodes and is
 	waiting for them to boot or reboot</td></tr>
+<tr><td><code>EXPEDITING</code></td><td>the job is immediately eligible for
+	scheduling with the highest possible priority</td></tr>
 <tr><td><code>LAUNCH_FAILED</code></td><td>failed to launch on the chosen
 	node(s); includes <a href="prolog_epilog.html">prolog</a> failure and
 	other failure conditions</td></tr>
