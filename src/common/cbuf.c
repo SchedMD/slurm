@@ -102,7 +102,6 @@ static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src,
 		       int *ndropped);
 
 static int cbuf_grow(cbuf_t *cb, int n);
-static int cbuf_shrink(cbuf_t *cb);
 
 #ifndef NDEBUG
 static int _cbuf_is_valid(cbuf_t *cb);
@@ -577,14 +576,6 @@ static int cbuf_dropper(cbuf_t *cb, int len)
     cb->used -= len;
     cb->i_out = (cb->i_out + len) % (cb->size + 1);
 
-    /*  Attempt to shrink cbuf if possible.
-     */
-    if ((cb->size - cb->used > CBUF_CHUNK) && (cb->size > cb->minsize)) {
-        cbuf_shrink(cb);
-    }
-    /*  Don't call me clumsy, don't call me a fool.
-     *  When things fall down on me, I'm following the rule.
-     */
     return(len);
 }
 
@@ -796,27 +787,6 @@ static int cbuf_grow(cbuf_t *cb, int n)
     }
     assert(_cbuf_is_valid(cb));
     return(cb->size - size_old);
-}
-
-
-static int cbuf_shrink(cbuf_t *cb)
-{
-/*  XXX: DOCUMENT ME.
- */
-    assert(cb != NULL);
-    assert(_cbuf_mutex_is_locked(cb));
-    assert(_cbuf_is_valid(cb));
-
-    if (cb->size == cb->minsize) {
-        return(0);
-    }
-    if (cb->size - cb->used <= CBUF_CHUNK) {
-        return(0);
-    }
-    /*  FIXME: NOT IMPLEMENTED.
-     */
-    assert(_cbuf_is_valid(cb));
-    return(0);
 }
 
 
