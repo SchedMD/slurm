@@ -107,6 +107,10 @@ typedef struct {
 	void *arg;
 } thread_t;
 
+/* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
+strong_alias(threadpool_create, slurm_threadpool_create);
+strong_alias(threadpool_join, slurm_threadpool_join);
+
 extern int threadpool_join(const pthread_t id, const char *caller)
 {
 	int rc = EINVAL;
