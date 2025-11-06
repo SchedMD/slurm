@@ -196,7 +196,7 @@ slurm_delete_partition ( delete_part_msg_t * part_msg )
 /*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
- * RET name of reservation on success (caller must free the memory),
+ * RET name of reservation on success (caller must xfree),
  *	otherwise return NULL and set errno to indicate the error
  */
 char *
@@ -222,7 +222,7 @@ slurm_create_reservation (resv_desc_msg_t * resv_msg)
 	case RESPONSE_CREATE_RESERVATION:
 		resp = (reservation_name_msg_t *) resp_msg.data;
 		if (resp->name)
-			resv_name = strdup(resp->name);
+			resv_name = xstrdup(resp->name);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

@@ -4668,7 +4668,7 @@ extern void slurm_init_resv_desc_msg(resv_desc_msg_t *update_resv_msg);
 /*
  * slurm_create_reservation - create a new reservation, only usable by user root
  * IN resv_msg - description of reservation
- * RET name of reservation on success (caller must free the memory),
+ * RET name of reservation on success (caller must xfree the memory),
  *	otherwise return NULL and set errno to indicate the error
  */
 extern char *slurm_create_reservation(resv_desc_msg_t *resv_msg);

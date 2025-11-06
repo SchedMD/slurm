@@ -506,7 +506,7 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 				temp = g_strdup_printf(
 					"Reservation %s created",
 					res_name);
-				free(res_name);
+				xfree(res_name);
 			} else {
 				temp = g_strdup_printf(
 					"Problem creating reservation: %s",
