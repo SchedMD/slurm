@@ -72,7 +72,11 @@ int main(int argc, char **argv)
 	for (i = 0; i < job_info_msg->record_count; i++) {
 		job_ptr = job_info_msg->job_array + i;
 		printf("job_id:%u name:%s user_id:%u\n",
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
 		       job_ptr->step_id.job_id, job_ptr->name, job_ptr->user_id);
+#else
+		       job_ptr->job_id, job_ptr->name, job_ptr->user_id);
+#endif
 	}
 	slurm_free_job_info_msg(job_info_msg);
 
