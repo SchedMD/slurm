@@ -167,8 +167,11 @@ static int _on_error_callback(lua_State *L)
 	/* msg should always have a string at this point */
 	xassert(msg && msg[0]);
 
-	/* Request Lua generate backtrace with given error message */
-	luaL_traceback(L, L, msg, 1);
+	log_flag(SCRIPT, "%s: Lua@0x%"PRIxPTR" failed: %s",
+		 __func__, (uintptr_t) L, msg);
+
+	/* Request Lua generate backtrace */
+	luaL_traceback(L, L, NULL, 1);
 
 	if ((msg = lua_tostring(L, -1))) {
 		char *save_ptr = NULL, *token = NULL, *str = NULL;
