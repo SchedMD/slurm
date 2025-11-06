@@ -4131,6 +4131,7 @@ def wait_for_job_state(
                     )
 
             if not xfail:
+                log_load_avg()
                 if fatal:
                     pytest.fail(message)
                 else:
