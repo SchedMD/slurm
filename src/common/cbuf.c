@@ -69,9 +69,6 @@ struct cbuf {
 
     pthread_mutex_t     mutex;          /* mutex to protect access to cbuf   */
 
-    int                 alloc;          /* num bytes xmalloc'd/xrealloc'd      */
-    int                 minsize;        /* min bytes of data to allocate     */
-    int                 maxsize;        /* max bytes of data to allocate     */
     int                 size;           /* num bytes of data allocated       */
     int                 used;           /* num bytes of unread data          */
     cbuf_overwrite_t    overwrite;      /* overwrite option behavior         */
@@ -101,8 +98,6 @@ static int cbuf_reader(cbuf_t *src, int len, cbuf_iof putf, void *dst);
 static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src,
 		       int *ndropped);
 
-static int cbuf_grow(cbuf_t *cb, int n);
-
 #ifndef NDEBUG
 static int _cbuf_is_valid(cbuf_t *cb);
 static int _cbuf_mutex_is_locked(cbuf_t *cb);
@@ -114,30 +109,23 @@ static int _cbuf_mutex_is_locked(cbuf_t *cb);
 
 cbuf_t *cbuf_create(int minsize, int maxsize)
 {
-    cbuf_t *cb;
-
-    if (minsize <= 0) {
-        errno = EINVAL;
-        return(NULL);
-    }
-    cb = xmalloc(sizeof(struct cbuf));
+    int alloc;
+    cbuf_t *cb = xmalloc(sizeof(struct cbuf));
 
     /*  Circular buffer is empty when (i_in == i_out),
      *    so reserve 1 byte for this sentinel.
      */
-    cb->alloc = minsize + 1;
+    alloc = maxsize + 1;
 #ifndef NDEBUG
     /*  Reserve space for the magic cookies used to protect the
      *    cbuf data[] array from underflow and overflow.
      */
-    cb->alloc += 2 * CBUF_MAGIC_LEN;
+    alloc += 2 * CBUF_MAGIC_LEN;
 #endif /* !NDEBUG */
 
-    cb->data = xmalloc(cb->alloc);
+    cb->data = xmalloc(alloc);
     slurm_mutex_init(&cb->mutex);
-    cb->minsize = minsize;
-    cb->maxsize = (maxsize > minsize) ? maxsize : minsize;
-    cb->size = minsize;
+    cb->size = maxsize;
     cb->used = 0;
     cb->overwrite = CBUF_WRAP_MANY;
     cb->got_wrap = 0;
@@ -198,7 +186,7 @@ int cbuf_free(cbuf_t *cb)
     assert(cb != NULL);
     slurm_mutex_lock(&cb->mutex);
     assert(_cbuf_is_valid(cb));
-    nfree = cb->maxsize - cb->used;
+    nfree = cb->size - cb->used;
     slurm_mutex_unlock(&cb->mutex);
     return(nfree);
 }
@@ -656,9 +644,6 @@ static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src, int *ndro
     /*  Attempt to grow dst cbuf if necessary.
      */
     nfree = dst->size - dst->used;
-    if ((len > nfree) && (dst->size < dst->maxsize)) {
-        nfree += cbuf_grow(dst, len - nfree);
-    }
     /*  Compute number of bytes to write to dst cbuf.
      */
     if (dst->overwrite == CBUF_NO_DROP) {
@@ -721,75 +706,6 @@ static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src, int *ndro
 }
 
 
-static int cbuf_grow(cbuf_t *cb, int n)
-{
-/*  Attempts to grow the circular buffer [cb] by at least [n] bytes.
- *  Returns the number of bytes by which the buffer has grown (which may be
- *    less-than, equal-to, or greater-than the number of bytes requested).
- */
-    unsigned char *data;
-    int size_old, size_meta;
-    int m;
-
-    assert(cb != NULL);
-    assert(n > 0);
-    assert(_cbuf_mutex_is_locked(cb));
-
-    if (cb->size == cb->maxsize) {
-        return(0);
-    }
-    size_old = cb->size;
-    size_meta = cb->alloc - cb->size;   /* size of sentinel & magic cookies */
-    assert(size_meta > 0);
-
-    /*  Attempt to grow data buffer by multiples of the chunk-size.
-     */
-    m = cb->alloc + n;
-    m = m + (CBUF_CHUNK - (m % CBUF_CHUNK));
-    m = MIN(m, (cb->maxsize + size_meta));
-    assert(m > cb->alloc);
-
-    data = cb->data;
-#ifndef NDEBUG
-    data -= CBUF_MAGIC_LEN;             /* jump back to what xmalloc returned */
-#endif /* !NDEBUG */
-
-    data = xrealloc(data, m);
-    cb->data = data;
-    cb->alloc = m;
-    cb->size = m - size_meta;
-
-#ifndef NDEBUG
-    /*  A round cookie with one bite out of it looks like a C.
-     *  The underflow cookie will have been copied by realloc() if needed.
-     *    But the overflow cookie must be rebaked.
-     *  Must use memcpy since overflow cookie may not be word-aligned.
-     */
-    cb->data += CBUF_MAGIC_LEN;         /* jump forward past underflow magic */
-    memcpy(cb->data + cb->size + 1, (void *) &cb->magic, CBUF_MAGIC_LEN);
-#endif /* !NDEBUG */
-
-    /*  The memory containing replay and unread data must be contiguous modulo
-     *    the buffer size.  Additional memory must be inserted between where
-     *    new data is written in (i_in) and where replay data starts (i_rep).
-     *  If replay data wraps-around the old buffer, move it to the new end
-     *    of the buffer so it wraps-around in the same manner.
-     */
-    if (cb->i_rep > cb->i_in) {
-        n = (size_old + 1) - cb->i_rep;
-        m = (cb->size + 1) - n;
-        memmove(cb->data + m, cb->data + cb->i_rep, n);
-
-        if (cb->i_out >= cb->i_rep) {
-            cb->i_out += m - cb->i_rep;
-        }
-        cb->i_rep = m;
-    }
-    assert(_cbuf_is_valid(cb));
-    return(cb->size - size_old);
-}
-
-
 #ifndef NDEBUG
 static int _cbuf_mutex_is_locked(cbuf_t *cb)
 {
@@ -821,13 +737,7 @@ static int _cbuf_is_valid(cbuf_t *cb)
     assert(memcmp(cb->data + cb->size + 1,
         (void *) &cb->magic, CBUF_MAGIC_LEN) == 0);
 
-    assert(cb->alloc > 0);
-    assert(cb->alloc > cb->size);
     assert(cb->size > 0);
-    assert(cb->size >= cb->minsize);
-    assert(cb->size <= cb->maxsize);
-    assert(cb->minsize > 0);
-    assert(cb->maxsize > 0);
     assert(cb->used >= 0);
     assert(cb->used <= cb->size);
     assert(cb->overwrite == CBUF_NO_DROP
