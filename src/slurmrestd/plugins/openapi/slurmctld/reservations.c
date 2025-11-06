@@ -84,7 +84,7 @@ static int _create_resv(resv_desc_msg_t *resv_msg, openapi_ctxt_t *ctxt)
 		return rc;
 	}
 
-	free(new_res_name);
+	xfree(new_res_name);
 	return rc;
 }
 

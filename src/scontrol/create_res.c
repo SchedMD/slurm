@@ -436,7 +436,7 @@ scontrol_create_res(int argc, char **argv)
 		ret = errno;
 	} else {
 		printf("Reservation created: %s\n", new_res_name);
-		free(new_res_name);
+		xfree(new_res_name);
 	}
 
 SCONTROL_CREATE_RES_CLEANUP:
