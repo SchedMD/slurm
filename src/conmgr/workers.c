@@ -33,13 +33,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "config.h"
-
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
-#include <pthread.h>
+#include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
 #include "src/common/probes.h"
@@ -165,11 +159,27 @@ static probe_status_t _probe(probe_log_t *log)
 
 static void _create_worker(const int i)
 {
+	char title[PRCTL_BUF_BYTES] = "INVALID";
+	const int id = (i + 1);
+	int rc = EINVAL;
 	worker_t *worker = xmalloc(sizeof(*worker));
 	worker->magic = MAGIC_WORKER;
-	worker->id = i + 1;
+	worker->id = id;
 
-	slurm_thread_create(&worker->tid, _worker, worker);
+	/*
+	 * Avoid compiler warnings for id not fitting in PRCTL_BUF_BYTES by
+	 * using %hu instead of %d
+	 */
+	xassert(id < UINT16_MAX);
+	(void) snprintf(title, sizeof(title), "worker[%hu]",
+			(unsigned short) id);
+
+	if ((rc = threadpool_create(_worker, XSTRINGIFY(_worker), worker, true,
+							title, &worker->tid,
+							__func__)))
+		fatal("%s: unable to create new thread: %s",
+		      __func__, slurm_strerror(rc));
+
 	_check_magic_worker(worker);
 
 	list_append(mgr.workers.workers, worker);
@@ -254,28 +264,12 @@ extern void workers_fini(void)
 static void *_worker(void *arg)
 {
 	worker_t *worker = arg;
-	_check_magic_worker(worker);
-
-#if HAVE_SYS_PRCTL_H
-	{
-		char title[PRCTL_BUF_BYTES];
-		int id;
-
-		slurm_mutex_lock(&mgr.mutex);
-		id = worker->id;
-		slurm_mutex_unlock(&mgr.mutex);
-
-		snprintf(title, sizeof(title), "worker[%d]", id);
-
-		if (prctl(PR_SET_NAME, title, NULL, NULL, NULL)) {
-			error("%s: cannot set process name to %s %m",
-			      __func__, title);
-		}
-	}
-#endif
-
 
 	slurm_mutex_lock(&mgr.mutex);
+
+	_check_magic_worker(worker);
+	xassert(worker->tid == pthread_self());
+
 	mgr.workers.total++;
 	/*
 	 * mgr.mutex should be locked at the beginning of this loop. It should
