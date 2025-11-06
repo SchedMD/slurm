@@ -41,8 +41,10 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
-#include "src/slurmctld/slurmctld.h"
+
 #include "slurm/slurm_errno.h"
+
+#include "src/slurmctld/slurmctld.h"
 
 #ifndef LUA_OK
 /* Define LUA_OK if Lua is <5.2 */
