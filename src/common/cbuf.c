@@ -71,7 +71,7 @@ struct cbuf {
 
     int                 size;           /* num bytes of data allocated       */
     int                 used;           /* num bytes of unread data          */
-    cbuf_overwrite_t    overwrite;      /* overwrite option behavior         */
+    bool overwrite;                     /* overwrite option behavior         */
     int                 got_wrap;       /* true if data has wrapped          */
     int                 i_in;           /* index to where data is written in */
     int                 i_out;          /* index to where data is read out   */
@@ -127,7 +127,7 @@ cbuf_t *cbuf_create(int size, bool overwrite)
     slurm_mutex_init(&cb->mutex);
     cb->size = size;
     cb->used = 0;
-    cb->overwrite = overwrite ? CBUF_WRAP_MANY : CBUF_NO_DROP;
+    cb->overwrite = overwrite;
     cb->got_wrap = 0;
     cb->i_in = cb->i_out = cb->i_rep = 0;
 
@@ -616,15 +616,12 @@ static int cbuf_writer(cbuf_t *dst, int len, cbuf_iof getf, void *src, int *ndro
     nfree = dst->size - dst->used;
     /*  Compute number of bytes to write to dst cbuf.
      */
-    if (dst->overwrite == CBUF_NO_DROP) {
+    if (!dst->overwrite) {
         len = MIN(len, dst->size - dst->used);
         if (len == 0) {
             errno = ENOSPC;
             return(-1);
         }
-    }
-    else if (dst->overwrite == CBUF_WRAP_ONCE) {
-        len = MIN(len, dst->size);
     }
     /*  Copy data from src obj to dst cbuf.  Do the cbuf hokey-pokey and
      *    wrap-around the buffer as needed.  Break out if getf() returns
@@ -710,9 +707,6 @@ static int _cbuf_is_valid(cbuf_t *cb)
     assert(cb->size > 0);
     assert(cb->used >= 0);
     assert(cb->used <= cb->size);
-    assert(cb->overwrite == CBUF_NO_DROP
-        || cb->overwrite == CBUF_WRAP_ONCE
-        || cb->overwrite == CBUF_WRAP_MANY);
     assert(cb->got_wrap || !cb->i_rep); /* i_rep = 0 if data has not wrapped */
     assert(cb->i_in >= 0);
     assert(cb->i_in <= cb->size);
