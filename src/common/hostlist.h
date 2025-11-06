@@ -194,6 +194,10 @@ int hostlist_push_host(hostlist_t *hl, const char *host);
  */
 int hostlist_push_list(hostlist_t *hl1, hostlist_t *hl2);
 
+/*
+ * Remove the last host push onto the list.
+ */
+extern void hostlist_drop(hostlist_t *hl);
 
 /* hostlist_pop():
  *

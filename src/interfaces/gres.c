@@ -2194,7 +2194,7 @@ static void _set_file_subset(gres_slurmd_conf_t *gres_slurmd_conf,
 
 	/* Remove all but the first entries */
 	for (int i = old_count; i > new_count; --i) {
-		free(hostlist_pop(hl));
+		hostlist_drop(hl);
 	}
 
 	debug3("%s: Truncating %s:%s File from (%ld) %s", __func__,

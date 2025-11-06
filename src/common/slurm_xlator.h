@@ -142,6 +142,7 @@
 #define	hostlist_iterator_reset	slurm_hostlist_iterator_reset
 #define	hostlist_next		slurm_hostlist_next
 #define	hostlist_nth		slurm_hostlist_nth
+#define hostlist_drop slurm_hostlist_drop
 #define	hostlist_pop            slurm_hostlist_pop
 #define	hostlist_push		slurm_hostlist_push
 #define	hostlist_push_host_dims	slurm_hostlist_push_host_dims
