@@ -2282,7 +2282,7 @@ silently ignored. Only root, \fISlurmUser\fR or admins can reboot nodes.
 .IP
 
 .TP
-\fB\-\-requeue\fR
+\fB\-\-requeue\fR[=\fIexpedited\fR]
 Specifies that the batch job should be eligible for requeuing.
 The job may be requeued explicitly by a system administrator, after node
 failure, or upon preemption by a higher priority job.
@@ -2290,6 +2290,11 @@ When a job is requeued, the batch script is initiated from its beginning with
 the same job ID. Also see the \fB\-\-no\-requeue\fR option.
 The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
+
+The optional \fBexpedited\fR parameter will request that the job be immediately
+eligible to start again, and be scheduled with the highest possible priority.
+This will only happen if expedited requeues are allowed globally with the
+\fBSlurmctldParameters=enable_expedited_requeue\fR in \fIslurm.conf\fR.
 .IP
 
 .TP
