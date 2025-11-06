@@ -721,8 +721,7 @@ static eio_obj_t *_create_task_out_eio(int fd, uint16_t type,
 	out->type = type;
 	out->gtaskid = task->gtid;
 	out->ltaskid = task->id;
-	out->buf = cbuf_create(SLURM_IO_MAX_MSG_LEN,
-			       (SLURM_IO_MAX_MSG_LEN * 4));
+	out->buf = cbuf_create(SLURM_IO_MAX_MSG_LEN * 4);
 	out->eof = false;
 	out->eof_msg_sent = false;
 	if (cbuf_opt_set(out->buf, CBUF_OPT_OVERWRITE, CBUF_NO_DROP) == -1)

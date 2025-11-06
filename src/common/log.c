@@ -342,8 +342,8 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	}
 
 	if (log->opt.buffered) {
-		log->buf  = cbuf_create(128, 8192);
-		log->fbuf = cbuf_create(128, 8192);
+		log->buf = cbuf_create(8192);
+		log->fbuf = cbuf_create(8192);
 	}
 
 	if (log->opt.syslog_level > LOG_LEVEL_QUIET) {
@@ -436,8 +436,8 @@ _sched_log_init(char *prog, log_options_t opt, log_facility_t fac,
 	}
 
 	if (sched_log->opt.buffered) {
-		sched_log->buf  = cbuf_create(128, 8192);
-		sched_log->fbuf = cbuf_create(128, 8192);
+		sched_log->buf = cbuf_create(8192);
+		sched_log->fbuf = cbuf_create(8192);
 	}
 
 	if (sched_log->opt.syslog_level > LOG_LEVEL_QUIET)

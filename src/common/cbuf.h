@@ -73,14 +73,11 @@ typedef enum {                          /* CBUF_OPT_OVERWRITE values:        */
  ***************/
 
 /*
- *  Creates and returns a new circular buffer, or lsd_nomem_error() on failure.
- *  The buffer is initially allocated to hold [minsize] bytes of data,
- *    but can attempt to grow up to [maxsize] bytes before overwriting data.
- *  Set minsize = maxsize to prevent cbuf from dynamically resizing itself.
+ *  Creates and returns a new circular buffer.
  *  The default overwrite option behavior is CBUF_WRAP_MANY.
  *  Abandoning a cbuf without calling cbuf_destroy() will cause a memory leak.
  */
-extern cbuf_t *cbuf_create(int minsize, int maxsize);
+extern cbuf_t *cbuf_create(int size);
 
 /*
  *  Destroys the circular buffer [cb].

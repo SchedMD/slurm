@@ -107,7 +107,7 @@ static int _cbuf_mutex_is_locked(cbuf_t *cb);
  *  Functions  *
  ***************/
 
-cbuf_t *cbuf_create(int minsize, int maxsize)
+cbuf_t *cbuf_create(int size)
 {
     int alloc;
     cbuf_t *cb = xmalloc(sizeof(struct cbuf));
@@ -115,7 +115,7 @@ cbuf_t *cbuf_create(int minsize, int maxsize)
     /*  Circular buffer is empty when (i_in == i_out),
      *    so reserve 1 byte for this sentinel.
      */
-    alloc = maxsize + 1;
+    alloc = size + 1;
 #ifndef NDEBUG
     /*  Reserve space for the magic cookies used to protect the
      *    cbuf data[] array from underflow and overflow.
@@ -125,7 +125,7 @@ cbuf_t *cbuf_create(int minsize, int maxsize)
 
     cb->data = xmalloc(alloc);
     slurm_mutex_init(&cb->mutex);
-    cb->size = maxsize;
+    cb->size = size;
     cb->used = 0;
     cb->overwrite = CBUF_WRAP_MANY;
     cb->got_wrap = 0;
