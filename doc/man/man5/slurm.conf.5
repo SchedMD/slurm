@@ -5282,6 +5282,13 @@ Glob patterns (See \fBglob\fR (7)) are not supported.
 .IP
 
 .TP
+\fBenable_expedited_requeue\fR
+Allow jobs to request an expedited requeue on certain events. An expedited
+requeue ensures that the job is immediately eligible to run and gets placed at
+the top of the queue.
+.IP
+
+.TP
 \fBidle_on_node_suspend\fR
 Mark nodes as idle, regardless of current state, when suspending nodes with
 \fBSuspendProgram\fR so that nodes will be eligible to be resumed at a later
