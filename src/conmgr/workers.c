@@ -163,6 +163,18 @@ static probe_status_t _probe(probe_log_t *log)
 	return status;
 }
 
+static void _create_worker(const int i)
+{
+	worker_t *worker = xmalloc(sizeof(*worker));
+	worker->magic = MAGIC_WORKER;
+	worker->id = i + 1;
+
+	slurm_thread_create(&worker->tid, _worker, worker);
+	_check_magic_worker(worker);
+
+	list_append(mgr.workers.workers, worker);
+}
+
 extern void workers_init(int count, int default_count)
 {
 	const int detected_cpus = _detect_cpu_count();
@@ -220,16 +232,8 @@ extern void workers_init(int count, int default_count)
 
 	_check_magic_workers();
 
-	for (int i = 0; i < count; i++) {
-		worker_t *worker = xmalloc(sizeof(*worker));
-		worker->magic = MAGIC_WORKER;
-		worker->id = i + 1;
-
-		slurm_thread_create(&worker->tid, _worker, worker);
-		_check_magic_worker(worker);
-
-		list_append(mgr.workers.workers, worker);
-	}
+	for (int i = 0; i < count; i++)
+		_create_worker(i);
 
 	probe_register("conmgr->workers", _probe);
 }
