@@ -48,11 +48,20 @@
 typedef void *(*threadpool_func_t)(void *arg);
 
 /*
+ * From man prctl:
+ *	If the length of the  string, including the terminating null byte,
+ *	exceeds 16 bytes, the string is silently truncated.
+ */
+#define PRCTL_BUF_BYTES 17
+
+/*
  * Create new pthread
  * See pthread_create() for use cases.
  * IN func - function for thread to call
  * IN func_name - function name (for logging)
- * IN thread_name - thread name (assigned to thread via prctl())
+ * IN thread_name - thread or process name
+ *	thread_name must be less than strlen(PRCTL_BUF_BYTES) or it will be
+ *	silently truncated by prctl().
  * IN arg - arg to pass to function
  * IN detached
  *	True: create detached thread.

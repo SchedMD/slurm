@@ -56,13 +56,6 @@
 #define CPU_THREAD_LOW 2
 
 /*
- * From man prctl:
- *	If the length of the  string, including the terminating null byte,
- *	exceeds 16 bytes, the string is silently truncated.
- */
-#define PRCTL_BUF_BYTES 17
-
-/*
  * Amount of time to sleep while polling for all threads to have started up
  * during shutdown
  */
