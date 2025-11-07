@@ -42,6 +42,7 @@
 
 #include "preempt.h"
 #include "src/common/log.h"
+#include "src/common/parse_value.h"
 #include "src/common/plugrack.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
@@ -257,9 +258,13 @@ extern int preempt_g_init(void)
 		youngest_order = true;
 
 	min_exempt_priority = NO_VAL;
-	if ((temp_str = xstrcasestr(slurm_conf.preempt_params,
-				    "min_exempt_priority=")))
-		retval = parse_uint32((temp_str + 20), &min_exempt_priority);
+	if ((temp_str = conf_get_opt_str(slurm_conf.preempt_params,
+					 "min_exempt_priority="))) {
+		if (s_p_handle_uint32(&min_exempt_priority,
+				      "min_exempt_priority", temp_str))
+			retval = SLURM_ERROR;
+		xfree(temp_str);
+	}
 	plugin_inited = PLUGIN_INITED;
 done:
 	slurm_mutex_unlock(&g_context_lock);
