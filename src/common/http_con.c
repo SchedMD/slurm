@@ -753,14 +753,13 @@ cleanup:
 
 static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	http_con_t *hcon = arg;
 	void *hcon_arg = hcon->arg;
 	conmgr_fd_ref_t *hcon_con = NULL;
 	const http_con_server_events_t *hcon_events = hcon->events;
 
 	xassert(hcon->magic == MAGIC);
-	xassert(conmgr_fd_get_ref(hcon->con) == con);
+	xassert(conmgr_fd_get_ref(hcon->con) == conmgr_args.con);
 
 	/*
 	 * Preserve conmgr connection reference to ensure that the connection is
