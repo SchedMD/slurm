@@ -38,6 +38,40 @@ from optparse import OptionValueError
 from subprocess import Popen
 
 
+def wait_load_avg(
+    threshold=1.0, incr_threshold=0.1, incr_period=60, max_timeout=600, poll_interval=10
+):
+    """
+    This functions waits until the normalized load of the system is lower than threshold.
+    After each incr_period of seconds the threshold will be incremented by incr_threshold.
+    After max_timeout secionds, function will return False.
+    Otherwise once the load is below the thresdhold, it will return True.
+    """
+    cpu_count = os.cpu_count()
+    start_timeout = time.time()
+    start_incr = time.time()
+    while True:
+        load1, load5, load15 = tuple(x / cpu_count for x in os.getloadavg())
+        if load1 < threshold:
+            break
+
+        print(
+            f"System too busy: {(load1*100):.0f}% / {(load5*100):.0f}% / {(load15*100):.0f}% (Max allowed: {(threshold*100):.0f}%)"
+        )
+        now = time.time()
+
+        if (now - start_timeout) > max_timeout:
+            return False
+
+        if (now - start_incr) > incr_period:
+            start_incr = time.time()
+            threshold += incr_threshold
+
+        time.sleep(poll_interval)
+
+    return True
+
+
 def main(argv=None):
     # "tests" is a list containing tuples of length 3 of the form
     # (test major number, test minor number, test filename)
@@ -94,6 +128,14 @@ def main(argv=None):
         type="string",
         help="write json result to specified file name",
     )
+    parser.add_option(
+        "-w",
+        "--wait-load",
+        action="store_true",
+        dest="wait_load",
+        default=True,
+        help="before starting each test, wait until the system load is low enough",
+    )
 
     (options, args) = parser.parse_args(args=argv)
 
@@ -147,6 +189,8 @@ def main(argv=None):
     for test in tests:
         if begin[0] > test[0] or (begin[0] == test[0] and begin[1] > test[1]):
             continue
+        if options.wait_load:
+            wait_load_avg()
         test_id = f"{test[0]}.{test[1]}"
         sys.stdout.write(f"Running test {test_id} ")
         sys.stdout.flush()
