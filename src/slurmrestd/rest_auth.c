@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -161,7 +162,7 @@ extern int init_rest_auth(bool become_user,
 	return rc;
 }
 
-extern int rest_authenticate_http_request(on_http_request_args_t *args)
+static int _auth(on_http_request_args_t *args)
 {
 	int rc = ESLURM_AUTH_CRED_INVALID;
 	rest_auth_context_t *context = rest_auth_g_new();
@@ -194,6 +195,12 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 
 	FREE_NULL_REST_AUTH(context);
 	return rc;
+}
+
+extern int rest_authenticate_http_request(on_http_request_args_t *args)
+{
+	/* Force return to be well defined */
+	return (_auth(args) ? ESLURM_REST_AUTH_FAIL : SLURM_SUCCESS);
 }
 
 extern rest_auth_context_t *rest_auth_g_new(void)
