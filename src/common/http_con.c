@@ -690,7 +690,6 @@ static int _on_content_complete(void *arg)
 
 extern int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	http_con_t *hcon = arg;
 	static const http_parser_callbacks_t callbacks = {
 		.on_request = _on_request,
@@ -704,7 +703,7 @@ extern int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 	buf_t *buffer = NULL;
 
 	xassert(hcon->magic == MAGIC);
-	xassert(conmgr_fd_get_ref(hcon->con) == con);
+	xassert(conmgr_fd_get_ref(hcon->con) == conmgr_args.con);
 
 	if (!hcon->parser && (rc = http_parser_g_new_parse_request(
 				      conmgr_con_get_name(hcon->con),
