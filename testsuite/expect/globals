@@ -7332,6 +7332,21 @@ proc _test_fini { status } {
 	if {$status != $STATUS_FAIL || $testsuite_cleanup_on_failure} {
 		_test_cleanup
 	}
+
+	# If failed, print the normalized load average to help troubleshooting
+	if {$status > 0} {
+		set cpu_count [string trim [run_command_output -nolog "nproc"]]
+		set output [run_command_output -nolog "cat /proc/loadavg"]
+		if {[scan $output "%f %f %f" load1 load5 load15] != 3} {
+			log_warn "Cannot read load average from: $output"
+		} else {
+			set load1 [expr {int($load1 * 100 / $cpu_count)}]
+			set load5 [expr {int($load5 * 100 / $cpu_count)}]
+			set load15 [expr {int($load15 * 100 / $cpu_count)}]
+			log_debug "Load Average: ${load1}% / ${load5}% / ${load15}%"
+		}
+	}
+
 	_print_summary $status $completed
 
 	__exit $status
