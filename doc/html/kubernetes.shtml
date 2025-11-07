@@ -32,12 +32,12 @@ area.</p>
 
 <ul>
   <li>
-    <a href="SC23/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/vs
+    <a href="https://slurm.schedmd.com/SC23/Slurm-and-or-vs-Kubernetes.pdf">Slurm and/or/vs
     Kubernetes</a>, Tim Wickberg, SchedMD (SC23, November 2023)
   </li>
 
   <li>
-    <a href="SLUG23/NERSC-SLUG23.pdf">Never use Slurm HA again: Solve all
+    <a href="https://slurm.schedmd.com/SLUG23/NERSC-SLUG23.pdf">Never use Slurm HA again: Solve all
     your problems with Kubernetes</a>, Chris Samuel and Doug Jacobsen, NERSC
     (SLUG23, November 2023)
   </li>
