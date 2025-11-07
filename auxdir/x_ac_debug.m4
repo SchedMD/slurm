@@ -140,4 +140,11 @@ AC_DEFUN([X_AC_DEBUG], [
   if test "$x_ac_optimizations" = no; then
     test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
   fi
+
+  # Be able to pass in flags later in the configure process. e.g. Using
+  # CFLAGS=-Werror causes problems because configure expects some things to
+  # not fail.
+  if test -n "$SLURM_CFLAGS"; then
+    CFLAGS="$CFLAGS $SLURM_CFLAGS"
+  fi
 ])
