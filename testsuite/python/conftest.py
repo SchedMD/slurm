@@ -161,6 +161,15 @@ def update_tmp_path_exec_permissions(path):
             os.chmod(subdir, 0o777)
 
 
+def log_load_avg():
+    """Print the system normalized load average"""
+    load1, load5, load15 = os.getloadavg()
+    cpu_count = os.cpu_count()
+    logging.debug(
+        f"Load Average: {(load1*100/cpu_count):.0f}% / {(load5*100/cpu_count):.0f}% / {(load15*100/cpu_count):.0f}%"
+    )
+
+
 @pytest.fixture(scope="module", autouse=True)
 def module_setup(request, tmp_path_factory):
     atf.properties["slurm-started"] = False
@@ -230,6 +239,9 @@ def module_setup(request, tmp_path_factory):
         atf.properties["nodes"].append(node_name)
         atf.run_command(f"sudo mkdir -p {spool_dir}", fatal=True, quiet=True)
         atf.run_command(f"sudo mkdir -p {tmpfs_dir}", fatal=True, quiet=True)
+
+    # Print the normalized load average before starting the test
+    log_load_avg()
 
     yield
 
@@ -317,6 +329,9 @@ def module_teardown():
     os.environ.clear()
     os.environ.update(atf.properties["orig-environment"])
     sys.path = atf.properties["orig-pypath"]
+
+    # Print the normalized load average once the test is over
+    log_load_avg()
 
     if failures:
         pytest.fail(failures[0])

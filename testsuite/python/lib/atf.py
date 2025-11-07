@@ -478,7 +478,6 @@ def repeat_until(
         time.sleep(poll_interval)
 
     if not xfail and not condition_met:
-        log_load_avg()
         if fatal:
             pytest.fail(f"Condition was not met within the {timeout} second timeout")
         else:
@@ -591,15 +590,6 @@ def is_slurmctld_running(quiet=False):
     return False
 
 
-def log_load_avg():
-    """Print system load average"""
-    load1, load5, load15 = os.getloadavg()
-    cpu_count = os.cpu_count()
-    logging.debug(
-        f"Load Average: {(load1*100/cpu_count):.0f}% / {(load5*100/cpu_count):.0f}% / {(load15*100/cpu_count):.0f}%"
-    )
-
-
 def gcore(component, pid=None, sbin=True):
     """Generates a gcore file for all pids running of a given Slurm component.
 
@@ -614,9 +604,6 @@ def gcore(component, pid=None, sbin=True):
     Returns:
         None
     """
-    # Log how load is the system to help troubleshoot issues
-    log_load_avg()
-
     # Ensure that slurm-logs-dir is set.
     if "slurm-logs-dir" not in properties:
         properties["slurm-logs-dir"] = os.path.dirname(
@@ -4131,7 +4118,6 @@ def wait_for_job_state(
                     )
 
             if not xfail:
-                log_load_avg()
                 if fatal:
                     pytest.fail(message)
                 else:
