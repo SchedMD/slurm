@@ -268,10 +268,9 @@ static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	int fd;
 
-	xassert(arg == con);
+	xassert(arg == conmgr_args.con);
 
 	slurm_rwlock_wrlock(&lock);
 
@@ -281,7 +280,7 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(fd != -1);
 	fd_close(&fd);
 
-	xassert(con == signal_con);
+	xassert(conmgr_args.con == signal_con);
 	signal_con = NULL;
 
 	slurm_rwlock_unlock(&lock);
