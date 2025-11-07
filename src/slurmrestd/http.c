@@ -64,14 +64,7 @@ static http_con_t *_ctxt_get_hcon(http_context_t *ctxt)
 extern int send_http_response(http_context_t *context,
 			      const send_http_response_args_t *args)
 {
-	/* Fake having a shadow buffer for body */
-	buf_t buffer = {
-		.magic = BUF_MAGIC,
-		.head = (void *) args->body,
-		.size = args->body_length,
-		.processed = args->body_length,
-		.shadow = true,
-	};
+	buf_t buffer = SHADOW_BUF_INITIALIZER(args->body, args->body_length);
 
 	xassert(context->magic == MAGIC);
 
