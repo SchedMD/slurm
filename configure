@@ -28912,6 +28912,13 @@ printf "%s\n" "no" >&6; }
     test "$GCC" = yes && CFLAGS="$CFLAGS -O0"
   fi
 
+  # Be able to pass in flags later in the configure process. e.g. Using
+  # CFLAGS=-Werror causes problems because configure expects some things to
+  # not fail.
+  if test -n "$SLURM_CFLAGS"; then
+    CFLAGS="$CFLAGS $SLURM_CFLAGS"
+  fi
+
 
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for slurmctld default port" >&5
