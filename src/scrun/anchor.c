@@ -1356,11 +1356,10 @@ static void *_on_startup_con(conmgr_callback_args_t conmgr_args, void *arg)
 
 static void _on_startup_con_fin(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	conmgr_fd_t *con = conmgr_args.con;
 	xassert(arg == &state);
 
 	write_lock_state();
-	xassert(state.startup_con == con);
+	xassert(state.startup_con == conmgr_args.con);
 	debug4("%s: [%s] create command parent notified of start",
 	       __func__, conmgr_fd_get_name(state.startup_con));
 	xassert(state.startup_con);
