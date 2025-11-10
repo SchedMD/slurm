@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  acct_gather.h - generic interface needed for some acct_gather plugins
+ *  acct_gather.h - interface for acct_gather plugins
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *

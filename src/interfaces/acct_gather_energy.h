@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  acct_gather_energy.h - implementation-independent job energy
- *  accounting plugin definitions
+ *  acct_gather_energy.h - job energy accounting plugin definitions
  *****************************************************************************
  *  Written by Bull-HN-PHX/d.rusak,
  *  Copyright (C) 2012 Bull-HN-PHX

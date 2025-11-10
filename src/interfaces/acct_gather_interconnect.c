@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather_interconnect.c - implementation-independent job interconnect
- *  accounting plugin definitions
+ *  acct_gather_interconnect.c - job interconnect accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull.
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>

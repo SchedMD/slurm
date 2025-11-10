@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_jobacct_gather.c - implementation-independent job accounting logging
+ *  jobacct_gather.c - implementation-independent job accounting logging
  *  functions
  *****************************************************************************
  *  Copyright (C) 2003-2007/ The Regents of the University of California.

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  metrics plugin interface header
+ *  metrics.h - metrics plugin interface header
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *

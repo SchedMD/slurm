@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  serializer plugin interface
+ *  serializer.c - serializer plugin interface
  ******************************************************************************
  *  Copyright (C) SchedMD LLC.
  *

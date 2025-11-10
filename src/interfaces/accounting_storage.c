@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_accounting_storage.c - account storage plugin wrapper.
+ *  accounting_storage.c - account storage plugin wrapper.
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.

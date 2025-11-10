@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_priority.c - Define priority plugin functions
+ *  priority.c - Define priority plugin functions
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
