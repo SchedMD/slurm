@@ -888,7 +888,7 @@ extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 		if (!ns_l_enabled[i].enabled)
 			continue;
 
-		if (!ns_l_enabled[i].fd) {
+		if (ns_l_enabled[i].fd == -1) {
 			ns_l_enabled[i].fd =
 				open(ns_l_enabled[i].path, O_RDONLY);
 			if (ns_l_enabled[i].fd == -1) {
