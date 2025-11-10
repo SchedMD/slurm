@@ -36,4 +36,50 @@
 #ifndef _INTERFACES_HTTP_AUTH_H
 #define _INTERFACES_HTTP_AUTH_H
 
+#include "slurm/slurm.h"
+
+#include "src/common/http_con.h"
+#include "src/common/plugrack.h"
+
+typedef enum {
+	HTTP_AUTH_PLUGIN_INVALID = 0,
+	HTTP_AUTH_PLUGIN_JWT = 100,
+	HTTP_AUTH_PLUGIN_LOCAL = 101,
+	HTTP_AUTH_PLUGIN_INVALID_MAX,
+	HTTP_AUTH_PLUGIN_ANY = INFINITE16,
+} http_auth_plugin_id_t;
+
+extern int http_auth_g_init(const char *plugin_type, plugrack_foreach_t listf);
+extern void http_auth_g_fini(void);
+
+/*
+ * Authenticate HTTP connection
+ * IN plugin_id - Authenticate using given plugin or HTTP_AUTH_PLUGIN_ANY for
+ *	any matching plugin
+ * IN uid_ptr - Pointer to populate when authenticated to given UID or set to
+ *	SLURM_AUTH_NOBODY on failure
+ * IN name - Connection name for logging
+ * IN request - HTTP connection request state
+ * RET SLURM_SUCCESS on successful authentication or error
+ */
+extern int http_auth_g_authenticate(http_auth_plugin_id_t plugin_id,
+				    uid_t *uid_ptr, http_con_t *hcon,
+				    const char *name,
+				    const http_con_request_t *request);
+
+/*
+ * Get authentication proxy token from HTTP connection for this thread
+ * WARNING: authentication may not be verified!
+ * IN plugin_id -
+ *	HTTP_AUTH_PLUGIN_*: Authenticate using given plugin
+ *	HTTP_AUTH_PLUGIN_ANY: any matching plugin
+ *	HTTP_AUTH_PLUGIN_INVALID: Remove proxy authentication from this thread
+ * IN name - Connection name for logging
+ * IN request - HTTP connection request state
+ * RET SLURM_SUCCESS on successful authentication or error
+ */
+extern int http_auth_g_proxy_token(http_auth_plugin_id_t plugin_id,
+				   http_con_t *hcon, const char *name,
+				   const http_con_request_t *request);
+
 #endif
