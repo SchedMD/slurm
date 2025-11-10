@@ -59,33 +59,10 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-/*
- * These variables are required by the generic plugin interface.  If they
- * are not found in the plugin, the plugin loader will ignore it.
- *
- * plugin_name - a string giving a human-readable description of the
- * plugin.  There is no maximum length, but the symbol must refer to
- * a valid string.
- *
- * plugin_type - a string suggesting the type of the plugin or its
- * applicability to a particular form of data or method of data handling.
- * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  Slurm uses the higher-level plugin
- * interface which requires this string to be of the form
- *
- *	<application>/<method>
- *
- * where <application> is a description of the intended application of
- * the plugin (e.g., "jobcomp" for Slurm job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  Slurm will
- * only load job completion logging plugins if the plugin_type string has a
- * prefix of "jobcomp/".
- *
- * plugin_version - an unsigned 32-bit integer containing the Slurm version
- * (major.minor.micro combined into a single number).
- */
-const char plugin_name[]      = "Process tracking via linux cgroup freezer subsystem";
-const char plugin_type[]      = "proctrack/cgroup";
+/* Required Slurm plugin symbols: */
+const char plugin_name[] =
+	"Process tracking via linux cgroup freezer subsystem";
+const char plugin_type[] = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static pthread_mutex_t monitor_setup_lock = PTHREAD_MUTEX_INITIALIZER;

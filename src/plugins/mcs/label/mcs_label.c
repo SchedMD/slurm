@@ -39,6 +39,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+/* Required Slurm plugin symbols: */
 const char plugin_name[] = "mcs label plugin";
 const char plugin_type[] = "mcs/label";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;

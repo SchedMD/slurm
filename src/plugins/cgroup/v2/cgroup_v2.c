@@ -67,6 +67,7 @@
 #define SYSTEM_CGSCOPE "slurmstepd"
 #define SYSTEM_CGDIR "system"
 
+/* Required Slurm plugin symbols: */
 const char plugin_name[] = "Cgroup v2 plugin";
 const char plugin_type[] = "cgroup/v2";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;

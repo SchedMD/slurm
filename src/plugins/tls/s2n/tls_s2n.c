@@ -61,10 +61,13 @@
 #define DEFAULT_S2N_SECURITY_POLICY "20230317"
 #define CTIME_STR_LEN 72
 
+/* Required Slurm plugin symbols: */
 const char plugin_name[] = "s2n tls plugin";
 const char plugin_type[] = "tls/s2n";
-const uint32_t plugin_id = TLS_PLUGIN_S2N;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+/* Required for tls plugins: */
+const uint32_t plugin_id = TLS_PLUGIN_S2N;
 
 /* Default client/server s2n_config objects used for most connections */
 static struct s2n_config *client_config = NULL;

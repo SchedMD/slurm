@@ -66,6 +66,7 @@ extern slurmd_conf_t *conf __attribute__((weak_import));
 slurmd_conf_t *conf = NULL;
 #endif
 
+/* Required Slurm plugin symbols: */
 const char plugin_name[] = "node_features helpers plugin";
 const char plugin_type[] = "node_features/helpers";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;

@@ -73,9 +73,10 @@ extern slurmd_conf_t *conf __attribute__((weak_import));
 slurmd_conf_t *conf = NULL;
 #endif
 
-const char plugin_name[]        = "namespace tmpfs plugin";
-const char plugin_type[]        = "namespace/tmpfs";
-const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "namespace tmpfs plugin";
+const char plugin_type[] = "namespace/tmpfs";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
