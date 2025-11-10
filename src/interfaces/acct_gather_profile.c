@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  slurm_acct_gather_profile.c - implementation-independent job profile
- *  accounting plugin definitions
+ *  acct_gather_profile.c - job profile accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.

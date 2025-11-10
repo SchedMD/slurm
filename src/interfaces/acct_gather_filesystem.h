@@ -1,6 +1,5 @@
 /*****************************************************************************\
- *  acct_gather_filesystem.h - implementation-independent job filesystem
- *  accounting plugin definitions
+ *  acct_gather_filesystem.h - job filesystem accounting plugin definitions
  *****************************************************************************
  *  Copyright (C) 2013 Bull
  *  Written by Yiannis Georgiou <yiannis.georgiou@bull.net>

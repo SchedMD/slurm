@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_mcs.c - Define mcs plugin functions
+ *  mcs.c - Define mcs plugin functions
  *****************************************************************************
  *  Copyright (C) 2015 CEA/DAM/DIF
  *  Written by Aline Roy <aline.roy@cea.fr>

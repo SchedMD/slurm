@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_topology.c - Topology plugin function setup.
+ *  topology.c - Topology plugin function setup.
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
  *  Copyright (C) 2014 Silicon Graphics International Corp. All rights reserved.

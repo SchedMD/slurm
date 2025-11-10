@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  acct_gather_profile.h - implementation-independent job profile
- *  accounting plugin definitions
+ *  acct_gather_profile.h - job profile accounting plugin definitions
+ *****************************************************************************
  *  Copyright (C) 2013 Bull S. A. S.
  *		Bull, Rue Jean Jaures, B.P.68, 78340, Les Clayes-sous-Bois.
  *

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/interfaces/cred.h - Slurm job and sbcast credential functions
+ *  cred.h - Slurm job and sbcast credential functions
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
