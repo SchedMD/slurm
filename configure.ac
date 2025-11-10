@@ -481,6 +481,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/hash/common_xkcp/Makefile
 		 src/plugins/hash/k12/Makefile
 		 src/plugins/hash/sha3/Makefile
+		 src/plugins/http_auth/Makefile
 		 src/plugins/http_parser/Makefile
 		 src/plugins/http_parser/libhttp_parser/Makefile
 		 src/plugins/job_submit/Makefile
