@@ -55,9 +55,10 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/acct_policy.h"
 
-const char	plugin_name[]	= "Preempt by Quality Of Service (QOS)";
-const char	plugin_type[]	= "preempt/qos";
-const uint32_t	plugin_version	= SLURM_VERSION_NUMBER;
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "Preempt by Quality Of Service (QOS)";
+const char plugin_type[] = "preempt/qos";
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 extern bool preempt_p_preemptable(
 	job_record_t *preemptee, job_record_t *preemptor);

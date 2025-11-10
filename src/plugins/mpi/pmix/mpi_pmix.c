@@ -51,35 +51,9 @@
 #include "pmixp_info.h"
 #include "pmixp_client.h"
 
-/*
- * These variables are required by the generic plugin interface.  If they
- * are not found in the plugin, the plugin loader will ignore it.
- *
- * plugin_name - a string giving a human-readable description of the
- * plugin.  There is no maximum length, but the symbol must refer to
- * a valid string.
- *
- * plugin_type - a string suggesting the type of the plugin or its
- * applicability to a particular form of data or method of data handling.
- * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  Slurm uses the higher-level plugin
- * interface which requires this string to be of the form
- *
- *      <application>/<method>
- *
- * where <application> is a description of the intended application of
- * the plugin (e.g., "switch" for Slurm switch) and <method> is a description
- * of how this plugin satisfies that application.  Slurm will only load
- * a switch plugin if the plugin_type string has a prefix of "switch/".
- *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various Slurm versions will likely require a certain
- * minimum version for their plugins as this API matures.
- */
+/* Required Slurm and mpi plugin symbols: */
 const char plugin_name[] = "PMIx plugin";
-
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 #if (HAVE_PMIX_VER == 2)
 const char plugin_type[] = "mpi/pmix_v2";
 const uint32_t plugin_id = MPI_PLUGIN_PMIX2;
@@ -96,8 +70,6 @@ const uint32_t plugin_id = MPI_PLUGIN_PMIX5;
 const char plugin_type[] = "mpi/pmix_v6";
 const uint32_t plugin_id = MPI_PLUGIN_PMIX6;
 #endif
-
-const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static pthread_mutex_t setup_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t setup_cond  = PTHREAD_COND_INITIALIZER;

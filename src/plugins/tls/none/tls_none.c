@@ -48,10 +48,13 @@
 
 #include "src/interfaces/conn.h"
 
+/* Required Slurm plugin symbols: */
 const char plugin_name[] = "Null tls plugin";
 const char plugin_type[] = "tls/none";
-const uint32_t plugin_id = TLS_PLUGIN_NONE;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+
+/* Required for tls plugins: */
+const uint32_t plugin_id = TLS_PLUGIN_NONE;
 
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */

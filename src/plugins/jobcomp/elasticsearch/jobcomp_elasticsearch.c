@@ -68,35 +68,7 @@
 #define MAX_STR_LEN 10240	/* 10 KB */
 #define MAX_JOBS 1000000
 
-/*
- * These variables are required by the generic plugin interface. If they
- * are not found in the plugin, the plugin loader will ignore it.
- *
- * plugin_name - a string giving a human-readable description of the
- * plugin. There is no maximum length, but the symbol must refer to
- * a valid string.
- *
- * plugin_type - a string suggesting the type of the plugin or its
- * applicability to a particular form of data or method of data handling.
- * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything. Slurm uses the higher-level plugin
- * interface which requires this string to be of the form
- *
- *	<application>/<method>
- *
- * where <application> is a description of the intended application of
- * the plugin (e.g., "jobcomp" for Slurm job completion logging) and <method>
- * is a description of how this plugin satisfies that application. Slurm will
- * only load job completion logging plugins if the plugin_type string has a
- * prefix of "jobcomp/".
- *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin. If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000. Various Slurm versions will likely require a certain
- * minimum version for their plugins as the job completion logging API
- * matures.
- */
+/* Required Slurm plugin symbols: */
 const char plugin_name[] = "Job completion elasticsearch logging plugin";
 const char plugin_type[] = "jobcomp/elasticsearch";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
