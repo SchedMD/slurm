@@ -1,3 +1,13 @@
+## Changes in 25.05.5
+
+* Fix slurmdbd error triggered by "sreport user topusage" when trying to get data from monthly usage tables.
+* scontrol - fix regression where "scontrol update jobid=<id> qos=" was not considered a valid command.
+* slurmstepd - Prevent the slurmstepd from segfaulting if the switch/hpe_slingshot plugin is enabled and SwitchParameters is not specified.
+* Avoid deadlock that occurs on a failed reconfigure when there are issues with slurmdbd connections and AccountingStoreFlags is set with job_script or job_env.
+* slurmctld - Avoid regression that caused POSIX signals to be ignored after quiesce timeout triggers.
+* Fix potential file descriptor leak to child processes.
+* slurmctld - Prevent a fatal when min_exempt_priority is not the last option listed in PreemptParameters.
+
 ## Changes in 25.05.4
 
 * scontrol/sacct/sacctmgr - Prevent hitting a double free when slurm is compiled with --enable-memory-leak-debug and using the --json or --yaml options.
