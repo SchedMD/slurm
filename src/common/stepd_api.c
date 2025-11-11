@@ -169,7 +169,7 @@ _step_connect(const char *directory, const char *nodename,
 		}
 
 		xfree(name);
-		close(fd);
+		fd_close(&fd);
 		return -1;
 	}
 
