@@ -1,3 +1,12 @@
+## Changes in 24.11.7
+
+* slurmctld - Prevent segfault when freeing job arrays that request one partition and a QOS list.
+* slurmstepd - Avoid regression requiring slurmstepd (and all library dependencies) needing to exist inside of job container's mount namespace to execute TaskProlog and TaskEpilog.
+* Fix potential segfault of slurmstepd when acct_gather_profile/influxdb plugin fails to send data.
+* Fix potential segfault when jobcomp/elasticsearch fails to send data.
+* Prevent potential memory corruption while forwarding messages that require addresses to be packed.
+* slurmctld - Prevent a fatal when min_exempt_priority is not the last option listed in PreemptParameters.
+
 ## Changes in 24.11.6
 
 * Fix race condition on x11 shutdown which caused other privileged cleanup operations to fail and leave stray cgroup or spool directories and errors in the logs.
