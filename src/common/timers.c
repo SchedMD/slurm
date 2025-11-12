@@ -86,6 +86,14 @@ static const latency_range_t latency_ranges[LATENCY_RANGE_COUNT] = {
 #undef TS
 // clang-format on
 
+static long _calc_tv_delta(const struct timeval *tv1, const struct timeval *tv2)
+{
+	long delta = (tv2->tv_sec - tv1->tv_sec) * USEC_IN_SEC;
+	delta += tv2->tv_usec;
+	delta -= tv1->tv_usec;
+	return delta;
+}
+
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two
  *		       times
@@ -103,9 +111,8 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 	struct tm tm;
 	int debug_limit = limit;
 
-	(*delta_t)  = (tv2->tv_sec - tv1->tv_sec) * 1000000;
-	(*delta_t) += tv2->tv_usec;
-	(*delta_t) -= tv1->tv_usec;
+	(*delta_t) = _calc_tv_delta(tv1, tv2);
+
 	snprintf(tv_str, len_tv_str, "usec=%ld", *delta_t);
 	if (from) {
 		if (!limit) {
