@@ -4167,6 +4167,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	step_loc_t *stepd;
 	int step_cnt  = 0;
 	int rc = SLURM_SUCCESS;
+	const long time_slice_limit =
+		(slurm_conf.sched_time_slice * USEC_IN_SEC);
 	DEF_TIMERS;
 
 	if ((req->op != SUSPEND_JOB) && (req->op != RESUME_JOB)) {
@@ -4312,7 +4314,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	_unlock_suspend_job(req->step_id.job_id);
 
 	END_TIMER;
-	if (DELTA_TIMER >= (long)(slurm_conf.sched_time_slice * USEC_IN_SEC)) {
+
+	if (TIMER_DURATION_USEC() >= time_slice_limit) {
 		if (req->op == SUSPEND_JOB) {
 			info("Suspend time for %pI was %s. Configure SchedulerTimeSlice higher.",
 			     &req->step_id, TIMER_STR());
