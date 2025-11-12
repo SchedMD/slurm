@@ -4659,7 +4659,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		     slurm_strerror(error_code));
 	} else {
 		info("%s(%s) for %s %s",
-		     __func__, op, sus_ptr->job_id_str, TIME_STR);
+		     __func__, op, sus_ptr->job_id_str, TIMER_STR());
 
 		schedule_job_save();	/* Has own locking */
 		if (sus_ptr->op == SUSPEND_JOB)
