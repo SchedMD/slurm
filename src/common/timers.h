@@ -72,8 +72,8 @@
 #define END_TIMER3(from, limit) \
 	do { \
 		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, from, limit, \
-				  &DELTA_TIMER); \
+		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR), \
+				  from, limit, &DELTA_TIMER); \
 	} while (false)
 
 /*
