@@ -1925,7 +1925,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 			     __func__, job_ptr, slurm_strerror(error_code));
 		}
 	} else {
-		debug2("%s: %pJ %s", __func__, job_ptr, TIME_STR);
+		debug2("%s: %pJ %s", __func__, job_ptr, TIMER_STR());
 	}
 
 	unlock_slurmctld(job_write_lock);
