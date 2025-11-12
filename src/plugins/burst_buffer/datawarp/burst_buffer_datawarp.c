@@ -1624,7 +1624,7 @@ static void *_start_stage_out(void *x)
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("dws_post_run for JobId=%u ran for %s",
-		     stage_args->job_id, TIME_STR);
+		     stage_args->job_id, TIMER_STR());
 	}
 
 	if (track_script_killed(pthread_self(), status, true)) {
