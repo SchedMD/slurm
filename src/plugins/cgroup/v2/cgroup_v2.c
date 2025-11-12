@@ -905,7 +905,7 @@ static int _wait_scope_ready(xcgroup_t scope_root, pid_t pid, uint32_t t)
 
 	END_TIMER;
 	log_flag(CGROUP, "Took %s and %d retries for scope dir %s to show up.",
-		 TIME_STR, retries, scope_root.path);
+		 TIMER_STR(), retries, scope_root.path);
 
 	/* Wait for the pid to show up in cgroup.procs */
 	START_TIMER;
@@ -929,7 +929,7 @@ static int _wait_scope_ready(xcgroup_t scope_root, pid_t pid, uint32_t t)
 
 	END_TIMER;
 	log_flag(CGROUP, "Took %s and %d retries for pid %d to show up in %s/cgroup.procs.",
-		 TIME_STR, retries, pid, scope_root.path);
+		 TIMER_STR(), retries, pid, scope_root.path);
 
 	log_flag(CGROUP, "Scope initialization complete after %d msec",
 		 (slurm_delta_tv(&start_tv)/1000));
@@ -937,7 +937,7 @@ static int _wait_scope_ready(xcgroup_t scope_root, pid_t pid, uint32_t t)
 	return SLURM_SUCCESS;
 dbus_timeout:
 	END_TIMER;
-	error("Scope initialization timeout after %s", TIME_STR);
+	error("Scope initialization timeout after %s", TIMER_STR());
 	return SLURM_ERROR;
 }
 
