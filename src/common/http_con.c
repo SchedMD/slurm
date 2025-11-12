@@ -846,3 +846,9 @@ failed:
 
 	return rc;
 }
+
+extern int http_con_get_status(http_con_t *hcon, conmgr_fd_status_t *status_ptr)
+{
+	xassert(hcon->magic == MAGIC);
+	return conmgr_con_get_status(hcon->con, status_ptr);
+}

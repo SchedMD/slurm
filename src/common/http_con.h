@@ -128,4 +128,12 @@ extern int http_con_send_response(http_con_t *hcon,
 				  list_t *headers, bool close_header,
 				  const buf_t *body, const char *body_encoding);
 
+/* Get connection status
+ * IN hcon - HTTP connection to query
+ * IN/OUT status_ptr - Pointer to populate
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_get_status(http_con_t *hcon,
+			       conmgr_fd_status_t *status_ptr);
+
 #endif
