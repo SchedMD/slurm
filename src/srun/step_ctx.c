@@ -177,7 +177,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 			xsignal(step_signals[i], _signal_while_allocating);
 		while (1) {
 			END_TIMER;
-			elapsed_time = DELTA_TIMER / 1000;
+			elapsed_time = (TIMER_DURATION_USEC() / 1000);
 			if (elapsed_time >= timeout)
 				break;
 			time_left = timeout - elapsed_time;
