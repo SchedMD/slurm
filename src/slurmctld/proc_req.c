@@ -1975,7 +1975,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 		     __func__, &comp_msg->step_id, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
