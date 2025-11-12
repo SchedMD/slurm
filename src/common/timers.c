@@ -94,6 +94,13 @@ static long _calc_tv_delta(const struct timeval *tv1, const struct timeval *tv2)
 	return delta;
 }
 
+extern int timer_duration_str(struct timeval *tv1, struct timeval *tv2,
+			      char *tv_str, const size_t len_tv_str)
+{
+	return snprintf(tv_str, len_tv_str, "usec=%ld",
+			_calc_tv_delta(tv1, tv2));
+}
+
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two
  *		       times
@@ -113,7 +120,7 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 
 	(*delta_t) = _calc_tv_delta(tv1, tv2);
 
-	snprintf(tv_str, len_tv_str, "usec=%ld", *delta_t);
+	(void) timer_duration_str(tv1, tv2, tv_str, len_tv_str);
 	if (from) {
 		if (!limit) {
 			/* NOTE: The slurmctld scheduler's default run time

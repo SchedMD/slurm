@@ -92,6 +92,17 @@ extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 			      long limit, long *delta_t);
 
 /*
+ * Write string of time difference between tv1 and tv2 into tv_str
+ * IN tv1 - time value start
+ * IN tv2 - time value end
+ * IN tv_str - string to populate
+ * IN len_tv_str - sizeof(tv_str)
+ * RET number of bytes in tv_str written by snprintf()
+ */
+extern int timer_duration_str(struct timeval *tv1, struct timeval *tv2,
+			      char *tv_str, const size_t len_tv_str);
+
+/*
  * Number of latency ranges in latency histogram.
  * WARNING: Must be kept in sync with ARRAY_SIZE(latency_ranges).
  */
