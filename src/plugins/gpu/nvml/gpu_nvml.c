@@ -277,8 +277,7 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 						       nvml_gfx_freqs_size,
 						       nvml_gfx_freqs);
 	END_TIMER;
-	debug3("nvmlDeviceGetSupportedGraphicsClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceGetSupportedGraphicsClocks() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get supported graphics frequencies for the"
 		      " GPU at mem frequency %u: %s", __func__, mem_freq,
