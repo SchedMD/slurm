@@ -4969,7 +4969,7 @@ static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg,
 
 	END_TIMER2(__func__);
 	log_flag(STEPS, "%s: %ps rc:%s %s",
-		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
+		 __func__, &req->step_id, slurm_strerror(rc), TIMER_STR());
 }
 
 /* create a credential for a given job step, return error code */
