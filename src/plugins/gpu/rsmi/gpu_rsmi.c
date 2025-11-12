@@ -119,7 +119,7 @@ static void _rsmi_init()
 	START_TIMER;
 	rsmi_rc = rsmi_init(0);
 	END_TIMER;
-	debug3("rsmi_init() took %ld microseconds", DELTA_TIMER);
+	debug3("rsmi_init() took %s", TIMER_STR());
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_status_string(rsmi_rc, &status_string);
 		error("Failed to initialize rsmi: %s",
