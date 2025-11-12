@@ -7041,7 +7041,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		END_TIMER;
-		record_rpc_stats(msg, DELTA_TIMER);
+		record_rpc_stats(msg, TIMER_DURATION_USEC());
 	}
 }
 
