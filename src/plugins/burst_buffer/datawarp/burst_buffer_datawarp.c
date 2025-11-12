@@ -1686,7 +1686,7 @@ static void *_start_stage_out(void *x)
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 			info("dws_data_out for JobId=%u ran for %s",
 			     stage_args->job_id,
-			     TIME_STR);
+			     TIMER_STR());
 		}
 
 		if (track_script_killed(pthread_self(), status, true)) {
