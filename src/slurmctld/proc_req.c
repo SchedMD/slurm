@@ -1837,10 +1837,10 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	if (epilog_msg->return_code)
 		error("%s: epilog error %pJ Node=%s Err=%s %s",
 		      __func__, job_ptr, epilog_msg->node_name,
-		      slurm_strerror(epilog_msg->return_code), TIME_STR);
+		      slurm_strerror(epilog_msg->return_code), TIMER_STR());
 	else
 		debug2("%s: %pJ Node=%s %s",
-		       __func__, job_ptr, epilog_msg->node_name, TIME_STR);
+		       __func__, job_ptr, epilog_msg->node_name, TIMER_STR());
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
