@@ -448,8 +448,7 @@ static uint32_t _rsmi_get_freq(uint32_t dv_ind, rsmi_clk_type_t type)
 	START_TIMER;
 	rsmi_rc = rsmi_dev_gpu_clk_freq_get(dv_ind, type, &rsmi_freqs);
 	END_TIMER;
-	debug3("rsmi_dev_gpu_clk_freq_get(%s) took %ld microseconds",
-	       type_str, DELTA_TIMER);
+	debug3("rsmi_dev_gpu_clk_freq_get(%s) took %s", type_str, TIMER_STR());
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
 		error("RSMI: Failed to get the GPU frequency type %s, error: %s",
