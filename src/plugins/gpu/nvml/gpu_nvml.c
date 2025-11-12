@@ -182,7 +182,7 @@ static void _nvml_shutdown(void)
 	nvml_rc = nvmlShutdown();
 	init_pid = 0;
 	END_TIMER;
-	debug3("nvmlShutdown() took %ld microseconds", DELTA_TIMER);
+	debug3("nvmlShutdown() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to shut down NVML: %s", nvmlErrorString(nvml_rc));
 	else
