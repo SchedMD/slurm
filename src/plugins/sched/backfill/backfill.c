@@ -2346,7 +2346,7 @@ static void _attempt_backfill(void)
 				END_TIMER;
 				info("yielding locks after testing %u(%d) jobs, %s",
 				     slurmctld_diag_stats.bf_last_depth,
-				     job_test_count, TIME_STR);
+				     job_test_count, TIMER_STR());
 			}
 			/* Sync planned nodes before yielding locks */
 			nodes_planned = true;
@@ -2731,7 +2731,7 @@ TRY_LATER:
 				log_flag(BACKFILL, "yielding locks after testing %u(%d) jobs tested, %u time slots, %s",
 					 slurmctld_diag_stats.bf_last_depth,
 					 job_test_count, test_time_count,
-					 TIME_STR);
+					 TIMER_STR());
 			}
 			/* Sync planned nodes before yielding locks */
 			nodes_planned = true;
@@ -3715,7 +3715,7 @@ skip_start:
 		END_TIMER;
 		info("completed testing %u(%d) jobs, %s",
 		     slurmctld_diag_stats.bf_last_depth,
-		     job_test_count, TIME_STR);
+		     job_test_count, TIMER_STR());
 	}
 
 	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
