@@ -2728,7 +2728,7 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 				       get_msg->archive_data,
 				       &rollup_stats_list);
 	END_TIMER;
-	handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 1);
+	handle_rollup_stats(rollup_stats_list, TIMER_DURATION_USEC(), 1);
 	FREE_NULL_LIST(rollup_stats_list);
 
 end_it:
