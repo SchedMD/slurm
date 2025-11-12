@@ -2147,7 +2147,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIMER_STR());
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
