@@ -42,6 +42,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
 #include <src/common/slurm_time.h>
 
 #define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
