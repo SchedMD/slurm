@@ -4688,7 +4688,7 @@ static void _slurm_rpc_top_job(slurm_msg_t *msg)
 		     __func__, top_ptr->job_id_str, slurm_strerror(error_code));
 	} else {
 		info("%s for %s %s",
-		     __func__, top_ptr->job_id_str, TIME_STR);
+		     __func__, top_ptr->job_id_str, TIMER_STR());
 	}
 }
 
