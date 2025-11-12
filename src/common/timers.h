@@ -49,7 +49,8 @@
 #define DELTA_TIMER delta_t
 #define TIME_STR tv_str
 #define DEF_TIMERS \
-	struct timeval tv1, tv2; \
+	struct timeval tv1 = { 0, 0 }; \
+	struct timeval tv2 = { 0, 0 }; \
 	char TIME_STR[20] = ""; \
 	long DELTA_TIMER;
 #define START_TIMER \
