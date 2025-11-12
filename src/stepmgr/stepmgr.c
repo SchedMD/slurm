@@ -5177,7 +5177,8 @@ end_it:
 		dynamic_plugin_data_t *switch_step = NULL;
 
 		log_flag(STEPS, "%s: %pS %s %s",
-			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
+			 __func__, step_rec, req_step_msg->node_list,
+			 TIMER_STR());
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
 		job_step_resp.step_id = step_rec->step_id;
