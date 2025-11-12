@@ -3407,7 +3407,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		list_append(rpc_stats->rpc_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
-	rpc_obj->time += DELTA_TIMER;
+	rpc_obj->time += TIMER_DURATION_USEC();
 
 	if (!(rpc_obj = list_find_first(rpc_stats->user_list,
 					_find_rpc_obj_in_list,
@@ -3417,7 +3417,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		list_append(rpc_stats->user_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
-	rpc_obj->time += DELTA_TIMER;
+	rpc_obj->time += TIMER_DURATION_USEC();
 
 	slurm_mutex_unlock(&rpc_mutex);
 
