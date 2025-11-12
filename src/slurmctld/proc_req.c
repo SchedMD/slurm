@@ -1454,9 +1454,6 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
 		END_TIMER2(__func__);
-#if 0
-		info("%s, size=%d %s", __func__, dump_size, TIME_STR);
-#endif
 
 		/* send message */
 		(void) send_msg_response(msg, RESPONSE_JOB_INFO, buffer);
