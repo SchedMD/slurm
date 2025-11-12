@@ -4118,7 +4118,7 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, node_msg->node_names, TIME_STR);
+		       __func__, node_msg->node_names, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
