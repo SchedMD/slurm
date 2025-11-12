@@ -60,8 +60,8 @@
 #define END_TIMER \
 	do { \
 		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, NULL, 0, \
-				  &DELTA_TIMER); \
+		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR), \
+				  NULL, 0, &DELTA_TIMER); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
