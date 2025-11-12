@@ -2179,6 +2179,7 @@ static int _set_licenses_alloc(job_record_t *job_ptr, bool lic_or,
 		xassert(license_entry ==
 			(licenses_t *) list_peek(job_ptr->license_list));
 	}
+	xfree(job_ptr->licenses_allocated);
 	job_ptr->licenses_allocated =
 		license_list_to_string(job_ptr->license_list);
 
