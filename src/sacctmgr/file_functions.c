@@ -3374,7 +3374,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 	END_TIMER2("add cluster");
 
 	if (set)
-		info("Done adding cluster in %s", TIME_STR);
+		info("Done adding cluster in %s", TIMER_STR());
 
 	if (rc == SLURM_SUCCESS) {
 		if (set) {
