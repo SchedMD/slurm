@@ -83,11 +83,7 @@
  * Note: Must be called after START_TIMER and END_TIMER macros
  * RET: string of duration of time between calls or "INVALID"
  */
-#define TIMER_STR() \
-	((timer_duration_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
-			     sizeof(TIME_STR) > 0) ? \
-		  TIME_STR : \
-		  "INVALID"))
+#define TIMER_STR() (timer_duration_str(&TIMER_START_TS, &TIMER_END_TS).str)
 /* Get timer duration in microseconds */
 #define TIMER_DURATION_USEC() timer_get_duration(&TIMER_START_TS, &TIMER_END_TS)
 
@@ -98,6 +94,10 @@
  * RET duration of timer in microseconds
  */
 extern long timer_get_duration(struct timeval *start, struct timeval *end);
+
+typedef struct {
+	char str[20];
+} timer_str_t;
 
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two
@@ -115,15 +115,12 @@ extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 			      long limit, long *delta_t);
 
 /*
- * Write string of time difference between tv1 and tv2 into tv_str
+ * Get string of time difference between tv1 and tv2 into tv_str
  * IN tv1 - time value start
  * IN tv2 - time value end
- * IN tv_str - string to populate
- * IN len_tv_str - sizeof(tv_str)
- * RET number of bytes in tv_str written by snprintf()
+ * RET string of duration
  */
-extern int timer_duration_str(struct timeval *tv1, struct timeval *tv2,
-			      char *tv_str, const size_t len_tv_str);
+extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2);
 
 /*
  * Number of latency ranges in latency histogram.
