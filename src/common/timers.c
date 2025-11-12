@@ -111,6 +111,7 @@ extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
 	struct tm tm;
 	int debug_limit = limit;
 	const long delta = _calc_tv_delta(tv1, tv2);
+	timer_str_t tstr = { { 0 } };
 
 	xassert(from);
 
@@ -124,24 +125,21 @@ extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
 		debug_limit = 1000000;
 	}
 
-	if ((delta > debug_limit) || (delta > limit)) {
-		timer_str_t tstr = timer_duration_str(tv1, tv2);
+	if ((delta <= debug_limit) || (delta <= limit))
+		return;
 
-		if (!localtime_r(&tv1->tv_sec, &tm))
-			error("localtime_r(): %m");
-		if (strftime(p, sizeof(p), "%T", &tm) == 0)
-			error("strftime(): %m");
-		if (delta > limit) {
-			verbose("Warning: Note very large processing "
-				"time from %s: %s began=%s.%3.3d",
-				from, tstr.str, p,
-				(int)(tv1->tv_usec / 1000));
-		} else { /* Log anything over 1 second here */
-			debug("Note large processing time from %s: "
-			      "%s began=%s.%3.3d",
-			      from, tstr.str, p,
-			      (int)(tv1->tv_usec / 1000));
-		}
+	tstr = timer_duration_str(tv1, tv2);
+
+	if (!localtime_r(&tv1->tv_sec, &tm))
+		error("localtime_r(): %m");
+	if (strftime(p, sizeof(p), "%T", &tm) == 0)
+		error("strftime(): %m");
+	if (delta > limit) {
+		verbose("Warning: Note very large processing time from %s: %s began=%s.%3.3d",
+			from, tstr.str, p, (int)(tv1->tv_usec / 1000));
+	} else { /* Log anything over 1 second here */
+		debug("Note large processing time from %s: %s began=%s.%3.3d",
+		      from, tstr.str, p, (int)(tv1->tv_usec / 1000));
 	}
 }
 
