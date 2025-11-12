@@ -1384,9 +1384,16 @@ extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref)
 	return conmgr_fd_get_name(ref->con);
 }
 
-extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
+static int _con_get_status(conmgr_fd_t *con, conmgr_fd_status_t *status_ptr)
 {
-	conmgr_fd_status_t status = {
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+	xassert(status_ptr);
+
+	if (!con)
+		return EINVAL;
+
+	*status_ptr = (conmgr_fd_status_t) {
 		.is_socket = con_flag(con, FLAG_IS_SOCKET),
 		.unix_socket = NULL,
 		.is_listen = con_flag(con, FLAG_IS_LISTEN),
@@ -1396,11 +1403,18 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 
 	if (con->address.ss_family == AF_LOCAL) {
 		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
-		status.unix_socket = un->sun_path;
+		status_ptr->unix_socket = un->sun_path;
 	}
 
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+	return SLURM_SUCCESS;
+}
+
+extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
+{
+	conmgr_fd_status_t status = { 0 };
+
+	(void) _con_get_status(con, &status);
+
 	return status;
 }
 
