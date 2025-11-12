@@ -1667,7 +1667,7 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 		unlock_slurmctld(fed_read_lock);
 
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIME_STR);
+	debug2("%s %s", __func__, TIMER_STR());
 }
 
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
