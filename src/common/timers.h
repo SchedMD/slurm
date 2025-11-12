@@ -46,13 +46,11 @@
 
 #include <src/common/slurm_time.h>
 
-#define DELTA_TIMER delta_t
 #define TIMER_START_TS tv1
 #define TIMER_END_TS tv2
 #define DEF_TIMERS \
 	struct timeval TIMER_START_TS = { 0, 0 }; \
-	struct timeval TIMER_END_TS = { 0, 0 }; \
-	long DELTA_TIMER;
+	struct timeval TIMER_END_TS = { 0, 0 };
 #define START_TIMER \
 	do { \
 		gettimeofday(&TIMER_START_TS, NULL); \
@@ -60,20 +58,18 @@
 #define END_TIMER \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
-		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, NULL, 0, \
-				    &DELTA_TIMER); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, NULL, 0); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
-		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, 0, \
-				    &DELTA_TIMER); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, 0); \
 	} while (false)
 #define END_TIMER3(from, limit) \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
 		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, \
-				    limit, &DELTA_TIMER); \
+				    limit); \
 	} while (false)
 /*
  * Get duration of time between START_TIMER and END_TIMER as string
@@ -102,10 +98,9 @@ typedef struct {
  * IN tv2 - end of event
  * IN from - Name to be printed on long diffs
  * IN limit - limit to wait
- * OUT delta_t - raw time difference in usec
  */
 extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
-				const char *from, long limit, long *delta_t);
+				const char *from, long limit);
 
 /*
  * Get string of time difference between tv1 and tv2 into tv_str
