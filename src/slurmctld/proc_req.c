@@ -3680,7 +3680,7 @@ send_msg:
 			.job_submit_user_msg = job_submit_user_msg,
 		};
 		info("%s: %pI InitPrio=%u %s",
-		     __func__, &step_id, priority, TIME_STR);
+		     __func__, &step_id, priority, TIMER_STR());
 		/* send job_ID */
 		(void) send_msg_response(msg, RESPONSE_SUBMIT_BATCH_JOB,
 					 &submit_msg);
