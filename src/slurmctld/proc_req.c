@@ -1337,7 +1337,7 @@ send_msg:
 
 		xassert(job_ptr);
 		sched_info("%s %pJ NodeList=%s %s",
-			   __func__, job_ptr, job_ptr->nodes, TIME_STR);
+			   __func__, job_ptr, job_ptr->nodes, TIMER_STR());
 
 		/*
 		 * This check really isn't needed, but just doing it
