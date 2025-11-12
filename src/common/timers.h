@@ -47,13 +47,11 @@
 #include <src/common/slurm_time.h>
 
 #define DELTA_TIMER delta_t
-#define TIME_STR tv_str
 #define TIMER_START_TS tv1
 #define TIMER_END_TS tv2
 #define DEF_TIMERS \
 	struct timeval TIMER_START_TS = { 0, 0 }; \
 	struct timeval TIMER_END_TS = { 0, 0 }; \
-	char TIME_STR[20] = ""; \
 	long DELTA_TIMER;
 #define START_TIMER \
 	do { \
@@ -62,21 +60,20 @@
 #define END_TIMER \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
-		slurm_diff_tv_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
-				  sizeof(TIME_STR), NULL, 0, &DELTA_TIMER); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, NULL, 0, \
+				    &DELTA_TIMER); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
-		slurm_diff_tv_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
-				  sizeof(TIME_STR), from, 0, &DELTA_TIMER); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, 0, \
+				    &DELTA_TIMER); \
 	} while (false)
 #define END_TIMER3(from, limit) \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
-		slurm_diff_tv_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
-				  sizeof(TIME_STR), from, limit, \
-				  &DELTA_TIMER); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, \
+				    limit, &DELTA_TIMER); \
 	} while (false)
 /*
  * Get duration of time between START_TIMER and END_TIMER as string
@@ -100,19 +97,15 @@ typedef struct {
 } timer_str_t;
 
 /*
- * slurm_diff_tv_str - build a string showing the time difference between two
- *		       times
+ * Compare the time difference between two times and log when over the limit
  * IN tv1 - start of event
  * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
  * IN from - Name to be printed on long diffs
  * IN limit - limit to wait
  * OUT delta_t - raw time difference in usec
  */
-extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-			      char *tv_str, int len_tv_str, const char *from,
-			      long limit, long *delta_t);
+extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
+				const char *from, long limit, long *delta_t);
 
 /*
  * Get string of time difference between tv1 and tv2 into tv_str

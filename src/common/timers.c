@@ -104,32 +104,14 @@ extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2)
 	return ret;
 }
 
-/*
- * slurm_diff_tv_str - build a string showing the time difference between two
- *		       times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
- * IN from - where the function was called form
- */
-extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
-			      char *tv_str, int len_tv_str, const char *from,
-			      long limit, long *delta_t)
+extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
+				const char *from, long limit, long *delta_t)
 {
 	char p[64] = "";
 	struct tm tm;
 	int debug_limit = limit;
 
 	(*delta_t) = _calc_tv_delta(tv1, tv2);
-
-	{
-		timer_str_t tstr = timer_duration_str(tv1, tv2);
-		size_t len = strlen(tstr.str);
-		size_t bytes = MIN(len, len_tv_str);
-		memcpy(tv_str, tstr.str, bytes);
-		tv_str[bytes] = '\0';
-	}
 
 	if (from) {
 		if (!limit) {
@@ -141,6 +123,8 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 			debug_limit = 1000000;
 		}
 		if ((*delta_t > debug_limit) || (*delta_t > limit)) {
+			timer_str_t tstr = timer_duration_str(tv1, tv2);
+
 			if (!localtime_r(&tv1->tv_sec, &tm))
 				error("localtime_r(): %m");
 			if (strftime(p, sizeof(p), "%T", &tm) == 0)
@@ -148,12 +132,12 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 			if (*delta_t > limit) {
 				verbose("Warning: Note very large processing "
 					"time from %s: %s began=%s.%3.3d",
-					from, tv_str, p,
+					from, tstr.str, p,
 					(int)(tv1->tv_usec / 1000));
 			} else {	/* Log anything over 1 second here */
 				debug("Note large processing time from %s: "
 				      "%s began=%s.%3.3d",
-				      from, tv_str, p,
+				      from, tstr.str, p,
 				      (int)(tv1->tv_usec / 1000));
 			}
 		}
