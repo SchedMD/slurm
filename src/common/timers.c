@@ -150,6 +150,17 @@ extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
 	}
 }
 
+extern long timer_get_duration(struct timeval *start, struct timeval *end)
+{
+	if (!start->tv_sec)
+		(void) gettimeofday(start, NULL);
+
+	if (!end->tv_sec)
+		(void) gettimeofday(end, NULL);
+
+	return _calc_tv_delta(start, end);
+}
+
 extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start)
 {
 	xassert(!start->tv_sec);

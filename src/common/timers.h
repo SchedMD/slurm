@@ -88,6 +88,16 @@
 			     sizeof(TIME_STR) > 0) ? \
 		  TIME_STR : \
 		  "INVALID"))
+/* Get timer duration in microseconds */
+#define TIMER_DURATION_USEC() timer_get_duration(&TIMER_START_TS, &TIMER_END_TS)
+
+/*
+ * Get timer duration in microseconds
+ * IN/OUT start - ptr to start of timer. Will be populated with now if zero.
+ * IN/OUT end - ptr to end of timer. Will be populated with now if zero.
+ * RET duration of timer in microseconds
+ */
+extern long timer_get_duration(struct timeval *start, struct timeval *end);
 
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two
