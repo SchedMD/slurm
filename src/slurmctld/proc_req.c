@@ -4262,7 +4262,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, part_desc_ptr->name, TIME_STR);
+		       __func__, part_desc_ptr->name, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		schedule_part_save();		/* Has its locking */
