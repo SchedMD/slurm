@@ -1431,7 +1431,7 @@ static void *_start_stage_in(void *x)
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 			info("real_size ran for %s",
-			     TIME_STR);
+			     TIMER_STR());
 
 		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
