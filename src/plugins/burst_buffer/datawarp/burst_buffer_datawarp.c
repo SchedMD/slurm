@@ -3666,7 +3666,7 @@ static void *_start_pre_run(void *x)
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
-	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	if ((TIMER_DURATION_USEC() > 500000) || /* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("dws_pre_run for %pJ ran for %s",
 		     job_ptr, TIMER_STR());
