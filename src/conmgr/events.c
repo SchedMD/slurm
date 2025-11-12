@@ -86,7 +86,7 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 		END_TIMER3(NULL, 0);
 
 		log_flag(CONMGR, "%s->%s: [EVENT:%s] END waited after %s with %d other pending waiters",
-			 caller, __func__, event->name, TIME_STR,
+			 caller, __func__, event->name, TIMER_STR(),
 			 event->waiting);
 	}
 }
