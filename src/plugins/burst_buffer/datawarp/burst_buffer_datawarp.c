@@ -3117,7 +3117,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 		info("job_process ran for %s",
-		     TIME_STR);
+		     TIMER_STR());
 	_log_script_argv(script_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("job_process for %pJ status:%u response:%s",
