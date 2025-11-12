@@ -3029,7 +3029,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
 					job_info_msg),
 	     job_info_resp_msg->node_list,
-	     TIME_STR);
+	     TIMER_STR());
 
 	(void) send_msg_response(msg, RESPONSE_JOB_SBCAST_CRED,
 				 job_info_resp_msg);
