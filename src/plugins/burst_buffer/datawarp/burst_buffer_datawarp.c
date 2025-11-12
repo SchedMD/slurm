@@ -1877,7 +1877,7 @@ static void *_start_teardown(void *x)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	info("teardown for JobId=%u ran for %s",
-	     teardown_args->job_id, TIME_STR);
+	     teardown_args->job_id, TIMER_STR());
 
 	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
