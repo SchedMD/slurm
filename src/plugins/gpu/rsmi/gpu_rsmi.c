@@ -404,8 +404,7 @@ static bool _rsmi_reset_freqs(uint32_t dv_ind)
 	START_TIMER;
 	rsmi_rc = rsmi_dev_perf_level_set(dv_ind, RSMI_DEV_PERF_LEVEL_AUTO);
 	END_TIMER;
-	debug3("rsmi_dev_perf_level_set() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("rsmi_dev_perf_level_set() took %s", TIMER_STR());
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
 		error("RSMI: Failed to reset frequencies error: %s",
