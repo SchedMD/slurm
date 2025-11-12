@@ -232,8 +232,7 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device, uint32_t *mem_freqs_size,
 						     nvml_mem_freqs_size,
 						     nvml_mem_freqs);
 	END_TIMER;
-	debug3("nvmlDeviceGetSupportedMemoryClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceGetSupportedMemoryClocks() took %s", TIMER_STR());
 
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get supported memory frequencies for the "
