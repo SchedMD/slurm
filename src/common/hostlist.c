@@ -2476,7 +2476,7 @@ static int _set_span(int total, uint16_t tree_width, int **span)
 	 * Each time a new level is created, it is exponentially bigger than the
 	 * previous one
 	 */
-	for (int branch_capacity = 1, level_capacity = tree_width; total;
+	for (uint32_t branch_capacity = 1, level_capacity = tree_width; total;
 	     branch_capacity *= tree_width, level_capacity *= tree_width) {
 		/* Remaining nodes can fill a whole new level up, or not */
 		if (level_capacity <= total) {
