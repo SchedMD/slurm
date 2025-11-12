@@ -2842,7 +2842,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 	} else {
 		debug("%s: %pI NodeList=%s %s",
 		      __func__, &job_info_msg->step_id, job_ptr->nodes,
-		      TIME_STR);
+		      TIMER_STR());
 
 		job_info_resp_msg = build_job_info_resp(job_ptr);
 		set_remote_working_response(job_info_resp_msg, job_ptr,
