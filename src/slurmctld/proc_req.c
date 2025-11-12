@@ -3432,7 +3432,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	END_TIMER2(__func__);
 
 	log_flag(STEPS, "%s: %ps rc:%s %s",
-		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
+		 __func__, &req->step_id, slurm_strerror(rc), TIMER_STR());
 
 	/* return result */
 	(void) slurm_send_rc_msg(msg, rc);
