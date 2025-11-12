@@ -2634,12 +2634,12 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 		} else {
 			if (job_step_kill_msg->signal == SIGKILL) {
 				log_flag(STEPS, "%s: Cancel of %pJ by UID=%u, %s",
-					 __func__, job_ptr, uid, TIME_STR);
+					 __func__, job_ptr, uid, TIMER_STR());
 				slurmctld_diag_stats.jobs_canceled++;
 			} else
 				log_flag(STEPS, "%s: Signal %u of %pJ by UID=%u, %s",
 					 __func__, job_step_kill_msg->signal,
-					 job_ptr, uid, TIME_STR);
+					 job_ptr, uid, TIMER_STR());
 
 			/* Below function provides its own locking */
 			schedule_job_save();
@@ -2665,14 +2665,14 @@ static int _kill_job_step(job_step_kill_msg_t *job_step_kill_msg,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
 					 uid,
-					 TIME_STR);
+					 TIMER_STR());
 			else
 				log_flag(STEPS, "%s: Signal %u of %pI StepId=%u by UID=%u %s",
 					 __func__, job_step_kill_msg->signal,
 					 &job_step_kill_msg->step_id,
 					 job_step_kill_msg->step_id.step_id,
 					 uid,
-					 TIME_STR);
+					 TIMER_STR());
 
 			/* Below function provides its own locking */
 			schedule_job_save();
