@@ -3669,7 +3669,7 @@ static void *_start_pre_run(void *x)
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("dws_pre_run for %pJ ran for %s",
-		     job_ptr, TIME_STR);
+		     job_ptr, TIMER_STR());
 	}
 	if (job_ptr)
 		bb_job = _get_bb_job(job_ptr);
