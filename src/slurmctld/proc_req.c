@@ -5902,7 +5902,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 			START_TIMER;
 			_slurm_rpc_accounting_update_msg(&msg);
 			END_TIMER;
-			record_rpc_stats(&msg, DELTA_TIMER);
+			record_rpc_stats(&msg, TIMER_DURATION_USEC());
 		} else {
 			slurm_send_rc_msg(&msg, EINVAL);
 		}
