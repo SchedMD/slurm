@@ -75,6 +75,15 @@
 		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR), \
 				  from, limit, &DELTA_TIMER); \
 	} while (false)
+/*
+ * Get duration of time between START_TIMER and END_TIMER as string
+ * Note: Must be called after START_TIMER and END_TIMER macros
+ * RET: string of duration of time between calls or "INVALID"
+ */
+#define TIMER_STR() \
+	((timer_duration_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR) > 0) ? \
+		  TIME_STR : \
+		  "INVALID"))
 
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two
