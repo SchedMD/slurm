@@ -1621,7 +1621,7 @@ static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	unlock_slurmctld(job_read_lock);
 	FREE_NULL_LIST(resp_msg.priority_factors_list);
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIME_STR);
+	debug2("%s %s", __func__, TIMER_STR());
 }
 
 /* _slurm_rpc_end_time - Process RPC for job end time */
