@@ -4524,7 +4524,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 		};
 
 		debug2("%s: %pI result %d in %s",
-		       __func__, &id_msg->step_id, result, TIME_STR);
+		       __func__, &id_msg->step_id, result, TIMER_STR());
 
 		if (!_is_prolog_finished(&id_msg->step_id))
 			(void) send_msg_response(msg, RESPONSE_PROLOG_EXECUTING,
