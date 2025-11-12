@@ -70,6 +70,26 @@ extern char *slurm_ctime2_r(const time_t *timep, char *time_str)
 	return time_str;
 }
 
+extern int slurm_delta_tv(struct timeval *tv)
+{
+	struct timeval now = { 0, 0 };
+	int delta_t;
+
+	if (gettimeofday(&now, NULL))
+		return 1; /* Some error */
+
+	if (tv->tv_sec == 0) {
+		tv->tv_sec = now.tv_sec;
+		tv->tv_usec = now.tv_usec;
+		return 0;
+	}
+
+	delta_t = (now.tv_sec - tv->tv_sec) * 1000000;
+	delta_t += (now.tv_usec - tv->tv_usec);
+
+	return delta_t;
+}
+
 extern int slurm_nanosleep(time_t sleep_sec, uint32_t sleep_ns)
 {
 	timespec_t ts = { .tv_sec = sleep_sec, .tv_nsec = sleep_ns };

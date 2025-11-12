@@ -75,10 +75,6 @@
 				  &DELTA_TIMER); \
 	} while (false)
 
-/* Return the number of micro-seconds between now and argument "tv",
- * Initialize tv to NOW if zero on entry */
-extern int slurm_delta_tv(struct timeval *tv);
-
 /*
  * slurm_diff_tv_str - build a string showing the time difference between two
  *		       times
