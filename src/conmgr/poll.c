@@ -645,7 +645,7 @@ static int _intr_send_byte(int fd, const char *caller)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		END_TIMER3(NULL, 0);
 		log_flag(CONMGR, "%s->%s: [POLL] interrupt byte sent in %s",
-			 caller, __func__, TIME_STR);
+			 caller, __func__, TIMER_STR());
 	}
 
 	return SLURM_SUCCESS;
