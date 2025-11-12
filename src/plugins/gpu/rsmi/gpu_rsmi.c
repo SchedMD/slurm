@@ -212,8 +212,7 @@ static bool _rsmi_get_gfx_freqs(uint32_t dv_ind, uint32_t *gfx_freqs_size,
 	rsmi_rc = rsmi_dev_gpu_clk_freq_get(
 		dv_ind, RSMI_CLK_TYPE_SYS, &rsmi_freqs);
 	END_TIMER;
-	debug3("rsmi_dev_gpu_clk_freq_get() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("rsmi_dev_gpu_clk_freq_get() took %s", TIMER_STR());
 
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
