@@ -1423,6 +1423,23 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 	return status;
 }
 
+extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
+				 conmgr_fd_status_t *status_ptr)
+{
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	rc = _con_get_status(con->con, status_ptr);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
 /*
  * Find by matching fd to connection
  */

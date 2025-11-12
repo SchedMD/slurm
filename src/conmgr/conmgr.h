@@ -912,6 +912,15 @@ typedef struct {
 extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
 
 /*
+ * Get status of connection
+ * IN con - connection to query
+ * IN status_ptr - pointer to status to populate
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
+				 conmgr_fd_status_t *status_ptr);
+
+/*
  * Check to see if the con->output_fd is currently open and can (in theory)
  * accept more write()s.
  *
