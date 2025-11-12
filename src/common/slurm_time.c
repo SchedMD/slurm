@@ -84,7 +84,7 @@ extern int slurm_delta_tv(struct timeval *tv)
 		return 0;
 	}
 
-	delta_t = (now.tv_sec - tv->tv_sec) * 1000000;
+	delta_t = (now.tv_sec - tv->tv_sec) * USEC_IN_SEC;
 	delta_t += (now.tv_usec - tv->tv_usec);
 
 	return delta_t;
