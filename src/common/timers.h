@@ -47,9 +47,10 @@
 #include <src/common/slurm_time.h>
 
 #define DELTA_TIMER delta_t
+#define TIME_STR tv_str
 #define DEF_TIMERS \
 	struct timeval tv1, tv2; \
-	char tv_str[20] = ""; \
+	char TIME_STR[20] = ""; \
 	long DELTA_TIMER;
 #define START_TIMER \
 	do { \
@@ -58,22 +59,21 @@
 #define END_TIMER \
 	do { \
 		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0, \
+		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, NULL, 0, \
 				  &DELTA_TIMER); \
 	} while (0)
 #define END_TIMER2(from) \
 	do { \
 		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0, \
+		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, from, 0, \
 				  &DELTA_TIMER); \
 	} while (0)
 #define END_TIMER3(from, limit) \
 	do { \
 		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit, \
+		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, from, limit, \
 				  &DELTA_TIMER); \
 	} while (0)
-#define TIME_STR 	tv_str
 
 /* Return the number of micro-seconds between now and argument "tv",
  * Initialize tv to NOW if zero on entry */
