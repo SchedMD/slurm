@@ -3114,7 +3114,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	run_command_args.script_argv = script_argv;
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
-	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+	if ((TIMER_DURATION_USEC() > 200000) || /* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 		info("job_process ran for %s",
 		     TIMER_STR());
