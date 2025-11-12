@@ -1646,7 +1646,7 @@ static void _slurm_rpc_end_time(slurm_msg_t *msg)
 	} else {
 		(void) send_msg_response(msg, SRUN_TIMEOUT, &timeout_msg);
 	}
-	debug2("%s %pI %s", __func__, &time_req_msg->step_id, TIME_STR);
+	debug2("%s %pI %s", __func__, &time_req_msg->step_id, TIMER_STR());
 }
 
 /* _slurm_rpc_get_fd - process RPC for federation state information */
