@@ -361,8 +361,8 @@ static bool _rsmi_set_freqs(uint32_t dv_ind, uint64_t mem_bitmask,
 	rsmi_rc = rsmi_dev_gpu_clk_freq_set(
 		dv_ind, RSMI_CLK_TYPE_MEM, mem_bitmask);
 	END_TIMER;
-	debug3("rsmi_dev_gpu_clk_freq_set(0x%lx) for memory took %ld microseconds",
-	       mem_bitmask, DELTA_TIMER);
+	debug3("rsmi_dev_gpu_clk_freq_set(0x%lx) for memory took %s",
+	       mem_bitmask, TIMER_STR());
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
 		error("RSMI: Failed to set memory frequency GPU %u error: %s",
@@ -373,8 +373,8 @@ static bool _rsmi_set_freqs(uint32_t dv_ind, uint64_t mem_bitmask,
 	START_TIMER;
 	rsmi_rc = rsmi_dev_gpu_clk_freq_set(dv_ind,
 					    RSMI_CLK_TYPE_SYS, gfx_bitmask);
-	debug3("rsmi_dev_gpu_clk_freq_set(0x%lx) for graphics took %ld microseconds",
-	       gfx_bitmask, DELTA_TIMER);
+	debug3("rsmi_dev_gpu_clk_freq_set(0x%lx) for graphics took %s",
+	       gfx_bitmask, TIMER_STR());
 	END_TIMER;
 	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
 		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
