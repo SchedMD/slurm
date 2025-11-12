@@ -2505,9 +2505,9 @@ send_reply:
 		job_submit_user_msg = NULL;
 		(void) send_msg_response(msg, RESPONSE_JOB_WILL_RUN, resp);
 		slurm_free_will_run_response_msg(resp);
-		debug2("%s success %s", __func__, TIME_STR);
+		debug2("%s success %s", __func__, TIMER_STR());
 	} else {
-		debug2("%s success %s", __func__, TIME_STR);
+		debug2("%s success %s", __func__, TIMER_STR());
 		if (job_desc_msg->step_id.job_id == NO_VAL)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
