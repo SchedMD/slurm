@@ -426,8 +426,8 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 	START_TIMER;
 	nvml_rc = nvmlDeviceSetApplicationsClocks(*device, mem_freq, gfx_freq);
 	END_TIMER;
-	debug3("nvmlDeviceSetApplicationsClocks(%u, %u) took %ld microseconds",
-	       mem_freq, gfx_freq, DELTA_TIMER);
+	debug3("nvmlDeviceSetApplicationsClocks(%u, %u) took %s",
+	       mem_freq, gfx_freq, TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to set memory and graphics clock frequency "
 		      "pair (%u, %u) for the GPU: %s", __func__, mem_freq,
