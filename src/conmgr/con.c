@@ -1384,6 +1384,7 @@ extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref)
 	return conmgr_fd_get_name(ref->con);
 }
 
+/* Caller must hold mgr.mutex lock */
 static int _con_get_status(conmgr_fd_t *con, conmgr_fd_status_t *status_ptr)
 {
 	xassert(con->magic == MAGIC_CON_MGR_FD);
@@ -1413,7 +1414,11 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 {
 	conmgr_fd_status_t status = { 0 };
 
+	slurm_mutex_lock(&mgr.mutex);
+
 	(void) _con_get_status(con, &status);
+
+	slurm_mutex_unlock(&mgr.mutex);
 
 	return status;
 }
