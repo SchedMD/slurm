@@ -1372,7 +1372,7 @@ static void *_start_stage_in(void *x)
 		resp_msg = run_command(&run_command_args);
 		END_TIMER;
 		info("dws_data_in for JobId=%u ran for %s",
-		     stage_args->job_id, TIME_STR);
+		     stage_args->job_id, TIMER_STR());
 		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("dws_data_in for JobId=%u terminated by slurmctld",
