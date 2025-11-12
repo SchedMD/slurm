@@ -4416,7 +4416,7 @@ static void *_destroy_persistent(void *x)
 	xfree_array(script_argv);
 	END_TIMER;
 	info("destroy_persistent of %s ran for %s",
-	     destroy_args->name, TIME_STR);
+	     destroy_args->name, TIMER_STR());
 
 	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
