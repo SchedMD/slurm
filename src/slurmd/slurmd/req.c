@@ -4315,10 +4315,10 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	if (DELTA_TIMER >= (long)(slurm_conf.sched_time_slice * USEC_IN_SEC)) {
 		if (req->op == SUSPEND_JOB) {
 			info("Suspend time for %pI was %s. Configure SchedulerTimeSlice higher.",
-			     &req->step_id, TIME_STR);
+			     &req->step_id, TIMER_STR());
 		} else {
 			info("Resume time for %pI was %s. Configure SchedulerTimeSlice higher.",
-			     &req->step_id, TIME_STR);
+			     &req->step_id, TIMER_STR());
 		}
 	}
 
