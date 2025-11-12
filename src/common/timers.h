@@ -61,7 +61,7 @@
 		gettimeofday(&tv2, NULL); \
 		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, NULL, 0, \
 				  &DELTA_TIMER); \
-	} while (0)
+	} while (false)
 #define END_TIMER2(from) \
 	do { \
 		gettimeofday(&tv2, NULL); \
