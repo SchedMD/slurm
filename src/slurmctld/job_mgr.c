@@ -9506,7 +9506,7 @@ void job_time_limit(void)
 		    list_peek_next(job_iterator)) {
 			END_TIMER;
 			debug("%s: yielding locks after testing %d jobs, %s",
-			      __func__, job_test_count, TIME_STR);
+			      __func__, job_test_count, TIMER_STR());
 			unlock_slurmctld(job_write_lock);
 			usleep(1000000);
 			lock_slurmctld(job_write_lock);
