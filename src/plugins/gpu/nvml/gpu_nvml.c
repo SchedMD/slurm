@@ -454,8 +454,7 @@ static bool _nvml_reset_freqs(nvmlDevice_t *device)
 	START_TIMER;
 	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
 	END_TIMER;
-	debug3("nvmlDeviceResetApplicationsClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceResetApplicationsClocks() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to reset GPU frequencies to the hardware default: %s",
 		      __func__, nvmlErrorString(nvml_rc));
