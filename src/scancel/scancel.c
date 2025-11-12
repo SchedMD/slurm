@@ -1013,7 +1013,7 @@ _cancel_step_id (void *ci)
 						      cancel_info->sig);
 		END_TIMER;
 		slurm_mutex_lock(&max_delay_lock);
-		max_resp_time = MAX(max_resp_time, DELTA_TIMER);
+		max_resp_time = MAX(max_resp_time, TIMER_DURATION_USEC());
 		slurm_mutex_unlock(&max_delay_lock);
 
 		if ((error_code == 0) ||
