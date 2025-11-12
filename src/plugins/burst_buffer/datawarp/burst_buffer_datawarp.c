@@ -1428,7 +1428,7 @@ static void *_start_stage_in(void *x)
 		run_command_args.script_type = "real_size";
 		resp_msg2 = run_command(&run_command_args);
 		END_TIMER;
-		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+		if ((TIMER_DURATION_USEC() > 200000) || /* 0.2 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 			info("real_size ran for %s",
 			     TIMER_STR());
