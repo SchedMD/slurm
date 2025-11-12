@@ -163,7 +163,7 @@ static void _nvml_init(void)
 	START_TIMER;
 	nvml_rc = nvmlInit();
 	END_TIMER;
-	debug3("nvmlInit() took %ld microseconds", DELTA_TIMER);
+	debug3("nvmlInit() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to initialize NVML: %s",
 		      nvmlErrorString(nvml_rc));
