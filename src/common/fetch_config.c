@@ -98,6 +98,7 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	config_response_msg_t *config = NULL;
 	int status;
 
+	close(to_parent[1]);
 	safe_read(to_parent[0], &len, sizeof(int));
 
 	/*
@@ -108,7 +109,7 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	if (len <= 0) {
 		waitpid(pid, &status, 0);
 		debug2("%s: status from child %d", __func__, status);
-		return NULL;
+		goto closepipe;
 	}
 
 	buffer = init_buf(len);
@@ -121,17 +122,19 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 				       SLURM_PROTOCOL_VERSION)) {
 		FREE_NULL_BUFFER(buffer);
 		error("%s: unpack failed", __func__);
-		return NULL;
+		goto closepipe;
 	}
 	FREE_NULL_BUFFER(buffer);
 
+	close(to_parent[0]);
 	return config;
 
 rwfail:
 	error("%s: failed to read from child: %m", __func__);
 	waitpid(pid, &status, 0);
 	debug2("%s: status from child %d", __func__, status);
-
+closepipe:
+	close(to_parent[0]);
 	return NULL;
 }
 
@@ -146,6 +149,7 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 	buf_t *buffer = init_buf(1024 * 1024);
 	int len = 0;
 
+	close(to_parent[0]);
 	setenv("SLURM_CONFIG_FETCH", "1", 1);
 
 	/*
@@ -191,7 +195,7 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 	if (!config) {
 		error("%s: failed to fetch remote configs: %m", __func__);
 		safe_write(to_parent[1], &len, sizeof(int));
-		_exit(1);
+		goto closepipe;
 	}
 
 	msg_wrap.data = config;
@@ -200,11 +204,14 @@ static void _fetch_child(list_t *controllers, uint32_t flags, uint16_t port,
 	len = buffer->processed;
 	safe_write(to_parent[1], &len, sizeof(int));
 	safe_write(to_parent[1], buffer->head, len);
+	close(to_parent[1]);
 
 	_exit(0);
 
 rwfail:
 	error("%s: failed to write to parent: %m", __func__);
+closepipe:
+	close(to_parent[1]);
 	_exit(1);
 }
 
