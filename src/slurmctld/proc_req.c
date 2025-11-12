@@ -2910,7 +2910,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	}
 
 	debug2("%s: %pI NodeList=%s %s", __func__,
-	       &job_info_msg->step_id, job_ptr->nodes, TIME_STR);
+	       &job_info_msg->step_id, job_ptr->nodes, TIMER_STR());
 
 	if (!job_ptr->het_job_list) {
 		resp = list_create(_het_job_alloc_list_del);
