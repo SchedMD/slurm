@@ -4601,7 +4601,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_instances ran for %s",
-		 TIME_STR);
+		 TIMER_STR());
 	_log_script_argv(script_argv, resp_msg);
 	xfree_array(script_argv);
 #if 0
