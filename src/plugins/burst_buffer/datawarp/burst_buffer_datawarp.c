@@ -1621,7 +1621,7 @@ static void *_start_stage_out(void *x)
 	run_command_args.script_type = "dws_post_run";
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
-	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	if ((TIMER_DURATION_USEC() > 500000) || /* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("dws_post_run for JobId=%u ran for %s",
 		     stage_args->job_id, TIMER_STR());
@@ -1682,7 +1682,7 @@ static void *_start_stage_out(void *x)
 		run_command_args.script_type = "dws_data_out";
 		resp_msg = run_command(&run_command_args);
 		END_TIMER;
-		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
+		if ((TIMER_DURATION_USEC() > 1000000) || /* 10 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 			info("dws_data_out for JobId=%u ran for %s",
 			     stage_args->job_id,
