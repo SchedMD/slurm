@@ -45,7 +45,10 @@
 
 #include <src/common/slurm_time.h>
 
-#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
+#define DEF_TIMERS \
+	struct timeval tv1, tv2; \
+	char tv_str[20] = ""; \
+	long delta_t;
 #define START_TIMER	gettimeofday(&tv1, NULL)
 #define END_TIMER do {							\
 	gettimeofday(&tv2, NULL);					\
