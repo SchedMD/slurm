@@ -48,32 +48,35 @@
 
 #define DELTA_TIMER delta_t
 #define TIME_STR tv_str
+#define TIMER_START_TS tv1
+#define TIMER_END_TS tv2
 #define DEF_TIMERS \
-	struct timeval tv1 = { 0, 0 }; \
-	struct timeval tv2 = { 0, 0 }; \
+	struct timeval TIMER_START_TS = { 0, 0 }; \
+	struct timeval TIMER_END_TS = { 0, 0 }; \
 	char TIME_STR[20] = ""; \
 	long DELTA_TIMER;
 #define START_TIMER \
 	do { \
-		gettimeofday(&tv1, NULL); \
+		gettimeofday(&TIMER_START_TS, NULL); \
 	} while (false)
 #define END_TIMER \
 	do { \
-		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR), \
-				  NULL, 0, &DELTA_TIMER); \
+		gettimeofday(&TIMER_END_TS, NULL); \
+		slurm_diff_tv_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
+				  sizeof(TIME_STR), NULL, 0, &DELTA_TIMER); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
-		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR), \
-				  from, 0, &DELTA_TIMER); \
+		gettimeofday(&TIMER_END_TS, NULL); \
+		slurm_diff_tv_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
+				  sizeof(TIME_STR), from, 0, &DELTA_TIMER); \
 	} while (false)
 #define END_TIMER3(from, limit) \
 	do { \
-		gettimeofday(&tv2, NULL); \
-		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR), \
-				  from, limit, &DELTA_TIMER); \
+		gettimeofday(&TIMER_END_TS, NULL); \
+		slurm_diff_tv_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
+				  sizeof(TIME_STR), from, limit, \
+				  &DELTA_TIMER); \
 	} while (false)
 /*
  * Get duration of time between START_TIMER and END_TIMER as string
@@ -81,7 +84,8 @@
  * RET: string of duration of time between calls or "INVALID"
  */
 #define TIMER_STR() \
-	((timer_duration_str(&tv1, &tv2, TIME_STR, sizeof(TIME_STR) > 0) ? \
+	((timer_duration_str(&TIMER_START_TS, &TIMER_END_TS, TIME_STR, \
+			     sizeof(TIME_STR) > 0) ? \
 		  TIME_STR : \
 		  "INVALID"))
 
