@@ -296,7 +296,7 @@ static void *_agent(void *x)
 	xfree(args);
 
 	END_TIMER;
-	debug("kvs_xmit time %ld usec", DELTA_TIMER);
+	debug("kvs_xmit time %s", TIMER_STR());
 	return NULL;
 }
 
