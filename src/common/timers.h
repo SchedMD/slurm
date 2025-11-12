@@ -39,6 +39,7 @@
 #ifndef _HAVE_TIMERS_H
 #define _HAVE_TIMERS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -49,7 +50,10 @@
 	struct timeval tv1, tv2; \
 	char tv_str[20] = ""; \
 	long delta_t;
-#define START_TIMER	gettimeofday(&tv1, NULL)
+#define START_TIMER \
+	do { \
+		gettimeofday(&tv1, NULL); \
+	} while (false)
 #define END_TIMER do {							\
 	gettimeofday(&tv2, NULL);					\
 	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0, &delta_t);	\
