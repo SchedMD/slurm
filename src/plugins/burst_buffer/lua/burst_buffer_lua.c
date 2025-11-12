@@ -1247,10 +1247,10 @@ static int _run_lua_script_wrapper(run_lua_args_t *run_lua_args)
 	if (run_lua_args->job_id)
 		log_flag(BURST_BUF, "%s for JobId=%u ran for %s",
 			 run_lua_args->lua_func, run_lua_args->job_id,
-			 TIME_STR);
+			 TIMER_STR());
 	else
 		log_flag(BURST_BUF, "%s ran for %s",
-			 run_lua_args->lua_func, TIME_STR);
+			 run_lua_args->lua_func, TIMER_STR());
 
 	return rc;
 }
