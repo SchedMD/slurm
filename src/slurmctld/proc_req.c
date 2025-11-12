@@ -4071,10 +4071,12 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 	} else {
 		if (job_desc_msg->job_id_str) {
 			info("%s: complete JobId=%s uid=%u %s",
-			     __func__, job_desc_msg->job_id_str, uid, TIME_STR);
+			     __func__, job_desc_msg->job_id_str, uid,
+			     TIMER_STR());
 		} else {
 			info("%s: complete %pI uid=%u %s",
-			     __func__, &job_desc_msg->step_id, uid, TIME_STR);
+			     __func__, &job_desc_msg->step_id, uid,
+			     TIMER_STR());
 		}
 		/* Below functions provide their own locking */
 		schedule_job_save();
