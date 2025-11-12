@@ -36,6 +36,8 @@
 #ifndef SLURM_HTTP_CON_H
 #define SLURM_HTTP_CON_H
 
+#include <sys/stat.h>
+
 #include "src/common/http.h"
 #include "src/conmgr/conmgr.h"
 
@@ -135,5 +137,13 @@ extern int http_con_send_response(http_con_t *hcon,
  */
 extern int http_con_get_status(http_con_t *hcon,
 			       conmgr_fd_status_t *status_ptr);
+
+/*
+ * Run fstat() against HTTP connection input file descriptor
+ * IN con - connection to query
+ * IN/OUT stat_ptr - stat struct to populate
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_fstat_input(http_con_t *hcon, struct stat *stat_ptr);
 
 #endif

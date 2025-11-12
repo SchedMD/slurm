@@ -852,3 +852,9 @@ extern int http_con_get_status(http_con_t *hcon, conmgr_fd_status_t *status_ptr)
 	xassert(hcon->magic == MAGIC);
 	return conmgr_con_get_status(hcon->con, status_ptr);
 }
+
+extern int http_con_fstat_input(http_con_t *hcon, struct stat *stat_ptr)
+{
+	xassert(hcon->magic == MAGIC);
+	return conmgr_con_fstat_input(hcon->con, stat_ptr);
+}
