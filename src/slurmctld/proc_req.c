@@ -4353,7 +4353,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t *msg)
 		};
 
 		debug2("%s complete for %s %s",
-		       __func__, resv_desc_ptr->name, TIME_STR);
+		       __func__, resv_desc_ptr->name, TIMER_STR());
 		/* send reservation name */
 		(void) send_msg_response(msg, RESPONSE_CREATE_RESERVATION,
 					 &resv_resp_msg);
