@@ -1592,7 +1592,7 @@ static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 	FREE_NULL_LIST(resp_msg.assoc_shares_list);
 	/* don't free the resp_msg.tres_names */
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIME_STR);
+	debug2("%s %s", __func__, TIMER_STR());
 }
 
 static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
