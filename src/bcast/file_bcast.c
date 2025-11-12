@@ -414,7 +414,7 @@ static int _bcast_file(struct bcast_parameters *params)
 						  &more, file_start);
 		END_TIMER;
 		file_start = false;
-		time_compression += DELTA_TIMER;
+		time_compression += TIMER_DURATION_USEC();
 		size_uncompressed += orig_len;
 		size_compressed += bcast_msg.block_len;
 		debug("block %u, size %u", bcast_msg.block_no,
