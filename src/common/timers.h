@@ -58,7 +58,6 @@
 #define END_TIMER \
 	do { \
 		gettimeofday(&TIMER_END_TS, NULL); \
-		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, NULL, 0); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
