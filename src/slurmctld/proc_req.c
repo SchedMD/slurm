@@ -2777,7 +2777,7 @@ send_resp:
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, node_reg_stat_msg->node_name, TIME_STR);
+		       __func__, node_reg_stat_msg->node_name, TIMER_STR());
 		/* If the slurmd is requesting a response send it */
 		if (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP) {
 			slurm_node_reg_resp_msg_t tmp_resp;
