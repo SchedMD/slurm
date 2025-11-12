@@ -38,6 +38,7 @@
 
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -919,6 +920,14 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con);
  */
 extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
 				 conmgr_fd_status_t *status_ptr);
+
+/*
+ * Run fstat() against connection input file descriptor
+ * IN con - connection to query
+ * IN stat_ptr - stat struct to populate
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_fstat_input(conmgr_fd_ref_t *con, struct stat *stat_ptr);
 
 /*
  * Check to see if the con->output_fd is currently open and can (in theory)

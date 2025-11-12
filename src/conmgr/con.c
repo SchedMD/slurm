@@ -1440,6 +1440,56 @@ extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
 	return rc;
 }
 
+extern int conmgr_con_fstat_input(conmgr_fd_ref_t *ref, struct stat *stat_ptr)
+{
+	int rc = SLURM_SUCCESS, input_fd = -1;
+	conmgr_fd_t *con = NULL;
+
+	xassert(stat_ptr);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	con = ref->con;
+
+	if (!con) {
+		slurm_mutex_unlock(&mgr.mutex);
+		return EBADF;
+	}
+
+	if (!con_flag(con, FLAG_READ_EOF))
+		input_fd = con->input_fd;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	/*
+	 * Possible but unlikely TOCTOU if input_fd is reused after unlocking
+	 * and before fstat(). Intentionally not locking the syscall as it
+	 * causes a too big performance impact, and we would have bigger
+	 * problems in conmgr if this happened.
+	 */
+	if (fstat(input_fd, stat_ptr))
+		rc = errno;
+
+	if (!rc) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Catch the file descriptor changing while calling fstat() */
+		if (con->input_fd != input_fd)
+			rc = EBADF;
+
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+
+	/* Avoid leaking any flags or stat state on any failure */
+	if (rc)
+		*stat_ptr = (struct stat) { 0 };
+
+	return rc;
+}
+
 /*
  * Find by matching fd to connection
  */
