@@ -3981,7 +3981,7 @@ send_msg:
 			.error_code = error_code,
 			.job_submit_user_msg = job_submit_user_msg,
 		};
-		info("%s: %pI %s", __func__, &step_id, TIME_STR);
+		info("%s: %pI %s", __func__, &step_id, TIMER_STR());
 		/* send job_ID */
 		(void) send_msg_response(msg, RESPONSE_SUBMIT_BATCH_JOB,
 					 &submit_msg);
