@@ -4678,7 +4678,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 		static uint32_t last_csum = 0;
 		uint32_t i, resp_csum = 0;
 		debug("pools ran for %s",
-		      TIME_STR);
+		      TIMER_STR());
 		for (i = 0; resp_msg[i]; i++)
 			resp_csum += ((i * resp_msg[i]) % 1000000);
 		if (last_csum != resp_csum)
