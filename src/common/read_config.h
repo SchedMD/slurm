@@ -314,7 +314,7 @@ extern int job_defaults_unpack(void **out, uint16_t protocol_version,
 			       buf_t *buffer);
 
 /*
- * slurm_reset_alias() for each node in alias_list
+ * set_nodes_alias() for each node in alias_list
  *
  * IN alias_list - string with sets of node name, communication address in []
  * 	and hostname. Each element in the set if colon separated and
