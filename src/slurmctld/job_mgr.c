@@ -9502,7 +9502,7 @@ void job_time_limit(void)
 		 */
 	time_check:
 		/* Use a hard-coded 3 second timeout, with a 1 second sleep. */
-		if (slurm_delta_tv(&tv1) >= 3000000 &&
+		if ((TIMER_DURATION_USEC() >= 3000000) &&
 		    list_peek_next(job_iterator)) {
 			END_TIMER;
 			debug("%s: yielding locks after testing %d jobs, %s",
