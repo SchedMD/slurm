@@ -42,6 +42,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"
 
@@ -83,7 +85,7 @@ extern bool slurm_get_plugin_hash_enable(int index);
 /*
  * Check if specific plugin type has been initialized
  */
-extern bool auth_is_plugin_type_inited(int plugin_id);
+extern bool auth_is_plugin_type_inited(auth_plugin_type_t plugin_id);
 
 /*
  * Expose the context_lock externally so slurmstepd can prevent the
@@ -120,14 +122,14 @@ extern void *auth_g_get_identity(void *cred);
 extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version);
 extern void *auth_g_unpack(buf_t *buf, uint16_t protocol_version);
 
-extern char *auth_g_token_generate(int plugin_id, const char *username,
-				   int lifespan);
+extern char *auth_g_token_generate(auth_plugin_type_t plugin_id,
+				   const char *username, int lifespan);
 
 /*
  * Get file descriptor that must survive reconfig
  * RET -1 or file descriptor that must survive reconfig
  */
-extern int auth_g_get_reconfig_fd(int plugin_id);
+extern int auth_g_get_reconfig_fd(auth_plugin_type_t plugin_id);
 
 /*
  * Set local thread security context
@@ -144,6 +146,6 @@ extern void auth_g_thread_clear(void);
 /*
  * Give auth plugin type if known from plugin_id
  */
-extern const char *auth_get_plugin_name(int plugin_id);
+extern const char *auth_get_plugin_name(auth_plugin_type_t plugin_id);
 
 #endif

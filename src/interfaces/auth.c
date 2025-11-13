@@ -42,6 +42,8 @@
 #include <string.h>
 #include <sys/socket.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -152,7 +154,7 @@ static void _atfork_child()
 		slurm_rwlock_wrlock(&context_lock);
 }
 
-extern const char *auth_get_plugin_name(int plugin_id)
+extern const char *auth_get_plugin_name(auth_plugin_type_t plugin_id)
 {
 	for (int i = 0; i < ARRAY_SIZE(auth_plugin_types); i++)
 		if (plugin_id == auth_plugin_types[i].plugin_id)
@@ -170,7 +172,7 @@ extern bool slurm_get_plugin_hash_enable(int index)
 	return *(ops[index].hash_enable);
 }
 
-extern bool auth_is_plugin_type_inited(int plugin_id)
+extern bool auth_is_plugin_type_inited(auth_plugin_type_t plugin_id)
 {
 	for (int i = 0; i < g_context_num; i++)
 		if (plugin_id == *(ops[i].plugin_id))
@@ -576,8 +578,8 @@ extern void auth_g_thread_clear(void)
 	slurm_rwlock_unlock(&context_lock);
 }
 
-extern char *auth_g_token_generate(int plugin_id, const char *username,
-				   int lifespan)
+extern char *auth_g_token_generate(auth_plugin_type_t plugin_id,
+				   const char *username, int lifespan)
 {
 	char *token = NULL;
 	xassert(g_context_num > 0);
@@ -594,7 +596,7 @@ extern char *auth_g_token_generate(int plugin_id, const char *username,
 	return token;
 }
 
-extern int auth_g_get_reconfig_fd(int plugin_id)
+extern int auth_g_get_reconfig_fd(auth_plugin_type_t plugin_id)
 {
 	int fd = -1;
 
