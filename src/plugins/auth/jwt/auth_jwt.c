@@ -87,6 +87,10 @@ static char *claim_field = NULL;
 static __thread char *thread_token = NULL;
 static __thread char *thread_username = NULL;
 
+extern auth_token_t *auth_p_cred_generate(const char *token,
+					  const char *username, uid_t uid,
+					  gid_t gid);
+
 /*
  * This plugin behaves differently than the others in that it needs to operate
  * asynchronously. If we're running in one of the daemons, it's presumed that
@@ -660,4 +664,28 @@ fail:
 extern int auth_p_get_reconfig_fd(void)
 {
 	return -1;
+}
+
+extern auth_token_t *auth_p_cred_generate(const char *token,
+					  const char *username, uid_t uid,
+					  gid_t gid)
+{
+	auth_token_t *cred = NULL;
+
+	if (!token || !token[0]) {
+		error("%s: required token not provided", __func__);
+		errno = ESLURM_AUTH_CRED_INVALID;
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = xmalloc(sizeof(*cred));
+	*cred = (auth_token_t) {
+		.token = xstrdup(token),
+		.username = xstrdup(username),
+		.uid = uid,
+		.gid = gid,
+	};
+
+	return cred;
 }
