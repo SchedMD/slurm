@@ -35,6 +35,10 @@ if {![is_super_user]} {
 	skip "AccountingStorageEnforce limits must be set"
 }
 
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "Test requires accounting_storage/slurmdbd"
+}
+
 proc mod_assoc_vals { } {
 	global sacctmgr test_acct test_user
 
@@ -83,7 +87,7 @@ proc clear_assoc_vals { } {
 	}
 }
 
-proc delete_test_acct { } {
+proc cleanup { } {
 	global test_acct sacctmgr
 
 	set deleted 0
@@ -103,197 +107,98 @@ proc delete_test_acct { } {
 }
 
 # Remove any vestigial accounts
-delete_test_acct
+cleanup
 
 # Get username
 set test_user [get_my_user_name]
 
-if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
-	# Add test Account
-	set acct_added 0
-	set cluster [get_config_param "ClusterName"]
-	spawn $sacctmgr add -i account $test_acct cluster=$cluster
-	expect {
-		-re "Adding Account" {
-			set acct_added 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
+# Add test Account
+set acct_added 0
+set cluster [get_config_param "ClusterName"]
+spawn $sacctmgr add -i account $test_acct cluster=$cluster
+expect {
+	-re "Adding Account" {
+		set acct_added 1
+		exp_continue
 	}
-
-	if {!$acct_added} {
-		fail "Could not add test account ($test_acct)"
+	timeout {
+		fail "sacctmgr is not responding"
 	}
-
-	# Add user to test account
-	set user_added 0
-	spawn $sacctmgr add -i user $test_user account=$test_acct
-	expect {
-		-re "Associations" {
-			set user_added 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
+	eof {
+		wait
 	}
-
-	if {!$user_added} {
-		fail "Could not add user to test account"
-	}
-
-	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
-	expect {
-		-re " Account=$test_acct" {
-			incr match
-			exp_continue
-		}
-		-re " UserName=$test_user" {
-			incr match
-			exp_continue
-		}
-		-re " GrpTRES=" {
-			incr match
-			exp_continue
-		}
-		-re " MaxJobs=" {
-			incr match
-			exp_continue
-		}
-		-re " MaxTRESPJ=" {
-			incr match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	subtest {$match == 5} "1. Verify scontrol show assoc_mgr shows correct information" "$match != 5"
-
-	# Set association limits and check that controller is updated
-	mod_assoc_vals
-
-	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
-	expect {
-		-re " Account=$test_acct" {
-			incr match
-			exp_continue
-		}
-		-re " UserName=$test_user" {
-			incr match
-			exp_continue
-		}
-		-re " Priority=9" {
-			incr match
-			exp_continue
-		}
-		-re " GrpTRES=cpu=3" {
-			incr match
-			exp_continue
-		}
-		-re " MaxJobs=2" {
-			incr match
-			exp_continue
-		}
-		-re " MaxTRESPJ=cpu=6" {
-			incr match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	subtest {$match == 6} "2. Verify scontrol show assoc_mgr shows correct information" "$match != 6"
-
-	# Clear associtation limits and check controller is updated
-	clear_assoc_vals
-
-	set match 0
-	set limit_match 0
-	spawn $bin_bash -c "exec $scontrol show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
-	expect {
-		-re " Account=$test_acct" {
-			incr match
-			exp_continue
-		}
-		-re " UserName=$test_user" {
-			incr match
-			exp_continue
-		}
-		-re " Priority=0" {
-			incr match
-			exp_continue
-		}
-		-re " GrpTRES=cpu=3" {
-			incr limit_match
-			exp_continue
-		}
-		-re " MaxJobs=2" {
-			incr limit_match
-			exp_continue
-		}
-		-re " MaxTRESPJ=cpu=6" {
-			incr limit_match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	subtest {$match == 3 || ! $limit_match} "3. Verify scontrol show assoc_mgr shows correct information" "$match != 3"
-
-	delete_test_acct
-
-} else {
-
-	set match 0
-	spawn $scontrol show assoc_mgr
-	expect {
-		-re "Current Association Manager state" {
-			incr match
-			exp_continue
-		}
-		-re "No users currently cached in Slurm" {
-			incr match
-			exp_continue
-		}
-		-re "No associations currently cached in Slurm" {
-			incr match
-			exp_continue
-		}
-		-re "No QOS currently cached in Slurm" {
-			incr match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	subtest {$match == 4} "4. Verify scontrol show assoc_mgr shows correct information" "$match != 4"
 }
+
+if {!$acct_added} {
+	fail "Could not add test account ($test_acct)"
+}
+
+# Add user to test account
+set user_added 0
+spawn $sacctmgr add -i user $test_user account=$test_acct
+expect {
+	-re "Associations" {
+		set user_added 1
+		exp_continue
+	}
+	timeout {
+		fail "sacctmgr is not responding"
+	}
+	eof {
+		wait
+	}
+}
+
+if {!$user_added} {
+	fail "Could not add user to test account"
+}
+
+set match 0
+wait_for {$match == 5} {
+	set output [run_command -fail "$scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"]
+	set match 0
+	incr match [regexp " Account=$test_acct" $output]
+	incr match [regexp " UserName=$test_user" $output]
+	incr match [regexp -all " GrpTRES=" $output]
+	incr match [regexp -all " MaxJobs=" $output]
+	incr match [regexp -all " MaxTRESPJ=" $output]
+}
+subtest {$match == 5} "1. Verify scontrol show assoc_mgr shows correct information" "$match != 5"
+
+# Set association limits and check that controller is updated
+mod_assoc_vals
+
+set match 0
+wait_for {$match == 6} {
+	set output [run_command -fail "$scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"]
+	set match 0
+	incr match [regexp " Account=$test_acct" $output]
+	incr match [regexp " UserName=$test_user" $output]
+	incr match [regexp -all " Priority=9" $output]
+	incr match [regexp -all " GrpTRES=cpu=3" $output]
+	incr match [regexp -all " MaxJobs=2" $output]
+	incr match [regexp -all " MaxTRESPJ=cpu=6" $output]
+}
+subtest {$match == 6} "2. Verify scontrol show assoc_mgr shows correct information" "$match != 6"
+
+# Clear associtation limits and check controller is updated
+clear_assoc_vals
+
+set match 0
+set nmatch 0
+wait_for {$match == 3 && $nmatch == 0} {
+	set output [run_command -fail "$scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"]
+	set match 0
+	incr match [regexp " Account=$test_acct" $output]
+	incr match [regexp " UserName=$test_user" $output]
+	incr match [regexp -all " Priority=0" $output]
+	incr nmatch [regexp -all " GrpTRES=" $output]
+	incr nmatch [regexp -all " MaxJobs=" $output]
+	incr nmatch [regexp -all " MaxTRESPJ=" $output]
+
+	set nmatch 0
+	incr nmatch [regexp -all " GrpTRES=cpu=3" $output]
+	incr nmatch [regexp -all " MaxJobs=2" $output]
+	incr nmatch [regexp -all " MaxTRESPJ=cpu=6" $output]
+}
+subtest {$match == 3 && $nmatch == 0} "3. Verify scontrol show assoc_mgr shows correct information" "$match != 3 || $nmatch != 0"
