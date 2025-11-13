@@ -107,7 +107,7 @@ static const char *syms[] = {
 };
 
 typedef struct {
-	int plugin_id;
+	auth_plugin_type_t plugin_id;
 	char *type;
 } auth_plugin_types_t;
 
