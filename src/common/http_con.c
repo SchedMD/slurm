@@ -858,3 +858,11 @@ extern int http_con_fstat_input(http_con_t *hcon, struct stat *stat_ptr)
 	xassert(hcon->magic == MAGIC);
 	return conmgr_con_fstat_input(hcon->con, stat_ptr);
 }
+
+extern int http_con_get_auth_creds(http_con_t *hcon, uid_t *cred_uid,
+				   gid_t *cred_gid, pid_t *cred_pid)
+{
+	xassert(hcon->magic == MAGIC);
+	return conmgr_con_get_auth_creds(hcon->con, cred_uid, cred_gid,
+					 cred_pid);
+}

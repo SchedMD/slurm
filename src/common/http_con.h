@@ -146,4 +146,12 @@ extern int http_con_get_status(http_con_t *hcon,
  */
 extern int http_con_fstat_input(http_con_t *hcon, struct stat *stat_ptr);
 
+/*
+ * Run SO_PEERCRED against HTTP connection
+ * IN con - connection to query
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_get_auth_creds(http_con_t *hcon, uid_t *cred_uid,
+				   gid_t *cred_gid, pid_t *cred_pid);
+
 #endif
