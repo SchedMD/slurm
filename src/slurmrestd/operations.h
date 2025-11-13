@@ -36,7 +36,6 @@
 #ifndef SLURMRESTD_OPERATIONS_H
 #define SLURMRESTD_OPERATIONS_H
 
-#include "src/interfaces/serializer.h"
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
 
