@@ -177,7 +177,7 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 
 	if (opts.join_container) {
 		list_t *fd_map = list_create(NULL);
-		int rc = stepd_get_namespace_fd(fd, protocol_version);
+		int rc = stepd_get_namespace_fds(fd, fd_map, protocol_version);
 		if (rc == -1) {
 			error("stepd_get_ns_fds failed");
 			rc = SLURM_ERROR;
