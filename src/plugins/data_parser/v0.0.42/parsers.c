@@ -8538,7 +8538,7 @@ static const parser_t PARSER_ARRAY(INSTANCE_CONDITION)[] = {
 #define add_parse_deprec(mtype, field, overloads, path, desc, deprec) \
 	add_parser_deprec(openapi_job_submit_request_t, mtype, false, field, overloads, path, desc, deprec)
 static const parser_t PARSER_ARRAY(JOB_SUBMIT_REQ)[] = {
-	add_parse_deprec(STRING, script, 0, "script", "Deprecated; Populate script field in jobs[0] or job", SLURM_24_05_PROTOCOL_VERSION),
+	add_parse(STRING, script, "script", "Job batch script contents; Same as the script field in jobs[0] or job."),
 	add_parse(JOB_DESC_MSG_LIST, jobs, "jobs", "HetJob description"),
 	add_parse(JOB_DESC_MSG_PTR, job, "job", "Job description"),
 };
