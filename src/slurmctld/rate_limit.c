@@ -68,27 +68,45 @@ static int refill_period = 1;
 
 extern void rate_limit_init(void)
 {
+	char rl_table_size_str[] = "rl_table_size=";
+	char rl_bucket_size_str[] = "rl_bucket_size=";
+	char rl_log_freq_str[] = "rl_log_freq=";
+	char rl_refill_rate_str[] = "rl_refill_rate=";
+	char rl_refill_period_str[] = "rl_refill_period=";
 	char *tmp_ptr;
 
 	if (!xstrcasestr(slurm_conf.slurmctld_params, "rl_enable"))
 		return;
 
-	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
-				   "rl_table_size=")))
-		table_size = atoi(tmp_ptr + 14);
-	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
-				   "rl_bucket_size=")))
-		bucket_size = atoi(tmp_ptr + 15);
-	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
-				   "rl_log_freq=")))
-		log_freq = atoi(tmp_ptr + 12);
-	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
-				   "rl_refill_rate=")))
-		refill_rate = atoi(tmp_ptr + 15);
-	if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
-				   "rl_refill_period=")))
-		refill_period = atoi(tmp_ptr + 17);
+	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+					rl_table_size_str))) {
+		table_size = atoi(tmp_ptr);
+		xfree(tmp_ptr);
+	}
 
+	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+					rl_bucket_size_str))) {
+		bucket_size = atoi(tmp_ptr);
+		xfree(tmp_ptr);
+	}
+
+	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+					rl_log_freq_str))) {
+		log_freq = atoi(tmp_ptr);
+		xfree(tmp_ptr);
+	}
+
+	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+					rl_refill_rate_str))) {
+		refill_rate = atoi(tmp_ptr);
+		xfree(tmp_ptr);
+	}
+
+	if ((tmp_ptr = conf_get_opt_str(slurm_conf.slurmctld_params,
+					rl_refill_period_str))) {
+		refill_period = atoi(tmp_ptr);
+		xfree(tmp_ptr);
+	}
 
 	rate_limit_enabled = true;
 	user_buckets = xcalloc(table_size, sizeof(user_bucket_t));
