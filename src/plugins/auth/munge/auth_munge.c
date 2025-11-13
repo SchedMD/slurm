@@ -94,6 +94,9 @@ typedef struct {
 
 extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data,
 					int dlen);
+extern auth_credential_t *auth_p_cred_generate(const char *token,
+					       const char *username, uid_t uid,
+					       gid_t gid);
 extern void auth_p_destroy(auth_credential_t *cred);
 
 /* Static prototypes */
@@ -626,4 +629,30 @@ char *auth_p_token_generate(const char *username, int lifespan)
 extern int auth_p_get_reconfig_fd(void)
 {
 	return -1;
+}
+
+extern auth_credential_t *auth_p_cred_generate(const char *token,
+					       const char *username, uid_t uid,
+					       gid_t gid)
+
+{
+	auth_credential_t *cred = NULL;
+
+	if (!token || !token[0]) {
+		error("%s: required token not provided", __func__);
+		errno = ESLURM_AUTH_CRED_INVALID;
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = xmalloc(sizeof(*cred));
+	*cred = (auth_credential_t) {
+		.magic = MUNGE_MAGIC,
+		.m_xstr = true,
+		.m_str = xstrdup(token),
+		.uid = uid,
+		.gid = gid,
+	};
+
+	return cred;
 }
