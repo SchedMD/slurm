@@ -418,8 +418,8 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 				     int *count, uint16_t tree_width,
 				     void *tctx)
 {
-	int i, j, k, msg_count, switch_count, switch_nodes_cnt, depth = 0,
-		upper_switch_level = 0;
+	int i, j, k, msg_count, switch_count, depth = 0, upper_switch_level = 0;
+	double switch_nodes_cnt;
 	int s_first, s_last;
 	char *buf;
 	bitstr_t *nodes_bitmap = NULL;		/* nodes in message list */
