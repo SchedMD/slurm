@@ -249,7 +249,8 @@ extern const char *resolve_mime_type(const char *mime_type,
 	if (!pmt)
 		return NULL;
 
-	*plugin_ptr = plugins->types[pmt->index];
+	if (plugin_ptr)
+		*plugin_ptr = plugins->types[pmt->index];
 	return pmt->mime_type;
 }
 
