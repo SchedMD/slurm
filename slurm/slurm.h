@@ -690,6 +690,7 @@ enum job_acct_types {
  * Update auth_plugin_types in slurm_auth.c if changed.
  */
 typedef enum auth_plugin_type {
+	AUTH_PLUGIN_DEFAULT = 0,
 	AUTH_PLUGIN_NONE	= 100,
 	AUTH_PLUGIN_MUNGE	= 101,
 	AUTH_PLUGIN_JWT		= 102,
