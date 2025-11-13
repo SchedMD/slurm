@@ -41,6 +41,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/http.h"
+#include "src/common/http_mime.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/xassert.h"

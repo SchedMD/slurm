@@ -36,4 +36,6 @@
 #ifndef SLURM_HTTP_MIME_H
 #define SLURM_HTTP_MIME_H
 
+#define MIME_TYPE_TEXT "text/plain"
+
 #endif

@@ -35,8 +35,9 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/http_con.h"
 #include "src/common/http.h"
+#include "src/common/http_con.h"
+#include "src/common/http_mime.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
