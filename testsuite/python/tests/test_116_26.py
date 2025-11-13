@@ -4,8 +4,6 @@
 import atf
 import pytest
 
-# import re
-import pexpect
 
 node_count = 2
 slurm_user = atf.properties["slurm-user"]
@@ -22,9 +20,7 @@ def setup():
 @pytest.fixture(scope="module")
 def no_kill_job():
     """Submit a job that should not be killed on node failure"""
-    child = pexpect.spawn("srun --no-kill -N2 -v sleep 300")
-    child.expect(r"jobid (\d+)", timeout=5)
-    job_id = int(child.match.group(1))
+    job_id = atf.submit_job_sbatch(f"--no-kill -N{node_count} --wrap 'sleep 300'")
     atf.wait_for_job_state(job_id, "RUNNING")
     # Grab the first allocated node before it is removed from the job so we can clean it up
     first_node = atf.node_range_to_list(atf.get_job_parameter(job_id, "NodeList"))[0]
