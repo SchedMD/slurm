@@ -72,6 +72,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/port_mgr.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -299,6 +300,9 @@ static void _update_pidfile(void);
 static void         _update_qos(slurmdb_qos_rec_t *rec);
 static void _usage(void);
 static void _verify_clustername(void);
+static probe_status_t _probe_listeners(probe_log_t *log);
+static probe_status_t _probe_primary(probe_log_t *log);
+static probe_status_t _probe_reconfig(probe_log_t *log);
 
 static void _send_reconfig_replies(void)
 {
@@ -481,7 +485,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
-	conmgr_log_diagnostics();
+	(void) probe_run(true, NULL, NULL, __func__);
 }
 
 static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
@@ -616,6 +620,11 @@ int main(int argc, char **argv)
 	bool slurmscriptd_mode = false;
 	char *conf_file;
 	stepmgr_ops_t stepmgr_ops = { 0 };
+
+	probe_init();
+	probe_register("rpc-listeners", _probe_listeners);
+	probe_register("primary", _probe_primary);
+	probe_register("reconfiguring", _probe_reconfig);
 
 	stepmgr_ops.agent_queue_request = agent_queue_request;
 	stepmgr_ops.find_job = find_job;
@@ -1230,6 +1239,7 @@ int main(int argc, char **argv)
 	http_switch_fini();
 
 	rate_limit_shutdown();
+	probe_fini();
 	log_fini();
 	sched_log_fini();
 
@@ -1517,9 +1527,19 @@ rwfail:
 	(void) close(fd);
 }
 
-extern bool is_reconfiguring(void)
+static probe_status_t _probe_reconfig(probe_log_t *log)
 {
-	return reconfig || !list_is_empty(reconfig_reqs);
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	probe_log(log, "reconfiguring:%c requests:%d",
+		  BOOL_CHARIFY(reconfig), list_count(reconfig_reqs));
+
+	if (reconfig || !list_is_empty(reconfig_reqs))
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
+
+	return status;
 }
 
 extern void reconfigure_slurm(slurm_msg_t *msg)
@@ -1795,30 +1815,40 @@ extern void listeners_unquiesce(void)
 	slurm_mutex_unlock(&listeners.mutex);
 }
 
-extern bool listeners_quiesced(void)
+static probe_status_t _probe_listeners(probe_log_t *log)
 {
-	bool quiesced;
+	probe_status_t status = PROBE_RC_UNKNOWN;
 
 	slurm_mutex_lock(&listeners.mutex);
 
-	quiesced = listeners.quiesced;
+	if (listeners.count <= 0)
+		status = PROBE_RC_DOWN;
+	else if (listeners.quiesced)
+		status = PROBE_RC_BUSY;
+	else
+		status = PROBE_RC_READY;
 
 	slurm_mutex_unlock(&listeners.mutex);
 
-	return quiesced;
+	return status;
 }
 
-extern bool is_primary(void)
+static probe_status_t _probe_primary(probe_log_t *log)
 {
-	bool primary;
+	probe_status_t status = PROBE_RC_UNKNOWN;
 
 	slurm_mutex_lock(&listeners.mutex);
 
-	primary = !listeners.standby_mode;
+	probe_log(log, "primary:%c", BOOL_CHARIFY(!listeners.standby_mode));
+
+	if (listeners.standby_mode)
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
 
 	slurm_mutex_unlock(&listeners.mutex);
 
-	return primary;
+	return status;
 }
 
 /*

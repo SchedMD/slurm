@@ -52,6 +52,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
 #include "src/common/port_mgr.h"
+#include "src/common/probes.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_protocol_api.h"
@@ -379,7 +380,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
-	conmgr_log_diagnostics();
+	(void) probe_run(true, NULL, NULL, __func__);
 }
 
 static void _main_thread_init()
@@ -431,6 +432,8 @@ extern int main(int argc, char **argv)
 	slurm_msg_t *msg;
 	int rc = SLURM_SUCCESS;
 	bool only_mem = true;
+
+	probe_init();
 
 	_main_thread_init();
 
@@ -527,6 +530,7 @@ ending:
 	stepd_cleanup(msg, cli, rc, only_mem);
 
 	conmgr_fini();
+	probe_fini();
 	return rc;
 }
 

@@ -110,6 +110,8 @@ libcommon_la_SOURCES =				\
 	port_mgr.h				\
 	print_fields.c				\
 	print_fields.h				\
+	probes.c				\
+	probes.h				\
 	proc_args.c				\
 	proc_args.h				\
 	read_config.c				\

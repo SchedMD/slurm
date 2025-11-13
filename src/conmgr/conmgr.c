@@ -41,6 +41,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/probes.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -86,7 +87,8 @@ static void _at_exit(void)
 	mgr.shutdown_requested = true;
 }
 
-static void _log_diag_mgr(void)
+/* Caller must hold mgr.mutex lock */
+static void _probe_verbose(probe_log_t *log)
 {
 	char conf_read_timeout[CTIME_STR_LEN] = "∞";
 	char conf_write_timeout[CTIME_STR_LEN] = "∞";
@@ -118,38 +120,46 @@ static void _log_diag_mgr(void)
 			       sizeof(quiesce_start));
 	}
 
-	info("config: max_connections:%d delay_write_complete:%us read_timeout:%s write_timeout:%s connect_timeout:%s quiesce_timeout:%s threads=%d",
+	probe_log(log, "config: max_connections:%d delay_write_complete:%us read_timeout:%s write_timeout:%s connect_timeout:%s quiesce_timeout:%s threads=%d",
 	     mgr.conf_max_connections, mgr.conf_delay_write_complete,
 	     conf_read_timeout, conf_write_timeout, conf_connect_timeout,
 	     quiesce_timeout, mgr.workers.conf_threads);
 
-	info("status: initialized:%c shutdown_requested:%c",
+	probe_log(log, "status: initialized:%c shutdown_requested:%c",
 	     BOOL_CHARIFY(mgr.initialized), BOOL_CHARIFY(mgr.shutdown_requested));
 
-	info("watch: max_sleep:%s polling:%c inspecting:%c waiting_on_work:%c",
+	probe_log(log, "watch: max_sleep:%s polling:%c inspecting:%c waiting_on_work:%c",
 	     watch_max_sleep, BOOL_CHARIFY(mgr.poll_active),
 	     BOOL_CHARIFY(mgr.inspecting), BOOL_CHARIFY(mgr.waiting_on_work));
 
-	info("quiesce: requested:%c%s%s active:%c",
+	probe_log(log, "quiesce: requested:%c%s%s active:%c",
 	     BOOL_CHARIFY(mgr.quiesce.requested), quiesce_start_delim,
 	     quiesce_start, BOOL_CHARIFY(mgr.quiesce.active));
 }
 
-extern void conmgr_log_diagnostics(void)
+static probe_status_t _probe(probe_log_t *log)
 {
-	if (get_log_level() < LOG_LEVEL_INFO)
-		return;
+	probe_status_t status = PROBE_RC_UNKNOWN;
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	info("BEGIN: CONMGR Diagnostics:");
-	_log_diag_mgr();
-	conmgr_log_workers();
-	conmgr_log_connections();
-	conmgr_log_work();
-	info("END: CONMGR Diagnostics:");
+	if (log)
+		_probe_verbose(log);
+
+	if (!mgr.initialized)
+		status = PROBE_RC_UNKNOWN;
+	else if (!mgr.watch_thread)
+		status = PROBE_RC_DOWN;
+	else if (mgr.shutdown_requested)
+		status = PROBE_RC_ONLINE;
+	else if (mgr.quiesce.requested)
+		status = PROBE_RC_BUSY;
+	else
+		status = PROBE_RC_READY;
 
 	slurm_mutex_unlock(&mgr.mutex);
+
+	return status;
 }
 
 extern void conmgr_init(int thread_count, int default_thread_count,
@@ -222,6 +232,10 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 
 	/* Hook into atexit() in always clean shutdown if exit() called */
 	(void) atexit(_at_exit);
+
+	probe_register("conmgr", _probe);
+	probe_register("conmgr->connections", probe_connections);
+	probe_register("conmgr->work", probe_work);
 }
 
 extern void conmgr_fini(void)

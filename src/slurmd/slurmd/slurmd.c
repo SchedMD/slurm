@@ -84,6 +84,7 @@
 #include "src/common/node_conf.h"
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -341,18 +342,22 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
-extern bool listener_quiesced(void)
+static probe_status_t _probe_listener(probe_log_t *log)
 {
-	bool quiesced;
+	probe_status_t status = PROBE_RC_UNKNOWN;
 
 	slurm_mutex_lock(&listen_mutex);
-	if (_shutdown || !listener)
-		quiesced = true;
+
+	if (!listener)
+		status = PROBE_RC_DOWN;
+	else if (_shutdown)
+		status = PROBE_RC_BUSY;
 	else
-		quiesced = conmgr_con_is_quiesced(listener);
+		status = PROBE_RC_READY;
+
 	slurm_mutex_unlock(&listen_mutex);
 
-	return quiesced;
+	return status;
 }
 
 static void _unquiesce_fd_listener(void)
@@ -384,6 +389,9 @@ main (int argc, char **argv)
 
 	/* NOTE: logfile is NULL at this point */
 	log_init(argv[0], lopts, LOG_DAEMON, NULL);
+
+	probe_init();
+	probe_register("rpc-listeners", _probe_listener);
 
 	if (original) {
 		/*
@@ -590,6 +598,7 @@ main (int argc, char **argv)
 
 	conmgr_fini();
 	http_switch_fini();
+	probe_fini();
 	log_fini();
 
 	return SLURM_SUCCESS;

@@ -57,6 +57,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -162,7 +163,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
 		return;
 
-	conmgr_log_diagnostics();
+	(void) probe_run(true, NULL, NULL, __func__);
 }
 
 static void _set_max_connections(const char *buffer)
@@ -742,6 +743,7 @@ int main(int argc, char **argv)
 
 	_examine_stdin();
 	_examine_stderr();
+	probe_init();
 	_setup_logging(argc, argv);
 
 	run_mode.listen = !list_is_empty(socket_listen);
@@ -920,6 +922,7 @@ int main(int argc, char **argv)
 	conn_g_fini();
 	cred_g_fini();
 	auth_g_fini();
+	probe_fini();
 	getnameinfo_cache_purge();
 	log_fini();
 
