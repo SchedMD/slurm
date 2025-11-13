@@ -60,8 +60,6 @@ static list_t *paths = NULL;
 static data_parser_t **parsers; /* symlink to parser array */
 bool inetd_mode = false;
 
-#define MAGIC_HEADER_ACCEPT 0xDF9EAABE
-
 typedef struct {
 #define PATH_MAGIC 0xDFFEA1AE
 	int magic; /* PATH_MAGIC */
@@ -76,12 +74,6 @@ typedef struct {
 	/* assigned parser */
 	data_parser_t *parser;
 } path_t;
-
-typedef struct {
-	int magic; /* MAGIC_HEADER_ACCEPT */
-	char *type; /* mime type and sub type unchanged */
-	float q; /* quality factor (priority) */
-} http_header_accept_t;
 
 static void _check_path_magic(const path_t *path)
 {
@@ -318,180 +310,6 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 		return _operations_router_reject(args, NULL, rc, NULL);
 	else
 		return SLURM_SUCCESS;
-
-}
-
-static void _parse_http_accept_entry(char *entry, list_t *l)
-{
-	char *save_ptr = NULL;
-	char *token = NULL;
-	char *buffer = xstrdup(entry);
-	http_header_accept_t *act = xmalloc(sizeof(*act));
-	act->magic = MAGIC_HEADER_ACCEPT;
-	act->type = NULL;
-	act->q = 1; /* default to 1 per rfc7231:5.3.1 */
-
-	token = strtok_r(buffer, ";", &save_ptr);
-
-	if (token) {
-		/* first token is the mime type */
-		xstrtrim(token);
-		act->type = xstrdup(token);
-	}
-	while ((token = strtok_r(NULL, ",", &save_ptr))) {
-		xstrtrim(token);
-		sscanf(token, "q=%f", &act->q);
-	}
-	xfree(buffer);
-
-	debug5("%s: found %s with q=%f", __func__, act->type, act->q);
-
-	list_append(l, act);
-}
-
-static int _compare_q(void *x, void *y)
-{
-	http_header_accept_t **xobj_ptr = x;
-	http_header_accept_t **yobj_ptr = y;
-	http_header_accept_t *xobj = *xobj_ptr;
-	http_header_accept_t *yobj = *yobj_ptr;
-
-	xassert(xobj->magic == MAGIC_HEADER_ACCEPT);
-	xassert(yobj->magic == MAGIC_HEADER_ACCEPT);
-
-	if (xobj->q < yobj->q)
-		return -1;
-	else if (xobj->q > yobj->q)
-		return 1;
-
-	return 0;
-}
-
-static void _http_accept_list_delete(void *x)
-{
-	http_header_accept_t *obj = (http_header_accept_t *) x;
-
-	if (!obj)
-		return;
-
-	xassert(obj->magic == MAGIC_HEADER_ACCEPT);
-	obj->magic = ~MAGIC_HEADER_ACCEPT;
-
-	xfree(obj->type);
-	xfree(obj);
-}
-
-static list_t *_parse_http_accept(const char *accept)
-{
-	list_t *l = list_create(_http_accept_list_delete);
-	xassert(accept);
-	char *save_ptr = NULL;
-	char *token = NULL;
-	char *buffer = xstrdup(accept);
-
-	token = strtok_r(buffer, ",", &save_ptr);
-	while (token) {
-		xstrtrim(token);
-		_parse_http_accept_entry(token, l);
-		token = strtok_r(NULL, ",", &save_ptr);
-	}
-	xfree(buffer);
-
-	list_sort(l, _compare_q);
-
-	return l;
-}
-
-static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
-			 const char **write_mime, const char **plugin_ptr)
-{
-	*read_mime = args->content_type;
-
-	//TODO: check Content-encoding and make sure it is identity only!
-	//https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
-
-	if (!*read_mime) {
-		*read_mime = MIME_TYPE_URL_ENCODED;
-
-		debug4("%s: [%s] did not provide a known content type header. Assuming URL encoded.",
-		       __func__, args->name);
-	}
-
-	if (args->accept) {
-		list_t *accept = _parse_http_accept(args->accept);
-		http_header_accept_t *ptr = NULL;
-		list_itr_t *itr = list_iterator_create(accept);
-		while ((ptr = list_next(itr))) {
-			xassert(ptr->magic == MAGIC_HEADER_ACCEPT);
-
-			debug4("%s: [%s] accepts %s with q=%f",
-			       __func__, args->name, ptr->type, ptr->q);
-
-			if ((*write_mime = resolve_mime_type(ptr->type,
-							     plugin_ptr))) {
-				debug4("%s: [%s] found accepts %s=%s with q=%f",
-				       __func__, args->name, ptr->type,
-				       *write_mime, ptr->q);
-				break;
-			} else {
-				debug4("%s: [%s] rejecting accepts %s with q=%f",
-				       __func__, args->name, ptr->type,
-				       ptr->q);
-			}
-		}
-		list_iterator_destroy(itr);
-		FREE_NULL_LIST(accept);
-	} else {
-		debug3("%s: [%s] Accept header not specified. Defaulting to JSON.",
-		       __func__, args->name);
-		*write_mime = MIME_TYPE_JSON;
-	}
-
-	if (!*write_mime)
-		return _operations_router_reject(
-			args, NULL, ESLURM_HTTP_UNKNOWN_ACCEPT_MIME_TYPE, NULL);
-
-	/*
-	 * RFC7230 3.3: Allows for any request to have a BODY but doesn't require
-	 * the server do anything with it.
-	 *	Request message framing is independent of method semantics, even
-	 *	if the method does not define any use for a message body.
-	 * RFC7231 Appendix B:
-	 *	To be consistent with the method-neutral parsing algorithm of
-	 *	[RFC7230], the definition of GET has been relaxed so that
-	 *	requests can have a body, even though a body has no meaning for
-	 *	GET.  (Section 4.3.1)
-	 *
-	 * In order to avoid confusing the client when their query or body gets
-	 * ignored, reject request when both query and body are provided.
-	 */
-	if ((args->body_length > 0) && args->query && args->query[0])
-		return _operations_router_reject(args, NULL,
-						 ESLURM_HTTP_UNEXPECTED_BODY,
-						 NULL);
-
-	if (xstrcasecmp(*read_mime, MIME_TYPE_URL_ENCODED) &&
-	    (args->body_length == 0)) {
-		/*
-		 * RFC7273#3.1.1.5 only specifies a sender SHOULD send
-		 * the correct content-type header but allows for them to be
-		 * wrong and expects the server to handle that gracefully.
-		 *
-		 * We will instead override the mime type if there is empty body
-		 * content to avoid unneccesssily rejecting otherwise compliant
-		 * requests.
-		 */
-		debug("%s: [%s] Overriding content type from %s to %s for %s",
-		      __func__, args->name, *read_mime, MIME_TYPE_URL_ENCODED,
-		      get_http_method_string(args->method));
-
-		*read_mime = MIME_TYPE_URL_ENCODED;
-	}
-
-	debug3("%s: [%s] mime read: %s write: %s",
-	       __func__, args->name, *read_mime, *write_mime);
-
-	return SLURM_SUCCESS;
 }
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
@@ -639,7 +457,8 @@ extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
 	       callback_tag, args->path,
 	       (parser ? data_parser_get_plugin(parser) : ""));
 
-	if ((rc = _resolve_mime(args, &read_mime, &write_mime, NULL)))
+	if ((rc = http_resolve_mime_types(name, request, &read_mime,
+					  &write_mime)))
 		goto cleanup;
 
 	if ((rc = _get_query(args, &query, read_mime)))
