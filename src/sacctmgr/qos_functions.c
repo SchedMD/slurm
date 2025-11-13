@@ -208,9 +208,9 @@ extern int sacctmgr_set_qos_rec(slurmdb_qos_rec_t *qos,
 		if (qos->flags == QOS_FLAG_NOTSET) {
 			char *tmp_char = NULL;
 			qos->flags = INFINITE;
-			qos->flags &= (~QOS_FLAG_NOTSET &
-				       ~QOS_FLAG_ADD &
-				       ~QOS_FLAG_REMOVE);
+			qos->flags &= (~QOS_FLAG_NOTSET & ~QOS_FLAG_ADD &
+				       ~QOS_FLAG_REMOVE & ~QOS_FLAG_DELETED &
+				       ~QOS_FLAG_PART_QOS);
 			tmp_char = slurmdb_qos_flags_str(qos->flags);
 			printf(" Unknown QOS flag used in:\n  '%s'\n"
 			       " Valid QOS flags are\n  '%s'\n",
