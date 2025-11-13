@@ -44,6 +44,7 @@
 #include "src/common/http_mime.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -504,6 +505,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	char *body = NULL;
 	http_status_code_t e = HTTP_STATUS_CODE_INVALID;
 	void *auth = NULL;
+	void *db_conn = NULL;
 
 	xassert(op_path);
 	debug3("%s: [%s] BEGIN: calling ctxt handler: 0x%"PRIXPTR"[%d] for path: %s",
@@ -512,8 +514,12 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 
 	auth = http_context_set_auth(args->context, NULL);
 
+	if (!(op_path->flags & OP_BIND_NO_SLURMDBD) &&
+	    slurm_conf.accounting_storage_type)
+		db_conn = openapi_get_db_conn(auth);
+
 	rc = wrap_openapi_ctxt_callback(args->name, args->method, params, query,
-					callback_tag, resp, auth, parser,
+					callback_tag, resp, db_conn, parser,
 					op_path, meta);
 
 	/*

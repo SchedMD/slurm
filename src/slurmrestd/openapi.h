@@ -174,7 +174,7 @@ extern void *openapi_get_db_conn(void *ctxt);
 extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      http_request_method_t method,
 				      data_t *parameters, data_t *query,
-				      int tag, data_t *resp, void *auth,
+				      int tag, data_t *resp, void *db_conn,
 				      data_parser_t *parser,
 				      const openapi_path_binding_t *op_path,
 				      const openapi_resp_meta_t *plugin_meta);
