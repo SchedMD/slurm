@@ -151,118 +151,54 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 	}
 
 	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
-	expect {
-		-re " Account=$test_acct" {
-			incr match
-			exp_continue
-		}
-		-re " UserName=$test_user" {
-			incr match
-			exp_continue
-		}
-		-re " GrpTRES=" {
-			incr match
-			exp_continue
-		}
-		-re " MaxJobs=" {
-			incr match
-			exp_continue
-		}
-		-re " MaxTRESPJ=" {
-			incr match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
+	wait_for {$match == 5} {
+		set output [run_command -fail "$scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"]
+		set match 0
+		incr match [regexp " Account=$test_acct" $output]
+		incr match [regexp " UserName=$test_user" $output]
+		incr match [regexp -all " GrpTRES=" $output]
+		incr match [regexp -all " MaxJobs=" $output]
+		incr match [regexp -all " MaxTRESPJ=" $output]
 	}
-
 	subtest {$match == 5} "1. Verify scontrol show assoc_mgr shows correct information" "$match != 5"
 
 	# Set association limits and check that controller is updated
 	mod_assoc_vals
 
 	set match 0
-	spawn $bin_bash -c "exec $scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
-	expect {
-		-re " Account=$test_acct" {
-			incr match
-			exp_continue
-		}
-		-re " UserName=$test_user" {
-			incr match
-			exp_continue
-		}
-		-re " Priority=9" {
-			incr match
-			exp_continue
-		}
-		-re " GrpTRES=cpu=3" {
-			incr match
-			exp_continue
-		}
-		-re " MaxJobs=2" {
-			incr match
-			exp_continue
-		}
-		-re " MaxTRESPJ=cpu=6" {
-			incr match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
+	wait_for {$match == 6} {
+		set output [run_command -fail "$scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"]
+		set match 0
+		incr match [regexp " Account=$test_acct" $output]
+		incr match [regexp " UserName=$test_user" $output]
+		incr match [regexp -all " Priority=9" $output]
+		incr match [regexp -all " GrpTRES=cpu=3" $output]
+		incr match [regexp -all " MaxJobs=2" $output]
+		incr match [regexp -all " MaxTRESPJ=cpu=6" $output]
 	}
-
 	subtest {$match == 6} "2. Verify scontrol show assoc_mgr shows correct information" "$match != 6"
 
 	# Clear associtation limits and check controller is updated
 	clear_assoc_vals
 
 	set match 0
-	set limit_match 0
-	spawn $bin_bash -c "exec $scontrol show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"
-	expect {
-		-re " Account=$test_acct" {
-			incr match
-			exp_continue
-		}
-		-re " UserName=$test_user" {
-			incr match
-			exp_continue
-		}
-		-re " Priority=0" {
-			incr match
-			exp_continue
-		}
-		-re " GrpTRES=cpu=3" {
-			incr limit_match
-			exp_continue
-		}
-		-re " MaxJobs=2" {
-			incr limit_match
-			exp_continue
-		}
-		-re " MaxTRESPJ=cpu=6" {
-			incr limit_match
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set nmatch 0
+	wait_for {$match == 3 && $nmatch == 0} {
+		set output [run_command -fail "$scontrol -o show assoc_mgr | $bin_grep Account=$test_acct| $bin_grep UserName=$test_user"]
+		set match 0
+		incr match [regexp " Account=$test_acct" $output]
+		incr match [regexp " UserName=$test_user" $output]
+		incr match [regexp -all " Priority=0" $output]
+		incr nmatch [regexp -all " GrpTRES=" $output]
+		incr nmatch [regexp -all " MaxJobs=" $output]
+		incr nmatch [regexp -all " MaxTRESPJ=" $output]
 
-	subtest {$match == 3 || ! $limit_match} "3. Verify scontrol show assoc_mgr shows correct information" "$match != 3"
+		set nmatch 0
+		incr nmatch [regexp -all " GrpTRES=cpu=3" $output]
+		incr nmatch [regexp -all " MaxJobs=2" $output]
+		incr nmatch [regexp -all " MaxTRESPJ=cpu=6" $output]
+	}
+	subtest {$match == 3 && $nmatch == 0} "3. Verify scontrol show assoc_mgr shows correct information" "$match != 3 || $nmatch != 0"
 
 	delete_test_acct
 
