@@ -591,7 +591,10 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	return rc;
 }
 
-extern int operations_router(on_http_request_args_t *args)
+extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
+			     const char *name,
+			     const http_con_request_t *request,
+			     http_context_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *query = NULL;
@@ -603,12 +606,11 @@ extern int operations_router(on_http_request_args_t *args)
 	data_parser_t *parser = NULL;
 
 	info("%s: [%s] %s %s",
-	     __func__, args->name, get_http_method_string(args->method),
-	     args->path);
+	     __func__, name, get_http_method_string(args->method), args->path);
 
 	if ((rc = rest_authenticate_http_request(args))) {
 		error("%s: [%s] authentication failed: %s",
-		      __func__, args->name, slurm_strerror(rc));
+		      __func__, name, slurm_strerror(rc));
 		_operations_router_reject(args, NULL, rc, NULL);
 		return rc;
 	}
@@ -633,7 +635,7 @@ extern int operations_router(on_http_request_args_t *args)
 	slurm_rwlock_unlock(&paths_lock);
 
 	debug5("%s: [%s] found callback handler: (0x%"PRIXPTR") callback_tag=%d path=%s parser=%s",
-	       __func__, args->name, (uintptr_t) path->op_path->callback,
+	       __func__, name, (uintptr_t) path->op_path->callback,
 	       callback_tag, args->path,
 	       (parser ? data_parser_get_plugin(parser) : ""));
 

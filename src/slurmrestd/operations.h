@@ -36,6 +36,8 @@
 #ifndef SLURMRESTD_OPERATIONS_H
 #define SLURMRESTD_OPERATIONS_H
 
+#include "src/common/http_con.h"
+
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
 
@@ -68,7 +70,10 @@ extern int bind_operation_path(const openapi_path_binding_t *op_path,
  * expected to be called as on_http_request_t() by http.c.
  * RET SLURM_SUCCESS or error
  */
-extern int operations_router(on_http_request_args_t *args);
+extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
+			     const char *name,
+			     const http_con_request_t *request,
+			     http_context_t *ctxt);
 
 /*
  * Retrieve db_conn for slurmdbd calls.
