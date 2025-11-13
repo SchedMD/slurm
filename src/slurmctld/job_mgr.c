@@ -14561,7 +14561,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 				   __func__, job_ptr->licenses,
 				   job_desc->licenses, job_ptr);
 			xfree(job_ptr->licenses);
-			job_ptr->licenses = xstrdup(job_desc->licenses);
+			if (job_desc->licenses && *job_desc->licenses)
+				job_ptr->licenses = xstrdup(job_desc->licenses);
 			license_job_get(job_ptr, false);
 		} else {
 			/*
