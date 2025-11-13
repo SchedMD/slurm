@@ -1075,10 +1075,11 @@ See \fIStartTime\fP.
 .IP
 
 .TP
-\fBEndTime\fR
-The time the job is expected to terminate based on the job's time
-limit. When the job ends sooner, this field will be updated with the
-actual end time.
+\fBEndTime\fR=<\fItime_spec\fR>
+Set the job's expected end time. The job's \fBTimeLimit\fR will be automatically
+recalculated to reflect the change. When the job ends, this field will be
+updated with the actual end time.
+Only a privileged user can extend a job's EndTime.
 .IP
 
 .TP
