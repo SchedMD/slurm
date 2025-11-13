@@ -36,6 +36,21 @@
 #ifndef SLURM_HTTP_MIME_H
 #define SLURM_HTTP_MIME_H
 
+#include "src/common/http_con.h"
+
 #define MIME_TYPE_TEXT "text/plain"
+
+/*
+ * Resolve read and write mime types from HTTP connection request
+ * IN name - connection name (for logging)
+ * IN request - http request
+ * OUT read_mime_ptr - Pointer to populate with mime type
+ * OUT write_mime_ptr - Pointer to populate with mime type
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_resolve_mime_types(const char *name,
+				   const http_con_request_t *request,
+				   const char **read_mime_ptr,
+				   const char **write_mime_ptr);
 
 #endif
