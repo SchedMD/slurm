@@ -497,8 +497,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 static int _call_handler(on_http_request_args_t *args, data_t *params,
 			 data_t *query, const openapi_path_binding_t *op_path,
 			 int callback_tag, const char *write_mime,
-			 data_parser_t *parser, const openapi_resp_meta_t *meta,
-			 const char *plugin)
+			 data_parser_t *parser, const openapi_resp_meta_t *meta)
 {
 	int rc;
 	data_t *resp = data_new();
@@ -600,7 +599,7 @@ extern int operations_router(on_http_request_args_t *args)
 	int path_tag;
 	path_t *path = NULL;
 	int callback_tag;
-	const char *read_mime = NULL, *write_mime = NULL, *plugin = NULL;
+	const char *read_mime = NULL, *write_mime = NULL;
 	data_parser_t *parser = NULL;
 
 	info("%s: [%s] %s %s",
@@ -638,14 +637,14 @@ extern int operations_router(on_http_request_args_t *args)
 	       callback_tag, args->path,
 	       (parser ? data_parser_get_plugin(parser) : ""));
 
-	if ((rc = _resolve_mime(args, &read_mime, &write_mime, &plugin)))
+	if ((rc = _resolve_mime(args, &read_mime, &write_mime, NULL)))
 		goto cleanup;
 
 	if ((rc = _get_query(args, &query, read_mime)))
 		goto cleanup;
 
 	rc = _call_handler(args, params, query, path->op_path, callback_tag,
-			   write_mime, parser, path->meta, plugin);
+			   write_mime, parser, path->meta);
 
 cleanup:
 	FREE_NULL_DATA(query);
