@@ -153,6 +153,7 @@ is as follows:</p>
 <li>helpers.conf</li>
 <li>job_container.conf</li>
 <li>mpi.conf</li>
+<li>namespace.yaml</li>
 <li>oci.conf</li>
 <li>plugstack.conf</li>
 <li>scrun.lua</li>
