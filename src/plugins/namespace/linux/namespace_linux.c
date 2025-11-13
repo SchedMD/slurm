@@ -96,7 +96,9 @@ typedef struct {
 	char *proc_name;
 } ns_l_t;
 
-static ns_l_t ns_l_enabled[NS_L_END] = { { false, -1, 0, NULL, NULL } };
+static ns_l_t ns_l_enabled[NS_L_END] = { { false, -1, 0, NULL, NULL },
+					 { false, -1, 0, NULL, NULL },
+					 { false, -1, 0, NULL, NULL } };
 
 static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 			  char **src_bind)
@@ -117,7 +119,7 @@ static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 		}
 		if (ns_conf->clonensflags & CLONE_NEWPID) {
 			ns_l_enabled[NS_L_PID].enabled = true;
-			ns_l_enabled[NS_L_NS].flag = CLONE_NEWPID;
+			ns_l_enabled[NS_L_PID].flag = CLONE_NEWPID;
 			xfree(ns_l_enabled[NS_L_PID].path);
 			xstrfmtcat(ns_l_enabled[NS_L_PID].path, "%s/pid",
 				   *ns_base);
@@ -125,7 +127,7 @@ static void _create_paths(uint32_t job_id, char **job_mount, char **ns_base,
 		}
 		if (ns_conf->clonensflags & CLONE_NEWUSER) {
 			ns_l_enabled[NS_L_USER].enabled = true;
-			ns_l_enabled[NS_L_NS].flag = CLONE_NEWUSER;
+			ns_l_enabled[NS_L_USER].flag = CLONE_NEWUSER;
 			xfree(ns_l_enabled[NS_L_USER].path);
 			xstrfmtcat(ns_l_enabled[NS_L_USER].path, "%s/user",
 				   *ns_base);
@@ -209,8 +211,10 @@ extern void fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	for (int i = 0; i < NS_L_END; i++) {
 		xfree(ns_l_enabled[i].path);
-		if (ns_l_enabled[i].fd >= 0)
+		if (ns_l_enabled[i].fd >= 0) {
 			close(ns_l_enabled[i].fd);
+			ns_l_enabled[i].fd = -1;
+		}
 	}
 	free_ns_conf();
 #endif
@@ -884,7 +888,7 @@ extern int namespace_p_join_external(slurm_step_id_t *step_id, list_t *ns_map)
 		if (!ns_l_enabled[i].enabled)
 			continue;
 
-		if (!ns_l_enabled[i].fd) {
+		if (ns_l_enabled[i].fd == -1) {
 			ns_l_enabled[i].fd =
 				open(ns_l_enabled[i].path, O_RDONLY);
 			if (ns_l_enabled[i].fd == -1) {

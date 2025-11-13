@@ -83,6 +83,7 @@ strong_alias(xfree_struct_group_array, slurm_xfree_struct_group_array);
 strong_alias(stepd_gethostbyname, slurm_stepd_gethostbyname);
 strong_alias(xfree_struct_hostent, slurm_xfree_struct_hostent);
 strong_alias(stepd_get_namespace_fd, slurm_stepd_get_namespace_fd);
+strong_alias(stepd_get_namespace_fds, slurm_stepd_get_namespace_fds);
 
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
