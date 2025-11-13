@@ -122,6 +122,13 @@ extern void *auth_g_get_identity(void *cred);
 extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version);
 extern void *auth_g_unpack(buf_t *buf, uint16_t protocol_version);
 
+/*
+ * Generate authentication credential from token/username instead of unpacking
+ * from a buffer
+ */
+extern void *auth_g_cred_generate(auth_plugin_type_t plugin_id,
+				  const char *token, const char *username);
+
 extern char *auth_g_token_generate(auth_plugin_type_t plugin_id,
 				   const char *username, int lifespan);
 

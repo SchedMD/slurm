@@ -82,6 +82,8 @@ typedef struct {
 	void		(*thread_clear) (void);
 	char *		(*token_generate) (const char *username, int lifespan);
 	int		(*get_reconfig_fd)(void);
+	void *(*cred_generate)(const char *token, const char *username,
+			       uid_t uid, gid_t gid);
 } auth_ops_t;
 /*
  * These strings must be kept in the same order as the fields
@@ -104,6 +106,7 @@ static const char *syms[] = {
 	"auth_p_thread_clear",
 	"auth_p_token_generate",
 	"auth_p_get_reconfig_fd",
+	"auth_p_cred_generate",
 };
 
 typedef struct {
@@ -594,6 +597,52 @@ extern char *auth_g_token_generate(auth_plugin_type_t plugin_id,
 	slurm_rwlock_unlock(&context_lock);
 
 	return token;
+}
+
+extern void *auth_g_cred_generate(auth_plugin_type_t plugin_id,
+				  const char *token, const char *username)
+{
+	int rc = EINVAL;
+	cred_wrapper_t *cred = NULL;
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
+
+	xassert(g_context_num > 0);
+
+	if (username) {
+		if ((rc = uid_from_string(username, &uid))) {
+			error("%s: resolving username=%s failed:%s",
+			      __func__, username, slurm_strerror(rc));
+			errno = ESLURM_AUTH_CRED_INVALID;
+			return NULL;
+		}
+
+		gid = gid_from_uid(uid);
+
+		if ((uid == SLURM_AUTH_NOBODY) || (gid == SLURM_AUTH_NOBODY)) {
+			error("%s: rejecting resolved username=%s to nobody",
+			      __func__, username);
+			errno = ESLURM_AUTH_NOBODY;
+			return NULL;
+		}
+	}
+
+	for (int i = 0; i < g_context_num; i++) {
+		if ((plugin_id == AUTH_PLUGIN_DEFAULT) ||
+		    (plugin_id == *(ops[i].plugin_id))) {
+			cred = (*(ops[i].cred_generate))(token, username, uid,
+							 gid);
+
+			if (cred)
+				cred->index = i;
+
+			return cred;
+		}
+	}
+
+	error("%s: authentication plugin %s(%u) not found",
+	      __func__, auth_get_plugin_name(plugin_id), plugin_id);
+	return NULL;
 }
 
 extern int auth_g_get_reconfig_fd(auth_plugin_type_t plugin_id)
