@@ -1606,126 +1606,6 @@ def openapi_slurmdb():
     )
 
 
-def backup_config_file(config="slurm.conf"):
-    """Backs up a configuration file.
-
-    This function may only be used in auto-config mode.
-
-    Args:
-        config (string): Name of the config file to back up.
-
-    Returns:
-        None
-
-    Example:
-        >>> backup_config_file('slurm.conf')
-        >>> backup_config_file('gres.conf')
-        >>> backup_config_file('cgroup.conf')
-    """
-
-    if not properties["auto-config"]:
-        require_auto_config(f"wants to modify the {config} file")
-
-    properties["configurations-modified"].add(config)
-
-    config_file = f"{properties['slurm-config-dir']}/{config}"
-    backup_config_file = f"{config_file}.orig-atf"
-
-    # If a backup already exists, issue a warning and return (honor existing backup)
-    if os.path.isfile(backup_config_file):
-        logging.trace(f"Backup file already exists ({backup_config_file})")
-        return
-
-    # If the file to backup does not exist, touch an empty backup file with
-    # the sticky bit set. restore_config_file will remove the file.
-    if not os.path.isfile(config_file):
-        run_command(
-            f"touch {backup_config_file}",
-            user=properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-        run_command(
-            f"chmod 1000 {backup_config_file}",
-            user=properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-
-    # Otherwise, copy the config file to the backup
-    else:
-        run_command(
-            f"cp {config_file} {backup_config_file}",
-            user=properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-
-
-def restore_config_file(config="slurm.conf"):
-    """Restores a configuration file.
-
-    This function may only be used in auto-config mode.
-
-    Args:
-        config (string): Name of config file to restore.
-
-    Returns:
-        None
-
-    Example:
-        >>> restore_config_file('slurm.conf')
-        >>> restore_config_file('gres.conf')
-        >>> restore_config_file('cgroup.conf')
-    """
-
-    config_file = f"{properties['slurm-config-dir']}/{config}"
-    backup_config_file = f"{config_file}.orig-atf"
-
-    properties["configurations-modified"].remove(config)
-
-    # If backup file doesn't exist, it has probably already been
-    # restored by a previous call to restore_config_file
-    if not os.path.isfile(backup_config_file):
-        logging.trace(
-            f"Backup file does not exist for {config_file}. It has probably already been restored."
-        )
-        return
-
-    # If the sticky bit is set and the file is empty, remove both the file and the backup
-    backup_stat = os.stat(backup_config_file)
-    if backup_stat.st_size == 0 and backup_stat.st_mode & stat.S_ISVTX:
-        run_command(
-            f"rm -f {backup_config_file}",
-            user=properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-        if os.path.isfile(config_file):
-            run_command(
-                f"rm -f {config_file}",
-                user=properties["slurm-user"],
-                fatal=True,
-                quiet=True,
-            )
-
-    # Otherwise, copy backup config file to primary config file
-    # and remove the backup (.orig-atf)
-    else:
-        run_command(
-            f"cp {backup_config_file} {config_file}",
-            user=properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-        run_command(
-            f"rm -f {backup_config_file}",
-            user=properties["slurm-user"],
-            fatal=True,
-            quiet=True,
-        )
-
-
 def get_config(live=True, source="slurm", quiet=False, delimiter="="):
     """Returns the Slurm configuration as a dictionary.
 
@@ -1942,9 +1822,6 @@ def set_config_parameter(
         config = source
 
     config_file = f"{properties['slurm-config-dir']}/{config}.conf"
-
-    # This has the side-effect of adding config to configurations-modified
-    backup_config_file(f"{config}.conf")
 
     # Remove all matching parameters and append the new parameter
     lines = []
@@ -2297,7 +2174,6 @@ def require_config_file(
         )
 
     # In auto-config
-    backup_config_file(filename)
     run_command(
         f"cat > {file_path}", input=content, user=properties["slurm-user"], fatal=True
     )
@@ -3028,7 +2904,6 @@ def set_node_parameter(node_name, new_parameter_name, new_parameter_value):
         )
 
     # Write the config file back out with the modifications
-    backup_config_file("slurm.conf")
     new_config_string = "\n".join(new_config_lines)
     run_command(
         f"echo '{new_config_string}' > {config_file}",
@@ -4337,7 +4212,6 @@ def create_node(node_dict):
     new_config_lines.insert(last_node_line_index + 1, node_line)
 
     # Write the config file back out with the modifications
-    backup_config_file("slurm.conf")
     new_config_string = "\n".join(new_config_lines)
     run_command(
         f"echo '{new_config_string}' > {config_file}",
@@ -5110,7 +4984,6 @@ def set_partition_parameter(partition_name, new_parameter_name, new_parameter_va
         )
 
     # Write the config file back out with the modifications
-    backup_config_file("slurm.conf")
     new_config_string = "\n".join(new_config_lines)
     run_command(
         f"echo '{new_config_string}' > {config_file}",
@@ -5265,6 +5138,10 @@ if "influxdb_port" in testsuite_config:
     properties["influxdb_port"] = testsuite_config["influxdb_port"]
 if "influxdb_db" in testsuite_config:
     properties["influxdb_db"] = testsuite_config["influxdb_db"]
+
+# TODO: The SlurmConfigDirBase should be passed from the testsuite.conf too,
+#       instead of the hadcoded prefix+etc.orig form here.
+properties["slurm-config-orig-dir"] = properties["slurm-prefix"] + "/etc.orig"
 
 # Set derived directory properties
 # The environment (e.g. PATH, SLURM_CONF) overrides the configuration.

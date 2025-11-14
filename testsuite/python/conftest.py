@@ -234,6 +234,34 @@ def module_setup(request, tmp_path_factory):
                 quiet=True,
             )
 
+        # Backup current SysConfigDir
+        if os.path.exists(atf.properties["slurm-config-dir"]):
+            if os.path.exists(atf.properties["slurm-config-dir"] + name):
+                logging.warning(
+                    f"Backup for SysConfigDir already exists ({atf.properties['slurm-config-dir']+name}). Removing it."
+                )
+                atf.run_command(
+                    f"rm -rf {atf.properties['slurm-config-dir']+name}",
+                    user="root",
+                    quiet=True,
+                )
+            atf.run_command(
+                f"rsync -a --delete {atf.properties['slurm-config-dir']}/ {atf.properties['slurm-config-dir']+name}/",
+                user="root",
+                quiet=True,
+            )
+        # Setup a fresh SysConfDir based on slurm-config-orig-dir
+        if os.path.exists(atf.properties["slurm-config-orig-dir"]):
+            atf.run_command(
+                f"sudo rsync -a --delete {atf.properties['slurm-config-orig-dir']}/ {atf.properties['slurm-config-dir']}/",
+                quiet=True,
+                fatal=True,
+            )
+        else:
+            logging.warning(
+                f"Base SysConfDir ({atf.properties['slurm-config-orig-dir']}) doesn't exists. Using current SysConfDir as the Base one."
+            )
+
         # Create the required node directories for node0
         node_name = "node0"
         spool_dir = atf.properties["slurm-spool-dir"].replace("%n", node_name)
@@ -281,6 +309,23 @@ def module_teardown():
                 quiet=True,
             )
 
+        # Restore SysConfigDir
+        atf.run_command(
+            f"rm -rf {atf.properties['slurm-config-dir']}", user="root", quiet=True
+        )
+        if os.path.exists(
+            atf.properties["slurm-config-dir"] + atf.properties["test_name"]
+        ):
+            atf.run_command(
+                f"mv {atf.properties['slurm-config-dir']+atf.properties['test_name']} {atf.properties['slurm-config-dir']}",
+                user="root",
+                quiet=True,
+            )
+        else:
+            logging.warning(
+                "SysConfDir backup doesn't exists, but it should be created in the module_setup fixture."
+            )
+
         # Remove Nodes directories:
         if "nodes" not in atf.properties:
             atf.properties["nodes"] = ["node0"]
@@ -316,10 +361,6 @@ def module_teardown():
                 quiet=True,
                 fatal=True,
             )
-
-        # Restore any backed up configuration files
-        for config in set(atf.properties["configurations-modified"]):
-            atf.restore_config_file(config)
 
         # Clean influxdb
         if atf.properties["influxdb-started"]:
