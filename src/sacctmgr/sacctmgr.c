@@ -213,6 +213,11 @@ int main(int argc, char **argv)
 		log_alter(opts, 0, NULL);
 	}
 
+	if (quiet_flag == 1) {
+		opts.stderr_level = LOG_LEVEL_ERROR;
+		log_alter(opts, 0, NULL);
+	}
+
 	/* Check to see if we are running a supported accounting plugin */
 	if (!slurm_with_slurmdbd()) {
 		fprintf(stderr,
