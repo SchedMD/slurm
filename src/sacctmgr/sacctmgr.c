@@ -159,6 +159,11 @@ int main(int argc, char **argv)
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case (int)'Q':
+			if (quiet_flag == -1) {
+				fprintf(stderr,
+					"conflicting 'quiet' and 'verbose' options\n");
+				exit(1);
+			}
 			quiet_flag = 1;
 			break;
 		case (int)'r':
@@ -168,6 +173,11 @@ int main(int argc, char **argv)
 			with_assoc_flag = 1;
 			break;
 		case (int)'v':
+			if (quiet_flag == 1) {
+				fprintf(stderr,
+					"conflicting 'quiet' and 'verbose' options\n");
+				exit(1);
+			}
 			quiet_flag = -1;
 			verbosity++;
 			break;
