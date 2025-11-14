@@ -3592,7 +3592,8 @@ extern char *node_state_string(uint32_t inx)
 		}
 	}
 	if (fail_flag) {
-		if (comp_flag || (base == NODE_STATE_ALLOCATED)) {
+		if (comp_flag || (base == NODE_STATE_ALLOCATED) ||
+		    (base == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "FAILING*";
 			return "FAILING";
@@ -3848,7 +3849,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		}
 	}
 	if (fail_flag) {
-		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED) ||
+		    (inx == NODE_STATE_MIXED)) {
 			if (no_resp_flag)
 				return "FAILG*";
 			return "FAILG";
