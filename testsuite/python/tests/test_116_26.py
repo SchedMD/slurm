@@ -22,30 +22,38 @@ def no_kill_job():
     """Submit a job that should not be killed on node failure"""
     job_id = atf.submit_job_sbatch(f"--no-kill -N{node_count} --wrap 'sleep 300'")
     atf.wait_for_job_state(job_id, "RUNNING")
-    # Grab the first allocated node before it is removed from the job so we can clean it up
-    first_node = atf.node_range_to_list(atf.get_job_parameter(job_id, "NodeList"))[0]
 
-    yield job_id
+    # Get an allocated node that it's not the BatchHost before it is removed
+    # from the job so we can clean it up
+    batch_node = atf.get_job_parameter(job_id, "BatchHost")
+    node_list = atf.node_range_to_list(atf.get_job_parameter(job_id, "NodeList"))
+    node = next((n for n in node_list if n != batch_node), None)
+    if not node:
+        pytest.fail(
+            "Unable to find a node different than BatchHost, this shouldn't happen"
+        )
+
+    yield job_id, node
 
     # Return the node to the idle state
-    atf.run_command(
-        f"scontrol update nodename={first_node} state=resume", user=slurm_user
-    )
+    atf.run_command(f"scontrol update nodename={node} state=resume", user=slurm_user)
 
 
 def test_no_kill(no_kill_job):
     """Verify job with --no-kill option is not killed on node failure"""
 
-    job_nodes = atf.get_job_parameter(no_kill_job, "NodeList")
-    first_node = atf.node_range_to_list(job_nodes)[0]
+    job_id, node = no_kill_job
+
+    job_nodes = atf.get_job_parameter(job_id, "NodeList")
     atf.run_command(
-        f"scontrol update nodename={first_node} state=down reason=test_nokill",
+        f"scontrol update nodename={node} state=down reason=test_nokill",
         user=slurm_user,
     )
-    job_nodes_post_node_down = atf.get_job_parameter(no_kill_job, "NodeList")
+    atf.wait_for_node_state(node, "DOWN", fatal=True)
+    job_nodes_post_node_down = atf.get_job_parameter(job_id, "NodeList")
     assert (
         job_nodes != job_nodes_post_node_down
     ), "The job did not lose any nodes after a node was brought down"
     assert (
-        atf.get_job_parameter(no_kill_job, "JobState") != "COMPLETING"
+        atf.get_job_parameter(job_id, "JobState") == "RUNNING"
     ), "The whole job was still canceled with --no-kill set"
