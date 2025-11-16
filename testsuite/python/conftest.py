@@ -163,11 +163,13 @@ def update_tmp_path_exec_permissions(path):
 
 def log_load_avg():
     """Print the system normalized load average"""
-    load1, load5, load15 = os.getloadavg()
     cpu_count = os.cpu_count()
+    load1, load5, load15 = tuple(x / cpu_count for x in os.getloadavg())
     logging.debug(
-        f"Load Average: {(load1*100/cpu_count):.0f}% / {(load5*100/cpu_count):.0f}% / {(load15*100/cpu_count):.0f}%"
+        f"Load Average: {(load1*100):.0f}% / {(load5*100):.0f}% / {(load15*100):.0f}%"
     )
+    if load1 > 1.0:
+        atf.run_command("ps aux --sort=-pcpu | head -n 10")
 
 
 @pytest.fixture(scope="module", autouse=True)
