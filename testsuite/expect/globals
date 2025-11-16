@@ -7344,6 +7344,10 @@ proc _test_fini { status } {
 			set load5 [expr {int($load5 * 100 / $cpu_count)}]
 			set load15 [expr {int($load15 * 100 / $cpu_count)}]
 			log_debug "Load Average: ${load1}% / ${load5}% / ${load15}%"
+
+			if {$load1 > 100} {
+				set output [run_command_output "ps aux --sort=-pcpu | head -n 10"]
+			}
 		}
 	}
 
