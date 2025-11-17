@@ -26,9 +26,9 @@ sleep 1000""",
     )
 
     child = pexpect.spawn(f"srun -v -N1 --unbuffered {file_in}")
-    child.expect(r"launching StepId=(\d+)")
+    child.expect(r"launching StepId=(\d+)", timeout=atf.default_command_timeout)
     step_id = re.search(r"\d+", str(child.after)).group(0)
-    child.expect("WAITING")
+    child.expect("WAITING", timeout=atf.default_command_timeout)
     time.sleep(1)
     atf.run_command(f"kill -INT {child.pid}")
     assert (
@@ -41,9 +41,9 @@ sleep 1000""",
     child.close()
 
     child = pexpect.spawn(f"srun -v -N1 --unbuffered --quit-on-interrupt {file_in}")
-    child.expect(r"launching StepId=(\d+)")
+    child.expect(r"launching StepId=(\d+)", timeout=atf.default_command_timeout)
     step_id = re.search(r"\d+", str(child.after)).group(0)
-    child.expect("WAITING")
+    child.expect("WAITING", timeout=atf.default_command_timeout)
     time.sleep(1)
     atf.run_command(f"kill -INT {child.pid}")
     assert (
