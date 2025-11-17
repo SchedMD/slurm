@@ -184,7 +184,6 @@ typedef struct {
 	gid_t        *gids;    /* array of gids for user specified in uid   */
 	bool           aborted;    /* true if already aborted               */
 	bool           batch;      /* true if this is a batch job           */
-	bool           run_prolog; /* true if need to run prolog            */
 	time_t         timelimit;  /* time at which job must stop           */
 	uint32_t       profile;	   /* Level of acct_gather_profile          */
 	char          *task_prolog; /* per-task prolog                      */

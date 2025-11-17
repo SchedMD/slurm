@@ -166,8 +166,8 @@ static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
 
 static int  _add_starting_step(uint16_t type, void *req);
-static int  _remove_starting_step(uint16_t type, void *req);
-static int  _wait_for_starting_step(slurm_step_id_t *step_id);
+static void _remove_starting_step(uint16_t type, void *req);
+static void _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
 static void _add_job_running_prolog(slurm_step_id_t *step_id);
@@ -754,8 +754,7 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		}
 #endif
 	done:
-		if (_remove_starting_step(type, req))
-			error("Error cleaning up starting_step list");
+		_remove_starting_step(type, req);
 
 		/* Reap child */
 		if (waitpid(pid, NULL, 0) < 0)
@@ -969,26 +968,16 @@ static int _get_host_index(char *cred_hostlist)
 
 /*
  * IN cred the job credential from where to extract the memory
- * IN host_index used to get the sockets&core from the cred. If -1 is passed,
- * it is searched in the cred->hostlist based on conf->node_name.
+ * IN host_index used to get the sockets&core from the cred.
  * OUT step_cpus the number of cpus used by the step
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
-static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
-		      uint32_t *step_cpus)
+static void _get_ncpus(slurm_cred_arg_t *cred, int host_index,
+		       uint32_t *step_cpus)
 {
 	uint32_t hi, i, j, i_first_bit = 0, i_last_bit = 0;
 	bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 
-	if (host_index == -1) {
-		host_index = _get_host_index(cred->job_hostlist);
-
-		if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
-			error("job cr credential invalid host_index %d for %pI",
-			      host_index, &cred->step_id);
-			return SLURM_ERROR;
-		}
-	}
 	*step_cpus = 0;
 	hi = host_index + 1;	/* change from 0-origin to 1-origin */
 	for (i = 0; hi; i++) {
@@ -1042,7 +1031,6 @@ static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
 			*step_cpus *= i;
 		}
 	}
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -1196,8 +1184,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		else
 			req->x11 = 0;
 
-		if (_get_ncpus(arg, host_index, &step_cpus))
-			goto fail;
+		_get_ncpus(arg, host_index, &step_cpus);
+
 		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
@@ -4496,14 +4484,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
 			send_response = false;
 		}
-		if (_wait_for_starting_step(&req->step_id)) {
-			/*
-			 * There's currently no case in which we enter this
-			 * error condition.  If there was, it's hard to say
-			 * whether to proceed with the job termination.
-			 */
-			error("Error in _wait_for_starting_step");
-		}
+		_wait_for_starting_step(&req->step_id);
 	}
 
 	if (IS_JOB_NODE_FAILED(req))
@@ -4759,11 +4740,9 @@ _add_starting_step(uint16_t type, void *req)
 }
 
 
-static int
-_remove_starting_step(uint16_t type, void *req)
+static void _remove_starting_step(uint16_t type, void *req)
 {
 	slurm_step_id_t starting_step = { 0 };
-	int rc = SLURM_SUCCESS;
 
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
@@ -4776,26 +4755,21 @@ _remove_starting_step(uint16_t type, void *req)
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
-		rc = SLURM_ERROR;
-		goto fail;
+		return;
 	}
 
 	if (!list_delete_all(conf->starting_steps,
 			     (ListCmpF) verify_step_id,
 			     &starting_step)) {
 		error("%s: %ps not found", __func__, &starting_step);
-		rc = SLURM_ERROR;
 	}
 	slurm_cond_broadcast(&conf->starting_steps_cond);
-fail:
-	return rc;
 }
 
 /* Wait for a step to get far enough in the launch process to have
    a socket open, ready to handle RPC calls.  Pass step_id = NO_VAL
    to wait on any step for the given job. */
-
-static int _wait_for_starting_step(slurm_step_id_t *step_id)
+static void _wait_for_starting_step(slurm_step_id_t *step_id)
 {
 	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
 	struct timespec ts = {0, 0};
@@ -4831,8 +4805,6 @@ static int _wait_for_starting_step(slurm_step_id_t *step_id)
 			debug("Finished wait for %ps, all steps",
 			      step_id);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 

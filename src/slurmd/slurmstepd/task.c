@@ -169,7 +169,6 @@ rwfail:		 /* process rest of script output */
 			break;
 		buf_ptr = end_line + 1;
 	}
-	return;
 }
 
 /*
@@ -207,8 +206,7 @@ static int _run_script_and_set_env(const char *name, const char *path)
 	argv[1] = NULL;
 	args.script_argv = argv;
 
-	debug("[job %u] attempting to run %s [%s]",
-	      step->step_id.job_id, name, path);
+	debug("%pI attempting to run %s [%s]", &step->step_id, name, path);
 	buf = run_command(&args);
 
 	if (WIFEXITED(status)) {
@@ -278,14 +276,12 @@ static int _setup_mpi(int ltaskid)
 {
 	mpi_task_info_t info[1];
 
+	info->step_id = step->step_id;
+
 	if (step->het_job_id && (step->het_job_id != NO_VAL))
-		info->step_id.job_id   = step->het_job_id;
-	else
-		info->step_id.job_id   = step->step_id.job_id;
+		info->step_id.job_id = step->het_job_id;
 
 	if (step->het_job_offset != NO_VAL) {
-		info->step_id.step_id  = step->step_id.step_id;
-		info->step_id.step_het_comp  = step->step_id.step_het_comp;
 		info->nnodes  = step->het_job_nnodes;
 		info->nodeid  = step->het_job_node_offset + step->nodeid;
 		info->ntasks  = step->het_job_ntasks;
@@ -295,8 +291,6 @@ static int _setup_mpi(int ltaskid)
 		info->ltaskid = step->task[ltaskid]->id;
 		info->client  = step->envtp->cli;
 	} else {
-		info->step_id.step_id  = step->step_id.step_id;
-		info->step_id.step_het_comp  = step->step_id.step_het_comp;
 		info->nnodes  = step->nnodes;
 		info->nodeid  = step->nodeid;
 		info->ntasks  = step->ntasks;
@@ -584,6 +578,4 @@ static void _make_tmpdir(void)
 		error("Setting TMPDIR to /tmp");
 		setenvf(&step->env, "TMPDIR", "/tmp");
 	}
-
-	return;
 }

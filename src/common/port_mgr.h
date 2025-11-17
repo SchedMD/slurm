@@ -68,7 +68,7 @@ extern int resv_port_job_alloc(job_record_t *job_ptr);
 extern int resv_port_check_job_request_cnt(job_record_t *job_ptr);
 
 /* Returns the total reserved ports configured */
-extern int resv_port_get_resv_port_cnt();
+extern int resv_port_get_resv_port_cnt(void);
 
 /* Release reserved ports for a job step
  * RET SLURM_SUCCESS or an error code */

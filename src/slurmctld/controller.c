@@ -263,13 +263,13 @@ static struct {
 	.quiesced = true,
 };
 
-static int          _accounting_cluster_ready();
+static int _accounting_cluster_ready(void);
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
 static void         _create_clustername_file(void);
 static void _flush_rpcs(void);
-static void         _get_fed_updates();
+static void _get_fed_updates(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static int          _init_tres(void);
@@ -283,7 +283,7 @@ static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
-static void         _send_future_cloud_to_db();
+static void _send_future_cloud_to_db(void);
 static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg);
 static void _on_extract(conmgr_callback_args_t conmgr_args, void *conn,
 			void *arg);
@@ -1260,7 +1260,7 @@ static int _find_node_event(void *x, void *key)
 /*
  * Create db down events for FUTURE and CLOUD+POWERED_DOWN nodes
  */
-static void _send_future_cloud_to_db()
+static void _send_future_cloud_to_db(void)
 {
 	time_t now = time(NULL);
 	slurmdb_event_rec_t *event = NULL;

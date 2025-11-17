@@ -57,10 +57,8 @@ typedef struct {
 static list_t *sackd_nodes = NULL;
 static pthread_mutex_t sackd_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static void _destroy_sackd_node(void *x)
+static void _destroy_sackd_node(sackd_node_t *node)
 {
-	sackd_node_t *node = x;
-
 	if (!node)
 		return;
 
@@ -159,8 +157,9 @@ extern int sackd_mgr_load_state(buf_t *buffer, uint16_t protocol_version)
 
 	slurm_mutex_lock(&sackd_lock);
 	FREE_NULL_LIST(sackd_nodes);
-	rc = slurm_unpack_list(&sackd_nodes, _unpack_node, _destroy_sackd_node,
-			       buffer, protocol_version);
+	rc = slurm_unpack_list(&sackd_nodes, _unpack_node,
+			       (ListDelF) _destroy_sackd_node, buffer,
+			       protocol_version);
 	debug("%s: restored state of %d nodes",
 	      __func__, list_count(sackd_nodes));
 	slurm_mutex_unlock(&sackd_lock);
@@ -185,7 +184,7 @@ extern void sackd_mgr_add_node(slurm_msg_t *msg, uint16_t port)
 
 	slurm_mutex_lock(&sackd_lock);
 	if (!sackd_nodes)
-		sackd_nodes = list_create(_destroy_sackd_node);
+		sackd_nodes = list_create((ListDelF) _destroy_sackd_node);
 
 	if ((node = list_find_first(sackd_nodes, _find_sackd_node,
 				    auth_host))) {

@@ -3311,7 +3311,7 @@ extern int slurmdb_get_first_avail_cluster(job_desc_msg_t *req,
 	if (working_cluster_rec)
 		*cluster_rec = working_cluster_rec;
 
-	ret_list = list_create(slurm_free_will_run_response_msg);
+	ret_list = list_create((ListDelF) slurm_free_will_run_response_msg);
 	itr = list_iterator_create(cluster_list);
 	while ((working_cluster_rec = list_next(itr))) {
 		if ((will_run_resp = _job_will_run(req))) {

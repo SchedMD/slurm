@@ -136,7 +136,8 @@ static void _set_freq(int type, char *freq, char *freq_def)
 
 static void *_timer_thread(void *args)
 {
-	int i, now, diff;
+	time_t now;
+	int i, diff;
 	struct timeval tvnow;
 	struct timespec abs;
 

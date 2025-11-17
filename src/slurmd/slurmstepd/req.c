@@ -2346,7 +2346,7 @@ extern void set_msg_node_id(void)
 		msg_target_node_id = atoi(ptr);
 }
 
-extern void join_extern_threads()
+extern void join_extern_threads(void)
 {
 	int thread_cnt;
 

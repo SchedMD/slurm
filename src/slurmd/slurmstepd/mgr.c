@@ -2062,7 +2062,6 @@ static void _prepare_stdio(stepd_step_task_info_t *task)
 	}
 #endif
 	io_dup_stdio(task);
-	return;
 }
 
 /*
@@ -2709,8 +2708,6 @@ static void _wait_for_io(void)
 
 	/* Close any files for stdout/stderr opened by the stepd */
 	io_close_local_fds();
-
-	return;
 }
 
 static int _make_batch_dir(void)
@@ -2874,7 +2871,6 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 	if (_send_srun_resp_msg(&resp_msg, msg->nnodes) != SLURM_SUCCESS)
 		error("%s: Failed to send RESPONSE_LAUNCH_TASKS: %m", __func__);
 	xfree(name);
-	return;
 }
 
 static void _send_launch_resp(int rc)

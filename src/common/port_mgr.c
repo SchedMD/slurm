@@ -484,7 +484,7 @@ extern int resv_port_check_job_request_cnt(job_record_t *job_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int resv_port_get_resv_port_cnt()
+extern int resv_port_get_resv_port_cnt(void)
 {
 	return port_resv_cnt;
 }
