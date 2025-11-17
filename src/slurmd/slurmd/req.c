@@ -167,7 +167,7 @@ static uid_t _get_job_uid(uint32_t jobid);
 
 static int  _add_starting_step(uint16_t type, void *req);
 static int  _remove_starting_step(uint16_t type, void *req);
-static int  _wait_for_starting_step(slurm_step_id_t *step_id);
+static void _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
 static void _add_job_running_prolog(slurm_step_id_t *step_id);
@@ -4485,14 +4485,7 @@ static void _rpc_terminate_job(slurm_msg_t *msg)
 			slurm_send_rc_msg (msg, SLURM_SUCCESS);
 			send_response = false;
 		}
-		if (_wait_for_starting_step(&req->step_id)) {
-			/*
-			 * There's currently no case in which we enter this
-			 * error condition.  If there was, it's hard to say
-			 * whether to proceed with the job termination.
-			 */
-			error("Error in _wait_for_starting_step");
-		}
+		_wait_for_starting_step(&req->step_id);
 	}
 
 	if (IS_JOB_NODE_FAILED(req))
@@ -4783,8 +4776,7 @@ fail:
 /* Wait for a step to get far enough in the launch process to have
    a socket open, ready to handle RPC calls.  Pass step_id = NO_VAL
    to wait on any step for the given job. */
-
-static int _wait_for_starting_step(slurm_step_id_t *step_id)
+static void _wait_for_starting_step(slurm_step_id_t *step_id)
 {
 	static pthread_mutex_t dummy_lock = PTHREAD_MUTEX_INITIALIZER;
 	struct timespec ts = {0, 0};
@@ -4820,8 +4812,6 @@ static int _wait_for_starting_step(slurm_step_id_t *step_id)
 			debug("Finished wait for %ps, all steps",
 			      step_id);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 
