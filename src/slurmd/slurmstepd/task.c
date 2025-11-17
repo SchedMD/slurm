@@ -207,8 +207,7 @@ static int _run_script_and_set_env(const char *name, const char *path)
 	argv[1] = NULL;
 	args.script_argv = argv;
 
-	debug("[job %u] attempting to run %s [%s]",
-	      step->step_id.job_id, name, path);
+	debug("%pI attempting to run %s [%s]", &step->step_id, name, path);
 	buf = run_command(&args);
 
 	if (WIFEXITED(status)) {
