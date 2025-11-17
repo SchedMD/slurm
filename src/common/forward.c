@@ -905,8 +905,6 @@ extern void mark_as_failed_forward(list_t **ret_list, char *node_name, int err)
 	ret_data_info->type = RESPONSE_FORWARD_FAILED;
 	ret_data_info->err = err;
 	list_push(*ret_list, ret_data_info);
-
-	return;
 }
 
 extern void forward_wait(slurm_msg_t * msg)
@@ -935,7 +933,6 @@ extern void forward_wait(slurm_msg_t * msg)
 		slurm_mutex_unlock(&msg->forward_struct->forward_mutex);
 		FREE_NULL_FORWARD_STRUCT(msg->forward_struct);
 	}
-	return;
 }
 
 extern void fwd_set_alias_addrs(slurm_node_alias_addrs_t *alias_addrs)
