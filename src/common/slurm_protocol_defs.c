@@ -2503,9 +2503,8 @@ extern void slurm_free_kvs_comm_set(kvs_comm_set_t *msg)
 	}
 }
 
-extern void slurm_free_will_run_response_msg(void *data)
+extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 {
-	will_run_response_msg_t *msg = data;
 	if (msg) {
 		xfree(msg->cluster_name);
 		xfree(msg->job_submit_user_msg);
