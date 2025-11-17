@@ -169,7 +169,6 @@ rwfail:		 /* process rest of script output */
 			break;
 		buf_ptr = end_line + 1;
 	}
-	return;
 }
 
 /*
@@ -579,6 +578,4 @@ static void _make_tmpdir(void)
 		error("Setting TMPDIR to /tmp");
 		setenvf(&step->env, "TMPDIR", "/tmp");
 	}
-
-	return;
 }
