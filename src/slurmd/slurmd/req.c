@@ -166,7 +166,7 @@ static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay);
 static uid_t _get_job_uid(uint32_t jobid);
 
 static int  _add_starting_step(uint16_t type, void *req);
-static int  _remove_starting_step(uint16_t type, void *req);
+static void _remove_starting_step(uint16_t type, void *req);
 static void _wait_for_starting_step(slurm_step_id_t *step_id);
 static bool _step_is_starting(slurm_step_id_t *step_id);
 
@@ -754,8 +754,7 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		}
 #endif
 	done:
-		if (_remove_starting_step(type, req))
-			error("Error cleaning up starting_step list");
+		_remove_starting_step(type, req);
 
 		/* Reap child */
 		if (waitpid(pid, NULL, 0) < 0)
@@ -4741,11 +4740,9 @@ _add_starting_step(uint16_t type, void *req)
 }
 
 
-static int
-_remove_starting_step(uint16_t type, void *req)
+static void _remove_starting_step(uint16_t type, void *req)
 {
 	slurm_step_id_t starting_step = { 0 };
-	int rc = SLURM_SUCCESS;
 
 	switch(type) {
 	case LAUNCH_BATCH_JOB:
@@ -4758,19 +4755,15 @@ _remove_starting_step(uint16_t type, void *req)
 		break;
 	default:
 		error("%s called with an invalid type: %u", __func__, type);
-		rc = SLURM_ERROR;
-		goto fail;
+		return;
 	}
 
 	if (!list_delete_all(conf->starting_steps,
 			     (ListCmpF) verify_step_id,
 			     &starting_step)) {
 		error("%s: %ps not found", __func__, &starting_step);
-		rc = SLURM_ERROR;
 	}
 	slurm_cond_broadcast(&conf->starting_steps_cond);
-fail:
-	return rc;
 }
 
 /* Wait for a step to get far enough in the launch process to have
