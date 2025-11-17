@@ -68,8 +68,7 @@ static pam_handle_t *pam_h = NULL;
  * be called once.
  */
 
-int
-pam_setup (char *user, char *host)
+extern int pam_setup(char *user, char *host)
 {
 	/*
 	 * Any application using PAM must provide a conversation function, which
@@ -161,7 +160,7 @@ extern void pam_finish(void)
 
 #else  /* HAVE_PAM */
 
-int pam_setup (char *user, char *host)
+extern int pam_setup(char *user, char *host)
 {
 	/* Don't have PAM support, do nothing. */
 	return SLURM_SUCCESS;
