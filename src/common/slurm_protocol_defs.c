@@ -4616,9 +4616,8 @@ extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 	}
 }
 
-extern void slurm_free_job_step_stat(void *object)
+extern void slurm_free_job_step_stat(job_step_stat_t *msg)
 {
-	job_step_stat_t *msg = (job_step_stat_t *)object;
 	if (msg) {
 		jobacctinfo_destroy(msg->jobacct);
 		slurm_free_job_step_pids(msg->step_pids);

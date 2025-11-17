@@ -1673,7 +1673,7 @@ extern void slurm_free_topo_config_msg(topo_config_response_msg_t *msg);
 extern void slurm_free_topo_request_msg(topo_info_request_msg_t *msg);
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg);
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg);
-extern void slurm_free_job_step_stat(void *object);
+extern void slurm_free_job_step_stat(job_step_stat_t *msg);
 extern void slurm_free_job_step_pids(void *object);
 extern void slurm_free_acct_gather_node_resp_msg(
 	acct_gather_node_resp_msg_t *msg);

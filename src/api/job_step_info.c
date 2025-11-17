@@ -546,7 +546,7 @@ extern int slurm_job_step_stat(slurm_step_id_t *step_id,
 		case RESPONSE_JOB_STEP_STAT:
 			if (!resp_out->stats_list)
 				resp_out->stats_list = list_create(
-					slurm_free_job_step_stat);
+					(ListDelF) slurm_free_job_step_stat);
 			list_push(resp_out->stats_list,
 				  ret_data_info->data);
 			ret_data_info->data = NULL;
