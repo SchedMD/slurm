@@ -4,9 +4,7 @@
 import atf
 import pytest
 
-# import re
 import pexpect
-import time
 
 suser = atf.properties["slurm-user"]
 
@@ -34,7 +32,6 @@ def test_multiple_jobs():
     """
     Run three tasks at a time on some node and do so repeatedly
     This checks for slurmd race conditions
-    The sleep between cycles is to make sure the job step completion
     logic has time to be processed (slurmd -> slurmctld messages)
     Note: process output in order of expected completion
     """
@@ -65,4 +62,11 @@ def test_multiple_jobs():
             timeout=atf.default_command_timeout,
         )
         assert pattern_index != 1, f"Child 1 failed to run on iteration {it}"
-        time.sleep(0.25)
+
+        # Ensure that jobs ended
+        for child in [child1, child2, child3]:
+            atf.repeat_until(
+                lambda: child1.isalive(),
+                lambda alive: not alive,
+                fatal=True,
+            )
