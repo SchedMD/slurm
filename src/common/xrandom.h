@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  xgetrandom.h - Slurm helper functions for randomness
+ *  xrandom.h - Slurm helper functions for randomness
  *****************************************************************************
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
