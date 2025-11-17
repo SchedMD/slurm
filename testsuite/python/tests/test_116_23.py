@@ -51,15 +51,18 @@ def test_multiple_jobs():
         )
 
         pattern_index = child2.expect(
-            [r"error:.*configuring interconnect", r"error:", pexpect.EOF]
+            [r"error:.*configuring interconnect", r"error:", pexpect.EOF],
+            timeout=atf.default_command_timeout,
         )
         assert pattern_index != 1, f"Child 2 failed to run on iteration {it}"
         pattern_index = child3.expect(
-            [r"error:.*configuring interconnect", r"error:", pexpect.EOF]
+            [r"error:.*configuring interconnect", r"error:", pexpect.EOF],
+            timeout=atf.default_command_timeout,
         )
         assert pattern_index != 1, f"Child 3 failed to run on iteration {it}"
         pattern_index = child1.expect(
-            [r"error:.*configuring interconnect", r"error:", pexpect.EOF]
+            [r"error:.*configuring interconnect", r"error:", pexpect.EOF],
+            timeout=atf.default_command_timeout,
         )
         assert pattern_index != 1, f"Child 1 failed to run on iteration {it}"
         time.sleep(0.25)
