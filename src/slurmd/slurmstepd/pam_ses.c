@@ -130,9 +130,7 @@ fail1:
         return SLURM_ERROR;
 }
 
-
-void
-pam_finish ()
+extern void pam_finish(void)
 {
         int             rc = 0;
 
@@ -169,7 +167,7 @@ int pam_setup (char *user, char *host)
 	return SLURM_SUCCESS;
 }
 
-void pam_finish ()
+extern void pam_finish(void)
 {
 	/* Don't have PAM support, do nothing. */
 }

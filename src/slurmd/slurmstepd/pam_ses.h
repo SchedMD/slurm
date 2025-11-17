@@ -45,6 +45,6 @@
  * when finished.
  */
 int pam_setup (char *user, char *host);
-void pam_finish ();
+extern void pam_finish(void);
 
 #endif /* !_SLURMD_PAMSES_H */
