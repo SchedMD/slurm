@@ -263,13 +263,13 @@ static struct {
 	.quiesced = true,
 };
 
-static int          _accounting_cluster_ready();
+static int _accounting_cluster_ready(void);
 static int          _accounting_mark_all_nodes_down(char *reason);
 static void *       _assoc_cache_mgr(void *no_data);
 static int          _controller_index(void);
 static void         _create_clustername_file(void);
 static void _flush_rpcs(void);
-static void         _get_fed_updates();
+static void _get_fed_updates(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static int          _init_tres(void);
