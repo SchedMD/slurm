@@ -969,26 +969,16 @@ static int _get_host_index(char *cred_hostlist)
 
 /*
  * IN cred the job credential from where to extract the memory
- * IN host_index used to get the sockets&core from the cred. If -1 is passed,
- * it is searched in the cred->hostlist based on conf->node_name.
+ * IN host_index used to get the sockets&core from the cred.
  * OUT step_cpus the number of cpus used by the step
  * RET SLURM_SUCCESS on success SLURM_ERROR else
  */
-static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
-		      uint32_t *step_cpus)
+static void _get_ncpus(slurm_cred_arg_t *cred, int host_index,
+		       uint32_t *step_cpus)
 {
 	uint32_t hi, i, j, i_first_bit = 0, i_last_bit = 0;
 	bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 
-	if (host_index == -1) {
-		host_index = _get_host_index(cred->job_hostlist);
-
-		if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
-			error("job cr credential invalid host_index %d for %pI",
-			      host_index, &cred->step_id);
-			return SLURM_ERROR;
-		}
-	}
 	*step_cpus = 0;
 	hi = host_index + 1;	/* change from 0-origin to 1-origin */
 	for (i = 0; hi; i++) {
@@ -1042,7 +1032,6 @@ static int _get_ncpus(slurm_cred_arg_t *cred, int host_index,
 			*step_cpus *= i;
 		}
 	}
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -1196,8 +1185,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		else
 			req->x11 = 0;
 
-		if (_get_ncpus(arg, host_index, &step_cpus))
-			goto fail;
+		_get_ncpus(arg, host_index, &step_cpus);
+
 		if (tasks_to_launch > step_cpus) {
 			/* This is expected with the --overcommit option
 			 * or hyperthreads */
