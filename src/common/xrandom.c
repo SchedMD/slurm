@@ -43,7 +43,7 @@
 #include <sys/random.h>
 #endif
 
-uint32_t xrandom(void)
+extern uint32_t xrandom(void)
 {
 	static bool no_seed = true;
 	uint32_t random_value = 0;
