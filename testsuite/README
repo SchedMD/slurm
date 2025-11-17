@@ -883,6 +883,7 @@ test_116_53  Test MPI/PMIx signaling
 test_116_54  Test MPI/PMI2 signaling (requires MPICH)
 test_116_55  Test srun --async CLI behavior
 test_116_56  Test srun --relative
+test_116_57  Test srun in het job nested in non-het job
 
 test_117_#   Testing of sstat options.
 ======================================
