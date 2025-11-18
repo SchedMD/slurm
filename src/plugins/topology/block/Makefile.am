@@ -8,7 +8,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
 
 pkglib_LTLIBRARIES = topology_block.la
 
-# Null topology plugin.
+# block topology plugin.
 topology_block_la_SOURCES = topology_block.c \
 	block_record.c block_record.h \
 	eval_nodes_block.c eval_nodes_block.h
