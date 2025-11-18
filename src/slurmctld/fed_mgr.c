@@ -4637,7 +4637,7 @@ extern int fed_mgr_job_lock(job_record_t *job_ptr)
 
 		if (!rc) {
 			job_ptr->fed_details->cluster_lock = cluster_id;
-			fed_mgr_job_lock_set(job_ptr->job_id, cluster_id);
+			rc = fed_mgr_job_lock_set(job_ptr->job_id, cluster_id);
 		}
 
 		return rc;
