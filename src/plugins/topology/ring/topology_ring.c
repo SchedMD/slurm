@@ -1,0 +1,360 @@
+/*****************************************************************************\
+ *  topology_ring.c
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include "src/common/slurm_xlator.h"
+
+#include "slurm/slurm_errno.h"
+#include "src/common/bitstring.h"
+#include "src/common/log.h"
+#include "src/common/node_conf.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
+
+#include "../common/common_topo.h"
+#include "eval_nodes_ring.h"
+#include "ring_record.h"
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined(__APPLE__)
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+#else
+node_record_t **node_record_table_ptr;
+int node_record_count;
+#endif
+
+/*
+ * These variables are required by the generic plugin interface.  If they
+ * are not found in the plugin, the plugin loader will ignore it.
+ *
+ * plugin_name - a string giving a human-readable description of the
+ * plugin.  There is no maximum length, but the symbol must refer to
+ * a valid string.
+ *
+ * plugin_type - a string suggesting the type of the plugin or its
+ * applicability to a particular form of data or method of data handling.
+ * If the low-level plugin API is used, the contents of this string are
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
+ * interface which requires this string to be of the form
+ *
+ *      <application>/<method>
+ *
+ * where <application> is a description of the intended application of
+ * the plugin (e.g., "task" for task control) and <method> is a description
+ * of how this plugin satisfies that application.  Slurm will only load
+ * a task plugin if the plugin_type string has a prefix of "task/".
+ *
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
+ */
+const char plugin_name[] = "topology ring plugin";
+const char plugin_type[] = "topology/ring";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_RING;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+const bool supports_exclusive_topo = false;
+
+typedef struct topoinfo_ring {
+	char *name;
+	char *nodes;
+	uint16_t ring_index;
+	uint16_t size;
+} topoinfo_ring_t;
+
+typedef struct topoinfo_rings {
+	uint32_t record_count; /* number of records */
+	topoinfo_ring_t *topo_array; /* the ring topology records */
+} topoinfo_rings_t;
+
+static void _print_topo_record(topoinfo_ring_t *ring_ptr, char **out)
+{
+	char *env, *line = NULL, *pos = NULL;
+
+	/****** Line 1 ******/
+	xstrfmtcatat(line, &pos, "RingName=%s", ring_ptr->name);
+
+	if (ring_ptr->nodes)
+		xstrfmtcatat(line, &pos, " Nodes=%s", ring_ptr->nodes);
+
+	xstrfmtcatat(line, &pos, " RingSize=%u", ring_ptr->size);
+
+	if ((env = getenv("SLURM_TOPO_LEN")))
+		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
+	else
+		xstrfmtcat(*out, "%s\n", line);
+
+	xfree(line);
+}
+
+extern int init(void)
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+extern void fini(void)
+{
+	return;
+}
+
+extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
+				  topology_ctx_t *tctx)
+{
+	return SLURM_SUCCESS;
+}
+
+/*
+ * topo_build_config - build or rebuild system topology information
+ *	after a system startup or reconfiguration.
+ */
+extern int topology_p_build_config(topology_ctx_t *tctx)
+{
+	if (node_record_count)
+		return ring_record_validate(tctx);
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_destroy_config(topology_ctx_t *tctx)
+{
+	ring_context_t *ctx = tctx->plugin_ctx;
+
+	ring_record_table_destroy(ctx);
+	FREE_NULL_BITMAP(ctx->rings_nodes_bitmap);
+	xfree(tctx->plugin_ctx);
+
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
+{
+	ring_context_t *ctx = topo_eval->tctx->plugin_ctx;
+	if (ctx->rings_nodes_bitmap &&
+	    bit_overlap_any(ctx->rings_nodes_bitmap, topo_eval->node_map)) {
+		topo_eval->eval_nodes = eval_nodes_ring;
+		topo_eval->trump_others = true;
+	}
+
+	return common_topo_choose_nodes(topo_eval);
+}
+
+extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
+{
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Get bitmap of nodes in ring
+ *
+ * IN name of ring
+ * RET bitmap of nodes from ring_record_table (do not free)
+ */
+extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
+{
+	return NULL;
+}
+
+extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
+{
+	return false;
+}
+
+/*
+ * topo_get_node_addr - build node address and the associated pattern
+ *      based on the topology information
+ *
+ * example of output :
+ *      address : r8:2.tux1
+ *      pattern : ring:position.node
+ */
+extern int topology_p_get_node_addr(char *node_name, char **paddr,
+				    char **ppattern, void *tctx)
+{
+	return common_topo_get_node_addr(node_name, paddr, ppattern);
+}
+
+extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width,
+				     void *tctx)
+{
+	return common_topo_split_hostlist_treewidth(hl, sp_hl, count,
+						    tree_width);
+}
+
+extern int topology_p_get(topology_data_t type, void *data, void *tctx)
+{
+	ring_context_t *ctx = tctx;
+
+	switch (type) {
+	case TOPO_DATA_TOPOLOGY_PTR:
+	{
+		dynamic_plugin_data_t **topoinfo_pptr = data;
+
+		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
+		(*topoinfo_pptr)->data = NULL;
+		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		break;
+	}
+	case TOPO_DATA_REC_CNT:
+	{
+		int *rec_cnt = data;
+		*rec_cnt = ctx->ring_count;
+		break;
+	}
+	case TOPO_DATA_EXCLUSIVE_TOPO:
+	{
+		int *exclusive_topo = data;
+		*exclusive_topo = 0;
+		break;
+	}
+	default:
+		error("Unsupported option %d", type);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_free(void *topoinfo_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
+				     char *unit, char **out)
+{
+	int i, match, match_cnt = 0;
+	topoinfo_rings_t *topoinfo = topoinfo_ptr;
+
+	*out = NULL;
+
+	if ((!nodes_list || (nodes_list[0] == '\0')) &&
+	    (!unit || (unit[0] == '\0'))) {
+		if (topoinfo->record_count == 0) {
+			error("No topology information available");
+			return SLURM_SUCCESS;
+		}
+
+		for (i = 0; i < topoinfo->record_count; i++)
+			_print_topo_record(&topoinfo->topo_array[i], out);
+
+		return SLURM_SUCCESS;
+	}
+
+	/* Search for matching node name and  ring name */
+	for (i = 0; i < topoinfo->record_count; i++) {
+		hostset_t *hs;
+
+		if (unit && xstrcmp(topoinfo->topo_array[i].name, unit))
+			continue;
+
+		if (nodes_list) {
+			if ((topoinfo->topo_array[i].nodes == NULL) ||
+			    (topoinfo->topo_array[i].nodes[0] == '\0'))
+				continue;
+			hs = hostset_create(topoinfo->topo_array[i].nodes);
+			if (hs == NULL)
+				fatal("hostset_create: memory allocation failure");
+			match = hostset_within(hs, nodes_list);
+			hostset_destroy(hs);
+			if (!match)
+				continue;
+		}
+		match_cnt++;
+		_print_topo_record(&topoinfo->topo_array[i], out);
+	}
+
+	if (match_cnt == 0) {
+		error("Topology information contains no ring%s%s%s%s",
+		      unit ? " named " : "",
+		      unit ? unit : "",
+		      nodes_list ? " with nodes " : "",
+		      nodes_list ? nodes_list : "");
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern void topology_p_jobinfo_free(void *topo_jobinfo)
+{
+	return;
+}
+
+extern void topology_p_jobinfo_pack(void *topo_jobinfo, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	return;
+}
+
+extern int topology_p_jobinfo_unpack(void **topo_jobinfo, buf_t *buffer,
+				     uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_jobinfo_get(topology_jobinfo_type_t type,
+				  void *topo_jobinfo, void *data)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tctx)
+{
+	return 0;
+}
+
+extern void topology_p_get_topology_str(node_record_t *node_ptr,
+					char **topology_str_ptr,
+					topology_ctx_t *tctx)
+{
+	return;
+}
