@@ -33,8 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _TOPO_TREE_BLOCK_RECORD_H
-#define _TOPO_TREE_BLOCK_RECORD_H
+#ifndef _TOPO_BLOCK_RECORD_H
+#define _TOPO_BLOCK_RECORD_H
 
 #include "../common/common_topo.h"
 
