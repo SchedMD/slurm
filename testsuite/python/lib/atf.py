@@ -4794,7 +4794,7 @@ def restore_accounting_database():
     # restored by a previous call to restore_accounting_database
     if not os.path.isfile(sql_dump_file):
         logging.debug(
-            f"Slurm accounting database backup ({sql_dump_file}) is s not present. It has probably already been restored."
+            f"Slurm accounting database backup ({sql_dump_file}) is not present. It has probably already been restored."
         )
         return
 
