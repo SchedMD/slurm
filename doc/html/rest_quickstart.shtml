@@ -33,6 +33,7 @@ See also:
   <li><a href="#tokens">Token management</a></li>
   </ul>
 </li>
+<li><a href="#advanced_usage">Advanced Usage</a></li>
 <li><a href="#common_issues">Common Issues</a>
   <ul>
   <li><a href="#bind_socket">Unable to bind socket</a></li>
