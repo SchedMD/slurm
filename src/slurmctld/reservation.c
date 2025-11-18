@@ -5313,6 +5313,10 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	resv_select_t resv_select = {
 		.allowed_parts_list = resv_ptr->allowed_parts_list,
 	};
+	slurmctld_resv_t *resv_backup;
+
+	/* Required for accounting update if node list changes */
+	resv_backup = _copy_resv(resv_ptr);
 
 	/* Identify nodes which can be preserved in this reservation */
 	preserve_bitmap = bit_copy(resv_ptr->node_bitmap);
@@ -5444,9 +5448,11 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	}
 	FREE_NULL_BITMAP(preserve_bitmap);
 	if (replaced) {
+		_set_tres_cnt(resv_ptr, resv_backup);
 		last_resv_update = time(NULL);
 		schedule_resv_save();
 	}
+	_del_resv_rec(resv_backup);
 }
 
 /*
