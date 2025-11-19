@@ -37,7 +37,7 @@ proc dist_good {opt regex match} {
 			exp_continue
 		}
 		timeout {
-			fail "$client not responding"
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -61,7 +61,7 @@ proc dist_bad {opt} {
 			exp_continue
 		}
 		timeout {
-			fail "$client not responding"
+			fail "srun not responding"
 		}
 		eof {
 			wait
