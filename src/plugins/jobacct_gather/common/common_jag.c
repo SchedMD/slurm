@@ -1256,8 +1256,12 @@ extern void jag_common_poll_data(list_t *task_list, uint64_t cont_id,
 				prec->tres_data[i].size_write;
 		}
 
-		total_job_mem += jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
-		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+		if (jobacct->pid) {
+			total_job_mem +=
+				jobacct->tres_usage_in_tot[TRES_ARRAY_MEM];
+			total_job_vsize +=
+				jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
+		}
 
 		/* Update the cpu times */
 		jobacct->user_cpu_sec = (uint64_t)(prec->usec /
