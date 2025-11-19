@@ -152,6 +152,14 @@ typedef struct {
 	char *str_pos;
 } foreach_set_allow_str_t;
 
+typedef struct {
+	char *access_str;
+	bool check_denied;
+	bool check_allowed;
+	bool found_denied;
+	bool found_allowed;
+} foreach_check_assoc_access_t;
+
 static int _advance_resv_time(slurmctld_resv_t *resv_ptr);
 static void _advance_time(time_t *res_time, int day_cnt, int hour_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
@@ -4801,34 +4809,6 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 	list_for_each(job_list, _foreach_clear_job_resv, resv_ptr);
 }
 
-static bool _match_user_assoc(char *assoc_str, list_t *assoc_list, bool deny)
-{
-	list_itr_t *itr;
-	bool found = 0;
-	slurmdb_assoc_rec_t *assoc;
-	char tmp_char[30];
-
-	if (!assoc_str || !assoc_list || !list_count(assoc_list))
-		return false;
-
-	itr = list_iterator_create(assoc_list);
-	while ((assoc = list_next(itr))) {
-		while (assoc) {
-			snprintf(tmp_char, sizeof(tmp_char), ",%s%u,",
-				 deny ? "-" : "", assoc->id);
-			if (xstrstr(assoc_str, tmp_char)) {
-				found = 1;
-				goto end_it;
-			}
-			assoc = assoc->usage->parent_assoc_ptr;
-		}
-	}
-end_it:
-	list_iterator_destroy(itr);
-
-	return found;
-}
-
 /* Delete an exiting resource reservation */
 extern int delete_resv(reservation_name_msg_t *resv_desc_ptr)
 {
@@ -5558,6 +5538,129 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 	_free_resv_select_members(&resv_select);
 }
 
+static bool _access_str_any_allowed(char *access_str)
+{
+	char c;
+	int i = 0;
+
+	if (!access_str || *access_str == '\0')
+		return false;
+
+	while (access_str[i + 1]) {
+		if (access_str[i] == ',') {
+			c = access_str[i + 1];
+			if ('0' <= c && c <= '9')
+				return true;
+		}
+		i++;
+	}
+	return false;
+}
+
+static int _foreach_check_assoc_access(void *x, void *arg)
+{
+	slurmdb_assoc_rec_t *assoc = x;
+	foreach_check_assoc_access_t *data = arg;
+
+	char *access_str = data->access_str;
+	char deny_id_str[30];
+	char *allow_id_str;
+
+	while (assoc) {
+		snprintf(deny_id_str, sizeof(deny_id_str), ",-%u,", assoc->id);
+
+		/* Check if ,-%u, is in list */
+		if (data->check_denied && xstrstr(access_str, deny_id_str)) {
+			data->found_denied = true;
+			return -1;
+		}
+
+		/* Check if ,%u, is in list */
+		if (data->check_allowed) {
+			/*
+			 * Remove '-' to change "deny" string to "allow" string
+			 */
+			allow_id_str = deny_id_str + 1;
+			allow_id_str[0] = ',';
+			if (xstrstr(access_str, allow_id_str)) {
+				data->found_allowed = true;
+				if (data->check_denied) {
+					/* Keep checking for denied only */
+					data->check_allowed = false;
+				} else {
+					return -1;
+				}
+			}
+		}
+		assoc = assoc->usage->parent_assoc_ptr;
+	}
+
+	return 0;
+}
+
+static bool _check_assoc_access(char *access_list, slurmdb_assoc_rec_t *assoc)
+{
+	xassert(access_list);
+	xassert(assoc);
+
+	/*
+	 * Reject if the association or a parent association is denied.
+	 * Otherwise, check if explicitly allowed.
+	 */
+	bool any_denied = xstrchr(access_list, '-');
+	bool any_allowed = _access_str_any_allowed(access_list);
+	foreach_check_assoc_access_t args = {
+		.access_str = access_list,
+		.check_denied = any_denied,
+		.check_allowed = any_allowed,
+		.found_denied = false,
+		.found_allowed = false,
+	};
+	(void) _foreach_check_assoc_access(assoc, &args);
+
+	return !args.found_denied && (!any_allowed || args.found_allowed);
+}
+
+static bool _check_assoc_access_each(char *access_list, list_t *assoc_list)
+{
+	xassert(access_list);
+	xassert(assoc_list);
+
+	/*
+	 * Reject if any association or parent association is denied.
+	 * Otherwise, check if any is explicitly allowed.
+	 */
+	bool any_denied = xstrchr(access_list, '-');
+	bool any_allowed = _access_str_any_allowed(access_list);
+	foreach_check_assoc_access_t args = {
+		.access_str = access_list,
+		.check_denied = any_denied,
+		.check_allowed = any_allowed,
+		.found_denied = false,
+		.found_allowed = false,
+	};
+	(void) list_for_each(assoc_list, _foreach_check_assoc_access, &args);
+
+	return !args.found_denied && (!any_allowed || args.found_allowed);
+}
+
+static bool _check_uid_access(slurmctld_resv_t *resv_ptr, uid_t uid)
+{
+	bool user_found = false;
+	bool is_allow_list = !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT);
+
+	if (resv_ptr->user_cnt == 0)
+		return true;
+
+	for (int i = 0; i < resv_ptr->user_cnt; i++) {
+		if (resv_ptr->user_list[i] == uid) {
+			user_found = true;
+			break;
+		}
+	}
+	return user_found == is_allow_list;
+}
+
 /*
  * Validate if the user has access to this reservation.
  */
@@ -5567,51 +5670,11 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 	/* Determine if we have access */
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
 	    resv_ptr->assoc_list) {
-		xassert(user_assoc_list);
-		/*
-		 * Check to see if the association is
-		 * here or the parent association is
-		 * listed in the valid associations.
-		 */
-		if (xstrchr(resv_ptr->assoc_list, '-')) {
-			if (_match_user_assoc(resv_ptr->assoc_list,
-					      user_assoc_list,
-					      true))
-				return 0;
-		}
-
-		if (xstrstr(resv_ptr->assoc_list, ",1") ||
-		    xstrstr(resv_ptr->assoc_list, ",2") ||
-		    xstrstr(resv_ptr->assoc_list, ",3") ||
-		    xstrstr(resv_ptr->assoc_list, ",4") ||
-		    xstrstr(resv_ptr->assoc_list, ",5") ||
-		    xstrstr(resv_ptr->assoc_list, ",6") ||
-		    xstrstr(resv_ptr->assoc_list, ",7") ||
-		    xstrstr(resv_ptr->assoc_list, ",8") ||
-		    xstrstr(resv_ptr->assoc_list, ",9") ||
-		    xstrstr(resv_ptr->assoc_list, ",0")) {
-			if (!_match_user_assoc(resv_ptr->assoc_list,
-					       user_assoc_list,
-					       false))
-				return 0;
-		}
-	} else {
-		bool user_found = false;
-		bool is_allow_list = !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT);
-
-		if (resv_ptr->user_cnt == 0)
-			return 1;
-
-		for (int i = 0; i < resv_ptr->user_cnt; i++) {
-			if (resv_ptr->user_list[i] == uid) {
-				user_found = true;
-				break;
-			}
-		}
-		return user_found == is_allow_list;
+		return _check_assoc_access_each(resv_ptr->assoc_list,
+						user_assoc_list);
 	}
 
-	return 1;
+	return _check_uid_access(resv_ptr, uid);
 }
 
 /*
@@ -7068,7 +7131,7 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 				  slurmctld_resv_t *resv_ptr,
 				  bool show_security_violation_error)
 {
-	bool account_good = false, user_good = false;
+	bool account_good = false;
 	int i;
 
 	if (!resv_ptr) {
@@ -7087,8 +7150,6 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 
 	/* Determine if we have access */
 	if (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) {
-		char tmp_char[30];
-		slurmdb_assoc_rec_t *assoc;
 		if (!resv_ptr->assoc_list) {
 			if (resv_ptr->qos_list || resv_ptr->allowed_parts_list)
 				return SLURM_SUCCESS;
@@ -7114,53 +7175,12 @@ static int _valid_job_access_resv(job_record_t *job_ptr,
 				goto end_it;
 		}
 
-		/* Check to see if the association is here or the parent
-		 * association is listed in the valid associations. */
-		if (strchr(resv_ptr->assoc_list, '-')) {
-			assoc = job_ptr->assoc_ptr;
-			while (assoc) {
-				snprintf(tmp_char, sizeof(tmp_char), ",-%u,",
-					 assoc->id);
-				if (xstrstr(resv_ptr->assoc_list, tmp_char))
-					goto end_it;	/* explicitly denied */
-				assoc = assoc->usage->parent_assoc_ptr;
-			}
-		}
-		if (xstrstr(resv_ptr->assoc_list, ",1") ||
-		    xstrstr(resv_ptr->assoc_list, ",2") ||
-		    xstrstr(resv_ptr->assoc_list, ",3") ||
-		    xstrstr(resv_ptr->assoc_list, ",4") ||
-		    xstrstr(resv_ptr->assoc_list, ",5") ||
-		    xstrstr(resv_ptr->assoc_list, ",6") ||
-		    xstrstr(resv_ptr->assoc_list, ",7") ||
-		    xstrstr(resv_ptr->assoc_list, ",8") ||
-		    xstrstr(resv_ptr->assoc_list, ",9") ||
-		    xstrstr(resv_ptr->assoc_list, ",0")) {
-			assoc = job_ptr->assoc_ptr;
-			while (assoc) {
-				snprintf(tmp_char, sizeof(tmp_char), ",%u,",
-					 assoc->id);
-				if (xstrstr(resv_ptr->assoc_list, tmp_char))
-					return SLURM_SUCCESS;
-				assoc = assoc->usage->parent_assoc_ptr;
-			}
-		} else {
+		if (_check_assoc_access(resv_ptr->assoc_list,
+					job_ptr->assoc_ptr))
 			return SLURM_SUCCESS;
-		}
 	} else {
-no_assocs:	if ((resv_ptr->user_cnt == 0) ||
-		    (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT))
-			user_good = true;
-		for (i = 0; i < resv_ptr->user_cnt; i++) {
-			if (job_ptr->user_id == resv_ptr->user_list[i]) {
-				if (resv_ptr->ctld_flags & RESV_CTLD_USER_NOT)
-					user_good = false;
-				else
-					user_good = true;
-				break;
-			}
-		}
-		if (!user_good)
+no_assocs:
+		if (!_check_uid_access(resv_ptr, job_ptr->user_id))
 			goto end_it;
 		if ((resv_ptr->user_cnt != 0) && (resv_ptr->account_cnt == 0))
 			return SLURM_SUCCESS;
