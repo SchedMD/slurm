@@ -337,7 +337,7 @@ static struct spank_plugin *_spank_plugin_create(struct spank_stack *stack,
 	int e;
 	struct spank_plugin_operations ops;
 
-	if ((e = plugin_load_from_file(&p, path)) != SLURM_SUCCESS) {
+	if ((e = plugin_load_from_file(&p, path, true)) != SLURM_SUCCESS) {
 		error("spank: %s: %s", path, slurm_strerror(e));
 		return NULL;
 	}

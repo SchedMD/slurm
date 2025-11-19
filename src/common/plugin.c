@@ -132,7 +132,8 @@ extern int plugin_peek(const char *fq_path, char *plugin_type,
 	return rc;
 }
 
-extern int plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
+extern int plugin_load_from_file(plugin_handle_t *p, const char *fq_path,
+				 bool required)
 {
 	int rc;
 	plugin_handle_t plug;
@@ -153,8 +154,12 @@ extern int plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 	(void) dlerror();
 	plug = dlopen(fq_path, RTLD_LAZY);
 	if (plug == NULL) {
-		error("plugin_load_from_file: dlopen(%s): %s",
-		      fq_path, dlerror());
+		if (required)
+			error("plugin_load_from_file: dlopen(%s): %s",
+			      fq_path, dlerror());
+		else
+			verbose("plugin_load_from_file: dlopen(%s): %s",
+				fq_path, dlerror());
 		return ESLURM_PLUGIN_DLOPEN_FAILED;
 	}
 
@@ -229,8 +234,9 @@ plugin_load_and_link(const char *type_name, int n_syms,
 			xfree(file_name);
 			err = ESLURM_PLUGIN_NOTFOUND;
 		} else {
-			if ((err = plugin_load_from_file(&plug, file_name))
-			   == SLURM_SUCCESS) {
+			if ((err = plugin_load_from_file(&plug, file_name,
+							 true)) ==
+			    SLURM_SUCCESS) {
 				if (plugin_get_syms(plug, n_syms,
 						    names, ptrs) >= n_syms) {
 					debug3("Success.");
