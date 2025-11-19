@@ -15389,7 +15389,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 			msg->protocol_version);
 		break;
 	case REQUEST_CONFIG:
-		_unpack_config_request_msg(
+		rc = _unpack_config_request_msg(
 			(config_request_msg_t **) &msg->data,
 			buffer, msg->protocol_version);
 		break;
