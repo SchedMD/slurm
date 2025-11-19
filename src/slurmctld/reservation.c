@@ -5596,11 +5596,19 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 				return 0;
 		}
 	} else {
+		bool user_found = false;
+		bool is_allow_list = !(resv_ptr->ctld_flags & RESV_CTLD_USER_NOT);
+
+		if (resv_ptr->user_cnt == 0)
+			return 1;
+
 		for (int i = 0; i < resv_ptr->user_cnt; i++) {
-			if (resv_ptr->user_list[i] == uid)
-				return 1;
+			if (resv_ptr->user_list[i] == uid) {
+				user_found = true;
+				break;
+			}
 		}
-		return 0;
+		return user_found == is_allow_list;
 	}
 
 	return 1;
