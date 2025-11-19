@@ -14899,7 +14899,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_id_response_msg(msg, buffer);
 		break;
 	case REQUEST_CONFIG:
-		_unpack_config_request_msg(msg, buffer);
+		rc = _unpack_config_request_msg(msg, buffer);
 		break;
 	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
