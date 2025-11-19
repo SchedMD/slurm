@@ -37,48 +37,20 @@ proc cleanup {} {
 }
 
 #
-# Run an srun to grab a single node allocation, but not start any
-# job steps.
+# Submit a job and wait for the batch step, leave space for another step
+# submitted outside the batch script
 #
-set timeout $max_job_delay
-spawn $salloc -v -N1 -n1 -t2 $bin_sleep 600
-expect {
-	-re "salloc: Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-	}
-	timeout {
-		fail "srun failed to grab an allocation in a timely manner"
-	}
-}
-if {$job_id == 0} {
-	fail "srun failed to create an allocation"
+set job_id [submit_job "-N1 -n1 -t1 --wrap '$bin_sleep infinity'"]
+
+# give time for stepmgr to be created
+if {[wait_for_step ${job_id}.batch] != $::RETURN_SUCCESS} {
+	fail "Step .batch not found"
 }
 
 #
 # Now try to use the srun --jobid option to run in the already existing
-# allocation.
+# allocation, querying for himself
 #
-set pattern "sdiouetj49udfj"
-
-# give time for stepmgr to be created
-sleep 1
-
-set got_pattern 0
-spawn $srun --jobid $job_id echo $pattern
-expect {
-	-re "error" {
-		fail "Unexpected error occurred"
-	}
- 	-re $pattern {
-		set got_pattern 1
-		exp_continue
-	}
-	timeout {
-		fail "srun timed out"
-	}
-	eof {
-		wait
-	}
-}
-
-subtest {$got_pattern != 0} "srun should run under existing job allocation"
+set step_id ${job_id}.0
+set output [run_command_output -fail "$srun --jobid $job_id $scontrol -o show step $step_id"]
+subtest {[regexp "StepId=${step_id}.*State=RUNNING" $output]} "srun should run in the existing job allocation "
