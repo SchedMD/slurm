@@ -24,51 +24,21 @@
 ############################################################################
 source ./globals
 
-proc dist_good {opt regex match} {
-	global test_name srun number
-	set cmd "$srun -J$test_name -t1 -n1 -m$opt env"
+proc dist_good {opt regex matches} {
+	global test_name srun
 
-	set matches 0
-	log_user 0
-	set pid [spawn {*}$cmd]
-	expect {
-		-re $regex {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "$client not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	subtest {$matches == $match} "$cmd found option '$regex' ($matches)"
-	log_user 1
+	set result [run_command -nolog "$srun -J$test_name -t1 -n1 -m$opt env"]
+	subtest {[dict get $result "exit_code"] == 0} "srun with -m$opt should not fail"
+	set output [dict get $result "output"]
+	subtest {[regexp -all $regex $output] == $matches} "srun with -m$opt should have right env vars '$regex' $matches times" ", but got: $output"
 }
 
 
 proc dist_bad {opt} {
-	global test_name srun number
-	set cmd "$srun -J$test_name -t1 -n1 -m$opt env"
-
-	set matches 0
-	log_user 1
-	set pid [spawn {*}$cmd]
-	expect {
-		"error: Invalid --distribution specification" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "$client not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	subtest {$matches == 1} "$cmd error'ed out' ($matches)"
-	log_user 1
+	global test_name srun
+	set result [run_command -xfail "$srun -J$test_name -t1 -n1 -m$opt env"]
+	subtest {[dict get $result "exit_code"] != 0} "srun with -m$opt should fail"
+	subtest {[regexp -all "error: Invalid --distribution specification" [dict get $result "output"]] == 1} "srun should print the right error message"
 }
 
 
