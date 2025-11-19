@@ -9,6 +9,10 @@ import pytest
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(128)
+
+    # Not really required, but to avoid false failures due too busy systems
+    atf.require_config_parameter("SystemdTimeout", 20000, source="cgroup")
+
     atf.require_slurm_running()
 
 
