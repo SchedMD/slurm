@@ -691,16 +691,16 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 
 extern nodes_stats_t *statistics_get_nodes(bool lock)
 {
-	slurmctld_lock_t node_read_lock = {
+	slurmctld_lock_t node_write_lock = {
 		.conf = READ_LOCK,
-		.node = READ_LOCK,
+		.node = WRITE_LOCK, /* for select_g_select_nodeinfo_set_all() */
 		.part = READ_LOCK,
 	};
 	node_record_t *node_ptr;
 	nodes_stats_t *s = xmalloc(sizeof(*s));
 
 	if (lock)
-		lock_slurmctld(node_read_lock);
+		lock_slurmctld(node_write_lock);
 
 	select_g_select_nodeinfo_set_all();
 
@@ -806,7 +806,7 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 	}
 
 	if (lock)
-		unlock_slurmctld(node_read_lock);
+		unlock_slurmctld(node_write_lock);
 
 	return s;
 }
