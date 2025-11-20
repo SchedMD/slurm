@@ -52,7 +52,7 @@ generated_html = \
 	metrics.html \
 	mpi_guide.html \
 	multi_cluster.html \
-	namespace_tmpfs.html \
+	namespace.html \
 	network.html \
 	nss_slurm.html \
 	openapi_release_notes.html \
