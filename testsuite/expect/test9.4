@@ -47,13 +47,17 @@ set other_opts    "-O"
 log_info "Using $task_cnt tasks"
 
 #
-# Create a sizable text file
+# Create random text files for each task
 #
-exec $bin_cat /etc/hosts >$file_in
-set stdin_lines [get_line_cnt $file_in]
-
-# Generate the input file for each task
-run_command -fail "$srun -e /dev/null -i $file_in -o $file_in_task -n$task_cnt $other_opts -t1 $bin_cat"
+for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
+    set chars "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
+    set out ""
+    set len [expr {int(rand()*128)}]
+    for {set i 0} {$i < $len} {incr i} {
+        append out [string index $chars [expr {int(rand() * [string length $chars])}]]
+    }
+    run_command -fail "echo $out > $test_dir/$test_name.$tsk.input"
+}
 
 #
 # Run cycle_count jobs to copy job input to job output and compare sizes
@@ -71,11 +75,12 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	# Test output file sizes
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
 		set file_out_glob "$test_dir/$test_name.$tsk.output"
-		set stdout_lines 0
+		set input [run_command_output -fail "cat $test_dir/$test_name.$tsk.input"]
+		set output ""
 		wait_for_file $file_out_glob
-		wait_for {$stdout_lines == $stdin_lines} {
-			set stdout_lines [get_line_cnt $file_out_glob]
+		wait_for {$output == $input} {
+			set output [run_command_output -fail "cat $file_out_glob"]
 		}
-		subtest {$stdout_lines == $stdin_lines} "Lines in stdout ($stdout_lines) should be the same than stdin ($stdin_lines)"
+		subtest {$output == $input} "Output file ($output) should be the same than input file ($input)"
 	}
 }
