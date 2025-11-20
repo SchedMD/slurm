@@ -43,11 +43,6 @@ set job_name      $test_name
 set cycle_count   [get_cycle_count]
 set task_cnt      $max_stress_tasks
 
-# TODO: Temporary debug for bug 15302 (remove once fixed)
-set config_dir  [get_conf_path]
-set config_file $config_dir/slurm.conf
-
-
 proc cleanup {} {
 	global test_name task_cnt
 
@@ -57,11 +52,6 @@ proc cleanup {} {
 		set file_out_glob "$test_name.$tsk.output"
 		file delete $file_in_glob $file_out_glob
 	}
-
-	# TODO: Temporary debug for bug 15302 (remove once fixed)
-	global config_file
-	restore_conf $config_file
-	reconfigure
 }
 
 
@@ -75,9 +65,7 @@ set other_opts    "-O"
 proc run_cat_job { input_file output_file } {
 	global bin_cat bin_rm job_name number srun node_cnt other_opts task_cnt timeout
 
-	# TODO: Temporarily add verbosity to troubleshoot bug 15302 (restore once fixed)
-	spawn $srun -vvvvv --job-name=$job_name -e - -i $input_file -o $output_file -N$node_cnt -n$task_cnt $other_opts -t1 $bin_cat -
-	#spawn $srun --job-name=$job_name -e - -i $input_file -o $output_file -N$node_cnt -n$task_cnt $other_opts -t1 $bin_cat -
+	spawn $srun --job-name=$job_name -e - -i $input_file -o $output_file -N$node_cnt -n$task_cnt $other_opts -t1 $bin_cat -
 	expect {
 		-re "Unable to contact" {
 			fail "Slurm appears to be down"
@@ -90,12 +78,6 @@ proc run_cat_job { input_file output_file } {
 		}
 	}
 }
-
-
-# TODO: Temporary debug for bug 15302 (remove once fixed)
-save_conf $config_file
-run_command -none "$bin_echo SlurmdDebug=debug4 >> $config_file"
-reconfigure -fail
 
 #
 # Create a sizable text file
@@ -122,7 +104,6 @@ expect {
 #
 # Run cycle_count jobs to copy job input to job output and compare sizes
 #
-set success_cnt 0
 set timeout $max_job_delay
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
@@ -133,26 +114,11 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	# Test output file sizes
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
 		set file_out_glob "$test_name.$tsk.output"
+		set stdout_lines 0
 		wait_for_file $file_out_glob
-		set stdout_lines [get_line_cnt $file_out_glob]
-		if {$stdout_lines != $stdin_lines} {
-			exec $bin_sleep 1
+		wait_for {$stdout_lines == $stdin_lines} {
 			set stdout_lines [get_line_cnt $file_out_glob]
 		}
-		if {$stdout_lines != $stdin_lines} {
-			# TODO: Temporary debug for bug 15302 (remove once fixed)
-			set hostname [string trimright [run_command_output "hostname -s"]]
-			run_command "sudo dmesg -T | grep -i 'killed process'"
-			run_command "free -h"
-			run_command "top -o %MEM -n 1"
-
-			if {$stdout_lines == 0} {
-				fail "stdout is empty. Is current working directory writable from compute nodes?"
-			} else {
-				fail "stdout is incomplete"
-			}
-		} else {
-			incr success_cnt
-		}
+		subtest {$stdout_lines == $stdin_lines} "Lines in stdout ($stdout_lines) should be the same than stdin ($stdin_lines)"
 	}
 }
