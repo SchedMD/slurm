@@ -2058,8 +2058,6 @@ proc wait_for_file args {
 	for {set my_delay 0} {$my_delay <= $timeout} \
 	                     {set my_delay [expr $my_delay + $poll_interval]} {
 		if {[file exists $file_name]} {
-			# Add small delay for I/O buffering
-			exec $bin_sleep 1
 			return $::RETURN_SUCCESS
 		}
 		exec $bin_sleep $poll_interval
