@@ -283,18 +283,15 @@ appropriate for your environment.</li>
   requests to be accumulated and reduces the number of commit requests
   to the database.</p>
 
-<p>You might also consider setting the '<i>Purge*</i>' options in your
-  slurmdbd.conf to clear out old Data.  A Typical configuration would
-  look like this...</p>
-<ul>
-<li><b>PurgeEventAfter</b>=12months</li>
-<li><b>PurgeJobAfter</b>=12months</li>
-<li><b>PurgeResvAfter</b>=2months</li>
-<li><b>PurgeStepAfter</b>=2months</li>
-<li><b>PurgeSuspendAfter</b>=1month</li>
-<li><b>PurgeTXNAfter</b>=12months</li>
-<li><b>PurgeUsageAfter</b>=12months</li>
-
-</ul>
+<p>High job throughput leads to the database growing much faster than in a
+  typical environment, potentially to a size that becomes difficult to manage
+  depending on the capabilities of the database server. Sites are strongly
+  encouraged to make a plan for data retention early on and to configure the
+  relevant <a href="accounting.html#slurmdbd-archive-purge">Purge options</a> to
+  keep the database files at a manageable size. Also consider the frequency of
+  these purges as explained in the linked  documentation. Alternately, sites may
+  prefer to skip the storage of steps or jobs entirely through the relevant
+  <a href="slurm.conf.html#OPT_AccountingStorageEnforce">AccountingStorageEnforce</a>
+  options (<b>nosteps</b> and <b>nojobs</b>).</p>
 
 <!--#include virtual="footer.txt"-->
