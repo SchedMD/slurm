@@ -64,14 +64,30 @@ def test_no_kill(no_kill_job):
         atf.get_job_parameter(job_id, "NodeList")
     )
 
-    assert (
-        len(job_nodes_post_node_down) == len(job_nodes) - 1
-    ), "The job should lose one node after it was brought down"
     if no_kill:
+        # With --no-kill: job should keep running without the down node
+        assert (
+            len(job_nodes_post_node_down) == len(job_nodes) - 1
+        ), "The job with --no-kill should lose only one node after it was brought down"
         assert (
             atf.get_job_parameter(job_id, "JobState") == "RUNNING"
         ), "The job should keep running with --no-kill set"
+        assert (
+            atf.get_job_parameter(job_id, "Restarts") == 0
+        ), "The job should not be restarted/requeued"
     else:
+        # Without --no-kill: job should be requeued
         assert (
             atf.get_job_parameter(job_id, "JobState") != "RUNNING"
         ), "The job should not keep running without --no-kill set"
+
+        # Wait until the initial job is completed and restarted/requeued
+        requeued = atf.repeat_until(
+            lambda: atf.get_jobs()[job_id],
+            lambda job: job["JobState"] == "PENDING"
+            and job["Restarts"] == 1
+            and job["Reason"] == "BeginTime",
+        )
+        assert (
+            requeued
+        ), f"Job should be requeued when run without --no--kill, but {atf.get_jobs[job_id]}"
