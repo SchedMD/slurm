@@ -325,7 +325,10 @@ def test_scontrol_power_down_asap():
     # Submit job in preparation for POWER_DOWN_ASAP
     job_id = atf.submit_job_sbatch("-p cloud1 --wrap 'srun sleep 5'", fatal=True)
     atf.wait_for_job_state(
-        job_id, "RUNNING", timeout=atf.PERIODIC_TIMEOUT + 5, fatal=True
+        job_id,
+        "RUNNING",
+        timeout=atf.PERIODIC_TIMEOUT + atf.default_command_timeout,
+        fatal=True,
     )
     assert "ALLOCATED" in atf.get_node_parameter(
         f"{node_prefix}1", "state"
