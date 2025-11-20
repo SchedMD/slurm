@@ -37,24 +37,11 @@
 source ./globals
 
 set file_in       "$test_dir/input"
-set file_in_task  "$test_name.%t.input"
-set file_out_task "$test_name.%t.output"
+set file_in_task  "$test_dir/$test_name.%t.input"
+set file_out_task "$test_dir/$test_name.%t.output"
 set job_name      $test_name
 set cycle_count   2
 set task_cnt      [get_total_cpus]
-
-proc cleanup {} {
-	global test_name task_cnt
-
-	# Destroy all input/output files
-	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-		set file_in_glob  "$test_name.$tsk.input"
-		set file_out_glob "$test_name.$tsk.output"
-		file delete $file_in_glob $file_out_glob
-	}
-}
-
-
 set other_opts    "-O"
 
 log_info "Using $task_cnt tasks"
@@ -74,7 +61,7 @@ run_command -fail "$srun -e /dev/null -i $file_in -o $file_in_task -n$task_cnt $
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	# Remove files from previous cycle
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-		set file_out_glob "$test_name.$tsk.output"
+		set file_out_glob "$test_dir/$test_name.$tsk.output"
 		exec $bin_rm -f $file_out_glob
 	}
 
@@ -83,7 +70,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 
 	# Test output file sizes
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-		set file_out_glob "$test_name.$tsk.output"
+		set file_out_glob "$test_dir/$test_name.$tsk.output"
 		set stdout_lines 0
 		wait_for_file $file_out_glob
 		wait_for {$stdout_lines == $stdin_lines} {
