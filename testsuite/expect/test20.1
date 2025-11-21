@@ -51,9 +51,12 @@ subtest {[regexp "$number" $output job_id]} "Verify qsub job submission"
 wait_for_file -fail $file_out
 wait_for_file -fail $file_err
 
-set output [run_command_output -fail "$bin_cat $file_out"]
-subtest {[regexp -all "HELLO" $output] == 1} "Verify qsub output file contents"
+set output ""
+wait_for -subtest {[regexp -all "HELLO" $output] == 1} {
+	set output [run_command_output -fail "$bin_cat $file_out"]
+}
 
-
-set output [run_command -fail "$bin_cat $file_err"]
-subtest {[regexp -all "No such file" $output] == 1} "Verify qsub error file contents"
+set output ""
+wait_for -subtest {[regexp -all "No such file" $output] == 1} {
+	set output [run_command -fail "$bin_cat $file_err"]
+}
