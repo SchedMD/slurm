@@ -252,10 +252,12 @@ proc inc21_21_submit_test { limit } {
 	if {$limit eq "maxjobsub"} {
 		set limit_job "maxjob"
 		set limit_sub "maxsubmit"
+		set expected_reason "AssocMaxJobsLimit"
 
 	} else {
 		set limit_job "grpjob"
 		set limit_sub "grpsubmit"
+		set expected_reason "AssocGrpJobsLimit"
 	}
 
 	set acct_mod_assoc_test_vals($limit_job) \
@@ -283,22 +285,10 @@ proc inc21_21_submit_test { limit } {
 			fail "sbatch didn't return jobid"
 		}
 		lappend job_list $job_id($inx)
-	}
 
-	# Wait for the allowed jobs to start running
-	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} {incr inx} {
+		# If we didn't reach the MaxJob limit, wait util it's running
 		if {$inx < $acct_mod_assoc_test_vals($limit_job)} {
-			if {[wait_for_job -timeout 120 $job_id($inx) "RUNNING"]} {
-				# TODO: Ticket 23259: Temporarily debug traces
-				#       to be removed once the issue is fixed.
-				log_error "Job $job_id($inx) wasn't able to start running"
-				run_command "$squeue"
-				run_command "$sinfo"
-				run_command "$scontrol show jobs"
-				run_command "$scontrol show nodes"
-
-				fail "Job $job_id($inx) wasn't able to start running"
-			}
+			wait_for_job -fail $job_id($inx) "RUNNING"
 		}
 	}
 
@@ -307,41 +297,35 @@ proc inc21_21_submit_test { limit } {
 	subtest [dict get $result exit_code] "Job submitted in excess of $limit limit should fail"
 	subtest {[regexp {Job violates accounting/QOS policy} [dict get $result output]]} "Job submitted in execess of $limit limit should display policy violation error"
 
-	set matches 0
-	spawn $squeue -A$ta -h -o "\%i \%t \%r"
-	expect {
-		-re "($job_id(2)|$job_id(3)).PD.AssocMaxJobsLimit" {
-			incr matches
-			exp_continue
-		}
-		-re "($job_id(2)|$job_id(3)).PD.AssocGrpJobsLimit" {
-			incr matches
-			exp_continue
-		}
-		-re "($job_id(0)|$job_id(1)).R.$re_word_str" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "squeue not responding"
-		}
-		eof {
-			wait
+	# Verify that jobs have the desired state and reason
+	set condition false
+	wait_for {$condition} {
+		set jobs [get_jobs]
+		set job0 [dict get $jobs $job_id(0)]
+		set job1 [dict get $jobs $job_id(1)]
+		set job2 [dict get $jobs $job_id(2)]
+		set job3 [dict get $jobs $job_id(3)]
+		if {[dict get $job0 "JobState"] == "RUNNING" && \
+		    [dict get $job1 "JobState"] == "RUNNING" && \
+		    [dict get $job2 "JobState"] == "PENDING" && \
+		    [dict get $job3 "JobState"] == "PENDING" && \
+		    [dict get $job2 "Reason"] == $expected_reason && \
+		    [dict get $job3 "Reason"] == $expected_reason} {
+			set condition true
+		} else {
+			log_info "[dict get $job0 JobState]"
+			log_info "[dict get $job1 JobState]"
+			log_info "[dict get $job2 JobState]"
+			log_info "[dict get $job3 JobState]"
+			log_info "[dict get $job2 Reason]"
+			log_info "[dict get $job3 Reason]"
 		}
 	}
+	subtest {$condition} "First 2 jobs ($job_id(0), $job_id(1)) should be running and the last 2 should be pending with $expected_reason"
 
-	spawn $scancel --quiet --account=$ta
-	expect {
-		eof {
-			wait
-		}
-	}
+	# Cleanup
+	run_command -fail "$scancel --account=$ta"
 
-	if {$limit eq "maxjobsub" && $matches > 0 && $matches < 4 && [default_part_exclusive] != 0} {
-		log_warn "Only started $matches of 4 possible jobs"
-	} elseif { $matches != 4 } {
-		fail "Jobs are not in the expected state (expected $matches != 4)"
-	}
 
 	# Test to make sure that the grpsubmit and maxsubmit
 	# are enforced with job arrays
