@@ -535,12 +535,20 @@ record types:
 .TP
 \fBusers\fR=<\fIuser1\fR>[...,<\fIuserN\fR>]
 Limit the User Records displayed to those with the specified user name(s).
+
+\fBNOTE\fR: If \fBPrivateData=users\fR is set in \fIslurm.conf\fR, unprivileged
+users will be limited to their own records. Privileged users will be able to
+see all records.
 .IP
 
 .TP
 \fBaccounts\fR=<\fIacct1\fR>[...,<\fIacctN\fR>]
 Limit the Association Records displayed to those with the specified account
 name(s).
+
+\fBNOTE\fR: If \fBPrivateData=usage\fR is set in \fIslurm.conf\fR, unprivileged
+users will be limited to accounts where they are a member or coordinator.
+Privileged users will be able to see all records.
 .IP
 
 .TP
@@ -3215,6 +3223,9 @@ authorization levels will be required to access the corresponding data.
 \fBscontrol show partition:      \fR Privileged
 .br
 \fBscontrol show reservation:    \fR Privileged or Access
+.br
+.sp
+\fBscontrol show assoc_mgr:      \fR See assoc_mgr description for details
 .br
 
 .SH "EXAMPLES"
