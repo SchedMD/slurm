@@ -25,15 +25,12 @@
 source ./globals
 
 set file_in	"$test_dir/input"
-set timeout	60
 set het_job_id  0
 
 proc cleanup {} {
-	global het_job_id scancel
+	global het_job_id
 
-	if {$het_job_id > 0} {
-		exec $scancel $het_job_id
-	}
+	cancel_job $het_job_id 1
 }
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
@@ -45,93 +42,35 @@ if {$nb_nodes < 3} {
 	skip "Need 3 or more nodes in default partition"
 }
 
-set component(0) 0
-set matches 0
-set index 0
-set timeout $max_job_delay
-spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
-expect {
-	-re "job ($number) has been allocated resources" {
-		set het_job_id $expect_out(1,string)
-		reset_bash_prompt
-		exp_continue
-	}
-	-re "$test_prompt" {
-		#log_debug "Job initiated"
-	}
-	timeout {
-		fail "salloc: allocation not granted in $timeout seconds"
-	}
-	eof {
-		wait
-	}
-}
-if {$het_job_id == 0} {
-	fail "salloc failure"
+# HetJobs are scheduled only by backfill, therefore we better submit a single
+# het job and run multiple steps on it to make the test faster
+set het_job_id [submit_job -fail "-t1 -N1 : -N1 : -N1 --wrap 'sleep infinity'"]
+if {[wait_for_step ${het_job_id}.batch] != $::RETURN_SUCCESS} {
+	fail "Batch step for job $het_job_id not found"
 }
 
-make_bash_script $file_in "
-#!/usr/bin/env bash
-sleep_time=`expr 3 - \$SLURM_PROCID`
-sleep \$sleep_time
-env | grep SLURMD_NODENAME
-"
+# All steps will run into all components of the hetjob
+set srun_cmd "$srun --jobid $het_job_id --label --mpi=none --het-group=0-2 $file_in"
+set re_component "($number): SLURMD_NODENAME"
 
-set matches 0
-send "$srun --label --mpi=none --het-group=0-2 $file_in\r"
-expect {
-	-re "($number): SLURMD_NODENAME" {
-		incr matches
-		exp_continue
-	}
-	-re "$test_prompt" {
-		#break
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 3} {
-	fail "srun output failure ($matches != 3)"
-}
-
+# Submit step forcing ascendent order (the first component is the first to end)
 make_bash_script $file_in "
 #!/usr/bin/env bash
 sleep_time=`expr \$SLURM_PROCID`
 sleep \$sleep_time
 env | grep SLURMD_NODENAME
 "
+set output [run_command -fail "$srun_cmd"]
+set matches [regexp -all $re_component $output]
+subtest {$matches == 3} "All 3components should work properly when finishing in ascendent order" ",but got only $matches"
 
-set matches 0
-send "$srun --label --mpi=none --het-group=0-2 $file_in\r"
-expect {
-	-re "($number): SLURMD_NODENAME" {
-		incr matches
-		exp_continue
-	}
-	-re "$test_prompt" {
-		#break
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 3} {
-	fail "srun output failure ($matches != 3)"
-}
-
-send "exit\r"
-expect {
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
+# Submit step forcing descendent order (the first component is the last to end)
+make_bash_script $file_in "
+#!/usr/bin/env bash
+sleep_time=`expr 3 - \$SLURM_PROCID`
+sleep \$sleep_time
+env | grep SLURMD_NODENAME
+"
+set output [run_command -fail "$srun_cmd"]
+set matches [regexp -all $re_component $output]
+subtest {$matches == 3} "All 3components should work properly when finishing in descendent order" ",but got only $matches"
