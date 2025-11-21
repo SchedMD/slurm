@@ -1473,7 +1473,7 @@ static int _build_tasks_per_node_sock(struct job_resources *job_res,
 					if (tpc < 1) {
 						tpc = 1;
 						skip_cores = cpus_per_task /
-							cpus_per_core;
+							     node_ptr->tpc;
 						skip_cores--;	/* This core */
 					}
 					/* Start with 1 task per core */
