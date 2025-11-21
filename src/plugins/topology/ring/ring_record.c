@@ -133,7 +133,7 @@ extern void ring_record_table_destroy(ring_context_t *ctx)
 
 extern int ring_record_validate(topology_ctx_t *tctx)
 {
-	slurm_conf_ring_t *ptr, **ptr_array;
+	slurm_conf_ring_t *ptr, **ptr_array, **ptr_array_mem = NULL;
 	int i, j;
 	ring_record_t *ring_ptr, *prior_ptr;
 	hostlist_t *invalid_hl = NULL;
@@ -141,10 +141,23 @@ extern int ring_record_validate(topology_ctx_t *tctx)
 	int no_access_cnt = 0;
 	ring_context_t *ctx = xmalloc(sizeof(*ctx));
 
-	ctx->ring_count = _read_topo_file(&ptr_array, tctx->topo_conf, ctx);
+	if (tctx->config) {
+		topology_ring_config_t *ring_config = tctx->config;
+		ctx->ring_count = ring_config->config_cnt;
+		ptr_array_mem =
+			xcalloc(ctx->ring_count, sizeof(*ptr_array_mem));
+		ptr_array = ptr_array_mem;
+		for (int i = 0; i < ctx->ring_count; i++)
+			ptr_array[i] = &ring_config->ring_configs[i];
+
+	} else {
+		ctx->ring_count =
+			_read_topo_file(&ptr_array, tctx->topo_conf, ctx);
+	}
 
 	if (ctx->ring_count == 0) {
 		s_p_hashtbl_destroy(conf_hashtbl);
+		xfree(ptr_array_mem);
 		xfree(ctx);
 		fatal("No rings configured, failed to create context for topology plugin");
 	}
@@ -244,6 +257,7 @@ extern int ring_record_validate(topology_ctx_t *tctx)
 
 	_log_rings(ctx);
 	tctx->plugin_ctx = ctx;
+	xfree(ptr_array_mem);
 	return SLURM_SUCCESS;
 }
 
