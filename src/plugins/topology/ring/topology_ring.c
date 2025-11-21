@@ -136,10 +136,226 @@ extern void fini(void)
 	return;
 }
 
+extern int ring_record_add_ring(topology_ctx_t *tctx, char *name)
+{
+	topology_ring_config_t *ring_config = tctx->config;
+	ring_context_t *ctx = tctx->plugin_ctx;
+	ring_record_t *ring_ptr;
+	int new_idx = ctx->ring_count;
+
+	ctx->ring_count++;
+	xrecalloc(ctx->rings, ctx->ring_count, sizeof(*ctx->rings));
+
+	ring_ptr = &(ctx->rings[new_idx]);
+	ring_ptr->ring_name = xstrdup(name);
+	ring_ptr->nodes_bitmap = bit_alloc(node_record_count);
+	ring_ptr->ring_index = new_idx;
+
+	if (ring_config) {
+		xrecalloc(ring_config->ring_configs,
+			  ring_config->config_cnt + 1,
+			  sizeof(*ring_config->ring_configs));
+		ring_config->ring_configs[new_idx].ring_name = xstrdup(name);
+		ring_config->config_cnt++;
+	}
+
+	return new_idx;
+}
+
+extern int ring_record_get_ring_inx(const char *name, ring_context_t *ctx)
+{
+	int i;
+	ring_record_t *ring_ptr;
+
+	ring_ptr = ctx->rings;
+	for (i = 0; i < ctx->ring_count; i++, ring_ptr++) {
+		if (xstrcmp(ring_ptr->ring_name, name) == 0)
+			return i;
+	}
+
+	return -1;
+}
+
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  topology_ctx_t *tctx)
 {
-	return SLURM_SUCCESS;
+	ring_context_t *ctx = tctx->plugin_ctx;
+	int rc = SLURM_SUCCESS;
+	char *ring_name = NULL;
+	uint16_t ring_pos = 0;
+	int ring_idx = -1;
+	bool added = false;
+
+	if (unit) {
+		char *endptr, *tok = NULL;
+		unsigned long value;
+
+		ring_name = xstrdup(unit);
+		tok = strchr(ring_name, ':');
+		if (tok) {
+			*tok++ = '\0';
+			value = strtoul(tok, &endptr, 0);
+		}
+
+		if (!tok || tok == endptr || *endptr != '\0' ||
+		    value >= MAX_RING_SIZE) {
+			error("invalid ring position: %s", tok);
+			xfree(ring_name);
+			return SLURM_ERROR;
+		}
+		ring_pos = (uint16_t) value;
+		ring_idx = ring_record_get_ring_inx(ring_name, ctx);
+		if (ring_idx < 0) {
+			if (ring_pos) {
+				error("Position in new ring must be 0");
+				xfree(ring_name);
+				return SLURM_ERROR;
+			}
+			ring_idx = ring_record_add_ring(tctx, ring_name);
+		} else if ((ctx->rings[ring_idx].ring_size == MAX_RING_SIZE) &&
+			   !bit_test(ctx->rings[ring_idx].nodes_bitmap,
+				     node_ptr->index)) {
+			error("Ring %s is full", ring_name);
+			xfree(ring_name);
+			return SLURM_ERROR;
+		} else if (ctx->rings[ring_idx].ring_size < ring_pos ||
+			   ((ctx->rings[ring_idx].ring_size == ring_pos) &&
+			    bit_test(ctx->rings[ring_idx].nodes_bitmap,
+				     node_ptr->index))) {
+			error("Position %u in ring must be < ring_size(%u)",
+			      ring_pos, ctx->rings[ring_idx].ring_size);
+			ring_pos = 0;
+		}
+	}
+
+	bit_clear(ctx->rings_nodes_bitmap, node_ptr->index);
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		ring_record_t *ring_ptr = &(ctx->rings[i]);
+		bool in_ring =
+			bit_test(ring_ptr->nodes_bitmap, node_ptr->index);
+		bool add = (ring_idx == i);
+
+		if (!add && !in_ring)
+			continue;
+
+		if (add && !in_ring) {
+			hostlist_t *host_list_out = hostlist_create(NULL);
+			bool shift = false;
+			uint16_t shift_idx;
+
+			debug2("%s: add %s to %s on position:%u", __func__,
+			       node_ptr->name, ring_ptr->ring_name, ring_pos);
+			bit_set(ring_ptr->nodes_bitmap, node_ptr->index);
+
+			xfree(ring_ptr->nodes);
+			ring_ptr->ring_size++;
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_pos == j) {
+					shift_idx = ring_ptr->nodes_map[j];
+					ring_ptr->nodes_map[j] =
+						node_ptr->index;
+					shift = true;
+				} else if (shift) {
+					uint16_t tmp = shift_idx;
+					shift_idx = ring_ptr->nodes_map[j];
+					ring_ptr->nodes_map[j] = tmp;
+				}
+				hostlist_push_host(
+					host_list_out,
+					node_record_table_ptr
+						[ring_ptr->nodes_map[j]]
+							->name);
+			}
+
+			ring_ptr->nodes =
+				hostlist_ranged_string_xmalloc(host_list_out);
+			hostlist_destroy(host_list_out);
+			added = true;
+		} else if (!add && in_ring) {
+			hostlist_t *host_list_out = hostlist_create(NULL);
+			bool shift = false;
+
+			debug2("%s: remove %s from %s", __func__,
+			       node_ptr->name, ring_ptr->ring_name);
+			bit_clear(ring_ptr->nodes_bitmap, node_ptr->index);
+			xfree(ring_ptr->nodes);
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_ptr->nodes_map[j] == node_ptr->index) {
+					shift = true;
+					continue;
+				} else if (shift) {
+					ring_ptr->nodes_map[j - 1] =
+						ring_ptr->nodes_map[j];
+				}
+				hostlist_push_host(
+					host_list_out,
+					node_record_table_ptr
+						[ring_ptr->nodes_map[j]]
+							->name);
+			}
+			ring_ptr->nodes =
+				hostlist_ranged_string_xmalloc(host_list_out);
+			hostlist_destroy(host_list_out);
+			ring_ptr->ring_size--;
+		} else if (add && in_ring) {
+			hostlist_t *host_list_out = hostlist_create(NULL);
+			bool shift_r = false;
+			bool shift_l = false;
+			uint16_t shift_idx = MAX_RING_SIZE;
+
+			debug2("%s: move %s  %s", __func__, node_ptr->name,
+			       ring_ptr->ring_name);
+			xfree(ring_ptr->nodes);
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				uint16_t current_idx = ring_ptr->nodes_map[j];
+				if (shift_r) {
+					xassert(shift_idx != MAX_RING_SIZE);
+					ring_ptr->nodes_map[j] = shift_idx;
+					shift_idx = current_idx;
+				}
+
+				if (current_idx == node_ptr->index) {
+					if (ring_pos == j)
+						;
+					else if (shift_r)
+						shift_r = false;
+					else
+						shift_l = true;
+				} else if (ring_pos == j) {
+					if (shift_l)
+						shift_l = false;
+					else {
+						shift_idx = current_idx;
+						shift_r = true;
+					}
+					ring_ptr->nodes_map[j] =
+						node_ptr->index;
+				}
+
+				if (shift_l) {
+					ring_ptr->nodes_map[j] =
+						ring_ptr->nodes_map[j + 1];
+				}
+				hostlist_push_host(
+					host_list_out,
+					node_record_table_ptr
+						[ring_ptr->nodes_map[j]]
+							->name);
+			}
+			ring_ptr->nodes =
+				hostlist_ranged_string_xmalloc(host_list_out);
+			hostlist_destroy(host_list_out);
+			added = true;
+		}
+		ring_record_update_ring_config(tctx, i);
+	}
+
+	if (added)
+		bit_set(ctx->rings_nodes_bitmap, node_ptr->index);
+
+	xfree(ring_name);
+	return rc;
 }
 
 /*
@@ -430,5 +646,22 @@ extern void topology_p_get_topology_str(node_record_t *node_ptr,
 					char **topology_str_ptr,
 					topology_ctx_t *tctx)
 {
+	ring_context_t *ctx = tctx->plugin_ctx;
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		ring_record_t *ring_ptr = &(ctx->rings[i]);
+		if (bit_test(ring_ptr->nodes_bitmap, node_ptr->index)) {
+			xstrfmtcat(*topology_str_ptr, "%s%s:%s",
+				   *topology_str_ptr ? "," : "", tctx->name,
+				   ring_ptr->ring_name);
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_ptr->nodes_map[j] == node_ptr->index) {
+					xstrfmtcat(*topology_str_ptr, ":%d", j);
+					break;
+				}
+			}
+			break;
+		}
+	}
 	return;
 }

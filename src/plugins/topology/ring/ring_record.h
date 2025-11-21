@@ -64,4 +64,8 @@ extern int ring_record_validate(topology_ctx_t *tctx);
 
 extern void ring_record_update_ring_config(topology_ctx_t *tctx, int idx);
 
+extern int ring_record_add_ring(topology_ctx_t *tctx, char *name);
+
+extern int ring_record_get_ring_inx(const char *name, ring_context_t *ctx);
+
 #endif
