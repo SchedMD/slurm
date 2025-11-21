@@ -7027,6 +7027,120 @@ static int DUMP_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
 	return rc;
 }
 
+static int PARSE_FUNC(TOPOLOGY_RING)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	topology_ctx_t *tctx = obj;
+	size_t src_dict_count;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	if (data_get_type(src) != DATA_TYPE_DICT)
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_EXPECTED_DICT,
+				   "Rejecting %s when dictionary expected",
+				   data_get_type_string(src));
+
+	src_dict_count = data_get_dict_length(src);
+	if (tctx->plugin && src_dict_count) {
+		rc = parse_error(
+			parser, args, parent_path, SLURM_ERROR,
+			"Field ring is mutually excusive with fields block, tree and flat");
+	} else if (src_dict_count) {
+		tctx->plugin = xstrdup("topology/ring");
+		rc = PARSE(TOPOLOGY_RING_CONFIG_PTR, tctx->config, src,
+			   parent_path, args);
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_RING)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	topology_ctx_t *tctx = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(tctx);
+
+	if (!xstrcmp(tctx->plugin, "topology/ring"))
+		rc = DUMP(TOPOLOGY_RING_CONFIG_PTR, tctx->config, dst, args);
+	else
+		data_set_dict(dst);
+
+	return rc;
+}
+
+static int _parse_ring_conf(void *array, int index, data_t *src, args_t *args,
+			    data_t *parent_path)
+{
+	slurm_conf_ring_t *ring_config_array = array;
+	return PARSE(RING_CONFIG, ring_config_array[index], src, parent_path,
+		     args);
+}
+
+static int PARSE_FUNC(TOPOLOGY_RING_CONFIG_ARRAY)(const parser_t *const parser,
+						  void *obj, data_t *src,
+						  args_t *args,
+						  data_t *parent_path)
+{
+	topology_ring_config_t *ring_configs = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(ring_configs);
+
+	if (data_get_type(src) == DATA_TYPE_DICT) {
+		/* single ring configuration */
+		ring_configs->config_cnt = 1;
+		xrealloc(ring_configs->ring_configs,
+			 sizeof(*ring_configs->ring_configs));
+
+		rc = PARSE(RING_CONFIG, *ring_configs->ring_configs, src,
+			   parent_path, args);
+	} else if (data_get_type(src) == DATA_TYPE_LIST) {
+		foreach_topo_array_args_t fargs = {
+			.magic = PARSE_TOPO_ARRAY_MAGIC,
+			.args = args,
+			.parent_path = parent_path,
+			.parser = parser,
+			.parse_callback = _parse_ring_conf,
+			.rc_ptr = &rc,
+		};
+
+		/* multiple rings configurations */
+		ring_configs->config_cnt = data_get_list_length(src);
+		xrealloc(ring_configs->ring_configs,
+			 (sizeof(*ring_configs->ring_configs) *
+			  ring_configs->config_cnt));
+
+		fargs.array_size = ring_configs->config_cnt;
+		fargs.array = ring_configs->ring_configs;
+		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
+	} else {
+		rc = on_error(DUMPING, parser->type, args,
+			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
+			      "Unexpected type %s when expecting a list",
+			      data_type_to_string(data_get_type(src)));
+	}
+
+	return rc;
+}
+
+static int DUMP_FUNC(TOPOLOGY_RING_CONFIG_ARRAY)(const parser_t *const parser,
+						 void *obj, data_t *dst,
+						 args_t *args)
+{
+	topology_ring_config_t *ring_configs = obj;
+	int rc = SLURM_SUCCESS;
+	xassert(ring_configs);
+
+	data_set_list(dst);
+
+	for (int i = 0; i < ring_configs->config_cnt; i++)
+		if ((rc = DUMP(RING_CONFIG, ring_configs->ring_configs[i],
+			       data_list_append(dst), args)))
+			return rc;
+	return rc;
+}
 static void FREE_FUNC(H_LAYER)(void *ptr)
 {
 	hierarchy_layer_t *layer = ptr;
@@ -10510,6 +10624,21 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_BLOCK_CONFIG)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(slurm_conf_ring_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(RING_CONFIG)[] = {
+	add_parse(STRING, ring_name, "ring", "The name of a ring. This name is internal to Slurm and arbitrary. Each block should have a unique name. This field must be specified."),
+	add_parse(STRING, nodes, "nodes", "Child Nodes of the named ring. This must be specified along with the RingName."),
+};
+#undef add_parse
+
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(topology_ring_config_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(TOPOLOGY_RING_CONFIG)[] = {
+	add_cparse(TOPOLOGY_RING_CONFIG_ARRAY, "rings", "Array of ring configurations"),
+};
+#undef add_cparse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(topology_ctx_t, mtype, false, field, 0, path, desc)
 #define add_cparse(mtype, path, desc)					\
 	add_complex_parser(topology_ctx_t, mtype, false, path, desc)
@@ -10518,6 +10647,7 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_CONF)[] = {
 	add_parse(BOOL, cluster_default, "cluster_default", "topology configuration used outside the context of partitions"),
 	add_cparse(TOPOLOGY_BLOCK, "block", "topology/block plugin configuration, mutually exclusive with tree and default"),
 	add_cparse(TOPOLOGY_FLAT, "flat", "topology/flat plugin, mutually exclusive with tree and block"),
+	add_cparse(TOPOLOGY_RING, "ring", "topology/ring plugin configuration, mutually exclusive with block, tree and flat"),
 	add_cparse(TOPOLOGY_TREE, "tree", "topology/tree plugin configuration, mutually exclusive with block and default"),
 };
 #undef add_cparse
@@ -11310,9 +11440,11 @@ static const parser_t parsers[] = {
 	addpca(TOPOLOGY_CONF_ARRAY, TOPOLOGY_CONF, topology_ctx_array_t, NEED_NONE, "Topology configuration array"),
 	addpcp(TOPOLOGY_TREE, TOPOLOGY_TREE_CONFIG_PTR, topology_tree_config_t *, NEED_NONE, "topology/tree plugin configuration"),
 	addpcp(TOPOLOGY_BLOCK, TOPOLOGY_BLOCK_CONFIG_PTR, topology_block_config_t *, NEED_NONE, "topology/block plugin configuration"),
+	addpcp(TOPOLOGY_RING, TOPOLOGY_RING_CONFIG_PTR, topology_ring_config_t *, NEED_NONE, "topology/ring plugin configuration"),
 	addpcp(TOPOLOGY_FLAT, BOOL, bool, NEED_NONE, "topology/flat plugin"),
 	addpca(TOPOLOGY_TREE_CONFIG_ARRAY, SWITCH_CONFIG, topology_tree_config_t, NEED_NONE, "Array of switch configurations"),
 	addpca(TOPOLOGY_BLOCK_CONFIG_ARRAY, BLOCK_CONFIG, topology_block_config_t, NEED_NONE, "Array of block configurations"),
+	addpca(TOPOLOGY_RING_CONFIG_ARRAY, RING_CONFIG, topology_ring_config_t, NEED_NONE, "Array of ring configurations"),
 	addpcp(NAMESPACE_NODE_CONF_COMPLEX, NAMESPACE_CONF_PTR, ns_node_conf_t, NEED_NONE, "Namespace node specific configuration"),
 
 	/* NULL terminated model parsers */
@@ -11462,8 +11594,10 @@ static const parser_t parsers[] = {
 	addpap(TOPOLOGY_CONF, topology_ctx_t, NULL, (parser_free_func_t) free_topology_ctx),
 	addpap(TOPOLOGY_TREE_CONFIG, topology_tree_config_t, NULL, (parser_free_func_t) free_topology_tree_config),
 	addpap(TOPOLOGY_BLOCK_CONFIG, topology_block_config_t, NULL, (parser_free_func_t) free_topology_block_config),
+	addpap(TOPOLOGY_RING_CONFIG, topology_ring_config_t, NULL, (parser_free_func_t) free_topology_ring_config),
 	addpap(SWITCH_CONFIG, slurm_conf_switches_t, NULL, (parser_free_func_t) free_switch_conf),
 	addpap(BLOCK_CONFIG, slurm_conf_block_t, NULL, (parser_free_func_t) free_block_conf),
+	addpap(RING_CONFIG, slurm_conf_ring_t, NULL, (parser_free_func_t) free_ring_conf),
 	addpap(H_RESOURCE, hierarchical_resource_t, NULL, FREE_FUNC(H_RESOURCE)),
 	addpap(H_LAYER, hierarchy_layer_t, NULL, FREE_FUNC(H_LAYER)),
 	addpap(H_VARIABLE, hres_variable_t, NULL, hres_variable_free),

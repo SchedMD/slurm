@@ -662,6 +662,12 @@ typedef enum {
 	DATA_PARSER_NAMESPACE_CONF_PTR, /* ns_conf_t* */
 	DATA_PARSER_NODE_REASON_USER_ID, /* node_info_t->reason_uid */
 	DATA_PARSER_SINFO_REASON_USER_ID, /* sinfo_data_t->reason_uid */
+	DATA_PARSER_TOPOLOGY_RING, /* topology_ctx_t topology/flat plugin */
+	DATA_PARSER_TOPOLOGY_RING_CONFIG, /* topology_ring_config_t */
+	DATA_PARSER_TOPOLOGY_RING_CONFIG_PTR, /* topology_ring_config_t* */
+	DATA_PARSER_TOPOLOGY_RING_CONFIG_ARRAY, /* topology_ring_config_t->ring_configs,config_cnt */
+	DATA_PARSER_RING_CONFIG, /* slurm_conf_ring_t */
+	DATA_PARSER_RING_CONFIG_PTR, /* slurm_conf_ring_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
