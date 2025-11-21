@@ -49,10 +49,13 @@ if {[param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 }
 
 make_bash_script $test_timer "
+echo \"JOB STARTED: \$SLURM_JOB_ID \"
+echo \"Give time to the other job to also start...\"
+sleep 10
 for i in \{1..10\}
 do
 	echo \"timer \$a time \$i\"
-	sleep 5
+	sleep 1
 done
 echo \"Timer \$a finished\"
 "
@@ -62,7 +65,7 @@ set -m
 for a in \{1..$run_timer\}
 do
   export a
-  $srun -v $mem_opt -t1 $test_timer &
+  $srun -v $mem_opt -t2 $test_timer &
 done
 "
 
@@ -79,9 +82,15 @@ set fini_num 1
 set timer_match 0
 set time_match 0
 set fini_match 0
+set jobs 0
 spawn bash -i $file_in
 expect {
-
+	-re "JOB STARTED: ($number)" {
+		set job_id $expect_out(1,string)
+		log_debug "Job $job_id started"
+		incr jobs
+		exp_continue
+	}
 	-re "timer ($number) time ($number)" {
 		set tr_num $expect_out(1,string)
 		set t_num  $expect_out(2,string)
@@ -126,3 +135,4 @@ expect {
 subtest {$timer_match == [expr $run_timer*10]} "srun should execute all timers" "$timer_match != [expr $run_timer*10]"
 subtest {$time_match == [expr $run_timer*10]} "srun should generate the right output" "$time_match != [expr $run_timer*10]"
 subtest {$fini_match == $run_timer} "srun should finish the submitted program" "$fini_match != $run_timer"
+subtest {$jobs == 2} "Both jobs should be started before timers start"
