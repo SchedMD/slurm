@@ -221,16 +221,34 @@ extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
 
 extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 {
+	int rc = SLURM_SUCCESS;
 	ring_context_t *ctx = tctx;
 
 	switch (type) {
 	case TOPO_DATA_TOPOLOGY_PTR:
 	{
 		dynamic_plugin_data_t **topoinfo_pptr = data;
+		topoinfo_rings_t *topoinfo_ptr = xmalloc(sizeof(*topoinfo_ptr));
 
-		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
-		(*topoinfo_pptr)->data = NULL;
+		*topoinfo_pptr = xmalloc(sizeof(**topoinfo_pptr));
+		(*topoinfo_pptr)->data = topoinfo_ptr;
 		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		topoinfo_ptr->record_count = ctx->ring_count;
+		topoinfo_ptr->topo_array =
+			xcalloc(topoinfo_ptr->record_count,
+				sizeof(*(topoinfo_ptr->topo_array)));
+
+		for (int i = 0; i < topoinfo_ptr->record_count; i++) {
+			topoinfo_ptr->topo_array[i].name =
+				xstrdup(ctx->rings[i].ring_name);
+			topoinfo_ptr->topo_array[i].nodes =
+				xstrdup(ctx->rings[i].nodes);
+			topoinfo_ptr->topo_array[i].ring_index =
+				ctx->rings[i].ring_index;
+			topoinfo_ptr->topo_array[i].size =
+				ctx->rings[i].ring_size;
+		}
 
 		break;
 	}
@@ -248,19 +266,47 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	}
 	default:
 		error("Unsupported option %d", type);
+		rc = SLURM_ERROR;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int topology_p_topoinfo_free(void *topoinfo_ptr)
 {
+	int i = 0;
+	topoinfo_rings_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		if (topoinfo->topo_array) {
+			for (i = 0; i < topoinfo->record_count; i++) {
+				xfree(topoinfo->topo_array[i].name);
+				xfree(topoinfo->topo_array[i].nodes);
+			}
+			xfree(topoinfo->topo_array);
+		}
+		xfree(topoinfo);
+	}
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
 				    uint16_t protocol_version)
 {
+	int i;
+	topoinfo_rings_t *topoinfo = topoinfo_ptr;
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack32(topoinfo->record_count, buffer);
+		for (i = 0; i < topoinfo->record_count; i++) {
+			packstr(topoinfo->topo_array[i].name, buffer);
+			packstr(topoinfo->topo_array[i].nodes, buffer);
+			pack16(topoinfo->topo_array[i].ring_index, buffer);
+			pack16(topoinfo->topo_array[i].size, buffer);
+		}
+	} else {
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -321,7 +367,35 @@ extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
+	int i = 0;
+	topoinfo_rings_t *topoinfo_ptr = xmalloc(sizeof(*topoinfo_ptr));
+
+	*topoinfo_pptr = topoinfo_ptr;
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack32(&topoinfo_ptr->record_count, buffer);
+		safe_xcalloc(topoinfo_ptr->topo_array,
+			     topoinfo_ptr->record_count,
+			     sizeof(*(topoinfo_ptr->topo_array)));
+		for (i = 0; i < topoinfo_ptr->record_count; i++) {
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
+				       buffer);
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
+				       buffer);
+			safe_unpack16(&topoinfo_ptr->topo_array[i].ring_index,
+				      buffer);
+			safe_unpack16(&topoinfo_ptr->topo_array[i].size,
+				      buffer);
+		}
+	} else {
+		goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	topology_p_topoinfo_free(topoinfo_ptr);
+	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
 }
 
 extern void topology_p_jobinfo_free(void *topo_jobinfo)
