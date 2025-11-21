@@ -89,8 +89,12 @@ proc test_overlap_after_overlap {} {
 
 	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
 
-	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
-	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+	# Ensure that both steps run in parallel
+	set steps {}
+	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING"} {
+		set steps [get_steps]
+	}
 
 	subtest_step_tres "$job_id.0" "" ""
 	subtest_step_tres "$job_id.1" "" ""
@@ -107,10 +111,17 @@ proc test_overlap_after_exclusive {} {
 	"
 
 	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
-	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+	subtest {![wait_for_step $job_id.0]} "Verify $job_id.0 is found"
 
+	# Submit the external step (in background)
 	spawn $srun --jobid=$job_id --overlap --mem=50 $bin_sleep 60
-	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+
+	# Ensure that both steps run in parallel
+	set steps {}
+	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING"} {
+		set steps [get_steps]
+	}
 
 	subtest_step_tres "$job_id.1" "" ""
 
@@ -126,10 +137,17 @@ proc test_exclusive_after_overlap {} {
 	"
 
 	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
-	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
+	subtest {![wait_for_step $job_id.0]} "Verify $job_id.0 is found"
 
+	# Submit the external step (in background)
 	spawn $srun --jobid=$job_id --mem=50 $bin_sleep 60
-	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
+
+	# Ensure that both steps run in parallel
+	set steps {}
+	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING"} {
+		set steps [get_steps]
+	}
 
 	subtest_step_tres "$job_id.0" "" ""
 
@@ -150,9 +168,13 @@ proc test_overlap_memory {} {
 
 	set job_id [submit_job -fail "-N1 -n1 -w$nodes --mem=100 --time=1 --output=none $file_in"]
 
-	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
-	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
-	subtest {![wait_for_step -timeout 10 $job_id.2]} "Verify $job_id.2 is found"
+	# Ensure that all steps run in parallel
+	set steps {}
+	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.2 {}] "State" ""] == "RUNNING"} {
+		set steps [get_steps]
+	}
 
 	subtest_step_tres "$job_id.1" 100 ""
 	subtest_step_tres "$job_id.2" 100 ""
@@ -174,9 +196,13 @@ proc test_overlap_gpus {} {
 
 	set job_id [submit_job -fail "-N1 -n1 -w$nodes --gres=gpu:1 --mem=100 --time=1 --output=none $file_in"]
 
-	subtest {![wait_for_step -timeout 10 $job_id.0]} "Verify $job_id.0 is found"
-	subtest {![wait_for_step -timeout 10 $job_id.1]} "Verify $job_id.1 is found"
-	subtest {![wait_for_step -timeout 10 $job_id.2]} "Verify $job_id.2 is found"
+	# Ensure that all steps run in parallel
+	set steps {}
+	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING" && \
+	                   [dict_getdef [dict_getdef $steps $job_id.2 {}] "State" ""] == "RUNNING"} {
+		set steps [get_steps]
+	}
 
 	subtest_step_tres "$job_id.1" 100 1
 	subtest_step_tres "$job_id.2" 100 1
