@@ -6302,6 +6302,53 @@ proc get_jobs { {job_id_in ""} } {
 ################################################################
 #
 # NAME
+#	get_steps - returns a dictionary of dictionaries of step parameters
+#
+# SYNOPSIS
+#	get_steps
+#
+# DESCRIPTION
+#	Uses `scontrol show steps` to return a dictionary of dictionaries of
+#	step parameters.
+#
+################################################################
+
+proc get_steps {} {
+	global scontrol
+
+	set steps_dict {}
+	set output [run_command_output -fail "$scontrol show steps -d -o"]
+
+	# Iterate over each step's parameter list
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+		if {$line eq "No job steps in the system"} { continue }
+
+		# Peel off the step parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary job dictionary
+			dict set step_dict $param_name $param_value
+		}
+
+		set step_id [dict get $step_dict "StepId"]
+
+		# Add the step dictionary to steps dictionary
+		dict set steps_dict $step_id $step_dict
+
+		# Clear the setp dictionary for the next step
+		set step_dict {}
+	}
+
+	return $steps_dict
+}
+
+
+################################################################
+#
+# NAME
 #	get_job_param - returns a specific parameter value for a specific job
 #
 # SYNOPSIS
