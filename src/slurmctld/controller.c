@@ -3076,6 +3076,7 @@ extern void ctld_assoc_mgr_init(void)
 			(void) list_for_each(job_list,
 					     _foreach_cache_update_job, NULL);
 			assoc_mgr_unlock(&locks);
+			restore_job_accounting();
 		}
 	}
 	unlock_slurmctld(job_write_lock);
