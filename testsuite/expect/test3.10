@@ -67,18 +67,10 @@ run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
 # Test stderr file
 #
 wait_for_file -fail $file_err
-set got_message 0
-spawn cat $file_err
-expect {
-	-re "TEST_NOTIFY" {
-		set got_message 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
+set output ""
+wait_for -subtest {[regexp "TEST_NOTIFY" $output]} {
+	set output [run_command -fail "$bin_cat $file_err"]
 }
-subtest {$got_message} "Message TEST_NOTIFY should be received by batch job"
 cancel_job $job_id
 
 #
