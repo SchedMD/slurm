@@ -51,18 +51,7 @@ if {[get_admin_level] ne "Administrator"} {
 proc set_part_val {part_type part_val} {
 	global scontrol part_name
 
-	spawn $scontrol update partitionname=$part_name $part_type=$part_val
-	expect {
-		-re "Error" {
-			fail "$part_type was not set"
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -fail "$scontrol update partitionname=$part_name $part_type=$part_val"
 }
 
 proc cleanup { } {
@@ -79,60 +68,19 @@ proc cleanup { } {
 proc create_acct { acct } {
 	global sacctmgr user_name cluster_name
 
-	set create_acct 0
-	spawn $sacctmgr -i create account $acct cluster=$cluster_name
-	expect {
-		-re "Adding Account" {
-			set create_acct 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	spawn $sacctmgr -i create user $user_name account=$acct cluster=$cluster_name
-	expect {
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$create_acct !=1 } {
-		fail "Account was not added"
-	}
+	run_command -fail "$sacctmgr -i create account $acct cluster=$cluster_name"
+	run_command -fail "$sacctmgr -i create user $user_name account=$acct cluster=$cluster_name"
 }
 
 proc test_part { acct part acct_con } {
 	global srun
 
-	set sub_job 0
-
-	spawn $srun -I5 -A $acct -p $part true
-	expect {
-		-re "error:" {
-			if { $acct_con == 1 } {
-				log_debug "This error is expected"
-			} else {
-				fail "This error should not have occurred"
-			}
-			exp_continue
-		}
-		timeout {
-			fail "srun is not responding"
-		}
-		eof {
-			wait
-		}
+	set args {}
+	if {$acct_con} {
+		lappend args "-xfail"
 	}
 
-
+	run_command -subtest {*}$args "$srun -I5 -A $acct -p $part true"
 }
 
 # Remove any vestigial accounts or partitions
@@ -156,18 +104,7 @@ create_acct $acct_good
 create_acct $acct_bad
 
 # Create partition
-spawn $scontrol create partition=$part_name nodes=$node_name
-expect {
-	-re "error" {
-		fail "Partition was not created"
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol create partition=$part_name nodes=$node_name"
 
 #
 # Set Allow Account to good values
@@ -211,6 +148,3 @@ test_part $acct_good $part_name 0
 # 0 = good test / 1 = bad test
 #
 test_part $acct_bad $part_name 1
-
-# Sleep before automatically calling cleanup
-sleep 5
