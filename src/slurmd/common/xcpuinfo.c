@@ -42,6 +42,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -1266,6 +1267,10 @@ extern char *xcpuinfo_get_cpuspec(void)
 	bitstr_t *res_cpu_bitmap = NULL;
 	char *restricted_cpus_as_abs = NULL;
 	char *pcores_range = NULL;
+	int digits = floor(log10(MAX_CPU_CNT)) + 1;
+	int max_bytes = (MAX_CPU_CNT * digits) + //digits
+			(MAX_CPU_CNT - 1) + //commas
+			1; //terminator
 
 	if (!restricted_cpus_as_mac)
 		return NULL;
@@ -1304,8 +1309,8 @@ extern char *xcpuinfo_get_cpuspec(void)
 		}
 	}
 
-	res_abs_cores = xmalloc(MAX_CPU_CNT);
-	bit_fmt(res_abs_cores, MAX_CPU_CNT, res_cpu_bitmap);
+	res_abs_cores = xmalloc(max_bytes);
+	bit_fmt(res_abs_cores, max_bytes, res_cpu_bitmap);
 
 	FREE_NULL_BITMAP(res_core_bitmap);
 	FREE_NULL_BITMAP(res_cpu_bitmap);
