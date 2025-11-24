@@ -1292,7 +1292,8 @@ extern char *xcpuinfo_get_cpuspec(void)
 	res_cpu_bitmap = bit_alloc(MAX_CPU_CNT);
 	bit_unfmt(res_core_bitmap, restricted_cpus_as_abs);
 
-	for (int core_off = 0; core_off < conf->cores; core_off++) {
+	for (int core_off = 0; core_off < (conf->sockets * conf->cores);
+	     core_off++) {
 		if (!bit_test(res_core_bitmap, core_off))
 			continue;
 		for (int thread_off = 0; thread_off < conf->threads;
