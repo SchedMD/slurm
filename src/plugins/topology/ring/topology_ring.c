@@ -437,6 +437,30 @@ extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 extern int topology_p_get_node_addr(char *node_name, char **paddr,
 				    char **ppattern, void *tctx)
 {
+	node_record_t *node_ptr = find_node_record(node_name);
+	ring_context_t *ctx = tctx;
+
+	/* node not found in configuration */
+	if (!node_ptr)
+		return SLURM_ERROR;
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		ring_record_t *ring_ptr = &(ctx->rings[i]);
+		if (bit_test(ctx->rings[i].nodes_bitmap, node_ptr->index)) {
+			uint16_t ring_pos = INFINITE16;
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_ptr->nodes_map[j] == node_ptr->index) {
+					ring_pos = j;
+					break;
+				}
+			}
+			*paddr = xstrdup_printf("%s:%u.%s", ring_ptr->ring_name,
+						ring_pos, node_name);
+			*ppattern = xstrdup("ring:position.node");
+			return SLURM_SUCCESS;
+		}
+	}
+
 	return common_topo_get_node_addr(node_name, paddr, ppattern);
 }
 
