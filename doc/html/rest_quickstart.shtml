@@ -33,6 +33,7 @@ See also:
   <li><a href="#tokens">Token management</a></li>
   </ul>
 </li>
+<li><a href="#advanced_usage">Advanced Usage</a></li>
 <li><a href="#common_issues">Common Issues</a>
   <ul>
   <li><a href="#bind_socket">Unable to bind socket</a></li>
@@ -263,8 +264,8 @@ Refer to the <a href="jwt.html">JWT page</a> for more details.</p>
 <a class="slurm_link" href="#advanced_usage"></a></h2>
 
 <p>Information about ways to further customize and configure slurmrestd,
-including authentication methods, run modes, plugins, high availability, and
-proxies, is found on the <a href="rest.html">REST API Details</a> page.</p>
+including authentication methods, run modes, plugins, high availability, proxies,
+and Python client is found on the <a href="rest.html">REST API Details</a> page.</p>
 
 <h2 id="common_issues">Common Issues
 <a class="slurm_link" href="#common_issues"></a></h2>
