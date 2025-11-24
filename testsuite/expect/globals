@@ -6305,21 +6305,28 @@ proc get_jobs { {job_id_in ""} } {
 #	get_steps - returns a dictionary of dictionaries of step parameters
 #
 # SYNOPSIS
-#	get_steps
+#	get_steps job_id
 #
 # DESCRIPTION
-#	Uses `scontrol show steps` to return a dictionary of dictionaries of
-#	step parameters.
+#	Uses `scontrol show steps job_id` to return a dictionary of
+#	dictionaries of the step parameters of the job_id.
+#	I doesn't return all the steps in the system because that's not
+#	possible with stepmgr, and probably that's not really needed.
 #
 ################################################################
 
-proc get_steps {} {
+proc get_steps {job_id} {
 	global scontrol
 
 	set steps_dict {}
-	set output [run_command_output -fail "$scontrol show steps -d -o"]
+	set results [run_command -none "$scontrol show steps -d -o $job_id"]
+	if {[dict get $results "exit_code"]} {
+		log_debug "No steps found for JobId $job_id"
+		return $steps_dict
+	}
 
 	# Iterate over each step's parameter list
+	set output [dict get $results "output"]
 	foreach line [split $output "\n"] {
 		if {$line eq ""} { continue }
 		if {$line eq "No job steps in the system"} { continue }
