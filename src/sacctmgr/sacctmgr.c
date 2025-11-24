@@ -159,6 +159,11 @@ int main(int argc, char **argv)
 			PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case (int)'Q':
+			if (quiet_flag == -1) {
+				fprintf(stderr,
+					"conflicting 'quiet' and 'verbose' options\n");
+				exit(1);
+			}
 			quiet_flag = 1;
 			break;
 		case (int)'r':
@@ -168,6 +173,11 @@ int main(int argc, char **argv)
 			with_assoc_flag = 1;
 			break;
 		case (int)'v':
+			if (quiet_flag == 1) {
+				fprintf(stderr,
+					"conflicting 'quiet' and 'verbose' options\n");
+				exit(1);
+			}
 			quiet_flag = -1;
 			verbosity++;
 			break;
@@ -200,6 +210,11 @@ int main(int argc, char **argv)
 	if (verbosity) {
 		opts.stderr_level += verbosity;
 		opts.prefix_level = 1;
+		log_alter(opts, 0, NULL);
+	}
+
+	if (quiet_flag == 1) {
+		opts.stderr_level = LOG_LEVEL_ERROR;
 		log_alter(opts, 0, NULL);
 	}
 
@@ -509,6 +524,9 @@ static int _process_command (int argc, char **argv)
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
+		log_options_t opts = LOG_OPTS_STDERR_ONLY;
+		opts.stderr_level = LOG_LEVEL_ERROR;
+		log_alter(opts, 0, NULL);
 		quiet_flag = 1;
 	} else if ((xstrncasecmp(argv[0], "exit", MAX(command_len, 4)) == 0) ||
 		   (xstrncasecmp(argv[0], "\\q", MAX(command_len, 2)) == 0) ||
@@ -547,6 +565,9 @@ static int _process_command (int argc, char **argv)
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}
+		log_options_t opts = LOG_OPTS_STDERR_ONLY;
+		opts.stderr_level += verbosity;
+		log_alter(opts, 0, NULL);
 		quiet_flag = -1;
 	} else if (xstrncasecmp(argv[0], "ping", MAX(command_len, 4)) == 0) {
 		if (argc > 1) {
