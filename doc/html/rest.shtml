@@ -45,7 +45,7 @@ Slurm via a REST API (in addition to the command line interface (CLI) or C API).
 <li><a href="#python-usage-overview">Usage Overview</a></li>
 <li><a href="#python-job-submission">Job Submission</a></li>
 <li><a href="#python-entity-control">Job, Node, and Reservation Control</a></li>
-<li><a href="#python-system-info">View System Information</a></li>
+<li><a href="#python-system-management">System Management</a></li>
 </ul>
 </li>
 </li>
