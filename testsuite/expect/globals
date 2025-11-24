@@ -2172,7 +2172,7 @@ proc _wait_for_single_job args {
 		return $::RETURN_ERROR
 	}
 
-	set my_delay    0
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	while 1 {
 		set fd [open "|$scontrol -o show job $job_id"]
 		gets $fd line
@@ -2251,7 +2251,8 @@ proc _wait_for_single_job args {
 			}
 		}
 
-		if { $my_delay > $timeout } {
+		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+		if {$now > $start_time + $timeout} {
 			set message "Timeout waiting for job state $desired_state"
 			if {$fatal} {
 				fail $message
@@ -2261,7 +2262,6 @@ proc _wait_for_single_job args {
 		}
 
 		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
 
@@ -2767,7 +2767,7 @@ proc wait_job_reason args {
 	set log_user_prev [log_user -info]
 	log_user 0
 
-	set my_delay 0
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set rc $::RETURN_ERROR
 	while true {
 		set pending 0
@@ -2813,12 +2813,13 @@ proc wait_job_reason args {
 		}
 
 		# Check if this was the last poll
-		if {$my_delay > $timeout} {
+		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+		if {$now > $start_time + $timeout} {
 			log_error "Timeout"
 			set rc $::RETURN_TIMEOUT
 			break
 		}
-		set remamining_sec [expr $timeout - $my_delay]
+		set remamining_sec [expr $timeout - $now]
 		log_debug [format "Job in state/reason '%s' / '%s' instead of the desired '%s' / '%s'." \
 		                  $job_state $job_reason \
 		                  $desired_state $desired_reason_list]
@@ -2826,7 +2827,6 @@ proc wait_job_reason args {
 		                  $poll_interval $remamining_sec]
 
 		sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
 	}
 
 	log_user $log_user_prev
