@@ -93,7 +93,7 @@ proc test_overlap_after_overlap {} {
 	set steps {}
 	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING"} {
-		set steps [get_steps]
+		set steps [get_steps $job_id]
 	}
 
 	subtest_step_tres "$job_id.0" "" ""
@@ -120,7 +120,7 @@ proc test_overlap_after_exclusive {} {
 	set steps {}
 	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING"} {
-		set steps [get_steps]
+		set steps [get_steps $job_id]
 	}
 
 	subtest_step_tres "$job_id.1" "" ""
@@ -146,7 +146,7 @@ proc test_exclusive_after_overlap {} {
 	set steps {}
 	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING"} {
-		set steps [get_steps]
+		set steps [get_steps $job_id]
 	}
 
 	subtest_step_tres "$job_id.0" "" ""
@@ -173,7 +173,7 @@ proc test_overlap_memory {} {
 	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.2 {}] "State" ""] == "RUNNING"} {
-		set steps [get_steps]
+		set steps [get_steps $job_id]
 	}
 
 	subtest_step_tres "$job_id.1" 100 ""
@@ -201,7 +201,7 @@ proc test_overlap_gpus {} {
 	wait_for -subtest {[dict_getdef [dict_getdef $steps $job_id.0 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.1 {}] "State" ""] == "RUNNING" && \
 	                   [dict_getdef [dict_getdef $steps $job_id.2 {}] "State" ""] == "RUNNING"} {
-		set steps [get_steps]
+		set steps [get_steps $job_id]
 	}
 
 	subtest_step_tres "$job_id.1" 100 1
