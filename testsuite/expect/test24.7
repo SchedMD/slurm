@@ -283,10 +283,10 @@ PriorityWeightTRES=cpu=$weight
 exec $bin_echo $prio_conf >> $config_file
 reconfigure -fail
 
-
-set idle_node [lindex [get_nodes_by_state] 0]
-if {$idle_node == ""} {
-	fail "No idle nodes"
+# After reconfiguring nodes may need some time to be idle again
+set idle_node ""
+wait_for -fail {$idle_node != ""} {
+	set idle_node [lindex [get_nodes_by_state] 0]
 }
 log_info "idle: $idle_node"
 create_part $p1 $idle_node $part_weight
