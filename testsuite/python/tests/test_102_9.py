@@ -63,6 +63,9 @@ table_gen_info = [
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     """Test setup with required configurations."""
+    atf.require_version(
+        (25, 5), "sbin/slurmdbd", reason="Fixed in !648 speed up account deletion"
+    )
     atf.require_accounting(modify=True)
     atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
     atf.require_config_parameter("AllowNoDefAcct", None, source="slurmdbd")
@@ -107,10 +110,6 @@ def setup_db(sql_statement_repeat):
     )
 
 
-@pytest.mark.xfail(
-    atf.get_version("sbin/slurmdbd") < (25, 5),
-    reason="Fixed in !648 speed up account deletion",
-)
 def test_remove_user_account():
     """Test removing default account of a user"""
     # acct1 is default account of user1
