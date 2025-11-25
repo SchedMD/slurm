@@ -2089,7 +2089,7 @@ proc wait_for_file args {
 #	_wait_for_single_job - waits for a job to reach the desired state
 #
 # SYNOPSIS
-#	_wait_for_single_job ?options? job_id desired_state
+#	_wait_for_single_job ?options? job_id desired_state desired_reason
 #
 # DESCRIPTION
 #	Wait for a previously submitted Slurm job to reach the desired state.
@@ -2116,6 +2116,8 @@ proc wait_for_file args {
 #			RUNNING   - job is running
 #			SPECIAL_EXIT
 #			SUSPENDED - job is suspended
+#	desired_reason
+#		The desired_reason.
 #
 # RETURN VALUE
 #	RETURN_SUCCESS, or non-zero on error.
@@ -2139,10 +2141,10 @@ proc _wait_for_single_job args {
 		}
 	}
 	set argument_count [llength $args]
-	if {$argument_count != 2} {
+	if {$argument_count != 3} {
 		fail "Invalid number of arguments ($argument_count): $args"
 	} else {
-		lassign $args job_id desired_state
+		lassign $args job_id desired_state desired_reason
 	}
 
 	# First verify that desired_state is supported
@@ -2172,7 +2174,7 @@ proc _wait_for_single_job args {
 		return $::RETURN_ERROR
 	}
 
-	set my_delay    0
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	while 1 {
 		set fd [open "|$scontrol -o show job $job_id"]
 		gets $fd line
@@ -2180,18 +2182,21 @@ proc _wait_for_single_job args {
 		if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
 			set state "NOT_FOUND"
 		}
+		if {[regexp {Reason\s*=\s*(\w+)} $line foo reason] != 1} {
+			set reason "NOT_FOUND"
+		}
 
 		switch $state {
 			"CANCELLED" {
-				if {$desired_state eq "CANCELLED"} {
+				if {$desired_state eq "CANCELLED" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is CANCELLED"
 					return $::RETURN_SUCCESS
 				}
-				if {$desired_state eq "DONE"} {
+				if {$desired_state eq "DONE" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is DONE ($state)"
 					return $::RETURN_SUCCESS
 				}
-				set message "Job ($job_id) is $state, but we wanted $desired_state"
+				set message "Job ($job_id) is $state (and reason '$reason'), but we wanted $desired_state (and reason '$desired_reason')"
 				if {$fatal} {
 					fail $message
 				}
@@ -2207,11 +2212,11 @@ proc _wait_for_single_job args {
 			"OUT_OF_MEMORY" -
 			"PREEMPTED" -
 			"TIMEOUT" {
-				if {$desired_state eq "DONE"} {
+				if {$desired_state eq "DONE" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is DONE ($state)"
 					return $::RETURN_SUCCESS
 				}
-				set message "Job ($job_id) is $state, but we wanted $desired_state"
+				set message "Job ($job_id) is $state (and reason '$reason'), but we wanted $desired_state (and reason '$desired_reason')"
 				if {$fatal} {
 					fail $message
 				}
@@ -2219,49 +2224,45 @@ proc _wait_for_single_job args {
 				return $::RETURN_ERROR
 			}
 			"PENDING" {
-				if {$desired_state eq "PENDING"} {
+				if {$desired_state eq "PENDING" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is PENDING"
 					return $::RETURN_SUCCESS
 				}
-				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"RUNNING" {
-				if {$desired_state eq "RUNNING"} {
+				if {$desired_state eq "RUNNING" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is RUNNING"
 					return $::RETURN_SUCCESS
 				}
-				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SPECIAL_EXIT" {
-				if {$desired_state eq "SPECIAL_EXIT"} {
+				if {$desired_state eq "SPECIAL_EXIT" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is SPECIAL_EXIT"
 					return $::RETURN_SUCCESS
 				}
-				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			"SUSPENDED" {
-				if {$desired_state eq "SUSPENDED"} {
+				if {$desired_state eq "SUSPENDED" && ($desired_reason eq "" || $reason eq $desired_reason)} {
 					log_debug "Job $job_id is SUSPENDED"
 					return $::RETURN_SUCCESS
 				}
-				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 			default {
-				log_debug "Job $job_id is in state $state, desire $desired_state"
 			}
 		}
 
-		if { $my_delay > $timeout } {
-			set message "Timeout waiting for job state $desired_state"
+		log_debug "Job $job_id is in state $state (and reason '$reason'), desire $desired_state (and reason '$desired_reason')"
+		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+		if {$now > $start_time + $timeout} {
+			set message "Timeout waiting for job state $desired_state (and reason '$desired_reason')"
 			if {$fatal} {
 				fail $message
 			}
-			log_warn "Timeout waiting for job state $desired_state"
+			log_debug $message
 			return $::RETURN_TIMEOUT
 		}
 
 		exec sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
 	}
 }
 
@@ -2302,6 +2303,8 @@ proc _wait_for_single_job args {
 #	het_job
 #		If set, checks the state of each component job if the job
 #		is a het one.
+#	desired_reason
+#		The desired reason to match too.
 #
 # RETURN VALUE
 #	RETURN_SUCCESS if job reaches the desired state, or non-zero value
@@ -2316,6 +2319,7 @@ proc wait_for_job args {
 
 	set options  [list]
 	set het_job  0
+	set desired_reason ""
 
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
@@ -2335,12 +2339,13 @@ proc wait_for_job args {
 	set argument_count [llength $args]
 	if {$argument_count < 2} {
 		fail "Too few arguments ($argument_count): $args"
-	} elseif {$argument_count > 3}  {
+	} elseif {$argument_count > 4}  {
 		fail "Too many arguments ($argument_count): $args"
 	} else {
 		lassign $args job_id desired_state
 	}
-	if {$argument_count == 3} { set hetjob [lindex $args 2] }
+	if {$argument_count >= 3} { set hetjob [lindex $args 2] }
+	if {$argument_count == 3} { set desired_reason [lindex $args 3] }
 
 	if { $het_job } {
 		# get component job ids
@@ -2355,7 +2360,7 @@ proc wait_for_job args {
 	}
 
 	foreach jid $jid_list {
-		set rc [_wait_for_single_job {*}$options $jid $desired_state]
+		set rc [_wait_for_single_job {*}$options $jid $desired_state $desired_reason]
 		if { $rc } {
 			# bail out on first failure
 			break
@@ -2767,7 +2772,7 @@ proc wait_job_reason args {
 	set log_user_prev [log_user -info]
 	log_user 0
 
-	set my_delay 0
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set rc $::RETURN_ERROR
 	while true {
 		set pending 0
@@ -2813,12 +2818,13 @@ proc wait_job_reason args {
 		}
 
 		# Check if this was the last poll
-		if {$my_delay > $timeout} {
+		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+		if {$now > $start_time + $timeout} {
 			log_error "Timeout"
 			set rc $::RETURN_TIMEOUT
 			break
 		}
-		set remamining_sec [expr $timeout - $my_delay]
+		set remamining_sec [expr $timeout - $now]
 		log_debug [format "Job in state/reason '%s' / '%s' instead of the desired '%s' / '%s'." \
 		                  $job_state $job_reason \
 		                  $desired_state $desired_reason_list]
@@ -2826,7 +2832,6 @@ proc wait_job_reason args {
 		                  $poll_interval $remamining_sec]
 
 		sleep $poll_interval
-		set my_delay [expr $my_delay + $poll_interval]
 	}
 
 	log_user $log_user_prev

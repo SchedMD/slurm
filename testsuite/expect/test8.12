@@ -95,12 +95,12 @@ proc test_flex {use_flex submit_active} {
 	}
 	set job_id [submit_job -none "-N2 --reservation=$res_name --wrap 'sleep 30' -o /dev/null -e /dev/null"]
 	if {$use_flex} {
-		subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should be running because with FLEX more nodes can be requested"
+		subtest {![wait_for_job $job_id RUNNING]} "Job should be running because with FLEX more nodes can be requested"
 	} else {
 		if {$submit_active} {
 			subtest {$job_id == 0} "Job shouldn't be running requested more nodes than in reservation without FLEX and ACTIVE"
 		} else {
-			subtest {[wait_for_job -timeout 30 $job_id RUNNING]} "Job shouldn't be running because requested more nodes than in reservation without FLEX"
+			subtest {![wait_for_job $job_id PENDING "Resources"]} "Job shouldn't be running because requested more nodes than in reservation without FLEX"
 		}
 	}
 
@@ -113,7 +113,7 @@ proc test_flex {use_flex submit_active} {
 		setup $use_flex "+5"
 	}
 	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 120 --wrap 'sleep 100' -o /dev/null -e /dev/null"]
-	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should be RUNNING"
+	subtest {![wait_for_job $job_id RUNNING]} "Job should be RUNNING"
 	subtest {![wait_for_job -timeout 200 -pollinterval 10 $job_id DONE]} "Job should be DONE"
 
 	if {$use_flex} {
@@ -127,17 +127,17 @@ proc test_flex {use_flex submit_active} {
 	setup $use_flex "+60"
 	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 300 --wrap 'sleep 30' -o /dev/null -e /dev/null"]
 	if {$use_flex} {
-		subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should start before reservation since it's FLEX."
+		subtest {![wait_for_job $job_id RUNNING]} "Job should start before reservation since it's FLEX."
 	} else {
-		subtest {[wait_for_job -timeout 30 $job_id RUNNING]}  "Job shouldn't started before reservation since it's not FLEX."
+		subtest {![wait_for_job $job_id "PENDING" "Resources"]}  "Job shouldn't started before reservation since it's not FLEX."
 	}
 }
 
 # Test with FLEX flag and when reservation is ACTIVE
-test_flex true true
+testproc test_flex true true
 # Test with FLEX flag and when reservation is INACTIVE
-test_flex true false
+testproc test_flex true false
 # Test without FLEX flag and when reservation is ACTIVE
-test_flex false true
+testproc test_flex false true
 # Test without FLEX flag and when reservation is INACTIVE
-test_flex false false
+testproc test_flex false false
