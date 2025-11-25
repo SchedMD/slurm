@@ -72,7 +72,7 @@ extern void rest_auth_g_free(rest_auth_context_t *context);
  * Attempt to authenticate HTTP request
  * IN/OUT args - HTTP request
  * 	sets instructions in args
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS or ESLURM_AUTH_CRED_INVALID on failure
  */
 extern int rest_authenticate_http_request(on_http_request_args_t *args);
 
