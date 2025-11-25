@@ -140,7 +140,6 @@
 <ul>
 <li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
   regular database plugins?</a></li>
-<li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
 <li><a href="#ha_db">How critical is configuring high availability for my
   database?</a></li>
 <li><a href="#sql">How can I use double quotes in MySQL queries?</a></li>
@@ -1370,17 +1369,6 @@ any node Slurm is installed on. With the slurmdbd you can also query any
 cluster using the slurmdbd from any other cluster's nodes. Other tools like
 sreport are also available.</li>
 </ol>
-
-<p><a id="dbd_rebuild"><b>How can I rebuild the database hierarchy?</b></a><br>
-If you see errors of this sort:</p>
-<pre>
-error: Can't find parent id 3358 for assoc 1504, this should never happen.
-</pre>
-<p>in the slurmctld log file, this is indicative that the database hierarchy
-information has been corrupted, typically due to a hardware failure or
-administrator error in directly modifying the database. In order to rebuild
-the database information, start the slurmdbd daemon with the "-R" option
-followed by an optional comma separated list of cluster names to operate on.</p>
 
 <p><a id="ha_db"><b>How critical is configuring high availability for my
 database?</b></a></p>
