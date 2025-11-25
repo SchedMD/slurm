@@ -1,1 +1,1 @@
-SUBDIRS =
+SUBDIRS = local
