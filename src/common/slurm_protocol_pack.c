@@ -13344,7 +13344,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
-		unpack_config_response_msg(msg, buffer);
+		rc = unpack_config_response_msg(msg, buffer);
 		break;
 	case SRUN_NET_FORWARD:
 		rc = _unpack_net_forward_msg(msg, buffer);
