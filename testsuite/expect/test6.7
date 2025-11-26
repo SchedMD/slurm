@@ -103,21 +103,10 @@ wait_for_job -fail $job_id DONE
 # Test output file
 #
 wait_for_file -fail $file_out
-set got_signal 0
-spawn cat $file_out
-expect {
-	-re "ERROR" {
-		fail "Failure running test program"
-	}
-	-re "Received SIGUSR1" {
-		set got_signal 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
+set output ""
+wait_for -subtest {[regexp "Received SIGUSR1" $output]} {
+	set output [run_command_output -fail "cat $file_out"]
 }
-subtest {$got_signal == 1} "Test output file for SIGUSR1"
 
 #
 # Variation of above to test signal of batch script processes
