@@ -446,6 +446,7 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
  */
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
+	char *token = NULL;
 	auth_credential_t *cred = NULL;
 
 	if (!buf) {
@@ -454,24 +455,24 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	}
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* Allocate and initialize credential. */
-		cred = xmalloc(sizeof(*cred));
-		cred->magic = MUNGE_MAGIC;
-		cred->verified = false;
-		cred->m_xstr = true;
-
-		safe_unpackstr(&cred->m_str, buf);
+		safe_unpackstr(&token, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
+	/* Allocate and initialize credential. */
+	cred = auth_p_cred_generate(token, NULL, SLURM_AUTH_NOBODY,
+				    SLURM_AUTH_NOBODY);
+	xassert(!cred->verified);
+	xfree(token);
 	return cred;
 
 unpack_error:
 	errno = ESLURM_AUTH_UNPACK;
 	auth_p_destroy(cred);
+	xfree(token);
 	return NULL;
 }
 
