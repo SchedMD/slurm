@@ -483,6 +483,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/hash/sha3/Makefile
 		 src/plugins/http_auth/Makefile
 		 src/plugins/http_auth/local/Makefile
+		 src/plugins/http_auth/jwt/Makefile
 		 src/plugins/http_parser/Makefile
 		 src/plugins/http_parser/libhttp_parser/Makefile
 		 src/plugins/job_submit/Makefile
