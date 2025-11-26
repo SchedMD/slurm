@@ -116,7 +116,11 @@ sleep 5
 #
 set output [run_command_output -fail "$scancel --batch --signal=STOP --verbose $job_id"]
 subtest {[regexp "Signal ($SIGSTOP) to batch job $job_id" $output]} "scancel should print the expected output"
-wait_for_job -subtest $job_id STOPPED
+
+set state ""
+wait_for -subtest {$state == "STOPPED"} {
+	set state [get_job_param $job_id "JobState"]
+}
 
 
 wait_for_job -fail $job_id DONE
