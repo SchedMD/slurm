@@ -194,8 +194,9 @@ subtest {[regexp "\n$wk2\|$cn\|$user_name\|" $output]} "Verify wk2"
 subtest {[regexp "\n$wk3\|$cn\|$user_name\|" $output]} "Verify wk3"
 
 #
-# Use sacctmgr to delete test WCKeys
+# Use sacctmgr to delete test WCKeys, once job completion is received
 #
+wait_for_job_acct -fail $job_id "End"
 run_command -fail "$sacctmgr -i delete user $user_name wckey=$wk,$wk2,$wk3"
 
 #
