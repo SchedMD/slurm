@@ -1264,8 +1264,8 @@ def test_jobs(slurm, slurmdb, non_admin):
         assert job.user == local_user_name
 
     # Update job in db -- posting to /job/jobid/
-    atf.wait_for_job_accounted(jobid1, fatal=True)
-    atf.wait_for_job_accounted(jobid2, fatal=True)
+    atf.wait_for_job_accounted(jobid1, "End", fatal=True)
+    atf.wait_for_job_accounted(jobid2, "End", fatal=True)
 
     WIFEXIT_CODE = V0045Uint32NoValStruct(
         set=True, infinite=False, number=4  # 1024 >> 8
