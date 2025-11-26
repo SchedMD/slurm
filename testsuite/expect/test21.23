@@ -135,12 +135,10 @@ if {$matches != 1} {
 	fail "salloc failed to use desired wckey"
 }
 
-if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-	sleep 5
+set output ""
+wait_for -subtest {[regexp "$wk" $output]} {
+	set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
 }
-
-set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
-subtest {[regexp "$wk" $output]} "Verify WCKey in sacct"
 
 #
 # Spawn a job via sbatch using this wckey
@@ -151,12 +149,10 @@ set job_id [submit_job -fail "-N1 --account=$ta --wckey=$wk --output=none $file_
 set output [run_command_output -fail "$scontrol show job $job_id"]
 subtest {[regexp "WCKey=$wk" $output]} "Verify WCKey in scontrol"
 
-if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-	sleep 5
+set output ""
+wait_for -subtest {[regexp "$wk" $output]} {
+	set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
 }
-
-set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
-subtest {[regexp "$wk" $output]} "Verify WCKey in sacct"
 
 #
 # Spawn a job via srun using this wckey
@@ -169,12 +165,10 @@ if {![regexp "launching StepId=($number)\\.$re_word_str" $output - job_id]} {
 set output [run_command_output -fail "$scontrol show job $job_id"]
 subtest {[regexp "WCKey=$wk" $output]} "Verify WCKey in scontrol"
 
-if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-	sleep 5
+set output ""
+wait_for -subtest {[regexp "$wk" $output]} {
+	set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
 }
-
-set output [run_command_output -fail "$sacct -p -j $job_id --format=wckey"]
-subtest {[regexp "$wk" $output]} "Verify WCKey in sacct"
 
 #
 # Add more test WCKeys the user
