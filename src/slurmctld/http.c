@@ -208,7 +208,7 @@ extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
 	slurmctld_lock_t part_read_lock = {
 		.conf = READ_LOCK,
 		.job = READ_LOCK,
-		.node = READ_LOCK,
+		.node = WRITE_LOCK, /* required by statistics_get_nodes() */
 		.part = READ_LOCK,
 	};
 
