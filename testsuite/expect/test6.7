@@ -171,17 +171,4 @@ expect {
 subtest {$matches == 1} "Test scancel with --signal=STOP"
 
 wait_for_job -fail $job_id DONE
-
-#
-# Test output file
-#
-wait_for_file -fail $file_out2
-spawn cat $file_out2
-expect {
-	-re "FINI" {
-		fail "Job not stopped"
-	}
-	eof {
-		wait
-	}
-}
+subtest {[get_job_param $job_id "JobState"] == "TIMEOUT"} "Job $job_id should be stopped and timeout"
