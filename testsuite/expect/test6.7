@@ -34,6 +34,9 @@ set file_out2    "$test_dir/output2"
 set file_prog    "$test_name.prog"
 set job_id       0
 
+set SIGUSR1 [string trim [exec kill -l SIGUSR1]]
+set SIGSTOP [string trim [exec kill -l SIGSTOP]]
+
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
 #
@@ -72,52 +75,18 @@ wait_for_command_match -fail "$bin_cat $file_out" "WAITING"
 #
 # Test verbose scancel
 #
-set matches 0
-spawn $scancel --signal=USR1 --verbose $job_id
-expect {
-	-re "Signal ($number) to job $job_id" {
-		set sig_num $expect_out(1,string)
-		if {$sig_num != 9} {
-			incr matches
-		} else {
-			incr matches -1
-		}
-		exp_continue
-	}
-	-re "Job is in transitional state, retrying" {
-		incr matches -1
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$matches == 1} "Test scancel with --signal=USR1"
-
-wait_for_job -fail $job_id DONE
+set output [run_command_output -fail "$scancel --signal=USR1 --verbose $job_id"]
+subtest {[regexp "Signal ($SIGUSR1) to job $job_id" $output]} "scancel should print the expected output"
 
 #
 # Test output file
 #
+wait_for_job -fail $job_id DONE
 wait_for_file -fail $file_out
-set got_signal 0
-spawn cat $file_out
-expect {
-	-re "ERROR" {
-		fail "Failure running test program"
-	}
-	-re "Received SIGUSR1" {
-		set got_signal 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
+set output ""
+wait_for -subtest {[regexp "Received SIGUSR1" $output]} {
+	set output [run_command_output -fail "cat $file_out"]
 }
-subtest {$got_signal == 1} "Test output file for SIGUSR1"
 
 #
 # Variation of above to test signal of batch script processes
@@ -145,43 +114,10 @@ sleep 5
 #
 # Test verbose scancel
 #
-set matches 0
-spawn $scancel --batch --signal=STOP --verbose $job_id
-expect {
-	-re "Signal ($number) to batch job $job_id" {
-		set sig_num $expect_out(1,string)
-		if {$sig_num != 9} {
-			incr matches
-		} else {
-			incr matches -1
-		}
-		exp_continue
-	}
-	-re "Job is in transitional state, retrying" {
-		incr matches -1
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$matches == 1} "Test scancel with --signal=STOP"
+set output [run_command_output -fail "$scancel --batch --signal=STOP --verbose $job_id"]
+subtest {[regexp "Signal ($SIGSTOP) to batch job $job_id" $output]} "scancel should print the expected output"
+wait_for_job -subtest $job_id STOPPED
+
 
 wait_for_job -fail $job_id DONE
-
-#
-# Test output file
-#
-wait_for_file -fail $file_out2
-spawn cat $file_out2
-expect {
-	-re "FINI" {
-		fail "Job not stopped"
-	}
-	eof {
-		wait
-	}
-}
+subtest {[get_job_param $job_id "JobState"] == "TIMEOUT"} "Job $job_id should be stopped and timeout"
