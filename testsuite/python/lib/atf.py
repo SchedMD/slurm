@@ -925,9 +925,25 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
             lambda pids: len(pids) == 0,
             timeout=default_polling_timeout * 2,
         ):
-            failures.append("Some slurmds are still running")
-            logging.warning("Getting the core files of the still running slurmds")
-            gcore("slurmd")
+            logging.warning("Some slurmd was not stopped.")
+            logging.warning(
+                "Sometimes slurm may be just rebooting or similar when shutdown was run"
+            )
+
+            logging.debug("Shutting down slurmds manually")
+            for pid in pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"):
+                run_command(f"kill {pid}", user="root")
+
+            if not repeat_until(
+                lambda: pids_from_exe(f"{properties['slurm-sbin-dir']}/slurmd"),
+                lambda pids: len(pids) == 0,
+                timeout=default_polling_timeout * 2,
+            ):
+                failures.append("Some slurmds are still running")
+                logging.warning("Getting the core files of the still running slurmds")
+                gcore("slurmd")
+            else:
+                logging.debug("No slurmd is running.")
         else:
             logging.debug("No slurmd is running.")
 
