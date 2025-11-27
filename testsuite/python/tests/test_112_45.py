@@ -1264,8 +1264,14 @@ def test_jobs(slurm, slurmdb, non_admin):
         assert job.user == local_user_name
 
     # Update job in db -- posting to /job/jobid/
-    atf.wait_for_job_accounted(jobid1, fatal=True)
-    atf.wait_for_job_accounted(jobid2, fatal=True)
+    atf.wait_for_job_accounted(jobid1, "End", fatal=True)
+    atf.wait_for_job_accounted(jobid2, "End", fatal=True)
+
+    atf.run_command(
+        f"sacctmgr -i mod user {local_cluster_name} set AdminLevel=Admin",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
 
     WIFEXIT_CODE = V0045Uint32NoValStruct(
         set=True, infinite=False, number=4  # 1024 >> 8
@@ -1287,11 +1293,6 @@ def test_jobs(slurm, slurmdb, non_admin):
         wckey="mywckey1",
     )
 
-    atf.run_command(
-        f"sacctmgr -i mod user {local_cluster_name} set AdminLevel=Admin",
-        user=atf.properties["slurm-user"],
-        fatal=True,
-    )
     resp = slurmdb.slurmdb_v0045_post_job(str(jobid1), v0045_job_modify=job_modify)
     assert len(resp.warnings) == 0
     assert len(resp.errors) == 0

@@ -3985,14 +3985,17 @@ def wait_for_step_accounted(job_id, step_id, **repeat_until_kwargs):
     )
 
 
-def wait_for_job_accounted(job_id, **repeat_until_kwargs):
-    """Wait for specified job to appear in accounting database (`sacct`).
+def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwargs):
+    """Wait for specified job field to appear in accounting database (`sacct`).
 
-    Continuously polls the database until the job is accounted for or until a
-    timeout occurs.
+    Continuously polls the database until the job field is accounted for or until a
+    timeout occurs. If a value is specified, it waits until the field has that value.
 
     Args:
         job_id (integer): The id of the job.
+        field (string): The field to query from the job.
+        value (string): The desired value to wait for.
+                        None means "any value but empty"
 
     Returns:
         A boolean value indicating whether the specified job is accounted for
@@ -4001,13 +4004,15 @@ def wait_for_job_accounted(job_id, **repeat_until_kwargs):
     Example:
         >>> wait_for_job_accounted(1234, timeout=60, poll_interval=5, fatal=True)
         True
-        >>> wait_for_job_accounted(5678, timeout=30)
+        >>> wait_for_job_accounted(5678, "End", timeout=30)
         False
     """
 
+    if not value:
+        value = r"."
     return repeat_until(
-        lambda: run_command_output(f"sacct -Xj {job_id} -o JobID"),
-        lambda out: re.search(rf"{job_id}", out) is not None,
+        lambda: run_command_output(f"sacct -Xnj {job_id} -o {field}"),
+        lambda out: re.search(value, out.strip()) is not None,
         **repeat_until_kwargs,
     )
 
