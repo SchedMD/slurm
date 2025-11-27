@@ -123,6 +123,11 @@ proc test_signaling { batch full } {
 	# Wait for job completion
 	#
 	wait_for_job -fail $job_id DONE
+	wait_for_file -fail $file_out
+	set output ""
+	wait_for -fail {[regexp -all "Ending: " $output] == 4} {
+		set output [run_command_output -fail "$bin_cat $file_out"]
+	}
 
 	set expected_script_signaled 0
 	set expected_parent_step_signaled 0
