@@ -202,7 +202,6 @@ UNTESTED   "scontrol shutdown" would stop slurm
 
 test4.#    Testing of sinfo options.
 ====================================
-test4.2    Confirm sinfo help option works (--help option).
 test4.3    Test partition information, both long and short (--long and
 	   --summarize options) and partition filtering (--partition option).
 test4.4    Test node information, both regular and long (--Node, --long,
