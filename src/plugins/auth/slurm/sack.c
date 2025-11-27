@@ -365,9 +365,12 @@ extern void init_sack_conmgr(void)
 
 extern int auth_p_get_reconfig_fd(void)
 {
-	/* Prepare for reconfigure */
-	setenvf(NULL, SACK_RECONFIG_ENV, "%d", sack_fd);
-	fd_set_noclose_on_exec(sack_fd);
+	if (sack_fd >= 0) {
+		/* Prepare for reconfigure */
+		setenvf(NULL, SACK_RECONFIG_ENV, "%d", sack_fd);
+		fd_set_noclose_on_exec(sack_fd);
+	}
 
+	/* sack_fd init'd to -1 and won't be added for skip close() later. */
 	return sack_fd;
 }
