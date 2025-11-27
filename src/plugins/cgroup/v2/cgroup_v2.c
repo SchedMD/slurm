@@ -2751,7 +2751,8 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
-	static bool interfaces_checked = false, memory_peak_interface = false;
+	bool memory_peak_interface = false;
+	static bool interfaces_checked = false;
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
