@@ -56,5 +56,16 @@ int main(int argc, char *argv[])
 	if (pid)
 		wait(NULL);
 
+	if (pid)
+		if (step)
+			printf("Ending: parent_step\n");
+		else
+			printf("Ending: parent_command\n");
+	else
+		if (step)
+			printf("Ending: child_step\n");
+		else
+			printf("Ending: child_command\n");
+
 	return 0;
 }
