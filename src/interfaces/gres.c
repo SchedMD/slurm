@@ -2413,6 +2413,11 @@ static int _unpack_gres_context(slurm_gres_context_t *gres_ctx, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
+	/* Free structs pre-initialized by gres_init() */
+	xfree(gres_ctx->gres_name);
+	xfree(gres_ctx->gres_name_colon);
+	xfree(gres_ctx->gres_type);
+
 	/* gres_ctx->cur_plugin: filled in later with _load_plugin() */
 	safe_unpack32(&gres_ctx->config_flags, buffer);
 	safe_unpackstr(&gres_ctx->gres_name, buffer);
