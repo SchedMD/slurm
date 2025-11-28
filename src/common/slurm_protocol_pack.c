@@ -9902,17 +9902,15 @@ extern void pack_config_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
-				      buf_t *buffer, uint16_t protocol_version)
+extern int unpack_config_response_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	config_response_msg_t *msg = xmalloc(sizeof(*msg));
-	xassert(msg_ptr);
-	*msg_ptr = msg;
+	smsg->data = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_list(&msg->config_files, unpack_config_file,
 				      destroy_config_file, buffer,
-				      protocol_version) != SLURM_SUCCESS)
+				      smsg->protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg->slurmd_spooldir, buffer);
 	}
@@ -9921,7 +9919,7 @@ extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 
 unpack_error:
 	slurm_free_config_response_msg(msg);
-	*msg_ptr = NULL;
+	smsg->data = NULL;
 	return SLURM_ERROR;
 }
 
@@ -13346,9 +13344,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_RECONFIGURE_SACKD:
 	case REQUEST_RECONFIGURE_WITH_CONFIG:
 	case RESPONSE_CONFIG:
-		unpack_config_response_msg(
-			(config_response_msg_t **) &msg->data,
-			buffer, msg->protocol_version);
+		unpack_config_response_msg(msg, buffer);
 		break;
 	case SRUN_NET_FORWARD:
 		rc = _unpack_net_forward_msg(msg, buffer);
