@@ -139,6 +139,7 @@ void run_backup(void)
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
 		.part = WRITE_LOCK,
+		.select_node = WRITE_LOCK,
 	};
 
 	info("slurmctld running in background mode");

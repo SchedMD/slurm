@@ -781,6 +781,7 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return job_res_add_job(job_ptr, JOB_RES_ACTION_RESUME);
 }
 
+/* Requires node READ_LOCK and select_node WRITE_LOCK */
 extern int select_p_select_nodeinfo_set_all(void)
 {
 	static time_t last_set_all = 0;
@@ -827,6 +828,7 @@ extern int select_p_select_nodeinfo_set_all(void)
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
 		uint64_t *tres_alloc_cnt = NULL;
+		node_select_stats_t *node_stats = node_select_stats_array[n];
 
 		if (alloc_core_bitmap && alloc_core_bitmap[n])
 			alloc_cores = bit_set_count(alloc_core_bitmap[n]);
@@ -860,14 +862,14 @@ extern int select_p_select_nodeinfo_set_all(void)
 		 */
 		if (total_node_cores < node_ptr->cpus)
 			alloc_cpus *= node_ptr->threads;
-		node_ptr->alloc_cpus = alloc_cpus;
+		node_stats->alloc_cpus = alloc_cpus;
 
-		node_ptr->alloc_memory = select_node_usage[n].alloc_memory;
+		node_stats->alloc_memory = select_node_usage[n].alloc_memory;
 
 		/* Build allocated TRES info */
 		tres_alloc_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
 		tres_alloc_cnt[TRES_ARRAY_CPU] = alloc_cpus;
-		tres_alloc_cnt[TRES_ARRAY_MEM] = node_ptr->alloc_memory;
+		tres_alloc_cnt[TRES_ARRAY_MEM] = node_stats->alloc_memory;
 		if (select_node_usage[n].gres_list)
 			gres_list = select_node_usage[n].gres_list;
 		else
@@ -875,8 +877,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 		gres_stepmgr_set_node_tres_cnt(gres_list, tres_alloc_cnt,
 					       false);
 
-		xfree(node_ptr->alloc_tres_fmt_str);
-		node_ptr->alloc_tres_fmt_str =
+		xfree(node_stats->alloc_tres_fmt_str);
+		node_stats->alloc_tres_fmt_str =
 			assoc_mgr_make_tres_str_from_array(
 				tres_alloc_cnt, TRES_STR_CONVERT_UNITS, false);
 		xfree(tres_alloc_cnt);

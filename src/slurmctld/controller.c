@@ -615,6 +615,7 @@ int main(int argc, char **argv)
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
 		.part = WRITE_LOCK,
+		.select_node = WRITE_LOCK,
 	};
 	prep_callbacks_t prep_callbacks = {
 		.prolog_slurmctld = prep_prolog_slurmctld_callback,
@@ -2591,6 +2592,16 @@ static void *_slurmctld_background(void *no_data)
 		.node = WRITE_LOCK,
 		.fed = READ_LOCK,
 	};
+	/*
+	 * Creating the heath check agent reads node state and updates select
+	 * node stats
+	 */
+	slurmctld_lock_t node_health_check_lock = {
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = READ_LOCK,
+		.select_node = WRITE_LOCK,
+	};
 
 	/* Let the dust settle before doing work */
 	now = time(NULL);
@@ -2729,7 +2740,7 @@ static void *_slurmctld_background(void *no_data)
 		    (difftime(now, last_health_check_time) >=
 		     slurm_conf.health_check_interval) &&
 		    is_ping_done()) {
-			lock_slurmctld(node_write_lock);
+			lock_slurmctld(node_health_check_lock);
 			if (slurm_conf.health_check_node_state &
 			     HEALTH_CHECK_CYCLE) {
 				/* Call run_health_check() on each cycle */
@@ -2738,7 +2749,7 @@ static void *_slurmctld_background(void *no_data)
 				last_health_check_time = now;
 			}
 			run_health_check();
-			unlock_slurmctld(node_write_lock);
+			unlock_slurmctld(node_health_check_lock);
 		}
 
 		if (slurm_conf.acct_gather_node_freq &&

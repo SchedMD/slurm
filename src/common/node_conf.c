@@ -87,6 +87,7 @@ strong_alias(find_node_record, slurm_find_node_record);
 list_t *config_list = NULL;	/* list of config_record entries */
 time_t last_node_update = (time_t) 0;	/* time of last update */
 node_record_t **node_record_table_ptr = NULL;	/* node records */
+node_select_stats_t **node_select_stats_array = NULL; /* select plugin stats */
 xhash_t* node_hash_table = NULL;
 int node_record_table_size = 0;		/* size of node_record_table_ptr */
 int node_record_count = 0;		/* number of node slots in
@@ -738,6 +739,8 @@ extern void grow_node_record_table_ptr(void)
 
 	xrealloc(node_record_table_ptr,
 		 node_record_table_size * sizeof(node_record_t *));
+	xrealloc(node_select_stats_array,
+		 node_record_table_size * sizeof(node_select_stats_t *));
 	/*
 	 * You need to rehash the hash after we realloc or we will have
 	 * only bad memory references in the hash.
@@ -780,6 +783,7 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 
 	xassert(index <= node_record_count);
 	xassert(!node_record_table_ptr[index]);
+	xassert(!node_select_stats_array[index]);
 
 	if ((slurm_conf.max_node_cnt != NO_VAL) &&
 	    (index >= slurm_conf.max_node_cnt)) {
@@ -794,6 +798,9 @@ extern node_record_t *create_node_record_at(int index, char *node_name,
 
 	if (index > last_node_index)
 		last_node_index = index;
+
+	node_select_stats_array[index] =
+		xmalloc(sizeof(**node_select_stats_array));
 
 	node_ptr = node_record_table_ptr[index] = xmalloc(sizeof(*node_ptr));
 	node_ptr->index = index;
@@ -876,6 +883,8 @@ extern void insert_node_record_at(node_record_t *node_ptr, int index)
 		list_append(config_list, node_ptr->config_ptr);
 
 	node_record_table_ptr[index] = node_ptr;
+	node_select_stats_array[index] =
+		xmalloc(sizeof(**node_select_stats_array));
 	/*
 	 * _build_bitmaps_pre_select() will reset bitmaps on
 	 * start/reconfig. Set here to be consistent in case this is
@@ -890,6 +899,14 @@ extern void insert_node_record_at(node_record_t *node_ptr, int index)
 	/* add node to conf node hash tables */
 	slurm_conf_remove_node(node_ptr->name);
 	slurm_conf_add_node(node_ptr);
+}
+
+static void _free_node_select_stats(node_select_stats_t *node_stats)
+{
+	if (node_stats) {
+		xfree(node_stats->alloc_tres_fmt_str);
+		xfree(node_stats);
+	}
 }
 
 extern void delete_node_record(node_record_t *node_ptr)
@@ -910,6 +927,9 @@ extern void delete_node_record(node_record_t *node_ptr)
 			last_node_index = -1;
 	}
 	active_node_record_count--;
+
+	_free_node_select_stats(node_select_stats_array[node_ptr->index]);
+	node_select_stats_array[node_ptr->index] = NULL;
 
 	_delete_node_config_ptr(node_ptr);
 
@@ -1021,6 +1041,7 @@ extern void init_node_conf(void)
 	node_record_table_size = 0;
 	last_node_index = -1;
 	xfree(node_record_table_ptr);
+	xfree(node_select_stats_array);
 	xhash_free(node_hash_table);
 
 	if (config_list)	/* delete defunct configuration entries */
@@ -1054,6 +1075,7 @@ extern void node_fini2(void)
 	}
 
 	xfree(node_record_table_ptr);
+	xfree(node_select_stats_array);
 	/*
 	 * Don't clear node_record_count because other plugins are relying on
 	 * node_record_count to free arrays on cleanup -- e.g.
@@ -1342,7 +1364,6 @@ extern void purge_node_rec(void *in)
 {
 	node_record_t *node_ptr = in;
 
-	xfree(node_ptr->alloc_tres_fmt_str);
 	xfree(node_ptr->arch);
 	xfree(node_ptr->cert_token);
 	xfree(node_ptr->comment);
