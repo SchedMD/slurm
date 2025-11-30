@@ -236,7 +236,6 @@ test5.11   Validate that job node estimation is accurate.
 
 test6.#    Testing of scancel options.
 ======================================
-test6.1    Validate scancel usage option (--usage option).
 test6.2    Validate scancel help option (--help option).
 test6.3    Validate scancel interactive mode (--interactive option).
 test6.4    Validate scancel job name filter (--name option).
