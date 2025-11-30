@@ -221,7 +221,6 @@ test4.14   Test that multiple partitions can be specified in the env variable.
 
 test5.#    Testing of squeue options.
 =====================================
-test5.1    Confirm squeue usage option works (--usage option).
 test5.2    Confirm squeue help option works (--help option).
 test5.3    Test squeue iteration (--iterate option).
 test5.4    Test squeue formatting options (--noheader, --format and --step
