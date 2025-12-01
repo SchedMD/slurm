@@ -49,48 +49,6 @@ typedef struct {
 	bool count_only;
 } job_state_args_t;
 
-#define T(x) { x, XSTRINGIFY(x) }
-static const struct {
-	uint32_t flag;
-	char *string;
-} job_flags[] = {
-	T(JOB_LAUNCH_FAILED),
-	T(JOB_REQUEUE),
-	T(JOB_REQUEUE_HOLD),
-	T(JOB_SPECIAL_EXIT),
-	T(JOB_RESIZING),
-	T(JOB_CONFIGURING),
-	T(JOB_COMPLETING),
-	T(JOB_STOPPED),
-	T(JOB_RECONFIG_FAIL),
-	T(JOB_POWER_UP_NODE),
-	T(JOB_REVOKED),
-	T(JOB_REQUEUE_FED),
-	T(JOB_RESV_DEL_HOLD),
-	T(JOB_SIGNALING),
-	T(JOB_STAGE_OUT),
-	T(JOB_EXPEDITING),
-};
-
-static void _check_job_state(const uint32_t state)
-{
-	uint32_t flags;
-
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_TRACE_JOBS))
-		return;
-
-	flags = (state & JOB_STATE_FLAGS);
-
-	xassert((state & JOB_STATE_BASE) < JOB_END);
-
-	for (int i = 0; i < ARRAY_SIZE(job_flags); i++)
-		if ((flags & job_flags[i].flag) == job_flags[i].flag)
-			flags &= ~(job_flags[i].flag);
-
-	/* catch any bits that are not known flags */
-	xassert(!flags);
-}
-
 static void _log_job_state_change(const job_record_t *job_ptr,
 				  const uint32_t new_state, const char *caller)
 {
@@ -118,7 +76,6 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-	_check_job_state(state);
 	_log_job_state_change(job_ptr, state, __func__);
 
 	on_job_state_change(job_ptr, state);
@@ -135,7 +92,6 @@ extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
 	xassert(flag & JOB_STATE_FLAGS);
 
 	job_state = job_ptr->job_state | flag;
-	_check_job_state(job_state);
 	_log_job_state_change(job_ptr, job_state, __func__);
 
 	on_job_state_change(job_ptr, job_state);
@@ -152,7 +108,6 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	xassert(flag & JOB_STATE_FLAGS);
 
 	job_state = job_ptr->job_state & ~flag;
-	_check_job_state(job_state);
 	_log_job_state_change(job_ptr, job_state, __func__);
 
 	on_job_state_change(job_ptr, job_state);
