@@ -187,6 +187,9 @@ extern int acct_gather_read_conf(int fd)
 
 	safe_read(fd, &len, sizeof(int));
 
+	/* Free struct pre-initialized in acct_gather_conf_init() */
+	FREE_NULL_BUFFER(acct_gather_options_buf);
+
 	acct_gather_options_buf = init_buf(len);
 	safe_read(fd, acct_gather_options_buf->head, len);
 
