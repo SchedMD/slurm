@@ -257,30 +257,29 @@ static auth_credential_t *_cred(uid_t uid, gid_t gid, char *hostname)
  */
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
-	auth_credential_t *cred = NULL;
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
+	char *hostname = NULL;
 
 	if (!buf) {
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
-	/* Allocate a new credential. */
-	cred = xmalloc(sizeof(*cred));
-
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&cred->uid, buf);
-		safe_unpack32(&cred->gid, buf);
-		safe_unpackstr(&cred->hostname, buf);
+		safe_unpack32(&uid, buf);
+		safe_unpack32(&gid, buf);
+		safe_unpackstr(&hostname, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
-	return cred;
+	return _cred(uid, gid, hostname);
 
 unpack_error:
-	auth_p_destroy(cred);
+	xfree(hostname);
 	errno = ESLURM_AUTH_UNPACK;
 	return NULL;
 }
