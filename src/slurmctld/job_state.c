@@ -49,8 +49,6 @@ typedef struct {
 	bool count_only;
 } job_state_args_t;
 
-#ifndef NDEBUG
-
 #define T(x) { x, XSTRINGIFY(x) }
 static const struct {
 	uint32_t flag;
@@ -114,19 +112,6 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 	xfree(before_str);
 	xfree(after_str);
 }
-
-#else /* NDEBUG */
-
-/*
- * Replace magic/sanity checks with no-ops that reference args to avoid compile
- * warnings.
- */
-
-#define _check_job_state(state) {(void) state;}
-#define _log_job_state_change(job_ptr, new_state) \
-	{(void) job_ptr; (void) new_state;}
-
-#endif /* NDEBUG */
 
 extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 {
