@@ -46,9 +46,10 @@
 
 #include "src/common/data.h"
 #include "src/common/pack.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -552,30 +553,29 @@ extern int auth_p_pack(auth_token_t *cred, buf_t *buf,
 
 extern auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
-	auth_token_t *cred = NULL;
+	char *token = NULL, *username = NULL;
 
 	if (!buf) {
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
-	cred = xmalloc(sizeof(*cred));
-	cred->verified = false;		/* just to be explicit */
-
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr(&cred->token, buf);
-		safe_unpackstr(&cred->username, buf);
+		safe_unpackstr(&token, buf);
+		safe_unpackstr(&username, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
-	return cred;
+	return auth_p_cred_generate(token, username, SLURM_AUTH_NOBODY,
+				    SLURM_AUTH_NOBODY);
 
 unpack_error:
 	errno = ESLURM_AUTH_UNPACK;
-	auth_p_destroy(cred);
+	xfree(token);
+	xfree(username);
 	return NULL;
 }
 
