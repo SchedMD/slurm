@@ -257,8 +257,6 @@ test6.17   Test scancel handling of invalid job IDs and filters.
 
 test7.#    Testing of other functionality.
 ==========================================
-test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and
-	   --batch options.
 test7.2    Test of PMI functions available via API library. Tests
 	   --pmi-threads option in srun command.
 test7.4    Test of TotalView operation with srun, with and without bulk
