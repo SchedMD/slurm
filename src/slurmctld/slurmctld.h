@@ -1581,12 +1581,6 @@ extern void queue_job_scheduler(void);
  */
 extern void rehash_jobs(void);
 
-/*
- * Setup and prepare job state cache (if configured)
- * IN new_hash_table_size - number of entries in hash table
- */
-extern void setup_job_state_hash(int new_hash_table_size);
-
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
 

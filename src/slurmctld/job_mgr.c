@@ -3419,9 +3419,6 @@ extern void rehash_jobs(void)
 					   sizeof(job_record_t *));
 		job_array_hash_t = xcalloc(hash_table_size,
 					   sizeof(job_record_t *));
-		if (xstrcasestr(slurm_conf.sched_params,
-				"enable_job_state_cache"))
-			setup_job_state_hash(hash_table_size);
 	} else if (hash_table_size < (slurm_conf.max_job_cnt / 2)) {
 		/* If the MaxJobCount grows by too much, the hash table will
 		 * be ineffective without rebuilding. We don't presently bother
