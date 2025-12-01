@@ -571,12 +571,17 @@ extern void slurm_job_state_set_flag(job_record_t *job_ptr, uint32_t flag,
 #define job_state_set_flag(job_ptr, flag) \
 	slurm_job_state_set_flag((job_ptr), (flag), __func__)
 
+/* Call job_state_set_flag() instead */
+extern void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
+				       const char *caller);
+
 /*
  * Unset job state flag
  * IN job_ptr - Job to update
  * IN flag - flag to unset (from JOB_* macro)
  */
-extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag);
+#define job_state_unset_flag(job_ptr, flag) \
+	slurm_job_state_unset_flag((job_ptr), (flag), __func__)
 
 /* dump_all_job_state - save the state of all jobs to file
  * RET 0 or error code */

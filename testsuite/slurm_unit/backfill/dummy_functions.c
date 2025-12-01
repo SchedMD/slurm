@@ -109,7 +109,8 @@ void job_state_set(job_record_t *job_ptr, uint32_t state)
 	job_ptr->job_state = state;
 }
 
-void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
+void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
+				const char *caller)
 {
 	uint32_t job_state;
 

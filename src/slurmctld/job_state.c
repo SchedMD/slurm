@@ -100,7 +100,8 @@ extern void slurm_job_state_set_flag(job_record_t *job_ptr, uint32_t flag,
 	job_ptr->job_state = job_state;
 }
 
-extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
+extern void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
+				       const char *caller)
 {
 	uint32_t job_state;
 
@@ -109,9 +110,9 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 	xassert(flag & JOB_STATE_FLAGS);
 
 	job_state = job_ptr->job_state & ~flag;
-	_log_job_state_change(job_ptr, job_state, __func__);
+	_log_job_state_change(job_ptr, job_state, caller);
 
-	on_job_state_change(job_ptr, job_state);
+	slurm_on_job_state_change(job_ptr, job_state, caller);
 
 	job_ptr->job_state = job_state;
 }
