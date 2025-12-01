@@ -663,7 +663,7 @@ extern void stepd_step_rec_destroy(void)
 
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
-	xfree(step->envtp);
+	env_opts_free(&step->envtp);
 	xfree(step->job_licenses);
 	xfree(step->pw_gecos);
 	xfree(step->pw_dir);
