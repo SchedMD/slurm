@@ -7966,6 +7966,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 
 	/* Add a temporary job_ptr for node_features_g_job_valid */
 	job_ptr = xmalloc(sizeof(job_record_t));
+	job_ptr->magic = JOB_MAGIC;
 	job_ptr->details = xmalloc(sizeof(job_details_t));
 	/* Point, don't dup, so don't free */
 	job_ptr->details->features = job_desc->features;
@@ -8069,6 +8070,7 @@ fini:
 	FREE_NULL_LIST(job_ptr->details->feature_list);
 	FREE_NULL_LIST(job_ptr->details->prefer_list);
 	xfree(job_ptr->details);
+	job_ptr->magic = ~JOB_MAGIC;
 	xfree(job_ptr);
 
 	return rc;
