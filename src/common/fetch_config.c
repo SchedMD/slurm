@@ -95,8 +95,10 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 {
 	int len;
 	buf_t *buffer;
-	config_response_msg_t *config = NULL;
 	int status;
+	slurm_msg_t smsg = {
+		.protocol_version = SLURM_PROTOCOL_VERSION,
+	};
 
 	close(to_parent[1]);
 	safe_read(to_parent[0], &len, sizeof(int));
@@ -118,8 +120,7 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	waitpid(pid, &status, 0);
 	debug2("%s: status from child %d", __func__, status);
 
-	if (unpack_config_response_msg(&config, buffer,
-				       SLURM_PROTOCOL_VERSION)) {
+	if (unpack_config_response_msg(&smsg, buffer)) {
 		FREE_NULL_BUFFER(buffer);
 		error("%s: unpack failed", __func__);
 		goto closepipe;
@@ -127,7 +128,7 @@ static config_response_msg_t *_fetch_parent(pid_t pid)
 	FREE_NULL_BUFFER(buffer);
 
 	close(to_parent[0]);
-	return config;
+	return smsg.data;
 
 rwfail:
 	error("%s: failed to read from child: %m", __func__);
