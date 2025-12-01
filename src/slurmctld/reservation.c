@@ -7675,6 +7675,15 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 	job_end_time   = *when + _get_job_duration(job_ptr, reboot);
 	*node_bitmap = (bitstr_t *) NULL;
 
+	/*
+	 * Prevent jobs that exceed the end time of the reservation from being
+	 * attracted to a magnetic reservation
+	 */
+	if ((job_ptr->bit_flags & JOB_MAGNETIC) && (job_ptr->resv_name) &&
+	    (job_end_time > job_ptr->resv_ptr->end_time)) {
+		return ESLURM_RESERVATION_INVALID;
+	}
+
 	if (job_ptr->resv_name) {
 		if (!job_ptr->resv_ptr) {
 			rc2 = validate_job_resv(job_ptr);
