@@ -102,12 +102,14 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 	before_str = job_state_string_complete(job_ptr->job_state);
 	after_str = job_state_string_complete(new_state);
 
-	if (job_ptr->job_state == new_state)
-		log_flag(TRACE_JOBS, "%s: [%pJ] no-op change state: %s",
-			 __func__, job_ptr, before_str);
-	else
+	if (job_ptr->job_state == new_state) {
+		if (get_log_level() >= LOG_LEVEL_DEBUG4)
+			log_flag(TRACE_JOBS, "%s: [%pJ] no-op change state: %s",
+				 __func__, job_ptr, before_str);
+	} else {
 		log_flag(TRACE_JOBS, "%s: [%pJ] change state: %s -> %s",
 			 __func__, job_ptr, before_str, after_str);
+	}
 
 	xfree(before_str);
 	xfree(after_str);
