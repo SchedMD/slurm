@@ -92,7 +92,7 @@ static void _check_job_state(const uint32_t state)
 }
 
 static void _log_job_state_change(const job_record_t *job_ptr,
-				  const uint32_t new_state)
+				  const uint32_t new_state, const char *caller)
 {
 	char *before_str, *after_str;
 
@@ -105,10 +105,10 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 	if (job_ptr->job_state == new_state) {
 		if (get_log_level() >= LOG_LEVEL_DEBUG4)
 			log_flag(TRACE_JOBS, "%s: [%pJ] no-op change state: %s",
-				 __func__, job_ptr, before_str);
+				 caller, job_ptr, before_str);
 	} else {
 		log_flag(TRACE_JOBS, "%s: [%pJ] change state: %s -> %s",
-			 __func__, job_ptr, before_str, after_str);
+			 caller, job_ptr, before_str, after_str);
 	}
 
 	xfree(before_str);
@@ -119,7 +119,7 @@ extern void job_state_set(job_record_t *job_ptr, uint32_t state)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	_check_job_state(state);
-	_log_job_state_change(job_ptr, state);
+	_log_job_state_change(job_ptr, state, __func__);
 
 	on_job_state_change(job_ptr, state);
 
@@ -136,7 +136,7 @@ extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag)
 
 	job_state = job_ptr->job_state | flag;
 	_check_job_state(job_state);
-	_log_job_state_change(job_ptr, job_state);
+	_log_job_state_change(job_ptr, job_state, __func__);
 
 	on_job_state_change(job_ptr, job_state);
 
@@ -153,7 +153,7 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag)
 
 	job_state = job_ptr->job_state & ~flag;
 	_check_job_state(job_state);
-	_log_job_state_change(job_ptr, job_state);
+	_log_job_state_change(job_ptr, job_state, __func__);
 
 	on_job_state_change(job_ptr, job_state);
 
@@ -282,5 +282,5 @@ cleanup:
 
 extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state)
 {
-	_log_job_state_change(job_ptr, new_state);
+	_log_job_state_change(job_ptr, new_state, __func__);
 }
