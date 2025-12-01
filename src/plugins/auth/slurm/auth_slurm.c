@@ -248,20 +248,19 @@ static auth_cred_t *_cred(char *token, const char *username, uid_t uid,
 
 extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
-	auth_cred_t *cred = NULL;
+	char *token = NULL;
 
 	if (!buf) {
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
-	cred = new_cred();
-	safe_unpackstr(&cred->token, buf);
+	safe_unpackstr(&token, buf);
 
-	return cred;
+	return _cred(token, NULL, SLURM_AUTH_NOBODY, SLURM_AUTH_NOBODY);
 
 unpack_error:
-	FREE_NULL_CRED(cred);
+	xfree(token);
 	errno = ESLURM_AUTH_UNPACK;
 	return NULL;
 }
