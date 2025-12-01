@@ -280,5 +280,5 @@ cleanup:
 
 extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state)
 {
-	/* do nothing */
+	_log_job_state_change(job_ptr, new_state);
 }
