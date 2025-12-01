@@ -577,13 +577,18 @@ extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag);
  * RET 0 or error code */
 extern int dump_all_job_state ( void );
 
+/* Call on_job_state_change() instead */
+extern void slurm_on_job_state_change(job_record_t *job_ptr, uint32_t new_state,
+				      const char *caller);
+
 /*
  * Notify/update job state hash table that job state has changed
  * IN job_ptr - Job about to be updated
  * IN new_state - New value that will be assigned to job_ptr->job_state.
  *                If NO_VAL, then delete the cache entry.
  */
-extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state);
+#define on_job_state_change(job_ptr, new_state) \
+	slurm_on_job_state_change((job_ptr), (new_state), __func__)
 
 /* dump_all_node_state - save the state of all nodes to file */
 extern int dump_all_node_state ( void );

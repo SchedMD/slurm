@@ -235,7 +235,8 @@ cleanup:
 	return args.rc;
 }
 
-extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state)
+extern void slurm_on_job_state_change(job_record_t *job_ptr, uint32_t new_state,
+				      const char *caller)
 {
-	_log_job_state_change(job_ptr, new_state, __func__);
+	_log_job_state_change(job_ptr, new_state, caller);
 }
