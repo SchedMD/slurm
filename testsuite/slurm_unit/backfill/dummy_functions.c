@@ -103,7 +103,8 @@ uint16_t job_get_sockets_per_node(job_record_t *job_ptr)
 	return 1;
 }
 
-void job_state_set(job_record_t *job_ptr, uint32_t state)
+void slurm_job_state_set(job_record_t *job_ptr, uint32_t state,
+			 const char *caller)
 {
 	debug("%s %pJ %u", __func__, job_ptr, state);
 	job_ptr->job_state = state;

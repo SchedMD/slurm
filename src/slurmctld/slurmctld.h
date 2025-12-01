@@ -552,12 +552,17 @@ extern list_t *depended_list_copy(list_t *depend_list_src);
  */
 extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 
+/* Call job_state_set() instead */
+extern void slurm_job_state_set(job_record_t *job_ptr, uint32_t state,
+				const char *caller);
+
 /*
  * Set job state
  * IN job_ptr - Job to update
  * IN state - state from enum job_states
  */
-extern void job_state_set(job_record_t *job_ptr, uint32_t state);
+#define job_state_set(job_ptr, state) \
+	slurm_job_state_set((job_ptr), (state), __func__)
 
 /* Call job_state_set_flag() instead */
 extern void slurm_job_state_set_flag(job_record_t *job_ptr, uint32_t flag,

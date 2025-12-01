@@ -73,12 +73,13 @@ static void _log_job_state_change(const job_record_t *job_ptr,
 	xfree(after_str);
 }
 
-extern void job_state_set(job_record_t *job_ptr, uint32_t state)
+extern void slurm_job_state_set(job_record_t *job_ptr, uint32_t state,
+				const char *caller)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
-	_log_job_state_change(job_ptr, state, __func__);
+	_log_job_state_change(job_ptr, state, caller);
 
-	on_job_state_change(job_ptr, state);
+	slurm_on_job_state_change(job_ptr, state, caller);
 
 	job_ptr->job_state = state;
 }
