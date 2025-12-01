@@ -559,12 +559,17 @@ extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
  */
 extern void job_state_set(job_record_t *job_ptr, uint32_t state);
 
+/* Call job_state_set_flag() instead */
+extern void slurm_job_state_set_flag(job_record_t *job_ptr, uint32_t flag,
+				     const char *caller);
+
 /*
  * Set job state flag
  * IN job_ptr - Job to update
  * IN flag - flag to set (from JOB_* macro)
  */
-extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag);
+#define job_state_set_flag(job_ptr, flag) \
+	slurm_job_state_set_flag((job_ptr), (flag), __func__)
 
 /*
  * Unset job state flag
