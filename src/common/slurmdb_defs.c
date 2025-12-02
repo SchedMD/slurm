@@ -433,6 +433,10 @@ static int _str_2_qos_flags(char *flag_in, slurmdb_qos_flags_t *flags_ptr)
 	if (!flag_in || !flag_in[0])
 		return SLURM_SUCCESS;
 
+	if (!(xstrcasecmp(flag_in, "Deleted")) ||
+	    !(xstrcasecmp(flag_in, "PartQOS")))
+		return EINVAL;
+
 	for (int i = 0; i < ARRAY_SIZE(slurmdb_qos_flags_map); i++) {
 		if (!xstrncasecmp(flag_in, slurmdb_qos_flags_map[i].str,
 				  strlen(flag_in))) {
