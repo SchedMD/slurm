@@ -574,6 +574,8 @@
 /* threadpool.[ch] functions */
 #define threadpool_create slurm_threadpool_create
 #define threadpool_join slurm_threadpool_join
+#define threadpool_init slurm_threadpool_init
+#define threadpool_fini slurm_threadpool_fini
 
 #endif /* USE_ALIAS */
 
