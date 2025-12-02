@@ -28,6 +28,7 @@ import signal
 
 import json
 import jsondiff
+import jsonpatch
 import yaml
 
 # This module will be (un)imported in require_openapi_generator()
@@ -1434,6 +1435,76 @@ def request_slurmrestd(request):
         f"{properties['slurmrestd_url']}/{request}",
         headers=properties["slurmrestd-headers"],
     )
+
+
+def get_deprecated_openapi_spec_patch(openapi_spec, undeprecate=False):
+    """
+    Returns a JsonPatch object that can be applied to the openapi_spec to
+    fully deprecate it, as we should do for older specs in newer Slurm
+    versions.
+
+    If undeprecate is set to True, then it does the opposite, it returns a
+    JsonPatch to remove all deprecate marks of the openapi_specs. This
+    should NOT be used in general, but as we generated some openapi_specs
+    with newer Slurm versions, we may need to undeprecate them (see v41).
+    """
+    ops = []
+
+    def _escape_json_pointer(s: str) -> str:
+        return s.replace("~", "~0").replace("/", "~1")
+
+    for raw_path, path_obj in openapi_spec.get("paths", {}).items():
+        escaped_path = _escape_json_pointer(raw_path)
+
+        for method, operation in path_obj.items():
+            if method.lower() not in (
+                "get",
+                "post",
+                "put",
+                "delete",
+                "patch",
+                "head",
+                "options",
+            ):
+                continue
+
+            # 1. Mark the operation itself as deprecated
+            if not undeprecate:
+                ops.append(
+                    {
+                        "op": "add",
+                        "path": f"/paths/{escaped_path}/{method}/deprecated",
+                        "value": True,
+                    }
+                )
+            else:
+                ops.append(
+                    {
+                        "op": "remove",
+                        "path": f"/paths/{escaped_path}/{method}/deprecated",
+                    }
+                )
+
+            # 2. Mark every parameter as deprecated
+            params = operation.get("parameters", [])
+            for i, _ in enumerate(params):
+                if not undeprecate:
+                    ops.append(
+                        {
+                            "op": "add",
+                            "path": f"/paths/{escaped_path}/{method}/parameters/{i}/deprecated",
+                            "value": True,
+                        }
+                    )
+                else:
+                    ops.append(
+                        {
+                            "op": "remove",
+                            "path": f"/paths/{escaped_path}/{method}/parameters/{i}/deprecated",
+                        }
+                    )
+
+    return jsonpatch.JsonPatch(ops)
 
 
 def assert_openapi_spec_eq(spec_a, spec_b):
