@@ -68,6 +68,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"

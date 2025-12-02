@@ -571,6 +571,10 @@
 #define url_parser_g_fini slurm_url_parser_g_fini
 #define url_parser_g_parse slurm_url_parser_g_parse
 
+/* threadpool.[ch] functions */
+#define threadpool_create slurm_threadpool_create
+#define threadpool_join slurm_threadpool_join
+
 #endif /* USE_ALIAS */
 
 #endif /*__SLURM_XLATOR_H__*/

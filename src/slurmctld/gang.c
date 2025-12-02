@@ -50,6 +50,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/preempt.h"

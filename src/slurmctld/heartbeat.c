@@ -42,6 +42,7 @@
 #include <sys/types.h>
 
 #include "src/common/fd.h"
+#include "src/common/threadpool.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/heartbeat.h"
 #include "src/slurmctld/slurmctld.h"

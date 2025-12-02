@@ -52,6 +52,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
+#include "src/common/threadpool.h"
 #include "src/common/xsignal.h"
 #include "src/interfaces/auth.h"
 #include "src/interfaces/conn.h"

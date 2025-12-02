@@ -5713,6 +5713,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Switch");
 	}
+	if (debug_flags & DEBUG_FLAG_THREAD) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "thread");
+	}
 	if (debug_flags & DEBUG_FLAG_TLS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5870,6 +5875,11 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_SWITCH;
 		else if (xstrcasecmp(tok, "Task") == 0)
 			error("DebugFlag Task has been removed, please use CPU_Bind");
+		else if (!xstrcasecmp(tok, "thread") ||
+			 !xstrcasecmp(tok, "threads") ||
+			 !xstrcasecmp(tok, "workqueue") ||
+			 !xstrcasecmp(tok, "workq"))
+			(*flags_out) |= DEBUG_FLAG_THREAD;
 		else if (xstrcasecmp(tok, "TLS") == 0)
 			(*flags_out) |= DEBUG_FLAG_TLS | DEBUG_FLAG_AUDIT_TLS;
 		else if (xstrcasecmp(tok, "TraceJobs") == 0)
@@ -5883,9 +5893,7 @@ extern int debug_str2flags(const char *debug_flags, uint64_t *flags_out)
 		else if ((xstrcasecmp(tok, "Power") == 0) ||
 			 (xstrcasecmp(tok, "PowerSave") == 0))
 			(*flags_out) |= DEBUG_FLAG_POWER;
-		else if (!xstrcasecmp(tok, "WorkQueue") ||
-			 !xstrcasecmp(tok, "WorkQ") ||
-			 !xstrcasecmp(tok, "ConMgr"))
+		else if (!xstrcasecmp(tok, "ConMgr"))
 			(*flags_out) |= DEBUG_FLAG_CONMGR;
 		else {
 			error("Invalid DebugFlag: %s", tok);

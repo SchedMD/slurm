@@ -45,12 +45,14 @@
 #include <math.h>
 
 #include "src/common/slurm_xlator.h"
-#include "src/interfaces/acct_gather_energy.h"
-#include "src/common/slurm_protocol_defs.h"
+
 #include "src/common/fd.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/threadpool.h"
 #include "src/common/xrandom.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/proctrack.h"
 
 #include "src/slurmd/slurmd/slurmd.h"

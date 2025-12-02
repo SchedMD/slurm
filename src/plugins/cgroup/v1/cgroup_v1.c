@@ -35,6 +35,8 @@
 
 #define _GNU_SOURCE
 
+#include "src/common/threadpool.h"
+
 #include "cgroup_v1.h"
 
 /* Required Slurm plugin symbols: */

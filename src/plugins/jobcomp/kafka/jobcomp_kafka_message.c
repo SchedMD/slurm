@@ -40,11 +40,14 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/state_save.h"
+#include "src/common/threadpool.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/jobcomp.h"
+
 #include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_conf.h"
 #include "src/plugins/jobcomp/kafka/jobcomp_kafka_message.h"

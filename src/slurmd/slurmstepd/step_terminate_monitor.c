@@ -36,6 +36,7 @@
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/namespace.h"

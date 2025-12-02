@@ -52,8 +52,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "src/api/step_launch.h"
-
 #include "src/common/bitstring.h"
 #include "src/common/cbuf.h"
 #include "src/common/fd.h"
@@ -68,12 +66,15 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/spank.h"
+#include "src/common/threadpool.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/cli_filter.h"
+
+#include "src/api/step_launch.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/debugger.h"

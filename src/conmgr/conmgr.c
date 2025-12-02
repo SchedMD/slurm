@@ -40,9 +40,10 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/read_config.h"
 #include "src/common/probes.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
+#include "src/common/threadpool.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

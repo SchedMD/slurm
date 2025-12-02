@@ -49,11 +49,14 @@
 #include <poll.h>
 
 #include "src/common/slurm_xlator.h"
+
 #include "src/common/eio.h"
 #include "src/common/macros.h"
-#include "src/interfaces/mpi.h"
-#include "src/common/xstring.h"
+#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
+
+#include "src/interfaces/mpi.h"
+
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #include "client.h"

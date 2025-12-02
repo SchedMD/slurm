@@ -36,11 +36,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "as_mysql_cluster.h"
 #include "as_mysql_usage.h"
+#include "as_mysql_cluster.h"
 #include "as_mysql_rollup.h"
+
 #include "src/common/macros.h"
 #include "src/common/slurm_time.h"
+#include "src/common/threadpool.h"
 
 time_t global_last_rollup = 0;
 pthread_mutex_t rollup_lock = PTHREAD_MUTEX_INITIALIZER;

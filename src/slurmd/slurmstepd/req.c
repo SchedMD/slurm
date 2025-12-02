@@ -61,6 +61,7 @@
 #include "src/common/stepd_api.h"
 #include "src/common/stepd_proxy.h"
 #include "src/common/strlcpy.h"
+#include "src/common/threadpool.h"
 #include "src/common/timers.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xmalloc.h"

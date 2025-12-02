@@ -44,10 +44,13 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/plugin.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/plugin.h"
+#include "src/common/threadpool.h"
+
 #include "src/slurmctld/slurmctld.h"
+
 #include "backfill.h"
 
 const char plugin_name[] = "Slurm Backfill Scheduler plugin";

@@ -50,16 +50,17 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/half_duplex.h"
-#include "src/common/net.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
 #include "src/common/read_config.h"
-#include "src/interfaces/auth.h"
-#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
+#include "src/interfaces/auth.h"
 #include "src/interfaces/conn.h"
 
 struct allocation_msg_thread {

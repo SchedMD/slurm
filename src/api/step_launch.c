@@ -74,6 +74,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/spank.h"
 #include "src/common/strlcpy.h"
+#include "src/common/threadpool.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"

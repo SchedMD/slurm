@@ -56,14 +56,16 @@
 #define PF_DUMPCORE     0x00000200      /* dumped core */
 #endif
 
-
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/proctrack.h"
+
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 bool proctrack_forked = false;

@@ -41,12 +41,16 @@
 
 #include "slurm/slurm_errno.h"
 
-#include "src/common/plugin.h"
 #include "src/common/log.h"
+#include "src/common/plugin.h"
+#include "src/common/threadpool.h"
+
 #include "src/interfaces/select.h"
+
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
+
 #include "src/plugins/sched/builtin/builtin.h"
 
 const char		plugin_name[]	= "Slurm Built-in Scheduler plugin";
