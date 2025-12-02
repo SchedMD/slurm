@@ -102,6 +102,14 @@ ok_test_parameters = [
         0,
         "gpu:1(IDX:0)",
     ),
+    (  # Try to allocate all Cores
+        "-N1 -c12 --gres=gpu:4 ",
+        4,
+        2,
+        4,
+        2,
+        "gpu:4(IDX:0-3)",
+    ),
     (
         "-N1 -n4 --tres-per-task=gres/gpu:1 ",
         2,
@@ -135,13 +143,41 @@ ok_test_parameters = [
         "gpu:3(IDX:0,2-3)",
     ),
     # Note: There is no guarantee that reserved cores are used in proportion to shared gres allocations
-    (
+    pytest.param(  # Test allocating all shards with 1 cores (see Note above)
+        "-N1 --gres=shard:40 ",
+        1,
+        0,
+        0,
+        0,
+        "shard:40(10/10,10/10,10/10,10/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
+    ),
+    pytest.param(  # Test allocating all cores with 4 shards
+        "-N1 -n1 -c12 --gres=shard:4 ",
+        4,
+        2,
+        4,
+        2,
+        "shard:4(4/10,0/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
+    ),
+    pytest.param(
         "-N1 -n1 -c1 --tres-per-task=gres/shard:1 ",
         1,
         0,
         0,
         0,
         "shard:1(1/10,0/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
     ),
     pytest.param(
         "-N1 -n3 -c2 --tres-per-task=gres/shard:5 ",
@@ -158,10 +194,46 @@ ok_test_parameters = [
     pytest.param(
         "-N1 -n1 -c8 --tres-per-task=gres/shard:10 ",
         4,
-        4,
+        2,
         0,
-        0,
+        2,
         "shard:10(10/10,0/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
+    ),
+    pytest.param(
+        "-N1 -n1 -c1 --gres=shard:1 ",
+        0,
+        1,
+        0,
+        0,
+        "shard:1(1/10,0/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
+    ),
+    pytest.param(
+        "-N1 -n2 -c3 --gres=shard:3 ",
+        4,
+        2,
+        0,
+        0,
+        "shard:3(3/10,0/10,0/10,0/10)",
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
+    ),
+    pytest.param(
+        "-N2 -n2 --gres=shard:5 ",
+        0,
+        1,
+        0,
+        0,
+        "shard:5(5/10,0/10,0/10,0/10)",  # Second node
         marks=pytest.mark.xfail(
             atf.get_version() < (25, 11),
             reason="Ticket 22391: ResCoresPerGPU with shard support",
@@ -218,7 +290,7 @@ fail_test_parameters = [
         "-N1 -n3 -c2",
         r"srun: error: .+ Requested node configuration is not available",
     ),
-    (
+    (  # Try allocating more cores than GPUs * ReservedCoresPerGPU + regular cores
         "-N1 -n4 -c2 --gres=gpu:1",
         r"srun: error: .+ Requested node configuration is not available",
     ),
@@ -232,6 +304,15 @@ fail_test_parameters = [
     ),
     (
         "-N2 -n9 -c1",
+        r"srun: error: .+ Requested node configuration is not available",
+    ),
+    # You need at least 1 shard per GPU if you want all Cores despite the fact
+    # that they may be on the same GPU. Fully requiring GPU usage to get the
+    # cores would be difficult and beyond current scope.
+    # This is a quirk of the current implementation of shard allocation with
+    # ReservedCoresPerGPU
+    (
+        "-N1 -n1 -c12 --gres=shard:1",
         r"srun: error: .+ Requested node configuration is not available",
     ),
 ]
