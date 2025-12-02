@@ -3108,9 +3108,12 @@ static uint64_t _step_test(gres_step_state_t *gres_ss, bool first_step_node,
 	    (gres_ss->gres_per_step > gres_ss->total_gres) &&
 	    (max_rem_nodes == 1)) {
 		uint64_t gres_per_step = gres_ss->gres_per_step;
-		if (ignore_alloc)
-			gres_per_step -= gres_ss->gross_gres;
-		else
+		if (ignore_alloc) {
+			if (gres_ss->gross_gres > gres_per_step)
+				gres_per_step = 0;
+			else
+				gres_per_step -= gres_ss->gross_gres;
+		} else
 			gres_per_step -= gres_ss->total_gres;
 		min_gres = MAX(min_gres, gres_per_step);
 	}
