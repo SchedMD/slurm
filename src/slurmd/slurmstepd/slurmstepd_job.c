@@ -171,6 +171,7 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 	slurm_mutex_lock(&t->mutex);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
+	xfree(t->cpu_set);
 	xfree(t->efname);
 	xfree(t->ifname);
 	xfree(t->ofname);
