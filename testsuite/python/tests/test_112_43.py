@@ -5,6 +5,7 @@ import atf
 import pytest
 import getpass
 import json
+import jsonpatch
 import random
 import logging
 import time
@@ -230,12 +231,32 @@ def test_loaded_versions():
     assert "/slurmdb/v0.0.43/jobs/" in spec["paths"].keys()
 
 
-@pytest.mark.xfail(
-    atf.get_version("sbin/slurmrestd") >= (25, 11),
-    reason="Ticket 23807: Schema changed",
-)
 @pytest.mark.parametrize("openapi_spec", ["43"], indirect=True)
 def test_specification(openapi_spec):
+    base_path = "/components/schemas/v0.0.43_"
+
+    if atf.get_version("sbin/slurmrestd") >= (25, 5):
+        # Ticket 2450: We finally decided to revert deprecating job_submit_req script field
+        path = base_path + "job_submit_req/properties/script/deprecated"
+        patch = jsonpatch.JsonPatch([{"op": "remove", "path": path}])
+        patch.apply(openapi_spec, in_place=True)
+
+    if atf.get_version("sbin/slurmrestd") >= (25, 11):
+        # Ticket 23874: In 25.11 we deprecated parts_packed
+        path = base_path + "stats_msg/properties/parts_packed/deprecated"
+        patch = jsonpatch.JsonPatch([{"op": "add", "path": path, "value": True}])
+        patch.apply(openapi_spec, in_place=True)
+
+        # Ticket 23874: In 25.11 we converted schedule_cycle_sum to int64
+        path = base_path + "stats_msg/properties/schedule_cycle_sum/format"
+        patch = jsonpatch.JsonPatch([{"op": "replace", "path": path, "value": "int64"}])
+        patch.apply(openapi_spec, in_place=True)
+
+    if atf.get_version("sbin/slurmrestd") >= (26, 11):
+        # This is expected to be deprecated in 26.11+
+        patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
+        patch.apply(openapi_spec, in_place=True)
+
     atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
 
 
