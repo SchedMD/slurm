@@ -121,7 +121,7 @@ static int _on_request(http_con_t *hcon, const char *name,
 
 	CONMGR_CON_LINK(ctxt->con, args.con);
 
-	rc = operations_router(&args);
+	rc = operations_router(&args, hcon, name, request, ctxt);
 
 	CONMGR_CON_UNLINK(args.con);
 	FREE_NULL_REST_AUTH(ctxt->auth);

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  operations.h - definitions for handling http operations
+ *  http_mime.h - handling HTTP mime types
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
@@ -33,55 +33,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef SLURMRESTD_OPERATIONS_H
-#define SLURMRESTD_OPERATIONS_H
+#ifndef SLURM_HTTP_MIME_H
+#define SLURM_HTTP_MIME_H
 
 #include "src/common/http_con.h"
 
-#include "src/slurmrestd/http.h"
-#include "src/slurmrestd/openapi.h"
+#define MIME_TYPE_TEXT "text/plain"
 
 /*
- * True if slurmrestd is running in inetd mode
- */
-extern bool inetd_mode;
-
-/*
- * setup locks.
- * only call once!
- */
-extern int init_operations(data_parser_t **parsers);
-extern void destroy_operations(void);
-
-/*
- * Bind callback handler for a given URL pattern.
- * Same rules as bind_operation_handler() but handles populating response and
- * tracking warnings and errors.
- *
- * IN op_path - operation path to bind
- * IN meta - meta info about plugin that owns callback or NULL
+ * Resolve read and write mime types from HTTP connection request
+ * IN name - connection name (for logging)
+ * IN request - http request
+ * OUT read_mime_ptr - Pointer to populate with mime type
+ * OUT write_mime_ptr - Pointer to populate with mime type
  * RET SLURM_SUCCESS or error
  */
-extern int bind_operation_path(const openapi_path_binding_t *op_path,
-			       const openapi_resp_meta_t *meta);
+extern int http_resolve_mime_types(const char *name,
+				   const http_con_request_t *request,
+				   const char **read_mime_ptr,
+				   const char **write_mime_ptr);
 
-/*
- * Parses incoming requests and calls handlers.
- * expected to be called as on_http_request_t() by http.c.
- * RET SLURM_SUCCESS or error
- */
-extern int operations_router(on_http_request_args_t *args, http_con_t *hcon,
-			     const char *name,
-			     const http_con_request_t *request,
-			     http_context_t *ctxt);
-
-/*
- * Retrieve db_conn for slurmdbd calls.
- * WARNING: Only valid inside of openapi_handler_t()
- * RET NULL on error or db_conn pointer
- *
- * Note: this is not implemented here but must be in the caller
- */
-extern void *openapi_get_db_conn(void *ctxt);
-
-#endif /* SLURMRESTD_OPERATIONS_H */
+#endif

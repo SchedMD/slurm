@@ -1643,7 +1643,7 @@ static void _populate_openapi_results(openapi_ctxt_t *ctxt,
 extern int wrap_openapi_ctxt_callback(const char *context_id,
 				      http_request_method_t method,
 				      data_t *parameters, data_t *query,
-				      int tag, data_t *resp, void *auth,
+				      int tag, data_t *resp, void *db_conn,
 				      data_parser_t *parser,
 				      const openapi_path_binding_t *op_path,
 				      const openapi_resp_meta_t *plugin_meta)
@@ -1683,21 +1683,17 @@ extern int wrap_openapi_ctxt_callback(const char *context_id,
 
 	if (op_path->flags & OP_BIND_NO_SLURMDBD) {
 		; /* Do not attempt to open a connection to slurmdbd */
-	} else if (slurm_conf.accounting_storage_type &&
-		   !(ctxt.db_conn = openapi_get_db_conn(auth))) {
-		char *auth_error_msg = "";
-		if (errno == SLURM_PROTOCOL_AUTHENTICATION_ERROR)
-			auth_error_msg = ", authentication error";
+	} else if (!(ctxt.db_conn = db_conn)) {
 		if (op_path->flags & OP_BIND_REQUIRE_SLURMDBD)
-			openapi_resp_error(&ctxt, (rc = ESLURM_DB_CONNECTION),
-					   XSTRINGIFY(openapi_get_db_conn),
-					   "Failed to open slurmdbd connection%s",
-					   auth_error_msg);
+			openapi_resp_error(
+				&ctxt, (rc = ESLURM_DB_CONNECTION),
+				XSTRINGIFY(openapi_get_db_conn),
+					"Failed to open slurmdbd connection");
 		else
-			openapi_resp_warn(&ctxt,
-					  XSTRINGIFY(openapi_get_db_conn),
-					  "Failed to open connection to slurmdbd%s. Response fields may not be fully populated or empty.",
-					  auth_error_msg);
+			openapi_resp_warn(
+				&ctxt,
+				XSTRINGIFY(openapi_get_db_conn),
+					"Failed to open connection to slurmdbd. Response fields may not be fully populated or empty.");
 	} else {
 		rc = data_parser_g_assign(ctxt.parser,
 					  DATA_PARSER_ATTR_DBCONN_PTR,

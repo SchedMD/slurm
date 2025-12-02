@@ -40,8 +40,6 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/data.h"
 
-#define MIME_TYPE_TEXT "text/plain"
-
 /*
  * HTTP status codes from rfc2616&rfc7231 for http1.1
  */

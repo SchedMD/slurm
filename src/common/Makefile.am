@@ -51,6 +51,8 @@ libcommon_la_SOURCES =				\
 	http.c					\
 	http_con.h				\
 	http_con.c				\
+	http_mime.h				\
+	http_mime.c				\
 	http_router.h				\
 	http_router.c				\
 	http_switch.h				\
