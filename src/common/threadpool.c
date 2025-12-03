@@ -150,13 +150,11 @@ static void _set_thread_name(const char *name)
 
 static void _thread_free(thread_t *thread)
 {
-#ifdef MEMORY_LEAK_DEBUG
 	xassert(thread);
 	xassert(thread->magic == THREAD_MAGIC);
 
 	thread->magic = ~THREAD_MAGIC;
 	xfree(thread);
-#endif
 }
 
 static void *_thread(void *arg)
