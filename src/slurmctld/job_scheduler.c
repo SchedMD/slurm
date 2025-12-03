@@ -1835,7 +1835,8 @@ skip_start:
 				     job_state_reason_string(
 					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
-			fail_by_part = true;
+			if (!use_prefer)
+				fail_by_part = true;
 		} else if (error_code == ESLURM_LICENSES_UNAVAILABLE) {
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,
