@@ -30,6 +30,6 @@ wait
     for i in range(node_count):
         atf.wait_for_step(job_id, i, fatal=True)
         step_str = f"{job_id}.{i}"
-        nodes.add(atf.get_steps(step_str)[step_str].get("NodeList"))
+        nodes.add(atf.get_steps(job_id)[step_str].get("NodeList"))
 
     assert len(nodes) == node_count, "Verify that all steps are in different nodes"

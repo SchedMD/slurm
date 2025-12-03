@@ -3644,12 +3644,11 @@ def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
     return jobs_dict
 
 
-def get_steps(step_id=None, **run_command_kwargs):
-    """Returns the steps as a dictionary of dictionaries.
+def get_steps(job_id, **run_command_kwargs):
+    """Returns the steps of a given job_id as a dictionary of dictionaries.
 
     Args:
-        step_id (string): The specific step ID to retrieve information for. If
-            not provided, information for all steps will be returned.
+        job_id (string): The specific JobId to retrieve information for.
 
     Returns:
         A dictionary of dictionaries where the first level keys are the step ids
@@ -3657,21 +3656,15 @@ def get_steps(step_id=None, **run_command_kwargs):
         the respective step.
 
     Example:
-        >>> get_steps()
+        >>> get_steps(44)
         {'44.batch': {'StepId': '44.batch', 'UserId': 1002, 'StartTime': '2024-04-05T01:17:53', ...},
-         '44.0': {'StepId': 44.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:17:54', ...},
-         '45.batch': {'StepId': '45.batch', 'UserId': 1002, 'StartTime': '2024-04-05T01:17:53', ...},
-         '45.0': {'StepId': 45.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:17:54', ...}}
-        >>> get_steps(step_id='123.0', quiet=True)
-        {'123.0': {'StepId': 123.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:21:14', ...}}
+         '44.0': {'StepId': 44.0, 'UserId': 1002, 'StartTime': '2024-04-05T01:17:54', ...}}
     """
 
     steps_dict = {}
     step_dict = {}
 
-    command = "scontrol -d -o show steps"
-    if step_id is not None:
-        command += f" {step_id}"
+    command = f"scontrol -d -o show steps {job_id}"
     result = run_command(command, **run_command_kwargs)
 
     if result["exit_code"]:
