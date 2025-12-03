@@ -2366,7 +2366,7 @@ def require_config_parameter(
     condition_satisfied = False
     if condition is None:
         # condition = lambda observed, desired: observed == desired
-        if observed_value == parameter_value:
+        if observed_value == str(parameter_value):
             condition_satisfied = True
     else:
         if condition(observed_value):
