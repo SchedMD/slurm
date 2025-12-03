@@ -73,7 +73,7 @@
 		gettimeofday(&tv2, NULL); \
 		slurm_diff_tv_str(&tv1, &tv2, TIME_STR, 20, from, limit, \
 				  &DELTA_TIMER); \
-	} while (0)
+	} while (false)
 
 /* Return the number of micro-seconds between now and argument "tv",
  * Initialize tv to NOW if zero on entry */
