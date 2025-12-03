@@ -198,9 +198,9 @@ BuildRequires: ucx-devel
 
 %if %{with libcurl}
 %if %{defined suse_version}
-Requires: libcurl
-%else
 Requires: libcurl4
+%else
+Requires: libcurl
 %endif
 BuildRequires: libcurl-devel
 %endif
