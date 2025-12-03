@@ -47,8 +47,10 @@
 
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/probes.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
+#include "src/common/timers.h"
 
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
@@ -151,6 +153,52 @@ static void _check_slow_save(void)
 		delay_str);
 }
 
+static void _probe_verbose(probe_log_t *log)
+{
+	char histogram[LATENCY_METRIC_HISTOGRAM_STR_LEN] = { 0 };
+	char ts_str[CTIME_STR_LEN] = { 0 };
+
+	if (timespec_is_after(save_start, last_save)) {
+		(void) timespec_ctime(save_start, true, ts_str, sizeof(ts_str));
+		probe_log(log, "StateSave Status: SAVING");
+		probe_log(log, "StateSave Started: %s", ts_str);
+	} else {
+		(void) timespec_ctime(timespec_rem(last_save, save_start),
+				      false, ts_str, sizeof(ts_str));
+		probe_log(log, "StateSave Status: SLEEPING");
+		probe_log(log, "StateSave Last Duration: %s", ts_str);
+	}
+
+	(void) timespec_ctime(last_save, true, ts_str, sizeof(ts_str));
+	probe_log(log, "StateSave Last Save: %s", ts_str);
+
+	(void) latency_histogram_print_labels(histogram, sizeof(histogram));
+	probe_log(log, "StateSave Histogram: %s", histogram);
+
+	(void) latency_histogram_print(&save_histogram, histogram,
+				       sizeof(histogram));
+	probe_log(log, "StateSave Histogram: %s", histogram);
+}
+
+static probe_status_t _probe(probe_log_t *log)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&state_save_lock);
+
+	if (log)
+		_probe_verbose(log);
+
+	if (!last_save.tv_sec)
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
+
+	slurm_mutex_unlock(&state_save_lock);
+
+	return status;
+}
+
 /*
  * Run as pthread to keep saving slurmctld state information as needed,
  * Use schedule_job_save(),  schedule_node_save(), and schedule_part_save()
@@ -168,6 +216,8 @@ extern void *slurmctld_state_save(void *no_data)
 		error("%s: cannot set my name to %s %m", __func__, "sstate");
 	}
 #endif
+
+	probe_register(__func__, _probe);
 
 	while (1) {
 		/* wait for work to perform */
