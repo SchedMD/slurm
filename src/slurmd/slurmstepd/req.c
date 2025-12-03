@@ -2357,13 +2357,20 @@ extern void join_extern_threads(void)
 	slurm_mutex_unlock(&extern_thread_lock);
 
 	for (int i = 0; i < thread_cnt; i++) {
+		pthread_t thread = 0;
 		debug2("Joining extern pid thread %d", i);
-		slurm_thread_join(extern_threads[i]);
+
+		slurm_mutex_lock(&extern_thread_lock);
+		SWAP(thread, extern_threads[i]);
+		extern_thread_cnt--;
+		slurm_mutex_unlock(&extern_thread_lock);
+
+		slurm_thread_join(thread);
 	}
 
 	slurm_mutex_lock(&extern_thread_lock);
 	xfree(extern_threads);
-	extern_thread_cnt = 0;
+	xassert(!extern_thread_cnt);
 	slurm_mutex_unlock(&extern_thread_lock);
 
 	debug2("Done joining extern pid threads");
