@@ -4372,10 +4372,18 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 		resv_ptr->purge_comp_time = resv_desc_ptr->purge_comp_time;
 
 	if (resv_desc_ptr->partition && (resv_desc_ptr->partition[0] == '\0')) {
-		/* Clear the partition */
-		xfree(resv_desc_ptr->partition);
-		xfree(resv_ptr->partition);
-		resv_ptr->part_ptr = NULL;
+		/*
+		 * Removing the partition from a reservation which already has
+		 * a partition may cause slurmctld to crash. Deny the request.
+		 */
+		info("Reservation %s request to clear partition is not allowed",
+		     resv_desc_ptr->name);
+		if (err_msg) {
+			xfree(*err_msg);
+			*err_msg = xstrdup("Reservation partition cannot be removed");
+		}
+		error_code = ESLURM_INVALID_PARTITION_NAME;
+		goto update_failure;
 	}
 	if (resv_desc_ptr->partition) {
 		part_record_t *part_ptr = NULL;
