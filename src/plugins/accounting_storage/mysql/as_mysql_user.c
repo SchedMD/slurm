@@ -685,17 +685,17 @@ extern char *as_mysql_add_users_cond(mysql_conn_t *mysql_conn, uint32_t uid,
 	else
 		admin_set = true;
 
-	memset(&add_user_cond, 0, sizeof(add_user_cond));
-	add_user_cond.user_in = user;
-	add_user_cond.mysql_conn = mysql_conn;
-	add_user_cond.now = time(NULL);
-	add_user_cond.user_name = uid_to_string((uid_t) uid);
-
 	if (!add_assoc->user_list || !list_count(add_assoc->user_list)) {
 		error("%s: Trying to add empty user(s) list", __func__);
 		errno = ESLURM_EMPTY_LIST;
 		return NULL;
 	}
+
+	memset(&add_user_cond, 0, sizeof(add_user_cond));
+	add_user_cond.user_in = user;
+	add_user_cond.mysql_conn = mysql_conn;
+	add_user_cond.now = time(NULL);
+	add_user_cond.user_name = uid_to_string((uid_t) uid);
 
 	/* First add the accounts to the user_table. */
 	if (list_for_each_ro(add_assoc->user_list, _foreach_add_user,
