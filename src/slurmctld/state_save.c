@@ -46,6 +46,9 @@
 #include <pthread.h>
 
 #include "src/common/macros.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
+
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -54,6 +57,11 @@
 #ifndef SAVE_MAX_WAIT
 #define SAVE_MAX_WAIT	5
 #endif
+
+#define SAVE_COUNT_DELAY \
+	((timespec_t) { \
+		.tv_sec = 1, \
+	})
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
@@ -153,10 +161,12 @@ extern void *slurmctld_state_save(void *no_data)
 				slurm_mutex_unlock(&state_save_lock);
 				return NULL;	/* shutdown */
 			} else if (save_count) { /* wait for a timeout */
-				struct timespec ts = {0, 0};
-				ts.tv_sec = now + 1;
+				timespec_t delay =
+					timespec_add(timespec_now(),
+						     SAVE_COUNT_DELAY);
+
 				slurm_cond_timedwait(&state_save_cond,
-					  	     &state_save_lock, &ts);
+						     &state_save_lock, &delay);
 			} else {		/* wait for more work */
 				slurm_cond_wait(&state_save_cond,
 					  	&state_save_lock);
