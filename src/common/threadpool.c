@@ -141,7 +141,13 @@ extern int threadpool_join(const pthread_t id, const char *caller)
 static void _set_thread_name(const char *name)
 {
 #if HAVE_SYS_PRCTL_H
-	xassert(strlen(name) < PRCTL_BUF_BYTES);
+
+#ifndef NDEBUG
+	if (strlen(name) >= PRCTL_BUF_BYTES)
+		warning("Thread name truncated[%zu/%zu]: %s",
+			(uint64_t) strlen(name), (uint64_t) PRCTL_BUF_BYTES,
+			name);
+#endif
 
 	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL))
 		error("%s: cannot set process name to %s %m", __func__, name);
