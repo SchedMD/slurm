@@ -125,7 +125,7 @@ extern timespec_t timespec_normalize(timespec_t ts);
 extern timespec_t timespec_add(const timespec_t x, const timespec_t y);
 
 /* Subtract timestamp Y from timestamp X */
-extern timespec_t timespec_rem(const timespec_t x, const timespec_t y);
+extern timespec_t timespec_rem(timespec_t x, timespec_t y);
 
 /* Is timestamp X after timestamp Y */
 extern bool timespec_is_after(const timespec_t x, const timespec_t y);

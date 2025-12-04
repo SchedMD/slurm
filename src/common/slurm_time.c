@@ -268,25 +268,14 @@ extern timespec_t timespec_add(const timespec_t x, const timespec_t y)
 	});
 }
 
-extern timespec_t timespec_rem(const timespec_t x, const timespec_t y)
+extern timespec_t timespec_rem(timespec_t x, timespec_t y)
 {
-	/* Use 64bit accumulators to avoid underflow */
-	int64_t s = (((uint64_t) x.tv_sec) - ((uint64_t) y.tv_sec));
-	int64_t ns = (((uint64_t) x.tv_nsec) - ((uint64_t) y.tv_nsec));
-
-	/* reject underflow of time */
-	if (s <= 0)
-		return (timespec_t) {0};
-
-	/* force ns to be positive */
-	if (ns < 0) {
-		s--;
-		ns = NSEC_IN_SEC - ns;
-	}
+	x = timespec_normalize(x);
+	y = timespec_normalize(y);
 
 	return timespec_normalize((timespec_t) {
-		.tv_sec = s,
-		.tv_nsec = ns,
+		.tv_sec = (((uint64_t) x.tv_sec) - ((uint64_t) y.tv_sec)),
+		.tv_nsec = (((uint64_t) x.tv_nsec) - ((uint64_t) y.tv_nsec)),
 	});
 }
 
