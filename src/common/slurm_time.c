@@ -242,9 +242,18 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	return wrote;
 }
 
-extern timespec_t timespec_normalize(timespec_t ts)
+/* Normalize nsec to less than a second */
+static timespec_t _normalize(timespec_t ts)
 {
-	/* Force direction of time to be uniform */
+	return (timespec_t) {
+		.tv_sec = ts.tv_sec + (ts.tv_nsec / NSEC_IN_SEC),
+		.tv_nsec = (ts.tv_nsec % NSEC_IN_SEC),
+	};
+}
+
+/* Force direction of time to be uniform */
+static timespec_t _uniform(timespec_t ts)
+{
 	if ((ts.tv_nsec < 0) && (ts.tv_sec > 0)) {
 		ts.tv_sec++;
 		ts.tv_nsec = NSEC_IN_SEC + ts.tv_nsec;
@@ -253,10 +262,12 @@ extern timespec_t timespec_normalize(timespec_t ts)
 		ts.tv_nsec = NSEC_IN_SEC - ts.tv_nsec;
 	}
 
-	return (timespec_t) {
-		.tv_sec = ts.tv_sec + (ts.tv_nsec / NSEC_IN_SEC),
-		.tv_nsec = (ts.tv_nsec % NSEC_IN_SEC),
-	};
+	return ts;
+}
+
+extern timespec_t timespec_normalize(timespec_t ts)
+{
+	return _normalize(_uniform(_normalize(ts)));
 }
 
 extern timespec_t timespec_add(timespec_t x, timespec_t y)
