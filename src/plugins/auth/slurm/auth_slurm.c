@@ -225,22 +225,42 @@ extern int auth_p_pack(auth_cred_t *cred, buf_t *buf,
 	return SLURM_SUCCESS;
 }
 
-extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
+/* Take ownership of token pointer */
+static auth_cred_t *_cred(char *token, const char *username, uid_t uid,
+			  gid_t gid)
 {
 	auth_cred_t *cred = NULL;
+
+	if (!token || !token[0]) {
+		error("%s: required token not provided", __func__);
+		errno = ESLURM_AUTH_CRED_INVALID;
+		xfree(token);
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = new_cred();
+	cred->token = token;
+	cred->uid = uid;
+	cred->gid = gid;
+	return cred;
+}
+
+extern auth_cred_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
+{
+	char *token = NULL;
 
 	if (!buf) {
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
-	cred = new_cred();
-	safe_unpackstr(&cred->token, buf);
+	safe_unpackstr(&token, buf);
 
-	return cred;
+	return _cred(token, NULL, SLURM_AUTH_NOBODY, SLURM_AUTH_NOBODY);
 
 unpack_error:
-	FREE_NULL_CRED(cred);
+	xfree(token);
 	errno = ESLURM_AUTH_UNPACK;
 	return NULL;
 }
@@ -283,4 +303,11 @@ extern void auth_p_thread_clear(void)
 extern char *auth_p_token_generate(const char *username, int lifespan)
 {
 	return NULL;
+}
+
+extern auth_cred_t *auth_p_cred_generate(const char *token,
+					 const char *username, uid_t uid,
+					 gid_t gid)
+{
+	return _cred(xstrdup(token), username, uid, gid);
 }

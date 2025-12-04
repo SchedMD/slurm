@@ -48,6 +48,7 @@
 
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -227,36 +228,58 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 	return SLURM_SUCCESS;
 }
 
+/* takes ownership of hostname pointer */
+static auth_credential_t *_cred(uid_t uid, gid_t gid, char *hostname)
+{
+	auth_credential_t *cred = NULL;
+
+	if ((uid == SLURM_AUTH_NOBODY) || (gid == SLURM_AUTH_NOBODY)) {
+		error("%s: rejecting user nobody", __func__);
+		errno = ESLURM_AUTH_NOBODY;
+		xfree(hostname);
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = xmalloc(sizeof(*cred));
+	*cred = (auth_credential_t) {
+		.uid = uid,
+		.gid = gid,
+		.hostname = hostname,
+	};
+
+	return cred;
+}
+
 /*
  * Unmarshall a credential after transmission over the network according
  * to Slurm's marshalling protocol.
  */
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
-	auth_credential_t *cred = NULL;
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
+	char *hostname = NULL;
 
 	if (!buf) {
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
 
-	/* Allocate a new credential. */
-	cred = xmalloc(sizeof(*cred));
-
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpack32(&cred->uid, buf);
-		safe_unpack32(&cred->gid, buf);
-		safe_unpackstr(&cred->hostname, buf);
+		safe_unpack32(&uid, buf);
+		safe_unpack32(&gid, buf);
+		safe_unpackstr(&hostname, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
-	return cred;
+	return _cred(uid, gid, hostname);
 
 unpack_error:
-	auth_p_destroy(cred);
+	xfree(hostname);
 	errno = ESLURM_AUTH_UNPACK;
 	return NULL;
 }
@@ -280,4 +303,21 @@ char *auth_p_token_generate(const char *username, int lifespan)
 extern int auth_p_get_reconfig_fd(void)
 {
 	return -1;
+}
+
+extern auth_credential_t *auth_p_cred_generate(const char *token,
+					       const char *username, uid_t uid,
+					       gid_t gid)
+{
+	/*
+	 * Without any type of authentication token, there is no way to guess
+	 * the username
+	 */
+	if (!username) {
+		error("%s: required username not provided", __func__);
+		errno = ESLURM_AUTH_CRED_INVALID;
+		return NULL;
+	}
+
+	return _cred(uid, gid, NULL);
 }

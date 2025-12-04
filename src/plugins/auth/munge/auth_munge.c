@@ -94,6 +94,9 @@ typedef struct {
 
 extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data,
 					int dlen);
+extern auth_credential_t *auth_p_cred_generate(const char *token,
+					       const char *username, uid_t uid,
+					       gid_t gid);
 extern void auth_p_destroy(auth_credential_t *cred);
 
 /* Static prototypes */
@@ -443,6 +446,7 @@ int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
  */
 auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
+	char *token = NULL;
 	auth_credential_t *cred = NULL;
 
 	if (!buf) {
@@ -451,24 +455,24 @@ auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 	}
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/* Allocate and initialize credential. */
-		cred = xmalloc(sizeof(*cred));
-		cred->magic = MUNGE_MAGIC;
-		cred->verified = false;
-		cred->m_xstr = true;
-
-		safe_unpackstr(&cred->m_str, buf);
+		safe_unpackstr(&token, buf);
 	} else {
 		error("%s: unknown protocol version %u",
 		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
+	/* Allocate and initialize credential. */
+	cred = auth_p_cred_generate(token, NULL, SLURM_AUTH_NOBODY,
+				    SLURM_AUTH_NOBODY);
+	xassert(!cred->verified);
+	xfree(token);
 	return cred;
 
 unpack_error:
 	errno = ESLURM_AUTH_UNPACK;
 	auth_p_destroy(cred);
+	xfree(token);
 	return NULL;
 }
 
@@ -626,4 +630,30 @@ char *auth_p_token_generate(const char *username, int lifespan)
 extern int auth_p_get_reconfig_fd(void)
 {
 	return -1;
+}
+
+extern auth_credential_t *auth_p_cred_generate(const char *token,
+					       const char *username, uid_t uid,
+					       gid_t gid)
+
+{
+	auth_credential_t *cred = NULL;
+
+	if (!token || !token[0]) {
+		error("%s: required token not provided", __func__);
+		errno = ESLURM_AUTH_CRED_INVALID;
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = xmalloc(sizeof(*cred));
+	*cred = (auth_credential_t) {
+		.magic = MUNGE_MAGIC,
+		.m_xstr = true,
+		.m_str = xstrdup(token),
+		.uid = uid,
+		.gid = gid,
+	};
+
+	return cred;
 }
