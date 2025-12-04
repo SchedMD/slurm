@@ -936,9 +936,11 @@ This option is for all daemons/clients except for the slurmctld.
 
 .TP
 \fBCompleteWait\fR
-The time to wait, in seconds, when any job is in the COMPLETING state
-before any additional jobs are scheduled. This is to attempt to keep jobs on
-nodes that were recently in use, with the goal of preventing fragmentation.
+The time to wait, in seconds, when any job in the cluster is in the
+COMPLETING state before any additional jobs are scheduled. This parameter is
+evaluated at the cluster scheduling level, not per node. This is to attempt to
+keep jobs on nodes that were recently in use, with the goal of preventing
+fragmentation.
 If set to zero, pending jobs will be started as soon as possible.
 Since a COMPLETING job's resources are released for use by other
 jobs as soon as the \fBEpilog\fR completes on each individual node,
