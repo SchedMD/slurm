@@ -2598,7 +2598,6 @@ static void *_slurmctld_background(void *no_data)
 	 */
 	slurmctld_lock_t node_health_check_lock = {
 		.conf = READ_LOCK,
-		.job = WRITE_LOCK,
 		.node = READ_LOCK,
 		.select_node = WRITE_LOCK,
 	};
