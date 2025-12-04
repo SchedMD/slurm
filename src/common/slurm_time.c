@@ -314,7 +314,7 @@ extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 {
 	timespec_t ts = timespec_rem(x, y);
 
-	if (ts.tv_sec < 0)
+	if ((ts.tv_sec < 0) || (ts.tv_nsec < 0))
 		return (timespec_diff_ns_t) {
 			.after = false,
 			.diff = ((timespec_t) {
