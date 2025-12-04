@@ -161,7 +161,11 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	ts = timespec_normalize(ts);
 
 	if (abs_time) {
-		ts = timespec_normalize(timespec_rem(ts, timespec_now()));
+		const timespec_diff_ns_t tdiff =
+			timespec_diff_ns(timespec_now(), ts);
+
+		ts = tdiff.diff;
+		negative = tdiff.after;
 
 		if (!ts.tv_nsec && !ts.tv_sec) {
 			return snprintf(buffer, buffer_len, "now");
