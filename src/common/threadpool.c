@@ -106,6 +106,8 @@ typedef struct {
 	const char *thread_name;
 	const char *func_name;
 	void *arg;
+	/* return from func() */
+	void *ret;
 } thread_t;
 
 /* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
@@ -159,9 +161,8 @@ static void _thread_free(thread_t *thread)
 	xfree(thread);
 }
 
-static void *_run(thread_t *thread)
+static void _run(thread_t *thread)
 {
-	void *ret = NULL;
 	timespec_t start = { 0 }, end = { 0 };
 
 	xassert(thread->magic == THREAD_MAGIC);
@@ -187,7 +188,7 @@ static void *_run(thread_t *thread)
 			 thread->func_name, (uintptr_t) thread->arg, ts);
 	}
 
-	ret = thread->func(thread->arg);
+	thread->ret = thread->func(thread->arg);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		char ts[CTIME_STR_LEN] = "UNKNOWN";
@@ -204,10 +205,8 @@ static void *_run(thread_t *thread)
 			 (uint64_t) pthread_self(),
 			 (thread->detached ? "detached" : "attached"),
 			 thread->func_name,
-			 (uintptr_t) thread->arg, (uintptr_t) ret, ts);
+			 (uintptr_t) thread->arg, (uintptr_t) thread->ret, ts);
 	}
-
-	return ret;
 }
 
 static void *_thread(void *arg)
@@ -217,7 +216,9 @@ static void *_thread(void *arg)
 
 	xassert(thread->magic == THREAD_MAGIC);
 
-	ret = _run(thread);
+	_run(thread);
+
+	ret = thread->ret;
 
 	_thread_free(thread);
 
