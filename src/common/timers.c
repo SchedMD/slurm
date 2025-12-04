@@ -86,76 +86,72 @@ static const latency_range_t latency_ranges[LATENCY_RANGE_COUNT] = {
 #undef TS
 // clang-format on
 
-/* Return the number of micro-seconds between now and argument "tv",
- * Initialize tv to NOW if zero on entry */
-extern int slurm_delta_tv(struct timeval *tv)
+static long _calc_tv_delta(const struct timeval *tv1, const struct timeval *tv2)
 {
-	struct timeval now = {0, 0};
-	int delta_t;
-
-	if (gettimeofday(&now, NULL))
-		return 1;		/* Some error */
-
-	if (tv->tv_sec == 0) {
-		tv->tv_sec  = now.tv_sec;
-		tv->tv_usec = now.tv_usec;
-		return 0;
-	}
-
-	delta_t  = (now.tv_sec - tv->tv_sec) * 1000000;
-	delta_t += (now.tv_usec - tv->tv_usec);
-
-	return delta_t;
+	long delta = (tv2->tv_sec - tv1->tv_sec) * USEC_IN_SEC;
+	delta += tv2->tv_usec;
+	delta -= tv1->tv_usec;
+	return delta;
 }
 
-/*
- * slurm_diff_tv_str - build a string showing the time difference between two
- *		       times
- * IN tv1 - start of event
- * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
- * IN from - where the function was called form
- */
-extern void slurm_diff_tv_str(struct timeval *tv1, struct timeval *tv2,
-			      char *tv_str, int len_tv_str, const char *from,
-			      long limit, long *delta_t)
+extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2)
+{
+	timer_str_t ret = { { 0 } };
+
+	(void) snprintf(ret.str, sizeof(ret.str), "usec=%ld",
+			_calc_tv_delta(tv1, tv2));
+
+	return ret;
+}
+
+extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
+				const char *from, long limit)
 {
 	char p[64] = "";
 	struct tm tm;
 	int debug_limit = limit;
+	const long delta = _calc_tv_delta(tv1, tv2);
+	timer_str_t tstr = { { 0 } };
 
-	(*delta_t)  = (tv2->tv_sec - tv1->tv_sec) * 1000000;
-	(*delta_t) += tv2->tv_usec;
-	(*delta_t) -= tv1->tv_usec;
-	snprintf(tv_str, len_tv_str, "usec=%ld", *delta_t);
-	if (from) {
-		if (!limit) {
-			/* NOTE: The slurmctld scheduler's default run time
-			 * limit is 4 seconds, but that would not typically
-			 * be reached. See "max_sched_time=" logic in
-			 * src/slurmctld/job_scheduler.c */
-			limit = 3000000;
-			debug_limit = 1000000;
-		}
-		if ((*delta_t > debug_limit) || (*delta_t > limit)) {
-			if (!localtime_r(&tv1->tv_sec, &tm))
-				error("localtime_r(): %m");
-			if (strftime(p, sizeof(p), "%T", &tm) == 0)
-				error("strftime(): %m");
-			if (*delta_t > limit) {
-				verbose("Warning: Note very large processing "
-					"time from %s: %s began=%s.%3.3d",
-					from, tv_str, p,
-					(int)(tv1->tv_usec / 1000));
-			} else {	/* Log anything over 1 second here */
-				debug("Note large processing time from %s: "
-				      "%s began=%s.%3.3d",
-				      from, tv_str, p,
-				      (int)(tv1->tv_usec / 1000));
-			}
-		}
+	xassert(from);
+
+	if (!limit) {
+		/*
+		 * NOTE: The slurmctld scheduler's default run time limit is 4
+		 * seconds, but that would not typically be reached. See
+		 * "max_sched_time=" logic in src/slurmctld/job_scheduler.c
+		 */
+		limit = 3000000;
+		debug_limit = 1000000;
 	}
+
+	if ((delta <= debug_limit) || (delta <= limit))
+		return;
+
+	tstr = timer_duration_str(tv1, tv2);
+
+	if (!localtime_r(&tv1->tv_sec, &tm))
+		error("localtime_r(): %m");
+	if (strftime(p, sizeof(p), "%T", &tm) == 0)
+		error("strftime(): %m");
+	if (delta > limit) {
+		verbose("Warning: Note very large processing time from %s: %s began=%s.%3.3d",
+			from, tstr.str, p, (int)(tv1->tv_usec / 1000));
+	} else { /* Log anything over 1 second here */
+		debug("Note large processing time from %s: %s began=%s.%3.3d",
+		      from, tstr.str, p, (int)(tv1->tv_usec / 1000));
+	}
+}
+
+extern long timer_get_duration(struct timeval *start, struct timeval *end)
+{
+	if (!start->tv_sec)
+		(void) gettimeofday(start, NULL);
+
+	if (!end->tv_sec)
+		(void) gettimeofday(end, NULL);
+
+	return _calc_tv_delta(start, end);
 }
 
 extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start)

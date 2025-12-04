@@ -163,7 +163,7 @@ static void _nvml_init(void)
 	START_TIMER;
 	nvml_rc = nvmlInit();
 	END_TIMER;
-	debug3("nvmlInit() took %ld microseconds", DELTA_TIMER);
+	debug3("nvmlInit() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to initialize NVML: %s",
 		      nvmlErrorString(nvml_rc));
@@ -182,7 +182,7 @@ static void _nvml_shutdown(void)
 	nvml_rc = nvmlShutdown();
 	init_pid = 0;
 	END_TIMER;
-	debug3("nvmlShutdown() took %ld microseconds", DELTA_TIMER);
+	debug3("nvmlShutdown() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS)
 		error("Failed to shut down NVML: %s", nvmlErrorString(nvml_rc));
 	else
@@ -232,8 +232,7 @@ static bool _nvml_get_mem_freqs(nvmlDevice_t *device, uint32_t *mem_freqs_size,
 						     nvml_mem_freqs_size,
 						     nvml_mem_freqs);
 	END_TIMER;
-	debug3("nvmlDeviceGetSupportedMemoryClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceGetSupportedMemoryClocks() took %s", TIMER_STR());
 
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get supported memory frequencies for the "
@@ -278,8 +277,7 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 						       nvml_gfx_freqs_size,
 						       nvml_gfx_freqs);
 	END_TIMER;
-	debug3("nvmlDeviceGetSupportedGraphicsClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceGetSupportedGraphicsClocks() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get supported graphics frequencies for the"
 		      " GPU at mem frequency %u: %s", __func__, mem_freq,
@@ -428,8 +426,8 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 	START_TIMER;
 	nvml_rc = nvmlDeviceSetApplicationsClocks(*device, mem_freq, gfx_freq);
 	END_TIMER;
-	debug3("nvmlDeviceSetApplicationsClocks(%u, %u) took %ld microseconds",
-	       mem_freq, gfx_freq, DELTA_TIMER);
+	debug3("nvmlDeviceSetApplicationsClocks(%u, %u) took %s",
+	       mem_freq, gfx_freq, TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to set memory and graphics clock frequency "
 		      "pair (%u, %u) for the GPU: %s", __func__, mem_freq,
@@ -456,8 +454,7 @@ static bool _nvml_reset_freqs(nvmlDevice_t *device)
 	START_TIMER;
 	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
 	END_TIMER;
-	debug3("nvmlDeviceResetApplicationsClocks() took %ld microseconds",
-	       DELTA_TIMER);
+	debug3("nvmlDeviceResetApplicationsClocks() took %s", TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to reset GPU frequencies to the hardware default: %s",
 		      __func__, nvmlErrorString(nvml_rc));
@@ -499,8 +496,8 @@ static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 	unsigned int *nvml_freq = &freq;
 	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
 	END_TIMER;
-	debug3("nvmlDeviceGetApplicationsClock(%s) took %ld microseconds",
-	       type_str, DELTA_TIMER);
+	debug3("nvmlDeviceGetApplicationsClock(%s) took %s",
+	       type_str, TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get the GPU %s frequency: %s", __func__,
 		      type_str, nvmlErrorString(nvml_rc));

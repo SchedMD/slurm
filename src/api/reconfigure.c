@@ -118,7 +118,7 @@ extern controller_ping_t *ping_all_controllers(void)
 		pings[0].pinged = !slurm_ping(0);
 		END_TIMER;
 
-		pings[0].latency = DELTA_TIMER;
+		pings[0].latency = TIMER_DURATION_USEC();
 
 		return pings;
 	}
@@ -133,7 +133,7 @@ extern controller_ping_t *ping_all_controllers(void)
 		pings[i].pinged = !slurm_ping(i);
 		END_TIMER;
 
-		pings[i].latency = DELTA_TIMER;
+		pings[i].latency = TIMER_DURATION_USEC();
 	}
 
 	return pings;

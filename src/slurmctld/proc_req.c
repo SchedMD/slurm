@@ -1337,7 +1337,7 @@ send_msg:
 
 		xassert(job_ptr);
 		sched_info("%s %pJ NodeList=%s %s",
-			   __func__, job_ptr, job_ptr->nodes, TIME_STR);
+			   __func__, job_ptr, job_ptr->nodes, TIMER_STR());
 
 		/*
 		 * This check really isn't needed, but just doing it
@@ -1454,9 +1454,6 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t *msg)
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_read_lock);
 		END_TIMER2(__func__);
-#if 0
-		info("%s, size=%d %s", __func__, dump_size, TIME_STR);
-#endif
 
 		/* send message */
 		(void) send_msg_response(msg, RESPONSE_JOB_INFO, buffer);
@@ -1483,9 +1480,6 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t *msg)
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_read_lock);
 	END_TIMER2(__func__);
-#if 0
-	info("%s, size=%d %s", __func__, dump_size, TIME_STR);
-#endif
 
 	/* send message */
 	(void) send_msg_response(msg, RESPONSE_JOB_INFO, buffer);
@@ -1598,7 +1592,7 @@ static void _slurm_rpc_get_shares(slurm_msg_t *msg)
 	FREE_NULL_LIST(resp_msg.assoc_shares_list);
 	/* don't free the resp_msg.tres_names */
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIME_STR);
+	debug2("%s %s", __func__, TIMER_STR());
 }
 
 static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
@@ -1627,7 +1621,7 @@ static void _slurm_rpc_get_priority_factors(slurm_msg_t *msg)
 	unlock_slurmctld(job_read_lock);
 	FREE_NULL_LIST(resp_msg.priority_factors_list);
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIME_STR);
+	debug2("%s %s", __func__, TIMER_STR());
 }
 
 /* _slurm_rpc_end_time - Process RPC for job end time */
@@ -1652,7 +1646,7 @@ static void _slurm_rpc_end_time(slurm_msg_t *msg)
 	} else {
 		(void) send_msg_response(msg, SRUN_TIMEOUT, &timeout_msg);
 	}
-	debug2("%s %pI %s", __func__, &time_req_msg->step_id, TIME_STR);
+	debug2("%s %pI %s", __func__, &time_req_msg->step_id, TIMER_STR());
 }
 
 /* _slurm_rpc_get_fd - process RPC for federation state information */
@@ -1673,7 +1667,7 @@ static void _slurm_rpc_get_fed(slurm_msg_t *msg)
 		unlock_slurmctld(fed_read_lock);
 
 	END_TIMER2(__func__);
-	debug2("%s %s", __func__, TIME_STR);
+	debug2("%s %s", __func__, TIMER_STR());
 }
 
 /* _slurm_rpc_dump_nodes - dump RPC for node state information */
@@ -1843,10 +1837,10 @@ static void _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	if (epilog_msg->return_code)
 		error("%s: epilog error %pJ Node=%s Err=%s %s",
 		      __func__, job_ptr, epilog_msg->node_name,
-		      slurm_strerror(epilog_msg->return_code), TIME_STR);
+		      slurm_strerror(epilog_msg->return_code), TIMER_STR());
 	else
 		debug2("%s: %pJ Node=%s %s",
-		       __func__, job_ptr, epilog_msg->node_name, TIME_STR);
+		       __func__, job_ptr, epilog_msg->node_name, TIMER_STR());
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
@@ -1931,7 +1925,7 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 			     __func__, job_ptr, slurm_strerror(error_code));
 		}
 	} else {
-		debug2("%s: %pJ %s", __func__, job_ptr, TIME_STR);
+		debug2("%s: %pJ %s", __func__, job_ptr, TIMER_STR());
 	}
 
 	unlock_slurmctld(job_write_lock);
@@ -1981,7 +1975,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 		     __func__, &comp_msg->step_id, slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
@@ -2153,7 +2147,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIME_STR);
+		debug2("%s: %pI %s", __func__, &comp_msg->step_id, TIMER_STR());
 		slurmctld_diag_stats.jobs_completed++;
 		dump_job = true;
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
@@ -2511,9 +2505,9 @@ send_reply:
 		job_submit_user_msg = NULL;
 		(void) send_msg_response(msg, RESPONSE_JOB_WILL_RUN, resp);
 		slurm_free_will_run_response_msg(resp);
-		debug2("%s success %s", __func__, TIME_STR);
+		debug2("%s success %s", __func__, TIMER_STR());
 	} else {
-		debug2("%s success %s", __func__, TIME_STR);
+		debug2("%s success %s", __func__, TIMER_STR());
 		if (job_desc_msg->step_id.job_id == NO_VAL)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
@@ -2783,7 +2777,7 @@ send_resp:
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, node_reg_stat_msg->node_name, TIME_STR);
+		       __func__, node_reg_stat_msg->node_name, TIMER_STR());
 		/* If the slurmd is requesting a response send it */
 		if (node_reg_stat_msg->flags & SLURMD_REG_FLAG_RESP) {
 			slurm_node_reg_resp_msg_t tmp_resp;
@@ -2848,7 +2842,7 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t *msg)
 	} else {
 		debug("%s: %pI NodeList=%s %s",
 		      __func__, &job_info_msg->step_id, job_ptr->nodes,
-		      TIME_STR);
+		      TIMER_STR());
 
 		job_info_resp_msg = build_job_info_resp(job_ptr);
 		set_remote_working_response(job_info_resp_msg, job_ptr,
@@ -2916,7 +2910,7 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t *msg)
 	}
 
 	debug2("%s: %pI NodeList=%s %s", __func__,
-	       &job_info_msg->step_id, job_ptr->nodes, TIME_STR);
+	       &job_info_msg->step_id, job_ptr->nodes, TIMER_STR());
 
 	if (!job_ptr->het_job_list) {
 		resp = list_create(_het_job_alloc_list_del);
@@ -3035,7 +3029,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
 					job_info_msg),
 	     job_info_resp_msg->node_list,
-	     TIME_STR);
+	     TIMER_STR());
 
 	(void) send_msg_response(msg, RESPONSE_JOB_SBCAST_CRED,
 				 job_info_resp_msg);
@@ -3438,7 +3432,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 	END_TIMER2(__func__);
 
 	log_flag(STEPS, "%s: %ps rc:%s %s",
-		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
+		 __func__, &req->step_id, slurm_strerror(rc), TIMER_STR());
 
 	/* return result */
 	(void) slurm_send_rc_msg(msg, rc);
@@ -3686,7 +3680,7 @@ send_msg:
 			.job_submit_user_msg = job_submit_user_msg,
 		};
 		info("%s: %pI InitPrio=%u %s",
-		     __func__, &step_id, priority, TIME_STR);
+		     __func__, &step_id, priority, TIMER_STR());
 		/* send job_ID */
 		(void) send_msg_response(msg, RESPONSE_SUBMIT_BATCH_JOB,
 					 &submit_msg);
@@ -3987,7 +3981,7 @@ send_msg:
 			.error_code = error_code,
 			.job_submit_user_msg = job_submit_user_msg,
 		};
-		info("%s: %pI %s", __func__, &step_id, TIME_STR);
+		info("%s: %pI %s", __func__, &step_id, TIMER_STR());
 		/* send job_ID */
 		(void) send_msg_response(msg, RESPONSE_SUBMIT_BATCH_JOB,
 					 &submit_msg);
@@ -4077,10 +4071,12 @@ static void _slurm_rpc_update_job(slurm_msg_t *msg)
 	} else {
 		if (job_desc_msg->job_id_str) {
 			info("%s: complete JobId=%s uid=%u %s",
-			     __func__, job_desc_msg->job_id_str, uid, TIME_STR);
+			     __func__, job_desc_msg->job_id_str, uid,
+			     TIMER_STR());
 		} else {
 			info("%s: complete %pI uid=%u %s",
-			     __func__, &job_desc_msg->step_id, uid, TIME_STR);
+			     __func__, &job_desc_msg->step_id, uid,
+			     TIMER_STR());
 		}
 		/* Below functions provide their own locking */
 		schedule_job_save();
@@ -4122,7 +4118,7 @@ static void _slurm_rpc_create_node(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, node_msg->node_names, TIME_STR);
+		       __func__, node_msg->node_names, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
@@ -4170,7 +4166,7 @@ static void _slurm_rpc_update_node(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, update_node_msg_ptr->node_names, TIME_STR);
+		       __func__, update_node_msg_ptr->node_names, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 
@@ -4214,7 +4210,7 @@ static void _slurm_rpc_delete_node(slurm_msg_t *msg)
 			slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, node_msg->node_names, TIME_STR);
+		       __func__, node_msg->node_names, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 	xfree(err_msg);
@@ -4266,7 +4262,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, part_desc_ptr->name, TIME_STR);
+		       __func__, part_desc_ptr->name, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		schedule_part_save();		/* Has its locking */
@@ -4307,7 +4303,7 @@ static void _slurm_rpc_delete_partition(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("%s complete for %s %s",
-		     __func__, part_desc_ptr->name, TIME_STR);
+		     __func__, part_desc_ptr->name, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		save_all_state();	/* Has own locking */
@@ -4357,7 +4353,7 @@ static void _slurm_rpc_resv_create(slurm_msg_t *msg)
 		};
 
 		debug2("%s complete for %s %s",
-		       __func__, resv_desc_ptr->name, TIME_STR);
+		       __func__, resv_desc_ptr->name, TIMER_STR());
 		/* send reservation name */
 		(void) send_msg_response(msg, RESPONSE_CREATE_RESERVATION,
 					 &resv_resp_msg);
@@ -4417,7 +4413,7 @@ static void _slurm_rpc_resv_update(slurm_msg_t *msg)
 		slurm_send_rc_err_msg(msg, error_code, err_msg);
 	} else {
 		debug2("%s complete for %s %s",
-		       __func__, resv_desc_ptr->name, TIME_STR);
+		       __func__, resv_desc_ptr->name, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		queue_job_scheduler();
@@ -4464,7 +4460,7 @@ static void _slurm_rpc_resv_delete(slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info("%s complete for %s %s",
-		     __func__, resv_desc_ptr->name, TIME_STR);
+		     __func__, resv_desc_ptr->name, TIMER_STR());
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		queue_job_scheduler();
@@ -4528,7 +4524,7 @@ static void _slurm_rpc_job_ready(slurm_msg_t *msg)
 		};
 
 		debug2("%s: %pI result %d in %s",
-		       __func__, &id_msg->step_id, result, TIME_STR);
+		       __func__, &id_msg->step_id, result, TIMER_STR());
 
 		if (!_is_prolog_finished(&id_msg->step_id))
 			(void) send_msg_response(msg, RESPONSE_PROLOG_EXECUTING,
@@ -4663,7 +4659,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 		     slurm_strerror(error_code));
 	} else {
 		info("%s(%s) for %s %s",
-		     __func__, op, sus_ptr->job_id_str, TIME_STR);
+		     __func__, op, sus_ptr->job_id_str, TIMER_STR());
 
 		schedule_job_save();	/* Has own locking */
 		if (sus_ptr->op == SUSPEND_JOB)
@@ -4692,7 +4688,7 @@ static void _slurm_rpc_top_job(slurm_msg_t *msg)
 		     __func__, top_ptr->job_id_str, slurm_strerror(error_code));
 	} else {
 		info("%s for %s %s",
-		     __func__, top_ptr->job_id_str, TIME_STR);
+		     __func__, top_ptr->job_id_str, TIMER_STR());
 	}
 }
 
@@ -5906,7 +5902,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 			START_TIMER;
 			_slurm_rpc_accounting_update_msg(&msg);
 			END_TIMER;
-			record_rpc_stats(&msg, DELTA_TIMER);
+			record_rpc_stats(&msg, TIMER_DURATION_USEC());
 		} else {
 			slurm_send_rc_msg(&msg, EINVAL);
 		}
@@ -7045,7 +7041,7 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		END_TIMER;
-		record_rpc_stats(msg, DELTA_TIMER);
+		record_rpc_stats(msg, TIMER_DURATION_USEC());
 	}
 }
 

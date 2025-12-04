@@ -2226,11 +2226,11 @@ static int _handle_stat_jobacct(int fd, uid_t uid, pid_t remote_pid)
 	jobacctinfo_destroy(jobacct);
 	END_TIMER;
 	msg_timeout_us = ((uint64_t) slurm_conf.msg_timeout) * USEC_IN_SEC;
-	if (DELTA_TIMER > msg_timeout_us)
+	if (TIMER_DURATION_USEC() > msg_timeout_us)
 		error("%s: Took %s, which is more than MessageTimeout (%us). The result won't be delivered",
-		      __func__, TIME_STR, slurm_conf.msg_timeout);
+		      __func__, TIMER_STR(), slurm_conf.msg_timeout);
 	else
-		debug("%s: Completed in %s", __func__, TIME_STR);
+		debug("%s: Completed in %s", __func__, TIMER_STR());
 
 	return SLURM_SUCCESS;
 
@@ -2238,8 +2238,8 @@ rwfail:
 	jobacctinfo_destroy(jobacct);
 	END_TIMER;
 	msg_timeout_us = ((uint64_t) slurm_conf.msg_timeout) * USEC_IN_SEC;
-	if (DELTA_TIMER > msg_timeout_us)
-		error("%s: Failed in %lus", __func__, DELTA_TIMER);
+	if (TIMER_DURATION_USEC() > msg_timeout_us)
+		error("%s: Failed in %s", __func__, TIMER_STR());
 
 	return SLURM_ERROR;
 }

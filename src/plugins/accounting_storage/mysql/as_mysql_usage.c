@@ -306,7 +306,8 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "hourly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
-		rollup_stats->time_total[DBD_ROLLUP_HOUR] += DELTA_TIMER;
+		rollup_stats->time_total[DBD_ROLLUP_HOUR] +=
+			TIMER_DURATION_USEC();
 		rollup_stats->timestamp[DBD_ROLLUP_HOUR] = hour_end;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
@@ -322,7 +323,8 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "daily_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
-		rollup_stats->time_total[DBD_ROLLUP_DAY] += DELTA_TIMER;
+		rollup_stats->time_total[DBD_ROLLUP_DAY] +=
+			TIMER_DURATION_USEC();
 		rollup_stats->timestamp[DBD_ROLLUP_DAY] = day_end;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;
@@ -338,7 +340,8 @@ static void *_cluster_rollup_usage(void *arg)
 		snprintf(timer_str, sizeof(timer_str),
 			 "monthly_rollup for %s", local_rollup->cluster_name);
 		END_TIMER3(timer_str, 5000000);
-		rollup_stats->time_total[DBD_ROLLUP_MONTH] += DELTA_TIMER;
+		rollup_stats->time_total[DBD_ROLLUP_MONTH] +=
+			TIMER_DURATION_USEC();
 		rollup_stats->timestamp[DBD_ROLLUP_MONTH] = month_end;
 		if (rc != SLURM_SUCCESS)
 			goto end_it;

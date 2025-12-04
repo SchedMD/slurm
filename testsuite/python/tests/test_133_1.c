@@ -192,7 +192,7 @@ int _measure_api(char* measure_case)
 		fatal("unable to split forward hostlist");
 	}
 	END_TIMER;
-	et = DELTA_TIMER;
+	et = TIMER_DURATION_USEC();
 	for (j = 0; j < hl_count; j++) {
 		hostlist_destroy(sp_hl[j]);
 	}

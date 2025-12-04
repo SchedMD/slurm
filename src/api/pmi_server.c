@@ -296,7 +296,7 @@ static void *_agent(void *x)
 	xfree(args);
 
 	END_TIMER;
-	debug("kvs_xmit time %ld usec", DELTA_TIMER);
+	debug("kvs_xmit time %s", TIMER_STR());
 	return NULL;
 }
 
@@ -452,7 +452,7 @@ extern int pmi_kvs_put(kvs_comm_set_t *kvs_set_ptr)
 	kvs_updated = 1;
 	slurm_mutex_unlock(&kvs_mutex);
 	END_TIMER;
-	usec_timer = DELTA_TIMER;
+	usec_timer = TIMER_DURATION_USEC();
 	min_time_kvs_put = MIN(min_time_kvs_put, usec_timer);
 	max_time_kvs_put = MAX(max_time_kvs_put, usec_timer);
 	tot_time_kvs_put += usec_timer;

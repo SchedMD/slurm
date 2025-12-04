@@ -912,7 +912,8 @@ static void *_rollup_handler(void *db_conn)
 		acct_storage_g_roll_usage(db_conn, 0, 0, 1, &rollup_stats_list);
 		END_TIMER;
 		acct_storage_g_commit(db_conn, 1);
-		handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 0);
+		handle_rollup_stats(rollup_stats_list, TIMER_DURATION_USEC(),
+				    0);
 		FREE_NULL_LIST(rollup_stats_list);
 
 		if (!shutdown_time) {

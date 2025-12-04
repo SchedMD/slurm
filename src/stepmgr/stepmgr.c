@@ -4969,7 +4969,7 @@ static void _kill_step_on_msg_fail(step_complete_msg_t *req, slurm_msg_t *msg,
 
 	END_TIMER2(__func__);
 	log_flag(STEPS, "%s: %ps rc:%s %s",
-		 __func__, &req->step_id, slurm_strerror(rc), TIME_STR);
+		 __func__, &req->step_id, slurm_strerror(rc), TIMER_STR());
 }
 
 /* create a credential for a given job step, return error code */
@@ -5177,7 +5177,8 @@ end_it:
 		dynamic_plugin_data_t *switch_step = NULL;
 
 		log_flag(STEPS, "%s: %pS %s %s",
-			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
+			 __func__, step_rec, req_step_msg->node_list,
+			 TIMER_STR());
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
 		job_step_resp.step_id = step_rec->step_id;

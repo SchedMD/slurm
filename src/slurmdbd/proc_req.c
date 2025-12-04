@@ -2728,7 +2728,7 @@ static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 				       get_msg->archive_data,
 				       &rollup_stats_list);
 	END_TIMER;
-	handle_rollup_stats(rollup_stats_list, DELTA_TIMER, 1);
+	handle_rollup_stats(rollup_stats_list, TIMER_DURATION_USEC(), 1);
 	FREE_NULL_LIST(rollup_stats_list);
 
 end_it:
@@ -3407,7 +3407,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		list_append(rpc_stats->rpc_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
-	rpc_obj->time += DELTA_TIMER;
+	rpc_obj->time += TIMER_DURATION_USEC();
 
 	if (!(rpc_obj = list_find_first(rpc_stats->user_list,
 					_find_rpc_obj_in_list,
@@ -3417,7 +3417,7 @@ extern int proc_req(void *conn, persist_msg_t *msg, buf_t **out_buffer)
 		list_append(rpc_stats->user_list, rpc_obj);
 	}
 	rpc_obj->cnt++;
-	rpc_obj->time += DELTA_TIMER;
+	rpc_obj->time += TIMER_DURATION_USEC();
 
 	slurm_mutex_unlock(&rpc_mutex);
 

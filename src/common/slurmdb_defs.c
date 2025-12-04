@@ -2286,7 +2286,7 @@ static void _ping_slurmdbd(slurmdbd_ping_t *ping, int offset)
 	ping->pinged = !slurmdb_ping(ping->hostname);
 	END_TIMER;
 
-	ping->latency = DELTA_TIMER;
+	ping->latency = TIMER_DURATION_USEC();
 }
 
 extern slurmdbd_ping_t *slurmdb_ping_all(void)

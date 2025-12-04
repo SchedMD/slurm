@@ -248,7 +248,7 @@ cleanup_easy_init:
 	curl_easy_cleanup(c);
 
 	END_TIMER;
-	log_flag(PROFILE, "%s: took %s to send data", __func__, TIME_STR);
+	log_flag(PROFILE, "%s: took %s to send data", __func__, TIMER_STR());
 
 	return rc;
 }

@@ -2791,7 +2791,7 @@ static int _future_run_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			 next_job_end_time > (end_time + time_window));
 timer_check:
 		END_TIMER;
-		if (DELTA_TIMER >= 2000000)
+		if (TIMER_DURATION_USEC() >= 2000000)
 			break;	/* Quit after 2 seconds wall time */
 	}
 	if (end_time && (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE ||

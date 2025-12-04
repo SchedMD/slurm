@@ -40,6 +40,12 @@ extern char *slurm_ctime2(const time_t *timep);
 extern char *slurm_ctime2_r(const time_t *timep, char *time_str);
 
 /*
+ * Return the number of micro-seconds between now and argument "tv",
+ * Initialize tv to NOW if zero on entry
+ */
+extern int slurm_delta_tv(struct timeval *tv);
+
+/*
  * Slurm wrapper for the nanosleep() function. This function will call
  * nanosleep() until the elapsed time passes, or until nanosleep() returns
  * an error with errno != EINTR.

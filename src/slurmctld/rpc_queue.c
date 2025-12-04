@@ -167,6 +167,8 @@ static void *_rpc_queue_worker(void *arg)
 			lock_slurmctld(q->locks);
 		} else {
 			DEF_TIMERS;
+			long delta = -1;
+
 			START_TIMER;
 			if (q->max_queued) {
 				slurm_mutex_lock(&q->mutex);
@@ -182,10 +184,11 @@ static void *_rpc_queue_worker(void *arg)
 			msg->conn = NULL;
 
 			END_TIMER;
-			record_rpc_stats(msg, DELTA_TIMER);
+			delta = TIMER_DURATION_USEC();
+			record_rpc_stats(msg, delta);
 			FREE_NULL_MSG(msg);
 			processed++;
-			processed_usec += DELTA_TIMER;
+			processed_usec += delta;
 		}
 	}
 

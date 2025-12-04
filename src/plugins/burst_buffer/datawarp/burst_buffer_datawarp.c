@@ -1303,7 +1303,7 @@ static void *_start_stage_in(void *x)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	info("setup for job JobId=%u ran for %s",
-	     stage_args->job_id, TIME_STR);
+	     stage_args->job_id, TIMER_STR());
 
 	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
@@ -1372,7 +1372,7 @@ static void *_start_stage_in(void *x)
 		resp_msg = run_command(&run_command_args);
 		END_TIMER;
 		info("dws_data_in for JobId=%u ran for %s",
-		     stage_args->job_id, TIME_STR);
+		     stage_args->job_id, TIMER_STR());
 		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
 			info("dws_data_in for JobId=%u terminated by slurmctld",
@@ -1428,10 +1428,10 @@ static void *_start_stage_in(void *x)
 		run_command_args.script_type = "real_size";
 		resp_msg2 = run_command(&run_command_args);
 		END_TIMER;
-		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+		if ((TIMER_DURATION_USEC() > 200000) || /* 0.2 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 			info("real_size ran for %s",
-			     TIME_STR);
+			     TIMER_STR());
 
 		if (track_script_killed(pthread_self(), status, true)) {
 			/* I was killed by slurmtrack, bail out right now */
@@ -1621,10 +1621,10 @@ static void *_start_stage_out(void *x)
 	run_command_args.script_type = "dws_post_run";
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
-	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	if ((TIMER_DURATION_USEC() > 500000) || /* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("dws_post_run for JobId=%u ran for %s",
-		     stage_args->job_id, TIME_STR);
+		     stage_args->job_id, TIMER_STR());
 	}
 
 	if (track_script_killed(pthread_self(), status, true)) {
@@ -1682,11 +1682,11 @@ static void *_start_stage_out(void *x)
 		run_command_args.script_type = "dws_data_out";
 		resp_msg = run_command(&run_command_args);
 		END_TIMER;
-		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
+		if ((TIMER_DURATION_USEC() > 1000000) || /* 10 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 			info("dws_data_out for JobId=%u ran for %s",
 			     stage_args->job_id,
-			     TIME_STR);
+			     TIMER_STR());
 		}
 
 		if (track_script_killed(pthread_self(), status, true)) {
@@ -1877,7 +1877,7 @@ static void *_start_teardown(void *x)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	info("teardown for JobId=%u ran for %s",
-	     teardown_args->job_id, TIME_STR);
+	     teardown_args->job_id, TIMER_STR());
 
 	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
@@ -3114,10 +3114,10 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	run_command_args.script_argv = script_argv;
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
-	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+	if ((TIMER_DURATION_USEC() > 200000) || /* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 		info("job_process ran for %s",
-		     TIME_STR);
+		     TIMER_STR());
 	_log_script_argv(script_argv, resp_msg);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		error("job_process for %pJ status:%u response:%s",
@@ -3520,10 +3520,10 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		run_command_args.script_argv = script_argv;
 		resp_msg = run_command(&run_command_args);
 		END_TIMER;
-		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
+		if ((TIMER_DURATION_USEC() > 200000) || /* 0.2 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
 			info("paths ran for %s",
-			     TIME_STR);
+			     TIMER_STR());
 		_log_script_argv(script_argv, resp_msg);
 #if 1
 		//FIXME: Cray API returning "job_file_valid True" but exit 1 in some cases
@@ -3666,10 +3666,10 @@ static void *_start_pre_run(void *x)
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(pre_run_args->job_id);
-	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
+	if ((TIMER_DURATION_USEC() > 500000) || /* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("dws_pre_run for %pJ ran for %s",
-		     job_ptr, TIME_STR);
+		     job_ptr, TIMER_STR());
 	}
 	if (job_ptr)
 		bb_job = _get_bb_job(job_ptr);
@@ -4254,7 +4254,7 @@ static void *_create_persistent(void *x)
 	xfree_array(script_argv);
 	END_TIMER;
 	info("create_persistent of %s ran for %s",
-	     create_args->name, TIME_STR);
+	     create_args->name, TIMER_STR());
 
 	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
@@ -4416,7 +4416,7 @@ static void *_destroy_persistent(void *x)
 	xfree_array(script_argv);
 	END_TIMER;
 	info("destroy_persistent of %s ran for %s",
-	     destroy_args->name, TIME_STR);
+	     destroy_args->name, TIMER_STR());
 
 	if (track_script_killed(pthread_self(), status, true)) {
 		/* I was killed by slurmtrack, bail out right now */
@@ -4527,7 +4527,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_configurations ran for %s",
-		 TIME_STR);
+		 TIMER_STR());
 	_log_script_argv(script_argv, resp_msg);
 	xfree_array(script_argv);
 #if 0
@@ -4601,7 +4601,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_instances ran for %s",
-		 TIME_STR);
+		 TIMER_STR());
 	_log_script_argv(script_argv, resp_msg);
 	xfree_array(script_argv);
 #if 0
@@ -4678,7 +4678,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 		static uint32_t last_csum = 0;
 		uint32_t i, resp_csum = 0;
 		debug("pools ran for %s",
-		      TIME_STR);
+		      TIMER_STR());
 		for (i = 0; resp_msg[i]; i++)
 			resp_csum += ((i * resp_msg[i]) % 1000000);
 		if (last_csum != resp_csum)
@@ -4746,7 +4746,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	resp_msg = run_command(&run_command_args);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_sessions ran for %s",
-		 TIME_STR);
+		 TIMER_STR());
 	_log_script_argv(script_argv, resp_msg);
 	xfree_array(script_argv);
 #if 0

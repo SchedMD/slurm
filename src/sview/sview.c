@@ -41,8 +41,6 @@
 
 #include "sview.h"
 
-#define _DEBUG 0
-
 typedef struct {
 	GtkTable *table;
 	int page_num;
@@ -181,22 +179,11 @@ void *_page_thr(void *arg)
 	thread_count++;
 	g_mutex_unlock(sview_mutex);
 	while (page_running == num) {
-#if _DEBUG
-		DEF_TIMERS;
-		START_TIMER;
-#endif
-//		g_mutex_lock(sview_mutex);
 		gdk_threads_enter();
 		sview_init_grid(reset_highlight);
 		reset_highlight=false;
 		(display_data->get_info)(table, display_data);
-		//gdk_flush();
 		gdk_threads_leave();
-//		g_mutex_unlock(sview_mutex);
-#if _DEBUG
-		END_TIMER;
-		g_print("got for iteration: %s\n", TIME_STR);
-#endif
 		sleep(working_sview_config.refresh_delay);
 		g_mutex_lock(sview_mutex);
 		if (thread_count > 1) {

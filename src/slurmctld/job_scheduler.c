@@ -2140,7 +2140,7 @@ fail_this_part:	if (fail_by_part) {
 	unlock_slurmctld(job_write_lock);
 	END_TIMER2(__func__);
 
-	_do_diag_stats(DELTA_TIMER);
+	_do_diag_stats(TIMER_DURATION_USEC());
 
 out:
 	return job_cnt;

@@ -150,7 +150,7 @@ static ze_result_t _oneapi_init()
 	START_TIMER;
 	oneapi_rc = zeInit(0);
 	END_TIMER;
-	debug3("zeInit() took %ld microseconds", DELTA_TIMER);
+	debug3("zeInit() took %s", TIMER_STR());
 	if (oneapi_rc != ZE_RESULT_SUCCESS) {
 		error("Failed to initialize oneapi: 0x%x", oneapi_rc);
 	} else

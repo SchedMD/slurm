@@ -39,46 +39,75 @@
 #ifndef _HAVE_TIMERS_H
 #define _HAVE_TIMERS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
 #include <src/common/slurm_time.h>
 
-#define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20] = ""; long delta_t;
-#define START_TIMER	gettimeofday(&tv1, NULL)
-#define END_TIMER do {							\
-	gettimeofday(&tv2, NULL);					\
-	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, NULL, 0, &delta_t);	\
-} while (0)
-#define END_TIMER2(from) do {						\
-	gettimeofday(&tv2, NULL);					\
-	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, 0, &delta_t);	\
-} while (0)
-#define END_TIMER3(from, limit) do {					\
-	gettimeofday(&tv2, NULL);					\
-	slurm_diff_tv_str(&tv1, &tv2, tv_str, 20, from, limit, &delta_t); \
-} while (0)
-#define DELTA_TIMER	delta_t
-#define TIME_STR 	tv_str
-
-/* Return the number of micro-seconds between now and argument "tv",
- * Initialize tv to NOW if zero on entry */
-extern int slurm_delta_tv(struct timeval *tv);
+#define TIMER_START_TS tv1
+#define TIMER_END_TS tv2
+#define DEF_TIMERS \
+	struct timeval TIMER_START_TS = { 0, 0 }; \
+	struct timeval TIMER_END_TS = { 0, 0 };
+#define START_TIMER \
+	do { \
+		gettimeofday(&TIMER_START_TS, NULL); \
+	} while (false)
+#define END_TIMER \
+	do { \
+		gettimeofday(&TIMER_END_TS, NULL); \
+	} while (false)
+#define END_TIMER2(from) \
+	do { \
+		gettimeofday(&TIMER_END_TS, NULL); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, 0); \
+	} while (false)
+#define END_TIMER3(from, limit) \
+	do { \
+		gettimeofday(&TIMER_END_TS, NULL); \
+		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, \
+				    limit); \
+	} while (false)
+/*
+ * Get duration of time between START_TIMER and END_TIMER as string
+ * Note: Must be called after START_TIMER and END_TIMER macros
+ * RET: string of duration of time between calls or "INVALID"
+ */
+#define TIMER_STR() (timer_duration_str(&TIMER_START_TS, &TIMER_END_TS).str)
+/* Get timer duration in microseconds */
+#define TIMER_DURATION_USEC() timer_get_duration(&TIMER_START_TS, &TIMER_END_TS)
 
 /*
- * slurm_diff_tv_str - build a string showing the time difference between two
- *		       times
+ * Get timer duration in microseconds
+ * IN/OUT start - ptr to start of timer. Will be populated with now if zero.
+ * IN/OUT end - ptr to end of timer. Will be populated with now if zero.
+ * RET duration of timer in microseconds
+ */
+extern long timer_get_duration(struct timeval *start, struct timeval *end);
+
+typedef struct {
+	char str[20];
+} timer_str_t;
+
+/*
+ * Compare the time difference between two times and log when over the limit
  * IN tv1 - start of event
  * IN tv2 - end of event
- * OUT tv_str - place to put delta time in format "usec=%ld"
- * IN len_tv_str - size of tv_str in bytes
  * IN from - Name to be printed on long diffs
  * IN limit - limit to wait
- * OUT delta_t - raw time difference in usec
  */
-extern void slurm_diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-			      char *tv_str, int len_tv_str, const char *from,
-			      long limit, long *delta_t);
+extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
+				const char *from, long limit);
+
+/*
+ * Get string of time difference between tv1 and tv2 into tv_str
+ * IN tv1 - time value start
+ * IN tv2 - time value end
+ * RET string of duration
+ */
+extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2);
 
 /*
  * Number of latency ranges in latency histogram.
