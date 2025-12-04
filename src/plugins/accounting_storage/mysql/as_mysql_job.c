@@ -1264,10 +1264,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		      job_ptr->job_id, mysql_conn->cluster_name,
 		      IS_JOB_RESIZING(job_ptr) ? "resized" : "ended");
 
-	if (!job_ptr->db_index) {
-		if (!(job_ptr->db_index =
-		      _get_db_index(mysql_conn,
-				    submit_time,
+	if (!IS_JOB_IN_DB(job_ptr)) {
+		if (!(_get_db_index(mysql_conn, submit_time,
 				    job_ptr->job_id))) {
 			/* Comment is overloaded in job_start to be
 			   the block_id, so we will need to store this
