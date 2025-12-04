@@ -45,7 +45,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static pthread_rwlock_t slurmctld_locks[5] = {
+static pthread_rwlock_t slurmctld_locks[6] = {
+	PTHREAD_RWLOCK_INITIALIZER,
 	PTHREAD_RWLOCK_INITIALIZER,
 	PTHREAD_RWLOCK_INITIALIZER,
 	PTHREAD_RWLOCK_INITIALIZER,
@@ -135,6 +136,11 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 		slurm_rwlock_rdlock(&slurmctld_locks[FED_LOCK]);
 	else if (lock_levels.fed == WRITE_LOCK)
 		slurm_rwlock_wrlock(&slurmctld_locks[FED_LOCK]);
+
+	if (lock_levels.select_node == READ_LOCK)
+		slurm_rwlock_rdlock(&slurmctld_locks[SELECT_NODE_LOCK]);
+	else if (lock_levels.select_node == WRITE_LOCK)
+		slurm_rwlock_wrlock(&slurmctld_locks[SELECT_NODE_LOCK]);
 }
 
 /* unlock_slurmctld - Issue the required unlock requests in a well
@@ -142,6 +148,9 @@ extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 extern void unlock_slurmctld(slurmctld_lock_t lock_levels)
 {
 	xassert(_clear_locks(lock_levels));
+
+	if (lock_levels.select_node)
+		slurm_rwlock_unlock(&slurmctld_locks[SELECT_NODE_LOCK]);
 
 	if (lock_levels.fed)
 		slurm_rwlock_unlock(&slurmctld_locks[FED_LOCK]);
