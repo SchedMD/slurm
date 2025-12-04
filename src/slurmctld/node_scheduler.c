@@ -1075,12 +1075,16 @@ static int _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			save_avail_node_bitmap = avail_node_bitmap;
 			if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION &&
 			    !bit_equal(avail_node_bitmap, resv_bitmap)) {
+				char *removed_nodes_str = NULL;
 				bitstr_t *removed_nodes =
 					bit_copy(save_avail_node_bitmap);
 				bit_and_not(removed_nodes, resv_bitmap);
+				removed_nodes_str =
+					bitmap2node_name(removed_nodes);
 				log_flag(RESERVATION, "Advanced reservation removed nodes:%s from consideration for %pJ",
-					 bitmap2node_name(removed_nodes),
+					 removed_nodes_str,
 					 job_ptr);
+				xfree(removed_nodes_str);
 				FREE_NULL_BITMAP(removed_nodes);
 			}
 			avail_node_bitmap = resv_bitmap;
