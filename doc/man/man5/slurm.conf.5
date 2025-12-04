@@ -1880,16 +1880,23 @@ Acceptable values at present include:
 .IP
 .RS
 .TP 20
-\fBNoShared\fR
-Exclude shared memory from RSS. This option cannot be used with UsePSS.
-Only compatible with \fBjobacct_gather/linux\fR plugin.
+\fBDisableGPUAcct\fR
+Do not do accounting of GPU usage and skip any gpu driver library call. This
+parameter can help to improve performance if the GPU driver response is slow.
 .IP
 
 .TP
-\fBUsePss\fR
-Use PSS value instead of RSS to calculate real usage of memory. The PSS value
-will be saved as RSS. This option cannot be used with NoShared. Only compatible
-with \fBjobacct_gather/linux\fR plugin.
+\fBno_file_cache\fR
+Filesystem-backed memory (active_file and inactive_file) will be subtracted
+from the reported memory. This disables the use of the memory.peak interface,
+which can result in MaxRSS failing to record short memory spikes.
+Only compatible with \fBcgroup/v2\fR plugin.
+.IP
+
+.TP
+\fBNoShared\fR
+Exclude shared memory from RSS. This option cannot be used with UsePSS.
+Only compatible with \fBjobacct_gather/linux\fR plugin.
 .IP
 
 .TP
@@ -1914,9 +1921,10 @@ possibly with other processes left running.
 .IP
 
 .TP
-\fBDisableGPUAcct\fR
-Do not do accounting of GPU usage and skip any gpu driver library call. This
-parameter can help to improve performance if the GPU driver response is slow.
+\fBUsePss\fR
+Use PSS value instead of RSS to calculate real usage of memory. The PSS value
+will be saved as RSS. This option cannot be used with NoShared. Only compatible
+with \fBjobacct_gather/linux\fR plugin.
 .RE
 .IP
 

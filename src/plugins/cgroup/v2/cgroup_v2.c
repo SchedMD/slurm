@@ -2744,13 +2744,15 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 {
+	uint64_t active_file, inactive_file;
 	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
 	char *memory_peak = NULL;
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
 	task_cg_info_t *task_cg_info;
-	static bool interfaces_checked = false, memory_peak_interface = false;
+	bool memory_peak_interface = false, no_file_cache = false;
+	static bool interfaces_checked = false;
 
 	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
 					     &task_id))) {
@@ -2762,6 +2764,9 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 			      task_id);
 		return NULL;
 	}
+
+	if (xstrcasestr(slurm_conf.job_acct_gather_params, "no_file_cache"))
+		no_file_cache = true;
 
 	/*
 	 * Check optional interfaces existence and permissions. This check
@@ -2847,33 +2852,49 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		xfree(cpu_stat);
 	}
 
-	/*
-	 * In cgroup/v1, total_rss was the hierarchical sum of # of bytes of
-	 * anonymous and swap cache memory (including transparent huge pages).
-	 *
-	 * In cgroup/v2 we use memory.current which includes all the
-	 * memory the app has touched. Using this value makes it consistent with
-	 * the OOM killer limit.
-	 */
-	if (memory_current) {
-		if (sscanf(memory_current, "%"PRIu64, &stats->total_rss) != 1)
-			error("Cannot parse memory.current file");
-		xfree(memory_current);
-	}
-
 	if (memory_stat) {
 		ptr = xstrstr(memory_stat, "pgmajfault");
 		if (ptr && (sscanf(ptr, "pgmajfault %"PRIu64,
 				   &stats->total_pgmajfault) != 1))
 			log_flag(CGROUP, "Cannot parse pgmajfault field in memory.stat file");
+
+		if (no_file_cache) {
+			ptr = xstrstr(memory_stat, "\nactive_file");
+			if (ptr && (sscanf(ptr, "\nactive_file %" PRIu64,
+					   &active_file) != 1))
+				log_flag(CGROUP, "Cannot parse active_file field in memory.stat file");
+
+			ptr = xstrstr(memory_stat, "\ninactive_file");
+			if (ptr && (sscanf(ptr, "\ninactive_file %" PRIu64,
+					   &inactive_file) != 1))
+				log_flag(CGROUP, "Cannot parse inactive_file field in memory.stat file");
+		}
+
 		xfree(memory_stat);
 	}
 
-	if (memory_peak) {
+	/* memory.current includes all the memory the app has touched. */
+	if (memory_current) {
+		if (sscanf(memory_current, "%"PRIu64, &stats->total_rss) != 1)
+			error("Cannot parse memory.current file");
+
+		if (no_file_cache) {
+			stats->total_rss -= active_file + inactive_file;
+		}
+
+		xfree(memory_current);
+	}
+
+	/*
+	 * memory.peak includes all memory, including filesystem-backed mem, so
+	 * do not provide it if user does not want it.
+	 */
+	if (memory_peak && !no_file_cache) {
 		if (sscanf(memory_peak, "%"PRIu64, &stats->memory_peak) != 1)
 			error("Cannot parse memory.peak file");
-		xfree(memory_peak);
 	}
+
+	xfree(memory_peak);
 
 	return stats;
 }
