@@ -222,14 +222,62 @@ static void _free_attr(pthread_attr_t *attr)
 		      __func__, slurm_strerror(rc));
 }
 
+static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
+{
+	pthread_t id = 0;
+	pthread_attr_t attr;
+	int rc = EINVAL;
+
+	if ((rc = pthread_attr_init(&attr)))
+		fatal("%s->%s: pthread_attr_init() failed: %s",
+		      caller, __func__, slurm_strerror(rc));
+
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	if ((rc = pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM)))
+		fatal("%s->%s: pthread_attr_setscope(PTHREAD_SCOPE_SYSTEM) failed: %s",
+		      caller, __func__, slurm_strerror(rc));
+#endif
+
+	if ((rc = pthread_attr_setstacksize(&attr, STACK_SIZE)))
+		fatal("%s->%s: pthread_attr_setstacksize(%u) failed: %s",
+		      caller, __func__, STACK_SIZE, slurm_strerror(rc));
+
+	if (id_ptr)
+		*id_ptr = 0;
+
+	if (thread->detached &&
+	    (rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)))
+		fatal("%s->%s: pthread_attr_setdetachstate failed: %s",
+		      caller, __func__, slurm_strerror(rc));
+
+	/* Pass ownership of thread to _thread() on success */
+	rc = pthread_create(&id, &attr, _thread, thread);
+
+	if (rc) {
+		error("%s->%s: pthread_create() failed: %s",
+		      caller, __func__, slurm_strerror(rc));
+		_thread_free(thread);
+	} else {
+		log_flag(THREAD, "%s->%s: pthread_create() created new %s pthread id=0x%"PRIx64" for %s()",
+			 caller, __func__,
+			 (thread->detached ? "detached" : "attached"),
+			 (uint64_t) id, thread->func_name);
+	}
+
+	_free_attr(&attr);
+
+	if (id_ptr)
+		*id_ptr = id;
+
+	return rc;
+}
+
 extern int threadpool_create(threadpool_func_t func, const char *func_name,
 			     void *arg, const bool detached,
 			     const char *thread_name, pthread_t *id_ptr,
 			     const char *caller)
 {
-	pthread_t id = 0;
-	pthread_attr_t attr;
-	int rc = EINVAL;
 	thread_t *thread = xmalloc(sizeof(*thread));
 
 #ifndef NDEBUG
@@ -251,46 +299,5 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD)
 		thread->requested = timespec_now();
 
-	if ((rc = pthread_attr_init(&attr)))
-		fatal("%s->%s: pthread_attr_init() failed: %s",
-		      caller, __func__, slurm_strerror(rc));
-
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	if ((rc = pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM)))
-		fatal("%s->%s: pthread_attr_setscope(PTHREAD_SCOPE_SYSTEM) failed: %s",
-		      caller, __func__, slurm_strerror(rc));
-#endif
-
-	if ((rc = pthread_attr_setstacksize(&attr, STACK_SIZE)))
-		fatal("%s->%s: pthread_attr_setstacksize(%u) failed: %s",
-		      caller, __func__, STACK_SIZE, slurm_strerror(rc));
-
-	if (id_ptr)
-		*id_ptr = 0;
-
-	if (detached &&
-	    (rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)))
-		fatal("%s->%s: pthread_attr_setdetachstate failed: %s",
-		      caller, __func__, slurm_strerror(rc));
-
-	/* Pass ownership of thread to _thread() on success */
-	rc = pthread_create(&id, &attr, _thread, thread);
-
-	if (rc) {
-		error("%s->%s: pthread_create() failed: %s",
-		      caller, __func__, slurm_strerror(rc));
-		_thread_free(thread);
-	} else {
-		log_flag(THREAD, "%s->%s: pthread_create() created new %s pthread id=0x%"PRIx64" for %s()",
-			 caller, __func__, (detached ? "detached" : "attached"),
-			 (uint64_t) id, func_name);
-	}
-
-	_free_attr(&attr);
-
-	if (id_ptr)
-		*id_ptr = id;
-
-	return rc;
+	return _new_thread(thread, id_ptr, caller);
 }
