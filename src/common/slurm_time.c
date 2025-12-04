@@ -155,7 +155,7 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 
 	if (!ts.tv_nsec && !ts.tv_sec) {
 		return snprintf(buffer, buffer_len, "%s",
-				(abs_time ? "now" : "None"));
+				(abs_time ? "Never" : "now"));
 	}
 
 	ts = timespec_normalize(ts);
