@@ -173,7 +173,7 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	}
 
 	/* Force positive time */
-	if (ts.tv_sec < 0) {
+	if ((ts.tv_sec < 0) || (ts.tv_nsec < 0)) {
 		negative = true;
 
 		ts.tv_sec *= -1;
