@@ -2,23 +2,83 @@
 
 <h1>Slinky &mdash; Slurm and Kubernetes</h1>
 
-<h2>Overview</h2>
+<h2 id="contents">Contents<a class="slurm_link" href="#contents"></a></h2>
+
+<ul>
+  <li><a href="#overview">Overview</a></li>
+  <li><a href="#links">Links</a></li>
+  <li><a href="#presentations">Presentations</a></li>
+</ul>
+
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p><a href="https://www.schedmd.com/slinky/why-slinky/">Slinky&trade;</a> is
 SchedMD's set of projects to enable interoperability between Slurm and <a
 href="https://kubernetes.io/">Kubernetes</a>.</p>
 
-<h3>Links</h3>
+<h2 id="links">Links<a class="slurm_link" href="#links"></a></h2>
 
-<p>
-The <a href="https://github.com/SlinkyProject">SlinkyProject</a> on GitHub
-hosts the associated Slinky components:
+<p>Slinky documentation can be found <a href="https://slinky.schedmd.com/">here</a>.</p>
+
+<p>Slinky repositories are publicly available on
+<a href="https://github.com/SlinkyProject">GitHub</a> and
+<a href="https://gitlab.com/SchedMD/slinky">GitLab</a>:</p>
+
 <ul>
-<li>The Slurm Operator provides for management and auto-scaling of Slurm clusters running as Kubernetes pods: <a href="https://github.com/SlinkyProject/slurm-operator">slurm-operator</a>
-<li>Slurm REST client Go library, shared by the Slinky projects: <a href="https://github.com/SlinkyProject/slurm-client">slurm-client</a>
-<li>Slurm Prometheus exporter, used to gather metrics for HPA (Horizontal Pod Autoscaling) and Grafana: <a href="https://github.com/SlinkyProject/slurm-exporter">slurm-exporter</a>
-<li>Docker files for the associated container images: <a href="https://github.com/SlinkyProject/containers">containers</a>
+  <li><a href="https://github.com/SlinkyProject/slurm-operator">slurm-operator</a>:
+    Run Slurm on Kubernetes. Manage and scale Slurm clusters on Kubernetes as
+    pods.</li>
+  <li><a href="https://github.com/SlinkyProject/slurm-bridge">slurm-bridge</a>:
+    Run Slurm as a Kubernetes scheduler. Schedule both Slurm and Kubernetes
+    workloads with Slurm.</li>
+  <li><a href="https://github.com/SlinkyProject/slurm-client">slurm-client</a>:
+    Golang library for Slurm REST communication. Shared by Slinky repositories.</li>
+  <li><a href="https://github.com/SlinkyProject/containers">containers</a>:
+    Dockerfiles for building Slurm container images.</li>
 </ul>
-</p>
+
+<p>Public container images and helm chart artifacts can be found
+<a href="https://github.com/orgs/SlinkyProject/packages">here</a>.</p>
+
+<h2 id="presentations">Presentations
+<a class="slurm_link" href="#presentations"></a>
+</h2>
+
+<p>Note that older presentations may contain outdated information.</p>
+
+<h3 id="2025-presentations">Presentations from 2025
+<a class="slurm_link" href="#2025-presentations"></a>
+</h3>
+
+<ul>
+  <li><a href="https://slurm.schedmd.com/MISC25/Slurm_Bridge_KubeCon_25.pdf">
+    Slurm Bridge: Slurm Scheduling Superpowers in Kubernetes</a>,
+    Alan Mutschelknaus and Tim Wickberg, SchedMD (KubeCon NA, November 2025)</li>
+  <li><a href="https://slurm.schedmd.com/MISC25/Slurm_Bridge_CNCF-Batch-20250729.pdf">
+    Slurm Bridge</a>, Alan Mutschelknaus, Skyler Malinowski, and Marlow Warnicke,
+    SchedMD (CNCF Batch Working Group, July 2025)</li>
+  <li><a href="https://slurm.schedmd.com/MISC25/Slinky-CUG2025.pdf">Slinky: The
+    Missing Link Between Slurm and Kubernetes</a>, Skyler Malinowski, Alan
+    Mutschelknaus, Marlow Warnicke, and Tim Wickberg, SchedMD (CUG25, May 2025)</li>
+  <li><a href="https://slurm.schedmd.com/MISC25/Slinky-KubeConEurope2025.pdf">
+    Slinky: Slurm in Kubernetes, Performant AI and HPC Workload Management</a>,
+    Tim Wickberg, SchedMD (KubeCon Europe, April 2025)</li>
+</ul>
+
+<h3 id="2024-presentations">Presentations from 2024
+<a class="slurm_link" href="#2024-presentations"></a>
+</h3>
+
+<ul>
+  <li><a href="https://slurm.schedmd.com/SC24/Slinky-CANOPIE.pdf">Slinky: The
+    Missing Link Between Slurm and Kubernetes</a>, Skyler Malinowski and
+    Tim Wickberg, SchedMD (SC24, November 2024)</li>
+  <li><a href="https://slurm.schedmd.com/SLUG24/Slinky-Slurm-Operator.pdf">Slinky
+    &mdash; Slurm Operator</a>, Skyler Malinowski, Alan Mutschelknaus, and
+    Marlow Warnicke, SchedMD (SLUG24, September 2024)</li>
+  <li><a href="https://slurm.schedmd.com/SLUG24/Slinky-Slurm-Bridge.pdf">Slinky
+    &mdash; Slurm Bridge</a>, Skyler Malinowski, Alan Mutschelknaus, and
+    Marlow Warnicke, SchedMD (SLUG24, September 2024)</li>
+</ul>
 
 <!--#include virtual="footer.txt"-->
