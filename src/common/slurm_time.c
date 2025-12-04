@@ -259,8 +259,11 @@ extern timespec_t timespec_normalize(timespec_t ts)
 	};
 }
 
-extern timespec_t timespec_add(const timespec_t x, const timespec_t y)
+extern timespec_t timespec_add(timespec_t x, timespec_t y)
 {
+	x = timespec_normalize(x);
+	y = timespec_normalize(y);
+
 	/* Use 64bit accumulators to avoid overflow */
 	return timespec_normalize((timespec_t) {
 		.tv_sec = (((uint64_t) x.tv_sec) + ((uint64_t) y.tv_sec)),

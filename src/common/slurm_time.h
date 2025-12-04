@@ -122,7 +122,7 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 extern timespec_t timespec_normalize(timespec_t ts);
 
 /* Add timestamp X to timestamp Y */
-extern timespec_t timespec_add(const timespec_t x, const timespec_t y);
+extern timespec_t timespec_add(timespec_t x, timespec_t y);
 
 /* Subtract timestamp Y from timestamp X */
 extern timespec_t timespec_rem(timespec_t x, timespec_t y);
