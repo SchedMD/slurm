@@ -29,6 +29,7 @@ source ./globals
 set file_err    "$test_dir/error"
 set file_in     "$test_dir/input"
 set file_out    "$test_dir/output"
+set bad_file    "/bad_file"
 set job_id      0
 
 if {[file executable $bsub] == 0} {
@@ -45,7 +46,7 @@ proc cleanup {} {
 	run_command -none "$qdel $job_id"
 }
 
-make_bash_script $file_in "$bin_echo HELLO; $bin_cat /dummy_file"
+make_bash_script $file_in "$bin_echo HELLO; $bin_cat $bad_file"
 spawn $bsub -W 01:00 -e $file_err -o $file_out $file_in
 expect {
 	-re "($number)" {
@@ -64,30 +65,13 @@ if {$job_id == 0} {
 }
 
 wait_for_file -fail $file_out
-set matches 0
-spawn $bin_cat $file_out
-expect {
-	-re "HELLO" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
+set output ""
+wait_for -subtest {[regexp -all "HELLO" $output] == 1} {
+	set output [run_command -fail "$bin_cat $file_out"]
 }
-subtest {$matches == 1} "Verify expected bsub output file contents"
 
 wait_for_file -fail $file_err
-set matches 0
-spawn $bin_cat $file_err
-expect {
-	-re "No such file" {
-		log_debug "Message from cat expected, no worries"
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
+set output ""
+wait_for -subtest {[regexp -all "$bad_file: No such file" $output] == 1} {
+	set output [run_command -fail "$bin_cat $file_err"]
 }
-subtest {$matches == 1} "Verify expected bsub error file contents"
