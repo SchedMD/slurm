@@ -159,9 +159,8 @@ static void _thread_free(thread_t *thread)
 	xfree(thread);
 }
 
-static void *_thread(void *arg)
+static void *_run(thread_t *thread)
 {
-	thread_t *thread = arg;
 	void *ret = NULL;
 	timespec_t start = { 0 }, end = { 0 };
 
@@ -207,6 +206,18 @@ static void *_thread(void *arg)
 			 thread->func_name,
 			 (uintptr_t) thread->arg, (uintptr_t) ret, ts);
 	}
+
+	return ret;
+}
+
+static void *_thread(void *arg)
+{
+	thread_t *thread = arg;
+	void *ret = NULL;
+
+	xassert(thread->magic == THREAD_MAGIC);
+
+	ret = _run(thread);
 
 	_thread_free(thread);
 
