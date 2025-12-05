@@ -2861,6 +2861,11 @@ extern char *job_state_string_complete(uint32_t state)
 	/* Malloc space ahead of time to avoid realloc inside of xstrcat. */
 	char *state_str = xmalloc(100);
 
+	if (state == NO_VAL) {
+		xstrcat(state_str, "UNINITIALISED");
+		return state_str;
+	}
+
 	/* Process JOB_STATE_BASE */
 	switch (state & JOB_STATE_BASE) {
 	case JOB_PENDING:

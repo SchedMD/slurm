@@ -552,30 +552,49 @@ extern list_t *depended_list_copy(list_t *depend_list_src);
  */
 extern int drain_nodes ( char *nodes, char *reason, uint32_t reason_uid );
 
+/* Call job_state_set() instead */
+extern void slurm_job_state_set(job_record_t *job_ptr, uint32_t state,
+				const char *caller);
+
 /*
  * Set job state
  * IN job_ptr - Job to update
  * IN state - state from enum job_states
  */
-extern void job_state_set(job_record_t *job_ptr, uint32_t state);
+#define job_state_set(job_ptr, state) \
+	slurm_job_state_set((job_ptr), (state), __func__)
+
+/* Call job_state_set_flag() instead */
+extern void slurm_job_state_set_flag(job_record_t *job_ptr, uint32_t flag,
+				     const char *caller);
 
 /*
  * Set job state flag
  * IN job_ptr - Job to update
  * IN flag - flag to set (from JOB_* macro)
  */
-extern void job_state_set_flag(job_record_t *job_ptr, uint32_t flag);
+#define job_state_set_flag(job_ptr, flag) \
+	slurm_job_state_set_flag((job_ptr), (flag), __func__)
+
+/* Call job_state_set_flag() instead */
+extern void slurm_job_state_unset_flag(job_record_t *job_ptr, uint32_t flag,
+				       const char *caller);
 
 /*
  * Unset job state flag
  * IN job_ptr - Job to update
  * IN flag - flag to unset (from JOB_* macro)
  */
-extern void job_state_unset_flag(job_record_t *job_ptr, uint32_t flag);
+#define job_state_unset_flag(job_ptr, flag) \
+	slurm_job_state_unset_flag((job_ptr), (flag), __func__)
 
 /* dump_all_job_state - save the state of all jobs to file
  * RET 0 or error code */
 extern int dump_all_job_state ( void );
+
+/* Call on_job_state_change() instead */
+extern void slurm_on_job_state_change(job_record_t *job_ptr, uint32_t new_state,
+				      const char *caller);
 
 /*
  * Notify/update job state hash table that job state has changed
@@ -583,7 +602,8 @@ extern int dump_all_job_state ( void );
  * IN new_state - New value that will be assigned to job_ptr->job_state.
  *                If NO_VAL, then delete the cache entry.
  */
-extern void on_job_state_change(job_record_t *job_ptr, uint32_t new_state);
+#define on_job_state_change(job_ptr, new_state) \
+	slurm_on_job_state_change((job_ptr), (new_state), __func__)
 
 /* dump_all_node_state - save the state of all nodes to file */
 extern int dump_all_node_state ( void );
@@ -1580,12 +1600,6 @@ extern void queue_job_scheduler(void);
  * NOTE: run lock_slurmctld before entry: Read config, write job
  */
 extern void rehash_jobs(void);
-
-/*
- * Setup and prepare job state cache (if configured)
- * IN new_hash_table_size - number of entries in hash table
- */
-extern void setup_job_state_hash(int new_hash_table_size);
 
 /* update first assigned job id as needed on reconfigure */
 extern void reset_first_job_id(void);
