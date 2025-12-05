@@ -192,7 +192,12 @@ int _measure_api(char* measure_case)
 		fatal("unable to split forward hostlist");
 	}
 	END_TIMER;
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+	/* In #50113 we converted to timespec_t logic with new macros */
 	et = TIMER_DURATION_USEC();
+#else
+	et = DELTA_TIMER;
+#endif
 	for (j = 0; j < hl_count; j++) {
 		hostlist_destroy(sp_hl[j]);
 	}
