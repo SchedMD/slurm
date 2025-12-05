@@ -684,7 +684,7 @@ srun in order to better synchronize the step startup and error handling. -->
 </h2>
 
 <p>Slurm version 20.11 introduces the ability to request heterogeneous job
-steps from within a non-homogeneous job allocation. This allows you the
+steps from within a non-heterogeneous job allocation. This allows you the
 flexibility to have different layouts for job steps without requiring the
 use of heterogeneous jobs, where having separate jobs for the components
 may be undesirable.</p>
