@@ -114,16 +114,10 @@ typedef struct {
 strong_alias(threadpool_create, slurm_threadpool_create);
 strong_alias(threadpool_join, slurm_threadpool_join);
 
-extern int threadpool_join(const pthread_t id, const char *caller)
+static int _join(const pthread_t id, const char *caller)
 {
 	int rc = EINVAL;
 	void *ret = 0;
-
-	if (!id) {
-		log_flag(THREAD, "%s->%s: Ignoring invalid pthread id=0x0",
-		       caller, __func__);
-		return SLURM_SUCCESS;
-	}
 
 	if ((rc = pthread_join(id, &ret))) {
 		error("%s->%s: pthread_join(id=0x%"PRIx64") failed: %s",
@@ -139,6 +133,17 @@ extern int threadpool_join(const pthread_t id, const char *caller)
 		       caller, __func__, (uint64_t) id, (uintptr_t) ret);
 
 	return rc;
+}
+
+extern int threadpool_join(const pthread_t id, const char *caller)
+{
+	if (!id) {
+		log_flag(THREAD, "%s->%s: Ignoring invalid pthread id=0x0",
+		       caller, __func__);
+		return SLURM_SUCCESS;
+	}
+
+	return _join(id, caller);
 }
 
 static void _set_thread_name(const char *name)
