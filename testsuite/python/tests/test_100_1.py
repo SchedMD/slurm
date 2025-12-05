@@ -82,14 +82,6 @@ if atf.get_version() < (25, 5):
             "conmgr test doesn't compile for versions < 25.05",
         )
     )
-else:
-    xfail_tests.append(
-        (
-            "common/test_timespec_t.c",
-            "test_normalize",
-            "Issue #50096. Math operations fail cross negatives",
-        )
-    )
 
 # Create a test_function() for all test file in the testsuite_check_dir.
 # All the test_function()s will be run by pytest as if actually defined here.
