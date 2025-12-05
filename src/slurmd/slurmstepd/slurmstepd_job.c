@@ -689,6 +689,7 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step->job_alloc_cores);
 	xfree(step->node_list);
 	xfree(step->step_alloc_cores);
+	xfree(step->stepmgr);
 	xfree(step->task_cnts);
 	xfree(step->tres_bind);
 	xfree(step->tres_freq);
