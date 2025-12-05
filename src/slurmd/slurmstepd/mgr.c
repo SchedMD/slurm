@@ -776,6 +776,7 @@ static void _one_step_complete_msg(int first, int last)
 	}
 
 	if (step->stepmgr) {
+		int rc;
 		slurm_msg_t resp_msg;
 
 		slurm_msg_t_init(&resp_msg);
@@ -786,7 +787,9 @@ static void _one_step_complete_msg(int first, int last)
 		msg.send_to_stepmgr = true;
 		debug3("sending complete to step_ctld host:%s",
 		       step->stepmgr);
-		if (slurm_send_recv_node_msg(&req, &resp_msg, 0))
+		rc = slurm_send_recv_node_msg(&req, &resp_msg, 0);
+		slurm_free_msg_members(&resp_msg);
+		if (rc)
 			return;
 		goto finished;
 	}
