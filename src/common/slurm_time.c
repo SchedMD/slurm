@@ -255,11 +255,11 @@ static timespec_t _normalize(timespec_t ts)
 static timespec_t _uniform(timespec_t ts)
 {
 	if ((ts.tv_nsec < 0) && (ts.tv_sec > 0)) {
-		ts.tv_sec++;
-		ts.tv_nsec = NSEC_IN_SEC + ts.tv_nsec;
-	} else if ((ts.tv_nsec > 0) && (ts.tv_sec < 0)) {
 		ts.tv_sec--;
-		ts.tv_nsec = NSEC_IN_SEC - ts.tv_nsec;
+		ts.tv_nsec = (NSEC_IN_SEC + ts.tv_nsec);
+	} else if ((ts.tv_nsec > 0) && (ts.tv_sec < 0)) {
+		ts.tv_sec++;
+		ts.tv_nsec = (NSEC_IN_SEC - ts.tv_nsec);
 	}
 
 	return ts;
