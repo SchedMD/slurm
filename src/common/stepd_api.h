@@ -316,10 +316,9 @@ int stepd_list_pids(int fd, uint16_t protocol_version,
 
 /*
  * Get the memory limits of the step
- * Returns uid of the running step if successful.  On error returns -1.
  */
-extern int stepd_get_mem_limits(int fd, uint16_t protocol_version,
-				slurmstepd_mem_info_t *stepd_mem_info);
+extern int stepd_get_mem_limit(int fd, uint16_t protocol_version,
+			       uint64_t *job_mem_limit);
 
 /*
  * Get the uid of the step

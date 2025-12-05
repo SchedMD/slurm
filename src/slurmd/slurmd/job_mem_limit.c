@@ -129,34 +129,34 @@ static int _extract_limit_from_step(void *x, void *arg)
 {
 	step_loc_t *stepd = x;
 	int fd;
-	slurmstepd_mem_info_t stepd_mem_info;
+	uint64_t job_mem_limit = 0;
 
 	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
 			   &stepd->protocol_version);
 	if (fd == -1)
 		return 1; /* step completed */
 
-	if (stepd_get_mem_limits(fd, stepd->protocol_version,
-				 &stepd_mem_info) != SLURM_SUCCESS) {
+	if (stepd_get_mem_limit(fd, stepd->protocol_version, &job_mem_limit) !=
+	    SLURM_SUCCESS) {
 		error("Error reading %ps memory limits from slurmstepd",
 		      &stepd->step_id);
 		close(fd);
 		return 1;
 	}
 
-	if (stepd_mem_info.job_mem_limit) {
+	if (job_mem_limit) {
 		job_mem_limits_t *limits =
 			list_find_first(job_limits_list, _match_job,
 					&stepd->step_id.job_id);
 
 		if (limits) {
-			if (stepd_mem_info.job_mem_limit > limits->job_mem)
-				limits->job_mem = stepd_mem_info.job_mem_limit;
+			if (job_mem_limit > limits->job_mem)
+				limits->job_mem = job_mem_limit;
 		} else {
 			/* create entry for this step */
 			limits = xmalloc(sizeof(*limits));
 			limits->job_id = stepd->step_id.job_id;
-			limits->job_mem = stepd_mem_info.job_mem_limit;
+			limits->job_mem = job_mem_limit;
 			debug2("%s: RecLim JobId=%u job_mem:%"PRIu64,
 			       __func__, stepd->step_id.job_id, limits->job_mem);
 			list_append(job_limits_list, limits);

@@ -1443,25 +1443,14 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-/*
- * Get the memory limits of the step
- * Returns uid of the running step if successful.  On error returns -1.
- */
-extern int stepd_get_mem_limits(int fd, uint16_t protocol_version,
-				slurmstepd_mem_info_t *stepd_mem_info)
+extern int stepd_get_mem_limit(int fd, uint16_t protocol_version,
+			       uint64_t *job_mem_limit)
 {
 	int req = REQUEST_STEP_MEM_LIMITS;
 
-	xassert(stepd_mem_info);
-	memset(stepd_mem_info, 0, sizeof(slurmstepd_mem_info_t));
+	safe_write(fd, &req, sizeof(int));
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_write(fd, &req, sizeof(int));
-
-		safe_read(fd, &stepd_mem_info->job_mem_limit, sizeof(uint32_t));
-		safe_read(fd, &stepd_mem_info->step_mem_limit,
-			  sizeof(uint32_t));
-	}
+	safe_read(fd, &job_mem_limit, sizeof(uint64_t));
 
 	return SLURM_SUCCESS;
 rwfail:
