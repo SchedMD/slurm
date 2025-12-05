@@ -842,6 +842,45 @@ static int _handle_spank_mode(int argc, char **argv)
 	return 0;
 }
 
+/* do nothing */
+static void _ns_on_sigchld(int signo) {}
+
+/*
+ * Reap all adopted processes forever
+ *
+ * If creating new PID namespaces with namespaces/linux, processes that
+ * terminate inside the new PID namespace may become children of this
+ * slurmstepd. Such processes that would normally be reaped by the original init
+ * process now need to be reaped by this slurmstepd.
+ */
+static void _reap_adopted_processes(void)
+{
+	struct sigaction sa = {
+		.sa_handler = _ns_on_sigchld,
+	};
+	sigset_t mask;
+
+	/* Unblock SIGCHLD if sigmask was inherited with it blocked */
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
+	pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
+
+	/*
+	 * Override default ignore behavior for SIGCHLD by adding empty handler
+	 * function.
+	 */
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGCHLD, &sa, NULL);
+
+	while (true) {
+		/* Block until SIGCHLD (or any signal) is received */
+		pause();
+		/* Cleanup any terminated processes (if any) */
+		while (waitpid(-1, NULL, WNOHANG) > 0)
+			;
+	}
+}
+
 /*
  *  Process special "modes" of slurmstepd passed as cmdline arguments.
  */
@@ -865,7 +904,9 @@ static void _process_cmdline(int argc, char **argv)
 		setproctitle("%s", buf);
 		xfree(buf);
 		set_oom_adj(STEPD_OOM_ADJ);
-		(void) poll(NULL, 0, -1);
+
+		_reap_adopted_processes();
+
 		fini_setproctitle();
 		exit(0);
 	}

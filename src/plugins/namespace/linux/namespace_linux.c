@@ -79,6 +79,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static ns_conf_t *ns_conf = NULL;
 static bool plugin_disabled = false;
+static pid_t ns_pid = -1;
 
 /* NS_L_NS must be last */
 enum ns_l_types {
@@ -629,7 +630,6 @@ static int _create_ns(stepd_step_rec_t *step)
 	unsigned long tls = 0;
 	sem_t *sem1 = NULL;
 	sem_t *sem2 = NULL;
-	pid_t cpid;
 
 	_create_paths(step->step_id.job_id, &job_mount, &ns_base, &src_bind);
 
@@ -743,14 +743,14 @@ static int _create_ns(stepd_step_rec_t *step)
 		error("%s: sem_init: %m", __func__);
 		goto exit1;
 	}
-	cpid = sys_clone(ns_conf->clonensflags|SIGCHLD, &parent_tid,
-			 &child_tid, tls);
+	ns_pid = sys_clone(ns_conf->clonensflags | SIGCHLD, &parent_tid,
+			   &child_tid, tls);
 
-	if (cpid == -1) {
+	if (ns_pid == -1) {
 		error("%s: sys_clone failed: %m", __func__);
 		rc = -1;
 		goto exit1;
-	} else if (cpid == 0) {
+	} else if (ns_pid == 0) {
 		_create_ns_child(step, src_bind, job_mount, sem1, sem2);
 	} else {
 		char *proc_path = NULL;
@@ -762,7 +762,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		for (int i = 0; i < NS_L_END; i++) {
 			if (!ns_l_enabled[i].enabled)
 				continue;
-			xstrfmtcat(proc_path, "/proc/%u/ns/%s", cpid,
+			xstrfmtcat(proc_path, "/proc/%u/ns/%s", ns_pid,
 				   ns_l_enabled[i].proc_name);
 			rc = mount(proc_path, ns_l_enabled[i].path, NULL,
 				   MS_BIND, NULL);
@@ -779,7 +779,7 @@ static int _create_ns(stepd_step_rec_t *step)
 		}
 
 		/* setup users before setting up the rest of the container */
-		if ((rc = _clonens_user_setup(step, cpid))) {
+		if ((rc = _clonens_user_setup(step, ns_pid))) {
 			error("%s: Unable to prepare user namespace.",
 			      __func__);
 			/* error needs to fall though here */
@@ -798,9 +798,9 @@ static int _create_ns(stepd_step_rec_t *step)
 			goto exit1;
 		}
 
-		if (proctrack_g_add(step, cpid) != SLURM_SUCCESS) {
+		if (proctrack_g_add(step, ns_pid) != SLURM_SUCCESS) {
 			error("%s: Job %u can't add pid %d to proctrack plugin in the extern_step.",
-			      __func__, step->step_id.job_id, cpid);
+			      __func__, step->step_id.job_id, ns_pid);
 			rc = SLURM_ERROR;
 			goto exit1;
 		}
@@ -1061,6 +1061,17 @@ extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
+
+	if (ns_pid) {
+		int wstatus;
+		/*
+		 * The namespace process may have been signaled already, but
+		 * kill it to be sure.
+		 */
+		kill(ns_pid, SIGKILL);
+		waitpid(ns_pid, &wstatus, 0);
+		ns_pid = -1;
+	}
 
 	return _delete_ns(step_id->job_id);
 }
