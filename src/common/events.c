@@ -82,7 +82,7 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		/* we want the time but not to warn about a time limit */
-		END_TIMER3(NULL, 0);
+		END_TIMER;
 
 		log_flag(THREAD, "%s->%s: [EVENT:%s] END waited after %s with %d other pending waiters",
 			 caller, __func__, event->name, TIMER_STR(),
