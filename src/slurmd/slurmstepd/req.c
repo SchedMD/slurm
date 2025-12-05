@@ -822,7 +822,6 @@ rwfail:
 static int _handle_mem_limits(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->job_mem, sizeof(uint64_t));
-	safe_write(fd, &step->step_mem, sizeof(uint64_t));
 
 	return SLURM_SUCCESS;
 rwfail:
