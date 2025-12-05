@@ -607,7 +607,7 @@ static int _intr_send_byte(int fd, const char *caller)
 	safe_write(fd, buf, 1);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		END_TIMER3(NULL, 0);
+		END_TIMER;
 		log_flag(CONMGR, "%s->%s: [EPOLL] interrupt byte sent in %s",
 			 caller, __func__, TIMER_STR());
 	}
