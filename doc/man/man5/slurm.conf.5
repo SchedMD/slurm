@@ -5472,6 +5472,26 @@ Allow any user able to run in a reservation to delete it.
 .IP
 
 .TP
+\fBthreadpool\fR=\fI<enabled|disabled>\fR
+Enable or disable using the threadpool in slurmctld to avoid overhead of
+allocating new process threads by preserving previously created threads.
+The default value is "enabled".
+.IP
+
+.TP
+\fBthreadpool_preallocate\fR=\fI<thread_count>\fR
+The number of process threads to preallocate at startup for thread pool.
+The default value is 32.
+.IP
+
+.TP
+\fBthreadpool_preserve\fR=\fI<thread_count>\fR
+The number of idle process threads to maintain in thread pool before allowing
+threads to exit.
+The default value is 128.
+.IP
+
+.TP
 \fBvalidate_nodeaddr_threads\fR=
 During startup, slurmctld looks up the address for each compute node in the
 system. On large systems this can cause considerable delay, this option permits
