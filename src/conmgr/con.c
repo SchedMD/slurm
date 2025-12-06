@@ -1219,7 +1219,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
-					void *arg)
+					char *tls_cert, void *arg)
 {
 	int fd = -1, rc = SLURM_ERROR;
 	//socklen_t bindlen = 0;
@@ -1285,7 +1285,7 @@ again:
 	}
 
 	return add_connection(type, NULL, fd, fd, events, flags, addr, addrlen,
-			      false, NULL, NULL, NULL, arg);
+			      false, NULL, NULL, tls_cert, arg);
 }
 
 /* WARNING: caller must not hold mgr.mutex lock */
