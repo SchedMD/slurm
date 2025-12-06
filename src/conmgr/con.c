@@ -1284,6 +1284,9 @@ again:
 		/* delayed connect() completion is expected */
 	}
 
+	if ((type == CON_TYPE_RPC) && conn_tls_enabled())
+		flags |= FLAG_TLS_CLIENT;
+
 	return add_connection(type, NULL, fd, fd, events, flags, addr, addrlen,
 			      false, NULL, NULL, tls_cert, arg);
 }
