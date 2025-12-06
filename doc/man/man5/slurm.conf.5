@@ -936,9 +936,11 @@ This option is for all daemons/clients except for the slurmctld.
 
 .TP
 \fBCompleteWait\fR
-The time to wait, in seconds, when any job is in the COMPLETING state
-before any additional jobs are scheduled. This is to attempt to keep jobs on
-nodes that were recently in use, with the goal of preventing fragmentation.
+The time to wait, in seconds, when any job in the cluster is in the
+COMPLETING state before any additional jobs are scheduled. This parameter is
+evaluated at the cluster scheduling level, not per node. This is to attempt to
+keep jobs on nodes that were recently in use, with the goal of preventing
+fragmentation.
 If set to zero, pending jobs will be started as soon as possible.
 Since a COMPLETING job's resources are released for use by other
 jobs as soon as the \fBEpilog\fR completes on each individual node,
@@ -950,6 +952,11 @@ plus two is recommended.
 In that case, setting \fBKillWait\fR to a small value may be beneficial.
 The default value of \fBCompleteWait\fR is zero seconds.
 The value may not exceed 65533.
+
+This parameter does not override the fact that nodes in the COMPLETING state
+are not eligible for job scheduling. Nodes will not accept new job placement
+until their Epilog completes and they leave the COMPLETING state, even if
+\fBCompleteWait\fR is set to zero.
 
 \fBNOTE\fR: Setting \fBreduce_completing_frag\fR affects the behavior
 of \fBCompleteWait\fR.
@@ -1478,6 +1485,11 @@ alphabetical order (z-a -> Z-A -> 9-0). The Epilog script(s) may be used
 to purge files, disable user login, etc.
 By default there is no epilog.
 See \fBProlog and Epilog Scripts\fR for more information.
+
+While the Epilog script is running on a node, that node will be placed in the
+\fBCOMPLETING\fR state. Nodes in the COMPLETING state do not accept new job
+allocations, and no jobs will be scheduled on them until the Epilog has
+finished and the node has returned to an available state.
 
 \fB\fBNOTE\fR: It is possible to configure multiple epilog scripts by including
 this option on multiple lines.\fR

@@ -1038,7 +1038,9 @@ The node has been blocked by exclusive topo job.
 All jobs associated with this node are in the process of
 COMPLETING. This node state will be removed when
 all of the job's processes have terminated and the Slurm
-epilog program (if any) has terminated. See the \fBEpilog\fR
+epilog program (if any) has terminated. While a node is in
+the COMPLETING state, it is not eligible for new job placement
+and no jobs will be scheduled on it. See the \fBEpilog\fR
 parameter description in the \fBslurm.conf\fR(5) man page for
 more information.
 .IP

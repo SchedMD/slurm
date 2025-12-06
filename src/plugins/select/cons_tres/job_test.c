@@ -541,6 +541,8 @@ static avail_res_t *_can_job_run_on_node(job_record_t *job_ptr,
 		 * Do not allocate more jobs to nodes with completing jobs,
 		 * backfill scheduler independently handles completing nodes
 		 */
+		log_flag(SELECT_TYPE, "Node %s is in COMPLETING state, skip trying to schedule %pJ on this node.",
+			 node_ptr->name, job_ptr);
 		return NULL;
 	}
 
