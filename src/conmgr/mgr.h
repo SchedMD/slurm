@@ -202,6 +202,8 @@ struct conmgr_fd_s {
 	tls_conn_t *tls;
 	/* buffer holding incoming already read encrypted data */
 	buf_t *tls_in;
+	/* TLS certificate for connecting to server not trusted by CA */
+	char *tls_cert;
 	/* buffer holding incoming already read data */
 	buf_t *in;
 	/* timestamp when last read() got >0 bytes or when connect() called */

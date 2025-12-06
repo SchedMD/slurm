@@ -1488,6 +1488,7 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->tls_in);
+	xfree(con->tls_cert);
 	FREE_NULL_LIST(con->out);
 	FREE_NULL_LIST(con->tls_out);
 	FREE_NULL_LIST(con->work);
