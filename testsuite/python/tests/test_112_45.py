@@ -295,6 +295,11 @@ def test_loaded_versions():
 )
 @pytest.mark.parametrize("openapi_spec", ["45"], indirect=True)
 def test_specification(openapi_spec):
+    if atf.get_version("sbin/slurmrestd") >= (27, 11):
+        # This is expected to be deprecated in 27.11+
+        patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
+        patch.apply(openapi_spec, in_place=True)
+
     atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
 
 
