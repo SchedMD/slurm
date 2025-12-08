@@ -413,7 +413,12 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
  */
 extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
 {
-	return NULL;
+	ring_context_t *ctx = tctx;
+	int ring_idx = ring_record_get_ring_inx(name, ctx);
+	if (ring_idx < 0)
+		return NULL;
+
+	return ctx->rings[ring_idx].nodes_bitmap;
 }
 
 extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
