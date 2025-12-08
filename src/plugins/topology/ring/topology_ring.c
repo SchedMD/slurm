@@ -91,7 +91,7 @@ const char plugin_name[] = "topology ring plugin";
 const char plugin_type[] = "topology/ring";
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_RING;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-const bool supports_exclusive_topo = false;
+const bool supports_exclusive_topo = true;
 
 typedef struct topoinfo_ring {
 	char *name;
@@ -394,6 +394,14 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 
 extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 {
+	ring_context_t *ctx = tctx;
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		if (bit_overlap_any(ctx->rings[i].nodes_bitmap, node_mask)) {
+			bit_or(node_mask, ctx->rings[i].nodes_bitmap);
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -477,7 +485,7 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	case TOPO_DATA_EXCLUSIVE_TOPO:
 	{
 		int *exclusive_topo = data;
-		*exclusive_topo = 0;
+		*exclusive_topo = 1;
 		break;
 	}
 	default:
