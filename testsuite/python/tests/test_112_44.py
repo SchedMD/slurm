@@ -5,6 +5,7 @@ import atf
 import pytest
 import getpass
 import json
+import jsonpatch
 import random
 import logging
 import time
@@ -291,6 +292,19 @@ def test_loaded_versions():
 
 @pytest.mark.parametrize("openapi_spec", ["44"], indirect=True)
 def test_specification(openapi_spec):
+    base_path = "/components/schemas/v0.0.44_"
+
+    if atf.get_version("sbin/slurmrestd") >= (25, 11):
+        # Ticket 2450: We finally decided to revert deprecating job_submit_req script field
+        path = base_path + "job_submit_req/properties/script/deprecated"
+        patch = jsonpatch.JsonPatch([{"op": "remove", "path": path}])
+        patch.apply(openapi_spec, in_place=True)
+
+    if atf.get_version("sbin/slurmrestd") >= (27, 5):
+        # This is expected to be deprecated in 27.05+
+        patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
+        patch.apply(openapi_spec, in_place=True)
+
     atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
 
 
