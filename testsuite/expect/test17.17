@@ -44,6 +44,11 @@ proc cleanup {} {
 	cancel_job [list $job_id1 $job_id2]
 }
 
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"] && \
+    [package vcompare [get_version] "25.11.0"] < 0 } {
+	skip "In 25.11 we fixed some issues with stepmgr that were leading to random failures in this test."
+}
+
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
 if { [llength $node_name] != 1 } {
 	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
