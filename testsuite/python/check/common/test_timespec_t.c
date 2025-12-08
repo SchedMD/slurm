@@ -67,16 +67,16 @@ START_TEST(test_normalize)
 	ck_assert(y.tv_nsec == 5);
 	ck_assert(y.tv_sec == 5);
 
-	x = (timespec_t) { 10, (10 * NSEC_IN_SEC) };
-	y = (timespec_t) { 5, (5 * NSEC_IN_SEC) };
+	x = (timespec_t) { 10, ((2 * NSEC_IN_SEC) + 150) };
+	y = (timespec_t) { 5, ((1 * NSEC_IN_SEC) + 88) };
 
 	x = timespec_normalize(x);
-	ck_assert(x.tv_nsec == 20);
-	ck_assert(x.tv_sec == 0);
+	ck_assert(x.tv_sec == 12);
+	ck_assert(x.tv_nsec == 150);
 
 	y = timespec_normalize(y);
-	ck_assert(y.tv_nsec == 10);
-	ck_assert(y.tv_sec == 0);
+	ck_assert(y.tv_sec == 6);
+	ck_assert(y.tv_nsec == 88);
 }
 
 END_TEST
@@ -123,18 +123,13 @@ START_TEST(test_rem)
 	ck_assert(t1.tv_sec == 5);
 	ck_assert(t1.tv_nsec == 2);
 
-	/* Negative math is rejected currently */
 	t2 = timespec_rem(y, x);
-	//ck_assert(t2.tv_sec == -5);
-	//ck_assert(t2.tv_nsec == -2);
-	ck_assert(t2.tv_sec == 0);
-	ck_assert(t2.tv_nsec == 0);
+	ck_assert(t2.tv_sec == -5);
+	ck_assert(t2.tv_nsec == -2);
 
-	t3 = timespec_rem(t1, t2);
-	//ck_assert(t3.tv_sec == 0);
-	//ck_assert(t3.tv_nsec == 0);
-	ck_assert(t3.tv_sec == 5);
-	ck_assert(t3.tv_nsec == 2);
+	t3 = timespec_add(t1, t2);
+	ck_assert(t3.tv_sec == 0);
+	ck_assert(t3.tv_nsec == 0);
 }
 
 END_TEST

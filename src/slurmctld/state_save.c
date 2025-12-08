@@ -45,7 +45,13 @@
 
 #include <pthread.h>
 
+#include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/probes.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_time.h"
+#include "src/common/timers.h"
+
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -55,11 +61,24 @@
 #define SAVE_MAX_WAIT	5
 #endif
 
+#define SAVE_COUNT_DELAY \
+	((timespec_t) { \
+		.tv_sec = 1, \
+	})
+#define STATESAVE_WARN_TS \
+	((timespec_t) { \
+		.tv_nsec = (NSEC_IN_SEC / 2), \
+	})
+#define CTIME_STR_LEN 72
+
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
 static int save_jobs = 0, save_nodes = 0, save_parts = 0;
 static int save_triggers = 0, save_resv = 0;
 static bool run_save_thread = true;
+static latency_histogram_t save_histogram = LATENCY_HISTOGRAM_INITIALIZER;
+static timespec_t last_save = { 0, 0 };
+static timespec_t save_start = { 0, 0 };
 
 /* Queue saving of job state information */
 extern void schedule_job_save(void)
@@ -115,6 +134,71 @@ extern void shutdown_state_save(void)
 	slurm_mutex_unlock(&state_save_lock);
 }
 
+static void _check_slow_save(void)
+{
+	timespec_diff_ns_t tdiff = { { 0 } };
+	bool warn = false;
+	char delay_str[CTIME_STR_LEN] = { 0 };
+
+	tdiff = timespec_diff_ns(last_save, save_start);
+	xassert(tdiff.after);
+
+	latency_metric_add_histogram_value(&save_histogram, tdiff.diff);
+
+	if (!(warn = timespec_is_after(tdiff.diff, STATESAVE_WARN_TS)))
+		return;
+
+	(void) timespec_ctime(tdiff.diff, false, delay_str, sizeof(delay_str));
+	warning("Saving to StateSaveLocation took %s. Please check backing filesystem as all of Slurm operations are delayed due to slow StateSaveLocation writes.",
+		delay_str);
+}
+
+static void _probe_verbose(probe_log_t *log)
+{
+	char histogram[LATENCY_METRIC_HISTOGRAM_STR_LEN] = { 0 };
+	char ts_str[CTIME_STR_LEN] = { 0 };
+
+	if (timespec_is_after(save_start, last_save)) {
+		(void) timespec_ctime(save_start, true, ts_str, sizeof(ts_str));
+		probe_log(log, "StateSave Status: SAVING");
+		probe_log(log, "StateSave Started: %s", ts_str);
+	} else {
+		(void) timespec_ctime(timespec_rem(last_save, save_start),
+				      false, ts_str, sizeof(ts_str));
+		probe_log(log, "StateSave Status: SLEEPING");
+		probe_log(log, "StateSave Last Duration: %s", ts_str);
+	}
+
+	(void) timespec_ctime(last_save, true, ts_str, sizeof(ts_str));
+	probe_log(log, "StateSave Last Save: %s", ts_str);
+
+	(void) latency_histogram_print_labels(histogram, sizeof(histogram));
+	probe_log(log, "StateSave Histogram: %s", histogram);
+
+	(void) latency_histogram_print(&save_histogram, histogram,
+				       sizeof(histogram));
+	probe_log(log, "StateSave Histogram: %s", histogram);
+}
+
+static probe_status_t _probe(probe_log_t *log)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&state_save_lock);
+
+	if (log)
+		_probe_verbose(log);
+
+	if (!last_save.tv_sec)
+		status = PROBE_RC_ONLINE;
+	else
+		status = PROBE_RC_READY;
+
+	slurm_mutex_unlock(&state_save_lock);
+
+	return status;
+}
+
 /*
  * Run as pthread to keep saving slurmctld state information as needed,
  * Use schedule_job_save(),  schedule_node_save(), and schedule_part_save()
@@ -124,8 +208,6 @@ extern void shutdown_state_save(void)
  */
 extern void *slurmctld_state_save(void *no_data)
 {
-	time_t last_save = 0, now;
-	double save_delay;
 	bool run_save;
 	int save_count;
 
@@ -135,33 +217,46 @@ extern void *slurmctld_state_save(void *no_data)
 	}
 #endif
 
+	probe_register(__func__, _probe);
+
 	while (1) {
 		/* wait for work to perform */
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
+			timespec_diff_ns_t save_delay = { { 0 } };
+
+			if (last_save.tv_sec) {
+				save_delay = timespec_diff_ns(timespec_now(),
+							      save_start);
+				xassert(save_delay.after);
+			}
+
 			save_count = save_jobs + save_nodes + save_parts +
 				     save_resv + save_triggers;
-			now = time(NULL);
-			save_delay = difftime(now, last_save);
+
 			if (save_count &&
-			    (!run_save_thread ||
-			     (save_delay >= SAVE_MAX_WAIT))) {
-				last_save = now;
+			    (!run_save_thread || !last_save.tv_sec ||
+			     (timespec_to_secs(save_delay.diff) >=
+			      SAVE_MAX_WAIT))) {
 				break;		/* do the work */
 			} else if (!run_save_thread) {
 				run_save_thread = true;
 				slurm_mutex_unlock(&state_save_lock);
 				return NULL;	/* shutdown */
 			} else if (save_count) { /* wait for a timeout */
-				struct timespec ts = {0, 0};
-				ts.tv_sec = now + 1;
+				timespec_t delay =
+					timespec_add(timespec_now(),
+						     SAVE_COUNT_DELAY);
+
 				slurm_cond_timedwait(&state_save_cond,
-					  	     &state_save_lock, &ts);
-			} else {		/* wait for more work */
+						     &state_save_lock, &delay);
+			} else { /* wait for more work */
 				slurm_cond_wait(&state_save_cond,
 					  	&state_save_lock);
 			}
 		}
+
+		save_start = timespec_now();
 
 		/* save job info if necessary */
 		run_save = false;
@@ -217,5 +312,10 @@ extern void *slurmctld_state_save(void *no_data)
 		slurm_mutex_unlock(&state_save_lock);
 		if (run_save)
 			(void)trigger_state_save();
+
+		slurm_mutex_lock(&state_save_lock);
+		last_save = timespec_now();
+		_check_slow_save();
+		slurm_mutex_unlock(&state_save_lock);
 	}
 }

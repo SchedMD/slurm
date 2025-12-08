@@ -155,13 +155,17 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 
 	if (!ts.tv_nsec && !ts.tv_sec) {
 		return snprintf(buffer, buffer_len, "%s",
-				(abs_time ? "now" : "None"));
+				(abs_time ? "NEVER" : "now"));
 	}
 
 	ts = timespec_normalize(ts);
 
 	if (abs_time) {
-		ts = timespec_normalize(timespec_rem(ts, timespec_now()));
+		const timespec_diff_ns_t tdiff =
+			timespec_diff_ns(timespec_now(), ts);
+
+		ts = tdiff.diff;
+		negative = tdiff.after;
 
 		if (!ts.tv_nsec && !ts.tv_sec) {
 			return snprintf(buffer, buffer_len, "now");
@@ -169,7 +173,7 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	}
 
 	/* Force positive time */
-	if (ts.tv_sec < 0) {
+	if ((ts.tv_sec < 0) || (ts.tv_nsec < 0)) {
 		negative = true;
 
 		ts.tv_sec *= -1;
@@ -242,25 +246,39 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	return wrote;
 }
 
-extern timespec_t timespec_normalize(timespec_t ts)
+/* Normalize nsec to less than a second */
+static timespec_t _normalize(timespec_t ts)
 {
-	/* Force direction of time to be uniform */
-	if ((ts.tv_nsec < 0) && (ts.tv_sec > 0)) {
-		ts.tv_sec++;
-		ts.tv_nsec = NSEC_IN_SEC + ts.tv_nsec;
-	} else if ((ts.tv_nsec > 0) && (ts.tv_sec < 0)) {
-		ts.tv_sec--;
-		ts.tv_nsec = NSEC_IN_SEC - ts.tv_nsec;
-	}
-
 	return (timespec_t) {
 		.tv_sec = ts.tv_sec + (ts.tv_nsec / NSEC_IN_SEC),
 		.tv_nsec = (ts.tv_nsec % NSEC_IN_SEC),
 	};
 }
 
-extern timespec_t timespec_add(const timespec_t x, const timespec_t y)
+/* Force direction of time to be uniform */
+static timespec_t _uniform(timespec_t ts)
 {
+	if ((ts.tv_nsec < 0) && (ts.tv_sec > 0)) {
+		ts.tv_sec--;
+		ts.tv_nsec = (NSEC_IN_SEC + ts.tv_nsec);
+	} else if ((ts.tv_nsec > 0) && (ts.tv_sec < 0)) {
+		ts.tv_sec++;
+		ts.tv_nsec = (NSEC_IN_SEC - ts.tv_nsec);
+	}
+
+	return ts;
+}
+
+extern timespec_t timespec_normalize(timespec_t ts)
+{
+	return _normalize(_uniform(_normalize(ts)));
+}
+
+extern timespec_t timespec_add(timespec_t x, timespec_t y)
+{
+	x = timespec_normalize(x);
+	y = timespec_normalize(y);
+
 	/* Use 64bit accumulators to avoid overflow */
 	return timespec_normalize((timespec_t) {
 		.tv_sec = (((uint64_t) x.tv_sec) + ((uint64_t) y.tv_sec)),
@@ -268,25 +286,14 @@ extern timespec_t timespec_add(const timespec_t x, const timespec_t y)
 	});
 }
 
-extern timespec_t timespec_rem(const timespec_t x, const timespec_t y)
+extern timespec_t timespec_rem(timespec_t x, timespec_t y)
 {
-	/* Use 64bit accumulators to avoid underflow */
-	int64_t s = (((uint64_t) x.tv_sec) - ((uint64_t) y.tv_sec));
-	int64_t ns = (((uint64_t) x.tv_nsec) - ((uint64_t) y.tv_nsec));
-
-	/* reject underflow of time */
-	if (s <= 0)
-		return (timespec_t) {0};
-
-	/* force ns to be positive */
-	if (ns < 0) {
-		s--;
-		ns = NSEC_IN_SEC - ns;
-	}
+	x = timespec_normalize(x);
+	y = timespec_normalize(y);
 
 	return timespec_normalize((timespec_t) {
-		.tv_sec = s,
-		.tv_nsec = ns,
+		.tv_sec = (((uint64_t) x.tv_sec) - ((uint64_t) y.tv_sec)),
+		.tv_nsec = (((uint64_t) x.tv_nsec) - ((uint64_t) y.tv_nsec)),
 	});
 }
 
@@ -309,31 +316,20 @@ extern int64_t timespec_diff(const timespec_t x, const timespec_t y)
 extern timespec_diff_ns_t timespec_diff_ns(const timespec_t x,
 					   const timespec_t y)
 {
-	/* Use 64bit accumulators to catch underflows */
-	int64_t s = (((int64_t) x.tv_sec) - ((int64_t) y.tv_sec));
-	int64_t ns = (((int64_t) x.tv_nsec) - ((int64_t) y.tv_nsec));
+	timespec_t ts = timespec_rem(x, y);
 
-	/* Adjust positive nanoseconds if seconds is negative */
-	if ((ns > 0) && (s < 0)) {
-		s += 1;
-		ns -= NSEC_IN_SEC;
-	}
-
-	if (s < 0)
+	if ((ts.tv_sec < 0) || (ts.tv_nsec < 0))
 		return (timespec_diff_ns_t) {
 			.after = false,
-			.diff = {
-				.tv_sec = (-1 * s),
-				.tv_nsec = (-1 * ns),
-			},
+			.diff = ((timespec_t) {
+				.tv_sec = (-1 * ts.tv_sec),
+				.tv_nsec = (-1 * ts.tv_nsec),
+			}),
 		};
 	else
 		return (timespec_diff_ns_t) {
 			.after = true,
-			.diff = {
-				.tv_sec = s,
-				.tv_nsec = ns,
-			},
+			.diff = ts,
 		};
 }
 
