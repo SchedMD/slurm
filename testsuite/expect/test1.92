@@ -61,7 +61,7 @@ set mask 0
 set task_cnt 0
 set prev_node -1
 set node_cnt 0
-spawn $bin_bash -c "$srun $srun_args -l -c1 $file_bash | $bin_sort -V"
+spawn $bin_bash -c "$srun $srun_args -l -c1 $file_bash | $bin_sort -V; echo EXIT_CODE:$?"
 expect {
 	-re "nodeid:($number) taskid:($number)" {
 		set this_node $expect_out(1,string)
@@ -73,8 +73,10 @@ expect {
 		}
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
@@ -96,7 +98,7 @@ if {$task_cnt < (2 * $node_cnt)} {
 set this_cnt  0
 set prev_node -1
 set this_node -1
-spawn $bin_bash -c "$srun $srun_args -l -n $task_cnt -m block $file_bash | $bin_sort -V"
+spawn $bin_bash -c "$srun $srun_args -l -n $task_cnt -m block $file_bash | $bin_sort -V; echo EXIT_CODE:$?"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -112,8 +114,10 @@ expect {
 		}
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "srun not responding or failure to recognize prompt"
@@ -131,7 +135,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-spawn $bin_bash -c "$srun $srun_args -l -n $task_cnt -m cyclic $file_bash | $bin_sort -V"
+spawn $bin_bash -c "$srun $srun_args -l -n $task_cnt -m cyclic $file_bash | $bin_sort -V; echo EXIT_CODE:$?"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -147,8 +151,10 @@ expect {
 		}
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "srun not responding or failure to recognize prompt"
@@ -166,7 +172,7 @@ set this_cnt  0
 set prev_node -1
 set this_node -1
 set prev_cnt  $block_size
-spawn $bin_bash -c "$srun $srun_args -l -n $task_cnt -m plane=$block_size $file_bash | $bin_sort -V"
+spawn $bin_bash -c "$srun $srun_args -l -n $task_cnt -m plane=$block_size $file_bash | $bin_sort -V; echo EXIT_CODE:$?"
 expect {
 	-re "nodeid:($number) taskid:($number) localid:($number)" {
 		set this_node $expect_out(1,string)
@@ -182,8 +188,10 @@ expect {
 		}
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "srun not responding or failure to recognize prompt"

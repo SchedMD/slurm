@@ -217,14 +217,16 @@ expect {
 # Run a job step to get allocated processor count
 #
 set task_cnt 0
-send "$srun -c1 ./$file_prog\r"
+send "$srun -c1 ./$file_prog; echo EXIT_CODE:$?\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_cnt
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
@@ -241,14 +243,16 @@ expect {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -c1 -n $task_cnt --cpu-bind=threads ./$file_prog\r"
+send "$srun -c1 -n $task_cnt --cpu-bind=threads ./$file_prog; echo EXIT_CODE:$?\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "srun (from --allocate) not responding or failure to recognize prompt"
@@ -276,14 +280,16 @@ set expected_mask [get_core_mask]
 log_debug "core_mask: $expected_mask"
 
 set task_mask 0
-send "$srun -c1 -n $core_task_cnt -B 1:1:1 ./$file_prog\r"
+send "$srun -c1 -n $core_task_cnt -B 1:1:1 ./$file_prog; echo EXIT_CODE:$?\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "srun (from --allocate) not responding or failure to recognize prompt"
@@ -306,7 +312,7 @@ while {$this_cnt <= $num_sockets} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $this_cnt-$this_cnt:$num_cores:$num_threads ./$file_prog\r"
+	send "$srun -B $this_cnt-$this_cnt:$num_cores:$num_threads ./$file_prog; echo EXIT_CODE:$?\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -321,8 +327,10 @@ while {$this_cnt <= $num_sockets} {
 			}
 			exp_continue
 		}
-		-re "error" {
-			fail "Some error occurred"
+		-re "EXIT_CODE:(\d+)" {
+			if {[$expect_out(1,string)] != 0} {
+				fail "Some error occurred"
+			}
 		}
 		timeout {
 			fail "srun (from --allocate) not responding or failure to recognize prompt"
@@ -350,7 +358,7 @@ while {$this_cnt <= $num_cores} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $num_sockets:$this_cnt-$this_cnt:$num_threads ./$file_prog\r"
+	send "$srun -B $num_sockets:$this_cnt-$this_cnt:$num_threads ./$file_prog; echo EXIT_CODE:$?\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -365,8 +373,10 @@ while {$this_cnt <= $num_cores} {
 			}
 			exp_continue
 		}
-		-re "error" {
-			fail "Some error occurred"
+		-re "EXIT_CODE:(\d+)" {
+			if {[$expect_out(1,string)] != 0} {
+				fail "Some error occurred"
+			}
 		}
 		timeout {
 			fail "salloc not responding or failure to recognize prompt"
@@ -394,7 +404,7 @@ while {$this_cnt <= $num_threads} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -B $num_sockets:$num_cores:$this_cnt-$this_cnt ./$file_prog\r"
+	send "$srun -B $num_sockets:$num_cores:$this_cnt-$this_cnt ./$file_prog; echo EXIT_CODE:$?\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -409,8 +419,10 @@ while {$this_cnt <= $num_threads} {
 			}
 			exp_continue
 		}
-		-re "error" {
-			fail "Some error occurred"
+		-re "EXIT_CODE:(\d+)" {
+			if {[$expect_out(1,string)] != 0} {
+				fail "Some error occurred"
+			}
 		}
 		timeout {
 			fail "salloc not responding or failure to recognize prompt"
@@ -437,7 +449,7 @@ while {$this_cnt <= $core_task_cnt} {
 	set num_tasks 0
 	set num_bits  0
 	set task_mask 0
-	send "$srun -c$this_cnt -B 1:1:1 ./$file_prog\r"
+	send "$srun -c$this_cnt -B 1:1:1 ./$file_prog; echo EXIT_CODE:$?\r"
 	expect {
 		-re "TASK_ID:($number),MASK:($number)" {
 			incr task_mask $expect_out(2,string)
@@ -452,8 +464,10 @@ while {$this_cnt <= $core_task_cnt} {
 			}
 			exp_continue
 		}
-		-re "error" {
-			fail "Some error occurred"
+		-re "EXIT_CODE:(\d+)" {
+			if {[$expect_out(1,string)] != 0} {
+				fail "Some error occurred"
+			}
 		}
 		timeout {
 			fail "salloc not responding or failure to recognize prompt"
@@ -477,14 +491,16 @@ while {$this_cnt <= $core_task_cnt} {
 #
 set expected_mask [ expr ((1 << $task_cnt) - 1) ]
 set task_mask 0
-send "$srun -n $task_cnt -m plane=4 ./$file_prog\r"
+send "$srun -n $task_cnt -m plane=4 ./$file_prog; echo EXIT_CODE:$?\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_mask $expect_out(2,string)
 		exp_continue
 	}
-	-re "error" {
-		fail "Some error occurred"
+	-re "EXIT_CODE:(\d+)" {
+		if {[$expect_out(1,string)] != 0} {
+			fail "Some error occurred"
+		}
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
@@ -504,9 +520,6 @@ subtest {$task_mask == $expected_mask} "Affinity mask is consistent for a job st
 #
 send "exit\r"
 expect {
-	-re "error" {
-		fail "Some error occurred"
-	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
