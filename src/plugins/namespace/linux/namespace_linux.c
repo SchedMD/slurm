@@ -548,7 +548,7 @@ child_exit:
 
 static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 {
-	int fd = 0, rc = SLURM_SUCCESS;
+	int fd = -1, rc = SLURM_SUCCESS;
 	char *tmpstr = NULL;
 
 	if (!ns_l_enabled[NS_L_USER].enabled)
