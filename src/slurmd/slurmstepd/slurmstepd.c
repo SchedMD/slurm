@@ -963,7 +963,7 @@ _got_ack_from_slurmd(int sock)
 	safe_read(sock, &ok, sizeof(int));
 	return;
 rwfail:
-	error("Unable to receive \"ok ack\" to slurmd");
+	error("Unable to receive \"ok ack\" from slurmd");
 #endif
 }
 
