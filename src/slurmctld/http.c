@@ -33,17 +33,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/http.h"
 #include "src/common/http_con.h"
 #include "src/common/http_mime.h"
 #include "src/common/http_router.h"
 #include "src/common/pack.h"
 #include "src/common/probes.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/http_auth.h"
 #include "src/interfaces/metrics.h"
 
 #include "src/slurmctld/http.h"
@@ -69,6 +73,20 @@ static int _reply_error(http_con_t *hcon, const char *name,
 
 	xfree(body);
 	return rc;
+}
+
+static int _auth(http_con_t *hcon, const char *name,
+		 const http_con_request_t *request, void *uid_ptr)
+{
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_authenticate(HTTP_AUTH_PLUGIN_ANY, uid_ptr, hcon,
+					   name, request))) {
+		(void) _reply_error(hcon, name, request, rc);
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static int _req_not_found(http_con_t *hcon, const char *name,
@@ -121,9 +139,19 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 	buf_t *body = NULL;
 	int rc = EINVAL;
 
-	if (!xstrcasecmp(request->url.query, "verbose") &&
-	    !slurm_conf.private_data)
+	if (!xstrcasecmp(request->url.query, "verbose")) {
+		uid_t uid = SLURM_AUTH_NOBODY;
+
+		/* Authenticate request and close it on any failure */
+		if (_auth(hcon, name, request, &uid))
+			return SLURM_SUCCESS;
+
+		/* Only root and SlurmUser are allowed to view verbose */
+		if ((uid != 0) && (uid != slurm_conf.slurm_user_id))
+			return _reply_error(hcon, name, request, EPERM);
+
 		body = init_buf(BUF_SIZE);
+	}
 
 	if (probe_run(body, NULL, body, __func__) >= PROBE_RC_READY) {
 		if (body && (get_buf_offset(body) > 0))
@@ -308,6 +336,12 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 
 extern void http_init(void)
 {
+	int rc = EINVAL;
+
+	if ((rc = http_auth_g_init(NULL, NULL)))
+		fatal("http authentication plugins failed to load: %s",
+		      slurm_strerror(rc));
+
 	http_router_init(_req_not_found);
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root);
 	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
@@ -328,6 +362,7 @@ extern void http_init(void)
 extern void http_fini(void)
 {
 	http_router_fini();
+	http_auth_g_fini();
 }
 
 extern int on_http_connection(conmgr_fd_t *con)
