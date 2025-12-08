@@ -35,6 +35,7 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/probes.h"
 #include "src/common/read_config.h"
@@ -45,7 +46,6 @@
 #include "src/common/xsched.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
 /* Limit automatically set default thread count */

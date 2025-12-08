@@ -34,6 +34,8 @@ libcommon_la_SOURCES =				\
 	env.h					\
 	extra_constraints.c			\
 	extra_constraints.h			\
+	events.c				\
+	events.h				\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\

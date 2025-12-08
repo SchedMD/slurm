@@ -42,6 +42,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/events.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -52,7 +53,6 @@
 #include "src/common/xstring.h"
 
 #include "src/conmgr/polling.h"
-#include "src/conmgr/events.h"
 
 /*
  * Size event count for 1 input and 1 output per connection and
@@ -607,7 +607,7 @@ static int _intr_send_byte(int fd, const char *caller)
 	safe_write(fd, buf, 1);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		END_TIMER3(NULL, 0);
+		END_TIMER;
 		log_flag(CONMGR, "%s->%s: [EPOLL] interrupt byte sent in %s",
 			 caller, __func__, TIMER_STR());
 	}

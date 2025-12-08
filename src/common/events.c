@@ -35,17 +35,16 @@
 
 #include <pthread.h>
 
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include <time.h>
 
-#include "src/conmgr/events.h"
-
 static void _wait_pending(event_signal_t *event, const char *caller)
 {
-	log_flag(CONMGR, "%s->%s: [EVENT:%s] wait skipped due to %d pending reliable signals",
+	log_flag(THREAD, "%s->%s: [EVENT:%s] wait skipped due to %d pending reliable signals",
 		 caller, __func__, event->name, event->pending);
 
 	xassert(!event->waiting);
@@ -60,10 +59,10 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 {
 	DEF_TIMERS;
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		START_TIMER;
 
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] BEGIN wait with %d other waiters",
+		log_flag(THREAD, "%s->%s: [EVENT:%s] BEGIN wait with %d other waiters",
 			 caller, __func__, event->name, event->waiting);
 	}
 
@@ -81,11 +80,11 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 	xassert(event->waiting >= 0);
 	xassert(!event->pending);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
+	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		/* we want the time but not to warn about a time limit */
-		END_TIMER3(NULL, 0);
+		END_TIMER;
 
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] END waited after %s with %d other pending waiters",
+		log_flag(THREAD, "%s->%s: [EVENT:%s] END waited after %s with %d other pending waiters",
 			 caller, __func__, event->name, TIMER_STR(),
 			 event->waiting);
 	}
@@ -103,7 +102,7 @@ extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
 static void _broadcast(event_signal_t *event, const char *caller)
 {
 	if (!event->waiting) {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] broadcast skipped due to 0 waiters with %d pending signals",
+		log_flag(THREAD, "%s->%s: [EVENT:%s] broadcast skipped due to 0 waiters with %d pending signals",
 			 caller, __func__, event->name, event->pending);
 		return;
 	}
@@ -111,7 +110,7 @@ static void _broadcast(event_signal_t *event, const char *caller)
 	/* can't have pending signals when there are waiters */
 	xassert(!event->pending);
 
-	log_flag(CONMGR, "%s->%s: [EVENT:%s] broadcasting to all %d waiters",
+	log_flag(THREAD, "%s->%s: [EVENT:%s] broadcasting to all %d waiters",
 		 caller, __func__, event->name, event->pending);
 
 	slurm_cond_broadcast(&event->cond);
@@ -122,7 +121,7 @@ static void _signal_waiting(event_signal_t *event, const char *caller)
 	/* can't have pending signals when there are waiters */
 	xassert(!event->pending);
 
-	log_flag(CONMGR, "%s->%s: [EVENT:%s] sending signal to 1/%d waiters",
+	log_flag(THREAD, "%s->%s: [EVENT:%s] sending signal to 1/%d waiters",
 		 caller, __func__, event->name, event->waiting);
 
 	slurm_cond_signal(&event->cond);
@@ -133,10 +132,10 @@ static void _signal_no_waiting(event_signal_t *event, const char *caller)
 	xassert(event->pending >= 0);
 
 	if (event->pending) {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] skipping signal to 0 waiters with %d signals pending",
+		log_flag(THREAD, "%s->%s: [EVENT:%s] skipping signal to 0 waiters with %d signals pending",
 			 caller, __func__, event->name, event->pending);
 	} else {
-		log_flag(CONMGR, "%s->%s: [EVENT:%s] enqueuing signal to 0 waiters with 0 signals pending",
+		log_flag(THREAD, "%s->%s: [EVENT:%s] enqueuing signal to 0 waiters with 0 signals pending",
 			 caller, __func__, event->name);
 		event->pending++;
 	}
