@@ -72,6 +72,11 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "Test invalid without slurmdbd"
 }
 
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"] && \
+    [package vcompare [get_version] "25.11.0"] < 0 } {
+	skip "In 25.11 we fixed some issues with stepmgr that were leading to random fails in this test."
+}
+
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
 if { [llength $node_name] != 1 } {
 	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
