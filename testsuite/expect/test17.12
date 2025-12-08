@@ -51,6 +51,11 @@ proc cleanup {} {
 #
 # Prerequisites
 #
+if {[param_contains [get_config_param "SlurmctldParameters"] "enable_stepmgr"] && \
+    [package vcompare [get_version] "25.11.0"] < 0 } {
+	skip "Ticket 23611: In 25.11 we fixed some issues with stepmgr that were leading to random failures in this test."
+}
+
 if {![is_super_user] || [get_config_param "NodeFeaturesPlugins"] ne "(null)"} {
 	skip "Test needs super user and not NodeFeaturesPlugins"
 }
