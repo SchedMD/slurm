@@ -33,55 +33,28 @@ source ./globals
 
 set file_out     "$test_dir/output"
 set job_name     $test_name
-
-set cycle_count [get_cycle_count]
-set task_cnt    $max_stress_tasks
-set node_cnt	1-4
+set cycle_count  2
+set task_cnt     [get_total_cpus]
+set node_cnt     [llength [get_nodes_by_state]]
 set other_opts   "-O"
 
-# Execute an srun job to print hostname to output_file with task_cnt tasks per node,
-# wait for completion
-# Returns 0 on successful completion, returns 1 otherwise
-proc run_hostname_job { output_file } {
-	global bin_printenv bin_rm job_name number srun node_cnt other_opts
-	global task_cnt timeout
-	exec $bin_rm -f $output_file
-
-	spawn $srun --job-name=$job_name --input=/dev/null --output=$output_file --error=/dev/null -n$task_cnt -N$node_cnt $other_opts -t1 $bin_printenv SLURMD_NODENAME
-	expect {
-		-re "Unable to contact" {
-			fail "Slurm appears to be down"
-		}
-		timeout {
-			fail "srun not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	wait_for_file -fail $output_file
-}
+log_info "Using $task_cnt tasks"
 
 #
 # Run cycle_count jobs to run "hostname" and check output file size
 #
-set success_cnt 0
-set timeout $max_job_delay
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
-	run_hostname_job $file_out
-	set stdout_lines [get_line_cnt $file_out]
-	if {$stdout_lines != $task_cnt} {
-		exec $bin_sleep 1
+	# Remove files from previous cycle
+	exec $bin_rm -f $file_out
+
+	# Submit a job that copies -i to -o
+	run_command -fail "$srun --job-name=$job_name --input=/dev/null --output=$file_out --error=/dev/null -n$task_cnt -N$node_cnt $other_opts -t1 $bin_printenv SLURMD_NODENAME"
+
+	# Test output file size
+	set stdout_lines 0
+	wait_for_file $file_out
+	wait_for {$stdout_lines == $task_cnt} {
 		set stdout_lines [get_line_cnt $file_out]
 	}
-	if {$stdout_lines != $task_cnt} {
-		if {$stdout_lines == 0} {
-			fail "stdout is empty. Is current working directory writable from compute nodes?"
-		} else {
-			fail "stdout is incomplete"
-		}
-	} else {
-		incr success_cnt
-	}
+	subtest {$stdout_lines == $task_cnt} "Output file should have one line per task" "$stdout_lines != $task_cnt"
 }
