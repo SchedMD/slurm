@@ -422,7 +422,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	} else if (rc) {
-		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_tls() failed: %s",
+		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() failed: %s",
 				 __func__, con->name, slurm_strerror(rc));
 		_wait_close(false, con);
 		return;
