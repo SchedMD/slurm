@@ -702,7 +702,7 @@ static bool _pick_core_group(bitstr_t *gpu_res_core_bitmap,
  */
 static void _pick_restricted_cores(bitstr_t *core_bitmap,
 				   bitstr_t *gpu_spec_cpy,
-				   gres_job_state_t *gres_js,
+				   gres_state_t *gres_state_job,
 				   gres_node_state_t *gres_ns,
 				   uint32_t res_cores_per_gpu,
 				   uint16_t sockets,
@@ -710,6 +710,7 @@ static void _pick_restricted_cores(bitstr_t *core_bitmap,
 				   uint32_t node_i)
 {
 	int *picked_cores = xcalloc(res_cores_per_gpu, sizeof(int));
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
 
 	if (!gres_js->res_gpu_cores) {
 		gres_js->res_array_size = node_record_count;
@@ -730,6 +731,20 @@ static void _pick_restricted_cores(bitstr_t *core_bitmap,
 		if (gres_js->type_name &&
 		    (gres_js->type_id != gres_ns->topo_type_id[i]))
 			continue;
+
+		/* Shared gres use all allowed cores (No groups needed) */
+		if (gres_id_shared(gres_state_job->config_flags)) {
+			bitstr_t *picked_core_bitmap = bit_copy(core_bitmap);
+			bit_and(picked_core_bitmap,
+				gres_ns->topo_res_core_bitmap[i]);
+
+			bit_or(gpu_spec_cpy, picked_core_bitmap);
+			bit_or(gres_js->res_gpu_cores[node_i],
+			       picked_core_bitmap);
+			FREE_NULL_BITMAP(picked_core_bitmap);
+			continue;
+		}
+
 		for (int s = 0; s < sockets; s++) {
 			int max_inx = (s + 1) * cores_per_sock;
 			for (int c = 0; c < cores_per_sock; c++) {
@@ -765,15 +780,13 @@ static int _foreach_restricted_gpu(void *x, void *arg)
 {
 	gres_state_t *gres_state_job = x;
 	foreach_res_gpu_t *args = arg;
-	gres_job_state_t  *gres_js;
 
 	/* Currently all shared gres are gpu alt gres */
 	if (!gres_find_gpu_or_alt(gres_state_job, NULL))
 		return SLURM_SUCCESS;
-	gres_js = gres_state_job->gres_data;
 
 	_pick_restricted_cores(args->core_bitmap, args->gpu_spec_bitmap,
-			       gres_js, args->gres_state_node->gres_data,
+			       gres_state_job, args->gres_state_node->gres_data,
 			       args->res_cores_per_gpu, args->sockets,
 			       args->cores_per_sock, args->node_inx);
 
