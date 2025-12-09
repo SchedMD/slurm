@@ -33,9 +33,10 @@ the name "slurm\-%j.out", where the "%j" is replaced with the job allocation
 number. The file will be generated on the first node of the job allocation.
 Other than the batch script itself, Slurm does no movement of user files.
 
-When the job allocation is finally granted for the batch script, Slurm
-runs a single copy of the batch script on the first node in the set of
-allocated nodes.
+When the job allocation is granted for the batch job, Slurm runs a single copy
+of the batch script on one of the allocated nodes. The batch host is typically
+the first node in the allocation, but may be placed elsewhere due to the
+\fB\-\-batch\fR option.
 
 The following document describes the influence of various options on the
 allocation of cpus to jobs and tasks.
