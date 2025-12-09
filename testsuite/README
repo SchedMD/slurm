@@ -318,7 +318,6 @@ test13.#   Testing of switch plugins
 
 test14.#   Testing of sbcast options.
 =====================================
-test14.1   Confirm sbcast usage option works (--usage option).
 test14.2   Confirm sbcast help option works (--help option).
 test14.3   Confirm that sbcast reports a proper version number
 	   (--version option).
