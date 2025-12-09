@@ -561,7 +561,9 @@ components.
 All Slurm daemons and commands must be terminated prior to changing
 the value of \fBAuthType\fR and later restarted.
 Changes to this value will interrupt outstanding job steps and prevent them
-from completing.
+from completing, so no jobs should be running when this is changed.
+See <https://slurm.schedmd.com/authentication.html> for more information.
+
 Acceptable values at present:
 .RS
 .TP
