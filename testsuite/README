@@ -332,7 +332,6 @@ test14.10  Validate sbcast for a job step allocation (subset of job allocation).
 
 test15.#   Testing of salloc options.
 =====================================
-test15.1   Confirm salloc usage option works (--usage option).
 test15.2   Confirm salloc help option works (--help option).
 test15.3   Confirm that salloc reports a proper version number
 	   (--version option).
