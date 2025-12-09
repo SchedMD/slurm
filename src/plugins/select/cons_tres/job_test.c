@@ -2573,6 +2573,7 @@ static job_record_t *_get_last_relevant_job(job_record_t *job_ptr,
 					    &relevant_job_args);
 
 	xfree(relevant_job_args.needed_licenses);
+	FREE_NULL_BITMAP(relevant_job_args.effective_nodes);
 
 	return last_relevant_job;
 }
