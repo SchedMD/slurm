@@ -1742,6 +1742,32 @@ void env_array_free(char **env_array)
 }
 
 /*
+ * Free the memory used by an env_options env_t struct.
+ */
+extern void env_opts_free(env_t **envtp)
+{
+	if (!envtp || !*envtp)
+		return;
+	xfree((*envtp)->account);
+	/* xfree((*envtp)->cli); DON'T FREE - ref only */
+	xfree((*envtp)->cpu_bind);
+	env_array_free((*envtp)->env);
+	xfree((*envtp)->group_name);
+	xfree((*envtp)->job_licenses);
+	xfree((*envtp)->job_name);
+	xfree((*envtp)->mem_bind);
+	xfree((*envtp)->nodelist);
+	xfree((*envtp)->partition);
+	xfree((*envtp)->qos);
+	xfree((*envtp)->resv_name);
+	xfree((*envtp)->sgtids);
+	xfree((*envtp)->task_count);
+	/* xfree((*envtp)->tls_cert); DON'T FREE - ref only */
+	xfree((*envtp)->user_name);
+	xfree(*envtp);
+}
+
+/*
  * Given an environment variable "name=value" string,
  * copy the name portion into the "name" buffer, and the
  * value portion into the "value" buffer.
