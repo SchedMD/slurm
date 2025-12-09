@@ -251,6 +251,18 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		return;
 	}
 
+	if (con->tls) {
+		con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+		add_work_con_fifo(true, con, tls_close, NULL);
+
+		if (!locked)
+			slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] closing tls connection before closing fd",
+			 __func__, con->name);
+		return;
+	}
+
 	log_flag(CONMGR, "%s: [%s] closing input", __func__, con->name);
 
 	/*
