@@ -1213,6 +1213,7 @@ extern void *backfill_agent(void *args)
 
 		slurm_mutex_lock(&check_bf_running_lock);
 		slurmctld_diag_stats.bf_active = 0;
+		slurm_cond_broadcast(&check_bf_running_cond);
 		slurm_mutex_unlock(&check_bf_running_lock);
 
 		short_sleep = false;
