@@ -233,6 +233,47 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	s2n_errno = S2N_ERR_T_OK;
 }
 
+/* s2n library does not provide this */
+static char *_s2n_strblocked(s2n_blocked_status blocked)
+{
+	switch (blocked) {
+	case S2N_NOT_BLOCKED:
+		return "S2N_NOT_BLOCKED";
+	case S2N_BLOCKED_ON_READ:
+		return "S2N_BLOCKED_ON_READ";
+	case S2N_BLOCKED_ON_WRITE:
+		return "S2N_BLOCKED_ON_WRITE";
+	case S2N_BLOCKED_ON_APPLICATION_INPUT:
+		return "S2N_BLOCKED_ON_APPLICATION_INPUT";
+	case S2N_BLOCKED_ON_EARLY_DATA:
+		return "S2N_BLOCKED_ON_EARLY_DATA";
+	default:
+		return "UNKNOWN_BLOCK_STATUS";
+	}
+}
+
+/*
+ * Handle and log a libs2n function failing
+ * IN conn - ptr to connection or NULL
+ * IN func - function that failed
+ */
+#define on_s2n_block(conn, func) \
+	_on_s2n_block(conn, blocked, (void *(*) (void) ) func, \
+		      XSTRINGIFY(func), __func__)
+
+static void _on_s2n_block(tls_conn_t *conn, s2n_blocked_status blocked,
+			  void *(*func_ptr)(void), const char *funcname,
+			  const char *caller)
+{
+	xassert(s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED);
+
+	log_flag(TLS, "%s: %s() would block %s[%d]: %s (%s) -> %s",
+		 caller, funcname, s2n_strerror_name(s2n_errno), s2n_errno,
+		 s2n_strerror(s2n_errno, NULL),
+		 _s2n_strblocked(blocked),
+		 s2n_strerror_debug(s2n_errno, NULL));
+}
+
 static int _check_file_permissions(const char *path, int bad_perms,
 				   bool check_owner)
 {
@@ -756,6 +797,7 @@ static int _negotiate(tls_conn_t *conn)
 	if (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
 		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
 			/* Avoid calling on_s2n_error for blocking */
+			on_s2n_block(conn, s2n_negotiate);
 			return EWOULDBLOCK;
 		} else {
 			on_s2n_error(conn, s2n_negotiate);
@@ -1141,6 +1183,7 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 			else if (s2n_errno == S2N_BLOCKED_ON_WRITE)
 				errno = SLURM_BLOCKED_ON_WRITE;
 			/* Avoid calling on_s2n_error for blocking */
+			on_s2n_block(conn, s2n_shutdown);
 			return EWOULDBLOCK;
 		} else {
 			on_s2n_error(conn, s2n_shutdown);
