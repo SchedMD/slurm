@@ -205,6 +205,7 @@ bool	ping_nodes_now = false;
 pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t check_bf_running_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t check_bf_running_cond = PTHREAD_COND_INITIALIZER;
 int	sched_interval = 60;
 slurmctld_config_t slurmctld_config = {0};
 diag_stats_t slurmctld_diag_stats;
@@ -2694,6 +2695,13 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			_flush_rpcs();
 
+			/* Wait for backfill to release locks */
+			slurm_mutex_lock(&check_bf_running_lock);
+			while (slurmctld_diag_stats.bf_active) {
+				slurm_cond_wait(&check_bf_running_cond,
+						&check_bf_running_lock);
+			}
+
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
@@ -2701,6 +2709,9 @@ static void *_slurmctld_background(void *no_data)
 				error("Semaphores still set after %d seconds, "
 				      "can not save state", CONTROL_TIMEOUT);
 			}
+
+			/* Unblock backfill thread, so that it can shutdown */
+			slurm_mutex_unlock(&check_bf_running_lock);
 
 			/*
 			 * Allow other connections to start processing again as
