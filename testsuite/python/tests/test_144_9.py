@@ -195,8 +195,8 @@ ok_test_parameters = [
         "-N1 -n1 -c8 --tres-per-task=gres/shard:10 ",
         4,
         2,
-        0,
         2,
+        0,
         "shard:10(10/10,0/10,0/10,0/10)",
         marks=pytest.mark.xfail(
             atf.get_version() < (25, 11),
@@ -205,8 +205,8 @@ ok_test_parameters = [
     ),
     pytest.param(
         "-N1 -n1 -c1 --gres=shard:1 ",
-        0,
         1,
+        0,
         0,
         0,
         "shard:1(1/10,0/10,0/10,0/10)",
@@ -229,8 +229,8 @@ ok_test_parameters = [
     ),
     pytest.param(
         "-N2 -n2 --gres=shard:5 ",
-        0,
         1,
+        0,
         0,
         0,
         "shard:5(5/10,0/10,0/10,0/10)",  # Second node
@@ -261,28 +261,64 @@ def test_ok(job_args, s0_res, s0_reg, s1_res, s1_reg, gres):
     assert str(job_dict["GRES"]) == gres, f"The job should have this gres: {gres}"
 
     cores = set(atf.range_to_list(job_dict["CPU_IDs"]))
-    # For shard allocations the reserved vs regular core distribution is not
-    # guaranteed. In that case, only verify the total number of allocated
-    # cores matches the expected total. For other resources, keep strict
-    # per-socket assertions.
-    expected_total = s0_res + s0_reg + s1_res + s1_reg
-    if isinstance(gres, str) and gres.startswith("shard:"):
-        assert (
-            len(cores) == expected_total
-        ), f"The job should have {expected_total} total cores (reserved+regular). Got CPU_IDs={job_dict['CPU_IDs']}"
-    else:
-        assert s0_res == len(
-            cores & sock_0_reserved_cores
-        ), f"The job should have {s0_res} reserved cores on socket 0. We got CPU_IDs={job_dict['CPU_IDs']}"
-        assert s0_reg == len(
-            cores & sock_0_regular_cores
-        ), f"The job should have {s0_reg} not reserved cores on socket 0. We got CPU_IDs={job_dict['CPU_IDs']}"
-        assert s1_res == len(
-            cores & sock_1_reserved_cores
-        ), f"The job should have {s1_res} reserved cores on socket 1. We got CPU_IDs={job_dict['CPU_IDs']}"
-        assert s1_reg == len(
-            cores & sock_1_regular_cores
-        ), f"The job should have {s1_reg} not reserved cores on socket 1. We got CPU_IDs={job_dict['CPU_IDs']}"
+
+    print(s0_res, s0_reg, s1_res, s1_reg)
+
+    assert s0_res == len(
+        cores & sock_0_reserved_cores
+    ), f"The job should have {s0_res} reserved cores on socket 0. We got CPU_IDs={job_dict['CPU_IDs']}"
+    assert s0_reg == len(
+        cores & sock_0_regular_cores
+    ), f"The job should have {s0_reg} not reserved cores on socket 0. We got CPU_IDs={job_dict['CPU_IDs']}"
+    assert s1_res == len(
+        cores & sock_1_reserved_cores
+    ), f"The job should have {s1_res} reserved cores on socket 1. We got CPU_IDs={job_dict['CPU_IDs']}"
+    assert s1_reg == len(
+        cores & sock_1_regular_cores
+    ), f"The job should have {s1_reg} not reserved cores on socket 1. We got CPU_IDs={job_dict['CPU_IDs']}"
+
+
+array_test_parameters = [
+    (  # Test with no gres, should use only regular cores
+        "--array=[0-100] -N1 -n1 --nodelist=node1 ",
+        4,
+    ),
+    (  # Test with gres gpu, should use all gpus
+        "--array=[0-100] -N1 -n1 --nodelist=node1 --gres=gpu:1 ",
+        4,
+    ),
+    (  # Test with gres shard, should use all cores
+        "--array=[0-100] -N1 -n1 --nodelist=node1 --gres=shard:1 ",
+        12,
+    ),
+    (  # Test with gres shard, should use all shards
+        "--array=[0-100] -N1 -n1 --nodelist=node1 --gres=shard:5 ",
+        8,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "job_args,running_count",
+    array_test_parameters,
+    ids=[
+        param.values[0].strip() if hasattr(param, "values") else param[0].strip()
+        for param in array_test_parameters
+    ],
+)
+def test_array(job_args, running_count):
+    job_str = f'{job_args} --wrap "sleep infinity"'
+    job_id = atf.submit_job_sbatch(job_str, fatal=True, quiet=False)
+    atf.wait_for_node_state_any("node1", ["ALLOCATED", "MIXED"], fatal=True)
+    count = int(atf.run_command_output("squeue --noheader --state=Running| wc -l"))
+    atf.cancel_all_jobs(quiet=True)
+    atf.wait_for_job_state(job_id, "CANCELLED")
+
+    print(count, running_count)
+
+    assert (
+        count == running_count
+    ), f"The job array should have {running_count} running tasks"
 
 
 fail_test_parameters = [
