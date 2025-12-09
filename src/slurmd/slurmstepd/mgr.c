@@ -2228,6 +2228,7 @@ static int _fork_all_tasks(bool *io_initialized)
 			goto fail4;
 		} else if ((pid = _exec_wait_get_pid(ei)) == 0) { /* child */
 			int rc;
+			sigset_t mask;
 
 			/*
 			 *  Destroy exec_wait_list in the child.
@@ -2236,6 +2237,17 @@ static int _fork_all_tasks(bool *io_initialized)
 			 *   can be discarded.
 			 */
 			FREE_NULL_LIST(exec_wait_list);
+
+			/*
+			 * Unblock SIGCHLD since this is blocked early by the
+			 * slurmstepd
+			 */
+			sigemptyset(&mask);
+			sigaddset(&mask, SIGCHLD);
+			if (pthread_sigmask(SIG_UNBLOCK, &mask, NULL) == -1) {
+				error("pthread_sigmask() failed: %m");
+				_exit(1);
+			}
 
 			/* jobacctinfo_endpoll();
 			 * closing jobacct files here causes deadlock */
