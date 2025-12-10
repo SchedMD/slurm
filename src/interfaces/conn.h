@@ -233,6 +233,21 @@ extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown);
 extern int conn_g_shutdown(void *conn);
 
 /*
+ * Perform blocking shutdown on connection
+ *
+ * WARNING: If underlying fd connection is non-blocking, this function will
+ * still block via poll(). It is recommended to use conn_g_shutdown and handle
+ * EWOULDBLOCK cases.
+ *
+ * NOTE: conn must have the underlying fd's set in its state in order to use
+ * this function.
+ *
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_blocking_g_shutdown(void *conn);
+
+/*
  * Get absolute time that next conn_g_*() should be delayed until after any
  * failure
  * NOTE: returned timespec may be {0,0} indicating no delay required

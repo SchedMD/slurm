@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -338,4 +339,39 @@ extern int conn_g_shutdown(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.shutdown_conn))(conn);
+}
+
+extern int conn_blocking_g_shutdown(void *conn)
+{
+	int rc;
+	int fd;
+
+	xassert(plugin_inited == PLUGIN_INITED);
+
+	if (!conn)
+		return SLURM_SUCCESS;
+
+	fd = conn_g_get_fd(conn);
+
+	while ((rc = (*(ops.shutdown_conn))(conn))) {
+		short int events = POLLIN;
+
+		if ((rc != SLURM_BLOCKED_ON_READ) &&
+		    (rc != SLURM_BLOCKED_ON_WRITE))
+			return rc;
+
+		if (rc == SLURM_BLOCKED_ON_READ)
+			events = POLLIN;
+		else if (rc == SLURM_BLOCKED_ON_WRITE)
+			events = POLLOUT;
+
+		/* Wait until it's possible read/write then try again */
+		if ((rc = wait_fd(fd, slurm_conf.msg_timeout, events))) {
+			error("%s: Failed to wait on fd %d",
+			      __func__, fd);
+			return rc;
+		}
+	}
+
+	return rc;
 }
