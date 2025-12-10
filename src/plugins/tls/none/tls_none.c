@@ -210,3 +210,8 @@ extern void tls_p_set_graceful_shutdown(tls_conn_t *conn,
 {
 	return;
 }
+
+extern void tls_p_shutdown_conn(tls_conn_t *conn)
+{
+	return;
+}

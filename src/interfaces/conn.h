@@ -223,6 +223,16 @@ extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks);
 extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown);
 
 /*
+ * Perform shutdown on connection
+ *
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS if connection was shutdown,
+ * SLURM_BLOCKED_ON_READ/SLURM_BLOCKED_ON_WRITE if blocked in either read/write
+ * direction, or error if shutdown was unsuccessful.
+ */
+extern int conn_g_shutdown(void *conn);
+
+/*
  * Get absolute time that next conn_g_*() should be delayed until after any
  * failure
  * NOTE: returned timespec may be {0,0} indicating no delay required

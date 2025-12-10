@@ -1116,6 +1116,36 @@ fail:
 	return NULL;
 }
 
+extern int tls_p_shutdown_conn(tls_conn_t *conn)
+{
+	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+
+	xassert(conn);
+
+	log_flag(TLS, "%s: Attempting s2n_shutdown for fd:%d->%d",
+		 plugin_type, conn->input_fd, conn->output_fd);
+
+	/* Attempt graceful shutdown at TLS layer */
+	if (s2n_shutdown(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
+			if (s2n_errno == S2N_BLOCKED_ON_READ)
+				errno = SLURM_BLOCKED_ON_READ;
+			else if (s2n_errno == S2N_BLOCKED_ON_WRITE)
+				errno = SLURM_BLOCKED_ON_WRITE;
+			/* Avoid calling on_s2n_error for blocking */
+			return EWOULDBLOCK;
+		} else {
+			on_s2n_error(conn, s2n_negotiate);
+			return errno;
+		}
+	} else {
+		log_flag(TLS, "%s: Successfully did s2n_shutdown for  fd:%d->%d.",
+			 plugin_type, conn->input_fd, conn->output_fd);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
