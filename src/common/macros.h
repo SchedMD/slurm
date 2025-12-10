@@ -286,12 +286,12 @@
 /* Get __typeof__(s->f) */
 #define STRUCT_FIELD_TYPEOF(s, f) __typeof__(((s *) (NULL))->f)
 
-#define SWAP(x, y)		\
-do {				\
-	__typeof__(x) b = x;	\
-	x = y;			\
-	y = b;			\
-} while (0)
+#define SWAP(x, y) \
+	do { \
+		__typeof__(x) b = (x); \
+		(x) = (y); \
+		(y) = b; \
+	} while (0)
 
 /* macro to force stringification */
 #define XSTRINGIFY(s) XSTRINGIFY2(s)
