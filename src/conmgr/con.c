@@ -119,6 +119,7 @@ static const struct {
 	T(FLAG_TLS_WAIT_ON_CLOSE),
 	T(FLAG_RPC_RECV_FORWARD),
 	T(FLAG_WAIT_ON_EXTRACT),
+	T(FLAG_IS_TLS_SHUTTING_DOWN),
 };
 #undef T
 
