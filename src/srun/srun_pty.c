@@ -178,6 +178,7 @@ static void *_pty_thread(void *arg)
 		winch = 0;
 	}
 
+	(void) conn_blocking_g_shutdown(conn);
 	conn_g_destroy(conn, true);
 	return NULL;
 }

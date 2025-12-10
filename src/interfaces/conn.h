@@ -208,21 +208,6 @@ extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
 extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks);
 
 /*
- * Enable graceful TLS shutdown on connection
- *
- * Places that talk to a peer that blocks until a connection is closed (i.e.
- * peer waits until conn_g_recv() returns 0) need to do a graceful shutdown.
- * Otherwise, the peer's conn_g_recv will return an error, and the peer will not
- * know if the connection was intentionally closed.
- *
- * NOTE: Most Slurm connections do not need to do this as RPC conversations have
- * a clear end.
- *
- * IN conn - TLS connection enable graceful shutdown
- */
-extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown);
-
-/*
  * Perform shutdown on connection
  *
  * IN conn - connection to shutdown

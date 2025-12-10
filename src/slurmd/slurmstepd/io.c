@@ -856,6 +856,7 @@ static void *_window_manager(void *arg)
 		}
 	}
 
+	(void) conn_blocking_g_shutdown(win_info->conn);
 	conn_g_destroy(win_info->conn, true);
 	xfree(win_info);
 

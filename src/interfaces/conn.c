@@ -71,7 +71,6 @@ typedef struct {
 	int (*get_conn_fd)(void *conn);
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
 	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
-	void (*set_graceful_shutdown)(void *conn, bool do_graceful_shutdown);
 	int (*shutdown_conn)(void *conn);
 } conn_ops_t;
 
@@ -98,7 +97,6 @@ static const char *syms[] = {
 	"tls_p_get_conn_fd",
 	"tls_p_set_conn_fds",
 	"tls_p_set_conn_callbacks",
-	"tls_p_set_graceful_shutdown",
 	"tls_p_shutdown_conn",
 };
 
@@ -327,12 +325,6 @@ extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_callbacks))(conn, callbacks);
-}
-
-extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
-{
-	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.set_graceful_shutdown))(conn, do_graceful_shutdown);
 }
 
 extern int conn_g_shutdown(void *conn)
