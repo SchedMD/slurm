@@ -173,7 +173,8 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 	} else if ((in < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
 		return 0;
 	} else if (in < 0) {
-		error("%s: read error %zd %m", __func__, in);
+		error("%s: read error %zd on fd %d -> %d: %m",
+		      __func__, in, obj->fd, *fd_out);
 		goto shutdown;
 	}
 
