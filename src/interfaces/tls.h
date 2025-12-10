@@ -113,6 +113,16 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 			       uint32_t key_len);
 
 /*
+ * Perform shutdown on connection
+ *
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS if connection was shutdown,
+ * SLURM_BLOCKED_ON_READ/SLURM_BLOCKED_ON_WRITE if blocked in either read/write
+ * direction, or error if shutdown was unsuccessful.
+ */
+extern int tls_g_shutdown_conn(void *conn);
+
+/*
  * Return true if interface/tls has TLS plugin loaded
  * WARNING: tls_available() is different than conn_tls_enabled()
  */
