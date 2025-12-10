@@ -181,7 +181,7 @@ static int _restore_ns(list_t *steps, const char *d_name)
 		return _delete_ns(job_id);
 	}
 
-	close(fd);
+	fd_close(&fd);
 
 	return SLURM_SUCCESS;
 }
@@ -212,10 +212,7 @@ extern void fini(void)
 #ifdef MEMORY_LEAK_DEBUG
 	for (int i = 0; i < NS_L_END; i++) {
 		xfree(ns_l_enabled[i].path);
-		if (ns_l_enabled[i].fd >= 0) {
-			close(ns_l_enabled[i].fd);
-			ns_l_enabled[i].fd = -1;
-		}
+		fd_close(&ns_l_enabled[i].fd);
 	}
 	free_ns_conf();
 #endif
@@ -551,7 +548,7 @@ child_exit:
 
 static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 {
-	int fd = 0, rc = SLURM_SUCCESS;
+	int fd = -1, rc = SLURM_SUCCESS;
 	char *tmpstr = NULL;
 
 	if (!ns_l_enabled[NS_L_USER].enabled)
@@ -596,8 +593,7 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	if (fd >= 0)
-		close(fd);
+	fd_close(&fd);
 	xfree(tmpstr);
 
 	xstrfmtcat(tmpstr, "/proc/%d/gid_map", pid);
@@ -614,8 +610,7 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 	}
 
 end_it:
-	if (fd >= 0)
-		close(fd);
+	fd_close(&fd);
 	xfree(tmpstr);
 	return rc;
 }
@@ -674,7 +669,7 @@ static int _create_ns(stepd_step_rec_t *step)
 			rc = -1;
 			goto exit2;
 		}
-		close(fd);
+		fd_close(&fd);
 	}
 
 	/* Create location for bind mounts to go */
@@ -951,8 +946,7 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 		if (!ns_l_enabled[i].enabled)
 			continue;
 		rc = setns(ns_l_enabled[i].fd, 0);
-		close(ns_l_enabled[i].fd);
-		ns_l_enabled[i].fd = -1;
+		fd_close(&ns_l_enabled[i].fd);
 		if (rc) {
 			error("%s: setns failed for %s: %m",
 			      __func__, ns_l_enabled[i].path);
@@ -1177,7 +1171,6 @@ extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
 		rc = SLURM_SUCCESS;
 	}
 end:
-	if (fd >= 0)
-		close(fd);
+	fd_close(&fd);
 	return rc;
 }
