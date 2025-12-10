@@ -142,14 +142,6 @@ extern int threadpool_join(const pthread_t id, const char *caller)
 static void _set_thread_name(const char *name)
 {
 #if HAVE_SYS_PRCTL_H
-
-#ifndef NDEBUG
-	if (strlen(name) >= PRCTL_BUF_BYTES)
-		warning("Thread name truncated[%zu/%zu]: %s",
-			(uint64_t) strlen(name), (uint64_t) PRCTL_BUF_BYTES,
-			name);
-#endif
-
 	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL))
 		error("%s: cannot set process name to %s %m", __func__, name);
 #endif
@@ -237,6 +229,13 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 	pthread_attr_t attr;
 	int rc = EINVAL;
 	thread_t *thread = xmalloc(sizeof(*thread));
+
+#ifndef NDEBUG
+	if (thread_name && strlen(thread_name) >= PRCTL_BUF_BYTES)
+		warning("%s: Thread name truncated[%zu/%zu]: %s",
+			caller, (uint64_t) strlen(thread_name),
+			(uint64_t) PRCTL_BUF_BYTES, thread_name);
+#endif
 
 	*thread = (thread_t) {
 		.magic = THREAD_MAGIC,
