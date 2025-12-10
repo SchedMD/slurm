@@ -590,6 +590,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "STEPMGR_ENABLED");
 	lua_pushnumber(L, SPREAD_SEGMENTS);
 	lua_setfield(L, -2, "SPREAD_SEGMENTS");
+	lua_pushnumber(L, CONSOLIDATE_SEGMENTS);
+	lua_setfield(L, -2, "CONSOLIDATE_SEGMENTS");
 	lua_pushnumber(L, EXPEDITED_REQUEUE);
 	lua_setfield(L, -2, "EXPEDITED_REQUEUE");
 
