@@ -107,6 +107,12 @@ extern timespec_t timespec_now(void);
 /* Minimum number of bytes for output of timespec_ctime() */
 #define TIMESPEC_CTIME_STR_LEN 72
 
+/* Converts micro seconds to timespec_t */
+#define TIMESPEC_FROM_USEC(usecs) \
+	((timespec_t) { \
+		.tv_sec = ((usecs) / USEC_IN_SEC), \
+		.tv_nsec = (((usecs) % USEC_IN_SEC) * NSEC_IN_USEC), \
+	})
 /*
  * Convert timespec into human readable string
  *
