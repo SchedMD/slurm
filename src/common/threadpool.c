@@ -48,6 +48,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 /*
  * From man prctl:
@@ -160,6 +161,7 @@ static void _thread_free(thread_t *thread)
 	xassert(thread->magic == THREAD_MAGIC);
 
 	thread->magic = ~THREAD_MAGIC;
+	xfree(thread->thread_name);
 	xfree(thread);
 }
 
@@ -239,7 +241,7 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 	*thread = (thread_t) {
 		.magic = THREAD_MAGIC,
 		.detached = detached,
-		.thread_name = thread_name,
+		.thread_name = xstrdup(thread_name),
 		.func = func,
 		.func_name = func_name,
 		.arg = arg,
