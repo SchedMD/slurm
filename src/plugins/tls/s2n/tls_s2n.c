@@ -115,6 +115,7 @@ typedef struct {
 	struct s2n_config *s2n_config;
 	struct s2n_cert_chain_and_key *cert_and_key;
 	bool do_graceful_shutdown;
+	bool shutdown_finished;
 	bool using_global_s2n_conf;
 	bool is_client_authenticated;
 } tls_conn_t;
@@ -1119,8 +1120,15 @@ fail:
 extern int tls_p_shutdown_conn(tls_conn_t *conn)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+	int rc = SLURM_SUCCESS;
 
 	xassert(conn);
+
+	if (conn->shutdown_finished) {
+		log_flag(TLS, "%s: s2n_shutdown already finished for fd:%d->%d, skipping.",
+			 plugin_type, conn->input_fd, conn->output_fd);
+		return SLURM_SUCCESS;
+	}
 
 	log_flag(TLS, "%s: Attempting s2n_shutdown for fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
@@ -1135,15 +1143,17 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 			/* Avoid calling on_s2n_error for blocking */
 			return EWOULDBLOCK;
 		} else {
-			on_s2n_error(conn, s2n_negotiate);
-			return errno;
+			on_s2n_error(conn, s2n_shutdown);
+			rc = errno;
 		}
 	} else {
 		log_flag(TLS, "%s: Successfully did s2n_shutdown for  fd:%d->%d.",
 			 plugin_type, conn->input_fd, conn->output_fd);
 	}
 
-	return SLURM_SUCCESS;
+	conn->shutdown_finished = true;
+
+	return rc;
 }
 
 extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
