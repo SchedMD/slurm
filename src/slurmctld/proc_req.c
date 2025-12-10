@@ -5934,7 +5934,6 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 
 static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 {
-	DEF_TIMERS;
 	int rc = SLURM_SUCCESS, fd = -1;
 	char *comment = NULL;
 	buf_t *ret_buf;
@@ -5944,8 +5943,6 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	if (msg->pcon)
 		error("We already have a persistent connect, this should never happen");
-
-	START_TIMER;
 
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
 		persist_init->version = SLURM_PROTOCOL_VERSION;
@@ -6036,7 +6033,6 @@ end_it:
 	}
 	xfree(comment);
 	FREE_NULL_BUFFER(ret_buf);
-	END_TIMER;
 
 	/* Don't free this here, it will be done elsewhere */
 	//slurm_persist_conn_destroy(persist_conn);
