@@ -44,6 +44,8 @@
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 
+#define TIMER_DEFAULT_LIMIT 3000000
+#define TIMER_DEFAULT_DEBUG_LIMIT 1000000
 #define HISTOGRAM_FIELD_DELIMITER "|"
 
 typedef struct {
@@ -121,8 +123,8 @@ extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
 		 * seconds, but that would not typically be reached. See
 		 * "max_sched_time=" logic in src/slurmctld/job_scheduler.c
 		 */
-		limit = 3000000;
-		debug_limit = 1000000;
+		limit = TIMER_DEFAULT_LIMIT;
+		debug_limit = TIMER_DEFAULT_DEBUG_LIMIT;
 	}
 
 	if ((delta <= debug_limit) || (delta <= limit))
