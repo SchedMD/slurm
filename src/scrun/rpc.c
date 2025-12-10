@@ -105,7 +105,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 	resp_msg = xmalloc(sizeof(*resp_msg));
 	slurm_msg_t_init(resp_msg);
 
-	wait_fd_readable(fd, slurm_conf.msg_timeout);
+	wait_fd(fd, slurm_conf.msg_timeout, POLLIN);
 
 	if ((rc = slurm_receive_msg(conn, resp_msg, INFINITE))) {
 		/* capture real error */

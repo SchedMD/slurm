@@ -1352,7 +1352,7 @@ stepd_stat_jobacct(int fd, uint16_t protocol_version,
 	/* Do not attempt reading data until there is something to read.
 	 * Avoid locking the jobacct_gather plugin early and creating
 	 * possible deadlock. */
-	if (wait_fd_readable(fd, 300))
+	if (wait_fd(fd, 300, POLLIN))
 		goto rwfail;
 
 	/* Fill in the jobacct struct and return */

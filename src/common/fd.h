@@ -39,6 +39,7 @@
 #define _FD_H
 
 #include <fcntl.h>
+#include <poll.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -117,8 +118,8 @@ pid_t fd_is_read_lock_blocked(int fd);
  *    returns the pid of the process holding the lock; o/w, returns 0.
  */
 
-extern int wait_fd_readable(int fd, int time_limit);
-/* Wait for a file descriptor to be readable (up to time_limit seconds).
+extern int wait_fd(int fd, int time_limit, short int events);
+/* Wait for events on file descriptor (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
 
 /*

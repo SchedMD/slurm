@@ -1130,8 +1130,8 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		/* Negotiate the TLS handshake */
 		while ((rc = _negotiate(conn))) {
 			if (rc == EWOULDBLOCK) {
-				if (wait_fd_readable(conn->input_fd,
-						     slurm_conf.msg_timeout))
+				if (wait_fd(conn->input_fd,
+					    slurm_conf.msg_timeout, POLLIN))
 					error("%s: [fd:%d->fd:%d] Problem reading socket during s2n negotiation",
 					      __func__, tls_conn_args->input_fd,
 					      tls_conn_args->output_fd);
@@ -1230,7 +1230,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 			break;
 		}
 
-		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
+		if (wait_fd(conn->input_fd, slurm_conf.msg_timeout, POLLIN) ==
 		    -1) {
 			error("Problem reading socket, couldn't do graceful s2n shutdown");
 			break;
