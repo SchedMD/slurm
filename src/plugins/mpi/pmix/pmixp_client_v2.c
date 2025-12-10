@@ -58,18 +58,18 @@ static int _client_connected(const pmix_proc_t *proc, void *server_object,
 			     pmix_op_cbfunc_t cbfunc, void *cbdata)
 {
 	/*
-	 * Before PMIx v6, a return of PMIX_SUCCESS was always excepted.
+	 * Before PMIx v5.0.8, a return of PMIX_SUCCESS was always excepted.
 	 * (Note: PMIx v3.1.0rc2+ would also treat PMIX_OPERATION_SUCCEEDED the
-	 *  same as PMIX_SUCCESS. Also cbfunc was always NULL before PMIx v6)
+	 *  same as PMIX_SUCCESS. Also cbfunc was always NULL before v5.0.8)
 	 *
-	 * Starting in PMIx v6, PMIX_SUCCESS and PMIX_OPERATION_SUCCEEDED are
-	 * treated differently. In v6+ only return PMIX_SUCCESS to indicate
-	 * cbfunc was called.
+	 * Starting in PMIx v5.0.8, PMIX_SUCCESS and PMIX_OPERATION_SUCCEEDED
+	 * are treated differently. In v5+ only return PMIX_SUCCESS to
+	 * indicate cbfunc was called.
 	 *
-	 * Also, guarding PMIX_OPERATION_SUCCEEDED in PMIx v6+ allows Slurm to
+	 * Also, guarding PMIX_OPERATION_SUCCEEDED in PMIx v5+ allows Slurm to
 	 * compile against PMIx v2 - v3.0.0 since it didn't exist yet.
 	 */
-#if (HAVE_PMIX_VER >= 6)
+#if (HAVE_PMIX_VER >= 5)
 	if (!cbfunc)
 		return PMIX_OPERATION_SUCCEEDED;
 
