@@ -132,7 +132,6 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 
 		if (fd_out) {
 			if (conn_out && *conn_out) {
-				conn_g_destroy(*conn_out, false);
 				*conn_out = NULL;
 			} else if (conn_out) {
 				xfree(conn_out);
@@ -205,7 +204,6 @@ shutdown:
 	shutdown(obj->fd, SHUT_RD);
 	if (fd_out) {
 		if (conn_out && *conn_out) {
-			conn_g_destroy(*conn_out, false);
 			*conn_out = NULL;
 		} else if (conn_out) {
 			xfree(conn_out);
