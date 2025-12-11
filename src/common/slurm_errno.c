@@ -142,6 +142,14 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_INVALID_FD),
 		"Unable to process incoming and outgoing file descriptors",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_BLOCKED_ON_READ),
+		"Read would block",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_BLOCKED_ON_WRITE),
+		"Write would block",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
