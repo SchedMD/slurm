@@ -115,6 +115,10 @@ END_TEST
 
 START_TEST(test_rem)
 {
+#if SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(26, 5, 0)
+	printf("XFAIL: Issue #50096: timespec_t - Math operations fail cross negatives\n");
+#endif
+
 	timespec_t x = { 10, 4 };
 	timespec_t y = { 5, 2 };
 	timespec_t t1 = { 0 }, t2 = { 0 }, t3 = { 0 };

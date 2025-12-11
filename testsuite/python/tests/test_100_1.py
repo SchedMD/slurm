@@ -55,6 +55,14 @@ and hopefully remove them from the xfail list.
 """
 
 # TODO: Remove xfail_tests.append() once their issue is fixed.
+if atf.get_version() < (26, 5):
+    xfail_tests.append(
+        (
+            "common/test_timespec_t.c",
+            "test_rem",
+            "Issue #50096. Math operations fail cross negatives",
+        )
+    )
 if atf.get_version() < (25, 11):
     skip_tests.append(
         (
