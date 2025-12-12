@@ -1631,7 +1631,10 @@ static int _handle_getpw(int fd, uid_t socket_uid, pid_t remote_pid)
 		safe_read(fd, name, len);
 	}
 
-	pid_match = proctrack_g_has_pid(step->cont_id, remote_pid);
+	if (!remote_pid)
+		pid_match = false;
+	else
+		pid_match = proctrack_g_has_pid(step->cont_id, remote_pid);
 
 	if (uid == step->uid)
 		user_match = true;
@@ -1730,7 +1733,10 @@ static int _handle_getgr(int fd, uid_t uid, pid_t remote_pid)
 		safe_read(fd, name, len);
 	}
 
-	pid_match = proctrack_g_has_pid(step->cont_id, remote_pid);
+	if (!remote_pid)
+		pid_match = false;
+	else
+		pid_match = proctrack_g_has_pid(step->cont_id, remote_pid);
 
 	if (!step->ngids || !step->gids || !step->gr_names) {
 		error("%s: incomplete data, ignoring request", __func__);
@@ -1793,8 +1799,10 @@ static int _handle_gethost(int fd, uid_t uid, pid_t remote_pid)
 		nodename = xmalloc(len + 1); /* add room for NULL */
 		safe_read(fd, nodename, len);
 	}
-
-	pid_match = proctrack_g_has_pid(step->cont_id, remote_pid);
+	if (!remote_pid)
+		pid_match = false;
+	else
+		pid_match = proctrack_g_has_pid(step->cont_id, remote_pid);
 
 	if (!(mode & GETHOST_NOT_MATCH_PID) && !pid_match)
 		debug("%s: no pid_match", __func__);
