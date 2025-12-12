@@ -198,10 +198,14 @@ _guess_nodename(void)
 		nodename = slurm_conf_get_nodename("localhost");
 	/*
 	 * If nothing above has given us a name, just return what
-	 * gethostname_short. This is helpful for dynamic nodes.
+	 * gethostname() returns. This is helpful for dynamic nodes whose names
+	 * contain dots.
 	 */
-	if (!nodename)
+	if (!nodename) {
+		if (gethostname(host, sizeof(host)) != 0)
+			return NULL;
 		nodename = xstrdup(host);
+	}
 
 	return nodename;
 }
