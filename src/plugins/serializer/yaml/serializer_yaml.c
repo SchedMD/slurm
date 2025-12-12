@@ -712,6 +712,7 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 {
 	yaml_emitter_t emitter;
 	buf_t *buf = init_buf(0);
+	int rc = EINVAL;
 
 	flags = _merge_flags(flags);
 
@@ -723,6 +724,17 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 	}
 
 	yaml_emitter_delete(&emitter);
+
+	if ((rc = try_grow_buf_remaining(buf, 1))) {
+		return rc;
+	} else {
+		/* Always append NULL terminator */
+		void *ptr = get_buf_data(buf);
+		char *end = (ptr + get_buf_offset(buf));
+
+		*end = '\0';
+		set_buf_offset(buf, (get_buf_offset(buf) + 1));
+	}
 
 	if (length)
 		*length = get_buf_offset(buf);

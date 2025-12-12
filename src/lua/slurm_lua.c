@@ -51,6 +51,20 @@
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 
+#include "src/interfaces/serializer.h"
+
+/* Max table depth for data_t conversions */
+#define MAX_DEPTH 16
+#define DUMP_DATA_FOREACH_ARGS_MAGIC 0x02141444
+
+typedef struct {
+	int magic; /* DUMP_DATA_FOREACH_ARGS_MAGIC */
+	lua_State *L;
+	int rc;
+	int table_index;
+	int field_index;
+} dump_data_foreach_args_t;
+
 static void *lua_handle = NULL;
 
 #ifdef HAVE_LUA
@@ -100,6 +114,11 @@ static const struct {
 	  ESLURM_LUA_FUNC_FAILED_RUNTIME_ERROR),
 };
 #undef T
+
+static int _lua_to_data(lua_State *L, data_t *dst, const int index,
+			const int depth, const char *parent,
+			const bool parent_is_table);
+static int _from_data(lua_State *L, const data_t *src);
 
 extern const char *slurm_lua_status_code_string(lua_status_code_t sc)
 {
@@ -422,11 +441,148 @@ static int _get_qos_priority(lua_State *L)
 	return 1;
 }
 
-static const struct luaL_Reg slurm_functions [] = {
+static int _parse(lua_State *L, const char *mime_type)
+{
+	int rc = EINVAL;
+	const char *str = NULL;
+	size_t str_len = 0;
+	data_t *data = NULL;
+
+	if (!(str = lua_tolstring(L, -1, &str_len))) {
+		rc = ESLURM_LUA_INVALID_CONVERSION_TYPE;
+		goto failed;
+	}
+
+	if ((rc = serialize_g_string_to_data(&data, str, str_len, mime_type)))
+		goto failed;
+
+	log_flag_hex(SCRIPT, str, str_len,
+		     "%s: Lua@0x%" PRIxPTR "[+%d]: parsed %s",
+		     __func__, (uintptr_t) L, lua_gettop(L), mime_type);
+
+	/* Pop string arg off stack after converting it */
+	lua_pop(L, -1);
+
+	if ((rc = slurm_lua_from_data(L, data)))
+		goto failed;
+
+	FREE_NULL_DATA(data);
+	return 1;
+failed:
+	error("%s: Lua@0x%" PRIxPTR "[+%d]: parsing string as %s failed: %s",
+	      __func__, (uintptr_t) L, lua_gettop(L), mime_type,
+	      slurm_strerror(rc));
+
+	if (str_len > 0)
+		log_flag_hex(SCRIPT, str, str_len, "%s: parsing %s failed",
+			     __func__, mime_type);
+
+	FREE_NULL_DATA(data);
+
+	(void) lua_pushfstring(L, "Conversion from %s failed: %s", mime_type,
+			       slurm_strerror(rc));
+	lua_error(L);
+	fatal_abort("lua_error() should never return");
+}
+
+static int _dump(lua_State *L, const char *mime_type)
+{
+	int rc = EINVAL;
+	char *str = NULL;
+	size_t str_len = 0;
+	data_t *data = data_new();
+
+	if ((rc = slurm_lua_to_data(L, data)))
+		goto failed;
+
+	/* Pop table arg off stack after converting it */
+	lua_pop(L, -1);
+
+	if ((rc = serialize_g_data_to_string(&str, &str_len, data, mime_type,
+					     SER_FLAGS_NONE)))
+		goto failed;
+
+	log_flag_hex(SCRIPT, str, str_len,
+		     "%s: Lua@0x%" PRIxPTR "[+%d]: dumped %pD->%s",
+		     __func__, (uintptr_t) L, lua_gettop(L), data, mime_type);
+
+	FREE_NULL_DATA(data);
+
+	(void) lua_pushstring(L, str);
+
+	xfree(str);
+	return 1;
+failed:
+	error("%s: Lua@0x%" PRIxPTR "[+%d]: dumping %pD as %s failed: %s",
+	      __func__, (uintptr_t) L, lua_gettop(L), data, mime_type,
+	      slurm_strerror(rc));
+
+	FREE_NULL_DATA(data);
+	xfree(str);
+
+	(void) lua_pushfstring(L, "Conversion to %s failed: %s", mime_type,
+			       slurm_strerror(rc));
+	lua_error(L);
+	fatal_abort("lua_error() should never return");
+}
+
+static int _from_json(lua_State *L)
+{
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_JSON);
+		load_once = true;
+	}
+
+	return _parse(L, MIME_TYPE_JSON);
+}
+
+static int _to_json(lua_State *L)
+{
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_JSON);
+		load_once = true;
+	}
+
+	return _dump(L, MIME_TYPE_JSON);
+}
+
+static int _from_yaml(lua_State *L)
+{
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_YAML);
+		load_once = true;
+	}
+
+	return _parse(L, MIME_TYPE_YAML);
+}
+
+static int _to_yaml(lua_State *L)
+{
+	static bool load_once = false;
+
+	if (!load_once) {
+		serializer_required(MIME_TYPE_YAML);
+		load_once = true;
+	}
+
+	return _dump(L, MIME_TYPE_YAML);
+}
+
+static const struct luaL_Reg slurm_functions[] = {
 	{ "log", _log_lua_msg },
 	{ "error", _log_lua_error },
-	{ "time_str2mins", _time_str2mins},
+	{ "time_str2mins", _time_str2mins },
 	{ "get_qos_priority", _get_qos_priority },
+	{ "to_json", _to_json },
+	{ "from_json", _from_json },
+	{ "to_yaml", _to_yaml },
+	{ "from_yaml", _from_yaml },
 	{ NULL, NULL }
 };
 
@@ -1103,6 +1259,9 @@ extern int slurm_lua_init(void)
 		return SLURM_ERROR;
 	}
 
+	/* Load any serializer plugins for JSON/YAML conversions */
+	serializer_g_init();
+
 	return SLURM_SUCCESS;
 }
 
@@ -1113,4 +1272,374 @@ extern void slurm_lua_fini(void)
 {
 	if (lua_handle)
 		dlclose(lua_handle);
+}
+
+static data_for_each_cmd_t _dump_data_foreach_list(const data_t *data,
+						   void *arg)
+{
+	dump_data_foreach_args_t *args = arg;
+	lua_State *L = args->L;
+
+	xassert(args->magic == DUMP_DATA_FOREACH_ARGS_MAGIC);
+
+	if ((args->rc = slurm_lua_from_data(L, data)))
+		return DATA_FOR_EACH_FAIL;
+
+	lua_rawseti(L, args->table_index, args->field_index);
+	args->field_index++;
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _dump_data_foreach_dict(const char *key,
+						   const data_t *data,
+						   void *arg)
+{
+	dump_data_foreach_args_t *args = arg;
+	lua_State *L = args->L;
+
+	xassert(args->magic == DUMP_DATA_FOREACH_ARGS_MAGIC);
+
+	if ((args->rc = slurm_lua_from_data(L, data)))
+		return DATA_FOR_EACH_FAIL;
+
+	lua_setfield(L, args->table_index, key);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+static int _from_data_list(lua_State *L, const data_t *src)
+{
+	dump_data_foreach_args_t args = {
+		.magic = DUMP_DATA_FOREACH_ARGS_MAGIC,
+		.L = L,
+		.rc = SLURM_SUCCESS,
+		.field_index = 1,
+	};
+
+	lua_createtable(L, data_get_list_length(src), 0);
+
+	args.table_index = lua_gettop(L);
+
+	(void) data_list_for_each_const(src, _dump_data_foreach_list, &args);
+
+	return args.rc;
+}
+
+static int _from_data_dict(lua_State *L, const data_t *src)
+{
+	dump_data_foreach_args_t args = {
+		.magic = DUMP_DATA_FOREACH_ARGS_MAGIC,
+		.L = L,
+		.rc = SLURM_SUCCESS,
+	};
+
+	lua_createtable(L, data_get_dict_length(src), 0);
+
+	args.table_index = lua_gettop(L);
+
+	(void) data_dict_for_each_const(src, _dump_data_foreach_dict, &args);
+
+	return args.rc;
+}
+
+static int _from_data(lua_State *L, const data_t *src)
+{
+	switch (data_get_type(src)) {
+	case DATA_TYPE_LIST:
+		return _from_data_list(L, src);
+	case DATA_TYPE_DICT:
+		return _from_data_dict(L, src);
+	case DATA_TYPE_NULL:
+		lua_pushnil(L);
+		return SLURM_SUCCESS;
+	case DATA_TYPE_INT_64:
+		lua_pushinteger(L, data_get_int(src));
+		return SLURM_SUCCESS;
+	case DATA_TYPE_FLOAT:
+		lua_pushnumber(L, data_get_float(src));
+		return SLURM_SUCCESS;
+	case DATA_TYPE_STRING:
+		lua_pushstring(L, data_get_string(src));
+		return SLURM_SUCCESS;
+	case DATA_TYPE_BOOL:
+		lua_pushboolean(L, data_get_bool(src));
+		return SLURM_SUCCESS;
+	case DATA_TYPE_NONE:
+		;/* fall through */
+	case DATA_TYPE_MAX:
+		;/* fall through */
+	};
+
+	fatal_abort("should never happen");
+}
+
+extern int slurm_lua_from_data(lua_State *L, const data_t *src)
+{
+	if (!L)
+		return ESLURM_LUA_INVALID_STATE;
+
+	if (!src)
+		return ESLURM_DATA_PTR_NULL;
+
+	return _from_data(L, src);
+}
+
+/* Log details on function at index */
+static void _log_function(lua_State *L, const int index, const char *label)
+{
+	lua_Debug ar = { 0 };
+
+	lua_pushvalue(L, index);
+
+	if (lua_getinfo(L, ">nSl", &ar))
+		log_flag(SCRIPT, "%s: type=%s name=%s%s%s%s source=%s:%d-%d executing=%d",
+			 label, ar.what, ((ar.name && ar.name[0]) ?
+					  ar.name : "<ANONYMOUS>"),
+			 ((ar.namewhat && ar.namewhat[0]) ? "(" : ""),
+			 ((ar.namewhat && ar.namewhat[0]) ?
+			  ar.namewhat : ""),
+			 ((ar.namewhat && ar.namewhat[0]) ? ")" : ""),
+			 ar.short_src, ar.linedefined,
+			 ar.lastlinedefined, ar.currentline);
+
+	lua_pop(L, 1);
+}
+
+/* Ask Lua for string and retry by converting to a string */
+static int _dump_string(lua_State *L, char **ptr, const int index,
+			const char *label)
+{
+	const char *str = NULL;
+	size_t len = 0;
+
+	if (!(str = lua_tolstring(L, index, &len)) &&
+	    luaL_callmeta(L, index, "__tostring"))
+		str = lua_tolstring(L, index, &len);
+
+	/* Only log string if it was set and was a sane length */
+	if (!str || (len <= 0) || (len >= MAX_VAL)) {
+		log_flag(SCRIPT, "%s: invalid string", label);
+		return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+	}
+
+	*ptr = xstrndup(str, len);
+	return SLURM_SUCCESS;
+}
+
+static int _dump_data_string(lua_State *L, data_t *dst, const int index,
+			     const char *label)
+{
+	char *str = NULL;
+	int rc = EINVAL;
+
+	if ((rc = _dump_string(L, &str, index, label)))
+		return rc;
+
+	log_flag_hex(SCRIPT, str, (xsize(str) - 1), "%s: string", label);
+	data_set_string_own(dst, str);
+	return SLURM_SUCCESS;
+}
+
+static int _foreach_table_row(lua_State *L, data_t *dst, const int index,
+			      const char *parent, const int depth)
+{
+	/*
+	 * Lua stack:
+	 * -1 -> value
+	 * -2 -> key
+	 */
+	const int key_type = lua_type(L, -2);
+	char *label = NULL;
+	data_t *child = NULL;
+	int rc = EINVAL;
+
+	if (key_type == LUA_TNUMBER) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT)
+			xstrfmtcat(label, "%s[" LUA_NUMBER_FMT "]", parent,
+				   lua_tonumber(L, -2));
+
+#if LUA_VERSION_NUM >= 503
+		/* Skip conversion to string */
+		if (lua_isinteger(L, -2))
+			child = data_key_set_int(dst, lua_tointeger(L, -2));
+#endif
+	}
+
+	if (!child) {
+		char *key = NULL;
+
+		if ((rc = _dump_string(L, &key, -2, parent)))
+			return rc;
+		else if (!key)
+			return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+
+		if ((slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT) && !label)
+			xstrfmtcat(label, "%s[%s]", parent, key);
+
+		child = data_key_set(dst, key);
+		xfree(key);
+	}
+
+	if ((rc = _lua_to_data(L, child, lua_gettop(L), (depth + 1), label,
+			       true)))
+		return rc;
+
+	/* Pop value off stack to use key for next loop */
+	lua_pop(L, 1);
+	xfree(label);
+	return SLURM_SUCCESS;
+}
+
+static int _dump_table(lua_State *L, data_t *dst, const int index,
+		       const char *parent, const int depth)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(lua_istable(L, index));
+
+	(void) data_set_dict(dst);
+
+	/* Walk each table row */
+	lua_pushnil(L);
+
+	while (lua_next(L, index) && !rc)
+		rc = _foreach_table_row(L, dst, index, parent, depth);
+
+	return rc;
+}
+
+/* Log details on unsupported type at index */
+static void _log_invalid_type(lua_State *L, const int index, const char *label,
+			      const int type, const char *typename)
+{
+	char *str = NULL;
+
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT))
+		return;
+
+	if (type == LUA_TFUNCTION)
+		_log_function(L, index, label);
+	else
+		(void) _dump_string(L, &str, index, label);
+
+	if (str)
+		log_flag_hex(SCRIPT, str, xsize(str),
+			     "%s: unsupported Lua type[0x%x]: %s",
+			     label, type, typename);
+	else
+		log_flag(SCRIPT, "%s: unsupported Lua type[0x%x]: %s",
+			     label, type, typename);
+
+	xfree(str);
+}
+
+static int _lua_to_data(lua_State *L, data_t *dst, const int index,
+			const int depth, const char *parent,
+			const bool parent_is_table)
+{
+	char *label = NULL;
+	const int type = lua_type(L, index);
+	const char *typename = lua_typename(L, type);
+
+	xassert(index > 0);
+
+	/* Add type to Label (or hex if not an unknown Lua type) */
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT))
+		; /* do nothing without logging active */
+	else if (parent_is_table)
+		label = xstrdup(parent);
+	else if (typename)
+		xstrfmtcat(label, "%s->%s", parent, typename);
+	else
+		xstrfmtcat(label, "%s->0x%0x", parent, type);
+
+	if (depth > MAX_DEPTH) {
+		log_flag(SCRIPT, "%s: table depth %d/%d too deep",
+			 label, depth, MAX_DEPTH);
+		return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+	}
+
+	if (luaL_getmetafield(L, index, "__metatable") != LUA_TNIL) {
+		const char *metatable = NULL;
+
+		if (!(metatable = lua_tostring(L, -1))) {
+			/* Metatable name isn't string? */
+			metatable = "INVALID";
+		}
+
+		log_flag(SCRIPT, "%s: rejecting __metatable==%s",
+			 label, metatable);
+
+		lua_pop(L, 1);
+		return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+	}
+
+	switch (type) {
+	case LUA_TNONE:
+		log_flag(SCRIPT, "%s: none", label);
+		data_set_null(dst);
+		return SLURM_SUCCESS;
+	case LUA_TNIL:
+		log_flag(SCRIPT, "%s: nil", label);
+		data_set_null(dst);
+		return SLURM_SUCCESS;
+	case LUA_TNUMBER:
+		log_flag(SCRIPT, "%s: number=" LUA_NUMBER_FMT,
+			 label, lua_tonumber(L, index));
+#if LUA_VERSION_NUM >= 503
+		if (lua_isinteger(L, index))
+			data_set_int(dst, lua_tointeger(L, index));
+		else
+#endif
+			data_set_float(dst, lua_tonumber(L, index));
+		return SLURM_SUCCESS;
+	case LUA_TBOOLEAN:
+		log_flag(SCRIPT, "%s: boolean=%s",
+			 label, BOOL_STRINGIFY(lua_toboolean(L, index)));
+		data_set_bool(dst, lua_toboolean(L, index));
+		return SLURM_SUCCESS;
+	case LUA_TSTRING:
+		return _dump_data_string(L, dst, index, label);
+	case LUA_TTABLE:
+		return _dump_table(L, dst, index, label, depth);
+	}
+
+	_log_invalid_type(L, index, label, type, typename);
+	return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+}
+
+static int _to_data(lua_State *L, data_t *dst, const int index)
+{
+	char *label = NULL;
+	int rc = EINVAL, copy = -1;
+	const int top = lua_gettop(L);
+
+	/* Copy to avoid changing value due to conversion to string */
+	lua_pushvalue(L, index);
+	copy = lua_gettop(L);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_SCRIPT)
+		xstrfmtcat(label, "%s: Lua@0x%" PRIxPTR "[+%d]", __func__,
+			   (uintptr_t) L, copy);
+
+	if ((rc = _lua_to_data(L, dst, copy, 0, label, false)))
+		data_set_null(dst);
+
+	/* drop any additions to the stack */
+	lua_settop(L, top);
+
+	xfree(label);
+	return rc;
+}
+
+extern int slurm_lua_to_data(lua_State *L, data_t *dst)
+{
+	if (!L)
+		return ESLURM_LUA_INVALID_STATE;
+
+	if (!dst)
+		return ESLURM_DATA_PTR_NULL;
+
+	return _to_data(L, dst, lua_gettop(L));
 }
