@@ -685,6 +685,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->reservation);
 	} else if (!xstrcmp(name, "script")) {
 		lua_pushstring(L, job_desc->script);
+	} else if (!xstrcmp(name, "segment_size")) {
+		lua_pushnumber(L, job_desc->segment_size);
 	} else if (!xstrcmp(name, "shared") ||
 		   !xstrcmp(name, "oversubscribe")) {
 		lua_pushnumber(L, job_desc->shared);
@@ -1005,6 +1007,8 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->script);
 		if (strlen(value_str))
 			job_desc->script = xstrdup(value_str);
+	} else if (!xstrcmp(name, "segment_size")) {
+		job_desc->segment_size = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "selinux_context")) {
 		value_str = luaL_checkstring(L, 3);
 		xfree(job_desc->selinux_context);
