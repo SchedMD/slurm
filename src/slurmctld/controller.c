@@ -2646,6 +2646,12 @@ static void *_slurmctld_background(void *no_data)
 						&check_bf_running_lock);
 			}
 
+			/* Wait for main sched to release locks */
+			slurm_mutex_lock(&sched_mutex);
+			while (sched_requests || sched_running) {
+				slurm_cond_wait(&sched_cond, &sched_mutex);
+			}
+
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
@@ -2654,6 +2660,8 @@ static void *_slurmctld_background(void *no_data)
 				      "can not save state", CONTROL_TIMEOUT);
 			}
 
+			/* Unblock main sched thread, so that it can shutdown */
+			slurm_mutex_unlock(&sched_mutex);
 			/* Unblock backfill thread, so that it can shutdown */
 			slurm_mutex_unlock(&check_bf_running_lock);
 
