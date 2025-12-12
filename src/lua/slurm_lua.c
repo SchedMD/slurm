@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include <dlfcn.h>
+#include <limits.h>
 #include <stdio.h>
 #include "config.h"
 
@@ -45,6 +46,7 @@
 #include <unistd.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -1448,8 +1450,9 @@ static int _dump_data_string(lua_State *L, data_t *dst, const int index,
 	return SLURM_SUCCESS;
 }
 
-static int _foreach_table_row(lua_State *L, data_t *dst, const int index,
-			      const char *parent, const int depth)
+static int _foreach_table_row(lua_State *L, data_t *dst, int *last_key_ptr,
+			      const int index, const char *parent,
+			      const int depth)
 {
 	/*
 	 * Lua stack:
@@ -1457,6 +1460,7 @@ static int _foreach_table_row(lua_State *L, data_t *dst, const int index,
 	 * -2 -> key
 	 */
 	const int key_type = lua_type(L, -2);
+	int nkey = -1;
 	char *label = NULL;
 	data_t *child = NULL;
 	int rc = EINVAL;
@@ -1468,8 +1472,10 @@ static int _foreach_table_row(lua_State *L, data_t *dst, const int index,
 
 #if LUA_VERSION_NUM >= 503
 		/* Skip conversion to string */
-		if (lua_isinteger(L, -2))
-			child = data_key_set_int(dst, lua_tointeger(L, -2));
+		if (lua_isinteger(L, -2)) {
+			nkey = lua_tointeger(L, -2);
+			child = data_key_set_int(dst, nkey);
+		}
 #endif
 	}
 
@@ -1485,7 +1491,24 @@ static int _foreach_table_row(lua_State *L, data_t *dst, const int index,
 			xstrfmtcat(label, "%s[%s]", parent, key);
 
 		child = data_key_set(dst, key);
+
+		/*
+		 * Only attempt conversion to integer if we know this could be a
+		 * list
+		 */
+		if (*last_key_ptr >= 0)
+			nkey = slurm_atoul(key);
+
 		xfree(key);
+	}
+
+	if (*last_key_ptr >= 0) {
+		/* Track if the keys are a natural index */
+		if ((nkey > 0) && (nkey < ULONG_MAX) &&
+		    (*last_key_ptr + 1) == nkey)
+			*last_key_ptr = nkey;
+		else
+			*last_key_ptr = -1;
 	}
 
 	if ((rc = _lua_to_data(L, child, lua_gettop(L), (depth + 1), label,
@@ -1502,16 +1525,55 @@ static int _dump_table(lua_State *L, data_t *dst, const int index,
 		       const char *parent, const int depth)
 {
 	int rc = SLURM_SUCCESS;
+	int list_length = -1, last_key = 0;
+
+	if (luaL_getmetafield(L, index, "__len") != LUA_TNIL) {
+#if LUA_VERSION_NUM >= 503
+		if (lua_isinteger(L, -1))
+			list_length = lua_tointeger(L, -1);
+		else
+#endif
+			list_length = lua_tonumber(L, -1);
+
+		log_flag(SCRIPT, "%s: metadata: __len=%d", parent, list_length);
+
+		lua_pop(L, 1);
+	}
 
 	xassert(lua_istable(L, index));
 
+	/*
+	 * Assume table is a dictionary until entire table is dumped and every
+	 * key can be verified
+	 */
 	(void) data_set_dict(dst);
 
 	/* Walk each table row */
 	lua_pushnil(L);
 
 	while (lua_next(L, index) && !rc)
-		rc = _foreach_table_row(L, dst, index, parent, depth);
+		rc = _foreach_table_row(L, dst, &last_key, index, parent,
+					depth);
+
+	/*
+	 * Per 3.4.7 – The Length Operator of the Lua 5.3 manual:
+	 * A sequence is the natural index with out any borders (aka
+	 * nil)s for the dictionary keys starting at 1. We are going to
+	 * treat a Lua sequence the same as a list.
+	 *
+	 * __len is not a reliably set field but verify when it is present.
+	 */
+	if (((list_length > 0) && (list_length == last_key)) ||
+	    (last_key >= 0)) {
+		(void) data_convert_type(dst, DATA_TYPE_LIST);
+		log_flag(SCRIPT, "%s: dumped list -> __len=%d last_key=%d length=%zu",
+			 parent, list_length, last_key,
+			 data_get_list_length(dst));
+	} else {
+		log_flag(SCRIPT, "%s: dumped dictionary -> __len=%d last_key=%d length=%zu",
+			 parent, list_length, last_key,
+			 data_get_dict_length(dst));
+	}
 
 	return rc;
 }
