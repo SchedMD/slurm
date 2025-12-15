@@ -1317,6 +1317,7 @@ function __slurm_comp_common_flags() {
 		"exclusive"
 		"mcs"
 		"oversubscribe"
+		"topo"
 		"user"
 	)
 	local export_types=(
