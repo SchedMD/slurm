@@ -1138,9 +1138,15 @@ extern void *backfill_agent(void *args)
 	time_t now;
 	double wait_time;
 	static time_t last_backfill_time = 0;
-	/* Read config and partitions; Write jobs and nodes */
+	/* Read config and partitions; Write jobs, nodes, and select_node */
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+		.select_node = WRITE_LOCK,
+	};
 	bool load_config;
 	bool short_sleep = false;
 	int backfill_cnt = 0;
@@ -1240,7 +1246,13 @@ static int _clear_job_estimates(void *x, void *arg)
 static int _yield_locks(int64_t usec)
 {
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		.conf = READ_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = READ_LOCK,
+		.fed = READ_LOCK,
+		.select_node = WRITE_LOCK,
+	};
 	time_t job_update, node_update, part_update, config_update, resv_update;
 	bool load_config = false;
 
@@ -1814,6 +1826,9 @@ static void _handle_planned(bool set)
 			 */
 			if (IS_NODE_ALLOCATED(node_ptr)) {
 				uint16_t idle_cpus = 0;
+				node_select_stats_t *node_stats =
+					node_select_stats_array
+						[node_ptr->index];
 
 				if (!select_synced) {
 					select_g_select_nodeinfo_set_all();
@@ -1821,7 +1836,7 @@ static void _handle_planned(bool set)
 				}
 
 				idle_cpus = node_ptr->cpus_efctv -
-					    node_ptr->alloc_cpus;
+					    node_stats->alloc_cpus;
 				if (idle_cpus &&
 				    (idle_cpus < node_ptr->cpus_efctv))
 					/* Mixed node as planned */

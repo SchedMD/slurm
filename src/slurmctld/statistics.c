@@ -693,8 +693,9 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 {
 	slurmctld_lock_t node_write_lock = {
 		.conf = READ_LOCK,
-		.node = WRITE_LOCK, /* for select_g_select_nodeinfo_set_all() */
+		.node = READ_LOCK,
 		.part = READ_LOCK,
+		.select_node = WRITE_LOCK, /*select_g_select_nodeinfo_set_all*/
 	};
 	node_record_t *node_ptr;
 	nodes_stats_t *s = xmalloc(sizeof(*s));
@@ -711,16 +712,17 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
 		uint16_t idle_cpus = 0;
 		node_stats_t *n;
+		node_select_stats_t *select_stats = node_select_stats_array[i];
 
 		n = xmalloc(sizeof(*n));
 
-		idle_cpus = node_ptr->cpus_efctv - node_ptr->alloc_cpus;
+		idle_cpus = node_ptr->cpus_efctv - select_stats->alloc_cpus;
 		n->name = xstrdup(node_ptr->name);
-		n->cpus_alloc = node_ptr->alloc_cpus;
+		n->cpus_alloc = select_stats->alloc_cpus;
 		n->cpus_efctv = node_ptr->cpus_efctv;
 		n->cpus_idle = idle_cpus;
 		n->cpus_total = node_ptr->cpus;
-		n->mem_alloc = node_ptr->alloc_memory;
+		n->mem_alloc = select_stats->alloc_memory;
 		n->mem_avail = node_ptr->real_memory - node_ptr->mem_spec_limit;
 		n->mem_free =
 			(node_ptr->free_mem == NO_VAL64 ? 0 :
@@ -740,7 +742,7 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 		else if (IS_NODE_DOWN(node_ptr))
 			s->down++;
 		else if ((idle_cpus && (idle_cpus < node_ptr->cpus_efctv)) ||
-			 (node_ptr->alloc_tres_fmt_str &&
+			 (select_stats->alloc_tres_fmt_str &&
 			  (idle_cpus == node_ptr->cpus_efctv))) {
 			n->node_state &= NODE_STATE_FLAGS;
 			n->node_state |= NODE_STATE_MIXED;

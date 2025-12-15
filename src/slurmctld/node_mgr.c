@@ -1083,8 +1083,12 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		       uint16_t protocol_version, uint16_t show_flags)
 {
 	char *gres_drain = NULL, *gres_used = NULL;
+	node_select_stats_t *dump_node_stats;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
+	xassert(verify_lock(SELECT_NODE_LOCK, READ_LOCK));
+
+	dump_node_stats = node_select_stats_array[dump_node_ptr->index];
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		packstr(dump_node_ptr->name, buffer);
@@ -1135,9 +1139,9 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 		pack_time(dump_node_ptr->cert_last_renewal, buffer);
 
-		pack16(dump_node_ptr->alloc_cpus, buffer);
-		pack64(dump_node_ptr->alloc_memory, buffer);
-		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+		pack16(dump_node_stats->alloc_cpus, buffer);
+		pack64(dump_node_stats->alloc_memory, buffer);
+		packstr(dump_node_stats->alloc_tres_fmt_str, buffer);
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);
@@ -1221,9 +1225,9 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 		pack_time(dump_node_ptr->cert_last_renewal, buffer);
 
-		pack16(dump_node_ptr->alloc_cpus, buffer);
-		pack64(dump_node_ptr->alloc_memory, buffer);
-		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+		pack16(dump_node_stats->alloc_cpus, buffer);
+		pack64(dump_node_stats->alloc_memory, buffer);
+		packstr(dump_node_stats->alloc_tres_fmt_str, buffer);
 
 		packstr(dump_node_ptr->arch, buffer);
 		packstr(dump_node_ptr->features, buffer);
@@ -1298,9 +1302,9 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
 		select_plugin_id_pack(buffer);
-		pack16(dump_node_ptr->alloc_cpus, buffer);
-		pack64(dump_node_ptr->alloc_memory, buffer);
-		packstr(dump_node_ptr->alloc_tres_fmt_str, buffer);
+		pack16(dump_node_stats->alloc_cpus, buffer);
+		pack64(dump_node_stats->alloc_memory, buffer);
+		packstr(dump_node_stats->alloc_tres_fmt_str, buffer);
 		packdouble(0, buffer); /* was alloc_tres_weighted */
 
 		packstr(dump_node_ptr->arch, buffer);
@@ -4802,6 +4806,7 @@ extern int create_nodes(update_node_msg_t *msg, char **err_msg)
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
 		.part = WRITE_LOCK,
+		.select_node = WRITE_LOCK,
 	};
 
 	xassert(nodeline);
@@ -5092,6 +5097,7 @@ extern int delete_nodes(char *names, char **err_msg)
 		.node = WRITE_LOCK,
 		.part = WRITE_LOCK,
 		.conf = READ_LOCK,
+		.select_node = WRITE_LOCK,
 	};
 
 	xassert(err_msg);

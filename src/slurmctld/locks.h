@@ -107,6 +107,7 @@ typedef struct {
 	lock_level_t node;
 	lock_level_t part;
 	lock_level_t fed;
+	lock_level_t select_node;
 }	slurmctld_lock_t;
 
 typedef enum {
@@ -115,6 +116,7 @@ typedef enum {
 	NODE_LOCK,
 	PART_LOCK,
 	FED_LOCK,
+	SELECT_NODE_LOCK,
 }	lock_datatype_t;
 
 #ifndef NDEBUG

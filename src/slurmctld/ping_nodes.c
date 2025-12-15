@@ -390,8 +390,12 @@ extern void run_health_check(void)
 		if (node_states != HEALTH_CHECK_NODE_ANY) {
 			uint16_t cpus_total, cpus_used = 0;
 			cpus_total = node_ptr->config_ptr->cpus;
-			if (!IS_NODE_IDLE(node_ptr))
-				cpus_used = node_ptr->alloc_cpus;
+			if (!IS_NODE_IDLE(node_ptr)) {
+				node_select_stats_t *tmp =
+					node_select_stats_array
+						[node_ptr->index];
+				cpus_used = tmp->alloc_cpus;
+			}
 			/* Here the node state is inferred from
 			 * the cpus allocated on it.
 			 * - cpus_used == 0

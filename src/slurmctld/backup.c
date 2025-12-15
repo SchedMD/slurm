@@ -132,9 +132,15 @@ void run_backup(void)
 	int i;
 	time_t last_ping = 0;
 	slurmctld_lock_t config_read_lock = {
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		.conf = READ_LOCK,
+	};
 	slurmctld_lock_t config_write_lock = {
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		.conf = WRITE_LOCK,
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.part = WRITE_LOCK,
+		.select_node = WRITE_LOCK,
+	};
 
 	info("slurmctld running in background mode");
 	takeover = false;

@@ -1676,10 +1676,14 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t *msg)
 	DEF_TIMERS;
 	buf_t *buffer;
 	node_info_request_msg_t *node_req_msg = msg->data;
-	/* Locks: Read config, write node (reset allocated CPU count in some
-	 * select plugins), read part (for part_is_visible) */
+	/* Locks: Read config, read node, write select_node (reset allocated CPU
+	 * count in some select plugins), read part (for part_is_visible) */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
+		.conf = READ_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK,
+		.select_node = WRITE_LOCK,
+	};
 
 	START_TIMER;
 	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
@@ -1719,9 +1723,16 @@ static void _slurm_rpc_dump_node_single(slurm_msg_t *msg)
 	DEF_TIMERS;
 	buf_t *buffer = NULL;
 	node_info_single_msg_t *node_req_msg = msg->data;
-	/* Locks: Read config, read node, read part (for part_is_visible) */
+	/*
+	 * Locks: Read config, read node, read part (for part_is_visible)
+	 * read select_node (for packing alloc_* values)
+	 */
 	slurmctld_lock_t node_write_lock = {
-		READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		.conf = READ_LOCK,
+		.node = READ_LOCK,
+		.part = READ_LOCK,
+		.select_node = READ_LOCK,
+	};
 
 	START_TIMER;
 	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
@@ -6585,8 +6596,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 		.queue_enabled = true,
 		.locks = {
 			.conf = READ_LOCK,
-			.node = WRITE_LOCK,
+			.node = READ_LOCK,
 			.part = READ_LOCK,
+			.select_node = WRITE_LOCK,
 		},
 	},{
 		.msg_type = REQUEST_NODE_INFO_SINGLE,

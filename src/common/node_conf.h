@@ -86,8 +86,8 @@ typedef struct {
 } config_record_t;
 extern list_t *config_list;	/* list of config_record entries */
 
-typedef struct node_record node_record_t;
-struct node_record {
+/* Use SELECT_NODE_LOCK */
+typedef struct node_select_stats {
 	/*
 	 * alloc fields are managed by the select plugin
 	 * call select_g_select_nodeinfo_set_all() to update
@@ -95,6 +95,10 @@ struct node_record {
 	uint16_t alloc_cpus;		/* allocated cpus */
 	uint64_t alloc_memory;		/* allocated memory */
 	char *alloc_tres_fmt_str;	/* allocated TRES */
+} node_select_stats_t;
+
+typedef struct node_record node_record_t;
+struct node_record {
 	char *arch;			/* computer architecture */
 	char *bcast_address;		/* BcastAddr */
 	uint16_t boards; 		/* count of boards configured */
@@ -212,6 +216,7 @@ struct node_record {
 					 * scheduling purposes. */
 };
 extern node_record_t **node_record_table_ptr;  /* ptr to node records */
+extern node_select_stats_t **node_select_stats_array;
 extern int node_record_count;		/* number of node slots
 					 * node_record_table_ptr */
 extern int active_node_record_count;	/* non-null node count in

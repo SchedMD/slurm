@@ -2439,6 +2439,7 @@ extern int select_p_job_resume(job_record_t *job_ptr, bool indf_susp)
 	return rc;
 }
 
+/* Requires node READ_LOCK and select_node WRITE_LOCK */
 extern int select_p_select_nodeinfo_set_all(void)
 {
 	node_record_t *node_ptr = NULL;
@@ -2456,22 +2457,24 @@ extern int select_p_select_nodeinfo_set_all(void)
 	last_set_all = last_node_update;
 
 	for (n = 0; (node_ptr = next_node(&n)); n++) {
-		xfree(node_ptr->alloc_tres_fmt_str);
-		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
-			node_ptr->alloc_cpus = node_ptr->config_ptr->cpus;
+		node_select_stats_t *node_stats = node_select_stats_array[n];
 
-			node_ptr->alloc_tres_fmt_str =
+		xfree(node_stats->alloc_tres_fmt_str);
+		if (IS_NODE_COMPLETING(node_ptr) || IS_NODE_ALLOCATED(node_ptr)) {
+			node_stats->alloc_cpus = node_ptr->config_ptr->cpus;
+
+			node_stats->alloc_tres_fmt_str =
 				assoc_mgr_make_tres_str_from_array(
-						node_ptr->tres_cnt,
-						TRES_STR_CONVERT_UNITS, false);
+					node_ptr->tres_cnt,
+					TRES_STR_CONVERT_UNITS, false);
 		} else {
-			node_ptr->alloc_cpus = 0;
+			node_stats->alloc_cpus = 0;
 		}
 		if (cr_ptr && cr_ptr->nodes) {
-			node_ptr->alloc_memory =
+			node_stats->alloc_memory =
 				cr_ptr->nodes[node_ptr->index].alloc_memory;
 		} else {
-			node_ptr->alloc_memory = 0;
+			node_stats->alloc_memory = 0;
 		}
 	}
 
