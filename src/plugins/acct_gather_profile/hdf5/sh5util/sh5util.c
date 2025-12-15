@@ -339,7 +339,6 @@ static int _set_options(const int argc, char **argv)
 	int option_index = 0;
 	int cc;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	char *next_str = NULL;
 	uid_t u;
 
 	static struct option long_options[] = {
@@ -402,11 +401,30 @@ static int _set_options(const int argc, char **argv)
 			params.input = xstrdup(optarg);
 			break;
 		case 'j':
-			params.job_id = strtol(optarg, &next_str, 10);
-			if (next_str[0] == '.')
-				params.step_id =
-					strtol(next_str + 1, NULL, 10);
+		{
+			slurm_selected_step_t selected_step;
+			int rc = unfmt_job_id_string(optarg, &selected_step, 0);
+
+			switch (rc) {
+			case SLURM_SUCCESS:
+				if (selected_step.array_task_id != NO_VAL) {
+					error("Job array IDs not supported, use regular job ID instead");
+					return -1;
+				}
+				if (selected_step.het_job_offset != NO_VAL) {
+					error("Het job IDs not supported, use regular job ID instead");
+					return -1;
+				}
+				break;
+			default:
+				error("Failed to parse job ID \"%s\": %s",
+				      optarg, slurm_strerror(rc));
+				return -1;
+			}
+			params.job_id = selected_step.step_id.job_id;
+			params.step_id = selected_step.step_id.step_id;
 			break;
+		}
 		case 'l':
 			xfree(params.level);
 			params.level = xstrdup(optarg);
