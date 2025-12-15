@@ -7635,10 +7635,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		if (!job_ptr->details->std_out) {
 			if (!job_desc->array_inx)
 				job_ptr->details->std_out =
-					xstrdup("slurm-%j.out");
+					xstrdup(DEFAULT_BATCH_STDOUT_PATH);
 			else
-				job_ptr->details->std_out =
-					xstrdup("slurm-%A_%a.out");
+				job_ptr->details->std_out = xstrdup(
+					DEFAULT_BATCH_ARRAY_STDOUT_PATH);
 		}
 
 		if (slurm_conf.conf_flags & CONF_FLAG_SJE) {

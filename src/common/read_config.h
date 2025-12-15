@@ -78,6 +78,8 @@ typedef struct node_record node_record_t;
 #define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_AUTH_TOKEN_LIFESPAN 1800
 #define DEFAULT_BATCH_START_TIMEOUT 10
+#define DEFAULT_BATCH_STDOUT_PATH "slurm-%j.out"
+#define DEFAULT_BATCH_ARRAY_STDOUT_PATH "slurm-%A_%a.out"
 #define DEFAULT_BCAST_EXCLUDE       "/lib,/usr/lib,/lib64,/usr/lib64"
 #define DEFAULT_COMPLETE_WAIT       0
 #define DEFAULT_CERTGEN_TYPE "certgen/script"

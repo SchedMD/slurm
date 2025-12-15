@@ -2419,6 +2419,27 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 	launch_msg_ptr->std_out = xstrdup(job_ptr->details->std_out);
 	launch_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
 
+	/*
+	 * Upon job submission, slurmctld will fill in the default stdout path
+	 * in the job record if the job did not specify a path (e.g. no --output
+	 * for sbatch). For jobs that were submitted to an older slurmctld
+	 * (25.05 and older), and are using the using the default stdout path,
+	 * they will not store the stdout path in the job record. The following
+	 * logic fills in the default stdout path in the batch launch message so
+	 * that slurmstepd can handle the paths correctly as they now expect
+	 * stdout path to be set.
+	 */
+	if ((job_ptr->start_protocol_ver <= SLURM_25_05_PROTOCOL_VERSION) &&
+	    !launch_msg_ptr->std_out) {
+		if (!job_ptr->array_job_id) {
+			launch_msg_ptr->std_out =
+				xstrdup(DEFAULT_BATCH_STDOUT_PATH);
+		} else {
+			launch_msg_ptr->std_out =
+				xstrdup(DEFAULT_BATCH_ARRAY_STDOUT_PATH);
+		}
+	}
+
 	launch_msg_ptr->argc = job_ptr->details->argc;
 	launch_msg_ptr->argv = xduparray(job_ptr->details->argc,
 					 job_ptr->details->argv);
