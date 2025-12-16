@@ -526,9 +526,10 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 {
 	/*
 	 * Some job fields can change in the course of scheduling, so we
-	 * report the original values supplied by the user rather than
+	 * report the original values supplied by the user and the
 	 * an intermediate value that might be set by our scheduling
-	 * logic (e.g. to enforce a partition, association or QOS limit).
+	 * logic to keep scontrol show job consistent through restarts
+	 * (e.g. to enforce a partition, association or QOS limit).
 	 *
 	 * Fields subject to change and their original values are as follows:
 	 * min_cpus		orig_min_cpus
@@ -542,7 +543,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		job_record_pack_details_common(detail_ptr, buffer,
 					       protocol_version);
 
+		pack32(detail_ptr->min_cpus, buffer);
 		pack32(detail_ptr->orig_min_cpus, buffer);
+		pack32(detail_ptr->max_cpus, buffer);
 		pack32(detail_ptr->orig_max_cpus, buffer);
 		pack32(detail_ptr->min_nodes, buffer);
 		pack32(detail_ptr->max_nodes, buffer);
@@ -551,6 +554,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->acctg_freq, buffer);
 		pack16(detail_ptr->contiguous, buffer);
 		pack16(detail_ptr->core_spec, buffer);
+		pack16(detail_ptr->cpus_per_task, buffer);
 		pack16(detail_ptr->orig_cpus_per_task, buffer);
 		pack32(detail_ptr->task_dist, buffer);
 
@@ -566,7 +570,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack8(detail_ptr->overcommit, buffer);
 		pack8(detail_ptr->prolog_running, buffer);
 
+		pack32(detail_ptr->pn_min_cpus, buffer);
 		pack32(detail_ptr->orig_pn_min_cpus, buffer);
+		pack64(detail_ptr->pn_min_memory, buffer);
 		pack64(detail_ptr->orig_pn_min_memory, buffer);
 		pack16(detail_ptr->oom_kill_step, buffer);
 		pack32(detail_ptr->pn_min_tmp_disk, buffer);
@@ -1476,16 +1482,18 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *x11_magic_cookie = NULL, *x11_target = NULL;
 	char *resv_req = NULL;
 	uint32_t min_nodes, max_nodes;
-	uint32_t min_cpus = 1, max_cpus = NO_VAL;
-	uint32_t pn_min_cpus, pn_min_tmp_disk;
-	uint64_t pn_min_memory;
+	uint32_t min_cpus = 1, orig_min_cpus = 1;
+	uint32_t max_cpus = NO_VAL, orig_max_cpus = NO_VAL;
+	uint32_t pn_min_cpus, orig_pn_min_cpus, pn_min_tmp_disk;
+	uint64_t pn_min_memory, orig_pn_min_memory;
 	uint16_t oom_kill_step = NO_VAL16;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
 	uint32_t cpu_freq_gov = NO_VAL, nice = 0;
 	uint32_t num_tasks, argc = 0, env_cnt = 0, task_dist;
 	uint16_t contiguous, core_spec = NO_VAL16;
-	uint16_t ntasks_per_node, ntasks_per_tres = 0, cpus_per_task, requeue;
+	uint16_t ntasks_per_node, ntasks_per_tres = 0, requeue;
+	uint16_t cpus_per_task, orig_cpus_per_task;
 	uint16_t cpu_bind_type, mem_bind_type;
 	uint16_t segment_size = 0;
 	uint16_t resv_port_cnt = NO_VAL16;
@@ -1520,7 +1528,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		/**********************************/
 
 		safe_unpack32(&min_cpus, buffer);
+		safe_unpack32(&orig_min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
+		safe_unpack32(&orig_max_cpus, buffer);
 		safe_unpack32(&min_nodes, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
@@ -1529,6 +1539,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpack16(&orig_cpus_per_task, buffer);
 		safe_unpack32(&task_dist, buffer);
 
 		safe_unpack8(&share_res, buffer);
@@ -1544,7 +1555,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack8(&prolog_running, buffer);
 
 		safe_unpack32(&pn_min_cpus, buffer);
+		safe_unpack32(&orig_pn_min_cpus, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack64(&orig_pn_min_memory, buffer);
 		safe_unpack16(&oom_kill_step, buffer);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
 
@@ -1600,7 +1613,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		/**********************************/
 
 		safe_unpack32(&min_cpus, buffer);
+		orig_min_cpus = min_cpus;
 		safe_unpack32(&max_cpus, buffer);
+		orig_max_cpus = max_cpus;
 		safe_unpack32(&min_nodes, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
@@ -1609,6 +1624,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
+		orig_cpus_per_task = cpus_per_task;
 		safe_unpack32(&task_dist, buffer);
 
 		safe_unpack8(&share_res, buffer);
@@ -1624,7 +1640,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack8(&prolog_running, buffer);
 
 		safe_unpack32(&pn_min_cpus, buffer);
+		orig_pn_min_cpus = pn_min_cpus;
 		safe_unpack64(&pn_min_memory, buffer);
+		orig_pn_min_memory = pn_min_memory;
 		safe_unpack16(&oom_kill_step, buffer);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
 
@@ -1679,7 +1697,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		/**********************************/
 
 		safe_unpack32(&min_cpus, buffer);
+		orig_min_cpus = min_cpus;
 		safe_unpack32(&max_cpus, buffer);
+		orig_max_cpus = max_cpus;
 		safe_unpack32(&min_nodes, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&num_tasks, buffer);
@@ -1688,6 +1708,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&contiguous, buffer);
 		safe_unpack16(&core_spec, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
+		orig_cpus_per_task = cpus_per_task;
 		safe_unpack32(&task_dist, buffer);
 
 		safe_unpack8(&share_res, buffer);
@@ -1703,7 +1724,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack8(&prolog_running, buffer);
 
 		safe_unpack32(&pn_min_cpus, buffer);
+		orig_pn_min_cpus = pn_min_cpus;
 		safe_unpack64(&pn_min_memory, buffer);
+		orig_pn_min_memory = pn_min_memory;
 		safe_unpack16(&oom_kill_step, buffer);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
 
@@ -1810,7 +1833,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		job_ptr->details->cpus_per_task = cpus_per_task;
 	else
 		job_ptr->details->cpus_per_task = 1;
-	job_ptr->details->orig_cpus_per_task = cpus_per_task;
+	job_ptr->details->orig_cpus_per_task = orig_cpus_per_task;
 	job_ptr->details->crontab_entry = crontab_entry;
 	job_ptr->details->depend_list = depend_list;
 	job_ptr->details->dependency = dependency;
@@ -1848,19 +1871,19 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 
 	job_ptr->details->std_in = in;
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
-	job_ptr->details->orig_pn_min_cpus = pn_min_cpus;
+	job_ptr->details->orig_pn_min_cpus = orig_pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
 	job_ptr->details->oom_kill_step = oom_kill_step;
-	job_ptr->details->orig_pn_min_memory = pn_min_memory;
+	job_ptr->details->orig_pn_min_memory = orig_pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
 	job_ptr->details->max_cpus = max_cpus;
-	job_ptr->details->orig_max_cpus = max_cpus;
+	job_ptr->details->orig_max_cpus = orig_max_cpus;
 	job_ptr->details->max_nodes = max_nodes;
 	job_ptr->details->mc_ptr = mc_ptr;
 	job_ptr->details->mem_bind = mem_bind;
 	job_ptr->details->mem_bind_type = mem_bind_type;
 	job_ptr->details->min_cpus = min_cpus;
-	job_ptr->details->orig_min_cpus = min_cpus;
+	job_ptr->details->orig_min_cpus = orig_min_cpus;
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->nice = nice;
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
