@@ -850,3 +850,10 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		close_con(false, con);
 	}
 }
+
+extern bool tls_is_client_authenticated(conmgr_fd_t *con)
+{
+	xassert(con->tls);
+
+	return tls_g_is_client_authenticated(con->tls);
+}

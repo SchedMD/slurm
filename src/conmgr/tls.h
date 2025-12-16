@@ -68,4 +68,9 @@ extern void tls_handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args,
 				  void *arg);
 
+/*
+ * Return true if client is authenticated via TLS
+ */
+extern bool tls_is_client_authenticated(conmgr_fd_t *con);
+
 #endif /* _CONMGR_TLS_H */
