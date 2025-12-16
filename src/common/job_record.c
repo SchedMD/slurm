@@ -596,8 +596,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
 		packstr_array(detail_ptr->env_sup, detail_ptr->env_cnt, buffer);
 
-		pack_cron_entry(detail_ptr->crontab_entry,
-				protocol_version,
+		pack_cron_entry(detail_ptr->crontab_entry, protocol_version,
 				buffer);
 		packstr(detail_ptr->env_hash, buffer);
 		packstr(detail_ptr->script_hash, buffer);
@@ -665,8 +664,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
 		packstr_array(detail_ptr->env_sup, detail_ptr->env_cnt, buffer);
 
-		pack_cron_entry(detail_ptr->crontab_entry,
-				protocol_version,
+		pack_cron_entry(detail_ptr->crontab_entry, protocol_version,
 				buffer);
 		packstr(detail_ptr->env_hash, buffer);
 		packstr(detail_ptr->script_hash, buffer);
