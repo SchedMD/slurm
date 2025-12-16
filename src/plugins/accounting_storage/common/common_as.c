@@ -841,6 +841,34 @@ extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 				     (long)curr_end);
 	}
 
+	if (arch_cond->purge_jobenv != NO_VAL) {
+		if (!(curr_end =
+			      archive_setup_end_time(last_submit,
+						     arch_cond
+							     ->purge_jobenv))) {
+			error("Parsing purge job_env failed");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(
+			&env, "SLURM_ARCHIVE_JOB_ENV", "%u",
+			SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_jobenv));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_JOB_ENV", "%ld",
+				     (long) curr_end);
+	}
+	if (arch_cond->purge_jobscript != NO_VAL) {
+		if (!(curr_end = archive_setup_end_time(
+			      last_submit, arch_cond->purge_jobscript))) {
+			error("Parsing purge job_script failed");
+			return SLURM_ERROR;
+		}
+
+		env_array_append_fmt(
+			&env, "SLURM_ARCHIVE_JOB_SCRIPT", "%u",
+			SLURMDB_PURGE_ARCHIVE_SET(arch_cond->purge_jobscript));
+		env_array_append_fmt(&env, "SLURM_ARCHIVE_LAST_JOB_SCRIPT",
+				     "%ld", (long) curr_end);
+	}
 #ifdef _PATH_STDPATH
 	env_array_append (&env, "PATH", _PATH_STDPATH);
 #else
