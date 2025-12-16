@@ -746,6 +746,8 @@ static void _register_slurm_output_functions(lua_State *L)
 	lua_setfield(L, -2, "STEPMGR_ENABLED");
 	lua_pushnumber(L, SPREAD_SEGMENTS);
 	lua_setfield(L, -2, "SPREAD_SEGMENTS");
+	lua_pushnumber(L, CONSOLIDATE_SEGMENTS);
+	lua_setfield(L, -2, "CONSOLIDATE_SEGMENTS");
 	lua_pushnumber(L, EXPEDITED_REQUEUE);
 	lua_setfield(L, -2, "EXPEDITED_REQUEUE");
 
@@ -968,6 +970,11 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		} else
 			lua_pushnil(L);
 		FREE_NULL_BUFFER(bscript);
+	} else if (!xstrcmp(name, "segment_size")) {
+		if (job_ptr->details)
+			lua_pushnumber(L, job_ptr->details->segment_size);
+		else
+			lua_pushnumber(L, 0);
 	} else if (!xstrcmp(name, "selinux_context")) {
 		lua_pushstring(L, job_ptr->selinux_context);
  	} else if (!xstrcmp(name, "site_factor")) {
