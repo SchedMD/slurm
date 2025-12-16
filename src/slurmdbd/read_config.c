@@ -133,6 +133,8 @@ extern int read_slurmdbd_conf(void)
 		{"ArchiveDir", S_P_STRING},
 		{"ArchiveEvents", S_P_BOOLEAN},
 		{"ArchiveJobs", S_P_BOOLEAN},
+		{"ArchiveJobScript", S_P_BOOLEAN},
+		{"ArchiveJobEnv", S_P_BOOLEAN},
 		{"ArchiveResvs", S_P_BOOLEAN},
 		{"ArchiveScript", S_P_STRING},
 		{"ArchiveSteps", S_P_BOOLEAN},
@@ -173,6 +175,8 @@ extern int read_slurmdbd_conf(void)
 		{"PurgeSuspendAfter", S_P_STRING},
 		{"PurgeTXNAfter", S_P_STRING},
 		{"PurgeUsageAfter", S_P_STRING},
+		{"PurgeJobScriptAfter", S_P_STRING},
+		{"PurgeJobEnvAfter", S_P_STRING},
 		{"PurgeEventMonths", S_P_UINT32},
 		{"PurgeJobMonths", S_P_UINT32},
 		{"PurgeStepMonths", S_P_UINT32},
@@ -221,7 +225,7 @@ extern int read_slurmdbd_conf(void)
 	} else {
 		bool a_events = false, a_jobs = false, a_resv = false;
 		bool a_steps = false, a_suspend = false, a_txn = false;
-		bool a_usage = false;
+		bool a_usage = false, a_jobscript = false, a_jobenv = false;
 		bool tmp_bool = false;
 		uint32_t parse_flags = 0;
 		uid_t conf_path_uid;
@@ -260,6 +264,8 @@ extern int read_slurmdbd_conf(void)
 
 		s_p_get_boolean(&a_events, "ArchiveEvents", tbl);
 		s_p_get_boolean(&a_jobs, "ArchiveJobs", tbl);
+		s_p_get_boolean(&a_jobscript, "ArchiveJobScript", tbl);
+		s_p_get_boolean(&a_jobenv, "ArchiveJobEnv", tbl);
 		s_p_get_boolean(&a_resv, "ArchiveResvs", tbl);
 		s_p_get_string(&slurmdbd_conf->archive_script, "ArchiveScript",
 			       tbl);
@@ -520,6 +526,24 @@ extern int read_slurmdbd_conf(void)
 			}
 			xfree(temp_str);
 		}
+		if (s_p_get_string(&temp_str, "PurgeJobScriptAfter", tbl)) {
+			/* slurmdb_parse_purge will set SLURMDB_PURGE_FLAGS */
+			if ((slurmdbd_conf->purge_jobscript =
+				     slurmdb_parse_purge(temp_str)) == NO_VAL) {
+				fatal("Bad value \"%s\" for PurgeJobScriptAfter",
+				      temp_str);
+			}
+			xfree(temp_str);
+		}
+		if (s_p_get_string(&temp_str, "PurgeJobEnvAfter", tbl)) {
+			/* slurmdb_parse_purge will set SLURMDB_PURGE_FLAGS */
+			if ((slurmdbd_conf->purge_jobenv =
+				     slurmdb_parse_purge(temp_str)) == NO_VAL) {
+				fatal("Bad value \"%s\" for PurgeJobEnvAfter",
+				      temp_str);
+			}
+			xfree(temp_str);
+		}
 		if (s_p_get_uint32(&slurmdbd_conf->purge_event,
 				   "PurgeEventMonths", tbl)) {
 			if (!slurmdbd_conf->purge_event)
@@ -635,6 +659,10 @@ extern int read_slurmdbd_conf(void)
 			slurmdbd_conf->purge_event |= SLURMDB_PURGE_ARCHIVE;
 		if (a_jobs && slurmdbd_conf->purge_job)
 			slurmdbd_conf->purge_job |= SLURMDB_PURGE_ARCHIVE;
+		if (a_jobscript && slurmdbd_conf->purge_jobscript)
+			slurmdbd_conf->purge_jobscript |= SLURMDB_PURGE_ARCHIVE;
+		if (a_jobenv && slurmdbd_conf->purge_jobenv)
+			slurmdbd_conf->purge_jobenv |= SLURMDB_PURGE_ARCHIVE;
 		if (a_resv && slurmdbd_conf->purge_resv)
 			slurmdbd_conf->purge_resv |= SLURMDB_PURGE_ARCHIVE;
 		if (a_steps && slurmdbd_conf->purge_step)
@@ -748,6 +776,10 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->purge_txn = NO_VAL;
 	if (!slurmdbd_conf->purge_usage)
 		slurmdbd_conf->purge_usage = NO_VAL;
+	if (!slurmdbd_conf->purge_jobscript)
+		slurmdbd_conf->purge_jobscript = NO_VAL;
+	if (!slurmdbd_conf->purge_jobenv)
+		slurmdbd_conf->purge_jobenv = NO_VAL;
 
 	slurm_conf.last_update = time(NULL);
 	slurm_mutex_unlock(&conf_mutex);
@@ -794,6 +826,14 @@ extern list_t *dump_config(void)
 
 	add_key_pair_bool(my_list, "ArchiveJobs",
 		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job));
+
+	add_key_pair_bool(my_list, "ArchiveJobScript",
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf
+							    ->purge_jobscript));
+
+	add_key_pair_bool(my_list, "ArchiveJobEnv",
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf
+							    ->purge_jobenv));
 
 	add_key_pair_bool(my_list, "ArchiveResvs",
 		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv));
@@ -952,6 +992,26 @@ extern list_t *dump_config(void)
 		tmp_ptr = xstrdup("NONE");
 
 	add_key_pair(my_list, "PurgeUsageAfter", "%s", tmp_ptr);
+	xfree(tmp_ptr);
+
+	if (slurmdbd_conf->purge_jobscript != NO_VAL) {
+		tmp_ptr = xmalloc(32);
+		slurmdb_purge_string(slurmdbd_conf->purge_jobscript, tmp_ptr,
+				     32, 1);
+	} else
+		tmp_ptr = xstrdup("NONE");
+
+	add_key_pair(my_list, "PurgeJobScriptAfter", "%s", tmp_ptr);
+	xfree(tmp_ptr);
+
+	if (slurmdbd_conf->purge_jobenv != NO_VAL) {
+		tmp_ptr = xmalloc(32);
+		slurmdb_purge_string(slurmdbd_conf->purge_jobenv, tmp_ptr, 32,
+				     1);
+	} else
+		tmp_ptr = xstrdup("NONE");
+
+	add_key_pair(my_list, "PurgeJobEnvAfter", "%s", tmp_ptr);
 	xfree(tmp_ptr);
 
 	add_key_pair_own(my_list, "SLURMDBD_CONF",
