@@ -3,7 +3,7 @@
     <div class="app-desc">API to access and control Slurm</div>
     <div class="app-desc">More information: <a href="https://www.schedmd.com/">https://www.schedmd.com/</a></div>
     <div class="app-desc">Contact Info: <a href="sales@schedmd.com">sales@schedmd.com</a></div>
-    <div class="app-desc">Version: Slurm-25.11.0</div>
+    <div class="app-desc">Version: Slurm-25.11.1</div>
     <div class="app-desc">BasePath:</div>
     <div class="license-info">Apache 2.0</div>
     <div class="license-url">https://www.apache.org/licenses/LICENSE-2.0.html</div>
@@ -18201,7 +18201,7 @@
     <h3><a name="v0.0.44_job_submit_req"><code>v0.0.44_job_submit_req</code> - </a> <a class="up" href="#__Models">Up</a></h3>
     <div class="model-description"></div>
     <div class="field-items">
-      <div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Deprecated; Populate script field in jobs[0] or job </div>
+      <div class="param">script (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Job batch script contents; Same as the script field in jobs[0] or job. </div>
 <div class="param">jobs (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_job_desc_msg">array[v0.0.44_job_desc_msg]</a></span>  </div>
 <div class="param">job (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_job_desc_msg">v0.0.44_job_desc_msg</a></span>  </div>
     </div>  <!-- field-items -->
