@@ -49,6 +49,7 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/mgr.h"
+#include "src/conmgr/tls.h"
 
 static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 {
@@ -152,6 +153,9 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 			msg->flags |= SLURM_MSG_KEEP_BUFFER;
 			set_buf_offset(msg->buffer, size_buf(rpc));
 		}
+
+		if (con->tls)
+			msg->conn_is_mtls = tls_is_client_authenticated(con);
 
 		/* notify conmgr we processed some data successfully */
 		set_buf_offset(con->in, need);
