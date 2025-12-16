@@ -59,6 +59,7 @@ typedef struct {
 	ssize_t (*recv)(tls_conn_t *conn, void *buf, size_t n);
 	timespec_t (*get_delay)(tls_conn_t *conn);
 	int (*negotiate)(tls_conn_t *conn);
+	bool (*is_client_authenticated)(tls_conn_t *conn);
 	int (*set_conn_fds)(tls_conn_t *conn, int input_fd, int output_fd);
 	int (*set_conn_callbacks)(tls_conn_t *conn,
 				  conn_callbacks_t *callbacks);
@@ -78,6 +79,7 @@ static const char *syms[] = {
 	"tls_p_recv",
 	"tls_p_get_delay",
 	"tls_p_negotiate_conn",
+	"tls_p_is_client_authenticated",
 	"tls_p_set_conn_fds",
 	"tls_p_set_conn_callbacks",
 	"tls_p_shutdown_conn",
@@ -151,6 +153,12 @@ extern int tls_g_negotiate_conn(tls_conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.negotiate))(conn);
+}
+
+extern bool tls_g_is_client_authenticated(tls_conn_t *conn)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.is_client_authenticated))(conn);
 }
 
 extern void tls_g_destroy_conn(tls_conn_t *conn, bool close_fds)

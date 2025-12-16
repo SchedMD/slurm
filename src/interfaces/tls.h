@@ -72,6 +72,11 @@ extern void tls_g_destroy_conn(tls_conn_t *conn, bool close_fds);
  * RET SLURM_SUCCESS or EWOULDBLOCK or error
  */
 extern int tls_g_negotiate_conn(tls_conn_t *conn);
+/*
+ * Return true if client is authenticated (mTLS)
+ * NOTE: Only to be called by server connections
+ */
+extern bool tls_g_is_client_authenticated(tls_conn_t *conn);
 
 extern ssize_t tls_g_recv(tls_conn_t *conn, void *buf, size_t n);
 
