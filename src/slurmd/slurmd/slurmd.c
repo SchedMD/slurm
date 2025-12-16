@@ -54,6 +54,7 @@
 #include <grp.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -614,24 +615,29 @@ static void *
 _registration_engine(void *arg)
 {
 	static const uint32_t MAX_DELAY = 128;
-	uint32_t delay = 1;
+	timespec_t delay = {
+		.tv_sec = 1,
+	};
+
 	(void) _increment_thd_count(true);
 
 	while (!_shutdown && !sent_reg_time) {
 		int rc;
+		const timespec_t end_ts = timespec_add(delay, timespec_now());
 
 		if (!(rc = send_registration_msg(SLURM_SUCCESS)))
 			break;
 
-		debug("Unable to register with slurm controller (retry in %us): %s",
-		      delay, slurm_strerror(rc));
+		debug("Unable to register with slurm controller (retry in %" PRIu64 "s): %s",
+		      (uint64_t) delay.tv_sec, slurm_strerror(rc));
 
-		sleep(delay);
+		while (!_shutdown && timespec_is_after(end_ts, timespec_now()))
+			slurm_nanosleep(1, 0);
 
 		/* increase delay until max on every failure */
-		delay *= 2;
-		if (delay > MAX_DELAY)
-			delay = MAX_DELAY;
+		delay.tv_sec *= 2;
+		if (delay.tv_sec > MAX_DELAY)
+			delay.tv_sec = MAX_DELAY;
 	}
 
 	debug3("%s complete", __func__);
