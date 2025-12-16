@@ -1,3 +1,53 @@
+## Changes in 25.11.1
+
+* data_parser/v0.0.41 - Prevent memory leaks when freeing parsed lists.
+* data_parser/v0.0.42 - Prevent memory leaks when freeing parsed lists.
+* data_parser/v0.0.43 - Prevent memory leaks when freeing parsed lists.
+* data_parser/v0.0.44 - Prevent memory leaks when freeing parsed lists.
+* slurmctld - Prevent a fatal when min_exempt_priority is not the last option listed in PreemptParameters.
+* Updating a job's qos will always replace the previous timelimit with the new qos' timelimit, unless another time limit is explicitly specified in the update command.
+* When debugflags=script is set in slurm.conf, Lua runtime error message will be logged with backtrace.
+* slurmctld - Prevent memory corruption when fanning out messages to the slurmds if TreeWidth is more then or equal to 46341 and the number of nodes in the cluster is more then or equal to (TreeWidth + 1).
+* When GrpTRES and MaxTRESPU are set on different QOSes and both QOSes are applied to a job, ensure that both limits are honored.
+* Fix issue where a cli command or process could get stuck indefinitely when trying to retrieve a slurm.conf from slurmctld.
+* Fix slurmctld potential deadlock when trying to schedule jobs starting many years in the future. Slurm only supports one year time limits.
+* Fix pam_slurm_adopt when using namespace/linux plugin.
+* topology/tree - Prevent overflow error when calculating fanout depth.
+* The state string for nodes in the MIXED+FAIL state will now appear as "FAILING" rather than just "FAIL", similar to what is already done for nodes in the ALLOCATED+FAIL state.
+* slurmctld - Prevent a divide by zero crash by fataling if the following SlurmctldParameters have a value of less than or equal to 0: rl_table_size, rl_bucket_size, rl_refill_rate, and rl_refill_period.
+* Fix missing updates to reservation TRES and accounting when node(s) replaced due to REPLACE or REPLACE_DOWN flags.
+* slurmctld - Cancel interactive job if prolog RPC never reaches its receiver.
+* slurmctld - Cancel interactive jobs that never ran the prolog in the purge jobs logic.
+* Fix accounting for memory on steps without pids, like the extern step, which caused them to be killed if OvermemoryKill was set.
+* NO_NORMAL_ALL will only be printed if all NO_NORMAL_* flags are set.
+* slurmctld - Prevent the controller from believing it has a job's federation cluster lock when it does not.
+* Fix jobs incorrectly stuck waiting for resources when launched with specific client flag combinations containing "--hint=nomultithread".
+* Fix allocated licenses still showing after removing all allocated licenses.
+* accounting_storage/mysql - Disallow creating users if requested user list is empty or usernames are empty strings.
+* slurmrestd - Revert tagging `.script` field as deprecated in 'POST /slurm/v0.0.42/job/submit'.
+* slurmrestd - Revert tagging `.script` field as deprecated in 'POST /slurm/v0.0.43/job/submit'.
+* slurmrestd - Revert tagging `.script` field as deprecated in 'POST /slurm/v0.0.44/job/submit'.
+* slurmrestd - Revert regression that changed the error from "Authentication failure" to "Authentication does not apply to request" when a HTTP request lacks any authentication credentials.
+* When a job requests multiple partitions and cannot run in one of them due to topology, allow the main scheduler to evaluate jobs in the other requested partitions.
+* slurmctld - Acquire the node write lock instead of the node read lock when querying 'GET /metrics/nodes' and 'GET /metrics/partitions' endpoints.
+* slurmctld - Fixed segfault when running configless and a malformed REQUEST_CONFIG RPC is received.
+* Remove error output for missing optional spank plugin.
+* slurmctld - when unable to schedule a job with preferred node features, don't exclude the partition from further scheduling attempts in the same iteration.
+* Fix issue with RestrictedCoresPerGPU with shared gres.
+* Fix rpmbuild --with libcurl option.
+* Add new JobAcctGatherParams=no_file_cache to change how memory usage (RSS) is reported when using cgroup/v2. With this flag set we will subtract active_file and inactive_file from the value reported in memory.current to avoid counting the file cache. memory.peak will then not be used to get the MaxRSS and getting memory spikes will depend on the JobAcctGatherFrequency parameter.
+* namespace/linux - fix bug that could leave defunct processes in the jobs namespace.
+* namespace/linux - kill and reap the namespace process during job teardown.
+* namespace/linux - Fix issue with user_ns_script that may result in STDIN closing, which may result in 'Unable to receive "ok ack"' error on slurmstepd or other undefined behavior.
+* Fix error reading /proc/0/* when calling the api outside the step namespace.
+* slurmctld - Fixed segfault when using newly added remote licenses.
+* Fix SIGCHLD not being sent to tasks.
+* bitmap2node_name() is not cleaned up properly when reservation logging is enabled.
+* Fix issue with jobs running on slurmd's with version 25.05.x or older getting aborted when slurmd re-registers with slurmctld.
+* Fix memory leak on slurmctld for jobs that use --exclusive=topo
+* Prevent jobs that cannot fit in the reservation's time limit from being attracted to a magnetic reservation.
+* Fix slurmstepd segfault for older versioned batch jobs (25.05 and older) submitted without using -o/--output on submission.
+
 ## Changes in 25.11.0
 
 * namespace/linux - move directory creation for bind mounts to before the init script is called.
