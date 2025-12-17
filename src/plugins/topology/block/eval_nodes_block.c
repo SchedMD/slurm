@@ -345,8 +345,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	if (details_ptr->segment_size &&
 	    job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
+		int asblock_level;
 		if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
-			int asblock_level;
 			int tmp = ROUNDUP(details_ptr->segment_size,
 					  ctx->bblock_node_cnt);
 
@@ -354,16 +354,22 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 			tmp *= segment_cnt;
 			asblock_level = _get_block_level(tmp, NULL, ctx);
 
-			block_per_asblock =
-				(1 << (asblock_level - block_level));
 		} else {
-			int asblock_level =
+			asblock_level =
 				_get_block_level(as_rem_nodes, NULL, ctx);
-			block_per_asblock =
-				(1 << (asblock_level - block_level));
 		}
 
-		asblock_cnt = ROUNDUP(block_cnt, block_per_asblock);
+		if (asblock_level < 0) {
+			/*
+			 * Use the whole topology
+			 */
+			block_per_asblock = ctx->block_count;
+			asblock_cnt = 1;
+		} else {
+			block_per_asblock =
+				(1 << (asblock_level - block_level));
+			asblock_cnt = ROUNDUP(block_cnt, block_per_asblock);
+		}
 	}
 
 	/* Validate availability of required nodes */
