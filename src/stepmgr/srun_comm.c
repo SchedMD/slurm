@@ -53,6 +53,17 @@
 /* Launch the srun request. Note that retry is always zero since
  * we don't want to clog the system up with messages destined for
  * defunct srun processes
+ *
+ * IN addr - message will be sent to this address if specified
+ * IN tls_cert - TLS certificate of server that the message will be sent to.
+ *   Only required only if recipient does not have TLS cert signed by the CA.
+ *   Typically required when 'addr' is set to an ephemeral srun w/o a signed
+ *   cert rather than when 'host' is set to a slurmd w/ a signed cert.
+ * IN host - message will be sent to this host
+ * IN type - type of msg_args
+ * IN msg_args - pointer to message data
+ * IN r_uid - restricted uid for message
+ * IN protocol_version - message protocol version
  */
 static void _srun_agent_launch(slurm_addr_t *addr, char *tls_cert, char *host,
 			       slurm_msg_type_t type, void *msg_args,
