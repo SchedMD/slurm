@@ -195,7 +195,6 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		msg_arg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		msg_arg->nodelist = xstrdup(node_name);
 
-		//FIXME
 		_srun_agent_launch(NULL, NULL, job_ptr->batch_host,
 				   SRUN_NODE_FAIL, msg_arg,
 				   slurm_conf.slurmd_user_id,
@@ -321,7 +320,6 @@ extern void srun_timeout(job_record_t *job_ptr)
 		msg_arg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		msg_arg->timeout = job_ptr->end_time;
 
-		//FIXME
 		_srun_agent_launch(NULL, NULL, job_ptr->batch_host,
 				   SRUN_TIMEOUT, msg_arg,
 				   slurm_conf.slurmd_user_id,
