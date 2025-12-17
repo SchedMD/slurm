@@ -2460,7 +2460,7 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 	bool is_coord = add_assoc_cond->is_coord;
 	mysql_conn_t *mysql_conn = add_assoc_cond->mysql_conn;
 	char *user_name = add_assoc_cond->user_name;
-	int rc;
+	int rc = SLURM_SUCCESS;
 	uint32_t assoc_id = 0;
 	char *parent = NULL;
 	char *cols = NULL, *vals = NULL, *tmp_extra = NULL;
@@ -2608,10 +2608,8 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 	if (add_assoc_cond->extra)
 		xstrcat(extra, add_assoc_cond->extra);
 
-	assoc_id = 0;
-
 	xstrfmtcat(query,
-		   "insert into \"%s_%s\" (%s%s) values (%s%s) on duplicate key update deleted=0%s;",
+		   "insert into \"%s_%s\" (%s%s) values (%s%s) on duplicate key update deleted=0%s, id_assoc=LAST_INSERT_ID(id_assoc);",
 		   assoc->cluster, assoc_table,
 		   cols,
 		   add_assoc_cond->cols ? add_assoc_cond->cols : "",
@@ -2623,21 +2621,13 @@ static int _add_assoc_internal(add_assoc_cond_t *add_assoc_cond)
 	xfree(vals);
 	xfree(update);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
-	rc = mysql_db_query(mysql_conn, query);
+	assoc_id = (uint32_t) mysql_db_insert_ret_id(mysql_conn, query);
 	xfree(query);
-	if (rc != SLURM_SUCCESS) {
+	if (!assoc_id) {
 		error("Couldn't add assoc");
 		xfree(extra);
 		slurmdb_destroy_assoc_rec(assoc);
-		return rc;
-	}
-	/* see if this was an insert or update.  On an update
-	 * the assoc_id will already be set
-	 */
-	if (!assoc_id) {
-		(void) last_affected_rows(mysql_conn);
-		assoc_id = mysql_insert_id(mysql_conn->db_conn);
-		//info("last id was %d", assoc_id);
+		return SLURM_ERROR;
 	}
 
 	assoc->id = assoc_id;
