@@ -419,6 +419,10 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 	job_record_t *job_ptr;
 	resv_exc_t resv_exc = { 0 };
 	int rc;
+	will_run_data_t will_run_data = {
+		.start = resv_desc_ptr->start_time,
+		.end = resv_desc_ptr->end_time,
+	};
 
 	xassert(avail_node_bitmap);
 	xassert(resv_desc_ptr);
@@ -439,11 +443,12 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 		job_ptr->details->max_nodes,
 		SELECT_MODE_WILL_RUN, NULL, NULL,
 		&resv_exc,
-		NULL);
+		&will_run_data);
 
 	free_core_array(&resv_exc.exc_cores);
 
-	if (rc != SLURM_SUCCESS) {
+	if (rc != SLURM_SUCCESS ||
+	    job_ptr->start_time > MAX(resv_desc_ptr->start_time, time(NULL))) {
 		return NULL;
 	}
 
