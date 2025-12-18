@@ -379,7 +379,6 @@ test15.39  Test of --use-min-nodes option.
 
 test16.#   Testing of sattach options.
 ======================================
-test16.1   Confirm sattach usage option works (--usage option).
 test16.2   Confirm sattach help option works (--help option).
 test16.3   Confirm that sattach reports a proper version number
 	   (--version option).
