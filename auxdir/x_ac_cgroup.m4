@@ -116,7 +116,7 @@ AC_DEFUN([X_AC_BPF], [
       if test "x$ac_bpf_token_support" = "xyes"; then
         AC_DEFINE([HAVE_BPF_TOKENS], [1], [Define if you are compiling with bpf tokens.])
       else
-        AC_MSG_WARN([unable to link against a bpf.h from kernel-headers, version >= 6.9 required for cgroup/v2])
+        AC_MSG_WARN([unable to build with BPF token support, BPF token support will be disabled. kernel-headers version >= 6.9 required to enable BPF token support .])
       fi
     fi
 
