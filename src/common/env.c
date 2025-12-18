@@ -1245,7 +1245,6 @@ extern int env_array_for_job(char ***dest,
  *	SLURM_NNODES
  *	SLURM_NODELIST
  *	SLURM_NTASKS
- *	SLURM_TASKS_PER_NODE
  */
 extern int
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
@@ -1253,25 +1252,19 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 {
 	char *tmp = NULL;
 	int i;
-	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_task;
-	uint32_t task_dist;
-	slurm_step_layout_req_t step_layout_req;
-	uint16_t cpus_per_task_array[1];
-	uint32_t cpus_task_reps[1];
+	uint32_t num_tasks = batch->ntasks;
+	uint32_t num_hosts = 0;
 
 	if (!batch)
 		return SLURM_ERROR;
-
-	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
-	step_layout_req.num_tasks = batch->ntasks;
 
 	/*
 	 * There is no explicit node count in the batch structure,
 	 * so we need to calculate the node count.
 	 */
 	for (i = 0; i < batch->num_cpu_groups; i++) {
-		step_layout_req.num_hosts += batch->cpu_count_reps[i];
+		num_hosts += batch->cpu_count_reps[i];
 	}
 
 	/*
@@ -1286,13 +1279,11 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	 *
 	 * SLURM_TASKS_PER_NODE is used by mpirun so it must be set correctly.
 	 */
-	if (!step_layout_req.num_tasks) {
+	if (!num_tasks) {
 		char *tmp_env_ntasks_per_node =
 			getenvp(batch->environment, "SLURM_NTASKS_PER_NODE");
 		if (tmp_env_ntasks_per_node) {
-			step_layout_req.num_tasks =
-				atoi(tmp_env_ntasks_per_node) *
-				step_layout_req.num_hosts;
+			num_tasks = atoi(tmp_env_ntasks_per_node) * num_hosts;
 		}
 	}
 
@@ -1301,8 +1292,7 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u",
 				batch->step_id.job_id);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
-				step_layout_req.num_hosts);
+	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_hosts);
 	if (batch->array_task_id != NO_VAL) {
 		env_array_overwrite_fmt(dest, "SLURM_ARRAY_JOB_ID", "%u",
 					batch->array_job_id);
@@ -1326,17 +1316,14 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 	/* OBSOLETE, but needed by MPI, do not remove */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u",
 				batch->step_id.job_id);
-	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u",
-				step_layout_req.num_hosts);
+	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_hosts);
 	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
 
 	if ((batch->cpus_per_task != 0) &&
 	    (batch->cpus_per_task != NO_VAL16))
 		cpus_per_task = batch->cpus_per_task;
 	else
-		cpus_per_task = 1;	/* default value */
-	cpus_per_task_array[0] = cpus_per_task;
-	cpus_task_reps[0] = step_layout_req.num_hosts;
+		cpus_per_task = 1; /* default value */
 
 	/* Only overwrite this if it is set.  They are set in
 	 * sbatch directly and could have changed. */
@@ -1347,47 +1334,11 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		env_array_overwrite_fmt(dest, "SLURM_TRES_PER_TASK", "%s",
 					batch->tres_per_task);
 
-	if (step_layout_req.num_tasks) {
-		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u",
-					step_layout_req.num_tasks);
+	if (num_tasks) {
+		env_array_overwrite_fmt(dest, "SLURM_NTASKS", "%u", num_tasks);
 		/* keep around for old scripts */
-		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u",
-					step_layout_req.num_tasks);
-	} else if (!step_layout_req.num_tasks) {
-		/*
-		 * Figure out num_tasks if it was not set by either
-		 * batch->ntasks or SLURM_NTASKS_PER_NODE above
-		 * Iterate over all kind of cluster nodes, and accum. the number
-		 * of tasks all the group can hold.
-		 */
-		for (int i = 0; i < batch->num_cpu_groups; i++)
-			step_layout_req.num_tasks += (batch->cpus_per_node[i] /
-						      cpus_per_task) *
-						     batch->cpu_count_reps[i];
+		env_array_overwrite_fmt(dest, "SLURM_NPROCS", "%u", num_tasks);
 	}
-
-	if ((step_layout_req.node_list =
-	     getenvp(*dest, "SLURM_ARBITRARY_NODELIST"))) {
-		task_dist = SLURM_DIST_ARBITRARY;
-	} else {
-		step_layout_req.node_list = batch->nodes;
-		task_dist = SLURM_DIST_BLOCK;
-	}
-
-	step_layout_req.cpus_per_node = batch->cpus_per_node;
-	step_layout_req.cpu_count_reps = batch->cpu_count_reps;
-	step_layout_req.cpus_per_task = cpus_per_task_array;
-	step_layout_req.cpus_task_reps = cpus_task_reps;
-	step_layout_req.task_dist = task_dist;
-	step_layout_req.plane_size = NO_VAL16;
-
-	if (!(step_layout = slurm_step_layout_create(&step_layout_req)))
-		return SLURM_ERROR;
-
-	tmp = uint16_array_to_str(step_layout->node_cnt, step_layout->tasks);
-	slurm_step_layout_destroy(step_layout);
-	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-	xfree(tmp);
 
 	if (batch->pn_min_memory & MEM_PER_CPU) {
 		uint64_t tmp_mem = batch->pn_min_memory & (~MEM_PER_CPU);
