@@ -62,15 +62,13 @@ new 6-month cycle</a>.</p>
 <h3 id="compatibility_window">Compatibility Window
 <a class="slurm_link" href="#compatibility_window"></a></h3>
 
-<p>Upgrades from the <b>previous two major releases</b> are compatible. For
-example, slurmdbd 23.11.x is capable of accepting messages from slurmctld
-daemons and commands with a version of 23.11.x, 23.02.x or 22.05.x. It is also
+<p>Slurm has long supported in-place upgrades from the previous two major
+releases. With the change to a 6-month cycle in 2024, Slurm 24.11 introduced
+compatibility with the <b>previous three major releases</b>. For example,
+slurmdbd 25.11.x is capable of accepting messages from slurmctld daemons and
+commands with a version of 25.11.x, 25.05.x, 24.11.x, or 24.05.x. It is also
 capable of updating the records in the database that were recorded by an
 instance of slurmdbd running these versions.</p>
-
-<p>The Slurm 24.11 release introduces compatibility with three previous
-major releases to provide a similar support duration with the more frequent
-6-month release cycle:</p>
 
 <table class="tlist centered">
 <tbody>
