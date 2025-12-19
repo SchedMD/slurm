@@ -61,7 +61,7 @@ typedef struct env_options {
 	char *partition;	/* partition name */
 	char **env;             /* job environment */
 	uint16_t comm_port;	/* srun's communication port */
-	slurm_addr_t *cli;	/* launch node address */
+	slurm_addr_t *cli; /* launch node address - DON'T FREE, ref only */
 	char *job_name;		/* assigned job name */
 	int jobid;		/* assigned job id */
 	int stepid;	        /* assigned step id */
@@ -94,7 +94,7 @@ typedef struct env_options {
 	char *job_licenses;	/* job's licenses */
 	time_t job_start_time;  /* job's start time */
 	uint16_t oom_kill_step;   /* --oom-kill-step */
-	char *tls_cert;		/* srun TLS certificate */
+	char *tls_cert; /* srun TLS certificate - DON'T FREE, ref only */
 } env_t;
 
 
@@ -243,6 +243,11 @@ char **env_array_copy(const char **array);
  * Free the memory used by an environment variable array.
  */
 void env_array_free(char **env_array);
+
+/*
+ * Free the memory used by an env_options env_t struct.
+ */
+extern void env_opts_free(env_t **envtp);
 
 /*
  * Append a single environment variable to an environment variable array,

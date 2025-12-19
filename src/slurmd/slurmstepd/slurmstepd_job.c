@@ -171,6 +171,7 @@ _task_info_destroy(stepd_step_task_info_t *t, uint16_t multi_prog)
 	slurm_mutex_lock(&t->mutex);
 	slurm_mutex_unlock(&t->mutex);
 	slurm_mutex_destroy(&t->mutex);
+	xfree(t->cpu_set);
 	xfree(t->efname);
 	xfree(t->ifname);
 	xfree(t->ofname);
@@ -663,7 +664,10 @@ extern void stepd_step_rec_destroy(void)
 
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
-	xfree(step->envtp);
+	env_opts_free(&step->envtp);
+	for (int i = 0; i < step->ngids; i++)
+		xfree(step->gr_names[i]);
+	xfree(step->gr_names);
 	xfree(step->job_licenses);
 	xfree(step->pw_gecos);
 	xfree(step->pw_dir);
@@ -688,6 +692,7 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step->job_alloc_cores);
 	xfree(step->node_list);
 	xfree(step->step_alloc_cores);
+	xfree(step->stepmgr);
 	xfree(step->task_cnts);
 	xfree(step->tres_bind);
 	xfree(step->tres_freq);

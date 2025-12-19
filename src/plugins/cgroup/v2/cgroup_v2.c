@@ -1870,6 +1870,12 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 	/* Don't let other plugins destroy our structs. */
 	step_active_cnt++;
 
+	/* Already initialized, nothing to do */
+	if (int_cg[CG_LEVEL_STEP_SLURM].path) {
+		common_cgroup_unlock(&int_cg[CG_LEVEL_ROOT]);
+		goto endit;
+	}
+
 	/* Job cgroup */
 	xstrfmtcat(new_path, "/job_%u", step->step_id.job_id);
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_JOB],
