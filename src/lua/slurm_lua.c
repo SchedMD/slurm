@@ -1545,6 +1545,7 @@ static int _lua_to_data(lua_State *L, data_t *dst, const int index,
 			const int depth, const char *parent,
 			const bool parent_is_table)
 {
+	int rc = EINVAL;
 	char *label = NULL;
 	const int type = lua_type(L, index);
 	const char *typename = lua_typename(L, type);
@@ -1564,7 +1565,8 @@ static int _lua_to_data(lua_State *L, data_t *dst, const int index,
 	if (depth > MAX_DEPTH) {
 		log_flag(SCRIPT, "%s: table depth %d/%d too deep",
 			 label, depth, MAX_DEPTH);
-		return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+		rc = ESLURM_LUA_INVALID_CONVERSION_TYPE;
+		goto done;
 	}
 
 	if (luaL_getmetafield(L, index, "__metatable") != LUA_TNIL) {
@@ -1579,18 +1581,21 @@ static int _lua_to_data(lua_State *L, data_t *dst, const int index,
 			 label, metatable);
 
 		lua_pop(L, 1);
-		return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+		rc = ESLURM_LUA_INVALID_CONVERSION_TYPE;
+		goto done;
 	}
 
 	switch (type) {
 	case LUA_TNONE:
 		log_flag(SCRIPT, "%s: none", label);
 		data_set_null(dst);
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
+		goto done;
 	case LUA_TNIL:
 		log_flag(SCRIPT, "%s: nil", label);
 		data_set_null(dst);
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
+		goto done;
 	case LUA_TNUMBER:
 		log_flag(SCRIPT, "%s: number=" LUA_NUMBER_FMT,
 			 label, lua_tonumber(L, index));
@@ -1600,20 +1605,28 @@ static int _lua_to_data(lua_State *L, data_t *dst, const int index,
 		else
 #endif
 			data_set_float(dst, lua_tonumber(L, index));
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
+		goto done;
 	case LUA_TBOOLEAN:
 		log_flag(SCRIPT, "%s: boolean=%s",
 			 label, BOOL_STRINGIFY(lua_toboolean(L, index)));
 		data_set_bool(dst, lua_toboolean(L, index));
-		return SLURM_SUCCESS;
+		rc = SLURM_SUCCESS;
+		goto done;
 	case LUA_TSTRING:
-		return _dump_data_string(L, dst, index, label);
+		rc = _dump_data_string(L, dst, index, label);
+		goto done;
 	case LUA_TTABLE:
-		return _dump_table(L, dst, index, label, depth);
+		rc = _dump_table(L, dst, index, label, depth);
+		goto done;
 	}
 
 	_log_invalid_type(L, index, label, type, typename);
-	return ESLURM_LUA_INVALID_CONVERSION_TYPE;
+	rc = ESLURM_LUA_INVALID_CONVERSION_TYPE;
+
+done:
+	xfree(label);
+	return rc;
 }
 
 static int _to_data(lua_State *L, data_t *dst, const int index)
