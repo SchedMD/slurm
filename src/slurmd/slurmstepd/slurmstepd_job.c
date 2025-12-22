@@ -665,9 +665,11 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step->cpu_bind);
 	xfree(step->cwd);
 	env_opts_free(&step->envtp);
-	for (int i = 0; i < step->ngids; i++)
-		xfree(step->gr_names[i]);
-	xfree(step->gr_names);
+	if (step->gr_names) {
+		for (int i = 0; i < step->ngids; i++)
+			xfree(step->gr_names[i]);
+		xfree(step->gr_names);
+	}
 	xfree(step->job_licenses);
 	xfree(step->pw_gecos);
 	xfree(step->pw_dir);
