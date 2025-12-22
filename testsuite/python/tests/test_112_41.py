@@ -231,6 +231,10 @@ def test_loaded_versions():
     assert "/slurmdb/v0.0.41/jobs/" in spec["paths"].keys()
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmrestd") < (24, 11),
+    reason="Ticket 24276: It fails in mixed versions with too old ones (!2726)",
+)
 @pytest.mark.parametrize("openapi_spec", ["41"], indirect=True)
 def test_specification(openapi_spec):
     base_path = "/components/schemas/v0.0.41_"
