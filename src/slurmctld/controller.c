@@ -203,6 +203,7 @@ bool	ping_nodes_now = false;
 pthread_cond_t purge_thread_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t purge_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t check_bf_running_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t check_bf_running_cond = PTHREAD_COND_INITIALIZER;
 int	sched_interval = 60;
 slurmctld_config_t slurmctld_config = {0};
 diag_stats_t slurmctld_diag_stats;
@@ -1077,7 +1078,6 @@ int main(int argc, char **argv)
 		_slurmctld_background(NULL);
 
 		controller_fini_scheduling(); /* Stop all scheduling */
-		rpc_queue_shutdown();
 		agent_fini();
 
 		/* termination of controller */
@@ -2479,6 +2479,13 @@ static void _flush_rpcs(void)
 	}
 
 	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+
+	/*
+	 * Now that no incoming RPCs are still getting processed by
+	 * _service_connection, wait for any still enqueued RPCs to be
+	 * processed, if queues are enabled.
+	 */
+	rpc_queue_shutdown();
 }
 
 /*
@@ -2616,8 +2623,6 @@ static void *_slurmctld_background(void *no_data)
 			/* Always stop listening when shutdown requested */
 			listeners_quiesce();
 
-			_flush_rpcs();
-
 			/*
 			 * Wait for all already accepted connection work to
 			 * finish before continuing on with control loop that
@@ -2626,13 +2631,38 @@ static void *_slurmctld_background(void *no_data)
 			 */
 			conmgr_quiesce(__func__);
 
+			/*
+			 * Flush incoming RPCs after pausing ConMgr
+			 * communication. We need to ensure that any ongoing
+			 * connection gets completed before this, to be sure no
+			 * RPC is lost.
+			 */
+			_flush_rpcs();
+
+			/* Wait for backfill to release locks */
+			slurm_mutex_lock(&check_bf_running_lock);
+			while (slurmctld_diag_stats.bf_active) {
+				slurm_cond_wait(&check_bf_running_cond,
+						&check_bf_running_lock);
+			}
+
+			/* Wait for main sched to release locks */
+			slurm_mutex_lock(&sched_mutex);
+			while (sched_requests || sched_running) {
+				slurm_cond_wait(&sched_cond, &sched_mutex);
+			}
+
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
 				save_all_state();
 			} else {
-				error("Semaphores still set after %d seconds, "
-				      "can not save state", CONTROL_TIMEOUT);
+				error("Semaphores still set after flushing RPCs, and finish scheduling. Can not save state");
 			}
+
+			/* Unblock main sched thread, so that it can shutdown */
+			slurm_mutex_unlock(&sched_mutex);
+			/* Unblock backfill thread, so that it can shutdown */
+			slurm_mutex_unlock(&check_bf_running_lock);
 
 			/*
 			 * Allow other connections to start processing again as
