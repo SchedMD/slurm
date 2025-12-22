@@ -746,8 +746,7 @@ Only jobs submitted to a single partition will be effected.
 This operation changes the order of jobs by adjusting job nice values.
 The net effect on that user's throughput will be negligible to slightly negative.
 This operation is disabled by default for unprivileged users, but may be enabled
-by including the option "enable_user_top" in the SchedulerParameters
-configuration parameter.
+by including \fBSchedulerParameters=enable_user_top\fR in \fIslurm.conf\fR.
 .IP
 
 .TP
@@ -1443,8 +1442,8 @@ switches than the count specified, the job remain pending until it either finds
 an allocation with desired switch count or the time limit expires. By default
 there is no switch count limit and no time limit delay. Set the count
 to zero in order to clean any previously set count (disabling the limit).
-The job's maximum time delay may be limited using the \fBSchedulerParameters\fR
-configuration parameter with the \fBmax_switch_wait\fR parameter option.
+The job's maximum time delay may be limited by setting
+\fBSchedulerParameters=max_switch_wait=#\fR in \fIslurm.conf\fR.
 Also see \fIwait\-for\-switch\fP.
 .IP
 
