@@ -233,11 +233,12 @@ static int	_valid_node_feature(char *feature, bool can_reboot);
 static int	build_queue_timeout = BUILD_TIMEOUT;
 static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
 
-static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  sched_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t sched_cond = PTHREAD_COND_INITIALIZER;
 static pthread_t thread_id_sched = 0;
 static bool sched_full_queue = false;
-static int sched_requests = 0;
+int sched_requests = 0;
+bool sched_running = false;
 static struct timeval sched_last = {0, 0};
 
 static uint32_t max_array_size = NO_VAL;
@@ -960,6 +961,7 @@ static void *_sched_agent(void *args)
 		full_queue = sched_full_queue;
 		sched_full_queue = false;
 		sched_requests = 0;
+		sched_running = true;
 		slurm_mutex_unlock(&sched_mutex);
 
 		job_cnt = _schedule(full_queue);
@@ -971,6 +973,12 @@ static void *_sched_agent(void *args)
 			schedule_node_save();		/* Has own locking */
 			schedule_job_save();		/* Has own locking */
 		}
+
+		/* Signal that scheduling work is complete */
+		slurm_mutex_lock(&sched_mutex);
+		sched_running = false;
+		slurm_cond_broadcast(&sched_cond);
+		slurm_mutex_unlock(&sched_mutex);
 	}
 
 	return NULL;
