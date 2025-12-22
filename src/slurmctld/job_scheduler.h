@@ -68,11 +68,6 @@ enum {
 	REMOTE_DEPEND
 };
 
-extern pthread_mutex_t sched_mutex;
-extern pthread_cond_t sched_cond;
-extern int sched_requests;
-extern bool sched_running;
-
 extern void main_sched_init(void);
 
 extern void main_sched_fini(void);
