@@ -2660,6 +2660,8 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 
 static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 {
+	char *task_count;
+
 	if (job->name)
 		env_array_overwrite(&launch->environment, "SLURM_JOB_NAME",
 				    job->name);
@@ -2712,6 +2714,12 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 		env_array_overwrite_fmt(&launch->environment,
 					"SLURM_JOB_SEGMENT_SIZE", "%u",
 					job->details->segment_size);
+
+	task_count = get_tasks_per_node(job);
+	if (task_count)
+		env_array_overwrite(&launch->environment,
+				    "SLURM_TASKS_PER_NODE", task_count);
+	xfree(task_count);
 
 	/* update size of env in case it changed */
 	if (launch->environment)
