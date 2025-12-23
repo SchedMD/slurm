@@ -142,7 +142,6 @@ static void _set_env_vars2(resource_allocation_response_msg_t *resp,
 			   int het_job_offset);
 static void _set_ntasks(allocation_info_t *ai, slurm_opt_t *opt_local);
 static int  _set_rlimit_env(void);
-static void _set_submit_dir_env(void);
 static int  _set_umask_env(void);
 static void _shepherd_notify(int shepherd_fd);
 static int _shepherd_spawn(srun_job_t *job, list_t *srun_job_list,
@@ -767,7 +766,11 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 	(void) _set_rlimit_env();
 	set_prio_process_env();
 	(void) _set_umask_env();
-	_set_submit_dir_env();
+
+	/* Only set these environment variables in new allocations */
+	if (sropt.jobid == NO_VAL) {
+		set_submit_dir_env(NULL, true);
+	}
 
 	/*
 	 * save process startup time to be used with -I<timeout>
@@ -2125,31 +2128,6 @@ static int _set_rlimit_env(void)
 	rlimits_use_max_nofile();
 
 	return rc;
-}
-
-/* Set SLURM_CLUSTER_NAME< SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment
- * variables within current state */
-static void _set_submit_dir_env(void)
-{
-	char buf[PATH_MAX], host[256];
-
-	/* Only set these environment variables in new allocations */
-	if (sropt.jobid != NO_VAL)
-		return;
-
-	if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
-		    slurm_conf.cluster_name) < 0)
-		error("unable to set SLURM_CLUSTER_NAME in environment");
-
-	if ((getcwd(buf, PATH_MAX)) == NULL)
-		error("getcwd failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0)
-		error("unable to set SLURM_SUBMIT_DIR in environment");
-
-	if ((gethostname(host, sizeof(host))))
-		error("gethostname_short failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
-		error("unable to set SLURM_SUBMIT_HOST in environment");
 }
 
 /* Set some environment variables with current state */
