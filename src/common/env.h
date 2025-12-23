@@ -411,4 +411,11 @@ extern void env_merge_filter(slurm_opt_t *opt, job_desc_msg_t *desc);
  */
 extern void set_prio_process_env(void);
 
+/*
+ * Set environment variables for the job submission.
+ * IN/OUT: wd_ptr - If not NULL, return a xstrdup() of the cwd.
+ * IN: set_cluster_name - Whether to set the SLURM_CLUSTER_NAME env var or not.
+ */
+extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name);
+
 #endif

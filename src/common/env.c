@@ -2667,3 +2667,27 @@ extern void set_prio_process_env(void)
 
         debug("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
+
+extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name)
+{
+	char host[256], work_dir[PATH_MAX];
+
+	if (set_cluster_name) {
+		if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
+			    slurm_conf.cluster_name) < 0)
+			error("unable to set SLURM_CLUSTER_NAME in environment");
+	}
+
+	if ((getcwd(work_dir, PATH_MAX)) == NULL)
+		error("getcwd failed: %m");
+	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0)
+		error("unable to set SLURM_SUBMIT_DIR in environment");
+
+	if ((gethostname(host, sizeof(host))))
+		error("gethostname_short failed: %m");
+	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
+		error("unable to set SLURM_SUBMIT_HOST in environment");
+
+	if (wd_ptr && work_dir[0])
+		*wd_ptr = xstrdup(work_dir);
+}
