@@ -116,7 +116,6 @@ static void _ring_terminal_bell(void);
 static int  _set_cluster_name(void *x, void *arg);
 static void _set_exit_code(void);
 static void _set_spank_env(void);
-static void _set_submit_dir_env(void);
 static void _signal_while_allocating(int signo);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
@@ -236,7 +235,7 @@ int main(int argc, char **argv)
 
 		_set_spank_env();
 		if (het_job_inx == 0)
-			_set_submit_dir_env();
+			set_submit_dir_env(&work_dir, false);
 		if (opt.chdir && chdir(opt.chdir)) {
 			error("chdir(%s): %m", opt.chdir);
 			exit(error_exit);
@@ -763,24 +762,6 @@ static void _set_spank_env(void)
 			      opt.spank_job_env[i]);
 		}
 	}
-}
-
-/* Set SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment variables within
- * current state */
-static void _set_submit_dir_env(void)
-{
-	char host[256];
-
-	work_dir = xmalloc(PATH_MAX);
-	if ((getcwd(work_dir, PATH_MAX)) == NULL)
-		error("getcwd failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", work_dir) < 0)
-		error("unable to set SLURM_SUBMIT_DIR in environment");
-
-	if ((gethostname(host, sizeof(host))))
-		error("gethostname_short failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
-		error("unable to set SLURM_SUBMIT_HOST in environment");
 }
 
 /* Returns 0 on success, -1 on failure */
