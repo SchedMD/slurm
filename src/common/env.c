@@ -2684,7 +2684,7 @@ extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name)
 		error("unable to set SLURM_SUBMIT_DIR in environment");
 
 	if ((gethostname(host, sizeof(host))))
-		error("gethostname_short failed: %m");
+		error("gethostname failed: %m");
 	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
 		error("unable to set SLURM_SUBMIT_HOST in environment");
 
