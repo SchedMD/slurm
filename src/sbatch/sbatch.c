@@ -76,7 +76,6 @@ static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
 static int   _set_rlimit_env(void);
 static void  _set_spank_env(void);
-static void  _set_submit_dir_env(void);
 static int   _set_umask_env(void);
 
 int main(int argc, char **argv)
@@ -198,7 +197,7 @@ int main(int argc, char **argv)
 
 		set_prio_process_env();
 		_set_spank_env();
-		_set_submit_dir_env();
+		set_submit_dir_env(NULL, false);
 		_set_umask_env();
 		if (local_env && !job_env_list) {
 			job_env_list = list_create(NULL);
@@ -508,23 +507,6 @@ static void _set_spank_env(void)
 			      opt.spank_job_env[i]);
 		}
 	}
-}
-
-/* Set SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST environment variables within
- * current state */
-static void _set_submit_dir_env(void)
-{
-	char buf[PATH_MAX], host[256];
-
-	if ((getcwd(buf, PATH_MAX)) == NULL)
-		error("getcwd failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_DIR", "%s", buf) < 0)
-		error("unable to set SLURM_SUBMIT_DIR in environment");
-
-	if ((gethostname(host, sizeof(host))))
-		error("gethostname_short failed: %m");
-	else if (setenvf(NULL, "SLURM_SUBMIT_HOST", "%s", host) < 0)
-		error("unable to set SLURM_SUBMIT_HOST in environment");
 }
 
 /* Set SLURM_UMASK environment variable with current state */
