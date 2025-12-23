@@ -118,7 +118,7 @@ ReservationName=root_5 StartTime=2009-02-04T16:22:57
 <p>Our next example is to reserve ten nodes in the default
 Slurm partition starting at noon and with a duration of 60
 minutes occurring daily. The reservation will be available
-only to users "alan" and "brenda".</p>
+only to users <i>alan</i> and <i>brenda</i>.</p>
 <pre>
 $ scontrol create reservation user=alan,brenda \
    starttime=noon duration=60 flags=daily nodecnt=10
@@ -135,7 +135,7 @@ ReservationName=alan_6 StartTime=2009-02-05T12:00:00
 
 <p>Our next example is to reserve 100GB of burst buffer space
 starting at noon today and with a duration of 60 minutes.
-The reservation will be available only to users "alan" and "brenda".</p>
+The reservation will be available only to users <i>alan</i> and <i>brenda</i>.</p>
 <pre>
 $ scontrol create reservation user=alan,brenda \
    starttime=noon duration=60 flags=any_nodes burstbuffer=100GB
@@ -177,9 +177,9 @@ $ scontrol create reservation StartTime=now Duration=60 \
 <p>Reservations can not only be created for the use of specific accounts and/or
 QOS and/or partitions and/or users, but specific accounts and/or QOS and/or
 partitions and/or users can be prevented from using them.
-In the following example, a reservation is created for account "foo", but user
-"alan" is prevented from using the reservation even when using the account
-"foo".</p>
+In the following example, a reservation is created for account <i>foo</i>, but
+user <i>alan</i> is prevented from using the reservation even when using the
+account <i>foo</i>.</p>
 
 <pre>
 $ scontrol create reservation account=foo \
@@ -297,56 +297,73 @@ outside of the reservation after the reservation is gone.
 <a class="slurm_link" href="#overlap"></a>
 </h2>
 
-<p>By default, reservations must not overlap. They must either include
-different nodes or operate at different times. If specific nodes
-are not specified when a reservation is created, Slurm will
-automatically select nodes to avoid overlap and ensure that
-the selected nodes are available when the reservation begins.</p>
+<p>By default, reservations must not overlap. They must either include different
+nodes or operate at different times. If specific nodes are not provided when a
+reservation is created, Slurm will automatically select nodes to avoid overlap
+and ensure that the selected nodes are available when the reservation begins.</p>
 
-<p>There is very limited support for overlapping reservations
-with two specific modes of operation available.
-For ease of system maintenance, you can create a reservation
-with the "maint" flag that overlaps existing reservations.
-This permits an administrator to easily create a maintenance
-reservation for an entire cluster without needing to remove
-or reschedule pre-existing reservations. Users requesting access
-to one of these pre-existing reservations will be prevented from
-using resources that are also in this maintenance reservation.
-For example, users alan and brenda might have a reservation for
-some nodes daily from noon until 1PM. If there is a maintenance
-reservation for all nodes starting at 12:30PM, the only jobs they
-may start in their reservation would have to be completed by 12:30PM,
-when the maintenance reservation begins.</p>
+<p>This behavior can be changed by adding the <b>OVERLAP</b> flag to a
+reservation. This might be used to ensure availability of resources for a
+specific user within a group having a reservation. For example, users <i>alan</i>
+and <i>brenda</i> having a 10 node reservation for 60 minutes, we might want to
+reserve 4 nodes of that for <i>brenda</i> during the first 30 minutes of the
+time period. In this case, the creation of one overlapping reservation (for a
+total of two reservations) allows for simpler setup and usage of these
+reservations. Without this flag, it would be necessary to create three separate
+reservations, and the users would need to select between two different
+reservation names during the final 30 minutes:</p>
 
-<p>The second exception operates in the same manner as a maintenance
-reservation except that it is not logged in the accounting system as nodes
-reserved for maintenance.
-It requires the use of the "overlap" flag when creating the second
-reservation.
-This might be used to ensure availability of resources for a specific
-user within a group having a reservation.
-Using the previous example of alan and brenda having a 10 node reservation
-for 60 minutes, we might want to reserve 4 nodes of that for brenda
-during the first 30 minutes of the time period.
-In this case, the creation of one overlapping reservation (for a total of
-two reservations) may be simpler than creating three separate reservations,
-partly since the use of any reservation requires the job specification
-of the reservation name.
 <ol>
-<li>A six node reservation for both alan and brenda that lasts the full
-60 minutes</li>
-<li>A four node reservation for brenda for the first 30 minutes</li>
-<li>A four node reservation for both alan and brenda that lasts for the
-final 30 minutes</li>
-</ol></p>
+<li>A six node reservation for both <i>alan</i> and <i>brenda</i> that lasts the
+full 60 minutes</li>
+<li>A four node reservation for <i>brenda</i> for the first 30 minutes</li>
+<li>A four node reservation for both <i>alan</i> and <i>brenda</i> that lasts
+for the final 30 minutes</li>
+</ol>
 
-<p>If the "maint" or "overlap" flag is used when creating reservations,
-one could create a reservation within a reservation within a third
-reservation.
-Note a reservation having a "maint" or "overlap" flag will not have
-resources removed from it by a subsequent reservation also having a
-"maint" or "overlap" flag, so nesting of reservations only works to a
-depth of two.</p>
+<p>If the <b>OVERLAP</b> flag is used when creating reservations, one could
+create a reservation within a reservation within a third reservation. Note that
+a reservation having the <b>OVERLAP</b> flag will not have resources removed
+from it by a subsequent reservation also having the <b>OVERLAP</b> flag, so more
+overlapping reservations will just allow the same resources to be accessed with
+different reservation names.</p>
+
+<h2 id="maint">Maintenance Reservations
+<a class="slurm_link" href="#maint"></a>
+</h2>
+
+<p>For ease of system maintenance, you can create a reservation with the
+<b>MAINT</b> flag that overlaps existing reservations. This is equivalent to the
+<b>OVERLAP</b> flag but with the following distinctions:</p>
+
+<ul>
+<li>Reserved nodes will be shown in <b>maint</b> state</li>
+<li>Reserved nodes will not be available as replacements in other reservations</li>
+<li>Cluster usage reports will show this time as <b>PlannedDown</b></li>
+</ul>
+
+<p>For example, users <i>alan</i> and <i>brenda</i> might have a reservation
+for some nodes daily from noon until 1PM. If there is a maintenance reservation
+for all nodes starting at 12:30PM, the only jobs they may start in their
+reservation would have to be completed by 12:30PM, when the maintenance
+reservation begins.</p>
+
+<h2 id="Recurring">Recurring Reservations
+<a class="slurm_link" href="#Recurring"></a>
+</h2>
+
+<p>Slurm allows a reservation to be repeated on one of several predefined
+intervals. The reservation will have the same characteristics and will
+automatically toggle between <b>active</b> and <b>inactive</b> (future) states.
+This is achieved by setting one of the following flags when creating the
+reservation: <b>HOURLY</b>, <b>DAILY</b>, <b>WEEKLY</b>, <b>WEEKDAY</b>, or
+<b>WEEKEND</b>. The first three directly represent the repetition interval,
+while the last two represent the type of day on which the reservation should
+repeat.</p>
+
+<p><b>NOTE</b>: When a recurring reservation attempts to replace nodes, it
+will consider future availability of the resources and will only reserve
+resources that are in an overlapping reservation or unreserved at that time.</p>
 
 <h2 id="float">Reservations Floating Through Time
 <a class="slurm_link" href="#float"></a>
