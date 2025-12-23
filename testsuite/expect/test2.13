@@ -44,7 +44,7 @@ proc cleanup {} {
 #
 make_bash_script $file_in1 "
   $bin_echo JOB_BEGIN
-  $srun -t5 $file_in2
+  $srun -t3 $file_in2
   $bin_echo JOB_FINISH
 "
 #
@@ -62,7 +62,7 @@ make_bash_script $file_in2 "
 #
 # Submit a job so we have something to work with
 #
-set job_id [submit_job -fail "--output=$file_out -t3 $file_in1"]
+set job_id [submit_job -fail "--output=$file_out -t5 $file_in1"]
 
 #
 # Wait for job _and_ step to start running
@@ -71,24 +71,42 @@ wait_for_job -fail $job_id "RUNNING"
 wait_for_step ${job_id}.${step_id}
 
 #
-# Validate that step's original time limit
+# Validate original time limits
 #
-set output ""
-wait_for -subtest {[regexp "TimeLimit=00:05:00" $output]} {
-	set output [run_command_output -fail "$scontrol show step $job_id.$step_id"]
+set job {}
+set step_batch {}
+set step_0 {}
+wait_for -subtest { [dict_getdef $job "TimeLimit" ""] == "00:05:00" && \
+                    [dict_getdef $step_0 "TimeLimit" ""] == "00:03:00" && \
+                    [dict_getdef $step_batch "TimeLimit" ""] == "UNLIMITED" } {
+	set jobs [get_jobs]
+	set steps [get_steps $job_id]
+
+	set job [dict_getdef $jobs $job_id {}]
+	set step_batch [dict_getdef $steps ${job_id}.batch {}]
+	set step_0 [dict_getdef $steps ${job_id}.0 {}]
 }
 
 #
-# Change that step's time limit
+# Update time limit of the step 0
 #
-run_command -fail "$scontrol update StepId=$job_id TimeLimit=1"
+run_command -fail "$scontrol update StepId=${job_id}.0 TimeLimit=1"
 
 #
-# Validate that step's new time limit
+# Validate new time limits
 #
-set output ""
-wait_for -subtest {[regexp "TimeLimit=00:01:00" $output]} {
-	set output [run_command_output -fail "$scontrol show step $job_id.$step_id"]
+set job {}
+set step_batch {}
+set step_0 {}
+wait_for -subtest { [dict_getdef $job "TimeLimit" ""] == "00:05:00" && \
+                    [dict_getdef $step_0 "TimeLimit" ""] == "00:01:00" && \
+                    [dict_getdef $step_batch "TimeLimit" ""] == "UNLIMITED" } {
+	set jobs [get_jobs]
+	set steps [get_steps $job_id]
+
+	set job [dict_getdef $jobs $job_id {}]
+	set step_batch [dict_getdef $steps ${job_id}.batch {}]
+	set step_0 [dict_getdef $steps ${job_id}.0 {}]
 }
 
 #
