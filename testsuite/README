@@ -388,7 +388,6 @@ test16.4   Basic sattach functionality test (--layout, --verbose, --label
 
 test17.#   Testing of sbatch options.
 =====================================
-test17.1   Confirm sbatch usage option works (--usage option).
 test17.2   Confirm sbatch help option works (--help option).
 test17.3   Confirm that sbatch reports a proper version number
 	   (--version option).
