@@ -75,6 +75,7 @@ bitstr_t *up_node_bitmap = NULL; /* bitmap of non-down nodes */
 bitstr_t *power_up_node_bitmap = NULL; /* bitmap of power_up requested nodes */
 
 pthread_mutex_t check_bf_running_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t check_bf_running_cond = PTHREAD_COND_INITIALIZER;
 
 typedef struct {
 	char *testcases;
