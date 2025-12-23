@@ -125,8 +125,6 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	block_context_t *ctx = tctx->plugin_ctx;
 	int *change;
 
-	bit_clear(ctx->blocks_nodes_bitmap, node_ptr->index);
-
 	if (unit) {
 		/*
 		 * Check for a valid block first before being destructive on
@@ -144,6 +142,8 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			return SLURM_ERROR;
 		}
 	}
+
+	bit_clear(ctx->blocks_nodes_bitmap, node_ptr->index);
 
 	change = xcalloc(ctx->block_count + ctx->ablock_count, sizeof(int));
 
