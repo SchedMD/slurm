@@ -3623,6 +3623,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->state_desc = xstrdup(job_ptr->state_desc);
 
 	job_ptr_pend->system_comment = xstrdup(job_ptr->system_comment);
+	job_ptr_pend->topo_jobinfo = NULL;
 
 	i = sizeof(uint64_t) * slurmctld_tres_cnt;
 	job_ptr_pend->tres_req_cnt = xmalloc(i);
