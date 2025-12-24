@@ -84,122 +84,37 @@ proc cleanup { } {
 	exec $bin_rm -f $test_name*.out
 }
 
-# Start test
-
-log_info "\n################################################################\n"
-log_info "Salloc hetjob and verify output from scontrol show job"
-log_info "\n################################################################\n"
-
-set matches 0
-
+# Submit hetjob with salloc, and wait until running
 set job_id [salloc]
 
-set matches 0
-set id_set  0
-set id_regex "\[0-9,-\]+"
+# Get all the jobs, and the HetJobIdSet from the job id
+set jobs [get_jobs]
+set j1 [dict get $jobs $job_id]
 
-# scontrol will show all components of the hetjob, but we just look at the
-# first set (hetjob leader).
-spawn $scontrol show job $job_id
-expect {
-	-re "JobId=$job_id\\s+HetJobId=$job_id\\s+HetJobOffset=0\\s+JobName=interactive\\s+HetJobIdSet=($id_regex)" {
-		incr matches
-		set id_set $expect_out(1,string)
-		exp_continue
-	}
-	-re "CPUs/Task=4" {
-		incr matches
-		exp_continue
-	}
-	-re "MinMemoryCPU=10M" {
-		incr matches
-		exp_continue
-	}
-        -re "JobId=$re_word_str\\s+HetJobId=$job_id" {
-                # this match ensures that the previous regexp are matched before
-                # the 2nd and 3rd components are printed
-                incr matches
-                exp_continue
-        }
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 5} {
-	fail "Problem with scontrol ($matches != 5)"
+set id_set [dict_getdef $j1 "HetJobIdSet" ""]
+if { $id_set == "" } {
+	fail "Unable to obtain HetJobIdSet from job $job_id"
 }
 
+# Obtain the other two components from the HetJobIdSet
 set js [parse_id_set $id_set $job_id]
+set j2 [dict_getdef $jobs [lindex $js 0] {}]
+set j3 [dict_getdef $jobs [lindex $js 1] {}]
 
-set j2 [lindex $js 0]
-set j3 [lindex $js 1]
+# Verify values of all components
+subtest {[dict_getdef $j1 "HetJobId" 0] == $job_id} "First component should have HetJobId=$job_id"
+subtest {[dict_getdef $j1 "HetJobOffset" -1] == 0} "First component should have HetJobOffset=0"
+subtest {[dict_getdef $j1 "CPUs/Task" 0] == 4} "First component should have CPUs/Task=4"
+subtest {[dict_getdef $j1 "MinMemoryCPU" 0M] == "10M"} "First component should have MinMemoryCPU=10M"
 
-set matches 0
+subtest {[dict_getdef $j2 "HetJobId" 0] == $job_id} "Second component should have HetJobId=$job_id"
+subtest {[dict_getdef $j2 "HetJobOffset" -1] == 1} "Second component should have HetJobOffset=1"
+subtest {[dict_getdef $j2 "HetJobIdSet" ""] == $id_set} "Second component should have HetJobIdSet=$id_set"
+subtest {[dict_getdef $j2 "CPUs/Task" 0] == 2} "Second component should have CPUs/Task=2"
+subtest {[dict_getdef $j2 "MinMemoryCPU" 0M] == "2M"} "Second component should have MinMemoryCPU=2M"
 
-spawn $scontrol show job $j2
-expect {
-	-re "JobId=$j2\\s+HetJobId=$job_id" {
-		incr matches
-		exp_continue
-	}
-	-re "HetJobOffset=1" {
-		incr matches
-		exp_continue
-	}
-	-re "HetJobIdSet=$id_set" {
-		incr matches
-		exp_continue
-	}
-	-re "CPUs/Task=2" {
-		incr matches
-		exp_continue
-	}
-	-re "MinMemoryCPU=2M" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-}
-if {$matches != 5} {
-	fail "Problem with scontrol ($matches != 5)"
-}
-
-set matches 0
-
-spawn $scontrol show job $j3
-expect {
-	-re "JobId=$j3\\s+HetJobId=$job_id" {
-		incr matches
-		exp_continue
-	}
-	-re "HetJobOffset=2" {
-		incr matches
-		exp_continue
-	}
-	-re "HetJobIdSet=$id_set" {
-		incr matches
-		exp_continue
-	}
-	-re "CPUs/Task=1" {
-		incr matches
-		exp_continue
-	}
-	-re "MinMemoryCPU=6M" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 5} {
-	fail "Problem with scontrol ($matches != 5)"
-}
+subtest {[dict_getdef $j3 "HetJobId" 0] == $job_id} "Third component should have HetJobId=$job_id"
+subtest {[dict_getdef $j3 "HetJobOffset" -1] == 2} "Third component should have HetJobOffset=2"
+subtest {[dict_getdef $j3 "HetJobIdSet" ""] == $id_set} "Third component should have HetJobIdSet=$id_set"
+subtest {[dict_getdef $j3 "CPUs/Task" 0] == 1} "Third component should have CPUs/Task=1"
+subtest {[dict_getdef $j3 "MinMemoryCPU" 0M] == "6M"} "Third component should have MinMemoryCPU=6M"
