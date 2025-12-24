@@ -104,7 +104,6 @@ static void _init_all_slurm_conf(void);
 static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
                                        uint16_t old_select_type_p);
 static int  _reset_node_bitmaps(void *x, void *arg);
-static void _restore_job_accounting();
 
 static void _set_features(node_record_t **old_node_table_ptr,
 			  int old_node_record_count, int recover);
@@ -1787,7 +1786,7 @@ extern int read_slurm_conf(int recover)
 		controller_reconfig_scheduling();
 	}
 	hres_init();
-	_restore_job_accounting();
+	restore_job_accounting();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -2395,7 +2394,7 @@ static void _restore_job_licenses(job_record_t *job_ptr)
  * Reset the running job count for scheduling policy.
  * This must be called after load_all_resv_state() and restore_node_features().
  */
-static void _restore_job_accounting(void)
+extern void restore_job_accounting(void)
 {
 	job_record_t *job_ptr;
 	list_itr_t *job_iterator;

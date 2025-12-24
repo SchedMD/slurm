@@ -270,6 +270,7 @@ static int          _controller_index(void);
 static void         _create_clustername_file(void);
 static void _flush_rpcs(void);
 static void         _get_fed_updates();
+static int _foreach_cache_update_job(void *x, void *arg);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static int          _init_tres(void);
@@ -950,13 +951,13 @@ int main(int argc, char **argv)
 				fatal("failed to initialize accounting_storage plugin");
 			(void) _shutdown_backup_controller();
 			trigger_primary_ctld_res_ctrl();
-			ctld_assoc_mgr_init();
 			/*
 			 * read_slurm_conf() will load the burst buffer state,
 			 * init the burst buffer plugin early.
 			 */
 			if (bb_g_init() != SLURM_SUCCESS)
 				fatal("failed to initialize burst_buffer plugin");
+			ctld_assoc_mgr_init();
 			/* Now recover the remaining state information */
 			lock_slurmctld(config_write_lock);
 			if (switch_g_restore(recover))
@@ -2942,8 +2943,19 @@ extern void ctld_assoc_mgr_init(void)
 {
 	assoc_init_args_t assoc_init_arg;
 	int num_jobs = 0;
-	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	slurmctld_lock_t job_write_lock = {
+		.conf = NO_LOCK,
+		.job = WRITE_LOCK,
+		.node = NO_LOCK,
+		.part = NO_LOCK,
+		.fed = NO_LOCK,
+	};
+	assoc_mgr_lock_t locks = {
+		.assoc = WRITE_LOCK,
+		.qos = WRITE_LOCK,
+		.tres = WRITE_LOCK,
+		.user = WRITE_LOCK,
+	};
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.enforce = accounting_enforce;
@@ -2994,13 +3006,24 @@ extern void ctld_assoc_mgr_init(void)
 	*/
 	load_assoc_usage();
 	load_qos_usage();
-
-	lock_slurmctld(job_read_lock);
-	if (job_list)
-		num_jobs = list_count(job_list);
-	unlock_slurmctld(job_read_lock);
-
 	_init_tres();
+
+	lock_slurmctld(job_write_lock);
+	if (job_list) {
+		num_jobs = list_count(job_list);
+		if (num_jobs) {
+			/*
+			 * This case (num_jobs > 0) should only happen on a
+			 * failed reconfiguration.
+			 */
+			assoc_mgr_lock(&locks);
+			(void) list_for_each(job_list,
+					     _foreach_cache_update_job, NULL);
+			assoc_mgr_unlock(&locks);
+			restore_job_accounting();
+		}
+	}
+	unlock_slurmctld(job_write_lock);
 
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
