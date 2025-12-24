@@ -2231,7 +2231,6 @@ char **env_array_user_default(const char *username)
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {
 			verbose("timeout waiting for "SUCMD" to complete");
-			kill(child, 9);
 			break;
 		}
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
