@@ -65,6 +65,7 @@ extern void cluster_rec_free(void);
  * Note: Operates on common variables only
  */
 extern int read_slurm_conf(int recover);
+extern void restore_job_accounting();
 
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);
