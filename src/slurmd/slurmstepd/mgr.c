@@ -2609,6 +2609,7 @@ static int _wait_for_any_task(bool waitflag)
 			tmp_env = step->env;
 			step->env = step->envtp->env;
 			env_array_free(tmp_env);
+			step->envtp->env = NULL;
 
 			setenvf(&step->env, "SLURM_SCRIPT_CONTEXT",
 				"epilog_task");
