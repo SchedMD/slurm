@@ -1099,3 +1099,7 @@ test_154_1   Test HRes MODE_3
 test_155_#   Testing sh5util
 ========================================
 test_155_1   Test sh5util options
+
+test_156_#   Testing job step launching
+========================================
+test_156_1   Test "--hint=nomultithread"
