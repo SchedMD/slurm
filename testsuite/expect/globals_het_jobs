@@ -65,5 +65,7 @@ proc parse_id_set {id_set job_id} {
 
 	set result [lsearch -all -inline -not -exact $result $job_id]
 
+	log_debug "HetJobIdSet=$id_set for JobId=$job_id parsed as: $result"
+
 	return $result
 }
