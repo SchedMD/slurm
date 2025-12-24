@@ -7071,10 +7071,16 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 			 */
 			job_desc.pn_min_memory = _get_def_mem(part_ptr, NULL);
 		}
+		job_desc.tres_per_task = xstrdup(job_ptr->tres_per_task);
 		if (detail_ptr->orig_cpus_per_task == NO_VAL16)
 			job_desc.cpus_per_task = 1;
-		else
+		else {
 			job_desc.cpus_per_task = detail_ptr->orig_cpus_per_task;
+			if (xstrstr(job_desc.tres_per_task, "cpu"))
+				slurm_option_update_tres_per_task(
+					job_desc.cpus_per_task, "cpu",
+					&job_desc.tres_per_task);
+		}
 		/*
 		 * Passing the value directly since detail_ptr->num_tasks
 		 * already set correctly. If it is zero _valid_pn_min_mem()
@@ -7096,7 +7102,6 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
 		job_desc.step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		job_desc.bitflags = job_ptr->bit_flags;
-		job_desc.tres_per_task = xstrdup(job_ptr->tres_per_task);
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
 			/* debug2 message already logged inside the function. */
 			fail_reason = WAIT_PN_MEM_LIMIT;
