@@ -2231,7 +2231,7 @@ char **env_array_user_default(const char *username)
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {
 			verbose("timeout waiting for "SUCMD" to complete");
-			kill(-child, 9);
+			kill(child, 9);
 			break;
 		}
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
@@ -2274,7 +2274,7 @@ char **env_array_user_default(const char *username)
 	env_array_free(child_args.tmp_env);
 
 	for (config_timeout=0; ; config_timeout++) {
-		kill(-child, SIGKILL);	/* Typically a no-op */
+		kill(child, SIGKILL); /* Typically a no-op */
 		if (config_timeout)
 			sleep(1);
 		if (waitpid(child, &rc, WNOHANG) > 0)
