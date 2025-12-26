@@ -1759,10 +1759,9 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 	    (!bit_super_set(details_ptr->req_node_bitmap, topo_eval->node_map)))
 		return ESLURM_BREAK_EVAL;
 
+	/* trump_others will skip any other algorithms */
 	if (topo_eval->trump_others && topo_eval->eval_nodes) {
-		int rc = topo_eval->eval_nodes(topo_eval);
-		if (rc != ESLURM_NOT_SUPPORTED)
-			return rc;
+		return topo_eval->eval_nodes(topo_eval);
 	}
 
 	if (topo_eval->job_ptr->bit_flags & SPREAD_JOB) {
@@ -1798,6 +1797,10 @@ extern int eval_nodes(topology_eval_t *topo_eval)
 	}
 
 	if (topo_eval->eval_nodes) {
+		/*
+		 * If we are here (likely topology/tree) we do a best-effort,
+		 * so don't break and continue.
+		 */
 		int rc = topo_eval->eval_nodes(topo_eval);
 		if (rc != ESLURM_NOT_SUPPORTED)
 			return rc;
