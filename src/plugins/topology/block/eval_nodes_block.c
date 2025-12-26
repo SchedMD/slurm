@@ -308,6 +308,12 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 
 	_jobinfo_init(job_ptr);
 
+	if (details_ptr->arbitrary_tpn) {
+		info("topology block does not support arbitrary tasks distribution");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+
 	if (details_ptr->segment_size &&
 	    (rem_nodes % details_ptr->segment_size)) {
 		info("%s: segment_size (%u) does not fit the job size (%d)",

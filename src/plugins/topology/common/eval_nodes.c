@@ -437,6 +437,12 @@ static int _eval_nodes_busy(topology_eval_t *topo_eval)
 	list_itr_t *iter;
 	uint64_t maxtasks;
 
+	if (details_ptr->arbitrary_tpn) {
+		info("does not support arbitrary tasks distribution");
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+
 	topo_eval->avail_cpus = 0;
 
 	rem_cpus = details_ptr->min_cpus;
@@ -1173,6 +1179,12 @@ static int _eval_nodes_lln(topology_eval_t *topo_eval)
 	uint32_t req_nodes = topo_eval->req_nodes;
 	uint64_t maxtasks;
 
+	if (details_ptr->arbitrary_tpn) {
+		info("does not support arbitrary tasks distribution");
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+
 	topo_eval->avail_cpus = 0;
 
 	rem_cpus = details_ptr->min_cpus;
@@ -1378,6 +1390,12 @@ static int _eval_nodes_serial(topology_eval_t *topo_eval)
 	list_itr_t *iter;
 	uint64_t maxtasks;
 
+	if (details_ptr->arbitrary_tpn) {
+		info("does not support arbitrary tasks distribution");
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+
 	topo_eval->avail_cpus = 0;
 
 	rem_cpus = details_ptr->min_cpus;
@@ -1576,6 +1594,12 @@ static int _eval_nodes_spread(topology_eval_t *topo_eval)
 	uint16_t *used_cpu_per_node = NULL;
 	uint32_t prev_max_nodes = topo_eval->max_nodes;
 	foreach_add_nodes_lln_t args = { 0 };
+
+	if (details_ptr->arbitrary_tpn) {
+		info("does not support arbitrary tasks distribution");
+		error_code = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
 
 	topo_eval->avail_cpus = 0;
 
