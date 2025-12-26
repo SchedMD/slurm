@@ -411,7 +411,6 @@ test17.17  Confirm that oversubscribe flags are respected  (--nodelist and
 test17.18  Test of job dependencies and deferred begin time (--dependency
 	   and --begin options).
 test17.19  Test of job submit to multiple partitions (--partition).
-test17.20  Test of mail options (--mail-type and --mail-user options)
 test17.22  Test of running non-existent job, confirm timely termination.
 test17.23  Test of nice value specification (--nice option).
 test17.24  Test of --partition and --verbose options.
