@@ -225,6 +225,8 @@ extern int stepd_connect(const char *directory, const char *nodename,
 			 slurm_step_id_t *step_id,
 			 uint16_t *protocol_version)
 {
+	char *alloc_dir = NULL;
+	const char *dir = directory;
 	int req = SLURM_PROTOCOL_VERSION;
 	int fd = -1;
 	int rc;
@@ -239,15 +241,16 @@ extern int stepd_connect(const char *directory, const char *nodename,
 	}
 	if (directory == NULL) {
 		slurm_conf_t *cf = slurm_conf_lock();
-		directory = slurm_conf_expand_slurmd_path(cf->slurmd_spooldir,
+		alloc_dir = slurm_conf_expand_slurmd_path(cf->slurmd_spooldir,
 							  nodename, NULL);
+		dir = alloc_dir;
 		slurm_conf_unlock();
 	}
 
 	/* Connect to the step */
-	fd = _step_connect(directory, nodename, step_id);
+	fd = _step_connect(dir, nodename, step_id);
 	if (fd == -1)
-		goto fail1;
+		goto cleanup;
 
 	safe_write(fd, &req, sizeof(int));
 	safe_read(fd, &rc, sizeof(int));
@@ -256,13 +259,13 @@ extern int stepd_connect(const char *directory, const char *nodename,
 	else if (rc)
 		*protocol_version = rc;
 
-	xfree(local_nodename);
-	return fd;
+	goto cleanup;
 
 rwfail:
 	fd_close(&fd);
-fail1:
+cleanup:
 	xfree(local_nodename);
+	xfree(alloc_dir);
 	return fd;
 }
 
@@ -691,6 +694,8 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 	regex_t re;
 	struct stat stat_buf;
 	char *local_nodename = NULL;
+	char *alloc_dir = NULL;
+	const char *dir = directory;
 
 	if (nodename == NULL) {
 		if (!(local_nodename = _guess_nodename())) {
@@ -701,8 +706,9 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 	}
 	if (directory == NULL) {
 		slurm_conf_t *cf = slurm_conf_lock();
-		directory = slurm_conf_expand_slurmd_path(
-			cf->slurmd_spooldir, nodename, NULL);
+		alloc_dir = slurm_conf_expand_slurmd_path(cf->slurmd_spooldir,
+							  nodename, NULL);
+		dir = alloc_dir;
 		slurm_conf_unlock();
 	}
 
@@ -713,15 +719,15 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 	/*
 	 * Make sure that "directory" exists and is a directory.
 	 */
-	if (stat(directory, &stat_buf) < 0) {
-		error("Domain socket directory %s: %m", directory);
+	if (stat(dir, &stat_buf) < 0) {
+		error("Domain socket directory %s: %m", dir);
 		goto done;
 	} else if (!S_ISDIR(stat_buf.st_mode)) {
-		error("%s is not a directory", directory);
+		error("%s is not a directory", dir);
 		goto done;
 	}
 
-	if ((dp = opendir(directory)) == NULL) {
+	if ((dp = opendir(dir)) == NULL) {
 		error("Unable to open directory: %m");
 		goto done;
 	}
@@ -733,10 +739,10 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 		if (!_sockname_regex(&re, ent->d_name, &step_id)) {
 			debug4("found %ps", &step_id);
 			loc = xmalloc(sizeof(step_loc_t));
-			loc->directory = xstrdup(directory);
+			loc->directory = xstrdup(dir);
 			loc->nodename = xstrdup(nodename);
 			loc->step_id = step_id;
-			list_append(l, (void *)loc);
+			list_append(l, (void *) loc);
 		}
 	}
 
@@ -744,6 +750,7 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 done:
 	xfree(local_nodename);
 	regfree(&re);
+	xfree(alloc_dir);
 	return l;
 }
 
