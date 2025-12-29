@@ -218,48 +218,6 @@ extern void core_array_log(char *loc, bitstr_t *node_map, bitstr_t **core_map)
 	}
 }
 
-/* Translate per-node core bitmap array to system-wide core bitmap */
-extern bitstr_t *core_array_to_bitmap(bitstr_t **core_array)
-{
-	bitstr_t *core_bitmap = NULL;
-	int i;
-	int c, core_offset;
-#if _DEBUG
-	char tmp[128];
-#endif
-
-	if (!core_array)
-		return core_bitmap;
-
-#if _DEBUG
-	for (i = 0; i < node_record_count; i++) {
-		if (!core_array[i])
-			continue;
-		bit_fmt(tmp, sizeof(tmp), core_array[i]);
-		error("OUT core bitmap[%d] %s",
-		      i, tmp);
-	}
-#endif
-
-	core_bitmap = bit_alloc(cr_get_coremap_offset(node_record_count));
-	for (i = 0; i < node_record_count; i++) {
-		if (!core_array[i])
-			continue;
-		core_offset = cr_get_coremap_offset(i);
-		for (c = 0; c < node_record_table_ptr[i]->tot_cores; c++) {
-			if (bit_test(core_array[i], c))
-				bit_set(core_bitmap, core_offset + c);
-		}
-	}
-
-#if _DEBUG
-	bit_fmt(tmp, sizeof(tmp), core_bitmap);
-	error("IN core bitmap %s", tmp);
-#endif
-
-	return core_bitmap;
-}
-
 /* Translate system-wide core bitmap to per-node core bitmap array */
 extern bitstr_t **core_bitmap_to_array(bitstr_t *core_bitmap)
 {
