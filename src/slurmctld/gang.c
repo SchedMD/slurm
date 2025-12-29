@@ -1151,30 +1151,6 @@ extern void gs_job_start(job_record_t *job_ptr)
 	log_flag(GANG, "gang: leaving gs_job_start");
 }
 
-/* Gang scheduling has been disabled by change in configuration,
- *	resume any suspended jobs */
-extern void gs_wake_jobs(void)
-{
-	job_record_t *job_ptr;
-	list_itr_t *job_iterator;
-
-	if (!job_list)	/* no jobs */
-		return;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		/* Exclude HetJobs from gang operation. */
-		if (job_ptr->het_job_id)
-			continue;
-
-		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority != 0)) {
-			info("gang waking preempted %pJ", job_ptr);
-			_resume_job(job_ptr);
-		}
-	}
-	list_iterator_destroy(job_iterator);
-}
-
 /* Notify the gang scheduler that a job has been suspended or completed.
  * In either case, remove the job from gang scheduling. */
 extern void gs_job_fini(job_record_t *job_ptr)
