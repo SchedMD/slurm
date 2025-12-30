@@ -1067,13 +1067,17 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 			assoc_ptr->usage->used_submit_jobs += job_cnt;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
-			if (assoc_ptr->usage->used_submit_jobs)
+			if (assoc_ptr->usage->used_submit_jobs >= job_cnt)
 				assoc_ptr->usage->used_submit_jobs -= job_cnt;
-			else
+			else {
 				debug2("acct_policy_remove_job_submit: "
 				       "used_submit_jobs underflow for "
-				       "account %s",
-				       assoc_ptr->acct);
+				       "account %s (%u < %u)",
+				       assoc_ptr->acct,
+				       assoc_ptr->usage->used_submit_jobs,
+				       job_cnt);
+				assoc_ptr->usage->used_submit_jobs = 0;
+			}
 			break;
 		case ACCT_POLICY_JOB_BEGIN:
 			assoc_ptr->usage->used_jobs++;
