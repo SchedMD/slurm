@@ -483,7 +483,6 @@ test20.15  Test for seff
 
 test21.#   Testing of sacctmgr commands and options.
 ====================================================
-test21.1   sacctmgr --usage
 test21.2   sacctmgr --help
 test21.3   sacctmgr -V
 test21.4   sacctmgr version
