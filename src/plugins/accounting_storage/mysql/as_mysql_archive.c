@@ -123,6 +123,7 @@ typedef struct {
 	char *derived_ec;
 	char *derived_es;
 	char *env_hash_inx;
+	char *exclusive;
 	char *exit_code;
 	char *extra;
 	char *eligible;
@@ -141,6 +142,7 @@ typedef struct {
 	char *name;
 	char *nodelist;
 	char *node_inx;
+	char *oversubscribe;
 	char *partition;
 	char *priority;
 	char *qos;
@@ -204,6 +206,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->derived_ec);
 		xfree(object->derived_es);
 		xfree(object->env_hash_inx);
+		xfree(object->exclusive);
 		xfree(object->exit_code);
 		xfree(object->extra);
 		xfree(object->eligible);
@@ -222,6 +225,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->name);
 		xfree(object->nodelist);
 		xfree(object->node_inx);
+		xfree(object->oversubscribe);
 		xfree(object->partition);
 		xfree(object->priority);
 		xfree(object->qos);
@@ -576,6 +580,7 @@ static char *job_req_inx[] = {
 	"derived_ec",
 	"derived_es",
 	"env_hash_inx",
+	"exclusive",
 	"exit_code",
 	"extra",
 	"flags",
@@ -595,6 +600,7 @@ static char *job_req_inx[] = {
 	"job_name",
 	"nodelist",
 	"node_inx",
+	"oversubscribe",
 	"`partition`",
 	"priority",
 	"id_qos",
@@ -641,6 +647,7 @@ enum {
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
 	JOB_REQ_ENV_HASH_INX,
+	JOB_REQ_EXCLUSIVE,
 	JOB_REQ_EXIT_CODE,
 	JOB_REQ_EXTRA,
 	JOB_REQ_FLAGS,
@@ -660,6 +667,7 @@ enum {
 	JOB_REQ_NAME,
 	JOB_REQ_NODELIST,
 	JOB_REQ_NODE_INX,
+	JOB_REQ_OVERSUBSCRIBE,
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_QOS,
@@ -1057,6 +1065,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->derived_ec, buffer);
 	packstr(object->derived_es, buffer);
 	packstr(object->env_hash_inx, buffer);
+	packstr(object->exclusive, buffer);
 	packstr(object->exit_code, buffer);
 	packstr(object->extra, buffer);
 	packstr(object->flags, buffer);
@@ -1076,6 +1085,7 @@ static void _pack_local_job(local_job_t *object, buf_t *buffer)
 	packstr(object->node_inx, buffer);
 	packstr(object->het_job_id, buffer);
 	packstr(object->het_job_offset, buffer);
+	packstr(object->oversubscribe, buffer);
 	packstr(object->partition, buffer);
 	packstr(object->priority, buffer);
 	packstr(object->qos, buffer);
@@ -1131,6 +1141,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->derived_ec, buffer);
 		safe_unpackstr(&object->derived_es, buffer);
 		safe_unpackstr(&object->env_hash_inx, buffer);
+		safe_unpackstr(&object->exclusive, buffer);
 		safe_unpackstr(&object->exit_code, buffer);
 		safe_unpackstr(&object->extra, buffer);
 		safe_unpackstr(&object->flags, buffer);
@@ -1150,6 +1161,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr(&object->node_inx, buffer);
 		safe_unpackstr(&object->het_job_id, buffer);
 		safe_unpackstr(&object->het_job_offset, buffer);
+		safe_unpackstr(&object->oversubscribe, buffer);
 		safe_unpackstr(&object->partition, buffer);
 		safe_unpackstr(&object->priority, buffer);
 		safe_unpackstr(&object->qos, buffer);
@@ -3822,6 +3834,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.derived_ec = row[JOB_REQ_DERIVED_EC];
 		job.derived_es = row[JOB_REQ_DERIVED_ES];
 		job.env_hash_inx = row[JOB_REQ_ENV_HASH_INX];
+		job.exclusive = row[JOB_REQ_EXCLUSIVE];
 		job.exit_code = row[JOB_REQ_EXIT_CODE];
 		job.extra = row[JOB_REQ_EXTRA];
 		job.flags = row[JOB_REQ_FLAGS];
@@ -3841,6 +3854,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.name = row[JOB_REQ_NAME];
 		job.nodelist = row[JOB_REQ_NODELIST];
 		job.node_inx = row[JOB_REQ_NODE_INX];
+		job.oversubscribe = row[JOB_REQ_OVERSUBSCRIBE];
 		job.partition = row[JOB_REQ_PARTITION];
 		job.priority = row[JOB_REQ_PRIORITY];
 		job.qos = row[JOB_REQ_QOS];
@@ -3937,12 +3951,14 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_CONSTRAINTS,
 		JOB_REQ_CONTAINER,
 		JOB_REQ_DERIVED_ES,
+		JOB_REQ_EXCLUSIVE,
 		JOB_REQ_EXTRA,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_LICENSES,
 		JOB_REQ_MCS_LABEL,
 		JOB_REQ_NODELIST,
 		JOB_REQ_NODE_INX,
+		JOB_REQ_OVERSUBSCRIBE,
 		JOB_REQ_SUBMIT_LINE,
 		JOB_REQ_SYSTEM_COMMENT,
 		JOB_REQ_QOS_REQ,
@@ -4009,6 +4025,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.exclusive == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.extra == NULL)
 			xstrcatat(format, &format_pos, ", %s");
 		else
@@ -4030,6 +4050,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
 		if (object.node_inx == NULL)
+			xstrcatat(format, &format_pos, ", %s");
+		else
+			xstrcatat(format, &format_pos, ", '%s'");
+		if (object.oversubscribe == NULL)
 			xstrcatat(format, &format_pos, ", %s");
 		else
 			xstrcatat(format, &format_pos, ", '%s'");
@@ -4112,6 +4136,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.container,
 			     (object.derived_es == NULL) ?
 			     "NULL" : object.derived_es,
+			     (object.exclusive == NULL) ?
+			     "NULL" : object.exclusive,
 			     (object.extra == NULL) ?
 			     "NULL" : object.extra,
 			     (object.kill_requid == NULL) ?
@@ -4124,6 +4150,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			     "NULL" : object.nodelist,
 			     (object.node_inx == NULL) ?
 			     "NULL" : object.node_inx,
+			     (object.oversubscribe == NULL) ?
+			     "NULL" : object.oversubscribe,
 			     (object.submit_line == NULL) ?
 			     "NULL" : object.submit_line,
 			     (object.system_comment == NULL) ?

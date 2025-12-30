@@ -248,6 +248,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->container_type);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
+	xfree(job_ptr->exclusive);
 	xfree(job_ptr->extra);
 	FREE_NULL_EXTRA_CONSTRAINTS(job_ptr->extra_constraints);
 	xfree(job_ptr->failed_node);
@@ -280,6 +281,7 @@ extern void job_record_delete(void *job_entry)
 	xfree(job_ptr->nodes_pr);
 	xfree(job_ptr->nodes_rs);
 	xfree(job_ptr->origin_cluster);
+	xfree(job_ptr->oversubscribe);
 	if (job_ptr->het_details && job_ptr->het_job_id) {
 		/* xfree struct if hetjob leader and NULL ptr otherwise. */
 		if (job_ptr->het_job_offset == 0)

@@ -62,6 +62,7 @@ char *job_req_inx[] = {
 	"t1.cpus_req",
 	"t1.derived_ec",
 	"t1.derived_es",
+	"t1.exclusive",
 	"t1.exit_code",
 	"t1.extra",
 	"t1.failed_node",
@@ -91,6 +92,7 @@ char *job_req_inx[] = {
 	"t1.node_inx",
 	"t1.nodelist",
 	"t1.nodes_alloc",
+	"t1.oversubscribe",
 	"t1.partition",
 	"t1.priority",
 	"t1.state",
@@ -130,6 +132,7 @@ enum {
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
+	JOB_REQ_EXCLUSIVE,
 	JOB_REQ_EXIT_CODE,
 	JOB_REQ_EXTRA,
 	JOB_REQ_FAILED_NODE,
@@ -159,6 +162,7 @@ enum {
 	JOB_REQ_NODE_INX,
 	JOB_REQ_NODELIST,
 	JOB_REQ_ALLOC_NODES,
+	JOB_REQ_OVERSUBSCRIBE,
 	JOB_REQ_PARTITION,
 	JOB_REQ_PRIORITY,
 	JOB_REQ_STATE,
@@ -771,6 +775,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->env = xstrdup(row[JOB_REQ_ENV]);
 
 		job->segment_size = slurm_atoul(row[JOB_REQ_SEGMENT_SIZE]);
+		job->exclusive = xstrdup(row[JOB_REQ_EXCLUSIVE]);
+		job->oversubscribe = xstrdup(row[JOB_REQ_OVERSUBSCRIBE]);
 
 		job->std_err = xstrdup(row[JOB_REQ_STDERR]);
 		job->std_in = xstrdup(row[JOB_REQ_STDIN]);

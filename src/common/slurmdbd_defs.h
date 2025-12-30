@@ -281,6 +281,7 @@ typedef struct dbd_job_start_msg {
 	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
 	char *env_hash;         /* hash value of env */
+	uint8_t exclusive; /* JOB_EXCLUSIVE_* value */
 	uint32_t gid;	        /* group ID */
 	uint32_t het_job_id;	/* ID of hetjob leader or 0 */
 	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */
@@ -292,6 +293,7 @@ typedef struct dbd_job_start_msg {
 	char *   nodes;		/* hosts allocated to the job */
 	char *   node_inx;      /* ranged bitmap string of hosts
 				 * allocated to the job */
+	uint8_t oversubscribe; /* JOB_OVERSUBSCRIBE_* value */
 	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
 	uint32_t qos_id;        /* qos job is running with */
