@@ -454,7 +454,6 @@ test17.64  Validate that the mcs plugin (mcs/account) is OK with sbatch
 
 test19.#   Testing of strigger options.
 =======================================
-test19.1   strigger --help
 test19.2   strigger --usage
 test19.3   strigger --set (node options)
 test19.4   strigger --set --reconfig
