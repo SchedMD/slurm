@@ -3865,7 +3865,8 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 						   job_node_select->test_only,
 						   true,
 						   SLURMDB_JOB_FLAG_SUBMIT);
-	} else if (job_node_select->rc_part_limits != WAIT_PART_CONFIG) {
+	} else if ((job_node_select->rc_part_limits != WAIT_PART_CONFIG) &&
+		   (job_node_select->rc_part_limits != WAIT_PART_NODE_LIMIT)) {
 		job_node_select->rc = select_nodes(job_node_select,
 						   true,
 						   true,
