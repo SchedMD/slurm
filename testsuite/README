@@ -466,7 +466,6 @@ test19.9   Validate that duplicate triggers cannot be submitted
 
 test20.#   Testing of PBS commands and Perl APIs.
 =================================================
-test20.1   qsub command tests
 test20.2   qstat command tests
 test20.3   qdel command tests
 test20.4   pbsnodes command tests
