@@ -1100,7 +1100,6 @@ is compiled. scrun.lua's syntax and ability to load JSON support should be
 tested by directly calling the script using \fBlua\fR outside of Slurm.
 
 .nf
-local json = require 'json'
 local open = io.open
 local scratch_path = "/run/user/"
 
@@ -1125,7 +1124,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		       id, bundle, spool_dir, config_file, job_id, user_id, group_id))
 
 	local status, output, user, rc
-	local config = json.decode(read_file(config_file))
+	local config = slurm.from_json(read_file(config_file))
 	local src_rootfs = config["root"]["path"]
 	rc, user = slurm.allocator_command(string.format("id -un %d", user_id))
 	user = string.gsub(user, "%s+", "")
@@ -1295,7 +1294,7 @@ function slurm_scrun_stage_in(id, bundle, spool_dir, config_file, job_id, user_i
 		config["process"]["rlimits"] = nil
 	end
 
-	write_file(dst_config, json.encode(config))
+	write_file(dst_config, slurm.to_json(config))
 	slurm.log_info("created: "..dst_config)
 
 	return slurm.SUCCESS
