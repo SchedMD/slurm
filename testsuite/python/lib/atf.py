@@ -3400,7 +3400,7 @@ def require_accounting(modify=False):
         ):
             set_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
         if modify:
-            backup_accounting_database()
+            dump_accounting_database(properties["sql-db-backup"])
     else:
         if modify and not properties["allow-slurmdbd-modify"]:
             require_auto_config("wants to modify the accounting database")
@@ -5561,42 +5561,38 @@ def wait_for_file(file_name, **repeat_until_kwargs):
     )
 
 
-# Assuming this will only be called internally after validating accounting is configured and auto-config is set
-def backup_accounting_database():
-    """Backs up the accounting database.
+def dump_accounting_database(dst):
+    """Dumps the accounting database to a gzipped SQL file.
 
-    This function may only be used in auto-config mode. The database dump is
-    automatically restored when the test ends.
+    Works in both auto-config and local-config modes. The dump can be used
+    later by restore_accounting_database (e.g. by require_accounting(modify=True)
+    for restore-on-teardown) or as a debugging artifact attached to a failing
+    test.
 
     Args:
-        None
+        dst (string): Destination file path. Always gzipped; callers should
+            use a .sql.gz suffix.
 
     Returns:
         None
 
     Example:
-        >>> backup_accounting_database() # Backs up Slurm accounting database to file in the test's temporary directory.
+        >>> dump_accounting_database(f"{atf.properties['slurm-logs-dir']}/slurm_acct_db.sql.gz")
     """
-
-    if not properties["auto-config"]:
-        return
 
     mysqldump_path = shutil.which("mysqldump")
     if mysqldump_path is None:
         pytest.fail(
-            "Unable to backup the accounting database. mysqldump was not found in your path"
+            "Unable to dump the accounting database. mysqldump was not found in your path"
         )
     mysql_path = shutil.which("mysql")
     if mysql_path is None:
         pytest.fail(
-            "Unable to backup the accounting database. mysql was not found in your path"
+            "Unable to dump the accounting database. mysql was not found in your path"
         )
 
-    sql_dump_file = f"{str(module_tmp_path / '../../slurm_acct_db.sql')}"
-
-    # If a dump already exists, issue a warning and return (honor existing dump)
-    if os.path.isfile(sql_dump_file):
-        logging.warning(f"Dump file already exists ({sql_dump_file})")
+    if os.path.isfile(dst):
+        logging.warning(f"Dump file already exists ({dst})")
         return
 
     slurmdbd_dict = get_config(live=False, source="slurmdbd", quiet=True)
@@ -5631,26 +5627,28 @@ def backup_accounting_database():
         logging.debug(f"Slurm accounting database ({database_name}) is not present")
     else:
         mysqldump_command = (
-            f"{mysqldump_path} {mysql_options} {database_name} > {sql_dump_file}"
+            f"{mysqldump_path} {mysql_options} {database_name} | gzip -c > {dst}"
         )
         run_command(
             mysqldump_command, fatal=True, quiet=False, timeout=default_sql_cmd_timeout
         )
 
 
-def restore_accounting_database():
-    """Restores the accounting database from the backup.
+def restore_accounting_database(src):
+    """Restores the accounting database from a previous dump.
 
-    This function may only be used in auto-config mode.
+    This function may only be used in auto-config mode. The dump file is
+    removed after a successful restore.
 
     Args:
-        None
+        src (string): Source dump file path (gzipped, as produced by
+            dump_accounting_database).
 
     Returns:
         None
 
     Example:
-        >>> restore_accounting_database() # Restores Slurm accounting database from previously created backup.
+        >>> restore_accounting_database(properties["sql-db-backup"])
     """
 
     if not properties["auto-config"]:
@@ -5698,17 +5696,15 @@ def restore_accounting_database():
             timeout=default_sql_cmd_timeout,
         )
 
-    sql_dump_file = f"{str(module_tmp_path / '../../slurm_acct_db.sql')}"
-
     # If the dump file doesn't exist, it has probably already been
     # restored by a previous call to restore_accounting_database
-    if not os.path.isfile(sql_dump_file):
+    if not os.path.isfile(src):
         logging.debug(
-            f"Slurm accounting database backup ({sql_dump_file}) is not present. It has probably already been restored."
+            f"Slurm accounting database backup ({src}) is not present. It has probably already been restored."
         )
         return
 
-    dump_stat = os.stat(sql_dump_file)
+    dump_stat = os.stat(src)
     if not (dump_stat.st_size == 0 and dump_stat.st_mode & stat.S_ISVTX):
         run_command(
             f'{base_command} -e "create database {database_name}"',
@@ -5716,14 +5712,14 @@ def restore_accounting_database():
             quiet=False,
         )
         run_command(
-            f"{base_command} {database_name} < {sql_dump_file}",
+            f"gunzip -c {src} | {base_command} {database_name}",
             fatal=True,
             quiet=False,
             timeout=default_sql_cmd_timeout,
         )
 
     # In either case, remove the dump file
-    run_command(f"rm -f {sql_dump_file}", fatal=True, quiet=False)
+    run_command(f"rm -f {src}", fatal=True, quiet=False)
 
 
 def run_check_test(source_file, build_args=""):

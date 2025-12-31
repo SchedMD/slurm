@@ -325,6 +325,9 @@ def module_setup(request, tmp_path_factory):
     atf.properties["test_name"] = name
     atf.module_tmp_path = tmp_path_factory.mktemp(name, numbered=True)
     update_tmp_path_exec_permissions(atf.module_tmp_path)
+    atf.properties["sql-db-backup"] = str(
+        atf.module_tmp_path / "../../slurm_acct_db.sql.gz"
+    )
 
     # Module-level fixtures should run from within the module_tmp_path
     os.chdir(atf.module_tmp_path)
@@ -451,7 +454,7 @@ def module_teardown():
                 failures.append("Not all Slurm daemons were successfully stopped")
 
         # Restore the Slurm database
-        atf.restore_accounting_database()
+        atf.restore_accounting_database(atf.properties["sql-db-backup"])
 
         # Restore StateSaveLocation for auto-config
         atf.run_command(
