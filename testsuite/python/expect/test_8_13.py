@@ -21,4 +21,11 @@ def setup():
 
 
 def test_expect():
-    atf.run_expect_test()
+    # TODO: Remove fail=False and saving the DB once Ticket 23621 is fixed
+    reason, rc = atf.run_expect_test(fail=False)
+    if rc:
+        if atf.properties["auto-config"]:
+            atf.dump_accounting_database(
+                f"{atf.properties['slurm-logs-dir']}/slurm_acct_db_t23621.sql.gz"
+            )
+        pytest.fail(f"{reason}. DB dumped for t23621.")
