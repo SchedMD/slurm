@@ -3047,6 +3047,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 
 error:
 	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
 
 	debug2("%s: JobId=%s, uid=%u: %s",
 	       __func__,
