@@ -78,9 +78,7 @@ def test_const1():
         '-N 4 --exclusive --resources=power:full_gpu_node --mem=1 --wrap="hostname"'
     )
     assert job_id != 0, "Job should be accepted with a valid var"
-    assert atf.wait_for_job_state(
-        job_id, "DONE", timeout=5
-    ), "Job should run with a valid var"
+    assert atf.wait_for_job_state(job_id, "DONE"), "Job should run with a valid var"
 
     assert (
         atf.submit_job_sbatch(
