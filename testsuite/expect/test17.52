@@ -79,25 +79,8 @@ reconfigure -fail
 #
 # verify slurm conf parameters MCS
 #
-set found 0
-spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep MCS"
-expect {
-	-re "MCSPlugin               = mcs/group" {
-		log_debug "MCSPlugin=mcs/group OK"
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "MCSPlugin parameter in scontrol show config is not mcs/group"
-}
+set mcs [get_config_param "MCSPlugin"]
+subtest {$mcs == "mcs/group"} "MCSPlugin parameter should be mcs/group"
 
 ###### Check that sbatch fails with a bad mcs-label ######
 log_info "---Checking sbatch fails with a bad mcs-label ---"
