@@ -127,22 +127,9 @@ if {[wait_job_reason $job_id "PENDING" {"launch_failed_requeued_held" \
 }
 
 # Check that the node that the job ran on is in fact drained
-set match 0
-spawn $sinfo -h -o%T -n$test_node
-expect {
-	-re "drained" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		fail "sinfo is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match == 0} {
-	fail "Node ($test_node) was not drained when it should be"
+set state ""
+wait_for -subtest {$state == "IDLE+DRAIN"} {
+	set state [get_node_param $test_node "State"]
 }
 
 log_info "RESUMING NODE"
