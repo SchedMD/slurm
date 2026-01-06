@@ -79,25 +79,8 @@ reconfigure -fail
 #
 # verify slurm conf parameters MCS
 #
-set found 0
-spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep MCS"
-expect {
-	-re "MCSPlugin               = mcs/group" {
-		log_debug "MCSPlugin=mcs/group OK"
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "MCSPlugin parameter in scontrol show config is not mcs/group"
-}
+set mcs [get_config_param "MCSPlugin"]
+subtest {$mcs == "mcs/group"} "MCSPlugin parameter should be mcs/group"
 
 ###### Check that sbatch fails with a bad mcs-label ######
 log_info "---Checking sbatch fails with a bad mcs-label ---"
@@ -105,42 +88,15 @@ log_info "---Checking sbatch fails with a bad mcs-label ---"
 set timeout $max_job_delay
 make_bash_script $tmp_job "sleep 10"
 
-spawn $sbatch -N1 --mcs-label=foo -t1 $tmp_job
-expect {
-	-re "Batch job submission failed: Invalid mcs_label specified" {
-		log_debug "This error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -xfail -subtest "-N1 --mcs-label=foo -t1 $tmp_job"]
 
 
 ###### Check that sbatch uses mcs-label=group ######
 log_info "---Checking sbatch uses mcs-label=group---"
 
 make_bash_script $tmp_job "sleep 10"
-spawn $sbatch -N1 -o/dev/null --exclusive=mcs -t1 $tmp_job
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -subtest -fail "-N1 -o/dev/null --exclusive=mcs -t1 $tmp_job"]
 
-if {$job_id == 0} {
-	fail "Job was not submitted"
-}
 
  spawn $bin_bash -c "exec groups \| sed \"s/ /\|/g\""
  expect {
@@ -157,117 +113,27 @@ if {$job_id == 0} {
 	}
 }
 
-
-set found 0
-spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
-expect {
-	-re "(null)" {
-		log_debug "NO MCS-label for this job : this is not expected"
-		exp_continue
-	}
-	-re "$group1" {
-		log_debug "MCS-label OK for this job"
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "Job was submitted with a bad mcs-label"
-}
-
+set mcslabel [get_job_param $job_id "MCS_label"]
+subtest {$mcslabel == $group1} "Job should be submitted with MCSLabel $group1"
 cancel_job $job_id
 
 make_bash_script $tmp_job "sleep 30"
-set job_id 0
-spawn $sbatch -N1 --mcs-label=$group1 --exclusive=mcs -o/dev/null -t10 $tmp_job
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -fail "-N1 --mcs-label=$group1 --exclusive=mcs -o/dev/null -t10 $tmp_job"]
 
-if {$job_id == 0} {
-	fail "Job was not submitted"
-}
-set found 0
-sleep 5
-spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
-expect {
-	-re "$group1" {
-		log_debug "MCS-label OK for this job"
-		set found 1
-		exp_continue
-	}
-	-re "Invalid job format specification" {
-		fail "Invalid job format specification mcslabel"
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found == 0} {
-	 fail "Job was submitted with a bad mcs-label"
-}
-
-set found 0
-set node 0
-spawn $squeue --jobs=$job_id --noheader -O "nodelist"
-expect {
-	-re "($re_word_str)" {
-		set node $expect_out(1,string)
-		log_debug "Node for this job : $node"
-		set found 1
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "No node found in squeue command"
+set mcslabel ""
+set node ""
+wait_for -subtest {$mcslabel == $group1 && $node != ""} {
+	set job [dict get [get_jobs] $job_id]
+	set mcslabel [dict_getdef $job "MCS_label" ""]
+	set node [dict_getdef $job "NodeList" ""]
 }
 
 #
 # verify MCS of nodes
 #
-set found 0
-spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
-expect {
-	-re "MCS_label=$group1" {
-		log_debug "mcs_label OK for node $node"
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "Job was submitted with node with bad mcs-label"
+set mcslabel ""
+wait_for -subtest {$mcslabel == $group1} {
+	set mcslabel [get_node_param $node "MCS_label"]
 }
 cancel_job $job_id
 
@@ -290,84 +156,21 @@ log_info "---Checking sbatch uses mcs-label=group---"
 
 make_bash_script $tmp_job "sleep 10"
 
-spawn $sbatch -N1 -o/dev/null -t1 $tmp_job
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
+set job_id [submit_job -fail "-N1 -o/dev/null -t1 $tmp_job"]
+
+set mcslabel ""
+set node ""
+wait_for -subtest {$mcslabel == $group1 && $node != ""} {
+	set job [dict get [get_jobs] $job_id]
+	set mcslabel [dict_getdef $job "MCS_label" ""]
+	set node [dict_getdef $job "NodeList" ""]
 }
 
-if {$job_id == 0} {
-	fail "Job was not submitted"
-}
-
-set found 0
-sleep 3
-spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
-expect {
-	-re "$group1" {
-		log_debug "MCS-label OK for this job"
-		set found 1
-		exp_continue
-	}
-	-re "(null)" {
-		fail "No MCS-label for this job"
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "Job was submitted with a bad mcs-label"
-}
-
-set found 0
-set node 0
-spawn $squeue --jobs=$job_id --noheader -O "nodelist"
-expect {
-	-re "($re_word_str)" {
-		set node $expect_out(1,string)
-		log_debug "Node for this job : $node"
-		set found 1
-	}
-	timeout {
-		fail "squeue is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$found == 0} {
-	fail "No node found in squeue command"
-}
 
 #
 # verify MCS of nodes
 #
-spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
-expect {
-	-re "MCS_label=$group1" {
-		fail "An mcs_label is found for this job. It was not expected"
-	}
-	-re "MCS_label=N/A" {
-		log_debug "No mcs_label for this node. It was expected"
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
+set mcslabel ""
+wait_for -subtest {$mcslabel == "N/A"} {
+	set mcslabel [get_node_param $node "MCS_label"]
 }
