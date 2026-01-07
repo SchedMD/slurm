@@ -11,6 +11,11 @@ def setup():
 
     atf.require_accounting()
     atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
+
+    # TODO: Remove extra slurmdbd logging once Ticket 23621 is resolved.
+    atf.require_config_parameter_includes("DebugFlags", "DB_Assoc", source="slurmdbd")
+    atf.require_config_parameter("DebugLevel", "debug2", source="slurmdbd")
+
     atf.require_nodes(1)
     atf.require_slurm_running()
     atf.run_command(
