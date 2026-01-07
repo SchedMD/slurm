@@ -471,11 +471,17 @@ def repeat_until(
         else:
             poll_interval = 1
 
+    logging.debug(
+        f"Waiting until condition related to {condition.__code__.co_varnames} is met, or timeout after {timeout}s..."
+    )
     condition_met = False
     while time.time() < begin_time + timeout:
-        if condition(callable()):
+        value = callable()
+        if condition(value):
+            logging.debug(f"Condition met, value: {value}")
             condition_met = True
             break
+        logging.debug(f"Condition not yet met, value: {value}")
         time.sleep(poll_interval)
 
     if not xfail and not condition_met:
