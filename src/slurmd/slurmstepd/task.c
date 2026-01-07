@@ -420,6 +420,7 @@ extern void exec_task(int local_proc_id)
 		tmp_env = step->env;
 		step->env = step->envtp->env;
 		env_array_free(tmp_env);
+		step->envtp->env = NULL;
 	}
 
 	/*
