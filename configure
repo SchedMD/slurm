@@ -25667,6 +25667,7 @@ printf "%s\n" "#define HAVE_HWLOC 1" >>confdefs.h
   {
       { ac_cv_header_nvml_h=; unset ac_cv_header_nvml_h;}
       { ac_cv_lib_nvidia_ml_nvmlInit=; unset ac_cv_lib_nvidia_ml_nvmlInit;}
+      { ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks=; unset ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks;}
       ac_fn_c_check_header_compile "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
 if test "x$ac_cv_header_nvml_h" = xyes
 then :
@@ -25724,6 +25725,59 @@ then :
   ac_nvml=yes
 else case e in #(
   e) ac_nvml=no ;;
+esac
+fi
+
+
+      # nvmlDeviceSetMemoryLockedClocks() added in driver version 465.19.01
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for nvmlDeviceSetMemoryLockedClocks in -lnvidia-ml" >&5
+printf %s "checking for nvmlDeviceSetMemoryLockedClocks in -lnvidia-ml... " >&6; }
+if test ${ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnvidia-ml  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char nvmlDeviceSetMemoryLockedClocks (void);
+int
+main (void)
+{
+return nvmlDeviceSetMemoryLockedClocks ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks=yes
+else case e in #(
+  e) ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks" >&5
+printf "%s\n" "$ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks" >&6; }
+if test "x$ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks" = xyes
+then :
+  ac_nvml_memory_clock=yes
+else case e in #(
+  e) ac_nvml_memory_clock=no ;;
 esac
 fi
 
@@ -25833,6 +25887,11 @@ printf "%s\n" "#define HAVE_MIG_SUPPORT 1" >>confdefs.h
       else
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&5
 printf "%s\n" "$as_me: WARNING: NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well." >&2;}
+      fi
+      if  test "$ac_nvml_memory_clock" = "yes" ; then
+
+printf "%s\n" "#define HAVE_NVML_MEMORY_CLOCK 1" >>confdefs.h
+
       fi
     else
       if test -z "$with_nvml"; then
