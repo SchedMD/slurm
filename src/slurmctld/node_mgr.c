@@ -2663,7 +2663,15 @@ extern void reset_node_topology(node_record_t *node_ptr)
 	else
 		old_topo = node_ptr->topology_orig_str;
 
-	node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+	if (!node_ptr->config_ptr->topology_str && !node_ptr->topology_str &&
+	    !node_ptr->topology_orig_str) {
+		/*
+		 * No need to reset topo if the topology was never modified to
+		 * start with. Topology is only from topology.conf|yaml.
+		 */
+	} else {
+		node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+	}
 
 	if (old_topo == node_ptr->topology_orig_str) {
 		xfree(node_ptr->topology_str);
