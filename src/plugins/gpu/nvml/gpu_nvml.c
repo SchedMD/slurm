@@ -330,6 +330,10 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 
 	unsigned int *nvml_gfx_freqs = gfx_freqs;
 	unsigned int *nvml_gfx_freqs_size = gfx_freqs_size;
+
+	if (!mem_freq)
+		mem_freq = _nvml_get_mem_freq(device);
+
 	nvml_rc = nvmlDeviceGetSupportedGraphicsClocks(*device, mem_freq,
 						       nvml_gfx_freqs_size,
 						       nvml_gfx_freqs);
