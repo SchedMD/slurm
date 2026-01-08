@@ -421,18 +421,42 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device, uint32_t *mem_freq,
 static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 			    uint32_t gfx_freq)
 {
+	bool set = true;
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
 	START_TIMER;
+
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	if (mem_freq) {
+		nvml_rc = nvmlDeviceSetMemoryLockedClocks(*device, mem_freq,
+							  mem_freq);
+		if (nvml_rc != NVML_SUCCESS) {
+			error("%s: Failed to set memory clock frequency (%u) for the GPU: %s",
+			      __func__, mem_freq, nvmlErrorString(nvml_rc));
+			set = false;
+		}
+	}
+	if (gfx_freq) {
+		nvml_rc = nvmlDeviceSetGpuLockedClocks(*device, gfx_freq,
+						       gfx_freq);
+		if (nvml_rc != NVML_SUCCESS) {
+			error("%s: Failed to set GPU clock frequency (%u) for the GPU: %s",
+			      __func__, gfx_freq, nvmlErrorString(nvml_rc));
+			set = false;
+		}
+	}
+#else
 	nvml_rc = nvmlDeviceSetApplicationsClocks(*device, mem_freq, gfx_freq);
-	END_TIMER2(__func__);
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to set memory and graphics clock frequency "
 		      "pair (%u, %u) for the GPU: %s", __func__, mem_freq,
 		      gfx_freq, nvmlErrorString(nvml_rc));
-		return false;
+		set = false;
 	}
-	return true;
+#endif
+	END_TIMER2(__func__);
+
+	return set;
 }
 
 /*
@@ -446,18 +470,39 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
  */
 static bool _nvml_reset_freqs(nvmlDevice_t *device)
 {
+	bool reset = true;
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
 
 	START_TIMER;
-	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
-	END_TIMER2(__func__);
-	if (nvml_rc != NVML_SUCCESS) {
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	nvml_rc = nvmlDeviceResetMemoryLockedClocks(*device);
+	if (nvml_rc == NVML_ERROR_NOT_SUPPORTED) {
+		debug2("Could not reset memory clock, not supported by device.");
+	} else if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to reset memory frequencies to the hardware default: %s",
+		      __func__, nvmlErrorString(nvml_rc));
+		reset = false;
+	}
+	nvml_rc = nvmlDeviceResetGpuLockedClocks(*device);
+	if (nvml_rc == NVML_ERROR_NOT_SUPPORTED) {
+		debug2("Could not reset GPU clock, not supported by device.");
+	} else if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to reset GPU frequencies to the hardware default: %s",
 		      __func__, nvmlErrorString(nvml_rc));
-		return false;
+		reset = false;
 	}
-	return true;
+#else
+	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to reset Application Clocks to the hardware default: %s",
+		      __func__, nvmlErrorString(nvml_rc));
+		reset = false;
+	}
+#endif
+
+	END_TIMER2(__func__);
+	return reset;
 }
 
 /*
@@ -491,7 +536,11 @@ static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 
 	START_TIMER;
 	unsigned int *nvml_freq = &freq;
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	nvml_rc = nvmlDeviceGetClockInfo(*device, type, nvml_freq);
+#else
 	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
+#endif
 	END_TIMER2(__func__);
 
 	if (nvml_rc != NVML_SUCCESS) {
