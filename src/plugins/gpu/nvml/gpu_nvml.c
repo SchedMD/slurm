@@ -590,10 +590,6 @@ static void _reset_freq(bitstr_t *gpus)
 		debug2("Graphics frequency before reset: %u",
 		       _nvml_get_gfx_freq(&device));
 		freq_reset = _nvml_reset_freqs(&device);
-		debug2("Memory frequency after reset: %u",
-		       _nvml_get_mem_freq(&device));
-		debug2("Graphics frequency after reset: %u",
-		       _nvml_get_gfx_freq(&device));
 
 		if (freq_reset) {
 			log_flag(GRES, "Successfully reset GPU[%d]", i);
@@ -700,10 +696,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		debug2("Graphics frequency before set: %u",
 		       _nvml_get_gfx_freq(&device));
 		freq_set = _nvml_set_freqs(&device, mem_freq, gpu_freq);
-		debug2("Memory frequency after set: %u",
-		       _nvml_get_mem_freq(&device));
-		debug2("Graphics frequency after set: %u",
-		       _nvml_get_gfx_freq(&device));
 
 		if (mem_freq) {
 			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq);
