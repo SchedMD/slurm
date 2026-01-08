@@ -3024,11 +3024,12 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 						     &job_info_msg->step_id,
 						     msg->protocol_version,
 						     &job_info_resp_msg);
-	unlock_slurmctld(job_read_lock);
-	END_TIMER2(__func__);
 
 	if (error_code)
 		goto error;
+
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
 
 	info("%s: %s NodeList=%s - %s",
 	     __func__,
@@ -3046,6 +3047,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t *msg)
 
 error:
 	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
 
 	debug2("%s: JobId=%s, uid=%u: %s",
 	       __func__,
