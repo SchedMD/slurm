@@ -662,6 +662,7 @@ static void _decrement_thd_count(void)
  */
 static int _increment_thd_count(bool block)
 {
+	int rc = SLURM_SUCCESS;
 	bool logged = false;
 
 	slurm_mutex_lock(&active_mutex);
@@ -675,13 +676,13 @@ static int _increment_thd_count(bool block)
 		if (block)  {
 			slurm_cond_wait(&active_cond, &active_mutex);
 		} else {
-			slurm_mutex_unlock(&active_mutex);
-			return EWOULDBLOCK;
+			rc = EWOULDBLOCK;
+			break;
 		}
 	}
 	active_threads++;
 	slurm_mutex_unlock(&active_mutex);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* secs IN - wait up to this number of seconds for all threads to complete */
