@@ -589,7 +589,7 @@ static void _reset_freq(bitstr_t *gpus)
 		       _nvml_get_mem_freq(&device));
 		debug2("Graphics frequency before reset: %u",
 		       _nvml_get_gfx_freq(&device));
-		freq_reset =_nvml_reset_freqs(&device);
+		freq_reset = _nvml_reset_freqs(&device);
 		debug2("Memory frequency after reset: %u",
 		       _nvml_get_mem_freq(&device));
 		debug2("Graphics frequency after reset: %u",
