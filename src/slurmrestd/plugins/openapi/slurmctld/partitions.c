@@ -136,9 +136,8 @@ extern int op_handler_partition(openapi_ctxt_t *ctxt)
 		}
 
 		if (!part) {
-			resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-				   "Unable to find partition %s",
-				   params.partition_name);
+			resp_warn(ctxt, __func__, "Unable to find partition %s",
+				  params.partition_name);
 		} else {
 			partition_info_msg_t p = {
 				.last_update = part_info_ptr->last_update,
