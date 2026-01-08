@@ -210,6 +210,62 @@ static bool _nvml_get_handle(int index, nvmlDevice_t *device)
 }
 
 /*
+ * Get the memory or graphics clock frequency that the GPU is currently running
+ * at
+ *
+ * device	(IN) The NVML GPU device handle
+ * type		(IN) The clock type to query. Either NVML_CLOCK_GRAPHICS or
+ * 		NVML_CLOCK_MEM.
+ *
+ * Returns the clock frequency in MHz if successful, or 0 if not
+ */
+static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
+{
+	nvmlReturn_t nvml_rc;
+	uint32_t freq = 0;
+	char *type_str = "unknown";
+	DEF_TIMERS;
+
+	switch (type) {
+	case NVML_CLOCK_GRAPHICS:
+		type_str = "graphics";
+		break;
+	case NVML_CLOCK_MEM:
+		type_str = "memory";
+		break;
+	default:
+		error("%s: Unsupported clock type", __func__);
+		break;
+	}
+
+	START_TIMER;
+	unsigned int *nvml_freq = &freq;
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	nvml_rc = nvmlDeviceGetClockInfo(*device, type, nvml_freq);
+#else
+	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
+#endif
+	END_TIMER2(__func__);
+
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to get the GPU %s frequency: %s", __func__,
+		      type_str, nvmlErrorString(nvml_rc));
+		return 0;
+	}
+	return freq;
+}
+
+static uint32_t _nvml_get_gfx_freq(nvmlDevice_t *device)
+{
+	return _nvml_get_freq(device, NVML_CLOCK_GRAPHICS);
+}
+
+static uint32_t _nvml_get_mem_freq(nvmlDevice_t *device)
+{
+	return _nvml_get_freq(device, NVML_CLOCK_MEM);
+}
+
+/*
  * Get all possible memory frequencies for the device
  *
  * device		(IN) The device handle
@@ -503,62 +559,6 @@ static bool _nvml_reset_freqs(nvmlDevice_t *device)
 
 	END_TIMER2(__func__);
 	return reset;
-}
-
-/*
- * Get the memory or graphics clock frequency that the GPU is currently running
- * at
- *
- * device	(IN) The NVML GPU device handle
- * type		(IN) The clock type to query. Either NVML_CLOCK_GRAPHICS or
- * 		NVML_CLOCK_MEM.
- *
- * Returns the clock frequency in MHz if successful, or 0 if not
- */
-static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
-{
-	nvmlReturn_t nvml_rc;
-	uint32_t freq = 0;
-	char *type_str = "unknown";
-	DEF_TIMERS;
-
-	switch (type) {
-	case NVML_CLOCK_GRAPHICS:
-		type_str = "graphics";
-		break;
-	case NVML_CLOCK_MEM:
-		type_str = "memory";
-		break;
-	default:
-		error("%s: Unsupported clock type", __func__);
-		break;
-	}
-
-	START_TIMER;
-	unsigned int *nvml_freq = &freq;
-#ifdef HAVE_NVML_MEMORY_CLOCK
-	nvml_rc = nvmlDeviceGetClockInfo(*device, type, nvml_freq);
-#else
-	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
-#endif
-	END_TIMER2(__func__);
-
-	if (nvml_rc != NVML_SUCCESS) {
-		error("%s: Failed to get the GPU %s frequency: %s", __func__,
-		      type_str, nvmlErrorString(nvml_rc));
-		return 0;
-	}
-	return freq;
-}
-
-static uint32_t _nvml_get_gfx_freq(nvmlDevice_t *device)
-{
-	return _nvml_get_freq(device, NVML_CLOCK_GRAPHICS);
-}
-
-static uint32_t _nvml_get_mem_freq(nvmlDevice_t *device)
-{
-	return _nvml_get_freq(device, NVML_CLOCK_MEM);
 }
 
 /*
