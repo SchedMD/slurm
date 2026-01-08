@@ -669,8 +669,8 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 					while (isdigit(*(ptr + 1))) {
 						ptr++;
 					}
-					xstrfmtcatat(expanded, &pos,
-						     "%c", *ptr);
+					xstrfmtcatat(expanded, &pos, "%%%c",
+						     *ptr);
 					padding = 0;
 					curr_state = STATE_INIT;
 					break;
