@@ -492,9 +492,8 @@ static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
 	START_TIMER;
 	unsigned int *nvml_freq = &freq;
 	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
-	END_TIMER;
-	debug3("nvmlDeviceGetApplicationsClock(%s) took %s",
-	       type_str, TIMER_STR());
+	END_TIMER2(__func__);
+
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to get the GPU %s frequency: %s", __func__,
 		      type_str, nvmlErrorString(nvml_rc));
