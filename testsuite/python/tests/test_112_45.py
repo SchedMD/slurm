@@ -111,6 +111,16 @@ def non_admin(setup):
 
 
 @pytest.fixture(scope="function")
+def cleanup_crash(setup):
+    yield
+
+    if not atf.is_slurmrestd_running():
+        atf.start_slurmrestd()
+        # We have a new port
+        atf.properties["openapi_config"].host = atf.properties["slurmrestd_url"]
+
+
+@pytest.fixture(scope="function")
 def create_accounts():
     atf.run_command(
         f"sacctmgr -i create account {account_name}",
@@ -1750,3 +1760,38 @@ def test_util_hostlist(util_api):
     assert response.hostlist is not None
     assert isinstance(response.hostlist, str)
     assert "node[01-03]" == response.hostlist
+
+
+def test_resv_crash(slurm, admin_level, cleanup_crash):
+    """Check for xfree crash (bug 23038)"""
+    from openapi_client.models.v0045_reservation_mod_req import V0045ReservationModReq
+    from openapi_client.models.v0045_reservation_desc_msg import V0045ReservationDescMsg
+    from openapi_client.models.v0045_uint64_no_val_struct import V0045Uint64NoValStruct
+    from openapi_client.models.v0045_uint32_no_val_struct import V0045Uint32NoValStruct
+
+    # Don't overlap with other resv in case of restd crash/restart
+    resv_name = "crash_test_resv"
+    users = ["root", "atf"]
+    duration = V0045Uint32NoValStruct(number=1, set=True)
+    start_time = V0045Uint64NoValStruct(
+        number=int(time.time()) + 10000000,
+        set=True,
+    )
+    partition = "primary"
+
+    # Create a reservation with empty node_list
+    reservation_info = V0045ReservationDescMsg(
+        name=resv_name,
+        users=users,
+        duration=duration,
+        start_time=start_time,
+        partition=partition,
+        node_list=[],
+    )
+    # Exception means restd crashed
+    resp = slurm.slurm_v0045_post_reservations(
+        V0045ReservationModReq(reservations=[reservation_info])
+    )
+    assert (
+        not resp.warnings and not resp.errors
+    ), "We should be able to get the server response from this message"
