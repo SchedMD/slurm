@@ -203,7 +203,8 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 
 		/* Promote all components to double to avoid truncation */
 		avg = (double) metric->total.tv_sec;
-		avg += ((double) metric->total.tv_sec) / ((double) NSEC_IN_SEC);
+		avg += ((double) metric->total.tv_nsec) /
+		       ((double) NSEC_IN_SEC);
 		avg /= (double) metric->count;
 
 		rc.avg = avg;
