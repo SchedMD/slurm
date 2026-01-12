@@ -26,8 +26,7 @@
 ############################################################################
 source ./globals
 
-set task_num	2
-set timeout	60
+set het_job_id 0
 
 #
 # Check accounting config and bail if not found.
@@ -45,6 +44,14 @@ if {$nb_nodes < 3} {
 	skip "Need 3 or more nodes in default partition"
 }
 
+# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+# launched on each node, so we need to check for 2 matches per component
+# instead of 1.
+set expected_matches 1
+if {[param_contains [get_config_param "PrologFlags"] "Contain"]} {
+	set expected_matches 2
+}
+
 proc cleanup {} {
 	global het_job_id scancel
 
@@ -53,20 +60,12 @@ proc cleanup {} {
 	}
 }
 
-set het_job_id 0
-set matches 0
-set index 0
-set sid 0
+# Submit the hetjob to test with salloc
 set timeout $max_job_delay
 spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set het_job_id $expect_out(1,string)
-		reset_bash_prompt
-		exp_continue
-	}
-	-re "$test_prompt" {
-		#log_debug "Job initiated"
 	}
 	timeout {
 		fail "salloc: allocation not granted in $timeout seconds"
@@ -84,72 +83,18 @@ expect *
 log_info "Test Sending Sacct To Various Components"
 
 # Wait for accounting records to reach slurmdbd
-sleep 5
-set timeout 3
-set matches 0
-set expected_matches 3
-set has_prolog_flags 0
-
-# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
-# launched on each node, so we need to check for 6 matches instead of 3.
-spawn $scontrol show config
-expect {
-	-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
-		set expected_matches 6
-		set has_prolog_flags 1
-	}
-	timeout {
-		fail "scontrol show config not responding"
-	}
-	eof {
-		wait
-	}
+set output ""
+wait_for -subtest {[regexp -all "\n" $output] == [expr 3*$expected_matches]} {
+	set output [run_command_output -fail "$sacct -nj $het_job_id"]
 }
 
 # Now test sacct
-spawn $sacct -j $het_job_id
-expect {
-	-re "$het_job_id\\+\[0-2\]" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sacct not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != $expected_matches} {
-	fail "sacct failure ($matches != $expected_matches)"
-}
-
-set expected_matches 1
-if {$has_prolog_flags} {
-	set expected_matches 2
-}
+subtest {[regexp -all "$het_job_id\\+0" $output] == $expected_matches} "sacct should report component 0"
+subtest {[regexp -all "$het_job_id\\+1" $output] == $expected_matches} "sacct should report component 1"
+subtest {[regexp -all "$het_job_id\\+2" $output] == $expected_matches} "sacct should report component 2"
 
 for {set inx 0} {$inx < 3} {incr inx} {
-	set bad_matches 0
-	set matches 0
-	spawn $sacct -j $het_job_id+$inx
-	expect {
-		-re "$het_job_id\\+($number)" {
-			if {$expect_out(1,string) == $inx} {
-				incr matches
-			} else {
-				incr bad_matches
-			}
-			exp_continue
-		}
-		timeout {
-			fail "sacct not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != $expected_matches || $bad_matches != 0} {
-		fail "sacct failure ($matches != 1 || $bad_matches != 0)"
-	}
+	set output [run_command_output -fail "$sacct -nj $het_job_id+$inx"]
+	subtest {[regexp -all "$het_job_id\\+$inx" $output] == $expected_matches} "sacct for the component $inx should report component $inx"
+	subtest {[regexp -all "\n" $output] == [expr $expected_matches]} "sacct for the component $inx should not report other component $inx"
 }
