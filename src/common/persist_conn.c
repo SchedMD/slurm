@@ -416,17 +416,19 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			pthread_t thread_id =
 				persist_service_conn[i]->thread_id;
 
-			/* Let go of lock in case the persistent connection
+			/*
+			 * Let go of lock in case the persistent connection
 			 * thread is cleaning itself up.
 			 * slurm_persist_conn_free_thread_loc() may be trying to
 			 * remove itself but could be waiting on the
-			 * thread_count mutex which this has locked. */
+			 * thread_count mutex which this has locked.
+			 * After joining persist_service_conn[i] could be NULL
+			 */
 			slurm_mutex_unlock(&thread_count_lock);
 			slurm_thread_join(thread_id);
 			slurm_mutex_lock(&thread_count_lock);
 		}
-
-		if (persist_service_conn[i]->pcon) {
+		if (persist_service_conn[i] && persist_service_conn[i]->pcon) {
 			void *conn = persist_service_conn[i]->pcon->conn;
 			conn_g_set_graceful_shutdown(conn, false);
 		}
