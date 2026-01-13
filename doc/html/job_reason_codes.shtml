@@ -327,9 +327,10 @@ federation to sync up and issue a lock.</li>
 <li><b>JobArrayTaskLimit</b> &mdash; The job array's limit on the number of
 simultaneously running tasks has been reached.</li>
 
-<li><b>JobHeldAdmin</b> &mdash; The job is held by a system administrator.</li>
+<li><b>JobHeldAdmin</b> &mdash; The job is held by a privileged user.</li>
 
-<li><b>JobHeldUser</b> &mdash; The job is held by the user.</li>
+<li><b>JobHeldUser</b> &mdash; The job is held by the user or an account
+coordinator. This is also applies whenever <code>scontrol uhold</code> is used.</li>
 
 <li><b>JobHoldMaxRequeue</b> &mdash; Job has been requeued enough times to
 reach the MAX_BATCH_REQUEUE limit.</li>
