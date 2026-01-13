@@ -61,7 +61,7 @@ typedef struct {
 } latency_range_t;
 
 /* String large enough to hold strftime(%T) aka strftime(%H:%M:%S) */
-#define STRFTIME_T_BYTES 64
+#define STRFTIME_T_BYTES 12
 
 typedef struct {
 	char str[STRFTIME_T_BYTES];
