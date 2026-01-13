@@ -2733,7 +2733,6 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 	job_record_t *het_job_leader = het_job_env->het_job_leader;
 	int het_job_offset = het_job_env->het_job_offset;
 	batch_job_launch_msg_t *launch_msg_ptr = het_job_env->launch_msg_ptr;
-	uint32_t num_cpus = 0;
 	uint64_t tmp_mem = 0;
 	char *tmp_str = NULL;
 
@@ -2816,55 +2815,8 @@ static int _foreach_set_het_job_env(void *x, void *arg)
 
 	if (het_job->details && het_job->job_resrcs) {
 		/* Both should always be set for active jobs */
-		struct job_resources *resrcs_ptr = het_job->job_resrcs;
-		slurm_step_layout_t *step_layout = NULL;
-		uint16_t cpus_per_task_array[1];
-		uint32_t cpus_task_reps[1], task_dist;
-		uint16_t cpus_per_task = 1;
-		slurm_step_layout_req_t step_layout_req = {
-			.cpu_count_reps = resrcs_ptr->cpu_array_reps,
-			.cpus_per_node = resrcs_ptr->cpu_array_value,
-			.cpus_per_task = cpus_per_task_array,
-			.cpus_task_reps = cpus_task_reps,
-			.num_hosts = het_job->node_cnt,
-			.plane_size = NO_VAL16,
-		};
-
-		cpus_task_reps[0] = het_job->node_cnt;
-
-		for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
-			num_cpus += resrcs_ptr->cpu_array_value[i] *
-				resrcs_ptr->cpu_array_reps[i];
-		}
-
-		if ((het_job->details->cpus_per_task > 0) &&
-		    (het_job->details->cpus_per_task != NO_VAL16))
-			cpus_per_task = het_job->details->cpus_per_task;
-
-		cpus_per_task_array[0] = cpus_per_task;
-		if (het_job->details->num_tasks) {
-			step_layout_req.num_tasks =
-				het_job->details->num_tasks;
-		} else {
-			step_layout_req.num_tasks = num_cpus /
-				cpus_per_task;
-		}
-
-		if ((step_layout_req.node_list =
-		     getenvp(launch_msg_ptr->environment,
-			     "SLURM_ARBITRARY_NODELIST"))) {
-			task_dist = SLURM_DIST_ARBITRARY;
-		} else {
-			step_layout_req.node_list = het_job->nodes;
-			task_dist = SLURM_DIST_BLOCK;
-		}
-		step_layout_req.task_dist = task_dist;
-		step_layout = slurm_step_layout_create(&step_layout_req);
-		if (step_layout) {
-			tmp_str = uint16_array_to_str(
-				step_layout->node_cnt,
-				step_layout->tasks);
-			slurm_step_layout_destroy(step_layout);
+		tmp_str = get_tasks_per_node(het_job);
+		if (tmp_str) {
 			(void) env_array_overwrite_het_fmt(
 				&launch_msg_ptr->environment,
 				"SLURM_TASKS_PER_NODE",
