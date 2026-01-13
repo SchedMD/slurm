@@ -9,9 +9,10 @@ scontrol \- view or modify Slurm configuration and state.
 .SH "DESCRIPTION"
 \fBscontrol\fR is used to view or modify Slurm configuration including: job,
 job step, node, partition, reservation, and overall system configuration. Most
-of the commands can only be executed by user root or an Administrator. If an
-attempt to view or modify configuration information is made by an unauthorized
-user, an error message will be printed and the requested action will not occur.
+of the commands require elevated permissions to run (also see the
+\fBAUTHORIZATION\fR section).
+If a user runs a command without the required permissions,
+an error message will be printed and the requested action will not occur.
 If no command is entered on the execute line, \fBscontrol\fR will operate in an
 interactive mode and prompt for input. It will continue prompting for input and
 executing commands until explicitly terminated. If a command is entered on the
@@ -180,6 +181,11 @@ Name of reservation to delete. The reservation must have no associated jobs,
 otherwise the request is denied. It may be helpful to modify pending jobs to not
 use the reservation. You can also plan the reservation's deletion ahead of time
 by setting an \fBEndTime\fR or \fBDuration\fR.
+
+A privileged user can delete any reservation. An unprivileged user may be able
+to delete a reservation they have access to if
+\fBSlurmctldParameters=user_resv_delete\fR is set in \fIslurm.conf\fR or if
+\fBFlags=USER_DELETE\fR is set on the reservation.
 .IP
 .RE
 .IP
@@ -207,15 +213,16 @@ Display a description of scontrol options and commands.
 .TP
 \fBhold\fR <\fIjob_list\fR>
 Prevent a pending job from being started (sets its priority to 0).
-Use the \fIrelease\fP command to permit the job to be scheduled.
-The job_list argument is a comma separated list of job IDs OR
+The job_list argument is a space separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to hold all jobs having
 that name.
-Note that when a job is held by a system administrator using the \fBhold\fP
-command, only a system administrator may release the job for execution (also
-see the \fBuhold\fP command). When the job is held by its owner, it may also
-be released by the job's owner.
-Additionally, attempting to hold a running job will have not suspend or cancel
+
+Only a privileged user, account coordinator, or job owner may hold jobs. If
+issued by a privileged user an admin-hold will be placed on the job, otherwise
+a user-hold will be placed on the job. The hold type determines which users may
+remove the hold with the \fBrelease\fR command (also see \fBuhold\fR).
+
+Additionally, attempting to hold a running job will not suspend or cancel
 it. But, it will set the job priority to 0 and update the job reason field,
 which would hold the job if it was requeued at a later time.
 .IP
@@ -382,9 +389,11 @@ or authentication mechanism.
 .TP
 \fBrelease\fR <\fIjob_list\fR>
 Release a previously held job to begin execution.
-The job_list argument is a comma separated list of job IDs OR
+The job_list argument is a space separated list of job IDs OR
 "jobname=" with the job's name, which will attempt to release all jobs having
 that name.
+Note that a privileged user may release an admin-hold or a user-hold.
+An unprivileged job owner or coordinator may only release a user-hold.
 Also see \fBhold\fR.
 .IP
 
@@ -447,8 +456,7 @@ partitions to down so that no new jobs can be scheduled. Then suspend
 jobs. Once maintenance is done resume jobs then resume nodes and/or set all
 partitions back to up.
 Use with caution.
-Only an account coordinator, operator, administrator, SlurmUser, or root can
-resume jobs.
+Only a privileged user or an account coordinator can resume jobs.
 .IP
 
 .TP
@@ -527,12 +535,20 @@ record types:
 .TP
 \fBusers\fR=<\fIuser1\fR>[...,<\fIuserN\fR>]
 Limit the User Records displayed to those with the specified user name(s).
+
+\fBNOTE\fR: If \fBPrivateData=users\fR is set in \fIslurm.conf\fR, unprivileged
+users will be limited to their own records. Privileged users will be able to
+see all records.
 .IP
 
 .TP
 \fBaccounts\fR=<\fIacct1\fR>[...,<\fIacctN\fR>]
 Limit the Association Records displayed to those with the specified account
 name(s).
+
+\fBNOTE\fR: If \fBPrivateData=usage\fR is set in \fIslurm.conf\fR, unprivileged
+users will be limited to accounts where they are a member or coordinator.
+Privileged users will be able to see all records.
 .IP
 
 .TP
@@ -702,8 +718,7 @@ upon receipt of SIGCONT for this operation to be effective.
 Not all architectures and configurations support job suspension.
 If a suspended job is requeued, it will be placed in a held state.
 The time a job is suspended will not count against a job's time limit.
-Only an account coordinator, operator, administrator, SlurmUser, or root can
-suspend jobs.
+Only a privileged user or an account coordinator can suspend jobs.
 .IP
 
 .TP
@@ -730,10 +745,8 @@ Any job not matching \fBall\fP of those fields will not be effected.
 Only jobs submitted to a single partition will be effected.
 This operation changes the order of jobs by adjusting job nice values.
 The net effect on that user's throughput will be negligible to slightly negative.
-This operation is disabled by default for non\-privileged (non\-operator, admin,
-SlurmUser, or root) users. This operation may be enabled for non\-privileged
-users by the system administrator by including the option "enable_user_top" in
-the SchedulerParameters configuration parameter.
+This operation is disabled by default for unprivileged users, but may be enabled
+by including \fBSchedulerParameters=enable_user_top\fR in \fIslurm.conf\fR.
 .IP
 
 .TP
@@ -750,12 +763,9 @@ longer lived tokens.
 
 .TP
 \fBuhold\fR <\fIjob_list\fR>
-Prevent a pending job from being started (sets its priority to 0).
-The job_list argument is a space separated list of job IDs or job names.
-Use the \fIrelease\fP command to permit the job to be scheduled.
-This command is designed for a system administrator to hold a job so that
-the job owner may release it rather than requiring the intervention of a
-system administrator (also see the \fBhold\fP command).
+Similar to \fBhold\fR, but places a user-hold on the job even if the \fBuhold\fR
+command was issued by a privileged user. This allows the job owner or a
+coordinator to \fBrelease\fR the job without admin intervention.
 .IP
 
 .TP
@@ -810,7 +820,7 @@ PrologFlags=Alloc as this will result in a deadlock.
 Write the batch script for a given job_id to a file or to stdout. The file will
 default to \fIslurm\-\<job_id\>.sh\fP if the optional filename argument is not
 given. The script will be written to stdout if \- is given instead of a filename.
-The batch script can only be retrieved by an admin or operator, or by the
+The batch script can only be retrieved by a privileged user, or by the
 owner of the job.
 .IP
 
@@ -892,11 +902,14 @@ Repeat the last command executed.
 .IP
 
 .SH "JOBS \- SPECIFICATIONS FOR UPDATE COMMAND"
-Note that update requests done by either root, SlurmUser or Administrators are
-not subject to certain restrictions. For instance, if an Administrator changes
-the QOS on a pending job, certain limits such as the TimeLimit will not be
-changed automatically as changes made by the Administrators are allowed to
-violate these restrictions.
+An unprivileged user may modify their own jobs subject to certain restrictions,
+as well as jobs and steps in any accounts where they have Coordinator
+permissions. Most of these fields can only be updated on pending jobs.
+Some may be updated on running or suspended jobs.
+A privileged user can modify any jobs without policy restrictions. For instance,
+if an administrator changes the QOS on a pending job, certain limits such as the
+TimeLimit will not be changed automatically as changes made by privileged users
+are allowed to violate these restrictions.
 
 .TP
 \fBJobName\fR=<\fIname\fR>
@@ -934,6 +947,7 @@ is limited to 2.
 Burst buffer specification to be changed for this job's resource use.
 Value may be cleared with blank data value, "BurstBuffer=".
 Format is burst buffer plugin specific.
+Only a privileged user can change this parameter.
 .IP
 
 .TP
@@ -957,7 +971,7 @@ Arbitrary descriptive string.
 \fBContiguous\fR={yes|no}
 Set the job's requirement for contiguous (consecutive) nodes to be allocated.
 Possible values are "YES" and "NO".
-Only a Slurm administrator or root can change this parameter.
+Only a privileged user can change this parameter to "YES".
 .IP
 
 .TP
@@ -965,6 +979,7 @@ Only a Slurm administrator or root can change this parameter.
 Number of cores to reserve per node for system use.
 The job will be charged for these cores, but be unable to use them.
 Will be reported as "*" if not constrained.
+Only a privileged user can change this parameter.
 .IP
 
 .TP
@@ -978,9 +993,8 @@ Remove the job if no ending is possible before this deadline
 (start > (deadline \- time[\-min])). Note that if neither \fBDefaultTime\fR nor
 \fBMaxTime\fR are configured on the partition the job is in, the job will
 need to specify some form of time limit (TimeMin/TimeLimit) if a deadline
-is to be used. The specified deadline must be later than
-the current time. Only pending jobs can have the deadline updated. Only a
-Slurm administrator or root can change this parameter.
+is to be used. The specified deadline must be later than the current time.
+Only a privileged user can change this parameter.
 
 Valid time formats are:
 .br
@@ -1119,8 +1133,7 @@ The count is the number of those resources with a default value of 1.
 The specified resources will be allocated to the job on each node
 allocated unless "*cpu" is appended, in which case the resources
 will be allocated on a per cpu basis.
-The available generic consumable resources is configurable by the system
-administrator.
+The available generic consumable resources is configurable in slurm.conf.
 A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
 Examples of use include "Gres=gpus:2*cpu,disk=40G" and "Gres=help".
@@ -1140,6 +1153,9 @@ individual job, the form <\fIArrayJobID\fP>_<\fIArrayTaskId\fP> must be used.
 \fBLicenses\fR=<\fIname\fR>
 Specification of licenses (or other resources available on all nodes
 of the cluster) as described in salloc/sbatch/srun man pages.
+
+An unprivileged user can modify the licenses of pending jobs.
+A privileged user can modify the licenses of pending or running jobs.
 .IP
 
 .TP
@@ -1188,7 +1204,6 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .TP
 \fBMinTmpDiskNode\fR=<\fImegabytes\fR>
 Set the job's minimum temporary disk space required per node to the specified value.
-Only a Slurm administrator or root can change this parameter.
 .IP
 
 .TP
@@ -1201,7 +1216,7 @@ See JobName.
 Update the job with an adjusted scheduling priority within Slurm. With no
 adjustment value the scheduling priority is decreased by 100. A negative nice
 value increases the priority, otherwise decreases it. The adjustment range is
-+/\- 2147483645. Only privileged users can specify a negative adjustment.
++/\- 2147483645. Only a privileged user can specify a negative adjustment.
 .IP
 
 .TP
@@ -1249,6 +1264,7 @@ step creation. This is the same as ReqProcs.
 Set the job's ability to share compute resources (i.e. individual CPUs)
 with other jobs. Possible values are "YES" and "NO".
 This option can only be changed for pending jobs.
+Only a privileged user can change this parameter.
 .IP
 
 .TP
@@ -1268,12 +1284,16 @@ See \fIFeatures\fP option above.
 Set the job's priority to the specified value.
 Note that a job priority of zero prevents the job from ever being scheduled.
 By setting a job's priority to zero it is held.
-Set the priority to a non\-zero value to permit it to run.
-Explicitly setting a job's priority clears any previously set nice value and
-removes the priority/multifactor plugin's ability to manage a job's priority.
+Set the priority to a non\-zero value to permit it to run and clear any
+previously set nice value.
+
+When a privileged user explicitly sets a job's priority, it is fixed and
+the priority plugin will no longer modify it.
 In order to restore the priority/multifactor plugin's ability to manage a
 job's priority, hold and then release the job.
-Only a Slurm administrator or root can increase job's priority.
+
+An unprivileged user can only decrease job priority, and the priority plugin may
+still manage the value. Consider increasing \fBNice\fR instead.
 .IP
 
 .TP
@@ -1290,6 +1310,7 @@ Value may be cleared with blank data value, "QOS=".
 Set the job's flag that specifies whether to force the allocated nodes to reboot
 before starting the job. This is only supported with some system configurations
 and therefore it could be silently ignored.
+Only a Slurm administrator can change this parameter.
 .IP
 
 .TP
@@ -1346,8 +1367,8 @@ without waiting for the queue to flush out.
 
 .TP
 \fBSiteFactor\fR=<\fIaccount\fR>
-Specify the job's admin priority factor in the range of +/\-2147483645.
-Only privileged users can modify the value.
+Specify the job's site priority factor in the range of +/\-2147483645.
+Only a privileged user can change this parameter.
 .IP
 
 .TP
@@ -1421,15 +1442,15 @@ switches than the count specified, the job remain pending until it either finds
 an allocation with desired switch count or the time limit expires. By default
 there is no switch count limit and no time limit delay. Set the count
 to zero in order to clean any previously set count (disabling the limit).
-The job's maximum time delay may be limited by the system administrator using
-the \fBSchedulerParameters\fR configuration parameter with the
-\fBmax_switch_wait\fR parameter option.
+The job's maximum time delay may be limited by setting
+\fBSchedulerParameters=max_switch_wait=#\fR in \fIslurm.conf\fR.
 Also see \fIwait\-for\-switch\fP.
 .IP
 
 .TP
 \fBTasksPerNode\fR=<\fIcount\fR>
 Change the job's requested TasksPerNode.
+Only a privileged user can change this parameter.
 .IP
 
 .TP
@@ -1455,7 +1476,7 @@ the current time limit, the \fIJobId\fP specification must precede the
 \fITimeLimit\fP specification.
 Note that incrementing or decrementing the time limit for a job array is only
 allowed before the job array has been split into more than one job record.
-Only a Slurm administrator or root can increase job's TimeLimit.
+Only a privileged user can increase a running or suspended job's TimeLimit.
 .IP
 
 .TP
@@ -2872,6 +2893,7 @@ QOS set here.
 .TP
 \fBSkip\fR
 Used on a reoccurring reservation, skip to the next reservation iteration.
+Requires the same permissions as deleting a reservation.
 \fBNOTE\fR: Only available for update.
 .IP
 
@@ -3127,45 +3149,52 @@ Control YAML serialization:
 
 .SH "AUTHORIZATION"
 
-When using SlurmDBD, users who have an AdminLevel defined (Operator
-or Admin) and users who are account coordinators are given the
-authority to view and modify jobs, reservations, nodes, etc., as
-defined in the following table \- regardless of whether a PrivateData
-restriction has been defined in the slurm.conf file.
+Slurm generally classifies users into three authorization levels:
+ - \fBAdministrators\fR include root, SlurmUser, and any users with
+"AdminLevel=Administrator"
+ - \fBPrivileged Users\fR include all Administrators and any users with
+"AdminLevel=Operator"
+ - \fBEffective Owners\fR of a job or step include the direct owner and all
+Coordinators of the corresponding account.
 
+Note that configuring AdminLevels or Coordinators requires the use of SlurmDBD.
+The authorization levels required to execute various commands are defined in the
+following table.
+
+\fBscontrol update job:        \fR Privileged or Effective Owner
 .br
-\fBscontrol show job(s):       \fR Admin, Operator, Coordinator
+\fBscontrol requeue:           \fR Privileged or Effective Owner
 .br
-\fBscontrol update job:        \fR Admin, Operator, Coordinator
+\fBscontrol update step:       \fR Privileged or Effective Owner
 .br
-\fBscontrol requeue:           \fR Admin, Operator, Coordinator
+\fBscontrol suspend:           \fR Privileged or Coordinator
 .br
-\fBscontrol show step(s):      \fR Admin, Operator, Coordinator
+\fBscontrol resume:            \fR Privileged or Coordinator
 .br
-\fBscontrol update step:       \fR Admin, Operator, Coordinator
+\fBscontrol notify:            \fR Root, SlurmUser, or direct owner
+.br
+\fBscontrol write batch_script:\fR Privileged or direct owner
 .br
 .sp
-\fBscontrol show node:         \fR Admin, Operator
+\fBscontrol create node:       \fR Admin
 .br
 \fBscontrol update node:       \fR Admin
 .br
+\fBscontrol delete node:       \fR Admin
+.br
 .sp
 \fBscontrol create partition:  \fR Admin
-.br
-\fBscontrol show partition:    \fR Admin, Operator
 .br
 \fBscontrol update partition:  \fR Admin
 .br
 \fBscontrol delete partition:  \fR Admin
 .br
 .sp
-\fBscontrol create reservation:\fR Admin, Operator
+\fBscontrol create reservation:\fR Privileged
 .br
-\fBscontrol show reservation:  \fR Admin, Operator
+\fBscontrol update reservation:\fR Privileged
 .br
-\fBscontrol update reservation:\fR Admin, Operator
-.br
-\fBscontrol delete reservation:\fR Admin, Operator
+\fBscontrol delete reservation:\fR Privileged
 .br
 .sp
 \fBscontrol reconfig:          \fR Admin
@@ -3173,6 +3202,29 @@ restriction has been defined in the slurm.conf file.
 \fBscontrol shutdown:          \fR Admin
 .br
 \fBscontrol takeover:          \fR Admin
+.br
+
+.br
+The \fBscontrol show\fR commands are available to all users by default. If any
+PrivateData restrictions are defined in the slurm.conf file, the listed
+authorization levels will be required to access the corresponding data.
+
+\fBscontrol show job(s):         \fR Privileged or Effective Owner
+.br
+\fBscontrol show step(s):        \fR Privileged or Effective Owner
+.br
+.sp
+\fBscontrol show node:           \fR Privileged
+.br
+\fBscontrol show host*:          \fR Privileged
+.br
+.sp
+\fBscontrol show partition:      \fR Privileged
+.br
+\fBscontrol show reservation:    \fR Privileged or Access
+.br
+.sp
+\fBscontrol show assoc_mgr:      \fR See assoc_mgr description for details
 .br
 
 .SH "EXAMPLES"
