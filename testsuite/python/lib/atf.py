@@ -1689,7 +1689,7 @@ def openapi_slurmdb():
     )
 
 
-def get_config(live=True, source="slurm", quiet=False, delimiter="="):
+def get_config(live=True, source="slurm", quiet=True, delimiter="="):
     """Returns the Slurm configuration as a dictionary.
 
     Args:
