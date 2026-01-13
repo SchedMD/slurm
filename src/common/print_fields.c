@@ -651,26 +651,16 @@ extern char *expand_stdio_fields(char *stdio_path, job_std_pattern_t *job)
 			}
 			if (isdigit(*ptr)) {
 				char *tmp_ptr = ptr;
-				if ((padding = strtoul(ptr, &end, 10)) > 9) {
-					/* Remove % and double digit 10 */
-					ptr = end;
+
+				padding = strtoul(ptr, &end, 10);
+				ptr = end;
+				if (padding > 9)
 					padding = 10;
-				} else {
-					ptr++;
-				}
-				/*
-				 * weird behavior fix: we remove all the digits
-				 * except the last one to match with the current
-				 * fname creation.
-				 */
+
 				if (!_is_wildcard(ptr, job)) {
-					ptr = tmp_ptr;
-					/* seek until the last digit */
-					while (isdigit(*(ptr + 1))) {
-						ptr++;
-					}
-					xstrfmtcatat(expanded, &pos, "%%%c",
-						     *ptr);
+					xstrcatat(expanded, &pos, "%");
+					xstrncatat(expanded, &pos, tmp_ptr,
+						   ((ptr + 1) - tmp_ptr));
 					padding = 0;
 					curr_state = STATE_INIT;
 					break;
