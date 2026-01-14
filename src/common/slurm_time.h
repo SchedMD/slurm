@@ -104,6 +104,15 @@ extern bool timespec_is_infinite(timespec_t x);
 /* Get timespec for current timestamp from UNIX Epoch */
 extern timespec_t timespec_now(void);
 
+/* Minimum number of bytes for output of timespec_ctime() */
+#define TIMESPEC_CTIME_STR_LEN 72
+
+/* Converts micro seconds to timespec_t */
+#define TIMESPEC_FROM_USEC(usecs) \
+	((timespec_t) { \
+		.tv_sec = ((usecs) / USEC_IN_SEC), \
+		.tv_nsec = (((usecs) % USEC_IN_SEC) * NSEC_IN_USEC), \
+	})
 /*
  * Convert timespec into human readable string
  *
@@ -112,7 +121,8 @@ extern timespec_t timespec_now(void);
  *	true if ts is time since UNIX epoch
  *	false if ts is arbitrary length of time
  * IN buffer - pointer to buffer to populate (always \0 terminates string)
- * IN buffer_len - number of bytes in buffer
+ * IN buffer_len - number of bytes in buffer. Should always be >=
+ *	TIMESPEC_CTIME_STR_LEN.
  * RET number of bytes written to buffer
  */
 extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,

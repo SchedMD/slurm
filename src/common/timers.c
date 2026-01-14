@@ -44,6 +44,14 @@
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 
+#define TIMER_DEFAULT_LIMIT \
+	((timespec_t) { \
+		.tv_sec = 3, \
+	})
+#define TIMER_DEFAULT_DEBUG_LIMIT \
+	((timespec_t) { \
+		.tv_sec = 1, \
+	})
 #define HISTOGRAM_FIELD_DELIMITER "|"
 
 typedef struct {
@@ -51,6 +59,13 @@ typedef struct {
 	timespec_t start;
 	timespec_t end;
 } latency_range_t;
+
+/* String large enough to hold strftime(%T) aka strftime(%H:%M:%S) */
+#define STRFTIME_T_BYTES 12
+
+typedef struct {
+	char str[STRFTIME_T_BYTES];
+} hourminsec_str_t;
 
 // clang-format off
 #define TS(s, ns) ((timespec_t) { .tv_sec = (s), .tv_nsec = (ns) })
@@ -86,15 +101,16 @@ static const latency_range_t latency_ranges[LATENCY_RANGE_COUNT] = {
 #undef TS
 // clang-format on
 
-static long _calc_tv_delta(const struct timeval *tv1, const struct timeval *tv2)
+static long _calc_tv_delta(const timespec_t tv1, const timespec_t tv2)
 {
-	long delta = (tv2->tv_sec - tv1->tv_sec) * USEC_IN_SEC;
-	delta += tv2->tv_usec;
-	delta -= tv1->tv_usec;
-	return delta;
+	const timespec_diff_ns_t tdiff = timespec_diff_ns(tv2, tv1);
+	const timespec_t diff = tdiff.diff;
+
+	return ((diff.tv_sec * USEC_IN_SEC) + (diff.tv_nsec / NSEC_IN_USEC));
 }
 
-extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2)
+extern timer_str_t timer_duration_str(const timespec_t tv1,
+				      const timespec_t tv2)
 {
 	timer_str_t ret = { { 0 } };
 
@@ -104,54 +120,71 @@ extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2)
 	return ret;
 }
 
-extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
-				const char *from, long limit)
+static hourminsec_str_t _timespec_to_hourminsec(const timespec_t ts)
 {
-	char p[64] = "";
-	struct tm tm;
-	int debug_limit = limit;
-	const long delta = _calc_tv_delta(tv1, tv2);
-	timer_str_t tstr = { { 0 } };
+	struct tm tm = { 0 };
+	hourminsec_str_t ret = { { 0 } };
+
+	/* Avoid ambiguous setting of errno on failure */
+	errno = EINVAL;
+
+	if (!localtime_r(&ts.tv_sec, &tm))
+		error("localtime_r(): %m");
+	else if (!strftime(ret.str, sizeof(ret.str), "%T", &tm))
+		error("strftime() failed to format time");
+	else
+		return ret;
+
+	return (hourminsec_str_t) {
+		.str = "INVALID",
+	};
+}
+
+extern void timer_compare_limit(const timespec_t tv1, const timespec_t tv2,
+				const char *from, timespec_t limit)
+{
+	bool is_after_limit = false;
+	timespec_t debug_limit = limit;
+	const timespec_t diff = timespec_diff_ns(tv2, tv1).diff;
 
 	xassert(from);
 
-	if (!limit) {
+	if (!limit.tv_nsec && !limit.tv_sec) {
 		/*
 		 * NOTE: The slurmctld scheduler's default run time limit is 4
 		 * seconds, but that would not typically be reached. See
 		 * "max_sched_time=" logic in src/slurmctld/job_scheduler.c
 		 */
-		limit = 3000000;
-		debug_limit = 1000000;
+		limit = TIMER_DEFAULT_LIMIT;
+		debug_limit = TIMER_DEFAULT_DEBUG_LIMIT;
 	}
 
-	if ((delta <= debug_limit) || (delta <= limit))
+	if (!(is_after_limit = timespec_is_after(diff, limit)) &&
+	    !timespec_is_after(diff, debug_limit))
 		return;
 
-	tstr = timer_duration_str(tv1, tv2);
-
-	if (!localtime_r(&tv1->tv_sec, &tm))
-		error("localtime_r(): %m");
-	if (strftime(p, sizeof(p), "%T", &tm) == 0)
-		error("strftime(): %m");
-	if (delta > limit) {
+	if (is_after_limit) {
 		verbose("Warning: Note very large processing time from %s: %s began=%s.%3.3d",
-			from, tstr.str, p, (int)(tv1->tv_usec / 1000));
+			from, timer_duration_str(tv1, tv2).str,
+			_timespec_to_hourminsec(tv1).str,
+			(int) (tv1.tv_nsec / NSEC_IN_MSEC));
 	} else { /* Log anything over 1 second here */
 		debug("Note large processing time from %s: %s began=%s.%3.3d",
-		      from, tstr.str, p, (int)(tv1->tv_usec / 1000));
+		      from, timer_duration_str(tv1, tv2).str,
+		      _timespec_to_hourminsec(tv1).str,
+		      (int) (tv1.tv_nsec / NSEC_IN_MSEC));
 	}
 }
 
-extern long timer_get_duration(struct timeval *start, struct timeval *end)
+extern long timer_get_duration(timespec_t *start, timespec_t *end)
 {
 	if (!start->tv_sec)
-		(void) gettimeofday(start, NULL);
+		*start = timespec_now();
 
 	if (!end->tv_sec)
-		(void) gettimeofday(end, NULL);
+		*end = timespec_now();
 
-	return _calc_tv_delta(start, end);
+	return _calc_tv_delta(*start, *end);
 }
 
 extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start)
@@ -203,7 +236,8 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 
 		/* Promote all components to double to avoid truncation */
 		avg = (double) metric->total.tv_sec;
-		avg += ((double) metric->total.tv_sec) / ((double) NSEC_IN_SEC);
+		avg += ((double) metric->total.tv_nsec) /
+		       ((double) NSEC_IN_SEC);
 		avg /= (double) metric->count;
 
 		rc.avg = avg;

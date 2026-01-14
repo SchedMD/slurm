@@ -49,33 +49,33 @@
 #define TIMER_START_TS tv1
 #define TIMER_END_TS tv2
 #define DEF_TIMERS \
-	struct timeval TIMER_START_TS = { 0, 0 }; \
-	struct timeval TIMER_END_TS = { 0, 0 };
+	timespec_t TIMER_START_TS = { 0, 0 }, TIMER_END_TS = { 0, 0 };
 #define START_TIMER \
 	do { \
-		gettimeofday(&TIMER_START_TS, NULL); \
+		TIMER_START_TS = timespec_now(); \
 	} while (false)
 #define END_TIMER \
 	do { \
-		gettimeofday(&TIMER_END_TS, NULL); \
+		TIMER_END_TS = timespec_now(); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
-		gettimeofday(&TIMER_END_TS, NULL); \
-		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, 0); \
+		TIMER_END_TS = timespec_now(); \
+		timer_compare_limit(TIMER_START_TS, TIMER_END_TS, from, \
+				    (timespec_t) { 0, 0 }); \
 	} while (false)
 #define END_TIMER3(from, limit) \
 	do { \
-		gettimeofday(&TIMER_END_TS, NULL); \
-		timer_compare_limit(&TIMER_START_TS, &TIMER_END_TS, from, \
-				    limit); \
+		TIMER_END_TS = timespec_now(); \
+		timer_compare_limit(TIMER_START_TS, TIMER_END_TS, from, \
+				    TIMESPEC_FROM_USEC(limit)); \
 	} while (false)
 /*
  * Get duration of time between START_TIMER and END_TIMER as string
  * Note: Must be called after START_TIMER and END_TIMER macros
  * RET: string of duration of time between calls or "INVALID"
  */
-#define TIMER_STR() (timer_duration_str(&TIMER_START_TS, &TIMER_END_TS).str)
+#define TIMER_STR() (timer_duration_str(TIMER_START_TS, TIMER_END_TS).str)
 /* Get timer duration in microseconds */
 #define TIMER_DURATION_USEC() timer_get_duration(&TIMER_START_TS, &TIMER_END_TS)
 
@@ -85,10 +85,10 @@
  * IN/OUT end - ptr to end of timer. Will be populated with now if zero.
  * RET duration of timer in microseconds
  */
-extern long timer_get_duration(struct timeval *start, struct timeval *end);
+extern long timer_get_duration(timespec_t *start, timespec_t *end);
 
 typedef struct {
-	char str[20];
+	char str[TIMESPEC_CTIME_STR_LEN];
 } timer_str_t;
 
 /*
@@ -98,8 +98,8 @@ typedef struct {
  * IN from - Name to be printed on long diffs
  * IN limit - limit to wait
  */
-extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
-				const char *from, long limit);
+extern void timer_compare_limit(const timespec_t tv1, const timespec_t tv2,
+				const char *from, timespec_t limit);
 
 /*
  * Get string of time difference between tv1 and tv2 into tv_str
@@ -107,7 +107,8 @@ extern void timer_compare_limit(struct timeval *tv1, struct timeval *tv2,
  * IN tv2 - time value end
  * RET string of duration
  */
-extern timer_str_t timer_duration_str(struct timeval *tv1, struct timeval *tv2);
+extern timer_str_t timer_duration_str(const timespec_t tv1,
+				      const timespec_t tv2);
 
 /*
  * Number of latency ranges in latency histogram.
