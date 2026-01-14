@@ -49,7 +49,7 @@ proc get_wrong_uid {} {
 	set wrong_uid 1
 	set slurm_uid 1
 	regexp "(${re_word_str})\\(($number)\\)" [get_config_param "SlurmUser"] - slurm_user slurm_uid
-	set max_uid [expr min($my_uid, $slurm_uid)]
+	set max_uid [expr max($my_uid, $slurm_uid)]
 	while {$wrong_uid < $max_uid} {
 		if {![run_command_status -nolog -none "$bin_id $wrong_uid"]} {
 			return $wrong_uid
