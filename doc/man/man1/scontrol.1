@@ -688,8 +688,8 @@ Displays information about the selected topology layout. If no arguments are
 provided, the default topology will be returned.
 
 If a unit is specified, information about that unit will be shown. The
-\fBunit\fR keyword can be replaced with \fBswitch\fR or \fBblock\fR (e.g.
-block=b2).
+\fBunit\fR keyword can be replaced with \fBswitch\fR, \fBblock\fR, or \fBring\fR
+(e.g.block=b2).
 
 If one node name is specified, all units connected to that node (and
 their parent switches) will be shown.
@@ -1896,9 +1896,12 @@ Cray systems. Use Cray tools such as \fIxtprocadmin\fR instead.
 
 .TP
 \fBTopology\fR=<\fItopology_name\fR>:<\fItopology_unit\fR>[,<\fItopology_name\fR>:<\fItopology_unit\fR>,...]
-Where <\fItopology_unit\fR> is the block name or the name of a leaf switch.
-Intermediate switch names -- ':' delimited -- can be provided and will be
-created if needed (e.g. Topology=topo-tree:sw_root:s1:s2).
+Where <\fItopology_unit\fR> is the name of the block, leaf switch, or ring.
+A ring name must be followed by its numeric position in the ring
+(colon-delimited, e.g., Topology=topo-ring:ring1:2). The ring position must be
+0 when creating a new ring. A switch name may be followed by one or more
+intermediate switch names, which will be created if needed (colon-delimited,
+e.g., Topology=topo-tree:sw_root:s1:s2).
 This configuration overrides node topology affiliation settings from
 \fItopology.conf\fR and \fItopology.yaml\fR.
 .IP

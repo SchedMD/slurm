@@ -114,6 +114,37 @@ Each block must have at least the planning base block size count of nodes.
 Successive \fBBlockSizes\fR must be a power of two larger than the prior values.
 .IP
 
+.SH "topology/ring"
+
+.LP
+This plugin models the cluster as one or more ordered rings of nodes.
+Jobs are allocated using contiguous segments of nodes in the ring, which may
+wrap at the end of the ring.
+
+.LP
+The network topology configuration, each line defining a ring name and
+its child node names.
+Slurm's hostlist expression parser is used, so the node
+names need not be consecutive (e.g. "Nodes=tux[0\-3,12,18\-20]").
+The order of the nodes in the list defines the ring position
+starting at 0.
+
+.LP
+The overall configuration parameters available for topology/ring include:
+
+.TP
+\fBRingName\fR
+The name of a ring. This name is internal to Slurm and arbitrary.
+Each ring should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBNodes\fR
+Ordered list of child nodes in the ring.
+A maximum of 16 nodes can be specified per ring.
+.IP
+
 .SH "EXAMPLE"
 .nf
 ##################################################################
@@ -136,6 +167,15 @@ BlockName=block2 Nodes=node[33-64]
 BlockName=block3 Nodes=node[65-96]
 BlockName=block4 Nodes=node[97-128]
 BlockSizes=30,120
+.fi
+
+.nf
+##################################################################
+# Slurm's network topology configuration file for use with the
+# topology/ring plugin
+##################################################################
+RingName=ring0 Nodes=node[01-08]
+RingName=ring1 Nodes=node[09-16]
 .fi
 
 .SH "COPYING"

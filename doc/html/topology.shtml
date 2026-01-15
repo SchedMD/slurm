@@ -30,6 +30,7 @@ allocated to the job.</p>
 <ul>
 <li><a href="#block-limitations">Limitations</a></li>
 </ul></li>
+<li><a href="#ring">Ring Topology</a></li>
 <li><a href="#env_vars">Environment Variables</a></li>
 <li><a href="#multi_topo">Multiple Topologies</a></li>
 <li><a href="#dynamic_topo">Dynamic Topology</a></li>
@@ -253,6 +254,41 @@ other in the block structure. You cannot currently request that a job be
 placed on non-adjacent blocks.</li>
 </ul>
 
+<h2 id="ring">Ring Topology<a class="slurm_link" href="#ring"></a></h2>
+
+<p>Slurm 26.05 introduced ring topologies with <b>TopologyPlugin=topology/ring</b>.
+This plugin models the cluster as one or more ordered rings of nodes. Jobs are
+allocated using contiguous segments of nodes in the ring, which may wrap at the
+end of the ring.</p>
+
+<p>Rings can be defined in <b>topology.conf</b> using <b>RingName</b> and
+<b>Nodes</b>. The order of <b>Nodes</b> establishes the ring position
+(starting at 0). A maximum of 16 nodes can be specified per ring.</p>
+
+<pre>
+# topology.conf
+RingName=ring0 Nodes=node[01-08]
+RingName=ring1 Nodes=node[09-16]
+</pre>
+
+<p>When using <b>topology.yaml</b>, the following lines would define a ring
+topology equivalent to the previous example:</p>
+
+<pre>
+- topology: topo-ring
+  cluster_default: true
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[01-08]
+      - ring: ring1
+        nodes: node[09-16]
+</pre>
+
+<p>For <a href="#dynamic_topo">dynamic or cloud</a> nodes, the <b>Topology</b>
+field uses the ring name and position: <code>Topology=topo-ring:ring0:3</code>.
+The ring position must be 0 when creating a new ring.</p>
+
 <h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
 
 <p>For use with the <b>topology/tree</b> plugin, user can also specify the
@@ -264,16 +300,16 @@ wait for this optimized configuration using the <b>SchedulerParameters</b>
 configuration parameter with the
 <a href="slurm.conf.html#OPT_max_switch_wait=#">max_switch_wait</a> option.</p>
 
-<p>When <b>topology/tree</b> or <b>topology/block</b> is configured, hostlist
-functions may be used in place of or alongside regular hostlist expressions
-in commands or configuration files that interact with the slurmctld. Valid
-topology functions include:</p>
+<p>When <b>topology/tree</b>, <b>topology/block</b>, or <b>topology/ring</b> is
+configured, hostlist functions may be used in place of or alongside regular
+hostlist expressions in commands or configuration files that interact with the
+slurmctld. Valid topology functions include:</p>
 
 <ul>
-<li><b>block{blockX}</b> and <b>switch{switchY}</b> - expand to all nodes in
-	the specified block/switch.</li>
-<li><b>blockwith{nodeX}</b> and <b>switchwith{nodeY}</b> - expand to all nodes
-	in the same block/switch as the specified node.</li>
+<li><b>block{blockX}</b>, <b>switch{switchY}</b>, and <b>ring{ringZ}</b>
+  - expand to all nodes in the specified block/switch.</li>
+<li><b>blockwith{nodeX}</b>, <b>switchwith{nodeY}</b>, and <b>ringwith{nodeZ}</b>
+  - expand to all nodes in the same block/switch as the specified node.</li>
 </ul>
 
 <p>For example:</p>

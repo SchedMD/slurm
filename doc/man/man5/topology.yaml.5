@@ -54,6 +54,12 @@ which is the default if no TopologyPlugin or topology.yaml is specified.
 .IP
 
 .TP
+\fBring\fR
+This topology will use the \fBtopology/ring\fR plugin. Must contain additional
+fields, see below.
+.IP
+
+.TP
 \fBtree\fR
 This topology will use the \fBtopology/tree\fR plugin. Must contain additional
 fields, see below.
@@ -123,6 +129,32 @@ Child nodes of the named leaf switch.
 .RE
 .IP
 
+.SS "Ring definitions"
+.LP
+Each ring topology contains the following attribute:
+.LP
+
+.TP
+\fBrings\fR
+List of rings available in this topology. Each ring contains the following
+attributes:
+
+.RS
+.TP
+\fBring\fR
+The name of a ring. This name is internal to Slurm and arbitrary.
+Each ring should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBnodes\fR
+Ordered list of child nodes in the ring.
+A maximum of 16 nodes can be specified per ring.
+.IP
+.RE
+.IP
+
 .SH "EXAMPLE"
 .nf
 ---
@@ -154,6 +186,14 @@ Child nodes of the named leaf switch.
 - topology: topo3
   cluster_default: false
   flat: true
+- topology: topo4
+  cluster_default: false
+  ring:
+    rings:
+      - ring: ring0
+        nodes: node[01-08]
+      - ring: ring1
+        nodes: node[09-16]
 .fi
 
 .SH "COPYING"
