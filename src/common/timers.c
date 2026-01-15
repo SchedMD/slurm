@@ -246,6 +246,21 @@ extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
 	return rc;
 }
 
+extern int latency_histogram_print_labels(char *buffer, size_t buffer_len)
+{
+	int wrote = 0;
+
+	for (int i = 0;
+	     (i < ARRAY_SIZE(latency_ranges)) && (wrote < buffer_len); i++)
+		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
+				  "%s%-8s",
+				  (wrote ? HISTOGRAM_FIELD_DELIMITER : ""),
+				  latency_ranges[i].label);
+	return wrote;
+}
+
+#ifndef __STDC_NO_ATOMICS__
+
 extern void latency_metric_add_histogram_value(latency_histogram_t *histogram,
 					       timespec_t value)
 {
@@ -258,22 +273,9 @@ extern void latency_metric_add_histogram_value(latency_histogram_t *histogram,
 		if (timespec_is_after(value, range->end))
 			continue;
 
-		histogram->buckets[i].count++;
+		(void) atomic_uint64_increment(histogram->buckets[i]);
 		return;
 	}
-}
-
-extern int latency_histogram_print_labels(char *buffer, size_t buffer_len)
-{
-	int wrote = 0;
-
-	for (int i = 0;
-	     (i < ARRAY_SIZE(latency_ranges)) && (wrote < buffer_len); i++)
-		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
-				  "%s%-8s",
-				  (wrote ? HISTOGRAM_FIELD_DELIMITER : ""),
-				  latency_ranges[i].label);
-	return wrote;
 }
 
 extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
@@ -291,7 +293,23 @@ extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
 		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
 				  "%s%-8" PRId64,
 				  (wrote ? HISTOGRAM_FIELD_DELIMITER : ""),
-				  histogram->buckets[i].count);
+				  atomic_uint64_get(histogram->buckets[i]));
 
 	return wrote;
 }
+
+#else /* __STDC_NO_ATOMICS__ */
+
+extern void latency_metric_add_histogram_value(latency_histogram_t *histogram,
+					       timespec_t value)
+{
+	/* do nothing */
+}
+
+extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
+				   size_t buffer_len)
+{
+	return snprintf(buffer, buffer_len, "Histograms are disabled");
+}
+
+#endif /* __STDC_NO_ATOMICS__ */
