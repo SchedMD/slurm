@@ -76,6 +76,8 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "CloneNSScript_Wait=%u",
 		 slurm_ns_conf.clonensscript_wait);
 	log_flag(NAMESPACE, "Dirs=%s", slurm_ns_conf.dirs);
+	log_flag(NAMESPACE, "disable_bpf_token=%d",
+		 slurm_ns_conf.disable_bpf_token);
 	log_flag(NAMESPACE, "InitScript=%s", slurm_ns_conf.initscript);
 	log_flag(NAMESPACE, "Shared=%d", slurm_ns_conf.shared);
 	log_flag(NAMESPACE, "UserNSScript=%s", slurm_ns_conf.usernsscript);
@@ -95,6 +97,7 @@ static void _pack_slurm_ns_conf_buf(void)
 	pack32(slurm_ns_conf.clonensepilog_wait, slurm_ns_conf_buf);
 	pack32(slurm_ns_conf.clonensscript_wait, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.dirs, slurm_ns_conf_buf);
+	packbool(slurm_ns_conf.disable_bpf_token, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.initscript, slurm_ns_conf_buf);
 	packbool(slurm_ns_conf.shared, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.usernsscript, slurm_ns_conf_buf);
@@ -113,6 +116,8 @@ static void _swap_slurm_ns_conf(ns_node_conf_t *ns_node_conf)
 		slurm_ns_conf.clonensepilog_wait = ns_conf->clonensepilog_wait;
 	if (ns_node_conf->set_clonensscript_wait)
 		slurm_ns_conf.clonensscript_wait = ns_conf->clonensscript_wait;
+	if (ns_node_conf->set_disable_bpf_token)
+		slurm_ns_conf.disable_bpf_token = ns_conf->disable_bpf_token;
 	if (ns_node_conf->set_shared)
 		slurm_ns_conf.shared = ns_conf->shared;
 
@@ -196,11 +201,13 @@ static int _read_slurm_ns_conf(void)
 	    (!ns_full_conf->defaults && !ns_full_conf->node_confs))
 		goto end_it;
 	if (ns_full_conf->defaults) {
+		/* All set to true for _swap_slurm_ns_conf() to work */
 		ns_node_conf_t tmp_ns_node_conf = {
 			.ns_conf = ns_full_conf->defaults,
 			.set_auto_basepath = true,
 			.set_clonensepilog_wait = true,
 			.set_clonensscript_wait = true,
+			.set_disable_bpf_token = true,
 			.set_shared = true,
 		};
 
@@ -216,6 +223,9 @@ static int _read_slurm_ns_conf(void)
 
 	if (!slurm_ns_conf.dirs)
 		debug3("empty Dirs detected");
+
+	if (!slurm_ns_conf.disable_bpf_token)
+		log_flag(NAMESPACE, "empty disable_bpf_token detected");
 
 	if (!slurm_ns_conf.initscript)
 		debug3("empty init script detected");
@@ -302,6 +312,7 @@ extern ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 	safe_unpack32(&slurm_ns_conf.clonensepilog_wait, buf);
 	safe_unpack32(&slurm_ns_conf.clonensscript_wait, buf);
 	safe_unpackstr(&slurm_ns_conf.dirs, buf);
+	safe_unpackbool(&slurm_ns_conf.disable_bpf_token, buf);
 	safe_unpackstr(&slurm_ns_conf.initscript, buf);
 	safe_unpackbool(&slurm_ns_conf.shared, buf);
 	safe_unpackstr(&slurm_ns_conf.usernsscript, buf);

@@ -49,6 +49,7 @@ typedef struct ns_conf {
 	uint32_t clonensflags;
 	uint32_t clonensepilog_wait;
 	char *dirs;
+	bool disable_bpf_token;
 	char *initscript;
 	bool shared;
 	char *usernsscript;
@@ -60,6 +61,7 @@ typedef struct ns_node_conf_t {
 	bool set_auto_basepath;
 	bool set_clonensscript_wait;
 	bool set_clonensepilog_wait;
+	bool set_disable_bpf_token;
 	bool set_shared;
 } ns_node_conf_t;
 

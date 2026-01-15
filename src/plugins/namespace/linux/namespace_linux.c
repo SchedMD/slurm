@@ -1141,6 +1141,11 @@ extern int namespace_p_setup_bpf_token(stepd_step_rec_t *step)
 	uint16_t prot_ver;
 	slurm_step_id_t con = step->step_id;
 
+	if (ns_conf->disable_bpf_token) {
+		log_flag(NAMESPACE, "bpf tokens disabled, skipping");
+		return SLURM_SUCCESS;
+	}
+
 	/*
 	 * This indicates that either this is a extern step or that the plugin
 	 * is not configured to use user namespaces. In both cases we do not
