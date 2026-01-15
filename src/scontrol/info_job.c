@@ -1494,13 +1494,14 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			exit_code = 1;
 			if (quiet_flag != 1) {
 				if (array_id != NO_VAL) {
-					printf("Job %u_%u not found\n",
-					       job_id, array_id);
+					fprintf(stderr, "Job %u_%u not found\n",
+						job_id, array_id);
 				} else if (het_job_offset != NO_VAL) {
-					printf("Job %u+%u not found\n",
-					       job_id, het_job_offset);
+					fprintf(stderr, "Job %u+%u not found\n",
+						job_id, het_job_offset);
 				} else {
-					printf("Job %u not found\n", job_id);
+					fprintf(stderr, "Job %u not found\n",
+						job_id);
 				}
 			}
 		} else if (quiet_flag != 1)
