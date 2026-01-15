@@ -1,3 +1,30 @@
+## Changes in 25.11.2
+
+* slurmstepd - Revert regression that would apply job environment to container runtime invocation.
+* Fix issue where reservations may start while required GRES resources are still being used by jobs.
+* Fix slurmctld segfault when using --consolidate-segments.
+* Expose slurm.CONSOLIDATE_SEGMENTS flag in lua.
+* Expose the job record's segment_size in lua.
+* job_submit/lua - Expose the job_desc's segment_size in lua.
+* Prevent PMIx 5.0.8 and 5.0.9 clients from hanging when connecting to the PMIx server.
+* Clarify warning when BPF tokens are not supported.
+* slurmctld - Ensure we close already accepted conn before RPC flush check
+* slurmctld - Fix rpc_queue feature causing statesave corruption while shutdown
+* slurmctld - Ensure backfill has finished before saving state.
+* slurmctld - Ensure main scheduler has finished before saving state.
+* slurmctld - Fix error message while shutting down and state cannot be saved.
+* Fix slurmctld double free that occurs when purging array jobs from memory only when using the topology/block plugin.
+* Fix steps being rejected inside a batch job when using --cpus-per-task and --mem-per-cpu, and the job was submitted to multiple partitions, but not all of them had the same MaxMemPerCPU limit in place.
+* slurmctld - Fix crash after failed reconfiguration while running jobs and priority/multifactor enabled.
+* slurmctld - Fix jobs' QOS/association usage leading to potential underflow errors after a failed reconfiguration attempt.
+* Guess NodeName with gethostname instead of gethostname_short
+* Fix allowing job submissions when EnforcePartLimits=NO and the requested minimum number of nodes exceeds the total nodes in the specified partition(s).
+* Fix double unlock issue in _slurm_rpc_job_sbcast_cred()
+* srun - fix bug where some input/output/error filename format identifiers were not expanded.
+* Fix detecting restricted cores with SlurmdSpecOverride in nodes with more than one socket.
+* slurmctld/slurmdbd - Prevent segfaulting if a persistent connection closes right before reconfiguring or shutting down.
+* Fix average calculation in latency timers to show more accurate timing logs.
+
 ## Changes in 25.11.1
 
 * data_parser/v0.0.41 - Prevent memory leaks when freeing parsed lists.
