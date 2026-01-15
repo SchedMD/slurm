@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#include "src/common/atomic.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/probes.h"
@@ -233,6 +234,8 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 
 	/* Hook into atexit() in always clean shutdown if exit() called */
 	(void) atexit(_at_exit);
+
+	atomic_log_features();
 
 	probe_register("conmgr", _probe);
 	probe_register("conmgr->connections", probe_connections);
