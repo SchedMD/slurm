@@ -36,4 +36,33 @@
 #ifndef _SLURM_ATOMIC_H
 #define _SLURM_ATOMIC_H
 
+/*
+ * Need at least C11 for atomics and guarantee __STDC_NO_ATOMICS__ is always
+ * defined if not even if not by a non-compliant compiler or CPU Architecture.
+ *
+ * https://fedoraproject.org/wiki/Architectures/ARM/GCCBuiltInAtomicOperations:
+ *	older ARM processors (prior to ARMv6) did not provide hardware
+ *	instructions to support this.
+ */
+#if (!defined(__STDC_VERSION__) || (__STDC_VERSION__ <= 201112L)) && \
+	!defined(__STDC_NO_ATOMICS__)
+#define __STDC_NO_ATOMICS__
+#endif
+
+#ifndef __STDC_NO_ATOMICS__
+
+#include <stdatomic.h>
+
+/* Debug log current features of Atomic support from compiler */
+extern void atomic_log_features(void);
+
+#else
+
+#include "src/common/log.h"
+
+#define atomic_log_features() \
+	debug("%s: Atomic operations are not supported", __func__)
+
+#endif
+
 #endif
