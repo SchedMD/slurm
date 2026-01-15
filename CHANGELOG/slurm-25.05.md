@@ -1,3 +1,18 @@
+## Changes in 25.05.6
+
+* Updating a job's qos will always replace the previous timelimit with the new qos' timelimit, unless another time limit is explicitly specified in the update command.
+* slurmctld - Prevent memory corruption when fanning out messages to the slurmds if TreeWidth is more then or equal to 46341 and the number of nodes in the cluster is more then or equal to (TreeWidth + 1).
+* Fix slurmctld potential deadlock when trying to schedule jobs starting many years in the future. Slurm only supports one year time limits.
+* Fix accounting for memory on steps without pids, like the extern step, which caused them to be killed if OvermemoryKill was set.
+* slurmrestd - Revert tagging `.script` field as deprecated in 'POST /slurm/v0.0.42/job/submit'.
+* slurmrestd - Revert tagging `.script` field as deprecated in 'POST /slurm/v0.0.43/job/submit'.
+* slurmrestd - Revert tagging `.script` field as deprecated in 'POST /slurm/v0.0.44/job/submit'.
+* slurmctld - Fixed segfault when running configless and a malformed REQUEST_CONFIG RPC is received.
+* slurmctld - Fixed segfault when using newly added remote licenses.
+* Fix memory leak on slurmctld for jobs that use --exclusive=topo
+* Fix double unlock issue in _slurm_rpc_job_sbcast_cred()
+* slurmctld/slurmdbd - Prevent segfaulting if a persistent connection closes right before reconfiguring or shutting down.
+
 ## Changes in 25.05.5
 
 * Fix slurmdbd error triggered by "sreport user topusage" when trying to get data from monthly usage tables.
