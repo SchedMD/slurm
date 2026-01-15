@@ -36,6 +36,8 @@
 #ifndef _SLURM_ATOMIC_H
 #define _SLURM_ATOMIC_H
 
+#include <stdint.h>
+
 /*
  * Need at least C11 for atomics and guarantee __STDC_NO_ATOMICS__ is always
  * defined if not even if not by a non-compliant compiler or CPU Architecture.
@@ -55,6 +57,53 @@
 
 /* Debug log current features of Atomic support from compiler */
 extern void atomic_log_features(void);
+
+/******************************************************************************
+ * atomic uint64
+ ******************************************************************************/
+
+/* Always use helper functions to access and ATOMIC_UINT64_INITIALIZER() */
+typedef struct {
+	_Atomic uint64_t value;
+} atomic_uint64_t;
+
+#define ATOMIC_UINT64_INITIALIZER(init) \
+	((atomic_uint64_t) { \
+		.value = (init), \
+	})
+
+/* Use atomic_uint64_add() instead */
+extern uint64_t atomic_uint64_ptr_add(atomic_uint64_t *target, uint64_t value);
+
+/* Increment target by value and return prior value */
+#define atomic_uint64_add(target, value) atomic_uint64_ptr_add(&target, value)
+
+/* Use atomic_uint64_increment() instead */
+extern uint64_t atomic_uint64_ptr_increment(atomic_uint64_t *target);
+
+/* Increment target by 1 */
+#define atomic_uint64_increment(target) atomic_uint64_ptr_increment(&target)
+
+/* Use atomic_uint64_decrement() instead */
+extern uint64_t atomic_uint64_ptr_decrement(atomic_uint64_t *target);
+
+/* Decrement target by 1 */
+#define atomic_uint64_decrement(target) atomic_uint64_ptr_decrement(&target)
+
+/* use atomic_uint64_get() instead */
+extern uint64_t atomic_uint64_ptr_get(atomic_uint64_t *target);
+
+/* get value of target */
+#define atomic_uint64_get(target) atomic_uint64_ptr_get(&target)
+
+/* use atomic_uint64_set() instead */
+extern uint64_t atomic_uint64_ptr_set(atomic_uint64_t *target, uint64_t value);
+
+/* Set target to value and return value */
+#define atomic_uint64_set(target, value) atomic_uint64_ptr_set(&target, value)
+
+/* Set value of target to zero and return value */
+#define atomic_uint64_set_zero(target) atomic_uint64_ptr_set(&target, 0)
 
 #else
 

@@ -33,6 +33,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "stdint.h"
+
 #include "src/common/atomic.h"
 #include "src/common/log.h"
 
@@ -72,6 +74,31 @@ extern void atomic_log_features(void)
 	      "N/A"
 #endif /* !ATOMIC_CHAR8_T_LOCK_FREE */
 	     );
+}
+
+extern uint64_t atomic_uint64_ptr_add(atomic_uint64_t *target, uint64_t value)
+{
+	return atomic_fetch_add(&target->value, value);
+}
+
+extern uint64_t atomic_uint64_ptr_increment(atomic_uint64_t *target)
+{
+	return atomic_fetch_add(&target->value, 1);
+}
+
+extern uint64_t atomic_uint64_ptr_decrement(atomic_uint64_t *target)
+{
+	return atomic_fetch_sub(&target->value, 1);
+}
+
+extern uint64_t atomic_uint64_ptr_get(atomic_uint64_t *target)
+{
+	return atomic_load(&target->value);
+}
+
+extern uint64_t atomic_uint64_ptr_set(atomic_uint64_t *target, uint64_t value)
+{
+	return atomic_exchange(&target->value, value);
 }
 
 #endif /* __STDC_NO_ATOMICS__ */
