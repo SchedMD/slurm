@@ -618,11 +618,6 @@ static void *_job_watch_thread(void *arg)
 	slurmctld_lock_t job_write_fed_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_jobw", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_jobw");
-	}
-#endif
 	log_flag(FEDR, "%s: started job_watch thread", __func__);
 
 	while (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
@@ -691,7 +686,8 @@ static void _spawn_job_watch_thread()
 		 * drained or removed. */
 		stop_job_watch_thread = false;
 		job_watch_thread_running = true;
-		slurm_thread_create_detached(NULL, _job_watch_thread, NULL);
+		slurm_thread_create_detached("fed_jobw", _job_watch_thread,
+					     NULL);
 	} else {
 		info("a job_watch_thread already exists");
 	}
