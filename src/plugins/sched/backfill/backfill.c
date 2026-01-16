@@ -52,10 +52,6 @@
 
 #include "config.h"
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1151,11 +1147,6 @@ extern void *backfill_agent(void *args)
 	bool short_sleep = false;
 	int backfill_cnt = 0;
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "bckfl", NULL, NULL, NULL) < 0) {
-		error("cannot set my name to %s %m", "backfill");
-	}
-#endif
 	_load_config();
 	last_backfill_time = time(NULL);
 	_init_planned_bitmap();
