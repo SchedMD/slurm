@@ -2525,12 +2525,6 @@ static void *_fed_job_update_thread(void *arg)
 	struct timespec ts = {0, 0};
 	fed_job_update_info_t *job_update_info;
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_jobs", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_jobs");
-	}
-#endif
-
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&job_update_mutex);
 		ts.tv_sec  = time(NULL) + 2;
@@ -2736,7 +2730,7 @@ static void _spawn_threads(void)
 	slurm_mutex_unlock(&agent_mutex);
 
 	slurm_mutex_lock(&job_update_mutex);
-	slurm_thread_create(NULL, &fed_job_update_thread_id,
+	slurm_thread_create("fed_jobs", &fed_job_update_thread_id,
 			    _fed_job_update_thread, NULL);
 	slurm_mutex_unlock(&job_update_mutex);
 
