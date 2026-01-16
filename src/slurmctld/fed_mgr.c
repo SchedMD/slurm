@@ -38,10 +38,6 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
@@ -2559,12 +2555,6 @@ static void *_agent_thread(void *arg)
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_agent", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_agent");
-	}
-#endif
-
 	while (!slurmctld_config.shutdown_time) {
 		/* Wait for new work or re-issue RPCs after 2 second wait */
 		slurm_mutex_lock(&agent_mutex);
@@ -2726,7 +2716,7 @@ end_it:
 static void _spawn_threads(void)
 {
 	slurm_mutex_lock(&agent_mutex);
-	slurm_thread_create(NULL, &agent_thread_id, _agent_thread, NULL);
+	slurm_thread_create("fed_agent", &agent_thread_id, _agent_thread, NULL);
 	slurm_mutex_unlock(&agent_mutex);
 
 	slurm_mutex_lock(&job_update_mutex);
