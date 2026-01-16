@@ -193,7 +193,7 @@ static void *_rpc_thread(void *data)
 
 static void _agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
-	slurm_thread_create_detached(_rpc_thread, agent_arg_ptr);
+	slurm_thread_create_detached(NULL, _rpc_thread, agent_arg_ptr);
 }
 
 extern job_record_t *find_job(const slurm_step_id_t *step_id)

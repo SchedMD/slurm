@@ -161,7 +161,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("Reconfigure signal (SIGHUP) received");
-	slurm_thread_create_detached(reconfig, NULL);
+	slurm_thread_create_detached(NULL, reconfig, NULL);
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)

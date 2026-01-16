@@ -97,12 +97,12 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
  * is basically nothing safe you can do with a detached thread's id,
  * so this macro intentionally prevents you from capturing it.
  */
-#define slurm_thread_create_detached(func, arg) \
+#define slurm_thread_create_detached(name, func, arg) \
 	do { \
 		int thread_err = SLURM_SUCCESS; \
 		if ((thread_err = \
 			     threadpool_create(func, XSTRINGIFY(func), arg, \
-								true, NULL, \
+								true, (name), \
 								NULL, \
 								__func__))) \
 			fatal("%s: threadpool_create() failed: %s", \

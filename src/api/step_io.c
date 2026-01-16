@@ -1166,7 +1166,7 @@ extern void client_io_handler_start(client_io_t *cio)
 	xsignal(SIGTTIN, SIG_IGN);
 
 	slurm_mutex_lock(&cio->io_mutex);
-	slurm_thread_create_detached(_io_thr_internal, cio);
+	slurm_thread_create_detached(NULL, _io_thr_internal, cio);
 	cio->io_running = true;
 	slurm_mutex_unlock(&cio->io_mutex);
 

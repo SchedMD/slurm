@@ -381,7 +381,7 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 	param = xmalloc(sizeof(int));
 	*param = fd;
-	slurm_thread_create_detached(_handle_accept, param);
+	slurm_thread_create_detached(NULL, _handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
 	return SLURM_SUCCESS;

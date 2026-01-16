@@ -5036,7 +5036,8 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 
 	job_id = xmalloc(sizeof(*job_id));
 	*job_id = job_ptr->job_id;
-	slurm_thread_create_detached(_start_prolog_slurmctld_thread, job_id);
+	slurm_thread_create_detached(NULL, _start_prolog_slurmctld_thread,
+				     job_id);
 }
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
@@ -5775,7 +5776,7 @@ void main_sched_init(void)
 	slurm_mutex_unlock(&sched_mutex);
 
 	if (!was_alive)
-		slurm_thread_create_detached(_sched_agent, NULL);
+		slurm_thread_create_detached(NULL, _sched_agent, NULL);
 }
 
 void main_sched_fini(void)

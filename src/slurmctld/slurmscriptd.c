@@ -1059,7 +1059,7 @@ static int _msg_accept(eio_obj_t *obj, list_t *objs)
 		req_args = xmalloc(sizeof *req_args);
 		req_args->req = req;
 		req_args->buffer = buffer;
-		slurm_thread_create_detached(_handle_accept, req_args);
+		slurm_thread_create_detached(NULL, _handle_accept, req_args);
 
 		/*
 		 * xmalloc()'d data will be xfree()'d by _handle_accept()
@@ -1524,7 +1524,8 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 	send_args->msg_data = msg;
 	send_args->msg_type = SLURMSCRIPTD_REQUEST_FLUSH_JOB;
 
-	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
+	slurm_thread_create_detached(NULL, _async_send_to_slurmscriptd,
+				     send_args);
 }
 
 extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
@@ -1587,7 +1588,8 @@ extern void slurmscriptd_run_power(char *script_path, char *hosts,
 	/* Send message; don't wait for response */
 	send_args->msg_data = run_script_msg;
 	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
-	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
+	slurm_thread_create_detached(NULL, _async_send_to_slurmscriptd,
+				     send_args);
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
@@ -1657,7 +1659,8 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	 */
 	send_args->msg_data = run_script_msg;
 	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
-	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
+	slurm_thread_create_detached(NULL, _async_send_to_slurmscriptd,
+				     send_args);
 }
 
 extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
@@ -1698,7 +1701,8 @@ extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 	/* Send message; don't wait for response */
 	send_args->msg_data = run_script_msg;
 	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
-	slurm_thread_create_detached(_async_send_to_slurmscriptd, send_args);
+	slurm_thread_create_detached(NULL, _async_send_to_slurmscriptd,
+				     send_args);
 }
 
 extern void slurmscriptd_update_debug_flags(uint64_t debug_flags)

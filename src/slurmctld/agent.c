@@ -1924,7 +1924,8 @@ next:
 		if (agent_arg_ptr) {
 			debug2("Spawning RPC agent for msg_type %s",
 			       rpc_num2string(agent_arg_ptr->msg_type));
-			slurm_thread_create_detached(agent, agent_arg_ptr);
+			slurm_thread_create_detached(NULL, agent,
+						     agent_arg_ptr);
 			agent_started++;
 		} else
 			error("agent_retry found record with no agent_args");
@@ -1945,7 +1946,7 @@ next:
 
 			mail_thread_cnt++;
 			agent_thread_cnt++;
-			slurm_thread_create_detached(_mail_proc, mi);
+			slurm_thread_create_detached(NULL, _mail_proc, mi);
 		}
 		slurm_mutex_unlock(&mail_mutex);
 		slurm_mutex_unlock(&agent_cnt_mutex);

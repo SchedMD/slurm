@@ -714,7 +714,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 					_build_jobid_str(job_ptr,
 							 opt.array_id[j]);
 
-				slurm_thread_create_detached(_cancel_job_id,
+				slurm_thread_create_detached(NULL,
+							     _cancel_job_id,
 							     cancel_info);
 
 				if (opt.array_id[j] == NO_VAL ||
@@ -726,7 +727,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 				cancel_info->step_id.job_id =
 					job_ptr->step_id.job_id;
 				cancel_info->step_id.step_id = opt.step_id[j];
-				slurm_thread_create_detached(_cancel_step_id,
+				slurm_thread_create_detached(NULL,
+							     _cancel_step_id,
 							     cancel_info);
 			}
 
@@ -793,7 +795,7 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
-		slurm_thread_create_detached(_cancel_job_id, cancel_info);
+		slurm_thread_create_detached(NULL, _cancel_job_id, cancel_info);
 		job_ptr->step_id.job_id = 0;
 
 		if (opt.interactive) {
@@ -1106,7 +1108,7 @@ static int _signal_job_by_str(void)
 		}
 		slurm_mutex_unlock(&num_active_threads_lock);
 
-		slurm_thread_create_detached(_cancel_job_id, cancel_info);
+		slurm_thread_create_detached(NULL, _cancel_job_id, cancel_info);
 	}
 
 	/* Wait all spawned threads to finish */

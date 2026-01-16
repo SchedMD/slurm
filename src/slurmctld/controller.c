@@ -3574,7 +3574,7 @@ static int _shutdown_backup_controller(void)
 		 */
 		if (i < backup_inx)
 			shutdown_arg->shutdown = true;
-		slurm_thread_create_detached(_shutdown_bu_thread,
+		slurm_thread_create_detached(NULL, _shutdown_bu_thread,
 					     shutdown_arg);
 		slurm_mutex_lock(&bu_mutex);
 		bu_thread_cnt++;

@@ -691,7 +691,7 @@ static void _spawn_job_watch_thread()
 		 * drained or removed. */
 		stop_job_watch_thread = false;
 		job_watch_thread_running = true;
-		slurm_thread_create_detached(_job_watch_thread, NULL);
+		slurm_thread_create_detached(NULL, _job_watch_thread, NULL);
 	} else {
 		info("a job_watch_thread already exists");
 	}

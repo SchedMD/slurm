@@ -277,7 +277,7 @@ extern int setup_x11_forward(void)
 	obj->arg = xstrdup(srun->tls_cert);
 
 	eio_new_initial_obj(eio_handle, obj);
-	slurm_thread_create_detached(_eio_thread, NULL);
+	slurm_thread_create_detached(NULL, _eio_thread, NULL);
 
 	return SLURM_SUCCESS;
 

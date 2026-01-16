@@ -919,7 +919,7 @@ static void _spawn_window_manager(stepd_step_task_info_t *task)
 	win_info = xmalloc(sizeof(struct window_info));
 	win_info->task   = task;
 	win_info->conn = conn;
-	slurm_thread_create_detached(_window_manager, win_info);
+	slurm_thread_create_detached(NULL, _window_manager, win_info);
 }
 #endif
 
@@ -1288,7 +1288,7 @@ extern int io_init_tasks_stdio(void)
 extern void io_thread_start(void)
 {
 	slurm_mutex_lock(&step->io_mutex);
-	slurm_thread_create_detached(_io_thr, NULL);
+	slurm_thread_create_detached(NULL, _io_thr, NULL);
 	step->io_running = true;
 	slurm_mutex_unlock(&step->io_mutex);
 }

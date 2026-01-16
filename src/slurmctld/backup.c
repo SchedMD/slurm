@@ -154,7 +154,7 @@ void run_backup(void)
 	slurm_cond_broadcast(&slurmctld_config.backup_finish_cond);
 	slurm_mutex_unlock(&slurmctld_config.backup_finish_lock);
 
-	slurm_thread_create_detached(_trigger_slurmctld_event, NULL);
+	slurm_thread_create_detached(NULL, _trigger_slurmctld_event, NULL);
 
 	/* wait for the heartbeat file to exist before starting */
 	while (!get_last_heartbeat(NULL) &&
@@ -657,7 +657,7 @@ static int _shutdown_primary_controller(int wait_time)
 		 */
 		if (i < backup_inx)
 			shutdown_arg->shutdown = true;
-		slurm_thread_create_detached(_shutdown_controller,
+		slurm_thread_create_detached(NULL, _shutdown_controller,
 					     shutdown_arg);
 		slurm_mutex_lock(&shutdown_mutex);
 		shutdown_thread_cnt++;

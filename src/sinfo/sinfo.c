@@ -645,7 +645,7 @@ static int _build_sinfo_data(list_t *sinfo_list,
 		sinfo_cnt++;
 		slurm_mutex_unlock(&sinfo_cnt_mutex);
 
-		slurm_thread_create_detached(_build_part_info,
+		slurm_thread_create_detached(NULL, _build_part_info,
 					     build_struct_ptr);
 	}
 

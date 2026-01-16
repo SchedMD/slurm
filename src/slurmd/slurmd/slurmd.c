@@ -316,7 +316,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 
 	info("Caught SIGHUP. Triggering reconfigure.");
 
-	slurm_thread_create_detached(_try_to_reconfig, NULL);
+	slurm_thread_create_detached(NULL, _try_to_reconfig, NULL);
 }
 
 static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)
@@ -553,7 +553,7 @@ main (int argc, char **argv)
 
 	record_launched_jobs();
 
-	slurm_thread_create_detached(_registration_engine, NULL);
+	slurm_thread_create_detached(NULL, _registration_engine, NULL);
 
 	/* Allow listening socket to start accept()ing incoming */
 	_unquiesce_fd_listener();
@@ -2040,7 +2040,7 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(NET, "%s: [%s] detaching new thread for RPC connection",
 			 __func__, conmgr_fd_get_name(conmgr_args.con));
 
-		slurm_thread_create_detached(_service_msg, args);
+		slurm_thread_create_detached(NULL, _service_msg, args);
 	} else {
 		xassert(rc == EWOULDBLOCK);
 

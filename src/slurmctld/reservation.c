@@ -8207,7 +8207,7 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 			 * Update pending jobs for this reservation with the new
 			 * reservation ID out of band.
 			 */
-			slurm_thread_create_detached(_update_resv_jobs,
+			slurm_thread_create_detached(NULL, _update_resv_jobs,
 						     &resv_ptr->resv_id);
 		}
 
