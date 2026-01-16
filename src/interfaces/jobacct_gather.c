@@ -56,10 +56,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "src/common/assoc_mgr.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -340,12 +336,6 @@ static bool _init_run_test(void)
 
 static void *_watch_tasks(void *arg)
 {
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "acctg", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "acctg");
-	}
-#endif
-
 	while (_init_run_test() && !_jobacct_shutdown_test() &&
 	       acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
@@ -630,7 +620,8 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_thread_create(NULL, &watch_tasks_thread_id, _watch_tasks, NULL);
+	slurm_thread_create("acctg", &watch_tasks_thread_id, _watch_tasks,
+			    NULL);
 
 	debug3("jobacct_gather dynamic logging enabled");
 
