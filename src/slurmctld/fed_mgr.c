@@ -2453,13 +2453,6 @@ static void *_test_dep_job_thread(void *arg)
 	slurmctld_lock_t job_read_lock = {
 		.job = READ_LOCK, .fed = READ_LOCK };
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_test_dep", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__,
-		      "fed_test_dep");
-	}
-#endif
-
 	while (!slurmctld_config.shutdown_time) {
 		now = time(NULL);
 
@@ -2771,8 +2764,8 @@ static void _spawn_threads(void)
 	slurm_mutex_unlock(&remote_dep_recv_mutex);
 
 	slurm_mutex_lock(&test_dep_mutex);
-	slurm_thread_create(NULL, &dep_job_thread_id, _test_dep_job_thread,
-			    NULL);
+	slurm_thread_create("fed_test_dep", &dep_job_thread_id,
+			    _test_dep_job_thread, NULL);
 	slurm_mutex_unlock(&test_dep_mutex);
 
 	slurm_mutex_lock(&origin_dep_update_mutex);
