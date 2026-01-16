@@ -64,10 +64,6 @@
 
 #include "config.h"
 
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include <errno.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -279,12 +275,6 @@ void *agent(void *args)
 	int rpc_thread_cnt;
 	static time_t sched_update = 0;
 	static bool reboot_from_ctld = false;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "agent", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "agent");
-	}
-#endif
 
 	log_flag(AGENT, "%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s retry_list_size=%d",
 		 __func__, agent_cnt, agent_thread_cnt,
@@ -1971,7 +1961,8 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		pthread_t agent_thread = 0;
-		slurm_thread_create(NULL, &agent_thread, agent, agent_arg_ptr);
+		slurm_thread_create("agent", &agent_thread, agent,
+				    agent_arg_ptr);
 		slurm_thread_join(agent_thread);
 		return;
 	}
