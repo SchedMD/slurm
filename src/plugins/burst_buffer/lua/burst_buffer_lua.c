@@ -2216,7 +2216,7 @@ extern int init(void)
 	_test_config();
 	log_flag(BURST_BUF, "");
 	bb_alloc_cache(&bb_state);
-	slurm_thread_create(&bb_state.bb_thread, _bb_agent, NULL);
+	slurm_thread_create(NULL, &bb_state.bb_thread, _bb_agent, NULL);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;

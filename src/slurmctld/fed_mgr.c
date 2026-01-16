@@ -2757,26 +2757,27 @@ end_it:
 static void _spawn_threads(void)
 {
 	slurm_mutex_lock(&agent_mutex);
-	slurm_thread_create(&agent_thread_id, _agent_thread, NULL);
+	slurm_thread_create(NULL, &agent_thread_id, _agent_thread, NULL);
 	slurm_mutex_unlock(&agent_mutex);
 
 	slurm_mutex_lock(&job_update_mutex);
-	slurm_thread_create(&fed_job_update_thread_id,
+	slurm_thread_create(NULL, &fed_job_update_thread_id,
 			    _fed_job_update_thread, NULL);
 	slurm_mutex_unlock(&job_update_mutex);
 
 	slurm_mutex_lock(&remote_dep_recv_mutex);
-	slurm_thread_create(&remote_dep_thread_id,
+	slurm_thread_create(NULL, &remote_dep_thread_id,
 			    _remote_dep_recv_thread, NULL);
 	slurm_mutex_unlock(&remote_dep_recv_mutex);
 
 	slurm_mutex_lock(&test_dep_mutex);
-	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
+	slurm_thread_create(NULL, &dep_job_thread_id, _test_dep_job_thread,
+			    NULL);
 	slurm_mutex_unlock(&test_dep_mutex);
 
 	slurm_mutex_lock(&origin_dep_update_mutex);
-	slurm_thread_create(&origin_dep_thread_id, _origin_dep_update_thread,
-			    NULL);
+	slurm_thread_create(NULL, &origin_dep_thread_id,
+			    _origin_dep_update_thread, NULL);
 	slurm_mutex_unlock(&origin_dep_update_mutex);
 }
 

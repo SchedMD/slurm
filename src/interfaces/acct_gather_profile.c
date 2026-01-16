@@ -526,7 +526,7 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	}
 
 	/* create polling thread */
-	slurm_thread_create(&timer_thread_id, _timer_thread, NULL);
+	slurm_thread_create(NULL, &timer_thread_id, _timer_thread, NULL);
 
 	debug3("acct_gather_profile_startpoll dynamic logging enabled");
 

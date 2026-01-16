@@ -630,7 +630,7 @@ extern int jobacct_gather_startpoll(uint16_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_thread_create(&watch_tasks_thread_id, _watch_tasks, NULL);
+	slurm_thread_create(NULL, &watch_tasks_thread_id, _watch_tasks, NULL);
 
 	debug3("jobacct_gather dynamic logging enabled");
 

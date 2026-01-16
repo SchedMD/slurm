@@ -332,7 +332,7 @@ void *agent(void *args)
 	thread_ptr = agent_info_ptr->thread_struct;
 
 	/* start the watchdog thread */
-	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
+	slurm_thread_create(NULL, &thread_wdog, _wdog, agent_info_ptr);
 
 	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c r_uid:%u msg_type:%s protocol_version:%hu",
 		 __func__, agent_info_ptr->thread_count,
@@ -359,9 +359,8 @@ void *agent(void *args)
 		 */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
-		slurm_thread_create(&thread_ptr[i].thread,
-				    _thread_per_group_rpc,
-				    task_specific_ptr);
+		slurm_thread_create(NULL, &thread_ptr[i].thread,
+				    _thread_per_group_rpc, task_specific_ptr);
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
@@ -1626,9 +1625,9 @@ extern void agent_init(void)
 
 	update_srun_list = list_create(xfree_ptr);
 
-	slurm_thread_create(&pending_thread_tid, _agent_init, NULL);
-	slurm_thread_create(&nodes_update_tid, _agent_nodes_update, NULL);
-	slurm_thread_create(&srun_update_tid, _agent_srun_update, NULL);
+	slurm_thread_create(NULL, &pending_thread_tid, _agent_init, NULL);
+	slurm_thread_create(NULL, &nodes_update_tid, _agent_nodes_update, NULL);
+	slurm_thread_create(NULL, &srun_update_tid, _agent_srun_update, NULL);
 }
 
 extern void agent_fini(void)
@@ -1971,7 +1970,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		pthread_t agent_thread = 0;
-		slurm_thread_create(&agent_thread, agent, agent_arg_ptr);
+		slurm_thread_create(NULL, &agent_thread, agent, agent_arg_ptr);
 		slurm_thread_join(agent_thread);
 		return;
 	}

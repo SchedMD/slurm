@@ -220,7 +220,7 @@ extern int acct_gather_filesystem_startpoll(uint32_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_thread_create(&watch_node_thread_id, _watch_node, NULL);
+	slurm_thread_create(NULL, &watch_node_thread_id, _watch_node, NULL);
 
 	debug3("acct_gather_filesystem dynamic logging enabled");
 

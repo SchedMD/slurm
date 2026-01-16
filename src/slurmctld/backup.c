@@ -515,7 +515,8 @@ extern int ping_controllers(bool active_controller)
 		ping->control_addr = xstrdup(slurm_conf.control_addr[i]);
 		ping->control_machine = xstrdup(slurm_conf.control_machine[i]);
 		ping->slurmctld_port = slurm_conf.slurmctld_port;
-		slurm_thread_create(&ping_tids[i], _ping_ctld_thread, ping);
+		slurm_thread_create(NULL, &ping_tids[i], _ping_ctld_thread,
+				    ping);
 	}
 	unlock_slurmctld(config_read_lock);
 

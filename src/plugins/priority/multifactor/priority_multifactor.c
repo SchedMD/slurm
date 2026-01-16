@@ -1837,7 +1837,7 @@ extern void fini(void)
 
 void priority_p_thread_start(void)
 {
-	slurm_thread_create(&decay_handler_thread, _decay_thread, NULL);
+	slurm_thread_create(NULL, &decay_handler_thread, _decay_thread, NULL);
 
 	return;
 }

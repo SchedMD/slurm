@@ -480,7 +480,8 @@ static void _validate_slurmd_addr(void)
 
 	work_threads = xcalloc(threads_num, sizeof(pthread_t));
 	for (int i = 0; i < threads_num; i++)
-		slurm_thread_create(&work_threads[i], _set_node_addrs, nodes);
+		slurm_thread_create(NULL, &work_threads[i], _set_node_addrs,
+				    nodes);
 	for (int i = 0; i < threads_num; i++)
 		slurm_thread_join(work_threads[i]);
 	xfree(work_threads);

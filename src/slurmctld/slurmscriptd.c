@@ -1814,7 +1814,7 @@ extern int slurmscriptd_init(char **argv, char *binary_path)
 		slurm_mutex_init(&script_resp_map_mutex);
 		script_resp_map = xhash_init(_resp_map_key_id, _resp_map_free);
 		_setup_eio(slurmctld_readfd);
-		slurm_thread_create(&slurmctld_listener_tid,
+		slurm_thread_create(NULL, &slurmctld_listener_tid,
 				    _slurmctld_listener_thread, NULL);
 		debug("slurmctld: slurmscriptd fork()'d and initialized.");
 	} else { /* child (slurmscriptd_pid == 0) */

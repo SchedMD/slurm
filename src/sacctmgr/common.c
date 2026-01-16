@@ -894,7 +894,8 @@ extern void notice_thread_init(void)
 {
 	slurm_mutex_lock(&warn_mutex);
 	warn_needed = true;
-	slurm_thread_create(&notice_thread_handler, _print_lock_warn, NULL);
+	slurm_thread_create(NULL, &notice_thread_handler, _print_lock_warn,
+			    NULL);
 	slurm_mutex_unlock(&warn_mutex);
 }
 

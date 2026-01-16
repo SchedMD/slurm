@@ -206,7 +206,7 @@ static void _create_ext_thread(void)
 	ext_shutdown = 0;
 
 	slurm_mutex_lock(&ext_thread_mutex);
-	slurm_thread_create(&ext_thread_tid, _ext_thread, NULL);
+	slurm_thread_create(NULL, &ext_thread_tid, _ext_thread, NULL);
 	slurm_mutex_unlock(&ext_thread_mutex);
 }
 

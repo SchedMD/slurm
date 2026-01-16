@@ -311,7 +311,7 @@ extern int init(void)
 
 	jobcomp_common_conf_init();
 	jobslist = list_create(_jobslist_del);
-	slurm_thread_create(&job_handler_thread, _process_jobs, NULL);
+	slurm_thread_create(NULL, &job_handler_thread, _process_jobs, NULL);
 	slurm_mutex_lock(&pend_jobs_lock);
 	(void) _load_pending_jobs();
 	slurm_mutex_unlock(&pend_jobs_lock);

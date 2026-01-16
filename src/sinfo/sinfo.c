@@ -500,7 +500,7 @@ static list_t *_query_fed_servers(slurmdb_federation_rec_t *fed,
 		load_args->node_info_msg_list = node_info_msg_list;
 		load_args->part_info_msg_list = part_info_msg_list;
 		load_args->resp_msg_list = resp_msg_list;
-		slurm_thread_create(&load_thread[pthread_count],
+		slurm_thread_create(NULL, &load_thread[pthread_count],
 				    _load_job_prio_thread, load_args);
 		pthread_count++;
 

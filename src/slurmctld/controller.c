@@ -1051,7 +1051,7 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread for state save
 		 */
-		slurm_thread_create(&slurmctld_config.thread_id_save,
+		slurm_thread_create(NULL, &slurmctld_config.thread_id_save,
 				    slurmctld_state_save, NULL);
 
 		/*
@@ -1062,13 +1062,15 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread for purging completed job files
 		 */
-		slurm_thread_create(&slurmctld_config.thread_id_purge_files,
+		slurm_thread_create(NULL,
+				    &slurmctld_config.thread_id_purge_files,
 				    _purge_files_thread, NULL);
 
 		/*
 		 * create attached thread for purging completed job files
 		 */
-		slurm_thread_create(&slurmctld_config.thread_id_acct_update,
+		slurm_thread_create(NULL,
+				    &slurmctld_config.thread_id_acct_update,
 				    _acct_update_thread, NULL);
 
 		/*
@@ -3128,8 +3130,8 @@ extern void ctld_assoc_mgr_init(void)
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
 	if ((running_cache != RUNNING_CACHE_STATE_NOTRUNNING) || num_jobs) {
-		slurm_thread_create(&assoc_cache_thread,
-				    _assoc_cache_mgr, NULL);
+		slurm_thread_create(NULL, &assoc_cache_thread, _assoc_cache_mgr,
+				    NULL);
 	}
 
 }

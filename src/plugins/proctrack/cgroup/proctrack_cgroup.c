@@ -888,8 +888,8 @@ extern int proctrack_p_wait_for_any_task(stepd_step_rec_t *step,
 	args.ended_task = ended_task;
 	args.end_fd = end_fd;
 
-	slurm_thread_create(&ended_task_cg_monitor_tid, _ended_task_cg_monitor,
-			    &args);
+	slurm_thread_create(NULL, &ended_task_cg_monitor_tid,
+			    _ended_task_cg_monitor, &args);
 
 	/* Wait for monitor to create fd's that listen for ended task events */
 	slurm_mutex_lock(&monitor_setup_lock);

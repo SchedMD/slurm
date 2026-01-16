@@ -1039,7 +1039,8 @@ static void _spawn_timeslicer_thread(void)
 		return;
 	}
 
-	slurm_thread_create(&timeslicer_thread_id, _timeslicer_thread, NULL);
+	slurm_thread_create(NULL, &timeslicer_thread_id, _timeslicer_thread,
+			    NULL);
 	thread_running = true;
 	slurm_mutex_unlock(&thread_flag_mutex);
 }

@@ -143,7 +143,8 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	}
 	eio_new_initial_obj(msg_thr->handle, obj);
 	slurm_mutex_lock(&msg_thr_start_lock);
-	slurm_thread_create(&msg_thr->id, _msg_thr_internal, msg_thr->handle);
+	slurm_thread_create(NULL, &msg_thr->id, _msg_thr_internal,
+			    msg_thr->handle);
 	while (!msg_thr_start_done) {
 		/*
 		 * Wait until the message thread has blocked signals

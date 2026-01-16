@@ -909,7 +909,7 @@ static void *_thread_launcher(void *no_data)
 	struct timeval tvnow;
 	struct timespec abs;
 
-	slurm_thread_create(&thread_ipmi_id_run, _thread_ipmi_run, NULL);
+	slurm_thread_create(NULL, &thread_ipmi_id_run, _thread_ipmi_run, NULL);
 
 	/* setup timer */
 	gettimeofday(&tvnow, NULL);
@@ -1607,7 +1607,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 
 		flag_init = true;
 		if (running_in_slurmd()) {
-			slurm_thread_create(&thread_ipmi_id_launcher,
+			slurm_thread_create(NULL, &thread_ipmi_id_launcher,
 					    _thread_launcher, NULL);
 			log_flag(ENERGY, "%s thread launched", plugin_name);
 		} else

@@ -482,7 +482,7 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 				   */
 
 	//_service_connection(service_conn);
-	slurm_thread_create(&persist_service_conn[thread_loc]->thread_id,
+	slurm_thread_create(NULL, &persist_service_conn[thread_loc]->thread_id,
 			    _service_connection, service_conn);
 }
 

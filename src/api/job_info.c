@@ -299,7 +299,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 		load_args->cluster = cluster;
 		load_args->req_msg = thread_msg;
 		load_args->resp_msg_list = resp_msg_list;
-		slurm_thread_create(&load_thread[pthread_count],
+		slurm_thread_create(NULL, &load_thread[pthread_count],
 				    _load_job_thread, load_args);
 		pthread_count++;
 
@@ -1156,7 +1156,7 @@ static int _load_fed_job_prio(slurm_msg_t *req_msg,
 		load_args->local_cluster = local_cluster;
 		load_args->req_msg = req_msg;
 		load_args->resp_msg_list = resp_msg_list;
-		slurm_thread_create(&load_thread[pthread_count],
+		slurm_thread_create(NULL, &load_thread[pthread_count],
 				    _load_job_prio_thread, load_args);
 		pthread_count++;
 

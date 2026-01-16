@@ -75,7 +75,7 @@ extern int init(void)
 	}
 
 	/* since we do a join on this later we don't make it detached */
-	slurm_thread_create(&backfill_thread, backfill_agent, NULL);
+	slurm_thread_create(NULL, &backfill_thread, backfill_agent, NULL);
 
 	slurm_mutex_unlock(&thread_flag_mutex);
 

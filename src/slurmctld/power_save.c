@@ -1160,7 +1160,7 @@ extern void power_save_init(void)
 	}
 	power_save_started = true;
 
-	slurm_thread_create(&power_thread, _power_save_thread, NULL);
+	slurm_thread_create(NULL, &power_thread, _power_save_thread, NULL);
 	slurm_mutex_unlock(&power_mutex);
 }
 

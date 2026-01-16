@@ -178,7 +178,8 @@ extern bool slingshot_init_collectives(void)
 
 	if (running_in_slurmctld()) {
 		slurm_mutex_lock(&cleanup_thread_lock);
-		slurm_thread_create(&cleanup_thread_id, _cleanup_thread, NULL);
+		slurm_thread_create(NULL, &cleanup_thread_id, _cleanup_thread,
+				    NULL);
 		slurm_mutex_unlock(&cleanup_thread_lock);
 	}
 

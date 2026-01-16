@@ -414,7 +414,7 @@ static int _fed_job_will_run(job_desc_msg_t *req,
 		load_args->req           = req;
 		load_args->resp_msg_list = resp_msg_list;
 		load_args->will_run_rc = &will_run_rc;
-		slurm_thread_create(&load_thread[pthread_count],
+		slurm_thread_create(NULL, &load_thread[pthread_count],
 				    _load_willrun_thread, load_args);
 		pthread_count++;
 	}

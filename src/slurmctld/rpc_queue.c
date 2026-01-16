@@ -328,7 +328,7 @@ extern void rpc_queue_init(void)
 			q->msg_name, q->max_per_cycle, q->max_usec_per_cycle,
 			q->max_queued, q->hard_drop, q->yield_sleep,
 			q->interval);
-		slurm_thread_create(&q->thread, _rpc_queue_worker, q);
+		slurm_thread_create(NULL, &q->thread, _rpc_queue_worker, q);
 	}
 
 	FREE_NULL_DATA(conf);
