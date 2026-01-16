@@ -2498,13 +2498,6 @@ static void *_remote_dep_recv_thread(void *arg)
 	struct timespec ts = {0, 0};
 	dep_msg_t *remote_dep_info;
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_remote_dep", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__,
-		      "fed_remote_dep");
-	}
-#endif
-
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&remote_dep_recv_mutex);
 		ts.tv_sec = time(NULL) + 2;
@@ -2748,7 +2741,7 @@ static void _spawn_threads(void)
 	slurm_mutex_unlock(&job_update_mutex);
 
 	slurm_mutex_lock(&remote_dep_recv_mutex);
-	slurm_thread_create(NULL, &remote_dep_thread_id,
+	slurm_thread_create("fed_remote_dep", &remote_dep_thread_id,
 			    _remote_dep_recv_thread, NULL);
 	slurm_mutex_unlock(&remote_dep_recv_mutex);
 
