@@ -46,10 +46,6 @@
 
 #define _GNU_SOURCE
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include <limits.h>	/* For LONG_MIN, LONG_MAX */
 #include <signal.h>
 #include <stdlib.h>
@@ -1160,7 +1156,8 @@ extern void power_save_init(void)
 	}
 	power_save_started = true;
 
-	slurm_thread_create(NULL, &power_thread, _power_save_thread, NULL);
+	slurm_thread_create("powersave", &power_thread, _power_save_thread,
+			    NULL);
 	slurm_mutex_unlock(&power_mutex);
 }
 
@@ -1215,12 +1212,6 @@ static void *_power_save_thread(void *arg)
 	slurmctld_lock_t node_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, last_power_scan = 0;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "powersave", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "powersave");
-	}
-#endif
 
 	/*
 	 * Build up resume_job_list list in case shut down before resuming
