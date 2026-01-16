@@ -44,10 +44,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -142,13 +138,6 @@ static void *_timer_thread(void *args)
 	int i, diff;
 	struct timeval tvnow;
 	struct timespec abs;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "acctg_prof", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, "acctg_prof");
-	}
-#endif
 
 	/* setup timer */
 	gettimeofday(&tvnow, NULL);
@@ -526,7 +515,8 @@ extern int acct_gather_profile_startpoll(char *freq, char *freq_def)
 	}
 
 	/* create polling thread */
-	slurm_thread_create(NULL, &timer_thread_id, _timer_thread, NULL);
+	slurm_thread_create("acctg_prof", &timer_thread_id, _timer_thread,
+			    NULL);
 
 	debug3("acct_gather_profile_startpoll dynamic logging enabled");
 
