@@ -1251,10 +1251,29 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				job_blocked_nodes++;
 				usable_cpu_cnt[i] = 0;
 			} else {
+				uint16_t tpc = _get_threads_per_core(
+					step_spec->threads_per_core, job_ptr);
+
 				usable_cpu_cnt[i] -=
 					job_resrcs_ptr->cpus_used[node_inx];
 				job_blocked_cpus +=
 					job_resrcs_ptr->cpus_used[node_inx];
+				if (step_spec->threads_per_core != NO_VAL16 &&
+				    (node_ptr->threads != tpc)) {
+					log_flag(STEPS, "%s, %pJ requested threads per core does not match node defaults, adjusting usable cpu count",
+						 __func__, job_ptr);
+					/*
+					 * calculate number of free cores and
+					 * multiply by requested threads per
+					 * core since usable_cpu_cnt will
+					 * always be a multiple of the nodes
+					 * threads_per_core this should always
+					 * be correct
+					 */
+					usable_cpu_cnt[i] =
+						(usable_cpu_cnt[i] /
+						 node_ptr->threads) * tpc;
+				}
 				if (!usable_cpu_cnt[i]) {
 					job_blocked_nodes++;
 					log_flag(STEPS, "%s: %pJ Skipping node %s. Not enough CPUs to run step here.",
