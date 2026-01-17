@@ -1339,10 +1339,9 @@ sockets, cores per socket and/or threads per core.
 .br
 \fBNOTE\fR: These options do not specify the resource allocation size.
 Each value specified is considered a minimum.
-An asterisk (*) can be used as a placeholder indicating that all available
-resources of that type are to be utilized. Values can also be specified as
-min\-max. The individual levels can also be specified in separate options if
-desired:
+An asterisk (*) can be used as a placeholder without restricting node selection
+for that type. Values can also be specified as min\-max. The individual levels
+can also be specified in separate options if desired:
 .IP
 .nf
     \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
