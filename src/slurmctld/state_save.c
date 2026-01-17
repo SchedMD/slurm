@@ -39,10 +39,6 @@
 
 #include "config.h"
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include <pthread.h>
 
 #include "src/common/log.h"
@@ -210,12 +206,6 @@ extern void *slurmctld_state_save(void *no_data)
 {
 	bool run_save;
 	int save_count;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "sstate", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "sstate");
-	}
-#endif
 
 	probe_register(__func__, _probe);
 

@@ -1051,7 +1051,7 @@ int main(int argc, char **argv)
 		/*
 		 * create attached thread for state save
 		 */
-		slurm_thread_create(NULL, &slurmctld_config.thread_id_save,
+		slurm_thread_create("sstate", &slurmctld_config.thread_id_save,
 				    slurmctld_state_save, NULL);
 
 		/*
