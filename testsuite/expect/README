@@ -109,10 +109,10 @@ running the tests.
 When failures do occur, check the standard output for details. Searching
 for the keyword "FAILURE" will typically locate the failing test. Note
 that some of the tests are architecture or configuration specific.  Also
-note that most tests are designed to be run as a normal user. Tests 3.#
-are designed to be run as user root or SlurmUser, but will be skipped
-when the full test suite is executed as an unprivileged user. The full
-test suite is typically executed many times by the Slurm developers on a
-variety of systems before a Slurm release is made. This has resulted in
-high system reliability. When Slurm bugs are found or features added,
-this test suite is expanded.
+note that most tests are designed to be run as a normal user. Some of tests
+are designed to be run as SlurmUser, therefore they will be skipped
+when the full test suite is executed as an unprivileged user.
+
+The testsuite/expect is still executed on a variety of systems in a daily
+basis, but new tests for found bugs and new features are added into the new
+testsuite/python.
