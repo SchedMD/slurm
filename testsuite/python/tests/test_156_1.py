@@ -12,11 +12,14 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (26, 5),
+    reason="Ticket 20799: Concurrent steps are not started and identified correctly",
+)
 def test_no_missing_step(tmp_path):
     """
     This test confirms steps 0 and 1 are run concurrently, and that step 2 is
     run as soon as there are available resources, and with the correct step id.
-    See Ticket 20799 for more details
     """
     atf.make_bash_script(
         "my_script.sh",
