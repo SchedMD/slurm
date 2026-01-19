@@ -914,6 +914,8 @@ extern jobacctinfo_t *jobacctinfo_create(jobacct_id_t *jobacct_id)
 	jobacct->sys_cpu_usec = 0;
 	jobacct->user_cpu_sec = 0;
 	jobacct->user_cpu_usec = 0;
+	/* Default PID -1 will be used to aggregate metrics from other PIDs */
+	jobacct->pid = -1;
 
 	_jobacctinfo_create_tres_usage(jobacct_id, jobacct);
 	return jobacct;
@@ -1141,9 +1143,10 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
 
 	xassert(jobacct);
 
-	if (alloc)
+	if (alloc) {
 		*jobacct = xmalloc(sizeof(struct jobacctinfo));
-	else {
+		(*jobacct)->pid = -1;
+	} else {
 		xassert(*jobacct);
 		_free_tres_usage(*jobacct);
 	}
