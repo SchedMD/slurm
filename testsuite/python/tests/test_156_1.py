@@ -13,7 +13,8 @@ def setup():
 
 
 @pytest.mark.xfail(
-    atf.get_version() < (26, 5),
+    atf.get_version() < (26, 5)
+    and atf.get_config_parameter("SelectType", live=False) != "select/linear",
     reason="Ticket 20799: Concurrent steps are not started and identified correctly",
 )
 def test_no_missing_step(tmp_path):
