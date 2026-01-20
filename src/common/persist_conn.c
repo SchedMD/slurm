@@ -76,6 +76,20 @@ static time_t          shutdown_time = 0;
 static buf_t *_slurm_persist_recv_msg(persist_conn_t *persist_conn,
 				      bool reopen);
 
+static void _conn_destroy(persist_conn_t *persist_conn)
+{
+	if (!persist_conn->conn)
+		return;
+
+	if (!persist_conn->skip_conn_shutdown)
+		(void) conn_blocking_g_shutdown(persist_conn->conn);
+
+	/* reset to default */
+	persist_conn->skip_conn_shutdown = false;
+
+	conn_g_destroy(persist_conn->conn, true);
+}
+
 /* Return true if communication failure should be logged. Only log failures
  * every 10 minutes to avoid filling logs */
 static bool _comm_fail_log(persist_conn_t *persist_conn)
@@ -234,7 +248,6 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 		(void) close(fd);
 		return SLURM_ERROR;
 	}
-	conn_g_set_graceful_shutdown(persist_conn->conn, true);
 
 	while (!(*persist_conn->shutdown) && !fini) {
 		if (!_conn_readable(persist_conn))
@@ -430,8 +443,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			slurm_mutex_lock(&thread_count_lock);
 		}
 		if (persist_service_conn[i] && persist_service_conn[i]->pcon) {
-			void *conn = persist_service_conn[i]->pcon->conn;
-			conn_g_set_graceful_shutdown(conn, false);
+			persist_service_conn[i]->pcon->skip_conn_shutdown =
+				true;
 		}
 
 		_destroy_persist_service(persist_service_conn[i]);
@@ -556,7 +569,6 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 	xassert(persist_conn->cluster_name);
 
 	if (persist_conn->conn) {
-		conn_g_destroy(persist_conn->conn, true);
 		persist_conn->conn = NULL;
 	}
 
@@ -588,12 +600,6 @@ static int _open_persist_conn(persist_conn_t *persist_conn)
 		}
 		return SLURM_ERROR;
 	}
-
-	/*
-	 * Peer will be waiting on conn_g_recv(), and they will need to know if
-	 * connection was intentionally closed or if an error occurred.
-	 */
-	conn_g_set_graceful_shutdown(persist_conn->conn, true);
 
 	fd = conn_g_get_fd(persist_conn->conn);
 
@@ -648,7 +654,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 	if (slurm_send_node_msg(persist_conn->conn, &req_msg) < 0) {
 		error("%s: failed to send persistent connection init message to %s:%d",
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
-		conn_g_destroy(persist_conn->conn, true);
+		_conn_destroy(persist_conn);
 		persist_conn->conn = NULL;
 	} else {
 		buf_t *buffer = NULL;
@@ -663,7 +669,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      __func__);
 			}
 
-			conn_g_destroy(persist_conn->conn, true);
+			_conn_destroy(persist_conn->conn);
 			persist_conn->conn = NULL;
 
 			if (!errno)
@@ -698,7 +704,8 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      persist_conn->rem_host,
 				      persist_conn->rem_port);
 			}
-			conn_g_destroy(persist_conn->conn, true);
+
+			_conn_destroy(persist_conn);
 			persist_conn->conn = NULL;
 		} else if (resp) {
 			persist_conn->version = resp->ret_info;
@@ -718,7 +725,8 @@ extern void slurm_persist_conn_close(persist_conn_t *persist_conn)
 	if (!persist_conn)
 		return;
 
-	conn_g_destroy(persist_conn->conn, true);
+	_conn_destroy(persist_conn);
+
 	persist_conn->conn = NULL;
 }
 
@@ -879,7 +887,7 @@ extern int slurm_persist_conn_writeable(persist_conn_t *persist_conn)
 				 __func__, ufds.fd);
 			if (persist_conn->trigger_callbacks.dbd_fail)
 				(persist_conn->trigger_callbacks.dbd_fail)();
-			conn_g_set_graceful_shutdown(persist_conn->conn, false);
+			persist_conn->skip_conn_shutdown = true;
 			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {

@@ -252,7 +252,7 @@ extern int io_init_msg_read_from_fd(int fd, void *conn, io_init_msg_t *msg)
 	xassert(msg);
 
 	debug2("Entering %s", __func__);
-	if (wait_fd_readable(fd, 300)) {
+	if (wait_fd(fd, 300, POLLIN)) {
 		error_in_daemon("io_init_msg_read timed out");
 		return SLURM_ERROR;
 	}

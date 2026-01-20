@@ -114,7 +114,7 @@ typedef struct {
 	timespec_t delay;
 	struct s2n_config *s2n_config;
 	struct s2n_cert_chain_and_key *cert_and_key;
-	bool do_graceful_shutdown;
+	bool shutdown_finished;
 	bool using_global_s2n_conf;
 	bool is_client_authenticated;
 } tls_conn_t;
@@ -230,6 +230,47 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	 *	after processing an error
 	 */
 	s2n_errno = S2N_ERR_T_OK;
+}
+
+/* s2n library does not provide this */
+static char *_s2n_strblocked(s2n_blocked_status blocked)
+{
+	switch (blocked) {
+	case S2N_NOT_BLOCKED:
+		return "S2N_NOT_BLOCKED";
+	case S2N_BLOCKED_ON_READ:
+		return "S2N_BLOCKED_ON_READ";
+	case S2N_BLOCKED_ON_WRITE:
+		return "S2N_BLOCKED_ON_WRITE";
+	case S2N_BLOCKED_ON_APPLICATION_INPUT:
+		return "S2N_BLOCKED_ON_APPLICATION_INPUT";
+	case S2N_BLOCKED_ON_EARLY_DATA:
+		return "S2N_BLOCKED_ON_EARLY_DATA";
+	default:
+		return "UNKNOWN_BLOCK_STATUS";
+	}
+}
+
+/*
+ * Handle and log a libs2n function failing
+ * IN conn - ptr to connection or NULL
+ * IN func - function that failed
+ */
+#define on_s2n_block(conn, func) \
+	_on_s2n_block(conn, blocked, (void *(*) (void) ) func, \
+		      XSTRINGIFY(func), __func__)
+
+static void _on_s2n_block(tls_conn_t *conn, s2n_blocked_status blocked,
+			  void *(*func_ptr)(void), const char *funcname,
+			  const char *caller)
+{
+	xassert(s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED);
+
+	log_flag(TLS, "%s: %s() would block %s[%d]: %s (%s) -> %s",
+		 caller, funcname, s2n_strerror_name(s2n_errno), s2n_errno,
+		 s2n_strerror(s2n_errno, NULL),
+		 _s2n_strblocked(blocked),
+		 s2n_strerror_debug(s2n_errno, NULL));
 }
 
 static int _check_file_permissions(const char *path, int bad_perms,
@@ -755,6 +796,7 @@ static int _negotiate(tls_conn_t *conn)
 	if (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
 		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
 			/* Avoid calling on_s2n_error for blocking */
+			on_s2n_block(conn, s2n_negotiate);
 			return EWOULDBLOCK;
 		} else {
 			on_s2n_error(conn, s2n_negotiate);
@@ -1087,8 +1129,8 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		/* Negotiate the TLS handshake */
 		while ((rc = _negotiate(conn))) {
 			if (rc == EWOULDBLOCK) {
-				if (wait_fd_readable(conn->input_fd,
-						     slurm_conf.msg_timeout))
+				if (wait_fd(conn->input_fd,
+					    slurm_conf.msg_timeout, POLLIN))
 					error("%s: [fd:%d->fd:%d] Problem reading socket during s2n negotiation",
 					      __func__, tls_conn_args->input_fd,
 					      tls_conn_args->output_fd);
@@ -1116,43 +1158,52 @@ fail:
 	return NULL;
 }
 
-extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
+extern int tls_p_shutdown_conn(tls_conn_t *conn)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
+	int rc = SLURM_SUCCESS;
 
+	xassert(conn);
+
+	if (conn->shutdown_finished) {
+		log_flag(TLS, "%s: s2n_shutdown already finished for fd:%d->%d, skipping.",
+			 plugin_type, conn->input_fd, conn->output_fd);
+		return SLURM_SUCCESS;
+	}
+
+	log_flag(TLS, "%s: Attempting s2n_shutdown for fd:%d->%d",
+		 plugin_type, conn->input_fd, conn->output_fd);
+
+	/* Attempt graceful shutdown at TLS layer */
+	if (s2n_shutdown(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
+		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
+			if (s2n_errno == S2N_BLOCKED_ON_READ)
+				errno = SLURM_BLOCKED_ON_READ;
+			else if (s2n_errno == S2N_BLOCKED_ON_WRITE)
+				errno = SLURM_BLOCKED_ON_WRITE;
+			/* Avoid calling on_s2n_error for blocking */
+			on_s2n_block(conn, s2n_shutdown);
+			return EWOULDBLOCK;
+		} else {
+			on_s2n_error(conn, s2n_shutdown);
+			rc = errno;
+		}
+	} else {
+		log_flag(TLS, "%s: Successfully did s2n_shutdown for  fd:%d->%d.",
+			 plugin_type, conn->input_fd, conn->output_fd);
+	}
+
+	conn->shutdown_finished = true;
+
+	return rc;
+}
+
+extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
+{
 	xassert(conn);
 
 	log_flag(TLS, "%s: destroying connection. fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
-
-	if (!conn->s2n_conn) {
-		_cleanup_tls_conn(conn);
-		xfree(conn);
-		return;
-	}
-
-	if (conn->do_graceful_shutdown) {
-		log_flag(TLS, "%s: Attempting s2n_shutdown for fd:%d->%d",
-			 plugin_type, conn->input_fd, conn->output_fd);
-	} else {
-		log_flag(TLS, "%s: Skipping s2n_shutdown for fd:%d->%d",
-			 plugin_type, conn->input_fd, conn->output_fd);
-	}
-
-	/* Attempt graceful shutdown at TLS layer */
-	while (conn->do_graceful_shutdown &&
-	       s2n_shutdown(conn->s2n_conn, &blocked)) {
-		if (s2n_error_get_type(s2n_errno) != S2N_ERR_T_BLOCKED) {
-			on_s2n_error(conn, s2n_shutdown);
-			break;
-		}
-
-		if (wait_fd_readable(conn->input_fd, slurm_conf.msg_timeout) ==
-		    -1) {
-			error("Problem reading socket, couldn't do graceful s2n shutdown");
-			break;
-		}
-	}
 
 	if (close_fds) {
 		if (conn->input_fd >= 0)
@@ -1404,16 +1455,4 @@ extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
 		 callbacks->send, callbacks->io_context, conn->s2n_conn);
 
 	return SLURM_SUCCESS;
-}
-
-extern void tls_p_set_graceful_shutdown(tls_conn_t *conn,
-					bool do_graceful_shutdown)
-{
-	xassert(conn);
-
-	log_flag(TLS, "%s: %s graceful shutdown on fd:%d->%d",
-		 plugin_type, do_graceful_shutdown ? "Enabled" : "Disabled",
-		 conn->input_fd, conn->output_fd);
-
-	conn->do_graceful_shutdown = do_graceful_shutdown;
 }

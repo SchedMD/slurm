@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -70,7 +71,7 @@ typedef struct {
 	int (*get_conn_fd)(void *conn);
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
 	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
-	void (*set_graceful_shutdown)(void *conn, bool do_graceful_shutdown);
+	int (*shutdown_conn)(void *conn);
 } conn_ops_t;
 
 /*
@@ -96,7 +97,7 @@ static const char *syms[] = {
 	"tls_p_get_conn_fd",
 	"tls_p_set_conn_fds",
 	"tls_p_set_conn_callbacks",
-	"tls_p_set_graceful_shutdown",
+	"tls_p_shutdown_conn",
 };
 
 static conn_ops_t ops;
@@ -326,8 +327,43 @@ extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks)
 	return (*(ops.set_conn_callbacks))(conn, callbacks);
 }
 
-extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown)
+extern int conn_g_shutdown(void *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.set_graceful_shutdown))(conn, do_graceful_shutdown);
+	return (*(ops.shutdown_conn))(conn);
+}
+
+extern int conn_blocking_g_shutdown(void *conn)
+{
+	int rc;
+	int fd;
+
+	xassert(plugin_inited == PLUGIN_INITED);
+
+	if (!conn)
+		return SLURM_SUCCESS;
+
+	fd = conn_g_get_fd(conn);
+
+	while ((rc = (*(ops.shutdown_conn))(conn))) {
+		short int events = POLLIN;
+
+		if ((rc != SLURM_BLOCKED_ON_READ) &&
+		    (rc != SLURM_BLOCKED_ON_WRITE))
+			return rc;
+
+		if (rc == SLURM_BLOCKED_ON_READ)
+			events = POLLIN;
+		else if (rc == SLURM_BLOCKED_ON_WRITE)
+			events = POLLOUT;
+
+		/* Wait until it's possible read/write then try again */
+		if ((rc = wait_fd(fd, slurm_conf.msg_timeout, events))) {
+			error("%s: Failed to wait on fd %d",
+			      __func__, fd);
+			return rc;
+		}
+	}
+
+	return rc;
 }

@@ -329,14 +329,14 @@ static pid_t fd_test_lock(int fd, int type)
 
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
-extern int wait_fd_readable(int fd, int time_limit)
+extern int wait_fd(int fd, int time_limit, short int events)
 {
 	struct pollfd ufd;
 	time_t start;
 
 	start = time(NULL);
 	ufd.fd = fd;
-	ufd.events = POLLIN;
+	ufd.events = events;
 	ufd.revents = 0;
 	while (1) {
 		int rc = -1;
@@ -348,7 +348,7 @@ extern int wait_fd_readable(int fd, int time_limit)
 
 		rc = poll(&ufd, 1, time_left * 1000);
 		if (rc > 0) {	/* activity on this fd */
-			if (ufd.revents & (POLLIN | POLLHUP))
+			if (ufd.revents & (events | POLLHUP))
 				return 0;
 			else	/* Exception */
 				return -1;

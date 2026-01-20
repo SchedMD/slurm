@@ -61,6 +61,7 @@ typedef struct {
 	int (*negotiate)(void *conn);
 	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
 	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
+	int (*shutdown_conn)(void *conn);
 } tls_ops_t;
 
 /*
@@ -78,6 +79,7 @@ static const char *syms[] = {
 	"tls_p_negotiate_conn",
 	"tls_p_set_conn_fds",
 	"tls_p_set_conn_callbacks",
+	"tls_p_shutdown_conn",
 };
 
 static tls_ops_t ops;
@@ -195,6 +197,12 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
+}
+
+extern int tls_g_shutdown_conn(void *conn)
+{
+	xassert(plugin_inited == PLUGIN_INITED);
+	return (*(ops.shutdown_conn))(conn);
 }
 
 extern bool tls_available(void)

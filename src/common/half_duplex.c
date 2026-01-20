@@ -111,12 +111,6 @@ extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 	if (conn_tls_enabled())
 		fd_set_nonblocking(*remote_fd);
 
-	/*
-	 * Peer will be waiting on conn_g_recv(), and they will need to know if
-	 * connection was intentionally closed or if an error occurred.
-	 */
-	conn_g_set_graceful_shutdown(conn, true);
-
 	eio_new_obj(eio_handle, local_to_remote_eio);
 	eio_new_obj(eio_handle, remote_to_local_eio);
 
@@ -132,7 +126,7 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 
 		if (fd_out) {
 			if (conn_out && *conn_out) {
-				conn_g_destroy(*conn_out, false);
+				(void) conn_blocking_g_shutdown(*conn_out);
 				*conn_out = NULL;
 			} else if (conn_out) {
 				xfree(conn_out);
@@ -140,6 +134,9 @@ static bool _half_duplex_readable(eio_obj_t *obj)
 			shutdown(*fd_out, SHUT_WR);
 			xfree(fd_out);
 			xfree(obj->arg);
+		}
+		if (obj->conn) {
+			(void) conn_blocking_g_shutdown(obj->conn);
 		}
 		shutdown(obj->fd, SHUT_RD);
 		return false;
@@ -173,7 +170,8 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 	} else if ((in < 0) && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
 		return 0;
 	} else if (in < 0) {
-		error("%s: read error %zd %m", __func__, in);
+		error("%s: read error %zd on fd %d -> %d: %m",
+		      __func__, in, obj->fd, *fd_out);
 		goto shutdown;
 	}
 
@@ -197,6 +195,7 @@ static int _half_duplex(eio_obj_t *obj, list_t *objs)
 shutdown:
 	obj->shutdown = true;
 	if (conn_in && *conn_in) {
+		(void) conn_blocking_g_shutdown(*conn_in);
 		conn_g_destroy(*conn_in, false);
 		*conn_in = NULL;
 		obj->conn = NULL;
@@ -204,7 +203,7 @@ shutdown:
 	shutdown(obj->fd, SHUT_RD);
 	if (fd_out) {
 		if (conn_out && *conn_out) {
-			conn_g_destroy(*conn_out, false);
+			(void) conn_blocking_g_shutdown(*conn_out);
 			*conn_out = NULL;
 		} else if (conn_out) {
 			xfree(conn_out);

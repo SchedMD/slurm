@@ -205,8 +205,7 @@ extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern void tls_p_set_graceful_shutdown(tls_conn_t *conn,
-					bool do_graceful_shutdown)
+extern void tls_p_shutdown_conn(tls_conn_t *conn)
 {
 	return;
 }

@@ -208,19 +208,29 @@ extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
 extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks);
 
 /*
- * Enable graceful TLS shutdown on connection
+ * Perform shutdown on connection
  *
- * Places that talk to a peer that blocks until a connection is closed (i.e.
- * peer waits until conn_g_recv() returns 0) need to do a graceful shutdown.
- * Otherwise, the peer's conn_g_recv will return an error, and the peer will not
- * know if the connection was intentionally closed.
- *
- * NOTE: Most Slurm connections do not need to do this as RPC conversations have
- * a clear end.
- *
- * IN conn - TLS connection enable graceful shutdown
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS if connection was shutdown,
+ * SLURM_BLOCKED_ON_READ/SLURM_BLOCKED_ON_WRITE if blocked in either read/write
+ * direction, or error if shutdown was unsuccessful.
  */
-extern void conn_g_set_graceful_shutdown(void *conn, bool do_graceful_shutdown);
+extern int conn_g_shutdown(void *conn);
+
+/*
+ * Perform blocking shutdown on connection
+ *
+ * WARNING: If underlying fd connection is non-blocking, this function will
+ * still block via poll(). It is recommended to use conn_g_shutdown and handle
+ * EWOULDBLOCK cases.
+ *
+ * NOTE: conn must have the underlying fd's set in its state in order to use
+ * this function.
+ *
+ * IN conn - connection to shutdown
+ * RET SLURM_SUCCESS or error
+ */
+extern int conn_blocking_g_shutdown(void *conn);
 
 /*
  * Get absolute time that next conn_g_*() should be delayed until after any
