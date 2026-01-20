@@ -17445,12 +17445,14 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 		if (preempt) {
 			job_state_set(job_ptr, JOB_PREEMPTED);
 			build_cg_bitmap(job_ptr);
-			job_completion_logger(job_ptr, true);
+			if (!is_completed && !is_completing)
+				job_completion_logger(job_ptr, true);
 			job_state_set(job_ptr, JOB_REQUEUE);
 		} else {
 			job_state_set(job_ptr, JOB_REQUEUE);
 			build_cg_bitmap(job_ptr);
-			job_completion_logger(job_ptr, true);
+			if (!is_completed && !is_completing)
+				job_completion_logger(job_ptr, true);
 		}
 	}
 
