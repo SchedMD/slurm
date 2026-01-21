@@ -4,6 +4,7 @@
 import atf
 import pytest
 import re
+import logging
 
 sock_0_reserved_cores = {0, 1, 2, 3}
 sock_0_regular_cores = {4, 5}
@@ -262,7 +263,7 @@ def test_ok(job_args, s0_res, s0_reg, s1_res, s1_reg, gres):
 
     cores = set(atf.range_to_list(job_dict["CPU_IDs"]))
 
-    print(s0_res, s0_reg, s1_res, s1_reg)
+    logging.debug(f"Values: {s0_res}, {s0_reg}, {s1_res}, {s1_reg}")
 
     assert s0_res == len(
         cores & sock_0_reserved_cores
@@ -322,7 +323,7 @@ def test_array(job_args, running_count):
     atf.cancel_all_jobs(quiet=True)
     atf.wait_for_job_state(job_id, "CANCELLED")
 
-    print(count, running_count)
+    logging.info(f"Count: {count} / {running_count}")
 
     assert (
         count == running_count
