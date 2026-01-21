@@ -558,10 +558,10 @@ extern int add_connection(conmgr_con_type_t type,
 	}
 
 	con = xmalloc(sizeof(*con));
-	*con = (conmgr_fd_t){
+	*con = (conmgr_fd_t) {
 		.magic = MAGIC_CON_MGR_FD,
 		.address = {
-			.ss_family = AF_UNSPEC
+			.ss_family = AF_UNSPEC,
 		},
 		.input_fd = input_fd,
 		.output_fd = output_fd,
@@ -734,16 +734,16 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *tls_conn, void *arg)
 {
-	return add_connection(type, NULL, input_fd, output_fd, events,
-			      flags, addr, addrlen, false, NULL, tls_conn, arg);
+	return add_connection(type, NULL, input_fd, output_fd, events, flags,
+			      addr, addrlen, false, NULL, tls_conn, arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, flags, NULL,
-			      0, true, NULL, NULL, arg);
+	return add_connection(type, NULL, fd, -1, events, flags, NULL, 0, true,
+			      NULL, NULL, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -773,8 +773,8 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		 */
 		close_con(false, src);
 	} else if (add_connection(args->type, NULL, fd, fd, args->events,
-				  CON_FLAG_NONE, NULL, 0, false, NULL,
-				  NULL, args->arg) != SLURM_SUCCESS) {
+				  CON_FLAG_NONE, NULL, 0, false, NULL, NULL,
+				  args->arg) != SLURM_SUCCESS) {
 		/*
 		 * Error already logged by add_connection() and there is no
 		 * reason to assume that failing is due to the state of src.
