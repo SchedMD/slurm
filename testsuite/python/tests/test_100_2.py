@@ -39,16 +39,11 @@ def assert_jobs(jobs_old_dbd, jobs_old_ctld):
                 jobs_old[jid].keys() == jobs_new[jid].keys()
             ), f"Verify JobID={jid} has the same attributes in {daemon}"
             for param in jobs_old[jid]:
+                # Time related parameters may be bigger after restart/upgrade
                 if param == "RunTime":
                     assert (
                         jobs_old[jid][param] <= jobs_new[jid][param]
                     ), f"Verify that {param} of JobID={jid} is correct"
-                elif param == "MinMemoryNode":
-                    # TODO: Bug 22789, MinMemoryNode is 0 after restart
-                    assert (
-                        jobs_new[jid][param] == jobs_old[jid][param]
-                        or jobs_new[jid][param] == 0
-                    ), f"Parameter {param} of JobID={jid} ({jobs_new[jid][param]}) should be 0 after upgrading {daemon}"
                 elif param == "time":
                     for subparam in jobs_old[jid][param]:
                         if subparam == "elapsed":
@@ -60,6 +55,17 @@ def assert_jobs(jobs_old_dbd, jobs_old_ctld):
                             jobs_old[jid][param][subparam] == jobs_new[jid][param][
                                 subparam
                             ]
+
+                # TODO: Ticket 22789: MinMemoryNode was 0 when slurmcltd < 26.05 is restarted
+                elif (
+                    atf.get_version(slurm_prefix=atf.properties["old-slurm-prefix"])
+                    < (26, 5)
+                    and param == "MinMemoryNode"
+                    and daemon == "slurmctld"
+                ):
+                    assert (
+                        jobs_new[jid][param] == 0
+                    ), "Ticket 22789: MinMemoryNode was 0 when slurmcltd < 26.05 is restarted"
 
                 else:
                     assert (
