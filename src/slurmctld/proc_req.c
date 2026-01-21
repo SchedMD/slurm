@@ -824,6 +824,19 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 			alloc_msg->env_size =
 				PTR_ARRAY_SIZE(alloc_msg->environment) - 1;
 		}
+
+		if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpu_array_cnt) {
+			char *task_count = get_tasks_per_node(job_ptr);
+			if (task_count) {
+				env_array_overwrite(&alloc_msg->environment,
+						    "SLURM_TASKS_PER_NODE",
+						    task_count);
+				xfree(task_count);
+				alloc_msg->env_size =
+					PTR_ARRAY_SIZE(alloc_msg->environment) -
+					1;
+			}
+		}
 	} else {
 		/* alloc_msg->pn_min_memory = 0; */
 		alloc_msg->ntasks_per_board  = NO_VAL16;

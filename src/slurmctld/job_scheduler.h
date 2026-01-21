@@ -301,4 +301,5 @@ extern void fill_array_reasons(job_record_t *job_ptr,
 /* Add a job_queue_rec_t to job_queue */
 extern void job_queue_append_internal(job_queue_req_t *job_queue_req);
 
+extern char *get_tasks_per_node(job_record_t *job_ptr);
 #endif /* !_JOB_SCHEDULER_H */
