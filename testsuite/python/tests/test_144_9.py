@@ -287,13 +287,21 @@ array_test_parameters = [
         "--array=[0-100] -N1 -n1 --nodelist=node1 --gres=gpu:1 ",
         4,
     ),
-    (  # Test with gres shard, should use all cores
+    pytest.param(  # Test with gres shard, should use all cores
         "--array=[0-100] -N1 -n1 --nodelist=node1 --gres=shard:1 ",
         12,
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
     ),
-    (  # Test with gres shard, should use all shards
+    pytest.param(  # Test with gres shard, should use all shards
         "--array=[0-100] -N1 -n1 --nodelist=node1 --gres=shard:5 ",
         8,
+        marks=pytest.mark.xfail(
+            atf.get_version() < (25, 11),
+            reason="Ticket 22391: ResCoresPerGPU with shard support",
+        ),
     ),
 ]
 
