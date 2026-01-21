@@ -37,6 +37,43 @@
 
 /* Max runaway jobs per single sql statement. */
 #define RUNAWAY_JOBS_PER_PASS 1000
+#define DEFAULT_SYNC_DELAY 5
+
+static uint16_t sync_delay = 0;
+
+static int _find_commit_delay(void *x, void *arg)
+{
+	config_key_pair_t *key_pair = x;
+	uint16_t *commit_delay = arg;
+
+	if (!xstrcmp(key_pair->name, "CommitDelay")) {
+		*commit_delay = (uint16_t) atoi(key_pair->value);
+		return 1;
+	}
+
+	return 0;
+}
+
+static void _get_sync_delay(void)
+{
+	list_t *dbd_config_list = NULL;
+	uint16_t commit_delay = 0;
+
+	if (sync_delay)
+		return;
+
+	sync_delay = DEFAULT_SYNC_DELAY;
+
+	dbd_config_list = slurmdb_config_get(db_conn);
+	if (!dbd_config_list)
+		return;
+
+	list_for_each(dbd_config_list, _find_commit_delay, &commit_delay);
+
+	FREE_NULL_LIST(dbd_config_list);
+
+	sync_delay += commit_delay;
+}
 
 static uint32_t _parse_state(char *state_str)
 {
@@ -226,12 +263,14 @@ static int _purge_known_jobs(void *x, void *key)
 {
 	job_info_msg_t *clus_jobs = (job_info_msg_t *) key;
 	slurmdb_job_rec_t *db_job = (slurmdb_job_rec_t *) x;
+	time_t now = time(NULL);
 
 	if (clus_jobs->record_count > 0) {
 		job_info_t *clus_job  = clus_jobs->job_array;
 		for (int i = 0; i < clus_jobs->record_count; i++, clus_job++) {
 			if ((db_job->jobid == clus_job->step_id.job_id) &&
-			    ((db_job->submit == clus_job->submit_time) ||
+			    (((now - clus_job->submit_time) < sync_delay) ||
+			     (clus_job->submit_time == db_job->submit) ||
 			     (db_job->submit == clus_job->resize_time))) {
 				debug5("%s: matched known JobId=%u SubmitTime=%"PRIu64,
 				       __func__, db_job->jobid,
@@ -310,6 +349,8 @@ static list_t *_get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 		error("Failed to get jobs from requested clusters: %m");
 		goto cleanup;
 	}
+
+	_get_sync_delay();
 
 	list_delete_all(db_jobs_list, _purge_known_jobs, clus_jobs);
 

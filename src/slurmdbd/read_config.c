@@ -824,7 +824,7 @@ extern list_t *dump_config(void)
 	add_key_pair(my_list, "BOOT_TIME", "%s", tmp_ptr);
 	xfree(tmp_ptr);
 
-	add_key_pair_bool(my_list, "CommitDelay", slurmdbd_conf->commit_delay);
+	add_key_pair(my_list, "CommitDelay", "%u", slurmdbd_conf->commit_delay);
 
 	add_key_pair(my_list, "CommunicationParameters", "%s",
 		     slurm_conf.comm_params);
