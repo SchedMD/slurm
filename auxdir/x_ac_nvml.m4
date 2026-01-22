@@ -16,8 +16,12 @@ AC_DEFUN([X_AC_NVML],
   {
       AS_UNSET([ac_cv_header_nvml_h])
       AS_UNSET([ac_cv_lib_nvidia_ml_nvmlInit])
+      AS_UNSET([ac_cv_lib_nvidia_ml_nvmlDeviceSetMemoryLockedClocks])
       AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
       AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
+
+      # nvmlDeviceSetMemoryLockedClocks() added in driver version 465.19.01
+      AC_CHECK_LIB([nvidia-ml], [nvmlDeviceSetMemoryLockedClocks], [ac_nvml_memory_clock=yes], [ac_nvml_memory_clock=no])
 
       if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
           # Check indirectly that CUDA 11.1+ was installed to see if we
@@ -100,6 +104,9 @@ AC_DEFUN([X_AC_NVML],
 	AC_DEFINE(HAVE_MIG_SUPPORT, 1, [Define to 1 if NVML library has MIG support])
       else
 	AC_MSG_WARN([NVML was found, but can not support MIG. For MIG support both nvml.h and libnvidia-ml must be 11.1+. Please make sure they are both the same version as well.])
+      fi
+      if [ test "$ac_nvml_memory_clock" = "yes" ]; then
+        AC_DEFINE(HAVE_NVML_MEMORY_CLOCK, 1, [Define to 1 if NVML library has memory clock support.])
       fi
     else
       if test -z "$with_nvml"; then

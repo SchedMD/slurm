@@ -163,6 +163,9 @@
 /* Define to 1 if NVML library found */
 #undef HAVE_NVML
 
+/* Define to 1 if NVML library has memory clock support. */
+#undef HAVE_NVML_MEMORY_CLOCK
+
 /* Define to 1 if ofed library found */
 #undef HAVE_OFED
 

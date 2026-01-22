@@ -73,7 +73,8 @@ typedef struct {
 	/* `MIG-<GPU-UUID>/<GPU instance ID>/<compute instance ID>` */
 } nvml_mig_t;
 
-static bitstr_t	*saved_gpus = NULL;
+/* Only valid after calling _set_step_gpus() */
+static bitstr_t *step_gpus = NULL;
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "GPU NVML plugin";
@@ -210,6 +211,62 @@ static bool _nvml_get_handle(int index, nvmlDevice_t *device)
 }
 
 /*
+ * Get the memory or graphics clock frequency that the GPU is currently running
+ * at
+ *
+ * device	(IN) The NVML GPU device handle
+ * type		(IN) The clock type to query. Either NVML_CLOCK_GRAPHICS or
+ * 		NVML_CLOCK_MEM.
+ *
+ * Returns the clock frequency in MHz if successful, or 0 if not
+ */
+static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
+{
+	nvmlReturn_t nvml_rc;
+	uint32_t freq = 0;
+	char *type_str = "unknown";
+	DEF_TIMERS;
+
+	switch (type) {
+	case NVML_CLOCK_GRAPHICS:
+		type_str = "graphics";
+		break;
+	case NVML_CLOCK_MEM:
+		type_str = "memory";
+		break;
+	default:
+		error("%s: Unsupported clock type", __func__);
+		break;
+	}
+
+	START_TIMER;
+	unsigned int *nvml_freq = &freq;
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	nvml_rc = nvmlDeviceGetClockInfo(*device, type, nvml_freq);
+#else
+	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
+#endif
+	END_TIMER2(__func__);
+
+	if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to get the GPU %s frequency: %s", __func__,
+		      type_str, nvmlErrorString(nvml_rc));
+		return 0;
+	}
+	return freq;
+}
+
+static uint32_t _nvml_get_gfx_freq(nvmlDevice_t *device)
+{
+	return _nvml_get_freq(device, NVML_CLOCK_GRAPHICS);
+}
+
+static uint32_t _nvml_get_mem_freq(nvmlDevice_t *device)
+{
+	return _nvml_get_freq(device, NVML_CLOCK_MEM);
+}
+
+/*
  * Get all possible memory frequencies for the device
  *
  * device		(IN) The device handle
@@ -273,6 +330,10 @@ static bool _nvml_get_gfx_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 
 	unsigned int *nvml_gfx_freqs = gfx_freqs;
 	unsigned int *nvml_gfx_freqs_size = gfx_freqs_size;
+
+	if (!mem_freq)
+		mem_freq = _nvml_get_mem_freq(device);
+
 	nvml_rc = nvmlDeviceGetSupportedGraphicsClocks(*device, mem_freq,
 						       nvml_gfx_freqs_size,
 						       nvml_gfx_freqs);
@@ -421,20 +482,42 @@ static void _nvml_get_nearest_freqs(nvmlDevice_t *device, uint32_t *mem_freq,
 static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
 			    uint32_t gfx_freq)
 {
+	bool set = true;
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
 	START_TIMER;
+
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	if (mem_freq) {
+		nvml_rc = nvmlDeviceSetMemoryLockedClocks(*device, mem_freq,
+							  mem_freq);
+		if (nvml_rc != NVML_SUCCESS) {
+			error("%s: Failed to set memory clock frequency (%u) for the GPU: %s",
+			      __func__, mem_freq, nvmlErrorString(nvml_rc));
+			set = false;
+		}
+	}
+	if (gfx_freq) {
+		nvml_rc = nvmlDeviceSetGpuLockedClocks(*device, gfx_freq,
+						       gfx_freq);
+		if (nvml_rc != NVML_SUCCESS) {
+			error("%s: Failed to set GPU clock frequency (%u) for the GPU: %s",
+			      __func__, gfx_freq, nvmlErrorString(nvml_rc));
+			set = false;
+		}
+	}
+#else
 	nvml_rc = nvmlDeviceSetApplicationsClocks(*device, mem_freq, gfx_freq);
-	END_TIMER;
-	debug3("nvmlDeviceSetApplicationsClocks(%u, %u) took %s",
-	       mem_freq, gfx_freq, TIMER_STR());
 	if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to set memory and graphics clock frequency "
 		      "pair (%u, %u) for the GPU: %s", __func__, mem_freq,
 		      gfx_freq, nvmlErrorString(nvml_rc));
-		return false;
+		set = false;
 	}
-	return true;
+#endif
+	END_TIMER2(__func__);
+
+	return set;
 }
 
 /*
@@ -448,72 +531,39 @@ static bool _nvml_set_freqs(nvmlDevice_t *device, uint32_t mem_freq,
  */
 static bool _nvml_reset_freqs(nvmlDevice_t *device)
 {
+	bool reset = true;
 	nvmlReturn_t nvml_rc;
 	DEF_TIMERS;
 
 	START_TIMER;
-	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
-	END_TIMER;
-	debug3("nvmlDeviceResetApplicationsClocks() took %s", TIMER_STR());
-	if (nvml_rc != NVML_SUCCESS) {
+#ifdef HAVE_NVML_MEMORY_CLOCK
+	nvml_rc = nvmlDeviceResetMemoryLockedClocks(*device);
+	if (nvml_rc == NVML_ERROR_NOT_SUPPORTED) {
+		debug2("Could not reset memory clock, not supported by device.");
+	} else if (nvml_rc != NVML_SUCCESS) {
+		error("%s: Failed to reset memory frequencies to the hardware default: %s",
+		      __func__, nvmlErrorString(nvml_rc));
+		reset = false;
+	}
+	nvml_rc = nvmlDeviceResetGpuLockedClocks(*device);
+	if (nvml_rc == NVML_ERROR_NOT_SUPPORTED) {
+		debug2("Could not reset GPU clock, not supported by device.");
+	} else if (nvml_rc != NVML_SUCCESS) {
 		error("%s: Failed to reset GPU frequencies to the hardware default: %s",
 		      __func__, nvmlErrorString(nvml_rc));
-		return false;
+		reset = false;
 	}
-	return true;
-}
-
-/*
- * Get the memory or graphics clock frequency that the GPU is currently running
- * at
- *
- * device	(IN) The NVML GPU device handle
- * type		(IN) The clock type to query. Either NVML_CLOCK_GRAPHICS or
- * 		NVML_CLOCK_MEM.
- *
- * Returns the clock frequency in MHz if successful, or 0 if not
- */
-static uint32_t _nvml_get_freq(nvmlDevice_t *device, nvmlClockType_t type)
-{
-	nvmlReturn_t nvml_rc;
-	uint32_t freq = 0;
-	char *type_str = "unknown";
-	DEF_TIMERS;
-
-	switch (type) {
-	case NVML_CLOCK_GRAPHICS:
-		type_str = "graphics";
-		break;
-	case NVML_CLOCK_MEM:
-		type_str = "memory";
-		break;
-	default:
-		error("%s: Unsupported clock type", __func__);
-		break;
-	}
-
-	START_TIMER;
-	unsigned int *nvml_freq = &freq;
-	nvml_rc = nvmlDeviceGetApplicationsClock(*device, type, nvml_freq);
-	END_TIMER;
-	debug3("nvmlDeviceGetApplicationsClock(%s) took %s",
-	       type_str, TIMER_STR());
+#else
+	nvml_rc = nvmlDeviceResetApplicationsClocks(*device);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("%s: Failed to get the GPU %s frequency: %s", __func__,
-		      type_str, nvmlErrorString(nvml_rc));
-		return 0;
+		error("%s: Failed to reset Application Clocks to the hardware default: %s",
+		      __func__, nvmlErrorString(nvml_rc));
+		reset = false;
 	}
-	return freq;
-}
+#endif
 
-static uint32_t _nvml_get_gfx_freq(nvmlDevice_t *device)
-{
-	return _nvml_get_freq(device, NVML_CLOCK_GRAPHICS);
-}
-
-static uint32_t _nvml_get_mem_freq(nvmlDevice_t *device)
-{
-	return _nvml_get_freq(device, NVML_CLOCK_MEM);
+	END_TIMER2(__func__);
+	return reset;
 }
 
 /*
@@ -544,11 +594,7 @@ static void _reset_freq(bitstr_t *gpus)
 		       _nvml_get_mem_freq(&device));
 		debug2("Graphics frequency before reset: %u",
 		       _nvml_get_gfx_freq(&device));
-		freq_reset =_nvml_reset_freqs(&device);
-		debug2("Memory frequency after reset: %u",
-		       _nvml_get_mem_freq(&device));
-		debug2("Graphics frequency after reset: %u",
-		       _nvml_get_gfx_freq(&device));
+		freq_reset = _nvml_reset_freqs(&device);
 
 		if (freq_reset) {
 			log_flag(GRES, "Successfully reset GPU[%d]", i);
@@ -579,14 +625,10 @@ static void _reset_freq(bitstr_t *gpus)
 static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 {
 	bool verbose_flag = false;
-	int gpu_len = 0;
 	int i = -1, count = 0, count_set = 0;
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
-	bool task_cgroup = false;
-	bool constrained_devices = false;
-	bool cgroups_active = false;
 
 	/*
 	 * Parse frequency information
@@ -609,37 +651,15 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		return;
 	}
 
-	// Check if GPUs are constrained by cgroups
-	cgroup_conf_init();
-	if (slurm_cgroup_conf.constrain_devices)
-		constrained_devices = true;
-
-	// Check if task/cgroup plugin is loaded
-	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
-		task_cgroup = true;
-
-	// If both of these are true, then GPUs will be constrained
-	if (constrained_devices && task_cgroup) {
-		cgroups_active = true;
-		gpu_len = bit_set_count(gpus);
-		debug2("%s: cgroups are configured. Using LOCAL GPU IDs",
-		       __func__);
-	} else {
-	 	gpu_len = bit_size(gpus);
-		debug2("%s: cgroups are NOT configured. Assuming GLOBAL GPU IDs",
-		       __func__);
-	}
-
 	/*
 	 * Set the frequency of each device allocated to the step
 	 */
-	for (i = 0; i < gpu_len; i++) {
+	for (i = 0; i < bit_size(gpus); i++) {
 		char *sep = "";
 		nvmlDevice_t device;
 		unsigned int gpu_freq = gpu_freq_num, mem_freq = mem_freq_num;
 
-		// Only check the global GPU bitstring if not using cgroups
-		if (!cgroups_active && !bit_test(gpus, i)) {
+		if (!bit_test(gpus, i)) {
 			debug2("Passing over NVML device %u", i);
 			continue;
 		}
@@ -655,10 +675,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 		debug2("Graphics frequency before set: %u",
 		       _nvml_get_gfx_freq(&device));
 		freq_set = _nvml_set_freqs(&device, mem_freq, gpu_freq);
-		debug2("Memory frequency after set: %u",
-		       _nvml_get_mem_freq(&device));
-		debug2("Graphics frequency after set: %u",
-		       _nvml_get_gfx_freq(&device));
 
 		if (mem_freq) {
 			xstrfmtcat(tmp, "%smemory_freq:%u", sep, mem_freq);
@@ -1695,6 +1711,29 @@ extern list_t *gpu_p_get_system_gpu_list(node_config_load_t *node_config)
 	return gres_list_system;
 }
 
+/*
+ * Determine the actual allocated GPU bitstring that lines up with the GPUs
+ * visible by NVML, accounting for possible cgroup device constraining.
+ */
+static void _set_step_gpus(bitstr_t *gpus)
+{
+	xassert(gpus);
+
+	cgroup_conf_init();
+	if (slurm_cgroup_conf.constrain_devices &&
+	    xstrstr(slurm_conf.task_plugin, "cgroup")) {
+		uint32_t gpu_cnt = bit_set_count(gpus);
+		step_gpus = bit_alloc(gpu_cnt);
+		bit_set_all(step_gpus);
+		debug2("%s: cgroups are configured. Using LOCAL GPU IDs",
+		       __func__);
+	} else {
+		step_gpus = bit_copy(gpus);
+		debug2("%s: cgroups are NOT configured. Assuming GLOBAL GPU IDs",
+		       __func__);
+	}
+}
+
 extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
 	char *freq = NULL;
@@ -1715,24 +1754,23 @@ extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 	if ((tmp = strchr(freq, ';')))
 		tmp[0] = '\0';
 
-	// Save a copy of the GPUs affected, so we can reset things afterwards
-	FREE_NULL_BITMAP(saved_gpus);
-	saved_gpus = bit_copy(usable_gpus);
-
 	_nvml_init();
+
+	_set_step_gpus(usable_gpus);
+
 	// Set the frequency of each GPU index specified in the bitstr
-	_set_freq(usable_gpus, freq);
+	_set_freq(step_gpus, freq);
 	xfree(freq);
 }
 
 extern void gpu_p_step_hardware_fini(void)
 {
-	if (!saved_gpus)
+	if (!step_gpus)
 		return;
 
 	// Reset the frequencies back to the hardware default
-	_reset_freq(saved_gpus);
-	FREE_NULL_BITMAP(saved_gpus);
+	_reset_freq(step_gpus);
+	FREE_NULL_BITMAP(step_gpus);
 	_nvml_shutdown();
 }
 
