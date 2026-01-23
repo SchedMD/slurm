@@ -1086,12 +1086,39 @@ static void *_thread_per_group_rpc(void *args)
 	while ((ret_data_info = list_next(itr))) {
 		rc = slurm_get_return_code(ret_data_info->type,
 					   ret_data_info->data);
-		/* SPECIAL CASE: Record node's CPU load */
 		if (ret_data_info->type == RESPONSE_PING_SLURMD) {
 			ping_slurmd_resp_msg_t *ping_resp;
 			ping_resp = (ping_slurmd_resp_msg_t *)
 				    ret_data_info->data;
+
+			/*
+			 * SPECIAL CASE: Ensure that the reply of a ping is made
+			 * by the expected node.
+			 *
+			 * This can be triggered if more than one node is
+			 * assigned the same IP address by mistake.
+			 *
+			 * For example, if two dynamic nodes are executing a
+			 * POWER_[DOWN/UP] simultaneously and the provisioning
+			 * system assigns the same IP for the POWER_UP node as
+			 * the POWER_DOWN node.
+			 *
+			 * If a node that was not the intended node responds to
+			 * a ping, put the node into the DOWN+NOT_RESPONDING
+			 * state.
+			 */
+			if (ping_resp->node_name && ret_data_info->node_name &&
+			    xstrcmp(ping_resp->node_name,
+				    ret_data_info->node_name)) {
+				error("%s: Node registration response identity mismatch: expected %s, got %s (possible IP conflict)",
+				      __func__, ret_data_info->node_name,
+				      ping_resp->node_name);
+				ret_data_info->err = DSH_NO_RESP;
+				continue;
+			}
+
 			lock_slurmctld(node_write_lock);
+			/* SPECIAL CASE: Record node's CPU load */
 			reset_node_load(ret_data_info->node_name,
 					ping_resp->cpu_load);
 			reset_node_free_mem(ret_data_info->node_name,
