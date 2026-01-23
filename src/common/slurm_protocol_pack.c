@@ -10613,6 +10613,7 @@ static void _pack_ping_slurmd_resp(const slurm_msg_t *smsg, buf_t *buffer)
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(msg->cpu_load, buffer);
 		pack64(msg->free_mem, buffer);
+		packstr(msg->node_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->cpu_load, buffer);
 		pack64(msg->free_mem, buffer);
@@ -10626,6 +10627,7 @@ static int _unpack_ping_slurmd_resp(slurm_msg_t *smsg, buf_t *buffer)
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->cpu_load, buffer);
 		safe_unpack64(&msg->free_mem, buffer);
+		safe_unpackstr(&msg->node_name, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->cpu_load, buffer);
 		safe_unpack64(&msg->free_mem, buffer);

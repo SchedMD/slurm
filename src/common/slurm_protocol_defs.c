@@ -2526,7 +2526,10 @@ extern void slurm_free_forward_data_msg(forward_data_msg_t *msg)
 
 extern void slurm_free_ping_slurmd_resp(ping_slurmd_resp_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->node_name);
+		xfree(msg);
+	}
 }
 
 /*
