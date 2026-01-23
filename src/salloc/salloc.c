@@ -530,6 +530,13 @@ int main(int argc, char **argv)
 		env_array_append_fmt(&env, "SLURM_CLUSTER_NAME", "%s",
 				     slurm_conf.cluster_name);
 
+	/*
+	 * Ensure this is not set in case this salloc is nested in another
+	 * where it is. Do this before the fork so that the stepmgr
+	 * determination can be properly handled in the srun.
+	 */
+	unsetenv("SLURM_STEPMGR");
+
 	env_array_set_environment(env);
 	env_array_free(env);
 	slurm_mutex_lock(&allocation_state_lock);
