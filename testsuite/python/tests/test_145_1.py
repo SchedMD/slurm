@@ -6,6 +6,7 @@ import pytest
 
 
 # Setup
+@pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_nodes(3, [("CPUs", 1), ("Features", "f1")])
     atf.require_nodes(3, [("CPUs", 1), ("Features", "f2")])
