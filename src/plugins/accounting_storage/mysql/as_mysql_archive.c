@@ -5653,17 +5653,20 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 		if (purge_type == PURGE_JOB) {
 			/* Purge associated data from hash tables */
-			rc = _purge_mark(PURGE_JOB_ENV, mysql_conn,
-					 curr_end, cluster_name,
-					 col_name, job_env_table);
-			if (rc != SLURM_SUCCESS)
-				goto end_it;
-
-			rc = _purge_mark(PURGE_JOB_SCRIPT, mysql_conn,
-					 curr_end, cluster_name,
-					 col_name, job_script_table);
-			if (rc != SLURM_SUCCESS)
-				goto end_it;
+			if (arch_cond->purge_jobenv == NO_VAL) {
+				rc = _purge_mark(PURGE_JOB_ENV, mysql_conn,
+						 curr_end, cluster_name,
+						 col_name, job_env_table);
+				if (rc != SLURM_SUCCESS)
+					goto end_it;
+			}
+			if (arch_cond->purge_jobscript == NO_VAL) {
+				rc = _purge_mark(PURGE_JOB_SCRIPT, mysql_conn,
+						 curr_end, cluster_name,
+						 col_name, job_script_table);
+				if (rc != SLURM_SUCCESS)
+					goto end_it;
+			}
 		}
 
 		/* Do archive */
