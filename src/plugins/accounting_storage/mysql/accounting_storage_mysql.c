@@ -233,11 +233,13 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	char *dassoc_inx[] = {
 		"user",
 		"acct",
+		"`partition`",
 	};
 
 	enum {
 		DASSOC_USER,
 		DASSOC_ACCT,
+		DASSOC_PART,
 		DASSOC_COUNT
 	};
 
@@ -295,6 +297,8 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		tmp_char = xstrdup_printf("C = %-15s A = %-10s U = %-9s",
 					  cluster_name, row[DASSOC_ACCT],
 					  row[DASSOC_USER]);
+		if (row[DASSOC_PART][0])
+			xstrfmtcat(tmp_char, " P = %-9s", row[DASSOC_PART]);
 		list_append(ret_list, tmp_char);
 	}
 
