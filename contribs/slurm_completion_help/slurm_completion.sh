@@ -2642,11 +2642,15 @@ function __sacctmgr_archive_dump() {
 		"events"
 		"purgeeventafter="
 		"purgejobafter="
+		"purgejobenvafter="
+		"purgejobscriptafter="
 		"purgestepafter="
 		"purgesuspendafter="
 		"script="
 		"steps"
 		"suspend"
+		"jobscript"
+		"jobenv"
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
