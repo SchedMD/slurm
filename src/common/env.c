@@ -1342,15 +1342,35 @@ env_array_for_step(char ***dest,
 		   uint16_t launcher_port,
 		   bool preserve_env)
 {
-	char *tmp, *tpn;
+	char *cluster_name, *tmp, *tpn;
 	uint32_t node_cnt, task_cnt;
 
 	if (!step || !launch)
 		return;
 
+	if (working_cluster_rec && working_cluster_rec->name)
+		cluster_name = working_cluster_rec->name;
+	else
+		cluster_name = slurm_conf.cluster_name;
+	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s", cluster_name);
+
 	node_cnt = step->step_layout->node_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u",
 				step->step_id.step_id);
+
+	if (launch->cred && launch->cred->arg &&
+	    launch->cred->arg->job_account) {
+		env_array_overwrite_fmt(dest, "SLURM_JOB_ACCOUNT", "%s",
+					launch->cred->arg->job_account);
+	}
+
+	if (launch->cred && launch->cred->arg) {
+		tmp = gid_to_string_or_null(launch->cred->arg->gid);
+		if (tmp) {
+			env_array_overwrite_fmt(dest, "SLURM_JOB_GROUP", "%s",
+						tmp);
+		}
+	}
 
 	if (launch->het_job_node_list) {
 		tmp = launch->het_job_node_list;
