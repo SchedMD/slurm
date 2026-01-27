@@ -90,7 +90,9 @@ requested/allocated TRES Type in a given partition
 <a class="slurm_link" href="#general"></a>
 </h2>
 
-<P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm.conf file.  Job priority can be expressed as:</P>
+<p>The job's priority at any given time will be a weighted sum of all the
+factors that have been enabled in the slurm.conf file.  Job priority can be
+expressed as:</p>
 <PRE>
 Job_priority =
 	site_factor +
@@ -160,13 +162,19 @@ documentation.</p>
 and operation of the <a href="accounting.html">Slurm Accounting
 Database</a>.</P>
 
-<P> The age factor represents the length of time a job has been sitting in the queue and eligible to run.  In general, the longer a job waits in the queue, the larger its age factor grows.  However, the age factor for a dependent job will not change while it waits for the job it depends on to complete.  Also, the age factor will not change when scheduling is withheld for a job whose node or time limits exceed the cluster's current limits.</P>
+<P>The age factor represents the length of time a job has been sitting in the
+queue and eligible to run. In general, the longer a job waits in the queue, the
+larger its age factor grows. However, the age factor for a dependent job will
+not change while it waits for the job it depends on to complete. Also, the age
+factor will not change when scheduling is withheld for a job whose node or time
+limits exceed the cluster's current limits.</P>
 
-<P> At some configurable length of time (<i>PriorityMaxAge</i>), the age factor will max out to 1.0.</P>
+<P>At some configurable length of time (<i>PriorityMaxAge</i>), the age factor
+will max out to 1.0.</P>
 
 <h2 id="assoc">Association Factor<a class="slurm_link" href="#assoc"></a></h2>
 
-<P> Each association can be assigned an integer priority. The larger the
+<P>Each association can be assigned an integer priority. The larger the
 number, the greater the job priority will be for jobs that request
 this association. This priority value is normalized to the highest
 priority of all the association to become the association factor.</P>
@@ -218,9 +226,10 @@ priority of all the QOSs to become the QOS factor.</P>
 <h2 id="site">Site Factor<a class="slurm_link" href="#site"></a></h2>
 
 <P> The site factor is a factor that can be set either using scontrol,
-through a job_submit or site_factor plugin. An example use case, might be a
-job_submit plugin
-that sets a specific priority based on how many resources are requested.</P>
+through a <a href="job_submit_plugins.html">job_submit</a> or
+<a href="site_factor.html">site_factor</a> plugin. An example use case might be
+a job_submit plugin that sets a specific priority based on how many resources
+are requested.</P>
 
 <h2 id="tres">TRES Factors<a class="slurm_link" href="#tres"></a></h2>
 
@@ -241,15 +250,25 @@ and operation of the <a href="accounting.html">Slurm Accounting
 Database</a> to provide the assigned shares and the consumed,
 computing resources described below.</P>
 
-<P> The fair-share component to a job's priority influences the order in which a user's queued jobs are scheduled to run based on the portion of the computing resources they have been allocated and the resources their jobs have already consumed.  The fair-share factor does not involve a fixed allotment, whereby a user's access to a machine is cut off once that allotment is reached.</P>
+<P>The fair-share component to a job's priority influences the order in which a
+user's queued jobs are scheduled to run based on the portion of the computing
+resources they have been allocated and the resources their jobs have already
+consumed. The fair-share factor does not involve a fixed allotment, whereby a
+user's access to a machine is cut off once that allotment is reached.</P>
 
-<P> Instead, the fair-share factor serves to prioritize queued jobs such that those jobs charging accounts that are under-serviced are scheduled first, while jobs charging accounts that are over-serviced are scheduled when the machine would otherwise go idle.</P>
+<P>Instead, the fair-share factor serves to prioritize queued jobs such that
+those jobs charging accounts that are under-serviced are scheduled first, while
+jobs charging accounts that are over-serviced are scheduled when the machine
+would otherwise go idle.</P>
 
-<P> Slurm's fair-share factor is a floating point number between 0.0 and 1.0 that reflects the shares of a computing resource that a user has been allocated and the amount of computing resources the user's jobs have consumed.  The higher the value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
+<P>Slurm's fair-share factor is a floating point number between 0.0 and 1.0 that
+reflects the shares of a computing resource that a user has been allocated and
+the amount of computing resources the user's jobs have consumed.  The higher the
+value, the higher is the placement in the queue of jobs waiting to be scheduled.</P>
 
 <P> By default, the computing resource is the computing cycles delivered by a
-machine in the units of allocated_cpus*seconds. Other resources can be taken into
-account by configuring a partition's TRESBillingWeights option. The
+machine in the units of allocated_cpus*seconds. Other resources can be taken
+into account by configuring a partition's TRESBillingWeights option. The
 TRESBillingWeights option allows you to account for consumed resources other
 than just CPUs by assigning different billing weights to different Trackable
 Resources (TRES) such as CPUs, nodes, memory, licenses and generic resources
@@ -330,11 +349,13 @@ factor as it is currently configured.</P>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
-<p>The following slurm.conf parameters are used to configure the Multifactor Job Priority Plugin. See slurm.conf(5) man page for more details.</p>
+<p>The following slurm.conf parameters are used to configure the Multifactor Job
+Priority Plugin. See slurm.conf(5) man page for more details.</p>
 
 <DL>
 <DT> PriorityType
-<DD> Set this value to "priority/multifactor" to enable the Multifactor Job Priority Plugin.
+<DD> Set this value to "priority/multifactor" to enable the Multifactor Job
+  Priority Plugin.
 <DT> PriorityDecayHalfLife
 <DD> This determines the contribution of historical usage on the
   composite usage value.  The larger the number, the longer past usage
@@ -359,7 +380,8 @@ factor as it is currently configured.</P>
   time string (i.e. NONE, NOW, DAILY, WEEKLY).  The default is NONE.
 <ul>
 <li>NONE: Never clear historic usage. The default value.</li>
-<li>NOW: Clear the historic usage now. Executed at startup and reconfiguration time.</li>
+<li>NOW: Clear the historic usage now. Executed at startup and reconfiguration
+  time.</li>
 <li>DAILY: Cleared every day at midnight.</li>
 <li>WEEKLY: Cleared every week on Sunday at time 00:00.</li>
 <li>MONTHLY: Cleared on the first day of each month at time 00:00.</li>
@@ -425,7 +447,11 @@ PriorityType=priority/multifactor.
 </ul>
 </DL>
 
-<P> Note:  As stated above, the six priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
+<p><b>NOTE</b>: As stated above, the six priority factors range from 0.0 to 1.0.
+As such, the PriorityWeight terms may need to be set to a high enough value
+(say, 1000) to resolve very tiny differences in priority factors. This is
+especially true with the fair-share factor, where two jobs may differ in
+priority by as little as .001 (or less).</p>
 
 <h2 id="configexample">Configuration Example
 <a class="slurm_link" href="#configexample"></a>
