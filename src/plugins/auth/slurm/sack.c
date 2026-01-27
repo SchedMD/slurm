@@ -301,6 +301,7 @@ extern void init_sack_conmgr(void)
 		char *runtime_dir = NULL, *runtime_socket = NULL;
 		slurm_addr_t addr = {0};
 		mode_t mask;
+		socklen_t bind_len = 0;
 
 		if (running_in_slurmctld()) {
 			_prepare_run_dir("slurmctld", true);
@@ -339,9 +340,9 @@ extern void init_sack_conmgr(void)
 		/* set value of socket path */
 		mask = umask(0);
 
-		/* bind() will EINVAL if socklen=sizeof(addr) */
-		if ((rc = bind(sack_fd, (const struct sockaddr *) &addr,
-			       sizeof(struct sockaddr_un))))
+		bind_len = sockaddr_fixlen((struct sockaddr *) &addr,
+					   (socklen_t) sizeof(struct sockaddr_un));
+		if ((rc = bind(sack_fd, (const struct sockaddr *) &addr, bind_len)))
 			fatal("%s: [%pA] Unable to bind UNIX socket: %m",
 			      __func__, &addr);
 		umask(mask);

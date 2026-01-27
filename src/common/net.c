@@ -109,6 +109,8 @@ int net_stream_listen(int *fd, uint16_t *port)
 	/* bind ephemeral port */
 	slurm_setup_addr(&sin, 0);
 
+	len = sockaddr_fixlen((struct sockaddr *) &sin, len);
+
 	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
 
@@ -244,6 +246,8 @@ extern int net_set_nodelay(int sock, bool set, const char *con_name)
 static bool _is_port_ok(int s, uint16_t port, bool local)
 {
 	slurm_addr_t addr;
+	socklen_t alen;
+
 	slurm_setup_addr(&addr, port);
 
 	if (!local) {
@@ -260,7 +264,8 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 		return false;
 	}
 
-	if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+	alen = sockaddr_fixlen((struct sockaddr *) &addr, sizeof(addr));
+	if (bind(s, (struct sockaddr *) &addr, alen) < 0) {
 		log_flag(NET, "%s: bind() failed on port:%d fd:%d: %m",
 			 __func__, port, s);
 		return false;
