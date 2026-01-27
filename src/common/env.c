@@ -1175,7 +1175,7 @@ extern int
 env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 			const char *node_name)
 {
-	char *tmp = NULL;
+	char *cluster_name, *tmp = NULL;
 	int i;
 	uint16_t cpus_per_task;
 	uint32_t num_tasks = batch->ntasks;
@@ -1212,8 +1212,11 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
 		}
 	}
 
-	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s",
-	                        slurm_conf.cluster_name);
+	if (working_cluster_rec && working_cluster_rec->name)
+		cluster_name = working_cluster_rec->name;
+	else
+		cluster_name = slurm_conf.cluster_name;
+	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s", cluster_name);
 
 	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u",
 				batch->step_id.job_id);
@@ -1339,15 +1342,35 @@ env_array_for_step(char ***dest,
 		   uint16_t launcher_port,
 		   bool preserve_env)
 {
-	char *tmp, *tpn;
+	char *cluster_name, *tmp, *tpn;
 	uint32_t node_cnt, task_cnt;
 
 	if (!step || !launch)
 		return;
 
+	if (working_cluster_rec && working_cluster_rec->name)
+		cluster_name = working_cluster_rec->name;
+	else
+		cluster_name = slurm_conf.cluster_name;
+	env_array_overwrite_fmt(dest, "SLURM_CLUSTER_NAME", "%s", cluster_name);
+
 	node_cnt = step->step_layout->node_cnt;
 	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u",
 				step->step_id.step_id);
+
+	if (launch->cred && launch->cred->arg &&
+	    launch->cred->arg->job_account) {
+		env_array_overwrite_fmt(dest, "SLURM_JOB_ACCOUNT", "%s",
+					launch->cred->arg->job_account);
+	}
+
+	if (launch->cred && launch->cred->arg) {
+		tmp = gid_to_string_or_null(launch->cred->arg->gid);
+		if (tmp) {
+			env_array_overwrite_fmt(dest, "SLURM_JOB_GROUP", "%s",
+						tmp);
+		}
+	}
 
 	if (launch->het_job_node_list) {
 		tmp = launch->het_job_node_list;
@@ -2546,11 +2569,16 @@ extern void set_prio_process_env(void)
 
 extern void set_submit_dir_env(char **wd_ptr, bool set_cluster_name)
 {
+	char *cluster_name;
 	char host[256], work_dir[PATH_MAX];
 
+	if (working_cluster_rec && working_cluster_rec->name)
+		cluster_name = working_cluster_rec->name;
+	else
+		cluster_name = slurm_conf.cluster_name;
+
 	if (set_cluster_name) {
-		if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
-			    slurm_conf.cluster_name) < 0)
+		if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s", cluster_name) < 0)
 			error("unable to set SLURM_CLUSTER_NAME in environment");
 	}
 
