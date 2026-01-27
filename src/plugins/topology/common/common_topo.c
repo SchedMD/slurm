@@ -317,7 +317,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	/*
 	 * Already succeeded or permanent error
 	 */
-	if ((ec == SLURM_SUCCESS) ||
+	if ((ec == SLURM_SUCCESS) || (ec == ESLURM_NOT_SUPPORTED) ||
 	    (ec == ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE))
 		goto fini;
 

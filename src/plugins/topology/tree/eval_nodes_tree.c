@@ -1432,7 +1432,7 @@ extern int eval_nodes_tree(topology_eval_t *topo_eval)
 	xassert(((tree_context_t *) topo_eval->tctx->plugin_ctx)->switch_count);
 	xassert(((tree_context_t *) topo_eval->tctx->plugin_ctx)->switch_table);
 
-	if (!details_ptr->contiguous &&
+	if (!details_ptr->contiguous && !details_ptr->arbitrary_tpn &&
 	    ((topo_optional == false) || topo_eval->job_ptr->req_switch)) {
 		/* Perform optimized resource selection based upon topology */
 		if (have_dragonfly) {
