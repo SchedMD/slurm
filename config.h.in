@@ -274,6 +274,18 @@
 /* Define to 1 if the system has the type 'struct cxi_rsrc_use'. */
 #undef HAVE_STRUCT_CXI_RSRC_USE
 
+/* Define to 1 if 'sin6_len' is a member of 'struct sockaddr_in6'. */
+#undef HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN
+
+/* Define to 1 if 'sin_len' is a member of 'struct sockaddr_in'. */
+#undef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+
+/* Define to 1 if 'sa_len' is a member of 'struct sockaddr'. */
+#undef HAVE_STRUCT_SOCKADDR_SA_LEN
+
+/* Define to 1 if 'sun_len' is a member of 'struct sockaddr_un'. */
+#undef HAVE_STRUCT_SOCKADDR_UN_SUN_LEN
+
 /* Define to 1 if you have the 'sysctlbyname' function. */
 #undef HAVE_SYSCTLBYNAME
 

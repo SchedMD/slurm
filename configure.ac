@@ -275,6 +275,26 @@ X_AC_CGROUP
 X_AC_BPF
 X_AC_DBUS
 
+dnl sockaddr length fields (BSD-style)
+AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [],
+  [[#include <sys/types.h>
+    #include <sys/socket.h>]])
+
+AC_CHECK_MEMBERS([struct sockaddr_in.sin_len], [], [],
+  [[#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>]])
+
+AC_CHECK_MEMBERS([struct sockaddr_in6.sin6_len], [], [],
+  [[#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>]])
+
+AC_CHECK_MEMBERS([struct sockaddr_un.sun_len], [], [],
+  [[#include <sys/types.h>
+    #include <sys/socket.h>
+    #include <sys/un.h>]])
+
 #
 #  Tests for Check
 #
