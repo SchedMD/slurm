@@ -281,6 +281,7 @@ static void _post_reconfig(void);
 static void *       _purge_files_thread(void *no_data);
 static void *_acct_update_thread(void *no_data);
 static void         _remove_assoc(slurmdb_assoc_rec_t *rec);
+static void _remove_csv_item(char **csv_str, const char *remove);
 static void         _remove_qos(slurmdb_qos_rec_t *rec);
 static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
@@ -2054,6 +2055,30 @@ static void _remove_assoc(slurmdb_assoc_rec_t *rec)
 		debug("Removed association id:%u user:%s", rec->id, rec->user);
 }
 
+/* Remove matching items from a csv-style string */
+static void _remove_csv_item(char **csv_str, const char *remove)
+{
+	char *item, *new_csv_str = NULL;
+	char *saveptr = NULL, *pos = NULL, *sep = "";
+
+	if (!csv_str || !*csv_str || !remove || !*remove)
+		return;
+
+	/* Build a copy of *csv_str with any matching items removed */
+	item = strtok_r(*csv_str, ",", &saveptr);
+	while (item) {
+		if (xstrcmp(item, remove)) {
+			xstrfmtcatat(new_csv_str, &pos, "%s%s", sep, item);
+			sep = ",";
+		}
+		item = strtok_r(NULL, ",", &saveptr);
+	}
+
+	/* Replace the original *csv_str with the new one */
+	xfree(*csv_str);
+	*csv_str = new_csv_str;
+}
+
 static int _foreach_part_remove_qos(void *x, void *arg)
 {
 	part_record_t *part_ptr = x;
@@ -2062,7 +2087,20 @@ static int _foreach_part_remove_qos(void *x, void *arg)
 	if (part_ptr->qos_ptr == rec) {
 		info("Partition %s's QOS %s was just removed, you probably didn't mean for this to happen unless you are also removing the partition.",
 		     part_ptr->name, rec->name);
+		xfree(part_ptr->qos_char);
 		part_ptr->qos_ptr = NULL;
+	}
+
+	if (part_ptr->allow_qos_bitstr &&
+	    bit_test(part_ptr->allow_qos_bitstr, rec->id)) {
+		bit_clear(part_ptr->allow_qos_bitstr, rec->id);
+		_remove_csv_item(&part_ptr->allow_qos, rec->name);
+	}
+
+	if (part_ptr->deny_qos_bitstr &&
+	    bit_test(part_ptr->deny_qos_bitstr, rec->id)) {
+		bit_clear(part_ptr->deny_qos_bitstr, rec->id);
+		_remove_csv_item(&part_ptr->deny_qos, rec->name);
 	}
 
 	return 0;
