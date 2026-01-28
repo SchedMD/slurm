@@ -4263,6 +4263,10 @@ static int _node_config_validate(node_record_t *node_ptr,
 		(void) list_for_each(gres_conf_list, _foreach_rebuild_topo,
 				     &rebuild_topo);
 		rc = rebuild_topo.rc;
+
+		if (rc)
+			gres_ns->topo_cnt = rebuild_topo.topo_cnt;
+
 		has_file = rebuild_topo.has_file;
 
 		if (rebuild_topo.cpu_config_err) {
