@@ -1369,6 +1369,7 @@ env_array_for_step(char ***dest,
 		if (tmp) {
 			env_array_overwrite_fmt(dest, "SLURM_JOB_GROUP", "%s",
 						tmp);
+			xfree(tmp);
 		}
 	}
 
