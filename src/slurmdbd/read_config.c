@@ -253,6 +253,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_boolean(&tmp_bool, "AllowNoDefAcct", tbl);
 		if (tmp_bool)
 			slurmdbd_conf->flags |= DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT;
+		tmp_bool = false;
 		s_p_get_boolean(&tmp_bool, "AllResourcesAbsolute", tbl);
 		if (tmp_bool)
 			slurmdbd_conf->flags |= DBD_CONF_FLAG_ALL_RES_ABS;
@@ -351,11 +352,13 @@ extern int read_slurmdbd_conf(void)
 					SLURMDB_PURGE_MONTHS;
 		}
 
+		tmp_bool = false;
 		s_p_get_boolean(&tmp_bool, "DisableCoordDBD", tbl);
 		if (tmp_bool)
 			slurmdbd_conf->flags |=
 				DBD_CONF_FLAG_DISABLE_COORD_DBD;
 
+		tmp_bool = false;
 		s_p_get_boolean(&tmp_bool, "DisableArchiveCommands", tbl);
 		if (tmp_bool)
 			slurmdbd_conf->flags |=
