@@ -184,7 +184,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-gpu_nrt_la_LIBADD =
+gpu_nrt_la_DEPENDENCIES = ../common/libgpu_common.la
 am__objects_1 = gpu_nrt.lo
 am_gpu_nrt_la_OBJECTS = $(am__objects_1)
 gpu_nrt_la_OBJECTS = $(am_gpu_nrt_la_OBJECTS)
@@ -520,6 +520,7 @@ NRT_SOURCES = gpu_nrt.c
 pkglib_LTLIBRARIES = gpu_nrt.la
 gpu_nrt_la_SOURCES = $(NRT_SOURCES)
 gpu_nrt_la_LDFLAGS = $(PLUGIN_FLAGS)
+gpu_nrt_la_LIBADD = ../common/libgpu_common.la
 all: all-am
 
 .SUFFIXES:
