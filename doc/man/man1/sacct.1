@@ -268,30 +268,30 @@ AveVMSize           BlockID             Cluster             Comment
 Constraints         ConsumedEnergy      ConsumedEnergyRaw   Container
 CPUTime             CPUTimeRAW          DBIndex             DerivedExitCode
 Elapsed             ElapsedRaw          Eligible            End
-ExitCode            Extra               FailedNode          Flags
-GID                 Group               JobID               JobIDRaw
-JobName             Layout              Licenses            MaxDiskRead
-MaxDiskReadNode     MaxDiskReadTask     MaxDiskWrite        MaxDiskWriteNode
-MaxDiskWriteTask    MaxPages            MaxPagesNode        MaxPagesTask
-MaxRSS              MaxRSSNode          MaxRSSTask          MaxVMSize
-MaxVMSizeNode       MaxVMSizeTask       McsLabel            MinCPU
-MinCPUNode          MinCPUTask          NCPUS               NNodes
-NodeList            NTasks              OriginalSLUID       Partition
-Planned             PlannedCPU          PlannedCPURAW       Priority
-QOS                 QOSRAW              QOSREQ              Reason
-ReqCPUFreq          ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin
-ReqCPUS             ReqMem              ReqNodes            ReqReservation
-ReqTRES             Reservation         ReservationId       Restarts
-SegmentSize         SLUID               Start               State
-StdErr              StdIn               StdOut              Submit
-SubmitLine          Suspended           SystemComment       SystemCPU
-Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
-TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
-TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
-TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
-TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
-User                UserCPU             WCKey               WCKeyID
-WorkDir
+Exclusive           ExitCode            Extra               FailedNode
+Flags               GID                 Group               JobID
+JobIDRaw            JobName             Layout              Licenses
+MaxDiskRead         MaxDiskReadNode     MaxDiskReadTask     MaxDiskWrite
+MaxDiskWriteNode    MaxDiskWriteTask    MaxPages            MaxPagesNode
+MaxPagesTask        MaxRSS              MaxRSSNode          MaxRSSTask
+MaxVMSize           MaxVMSizeNode       MaxVMSizeTask       McsLabel
+MinCPU              MinCPUNode          MinCPUTask          NCPUS
+NNodes              NodeList            NTasks              OriginalSLUID
+OverSubscribe       Partition           Planned             PlannedCPU
+PlannedCPURAW       Priority            QOS                 QOSRAW
+QOSREQ              Reason              ReqCPUFreq          ReqCPUFreqGov
+ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS             ReqMem
+ReqNodes            ReqReservation      ReqTRES             Reservation
+ReservationId       Restarts            SegmentSize         SLUID
+Start               State               StdErr              StdIn
+StdOut              Submit              SubmitLine          Suspended
+SystemComment       SystemCPU           Timelimit           TimelimitRaw
+TotalCPU            TRESUsageInAve      TRESUsageInMax      TRESUsageInMaxNode
+TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode  TRESUsageInMinTask
+TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax     TRESUsageOutMaxNode
+TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode TRESUsageOutMinTask
+TRESUsageOutTot     UID                 User                UserCPU
+WCKey               WCKeyID             WorkDir
 .ft 1
 .fi
 .RE
@@ -770,6 +770,46 @@ unless changed through the SLURM_TIME_FORMAT environment variable.
 .IP
 
 .TP
+\f3Exclusive\fP
+Indicates whether the job has exclusive access to its allocated resources.
+.IP
+.RS
+.TP
+.B NO
+The job does not require exclusive access to its allocated resources.
+.IP
+
+.TP
+.B NODE
+The job is allocated all CPUs and GRES on all nodes in the allocation and
+cannot share nodes with other jobs. This corresponds to the
+\fB\-\-exclusive\fP option.
+.IP
+
+.TP
+.B USER
+The job cannot share nodes with other jobs unless they are from the
+same user. This corresponds to the \fB\-\-exclusive=user\fP option.
+.IP
+
+.TP
+.B MCS
+The job cannot share nodes with other jobs unless they are using the same
+MCS label. This corresponds to the \fB\-\-exclusive=mcs\fP option.
+.IP
+
+.TP
+.B TOPO
+The job cannot share a topology segment with other jobs. This corresponds
+to the \fB\-\-exclusive=topo\fP option.
+.RE
+.IP
+
+\fBNOTE\fR: Partition and Global parameters can set this despite job requests
+otherwise.
+.IP
+
+.TP
 \f3ExitCode\fP
 The exit code returned by the job script or salloc, typically as set
 by the exit() function. Following the colon is the signal that caused
@@ -974,6 +1014,32 @@ The SLUID assigned when the job was first submitted. Remains constant during
 the entire life of the job even if it has been resized. It changes if the job is
 requeued or restarted. It can be used to correlate runs of jobs which have been
 resized. This is the SLUID used by command tools during the runtime of the job.
+.IP
+
+.TP
+\f3OverSubscribe\fP
+Indicates whether the job can oversubscribe resources with other jobs.
+.IP
+.RS
+.TP
+.B NO
+The job cannot oversubscribe resources with other jobs.
+.IP
+
+.TP
+.B YES
+The user requested that the job be able to oversubscribe resources with
+other jobs. This corresponds to the \fB\-\-oversubscribe\fP option.
+.IP
+
+.TP
+.B OK
+The partition allows oversubscribing resources with other jobs.
+.RE
+.IP
+
+\fBNOTE\fR: Partition and Global parameters can set this despite job requests
+otherwise.
 .IP
 
 .TP
