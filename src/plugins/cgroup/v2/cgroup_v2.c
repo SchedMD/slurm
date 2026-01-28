@@ -1277,28 +1277,29 @@ static int _unset_cpu_mem_limits(xcgroup_t *cg)
  * Create a new cgroup, define it as our new root cgroup, set controllers and
  * move our process into it.
  *
- * Slurmd started manually may not remain in the actual scope. Normally there
- * are other pids there, like the terminal from where it's been launched, so
- * slurmd would affect these pids. For example a CoreSpecCount of 1 would leave
- * the bash terminal with only one core.
+ * Case 1: Slurmd started manually may not remain in the actual scope. Normally
+ * there are other pids there, like the terminal from where it's been launched,
+ * so slurmd would affect these pids. For example a CoreSpecCount of 1 would
+ * leave the bash terminal with only one core.
  *
- * Get out of there and put ourselves into a new home. This shouldn't happen on
- * production systems.
+ * Case 2: Slurmd has been launched with systemd. To avoid systemd resetting our
+ * cgroup settings (e.g. cpuset.cpus) on a daemon-reload, move ourselves into a
+ * sub-tree. Simulates "DelegateSubgroup=slurmd" (not available everywhere).
  *
  * IN new_path - base path of the new cgroup to set up and move ourselves to
  * IN name - name of the new cgroup
- * RET SLURM_SUCCESS if cgroup setup and migration was successful
+ * RET - SLURM_SUCCESS if cgroup setup and migration was successful
  */
 static int _reparent_into_cgroup(char *new_path, char *name)
 {
 	char *new_home = NULL;
 	pid_t slurmd_pid = getpid();
 
+	xstrfmtcat(new_home, "%s/%s", new_path, name);
 	bit_clear_all(int_cg_ns.avail_controllers);
 	xfree(int_cg_ns.mnt_point);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
 
-	xstrfmtcat(new_home, "%s/%s", new_path, name);
 	int_cg_ns.mnt_point = new_home;
 
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
@@ -1320,6 +1321,13 @@ static int _reparent_into_cgroup(char *new_path, char *name)
 	 */
 	invoc_id = "";
 
+	if (common_cgroup_move_process(&int_cg[CG_LEVEL_ROOT], slurmd_pid) !=
+	    SLURM_SUCCESS) {
+		error("Unable to attach slurmd pid %d to %s cgroup.",
+		      slurmd_pid, new_home);
+		return SLURM_ERROR;
+	}
+
 	if (_get_controllers(new_path, int_cg_ns.avail_controllers) !=
 	    SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -1328,13 +1336,6 @@ static int _reparent_into_cgroup(char *new_path, char *name)
 	    SLURM_SUCCESS) {
 		error("Cannot enable subtree_control at the top level %s",
 		      int_cg_ns.mnt_point);
-		return SLURM_ERROR;
-	}
-
-	if (common_cgroup_move_process(&int_cg[CG_LEVEL_ROOT], slurmd_pid) !=
-	    SLURM_SUCCESS) {
-		error("Unable to attach slurmd pid %d to %s cgroup.",
-		      slurmd_pid, new_home);
 		return SLURM_ERROR;
 	}
 
@@ -1606,6 +1607,7 @@ end:
 
 extern int cgroup_p_setup_scope(char *scope_path)
 {
+	char *cgroup_root_path;
 	/*
 	 * Detect if we are started by systemd. Another way could be to check
 	 * if our PPID=1, but we cannot rely on it because when starting slurmd
@@ -1714,6 +1716,26 @@ extern int cgroup_p_setup_scope(char *scope_path)
 				return SLURM_ERROR;
 		} else {
 			log_flag(CGROUP, "INVOCATION_ID env var found. Assuming slurmd has been started by systemd.");
+			/*
+			 * When launching slurmd as a service we need to migrate
+			 * slurmd to be in a subcgroup in its current root. This
+			 * is done because systemd owns the unit root cgroups
+			 * and resets limits on a daemon-reload, even if
+			 * Delegate=yes is explicit. Since systemd 255, this can
+			 * be achieved by setting DelegateSubgroup=slurmd in the
+			 * unit file, so in the future this code might be
+			 * changed.
+			 */
+			cgroup_root_path = xstrdup(int_cg[CG_LEVEL_ROOT].path);
+			if (_reparent_into_cgroup(cgroup_root_path,
+						  SLURMD_CGROUP) !=
+			    SLURM_SUCCESS) {
+				error("Cannot migrate slurmd to %s/%s",
+				      cgroup_root_path, SLURMD_CGROUP);
+				xfree(cgroup_root_path);
+				return SLURM_ERROR;
+			}
+			xfree(cgroup_root_path);
 		}
 
 		/*
