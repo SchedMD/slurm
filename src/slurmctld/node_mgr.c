@@ -4059,7 +4059,7 @@ extern void push_reconfig_to_slurmd(void)
 	ver_args[3]->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
-		if (IS_NODE_FUTURE(node_ptr))
+		if (IS_NODE_FUTURE(node_ptr) || IS_NODE_EXTERNAL(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
 		    (IS_NODE_POWERED_DOWN(node_ptr) ||
