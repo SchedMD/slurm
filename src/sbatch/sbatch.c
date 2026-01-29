@@ -139,6 +139,13 @@ int main(int argc, char **argv)
 			exit(error_exit);
 	}
 
+	/*
+	 * Ensure this is not set in case this sbatch is nested in
+	 * another job where it is set. Removed here before environ is copied to
+	 * desc->environment in following loop.
+	 */
+	unsetenv("SLURM_STEPMGR");
+
 	het_job_argc = argc - opt.argc;
 	het_job_argv = argv;
 	for (het_job_inx = 0; !het_job_fini; het_job_inx++) {
