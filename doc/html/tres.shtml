@@ -39,9 +39,13 @@ Current TRES Types are:
 </p>
 
 <h2 id="conf">slurm.conf settings<a class="slurm_link" href="#conf"></a></h2>
-<ul>
-<li><b>AccountingStorageTRES</b>
-<p>Used to define which TRES are
+
+<h3 id="AccountingStorageTRES">TRES Tracking
+<a class="slurm_link" href="#AccountingStorageTRES"></a>
+</h3>
+
+<p><b>AccountingStorageTRES</b>
+<br>Used to define which TRES are
   to be tracked on the system. By default Billing, CPU, Energy, Memory, Node,
   FS/Disk, Pages and VMem are tracked. These default TRES cannot be disabled,
   but only appended to. The following example:
@@ -68,14 +72,17 @@ we would also include gres/gpu for accounting gpus in requests like
 <i>srun --gres=gpu:1</i>.
 </p>
 <pre>AccountingStorageTRES=gres/gpu,gres/gpu:tesla</pre>
-</li>
 
 <p><b>NOTE</b>: Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
 gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
 </p>
 
-<li><b>PriorityWeightTRES</b>
-<p>A comma separated list of TRES Types and weights that sets the
+<h3 id="PriorityWeightTRES">Priority Weights
+<a class="slurm_link" href="#PriorityWeightTRES"></a>
+</h3>
+
+<p><b>PriorityWeightTRES</b>
+<br>A comma separated list of TRES Types and weights that sets the
   degree that each TRES Type contributes to the job's priority.</p>
 <pre>PriorityWeightTRES=CPU=1000,Mem=2000,GRES/gpu=3000</pre>
 
@@ -86,10 +93,13 @@ The default values are 0.</p>
 <p>The Billing TRES is not available for priority calculations because the
 number isn't generated until after the job has been allocated resources &mdash;
 since the number can change for different partitions.<p>
-</li>
 
-<li><b>TRESBillingWeights</b>
-<p>Comma-separated list of <code>&lt;TRES Type&gt;=&lt;Numeric Weight&gt;</code>
+<h3 id="TRESBillingWeights">Billing Weights
+<a class="slurm_link" href="#TRESBillingWeights"></a>
+</h3>
+
+<p><b>TRESBillingWeights</b>
+<br>Comma-separated list of <code>&lt;TRES Type&gt;=&lt;Numeric Weight&gt;</code>
 pairs defining the billing weights of one or more tracked TRES types that will
 be used in calculating the usage of a job in each partition. The resulting usage
 amount is used when calculating <a href="priority_multifactor.html#fairshare">
@@ -131,8 +141,16 @@ above example job would affect the billed amount:</p>
 <pre>(1*1.0) + (8*0.25) + (0*2.0) + (1*1.5) = 4.5 => 4
 (1*1.0) + (10*0.25) + (0*2.0) + (1*1.5) = 5.0 => 5</pre>
 
-<p>If <code>PriorityFlags=MAX_TRES</code> is set, the billable TRES is
-calculated as the sum of the following:
+<h3 id="PriorityFlags">Priority Flags
+<a class="slurm_link" href="#PriorityFlags"></a>
+</h3>
+
+<p>Two of the available <b>PriorityFlags</b> relate to the interpretation of the
+<b>TRESBillingWeights</b> field.</p>
+
+<p><b>PriorityFlags=MAX_TRES</b>
+<br>If this flag is set, the billable TRES is calculated as the sum of the
+following:
 <ul>
 <li>MAX of individual TRESs (those tied to a specific node, e.g., cpus, mem, gres)</li>
 <li>SUM of all global TRESs (those available on any nodes, e.g., licenses)</li>
@@ -140,8 +158,9 @@ calculated as the sum of the following:
 Using the same example above, the billable TRES will be:</p>
 <pre>MAX(1*1.0, 8*0.25, 0*2.0) + (0*1.5) = 2.0</pre>
 
-<p>If <code>PriorityFlags=MAX_TRES_GRES</code> is set, the billable TRES is
-calculated as the sum of the following:
+<p><b>PriorityFlags=MAX_TRES_GRES</b>
+<br>If this flag is set, the billable TRES is calculated as the sum of the
+following:
 <ul>
 <li>SUM of all billable GRESs (e.g., GPUs)</li>
 <li>MAX of other individual TRESs (those tied to a specific node, e.g., cpus, mem)</li>
@@ -151,9 +170,6 @@ With this flag set, the billable TRES will be:</p>
 <pre>(0*2.0) + MAX(1*1.0, 8*0.25) + (0*1.5) = 2.0</pre>
 <p>Adding a GPU to the example job, the billable TRES will be:</p>
 <pre>(1*2.0) + MAX(1*1.0, 8*0.25) + (0*1.5) = 3.0</pre>
-</li>
-
-</ul>
 
 <h2 id="sacct">sacct<a class="slurm_link" href="#sacct"></a></h2>
 <p>sacct can be used to view the TRES of each job by adding "tres" to the
