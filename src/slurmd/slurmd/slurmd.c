@@ -1830,6 +1830,7 @@ _process_cmdline(int ac, char **av)
 			conf->debug_level_set = 1;
 			conf->daemonize = 0;
 			conf->print_gres = true;
+			setenv("SLURM_CONFIG_FETCH", "1", 1);
 			break;
 		case 'h':
 			_usage();
