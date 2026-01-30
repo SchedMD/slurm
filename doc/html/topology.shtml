@@ -31,6 +31,7 @@ allocated to the job.</p>
 <li><a href="#block-limitations">Limitations</a></li>
 </ul></li>
 <li><a href="#ring">Ring Topology</a></li>
+<li><a href="#user_opts">User Options</a></li>
 <li><a href="#env_vars">Environment Variables</a></li>
 <li><a href="#multi_topo">Multiple Topologies</a></li>
 <li><a href="#dynamic_topo">Dynamic Topology</a></li>
