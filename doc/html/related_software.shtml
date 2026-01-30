@@ -198,7 +198,7 @@ cd http_parser
 make
 sudo make install</pre>
 	Add the following argument when running <i>configure</i> for Slurm:
-	<pre>--with-http-parser=/usr/local/</pre>
+	<pre>--with-libhttp-parser=/usr/local/</pre>
 </li><br>
 
 <li><a id="yaml" href="https://github.com/yaml/libyaml">

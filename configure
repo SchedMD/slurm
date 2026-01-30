@@ -810,10 +810,10 @@ WITH_YAML_FALSE
 WITH_YAML_TRUE
 YAML_LDFLAGS
 YAML_CPPFLAGS
-WITH_HTTP_PARSER_FALSE
-WITH_HTTP_PARSER_TRUE
-HTTP_PARSER_LDFLAGS
-HTTP_PARSER_CPPFLAGS
+WITH_LIBHTTP_PARSER_FALSE
+WITH_LIBHTTP_PARSER_TRUE
+LIBHTTP_PARSER_LDFLAGS
+LIBHTTP_PARSER_CPPFLAGS
 WITH_JWT_FALSE
 WITH_JWT_TRUE
 JWT_LDFLAGS
@@ -1028,7 +1028,7 @@ with_shared_libslurm
 enable_load_env_no_login
 with_json
 with_jwt
-with_http_parser
+with_libhttp_parser
 with_yaml
 with_ofed
 with_hdf5
@@ -1797,7 +1797,8 @@ Optional Packages:
                           footprint of Slurm.
   --with-json=PATH        Specify path to json-c installation
   --with-jwt=PATH         Specify path to jwt installation
-  --with-http-parser=PATH Specify path to HTTP Parser installation
+  --with-libhttp-parser=PATH
+                          Specify path to libhttp_parser installation
   --with-yaml=PATH        Specify path to libyaml installation
   --with-ofed=PATH        Specify path to ofed installation
   --with-hdf5=yes/no/PATH location of h5cc or h5pcc for HDF5 configuration
@@ -23162,37 +23163,37 @@ fi
 
 
 
-	_x_ac_http_parser_dirs="/usr /usr/local"
-	_x_ac_http_parser_libs="lib64 lib"
+	_x_ac_libhttp_parser_dirs="/usr /usr/local"
+	_x_ac_libhttp_parser_libs="lib64 lib"
 
 
-# Check whether --with-http_parser was given.
-if test ${with_http_parser+y}
+# Check whether --with-libhttp_parser was given.
+if test ${with_libhttp_parser+y}
 then :
-  withval=$with_http_parser; if test "x$with_http_parser" != xno && test "x$with_http_parser" != xyes
+  withval=$with_libhttp_parser; if test "x$with_libhttp_parser" != xno && test "x$with_libhttp_parser" != xyes
 then :
-  _x_ac_http_parser_dirs="$with_http_parser"
+  _x_ac_libhttp_parser_dirs="$with_libhttp_parser"
 fi
 fi
 
 
-	if test "x$with_http_parser" = xno; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for HTTP parser disabled" >&5
-printf "%s\n" "$as_me: support for HTTP parser disabled" >&6;}
+	if test "x$with_libhttp_parser" = xno; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for libhttp_parser disabled" >&5
+printf "%s\n" "$as_me: support for libhttp_parser disabled" >&6;}
 	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for http-parser installation" >&5
-printf %s "checking for http-parser installation... " >&6; }
-if test ${x_ac_cv_http_parser_dir+y}
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libhttp_parser installation" >&5
+printf %s "checking for libhttp_parser installation... " >&6; }
+if test ${x_ac_cv_libhttp_parser_dir+y}
 then :
   printf %s "(cached) " >&6
 else case e in #(
   e)
-			for d in $_x_ac_http_parser_dirs; do
+			for d in $_x_ac_libhttp_parser_dirs; do
 			  test -d "$d" || continue
 			  test -d "$d/include" || continue
 			  test -f "$d/include/http_parser.h" || continue
-			  for bit in $_x_ac_http_parser_libs; do
-				_x_ac_http_parser_libs_save="$LIBS"
+			  for bit in $_x_ac_libhttp_parser_libs; do
+				_x_ac_libhttp_parser_libs_save="$LIBS"
 				LIBS="-L$d/$bit -lhttp_parser $LIBS"
 				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -23217,46 +23218,46 @@ return http_parser_init ();
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
-  x_ac_cv_http_parser_dir=$d
+  x_ac_cv_libhttp_parser_dir=$d
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-				LIBS="$_x_ac_http_parser_libs_save"
-				test -n "$x_ac_cv_http_parser_dir" && break
+				LIBS="$_x_ac_libhttp_parser_libs_save"
+				test -n "$x_ac_cv_libhttp_parser_dir" && break
 			  done
-			  test -n "$x_ac_cv_http_parser_dir" && break
+			  test -n "$x_ac_cv_libhttp_parser_dir" && break
 			done
 		   ;;
 esac
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_http_parser_dir" >&5
-printf "%s\n" "$x_ac_cv_http_parser_dir" >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $x_ac_cv_libhttp_parser_dir" >&5
+printf "%s\n" "$x_ac_cv_libhttp_parser_dir" >&6; }
 
-	if test -z "$x_ac_cv_http_parser_dir"; then
-		if test -z "$with_http_parser"; then
-			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate HTTP Parser library" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate HTTP Parser library" >&2;}
+	if test -z "$x_ac_cv_libhttp_parser_dir"; then
+		if test -z "$with_libhttp_parser"; then
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libhttp_parser library" >&5
+printf "%s\n" "$as_me: WARNING: unable to locate libhttp_parser library" >&2;}
 		else
-			as_fn_error $? "unable to locate HTTP Parser library" "$LINENO" 5
+			as_fn_error $? "unable to locate libhttp_parser library" "$LINENO" 5
 		fi
 	else
 
 printf "%s\n" "#define HAVE_HTTP_PARSER 1" >>confdefs.h
 
-	  HTTP_PARSER_CPPFLAGS="-I$x_ac_cv_http_parser_dir/include"
-	  HTTP_PARSER_LDFLAGS="-L$x_ac_cv_http_parser_dir/$bit -lhttp_parser"
+	  LIBHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_libhttp_parser_dir/include"
+	  LIBHTTP_PARSER_LDFLAGS="-L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
 	fi
 
 
 
 	fi
 
-	 if test -n "$x_ac_cv_http_parser_dir"; then
-  WITH_HTTP_PARSER_TRUE=
-  WITH_HTTP_PARSER_FALSE='#'
+	 if test -n "$x_ac_cv_libhttp_parser_dir"; then
+  WITH_LIBHTTP_PARSER_TRUE=
+  WITH_LIBHTTP_PARSER_FALSE='#'
 else
-  WITH_HTTP_PARSER_TRUE='#'
-  WITH_HTTP_PARSER_FALSE=
+  WITH_LIBHTTP_PARSER_TRUE='#'
+  WITH_LIBHTTP_PARSER_FALSE=
 fi
 
 
@@ -29294,7 +29295,7 @@ fi
 
 
   if test "x$x_ac_slurmrestd" != "xno"; then
-    if test -n "$x_ac_cv_http_parser_dir" && test -n "$x_ac_cv_json_dir"; then
+    if test -n "$x_ac_cv_libhttp_parser_dir" && test -n "$x_ac_cv_json_dir"; then
       x_ac_slurmrestd=yes
     else
       if test "x$x_ac_slurmrestd" = "xyes"; then
@@ -30817,8 +30818,8 @@ if test -z "${WITH_JWT_TRUE}" && test -z "${WITH_JWT_FALSE}"; then
   as_fn_error $? "conditional \"WITH_JWT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${WITH_HTTP_PARSER_TRUE}" && test -z "${WITH_HTTP_PARSER_FALSE}"; then
-  as_fn_error $? "conditional \"WITH_HTTP_PARSER\" was never defined.
+if test -z "${WITH_LIBHTTP_PARSER_TRUE}" && test -z "${WITH_LIBHTTP_PARSER_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_LIBHTTP_PARSER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_YAML_TRUE}" && test -z "${WITH_YAML_FALSE}"; then
