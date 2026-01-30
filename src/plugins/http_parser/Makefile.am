@@ -1,5 +1,5 @@
 SUBDIRS =
 
-if WITH_HTTP_PARSER
+if WITH_LIBHTTP_PARSER
 SUBDIRS += libhttp_parser
 endif

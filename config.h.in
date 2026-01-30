@@ -88,7 +88,7 @@
 /* Define to 1 if you have the 'hstrerror' function. */
 #undef HAVE_HSTRERROR
 
-/* Define if you are compiling with HTTP parser. */
+/* Define if you are compiling with libhttp_parser or llhttp. */
 #undef HAVE_HTTP_PARSER
 
 /* Define to 1 if hwloc library found */

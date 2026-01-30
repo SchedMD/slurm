@@ -1,8 +1,8 @@
 AUTOMAKE_OPTIONS = foreign
 
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(HTTP_PARSER_LDFLAGS)
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(LIBHTTP_PARSER_LDFLAGS)
 
-AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(LIBHTTP_PARSER_CPPFLAGS)
 
 pkglib_LTLIBRARIES = http_parser_libhttp_parser.la
 
