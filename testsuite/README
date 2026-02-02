@@ -563,7 +563,6 @@ test27.5   sdiag --reset
 
 test28.#   Testing of job array options.
 ========================================
-test28.1   Confirms sbatch --array and scancel of the job arrays.
 test28.2   checks that the --array environment variables are correct, and
 	   checks that the --output and -error files were created and
 	   contain the correct information.
