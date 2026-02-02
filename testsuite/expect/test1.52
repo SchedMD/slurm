@@ -36,6 +36,11 @@ set max_nodes   0
 set task_count  0
 set hostfile    "$test_dir/hostfile"
 
+if {[package vcompare [get_version] "26.05"] >= 0 && \
+    [param_contains [get_config_param "SelectTypeParameters"] "CR_LLN"]} {
+	skip "This test cannot be run with CR_LLN because --distribution=arbitrary is not anymore supported with CR_LLN"
+}
+
 # Determine if we have enough nodes to test functionality
 spawn $scontrol show partition [default_partition]
 expect {
