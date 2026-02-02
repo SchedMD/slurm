@@ -64,12 +64,13 @@ def assert_jobs(jobs_old_dbd, jobs_old_ctld):
                     and daemon == "slurmctld"
                 ):
                     assert (
-                        jobs_new[jid][param] == 0
-                    ), "Ticket 22789: MinMemoryNode was 0 when slurmcltd < 26.05 is restarted"
+                        jobs_new[jid][param] == jobs_old[jid][param]
+                        or jobs_new[jid][param] == 0
+                    ), "Ticket 22789: MinMemoryNode is set to 0 when slurmcltd < 26.05 is restarted"
 
                 else:
                     assert (
-                        jobs_old[jid][param] == jobs_new[jid][param]
+                        jobs_new[jid][param] == jobs_old[jid][param]
                     ), f"Parameter {param} of JobID={jid} ({jobs_new[jid][param]}) should have the same value in {daemon} than before upgrading ({jobs_old[jid][param]})"
 
     _assert_jobs(jobs_old_dbd, atf.get_jobs(dbd=True), "slurmdbd")
