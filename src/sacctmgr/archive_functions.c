@@ -99,9 +99,17 @@ static int _set_cond(int *start, int argc, char **argv,
 					  MAX(command_len, 1))) {
 			arch_cond->purge_usage |= SLURMDB_PURGE_ARCHIVE;
 			set = 1;
-		} else if (!end
-			  || !xstrncasecmp(argv[i], "Clusters",
-					  MAX(command_len, 1))) {
+		} else if (!end && !xstrncasecmp(argv[i], "jobscript",
+						 MAX(command_len, 1))) {
+			arch_cond->purge_jobscript |= SLURMDB_PURGE_ARCHIVE;
+			set = 1;
+		} else if (!end && !xstrncasecmp(argv[i], "jobenv",
+						 MAX(command_len, 1))) {
+			arch_cond->purge_jobenv |= SLURMDB_PURGE_ARCHIVE;
+			set = 1;
+
+		} else if (!end || !xstrncasecmp(argv[i], "Clusters",
+						 MAX(command_len, 1))) {
 			if (!job_cond->cluster_list)
 				job_cond->cluster_list = list_create(xfree_ptr);
 			slurm_addto_char_list(job_cond->cluster_list,
@@ -242,6 +250,24 @@ static int _set_cond(int *start, int argc, char **argv,
 				arch_cond->purge_usage |= tmp;
 				set = 1;
 			}
+		} else if (!xstrncasecmp(argv[i], "PurgeJobScriptAfter",
+					 MAX(command_len, 10))) {
+			if ((tmp = slurmdb_parse_purge(argv[i] + end)) ==
+			    NO_VAL) {
+				exit_code = 1;
+			} else {
+				arch_cond->purge_jobscript |= tmp;
+				set = 1;
+			}
+		} else if (!xstrncasecmp(argv[i], "PurgeJobEnvAfter",
+					 MAX(command_len, 10))) {
+			if ((tmp = slurmdb_parse_purge(argv[i] + end)) ==
+			    NO_VAL) {
+				exit_code = 1;
+			} else {
+				arch_cond->purge_jobenv |= tmp;
+				set = 1;
+			}
 		} else if (!xstrncasecmp(argv[i], "PurgeEventMonths",
 					 MAX(command_len, 6))) {
 			if (get_uint(argv[i]+end, &tmp, "PurgeEventMonths")
@@ -375,6 +401,10 @@ extern int sacctmgr_archive_dump(int argc, char **argv)
 		arch_cond->purge_txn = NO_VAL;
 	if (!arch_cond->purge_usage)
 		arch_cond->purge_usage = NO_VAL;
+	if (!arch_cond->purge_jobenv)
+		arch_cond->purge_jobenv = NO_VAL;
+	if (!arch_cond->purge_jobscript)
+		arch_cond->purge_jobscript = NO_VAL;
 
 	if (exit_code) {
 		slurmdb_destroy_archive_cond(arch_cond);

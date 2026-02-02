@@ -4654,6 +4654,8 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
 			return;
 		}
 
@@ -4668,6 +4670,8 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t protocol_version,
 		pack32(object->purge_suspend, buffer);
 		pack32(object->purge_txn, buffer);
 		pack32(object->purge_usage, buffer);
+		pack32(object->purge_jobscript, buffer);
+		pack32(object->purge_jobenv, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -4719,6 +4723,8 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->purge_suspend, buffer);
 		safe_unpack32(&object_ptr->purge_txn, buffer);
 		safe_unpack32(&object_ptr->purge_usage, buffer);
+		safe_unpack32(&object_ptr->purge_jobscript, buffer);
+		safe_unpack32(&object_ptr->purge_jobenv, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&object_ptr->archive_dir, buffer);
 		safe_unpackstr(&object_ptr->archive_script, buffer);
@@ -4733,6 +4739,8 @@ extern int slurmdb_unpack_archive_cond(void **object, uint16_t protocol_version,
 		safe_unpack32(&object_ptr->purge_suspend, buffer);
 		safe_unpack32(&object_ptr->purge_txn, buffer);
 		safe_unpack32(&object_ptr->purge_usage, buffer);
+		object_ptr->purge_jobscript = NO_VAL;
+		object_ptr->purge_jobenv = NO_VAL;
 	}
 
 	return SLURM_SUCCESS;
