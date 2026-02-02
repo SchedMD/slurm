@@ -555,7 +555,6 @@ test25.1   sprio all options
 
 test27.#   Testing of sdiag commands and options.
 =================================================
-test27.1   sdiag --usage
 test27.2   sdiag --help
 test27.3   sdiag --version
 test27.4   sdiag --all (default output)
