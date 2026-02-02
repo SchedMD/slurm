@@ -11,6 +11,10 @@ node_num = 3
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    if atf.get_version() >= (26, 5):
+        # Since !2789 --distribution=arbitrary is not supported with CR_LLN
+        atf.require_config_parameter_excludes("SelectTypeParameters", "CR_LLN")
+
     atf.require_nodes(node_num + 2)
     atf.require_slurm_running()
 
