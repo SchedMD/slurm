@@ -589,7 +589,6 @@ test31.3   Validate Prolog and Epilog Environment Variables.
 
 test32.#   Test of sgather command and options.
 ===============================================
-test32.1   Validates that the sgather --usage option reports the usage.
 test32.2   Validates that the sgather --help option reports the help message.
 test32.3   Validates that the sgather -V (Version) option reports the version.
 test32.4   Validates that sgather copies specified files from compute nodes.
