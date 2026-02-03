@@ -90,8 +90,8 @@ typedef struct {
 extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 					  rest_auth_context_t *ctxt)
 {
-	plugin_data_t *data;
-	const char *key, *user_name, *bearer;
+	plugin_data_t *data = NULL;
+	const char *key = NULL, *user_name = NULL, *bearer = NULL;
 	const char *name = args->name;
 
 	key = find_http_header(args->headers, HTTP_HEADER_USER_TOKEN);
