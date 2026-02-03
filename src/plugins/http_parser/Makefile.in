@@ -91,6 +91,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @WITH_LIBHTTP_PARSER_TRUE@am__append_1 = libhttp_parser
+@WITH_LLHTTP_PARSER_TRUE@am__append_2 = llhttp_parser
 subdir = src/plugins/http_parser
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -204,7 +205,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = libhttp_parser
+DIST_SUBDIRS = libhttp_parser llhttp_parser
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -294,6 +295,8 @@ LIBTOOL = @LIBTOOL@
 LIB_SLURM = @LIB_SLURM@
 LIB_SLURM_BUILD = @LIB_SLURM_BUILD@
 LIPO = @LIPO@
+LLHTTP_PARSER_CPPFLAGS = @LLHTTP_PARSER_CPPFLAGS@
+LLHTTP_PARSER_LDFLAGS = @LLHTTP_PARSER_LDFLAGS@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
@@ -466,7 +469,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(am__append_1)
+SUBDIRS = $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:
