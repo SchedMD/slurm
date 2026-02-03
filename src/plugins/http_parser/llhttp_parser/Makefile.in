@@ -14,8 +14,6 @@
 
 @SET_MAKE@
 
-# Makefile for namespace/linux plugin
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -93,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/namespace/linux
+subdir = src/plugins/http_parser/llhttp_parser
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_compare_version.m4 \
@@ -184,17 +182,18 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-namespace_linux_la_LIBADD =
-am_namespace_linux_la_OBJECTS = namespace_linux.lo read_nsconf.lo
-namespace_linux_la_OBJECTS = $(am_namespace_linux_la_OBJECTS)
+am_http_parser_llhttp_parser_la_OBJECTS =  \
+	http_parser_llhttp_parser_la-llhttp_parser.lo
+http_parser_llhttp_parser_la_OBJECTS =  \
+	$(am_http_parser_llhttp_parser_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-namespace_linux_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+http_parser_llhttp_parser_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(namespace_linux_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(http_parser_llhttp_parser_la_CFLAGS) $(CFLAGS) \
+	$(http_parser_llhttp_parser_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -210,8 +209,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/namespace_linux.Plo \
-	./$(DEPDIR)/read_nsconf.Plo
+am__depfiles_remade =  \
+	./$(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -231,7 +230,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(namespace_linux_la_SOURCES)
+SOURCES = $(http_parser_llhttp_parser_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -518,11 +517,14 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir)
-pkglib_LTLIBRARIES = namespace_linux.la
-namespace_linux_la_SOURCES = namespace_linux.c read_nsconf.c read_nsconf.h
-namespace_linux_la_LDFLAGS = $(PLUGIN_FLAGS)
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(LLHTTP_PARSER_LDFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(LLHTTP_PARSER_CPPFLAGS)
+pkglib_LTLIBRARIES = http_parser_llhttp_parser.la
+http_parser_llhttp_parser_la_SOURCES = llhttp_parser.c
+http_parser_llhttp_parser_la_DEPENDENCIES = 
+http_parser_llhttp_parser_la_LDFLAGS = $(PLUGIN_FLAGS)
+http_parser_llhttp_parser_la_LIBADD = 
+http_parser_llhttp_parser_la_CFLAGS = 
 all: all-am
 
 .SUFFIXES:
@@ -536,9 +538,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/namespace/linux/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/http_parser/llhttp_parser/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/namespace/linux/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/http_parser/llhttp_parser/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -590,8 +592,8 @@ clean-pkglibLTLIBRARIES:
 	echo rm -f $${locs}; \
 	$(am__rm_f) $${locs}
 
-namespace_linux.la: $(namespace_linux_la_OBJECTS) $(namespace_linux_la_DEPENDENCIES) $(EXTRA_namespace_linux_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(namespace_linux_la_LINK) -rpath $(pkglibdir) $(namespace_linux_la_OBJECTS) $(namespace_linux_la_LIBADD) $(LIBS)
+http_parser_llhttp_parser.la: $(http_parser_llhttp_parser_la_OBJECTS) $(http_parser_llhttp_parser_la_DEPENDENCIES) $(EXTRA_http_parser_llhttp_parser_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(http_parser_llhttp_parser_la_LINK) -rpath $(pkglibdir) $(http_parser_llhttp_parser_la_OBJECTS) $(http_parser_llhttp_parser_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -599,8 +601,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/namespace_linux.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_nsconf.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -628,6 +629,13 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+http_parser_llhttp_parser_la-llhttp_parser.lo: llhttp_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(http_parser_llhttp_parser_la_CFLAGS) $(CFLAGS) -MT http_parser_llhttp_parser_la-llhttp_parser.lo -MD -MP -MF $(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Tpo -c -o http_parser_llhttp_parser_la-llhttp_parser.lo `test -f 'llhttp_parser.c' || echo '$(srcdir)/'`llhttp_parser.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Tpo $(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='llhttp_parser.c' object='http_parser_llhttp_parser_la-llhttp_parser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(http_parser_llhttp_parser_la_CFLAGS) $(CFLAGS) -c -o http_parser_llhttp_parser_la-llhttp_parser.lo `test -f 'llhttp_parser.c' || echo '$(srcdir)/'`llhttp_parser.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -729,8 +737,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -f ./$(DEPDIR)/namespace_linux.Plo
-	-rm -f ./$(DEPDIR)/read_nsconf.Plo
+	-rm -f ./$(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -776,8 +783,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -f ./$(DEPDIR)/namespace_linux.Plo
-	-rm -f ./$(DEPDIR)/read_nsconf.Plo
+	-rm -f ./$(DEPDIR)/http_parser_llhttp_parser_la-llhttp_parser.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -815,6 +821,10 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+force:
+$(http_parser_llhttp_parser_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
