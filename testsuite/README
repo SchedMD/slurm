@@ -606,7 +606,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
-test37.2   Validate federated clusters return federated job ids.
 test37.3   scontrol show federations
 test37.4   federated job submission
 test37.5   Federated Requeue
@@ -1115,6 +1114,10 @@ test_132_3   Test job state while the Prolog runs with various PrologFlags
 test_132_4   Test job state while PrologSlurmctld and the Prolog run
 test_132_5   Test a job requeued by a failed Prolog runs when retried
 test_132_6   Test a Prolog failure keeps a job from finishing configuration
+
+test_133_#   Testing of federations.
+====================================
+test_133_2   Validate federated clusters return federated job ids.
 
 test_134_#   Testing of SwitchType.
 ===================================
