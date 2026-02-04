@@ -58,7 +58,7 @@ const uint32_t plugin_id = TLS_PLUGIN_NONE;
 
 #define TLS_CONN_MAGIC 0x2aa20b82
 
-typedef struct {
+typedef struct tls_conn_s {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	int magic; /* TLS_CONN_MAGIC */
 	int input_fd;
