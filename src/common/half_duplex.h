@@ -37,6 +37,7 @@
 #ifndef _SLURM_HALF_DUPLEX_H
 #define _SLURM_HALF_DUPLEX_H
 
+#include "src/common/eio.h"
 #include "src/interfaces/conn.h"
 
 extern struct io_operations half_duplex_ops;
