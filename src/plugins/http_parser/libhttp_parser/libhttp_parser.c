@@ -47,6 +47,8 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "../common/http_parser_common.h"
+
 #include "src/interfaces/http_parser.h"
 
 /* Required Slurm plugin symbols: */
@@ -55,9 +57,17 @@ const char plugin_type[] = HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define LOG_PARSE(state, fmt, ...) \
-	_log_parse(state, NULL, 0, __func__, fmt, ##__VA_ARGS__)
+	do { \
+		xassert(state->magic == STATE_MAGIC); \
+		log_parse(state->buffer, state->name, NULL, 0, __func__, fmt, \
+			  ##__VA_ARGS__); \
+	} while (0)
 #define LOG_PARSE_AT(state, at, bytes, fmt, ...) \
-	_log_parse(state, (at), (bytes), __func__, fmt, ##__VA_ARGS__)
+	do { \
+		xassert(state->magic == STATE_MAGIC); \
+		log_parse(state->buffer, state->name, (at), (bytes), __func__, \
+			  fmt, ##__VA_ARGS__); \
+	} while (0)
 
 #define PARSE_ERROR(error_number, state) \
 	_on_parse_error(error_number, state, NULL, 0, __func__)
@@ -236,78 +246,6 @@ extern int http_parser_p_new_parse_request(const char *name,
 
 	*state_ptr = state;
 	return SLURM_SUCCESS;
-}
-
-static void _log_parse_buffer(state_t *state, const char *caller,
-			      const char *log_str, const void *at,
-			      const size_t at_bytes)
-{
-	const void *buffer_ptr = get_buf_data(state->buffer);
-	const size_t buffer_bytes = get_buf_offset(state->buffer);
-	const void *buffer_begin = buffer_ptr;
-	const void *begin = NULL;
-#ifndef NDEBUG
-	const void *buffer_end = (buffer_ptr + buffer_bytes);
-	const void *end = (at ? (at + at_bytes) : buffer_end);
-#endif
-	size_t offset_begin = 0, offset_end = 0;
-
-	xassert(buffer_begin);
-	xassert(buffer_begin <= buffer_end);
-
-	if (at) {
-		begin = at;
-		offset_begin = (begin - buffer_begin);
-		offset_end = (offset_begin + at_bytes);
-	} else {
-		xassert(!at_bytes);
-
-		begin = buffer_begin;
-		offset_begin = 0;
-		offset_end = buffer_bytes;
-	}
-
-	/* assert that pointers are in the buffer */
-	xassert(begin >= buffer_begin);
-	xassert(end <= buffer_end);
-	xassert(offset_begin <= offset_end);
-	xassert(offset_begin <= buffer_bytes);
-	xassert(offset_end <= buffer_bytes);
-
-	log_flag(DATA, "%s: [%s] PARSE [%zu,%zu)@0x%"PRIxPTR" %s", caller,
-		 state->name, offset_begin, offset_end, (uintptr_t) buffer_ptr,
-		 log_str);
-	log_flag_hex_range(NET_RAW, buffer_ptr, buffer_bytes, offset_begin,
-			   offset_end, "%s: [%s] %s", caller, state->name,
-			   log_str);
-}
-
-static void _log_parse(state_t *state, const void *at, const size_t at_bytes,
-		       const char *caller, const char *fmt, ...)
-{
-	char *log_str = NULL;
-
-	xassert(state->magic == STATE_MAGIC);
-
-	if (!(slurm_conf.debug_flags & DEBUG_FLAG_DATA) ||
-	    (get_log_level() < LOG_LEVEL_VERBOSE))
-		return;
-
-	xassert(fmt);
-	if (fmt) {
-		va_list ap;
-		va_start(ap, fmt);
-		log_str = vxstrfmt(fmt, ap);
-		va_end(ap);
-	}
-
-	if (state->buffer)
-		_log_parse_buffer(state, caller, log_str, at, at_bytes);
-	else
-		log_flag(DATA, "%s: [%s] PARSE EOF %s",
-			 caller, state->name, log_str);
-
-	xfree(log_str);
 }
 
 /*

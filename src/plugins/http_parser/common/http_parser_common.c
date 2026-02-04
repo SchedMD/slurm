@@ -34,3 +34,80 @@
 \*****************************************************************************/
 
 #include "http_parser_common.h"
+
+#include "slurm/slurm.h"
+
+#include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+
+static void _log_parse_buffer(const buf_t *buffer, const char *name,
+			      const char *caller, const char *log_str,
+			      const void *at, const size_t at_bytes)
+{
+	const void *buffer_ptr = get_buf_data(buffer);
+	const size_t buffer_bytes = get_buf_offset(buffer);
+	const void *buffer_begin = buffer_ptr;
+	const void *begin = NULL;
+#ifndef NDEBUG
+	const void *buffer_end = (buffer_ptr + buffer_bytes);
+	const void *end = (at ? (at + at_bytes) : buffer_end);
+#endif
+	size_t offset_begin = 0, offset_end = 0;
+
+	xassert(buffer_begin);
+	xassert(buffer_begin <= buffer_end);
+
+	if (at) {
+		begin = at;
+		offset_begin = (begin - buffer_begin);
+		offset_end = (offset_begin + at_bytes);
+	} else {
+		xassert(!at_bytes);
+
+		begin = buffer_begin;
+		offset_begin = 0;
+		offset_end = buffer_bytes;
+	}
+
+	/* assert that pointers are in the buffer */
+	xassert(begin >= buffer_begin);
+	xassert(end <= buffer_end);
+	xassert(offset_begin <= offset_end);
+	xassert(offset_begin <= buffer_bytes);
+	xassert(offset_end <= buffer_bytes);
+
+	log_flag(DATA, "%s: [%s] PARSE [%zu,%zu)@0x%"PRIxPTR" %s", caller,
+		 name, offset_begin, offset_end, (uintptr_t) buffer_ptr,
+		 log_str);
+	log_flag_hex_range(NET_RAW, buffer_ptr, buffer_bytes, offset_begin,
+			   offset_end, "%s: [%s] %s", caller, name,
+			   log_str);
+}
+
+extern void log_parse(const buf_t *buffer, const char *name, const void *at,
+		      const size_t at_bytes, const char *caller,
+		      const char *fmt, ...)
+{
+	char *log_str = NULL;
+
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_DATA) ||
+	    (get_log_level() < LOG_LEVEL_VERBOSE))
+		return;
+
+	xassert(fmt);
+	if (fmt) {
+		va_list ap;
+		va_start(ap, fmt);
+		log_str = vxstrfmt(fmt, ap);
+		va_end(ap);
+	}
+
+	if (buffer)
+		_log_parse_buffer(buffer, name, caller, log_str, at, at_bytes);
+	else
+		log_flag(DATA, "%s: [%s] PARSE EOF %s", caller, name, log_str);
+
+	xfree(log_str);
+}
