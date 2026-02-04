@@ -36,4 +36,12 @@
 #ifndef _HTTP_PARSER_COMMON_H
 #define _HTTP_PARSER_COMMON_H
 
+#include <stddef.h>
+
+#include "src/common/pack.h"
+
+extern void log_parse(const buf_t *buffer, const char *name, const void *at,
+		      const size_t at_bytes, const char *caller,
+		      const char *fmt, ...);
+
 #endif
