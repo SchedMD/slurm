@@ -165,19 +165,19 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
 	return rc;
 }
 
-extern timespec_t tls_p_get_delay(void *conn)
+extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 {
 	xassert(conn);
 
 	return ((timespec_t) { 0 });
 }
 
-extern int tls_p_negotiate_conn(void *conn)
+extern int tls_p_negotiate_conn(tls_conn_t *conn)
 {
 	return ESLURM_NOT_SUPPORTED;
 }
 
-extern bool tls_p_is_client_authenticated(void *conn)
+extern bool tls_p_is_client_authenticated(tls_conn_t *conn)
 {
 	return false;
 }
