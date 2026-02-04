@@ -9,7 +9,7 @@ pkglib_LTLIBRARIES = http_parser_llhttp_parser.la
 http_parser_llhttp_parser_la_SOURCES = llhttp_parser.c
 http_parser_llhttp_parser_la_DEPENDENCIES =
 http_parser_llhttp_parser_la_LDFLAGS = $(PLUGIN_FLAGS)
-http_parser_llhttp_parser_la_LIBADD =
+http_parser_llhttp_parser_la_LIBADD = ../common/libhttp_parser_common.la
 http_parser_llhttp_parser_la_CFLAGS =
 
 force:
