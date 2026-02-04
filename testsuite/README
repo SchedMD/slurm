@@ -606,7 +606,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
-test37.6   Federated Job Updates
 test37.7   Federated Cluster States
 test37.8   scontrol --local, --sibling options
            scancel --sibling=<jobid>
@@ -1118,6 +1117,7 @@ test_133_2   Validate federated clusters return federated job ids.
 test_133_3   scontrol show federations
 test_133_4   federated job submission
 test_133_5   Federated Requeue
+test_133_6   Federated Job Updates
 
 test_134_#   Testing of SwitchType.
 ===================================
