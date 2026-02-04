@@ -106,7 +106,7 @@ slurmd_conf_t *conf = NULL;
 
 #define TLS_CONN_MAGIC 0xb482dff0
 
-typedef struct {
+typedef struct tls_conn_s {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	int magic; /* TLS_CONN_MAGIC */
 	int input_fd;
