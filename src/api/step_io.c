@@ -81,7 +81,7 @@ static struct io_buf *_alloc_io_buf(void);
 static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
-static int _read_io_init_msg(int fd, void *conn, client_io_t *cio,
+static int _read_io_init_msg(int fd, conn_t *conn, client_io_t *cio,
 			     slurm_addr_t *host);
 static int      _wid(int n);
 static bool     _incoming_buf_free(client_io_t *cio);
@@ -220,7 +220,7 @@ _set_listensocks_nonblocking(client_io_t *cio)
 /**********************************************************************
  * IO server socket functions
  **********************************************************************/
-static eio_obj_t *_create_server_eio_obj(int fd, void *conn, client_io_t *cio,
+static eio_obj_t *_create_server_eio_obj(int fd, conn_t *conn, client_io_t *cio,
 					 int nodeid, int stdout_objs,
 					 int stderr_objs)
 {
@@ -846,7 +846,7 @@ _create_listensock_eio(int fd, client_io_t *cio)
 	return eio;
 }
 
-static int _read_io_init_msg(int fd, void *conn, client_io_t *cio,
+static int _read_io_init_msg(int fd, conn_t *conn, client_io_t *cio,
 			     slurm_addr_t *host)
 {
 	io_init_msg_t msg = { 0 };
@@ -926,7 +926,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 
 	for (j = 0; j < 15; j++) {
 		int sd;
-		void *conn = NULL;
+		conn_t *conn = NULL;
 		slurm_addr_t addr;
 
 		/*

@@ -981,7 +981,7 @@ static void *_commit_handler(void *db_conn)
 static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 {
 	slurm_msg_t req_msg;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 
 	slurm_msg_t_init(&req_msg);
 

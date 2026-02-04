@@ -91,7 +91,7 @@ int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
  * Only return when the all of the bytes have been read, or an unignorable
  * error has occurred.
  */
-static int _full_read(int fd, void *conn, void *buf, size_t count)
+static int _full_read(int fd, conn_t *conn, void *buf, size_t count)
 {
 	int n;
 	int left;
@@ -127,7 +127,7 @@ static int _full_read(int fd, void *conn, void *buf, size_t count)
 /*
  * Read and unpack an io_hdr_t from a file descriptor (socket).
  */
-int io_hdr_read_fd(int fd, void *conn, io_hdr_t *hdr)
+extern int io_hdr_read_fd(int fd, conn_t *conn, io_hdr_t *hdr)
 {
 	int n = 0;
 	buf_t *buffer = init_buf(IO_HDR_PACKET_BYTES);
@@ -216,9 +216,7 @@ static int io_init_msg_unpack(io_init_msg_t *hdr, buf_t *buffer)
 	return SLURM_ERROR;
 }
 
-
-int
-io_init_msg_write_to_fd(int fd, void *conn, io_init_msg_t *msg)
+extern int io_init_msg_write_to_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 {
 	int rc = SLURM_ERROR;
 	buf_t *buf = init_buf(0);
@@ -243,7 +241,7 @@ rwfail:
 	return rc;
 }
 
-extern int io_init_msg_read_from_fd(int fd, void *conn, io_init_msg_t *msg)
+extern int io_init_msg_read_from_fd(int fd, conn_t *conn, io_init_msg_t *msg)
 {
 	buf_t *buf = NULL;
 	uint32_t len;

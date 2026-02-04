@@ -1717,7 +1717,7 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int input_fd = -1, output_fd = -1;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	conmgr_extract_fd_func_t func = NULL;
 	const char *func_name = NULL;
 	void *func_arg = NULL;

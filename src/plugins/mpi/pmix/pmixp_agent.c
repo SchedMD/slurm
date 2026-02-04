@@ -174,7 +174,7 @@ static int _abort_conn_close(eio_obj_t *obj, list_t *objs)
 
 static int _abort_conn_read(eio_obj_t *obj, list_t *objs)
 {
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	slurm_addr_t abort_client;
 	int shutdown = 0;
 

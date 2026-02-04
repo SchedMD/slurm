@@ -60,18 +60,18 @@ typedef struct {
 	int (*load_self_signed_cert)(void);
 	bool (*own_cert_loaded)(void);
 	void *(*create_conn)(const conn_args_t *conn_args);
-	void (*destroy_conn)(void *conn, bool close_fds);
-	ssize_t (*send)(void *conn, const void *buf, size_t n);
-	ssize_t (*sendv)(void *conn, const struct iovec *bufs, int count);
-	uint32_t (*peek)(void *conn);
-	ssize_t (*recv)(void *conn, void *buf, size_t n);
-	timespec_t (*get_delay)(void *conn);
-	int (*negotiate)(void *conn);
-	bool (*is_client_authenticated)(void *conn);
-	int (*get_conn_fd)(void *conn);
-	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
-	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
-	int (*shutdown_conn)(void *conn);
+	void (*destroy_conn)(conn_t *conn, bool close_fds);
+	ssize_t (*send)(conn_t *conn, const void *buf, size_t n);
+	ssize_t (*sendv)(conn_t *conn, const struct iovec *bufs, int count);
+	uint32_t (*peek)(conn_t *conn);
+	ssize_t (*recv)(conn_t *conn, void *buf, size_t n);
+	timespec_t (*get_delay)(conn_t *conn);
+	int (*negotiate)(conn_t *conn);
+	bool (*is_client_authenticated)(conn_t *conn);
+	int (*get_conn_fd)(conn_t *conn);
+	int (*set_conn_fds)(conn_t *conn, int input_fd, int output_fd);
+	int (*set_conn_callbacks)(conn_t *conn, conn_callbacks_t *callbacks);
+	int (*shutdown_conn)(conn_t *conn);
 } conn_ops_t;
 
 typedef struct tls_conn_s conn_s;
@@ -248,7 +248,7 @@ extern bool conn_g_own_cert_loaded(void)
 	return (*(ops.own_cert_loaded))();
 }
 
-extern void *conn_g_create(const conn_args_t *conn_args)
+extern conn_t *conn_g_create(const conn_args_t *conn_args)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 
@@ -259,7 +259,7 @@ extern void *conn_g_create(const conn_args_t *conn_args)
 	return (*(ops.create_conn))(conn_args);
 }
 
-extern void conn_g_destroy(void *conn, bool close_fds)
+extern void conn_g_destroy(conn_t *conn, bool close_fds)
 {
 	if (!conn)
 		return;
@@ -269,73 +269,73 @@ extern void conn_g_destroy(void *conn, bool close_fds)
 	(*(ops.destroy_conn))(conn, close_fds);
 }
 
-extern ssize_t conn_g_send(void *conn, const void *buf, size_t n)
+extern ssize_t conn_g_send(conn_t *conn, const void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.send))(conn, buf, n);
 }
 
-extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count)
+extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.sendv))(conn, bufs, count);
 }
 
-extern uint32_t conn_g_peek(void *conn)
+extern uint32_t conn_g_peek(conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.peek))(conn);
 }
 
-extern ssize_t conn_g_recv(void *conn, void *buf, size_t n)
+extern ssize_t conn_g_recv(conn_t *conn, void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.recv))(conn, buf, n);
 }
 
-extern timespec_t conn_g_get_delay(void *conn)
+extern timespec_t conn_g_get_delay(conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_delay))(conn);
 }
 
-extern int conn_g_negotiate_tls(void *conn)
+extern int conn_g_negotiate_tls(conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.negotiate))(conn);
 }
 
-extern bool conn_g_is_client_authenticated(void *conn)
+extern bool conn_g_is_client_authenticated(conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.is_client_authenticated))(conn);
 }
 
-extern int conn_g_get_fd(void *conn)
+extern int conn_g_get_fd(conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_conn_fd))(conn);
 }
 
-extern int conn_g_set_fds(void *conn, int input_fd, int output_fd)
+extern int conn_g_set_fds(conn_t *conn, int input_fd, int output_fd)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);
 }
 
-extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks)
+extern int conn_g_set_callbacks(conn_t *conn, conn_callbacks_t *callbacks)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_callbacks))(conn, callbacks);
 }
 
-extern int conn_g_shutdown(void *conn)
+extern int conn_g_shutdown(conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.shutdown_conn))(conn);
 }
 
-extern int conn_blocking_g_shutdown(void *conn)
+extern int conn_blocking_g_shutdown(conn_t *conn)
 {
 	int rc;
 	int fd;

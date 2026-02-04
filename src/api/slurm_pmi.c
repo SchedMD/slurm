@@ -222,7 +222,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 				      int pmi_rank, int pmi_size)
 {
 	int rc, retries = 0, timeout = 0;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr_t slurm_addr, srun_reply_addr;
 	char hostname[HOST_NAME_MAX];

@@ -173,7 +173,7 @@ bool eio_message_socket_readable(eio_obj_t *obj)
 
 int eio_message_socket_accept(eio_obj_t *obj, list_t *objs)
 {
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	int fd;
 	slurm_addr_t addr;
 	slurm_msg_t *msg = NULL;

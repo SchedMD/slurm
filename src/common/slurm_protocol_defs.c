@@ -228,7 +228,7 @@ extern void slurm_msg_t_init(slurm_msg_t *msg)
 extern int slurm_msg_t_init_address(slurm_msg_t *msg)
 {
 	int rc = EINVAL, fd = -1;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 
 	if (!msg)
 		return rc;

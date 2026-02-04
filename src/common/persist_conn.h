@@ -40,6 +40,8 @@
 
 #include "src/common/pack.h"
 
+#include "src/interfaces/conn.h"
+
 #define PERSIST_FLAG_NONE           0x0000
 #define PERSIST_FLAG_DBD            SLURM_BIT(0)
 #define PERSIST_FLAG_RECONNECT      SLURM_BIT(1)
@@ -85,7 +87,7 @@ typedef struct {
 	time_t *shutdown;
 	pthread_t thread_id;
 	int timeout;
-	void *conn; /* interfaces/conn data */
+	conn_t *conn; /* interfaces/conn data */
 	bool skip_conn_shutdown;
 	slurm_trigger_callbacks_t trigger_callbacks;
 	uint16_t version;

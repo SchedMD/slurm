@@ -45,6 +45,8 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 
+#include "src/interfaces/conn.h"
+
 #define CONMGR_THREAD_COUNT_MIN 2
 #define CONMGR_THREAD_COUNT_MAX 256
 
@@ -947,7 +949,7 @@ extern bool conmgr_enabled(void);
  * IN arg - arbitrary pointer func_arg handed to conmgr_queue_extract_con_fd()
  */
 typedef void (*conmgr_extract_fd_func_t)(conmgr_callback_args_t conmgr_args,
-					 void *tls_conn, void *arg);
+					 conn_t *tls_conn, void *arg);
 
 /*
  * Queue up extraction of file descriptors from a connection.

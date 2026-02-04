@@ -1033,7 +1033,7 @@ send_direct:
 
 static int _abort_status = SLURM_SUCCESS;
 
-void pmixp_abort_handle(void *conn)
+extern void pmixp_abort_handle(conn_t *conn)
 {
 	uint32_t status;
 	int len;
@@ -1059,7 +1059,7 @@ void pmixp_abort_handle(void *conn)
 
 void pmixp_abort_propagate(int status)
 {
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	uint32_t status_net = htonl((uint32_t)status);
 	int len;
 	slurm_addr_t abort_server;

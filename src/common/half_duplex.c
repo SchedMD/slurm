@@ -42,6 +42,8 @@
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
 
+#include "src/interfaces/conn.h"
+
 #define BUFFER_SIZE 4096
 
 static bool _half_duplex_readable(eio_obj_t *obj);
@@ -62,7 +64,7 @@ typedef struct {
 
 extern int half_duplex_add_objs_to_handle(eio_handle_t *eio_handle,
 					  int *local_fd, int *remote_fd,
-					  void *conn)
+					  conn_t *conn)
 {
 	void **conn_ptr = xmalloc(sizeof(*conn_ptr));
 	half_duplex_eio_arg_t *local_arg = NULL;

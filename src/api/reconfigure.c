@@ -190,7 +190,7 @@ extern int slurm_takeover(int backup_inx)
 static int _send_message_controller(int dest, slurm_msg_t *req)
 {
 	int rc = SLURM_SUCCESS;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	slurm_msg_t resp_msg;
 
 	/*

@@ -49,7 +49,10 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/pack.h"
+
 #include "src/interfaces/auth.h"
+#include "src/interfaces/conn.h"
+
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_socket.h"
@@ -213,7 +216,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer);
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_receive_msg(void *conn, slurm_msg_t *msg, int timeout);
+extern int slurm_receive_msg(conn_t *conn, slurm_msg_t *msg, int timeout);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
@@ -230,8 +233,8 @@ extern int slurm_receive_msg(void *conn, slurm_msg_t *msg, int timeout);
  *                (ret_data_info_t). NULL is returned on failure. and
  *                errno set.
  */
-extern list_t *slurm_receive_msgs(void *conn, int steps, int timeout);
-extern list_t *slurm_receive_resp_msgs(void *conn, int steps, int timeout);
+extern list_t *slurm_receive_msgs(conn_t *conn, int steps, int timeout);
+extern list_t *slurm_receive_resp_msgs(conn_t *conn, int steps, int timeout);
 
 /*
  *  Unpack a Slurm message from the supplied 'buffer' and forward.
@@ -261,7 +264,7 @@ extern int slurm_unpack_msg_and_forward(slurm_msg_t *msg,
  * IN msg		- a slurm msg struct to be sent
  * RET int		- size of msg sent in bytes
  */
-extern int slurm_send_node_msg(void *conn, slurm_msg_t *msg);
+extern int slurm_send_node_msg(conn_t *conn, slurm_msg_t *msg);
 
 /**********************************************************************\
  * msg connection establishment functions used by msg clients
@@ -302,7 +305,7 @@ extern void *slurm_open_msg_conn_maybe(slurm_addr_t *addr, char *tls_cert);
  * IN size		- size of buffer send
  * RET size_t		- bytes sent , or -1 on error
  */
-extern size_t slurm_write_stream(void *conn, char *buffer, size_t size);
+extern size_t slurm_write_stream(conn_t *conn, char *buffer, size_t size);
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
@@ -311,7 +314,7 @@ extern size_t slurm_write_stream(void *conn, char *buffer, size_t size);
  * IN size		- size of buffer
  * RET size_t		- bytes read , or -1 on error
  */
-extern size_t slurm_read_stream(void *conn, char *buffer, size_t size);
+extern size_t slurm_read_stream(conn_t *conn, char *buffer, size_t size);
 
 /**********************************************************************\
  * address conversion and management functions
@@ -543,8 +546,8 @@ extern int slurm_send_only_node_msg(slurm_msg_t *request_msg);
  * IN timeout	- how long to wait in milliseconds
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
-extern int slurm_send_recv_msg(void *conn, slurm_msg_t *req, slurm_msg_t *resp,
-			       int timeout);
+extern int slurm_send_recv_msg(conn_t *conn, slurm_msg_t *req,
+			       slurm_msg_t *resp, int timeout);
 
 /* Slurm message functions */
 
