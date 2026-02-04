@@ -56,8 +56,11 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 /* Required for tls plugins: */
 const uint32_t plugin_id = TLS_PLUGIN_NONE;
 
+#define TLS_CONN_MAGIC 0x2aa20b82
+
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
+	int magic; /* TLS_CONN_MAGIC */
 	int input_fd;
 	int output_fd;
 } tls_conn_t;
@@ -103,6 +106,7 @@ extern tls_conn_t *tls_p_create_conn(const conn_args_t *tls_conn_args)
 {
 	tls_conn_t *conn = xmalloc(sizeof(*conn));
 
+	conn->magic = TLS_CONN_MAGIC;
 	conn->input_fd = tls_conn_args->input_fd;
 	conn->output_fd = tls_conn_args->output_fd;
 
@@ -114,6 +118,8 @@ extern tls_conn_t *tls_p_create_conn(const conn_args_t *tls_conn_args)
 
 extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 {
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	log_flag(TLS, "%s: destroy connection. fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
 
@@ -125,11 +131,14 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 			close(conn->output_fd);
 	}
 
+	conn->magic = ~TLS_CONN_MAGIC;
 	xfree(conn);
 }
 
 extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 {
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	log_flag(TLS, "%s: send %zd. fd:%d->%d",
 		 plugin_type, n, conn->input_fd, conn->output_fd);
 
@@ -139,6 +148,8 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 			   int count)
 {
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	return writev(conn->output_fd, bufs, count);
 }
 
@@ -148,6 +159,8 @@ extern uint32_t tls_p_peek(tls_conn_t *conn)
 
 	if (!conn)
 		return 0;
+
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (fd_get_readable_bytes(conn->input_fd, &readable, NULL) || !readable)
 		return 0;
@@ -159,6 +172,8 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
 {
 	ssize_t rc = recv(conn->input_fd, buf, n, 0);
 
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	log_flag(TLS, "%s: recv %zd. fd:%d->%d",
 		 plugin_type, rc, conn->input_fd, conn->output_fd);
 
@@ -168,17 +183,20 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n, int flags)
 extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	return ((timespec_t) { 0 });
 }
 
 extern int tls_p_negotiate_conn(tls_conn_t *conn)
 {
+	xassert(!conn || (conn->magic == TLS_CONN_MAGIC));
 	return ESLURM_NOT_SUPPORTED;
 }
 
 extern bool tls_p_is_client_authenticated(tls_conn_t *conn)
 {
+	xassert(!conn || (conn->magic == TLS_CONN_MAGIC));
 	return false;
 }
 
@@ -186,6 +204,8 @@ extern int tls_p_get_conn_fd(tls_conn_t *conn)
 {
 	if (!conn)
 		return -1;
+
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (conn->input_fd != conn->output_fd)
 		debug("%s: asymmetric connection %d->%d",
@@ -196,16 +216,19 @@ extern int tls_p_get_conn_fd(tls_conn_t *conn)
 
 extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 {
+	xassert(!conn || (conn->magic == TLS_CONN_MAGIC));
 	return ESLURM_NOT_SUPPORTED;
 }
 
 extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
 				    conn_callbacks_t *callbacks)
 {
+	xassert(!conn || (conn->magic == TLS_CONN_MAGIC));
 	return ESLURM_NOT_SUPPORTED;
 }
 
 extern void tls_p_shutdown_conn(tls_conn_t *conn)
 {
+	xassert(!conn || (conn->magic == TLS_CONN_MAGIC));
 	return;
 }
