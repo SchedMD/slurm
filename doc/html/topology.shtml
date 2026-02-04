@@ -301,24 +301,33 @@ wait for this optimized configuration using the <b>SchedulerParameters</b>
 configuration parameter with the
 <a href="slurm.conf.html#OPT_max_switch_wait=#">max_switch_wait</a> option.</p>
 
-<p>When <b>topology/tree</b>, <b>topology/block</b>, or <b>topology/ring</b> is
-configured, hostlist functions may be used in place of or alongside regular
+<p>When a <b>block</b>, <b>tree</b>, or <b>ring</b> topology is configured,
+hostlist functions may be used in place of or alongside regular
 hostlist expressions in commands or configuration files that interact with the
 slurmctld. Valid topology functions include:</p>
 
-<ul>
-<li><b>block{blockX}</b>, <b>switch{switchY}</b>, and <b>ring{ringZ}</b>
-  - expand to all nodes in the specified block/switch.</li>
-<li><b>blockwith{nodeX}</b>, <b>switchwith{nodeY}</b>, and <b>ringwith{nodeZ}</b>
-  - expand to all nodes in the same block/switch as the specified node.</li>
-</ul>
+<table class="tlist">
+  <tr>
+    <td><code>block{blockX}</code>
+      <br><code>switch{switchY}</code>
+      <br><code>ring{ringZ}</code></td>
+    <td>Expand to all nodes in the specified topology unit</td>
+  </tr>
+  <tr>
+    <td><code>blockwith{nodeX}</code>
+      <br><code>switchwith{nodeY}</code>
+      <br><code>ringwith{nodeZ}</code></td>
+    <td>Expand to all nodes in the same topology unit as the specified node</td>
+  </tr>
+</table>
+<br>
 
-<p>For example:</p>
+<p>Hostlist functions can be used in several different contexts, for example:</p>
 
 <pre>
 scontrol update node=block{b1} state=resume
-sbatch --nodelist=blockwith{node0} -N 10 program
-PartitionName=Block10 Nodes=block{block10} ...
+sbatch --nodelist=switchwith{node0} -N 10 program
+PartitionName=Ring10 Nodes=ring{ring10} ...
 </pre>
 
 See also the hostlist function <b>feature{myfeature}</b>
