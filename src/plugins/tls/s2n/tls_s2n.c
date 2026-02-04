@@ -104,8 +104,11 @@ extern slurmd_conf_t *conf __attribute__((weak_import));
 slurmd_conf_t *conf = NULL;
 #endif
 
+#define TLS_CONN_MAGIC 0xb482dff0
+
 typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
+	int magic; /* TLS_CONN_MAGIC */
 	int input_fd;
 	int output_fd;
 	bool maybe;
@@ -133,6 +136,8 @@ static void _on_s2n_error(tls_conn_t *conn, void *(*func_ptr)(void),
 	/* Save errno now in case error() clobbers it */
 	const int orig_errno = errno;
 	const int error_type = s2n_error_get_type(s2n_errno);
+
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	/*
 	 * Per libs2n docs:
@@ -793,6 +798,8 @@ static int _negotiate(tls_conn_t *conn)
 {
 	s2n_blocked_status blocked = S2N_NOT_BLOCKED;
 
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	if (s2n_negotiate(conn->s2n_conn, &blocked) != S2N_SUCCESS) {
 		if (s2n_error_get_type(s2n_errno) == S2N_ERR_T_BLOCKED) {
 			/* Avoid calling on_s2n_error for blocking */
@@ -895,6 +902,8 @@ extern bool tls_p_own_cert_loaded(void)
 
 static void _s2n_config_inc(tls_conn_t *conn)
 {
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	slurm_mutex_lock(&s2n_conf_cnt_lock);
 	s2n_conf_conn_cnt++;
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
@@ -902,6 +911,8 @@ static void _s2n_config_inc(tls_conn_t *conn)
 
 static void _s2n_config_dec(tls_conn_t *conn)
 {
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	slurm_mutex_lock(&s2n_conf_cnt_lock);
 
 	if (s2n_conf_conn_cnt > 0) {
@@ -919,6 +930,8 @@ static void _s2n_config_dec(tls_conn_t *conn)
 
 static void _cleanup_tls_conn(tls_conn_t *conn)
 {
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	if (conn->s2n_config && (conn->s2n_config != server_config) &&
 	    (conn->s2n_config != client_config))
 		if (s2n_config_free(conn->s2n_config))
@@ -936,6 +949,8 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 
 	if (s2n_stack_traces_enabled())
 		s2n_free_stacktrace();
+
+	conn->magic = ~TLS_CONN_MAGIC;
 }
 
 static int _set_conn_s2n_conf(tls_conn_t *conn,
@@ -943,6 +958,8 @@ static int _set_conn_s2n_conf(tls_conn_t *conn,
 {
 	char *cert_file = NULL;
 	bool is_server = (tls_conn_args->mode == CONN_SERVER);
+
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (!slurm_rwlock_tryrdlock(&s2n_conf_lock)) {
 		if (is_server && !own_cert_and_key) {
@@ -1018,6 +1035,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 		 conn_mode_to_str(tls_conn_args->mode));
 
 	conn = xmalloc(sizeof(*conn));
+	conn->magic = TLS_CONN_MAGIC;
 	conn->input_fd = tls_conn_args->input_fd;
 	conn->output_fd = tls_conn_args->output_fd;
 	conn->maybe = tls_conn_args->maybe;
@@ -1164,6 +1182,7 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 	int rc = SLURM_SUCCESS;
 
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (conn->shutdown_finished) {
 		log_flag(TLS, "%s: s2n_shutdown already finished for fd:%d->%d, skipping.",
@@ -1201,6 +1220,7 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	log_flag(TLS, "%s: destroying connection. fd:%d->%d",
 		 plugin_type, conn->input_fd, conn->output_fd);
@@ -1223,6 +1243,7 @@ extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
 	ssize_t bytes_written = 0;
 
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	while ((bytes_written < n) && (blocked == S2N_NOT_BLOCKED)) {
 		ssize_t w = s2n_send(conn->s2n_conn, (buf + bytes_written),
@@ -1256,6 +1277,7 @@ extern ssize_t tls_p_sendv(tls_conn_t *conn, const struct iovec *bufs,
 	ssize_t w = 0;
 
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_TLS) {
 		log_flag(TLS, "%s: s2n_sendv %d bufs. fd:%d->%d:",
@@ -1282,6 +1304,8 @@ extern uint32_t tls_p_peek(tls_conn_t *conn)
 	if (!conn)
 		return 0;
 
+	xassert(conn->magic == TLS_CONN_MAGIC);
+
 	if ((readable = s2n_peek(conn->s2n_conn)))
 		return readable;
 
@@ -1297,6 +1321,7 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 	ssize_t bytes_read = 0;
 
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (!n) {
 		ssize_t r = -1;
@@ -1347,6 +1372,7 @@ extern ssize_t tls_p_recv(tls_conn_t *conn, void *buf, size_t n)
 extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	return conn->delay;
 }
@@ -1354,6 +1380,7 @@ extern timespec_t tls_p_get_delay(tls_conn_t *conn)
 extern int tls_p_negotiate_conn(tls_conn_t *conn)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	return _negotiate(conn);
 }
@@ -1361,6 +1388,7 @@ extern int tls_p_negotiate_conn(tls_conn_t *conn)
 extern bool tls_p_is_client_authenticated(tls_conn_t *conn)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	return conn->is_client_authenticated;
 }
@@ -1369,6 +1397,8 @@ extern int tls_p_get_conn_fd(tls_conn_t *conn)
 {
 	if (!conn)
 		return -1;
+
+	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (conn->input_fd != conn->output_fd)
 		debug("%s: asymmetric connection %d->%d",
@@ -1380,6 +1410,7 @@ extern int tls_p_get_conn_fd(tls_conn_t *conn)
 extern int tls_p_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 	xassert(conn->s2n_conn);
 	xassert(input_fd >= 0);
 	xassert(output_fd >= 0);
@@ -1425,6 +1456,7 @@ extern int tls_p_set_conn_callbacks(tls_conn_t *conn,
 				    conn_callbacks_t *callbacks)
 {
 	xassert(conn);
+	xassert(conn->magic == TLS_CONN_MAGIC);
 	xassert(conn->s2n_conn);
 	xassert(callbacks);
 	xassert(callbacks->recv);
