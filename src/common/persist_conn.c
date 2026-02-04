@@ -669,7 +669,7 @@ extern int slurm_persist_conn_open(persist_conn_t *persist_conn)
 				      __func__);
 			}
 
-			_conn_destroy(persist_conn->conn);
+			_conn_destroy(persist_conn);
 			persist_conn->conn = NULL;
 
 			if (!errno)
