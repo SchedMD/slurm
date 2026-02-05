@@ -1389,12 +1389,9 @@ static int _remove_from_allowed_parts_list(list_t *allowed_parts_list,
 		return rc;
 	}
 
-	if (part_ptr) {
-		(void) list_delete_first(allowed_parts_list,
-					 slurm_find_ptr_in_list,
-					 part_ptr);
-		rc = SLURM_SUCCESS;
-	}
+	(void) list_delete_first(allowed_parts_list, slurm_find_ptr_in_list,
+				 part_ptr);
+	rc = SLURM_SUCCESS;
 
 	return rc;
 }
