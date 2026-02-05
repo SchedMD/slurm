@@ -5947,7 +5947,7 @@ static int _process_persist_conn(void *arg, persist_msg_t *persist_msg,
 
 static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 {
-	int rc = SLURM_SUCCESS, fd = -1;
+	int rc = SLURM_SUCCESS, fd = -1, rc_msg = EINVAL;
 	char *comment = NULL;
 	buf_t *ret_buf;
 	persist_conn_t *persist_conn = NULL, p_tmp = { 0 };
@@ -6034,9 +6034,10 @@ end_it:
 	 * with the persist_conn we sent in, so use the copy instead
 	 */
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
-	if (slurm_persist_send_msg(&p_tmp, ret_buf) != SLURM_SUCCESS) {
-		debug("Problem sending response to connection %d uid(%u)",
-		      conn_g_get_fd(p_tmp.conn), msg->auth_uid);
+	if ((rc_msg = slurm_persist_send_msg(&p_tmp, ret_buf))) {
+		debug("Problem sending response to connection %d uid(%u): %s",
+		      conn_g_get_fd(p_tmp.conn), msg->auth_uid,
+		      slurm_strerror(rc_msg));
 	}
 
 	if (rc && persist_conn) {
