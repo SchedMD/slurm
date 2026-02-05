@@ -5954,6 +5954,14 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
 
+	/*
+	 * Conversion to persistent connections should only happen to extracted
+	 * connections
+	 */
+	xassert(!msg->pcon);
+	xassert(!msg->conmgr_con);
+	xassert(msg->conn);
+
 	if (msg->pcon)
 		error("We already have a persistent connect, this should never happen");
 
