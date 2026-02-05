@@ -58,7 +58,7 @@ static int _sort_controllers(void *x, void *y)
 
 extern list_t *resolve_ctls_from_dns_srv(void)
 {
-	struct __res_state res;
+	struct __res_state res = { 0 };
 	ns_msg handle;
 	ns_rr rr;
 	unsigned char answer[512];
