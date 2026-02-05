@@ -70,9 +70,13 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 	} while (0)
 
 #define PARSE_ERROR(error_number, state) \
-	_on_parse_error(error_number, state, NULL, 0, __func__)
+	on_parse_error(error_number, state->total_bytes, state->buffer, \
+		       state->callbacks, state->callback_arg, state->name, \
+		       NULL, 0, __func__, &state->rc)
 #define PARSE_ERROR_AT(error_number, state, at, bytes) \
-	_on_parse_error(error_number, state, (at), (bytes), __func__)
+	on_parse_error(error_number, state->total_bytes, state->buffer, \
+		       state->callbacks, state->callback_arg, state->name, \
+		       (at), (bytes), __func__, &state->rc)
 
 #define LOG_URL_PARSE(name, buffer, fmt, ...) \
 	_log_url_parse(name, buffer, __func__, fmt, ##__VA_ARGS__)
@@ -246,53 +250,6 @@ extern int http_parser_p_new_parse_request(const char *name,
 
 	*state_ptr = state;
 	return SLURM_SUCCESS;
-}
-
-/*
- * Notify caller that parsing failed
- * NOTE: use PARSE_ERROR() or PARSE_ERROR_AT() instead of calling directly
- * IN error_number - Slurm error encountered
- * IN state - state pointer
- * IN at - pointer to where failure happened or NULL if N/A
- * IN caller - function that caught error
- * RET 1 - always 1 to return to libhttp_parser to stop parsing
- */
-static int _on_parse_error(slurm_err_t error_number, state_t *state,
-			   const void *at, const size_t at_bytes,
-			   const char *caller)
-{
-	http_parser_error_t error = {
-		.error_number = error_number,
-		.offset = state->total_bytes,
-		.at = at,
-		.at_bytes = (at ? at_bytes : -1),
-	};
-
-	xassert(state->magic == STATE_MAGIC);
-
-	if (at) {
-		xassert(state->buffer);
-		xassert(at >= (const void *) get_buf_data(state->buffer));
-		xassert((at + at_bytes) <=
-			(const void *) (get_buf_data(state->buffer) +
-					get_buf_offset(state->buffer)));
-
-		/* Shift total_bytes to at pointer */
-		error.offset +=
-			(at - (const void *) get_buf_data(state->buffer));
-	}
-
-	LOG_PARSE_AT(state, at, at_bytes, "Parsing failed: %s",
-		     slurm_strerror(error_number));
-
-	if (state->callbacks->on_parse_error)
-		state->rc =
-			state->callbacks->on_parse_error(&error,
-							 state->callback_arg);
-	else
-		state->rc = error_number;
-
-	return 1;
 }
 
 static void _log_url_parse_buffer(const char *name, const char *caller,
