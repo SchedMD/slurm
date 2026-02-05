@@ -40,8 +40,31 @@
 
 #include "src/common/pack.h"
 
+#include "src/interfaces/http_parser.h"
+
 extern void log_parse(const buf_t *buffer, const char *name, const void *at,
 		      const size_t at_bytes, const char *caller,
 		      const char *fmt, ...);
+
+/*
+ * Notify caller that parsing failed
+ * NOTE: use plugin's PARSE_ERROR()/PARSE_ERROR_AT() instead of calling directly
+ * IN error_number - Slurm error encountered
+ * IN total_bytes - Bytes already parsed (cumulative)
+ * IN buffer - Current buffer getting parsed
+ * IN callbacks - callback to call on events
+ * IN callback_arg - pointer to hand to callbacks
+ * IN name - Name of connection for logging
+ * IN state - state pointer
+ * IN at - pointer to where failure happened or NULL if N/A
+ * IN caller - function that caught error
+ * OUT rc - error code
+ * RET 1 - always 1 to return to http_parser to stop parsing
+ */
+extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
+			  const buf_t *buffer,
+			  const http_parser_callbacks_t *callbacks,
+			  void *callback_arg, const char *name, const void *at,
+			  const size_t at_bytes, const char *caller, int *rc);
 
 #endif

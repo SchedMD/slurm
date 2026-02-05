@@ -111,3 +111,53 @@ extern void log_parse(const buf_t *buffer, const char *name, const void *at,
 
 	xfree(log_str);
 }
+
+/*
+ * Notify caller that parsing failed
+ * NOTE: use plugin's PARSE_ERROR()/PARSE_ERROR_AT() instead of calling directly
+ * IN error_number - Slurm error encountered
+ * IN total_bytes - Bytes already parsed (cumulative)
+ * IN buffer - Current buffer getting parsed
+ * IN callbacks - callback to call on events
+ * IN callback_arg - pointer to hand to callbacks
+ * IN name - Name of connection for logging
+ * IN at - pointer to where failure happened or NULL if N/A
+ * IN at_bytes - number of bytes at "at" or ignored if "at" is NULL
+ * IN caller - function that caught error
+ * OUT rc - error code
+ * RET 1 - always 1 to return to http_parser to stop parsing
+ */
+extern int on_parse_error(slurm_err_t error_number, ssize_t total_bytes,
+			  const buf_t *buffer,
+			  const http_parser_callbacks_t *callbacks,
+			  void *callback_arg, const char *name, const void *at,
+			  const size_t at_bytes, const char *caller, int *rc)
+{
+	http_parser_error_t error = {
+		.error_number = error_number,
+		.offset = total_bytes,
+		.at = at,
+		.at_bytes = (at ? at_bytes : -1),
+	};
+
+	if (at) {
+		xassert(buffer);
+		xassert(at >= (const void *) get_buf_data(buffer));
+		xassert((at + at_bytes) <=
+			(const void *) (get_buf_data(buffer) +
+					get_buf_offset(buffer)));
+
+		/* Shift total_bytes to at pointer */
+		error.offset += (at - (const void *) get_buf_data(buffer));
+	}
+
+	log_parse(buffer, name, (at), (at_bytes), __func__,
+		  "Parsing failed: %s", slurm_strerror(error_number));
+
+	if (callbacks->on_parse_error)
+		*rc = callbacks->on_parse_error(&error, callback_arg);
+	else
+		*rc = error_number;
+
+	return 1;
+}
