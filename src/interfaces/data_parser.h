@@ -660,6 +660,8 @@ typedef enum {
 	DATA_PARSER_NAMESPACE_NODE_CONF_COMPLEX, /* ns_node_conf_t* */
 	DATA_PARSER_NAMESPACE_CONF, /* ns_conf_t */
 	DATA_PARSER_NAMESPACE_CONF_PTR, /* ns_conf_t* */
+	DATA_PARSER_NODE_REASON_USER_ID, /* node_info_t->reason_uid */
+	DATA_PARSER_SINFO_REASON_USER_ID, /* sinfo_data_t->reason_uid */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

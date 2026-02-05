@@ -2216,6 +2216,33 @@ static int PARSE_FUNC(USER_ID)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
+static int DUMP_FUNC(NODE_REASON_USER_ID)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	node_info_t *node = obj;
+	if (node->reason != NULL)
+		return DUMP(USER_ID, node->reason_uid, dst, args);
+
+	data_set_string(dst, "");
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(NODE_REASON_USER_ID)
+
+static int DUMP_FUNC(SINFO_REASON_USER_ID)(const parser_t *const parser, void *obj,
+					   data_t *dst, args_t *args)
+{
+	sinfo_data_t *node = obj;
+	if (node->reason != NULL)
+		return DUMP(USER_ID, node->reason_uid, dst, args);
+
+	data_set_string(dst, "");
+	return SLURM_SUCCESS;
+}
+
+PARSE_DISABLED(SINFO_REASON_USER_ID)
+
+
 static int PARSE_FUNC(GROUP_ID)(const parser_t *const parser, void *obj,
 				data_t *src, args_t *args, data_t *parent_path)
 {
@@ -8527,7 +8554,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_parse(STRING, comment, "comment", "Arbitrary comment"),
 	add_parse(STRING, reason, "reason", "Describes why the node is in a \"DOWN\", \"DRAINED\", \"DRAINING\", \"FAILING\" or \"FAIL\" state"),
 	add_parse(TIMESTAMP_NO_VAL, reason_time, "reason_changed_at", "When the reason changed (UNIX timestamp)"),
-	add_parse(USER_ID, reason_uid, "reason_set_by_user", "User who set the reason"),
+	add_cparse(NODE_REASON_USER_ID, "reason_set_by_user", "User who set the reason"),
 	add_parse(TIMESTAMP_NO_VAL, resume_after, "resume_after", "Number of seconds after the node's state is updated to \"DOWN\" or \"DRAIN\" before scheduling a node state resume"),
 	add_parse(STRING, resv_name, "reservation", "Name of reservation containing this node"),
 	add_parse(UINT64, alloc_memory, "alloc_memory", "Total memory in MB currently allocated for jobs"),
@@ -9073,6 +9100,8 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(sinfo_data_t, mtype, false, field, 0, path, desc)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(sinfo_data_t, mtype, false, path, desc)
 #define add_skip(field)				\
 	add_parser_skip(sinfo_data_t, field)
 static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
@@ -9116,7 +9145,7 @@ static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
 	add_parse(STRING, reason, "reason/description", "Why a node is unavailable"),
 	add_parse(UINT64, reason_time, "reason/time", "When the reason was set (UNIX timestamp)"),
 	add_parse(STRING, resv_name, "reservation", "Name of advanced reservation"),
-	add_parse(USER_ID, reason_uid, "reason/user", "UID of the user that set the reason"),
+	add_cparse(SINFO_REASON_USER_ID, "reason_set_by_user", "User who set the reason"),
 	add_parse(STRING, cpu_spec_list, "resource_spec/cpus", "CpuSpecList - Comma-separated list of Slurm abstract CPU IDs reserved for system use"),
 	add_parse(UINT64, mem_spec_limit, "resource_spec/memory", "MemSpecLimit - Amount of RealMemory in megabytes reserved for system use"),
 	add_skip(version), /* already in meta */
@@ -9127,6 +9156,7 @@ static const parser_t PARSER_ARRAY(SINFO_DATA)[] = {
 	add_skip(part_inx),
 };
 #undef add_parse
+#undef add_cparse
 #undef add_skip
 
 #define add_parse(mtype, field, path, desc)				\
@@ -11205,6 +11235,8 @@ static const parser_t parsers[] = {
 	addpcp(JOB_STDERR, STRING, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpcp(JOB_ASSOC_ID, ASSOC_SHORT_PTR, slurmdb_job_rec_t, NEED_NONE, NULL),
 	addpca(QOS_PREEMPT_LIST, STRING, slurmdb_qos_rec_t, NEED_QOS, NULL),
+	addpcp(NODE_REASON_USER_ID, USER_ID, node_info_t, NEED_NONE, NULL),
+	addpcp(SINFO_REASON_USER_ID, USER_ID, sinfo_data_t, NEED_NONE, NULL),
 	addpcp(STEP_NODES, HOSTLIST, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_REQ_MAX, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
 	addpca(STEP_TRES_REQ_MIN, TRES, slurmdb_step_rec_t, NEED_TRES, NULL),
