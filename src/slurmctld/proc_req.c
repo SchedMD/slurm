@@ -6029,6 +6029,7 @@ end_it:
 	}
 	xfree(comment);
 	FREE_NULL_BUFFER(ret_buf);
+	FREE_NULL_MSG(msg);
 	END_TIMER;
 
 	/* Don't free this here, it will be done elsewhere */
@@ -6889,6 +6890,7 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_PERSIST_INIT,
 		.func = _slurm_rpc_persist_init,
+		.keep_msg = true,
 	},{
 		.msg_type = REQUEST_SET_FS_DAMPENING_FACTOR,
 		.func = _slurm_rpc_set_fs_dampening_factor,
