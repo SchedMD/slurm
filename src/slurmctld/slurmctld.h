@@ -2281,14 +2281,6 @@ extern void reconfigure_slurm(slurm_msg_t *msg);
 extern void notify_parent_of_success(void);
 
 /*
- * free_job_record - delete a job record and its corresponding
- *	job_details,
- *	see common/list.h for documentation
- * IN job_entry - pointer to job_record to delete
- */
-extern void free_job_record(void *job_entry);
-
-/*
  * Build a job rec from an advanced reservation request.
  */
 extern job_record_t *job_mgr_copy_resv_desc_to_job_record(
