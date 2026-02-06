@@ -578,6 +578,7 @@ typedef struct set_debug_level_msg {
 typedef struct job_step_specs {
 	char *container; /* OCI container bundle path */
 	char *container_id; /* OCI container ID */
+	char *container_type; /* Job container type */
 	uint32_t cpu_count;	/* count of required processors */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
