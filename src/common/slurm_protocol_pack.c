@@ -3161,6 +3161,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr(&step->cluster, buffer);
 		safe_unpackstr(&step->container, buffer);
 		safe_unpackstr(&step->container_id, buffer);
+		safe_unpackstr(&step->container_type, buffer);
 		safe_unpackstr(&step->partition, buffer);
 		safe_unpackstr(&step->srun_host, buffer);
 		safe_unpackstr(&step->resv_ports, buffer);

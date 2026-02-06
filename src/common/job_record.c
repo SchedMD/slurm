@@ -411,6 +411,7 @@ extern int pack_ctld_job_step_info(void *x, void *arg)
 		packstr(slurm_conf.cluster_name, buffer);
 		packstr(step_ptr->container, buffer);
 		packstr(step_ptr->container_id, buffer);
+		packstr(step_ptr->container_type, buffer);
 		if (step_ptr->job_ptr->part_ptr)
 			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
 		else
