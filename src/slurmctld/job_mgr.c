@@ -3370,9 +3370,11 @@ void dump_job_desc(job_desc_msg_t *job_desc)
 	if (job_desc->tres_per_task)
 		debug3("   TRES_per_task=%s", job_desc->tres_per_task);
 
-	if (job_desc->container || job_desc->container_id)
-		debug3("   container=%s container-id=%s",
-		       job_desc->container, job_desc->container_id);
+	if (job_desc->container_type || job_desc->container ||
+	    job_desc->container_id)
+		debug3("   container-type=%s container=%s container-id=%s",
+		       job_desc->container_type, job_desc->container,
+		       job_desc->container_id);
 }
 
 /*
