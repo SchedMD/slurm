@@ -569,7 +569,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	 * the lock. The lock is needed to ensure that the privileges are not
 	 * dropped from a different thread, like X11 shutdown thread.
 	 */
-	auth_setuid_lock();
+	auth_context_lock();
 
 	if (!only_mem) {
 		/* signal the message thread to shutdown, and wait for it */
@@ -593,7 +593,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 			      &step->step_id);
 	}
 
-	auth_setuid_unlock();
+	auth_context_unlock();
 	run_command_shutdown();
 
 	/*
