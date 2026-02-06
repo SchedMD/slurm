@@ -2296,6 +2296,7 @@ typedef struct {
 	char *cluster;		/* cluster that the step is running on. */
 	char *container;	/* OCI container bundle path */
 	char *container_id;	/* OCI container ID */
+	char *container_type;	/* Job container type */
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
