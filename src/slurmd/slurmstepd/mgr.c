@@ -1504,7 +1504,7 @@ x11_fail:
 			step->oom_error = true;
 
 	/* Lock to not collide with the _x11_signal_handler thread. */
-	auth_setuid_lock();
+	auth_context_lock();
 
 	/*
 	 * This function below calls jobacct_gather_fini(). For the case of
@@ -1515,7 +1515,7 @@ x11_fail:
 	acct_gather_profile_fini();
 	task_g_post_step(step);
 
-	auth_setuid_unlock();
+	auth_context_unlock();
 
 fail1:
 	conmgr_add_work_fifo(_x11_signal_handler, NULL);
