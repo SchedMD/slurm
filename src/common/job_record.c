@@ -2302,6 +2302,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		packstr(dump_job_ptr->comment, buffer);
 		packstr(dump_job_ptr->container, buffer);
 		packstr(dump_job_ptr->container_id, buffer);
+		packstr(dump_job_ptr->container_type, buffer);
 		packstr(dump_job_ptr->cpus_per_tres, buffer);
 
 		pack_time(dump_job_ptr->deadline, buffer);
@@ -2676,6 +2677,7 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpackstr(&job_ptr->comment, buffer);
 		safe_unpackstr(&job_ptr->container, buffer);
 		safe_unpackstr(&job_ptr->container_id, buffer);
+		safe_unpackstr(&job_ptr->container_type, buffer);
 		safe_unpackstr(&job_ptr->cpus_per_tres, buffer);
 
 		safe_unpack_time(&job_ptr->deadline, buffer);
