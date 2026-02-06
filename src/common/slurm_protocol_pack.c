@@ -3461,6 +3461,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr(&job->comment, buffer);
 		safe_unpackstr(&job->container, buffer);
 		safe_unpackstr(&job->container_id, buffer);
+		safe_unpackstr(&job->container_type, buffer);
 		safe_unpackstr(&job->cpus_per_tres, buffer);
 
 		safe_unpack_time(&job->deadline, buffer);
