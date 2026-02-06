@@ -100,6 +100,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->alloc_tls_cert);
 	xfree(step_ptr->container);
 	xfree(step_ptr->container_id);
+	xfree(step_ptr->container_type);
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
