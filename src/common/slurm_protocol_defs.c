@@ -1859,6 +1859,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->comment);
 		xfree(job->container);
 		xfree(job->container_id);
+		xfree(job->container_type);
 		xfree(job->cpus_per_tres);
 		xfree(job->cronspec);
 		xfree(job->dependency);

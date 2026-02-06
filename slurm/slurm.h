@@ -1852,6 +1852,7 @@ typedef struct job_info {
 	char *comment;		/* arbitrary comment */
 	char *container;	/* OCI Container bundle path */
 	char *container_id;	/* OCI Container ID */
+	char *container_type;	/* Job container type */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
 	uint16_t cores_per_socket; /* cores per socket required by job  */
