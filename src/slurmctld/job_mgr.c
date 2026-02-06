@@ -3532,6 +3532,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
 	job_ptr_pend->container = xstrdup(job_ptr->container);
 	job_ptr_pend->container_id = xstrdup(job_ptr->container_id);
+	job_ptr_pend->container_type = xstrdup(job_ptr->container_type);
 	job_ptr_pend->extra = xstrdup(job_ptr->extra);
 	if ((extra_constraints_parse(job_ptr_pend->extra,
 				     &job_ptr_pend->extra_constraints)) !=
