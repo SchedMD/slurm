@@ -18821,8 +18821,10 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 
 	exit_code = WEXITSTATUS(job_ptr->exit_code);
 
-	if (job_ptr->bit_flags & EXPEDITED_REQUEUE) {
-		verbose("%s: %pJ starting expedited requeue", __func__, job_ptr);
+	/* Only requeue on failure; success (exit 0) completes the job. */
+	if ((job_ptr->bit_flags & EXPEDITED_REQUEUE) && exit_code) {
+		verbose("%s: %pJ starting expedited requeue",
+			__func__, job_ptr);
 		job_state_set_flag(job_ptr, JOB_REQUEUE | JOB_EXPEDITING);
 		return;
 	}
