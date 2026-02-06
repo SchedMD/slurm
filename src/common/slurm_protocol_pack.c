@@ -2347,6 +2347,7 @@ static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 		pack32(msg->max_nodes, buffer);
 		packstr(msg->container, buffer);
 		packstr(msg->container_id, buffer);
+		packstr(msg->container_type, buffer);
 		pack32(msg->cpu_count, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
@@ -2501,6 +2502,7 @@ static int _unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->max_nodes, buffer);
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpackstr(&msg->container_type, buffer);
 		safe_unpack32(&msg->cpu_count, buffer);
 		safe_unpack32(&msg->cpu_freq_min, buffer);
 		safe_unpack32(&msg->cpu_freq_max, buffer);
