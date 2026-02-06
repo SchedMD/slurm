@@ -18473,6 +18473,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->comment           = xstrdup(job_ptr->comment);
 	job_desc->container = xstrdup(job_ptr->container);
 	job_desc->container_id = xstrdup(job_ptr->container_id);
+	job_desc->container_type = xstrdup(job_ptr->container_type);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);
