@@ -89,6 +89,7 @@ enum {
 	LONG_OPT_CONSOLIDATE_SEGMENTS,
 	LONG_OPT_CONTAINER,
 	LONG_OPT_CONTAINER_ID,
+	LONG_OPT_CONTAINER_TYPE,
 	LONG_OPT_CONTEXT,
 	LONG_OPT_CONTIGUOUS,
 	LONG_OPT_CORE,
@@ -394,6 +395,7 @@ typedef struct {
 	char *gres;			/* --gres			*/
 	char *container;		/* --container			*/
 	char *container_id;		/* --container-id		*/
+	char *container_type;		/* --container-type		*/
 	char *context;			/* --context			*/
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/
