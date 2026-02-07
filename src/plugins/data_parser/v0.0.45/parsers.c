@@ -9114,6 +9114,7 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 	add_parse(STRING, cluster, "cluster", "Cluster name"),
 	add_parse(STRING, container, "container", "Absolute path to OCI container bundle"),
 	add_parse(STRING, container_id, "container_id", "OCI container ID"),
+	add_parse(STRING, container_type, "container_type", "Job container type"),
 	add_parse(UINT32_NO_VAL, cpu_freq_min, "cpu/frequency/min", "Minimum CPU frequency"),
 	add_parse(UINT32_NO_VAL, cpu_freq_max, "cpu/frequency/max", "Maximum CPU frequency"),
 	add_parse(UINT32_NO_VAL, cpu_freq_gov, "cpu/frequency/governor", "CPU frequency governor"),
