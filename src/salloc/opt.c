@@ -193,6 +193,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_CONSOLIDATE_SEGMENTS", LONG_OPT_CONSOLIDATE_SEGMENTS },
   { "SALLOC_CONTAINER", LONG_OPT_CONTAINER },
   { "SALLOC_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
+  { "SALLOC_CONTAINER_TYPE", LONG_OPT_CONTAINER_TYPE },
   { "SALLOC_CONSTRAINT", 'C' },
   { "SALLOC_CORE_SPEC", 'S' },
   { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
@@ -431,6 +432,8 @@ static bool _opt_verify(void)
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
+	if (opt.container_type && !getenv("SLURM_CONTAINER_TYPE"))
+		setenvf(NULL, "SLURM_CONTAINER_TYPE", "%s", opt.container_type);
 
 	if (opt.hint &&
 	    !validate_hint_option(&opt)) {

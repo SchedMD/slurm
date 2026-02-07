@@ -372,6 +372,11 @@ Unique name for OCI container.
 .IP
 
 .TP
+\fB\-\-container-type\fR=<\fIcontainer_type\fR>
+Job container type to use for job.
+.IP
+
+.TP
 \fB\-\-contiguous\fR
 If set, then the allocated nodes must form a contiguous set.
 
@@ -2453,6 +2458,11 @@ Same as \-\-container-id\fR.
 .IP
 
 .TP
+\fBSALLOC_CONTAINER_TYPE\fR
+Same as \-\-container-type\fR.
+.IP
+
+.TP
 \fBSALLOC_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .IP
@@ -2715,6 +2725,12 @@ Only set if \fB\-\-container\fR is specified.
 \fBSLURM_CONTAINER_ID\fR
 OCI id for job.
 Only set if \fB\-\-container-id\fR is specified.
+.IP
+
+.TP
+\fBSLURM_CONTAINER_TYPE\fR
+Job container type for job.
+Only set if \fB\-\-container-type\fR is specified.
 .IP
 
 .TP
