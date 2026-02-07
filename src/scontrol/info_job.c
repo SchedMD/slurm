@@ -930,9 +930,11 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	}
 
 	/****** Line (optional) ******/
-	if (job_ptr->container || job_ptr->container_id) {
-		xstrfmtcat(out, "Container=%s ContainerID=%s",
-			   job_ptr->container, job_ptr->container_id);
+	if (job_ptr->container_type || job_ptr->container ||
+	    job_ptr->container_id) {
+		xstrfmtcat(out, "ContainerType=%s Container=%s ContainerID=%s",
+			   job_ptr->container_type, job_ptr->container,
+			   job_ptr->container_id);
 		xstrcat(out, line_end);
 	}
 
