@@ -636,6 +636,7 @@ env_vars_t env_vars[] = {
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
   { "SRUN_CONTAINER", LONG_OPT_CONTAINER },
   { "SRUN_CONTAINER_ID", LONG_OPT_CONTAINER_ID },
+  { "SRUN_CONTAINER_TYPE", LONG_OPT_CONTAINER_TYPE },
   { "SLURM_DEBUG", 'v'},
   { "SRUN_ERROR", 'e' },
   { "SRUN_INPUT", 'i' },
@@ -797,6 +798,8 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 	if (opt.container_id && !getenv("SLURM_CONTAINER_ID"))
 		setenvf(NULL, "SLURM_CONTAINER_ID", "%s", opt.container_id);
+	if (opt.container_type && !getenv("SLURM_CONTAINER_TYPE"))
+		setenvf(NULL, "SLURM_CONTAINER_TYPE", "%s", opt.container_type);
 
 	if (opt.network)
 		setenvf(NULL, "SLURM_NETWORK", "%s", opt.network);
