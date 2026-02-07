@@ -8845,6 +8845,7 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(STRING, comment, "comment", "Arbitrary comment"),
 	add_parse(STRING, container, "container", "Absolute path to OCI container bundle"),
 	add_parse(STRING, container_id, "container_id", "OCI container ID"),
+	add_parse(STRING, container_type, "container_type", "Job container type"),
 	add_parse(BOOL16_NO_VAL, contiguous, "contiguous", "True if job requires contiguous nodes"),
 	add_parse_overload(CORE_SPEC, core_spec, 1, "core_spec", "Specialized core count"),
 	add_parse_overload(THREAD_SPEC, core_spec, 1, "thread_spec", "Specialized thread count"),
