@@ -4694,6 +4694,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
+	step_ptr->container_type = xstrdup(job_ptr->container_type);
 
 	if (node_name2bitmap(job_ptr->batch_host, false,
 			     &step_ptr->step_node_bitmap, NULL)) {
