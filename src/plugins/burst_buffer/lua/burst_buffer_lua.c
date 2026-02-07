@@ -318,6 +318,8 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->container);
 	} else if (!xstrcmp(name, "container_id")) {
 		lua_pushstring(L, job_info->container_id);
+	} else if (!xstrcmp(name, "container_type")) {
+		lua_pushstring(L, job_info->container_type);
 	} else if (!xstrcmp(name, "contiguous")) {
 		lua_pushinteger(L, job_info->contiguous);
 	} else if (!xstrcmp(name, "core_spec")) {
