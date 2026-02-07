@@ -3529,6 +3529,7 @@ extern int step_create(job_record_t *job_ptr,
 
 	step_ptr->container = xstrdup(step_specs->container);
 	step_ptr->container_id = xstrdup(step_specs->container_id);
+	step_ptr->container_type = xstrdup(step_specs->container_type);
 	step_ptr->gres_list_req = step_gres_list;
 	step_gres_list = NULL;
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
