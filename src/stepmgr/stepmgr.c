@@ -4764,6 +4764,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
+	step_ptr->container_type = xstrdup(job_ptr->container_type);
 
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
