@@ -6884,6 +6884,7 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		pack16(msg->contiguous, buffer);
 		packstr(msg->container, buffer);
 		packstr(msg->container_id, buffer);
+		packstr(msg->container_type, buffer);
 		pack16(msg->core_spec, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->kill_on_node_fail, buffer);
@@ -7447,6 +7448,7 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->contiguous, buffer);
 		safe_unpackstr(&msg->container, buffer);
 		safe_unpackstr(&msg->container_id, buffer);
+		safe_unpackstr(&msg->container_type, buffer);
 		safe_unpack16(&msg->core_spec, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->kill_on_node_fail, buffer);
