@@ -9542,6 +9542,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(BOOL16, contiguous, "contiguous", "True if job requires contiguous nodes"),
 	add_parse(STRING, container, "container", "Absolute path to OCI container bundle"),
 	add_parse(STRING, container_id, "container_id", "OCI container ID"),
+	add_parse(STRING, container_type, "container_type", "Job container type"),
 	add_parse_overload(CORE_SPEC, core_spec, 1, "core_specification", "Specialized core count"),
 	add_parse_overload(THREAD_SPEC, core_spec, 1, "thread_specification", "Specialized thread count"),
 	add_parse(STRING, cpu_bind, "cpu_binding", "Method for binding tasks to allocated CPUs"),
