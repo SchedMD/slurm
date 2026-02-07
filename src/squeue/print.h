@@ -106,6 +106,8 @@ int _print_job_cluster_name(job_info_t * job, int width, bool right,
 int _print_job_container(job_info_t *job, int width, bool right, char *suffix);
 int _print_job_container_id(job_info_t *job, int width, bool right,
 			    char *suffix);
+extern int print_job_container_type(job_info_t *job, int width, bool right,
+				    char *suffix);
 int _print_job_core_spec(job_info_t * job, int width, bool right_justify,
 			 char* suffix);
 int _print_job_delay_boot(job_info_t * job, int width, bool right_justify,
@@ -360,6 +362,8 @@ int _print_step_container(job_step_info_t *step, int width, bool right_justify,
 			  char *suffix);
 int _print_step_container_id(job_step_info_t *step, int width,
 			     bool right_justify, char *suffix);
+extern int print_step_container_type(job_step_info_t *step, int width,
+				     bool right_justify, char *suffix);
 int _print_step_id(job_step_info_t * step, int width, bool right_justify,
 		   char *suffix);
 int _print_step_partition(job_step_info_t * step, int width,
