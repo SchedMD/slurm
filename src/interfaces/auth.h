@@ -94,6 +94,9 @@ extern bool auth_is_plugin_type_inited(auth_plugin_type_t plugin_id);
  */
 extern void auth_setuid_lock(void);
 extern void auth_setuid_unlock(void);
+extern void auth_context_lock(void);
+extern void auth_context_unlock(void);
+
 /*
  * Static bindings for the global authentication context.
  */

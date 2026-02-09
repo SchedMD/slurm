@@ -312,6 +312,10 @@ extern int auth_index(void *cred)
 	return 0;
 }
 
+/*
+ * For drop_privileges/reclaim_privileges pairs.
+ * Sets externally_locked to maintain lock state across fork().
+ */
 extern void auth_setuid_lock(void)
 {
 	slurm_rwlock_wrlock(&context_lock);
@@ -326,6 +330,21 @@ extern void auth_setuid_lock(void)
 extern void auth_setuid_unlock(void)
 {
 	externally_locked = false;
+	slurm_rwlock_unlock(&context_lock);
+}
+
+/*
+ * For protecting against concurrent privilege changes without fork
+ * implications. Does NOT set externally_locked, so lock state will not
+ * persist across fork().
+ */
+extern void auth_context_lock(void)
+{
+	slurm_rwlock_wrlock(&context_lock);
+}
+
+extern void auth_context_unlock(void)
+{
 	slurm_rwlock_unlock(&context_lock);
 }
 
