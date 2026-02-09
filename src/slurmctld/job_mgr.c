@@ -16404,6 +16404,11 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		return;
 
 	if (IS_JOB_EXPEDITING(job_ptr)) {
+		if (job_ptr->epilog_running) {
+			debug("%s: unexpected call with epilog still running for %pJ",
+			     __func__, job_ptr);
+			return;
+		}
 		if (!job_ptr->epilog_failed) {
 			job_state_unset_flag(job_ptr, JOB_EXPEDITING);
 			job_state_set_flag(job_ptr, JOB_REQUEUE_HOLD);
