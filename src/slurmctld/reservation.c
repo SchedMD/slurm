@@ -1358,10 +1358,10 @@ static int _append_to_allowed_parts_list(list_t *allowed_parts_list,
 		return rc;
 	}
 
+	rc = SLURM_SUCCESS;
 	if (!list_find_first(allowed_parts_list, slurm_find_ptr_in_list,
 			     part_ptr)) {
 		list_append(allowed_parts_list, part_ptr);
-		rc = SLURM_SUCCESS;
 	}
 
 	return rc;
