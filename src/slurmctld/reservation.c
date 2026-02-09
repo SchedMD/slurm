@@ -1346,7 +1346,6 @@ extern int _sort_allowed_parts_list_asc(void *v1, void *v2)
 static int _append_to_allowed_parts_list(list_t *allowed_parts_list,
 					 char *part_name)
 {
-	int rc = ESLURM_INVALID_PARTITION_NAME;
 	part_record_t *part_ptr = NULL;
 
 	xassert(allowed_parts_list);
@@ -1356,16 +1355,14 @@ static int _append_to_allowed_parts_list(list_t *allowed_parts_list,
 	if (!(part_ptr = list_find_first(part_list, &list_find_part,
 					 part_name))) {
 		error("No Partition by name %s", part_name);
-		return rc;
+		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
 	if (!list_find_first(allowed_parts_list, slurm_find_ptr_in_list,
-			     part_ptr)) {
+			     part_ptr))
 		list_append(allowed_parts_list, part_ptr);
-		rc = SLURM_SUCCESS;
-	}
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1376,7 +1373,6 @@ static int _append_to_allowed_parts_list(list_t *allowed_parts_list,
 static int _remove_from_allowed_parts_list(list_t *allowed_parts_list,
 					   char *part_name)
 {
-	int rc = ESLURM_INVALID_PARTITION_NAME;
 	part_record_t *part_ptr = NULL;
 
 	xassert(allowed_parts_list);
@@ -1386,17 +1382,13 @@ static int _remove_from_allowed_parts_list(list_t *allowed_parts_list,
 	if (!(part_ptr = list_find_first(part_list, &list_find_part,
 					 part_name))) {
 		error("No Partition by name %s", part_name);
-		return rc;
+		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
-	if (part_ptr) {
-		(void) list_delete_first(allowed_parts_list,
-					 slurm_find_ptr_in_list,
-					 part_ptr);
-		rc = SLURM_SUCCESS;
-	}
+	(void) list_delete_first(allowed_parts_list, slurm_find_ptr_in_list,
+				 part_ptr);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
