@@ -606,7 +606,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
-test37.12  Federated sbatch|srun --test-only
 test37.13  Validate federated arrays
 test37.14  Validate federated scontrol notify
 test37.15  Validate federated scontrol suspend
@@ -1117,6 +1116,7 @@ test_133_8   scontrol --local, --sibling options scancel --sibling=<jobid>
 test_133_9   Verify federated scontrol, squeue, sinfo and sprio output
 test_133_10  Federated job cancellations
 test_133_11  Federated sacct output
+test_133_12  Federated sbatch|srun --test-only
 
 test_134_#   Testing of SwitchType.
 ===================================
