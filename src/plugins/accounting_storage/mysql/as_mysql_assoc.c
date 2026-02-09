@@ -3921,9 +3921,15 @@ extern list_t *as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						       wanted_qos))
 					continue;
 			}
-			xstrfmtcat(args.name_char,
-				   "%slineage='%s'",
-				   args.name_char ? " || " : "", row[1]);
+			if (list_count(assoc_cond->partition_list))
+				xstrfmtcat(args.name_char, "%slineage='%s'",
+					   args.name_char ? " || " : "",
+					   row[1]);
+			else
+				xstrfmtcat(args.name_char,
+					   "%slineage like '%s%%'",
+					   args.name_char ? " || " : "",
+					   row[1]);
 		}
 		mysql_free_result(result);
 
