@@ -9531,6 +9531,7 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(UINT16, boards_per_node, "minimum_boards_per_node", "Boards per node required"),
 	add_parse(UINT16, sockets_per_board, "minimum_sockets_per_board", "Sockets per board required"),
 	add_parse(UINT16, sockets_per_node, "sockets_per_node", "Sockets per node required"),
+	add_parse(UINT16, cores_per_socket, "cores_per_socket", "Cores per sockets required"),
 	add_parse(UINT16, threads_per_core, "threads_per_core", "Threads per core required"),
 	add_parse(UINT16, ntasks_per_node, "tasks_per_node", "Number of tasks to invoke on each node"),
 	add_parse(UINT16, ntasks_per_socket, "tasks_per_socket", "Number of tasks to invoke on each socket"),
