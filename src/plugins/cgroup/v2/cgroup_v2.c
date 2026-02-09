@@ -66,6 +66,7 @@
 #define DEFAULT_SYSTEM_CGSLICE "system.slice"
 #define SYSTEM_CGSCOPE "slurmstepd"
 #define SYSTEM_CGDIR "system"
+#define SLURMD_CGROUP "slurmd"
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "Cgroup v2 plugin";
@@ -1274,6 +1275,9 @@ static int _unset_cpu_mem_limits(xcgroup_t *cg)
 }
 
 /*
+ * Create a new cgroup, define it as our new root cgroup, set controllers and
+ * move our process into it.
+ *
  * Slurmd started manually may not remain in the actual scope. Normally there
  * are other pids there, like the terminal from where it's been launched, so
  * slurmd would affect these pids. For example a CoreSpecCount of 1 would leave
@@ -1281,8 +1285,12 @@ static int _unset_cpu_mem_limits(xcgroup_t *cg)
  *
  * Get out of there and put ourselves into a new home. This shouldn't happen on
  * production systems.
+ *
+ * IN new_path - base path of the new cgroup to set up and move ourselves to
+ * IN name - name of the new cgroup
+ * RET SLURM_SUCCESS if cgroup setup and migration was successful
  */
-static int _migrate_to_stepd_scope()
+static int _reparent_into_cgroup(char *new_path, char *name)
 {
 	char *new_home = NULL;
 	pid_t slurmd_pid = getpid();
@@ -1291,7 +1299,7 @@ static int _migrate_to_stepd_scope()
 	xfree(int_cg_ns.mnt_point);
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
 
-	xstrfmtcat(new_home, "%s/slurmd", stepd_scope_path);
+	xstrfmtcat(new_home, "%s/%s", new_path, name);
 	int_cg_ns.mnt_point = new_home;
 
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
@@ -1313,12 +1321,11 @@ static int _migrate_to_stepd_scope()
 	 */
 	invoc_id = "";
 
-	if (_get_controllers(stepd_scope_path, int_cg_ns.avail_controllers) !=
+	if (_get_controllers(new_path, int_cg_ns.avail_controllers) !=
 	    SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	if (_enable_subtree_control(stepd_scope_path,
-				    int_cg_ns.avail_controllers) !=
+	if (_enable_subtree_control(new_path, int_cg_ns.avail_controllers) !=
 	    SLURM_SUCCESS) {
 		error("Cannot enable subtree_control at the top level %s",
 		      int_cg_ns.mnt_point);
@@ -1702,7 +1709,9 @@ extern int cgroup_p_setup_scope(char *scope_path)
 		 */
 		if (!invoc_id) {
 			log_flag(CGROUP, "assuming slurmd has been started manually.");
-			if (_migrate_to_stepd_scope() != SLURM_SUCCESS)
+			if (_reparent_into_cgroup(stepd_scope_path,
+						  SLURMD_CGROUP) !=
+			    SLURM_SUCCESS)
 				return SLURM_ERROR;
 		} else {
 			log_flag(CGROUP, "INVOCATION_ID env var found. Assuming slurmd has been started by systemd.");
