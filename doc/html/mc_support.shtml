@@ -321,7 +321,7 @@ to -m block:cyclic with --cpu-bind=thread.</p>
 <a class="slurm_link" href="#srun_consres"></a>
 </h3>
 
-<p>The --mem flag specifies the maximum amount of memory in MB
+<p>The --mem flag specifies the maximum amount of memory in MiB
 needed by the job per node.  This flag is used to support the memory
 as a consumable resource allocation strategy.</p>
 
@@ -785,7 +785,7 @@ parts*    4    2:2:1    2        2        1
 the following identifiers are available:</p>
 
 <PRE>
-%m  Size of memory (in MB) requested by the job
+%m  Size of memory (in MiB) requested by the job
 %H  Number of requested sockets per node
 %I  Number of requested cores per socket
 %J  Number of requested threads per core

@@ -1793,7 +1793,7 @@ details: <https://slurm.schedmd.com/mcs.html>
 .TP
 \fB\-\-mem\fR=<\fIsize\fR>[\fIunits\fR]
 Specify the real memory required per node.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -1952,7 +1952,7 @@ This option applies to job and step allocations.
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per usable allocated CPU.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 The default value is \fBDefMemPerCPU\fR and the maximum value is
 \fBMaxMemPerCPU\fR (see exception below). If configured, both parameters can be
@@ -2033,7 +2033,7 @@ $ sacct \-j $SLURM_JOB_ID \-X \-o jobid%7,reqtres%35,alloctres%35
 .TP
 \fB\-\-mem\-per\-gpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per allocated GPU.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerGPU\fR and is available on both a global and
 per partition basis.
@@ -3118,7 +3118,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 .TP
 \fB\-\-tmp\fR=<\fIsize\fR>[\fIunits\fR]
 Specify a minimum amount of temporary disk space per node.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 This option applies to job allocations.
 .IP
@@ -4785,8 +4785,8 @@ wait
 .TP
 \fBExample 8:\fR
 This example shows how to launch an application called "server" with one task,
-8 CPUs and 16 GB of memory (2 GB per CPU) plus another application called
-"client" with 16 tasks, 1 CPU per task (the default) and 1 GB of memory per
+8 CPUs and 16 GiB of memory (2 GiB per CPU) plus another application called
+"client" with 16 tasks, 1 CPU per task (the default) and 1 GiB of memory per
 task.
 .IP
 .nf

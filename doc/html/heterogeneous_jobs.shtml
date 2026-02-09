@@ -23,8 +23,9 @@
 <p>Slurm version 17.11 and later supports the ability to submit and manage
 heterogeneous jobs, in which each component has virtually all job options
 available including partition, account and QOS (Quality Of Service).
-For example, part of a job might require four cores and 4 GB for each of 128
-tasks while another part of the job would require 16 GB of memory and one CPU.</p>
+For example, part of a job might require four cores and 4 GiB for each of 128
+tasks while another part of the job would require 16 GiB of memory and one CPU.
+</p>
 
 <h2 id="submitting">Submitting Jobs
 <a class="slurm_link" href="#submitting"></a>
@@ -163,7 +164,7 @@ $ sbatch --cpus-per-task=4 --mem-per-cpu=16g --ntasks=1 : \
 
 <p>The batch script will be executed in the first node in the first component
 of the heterogeneous job. For the above example, that will be the job component
-with 1 task, 4 CPUs and 64 GB of memory (16 GB for each of the 4 CPUs).</p>
+with 1 task, 4 CPUs and 64 GiB of memory (16 GiB for each of the 4 CPUs).</p>
 
 <p>If a heterogeneous job is submitted to run in multiple clusters <u>not</u>
 part of a federation (e.g. "sbatch --cluster=alpha,beta ...") then the entire
