@@ -606,8 +606,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
-test37.8   scontrol --local, --sibling options
-           scancel --sibling=<jobid>
 test37.9   Verify federated scontrol, squeue, sinfo and sprio output
 test37.10  Federated job cancellations
 test37.11  Federated sacct output
@@ -1118,6 +1116,7 @@ test_133_4   federated job submission
 test_133_5   Federated Requeue
 test_133_6   Federated Job Updates
 test_133_7   Federated Cluster States
+test_133_8   scontrol --local, --sibling options scancel --sibling=<jobid>
 
 test_134_#   Testing of SwitchType.
 ===================================
