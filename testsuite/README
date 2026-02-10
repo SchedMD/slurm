@@ -606,7 +606,6 @@ test36.4   bsub wrapper test
 
 test37.#   Testing of federations.
 ==================================
-test37.15  Validate federated scontrol suspend
 test37.16  Validate job cleanup when clusters are removed federation
 test37.17  Test local and remote job dependencies
 
@@ -1117,6 +1116,7 @@ test_133_11  Federated sacct output
 test_133_12  Federated sbatch|srun --test-only
 test_133_13  Validate federated arrays
 test_133_14  Validate federated scontrol notify
+test_133_15  Validate federated scontrol suspend
 
 test_134_#   Testing of SwitchType.
 ===================================
