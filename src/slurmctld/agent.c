@@ -741,6 +741,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 	slurmctld_lock_t node_write_lock =
 		{ .conf = READ_LOCK, .node = WRITE_LOCK };
 	thd_t *thread_ptr = agent_ptr->thread_struct;
+	slurm_msg_type_t msg_type = agent_ptr->msg_type;
 	int i;
 	bool locked = false;
 
@@ -825,6 +826,23 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 					locked = true;
 					lock_slurmctld(node_write_lock);
 				}
+				/*
+				 * Only override resp_type when no ret_list and
+				 * while processing reconfiguration messages.
+				 * This helps prevent last_response being
+				 * updated for non-responding nodes during
+				 * reconfigurations. In the ret_list path it is
+				 * already set from ret_data_info->type,
+				 * preserving the distinction between a forward
+				 * failure and a node that responded with an
+				 * error (e.g. temporary protocol mismatches).
+				 */
+				if (!is_ret_list &&
+				    (msg_type == REQUEST_RECONFIGURE ||
+				     msg_type ==
+					REQUEST_RECONFIGURE_WITH_CONFIG))
+					resp_type = RESPONSE_FORWARD_FAILED;
+
 				node_not_resp(*node_names,
 					      thread_ptr[i].start_time,
 					      resp_type);
