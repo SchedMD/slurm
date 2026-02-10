@@ -604,10 +604,6 @@ test36.2   bjobs wrapper test
 test36.3   bkill wrapper test
 test36.4   bsub wrapper test
 
-test37.#   Testing of federations.
-==================================
-test37.17  Test local and remote job dependencies
-
 test38.#   Testing of heterogeneous jobs.
 =========================================
 test38.3   Validate salloc heterogeneous job options.
@@ -1117,6 +1113,7 @@ test_133_13  Validate federated arrays
 test_133_14  Validate federated scontrol notify
 test_133_15  Validate federated scontrol suspend
 test_133_16  Validate job cleanup when clusters are removed federation
+test_133_17  Test local and remote job dependencies
 
 test_134_#   Testing of SwitchType.
 ===================================
