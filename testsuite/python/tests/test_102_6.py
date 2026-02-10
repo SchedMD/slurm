@@ -12,6 +12,8 @@ acct1 = "acct1"
 acct2 = "acct2"
 acct3 = "acct3"
 acct4 = "acct4"
+acct5 = "acct4_sub"
+acct6 = "acct4_sub_sub"
 user1 = "user1"
 defacct = acct1
 
@@ -154,3 +156,49 @@ def test_account_removal():
         result["exit_code"] == 0
     ), "Removing default account when it's not a default account should succeed"
     assert defacct in result["stdout"], "sacctmgr should report the deleted account"
+
+
+def test_account_removal_with_parent():
+    """Test removing an account using parent="""
+
+    # Add a sub acct
+    atf.run_command(
+        f"sacctmgr -i add account {acct5} parent={acct4} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Add another sub acct
+    atf.run_command(
+        f"sacctmgr -i add account {acct6} parent={acct5} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Now add user to it
+    atf.run_command(
+        f"sacctmgr -i add user {user1} acct={acct5} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Remove non-default account with parent specified
+    result = atf.run_command(
+        f"sacctmgr -i remove account {acct5} parent={acct4} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+    )
+    assert (
+        result["exit_code"] == 0
+    ), "Removing non-default account with a parent should succeed"
+    assert (
+        f"A = {acct5}" in result["stdout"]
+    ), "sacctmgr should report the deleted account"
+
+    # Confirm previous operation succeeded
+    output = atf.run_command_output(
+        f"sacctmgr -n show assoc format=acct,user,lineage acct={acct5},{acct6} cluster={cluster1}",
+        fatal=True,
+    )
+    assert (
+        output == ""
+    ), f"User {user1} with acct {acct5} shouldn't have an assoc anymore"
