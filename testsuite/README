@@ -647,7 +647,6 @@ test37.17  Test local and remote job dependencies
 
 test38.#   Testing of heterogeneous jobs.
 =========================================
-test38.1   Validate sbatch heterogeneous job options.
 test38.2   Validate sbatch heterogeneous job environment variables.
 test38.3   Validate salloc heterogeneous job options.
 test38.4   Validate salloc heterogeneous job environment variables.
