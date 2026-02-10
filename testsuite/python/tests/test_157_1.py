@@ -93,6 +93,10 @@ def setup_db(module_setup):
     )
 
 
+@pytest.mark.skipif(
+    atf.get_version() < (24, 11),
+    reason="Ticket 20828: Allow lookup of available QOSs for user in submit filter, in 24.11+.",
+)
 def test_assoc_qos():
     """Test that submitting a job reports the correct assoc QOS info"""
 
@@ -108,6 +112,10 @@ def test_assoc_qos():
         assert "No assoc_qos" in output
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (24, 11),
+    reason="Issue 50073: job_desc['assoc_comment'] does not look at assoc partition. Fixed in 24.11+",
+)
 def test_assoc_comment():
     """Test that submitting a job reports the correct assoc comment"""
 
