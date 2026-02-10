@@ -466,7 +466,7 @@ static list_t *_build_job_list(char *str)
 	job = strtok_r(my_job_list, ",", &tmp_char);
 	while (job) {
 		slurm_selected_step_t sel_step;
-		if (unfmt_job_id_string(str, &sel_step, NO_VAL)) {
+		if (unfmt_job_id_string(job, &sel_step, NO_VAL)) {
 			error("Invalid job id: %s", job);
 			exit(1);
 		} else if (sel_step.het_job_offset != NO_VAL)
