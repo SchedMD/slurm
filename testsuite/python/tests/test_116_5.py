@@ -11,10 +11,6 @@ node_num = 3
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    if atf.get_version() >= (26, 5):
-        # Since !2789 --distribution=arbitrary is not supported with CR_LLN
-        atf.require_config_parameter_excludes("SelectTypeParameters", "CR_LLN")
-
     atf.require_nodes(node_num + 2)
     atf.require_slurm_running()
 
@@ -40,9 +36,35 @@ def test_hostfile():
         match_ordered.append((str(iter), matches[iter][1]))
     write_host_file(matches)
 
+    if atf.get_version() >= (26, 5) and atf.config_parameter_includes(
+        "SelectTypeParameters", "CR_LLN"
+    ):
+        # In 26.05+ --distribution=arbitrary cannot be used in job allocation if
+        # CR_LLN is configured
+        assert atf.run_job_exit(
+            "-l --distribution=arbitrary printenv SLURMD_NODENAME",
+            env_vars=f"{HOSTFILE_ENV}={host_file}",
+            xfail=True,
+        ), "Jobs with --distribution=arbitrary should be rejected if CR_LLN is configured (in 26.05+)"
+
+        # Use exclusive allocation to test hostfile at step level
+        job_id = atf.submit_job_sbatch(
+            f"-N{node_num} --exclusive --wrap 'sleep infinity'", fatal=True
+        )
+    else:
+        # Use --distribution=arbitrary at job level
+        job_id = atf.submit_job_sbatch(
+            "--distribution=arbitrary --wrap 'sleep infinity'",
+            env_vars=f"{HOSTFILE_ENV}={host_file}",
+            fatal=True,
+        )
+
+    # Wait for the batch step to submit more external steps
+    atf.wait_for_step(job_id, "batch")
+
     # Test pass 1
     output = atf.run_job_output(
-        "-l --distribution=arbitrary printenv SLURMD_NODENAME",
+        f"--jobid={job_id} -l --distribution=arbitrary printenv SLURMD_NODENAME",
         env_vars=f"{HOSTFILE_ENV}={host_file}",
         fatal=True,
     )
@@ -63,7 +85,7 @@ def test_hostfile():
 
     # Test pass 2
     output = atf.run_job_output(
-        "-l --distribution=arbitrary printenv SLURMD_NODENAME",
+        f"--jobid={job_id} -l --distribution=arbitrary printenv SLURMD_NODENAME",
         env_vars=f"{HOSTFILE_ENV}={host_file}",
         fatal=True,
     )
