@@ -239,6 +239,7 @@ static pthread_t thread_id_sched = 0;
 static bool sched_full_queue = false;
 int sched_requests = 0;
 bool sched_running = false;
+bool sched_alive = false;
 static struct timeval sched_last = {0, 0};
 
 static uint32_t max_array_size = NO_VAL;
@@ -931,7 +932,7 @@ static void *_sched_agent(void *args)
 		while (true) {
 			if (slurmctld_config.shutdown_time) {
 				slurm_mutex_unlock(&sched_mutex);
-				return NULL;
+				goto cleanup;
 			}
 
 			gettimeofday(&now, NULL);
@@ -980,6 +981,13 @@ static void *_sched_agent(void *args)
 		slurm_cond_broadcast(&sched_cond);
 		slurm_mutex_unlock(&sched_mutex);
 	}
+
+cleanup:
+	slurm_mutex_lock(&sched_mutex);
+	xassert(sched_alive);
+	sched_alive = false;
+	slurm_cond_broadcast(&sched_cond);
+	slurm_mutex_unlock(&sched_mutex);
 
 	return NULL;
 }
@@ -5762,6 +5770,12 @@ void main_sched_init(void)
 {
 	if (thread_id_sched)
 		return;
+
+	slurm_mutex_lock(&sched_mutex);
+	xassert(!sched_alive);
+	sched_alive = true;
+	slurm_mutex_unlock(&sched_mutex);
+
 	slurm_thread_create(&thread_id_sched, _sched_agent, NULL);
 }
 
