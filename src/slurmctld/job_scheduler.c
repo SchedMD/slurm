@@ -4962,6 +4962,19 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 		}
 		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 		node_ptr->node_state |= NODE_STATE_POWERING_UP;
+		if (reboot_features &&
+		    !node_features_g_job_features_need_reboot(reboot_features)) {
+			/* Don't need to put REBOOT_ISSUSED flag on. */
+		} else {
+			/*
+			 * Use REBOOT_ISSUED flag to be able to detect when a
+			 * node was rebooted through this code and to determine
+			 * if the health check should be run when the node
+			 * finished rebooting.
+			 */
+			node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
+		}
+
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(power_down_node_bitmap, i);
 		bit_set(booting_node_bitmap, i);
