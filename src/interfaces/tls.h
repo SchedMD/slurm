@@ -45,6 +45,9 @@
  * be kept in sync with interfaces/tls as it reuses the same plugins.
  */
 
+/* Can safely be cast as conn_t from interfaces/conn */
+typedef struct tls_conn_s tls_conn_t;
+
 extern int tls_g_init(void);
 extern int tls_g_fini(void);
 
