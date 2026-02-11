@@ -10,6 +10,8 @@ noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES =				\
 	assoc_mgr.c				\
 	assoc_mgr.h				\
+	atomic.c				\
+	atomic.h				\
 	bitstring.c				\
 	bitstring.h				\
 	callerid.c				\

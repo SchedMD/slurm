@@ -44,6 +44,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include <src/common/atomic.h>
 #include <src/common/slurm_time.h>
 
 #define TIMER_START_TS tv1
@@ -116,18 +117,24 @@ extern timer_str_t timer_duration_str(const timespec_t tv1,
  */
 #define LATENCY_RANGE_COUNT 24
 
-typedef struct {
-	ssize_t count;
-} latency_histogram_bucket_t;
+#ifndef __STDC_NO_ATOMICS__
 
 typedef struct {
-	latency_histogram_bucket_t buckets[LATENCY_RANGE_COUNT];
+	atomic_uint64_t buckets[LATENCY_RANGE_COUNT];
 } latency_histogram_t;
 
 #define LATENCY_HISTOGRAM_INITIALIZER \
 	((latency_histogram_t) { \
 		.buckets = { { 0 } }, \
 	})
+
+#else /* !__STDC_NO_ATOMICS__ */
+
+/* Only provide a placeholder type to avoid breaking structs */
+typedef void *latency_histogram_t;
+#define LATENCY_HISTOGRAM_INITIALIZER NULL
+
+#endif /* !__STDC_NO_ATOMICS__ */
 
 /* Struct to hold latency metric state */
 typedef struct {
@@ -203,6 +210,8 @@ extern int latency_histogram_print_labels(char *buffer, size_t buffer_len);
 
 /*
  * print histogram buckets to buffer
+ * Note: operation is threadsafe w/rt to the histogram buckets individually but
+ *	will potentially print out of date values.
  * IN metric - latency metric to print histogram from
  * IN buffer - pointer to buffer to populate
  * IN buffer_len - number of bytes in buffer. should be at least
@@ -214,6 +223,7 @@ extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
 
 /*
  * Add latency value to histogram
+ * Note: operation is threadsafe
  * IN metric - latency metric to add new result
  * IN value - duration of time spent waiting
  */

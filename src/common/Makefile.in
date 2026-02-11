@@ -162,9 +162,9 @@ PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
-	cbuf.lo core_array.lo cpu_frequency.lo cron.lo daemonize.lo \
-	data.lo dynamic_plugin_data.lo eio.lo env.lo \
+am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
+	callerid.lo cbuf.lo core_array.lo cpu_frequency.lo cron.lo \
+	daemonize.lo data.lo dynamic_plugin_data.lo eio.lo env.lo \
 	extra_constraints.lo events.lo fd.lo fetch_config.lo \
 	forward.lo global_defaults.lo group_cache.lo half_duplex.lo \
 	hostlist.lo http.lo http_con.lo http_mime.lo http_router.lo \
@@ -215,7 +215,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
+am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/bitstring.Plo ./$(DEPDIR)/callerid.Plo \
 	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/core_array.Plo \
 	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
@@ -580,6 +580,8 @@ noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES = \
 	assoc_mgr.c				\
 	assoc_mgr.h				\
+	atomic.c				\
+	atomic.h				\
 	bitstring.c				\
 	bitstring.h				\
 	callerid.c				\
@@ -853,6 +855,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assoc_mgr.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/atomic.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/callerid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@ # am--include-marker
@@ -1082,6 +1085,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 
 distclean: distclean-am
 	-rm -f ./$(DEPDIR)/assoc_mgr.Plo
+	-rm -f ./$(DEPDIR)/atomic.Plo
 	-rm -f ./$(DEPDIR)/bitstring.Plo
 	-rm -f ./$(DEPDIR)/callerid.Plo
 	-rm -f ./$(DEPDIR)/cbuf.Plo
@@ -1231,6 +1235,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/assoc_mgr.Plo
+	-rm -f ./$(DEPDIR)/atomic.Plo
 	-rm -f ./$(DEPDIR)/bitstring.Plo
 	-rm -f ./$(DEPDIR)/callerid.Plo
 	-rm -f ./$(DEPDIR)/cbuf.Plo
