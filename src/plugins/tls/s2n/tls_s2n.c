@@ -928,8 +928,12 @@ static void _s2n_config_dec(tls_conn_t *conn)
 	slurm_mutex_unlock(&s2n_conf_cnt_lock);
 }
 
-static void _cleanup_tls_conn(tls_conn_t *conn)
+static void _cleanup_tls_conn(tls_conn_t **conn_ptr)
 {
+	tls_conn_t *conn = NULL;
+
+	SWAP(*conn_ptr, conn);
+
 	xassert(conn->magic == TLS_CONN_MAGIC);
 
 	if (conn->s2n_config && (conn->s2n_config != server_config) &&
@@ -951,6 +955,8 @@ static void _cleanup_tls_conn(tls_conn_t *conn)
 		s2n_free_stacktrace();
 
 	conn->magic = ~TLS_CONN_MAGIC;
+
+	xfree(conn);
 }
 
 static int _set_conn_s2n_conf(tls_conn_t *conn,
@@ -1170,8 +1176,7 @@ extern void *tls_p_create_conn(const conn_args_t *tls_conn_args)
 	return conn;
 
 fail:
-	_cleanup_tls_conn(conn);
-	xfree(conn);
+	_cleanup_tls_conn(&conn);
 
 	return NULL;
 }
@@ -1233,8 +1238,7 @@ extern void tls_p_destroy_conn(tls_conn_t *conn, bool close_fds)
 			close(conn->output_fd);
 	}
 
-	_cleanup_tls_conn(conn);
-	xfree(conn);
+	_cleanup_tls_conn(&conn);
 }
 
 extern ssize_t tls_p_send(tls_conn_t *conn, const void *buf, size_t n)
