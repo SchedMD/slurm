@@ -566,7 +566,7 @@ static void _test_bandwidth_str(const char *tag, const char *source,
 	double read_rate_bytes, write_rate_bytes;
 	double fastest_read_rate_bytes, fastest_write_rate_bytes;
 	double fastest_read_rate, fastest_write_rate;
-	mem_track_t read_mem = {0}, write_mem = {0};
+	mem_track_t read_mem = { 0 }, write_mem = { 0 };
 	latency_metric_t read_latency_metric = LATENCY_METRIC_INITIALIZER;
 	timespec_t read_latency_metric_start = { 0, 0 };
 	latency_metric_t write_latency_metric = LATENCY_METRIC_INITIALIZER;
