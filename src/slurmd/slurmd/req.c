@@ -2633,6 +2633,7 @@ static void _rpc_ping(slurm_msg_t *msg)
 	ping_slurmd_resp_msg_t ping_resp;
 	get_cpu_load(&ping_resp.cpu_load);
 	get_free_mem(&ping_resp.free_mem);
+	ping_resp.node_name = conf->node_name;
 	slurm_msg_t_copy(&resp_msg, msg);
 	resp_msg.msg_type = RESPONSE_PING_SLURMD;
 	resp_msg.data = &ping_resp;
