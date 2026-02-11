@@ -1815,11 +1815,11 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 		int rc = EINVAL;
 
 		/*
-		 * Assign ownership of the file descriptor to the interface/TLS
+		 * Assign ownership of the file descriptor to the interface/conn
 		 * connection.
 		 */
-		if ((rc = tls_g_set_conn_fds(conn, input_fd, output_fd))) {
-			log_flag(CONMGR, "%s: [%s] tls_g_set_fds() failed: %s",
+		if ((rc = conn_g_set_fds(conn, input_fd, output_fd))) {
+			log_flag(CONMGR, "%s: [%s] conn_g_set_fds() failed: %s",
 				 __func__, con->name, slurm_strerror(rc));
 			slurm_mutex_lock(&mgr.mutex);
 			goto failed;
