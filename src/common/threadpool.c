@@ -124,8 +124,8 @@ extern int threadpool_join(const pthread_t id, const char *caller)
 	}
 
 	if ((rc = pthread_join(id, &ret))) {
-		error("%s->%s: pthread_join(id=0x%"PRIx64") failed: %m",
-		      caller, __func__, (uint64_t) id);
+		error("%s->%s: pthread_join(id=0x%"PRIx64") failed: %s",
+		      caller, __func__, (uint64_t) id, slurm_strerror(rc));
 		return rc;
 	}
 
