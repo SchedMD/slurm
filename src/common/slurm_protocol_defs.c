@@ -3070,6 +3070,10 @@ extern char *health_check_node_state_str(uint32_t node_state)
 		xstrfmtcat(state_str, "%s%s", sep, "NONDRAINED_IDLE");
 		sep = ",";
 	}
+	if (node_state & HEALTH_CHECK_REBOOT_ONLY) {
+		xstrfmtcat(state_str, "%s%s", sep, "REBOOT_ONLY");
+		sep = ",";
+	}
 	if (node_state & HEALTH_CHECK_START_ONLY) {
 		xstrfmtcat(state_str, "%s%s", sep, "START_ONLY");
 		sep = ",";

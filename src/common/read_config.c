@@ -3398,6 +3398,9 @@ static uint16_t _health_node_state(char *state_str)
 		} else if (!xstrcasecmp(token, "NONDRAINED_IDLE")) {
 			state_num |= HEALTH_CHECK_NODE_NONDRAINED_IDLE;
 			state_set = true;
+		} else if (!xstrcasecmp(token, "REBOOT_ONLY")) {
+			state_num |= HEALTH_CHECK_REBOOT_ONLY;
+			state_set = true;
 		} else if (!xstrcasecmp(token, "START_ONLY")) {
 			state_num |= HEALTH_CHECK_START_ONLY;
 			state_set = true;

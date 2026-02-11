@@ -3579,6 +3579,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (IS_NODE_POWERING_UP(node_ptr)) {
 			node_ptr->last_response = now;
 			was_powering_up = true;
+
+			if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
+			    (slurm_conf.health_check_node_state &
+			     HEALTH_CHECK_REBOOT_ONLY))
+				run_health_check_individual(node_ptr);
+			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 		}
 
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
@@ -3755,6 +3761,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			     !xstrcmp(node_ptr->reason, "Not responding") &&
 			     (node_ptr->boot_time <
 			      node_ptr->last_response)))) {
+			if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
+			    (slurm_conf.health_check_node_state &
+			     HEALTH_CHECK_REBOOT_ONLY))
+				run_health_check_individual(node_ptr);
 			node_flags &= (~NODE_STATE_REBOOT_ISSUED);
 			if (node_ptr->next_state != NO_VAL)
 				node_flags &= (~NODE_STATE_DRAIN);
