@@ -43,6 +43,8 @@
 
 #include "src/common/slurm_time.h"
 
+typedef struct conn_s conn_t;
+
 typedef enum {
 	CONN_NULL = 0,
 	CONN_SERVER,

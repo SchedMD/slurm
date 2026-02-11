@@ -74,6 +74,8 @@ typedef struct {
 	int (*shutdown_conn)(void *conn);
 } conn_ops_t;
 
+typedef struct tls_conn_s conn_s;
+
 /*
  * These strings must be kept in the same order as the fields
  * declared for conn_ops_t.
