@@ -54,14 +54,15 @@ typedef struct {
 	int (*load_own_cert)(char *cert, uint32_t cert_len, char *key,
 			     uint32_t key_len);
 	void *(*create_conn)(const conn_args_t *tls_conn_args);
-	void (*destroy_conn)(void *conn, bool close_fds);
-	ssize_t (*send)(void *conn, const void *buf, size_t n);
-	ssize_t (*recv)(void *conn, void *buf, size_t n);
-	timespec_t (*get_delay)(void *conn);
-	int (*negotiate)(void *conn);
-	int (*set_conn_fds)(void *conn, int input_fd, int output_fd);
-	int (*set_conn_callbacks)(void *conn, conn_callbacks_t *callbacks);
-	int (*shutdown_conn)(void *conn);
+	void (*destroy_conn)(tls_conn_t *conn, bool close_fds);
+	ssize_t (*send)(tls_conn_t *conn, const void *buf, size_t n);
+	ssize_t (*recv)(tls_conn_t *conn, void *buf, size_t n);
+	timespec_t (*get_delay)(tls_conn_t *conn);
+	int (*negotiate)(tls_conn_t *conn);
+	int (*set_conn_fds)(tls_conn_t *conn, int input_fd, int output_fd);
+	int (*set_conn_callbacks)(tls_conn_t *conn,
+				  conn_callbacks_t *callbacks);
+	int (*shutdown_conn)(tls_conn_t *conn);
 } tls_ops_t;
 
 /*
@@ -146,13 +147,13 @@ extern void *tls_g_create_conn(const conn_args_t *tls_conn_args)
 	return (*(ops.create_conn))(tls_conn_args);
 }
 
-extern int tls_g_negotiate_conn(void *conn)
+extern int tls_g_negotiate_conn(tls_conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.negotiate))(conn);
 }
 
-extern void tls_g_destroy_conn(void *conn, bool close_fds)
+extern void tls_g_destroy_conn(tls_conn_t *conn, bool close_fds)
 {
 	if (!conn)
 		return;
@@ -162,31 +163,32 @@ extern void tls_g_destroy_conn(void *conn, bool close_fds)
 	(*(ops.destroy_conn))(conn, close_fds);
 }
 
-extern ssize_t tls_g_recv(void *conn, void *buf, size_t n)
+extern ssize_t tls_g_recv(tls_conn_t *conn, void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.recv))(conn, buf, n);
 }
 
-extern ssize_t tls_g_send(void *conn, const void *buf, size_t n)
+extern ssize_t tls_g_send(tls_conn_t *conn, const void *buf, size_t n)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.send))(conn, buf, n);
 }
 
-extern timespec_t tls_g_get_delay(void *conn)
+extern timespec_t tls_g_get_delay(tls_conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.get_delay))(conn);
 }
 
-extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd)
+extern int tls_g_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_fds))(conn, input_fd, output_fd);
 }
 
-extern int tls_g_set_conn_callbacks(void *conn, conn_callbacks_t *callbacks)
+extern int tls_g_set_conn_callbacks(tls_conn_t *conn,
+				    conn_callbacks_t *callbacks)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.set_conn_callbacks))(conn, callbacks);
@@ -199,7 +201,7 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
 	return (*(ops.load_own_cert))(cert, cert_len, key, key_len);
 }
 
-extern int tls_g_shutdown_conn(void *conn)
+extern int tls_g_shutdown_conn(tls_conn_t *conn)
 {
 	xassert(plugin_inited == PLUGIN_INITED);
 	return (*(ops.shutdown_conn))(conn);

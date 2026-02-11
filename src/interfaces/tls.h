@@ -56,7 +56,7 @@ extern int tls_g_fini(void);
  * failure
  * NOTE: returned timespec may be {0,0} indicating no delay required
  */
-extern timespec_t tls_g_get_delay(void *conn);
+extern timespec_t tls_g_get_delay(tls_conn_t *conn);
 
 /*
  * Create new TLS connection
@@ -64,18 +64,18 @@ extern timespec_t tls_g_get_delay(void *conn);
  * RET ptr to TLS state
  */
 extern void *tls_g_create_conn(const conn_args_t *tls_conn_args);
-extern void tls_g_destroy_conn(void *conn, bool close_fds);
+extern void tls_g_destroy_conn(tls_conn_t *conn, bool close_fds);
 
 /*
  * Attempt TLS connection negotiation
  * NOTE: Only to be called at start of connection and if defer_negotiation=true
  * RET SLURM_SUCCESS or EWOULDBLOCK or error
  */
-extern int tls_g_negotiate_conn(void *conn);
+extern int tls_g_negotiate_conn(tls_conn_t *conn);
 
-extern ssize_t tls_g_recv(void *conn, void *buf, size_t n);
+extern ssize_t tls_g_recv(tls_conn_t *conn, void *buf, size_t n);
 
-extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
+extern ssize_t tls_g_send(tls_conn_t *conn, const void *buf, size_t n);
 
 /*
  * Set read/write fd's on TLS connection
@@ -85,7 +85,7 @@ extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd);
+extern int tls_g_set_conn_fds(tls_conn_t *conn, int input_fd, int output_fd);
 
 /*
  * Set read/write fd's on TLS connection
@@ -95,7 +95,8 @@ extern int tls_g_set_conn_fds(void *conn, int input_fd, int output_fd);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int tls_g_set_conn_callbacks(void *conn, conn_callbacks_t *callbacks);
+extern int tls_g_set_conn_callbacks(tls_conn_t *conn,
+				    conn_callbacks_t *callbacks);
 
 /*
  * Load own certificate into store
@@ -123,7 +124,7 @@ extern int tls_g_load_own_cert(char *cert, uint32_t cert_len, char *key,
  * SLURM_BLOCKED_ON_READ/SLURM_BLOCKED_ON_WRITE if blocked in either read/write
  * direction, or error if shutdown was unsuccessful.
  */
-extern int tls_g_shutdown_conn(void *conn);
+extern int tls_g_shutdown_conn(tls_conn_t *conn);
 
 /*
  * Return true if interface/tls has TLS plugin loaded

@@ -57,6 +57,8 @@
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/polling.h"
 
+#include "src/interfaces/tls.h"
+
 /* Default buffer to 1 page */
 #define BUFFER_START_SIZE 4096
 
@@ -195,7 +197,7 @@ struct conmgr_fd_s {
 	/* call backs for events */
 	const conmgr_events_t *events;
 	/* Opaque pointer to TLS state */
-	void *tls;
+	tls_conn_t *tls;
 	/* buffer holding incoming already read encrypted data */
 	buf_t *tls_in;
 	/* buffer holding incoming already read data */

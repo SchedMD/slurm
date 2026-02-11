@@ -1793,7 +1793,10 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	/* Remove extraction state from connection */
 	SWAP(input_fd, con->input_fd);
 	SWAP(output_fd, con->output_fd);
-	SWAP(conn, con->tls);
+
+	/* tls_conn_t can be safely cast as conn_t */
+	conn = (conn_t *) con->tls;
+	con->tls = NULL;
 
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -1867,7 +1870,7 @@ failed:
 			 __func__, con->name,
 			 ((input_fd > 0) ? input_fd : con->input_fd),
 			 ((output_fd > 0) ? output_fd : con->output_fd),
-			 (uintptr_t) (conn ? conn : con->tls),
+			 (uintptr_t) (conn ? conn : (conn_t *) con->tls),
 			 con->on_extract.func_name,
 			 (uintptr_t) con->on_extract.func_arg, flags);
 		xfree(flags);
