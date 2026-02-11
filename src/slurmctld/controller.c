@@ -2687,7 +2687,7 @@ static void *_slurmctld_background(void *no_data)
 
 			/* Wait for main sched to release locks */
 			slurm_mutex_lock(&sched_mutex);
-			while (sched_requests || sched_running) {
+			while (sched_alive) {
 				slurm_cond_wait(&sched_cond, &sched_mutex);
 			}
 
