@@ -38,9 +38,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/sacctmgr/sacctmgr.h"
 #include "src/common/uid.h"
+
 #include "src/interfaces/data_parser.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 static bool with_deleted = 0;
 static bool with_fed = 0;
