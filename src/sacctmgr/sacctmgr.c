@@ -41,15 +41,16 @@
 
 #include "config.h"
 
-#include "src/sacctmgr/sacctmgr.h"
 #include "src/common/data.h"
-#include "src/common/ref.h"
-#include "src/common/xsignal.h"
 #include "src/common/proc_args.h"
+#include "src/common/ref.h"
 #include "src/common/strlcpy.h"
+#include "src/common/xsignal.h"
 
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/serializer.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 #define OPT_LONG_AUTOCOMP 0x100
 #define OPT_LONG_JSON 0x101
