@@ -4785,7 +4785,7 @@ extern int slurm_ping(int dest);
  * RET array of each ping result (NULL terminated).
  * Caller must xfree() the result.
  */
-extern controller_ping_t *ping_all_controllers();
+extern controller_ping_t *ping_all_controllers(void);
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)
