@@ -37,9 +37,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "scontrol.h"
-#include "src/interfaces/data_parser.h"
 #include <arpa/inet.h>
+
+#include "src/interfaces/data_parser.h"
+
+#include "scontrol.h"
 
 extern void scontrol_getaddrs(char *node_list)
 {
