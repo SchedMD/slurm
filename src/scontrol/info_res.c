@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "src/interfaces/data_parser.h"
+
 #include "scontrol.h"
 
 /* Load current reservation table information into *res_buffer_pptr */
