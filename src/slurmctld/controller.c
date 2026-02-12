@@ -2744,6 +2744,11 @@ static void *_slurmctld_background(void *no_data)
 			/* Wait for main sched to release locks */
 			slurm_mutex_lock(&sched_mutex);
 			while (sched_alive) {
+				/*
+				 * Wake up _sched_agent() if it is sleeping
+				 * before waiting for it to change state
+				 */
+				slurm_cond_broadcast(&sched_cond);
 				slurm_cond_wait(&sched_cond, &sched_mutex);
 			}
 
