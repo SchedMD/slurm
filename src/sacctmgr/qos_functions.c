@@ -38,9 +38,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
+
 #include "src/interfaces/data_parser.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 static int _parse_preempt_modes_internal(list_t *null, char *name, void *x)
 {
