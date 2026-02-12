@@ -131,6 +131,8 @@ libcommon_la_SOURCES =				\
 	run_in_daemon.h				\
 	sack_api.c				\
 	sack_api.h				\
+	sercli.c				\
+	sercli.h				\
 	setproctitle.c				\
 	setproctitle.h				\
 	sluid.c					\
