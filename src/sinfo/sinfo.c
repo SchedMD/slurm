@@ -41,6 +41,7 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/macros.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/xstring.h"

@@ -45,6 +45,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
 

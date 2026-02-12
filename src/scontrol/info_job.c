@@ -48,6 +48,7 @@
 #include "src/common/cpu_frequency.h"
 #include "src/common/openapi.h"
 #include "src/common/proc_args.h"
+#include "src/common/sercli.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
 #include "src/common/stepd_api.h"

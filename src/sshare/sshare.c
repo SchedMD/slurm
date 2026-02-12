@@ -41,6 +41,7 @@
 
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"

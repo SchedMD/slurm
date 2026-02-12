@@ -44,6 +44,7 @@
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
 #include "src/common/ref.h"
+#include "src/common/sercli.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xsignal.h"
 

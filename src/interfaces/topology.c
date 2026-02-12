@@ -42,6 +42,7 @@
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"

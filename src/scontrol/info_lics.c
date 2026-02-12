@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "src/common/data.h"
+#include "src/common/sercli.h"
 
 #include "src/interfaces/data_parser.h"
 

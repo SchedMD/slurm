@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/sercli.h"
 
 #include "src/interfaces/data_parser.h"
 

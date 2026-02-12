@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/sercli.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 

@@ -36,6 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/sercli.h"
+
 #include "src/interfaces/data_parser.h"
 
 #include "scontrol.h"
