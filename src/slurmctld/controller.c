@@ -1108,6 +1108,9 @@ int main(int argc, char **argv)
 
 		controller_fini_scheduling(); /* Stop all scheduling */
 		agent_fini();
+		/* kill all scripts running by the slurmctld */
+		track_script_flush();
+		slurmscriptd_flush();
 
 		/* termination of controller */
 		switch_g_save();
@@ -1123,9 +1126,6 @@ int main(int argc, char **argv)
 		slurm_mutex_unlock(&slurmctld_config.acct_update_lock);
 		slurm_thread_join(slurmctld_config.thread_id_acct_update);
 
-		/* kill all scripts running by the slurmctld */
-		track_script_flush();
-		slurmscriptd_flush();
 		run_command_shutdown();
 
 		bb_g_fini();
