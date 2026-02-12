@@ -122,7 +122,7 @@ static void *_forward_thread(void *arg)
 	forward_t *fwd_ptr = &fwd_msg->header.forward;
 	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	list_t *ret_list = NULL;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	char *name = NULL;
 	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);

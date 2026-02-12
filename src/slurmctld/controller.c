@@ -289,7 +289,7 @@ static void         _restore_job_dependencies(void);
 static void         _run_primary_prog(bool primary_on);
 static void _send_future_cloud_to_db(void);
 static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg);
-static void _on_extract(conmgr_callback_args_t conmgr_args, void *conn,
+static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
 			void *arg);
 static void         _set_work_dir(void);
 static int          _shutdown_backup_controller(void);
@@ -1991,7 +1991,7 @@ static int _service_connection(slurmctld_rpc_t *this_rpc, slurm_msg_t *msg)
  * IN conn - pointer to extracted connection
  * IN/OUT arg - pointer to slurm_msg_t
  */
-static void _on_extract(conmgr_callback_args_t conmgr_args, void *conn,
+static void _on_extract(conmgr_callback_args_t conmgr_args, conn_t *conn,
 			void *arg)
 {
 	slurm_msg_t *msg = arg;

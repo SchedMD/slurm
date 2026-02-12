@@ -126,7 +126,7 @@ static void  _handle_sigwinch(int sig)
 	xsignal(SIGWINCH, _handle_sigwinch);
 }
 
-static void _notify_winsize_change(void *conn, srun_job_t *job)
+static void _notify_winsize_change(conn_t *conn, srun_job_t *job)
 {
 	pty_winsz_t winsz;
 	int len;
@@ -143,7 +143,7 @@ static void _notify_winsize_change(void *conn, srun_job_t *job)
 
 static void *_pty_thread(void *arg)
 {
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	int fd = -1;
 	srun_job_t *job = (srun_job_t *) arg;
 	slurm_addr_t client_addr;

@@ -2070,7 +2070,7 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 }
 
-static void _on_extract_fd(conmgr_callback_args_t conmgr_args, void *conn,
+static void _on_extract_fd(conmgr_callback_args_t conmgr_args, conn_t *conn,
 			   void *arg)
 {
 	service_msg_args_t *args = NULL;

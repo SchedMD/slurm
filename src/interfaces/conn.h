@@ -43,6 +43,8 @@
 
 #include "src/common/slurm_time.h"
 
+typedef struct conn_s conn_t;
+
 typedef enum {
 	CONN_NULL = 0,
 	CONN_SERVER,
@@ -151,14 +153,14 @@ extern int conn_g_load_ca_cert(char *cert_file);
  * IN conn_args - ptr to conn_args_t
  * RET ptr to TLS state
  */
-extern void *conn_g_create(const conn_args_t *conn_args);
+extern conn_t *conn_g_create(const conn_args_t *conn_args);
 /*
  * Destroy connection state and release memory
  * Note: Use FREE_NULL_CONN() instead of calling directly
  * IN conn - connection to destroy
  * IN close_fds - True to close input and output file descriptors
  */
-extern void conn_g_destroy(void *conn, bool close_fds);
+extern void conn_g_destroy(conn_t *conn, bool close_fds);
 
 #define FREE_NULL_CONN(_X)                        \
 	do {                                      \
@@ -172,20 +174,20 @@ extern void conn_g_destroy(void *conn, bool close_fds);
  * NOTE: Only to be called at start of connection and if defer_negotiation=true
  * RET SLURM_SUCCESS or EWOULDBLOCK or error
  */
-extern int conn_g_negotiate_tls(void *conn);
+extern int conn_g_negotiate_tls(conn_t *conn);
 
 /*
  * Return true if client is authenticated (mTLS)
  * NOTE: Only to be called by server connections
  */
-extern bool conn_g_is_client_authenticated(void *conn);
+extern bool conn_g_is_client_authenticated(conn_t *conn);
 
 /*
  * Retrieve connection read file descriptor.
  * Needed for poll() and similar status monitoring.
  * Assumes both read and write file descriptor are the same.
  */
-extern int conn_g_get_fd(void *conn);
+extern int conn_g_get_fd(conn_t *conn);
 
 /*
  * Set read/write fd's on TLS connection
@@ -195,7 +197,7 @@ extern int conn_g_get_fd(void *conn);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
+extern int conn_g_set_fds(conn_t *conn, int input_fd, int output_fd);
 
 /*
  * Set read/write fd's on TLS connection
@@ -205,7 +207,7 @@ extern int conn_g_set_fds(void *conn, int input_fd, int output_fd);
  * IN output_fd - new write fd
  * RET SLURM_SUCCESS or error
  */
-extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks);
+extern int conn_g_set_callbacks(conn_t *conn, conn_callbacks_t *callbacks);
 
 /*
  * Perform shutdown on connection
@@ -215,7 +217,7 @@ extern int conn_g_set_callbacks(void *conn, conn_callbacks_t *callbacks);
  * SLURM_BLOCKED_ON_READ/SLURM_BLOCKED_ON_WRITE if blocked in either read/write
  * direction, or error if shutdown was unsuccessful.
  */
-extern int conn_g_shutdown(void *conn);
+extern int conn_g_shutdown(conn_t *conn);
 
 /*
  * Perform blocking shutdown on connection
@@ -230,18 +232,18 @@ extern int conn_g_shutdown(void *conn);
  * IN conn - connection to shutdown
  * RET SLURM_SUCCESS or error
  */
-extern int conn_blocking_g_shutdown(void *conn);
+extern int conn_blocking_g_shutdown(conn_t *conn);
 
 /*
  * Get absolute time that next conn_g_*() should be delayed until after any
  * failure
  * NOTE: returned timespec may be {0,0} indicating no delay required
  */
-extern timespec_t conn_g_get_delay(void *conn);
+extern timespec_t conn_g_get_delay(conn_t *conn);
 
-extern ssize_t conn_g_send(void *conn, const void *buf, size_t n);
-extern ssize_t conn_g_sendv(void *conn, const struct iovec *bufs, int count);
-extern uint32_t conn_g_peek(void *conn);
-extern ssize_t conn_g_recv(void *conn, void *buf, size_t n);
+extern ssize_t conn_g_send(conn_t *conn, const void *buf, size_t n);
+extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count);
+extern uint32_t conn_g_peek(conn_t *conn);
+extern ssize_t conn_g_recv(conn_t *conn, void *buf, size_t n);
 
 #endif

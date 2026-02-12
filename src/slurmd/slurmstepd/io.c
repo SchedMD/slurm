@@ -198,7 +198,7 @@ struct task_read_info {
  **********************************************************************/
 struct window_info {
 	stepd_step_task_info_t *task;
-	void *conn;
+	conn_t *conn;
 };
 #ifdef HAVE_PTY_H
 static void _spawn_window_manager(stepd_step_task_info_t *task);
@@ -209,7 +209,7 @@ static void *_window_manager(void *arg);
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *ignored);
-static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun,
+static int _send_io_init_msg(int sock, conn_t *conn, srun_info_t *srun,
 			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
@@ -865,7 +865,7 @@ static void *_window_manager(void *arg)
 
 static void _spawn_window_manager(stepd_step_task_info_t *task)
 {
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	char *tls_cert = NULL;
 	char *host, *port, *rows, *cols;
 	slurm_addr_t pty_addr;
@@ -1621,7 +1621,7 @@ extern int io_initial_client_connect(srun_info_t *srun, int stdout_tasks,
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 
 	debug4 ("adding IO connection (logical node rank %d)", step->nodeid);
 
@@ -1681,7 +1681,7 @@ extern int io_client_connect(srun_info_t *srun)
 	int sock = -1;
 	struct client_io_info *client;
 	eio_obj_t *obj;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 
 	debug4 ("adding IO connection (logical node rank %d)", step->nodeid);
 
@@ -1727,7 +1727,8 @@ extern int io_client_connect(srun_info_t *srun)
 	return SLURM_SUCCESS;
 }
 
-static int _send_io_init_msg(int sock, void *conn, srun_info_t *srun, bool init)
+static int _send_io_init_msg(int sock, conn_t *conn, srun_info_t *srun,
+			     bool init)
 {
 	io_init_msg_t msg;
 

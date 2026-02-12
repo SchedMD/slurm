@@ -1717,7 +1717,7 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	int input_fd = -1, output_fd = -1;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	conmgr_extract_fd_func_t func = NULL;
 	const char *func_name = NULL;
 	void *func_arg = NULL;
@@ -1793,7 +1793,10 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 	/* Remove extraction state from connection */
 	SWAP(input_fd, con->input_fd);
 	SWAP(output_fd, con->output_fd);
-	SWAP(conn, con->tls);
+
+	/* tls_conn_t can be safely cast as conn_t */
+	conn = (conn_t *) con->tls;
+	con->tls = NULL;
 
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -1815,11 +1818,11 @@ extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)
 		int rc = EINVAL;
 
 		/*
-		 * Assign ownership of the file descriptor to the interface/TLS
+		 * Assign ownership of the file descriptor to the interface/conn
 		 * connection.
 		 */
-		if ((rc = tls_g_set_conn_fds(conn, input_fd, output_fd))) {
-			log_flag(CONMGR, "%s: [%s] tls_g_set_fds() failed: %s",
+		if ((rc = conn_g_set_fds(conn, input_fd, output_fd))) {
+			log_flag(CONMGR, "%s: [%s] conn_g_set_fds() failed: %s",
 				 __func__, con->name, slurm_strerror(rc));
 			slurm_mutex_lock(&mgr.mutex);
 			goto failed;
@@ -1867,7 +1870,7 @@ failed:
 			 __func__, con->name,
 			 ((input_fd > 0) ? input_fd : con->input_fd),
 			 ((output_fd > 0) ? output_fd : con->output_fd),
-			 (uintptr_t) (conn ? conn : con->tls),
+			 (uintptr_t) (conn ? conn : (conn_t *) con->tls),
 			 con->on_extract.func_name,
 			 (uintptr_t) con->on_extract.func_arg, flags);
 		xfree(flags);

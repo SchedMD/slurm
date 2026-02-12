@@ -55,6 +55,8 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 
+#include "src/interfaces/conn.h"
+
 /*****************/
 /* msg functions */
 /*****************/
@@ -63,8 +65,8 @@
  * timing out after `timeout' milliseconds.
  *
  */
-extern ssize_t slurm_msg_recvfrom_timeout(void *conn, char **pbuf, size_t *lenp,
-					  int timeout);
+extern ssize_t slurm_msg_recvfrom_timeout(conn_t *conn, char **pbuf,
+					  size_t *lenp, int timeout);
 
 /* slurm_msg_sendto
  * Send message over the given connection, default timeout value
@@ -74,7 +76,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(void *conn, char **pbuf, size_t *lenp,
  * IN size - size of buffer in bytes
  * RET number of bytes written
  */
-extern ssize_t slurm_msg_sendto(void *conn, char *buffer, size_t size);
+extern ssize_t slurm_msg_sendto(conn_t *conn, char *buffer, size_t size);
 extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size);
 
 /*
@@ -83,7 +85,7 @@ extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size);
  * IN buffers - array of buffers to transmit
  * RET number of bytes written or SLURM_ERROR on error
  */
-extern ssize_t slurm_bufs_sendto(void *conn, msg_bufs_t *buffers);
+extern ssize_t slurm_bufs_sendto(conn_t *conn, msg_bufs_t *buffers);
 
 /********************/
 /* stream functions */
@@ -132,9 +134,9 @@ extern int slurm_open_unix_stream(char *addr_name, int sock_flags, int *fd);
  */
 extern int slurm_get_stream_addr(int open_fd, slurm_addr_t *address);
 
-extern int slurm_send_timeout(void *conn, char *buffer, size_t size,
+extern int slurm_send_timeout(conn_t *conn, char *buffer, size_t size,
 			      int timeout);
-extern int slurm_recv_timeout(void *conn, char *buffer, size_t size,
+extern int slurm_recv_timeout(conn_t *conn, char *buffer, size_t size,
 			      int timeout);
 
 /*****************************/

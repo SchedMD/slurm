@@ -1400,7 +1400,7 @@ static int _handle_msg(slurm_msg_t *msg, uint16_t msg_type, void **resp,
 static int _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp,
 				  uint32_t job_id)
 {
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	slurm_msg_t  *msg = NULL;
 	slurm_addr_t cli_addr;
 	int          rc = 0;

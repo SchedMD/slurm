@@ -115,8 +115,8 @@ static void _sock_bind_wild(int sockfd)
 	return;
 }
 
-extern ssize_t slurm_msg_recvfrom_timeout(void *conn, char **pbuf, size_t *lenp,
-					  int timeout)
+extern ssize_t slurm_msg_recvfrom_timeout(conn_t *conn, char **pbuf,
+					  size_t *lenp, int timeout)
 {
 	ssize_t  len;
 	uint32_t msglen;
@@ -149,7 +149,7 @@ extern ssize_t slurm_msg_recvfrom_timeout(void *conn, char **pbuf, size_t *lenp,
 	return (ssize_t) msglen;
 }
 
-static int _writev_timeout(int fd, void *conn, struct iovec *iov, int iovcnt,
+static int _writev_timeout(int fd, conn_t *conn, struct iovec *iov, int iovcnt,
 			   int timeout)
 {
 	int tot_bytes_sent = 0;
@@ -311,13 +311,13 @@ ready:
  * Send slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error
  */
-extern int slurm_send_timeout(void *conn, char *buf, size_t size, int timeout)
+extern int slurm_send_timeout(conn_t *conn, char *buf, size_t size, int timeout)
 {
 	struct iovec iov = { .iov_base = buf, .iov_len = size };
 	return _writev_timeout(-1, conn, &iov, 1, timeout);
 }
 
-extern ssize_t slurm_msg_sendto(void *conn, char *buffer, size_t size)
+extern ssize_t slurm_msg_sendto(conn_t *conn, char *buffer, size_t size)
 {
 	struct iovec iov[2];
 	uint32_t usize;
@@ -379,7 +379,7 @@ extern ssize_t slurm_msg_sendto_socket(int fd, char *buffer, size_t size)
 	return size;
 }
 
-extern ssize_t slurm_bufs_sendto(void *conn, msg_bufs_t *buffers)
+extern ssize_t slurm_bufs_sendto(conn_t *conn, msg_bufs_t *buffers)
 {
 	struct iovec iov[4];
 	int len;
@@ -415,7 +415,7 @@ extern ssize_t slurm_bufs_sendto(void *conn, msg_bufs_t *buffers)
 
 /* Get slurm message with timeout
  * RET message size (as specified in argument) or SLURM_ERROR on error */
-extern int slurm_recv_timeout(void *conn, char *buffer, size_t size,
+extern int slurm_recv_timeout(conn_t *conn, char *buffer, size_t size,
 			      int timeout)
 {
 	int fd = -1;
@@ -614,7 +614,7 @@ extern int slurm_accept_conn(int fd, slurm_addr_t *addr)
 extern void *slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	int sock = -1;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	conn_args_t conn_args = {
 		.mode = CONN_SERVER,
 	};

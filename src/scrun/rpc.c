@@ -49,7 +49,7 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
 		    int *conn_fd)
 {
 	int rc = SLURM_ERROR;
-	void *conn = NULL;
+	conn_t *conn = NULL;
 	conn_args_t conn_args = { 0 };
 	slurm_msg_t *resp_msg = NULL;
 	int fd = conn_fd ? *conn_fd : -1;

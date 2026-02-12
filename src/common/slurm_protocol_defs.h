@@ -340,8 +340,8 @@ typedef struct slurm_msg {
 	char *tls_cert; /* TLS certificate for server. Only needed when server's
 			 * cert is not already trusted (i.e. signed by a cert in
 			 * our trust store) */
-	void *conn; /* interfaces/conn data used for sending this message and
-		     * receiving a response */
+	conn_t *conn; /* interfaces/conn data used for sending this message
+			   * and receiving a response */
 
 	uint16_t msg_type; /* really a slurm_msg_type_t but needs to be
 			    * this way for packing purposes.  message type */

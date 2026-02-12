@@ -31,6 +31,9 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
+
+#include "src/interfaces/conn.h"
+
 typedef struct eio_obj eio_obj_t;
 
 typedef struct eio_handle_components eio_handle_t;
@@ -65,7 +68,7 @@ struct io_operations {
 
 struct eio_obj {
 	int fd;                           /* fd to operate on                */
-	void *conn;
+	conn_t *conn;
 	uint32_t data_on_conn;
 	void *arg;                        /* application-specific data       */
 	struct io_operations *ops;        /* pointer to ops struct for obj   */
