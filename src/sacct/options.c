@@ -38,6 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <time.h>
+
 #include "src/common/data.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
@@ -45,10 +47,11 @@
 #include "src/common/ref.h"
 #include "src/common/slurm_time.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/serializer.h"
+
 #include "sacct.h"
-#include <time.h>
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_DELIMITER 0x100
