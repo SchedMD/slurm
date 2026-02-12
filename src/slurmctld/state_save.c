@@ -189,7 +189,7 @@ static probe_status_t _probe(probe_log_t *log)
 	if (log)
 		_probe_verbose(log);
 
-	if (!last_save.tv_sec)
+	if (!last_save.tv_sec && save_start.tv_sec)
 		status = PROBE_RC_ONLINE;
 	else
 		status = PROBE_RC_READY;
