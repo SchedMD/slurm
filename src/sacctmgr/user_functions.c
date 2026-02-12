@@ -37,11 +37,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/sacctmgr/sacctmgr.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/data_parser.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 typedef struct {
 	char *cluster;
