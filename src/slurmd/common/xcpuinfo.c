@@ -200,7 +200,7 @@ static void _remove_ecores(hwloc_topology_t *topology)
 #if HWLOC_API_VERSION > 0x00020401
 	int type_cnt;
 	hwloc_bitmap_t cpuset;
-	char *pcore_freq = NULL;
+	list_t *pcore_freqs = NULL;
 	bool found = false;
 
 	if (slurm_conf.conf_flags & CONF_FLAG_ECORE)
@@ -225,18 +225,31 @@ static void _remove_ecores(hwloc_topology_t *topology)
 	 *
 	 * This logic should do nothing on any other existing processor.
 	 *
-	 * One notable issue found is that, for processes launching with a
-	 * restricted cpuset, the CPU Kind entry for the P-Cores will only
-	 * include the P-Cores in the active cpuset, and not all of those
-	 * available on the node. However, those unavailable cores are
-	 * listed on another entry with an identical FrequencyMaxMHz value.
-	 * This should be distinct from the slower E-Cores.
+	 * Two-pass approach:
+	 * 1) Collect all P-core frequencies from CPU Kinds with
+	 *    CoreType=IntelCore. Handles processors with multiple P-core
+	 *    frequencies (e.g., Core Ultra 7 268V with 4900/5000 MHz P-cores).
+	 * 2) Include CPU Kinds matching those frequencies even without
+	 *    CoreType. Necessary when slurmd launches with restricted cpuset on
+	 *    hwloc < 2.10: cpuset-restricted P-cores lack CoreType but retain
+	 *    FrequencyMaxMHz. Fixed in hwloc 2.10+ via PMU-based detection.
+	 *    Once min hwloc >= 2.10, this can simplify to a single loop.
 	 */
 	cpuset = hwloc_bitmap_alloc();
 	cpuset_tot = hwloc_bitmap_alloc();
+	pcore_freqs = list_create(xfree_ptr);
+
+	/*
+	 * First pass: Find all CPU Kinds with CoreType=IntelCore and collect
+	 * their frequencies. This identifies all properly-labeled P-cores,
+	 * which may have varying frequencies on newer processors.
+	 */
 	for (int i = 0; i < type_cnt; i++) {
 		unsigned nr_infos = 0;
 		struct hwloc_info_s *infos;
+		bool is_pcore = false;
+		char *freq = NULL;
+
 		if (hwloc_cpukinds_get_info(
 			    *topology, i, cpuset, NULL, &nr_infos, &infos, 0))
 			fatal("Error getting info from hwloc_cpukinds_get_info() %m");
@@ -245,61 +258,65 @@ static void _remove_ecores(hwloc_topology_t *topology)
 		for (int j = 0; j < nr_infos; j++) {
 			if (!xstrcasecmp(infos[j].name, "CoreType") &&
 			    !xstrcasecmp(infos[j].value, "IntelCore")) {
-				found = true;
-				break;
+				is_pcore = true;
+			} else if (!xstrcasecmp(infos[j].name,
+						"FrequencyMaxMHz")) {
+				freq = infos[j].value;
 			}
 		}
 
-		if (!found)
-			continue;
+		if (is_pcore) {
+			hwloc_bitmap_or(cpuset_tot, cpuset_tot, cpuset);
+			found = true;
 
-		/*
-		 * Copy the cpuset over now. This avoids problems with a
-		 * hypothetical system with the FrequencyMaxMHz not being
-		 * listed for the P-Cores.
-		 */
-		hwloc_bitmap_or(cpuset_tot, cpuset_tot, cpuset);
-
-		/* If found, note the FrequencyMaxMHz value for these cores. */
-		for (int j = 0; j < nr_infos; j++) {
-			if (!xstrcasecmp(infos[j].name, "FrequencyMaxMHz")) {
-				pcore_freq = infos[j].value;
-				break;
-			}
+			/*
+			 * Store this P-core's frequency if we haven't seen it.
+			 * Collects all distinct P-core frequencies for the
+			 * second pass to match against.
+			 */
+			if (freq &&
+			    !list_find_first(pcore_freqs,
+					     slurm_find_char_in_list, freq))
+				list_append(pcore_freqs, xstrdup(freq));
 		}
-		break;
 	}
 
-	if (!found) {
-		hwloc_bitmap_free(cpuset);
-		hwloc_bitmap_free(cpuset_tot);
-		cpuset_tot = NULL;
-		return;
-	}
+	if (!found)
+		goto cleanup;
 
+	/*
+	 * Second pass: Include any CPU Kinds that match collected P-core
+	 * frequencies, even without CoreType=IntelCore. Recovers cpuset-
+	 * restricted P-cores that lack CoreType on hwloc < 2.10.
+	 */
 	for (int i = 0; i < type_cnt; i++) {
 		unsigned nr_infos = 0;
 		struct hwloc_info_s *infos;
+
 		if (hwloc_cpukinds_get_info(
 			    *topology, i, cpuset, NULL, &nr_infos, &infos, 0))
 			fatal("Error getting info from hwloc_cpukinds_get_info() %m");
 
-		/*
-		 * Look for all CPU Kinds with a matching FrequencyMaxMHz value.
-		 * These should all be the P-cores, including those that aren't
-		 * in the available cpuset we are running under.
-		 */
 		for (int j = 0; j < nr_infos; j++) {
-			if (!xstrcasecmp(infos[j].name, "FrequencyMaxMHz") &&
-			    !xstrcasecmp(infos[j].value, pcore_freq)) {
-				hwloc_bitmap_or(cpuset_tot, cpuset_tot, cpuset);
+			if (!xstrcasecmp(infos[j].name, "FrequencyMaxMHz")) {
+				/* Check if this frequency matches any P-core */
+				if (list_find_first(pcore_freqs,
+						    slurm_find_char_in_list,
+						    infos[j].value))
+					hwloc_bitmap_or(cpuset_tot, cpuset_tot,
+							cpuset);
+				break;
 			}
 		}
-
 	}
 
 	hwloc_topology_restrict(*topology, cpuset_tot, 0);
+
+cleanup:
+	FREE_NULL_LIST(pcore_freqs);
 	hwloc_bitmap_free(cpuset);
+	hwloc_bitmap_free(cpuset_tot);
+	cpuset_tot = NULL;
 #endif
 }
 
