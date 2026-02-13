@@ -69,7 +69,6 @@ static pthread_t       master_thread_id = 0;
 extern void *rpc_mgr(void *no_data)
 {
 	int sockfd, newsockfd;
-	int i;
 	slurm_addr_t cli_addr;
 	slurmdbd_conn_t *dbd_conn = NULL;
 
@@ -85,15 +84,13 @@ extern void *rpc_mgr(void *no_data)
 	/*
 	 * Process incoming RPCs until told to shutdown
 	 */
-	while (!shutdown_time &&
-	       (i = slurm_persist_conn_wait_for_thread_loc()) >= 0) {
+	while (!shutdown_time) {
 		/*
 		 * accept needed for stream implementation is a no-op in
 		 * message implementation that just passes sockfd to newsockfd
 		 */
 		if ((newsockfd = slurm_accept_conn(sockfd, &cli_addr)) ==
 		    SLURM_ERROR) {
-			slurm_persist_conn_free_thread_loc(i);
 			if (errno != EINTR)
 				error("slurm_accept_conn: %m");
 			continue;
@@ -113,8 +110,8 @@ extern void *rpc_mgr(void *no_data)
 		slurm_get_ip_str(&cli_addr, dbd_conn->pcon->rem_host,
 				 INET6_ADDRSTRLEN);
 
-		slurm_persist_conn_recv_thread_init(
-			dbd_conn->pcon, newsockfd, i, dbd_conn);
+		slurm_persist_conn_recv_thread_init(dbd_conn->pcon, newsockfd,
+						    -1, dbd_conn);
 	}
 
 	debug("rpc_mgr shutting down");
