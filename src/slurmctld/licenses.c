@@ -135,6 +135,19 @@ typedef struct {
 	uint16_t prev_hres_id;
 } foreach_hres_set_mode3_t;
 
+typedef struct {
+	list_t *licenses_cur;
+	list_t *licenses_next;
+	list_itr_t *licenses_cur_iter;
+	slurmctld_resv_t *job_resv_ptr;
+} find_relevant_hres_diff_args_t;
+
+typedef struct {
+	list_itr_t *licenses_iter;
+	uint16_t hres_id;
+	slurmctld_resv_t *job_resv_ptr;
+} find_diff_hres_in_list_args_t;
+
 static void _print_path(path_idx_t path_idx, uint16_t depth)
 {
 	for (int i = 0; i < depth; i++) {
@@ -3153,6 +3166,110 @@ extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 	if (list_count(a) != list_count(b))
 		return false;
 	return !(list_find_first_ro(a, _bf_licenses_find_difference, b));
+}
+
+static int _find_more_hres_in_list(void *x, void *arg)
+{
+	bf_license_t *lic_next = x;
+	bf_license_t *lic_cur = NULL;
+	find_diff_hres_in_list_args_t *args = arg;
+	bf_licenses_find_resv_t target_record = {
+		.id = lic_next->id,
+		.resv_ptr = lic_next->resv_ptr,
+	};
+
+	if (lic_next->id.hres_id != args->hres_id)
+		return 0;
+
+	if (lic_next->resv_ptr && (args->job_resv_ptr != lic_next->resv_ptr))
+		return 0;
+
+	lic_cur = list_find(args->licenses_iter, _bf_licenses_find_resv,
+			    &target_record);
+
+	/*
+	 * Break out of list_find_first if lic_next has more resources remaining
+	 * the lic_cur.
+	 *
+	 * In context of backfill node_space table licenses, if lic_cur has more
+	 * than or equal resources compared to lic_next then it would be useless
+	 * to try scheduling on licenses_next's timeslot since the job would
+	 * have already failed with licenses_cur's resources. In short don't set
+	 * later_start if there are less or equal resources in the next slot.
+	 */
+
+	/* If lic_cur is NULL then it is like there are zero remaining */
+	if (!lic_cur && !lic_next->remaining)
+		return 0; /* equal remaining since both have none */
+	if (!lic_cur || (lic_next->remaining > lic_cur->remaining))
+		return 1; /* more resources in lic_next - break out */
+
+	return 0;
+}
+
+static int _bf_licenses_find_relevant_hres_increase(void *x, void *key)
+{
+	licenses_t *job_license = x;
+	find_relevant_hres_diff_args_t *args = key;
+	find_diff_hres_in_list_args_t fargs = {
+		.hres_id = job_license->id.hres_id,
+		.job_resv_ptr = args->job_resv_ptr,
+	};
+
+	if (job_license->id.hres_id == NO_VAL16)
+		return 0;
+
+	if (!args->licenses_cur_iter)
+		args->licenses_cur_iter =
+			list_iterator_create(args->licenses_cur);
+	else
+		list_iterator_reset(args->licenses_cur_iter);
+
+	/*
+	 * Iterate through licenses_next and see if any relevant elements
+	 * matching the job's hres request have more hres remaining in
+	 * licenses_next than licenses_cur.
+	 *
+	 * bf_license lists elements are in the same order so pass an iterator
+	 * of licenses_cur so both lists only needed to be iterated through
+	 * once.
+	 */
+	fargs.licenses_iter = args->licenses_cur_iter;
+	if (list_find_first_ro(args->licenses_next, _find_more_hres_in_list,
+			       &fargs))
+		return 1;
+
+	/*
+	 * Even if licenses_cur contains more records, they don't have the same
+	 * hres id or are additional records with a reservation that are no
+	 * longer available in the next time slot.
+	 */
+
+	return 0;
+}
+
+extern bool slurm_bf_licenses_relevant_hres_increase(list_t *current,
+						     list_t *next,
+						     job_record_t *job_ptr)
+{
+	bool next_has_more; /* next has more hres remaining avail to job */
+	find_relevant_hres_diff_args_t args = {
+		.licenses_cur = current,
+		.licenses_next = next,
+		.job_resv_ptr = job_ptr->resv_ptr,
+	};
+
+	if (!job_ptr->license_list)
+		return false;
+
+	next_has_more =
+		list_find_first_ro(job_ptr->license_list,
+				   _bf_licenses_find_relevant_hres_increase,
+				   &args);
+	if (args.licenses_cur_iter)
+		list_iterator_destroy(args.licenses_cur_iter);
+
+	return next_has_more;
 }
 
 /* sort appended resv bf_licenses to be in order of resv id and license id */
