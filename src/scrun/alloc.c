@@ -564,6 +564,7 @@ static void _alloc_job(void)
 
 	/* take job env (if any) for srun calls later */
 	SWAP(state.job_env, alloc->environment);
+	alloc->env_size = envcount(alloc->environment);
 
 	/* apply SPANK env (if any) */
 	for (int i = 0; i < opt.spank_job_env_size; i++) {
