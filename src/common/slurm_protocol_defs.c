@@ -2113,6 +2113,7 @@ extern void slurm_free_job_step_create_request_msg(
 {
 	if (msg) {
 		xfree(msg->container);
+		xfree(msg->container_id);
 		xfree(msg->cpus_per_tres);
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
