@@ -3140,5 +3140,8 @@ static int _bf_licenses_find_difference(void *x, void *key)
 
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 {
+	/* The # of licenses can be different based on advanced reservations */
+	if (list_count(a) != list_count(b))
+		return false;
 	return !(list_find_first_ro(a, _bf_licenses_find_difference, b));
 }
