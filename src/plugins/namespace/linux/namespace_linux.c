@@ -408,6 +408,26 @@ static int _mount_private_proc(void)
 	return SLURM_SUCCESS;
 }
 
+static int _foreach_build_str(void *x, void *arg)
+{
+	gres_state_t *gres_state = x;
+	char **gres_str = (char **) arg;
+	gres_job_state_t *gres_js = gres_state->gres_data;
+
+	xstrfmtcat(*gres_str, "%s%s%s%s:%" PRIu64, (*gres_str ? "," : ""),
+		   gres_state->gres_name, (gres_js->type_name ? ":" : ""),
+		   (gres_js->type_name ? gres_js->type_name : ""),
+		   gres_js->total_gres);
+	return 0;
+}
+
+static char *_parse_gres_list(list_t *gres_list)
+{
+	char *gres_str = NULL;
+	list_for_each(gres_list, _foreach_build_str, &gres_str);
+	return gres_str;
+}
+
 static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 				char *src_bind, char *ns_base)
 {
@@ -436,6 +456,20 @@ static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 		if (step->job_mem)
 			env_array_overwrite_fmt(&env, "SLURM_JOB_MEM",
 						"%" PRIu64, step->job_mem);
+		if (step->cpus)
+			env_array_overwrite_fmt(&env, "SLURM_JOB_CPUS", "%u",
+						step->cpus);
+		if (step->nnodes)
+			env_array_overwrite_fmt(&env, "SLURM_JOB_NUM_NODES",
+						"%u", step->nnodes);
+		if (step->job_gres_list) {
+			char *gres = _parse_gres_list(step->job_gres_list);
+			if (gres) {
+				env_array_overwrite_fmt(&env, "SLURM_JOB_GRES",
+							"%s", gres);
+				xfree(gres);
+			}
+		}
 	}
 
 	if (ns_base)
