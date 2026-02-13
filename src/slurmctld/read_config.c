@@ -572,15 +572,38 @@ static int _set_nodes_topo(void)
 {
 	node_record_t *node_ptr;
 	int rc = SLURM_SUCCESS;
+	char *tmp_orig_topo_str = NULL;
 
 	last_node_update = time(NULL);
 
 	for (int i = 0; (node_ptr = next_node(&i)); i++) {
-		if (node_ptr->topology_str &&
-		    (rc = topology_g_add_rm_node(node_ptr))) {
-			error("Invalid node topology specified %s for %s",
-			      node_ptr->topology_str, node_ptr->name);
-			break;
+		if (node_ptr->topology_str) {
+			/*
+			 * Only need to initialize topology_orig_str if
+			 * 1: power saving is enable (required to reset topo)
+			 * 2: slurm.conf didn't configure the topology
+			 *    (if defined that is used as orig instead)
+			 * The only way topology_str is not NULL here and
+			 * config_ptr->topology_str is NULL is if it was
+			 * recovered from state, which only occurs if the node
+			 * is powered up.
+			 */
+			if (slurm_conf.suspend_program &&
+			    slurm_conf.resume_program &&
+			    !node_ptr->config_ptr->topology_str) {
+				tmp_orig_topo_str =
+					topology_g_get_topology_str(node_ptr);
+			}
+
+			if ((rc = topology_g_add_rm_node(node_ptr))) {
+				xfree(tmp_orig_topo_str);
+				error("Invalid node topology specified %s for %s",
+				      node_ptr->topology_str, node_ptr->name);
+				break;
+			}
+
+			SWAP(node_ptr->topology_orig_str, tmp_orig_topo_str);
+			xfree(tmp_orig_topo_str);
 		}
 	}
 
