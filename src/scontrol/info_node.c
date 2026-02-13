@@ -334,6 +334,7 @@ extern void scontrol_print_topo(int argc, char **argv)
 			node_list = val;
 		} else if (!xstrncasecmp(tag, "switch", MAX(tag_len, 1)) ||
 			   !xstrncasecmp(tag, "block", MAX(tag_len, 1)) ||
+			   !xstrncasecmp(tag, "ring", MAX(tag_len, 1)) ||
 			   !xstrncasecmp(tag, "unit", MAX(tag_len, 1))) {
 			unit = val;
 		} else {

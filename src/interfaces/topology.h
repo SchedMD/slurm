@@ -64,6 +64,11 @@ typedef struct slurm_conf_block {
 	char *nodes; /* names of nodes directly connect to this block */
 } slurm_conf_block_t;
 
+typedef struct slurm_conf_ring {
+	char *ring_name; /* name of this ring */
+	char *nodes; /* names of nodes in this ring */
+} slurm_conf_ring_t;
+
 typedef struct slurm_conf_switches {
 	uint32_t link_speed; /* link speed, arbitrary units */
 	char *nodes; /* names of nodes directly connect to
@@ -88,6 +93,11 @@ typedef struct {
 	int config_cnt; /* size of config array */
 	slurm_conf_switches_t *switch_configs; /* array of switch configs */
 } topology_tree_config_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
+	slurm_conf_ring_t *ring_configs; /* array of ring configs */
+} topology_ring_config_t;
 
 typedef struct {
 	int config_cnt; /* size of config array */
@@ -324,9 +334,13 @@ extern void free_topology_ctx(topology_ctx_t *tctx_ptr);
 
 extern void free_topology_block_config(topology_block_config_t *config);
 
+extern void free_topology_ring_config(topology_ring_config_t *config);
+
 extern void free_topology_tree_config(topology_tree_config_t *config);
 
 extern void free_block_conf(slurm_conf_block_t *config);
+
+extern void free_ring_conf(slurm_conf_ring_t *config);
 
 extern void free_switch_conf(slurm_conf_switches_t *config);
 #endif

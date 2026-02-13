@@ -1,0 +1,704 @@
+/*****************************************************************************\
+ *  topology_ring.c
+ *****************************************************************************
+ *  Copyright (C) SchedMD LLC.
+ *
+ *  This file is part of Slurm, a resource management program.
+ *  For details, see <https://slurm.schedmd.com/>.
+ *  Please also read the included file: DISCLAIMER.
+ *
+ *  Slurm is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
+ *  Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with Slurm; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include "src/common/slurm_xlator.h"
+
+#include "slurm/slurm_errno.h"
+#include "src/common/bitstring.h"
+#include "src/common/log.h"
+#include "src/common/node_conf.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
+
+#include "../common/common_topo.h"
+#include "eval_nodes_ring.h"
+#include "ring_record.h"
+
+/* These are defined here so when we link with something other than
+ * the slurmctld we will have these symbols defined.  They will get
+ * overwritten when linking with the slurmctld.
+ */
+#if defined(__APPLE__)
+extern node_record_t **node_record_table_ptr __attribute__((weak_import));
+extern int node_record_count __attribute__((weak_import));
+#else
+node_record_t **node_record_table_ptr;
+int node_record_count;
+#endif
+
+/*
+ * These variables are required by the generic plugin interface.  If they
+ * are not found in the plugin, the plugin loader will ignore it.
+ *
+ * plugin_name - a string giving a human-readable description of the
+ * plugin.  There is no maximum length, but the symbol must refer to
+ * a valid string.
+ *
+ * plugin_type - a string suggesting the type of the plugin or its
+ * applicability to a particular form of data or method of data handling.
+ * If the low-level plugin API is used, the contents of this string are
+ * unimportant and may be anything.  Slurm uses the higher-level plugin
+ * interface which requires this string to be of the form
+ *
+ *      <application>/<method>
+ *
+ * where <application> is a description of the intended application of
+ * the plugin (e.g., "task" for task control) and <method> is a description
+ * of how this plugin satisfies that application.  Slurm will only load
+ * a task plugin if the plugin_type string has a prefix of "task/".
+ *
+ * plugin_version - an unsigned 32-bit integer containing the Slurm version
+ * (major.minor.micro combined into a single number).
+ */
+const char plugin_name[] = "topology ring plugin";
+const char plugin_type[] = "topology/ring";
+const uint32_t plugin_id = TOPOLOGY_PLUGIN_RING;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
+const bool supports_exclusive_topo = true;
+
+typedef struct topoinfo_ring {
+	char *name;
+	char *nodes;
+	uint16_t ring_index;
+	uint16_t size;
+} topoinfo_ring_t;
+
+typedef struct topoinfo_rings {
+	uint32_t record_count; /* number of records */
+	topoinfo_ring_t *topo_array; /* the ring topology records */
+} topoinfo_rings_t;
+
+static void _print_topo_record(topoinfo_ring_t *ring_ptr, char **out)
+{
+	char *env, *line = NULL, *pos = NULL;
+
+	/****** Line 1 ******/
+	xstrfmtcatat(line, &pos, "RingName=%s", ring_ptr->name);
+
+	if (ring_ptr->nodes)
+		xstrfmtcatat(line, &pos, " Nodes=%s", ring_ptr->nodes);
+
+	xstrfmtcatat(line, &pos, " RingSize=%u", ring_ptr->size);
+
+	if ((env = getenv("SLURM_TOPO_LEN")))
+		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
+	else
+		xstrfmtcat(*out, "%s\n", line);
+
+	xfree(line);
+}
+
+extern int init(void)
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+extern void fini(void)
+{
+	return;
+}
+
+extern int ring_record_add_ring(topology_ctx_t *tctx, char *name)
+{
+	topology_ring_config_t *ring_config = tctx->config;
+	ring_context_t *ctx = tctx->plugin_ctx;
+	ring_record_t *ring_ptr;
+	int new_idx = ctx->ring_count;
+
+	ctx->ring_count++;
+	xrecalloc(ctx->rings, ctx->ring_count, sizeof(*ctx->rings));
+
+	ring_ptr = &(ctx->rings[new_idx]);
+	ring_ptr->ring_name = xstrdup(name);
+	ring_ptr->nodes_bitmap = bit_alloc(node_record_count);
+	ring_ptr->ring_index = new_idx;
+
+	if (ring_config) {
+		xrecalloc(ring_config->ring_configs,
+			  ring_config->config_cnt + 1,
+			  sizeof(*ring_config->ring_configs));
+		ring_config->ring_configs[new_idx].ring_name = xstrdup(name);
+		ring_config->config_cnt++;
+	}
+
+	return new_idx;
+}
+
+extern int ring_record_get_ring_inx(const char *name, ring_context_t *ctx)
+{
+	int i;
+	ring_record_t *ring_ptr;
+
+	ring_ptr = ctx->rings;
+	for (i = 0; i < ctx->ring_count; i++, ring_ptr++) {
+		if (xstrcmp(ring_ptr->ring_name, name) == 0)
+			return i;
+	}
+
+	return -1;
+}
+
+extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
+				  topology_ctx_t *tctx)
+{
+	ring_context_t *ctx = tctx->plugin_ctx;
+	int rc = SLURM_SUCCESS;
+	char *ring_name = NULL;
+	uint16_t ring_pos = 0;
+	int ring_idx = -1;
+	bool added = false;
+
+	if (unit) {
+		char *endptr, *tok = NULL;
+		unsigned long value;
+
+		ring_name = xstrdup(unit);
+		tok = strchr(ring_name, ':');
+		if (tok) {
+			*tok++ = '\0';
+			value = strtoul(tok, &endptr, 0);
+		}
+
+		if (!tok || tok == endptr || *endptr != '\0' ||
+		    value >= MAX_RING_SIZE) {
+			error("invalid ring position: %s", tok);
+			xfree(ring_name);
+			return SLURM_ERROR;
+		}
+		ring_pos = (uint16_t) value;
+		ring_idx = ring_record_get_ring_inx(ring_name, ctx);
+		if (ring_idx < 0) {
+			if (ring_pos) {
+				error("Position in new ring must be 0");
+				xfree(ring_name);
+				return SLURM_ERROR;
+			}
+			ring_idx = ring_record_add_ring(tctx, ring_name);
+		} else if ((ctx->rings[ring_idx].ring_size == MAX_RING_SIZE) &&
+			   !bit_test(ctx->rings[ring_idx].nodes_bitmap,
+				     node_ptr->index)) {
+			error("Ring %s is full", ring_name);
+			xfree(ring_name);
+			return SLURM_ERROR;
+		} else if (ctx->rings[ring_idx].ring_size < ring_pos ||
+			   ((ctx->rings[ring_idx].ring_size == ring_pos) &&
+			    bit_test(ctx->rings[ring_idx].nodes_bitmap,
+				     node_ptr->index))) {
+			error("Position %u in ring must be < ring_size(%u)",
+			      ring_pos, ctx->rings[ring_idx].ring_size);
+			ring_pos = 0;
+		}
+	}
+
+	bit_clear(ctx->rings_nodes_bitmap, node_ptr->index);
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		ring_record_t *ring_ptr = &(ctx->rings[i]);
+		bool in_ring =
+			bit_test(ring_ptr->nodes_bitmap, node_ptr->index);
+		bool add = (ring_idx == i);
+
+		if (!add && !in_ring)
+			continue;
+
+		if (add && !in_ring) {
+			hostlist_t *host_list_out = hostlist_create(NULL);
+			bool shift = false;
+			uint16_t shift_idx;
+
+			debug2("%s: add %s to %s on position:%u", __func__,
+			       node_ptr->name, ring_ptr->ring_name, ring_pos);
+			bit_set(ring_ptr->nodes_bitmap, node_ptr->index);
+
+			xfree(ring_ptr->nodes);
+			ring_ptr->ring_size++;
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_pos == j) {
+					shift_idx = ring_ptr->nodes_map[j];
+					ring_ptr->nodes_map[j] =
+						node_ptr->index;
+					shift = true;
+				} else if (shift) {
+					uint16_t tmp = shift_idx;
+					shift_idx = ring_ptr->nodes_map[j];
+					ring_ptr->nodes_map[j] = tmp;
+				}
+				hostlist_push_host(
+					host_list_out,
+					node_record_table_ptr
+						[ring_ptr->nodes_map[j]]
+							->name);
+			}
+
+			ring_ptr->nodes =
+				hostlist_ranged_string_xmalloc(host_list_out);
+			hostlist_destroy(host_list_out);
+			added = true;
+		} else if (!add && in_ring) {
+			hostlist_t *host_list_out = hostlist_create(NULL);
+			bool shift = false;
+
+			debug2("%s: remove %s from %s", __func__,
+			       node_ptr->name, ring_ptr->ring_name);
+			bit_clear(ring_ptr->nodes_bitmap, node_ptr->index);
+			xfree(ring_ptr->nodes);
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_ptr->nodes_map[j] == node_ptr->index) {
+					shift = true;
+					continue;
+				} else if (shift) {
+					ring_ptr->nodes_map[j - 1] =
+						ring_ptr->nodes_map[j];
+				}
+				hostlist_push_host(
+					host_list_out,
+					node_record_table_ptr
+						[ring_ptr->nodes_map[j]]
+							->name);
+			}
+			ring_ptr->nodes =
+				hostlist_ranged_string_xmalloc(host_list_out);
+			hostlist_destroy(host_list_out);
+			ring_ptr->ring_size--;
+		} else if (add && in_ring) {
+			hostlist_t *host_list_out = hostlist_create(NULL);
+			bool shift_r = false;
+			bool shift_l = false;
+			uint16_t shift_idx = MAX_RING_SIZE;
+
+			debug2("%s: move %s  %s", __func__, node_ptr->name,
+			       ring_ptr->ring_name);
+			xfree(ring_ptr->nodes);
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				uint16_t current_idx = ring_ptr->nodes_map[j];
+				if (shift_r) {
+					xassert(shift_idx != MAX_RING_SIZE);
+					ring_ptr->nodes_map[j] = shift_idx;
+					shift_idx = current_idx;
+				}
+
+				if (current_idx == node_ptr->index) {
+					if (ring_pos == j)
+						;
+					else if (shift_r)
+						shift_r = false;
+					else
+						shift_l = true;
+				} else if (ring_pos == j) {
+					if (shift_l)
+						shift_l = false;
+					else {
+						shift_idx = current_idx;
+						shift_r = true;
+					}
+					ring_ptr->nodes_map[j] =
+						node_ptr->index;
+				}
+
+				if (shift_l) {
+					ring_ptr->nodes_map[j] =
+						ring_ptr->nodes_map[j + 1];
+				}
+				hostlist_push_host(
+					host_list_out,
+					node_record_table_ptr
+						[ring_ptr->nodes_map[j]]
+							->name);
+			}
+			ring_ptr->nodes =
+				hostlist_ranged_string_xmalloc(host_list_out);
+			hostlist_destroy(host_list_out);
+			added = true;
+		}
+		ring_record_update_ring_config(tctx, i);
+	}
+
+	if (added)
+		bit_set(ctx->rings_nodes_bitmap, node_ptr->index);
+
+	xfree(ring_name);
+	return rc;
+}
+
+/*
+ * topo_build_config - build or rebuild system topology information
+ *	after a system startup or reconfiguration.
+ */
+extern int topology_p_build_config(topology_ctx_t *tctx)
+{
+	if (node_record_count)
+		return ring_record_validate(tctx);
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_destroy_config(topology_ctx_t *tctx)
+{
+	ring_context_t *ctx = tctx->plugin_ctx;
+
+	ring_record_table_destroy(ctx);
+	FREE_NULL_BITMAP(ctx->rings_nodes_bitmap);
+	xfree(tctx->plugin_ctx);
+
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
+{
+	ring_context_t *ctx = topo_eval->tctx->plugin_ctx;
+	if (ctx->rings_nodes_bitmap &&
+	    bit_overlap_any(ctx->rings_nodes_bitmap, topo_eval->node_map)) {
+		topo_eval->eval_nodes = eval_nodes_ring;
+		topo_eval->trump_others = true;
+	}
+
+	return common_topo_choose_nodes(topo_eval);
+}
+
+extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
+{
+	ring_context_t *ctx = tctx;
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		if (bit_overlap_any(ctx->rings[i].nodes_bitmap, node_mask)) {
+			bit_or(node_mask, ctx->rings[i].nodes_bitmap);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Get bitmap of nodes in ring
+ *
+ * IN name of ring
+ * RET bitmap of nodes from ring_record_table (do not free)
+ */
+extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
+{
+	ring_context_t *ctx = tctx;
+	int ring_idx = ring_record_get_ring_inx(name, ctx);
+	if (ring_idx < 0)
+		return NULL;
+
+	return ctx->rings[ring_idx].nodes_bitmap;
+}
+
+extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
+{
+	return false;
+}
+
+/*
+ * topo_get_node_addr - build node address and the associated pattern
+ *      based on the topology information
+ *
+ * example of output :
+ *      address : r8:2.tux1
+ *      pattern : ring:position.node
+ */
+extern int topology_p_get_node_addr(char *node_name, char **paddr,
+				    char **ppattern, void *tctx)
+{
+	node_record_t *node_ptr = find_node_record(node_name);
+	ring_context_t *ctx = tctx;
+
+	/* node not found in configuration */
+	if (!node_ptr)
+		return SLURM_ERROR;
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		ring_record_t *ring_ptr = &(ctx->rings[i]);
+		if (bit_test(ctx->rings[i].nodes_bitmap, node_ptr->index)) {
+			uint16_t ring_pos = INFINITE16;
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_ptr->nodes_map[j] == node_ptr->index) {
+					ring_pos = j;
+					break;
+				}
+			}
+			*paddr = xstrdup_printf("%s:%u.%s", ring_ptr->ring_name,
+						ring_pos, node_name);
+			*ppattern = xstrdup("ring:position.node");
+			return SLURM_SUCCESS;
+		}
+	}
+
+	return common_topo_get_node_addr(node_name, paddr, ppattern);
+}
+
+extern int topology_p_split_hostlist(hostlist_t *hl, hostlist_t ***sp_hl,
+				     int *count, uint16_t tree_width,
+				     void *tctx)
+{
+	return common_topo_split_hostlist_treewidth(hl, sp_hl, count,
+						    tree_width);
+}
+
+extern int topology_p_get(topology_data_t type, void *data, void *tctx)
+{
+	int rc = SLURM_SUCCESS;
+	ring_context_t *ctx = tctx;
+
+	switch (type) {
+	case TOPO_DATA_TOPOLOGY_PTR:
+	{
+		dynamic_plugin_data_t **topoinfo_pptr = data;
+		topoinfo_rings_t *topoinfo_ptr = xmalloc(sizeof(*topoinfo_ptr));
+
+		*topoinfo_pptr = xmalloc(sizeof(**topoinfo_pptr));
+		(*topoinfo_pptr)->data = topoinfo_ptr;
+		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		topoinfo_ptr->record_count = ctx->ring_count;
+		topoinfo_ptr->topo_array =
+			xcalloc(topoinfo_ptr->record_count,
+				sizeof(*(topoinfo_ptr->topo_array)));
+
+		for (int i = 0; i < topoinfo_ptr->record_count; i++) {
+			topoinfo_ptr->topo_array[i].name =
+				xstrdup(ctx->rings[i].ring_name);
+			topoinfo_ptr->topo_array[i].nodes =
+				xstrdup(ctx->rings[i].nodes);
+			topoinfo_ptr->topo_array[i].ring_index =
+				ctx->rings[i].ring_index;
+			topoinfo_ptr->topo_array[i].size =
+				ctx->rings[i].ring_size;
+		}
+
+		break;
+	}
+	case TOPO_DATA_REC_CNT:
+	{
+		int *rec_cnt = data;
+		*rec_cnt = ctx->ring_count;
+		break;
+	}
+	case TOPO_DATA_EXCLUSIVE_TOPO:
+	{
+		int *exclusive_topo = data;
+		*exclusive_topo = 1;
+		break;
+	}
+	default:
+		error("Unsupported option %d", type);
+		rc = SLURM_ERROR;
+	}
+
+	return rc;
+}
+
+extern int topology_p_topoinfo_free(void *topoinfo_ptr)
+{
+	int i = 0;
+	topoinfo_rings_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		if (topoinfo->topo_array) {
+			for (i = 0; i < topoinfo->record_count; i++) {
+				xfree(topoinfo->topo_array[i].name);
+				xfree(topoinfo->topo_array[i].nodes);
+			}
+			xfree(topoinfo->topo_array);
+		}
+		xfree(topoinfo);
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	int i;
+	topoinfo_rings_t *topoinfo = topoinfo_ptr;
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack32(topoinfo->record_count, buffer);
+		for (i = 0; i < topoinfo->record_count; i++) {
+			packstr(topoinfo->topo_array[i].name, buffer);
+			packstr(topoinfo->topo_array[i].nodes, buffer);
+			pack16(topoinfo->topo_array[i].ring_index, buffer);
+			pack16(topoinfo->topo_array[i].size, buffer);
+		}
+	} else {
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
+				     char *unit, char **out)
+{
+	int i, match, match_cnt = 0;
+	topoinfo_rings_t *topoinfo = topoinfo_ptr;
+
+	*out = NULL;
+
+	if ((!nodes_list || (nodes_list[0] == '\0')) &&
+	    (!unit || (unit[0] == '\0'))) {
+		if (topoinfo->record_count == 0) {
+			error("No topology information available");
+			return SLURM_SUCCESS;
+		}
+
+		for (i = 0; i < topoinfo->record_count; i++)
+			_print_topo_record(&topoinfo->topo_array[i], out);
+
+		return SLURM_SUCCESS;
+	}
+
+	/* Search for matching node name and  ring name */
+	for (i = 0; i < topoinfo->record_count; i++) {
+		hostset_t *hs;
+
+		if (unit && xstrcmp(topoinfo->topo_array[i].name, unit))
+			continue;
+
+		if (nodes_list) {
+			if ((topoinfo->topo_array[i].nodes == NULL) ||
+			    (topoinfo->topo_array[i].nodes[0] == '\0'))
+				continue;
+			hs = hostset_create(topoinfo->topo_array[i].nodes);
+			if (hs == NULL)
+				fatal("hostset_create: memory allocation failure");
+			match = hostset_within(hs, nodes_list);
+			hostset_destroy(hs);
+			if (!match)
+				continue;
+		}
+		match_cnt++;
+		_print_topo_record(&topoinfo->topo_array[i], out);
+	}
+
+	if (match_cnt == 0) {
+		error("Topology information contains no ring%s%s%s%s",
+		      unit ? " named " : "",
+		      unit ? unit : "",
+		      nodes_list ? " with nodes " : "",
+		      nodes_list ? nodes_list : "");
+	}
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	int i = 0;
+	topoinfo_rings_t *topoinfo_ptr = xmalloc(sizeof(*topoinfo_ptr));
+
+	*topoinfo_pptr = topoinfo_ptr;
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack32(&topoinfo_ptr->record_count, buffer);
+		safe_xcalloc(topoinfo_ptr->topo_array,
+			     topoinfo_ptr->record_count,
+			     sizeof(*(topoinfo_ptr->topo_array)));
+		for (i = 0; i < topoinfo_ptr->record_count; i++) {
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].name,
+				       buffer);
+			safe_unpackstr(&topoinfo_ptr->topo_array[i].nodes,
+				       buffer);
+			safe_unpack16(&topoinfo_ptr->topo_array[i].ring_index,
+				      buffer);
+			safe_unpack16(&topoinfo_ptr->topo_array[i].size,
+				      buffer);
+		}
+	} else {
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	topology_p_topoinfo_free(topoinfo_ptr);
+	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
+}
+
+extern void topology_p_jobinfo_free(void *topo_jobinfo)
+{
+	return;
+}
+
+extern void topology_p_jobinfo_pack(void *topo_jobinfo, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	return;
+}
+
+extern int topology_p_jobinfo_unpack(void **topo_jobinfo, buf_t *buffer,
+				     uint16_t protocol_version)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int topology_p_jobinfo_get(topology_jobinfo_type_t type,
+				  void *topo_jobinfo, void *data)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
+extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tctx)
+{
+	return 0;
+}
+
+extern void topology_p_get_topology_str(node_record_t *node_ptr,
+					char **topology_str_ptr,
+					topology_ctx_t *tctx)
+{
+	ring_context_t *ctx = tctx->plugin_ctx;
+
+	for (int i = 0; i < ctx->ring_count; i++) {
+		ring_record_t *ring_ptr = &(ctx->rings[i]);
+		if (bit_test(ring_ptr->nodes_bitmap, node_ptr->index)) {
+			xstrfmtcat(*topology_str_ptr, "%s%s:%s",
+				   *topology_str_ptr ? "," : "", tctx->name,
+				   ring_ptr->ring_name);
+			for (int j = 0; j < ring_ptr->ring_size; j++) {
+				if (ring_ptr->nodes_map[j] == node_ptr->index) {
+					xstrfmtcat(*topology_str_ptr, ":%d", j);
+					break;
+				}
+			}
+			break;
+		}
+	}
+	return;
+}

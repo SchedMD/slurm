@@ -138,6 +138,8 @@ static void _free_topology_ctx_members(topology_ctx_t *tctx_ptr)
 			free_topology_tree_config(tctx_ptr->config);
 		else if (!xstrcmp(tctx_ptr->plugin, "topology/block"))
 			free_topology_block_config(tctx_ptr->config);
+		else if (!xstrcmp(tctx_ptr->plugin, "topology/ring"))
+			free_topology_ring_config(tctx_ptr->config);
 
 		xfree(tctx_ptr->name);
 		xfree(tctx_ptr->plugin);
@@ -889,6 +891,32 @@ extern void free_topology_block_config(topology_block_config_t *config)
 			_free_block_conf_members(&config->block_configs[i]);
 		xfree(config->block_configs);
 		FREE_NULL_LIST(config->block_sizes);
+		xfree(config);
+	}
+}
+
+static void _free_ring_conf_members(slurm_conf_ring_t *config)
+{
+	if (config) {
+		xfree(config->ring_name);
+		xfree(config->nodes);
+	}
+}
+
+extern void free_ring_conf(slurm_conf_ring_t *config)
+{
+	if (config) {
+		_free_ring_conf_members(config);
+		xfree(config);
+	}
+}
+
+extern void free_topology_ring_config(topology_ring_config_t *config)
+{
+	if (config) {
+		for (int i = 0; i < config->config_cnt; i++)
+			_free_ring_conf_members(&config->ring_configs[i]);
+		xfree(config->ring_configs);
 		xfree(config);
 	}
 }
