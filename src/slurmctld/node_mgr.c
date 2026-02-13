@@ -493,17 +493,21 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->node_state =
 					node_state | NODE_STATE_CLOUD;
 
-				/* Preserve dynamic topology for cloud nodes */
-				if (node_state_rec->topology_str) {
+				/*
+				 * Preserve dynamic topology for cloud nodes.
+				 * If the node is powered down then keep topo
+				 * as configured by current config files to stop
+				 * old slurm.conf node topology from persisting.
+				 * Ignore topology_orig_str for similar reason
+				 * for topology.conf config.
+				 */
+				if (node_state_rec->topology_str &&
+				    !IS_NODE_POWERING_DOWN(node_ptr) &&
+				    !IS_NODE_POWERED_DOWN(node_ptr)) {
 					xfree(node_ptr->topology_str);
 					node_ptr->topology_str =
 						node_state_rec->topology_str;
 					node_state_rec->topology_str = NULL;
-
-					xfree(node_ptr->topology_orig_str);
-					node_ptr->topology_orig_str =
-						node_state_rec->topology_orig_str;
-					node_state_rec->topology_orig_str = NULL;
 				}
 
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
@@ -711,13 +715,25 @@ extern int load_all_node_state ( bool state_only )
 			xfree(node_ptr->mcs_label);
 			node_ptr->mcs_label = node_state_rec->mcs_label;
 			node_state_rec->mcs_label = NULL;
-			xfree(node_ptr->topology_str);
-			node_ptr->topology_str = node_state_rec->topology_str;
-			node_state_rec->topology_str = NULL;
-			xfree(node_ptr->topology_orig_str);
-			node_ptr->topology_orig_str =
-				node_state_rec->topology_orig_str;
-			node_state_rec->topology_orig_str = NULL;
+
+			/*
+			 * Preserve dynamic topology.
+			 * If the node is powered down then keep topo
+			 * as configured by current config files to stop
+			 * old slurm.conf node topology from persisting.
+			 * This is required even on state_only=false to prevent
+			 * nodes from being completely removed from the topology
+			 * if topo is removed from slurm.conf but exists in
+			 * topology.conf before restart.
+			 */
+			if (node_state_rec->topology_str &&
+			    !IS_NODE_POWERING_DOWN(node_ptr) &&
+			    !IS_NODE_POWERED_DOWN(node_ptr)) {
+				xfree(node_ptr->topology_str);
+				node_ptr->topology_str =
+					node_state_rec->topology_str;
+				node_state_rec->topology_str = NULL;
+			}
 		}
 
 		if (node_ptr) {
@@ -2596,7 +2612,15 @@ extern void reset_node_topology(node_record_t *node_ptr)
 	else
 		old_topo = node_ptr->topology_orig_str;
 
-	node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+	if (!node_ptr->config_ptr->topology_str && !node_ptr->topology_str &&
+	    !node_ptr->topology_orig_str) {
+		/*
+		 * No need to reset topo if the topology was never modified to
+		 * start with. Topology is only from topology.conf|yaml.
+		 */
+	} else {
+		node_mgr_set_node_topology(node_ptr, old_topo ? old_topo : "");
+	}
 
 	if (old_topo == node_ptr->topology_orig_str) {
 		xfree(node_ptr->topology_str);

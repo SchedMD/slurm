@@ -454,6 +454,7 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 {
 	int rc = SLURM_SUCCESS;
 	char *topology_str, *token, *save_ptr = NULL;
+	bool *set_tctx = NULL;
 
 	xassert(plugin_inited);
 
@@ -470,6 +471,7 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 	topology_str = xstrdup(node_ptr->topology_str);
 	token = strtok_r(topology_str, ",", &save_ptr);
 
+	set_tctx = xcalloc(tctx_num, sizeof(*set_tctx));
 	while (token) {
 		char *name, *unit = NULL;
 		int tctx_idx;
@@ -488,9 +490,23 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 		if (rc)
 			break;
 
+		set_tctx[tctx_idx] = true;
 		token = strtok_r(NULL, ",", &save_ptr);
 	}
 
+	if (!rc) {
+		/* clear the node from any topology not in topology_str */
+		for (int i = 0; i < tctx_num; i++) {
+			if (set_tctx[i])
+				continue;
+			rc = (*(ops[tctx[i].idx].add_rm_node))(node_ptr, NULL,
+							       &(tctx[i]));
+			if (rc)
+				break;
+		}
+	}
+
+	xfree(set_tctx);
 	xfree(topology_str);
 
 	return rc;
