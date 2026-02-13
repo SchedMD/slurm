@@ -352,6 +352,16 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 #define bf_licenses_equal(_x, _y) (_x ? slurm_bf_licenses_equal(_x, _y) : true)
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b);
 
+#define bf_licenses_relevant_hres_increase(_x, _y, job_ptr) \
+	(_x ? slurm_bf_licenses_relevant_hres_increase(_x, _y, job_ptr) : true)
+/*
+ * Return true if the job requests an hres license and 'next' has an licenses
+ * with the same hres_id that has more remaining than in 'current'.
+ */
+extern bool slurm_bf_licenses_relevant_hres_increase(list_t *current,
+						     list_t *next,
+						     job_record_t *job_ptr);
+
 #define FREE_NULL_BF_LICENSES(_x) FREE_NULL_LIST(_x)
 
 #endif /* !_LICENSES_H */

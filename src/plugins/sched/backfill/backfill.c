@@ -2934,10 +2934,10 @@ TRY_LATER:
 			     node_space[j].next && (later_start == 0)) {
 				int tmp = node_space[j].next;
 
-				if (job_ptr->license_list &&
-				    !bf_licenses_equal(node_space[tmp].licenses,
-						       node_space[j]
-							       .licenses)) {
+				if (bf_licenses_relevant_hres_increase(
+					    node_space[j].licenses,
+					    node_space[tmp].licenses,
+					    job_ptr)) {
 					later_start = node_space[j].end_time;
 					goto later_start_set;
 				}
