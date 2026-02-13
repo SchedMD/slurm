@@ -46,6 +46,15 @@ in options.
 .IP
 
 .TP
+\fBdisable_bpf_token\fR
+If specified this disables the use of bpf tokens in the namespace plugin. Use of
+this option when ConstrainDevices is set in the cgroup.conf file will result in
+devices only being constrained at the job level, individual steps won't actually
+be constrained if requesting fewer devices than the job does.  This will also
+permit ConstrainDevices to work on kernels where bpf tokens are not available.
+.IP
+
+.TP
 \fBnode_confs\fR
 List of node namespace configurations. The list element attributes are described
 below.
