@@ -1184,11 +1184,11 @@ def is_upgrade_setup(
     Return True if we have two Slurms configured in the system.
     """
 
-    if not os.path.exists(old_slurm_prefix):
+    if not os.path.exists(f"{old_slurm_prefix}/bin"):
         logging.debug(f"Old prefix {old_slurm_prefix} not exists.")
         return False
 
-    if not os.path.exists(new_slurm_prefix):
+    if not os.path.exists(f"{new_slurm_prefix}/bin"):
         logging.debug(f"New prefix {new_slurm_prefix} not exists.")
         return False
 
@@ -1260,7 +1260,7 @@ def setup_upgrades(
     if old_build_prefix == "":
         old_build_prefix = properties["slurm-build-dir"]
     if new_build_prefix == "":
-        new_build_prefix = f"{properties['slurm-build-dir']}/../slurm-git-build"
+        new_build_prefix = f"{properties['slurm-build-dir']}/../slurm-build-new"
     if old_source_prefix == "":
         old_source_prefix = properties["slurm-source-dir"]
     if new_source_prefix == "":

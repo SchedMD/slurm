@@ -234,6 +234,26 @@ def module_setup(request, tmp_path_factory):
                 quiet=True,
             )
 
+        # Cleanup logs directory for auto-config
+        atf.properties["slurm-logs-dir"] = os.path.dirname(
+            atf.get_config_parameter("SlurmctldLogFile", live=False, quiet=True)
+        )
+        bkp_logs_dir = f"{atf.properties['slurm-logs-dir']}.orig"
+        if os.path.exists(bkp_logs_dir):
+            logging.warning(
+                f"Backup of Slurm Logs directory already exists ({bkp_logs_dir}), it will be replaced."
+            )
+        atf.run_command(
+            f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}/ {bkp_logs_dir}/",
+            user="root",
+            quiet=True,
+        )
+        atf.run_command(
+            f"rm -rf {atf.properties['slurm-logs-dir']}/*",
+            user="root",
+            quiet=True,
+        )
+
         # Backup current SysConfigDir
         if os.path.exists(atf.properties["slurm-config-dir"]):
             if os.path.exists(atf.properties["slurm-config-dir"] + name):
@@ -308,6 +328,23 @@ def module_teardown():
                 user="root",
                 quiet=True,
             )
+
+        # Save logs dir for the test and restore the orifinal
+        atf.run_command(
+            f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}/ {atf.properties['slurm-logs-dir']}_{atf.properties['test_name']}/",
+            user="root",
+            quiet=True,
+        )
+        atf.run_command(
+            f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}.orig/ {atf.properties['slurm-logs-dir']}/",
+            user="root",
+            quiet=True,
+        )
+        atf.run_command(
+            f"rm -rf {atf.properties['slurm-logs-dir']}.orig",
+            user="root",
+            quiet=True,
+        )
 
         # Restore SysConfigDir
         atf.run_command(
