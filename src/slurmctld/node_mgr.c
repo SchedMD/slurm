@@ -2091,6 +2091,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					 */
 					kill_running_job_by_node_ptr(node_ptr);
 					node_ptr->node_state &=
+						(~NODE_STATE_POWER_UP);
+					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_UP);
 				} else if (state_val & NODE_STATE_POWER_DRAIN) {
 					/* power down asap -- drain */
