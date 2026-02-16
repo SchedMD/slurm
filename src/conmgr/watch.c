@@ -974,6 +974,19 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
+	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
+	    con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
+	    !con_flag(con, FLAG_READ_EOF)) {
+		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
+
+		log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_close, NULL);
+		return 0;
+	}
+
 	/* handle already read data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
 	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
@@ -1098,13 +1111,6 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			xfree(flags);
 		}
 
-		return 0;
-	}
-
-	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls && con->tls) {
-		log_flag(CONMGR, "%s: [%s] waiting to close TLS connection",
-			 __func__, con->name);
-		add_work_con_fifo(true, con, tls_close, NULL);
 		return 0;
 	}
 

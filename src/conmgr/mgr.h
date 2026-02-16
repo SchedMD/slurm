@@ -145,6 +145,8 @@ typedef enum {
 	FLAG_RPC_RECV_FORWARD = CON_FLAG_RPC_RECV_FORWARD,
 	/* True if on_fingerprint() pending */
 	FLAG_WAIT_ON_EXTRACT = SLURM_BIT(24),
+	/* True if TLS is currently attempting shutting down */
+	FLAG_IS_TLS_SHUTTING_DOWN = SLURM_BIT(25),
 } con_flags_t;
 
 /* Mask over flags that track connection state */

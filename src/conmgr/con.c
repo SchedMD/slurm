@@ -119,6 +119,7 @@ static const struct {
 	T(FLAG_TLS_WAIT_ON_CLOSE),
 	T(FLAG_RPC_RECV_FORWARD),
 	T(FLAG_WAIT_ON_EXTRACT),
+	T(FLAG_IS_TLS_SHUTTING_DOWN),
 };
 #undef T
 
@@ -246,6 +247,18 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 			slurm_mutex_unlock(&mgr.mutex);
 
 		log_flag(CONMGR, "%s: [%s] ignoring duplicate close request",
+			 __func__, con->name);
+		return;
+	}
+
+	if (con->tls) {
+		con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+		add_work_con_fifo(true, con, tls_close, NULL);
+
+		if (!locked)
+			slurm_mutex_unlock(&mgr.mutex);
+
+		log_flag(CONMGR, "%s: [%s] closing tls connection before closing fd",
 			 __func__, con->name);
 		return;
 	}
@@ -1958,6 +1971,23 @@ extern int conmgr_unquiesce_fd(conmgr_fd_t *con)
 	return rc;
 }
 
+extern int conmgr_unquiesce_con(conmgr_fd_ref_t *ref)
+{
+	int rc;
+
+	xassert(ref);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	if (!ref->con)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	rc = _unquiesce_fd(ref->con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
 extern bool conmgr_con_is_quiesced(conmgr_fd_ref_t *con)
 {
 	bool quiesced;
@@ -2005,6 +2035,23 @@ extern int conmgr_quiesce_fd(conmgr_fd_t *con)
 
 	slurm_mutex_lock(&mgr.mutex);
 	rc = _quiesce_fd(con);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+extern int conmgr_quiesce_con(conmgr_fd_ref_t *ref)
+{
+	int rc;
+
+	xassert(ref);
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+
+	if (!ref->con)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+	rc = _quiesce_fd(ref->con);
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return rc;
