@@ -16709,6 +16709,11 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		return;
 
 	if (IS_JOB_EXPEDITING(job_ptr)) {
+		if (job_ptr->epilog_running) {
+			debug("%s: unexpected call with epilog still running for %pJ",
+			     __func__, job_ptr);
+			return;
+		}
 		if (!job_ptr->epilog_failed) {
 			job_state_unset_flag(job_ptr, JOB_EXPEDITING);
 			job_state_set_flag(job_ptr, JOB_REQUEUE_HOLD);
@@ -19126,8 +19131,10 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 
 	exit_code = WEXITSTATUS(job_ptr->exit_code);
 
-	if (job_ptr->bit_flags & EXPEDITED_REQUEUE) {
-		verbose("%s: %pJ starting expedited requeue", __func__, job_ptr);
+	/* Only requeue on failure; success (exit 0) completes the job. */
+	if ((job_ptr->bit_flags & EXPEDITED_REQUEUE) && exit_code) {
+		verbose("%s: %pJ starting expedited requeue",
+			__func__, job_ptr);
 		job_state_set_flag(job_ptr, JOB_REQUEUE | JOB_EXPEDITING);
 		return;
 	}
