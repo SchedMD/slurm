@@ -599,6 +599,9 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(con->tls_in == tls_in);
 		xassert(con->tls_out == tls_out);
 
+		/* Release cert that is no longer needed */
+		xfree(con->tls_cert);
+
 		slurm_mutex_unlock(&mgr.mutex);
 
 		_negotiate(con, tls);
