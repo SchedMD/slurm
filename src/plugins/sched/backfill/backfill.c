@@ -2086,6 +2086,9 @@ static int _hres_pre_select(job_record_t *job_ptr, node_space_map_t *node_space,
 {
 	bf_licenses_t *licenses;
 
+	if (!job_ptr->hres_select)
+		return SLURM_SUCCESS;
+
 	if (_get_licenses_from_nspace(node_space, will_run_data->start,
 				      &licenses))
 		return SLURM_ERROR;
