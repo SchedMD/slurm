@@ -1262,7 +1262,7 @@ static bool _attempt_accept(conmgr_fd_t *con)
 	/* hand over FD for normal processing */
 	if ((rc = add_connection(type, con, fd, fd, con->events,
 				 (conmgr_con_flags_t) flags, &addr, addrlen,
-				 false, unix_path, NULL, con->new_arg))) {
+				 false, unix_path, NULL, NULL, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
 			 __func__, fd, slurm_strerror(rc));
 		return true;
@@ -1488,6 +1488,7 @@ static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
 
 	FREE_NULL_BUFFER(con->in);
 	FREE_NULL_BUFFER(con->tls_in);
+	xfree(con->tls_cert);
 	FREE_NULL_LIST(con->out);
 	FREE_NULL_LIST(con->tls_out);
 	FREE_NULL_LIST(con->work);

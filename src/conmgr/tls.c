@@ -461,6 +461,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 			.io_context = con,
 		},
 		.defer_negotiation = true,
+		.cert = con->tls_cert,
 	};
 	int rc = SLURM_ERROR;
 	void *tls = NULL;
@@ -597,6 +598,9 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		con->tls = tls;
 		xassert(con->tls_in == tls_in);
 		xassert(con->tls_out == tls_out);
+
+		/* Release cert that is no longer needed */
+		xfree(con->tls_cert);
 
 		slurm_mutex_unlock(&mgr.mutex);
 

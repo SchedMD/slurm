@@ -593,6 +593,8 @@ extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
  * IN addr - destination address to connect() socket
  * IN addrlen - sizeof(*addr)
  * IN events - ptr to function callback on events
+ * IN tls_cert - TLS certificate for destination address, used when destination
+ * address TLS certificate is not signed by a trusted CA.
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
@@ -600,7 +602,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
-					void *arg);
+					char *tls_cert, void *arg);
 
 /*
  * Run connection manager main loop for until shutdown
