@@ -92,7 +92,14 @@ extern int slurm_ping(int dest)
 
 	slurm_msg_t_init(&request_msg);
 	request_msg.msg_type = REQUEST_PING ;
-	rc = _send_message_controller(dest, &request_msg);
+
+	errno = SLURM_SUCCESS;
+
+	if (!(rc = _send_message_controller(dest, &request_msg)))
+		return SLURM_SUCCESS;
+
+	if ((rc == SLURM_ERROR) && errno)
+		return errno;
 
 	return rc;
 }
