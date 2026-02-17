@@ -36,6 +36,8 @@
 #ifndef SLURM_HTTP_CON_H
 #define SLURM_HTTP_CON_H
 
+#include <sys/stat.h>
+
 #include "src/common/http.h"
 #include "src/conmgr/conmgr.h"
 
@@ -127,5 +129,29 @@ extern int http_con_send_response(http_con_t *hcon,
 				  http_status_code_t status_code,
 				  list_t *headers, bool close_header,
 				  const buf_t *body, const char *body_encoding);
+
+/* Get connection status
+ * IN hcon - HTTP connection to query
+ * IN/OUT status_ptr - Pointer to populate
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_get_status(http_con_t *hcon,
+			       conmgr_fd_status_t *status_ptr);
+
+/*
+ * Run fstat() against HTTP connection input file descriptor
+ * IN con - connection to query
+ * IN/OUT stat_ptr - stat struct to populate
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_fstat_input(http_con_t *hcon, struct stat *stat_ptr);
+
+/*
+ * Run SO_PEERCRED against HTTP connection
+ * IN con - connection to query
+ * RET SLURM_SUCCESS or error
+ */
+extern int http_con_get_auth_creds(http_con_t *hcon, uid_t *cred_uid,
+				   gid_t *cred_gid, pid_t *cred_pid);
 
 #endif

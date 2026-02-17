@@ -1384,9 +1384,17 @@ extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref)
 	return conmgr_fd_get_name(ref->con);
 }
 
-extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
+/* Caller must hold mgr.mutex lock */
+static int _con_get_status(conmgr_fd_t *con, conmgr_fd_status_t *status_ptr)
 {
-	conmgr_fd_status_t status = {
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+	xassert(status_ptr);
+
+	if (!con)
+		return EINVAL;
+
+	*status_ptr = (conmgr_fd_status_t) {
 		.is_socket = con_flag(con, FLAG_IS_SOCKET),
 		.unix_socket = NULL,
 		.is_listen = con_flag(con, FLAG_IS_LISTEN),
@@ -1396,12 +1404,90 @@ extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
 
 	if (con->address.ss_family == AF_LOCAL) {
 		struct sockaddr_un *un = (struct sockaddr_un *) &con->address;
-		status.unix_socket = un->sun_path;
+		status_ptr->unix_socket = un->sun_path;
 	}
 
-	xassert(con->magic == MAGIC_CON_MGR_FD);
-	xassert(con_flag(con, FLAG_WORK_ACTIVE));
+	return SLURM_SUCCESS;
+}
+
+extern conmgr_fd_status_t conmgr_fd_get_status(conmgr_fd_t *con)
+{
+	conmgr_fd_status_t status = { 0 };
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	(void) _con_get_status(con, &status);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
 	return status;
+}
+
+extern int conmgr_con_get_status(conmgr_fd_ref_t *con,
+				 conmgr_fd_status_t *status_ptr)
+{
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	rc = _con_get_status(con->con, status_ptr);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+extern int conmgr_con_fstat_input(conmgr_fd_ref_t *ref, struct stat *stat_ptr)
+{
+	int rc = SLURM_SUCCESS, input_fd = -1;
+	conmgr_fd_t *con = NULL;
+
+	xassert(stat_ptr);
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
+
+	con = ref->con;
+
+	if (!con) {
+		slurm_mutex_unlock(&mgr.mutex);
+		return EBADF;
+	}
+
+	if (!con_flag(con, FLAG_READ_EOF))
+		input_fd = con->input_fd;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	/*
+	 * Possible but unlikely TOCTOU if input_fd is reused after unlocking
+	 * and before fstat(). Intentionally not locking the syscall as it
+	 * causes a too big performance impact, and we would have bigger
+	 * problems in conmgr if this happened.
+	 */
+	if (fstat(input_fd, stat_ptr))
+		rc = errno;
+
+	if (!rc) {
+		slurm_mutex_lock(&mgr.mutex);
+
+		/* Catch the file descriptor changing while calling fstat() */
+		if (con->input_fd != input_fd)
+			rc = EBADF;
+
+		slurm_mutex_unlock(&mgr.mutex);
+	}
+
+	/* Avoid leaking any flags or stat state on any failure */
+	if (rc)
+		*stat_ptr = (struct stat) { 0 };
+
+	return rc;
 }
 
 /*
