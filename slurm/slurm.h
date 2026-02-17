@@ -4758,6 +4758,7 @@ typedef struct {
 	 * 2+: backup#
 	 */
 	int offset;
+	int rc; /* Ping msg status code */
 } controller_ping_t;
 
 typedef struct {
