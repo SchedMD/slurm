@@ -4769,6 +4769,7 @@ typedef struct {
 		     * 0: primary
 		     * 1: backup
 		     */
+	int rc; /* Ping msg status code */
 } slurmdbd_ping_t;
 
 /*****************************************************************************\
