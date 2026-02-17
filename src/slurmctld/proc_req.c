@@ -6066,7 +6066,6 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 	tls_cert_request_msg_t *req = msg->data;
 	tls_cert_response_msg_t resp = { 0 };
 	node_record_t *node = NULL;
-	bool is_client_auth = false;
 
 	if (!validate_slurm_user(msg->auth_uid)) {
 		error("Security violation, REQUEST_TLS_CERT from uid=%u",
@@ -6080,11 +6079,9 @@ static void _slurm_rpc_tls_cert(slurm_msg_t *msg)
 			 __func__);
 	}
 
-	is_client_auth = conn_g_is_client_authenticated(msg->conn);
-
 	if (!(resp.signed_cert =
-		      certmgr_g_sign_csr(req->csr, is_client_auth, req->token,
-					 req->node_name))) {
+		      certmgr_g_sign_csr(req->csr, msg->conn_is_mtls,
+					 req->token, req->node_name))) {
 		error("%s: Unable to sign certificate signing request.",
 		      __func__);
 		slurm_send_rc_msg(msg, SLURM_ERROR);
