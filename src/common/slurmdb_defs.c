@@ -2270,7 +2270,13 @@ extern int slurmdb_ping(char *rem_host)
 	persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 	persist_conn->version = SLURM_PROTOCOL_VERSION;
 
+	errno = SLURM_SUCCESS;
+
 	rc = slurm_persist_conn_open(persist_conn);
+
+	if ((rc == SLURM_ERROR) && errno)
+		rc = errno;
+
 	slurm_persist_conn_destroy(persist_conn);
 
 	return rc;
