@@ -2233,9 +2233,24 @@ static void _attempt_backfill(void)
 		node_space_handler.node_space = node_space;
 		node_space_handler.node_space_recs = &node_space_recs;
 
-		if (bf_licenses)
+		if (bf_licenses) {
+			int cluster_list_count = cluster_license_count();
+
 			list_for_each(resv_list, _bf_reserve_resv_licenses,
 				      &node_space_handler);
+			j = 0;
+			while (cluster_list_count) {
+				/* if 2+ resv license was added sort the list */
+				if (list_count(node_space[j].licenses) >
+				    (cluster_list_count + 1)) {
+					list_sort(node_space[j].licenses,
+						  bf_license_cmp);
+				}
+
+				if ((j = node_space[j].next) == 0)
+					break;
+			}
+		}
 
 		list_for_each(job_list, _bf_reserve_running,
 			      &node_space_handler);

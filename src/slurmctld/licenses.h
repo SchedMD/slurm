@@ -314,6 +314,8 @@ extern void license_set_job_tres_cnt(list_t *license_list,
 
 extern bf_licenses_t *bf_licenses_initial(bool bf_running_job_reserve);
 
+extern int bf_license_cmp(void *x, void *y);
+
 extern char *bf_licenses_to_string(bf_licenses_t *licenses_list);
 
 /*
