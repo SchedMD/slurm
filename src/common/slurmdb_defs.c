@@ -2283,7 +2283,8 @@ static void _ping_slurmdbd(slurmdbd_ping_t *ping, int offset)
 	ping->offset = offset;
 
 	START_TIMER;
-	ping->pinged = !slurmdb_ping(ping->hostname);
+	ping->rc = slurmdb_ping(ping->hostname);
+	ping->pinged = !ping->rc;
 	END_TIMER;
 
 	ping->latency = TIMER_DURATION_USEC();
