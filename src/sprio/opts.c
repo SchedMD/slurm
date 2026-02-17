@@ -231,6 +231,8 @@ parse_command_line( int argc, char* *argv )
 
 	if (optind < argc) {
 		if (params.job_flag) {
+			xfree(params.jobs);
+			FREE_NULL_LIST(params.job_list);
 			params.jobs = xstrdup(argv[optind++]);
 			params.job_list = _build_job_list(params.jobs);
 		}
