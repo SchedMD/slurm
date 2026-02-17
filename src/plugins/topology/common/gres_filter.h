@@ -56,6 +56,8 @@ typedef struct {
 	uint32_t *min_cores_this_node;
 	uint32_t *min_tasks_this_node; /* Min tasks that can start on this node,
 					* UPDATED */
+	bool no_task_count; /* job gave no task count, so max_tasks_this_node
+			     * is only how many tasks fit on this node */
 	int node_i;
 	char *node_name; /* name of the node */
 	int rem_nodes; /* node count left to allocate, including this node */
