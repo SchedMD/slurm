@@ -3155,3 +3155,24 @@ extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b)
 		return false;
 	return !(list_find_first_ro(a, _bf_licenses_find_difference, b));
 }
+
+/* sort appended resv bf_licenses to be in order of resv id and license id */
+extern int bf_license_cmp(void *x, void *y)
+{
+	bf_license_t *entry_a = *(bf_license_t **) x;
+	bf_license_t *entry_b = *(bf_license_t **) y;
+	int resv_cmp_rc;
+
+	if (!entry_a->resv_ptr && !entry_b->resv_ptr)
+		return 0; /* keep these in cluster_license_list order */
+	if (!entry_a->resv_ptr && entry_b->resv_ptr)
+		return -1;
+	if (entry_a->resv_ptr && !entry_b->resv_ptr)
+		return 1;
+	if ((resv_cmp_rc =
+		     slurm_sort_uint32_list_asc(&entry_a->resv_ptr->resv_id,
+						&entry_b->resv_ptr->resv_id)))
+		return resv_cmp_rc;
+	return slurm_sort_uint16_list_asc(&entry_a->id.lic_id,
+					  &entry_b->id.lic_id);
+}
