@@ -438,9 +438,11 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			 * thread_count mutex which this has locked.
 			 * After joining persist_service_conn[i] could be NULL
 			 */
-			slurm_mutex_unlock(&thread_count_lock);
-			slurm_thread_join(thread_id);
-			slurm_mutex_lock(&thread_count_lock);
+			if (thread_id != pthread_self()) {
+				slurm_mutex_unlock(&thread_count_lock);
+				slurm_thread_join(thread_id);
+				slurm_mutex_lock(&thread_count_lock);
+			}
 		}
 		if (persist_service_conn[i] && persist_service_conn[i]->pcon) {
 			persist_service_conn[i]->pcon->skip_conn_shutdown =
