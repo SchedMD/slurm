@@ -2150,6 +2150,15 @@ extern list_t *cluster_license_copy(void)
 	return license_list_dest;
 }
 
+extern int cluster_license_count(void)
+{
+	int cnt;
+	slurm_mutex_lock(&license_mutex);
+	cnt = list_count(cluster_license_list);
+	slurm_mutex_unlock(&license_mutex);
+	return cnt;
+}
+
 /*
  * We need to track the allocated licenses separately, so that:
  *
