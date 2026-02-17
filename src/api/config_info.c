@@ -870,6 +870,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "MessageTimeout", "%u sec", conf->msg_timeout);
 
+	add_key_pair(ret_list, "MetricsAuthUsers", "%s",
+		     conf->metrics_auth_users);
+
+	add_key_pair(ret_list, "MetricsParameters", "%s", conf->metrics_params);
+
 	add_key_pair(ret_list, "MetricsType", "%s", conf->metrics_type);
 
 	add_key_pair(ret_list, "MinJobAge", "%u sec", conf->min_job_age);

@@ -2757,10 +2757,33 @@ necessitate higher values.
 .IP
 
 .TP
+\fBMetricsAuthUsers\fR
+Controls which users are allowed to query metrics plugin endpoints.
+\fBSlurmUser\fR and \fBroot\fR are always allowed. When set, it will ignore
+\fBPrivateData\fR and/or \fBMetricsParameters=ignore_private_data\fR, allowing
+users in the list to query the metrics endpoints.
+This option enables JWT authentication for querying metrics endpoints.
+.IP
+
+.TP
+\fBMetricsParameters\fR
+Parameters related to metrics plugins. Multiple parameters may be comma
+separated. Currently supported parameters include:
+.IP
+.RS
+.TP
+\fBignore_private_data\fR
+Causes metrics plugins to ignore \fBPrivateData\fR when set, and allows
+all users global access to query metrics endpoints without authentication.
+This option will be ignored if \fBMetricsAuthUsers\fR is set.
+.RE
+.IP
+
+.TP
 \fBMetricsType\fR
 Specify the metrics plugin to be used to dump statistics from the slurmctld
-socket. Gathering of metrics is disabled when PrivateData is set. Refer to the
-Metrics Guide for further details: <https://slurm.schedmd.com/metrics.html>
+socket. Refer to the Metrics Guide for further details:
+<https://slurm.schedmd.com/metrics.html>
 
 Configurable values at present are:
 .IP
@@ -3465,6 +3488,10 @@ The default values are 0.
 This controls what type of information is hidden from regular users.
 By default, all information is visible to all users.
 User \fBSlurmUser\fR and \fBroot\fR can always view all information.
+This option, when set, causes metrics plugins endpoints to be restricted (plus
+enable JWT authentication for querying) and available only for \fBSlurmUser\fR
+and \fBroot\fR, unless \fBMetricsAuthUsers\fR or
+\fBMetricsParameters=ignore_private_data\fR are configured.
 Multiple values may be specified with a comma separator.
 Acceptable values include:
 .IP

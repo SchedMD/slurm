@@ -323,6 +323,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"MCSParameters", S_P_STRING},
 	{"MCSPlugin", S_P_STRING},
 	{"MessageTimeout", S_P_UINT16},
+	{"MetricsAuthUsers", S_P_STRING},
+	{"MetricsParameters", S_P_STRING},
 	{"MetricsType", S_P_STRING},
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
@@ -2659,6 +2661,8 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	xfree(conf->mail_prog);
 	xfree(conf->mcs_plugin);
 	xfree(conf->mcs_plugin_params);
+	xfree(conf->metrics_auth_users);
+	xfree(conf->metrics_params);
 	xfree(conf->metrics_type);
 	FREE_NULL_LIST(conf->mpi_conf);
 	xfree(conf->mpi_default);
@@ -2829,6 +2833,9 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->max_step_cnt = NO_VAL;
 	xfree(conf->mcs_plugin);
 	xfree(conf->mcs_plugin_params);
+	conf->metrics_auth = 0;
+	xfree(conf->metrics_auth_users);
+	xfree(conf->metrics_params);
 	xfree(conf->metrics_type);
 	conf->job_acct_oom_kill = false;
 	conf->min_job_age = NO_VAL;
@@ -4093,6 +4100,14 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->http_parser_type, "HttpParserType", hashtbl))
 		conf->http_parser_type = xstrdup(DEFAULT_HTTP_PARSER_TYPE);
 
+	conf->metrics_auth = 0;
+	if (s_p_get_string(&conf->metrics_auth_users, "MetricsAuthUsers",
+			   hashtbl))
+		conf->metrics_auth = 1;
+
+	(void) s_p_get_string(&conf->metrics_params, "MetricsParameters",
+			      hashtbl);
+
 	(void) s_p_get_string(&conf->metrics_type, "MetricsType", hashtbl);
 
 	if (!s_p_get_uint32(&conf->keepalive_time, "KeepAliveTime", hashtbl)) {
@@ -4682,6 +4697,31 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		if (xstrcasestr(temp_str, "all"))
 			conf->private_data = 0xffff;
 		xfree(temp_str);
+
+		if (conf->private_data)
+			conf->metrics_auth = 1;
+	}
+
+	/* This configuration needs to be done here as we need PrivateData */
+	if (conf->metrics_params) {
+		char *save_ptr = NULL;
+		char *tmp = xstrdup(conf->metrics_params);
+		char *tok = strtok_r(tmp, ",", &save_ptr);
+
+		while (tok) {
+			/*
+			 * By default, if PrivateData, metrics_auth=1.
+			 * But if no metrics_auth_users and ignore_private_data,
+			 * we still want metrics open to world.
+			 */
+			if (!conf->metrics_auth_users && conf->private_data &&
+			    !xstrcasecmp(tok, "ignore_private_data")) {
+				conf->metrics_auth = 0;
+				break;
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
 	}
 
 	_load_script(&conf->prolog, &conf->prolog_cnt, "Prolog");
