@@ -52,6 +52,7 @@
 
 #include "src/slurmctld/http.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 static int _reply_error(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, int err)
@@ -89,6 +90,57 @@ static int _auth(http_con_t *hcon, const char *name,
 	return SLURM_SUCCESS;
 }
 
+static int _check_metrics_authorized(http_con_t *hcon, const char *name,
+				     const http_con_request_t *request, int *rc)
+{
+	uid_t uid = SLURM_AUTH_NOBODY;
+
+	if (!slurm_conf.metrics_auth)
+		return SLURM_SUCCESS;
+
+	/* Authenticate request and close it on any failure */
+	if (_auth(hcon, name, request, &uid))
+		return SLURM_ERROR;
+
+	/*
+	 * Only root and SlurmUser are allowed to access, unless
+	 * MetricsAuthUsers is set
+	 */
+	if (!slurm_conf.metrics_auth_users && (uid != 0) &&
+	    (uid != slurm_conf.slurm_user_id)) {
+		*rc = _reply_error(hcon, name, request, EPERM);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * If MetricsAuthUsers is set, only root and SlurmUser are allowed to
+	 * access w/o being in the list
+	 */
+	if (slurm_conf.metrics_auth_users && (uid != 0) &&
+	    (uid != slurm_conf.slurm_user_id)) {
+		char *save_ptr = NULL;
+		char *tmp = xstrdup(slurm_conf.metrics_auth_users);
+		char *tok = strtok_r(tmp, ",", &save_ptr);
+		char *username = uid_to_string_cached(uid);
+		bool found = false;
+
+		while (tok) {
+			if (!xstrcmp(tok, username)) {
+				found = true;
+				break;
+			}
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
+		if (!found) {
+			*rc = _reply_error(hcon, name, request, EPERM);
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _req_not_found(http_con_t *hcon, const char *name,
 			  const http_con_request_t *request, void *arg)
 {
@@ -105,6 +157,11 @@ static int _req_metrics(http_con_t *hcon, const char *name,
 		"  '/metrics/partitions': get partition metrics\n"
 		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n"
 		"  '/metrics/scheduler': get scheduler metrics\n";
+	int rc = SLURM_SUCCESS;
+
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
+		return rc;
 
 	return http_con_send_response(hcon,
 				      http_status_from_error(SLURM_SUCCESS),
@@ -188,18 +245,6 @@ static int _send_metrics_resp(http_con_t *hcon, char *stats_str)
 	return rc;
 }
 
-static int _check_metrics_authorized(http_con_t *hcon, int *rc)
-{
-	http_status_code_t status = HTTP_STATUS_CODE_ERROR_UNAUTHORIZED;
-
-	if (slurm_conf.private_data) {
-		*rc = http_con_send_response(hcon, status, NULL, true, NULL,
-					     NULL);
-		return false;
-	}
-	return true;
-}
-
 extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
 			     const http_con_request_t *request, void *arg)
 {
@@ -207,7 +252,8 @@ extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
 	char *stats_str = NULL;
 	int rc = SLURM_SUCCESS;
 
-	if (!_check_metrics_authorized(hcon, &rc))
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
 		return rc;
 
 	stats = statistics_get_jobs(true);
@@ -226,7 +272,8 @@ extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
 	char *stats_str;
 	int rc = SLURM_SUCCESS;
 
-	if (!_check_metrics_authorized(hcon, &rc))
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
 		return rc;
 
 	stats = statistics_get_nodes(true);
@@ -253,7 +300,8 @@ extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
 		.part = READ_LOCK,
 	};
 
-	if (!_check_metrics_authorized(hcon, &rc))
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
 		return rc;
 
 	lock_slurmctld(part_read_lock);
@@ -279,7 +327,8 @@ extern int _req_metrics_ua(http_con_t *hcon, const char *name,
 	char *stats_str;
 	int rc = SLURM_SUCCESS;
 
-	if (!_check_metrics_authorized(hcon, &rc))
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
 		return rc;
 
 	jobs_stats = statistics_get_jobs(true);
@@ -300,7 +349,8 @@ extern int _req_metrics_sched(http_con_t *hcon, const char *name,
 	char *stats_str;
 	int rc = SLURM_SUCCESS;
 
-	if (!_check_metrics_authorized(hcon, &rc))
+	if (_check_metrics_authorized(hcon, name, request, &rc) !=
+	    SLURM_SUCCESS)
 		return rc;
 
 	stats = statistics_get_sched();
