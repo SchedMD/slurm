@@ -234,10 +234,10 @@ static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
 
 pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t sched_cond = PTHREAD_COND_INITIALIZER;
-static pthread_t thread_id_sched = 0;
 static bool sched_full_queue = false;
 int sched_requests = 0;
 bool sched_running = false;
+bool sched_alive = false;
 static struct timeval sched_last = {0, 0};
 
 static uint32_t max_array_size = NO_VAL;
@@ -930,7 +930,7 @@ static void *_sched_agent(void *args)
 		while (true) {
 			if (slurmctld_config.shutdown_time) {
 				slurm_mutex_unlock(&sched_mutex);
-				return NULL;
+				goto cleanup;
 			}
 
 			gettimeofday(&now, NULL);
@@ -979,6 +979,13 @@ static void *_sched_agent(void *args)
 		slurm_cond_broadcast(&sched_cond);
 		slurm_mutex_unlock(&sched_mutex);
 	}
+
+cleanup:
+	slurm_mutex_lock(&sched_mutex);
+	xassert(sched_alive);
+	sched_alive = false;
+	slurm_cond_broadcast(&sched_cond);
+	slurm_mutex_unlock(&sched_mutex);
 
 	return NULL;
 }
@@ -5728,17 +5735,29 @@ void cleanup_completing(job_record_t *job_ptr, bool requeue)
 
 void main_sched_init(void)
 {
-	if (thread_id_sched)
-		return;
-	slurm_thread_create(&thread_id_sched, _sched_agent, NULL);
+	bool was_alive;
+
+	slurm_mutex_lock(&sched_mutex);
+	was_alive = sched_alive;
+	sched_alive = true;
+	slurm_mutex_unlock(&sched_mutex);
+
+	if (!was_alive)
+		slurm_thread_create_detached(_sched_agent, NULL);
 }
 
 void main_sched_fini(void)
 {
-	if (!thread_id_sched)
-		return;
 	slurm_mutex_lock(&sched_mutex);
-	slurm_cond_broadcast(&sched_cond);
+
+	while (sched_alive) {
+		/*
+		 * Wake up _sched_agent() if it is sleeping
+		 * before waiting for it to change state
+		 */
+		slurm_cond_broadcast(&sched_cond);
+		slurm_cond_wait(&sched_cond, &sched_mutex);
+	}
+
 	slurm_mutex_unlock(&sched_mutex);
-	slurm_thread_join(thread_id_sched);
 }
