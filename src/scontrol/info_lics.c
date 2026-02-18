@@ -38,9 +38,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "scontrol.h"
 #include "src/common/data.h"
+#include "src/common/sercli.h"
+
 #include "src/interfaces/data_parser.h"
+
+#include "scontrol.h"
 
 static void _print_license_info(const char *, license_info_msg_t *);
 static slurm_license_info_t ** _license_sort(license_info_msg_t

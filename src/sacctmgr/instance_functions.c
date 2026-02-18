@@ -33,13 +33,17 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
 #include <grp.h>
 
+#include "src/common/sercli.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
-#include "src/sacctmgr/sacctmgr.h"
+
 #include "src/interfaces/data_parser.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_instance_cond_t *instance_cond,

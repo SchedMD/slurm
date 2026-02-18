@@ -40,8 +40,10 @@
 #include <unistd.h>
 
 #include <slurm/slurm.h>
+
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"

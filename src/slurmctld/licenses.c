@@ -49,6 +49,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/sercli.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 

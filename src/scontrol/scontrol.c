@@ -44,15 +44,18 @@
 #include <limits.h>
 #include <stdarg.h>
 
-#include "scontrol.h"
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
 #include "src/common/ref.h"
+#include "src/common/sercli.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
+
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/hash.h"
 #include "src/interfaces/serializer.h"
+
+#include "scontrol.h"
 
 #define OPT_LONG_HIDE    0x102
 #define OPT_LONG_LOCAL   0x103

@@ -42,10 +42,12 @@
 
 #include "src/common/log.h"
 #include "src/common/plugrack.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/serializer.h"
 #include "src/interfaces/topology.h"

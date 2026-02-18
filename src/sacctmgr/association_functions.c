@@ -38,8 +38,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/sacctmgr/sacctmgr.h"
+#include "src/common/sercli.h"
+
 #include "src/interfaces/data_parser.h"
+
+#include "src/sacctmgr/sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char **argv,
 		     slurmdb_assoc_cond_t *assoc_cond,

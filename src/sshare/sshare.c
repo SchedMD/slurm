@@ -41,12 +41,15 @@
 
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
+#include "src/common/sercli.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
+
 #include "src/interfaces/data_parser.h"
 #include "src/interfaces/priority.h"
 #include "src/interfaces/serializer.h"
+
 #include "src/sshare/sshare.h"
 
 #define OPT_LONG_HELP  0x100
