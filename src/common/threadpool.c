@@ -149,7 +149,9 @@ static void _set_thread_name(const char *name)
 
 static void _thread_free(thread_t *thread)
 {
-	xassert(thread);
+	if (!thread)
+		return;
+
 	xassert(thread->magic == THREAD_MAGIC);
 
 	thread->magic = ~THREAD_MAGIC;
