@@ -2270,7 +2270,13 @@ extern int slurmdb_ping(char *rem_host)
 	persist_conn->timeout = slurm_conf.msg_timeout * 1000;
 	persist_conn->version = SLURM_PROTOCOL_VERSION;
 
+	errno = SLURM_SUCCESS;
+
 	rc = slurm_persist_conn_open(persist_conn);
+
+	if ((rc == SLURM_ERROR) && errno)
+		rc = errno;
+
 	slurm_persist_conn_destroy(persist_conn);
 
 	return rc;
@@ -2283,7 +2289,8 @@ static void _ping_slurmdbd(slurmdbd_ping_t *ping, int offset)
 	ping->offset = offset;
 
 	START_TIMER;
-	ping->pinged = !slurmdb_ping(ping->hostname);
+	ping->rc = slurmdb_ping(ping->hostname);
+	ping->pinged = !ping->rc;
 	END_TIMER;
 
 	ping->latency = TIMER_DURATION_USEC();

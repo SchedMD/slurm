@@ -4758,6 +4758,7 @@ typedef struct {
 	 * 2+: backup#
 	 */
 	int offset;
+	int rc; /* Ping msg status code */
 } controller_ping_t;
 
 typedef struct {
@@ -4768,6 +4769,7 @@ typedef struct {
 		     * 0: primary
 		     * 1: backup
 		     */
+	int rc; /* Ping msg status code */
 } slurmdbd_ping_t;
 
 /*****************************************************************************\
@@ -4785,7 +4787,7 @@ extern int slurm_ping(int dest);
  * RET array of each ping result (NULL terminated).
  * Caller must xfree() the result.
  */
-extern controller_ping_t *ping_all_controllers();
+extern controller_ping_t *ping_all_controllers(void);
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)

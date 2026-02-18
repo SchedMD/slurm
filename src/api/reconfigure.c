@@ -92,7 +92,14 @@ extern int slurm_ping(int dest)
 
 	slurm_msg_t_init(&request_msg);
 	request_msg.msg_type = REQUEST_PING ;
-	rc = _send_message_controller(dest, &request_msg);
+
+	errno = SLURM_SUCCESS;
+
+	if (!(rc = _send_message_controller(dest, &request_msg)))
+		return SLURM_SUCCESS;
+
+	if ((rc == SLURM_ERROR) && errno)
+		return errno;
 
 	return rc;
 }
@@ -115,7 +122,8 @@ extern controller_ping_t *ping_all_controllers(void)
 		pings[0].offset = 0;
 
 		START_TIMER;
-		pings[0].pinged = !slurm_ping(0);
+		pings[0].rc = slurm_ping(0);
+		pings[0].pinged = !pings[0].rc;
 		END_TIMER;
 
 		pings[0].latency = TIMER_DURATION_USEC();
@@ -130,7 +138,8 @@ extern controller_ping_t *ping_all_controllers(void)
 		pings[i].offset = i;
 
 		START_TIMER;
-		pings[i].pinged = !slurm_ping(i);
+		pings[i].rc = slurm_ping(i);
+		pings[i].pinged = !pings[i].rc;
 		END_TIMER;
 
 		pings[i].latency = TIMER_DURATION_USEC();

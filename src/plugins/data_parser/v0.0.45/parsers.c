@@ -9086,6 +9086,7 @@ static const parser_t PARSER_ARRAY(CONTROLLER_PING)[] = {
 	add_parse(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
 	add_deprec(CONTROLLER_PING_MODE, offset, 1, "mode", "The operating mode of the responding slurmctld", SLURM_24_11_PROTOCOL_VERSION),
 	add_overload_req(CONTROLLER_PING_PRIMARY, offset, 1, "primary", "Is responding slurmctld the primary controller"),
+	add_parse(ERROR, rc, "status", "Ping status code"),
 };
 #undef add_parse
 #undef add_deprec
@@ -9098,6 +9099,7 @@ static const parser_t PARSER_ARRAY(SLURMDBD_PING)[] = {
 	add_parse_req(BOOL, pinged, "responding", "If ping RPC responded with pong from slurmdbd"),
 	add_parse_req(UINT64, latency, "latency", "Number of microseconds it took to successfully ping or timeout"),
 	add_parse_req(CONTROLLER_PING_PRIMARY, offset, "primary", "Is responding slurmdbd the primary controller"),
+	add_parse_req(ERROR, rc, "status", "Ping status code"),
 };
 #undef add_parse_req
 
