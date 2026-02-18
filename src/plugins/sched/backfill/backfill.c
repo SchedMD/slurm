@@ -2251,9 +2251,24 @@ static void _attempt_backfill(void)
 		node_space_handler.node_space = node_space;
 		node_space_handler.node_space_recs = &node_space_recs;
 
-		if (bf_licenses)
+		if (bf_licenses) {
+			int cluster_list_count = cluster_license_count();
+
 			list_for_each(resv_list, _bf_reserve_resv_licenses,
 				      &node_space_handler);
+			j = 0;
+			while (cluster_list_count) {
+				/* if 2+ resv license was added sort the list */
+				if (list_count(node_space[j].licenses) >
+				    (cluster_list_count + 1)) {
+					list_sort(node_space[j].licenses,
+						  bf_license_cmp);
+				}
+
+				if ((j = node_space[j].next) == 0)
+					break;
+			}
+		}
 
 		list_for_each(job_list, _bf_reserve_running,
 			      &node_space_handler);
@@ -2919,10 +2934,10 @@ TRY_LATER:
 			     node_space[j].next && (later_start == 0)) {
 				int tmp = node_space[j].next;
 
-				if (job_ptr->license_list &&
-				    !bf_licenses_equal(node_space[tmp].licenses,
-						       node_space[j]
-							       .licenses)) {
+				if (bf_licenses_relevant_hres_increase(
+					    node_space[j].licenses,
+					    node_space[tmp].licenses,
+					    job_ptr)) {
 					later_start = node_space[j].end_time;
 					goto later_start_set;
 				}
