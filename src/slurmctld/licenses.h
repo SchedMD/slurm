@@ -183,6 +183,8 @@ extern void license_free_rec(void *x);
 extern list_t *license_copy(list_t *license_list_src);
 extern list_t *cluster_license_copy(void);
 
+extern int cluster_license_count(void);
+
 extern licenses_t *license_find_rec_by_id(list_t *license_list,
 					  licenses_id_t id);
 /*
@@ -312,6 +314,8 @@ extern void license_set_job_tres_cnt(list_t *license_list,
 
 extern bf_licenses_t *bf_licenses_initial(bool bf_running_job_reserve);
 
+extern int bf_license_cmp(void *x, void *y);
+
 extern char *bf_licenses_to_string(bf_licenses_t *licenses_list);
 
 /*
@@ -347,6 +351,16 @@ extern bool slurm_bf_licenses_avail(bf_licenses_t *licenses,
 
 #define bf_licenses_equal(_x, _y) (_x ? slurm_bf_licenses_equal(_x, _y) : true)
 extern bool slurm_bf_licenses_equal(bf_licenses_t *a, bf_licenses_t *b);
+
+#define bf_licenses_relevant_hres_increase(_x, _y, job_ptr) \
+	(_x ? slurm_bf_licenses_relevant_hres_increase(_x, _y, job_ptr) : true)
+/*
+ * Return true if the job requests an hres license and 'next' has an licenses
+ * with the same hres_id that has more remaining than in 'current'.
+ */
+extern bool slurm_bf_licenses_relevant_hres_increase(list_t *current,
+						     list_t *next,
+						     job_record_t *job_ptr);
 
 #define FREE_NULL_BF_LICENSES(_x) FREE_NULL_LIST(_x)
 
