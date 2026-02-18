@@ -13,7 +13,7 @@ acct2 = "acct2"
 acct3 = "acct3"
 acct4 = "acct4"
 user1 = "user1"
-defacct = {acct1}
+defacct = acct1
 
 
 @pytest.fixture(scope="module", autouse=True)
