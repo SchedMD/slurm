@@ -380,8 +380,8 @@ extern char *run_command(run_command_args_t *args)
 			return resp;
 		}
 	}
-	if ((pipe(pfd) != 0) ||
-	    (args->write_to_child && (pipe(pfd_to_child) != 0))) {
+	if ((pipe2(pfd, O_CLOEXEC) != 0) ||
+	    (args->write_to_child && (pipe2(pfd_to_child, O_CLOEXEC) != 0))) {
 		error("%s: pipe(): %m", __func__);
 		fd_close(&pfd[0]);
 		fd_close(&pfd[1]);
