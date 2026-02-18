@@ -68,18 +68,28 @@ def test_account_removal():
     """
 
     # Try to remove a user's default account
-    atf.run_command(
+    result = atf.run_command(
         f"sacctmgr -i remove account {defacct} cluster={cluster1},{cluster2},{cluster3}",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
+    assert result["exit_code"] != 0, "Removing default account should fail"
+    assert (
+        "can not remove the default account of a user" in result["stderr"]
+    ), 'sacctmgr should explain that we "can not remove the default account of a user"'
 
     # Try to remove subset (including default) of accounts of user on cluster1
-    atf.run_command(
+    result = atf.run_command(
         f"sacctmgr -i remove account {defacct},{acct2} cluster={cluster1}",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
+    assert (
+        result["exit_code"] != 0
+    ), "Removing default account, either with other accounts, should fail"
+    assert (
+        "can not remove the default account of a user" in result["stderr"]
+    ), 'sacctmgr should explain that we "can not remove the default account of a user"'
 
     # Make user have only one account, the default on cluster1
     atf.run_command(
@@ -89,11 +99,17 @@ def test_account_removal():
     )
 
     # Try to remove default account on all clusters
-    atf.run_command(
+    result = atf.run_command(
         f"sacctmgr -i remove account {defacct}",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
+    assert (
+        result["exit_code"] != 0
+    ), "Removing default account when it's the only one account should fail"
+    assert (
+        "can not remove the default account of a user" in result["stderr"]
+    ), 'sacctmgr should explain that we "can not remove the default account of a user"'
 
     # Make acct2 have acct1 as parent
     atf.run_command(
@@ -103,11 +119,17 @@ def test_account_removal():
     )
 
     # Again, try to remove default account on all clusters
-    atf.run_command(
+    result = atf.run_command(
         f"sacctmgr -i remove account {defacct}",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
+    assert (
+        result["exit_code"] != 0
+    ), "Removing default account, either when it's a parent, should fail"
+    assert (
+        "can not remove the default account of a user" in result["stderr"]
+    ), 'sacctmgr should explain that we "can not remove the default account of a user"'
 
     # Remove all accounts of user on cluster2
     atf.run_command(
@@ -124,8 +146,11 @@ def test_account_removal():
     )
 
     # Again, try to remove default account on all clusters since it is now user's only account
-    atf.run_command(
+    result = atf.run_command(
         f"sacctmgr -i remove account {defacct}",
         user=atf.properties["slurm-user"],
-        xfail=True,
     )
+    assert (
+        result["exit_code"] == 0
+    ), "Removing default account when it's not a default account should succeed"
+    assert defacct in result["stdout"], "sacctmgr should report the deleted account"
