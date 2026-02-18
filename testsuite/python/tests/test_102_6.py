@@ -19,7 +19,7 @@ defacct = {acct1}
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     """Test setup with required configurations."""
-    atf.require_config_parameter("AccountingStorageType", "accounting_storage/slurmdbd")
+    atf.require_accounting(modify=True)
     atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
     atf.require_config_parameter("AllowNoDefAcct", None, source="slurmdbd")
     atf.require_slurm_running()
