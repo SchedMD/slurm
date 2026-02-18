@@ -70,6 +70,12 @@ extern void tls_g_destroy_conn(void *conn, bool close_fds);
  */
 extern int tls_g_negotiate_conn(void *conn);
 
+/*
+ * Return true if client is authenticated (mTLS)
+ * NOTE: Only to be called by server connections
+ */
+extern bool tls_g_is_client_authenticated(void *conn);
+
 extern ssize_t tls_g_recv(void *conn, void *buf, size_t n);
 
 extern ssize_t tls_g_send(void *conn, const void *buf, size_t n);
