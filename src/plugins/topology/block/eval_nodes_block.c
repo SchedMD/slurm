@@ -234,6 +234,10 @@ int _get_block_level(int rem_nodes, int *llblock_level, block_context_t *ctx)
 	else if (llblock_level)
 		*llblock_level = 0;
 
+	/* rem_nodes may have been zero */
+	if (block_level < 0)
+		return -1;
+
 	block_level = bit_ffs_from_bit(ctx->block_levels, block_level);
 
 	return block_level;
