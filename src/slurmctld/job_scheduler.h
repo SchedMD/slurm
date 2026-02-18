@@ -72,6 +72,8 @@ extern pthread_mutex_t sched_mutex;
 extern pthread_cond_t sched_cond;
 extern int sched_requests;
 extern bool sched_running;
+/* True if scheduler thread is alive */
+extern bool sched_alive;
 
 extern void main_sched_init(void);
 
