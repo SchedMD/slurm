@@ -287,9 +287,14 @@ extern int threadpool_join(const pthread_t id, const char *caller)
 		return _join(id, caller);
 }
 
-static void _set_thread_name(const char *name)
+static void _set_thread_name(thread_t *thread)
 {
 #if HAVE_SYS_PRCTL_H
+	const char *name = thread->thread_name;
+
+	if (!name)
+		return;
+
 	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL))
 		error("%s: cannot set process name to %s %m", __func__, name);
 #endif
@@ -313,8 +318,7 @@ static void _run(thread_t *thread)
 
 	xassert(thread->magic == THREAD_MAGIC);
 
-	if (thread->thread_name)
-		_set_thread_name(thread->thread_name);
+	_set_thread_name(thread);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		char ts[CTIME_STR_LEN] = "UNKNOWN";
