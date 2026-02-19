@@ -4977,6 +4977,32 @@ extern int validate_hint_option(slurm_opt_t *opt)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * The options --gres asks for resources in a per-node basis. When it is used
+ * to requests GPUs, both --gpus-per-node and --gres refer to the same thing.
+ * Therefore, they should be mutually exclusive.
+ */
+static void _validate_gres_vs_gpus_per_node(slurm_opt_t *opt)
+{
+	bool gpu_via_gres = false;
+	bool gpu_via_opts = false;
+
+	if (!opt->gres || !xstrcasecmp(opt->gres, "NONE"))
+		return;
+
+	if (xstrstr(opt->gres, "gres/gpu"))
+		gpu_via_gres = true;
+
+	if (!gpu_via_gres)
+		return;
+
+	gpu_via_opts = slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_NODE) ||
+		       slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_NODE);
+
+	if (gpu_via_opts)
+		fatal("--gpus-per-node and --gres=gpu are mutually exclusive.");
+}
+
 static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 {
 	bool tres = slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERTRES);
@@ -5646,6 +5672,7 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
+	_validate_gres_vs_gpus_per_node(opt);
 	_validate_ntasks_per_gpu(opt);
 	_validate_spec_cores_options(opt);
 	_validate_threads_per_core_option(opt);
