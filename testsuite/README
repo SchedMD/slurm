@@ -852,6 +852,7 @@ test_111_1   /commands/sinfo/test_--help.py
 test_111_2   /commands/sinfo/test_--usage.py
 test_111_3   /commands/sinfo/test_--json.py
 test_111_4   Test --state and --nodes filtering
+test_111_5   /commands/sinfo/test_--state.py
 
 test_112_#   Testing of slurmrestd options.
 ===========================================
