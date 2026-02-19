@@ -161,7 +161,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("Reconfigure signal (SIGHUP) received");
-	slurm_thread_create_detached(reconfig, NULL);
+	slurm_thread_create_detached(NULL, reconfig, NULL);
 }
 
 static void _on_sigusr1(conmgr_callback_args_t conmgr_args, void *arg)
@@ -294,7 +294,8 @@ int main(int argc, char **argv)
 
 	registered_clusters = list_create(NULL);
 
-	slurm_thread_create(&commit_handler_thread, _commit_handler, NULL);
+	slurm_thread_create(NULL, &commit_handler_thread, _commit_handler,
+			    NULL);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 
@@ -350,12 +351,13 @@ int main(int argc, char **argv)
 
 		if (!shutdown_time) {
 			/* Create attached thread to process incoming RPCs */
-			slurm_thread_create(&rpc_handler_thread, rpc_mgr, NULL);
+			slurm_thread_create(NULL, &rpc_handler_thread, rpc_mgr,
+					    NULL);
 		}
 
 		if (!shutdown_time) {
 			/* Create attached thread to do usage rollup */
-			slurm_thread_create(&rollup_handler_thread,
+			slurm_thread_create(NULL, &rollup_handler_thread,
 					    _rollup_handler, db_conn);
 		}
 

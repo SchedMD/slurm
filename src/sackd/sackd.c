@@ -334,7 +334,7 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		info("reconfigure requested by slurmctld");
 		if (write_configs_to_conf_cache(msg->data, dir))
 			error("%s: failed to write configs to cache", __func__);
-		slurm_thread_create_detached(_try_to_reconfig, NULL);
+		slurm_thread_create_detached(NULL, _try_to_reconfig, NULL);
 		/* no need to respond */
 		break;
 	default:
@@ -387,7 +387,7 @@ static void _on_sighup(conmgr_callback_args_t conmgr_args, void *arg)
 		return;
 
 	info("Caught SIGHUP. Reconfiguring.");
-	slurm_thread_create_detached(_try_to_reconfig, NULL);
+	slurm_thread_create_detached(NULL, _try_to_reconfig, NULL);
 }
 
 static void _on_sigusr2(conmgr_callback_args_t conmgr_args, void *arg)

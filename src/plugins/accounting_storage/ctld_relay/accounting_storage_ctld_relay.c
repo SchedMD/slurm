@@ -166,7 +166,7 @@ extern int init(void)
 	agent_list = list_create(NULL);
 
 	slurm_mutex_lock(&agent_lock);
-	slurm_thread_create(&agent_thread_id, _agent_thread, NULL);
+	slurm_thread_create(NULL, &agent_thread_id, _agent_thread, NULL);
 	slurm_mutex_unlock(&agent_lock);
 
 	return SLURM_SUCCESS;

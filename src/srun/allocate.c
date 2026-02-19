@@ -132,7 +132,7 @@ static void _signal_while_allocating(int signo)
 
 	local_signal = xmalloc(sizeof(int));
 	*local_signal = signo;
-	slurm_thread_create_detached(_safe_signal_while_allocating,
+	slurm_thread_create_detached(NULL, _safe_signal_while_allocating,
 				     local_signal);
 }
 

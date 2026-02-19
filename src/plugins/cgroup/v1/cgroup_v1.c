@@ -1397,7 +1397,7 @@ extern int cgroup_p_step_start_oom_mgr(stepd_step_rec_t *step)
 	event_args->event_fd = event_fd;
 
 	slurm_mutex_init(&oom_mutex);
-	slurm_thread_create(&oom_thread, _oom_event_monitor, event_args);
+	slurm_thread_create(NULL, &oom_thread, _oom_event_monitor, event_args);
 	oom_kill_type = OOM_KILL_MON;
 
 fini:

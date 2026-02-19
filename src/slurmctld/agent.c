@@ -64,10 +64,6 @@
 
 #include "config.h"
 
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include <errno.h>
 #include <pthread.h>
 #include <pwd.h>
@@ -280,12 +276,6 @@ void *agent(void *args)
 	static time_t sched_update = 0;
 	static bool reboot_from_ctld = false;
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "agent", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "agent");
-	}
-#endif
-
 	log_flag(AGENT, "%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s retry_list_size=%d",
 		 __func__, agent_cnt, agent_thread_cnt,
 		 rpc_num2string(agent_arg_ptr->msg_type),
@@ -332,7 +322,7 @@ void *agent(void *args)
 	thread_ptr = agent_info_ptr->thread_struct;
 
 	/* start the watchdog thread */
-	slurm_thread_create(&thread_wdog, _wdog, agent_info_ptr);
+	slurm_thread_create(NULL, &thread_wdog, _wdog, agent_info_ptr);
 
 	log_flag(AGENT, "%s: New agent thread_count:%d threads_active:%d retry:%c get_reply:%c r_uid:%u msg_type:%s protocol_version:%hu",
 		 __func__, agent_info_ptr->thread_count,
@@ -359,9 +349,8 @@ void *agent(void *args)
 		 */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
-		slurm_thread_create(&thread_ptr[i].thread,
-				    _thread_per_group_rpc,
-				    task_specific_ptr);
+		slurm_thread_create(NULL, &thread_ptr[i].thread,
+				    _thread_per_group_rpc, task_specific_ptr);
 		agent_info_ptr->threads_active++;
 		slurm_mutex_unlock(&agent_info_ptr->thread_mutex);
 	}
@@ -1626,9 +1615,9 @@ extern void agent_init(void)
 
 	update_srun_list = list_create(xfree_ptr);
 
-	slurm_thread_create(&pending_thread_tid, _agent_init, NULL);
-	slurm_thread_create(&nodes_update_tid, _agent_nodes_update, NULL);
-	slurm_thread_create(&srun_update_tid, _agent_srun_update, NULL);
+	slurm_thread_create(NULL, &pending_thread_tid, _agent_init, NULL);
+	slurm_thread_create(NULL, &nodes_update_tid, _agent_nodes_update, NULL);
+	slurm_thread_create(NULL, &srun_update_tid, _agent_srun_update, NULL);
 }
 
 extern void agent_fini(void)
@@ -1925,7 +1914,8 @@ next:
 		if (agent_arg_ptr) {
 			debug2("Spawning RPC agent for msg_type %s",
 			       rpc_num2string(agent_arg_ptr->msg_type));
-			slurm_thread_create_detached(agent, agent_arg_ptr);
+			slurm_thread_create_detached(NULL, agent,
+						     agent_arg_ptr);
 			agent_started++;
 		} else
 			error("agent_retry found record with no agent_args");
@@ -1946,7 +1936,7 @@ next:
 
 			mail_thread_cnt++;
 			agent_thread_cnt++;
-			slurm_thread_create_detached(_mail_proc, mi);
+			slurm_thread_create_detached(NULL, _mail_proc, mi);
 		}
 		slurm_mutex_unlock(&mail_mutex);
 		slurm_mutex_unlock(&agent_cnt_mutex);
@@ -1971,7 +1961,8 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 
 	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
 		pthread_t agent_thread = 0;
-		slurm_thread_create(&agent_thread, agent, agent_arg_ptr);
+		slurm_thread_create("agent", &agent_thread, agent,
+				    agent_arg_ptr);
 		slurm_thread_join(agent_thread);
 		return;
 	}

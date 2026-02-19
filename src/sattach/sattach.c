@@ -459,7 +459,7 @@ static message_thread_state_t *_msg_thr_create(int num_nodes, int num_tasks)
 		eio_new_initial_obj(mts->msg_handle, obj);
 	}
 
-	slurm_thread_create(&mts->msg_thread, _msg_thr_internal, mts);
+	slurm_thread_create(NULL, &mts->msg_thread, _msg_thr_internal, mts);
 
 	return mts;
 fail:

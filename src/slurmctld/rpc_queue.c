@@ -37,10 +37,6 @@
 
 #include <inttypes.h>
 
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include "src/common/data.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -65,14 +61,6 @@ static void *_rpc_queue_worker(void *arg)
 	slurmctld_rpc_t *q = (slurmctld_rpc_t *) arg;
 	int processed = 0;
 	long processed_usec = 0;
-
-#if HAVE_SYS_PRCTL_H
-	char *name = xstrdup_printf("rpcq-%u", q->msg_type);
-	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "sstate");
-	}
-	xfree(name);
-#endif
 
 	/*
 	 * Acquire on init to simplify the inner loop.
@@ -303,6 +291,7 @@ extern void rpc_queue_init(void)
 	conf = _load_config();
 
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
+		char name[PRCTL_BUF_BYTES] = "INVALID";
 		bool was_enabled = q->queue_enabled;
 		q->msg_name = rpc_num2string(q->msg_type);
 
@@ -328,7 +317,9 @@ extern void rpc_queue_init(void)
 			q->msg_name, q->max_per_cycle, q->max_usec_per_cycle,
 			q->max_queued, q->hard_drop, q->yield_sleep,
 			q->interval);
-		slurm_thread_create(&q->thread, _rpc_queue_worker, q);
+
+		(void) snprintf(name, sizeof(name), "rpcq-%u", q->msg_type);
+		slurm_thread_create(name, &q->thread, _rpc_queue_worker, q);
 	}
 
 	FREE_NULL_DATA(conf);

@@ -72,7 +72,7 @@ extern void step_terminate_monitor_start(void)
 	program_name = xstrdup(conf->unkillable_program);
 	slurm_conf_unlock();
 
-	slurm_thread_create(&tid, _monitor, NULL);
+	slurm_thread_create(NULL, &tid, _monitor, NULL);
 
 	recorded_jobid = step->step_id.job_id;
 	recorded_stepid = step->step_id.step_id;

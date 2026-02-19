@@ -38,10 +38,6 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
@@ -618,11 +614,6 @@ static void *_job_watch_thread(void *arg)
 	slurmctld_lock_t job_write_fed_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_jobw", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_jobw");
-	}
-#endif
 	log_flag(FEDR, "%s: started job_watch thread", __func__);
 
 	while (!slurmctld_config.shutdown_time && !stop_job_watch_thread) {
@@ -691,7 +682,8 @@ static void _spawn_job_watch_thread()
 		 * drained or removed. */
 		stop_job_watch_thread = false;
 		job_watch_thread_running = true;
-		slurm_thread_create_detached(_job_watch_thread, NULL);
+		slurm_thread_create_detached("fed_jobw", _job_watch_thread,
+					     NULL);
 	} else {
 		info("a job_watch_thread already exists");
 	}
@@ -2453,13 +2445,6 @@ static void *_test_dep_job_thread(void *arg)
 	slurmctld_lock_t job_read_lock = {
 		.job = READ_LOCK, .fed = READ_LOCK };
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_test_dep", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__,
-		      "fed_test_dep");
-	}
-#endif
-
 	while (!slurmctld_config.shutdown_time) {
 		now = time(NULL);
 
@@ -2485,13 +2470,6 @@ static void *_origin_dep_update_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_update_dep", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__,
-		      "fed_update_dep");
-	}
-#endif
-
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&origin_dep_update_mutex);
 		ts.tv_sec = time(NULL) + 2;
@@ -2515,13 +2493,6 @@ static void *_remote_dep_recv_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
 	dep_msg_t *remote_dep_info;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_remote_dep", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__,
-		      "fed_remote_dep");
-	}
-#endif
 
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&remote_dep_recv_mutex);
@@ -2549,12 +2520,6 @@ static void *_fed_job_update_thread(void *arg)
 {
 	struct timespec ts = {0, 0};
 	fed_job_update_info_t *job_update_info;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_jobs", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_jobs");
-	}
-#endif
 
 	while (!slurmctld_config.shutdown_time) {
 		slurm_mutex_lock(&job_update_mutex);
@@ -2589,12 +2554,6 @@ static void *_agent_thread(void *arg)
 
 	slurmctld_lock_t fed_read_lock = {
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "fed_agent", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "fed_agent");
-	}
-#endif
 
 	while (!slurmctld_config.shutdown_time) {
 		/* Wait for new work or re-issue RPCs after 2 second wait */
@@ -2757,26 +2716,27 @@ end_it:
 static void _spawn_threads(void)
 {
 	slurm_mutex_lock(&agent_mutex);
-	slurm_thread_create(&agent_thread_id, _agent_thread, NULL);
+	slurm_thread_create("fed_agent", &agent_thread_id, _agent_thread, NULL);
 	slurm_mutex_unlock(&agent_mutex);
 
 	slurm_mutex_lock(&job_update_mutex);
-	slurm_thread_create(&fed_job_update_thread_id,
+	slurm_thread_create("fed_jobs", &fed_job_update_thread_id,
 			    _fed_job_update_thread, NULL);
 	slurm_mutex_unlock(&job_update_mutex);
 
 	slurm_mutex_lock(&remote_dep_recv_mutex);
-	slurm_thread_create(&remote_dep_thread_id,
+	slurm_thread_create("fed_remote_dep", &remote_dep_thread_id,
 			    _remote_dep_recv_thread, NULL);
 	slurm_mutex_unlock(&remote_dep_recv_mutex);
 
 	slurm_mutex_lock(&test_dep_mutex);
-	slurm_thread_create(&dep_job_thread_id, _test_dep_job_thread, NULL);
+	slurm_thread_create("fed_test_dep", &dep_job_thread_id,
+			    _test_dep_job_thread, NULL);
 	slurm_mutex_unlock(&test_dep_mutex);
 
 	slurm_mutex_lock(&origin_dep_update_mutex);
-	slurm_thread_create(&origin_dep_thread_id, _origin_dep_update_thread,
-			    NULL);
+	slurm_thread_create("fed_update_dep", &origin_dep_thread_id,
+			    _origin_dep_update_thread, NULL);
 	slurm_mutex_unlock(&origin_dep_update_mutex);
 }
 

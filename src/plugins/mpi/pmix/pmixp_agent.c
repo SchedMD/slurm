@@ -421,7 +421,7 @@ int pmixp_abort_agent_start(char ***env)
 	_abort_handle = eio_handle_create(0);
 	obj = eio_obj_create(abort_server_socket, &abort_ops, (void *)(-1));
 	eio_new_initial_obj(_abort_handle, obj);
-	slurm_thread_create(&_abort_tid, _pmix_abort_thread, NULL);
+	slurm_thread_create(NULL, &_abort_tid, _pmix_abort_thread, NULL);
 
 	/* wait for the abort EIO thread to initialize */
 	slurm_cond_wait(&abort_mutex_cond, &abort_mutex);
@@ -498,7 +498,7 @@ int pmixp_agent_start(void)
 	_setup_timeout_fds();
 
 	/* start agent thread */
-	slurm_thread_create(&_agent_tid, _agent_thread, NULL);
+	slurm_thread_create(NULL, &_agent_tid, _agent_thread, NULL);
 
 	/* wait for the agent thread to initialize */
 	slurm_cond_wait(&agent_running_cond, &agent_mutex);
@@ -529,7 +529,7 @@ int pmixp_agent_start(void)
 	PMIXP_DEBUG("agent thread started: tid = %lu",
 		    (unsigned long) _agent_tid);
 
-	slurm_thread_create(&_timer_tid, _pmix_timer_thread, NULL);
+	slurm_thread_create(NULL, &_timer_tid, _pmix_timer_thread, NULL);
 
 	PMIXP_DEBUG("timer thread started: tid = %lu",
 		    (unsigned long) _timer_tid);

@@ -636,7 +636,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 					(unsigned int *) &gpus_len);
 			if (gpus_len) {
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
-				slurm_thread_create(&thread_gpu_id_run,
+				slurm_thread_create(NULL, &thread_gpu_id_run,
 						    _thread_gpu_run, NULL);
 				log_flag(ENERGY, "%s thread launched",
 					 plugin_name);

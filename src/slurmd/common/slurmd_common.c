@@ -386,7 +386,7 @@ extern int run_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	timer_struct.prolog_fini = &prolog_fini;
 	timer_struct.timer_cond  = &timer_cond;
 	timer_struct.timer_mutex = &timer_mutex;
-	slurm_thread_create(&timer_id, _prolog_timer, &timer_struct);
+	slurm_thread_create(NULL, &timer_id, _prolog_timer, &timer_struct);
 
 	rc = prep_g_prolog(job_env, cred);
 

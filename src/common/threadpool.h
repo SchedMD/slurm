@@ -90,13 +90,13 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
  * Note that the attr argument is intentionally omitted, as it will
  * be setup within the macro to Slurm's default options.
  */
-#define slurm_thread_create(id, func, arg) \
+#define slurm_thread_create(name, id, func, arg) \
 	do { \
 		int thread_err = SLURM_SUCCESS; \
 		if ((thread_err = \
 			     threadpool_create((func), \
 					       XSTRINGIFY(func), (arg), false, \
-							  NULL, (id), \
+							  (name), (id), \
 							  __func__))) \
 			fatal("%s: threadpool_create() failed: %s", \
 			      __func__, slurm_strerror(thread_err)); \
@@ -107,12 +107,12 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
  * is basically nothing safe you can do with a detached thread's id,
  * so this macro intentionally prevents you from capturing it.
  */
-#define slurm_thread_create_detached(func, arg) \
+#define slurm_thread_create_detached(name, func, arg) \
 	do { \
 		int thread_err = SLURM_SUCCESS; \
 		if ((thread_err = \
 			     threadpool_create(func, XSTRINGIFY(func), arg, \
-								true, NULL, \
+								true, (name), \
 								NULL, \
 								__func__))) \
 			fatal("%s: threadpool_create() failed: %s", \

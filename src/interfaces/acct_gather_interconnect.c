@@ -42,10 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -91,12 +87,6 @@ static acct_gather_profile_timer_t *profile_timer =
 static void *_watch_node(void *arg)
 {
 	int i;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "acctg_intrcnt", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "acctg_ib");
-	}
-#endif
 
 	while (init_run && acct_gather_profile_test()) {
 		/* Do this until shutdown is requested */
@@ -240,7 +230,8 @@ extern int acct_gather_interconnect_startpoll(uint32_t frequency)
 	}
 
 	/* create polling thread */
-	slurm_thread_create(&watch_node_thread_id, &_watch_node, NULL);
+	slurm_thread_create("acctg_intrcnt", &watch_node_thread_id,
+			    &_watch_node, NULL);
 
 	debug3("%s: dynamic logging enabled", __func__);
 

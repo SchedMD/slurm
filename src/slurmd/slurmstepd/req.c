@@ -293,7 +293,7 @@ extern int msg_thr_create(void)
 	step->msg_handle = eio_handle_create(0);
 	eio_new_initial_obj(step->msg_handle, eio_obj);
 
-	slurm_thread_create(&step->msgid, _msg_thr_internal, NULL);
+	slurm_thread_create(NULL, &step->msgid, _msg_thr_internal, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -381,7 +381,7 @@ static int _msg_socket_accept(eio_obj_t *obj, list_t *objs)
 
 	param = xmalloc(sizeof(int));
 	*param = fd;
-	slurm_thread_create_detached(_handle_accept, param);
+	slurm_thread_create_detached(NULL, _handle_accept, param);
 
 	debug3("Leaving _msg_socket_accept");
 	return SLURM_SUCCESS;
@@ -1512,7 +1512,7 @@ static void _wait_extern_thr_create(pid_t *extern_pid)
 	slurm_mutex_lock(&extern_thread_lock);
 	extern_thread_cnt++;
 	xrecalloc(extern_threads, extern_thread_cnt, sizeof(pthread_t));
-	slurm_thread_create(&extern_threads[extern_thread_cnt - 1],
+	slurm_thread_create(NULL, &extern_threads[extern_thread_cnt - 1],
 			    _wait_extern_pid, extern_pid);
 	slurm_mutex_unlock(&extern_thread_lock);
 }

@@ -344,7 +344,7 @@ pmi2_start_agent(void)
 	}
 	first = false;
 
-	slurm_thread_create(&_agent_tid, _agent, NULL);
+	slurm_thread_create(NULL, &_agent_tid, _agent, NULL);
 
 	slurm_cond_wait(&agent_running_cond, &agent_mutex);
 

@@ -38,10 +38,6 @@
 
 #include "src/interfaces/accounting_storage.h"
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "dbd_conn.h"
 #include "as_ext_dbd.h"
 
@@ -181,12 +177,6 @@ static void *_ext_thread(void *x)
 {
 	struct timespec ts = {0, 0};
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "ext_dbd", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "ext_dbd");
-	}
-#endif
-
 	while (!ext_shutdown) {
 		_check_ext_conns();
 
@@ -206,7 +196,7 @@ static void _create_ext_thread(void)
 	ext_shutdown = 0;
 
 	slurm_mutex_lock(&ext_thread_mutex);
-	slurm_thread_create(&ext_thread_tid, _ext_thread, NULL);
+	slurm_thread_create("ext_dbd", &ext_thread_tid, _ext_thread, NULL);
 	slurm_mutex_unlock(&ext_thread_mutex);
 }
 

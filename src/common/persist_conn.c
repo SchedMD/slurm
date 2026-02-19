@@ -39,10 +39,6 @@
 #include <poll.h>
 #include <pthread.h>
 
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/macros.h"
@@ -349,15 +345,6 @@ static void *_service_connection(void *arg)
 	xassert(service_conn);
 	xassert(service_conn->pcon);
 
-#if HAVE_SYS_PRCTL_H
-	char *name = xstrdup_printf("p-%s",
-				    service_conn->pcon->cluster_name);
-	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, name);
-	}
-	xfree(name);
-#endif
-
 	service_conn->thread_id = pthread_self();
 
 	_process_service_connection(service_conn->pcon, service_conn->fd,
@@ -459,6 +446,7 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 						int fd, int thread_loc,
 						void *arg)
 {
+	char name[PRCTL_BUF_BYTES] = "INVALID";
 	persist_service_conn_t *service_conn;
 
 	if (thread_loc < 0)
@@ -481,8 +469,10 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 				      like we want to.
 				   */
 
-	//_service_connection(service_conn);
-	slurm_thread_create(&persist_service_conn[thread_loc]->thread_id,
+	(void) snprintf(name, sizeof(name), "p-%s",
+			service_conn->pcon->cluster_name);
+
+	slurm_thread_create(name, &persist_service_conn[thread_loc]->thread_id,
 			    _service_connection, service_conn);
 }
 

@@ -656,7 +656,7 @@ static int _load_fed_nodes(slurm_msg_t *req_msg,
 		load_args->req_msg = req_msg;
 		load_args->resp_msg_list = resp_msg_list;
 		load_args->show_flags = show_flags;
-		slurm_thread_create(&load_thread[pthread_count],
+		slurm_thread_create(NULL, &load_thread[pthread_count],
 				    _load_node_thread, load_args);
 		pthread_count++;
 	}

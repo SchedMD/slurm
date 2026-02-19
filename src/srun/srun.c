@@ -552,7 +552,8 @@ static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
 			opts->step_mutex  = &step_mutex;
 			srun_opt->het_step_cnt = het_job_step_cnt;
 
-			slurm_thread_create_detached(_launch_one_app, opts);
+			slurm_thread_create_detached(NULL, _launch_one_app,
+						     opts);
 		}
 		xfree(het_job_node_list);
 		xfree(het_job_task_cnts);

@@ -50,10 +50,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#if HAVE_SYS_PRCTL_H
-#  include <sys/prctl.h>
-#endif
-
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
@@ -919,12 +915,6 @@ static void *_sched_agent(void *args)
 	struct timeval now;
 	int job_cnt;
 	bool full_queue;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "sched_agent", NULL, NULL, NULL) < 0) {
-		error("cannot set my name to _sched_agent %m");
-	}
-#endif
 
 	while (true) {
 		slurm_mutex_lock(&sched_mutex);
@@ -5036,7 +5026,8 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 
 	job_id = xmalloc(sizeof(*job_id));
 	*job_id = job_ptr->job_id;
-	slurm_thread_create_detached(_start_prolog_slurmctld_thread, job_id);
+	slurm_thread_create_detached(NULL, _start_prolog_slurmctld_thread,
+				     job_id);
 }
 
 /* Decrement a job's prolog_running counter and launch the job if zero */
@@ -5775,7 +5766,7 @@ void main_sched_init(void)
 	slurm_mutex_unlock(&sched_mutex);
 
 	if (!was_alive)
-		slurm_thread_create_detached(_sched_agent, NULL);
+		slurm_thread_create_detached("sched_agent", _sched_agent, NULL);
 }
 
 void main_sched_fini(void)

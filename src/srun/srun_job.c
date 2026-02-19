@@ -1555,7 +1555,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 extern void pre_launch_srun_job(srun_job_t *job, slurm_opt_t *opt_local)
 {
 	if (!signal_thread)
-		slurm_thread_create(&signal_thread, _srun_signal_mgr, job);
+		slurm_thread_create(NULL, &signal_thread, _srun_signal_mgr,
+				    job);
 
 	_run_srun_prolog(job);
 	if (_call_spank_local_user(job, opt_local)) {

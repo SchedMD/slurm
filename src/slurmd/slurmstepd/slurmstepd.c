@@ -193,7 +193,7 @@ static void *_rpc_thread(void *data)
 
 static void _agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
-	slurm_thread_create_detached(_rpc_thread, agent_arg_ptr);
+	slurm_thread_create_detached(NULL, _rpc_thread, agent_arg_ptr);
 }
 
 extern job_record_t *find_job(const slurm_step_id_t *step_id)
@@ -289,8 +289,8 @@ static void _init_stepd_stepmgr(void)
 
 	acct_storage_g_init();
 
-	slurm_thread_create(&time_limit_thread_id, _step_time_limit_thread,
-			    NULL);
+	slurm_thread_create(NULL, &time_limit_thread_id,
+			    _step_time_limit_thread, NULL);
 }
 
 static void _on_sigalrm(conmgr_callback_args_t conmgr_args, void *arg)

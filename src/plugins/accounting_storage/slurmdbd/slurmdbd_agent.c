@@ -880,7 +880,7 @@ static void _create_agent(void)
 	}
 
 	if (agent_tid == 0) {
-		slurm_thread_create(&agent_tid, _agent, NULL);
+		slurm_thread_create(NULL, &agent_tid, _agent, NULL);
 	}
 }
 

@@ -727,7 +727,7 @@ extern int jobcomp_kafka_message_init(void)
 
 	state_msg_list = list_create(_destroy_kafka_msg);
 	_load_jobcomp_kafka_state();
-	slurm_thread_create(&poll_thread, _poll_handler, NULL);
+	slurm_thread_create(NULL, &poll_thread, _poll_handler, NULL);
 
 	return SLURM_SUCCESS;
 }

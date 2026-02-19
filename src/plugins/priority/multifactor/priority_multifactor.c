@@ -45,10 +45,6 @@
 
 #include "config.h"
 
-#if HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-
 #include <fcntl.h>
 #include <float.h>
 #include <limits.h>
@@ -1327,12 +1323,6 @@ static void *_decay_thread(void *no_data)
 	assoc_mgr_lock_t locks = { WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   NO_LOCK, NO_LOCK, NO_LOCK };
 
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, "decay", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "decay");
-	}
-#endif
-
 	/* setup timer */
 	gettimeofday(&tvnow, NULL);
 	abs.tv_sec = tvnow.tv_sec;
@@ -1837,7 +1827,8 @@ extern void fini(void)
 
 void priority_p_thread_start(void)
 {
-	slurm_thread_create(&decay_handler_thread, _decay_thread, NULL);
+	slurm_thread_create("decay", &decay_handler_thread, _decay_thread,
+			    NULL);
 
 	return;
 }

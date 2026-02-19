@@ -1042,7 +1042,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
 
-	slurm_thread_create(&sls->msg_thread, _msg_thr_internal, sls);
+	slurm_thread_create(NULL, &sls->msg_thread, _msg_thr_internal, sls);
 	return rc;
 }
 
@@ -1282,7 +1282,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 
 	if (!sls->io_timeout_thread_created) {
 		sls->io_timeout_thread_created = true;
-		slurm_thread_create(&sls->io_timeout_thread,
+		slurm_thread_create(NULL, &sls->io_timeout_thread,
 				    _check_io_timeout, sls);
 	}
 

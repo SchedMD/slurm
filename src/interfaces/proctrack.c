@@ -368,7 +368,7 @@ static void _spawn_signal_thread(uint64_t cont_id, int signal)
 	agent_arg_ptr->cont_id = cont_id;
 	agent_arg_ptr->signal  = signal;
 
-	slurm_thread_create_detached(_sig_agent, agent_arg_ptr);
+	slurm_thread_create_detached(NULL, _sig_agent, agent_arg_ptr);
 }
 
 /*

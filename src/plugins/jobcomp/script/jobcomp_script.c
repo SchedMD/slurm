@@ -589,7 +589,7 @@ extern int init(void)
 
 	comp_list = list_create(_jobcomp_info_destroy);
 
-	slurm_thread_create(&script_thread, _script_agent, NULL);
+	slurm_thread_create(NULL, &script_thread, _script_agent, NULL);
 
 	slurm_mutex_unlock(&thread_flag_mutex);
 
