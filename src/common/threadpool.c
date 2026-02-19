@@ -61,7 +61,6 @@
  */
 #define PRCTL_BUF_BYTES 17
 /* default thread name for logging */
-#define DEFAULT_THREAD_NAME "thread"
 #define CTIME_STR_LEN 72
 /*
  * Avoid compiler warnings for id not fitting in PRCTL_BUF_BYTES by using %hu
@@ -363,9 +362,7 @@ static void _run(thread_t *thread)
 		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
 
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: %s thread calling %s(0x%"PRIxPTR") after %s",
-			 __func__,
-			 (thread->thread_name ? thread->thread_name : DEFAULT_THREAD_NAME),
-			 (uint64_t) thread->id,
+			 __func__, _thread_name(thread), (uint64_t) thread->id,
 			 (thread->detached ? "detached" : "attached"),
 			 thread->func_name, (uintptr_t) thread->arg, ts);
 	}
@@ -387,9 +384,7 @@ static void _run(thread_t *thread)
 		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
 
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: %s thread called %s(0x%"PRIxPTR")=0x%"PRIxPTR" for %s",
-			 __func__,
-			 (thread->thread_name ? thread->thread_name : DEFAULT_THREAD_NAME),
-			 (uint64_t) thread->id,
+			 __func__, _thread_name(thread), (uint64_t) thread->id,
 			 (thread->detached ? "detached" : "attached"),
 			 thread->func_name,
 			 (uintptr_t) thread->arg, (uintptr_t) thread->ret, ts);
@@ -405,9 +400,8 @@ static void _threadpool_wait_ack(thread_t *thread)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		start_ts = timespec_now();
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting for requester 0x%"PRIx64" to acknowledge assignment",
-			 __func__, (thread->thread_name ?  thread->thread_name :
-				    DEFAULT_THREAD_NAME),
-			 (uint64_t) thread->id, (uint64_t) requester);
+			 __func__, _thread_name(thread), (uint64_t) thread->id,
+			 (uint64_t) requester);
 	}
 
 	while (thread->requester)
@@ -421,9 +415,7 @@ static void _threadpool_wait_ack(thread_t *thread)
 		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
 
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: acknowledged by requester 0x%"PRIx64" after %s",
-			 __func__,
-			 (thread->thread_name ?  thread->thread_name :
-			  DEFAULT_THREAD_NAME), (uint64_t) thread->id,
+			 __func__, _thread_name(thread), (uint64_t) thread->id,
 			 (uint64_t) requester, ts);
 	}
 }
@@ -436,9 +428,7 @@ static void _threadpool_zombie(thread_t *thread)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_THREAD) {
 		start_ts = timespec_now();
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] BEGIN: waiting to be joined",
-			 __func__, (thread->thread_name ?  thread->thread_name :
-				    DEFAULT_THREAD_NAME),
-			 (uint64_t) thread->id);
+			 __func__, _thread_name(thread), (uint64_t) thread->id);
 	}
 
 	list_append(threadpool.zombies, thread);
@@ -456,9 +446,8 @@ static void _threadpool_zombie(thread_t *thread)
 		(void) timespec_ctime(diff.diff, false, ts, sizeof(ts));
 
 		log_flag(THREAD, "%s: [%s@0x%"PRIx64"] END: joined after waiting %s",
-			 __func__,
-			 (thread->thread_name ?  thread->thread_name :
-			  DEFAULT_THREAD_NAME), (uint64_t) thread->id, ts);
+			 __func__, _thread_name(thread),
+			 (uint64_t) thread->id, ts);
 	}
 
 	/* join thread should have removed ptr from zombie list */
