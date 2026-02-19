@@ -147,6 +147,13 @@
 decl_static_data(usage_txt);
 
 #define SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS 512
+
+#ifndef MEMORY_LEAK_DEBUG
+#define SLURMCTLD_THREADPOOL_PREALLOCATE 32
+#else
+#define SLURMCTLD_THREADPOOL_PREALLOCATE 2
+#endif
+
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
@@ -740,6 +747,9 @@ int main(int argc, char **argv)
 		sched_debug("slurmctld starting");
 	}
 
+	threadpool_init(SLURMCTLD_THREADPOOL_PREALLOCATE,
+			slurm_conf.slurmctld_params);
+
 	if (slurm_conf.slurmctld_params)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
@@ -1245,7 +1255,8 @@ int main(int argc, char **argv)
 	conmgr_fini();
 	http_fini();
 	http_switch_fini();
-
+	/* Multiple threads never exit naturally during shutdown */
+	threadpool_fini();
 	rate_limit_shutdown();
 	probe_fini();
 	log_fini();

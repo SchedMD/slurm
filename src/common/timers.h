@@ -221,6 +221,12 @@ extern int latency_histogram_print_labels(char *buffer, size_t buffer_len);
 extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
 				   size_t buffer_len);
 
+/* Add time difference between now and start_ts to histogram */
+#define HISTOGRAM_ADD_DURATION(histogram, start_ts) \
+	latency_metric_add_histogram_value((histogram), \
+					   timespec_rem(timespec_now(), \
+							(start_ts)))
+
 /*
  * Add latency value to histogram
  * Note: operation is threadsafe
