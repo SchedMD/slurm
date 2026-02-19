@@ -63,6 +63,12 @@
 /* default thread name for logging */
 #define DEFAULT_THREAD_NAME "thread"
 #define CTIME_STR_LEN 72
+/*
+ * Avoid compiler warnings for id not fitting in PRCTL_BUF_BYTES by using %hu
+ * and uint16_t instead of %d. This risks the index rolling over on longer lived
+ * daemons.
+ */
+#define THREAD_NAME_FMT "worker[%hu]"
 
 #ifdef PTHREAD_SCOPE_SYSTEM
 #define slurm_attr_init(attr) \
@@ -287,13 +293,42 @@ extern int threadpool_join(const pthread_t id, const char *caller)
 		return _join(id, caller);
 }
 
+static const char *_thread_default_name(void)
+{
+	static __thread char name[PRCTL_BUF_BYTES] = { 0 };
+	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	static int thread_count = 0;
+	uint16_t index = -1;
+
+	if (name[0])
+		return name;
+
+	slurm_mutex_lock(&mutex);
+	index = thread_count++;
+	slurm_mutex_unlock(&mutex);
+
+	(void) snprintf(name, sizeof(name), THREAD_NAME_FMT, index);
+
+	return name;
+}
+
+static const char *_thread_name(thread_t *thread)
+{
+	const char *name = NULL;
+
+	if (thread)
+		name = thread->thread_name;
+
+	if (!name)
+		name = _thread_default_name();
+
+	return name;
+}
+
 static void _set_thread_name(thread_t *thread)
 {
 #if HAVE_SYS_PRCTL_H
-	const char *name = thread->thread_name;
-
-	if (!name)
-		return;
+	const char *name = _thread_name(thread);
 
 	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL))
 		error("%s: cannot set process name to %s %m", __func__, name);
