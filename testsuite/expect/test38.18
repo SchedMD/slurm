@@ -314,7 +314,6 @@ proc test_gpus_per_node {} {
 		"-n1 --gres=gpu:2 : -n1 --gres=gpu:1" \
 		"-n1 --gres=gpu:2 : -n1" \
 		"-n1 : -n1 --gres=gpu:2" \
-		"-n1 --gpus-per-node=1 --gres=gpu:2 : -n1 --gpus-per-node=2 --gres=gpu:1" \
 	]
 
 	set regexes [list \
@@ -326,7 +325,6 @@ proc test_gpus_per_node {} {
 		"^JobId=.*TresPerNode=.*gpu:2.*JobId=.*TresPerNode=.*gpu:1" \
 		"^JobId=.*TresPerNode=.*gpu:2.*JobId=.*" \
 		"^JobId=.*JobId=.*TresPerNode=.*gpu:2" \
-		"^JobId=.*TresPerNode=.*gpu:1,.*gpu:2.*JobId=.*TresPerNode=.*gpu:2,.*gpu:1" \
 	]
 
 	foreach cmd {sbatch srun salloc} {

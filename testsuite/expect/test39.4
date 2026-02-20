@@ -60,8 +60,12 @@ if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 # Specify 1 node and more GPUs than exist on a single node
 #
 set output [run_command_output -xfail -subtest "$sbatch --gpus-per-node=$gpu_cnt --gres=gpu:[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
-subtest {[regexp "sbatch: error: Batch job submission failed: Requested node configuration is not available" $output]} "Job should be rejected at submit time"
-
+if {[package vcompare [get_version $sbatch] "26.05"] >= 0 } {
+	# Ticket 24694: In 25.06+ the --gres=gpu:N and --gpus-per-node are mutually exclusive.
+	subtest {[regexp "sbatch: fatal: --gpus-per-node and --gres=gpu are mutually exclusive." $output]} "Job should be rejected at submit time"
+} else {
+	subtest {[regexp "sbatch: error: Batch job submission failed: Requested node configuration is not available" $output]} "Job should be rejected at submit time"
+}
 if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 	lappend job_id_list $job_id
 }
