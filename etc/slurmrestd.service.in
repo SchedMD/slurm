@@ -17,7 +17,6 @@ ExecStart=@sbindir@/slurmrestd $SLURMRESTD_OPTIONS
 Environment=SLURM_JWT=daemon
 # Listen on TCP socket by default.
 Environment=SLURMRESTD_LISTEN=:@SLURMRESTD_PORT@
-ExecReload=/bin/kill -HUP $MAINPID
 LimitMEMLOCK=infinity
 
 [Install]
