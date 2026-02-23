@@ -36,4 +36,56 @@
 #ifndef _COMMON_WORKERPOOL_H
 #define _COMMON_WORKERPOOL_H
 
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "src/common/workq.h"
+
+#ifndef MEMORY_LEAK_DEBUG
+#define WORKERPOOL_THREAD_COUNT_MAX 256
+#else
+#define WORKERPOOL_THREAD_COUNT_MAX 64
+#endif
+
+#define WORKERPOOL_THREAD_COUNT_MIN 2
+
+/* aliased by CONMGR_PARAM_THREADS */
+#define WORKERPOOL_PARAM_THREADS "WORKERPOOL_THREADS="
+
+/*
+ * Create workerpool
+ * IN thread_count - User requested thread count
+ * IN default_thread_count - Default number of threads for current daemon
+ * IN params - CSV string with parameters for workerpool
+ *	See WORKERPOOL_PARAM_* for possible parameters.
+ */
+extern void workerpool_init(const int thread_count,
+			    const int default_thread_count, const char *params);
+
+/* Shutdown and release workerpool */
+extern void workerpool_fini(void);
+
+/*
+ * Create new work to run in workerpool's workq
+ * WARNING: always use workerpool_enqueue*() macros if alloc is NULL
+ * IN alloc - workq allocator
+ * IN priority - Priority of work to run
+ * IN func - function to call
+ * IN func_name - function name for logging
+ * IN arg - Arbitrary pointer to hand to func()
+ * IN caller - __func__ from caller
+ */
+extern void workerpool_enqueue(workq_allocator_t *alloc,
+			       workq_priority_t priority, work_func_t func,
+			       const char *func_name, void *arg,
+			       const char *caller);
+
+#define workerpool_enqueue_normal(func, arg) \
+	workerpool_enqueue(NULL, WORKQ_PRIORITY_NORMAL, func, #func, arg, \
+			   __func__)
+
+#define workerpool_enqueue_idle(func, arg) \
+	workerpool_enqueue(NULL, WORKQ_PRIORITY_IDLE, func, #func, arg, \
+			   __func__)
+
 #endif
