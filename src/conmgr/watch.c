@@ -1849,8 +1849,7 @@ static bool _watch_loop(void)
 		return true;
 
 	/* Avoid watch() ending if there are any queued work */
-	if (mgr.work_count || !list_is_empty(mgr.work) ||
-	    !list_is_empty(mgr.delayed_work)) {
+	if (mgr.work_count || !list_is_empty(mgr.delayed_work)) {
 		/* Need to wait for all work to complete */
 		log_flag(CONMGR, "%s: waiting on work:%d delayed_work:%d",
 			 __func__, mgr.work_count, list_count(mgr.delayed_work));
@@ -1916,6 +1915,7 @@ extern void *watch(void *arg)
 		 __func__, BOOL_CHARIFY(mgr.shutdown_requested),
 		 list_count(mgr.connections), list_count(mgr.listen_conns));
 
+	xassert(!mgr.work_count);
 	xassert(pthread_equal(mgr.watch_thread, pthread_self()));
 	mgr.watch_thread = 0;
 

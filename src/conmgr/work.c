@@ -38,6 +38,8 @@
 #include "src/common/macros.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/workerpool.h"
+#include "src/common/workq.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -262,7 +264,7 @@ static work_t *_on_con_work_complete(conmgr_fd_t *con, work_t *work)
 	return next;
 }
 
-static work_t *_run_work(work_t *work)
+static work_t *_run_work(work_t *work, const bool shutdown)
 {
 	work_t *next = NULL;
 	conmgr_callback_args_t args = {
@@ -270,6 +272,9 @@ static work_t *_run_work(work_t *work)
 	};
 
 	xassert(work->magic == MAGIC_WORK);
+
+	if (shutdown)
+		args.status = CONMGR_WORK_STATUS_CANCELLED;
 
 	if (work->ref) {
 		slurm_mutex_lock(&mgr.mutex);
@@ -300,9 +305,16 @@ static work_t *_run_work(work_t *work)
 	return next;
 }
 
-extern void wrap_work(work_t *work)
+/*
+ * Wrap work requested to notify mgr when that work is complete
+ */
+static void _wrap_work(const bool shutdown, void *arg)
 {
-	while ((work = _run_work(work)))
+	work_t *work = arg;
+
+	xassert(work->magic == MAGIC_WORK);
+
+	while ((work = _run_work(work, shutdown)))
 		/* do nothing */;
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -317,9 +329,8 @@ extern void wrap_work(work_t *work)
 }
 
 /*
- * Add work to mgr.work
- * Single point to enqueue internal function callbacks
- * NOTE: _handle_work_run() can add new entries to mgr.work
+ * Add work to workerpool
+ * Single point to enqueue internal function conmgr work callbacks
  *
  * IN work - pointer to work to run
  * NOTE: never add a thread that will never return or conmgr_fini() will never
@@ -333,10 +344,10 @@ static void _handle_work_run(work_t *work)
 	mgr.work_count++;
 	xassert(mgr.work_count > 0);
 
-	LOG_WORK(work, "Enqueueing work. work:%u", list_count(mgr.work));
+	LOG_WORK(work, "Enqueueing work. work:%u", mgr.work_count);
 
-	/* add to work list and signal a thread if watch is active */
-	list_append(mgr.work, work);
+	/* Give enqueue the final function's name instead of the wrappers */
+	workerpool_enqueue_idle(_wrap_work, work);
 }
 
 /*
@@ -451,7 +462,7 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 		     conmgr_work_control_t control,
 		     conmgr_work_depend_t depend_mask, const char *caller)
 {
-	work_t *work = xmalloc_nz(sizeof(*work));
+	work_t *work = xmalloc(sizeof(*work));
 	*work = (work_t) {
 		.magic = MAGIC_WORK,
 		.status = CONMGR_WORK_STATUS_PENDING,
@@ -515,64 +526,4 @@ extern size_t printf_work(const work_t *work, char *buffer, size_t len,
 	xfree(depend_type);
 
 	return wrote;
-}
-
-static int _foreach_log_work(void *x, void *arg)
-{
-	const work_t *work = x;
-	log_work_args_t *args = arg;
-	probe_log_t *log = args->log;
-	char str[PRINTF_WORK_CHARS];
-
-	xassert(args->magic == MAGIC_LOG_WORK_ARGS);
-	xassert(work->magic == MAGIC_WORK);
-
-	printf_work(work, str, sizeof(str), true);
-
-	probe_log(log, "%s[%d]: %s", args->type, args->index, str);
-
-	args->index++;
-
-	return SLURM_SUCCESS;
-}
-
-/* Caller must hold mgr.mutex lock */
-static void _probe_verbose(probe_log_t *log)
-{
-	log_work_args_t args = {
-		.magic = MAGIC_LOG_WORK_ARGS,
-		.type = "delayed_work",
-		.log = log,
-	};
-
-	probe_log(log, "work queues: work:%d delayed_work:%d",
-		  list_count(mgr.work), list_count(mgr.delayed_work));
-
-	(void) list_for_each_ro(mgr.delayed_work, _foreach_log_work, &args);
-
-	args.index = 0;
-	args.type = "work";
-
-	(void) list_for_each_ro(mgr.work, _foreach_log_work, &args);
-}
-
-extern probe_status_t probe_work(probe_log_t *log, void *arg)
-{
-	probe_status_t status = PROBE_RC_UNKNOWN;
-
-	slurm_mutex_lock(&mgr.mutex);
-
-	if (log)
-		_probe_verbose(log);
-
-	if (!mgr.initialized)
-		status = PROBE_RC_UNKNOWN;
-	else if (!mgr.work || !mgr.delayed_work)
-		status = PROBE_RC_DOWN;
-	else
-		status = PROBE_RC_READY;
-
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return status;
 }

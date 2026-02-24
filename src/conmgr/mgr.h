@@ -320,8 +320,6 @@ typedef struct {
 
 	/* list of work_t */
 	list_t *delayed_work;
-	/* list of work_t* */
-	list_t *work;
 
 	pthread_mutex_t mutex;
 
@@ -571,11 +569,6 @@ extern int on_rpc_connection_data(conmgr_callback_args_t conmgr_args,
 extern conmgr_fd_t *con_find_by_fd(int fd);
 
 /*
- * Wrap work requested to notify mgr when that work is complete
- */
-extern void wrap_work(work_t *work);
-
-/*
  * Change con->type
  * NOTE: caller must hold mgr.mutex lock
  * IN con - connection to change
@@ -650,11 +643,5 @@ extern probe_status_t probe_connections(probe_log_t *log, void *arg);
  */
 extern size_t printf_work(const work_t *work, char *buffer, size_t len,
 			  bool include_connection);
-
-/*
- * Probe all work
- * NOTE: caller must not hold conmgr global lock
- */
-extern probe_status_t probe_work(probe_log_t *log, void *arg);
 
 #endif /* _CONMGR_MGR_H */

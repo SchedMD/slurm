@@ -218,7 +218,6 @@ extern void conmgr_init(int max_connections)
 	mgr.connections = list_create(NULL);
 	mgr.listen_conns = list_create(NULL);
 	mgr.complete_conns = list_create(NULL);
-	mgr.work = list_create(NULL);
 	init_delayed_work();
 
 	pollctl_init(mgr.max_connections);
@@ -233,7 +232,6 @@ extern void conmgr_init(int max_connections)
 
 	probe_register("conmgr", _probe, NULL);
 	probe_register("conmgr->connections", probe_connections, NULL);
-	probe_register("conmgr->work", probe_work, NULL);
 }
 
 extern void conmgr_fini(void)
@@ -286,8 +284,7 @@ extern void conmgr_fini(void)
 	xassert(!mgr.quiesce.start.tv_sec);
 
 	/* work should have finished by this point */
-	xassert(list_is_empty(mgr.work));
-	FREE_NULL_LIST(mgr.work);
+	xassert(!mgr.work_count);
 
 	pollctl_fini();
 
