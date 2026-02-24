@@ -595,6 +595,10 @@ extern int main(int argc, char **argv)
 	conmgr_run(true);
 	probe_fini();
 
+#ifdef MEMORY_LEAK_DEBUG
+	conmgr_fini();
+#endif
+
 	xfree(conf_file);
 	xfree(conf_server);
 	xfree(dir);
