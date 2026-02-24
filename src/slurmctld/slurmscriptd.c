@@ -1272,6 +1272,7 @@ extern void slurmscriptd_run_slurmscriptd(int argc, char **argv,
 	track_script_fini();
 	slurm_mutex_destroy(&powersave_script_count_mutex);
 	probe_fini();
+	conmgr_fini();
 #endif
 
 	/* We never want to return from here, only exit. */
