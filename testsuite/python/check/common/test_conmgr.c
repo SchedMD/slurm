@@ -74,9 +74,7 @@ static void teardown(void)
 
 START_TEST(test_params)
 {
-	ck_assert(!conmgr_set_params(
-		"CONMGR_THREADS=93,CONMGR_MAX_CONNECTIONS=3484"));
-	ck_assert(mgr.workers.conf_threads == 93);
+	ck_assert(!conmgr_set_params("CONMGR_MAX_CONNECTIONS=3484"));
 	ck_assert(mgr.conf_max_connections == 3484);
 
 	ck_assert(!conmgr_set_params(
@@ -119,7 +117,24 @@ END_TEST
 
 START_TEST(test_reinit)
 {
-#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25,11,0)
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 11, 0)
+	conmgr_init(0);
+	ck_assert(conmgr_enabled());
+	conmgr_init(0);
+	ck_assert(conmgr_enabled());
+	conmgr_fini();
+	ck_assert(conmgr_enabled());
+	conmgr_request_shutdown();
+	ck_assert(conmgr_enabled());
+	conmgr_init(0);
+	ck_assert(conmgr_enabled());
+	conmgr_fini();
+	ck_assert(conmgr_enabled());
+	conmgr_fini();
+	ck_assert(conmgr_enabled());
+	conmgr_request_shutdown();
+	ck_assert(conmgr_enabled());
+#elif SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(25, 11, 0)
 	conmgr_init(0, 0, 0);
 	ck_assert(conmgr_enabled());
 	conmgr_init(0, 0, 0);

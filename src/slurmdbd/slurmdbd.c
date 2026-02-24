@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 	become_slurm_user();
 
 	workerpool_init(0, 0, NULL);
-	conmgr_init(0, 0, 0);
+	conmgr_init(0);
 
 	_register_signal_handlers();
 

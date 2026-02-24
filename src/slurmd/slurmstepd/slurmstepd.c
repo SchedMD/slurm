@@ -698,7 +698,7 @@ extern int main(int argc, char **argv)
 
 	workerpool_init(0, DEF_WORKPOOL_THREAD_COUNT,
 			slurm_conf.slurmstepd_params);
-	conmgr_init(0, DEF_WORKPOOL_THREAD_COUNT, 0);
+	conmgr_init(0);
 
 	conmgr_add_work_signal(SIGALRM, _on_sigalrm, NULL);
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);

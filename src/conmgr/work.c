@@ -337,9 +337,6 @@ static void _handle_work_run(work_t *work)
 
 	/* add to work list and signal a thread if watch is active */
 	list_append(mgr.work, work);
-
-	if (!mgr.quiesce.active)
-		EVENT_SIGNAL(&mgr.worker_sleep);
 }
 
 /*

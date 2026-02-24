@@ -26,8 +26,7 @@ libconmgr_la_SOURCES = \
 	tls_fingerprint.c \
 	tls_fingerprint.h \
 	watch.c \
-	work.c \
-	workers.c
+	work.c
 
 if HAVE_EPOLL
 libconmgr_la_SOURCES += epoll.c

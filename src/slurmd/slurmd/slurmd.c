@@ -467,8 +467,7 @@ main (int argc, char **argv)
 	debug3("finished daemonize");
 
 	workerpool_init(0, DEF_WORKPOOL_THREAD_COUNT, slurm_conf.slurmd_params);
-	conmgr_init(0, DEF_WORKPOOL_THREAD_COUNT,
-		    SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
+	conmgr_init(SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);

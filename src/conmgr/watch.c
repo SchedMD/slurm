@@ -1576,7 +1576,7 @@ static int _handle_poll_event(int fd, pollctl_events_t events, void *arg)
 static bool _is_poll_interrupt(void)
 {
 	return (mgr.shutdown_requested ||
-		(mgr.waiting_on_work && (mgr.workers.active == 1)));
+		(mgr.waiting_on_work && mgr.work_count));
 }
 
 /* Poll all connections */
@@ -1826,13 +1826,12 @@ static bool _watch_loop(void)
 				 __func__, waiters,
 				 (list_count(mgr.connections) +
 				  list_count(mgr.listen_conns)));
-		} else if (mgr.workers.active) {
-			log_flag(CONMGR, "%s: quiesced state waiting on workers:%d/%d",
-				 __func__, mgr.workers.active,
-				 mgr.workers.total);
+		} else if (mgr.work_count) {
+			log_flag(CONMGR, "%s: quiesced state waiting on work:%d",
+				 __func__, mgr.work_count);
 			mgr.waiting_on_work = true;
 			return true;
-		}  else {
+		} else {
 			log_flag(CONMGR, "%s: BEGIN: quiesced state", __func__);
 			mgr.quiesce.active = true;
 
@@ -1843,35 +1842,18 @@ static bool _watch_loop(void)
 					   &mgr.mutex);
 
 			log_flag(CONMGR, "%s: END: quiesced state", __func__);
-
-			/*
-			 * All the worker threads may be waiting for a
-			 * worker_sleep event and not an on_start_quiesced
-			 * event. Wake them all up right now if there is any
-			 * pending work queued to avoid workers remaining
-			 * sleeping until add_work() is called enough times to
-			 * wake them all up independent of the size of the
-			 * mgr.work queue.
-			 */
-			if (!list_is_empty(mgr.work))
-				EVENT_BROADCAST(&mgr.worker_sleep);
 		}
 	}
 
 	if (_handle_events())
 		return true;
 
-	/*
-	 * Avoid watch() ending if there are any other active workers or
-	 * any queued work.
-	 */
-
-	if (mgr.workers.active || !list_is_empty(mgr.work) ||
+	/* Avoid watch() ending if there are any queued work */
+	if (mgr.work_count || !list_is_empty(mgr.work) ||
 	    !list_is_empty(mgr.delayed_work)) {
-		/* Need to wait for all work/workers to complete */
-		log_flag(CONMGR, "%s: waiting on workers:%d work:%d delayed_work:%d",
-			 __func__, mgr.workers.active,
-			 list_count(mgr.delayed_work), list_count(mgr.work));
+		/* Need to wait for all work to complete */
+		log_flag(CONMGR, "%s: waiting on work:%d delayed_work:%d",
+			 __func__, mgr.work_count, list_count(mgr.delayed_work));
 		mgr.waiting_on_work = true;
 		return true;
 	}
@@ -1911,9 +1893,8 @@ extern void *watch(void *arg)
 			timespec_ctime(mgr.watch_max_sleep, true, timeout_str,
 				       sizeof(timeout_str));
 
-		log_flag(CONMGR, "%s: waiting for new events: workers:%d/%d work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c timeout:%s",
-				 __func__, mgr.workers.active,
-				 mgr.workers.total, list_count(mgr.work),
+		log_flag(CONMGR, "%s: waiting for new events: work:%d delayed_work:%d connections:%d listeners:%d complete:%d polling:%c inspecting:%c shutdown_requested:%c quiesce_requested:%c waiting_on_work:%c timeout:%s",
+				 __func__, mgr.work_count,
 				 list_count(mgr.delayed_work),
 				 list_count(mgr.connections),
 				 list_count(mgr.listen_conns),

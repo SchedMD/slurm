@@ -527,7 +527,7 @@ int main(int argc, char **argv)
 	stepmgr_node = _resolve_stepmgr(&opt.target);
 
 	workerpool_init(0, SWAIT_WORKERPOOL_THREADS, NULL);
-	conmgr_init(0, SWAIT_WORKERPOOL_THREADS, 0);
+	conmgr_init(0);
 
 	setup_rc = _setup_steps_drained_listener();
 	if (setup_rc == ESLURM_STEPS_DRAINED) {

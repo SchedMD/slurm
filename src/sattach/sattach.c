@@ -216,7 +216,7 @@ int sattach(int argc, char **argv)
 	 * a background thread.
 	 */
 	workerpool_init(0, SATTACH_WORKERPOOL_THREADS, NULL);
-	conmgr_init(0, SATTACH_WORKERPOOL_THREADS, 0);
+	conmgr_init(0);
 	conmgr_add_work_signal(SIGINT, _on_detach_signal, mts);
 	conmgr_add_work_signal(SIGTERM, _on_detach_signal, mts);
 	conmgr_add_work_signal(SIGQUIT, _on_detach_signal, mts);

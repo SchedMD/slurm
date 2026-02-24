@@ -1456,7 +1456,7 @@ static int _anchor_child(int pipe_fd[2])
 
 	/* must init conmgr/workerpool after calling fork() in _daemonize() */
 	workerpool_init(0, THREAD_COUNT, NULL);
-	conmgr_init(0, THREAD_COUNT, 0);
+	conmgr_init(0);
 
 	change_status_force(CONTAINER_ST_CREATING);
 

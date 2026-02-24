@@ -266,15 +266,6 @@ struct conmgr_fd_s {
 	slurm_err_t status_code;
 };
 
-typedef struct {
-#define MAGIC_WORKER 0xD2342412
-	int magic; /* MAGIC_WORKER */
-	/* thread id of worker */
-	pthread_t tid;
-	/* unique id for tracking */
-	int id;
-} worker_t;
-
 /*
  * Global instance of conmgr
  */
@@ -337,27 +328,6 @@ typedef struct {
 	/* Number of work requests in workerpool */
 	int work_count;
 
-	struct {
-		/* Configured value of threads */
-		int conf_threads;
-
-		/* list of worker_t */
-		list_t *workers;
-
-		/* track simple stats for logging */
-		int active;
-		int total;
-
-		/*
-		 * track shutdown of workers after other work is done or there
-		 * may be no workers to do the work
-		 */
-		bool shutdown_requested;
-
-		/* number of threads */
-		int threads;
-	} workers;
-
 	/* Global quiesce state */
 	struct {
 		/* Has a thread requested conmgr to quiesce? */
@@ -374,8 +344,6 @@ typedef struct {
 
 	event_signal_t watch_sleep;
 	event_signal_t watch_return;
-	event_signal_t worker_sleep;
-	event_signal_t worker_return;
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
@@ -385,7 +353,6 @@ typedef struct {
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
 		.shutdown_requested = true,\
-		.workers.conf_threads = -1,\
 		.quiesce = { \
 			.on_start_quiesced = \
 				EVENT_INITIALIZER("START_QUIESCED"), \
@@ -394,8 +361,6 @@ typedef struct {
 		}, \
 		.watch_sleep = EVENT_INITIALIZER("WATCH_SLEEP"), \
 		.watch_return = EVENT_INITIALIZER("WATCH_RETURN"), \
-		.worker_sleep = EVENT_INITIALIZER("WORKER_SLEEP"), \
-		.worker_return = EVENT_INITIALIZER("WORKER_RETURN"), \
 	}
 
 extern conmgr_t mgr;
@@ -609,28 +574,6 @@ extern conmgr_fd_t *con_find_by_fd(int fd);
  * Wrap work requested to notify mgr when that work is complete
  */
 extern void wrap_work(work_t *work);
-
-/*
- * Notify all worker thread to shutdown.
- * Wait until all work and workers have completed their work (and exited).
- * Note: Caller MUST hold conmgr lock
- */
-extern void workers_shutdown(void);
-
-/*
- * Initialize worker threads
- * IN count - number of workers to add
- * IN default_count - default number of workers to add
- * Note: Caller must hold conmgr lock
- */
-extern void workers_init(int count, int default_count);
-
-/*
- * Release worker threads
- * Will stop all workers (eventually).
- * Note: Caller must hold conmgr lock
- */
-extern void workers_fini(void);
 
 /*
  * Change con->type

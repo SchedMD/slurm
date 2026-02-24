@@ -179,7 +179,7 @@ int srun(int ac, char **av)
 
 	probe_init();
 	workerpool_init(0, THREAD_COUNT, NULL);
-	conmgr_init(0, THREAD_COUNT, 0);
+	conmgr_init(0);
 
 	forward_init();
 

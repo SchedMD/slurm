@@ -118,14 +118,13 @@ static void _at_exit(void)
 /* Caller must hold mgr.mutex lock */
 static void _probe_verbose(probe_log_t *log)
 {
-	probe_log(log, "config: max_connections:%d delay_write_complete:%s read_timeout:%s write_timeout:%s connect_timeout:%s quiesce_timeout:%s threads=%d",
+	probe_log(log, "config: max_connections:%d delay_write_complete:%s read_timeout:%s write_timeout:%s connect_timeout:%s quiesce_timeout:%s",
 	     mgr.conf_max_connections,
 	     TIMESPEC_STR(mgr.timeouts.write_complete, false),
 	     TIMESPEC_STR(mgr.timeouts.read, false),
 	     TIMESPEC_STR(mgr.timeouts.write, false),
 	     TIMESPEC_STR(mgr.timeouts.connect, false),
-	     TIMESPEC_STR(mgr.timeouts.quiesce, false),
-	     mgr.workers.conf_threads);
+	     TIMESPEC_STR(mgr.timeouts.quiesce, false));
 
 	probe_log(log, "status: initialized:%c shutdown_requested:%c work:%d",
 		  BOOL_CHARIFY(mgr.initialized),
@@ -168,8 +167,7 @@ static probe_status_t _probe(probe_log_t *log, void *arg)
 	return status;
 }
 
-extern void conmgr_init(int thread_count, int default_thread_count,
-			int max_connections)
+extern void conmgr_init(int max_connections)
 {
 	int rc = EINVAL;
 
@@ -192,8 +190,6 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 
 	enabled_status = true;
 	mgr.shutdown_requested = false;
-
-	workers_init(thread_count, default_thread_count);
 
 	if ((rc = pthread_atfork(NULL, NULL, _atfork_child)))
 		fatal_abort("%s: pthread_atfork() failed: %s",
@@ -275,9 +271,6 @@ extern void conmgr_fini(void)
 	/* tell all timers about being canceled */
 	cancel_delayed_work(false);
 
-	/* wait until all workers are done */
-	workers_shutdown();
-
 	/*
 	 * At this point, there should be no threads running.
 	 * It should be safe to shutdown the mgr.
@@ -288,13 +281,11 @@ extern void conmgr_fini(void)
 
 	free_delayed_work();
 
-	workers_fini();
-
 	xassert(!mgr.quiesce.requested);
 	xassert(!mgr.quiesce.active);
 	xassert(!mgr.quiesce.start.tv_sec);
 
-	/* work should have been cleared by workers_fini() */
+	/* work should have finished by this point */
 	xassert(list_is_empty(mgr.work));
 	FREE_NULL_LIST(mgr.work);
 
@@ -388,22 +379,7 @@ extern int conmgr_set_params(const char *params)
 	tmp_str = xstrdup(params);
 	tok = strtok_r(tmp_str, ",", &saveptr);
 	while (tok) {
-		if (!xstrncasecmp(tok, CONMGR_PARAM_THREADS,
-				  strlen(CONMGR_PARAM_THREADS))) {
-			const unsigned long count =
-				slurm_atoul(tok + strlen(CONMGR_PARAM_THREADS));
-
-			if ((count < 1) || (count > INT_MAX)) {
-				error("%s: Ignoring invalid %s: thread count must be >= 1; using default",
-				      __func__, tok);
-			} else {
-				mgr.workers.conf_threads = (int) count;
-
-				log_flag(CONMGR, "%s: %s set %d threads",
-					 __func__, tok,
-					 mgr.workers.conf_threads);
-			}
-		} else if (!xstrncasecmp(tok, CONMGR_PARAM_MAX_CONN,
+		if (!xstrncasecmp(tok, CONMGR_PARAM_MAX_CONN,
 				  strlen(CONMGR_PARAM_MAX_CONN))) {
 			const unsigned long count =
 				slurm_atoul(tok + strlen(CONMGR_PARAM_MAX_CONN));
@@ -417,8 +393,9 @@ extern int conmgr_set_params(const char *params)
 				log_flag(CONMGR, "%s: %s activated with %lu max connections",
 					 __func__, tok, count);
 			}
-		} else if (!xstrncasecmp(tok, CONMGR_PARAM_QUIESCE_TIMEOUT,
-				  strlen(CONMGR_PARAM_QUIESCE_TIMEOUT))) {
+		} else if (
+			!xstrncasecmp(tok, CONMGR_PARAM_QUIESCE_TIMEOUT,
+				      strlen(CONMGR_PARAM_QUIESCE_TIMEOUT))) {
 			const char *value =
 				(tok + strlen(CONMGR_PARAM_QUIESCE_TIMEOUT));
 

@@ -1191,7 +1191,7 @@ static void _init_slurmscriptd_conmgr(void)
 		conmgr_set_params(slurm_conf.slurmctld_params);
 
 	workerpool_init(0, 0, NULL);
-	conmgr_init(0, 0, 0);
+	conmgr_init(0);
 
 	/*
 	 * Ignore signals. slurmscriptd should only handle requests directly

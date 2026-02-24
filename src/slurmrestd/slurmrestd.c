@@ -716,9 +716,7 @@ int main(int argc, char **argv)
 			(run_mode.listen ? 0 : CONMGR_THREAD_COUNT_MIN),
 			slurm_conf.slurmrestd_params);
 
-	conmgr_init(thread_count,
-		    (run_mode.listen ? 0 : CONMGR_THREAD_COUNT_MIN),
-		    max_connections);
+	conmgr_init(max_connections);
 
 	/*
 	 * Attempt to load TLS plugin and then attempt to load the certificate

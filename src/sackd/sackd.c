@@ -550,7 +550,7 @@ extern int main(int argc, char **argv)
 	slurm_conf_init(conf_file);
 
 	workerpool_init(0, 0, NULL);
-	conmgr_init(0, 0, 0);
+	conmgr_init(0);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
