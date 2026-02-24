@@ -65,6 +65,7 @@
 #include "src/common/setproctitle.h"
 #include "src/common/spank.h"
 #include "src/common/uid.h"
+#include "src/common/workerpool.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1453,7 +1454,8 @@ static int _anchor_child(int pipe_fd[2])
 	state.pid = getpid();
 	_populate_pidfile();
 
-	/* must init conmgr after calling fork() in _daemonize() */
+	/* must init conmgr/workerpool after calling fork() in _daemonize() */
+	workerpool_init(0, THREAD_COUNT, NULL);
 	conmgr_init(0, THREAD_COUNT, 0);
 
 	change_status_force(CONTAINER_ST_CREATING);
@@ -1526,6 +1528,7 @@ static int _anchor_child(int pipe_fd[2])
 #endif
 	FREE_NULL_LIST(socket_listen);
 	conmgr_fini();
+	workerpool_fini();
 
 	return rc;
 }
