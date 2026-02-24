@@ -127,8 +127,9 @@ static void _probe_verbose(probe_log_t *log)
 	     TIMESPEC_STR(mgr.timeouts.quiesce, false),
 	     mgr.workers.conf_threads);
 
-	probe_log(log, "status: initialized:%c shutdown_requested:%c",
-	     BOOL_CHARIFY(mgr.initialized), BOOL_CHARIFY(mgr.shutdown_requested));
+	probe_log(log, "status: initialized:%c shutdown_requested:%c work:%d",
+		  BOOL_CHARIFY(mgr.initialized),
+		  BOOL_CHARIFY(mgr.shutdown_requested), mgr.work_count);
 
 	probe_log(log, "watch: max_sleep:%s polling:%c inspecting:%c waiting_on_work:%c",
 		  TIMESPEC_STR(mgr.watch_max_sleep, true),

@@ -304,6 +304,16 @@ extern void wrap_work(work_t *work)
 {
 	while ((work = _run_work(work)))
 		/* do nothing */;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	mgr.work_count--;
+	xassert(mgr.work_count >= 0);
+
+	/* Wake up watch from sleeping to schedule more work */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
@@ -319,6 +329,9 @@ extern void wrap_work(work_t *work)
 static void _handle_work_run(work_t *work)
 {
 	xassert(work->magic == MAGIC_WORK);
+
+	mgr.work_count++;
+	xassert(mgr.work_count > 0);
 
 	LOG_WORK(work, "Enqueueing work. work:%u", list_count(mgr.work));
 

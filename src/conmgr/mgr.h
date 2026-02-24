@@ -334,6 +334,9 @@ typedef struct {
 
 	pthread_mutex_t mutex;
 
+	/* Number of work requests in workerpool */
+	int work_count;
+
 	struct {
 		/* Configured value of threads */
 		int conf_threads;
