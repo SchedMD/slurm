@@ -166,12 +166,12 @@ libcommon_interfaces_la_LIBADD =
 am_libcommon_interfaces_la_OBJECTS = accounting_storage.lo \
 	acct_gather.lo acct_gather_energy.lo acct_gather_filesystem.lo \
 	acct_gather_interconnect.lo acct_gather_profile.lo auth.lo \
-	certgen.lo certmgr.lo cgroup.lo cli_filter.lo conn.lo cred.lo \
-	data_parser.lo gpu.lo gres.lo hash.lo http_auth.lo \
-	http_parser.lo jobacct_gather.lo jobcomp.lo mcs.lo metrics.lo \
-	mpi.lo namespace.lo node_features.lo prep.lo priority.lo \
-	select.lo serializer.lo site_factor.lo switch.lo tls.lo \
-	topology.lo url_parser.lo
+	certgen.lo certmgr.lo compress.lo cgroup.lo cli_filter.lo \
+	conn.lo cred.lo data_parser.lo gpu.lo gres.lo hash.lo \
+	http_auth.lo http_parser.lo jobacct_gather.lo jobcomp.lo \
+	mcs.lo metrics.lo mpi.lo namespace.lo node_features.lo prep.lo \
+	priority.lo select.lo serializer.lo site_factor.lo switch.lo \
+	tls.lo topology.lo url_parser.lo
 libcommon_interfaces_la_OBJECTS =  \
 	$(am_libcommon_interfaces_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -219,9 +219,10 @@ am__depfiles_remade = ./$(DEPDIR)/accounting_storage.Plo \
 	./$(DEPDIR)/acct_gather_profile.Plo ./$(DEPDIR)/auth.Plo \
 	./$(DEPDIR)/burst_buffer.Plo ./$(DEPDIR)/certgen.Plo \
 	./$(DEPDIR)/certmgr.Plo ./$(DEPDIR)/cgroup.Plo \
-	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/conn.Plo \
-	./$(DEPDIR)/cred.Plo ./$(DEPDIR)/data_parser.Plo \
-	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
+	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/compress.Plo \
+	./$(DEPDIR)/conn.Plo ./$(DEPDIR)/cred.Plo \
+	./$(DEPDIR)/data_parser.Plo ./$(DEPDIR)/gpu.Plo \
+	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/hash.Plo \
 	./$(DEPDIR)/http_auth.Plo ./$(DEPDIR)/http_parser.Plo \
 	./$(DEPDIR)/job_submit.Plo ./$(DEPDIR)/jobacct_gather.Plo \
 	./$(DEPDIR)/jobcomp.Plo ./$(DEPDIR)/mcs.Plo \
@@ -568,6 +569,8 @@ libcommon_interfaces_la_SOURCES = \
 	certgen.h				\
 	certmgr.c				\
 	certmgr.h				\
+	compress.c				\
+	compress.h				\
 	cgroup.c				\
 	cgroup.h				\
 	cli_filter.c				\
@@ -723,6 +726,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/certmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compress.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conn.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cred.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_parser.Plo@am__quote@ # am--include-marker
@@ -889,6 +893,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/certmgr.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
+	-rm -f ./$(DEPDIR)/compress.Plo
 	-rm -f ./$(DEPDIR)/conn.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/data_parser.Plo
@@ -975,6 +980,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/certmgr.Plo
 	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
+	-rm -f ./$(DEPDIR)/compress.Plo
 	-rm -f ./$(DEPDIR)/conn.Plo
 	-rm -f ./$(DEPDIR)/cred.Plo
 	-rm -f ./$(DEPDIR)/data_parser.Plo
