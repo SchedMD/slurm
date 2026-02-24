@@ -39,4 +39,33 @@
 extern int compress_g_init(void);
 extern void compress_g_fini(void);
 
+/*
+ * Arguments:
+ * 	int type - one of the compress_plugin_type enum values
+ * 	in_buf - buffer to read from - Note that position in the buffer is
+ * 		 updated
+ * 	input_size - full size of the input
+ * 	out_buf - location to output data, must be allocated by the caller
+ * 	out_size - size of the output buffer
+ * 	remaining - how much data remains to be read from the input buffer
+ */
+extern ssize_t compress_g_comp_block(const int type, char **in_buf,
+				     const ssize_t input_size, char **out_buf,
+				     const ssize_t out_size,
+				     ssize_t *remaining);
+
+/*
+ * Arguments:
+ * 	int type: one of the compress_plugin_type enum values
+ * 	in_buf: buffer to read from
+ * 	in_size: size of input buffer
+ * 	out_size: expected decompressed size
+ *
+ * Returns:
+ * 	char *: location of decompressed data
+ */
+extern char *compress_g_decompress(const int type, char *in_buf,
+				   const ssize_t in_size,
+				   const ssize_t out_size);
+
 #endif

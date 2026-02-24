@@ -45,13 +45,21 @@
 
 typedef struct compress_ops {
 	uint32_t *plugin_id;
+	ssize_t (*compress_p_comp_block)(char **in_buf,
+					 const ssize_t input_size,
+					 char **out_buf, const ssize_t out_size,
+					 ssize_t *remaining);
+	char *(*compress_p_decompress)(char *in_buf, const ssize_t in_size,
+				       const ssize_t out_size);
 } compress_ops_t;
 
 /*
- * Must be synchronized with job_container_ops_t above.
+ * Must be synchronized with compress_ops_t above.
  */
 static const char *syms[] = {
 	"plugin_id",
+	"compress_p_comp_block",
+	"compress_p_decompress",
 };
 
 static compress_ops_t *ops = NULL;
@@ -80,6 +88,15 @@ static int _load_plugins(void *x, void *arg)
 	}
 
 	return 0;
+}
+
+static int _get_plugin_index(const int type)
+{
+	for (int i = 0; i < compress_context_cnt; i++) {
+		if (*(ops[i].plugin_id) == type)
+			return i;
+	}
+	return -1;
 }
 
 extern int compress_g_init(void)
@@ -131,4 +148,57 @@ extern void compress_g_fini(void)
 	plugin_inited = PLUGIN_NOT_INITED;
 
 	slurm_rwlock_unlock(&context_lock);
+}
+
+extern ssize_t compress_g_comp_block(const int type, char **in_buf,
+				     const ssize_t input_size, char **out_buf,
+				     const ssize_t out_size, ssize_t *remaining)
+{
+	int plugin_index = -1;
+	ssize_t rc = -1;
+	slurm_rwlock_rdlock(&context_lock);
+
+	if (compress_context_cnt <= 0) {
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	if ((plugin_index = _get_plugin_index(type)) == -1) {
+		error("Unable to find requested compression plugin");
+		rc = SLURM_ERROR;
+		goto done;
+	}
+
+	rc = (*(ops[plugin_index].compress_p_comp_block))(in_buf, input_size,
+							  out_buf, out_size,
+							  remaining);
+
+done:
+	slurm_rwlock_unlock(&context_lock);
+	return rc;
+}
+
+extern char *compress_g_decompress(const int type, char *in_buf,
+				   const ssize_t in_size,
+				   const ssize_t out_size)
+{
+	int plugin_index = -1;
+	char *rc = NULL;
+	slurm_rwlock_rdlock(&context_lock);
+
+	if (compress_context_cnt <= 0) {
+		goto done;
+	}
+
+	if ((plugin_index = _get_plugin_index(type)) == -1) {
+		error("Unable to find requested compression plugin");
+		goto done;
+	}
+
+	rc = (*(ops[plugin_index].compress_p_decompress))(in_buf, in_size,
+							  out_size);
+
+done:
+	slurm_rwlock_unlock(&context_lock);
+	return rc;
 }
