@@ -36,4 +36,7 @@
 #ifndef _INTERFACES_COMPRESS_H
 #define _INTERFACES_COMPRESS_H
 
+extern int compress_g_init(void);
+extern void compress_g_fini(void);
+
 #endif

@@ -33,4 +33,102 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <pthread.h>
+
+#include "src/common/list.h"
+#include "src/common/macros.h"
+#include "src/common/plugin.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "src/interfaces/compress.h"
+
+typedef struct compress_ops {
+	uint32_t *plugin_id;
+} compress_ops_t;
+
+/*
+ * Must be synchronized with job_container_ops_t above.
+ */
+static const char *syms[] = {
+	"plugin_id",
+};
+
+static compress_ops_t *ops = NULL;
+static plugin_context_t **compress_context = NULL;
+static plugin_init_t plugin_inited = PLUGIN_NOT_INITED;
+static pthread_rwlock_t context_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+static int compress_context_cnt = -1;
+
+typedef struct _plugin_args {
+	char *plugin_type;
+} _plugin_args_t;
+
+static int _load_plugins(void *x, void *arg)
+{
+	char *plugin_name = (char *) x;
+	_plugin_args_t *pargs = (_plugin_args_t *) arg;
+
+	compress_context[compress_context_cnt] =
+		plugin_context_create(pargs->plugin_type, plugin_name,
+				      (void **) &ops[compress_context_cnt],
+				      syms, sizeof(syms));
+
+	if (compress_context[compress_context_cnt]) {
+		compress_context_cnt++;
+	}
+
+	return 0;
+}
+
+extern int compress_g_init(void)
+{
+	char *plugin_type = "compress";
+	list_t *plugin_names = NULL;
+	int rc = SLURM_SUCCESS, plugin_cnt = 0;
+	_plugin_args_t plugin_args = { 0 };
+
+	slurm_rwlock_wrlock(&context_lock);
+
+	if (plugin_inited != PLUGIN_NOT_INITED)
+		goto done;
+
+	plugin_args.plugin_type = plugin_type;
+	compress_context_cnt = 0;
+
+	plugin_names = plugin_get_plugins_of_type(plugin_type);
+
+	if (plugin_names && (plugin_cnt = list_count(plugin_names))) {
+		ops = xcalloc(plugin_cnt, sizeof(compress_ops_t));
+		compress_context =
+			xcalloc(plugin_cnt, sizeof(plugin_context_t *));
+		list_for_each(plugin_names, _load_plugins, &plugin_args);
+	}
+
+	if (compress_context_cnt == 0)
+		fatal("Unable to locate valid compression plugin");
+
+	plugin_inited = PLUGIN_INITED;
+
+done:
+	slurm_rwlock_unlock(&context_lock);
+	FREE_NULL_LIST(plugin_names);
+	return rc;
+}
+
+extern void compress_g_fini(void)
+{
+	slurm_rwlock_wrlock(&context_lock);
+
+	for (int i = 0; i < compress_context_cnt; i++) {
+		plugin_context_destroy(compress_context[i]);
+	}
+	xfree(compress_context);
+	xfree(ops);
+	compress_context_cnt = -1;
+
+	plugin_inited = PLUGIN_NOT_INITED;
+
+	slurm_rwlock_unlock(&context_lock);
+}
