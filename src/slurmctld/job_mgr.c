@@ -12313,6 +12313,56 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 	return true;
 }
 
+extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	uint64_t old_mem;
+
+	if (new_mem & MEM_PER_CPU) {
+		error("%s: MEM_PER_CPU not supported for running %pJ",
+		      __func__, job_ptr);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
+
+	if (new_mem == 0) {
+		info("%s: cannot set memory to 0 for running %pJ",
+		     __func__, job_ptr);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
+
+	/*
+	 * For MEM_PER_CPU or whole-mem (pn_min_memory == 0) jobs,
+	 * get old_mem from allocations.
+	 */
+	if (job_ptr->details->pn_min_memory & MEM_PER_CPU ||
+	    !job_ptr->details->pn_min_memory) {
+		if (!job_res || !job_res->memory_allocated) {
+			error("%s: no job resources for %pJ",
+			      __func__, job_ptr);
+			return ESLURM_INVALID_TASK_MEMORY;
+		}
+		old_mem = 0;
+		for (int i = 0; i < job_res->nhosts; i++)
+			old_mem = MAX(old_mem, job_res->memory_allocated[i]);
+	} else {
+		old_mem = job_ptr->details->pn_min_memory;
+	}
+
+	if (new_mem >= old_mem) {
+		info("%s: cannot increase memory for running %pJ (%"PRIu64" >= %"PRIu64")",
+		     __func__, job_ptr, new_mem, old_mem);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
+
+	job_ptr->details->pn_min_memory_pre_resize =
+		job_ptr->details->pn_min_memory;
+	job_ptr->details->pn_min_memory = new_mem;
+	job_ptr->bit_flags |= JOB_MEM_SET;
+	job_state_set_flag(job_ptr, JOB_RESIZING);
+
+	return SLURM_SUCCESS;
+}
+
 static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		       uid_t uid, char **err_msg)
 {
@@ -15573,6 +15623,26 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	 * it will not run again for the job.
 	 */
 	job_ptr->end_time_exp = job_ptr->end_time;
+}
+
+extern void job_mem_resize_complete(job_record_t *job_ptr)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+
+	job_pre_resize_acctg(job_ptr);
+	select_g_job_mem_reduce(job_ptr);
+
+	if (job_ptr->job_resrcs) {
+		uint64_t new_mem = job_ptr->details->pn_min_memory;
+		job_resources_t *job_res = job_ptr->job_resrcs;
+		for (int i = 0; i < job_res->nhosts; i++)
+			job_res->memory_allocated[i] =
+				MIN(job_res->memory_allocated[i], new_mem);
+	}
+
+	job_post_resize_acctg(job_ptr);
+	debug("%s: %pJ resizing, complete", __func__, job_ptr);
 }
 
 /*

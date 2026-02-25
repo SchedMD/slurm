@@ -1036,6 +1036,22 @@ extern void job_pre_resize_acctg(job_record_t *job_ptr);
 extern void job_post_resize_acctg(job_record_t *job_ptr);
 
 /*
+ * Complete a memory reduction after the agent confirms slurmd applied
+ * the new cgroup limits. Updates select plugin accounting and creates
+ * a new SlurmDBD record with the reduced memory.
+ */
+extern void job_mem_resize_complete(job_record_t *job_ptr);
+
+/*
+ * Begin memory reduction for a running job. Validates that new_mem is
+ * a strict reduction, then updates pn_min_memory and marks JOB_RESIZING.
+ * IN job_ptr - running job to reduce
+ * IN new_mem - new per-node memory limit in MB (must not have MEM_PER_CPU)
+ * RET SLURM_SUCCESS or ESLURM error code
+ */
+extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem);
+
+/*
  * job_signal - signal the specified job, access checks already done
  * IN job_ptr - job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
