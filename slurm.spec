@@ -461,12 +461,7 @@ export QA_RPATHS=0x5
 
 # Strip out some dependencies
 
-cat > find-requires.sh <<'EOF'
-exec %{__find_requires} "$@" | grep -E -v '^libpmix.so|libevent|libnvidia-ml'
-EOF
-chmod +x find-requires.sh
-%global _use_internal_dependency_generator 0
-%global __find_requires %{_builddir}/%{buildsubdir}/find-requires.sh
+%global __requires_exclude ^libpmix.so|libevent|libnvidia-ml
 
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
