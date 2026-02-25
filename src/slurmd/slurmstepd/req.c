@@ -840,6 +840,37 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _cap_step_mem(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+	uint64_t new_job_mem = *(uint64_t *) arg;
+	job_resources_t *resrcs = job_step_ptr->job_resrcs;
+	int job_node_inx = -1, step_node_inx = -1;
+
+	if (step_ptr->pn_min_memory && !(step_ptr->pn_min_memory & MEM_PER_CPU))
+		step_ptr->pn_min_memory =
+			MIN(step_ptr->pn_min_memory, new_job_mem);
+
+	if (!step_ptr->memory_allocated)
+		return SLURM_SUCCESS;
+
+	for (int i = 0; next_node_bitmap(resrcs->node_bitmap, &i); i++) {
+		job_node_inx++;
+		if (!bit_test(step_ptr->step_node_bitmap, i))
+			continue;
+		step_node_inx++;
+		step_ptr->memory_allocated[step_node_inx] =
+			MIN(step_ptr->memory_allocated[step_node_inx],
+			    new_job_mem);
+		if (!(step_ptr->flags & SSF_MEM_ZERO) &&
+		    !(step_ptr->flags & SSF_OVERLAP_FORCE))
+			resrcs->memory_used[job_node_inx] +=
+				step_ptr->memory_allocated[step_node_inx];
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int _handle_update_mem_limits(int fd, uid_t uid, pid_t remote_pid)
 {
 	uint64_t new_job_mem;
@@ -860,6 +891,23 @@ static int _handle_update_mem_limits(int fd, uid_t uid, pid_t remote_pid)
 	if (rc == SLURM_SUCCESS) {
 		step->job_mem = new_job_mem;
 		step->step_mem = new_step_mem;
+
+		if (job_step_ptr) {
+			job_resources_t *resrcs;
+
+			slurm_mutex_lock(&stepmgr_mutex);
+			job_step_ptr->details->pn_min_memory = new_job_mem;
+			resrcs = job_step_ptr->job_resrcs;
+			for (int i = 0; i < resrcs->nhosts; i++) {
+				resrcs->memory_allocated[i] =
+					MIN(resrcs->memory_allocated[i],
+					    new_job_mem);
+				resrcs->memory_used[i] = 0;
+			}
+			list_for_each(job_step_ptr->step_list, _cap_step_mem,
+				      &new_job_mem);
+			slurm_mutex_unlock(&stepmgr_mutex);
+		}
 	}
 	slurm_mutex_unlock(&resize_mutex);
 
