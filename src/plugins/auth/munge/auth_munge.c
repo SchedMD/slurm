@@ -90,6 +90,7 @@ typedef struct {
 	gid_t   gid;       /* GID. valid only if verified == true            */
 	void *data;        /* payload data */
 	int dlen;          /* payload data length */
+	time_t ctime; /* credential creation (encode) time */
 } auth_credential_t;
 
 extern auth_credential_t *auth_p_create(char *opts, uid_t r_uid, void *data,
@@ -554,6 +555,11 @@ again:
 	 */
 	if (munge_ctx_get(ctx, MUNGE_OPT_ADDR4, &c->addr) != EMUNGE_SUCCESS)
 		error("auth_munge: Unable to retrieve addr: %s",
+		      munge_ctx_strerror(ctx));
+
+	if (munge_ctx_get(ctx, MUNGE_OPT_ENCODE_TIME, &c->ctime) !=
+	    EMUNGE_SUCCESS)
+		error("auth_munge: Unable to retrieve encode time: %s",
 		      munge_ctx_strerror(ctx));
 
 	if (c->uid == SLURM_AUTH_NOBODY)
