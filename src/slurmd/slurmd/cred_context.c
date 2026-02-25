@@ -583,3 +583,26 @@ error:
 	slurm_mutex_unlock(&cred_cache_mutex);
 	return false;
 }
+
+extern void cred_set_reject_before(slurm_step_id_t *step_id,
+				   time_t reject_before)
+{
+	job_state_t *j;
+
+	slurm_mutex_lock(&cred_cache_mutex);
+
+	if (!(j = _find_job_state(step_id))) {
+		j = _job_state_create(step_id);
+		list_append(cred_job_list, j);
+	}
+
+	if (j->reject_before == (time_t) MAX_TIME)
+		j->reject_before = reject_before;
+	else
+		j->reject_before = MAX(j->reject_before, reject_before);
+
+	debug("%s: %pI reject credentials created before %ld",
+	      __func__, step_id, reject_before);
+
+	slurm_mutex_unlock(&cred_cache_mutex);
+}
