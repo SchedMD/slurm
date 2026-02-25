@@ -597,6 +597,30 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	return SLURM_SUCCESS;
 }
 
+extern void select_p_job_mem_reduce(job_record_t *job_ptr)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	uint64_t new_mem = job_ptr->details->pn_min_memory;
+	int n = -1;
+
+	xassert(job_res);
+
+	for (int i = 0; next_node_bitmap(job_res->node_bitmap, &i); i++) {
+		uint64_t delta;
+		n++;
+		if (job_res->memory_allocated[n] <= new_mem)
+			continue;
+		delta = job_res->memory_allocated[n] - new_mem;
+		if (select_node_usage[i].alloc_memory >= delta) {
+			select_node_usage[i].alloc_memory -= delta;
+		} else {
+			error("%s: memory underflow on node %d for %pJ",
+			      __func__, i, job_ptr);
+			select_node_usage[i].alloc_memory = 0;
+		}
+	}
+}
+
 extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	part_res_record_t *part_record_ptr = select_part_record;

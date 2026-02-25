@@ -67,6 +67,7 @@ typedef struct {
 						 job_record_t *to_job_ptr);
 	int		(*job_resized)		(job_record_t *job_ptr,
 						 node_record_t *node_ptr);
+	void (*job_mem_reduce)(job_record_t *job_ptr);
 	int		(*job_fini)		(job_record_t *job_ptr);
 	int		(*job_suspend)		(job_record_t *job_ptr,
 						 bool indf_susp);
@@ -85,6 +86,7 @@ static const char *node_select_syms[] = {
 	"select_p_job_ready",
 	"select_p_job_expand",
 	"select_p_job_resized",
+	"select_p_job_mem_reduce",
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
@@ -326,6 +328,11 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 {
 	return (*(ops.job_resized))(job_ptr, node_ptr);
+}
+
+extern void select_g_job_mem_reduce(job_record_t *job_ptr)
+{
+	(*(ops.job_mem_reduce))(job_ptr);
 }
 
 /*
