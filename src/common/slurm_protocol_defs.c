@@ -2338,6 +2338,11 @@ extern void slurm_free_job_mem_usage_msg(job_mem_usage_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_job_mem_usage_resp_msg(job_mem_usage_resp_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_update_job_mem_msg(update_job_mem_msg_t *msg)
 {
 	xfree(msg);
@@ -5241,6 +5246,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		break;
 	case REQUEST_JOB_MEM_USAGE:
 		slurm_free_job_mem_usage_msg(data);
+		break;
+	case RESPONSE_JOB_MEM_USAGE:
+		slurm_free_job_mem_usage_resp_msg(data);
 		break;
 	case REQUEST_UPDATE_JOB_MEM:
 		slurm_free_update_job_mem_msg(data);

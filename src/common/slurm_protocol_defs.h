@@ -545,6 +545,11 @@ typedef struct {
 	slurm_step_id_t step_id;
 } job_mem_usage_msg_t;
 
+typedef struct {
+	slurm_step_id_t step_id;
+	uint64_t mem_usage; /* total RSS in MB for this job on this node */
+} job_mem_usage_resp_msg_t;
+
 typedef struct update_job_mem_msg {
 	bool notify_ctld;
 	uint64_t job_mem_per_node; /* new memory limit per node in MB */
@@ -1652,6 +1657,7 @@ extern void slurm_free_launch_tasks_response_msg(
 extern void slurm_free_task_exit_msg(task_exit_msg_t * msg);
 extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t * msg);
 extern void slurm_free_job_mem_usage_msg(job_mem_usage_msg_t *msg);
+extern void slurm_free_job_mem_usage_resp_msg(job_mem_usage_resp_msg_t *msg);
 extern void slurm_free_update_job_mem_msg(update_job_mem_msg_t *msg);
 extern void slurm_free_response_update_job_mem_msg(response_update_job_mem_msg_t
 							   *msg);

@@ -9417,6 +9417,34 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_job_mem_usage_resp_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_mem_usage_resp_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack64(msg->mem_usage, buffer);
+	}
+}
+
+static int _unpack_job_mem_usage_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_mem_usage_resp_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpack64(&msg->mem_usage, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_job_mem_usage_resp_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_update_job_mem_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	update_job_mem_msg_t *msg = smsg->data;
@@ -14209,6 +14237,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_JOB_MEM_USAGE:
 		_pack_job_mem_usage_msg(msg, buffer);
 		break;
+	case RESPONSE_JOB_MEM_USAGE:
+		_pack_job_mem_usage_resp_msg(msg, buffer);
+		break;
 	case REQUEST_UPDATE_JOB_MEM:
 		_pack_update_job_mem_msg(msg, buffer);
 		break;
@@ -14728,6 +14759,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		break;
 	case REQUEST_JOB_MEM_USAGE:
 		rc = _unpack_job_mem_usage_msg(msg, buffer);
+		break;
+	case RESPONSE_JOB_MEM_USAGE:
+		rc = _unpack_job_mem_usage_resp_msg(msg, buffer);
 		break;
 	case REQUEST_UPDATE_JOB_MEM:
 		rc = _unpack_update_job_mem_msg(msg, buffer);
