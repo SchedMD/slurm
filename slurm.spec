@@ -213,8 +213,7 @@ BuildRequires: freeipmi-devel
 %endif
 
 %if %{with selinux}
-Requires: libselinux
-BuildRequires: libselinux-devel
+BuildRequires: pkgconfig(libselinux)
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
