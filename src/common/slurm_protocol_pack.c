@@ -9391,6 +9391,37 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_update_job_mem_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_job_mem_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack64(msg->job_mem_per_node, buffer);
+		packbool(msg->notify_ctld, buffer);
+	}
+}
+
+static int _unpack_update_job_mem_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_job_mem_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&msg->step_id, buffer,
+					   smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack64(&msg->job_mem_per_node, buffer);
+		safe_unpackbool(&msg->notify_ctld, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_job_mem_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_reboot_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	reboot_msg_t *msg = smsg->data;
@@ -14113,6 +14144,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_TERMINATE_JOB:
 		_pack_kill_job_msg(msg, buffer);
 		break;
+	case REQUEST_UPDATE_JOB_MEM:
+		_pack_update_job_mem_msg(msg, buffer);
+		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		_pack_epilog_comp_msg(msg, buffer);
 		break;
@@ -14623,6 +14657,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
 		rc = _unpack_kill_job_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_JOB_MEM:
+		rc = _unpack_update_job_mem_msg(msg, buffer);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		rc = _unpack_epilog_comp_msg(msg, buffer);

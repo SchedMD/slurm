@@ -2333,6 +2333,11 @@ extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_update_job_mem_msg(update_job_mem_msg_t *msg)
+{
+	xfree(msg);
+}
+
 extern void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 {
 	if (msg) {
@@ -5219,6 +5224,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_KILL_PREEMPTED:
 	case REQUEST_KILL_TIMELIMIT:
 		slurm_free_timelimit_msg(data);
+		break;
+	case REQUEST_UPDATE_JOB_MEM:
+		slurm_free_update_job_mem_msg(data);
 		break;
 	case REQUEST_REATTACH_TASKS:
 		slurm_free_reattach_tasks_request_msg(data);
