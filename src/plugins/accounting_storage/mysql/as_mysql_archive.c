@@ -43,6 +43,7 @@
 
 #include "as_mysql_archive.h"
 #include "src/common/env.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 
@@ -4095,9 +4096,12 @@ static buf_t *_pack_archive_job_env(MYSQL_RES *result, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (period_start && !*period_start)
-			error("period_start should already be set");
-
+		if (period_start && !*period_start) {
+			/* If archived with jobs then the job submit time
+			 * will be respected for the period */
+			debug("Period not set by jobs table setting one based job_env_table");
+			*period_start = parse_time(row[JOB_ENV_LAST_USED], 1);
+		}
 		memset(&job, 0, sizeof(local_job_env_t));
 
 		job.hash_inx = row[JOB_ENV_HASH_INX];
@@ -4203,9 +4207,13 @@ static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (period_start && !*period_start)
-			error("period_start should already be set");
-
+		if (period_start && !*period_start) {
+			/* If archived with jobs then the job submit time
+			 * will be respected for the period */
+			debug("Period not set by jobs table setting one based job_script_table");
+			*period_start =
+				parse_time(row[JOB_SCRIPT_LAST_USED], 1);
+		}
 		memset(&job, 0, sizeof(local_job_script_t));
 
 		job.hash_inx = row[JOB_SCRIPT_HASH_INX];
