@@ -671,7 +671,7 @@ extern bool xstrtolower(char *str)
 /* safe strchr */
 char *xstrchr(const char *s1, int c)
 {
-	return s1 ? strchr(s1, c) : NULL;
+	return s1 ? (char *) strchr(s1, c) : NULL;
 }
 
 /* safe strrchr */
