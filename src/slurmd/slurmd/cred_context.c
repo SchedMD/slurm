@@ -55,6 +55,7 @@ typedef struct {
 	time_t ctime;		/* Time that this entry was created         */
 	time_t expiration;	/* Time at which credentials can be purged  */
 	time_t revoked;		/* Time at which credentials were revoked   */
+	time_t reject_before; /* Oldest acceptable credential creation time */
 	slurm_step_id_t step_id;
 } job_state_t;
 
@@ -93,6 +94,7 @@ static job_state_t *_job_state_create(slurm_step_id_t *step_id)
 	j->revoked = (time_t) 0;
 	j->ctime = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
+	j->reject_before = (time_t) MAX_TIME;
 
 	return j;
 }
@@ -174,6 +176,7 @@ static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
+	pack_time(j->reject_before, buffer);
 }
 
 static int _job_state_unpack(void **out, uint16_t protocol_version,
@@ -188,6 +191,7 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
+		safe_unpack_time(&j->reject_before, buffer);
 	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&j->step_id, buffer,
 					   protocol_version))
@@ -195,11 +199,13 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
+		j->reject_before = MAX_TIME; /* No limit */
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&j->step_id.job_id, buffer);
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
+		j->reject_before = MAX_TIME; /* No limit */
 	}
 
 	debug3("cred_unpack: %pI ctime:%ld revoked:%ld expires:%ld",
