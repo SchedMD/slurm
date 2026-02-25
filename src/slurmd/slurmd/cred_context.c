@@ -181,7 +181,14 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&j->step_id, buffer,
+					   protocol_version))
+			goto unpack_error;
+		safe_unpack_time(&j->revoked, buffer);
+		safe_unpack_time(&j->ctime, buffer);
+		safe_unpack_time(&j->expiration, buffer);
+	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&j->step_id, buffer,
 					   protocol_version))
 			goto unpack_error;
