@@ -121,7 +121,7 @@ static task_dist_states_t _parse_plane_dist(const char *tok,
 	 * Check for plane size given after '=' sign or in SLURM_DIST_PLANESIZE
 	 * environment variable.
 	 */
-	if ((plane_size_str = strchr(tok, '=')))
+	if ((plane_size_str = xstrchr(tok, '=')))
 		plane_size_str++;
 	else if (!(plane_size_str = getenv("SLURM_DIST_PLANESIZE")))
 		goto fini; /* No plane size given */
