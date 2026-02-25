@@ -188,7 +188,7 @@ BuildRequires: numactl-devel
 %endif
 
 %if %{with pmix} && "%{_with_pmix}" == "--with-pmix"
-BuildRequires: pmix
+BuildRequires: pkgconfig(pmix)
 %global pmix_version %(rpm -q pmix --qf "%{RPMTAG_VERSION}")
 %endif
 
