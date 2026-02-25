@@ -189,7 +189,7 @@ BuildRequires: pkgconfig(pmix)
 %endif
 
 %if %{with ucx} && "%{_with_ucx}" == "--with-ucx"
-BuildRequires: ucx-devel
+BuildRequires: pkgconfig(ucx)
 %global ucx_version %(rpm -q ucx-devel --qf "%{RPMTAG_VERSION}")
 %endif
 
