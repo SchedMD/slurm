@@ -1858,9 +1858,20 @@ static bool _watch_loop(void)
 		return true;
 	}
 
-	log_flag(CONMGR, "%s: cleaning up", __func__);
+	/* Avoid watch() ending if polling or inspecting */
+	if (mgr.inspecting) {
+		log_flag(CONMGR, "%s: waiting on connection inspections",
+			 __func__);
+		mgr.waiting_on_work = true;
+		return true;
+	}
+	if (mgr.poll_active) {
+		log_flag(CONMGR, "%s: waiting on polling", __func__);
+		mgr.waiting_on_work = true;
+		return true;
+	}
 
-	xassert(!mgr.poll_active);
+	log_flag(CONMGR, "%s: cleaning up", __func__);
 	return false;
 }
 
