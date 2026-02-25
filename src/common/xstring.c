@@ -739,7 +739,7 @@ char *xstrstr(const char *haystack, const char *needle)
 	if (!haystack || !needle)
 		return NULL;
 
-	return strstr(haystack, needle);
+	return (char *) strstr(haystack, needle);
 }
 
 char *xstrcasestr(const char *haystack, const char *needle)
