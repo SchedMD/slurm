@@ -180,11 +180,7 @@ BuildRequires: hwloc-devel
 %endif
 
 %if %{with numa}
-%if %{defined suse_version}
-BuildRequires: libnuma-devel
-%else
-BuildRequires: numactl-devel
-%endif
+BuildRequires: pkgconfig(numa)
 %endif
 
 %if %{with pmix} && "%{_with_pmix}" == "--with-pmix"
