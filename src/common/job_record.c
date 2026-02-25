@@ -633,6 +633,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->mem_bind, buffer);
 		pack16(detail_ptr->mem_bind_type, buffer);
 
+		pack16(detail_ptr->mem_update_delay, buffer);
+		pack16(detail_ptr->mem_update_margin, buffer);
+
 		pack8(detail_ptr->open_mode, buffer);
 		pack8(detail_ptr->overcommit, buffer);
 		pack8(detail_ptr->prolog_running, buffer);
@@ -1732,6 +1735,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t ntasks_per_node, ntasks_per_tres = 0, requeue;
 	uint16_t cpus_per_task, orig_cpus_per_task;
 	uint16_t cpu_bind_type, mem_bind_type;
+	uint16_t mem_update_delay = 0, mem_update_margin = 0;
 	uint16_t segment_size = 0;
 	uint16_t resv_port_cnt = NO_VAL16;
 	uint16_t x11 = 0, x11_target_port = 0;
@@ -1786,6 +1790,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack16(&cpu_bind_type, buffer);
 		safe_unpackstr(&mem_bind, buffer);
 		safe_unpack16(&mem_bind_type, buffer);
+
+		safe_unpack16(&mem_update_delay, buffer);
+		safe_unpack16(&mem_update_margin, buffer);
 
 		safe_unpack8(&open_mode, buffer);
 		safe_unpack8(&overcommit, buffer);
@@ -2121,6 +2128,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->mc_ptr = mc_ptr;
 	job_ptr->details->mem_bind = mem_bind;
 	job_ptr->details->mem_bind_type = mem_bind_type;
+	job_ptr->details->mem_update_delay = mem_update_delay;
+	job_ptr->details->mem_update_margin = mem_update_margin;
 	job_ptr->details->min_cpus = min_cpus;
 	job_ptr->details->orig_min_cpus = orig_min_cpus;
 	job_ptr->details->min_nodes = min_nodes;

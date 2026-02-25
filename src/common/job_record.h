@@ -127,6 +127,8 @@ typedef struct {
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 	char *mem_bind;			/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
+	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
+	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	uint32_t min_cpus;		/* minimum number of cpus */
 	uint32_t orig_min_cpus;		/* requested value of min_cpus */
 	int min_gres_cpu;		/* Minimum CPU count per node required
