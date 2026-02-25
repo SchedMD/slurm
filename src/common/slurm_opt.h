@@ -135,6 +135,7 @@ enum {
 	LONG_OPT_MEM_BIND,
 	LONG_OPT_MEM_PER_CPU,
 	LONG_OPT_MEM_PER_GPU,
+	LONG_OPT_MEM_UPDATE,
 	LONG_OPT_MINCORES,
 	LONG_OPT_MINCPUS,
 	LONG_OPT_MINSOCKETS,
@@ -389,6 +390,8 @@ typedef struct {
 	uint64_t mem_per_cpu;		/* --mem-per-cpu		*/
 	uint64_t mem_per_gpu;		/* --mem-per-gpu		*/
 	uint64_t pn_min_memory;		/* --mem			*/
+	uint16_t mem_update_margin; /* --mem-update (margin %)	*/
+	uint16_t mem_update_delay; /* --mem-update (delay min)	*/
 	uint16_t oom_kill_step;		/* --oom-kill-step=0,1		*/
 	uint64_t pn_min_tmp_disk;	/* --tmp			*/
 	char *prefer;			/* --prefer			*/
