@@ -3354,6 +3354,9 @@ extern int step_create(job_record_t *job_ptr,
 	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
 
+	if (job_ptr->node_bitmap_rs)
+		return ESLURM_INVALID_JOB_STATE;
+
 	if (IS_JOB_PENDING(job_ptr)) {
 		/* NOTE: LSF creates a job allocation for batch jobs.
 		 * After the allocation has been made, LSF submits a
