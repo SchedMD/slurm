@@ -1582,11 +1582,11 @@ static bool _is_poll_interrupt(void)
 }
 
 /* Poll all connections */
-static void _poll_connections(conmgr_callback_args_t conmgr_args, void *arg)
+static void _poll_connections(const bool shutdown, void *arg)
 {
 	int rc;
 
-	xassert(!conmgr_args.con);
+	xassert(!shutdown);
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.poll_active);
@@ -1705,8 +1705,7 @@ static bool _handle_events(void)
 		/* request a listen thread to run */
 		log_flag(CONMGR, "%s: queuing up poll", __func__);
 		mgr.poll_active = true;
-
-		add_work_fifo(true, _poll_connections, NULL);
+		workerpool_enqueue_normal(_poll_connections, NULL);
 	} else
 		log_flag(CONMGR, "%s: poll active already", __func__);
 
