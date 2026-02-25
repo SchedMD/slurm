@@ -400,11 +400,7 @@ Summary: Slurm REST API translator
 Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
 BuildRequires: http-parser-devel
-%if %{defined suse_version}
-BuildRequires: libjson-c-devel
-%else
-BuildRequires: json-c-devel
-%endif
+BuildRequires: pkgconfig(json-c)
 %description slurmrestd
 Provides a REST interface to Slurm.
 %endif
