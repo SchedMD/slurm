@@ -677,7 +677,7 @@ char *xstrchr(const char *s1, int c)
 /* safe strrchr */
 char *xstrrchr(const char *s1, int c)
 {
-	return s1 ? strrchr(s1, c) : NULL;
+	return s1 ? (char *) strrchr(s1, c) : NULL;
 }
 
 /* safe strcmp */
