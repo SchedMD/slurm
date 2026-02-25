@@ -392,6 +392,7 @@ struct job_record {
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
+	bitstr_t *node_bitmap_rs; /* bitmap of nodes with mem resize */
 	bitstr_t *node_bitmap_preempt; /* bitmap of nodes selected for the job
 					 * when trying to preempt other jobs.
 					 * (DO NOT SAVE OR PACK). */
@@ -412,6 +413,8 @@ struct job_record {
 					 * used only to dump/load nodes from/to dump file */
 	char *nodes_pr;			/* nodes with prolog running,
 					 * used only to dump/load nodes from/to dump file */
+	char *nodes_rs; /* nodes pending mem resize confirm,
+			 * used only to dump/load nodes from/to dump file */
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */

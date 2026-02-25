@@ -3604,10 +3604,12 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
 	job_ptr_pend->node_bitmap_pr = NULL;
+	job_ptr_pend->node_bitmap_rs = NULL;
 	job_ptr_pend->node_bitmap_preempt = NULL;
 	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
 	job_ptr_pend->nodes_pr = NULL;
+	job_ptr_pend->nodes_rs = NULL;
 	job_ptr_pend->origin_cluster = xstrdup(job_ptr->origin_cluster);
 	job_ptr_pend->partition = xstrdup(job_ptr->partition);
 	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
@@ -16519,9 +16521,11 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->node_addrs);
 	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->nodes_rs);
 	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->resv_ports);
 
@@ -18295,6 +18299,7 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
 {
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
+	xfree(job_ptr->nodes_rs);
 
 	if (!job_ptr->node_bitmap)
 		return 0;
@@ -18316,6 +18321,9 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
 			job_ptr->nodes_pr =
 				bitmap2node_name(job_ptr->node_bitmap);
 		}
+	}
+	if (IS_JOB_RESIZING(job_ptr) && job_ptr->node_bitmap_rs) {
+		job_ptr->nodes_rs = bitmap2node_name(job_ptr->node_bitmap_rs);
 	}
 
 	return 0;

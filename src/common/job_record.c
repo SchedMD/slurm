@@ -273,10 +273,12 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_preempt);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
+	xfree(job_ptr->nodes_rs);
 	xfree(job_ptr->origin_cluster);
 	if (job_ptr->het_details && job_ptr->het_job_id) {
 		/* xfree struct if hetjob leader and NULL ptr otherwise. */
@@ -3127,6 +3129,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 			packstr(dump_job_ptr->nodes_completing, buffer);
 		if (dump_job_ptr->state_reason == WAIT_PROLOG)
 			packstr(dump_job_ptr->nodes_pr, buffer);
+		if (IS_JOB_RESIZING(dump_job_ptr))
+			packstr(dump_job_ptr->nodes_rs, buffer);
 		packstr(dump_job_ptr->nodes, buffer);
 		pack32(dump_job_ptr->node_cnt, buffer);
 		/* node_bitmap not packed — rebuilt from nodes string */
@@ -3642,6 +3646,8 @@ extern int job_record_unpack(job_record_t **out,
 			safe_unpackstr(&job_ptr->nodes_completing, buffer);
 		if (job_ptr->state_reason == WAIT_PROLOG)
 			safe_unpackstr(&job_ptr->nodes_pr, buffer);
+		if (job_ptr->job_state & JOB_RESIZING)
+			safe_unpackstr(&job_ptr->nodes_rs, buffer);
 		safe_unpackstr(&job_ptr->nodes, buffer);
 		safe_unpack32(&job_ptr->node_cnt, buffer);
 		/* node_bitmap not unpacked — rebuilt from nodes string */
