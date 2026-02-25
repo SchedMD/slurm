@@ -2852,6 +2852,66 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	return rc;
 }
 
+static void _rpc_job_mem_usage(slurm_msg_t *msg)
+{
+	job_mem_usage_msg_t *req = msg->data;
+	slurm_msg_t resp_msg;
+	job_mem_usage_resp_msg_t *resp;
+	jobacctinfo_t *jobacct = NULL;
+	uint16_t protocol_version;
+	int fd, rc;
+	slurm_step_id_t extern_step_id = {
+		.job_id = req->step_id.job_id,
+		.sluid = req->step_id.sluid,
+		.step_id = SLURM_EXTERN_CONT,
+		.step_het_comp = NO_VAL,
+	};
+
+	debug("%s: querying memory usage for %pI", __func__, &req->step_id);
+
+	fd = stepd_connect(conf->spooldir, conf->node_name, &extern_step_id,
+			   &protocol_version);
+	if (fd == -1) {
+		error("%s: Cannot connect to extern step for %pI: %m",
+		      __func__, &req->step_id);
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return;
+	}
+
+	if ((rc = stepd_job_usage(fd, protocol_version, &jobacct))) {
+		error("%s: stepd_job_usage failed for %pI",
+		      __func__, &req->step_id);
+		close(fd);
+		slurm_send_rc_msg(msg, rc);
+		return;
+	}
+	close(fd);
+
+	resp = xmalloc(sizeof(*resp));
+	resp->step_id = req->step_id;
+
+	if (jobacct) {
+		uint64_t rss = 0;
+		jobacctinfo_getinfo(jobacct, JOBACCT_DATA_TOT_RSS, &rss,
+				    protocol_version);
+		if (rss != INFINITE64) {
+			rss /= 1048576; /* B to MB */
+			resp->mem_usage = MAX(rss, 1);
+		}
+		jobacctinfo_destroy(jobacct);
+	}
+
+	debug("%s: %pI total RSS=%"PRIu64"MB", __func__, &req->step_id,
+	      resp->mem_usage);
+
+	slurm_msg_t_copy(&resp_msg, msg);
+	resp_msg.msg_type = RESPONSE_JOB_MEM_USAGE;
+	resp_msg.data = resp;
+
+	slurm_send_node_msg(msg->conn, &resp_msg);
+	slurm_free_job_mem_usage_resp_msg(resp);
+}
+
 static int _update_step_mem(void *x, void *arg)
 {
 	step_loc_t *stepd = x;
@@ -5101,6 +5161,11 @@ slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_SIGNAL_TASKS,
 		.func = _rpc_signal_tasks,
+	},
+	{
+		.msg_type = REQUEST_JOB_MEM_USAGE,
+		.from_slurmctld = true,
+		.func = _rpc_job_mem_usage,
 	},
 	{
 		.msg_type = REQUEST_UPDATE_JOB_MEM,
