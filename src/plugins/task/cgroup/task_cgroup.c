@@ -260,5 +260,8 @@ extern int task_p_add_pid(pid_t pid)
 extern int task_p_update_mem_limit(stepd_step_rec_t *step, uint64_t new_job_mem,
 				   uint64_t new_step_mem)
 {
-	return SLURM_SUCCESS;
+	if (!use_memory)
+		return SLURM_SUCCESS;
+
+	return task_cgroup_memory_update_limit(step, new_job_mem, new_step_mem);
 }
