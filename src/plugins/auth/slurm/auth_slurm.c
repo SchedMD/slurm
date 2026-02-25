@@ -217,7 +217,10 @@ extern int auth_p_get_data(auth_cred_t *cred, char **data, uint32_t *len)
 
 extern time_t auth_p_get_time(auth_cred_t *cred)
 {
-	return 0;
+	if (!cred)
+		return 0;
+
+	return cred->ctime;
 }
 
 extern void *auth_p_get_identity(auth_cred_t *cred)
