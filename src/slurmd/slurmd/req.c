@@ -2883,6 +2883,7 @@ static void _rpc_update_job_mem(slurm_msg_t *msg)
 {
 	update_job_mem_msg_t *req = msg->data;
 	list_t *steps;
+	int notify_rc = SLURM_ERROR;
 
 	debug("%s: updating memory limit for %pI to %"PRIu64"MB",
 	      __func__, &req->step_id, req->job_mem_per_node);
@@ -2890,7 +2891,8 @@ static void _rpc_update_job_mem(slurm_msg_t *msg)
 	/*
 	 *  Indicate to slurmctld that we've received the message
 	 */
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	if (req->notify_ctld)
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 	slurm_mutex_lock(&prolog_mutex);
 
@@ -2903,6 +2905,21 @@ static void _rpc_update_job_mem(slurm_msg_t *msg)
 	FREE_NULL_LIST(steps);
 
 	slurm_mutex_unlock(&prolog_mutex);
+
+	while (req->notify_ctld && notify_rc != SLURM_SUCCESS) {
+		notify_rc =
+			notify_slurmctld_mem_update_fini(&(req->step_id),
+							 req->job_mem_per_node,
+							 false);
+		if (notify_rc != SLURM_SUCCESS) {
+			info("%s: Retrying memory update complete RPC for %pI [sleeping %us]",
+			     __func__, &req->step_id, RETRY_DELAY);
+			sleep(RETRY_DELAY);
+		}
+	}
+
+	if (!req->notify_ctld)
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 static void

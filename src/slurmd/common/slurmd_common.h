@@ -46,6 +46,10 @@
  */
 extern int epilog_complete(slurm_step_id_t *step_id, char *node_list, int rc);
 
+extern int notify_slurmctld_mem_update_fini(slurm_step_id_t *step_id,
+					    uint64_t job_mem_per_node,
+					    bool all_nodes);
+
 /*
  *  Wait for up to max_time seconds.
  *  If max_time == 0, send SIGKILL to tasks repeatedly
