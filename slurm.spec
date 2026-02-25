@@ -176,7 +176,7 @@ BuildRequires: pkgconfig(lua) >= 5.1.0
 %endif
 
 %if %{with hwloc} && "%{_with_hwloc}" == "--with-hwloc"
-BuildRequires: hwloc-devel
+BuildRequires: pkgconfig(hwloc)
 %endif
 
 %if %{with numa}
