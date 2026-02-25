@@ -174,6 +174,7 @@ static void _remove_job_running_prolog(slurm_step_id_t *step_id);
 static void _wait_for_job_running_prolog(slurm_step_id_t *step_id);
 static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 					   bool *first_job_run);
+static int _match_job(void *x, void *key);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -2851,6 +2852,59 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	return rc;
 }
 
+static int _update_step_mem(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	update_job_mem_msg_t *req = arg;
+	int fd;
+
+	if (!_match_job(&stepd->step_id, &req->step_id))
+		return 0;
+
+	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
+			   &stepd->protocol_version);
+	if (fd == -1) {
+		debug("%s: unable to connect to %ps: %m",
+		      __func__, &stepd->step_id);
+		return 0;
+	}
+
+	if (stepd_update_mem_limit(fd, stepd->protocol_version,
+				   req->job_mem_per_node) != SLURM_SUCCESS) {
+		error("%s: failed to update memory for %ps",
+		      __func__, &stepd->step_id);
+	}
+	close(fd);
+
+	return 0;
+}
+
+static void _rpc_update_job_mem(slurm_msg_t *msg)
+{
+	update_job_mem_msg_t *req = msg->data;
+	list_t *steps;
+
+	debug("%s: updating memory limit for %pI to %"PRIu64"MB",
+	      __func__, &req->step_id, req->job_mem_per_node);
+
+	/*
+	 *  Indicate to slurmctld that we've received the message
+	 */
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+	slurm_mutex_lock(&prolog_mutex);
+
+	cred_set_reject_before(&(req->step_id),
+			       MAX(time(NULL),
+				   auth_g_get_time(msg->auth_cred)));
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	list_for_each(steps, _update_step_mem, req);
+	FREE_NULL_LIST(steps);
+
+	slurm_mutex_unlock(&prolog_mutex);
+}
+
 static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {
@@ -5030,6 +5084,11 @@ slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_SIGNAL_TASKS,
 		.func = _rpc_signal_tasks,
+	},
+	{
+		.msg_type = REQUEST_UPDATE_JOB_MEM,
+		.from_slurmctld = true,
+		.func = _rpc_update_job_mem,
 	},
 	{
 		.msg_type = REQUEST_TERMINATE_TASKS,
