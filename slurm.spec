@@ -194,12 +194,7 @@ BuildRequires: ucx-devel
 %endif
 
 %if %{with libcurl}
-%if %{defined suse_version}
-Requires: libcurl4
-%else
-Requires: libcurl
-%endif
-BuildRequires: libcurl-devel
+BuildRequires: pkgconfig(libcurl)
 %endif
 
 %if %{with jwt}
