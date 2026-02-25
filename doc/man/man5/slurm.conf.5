@@ -6942,17 +6942,12 @@ Multiple node names may be comma separated (e.g. "alpha,beta,gamma")
 and/or a simple node range expression may optionally be used to
 specify numeric ranges of nodes to avoid building a configuration
 file with large numbers of entries.
-The node range expression can contain one pair of square brackets
+The node range expression can contain one or more pairs of square brackets
 with a sequence of comma\-separated numbers and/or ranges of numbers
-separated by a "\-" (e.g. "linux[0\-64,128]", or "lx[15,18,32\-33]").
-Note that the numeric ranges can include one or more leading
-zeros to indicate the numeric portion has a fixed number of digits
+separated by a "\-" (e.g., "linux[0\-64,128]", "lx[15,18,32\-33]", or
+"rack[0\-63]_blade[0\-41]"). Note that the numeric ranges can include one or
+more leading zeros to indicate the numeric portion has a fixed number of digits
 (e.g. "linux[0000\-1023]").
-Multiple numeric ranges can be included in the expression
-(e.g. "rack[0\-63]_blade[0\-41]").
-If one or more numeric expressions are included, one of them
-must be at the end of the name (e.g. "unit[0\-31]rack" is invalid),
-but arbitrary names can always be used in a comma\-separated list.
 .LP
 The node configuration specified the following information:
 
