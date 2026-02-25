@@ -557,6 +557,22 @@ static bool _credential_replayed(slurm_cred_t *cred)
 	return false;
 }
 
+static bool _credential_too_old(slurm_cred_t *cred)
+{
+	job_state_t *j = _find_job_state(&cred->arg->step_id);
+
+	if (!j || (j->reject_before == (time_t) MAX_TIME))
+		return false;
+
+	if (cred->ctime <= j->reject_before) {
+		error("cred for %pI created at %ld rejected (reject_before=%ld)",
+		      &cred->arg->step_id, cred->ctime, j->reject_before);
+		return true;
+	}
+
+	return false;
+}
+
 extern bool cred_cache_valid(slurm_cred_t *cred)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
@@ -573,6 +589,11 @@ extern bool cred_cache_valid(slurm_cred_t *cred)
 
 	if (_credential_replayed(cred)) {
 		errno = ESLURMD_CREDENTIAL_REPLAYED;
+		goto error;
+	}
+
+	if (_credential_too_old(cred)) {
+		errno = ESLURMD_CREDENTIAL_REVOKED;
 		goto error;
 	}
 
