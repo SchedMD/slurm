@@ -112,6 +112,7 @@ static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t stepmgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t resize_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
@@ -834,6 +835,35 @@ static int _handle_mem_limits(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->job_mem, sizeof(uint64_t));
 
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
+static int _handle_update_mem_limits(int fd, uid_t uid, pid_t remote_pid)
+{
+	uint64_t new_job_mem;
+	uint64_t new_step_mem;
+	int rc;
+
+	safe_read(fd, &new_job_mem, sizeof(uint64_t));
+
+	slurm_mutex_lock(&resize_mutex);
+	/*
+	 * Cap the step memory at the new job memory if it exceeds it.
+	 * Otherwise keep the step's existing limit.
+	 */
+	new_step_mem = MIN(step->step_mem, new_job_mem);
+
+	rc = task_g_update_mem_limit(step, new_job_mem, new_step_mem);
+
+	if (rc == SLURM_SUCCESS) {
+		step->job_mem = new_job_mem;
+		step->step_mem = new_step_mem;
+	}
+	slurm_mutex_unlock(&resize_mutex);
+
+	safe_write(fd, &rc, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;
@@ -2418,6 +2448,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 	{
 		.msg_type = REQUEST_STEP_MEM_LIMITS,
 		.func = _handle_mem_limits,
+	},
+	{
+		.msg_type = REQUEST_STEP_UPDATE_MEM_LIMITS,
+		.from_slurmd = true,
+		.func = _handle_update_mem_limits,
 	},
 	{
 		.msg_type = REQUEST_STEP_UID,

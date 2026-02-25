@@ -356,6 +356,31 @@ rwfail:
 }
 
 /*
+ * Update the memory limit for a running job step.
+ */
+extern int stepd_update_mem_limit(int fd, uint16_t protocol_version,
+				  uint64_t job_mem_per_node)
+{
+	int req = REQUEST_STEP_UPDATE_MEM_LIMITS;
+	int rc;
+
+	safe_write(fd, &req, sizeof(int));
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_write(fd, &job_mem_per_node, sizeof(uint64_t));
+	} else {
+		error("%s: invalid protocol_version %u",
+		      __func__, protocol_version);
+		goto rwfail;
+	}
+
+	/* Receive the return code */
+	safe_read(fd, &rc, sizeof(int));
+	return rc;
+rwfail:
+	return SLURM_ERROR;
+}
+
+/*
  * Request to enter namespace of a job
  * -1 on error;
  */
