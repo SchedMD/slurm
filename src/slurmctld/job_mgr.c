@@ -8940,6 +8940,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	if (job_desc->pn_min_memory != NO_VAL64)
 		detail_ptr->pn_min_memory = job_desc->pn_min_memory;
 	detail_ptr->orig_pn_min_memory = detail_ptr->pn_min_memory;
+	detail_ptr->mem_update_delay = job_desc->mem_update_delay;
+	detail_ptr->mem_update_margin = job_desc->mem_update_margin;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 

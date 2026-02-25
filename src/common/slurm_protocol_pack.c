@@ -6993,6 +6993,8 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->burst_buffer, buffer);
 		pack16(msg->pn_min_cpus, buffer);
 		pack64(msg->pn_min_memory, buffer);
+		pack16(msg->mem_update_delay, buffer);
+		pack16(msg->mem_update_margin, buffer);
 		pack16(msg->oom_kill_step, buffer);
 		pack32(msg->pn_min_tmp_disk, buffer);
 		packstr(msg->prefer, buffer);
@@ -7557,6 +7559,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->burst_buffer, buffer);
 		safe_unpack16(&msg->pn_min_cpus, buffer);
 		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack16(&msg->mem_update_delay, buffer);
+		safe_unpack16(&msg->mem_update_margin, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
