@@ -57,6 +57,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with multiple_slurmd
 %bcond_with pmix
 %bcond_with ucx
+%bcond_with selinux
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
