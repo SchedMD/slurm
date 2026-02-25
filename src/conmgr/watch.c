@@ -52,6 +52,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_time.h"
 #include "src/common/timers.h"
+#include "src/common/workerpool.h"
 #include "src/common/xmalloc.h"
 
 #include "src/conmgr/conmgr.h"
@@ -1450,13 +1451,14 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg)
 /*
  * Inspect all connection states and apply actions required
  */
-
-static void _inspect_connections(conmgr_callback_args_t conmgr_args, void *arg)
+static void _inspect_connections(const bool shutdown, void *arg)
 {
 	bool send_signal = false;
 	handle_connection_args_t args = {
 		.magic = MAGIC_HANDLE_CONNECTION,
 	};
+
+	xassert(!shutdown);
 
 	slurm_mutex_lock(&mgr.mutex);
 	xassert(mgr.inspecting);
@@ -1695,7 +1697,7 @@ static bool _handle_events(void)
 
 	if (!mgr.inspecting) {
 		mgr.inspecting = true;
-		add_work_fifo(true, _inspect_connections, NULL);
+		workerpool_enqueue_normal(_inspect_connections, NULL);
 	}
 
 	/* start poll thread if needed */
