@@ -215,6 +215,11 @@ extern int auth_p_get_data(auth_cred_t *cred, char **data, uint32_t *len)
 	return SLURM_SUCCESS;
 }
 
+extern time_t auth_p_get_time(auth_cred_t *cred)
+{
+	return 0;
+}
+
 extern void *auth_p_get_identity(auth_cred_t *cred)
 {
 	if (!cred)
