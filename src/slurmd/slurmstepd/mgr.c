@@ -1518,7 +1518,8 @@ x11_fail:
 	auth_context_unlock();
 
 fail1:
-	conmgr_add_work_fifo(_x11_signal_handler, NULL);
+	if (step->x11)
+		conmgr_add_work_fifo(_x11_signal_handler, NULL);
 
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(step))
