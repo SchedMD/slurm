@@ -262,7 +262,7 @@ typedef enum {
 	REQUEST_ABORT_JOB,	/* job shouldn't be running, kill it without
 				 * job/step/task complete responses */
 	REQUEST_FILE_BCAST,
-	DEFUNCT_RPC_6015,
+	RESPONSE_UPDATE_JOB_MEM,
 	REQUEST_KILL_PREEMPTED,
 
 	REQUEST_LAUNCH_PROLOG,
