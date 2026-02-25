@@ -419,7 +419,7 @@ extern int plugrack_print_mpi_plugins(plugrack_t *rack)
 		 * Support symbolic links for various pmix plugins with names
 		 * that contain version numbers without listing duplicates
 		 */
-		sep = strstr(e->fq_path, "/mpi_");
+		sep = xstrstr(e->fq_path, "/mpi_");
 		if (sep) {
 			sep += 5;
 			i = snprintf(tmp, sizeof(tmp), "%s", sep);
