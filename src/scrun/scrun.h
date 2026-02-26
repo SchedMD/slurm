@@ -37,6 +37,7 @@
 #define _SCRUN_H
 
 #include <pty.h>
+#include <stdbool.h>
 #include <termios.h>
 
 #include "src/conmgr/conmgr.h"
@@ -196,14 +197,11 @@ extern int send_rpc(slurm_msg_t *msg, slurm_msg_t **ptr_resp, const char *id,
  */
 extern int get_anchor_state(void);
 
-/*
- * Request allocation for job
- * IN arg - ptr to conmgr
- */
-extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg);
+/* Request allocation for job */
+extern void get_allocation(const bool shutdown, void *arg);
 
 /* callback after allocation success */
-extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg);
+extern void on_allocation(const bool shutdown, void *arg);
 
 /*
  * Stop and (eventually) cleanup anchor

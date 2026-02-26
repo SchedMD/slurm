@@ -1092,13 +1092,18 @@ rwfail:
 	      __func__, state.pid_file, slurm_strerror(rc));
 }
 
-extern void on_allocation(conmgr_callback_args_t conmgr_args, void *arg)
+extern void on_allocation(const bool shutdown, void *arg)
 {
 	bool queue_try_start = false;
 	int rc;
 	pid_t pid;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	write_lock_state();
 	if (state.step_id.job_id == NO_VAL) {
@@ -1354,7 +1359,7 @@ static void *_on_startup_con(conmgr_callback_args_t conmgr_args, void *arg)
 	unlock_state();
 
 	if (queue) {
-		conmgr_add_work_fifo(on_allocation, NULL);
+		workerpool_enqueue_normal(on_allocation, NULL);
 	}
 
 	return &state;
@@ -1500,7 +1505,7 @@ static int _anchor_child(int pipe_fd[2])
 		fatal("%s: unable to initialize RPC listener: %s",
 		      __func__, slurm_strerror(rc));
 
-	conmgr_add_work_fifo(get_allocation, NULL);
+	workerpool_enqueue_normal(get_allocation, NULL);
 
 	if ((spank_rc = spank_init_post_opt())) {
 		fatal("%s: plugin stack post-option processing failed: %s",
