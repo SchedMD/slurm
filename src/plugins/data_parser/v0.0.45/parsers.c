@@ -8931,6 +8931,8 @@ static const parser_t PARSER_ARRAY(JOB_INFO)[] = {
 	add_parse(UINT32_NO_VAL, max_nodes, "max_nodes", "Maximum number of nodes usable by the job"),
 	add_parse(STRING, mcs_label, "mcs_label", "Multi-Category Security label on the job"),
 	add_parse(STRING, mem_per_tres, "memory_per_tres", "Semicolon delimited list of TRES=# values indicating how much memory in megabytes should be allocated for each specified TRES (currently only used for gres/gpu)"),
+	add_parse(UINT16, mem_update_delay, "memory_update_delay", "Auto-reduce memory delay in minutes"),
+	add_parse(UINT16, mem_update_margin, "memory_update_margin", "Auto-reduce memory margin percent"),
 	add_parse(STRING, name, "name", "Job name"),
 	add_parse(STRING, network, "network", "Network specs for the job"),
 	add_parse(STRING, nodes, "nodes", "Node(s) allocated to the job"),
