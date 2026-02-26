@@ -1915,6 +1915,8 @@ typedef struct job_info {
 	uint32_t max_nodes;	/* maximum number of nodes usable by job */
 	char *mcs_label;	/* mcs_label if mcs plugin in use */
 	char *mem_per_tres;	/* semicolon delimited list of TRES=# values */
+	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
+	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	char *name;		/* name of the job */
 	char *network;		/* network specification */
 	char *nodes;		/* list of nodes allocated to job */

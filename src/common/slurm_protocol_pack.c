@@ -3707,6 +3707,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpack16(&job->shared, buffer);
 
 			safe_unpackstr(&job->cronspec, buffer);
+
+			safe_unpack16(&job->mem_update_delay, buffer);
+			safe_unpack16(&job->mem_update_margin, buffer);
 		}
 
 		/*** unpack pending job details ***/
