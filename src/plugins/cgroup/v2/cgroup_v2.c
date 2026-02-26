@@ -1297,6 +1297,13 @@ static int _reparent_into_cgroup(char *new_path, char *name)
 	xcgroup_t original_cg = { 0 };
 	original_cg.path = int_cg[CG_LEVEL_ROOT].path;
 
+	/*
+	 * If we are already inside /name, do not attempt to move ourselves
+	 * again. This is useful in reconfigure situations.
+	 */
+	if (!xstrcmp(xbasename(original_cg.path), name))
+		return SLURM_SUCCESS;
+
 	xstrfmtcat(new_home, "%s/%s", new_path, name);
 	bit_clear_all(int_cg_ns.avail_controllers);
 	xfree(int_cg_ns.mnt_point);
