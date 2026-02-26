@@ -705,6 +705,10 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 			 UNIT_MEGA, NO_VAL, CONVERT_NUM_UNIT_EXACT);
 	xstrfmtcat(out, "MinMemory%s=%s MinTmpDiskNode=%s",
 		   tmp6_ptr, tmp1, tmp2);
+	if (job_ptr->mem_update_delay)
+		xstrfmtcat(out, " MemUpdate=%u%%@%umin",
+			   job_ptr->mem_update_margin,
+			   job_ptr->mem_update_delay);
 	xstrcat(out, line_end);
 
 	/****** Line ******/
