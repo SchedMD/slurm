@@ -500,8 +500,7 @@ static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
 	(void) probe_run(true, NULL, NULL, __func__);
 }
 
-static void _register_signal_handlers(conmgr_callback_args_t conmgr_args,
-				      void *arg)
+static void _register_signal_handlers(void)
 {
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
@@ -778,7 +777,7 @@ int main(int argc, char **argv)
 
 	conmgr_init(SLURMCTLD_CONMGR_DEFAULT_MAX_CONNECTIONS);
 
-	conmgr_add_work_fifo(_register_signal_handlers, NULL);
+	_register_signal_handlers();
 
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
