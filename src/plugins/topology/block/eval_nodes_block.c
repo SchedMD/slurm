@@ -183,7 +183,7 @@ static void _jobinfo_init(
 	 * --network=unique-channel-per-segment option. If that option is not
 	 *  specified, no segment data needs to be collected here.
 	 */
-	if (!xstrstr("unique-channel-per-segment", job_ptr->network)) {
+	if (!xstrstr(job_ptr->network, "unique-channel-per-segment")) {
 		log_flag(SELECT_TYPE, "Not recording segment information for %pJ",
 			 job_ptr);
 		return;
