@@ -90,6 +90,7 @@
 #include "src/common/strlcpy.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/util-net.h"
+#include "src/common/workerpool.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -1136,14 +1137,14 @@ static void _shutdown_x11_forward(void)
 		error("%s: Unable to reclaim privileges", __func__);
 }
 
-static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *ignored)
+static void _x11_signal_handler(const bool shutdown, void *arg)
 {
 	static bool run_once = false;
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	bool bail = false;
 	pid_t cpid, pid;
 
-	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED) {
+	if (shutdown) {
 		debug4("%s: cancelled", __func__);
 		return;
 	}
@@ -1194,7 +1195,9 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *ignore
 
 static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *ignored)
 {
-	_x11_signal_handler(conmgr_args, NULL);
+	_x11_signal_handler((conmgr_args.status ==
+			     CONMGR_WORK_STATUS_CANCELLED),
+			    NULL);
 }
 
 static int _set_xauthority(void)
@@ -1549,7 +1552,7 @@ x11_fail:
 
 fail1:
 	if (step->x11)
-		conmgr_add_work_fifo(_x11_signal_handler, NULL);
+		workerpool_enqueue_normal(_x11_signal_handler, NULL);
 
 	debug2("%s: Before call to spank_fini()", __func__);
 	if (spank_fini(step))
