@@ -376,7 +376,8 @@ typedef struct {
 } conmgr_t;
 
 #define CONMGR_DEFAULT \
-	(conmgr_t) {\
+	(conmgr_t) \
+	{ \
 		.conf_max_connections = -1,\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
