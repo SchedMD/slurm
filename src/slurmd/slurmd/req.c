@@ -5012,148 +5012,188 @@ typedef struct {
 	void (*func)(slurm_msg_t *msg);
 } slurmd_rpc_t;
 
-slurmd_rpc_t slurmd_rpcs[] =
-{
+slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_LAUNCH_PROLOG,
 		.from_slurmctld = true,
 		.func = _rpc_prolog,
-	},{
+	},
+	{
 		.msg_type = REQUEST_BATCH_JOB_LAUNCH,
 		.from_slurmctld = true,
 		.func = _rpc_batch_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_LAUNCH_TASKS,
 		.func = _rpc_launch_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SIGNAL_TASKS,
 		.func = _rpc_signal_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_TERMINATE_TASKS,
 		.func = _rpc_terminate_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_KILL_PREEMPTED,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
-	},{
+	},
+	{
 		.msg_type = REQUEST_KILL_TIMELIMIT,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
-	},{
+	},
+	{
 		.msg_type = REQUEST_REATTACH_TASKS,
 		.func = _rpc_reattach_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SUSPEND_INT,
 		.from_slurmctld = true,
 		.func = _rpc_suspend_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_ABORT_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_abort_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_TERMINATE_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_terminate_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SHUTDOWN,
 		.from_slurmctld = true,
 		.func = _rpc_shutdown,
-	},{
+	},
+	{
 		.msg_type = REQUEST_RECONFIGURE,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
 		.func = _rpc_set_slurmd_debug_flags,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
 		.func = _rpc_set_slurmd_debug,
-	},{
+	},
+	{
 		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
-	},{
+	},
+	{
 		.msg_type = REQUEST_REBOOT_NODES,
 		.from_slurmctld = true,
 		.func = _rpc_reboot,
-	},{
+	},
+	{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
 		.from_slurmctld = true,
 		.func = _rpc_ping,
-	},{
+	},
+	{
 		.msg_type = REQUEST_PING,
 		.from_slurmctld = true,
 		.func = _rpc_ping,
-	},{
+	},
+	{
 		.msg_type = REQUEST_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_health_check,
-	},{
+	},
+	{
 		.msg_type = REQUEST_ACCT_GATHER_UPDATE,
 		.from_slurmctld = true,
 		.func = _rpc_acct_gather_update,
-	},{
+	},
+	{
 		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
 		.func = _rpc_acct_gather_energy,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_ID,
 		.func = _rpc_pid2jid,
-	},{
+	},
+	{
 		.msg_type = REQUEST_FILE_BCAST,
 		.func = _rpc_file_bcast,
-	},{
+	},
+	{
 		.msg_type = REQUEST_STEP_COMPLETE,
 		.func = _rpc_step_complete,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_CREATE,
 		.func = _slurm_rpc_job_step_create,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_STAT,
 		.func = _rpc_stat_jobacct,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_PIDS,
 		.func = _rpc_list_pids,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_INFO,
 		.func = _slurm_rpc_job_step_get_info,
-	},{
+	},
+	{
 		.msg_type = REQUEST_DAEMON_STATUS,
 		.func = _rpc_daemon_status,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_NOTIFY,
 		.func = _rpc_job_notify,
-	},{
+	},
+	{
 		.msg_type = REQUEST_FORWARD_DATA,
 		.func = _rpc_forward_data,
-	},{
+	},
+	{
 		.msg_type = REQUEST_NETWORK_CALLERID,
 		.func = _rpc_network_callerid,
-	},{
+	},
+	{
 		.msg_type = REQUEST_CANCEL_JOB_STEP,
 		.func = _slurm_rpc_job_step_kill,
-	},{
+	},
+	{
 		.msg_type = SRUN_JOB_COMPLETE,
 		.func = _slurm_rpc_srun_job_complete,
-	},{
+	},
+	{
 		.msg_type = SRUN_NODE_FAIL,
 		.func = _slurm_rpc_srun_node_fail,
-	},{
+	},
+	{
 		.msg_type = SRUN_TIMEOUT,
 		.func = _slurm_rpc_srun_timeout,
-	},{
+	},
+	{
 		.msg_type = REQUEST_UPDATE_JOB_STEP,
 		.func = _slurm_rpc_update_step,
-	},{
+	},
+	{
 		.msg_type = REQUEST_STEP_LAYOUT,
 		.func = _slurm_rpc_step_layout,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
 		.func = _slurm_rpc_sbcast_cred,
-	},{
+	},
+	{
 		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
 		.func = _slurm_het_job_alloc_info,
-	},{
+	},
+	{
 		/* terminate the array. this must be last. */
 		.msg_type = 0,
 		.func = NULL,
