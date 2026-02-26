@@ -148,6 +148,9 @@
 /* Define to 1 if NVML library has MIG support */
 #undef HAVE_MIG_SUPPORT
 
+/* Define if sys/mount.h provides the mount API */
+#undef HAVE_MOUNT_API_SYS_MOUNT_H
+
 /* Define to 1 if you have the 'mtrace' function. */
 #undef HAVE_MTRACE
 
