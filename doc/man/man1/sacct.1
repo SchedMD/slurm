@@ -1101,6 +1101,15 @@ used to create the job allocation.
 .IP
 
 .TP
+\f3SLUID\fP
+A unique identifier for a specific run of a job. Unlike a job ID, the SLUID
+changes each time a job is requeued/restarted, allowing different runs of
+the same job to be distinguished. Previous runs of the job can be shown with
+the \fB\-D\fR/\fB\-\-duplicates\fR option. SLUIDs are globally unique across the
+accounting system.
+.IP
+
+.TP
 \f3Start\fP
 Initiation time of the job. In the same format as \f3End\fP.
 .IP
