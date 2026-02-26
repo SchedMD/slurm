@@ -337,14 +337,20 @@ static void _wrap_work(const bool shutdown, void *arg)
  *	return either.
  * NOTE: conmgr mutex must be held by caller
  */
-static void _handle_work_run(work_t *work)
+static void _handle_work_run(bool locked, work_t *work)
 {
 	xassert(work->magic == MAGIC_WORK);
+
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
 
 	mgr.work_count++;
 	xassert(mgr.work_count > 0);
 
 	LOG_WORK(work, "Enqueueing work. work:%u", mgr.work_count);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
 
 	/* Give enqueue the final function's name instead of the wrappers */
 	workerpool_enqueue_idle(_wrap_work, work);
@@ -419,26 +425,26 @@ static void _handle_work_pending(work_t *work)
 
 extern void handle_work(bool locked, work_t *work)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
-
 	switch (work->status) {
 	case CONMGR_WORK_STATUS_PENDING:
+		if (!locked)
+			slurm_mutex_lock(&mgr.mutex);
+
 		_handle_work_pending(work);
+
+		if (!locked)
+			slurm_mutex_unlock(&mgr.mutex);
 		break;
 	case CONMGR_WORK_STATUS_CANCELLED:
 		/* fall through as cancelled work runs immediately */
 	case CONMGR_WORK_STATUS_RUN:
-		_handle_work_run(work);
+		_handle_work_run(locked, work);
 		break;
 	case CONMGR_WORK_STATUS_MAX:
 	case CONMGR_WORK_STATUS_INVALID:
 		fatal_abort("%s: invalid work status 0x%x",
 			    __func__, work->status);
 	}
-
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void work_mask_depend(work_t *work, conmgr_work_depend_t depend_mask)
