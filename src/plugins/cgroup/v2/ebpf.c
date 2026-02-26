@@ -35,11 +35,22 @@
 
 #define _GNU_SOURCE
 #include "ebpf.h"
+#ifdef HAVE_BPF_TOKENS
+#ifdef HAVE_MOUNT_API_SYS_MOUNT_H
+#include <sys/mount.h>
+#else
 #include <linux/mount.h>
+#endif
+#endif
 
 #define bpf(cmd, attr, size) (int) syscall(__NR_bpf, cmd, attr, size);
+
+#ifdef HAVE_BPF_TOKENS
+#ifndef HAVE_MOUNT_API_SYS_MOUNT_H
 #define fsconfig(fs_fd, cmd, key, val, aux) \
 	(int) syscall(__NR_fsconfig, fs_fd, cmd, key, val, aux)
+#endif
+#endif
 
 /* Macros inspired from libcrun. */
 #define BPF_ALU32_IMM(OP, DST, IMM)					\
