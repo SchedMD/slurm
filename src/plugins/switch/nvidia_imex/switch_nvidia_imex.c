@@ -614,7 +614,7 @@ extern int switch_p_job_start(job_record_t *job_ptr, bool test_only)
 		log_flag(SWITCH, "%s: Allocating only one channel for %pJ with older protocol version %d",
 			 __func__, job_ptr, job_ptr->start_protocol_ver);
 		_allocate_channel(&args, NULL);
-	} else if (xstrstr("unique-channel-per-segment", job_ptr->network) &&
+	} else if (xstrstr(job_ptr->network, "unique-channel-per-segment") &&
 		   job_ptr->topo_jobinfo &&
 		   (topology_g_jobinfo_get(TOPO_JOBINFO_SEGMENT_LIST,
 					   job_ptr->topo_jobinfo,
