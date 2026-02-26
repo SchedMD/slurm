@@ -125,6 +125,9 @@ sacct [<OPTION>]
      -r, --partition:
                    Comma separated list of partitions to select jobs and
                    job steps from. The default is all partitions.
+     -R, --reason=<reason_list>:
+		   Comma separated list to filter jobs based on what reason the
+		   job wasn't scheduled outside resources/priority.
      -s, --state:
                    Select jobs based on their current state or the state
                    they were in during the time period given: running (r),
