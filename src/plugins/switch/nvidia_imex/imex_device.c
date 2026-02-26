@@ -65,6 +65,7 @@ static int _find_major(void)
 				     "imex_dev_major="))) {
 		device_major = atoi(line);
 		info("using configured imex_dev_major: %d", device_major);
+		xfree(line);
 		return SLURM_SUCCESS;
 	}
 
