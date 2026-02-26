@@ -968,13 +968,18 @@ static void *_thread_per_group_rpc(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		.node = READ_LOCK,
+	};
 	/* Lock: Write node */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		.node = WRITE_LOCK,
+	};
 	uint32_t job_id;
 
 	xassert(args != NULL);
