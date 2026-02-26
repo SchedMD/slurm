@@ -9677,6 +9677,8 @@ static const parser_t PARSER_ARRAY(JOB_DESC_MSG)[] = {
 	add_parse(STRING, mem_bind, "memory_binding", "Binding map for map/mask_cpu"),
 	add_parse(MEMORY_BINDING_TYPE, mem_bind_type, "memory_binding_type", "Method for binding tasks to memory"),
 	add_parse(STRING, mem_per_tres, "memory_per_tres", "Semicolon delimited list of TRES=# values indicating how much memory in megabytes should be allocated for each specified TRES (currently only used for gres/gpu)"),
+	add_parse(UINT16, mem_update_margin, "memory_update_margin", "Auto-reduce memory margin percent"),
+	add_parse(UINT16, mem_update_delay, "memory_update_delay", "Auto-reduce memory delay in minutes"),
 	add_parse(STRING, name, "name", "Job name"),
 	add_parse(STRING, network, "network", "Network specs for job step"),
 	add_parse(NICE, nice, "nice", "Requested job priority change"),
