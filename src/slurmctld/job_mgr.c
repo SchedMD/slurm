@@ -11029,21 +11029,81 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 	*core_cnt_ptr = max_core_cnt;
 }
 
-/* pack default job details for "get_job_info" RPC */
-static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
-				      uint16_t protocol_version)
+static void _pack_node_cnt(job_record_t *job_ptr, buf_t *buffer)
 {
 	int max_cpu_cnt = -1, max_core_cnt = -1;
 	job_details_t *detail_ptr = job_ptr->details;
-	uint16_t shared = 0;
-
-	shared = get_job_share_value(job_ptr);
 
 	if (job_ptr->part_ptr && job_ptr->part_ptr->max_cpu_cnt) {
 		max_cpu_cnt  = job_ptr->part_ptr->max_cpu_cnt;
 		max_core_cnt = job_ptr->part_ptr->max_core_cnt;
 	} else
 		_find_node_config(&max_cpu_cnt, &max_core_cnt);
+
+	if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
+		pack32(job_ptr->node_cnt, buffer);
+		pack32((uint32_t) 0, buffer);
+	} else if (job_ptr->total_nodes) {
+		pack32(job_ptr->total_nodes, buffer);
+		pack32((uint32_t) 0, buffer);
+	} else if (job_ptr->node_cnt_wag) {
+		/* This should catch everything else, but
+		 * just in case this is 0 (startup or
+		 * whatever) we will keep the rest of
+		 * this if statement around.
+		 */
+		pack32(job_ptr->node_cnt_wag, buffer);
+		pack32((uint32_t) detail_ptr->max_nodes, buffer);
+	} else if (detail_ptr->ntasks_per_node) {
+		/* min_nodes based upon task count and ntasks
+		 * per node */
+		uint32_t min_nodes;
+		min_nodes = detail_ptr->num_tasks / detail_ptr->ntasks_per_node;
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		pack32(min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+	} else if (detail_ptr->cpus_per_task > 1) {
+		/* min_nodes based upon task count and cpus
+		 * per task */
+		uint32_t ntasks_per_node, min_nodes;
+		ntasks_per_node = max_cpu_cnt / detail_ptr->cpus_per_task;
+		ntasks_per_node = MAX(ntasks_per_node, 1);
+		min_nodes = detail_ptr->num_tasks / ntasks_per_node;
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		pack32(min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+	} else if (detail_ptr->mc_ptr && detail_ptr->mc_ptr->ntasks_per_core &&
+		   (detail_ptr->mc_ptr->ntasks_per_core != INFINITE16)) {
+		/* min_nodes based upon task count and ntasks
+		 * per core */
+		uint32_t min_cores, min_nodes;
+		min_cores = ROUNDUP(detail_ptr->num_tasks,
+				    detail_ptr->mc_ptr->ntasks_per_core);
+		min_nodes = ROUNDUP(min_cores, max_core_cnt);
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		pack32(min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+	} else {
+		/* min_nodes based upon task count only */
+		uint32_t min_nodes;
+		uint32_t max_nodes;
+
+		min_nodes = ROUNDUP(detail_ptr->num_tasks, max_cpu_cnt);
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		max_nodes = MAX(min_nodes, detail_ptr->max_nodes);
+		pack32(min_nodes, buffer);
+		pack32(max_nodes, buffer);
+	}
+}
+
+/* pack default job details for "get_job_info" RPC */
+static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	job_details_t *detail_ptr = job_ptr->details;
+	uint16_t shared = 0;
+
+	shared = get_job_share_value(job_ptr);
 
 	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (!detail_ptr) {
@@ -11094,73 +11154,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				pack32((uint32_t) 0, buffer);
 		}
 
-		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
-			pack32(job_ptr->node_cnt, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->total_nodes) {
-			pack32(job_ptr->total_nodes, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->node_cnt_wag) {
-			/* This should catch everything else, but
-			 * just in case this is 0 (startup or
-			 * whatever) we will keep the rest of
-			 * this if statement around.
-			 */
-			pack32(job_ptr->node_cnt_wag, buffer);
-			pack32((uint32_t) detail_ptr->max_nodes,
-			       buffer);
-		} else if (detail_ptr->ntasks_per_node) {
-			/* min_nodes based upon task count and ntasks
-			 * per node */
-			uint32_t min_nodes;
-			min_nodes = detail_ptr->num_tasks /
-				detail_ptr->ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->cpus_per_task > 1) {
-			/* min_nodes based upon task count and cpus
-			 * per task */
-			uint32_t ntasks_per_node, min_nodes;
-			ntasks_per_node = max_cpu_cnt /
-				detail_ptr->cpus_per_task;
-			ntasks_per_node = MAX(ntasks_per_node, 1);
-			min_nodes = detail_ptr->num_tasks /
-				ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->mc_ptr &&
-			   detail_ptr->mc_ptr->ntasks_per_core &&
-			   (detail_ptr->mc_ptr->ntasks_per_core
-			    != INFINITE16)) {
-			/* min_nodes based upon task count and ntasks
-			 * per core */
-			uint32_t min_cores, min_nodes;
-			min_cores = ROUNDUP(detail_ptr->num_tasks,
-					    detail_ptr->mc_ptr->
-					    ntasks_per_core);
-			min_nodes = ROUNDUP(min_cores, max_core_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else {
-			/* min_nodes based upon task count only */
-			uint32_t min_nodes;
-			uint32_t max_nodes;
+		_pack_node_cnt(job_ptr, buffer);
 
-			min_nodes = ROUNDUP(detail_ptr->num_tasks,
-					    max_cpu_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			max_nodes = MAX(min_nodes,
-					detail_ptr->max_nodes);
-			pack32(min_nodes, buffer);
-			pack32(max_nodes, buffer);
-		}
 		if (detail_ptr->num_tasks)
 			pack32(detail_ptr->num_tasks, buffer);
 		else if (IS_JOB_PENDING(job_ptr))
@@ -11227,73 +11222,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				pack32((uint32_t) 0, buffer);
 		}
 
-		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
-			pack32(job_ptr->node_cnt, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->total_nodes) {
-			pack32(job_ptr->total_nodes, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->node_cnt_wag) {
-			/* This should catch everything else, but
-			 * just in case this is 0 (startup or
-			 * whatever) we will keep the rest of
-			 * this if statement around.
-			 */
-			pack32(job_ptr->node_cnt_wag, buffer);
-			pack32((uint32_t) detail_ptr->max_nodes,
-			       buffer);
-		} else if (detail_ptr->ntasks_per_node) {
-			/* min_nodes based upon task count and ntasks
-			 * per node */
-			uint32_t min_nodes;
-			min_nodes = detail_ptr->num_tasks /
-				detail_ptr->ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->cpus_per_task > 1) {
-			/* min_nodes based upon task count and cpus
-			 * per task */
-			uint32_t ntasks_per_node, min_nodes;
-			ntasks_per_node = max_cpu_cnt /
-				detail_ptr->cpus_per_task;
-			ntasks_per_node = MAX(ntasks_per_node, 1);
-			min_nodes = detail_ptr->num_tasks /
-				ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->mc_ptr &&
-			   detail_ptr->mc_ptr->ntasks_per_core &&
-			   (detail_ptr->mc_ptr->ntasks_per_core
-			    != INFINITE16)) {
-			/* min_nodes based upon task count and ntasks
-			 * per core */
-			uint32_t min_cores, min_nodes;
-			min_cores = ROUNDUP(detail_ptr->num_tasks,
-					    detail_ptr->mc_ptr->
-					    ntasks_per_core);
-			min_nodes = ROUNDUP(min_cores, max_core_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else {
-			/* min_nodes based upon task count only */
-			uint32_t min_nodes;
-			uint32_t max_nodes;
+		_pack_node_cnt(job_ptr, buffer);
 
-			min_nodes = ROUNDUP(detail_ptr->num_tasks,
-					    max_cpu_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			max_nodes = MAX(min_nodes,
-					detail_ptr->max_nodes);
-			pack32(min_nodes, buffer);
-			pack32(max_nodes, buffer);
-		}
 		if (detail_ptr->num_tasks)
 			pack32(detail_ptr->num_tasks, buffer);
 		else if (IS_JOB_PENDING(job_ptr))
