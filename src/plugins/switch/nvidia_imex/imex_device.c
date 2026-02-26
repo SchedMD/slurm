@@ -167,12 +167,12 @@ extern int setup_imex_channel(uint32_t channel, bool create_ns)
 	if (mknod(path, S_IFCHR | 0666, dev) < 0) {
 		error("%s: failed to create %s: %m", __func__, path);
 		rc = SLURM_ERROR;
+	} else {
+		log_flag(SWITCH, "Successfully setup IMEX channel ID %d at %s",
+			 channel, path);
 	}
 	umask(mask);
 	xfree(path);
-
-	log_flag(SWITCH, "Successfully setup IMEX channel ID %d at %s",
-                 channel, path);
 
 	return rc;
 }
