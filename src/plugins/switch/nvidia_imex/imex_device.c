@@ -103,6 +103,7 @@ static int _make_devdir(void)
 	mask = umask(0);
 	if ((mkdir(IMEX_DEV_DIR, 0755) < 0) && (errno != EEXIST)) {
 		error("could not create %s: %m", IMEX_DEV_DIR);
+		umask(mask);
 		return SLURM_ERROR;
 	}
 	umask(mask);
