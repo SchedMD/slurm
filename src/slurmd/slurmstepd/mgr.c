@@ -1192,6 +1192,11 @@ static void _x11_signal_handler(conmgr_callback_args_t conmgr_args, void *ignore
 	}
 }
 
+static void _on_sigterm(conmgr_callback_args_t conmgr_args, void *ignored)
+{
+	_x11_signal_handler(conmgr_args, NULL);
+}
+
 static int _set_xauthority(void)
 {
 	struct priv_state sprivs = { 0 };
@@ -1383,7 +1388,7 @@ static int _spawn_job_container(void)
 			return SLURM_ERROR;
 		}
 
-		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, NULL);
+		conmgr_add_work_signal(SIGTERM, _on_sigterm, NULL);
 
 		/*
 		 * When using a namespace plugin we need to get into
