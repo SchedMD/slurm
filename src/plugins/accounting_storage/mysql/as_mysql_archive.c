@@ -5688,6 +5688,7 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 					    purge_attr, sql_table, usage_info);
 			if (rc == SLURM_ERROR)
 				goto end_it;
+			cnt += rc;
 
 			if (purge_type == PURGE_JOB) {
 				/* Archive associated data from hash tables */
@@ -5716,8 +5717,6 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 					cnt += rc;
 				}
 			}
-
-			cnt += rc;
 
 			if (!cnt) { /* no records archived */
 				error("%s: No records archived for %s before %ld but we found some records",
