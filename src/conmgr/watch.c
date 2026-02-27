@@ -1633,7 +1633,7 @@ extern void wait_for_watch(void)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-static void _connection_fd_delete(conmgr_callback_args_t conmgr_args, void *arg)
+static void _connection_fd_delete(const bool shutdown, void *arg)
 {
 	conmgr_fd_t *con = arg;
 
@@ -1676,7 +1676,7 @@ static void _handle_complete_conns(void)
 		 * to delete the connection and cleanup and it should
 		 * not queue into the connection work queue itself
 		 */
-		add_work_fifo(true, _connection_fd_delete, con);
+		workerpool_enqueue_idle(_connection_fd_delete, con);
 	}
 }
 
