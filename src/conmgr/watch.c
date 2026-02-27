@@ -1886,7 +1886,17 @@ extern void *watch(void *arg)
 		return NULL;
 	}
 
-	add_work_fifo(true, signal_mgr_start, NULL);
+	add_work(true, NULL,
+		 (conmgr_callback_t) {
+			 .func = signal_mgr_start,
+			 .arg = NULL,
+			 .func_name = "signal_mgr_start",
+		 },
+		 (conmgr_work_control_t) {
+			 .depend_type = CONMGR_WORK_DEP_NONE,
+			 .schedule_type = CONMGR_WORK_SCHED_FIFO,
+		 },
+		 0, __func__);
 
 	while (_watch_loop()) {
 		char timeout_str[CTIME_STR_LEN];
