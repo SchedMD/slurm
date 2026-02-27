@@ -284,7 +284,7 @@ static int _send_delete_confirmation(void *x, void *arg)
 }
 
 /* stopping job is async: this is the final say if the job has stopped */
-static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
+static void _check_if_stopped(const bool shutdown, void *arg)
 {
 	int ptm = -1;
 	bool stopped = false;
@@ -293,6 +293,11 @@ static void _check_if_stopped(conmgr_callback_args_t conmgr_args, void *arg)
 	list_t *delete_requests;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	debug2("%s: status=%s job_completed=%c staged_out=%c",
@@ -420,7 +425,7 @@ done:
 	state.job_completed = true;
 	unlock_state();
 
-	conmgr_add_work_fifo(_check_if_stopped, NULL);
+	workerpool_enqueue_normal(_check_if_stopped, NULL);
 }
 
 static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
