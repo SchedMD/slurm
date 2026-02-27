@@ -117,7 +117,7 @@ int main (int argc, char **argv)
 		fatal("failed to initialize priority plugin");
 	log_init("sshare", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while ((opt_char = getopt_long(argc, argv, "aA:ehlM:no:pPqUu:t:vVm",
+	while ((opt_char = getopt_long(argc, argv, "aA:ehlM:no:pPUu:vVm",
 				       long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
