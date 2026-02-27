@@ -349,6 +349,7 @@ static int _statistics_part_aggregate_job(void *x, void *arg)
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		ps->jobs_cpus_alloc += j->cpus_alloc;
+		ps->jobs_gpus_alloc += j->gpus_alloc;
 		ps->jobs_memory_alloc += j->memory_alloc;
 	}
 

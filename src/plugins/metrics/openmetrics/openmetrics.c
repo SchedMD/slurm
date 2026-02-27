@@ -492,6 +492,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_completing, partition_jobs_completing, "Number of jobs in Completing state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_configuring, partition_jobs_configuring, "Number of jobs in Configuring state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->jobs_cpus_alloc, partition_jobs_cpus_alloc, "Total number of Cpus allocated by jobs", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->jobs_gpus_alloc, partition_jobs_gpus_alloc, "Total number of GPUs allocated by jobs", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_deadline, partition_jobs_deadline, "Number of jobs in Deadline state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_expediting, partition_jobs_expediting, "Number of jobs in Expediting state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->jobs_failed, partition_jobs_failed, "Number of jobs in Failed state", GAUGE, "partition", ps->name);
