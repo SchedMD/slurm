@@ -350,6 +350,10 @@ extern int url_path_walk(const char *path, bool allow_templates,
 	int rc = SLURM_SUCCESS;
 	char *buffer = NULL, *buffer_at = NULL;
 
+	/* Skip empty path strings */
+	if (!path || !path[0])
+		return SLURM_SUCCESS;
+
 	/* extract each word */
 	for (const char *ptr = path; !rc && (*ptr != '\0'); ptr++) {
 		if (_is_valid_url_char(*ptr)) {
