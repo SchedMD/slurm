@@ -130,6 +130,31 @@ static uint64_t _get_db_index(mysql_conn_t *mysql_conn,
 	return db_index;
 }
 
+/*
+ * Check if the job record exists in the database by db_index.
+ */
+static bool _job_db_index_exists(mysql_conn_t *mysql_conn, uint64_t db_index)
+{
+	MYSQL_RES *result = NULL;
+	bool exists = false;
+	char *query = NULL;
+
+	if (!db_index)
+		return false;
+
+	query = xstrdup_printf("select job_db_inx from \"%s_%s\" where "
+			       "job_db_inx=%" PRIu64,
+			       mysql_conn->cluster_name, job_table, db_index);
+
+	if ((result = mysql_db_query_ret(mysql_conn, query, 0))) {
+		exists = (mysql_fetch_row(result) != NULL);
+		mysql_free_result(result);
+	}
+	xfree(query);
+
+	return exists;
+}
+
 static char *_get_user_from_associd(mysql_conn_t *mysql_conn,
 				    char *cluster, uint32_t associd)
 {
@@ -1264,7 +1289,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		      job_ptr->job_id, mysql_conn->cluster_name,
 		      IS_JOB_RESIZING(job_ptr) ? "resized" : "ended");
 
-	if (!IS_JOB_IN_DB(job_ptr)) {
+	if (!_job_db_index_exists(mysql_conn, job_ptr->db_index)) {
 		if (!(_get_db_index(mysql_conn, submit_time,
 				    job_ptr->job_id))) {
 			/* Comment is overloaded in job_start to be
