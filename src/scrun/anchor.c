@@ -223,12 +223,17 @@ static void _daemonize_logs()
 	update_logging();
 }
 
-static void _tear_down(conmgr_callback_args_t conmgr_args, void *arg)
+static void _tear_down(const bool shutdown, void *arg)
 {
 	bool need_kill = false, need_stop = false;
 	int rc = SLURM_SUCCESS;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	if (state.status >= CONTAINER_ST_STOPPED) {
@@ -918,7 +923,7 @@ static int _delete(conmgr_fd_t *con, slurm_msg_t *req_msg)
 
 	rc = _queue_delete_request(con, req_msg);
 
-	conmgr_add_work_fifo(_tear_down, NULL);
+	workerpool_enqueue_normal(_tear_down, NULL);
 
 	return rc;
 }
