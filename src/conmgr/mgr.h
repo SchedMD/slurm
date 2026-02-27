@@ -378,16 +378,6 @@ extern void add_work(bool locked, conmgr_fd_t *con, conmgr_callback_t callback,
 		     conmgr_work_control_t control,
 		     conmgr_work_depend_t depend_mask, const char *caller);
 
-#define add_work_fifo(locked, _func, func_arg) \
-	add_work(locked, NULL, (conmgr_callback_t) { \
-			.func = _func, \
-			.arg = func_arg, \
-			.func_name = #_func, \
-		}, (conmgr_work_control_t) { \
-			.depend_type = CONMGR_WORK_DEP_NONE, \
-			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
-		}, 0, __func__)
-
 #define add_work_con_fifo(locked, con, _func, func_arg) \
 	add_work(locked, con, (conmgr_callback_t) { \
 			.func = _func, \
