@@ -433,12 +433,17 @@ done:
 	workerpool_enqueue_normal(_check_if_stopped, NULL);
 }
 
-static void _stage_out(conmgr_callback_args_t conmgr_args, void *arg)
+static void _stage_out(const bool shutdown, void *arg)
 {
 	int rc;
 	bool staged_in;
 
 	xassert(!arg);
+
+	if (shutdown) {
+		debug("%s: skipping due to workerpool shutdown", __func__);
+		return;
+	}
 
 	read_lock_state();
 	xassert(state.status >= CONTAINER_ST_STOPPING);
@@ -515,7 +520,7 @@ extern void stop_anchor(int status)
 	}
 	unlock_state();
 
-	conmgr_add_work_fifo(_stage_out, NULL);
+	workerpool_enqueue_normal(_stage_out, NULL);
 
 	debug2("%s: end", __func__);
 }
