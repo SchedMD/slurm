@@ -1096,6 +1096,23 @@ static data_for_each_cmd_t _foreach_strip_params(data_t *data, void *arg)
 	return DATA_FOR_EACH_DELETE;
 }
 
+static int _add_operation_path(const char *entry, bool template, void *arg)
+{
+	data_t *dpath = arg;
+	data_t *c = data_list_append(dpath);
+
+	if (!xstrcasecmp(entry, ".") || !xstrcasecmp(entry, ".."))
+		fatal_abort("OpenAPI path must not include . or ..");
+
+	if (template) {
+		data_set_string_fmt(c, "{%s}", entry);
+	} else {
+		data_set_string(c, entry);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* Caller must xfree() returned string */
 static char *_get_method_operationId(openapi_spec_t *spec, path_t *path,
 				     const openapi_path_binding_method_t
@@ -1113,7 +1130,8 @@ static char *_get_method_operationId(openapi_spec_t *spec, path_t *path,
 		.merge_args = &merge_args,
 	};
 
-	dpath = parse_url_path(path->path, false, true);
+	dpath = data_set_list(data_new());
+	(void) url_path_walk(path->path, true, _add_operation_path, dpath);
 
 	xassert((data_get_list_length(dpath) + 1) < (ARRAY_SIZE(merge) - 1));
 
