@@ -670,23 +670,6 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 			    conmgr_work_control_t control, const char *caller);
 
 /*
- * Add work to run
- * IN _func - function pointer to run work
- * IN func_arg - arg to hand to function pointer
- * NOTE: never add a thread that will never return or conmgr_run() will never
- * return either.
- */
-#define conmgr_add_work_fifo(_func, func_arg) \
-	conmgr_add_work(NULL, (conmgr_callback_t) { \
-			.func = _func, \
-			.arg = func_arg, \
-			.func_name = #_func, \
-		}, (conmgr_work_control_t) { \
-			.depend_type = CONMGR_WORK_DEP_NONE, \
-			.schedule_type = CONMGR_WORK_SCHED_FIFO, \
-		}, __func__)
-
-/*
  * Add work to run for connection
  * IN con - connection to assign work
  * IN _func - function pointer to run work
