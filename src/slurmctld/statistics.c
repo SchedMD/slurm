@@ -652,6 +652,7 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		s->cpus_alloc += j->cpus_alloc;
+		s->gpus_alloc += j->gpus_alloc;
 		s->memory_alloc += j->memory_alloc;
 		s->nodes_alloc += j->nodes_alloc;
 	}
