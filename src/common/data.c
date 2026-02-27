@@ -2324,16 +2324,17 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 	if (!data)
 		return NULL;
 
-	if (!url_path_walk(path, false, _on_dict_path_define, &args))
+	if (!url_path_walk(path, false, _on_dict_path_define, &args)) {
 		log_flag_hex(DATA, path, strlen(path),
 			     "%s: %pD defined dictionary path to %pD",
 			     __func__, data, args.found);
-	else
+		return args.found;
+	} else {
 		log_flag_hex(DATA, path, strlen(path),
 			     "%s: %pD failed to define dictionary path",
 			     __func__, data);
-
-	return args.found;
+		return NULL;
+	}
 }
 
 extern data_t *data_copy(data_t *dest, const data_t *src)
