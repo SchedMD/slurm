@@ -1871,8 +1871,13 @@ static bool _watch_loop(void)
 		return true;
 	}
 
-	log_flag(CONMGR, "%s: cleaning up", __func__);
-	return false;
+	if (mgr.shutdown_requested) {
+		log_flag(CONMGR, "%s: cleaning up", __func__);
+		return false;
+	}
+
+	log_flag(CONMGR, "%s: waiting for shutdown", __func__);
+	return true;
 }
 
 extern void *watch(void *arg)
