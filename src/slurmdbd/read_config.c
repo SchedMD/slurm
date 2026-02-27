@@ -428,6 +428,10 @@ extern int read_slurmdbd_conf(void)
 					"PreserveCaseUser"))
 				slurmdbd_conf->persist_conn_rc_flags |=
 					PERSIST_FLAG_P_USER_CASE;
+			if (xstrcasestr(slurmdbd_conf->parameters,
+					"PreserveCaseResource"))
+				slurmdbd_conf->persist_conn_rc_flags |=
+					PERSIST_FLAG_P_RESOURCE_CASE;
 		}
 
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);

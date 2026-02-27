@@ -218,6 +218,10 @@ LicenseName=nastran@flex_host
     LastConsumed=0 LastDeficit=0 LastUpdate=2023-02-28T17:01:44
 </pre>
 
+<p><b>NOTE</b>: By default only lowercase resources names are supported, but
+starting with Slurm 26.05 you can configure <b>Parameters=PreserveCaseResource</b>
+in slurmdbd.conf to allow resource names with uppercase characters.</p>
+
 <p>When submitting jobs to remote licenses, the name and server must be
 used.</p>
 <pre>

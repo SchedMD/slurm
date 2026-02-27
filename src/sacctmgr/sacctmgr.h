@@ -232,6 +232,7 @@ extern const char *mime_type; /* user requested JSON or YAML */
 extern const char *data_parser; /* data_parser args */
 
 extern bool user_case_norm;
+extern bool resource_case_norm;
 extern bool tree_display;
 extern bool have_db_conn;
 

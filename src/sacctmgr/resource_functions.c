@@ -294,7 +294,9 @@ static int _set_res_rec(int *start, int argc, char **argv,
 			   || !xstrncasecmp(argv[i], "Resources",
 					    MAX(command_len, 1))) {
 			if (name_list)
-				slurm_addto_char_list(name_list, argv[i]+end);
+				slurm_addto_char_list_with_case(
+					name_list, argv[i] + end,
+					resource_case_norm);
 		} else if (!xstrncasecmp(argv[i], "Clusters",
 					 MAX(command_len, 1))) {
 			if (cluster_list) {

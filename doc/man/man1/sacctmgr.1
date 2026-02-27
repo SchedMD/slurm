@@ -2675,7 +2675,9 @@ the numbers in the database back to percentages. This is required by the user.
 Comma\-separated list of the name of a resource configured on the
 system being controlled by a resource manager. If this resource is
 seen on the slurmctld its name will be name@server to distinguish it
-from local resources defined in a slurm.conf.
+from local resources defined in a slurm.conf. Resource names are
+case\-insensitive (forced to lowercase) unless the
+\fBParameters=PreserveCaseResource\fR option has been set in slurmdbd.conf.
 .IP
 
 .TP
