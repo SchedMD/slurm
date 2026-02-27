@@ -53,6 +53,11 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/statistics.h"
 
+typedef struct foreach_fill_jobs_args {
+	int gpu_tres_pos;
+	jobs_stats_t *js;
+} foreach_fill_jobs_args_t;
+
 typedef struct foreach_part_gen_stats {
 	jobs_stats_t *js;
 	nodes_stats_t *ns;
@@ -475,7 +480,9 @@ static int _get_part_statistics(void *x, void *arg)
 static int _fill_jobs_statistics(void *x, void *arg)
 {
 	job_record_t *j = x;
-	jobs_stats_t *js = arg;
+	foreach_fill_jobs_args_t *args = arg;
+	jobs_stats_t *js = args->js;
+	int gpu_tres_pos = args->gpu_tres_pos;
 	job_stats_t *new = xmalloc(sizeof(*new));
 
 	new->job_array_cnt = (j->array_recs && j->array_recs->task_cnt) ?
@@ -555,9 +562,13 @@ static int _fill_jobs_statistics(void *x, void *arg)
 			(j->tres_alloc_cnt ? j->tres_alloc_cnt[TRES_ARRAY_MEM] :
 					     0);
 
+		if ((gpu_tres_pos >= 0) && j->tres_alloc_cnt)
+			new->gpus_alloc = j->tres_alloc_cnt[gpu_tres_pos];
+
 		js->cpus_alloc += new->cpus_alloc;
 		js->nodes_alloc += new->nodes_alloc;
 		js->memory_alloc += new->memory_alloc;
+		js->gpus_alloc += new->gpus_alloc;
 	}
 
 	/*
@@ -682,13 +693,20 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 		.fed = READ_LOCK,
 	};
 	jobs_stats_t *s = xmalloc(sizeof(*s));
+	slurmdb_tres_rec_t tres_rec = { .type = "gres", .name = "gpu" };
+
+	/* Avoid looking for tres pos at each iteration, store in args. */
+	foreach_fill_jobs_args_t args = {
+		.gpu_tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false),
+		.js = s,
+	};
 
 	s->jobs = list_create((ListDelF) _free_job_stats);
 
 	if (lock)
 		lock_slurmctld(job_read_lock);
 
-	list_for_each_ro(job_list, _fill_jobs_statistics, s);
+	list_for_each_ro(job_list, _fill_jobs_statistics, &args);
 
 	if (lock)
 		unlock_slurmctld(job_read_lock);

@@ -187,6 +187,7 @@ typedef struct scheduling_statistics {
 typedef struct job_statistics {
 	char *account;
 	uint16_t cpus_alloc;
+	uint64_t gpus_alloc;
 	uint32_t job_array_cnt; /* If job array and PD, number of array tasks */
 	uint32_t job_id;
 	uint32_t job_state;
@@ -211,6 +212,7 @@ typedef struct jobs_statistics {
 	uint32_t failed;
 	uint32_t fed_requeued;
 	uint32_t finished;
+	uint64_t gpus_alloc;
 	uint32_t hold;
 	uint32_t job_cnt;
 	list_t *jobs;
