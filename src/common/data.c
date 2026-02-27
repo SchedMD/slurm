@@ -2279,16 +2279,17 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 	if (!data || (data->type != TYPE_DICT))
 		return NULL;
 
-	if (!url_path_walk(path, false, _on_dict_path_const, &args))
+	if (!url_path_walk(path, false, _on_dict_path_const, &args)) {
 		log_flag_hex(DATA, path, strlen(path),
 			     "%s: %pD resolved dictionary path to %pD",
 			     __func__, data, args.found);
-	else
+		return args.found;
+	} else {
 		log_flag_hex(DATA, path, strlen(path),
 			     "%s: %pD failed to resolve dictionary path",
 			     __func__, data);
-
-	return args.found;
+		return NULL;
+	}
 }
 
 static int _on_dict_path_define(const char *entry, bool template, void *arg)
