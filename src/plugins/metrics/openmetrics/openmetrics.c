@@ -395,6 +395,8 @@ extern metric_set_t *metrics_p_parse_nodes_metrics(nodes_stats_t *stats)
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_alloc, node_cpus_alloc, "Allocated cpus in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_efctv, node_cpus_effective, "CPUs allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT16, n->cpus_idle, node_cpus_idle, "Idle cpus in the node", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, n->gpus_total, node_gpus, "Total number of GPUs in the node", GAUGE, "node", n->name);
+		ADD_METRIC_KEYVAL(set, UINT64, n->gpus_alloc, node_gpus_alloc, "Number of GPUs currently allocated by jobs on the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_alloc, node_memory_alloc_bytes, "Bytes allocated to jobs in the node", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_avail, node_memory_effective_bytes, "Memory allocatable to jobs not reserved for system usage", GAUGE, "node", n->name);
 		ADD_METRIC_KEYVAL(set, UINT64, n->mem_free, node_memory_free_bytes, "Free memory in bytes of the node", GAUGE, "node", n->name);

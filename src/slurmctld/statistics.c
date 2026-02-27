@@ -46,6 +46,8 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdbd_defs.h"
 
+#include "src/common/assoc_mgr.h"
+#include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/locks.h"
@@ -702,6 +704,9 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 		.part = READ_LOCK,
 		.select_node = WRITE_LOCK, /*select_g_select_nodeinfo_set_all*/
 	};
+	slurmdb_tres_rec_t tres_rec = { .type = "gres", .name = "gpu" };
+	int gpu_tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	uint32_t gpu_plugin_id = gres_get_gpu_plugin_id();
 	node_record_t *node_ptr;
 	nodes_stats_t *s = xmalloc(sizeof(*s));
 
@@ -734,6 +739,24 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 							  node_ptr->free_mem);
 		n->mem_total = node_ptr->real_memory;
 		n->node_state = node_ptr->node_state;
+
+		/* GPU totals from TRES */
+		if ((gpu_tres_pos >= 0) && node_ptr->tres_cnt)
+			n->gpus_total = node_ptr->tres_cnt[gpu_tres_pos];
+
+		/* GPU allocated from GRES node state */
+		if (node_ptr->gres_list) {
+			gres_state_t *gres_state_node;
+			gres_state_node =
+				list_find_first(node_ptr->gres_list,
+						gres_find_id, &gpu_plugin_id);
+			if (gres_state_node) {
+				gres_node_state_t *gres_ns =
+					gres_state_node->gres_data;
+				n->gpus_alloc = gres_ns->gres_cnt_alloc;
+			}
+		}
+
 		s->node_stats_table[i] = n;
 
 		/*

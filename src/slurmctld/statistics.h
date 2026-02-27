@@ -43,6 +43,8 @@ typedef struct node_stats {
 	uint16_t cpus_efctv;
 	uint16_t cpus_idle;
 	uint16_t cpus_total;
+	uint64_t gpus_alloc;
+	uint64_t gpus_total;
 	uint64_t mem_alloc;
 	uint64_t mem_avail;
 	uint64_t mem_free;
