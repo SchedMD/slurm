@@ -153,6 +153,14 @@ typedef struct {
 	entry_t *entry;
 } url_parse_args_t;
 
+#define URL_PARSE_OPERATION_IDARGS_MAGIC 0xaaffec0e
+
+typedef struct {
+	int magic; /* URL_PARSE_OPERATION_IDARGS_MAGIC */
+	data_t *dpath;
+	data_t *last;
+} url_parse_operation_id_args_t;
+
 static list_t *paths = NULL;
 static int path_tag_counter = 0;
 static plugins_t *plugins = NULL;
@@ -1052,64 +1060,38 @@ static data_for_each_cmd_t _merge_operationId_strings(data_t *data, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static data_for_each_cmd_t _foreach_strip_params(data_t *data, void *arg)
-{
-	const char *item = data_get_string(data);
-	data_t **last_ptr = arg;
-	int len = strlen(item);
-
-	xassert(item);
-	if (!item || (item[0] != '{')) {
-		char *dst = xstrdup(item);
-		char *last = dst;
-
-		/* strip out '.' */
-		for (int i = 0; i < len; i++) {
-			if (item[i] == '.')
-				continue;
-
-			*last = item[i];
-			last++;
-		}
-
-		*last = '\0';
-
-		data_set_string_own(data, dst);
-
-		*last_ptr = data;
-		return DATA_FOR_EACH_CONT;
-	}
-
-	xassert(len > 2);
-	xassert(item[len - 1] == '}');
-	if (*last_ptr &&
-	    !xstrncmp(data_get_string(*last_ptr), (item + 1), (len - 2))) {
-		/*
-		 * Last item is the same as the parameter name which means that
-		 * the item is uncountable and we need to set last as single.
-		 */
-		data_set_string(data, data_get_string(*last_ptr));
-		data_set_string(*last_ptr, "single");
-		return DATA_FOR_EACH_CONT;
-	}
-
-	return DATA_FOR_EACH_DELETE;
-}
-
 static int _add_operation_path(const char *entry, bool template, void *arg)
 {
-	data_t *dpath = arg;
-	data_t *c = data_list_append(dpath);
+	url_parse_operation_id_args_t *args = arg;
+	data_t *dpath = args->dpath;
+	data_t *last = args->last;
+	data_t *c = NULL;
+
+	xassert(args->magic == URL_PARSE_OPERATION_IDARGS_MAGIC);
 
 	if (!xstrcasecmp(entry, ".") || !xstrcasecmp(entry, ".."))
 		fatal_abort("OpenAPI path must not include . or ..");
 
-	if (template) {
-		data_set_string_fmt(c, "{%s}", entry);
+	if (template && last && !xstrcmp(data_get_string(last), entry)) {
+		/*
+		 * Last entry is the same as the parameter name which means that
+		 * the entry is uncountable and we need to set last entry as
+		 * "single" to avoid ambiguous operationIds
+		 */
+		data_set_string(data_list_append(dpath), entry);
+		c = data_set_string(last, "single");
+	} else if (template) {
+		/* skip including template names in operationId */
 	} else {
-		data_set_string(c, entry);
+		char *e = xstrdup(entry);
+
+		/* Strip out all '.' in entry */
+		xstrsubstituteall(e, ".", "");
+
+		c = data_set_string_own(data_list_append(dpath), e);
 	}
 
+	args->last = c;
 	return SLURM_SUCCESS;
 }
 
@@ -1118,7 +1100,7 @@ static char *_get_method_operationId(openapi_spec_t *spec, path_t *path,
 				     const openapi_path_binding_method_t
 					     *method)
 {
-	data_t *merge[10] = {0}, *dpath, *merged = NULL, *last = NULL;
+	data_t *merge[10] = { 0 }, *dpath = NULL, *merged = NULL;
 	const char *method_str = get_http_method_string_lc(method->method);
 	int i = 0;
 	merge_path_t merge_args = {
@@ -1129,13 +1111,14 @@ static char *_get_method_operationId(openapi_spec_t *spec, path_t *path,
 		.magic = MAGIC_MERGE_ID_PATH,
 		.merge_args = &merge_args,
 	};
+	url_parse_operation_id_args_t url_args = {
+		.magic = URL_PARSE_OPERATION_IDARGS_MAGIC,
+	};
 
-	dpath = data_set_list(data_new());
-	(void) url_path_walk(path->path, true, _add_operation_path, dpath);
+	url_args.dpath = dpath = data_set_list(data_new());
+	(void) url_path_walk(path->path, true, _add_operation_path, &url_args);
 
 	xassert((data_get_list_length(dpath) + 1) < (ARRAY_SIZE(merge) - 1));
-
-	(void) data_list_for_each(dpath, _foreach_strip_params, &last);
 
 	if (data_get_list_length(dpath) < 3) {
 		/* unversioned paths */
