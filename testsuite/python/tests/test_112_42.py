@@ -283,6 +283,12 @@ def test_specification(openapi_spec):
         patch = atf.get_deprecated_openapi_spec_patch(openapi_spec)
         patch.apply(openapi_spec, in_place=True)
 
+    if atf.get_version("sbin/slurmrestd") >= (26, 5):
+        # Issue 50774: reason_uid removed
+        path = base_path + "update_node_msg/properties/reason_uid/deprecated"
+        patch = jsonpatch.JsonPatch([{"op": "add", "path": path, "value": True}])
+        patch.apply(openapi_spec, in_place=True)
+
     atf.assert_openapi_spec_eq(openapi_spec, atf.properties["openapi_spec"])
 
 
