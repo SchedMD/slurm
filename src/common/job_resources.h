@@ -210,14 +210,6 @@ extern int get_job_resources_offset(job_resources_t *job_resrcs_ptr,
 				    uint32_t node_id, uint16_t socket_id,
 				    uint16_t core_id);
 
-/* Get/set bit value at specified location.
- *	node_id, socket_id and core_id are all zero origin */
-extern int get_job_resources_bit(job_resources_t *job_resrcs_ptr,
-				 uint32_t node_id, uint16_t socket_id,
-				 uint16_t core_id);
-extern int set_job_resources_bit(job_resources_t *job_resrcs_ptr,
-				 uint32_t node_id, uint16_t socket_id,
-				 uint16_t core_id);
 /* For every core bitmap set in the "from" resources structure at
  * from_node_offset, set the corresponding bit in the "new" resources structure
  * at new_node_offset */
@@ -226,33 +218,11 @@ extern int job_resources_bits_copy(job_resources_t *new_job_resrcs_ptr,
 				   job_resources_t *from_job_resrcs_ptr,
 				   uint16_t from_node_offset);
 
-/*
- * AND two job_resources structures.
- * Every node/core set in job_resrcs1_ptr and job_resrcs2_ptr is set in the
- * resulting job_resrcs1_ptr data structure
- * RET SLURM_SUCCESS or an error code
- */
-extern int job_resources_and(job_resources_t *job_resrcs1_ptr,
-			     job_resources_t *job_resrcs2_ptr);
-
-/*
- * OR two job_resources structures.
- * Every node/core set in job_resrcs1_ptr or job_resrcs2_ptr is set in the
- * resulting job_resrcs1_ptr data structure
- * RET SLURM_SUCCESS or an error code
- */
-extern int job_resources_or(job_resources_t *job_resrcs1_ptr,
-			    job_resources_t *job_resrcs2_ptr);
-
-/* Get/clear/set bit value at specified location for whole node allocations
+/* Set bit value at specified location for whole node allocations
  *	get is for any socket/core on the specified node
  *	set is for all sockets/cores on the specified node
- *	fully compatible with set/get_job_resources_bit()
+ *	fully compatible with set_job_resources_bit()
  *	node_id is all zero origin */
-extern int get_job_resources_node(job_resources_t *job_resrcs_ptr,
-				  uint32_t node_id);
-extern int clear_job_resources_node(job_resources_t *job_resrcs_ptr,
-				    uint32_t node_id);
 extern int set_job_resources_node(job_resources_t *job_resrcs_ptr,
 				  uint32_t node_id);
 
