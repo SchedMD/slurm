@@ -1435,11 +1435,13 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	if (step_spec->node_list && xstrcmp(step_spec->node_list,
 					    job_ptr->details->req_nodes)) {
 		bitstr_t *selected_nodes = NULL;
+		int selected_nodes_cnt = 0;
+
 		log_flag(STEPS, "%s: selected nodelist is %s",
 			 __func__, step_spec->node_list);
 		error_code = node_name2bitmap(step_spec->node_list, false,
 					      &selected_nodes, NULL);
-		if (error_code) {
+		if (error_code || !selected_nodes) {
 			log_flag(STEPS, "%s: invalid node list %s", __func__,
 				 step_spec->node_list);
 			FREE_NULL_BITMAP(selected_nodes);
@@ -1473,44 +1475,41 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
+		selected_nodes_cnt = bit_set_count(selected_nodes);
 		if ((step_spec->task_dist & SLURM_DIST_STATE_BASE) ==
 		    SLURM_DIST_ARBITRARY) {
-			step_spec->min_nodes = bit_set_count(selected_nodes);
+			step_spec->min_nodes = selected_nodes_cnt;
 		}
-		if (selected_nodes) {
-			int node_cnt = 0;
-			/*
-			 * Use selected nodes to run the step and
-			 * mark them unavailable for future use
-			 */
+		/*
+		 * Use selected nodes to run the step and
+		 * mark them unavailable for future use
+		 */
 
-			/*
-			 * If we have selected more than we requested
-			 * make the available nodes equal to the
-			 * selected nodes and we will pick from that
-			 * list later on in the function.
-			 * Other than that copy the nodes selected as
-			 * the nodes we want.
-			 */
-			node_cnt = bit_set_count(selected_nodes);
-			if (node_cnt > step_spec->max_nodes) {
-				log_flag(STEPS, "%s: requested nodes %s exceed max node count for %pJ (%d > %u)",
-					 __func__, step_spec->node_list,
-					 job_ptr, node_cnt,
-					 step_spec->max_nodes);
-				FREE_NULL_BITMAP(selected_nodes);
-				goto cleanup;
-			} else if (step_spec->min_nodes &&
-				   (node_cnt > step_spec->min_nodes)) {
-				nodes_picked = bit_alloc(bit_size(nodes_avail));
-				FREE_NULL_BITMAP(nodes_avail);
-				nodes_avail = selected_nodes;
-				selected_nodes = NULL;
-			} else {
-				nodes_picked = bit_copy(selected_nodes);
-				bit_and_not(nodes_avail, selected_nodes);
-				FREE_NULL_BITMAP(selected_nodes);
-			}
+		/*
+		 * If we have selected more than we requested
+		 * make the available nodes equal to the
+		 * selected nodes and we will pick from that
+		 * list later on in the function.
+		 * Other than that copy the nodes selected as
+		 * the nodes we want.
+		 */
+		if (selected_nodes_cnt > step_spec->max_nodes) {
+			log_flag(STEPS, "%s: requested nodes %s exceed max node count for %pJ (%d > %u)",
+				 __func__, step_spec->node_list,
+				 job_ptr, selected_nodes_cnt,
+				 step_spec->max_nodes);
+			FREE_NULL_BITMAP(selected_nodes);
+			goto cleanup;
+		} else if (step_spec->min_nodes &&
+			   (selected_nodes_cnt > step_spec->min_nodes)) {
+			nodes_picked = bit_alloc(bit_size(nodes_avail));
+			FREE_NULL_BITMAP(nodes_avail);
+			nodes_avail = selected_nodes;
+			selected_nodes = NULL;
+		} else {
+			nodes_picked = bit_copy(selected_nodes);
+			bit_and_not(nodes_avail, selected_nodes);
+			FREE_NULL_BITMAP(selected_nodes);
 		}
 	} else {
 		nodes_picked = bit_alloc(bit_size(nodes_avail));
