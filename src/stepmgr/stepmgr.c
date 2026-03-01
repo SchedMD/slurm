@@ -3695,7 +3695,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 
 		gres_test_args.test_mem = false;
 		gres_test_args.err_code = &err_code;
-		gres_test_args.node_offset++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
 
@@ -3796,6 +3795,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			gres_test_args.ignore_alloc = true;
 		else
 			gres_test_args.ignore_alloc = false;
+		gres_test_args.node_offset = pos;
 
 		gres_cpus = gres_stepmgr_step_test(&gres_test_args);
 		if (usable_cpus > gres_cpus)
