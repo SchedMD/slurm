@@ -242,8 +242,6 @@ static int _foreach_job_node_array(void *x, void *arg)
 	config_record_t *config_ptr =
 		config_record_from_node_record(job_node_ptr);
 
-	*table_index = bit_ffs_from_bit(job_step_ptr->node_bitmap, *table_index);
-
 	job_node_ptr->config_ptr = config_ptr;
 	insert_node_record_at(job_node_ptr, *table_index);
 
@@ -266,10 +264,11 @@ static void _setup_stepmgr_nodes(void)
 
 	xassert(job_node_array);
 	/*
-	 * next_node_bitmap() asserts
-	 * bit_size(node_bitmap) == node_record_count
+	 * Use job node count (dense table) instead of cluster-wide
+	 * node_record_count. Nodes are inserted at sequential positions
+	 * 0, 1, 2, ... making the table dense.
 	 */
-	node_record_count = bit_size(job_step_ptr->node_bitmap);
+	node_record_count = list_count(job_node_array);
 	grow_node_record_table_ptr();
 	list_for_each(job_node_array, _foreach_job_node_array, &table_index);
 }
@@ -279,14 +278,37 @@ static void _init_stepd_stepmgr(void)
 	if (!job_step_ptr)
 		return;
 
-	stepd_stepmgr_ops.up_node_bitmap =
-		bit_alloc(bit_size(job_step_ptr->node_bitmap));
+	/*
+	 * Build dense node table first so that node_record_count is
+	 * job-sized and node_name2bitmap() can rebuild bitmaps using
+	 * the local node table.
+	 */
+	_setup_stepmgr_nodes();
+
+	/*
+	 * Rebuild job_ptr->node_bitmap from the hostname string using
+	 * the stepmgr's own node table (job-relative indices).
+	 */
+	FREE_NULL_BITMAP(job_step_ptr->node_bitmap);
+	if (node_name2bitmap(job_step_ptr->nodes, false,
+			     &job_step_ptr->node_bitmap, NULL))
+		fatal("Failed to rebuild job node_bitmap from nodes: %s",
+		      job_step_ptr->nodes);
+
+	node_features_build_active_list(job_step_ptr);
+
+	/*
+	 * Rebuild job_resrcs->node_bitmap from job_resrcs->nodes using
+	 * the stepmgr's node table (mirrors slurmctld's reset_node_bitmap
+	 * on restart/reconfig).
+	 */
+	if (reset_node_bitmap(job_step_ptr))
+		fatal("Failed to set resources bitmap");
+
+	stepd_stepmgr_ops.up_node_bitmap = bit_alloc(node_record_count);
 	bit_set_all(stepd_stepmgr_ops.up_node_bitmap);
 	stepmgr_init(&stepd_stepmgr_ops);
 	reserve_port_stepmgr_init(job_step_ptr);
-
-	_setup_stepmgr_nodes();
-	node_features_build_active_list(job_step_ptr);
 
 	acct_storage_g_init();
 
