@@ -1774,28 +1774,26 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					      usable_cpu_cnt);
 		if ((step_spec->cpu_count > cpus_picked_cnt) &&
 		    (step_spec->max_nodes > nodes_picked_cnt)) {
+			int node_idx = 0;
 			/* Attempt to add more nodes to allocation */
 			nodes_picked_cnt = bit_set_count(nodes_picked);
 			while (step_spec->cpu_count > cpus_picked_cnt) {
-				node_tmp = bit_pick_cnt(nodes_avail, 1);
-				if (node_tmp == NULL)
+				node_idx =
+					bit_ffs_from_bit(nodes_avail, node_idx);
+				if (node_idx < 0)
 					break;
 
-				cpu_cnt = _count_cpus(job_ptr, node_tmp,
-						      usable_cpu_cnt);
+				cpu_cnt = usable_cpu_cnt[node_idx];
+				bit_clear(nodes_avail, node_idx);
 				if (cpu_cnt == 0) {
 					/*
 					 * Node not usable (memory insufficient
 					 * to allocate any CPUs, etc.)
 					 */
-					bit_and_not(nodes_avail, node_tmp);
-					FREE_NULL_BITMAP(node_tmp);
 					continue;
 				}
 
-				bit_or(nodes_picked, node_tmp);
-				bit_and_not(nodes_avail, node_tmp);
-				FREE_NULL_BITMAP(node_tmp);
+				bit_set(nodes_picked, node_idx);
 				nodes_picked_cnt += 1;
 				if (step_spec->min_nodes)
 					step_spec->min_nodes = nodes_picked_cnt;
