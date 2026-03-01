@@ -3017,7 +3017,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 	allocate_nodes(job_ptr);
 	job_array_start(job_ptr);
-	build_node_details(job_ptr, true);
+	build_node_details(job_ptr);
 	rebuild_job_part_list(job_ptr);
 
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
@@ -4316,9 +4316,8 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 /*
  * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record
- * IN new_alloc - set if new job allocation, cleared if state recovery
  */
-extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
+extern void build_node_details(job_record_t *job_ptr)
 {
 	hostlist_t *host_list = NULL;
 	node_record_t *node_ptr;

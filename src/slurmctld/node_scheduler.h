@@ -77,9 +77,8 @@ extern bitstr_t *build_active_feature_bitmap2(char *reboot_features);
 /*
  * build_node_details - sets addresses for allocated nodes
  * IN job_ptr - pointer to a job record
- * IN new_alloc - set if new job allocation, cleared if state recovery
  */
-extern void build_node_details(job_record_t *job_ptr, bool new_alloc);
+extern void build_node_details(job_record_t *job_ptr);
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make
