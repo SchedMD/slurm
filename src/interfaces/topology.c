@@ -94,6 +94,8 @@ typedef struct slurm_topo_ops {
 	uint32_t (*get_fragmentation)(bitstr_t *node_mask, void *tctx);
 	void (*get_topology_str)(node_record_t *node_ptr,
 				 char **topology_str_ptr, topology_ctx_t *tctx);
+	int (*get_rank)(bitstr_t *node_bitmap, uint32_t **node_rank,
+			uint32_t *size, void *tctx);
 } slurm_topo_ops_t;
 
 /*
@@ -124,6 +126,7 @@ static const char *syms[] = {
 	"topology_p_jobinfo_get",
 	"topology_p_get_fragmentation",
 	"topology_p_get_topology_str",
+	"topology_p_get_rank",
 };
 
 static slurm_topo_ops_t *ops = NULL;
@@ -880,6 +883,16 @@ extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask)
 	}
 
 	return fragmentation;
+}
+
+extern int topology_g_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, int idx)
+{
+	xassert(plugin_inited);
+	xassert((idx >= 0) && (idx < tctx_num));
+
+	return (*(ops[tctx[idx].idx].get_rank))(node_bitmap, node_rank, size,
+						tctx[idx].plugin_ctx);
 }
 
 extern void free_topology_ctx(topology_ctx_t *tctx_ptr)

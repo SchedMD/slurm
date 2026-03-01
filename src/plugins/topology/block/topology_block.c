@@ -283,6 +283,18 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, void *tctx)
+{
+	xassert(node_rank);
+	xassert(size);
+
+	*node_rank = NULL;
+	*size = 0;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Get bitmap of nodes in block
  *

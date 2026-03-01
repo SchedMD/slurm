@@ -132,6 +132,9 @@ typedef struct topology_eval {
 	topology_ctx_t *tctx;
 } topology_eval_t;
 
+/* Upper bits of node_rank represent the topology unit id */
+#define TOPO_RANK_ID_SHIFT 16
+
 /*****************************************************************************\
  *  Slurm topology functions
 \*****************************************************************************/
@@ -322,6 +325,8 @@ extern int topology_g_jobinfo_get(
  */
 extern uint32_t topology_g_get_fragmentation(bitstr_t *node_mask);
 
+extern int topology_g_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, int idx);
 /*
  * topology_g_get_topology_str - return the node's topology_str according to
  * the current topology configuration
