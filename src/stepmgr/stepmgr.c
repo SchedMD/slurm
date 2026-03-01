@@ -1074,7 +1074,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 {
 	node_record_t *node_ptr;
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
-	bitstr_t *select_nodes_avail = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
 	int cpu_cnt, i;
@@ -1194,7 +1193,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				 * for it to start responding again.
 				 */
 				FREE_NULL_BITMAP(nodes_avail);
-				FREE_NULL_BITMAP(select_nodes_avail);
 				*return_code = ESLURM_NODES_BUSY;
 				return NULL;
 			}
@@ -1213,7 +1211,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	    (step_spec->pn_min_memory >
 	     job_ptr->details->pn_min_memory)) {
 		FREE_NULL_BITMAP(nodes_avail);
-		FREE_NULL_BITMAP(select_nodes_avail);
 		*return_code = ESLURM_INVALID_TASK_MEMORY;
 		return NULL;
 	}
@@ -1377,7 +1374,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					log_flag(STEPS, "%s: %pJ All nodes in allocation required, but can't use them now",
 						 __func__, job_ptr);
 					FREE_NULL_BITMAP(nodes_avail);
-					FREE_NULL_BITMAP(select_nodes_avail);
 					xfree(usable_cpu_cnt);
 					*return_code = ESLURM_NODES_BUSY;
 					if (total_tasks == 0 &&
@@ -1408,7 +1404,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		log_flag(STEPS, "%s: Never able to satisfy the GRES request for this step",
 			 __func__);
 		FREE_NULL_BITMAP(nodes_avail);
-		FREE_NULL_BITMAP(select_nodes_avail);
 		xfree(usable_cpu_cnt);
 		return NULL;
 	}
@@ -1428,17 +1423,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 		job_resrcs_ptr->next_step_node_inx = 0;
 		xfree(usable_cpu_cnt);
-		FREE_NULL_BITMAP(select_nodes_avail);
 		return nodes_avail;
-	}
-
-	if (select_nodes_avail) {
-		/*
-		 * The select plugin told us these were the only ones we could
-		 * choose from.  If it doesn't fit here then defer request
-		 */
-		bit_and(nodes_avail, select_nodes_avail);
-		FREE_NULL_BITMAP(select_nodes_avail);
 	}
 
 	/*
@@ -1850,14 +1835,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 	job_resrcs_ptr->next_step_node_inx = bit_fls(nodes_picked) + 1;
 	FREE_NULL_BITMAP(nodes_avail);
-	FREE_NULL_BITMAP(select_nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	xfree(usable_cpu_cnt);
 	return nodes_picked;
 
 cleanup:
 	FREE_NULL_BITMAP(nodes_avail);
-	FREE_NULL_BITMAP(select_nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
 	xfree(usable_cpu_cnt);
