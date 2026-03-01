@@ -74,6 +74,7 @@
 #include "src/interfaces/mcs.h"
 #include "src/interfaces/select.h"
 #include "src/interfaces/switch.h"
+#include "src/interfaces/topology.h"
 
 #include "src/stepmgr/gres_stepmgr.h"
 #include "src/stepmgr/srun_comm.h"
@@ -807,6 +808,32 @@ static int _cmp_node_rank(const void *x, const void *y)
 	return 0;
 }
 
+/*
+ * Advance past the current topology unit in order_map, returning the index of
+ * the first entry whose node_rank differs from order_map[pos].
+ */
+static int _next_rank_start(node_rank_order_t *order_map, int order_cnt,
+			    int pos)
+{
+	uint32_t cur_unit = order_map[pos].node_rank >> TOPO_RANK_ID_SHIFT;
+	int next = (pos + 1) % order_cnt;
+
+	/* Sorted array: if first and last share the same unit. */
+	if ((order_map[0].node_rank >> TOPO_RANK_ID_SHIFT) ==
+	    (order_map[order_cnt - 1].node_rank >> TOPO_RANK_ID_SHIFT))
+		return next;
+
+	while (next != pos) {
+		if ((order_map[next].node_rank >> TOPO_RANK_ID_SHIFT) !=
+		    cur_unit)
+			return next;
+		next = (next + 1) % order_cnt;
+	}
+
+	/* It should never happen with sorted order_map */
+	return (pos + 1) % order_cnt;
+}
+
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
  * then select nodes with a sufficient CPU count.
  * IN job_ptr - job to contain step allocation
@@ -850,7 +877,8 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				      &node_inx) == SLURM_SUCCESS)
 			bit_set(picked_node_bitmap, node_inx);
 
-		job_ptr->job_resrcs->next_step_node_inx = (pos + 1) % order_cnt;
+		job_ptr->job_resrcs->next_step_node_inx =
+			_next_rank_start(order_map, order_cnt, pos);
 		return picked_node_bitmap;
 	}
 
@@ -872,7 +900,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 		if ((rem_cpus <= 0) && (rem_nodes <= 0)) {
 			/* Satisfied request */
 			job_ptr->job_resrcs->next_step_node_inx =
-				(pos + 1) % order_cnt;
+				_next_rank_start(order_map, order_cnt, pos);
 			xfree(usable_cpu_array);
 			return picked_node_bitmap;
 		}
@@ -926,7 +954,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 		if ((rem_cpus <= 0) && (rem_nodes <= 0)) {
 			/* Satisfied request */
 			job_ptr->job_resrcs->next_step_node_inx =
-				(pos + 1) % order_cnt;
+				_next_rank_start(order_map, order_cnt, pos);
 			xfree(usable_cpu_array);
 			return picked_node_bitmap;
 		}
