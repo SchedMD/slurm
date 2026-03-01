@@ -170,6 +170,14 @@ int srun(int ac, char **av)
 	list_t *srun_job_list = NULL;
 
 	slurm_init(NULL);
+	if (auth_is_plugin_type_inited(AUTH_PLUGIN_JWT)) {
+		/*
+		 * Bail out if we're trying to use auth/jwt.
+		 * Slurmd does not support this auth plugin, and srun needs
+		 * to talk to slurmd.
+		 */
+		fatal("auth/jwt is not supported for use with srun.");
+	}
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
