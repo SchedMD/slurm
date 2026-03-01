@@ -9357,6 +9357,7 @@ void job_time_limit(void)
 		else
 			prolog = 0;
 		if ((prolog == 0) && IS_JOB_CONFIGURING(job_ptr) &&
+		    !pick_batch_host(job_ptr) &&
 		    test_job_nodes_ready(job_ptr)) {
 			info("%s: Configuration for %pJ complete",
 			     __func__, job_ptr);

@@ -5066,7 +5066,8 @@ extern void prolog_running_decr(job_record_t *job_ptr)
 	if (job_ptr->job_state & JOB_REQUEUE_FED)
 		return;
 
-	if (IS_JOB_CONFIGURING(job_ptr) && test_job_nodes_ready(job_ptr)) {
+	if (IS_JOB_CONFIGURING(job_ptr) && !pick_batch_host(job_ptr) &&
+	    test_job_nodes_ready(job_ptr)) {
 		info("%s: Configuration for %pJ is complete",
 		     __func__, job_ptr);
 		job_config_fini(job_ptr);

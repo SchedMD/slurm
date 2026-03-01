@@ -2423,6 +2423,12 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 		}
 	}
 
+	if (pick_batch_host(job_ptr)) {
+		debug2("%s: %pJ still waiting for batch_host", __func__,
+		       job_ptr);
+		return 1;
+	}
+
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_DEFER_BATCH) &&
 	    (job_ptr->state_reason == WAIT_PROLOG)) {
 		if (job_ptr->node_bitmap_pr &&

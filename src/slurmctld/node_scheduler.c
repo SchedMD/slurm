@@ -3055,7 +3055,8 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		}
 	}
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
-	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
+	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap) ||
+	    pick_batch_host(job_ptr)) {
 		/* This handles nodes explicitly requesting node reboot */
 		job_state_set_flag(job_ptr, JOB_CONFIGURING);
 	}
