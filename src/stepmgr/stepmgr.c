@@ -3842,6 +3842,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	step_layout_req.num_tasks = num_tasks;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = plane_size;
+	step_layout_req.node_ranks = NULL;
 
 	if ((step_layout = slurm_step_layout_create(&step_layout_req))) {
 		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
