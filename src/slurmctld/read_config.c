@@ -1494,7 +1494,7 @@ void _sync_jobs_to_conf(void)
 
 		_sync_steps_to_conf(job_ptr);
 
-		build_node_details(job_ptr); /* set node_addr */
+		build_node_details(job_ptr);
 
 		if (job_fail) {
 			bool was_running = false;

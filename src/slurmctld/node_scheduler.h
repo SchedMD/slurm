@@ -75,7 +75,7 @@ extern void build_active_feature_bitmap(job_record_t *job_ptr,
 extern bitstr_t *build_active_feature_bitmap2(char *reboot_features);
 
 /*
- * build_node_details - sets addresses for allocated nodes
+ * build_node_details - sets node_cnt
  * IN job_ptr - pointer to a job record
  */
 extern void build_node_details(job_record_t *job_ptr);

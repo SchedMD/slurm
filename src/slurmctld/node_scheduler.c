@@ -4315,7 +4315,7 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 }
 
 /*
- * build_node_details - sets addresses for allocated nodes
+ * build_node_details - sets node_cnt
  * IN job_ptr - pointer to a job record
  */
 extern void build_node_details(job_record_t *job_ptr)
@@ -4331,12 +4331,9 @@ extern void build_node_details(job_record_t *job_ptr)
 		return;
 	}
 
-	/* Use hostlist here to ensure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
-
-	xfree(job_ptr->batch_host);
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
@@ -4344,14 +4341,6 @@ extern void build_node_details(job_record_t *job_ptr)
 		} else {
 			error("Invalid node %s in %pJ",
 			      this_node_name, job_ptr);
-		}
-		if (!job_ptr->batch_host && !job_ptr->batch_features) {
-			/*
-			 * Do not select until launch_job() as node features
-			 * might be changed by node_features plugin between
-			 * allocation time (now) and launch.
-			 */
-			job_ptr->batch_host = xstrdup(this_node_name);
 		}
 		free(this_node_name);
 	}
