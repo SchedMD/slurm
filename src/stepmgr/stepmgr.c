@@ -3692,14 +3692,12 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	     i++) {
 		uint16_t cpus, cpus_used;
 		int err_code = SLURM_SUCCESS;
-		node_record_t *node_ptr;
 
 		gres_test_args.test_mem = false;
 		gres_test_args.err_code = &err_code;
 		gres_test_args.node_offset++;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
-		node_ptr = node_record_table_ptr[i];
 
 		if (step_ptr->start_protocol_ver > node_ptr->protocol_version)
 			step_ptr->start_protocol_ver =
