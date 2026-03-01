@@ -1077,7 +1077,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt = 0;
-	int cpu_cnt, i;
+	int cpu_cnt;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	int job_blocked_nodes = 0, job_blocked_cpus = 0;
 	int gres_invalid_nodes = 0;
@@ -1844,8 +1844,9 @@ cleanup:
 		nodes_picked = bit_copy(stepmgr_ops->up_node_bitmap);
 		bit_not(nodes_picked);
 		bit_and(nodes_picked, job_ptr->node_bitmap);
-		for (i = 0; (node_ptr = next_node_bitmap(
-				     job_resrcs_ptr->node_bitmap, &i));
+		for (int i = 0;
+		     (node_ptr = next_node_bitmap(job_resrcs_ptr->node_bitmap,
+						  &i));
 		     i++) {
 			if (!IS_NODE_NO_RESPOND(node_ptr)) {
 				*return_code = ESLURM_NODES_BUSY;
