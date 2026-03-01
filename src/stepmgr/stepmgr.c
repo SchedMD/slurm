@@ -1867,7 +1867,6 @@ cleanup:
  * IN job_ptr - point to job
  * IN bitmap - map of nodes to tally
  * IN usable_cpu_cnt - count of usable CPUs based upon memory or gres specs
- *		NULL if not available
  * RET cpu count
  */
 static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -1876,29 +1875,20 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 	int i, sum = 0;
 	node_record_t *node_ptr;
 
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->cpus &&
-	    job_ptr->job_resrcs->node_bitmap) {
-		int node_inx = -1;
-		for (i = 0;
-		     (node_ptr = next_node_bitmap(
-			job_ptr->job_resrcs->node_bitmap, &i));
-		     i++) {
-			node_inx++;
-			if (!bit_test(job_ptr->node_bitmap, node_ptr->index) ||
-			    !bit_test(bitmap, node_ptr->index)) {
-				/* absent from current job or step bitmap */
-				continue;
-			}
-			if (usable_cpu_cnt)
-				sum += usable_cpu_cnt[node_ptr->index];
-			else
-				sum += job_ptr->job_resrcs->cpus[node_inx];
+	xassert(usable_cpu_cnt);
+	xassert(job_ptr->job_resrcs);
+	xassert(job_ptr->job_resrcs->node_bitmap);
+
+	for (i = 0;
+	     (node_ptr =
+		      next_node_bitmap(job_ptr->job_resrcs->node_bitmap, &i));
+	     i++) {
+		if (!bit_test(job_ptr->node_bitmap, node_ptr->index) ||
+		    !bit_test(bitmap, node_ptr->index)) {
+			/* absent from current job or step bitmap */
+			continue;
 		}
-	} else {
-		error("%pJ lacks cpus array", job_ptr);
-		for (i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
-			sum += node_ptr->config_ptr->cpus;
-		}
+		sum += usable_cpu_cnt[node_ptr->index];
 	}
 
 	return sum;
