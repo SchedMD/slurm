@@ -770,10 +770,11 @@ static int _next_node_inx(int *cur_inx, int *check_cnt, int len, int node_cnt,
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
  * then select nodes with a sufficient CPU count.
  * IN job_ptr - job to contain step allocation
- * IN/OUT node_bitmap - nodes available (IN), selectect for use (OUT)
+ * IN node_bitmap - nodes available (IN)
  * IN node_cnt - step node count specification
  * IN cpu_cnt - step CPU count specification
  * IN usable_cpu_cnt - count of usable CPUs on each node in node_bitmap
+ * RET nodes selected for use
  */
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
