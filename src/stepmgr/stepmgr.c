@@ -3650,13 +3650,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req = { 0 };
 	uint64_t gres_cpus;
-	int cpu_inx = -1, cpus_task_inx = -1;
 	int usable_cpus, usable_mem;
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1;
-	uint32_t cpu_count_reps[node_count];
-	uint32_t cpus_task_reps[node_count];
-	uint32_t cpus_task = 0;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
 	uint16_t ntasks_per_socket = 0;
 	node_record_t *node_ptr;
@@ -3722,8 +3718,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 
 			cpus /= threads;
 			cpus_used /= threads;
-			cpus_per_task_array[0] = cpus_per_task;
-			cpus_task_reps[0] = node_count;
+			cpus_per_task_array[set_nodes] = cpus_per_task;
 		} else {
 			/*
 			 * Here we are trying to figure out how many
@@ -3749,6 +3744,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			else
 				threads_per_core =
 					node_ptr->config_ptr->threads;
+			cpus_per_task_array[set_nodes] = cpus_per_task;
 			if (ntasks_per_socket == 1) {
 				uint16_t threads_per_socket;
 				threads_per_socket =
@@ -3756,20 +3752,12 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				threads_per_socket *= threads_per_core;
 
 				if (cpus_per_task < threads_per_socket)
-					cpus_task = threads_per_socket;
+					cpus_per_task_array[set_nodes] =
+						threads_per_socket;
 			} else if ((ntasks_per_core == 1) &&
 				   (cpus_per_task < threads_per_core))
-				cpus_task = threads_per_core;
-			else
-				cpus_task = cpus_per_task;
-
-			if ((cpus_task_inx == -1) ||
-			    (cpus_per_task_array[cpus_task_inx] != cpus_task)) {
-				cpus_task_inx++;
-				cpus_per_task_array[cpus_task_inx] = cpus_task;
-				cpus_task_reps[cpus_task_inx] = 1;
-			} else
-				cpus_task_reps[cpus_task_inx]++;
+				cpus_per_task_array[set_nodes] =
+					threads_per_core;
 		}
 
 		if (step_ptr->flags & SSF_OVERLAP_FORCE)
@@ -3806,14 +3794,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		}
 		debug3("step_layout cpus = %d pos = %d", usable_cpus, pos);
 
-		if ((cpu_inx == -1) ||
-		    (cpus_per_node[cpu_inx] != usable_cpus)) {
-			cpu_inx++;
-
-			cpus_per_node[cpu_inx] = usable_cpus;
-			cpu_count_reps[cpu_inx] = 1;
-		} else
-			cpu_count_reps[cpu_inx]++;
+		cpus_per_node[set_nodes] = usable_cpus;
 		set_nodes++;
 		gres_test_args.first_step_node = false;
 		gres_test_args.max_rem_nodes--;
@@ -3855,9 +3836,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	/* layout the tasks on the nodes */
 	step_layout_req.node_list = step_node_list;
 	step_layout_req.cpus_per_node = cpus_per_node;
-	step_layout_req.cpu_count_reps = cpu_count_reps;
 	step_layout_req.cpus_per_task = cpus_per_task_array;
-	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.num_hosts = node_count;
 	step_layout_req.num_tasks = num_tasks;
 	step_layout_req.task_dist = task_dist;

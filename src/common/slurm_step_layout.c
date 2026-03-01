@@ -463,30 +463,14 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			     slurm_step_layout_t *step_layout,
 			     const char *arbitrary_nodes)
 {
-	int cpu_cnt = 0, cpu_inx = 0, cpu_task_cnt = 0, cpu_task_inx = 0, i;
+	int i;
 	hostlist_t *hl;
-
 	uint16_t cpus[step_layout->node_cnt];
-	uint16_t cpus_per_task[1];
-	uint32_t cpus_task_reps[1];
 
 	if (step_layout->node_cnt == 0)
 		return SLURM_ERROR;
 	if (step_layout->tasks)	/* layout already completed */
 		return SLURM_SUCCESS;
-
-	if (!step_layout_req->cpus_per_task) {
-		cpus_per_task[0] = 1;
-		cpus_task_reps[0] = step_layout_req->num_hosts;
-		step_layout_req->cpus_per_task = cpus_per_task;
-		step_layout_req->cpus_task_reps = cpus_task_reps;
-	}
-
-	if (((int)step_layout_req->cpus_per_task[0] < 1) ||
-	    (step_layout_req->cpus_per_task[0] == NO_VAL16)) {
-		step_layout_req->cpus_per_task[0] = 1;
-		step_layout_req->cpus_task_reps[0] = step_layout_req->num_hosts;
-	}
 
 	step_layout->plane_size = step_layout_req->plane_size;
 
@@ -509,7 +493,8 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 	}
 
 	/* hostlist_t *hl = hostlist_create(step_layout->node_list); */
-	for (i=0; i<step_layout->node_cnt; i++) {
+	for (i = 0; i < step_layout->node_cnt; i++) {
+		uint16_t cpt = 1;
 		/* char *name = hostlist_shift(hl); */
 		/* if (!name) { */
 		/* 	error("hostlist incomplete for this job request"); */
@@ -518,8 +503,13 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 		/* } */
 		/* debug2("host %d = %s", i, name); */
 		/* free(name); */
-		cpus[i] = (step_layout_req->cpus_per_node[cpu_inx] /
-			   step_layout_req->cpus_per_task[cpu_task_inx]);
+
+		if (step_layout_req->cpus_per_task &&
+		    step_layout_req->cpus_per_task[i] > 0 &&
+		    step_layout_req->cpus_per_task[i] != NO_VAL16)
+			cpt = step_layout_req->cpus_per_task[i];
+
+		cpus[i] = step_layout_req->cpus_per_node[i] / cpt;
 		if (cpus[i] == 0) {
 			/* this can be a result of a heterogeneous allocation
 			 * (e.g. 4 cpus on one node and 2 on the second with
@@ -535,27 +525,12 @@ static int _init_task_layout(slurm_step_layout_req_t *step_layout_req,
 			   convey ntasks_per_node. Adjust the number
 			   of cpus to reflect that.
 			*/
-			uint16_t cpus_per_node =
-				step_layout->plane_size *
-				step_layout_req->cpus_per_task[cpu_task_inx];
+			uint16_t cpus_per_node = step_layout->plane_size * cpt;
 			if (cpus[i] > cpus_per_node)
 				cpus[i] = cpus_per_node;
 		}
 
 		/* info("got %d cpus", cpus[i]); */
-		if ((++cpu_cnt) >=
-		    step_layout_req->cpu_count_reps[cpu_inx]) {
-			/* move to next record */
-			cpu_inx++;
-			cpu_cnt = 0;
-		}
-
-		if ((++cpu_task_cnt) >=
-		    step_layout_req->cpus_task_reps[cpu_task_inx]) {
-			/* move to next record */
-			cpu_task_inx++;
-			cpu_task_cnt = 0;
-		}
 	}
 
 	if ((step_layout->task_dist & SLURM_DIST_NODEMASK)

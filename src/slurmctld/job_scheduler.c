@@ -2596,22 +2596,18 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	/* Should always be set for active jobs */
 	struct job_resources *resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_t *step_layout = NULL;
-	uint16_t cpus_per_task_array[1];
-	uint32_t cpus_task_reps[1];
 	uint16_t cpus_per_task = 1;
 	char *task_count = NULL;
+	uint16_t *cpus_per_node = NULL;
+	uint16_t *cpus_per_task_array = NULL;
+	int node_inx = 0;
 
 	slurm_step_layout_req_t step_layout_req = {
-		.cpus_per_task = cpus_per_task_array,
-		.cpus_task_reps = cpus_task_reps,
 		.plane_size = NO_VAL16,
 	};
 
 	xassert(job_ptr->details);
 	xassert(resrcs_ptr);
-
-	step_layout_req.cpu_count_reps = resrcs_ptr->cpu_array_reps;
-	step_layout_req.cpus_per_node = resrcs_ptr->cpu_array_value;
 
 	step_layout_req.num_hosts = resrcs_ptr->nhosts;
 
@@ -2619,8 +2615,23 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 	    (job_ptr->details->cpus_per_task != NO_VAL16))
 		cpus_per_task = job_ptr->details->cpus_per_task;
 
-	cpus_per_task_array[0] = cpus_per_task;
-	cpus_task_reps[0] = resrcs_ptr->nhosts;
+	/* Expand RLE cpu_array into flat per-node arrays */
+	cpus_per_node = xcalloc(resrcs_ptr->nhosts, sizeof(*cpus_per_node));
+	cpus_per_task_array =
+		xcalloc(resrcs_ptr->nhosts, sizeof(*cpus_per_task_array));
+	for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+		for (int j = 0; j < resrcs_ptr->cpu_array_reps[i]; j++) {
+			if (node_inx >= resrcs_ptr->nhosts)
+				break;
+			cpus_per_node[node_inx] =
+				resrcs_ptr->cpu_array_value[i];
+			cpus_per_task_array[node_inx] = cpus_per_task;
+			node_inx++;
+		}
+	}
+
+	step_layout_req.cpus_per_node = cpus_per_node;
+	step_layout_req.cpus_per_task = cpus_per_task_array;
 
 	if (job_ptr->bit_flags & JOB_NTASKS_SET &&
 	    (job_ptr->details->num_tasks)) {
@@ -2630,11 +2641,9 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 					    step_layout_req.num_hosts;
 	} else {
 		step_layout_req.num_tasks = 0;
-		for (int i = 0; i < resrcs_ptr->cpu_array_cnt; i++) {
+		for (int i = 0; i < resrcs_ptr->nhosts; i++) {
 			step_layout_req.num_tasks +=
-				(resrcs_ptr->cpu_array_value[i] /
-				 cpus_per_task) *
-				resrcs_ptr->cpu_array_reps[i];
+				cpus_per_node[i] / cpus_per_task;
 		}
 	}
 
@@ -2659,6 +2668,8 @@ extern char *get_tasks_per_node(job_record_t *job_ptr)
 		slurm_step_layout_destroy(step_layout);
 	}
 
+	xfree(cpus_per_node);
+	xfree(cpus_per_task_array);
 	return task_count;
 }
 
