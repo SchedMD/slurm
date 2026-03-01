@@ -572,8 +572,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		xassert(job_resrcs_ptr->core_bitmap_used);
 		pack_bit_str_hex(job_resrcs_ptr->core_bitmap, buffer);
 		pack_bit_str_hex(job_resrcs_ptr->core_bitmap_used, buffer);
-
-		pack_bit_str_hex(job_resrcs_ptr->node_bitmap, buffer);
+		/* node_bitmap not packed — rebuilt via reset_node_bitmap() */
 
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
@@ -733,8 +732,7 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 
 		unpack_bit_str_hex(&job_resrcs->core_bitmap, buffer);
 		unpack_bit_str_hex(&job_resrcs->core_bitmap_used, buffer);
-
-		unpack_bit_str_hex(&job_resrcs->node_bitmap, buffer);
+		/* node_bitmap not unpacked — rebuilt via reset_node_bitmap() */
 
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&empty, buffer);
