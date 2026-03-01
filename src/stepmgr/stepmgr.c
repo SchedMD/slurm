@@ -1641,9 +1641,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 
 		i = ROUNDUP(cpu_count, job_resrcs_ptr->cpu_array_value[0]);
-		step_spec->min_nodes = (i > step_spec->min_nodes) ?
-			i : step_spec->min_nodes ;
-
+		step_spec->min_nodes = MAX(i, step_spec->min_nodes);
 		/*
 		 * If we are trying to pack the nodes we only want the minimum
 		 * it takes to satisfy the request.
