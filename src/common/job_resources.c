@@ -326,6 +326,13 @@ extern job_resources_t *copy_job_resources(job_resources_t *job_resrcs_ptr)
 		       (sizeof(uint64_t) * job_resrcs_ptr->nhosts));
 	}
 
+	if (job_resrcs_ptr->node_ranks) {
+		new_layout->node_ranks =
+			xcalloc(new_layout->nhosts,
+				sizeof(*new_layout->node_ranks));
+		memcpy(new_layout->node_ranks, job_resrcs_ptr->node_ranks,
+		       (sizeof(*new_layout->node_ranks) * new_layout->nhosts));
+	}
 	/* Copy sockets_per_node, cores_per_socket and core_sock_rep_count */
 	new_layout->sockets_per_node = xcalloc(new_layout->nhosts,
 					       sizeof(uint16_t));
@@ -370,6 +377,7 @@ extern void free_job_resources(job_resources_t **job_resrcs_pptr)
 		xfree(job_resrcs_ptr->memory_allocated);
 		xfree(job_resrcs_ptr->memory_used);
 		FREE_NULL_BITMAP(job_resrcs_ptr->node_bitmap);
+		xfree(job_resrcs_ptr->node_ranks);
 		xfree(job_resrcs_ptr->nodes);
 		xfree(job_resrcs_ptr->sock_core_rep_count);
 		xfree(job_resrcs_ptr->sockets_per_node);
@@ -574,6 +582,12 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		pack_bit_str_hex(job_resrcs_ptr->core_bitmap_used, buffer);
 		/* node_bitmap not packed — rebuilt via reset_node_bitmap() */
 
+		if (job_resrcs_ptr->node_ranks)
+			pack32_array(job_resrcs_ptr->node_ranks,
+				     job_resrcs_ptr->nhosts, buffer);
+		else
+			pack32_array(NULL, 0, buffer);
+
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (job_resrcs_ptr == NULL) {
 			uint32_t empty = NO_VAL;
@@ -733,6 +747,12 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		unpack_bit_str_hex(&job_resrcs->core_bitmap, buffer);
 		unpack_bit_str_hex(&job_resrcs->core_bitmap_used, buffer);
 		/* node_bitmap not unpacked — rebuilt via reset_node_bitmap() */
+
+		safe_unpack32_array(&job_resrcs->node_ranks, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(job_resrcs->node_ranks);
+		else if (tmp32 != job_resrcs->nhosts)
+			goto unpack_error;
 
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&empty, buffer);
@@ -1061,6 +1081,8 @@ extern int extract_job_resources_node(job_resources_t *job, uint32_t node_id)
 		job->cpus_used[i] = job->cpus_used[i+1];
 		job->memory_allocated[i] = job->memory_allocated[i+1];
 		job->memory_used[i] = job->memory_used[i+1];
+		if (job->node_ranks)
+			job->node_ranks[i] = job->node_ranks[i + 1];
 	}
 
 	xfree(job->nodes);

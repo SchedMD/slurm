@@ -118,6 +118,7 @@ struct job_resources {
 	uint32_t  next_step_node_inx;
 	uint32_t  nhosts;
 	bitstr_t *node_bitmap;
+	uint32_t *node_ranks;
 	uint32_t  node_req;
 	char	 *nodes;
 	uint32_t  ncpus;
