@@ -3684,12 +3684,19 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	/* build cpus-per-node arrays for the subset of nodes used by step */
 	gres_test_args.max_rem_nodes =
 		bit_set_count(step_ptr->step_node_bitmap);
+	if ((!step_ptr->pn_min_memory) && _is_mem_resv()) {
+		gres_test_args.test_mem = true;
+	}
+	if (step_ptr->flags & SSF_OVERLAP_FORCE)
+		gres_test_args.ignore_alloc = true;
+	else
+		gres_test_args.ignore_alloc = false;
+
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
 		uint16_t cpus, cpus_used;
 		int err_code = SLURM_SUCCESS;
 
-		gres_test_args.test_mem = false;
 		gres_test_args.err_code = &err_code;
 		if (!bit_test(step_ptr->step_node_bitmap, i))
 			continue;
@@ -3775,14 +3782,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				     job_resrcs_ptr->memory_used[pos];
 			usable_mem /= mem_use;
 			usable_cpus = MIN(usable_cpus, usable_mem);
-		} else if ((!step_ptr->pn_min_memory) && _is_mem_resv()) {
-			gres_test_args.test_mem = true;
 		}
 
-		if (step_ptr->flags & SSF_OVERLAP_FORCE)
-			gres_test_args.ignore_alloc = true;
-		else
-			gres_test_args.ignore_alloc = false;
 		gres_test_args.node_offset = pos;
 
 		gres_cpus = gres_stepmgr_step_test(&gres_test_args);
