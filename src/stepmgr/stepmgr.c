@@ -1599,6 +1599,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	    (job_resrcs_ptr->cpu_array_value)) {
 		uint32_t cpu_count = step_spec->cpu_count;
 		uint16_t req_tpc;
+		uint32_t nodes_needed;
 		/*
 		 * Expand cpu account to account for blocked/used threads when
 		 * using threads-per-core. See _step_[de]alloc_lps() for similar
@@ -1640,8 +1641,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			}
 		}
 
-		i = ROUNDUP(cpu_count, job_resrcs_ptr->cpu_array_value[0]);
-		step_spec->min_nodes = MAX(i, step_spec->min_nodes);
+		nodes_needed =
+			ROUNDUP(cpu_count, job_resrcs_ptr->cpu_array_value[0]);
+		step_spec->min_nodes = MAX(nodes_needed, step_spec->min_nodes);
 		/*
 		 * If we are trying to pack the nodes we only want the minimum
 		 * it takes to satisfy the request.
