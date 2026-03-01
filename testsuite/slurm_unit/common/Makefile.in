@@ -100,7 +100,6 @@ TESTS = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @HAVE_CHECK_TRUE@	 sluid-test \
 @HAVE_CHECK_TRUE@	 xstring-test \
 @HAVE_CHECK_TRUE@	 parse_time-test \
-@HAVE_CHECK_TRUE@	 job-resources-test \
 @HAVE_CHECK_TRUE@	 pack-test \
 @HAVE_CHECK_TRUE@	 reverse_tree-test \
 @HAVE_CHECK_TRUE@	 xahash-test
@@ -174,9 +173,8 @@ CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@	dns-test$(EXEEXT) http-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	serializer-test$(EXEEXT) sluid-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xstring-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	job-resources-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	pack-test$(EXEEXT) reverse_tree-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	parse_time-test$(EXEEXT) pack-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	reverse_tree-test$(EXEEXT) \
 @HAVE_CHECK_TRUE@	xahash-test$(EXEEXT)
 @HAVE_CHECK_TRUE@@HAVE_LUA_TRUE@am__EXEEXT_2 = lua-test$(EXEEXT)
 am__EXEEXT_3 = log-test$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
@@ -204,15 +202,6 @@ http_test_OBJECTS = http_test-http-test.$(OBJEXT)
 http_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(http_test_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-job_resources_test_SOURCES = job-resources-test.c
-job_resources_test_OBJECTS =  \
-	job_resources_test-job-resources-test.$(OBJEXT)
-@HAVE_CHECK_TRUE@job_resources_test_DEPENDENCIES =  \
-@HAVE_CHECK_TRUE@	$(am__DEPENDENCIES_2)
-job_resources_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(job_resources_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
@@ -296,9 +285,8 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
 	./$(DEPDIR)/dns_test-dns-test.Po \
-	./$(DEPDIR)/http_test-http-test.Po \
-	./$(DEPDIR)/job_resources_test-job-resources-test.Po \
-	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/lua_test-lua-test.Po \
+	./$(DEPDIR)/http_test-http-test.Po ./$(DEPDIR)/log-test.Po \
+	./$(DEPDIR)/lua_test-lua-test.Po \
 	./$(DEPDIR)/pack_test-pack-test.Po \
 	./$(DEPDIR)/parse_time_test-parse_time-test.Po \
 	./$(DEPDIR)/reverse_tree_test-reverse_tree-test.Po \
@@ -326,10 +314,10 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = data-test.c dns-test.c http-test.c job-resources-test.c \
-	log-test.c lua-test.c pack-test.c parse_time-test.c \
-	reverse_tree-test.c serializer-test.c sluid-test.c \
-	xahash-test.c xhash-test.c xstring-test.c
+SOURCES = data-test.c dns-test.c http-test.c log-test.c lua-test.c \
+	pack-test.c parse_time-test.c reverse_tree-test.c \
+	serializer-test.c sluid-test.c xahash-test.c xhash-test.c \
+	xstring-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -868,8 +856,6 @@ LDADD = -ldl -lpthread $(LIB_SLURM)
 @HAVE_CHECK_TRUE@xstring_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@parse_time_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
-@HAVE_CHECK_TRUE@job_resources_test_CFLAGS = $(MYCFLAGS)
-@HAVE_CHECK_TRUE@job_resources_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@pack_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@reverse_tree_test_CFLAGS = $(MYCFLAGS)
@@ -932,10 +918,6 @@ http-test$(EXEEXT): $(http_test_OBJECTS) $(http_test_DEPENDENCIES) $(EXTRA_http_
 	@rm -f http-test$(EXEEXT)
 	$(AM_V_CCLD)$(http_test_LINK) $(http_test_OBJECTS) $(http_test_LDADD) $(LIBS)
 
-job-resources-test$(EXEEXT): $(job_resources_test_OBJECTS) $(job_resources_test_DEPENDENCIES) $(EXTRA_job_resources_test_DEPENDENCIES) 
-	@rm -f job-resources-test$(EXEEXT)
-	$(AM_V_CCLD)$(job_resources_test_LINK) $(job_resources_test_OBJECTS) $(job_resources_test_LDADD) $(LIBS)
-
 log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test_DEPENDENCIES) 
 	@rm -f log-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(log_test_OBJECTS) $(log_test_LDADD) $(LIBS)
@@ -985,7 +967,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns_test-dns-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_test-http-test.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources_test-job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lua_test-lua-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack_test-pack-test.Po@am__quote@ # am--include-marker
@@ -1065,20 +1046,6 @@ http_test-http-test.obj: http-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='http-test.c' object='http_test-http-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(http_test_CFLAGS) $(CFLAGS) -c -o http_test-http-test.obj `if test -f 'http-test.c'; then $(CYGPATH_W) 'http-test.c'; else $(CYGPATH_W) '$(srcdir)/http-test.c'; fi`
-
-job_resources_test-job-resources-test.o: job-resources-test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -MT job_resources_test-job-resources-test.o -MD -MP -MF $(DEPDIR)/job_resources_test-job-resources-test.Tpo -c -o job_resources_test-job-resources-test.o `test -f 'job-resources-test.c' || echo '$(srcdir)/'`job-resources-test.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/job_resources_test-job-resources-test.Tpo $(DEPDIR)/job_resources_test-job-resources-test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='job-resources-test.c' object='job_resources_test-job-resources-test.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -c -o job_resources_test-job-resources-test.o `test -f 'job-resources-test.c' || echo '$(srcdir)/'`job-resources-test.c
-
-job_resources_test-job-resources-test.obj: job-resources-test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -MT job_resources_test-job-resources-test.obj -MD -MP -MF $(DEPDIR)/job_resources_test-job-resources-test.Tpo -c -o job_resources_test-job-resources-test.obj `if test -f 'job-resources-test.c'; then $(CYGPATH_W) 'job-resources-test.c'; else $(CYGPATH_W) '$(srcdir)/job-resources-test.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/job_resources_test-job-resources-test.Tpo $(DEPDIR)/job_resources_test-job-resources-test.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='job-resources-test.c' object='job_resources_test-job-resources-test.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(job_resources_test_CFLAGS) $(CFLAGS) -c -o job_resources_test-job-resources-test.obj `if test -f 'job-resources-test.c'; then $(CYGPATH_W) 'job-resources-test.c'; else $(CYGPATH_W) '$(srcdir)/job-resources-test.c'; fi`
 
 lua_test-lua-test.o: lua-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lua_test_CFLAGS) $(CFLAGS) -MT lua_test-lua-test.o -MD -MP -MF $(DEPDIR)/lua_test-lua-test.Tpo -c -o lua_test-lua-test.o `test -f 'lua-test.c' || echo '$(srcdir)/'`lua-test.c
@@ -1540,13 +1507,6 @@ parse_time-test.log: parse_time-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-job-resources-test.log: job-resources-test$(EXEEXT)
-	@p='job-resources-test$(EXEEXT)'; \
-	b='job-resources-test'; \
-	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
 pack-test.log: pack-test$(EXEEXT)
 	@p='pack-test$(EXEEXT)'; \
 	b='pack-test'; \
@@ -1638,7 +1598,6 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/data_test-data-test.Po
 	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
-	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/lua_test-lua-test.Po
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po
@@ -1697,7 +1656,6 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/data_test-data-test.Po
 	-rm -f ./$(DEPDIR)/dns_test-dns-test.Po
 	-rm -f ./$(DEPDIR)/http_test-http-test.Po
-	-rm -f ./$(DEPDIR)/job_resources_test-job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/lua_test-lua-test.Po
 	-rm -f ./$(DEPDIR)/pack_test-pack-test.Po

@@ -27,7 +27,6 @@ TESTS += xhash-test \
 	 sluid-test \
 	 xstring-test \
 	 parse_time-test \
-	 job-resources-test \
 	 pack-test \
 	 reverse_tree-test \
 	 xahash-test
@@ -50,8 +49,6 @@ xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
 parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
-job_resources_test_CFLAGS = $(MYCFLAGS)
-job_resources_test_LDADD = $(LDADD) @CHECK_LIBS@
 pack_test_CFLAGS = $(MYCFLAGS)
 pack_test_LDADD = $(LDADD) @CHECK_LIBS@
 reverse_tree_test_CFLAGS = $(MYCFLAGS)
