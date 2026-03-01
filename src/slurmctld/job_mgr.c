@@ -1704,7 +1704,6 @@ extern int job_mgr_load_job_state(buf_t *buffer,
 		job_set_req_tres(job_ptr, true);
 	assoc_mgr_unlock(&locks);
 
-	build_node_details(job_ptr, false);	/* set node_addr */
 	gres_stepmgr_job_build_details(
 		job_ptr->gres_list_alloc, job_ptr->nodes,
 		&job_ptr->gres_detail_cnt,
