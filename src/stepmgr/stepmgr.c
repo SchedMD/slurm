@@ -895,7 +895,7 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 static int _mark_busy_nodes(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
-	bitstr_t *busy = (bitstr_t *) arg;
+	bitstr_t *nodes_idle = arg;
 
 	if (step_ptr->state < JOB_RUNNING)
 		return 0;
@@ -916,7 +916,7 @@ static int _mark_busy_nodes(void *x, void *arg)
 		return 0;
 	}
 
-	bit_or(busy, step_ptr->step_node_bitmap);
+	bit_and_not(nodes_idle, step_ptr->step_node_bitmap);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_STEPS) {
 		char *temp;
@@ -1541,10 +1541,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		bit_and_not(nodes_avail, relative_nodes);
 		FREE_NULL_BITMAP(relative_nodes);
 	} else {
-		nodes_idle = bit_alloc (bit_size (nodes_avail) );
+		nodes_idle = bit_copy(nodes_avail);
 		list_for_each(job_ptr->step_list, _mark_busy_nodes, nodes_idle);
-		bit_not(nodes_idle);
-		bit_and(nodes_idle, nodes_avail);
 	}
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_STEPS) {
