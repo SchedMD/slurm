@@ -3128,8 +3128,7 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 			packstr(dump_job_ptr->nodes_pr, buffer);
 		packstr(dump_job_ptr->nodes, buffer);
 		pack32(dump_job_ptr->node_cnt, buffer);
-
-		pack_bit_str_hex(dump_job_ptr->node_bitmap, buffer);
+		/* node_bitmap not packed — rebuilt from nodes string */
 
 		packstr(dump_job_ptr->partition, buffer);
 		packstr(dump_job_ptr->lic_req, buffer);
@@ -3644,7 +3643,7 @@ extern int job_record_unpack(job_record_t **out,
 			safe_unpackstr(&job_ptr->nodes_pr, buffer);
 		safe_unpackstr(&job_ptr->nodes, buffer);
 		safe_unpack32(&job_ptr->node_cnt, buffer);
-		unpack_bit_str_hex(&job_ptr->node_bitmap, buffer);
+		/* node_bitmap not unpacked — rebuilt from nodes string */
 		safe_unpackstr(&job_ptr->partition, buffer);
 		if (job_ptr->partition == NULL) {
 			error("No partition for JobId=%u", job_ptr->job_id);
