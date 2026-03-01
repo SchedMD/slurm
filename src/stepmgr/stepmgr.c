@@ -96,6 +96,11 @@ typedef struct {
 	list_t *node_gres_list;
 } foreach_gres_filter_t;
 
+typedef struct {
+	uint32_t node_inx;
+	uint32_t node_rank;
+} node_rank_order_t;
+
 static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
 static int _step_partial_comp(step_record_t *step_ptr,
@@ -115,7 +120,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  uint32_t node_count, int *return_code);
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
-				       int cpu_cnt, uint32_t *usable_cpu_cnt);
+				       int cpu_cnt, uint32_t *usable_cpu_cnt,
+				       node_rank_order_t *order_map,
+				       int order_cnt);
 static void _step_dealloc_lps(step_record_t *step_ptr);
 static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
@@ -728,43 +735,76 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 	list_delete_all(job_ptr->step_list, _wake_steps, &args);
 }
 
-/* Set cur_inx to the next round-robin node index */
-static int _next_node_inx(int *cur_inx, int *check_cnt, int len, int node_cnt,
-			  bitstr_t *nodes_bitmap, bitstr_t **picked_node_bitmap,
-			  int start_inx)
+/*
+ * Set node_inx to the next node in the order map
+ *
+ * IN/OUT cur_pos - current position in order_map
+ * IN/OUT check_cnt - how many nodes returned so far
+ * IN node_cnt - max nodes to return
+ * IN nodes_bitmap - nodes available
+ * IN start_pos - starting position in order_map
+ * IN order_map - array of (node_inx, node_rank) for all job nodes
+ * IN order_cnt - number of entries in order_map
+ * OUT node_inx - the selected node index
+ * RET SLURM_SUCCESS or SLURM_ERROR when exhausted
+ */
+static int _next_node_inx(int *cur_pos, int *check_cnt, int node_cnt,
+			  bitstr_t *nodes_bitmap, int start_pos,
+			  node_rank_order_t *order_map, int order_cnt,
+			  int *node_inx)
 {
-	bool wrapped = false;
-	xassert(cur_inx);
+	int iter_cnt = 0;
+
+	xassert(cur_pos);
 	xassert(check_cnt);
 	xassert(nodes_bitmap);
-	xassert(picked_node_bitmap);
-
-	if (*check_cnt == 0) {
-		*cur_inx = start_inx;
-	} else {
-		*cur_inx = (*cur_inx + 1) % len;
-		wrapped = *cur_inx <= start_inx;
-		if (*cur_inx == start_inx)
-			return SLURM_ERROR; /* Normal break case */
-	}
+	xassert(order_map);
+	xassert(order_cnt > 0);
+	xassert(node_inx);
 
 	if (*check_cnt >= node_cnt)
-		return SLURM_ERROR; /* Normal break case */
-
-	*cur_inx = bit_ffs_from_bit(nodes_bitmap, *cur_inx);
-
-	if (wrapped && (*cur_inx >= start_inx))
-		return SLURM_ERROR; /* Normal break case */
-
-	if (*cur_inx < 0) {
-		/* This should never happen */
-		xassert(false);
-		FREE_NULL_BITMAP(*picked_node_bitmap);
 		return SLURM_ERROR;
+
+	if (*check_cnt == 0) {
+		*cur_pos = start_pos;
+	} else {
+		*cur_pos = (*cur_pos + 1) % order_cnt;
+		if (*cur_pos == start_pos)
+			return SLURM_ERROR;
 	}
 
-	(*check_cnt)++;
-	return SLURM_SUCCESS;
+	while (iter_cnt < order_cnt) {
+		int candidate = order_map[*cur_pos].node_inx;
+
+		if (bit_test(nodes_bitmap, candidate)) {
+			*node_inx = candidate;
+			(*check_cnt)++;
+			return SLURM_SUCCESS;
+		}
+
+		*cur_pos = (*cur_pos + 1) % order_cnt;
+		if (*cur_pos == start_pos)
+			break;
+		iter_cnt++;
+	}
+
+	return SLURM_ERROR;
+}
+
+static int _cmp_node_rank(const void *x, const void *y)
+{
+	const node_rank_order_t *nx = x;
+	const node_rank_order_t *ny = y;
+
+	if (nx->node_rank > ny->node_rank)
+		return 1;
+	else if (nx->node_rank < ny->node_rank)
+		return -1;
+	if (nx->node_inx > ny->node_inx)
+		return 1;
+	else if (nx->node_inx < ny->node_inx)
+		return -1;
+	return 0;
 }
 
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
@@ -778,35 +818,39 @@ static int _next_node_inx(int *cur_inx, int *check_cnt, int len, int node_cnt,
  */
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
-				       int cpu_cnt, uint32_t *usable_cpu_cnt)
+				       int cpu_cnt, uint32_t *usable_cpu_cnt,
+				       node_rank_order_t *order_map,
+				       int order_cnt)
 {
 	bitstr_t *picked_node_bitmap = NULL;
 	int *usable_cpu_array;
 	int cpu_target;	/* Target number of CPUs per allocated node */
 	int rem_nodes, rem_cpus, save_rem_nodes, save_rem_cpus;
-	int i;
-	int start_inx, bit_len, check_cnt;
+	int i, pos = 0, check_cnt, node_inx;
+	int start_pos;
 
 	xassert(node_cnt > 0);
 	xassert(nodes_bitmap);
 	xassert(usable_cpu_cnt);
+	xassert(order_map);
+	xassert(order_cnt > 0);
 
 	picked_node_bitmap = bit_alloc(node_record_count);
-	start_inx = job_ptr->job_resrcs->next_step_node_inx;
-	bit_len = bit_fls(nodes_bitmap) + 1;
-	if (start_inx >= bit_len)
-		start_inx = 0;
+	start_pos = job_ptr->job_resrcs->next_step_node_inx;
+	if (start_pos >= order_cnt)
+		start_pos = 0;
 
 	cpu_target = ROUNDUP(cpu_cnt, node_cnt);
 	if (cpu_target > 1024)
 		info("%s: high cpu_target (%d)", __func__, cpu_target);
 	if ((cpu_cnt <= node_cnt) || (cpu_target > 1024)) {
 		check_cnt = 0;
-		while (_next_node_inx(&i, &check_cnt, bit_len, node_cnt,
-				      nodes_bitmap, &picked_node_bitmap,
-				      start_inx) == SLURM_SUCCESS)
-			bit_set(picked_node_bitmap, i);
+		while (_next_node_inx(&pos, &check_cnt, node_cnt, nodes_bitmap,
+				      start_pos, order_map, order_cnt,
+				      &node_inx) == SLURM_SUCCESS)
+			bit_set(picked_node_bitmap, node_inx);
 
+		job_ptr->job_resrcs->next_step_node_inx = (pos + 1) % order_cnt;
 		return picked_node_bitmap;
 	}
 
@@ -815,18 +859,20 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	rem_nodes = node_cnt;
 	rem_cpus  = cpu_cnt;
 	check_cnt = 0;
-	while (_next_node_inx(&i, &check_cnt, bit_len, bit_len, nodes_bitmap,
-			      &picked_node_bitmap, start_inx) ==
-	       SLURM_SUCCESS) {
-		if (usable_cpu_cnt[i] < cpu_target) {
-			usable_cpu_array[usable_cpu_cnt[i]]++;
+	while (_next_node_inx(&pos, &check_cnt, order_cnt, nodes_bitmap,
+			      start_pos, order_map, order_cnt,
+			      &node_inx) == SLURM_SUCCESS) {
+		if (usable_cpu_cnt[node_inx] < cpu_target) {
+			usable_cpu_array[usable_cpu_cnt[node_inx]]++;
 			continue;
 		}
-		bit_set(picked_node_bitmap, i);
-		rem_cpus -= usable_cpu_cnt[i];
+		bit_set(picked_node_bitmap, node_inx);
+		rem_cpus -= usable_cpu_cnt[node_inx];
 		rem_nodes--;
 		if ((rem_cpus <= 0) && (rem_nodes <= 0)) {
 			/* Satisfied request */
+			job_ptr->job_resrcs->next_step_node_inx =
+				(pos + 1) % order_cnt;
 			xfree(usable_cpu_array);
 			return picked_node_bitmap;
 		}
@@ -866,19 +912,21 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 
 	/* Pick nodes with CPU counts below original target */
 	check_cnt = 0;
-	while (_next_node_inx(&i, &check_cnt, bit_len, bit_len, nodes_bitmap,
-			      &picked_node_bitmap, start_inx) ==
-	       SLURM_SUCCESS) {
-		if (usable_cpu_cnt[i] >= cpu_target)
+	while (_next_node_inx(&pos, &check_cnt, order_cnt, nodes_bitmap,
+			      start_pos, order_map, order_cnt,
+			      &node_inx) == SLURM_SUCCESS) {
+		if (usable_cpu_cnt[node_inx] >= cpu_target)
 			continue;	/* already picked */
-		if (usable_cpu_array[usable_cpu_cnt[i]] == 0)
+		if (usable_cpu_array[usable_cpu_cnt[node_inx]] == 0)
 			continue;
-		usable_cpu_array[usable_cpu_cnt[i]]--;
-		bit_set(picked_node_bitmap, i);
-		rem_cpus -= usable_cpu_cnt[i];
+		usable_cpu_array[usable_cpu_cnt[node_inx]]--;
+		bit_set(picked_node_bitmap, node_inx);
+		rem_cpus -= usable_cpu_cnt[node_inx];
 		rem_nodes--;
 		if ((rem_cpus <= 0) && (rem_nodes <= 0)) {
 			/* Satisfied request */
+			job_ptr->job_resrcs->next_step_node_inx =
+				(pos + 1) % order_cnt;
 			xfree(usable_cpu_array);
 			return picked_node_bitmap;
 		}
@@ -1083,6 +1131,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int gres_invalid_nodes = 0;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
+	node_rank_order_t *order_map = NULL;
+	int order_cnt = 0;
 	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = cpus_per_task,
 		.first_step_node = true,
@@ -1427,6 +1477,23 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		return nodes_avail;
 	}
 
+	order_cnt = bit_set_count(job_resrcs_ptr->node_bitmap);
+	if (order_cnt > 0) {
+		order_map = xcalloc(order_cnt, sizeof(*order_map));
+		for (int node_idx = 0, map_idx = 0;
+		     next_node_bitmap(job_resrcs_ptr->node_bitmap, &node_idx);
+		     node_idx++) {
+			order_map[map_idx].node_inx = node_idx;
+			if (job_resrcs_ptr->node_ranks)
+				order_map[map_idx].node_rank =
+					job_resrcs_ptr->node_ranks[map_idx];
+			map_idx++;
+		}
+		if (job_resrcs_ptr->node_ranks)
+			qsort(order_map, order_cnt, sizeof(*order_map),
+			      _cmp_node_rank);
+	}
+
 	/*
 	 * An allocating srun will send in the same node_list that was already
 	 * used to construct the job allocation. In that case, we can assume
@@ -1697,10 +1764,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						     step_spec->max_nodes,
 						     node_avail_cnt,
 						     nodes_picked_cnt);
-			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_idle,
-							 nodes_needed,
-							 cpus_needed,
-							 usable_cpu_cnt);
+			node_tmp =
+				_pick_step_nodes_cpus(job_ptr, nodes_idle,
+						      nodes_needed, cpus_needed,
+						      usable_cpu_cnt, order_map,
+						      order_cnt);
 			if (node_tmp) {
 				bit_or(nodes_picked, node_tmp);
 				bit_and_not(nodes_idle, node_tmp);
@@ -1720,10 +1788,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						     step_spec->max_nodes,
 						     node_avail_cnt,
 						     nodes_picked_cnt);
-			node_tmp = _pick_step_nodes_cpus(job_ptr, nodes_avail,
-							 nodes_needed,
-							 cpus_needed,
-							 usable_cpu_cnt);
+			node_tmp =
+				_pick_step_nodes_cpus(job_ptr, nodes_avail,
+						      nodes_needed, cpus_needed,
+						      usable_cpu_cnt, order_map,
+						      order_cnt);
 			if (node_tmp == NULL) {
 				/* Count of nodes already picked for step */
 				int pick_node_cnt = bit_set_count(nodes_avail);
@@ -1823,9 +1892,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 	}
 
-	job_resrcs_ptr->next_step_node_inx = bit_fls(nodes_picked) + 1;
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
+	xfree(order_map);
 	xfree(usable_cpu_cnt);
 	return nodes_picked;
 
@@ -1833,6 +1902,7 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
+	xfree(order_map);
 	xfree(usable_cpu_cnt);
 	if (*return_code == SLURM_SUCCESS) {
 		*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
