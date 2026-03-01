@@ -3648,7 +3648,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	uint16_t cpus_per_task_array[node_count];
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-	slurm_step_layout_req_t step_layout_req;
+	slurm_step_layout_req_t step_layout_req = { 0 };
 	uint64_t gres_cpus;
 	int cpu_inx = -1, cpus_task_inx = -1;
 	int usable_cpus, usable_mem;
@@ -3855,7 +3855,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	/* } */
 
 	/* layout the tasks on the nodes */
-	memset(&step_layout_req, 0, sizeof(slurm_step_layout_req_t));
 	step_layout_req.node_list = step_node_list;
 	step_layout_req.cpus_per_node = cpus_per_node;
 	step_layout_req.cpu_count_reps = cpu_count_reps;
