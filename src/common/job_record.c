@@ -828,7 +828,6 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
-		pack16(step_ptr->cyclic_alloc, buffer);
 		pack32(step_ptr->srun_pid, buffer);
 		pack16(step_ptr->port, buffer);
 		pack16(step_ptr->cpus_per_task, buffer);
@@ -919,7 +918,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
-		pack16(step_ptr->cyclic_alloc, buffer);
+		pack16(0, buffer);
 		pack32(step_ptr->srun_pid, buffer);
 		pack16(step_ptr->port, buffer);
 		pack16(step_ptr->cpus_per_task, buffer);
@@ -1009,7 +1008,7 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
-		pack16(step_ptr->cyclic_alloc, buffer);
+		pack16(0, buffer);
 		pack32(step_ptr->srun_pid, buffer);
 		pack16(step_ptr->port, buffer);
 		pack16(step_ptr->cpus_per_task, buffer);
@@ -1160,7 +1159,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
-		safe_unpack16(&cyclic_alloc, buffer);
 		safe_unpack32(&srun_pid, buffer);
 		safe_unpack16(&port, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
@@ -1407,13 +1405,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		goto unpack_error;
 	}
 
-	/* validity test as possible */
-	if (cyclic_alloc > 1) {
-		error("Invalid data for %pJ StepId=%u: cyclic_alloc=%u",
-		      job_ptr, step_id.step_id, cyclic_alloc);
-		goto unpack_error;
-	}
-
 	step_ptr = create_step_record(job_ptr, start_protocol_ver);
 	if (step_ptr == NULL)
 		goto unpack_error;
@@ -1433,7 +1424,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	cpu_alloc_values = NULL;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
-	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->resv_port_cnt= resv_port_cnt;
 	step_ptr->resv_ports   = resv_ports;
 	step_ptr->memory_allocated = memory_allocated;

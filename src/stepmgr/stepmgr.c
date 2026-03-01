@@ -3482,18 +3482,6 @@ extern int step_create(job_record_t *job_ptr,
 		 step_node_list, step_specs->node_list);
 	step_ptr->step_node_bitmap = nodeset;
 
-	switch (step_specs->task_dist & SLURM_DIST_NODESOCKMASK) {
-	case SLURM_DIST_CYCLIC:
-	case SLURM_DIST_CYCLIC_CYCLIC:
-	case SLURM_DIST_CYCLIC_CFULL:
-	case SLURM_DIST_CYCLIC_BLOCK:
-		step_ptr->cyclic_alloc = 1;
-		break;
-	default:
-		step_ptr->cyclic_alloc = 0;
-		break;
-	}
-
 	step_ptr->container = xstrdup(step_specs->container);
 	step_ptr->container_id = xstrdup(step_specs->container_id);
 	step_ptr->container_type = xstrdup(step_specs->container_type);
