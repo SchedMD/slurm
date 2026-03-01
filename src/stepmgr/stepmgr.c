@@ -1112,8 +1112,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		return NULL;
 	}
 
-	if (!nodes_avail)
-		nodes_avail = bit_copy (job_ptr->node_bitmap);
+	nodes_avail = bit_copy(job_ptr->node_bitmap);
+
 	bit_and(nodes_avail, stepmgr_ops->up_node_bitmap);
 
 	if (step_spec->exc_nodes) {
@@ -1409,7 +1409,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	}
 
 	if (step_spec->min_nodes == INFINITE) {	/* use all nodes */
-		if ((step_spec->num_tasks == NO_VAL) && nodes_avail &&
+		if ((step_spec->num_tasks == NO_VAL) &&
 		    !(step_spec->flags & SSF_EXT_LAUNCHER)) {
 			_set_max_num_tasks(step_spec, job_ptr, nodes_avail,
 					   cpus_per_task);
@@ -1566,7 +1566,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		uint32_t cnt = 0;
 		bitstr_t *node_bitmap = NULL;
 
-		if ((step_spec->flags & SSF_OVERLAP_FORCE) && nodes_avail) {
+		if ((step_spec->flags & SSF_OVERLAP_FORCE)) {
 			cnt = bit_set_count(nodes_avail);
 			node_bitmap = nodes_avail;
 		} else if (nodes_idle) {
@@ -1675,10 +1675,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		 * step we can never test if the step requested too
 		 * many CPUs, too much memory, etc. so we just bail right here.
 		 */
-		if (nodes_avail)
-			node_avail_cnt = bit_set_count(nodes_avail);
-		else
-			node_avail_cnt = 0;
+		node_avail_cnt = bit_set_count(nodes_avail);
 		if ((node_avail_cnt + nodes_picked_cnt) <
 		    step_spec->min_nodes) {
 			log_flag(STEPS, "%s: Step requested more nodes (%u) than are available (%d), deferring step until enough nodes are available.",
@@ -1715,10 +1712,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				nodes_needed = 0;
 			}
 		}
-		if (nodes_avail)
-			node_avail_cnt = bit_set_count(nodes_avail);
-		else
-			node_avail_cnt = 0;
+		node_avail_cnt = bit_set_count(nodes_avail);
 		if ((nodes_needed > 0) &&
 		    (node_avail_cnt >= nodes_needed)) {
 			cpus_needed = _opt_cpu_cnt(step_spec->cpu_count,
