@@ -3646,6 +3646,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	slurm_step_layout_t *step_layout = NULL;
 	uint16_t cpus_per_node[node_count];
 	uint16_t cpus_per_task_array[node_count];
+	uint32_t *step_node_ranks = NULL;
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	slurm_step_layout_req_t step_layout_req = { 0 };
@@ -3692,6 +3693,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	else
 		gres_test_args.ignore_alloc = false;
 
+	if (job_resrcs_ptr->node_ranks)
+		step_node_ranks = xcalloc(node_count, sizeof(*step_node_ranks));
+
 	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
 	     i++) {
 		uint16_t cpus, cpus_used;
@@ -3706,8 +3710,10 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				node_ptr->protocol_version;
 
 		/* find out the position in the job */
-		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i)) {
+			xfree(step_node_ranks);
 			return NULL;
+		}
 		pos = bit_set_count_range(job_resrcs_ptr->node_bitmap, 0, i);
 		if (pos >= job_resrcs_ptr->nhosts)
 			fatal("%s: node index bad", __func__);
@@ -3791,11 +3797,15 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			usable_cpus = gres_cpus;
 		if (usable_cpus <= 0) {
 			error("%s: no usable CPUs", __func__);
+			xfree(step_node_ranks);
 			return NULL;
 		}
 		debug3("step_layout cpus = %d pos = %d", usable_cpus, pos);
 
 		cpus_per_node[set_nodes] = usable_cpus;
+		if (job_resrcs_ptr->node_ranks)
+			step_node_ranks[set_nodes] =
+				job_resrcs_ptr->node_ranks[pos];
 		set_nodes++;
 		gres_test_args.first_step_node = false;
 		gres_test_args.max_rem_nodes--;
@@ -3842,7 +3852,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	step_layout_req.num_tasks = num_tasks;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = plane_size;
-	step_layout_req.node_ranks = NULL;
+	step_layout_req.node_ranks = step_node_ranks;
 
 	if ((step_layout = slurm_step_layout_create(&step_layout_req))) {
 		step_layout->start_protocol_ver = step_ptr->start_protocol_ver;
@@ -3851,6 +3861,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			step_layout->alias_addrs = build_alias_addrs(job_ptr);
 	}
 
+	xfree(step_node_ranks);
 	return step_layout;
 }
 
