@@ -87,7 +87,7 @@ extern int url_parser_g_init(void)
 	if (!(g_context = plugin_context_create(plugin_type, url_parser_type,
 						(void **) &ops, syms,
 						sizeof(syms)))) {
-		error("cannot create %s context for %s",
+		warning("cannot create %s context for %s",
 		      plugin_type, url_parser_type);
 		rc = SLURM_ERROR;
 		plugin_inited = PLUGIN_NOT_INITED;
