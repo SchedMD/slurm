@@ -3558,7 +3558,7 @@ static int _parse_select_type_param(
 				       "CR_ONE_TASK_PER_CORE")) {
 			*param |= SELECT_ONE_TASK_PER_CORE;
 		} else if (!xstrcasecmp(str_parameters,
-				       "CR_CORE_DEFAULT_DIST_BLOCK")) {
+					"CR_CORE_DEFAULT_DIST_BLOCK")) {
 			*param |= SELECT_CORE_DEFAULT_DIST_BLOCK;
 		} else if (!xstrcasecmp(str_parameters, "CR_LLN")) {
 			*param |= SELECT_LLN;
