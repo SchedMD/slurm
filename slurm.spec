@@ -104,13 +104,7 @@ BuildRequires:  pkgconfig
 %if %{with cgroupv2}
 Requires: libbpf
 BuildRequires: kernel-headers
-%if %{defined suse_version}
-Requires: dbus-1
-BuildRequires: dbus-1-devel
-%else
-Requires: dbus
-BuildRequires: dbus-devel
-%endif
+BuildRequires: pkgconfig(dbus-1)
 %endif
 
 %if %{with munge}
