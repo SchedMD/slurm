@@ -160,6 +160,7 @@ typedef struct partition_statistics {
 	uint16_t nodes_resv;
 	uint16_t nodes_unknown;
 	uint32_t total_cpus; /* number of CPUs associated with the partition. */
+	uint64_t total_gpus; /* number of GPUs associated with the partition. */
 	uint16_t total_nodes; /* number of total nodes in the partition */
 } partition_stats_t;
 

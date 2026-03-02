@@ -555,6 +555,7 @@ static int _part_stats_to_metric(void *x, void *arg)
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_resv, partition_nodes_resv, "Nodes with Reserved flag", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->nodes_unknown, partition_nodes_unknown, "Nodes in Unknown state", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT32, ps->total_cpus, partition_cpus, "Partition total cpus", GAUGE, "partition", ps->name);
+	ADD_METRIC_KEYVAL(set, UINT64, ps->total_gpus, partition_gpus, "Partition total gpus", GAUGE, "partition", ps->name);
 	ADD_METRIC_KEYVAL(set, UINT16, ps->total_nodes, partition_nodes, "Partition total nodes", GAUGE, "partition", ps->name);
 	// clang-format on
 

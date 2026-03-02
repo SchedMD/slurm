@@ -387,6 +387,8 @@ static void _statistics_part_aggregate_node(partition_stats_t *ps,
 	ps->nodes_cpus_efctv += ns->cpus_efctv;
 	ps->nodes_cpus_idle += ns->cpus_idle;
 
+	ps->total_gpus += ns->gpus_total;
+
 	ps->nodes_mem_alloc += ns->mem_alloc;
 	ps->nodes_mem_avail += ns->mem_avail;
 	ps->nodes_mem_free += ns->mem_free;
