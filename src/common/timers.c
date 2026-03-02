@@ -76,16 +76,16 @@ typedef struct {
 #define T(label, start, end) { label, start, end }
 static const latency_range_t latency_ranges[LATENCY_RANGE_COUNT] = {
 	/* WARNING: LATENCY_RANGE_COUNT must equal ARRAY_SIZE(latency_ranges) */
-	T("<1µs", TS(0, 0), TS(0, MSEC_IN_SEC)),
-	T("1µs - 2µs", TS(0, (1 * MSEC_IN_SEC)), TS(0, (2 * MSEC_IN_SEC))),
-	T("2µs - 4µs", TS(0, (2 * MSEC_IN_SEC)), TS(0, (4 * MSEC_IN_SEC))),
-	T("4µs - 8µs", TS(0, (4 * MSEC_IN_SEC)), TS(0, (8 * MSEC_IN_SEC))),
-	T("8µs - 16µs", TS(0, (8 * MSEC_IN_SEC)), TS(0, (16 * MSEC_IN_SEC))),
-	T("16µs - 64µs", TS(0, (16 * MSEC_IN_SEC)), TS(0, (64 * MSEC_IN_SEC))),
-	T("64µs - 128µs", TS(0, (64 * MSEC_IN_SEC)), TS(0, (128 * MSEC_IN_SEC))),
-	T("128µs - 256µs", TS(0, (128 * MSEC_IN_SEC)), TS(0, (256 * MSEC_IN_SEC))),
-	T("256µs - 512µs", TS(0, (256 * MSEC_IN_SEC)), TS(0, (512 * MSEC_IN_SEC))),
-	T("512µs - 1ms", TS(0, (512 * MSEC_IN_SEC)), TS(0, NSEC_IN_MSEC)),
+	T("<1us", TS(0, 0), TS(0, MSEC_IN_SEC)),
+	T("1us - 2us", TS(0, (1 * MSEC_IN_SEC)), TS(0, (2 * MSEC_IN_SEC))),
+	T("2us - 4us", TS(0, (2 * MSEC_IN_SEC)), TS(0, (4 * MSEC_IN_SEC))),
+	T("4us - 8us", TS(0, (4 * MSEC_IN_SEC)), TS(0, (8 * MSEC_IN_SEC))),
+	T("8us - 16us", TS(0, (8 * MSEC_IN_SEC)), TS(0, (16 * MSEC_IN_SEC))),
+	T("16us - 64us", TS(0, (16 * MSEC_IN_SEC)), TS(0, (64 * MSEC_IN_SEC))),
+	T("64us - 128us", TS(0, (64 * MSEC_IN_SEC)), TS(0, (128 * MSEC_IN_SEC))),
+	T("128us - 256us", TS(0, (128 * MSEC_IN_SEC)), TS(0, (256 * MSEC_IN_SEC))),
+	T("256us - 512us", TS(0, (256 * MSEC_IN_SEC)), TS(0, (512 * MSEC_IN_SEC))),
+	T("512us - 1ms", TS(0, (512 * MSEC_IN_SEC)), TS(0, NSEC_IN_MSEC)),
 	T("1ms - 2ms", TS(0, NSEC_IN_MSEC), TS(0, (2 * NSEC_IN_MSEC))),
 	T("2ms - 8ms", TS(0, (2 * NSEC_IN_MSEC)), TS(0, (8 * NSEC_IN_MSEC))),
 	T("8ms - 16ms", TS(0, (8 * NSEC_IN_MSEC)), TS(0, (16 * NSEC_IN_MSEC))),
@@ -275,7 +275,7 @@ extern int latency_histogram_print_labels(char *buffer, size_t buffer_len)
 	for (int i = 0;
 	     (i < ARRAY_SIZE(latency_ranges)) && (wrote < buffer_len); i++)
 		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
-				  "%s%-8s",
+				  "%s%-13s",
 				  (wrote ? HISTOGRAM_FIELD_DELIMITER : ""),
 				  latency_ranges[i].label);
 	return wrote;
@@ -317,7 +317,7 @@ extern int latency_histogram_print(latency_histogram_t *histogram, char *buffer,
 	for (int i = 0;
 	     (i < ARRAY_SIZE(latency_ranges)) && (wrote < buffer_len); i++)
 		wrote += snprintf((buffer + wrote), (buffer_len - wrote),
-				  "%s%-8" PRId64,
+				  "%s%-13" PRId64,
 				  (wrote ? HISTOGRAM_FIELD_DELIMITER : ""),
 				  atomic_uint64_get(histogram->buckets[i]));
 
