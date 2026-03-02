@@ -15,6 +15,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/openapi.h"
 #include "src/common/plugrack.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
