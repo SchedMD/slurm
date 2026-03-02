@@ -3557,6 +3557,18 @@ all job data removed will be lost permanently.
 .IP
 
 .TP
+\fBJobScript\fR
+Archive Job scripts. If not specified and PurgeJobScriptAfter is set
+all job script data removed will be lost permanently.
+.IP
+
+.TP
+\fBJobEnv\fR
+Archive Job environments. If not specified and PurgeJobEnvAfter is set
+all job env data removed will be lost permanently.
+.IP
+
+.TP
 \fBPurgeEventAfter\fR=
 Purge cluster event records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
@@ -3567,6 +3579,22 @@ value of '12hours' would purge everything older than 12 hours.)
 .TP
 \fBPurgeJobAfter\fR=
 Purge job records older than time stated in months. If you
+want to purge on a shorter time period you can include hours, or days
+behind the numeric value to get those more frequent purges. (e.g. a
+value of '12hours' would purge everything older than 12 hours.)
+.IP
+
+.TP
+\fBPurgeJobScriptAfter\fR=
+Purge job script records older than time stated in months. If you
+want to purge on a shorter time period you can include hours, or days
+behind the numeric value to get those more frequent purges. (e.g. a
+value of '12hours' would purge everything older than 12 hours.)
+.IP
+
+.TP
+\fBPurgeJobEnvAfter\fR=
+Purge job environment records older than time stated in months. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)

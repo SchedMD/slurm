@@ -65,6 +65,19 @@ no otherwise. Default is no.
 .IP
 
 .TP
+\fBArchiveJobScript\fR
+When purging jobscripts also archive them. Boolean, yes to archive jobscript data,
+no otherwise. Default is no.
+.IP
+
+.TP
+\fBArchiveJobEnv\fR
+When purging job environments also archive them. Boolean, yes to archive job
+environment data,
+no otherwise. Default is no.
+.IP
+
+.TP
 \fBArchiveResvs\fR
 When purging reservations also archive them. Boolean, yes to archive
 reservation data, no otherwise. Default is no.
@@ -772,6 +785,38 @@ If not set (default), then event records are never purged.
 .TP
 \fBPurgeJobAfter\fR
 Individual job records are purged from the database after this amount of time
+has passed since they ended.
+Aggregated information will be preserved to "PurgeUsageAfter".
+The time is a numeric value and is a number of months. If you want to purge
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
+If not set (default), then job records are never purged.
+NOTE: if PurgeJobScriptAfter or PurgeJobEnvAfter is not specified job scripts
+and job environments will be also purged at the frequency specified here.
+.IP
+
+.TP
+\fBPurgeJobScriptAfter\fR
+Individual job script records are purged from the database after this amount of time
+has passed since they ended.
+Aggregated information will be preserved to "PurgeUsageAfter".
+The time is a numeric value and is a number of months. If you want to purge
+more often you can include "hours", or "days" behind the numeric value to get
+those more frequent purges (i.e. a value of "12hours" would purge
+everything older than 12 hours).
+The purge takes place at the start of the each purge interval.
+For example, if the purge time is 2 months, the purge would happen at the
+beginning of each month.
+If not set (default), then job records are never purged.
+.IP
+
+.TP
+\fBPurgeJobEnvAfter\fR
+Individual job environment records are purged from the database after this amount of time
 has passed since they ended.
 Aggregated information will be preserved to "PurgeUsageAfter".
 The time is a numeric value and is a number of months. If you want to purge

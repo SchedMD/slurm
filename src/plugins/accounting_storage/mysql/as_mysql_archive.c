@@ -43,6 +43,7 @@
 
 #include "as_mysql_archive.h"
 #include "src/common/env.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
 
@@ -965,7 +966,9 @@ typedef enum {
 	PURGE_STEP,
 	PURGE_TXN,
 	PURGE_USAGE,
-	PURGE_CLUSTER_USAGE
+	PURGE_CLUSTER_USAGE,
+	PURGE_JOB_SCRIPT_NJ,
+	PURGE_JOB_ENV_NJ
 } purge_type_t;
 
 static uint32_t high_buffer_size = (1024 * 1024);
@@ -3586,10 +3589,12 @@ static char *_get_archive_columns(purge_type_t type)
 		col_count = JOB_REQ_COUNT;
 		break;
 	case PURGE_JOB_ENV:
+	case PURGE_JOB_ENV_NJ:
 		cols      = job_env_inx;
 		col_count = JOB_ENV_COUNT;
 		break;
 	case PURGE_JOB_SCRIPT:
+	case PURGE_JOB_SCRIPT_NJ:
 		cols      = job_script_inx;
 		col_count = JOB_SCRIPT_COUNT;
 		break;
@@ -4091,9 +4096,12 @@ static buf_t *_pack_archive_job_env(MYSQL_RES *result, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (period_start && !*period_start)
-			error("period_start should already be set");
-
+		if (period_start && !*period_start) {
+			/* If archived with jobs then the job submit time
+			 * will be respected for the period */
+			debug("Period not set by jobs table setting one based job_env_table");
+			*period_start = parse_time(row[JOB_ENV_LAST_USED], 1);
+		}
 		memset(&job, 0, sizeof(local_job_env_t));
 
 		job.hash_inx = row[JOB_ENV_HASH_INX];
@@ -4199,9 +4207,13 @@ static buf_t *_pack_archive_job_script(MYSQL_RES *result, char *cluster_name,
 	pack32(cnt, buffer);
 
 	while ((row = mysql_fetch_row(result))) {
-		if (period_start && !*period_start)
-			error("period_start should already be set");
-
+		if (period_start && !*period_start) {
+			/* If archived with jobs then the job submit time
+			 * will be respected for the period */
+			debug("Period not set by jobs table setting one based job_script_table");
+			*period_start =
+				parse_time(row[JOB_SCRIPT_LAST_USED], 1);
+		}
 		memset(&job, 0, sizeof(local_job_script_t));
 
 		job.hash_inx = row[JOB_SCRIPT_HASH_INX];
@@ -5158,10 +5170,12 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 
 	switch (type) {
 	case PURGE_JOB_ENV:
+	case PURGE_JOB_ENV_NJ:
 		parent_table = job_table;
 		hash_col = "env_hash_inx";
 		break;
 	case PURGE_JOB_SCRIPT:
+	case PURGE_JOB_SCRIPT_NJ:
 		parent_table = job_table;
 		hash_col = "script_hash_inx";
 		break;
@@ -5201,6 +5215,14 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 				       cluster_name, parent_table,
 				       slurmdbd_conf->max_purge_limit,
 				       hash_col);
+		break;
+	case PURGE_JOB_ENV_NJ:
+	case PURGE_JOB_SCRIPT_NJ:
+		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
+				       "unix_timestamp(%s) <= %ld LIMIT %d",
+				       cluster_name, sql_table, col_name,
+				       period_end,
+				       slurmdbd_conf->max_purge_limit);
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
@@ -5261,9 +5283,11 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 		pack_func = &_pack_archive_jobs;
 		break;
 	case PURGE_JOB_ENV:
+	case PURGE_JOB_ENV_NJ:
 		pack_func = &_pack_archive_job_env;
 		break;
 	case PURGE_JOB_SCRIPT:
+	case PURGE_JOB_SCRIPT_NJ:
 		pack_func = &_pack_archive_job_script;
 		break;
 	case PURGE_STEP:
@@ -5384,6 +5408,16 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 			col_name, cluster, table, col_name, period_end,
 			col_name);
 		break;
+	case PURGE_JOB_SCRIPT_NJ:
+	case PURGE_JOB_ENV_NJ:
+		query = xstrdup_printf("select unix_timestamp(%s) from "
+				       "\"%s_%s\" where unix_timestamp(%s) "
+				       "<= %ld order by %s asc limit 1",
+				       col_name, cluster, table, col_name,
+				       period_end, col_name);
+
+		break;
+
 	default:
 		query = xstrdup_printf(
 			"select %s from \"%s_%s\" where %s <= %ld "
@@ -5405,6 +5439,7 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 		return 0;
 	}
 	row = mysql_fetch_row(result);
+
 	*record_start = slurm_atoul(row[0]);
 	mysql_free_result(result);
 
@@ -5545,6 +5580,16 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		purge_attr = arch_cond->purge_usage;
 		col_name   = cluster_req_inx[CLUSTER_MOD_TIME];
 		break;
+	case PURGE_JOB_SCRIPT_NJ:
+		purge_attr = arch_cond->purge_jobscript;
+		sql_table = job_script_table;
+		col_name = job_script_inx[JOB_SCRIPT_LAST_USED];
+		break;
+	case PURGE_JOB_ENV_NJ:
+		purge_attr = arch_cond->purge_jobenv;
+		sql_table = job_env_table;
+		col_name = job_env_inx[JOB_ENV_LAST_USED];
+		break;
 	default:
 		fatal("Unknown purge type: %d", purge_type);
 		return SLURM_ERROR;
@@ -5569,12 +5614,21 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 		break;
 	case PURGE_JOB:
-		purge_query = xstrdup_printf(
-			"delete from \"%s_%s\" where deleted=1 LIMIT %d;"
-			"delete from \"%s_%s\" where deleted=1 LIMIT %d;",
-			cluster_name, job_script_table,
-			slurmdbd_conf->max_purge_limit, cluster_name,
-			job_env_table, slurmdbd_conf->max_purge_limit);
+		if (arch_cond->purge_jobenv == NO_VAL)
+			/* Explicit job_env_table purge not requested */
+			xstrfmtcat(
+				purge_query,
+				"delete from \"%s_%s\" where deleted=1 LIMIT %d;",
+				cluster_name, job_env_table,
+				slurmdbd_conf->max_purge_limit);
+
+		if (arch_cond->purge_jobscript == NO_VAL)
+			/* Explicit job_script_table purge not requested */
+			xstrfmtcat(
+				purge_query,
+				"delete from \"%s_%s\" where deleted=1 LIMIT %d;",
+				cluster_name, job_script_table,
+				slurmdbd_conf->max_purge_limit);
 		/* fall through */
 	default:
 		xstrfmtcat(purge_query,
@@ -5607,17 +5661,20 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 
 		if (purge_type == PURGE_JOB) {
 			/* Purge associated data from hash tables */
-			rc = _purge_mark(PURGE_JOB_ENV, mysql_conn,
-					 curr_end, cluster_name,
-					 col_name, job_env_table);
-			if (rc != SLURM_SUCCESS)
-				goto end_it;
-
-			rc = _purge_mark(PURGE_JOB_SCRIPT, mysql_conn,
-					 curr_end, cluster_name,
-					 col_name, job_script_table);
-			if (rc != SLURM_SUCCESS)
-				goto end_it;
+			if (arch_cond->purge_jobenv == NO_VAL) {
+				rc = _purge_mark(PURGE_JOB_ENV, mysql_conn,
+						 curr_end, cluster_name,
+						 col_name, job_env_table);
+				if (rc != SLURM_SUCCESS)
+					goto end_it;
+			}
+			if (arch_cond->purge_jobscript == NO_VAL) {
+				rc = _purge_mark(PURGE_JOB_SCRIPT, mysql_conn,
+						 curr_end, cluster_name,
+						 col_name, job_script_table);
+				if (rc != SLURM_SUCCESS)
+					goto end_it;
+			}
 		}
 
 		/* Do archive */
@@ -5631,32 +5688,35 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 					    purge_attr, sql_table, usage_info);
 			if (rc == SLURM_ERROR)
 				goto end_it;
+			cnt += rc;
 
 			if (purge_type == PURGE_JOB) {
 				/* Archive associated data from hash tables */
-				rc = _archive_table(PURGE_JOB_ENV,
-						    mysql_conn, cluster_name,
-						    col_name, &start, curr_end,
-						    arch_cond->archive_dir,
-						    purge_attr, job_env_table,
-						    usage_info);
-				if (rc == SLURM_ERROR)
-					goto end_it;
-				cnt += rc;
-
-				rc = _archive_table(PURGE_JOB_SCRIPT,
-						    mysql_conn, cluster_name,
-						    col_name, &start, curr_end,
-						    arch_cond->archive_dir,
-						    purge_attr,
-						    job_script_table,
-						    usage_info);
-				if (rc == SLURM_ERROR)
-					goto end_it;
-				cnt += rc;
+				if (arch_cond->purge_jobenv == NO_VAL) {
+					rc = _archive_table(
+						PURGE_JOB_ENV, mysql_conn,
+						cluster_name, col_name, &start,
+						curr_end,
+						arch_cond->archive_dir,
+						purge_attr, job_env_table,
+						usage_info);
+					if (rc == SLURM_ERROR)
+						goto end_it;
+					cnt += rc;
+				}
+				if (arch_cond->purge_jobscript == NO_VAL) {
+					rc = _archive_table(
+						PURGE_JOB_SCRIPT, mysql_conn,
+						cluster_name, col_name, &start,
+						curr_end,
+						arch_cond->archive_dir,
+						purge_attr, job_script_table,
+						usage_info);
+					if (rc == SLURM_ERROR)
+						goto end_it;
+					cnt += rc;
+				}
 			}
-
-			cnt += rc;
 
 			if (!cnt) { /* no records archived */
 				error("%s: No records archived for %s before %ld but we found some records",
@@ -5745,6 +5805,19 @@ static int _execute_archive(mysql_conn_t *mysql_conn,
 	if (arch_cond->purge_txn != NO_VAL) {
 		if ((rc = _archive_purge_table(PURGE_TXN, 0, mysql_conn,
 					       cluster_name, arch_cond)))
+			return rc;
+	}
+
+	if (arch_cond->purge_jobenv != NO_VAL) {
+		if ((rc = _archive_purge_table(PURGE_JOB_ENV_NJ, 0, mysql_conn,
+					       cluster_name, arch_cond)))
+			return rc;
+	}
+
+	if (arch_cond->purge_jobscript != NO_VAL) {
+		if ((rc = _archive_purge_table(PURGE_JOB_SCRIPT_NJ, 0,
+					       mysql_conn, cluster_name,
+					       arch_cond)))
 			return rc;
 	}
 
