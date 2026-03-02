@@ -99,7 +99,7 @@ static const latency_range_t latency_ranges[LATENCY_RANGE_COUNT] = {
 	T("1m - 2m", TS(MINUTE_SECONDS, 0), TS((2 * MINUTE_SECONDS), 0)),
 	T("2m - 4m", TS((2 * MINUTE_SECONDS), 0), TS((4 * MINUTE_SECONDS), 0)),
 	T("4m - 8m", TS((4 * MINUTE_SECONDS), 0), TS((8 * MINUTE_SECONDS), 0)),
-	T(">8m", TS((4 * MINUTE_SECONDS), 0), TIMESPEC_INFINITE)
+	T(">8m", TS((8 * MINUTE_SECONDS), 0), TIMESPEC_INFINITE)
 };
 #undef T
 #undef TS
