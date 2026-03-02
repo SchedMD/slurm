@@ -194,6 +194,11 @@ extern char *select_type_param_string(uint16_t select_type_param)
 			strcat(select_str, ",");
 		strcat(select_str, "CR_ONE_TASK_PER_CORE");
 	}
+	if (select_type_param & SELECT_NO_DIST_TOPO_BLOCK) {
+		if (select_str[0])
+			strcat(select_str, ",");
+		strcat(select_str, "CR_NO_DIST_TOPO_BLOCK");
+	}
 	if (select_type_param & SELECT_CORE_DEFAULT_DIST_BLOCK) {
 		if (select_str[0])
 			strcat(select_str, ",");
