@@ -43,6 +43,7 @@ import pytest
 def setup():
     atf.require_version(
         (25, 11),
+        component="bin/sbatch",
         reason="The --requeue=expedite option was added in 25.11",
     )
     atf.require_auto_config("wants to set and unset Epilog")
