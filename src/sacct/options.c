@@ -526,9 +526,10 @@ extern void parse_command_line(int argc, char **argv)
 		params.opt_local = true;
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv,
-				"aA:bBcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
-				long_options, &option_index);
+		c = getopt_long(
+			argc, argv,
+			"aA:bBcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:R:s:S:Ttu:UvVW:x:X",
+			long_options, &option_index);
 		if (c == -1)
 			break;
 		switch (c) {
