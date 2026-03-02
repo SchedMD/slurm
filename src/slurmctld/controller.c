@@ -3397,8 +3397,8 @@ static void _parse_commandline(int argc, char **argv)
 	}
 
 	opterr = 0;
-	while ((c = getopt_long(argc, argv, "cdDf:hiL:n:rRsvV",
-	       long_options, NULL)) > 0) {
+	while ((c = getopt_long(argc, argv, "cDf:hiL:n:rRsvV", long_options,
+				NULL)) > 0) {
 		switch (c) {
 		case 'c':
 			recover = 0;
