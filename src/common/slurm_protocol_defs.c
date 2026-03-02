@@ -1878,6 +1878,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->het_job_id_set);
 		xfree(job->job_size_str);
 		xfree(job->licenses);
+		xfree(job->licenses_allocated);
 		xfree(job->mail_user);
 		xfree(job->mcs_label);
 		xfree(job->mem_per_tres);
@@ -1894,6 +1895,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->req_node_inx);
 		xfree(job->req_nodes);
 		xfree(job->resv_name);
+		xfree(job->resv_ports);
 		free_job_resources(&job->job_resrcs);
 		xfree(job->selinux_context);
 		xfree(job->state_desc);
