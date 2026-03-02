@@ -554,6 +554,7 @@ static void _allocate_channel(
 
 		list_for_each(*channel_list, _release_channel, job_ptr);
 		FREE_NULL_LIST(*channel_list);
+		*rc_ptr = SLURM_ERROR;
 	}
 }
 
