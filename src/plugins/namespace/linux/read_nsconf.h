@@ -64,7 +64,7 @@ extern ns_conf_t *get_slurm_ns_conf(void);
 /* Return pointer to the the slurm_ns_conf_buf */
 extern buf_t *get_slurm_ns_conf_buf(void);
 
-/* Free the job_container config structures */
+/* Free the namespace config structures */
 extern void free_ns_conf(void);
 
 #endif

@@ -911,7 +911,7 @@ extern void set_job_state(slurmstepd_state_t new_state)
 }
 
 /*
- * Run SPANK functions within the job container.
+ * Run SPANK functions within the job namespace.
  * WARNING: This is running as a separate process, but sharing the parent's
  * memory space. Be careful not to leak memory, or free resources that the
  * parent needs to continue processing. Only use _exit() here, otherwise
@@ -1360,7 +1360,7 @@ static int _spawn_job_container(void)
 		conmgr_add_work_signal(SIGTERM, _x11_signal_handler, NULL);
 
 		/*
-		 * When using job_container/tmpfs we need to get into
+		 * When using a namespace plugin we need to get into
 		 * the correct namespace or .Xauthority won't be visible
 		 * in /tmp from inside the job.
 		 */
@@ -1846,14 +1846,14 @@ static int _pre_task_child_privileged(int taskid, struct priv_state *sp)
 	set_oom_adj(0); /* the tasks may be killed by OOM */
 
 	if (!(step->flags & LAUNCH_NO_ALLOC)) {
-		/* Add job's pid to job container, if a normal job */
+		/* Add job's pid to job namespace, if a normal job */
 		if (namespace_g_join(&step->step_id, step->uid, false)) {
 			error("namespace_g_join(%pI) failed", &step->step_id);
 			exit(1);
 		}
 
 		/*
-		 * tmpfs job container plugin changes the working directory
+		 * The namespace/tmpfs plugin changes the working directory
 		 * back to root working directory, so change it back to users
 		 * but after dropping privillege
 		 */

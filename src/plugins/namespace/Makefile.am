@@ -1,4 +1,4 @@
-# Makefile for job_container plugins
+# Makefile for namespace plugins
 
 SUBDIRS =
 

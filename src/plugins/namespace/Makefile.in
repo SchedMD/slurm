@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for job_container plugins
+# Makefile for namespace plugins
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
