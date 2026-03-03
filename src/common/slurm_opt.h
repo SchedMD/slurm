@@ -74,6 +74,7 @@ enum {
 	LONG_OPT_ACCTG_FREQ,
 	LONG_OPT_ALLOC_NODELIST,
 	LONG_OPT_ARGV,
+	LONG_OPT_ASYNC,
 	LONG_OPT_BATCH,
 	LONG_OPT_BCAST,
 	LONG_OPT_BCAST_EXCLUDE,
@@ -249,6 +250,7 @@ typedef struct {
 typedef struct {
 	uint16_t accel_bind_type;	/* --accel-bind			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
+	bool async;			/* --async			*/
 	char *bcast_exclude;		/* --bcast-exclude */
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */

@@ -677,6 +677,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	     slurm_conf.kill_on_bad_exit))
 		step_req->flags |= SSF_KILL_ON_BAD_EXIT;
 
+	if (srun_opt->async)
+		step_req->flags |= SSF_ASYNC;
+
 	if (opt_local->immediate == 1)
 		step_req->immediate = opt_local->immediate;
 
