@@ -1128,6 +1128,14 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
 		slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
 				       DBD_GOT_JOBS, *out_buffer);
+		if (list_msg.return_code == ESLURM_RESULT_TOO_LARGE) {
+			free_buf(*out_buffer);
+			*out_buffer = slurm_persist_make_rc_msg(
+				slurmdbd_conn->pcon, ESLURM_RESULT_TOO_LARGE,
+				slurm_strerror(ESLURM_RESULT_TOO_LARGE),
+				DBD_GET_JOBS_COND);
+			rc = SLURM_ERROR;
+		}
 	} else {
 		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
 							errno,
