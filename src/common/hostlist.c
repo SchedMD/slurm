@@ -1538,7 +1538,7 @@ static int _parse_box_range(char *str, struct _range * *ranges,
  * returns 1 if str contained a valid number or range,
  *         0 if conversion of str to a range failed.
  */
-static int _parse_single_range(const char *str, struct _range *range, int dims)
+static int _parse_single_range(char *str, struct _range *range, int dims)
 {
 	char *p, *q;
 	char *orig = strdup(str);
