@@ -350,6 +350,10 @@ extern int url_path_walk(const char *path, bool allow_templates,
 	int rc = SLURM_SUCCESS;
 	char *buffer = NULL, *buffer_at = NULL;
 
+	/* Skip empty path strings */
+	if (!path || !path[0])
+		return SLURM_SUCCESS;
+
 	/* extract each word */
 	for (const char *ptr = path; !rc && (*ptr != '\0'); ptr++) {
 		if (_is_valid_url_char(*ptr)) {
@@ -366,7 +370,8 @@ extern int url_path_walk(const char *path, bool allow_templates,
 				rc = ESLURM_URL_INVALID_FORMATING;
 			} else {
 				/* find end of template */
-				char *end = xstrstr(ptr, "}");
+				const char *start = (ptr + 1);
+				const char *end = xstrstr(ptr, "}");
 
 				if (!end) {
 					debug("%s: missing terminated OAS template character: }",
@@ -375,8 +380,9 @@ extern int url_path_walk(const char *path, bool allow_templates,
 					break;
 				}
 
-				xstrncatat(buffer, &buffer_at, ptr,
-					   (end - ptr + 1));
+				xassert(end > start);
+				xstrncatat(buffer, &buffer_at, start,
+					   (end - start));
 				rc = on_entry(buffer, true, arg);
 				ptr = end;
 			}
