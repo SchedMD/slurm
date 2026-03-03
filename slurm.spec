@@ -57,6 +57,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with multiple_slurmd
 %bcond_with pmix
 %bcond_with ucx
+%bcond_with selinux
 
 # These options are only here to force there to be these on the build.
 # If they are not set they will still be compiled if the packages exist.
@@ -103,13 +104,7 @@ BuildRequires:  pkgconfig
 %if %{with cgroupv2}
 Requires: libbpf
 BuildRequires: kernel-headers
-%if %{defined suse_version}
-Requires: dbus-1
-BuildRequires: dbus-1-devel
-%else
-Requires: dbus
-BuildRequires: dbus-devel
-%endif
+BuildRequires: pkgconfig(dbus-1)
 %endif
 
 %if %{with munge}
@@ -175,34 +170,25 @@ BuildRequires: pkgconfig(lua) >= 5.1.0
 %endif
 
 %if %{with hwloc} && "%{_with_hwloc}" == "--with-hwloc"
-BuildRequires: hwloc-devel
+BuildRequires: pkgconfig(hwloc)
 %endif
 
 %if %{with numa}
-%if %{defined suse_version}
-BuildRequires: libnuma-devel
-%else
-BuildRequires: numactl-devel
-%endif
+BuildRequires: pkgconfig(numa)
 %endif
 
 %if %{with pmix} && "%{_with_pmix}" == "--with-pmix"
-BuildRequires: pmix
+BuildRequires: pkgconfig(pmix)
 %global pmix_version %(rpm -q pmix --qf "%{RPMTAG_VERSION}")
 %endif
 
 %if %{with ucx} && "%{_with_ucx}" == "--with-ucx"
-BuildRequires: ucx-devel
+BuildRequires: pkgconfig(ucx)
 %global ucx_version %(rpm -q ucx-devel --qf "%{RPMTAG_VERSION}")
 %endif
 
 %if %{with libcurl}
-%if %{defined suse_version}
-Requires: libcurl4
-%else
-Requires: libcurl
-%endif
-BuildRequires: libcurl-devel
+BuildRequires: pkgconfig(libcurl)
 %endif
 
 %if %{with jwt}
@@ -221,8 +207,7 @@ BuildRequires: freeipmi-devel
 %endif
 
 %if %{with selinux}
-Requires: libselinux
-BuildRequires: libselinux-devel
+BuildRequires: pkgconfig(libselinux)
 %endif
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
@@ -408,11 +393,7 @@ Summary: Slurm REST API translator
 Group: System Environment/Base
 Requires: %{name}%{?_isa} = %{version}-%{release}
 BuildRequires: http-parser-devel
-%if %{defined suse_version}
-BuildRequires: libjson-c-devel
-%else
-BuildRequires: json-c-devel
-%endif
+BuildRequires: pkgconfig(json-c)
 %description slurmrestd
 Provides a REST interface to Slurm.
 %endif
@@ -460,12 +441,7 @@ export QA_RPATHS=0x5
 
 # Strip out some dependencies
 
-cat > find-requires.sh <<'EOF'
-exec %{__find_requires} "$@" | grep -E -v '^libpmix.so|libevent|libnvidia-ml'
-EOF
-chmod +x find-requires.sh
-%global _use_internal_dependency_generator 0
-%global __find_requires %{_builddir}/%{buildsubdir}/find-requires.sh
+%global __requires_exclude ^libpmix.so|libevent|libnvidia-ml
 
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
