@@ -671,13 +671,13 @@ extern bool xstrtolower(char *str)
 /* safe strchr */
 char *xstrchr(const char *s1, int c)
 {
-	return s1 ? strchr(s1, c) : NULL;
+	return s1 ? (char *) strchr(s1, c) : NULL;
 }
 
 /* safe strrchr */
 char *xstrrchr(const char *s1, int c)
 {
-	return s1 ? strrchr(s1, c) : NULL;
+	return s1 ? (char *) strrchr(s1, c) : NULL;
 }
 
 /* safe strcmp */
@@ -739,7 +739,7 @@ char *xstrstr(const char *haystack, const char *needle)
 	if (!haystack || !needle)
 		return NULL;
 
-	return strstr(haystack, needle);
+	return (char *) strstr(haystack, needle);
 }
 
 char *xstrcasestr(const char *haystack, const char *needle)
