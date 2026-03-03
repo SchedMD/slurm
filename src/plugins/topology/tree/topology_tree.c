@@ -235,11 +235,43 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			       uint32_t *size, void *tctx)
 {
+	uint32_t count = 0;
+	tree_context_t *ctx = tctx;
+
 	xassert(node_rank);
 	xassert(size);
 
 	*node_rank = NULL;
 	*size = 0;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+
+	if (!count)
+		return SLURM_SUCCESS;
+
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+	*size = count;
+
+	count = 0;
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		switch_record_t *switch_ptr = ctx->switch_table;
+		uint32_t switch_rank = 1;
+
+		for (int j = 0; j < ctx->switch_count; j++, switch_ptr++) {
+			if (switch_ptr->level != 0)
+				continue;
+			if (bit_test(switch_ptr->node_bitmap, i)) {
+				(*node_rank)[count] = switch_rank
+						      << TOPO_RANK_ID_SHIFT;
+				break;
+			}
+			switch_rank++;
+		}
+		count++;
+	}
 
 	return SLURM_SUCCESS;
 }
