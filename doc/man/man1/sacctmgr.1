@@ -3552,14 +3552,14 @@ all job data removed will be lost permanently.
 
 .TP
 \fBJobScript\fR
-Archive Job scripts. If not specified and PurgeJobScriptAfter is set
-all job script data removed will be lost permanently.
+Archive Job scripts. If not specified and PurgeJobScriptAfter or PurgeJobAfter
+is set all job script data removed will be lost permanently.
 .IP
 
 .TP
 \fBJobEnv\fR
-Archive Job environments. If not specified and PurgeJobEnvAfter is set
-all job env data removed will be lost permanently.
+Archive Job environments. If not specified and PurgeJobEnvAfter or PurgeJobAfter
+is set all job env data removed will be lost permanently.
 .IP
 
 .TP
@@ -3572,7 +3572,8 @@ value of '12hours' would purge everything older than 12 hours.)
 
 .TP
 \fBPurgeJobAfter\fR=
-Purge job records older than time stated in months. If you
+Purge job records older than time stated in months. This includes job script and
+environment records unless the specific purge option is set. If you
 want to purge on a shorter time period you can include hours, or days
 behind the numeric value to get those more frequent purges. (e.g. a
 value of '12hours' would purge everything older than 12 hours.)
