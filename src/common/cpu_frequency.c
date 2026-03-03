@@ -1573,11 +1573,11 @@ cpu_freq_verify_cmdline(const char *arg,
 	*cpu_freq_min = NO_VAL;
 	*cpu_freq_max = NO_VAL;
 	*cpu_freq_gov = NO_VAL;
-	poscolon = strchr(arg,':');
+	poscolon = xstrchr(arg, ':');
 	if (poscolon) {
 		p3 = xstrdup((poscolon+1));
 	}
-	posdash = strchr(arg,'-');
+	posdash = xstrchr(arg, '-');
 	if (posdash) {
 		p1 = xstrndup(arg, (posdash-arg));
 		if (poscolon) {

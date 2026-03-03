@@ -1013,7 +1013,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->argv = xmalloc(sizeof(char *) * job_msg->argc);
 		if (new_text[0] == '/') {
 			job_msg->argv[0] = xstrdup(new_text);
-			token = strrchr(new_text, (int) '/');
+			token = xstrrchr(new_text, (int) '/');
 			if (token)
 				job_msg->name = xstrdup(token + 1);
 		} else {
