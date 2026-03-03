@@ -546,6 +546,9 @@ def pids_from_exe(executable):
         []
     """
 
+    # Avoid issues with links:
+    executable = os.path.realpath(executable)
+
     # We have to elevate privileges here, but forking off thousands of sudo
     # commands is expensive, so we will sudo a dynamic bash script for speed
     script = f"""cd /proc
