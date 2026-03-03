@@ -298,6 +298,7 @@ struct job_record {
 	char *comment;			/* arbitrary comment */
 	char *container;		/* OCI container bundle path */
 	char *container_id;		/* OCI container id */
+	char *container_type;		/* Job container type */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
 					 * completing */
@@ -587,6 +588,7 @@ typedef struct {
 					/* DO NOT ALPHABETIZE */
 	char *container;		/* OCI Container bundle path */
 	char *container_id;		/* OCI Container ID */
+	char *container_type;		/* Job container type */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes,
 					 * see src/common/job_resources.h */

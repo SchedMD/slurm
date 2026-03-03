@@ -1657,6 +1657,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 otherwise,default=0 */
 	char *container;	/* OCI container bundle */
 	char *container_id;	/* OCI container ID */
+	char *container_type;	/* container plugin type */
 	uint16_t core_spec;	/* specialized core/thread count,
 				 * see CORE_SPEC_THREAD */
 	char *cpu_bind;		/* binding map for map/mask_cpu - This
@@ -1851,6 +1852,7 @@ typedef struct job_info {
 	char *comment;		/* arbitrary comment */
 	char *container;	/* OCI Container bundle path */
 	char *container_id;	/* OCI Container ID */
+	char *container_type;	/* Job container type */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
 	uint16_t core_spec;	/* specialized core count */
 	uint16_t cores_per_socket; /* cores per socket required by job  */
@@ -2295,6 +2297,7 @@ typedef struct {
 	char *cluster;		/* cluster that the step is running on. */
 	char *container;	/* OCI container bundle path */
 	char *container_id;	/* OCI container ID */
+	char *container_type;	/* Job container type */
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */

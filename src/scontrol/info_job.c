@@ -931,9 +931,11 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	}
 
 	/****** Line (optional) ******/
-	if (job_ptr->container || job_ptr->container_id) {
-		xstrfmtcat(out, "Container=%s ContainerID=%s",
-			   job_ptr->container, job_ptr->container_id);
+	if (job_ptr->container_type || job_ptr->container ||
+	    job_ptr->container_id) {
+		xstrfmtcat(out, "ContainerType=%s Container=%s ContainerID=%s",
+			   job_ptr->container_type, job_ptr->container,
+			   job_ptr->container_id);
 		xstrcat(out, line_end);
 	}
 
@@ -1124,9 +1126,11 @@ static char *_sprint_step_info(job_step_info_t *job_step_ptr)
 	}
 
 	/****** Line (optional) ******/
-	if (job_step_ptr->container || job_step_ptr->container_id) {
+	if (job_step_ptr->container_type || job_step_ptr->container ||
+	    job_step_ptr->container_id) {
 		xstrcat(out, line_end);
-		xstrfmtcat(out, "Container=%s ContainerID=%s",
+		xstrfmtcat(out, "ContainerType=%s Container=%s ContainerID=%s",
+			   job_step_ptr->container_type,
 			   job_step_ptr->container, job_step_ptr->container_id);
 	}
 

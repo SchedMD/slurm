@@ -672,6 +672,7 @@ static fmt_data_job_t fmt_data_job[] = {
 	{"Comment", 'k', _print_job_comment, 0},
 	{"Container", 0, _print_job_container, 0},
 	{"ContainerId", 0, _print_job_container_id, 0},
+	{"ContainerType", 0, print_job_container_type, 0},
 	{"Contiguous", 'O', _print_job_contiguous, 0},
 	{"Cores", 'I', _print_cores, 0},
 	{"CoreSpec", 'X', _print_job_core_spec, 0},
@@ -787,6 +788,7 @@ static fmt_data_step_t fmt_data_step[] = {
 	{"Cluster", 0, _print_step_cluster_name, 0},
 	{"Container", 0, _print_step_container, 0},
 	{"ContainerId", 0, _print_step_container_id, 0},
+	{"ContainerType", 0, print_step_container_type, 0},
 	{"CPUFreq", 0, _print_step_cpu_freq, 0},
 	{"cpus-per-tres", 0, _print_step_cpus_per_tres, 0},
 	{"Gres", 0, _print_step_tres_per_node, FMT_FLAG_HIDDEN}, /* vestigial */

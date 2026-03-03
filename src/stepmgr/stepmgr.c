@@ -476,9 +476,11 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		debug3("   TRES_per_socket=%s", step_spec->tres_per_socket);
 	if (step_spec->tres_per_task)
 		debug3("   TRES_per_task=%s", step_spec->tres_per_task);
-	if (step_spec->container || step_spec->container_id)
-		debug3("   Container=%s ContainerID=%s",
-		       step_spec->container, step_spec->container_id);
+	if (step_spec->container_type || step_spec->container ||
+	    step_spec->container_id)
+		debug3("   ContainerType=%s Container=%s ContainerID=%s",
+		       step_spec->container_type, step_spec->container,
+		       step_spec->container_id);
 }
 
 /*
@@ -3527,6 +3529,7 @@ extern int step_create(job_record_t *job_ptr,
 
 	step_ptr->container = xstrdup(step_specs->container);
 	step_ptr->container_id = xstrdup(step_specs->container_id);
+	step_ptr->container_type = xstrdup(step_specs->container_type);
 	step_ptr->gres_list_req = step_gres_list;
 	step_gres_list = NULL;
 	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
@@ -4692,6 +4695,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
+	step_ptr->container_type = xstrdup(job_ptr->container_type);
 
 	if (node_name2bitmap(job_ptr->batch_host, false,
 			     &step_ptr->step_node_bitmap, NULL)) {
@@ -4762,6 +4766,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_ptr->container = xstrdup(job_ptr->container);
 	step_ptr->container_id = xstrdup(job_ptr->container_id);
+	step_ptr->container_type = xstrdup(job_ptr->container_type);
 
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
