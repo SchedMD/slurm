@@ -195,10 +195,10 @@ slurmd on the respective nodes will need to be
 restarted for changes to take effect (scontrol reconfigure is not sufficient).
 Additionally this can be disruptive to
 jobs already running on the node. So care must be taken to make sure no jobs
-are running if any changes to job_container.conf are deployed.
+are running if any changes to namespace.yaml are deployed.
 
 Restarting slurmd is safe and non\-disruptive to running jobs, as long as
-job_container.conf is not changed between restarts in which case above point
+namespace.yaml is not changed between restarts in which case above point
 applies.
 
 .SH "EXAMPLE"

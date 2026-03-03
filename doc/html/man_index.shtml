@@ -70,7 +70,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="helpers.conf.html">helpers.conf</a></td>
 	<td>Slurm configuration file for the node_features/helpers plugin.</td></tr>
 <tr><td><a href="job_container.conf.html">job_container.conf</a></td>
-	<td>Slurm configuration file for configuring the tmpfs job container
+	<td>Slurm configuration file for configuring the namespace/tmpfs
 	plugin.</td></tr>
 <tr><td><a href="mpi.conf.html">mpi.conf</a></td>
 	<td>Slurm configuration file to allow the configuration of MPI plugins.</td></tr>
