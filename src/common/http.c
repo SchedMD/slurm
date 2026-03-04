@@ -407,7 +407,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 			break;
 		}
 		case '/': /* rfc3986 */
-			if (buffer != NULL)
+			if (buffer && buffer[0])
 				rc = on_entry(buffer, false, arg);
 			break;
 		default:
@@ -417,12 +417,14 @@ extern int url_path_walk(const char *path, bool allow_templates,
 			goto cleanup;
 		}
 
-		xfree(buffer);
-		buffer_at = NULL;
+		if (buffer) {
+			(void) memset(buffer, '\0', (buffer_at - buffer));
+			buffer_at = buffer;
+		}
 	}
 
 	/* last part of path */
-	if (!rc && buffer)
+	if (!rc && buffer && buffer[0])
 		rc = on_entry(buffer, false, arg);
 cleanup:
 	xfree(buffer);
