@@ -77,6 +77,7 @@ typedef struct {
 					 stepd_step_rec_t *step, pid_t pid,
 					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
+	cgroup_acct_t *(*job_get_acct_data)(void);
 	long int (*get_acct_units)	(void);
 	bool (*has_feature) (cgroup_ctl_feature_t f);
 	char *(*get_scope_path)(void);
@@ -114,6 +115,7 @@ static const char *syms[] = {
 	"cgroup_p_step_stop_oom_mgr",
 	"cgroup_p_task_addto",
 	"cgroup_p_task_get_acct_data",
+	"cgroup_p_job_get_acct_data",
 	"cgroup_p_get_acct_units",
 	"cgroup_p_has_feature",
 	"cgroup_p_get_scope_path",
@@ -1068,6 +1070,17 @@ extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)
 	}
 
 	return (*(ops.task_get_acct_data))(taskid);
+}
+
+extern cgroup_acct_t *cgroup_g_job_get_acct_data(void)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP) {
+		return NULL;
+	}
+
+	return (*(ops.job_get_acct_data))();
 }
 
 extern long int cgroup_g_get_acct_units(void)

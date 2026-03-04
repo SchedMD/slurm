@@ -2959,6 +2959,11 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	return stats;
 }
 
+extern cgroup_acct_t *cgroup_p_job_get_acct_data(void)
+{
+	return NULL;
+}
+
 /*
  * Return conversion units used for stats gathered from cpuacct.
  * Dividing the provided data by this number will give seconds.
