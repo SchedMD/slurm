@@ -41,19 +41,12 @@
 
 #include "api.h"
 
-extern int op_handler_partitions(openapi_ctxt_t *ctxt)
+static int _partitions_get(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	partition_info_msg_t *part_info_ptr = NULL;
 	openapi_partitions_query_t query = {0};
 	openapi_resp_partitions_info_msg_t resp = {0};
-
-	if (ctxt->method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-		goto done;
-	}
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_PARTITIONS_QUERY, query,
 		       ctxt->query, ctxt->parent_path)) {
@@ -80,6 +73,23 @@ extern int op_handler_partitions(openapi_ctxt_t *ctxt)
 
 done:
 	slurm_free_partition_info_msg(part_info_ptr);
+	return rc;
+}
+
+extern int op_handler_partitions(openapi_ctxt_t *ctxt)
+{
+	int rc = SLURM_SUCCESS;
+
+	switch (ctxt->method) {
+	case HTTP_REQUEST_GET:
+		rc = _partitions_get(ctxt);
+		break;
+	default:
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+	}
+
 	return rc;
 }
 
