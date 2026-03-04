@@ -301,7 +301,7 @@ extern int switch_p_jobinfo_unpack(switch_info_t **switch_info, buf_t *buffer,
 		channel_t *channel;
 		uint32_t channel_id = NO_VAL;
 
-		*switch_info = NULL;
+		xfree(*switch_info);
 
 		safe_unpack32(&channel_id, buffer);
 
@@ -323,6 +323,7 @@ extern int switch_p_jobinfo_unpack(switch_info_t **switch_info, buf_t *buffer,
 
 unpack_error:
 	error("%s: unpack error", __func__);
+	xfree(*switch_info);
 	return SLURM_ERROR;
 }
 
@@ -553,6 +554,7 @@ static void _allocate_channel(
 
 		list_for_each(*channel_list, _release_channel, job_ptr);
 		FREE_NULL_LIST(*channel_list);
+		*rc_ptr = SLURM_ERROR;
 	}
 }
 
