@@ -2958,7 +2958,14 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 
 extern cgroup_acct_t *cgroup_p_job_get_acct_data(void)
 {
-	return NULL;
+	xcgroup_t *cg = &(int_cg[CG_LEVEL_JOB]);
+
+	if (!cg->path) {
+		log_flag(CGROUP, "Job cgroup not initialized");
+		return NULL;
+	}
+
+	return _get_acct_data(cg, "job");
 }
 
 /*
