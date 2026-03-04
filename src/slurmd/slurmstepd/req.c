@@ -2340,6 +2340,24 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_job_usage(int fd, uid_t uid, pid_t remote_pid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	int rc;
+
+	debug("%s for %ps", __func__, &step->step_id);
+
+	jobacct = jobacctinfo_create(NULL);
+	jobacct_gather_stat_job(jobacct);
+
+	rc = jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+				 SLURM_PROTOCOL_VERSION);
+
+	jobacctinfo_destroy(jobacct);
+
+	return rc;
+}
+
 /* We don't check the uid in this function, anyone may list the task info. */
 static int _handle_task_info(int fd, uid_t uid, pid_t remote_pid)
 {
@@ -2556,6 +2574,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_STEP_STAT,
 		.from_job_owner = true,
 		.func = _handle_stat_jobacct,
+	},
+	{
+		.msg_type = REQUEST_JOB_USAGE,
+		.from_slurmd = true,
+		.func = _handle_job_usage,
 	},
 	{
 		.msg_type = REQUEST_STEP_LIST_PIDS,

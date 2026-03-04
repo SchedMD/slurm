@@ -1394,6 +1394,33 @@ rwfail:
 	return rc;
 }
 
+extern int stepd_job_usage(int fd, uint16_t protocol_version,
+			   jobacctinfo_t **jobacct)
+{
+	int req = REQUEST_JOB_USAGE;
+	int rc = SLURM_ERROR;
+
+	if (!(*jobacct = jobacctinfo_create(NULL)))
+		return rc;
+
+	debug("Entering %s", __func__);
+
+	safe_write(fd, &req, sizeof(int));
+
+	if (wait_fd(fd, 300, POLLIN))
+		goto rwfail;
+
+	rc = jobacctinfo_getinfo(*jobacct, JOBACCT_DATA_PIPE, &fd,
+				 protocol_version);
+rwfail:
+	if (rc) {
+		error("%s: failed: %d", __func__, rc);
+		jobacctinfo_destroy(*jobacct);
+		*jobacct = NULL;
+	}
+	return rc;
+}
+
 /*
  * List all of task process IDs and their local and global Slurm IDs.
  *
