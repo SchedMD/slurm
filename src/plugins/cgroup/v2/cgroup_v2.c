@@ -2802,7 +2802,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *step,
 	return SLURM_SUCCESS;
 }
 
-extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
+static cgroup_acct_t *_get_acct_data(xcgroup_t *cg, char *label)
 {
 	uint64_t active_file, inactive_file;
 	char *cpu_stat = NULL, *memory_stat = NULL, *memory_current = NULL;
@@ -2810,20 +2810,10 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	char *ptr;
 	size_t tmp_sz = 0;
 	cgroup_acct_t *stats = NULL;
-	task_cg_info_t *task_cg_info;
 	bool no_file_cache = false;
 	static bool interfaces_checked = false, memory_peak_interface = false;
 
-	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
-					     &task_id))) {
-		if (task_id == task_special_id)
-			error("No task found with id %u (task_special), this should never happen",
-			      task_id);
-		else
-			error("No task found with id %u, this should never happen",
-			      task_id);
-		return NULL;
-	}
+	xassert(cg);
 
 	if (xstrcasestr(slurm_conf.job_acct_gather_params, "no_file_cache"))
 		no_file_cache = true;
@@ -2842,49 +2832,26 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 		interfaces_checked = true;
 	}
 
-	if (common_cgroup_get_param(&task_cg_info->task_cg,
-				    "cpu.stat",
-				    &cpu_stat,
-				    &tmp_sz) != SLURM_SUCCESS) {
-		if (task_id == task_special_id)
-			log_flag(CGROUP, "Cannot read task_special cpu.stat file");
-		else
-			log_flag(CGROUP, "Cannot read task %d cpu.stat file",
-				 task_id);
+	if (common_cgroup_get_param(cg, "cpu.stat", &cpu_stat, &tmp_sz) !=
+	    SLURM_SUCCESS) {
+		log_flag(CGROUP, "Cannot read %s cpu.stat file", label);
 	}
 
-	if (common_cgroup_get_param(&task_cg_info->task_cg,
-				    "memory.current",
-				    &memory_current,
+	if (common_cgroup_get_param(cg, "memory.current", &memory_current,
 				    &tmp_sz) != SLURM_SUCCESS) {
-		if (task_id == task_special_id)
-			log_flag(CGROUP, "Cannot read task_special memory.current file");
-		else
-			log_flag(CGROUP, "Cannot read task %d memory.current file",
-				 task_id);
+		log_flag(CGROUP, "Cannot read %s memory.current file", label);
 	}
 
-	if (common_cgroup_get_param(&task_cg_info->task_cg,
-				    "memory.stat",
-				    &memory_stat,
-				    &tmp_sz) != SLURM_SUCCESS) {
-		if (task_id == task_special_id)
-			log_flag(CGROUP, "Cannot read task_special memory.stat file");
-		else
-			log_flag(CGROUP, "Cannot read task %d memory.stat file",
-				 task_id);
+	if (common_cgroup_get_param(cg, "memory.stat", &memory_stat, &tmp_sz) !=
+	    SLURM_SUCCESS) {
+		log_flag(CGROUP, "Cannot read %s memory.stat file", label);
 	}
 
 	if (memory_peak_interface) {
-		if (common_cgroup_get_param(&task_cg_info->task_cg,
-					    "memory.peak",
-					    &memory_peak,
+		if (common_cgroup_get_param(cg, "memory.peak", &memory_peak,
 					    &tmp_sz) != SLURM_SUCCESS) {
-			if (task_id == task_special_id)
-				log_flag(CGROUP, "Cannot read task_special memory.peak interface, does your OS support it?");
-			else
-				log_flag(CGROUP, "Cannot read task %d memory.peak interface, does your OS support it?",
-					 task_id);
+			log_flag(CGROUP, "Cannot read %s memory.peak file",
+				 label);
 		}
 	}
 
@@ -2955,6 +2922,36 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 	}
 
 	xfree(memory_peak);
+
+	return stats;
+}
+
+extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
+{
+	task_cg_info_t *task_cg_info;
+	cgroup_acct_t *stats = NULL;
+	char *label = NULL;
+
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &task_id))) {
+		if (task_id == task_special_id)
+			error("No task found with id %u (task_special), this should never happen",
+			      task_id);
+		else
+			error("No task found with id %u, this should never happen",
+			      task_id);
+		return NULL;
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CGROUP) {
+		if (task_id == task_special_id)
+			label = xstrdup("task_special");
+		else
+			xstrfmtcat(label, "task %d", task_id);
+	}
+
+	stats = _get_acct_data(&(task_cg_info->task_cg), label);
+	xfree(label);
 
 	return stats;
 }
