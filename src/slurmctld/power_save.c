@@ -511,6 +511,8 @@ static void _do_power_work(time_t now)
 				job_ptr->extra);
 		data_set_int(data_key_set(job_node_data, "job_id"),
 			     job_ptr->job_id);
+		data_set_int(data_key_set(job_node_data, "priority"),
+			     job_ptr->priority);
 		data_set_string(data_key_set(job_node_data, "features"),
 				job_ptr->details->features_use);
 		if ((node_bitmap = bitmap2node_name(job_ptr->node_bitmap))) {
