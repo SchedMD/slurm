@@ -1,0 +1,8 @@
+[Docs] @SchedMD/dev/doc-reviewers
+!/doc/**/Makefile.*
+!/doc/html/openapi_release_notes/
+/doc/
+
+[Testsuite] @SchedMD/dev/qa-reviewers
+!/testsuite/**/Makefile.*
+/testsuite/
