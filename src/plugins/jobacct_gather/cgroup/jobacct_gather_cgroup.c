@@ -249,3 +249,8 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	return rc;
 }
+
+extern void jobacct_gather_p_stat_job(jobacctinfo_t *jobacct)
+{
+	return;
+}
