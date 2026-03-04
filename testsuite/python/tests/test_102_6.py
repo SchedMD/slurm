@@ -15,6 +15,7 @@ acct4 = "acct4"
 acct5 = "acct4_sub"
 acct6 = "acct4_sub_sub"
 user1 = "user1"
+part1 = "part1"
 defacct = acct1
 
 
@@ -24,6 +25,9 @@ def setup():
     atf.require_accounting(modify=True)
     atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
     atf.require_config_parameter("AllowNoDefAcct", None, source="slurmdbd")
+    # these can be helpful when debugging/tracing
+    # atf.require_config_parameter("DebugLevel", "debug4", source="slurmdbd")
+    # atf.require_config_parameter("DebugFlags", f"{atf.get_config(live=False, source="slurmdbd", quiet=True)["DebugFlags"]},DB_ASSOC", source="slurmdbd")
     atf.require_slurm_running()
 
 
@@ -202,3 +206,30 @@ def test_account_removal_with_parent():
     assert (
         output == ""
     ), f"User {user1} with acct {acct5} shouldn't have an assoc anymore"
+
+
+def test_account_removal_with_partition():
+    """Test removing an account using partition="""
+
+    # Add user to non-def account with partition
+    atf.run_command(
+        f"sacctmgr -i add user {user1} acct={acct4} partition={part1} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Remove account with partition specified
+    result = atf.run_command(
+        f"sacctmgr -i remove acct {acct4} partition={part1} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+    )
+    assert result["exit_code"] == 0, "Removing account with a partition should succeed"
+
+    # Confirm previous operation succeeded
+    output = atf.run_command_output(
+        f"sacctmgr -n show assoc format=acct,user,lineage acct={acct4} partition={part1} cluster={cluster1}",
+        fatal=True,
+    )
+    assert (
+        output == ""
+    ), f"Account {acct4} with partition {part1} shouldn't have an assoc anymore"
