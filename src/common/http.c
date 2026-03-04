@@ -368,6 +368,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 				debug("%s: unexpected OAS template character: %c",
 				      __func__, *ptr);
 				rc = ESLURM_URL_INVALID_FORMATING;
+				goto cleanup;
 			} else {
 				/* find end of template */
 				const char *start = (ptr + 1);
@@ -377,7 +378,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 					debug("%s: missing terminated OAS template character: }",
 					      __func__);
 					rc = ESLURM_URL_INVALID_FORMATING;
-					break;
+					goto cleanup;
 				}
 
 				xassert(end > start);
@@ -401,6 +402,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 				debug("%s: invalid URL escape sequence: %s",
 				      __func__, ptr);
 				rc = ESLURM_URL_UNSUPPORTED_FORMAT;
+				goto cleanup;
 			}
 			break;
 		}
@@ -412,6 +414,7 @@ extern int url_path_walk(const char *path, bool allow_templates,
 			debug("%s: unexpected URL character: %c",
 			      __func__, *ptr);
 			rc = ESLURM_URL_INVALID_FORMATING;
+			goto cleanup;
 		}
 
 		xfree(buffer);
@@ -421,7 +424,8 @@ extern int url_path_walk(const char *path, bool allow_templates,
 	/* last part of path */
 	if (!rc && buffer)
 		rc = on_entry(buffer, false, arg);
-
+cleanup:
+	xfree(buffer);
 	return rc;
 }
 
