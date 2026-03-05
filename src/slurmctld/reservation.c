@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include <fcntl.h>
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
@@ -3089,6 +3090,9 @@ static int _advance_slot(constraint_slot_t *slot)
 static void _advance_slot_until(constraint_slot_t *slot, time_t end)
 {
 	constraint_slot_t slot_advanced;
+	struct tm tm_start;
+	time_t new_start, delta, days;
+	int jump_days;
 
 	if (!slot) {
 		error("%s: Reservation slot is NULL and it shouldn't happen",
@@ -3106,8 +3110,43 @@ static void _advance_slot_until(constraint_slot_t *slot, time_t end)
 	}
 
 	/*
-	 * Loop until we get to the previous occurrence
+	 * Jump close to end to avoid iterating through long time spans.
+	 * Leave a 7-day margin so the loop below handles the final
+	 * alignment for all recurrence types (including weekly).
 	 */
+	days = (end - slot->start) / (24 * 3600);
+
+	if (days > 7) {
+		/*
+		 * tm_mday is int and will be incremented by jump_days below.
+		 * Bound days so neither the narrowing cast nor the addition
+		 * to tm_mday (max starting value 31) can overflow int.
+		 */
+		if (days > INT_MAX - 31) {
+			error("%s: Absurd reservation time gap between reservations; aborting",
+			      __func__);
+			return;
+		}
+		jump_days = (int) (days - 7);
+
+		if (slot->flags & RESERVE_FLAG_WEEKLY)
+			jump_days -= jump_days % 7;
+
+		localtime_r(&(slot->start), &tm_start);
+		tm_start.tm_mday += jump_days;
+		new_start = slurm_mktime(&tm_start);
+		if (new_start == (time_t) (-1)) {
+			error("%s: Could not compute reservation time %lu",
+			      __func__, (long unsigned int) slot->start);
+			return;
+		}
+
+		delta = new_start - slot->start;
+		slot->start = new_start;
+		slot->end += delta;
+	}
+
+	/* Loop the remaining days to find the last occurrence before end */
 	slot_advanced = *slot;
 	while (slot_advanced.start < end) {
 		*slot = slot_advanced;
