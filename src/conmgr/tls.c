@@ -190,7 +190,6 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	void *tls = NULL;
-	int rc = EINVAL;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -218,6 +217,26 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
+	tls_shutdown(conmgr_args, arg);
+}
+
+extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	void *tls = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->tls);
+	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
+		con_flag(con, FLAG_TLS_SERVER));
+	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+	tls = con->tls;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
 	log_flag(CONMGR, "%s: [%s] attempting graceful TLS shutdown",
 		 __func__, con->name);
 
@@ -232,6 +251,8 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 			 __func__, con->name);
 
 		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(tls == con->tls);
 
 		/* Wait for more incoming data before trying again */
 		con_set_flag(con, FLAG_ON_DATA_TRIED);

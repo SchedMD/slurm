@@ -53,6 +53,9 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg);
 /* Release TLS state */
 extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg);
 
+/* Perform TLS shutdown */
+extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg);
+
 /* Read from con->input_fd */
 extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg);
 
