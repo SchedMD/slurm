@@ -13,6 +13,7 @@ import pwd
 import pathlib
 import pytest
 import re
+import glob
 import shutil
 import stat
 import socket
@@ -118,6 +119,23 @@ def list_to_range(numeric_list):
 
     node_range_expression = node_list_to_range(map(str, numeric_list))
     return re.sub(r"^\[(.*)\]$", r"\1", node_range_expression)
+
+
+def get_coredumps():
+    """
+    Return the coredumps with the expected pattern in the tmp dirs of the test
+    and in the logs dir (the logs dir is the cwd of the daemons).
+    """
+    core_list = glob.glob(f"{properties['slurm-logs-dir']}/*.core*") + glob.glob(
+        f"{module_tmp_path}/../**/*.core*", recursive=True
+    )
+
+    # pytest creates a 'current' symlink alongside to tmp directories
+    core_set = set()
+    for core in core_list:
+        core_set.add(os.path.realpath(core))
+
+    return list(core_set)
 
 
 def run_command(

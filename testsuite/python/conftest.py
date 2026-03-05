@@ -329,6 +329,64 @@ def module_teardown():
                 quiet=True,
             )
 
+        # Check for coredump in the logs dir (daemons) and in the pytest
+        # tmp dir (clients), and save bt file form them.
+        # If any coredump is found, report an error.
+        for coredump in atf.get_coredumps():
+            logging.warning(f"Coredump detected: {coredump}")
+            failures.append(f"Coredump detected: {coredump}")
+
+            # Ensure that the core is copied into the logs dir
+            if atf.properties["slurm-logs-dir"] not in coredump:
+                coredump_new = (
+                    f"{atf.properties['slurm-logs-dir']}/{os.path.basename(coredump)}"
+                )
+                logging.debug(f"Moving coredump from {coredump} to {coredump_new}")
+                atf.run_command(
+                    f"mv {coredump} {coredump_new}", user="root", quiet=True
+                )
+                coredump = coredump_new
+
+            # Get the binary that generated the coredump
+            file_out = atf.run_command_output(
+                f"file {coredump}", user="root", quiet=True
+            )
+            bin_match = re.search(r"execfn: '([^']+)'", file_out) or re.search(
+                r"from '([^']+)'", file_out
+            )
+            bin_path = os.path.realpath(bin_match.group(1)) if bin_match else None
+
+            # Generate the .bt file if binary was found
+            if not bin_path:
+                logging.warning(
+                    f"Unable to get the binary file that generated the coredump {coredump}"
+                )
+            else:
+                bt_file = f"{coredump}.bt"
+                logging.info(
+                    f"Saving the full backtrace of {coredump} from {bin_path} into {bt_file}"
+                )
+                results = atf.run_command(
+                    f"gdb"
+                    f" -batch"
+                    f' -iex "set debuginfod enabled on"'
+                    f' -ex "info files"'
+                    f' -ex "set pagination off"'
+                    f' -ex "set confirm off"'
+                    f' -ex "set print pretty on"'
+                    f' -ex "set max-value-size unlimited"'
+                    f' -ex "set print array-indexes on"'
+                    f' -ex "set print array off"'
+                    f' -ex "thread apply all bt full"'
+                    f' -ex "quit"'
+                    f" {bin_path} {coredump}",
+                    user="root",
+                    quiet=True,
+                )
+                with open(bt_file, "w") as f:
+                    f.write(results["stdout"])
+                    f.write(results["stderr"])
+
         # Save logs dir for the test and restore the orifinal
         atf.run_command(
             f"rsync -a --sparse --delete {atf.properties['slurm-logs-dir']}/ {atf.properties['slurm-logs-dir']}_{atf.properties['test_name']}/",

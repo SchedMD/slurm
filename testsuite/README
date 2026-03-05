@@ -777,6 +777,7 @@ test_100_#   Special tests.
 test_100_1   Run all libcheck tests
 test_100_2   Test live upgrades
 test_100_3   Performance test: slurmdbd purge large tables
+test_100_4   Meta-test: testing test environment (coredump generation)
 
 test_101_#   Testing of sacct options.
 ======================================
