@@ -68,48 +68,18 @@ typedef struct {
 		.buckets = { { 0 } }, \
 	})
 
-#define TIMER_HISTOGRAM tv_histogram
-#define TIMER_HISTOGRAM_PTR &TIMER_HISTOGRAM
-#define DEF_TIMER_HISTOGRAM \
-	static latency_histogram_t TIMER_HISTOGRAM = \
-		LATENCY_HISTOGRAM_INITIALIZER
-#define TIMER_REGISTER() \
-	do { \
-		static atomic_run_once_t run_once = \
-			ATOMIC_RUN_ONCE_INITIALIZER(); \
-		if (atomic_run_once(run_once)) \
-			timer_register_probe(&TIMER_HISTOGRAM, __func__); \
-	} while (false)
-
-extern void timer_register_probe(latency_histogram_t *histogram,
-				 const char *caller);
-
-#define TIMER_ADD_HISTOGRAM() \
-	latency_metric_add_histogram_value(TIMER_HISTOGRAM_PTR, \
-					   timespec_diff_ns(TIMER_END_TS, \
-							    TIMER_START_TS) \
-						   .diff)
-
 #else /* !__STDC_NO_ATOMICS__ */
 
 /* Only provide a placeholder type to avoid breaking structs */
 typedef void *latency_histogram_t;
 #define LATENCY_HISTOGRAM_INITIALIZER NULL
 
-#define TIMER_HISTOGRAM
-#define TIMER_HISTOGRAM_PTR NULL
-#define DEF_TIMER_HISTOGRAM
-#define TIMER_REGISTER()
-#define TIMER_ADD_HISTOGRAM()
-
 #endif /* !__STDC_NO_ATOMICS__ */
 
 #define TIMER_START_TS tv1
 #define TIMER_END_TS tv2
 #define DEF_TIMERS \
-	timespec_t TIMER_START_TS = { 0, 0 }, TIMER_END_TS = { 0, 0 }; \
-	DEF_TIMER_HISTOGRAM; \
-	TIMER_REGISTER();
+	timespec_t TIMER_START_TS = { 0, 0 }, TIMER_END_TS = { 0, 0 };
 #define START_TIMER \
 	do { \
 		TIMER_START_TS = timespec_now(); \
@@ -117,21 +87,18 @@ typedef void *latency_histogram_t;
 #define END_TIMER \
 	do { \
 		TIMER_END_TS = timespec_now(); \
-		TIMER_ADD_HISTOGRAM(); \
 	} while (false)
 #define END_TIMER2(from) \
 	do { \
 		TIMER_END_TS = timespec_now(); \
 		timer_compare_limit(TIMER_START_TS, TIMER_END_TS, from, \
-				    (timespec_t) { 0, 0 }, \
-				    TIMER_HISTOGRAM_PTR); \
+				    (timespec_t) { 0, 0 }); \
 	} while (false)
 #define END_TIMER3(from, limit) \
 	do { \
 		TIMER_END_TS = timespec_now(); \
 		timer_compare_limit(TIMER_START_TS, TIMER_END_TS, from, \
-				    TIMESPEC_FROM_USEC(limit), \
-				    TIMER_HISTOGRAM_PTR); \
+				    TIMESPEC_FROM_USEC(limit)); \
 	} while (false)
 /*
  * Get duration of time between START_TIMER and END_TIMER as string
@@ -162,8 +129,7 @@ typedef struct {
  * IN limit - limit to wait
  */
 extern void timer_compare_limit(const timespec_t tv1, const timespec_t tv2,
-				const char *from, timespec_t limit,
-				latency_histogram_t *histogram);
+				const char *from, timespec_t limit);
 
 /*
  * Get string of time difference between tv1 and tv2 into tv_str
