@@ -46,7 +46,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/bitstring.h"
-#include "src/common/eio.h"
+#include "src/common/events.h"
 #include "src/common/slurm_step_layout.h"
 
 #include "src/interfaces/mpi.h"
@@ -78,9 +78,6 @@ struct step_launch_state {
 
 	uint32_t job_id;
 
-	/* message thread variables */
-	eio_handle_t *msg_handle;
-	pthread_t msg_thread;
 	/* set to -1 if step launch message handler should not attempt
 	   to handle */
 	int slurmctld_socket_fd;

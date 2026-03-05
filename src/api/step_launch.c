@@ -61,7 +61,7 @@
 #include "src/api/step_launch.h"
 
 #include "src/common/cpu_frequency.h"
-#include "src/common/eio.h"
+#include "src/common/events.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
@@ -79,6 +79,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/conmgr/conmgr.h"
+
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certgen.h"
 #include "src/interfaces/certmgr.h"
@@ -89,6 +91,7 @@
 #include "src/srun/step_ctx.h"
 
 #define STEP_ABORT_TIME 2
+#define SRUN_MSG_TIMEOUT_FACTOR 8
 
 extern char **environ;
 
@@ -108,16 +111,12 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
-static int _msg_thr_create(step_launch_state_t *sls, int num_nodes);
-static void _handle_msg(void *arg, slurm_msg_t *msg);
+static int _create_listeners(step_launch_state_t *sls, int num_nodes);
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg);
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg);
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg);
 static void *_check_io_timeout(void *_sls);
-
-static struct io_operations message_socket_ops = {
-	.readable = &eio_message_socket_readable,
-	.handle_read = &eio_message_socket_accept,
-	.handle_msg = &_handle_msg
-};
-
 
 /**********************************************************************
  * API functions
@@ -240,8 +239,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	}
 
 	/* Create message receiving sockets and handler thread */
-	rc = _msg_thr_create(ctx->launch_state,
-			     ctx->step_resp->step_layout->node_cnt);
+	rc = _create_listeners(ctx->launch_state,
+			       ctx->step_resp->step_layout->node_cnt);
 	if (rc != SLURM_SUCCESS)
 		return rc;
 
@@ -746,20 +745,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	if (task_exit_signal)
 		client_io_handler_abort(sls->io);
 
-	/* Then shutdown the message handler thread */
-	if (sls->msg_handle)
-		eio_signal_shutdown(sls->msg_handle);
-
-	slurm_mutex_unlock(&sls->lock);
-	if (sls->msg_thread)
-		slurm_thread_join(sls->msg_thread);
-	slurm_mutex_lock(&sls->lock);
 	pmi_kvs_free();
-
-	if (sls->msg_handle) {
-		eio_handle_destroy(sls->msg_handle);
-		sls->msg_handle = NULL;
-	}
 
 	/* Shutdown the IO timeout thread, if one exists */
 	if (sls->io_timeout_thread_created) {
@@ -980,15 +966,6 @@ void step_launch_state_destroy(step_launch_state_t *sls)
 /**********************************************************************
  * Message handler functions
  **********************************************************************/
-static void *_msg_thr_internal(void *arg)
-{
-	step_launch_state_t *sls = (step_launch_state_t *) arg;
-
-	eio_handle_mainloop(sls->msg_handle);
-
-	return NULL;
-}
-
 static inline int
 _estimate_nports(int nclients, int cli_per_port)
 {
@@ -997,24 +974,57 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-static int _msg_thr_create(step_launch_state_t *sls, int num_nodes)
+static void *_on_listen_connect(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+
+	log_flag(NET, "%s: [%s] Successfully opened step launch RPC listener",
+		 __func__, conmgr_con_get_name(con));
+
+	return arg;
+}
+
+static void _on_listen_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	log_flag(NET, "%s: [%s] Step launch RPC listener closed",
+		 __func__, conmgr_con_get_name(con));
+}
+
+static int _create_listeners(step_launch_state_t *sls, int num_nodes)
 {
 	int sock = -1;
 	uint16_t port;
-	eio_obj_t *obj;
 	int i, rc = SLURM_SUCCESS;
+	static const conmgr_events_t events = {
+		.on_listen_connect = _on_listen_connect,
+		.on_listen_finish = _on_listen_finish,
+		.on_connection = _on_connection,
+		.on_msg = _on_msg,
+		.on_finish = _on_finish,
+	};
+	conmgr_con_flags_t flags = CON_FLAG_NONE;
+	static conmgr_timeouts_t timeouts = { { 0 } };
 
-	debug("Entering _msg_thr_create()");
+	/*
+	 * Multiple jobs (easily induced via no_alloc) and highly
+	 * parallel jobs using PMI sometimes result in slow message
+	 * responses and timeouts. Raise the default timeout for srun.
+	 */
 
-	sls->msg_handle = eio_handle_create(slurm_conf.eio_timeout);
+	if (timespec_is_zero(timeouts.read)) {
+		conmgr_timeouts_init_default(&timeouts);
+		timeouts.read = (timespec_t) {
+			.tv_sec = (slurm_conf.msg_timeout *
+				   SRUN_MSG_TIMEOUT_FACTOR),
+		};
+	}
+
+	if (conn_tls_enabled())
+		flags |= CON_FLAG_TLS_FINGERPRINT;
+
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
 	sls->resp_port = xcalloc(sls->num_resp_port, sizeof(uint16_t));
-
-	/* multiple jobs (easily induced via no_alloc) and highly
-	 * parallel jobs using PMI sometimes result in slow message
-	 * responses and timeouts. Raise the default timeout for srun. */
-	if (!message_socket_ops.timeout)
-		message_socket_ops.timeout = slurm_conf.msg_timeout * 8000;
 
 	for (i = 0; i < sls->num_resp_port; i++) {
 		if (slurm_init_msg_engine_srun_ports(&sock, &port) !=
@@ -1024,18 +1034,24 @@ static int _msg_thr_create(step_launch_state_t *sls, int num_nodes)
 			return SLURM_ERROR;
 		}
 		sls->resp_port[i] = port;
-		obj = eio_obj_create(sock, &message_socket_ops, (void *)sls);
-		eio_new_initial_obj(sls->msg_handle, obj);
+		if ((rc = conmgr_process_fd_listen(sock, CON_TYPE_RPC,
+						   &timeouts, &events, flags,
+						   sls))) {
+			fatal("conmgr_process_fd_listen() failed: %s",
+			      slurm_strerror(rc));
+		}
 	}
 	/* finally, add the listening port that we told the slurmctld about
 	 * earlier in the step context creation phase */
 	if (sls->slurmctld_socket_fd > -1) {
-		obj = eio_obj_create(sls->slurmctld_socket_fd,
-				     &message_socket_ops, (void *)sls);
-		eio_new_initial_obj(sls->msg_handle, obj);
+		if ((rc = conmgr_process_fd_listen(sls->slurmctld_socket_fd,
+						   CON_TYPE_RPC, &timeouts,
+						   &events, flags, sls))) {
+			fatal("conmgr_process_fd_listen() failed for slurmctld socket: %s",
+			      slurm_strerror(rc));
+		}
 	}
 
-	slurm_thread_create(NULL, &sls->msg_thread, _msg_thr_internal, sls);
 	return rc;
 }
 
@@ -1386,17 +1402,38 @@ static void _step_step_signal(step_launch_state_t *sls, slurm_msg_t *signal_msg)
 
 }
 
-/*
- * Identify the incoming message and call the appropriate handler function.
- */
-static void
-_handle_msg(void *arg, slurm_msg_t *msg)
+static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	step_launch_state_t *sls = (step_launch_state_t *) arg;
+	log_flag(NET, "%s: [%s] new connection",
+		 __func__, conmgr_con_get_name(conmgr_args.ref));
+
+	return arg;
+}
+
+static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+		   int unpack_rc, void *arg)
+{
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	step_launch_state_t *sls = arg;
 	uid_t req_uid;
 	uid_t uid = getuid();
 	srun_user_msg_t *um;
-	int rc;
+	int rc = EINVAL;
+
+	if (!msg->auth_ids_set) {
+		error("%s: [%s] Security violation, rejecting unauthenticated slurm message",
+		      __func__, conmgr_con_get_name(con));
+		FREE_NULL_MSG(msg);
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	}
+
+	if (unpack_rc) {
+		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
+		      __func__, conmgr_con_get_name(con),
+		      slurm_strerror(unpack_rc));
+		FREE_NULL_MSG(msg);
+		return unpack_rc;
+	}
 
 	req_uid = auth_g_get_uid(msg->auth_cred);
 
@@ -1404,7 +1441,8 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	    (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u",
 		       req_uid);
- 		return;
+		slurm_free_msg(msg);
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
 	switch (msg->msg_type) {
@@ -1461,7 +1499,17 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 		      __func__, rpc_num2string(msg->msg_type));
 		break;
 	}
-	return;
+
+	conmgr_con_queue_close(con);
+
+	FREE_NULL_MSG(msg);
+	return SLURM_SUCCESS;
+}
+
+static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	log_flag(NET, "%s: [%s] connection finished",
+		 __func__, conmgr_con_get_name(conmgr_args.ref));
 }
 
 /**********************************************************************
