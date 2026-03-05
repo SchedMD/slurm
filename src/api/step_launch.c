@@ -1415,7 +1415,6 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 {
 	conmgr_fd_ref_t *con = conmgr_args.ref;
 	step_launch_state_t *sls = arg;
-	uid_t req_uid;
 	uid_t uid = getuid();
 	srun_user_msg_t *um;
 	int rc = EINVAL;
@@ -1435,13 +1434,11 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return unpack_rc;
 	}
 
-	req_uid = auth_g_get_uid(msg->auth_cred);
-
-	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
-	    (req_uid != uid)) {
-		error ("Security violation, slurm message from uid %u",
-		       req_uid);
-		slurm_free_msg(msg);
+	if ((msg->auth_uid != slurm_conf.slurm_user_id) &&
+	    (msg->auth_uid != 0) && (msg->auth_uid != uid)) {
+		error("%s: [%s] Security violation, slurm message from uid %u",
+		      __func__, conmgr_con_get_name(con), msg->auth_uid);
+		FREE_NULL_MSG(msg);
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
