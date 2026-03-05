@@ -1758,9 +1758,9 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		 * failure to give the sender a hint to fix their authentication
 		 * issue with authentication disabled.
 		 */
-		msg->flags |= SLURM_NO_AUTH_CRED;
 		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 		FREE_NULL_MSG(msg);
+		conmgr_queue_close_fd(con);
 		return SLURM_SUCCESS;
 	} else if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
