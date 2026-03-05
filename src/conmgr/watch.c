@@ -1069,6 +1069,16 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (con->tls) {
+		xassert(is_tls);
+
+		log_flag(CONMGR, "%s: [%s] queuing TLS destroy",
+			 __func__, con->name);
+
+		add_work_con_fifo(true, con, tls_destroy, NULL);
+		return 0;
+	}
+
 	log_flag(CONMGR, "%s: [%s] closed connection", __func__, con->name);
 
 	/* mark this connection for cleanup */
