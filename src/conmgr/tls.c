@@ -88,8 +88,17 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	tls = con->tls;
+	/* Connection must already be soft closed */
+	xassert(con_flag(con, FLAG_READ_EOF));
+
+	SWAP(tls, con->tls);
 	xassert(tls);
+
+	SWAP(tls_in, con->tls_in);
+	xassert(tls_in);
+
+	SWAP(tls_out, con->tls_out);
+	xassert(tls_out);
 
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -99,13 +108,13 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 
+#ifndef NDEBUG
 	slurm_mutex_lock(&mgr.mutex);
-	xassert(tls == con->tls);
-	con->tls = NULL;
-
-	SWAP(tls_in, con->tls_in);
-	SWAP(tls_out, con->tls_out);
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
 	slurm_mutex_unlock(&mgr.mutex);
+#endif
 
 	FREE_NULL_BUFFER(tls_in);
 	FREE_NULL_LIST(tls_out);
