@@ -137,10 +137,11 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 		/*
 		 * Always close input_fd on failure as it is not possible to
 		 * safely parse another incoming rpc on this connection.
-		 * Callback func will decide to close outbound connection as
-		 * error state by the returned rc.
+		 * Avoid sending a msg to callback where the msg is an unknown
+		 * state.
 		 */
 		close_con(false, con);
+		FREE_NULL_MSG(msg);
 	} else {
 		log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
 			 __func__, con->name, need,
