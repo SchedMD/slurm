@@ -122,10 +122,13 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
 }
 
-static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
+static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
+	conmgr_fd_t *con = conmgr_args.con;
+
+	log_flag(CONMGR, "%s: [%s] close wait complete", __func__, con->name);
+
+	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
@@ -133,29 +136,18 @@ static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 
 	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
 
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
-}
-
-static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	conmgr_fd_t *con = conmgr_args.con;
-
-	log_flag(CONMGR, "%s: [%s] close wait complete", __func__, con->name);
-
-	_post_wait_close_fds(false, con);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
  * Check and enforce if TLS has requested wait on operations and then close
  * connection
  */
-static void _wait_close(bool locked, conmgr_fd_t *con)
+static void _wait_close(conmgr_fd_t *con)
 {
 	timespec_t delay = { 0 };
 
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
+	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
@@ -163,8 +155,10 @@ static void _wait_close(bool locked, conmgr_fd_t *con)
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 	con_set_flag(con, FLAG_READ_EOF);
 	con_set_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_CAN_READ);
+	con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
 
 	xassert(con->tls);
 	delay = tls_g_get_delay(con->tls);
@@ -176,14 +170,13 @@ static void _wait_close(bool locked, conmgr_fd_t *con)
 		add_work_con_delayed_abs_fifo(true, con, _delayed_close, NULL,
 					      delay);
 	} else {
-		log_flag(CONMGR, "%s: [%s] closing now",
+		log_flag(CONMGR, "%s: [%s] queuing close",
 			 __func__, con->name);
 
-		_post_wait_close_fds(true, con);
+		add_work_con_fifo(true, con, _delayed_close, NULL);
 	}
 
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
@@ -273,17 +266,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
-		_wait_close(false, con);
-	} else {
-		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() complete",
-			 __func__, con->name);
-
-		slurm_mutex_lock(&mgr.mutex);
-
-		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
-		con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
-
-		slurm_mutex_unlock(&mgr.mutex);
+		_wait_close(con);
 	}
 
 	tls_destroy(conmgr_args, arg);
@@ -372,7 +355,7 @@ again:
 	if ((rc = try_grow_buf_remaining(buf, need))) {
 		error("%s: [%s] unable to allocate larger input buffer for TLS data: %s",
 		      __func__, con->name, slurm_strerror(rc));
-		_wait_close(false, con);
+		_wait_close(con);
 		return;
 	}
 
@@ -396,7 +379,7 @@ again:
 		log_flag(NET, "%s: [%s] error while decrypting TLS: %m",
 			 __func__, con->name);
 
-		_wait_close(false, con);
+		_wait_close(con);
 		return;
 	} else if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes previously decrypted",
@@ -485,7 +468,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() failed: %s",
 				 __func__, con->name, slurm_strerror(rc));
-		_wait_close(false, con);
+		_wait_close(con);
 		return;
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
@@ -803,7 +786,7 @@ extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
 		      __func__, con->name);
 		/* drop outbound data on the floor */
 		list_flush(con->out);
-		_wait_close(false, con);
+		_wait_close(con);
 	}
 }
 
