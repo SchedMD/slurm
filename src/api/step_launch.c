@@ -1426,6 +1426,10 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 
+	log_flag(AUDIT_RPCS, "step_launch _on_msg: [%s] msg_type=%s uid=%u client=[%pA] protocol=%u",
+		 conmgr_con_get_name(con), rpc_num2string(msg->msg_type),
+		 msg->auth_uid, &msg->address, msg->protocol_version);
+
 	if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
 		      __func__, conmgr_con_get_name(con),
