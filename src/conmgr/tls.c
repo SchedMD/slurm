@@ -232,6 +232,15 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+	xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+
+	if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+		log_flag(CONMGR, "%s: [%s] cancelling TLS shutdown",
+			 __func__, con->name);
+		con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
 
 	tls = con->tls;
 
@@ -253,6 +262,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		slurm_mutex_lock(&mgr.mutex);
 
 		xassert(tls == con->tls);
+		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
 		/* Wait for more incoming data before trying again */
 		con_set_flag(con, FLAG_ON_DATA_TRIED);
@@ -264,6 +274,16 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 		_wait_close(false, con);
+	} else {
+		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() complete",
+			 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+		con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 
 	tls_destroy(conmgr_args, arg);
