@@ -93,7 +93,6 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
 	errno = SLURM_SUCCESS;
 	tls_g_destroy_conn(tls, false);
 	if ((rc = errno))
@@ -110,6 +109,8 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 
 	FREE_NULL_BUFFER(tls_in);
 	FREE_NULL_LIST(tls_out);
+
+	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
 }
 
 static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
