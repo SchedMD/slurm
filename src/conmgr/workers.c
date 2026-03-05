@@ -152,23 +152,14 @@ static probe_status_t _probe(probe_log_t *log, void *arg)
 
 static void _create_worker(const int i)
 {
-	char title[PRCTL_BUF_BYTES] = "INVALID";
 	const int id = (i + 1);
 	int rc = EINVAL;
 	worker_t *worker = xmalloc(sizeof(*worker));
 	worker->magic = MAGIC_WORKER;
 	worker->id = id;
 
-	/*
-	 * Avoid compiler warnings for id not fitting in PRCTL_BUF_BYTES by
-	 * using %hu instead of %d
-	 */
-	xassert(id < UINT16_MAX);
-	(void) snprintf(title, sizeof(title), "worker[%hu]",
-			(unsigned short) id);
-
 	if ((rc = threadpool_create(_worker, XSTRINGIFY(_worker), worker, true,
-							title, &worker->tid,
+							NULL, &worker->tid,
 							__func__)))
 		fatal("%s: unable to create new thread: %s",
 		      __func__, slurm_strerror(rc));
