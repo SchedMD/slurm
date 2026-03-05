@@ -3231,7 +3231,7 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		 *    before the later slot ends.
 		 */
 		_advance_slot_until(slot[0], slot[1]->end);
-		if (slot[0]->end > slot[1]->end) {
+		if (slot[0]->start > slot[1]->end) {
 			error("%s: Reservation slot is already the last one, and it shouldn't happen",
 			      __func__);
 			return true;
@@ -3269,7 +3269,7 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		if (slot[1]->flags & RESERVE_REOCCURRING) {
 			/* 3) Repeat 1) with slot1 being the earlier one */
 			_advance_slot_until(slot[1], slot[0]->end);
-			if (slot[1]->end > slot[0]->end) {
+			if (slot[1]->start > slot[0]->end) {
 				error("%s: Reservation slot is the later one again, and it shouldn't happen",
 				      __func__);
 				return true;
