@@ -78,6 +78,40 @@ static void _shift_buf_bytes(buf_t *buf, const size_t bytes)
 	set_buf_offset(buf, remain);
 }
 
+extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	conmgr_fd_t *con = conmgr_args.con;
+	void *tls = NULL;
+	buf_t *tls_in = NULL;
+	list_t *tls_out = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	tls = con->tls;
+	xassert(tls);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
+	errno = SLURM_SUCCESS;
+	tls_g_destroy_conn(tls, false);
+	if ((rc = errno))
+		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(tls == con->tls);
+	con->tls = NULL;
+
+	SWAP(tls_in, con->tls_in);
+	SWAP(tls_out, con->tls_out);
+	slurm_mutex_unlock(&mgr.mutex);
+
+	FREE_NULL_BUFFER(tls_in);
+	FREE_NULL_LIST(tls_out);
+}
+
 static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
 {
 	if (!locked)
@@ -147,8 +181,6 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	void *tls = NULL;
 	int rc = EINVAL;
-	buf_t *tls_in = NULL;
-	list_t *tls_out = NULL;
 	bool defer_close = false;
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -204,24 +236,7 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 destroy:
-	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
-
-	errno = SLURM_SUCCESS;
-	tls_g_destroy_conn(tls, false);
-	if ((rc = errno))
-		log_flag(CONMGR, "%s: [%s] tls_g_destroy() failed: %s",
-			 __func__, con->name, slurm_strerror(rc));
-
-	slurm_mutex_lock(&mgr.mutex);
-	xassert(tls == con->tls);
-	con->tls = NULL;
-
-	SWAP(tls_in, con->tls_in);
-	SWAP(tls_out, con->tls_out);
-	slurm_mutex_unlock(&mgr.mutex);
-
-	FREE_NULL_BUFFER(tls_in);
-	FREE_NULL_LIST(tls_out);
+	tls_destroy(conmgr_args, arg);
 
 	if (!defer_close)
 		conmgr_con_queue_close(conmgr_args.ref);

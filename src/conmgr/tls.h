@@ -45,10 +45,13 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg);
 extern void tls_adopt(conmgr_fd_t *con, void *tls_conn);
 
 /*
- * Perform TLS shutdown and cleanup
- * WARNING: will defer cleanup if file descriptors are still open
+ * Perform TLS shutdown
+ * WARNING: will defer close if delay is requested by TLS plugin
  */
 extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg);
+
+/* Release TLS state */
+extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg);
 
 /* Read from con->input_fd */
 extern void tls_handle_read(conmgr_callback_args_t conmgr_args, void *arg);
