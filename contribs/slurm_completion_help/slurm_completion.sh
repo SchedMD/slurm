@@ -4479,6 +4479,7 @@ function _scontrol() {
 		"delete"
 		"errnumstr"
 		"fsdampeningfactor"
+		"getent"
 		"help"
 		"hold"
 		"notify"

@@ -206,6 +206,17 @@ Get IP addresses of <\fINODES\fR> from slurmctld.
 .IP
 
 .TP
+\fBgetent\fR [<\fINodeName\fR>]
+Print entities (users and groups) associated with each step
+running on the host that invokes this command. This contacts any
+slurmstepd's running locally, and does not contact slurmctld.
+Use <\fINodeName\fR> if using \-\-enable\-multiple\-slurmd.
+
+\fBNOTE\fR: This command will not work for any steps launched while
+\fBLaunchParameters=disable_send_gids\fR is set in slurm.conf.
+.IP
+
+.TP
 \fBhelp\fR
 Display a description of scontrol options and commands.
 .IP
