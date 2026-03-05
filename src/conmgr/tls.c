@@ -191,7 +191,6 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	conmgr_fd_t *con = conmgr_args.con;
 	void *tls = NULL;
 	int rc = EINVAL;
-	bool defer_close = false;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -213,7 +212,8 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] connection already closed, skipping TLS close",
 			 __func__, con->name);
 		slurm_mutex_unlock(&mgr.mutex);
-		goto destroy;
+		tls_destroy(conmgr_args, arg);
+		return;
 	}
 
 	slurm_mutex_unlock(&mgr.mutex);
@@ -237,19 +237,15 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 		con_set_flag(con, FLAG_ON_DATA_TRIED);
 
 		slurm_mutex_unlock(&mgr.mutex);
-		return;
+
+		conmgr_con_queue_close(conmgr_args.ref);
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 		_wait_close(false, con);
-		defer_close = true;
 	}
 
-destroy:
 	tls_destroy(conmgr_args, arg);
-
-	if (!defer_close)
-		conmgr_con_queue_close(conmgr_args.ref);
 }
 
 static int _recv(void *io_context, uint8_t *buf, uint32_t len)
