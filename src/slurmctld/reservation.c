@@ -5537,6 +5537,8 @@ static void _validate_node_choice(slurmctld_resv_t *resv_ptr)
 		job_ptr->gres_list_req = NULL;
 		job_record_delete(resv_desc.job_ptr);
 		resv_desc.job_ptr = NULL;
+		last_resv_update = time(NULL);
+		schedule_resv_save();
 		info("modified reservation %s due to unusable nodes, "
 		     "new nodes: %s", resv_ptr->name, resv_ptr->node_list);
 	} else if (difftime(resv_ptr->start_time, time(NULL)) < 600) {
