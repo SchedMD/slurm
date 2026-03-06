@@ -366,6 +366,10 @@ again:
 		close_con(false, con);
 		return;
 	} else {
+		size_t offset = 0;
+
+		slurm_mutex_lock(&mgr.mutex);
+
 		log_flag(NET, "%s: [%s] decrypted TLS %zd/%zd bytes with %u bytes previously decrypted",
 			 __func__, con->name, read_c, readable,
 			 get_buf_offset(buf));
@@ -377,7 +381,11 @@ again:
 
 		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
 
-		if (get_buf_offset(con->tls_in) > 0) {
+		offset = get_buf_offset(con->tls_in);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		if (offset) {
 			try++;
 			goto again;
 		}
