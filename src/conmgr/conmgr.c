@@ -251,6 +251,9 @@ extern void conmgr_fini(void)
 
 	mgr.shutdown_requested = true;
 
+	/* wake up watch to shutdown */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
 	if (mgr.watch_thread) {
 		slurm_mutex_unlock(&mgr.mutex);
 		wait_for_watch();
