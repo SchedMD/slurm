@@ -1536,7 +1536,7 @@ static void _usage(void)
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
-"            [--oom-kill-step[=0|1]]\n"
+"            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
 "            executable [args...]\n");
 
 }
@@ -1577,6 +1577,7 @@ static void _help(void)
 "      --gres=list             required generic resources per node\n"
 "      --gres-flags=opts       flags related to GRES management\n"
 "  -H, --hold                  submit job in held state\n"
+"      --ignore-signals=signals... prevent forwarding of specified signals\n"
 "  -i, --input=in              location of stdin redirection\n"
 "  -I, --immediate[=secs]      exit if resources not available in \"secs\"\n"
 "      --jobid=id              run under already allocated job\n"
