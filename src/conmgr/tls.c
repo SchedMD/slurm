@@ -385,12 +385,7 @@ again:
 		log_flag(NET, "%s: [%s] read EOF with %u bytes previously decrypted",
 			 __func__, con->name, get_buf_offset(buf));
 
-		/* Need to shutdown TLS layer before closing connection */
-		slurm_mutex_lock(&mgr.mutex);
-		con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
-		add_work_con_fifo(true, con, tls_close, NULL);
-		slurm_mutex_unlock(&mgr.mutex);
-
+		close_con(false, con);
 		return;
 	} else {
 		log_flag(NET, "%s: [%s] decrypted TLS %zd/%zd bytes with %u bytes previously decrypted",
