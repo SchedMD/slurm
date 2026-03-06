@@ -215,24 +215,38 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	rc = tls_g_shutdown_conn(tls);
 
 	if (rc == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() requires more incoming data",
-			 __func__, con->name);
-
 		slurm_mutex_lock(&mgr.mutex);
 
 		xassert(tls == con->tls);
 		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
-		/* Wait for more incoming data before trying again */
-		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() completed after connection closed",
+				 __func__, con->name);
+			close_con(true, con);
+		} else {
+			/* Wait for more incoming data before trying again */
+			con_set_flag(con, FLAG_ON_DATA_TRIED);
+
+			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() requires more incoming data",
+				 __func__, con->name);
+		}
 
 		slurm_mutex_unlock(&mgr.mutex);
-
-		conmgr_con_queue_close(conmgr_args.ref);
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
 		_wait_close(con);
+	} else {
+		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() complete",
+			 __func__, con->name);
+
+		slurm_mutex_lock(&mgr.mutex);
+
+		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+		con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
 
