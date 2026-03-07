@@ -299,6 +299,14 @@ extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
 
 again:
 	slurm_mutex_lock(&mgr.mutex);
+
+	if ((need = get_buf_offset(con->tls_in)) <= 0) {
+		log_flag(NET, "%s: [%s] already decrypted all incoming TLS data",
+			 __func__, con->name);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
 	if (con_flag(con, FLAG_ON_DATA_TRIED) ||
 	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
@@ -310,6 +318,7 @@ again:
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
+
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (try > 1) {
@@ -321,12 +330,6 @@ again:
 		/* lock to tell mgr that we are done for now */
 		con_set_flag(con, FLAG_ON_DATA_TRIED);
 		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	if ((need = get_buf_offset(con->tls_in)) <= 0) {
-		log_flag(NET, "%s: [%s] already decrypted all incoming TLS data",
-			 __func__, con->name);
 		return;
 	}
 
