@@ -1761,7 +1761,9 @@ static int _select_and_set_node(void *x, void *arg)
 	gres_js->gres_cnt_node_select[node_inx] = 0;
 
 	if (gres_js->res_gpu_cores && gres_js->res_gpu_cores[node_inx] &&
-	    !gres_id_shared(sock_gres->gres_state_job->config_flags)) {
+	    !gres_id_shared(sock_gres->gres_state_job->config_flags) &&
+	    !(job_ptr->details &&
+	      (job_ptr->details->whole_node & WHOLE_NODE_REQUIRED))) {
 		*rc = _set_res_core_bits(&res_gres_per_sock, &total_res_gres,
 					 &sock_with_res_cnt, args, sock_gres);
 		if (*rc != SLURM_SUCCESS)
