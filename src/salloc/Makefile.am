@@ -6,6 +6,7 @@ bin_PROGRAMS = salloc
 
 salloc_SOURCES = \
 	opt.c opt.h \
+	signals.c signals.h \
 	salloc.c salloc.h
 
 convenience_libs = $(LIB_SLURM)
