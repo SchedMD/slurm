@@ -48,18 +48,18 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "src/common/eio.h"
-#include "src/common/half_duplex.h"
-#include "src/common/macros.h"
+#include "slurm/slurm_errno.h"
+
+#include "src/common/duplex_relay.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
-#include "src/common/threadpool.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/x11_util.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/interfaces/conn.h"
+#include "src/conmgr/conmgr.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -92,58 +92,47 @@ static uid_t job_uid;
 static bool local_xauthority = false;
 static char hostname[HOST_NAME_MAX] = {0};
 
-static eio_handle_t *eio_handle = NULL;
-
 /* Target salloc/srun host/port */
 static slurm_addr_t alloc_node;
 /* X11 display hostname on target, or UNIX socket. */
 static char *x11_target = NULL;
 /* X11 display port on target (if not a UNIX socket). */
 static uint16_t x11_target_port = 0;
+static char *srun_tls_cert = NULL;
+
 static uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
-static void *_eio_thread(void *arg)
+#define MAGIC_X11_CON 0xba59504c
+
+typedef struct {
+	int magic; /* MAGIC_X11_CON */
+	conmgr_fd_ref_t *con;
+} x11_con_t;
+
+static void _x11_con_free(x11_con_t *x11con)
 {
-	eio_handle_mainloop(eio_handle);
-	return NULL;
+	if (!x11con)
+		return;
+
+	xassert(x11con->magic == MAGIC_X11_CON);
+	x11con->magic = ~MAGIC_X11_CON;
+	conmgr_con_queue_close_free(&x11con->con);
+	xfree(x11con);
 }
 
-static bool _x11_socket_readable(eio_obj_t *obj)
+static void *_x11_con_on_connection(conmgr_callback_args_t conmgr_args,
+				    void *arg)
 {
-        if (obj->shutdown) {
-		if (obj->fd != -1)
-			close(obj->fd);
-		obj->fd = -1;
-                return false;
-	}
-        return true;
-}
-
-static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
-{
-	conn_t *conn = NULL;
-	slurm_msg_t req, resp;
+	x11_con_t *x11con = arg;
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	int rc = EINVAL;
+	slurm_msg_t req;
 	net_forward_msg_t rpc;
-	slurm_addr_t sin;
-	int *local, *remote;
-	char *srun_tls_cert = obj->arg;
-	int rc;
 
-	local = xmalloc(sizeof(*local));
-	remote = xmalloc(sizeof(*remote));
+	xassert(x11con->magic == MAGIC_X11_CON);
 
-	if ((*local = slurm_accept_conn(obj->fd, &sin)) == -1) {
-		error("accept call failure, shutting down");
-		goto shutdown;
-	}
-
-	if (!(conn = slurm_open_msg_conn(&alloc_node, srun_tls_cert))) {
-		error("%s: slurm_open_msg_conn(%pA): %m",
-		      __func__, &alloc_node);
-		goto shutdown;
-	}
-
-	*remote = conn_g_get_fd(conn);
+	log_flag(NET, "%s: [%s] Connected to srun, will send SRUN_NET_FORWARD to continue setting up X11 tunnel",
+		 __func__, conmgr_con_get_name(con));
 
 	rpc.step_id.job_id = job_id;
 	rpc.flags = 0;
@@ -151,49 +140,119 @@ static int _x11_socket_read(eio_obj_t *obj, list_t *objs)
 	rpc.target = x11_target;
 
 	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
 
 	req.msg_type = SRUN_NET_FORWARD;
 	req.protocol_version = protocol_version;
 	slurm_msg_set_r_uid(&req, job_uid);
 	req.data = &rpc;
 
-	slurm_send_recv_msg(conn, &req, &resp, 0);
+	if (!(rc = conmgr_con_queue_write_msg(con, &req)))
+		return x11con;
 
-	if (resp.msg_type != RESPONSE_SLURM_RC) {
-		error("Unexpected response on setup, forwarding failed.");
-		slurm_free_msg_members(&resp);
-		goto shutdown;
+	error("%s: [%s] Failed to write SRUN_NET_FORWARD rpc: %s",
+	      __func__, conmgr_con_get_name(con), slurm_strerror(rc));
+	_x11_con_free(x11con);
+	return NULL;
+}
+
+static int _x11_con_on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
+			   int unpack_rc, void *arg)
+{
+	x11_con_t *x11con = arg;
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	int rc = SLURM_ERROR;
+	int msg_rc;
+
+	xassert(x11con->magic == MAGIC_X11_CON);
+
+	/* Ensure that peer is ready to start x11 tunnel */
+
+	if (msg->msg_type != RESPONSE_SLURM_RC) {
+		error("%s: [%s] Unexpected response type %s. Unable to start x11 forwarding.",
+		      __func__, conmgr_con_get_name(con),
+		      rpc_num2string(msg->msg_type));
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+	} else if ((msg_rc = slurm_get_return_code(msg->msg_type, msg->data))) {
+		error("%s: [%s] Error setting up X11 forwarding from remote: %s",
+		      __func__, conmgr_con_get_name(con),
+		      slurm_strerror(msg_rc));
+		rc = ESLURM_X11_NOT_AVAIL;
+	} else if ((rc = duplex_relay_assign(con, x11con->con))) {
+		error("%s: [%s] Failed to initialize second connection in duplex relay ",
+		      __func__, conmgr_con_get_name(con));
+	} else {
+		log_flag(NET, "%s: [%s] srun responded to SRUN_NET_FORWARD successfully, X11 tunnel is ready now",
+			 __func__, conmgr_con_get_name(con));
+
+		/* Cleanup state but avoid closing the connections */
+		CONMGR_CON_UNLINK(x11con->con);
+		_x11_con_free(x11con);
 	}
 
-	if ((rc = slurm_get_return_code(resp.msg_type, resp.data))) {
-		error("Error setting up X11 forwarding from remote: %s",
+	FREE_NULL_MSG(msg);
+	return rc;
+}
+
+static void _x11_con_on_finish(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	x11_con_t *x11con = arg;
+
+	xassert(x11con->magic == MAGIC_X11_CON);
+
+	_x11_con_free(x11con);
+}
+
+static void *_x11_server_on_connection(conmgr_callback_args_t conmgr_args,
+				       void *arg)
+{
+	static const conmgr_events_t events = {
+		.on_connection = _x11_con_on_connection,
+		.on_msg = _x11_con_on_msg,
+		.on_finish = _x11_con_on_finish,
+	};
+	conmgr_fd_ref_t *con = conmgr_args.ref;
+	int rc = EINVAL;
+	x11_con_t *x11con = NULL;
+
+	log_flag(NET, "%s: [%s] User application X11 client connected to our fake X11 server, setting up X11 tunnel now",
+		 __func__, conmgr_con_get_name(con));
+
+	x11con = xmalloc(sizeof(*x11con));
+	*x11con = (x11_con_t) {
+		.magic = MAGIC_X11_CON,
+	};
+
+	CONMGR_CON_LINK(con, x11con->con);
+
+	/*
+	 * Setup forwarding tunnel for srun. All data exchanged by x11 client
+	 * (user application) with slurmstepd's "x11 server" on the compute host
+	 * will be forwarded to the host running srun, as if the application
+	 * were running on the host running srun.
+	 */
+	if ((rc = conmgr_create_connect_socket(CON_TYPE_RPC, CON_FLAG_NONE,
+					       &alloc_node, sizeof(alloc_node),
+					       &events, srun_tls_cert,
+					       x11con))) {
+		error("%s: [%s] Failed to connect to srun at %pA: %s",
+		      __func__, conmgr_con_get_name(con), &alloc_node,
 		      slurm_strerror(rc));
-		slurm_free_msg_members(&resp);
-		goto shutdown;
+	} else if ((rc = conmgr_quiesce_con(con))) {
+		error("%s: [%s] Failed to quiesce connection: %s",
+		      __func__, conmgr_con_get_name(con), slurm_strerror(rc));
+	} else {
+		log_flag(NET, "%s: [%s] Waiting for tunnel to srun at %pA connect",
+			 __func__, conmgr_con_get_name(con), &alloc_node);
+		return con;
 	}
 
-	slurm_free_msg_members(&resp);
+	_x11_con_free(x11con);
+	return NULL;
+}
 
-	net_set_nodelay(*local, true, NULL);
-	net_set_nodelay(*remote, true, NULL);
-
-	if (half_duplex_add_objs_to_handle(eio_handle, local, remote, conn)) {
-		goto shutdown;
-	}
-
-	debug("%s: X11 forwarding setup successful", __func__);
-
-	return SLURM_SUCCESS;
-
-shutdown:
-	debug2("%s: error, shutting down", __func__);
-	if (*local != -1)
-		close(*local);
-	xfree(local);
-	xfree(remote);
-
-	return SLURM_ERROR;
+static int _x11_server_on_data(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	fatal_abort("should never happen");
 }
 
 extern int shutdown_x11_forward(void)
@@ -201,8 +260,6 @@ extern int shutdown_x11_forward(void)
 	int rc = SLURM_SUCCESS;
 
 	debug("x11 forwarding shutdown in progress");
-	if (eio_handle)
-		eio_signal_shutdown(eio_handle);
 
 	if (step->x11_xauthority) {
 		if (local_xauthority) {
@@ -229,6 +286,12 @@ extern int shutdown_x11_forward(void)
  */
 extern int setup_x11_forward(void)
 {
+	static const conmgr_events_t events = {
+		.on_connection = _x11_server_on_connection,
+		.on_data = _x11_server_on_data,
+	};
+	int rc = EINVAL;
+
 	int listen_socket = -1;
 	uint16_t port;
 	/*
@@ -238,15 +301,6 @@ extern int setup_x11_forward(void)
 	 */
 	uint16_t ports[2] = {6020, 6099};
 
-	/*
-	 * EIO handles both the local listening socket, as well as the individual
-	 * forwarded connections.
-	 */
-	eio_obj_t *obj;
-	static struct io_operations x11_socket_ops = {
-		.readable = _x11_socket_readable,
-		.handle_read = _x11_socket_read,
-	};
 	srun_info_t *srun = list_peek(step->sruns);
 	/* This should always be set to something else we have a bug. */
 	xassert(srun && srun->protocol_version);
@@ -256,6 +310,7 @@ extern int setup_x11_forward(void)
 	job_uid = step->uid;
 	x11_target = xstrdup(step->x11_target);
 	x11_target_port = step->x11_target_port;
+	srun_tls_cert = xstrdup(srun->tls_cert);
 
 	slurm_set_addr(&alloc_node, step->x11_alloc_port, step->x11_alloc_host);
 
@@ -294,12 +349,13 @@ extern int setup_x11_forward(void)
 	info("X11 forwarding established on DISPLAY=%s:%d.0",
 	     hostname, step->x11_display);
 
-	eio_handle = eio_handle_create(0);
-	obj = eio_obj_create(listen_socket, &x11_socket_ops, NULL);
-	obj->arg = xstrdup(srun->tls_cert);
-
-	eio_new_initial_obj(eio_handle, obj);
-	slurm_thread_create_detached(NULL, _eio_thread, NULL);
+	if ((rc = conmgr_process_fd_listen(listen_socket, CON_TYPE_RAW, NULL,
+					   &events, CON_FLAG_TCP_NODELAY,
+					   NULL))) {
+		error("%s: [fd:%d] Unable to process listening socket: %s",
+		      __func__, listen_socket, slurm_strerror(rc));
+		goto shutdown;
+	}
 
 	return SLURM_SUCCESS;
 
@@ -307,6 +363,7 @@ shutdown:
 	xfree(x11_target);
 	step->x11_display = 0;
 	xfree(step->x11_xauthority);
+	xfree(srun_tls_cert);
 	if (listen_socket != -1)
 		close(listen_socket);
 
