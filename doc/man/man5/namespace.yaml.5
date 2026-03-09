@@ -166,6 +166,13 @@ namespace, so they are isolated whether or not /dev/mqueue exists.
 
 \fBNOTE\fR: When CLONE_NEWUSER is specified, bpf token support is also required
 if using ConstrainDevices in \fBcgroup.conf\fR.
+
+\fBNOTE\fR: When \fBSwitchType=switch/nvidia_imex\fR is configured, do not use
+CLONE_NEWUSER.
+That plugin creates an IMEX channel device for every job inside the job
+namespace.
+A user namespace cannot create device nodes, so every job fails to launch on
+nodes where the nvidia\-caps\-imex\-channels device is present.
 .IP
 
 .TP
