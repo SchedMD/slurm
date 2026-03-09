@@ -179,39 +179,6 @@ static void _wait_close(conmgr_fd_t *con)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
-{
-	conmgr_fd_t *con = conmgr_args.con;
-	void *tls = NULL;
-
-	slurm_mutex_lock(&mgr.mutex);
-
-	xassert(con->tls);
-	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
-		con_flag(con, FLAG_TLS_SERVER));
-	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
-
-	tls = con->tls;
-
-	if (!tls) {
-		log_flag(CONMGR, "%s: [%s] TLS state doesn't exist, skip closing it",
-			 __func__, con->name);
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	if (con_flag(con, FLAG_READ_EOF)) {
-		log_flag(CONMGR, "%s: [%s] connection already closed, skipping TLS close",
-			 __func__, con->name);
-		slurm_mutex_unlock(&mgr.mutex);
-		return;
-	}
-
-	slurm_mutex_unlock(&mgr.mutex);
-
-	tls_shutdown(conmgr_args, arg);
-}
-
 extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
