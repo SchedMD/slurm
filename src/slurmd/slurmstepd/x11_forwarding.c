@@ -64,6 +64,28 @@
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+/*
+ * This file implements Slurm's built-in X11 forwarding on the slurmstepd side.
+ *
+ * Typical X11 environment
+ * - X11 client <-> X11 server
+ *
+ * Slurm's builtin X11 forwarding
+ * - X11 client <-> slurmstepd <-> srun <-> X11 server
+ *
+ * Setup Sequence:
+ * 1. X11 client in user app connects to slurmstepd's "X11 server"
+ * 2. slurmstepd connects to srun and sends SRUN_NET_FORWARD message
+ * 3. srun connects to local X11 server
+ *
+ * Data exchange:
+ *   X11 client writing to X11 server:
+ *   - X11 client (compute host) -> slurmstepd -> srun -> X11 server (srun host)
+ *
+ *   X11 server writing to X11 client:
+ *   - X11 server (srun host) -> srun -> slurmstepd -> X11 client (compute host)
+ */
+
 static uint32_t job_id = NO_VAL;
 static uid_t job_uid;
 
