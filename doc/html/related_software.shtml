@@ -220,7 +220,7 @@ sudo make install</pre>
 <li><a id="jwt" href="https://github.com/benmcollins/libjwt">
     <b>JWT library</b></a>
 	<p><a href="jwt.html">JWT authentication</a> requires <b>libjwt
-	(&gt;= v1.10.0)</b>. Instructions for the build are as follows:</p>
+	(&gt;= v1.10.0 and &lt; v2)</b>. Instructions for the build are as follows:</p>
 	<pre>
 git clone --depth 1 --single-branch -b v1.12.0 https://github.com/benmcollins/libjwt.git libjwt
 cd libjwt
