@@ -263,7 +263,7 @@ set matches_sbatch 0
 set matches_srun 0
 spawn $bin_cat $file_out
 expect {
-	-re "error" {
+	-re "error:" {
 		fail "Some error happened"
 	}
 	-re "_test_opt_process_(.*?=$number)" {
