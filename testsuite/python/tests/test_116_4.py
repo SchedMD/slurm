@@ -12,6 +12,15 @@ def setup():
     atf.require_slurm_running()
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clean_core():
+    yield
+    coredumps = atf.get_coredumps()
+    for coredump in coredumps:
+        if "file_in" in coredump:
+            atf.run_command(f"rm -f {coredump}")
+
+
 def test_task_signal_abort_message():
     """Test of task signal abort message"""
 
