@@ -54,6 +54,11 @@ SigFunc *xsignal(int signo, SigFunc *);
 extern SigFunc *xsignal_default(int sig);
 
 /*
+ * Set signal disposition to SIG_IGN
+ */
+extern SigFunc *xsignal_ignore(int sig);
+
+/*
  * Save current set of blocked signals into `set'
  */
 int xsignal_save_mask(sigset_t *set);

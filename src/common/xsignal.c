@@ -97,6 +97,12 @@ extern SigFunc *xsignal_default(int sig)
 	return _sigaction(sig, SIG_DFL);
 }
 
+extern SigFunc *xsignal_ignore(int sig)
+{
+	/* Allowed even when conmgr is enabled */
+	return _sigaction(sig, SIG_IGN);
+}
+
 /*
  *  Wrapper for pthread_sigmask.
  */
