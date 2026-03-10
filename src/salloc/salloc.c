@@ -134,8 +134,8 @@ static void _reset_input_mode (void)
 	/* SIGTTOU needs to be blocked per the POSIX spec:
 	 * http://pubs.opengroup.org/onlinepubs/009695399/functions/tcsetattr.html
 	 */
-	int sig_block[] = { SIGTTOU, SIGTTIN, 0 };
-	xsignal_block (sig_block);
+	xsignal_ignore(SIGTTOU);
+	xsignal_ignore(SIGTTIN);
 	tcsetattr (STDIN_FILENO, TCSANOW, &saved_tty_attributes);
 	/* If salloc was run as interactive, with job control, reset the
 	 * foreground process group of the terminal to the process group of
@@ -561,9 +561,9 @@ int main(int argc, char **argv)
 		 * Ignore remaining job-control signals (other than those in
 		 * sig_array, which at this state act like SIG_IGN).
 		 */
-		xsignal(SIGTSTP, SIG_IGN);
-		xsignal(SIGTTIN, SIG_IGN);
-		xsignal(SIGTTOU, SIG_IGN);
+		xsignal_ignore(SIGTSTP);
+		xsignal_ignore(SIGTTIN);
+		xsignal_ignore(SIGTTOU);
 
 		pid = getpid();
 		setpgid(pid, pid);
@@ -823,10 +823,10 @@ static pid_t _fork_command(char **command)
 		 * Suspending single commands is more complex and would require
 		 * adding full shell-like job control to salloc.
 		 */
-		xsignal(SIGINT, SIG_DFL);
-		xsignal(SIGQUIT, SIG_DFL);
-		xsignal(SIGTTIN, SIG_DFL);
-		xsignal(SIGTTOU, SIG_DFL);
+		xsignal_default(SIGINT);
+		xsignal_default(SIGQUIT);
+		xsignal_default(SIGTTIN);
+		xsignal_default(SIGTTOU);
 
 		execvp(cpath, command);
 
