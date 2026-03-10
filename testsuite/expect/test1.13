@@ -60,7 +60,7 @@ set matches 0
 set timeout $max_job_delay
 spawn $srun --immediate -v -t1 $bin_pwd
 expect {
-	-re "error" {
+	-re "error:" {
 		log_debug "This error is not unexpected, no worries"
 		incr matches
 		exp_continue
