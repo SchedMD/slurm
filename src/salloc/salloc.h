@@ -44,7 +44,7 @@
 #include <unistd.h>
 
 extern char *argvzero;
-extern pid_t    command_pid;
+extern pid_t command_pid;
 extern uint64_t debug_flags;
 
 enum possible_allocation_states {NOT_GRANTED, GRANTED, REVOKED};
