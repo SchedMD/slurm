@@ -555,8 +555,10 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 	}
 
 	xstrfmtcat(proc_file, "/proc/%u/stat", pid);
-	if (!(stat_fp = fopen(proc_file, "r")))
+	if (!(stat_fp = fopen(proc_file, "r"))) {
+		xfree(proc_file);
 		return;  /* Assume the process went away */
+	}
 	/*
 	 * Close the file on exec() of user tasks.
 	 *
@@ -635,6 +637,7 @@ static void _handle_stats(pid_t pid, jag_callbacks_t *callbacks, int tres_count)
 bail_out:
 	xfree(prec->tres_data);
 	xfree(prec);
+	xfree(proc_file);
 	return;
 }
 
