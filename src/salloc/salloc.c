@@ -122,7 +122,6 @@ static void _user_msg_handler(srun_user_msg_t *msg);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid);
 
-bool salloc_shutdown = false;
 /* Signals that are considered terminal before resource allocation. */
 int sig_array[] = {
 	SIGHUP, SIGINT, SIGQUIT, SIGPIPE,
