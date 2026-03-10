@@ -157,7 +157,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_salloc_OBJECTS = salloc.$(OBJEXT) opt.$(OBJEXT)
+am_salloc_OBJECTS = opt.$(OBJEXT) salloc.$(OBJEXT)
 salloc_OBJECTS = $(am_salloc_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
@@ -489,7 +489,10 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
-salloc_SOURCES = salloc.c salloc.h opt.c opt.h
+salloc_SOURCES = \
+	opt.c opt.h \
+	salloc.c salloc.h
+
 convenience_libs = $(LIB_SLURM)
 salloc_DEPENDENCIES = $(LIB_SLURM_BUILD)
 salloc_LDADD = \

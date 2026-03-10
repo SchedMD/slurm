@@ -4,7 +4,9 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 bin_PROGRAMS = salloc
 
-salloc_SOURCES = salloc.c salloc.h opt.c opt.h
+salloc_SOURCES = \
+	opt.c opt.h \
+	salloc.c salloc.h
 
 convenience_libs = $(LIB_SLURM)
 salloc_DEPENDENCIES = $(LIB_SLURM_BUILD)
