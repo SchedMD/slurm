@@ -1154,7 +1154,7 @@ static int _do_option_cb(struct spank_plugin_opt *opt, const char *arg,
 	int rc = 0;
 
 	xassert(opt);
-	xassert(arg);
+	xassert(!opt->opt->has_arg || arg);
 
 	/*
 	 *  Call plugin callback if such a one exists
