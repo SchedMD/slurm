@@ -51,6 +51,8 @@ enum possible_allocation_states {NOT_GRANTED, GRANTED, REVOKED};
 extern enum possible_allocation_states allocation_state;
 extern pthread_mutex_t allocation_state_lock;
 
+extern bool exit_flag;
+
 extern slurm_step_id_t my_job_id;
 
 #endif	/* _HAVE_SALLOC_H */

@@ -93,7 +93,7 @@ pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool allocation_interrupted = false;
 static bool allocation_revoked = false;
-static bool exit_flag = false;
+bool exit_flag = false;
 static bool is_het_job = false;
 static bool suspend_flag = false;
 slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
