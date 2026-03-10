@@ -288,6 +288,8 @@ typedef struct forward_struct {
 } forward_struct_t;
 
 typedef struct forward_message {
+	/* Timestamp forwarding was requested */
+	timespec_t ts_requested;
 	forward_struct_t *fwd_struct;
 	header_t header;
 	int timeout;
