@@ -59,6 +59,7 @@
 #include <unistd.h>
 
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -182,6 +183,9 @@ int srun(int ac, char **av)
 	xsignal(SIGTTIN, SIG_IGN);
 
 	conmgr_init(0, THREAD_COUNT, 0);
+
+	forward_init();
+
 	conmgr_run(false);
 
 	if (cli_filter_init() != SLURM_SUCCESS)
@@ -243,6 +247,8 @@ int srun(int ac, char **av)
 		global_rc = mpi_plugin_rc;
 	}
 
+	conmgr_request_shutdown();
+	forward_fini();
 	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
