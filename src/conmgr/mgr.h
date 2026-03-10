@@ -241,6 +241,9 @@ struct conmgr_fd_s {
 	 */
 	list_t *write_complete_work;
 
+	/* Connection specific timeouts */
+	const conmgr_timeouts_t *timeouts;
+
 	/* Flags set for connection */
 	con_flags_t flags;
 
@@ -264,18 +267,8 @@ typedef struct {
 	/* Configured value for max connections */
 	int conf_max_connections;
 
-	/*
-	 * Configured number of seconds to wait for recheck of output_fd for
-	 * write_complete work
-	 */
-	uint32_t conf_delay_write_complete;
-
-	/* Time delay requires to trigger a read timeout */
-	timespec_t conf_read_timeout;
-	/* Time delay requires to trigger a write timeout */
-	timespec_t conf_write_timeout;
-	/* Time delay requires to trigger a connect timeout */
-	timespec_t conf_connect_timeout;
+	/* Default timeouts derived from config */
+	conmgr_timeouts_t timeouts;
 
 	/* Max number of connections at any one time allowed */
 	int max_connections;
@@ -357,8 +350,6 @@ typedef struct {
 		bool requested;
 		/* Has conmgr quiesced */
 		bool active;
-		/* Configured value of time to active timeout */
-		timespec_t conf_timeout;
 		/* Timestamp when quiesce requested */
 		timespec_t start;
 		/* Event to broadcast when conmgr enters quiesced state */

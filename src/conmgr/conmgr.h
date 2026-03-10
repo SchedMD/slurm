@@ -130,6 +130,19 @@ typedef struct conmgr_fd_s conmgr_fd_t;
  */
 typedef struct conmgr_fd_ref_s conmgr_fd_ref_t;
 
+typedef struct {
+	/* Time delay required to trigger a read timeout */
+	timespec_t read;
+	/* Time delay required to trigger a write timeout */
+	timespec_t write;
+	/* Time delay required to trigger a connect timeout */
+	timespec_t connect;
+	/* Time delay required to trigger a quiesce timeout */
+	timespec_t quiesce;
+	/* Time delay for recheck of output_fd for write_complete work */
+	timespec_t write_complete;
+} conmgr_timeouts_t;
+
 typedef struct conmgr_callback_args_s conmgr_callback_args_t;
 
 /*

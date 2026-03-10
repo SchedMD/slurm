@@ -574,6 +574,7 @@ extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
 		/* Set flags not related to connection state tracking */
 		.flags = (flags & ~FLAGS_MASK_STATE),
 		.tls_cert = xstrdup(tls_cert),
+		.timeouts = &mgr.timeouts,
 	};
 
 	/* save if connection is a socket type to avoid calling fstat() again */
