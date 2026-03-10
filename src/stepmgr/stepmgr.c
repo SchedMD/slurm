@@ -2102,6 +2102,8 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	int core_cnt = (int) task_cnt;
 	bool use_all_cores;
 	bitstr_t *all_gres_core_bitmap = NULL, *any_gres_core_bitmap = NULL;
+	int rc = SLURM_SUCCESS;
+	int orig_core_cnt;
 
 	xassert(task_cnt);
 
@@ -2119,8 +2121,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		tasks_per_node = cores * cpus_per_core * sockets;
 
 	if (((step_ptr->flags & SSF_WHOLE) || task_cnt == (cores * sockets)) &&
-	    (task_cnt <= tasks_per_node || (step_ptr->flags & SSF_OVERCOMMIT)))
-	{
+	    (task_cnt <= tasks_per_node)) {
 		use_all_cores = true;
 		core_cnt = ROUNDUP(job_resrcs_ptr->cpus[job_node_inx],
 				   cpus_per_core);
@@ -2177,6 +2178,7 @@ static int _pick_step_cores(step_record_t *step_ptr,
 		}
 	}
 	cores_per_task = ROUNDUP(core_cnt, task_cnt); /* Round up */
+	orig_core_cnt = core_cnt;
 
 	/* select idle cores that fit all gres binding first */
 	if (_handle_core_select(step_ptr, job_resrcs_ptr,
@@ -2211,24 +2213,26 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	if (use_all_cores || (cores == 0))
 		goto cleanup;
 
-
-	if (!(step_ptr->flags & SSF_OVERCOMMIT)) {
-		FREE_NULL_BITMAP(all_gres_core_bitmap);
-		FREE_NULL_BITMAP(any_gres_core_bitmap);
-		return ESLURM_NODES_BUSY;
+	/*
+	 * Overcommit allows more tasks than CPUs within the same step,
+	 * so not finding a core per task is expected. Succeed as long as
+	 * at least one core was allocated on this node.
+	 */
+	if ((step_ptr->flags & SSF_OVERCOMMIT) &&
+	    (core_cnt < orig_core_cnt)) {
+		log_flag(STEPS, "%s: %pS overcommitting on node %s with %d cores allocated to the step. %d more cores requested by the step.",
+			 __func__, step_ptr,
+			 node_record_table_ptr[node_inx]->name,
+			 (orig_core_cnt - core_cnt), core_cnt);
+		goto cleanup;
 	}
 
-	/* We need to overcommit one or more cores. */
-	log_flag(STEPS, "%s: %pS needs to overcommit cores. Cores still needed:%u Cores assigned to step:%u exclusive:%c overlap:%c",
-		 __func__, step_ptr, core_cnt,
-		bit_set_count(step_ptr->core_bitmap_job),
-		 ((step_ptr->flags & SSF_EXCLUSIVE) ? 'T' : 'F'),
-		 ((step_ptr->flags & SSF_OVERLAP_FORCE) ? 'T' : 'F'));
-
+	/* Not enough cores available */
+	rc = ESLURM_NODES_BUSY;
 cleanup:
 	FREE_NULL_BITMAP(all_gres_core_bitmap);
 	FREE_NULL_BITMAP(any_gres_core_bitmap);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static bool _use_one_thread_per_core(step_record_t *step_ptr)
