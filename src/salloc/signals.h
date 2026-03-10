@@ -36,4 +36,19 @@
 #ifndef _SALLOC_SIGNALS_H
 #define _SALLOC_SIGNALS_H
 
+/*
+ * If a signal comes in to destroy salloc, this will be set to the signo used to
+ * destroy salloc. Otherwise, this will be set to 0.
+ */
+extern int salloc_destroy_sig;
+extern pthread_mutex_t salloc_destroy_sig_lock;
+
+extern int salloc_sig_eventfd;
+
+/* Called only once at the beginning of the process */
+extern void salloc_sig_init(void);
+
+/* Forward signal to command */
+extern void salloc_sig_forward(int signo);
+
 #endif /* _SALLOC_SIGNALS_H */
