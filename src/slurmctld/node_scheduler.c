@@ -3197,7 +3197,8 @@ extern int get_node_cnts(job_record_t *job_ptr, uint32_t qos_flags,
 
 	if (!job_ptr->limit_set.tres[TRES_ARRAY_NODE] &&
 	    job_ptr->details->max_nodes &&
-	    !(job_ptr->bit_flags & USE_MIN_NODES))
+	    !((job_ptr->bit_flags & USE_MIN_NODES) ||
+	      (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES)))
 		*req_nodes = *max_nodes;
 	else
 		*req_nodes = *min_nodes;

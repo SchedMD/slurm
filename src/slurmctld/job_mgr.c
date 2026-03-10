@@ -8595,6 +8595,12 @@ static int _unroll_min_max_node(job_record_t *job_ptr)
 	job_details_t *detail_ptr = job_ptr->details;
 	int i;
 
+	/*
+	 * JOB_IMPLICIT_MAX_NODES jobs are scheduled as min_nodes only
+	 */
+	if (job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES)
+		return SLURM_SUCCESS;
+
 	if (topo_update != slurm_conf.last_update) {
 		char *tmp_ptr;
 		topo_update = slurm_conf.last_update;
@@ -8981,6 +8987,11 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 			detail_ptr->min_nodes = 1;
 		detail_ptr->max_nodes = MIN(active_node_record_count,
 					    detail_ptr->num_tasks);
+	} else if ((detail_ptr->max_nodes == 0) &&
+		   (detail_ptr->num_tasks != 0) &&
+		   (detail_ptr->num_tasks != NO_VAL)) {
+		detail_ptr->max_nodes = detail_ptr->num_tasks;
+		job_ptr->bit_flags |= JOB_IMPLICIT_MAX_NODES;
 	}
 
 	job_ptr->selinux_context = xstrdup(job_desc->selinux_context);
@@ -13739,6 +13750,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		else {
 			save_max_nodes = detail_ptr->max_nodes;
 			detail_ptr->max_nodes = job_desc->max_nodes;
+			job_ptr->bit_flags &= ~JOB_IMPLICIT_MAX_NODES;
 		}
 	}
 	if ((save_min_nodes || save_max_nodes) && detail_ptr->max_nodes &&
@@ -13830,6 +13842,20 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			 */
 			if (job_desc->bitflags & JOB_NTASKS_SET)
 				job_ptr->bit_flags |= JOB_NTASKS_SET;
+
+			if ((job_ptr->bit_flags & JOB_IMPLICIT_MAX_NODES) &&
+			    (detail_ptr->max_nodes != detail_ptr->num_tasks)) {
+				info("%s: setting max_nodes from %u to %u for %pJ",
+				     __func__, detail_ptr->max_nodes,
+				     detail_ptr->num_tasks, job_ptr);
+				detail_ptr->max_nodes = detail_ptr->num_tasks;
+				job_ptr->limit_set.tres[TRES_ARRAY_NODE] =
+					acct_policy_limit_set
+						.tres[TRES_ARRAY_NODE];
+				update_accounting = true;
+				FREE_NULL_BITMAP(detail_ptr->job_size_bitmap);
+			}
+
 			info("%s: setting num_tasks to %u for %pJ",
 			     __func__, job_desc->num_tasks, job_ptr);
 		}
