@@ -3250,6 +3250,10 @@ slurm.conf this value is ignored. This option applies to job allocations.
 Sets up X11 forwarding on "all", "first" or "last" node(s) of the allocation.
 This option is only enabled if Slurm was compiled with X11 support and
 PrologFlags=x11 is defined in the slurm.conf. Default is "all".
+
+\fBNOTE\fR: This option may not work if \-\-clusters is also provided.
+Such jobs will be accepted (with a warning), but X11 forwarding is not
+guaranteed to work.
 .IP
 
 .PP
