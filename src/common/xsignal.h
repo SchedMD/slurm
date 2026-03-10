@@ -49,7 +49,7 @@ typedef void SigFunc(int);
 SigFunc *xsignal(int signo, SigFunc *);
 
 /*
- * Set signal handler to default unless it is marked as ignore
+ * Set signal disposition to SIG_DFL
  */
 extern SigFunc *xsignal_default(int sig);
 

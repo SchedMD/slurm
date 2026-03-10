@@ -93,21 +93,8 @@ extern SigFunc *xsignal(int signo, SigFunc *f)
 
 extern SigFunc *xsignal_default(int sig)
 {
-	struct sigaction act;
-
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return NULL;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return act.sa_handler;
-
-	xsignal(sig, SIG_DFL);
-
-	return act.sa_handler;
+	/* Allowed even when conmgr is enabled */
+	return _sigaction(sig, SIG_DFL);
 }
 
 /*
