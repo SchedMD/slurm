@@ -34,6 +34,7 @@
 \*****************************************************************************/
 
 #include <inttypes.h>
+#include <string.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -88,4 +89,23 @@ extern int fini(void)
 {
 	verbose("%s unloaded", plugin_name);
 	return SLURM_SUCCESS;
+}
+
+extern ssize_t compress_p_comp_block(char **in_buf, const ssize_t input_size,
+				     char **out_buf, const ssize_t out_size,
+				     ssize_t *remaining)
+{
+	ssize_t size = MIN(out_size, *remaining);
+
+	memcpy(*out_buf, *in_buf, size);
+	*remaining -= size;
+	*in_buf += size;
+
+	return size;
+}
+
+extern char *compress_p_decompress(char *in_buf, const ssize_t in_size,
+				   const ssize_t out_size)
+{
+	return in_buf;
 }
