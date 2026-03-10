@@ -7654,6 +7654,23 @@ static void _get_rel_start_end(slurmctld_resv_t *resv_ptr, time_t now,
 	}
 }
 
+static void _addto_resv_exc(bitstr_t *core_bitmap, resv_exc_t *resv_exc_ptr)
+{
+	bitstr_t **tmp_bitstr;
+
+	if (!resv_exc_ptr || !core_bitmap)
+		return;
+
+	tmp_bitstr = core_bitmap_to_array(core_bitmap);
+
+	if (!resv_exc_ptr->exc_cores) {
+		resv_exc_ptr->exc_cores = tmp_bitstr;
+	} else {
+		core_array_or(resv_exc_ptr->exc_cores, tmp_bitstr);
+		free_core_array(&tmp_bitstr);
+	}
+}
+
 extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			 bool move_time, bitstr_t **node_bitmap,
 			 resv_exc_t *resv_exc_ptr, bool *resv_overlap,
@@ -7779,9 +7796,25 @@ extern int job_test_resv(job_record_t *job_ptr, time_t *when,
 			    (res2_ptr == resv_ptr) ||
 			    (res2_ptr->node_bitmap == NULL) ||
 			    (start_relative >= job_end_time_use) ||
-			    (end_relative   <= job_start_time) ||
-			    (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)))
+			    (end_relative <= job_start_time)) {
 				continue;
+			}
+
+			if (!(res2_ptr->ctld_flags & RESV_CTLD_FULL_NODE)) {
+				/*
+				 * Flex reservations steal other reservations
+				 * resources if they are not on the full node.
+				 * This removes any cores that belong to other
+				 * reservations.
+				 */
+				if (resv_ptr->flags & RESERVE_FLAG_FLEX) {
+					_addto_resv_exc(res2_ptr->core_bitmap,
+							resv_exc_ptr);
+				}
+
+				continue;
+			}
+
 			if (bit_overlap_any(*node_bitmap,
 					    res2_ptr->node_bitmap)) {
 				log_flag(RESERVATION, "%s: reservation %s overlaps %s with %u nodes",
