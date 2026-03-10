@@ -42,6 +42,15 @@
 #include <stdint.h>
 #include "src/common/slurm_protocol_api.h"
 
+/* Initialize forwarding globally. */
+extern void forward_init(void);
+
+/*
+ * De-initialize forwarding globally.
+ * WARNING: this will block until all forwarding threads are complete.
+ */
+extern void forward_fini(void);
+
 /*
  * forward_msg	      - logic to forward a message which has been received and
  *			accumulate the return codes from processes getting the
