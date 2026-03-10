@@ -56,6 +56,7 @@
 
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -293,6 +294,8 @@ int main(int argc, char **argv)
 
 	registered_clusters = list_create(NULL);
 
+	forward_init();
+
 	slurm_thread_create(&commit_handler_thread, _commit_handler, NULL);
 
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
@@ -387,6 +390,8 @@ int main(int argc, char **argv)
 end_it:
 
 	slurm_thread_join(commit_handler_thread);
+
+	forward_fini();
 
 	acct_storage_g_commit(db_conn, 1);
 	acct_storage_g_close_connection(&db_conn);
