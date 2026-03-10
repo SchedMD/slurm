@@ -470,6 +470,8 @@ main (int argc, char **argv)
 		fatal("%s: Unable to reliably execute %s",
 		      __func__, conf->binary);
 
+	forward_init();
+
 	plugins_registered = true;
 
 	_create_msg_socket();
@@ -2771,6 +2773,7 @@ _slurmd_fini(void)
 	topology_g_destroy_config();
 	topology_g_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
+	forward_fini();
 	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
