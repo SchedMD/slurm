@@ -96,7 +96,7 @@ static bool allocation_revoked = false;
 static bool exit_flag = false;
 static bool is_het_job = false;
 static bool suspend_flag = false;
-static slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
+slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
 static int het_job_limit = 0;
