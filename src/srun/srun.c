@@ -243,6 +243,7 @@ int srun(int ac, char **av)
 		global_rc = mpi_plugin_rc;
 	}
 
+	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
@@ -252,9 +253,6 @@ int srun(int ac, char **av)
 	slurm_fini();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
-
-	conmgr_request_shutdown();
-	conmgr_fini();
 
 	return (int)global_rc;
 }

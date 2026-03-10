@@ -37,7 +37,9 @@
 
 #include "src/common/fd.h"
 #include "src/common/read_config.h"
+
 #include "src/conmgr/conmgr.h"
+
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
 #include "src/srun/signals.h"
