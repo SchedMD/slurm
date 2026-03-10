@@ -72,8 +72,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
+#include "src/salloc/salloc.h"
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getpgid(pid_t pid);
