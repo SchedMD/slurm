@@ -7976,22 +7976,15 @@ Also see \fBSuspendTime\fR.
 
 .TP
 \fBPreemptMode\fR
-Mechanism used to preempt jobs or enable gang scheduling for this
-partition when \fBPreemptType=preempt/partition_prio\fR is configured.
+Mechanism used to preempt jobs for this partition when
+\fBPreemptType=preempt/partition_prio\fR is configured.
 This partition\-specific \fBPreemptMode\fR configuration parameter will
 override the cluster\-wide \fBPreemptMode\fR for this partition.
-It can be set to OFF to disable preemption and gang scheduling for this
-partition.
+It can be set to OFF to disable preemption for this partition.
 See also \fBPriorityTier\fR and the above description of the cluster\-wide
 \fBPreemptMode\fR parameter for further details.
 .br
-The \fBGANG\fR option is used to enable gang scheduling independent of
-whether preemption is enabled (i.e. independent of the \fBPreemptType\fR
-setting). It can be specified in addition to a \fBPreemptMode\fR setting with
-the two options comma separated (e.g. \fBPreemptMode=SUSPEND,GANG\fR).
-.br
-See <https://slurm.schedmd.com/preempt.html> and
-<https://slurm.schedmd.com/gang_scheduling.html> for more details.
+See <https://slurm.schedmd.com/preempt.html> for more details.
 
 \fBNOTE\fR:
 For performance reasons, the backfill scheduler reserves whole nodes for jobs,
@@ -8014,32 +8007,12 @@ Heterogeneous jobs are excluded from GANG scheduling operations.
 .RS
 .TP 12
 \fBOFF\fR
-Disables job preemption and gang scheduling.
+Disables job preemption.
 .IP
 
 .TP
 \fBCANCEL\fR
 The preempted job will be cancelled.
-.IP
-
-.TP
-\fBGANG\fR
-Enables gang scheduling (time slicing) of jobs in the same partition, and
-allows the resuming of suspended jobs.
-
-\fBNOTE\fR:
-Gang scheduling is performed independently for each partition, so
-if you only want time\-slicing by \fBOverSubscribe\fR, without any preemption,
-then configuring partitions with overlapping nodes is not recommended.
-On the other hand, if you want to use \fBPreemptType=preempt/partition_prio\fR
-to allow jobs from higher PriorityTier partitions to Suspend jobs from lower
-PriorityTier partitions you will need overlapping partitions, and
-\fBPreemptMode=SUSPEND,GANG\fR to use the Gang scheduler to resume the suspended
-jobs(s).
-In any case, time\-slicing won't happen between jobs on different partitions.
-.br
-\fBNOTE\fR:
-Heterogeneous jobs are excluded from GANG scheduling operations.
 .IP
 
 .TP
