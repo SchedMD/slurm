@@ -53,6 +53,7 @@ extern enum possible_allocation_states allocation_state;
 extern pthread_mutex_t allocation_state_lock;
 
 extern bool exit_flag;
+extern pthread_mutex_t exit_flag_lock;
 
 extern slurm_step_id_t my_job_id;
 extern pthread_mutex_t my_job_id_lock;

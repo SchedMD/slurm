@@ -97,6 +97,7 @@ pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool allocation_revoked = false;
 bool exit_flag = false;
+pthread_mutex_t exit_flag_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool is_het_job = false;
 static bool suspend_flag = false;
 slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
@@ -603,6 +604,8 @@ int main(int argc, char **argv)
 	 * No need to hold lock for command_pid, no other thread will modify it.
 	 */
 	if (command_pid > 0) {
+		bool tmp_exit_flag = false;
+
 		setpgid(command_pid, command_pid);
 		if (is_interactive)
 			tcsetpgrp(STDIN_FILENO, command_pid);
@@ -610,7 +613,13 @@ int main(int argc, char **argv)
 		/* Use WUNTRACED to treat stopped children like terminated ones */
 		do {
 			rc_pid = waitpid(command_pid, &status, WUNTRACED);
-		} while (WIFSTOPPED(status) || ((rc_pid == -1) && (!exit_flag)));
+
+			slurm_mutex_lock(&exit_flag_lock);
+			tmp_exit_flag = exit_flag;
+			slurm_mutex_unlock(&exit_flag_lock);
+
+		} while (WIFSTOPPED(status) ||
+			 ((rc_pid == -1) && (!tmp_exit_flag)));
 		if ((rc_pid == -1) && (errno != EINTR))
 			error("waitpid for %s failed: %m", opt.argv[0]);
 	}

@@ -91,7 +91,9 @@ rwfail:
 	if ((tmp_command_pid > 0) && (signo == SIGHUP)) {
 		salloc_sig_forward(signo);
 
+		slurm_mutex_lock(&exit_flag_lock);
 		exit_flag = true;
+		slurm_mutex_unlock(&exit_flag_lock);
 		return;
 	}
 
