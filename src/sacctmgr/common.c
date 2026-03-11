@@ -1515,7 +1515,7 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 		return SLURM_ERROR;
 	}
 	num = strtol(meat, &ptr, 10);
-	if ((num == 0) && ptr && ptr[0]) {
+	if (ptr && ptr[0]) {
 		error("Invalid value for %s (%s)", type, meat);
 		xfree(meat);
 		return SLURM_ERROR;
@@ -1540,7 +1540,7 @@ extern int get_uint16(char *in_value, uint16_t *out_value, char *type)
 	}
 
 	num = strtol(meat, &ptr, 10);
-	if ((num == 0) && ptr && ptr[0]) {
+	if (ptr && ptr[0]) {
 		error("Invalid value for %s (%s)", type, meat);
 		xfree(meat);
 		return SLURM_ERROR;
@@ -1565,7 +1565,7 @@ extern int get_uint64(char *in_value, uint64_t *out_value, char *type)
 	}
 
 	num = strtoll(meat, &ptr, 10);
-	if ((num == 0) && ptr && ptr[0]) {
+	if (ptr && ptr[0]) {
 		error("Invalid value for %s (%s)", type, meat);
 		xfree(meat);
 		return SLURM_ERROR;
