@@ -640,6 +640,9 @@ extern int parse_timespec(const char *time_str, const bool past,
 	timespec_t ts = { 0, 0 };
 	bool is_integer = true;
 
+	if (!time_str || !time_str[0])
+		return EINVAL;
+
 	/* Handle [0-9]+ as seconds */
 	for (pos = 0; time_str[pos]; pos++) {
 		if ((time_str[pos] < '0') || (time_str[pos] > '9')) {
