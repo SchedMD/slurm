@@ -466,6 +466,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type,
 /*
  * instruct connection manager to listen to fd (async)
  * IN type connection type for fd
+ * IN timeouts - timeouts for connection or NULL for defaults
  * IN fd file descriptor to have conmgr take ownership of
  * IN events call backs on events of fd
  * IN flags bit-or'ed flags to apply to connection
@@ -475,6 +476,7 @@ extern int conmgr_process_fd(conmgr_con_type_t type,
  * RET SLURM_SUCCESS or error
  */
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
+				    const conmgr_timeouts_t *timeouts,
 				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg);
 

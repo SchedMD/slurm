@@ -1923,7 +1923,7 @@ static void _open_ports(void)
 		*index_ptr = i;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
-						   http_switch_con_type(),
+						   http_switch_con_type(), NULL,
 						   &events,
 						   (flags |
 						    http_switch_con_flags()),

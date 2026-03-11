@@ -2196,7 +2196,7 @@ static void _create_msg_socket(void)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, http_switch_con_type(),
-					   &events,
+					   NULL, &events,
 					   (flags | http_switch_con_flags()),
 					   NULL)))
 		fatal("%s: unable to process fd:%d error:%s",

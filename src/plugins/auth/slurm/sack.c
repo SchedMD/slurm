@@ -352,7 +352,7 @@ extern void init_sack_conmgr(void)
 			      __func__, &addr);
 	}
 
-	if ((rc = conmgr_process_fd_listen(sack_fd, CON_TYPE_RAW, &events,
+	if ((rc = conmgr_process_fd_listen(sack_fd, CON_TYPE_RAW, NULL, &events,
 					   CON_FLAG_NONE, NULL)))
 		fatal("%s: [fd:%d] conmgr rejected socket: %s",
 		      __func__, sack_fd, slurm_strerror(rc));

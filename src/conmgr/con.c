@@ -751,11 +751,12 @@ extern int conmgr_process_fd(conmgr_con_type_t type,
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
+				    const conmgr_timeouts_t *timeouts,
 				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg)
 {
-	return add_connection(type, NULL, NULL, fd, -1, events, flags, NULL, 0,
-			      true, NULL, NULL, NULL, arg);
+	return add_connection(type, timeouts, NULL, fd, -1, events, flags, NULL,
+			      0, true, NULL, NULL, NULL, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
