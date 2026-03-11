@@ -542,6 +542,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * Add new connection from file descriptor(s)
  *
  * IN type - Initial connection type
+ * IN timeouts - Pointer to timeouts or NULL for defaults
  * IN source - connection that created this fd (listeners only)
  * IN input_fd - file descriptor for incoming data (or -1)
  * IN output_fd - file descriptor for outgoing data (or -1)
@@ -555,8 +556,9 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * IN arg - arbitrary pointer to hand to events
  * RET SLURM_SUCCESS or error
  */
-extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
-			  int input_fd, int output_fd,
+extern int add_connection(conmgr_con_type_t type,
+			  const conmgr_timeouts_t *timeouts,
+			  conmgr_fd_t *source, int input_fd, int output_fd,
 			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags, const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,

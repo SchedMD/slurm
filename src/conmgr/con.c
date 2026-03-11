@@ -490,8 +490,9 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	return rc;
 }
 
-extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
-			  int input_fd, int output_fd,
+extern int add_connection(conmgr_con_type_t type,
+			  const conmgr_timeouts_t *timeouts,
+			  conmgr_fd_t *source, int input_fd, int output_fd,
 			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags, const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
@@ -509,6 +510,16 @@ extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
 		(unix_socket_path ?  (strlen(unix_socket_path) + 1): 0);
 	static const size_t unix_socket_path_max =
 		sizeof(((struct sockaddr_un *) NULL)->sun_path);
+	const conmgr_timeouts_t *timeouts_ptr = NULL;
+
+	if (timeouts)
+		timeouts_ptr = timeouts;
+	else if (source)
+		timeouts_ptr = source->timeouts;
+	else
+		timeouts_ptr = &mgr.timeouts;
+
+	xassert(timeouts_ptr);
 
 	if (unix_socket_path_len &&
 	    (unix_socket_path_len > unix_socket_path_max)) {
@@ -574,7 +585,7 @@ extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
 		/* Set flags not related to connection state tracking */
 		.flags = (flags & ~FLAGS_MASK_STATE),
 		.tls_cert = xstrdup(tls_cert),
-		.timeouts = &mgr.timeouts,
+		.timeouts = timeouts_ptr,
 	};
 
 	/* save if connection is a socket type to avoid calling fstat() again */
@@ -734,16 +745,17 @@ extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
 			     const slurm_addr_t *addr, socklen_t addrlen,
 			     void *tls_conn, void *arg)
 {
-	return add_connection(type, NULL, input_fd, output_fd, events, flags,
-			      addr, addrlen, false, NULL, tls_conn, NULL, arg);
+	return add_connection(type, NULL, NULL, input_fd, output_fd, events,
+			      flags, addr, addrlen, false, NULL, tls_conn, NULL,
+			      arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, flags, NULL, 0, true,
-			      NULL, NULL, NULL, arg);
+	return add_connection(type, NULL, NULL, fd, -1, events, flags, NULL, 0,
+			      true, NULL, NULL, NULL, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -772,7 +784,7 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		 * connection is now in an unknown state
 		 */
 		close_con(false, src);
-	} else if (add_connection(args->type, NULL, fd, fd, args->events,
+	} else if (add_connection(args->type, NULL, NULL, fd, fd, args->events,
 				  CON_FLAG_NONE, NULL, 0, false, NULL, NULL,
 				  NULL, args->arg) != SLURM_SUCCESS) {
 		/*
@@ -1073,7 +1085,7 @@ static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
 		fatal("%s: [%s] unable to listen(): %m",
 		      __func__, listen_on);
 
-	return add_connection(type, NULL, fd, -1, events, flags, &addr,
+	return add_connection(type, NULL, NULL, fd, -1, events, flags, &addr,
 			      sizeof(addr), true, unixsock, NULL, NULL, arg);
 }
 
@@ -1135,7 +1147,7 @@ static int _add_socket_listener(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = add_connection(type, NULL, fd, -1, events, flags,
+		rc = add_connection(type, NULL, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
 				    addr->ai_addrlen, true, NULL, NULL, NULL,
 				    arg);
@@ -1288,8 +1300,8 @@ again:
 	if ((type == CON_TYPE_RPC) && conn_tls_enabled())
 		flags |= FLAG_TLS_CLIENT;
 
-	return add_connection(type, NULL, fd, fd, events, flags, addr, addrlen,
-			      false, NULL, NULL, tls_cert, arg);
+	return add_connection(type, NULL, NULL, fd, fd, events, flags, addr,
+			      addrlen, false, NULL, NULL, tls_cert, arg);
 }
 
 /* WARNING: caller must not hold mgr.mutex lock */
