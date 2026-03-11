@@ -6090,7 +6090,7 @@ extern int slurm_remote_license_fuzzy_match(const char *query, const char *name)
 	size_t cnt = 0;
 
 	if ((query == NULL) || (name == NULL))
-		return 0;
+		return LIC_NO_MATCH;
 
 	query_split = xstrchr(query, '@');
 	split = xstrchr(name, '@');
@@ -6113,13 +6113,13 @@ extern int slurm_remote_license_fuzzy_match(const char *query, const char *name)
 	 */
 	if (!query_split) {
 		if (strlen(query) != cnt)
-			return 0;
+			return LIC_NO_MATCH;
 		if (xstrncmp(name, query, cnt))
-			return 0;
-		return 2; /* fuzzy match */
+			return LIC_NO_MATCH;
+		return LIC_FUZZY_MATCH;
 	} else if (xstrcmp(name, query))
-		return 0;
-	return 1; /* exact match */
+		return LIC_NO_MATCH;
+	return LIC_EXACT_MATCH;
 }
 
 extern int slurm_get_next_tres(

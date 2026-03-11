@@ -255,11 +255,14 @@ extern int license_job_test(job_record_t *job_ptr, time_t when,
  * OUT tres_req_cnt - appropriate counts for each requested gres
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
+ * OUT fuzzy_match - true if fuzzy matching was actually used in validation
+ *                   ok to pass NULL if caller doesn't require the output
  * RET license_list, must be destroyed by caller
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing, bool hres,
-				uint64_t *tres_req_cnt, bool *valid);
+				uint64_t *tres_req_cnt, bool *valid,
+				bool *fuzzy_match);
 
 /*
  * license_list_overlap - test if there is any overlap in licenses

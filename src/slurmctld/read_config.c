@@ -2384,10 +2384,10 @@ static void _restore_job_licenses(job_record_t *job_ptr)
 	bool valid = true, alloc_valid = true;
 
 	license_list = license_validate(job_ptr->licenses, false, false, false,
-					job_ptr->tres_req_cnt, &valid);
+					job_ptr->tres_req_cnt, &valid, NULL);
 	license_list_alloc =
 		license_validate(job_ptr->licenses_allocated, false, false,
-				 true, NULL, &alloc_valid);
+				 true, NULL, &alloc_valid, NULL);
 	FREE_NULL_LIST(job_ptr->license_list);
 
 	if (valid) {

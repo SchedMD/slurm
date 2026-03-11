@@ -1925,6 +1925,13 @@ extern int slurm_get_rep_count_inx(
  */
 extern void slurm_format_tres_string(char **s, char *tres_type);
 
+enum {
+	LIC_NO_MATCH = 0,
+	LIC_EXACT_MATCH,
+	LIC_FUZZY_MATCH,
+	LIC_MAX_MATCH
+};
+
 /*
  * Fuzzy name comparison for remote licenses
  * query IN - query string
