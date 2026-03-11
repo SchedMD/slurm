@@ -87,6 +87,7 @@ extern pid_t getpgid(pid_t pid);
 
 char *argvzero = NULL;
 pid_t command_pid = -1;
+pthread_mutex_t command_pid_lock = PTHREAD_MUTEX_INITIALIZER;
 char *work_dir = NULL;
 static int is_interactive;
 
@@ -574,7 +575,11 @@ int main(int argc, char **argv)
 	slurm_mutex_lock(&allocation_state_lock);
 	if (suspend_flag)
 		slurm_cond_wait(&allocation_state_cond, &allocation_state_lock);
+
+	slurm_mutex_lock(&command_pid_lock);
 	command_pid = _fork_command(opt.argv);
+	slurm_mutex_unlock(&command_pid_lock);
+
 	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
@@ -873,6 +878,7 @@ static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid)
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
+	int tmp_command_pid = -1;
 	if (!is_het_job && (my_job_id.job_id != NO_VAL) &&
 	    (my_job_id.job_id != comp->job_id)) {
 		error("Ignoring job_complete for job %u because we are %pI",
@@ -904,8 +910,12 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		 * Clean up child process: only if the forked process has not
 		 * yet changed state (waitpid returning 0).
 		 */
-		if ((command_pid > -1) &&
-		    (waitpid(command_pid, NULL, WNOHANG) == 0)) {
+		slurm_mutex_lock(&command_pid_lock);
+		tmp_command_pid = command_pid;
+		slurm_mutex_unlock(&command_pid_lock);
+
+		if ((tmp_command_pid > -1) &&
+		    (waitpid(tmp_command_pid, NULL, WNOHANG) == 0)) {
 			int signal = 0;
 
 			if (is_interactive) {
@@ -917,7 +927,8 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				 * originated from salloc). Notify foreground
 				 * process about pending termination.
 				 */
-				if (tpgid != command_pid && tpgid != getpgrp())
+				if (tpgid != tmp_command_pid &&
+				    tpgid != getpgrp())
 					killpg(tpgid, SIGHUP);
 			}
 
@@ -932,7 +943,7 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 			if (signal) {
 				verbose("Sending signal %d to command \"%s\","
 					 " pid %d",
-					 signal, opt.argv[0], command_pid);
+					 signal, opt.argv[0], tmp_command_pid);
 				if (suspend_flag)
 					salloc_sig_forward(SIGCONT);
 				salloc_sig_forward(signal);

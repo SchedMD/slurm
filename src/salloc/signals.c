@@ -62,6 +62,7 @@ static void _on_signal(int signo)
 {
 	uint64_t val = 1;
 	int write_rc = SLURM_ERROR;
+	int tmp_command_pid = -1;
 
 	slurm_mutex_lock(&salloc_destroy_sig_lock);
 	salloc_destroy_sig = signo;
@@ -82,8 +83,12 @@ rwfail:
 
 	debug("Got signal %d", signo);
 
+	slurm_mutex_lock(&command_pid_lock);
+	tmp_command_pid = command_pid;
+	slurm_mutex_unlock(&command_pid_lock);
+
 	/* Special handling for SIGHUP after command is started */
-	if ((command_pid > -1) && (signo == SIGHUP)) {
+	if ((tmp_command_pid > 0) && (signo == SIGHUP)) {
 		salloc_sig_forward(signo);
 
 		exit_flag = true;
@@ -129,6 +134,12 @@ extern void salloc_sig_init(void)
 
 extern void salloc_sig_forward(int signo)
 {
-	if (command_pid > 0)
-		killpg(command_pid, signo);
+	int tmp_command_pid = 0;
+
+	slurm_mutex_lock(&command_pid_lock);
+	tmp_command_pid = command_pid;
+	slurm_mutex_unlock(&command_pid_lock);
+
+	if (tmp_command_pid > 0)
+		killpg(tmp_command_pid, signo);
 }
