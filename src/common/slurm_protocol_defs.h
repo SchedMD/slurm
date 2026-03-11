@@ -259,9 +259,9 @@ typedef struct forward {
 } forward_t;
 
 #define FORWARD_INITIALIZER \
-	{ \
+	((forward_t) { \
 		.init = FORWARD_INIT, \
-	}
+	})
 
 /*core api protocol message structures */
 typedef struct slurm_protocol_header {
