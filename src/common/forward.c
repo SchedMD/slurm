@@ -618,23 +618,13 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 			free(tmp_char);
 		}
 
-		forward_init(&fwd_msg->header.forward);
+		fwd_msg->header.forward = FORWARD_INITIALIZER;
 		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.tree_width = header->forward.tree_width;
 		fwd_msg->header.forward.tree_depth = header->forward.tree_depth;
 		fwd_msg->header.forward.timeout = header->forward.timeout;
 		slurm_thread_create_detached(_forward_thread, fwd_msg);
 	}
-}
-
-/*
- * forward_init    - initialize forward structure
- * IN: forward     - forward_t *   - struct to store forward info
- * RET: VOID
- */
-extern void forward_init(forward_t *forward)
-{
-	*forward = (forward_t) FORWARD_INITIALIZER;
 }
 
 /*
