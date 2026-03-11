@@ -1615,6 +1615,26 @@ typedef bitstr_t bitoff_t;
 #define JOB_SHARED_MCS          0x0003
 #define JOB_SHARED_TOPO 0x0004
 
+/*
+ * Oversubscribe display
+ * (for job_info.oversubscribe, cred, SLURM_JOB_OVERSUBSCRIBE).
+ * NO=no oversubscribe, YES=user --oversubscribe, OK=partition allows.
+ */
+#define JOB_OVERSUBSCRIBE_NO 0
+#define JOB_OVERSUBSCRIBE_YES 1
+#define JOB_OVERSUBSCRIBE_OK 2
+
+/*
+ * Exclusive display
+ * (for job_info.exclusive, cred, SLURM_JOB_EXCLUSIVE).
+ * Single value: NONE/NODE/USER/MCS/TOPO. No combinations.
+ */
+#define JOB_EXCLUSIVE_NONE 0
+#define JOB_EXCLUSIVE_NODE 1
+#define JOB_EXCLUSIVE_USER 2
+#define JOB_EXCLUSIVE_MCS 3
+#define JOB_EXCLUSIVE_TOPO 4
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/

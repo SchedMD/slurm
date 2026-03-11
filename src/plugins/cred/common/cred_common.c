@@ -80,6 +80,7 @@ extern slurm_cred_t *cred_create(slurm_cred_arg_t *cred,
 		packstr(cred->job_constraints, buffer);
 		pack_time(cred->job_end_time, buffer);
 		packstr(cred->job_extra, buffer);
+		pack16(cred->job_exclusive, buffer);
 		pack16(cred->job_oversubscribe, buffer);
 		packstr(cred->job_partition, buffer);
 		packstr(cred->job_qos, buffer);
@@ -261,6 +262,7 @@ extern int cred_unpack(void **out, buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr(&cred_arg->job_constraints, buffer);
 		safe_unpack_time(&cred_arg->job_end_time, buffer);
 		safe_unpackstr(&cred_arg->job_extra, buffer);
+		safe_unpack16(&cred_arg->job_exclusive, buffer);
 		safe_unpack16(&cred_arg->job_oversubscribe, buffer);
 		safe_unpackstr(&cred_arg->job_partition, buffer);
 		safe_unpackstr(&cred_arg->job_qos, buffer);
