@@ -1177,6 +1177,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"ExclusiveUser", S_P_BOOLEAN}, /* YES or NO */
 		{"ExclusiveTopo", S_P_BOOLEAN}, /* YES or NO */
+		{ "Exclusive", S_P_STRING }, /* NO, NODE, USER, TOPO */
 		{"GraceTime", S_P_UINT32},
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"LLN", S_P_BOOLEAN}, /* YES or NO */
@@ -1507,7 +1508,7 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			if (xstrcasecmp(tmp, "NO") == 0)
 				p->max_share = 1;
 			else if (xstrcasecmp(tmp, "EXCLUSIVE") == 0)
-				p->max_share = 0;
+				p->max_share = 0; /* Exclusive=NODE */
 			else if (xstrncasecmp(tmp, "YES:", 4) == 0) {
 				int i = strtol(&tmp[4], (char **) NULL, 10);
 				if (i <= 1) {
@@ -1529,8 +1530,42 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			} else if (xstrcasecmp(tmp, "FORCE") == 0)
 				p->max_share = 4 | SHARED_FORCE;
 			else {
-				error("Bad value \"%s\" for OverSubscribe",
+				error("Bad value \"%s\" for OverSubscribe (use NO, YES, FORCE)",
 				      tmp);
+				goto fail;
+			}
+			xfree(tmp);
+		}
+
+		/*
+		 * Exclusive=NO|NODE|USER|TOPO (default NO when absent).
+		 * Single token only.
+		 */
+		if (s_p_get_string(&tmp, "Exclusive", tbl) ||
+		    s_p_get_string(&tmp, "Exclusive", dflt)) {
+			p->exclusive_user = false;
+			p->exclusive_topo = false;
+			if ((xstrcasecmp(tmp, "NO") == 0) ||
+			    (xstrcasecmp(tmp, "NONE") == 0)) {
+				/*
+				 * Drop node-exclusive if a prior
+				 * OverSubscribe=EXCLUSIVE set max_share to 0.
+				 * Leave non-zero OverSubscribe values alone.
+				 */
+				if (p->max_share == 0)
+					p->max_share = 1;
+			} else if (xstrcasecmp(tmp, "NODE") == 0) {
+				p->max_share = 0;
+			} else if (xstrcasecmp(tmp, "USER") == 0) {
+				p->exclusive_user = true;
+			} else if (xstrcasecmp(tmp, "TOPO") == 0) {
+				p->exclusive_topo = true;
+				/* TOPO implies NODE */
+				p->max_share = 0;
+			} else {
+				error("Bad value \"%s\" for Exclusive= (use NO, NODE, USER, TOPO)",
+				      tmp);
+				xfree(tmp);
 				goto fail;
 			}
 			xfree(tmp);
