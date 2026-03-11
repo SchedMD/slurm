@@ -176,4 +176,7 @@ extern int64_t timespec_after_deadline(const timespec_t deadline);
  */
 extern int timeval_tot_wait(struct timeval *start_time);
 
+/* True if X is equal to zero */
+extern bool timespec_is_zero(timespec_t x);
+
 #endif /* _HAVE_SLURM_TIME_H */

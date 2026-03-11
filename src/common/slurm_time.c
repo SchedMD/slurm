@@ -374,3 +374,8 @@ extern int64_t timespec_after_deadline(const timespec_t deadline)
 
 	return timespec_diff(deadline, timespec_now());
 }
+
+extern bool timespec_is_zero(timespec_t x)
+{
+	return (!x.tv_sec && !x.tv_nsec);
+}
