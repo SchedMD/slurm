@@ -638,6 +638,24 @@ extern int parse_timespec(const char *time_str, const bool past,
 {
 	int rc = EINVAL, pos = -1;
 	timespec_t ts = { 0, 0 };
+	bool is_integer = true;
+
+	/* Handle [0-9]+ as seconds */
+	for (pos = 0; time_str[pos]; pos++) {
+		if ((time_str[pos] < '0') || (time_str[pos] > '9')) {
+			is_integer = false;
+			break;
+		}
+	}
+
+	if (is_integer) {
+		const unsigned long secs = slurm_atoul(time_str);
+
+		if (secs != ULONG_MAX) {
+			ts_ptr->tv_sec = secs;
+			return SLURM_SUCCESS;
+		}
+	}
 
 	if ((rc = _parse_time(time_str, (past ? 1 : 0), &ts, &pos))) {
 		debug3("%s: Parsing %s @ %d failed: %s",

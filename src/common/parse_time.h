@@ -67,6 +67,7 @@ extern time_t parse_time(const char *time_str, int past);
  *   MMDDYY or MM/DD/YY or MM.DD.YY
  *   YYYY-MM-DD[THH[:MM[:SS]]]
  *   now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]
+ *   [seconds(default)]
  * IN time_str - String to parse
  * IN past - True to make string relative to past
  * IN ts_ptr - Pointer to timestamp to populate (only set on SLURM_SUCCESS)
