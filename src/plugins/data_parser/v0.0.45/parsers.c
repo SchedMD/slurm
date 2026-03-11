@@ -9207,6 +9207,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_PREEMPT_MODES)[] = {
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc)		\
 	add_parser(partition_info_t, mtype, false, field, overloads, path, desc)
+#define add_removed(mtype, path, desc, deprec)				\
+	add_parser_removed(partition_info_t, mtype, false, path, desc, deprec)
 #define add_skip(field)					\
 	add_parser_skip(partition_info_t, field)
 static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
@@ -9219,9 +9221,9 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, cluster_name, "cluster", "Cluster name"),
 	add_parse(CR_TYPE, cr_type, "select_type", "Scheduler consumable resource selection type"),
 	add_parse(NODE_PARTITION_CPU_BINDING_FLAGS, cpu_bind, "cpus/task_binding", "CpuBind - Default method controlling how tasks are bound to allocated resources"),
-	add_parse_overload(UINT64, def_mem_per_cpu, 2, "defaults/memory_per_cpu", "Raw value for DefMemPerCPU or DefMemPerNode"),
-	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 2, "defaults/partition_memory_per_cpu", "DefMemPerCPU - Default real memory size available per allocated CPU in megabytes"),
-	add_parse_overload(MEM_PER_NODE, def_mem_per_cpu, 2, "defaults/partition_memory_per_node", "DefMemPerNode - Default real memory size available per allocated node in megabytes"),
+	add_removed(UINT64, "defaults/memory_per_cpu", "Raw value for DefMemPerCPU or DefMemPerNode", SLURM_26_05_PROTOCOL_VERSION),
+	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 1, "defaults/partition_memory_per_cpu", "DefMemPerCPU - Default real memory size available per allocated CPU in megabytes"),
+	add_parse_overload(MEM_PER_NODE, def_mem_per_cpu, 1, "defaults/partition_memory_per_node", "DefMemPerNode - Default real memory size available per allocated node in megabytes"),
 	add_parse(UINT32_NO_VAL, default_time, "defaults/time", "DefaultTime - Run time limit in minutes used for jobs that don't specify a value"),
 	add_parse(STRING, deny_accounts, "accounts/deny", "DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition"),
 	add_parse(STRING, deny_qos, "qos/deny", "DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition"),
@@ -9231,13 +9233,13 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, job_defaults_str, "defaults/job", "JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults)"),
 	add_parse(UINT32_NO_VAL, max_cpus_per_node, "maximums/cpus_per_node", "MaxCPUsPerNode - Maximum number of CPUs on any node available to all jobs from this partition"),
 	add_parse(UINT32_NO_VAL, max_cpus_per_socket, "maximums/cpus_per_socket", "MaxCPUsPerSocket - Maximum number of CPUs on any node available on the all jobs from this partition"),
-	add_parse_overload(UINT64, max_mem_per_cpu, 2, "maximums/memory_per_cpu", "Raw value for MaxMemPerCPU or MaxMemPerNode"),
-	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 2, "maximums/partition_memory_per_cpu", "MaxMemPerCPU - Maximum real memory size available per allocated CPU in megabytes"),
-	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 2, "maximums/partition_memory_per_node", "MaxMemPerNode - Maximum real memory size available per allocated node in a job allocation in megabytes"),
+	add_removed(UINT64, "maximums/memory_per_cpu", "Raw value for MaxMemPerCPU or MaxMemPerNode", SLURM_26_05_PROTOCOL_VERSION),
+	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 1, "maximums/partition_memory_per_cpu", "MaxMemPerCPU - Maximum real memory size available per allocated CPU in megabytes"),
+	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 1, "maximums/partition_memory_per_node", "MaxMemPerNode - Maximum real memory size available per allocated node in a job allocation in megabytes"),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", "MaxNodes - Maximum count of nodes which may be allocated to any single job"),
-	add_parse_overload(UINT16, max_share, 2, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource"),
-	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 2, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
-	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 2, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
+	add_removed(UINT16, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource", SLURM_26_05_PROTOCOL_VERSION),
+	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 1, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
+	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 1, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
 	add_parse(STRING, name, "name", "PartitionName - Name by which the partition may be referenced"),
@@ -9260,6 +9262,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 };
 #undef add_parse
 #undef add_skip
+#undef add_removed
 #undef add_parse_overload
 
 #define add_parse(mtype, field, path, desc)				\
