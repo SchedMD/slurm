@@ -2335,7 +2335,14 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(OVERSUBSCRIBE_JOBS)
+static int PARSE_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser,
+					  void *obj, data_t *src, args_t *args,
+					  data_t *parent_path)
+{
+	uint16_t *state = obj;
+	int rc = PARSE(UINT16, *state, src, parent_path, args);
+	return rc;
+}
 
 static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj,
 					 data_t *dst, args_t *args)
