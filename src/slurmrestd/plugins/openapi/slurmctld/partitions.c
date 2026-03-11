@@ -255,6 +255,24 @@ extern int op_handler_partitions(openapi_ctxt_t *ctxt)
 	return rc;
 }
 
+static int _partition_delete(openapi_ctxt_t *ctxt, char *partition_name)
+{
+	delete_part_msg_t delete_msg = {
+		.name = partition_name,
+	};
+	int rc = EINVAL;
+
+	errno = SLURM_SUCCESS;
+	if ((rc = slurm_delete_partition(&delete_msg))) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+		resp_error(ctxt, rc, "slurm_delete_partition()",
+			   "Unable to delete partition");
+	}
+
+	return rc;
+}
+
 static int _partition_get(openapi_ctxt_t *ctxt, char *partition_name)
 {
 	openapi_partitions_query_t query = {0};
@@ -321,7 +339,8 @@ extern int op_handler_partition(openapi_ctxt_t *ctxt)
 	openapi_partition_param_t params = { 0 };
 	int rc = SLURM_SUCCESS;
 
-	if (ctxt->method != HTTP_REQUEST_GET) {
+	if ((ctxt->method != HTTP_REQUEST_GET) &&
+	    (ctxt->method != HTTP_REQUEST_DELETE)) {
 		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
 			   "Unsupported HTTP method requested: %s",
 			   get_http_method_string(ctxt->method));
@@ -335,7 +354,10 @@ extern int op_handler_partition(openapi_ctxt_t *ctxt)
 		goto done;
 	}
 
-	rc = _partition_get(ctxt, params.partition_name);
+	if (ctxt->method == HTTP_REQUEST_GET)
+		rc = _partition_get(ctxt, params.partition_name);
+	else
+		rc = _partition_delete(ctxt, params.partition_name);
 
 done:
 	xfree(params.partition_name);
