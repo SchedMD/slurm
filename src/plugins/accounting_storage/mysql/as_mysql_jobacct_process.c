@@ -305,6 +305,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		char *job_ids = NULL, *sep = "";
 		char *array_job_ids = NULL, *array_task_ids = NULL;
 		char *het_job_ids = NULL, *het_job_offset = NULL;
+		char *sluid_ids = NULL;
 
 		if (*extra)
 			xstrcat(*extra, " && (");
@@ -313,7 +314,12 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 
 		itr = list_iterator_create(job_cond->step_list);
 		while ((selected_step = list_next(itr))) {
-			if (selected_step->array_task_id != NO_VAL) {
+			if (selected_step->step_id.sluid) {
+				if (sluid_ids)
+					xstrcat(sluid_ids, " ,");
+				xstrfmtcat(sluid_ids, "%" PRIu64,
+					   selected_step->step_id.sluid);
+			} else if (selected_step->array_task_id != NO_VAL) {
 				if (array_task_ids)
 					xstrcat(array_task_ids, " ,");
 				xstrfmtcat(array_task_ids, "(%u, %u)",
@@ -341,22 +347,28 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		}
 		list_iterator_destroy(itr);
 
+		if (sluid_ids) {
+			xstrfmtcat(*extra, "t1.job_db_inx in (%s)", sluid_ids);
+			sep = " || ";
+		}
 		if (job_ids) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
-				xstrfmtcat(*extra, "t1.id_job in (%s) || "
+				xstrfmtcat(*extra,
+					   "%st1.id_job in (%s) || "
 					   "t1.het_job_id in (select "
 					   "t4.het_job_id from \"%s_%s\" as "
 					   "t4 where t4.id_job in (%s) && "
 					   "t4.het_job_id)",
-					   job_ids, cluster_name, job_table,
-					   job_ids);
+					   sep, job_ids, cluster_name,
+					   job_table, job_ids);
 			else if (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB)
-				xstrfmtcat(*extra, "t1.id_job in (%s)",
+				xstrfmtcat(*extra, "%st1.id_job in (%s)", sep,
 					   job_ids);
 			else
-				xstrfmtcat(*extra,
-					   "t1.id_job in (%s) || t1.het_job_id in (%s)",
-					   job_ids, job_ids);
+				xstrfmtcat(
+					*extra,
+					"%st1.id_job in (%s) || t1.het_job_id in (%s)",
+					sep, job_ids, job_ids);
 			sep = " || ";
 		}
 		if (het_job_offset) {
@@ -382,6 +394,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		}
 
 		xstrcat(*extra, ")");
+		xfree(sluid_ids);
 		xfree(job_ids);
 		xfree(array_job_ids);
 		xfree(array_task_ids);
