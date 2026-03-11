@@ -60,14 +60,6 @@ def setup():
     )
 
 
-# Cancel all jobs before and after the test
-@pytest.fixture(scope="function", autouse=True)
-def cancel_jobs():
-    atf.cancel_all_jobs()
-    yield
-    atf.cancel_all_jobs()
-
-
 #
 # Main fixtures
 #

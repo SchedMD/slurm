@@ -30,7 +30,7 @@ def update_state(nodes, state):
     )
 
 
-@pytest.fixture(scope="module", autouse=False)
+@pytest.fixture(scope="function", autouse=False)
 def set_states():
     # Has alloc state flag
     node_down = reserve_node()

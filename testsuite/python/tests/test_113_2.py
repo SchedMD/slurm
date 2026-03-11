@@ -18,7 +18,7 @@ def default_partition():
     return atf.default_partition()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def queued_job(default_partition):
     nodes_dict = atf.get_nodes()
     total_cpus = 0

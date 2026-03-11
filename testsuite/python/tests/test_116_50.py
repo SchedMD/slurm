@@ -30,7 +30,7 @@ def setup(taskget):
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def allocation():
     """Create a single allocation to be used by all tests."""
     global job_id, task_cnt

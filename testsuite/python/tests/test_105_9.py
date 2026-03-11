@@ -59,13 +59,7 @@ def node(setup):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def cancel_jobs(setup):
-    yield
-    atf.cancel_jobs(atf.properties["submitted-jobs"])
-
-
-@pytest.fixture(scope="function", autouse=True)
-def resume_node(setup, cancel_jobs, node):
+def resume_node(setup, node):
     yield
     atf.run_command(
         f"scontrol update nodename={node} state=RESUME",
