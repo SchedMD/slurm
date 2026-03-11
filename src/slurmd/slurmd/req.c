@@ -774,7 +774,7 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		char log_file[256];
 		char *const argv[13] = {"valgrind", "--tool=memcheck",
 					"--error-limit=no",
-					"--leak-check=summary",
+					"--leak-check=full",
 					"--show-reachable=yes",
 					"--max-stackframe=16777216",
 					"--num-callers=20",
