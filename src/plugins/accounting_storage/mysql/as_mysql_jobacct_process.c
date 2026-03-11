@@ -933,7 +933,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			set = 0;
 			itr = list_iterator_create(job_cond->step_list);
 			while ((selected_step = list_next(itr))) {
-				if ((selected_step->step_id.job_id !=
+				if ((selected_step->step_id.sluid !=
+				     job->db_index) &&
+				    (selected_step->step_id.job_id !=
 				     job->jobid) &&
 				    (selected_step->step_id.job_id !=
 				     job->het_job_id) &&
