@@ -10,12 +10,6 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
-#include "src/common/xassert.h"
-
-#ifndef NDEBUG
-#undef ck_assert
-#define ck_assert(x) xassert(x)
-#endif
 
 static void setup(void)
 {
