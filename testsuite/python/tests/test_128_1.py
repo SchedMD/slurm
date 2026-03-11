@@ -50,14 +50,7 @@ def partition2(partition_node):
     return partition_name
 
 
-@pytest.fixture(scope="function")
-def cancel_jobs():
-    """Cancel all jobs after each test"""
-    yield
-    atf.cancel_all_jobs(fatal=True)
-
-
-def test_preempt_cancel(partition1, partition2, cancel_jobs):
+def test_preempt_cancel(partition1, partition2):
     """Test preempt cancel"""
 
     job_id1 = atf.submit_job_sbatch(
@@ -79,7 +72,7 @@ def test_preempt_cancel(partition1, partition2, cancel_jobs):
     ), f"Job 1 ({job_id1}) did not get preempted"
 
 
-def test_preempt_suspend(partition1, partition2, cancel_jobs):
+def test_preempt_suspend(partition1, partition2):
     """Test preempt suspend"""
 
     atf.run_command(
@@ -111,7 +104,7 @@ def test_preempt_suspend(partition1, partition2, cancel_jobs):
     ), f"Job 1 ({job_id1}) did not start running again"
 
 
-def test_preempt_requeue(partition1, partition2, cancel_jobs):
+def test_preempt_requeue(partition1, partition2):
     """Test preempt requeue"""
 
     atf.run_command(

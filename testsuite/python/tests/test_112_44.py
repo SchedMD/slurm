@@ -65,12 +65,6 @@ def setup():
         partition_name = "debug"
 
 
-@pytest.fixture(scope="function", autouse=True)
-def cancel_jobs(setup):
-    yield
-    atf.cancel_all_jobs()
-
-
 @pytest.fixture(scope="function")
 def slurm(setup):
     yield atf.openapi_slurm()

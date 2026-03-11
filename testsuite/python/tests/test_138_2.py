@@ -13,12 +13,6 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="function", autouse=True)
-def cancel_jobs():
-    yield
-    atf.cancel_all_jobs()
-
-
 def make_and_run_bash(command) -> None:
     """Make and run the bash script to run a command 1000 times.
     Input is a list of lines to be run as bash script."""

@@ -485,6 +485,14 @@ def function_setup(request, monkeypatch, tmp_path):
     update_tmp_path_exec_permissions(tmp_path)
     monkeypatch.chdir(tmp_path)
 
+    yield
+
+    if atf.properties["auto-config"]:
+        if atf.properties["slurm-started"] is True:
+            atf.cancel_all_jobs(quiet=True)
+    else:
+        atf.cancel_jobs(atf.properties["submitted-jobs"])
+
 
 @pytest.fixture(scope="class", autouse=True)
 def class_setup(request):

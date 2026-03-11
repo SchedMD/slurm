@@ -25,12 +25,6 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="function", autouse=True)
-def cancel_jobs():
-    yield
-    atf.cancel_all_jobs()
-
-
 def test_single_job():
     output = atf.run_command_output(
         "squeue --noheader --only-job-state --format='%i=%T'"
