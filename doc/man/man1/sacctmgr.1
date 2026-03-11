@@ -2107,9 +2107,7 @@ global option in slurm.conf.
 Mechanism used to preempt jobs running in this QOS when the cluster's
 \fIPreemptType\fR is set to \fIpreempt/qos\fR.
 This QOS\-specific \fBPreemptMode\fR will override the cluster\-wide
-\fBPreemptMode\fR for this QOS. Unsetting the QOS specific \fBPreemptMode\fR,
-by specifying "OFF", "" or "Cluster", makes it use the default cluster\-wide
-\fBPreemptMode\fR.
+\fBPreemptMode\fR for this QOS.
 .br
 See <https://slurm.schedmd.com/preempt.html> for more details.
 
@@ -2133,9 +2131,11 @@ Heterogeneous jobs are excluded from GANG scheduling operations.
 .IP
 .RS
 .TP 12
-\fBOFF\fR
-Is the default value and disables job preemption.
-It is only compatible with \fBPreemptType=preempt/none\fR at a global level.
+\fBCLUSTER\fR
+Is the default value and uses the cluster-wide PreemptMode for job preemption.
+A value of "OFF" or "" (empty string) is equivalent. To prevent jobs in this QOS
+from being preempted, ensure this QOS is not listed in the \fBPreempt\fR field
+of any other QOS.
 .IP
 
 .TP
