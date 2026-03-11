@@ -615,6 +615,21 @@ extern time_t parse_time(const char *time_str, int past)
 	return (time_t) 0;
 }
 
+extern int parse_timespec(const char *time_str, const bool past,
+			  timespec_t *ts_ptr)
+{
+	timespec_t ts = { 0, 0 };
+
+	errno = SLURM_SUCCESS;
+	ts.tv_sec = parse_time(time_str, (past ? 1 : 0));
+
+	if (timespec_is_zero(ts))
+		return errno;
+
+	*ts_ptr = ts;
+	return SLURM_SUCCESS;
+}
+
 /*
  * Smart date for @epoch, relative to current date.
  * Maximum output length: 12 characters + '\0'
