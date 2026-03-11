@@ -246,6 +246,17 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	return wrote;
 }
 
+extern timespec_ctime_str_t timespec_ctime_str(timespec_t ts, bool abs_time)
+{
+	timespec_ctime_str_t ret = {
+		.str = "INVALID",
+	};
+
+	(void) timespec_ctime(ts, abs_time, ret.str, sizeof(ret.str));
+
+	return ret;
+}
+
 /* Normalize nsec to less than a second */
 static timespec_t _normalize(timespec_t ts)
 {
