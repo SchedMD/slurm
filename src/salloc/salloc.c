@@ -540,10 +540,11 @@ int main(int argc, char **argv)
 	env_array_free(env);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
-		error("Allocation was revoked for %pI before command could be run",
-		      &my_job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
+
+		error("Allocation was revoked for %pI before command could be run",
+		      &my_job_id);
 		if (slurm_complete_job(&my_job_id, status) != 0) {
 			error("Unable to clean up allocation for %pI: %m",
 			      &my_job_id);
