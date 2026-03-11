@@ -100,6 +100,7 @@ bool exit_flag = false;
 static bool is_het_job = false;
 static bool suspend_flag = false;
 slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
+pthread_mutex_t my_job_id_lock = PTHREAD_MUTEX_INITIALIZER;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
 static int het_job_limit = 0;
@@ -400,6 +401,7 @@ int main(int argc, char **argv)
 		i = 0;
 		iter_resp = list_iterator_create(job_resp_list);
 		while ((alloc = list_next(iter_resp))) {
+			slurm_mutex_lock(&my_job_id_lock);
 			if (i == 0) {
 				my_job_id = alloc->step_id;
 				info("Granted job allocation %u", my_job_id.job_id);
@@ -407,6 +409,7 @@ int main(int argc, char **argv)
 			log_flag(HETJOB, "Hetjob ID %u+%u (%pI) on nodes %s",
 			         my_job_id.job_id, i, &alloc->step_id,
 				 alloc->node_list);
+			slurm_mutex_unlock(&my_job_id_lock);
 			i++;
 			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
 				list_iterator_destroy(iter_resp);
@@ -416,17 +419,21 @@ int main(int argc, char **argv)
 		list_iterator_destroy(iter_resp);
 	} else if (!tmp_salloc_destroy_sig) {
 		/* Allocation granted to regular job */
+		slurm_mutex_lock(&my_job_id_lock);
 		my_job_id = alloc->step_id;
 
 		print_multi_line_string(alloc->job_submit_user_msg,
 					-1, LOG_LEVEL_INFO);
 		info("Granted job allocation %u", my_job_id.job_id);
+		slurm_mutex_unlock(&my_job_id_lock);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
 	}
 
+	slurm_mutex_lock(&my_job_id_lock);
 	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);
+	slurm_mutex_unlock(&my_job_id_lock);
 
 	after = time(NULL);
 	if ((saopt.bell == BELL_ALWAYS) ||
@@ -442,8 +449,11 @@ int main(int argc, char **argv)
 	slurm_mutex_unlock(&salloc_destroy_sig_lock);
 
 	if (tmp_salloc_destroy_sig) {
-		if (alloc)
+		if (alloc) {
+			slurm_mutex_lock(&my_job_id_lock);
 			my_job_id = alloc->step_id;
+			slurm_mutex_unlock(&my_job_id_lock);
+		}
 		/* salloc process received a signal after
 		 * slurm_allocate_resources_blocking returned with the
 		 * allocation, but before the new signal handlers were
@@ -548,12 +558,15 @@ int main(int argc, char **argv)
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
 
+		slurm_mutex_lock(&my_job_id_lock);
 		error("Allocation was revoked for %pI before command could be run",
 		      &my_job_id);
 		if (slurm_complete_job(&my_job_id, status) != 0) {
 			error("Unable to clean up allocation for %pI: %m",
 			      &my_job_id);
 		}
+		slurm_mutex_unlock(&my_job_id_lock);
+
 		return 1;
  	}
 	allocation_state = GRANTED;
@@ -613,11 +626,13 @@ relinquish:
 	if (allocation_state != REVOKED) {
 		slurm_mutex_unlock(&allocation_state_lock);
 
+		slurm_mutex_lock(&my_job_id_lock);
 		info("Relinquishing job allocation %u", my_job_id.job_id);
 		if ((slurm_complete_job(&my_job_id, status) != 0) &&
 		    (errno != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %pI: %m",
 			      &my_job_id);
+		slurm_mutex_unlock(&my_job_id_lock);
 
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
@@ -853,10 +868,12 @@ static pid_t _fork_command(char **command)
 static void _pending_callback(slurm_step_id_t *step_id)
 {
 	info("Pending job allocation %u", step_id->job_id);
+	slurm_mutex_lock(&my_job_id_lock);
 	my_job_id = *step_id;
 
 	/* call cli_filter post_submit here so it runs while allocating */
 	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);
+	slurm_mutex_unlock(&my_job_id_lock);
 }
 
 /*
@@ -879,12 +896,16 @@ static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid)
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
 	int tmp_command_pid = -1;
+
+	slurm_mutex_lock(&my_job_id_lock);
 	if (!is_het_job && (my_job_id.job_id != NO_VAL) &&
 	    (my_job_id.job_id != comp->job_id)) {
 		error("Ignoring job_complete for job %u because we are %pI",
 		      comp->job_id, &my_job_id);
+		slurm_mutex_unlock(&my_job_id_lock);
 		return;
 	}
+	slurm_mutex_unlock(&my_job_id_lock);
 
 	if (comp->step_id == NO_VAL) {
 		slurm_mutex_lock(&allocation_state_lock);
