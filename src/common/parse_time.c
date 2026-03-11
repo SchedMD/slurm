@@ -410,7 +410,7 @@ static int _get_date(const char *time_str, int *pos, int *month, int *mday,
  * NOTE: by default this will look into the future for the next time.
  * if you want to look in the past set the past flag.
  */
-extern time_t parse_time(const char *time_str, int past)
+static time_t _parse_time(const char *time_str, int past)
 {
 	time_t time_now;
 	struct tm time_now_tm;
@@ -615,13 +615,24 @@ extern time_t parse_time(const char *time_str, int past)
 	return (time_t) 0;
 }
 
+extern time_t parse_time(const char *time_str, int past)
+{
+	time_t ts = _parse_time(time_str, past);
+
+	if (!ts) {
+		errno = ESLURM_INVALID_TIME_VALUE;
+	}
+
+	return ts;
+}
+
 extern int parse_timespec(const char *time_str, const bool past,
 			  timespec_t *ts_ptr)
 {
 	timespec_t ts = { 0, 0 };
 
 	errno = SLURM_SUCCESS;
-	ts.tv_sec = parse_time(time_str, (past ? 1 : 0));
+	ts.tv_sec = _parse_time(time_str, (past ? 1 : 0));
 
 	if (timespec_is_zero(ts))
 		return errno;
