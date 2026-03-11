@@ -134,6 +134,7 @@ typedef struct {
 typedef struct {
 #define MAGIC_RECEIVE_FD 0xeba8bae0
 	int magic; /* MAGIC_RECEIVE_FD */
+	const conmgr_timeouts_t *timeouts;
 	conmgr_con_type_t type;
 	const conmgr_events_t *events;
 	void *arg;
@@ -785,9 +786,10 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		 * connection is now in an unknown state
 		 */
 		close_con(false, src);
-	} else if (add_connection(args->type, NULL, NULL, fd, fd, args->events,
-				  CON_FLAG_NONE, NULL, 0, false, NULL, NULL,
-				  NULL, args->arg) != SLURM_SUCCESS) {
+	} else if (add_connection(args->type, args->timeouts, NULL, fd, fd,
+				  args->events, CON_FLAG_NONE, NULL, 0, false,
+				  NULL, NULL, NULL,
+				  args->arg) != SLURM_SUCCESS) {
 		/*
 		 * Error already logged by add_connection() and there is no
 		 * reason to assume that failing is due to the state of src.
@@ -798,7 +800,9 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	xfree(args);
 }
 
-extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
+extern int conmgr_queue_receive_fd(conmgr_fd_t *src,
+				   const conmgr_timeouts_t *timeouts,
+				   conmgr_con_type_t type,
 				   const conmgr_events_t *events, void *arg)
 {
 	int rc = SLURM_ERROR;
@@ -827,6 +831,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 		receive_fd_args_t *args = xmalloc_nz(sizeof(*args));
 		*args = (receive_fd_args_t) {
 			.magic = MAGIC_RECEIVE_FD,
+			.timeouts = timeouts,
 			.type = type,
 			.events = events,
 			.arg = arg,

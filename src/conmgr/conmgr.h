@@ -483,12 +483,15 @@ extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
 /*
  * Queue up work to receive new connection (file descriptor via socket)
  * IN src - source connection to receive file descriptor
+ * IN timeouts - timeouts for connection or NULL for defaults
  * IN type connection type for fd
  * IN events call backs on events of fd
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
+extern int conmgr_queue_receive_fd(conmgr_fd_t *src,
+				   const conmgr_timeouts_t *timeouts,
+				   conmgr_con_type_t type,
 				   const conmgr_events_t *events, void *arg);
 
 /*
