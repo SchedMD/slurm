@@ -279,6 +279,14 @@ Requested CPU frequency for the step, in kHz.
 .IP
 
 .TP
+\f3SLUID\fP
+The Slurm Lexicographically\-sortable Unique Identifier assigned to the job.
+This value remains constant during the lifetime of the job, even after a resize.
+Be aware that the accounting database tracks a separate SLUID per accounting
+record that changes on resize or requeue.
+.IP
+
+.TP
 \f3TresUsageInAve\fP
 Tres average usage in by all tasks in job.
 \fBNOTE\fR: If corresponding TresUsageInMaxTask is \-1 the metric is node

@@ -82,6 +82,7 @@ print_field_t fields[] = {
 	{13, "ReqCPUFreqMin", print_fields_str, PRINT_REQ_CPUFREQ_MIN},
 	{13, "ReqCPUFreqMax", print_fields_str, PRINT_REQ_CPUFREQ_MAX},
 	{13, "ReqCPUFreqGov", print_fields_str, PRINT_REQ_CPUFREQ_GOV},
+	{14, "SLUID", print_fields_str, PRINT_SLUID},
 	{14, "TRESUsageInAve", print_fields_str, PRINT_TRESUIA},
 	{14, "TRESUsageInMax", print_fields_str, PRINT_TRESUIM},
 	{18, "TRESUsageInMaxNode", print_fields_str, PRINT_TRESUIMN},
