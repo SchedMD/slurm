@@ -162,6 +162,10 @@ def test_account_removal():
     assert defacct in result["stdout"], "sacctmgr should report the deleted account"
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmdbd") < (25, 11),
+    reason="Ticket 24228: In 24.11.4 we fixed an issue when removing and account specifying the parent",
+)
 def test_account_removal_with_parent():
     """Test removing an account using parent="""
 
