@@ -874,7 +874,7 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_listen_sockets(CON_TYPE_RAW, flags,
+		if (conmgr_create_listen_sockets(NULL, CON_TYPE_RAW, flags,
 						 socket_listen,
 						 http_events_get(),
 						 operations_router))

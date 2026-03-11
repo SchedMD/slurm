@@ -126,6 +126,7 @@ static const struct {
 typedef struct {
 	const conmgr_events_t *events;
 	void *arg;
+	const conmgr_timeouts_t *timeouts;
 	conmgr_con_type_t type;
 	int rc;
 	conmgr_con_flags_t flags;
@@ -1214,20 +1215,22 @@ static int _setup_listen_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	socket_listen_init_t *init = arg;
 
-	init->rc =
-		conmgr_create_listen_socket(NULL, init->type, init->flags,
-					    hostport, init->events, init->arg);
+	init->rc = conmgr_create_listen_socket(init->timeouts, init->type,
+					       init->flags, hostport,
+					       init->events, init->arg);
 
 	return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 }
 
-extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+extern int conmgr_create_listen_sockets(const conmgr_timeouts_t *timeouts,
+					conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					list_t *hostports,
 					const conmgr_events_t *events,
 					void *arg)
 {
 	socket_listen_init_t init = {
+		.timeouts = timeouts,
 		.events = events,
 		.arg = arg,
 		.type = type,

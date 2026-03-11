@@ -592,6 +592,7 @@ extern int conmgr_create_listen_socket(const conmgr_timeouts_t *timeouts,
 
 /*
  * Create listening sockets from list of host:port pairs
+ * IN timeouts - timeouts for connection or NULL for defaults
  * IN type - connection type for new sockets
  * IN flags - flags for connection
  * IN hostports - list_t* of cstrings to listen on:
@@ -602,7 +603,8 @@ extern int conmgr_create_listen_socket(const conmgr_timeouts_t *timeouts,
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+extern int conmgr_create_listen_sockets(const conmgr_timeouts_t *timeouts,
+					conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					list_t *hostports,
 					const conmgr_events_t *events,
