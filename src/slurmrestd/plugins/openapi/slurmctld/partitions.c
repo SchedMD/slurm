@@ -255,26 +255,11 @@ extern int op_handler_partitions(openapi_ctxt_t *ctxt)
 	return rc;
 }
 
-extern int op_handler_partition(openapi_ctxt_t *ctxt)
+static int _partition_get(openapi_ctxt_t *ctxt, char *partition_name)
 {
-	openapi_partition_param_t params = {0};
 	openapi_partitions_query_t query = {0};
 	partition_info_msg_t *part_info_ptr = NULL;
 	int rc = SLURM_SUCCESS;
-
-	if (ctxt->method != HTTP_REQUEST_GET) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Unsupported HTTP method requested: %s",
-			   get_http_method_string(ctxt->method));
-		goto done;
-	}
-
-	if (DATA_PARSE(ctxt->parser, OPENAPI_PARTITION_PARAM, params,
-		       ctxt->parameters, ctxt->parent_path)) {
-		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
-			   "Rejecting request. Failure parsing parameters");
-		goto done;
-	}
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_PARTITIONS_QUERY, query,
 		       ctxt->query, ctxt->parent_path)) {
@@ -301,7 +286,7 @@ extern int op_handler_partition(openapi_ctxt_t *ctxt)
 
 		for (int i = 0; !rc && i < part_info_ptr->record_count; i++) {
 			const char *n = part_info_ptr->partition_array[i].name;
-			if (!xstrcasecmp(params.partition_name, n)) {
+			if (!xstrcasecmp(partition_name, n)) {
 				part = &part_info_ptr->partition_array[i];
 				break;
 			}
@@ -309,7 +294,7 @@ extern int op_handler_partition(openapi_ctxt_t *ctxt)
 
 		if (!part) {
 			resp_warn(ctxt, __func__, "Unable to find partition %s",
-				  params.partition_name);
+				  partition_name);
 		} else {
 			partition_info_msg_t p = {
 				.last_update = part_info_ptr->last_update,
@@ -328,6 +313,31 @@ extern int op_handler_partition(openapi_ctxt_t *ctxt)
 
 done:
 	slurm_free_partition_info_msg(part_info_ptr);
+	return rc;
+}
+
+extern int op_handler_partition(openapi_ctxt_t *ctxt)
+{
+	openapi_partition_param_t params = { 0 };
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Unsupported HTTP method requested: %s",
+			   get_http_method_string(ctxt->method));
+		goto done;
+	}
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_PARTITION_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+			   "Rejecting request. Failure parsing parameters");
+		goto done;
+	}
+
+	rc = _partition_get(ctxt, params.partition_name);
+
+done:
 	xfree(params.partition_name);
 	return rc;
 }
