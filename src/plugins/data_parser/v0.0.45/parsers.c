@@ -9164,6 +9164,29 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 #undef add_skip
 #undef add_cparse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_FLAGS)[] = {
+	add_flag_bit(PART_FLAG_DEFAULT, "DEFAULT"),
+	add_flag_bit(PART_FLAG_HIDDEN, "HIDDEN"),
+	add_flag_bit(PART_FLAG_NO_ROOT, "NO_ROOT"),
+	add_flag_bit(PART_FLAG_ROOT_ONLY, "ROOT_ONLY"),
+	add_flag_bit(PART_FLAG_REQ_RESV, "REQ_RESV"),
+	add_flag_bit(PART_FLAG_LLN, "LLN"),
+	add_flag_bit(PART_FLAG_EXCLUSIVE_USER, "EXCLUSIVE_USER"),
+	add_flag_bit(PART_FLAG_PDOI, "PDOI"),
+	add_flag_bit(PART_FLAG_DEFAULT_CLR, "DEFAULT_CLEAR"),
+	add_flag_bit(PART_FLAG_HIDDEN_CLR, "HIDDEN_CLEAR"),
+	add_flag_bit(PART_FLAG_NO_ROOT_CLR, "NO_ROOT_CLEAR"),
+	add_flag_bit(PART_FLAG_ROOT_ONLY_CLR, "ROOT_ONLY_CLEAR"),
+	add_flag_bit(PART_FLAG_REQ_RESV_CLR, "REQ_RESV_CLEAR"),
+	add_flag_bit(PART_FLAG_LLN_CLR, "LLN_CLEAR"),
+	add_flag_bit(PART_FLAG_EXC_USER_CLR, "EXC_USER_CLEAR"),
+	add_flag_bit(PART_FLAG_PDOI_CLR, "PDOI_CLEAR"),
+	add_flag_bit(PART_FLAG_EXCLUSIVE_TOPO, "EXCLUSIVE_TOPO"),
+	add_flag_bit(PART_FLAG_EXC_TOPO_CLR, "EXC_TOPO_CLEAR"),
+	add_flag_hidden_bit(PART_FLAG_SCHED_FAILED, "SCHED_FAILED"),
+	add_flag_hidden_bit(PART_FLAG_SCHED_CLEARED, "SCHED_CLEARED"),
+};
+
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc)		\
@@ -9186,7 +9209,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(UINT32_NO_VAL, default_time, "defaults/time", "DefaultTime - Run time limit in minutes used for jobs that don't specify a value"),
 	add_parse(STRING, deny_accounts, "accounts/deny", "DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition"),
 	add_parse(STRING, deny_qos, "qos/deny", "DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition"),
-	add_skip(flags), //FIXME
+	add_parse(PARTITION_FLAGS, flags, "flags", "Partition flag options"),
 	add_parse(UINT32, grace_time, "grace_time", "GraceTime - Grace time in seconds to be extended to a job which has been selected for preemption"),
 	add_skip(job_defaults_list), //FIXME - is this even packed?
 	add_parse(STRING, job_defaults_str, "defaults/job", "JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults)"),
@@ -11711,6 +11734,7 @@ static const parser_t parsers[] = {
 	addfa(JOB_RES_CORE_STATUS, JOB_RES_CORE_status_t),
 	addfa(NODE_CERT_FLAGS, uint16_t),
 	addfa(H_RESOURCE_MODE_FLAG, uint8_t),
+	addfa(PARTITION_FLAGS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
