@@ -43,13 +43,6 @@
 #include "src/common/slurm_protocol_api.h"
 
 /*
- * forward_init    - initialize forward structure
- * IN: forward     - forward_t *   - struct to store forward info
- * RET: VOID
- */
-extern void forward_init(forward_t *forward);
-
-/*
  * forward_msg	      - logic to forward a message which has been received and
  *			accumulate the return codes from processes getting the
  *			forwarded message
