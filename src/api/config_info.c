@@ -826,6 +826,8 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "LaunchParameters", "%s", conf->launch_params);
 
+	add_key_pair(ret_list, "LicenseParameters", "%s", conf->license_params);
+
 	add_key_pair(ret_list, "Licenses", "%s", conf->licenses);
 
 	add_key_pair_own(ret_list, "LogTimeFormat", _logfmtstr(conf->log_fmt));

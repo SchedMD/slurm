@@ -3094,6 +3094,7 @@ typedef struct {
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL
 				 * on job termination */
 	char *launch_params;	/* step launcher plugin options */
+	char *license_params; /* license parameters */
 	char *licenses;		/* licenses available on this cluster */
 	uint16_t log_fmt;       /* Log file timestamp format */
 	char *mail_domain;	/* default domain to append to usernames */

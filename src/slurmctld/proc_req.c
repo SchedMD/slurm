@@ -396,6 +396,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->kill_on_bad_exit    = conf->kill_on_bad_exit;
 
 	conf_ptr->launch_params       = xstrdup(conf->launch_params);
+	conf_ptr->license_params = xstrdup(conf->license_params);
 	conf_ptr->licenses            = xstrdup(conf->licenses);
 	conf_ptr->log_fmt             = conf->log_fmt;
 
