@@ -34,11 +34,14 @@
 \*****************************************************************************/
 
 #include <inttypes.h>
+#include <lz4.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -88,4 +91,46 @@ extern int fini(void)
 {
 	verbose("%s unloaded", plugin_name);
 	return SLURM_SUCCESS;
+}
+
+extern ssize_t compress_p_comp_block(char **in_buf, const ssize_t input_size,
+				     char **out_buf, const ssize_t out_size,
+				     ssize_t *remaining)
+{
+	ssize_t compress_size;
+	int size_limit = MIN(out_size * 10, *remaining);
+
+	compress_size =
+		LZ4_compress_destSize(*in_buf, *out_buf, &size_limit, out_size);
+
+	if (!compress_size)
+		fatal("LZ4 compression error");
+
+	*remaining -= size_limit;
+	*in_buf += size_limit;
+
+	return compress_size;
+}
+
+extern char *compress_p_decompress(char *in_buf, const ssize_t in_size,
+				   const ssize_t out_size)
+{
+	char *out_buf = NULL;
+	int uncomp_len;
+
+	xassert(in_buf);
+
+	/* no data to decompress, simply return the input data */
+	if (in_size == 0)
+		return in_buf;
+
+	out_buf = xmalloc(out_size);
+	uncomp_len = LZ4_decompress_safe(in_buf, out_buf, in_size, out_size);
+
+	if (uncomp_len != out_size) {
+		error("lz4 decompression error, original block length != decompressed length");
+		xfree(out_buf);
+	}
+
+	return out_buf;
 }
