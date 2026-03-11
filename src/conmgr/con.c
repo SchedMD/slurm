@@ -1055,7 +1055,8 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 	return false;
 }
 
-static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
+static int _add_unix_listener(const conmgr_timeouts_t *timeouts,
+			      conmgr_con_type_t type, conmgr_con_flags_t flags,
 			      const char *listen_on, const char *unixsock,
 			      const conmgr_events_t *events, void *arg)
 {
@@ -1091,11 +1092,13 @@ static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
 		fatal("%s: [%s] unable to listen(): %m",
 		      __func__, listen_on);
 
-	return add_connection(type, NULL, NULL, fd, -1, events, flags, &addr,
-			      sizeof(addr), true, unixsock, NULL, NULL, arg);
+	return add_connection(type, timeouts, NULL, fd, -1, events, flags,
+			      &addr, sizeof(addr), true, unixsock, NULL, NULL,
+			      arg);
 }
 
-static int _add_socket_listener(conmgr_con_type_t type,
+static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
+				conmgr_con_type_t type,
 				conmgr_con_flags_t flags, const char *listen_on,
 				url_t *url, const conmgr_events_t *events,
 				void *arg)
@@ -1153,7 +1156,7 @@ static int _add_socket_listener(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = add_connection(type, NULL, NULL, fd, -1, events, flags,
+		rc = add_connection(type, timeouts, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
 				    addr->ai_addrlen, true, NULL, NULL, NULL,
 				    arg);
@@ -1163,7 +1166,8 @@ static int _add_socket_listener(conmgr_con_type_t type,
 	return rc;
 }
 
-extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+extern int conmgr_create_listen_socket(const conmgr_timeouts_t *timeouts,
+				       conmgr_con_type_t type,
 				       conmgr_con_flags_t flags,
 				       const char *listen_on,
 				       const conmgr_events_t *events, void *arg)
@@ -1184,8 +1188,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 
 	switch (url.scheme) {
 	case URL_SCHEME_UNIX:
-		rc = _add_unix_listener(type, flags, listen_on, url.path,
-					events, arg);
+		rc = _add_unix_listener(timeouts, type, flags, listen_on,
+					url.path, events, arg);
 		break;
 	case URL_SCHEME_HTTPS:
 		flags |= CON_FLAG_TLS_SERVER;
@@ -1194,8 +1198,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		/* fall through */
 	case URL_SCHEME_HTTP:
 	case URL_SCHEME_INVALID:
-		rc = _add_socket_listener(type, flags, listen_on, &url, events,
-					  arg);
+		rc = _add_socket_listener(timeouts, type, flags, listen_on,
+					  &url, events, arg);
 		break;
 	case URL_SCHEME_INVALID_MAX:
 		fatal_abort("should never happen");
@@ -1210,9 +1214,9 @@ static int _setup_listen_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	socket_listen_init_t *init = arg;
 
-	init->rc = conmgr_create_listen_socket(init->type, init->flags,
-					       hostport, init->events,
-					       init->arg);
+	init->rc =
+		conmgr_create_listen_socket(NULL, init->type, init->flags,
+					    hostport, init->events, init->arg);
 
 	return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 }

@@ -572,6 +572,7 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 
 /*
  * Create listening socket
+ * IN timeouts - timeouts for connection or NULL for defaults
  * IN type - connection type for new sockets
  * IN flags - flags for connection
  * IN listen_on - cstrings to listen on:
@@ -582,7 +583,8 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
  * IN arg - arbitrary ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+extern int conmgr_create_listen_socket(const conmgr_timeouts_t *timeouts,
+				       conmgr_con_type_t type,
 				       conmgr_con_flags_t flags,
 				       const char *listen_on,
 				       const conmgr_events_t *events,
