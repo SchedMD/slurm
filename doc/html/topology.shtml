@@ -245,7 +245,8 @@ find optimal placement on the available block(s). If using a range is necessary,
 the number of possible values should be kept as small as possible.</li>
 <li><b>Requesting specific nodes</b><br>
 Using <code>-w</code>/<code>--nodelist</code> to request a specific node or
-nodes can conflict with the block placement and is not currently supported. You
+nodes can conflict with the block placement. Because topology enforcement
+takes precedence, this will prevent the job from receiving an allocation. You
 can use <code>-x</code>/<code>--exclude</code> to prevent a job from
 being scheduled on certain nodes.
 </li>
