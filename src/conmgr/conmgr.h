@@ -446,6 +446,7 @@ extern int conmgr_con_get_auth_creds(conmgr_fd_ref_t *con, uid_t *cred_uid,
 /*
  * instruct connection manager to process fd (async)
  * IN type connection type for fd
+ * IN timeouts - timeouts for connection or NULL for defaults
  * IN input_fd file descriptor to have conmgr take ownership and read from
  * IN output_fd file descriptor to have conmgr take ownership and write to
  * IN events call backs on events of fd
@@ -456,11 +457,11 @@ extern int conmgr_con_get_auth_creds(conmgr_fd_ref_t *con, uid_t *cred_uid,
  * IN arg ptr handed to on_connection callback
  * RET SLURM_SUCCESS or error
  */
-extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
+extern int conmgr_process_fd(conmgr_con_type_t type,
+			     const conmgr_timeouts_t *timeouts, int input_fd,
 			     int output_fd, const conmgr_events_t *events,
-			     conmgr_con_flags_t flags,
-			     const slurm_addr_t *addr, socklen_t addrlen,
-			     void *tls_conn, void *arg);
+			     conmgr_con_flags_t flags, const slurm_addr_t *addr,
+			     socklen_t addrlen, void *tls_conn, void *arg);
 
 /*
  * instruct connection manager to listen to fd (async)

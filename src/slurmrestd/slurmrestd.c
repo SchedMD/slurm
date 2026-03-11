@@ -862,7 +862,7 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		inetd_mode = true;
-		if ((rc = conmgr_process_fd(CON_TYPE_RAW, STDIN_FILENO,
+		if ((rc = conmgr_process_fd(CON_TYPE_RAW, NULL, STDIN_FILENO,
 					    STDOUT_FILENO, http_events_get(),
 					    flags, NULL, 0, NULL,
 					    operations_router)))

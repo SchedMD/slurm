@@ -739,13 +739,13 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
+extern int conmgr_process_fd(conmgr_con_type_t type,
+			     const conmgr_timeouts_t *timeouts, int input_fd,
 			     int output_fd, const conmgr_events_t *events,
-			     conmgr_con_flags_t flags,
-			     const slurm_addr_t *addr, socklen_t addrlen,
-			     void *tls_conn, void *arg)
+			     conmgr_con_flags_t flags, const slurm_addr_t *addr,
+			     socklen_t addrlen, void *tls_conn, void *arg)
 {
-	return add_connection(type, NULL, NULL, input_fd, output_fd, events,
+	return add_connection(type, timeouts, NULL, input_fd, output_fd, events,
 			      flags, addr, addrlen, false, NULL, tls_conn, NULL,
 			      arg);
 }
