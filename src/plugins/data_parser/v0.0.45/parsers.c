@@ -7186,6 +7186,27 @@ static void FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)(void *ptr)
 	xfree(req);
 }
 
+static void *NEW_FUNC(PARTITION_INFO)(void)
+{
+	/*
+	 * update_part_msg_t is partition_info_t
+	 * This is only used for create and update partition endpoints
+	 */
+	partition_info_t *part_info = xmalloc(sizeof(*part_info));
+	slurm_init_part_desc_msg((update_part_msg_t *) part_info);
+	return part_info;
+}
+
+static void FREE_FUNC(PARTITION_INFO)(void *ptr)
+{
+	partition_info_t *part_info = ptr;
+
+	if (!part_info)
+		return;
+	slurm_free_partition_info_members(part_info);
+	xfree(part_info);
+}
+
 static int _foreach_variable(void *x, void *arg)
 {
 	hres_variable_t *var = x, *var_cpy;
@@ -9240,14 +9261,14 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_removed(UINT16, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource", SLURM_26_05_PROTOCOL_VERSION),
 	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 1, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
 	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 1, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
-	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs"),
+	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs in minutes"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
 	add_parse(STRING, name, "name", "PartitionName - Name by which the partition may be referenced"),
 	add_skip(node_inx),
 	add_parse(STRING, nodes, "nodes/configured", "Nodes - Comma-separated list of nodes which are associated with this partition"),
 	add_parse(STRING, nodesets, "node_sets", "NodeSets - Comma-separated list of nodesets which are associated with this partition"),
 	add_parse(UINT16_NO_VAL, over_time_limit, "maximums/over_time_limit", "OverTimeLimit - Number of minutes by which a job can exceed its time limit before being canceled"),
-	add_parse(PARTITION_PREEMPT_MODES, preempt_mode, "preempt_mode", "PreemptMode - The mechanism used to preempt jobs in this partition if PreemptType is configured to preempt/partition_prio."),
+	add_parse(PARTITION_PREEMPT_MODES, preempt_mode, "preempt_mode", "PreemptMode - Mechanism used to preempt jobs for this partition when PreemptType=preempt/partition_prio is configured (the \"CLUSTER_GLOBAL\" flag will be ignored when updating a partition)."),
 	add_parse(UINT16, priority_job_factor, "priority/job_factor", "PriorityJobFactor - Partition factor used by priority/multifactor plugin in calculating job priority"),
 	add_parse(UINT16, priority_tier, "priority/tier", "PriorityTier - Controls the order in which the scheduler evaluates jobs from different partitions"),
 	add_parse(STRING, qos_char, "qos/assigned", "QOS - QOS name containing limits that will apply to all jobs in this partition"),
@@ -10892,6 +10913,7 @@ add_openapi_response_single(OPENAPI_HOSTNAMES_REQ_RESP, HOSTLIST_STRING, "hostna
 add_openapi_response_single(OPENAPI_JOB_MODIFY_RESP, STRING_LIST, "results", "Job modify results");
 add_openapi_response_single(OPENAPI_CREATE_NODE_REQ, STRING, "node_conf", "Node configuration line");
 add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_LIST, "nodes", "Node resource layouts");
+add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIST, "partitions", "list of partition descriptions");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -11584,7 +11606,7 @@ static const parser_t parsers[] = {
 	addpap(CONTROLLER_PING, controller_ping_t, NULL, NULL),
 	addpap(SLURMDBD_PING, slurmdbd_ping_t, NULL, NULL),
 	addpap(STEP_INFO, job_step_info_t, NULL, NULL),
-	addpap(PARTITION_INFO, partition_info_t, NULL, NULL),
+	addpap(PARTITION_INFO, partition_info_t, NEW_FUNC(PARTITION_INFO), FREE_FUNC(PARTITION_INFO)),
 	addpap(SINFO_DATA, sinfo_data_t, NULL, NULL),
 	addpap(ACCT_GATHER_ENERGY, acct_gather_energy_t, NULL, NULL),
 	addpap(RESERVATION_INFO, reserve_info_t, NULL, NULL),
@@ -11720,6 +11742,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_JOB_MODIFY_RESP),
 	addoar(OPENAPI_CREATE_NODE_REQ),
 	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
+	addoar(OPENAPI_PARTITIONS_MOD_REQ),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -11807,6 +11830,7 @@ static const parser_t parsers[] = {
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
+	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 };
 #undef addpl
 #undef addps
