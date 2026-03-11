@@ -99,6 +99,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 {
 	char *out = NULL;
 	char *allow_deny, *value;
+	const char *exclusive;
 	uint16_t force, preempt_mode, val;
 	char *line_end = (one_liner) ? " " : "\n   ";
 	bool power_save_on = false;
@@ -198,15 +199,22 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		xstrcat(out, " DisableRootJobs=NO");
 
-	if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
-		xstrcat(out, " ExclusiveUser=YES");
-	else
-		xstrcat(out, " ExclusiveUser=NO");
-
+	/*
+	 * Exclusive= single token: TOPO (implies node exclusive), else NODE
+	 * when max_share masked by ~SHARED_FORCE is 0, else USER when
+	 * PART_FLAG_EXCLUSIVE_USER only, else NO. Node/topo wins over USER in
+	 * display when both apply (internal flags may still carry both).
+	 */
+	val = part_ptr->max_share & (~SHARED_FORCE);
 	if (part_ptr->flags & PART_FLAG_EXCLUSIVE_TOPO)
-		xstrcat(out, " ExclusiveTopo=YES");
+		exclusive = "TOPO";
+	else if (val == 0)
+		exclusive = "NODE";
+	else if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+		exclusive = "USER";
 	else
-		xstrcat(out, " ExclusiveTopo=NO");
+		exclusive = "NO";
+	xstrfmtcat(out, " Exclusive=%s", exclusive);
 
 	xstrfmtcat(out, " GraceTime=%u", part_ptr->grace_time);
 
@@ -281,9 +289,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, " ReqResv=NO");
 
 	force = part_ptr->max_share & SHARED_FORCE;
-	val = part_ptr->max_share & (~SHARED_FORCE);
 	if (val == 0)
-		xstrcat(out, " OverSubscribe=EXCLUSIVE");
+		xstrcat(out, " OverSubscribe=NO");
 	else if (force)
 		xstrfmtcat(out, " OverSubscribe=FORCE:%u", val);
 	else if (val == 1)
