@@ -1097,6 +1097,24 @@ function __slurm_signals() {
 	echo "${output}"
 }
 
+# Slurm helper function to return allowed --ignore-signals list
+#
+# RET: signals
+function __slurm_srun_ignorable_signals() {
+	local signals=(
+		"SIGINT"
+		"SIGQUIT"
+		"SIGTERM"
+		"SIGHUP"
+		"SIGUSR1"
+		"SIGUSR2"
+	)
+	local output="${signals[*]}"
+
+	__slurm_log_trace "$(__func__): output='$output'"
+	echo "${output}"
+}
+
 # Slurm helper function to get TRES list
 #
 # RET: space delimited list
@@ -1466,6 +1484,7 @@ function __slurm_comp_common_flags() {
 	--gres-flag?(s)) __slurm_compreply "${gres_flags[*]}" ;;
 	--hint) __slurm_compreply "${hints[*]}" ;;
 	-i | --input) _filedir ;;
+	--ignore-signals) __slurm_compreply_list "$(__slurm_srun_ignorable_signals)" ;;
 	--jobid) __slurm_compreply "$(__slurm_jobs)" ;;
 	-K)
 		# warning: salloc and srun overload -K
