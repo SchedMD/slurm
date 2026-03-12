@@ -1356,14 +1356,15 @@ extern int parse_requeue_flags(char *s, uint32_t *flags)
  * information is not available */
 static uint32_t _get_job_time(const char *job_id_str)
 {
-	uint32_t job_id, task_id;
+	uint32_t task_id;
 	char *next_str = NULL;
 	uint32_t time_limit = NO_VAL;
 	int i, rc;
 	job_info_msg_t *resp;
 	bitstr_t *array_bitmap;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
-	job_id = (uint32_t)strtol(job_id_str, &next_str, 10);
+	step_id.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 	if (next_str[0] == '_') {
 		task_id = (uint32_t)strtol(next_str+1, &next_str, 10);
 		if (next_str[0] != '\0') {
@@ -1377,7 +1378,7 @@ static uint32_t _get_job_time(const char *job_id_str)
 		task_id = NO_VAL;
 	}
 
-	rc = slurm_load_job(&resp, job_id, SHOW_ALL);
+	rc = slurm_load_job(&resp, step_id, SHOW_ALL);
 	if (rc == SLURM_SUCCESS) {
 		if (resp->record_count == 0) {
 			error("Job ID %s not found", job_id_str);
@@ -1396,14 +1397,15 @@ static uint32_t _get_job_time(const char *job_id_str)
 			return time_limit;
 		}
 		for (i = 0; i < resp->record_count; i++) {
-			if ((resp->job_array[i].step_id.job_id == job_id) &&
+			if ((resp->job_array[i].step_id.job_id ==
+			     step_id.job_id) &&
 			    (resp->job_array[i].array_task_id == NO_VAL) &&
 			    (resp->job_array[i].array_bitmap == NULL)) {
 				/* Regular job match */
 				time_limit = resp->job_array[i].time_limit;
 				break;
 			}
-			if (resp->job_array[i].array_job_id != job_id)
+			if (resp->job_array[i].array_job_id != step_id.job_id)
 				continue;
 			array_bitmap = resp->job_array[i].array_bitmap;
 			if ((task_id == NO_VAL) ||
@@ -1427,13 +1429,14 @@ static uint32_t _get_job_time(const char *job_id_str)
 
 static bool _is_single_job(char *job_id_str)
 {
-	uint32_t job_id, task_id;
+	uint32_t task_id;
 	char *next_str = NULL;
 	int rc;
 	job_info_msg_t *resp;
 	bool is_single = false;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
-	job_id = (uint32_t)strtol(job_id_str, &next_str, 10);
+	step_id.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 	if (next_str[0] == '_') {
 		task_id = (uint32_t)strtol(next_str+1, &next_str, 10);
 		if (next_str[0] != '\0') {
@@ -1447,7 +1450,7 @@ static bool _is_single_job(char *job_id_str)
 		task_id = NO_VAL;
 	}
 
-	rc = slurm_load_job(&resp, job_id, SHOW_ALL);
+	rc = slurm_load_job(&resp, step_id, SHOW_ALL);
 	if (rc == SLURM_SUCCESS) {
 		if (resp->record_count == 0) {
 			error("Job ID %s not found", job_id_str);

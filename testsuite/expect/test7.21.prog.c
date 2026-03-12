@@ -78,7 +78,13 @@ int run_test(spank_t sp, const char *caller)
 			caller, step_id, job_id, array_job_id, array_task_id);
 
 	// Ask slurm about this job
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+	slurm_step_id_t load_step_id = SLURM_STEP_ID_INITIALIZER;
+	load_step_id.job_id = job_id;
+	rc = slurm_load_job(&job_info, load_step_id, SHOW_DETAIL);
+#else /* Ticket 13506 (!3137): Change API to accept slurm_step_id_t */
 	rc = slurm_load_job(&job_info, job_id, SHOW_DETAIL);
+#endif
 	if (rc)
 		return rc;
 

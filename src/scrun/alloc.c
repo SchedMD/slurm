@@ -640,7 +640,7 @@ extern void get_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 	}
 
 	/* alloc response is too sparse. get full job info */
-	rc = slurm_load_job(&jobs, step_id.job_id, 0);
+	rc = slurm_load_job(&jobs, step_id, 0);
 	if (rc || !jobs || (jobs->record_count <= 0)) {
 		/* job not found or already died ? */
 		if ((rc == SLURM_ERROR) && errno)
