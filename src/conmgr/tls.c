@@ -214,7 +214,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	 */
 	rc = tls_g_shutdown_conn(tls);
 
-	if (rc == EWOULDBLOCK) {
+	if (rc == SLURM_BLOCKED_ON_READ) {
 		slurm_mutex_lock(&mgr.mutex);
 
 		xassert(tls == con->tls);
@@ -233,6 +233,9 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		}
 
 		slurm_mutex_unlock(&mgr.mutex);
+	} else if (rc == SLURM_BLOCKED_ON_WRITE) {
+		log_flag(NET, "%s: [%s] write required for tls_g_shutdown_conn() blocked, will try again",
+			 __func__, con->name);
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
