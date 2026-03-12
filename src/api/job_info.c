@@ -915,10 +915,10 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
- * IN job_id - slurm job id
+ * IN step_id - slurm step_id containing the job to query
  * RET: READY_* values as defined in slurm.h
  */
-extern int slurm_job_node_ready(uint32_t job_id)
+extern int (slurm_job_node_ready)(slurm_step_id_t step_id)
 {
 	slurm_msg_t req, resp;
 	job_id_msg_t msg;
@@ -928,7 +928,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	slurm_msg_t_init(&resp);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.step_id.job_id = job_id;
+	msg.step_id = step_id;
 	req.msg_type = REQUEST_JOB_READY;
 	req.data     = &msg;
 

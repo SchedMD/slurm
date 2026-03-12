@@ -4171,10 +4171,10 @@ extern long slurm_get_rem_time(uint32_t jobid);
 
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
- * IN job_id - slurm job id
+ * IN step_id - step identifier
  * RET: READY_* values defined above
  */
-extern int slurm_job_node_ready(uint32_t job_id);
+extern int slurm_job_node_ready(slurm_step_id_t step_id);
 
 /*
  * slurm_load_job - issue RPC to get job information for one job ID
@@ -5297,6 +5297,18 @@ inline static int slurm_signal_job_jid(uint32_t job_id, uint16_t signal)
 _Generic((id), \
 	slurm_step_id_t: slurm_signal_job, \
 	default: slurm_signal_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_job_node_ready_jid(uint32_t job_id)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_job_node_ready(step_id);
+}
+
+#define slurm_job_node_ready(id) \
+_Generic((id), \
+	slurm_step_id_t: slurm_job_node_ready, \
+	default: slurm_job_node_ready_jid)((id))
 
 #ifdef __cplusplus
 }
