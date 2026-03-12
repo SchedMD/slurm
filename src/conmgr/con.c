@@ -2357,10 +2357,8 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 				 const conmgr_events_t *events, void *arg,
 				 const char *caller)
 {
-	int rc = EINVAL;
-
 	if (!ref || !ref->con)
-		return rc;
+		return EINVAL;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -2369,28 +2367,17 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
 
-	/* Reject changing connections in process of cleaning up */
-	if ((ref->con->input_fd >= 0) || (ref->con->output_fd >= 0)) {
-		log_flag(CONMGR, "%s->%s: [%s] changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR,
-			 caller, __func__, ref->con->name,
-			 (uintptr_t) ref->con->events, (uintptr_t) events,
-			 (uintptr_t) ref->con->arg, (uintptr_t) arg);
+	log_flag(CONMGR, "%s->%s: [%s] changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR,
+		 caller, __func__, ref->con->name,
+		 (uintptr_t) ref->con->events, (uintptr_t) events,
+		 (uintptr_t) ref->con->arg, (uintptr_t) arg);
 
-		ref->con->events = events;
-		ref->con->arg = arg;
-		rc = SLURM_SUCCESS;
-	} else {
-		log_flag(CONMGR, "%s->%s: [%s] rejecting changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR" for closed connection",
-			 caller, __func__, ref->con->name,
-			 (uintptr_t) ref->con->events, (uintptr_t) events,
-			 (uintptr_t) ref->con->arg, (uintptr_t) arg);
-
-		rc = ESHUTDOWN;
-	}
+	ref->con->events = events;
+	ref->con->arg = arg;
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 #define MAGIC_LIST_BUFFER_STATS 0x4aa19f2f

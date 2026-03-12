@@ -1158,7 +1158,7 @@ extern int conmgr_con_get_events(conmgr_fd_ref_t *con,
  * IN arg - change arbitrary pointer for arg
  *	WARNING: pointer must be valid until on_finish() callback
  * IN caller - __func__ from caller
- * RET SLURM_SUCCESS or error
+ * RET SLURM_SUCCESS or EINVAL (if con is invalid)
  */
 extern int conmgr_con_set_events(conmgr_fd_ref_t *con,
 				 const conmgr_events_t *events, void *arg,
