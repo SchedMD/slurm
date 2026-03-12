@@ -119,7 +119,7 @@ extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 	FREE_NULL_BUFFER(tls_in);
 	FREE_NULL_LIST(tls_out);
 
-	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
+	log_flag(CONMGR, "%s: [%s] TLS destroy finished", __func__, con->name);
 }
 
 static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
