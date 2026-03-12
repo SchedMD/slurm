@@ -304,6 +304,7 @@ def module_setup(request, tmp_path_factory):
 
 def module_teardown():
     failures = []
+    xfailures = []
 
     if atf.properties["auto-config"]:
         if atf.properties["slurm-started"] is True:
@@ -334,7 +335,6 @@ def module_teardown():
         # If any coredump is found, report an error.
         for coredump in atf.get_coredumps():
             logging.warning(f"Coredump detected: {coredump}")
-            failures.append(f"Coredump detected: {coredump}")
 
             # Ensure that the core is copied into the logs dir
             if atf.properties["slurm-logs-dir"] not in coredump:
@@ -358,12 +358,12 @@ def module_teardown():
 
             # Generate the .bt file if binary was found
             if not bin_path:
-                logging.warning(
-                    f"Unable to get the binary file that generated the coredump {coredump}"
+                failures.append(
+                    f"Coredump detected ({coredump}), but unable to get binary"
                 )
             else:
                 bt_file = f"{coredump}.bt"
-                logging.info(
+                logging.debug(
                     f"Saving the full backtrace of {coredump} from {bin_path} into {bt_file}"
                 )
                 results = atf.run_command(
@@ -386,6 +386,11 @@ def module_teardown():
                 with open(bt_file, "w") as f:
                     f.write(results["stdout"])
                     f.write(results["stderr"])
+
+            # If coredump is not a known issue, reported as a failure.
+            # Otherwise a new reason will be appended to xfailures.
+            if not atf.is_xfail_coredump(bin_path, bt_file, xfailures):
+                failures.append(f"Unknown coredump detected: {coredump}")
 
         # Save logs dir for the test and restore the orifinal
         atf.run_command(
@@ -473,6 +478,8 @@ def module_teardown():
 
     if failures:
         pytest.fail(failures[0])
+    if xfailures:
+        pytest.xfail(xfailures[0])
 
 
 @pytest.fixture(scope="function", autouse=True)
