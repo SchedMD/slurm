@@ -251,10 +251,11 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	}
 
 	if (con->tls && con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
 	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
 	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
 		/* Attempt graceful TLS shutdown once */
-		con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+		con_set_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
 		if (!locked)
 			slurm_mutex_unlock(&mgr.mutex);

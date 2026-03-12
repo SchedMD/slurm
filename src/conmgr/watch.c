@@ -914,6 +914,17 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
+	if (con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN)) {
+		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(is_tls);
+		xassert(!con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+
+		log_flag(CONMGR, "%s: [%s] queuing up initial TLS shutdown work",
+			 __func__, con->name);
+		add_work_con_fifo(true, con, tls_shutdown, NULL);
+		return 0;
+	}
+
 	if (con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN)) {
 		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(is_tls);
@@ -923,7 +934,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			log_flag(CONMGR, "%s: [%s] waiting for incoming to continue TLS shutdown",
 				 __func__, con->name);
 		} else {
-			log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown",
+			log_flag(CONMGR, "%s: [%s] queuing up continuation of TLS shutdown",
 				 __func__, con->name);
 			add_work_con_fifo(true, con, tls_shutdown, NULL);
 		}
