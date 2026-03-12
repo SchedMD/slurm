@@ -496,7 +496,7 @@ extern int add_connection(conmgr_con_type_t type,
 			  conmgr_con_flags_t flags, const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
 			  const char *unix_socket_path, void *tls_conn,
-			  char *tls_cert, void *arg)
+			  const char *tls_cert, void *arg)
 {
 	struct stat in_stat = { 0 };
 	struct stat out_stat = { 0 };
