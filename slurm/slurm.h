@@ -3860,12 +3860,13 @@ typedef struct {
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - step identifier
  * IN signal     - signal number
  * IN flags      - see KILL_JOB_* flags above
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
+extern int slurm_kill_job(slurm_step_id_t step_id, uint16_t signal,
+			  uint16_t flags);
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step
@@ -5271,6 +5272,19 @@ inline static int slurm_allocation_lookup_jid(uint32_t job_id,
 _Generic((id), \
 	slurm_step_id_t: slurm_allocation_lookup, \
 	default: slurm_allocation_lookup_jid)((id), __VA_ARGS__)
+
+inline static int slurm_kill_job_jid(uint32_t job_id, uint16_t signal,
+				     uint16_t flags)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_kill_job(step_id, signal, flags);
+}
+
+#define slurm_kill_job(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_kill_job, \
+	default: slurm_kill_job_jid)((id), __VA_ARGS__)
 
 #ifdef __cplusplus
 }
