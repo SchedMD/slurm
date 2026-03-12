@@ -624,7 +624,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
-					char *tls_cert, void *arg);
+					const char *tls_cert, void *arg);
 
 /*
  * Run connection manager main loop for until shutdown
