@@ -4179,13 +4179,12 @@ extern int slurm_job_node_ready(slurm_step_id_t step_id);
 /*
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
- * IN job_id -  ID of job we want information about
+ * IN step_id - step identifier
  * IN show_flags - job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_job(job_info_msg_t **resp,
-			  uint32_t job_id,
+extern int slurm_load_job(job_info_msg_t **resp, slurm_step_id_t step_id,
 			  uint16_t show_flags);
 
 extern int slurm_load_job_sluid(job_info_msg_t **resp, sluid_t sluid,
@@ -5309,6 +5308,19 @@ inline static int slurm_job_node_ready_jid(uint32_t job_id)
 _Generic((id), \
 	slurm_step_id_t: slurm_job_node_ready, \
 	default: slurm_job_node_ready_jid)((id))
+
+inline static int slurm_load_job_jid(job_info_msg_t **resp, uint32_t job_id,
+				     uint16_t show_flags)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_load_job(resp, step_id, show_flags);
+}
+
+#define slurm_load_job(resp, id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_load_job, \
+	default: slurm_load_job_jid)((resp), (id), __VA_ARGS__)
 
 #ifdef __cplusplus
 }

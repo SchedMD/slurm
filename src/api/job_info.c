@@ -563,9 +563,8 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int
-slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
-		uint16_t show_flags)
+extern int (slurm_load_job)(job_info_msg_t **job_info_msg_pptr,
+			    slurm_step_id_t step_id, uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
 	job_id_msg_t req;
@@ -583,7 +582,7 @@ slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
 
 	memset(&req, 0, sizeof(req));
 	slurm_msg_t_init(&req_msg);
-	req.step_id.job_id = job_id;
+	req.step_id = step_id;
 	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
 	req_msg.data     = &req;
