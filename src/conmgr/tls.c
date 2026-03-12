@@ -263,6 +263,13 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 		con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
 
+		/*
+		 * Now that TLS shutdown is done, continue with normal
+		 * connection shutdown.
+		 */
+		con_unset_flag(con, FLAG_IS_TLS_CONNECTED);
+		close_con(true, con);
+
 		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
