@@ -1525,7 +1525,7 @@ static void _wait_for_allocation_response(slurm_step_id_t *step_id,
 		 */
 		if (msg_type == RESPONSE_RESOURCE_ALLOCATION) {
 			if (slurm_allocation_lookup(
-				    step_id->job_id,
+				    *step_id,
 				    (resource_allocation_response_msg_t **)
 					    resp) >= 0)
 				return;

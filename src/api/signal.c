@@ -246,7 +246,7 @@ extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal)
 	 */
 	if (step_id->step_id == SLURM_BATCH_SCRIPT) {
 		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(step_id->job_id, &alloc_info))
+		if (slurm_allocation_lookup(*step_id, &alloc_info))
 			return -1;
 
 		rc = _signal_batch_script_step(alloc_info, signal);
@@ -301,7 +301,7 @@ extern int slurm_terminate_job_step(slurm_step_id_t *step_id)
 	 */
 	if (step_id->step_id == SLURM_BATCH_SCRIPT) {
 		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(step_id->job_id, &alloc_info))
+		if (slurm_allocation_lookup(*step_id, &alloc_info))
 			return -1;
 
 		rc = _terminate_batch_script_step(alloc_info);

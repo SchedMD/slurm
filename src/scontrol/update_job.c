@@ -55,7 +55,7 @@ static bool	_is_job_id(char *job_str);
 static bool	_is_single_job(char *job_id_str);
 static char *	_job_name2id(char *job_name, uint32_t job_uid);
 static char *	_next_job_id(void);
-static void	_update_job_size(uint32_t job_id);
+static void _update_job_size(slurm_step_id_t step_id);
 
 /* Local variables for managing job IDs */
 static char *local_job_str = NULL;
@@ -1135,7 +1135,7 @@ extern int scontrol_update_job(int argc, char **argv)
 				/* See check above for one job ID */
 				job_msg.step_id.job_id =
 					slurm_atoul(job_msg.job_id_str);
-				_update_job_size(job_msg.step_id.job_id);
+				_update_job_size(job_msg.step_id);
 			}
 			if (rc2 != SLURM_SUCCESS) {
 				rc2 = errno;
@@ -1223,7 +1223,7 @@ extern int scontrol_job_notify(int argc, char **argv)
 		return 0;
 }
 
-static void _update_job_size(uint32_t job_id)
+static void _update_job_size(slurm_step_id_t step_id)
 {
 	resource_allocation_response_msg_t *alloc_info;
 	char *fname_csh = NULL, *fname_sh = NULL;
@@ -1232,8 +1232,7 @@ static void _update_job_size(uint32_t job_id)
 	if (!getenv("SLURM_JOBID"))
 		return;		/* No job environment here to update */
 
-	if (slurm_allocation_lookup(job_id, &alloc_info) !=
-	    SLURM_SUCCESS) {
+	if (slurm_allocation_lookup(step_id, &alloc_info) != SLURM_SUCCESS) {
 		if (errno != ESLURM_ALREADY_DONE) {
 			slurm_perror("slurm_allocation_lookup");
 			return;
@@ -1243,8 +1242,8 @@ static void _update_job_size(uint32_t job_id)
 		alloc_info->node_list = xstrdup("");
 	}
 
-	xstrfmtcat(fname_csh, "slurm_job_%u_resize.csh", job_id);
-	xstrfmtcat(fname_sh,  "slurm_job_%u_resize.sh", job_id);
+	xstrfmtcat(fname_csh, "slurm_job_%u_resize.csh", step_id.job_id);
+	xstrfmtcat(fname_sh, "slurm_job_%u_resize.sh", step_id.job_id);
 	(void) unlink(fname_csh);
 	(void) unlink(fname_sh);
  	if (!(resize_csh = fopen(fname_csh, "w"))) {
