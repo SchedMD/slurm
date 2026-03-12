@@ -234,7 +234,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 		i += 1;
 
-		rc = slurm_job_node_ready(alloc->step_id.job_id);
+		rc = slurm_job_node_ready(alloc->step_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 

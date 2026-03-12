@@ -445,7 +445,7 @@ extern void check_allocation(conmgr_callback_args_t conmgr_args, void *arg)
 		      __func__, &state.step_id);
 		unlock_state();
 	}
-	rc = slurm_job_node_ready(step_id.job_id);
+	rc = slurm_job_node_ready(step_id);
 	if ((rc == READY_JOB_ERROR) || (rc == EAGAIN)) {
 		delay *= 2;
 		if ((delay < 0) || (delay > MAX_DELAY))

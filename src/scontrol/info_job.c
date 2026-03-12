@@ -2450,7 +2450,7 @@ extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 	return SLURM_SUCCESS;
 }
 
-static int _wait_nodes_ready(uint32_t job_id)
+static int _wait_nodes_ready(slurm_step_id_t step_id)
 {
 	int is_ready = SLURM_ERROR, i, rc = 0;
 	int cur_delay = 0;
@@ -2469,7 +2469,7 @@ static int _wait_nodes_ready(uint32_t job_id)
 			cur_delay += POLL_SLEEP;
 		}
 
-		rc = slurm_job_node_ready(job_id);
+		rc = slurm_job_node_ready(step_id);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -2484,11 +2484,11 @@ static int _wait_nodes_ready(uint32_t job_id)
 		}
 	}
 	if (is_ready == SLURM_SUCCESS)
-     		info("Nodes are ready for job %u", job_id);
+		info("Nodes are ready for job %u", step_id.job_id);
 	else if ((rc & READY_JOB_STATE) == 0)
-		info("Job %u no longer running", job_id);
+		info("Job %u no longer running", step_id.job_id);
 	else
-		info("Problem running job %u", job_id);
+		info("Problem running job %u", step_id.job_id);
 
 	return is_ready;
 }
@@ -2501,14 +2501,16 @@ static int _wait_nodes_ready(uint32_t job_id)
 extern int scontrol_job_ready(char *job_id_str)
 {
 	uint32_t job_id;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	job_id = atoi(job_id_str);
 	if (job_id <= 0) {
 		fprintf(stderr, "Invalid job_id %s", job_id_str);
 		return SLURM_ERROR;
 	}
+	step_id.job_id = job_id;
 
-	return _wait_nodes_ready(job_id);
+	return _wait_nodes_ready(step_id);
 }
 
 extern int scontrol_callerid(int argc, char **argv)

@@ -1054,7 +1054,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 		i += 1;
 
-		rc = slurm_job_node_ready(alloc->step_id.job_id);
+		rc = slurm_job_node_ready(alloc->step_id);
 
 		slurm_mutex_lock(&salloc_destroy_sig_lock);
 		tmp_salloc_destroy_sig = salloc_destroy_sig;
