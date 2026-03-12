@@ -2358,23 +2358,24 @@ no_job:
 }
 
 /* Wrapper for slurm_kill_job() */
-static uint32_t _kill_job(uint32_t job_id)
+static uint32_t _kill_job(slurm_step_id_t step_id)
 {
 	/*
 	 * If we have a meta array job, kill only it and not the whole array
 	 * job.
 	 */
-	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK);
+	return slurm_kill_job(step_id, SIGKILL, KILL_ARRAY_TASK);
 }
 
 /* Wrapper for slurm_kill_job() */
-static uint32_t _kill_fail_job(uint32_t job_id)
+static uint32_t _kill_fail_job(slurm_step_id_t step_id)
 {
 	/*
 	 * If we have a meta array job, kill only it and not the whole array
 	 * job.
 	 */
-	return slurm_kill_job(job_id, SIGKILL, KILL_ARRAY_TASK | KILL_FAIL_JOB);
+	return slurm_kill_job(step_id, SIGKILL,
+			      (KILL_ARRAY_TASK | KILL_FAIL_JOB));
 }
 
 static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
@@ -2383,21 +2384,20 @@ static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 	requeue_msg_t req_msg = { { 0 } };
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
-	uint32_t job_id = step_id->job_id;
+	slurm_step_id_t kill_step_id = *step_id;
 
 	if (het_job_id && (het_job_id != NO_VAL))
-		job_id = het_job_id;
+		kill_step_id.job_id = het_job_id;
 
 	slurm_msg_t_init(&resp_msg);
 
 	if (slurm_rc == ESLURMD_CREDENTIAL_REVOKED)
-		return _kill_job(job_id);
+		return _kill_job(kill_step_id);
 	if (slurm_rc == ESPANK_JOB_FAILURE)
-		return _kill_fail_job(job_id);
+		return _kill_fail_job(kill_step_id);
 
 	/* Try to requeue the job. If that doesn't work, kill the job. */
-	req_msg.step_id = *step_id;
-	req_msg.step_id.job_id = job_id;
+	req_msg.step_id = kill_step_id;
 	req_msg.job_id_str = NULL;
 	req_msg.flags = JOB_LAUNCH_FAILED;
 	if (slurm_rc == ESLURMD_SETUP_ENVIRONMENT_ERROR)
@@ -2421,10 +2421,10 @@ static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 			char *buf = NULL;
 			xstrfmtcat(buf, "Prolog failure on node %s",
 				   conf->node_name);
-			slurm_notify_job(job_id, buf);
+			slurm_notify_job(kill_step_id.job_id, buf);
 			xfree(buf);
 		}
-		rpc_rc = _kill_job(job_id);
+		rpc_rc = _kill_job(kill_step_id);
 	}
 
 	return rpc_rc;
