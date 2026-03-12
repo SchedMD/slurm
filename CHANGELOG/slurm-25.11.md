@@ -1,3 +1,31 @@
+## Changes in 25.11.4
+
+* slurmrestd - Remove ExecReload from unit file since the daemon does not handle SIGHUP (reload would terminate the process).
+* Prevent "period_start should already be set" errors when purging slurmdbd data and fix file names for archives of purged slurmdbd data.
+* Skip x11 shutdown when x11 functionality was not requested.
+* Fix build errors with recent versions of libcurl (8.16+).
+* Fix scrun segfault with step_mgr and if environment is set.
+* Fix two memory leaks located in the job info struct.
+* Fix sacct not accepting -R flag.
+* switch/nvidia_imex - Fix parsing of --network=unique-channel-per-segment option.
+* topology/block - Fix parsing of --network=unique-channel-per-segment option.
+* Fix compile errors building against glibc-2.43
+* Prevent potential race that could cause process/script completion to go undetected. In the case of prolog/epilog, this would leave jobs stuck in CG state on nodes running many concurrent jobs. In the case of --get-user-env, it may time out resulting in jobs being requeued and held.
+* switch/nvidia_imex - fix use-after-free when switch plugin debug logging is enabled.
+* Fix bad umask() if switch/nvidia_imex fails to initialize.
+* switch/nvidia_imex - fix memory leak if imex_dev_major is set.
+* switch/nvidia_imex - fix potential memory leaks when unpacking the jobinfo structure.
+* switch/nvidia_imex - prevent job from starting when imex channel allocation fails.
+* When bf_continue is set, prevent backfill from potentially ending its cycle early due to the reason "System state changed" because of a node state change.
+* Fix underflow in GRES selection when RestrictedCoresPerGPU is configured and the job is exclusive.
+* Fix race on reconfigure that caused slurmctld to crash.
+* Docs - Update the version constraints for libjwt to reflect the fact that only 1.x may be used with Slurm.
+* Fix case when using sacctmgr where user assoc failed to be removed when removing an account with parent specified.
+* cgroup/v2 - Fix issue which caused memory.peak to be inconsistently used.
+* Prevent flex reservations from taking nodes from other reservations if those reservations do not request full nodes.
+* Fix slurmctld crash situation with srun --overcommit.
+* Adding log message to notify user of queries which are too large
+
 ## Changes in 25.11.3
 
 * Fix regression from af2c0bd which caused usercpu and systemcpu to be missing for job steps.
