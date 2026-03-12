@@ -1,3 +1,13 @@
+## Changes in 25.05.7
+
+* Fix regression from af2c0bd which caused usercpu and systemcpu to be missing for job steps.
+* slurmd - Fix regression that could cause thread limits to not be enforced for handling incoming RPCs.
+* Fix "undefined symbol: gpu_common_underscorify_tolower" when gpu/nrt plugin in use.
+* Fix CLOUD nodes infrequently becoming FUTURE on slurmctld restart.
+* slurmrestd - Remove ExecReload from unit file since the daemon does not handle SIGHUP (reload would terminate the process).
+* Fix compile errors building against glibc-2.43
+* Fix race on reconfigure that caused slurmctld to crash.
+
 ## Changes in 25.05.6
 
 * Updating a job's qos will always replace the previous timelimit with the new qos' timelimit, unless another time limit is explicitly specified in the update command.
