@@ -3899,11 +3899,11 @@ extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - step identifier
  * IN signal     - signal number
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
+extern int slurm_signal_job(slurm_step_id_t step_id, uint16_t signal);
 
 /*
  * slurm_signal_job_step - send the specified signal to an existing job step
@@ -5285,6 +5285,18 @@ inline static int slurm_kill_job_jid(uint32_t job_id, uint16_t signal,
 _Generic((id), \
 	slurm_step_id_t: slurm_kill_job, \
 	default: slurm_kill_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_signal_job_jid(uint32_t job_id, uint16_t signal)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_signal_job(step_id, signal);
+}
+
+#define slurm_signal_job(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_signal_job, \
+	default: slurm_signal_job_jid)((id), __VA_ARGS__)
 
 #ifdef __cplusplus
 }

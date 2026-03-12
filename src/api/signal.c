@@ -198,25 +198,24 @@ static int _terminate_job_step(const job_step_info_t *step)
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - the step_id related to the job to signal
  * IN signal     - signal number
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int
-slurm_signal_job (uint32_t job_id, uint16_t signal)
+extern int (slurm_signal_job)(slurm_step_id_t step_id, uint16_t signal)
 {
 	int rc = SLURM_SUCCESS;
 	resource_allocation_response_msg_t *alloc_info = NULL;
 	signal_tasks_msg_t rpc;
 
-	if (slurm_allocation_lookup(job_id, &alloc_info)) {
+	if (slurm_allocation_lookup(step_id, &alloc_info)) {
 		rc = errno;
 		goto fail1;
 	}
 
 	/* same remote procedure call for each node */
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.step_id.job_id = job_id;
+	rpc.step_id = step_id;
 	rpc.step_id.step_id = NO_VAL;
 	rpc.step_id.step_het_comp = NO_VAL;
 	rpc.signal = signal;
