@@ -159,6 +159,7 @@ static struct {
 		event_signal_t assigned_ack;
 		event_signal_t end;
 		event_signal_t zombie;
+		event_signal_t join;
 	} events;
 
 	struct {
@@ -263,7 +264,7 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 
 		xassert(!thread->detached);
 		thread->detached = true;
-		EVENT_BROADCAST(&threadpool.events.zombie);
+		EVENT_BROADCAST(&threadpool.events.join);
 
 		HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
 		rc = SLURM_SUCCESS;
@@ -435,7 +436,7 @@ static void _threadpool_zombie(thread_t *thread)
 
 	while (!thread->detached) {
 		EVENT_BROADCAST(&threadpool.events.zombie);
-		EVENT_WAIT(&threadpool.events.zombie, &threadpool.mutex);
+		EVENT_WAIT(&threadpool.events.join, &threadpool.mutex);
 	}
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_THREAD) && start_ts.tv_sec) {
