@@ -11831,6 +11831,10 @@ static const parser_t parsers[] = {
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
+
+	/* alias parsers */
+	/* Can remove OPENAPI_PARTITION_PARAM_ALIAS once v0.0.44 is removed */
+	addalias(OPENAPI_PARTITION_PARAM_ALIAS, OPENAPI_PARTITION_PARAM),
 };
 #undef addpl
 #undef addps

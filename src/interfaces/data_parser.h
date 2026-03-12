@@ -461,6 +461,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PARTITION_RESP_PTR, /* openapi_resp_partitions_info_msg_t* */
 	DATA_PARSER_OPENAPI_PARTITION_PARAM, /* openapi_partition_param_t */
 	DATA_PARSER_OPENAPI_PARTITION_PARAM_PTR, /* openapi_partition_param_t* */
+	DATA_PARSER_OPENAPI_PARTITION_PARAM_ALIAS, /* openapi_partition_param_t - needed to separate v4[2-4] from v45 */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY, /* openapi_partitions_query_t */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY_PTR, /* openapi_partitions_query_t* */
 	DATA_PARSER_OPENAPI_PARTITIONS_MOD_REQ, /* openapi_partitions_mod_t */
