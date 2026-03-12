@@ -3615,12 +3615,12 @@ extern list_t *slurm_allocate_het_job_blocking(
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource
  *			     allocation
- * IN job_id - job allocation identifier
+ * IN step_id - step identifier
  * OUT resp - job allocation information
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-extern int slurm_allocation_lookup(uint32_t job_id,
+extern int slurm_allocation_lookup(slurm_step_id_t step_id,
 				   resource_allocation_response_msg_t **resp);
 
 /*
@@ -5251,6 +5251,26 @@ extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
 							   list_t *jobs);
 
 extern int slurm_remove_crontab(uid_t uid, gid_t gid);
+
+/*
+ * Backward compatibility wrappers for external consumers.
+ * Define SLURM_BACKWARD_COMPAT before including slurm.h to enable _Generic,
+ * which will allow uint32_t job_id arguments where slurm_step_id_t is now
+ * required. Requires C11 or later.
+ */
+inline static int slurm_allocation_lookup_jid(uint32_t job_id,
+					      resource_allocation_response_msg_t
+						      **resp)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_allocation_lookup(step_id, resp);
+}
+
+#define slurm_allocation_lookup(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_allocation_lookup, \
+	default: slurm_allocation_lookup_jid)((id), __VA_ARGS__)
 
 #ifdef __cplusplus
 }
