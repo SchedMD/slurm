@@ -641,14 +641,19 @@ slurm_load_jobs(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 
 int
 slurm_notify_job(slurm_t self, uint32_t job_id, char *message)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, message
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_notify_job(step_id, message);
+	OUTPUT:
+		RETVAL
 
 #
 # $job_id = $slurm->pid2jobid($job_pid);
