@@ -2185,8 +2185,7 @@ static void _create_msg_socket(void)
 	int rc;
 	static const conmgr_con_flags_t flags =
 		(CON_FLAG_RPC_RECV_FORWARD | CON_FLAG_RPC_KEEP_BUFFER |
-		 CON_FLAG_QUIESCE | CON_FLAG_WATCH_WRITE_TIMEOUT |
-		 CON_FLAG_WATCH_READ_TIMEOUT | CON_FLAG_WATCH_CONNECT_TIMEOUT);
+		 CON_FLAG_QUIESCE);
 
 	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
 		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
