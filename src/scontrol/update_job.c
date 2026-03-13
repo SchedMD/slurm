@@ -225,6 +225,7 @@ scontrol_hold(char *op, char *job_str)
 	char *job_name = NULL;
 	char *job_id_str = NULL;
 	slurm_job_info_t *job_ptr;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (job_str && !xstrncasecmp(job_str, "JobID=", 6))
 		job_str += 6;
@@ -299,7 +300,10 @@ scontrol_hold(char *op, char *job_str)
 	}
 
 	if (last_job_id != job_id) {
-		if (scontrol_load_job(&jobs, 0, job_id)) {
+		step_id.job_id = job_id;
+		step_id.sluid = 0;
+
+		if (scontrol_load_job(&jobs, step_id)) {
 			if (quiet_flag == -1)
 				slurm_perror ("slurm_load_job error");
 			return 1;
@@ -1480,10 +1484,15 @@ static char *_job_name2id(char *job_name, uint32_t job_uid)
 	job_info_msg_t *resp;
 	slurm_job_info_t *job_ptr;
 	char *job_id_str = NULL, *sep = "";
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	xassert(job_name);
 
-	rc = scontrol_load_job(&resp, 0, 0);
+	/* All jobs */
+	step_id.sluid = 0;
+	step_id.job_id = 0;
+
+	rc = scontrol_load_job(&resp, step_id);
 	if (rc == SLURM_SUCCESS) {
 		if (resp->record_count == 0) {
 			error("JobName %s not found", job_name);

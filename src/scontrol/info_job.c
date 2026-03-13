@@ -1184,13 +1184,15 @@ static void _print_step_info(job_step_info_t *job_step_ptr)
 }
 
 /* Load current job table information into *job_buffer_pptr */
-extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
-			     uint32_t job_id)
+extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr,
+			     slurm_step_id_t step_id)
 {
 	int error_code;
 	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
 	job_info_msg_t * job_info_ptr = NULL;
+	uint32_t job_id = step_id.job_id;
+	sluid_t sluid = step_id.sluid;
 
 	if (all_flag)
 		show_flags |= SHOW_ALL;
@@ -1208,7 +1210,7 @@ extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
 		if (last_show_flags != show_flags)
 			old_job_info_ptr->last_update = (time_t) 0;
 		if (job_id) {
-			error_code = slurm_load_job(&job_info_ptr, job_id,
+			error_code = slurm_load_job(&job_info_ptr, step_id,
 						    show_flags);
 		} else {
 			error_code = slurm_load_jobs(
@@ -1227,7 +1229,7 @@ extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
 		error_code =
 			slurm_load_job_sluid(&job_info_ptr, sluid, show_flags);
 	} else if (job_id) {
-		error_code = slurm_load_job(&job_info_ptr, job_id, show_flags);
+		error_code = slurm_load_job(&job_info_ptr, step_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,
 					     show_flags);
@@ -1291,8 +1293,13 @@ scontrol_print_completing (void)
 	job_info_msg_t  *job_info_msg;
 	job_info_t      *job_info;
 	node_info_msg_t *node_info_msg;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
-	error_code = scontrol_load_job(&job_info_msg, 0, 0);
+	/* All jobs */
+	step_id.job_id = 0;
+	step_id.sluid = 0;
+
+	error_code = scontrol_load_job(&job_info_msg, step_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -1410,6 +1417,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	/* check for valid SLUID first */
 	sluid = str2sluid(job_id_str);
@@ -1437,7 +1445,9 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			het_job_offset = strtol(end_ptr + 1, &end_ptr, 10);
 	}
 
-	error_code = scontrol_load_job(&job_buffer_ptr, sluid, job_id);
+	step_id.sluid = sluid;
+	step_id.job_id = job_id;
+	error_code = scontrol_load_job(&job_buffer_ptr, step_id);
 
 	if (mime_type) {
 		openapi_resp_job_info_msg_t resp = {
