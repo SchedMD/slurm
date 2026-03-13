@@ -1204,6 +1204,7 @@ extern int scontrol_job_notify(int argc, char **argv)
 	int i;
 	uint32_t job_id;
 	char *message = NULL;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	job_id = atoi(argv[0]);
 	if (job_id <= 0) {
@@ -1218,7 +1219,8 @@ extern int scontrol_job_notify(int argc, char **argv)
 			xstrcat(message, argv[i]);
 	}
 
-	i = slurm_notify_job(job_id, message);
+	step_id.job_id = job_id;
+	i = slurm_notify_job(step_id, message);
 	xfree(message);
 
 	if (i)

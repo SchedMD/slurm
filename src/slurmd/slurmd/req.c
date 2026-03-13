@@ -2421,7 +2421,7 @@ static int _launch_job_fail(slurm_step_id_t *step_id, uint32_t het_job_id,
 			char *buf = NULL;
 			xstrfmtcat(buf, "Prolog failure on node %s",
 				   conf->node_name);
-			slurm_notify_job(kill_step_id.job_id, buf);
+			slurm_notify_job(kill_step_id, buf);
 			xfree(buf);
 		}
 		rpc_rc = _kill_job(kill_step_id);
