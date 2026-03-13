@@ -1340,10 +1340,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 	if (part_desc->preempt_mode != NO_VAL16) {
 		if (!(part_desc->preempt_mode & PREEMPT_MODE_GANG)) {
-			uint16_t new_mode;
-
-			new_mode =
-				part_desc->preempt_mode & (~PREEMPT_MODE_GANG);
+			uint16_t new_mode = part_desc->preempt_mode;
 
 			if (new_mode <= PREEMPT_MODE_CANCEL) {
 				/*
