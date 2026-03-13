@@ -5253,6 +5253,7 @@ extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
 
 extern int slurm_remove_crontab(uid_t uid, gid_t gid);
 
+#ifdef SLURM_BACKWARD_COMPAT
 /*
  * Backward compatibility wrappers for external consumers.
  * Define SLURM_BACKWARD_COMPAT before including slurm.h to enable _Generic,
@@ -5445,6 +5446,8 @@ inline static int slurm_requeue_jid(uint32_t job_id, uint32_t flags)
 _Generic((id), \
 	slurm_step_id_t: slurm_requeue, \
 	default: slurm_requeue_jid)((id), __VA_ARGS__)
+
+#endif /* SLURM_BACKWARD_COMPAT */
 
 #ifdef __cplusplus
 }
