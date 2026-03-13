@@ -316,6 +316,21 @@ $ sacctmgr show resource withclusters
 by adding <i>AllResourcesAbsolute=yes</i> to <i>slurmdbd.conf</i> (and restarting
 SlurmDBD to make the change take effect).</p>
 
+<p>Starting with Slurm 26.05, the flag <i>SharedPool</i> allows each cluster
+to access the full license pool. Normally each cluster must have a specific
+<i>Allowed</i> count or percentage of licenses that it can access;
+<i>SharedPool</i> removes that requirement. Because multiple clusters can each
+schedule up to <i>Count</i> licenses, one cluster may exhaust the pool and
+cause jobs at another cluster to stall waiting for licenses. It is strongly
+recommended to use <a href="#dynamic_licenses">Dynamic Licenses</a> so that
+real-time usage from the license server is reflected in scheduling decisions.</p>
+
+<p><i>SharedPool</i> requires that each cluster's <i>Allowed</i> be either 0
+or the full <i>Count</i>/100%. Partial shares are not supported because
+they conflict with how <i>LastConsumed</i> (the count reported by the license
+server) is applied across clusters.
+</p>
+
 <h2 id="dynamic_licenses">Dynamic Licenses
 <a class="slurm_link" href="#dynamic_licenses"></a>
 </h2>
