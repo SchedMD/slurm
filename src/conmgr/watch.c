@@ -80,7 +80,7 @@ static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
 static handle_connection_args_t *_set_time(handle_connection_args_t *args)
 {
-	if (!args->time.tv_sec)
+	if (timespec_is_zero(args->time))
 		args->time = timespec_now();
 
 	return args;
@@ -91,41 +91,41 @@ static bool _handle_time_limit(handle_connection_args_t *args,
 			       const struct timespec limit, const char *what,
 			       const char *name, const char *caller)
 {
-	const struct timespec deadline = timespec_add(timestamp, limit);
-	bool after, change_max_sleep = false;
+	timespec_t deadline = { 0, 0 };
+
+	xassert(!timespec_is_zero(limit));
+	xassert(!timespec_is_zero(timestamp));
+	xassert(!timespec_is_infinite(timestamp));
 
 	/* Always ignore infinite time limits */
 	if (timespec_is_infinite(limit))
 		return false;
 
-	_set_time(args);
+	deadline = timespec_add(timestamp, limit);
 
-	if (!(after = timespec_is_after(args->time, deadline)))
-		change_max_sleep =
-			(!mgr.watch_max_sleep.tv_sec ||
-			 timespec_is_after(mgr.watch_max_sleep, deadline));
+	(void) _set_time(args);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char str[CTIME_STR_LEN];
-
-		timespec_ctime(limit, false, str, sizeof(str));
-
-		log_flag(CONMGR, "%s->%s: %s%s%s%s %s timeout %s %s",
-			 caller, __func__, (name ? "[" : ""), name,
-			 (name ? "] " : ""),
-			 (change_max_sleep ? "updating watch() sleep" :
-			  "evaluating"),
-			 what, (after ? "triggered" : "ETA"), str);
+	if (!timespec_is_after(deadline, args->time)) {
+		log_flag(CONMGR, "%s->%s: [%s] triggered timeout %s at %s",
+			 caller, __func__, (name ? name : "watch"), what,
+			 TIMESPEC_STR(limit, false));
+		return true;
 	}
 
-	if (after)
-		return true;
+	if (timespec_is_zero(mgr.watch_max_sleep) ||
+	    timespec_is_after(mgr.watch_max_sleep, deadline)) {
+		log_flag(CONMGR, "%s->%s: [%s] reducing watch() sleep to timeout %s ETA %s",
+			 caller, __func__, (name ? name : "watch"),
+			 what, TIMESPEC_STR(limit, false));
 
-	if (change_max_sleep) {
 		mgr.watch_max_sleep = deadline;
 
 		/* Always wake up watch() as if deadline changed */
 		EVENT_SIGNAL(&mgr.watch_sleep);
+	} else {
+		log_flag(CONMGR, "%s->%s: [%s] waiting for timeout %s %s",
+			 caller, __func__, (name ? name : "watch"), what,
+			 TIMESPEC_STR(limit, false));
 	}
 
 	return false;
