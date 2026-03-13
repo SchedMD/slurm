@@ -559,14 +559,19 @@ slurm_get_rem_time(slurm_t self, uint32_t job_id)
 
 int
 slurm_job_node_ready(slurm_t self, uint32_t job_id)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_job_node_ready(step_id);
+	OUTPUT:
+		RETVAL
 
 #
 # $resp = $slurm->load_job($job_id, $show_flags);
