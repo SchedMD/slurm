@@ -19,10 +19,8 @@ The official issue tracker for Slurm is at
 
 :   <https://support.schedmd.com/>
 
-We welcome code contributions and patches, but **we do not accept Pull
-Requests through Github at this time.** Please submit patches as
-attachments to new issues under the \"C - Contributions\" severity
-level.
+We welcome code contributions and patches. Please see
+[the contributing guidelines](CONTRIBUTING.md) for further details.
 
 # SOURCE DISTRIBUTION HIERARCHY
 
