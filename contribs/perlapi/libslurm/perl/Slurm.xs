@@ -579,6 +579,7 @@ slurm_job_node_ready(slurm_t self, uint32_t job_id)
 HV *
 slurm_load_job(slurm_t self, uint32_t job_id, uint16_t show_flags=0)
 	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 		job_info_msg_t *ji_msg;
 		int rc;
 	CODE:
@@ -587,7 +588,8 @@ slurm_load_job(slurm_t self, uint32_t job_id, uint16_t show_flags=0)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_load_job(&ji_msg, job_id, show_flags);
+		step_id.job_id = job_id;
+		rc = slurm_load_job(&ji_msg, step_id, show_flags);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
