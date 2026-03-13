@@ -142,7 +142,8 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
  *	the job from ever running (lowered limits since job submission),
  *	then cancel the job.
  */
-extern int acct_policy_update_pending_job(job_record_t *job_ptr);
+extern int acct_policy_update_pending_job(job_record_t *job_ptr,
+					  bool update_db);
 
 /*
  * acct_policy_job_runnable - Determine of the specified job has timed
