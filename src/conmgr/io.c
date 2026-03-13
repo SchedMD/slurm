@@ -733,7 +733,7 @@ extern int conmgr_con_xfer_in_buffer(conmgr_fd_ref_t *con, buf_t **buffer_ptr)
 	return _con_xfer_in_buffer(con->con, buffer_ptr);
 }
 
-extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
+static int _con_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 {
 	int rc;
 
@@ -754,6 +754,11 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 		set_buf_offset(output, 0);
 
 	return rc;
+}
+
+extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
+{
+	return _con_xfer_out_buffer(con, output);
 }
 
 static int _fd_get_input_fd(conmgr_fd_t *con, int *input_fd_ptr)
