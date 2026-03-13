@@ -1225,10 +1225,7 @@ extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr,
 			if (quiet_flag == -1)
  				printf ("slurm_load_jobs no change in data\n");
 		}
-	} else if (sluid) {
-		error_code =
-			slurm_load_job_sluid(&job_info_ptr, sluid, show_flags);
-	} else if (job_id) {
+	} else if (sluid || job_id) {
 		error_code = slurm_load_job(&job_info_ptr, step_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,

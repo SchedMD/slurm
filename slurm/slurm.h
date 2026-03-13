@@ -4187,8 +4187,8 @@ extern int slurm_job_node_ready(slurm_step_id_t step_id);
 extern int slurm_load_job(job_info_msg_t **resp, slurm_step_id_t step_id,
 			  uint16_t show_flags);
 
-extern int slurm_load_job_sluid(job_info_msg_t **resp, sluid_t sluid,
-				uint16_t show_flags);
+#define slurm_load_job_sluid(resp, _sluid, show_flags) \
+slurm_load_job((resp), ((slurm_step_id_t) { .sluid = (_sluid) }), (show_flags))
 
 /*
  * slurm_load_job_prio - issue RPC to get job priority information for jobs
