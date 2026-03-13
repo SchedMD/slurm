@@ -61,8 +61,7 @@ strong_alias(xsignal_block,	slurm_xsignal_block);
 strong_alias(xsignal_unblock,	slurm_xsignal_unblock);
 strong_alias(xsignal_sigset_create, slurm_xsignal_sigset_create);
 
-SigFunc *
-xsignal(int signo, SigFunc *f)
+extern SigFunc *xsignal(int signo, SigFunc *f)
 {
 	struct sigaction sa, old_sa;
 
