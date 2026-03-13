@@ -327,14 +327,19 @@ slurm_job_will_run(slurm_t self, HV *job_desc)
 ######################################################################
 int
 slurm_kill_job(slurm_t self, uint32_t job_id, uint16_t signal, uint16_t batch_flag=0)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, signal, batch_flag
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_kill_job(step_id, signal, batch_flag);
+	OUTPUT:
+		RETVAL
 
 int
 slurm_signal_job(slurm_t self, uint32_t job_id, uint16_t signal)
