@@ -2192,7 +2192,7 @@ static int _update_assoc_for_each(void *x, void *arg) {
 	job_record_t *job_ptr = x;
 
 	if ((rec == job_ptr->assoc_ptr) && (IS_JOB_PENDING(job_ptr)))
-		acct_policy_update_pending_job(job_ptr);
+		acct_policy_update_pending_job(job_ptr, true);
 
 	return 0;
 }
@@ -2242,7 +2242,7 @@ static int _update_qos_for_each(void *x, void *arg) {
 	job_record_t *job_ptr = x;
 
 	if ((rec == job_ptr->qos_ptr) && (IS_JOB_PENDING(job_ptr)))
-		acct_policy_update_pending_job(job_ptr);
+		acct_policy_update_pending_job(job_ptr, true);
 
 	return 0;
 }
