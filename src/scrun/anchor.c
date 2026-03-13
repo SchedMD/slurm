@@ -1488,7 +1488,8 @@ static int _anchor_child(int pipe_fd[2])
 
 	conmgr_add_work_signal(SIGCHLD, _catch_sigchld, &state);
 
-	if ((rc = conmgr_process_fd(CON_TYPE_RAW, NULL, pipe_fd[1], pipe_fd[1],
+	if ((rc = conmgr_process_fd(CON_TYPE_RAW, &conmgr_timeouts_disabled,
+				    pipe_fd[1], pipe_fd[1],
 				    &conmgr_startup_events, CON_FLAG_NONE, NULL,
 				    0, NULL, NULL)))
 		fatal("%s: unable to initialize RPC listener: %s",
