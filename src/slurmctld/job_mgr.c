@@ -2576,6 +2576,9 @@ extern job_record_t *find_job(const slurm_step_id_t *step_id)
 		return job_ptr;
 	}
 
+	if (step_id->job_id == NO_VAL)
+		return NULL;
+
 	return find_job_record(step_id->job_id);
 }
 
