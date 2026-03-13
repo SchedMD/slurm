@@ -1119,6 +1119,7 @@ extern bool conmgr_is_quiesced(void);
  */
 #define CONMGR_CON_LINK(src, dst) \
 	do { \
+		xassert(!(dst)); \
 		(dst) = conmgr_con_link(src); \
 	} while (false); \
 /*
