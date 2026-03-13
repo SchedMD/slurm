@@ -569,7 +569,7 @@ int main(int argc, char **argv)
 		slurm_mutex_unlock(&my_job_id_lock);
 
 		return 1;
- 	}
+	}
 	allocation_state = GRANTED;
 	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
@@ -1095,7 +1095,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			slurm_mutex_unlock(&salloc_destroy_sig_lock);
 		} else
 			error("Nodes %s are still not ready", alloc->node_list);
-	} else /* caught destroy signal or slurmctld not responing */
+	} else /* caught destroy signal or slurmctld not responding */
 		is_ready = 0;
 
 	return is_ready;
