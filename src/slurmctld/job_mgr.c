@@ -13670,6 +13670,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
 		update_accounting = true;
 		acct_policy_add_job_submit(job_ptr, false);
+		acct_policy_update_pending_job(job_ptr, false);
 	}
 
 	if (new_resv_ptr) {
