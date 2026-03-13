@@ -389,8 +389,7 @@ def module_teardown():
 
             # If coredump is not a known issue, reported as a failure.
             # Otherwise a new reason will be appended to xfailures.
-            if not atf.is_xfail_coredump(bin_path, bt_file, xfailures):
-                failures.append(f"Unknown coredump detected: {coredump}")
+            atf.classify_coredump(bin_path, bt_file, failures, xfailures)
 
         # Save logs dir for the test and restore the orifinal
         atf.run_command(
