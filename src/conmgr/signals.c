@@ -235,6 +235,9 @@ static void *_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	_init_signal_handler();
 	signal_con = con;
 
+	log_flag(CONMGR, "%s: [%s] registering signal pipe",
+			 __func__, conmgr_con_get_name(conmgr_args.ref));
+
 	slurm_rwlock_unlock(&lock);
 
 	return con;
@@ -282,6 +285,9 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xassert(conmgr_args.con == signal_con);
 	signal_con = NULL;
+
+	log_flag(CONMGR, "%s: [%s] closed signal pipe",
+			 __func__, conmgr_con_get_name(conmgr_args.ref));
 
 	slurm_rwlock_unlock(&lock);
 }
