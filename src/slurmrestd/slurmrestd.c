@@ -862,10 +862,11 @@ int main(int argc, char **argv)
 
 	if (!run_mode.listen) {
 		inetd_mode = true;
-		if ((rc = conmgr_process_fd(CON_TYPE_RAW, NULL, STDIN_FILENO,
-					    STDOUT_FILENO, http_events_get(),
-					    flags, NULL, 0, NULL,
-					    operations_router)))
+		if ((rc = conmgr_process_fd(CON_TYPE_RAW,
+					    &conmgr_timeouts_disabled,
+					    STDIN_FILENO, STDOUT_FILENO,
+					    http_events_get(), flags, NULL, 0,
+					    NULL, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
 
@@ -874,7 +875,8 @@ int main(int argc, char **argv)
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
-		if (conmgr_create_listen_sockets(NULL, CON_TYPE_RAW, flags,
+		if (conmgr_create_listen_sockets(&conmgr_timeouts_disabled,
+						 CON_TYPE_RAW, flags,
 						 socket_listen,
 						 http_events_get(),
 						 operations_router))
