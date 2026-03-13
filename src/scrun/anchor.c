@@ -667,9 +667,10 @@ static void _queue_send_console_socket(void)
 		fatal("%s: [%s] Unable to connect() to console socket: %m",
 		      __func__, addr.sun_path);
 
-	if ((rc = conmgr_process_fd(CON_TYPE_RAW, NULL, fd, fd, &events,
-				    CON_FLAG_NONE, (slurm_addr_t *) &addr,
-				    sizeof(addr), NULL, NULL)))
+	if ((rc = conmgr_process_fd(CON_TYPE_RAW, &conmgr_timeouts_disabled, fd,
+				    fd, &events, CON_FLAG_NONE,
+				    (slurm_addr_t *) &addr, sizeof(addr), NULL,
+				    NULL)))
 		fatal("%s: [%s] unable to initialize console socket: %s",
 		      __func__, addr.sun_path, slurm_strerror(rc));
 
