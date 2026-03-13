@@ -1315,14 +1315,19 @@ slurm_resume(slurm_t self, uint32_t job_id)
 
 int
 slurm_requeue(slurm_t self, uint32_t job_id, uint32_t state)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, state
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_requeue(step_id, state);
+	OUTPUT:
+		RETVAL
 
 
 ######################################################################

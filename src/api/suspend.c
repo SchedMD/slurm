@@ -160,7 +160,7 @@ extern int slurm_resume2(char *job_id, job_array_resp_msg_t **resp)
 /*
  * slurm_requeue - re-queue a batch job, if already running
  *	then terminate it first
- * IN job_id  - job on which to perform operation
+ * IN step_id - job identifier on which to perform operation
  * IN flags - JOB_SPECIAL_EXIT - job should be placed special exit state and
  *		  held.
  *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
