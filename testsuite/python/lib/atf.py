@@ -160,6 +160,23 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
+    reason = "Ticket 22326: Known issue in slurmdbd: SIGABORT in  _list_find_first_lock(): Assertion (l != NULL)"
+    component = "sbin/slurmdbd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/list.c" in bt
+        and "src/slurmdbd/proc_req.c" in bt
+        and "_list_find_first_lock" in bt
+        and "_process_service_connection" in bt
+        and "l != NULL" in bt
+    ):
+        if get_version(component) >= (25, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED)"
     component = "sbin/slurmdbd"
     if (
