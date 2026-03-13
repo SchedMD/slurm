@@ -718,6 +718,21 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con, buf_t **buffer_ptr)
 	return _con_xfer_in_buffer(con, buffer_ptr);
 }
 
+extern int conmgr_con_xfer_in_buffer(conmgr_fd_ref_t *con, buf_t **buffer_ptr)
+{
+	xassert(buffer_ptr);
+	if (!buffer_ptr)
+		return EINVAL;
+
+	if (!con)
+		return EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	return _con_xfer_in_buffer(con->con, buffer_ptr);
+}
+
 extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 {
 	int rc;

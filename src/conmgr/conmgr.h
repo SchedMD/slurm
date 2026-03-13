@@ -875,6 +875,21 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 				    buf_t **buffer_ptr);
 
 /*
+ * Transfer incoming data into a buf_t
+ * WARNING: Only call this from inside of on_data() callback
+ * IN con - connection to query data
+ * IN buffer_ptr - pointer to buf_t to add/set with incoming data
+ * 	if *buffer_ptr is NULL, then a new buf_t will be created and caller must
+ * 	call FREE_NULL_BUFFER()
+ * 	if buffer->size is too small, then buffer will be grown to sufficient
+ * 	size.
+ * 	buffer->processed will not be changed
+ * 	if buffer->head is NULL, it will be set with a new xmalloc() buffer.
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_xfer_in_buffer(conmgr_fd_ref_t *con, buf_t **buffer_ptr);
+
+/*
  * Transfer outgoing data to connection from buf_t
  * NOTE: type=CON_TYPE_RAW only
  * IN con - connection manager connection struct
