@@ -860,6 +860,7 @@ extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
 
 /*
  * Transfer incoming data into a buf_t
+ * WARNING: Only call this from inside of on_data() callback
  * IN con - connection to query data
  * IN buffer_ptr - pointer to buf_t to add/set with incoming data
  * 	if *buffer_ptr is NULL, then a new buf_t will be created and caller must
