@@ -1406,6 +1406,198 @@ def test_partitions(slurm):
     assert resp.partitions
 
 
+def test_post_partitions(slurm, admin_level):
+    from openapi_client.models.v0045_openapi_partitions_mod_req import (
+        V0045OpenapiPartitionsModReq,
+    )
+    from openapi_client.models.v0045_partition_info import V0045PartitionInfo
+    from openapi_client.models.v0045_partition_info_nodes import V0045PartitionInfoNodes
+    from openapi_client.models.v0045_partition_info_defaults import (
+        V0045PartitionInfoDefaults,
+    )
+    from openapi_client.models.v0045_uint64_no_val_struct import V0045Uint64NoValStruct
+    from openapi_client.models.v0045_partition_info_maximums import (
+        V0045PartitionInfoMaximums,
+    )
+    from openapi_client.models.v0045_partition_info_maximums_oversubscribe import (
+        V0045PartitionInfoMaximumsOversubscribe,
+    )
+
+    part_1_name = "part_1"
+    part_2_name = "part_2"
+
+    nodes = list(atf.get_nodes().keys())
+    part_1_nodes = atf.run_command_output(
+        f"scontrol show hostlist {','.join(nodes[0:5])}"
+    ).strip()
+    part_2_nodes = atf.run_command_output(
+        f"scontrol show hostlist {','.join(nodes[5:10])}"
+    ).strip()
+
+    req = V0045OpenapiPartitionsModReq(
+        partitions=[
+            V0045PartitionInfo(
+                name=part_1_name,
+                nodes=V0045PartitionInfoNodes(configured=part_1_nodes),
+                flags=[
+                    "HIDDEN",
+                    "NO_ROOT",
+                    "ROOT_ONLY",
+                    "REQ_RESV",
+                    "LLN",
+                    "EXCLUSIVE_USER",
+                    "EXCLUSIVE_TOPO",
+                    "PDOI",
+                ],
+                preempt_mode=[
+                    "REQUEUE",
+                ],
+                defaults=V0045PartitionInfoDefaults(
+                    partition_memory_per_cpu=V0045Uint64NoValStruct(
+                        set=True,
+                        number=10,
+                    ),
+                ),
+                maximums=V0045PartitionInfoMaximums(
+                    oversubscribe=V0045PartitionInfoMaximumsOversubscribe(
+                        flags=["force"], jobs=5
+                    )
+                ),
+            ),
+            V0045PartitionInfo(
+                name=part_2_name,
+                nodes=V0045PartitionInfoNodes(configured=part_2_nodes),
+                flags=[
+                    "LLN",
+                ],
+                preempt_mode=["DISABLED"],
+                defaults=V0045PartitionInfoDefaults(
+                    partition_memory_per_node=V0045Uint64NoValStruct(
+                        set=True,
+                        number=12,
+                    )
+                ),
+                maximums=V0045PartitionInfoMaximums(
+                    oversubscribe=V0045PartitionInfoMaximumsOversubscribe(jobs=6)
+                ),
+            ),
+        ]
+    )
+
+    # Create partitions part_1 and part_2
+    resp = slurm.slurm_v0045_post_partitions(req)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    # Check that they were created
+    resp = slurm.slurm_v0045_get_partitions()
+    assert len(resp.errors) == 0
+    match_cnt = 0
+    inx = 0
+    for part in resp.partitions:
+        if part.name == part_1_name:
+            inx = 0
+        elif part.name == part_2_name:
+            inx = 1
+        else:
+            continue
+
+        match_cnt += 1
+
+        assert (
+            req.partitions[inx].nodes.configured == part.nodes.configured
+        ), "Partition was not created with the correct nodes"
+        assert set(req.partitions[inx].flags) == set(
+            part.flags
+        ), "Partition was not create with the correct flags"
+        assert set(req.partitions[inx].preempt_mode) == set(
+            part.preempt_mode
+        ), "Partition was not create with the correct PreemptMode"
+        if req.partitions[inx].defaults.partition_memory_per_cpu:
+            assert (
+                req.partitions[inx].defaults.partition_memory_per_cpu.number
+                == part.defaults.partition_memory_per_cpu.number
+            ), "Partition was not create with the correct DefMemPerCpu"
+        if req.partitions[inx].defaults.partition_memory_per_node:
+            assert (
+                req.partitions[inx].defaults.partition_memory_per_node.number
+                == part.defaults.partition_memory_per_node.number
+            ), "Partition was not create with the correct DefMemPerNode"
+        if req.partitions[inx].maximums.oversubscribe.flags:
+            assert (
+                req.partitions[inx].maximums.oversubscribe.flags
+                == part.maximums.oversubscribe.flags
+            ), "Partition was not create with the correct oversubscribe flags"
+        assert (
+            req.partitions[inx].maximums.oversubscribe.jobs
+            == part.maximums.oversubscribe.jobs
+        ), "Partition was not create with the correct oversubscribe jobs count"
+
+    assert match_cnt == 2
+
+    # Test updating
+    req.partitions[0].nodes.configured = part_2_nodes  # swap nodes
+    req.partitions[1].nodes.configured = part_1_nodes
+    req.partitions[0].flags = [  # clear all flags
+        "HIDDEN_CLEAR",
+        "NO_ROOT_CLEAR",
+        "ROOT_ONLY_CLEAR",
+        "REQ_RESV_CLEAR",
+        "LLN_CLEAR",
+        "EXC_USER_CLEAR",
+        "PDOI_CLEAR",
+        "EXC_TOPO_CLEAR",
+    ]
+    req.partitions[1].flags = [  # append HIDDEN to existing LLN
+        "HIDDEN",
+    ]
+
+    resp = slurm.slurm_v0045_post_partitions(req)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+
+    # Check that they were updated
+    resp = slurm.slurm_v0045_get_partitions()
+    assert len(resp.errors) == 0
+    match_cnt = 0
+    for part in resp.partitions:
+        if part.name == part_1_name:
+            inx = 0
+        elif part.name == part_2_name:
+            inx = 1
+        else:
+            continue
+
+        match_cnt += 1
+
+        assert (
+            req.partitions[inx].nodes.configured == part.nodes.configured
+        ), "Partition nodes failed to update"
+        if inx == 0:
+            assert (
+                len(part.flags) == 0
+            ), f"Partition flags were not all cleared during update: {part.flags}"
+        else:
+            assert set(part.flags) == {
+                "HIDDEN",
+                "LLN",
+            }, "Partition flags did not update correctly"
+
+    assert match_cnt == 2
+
+    atf.run_command_output(f"scontrol delete partition {part_1_name}")
+    atf.run_command_output(f"scontrol delete partition {part_2_name}")
+
+
+def test_delete_partition(slurm, admin_level):
+    partition_name = "new_partition"
+    atf.run_command_output(f"scontrol create partitionname={partition_name}")
+    assert partition_name in atf.get_partitions(), "Failed to create partition"
+    resp = slurm.slurm_v0045_delete_partition(partition_name)
+    assert len(resp.warnings) == 0
+    assert len(resp.errors) == 0
+    assert partition_name not in atf.get_partitions(), "Failed to delete partition"
+
+
 def test_nodes(slurm, admin_level):
     from openapi_client.models.v0045_update_node_msg import V0045UpdateNodeMsg
 
