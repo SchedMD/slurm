@@ -1342,7 +1342,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 		if (!(part_desc->preempt_mode & PREEMPT_MODE_GANG)) {
 			uint16_t new_mode = part_desc->preempt_mode;
 
-			if (new_mode <= PREEMPT_MODE_CANCEL) {
+			if ((new_mode & ~PREEMPT_MODE_PRIORITY) <=
+			    PREEMPT_MODE_CANCEL) {
 				/*
 				 * This is a valid mode, but if GANG was enabled
 				 * at cluster level, always leave it set.
