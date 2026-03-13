@@ -674,8 +674,7 @@ extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
 	return _mark_consumed_in_buffer(ref->con, bytes);
 }
 
-extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
-				    buf_t **buffer_ptr)
+static int _con_xfer_in_buffer(const conmgr_fd_t *con, buf_t **buffer_ptr)
 {
 	const void *data = (get_buf_data(con->in) + get_buf_offset(con->in));
 	const size_t bytes = (size_buf(con->in) - get_buf_offset(con->in));
@@ -685,10 +684,7 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
-
 	xassert(buffer_ptr);
-	if (!buffer_ptr)
-		return EINVAL;
 
 	/*
 	 * Create buffer if needed and size it size of the data to copy or the
@@ -711,6 +707,15 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 	/* mark connection input buffer as fully consumed */
 	set_buf_offset(con->in, size_buf(con->in));
 	return SLURM_SUCCESS;
+}
+
+extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con, buf_t **buffer_ptr)
+{
+	xassert(buffer_ptr);
+	if (!buffer_ptr)
+		return EINVAL;
+
+	return _con_xfer_in_buffer(con, buffer_ptr);
 }
 
 extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
