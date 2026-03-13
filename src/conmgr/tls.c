@@ -390,8 +390,7 @@ static int _send(void *io_context, const uint8_t *src, uint32_t len)
 
 	list_append(con->tls_out, buf);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-		con->last_write = timespec_now();
+	con->last_write = timespec_now();
 
 	slurm_mutex_unlock(&mgr.mutex);
 

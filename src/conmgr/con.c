@@ -109,9 +109,6 @@ static const struct {
 	T(FLAG_IS_FIFO),
 	T(FLAG_IS_CHR),
 	T(FLAG_TCP_NODELAY),
-	T(FLAG_WATCH_WRITE_TIMEOUT),
-	T(FLAG_WATCH_READ_TIMEOUT),
-	T(FLAG_WATCH_CONNECT_TIMEOUT),
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
@@ -661,8 +658,8 @@ extern int add_connection(conmgr_con_type_t type,
 
 	fd_change_mode(con, type);
 
-	if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT))
-		con->last_read = timespec_now();
+	/* Always set last_read for connect timeout */
+	con->last_read = timespec_now();
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);

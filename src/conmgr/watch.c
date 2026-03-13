@@ -94,6 +94,10 @@ static bool _handle_time_limit(handle_connection_args_t *args,
 	const struct timespec deadline = timespec_add(timestamp, limit);
 	bool after, change_max_sleep = false;
 
+	/* Always ignore infinite time limits */
+	if (timespec_is_infinite(limit))
+		return false;
+
 	_set_time(args);
 
 	if (!(after = timespec_is_after(args->time, deadline)))
@@ -513,8 +517,7 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 	 */
 	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
-	    _handle_time_limit(args, con->last_write, con->timeouts->write,
+	if (_handle_time_limit(args, con->last_write, con->timeouts->write,
 			       "write", con->name, __func__)) {
 		_on_write_timeout(args, con);
 		return 0;
@@ -637,10 +640,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
-		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
-			_set_time(args);
-			con->last_read = args->time;
-		}
+		_set_time(args);
+		con->last_read = args->time;
 
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
 			/* Query outbound MSS now kernel should know the answer */
@@ -695,8 +696,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
 
-		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
-		    _handle_time_limit(args, con->last_read,
+		if (_handle_time_limit(args, con->last_read,
 				       con->timeouts->connect, "connect",
 				       con->name, __func__)) {
 			_on_connect_timeout(args, con);
@@ -971,7 +971,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		} else {
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 
-			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
+			if (!timespec_is_infinite(con->timeouts->read) &&
 			    list_is_empty(con->write_complete_work) &&
 			    _handle_time_limit(args, con->last_read,
 					       con->timeouts->read, "read",

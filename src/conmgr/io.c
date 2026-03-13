@@ -158,8 +158,7 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 	}
 
 	/* Always update read timestamp on read() success */
-	if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
-		con->last_read = timespec_now();
+	con->last_read = timespec_now();
 
 	if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
@@ -302,8 +301,7 @@ extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 				       &args);
 		xassert(!args.wrote);
 
-		if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-			con->last_write = timespec_now();
+		con->last_write = timespec_now();
 	}
 
 	if (args.iov != iov_stack)
@@ -519,8 +517,7 @@ static int _append_output(conmgr_fd_t *con, buf_t *buf)
 
 	list_append(con->out, buf);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-		con->last_write = timespec_now();
+	con->last_write = timespec_now();
 
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
