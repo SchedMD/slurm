@@ -170,7 +170,7 @@ extern int slurm_resume2(char *job_id, job_array_resp_msg_t **resp)
  *		  CONFIGURING, RUNNING, STOPPED or SUSPENDED.
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue(uint32_t job_id, uint32_t flags)
+extern int (slurm_requeue)(slurm_step_id_t step_id, uint32_t flags)
 {
 	int rc = SLURM_SUCCESS;
 	requeue_msg_t requeue_req;
@@ -179,7 +179,7 @@ extern int slurm_requeue(uint32_t job_id, uint32_t flags)
 	slurm_msg_t_init(&req_msg);
 
 	memset(&requeue_req, 0, sizeof(requeue_req));
-	requeue_req.step_id.job_id = job_id;
+	requeue_req.step_id = step_id;
 	requeue_req.job_id_str	= NULL;
 	requeue_req.flags	= flags;
 	req_msg.msg_type	= REQUEST_JOB_REQUEUE;

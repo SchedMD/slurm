@@ -4936,7 +4936,7 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *resp);
 /*
  * slurm_requeue - re-queue a batch job, if already running
  *	then terminate it first
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * IN flags - JOB_SPECIAL_EXIT - job should be placed special exit state and
  *		  held.
  *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
@@ -4946,7 +4946,7 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *resp);
  *		  CONFIGURING, RUNNING, STOPPED or SUSPENDED.
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue(uint32_t job_id, uint32_t flags);
+extern int slurm_requeue(slurm_step_id_t step_id, uint32_t flags);
 
 /*
  * slurm_requeue2 - re-queue a batch job, if already running
@@ -5353,6 +5353,18 @@ inline static int slurm_resume_jid(uint32_t job_id)
 
 #define slurm_resume(id) \
 _Generic((id), slurm_step_id_t: slurm_resume, default: slurm_resume_jid)((id))
+
+inline static int slurm_requeue_jid(uint32_t job_id, uint32_t flags)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_requeue(step_id, flags);
+}
+
+#define slurm_requeue(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_requeue, \
+	default: slurm_requeue_jid)((id), __VA_ARGS__)
 
 #ifdef __cplusplus
 }
