@@ -69,6 +69,14 @@ conmgr_t mgr = CONMGR_DEFAULT;
 static sig_atomic_t enabled_init = 0;
 static bool enabled_status = false;
 
+const conmgr_timeouts_t conmgr_timeouts_disabled = {
+	.read = TIMESPEC_INFINITE,
+	.write = TIMESPEC_INFINITE,
+	.connect = TIMESPEC_INFINITE,
+	.quiesce = TIMESPEC_INFINITE,
+	.write_complete = TIMESPEC_INFINITE,
+};
+
 static void _atfork_child(void)
 {
 	/* Do nothing if conmgr was not running or already cleaned up */

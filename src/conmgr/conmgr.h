@@ -143,6 +143,8 @@ typedef struct {
 	timespec_t write_complete;
 } conmgr_timeouts_t;
 
+extern const conmgr_timeouts_t conmgr_timeouts_disabled;
+
 typedef struct conmgr_callback_args_s conmgr_callback_args_t;
 
 /*
