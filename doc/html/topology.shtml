@@ -293,7 +293,7 @@ The ring position must be 0 when creating a new ring.</p>
 
 <h2 id="user_opts">User Options<a class="slurm_link" href="#user_opts"></a></h2>
 
-<p>For use with the <b>topology/tree</b> plugin, user can also specify the
+<p>When a <b>tree</b> topology is configured, users can also specify the
 maximum number of leaf switches to be used for their job with the maximum time
 the job should wait for this optimized configuration. The syntax for this option
 is <code>--switches=count[@time]</code>.
@@ -315,7 +315,7 @@ needing to be placed within the same higher-level block.<br>
 the requested segment size.</li>
 </ul>
 
-<p>The following options only apply to the <b>topology/block</b> plugin:</p>
+<p>The following options only apply to a <b>block</b> topology:</p>
 
 <ul>
 <li><code>--spread-segments</code><br>
