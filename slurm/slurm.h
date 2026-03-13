@@ -4242,11 +4242,11 @@ extern int slurm_load_job_state(int job_id_count,
 /*
  * slurm_notify_job - send message to the job's stdout,
  *	usable only by user root
- * IN job_id - slurm job_id or 0 for all jobs
+ * IN step_id - step identifier, .sluid and .job_id 0 for all jobs
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job(uint32_t job_id, char *message);
+extern int slurm_notify_job(slurm_step_id_t step_id, char *message);
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
@@ -5321,6 +5321,18 @@ inline static int slurm_load_job_jid(job_info_msg_t **resp, uint32_t job_id,
 _Generic((id), \
 	slurm_step_id_t: slurm_load_job, \
 	default: slurm_load_job_jid)((resp), (id), __VA_ARGS__)
+
+inline static int slurm_notify_job_jid(uint32_t job_id, char *message)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_notify_job(step_id, message);
+}
+
+#define slurm_notify_job(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_notify_job, \
+	default: slurm_notify_job_jid)((id), __VA_ARGS__)
 
 #ifdef __cplusplus
 }

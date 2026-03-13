@@ -335,11 +335,11 @@ fail:
 /*
  * slurm_notify_job - send message to the job's stdout,
  *	usable only by user root
- * IN job_id - slurm job_id or 0 for all jobs
+ * IN step_id - step identifier, .sluid and .job_id 0 for all jobs
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job (uint32_t job_id, char *message)
+extern int (slurm_notify_job)(slurm_step_id_t step_id, char *message)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -350,9 +350,7 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 	 * Request message:
 	 */
 	memset(&req, 0, sizeof(req));
-	req.step_id.job_id = job_id;
-	req.step_id.step_id = NO_VAL;	/* currently not used */
-	req.step_id.step_het_comp = NO_VAL;	/* currently not used */
+	req.step_id = step_id;
 	req.message     = message;
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &req;
