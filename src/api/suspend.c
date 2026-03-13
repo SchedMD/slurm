@@ -44,11 +44,11 @@
 /*
  * _suspend_op - perform a suspend/resume operation for some job.
  * IN op         - operation to perform
- * IN job_id     - job on which to perform operation or NO_VAL
+ * IN step_id - job identifier on which to perform operation or NO_VAL
  * RET 0 or a slurm error code
  * NOTE: Supply either job_id NO_VAL or job_id_str as NULL, not both
  */
-static int _suspend_op(uint16_t op, uint32_t job_id)
+static int _suspend_op(uint16_t op, slurm_step_id_t step_id)
 {
 	int rc = SLURM_SUCCESS;
 	suspend_msg_t sus_req;
@@ -57,7 +57,7 @@ static int _suspend_op(uint16_t op, uint32_t job_id)
 	slurm_msg_t_init(&req_msg);
 	memset(&sus_req, 0, sizeof(sus_req));
 	sus_req.op         = op;
-	sus_req.step_id.job_id = job_id;
+	sus_req.step_id = step_id;
 	sus_req.job_id_str = NULL;
 	req_msg.msg_type   = REQUEST_SUSPEND;
 	req_msg.data       = &sus_req;
@@ -72,22 +72,22 @@ static int _suspend_op(uint16_t op, uint32_t job_id)
 
 /*
  * slurm_suspend - suspend execution of a job.
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend(uint32_t job_id)
+extern int (slurm_suspend)(slurm_step_id_t step_id)
 {
-	return _suspend_op (SUSPEND_JOB, job_id);
+	return _suspend_op(SUSPEND_JOB, step_id);
 }
 
 /*
  * slurm_resume - resume execution of a previously suspended job.
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * RET 0 or a slurm error code
  */
-extern int slurm_resume(uint32_t job_id)
+extern int (slurm_resume)(slurm_step_id_t step_id)
 {
-	return _suspend_op(RESUME_JOB, job_id);
+	return _suspend_op(RESUME_JOB, step_id);
 }
 
 /*

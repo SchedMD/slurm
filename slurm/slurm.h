@@ -4898,10 +4898,10 @@ extern int slurm_update_suspend_exc_states(char *states, update_mode_t mode);
 
 /*
  * slurm_suspend - suspend execution of a job.
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend(uint32_t job_id);
+extern int slurm_suspend(slurm_step_id_t step_id);
 
 /*
  * slurm_suspend2 - suspend execution of a job.
@@ -4915,10 +4915,10 @@ extern int slurm_suspend2(char *job_id, job_array_resp_msg_t **resp);
 
 /*
  * slurm_resume - resume execution of a previously suspended job.
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * RET 0 or a slurm error code
  */
-extern int slurm_resume(uint32_t job_id);
+extern int slurm_resume(slurm_step_id_t step_id);
 
 /*
  * slurm_resume2 - resume execution of a previously suspended job.
@@ -5333,6 +5333,26 @@ inline static int slurm_notify_job_jid(uint32_t job_id, char *message)
 _Generic((id), \
 	slurm_step_id_t: slurm_notify_job, \
 	default: slurm_notify_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_suspend_jid(uint32_t job_id)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_suspend(step_id);
+}
+
+#define slurm_suspend(id) \
+_Generic((id), slurm_step_id_t: slurm_suspend, default: slurm_suspend_jid)((id))
+
+inline static int slurm_resume_jid(uint32_t job_id)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_resume(step_id);
+}
+
+#define slurm_resume(id) \
+_Generic((id), slurm_step_id_t: slurm_resume, default: slurm_resume_jid)((id))
 
 #ifdef __cplusplus
 }
