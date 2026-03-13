@@ -391,8 +391,9 @@ static uint32_t _setup_listener(void)
 	xassert(port > 0);
 	debug("%s: listening for srun RPCs on port=%hu", __func__, port);
 
-	if ((rc = conmgr_process_fd(CON_TYPE_RPC, NULL, fd, fd, &events,
-				    CON_FLAG_NONE, NULL, 0, NULL, NULL)))
+	if ((rc = conmgr_process_fd(CON_TYPE_RPC, &conmgr_timeouts_disabled, fd,
+				    fd, &events, CON_FLAG_NONE, NULL, 0, NULL,
+				    NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, fd, slurm_strerror(rc));
 
