@@ -336,7 +336,7 @@ extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version);
 
 /*
  * Get the namespace fd of a running job via slurmstepd by entering
- * its job container
+ * its namespace
  * On error returns -1.
  */
 extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version);

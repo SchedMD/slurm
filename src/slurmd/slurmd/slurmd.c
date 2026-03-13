@@ -490,7 +490,7 @@ main (int argc, char **argv)
 	if (namespace_g_init() < 0)
 		fatal("Unable to initialize namespace plugin.");
 	if (namespace_g_restore(conf->spooldir, !conf->cleanstart))
-		error("Unable to restore job_container state.");
+		error("Unable to restore namespace state.");
 	if (prep_g_init(NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize prep plugin");
 	if (switch_g_init(false) < 0)

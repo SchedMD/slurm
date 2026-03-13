@@ -204,7 +204,7 @@
 <li><a href="#cpu_freq">Why is Slurm unable to set the CPU frequency for jobs?</a></li>
 <li><a href="#salloc_default_command">Can the salloc command be configured to
   launch a shell on a node in the job's allocation?</a></li>
-<li><a href="#tmpfs_jobcontainer">How can I set up a private /tmp and /dev/shm for
+<li><a href="#job_tmp_files">How can I set up a private /tmp and /dev/shm for
   jobs on my machine?</a></li>
 <li><a href="#sysv_memory">How do I configure Slurm to work with System V IPC
   enabled applications?</a></li>
@@ -1946,11 +1946,11 @@ launch a shell on a node in the job's allocation?</b></a><br>
 Yes, just set "use_interactive_step" as part of the LaunchParameters
 configuration option in slurm.conf.</p>
 
-<p><a id="tmpfs_jobcontainer"><b>How can I set up a private /tmp and /dev/shm for
+<p><a id="job_tmp_files"><b>How can I set up a private /tmp and /dev/shm for
   jobs on my machine?</b></a>
 <br/>
-Tmpfs job container plugin can be used by including
-<i>JobContainerType=job_container/tmpfs</i>
+The namespace/tmpfs plugin can be used by including
+<i>NamespaceType=namespace/tmpfs</i>
 in your slurm.conf file. It additionally requires a
 <a href="job_container.conf.html">job_container.conf</a> file to be
 set up which is further described in the man page.

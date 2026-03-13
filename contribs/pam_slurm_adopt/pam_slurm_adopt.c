@@ -182,7 +182,7 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 			error("stepd_get_ns_fds failed");
 			rc = SLURM_ERROR;
 		} else if (rc == 0) {
-			debug2("No ns_fd given back, expected if not running with a job_container plugin that supports namespace mounting");
+			debug2("No ns_fd given back, expected if not running with a namespace plugin that supports namespace mounting");
 		} else {
 			if (list_for_each(fd_map, _join_ns_helper, NULL))
 				rc = SLURM_ERROR;
