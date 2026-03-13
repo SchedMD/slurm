@@ -489,6 +489,25 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	return rc;
 }
 
+extern int conmgr_con_change_mode(conmgr_fd_ref_t *con, conmgr_con_type_t type)
+{
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	rc = fd_change_mode(con->con, type);
+
+	/* wake up watch() to send along any pending data */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
 extern int add_connection(conmgr_con_type_t type,
 			  const conmgr_timeouts_t *timeouts,
 			  conmgr_fd_t *source, int input_fd, int output_fd,

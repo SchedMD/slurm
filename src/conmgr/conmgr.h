@@ -569,6 +569,14 @@ extern void conmgr_con_queue_close_free(conmgr_fd_ref_t **ref_ptr);
 extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type);
 
 /*
+ * Change connection mode
+ * IN con - conmgr connection ptr
+ * IN type - change connection to new type
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_change_mode(conmgr_fd_ref_t *con, conmgr_con_type_t type);
+
+/*
  * Create listening socket
  * IN timeouts - timeouts for connection or NULL for defaults
  * IN type - connection type for new sockets
