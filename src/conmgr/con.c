@@ -2547,3 +2547,46 @@ extern probe_status_t probe_connections(probe_log_t *log, void *arg)
 
 	return status;
 }
+
+extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *ref,
+				   const conmgr_timeouts_t *timeouts,
+				   const char *caller)
+{
+	conmgr_fd_t *con = NULL;
+
+	if (!ref)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	con = ref->con;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (timeouts) {
+		log_flag(CONMGR, "%s->%s: [%s] changing connection timeouts read=%s write=%s connect=%s quiesce=%s write_complete=%s",
+			 caller, __func__, con->name,
+			 TIMESPEC_STR(timeouts->read, false),
+			 TIMESPEC_STR(timeouts->write, false),
+			 TIMESPEC_STR(timeouts->connect, false),
+			 TIMESPEC_STR(timeouts->quiesce, false),
+			 TIMESPEC_STR(timeouts->write_complete, false));
+
+		con->timeouts = timeouts;
+	} else {
+		log_flag(CONMGR, "%s->%s: [%s] changing connection timeouts to default",
+			 caller, __func__, con->name);
+
+		con->timeouts = &mgr.timeouts;
+	}
+
+	/*
+	 * Always wake up watch() as connection timeouts need to be recalculated
+	 */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return SLURM_SUCCESS;
+}

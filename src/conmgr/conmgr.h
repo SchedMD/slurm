@@ -1166,4 +1166,15 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *con,
 				 const conmgr_events_t *events, void *arg,
 				 const char *caller);
 
+/*
+ * Set connection timeouts
+ * IN con - connection to query
+ * IN timeouts - new timeouts to use or NULL for defaults
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or EINVAL (if con is invalid)
+ */
+extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *con,
+				   const conmgr_timeouts_t *timeouts,
+				   const char *caller);
+
 #endif /* _CONMGR_H */
