@@ -17465,6 +17465,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	static bool requeue_nohold_prolog = true;
 	bool is_running = false, is_suspended = false, is_completed = false;
 	bool is_completing = false;
+	bool requeue_fini_called = false;
 	bool force_requeue = false;
 	time_t now = time(NULL);
 	uint32_t completing_flags = 0;
@@ -17619,7 +17620,8 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 	 */
 	if (is_running) {
 		job_state_set_flag(job_ptr, JOB_COMPLETING);
-		deallocate_nodes(job_ptr, false, is_suspended, preempt);
+		requeue_fini_called =
+			deallocate_nodes(job_ptr, false, is_suspended, preempt);
 		if (!IS_JOB_COMPLETING(job_ptr) && !job_ptr->fed_details)
 			is_completed = true;
 		else
@@ -17716,7 +17718,7 @@ reply:
 	 * Call batch_requeue_fini after setting priority to 0 for requeue_hold
 	 * and special_exit so federation doesn't submit siblings for held job.
 	 */
-	if (is_completed)
+	if (is_completed && !requeue_fini_called)
 		batch_requeue_fini(job_ptr);
 
 	debug("%s: %pJ state 0x%x reason %u priority %d",

@@ -91,8 +91,9 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc);
  * IN suspended - true if job was already suspended (node's run_job_cnt
  *	already decremented);
  * IN preempted - true if job is being preempted
+ * RET true if job is COMPLETED (batch_requeue_fini called), otherwise false
  */
-extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
+extern bool deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			     bool suspended, bool preempted);
 
 /* Remove nodes from consideration for allocation based upon "mcs" by
