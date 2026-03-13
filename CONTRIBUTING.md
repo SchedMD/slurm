@@ -4,10 +4,6 @@ NOTES FOR DEVELOPERS
 The official issue tracker for Slurm is at
   https://support.schedmd.com/
 
-We welcome code contributions and patches, but **we do not accept Pull Requests
-through GitHub at this time.** Please submit patches as attachments to new
-tickets under the "C - Contributions" severity level.
-
 TARGET RELEASES
 ---------------
 Changes involving adding new functionality, functional changes to the command
@@ -70,7 +66,3 @@ If you make an automated change (changing a function name, fixing a pervasive
 spelling mistake), please send the command/regex used to generate the changes
 along with the patch, or note it in the commit message.
 
-We strongly encourage the use of `git format-patch` to generate the patch. This
-ensures the relevant author line and commit message stay attached. Spelling
-corrections or documentation improvements can be suggested without attaching
-the patch as long as you describe their location.
