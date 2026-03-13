@@ -146,6 +146,24 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     """
     bt = run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
 
+    reason = "Ticket Unknown: Fixed issue in slurmdbd in 25.05: SIGABRT in _connection_fini_callback(): pthread_mutex_lock(): Invalid argument"
+    component = "sbin/slurmdbd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/log.c" in bt
+        and "src/slurmdbd/rpc_mgr.c" in bt
+        and "_connection_fini_callback" in bt
+        and "_service_connection" in bt
+        and "fatal_abort" in bt
+        and "pthread_mutex_lock" in bt
+    ):
+        if get_version(component) >= (25, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection(): if (service_conn->conn->callback_fini)"
     component = "sbin/slurmdbd"
     if (
@@ -160,7 +178,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
-    reason = "Ticket 22326: Known issue in slurmdbd: SIGABORT in  _list_find_first_lock(): Assertion (l != NULL)"
+    reason = "Ticket 22326: Known issue in slurmdbd: SIGABRT in  _list_find_first_lock(): Assertion (l != NULL)"
     component = "sbin/slurmdbd"
     if (
         component in bin_path
