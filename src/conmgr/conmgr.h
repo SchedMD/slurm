@@ -901,6 +901,17 @@ extern int conmgr_con_xfer_in_buffer(conmgr_fd_ref_t *con, buf_t **buffer_ptr);
 extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output);
 
 /*
+ * Transfer outgoing data to connection from buf_t
+ * NOTE: type=CON_TYPE_RAW only
+ * IN con - connection add outgoing data
+ * IN output - pointer to buffer to write to connection
+ * 	output->{head,size} pointer may be changed
+ * 	output->processed will be set to 0 on success
+ * RET SLURM_SUCCESS or error
+ */
+extern int conmgr_con_xfer_out_buffer(conmgr_fd_ref_t *con, buf_t *output);
+
+/*
  * Get input file descriptor
  * WARNING: fd is only valid until return from callback and may close due to
  * other calls against connection

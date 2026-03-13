@@ -761,6 +761,17 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 	return _con_xfer_out_buffer(con, output);
 }
 
+extern int conmgr_con_xfer_out_buffer(conmgr_fd_ref_t *con, buf_t *output)
+{
+	if (!con)
+		return EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	return _con_xfer_out_buffer(con->con, output);
+}
+
 static int _fd_get_input_fd(conmgr_fd_t *con, int *input_fd_ptr)
 {
 	if (!con)
