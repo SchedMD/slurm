@@ -552,9 +552,9 @@ static int _add_clus_res(mysql_conn_t *mysql_conn, slurmdb_res_rec_t *res,
 		if (res->allocated > total_pos) {
 			rc = ESLURM_OVER_ALLOCATE;
 			DB_DEBUG(DB_RES, mysql_conn->conn,
-			         "Adding a new cluster with %u%s allowed to resource %s@%s would put the usage at %u%s, (which is more than possible). Please redo your math and resubmit.",
-			         object->allowed, percent_str, res->name,
-			         res->server, res->allocated, percent_str);
+				 "Adding a new cluster with %u%s allowed to resource %s@%s would put the usage at %u%s, (which is more than possible). Please redo your math and resubmit.",
+				 object->allowed, percent_str, res->name,
+				 res->server, res->allocated, percent_str);
 			break;
 		}
 		xfree(extra);
