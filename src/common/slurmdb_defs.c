@@ -3953,9 +3953,9 @@ extern char *slurmdb_format_tres_str(
 			char *tres_name;
 
 			while (tmp_str[end]) {
-				if ((tmp_str[end] == '=') ||
-				    (tmp_str[end] == '+') ||
-				    (tmp_str[end] == '-'))
+				if (tmp_str[end] == '=')
+					break;
+				if (((tmp_str[end] == '+') || (tmp_str[end] == '-')) && (tmp_str[end+1] == '='))
 					break;
 				end++;
 			}
