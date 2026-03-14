@@ -20,9 +20,12 @@ All contributed patches are subject to review by SchedMD.
 
 CODING GUIDELINES
 -----------------
-Slurm uses clang-format to automatically manage the coding style. The
-provided [.clang-format file](.clang-format) should be used for new commits.
-Please avoid reformatting lines that are otherwise unchanged by your patch.
+Slurm uses clang-format and [pre-commit](https://pre-commit.com/) to
+automatically manage the coding style. The provided
+[.clang-format file](.clang-format) and
+[.pre-commit-config.yaml](.pre-commit-config.yaml) files should be used for new
+commits. Please avoid reformatting lines that are otherwise unchanged by your
+patch.
 
 BUILD SYSTEM CHANGES
 --------------------
