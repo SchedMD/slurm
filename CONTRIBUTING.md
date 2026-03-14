@@ -20,23 +20,9 @@ All contributed patches are subject to review by SchedMD.
 
 CODING GUIDELINES
 -----------------
-Slurm loosely follows the Linux Kernel style guidelines
-(https://www.kernel.org/doc/html/latest/process/coding-style.html).
-If in doubt, please follow their example.
-
-A brief overview, with some notable exceptions:
-- Tabs not spaces, tabs are 8-spaces wide.
-- Lines should be less than 80-characters wide.
-- Except that error message and other log messages should not be broken up
-  mid-sentence. They should be split on a format sequence, comma, or period
-  instead. (This is to make it easier to grep for that string in the source
-  code at a later point.)
-- Use K&R style for braces.
-- Slurm does use typedef's for certain types, ignore Chapter 5 of the kernel
-  guidelines.
-- Comments can be in either C-style `/* comment */` or C++ style  `// comment`
-  formats. Follow the rest of Chapter 8's recommendations for multi-line
-  comments though.
+Slurm uses clang-format to automatically manage the coding style. The
+provided [.clang-format file](.clang-format) should be used for new commits.
+Please avoid reformatting lines that are otherwise unchanged by your patch.
 
 BUILD SYSTEM CHANGES
 --------------------

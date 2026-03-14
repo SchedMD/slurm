@@ -1,0 +1,172 @@
+# SPDX-License-Identifier: GPL-2.0
+#
+# clang-format configuration file for Slurm
+#
+# For more information, see:
+#
+#   https://clang.llvm.org/docs/ClangFormat.html
+#   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+#
+# See https://clang.llvm.org/docs/ClangFormat.html#script-for-patch-reformatting
+# for how to integrate with your favorite editor.
+---
+Language: Json
+---
+Language: Cpp
+AccessModifierOffset: -4
+AlignAfterOpenBracket: true
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros: false
+AlignEscapedNewlines: DontAlign
+AlignOperands: Align
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: None
+AllowShortLoopsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: No
+BitFieldColonSpacing: None
+BinPackArguments: true
+BinPackParameters: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: true
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+BreakAfterJavaFieldAnnotations: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+BreakStringLiterals: false
+ColumnLimit: 80
+CommentPragmas: '^ IWYU pragma:'
+CompactNamespaces: false
+ConstructorInitializerIndentWidth: 8
+ContinuationIndentWidth: 8
+Cpp11BracedListStyle: false
+UseCRLF: false
+DeriveLineEnding: true
+DerivePointerAlignment: false
+DisableFormat: false
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: Leave
+ExperimentalAutoDetectBinPacking: false
+IncludeBlocks: Preserve
+IncludeCategories:
+  - Regex: '.*'
+    Priority: 1
+IncludeIsMainRegex: '(Test)?$'
+IndentCaseBlocks: false
+IndentCaseLabels: false
+IndentExternBlock: AfterExternBlock
+IndentPPDirectives: None
+IndentGotoLabels: false
+IndentWidth: 8
+IndentWrappedFunctionNames: true
+JavaScriptQuotes: Leave
+JavaScriptWrapImports: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MacroBlockBegin: ''
+MacroBlockEnd: ''
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: Inner
+PPIndentWidth: 8
+
+# Taken from git's rules
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 10
+PenaltyBreakComment: 4
+PenaltyBreakFirstLessLess: 5
+PenaltyBreakOpenParenthesis: 500
+PenaltyBreakString: 100000
+PenaltyExcessCharacter: 10000000
+PenaltyReturnTypeOnItsOwnLine: 10000
+PenaltyIndentedWhitespace: 0
+AlwaysBreakAfterReturnType: None
+PointerAlignment: Right
+QualifierAlignment: Custom
+QualifierOrder: ['inline', 'volatile', 'static', 'const', 'type' ]
+ReferenceAlignment: Right
+RemoveBracesLLVM: false
+SeparateDefinitionBlocks: Always
+SortIncludes: CaseInsensitive
+SortUsingDeclarations: false
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceAroundPointerQualifiers: After
+SpaceBeforeCaseColon: false
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: true
+  AfterOverloadedOperator: false
+  BeforeNonEmptyParentheses: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+ReflowComments: false
+SpacesBeforeTrailingComments: 1
+SpacesInLineCommentPrefix:
+  Minimum: 0
+  Maximum: 1
+AlignTrailingComments: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+Standard: c++03
+TabWidth: 8
+UseTab: ForContinuationAndIndentation
+WhitespaceSensitiveMacros:
+  - 'XSTRINGIFY'
+  - 'XSTRINGIFY2'
+  - 'fatal_abort'
+  - 'fatal'
+  - 'error'
+  - 'warning'
+  - 'info'
+  - 'verbose'
+  - 'debug'
+  - 'debug2'
+  - 'debug3'
+  - 'debug4'
+  - 'debug5'
+  - 'sched_error'
+  - 'sched_info'
+  - 'sched_verbose'
+  - 'sched_debug'
+  - 'sched_debug2'
+  - 'sched_debug3'
+  - 'log_flag'
+  - 'log_flag_hex'
+  - 'log_flag_hex_range'
+  - 'probe_log'
+...
