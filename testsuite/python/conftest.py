@@ -22,6 +22,60 @@ sys.path.append(sys.path[0] + "/lib")
 import atf
 
 
+def pytest_terminal_summary(terminalreporter):
+    terminalreporter.write_sep("=", "summary", cyan=True, bold=True)
+
+    passed = terminalreporter.stats.get("passed", [])
+    failed = terminalreporter.stats.get("failed", [])
+    skipped = terminalreporter.stats.get("skipped", [])
+
+    for rep in passed:
+        terminalreporter.write("PASSED", green=True, bold=True)
+        terminalreporter.write_line(f" {rep.nodeid}")
+
+    for rep in skipped:
+        terminalreporter.write("SKIPPED", yellow=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        terminalreporter.write_line(
+            f" - {rep.longrepr[2].removeprefix('Skipped: ')}", bold=True
+        )
+
+    for rep in failed:
+        # In some corner cases there's no reprcrash
+        if hasattr(rep.longrepr, "reprcrash"):
+            reason = rep.longrepr.reprcrash.message
+        else:
+            reason = str(rep.longrepr)
+
+        terminalreporter.write("FAILED", red=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        terminalreporter.write_line(f" - {reason.removeprefix('Failed: ')}", bold=True)
+
+
+#
+# Hook to force printing separators between setup - test call (- teardown)
+#
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_setup(item):
+    terminalreporter = item.config.pluginmanager.getplugin("terminalreporter")
+    terminalreporter.write_sep("-", "test fixture - setup", bold=True)
+    yield
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_call(item):
+    terminalreporter = item.config.pluginmanager.getplugin("terminalreporter")
+    terminalreporter.write_sep("-", "test function", bold=True)
+    yield
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_teardown(item):
+    terminalreporter = item.config.pluginmanager.getplugin("terminalreporter")
+    terminalreporter.write_sep("-", "test fixture - teardown", bold=True)
+    yield
+
+
 # Add test description (docstring) as a junit property
 def pytest_itemcollected(item):
     node = item.obj
@@ -118,7 +172,11 @@ def session_setup(request):
     atf.properties["allow-slurmdbd-modify"] = request.config.getoption(
         "--allow-slurmdbd-modify"
     )
-    if not request.config.getoption("--no-color"):
+    if request.config.getoption("--no-color"):
+        atf.properties["no-color"] = True
+    else:
+        atf.properties["no-color"] = False
+
         # Customize logging level colors
         color_log_level(logging.CRITICAL, red=True, bold=True)
         color_log_level(logging.ERROR, red=True)
