@@ -1272,6 +1272,8 @@ typedef enum {
 #define EXPEDITED_REQUEUE SLURM_BIT(45) /* expedited requeue requested */
 #define NEED_MORE_FEATURES SLURM_BIT(46) /* protect from jobs being preempted
 					  * while resources are available */
+#define JOB_IMPLICIT_MAX_NODES SLURM_BIT(47) /* max_nodes was implicitly set
+					      * from num_tasks */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
