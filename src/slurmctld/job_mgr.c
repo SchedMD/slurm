@@ -6894,6 +6894,17 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
+
+	if ((job_desc->num_tasks != NO_VAL) && slurm_conf.enforce_part_limits &&
+	    (job_desc->num_tasks < part_min_nodes) &&
+	    (!qos_ptr ||
+	     (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) {
+		info("%s: job's ntasks less than partition's min nodes (%u < %u)",
+		     __func__, job_desc->num_tasks, part_min_nodes);
+		rc = ESLURM_BAD_TASK_COUNT;
+		goto fini;
+	}
+
 	/* Zero node count OK for persistent burst buffer create or destroy */
 	if ((job_desc->min_nodes == 0) &&
 	    (job_desc->array_inx || (job_desc->het_job_offset != NO_VAL) ||
