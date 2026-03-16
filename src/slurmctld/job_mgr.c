@@ -282,9 +282,9 @@ typedef struct {
 	bool any_check;
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_desc_msg_t *job_desc;
-	uint32_t max_nodes_orig;
+	uint32_t max_nodes;
 	uint32_t max_time;
-	uint32_t min_nodes_orig;
+	uint32_t min_nodes;
 	slurmdb_qos_rec_t *qos_ptr;
 	list_t *qos_ptr_list;
 	int rc;
@@ -6781,10 +6781,10 @@ static int _foreach_valid_part(void *x, void *arg)
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
 		foreach_valid_part->rc = SLURM_SUCCESS;
 
-	foreach_valid_part->min_nodes_orig =
-		MIN(foreach_valid_part->min_nodes_orig, part_ptr->min_nodes);
-	foreach_valid_part->max_nodes_orig =
-		MAX(foreach_valid_part->max_nodes_orig, part_ptr->max_nodes);
+	foreach_valid_part->min_nodes =
+		MIN(foreach_valid_part->min_nodes, part_ptr->min_nodes);
+	foreach_valid_part->max_nodes =
+		MAX(foreach_valid_part->max_nodes, part_ptr->max_nodes);
 	foreach_valid_part->max_time =
 		MAX(foreach_valid_part->max_time, part_ptr->max_time);
 
@@ -6812,9 +6812,9 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			.any_check = any_check,
 			.assoc_ptr = assoc_ptr,
 			.job_desc = job_desc,
-			.max_nodes_orig = 1,
+			.max_nodes = 1,
 			.max_time = 0,
-			.min_nodes_orig = INFINITE,
+			.min_nodes = INFINITE,
 			.qos_ptr = qos_ptr,
 			.qos_ptr_list = qos_ptr_list,
 			.req_bitmap = req_bitmap,
@@ -6838,8 +6838,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			goto fini;
 		}
 		any_check = foreach_valid_part.any_check;
-		min_nodes_orig = foreach_valid_part.min_nodes_orig;
-		max_nodes_orig = foreach_valid_part.max_nodes_orig;
+		min_nodes_orig = foreach_valid_part.min_nodes;
+		max_nodes_orig = foreach_valid_part.max_nodes;
 		max_time = foreach_valid_part.max_time;
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
