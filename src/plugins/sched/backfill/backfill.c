@@ -3034,6 +3034,12 @@ later_start_set:
 		job_ptr->bit_flags |= BACKFILL_TEST;
 		job_ptr->bit_flags |= job_no_reserve;	/* 0 or TEST_NOW_ONLY */
 
+		save_whole_node = job_ptr->details->whole_node;
+
+		if (part_ptr->max_share == 0) {
+			job_ptr->details->whole_node |= WHOLE_NODE_REQUIRED;
+		}
+
 		if (active_bitmap) {
 			will_run_data.start = start_res;
 			will_run_data.end = later_start;
@@ -3050,13 +3056,13 @@ later_start_set:
 				if (node_features_g_overlap(active_bitmap))
 					get_boot_time = true;
 				FREE_NULL_BITMAP(active_bitmap);
-				save_share_res  = job_ptr->details->share_res;
-				save_whole_node = job_ptr->details->whole_node;
+				save_share_res = job_ptr->details->share_res;
 				job_ptr->details->share_res = 0;
+				if (!job_ptr->details->whole_node)
+					job_ptr->bit_flags |=
+						BF_WHOLE_NODE_TEST;
 				job_ptr->details->whole_node |=
 					WHOLE_NODE_REQUIRED;
-				if (!save_whole_node)
-					job_ptr->bit_flags |= BF_WHOLE_NODE_TEST;
 				test_fini = 0;
 			}
 		}
@@ -3129,9 +3135,9 @@ later_start_set:
 				       &will_run_data);
 			if (test_fini == 0) {
 				job_ptr->details->share_res = save_share_res;
-				job_ptr->details->whole_node = save_whole_node;
 			}
 		}
+		job_ptr->details->whole_node = save_whole_node;
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
 		job_ptr->bit_flags &= ~TEST_NOW_ONLY;
