@@ -6799,7 +6799,7 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			   list_t *qos_ptr_list)
 {
 	int rc = SLURM_SUCCESS;
-	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
+	uint32_t part_min_nodes = INFINITE, part_max_nodes = 1;
 	uint32_t max_time = 0;
 	bool any_check = false;
 
@@ -6838,13 +6838,13 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			goto fini;
 		}
 		any_check = foreach_valid_part.any_check;
-		min_nodes_orig = foreach_valid_part.min_nodes;
-		max_nodes_orig = foreach_valid_part.max_nodes;
+		part_min_nodes = foreach_valid_part.min_nodes;
+		part_max_nodes = foreach_valid_part.max_nodes;
 		max_time = foreach_valid_part.max_time;
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
-		min_nodes_orig = part_ptr->min_nodes;
-		max_nodes_orig = part_ptr->max_nodes;
+		part_min_nodes = part_ptr->min_nodes;
+		part_max_nodes = part_ptr->max_nodes;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
 					submit_uid, qos_ptr, qos_ptr_list,
@@ -6863,33 +6863,32 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 	/* Check Partition with the highest limits when there are multiple */
 	if (job_desc->min_nodes == NO_VAL) {
 		/* Avoid setting the job request to 0 nodes unless requested */
-		if (!min_nodes_orig)
+		if (!part_min_nodes)
 			job_desc->min_nodes = 1;
 		else
-			job_desc->min_nodes = min_nodes_orig;
-	} else if ((job_desc->min_nodes > max_nodes_orig) &&
-	           slurm_conf.enforce_part_limits &&
-	           (!qos_ptr || (qos_ptr && !(qos_ptr->flags &
-	                                      QOS_FLAG_PART_MAX_NODE)))) {
+			job_desc->min_nodes = part_min_nodes;
+	} else if ((job_desc->min_nodes > part_max_nodes) &&
+		   slurm_conf.enforce_part_limits &&
+		   (!qos_ptr ||
+		    (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MAX_NODE)))) {
 		info("%s: job's min nodes greater than "
 		     "partition's max nodes (%u > %u)",
-		     __func__, job_desc->min_nodes, max_nodes_orig);
+		     __func__, job_desc->min_nodes, part_max_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
-	} else if ((job_desc->min_nodes < min_nodes_orig) &&
+	} else if ((job_desc->min_nodes < part_min_nodes) &&
 		   ((job_desc->max_nodes == NO_VAL) ||
-		    (job_desc->max_nodes >= min_nodes_orig))) {
-		job_desc->min_nodes = min_nodes_orig;
+		    (job_desc->max_nodes >= part_min_nodes))) {
+		job_desc->min_nodes = part_min_nodes;
 	}
 
-	if ((job_desc->max_nodes != NO_VAL) &&
-	    slurm_conf.enforce_part_limits &&
-	    (job_desc->max_nodes < min_nodes_orig) &&
-	    (!qos_ptr || (qos_ptr && !(qos_ptr->flags
-	                               & QOS_FLAG_PART_MIN_NODE)))) {
+	if ((job_desc->max_nodes != NO_VAL) && slurm_conf.enforce_part_limits &&
+	    (job_desc->max_nodes < part_min_nodes) &&
+	    (!qos_ptr ||
+	     (qos_ptr && !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))) {
 		info("%s: job's max nodes less than partition's "
 		     "min nodes (%u < %u)",
-		     __func__, job_desc->max_nodes, min_nodes_orig);
+		     __func__, job_desc->max_nodes, part_min_nodes);
 		rc = ESLURM_INVALID_NODE_COUNT;
 		goto fini;
 	}
