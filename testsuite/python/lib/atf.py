@@ -2347,7 +2347,6 @@ def require_config_file(
     if filename in {
         "slurm.conf",
         "slurmdbd.conf",
-        "gres.conf",
         "cgroup.conf",
         "testsuite.conf",
     }:
