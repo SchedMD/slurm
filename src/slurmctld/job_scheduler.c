@@ -4565,8 +4565,6 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 	if (job_start_data->rc == SLURM_SUCCESS) {
 		int test_fini = -1;
 		uint8_t save_share_res, save_whole_node;
-		/* On BlueGene systems don't adjust the min/max node limits
-		   here.  We are working on midplane values. */
 		min_nodes = MAX(job_ptr->details->min_nodes,
 				part_ptr->min_nodes);
 		if (job_ptr->details->max_nodes == 0)
