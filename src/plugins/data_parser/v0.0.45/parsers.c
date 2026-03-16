@@ -7574,6 +7574,11 @@ static int DUMP_FUNC(NAMESPACE_NODE_CONF_COMPLEX)(const parser_t *const parser,
 }
 #define add_flag_bit(flag_value, flag_string)				\
 	add_flag_masked_bit(flag_value, INFINITE64, flag_string)
+#define add_flag_hidden_bit(flag_value, flag_string)			\
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),	\
+			   flag_value, INFINITE64,			\
+			   XSTRINGIFY(INFINITE64), flag_string, false,	\
+			   NULL)
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)		\
 	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),	\
 			   flag_value, flag_mask,			\
