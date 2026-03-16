@@ -344,6 +344,14 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	(void) probe_run(true, NULL, NULL, __func__);
+}
+
 static probe_status_t _probe_listener(probe_log_t *log, void *arg)
 {
 	probe_status_t status = PROBE_RC_UNKNOWN;
@@ -462,6 +470,7 @@ main (int argc, char **argv)
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
 	if ((oom_value = getenv("SLURMD_OOM_ADJ"))) {
 		int i = atoi(oom_value);
