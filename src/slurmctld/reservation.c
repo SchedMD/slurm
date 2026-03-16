@@ -3970,8 +3970,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr, char **err_msg)
 			goto bad_parse;
 		}
 
-		/* Get count of allocated nodes, on BlueGene systems, this
-		 * might be more than requested */
+		/* Get count of allocated nodes */
 		total_node_cnt = bit_set_count(resv_select.node_bitmap);
 	}
 
