@@ -164,6 +164,23 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
+    reason = "Ticket 24853: Issue in slurmdbd in 25.05: SIGABRT in slurm_persist_conn_recv_thread_init: service_conn"
+    component = "sbin/slurmdbd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/persist_conn.c" in bt
+        and "src/slurmdbd/rpc_mgr.c" in bt
+        and "slurm_persist_conn_recv_thread_init" in bt
+        and "service_conn" in bt
+        and "__xassert_failed" in bt
+    ):
+        if get_version(component) >= (25, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection(): if (service_conn->conn->callback_fini)"
     component = "sbin/slurmdbd"
     if (
