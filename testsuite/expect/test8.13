@@ -58,6 +58,9 @@ proc cleanup {} {
 proc set_user_resv_delete {} {
 	global bin_echo bin_sed config_file
 
+	# Ensure an EOL at the end of slurm.conf
+	run_command -fail -nolog "$bin_echo >> $config_file"
+
 	set params [get_config_param "SlurmctldParameters"]
 	if {![param_value $params "user_resv_delete"]} {
 		if { $params eq "" || $params eq "(null)" } {
