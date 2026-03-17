@@ -786,11 +786,19 @@ extern void setup_cred_arg(slurm_cred_arg_t *cred_arg, job_record_t *job_ptr)
 	cred_arg->job_start_time = job_ptr->start_time;
 	cred_arg->uid = job_ptr->user_id;
 
+	/*
+	 * These helpers handle job_ptr->details == NULL internally and fall
+	 * through to the partition flags, so call them unconditionally so the
+	 * cred carries the partition's exclusive/oversubscribe state even
+	 * when details are unavailable.
+	 */
+	cred_arg->job_exclusive = get_job_exclusive_display_value(job_ptr);
+	cred_arg->job_oversubscribe = get_job_oversubscribe_value(job_ptr);
+
 	if (job_ptr->details) {
 		cred_arg->job_constraints = job_ptr->details->features_use;
 		cred_arg->job_core_spec = job_ptr->details->core_spec;
 		cred_arg->job_ntasks = job_ptr->details->num_tasks;
-		cred_arg->job_oversubscribe = get_job_share_value(job_ptr);
 		cred_arg->job_std_err = job_ptr->details->std_err;
 		cred_arg->job_std_in = job_ptr->details->std_in;
 		cred_arg->job_std_out = job_ptr->details->std_out;
