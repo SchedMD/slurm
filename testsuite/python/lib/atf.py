@@ -170,7 +170,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         component in bin_path
         and "Program terminated with signal SIGSEGV" in bt
         and "src/common/persist_conn.c" in bt
-        and "(service_conn->conn->callback_fini)" in bt
+        and "(service_conn->pconn->callback_fini)" in bt
     ):
         if get_version(component) >= (25, 11, 4):
             failures.append(reason)
