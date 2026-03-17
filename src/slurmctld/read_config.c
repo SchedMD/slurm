@@ -2393,7 +2393,7 @@ static void _sync_nodes_to_suspended_job(job_record_t *job_ptr)
 	set_initial_job_alias_list(job_ptr);
 }
 
-static void _restore_job_licenses(job_record_t *job_ptr)
+extern void restore_job_licenses(job_record_t *job_ptr)
 {
 	list_t *license_list = NULL, *license_list_alloc = NULL;
 	bool valid = true, alloc_valid = true;
@@ -2492,7 +2492,7 @@ extern void restore_job_accounting(void)
 						save_accrue_time;
 			}
 		}
-		_restore_job_licenses(job_ptr);
+		restore_job_licenses(job_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 }

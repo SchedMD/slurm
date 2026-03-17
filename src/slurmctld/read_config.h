@@ -67,6 +67,14 @@ extern void cluster_rec_free(void);
 extern int read_slurm_conf(int recover);
 extern void restore_job_accounting();
 
+/*
+ * restore_job_licenses - Rebuild the job's license_list based on its
+ * requested and allocated license strings.
+ *
+ * IN job_ptr - the job
+ */
+extern void restore_job_licenses(job_record_t *job_ptr);
+
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);
 
