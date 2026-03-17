@@ -7953,6 +7953,7 @@ static const parser_t PARSER_ARRAY(JOB)[] = {
 	add_cparse(JOB_PLANNED_TIME, "time/planned", "Time required to start job after becoming eligible to run in seconds"),
 	add_parse(STRING, script, "script", "Job batch script contents; only the first component in a HetJob is populated or honored"),
 	add_parse(UINT16, segment_size, "segment_size", "Requested segment size"),
+	add_parse(SLUID, sluid, "original_sluid", "Original SLUID"),
 	add_cparse(JOB_STDIN, "stdin_expanded", "Job stdin with expanded fields"),
 	add_cparse(JOB_STDOUT, "stdout_expanded", "Job stdout with expanded fields"),
 	add_cparse(JOB_STDERR, "stderr_expanded", "Job stderr with expanded fields"),
