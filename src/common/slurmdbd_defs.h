@@ -303,6 +303,7 @@ typedef struct dbd_job_start_msg {
 	char *resv_req;		/* original requested reservations */
 	char *script_hash;      /* hash value of script */
 	uint16_t segment_size;	/* requested segment size */
+	uint64_t sluid; /* sluid from first submission, never changes */
 	time_t   start_time;	/* job start time */
 	uint32_t state_reason_prev; /* Last reason of blocking before job
 				     * started */

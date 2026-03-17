@@ -487,6 +487,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->resv_id, buffer);
 		packstr(msg->resv_req, buffer);
 		pack16(msg->segment_size, buffer);
+		pack64(msg->sluid, buffer);
 		pack_time(msg->start_time, buffer);
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_in, buffer);
@@ -647,6 +648,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->resv_id, buffer);
 		safe_unpackstr(&msg_ptr->resv_req, buffer);
 		safe_unpack16(&msg_ptr->segment_size, buffer);
+		safe_unpack64(&msg_ptr->sluid, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpackstr(&msg_ptr->std_err, buffer);
 		safe_unpackstr(&msg_ptr->std_in, buffer);

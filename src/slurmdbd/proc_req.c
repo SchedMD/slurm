@@ -2210,6 +2210,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	 */
 	if (job_start_msg->db_index != NO_VAL64)
 		job.db_index = job_start_msg->db_index;
+	job.step_id.sluid = job_start_msg->sluid;
 	details.begin_time = job_start_msg->eligible_time;
 	details.env_hash = job_start_msg->env_hash;
 	job.user_id = job_start_msg->uid;
