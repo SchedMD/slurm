@@ -275,21 +275,22 @@ MaxDiskWriteTask    MaxPages            MaxPagesNode        MaxPagesTask
 MaxRSS              MaxRSSNode          MaxRSSTask          MaxVMSize
 MaxVMSizeNode       MaxVMSizeTask       McsLabel            MinCPU
 MinCPUNode          MinCPUTask          NCPUS               NNodes
-NodeList            NTasks              Partition           Planned
-PlannedCPU          PlannedCPURAW       Priority            QOS
-QOSRAW              QOSREQ              Reason              ReqCPUFreq
-ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin       ReqCPUS
-ReqMem              ReqNodes            ReqTRES             ReqReservation
-Reservation         ReservationId       Restarts            SegmentSize
-SLUID               Start               State               StdErr
-StdIn               StdOut              Submit              SubmitLine
-Suspended           SystemComment       SystemCPU           Timelimit
-TimelimitRaw        TotalCPU            TRESUsageInAve      TRESUsageInMax
-TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin      TRESUsageInMinNode
-TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve     TRESUsageOutMax
-TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin     TRESUsageOutMinNode
-TRESUsageOutMinTask TRESUsageOutTot     UID                 User
-UserCPU             WCKey               WCKeyID             WorkDir
+NodeList            NTasks              OriginalSLUID       Partition
+Planned             PlannedCPU          PlannedCPURAW       Priority
+QOS                 QOSRAW              QOSREQ              Reason
+ReqCPUFreq          ReqCPUFreqGov       ReqCPUFreqMax       ReqCPUFreqMin
+ReqCPUS             ReqMem              ReqNodes            ReqReservation
+ReqTRES             Reservation         ReservationId       Restarts
+SegmentSize         SLUID               Start               State
+StdErr              StdIn               StdOut              Submit
+SubmitLine          Suspended           SystemComment       SystemCPU
+Timelimit           TimelimitRaw        TotalCPU            TRESUsageInAve
+TRESUsageInMax      TRESUsageInMaxNode  TRESUsageInMaxTask  TRESUsageInMin
+TRESUsageInMinNode  TRESUsageInMinTask  TRESUsageInTot      TRESUsageOutAve
+TRESUsageOutMax     TRESUsageOutMaxNode TRESUsageOutMaxTask TRESUsageOutMin
+TRESUsageOutMinNode TRESUsageOutMinTask TRESUsageOutTot     UID
+User                UserCPU             WCKey               WCKeyID
+WorkDir
 .ft 1
 .fi
 .RE
@@ -967,6 +968,14 @@ Total number of tasks in a job or step.
 .IP
 
 .TP
+\f3OriginalSLUID\fP
+The SLUID assigned when the job was first submitted. Remains constant during
+the entire life of the job even if it has been resized. It changes if the job is
+requeued or restarted. It can be used to correlate runs of jobs which have been
+resized. This is the SLUID used by command tools during the runtime of the job.
+.IP
+
+.TP
 \f3Partition\fP
 Identifies the partition on which the job ran.
 .IP
@@ -1094,8 +1103,8 @@ used to create the job allocation.
 .TP
 \f3SLUID\fP
 A unique identifier for a specific run of a job. Unlike a job ID, the SLUID
-changes each time a job is requeued/restarted, allowing different runs of
-the same job to be distinguished. Previous runs of the job can be shown with
+changes each time a job is requeued/restarted/resized, allowing different runs
+of the same job to be distinguished. Previous runs of the job can be shown with
 the \fB\-D\fR/\fB\-\-duplicates\fR option. SLUIDs are globally unique across the
 accounting system.
 .IP
