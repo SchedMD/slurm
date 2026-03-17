@@ -507,7 +507,7 @@ static void _resv_port_free(uint16_t resv_port_cnt,
 		    (resv_port_array[i] > port_resv_max))
 			continue;
 		j = resv_port_array[i] - port_resv_min;
-		if (!port_resv_table[i])
+		if (!port_resv_table[j])
 			continue;
 		bit_and_not(port_resv_table[j], node_bitmap);
 
