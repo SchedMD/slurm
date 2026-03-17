@@ -2097,6 +2097,9 @@ extern void fd_free_ref(conmgr_fd_ref_t **ref_ptr)
 
 	ref->magic = ~MAGIC_CON_MGR_FD_REF;
 	xfree((*ref_ptr));
+
+	if (!con->refs)
+		EVENT_SIGNAL(&mgr.watch_sleep);
 }
 
 extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr)
