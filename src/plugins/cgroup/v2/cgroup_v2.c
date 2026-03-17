@@ -52,6 +52,7 @@
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/sluid.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -1907,7 +1908,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 {
 	int rc = SLURM_SUCCESS;
 	char *new_path = NULL;
-	char tmp_char[64];
+	char tmp_char[64], sluid_str[SLUID_STR_BYTES];
 
 	/*
 	 * Lock the root cgroup so we don't race with other steps that are being
@@ -1928,7 +1929,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *step)
 	}
 
 	/* Job cgroup */
-	xstrfmtcat(new_path, "/job_%u", step->step_id.job_id);
+	print_sluid(step->step_id.sluid, sluid_str, sizeof(sluid_str));
+	xstrfmtcat(new_path, "/%s", sluid_str);
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_JOB],
 				 new_path, 0, 0) != SLURM_SUCCESS) {
 		error("unable to create %pI cgroup", &step->step_id);

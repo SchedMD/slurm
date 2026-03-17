@@ -259,16 +259,16 @@ responsibility of the kernel maintainers.
 means the job structure must be replicated and managed for every enabled
 controller. For example, for the same job, if using
 <i>memory</i> and <i>freezer</i> controllers, we will need to create the same
-slurm/uid/job_id/step_id/ hierarchy in both controller's directories. For
+slurm/uid/SLUID/step_id/ hierarchy in both controller's directories. For
 example:
 
-<pre>/sys/fs/cgroup/memory/slurm/uid_1000/job_1/step_0/</pre>
-<pre>/sys/fs/cgroup/freezer/slurm/uid_1000/job_1/step_0/</pre>
+<pre>/sys/fs/cgroup/memory/slurm/uid_1000/job_31/step_0/</pre>
+<pre>/sys/fs/cgroup/freezer/slurm/uid_1000/job_31/step_0/</pre>
 
 <p>In <i>cgroup/v2</i> we have a <i>Unified</i> hierarchy, where controllers are
 enabled at the same level and presented to the user as different files.</p>
 
-<pre>/sys/fs/cgroup/system.slice/slurmstepd.scope/job_1/step_0/</pre></p>
+<pre>/sys/fs/cgroup/system.slice/slurmstepd.scope/s5K1KKYAYG5D00/step_0/</pre></p>
 
 </li>
 
