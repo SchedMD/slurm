@@ -1008,6 +1008,7 @@ typedef struct {
 	char *script;
 	uint16_t segment_size;
 	uint32_t show_full;
+	uint64_t sluid; /* sluid from first submission, never changes */
 	time_t start;
 	uint32_t state;
 	uint32_t state_reason_prev;
