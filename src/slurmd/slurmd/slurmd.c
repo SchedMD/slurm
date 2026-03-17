@@ -147,7 +147,7 @@ uint32_t slurm_daemon = IS_SLURMD;
 #define DEF_CONMGR_THREAD_COUNT 6
 #define TIMEOUT_SIGUSR2 5000000
 #define TIMEOUT_RECONFIG 5000000
-#define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 50
+#define SLURMD_CONMGR_DEFAULT_MAX_CONNECTIONS 512
 #define MAX_THREAD_DELAY_INC ((timespec_t) { .tv_nsec = 1500, })
 #define MAX_THREAD_DELAY_MAX ((timespec_t) { .tv_sec = 1, })
 
