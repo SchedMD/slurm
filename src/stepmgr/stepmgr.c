@@ -3441,8 +3441,7 @@ extern int step_create(job_record_t *job_ptr,
 				   cpus_per_task, node_count, &ret_code);
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
-		if ((ret_code == ESLURM_NODES_BUSY) ||
-		    (ret_code == ESLURM_PORTS_BUSY))
+		if (ret_code == ESLURM_NODES_BUSY)
 			_build_pending_step(job_ptr, step_specs);
 		return ret_code;
 	}
