@@ -34,10 +34,14 @@
 \*****************************************************************************/
 
 #include <pthread.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -271,8 +275,19 @@ extern void conn_g_destroy(conn_t *conn, bool close_fds)
 
 extern ssize_t conn_g_send(conn_t *conn, const void *buf, size_t n)
 {
+	ssize_t bytes = -1;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.send))(conn, buf, n);
+
+	log_flag_hex(NET_RAW, buf, n, "%s: [fd:%d] sending to 0x%"PRIxPTR,
+		     __func__, conn_g_get_fd(conn), (uintptr_t) conn);
+
+	bytes = (*(ops.send))(conn, buf, n);
+
+	log_flag(NET, "%s: [fd:%d] sent %zd/%zu bytes to 0x%"PRIxPTR,
+		 __func__, conn_g_get_fd(conn), bytes, n, (uintptr_t) conn);
+
+	return bytes;
 }
 
 extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count)
