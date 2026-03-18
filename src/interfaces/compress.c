@@ -150,6 +150,18 @@ extern void compress_g_fini(void)
 	slurm_rwlock_unlock(&context_lock);
 }
 
+extern int compress_g_type_available(const int type)
+{
+	int rc = SLURM_SUCCESS;
+
+	slurm_rwlock_rdlock(&context_lock);
+	if (_get_plugin_index(type) == -1)
+		rc = SLURM_ERROR;
+	slurm_rwlock_unlock(&context_lock);
+
+	return rc;
+}
+
 extern ssize_t compress_g_comp_block(const int type, char **in_buf,
 				     const ssize_t input_size, char **out_buf,
 				     const ssize_t out_size, ssize_t *remaining)

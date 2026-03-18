@@ -40,6 +40,18 @@ extern int compress_g_init(void);
 extern void compress_g_fini(void);
 
 /*
+ * Purpose:
+ *	Check if the requested plugin type is available
+ *
+ * Arguments:
+ * 	int type - one of the compress_plugin_type enum values
+ *
+ * Returns:
+ * 	int - SLURM_SUCCESS if available, SLURM_ERROR if not available
+ */
+extern int compress_g_type_available(const int type);
+
+/*
  * Arguments:
  * 	int type - one of the compress_plugin_type enum values
  * 	in_buf - buffer to read from - Note that position in the buffer is
