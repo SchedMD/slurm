@@ -2076,7 +2076,7 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		conmgr_add_work_con_delayed_fifo(conmgr_args.con,
 						 _try_service_msg, args,
 						 args->delay.tv_sec,
-						 args->delay.tv_sec);
+						 args->delay.tv_nsec);
 	}
 }
 
