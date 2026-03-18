@@ -420,7 +420,8 @@ err:
 }
 
 /*
- * Parse the "fm_authdir" token, with format "fm_authdir=<dirpath>"
+ * Parse the "fm_authdir" or "fm_authdir_ctld" token, with format
+ * "fm_authdir=<dirpath>"
  */
 static bool _config_fm_authdir(const char *token, char *arg)
 {
@@ -432,6 +433,8 @@ static bool _config_fm_authdir(const char *token, char *arg)
 		error("fm_authdir directory '%s' is not a directory", arg);
 		return false;
 	}
+
+	xfree(slingshot_config.fm_authdir);
 	slingshot_config.fm_authdir = xstrdup(arg);
 
 	log_flag(SWITCH, "[token=%s]: fm_authdir %s",
@@ -824,6 +827,8 @@ extern bool slingshot_setup_config(const char *switch_params)
 	const size_t size_fm_auth = sizeof(fm_auth) - 1;
 	const char fm_authdir[] = "fm_authdir";
 	const size_t size_fm_authdir = sizeof(fm_authdir) - 1;
+	const char fm_authdir_ctld[] = "fm_authdir_ctld";
+	const size_t size_fm_authdir_ctld = sizeof(fm_authdir_ctld) - 1;
 	const char fm_mtls_ca[] = "fm_mtls_ca";
 	const size_t size_fm_mtls_ca = sizeof(fm_mtls_ca) - 1;
 	const char fm_mtls_cert[] = "fm_mtls_cert";
@@ -838,6 +843,7 @@ extern bool slingshot_setup_config(const char *switch_params)
 	uint16_t vni_min = slingshot_state.vni_min;
 	uint16_t vni_max = slingshot_state.vni_max;
 	bool vni_range_set = false;
+	bool fm_authdir_ctld_set = false;
 
 	/*
 	 * Handle SwitchParameters values (separated by commas):
@@ -862,6 +868,9 @@ extern bool slingshot_setup_config(const char *switch_params)
 	 *   fm_url=<url>: use URL for fabric manager REST requests
 	 *   fm_auth="BASIC|OAUTH": fabric manager REST API authentication type
 	 *   fm_authdir=<dir>: fabric manager authentication info directory
+	 *     (i.e. /etc/fmsim for BASIC, /etc/wlm-client-auth for OAUTH)
+	 *   fm_authdir_ctld=<dir>: slurmctld specific fabric manager
+	 *     authentication info directory. Overrides fm_authdir in slurmctld.
 	 *     (i.e. /etc/fmsim for BASIC, /etc/wlm-client-auth for OAUTH)
 	 *   fm_mtls_ca=<path to FM certificate bundle>
 	 *   fm_mtls_cert=<path to client public certificate>
@@ -930,13 +939,23 @@ extern bool slingshot_setup_config(const char *switch_params)
 		} else if (!xstrncasecmp(token, fm_url, size_fm_url)) {
 			if (!_config_fm_url(token, arg))
 				goto err;
-		/*
-		 * NOTE: fm_authdir needs to come before fm_auth
-		 * since fm_auth is a prefix of fm_authdir
-		 */
+			/*
+			 * NOTE: fm_authdir_ctld needs to come before fm_authdir
+			 * since fm_authdir is a prefix of fm_authdir_ctld. fm_authdir
+			 * needs to come before fm_auth for the same reason.
+			 */
+		} else if (!xstrncasecmp(token, fm_authdir_ctld,
+					 size_fm_authdir_ctld)) {
+			if (running_in_slurmctld()) {
+				fm_authdir_ctld_set = true;
+				if (!_config_fm_authdir(token, arg))
+					goto err;
+			}
 		} else if (!xstrncasecmp(token, fm_authdir, size_fm_authdir)) {
-			if (!_config_fm_authdir(token, arg))
-				goto err;
+			if (!fm_authdir_ctld_set) {
+				if (!_config_fm_authdir(token, arg))
+					goto err;
+			}
 		} else if (!xstrncasecmp(token, fm_auth, size_fm_auth)) {
 			if (!_config_fm_auth(token, arg))
 				goto err;
