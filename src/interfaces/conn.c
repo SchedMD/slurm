@@ -330,8 +330,19 @@ extern uint32_t conn_g_peek(conn_t *conn)
 
 extern ssize_t conn_g_recv(conn_t *conn, void *buf, size_t n)
 {
+	ssize_t bytes = -1;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.recv))(conn, buf, n);
+	bytes = (*(ops.recv))(conn, buf, n);
+
+	if (bytes > 0)
+		log_flag_hex(NET_RAW, buf, bytes, "%s: [fd:%d] recv from 0x%"PRIxPTR,
+			     __func__, conn_g_get_fd(conn), (uintptr_t) conn);
+
+	log_flag(NET, "%s: [fd:%d] recv %zd bytes from 0x%"PRIxPTR,
+		 __func__, conn_g_get_fd(conn), bytes, (uintptr_t) conn);
+
+	return bytes;
 }
 
 extern timespec_t conn_g_get_delay(conn_t *conn)
