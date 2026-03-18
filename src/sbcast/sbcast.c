@@ -55,14 +55,16 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
-#include "src/sbcast/sbcast.h"
-#include "src/interfaces/cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_time.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/cred.h"
+
+#include "src/sbcast/sbcast.h"
 
 /* global variables */
 struct bcast_parameters params = {0};	/* program parameters */
