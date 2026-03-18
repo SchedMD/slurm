@@ -315,8 +315,17 @@ extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count)
 
 extern uint32_t conn_g_peek(conn_t *conn)
 {
+	uint32_t peek = 0;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.peek))(conn);
+
+	peek = (*(ops.peek))(conn);
+
+	log_flag_hex(NET_RAW, &peek, sizeof(peek),
+		     "%s: [fd:%d] peek 0x%"PRIxPTR,
+		     __func__, conn_g_get_fd(conn), (uintptr_t) conn);
+
+	return peek;
 }
 
 extern ssize_t conn_g_recv(conn_t *conn, void *buf, size_t n)
