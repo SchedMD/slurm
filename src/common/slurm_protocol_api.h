@@ -180,6 +180,16 @@ extern int slurm_init_msg_engine_port(uint16_t port);
  */
 extern int slurm_init_msg_engine_ports(uint16_t *);
 
+/*
+ * Creates a TCP listening socket on a port from SrunPortRange if configured,
+ * otherwise on an ephemeral port.
+ *
+ * OUT listen_fd - listening socket file descriptor
+ * OUT port - TCP port number in host byte order
+ * RET SLURM_SUCCESS or SLURM_ERROR
+ */
+extern int slurm_init_msg_engine_srun_ports(int *listen_fd, uint16_t *port);
+
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.
  * IN slurm_address 	- slurm_addr_t to bind the msg server to
