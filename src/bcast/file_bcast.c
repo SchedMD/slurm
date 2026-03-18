@@ -70,6 +70,7 @@
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/interfaces/compress.h"
 
 #include "file_bcast.h"
 
