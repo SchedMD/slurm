@@ -110,6 +110,7 @@
 #include "src/interfaces/auth.h"
 #include "src/interfaces/certmgr.h"
 #include "src/interfaces/cgroup.h"
+#include "src/interfaces/compress.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/cred.h"
 #include "src/interfaces/gpu.h"
@@ -2762,6 +2763,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (cred_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	if (compress_g_init() != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	if (getrlimit(RLIMIT_CPU, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
@@ -2813,6 +2816,7 @@ _slurmd_fini(void)
 {
 	int rc;
 
+	compress_g_fini();
 	assoc_mgr_fini(false);
 	mpi_fini();
 	node_features_g_fini();
