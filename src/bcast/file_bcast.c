@@ -266,108 +266,17 @@ static int _file_bcast(struct bcast_parameters *params,
 	return rc;
 }
 
-/* load a buffer with data from the file to broadcast,
- * return number of bytes read, zero on end of file */
-static int _get_block_none(char **buffer, int *orig_len, bool *more,
-			   bool file_start)
-{
-	static int64_t remaining = -1;
-	static void *position;
-	int size;
-
-	if (file_start) {
-		remaining = -1;
-		position = NULL;
-	}
-
-	if (remaining < 0) {
-		*buffer = xmalloc(block_len);
-		remaining = f_stat.st_size;
-		position = src;
-	}
-
-	size = MIN(block_len, remaining);
-	memcpy(*buffer, position, size);
-	remaining -= size;
-	position += size;
-
-	*orig_len = size;
-	*more = (remaining) ? true : false;
-	return size;
-}
-
-static int _get_block_lz4(struct bcast_parameters *params,
-			  char **buffer,
-			  int32_t *orig_len,
-			  bool *more, bool file_start)
-{
-#if HAVE_LZ4
-	int size_out;
-	static int64_t remaining = -1;
-	static void *position;
-	int size;
-
-	if (file_start) {
-		remaining = -1;
-		position = NULL;
-	}
-
-	if (!f_stat.st_size) {
-		*more = false;
-		return 0;
-	}
-
-	if (remaining < 0) {
-		position = src;
-		remaining = f_stat.st_size;
-		*buffer = xmalloc(block_len);
-	}
-
-	/* intentionally limit decompressed size to 10x compressed
-	 * to avoid problems on receive size when decompressed */
-	size = MIN(block_len * 10, remaining);
-	if (!(size_out = LZ4_compress_destSize(position, *buffer,
-					       &size, block_len))) {
-		/* compression failure */
-		fatal("LZ4 compression error");
-	}
-	position += size;
-	remaining -= size;
-
-	*orig_len = size;
-	*more = (remaining) ? true : false;
-	return size_out;
-#else
-	info("lz4 compression not supported, sending uncompressed file.");
-	params->compress = 0;
-	return _get_block_none(buffer, orig_len, more, file_start);
-#endif
-
-}
-
-static int _next_block(struct bcast_parameters *params,
-		       char **buffer,
-		       int32_t *orig_len,
-		       bool *more, bool file_start)
-{
-	switch (params->compress) {
-	case COMPRESS_LZ4:
-		return _get_block_lz4(params, buffer, orig_len, more,
-				      file_start);
-	}
-	return _get_block_none(buffer, orig_len, more, file_start);
-}
-
 /* read and broadcast the file */
 static int _bcast_file(struct bcast_parameters *params)
 {
 	int rc = SLURM_SUCCESS;
 	file_bcast_msg_t bcast_msg;
-	char *buffer = NULL;
+	char *buffer = NULL, *in_position = src;
 	int32_t orig_len = 0;
 	uint64_t size_uncompressed = 0, size_compressed = 0;
 	uint32_t time_compression = 0;
-	bool more = true, file_start = true;
+	bool more = true;
+	ssize_t remaining = f_stat.st_size;
 	DEF_TIMERS;
 
 	/* Check if compression type is supported, fallback to off */
@@ -381,6 +290,7 @@ static int _bcast_file(struct bcast_parameters *params)
 		block_len = MIN(params->block_size, f_stat.st_size);
 	else
 		block_len = MIN((512 * 1024), f_stat.st_size);
+	buffer = xmalloc(block_len);
 
 	memset(&bcast_msg, 0, sizeof(file_bcast_msg_t));
 	bcast_msg.fname		= params->dst_fname;
@@ -410,11 +320,15 @@ static int _bcast_file(struct bcast_parameters *params)
 		params->tree_width = MIN(MAX_THREADS, params->tree_width);
 
 	while (more) {
+		ssize_t remaining_before = remaining;
 		START_TIMER;
-		bcast_msg.block_len = _next_block(params, &buffer, &orig_len,
-						  &more, file_start);
+		bcast_msg.block_len =
+			compress_g_comp_block(params->compress, &in_position,
+					      f_stat.st_size, &buffer,
+					      block_len, &remaining);
+		orig_len = (int32_t) (remaining_before - remaining);
+		more = (remaining > 0);
 		END_TIMER;
-		file_start = false;
 		time_compression += TIMER_DURATION_USEC();
 		size_uncompressed += orig_len;
 		size_compressed += bcast_msg.block_len;
@@ -714,10 +628,10 @@ extern int bcast_decompress_data(file_bcast_msg_t *req)
 	}
 
 	/*
-	* only swap if there is a new buffer, if compression is off this will
+	 * only swap if there is a new buffer, if compression is off this will
 	 * be the same memory location.
 	 */
-	if (out_buf == req->block) {
+	if (out_buf != req->block) {
 		xfree(req->block);
 		req->block = out_buf;
 		req->block_len = req->uncomp_len;
