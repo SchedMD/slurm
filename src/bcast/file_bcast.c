@@ -50,10 +50,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if HAVE_LZ4
-# include <lz4.h>
-#endif
-
 #include "slurm/slurm_errno.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
