@@ -72,8 +72,9 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
+#include "src/salloc/salloc.h"
+#include "src/salloc/signals.h"
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getpgid(pid_t pid);
@@ -82,8 +83,11 @@ extern pid_t getpgid(pid_t pid);
 #define MAX_RETRIES	10
 #define POLL_SLEEP	0.5	/* retry interval in seconds  */
 
+#define THREAD_COUNT 3
+
 char *argvzero = NULL;
 pid_t command_pid = -1;
+pthread_mutex_t command_pid_lock = PTHREAD_MUTEX_INITIALIZER;
 char *work_dir = NULL;
 static int is_interactive;
 
@@ -91,21 +95,20 @@ enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_cond_t  allocation_state_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static bool allocation_interrupted = false;
 static bool allocation_revoked = false;
-static bool exit_flag = false;
+bool exit_flag = false;
+pthread_mutex_t exit_flag_lock = PTHREAD_MUTEX_INITIALIZER;
 static bool is_het_job = false;
 static bool suspend_flag = false;
-static slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
+slurm_step_id_t my_job_id = SLURM_STEP_ID_INITIALIZER;
+pthread_mutex_t my_job_id_lock = PTHREAD_MUTEX_INITIALIZER;
 static time_t last_timeout = 0;
 static struct termios saved_tty_attributes;
 static int het_job_limit = 0;
 static bool _cli_filter_post_submit_run = false;
 
-static void _exit_on_signal(int signo);
 static int  _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static pid_t _fork_command(char **command);
-static void _forward_signal(int signo);
 static void _job_complete_handler(srun_job_complete_msg_t *msg);
 static void _job_suspend_handler(suspend_msg_t *msg);
 static void _match_job_name(job_desc_msg_t *desc_last, list_t *job_req_list);
@@ -116,26 +119,18 @@ static void _ring_terminal_bell(void);
 static int  _set_cluster_name(void *x, void *arg);
 static void _set_exit_code(void);
 static void _set_spank_env(void);
-static void _signal_while_allocating(int signo);
 static void _timeout_handler(srun_timeout_msg_t *msg);
 static void _user_msg_handler(srun_user_msg_t *msg);
 static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc);
 static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid);
-
-bool salloc_shutdown = false;
-/* Signals that are considered terminal before resource allocation. */
-int sig_array[] = {
-	SIGHUP, SIGINT, SIGQUIT, SIGPIPE,
-	SIGTERM, SIGUSR1, SIGUSR2, 0
-};
 
 static void _reset_input_mode (void)
 {
 	/* SIGTTOU needs to be blocked per the POSIX spec:
 	 * http://pubs.opengroup.org/onlinepubs/009695399/functions/tcsetattr.html
 	 */
-	int sig_block[] = { SIGTTOU, SIGTTIN, 0 };
-	xsignal_block (sig_block);
+	xsignal_ignore(SIGTTOU);
+	xsignal_ignore(SIGTTIN);
 	tcsetattr (STDIN_FILENO, TCSANOW, &saved_tty_attributes);
 	/* If salloc was run as interactive, with job control, reset the
 	 * foreground process group of the terminal to the process group of
@@ -180,12 +175,18 @@ int main(int argc, char **argv)
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
 	slurm_allocation_callbacks_t callbacks;
 	list_itr_t *iter_req, *iter_resp;
+	int tmp_salloc_destroy_sig = 0;
 
 	slurm_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
 	if (cli_filter_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cli_filter plugin");
+
+	conmgr_init(0, THREAD_COUNT, 0);
+	conmgr_run(false);
+
+	salloc_sig_init();
 
 	argvzero = argv[0];
 	_set_exit_code();
@@ -339,11 +340,6 @@ int main(int argc, char **argv)
 				      &first_job->other_port);
 	}
 
-	/* NOTE: Do not process signals in separate pthread. The signal will
-	 * cause slurm_allocate_resources_blocking() to exit immediately. */
-	for (i = 0; sig_array[i]; i++)
-		xsignal(sig_array[i], _signal_while_allocating);
-
 	/*
 	 * This option is a bit odd - it's not actually used as part of the
 	 * allocation, but instead just needs to be propagated to an interactive
@@ -358,12 +354,13 @@ int main(int argc, char **argv)
 			is_het_job = true;
 			job_resp_list = slurm_allocate_het_job_blocking(
 				job_req_list, opt.immediate, _pending_callback,
-				-1);
+				salloc_sig_eventfd);
 			if (job_resp_list)
 				break;
 		} else {
 			alloc = slurm_allocate_resources_blocking(
-				desc, opt.immediate, _pending_callback, -1);
+				desc, opt.immediate, _pending_callback,
+				salloc_sig_eventfd);
 			if (alloc)
 				break;
 		}
@@ -377,8 +374,12 @@ int main(int argc, char **argv)
 		sleep(++retries);
 	}
 
+	slurm_mutex_lock(&salloc_destroy_sig_lock);
+	tmp_salloc_destroy_sig = salloc_destroy_sig;
+	slurm_mutex_unlock(&salloc_destroy_sig_lock);
+
 	if (!alloc && !job_resp_list) {
-		if (allocation_interrupted) {
+		if (tmp_salloc_destroy_sig) {
 			/* cancelled by signal */
 			info("Job aborted due to signal");
 		} else if (errno == EINTR) {
@@ -396,11 +397,12 @@ int main(int argc, char **argv)
 		if (msg_thr)
 			slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
-	} else if (job_resp_list && !allocation_interrupted) {
+	} else if (job_resp_list && !tmp_salloc_destroy_sig) {
 		/* Allocation granted to regular job */
 		i = 0;
 		iter_resp = list_iterator_create(job_resp_list);
 		while ((alloc = list_next(iter_resp))) {
+			slurm_mutex_lock(&my_job_id_lock);
 			if (i == 0) {
 				my_job_id = alloc->step_id;
 				info("Granted job allocation %u", my_job_id.job_id);
@@ -408,6 +410,7 @@ int main(int argc, char **argv)
 			log_flag(HETJOB, "Hetjob ID %u+%u (%pI) on nodes %s",
 			         my_job_id.job_id, i, &alloc->step_id,
 				 alloc->node_list);
+			slurm_mutex_unlock(&my_job_id_lock);
 			i++;
 			if (_proc_alloc(alloc) != SLURM_SUCCESS) {
 				list_iterator_destroy(iter_resp);
@@ -415,19 +418,23 @@ int main(int argc, char **argv)
 			}
 		}
 		list_iterator_destroy(iter_resp);
-	} else if (!allocation_interrupted) {
+	} else if (!tmp_salloc_destroy_sig) {
 		/* Allocation granted to regular job */
+		slurm_mutex_lock(&my_job_id_lock);
 		my_job_id = alloc->step_id;
 
 		print_multi_line_string(alloc->job_submit_user_msg,
 					-1, LOG_LEVEL_INFO);
 		info("Granted job allocation %u", my_job_id.job_id);
+		slurm_mutex_unlock(&my_job_id_lock);
 
 		if (_proc_alloc(alloc) != SLURM_SUCCESS)
 			goto relinquish;
 	}
 
+	slurm_mutex_lock(&my_job_id_lock);
 	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);
+	slurm_mutex_unlock(&my_job_id_lock);
 
 	after = time(NULL);
 	if ((saopt.bell == BELL_ALWAYS) ||
@@ -437,9 +444,17 @@ int main(int argc, char **argv)
 	}
 	if (saopt.no_shell)
 		exit(0);
-	if (allocation_interrupted) {
-		if (alloc)
+
+	slurm_mutex_lock(&salloc_destroy_sig_lock);
+	tmp_salloc_destroy_sig = salloc_destroy_sig;
+	slurm_mutex_unlock(&salloc_destroy_sig_lock);
+
+	if (tmp_salloc_destroy_sig) {
+		if (alloc) {
+			slurm_mutex_lock(&my_job_id_lock);
 			my_job_id = alloc->step_id;
+			slurm_mutex_unlock(&my_job_id_lock);
+		}
 		/* salloc process received a signal after
 		 * slurm_allocate_resources_blocking returned with the
 		 * allocation, but before the new signal handlers were
@@ -541,29 +556,30 @@ int main(int argc, char **argv)
 	env_array_free(env);
 	slurm_mutex_lock(&allocation_state_lock);
 	if (allocation_state == REVOKED) {
-		error("Allocation was revoked for %pI before command could be run",
-		      &my_job_id);
 		slurm_cond_broadcast(&allocation_state_cond);
 		slurm_mutex_unlock(&allocation_state_lock);
+
+		slurm_mutex_lock(&my_job_id_lock);
+		error("Allocation was revoked for %pI before command could be run",
+		      &my_job_id);
 		if (slurm_complete_job(&my_job_id, status) != 0) {
 			error("Unable to clean up allocation for %pI: %m",
 			      &my_job_id);
 		}
+		slurm_mutex_unlock(&my_job_id_lock);
+
 		return 1;
- 	}
+	}
 	allocation_state = GRANTED;
 	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*  Ensure that salloc has initial terminal foreground control.  */
 	if (is_interactive) {
-		/*
-		 * Ignore remaining job-control signals (other than those in
-		 * sig_array, which at this state act like SIG_IGN).
-		 */
-		xsignal(SIGTSTP, SIG_IGN);
-		xsignal(SIGTTIN, SIG_IGN);
-		xsignal(SIGTTOU, SIG_IGN);
+		/* Ignore remaining job-control signals */
+		xsignal_ignore(SIGTSTP);
+		xsignal_ignore(SIGTTIN);
+		xsignal_ignore(SIGTTOU);
 
 		pid = getpid();
 		setpgid(pid, pid);
@@ -573,26 +589,37 @@ int main(int argc, char **argv)
 	slurm_mutex_lock(&allocation_state_lock);
 	if (suspend_flag)
 		slurm_cond_wait(&allocation_state_cond, &allocation_state_lock);
+
+	slurm_mutex_lock(&command_pid_lock);
 	command_pid = _fork_command(opt.argv);
+	slurm_mutex_unlock(&command_pid_lock);
+
 	slurm_cond_broadcast(&allocation_state_cond);
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	/*
 	 * Wait for command to exit, OR for waitpid to be interrupted by a
 	 * signal.  Either way, we are going to release the allocation next.
+	 *
+	 * No need to hold lock for command_pid, no other thread will modify it.
 	 */
 	if (command_pid > 0) {
+		bool tmp_exit_flag = false;
+
 		setpgid(command_pid, command_pid);
 		if (is_interactive)
 			tcsetpgrp(STDIN_FILENO, command_pid);
 
-		/* NOTE: Do not process signals in separate pthread.
-		 * The signal will cause waitpid() to exit immediately. */
-		xsignal(SIGHUP,  _exit_on_signal);
 		/* Use WUNTRACED to treat stopped children like terminated ones */
 		do {
 			rc_pid = waitpid(command_pid, &status, WUNTRACED);
-		} while (WIFSTOPPED(status) || ((rc_pid == -1) && (!exit_flag)));
+
+			slurm_mutex_lock(&exit_flag_lock);
+			tmp_exit_flag = exit_flag;
+			slurm_mutex_unlock(&exit_flag_lock);
+
+		} while (WIFSTOPPED(status) ||
+			 ((rc_pid == -1) && (!tmp_exit_flag)));
 		if ((rc_pid == -1) && (errno != EINTR))
 			error("waitpid for %s failed: %m", opt.argv[0]);
 	}
@@ -608,11 +635,14 @@ relinquish:
 	if (allocation_state != REVOKED) {
 		slurm_mutex_unlock(&allocation_state_lock);
 
+		slurm_mutex_lock(&my_job_id_lock);
 		info("Relinquishing job allocation %u", my_job_id.job_id);
 		if ((slurm_complete_job(&my_job_id, status) != 0) &&
 		    (errno != ESLURM_ALREADY_DONE))
 			error("Unable to clean up job allocation %pI: %m",
 			      &my_job_id);
+		slurm_mutex_unlock(&my_job_id_lock);
+
 		slurm_mutex_lock(&allocation_state_lock);
 		allocation_state = REVOKED;
 	}
@@ -633,7 +663,7 @@ relinquish:
 			rc = WEXITSTATUS(status);
 		} else if (WIFSTOPPED(status)) {
 			/* Terminate stopped child process */
-			_forward_signal(SIGKILL);
+			salloc_sig_forward(SIGKILL);
 		} else if (WIFSIGNALED(status)) {
 			verbose("Command \"%s\" was terminated by signal %d",
 				opt.argv[0], WTERMSIG(status));
@@ -652,6 +682,8 @@ relinquish:
 			}
 		}
 	}
+
+	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
@@ -700,8 +732,10 @@ static int _proc_alloc(resource_allocation_response_msg_t *alloc)
 	}
 
 	if (!_wait_nodes_ready(alloc)) {
-		if (!allocation_interrupted)
+		slurm_mutex_lock(&salloc_destroy_sig_lock);
+		if (!salloc_destroy_sig)
 			error("Something is wrong with the boot of the nodes.");
+		slurm_mutex_unlock(&salloc_destroy_sig_lock);
 		return SLURM_ERROR;
 	}
 
@@ -823,10 +857,10 @@ static pid_t _fork_command(char **command)
 		 * Suspending single commands is more complex and would require
 		 * adding full shell-like job control to salloc.
 		 */
-		xsignal(SIGINT, SIG_DFL);
-		xsignal(SIGQUIT, SIG_DFL);
-		xsignal(SIGTTIN, SIG_DFL);
-		xsignal(SIGTTOU, SIG_DFL);
+		xsignal_default(SIGINT);
+		xsignal_default(SIGQUIT);
+		xsignal_default(SIGTTIN);
+		xsignal_default(SIGTTOU);
 
 		execvp(cpath, command);
 
@@ -843,10 +877,12 @@ static pid_t _fork_command(char **command)
 static void _pending_callback(slurm_step_id_t *step_id)
 {
 	info("Pending job allocation %u", step_id->job_id);
+	slurm_mutex_lock(&my_job_id_lock);
 	my_job_id = *step_id;
 
 	/* call cli_filter post_submit here so it runs while allocating */
 	_salloc_cli_filter_post_submit(my_job_id.job_id, NO_VAL);
+	slurm_mutex_unlock(&my_job_id_lock);
 }
 
 /*
@@ -865,35 +901,20 @@ static void _salloc_cli_filter_post_submit(uint32_t jobid, uint32_t stepid)
 	_cli_filter_post_submit_run = true;
 }
 
-static void _exit_on_signal(int signo)
-{
-	_forward_signal(signo);
-	exit_flag = true;
-}
-
-static void _forward_signal(int signo)
-{
-	if (command_pid > 0)
-		killpg(command_pid, signo);
-}
-
-static void _signal_while_allocating(int signo)
-{
-	allocation_interrupted = true;
-	if (my_job_id.job_id != NO_VAL) {
-		slurm_complete_job(&my_job_id, 128 + signo);
-	}
-}
-
 /* This typically signifies the job was cancelled by scancel */
 static void _job_complete_handler(srun_job_complete_msg_t *comp)
 {
+	int tmp_command_pid = -1;
+
+	slurm_mutex_lock(&my_job_id_lock);
 	if (!is_het_job && (my_job_id.job_id != NO_VAL) &&
 	    (my_job_id.job_id != comp->job_id)) {
 		error("Ignoring job_complete for job %u because we are %pI",
 		      comp->job_id, &my_job_id);
+		slurm_mutex_unlock(&my_job_id_lock);
 		return;
 	}
+	slurm_mutex_unlock(&my_job_id_lock);
 
 	if (comp->step_id == NO_VAL) {
 		slurm_mutex_lock(&allocation_state_lock);
@@ -919,8 +940,12 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 		 * Clean up child process: only if the forked process has not
 		 * yet changed state (waitpid returning 0).
 		 */
-		if ((command_pid > -1) &&
-		    (waitpid(command_pid, NULL, WNOHANG) == 0)) {
+		slurm_mutex_lock(&command_pid_lock);
+		tmp_command_pid = command_pid;
+		slurm_mutex_unlock(&command_pid_lock);
+
+		if ((tmp_command_pid > -1) &&
+		    (waitpid(tmp_command_pid, NULL, WNOHANG) == 0)) {
 			int signal = 0;
 
 			if (is_interactive) {
@@ -932,7 +957,8 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				 * originated from salloc). Notify foreground
 				 * process about pending termination.
 				 */
-				if (tpgid != command_pid && tpgid != getpgrp())
+				if (tpgid != tmp_command_pid &&
+				    tpgid != getpgrp())
 					killpg(tpgid, SIGHUP);
 			}
 
@@ -945,12 +971,12 @@ static void _job_complete_handler(srun_job_complete_msg_t *comp)
 				signal = SIGTERM;
 #endif
 			if (signal) {
-				 verbose("Sending signal %d to command \"%s\","
+				verbose("Sending signal %d to command \"%s\","
 					 " pid %d",
-					 signal, opt.argv[0], command_pid);
+					 signal, opt.argv[0], tmp_command_pid);
 				if (suspend_flag)
-					_forward_signal(SIGCONT);
-				_forward_signal(signal);
+					salloc_sig_forward(SIGCONT);
+				salloc_sig_forward(signal);
 			}
 		}
 	} else {
@@ -1001,6 +1027,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	double cur_sleep = 0;
 	int is_ready = 0, i = 0, rc;
 	bool job_killed = false;
+	int tmp_salloc_destroy_sig = 0;
 
 	if (saopt.wait_all_nodes == NO_VAL16)
 		saopt.wait_all_nodes = 0;
@@ -1028,9 +1055,16 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		i += 1;
 
 		rc = slurm_job_node_ready(alloc->step_id.job_id);
+
+		slurm_mutex_lock(&salloc_destroy_sig_lock);
+		tmp_salloc_destroy_sig = salloc_destroy_sig;
+		slurm_mutex_unlock(&salloc_destroy_sig_lock);
+
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
-		if (allocation_interrupted || allocation_revoked)
+		if (tmp_salloc_destroy_sig)
+			break;
+		if (allocation_revoked)
 			break;
 		if ((rc == READY_JOB_ERROR) || (rc == EAGAIN))
 			continue;			/* retry */
@@ -1045,16 +1079,23 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			break;
 		}
 	}
+
+	slurm_mutex_lock(&salloc_destroy_sig_lock);
+	tmp_salloc_destroy_sig = salloc_destroy_sig;
+	slurm_mutex_unlock(&salloc_destroy_sig_lock);
+
 	if (is_ready) {
 		info("Nodes %s are ready for job", alloc->node_list);
-	} else if (!allocation_interrupted) {
+	} else if (!tmp_salloc_destroy_sig) {
 		if (job_killed || allocation_revoked) {
 			error("Job allocation %u has been revoked",
 			      alloc->step_id.job_id);
-			allocation_interrupted = true;
+			slurm_mutex_lock(&salloc_destroy_sig_lock);
+			salloc_destroy_sig = SIGTERM;
+			slurm_mutex_unlock(&salloc_destroy_sig_lock);
 		} else
 			error("Nodes %s are still not ready", alloc->node_list);
-	} else	/* allocation_interrupted or slurmctld not responing */
+	} else /* caught destroy signal or slurmctld not responding */
 		is_ready = 0;
 
 	return is_ready;

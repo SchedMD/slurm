@@ -61,14 +61,9 @@ strong_alias(xsignal_block,	slurm_xsignal_block);
 strong_alias(xsignal_unblock,	slurm_xsignal_unblock);
 strong_alias(xsignal_sigset_create, slurm_xsignal_sigset_create);
 
-SigFunc *
-xsignal(int signo, SigFunc *f)
+static SigFunc *_sigaction(int signo, SigFunc *f)
 {
 	struct sigaction sa, old_sa;
-
-	if (conmgr_enabled())
-		return SLURM_SUCCESS;
-
 	sa.sa_handler = f;
 	sigemptyset(&sa.sa_mask);
 	sigaddset(&sa.sa_mask, signo);
@@ -88,23 +83,24 @@ xsignal(int signo, SigFunc *f)
 	return (old_sa.sa_handler);
 }
 
-extern SigFunc *xsignal_default(int sig)
+extern SigFunc *xsignal(int signo, SigFunc *f)
 {
-	struct sigaction act;
-
 	if (conmgr_enabled())
 		return SLURM_SUCCESS;
 
-	if (sigaction(sig, NULL, &act)) {
-		error("sigaction(%d): %m", sig);
-		return NULL;
-	}
-	if (act.sa_handler != SIG_IGN)
-		return act.sa_handler;
+	return _sigaction(signo, f);
+}
 
-	xsignal(sig, SIG_DFL);
+extern SigFunc *xsignal_default(int sig)
+{
+	/* Allowed even when conmgr is enabled */
+	return _sigaction(sig, SIG_DFL);
+}
 
-	return act.sa_handler;
+extern SigFunc *xsignal_ignore(int sig)
+{
+	/* Allowed even when conmgr is enabled */
+	return _sigaction(sig, SIG_IGN);
 }
 
 /*

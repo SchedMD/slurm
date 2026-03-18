@@ -1,10 +1,7 @@
 /*****************************************************************************\
- * src/common/xsignal.h - POSIX signal wrapper functions
+ *  signals.h - Signal handler logic for salloc
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  CODE-OCEC-09-009. All rights reserved.
+ *  Copyright (C) SchedMD LLC.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -36,59 +33,22 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _XSIGNAL_H
-#define _XSIGNAL_H
-
-#include <signal.h>
-
-typedef void SigFunc(int);
+#ifndef _SALLOC_SIGNALS_H
+#define _SALLOC_SIGNALS_H
 
 /*
- * Install a signal handler in the POSIX way, but with BSD signal() semantics
+ * If a signal comes in to destroy salloc, this will be set to the signo used to
+ * destroy salloc. Otherwise, this will be set to 0.
  */
-SigFunc *xsignal(int signo, SigFunc *);
+extern int salloc_destroy_sig;
+extern pthread_mutex_t salloc_destroy_sig_lock;
 
-/*
- * Set signal disposition to SIG_DFL
- */
-extern SigFunc *xsignal_default(int sig);
+extern int salloc_sig_eventfd;
 
-/*
- * Set signal disposition to SIG_IGN
- */
-extern SigFunc *xsignal_ignore(int sig);
+/* Called only once at the beginning of the process */
+extern void salloc_sig_init(void);
 
-/*
- * Save current set of blocked signals into `set'
- */
-int xsignal_save_mask(sigset_t *set);
+/* Forward signal to command */
+extern void salloc_sig_forward(int signo);
 
-/*
- *  Set the mask of blocked signals to exactly `set'
- */
-int xsignal_set_mask(sigset_t *set);
-
-/*
- *  Add the list of signals given in the signal array `sigarray'
- *   to the current list of signals masked in the process.
- *
- *   sigarray is a zero-terminated array of signal numbers,
- *   e.g. { SIGINT, SIGTERM, ... , 0 }
- *
- *  Returns SLURM_SUCCESS or SLURM_ERROR.
- *
- */
-int xsignal_block(int sigarray[]);
-
-/*
- *  As xsignal_block() above, but instead remove the list of signals
- *    from the threads signal mask.
- */
-int xsignal_unblock(int sigarray[]);
-
-/*
- *  Create a sigset_t from a sigarray
- */
-int xsignal_sigset_create(int sigarray[], sigset_t *setp);
-
-#endif /* !_XSIGNAL_H */
+#endif /* _SALLOC_SIGNALS_H */

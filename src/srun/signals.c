@@ -210,17 +210,9 @@ SRUN_SIGNALS
 
 extern void srun_sig_init(void)
 {
-	sigset_t set;
-
 	if ((srun_sig_eventfd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK)) == -1) {
 		fatal("Could not create eventfd for srun signal handling: %m");
 	}
-
-	sigemptyset(&set);
-#define X(sig, str) sigaddset(&set, sig);
-	SRUN_SIGNALS
-#undef X
-	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 #define X(sig, str) conmgr_add_work_signal(sig, _on_##str, NULL);
 	SRUN_SIGNALS

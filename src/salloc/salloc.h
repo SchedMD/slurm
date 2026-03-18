@@ -44,11 +44,18 @@
 #include <unistd.h>
 
 extern char *argvzero;
-extern pid_t    command_pid;
+extern pid_t command_pid;
+extern pthread_mutex_t command_pid_lock;
 extern uint64_t debug_flags;
 
 enum possible_allocation_states {NOT_GRANTED, GRANTED, REVOKED};
 extern enum possible_allocation_states allocation_state;
 extern pthread_mutex_t allocation_state_lock;
+
+extern bool exit_flag;
+extern pthread_mutex_t exit_flag_lock;
+
+extern slurm_step_id_t my_job_id;
+extern pthread_mutex_t my_job_id_lock;
 
 #endif	/* _HAVE_SALLOC_H */
