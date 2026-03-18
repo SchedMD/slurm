@@ -181,13 +181,14 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
-    reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection(): if (service_conn->conn->callback_fini)"
+    reason = "Ticket 22310: Known issue when shutting down slurmdbd: SIGSEGV in _service_connection(): if (service_conn->pcon->callback_fini)"
     component = "sbin/slurmdbd"
     if (
         component in bin_path
         and "Program terminated with signal SIGSEGV" in bt
         and "src/common/persist_conn.c" in bt
-        and "(service_conn->pconn->callback_fini)" in bt
+        and "_service_connection" in bt
+        and "(service_conn->pcon->callback_fini)" in bt
     ):
         if get_version(component) >= (25, 11, 4):
             failures.append(reason)
