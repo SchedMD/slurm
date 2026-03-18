@@ -47,6 +47,44 @@ typedef struct {
 	uint16_t index;
 } foreach_create_update_part_t;
 
+static void _warn_on_ignore_values(update_part_msg_t *update_part,
+				   uint16_t index, openapi_ctxt_t *ctxt)
+{
+	char *warn_str = NULL;
+	char *pos = NULL;
+
+	if (update_part->cluster_name)
+		xstrcatat(warn_str, &pos, "cluster");
+	if (update_part->cr_type)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "select_type");
+	if (update_part->resume_timeout)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "timeouts/resume");
+	if (update_part->suspend_time)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "suspend_time");
+	if (update_part->suspend_timeout)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "timeouts/suspend");
+	if (update_part->total_cpus)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "cpus/total");
+	if (update_part->total_nodes)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "nodes/total");
+	if (update_part->tres_fmt_str)
+		xstrfmtcatat(warn_str, &pos, "%s%s", (warn_str ? ", " : ""),
+			     "tres/configured");
+
+	if (warn_str)
+		resp_warn(
+			ctxt, __func__,
+			"The partition description at index %u contains the following ignored fields: %s",
+			index, warn_str);
+	xfree(warn_str);
+}
+
 static int _foreach_create_update_partition(void *x, void *arg)
 {
 	update_part_msg_t *update_part = x;
@@ -65,6 +103,8 @@ static int _foreach_create_update_partition(void *x, void *arg)
 		args->index++;
 		return 0; /* Don't break list_for_each */
 	}
+
+	_warn_on_ignore_values(update_part, args->index, args->ctxt);
 
 	/*
 	 * RPC does not use nodesets field, append it to nodes instead unless
