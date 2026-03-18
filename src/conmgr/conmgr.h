@@ -1167,6 +1167,9 @@ extern void conmgr_fd_free_ref(conmgr_fd_ref_t **ref_ptr);
  */
 extern conmgr_fd_t *conmgr_fd_get_ref(conmgr_fd_ref_t *ref);
 
+/* True if references point to the same connection */
+extern bool conmgr_con_is_equal(conmgr_fd_ref_t *con1, conmgr_fd_ref_t *con2);
+
 /* Get connection name from reference */
 extern const char *conmgr_con_get_name(conmgr_fd_ref_t *ref);
 

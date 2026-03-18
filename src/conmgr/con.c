@@ -2593,3 +2593,25 @@ extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *ref,
 
 	return SLURM_SUCCESS;
 }
+
+extern bool conmgr_con_is_equal(conmgr_fd_ref_t *con1, conmgr_fd_ref_t *con2)
+{
+	int is_equal = false;
+
+	if (!con1 || !con2)
+		return false;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con1->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con1->con->magic == MAGIC_CON_MGR_FD);
+
+	xassert(con2->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con2->con->magic == MAGIC_CON_MGR_FD);
+
+	is_equal = (con1->con == con2->con);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return is_equal;
+}
