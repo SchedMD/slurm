@@ -349,8 +349,7 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 	struct stat statbuf;
 
 	if ((dirp = opendir(dirpath)) == NULL) {
-		error("callerid_get_own_netinfo: opendir failed for %s: %m",
-				dirpath);
+		error("%s: opendir failed for %s: %m", __func__, dirpath);
 		return rc;
 	}
 
@@ -364,7 +363,7 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 		if (snprintf(fdpath, PATH_MAX, "%s/%s", dirpath,
 			     entryp->d_name) >= PATH_MAX)
 			continue;
-		debug3("callerid_get_own_netinfo: checking %s", fdpath);
+		debug3("%s: checking %s", __func__, fdpath);
 		/* This is a symlink. Follow it to get destination's inode. */
 		if (stat(fdpath, &statbuf) != 0) {
 			debug3("stat failed for %s: %m", fdpath);
@@ -373,8 +372,7 @@ extern int callerid_get_own_netinfo (callerid_conn_t *conn)
 
 		/* We are only interested in sockets */
 		if (S_ISSOCK(statbuf.st_mode)) {
-			debug3("callerid_get_own_netinfo: checking socket %s",
-					fdpath);
+			debug3("%s: checking socket %s", __func__, fdpath);
 			rc = callerid_find_conn_by_inode(conn, statbuf.st_ino);
 			if (rc == SLURM_SUCCESS) {
 				break;

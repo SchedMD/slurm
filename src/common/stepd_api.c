@@ -104,14 +104,13 @@ _handle_stray_socket(const char *socket_name)
 		return;
 
 	if (stat(socket_name, &buf) == -1) {
-		debug3("_handle_stray_socket: unable to stat %s: %m",
-			socket_name);
+		debug3("%s: unable to stat %s: %m", __func__, socket_name);
 		return;
 	}
 
 	if ((uid = getuid()) != buf.st_uid) {
-		debug3("_handle_stray_socket: socket %s is not owned by uid %u",
-		       socket_name, uid);
+		debug3("%s: socket %s is not owned by uid %u",
+		       __func__, socket_name, uid);
 		return;
 	}
 
@@ -120,8 +119,8 @@ _handle_stray_socket(const char *socket_name)
 		/* remove the socket */
 		if (unlink(socket_name) == -1) {
 			if (errno != ENOENT) {
-				error("_handle_stray_socket: unable to clean up"
-				      " stray socket %s: %m", socket_name);
+				error("%s: unable to clean up stray socket %s: %m",
+				      __func__, socket_name);
 			}
 		} else {
 			debug("Cleaned up stray socket %s", socket_name);

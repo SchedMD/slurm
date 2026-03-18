@@ -100,7 +100,6 @@ typedef struct hostlist_iterator hostlist_iterator_t;
 
 /* ----[ hostlist creation and destruction ]---- */
 
-int set_grid(int start, int end, int count);
 /*
  * hostlist_create():
  *

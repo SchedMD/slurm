@@ -61,10 +61,6 @@ extern void gs_job_start(job_record_t *job_ptr);
  * In either case, remove the job from gang scheduling. */
 extern void gs_job_fini(job_record_t *job_ptr);
 
-/* Gang scheduling has been disabled by change in configuration,
- *	resume any suspended jobs */
-extern void gs_wake_jobs(void);
-
 /* Tell gang scheduler that system reconfiguration has been performed
  *	configuration parameters may have changed. Rebuild data structures
  *	from scratch */
