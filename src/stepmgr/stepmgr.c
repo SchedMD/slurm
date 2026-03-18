@@ -3658,6 +3658,8 @@ extern int step_create(job_record_t *job_ptr,
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 		i = resv_port_step_alloc(step_ptr);
 		if (i != SLURM_SUCCESS) {
+			if (i == ESLURM_PORTS_BUSY)
+				_build_pending_step(job_ptr, step_specs);
 			delete_step_record(job_ptr, step_ptr);
 			return i;
 		}
