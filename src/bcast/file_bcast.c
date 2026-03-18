@@ -453,32 +453,6 @@ static int _bcast_file(struct bcast_parameters *params)
 	return rc;
 }
 
-
-static int _decompress_data_lz4(file_bcast_msg_t *req)
-{
-#if HAVE_LZ4
-	char *out_buf;
-	int out_len;
-
-	if (!req->block_len)
-		return 0;
-
-	out_buf = xmalloc(req->uncomp_len);
-	out_len = LZ4_decompress_safe(req->block, out_buf, req->block_len,
-				      req->uncomp_len);
-	xfree(req->block);
-	req->block = out_buf;
-	if (req->uncomp_len != out_len) {
-		error("lz4 decompression error, original block length != decompressed length");
-		return -1;
-	}
-	req->block_len = out_len;
-	return 0;
-#else
-	return -1;
-#endif
-}
-
 /*
  * IN: char pointer with the filename.
  * OUT: List of shared object direct and indirect dependencies.
@@ -727,15 +701,27 @@ extern int bcast_file(struct bcast_parameters *params)
 
 extern int bcast_decompress_data(file_bcast_msg_t *req)
 {
-	switch (req->compress) {
-	case COMPRESS_OFF:
-		return 0;
-	case COMPRESS_LZ4:
-		return _decompress_data_lz4(req);
+	char *out_buf = NULL;
+
+	out_buf = compress_g_decompress(req->compress, req->block,
+					req->block_len, req->uncomp_len);
+
+	if (!out_buf) {
+		/* compression type not recognized */
+		error("%s: compression type %u not supported.",
+		      __func__, req->compress);
+		return -1;
 	}
 
-	/* compression type not recognized */
-	error("%s: compression type %u not supported.",
-	      __func__, req->compress);
-	return -1;
+	/*
+	* only swap if there is a new buffer, if compression is off this will
+	 * be the same memory location.
+	 */
+	if (out_buf == req->block) {
+		xfree(req->block);
+		req->block = out_buf;
+		req->block_len = req->uncomp_len;
+	}
+
+	return 0;
 }
