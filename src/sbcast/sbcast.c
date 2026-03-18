@@ -62,6 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/interfaces/compress.h"
 #include "src/interfaces/cred.h"
 
 #include "src/sbcast/sbcast.h"
@@ -90,6 +91,8 @@ int main(int argc, char **argv)
 	log_init("sbcast", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	slurm_init(NULL);
+	if (compress_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize compress plugin");
 
 	parse_command_line(argc, argv);
 	if (params.verbose) {
@@ -107,6 +110,7 @@ int main(int argc, char **argv)
 	}
 
 #ifdef MEMORY_LEAK_DEBUG
+	compress_g_fini();
 	slurm_fini();
 	log_fini();
 #endif /* MEMORY_LEAK_DEBUG */
