@@ -551,6 +551,10 @@ static int _fill_jobs_statistics(void *x, void *arg)
 		new->memory_alloc =
 			(j->tres_alloc_cnt ? j->tres_alloc_cnt[TRES_ARRAY_MEM] :
 					     0);
+
+		js->cpus_alloc += new->cpus_alloc;
+		js->nodes_alloc += new->nodes_alloc;
+		js->memory_alloc += new->memory_alloc;
 	}
 
 	/*
