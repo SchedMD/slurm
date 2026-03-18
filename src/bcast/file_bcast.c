@@ -351,17 +351,10 @@ static int _next_block(struct bcast_parameters *params,
 		       bool *more, bool file_start)
 {
 	switch (params->compress) {
-	case COMPRESS_OFF:
-		return _get_block_none(buffer, orig_len, more, file_start);
 	case COMPRESS_LZ4:
 		return _get_block_lz4(params, buffer, orig_len, more,
 				      file_start);
 	}
-
-	/* compression type not recognized */
-	error("File compression type %u not supported,"
-	      " sending uncompressed file.", params->compress);
-	params->compress = 0;
 	return _get_block_none(buffer, orig_len, more, file_start);
 }
 
@@ -376,6 +369,13 @@ static int _bcast_file(struct bcast_parameters *params)
 	uint32_t time_compression = 0;
 	bool more = true, file_start = true;
 	DEF_TIMERS;
+
+	/* Check if compression type is supported, fallback to off */
+	if (compress_g_type_available(params->compress) == SLURM_ERROR) {
+		error("File compression type %u not supported sending uncompressed file.",
+		      params->compress);
+		params->compress = COMPRESS_OFF;
+	}
 
 	if (params->block_size)
 		block_len = MIN(params->block_size, f_stat.st_size);
