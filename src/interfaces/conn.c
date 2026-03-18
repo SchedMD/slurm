@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/fd.h"
@@ -292,8 +293,24 @@ extern ssize_t conn_g_send(conn_t *conn, const void *buf, size_t n)
 
 extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count)
 {
+	ssize_t bytes = -1;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.sendv))(conn, bufs, count);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET_RAW) {
+		for (int i = 0; i < count; i++)
+			log_flag_hex(NET_RAW, bufs[i].iov_base, bufs[i].iov_len,
+				     "%s: [fd:%d] sending iovec %d to 0x%"PRIxPTR,
+				     __func__, conn_g_get_fd(conn), i,
+				     (uintptr_t) conn);
+	}
+
+	bytes = (*(ops.sendv))(conn, bufs, count);
+
+	log_flag(NET, "%s: [fd:%d] sent %zd bytes to 0x%"PRIxPTR,
+		 __func__, conn_g_get_fd(conn), bytes, (uintptr_t) conn);
+
+	return bytes;
 }
 
 extern uint32_t conn_g_peek(conn_t *conn)
