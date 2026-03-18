@@ -106,5 +106,10 @@ int main(int argc, char **argv)
 		rc = bcast_file(&params);
 	}
 
+#ifdef MEMORY_LEAK_DEBUG
+	slurm_fini();
+	log_fini();
+#endif /* MEMORY_LEAK_DEBUG */
+
 	return rc;
 }
