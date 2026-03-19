@@ -147,7 +147,7 @@ typedef struct {
 					      directly requested */
 #define GRES_CONF_FROM_STATE SLURM_BIT(13) /* Flags from state, blow away once
 					      node checks in. */
-#define GRES_CONF_GLOBAL_INDEX SLURM_BIT(14) /* devices use global index */
+#define GRES_CONF_UUID SLURM_BIT(14) /* Use GPU UUID in env vars */
 #define GRES_CONF_AUTODETECT SLURM_BIT(15) /* Conf was made with Autodetect */
 #define GRES_CONF_UPDATE_CONFIG SLURM_BIT(16) /* Flag to update gres config */
 #define GRES_CONF_MIG SLURM_BIT(17) /* GRES configuration is for NVIDIA MIG */
