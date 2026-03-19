@@ -326,8 +326,8 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	}
 
 	if (segment_size && (rem_nodes % segment_size)) {
-		info("%s: segment_size (%u) does not fit the job size (%d)",
-		     __func__, segment_size, rem_nodes);
+		info("segment_size (%u) does not fit the job size (%d)",
+		     segment_size, rem_nodes);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
@@ -542,8 +542,8 @@ next_segment:
 		nodes_on_llblock = xcalloc(llblock_cnt, sizeof(uint32_t));
 	}
 
-	log_flag(SELECT_TYPE, "%s: bblock_per_block:%u rem_nodes:%u llblock_cnt:%u max_llblock:%d llblock_level:%d",
-		 __func__, bblock_per_block, rem_nodes, llblock_cnt,
+	log_flag(SELECT_TYPE, "bblock_per_block:%u rem_nodes:%u llblock_cnt:%u max_llblock:%d llblock_level:%d",
+		 bblock_per_block, rem_nodes, llblock_cnt,
 		 max_llblock, llblock_level);
 
 	if (!bblock_required)
@@ -1016,14 +1016,14 @@ next_segment:
 					    &best_same_block, &best_fit,
 					    &best_bblock_inx, ctx);
 		}
-		log_flag(SELECT_TYPE, "%s: rem_nodes:%d  best_bblock_inx:%d",
-			 __func__, rem_nodes, best_bblock_inx);
+		log_flag(SELECT_TYPE, "rem_nodes:%d  best_bblock_inx:%d",
+			 rem_nodes, best_bblock_inx);
 		if (best_bblock_inx == -1)
 			break;
 
 		if ((max_llblock <= 0) && !best_same_block) {
-			log_flag(SELECT_TYPE, "%s: min_rem_nodes:%d can't add more bblocks due to llblock limit",
-				 __func__, min_rem_nodes);
+			log_flag(SELECT_TYPE, "min_rem_nodes:%d can't add more bblocks due to llblock limit",
+				 min_rem_nodes);
 			break;
 		}
 
@@ -1109,8 +1109,8 @@ fini:
 			}
 			bit_copybits(topo_eval->node_map, orig_node_map);
 			bit_and_not(topo_eval->node_map, alloc_node_map);
-			log_flag(SELECT_TYPE, "%s: rem_segment_cnt:%d",
-				 __func__, rem_segment_cnt);
+			log_flag(SELECT_TYPE, "rem_segment_cnt:%d",
+				 rem_segment_cnt);
 			goto next_segment;
 		} else if (alloc_node_map) {
 			bit_or(topo_eval->node_map, alloc_node_map);
