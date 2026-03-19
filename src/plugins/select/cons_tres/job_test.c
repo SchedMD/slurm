@@ -1412,7 +1412,8 @@ try_next_nodes_cnt:
 	 *         place job and exit. If not successful, then continue. Two
 	 *         related items to note:
 	 *          1. Jobs that don't share CPUs finish with step 1.
-	 *          2. The remaining steps assume sharing or preemption.
+	 *          2. The remaining steps assume sharing (gang or
+	 *          preempt/partition_prio + PREEMPT_MODE_SUSPEND).
 	 *
 	 * Step 2: Remove resources that are in use by higher-priority
 	 *         partitions, and test that job can still succeed. If not
@@ -1491,13 +1492,12 @@ skip_test0:
 	_free_avail_res_array(avail_res_array);
 	avail_res_array = NULL;
 
-	if ((gang_mode == 0) && (job_node_req == NODE_CR_ONE_ROW)) {
+	if ((gang_mode == 0) && (job_node_req != NODE_CR_AVAILABLE)) {
 		/*
 		 * This job CANNOT share CPUs regardless of priority,
-		 * so we fail here. Note that OverSubscribe=EXCLUSIVE was
-		 * already addressed in _verify_node_state() and
-		 * job preemption removes jobs from simulated resource
-		 * allocation map before this point.
+		 * so we fail here. Note that job preemption removes
+		 * jobs from simulated resource allocation map before
+		 * this point.
 		 */
 		log_flag(SELECT_TYPE, "test 1 fail - no idle resources available");
 		goto alloc_job;
