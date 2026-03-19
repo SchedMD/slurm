@@ -514,7 +514,7 @@ expand, allbox, tab (@);
 l l c c c c
 l l c c c c.
 Command@Function                         @Context   @Exitcode @Drains Node @Fails job
-.SP
+_
 srun   @slurm_spank_init                 @local     @1        @no          @yes
 srun   @slurm_spank_init_post_opt        @local     @1        @no          @yes
 srun   @slurm_spank_local_user_init      @local     @1        @no          @yes
@@ -525,7 +525,7 @@ srun   @slurm_spank_task_post_fork       @remote    @0        @no          @no
 srun   @slurm_spank_task_init            @remote    @1        @no          @yes
 srun   @slurm_spank_task_exit            @remote    @0        @no          @no
 srun   @slurm_spank_exit                 @local     @0        @no          @yes
-=
+_
 salloc @slurm_spank_init                 @allocator @1        @no          @yes
 salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
 salloc @slurm_spank_init                 @remote    @1        @no          @no
@@ -535,7 +535,7 @@ salloc @slurm_spank_task_post_fork       @remote    @1        @no          @yes
 salloc @slurm_spank_task_init            @remote    @1        @no          @yes
 salloc @slurm_spank_task_exit            @remote    @0        @no          @no
 salloc @slurm_spank_exit                 @allocator @0        @no          @yes
-=
+_
 sbatch @slurm_spank_init                 @allocator @1        @no          @yes
 sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
 sbatch @slurm_spank_init                 @remote    @1        @yes         @no
@@ -545,7 +545,7 @@ sbatch @slurm_spank_task_post_fork       @remote    @1        @yes         @yes
 sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
 sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
 sbatch @slurm_spank_exit                 @allocator @0        @no          @no
-=
+_
 scrontab @slurm_spank_init               @allocator @1        @no          @no
 scrontab @slurm_spank_exit               @allocator @0        @no          @no
 .TE
