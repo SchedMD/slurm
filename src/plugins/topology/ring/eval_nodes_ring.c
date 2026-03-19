@@ -264,6 +264,7 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 	ring_record_t *ring_ptr;
 	ring_segment_set_t best_segments = { 0 };
 	uint16_t segment_cnt = 1;
+	uint16_t segment_size = details_ptr->segment_size;
 
 	topo_eval->avail_cpus = 0;
 
@@ -274,17 +275,16 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
 	rem_nodes = MIN(min_nodes, req_nodes);
 
-	if (details_ptr->segment_size &&
-	    (rem_nodes % details_ptr->segment_size)) {
+	if (segment_size && (rem_nodes % segment_size)) {
 		info("segment_size (%u) does not fit the job size (%d)",
-		     details_ptr->segment_size, rem_nodes);
+		     segment_size, rem_nodes);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
 
-	if (details_ptr->segment_size) {
-		segment_cnt = rem_nodes / details_ptr->segment_size;
-		rem_nodes = details_ptr->segment_size;
+	if (segment_size) {
+		segment_cnt = rem_nodes / segment_size;
+		rem_nodes = segment_size;
 	}
 
 	/* Validate availability of required nodes */
