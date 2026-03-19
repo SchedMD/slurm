@@ -275,6 +275,12 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
 	rem_nodes = MIN(min_nodes, req_nodes);
 
+	if (segment_size > rem_nodes) {
+		info("Ignoring segment_size (%u): larger than job size (%u)",
+		     segment_size, rem_nodes);
+		segment_size = 0;
+	}
+
 	if (segment_size && (rem_nodes % segment_size)) {
 		info("segment_size (%u) does not fit the job size (%d)",
 		     segment_size, rem_nodes);
