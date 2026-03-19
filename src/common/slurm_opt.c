@@ -5679,6 +5679,23 @@ static void _validate_gres_flags(slurm_opt_t *opt)
 		opt->job_flags |= GRES_ONE_TASK_PER_SHARING;
 }
 
+static void _validate_segment_size(slurm_opt_t *opt)
+{
+	int nodes_cnt;
+
+	if (!opt->segment_size || !opt->nodes_set)
+		return;
+
+	if (opt->job_size_str && opt->max_nodes)
+		nodes_cnt = opt->max_nodes;
+	else
+		nodes_cnt = opt->min_nodes;
+
+	if ((nodes_cnt > opt->segment_size) && (nodes_cnt % opt->segment_size))
+		fatal("--segment=%u does not fit the job size (%d): node count must be evenly divisible by segment size",
+		      opt->segment_size, nodes_cnt);
+}
+
 /* Validate shared options between srun, salloc, and sbatch */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
@@ -5693,6 +5710,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_nodelist(opt);
 	_validate_arbitrary(opt);
 	_validate_gres_flags(opt);
+	_validate_segment_size(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
