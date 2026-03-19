@@ -289,6 +289,7 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	block_context_t *ctx = topo_eval->tctx->plugin_ctx;
 
 	int segment_cnt = 1, rem_segment_cnt = 0;
+	uint16_t segment_size = details_ptr->segment_size;
 	bitstr_t *orig_node_map = bit_copy(topo_eval->node_map);
 	bitstr_t *alloc_node_map = NULL;
 	uint32_t orig_max_nodes = topo_eval->max_nodes;
@@ -318,19 +319,18 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		goto fini;
 	}
 
-	if (details_ptr->segment_size &&
-	    (rem_nodes % details_ptr->segment_size)) {
+	if (segment_size && (rem_nodes % segment_size)) {
 		info("%s: segment_size (%u) does not fit the job size (%d)",
-		     __func__, details_ptr->segment_size, rem_nodes);
+		     __func__, segment_size, rem_nodes);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
 
-	if (details_ptr->segment_size) {
+	if (segment_size) {
 		as_rem_nodes = rem_nodes;
-		segment_cnt = rem_nodes / details_ptr->segment_size;
+		segment_cnt = rem_nodes / segment_size;
 		rem_segment_cnt = segment_cnt;
-		rem_nodes = details_ptr->segment_size;
+		rem_nodes = segment_size;
 		if (segment_cnt > 1)
 			req_nodes = req_nodes / segment_cnt;
 	}
@@ -353,12 +353,10 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 	llblock_size = bblock_per_llblock * ctx->bblock_node_cnt;
 	max_llblock = ROUNDUP(rem_nodes, llblock_size);
 
-	if (details_ptr->segment_size &&
-	    job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
+	if (segment_size && job_ptr->bit_flags & CONSOLIDATE_SEGMENTS) {
 		int asblock_level;
 		if (job_ptr->bit_flags & SPREAD_SEGMENTS) {
-			int tmp = ROUNDUP(details_ptr->segment_size,
-					  ctx->bblock_node_cnt);
+			int tmp = ROUNDUP(segment_size, ctx->bblock_node_cnt);
 
 			tmp *= ctx->bblock_node_cnt;
 			tmp *= segment_cnt;
@@ -458,7 +456,7 @@ next_segment:
 	 * build list of node bitmaps, sorted by weight
 	 */
 	if (rem_segment_cnt) {
-		rem_nodes = details_ptr->segment_size;
+		rem_nodes = segment_size;
 		min_rem_nodes = min_nodes / segment_cnt;
 		topo_eval->max_nodes = orig_max_nodes / segment_cnt;
 		rem_cpus = details_ptr->min_cpus / segment_cnt;
