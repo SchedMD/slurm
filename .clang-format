@@ -146,6 +146,7 @@ Standard: c++03
 TabWidth: 8
 UseTab: ForContinuationAndIndentation
 WhitespaceSensitiveMacros:
+  - 'DB_DEBUG'
   - 'XSTRINGIFY'
   - 'XSTRINGIFY2'
   - 'debug'
