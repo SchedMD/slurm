@@ -276,8 +276,8 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 
 	if (details_ptr->segment_size &&
 	    (rem_nodes % details_ptr->segment_size)) {
-		info("%s: segment_size (%u) does not fit the job size (%d)",
-		     __func__, details_ptr->segment_size, rem_nodes);
+		info("segment_size (%u) does not fit the job size (%d)",
+		     details_ptr->segment_size, rem_nodes);
 		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
 		goto fini;
 	}
