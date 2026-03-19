@@ -27386,6 +27386,35 @@ esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+      # Check which header provides the new mount API (FSCONFIG_*, FSMOUNT_*)
+      # needed for BPF token creation. glibc >= 2.36 provides these in
+      # <sys/mount.h>, older systems may have them in <linux/mount.h>.
+      if test "x$ac_bpf_token_support" = "xyes"; then
+        ac_mount_api_found=no
+        ac_fn_check_decl "$LINENO" "FSCONFIG_SET_STRING" "ac_cv_have_decl_FSCONFIG_SET_STRING" "#include <sys/mount.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_FSCONFIG_SET_STRING" = xyes
+then :
+
+printf "%s\n" "#define HAVE_MOUNT_API_SYS_MOUNT_H 1" >>confdefs.h
+
+           ac_mount_api_found=yes
+fi
+        if test "x$ac_mount_api_found" = "xno"; then
+          ac_fn_check_decl "$LINENO" "FSCONFIG_SET_STRING" "ac_cv_have_decl_FSCONFIG_SET_STRING" "#include <linux/mount.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_FSCONFIG_SET_STRING" = xyes
+then :
+  ac_mount_api_found=yes
+fi
+        fi
+        if test "x$ac_mount_api_found" = "xno"; then
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Cannot find mount API (FSCONFIG_SET_STRING) in sys/mount.h or linux/mount.h. BPF token support will be disabled." >&5
+printf "%s\n" "$as_me: WARNING: Cannot find mount API (FSCONFIG_SET_STRING) in sys/mount.h or linux/mount.h. BPF token support will be disabled." >&2;}
+          ac_bpf_token_support=no
+        fi
+      fi
+
       if test "x$ac_bpf_token_support" = "xyes"; then
 
 printf "%s\n" "#define HAVE_BPF_TOKENS 1" >>confdefs.h
