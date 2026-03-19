@@ -72,8 +72,9 @@ extern void restore_job_accounting();
  * requested and allocated license strings.
  *
  * IN job_ptr - the job
+ * IN validate - If true, validate a pending job's licenses
  */
-extern void restore_job_licenses(job_record_t *job_ptr);
+extern void restore_job_licenses(job_record_t *job_ptr, bool validate);
 
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);
