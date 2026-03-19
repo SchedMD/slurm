@@ -319,6 +319,12 @@ extern int eval_nodes_block(topology_eval_t *topo_eval)
 		goto fini;
 	}
 
+	if (segment_size > rem_nodes) {
+		info("Ignoring segment_size (%u): larger than job size (%u)",
+		     segment_size, rem_nodes);
+		segment_size = 0;
+	}
+
 	if (segment_size && (rem_nodes % segment_size)) {
 		info("%s: segment_size (%u) does not fit the job size (%d)",
 		     __func__, segment_size, rem_nodes);
