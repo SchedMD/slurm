@@ -462,8 +462,10 @@ static void _threadpool_prerun(thread_t *thread)
 
 	threadpool.total_run++;
 
-	xassert(!thread->id);
-	thread->id = pthread_self();
+	if (!thread->id)
+		thread->id = pthread_self();
+	else
+		xassert(thread->id == pthread_self());
 
 	threadpool.idle--;
 	threadpool.running++;
@@ -480,6 +482,8 @@ static void _threadpool_prerun(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_postrun(thread_t *thread)
 {
+	xassert(thread->id == pthread_self());
+
 	threadpool.running--;
 	threadpool.idle++;
 
@@ -491,6 +495,8 @@ static void _threadpool_postrun(thread_t *thread)
 
 	if (!thread->detached)
 		_threadpool_zombie(thread);
+
+	thread->id = 0;
 
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(thread->detached);
@@ -595,7 +601,14 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 
 #ifndef NDEBUG
 	if (thread) {
+		if (threadpool.enabled)
+			slurm_mutex_lock(&threadpool.mutex);
+
 		xassert(thread->magic == THREAD_MAGIC);
+		xassert(!thread->id);
+
+		if (threadpool.enabled)
+			slurm_mutex_unlock(&threadpool.mutex);
 	} else {
 		/* only threadpool will have pre-allocated threads */
 		xassert(threadpool.enabled);
@@ -646,7 +659,14 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 
 		if (threadpool.enabled) {
 			slurm_mutex_lock(&threadpool.mutex);
+
+			if (thread) {
+				xassert(!thread->id || (thread->id == id));
+				thread->id = id;
+			}
+
 			threadpool.total_created++;
+
 			slurm_mutex_unlock(&threadpool.mutex);
 		}
 	}
