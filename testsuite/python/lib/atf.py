@@ -1490,6 +1490,23 @@ def upgrade_component(component, new_version=True):
         start_slurmctld()
 
 
+def get_slurmd_C():
+    """Return a dict with the main values reported by 'slurmd -C'"""
+    fields = [
+        "NodeName",
+        "CPUs",
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "RealMemory",
+        "Gres",
+    ]
+    output = run_command_output("slurmd -C", fatal=True)
+    keys = re.findall(r"(" + "|".join(fields) + r")=(\S+)", output)
+    return dict(keys)
+
+
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
     """Returns the version of the Slurm component as a tuple.
 
