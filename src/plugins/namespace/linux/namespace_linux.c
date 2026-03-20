@@ -1060,7 +1060,7 @@ extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
-	if (ns_pid) {
+	if (ns_pid != -1) {
 		int wstatus;
 		/*
 		 * The namespace process may have been signaled already, but
