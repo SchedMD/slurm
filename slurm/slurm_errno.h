@@ -378,6 +378,19 @@ typedef enum {
 	ESLURM_LUA_FUNC_FAILED_GARBAGE_COLLECTOR,
 	ESLURM_LUA_INVALID_CONVERSION_TYPE,
 
+	/* Topology eval_nodes rejection reasons */
+	ESLURM_TOPO_ERROR_START = 7200,
+	ESLURM_TOPO_REQ_NODES_NOT_AVAIL,
+	ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO,
+	ESLURM_TOPO_NO_FIT,
+	ESLURM_TOPO_SEGMENT_NO_FIT,
+	ESLURM_TOPO_INSUFFICIENT_RESOURCES,
+	ESLURM_TOPO_WEIGHT_NO_FIT,
+	ESLURM_TOPO_MAX_NODE_LIMIT,
+	ESLURM_TOPO_EMPTY_NODE_MAP,
+	/* End of reserved topology error range. Not a real error code. */
+	ESLURM_TOPO_ERROR_END = 7300,
+
 	/* plugin and custom errors */
 	ESLURM_MISSING_TIME_LIMIT       = 8000,
 	ESLURM_PLUGIN_INVALID = 8002,
@@ -462,6 +475,9 @@ typedef enum {
 	/* TLS errors */
 	ESLURM_TLS_REQUIRED = 13000,
 } slurm_err_t;
+
+#define IS_TOPO_ERROR(ec) \
+	((ec) > ESLURM_TOPO_ERROR_START && (ec) < ESLURM_TOPO_ERROR_END)
 
 /* Type for error string table entries */
 typedef struct {

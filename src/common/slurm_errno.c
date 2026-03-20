@@ -939,6 +939,40 @@ slurm_errtab_t slurm_errtab[] = {
 		"SLUID is invalid",
 	},
 
+	/* Topology eval_nodes rejection reasons */
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_REQ_NODES_NOT_AVAIL),
+		"Required nodes lack available resources",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO),
+		"Required nodes do not fit topology",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_NO_FIT),
+		"No suitable topology unit found",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_SEGMENT_NO_FIT),
+		"No suitable topology unit found for segment",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_INSUFFICIENT_RESOURCES),
+		"Insufficient resources in topology unit",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_WEIGHT_NO_FIT),
+		"Weight-based selection could not satisfy request within topology unit",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_MAX_NODE_LIMIT),
+		"Exceeded maximum node limit during topology allocation",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_EMPTY_NODE_MAP),
+		"No available nodes in topology",
+	},
+
 	/* SPANK errors */
 	{
 		ERRTAB_ENTRY(ESPANK_ERROR),
