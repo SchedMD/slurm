@@ -1027,10 +1027,10 @@ extern void threadpool_init(const int default_count, const char *params)
 	threadpool.enabled = true;
 
 	xassert(!threadpool.pending);
-	threadpool.pending = list_create((ListDelF) _thread_free);
+	threadpool.pending = list_create(NULL);
 
 	xassert(!threadpool.zombies);
-	threadpool.zombies = list_create((ListDelF) _thread_free);
+	threadpool.zombies = list_create(NULL);
 
 	xassert(!threadpool.attached);
 	threadpool.attached = list_create(NULL);
