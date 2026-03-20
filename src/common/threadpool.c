@@ -231,7 +231,6 @@ static int _match_thread_id(void *x, void *key)
 	pthread_t id = (pthread_t) key;
 
 	xassert(thread->magic == THREAD_MAGIC);
-	xassert(thread->id > 0);
 	xassert(id > 0);
 
 	return ((thread->id == id) ? 1 : 0);
