@@ -251,6 +251,23 @@ static int _match_thread_ptr(void *x, void *y)
 
 #endif
 
+static int _threadpool_on_detach(thread_t *thread, const bool remove,
+				 const char *caller)
+{
+	log_flag(THREAD, "%s->%s: detached pthread id=0x%"PRIx64,
+		       caller, __func__, (uint64_t) thread->id);
+
+	if (remove && !list_delete_ptr(threadpool.attached, thread))
+		fatal_abort("this should never happen");
+
+	xassert(!thread->detached);
+	thread->detached = true;
+
+	EVENT_BROADCAST(&threadpool.events.join);
+
+	return SLURM_SUCCESS;
+}
+
 static int _threadpool_join(const pthread_t id, const char *caller)
 {
 	thread_t *thread = NULL;
@@ -291,15 +308,9 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 			       caller, __func__, (uint64_t) thread->id,
 			       (uintptr_t) thread->ret);
 
-		if (!list_delete_ptr(threadpool.attached, thread))
-			fatal_abort("this should never happen");
-
-		xassert(!thread->detached);
-		thread->detached = true;
-		EVENT_BROADCAST(&threadpool.events.join);
+		rc = _threadpool_on_detach(thread, true, caller);
 
 		HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
-		rc = SLURM_SUCCESS;
 	} else {
 		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
 			       caller, __func__, (uint64_t) id);
@@ -1055,4 +1066,50 @@ extern void threadpool_fini(void)
 	threadpool.shutdown = true;
 
 	slurm_mutex_unlock(&threadpool.mutex);
+}
+
+static int _threadpool_detach(const pthread_t id, const char *caller)
+{
+	thread_t *thread = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&threadpool.mutex);
+
+	if (!(thread = list_remove_first(threadpool.attached, _match_thread_id,
+					 (void *) id))) {
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
+			       caller, __func__, (uint64_t) id);
+		rc = ESRCH;
+	} else {
+		rc = _threadpool_on_detach(thread, false, caller);
+	}
+
+	slurm_mutex_unlock(&threadpool.mutex);
+
+	return rc;
+}
+
+static int _detach(const pthread_t id, const char *caller)
+{
+	int rc = EINVAL;
+
+	if ((rc = pthread_detach(id)))
+		error("%s->%s: pthread_detach(id=0x%"PRIx64") failed: %s",
+		      caller, __func__, (uint64_t) id, slurm_strerror(rc));
+
+	return rc;
+}
+
+extern int threadpool_detach(const pthread_t id, const char *caller)
+{
+	if (!id) {
+		log_flag(THREAD, "%s->%s: Ignoring invalid pthread id=0x0",
+		       caller, __func__);
+		return SLURM_SUCCESS;
+	}
+
+	if (threadpool.enabled)
+		return _threadpool_detach(id, caller);
+	else
+		return _detach(id, caller);
 }

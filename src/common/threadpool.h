@@ -138,6 +138,22 @@ extern int threadpool_join(const pthread_t id, const char *caller);
 			id = 0; \
 	} while (false)
 
+/*
+ * Detach pthread (aka allow thread to exit without a zombie)
+ * IN id - thread ID
+ * IN caller - __func__ from caller
+ * RET SLURM_SUCCESS or error
+ */
+extern int threadpool_detach(const pthread_t id, const char *caller);
+
+#define slurm_thread_detach(id) \
+	do { \
+		int thread_err = SLURM_SUCCESS; \
+		if ((thread_err = threadpool_detach((id), __func__))) \
+			fatal("%s: threadpool_detach() failed: %s", \
+			      __func__, slurm_strerror(thread_err)); \
+	} while (false)
+
 #define THREADPOOL_PARAM "THREADPOOL="
 #define THREADPOOL_PARAM_PREALLOCATE "THREADPOOL_PREALLOCATE="
 #define THREADPOOL_PARAM_PRESERVE "THREADPOOL_PRESERVE="
