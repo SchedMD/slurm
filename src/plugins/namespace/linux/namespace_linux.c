@@ -1128,7 +1128,7 @@ rwfail:
 extern int namespace_p_recv_stepd(int fd)
 {
 	int len;
-	buf_t *buf;
+	buf_t *buf = NULL;
 
 	safe_read(fd, &len, sizeof(len));
 
@@ -1142,6 +1142,7 @@ extern int namespace_p_recv_stepd(int fd)
 
 	return SLURM_SUCCESS;
 rwfail:
+	free_buf(buf);
 	error("%s: failed", __func__);
 	return SLURM_ERROR;
 }
