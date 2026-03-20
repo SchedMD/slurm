@@ -796,6 +796,9 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		xassert(thread->requester == pthread_self());
 		xassert(threadpool.idle > 0);
 
+		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
+			 caller, __func__, thread->func_name, threadpool.idle);
+
 		EVENT_SIGNAL(&threadpool.events.assign);
 		EVENT_WAIT(&threadpool.events.assigned, &threadpool.mutex);
 	}
