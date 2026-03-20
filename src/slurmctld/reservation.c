@@ -3194,6 +3194,24 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 	 *      will overlap.
 	 */
 	if (slot[0]->flags & RESERVE_REOCCURRING) {
+		if ((slot[1]->flags & RESERVE_FLAG_MAINT) &&
+		    !(slot[1]->flags & RESERVE_REOCCURRING)) {
+			/*
+			 * Evaluate against reoccurring resv start, or now() if
+			 * resv already started.
+			 */
+			time_t eval_time = MAX(now, slot[0]->start);
+			/*
+			 * Do not check overlaps against maintenance
+			 * reservations starting more than 7 days after the
+			 * reservation being evaluated.
+			 */
+			if ((slot[1]->start - eval_time) > (7 * DAY_SECONDS)) {
+				log_flag(RESERVATION, "%s: Not filtering out nodes from maintenance reservation %s starting more than 7 days later",
+					 __func__, resv_ptr->name);
+				return false;
+			}
+		}
 		/*
 		 * 1) Advance earlier slot to the last reoccurring period
 		 *    before the later slot ends.
