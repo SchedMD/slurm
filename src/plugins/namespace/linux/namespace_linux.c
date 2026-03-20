@@ -722,7 +722,6 @@ static int _create_ns(stepd_step_rec_t *step)
 		    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	if (sem2 == MAP_FAILED) {
 		error("%s: mmap failed: %m", __func__);
-		sem_destroy(sem1);
 		munmap(sem1, sizeof(*sem1));
 		rc = -1;
 		goto exit2;
@@ -731,12 +730,17 @@ static int _create_ns(stepd_step_rec_t *step)
 	rc = sem_init(sem1, 1, 0);
 	if (rc) {
 		error("%s: sem_init: %m", __func__);
-		goto exit1;
+		munmap(sem1, sizeof(*sem1));
+		munmap(sem2, sizeof(*sem2));
+		goto exit2;
 	}
 	rc = sem_init(sem2, 1, 0);
 	if (rc) {
 		error("%s: sem_init: %m", __func__);
-		goto exit1;
+		sem_destroy(sem1);
+		munmap(sem1, sizeof(*sem1));
+		munmap(sem2, sizeof(*sem2));
+		goto exit2;
 	}
 	ns_pid = sys_clone(ns_conf->clonensflags | SIGCHLD, &parent_tid,
 			   &child_tid, tls);
