@@ -204,8 +204,8 @@ static int _partitions_get(openapi_ctxt_t *ctxt)
 {
 	int rc = SLURM_SUCCESS;
 	partition_info_msg_t *part_info_ptr = NULL;
-	openapi_partitions_query_t query = {0};
-	openapi_resp_partitions_info_msg_t resp = {0};
+	openapi_partitions_query_t query = { 0 };
+	openapi_resp_partitions_info_msg_t resp = { 0 };
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_PARTITIONS_QUERY, query,
 		       ctxt->query, ctxt->parent_path)) {
