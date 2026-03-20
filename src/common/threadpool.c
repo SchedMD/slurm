@@ -503,7 +503,8 @@ static void _threadpool_zombie(thread_t *thread)
 	}
 
 	/* join thread should have removed ptr from zombie list */
-	xassert(!list_delete_ptr(threadpool.zombies, thread));
+	xassert(!list_find_first(threadpool.zombies, _match_thread_ptr,
+				 thread));
 }
 
 /* caller must hold threadpool.mutex lock */
