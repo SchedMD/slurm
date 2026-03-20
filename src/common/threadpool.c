@@ -593,8 +593,14 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	pthread_attr_t attr;
 	int rc = EINVAL;
 
-	xassert((!thread && threadpool.enabled) ||
-		(thread->magic == THREAD_MAGIC));
+#ifndef NDEBUG
+	if (thread) {
+		xassert(thread->magic == THREAD_MAGIC);
+	} else {
+		/* only threadpool will have pre-allocated threads */
+		xassert(threadpool.enabled);
+	}
+#endif
 
 	if ((rc = pthread_attr_init(&attr)))
 		fatal("%s->%s: pthread_attr_init() failed: %s",
