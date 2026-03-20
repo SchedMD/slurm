@@ -261,6 +261,21 @@ extern bool common_topo_route_part(void)
 	return route_part;
 }
 
+/*
+ * Return the retry loop action after an eval_nodes() call.
+ * Uses topo_eval->eval_action if set by the eval_nodes().
+ */
+static int _eval_nodes_get_action(topology_eval_t *topo_eval, int ec)
+{
+	if (topo_eval->eval_action) {
+		int action = topo_eval->eval_action;
+		topo_eval->eval_action = 0;
+		return action;
+	}
+
+	return ec;
+}
+
 extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 {
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
@@ -327,6 +342,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
 	topo_eval->first_pass = false;
+	topo_eval->eval_action = 0;
 	rem_nodes = bit_set_count(orig_node_map);
 
 	/*
@@ -334,6 +350,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * removing nodes.
 	 */
 	do {
+		int action;
 		topo_eval->max_nodes = orig_max_nodes;
 		bit_copybits(topo_eval->node_map, orig_node_map);
 		core_array_or(topo_eval->avail_core, orig_core_array);
@@ -343,13 +360,14 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		if (ec == SLURM_SUCCESS)
 			break;
 
-		if (ec == ESLURM_BREAK_EVAL)
+		action = _eval_nodes_get_action(topo_eval, ec);
+		if (action == ESLURM_BREAK_EVAL)
 			break;
 
 		if (rem_nodes <= topo_eval->min_nodes)
 			break;
 
-		if (ec == ESLURM_RETRY_EVAL) {
+		if (action == ESLURM_RETRY_EVAL) {
 			bit_and_not(orig_node_map, topo_eval->node_map);
 			rem_nodes = bit_set_count(orig_node_map);
 
@@ -381,7 +399,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			idx = 0;
 		}
 
-		if (ec == ESLURM_RETRY_EVAL_HINT &&
+		if (action == ESLURM_RETRY_EVAL_HINT &&
 		    (bit_ffs(topo_eval->node_map) >= 0)) {
 			int tmp_idx = idx;
 
