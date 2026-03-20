@@ -275,7 +275,7 @@ static int _partition_delete(openapi_ctxt_t *ctxt, char *partition_name)
 
 static int _partition_get(openapi_ctxt_t *ctxt, char *partition_name)
 {
-	openapi_partitions_query_t query = {0};
+	openapi_partitions_query_t query = { 0 };
 	partition_info_msg_t *part_info_ptr = NULL;
 	int rc = SLURM_SUCCESS;
 
