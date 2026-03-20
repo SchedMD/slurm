@@ -704,6 +704,10 @@ static void _add_fake_gpus_from_file(list_t *gres_list_system,
 			error("Line #%d in fake_gpus.conf failed to parse! Make sure that the line has no empty tokens and that the format is <type>|<sys_cpu_count>|<cpu_range>|<links>|<device_file>[|<unique_id>[|<flags>]]",
 			      line_number);
 
+		if (!(gres_slurmd_conf.config_flags & GRES_CONF_ENV_SET))
+			warning("Line #%d in fake_gpus.conf has no env flags set. Real GPU plugins always set vendor env flags (e.g. nvidia_gpu_env).",
+				line_number);
+
 		gres_slurmd_conf.cpus_bitmap =
 			bit_alloc(gres_slurmd_conf.cpu_cnt);
 		if (bit_unfmt(gres_slurmd_conf.cpus_bitmap,
