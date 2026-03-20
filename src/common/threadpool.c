@@ -290,12 +290,15 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 			return ESRCH;
 		}
 
-		if ((thread = list_remove_first(threadpool.zombies,
-						_match_thread_id, (void *) id)))
+		/* Catch thread being detached */
+		xassert(thread->magic == THREAD_MAGIC);
+
+		if (list_delete_ptr(threadpool.zombies, thread))
 			break;
 
-		if (!threadpool.running)
-			break;
+		/* Thread is not a zombie yet */
+		xassert(threadpool.running > 0);
+		xassert(!thread->detached);
 
 		log_flag(THREAD, "%s->%s: waiting for thread id=0x%"PRIx64" with %d running threads",
 			       caller, __func__, (uint64_t) id,
@@ -303,19 +306,13 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 		EVENT_WAIT(&threadpool.events.zombie, &threadpool.mutex);
 	} while (true);
 
-	if (thread) {
-		log_flag(THREAD, "%s->%s: joined pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
-			       caller, __func__, (uint64_t) thread->id,
-			       (uintptr_t) thread->ret);
+	log_flag(THREAD, "%s->%s: joined pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
+		 caller, __func__, (uint64_t) thread->id,
+		 (uintptr_t) thread->ret);
 
-		rc = _threadpool_on_detach(thread, true, caller);
+	rc = _threadpool_on_detach(thread, true, caller);
 
-		HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
-	} else {
-		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
-			       caller, __func__, (uint64_t) id);
-		rc = ESRCH;
-	}
+	HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
 
 	slurm_mutex_unlock(&threadpool.mutex);
 
