@@ -264,6 +264,7 @@ static int _threadpool_on_detach(thread_t *thread, const bool remove,
 	thread->detached = true;
 
 	EVENT_BROADCAST(&threadpool.events.join);
+	EVENT_BROADCAST(&threadpool.events.zombie);
 
 	return SLURM_SUCCESS;
 }
