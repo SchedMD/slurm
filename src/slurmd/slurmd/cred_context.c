@@ -264,7 +264,13 @@ static void _cred_context_unpack(buf_t *buffer)
 	if (slurm_unpack_list(&cred_job_list, _job_state_unpack,
 			      xfree_ptr, buffer, version))
 		goto unpack_error;
-	_clear_expired_job_states();
+	/*
+	 * Do not call _clear_expired_job_states() here. A restart after the
+	 * epilog guard has expired would purge that entry before the next
+	 * TERMINATE_JOB retry, letting cred_revoke() insert a fresh job_state
+	 * and the epilog run again. Cleanup still runs from cred_insert_job(),
+	 * cred_job_cached(), and cred_cache_valid().
+	 */
 
 	FREE_NULL_LIST(cred_state_list);
 	if (slurm_unpack_list(&cred_state_list, _cred_state_unpack,
@@ -393,8 +399,6 @@ extern int cred_revoke(slurm_step_id_t *step_id, time_t time, time_t start_time)
 
 	slurm_mutex_lock(&cred_cache_mutex);
 
-	_clear_expired_job_states();
-
 	if (!(j = _find_job_state(step_id))) {
 		/*
 		 * This node has not yet seen a job step for this job.
@@ -446,8 +450,6 @@ extern int cred_begin_expiration(slurm_step_id_t *step_id)
 	job_state_t *j = NULL;
 
 	slurm_mutex_lock(&cred_cache_mutex);
-
-	_clear_expired_job_states();
 
 	if (!(j = _find_job_state(step_id))) {
 		errno = ESRCH;
