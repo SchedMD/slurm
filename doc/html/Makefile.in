@@ -569,8 +569,6 @@ html_DATA = \
 	fonts.ttf \
 	hdf5_task_attr.png \
 	hdf5_job_outline.png \
-	ibm_pe_fig1.png \
-	ibm_pe_fig2.png \
 	jobcomp_kafka_fig1.png \
 	jquery.min.js \
 	k_function.gif \
