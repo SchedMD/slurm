@@ -561,9 +561,6 @@ static void _threadpool_postrun(thread_t *thread)
 	xassert(threadpool.idle > 0);
 	xassert(threadpool.running >= 0);
 
-	if (thread->requester)
-		_threadpool_wait_ack(thread);
-
 	if (!thread->detached)
 		_threadpool_zombie(thread);
 
@@ -607,6 +604,9 @@ static void *_thread(void *arg)
 	do {
 		if (thread) {
 			_threadpool_prerun(thread);
+
+			if (thread->requester)
+				_threadpool_wait_ack(thread);
 
 			slurm_mutex_unlock(&threadpool.mutex);
 			_run(thread);
