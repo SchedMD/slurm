@@ -2295,9 +2295,11 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 	job_record_t *job_ptr = (job_record_t *) x;
 	pack_step_args_t *args = (pack_step_args_t *) arg;
 
-	if ((args->step_id->job_id != NO_VAL) &&
-	    (args->step_id->job_id != job_ptr->job_id) &&
-	    (args->step_id->job_id != job_ptr->array_job_id))
+	if ((args->step_id->sluid &&
+	     (args->step_id->sluid != job_ptr->step_id.sluid)) ||
+	    (args->step_id->job_id != NO_VAL &&
+	     args->step_id->job_id != job_ptr->job_id &&
+	     args->step_id->job_id != job_ptr->array_job_id))
 		return 0;
 
 	args->valid_job = 1;
