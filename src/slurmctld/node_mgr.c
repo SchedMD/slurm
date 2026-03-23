@@ -1518,6 +1518,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
 	hostlist_t *host_list = NULL, *hostaddr_list = NULL;
 	hostlist_t *hostname_list = NULL;
+	hostlist_t *instance_id_list = NULL;
+	char *instance_id_broadcast = NULL;
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
@@ -1528,7 +1530,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		goto end;
 	}
 
-	if (update_node_msg->node_addr || update_node_msg->node_hostname)
+	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
+	    (update_node_msg->instance_id && update_node_msg->instance_id[0]))
 		uniq = false;
 
 	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
@@ -1574,6 +1577,23 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		}
 	}
 
+	if (update_node_msg->instance_id && update_node_msg->instance_id[0]) {
+		instance_id_list =
+			hostlist_create(update_node_msg->instance_id);
+		if (instance_id_list == NULL) {
+			info("update_node: hostlist_create error on %s: %m",
+			     update_node_msg->instance_id);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+		if ((hostlist_count(instance_id_list) != 1) &&
+		    (node_cnt != hostlist_count(instance_id_list))) {
+			info("update_node: nodecount mismatch");
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+	}
+
 	if ((max_powered_nodes != NO_VAL) &&
 	    (update_node_msg->node_state & NODE_STATE_POWER_UP)) {
 		bitstr_t *bmp = NULL;
@@ -1595,6 +1615,15 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			goto end;
 		}
 		log_flag(POWER, "powered nodes good %d", count);
+	}
+
+	/*
+	 * If a single instance_id is specified for multiple nodes, broadcast
+	 * the value to all nodes.
+	 */
+	if (instance_id_list && (hostlist_count(instance_id_list) == 1)) {
+		instance_id_broadcast = hostlist_shift(instance_id_list);
+		FREE_NULL_HOSTLIST(instance_id_list);
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
@@ -1756,11 +1785,19 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					xstrdup(update_node_msg->comment);
 		}
 
-		if (update_node_msg->instance_id) {
+		if (instance_id_broadcast) {
 			xfree(node_ptr->instance_id);
-			if (update_node_msg->instance_id[0])
-				node_ptr->instance_id = xstrdup(
-					update_node_msg->instance_id);
+			node_ptr->instance_id = xstrdup(instance_id_broadcast);
+			update_db = true;
+		} else if (instance_id_list) {
+			char *this_instance_id =
+				hostlist_shift(instance_id_list);
+			xfree(node_ptr->instance_id);
+			node_ptr->instance_id = xstrdup(this_instance_id);
+			free(this_instance_id);
+			update_db = true;
+		} else if (update_node_msg->instance_id) {
+			xfree(node_ptr->instance_id);
 			update_db = true;
 		}
 
@@ -2246,6 +2283,8 @@ end:
 	FREE_NULL_HOSTLIST(host_list);
 	FREE_NULL_HOSTLIST(hostaddr_list);
 	FREE_NULL_HOSTLIST(hostname_list);
+	FREE_NULL_HOSTLIST(instance_id_list);
+	free(instance_id_broadcast);
 
 	return error_code;
 }

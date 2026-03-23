@@ -1764,7 +1764,9 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBInstanceId\fR=<\fIinstance_id\fR>
-Cloud instance ID.
+Cloud instance ID. Multiple IDs may be specified using the same syntax as a
+node range expression (used in \fBNodeName\fR). If multiple IDs are specified,
+the total number must match the number of nodes being updated.
 .IP
 
 .TP
