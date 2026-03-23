@@ -9,15 +9,14 @@ import logging
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_nodes(4)
+    atf.require_nodes(3)
     atf.require_slurm_running()
 
 
 @pytest.fixture(scope="function", autouse=True)
 def get_and_down_nodes():
     logging.info("Getting the necessary 3 nodes:")
-    nodes = atf.run_job_nodes("-N3 true", fatal=True)
-
+    nodes = list(atf.get_nodes().keys())
     logging.info("Setting ALL nodes Down:")
     atf.run_command(
         "scontrol update nodename=ALL state=down reason=test_resv_overlap",
@@ -314,14 +313,14 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
 
     logging.info("Creating resv1:")
     rc = atf.run_command(
-        f"scontrol create reservation ReservationName=resv1 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=1",
+        f"scontrol create reservation ReservationName=resv1 StartTime=NOW nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=1",
         user=atf.properties["slurm-user"],
     )
     assert rc["exit_code"] == 0, "resv1 should be created"
 
     logging.info("Ensuring that resv2 cannot be created yet:")
     rc = atf.run_command(
-        f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3",
+        f"scontrol create reservation ReservationName=resv2 StartTime=NOW nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3",
         user=atf.properties["slurm-user"],
         xfail=True,
     )
@@ -351,7 +350,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
 
     logging.info("Creating resv2:")
     rc2 = atf.run_command(
-        f"scontrol create reservation ReservationName=resv2 StartTime=NOW+1minutes nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3",
+        f"scontrol create reservation ReservationName=resv2 StartTime=NOW nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags={reocurring_flag},REPLACE_DOWN,PURGE_COMP=3",
         user=atf.properties["slurm-user"],
     )
     assert rc2["exit_code"] == 0, "resv2 should be created"
@@ -399,7 +398,14 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         fatal=True,
     )
 
-    logging.info("Waiting until resv1 is INACTIVE (should be purged 1 minute)...")
+    logging.info("Forcing resv1 to INACTIVE state by skipping to next occurrence")
+    atf.run_command(
+        "scontrol update ReservationName=resv1 skip",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    logging.info("Waiting until resv1 is INACTIVE...")
     atf.repeat_until(
         lambda: atf.get_reservation_parameter("resv1", "State"),
         lambda state: state == "INACTIVE",
@@ -414,7 +420,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
     assert not atf.repeat_until(
         lambda: atf.get_reservation_parameter("resv2", "Nodes"),
         lambda rnodes: rnodes != nodes[1],
-        timeout=60,
+        timeout=31,
     )
 
     logging.info(f"Resuming node {nodes[2]}:")
