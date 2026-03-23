@@ -2040,7 +2040,12 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 
 	_licenses_print("request_license", job_license_list, NULL);
 
-	if (!(*valid)) {
+	/*
+	 * The list may be empty if the license was removed and
+	 * validate_existing==false. Free the license list and return NULL if
+	 * that is the case to avoid crashing later.
+	 */
+	if (!(*valid) || !list_count(job_license_list)) {
 		FREE_NULL_LIST(job_license_list);
 	}
 	return job_license_list;
