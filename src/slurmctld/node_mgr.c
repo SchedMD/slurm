@@ -1591,21 +1591,24 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 	if (update_node_msg->node_names == NULL ) {
 		info("%s: invalid node name", __func__);
-		return ESLURM_INVALID_NODE_NAME;
+		error_code = ESLURM_INVALID_NODE_NAME;
+		goto end;
 	}
 
 	if (update_node_msg->node_addr || update_node_msg->node_hostname)
 		uniq = false;
 
 	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
-					       uniq, NULL)))
-		return ESLURM_INVALID_NODE_NAME;
+					       uniq, NULL))) {
+		error_code = ESLURM_INVALID_NODE_NAME;
+		goto end;
+	}
 
 	if (!(node_cnt = hostlist_count(host_list))) {
 		info("%s: expansion of node specification '%s' resulted in zero nodes",
 		     __func__, update_node_msg->node_names);
-		FREE_NULL_HOSTLIST(host_list);
-		return ESLURM_INVALID_NODE_NAME;
+		error_code = ESLURM_INVALID_NODE_NAME;
+		goto end;
 	}
 
 	if (update_node_msg->node_addr) {
@@ -1613,14 +1616,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (hostaddr_list == NULL) {
 			info("update_node: hostlist_create error on %s: %m",
 			     update_node_msg->node_addr);
-			FREE_NULL_HOSTLIST(host_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 		if (node_cnt != hostlist_count(hostaddr_list)) {
 			info("update_node: nodecount mismatch");
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 	}
 
@@ -1629,16 +1631,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (hostname_list == NULL) {
 			info("update_node: hostlist_create error on %s: %m",
 			     update_node_msg->node_hostname);
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 		if (node_cnt != hostlist_count(hostname_list)) {
 			info("update_node: nodecount mismatch");
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			FREE_NULL_HOSTLIST(hostname_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 	}
 
@@ -1649,11 +1648,9 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 		if (hostlist2bitmap(host_list, false, &bmp)) {
 			info("update_node: hostlist2bitmap failed");
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			FREE_NULL_HOSTLIST(hostname_list);
 			FREE_NULL_BITMAP(bmp);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 		bit_or(bmp, power_up_node_bitmap);
 		count = bit_set_count(bmp);
@@ -1661,10 +1658,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (count > max_powered_nodes) {
 			error("update_node: Cannot power up more nodes due to MaxPoweredUpNodes=%d",
 			      max_powered_nodes);
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			FREE_NULL_HOSTLIST(hostname_list);
-			return ESLURM_MAX_POWERED_NODES;
+			error_code = ESLURM_MAX_POWERED_NODES;
+			goto end;
 		}
 		log_flag(POWER, "powered nodes good %d", count);
 	}
@@ -2285,9 +2280,6 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	/* Write/clear log */
 	(void)update_node_active_features(NULL, NULL, FEATURE_MODE_PEND);
 
-	FREE_NULL_HOSTLIST(host_list);
-	FREE_NULL_HOSTLIST(hostaddr_list);
-	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
 	if ((error_code == SLURM_SUCCESS) && (update_node_msg->features)) {
@@ -2314,6 +2306,11 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			list_sort(config_list, &list_compare_config);
 		}
 	}
+
+end:
+	FREE_NULL_HOSTLIST(host_list);
+	FREE_NULL_HOSTLIST(hostaddr_list);
+	FREE_NULL_HOSTLIST(hostname_list);
 
 	return error_code;
 }
