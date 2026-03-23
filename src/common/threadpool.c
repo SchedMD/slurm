@@ -228,13 +228,13 @@ static int _join(const pthread_t id, const char *caller)
 
 static int _match_thread_id(void *x, void *key)
 {
-	thread_t *thread = x;
-	pthread_t id = (pthread_t) key;
+	const thread_t *thread = x;
+	const pthread_t *id_ptr = key;
 
 	xassert(thread->magic == THREAD_MAGIC);
-	xassert(id > 0);
+	xassert(*id_ptr > 0);
 
-	return ((thread->id == id) ? 1 : 0);
+	return ((thread->id == *id_ptr) ? 1 : 0);
 }
 
 #ifndef NDEBUG
@@ -282,9 +282,9 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 		       caller, __func__, (uint64_t) id);
 
 	do {
-		if (!(thread =
-			      list_find_first(threadpool.attached,
-					      _match_thread_id, (void *) id))) {
+		if (!(thread = list_find_first(threadpool.attached,
+					       _match_thread_id,
+					       (void *) &id))) {
 			log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist",
 				       caller, __func__, (uint64_t) id);
 			slurm_mutex_unlock(&threadpool.mutex);
@@ -1099,7 +1099,7 @@ static int _threadpool_detach(const pthread_t id, const char *caller)
 	slurm_mutex_lock(&threadpool.mutex);
 
 	if (!(thread = list_remove_first(threadpool.attached, _match_thread_id,
-					 (void *) id))) {
+					 (void *) &id))) {
 		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
 			       caller, __func__, (uint64_t) id);
 		rc = ESRCH;
