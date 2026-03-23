@@ -15,7 +15,9 @@ depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
 depend_ldflags = $(HWLOC_LDFLAGS)
 
 # This is needed to actually link to the libs that it doesn't use.
+if !DARWIN
 depend_ldflags += -Wl,--no-as-needed
+endif
 
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 

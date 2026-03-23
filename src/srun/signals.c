@@ -33,7 +33,9 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef __APPLE__
 #include <sys/eventfd.h>
+#endif
 
 #include "src/common/fd.h"
 #include "src/common/read_config.h"
@@ -52,6 +54,9 @@ pthread_mutex_t srun_destroy_sig_lock = PTHREAD_MUTEX_INITIALIZER;
 int srun_destroy_sig = 0;
 
 int srun_sig_eventfd = -1;
+#ifdef __APPLE__
+static int srun_sig_eventfd_write = -1;
+#endif
 
 #define SRUN_SIGNALS \
 	X(SIGINT, sigint) \
@@ -172,7 +177,11 @@ static void _on_signal(int signo)
 	 */
 	xassert(srun_sig_eventfd != -1);
 
+#ifdef __APPLE__
+	safe_write(srun_sig_eventfd_write, &val, sizeof(uint64_t));
+#else
 	safe_write(srun_sig_eventfd, &val, sizeof(uint64_t));
+#endif
 	write_rc = SLURM_SUCCESS;
 rwfail:
 	if (write_rc != SLURM_SUCCESS)
@@ -210,9 +219,19 @@ SRUN_SIGNALS
 
 extern void srun_sig_init(void)
 {
+#ifdef __APPLE__
+	{
+		int pipe_fds[2];
+		if (pipe2(pipe_fds, O_CLOEXEC | O_NONBLOCK) == -1)
+			fatal("Could not create pipe for srun signal handling: %m");
+		srun_sig_eventfd = pipe_fds[0];
+		srun_sig_eventfd_write = pipe_fds[1];
+	}
+#else
 	if ((srun_sig_eventfd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK)) == -1) {
 		fatal("Could not create eventfd for srun signal handling: %m");
 	}
+#endif
 
 #define X(sig, str) conmgr_add_work_signal(sig, _on_##str, NULL);
 	SRUN_SIGNALS
