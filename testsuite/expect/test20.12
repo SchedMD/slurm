@@ -11,6 +11,7 @@ set file_out   "$test_dir/output"
 set variable1_value "var1"
 set variable2_value "var2"
 set job_id     0
+set timeout    $max_job_delay
 
 if {[file executable $qsub] == 0} {
 	skip "qsub was not found"
