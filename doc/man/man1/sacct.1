@@ -150,20 +150,11 @@ are not specified.
 
 .TP
 \fB\-D\fR, \fB\-\-duplicates\fR
-If Slurm job ids are reset, some job numbers will probably appear more
-than once in the accounting log file but refer to different jobs.
-Such jobs can be distinguished by the "submit" time stamp in the data
-records.
-.IP
-
-When data for specific jobs are requested with the \-\-jobs option,
-\fBsacct\fR returns the most recent job with that number. This
-behavior can be overridden by specifying \-\-duplicates, in which case
-all records that match the selection criteria will be returned.
-.IP
-
-\fBNOTE\fR: Revoked federated sibling jobs are hidden unless the
-\fB\-\-duplicates\fR option is specified.
+Allow multiple job records for the same job ID to be shown. By default, if
+multiple job records for the same job ID match the request, only the most recent
+one will be shown. Duplicate records can result from requeues, federation, or
+from job IDs reaching the \fBMaxJobId\fR value and resetting. Such records can
+be distinguished by the \fBSubmit\fR time stamp or by the \fBSLUID\fR.
 .IP
 
 .TP
