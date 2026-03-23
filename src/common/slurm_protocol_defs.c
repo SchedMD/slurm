@@ -756,7 +756,7 @@ static int _addto_step_list_internal(list_t *step_list, char *name, void *x)
 {
 	slurm_selected_step_t *selected_step = NULL;
 
-	if (!isdigit(*name)) {
+	if (!isdigit(*name) && (name[0] != 's')) {
 		fatal("Bad job/step specified: %s", name);
 		return SLURM_ERROR;
 	}
@@ -1283,61 +1283,16 @@ cleanup:
 extern slurm_selected_step_t *slurm_parse_step_str(char *name)
 {
 	slurm_selected_step_t *selected_step;
-	char *dot, *plus = NULL, *under;
+	int rc;
 
 	xassert(name);
 
 	selected_step = xmalloc(sizeof(*selected_step));
-	selected_step->step_id.step_het_comp = NO_VAL;
-
-	if ((dot = xstrstr(name, "."))) {
-		*dot++ = 0;
-		/* can't use NO_VAL since that means all */
-		if (!xstrcmp(dot, "batch"))
-			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
-		else if (!xstrcmp(dot, "extern"))
-			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
-		else if (!xstrcmp(dot, "interactive"))
-			selected_step->step_id.step_id = SLURM_INTERACTIVE_STEP;
-		else if (!xstrcmp(dot, "TBD"))
-			selected_step->step_id.step_id = SLURM_PENDING_STEP;
-		else if (isdigit(*dot))
-			selected_step->step_id.step_id = atoi(dot);
-		else
-			fatal("Bad step specified: %s", name);
-		plus = xstrchr(dot, '+');
-		if (plus) {
-			/* het step */
-			plus++;
-			selected_step->step_id.step_het_comp =
-				slurm_atoul(plus);
-		}
-	} else {
-		debug2("No jobstep requested");
-		selected_step->step_id.step_id = NO_VAL;
+	rc = unfmt_job_id_string(name, selected_step, NO_VAL);
+	if (rc) {
+		fatal("Bad job/step specified: %s: %s", name,
+		      slurm_strerror(rc));
 	}
-
-	if ((under = xstrstr(name, "_"))) {
-		*under++ = 0;
-		if (isdigit(*under))
-			selected_step->array_task_id = atoi(under);
-		else
-			fatal("Bad job array element specified: %s", name);
-		selected_step->het_job_offset = NO_VAL;
-	} else if (!plus && (plus = xstrstr(name, "+"))) {
-		selected_step->array_task_id = NO_VAL;
-		*plus++ = 0;
-		if (isdigit(*plus))
-			selected_step->het_job_offset = atoi(plus);
-		else
-			fatal("Bad hetjob offset specified: %s", name);
-	} else {
-		debug2("No jobarray or hetjob requested");
-		selected_step->array_task_id = NO_VAL;
-		selected_step->het_job_offset = NO_VAL;
-	}
-
-	selected_step->step_id.job_id = atoi(name);
 
 	return selected_step;
 }

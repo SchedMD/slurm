@@ -3394,7 +3394,7 @@ extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
 				/* There is no such thing as jobid 0,
 				 * if we process it the database will
 				 * return all jobs. */
-				if (!job->step_id.job_id)
+				if (!job->step_id.job_id && !job->step_id.sluid)
 					slurm_destroy_selected_step(job);
 				else
 					list_append(object_ptr->step_list, job);
