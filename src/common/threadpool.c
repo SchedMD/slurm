@@ -51,6 +51,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/timers.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -381,7 +382,27 @@ static void _thread_free(thread_t *thread)
 	if (!thread)
 		return;
 
+#ifndef NDEBUG
 	xassert(thread->magic == THREAD_MAGIC);
+
+	if (threadpool.enabled) {
+		/* All threads must be detached at cleanup */
+		xassert(thread->detached);
+		xassert(!thread->requester);
+
+		slurm_mutex_lock(&threadpool.mutex);
+
+		/* check for dangling pointers */
+		xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
+					 thread));
+		xassert(!list_find_first(threadpool.pending, _match_thread_ptr,
+					 thread));
+		xassert(!list_find_first(threadpool.zombies, _match_thread_ptr,
+					 thread));
+
+		slurm_mutex_unlock(&threadpool.mutex);
+	}
+#endif
 
 	thread->magic = ~THREAD_MAGIC;
 	xfree(thread->thread_name);
