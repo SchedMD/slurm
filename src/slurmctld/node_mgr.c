@@ -1516,7 +1516,8 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
-	hostlist_t *host_list, *hostaddr_list = NULL, *hostname_list = NULL;
+	hostlist_t *host_list = NULL, *hostaddr_list = NULL;
+	hostlist_t *hostname_list = NULL;
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
