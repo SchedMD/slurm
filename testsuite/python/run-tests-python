@@ -43,12 +43,6 @@ args, unknown = parser.parse_known_args()
 if importlib.util.find_spec("pytest") is None:
     sys.exit("pytest must be installed in order to run the python testsuite")
 
-# Only highlight skips in auto-config mode
-if args.auto_config:
-    report_options = "A"
-else:
-    report_options = "fE"
-
 atf_base_dir = str(pathlib.Path(__file__).resolve().parent)
 
 # Change directory to the base of the ATF repo
@@ -57,18 +51,23 @@ os.chdir(atf_base_dir)
 command = "pytest"
 # --disable-warnings is very useful for tests using pydantic,
 # logging.warning in tests are still shown
+# -rN disables the pytest short summary, as we defined our own pytest_terminal_summary
 args = [
     command,
     "-s",
-    f"-r{report_options}",
+    "-rN",
     "-v",
     "-p",
     "no:cacheprovider",
     "--disable-warnings",
+    "--show-capture=no",
 ]
 
 if "pdb" in args:
     args.append("--pdb")
+
+# To avoid logs being truncated
+os.environ["PYTHONUNBUFFERED"] = "1"
 
 args.extend(sys.argv[1:])
 os.execvp(command, args)

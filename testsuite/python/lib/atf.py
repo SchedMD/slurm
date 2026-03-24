@@ -1490,6 +1490,23 @@ def upgrade_component(component, new_version=True):
         start_slurmctld()
 
 
+def get_slurmd_C():
+    """Return a dict with the main values reported by 'slurmd -C'"""
+    fields = [
+        "NodeName",
+        "CPUs",
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "RealMemory",
+        "Gres",
+    ]
+    output = run_command_output("slurmd -C", fatal=True)
+    keys = re.findall(r"(" + "|".join(fields) + r")=(\S+)", output)
+    return dict(keys)
+
+
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
     """Returns the version of the Slurm component as a tuple.
 
@@ -1528,6 +1545,117 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
         )
 
     return tuple(int(part) if part.isdigit() else 0 for part in version_str.split("."))
+
+
+def require_expect():
+    """Setup the expect directory to be used later with run_expect_test()"""
+
+    # Create a tmp expect dir from sources with the right permissions
+    properties["expect_dir"] = f"{module_tmp_path}/expect"
+    run_command(
+        f"rsync -a {properties['testsuite_base_dir']}/expect/ {properties['expect_dir']}/",
+        user=properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+    # Create the globals.local
+    properties["expect_globals_file"] = f"{properties['expect_dir']}/globals.local"
+    colorize = 1
+    if "no-color" in properties and properties["no-color"]:
+        colorize = 0
+
+    globals_local_content = f"""\
+set testsuite_user {get_user_name()}
+set testsuite_colorize {colorize}
+set testsuite_cleanup_on_failure false
+
+# These are not necessary because we should use SLURM_TESTSUITE_CONF
+# set slurm_dir  {properties['slurm-prefix']}
+# set build_dir  {properties['slurm-build-dir']}
+# set src_dir    {properties['slurm-source-dir']}
+    """
+
+    run_command(
+        f"cat > {properties['expect_globals_file']}",
+        input=globals_local_content,
+        user=properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+
+def run_expect_test(test_num=None):
+    """Run the expect test corresponding to the test_name"""
+    if test_num is None:
+        test_num = (
+            properties["test_name"]
+            .replace("test_", "")
+            .replace("_py", "")
+            .replace("_", ".")
+        )
+
+    # Most expect tests assume that are run by SlurmUser
+    cmd = (
+        f"sudo"
+        f" -u {properties['slurm-user']}"
+        f" --preserve-env=SLURM_TESTSUITE_CONF"
+        f" SLURM_LOCAL_GLOBALS_FILE={properties['expect_globals_file']}"
+        f" {properties['expect_dir']}/test{test_num}"
+    )
+
+    # Expect tests need to be launch in the expect_dir.
+    proc = subprocess.Popen(
+        cmd,
+        cwd=properties["expect_dir"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        shell=True,
+        text=True,
+    )
+
+    stdout = ""
+    for line in proc.stdout:
+        print(line, end="")
+        stdout += line
+
+    proc.wait()
+
+    # If it passed just end
+    if proc.returncode == 0:
+        return
+
+    # Clean the stdout to search for the main reasons to not pass
+    ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+    stdout = ansi_escape.sub("", stdout)
+
+    # Get the actual body of the test
+    sections = [s for s in stdout.split("=" * 78 + "\n")]
+    if len(sections) < 3:
+        pytest.fail("Something failed while running the expect test")
+    body = sections[2]
+
+    # Search for the main reason to not pass (as in regression.py)
+    fatals = re.findall(r"(?ms)\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$", body)
+    errors = re.findall(
+        r"(?ms)\[[^\]]+\][ \[]+Error[ \]:]+(.*?) \(subfail[^\)]+\)$", body
+    )
+    warnings = re.findall(
+        r"(?ms)\[[^\]]+\][ \[]+Warning[ \]:]+((?:(?!Warning).)*) \((?:sub)?skip[^\)]+\)$",
+        body,
+    )
+    if fatals:
+        reason = fatals[0]
+    elif errors:
+        reason = errors[0]
+    elif warnings:
+        reason = warnings[0]
+
+    # Forward the expect result to pytest
+    if proc.returncode > 127:
+        pytest.skip(reason)
+    else:
+        pytest.fail(reason)
 
 
 def require_version(
@@ -2347,7 +2475,6 @@ def require_config_file(
     if filename in {
         "slurm.conf",
         "slurmdbd.conf",
-        "gres.conf",
         "cgroup.conf",
         "testsuite.conf",
     }:

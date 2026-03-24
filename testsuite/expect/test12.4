@@ -44,9 +44,9 @@ set timeout     60
 ################################################################
 
 proc sacct_job { soption job_id} {
-	global sacct accounting_storage_type
+	global sacct accounting_storage_type test_name
 
-	set debug       0
+	set debug       1
 	set matches     0
 	set not_support 0
 	set total_opts "$sacct -$soption -X -p --starttime=00:00 -j $job_id"
@@ -64,7 +64,7 @@ proc sacct_job { soption job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id" {
+			-re "$job_id.COMPLETED" {
 				if {$debug} {log_debug "Match2"}
 				incr matches
 				exp_continue
@@ -119,7 +119,7 @@ proc sacct_job { soption job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id" {
+			-re "$job_id.$job_id.$test_name" {
 				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
@@ -160,7 +160,7 @@ proc sacct_job { soption job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id" {
+			-re "$job_id.$test_name" {
 				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue
@@ -190,7 +190,7 @@ proc sacct_job { soption job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id\\|" {
+			-re "$job_id\\|$test_name" {
 				if {$debug} {log_debug "Match13"}
 				incr matches
 				exp_continue
@@ -220,7 +220,7 @@ proc sacct_job { soption job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id\\|" {
+			-re "$job_id\\|$test_name" {
 				if {$debug} {log_debug "Match15"}
 				incr matches
 				exp_continue
@@ -260,7 +260,7 @@ proc sacct_job { soption job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id" {
+			-re "$job_id.$test_name" {
 				if {$debug} {log_debug "Match19"}
 				incr matches
 				exp_continue
@@ -293,9 +293,9 @@ proc sacct_job { soption job_id} {
 ################################################################
 
 proc sacct_vargs { soption vargs job_id} {
-	global sacct
+	global sacct test_name
 
-	set debug       0
+	set debug       1
 	set matches     0
 	set not_support 0
 	set total_opts "$sacct -$soption $vargs -X -p -j $job_id"
@@ -318,7 +318,7 @@ proc sacct_vargs { soption vargs job_id} {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id" {
+			-re "$job_id.$test_name" {
 				incr matches
 				if {$debug} {log_debug "Match22"}
 				exp_continue
@@ -408,7 +408,7 @@ expect {
 #
 # Spawn a job via srun using this account
 #
-set output [run_command_output -fail "$srun -N1 -v --account=$test_acct $bin_id"]
+set output [run_command_output -fail "$srun -J $test_name -N1 -v --account=$test_acct $bin_id"]
 if {![regexp "launching StepId=($number)\\.$re_word_str" $output - job_id]} {
 	fail "Did not get srun job id"
 }
@@ -439,10 +439,10 @@ set matches [sacct_vargs -group $user_gid $job_id]
 subtest {$matches == 3} "Verify sacct --group option" "sacct --group failed ($matches != 3)"
 
 set matches [sacct_job l $job_id]
-subtest {$matches == 8} "Verify sacct -l option" "sacct -l failed ($matches != 8)"
+subtest {$matches == 7} "Verify sacct -l option" "sacct -l failed ($matches != 7)"
 
 set matches [sacct_job -long $job_id]
-subtest {$matches == 8} "Verify sacct --long option" "sacct --long failed ($matches != 8)"
+subtest {$matches == 7} "Verify sacct --long option" "sacct --long failed ($matches != 7)"
 
 set matches [sacct_job n $job_id]
 subtest {$matches == 1} "Verify sacct -n option" "sacct -n failed ($matches != 1)"
