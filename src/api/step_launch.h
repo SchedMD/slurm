@@ -105,15 +105,15 @@ typedef struct step_launch_state step_launch_state_t;
 /*
  * Create a launch state structure for a specified step context, "ctx".
  */
-struct step_launch_state * step_launch_state_create(slurm_step_ctx_t *ctx);
+step_launch_state_t *step_launch_state_create(slurm_step_ctx_t *ctx);
 
 /*
- * Free the memory associated with the a launch state structure.
+ * Free the memory associated with a launch state structure.
  */
-void step_launch_state_destroy(struct step_launch_state *sls);
+void step_launch_state_destroy(step_launch_state_t *sls);
 
 /*
- * Notify the step_launch_state that an I/O connection went bad.
+ * Notify the step launch state that an I/O connection went bad.
  * If the node is suspected to be down, abort the job.
  */
 int step_launch_notify_io_failure(step_launch_state_t *sls, int node_id);

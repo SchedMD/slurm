@@ -108,7 +108,7 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 static bool   force_terminated_job = false;
 static int    task_exit_signal = 0;
 
-static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
+static int _msg_thr_create(step_launch_state_t *sls, int num_nodes);
 static void _handle_msg(void *arg, slurm_msg_t *msg);
 static void *_check_io_timeout(void *_sls);
 
@@ -618,7 +618,7 @@ fail1:
 
 static void _step_abort(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls = ctx->launch_state;
+	step_launch_state_t *sls = ctx->launch_state;
 
 	if (!sls->abort_action_taken) {
 		slurm_kill_job_step(&ctx->step_resp->step_id, SIGKILL, 0);
@@ -631,7 +631,7 @@ static void _step_abort(slurm_step_ctx_t *ctx)
  */
 int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls = ctx->launch_state;
+	step_launch_state_t *sls = ctx->launch_state;
 	struct timespec ts;
 
 	ts.tv_sec  = time(NULL);
@@ -669,7 +669,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
  */
 void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls;
+	step_launch_state_t *sls;
 	struct timespec ts = {0, 0};
 	bool time_set = false;
 	int errnum, ret_code;
@@ -795,7 +795,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
  */
 void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls;
+	step_launch_state_t *sls;
 
 	if (!ctx || ctx->magic != STEP_CTX_MAGIC)
 		return;
@@ -822,7 +822,7 @@ extern void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
 	list_itr_t *itr;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
-	struct step_launch_state *sls = ctx->launch_state;
+	step_launch_state_t *sls = ctx->launch_state;
 	bool retry = false;
 	int retry_cnt = 0;
 
@@ -922,13 +922,13 @@ RESEND:	slurm_msg_t_init(&req);
 /*
  * Create a launch state structure for a specified step context, "ctx".
  */
-struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
+step_launch_state_t *step_launch_state_create(slurm_step_ctx_t *ctx)
 {
-	struct step_launch_state *sls;
+	step_launch_state_t *sls;
 	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
 	int ii;
 
-	sls = xmalloc(sizeof(struct step_launch_state));
+	sls = xmalloc(sizeof(step_launch_state_t));
 	sls->slurmctld_socket_fd = -1;
 	sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
@@ -959,9 +959,9 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 }
 
 /*
- * Free the memory associated with the a launch state structure.
+ * Free the memory associated with a launch state structure.
  */
-void step_launch_state_destroy(struct step_launch_state *sls)
+void step_launch_state_destroy(step_launch_state_t *sls)
 {
 	/* First undo anything created in step_launch_state_create() */
 	slurm_mutex_destroy(&sls->lock);
@@ -982,7 +982,7 @@ void step_launch_state_destroy(struct step_launch_state *sls)
  **********************************************************************/
 static void *_msg_thr_internal(void *arg)
 {
-	struct step_launch_state *sls = (struct step_launch_state *)arg;
+	step_launch_state_t *sls = (step_launch_state_t *) arg;
 
 	eio_handle_mainloop(sls->msg_handle);
 
@@ -997,7 +997,7 @@ _estimate_nports(int nclients, int cli_per_port)
 	return d.rem > 0 ? d.quot + 1 : d.quot;
 }
 
-static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
+static int _msg_thr_create(step_launch_state_t *sls, int num_nodes)
 {
 	int sock = -1;
 	uint16_t port;
@@ -1039,8 +1039,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	return rc;
 }
 
-static void
-_launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
+static void _launch_handler(step_launch_state_t *sls, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
 	int i;
@@ -1081,8 +1080,7 @@ _launch_handler(struct step_launch_state *sls, slurm_msg_t *resp)
 
 }
 
-static void
-_exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
+static void _exit_handler(step_launch_state_t *sls, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = exit_msg->data;
 	void (*task_finish)(task_exit_msg_t *);
@@ -1119,8 +1117,8 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	slurm_mutex_unlock(&sls->lock);
 }
 
-static void
-_job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
+static void _job_complete_handler(step_launch_state_t *sls,
+				  slurm_msg_t *complete_msg)
 {
 	srun_job_complete_msg_t *step_msg = complete_msg->data;
 
@@ -1146,8 +1144,7 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 	slurm_mutex_unlock(&sls->lock);
 }
 
-static void
-_timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
+static void _timeout_handler(step_launch_state_t *sls, slurm_msg_t *timeout_msg)
 {
 	srun_timeout_msg_t *step_msg = timeout_msg->data;
 
@@ -1171,8 +1168,7 @@ _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
  * client_io_handler_downnodes to notify the IO handler to expect no
  * further IO from that node.
  */
-static void
-_node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
+static void _node_fail_handler(step_launch_state_t *sls, slurm_msg_t *fail_msg)
 {
 	srun_node_fail_msg_t *nf = fail_msg->data;
 	hostlist_t *fail_nodes, *all_nodes;
@@ -1248,8 +1244,8 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
  * This message could be the result of the slurmd daemon cold-starting
  * or a race condition when tasks are starting or terminating.
  */
-static void
-_step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
+static void _step_missing_handler(step_launch_state_t *sls,
+				  slurm_msg_t *missing_msg)
 {
 	srun_step_missing_msg_t *step_missing = missing_msg->data;
 	hostlist_t *fail_nodes, *all_nodes;
@@ -1373,8 +1369,7 @@ _step_missing_handler(struct step_launch_state *sls, slurm_msg_t *missing_msg)
 /* This RPC typically used to send a signal an external program that
  * is usually wrapped by srun.
  */
-static void
-_step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
+static void _step_step_signal(step_launch_state_t *sls, slurm_msg_t *signal_msg)
 {
 	job_step_kill_msg_t *step_signal = signal_msg->data;
 
@@ -1397,7 +1392,7 @@ _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
 static void
 _handle_msg(void *arg, slurm_msg_t *msg)
 {
-	struct step_launch_state *sls = (struct step_launch_state *)arg;
+	step_launch_state_t *sls = (step_launch_state_t *) arg;
 	uid_t req_uid;
 	uid_t uid = getuid();
 	srun_user_msg_t *um;
@@ -1483,7 +1478,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 	slurm_msg_t req;
 	step_complete_msg_t msg;
 	int rc = -1;
-	struct step_launch_state *sls = ctx->launch_state;
+	step_launch_state_t *sls = ctx->launch_state;
 	int nodeid = nodelist_find(ctx->step_resp->step_layout->node_list, node);
 
 	slurm_mutex_lock(&sls->lock);
