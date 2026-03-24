@@ -3500,6 +3500,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->resvid, buffer);
 		packstr(job->resv_req, buffer);
 		packstr(job->script, buffer);
+		pack64(job->sluid, buffer);
 		pack32(job->show_full, buffer);
 		pack_time(job->start, buffer);
 		pack32(job->state, buffer);
@@ -3790,6 +3791,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->resvid, buffer);
 		safe_unpackstr(&job_ptr->resv_req, buffer);
 		safe_unpackstr(&job_ptr->script, buffer);
+		safe_unpack64(&job_ptr->sluid, buffer);
 		safe_unpack32(&job_ptr->show_full, buffer);
 		safe_unpack_time(&job_ptr->start, buffer);
 		safe_unpack32(&uint32_tmp, buffer);

@@ -83,6 +83,7 @@ char *job_req_inx[] = {
 	"t1.id_user",
 	"t1.id_wckey",
 	"t1.job_db_inx",
+	"t1.sluid",
 	"t1.job_name",
 	"t1.kill_requid",
 	"t1.licenses",
@@ -150,6 +151,7 @@ enum {
 	JOB_REQ_UID,
 	JOB_REQ_WCKEYID,
 	JOB_REQ_DB_INX,
+	JOB_REQ_SLUID,
 	JOB_REQ_NAME,
 	JOB_REQ_KILL_REQUID,
 	JOB_REQ_LICENSES,
@@ -854,6 +856,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		job->db_index = slurm_atoull(db_inx_char);
 		job->jobid = curr_id;
+		job->sluid = slurm_atoull(row[JOB_REQ_SLUID]);
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = slurm_atoul(row[JOB_REQ_GID]);
 		job->exitcode = slurm_atoul(row[JOB_REQ_EXIT_CODE]);
