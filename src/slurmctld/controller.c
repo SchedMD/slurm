@@ -1098,6 +1098,8 @@ int main(int argc, char **argv)
 			slurm_conf.slurmctld_pidfile);
 	}
 
+	conmgr_request_shutdown();
+	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 {
@@ -1155,9 +1157,6 @@ int main(int argc, char **argv)
 	bit_cache_fini();
 }
 #endif
-
-	conmgr_request_shutdown();
-	conmgr_fini();
 
 	rate_limit_shutdown();
 	log_fini();
