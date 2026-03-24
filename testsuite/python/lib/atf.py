@@ -830,7 +830,9 @@ def repeat_command_until(command, condition, quiet=True, **repeat_until_kwargs):
     """
 
     return repeat_until(
-        lambda: run_command(command, quiet=quiet), condition, **repeat_until_kwargs
+        lambda: run_command(command, quiet=quiet),
+        condition,
+        **repeat_until_kwargs,
     )
 
 
@@ -1868,15 +1870,38 @@ def require_version(
     pytest.skip(reason)
 
 
-def request_slurmctld(request):
+def request_slurmctld(request, user=None):
     """
     Returns the slurmctld response of a given request.
     It needs slurmctld >= 25.11 listening HTTP requests.
     """
 
-    return requests.get(
+    token = None
+    if user is not None:
+        token = "".join(
+            run_command_output(
+                f"scontrol token username={user}",
+                fatal=True,
+                quiet=True,
+                user=properties["slurm-user"],
+            )
+            .strip()
+            .split("\n")[-1]
+            .split("=")[1:]
+        )
+
+    headers = None
+    # run_command_output worked and returned in time, set JWT headers
+    if user is not None and token is not None:
+        headers = {"X-SLURM-USER-NAME": user, "X-SLURM-USER-TOKEN": token}
+
+    logging.debug(f"HTTP request to slurmctld with user: {user}, token: {token}")
+    resp = requests.get(
         f"http://{properties['slurmctld_host']}:{properties['slurmctld_port']}/{request}",
+        headers=headers,
     )
+    logging.debug(f"HTTP request to slurmctld returned: {resp.text}")
+    return resp
 
 
 def request_slurmrestd(request):
@@ -4049,7 +4074,8 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
         command = "scontrol -d -o show jobs"
         if job_id is not None:
             command += f" {job_id}"
-        # TODO: Remove extra debug info for t22858 instead of fatal
+        # TODO: Remove extra debug info for t22858 instead of forwarding fatal
+        run_command_kwargs.pop("fatal", None)
         result = run_command(command, fatal=False, **run_command_kwargs)
         if result["exit_code"]:
             logging.debug(
@@ -4176,14 +4202,13 @@ def get_job(job_id, quiet=False):
     return jobs_dict[job_id] if job_id in jobs_dict else {}
 
 
-def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
+def get_job_parameter(job_id, parameter_name, default=None, **run_command_kwargs):
     """Returns the value of a specific parameter for a given job.
 
     Args:
         job_id (integer): The id of the job for which the parameter value is requested.
         parameter_name (string): The name of the parameter whose value is to be obtained.
         default (string or None): The value to be returned if the parameter is not found.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
         The value of the specified job parameter, or the default value if the
@@ -4196,7 +4221,7 @@ def get_job_parameter(job_id, parameter_name, default=None, quiet=False):
         'primary'
     """
 
-    jobs_dict = get_jobs(quiet=quiet)
+    jobs_dict = get_jobs(**run_command_kwargs)
 
     if job_id in jobs_dict:
         job_dict = jobs_dict[job_id]
@@ -4484,9 +4509,7 @@ def wait_for_job_state(
     desired_reason=None,
     timeout=default_polling_timeout,
     poll_interval=None,
-    fatal=False,
-    quiet=False,
-    xfail=False,
+    **run_command_kwargs,
 ):
     """Wait for the specified job to reach the desired state.
 
@@ -4506,9 +4529,6 @@ def wait_for_job_state(
         desired_reason (string): Optional reason to also match.
         timeout (integer): The number of seconds to poll before timing out.
         poll_interval (float): Time (in seconds) between job state polls.
-        fatal (boolean): If True, a timeout will cause the test to fail.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
-        xfail (boolean): If True, state (or reason) are not expected to be reached.
 
     Returns:
         Boolean value indicating whether the job reached the desired state.
@@ -4527,6 +4547,11 @@ def wait_for_job_state(
             poll_interval = 0.2
         else:
             poll_interval = 1
+
+    # Get the quiet, fatal and xfail values but don't forward them
+    quiet = run_command_kwargs.pop("quiet", None)
+    fatal = run_command_kwargs.pop("fatal", None)
+    xfail = run_command_kwargs.pop("xfail", None)
 
     if quiet:
         log_level = logging.TRACE
@@ -4549,7 +4574,7 @@ def wait_for_job_state(
     begin_time = time.time()
     while time.time() < begin_time + timeout:
         job_state = get_job_parameter(
-            job_id, "JobState", default="NOT_FOUND", quiet=True
+            job_id, "JobState", default="NOT_FOUND", quiet=True, **run_command_kwargs
         )
 
         message = f"Job ({job_id}) is in state {job_state}, but we are waiting for {desired_job_state}"
@@ -4557,7 +4582,11 @@ def wait_for_job_state(
             if desired_job_state == "DONE" or job_state == desired_job_state:
                 message = f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
                 reason = get_job_parameter(
-                    job_id, "Reason", default="NOT_FOUND", quiet=True
+                    job_id,
+                    "Reason",
+                    default="NOT_FOUND",
+                    quiet=True,
+                    **run_command_kwargs,
                 )
                 if desired_reason is None or reason == desired_reason:
                     if desired_reason is not None:
@@ -4587,7 +4616,7 @@ def wait_for_job_state(
                 f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
             )
             reason = get_job_parameter(
-                job_id, "Reason", default="NOT_FOUND", quiet=True
+                job_id, "Reason", default="NOT_FOUND", quiet=True, **run_command_kwargs
             )
             if desired_reason is None or reason == desired_reason:
                 if desired_reason is not None:
