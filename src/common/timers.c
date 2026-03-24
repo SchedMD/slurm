@@ -191,65 +191,6 @@ extern long timer_get_duration(timespec_t *start, timespec_t *end)
 	return _calc_tv_delta(*start, *end);
 }
 
-extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start)
-{
-	xassert(!start->tv_sec);
-	*start = timespec_now();
-}
-
-extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
-					      timespec_t *start, timespec_t end,
-					      const timespec_t interval)
-{
-	latency_metric_rc_t rc = {0};
-
-	xassert(start->tv_sec > 0);
-
-	{
-		timespec_diff_ns_t diff = timespec_diff_ns(end, *start);
-		xassert(diff.after);
-		metric->total = timespec_add(metric->total, diff.diff);
-		rc.delay = diff.diff;
-		latency_metric_add_histogram_value(&metric->histogram,
-						   diff.diff);
-	}
-
-	*start = (timespec_t) {0};
-	metric->count++;
-
-	/* Check if interval is not to be checked */
-	if (timespec_is_infinite(interval))
-		return rc;
-
-	if (!metric->last_log.tv_sec) {
-		/* Set timestamp on full run and skip analysis */
-		metric->last_log = end;
-		return rc;
-	} else {
-		timespec_diff_ns_t diff =
-			timespec_diff_ns(end, metric->last_log);
-
-		xassert(diff.after);
-
-		if (!timespec_is_after(diff.diff, interval))
-			return rc;
-	}
-
-	{
-		double avg;
-
-		/* Promote all components to double to avoid truncation */
-		avg = (double) metric->total.tv_sec;
-		avg += ((double) metric->total.tv_nsec) /
-		       ((double) NSEC_IN_SEC);
-		avg /= (double) metric->count;
-
-		rc.avg = avg;
-	}
-
-	return rc;
-}
-
 extern int latency_histogram_print_labels(char *buffer, size_t buffer_len)
 {
 	int wrote = 0;
