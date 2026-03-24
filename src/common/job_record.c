@@ -1153,6 +1153,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	jobacctinfo_t *jobacct = NULL;
 	slurm_step_id_t step_id = {
 		.job_id = job_ptr->job_id,
+		.sluid = job_ptr->step_id.sluid,
 		.step_het_comp = NO_VAL,
 	};
 
