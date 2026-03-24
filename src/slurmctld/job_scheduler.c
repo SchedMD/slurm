@@ -1998,8 +1998,9 @@ skip_start:
 				     job_ptr->priority, job_ptr->partition);
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
-			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
+			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+			   (error_code !=
+			    ESLURM_INVALID_BURST_BUFFER_REQUEST)) {
 			sched_info("schedule: %pJ non-runnable: %s",
 				   job_ptr, slurm_strerror(error_code));
 			last_job_update = now;
