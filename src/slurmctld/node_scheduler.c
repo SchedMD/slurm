@@ -1912,11 +1912,6 @@ try_sched:
 
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
-				if (bit_set_count(avail_bitmap) > max_nodes) {
-					/* end of tests for this feature */
-					avail_nodes = 0;
-					break;
-				}
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -1955,8 +1950,7 @@ try_sched:
 						smallest_min_mem;
 			}
 
-			if ((pick_code == SLURM_SUCCESS) &&
-			     (bit_set_count(avail_bitmap) <= max_nodes)) {
+			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -2007,9 +2001,7 @@ try_sched:
 
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
-					if (bit_set_count(avail_bitmap) <=
-					     max_nodes)
-						runable_avail = true;
+					runable_avail = true;
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = avail_bitmap;
 					avail_bitmap = NULL;
