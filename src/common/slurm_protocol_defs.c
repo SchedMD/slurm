@@ -53,6 +53,7 @@
 #include "src/common/job_record.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
@@ -5843,22 +5844,28 @@ extern char *slurm_get_selected_step_id(
 {
 	int pos = 0;
 
-	pos = snprintf(job_id_str, len, "%u",
-		       selected_step->step_id.job_id);
-	if (pos > len)
-		goto endit;
+	if (selected_step->step_id.sluid) {
+		print_sluid(selected_step->step_id.sluid, job_id_str, len);
+		pos = strlen(job_id_str);
+	} else {
+		pos = snprintf(job_id_str, len, "%u",
+			       selected_step->step_id.job_id);
 
-	if (selected_step->array_task_id != NO_VAL)
-		pos += snprintf(job_id_str + pos, len - pos, "_%u",
-				selected_step->array_task_id);
-	if (pos > len)
-		goto endit;
+		if (pos > len)
+			goto endit;
 
-	if (selected_step->het_job_offset != NO_VAL)
-		pos += snprintf(job_id_str + pos, len - pos, "+%u",
-				selected_step->het_job_offset);
-	if (pos > len)
-		goto endit;
+		if (selected_step->array_task_id != NO_VAL)
+			pos += snprintf(job_id_str + pos, len - pos, "_%u",
+					selected_step->array_task_id);
+		if (pos > len)
+			goto endit;
+
+		if (selected_step->het_job_offset != NO_VAL)
+			pos += snprintf(job_id_str + pos, len - pos, "+%u",
+					selected_step->het_job_offset);
+		if (pos > len)
+			goto endit;
+	}
 
 	if (selected_step->step_id.step_id != NO_VAL) {
 		job_id_str[pos++] = '.';
