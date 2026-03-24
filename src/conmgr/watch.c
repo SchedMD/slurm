@@ -78,10 +78,12 @@ typedef struct {
 
 static void _listen_accept(conmgr_callback_args_t conmgr_args, void *arg);
 
-static void _set_time(handle_connection_args_t *args)
+static handle_connection_args_t *_set_time(handle_connection_args_t *args)
 {
-	if (!args->time.tv_sec)
+	if (timespec_is_zero(args->time))
 		args->time = timespec_now();
+
+	return args;
 }
 
 static bool _handle_time_limit(handle_connection_args_t *args,
@@ -89,37 +91,41 @@ static bool _handle_time_limit(handle_connection_args_t *args,
 			       const struct timespec limit, const char *what,
 			       const char *name, const char *caller)
 {
-	const struct timespec deadline = timespec_add(timestamp, limit);
-	bool after, change_max_sleep = false;
+	timespec_t deadline = { 0, 0 };
 
-	_set_time(args);
+	xassert(!timespec_is_zero(limit));
+	xassert(!timespec_is_zero(timestamp));
+	xassert(!timespec_is_infinite(timestamp));
 
-	if (!(after = timespec_is_after(args->time, deadline)))
-		change_max_sleep =
-			(!mgr.watch_max_sleep.tv_sec ||
-			 timespec_is_after(mgr.watch_max_sleep, deadline));
+	/* Always ignore infinite time limits */
+	if (timespec_is_infinite(limit))
+		return false;
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char str[CTIME_STR_LEN];
+	deadline = timespec_add(timestamp, limit);
 
-		timespec_ctime(limit, false, str, sizeof(str));
+	(void) _set_time(args);
 
-		log_flag(CONMGR, "%s->%s: %s%s%s%s %s timeout %s %s",
-			 caller, __func__, (name ? "[" : ""), name,
-			 (name ? "] " : ""),
-			 (change_max_sleep ? "updating watch() sleep" :
-			  "evaluating"),
-			 what, (after ? "triggered" : "ETA"), str);
+	if (!timespec_is_after(deadline, args->time)) {
+		log_flag(CONMGR, "%s->%s: [%s] triggered timeout %s at %s",
+			 caller, __func__, (name ? name : "watch"), what,
+			 TIMESPEC_STR(limit, false));
+		return true;
 	}
 
-	if (after)
-		return true;
+	if (timespec_is_zero(mgr.watch_max_sleep) ||
+	    timespec_is_after(mgr.watch_max_sleep, deadline)) {
+		log_flag(CONMGR, "%s->%s: [%s] reducing watch() sleep to timeout %s ETA %s",
+			 caller, __func__, (name ? name : "watch"),
+			 what, TIMESPEC_STR(limit, false));
 
-	if (change_max_sleep) {
 		mgr.watch_max_sleep = deadline;
 
 		/* Always wake up watch() as if deadline changed */
 		EVENT_SIGNAL(&mgr.watch_sleep);
+	} else {
+		log_flag(CONMGR, "%s->%s: [%s] waiting for timeout %s %s",
+			 caller, __func__, (name ? name : "watch"), what,
+			 TIMESPEC_STR(limit, false));
 	}
 
 	return false;
@@ -136,14 +142,8 @@ static void _reset_watch_max_sleep(void)
 	/* timeout triggered and needs reset */
 	mgr.watch_max_sleep = timespec_add(now, WATCH_DEFAULT_SLEEP);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char str[CTIME_STR_LEN];
-
-		timespec_ctime(mgr.watch_max_sleep, true, str, sizeof(str));
-
-		log_flag(CONMGR, "%s: reset watch() sleep to %s",
-			 __func__, str);
-	}
+	log_flag(CONMGR, "%s: reset watch() sleep to %s",
+		 __func__, TIMESPEC_STR(mgr.watch_max_sleep, true));
 }
 
 static void _on_finish_wrapper(conmgr_callback_args_t conmgr_args, void *arg)
@@ -214,9 +214,10 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 
 			con_unset_flag(con, FLAG_CAN_QUERY_OUTPUT_BUFFER);
 		} else if (bytes > 0) {
-			log_flag(CONMGR, "%s: [%s] output_fd[%d] has %d bytes in outgoing buffer remaining. Retrying in %us",
+			log_flag(CONMGR, "%s: [%s] output_fd[%d] has %d bytes in outgoing buffer remaining. Retrying in %s",
 				 __func__, con->name, output_fd, bytes,
-				 mgr.conf_delay_write_complete);
+				 TIMESPEC_STR(con->timeouts->write_complete,
+					      false));
 
 			/* Turn off Nagle while we wait for buffer to flush */
 			if (con_flag(con, FLAG_IS_SOCKET) &&
@@ -229,8 +230,10 @@ static void _on_write_complete_work(conmgr_callback_args_t conmgr_args,
 
 			add_work_con_delayed_fifo(true, con,
 						  _on_write_complete_work, NULL,
-						  mgr.conf_delay_write_complete,
-						  0);
+						  con->timeouts->write_complete
+							  .tv_sec,
+						  con->timeouts->write_complete
+							  .tv_nsec);
 			slurm_mutex_unlock(&mgr.mutex);
 			return;
 		} else {
@@ -356,26 +359,15 @@ static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 
 	if (rc) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char str[CTIME_STR_LEN];
-
-			timespec_ctime(mgr.conf_connect_timeout, false, str,
-				       sizeof(str));
-
-			log_flag(CONMGR, "%s: [%s] closing due to connect %s timeout failed: %s",
-				 __func__, con->name, str, slurm_strerror(rc));
-		}
+		log_flag(CONMGR, "%s: [%s] closing due to connect %s timeout failed: %s",
+			 __func__, con->name,
+			 TIMESPEC_STR(con->timeouts->connect, false),
+			 slurm_strerror(rc));
 		close_con(false, con);
 	} else {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char str[CTIME_STR_LEN];
-
-			timespec_ctime(mgr.conf_connect_timeout, false, str,
-				       sizeof(str));
-
-			log_flag(CONMGR, "%s: [%s] connect %s timeout resetting",
-				 __func__, con->name, str);
-		}
+		log_flag(CONMGR, "%s: [%s] connect %s timeout resetting",
+			 __func__, con->name,
+			 TIMESPEC_STR(con->timeouts->connect, false));
 
 		slurm_mutex_lock(&mgr.mutex);
 		con->last_read = timespec_now();
@@ -389,20 +381,12 @@ static void _on_connect_timeout(handle_connection_args_t *args,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
-
-		_set_time(args);
-
-		timespec_ctime(timespec_diff_ns(con->last_read,
-						args->time).diff, false,
-			       time_str, sizeof(time_str));
-		timespec_ctime(mgr.conf_connect_timeout, false, total_str,
-			       sizeof(total_str));
-
-		log_flag(CONMGR, "%s: [%s] connect timed out at %s/%s",
-			 __func__, con->name, time_str, total_str);
-	}
+	log_flag(CONMGR, "%s: [%s] connect timed out at %s/%s",
+		 __func__, con->name,
+		 TIMESPEC_STR(timespec_diff_ns(con->last_read,
+					       _set_time(args)->time).diff,
+			      false), TIMESPEC_STR(con->timeouts->connect,
+						   false));
 
 	add_work_con_fifo(true, con, _wrap_on_connect_timeout, NULL);
 }
@@ -419,15 +403,10 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 
 	if (rc) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char str[CTIME_STR_LEN];
-
-			timespec_ctime(mgr.conf_write_timeout, false, str,
-				       sizeof(str));
-
-			log_flag(CONMGR, "%s: [%s] closing due to write %s timeout failed: %s",
-				 __func__, con->name, str, slurm_strerror(rc));
-		}
+		log_flag(CONMGR, "%s: [%s] closing due to write %s timeout failed: %s",
+			 __func__, con->name, TIMESPEC_STR(con->timeouts->write,
+							   false),
+			 slurm_strerror(rc));
 
 		slurm_mutex_lock(&mgr.mutex);
 
@@ -437,15 +416,9 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 
 		slurm_mutex_unlock(&mgr.mutex);
 	} else {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char str[CTIME_STR_LEN];
-
-			timespec_ctime(mgr.conf_write_timeout, false, str,
-				       sizeof(str));
-
-			log_flag(CONMGR, "%s: [%s] write %s timeout resetting",
-				 __func__, con->name, str);
-		}
+		log_flag(CONMGR, "%s: [%s] write %s timeout resetting",
+			 __func__, con->name, TIMESPEC_STR(con->timeouts->write,
+							   false));
 
 		slurm_mutex_lock(&mgr.mutex);
 		con->last_write = timespec_now();
@@ -458,20 +431,12 @@ static void _on_write_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
-
-		_set_time(args);
-
-		timespec_ctime(timespec_diff_ns(con->last_write,
-						args->time).diff, false,
-			       time_str, sizeof(time_str));
-		timespec_ctime(mgr.conf_write_timeout, false, total_str,
-			       sizeof(total_str));
-
-		log_flag(CONMGR, "%s: [%s] write timed out at %s/%s",
-			 __func__, con->name, time_str, total_str);
-	}
+	log_flag(CONMGR, "%s: [%s] write timed out at %s/%s",
+		 __func__, con->name,
+		 TIMESPEC_STR(timespec_diff_ns(con->last_write,
+					       _set_time(args)->time).diff,
+			      false), TIMESPEC_STR(con->timeouts->write,
+						   false));
 
 	add_work_con_fifo(true, con, _wrap_on_write_timeout, NULL);
 }
@@ -487,27 +452,16 @@ static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
 		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
 
 	if (rc) {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char str[CTIME_STR_LEN];
-
-			timespec_ctime(mgr.conf_read_timeout, false, str,
-				       sizeof(str));
-
-			log_flag(CONMGR, "%s: [%s] closing due to read %s timeout failed: %s",
-				 __func__, con->name, str, slurm_strerror(rc));
-		}
+		log_flag(CONMGR, "%s: [%s] closing due to read %s timeout failed: %s",
+			 __func__, con->name, TIMESPEC_STR(con->timeouts->read,
+							   false),
+			 slurm_strerror(rc));
 
 		close_con(false, con);
 	} else {
-		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-			char str[CTIME_STR_LEN];
-
-			timespec_ctime(mgr.conf_read_timeout, false, str,
-				       sizeof(str));
-
-			log_flag(CONMGR, "%s: [%s] read %s timeout resetting",
-				 __func__, con->name, str);
-		}
+		log_flag(CONMGR, "%s: [%s] read %s timeout resetting",
+			 __func__, con->name, TIMESPEC_STR(con->timeouts->read,
+							   false));
 
 		slurm_mutex_lock(&mgr.mutex);
 		con->last_read = timespec_now();
@@ -520,19 +474,11 @@ static void _on_read_timeout(handle_connection_args_t *args, conmgr_fd_t *con)
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(args->magic == MAGIC_HANDLE_CONNECTION);
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
-		char time_str[CTIME_STR_LEN], total_str[CTIME_STR_LEN];
-
-		_set_time(args);
-
-		timespec_ctime(timespec_diff_ns(con->last_read, args->time).diff,
-			       false, time_str, sizeof(time_str));
-		timespec_ctime(mgr.conf_read_timeout, false, total_str,
-			       sizeof(total_str));
-
-		log_flag(CONMGR, "%s: [%s] read timed out at %s/%s",
-			 __func__, con->name, time_str, total_str);
-	}
+	log_flag(CONMGR, "%s: [%s] read timed out at %s/%s",
+		 __func__, con->name,
+		 TIMESPEC_STR(timespec_diff_ns(con->last_read,
+					       _set_time(args)->time).diff,
+			      false), TIMESPEC_STR(con->timeouts->read, false));
 
 	add_work_con_fifo(true, con, _wrap_on_read_timeout, NULL);
 }
@@ -565,8 +511,7 @@ static int _handle_connection_wait_write(conmgr_fd_t *con,
 	 */
 	con_set_polling(con, PCTL_TYPE_WRITE_ONLY, __func__);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT) &&
-	    _handle_time_limit(args, con->last_write, mgr.conf_write_timeout,
+	if (_handle_time_limit(args, con->last_write, con->timeouts->write,
 			       "write", con->name, __func__)) {
 		_on_write_timeout(args, con);
 		return 0;
@@ -689,10 +634,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		con_set_flag(con, FLAG_IS_CONNECTED);
 
-		if (con_flag(con, FLAG_WATCH_READ_TIMEOUT)) {
-			_set_time(args);
-			con->last_read = args->time;
-		}
+		_set_time(args);
+		con->last_read = args->time;
 
 		if (con_flag(con, FLAG_IS_SOCKET) && (con->output_fd != -1)) {
 			/* Query outbound MSS now kernel should know the answer */
@@ -747,9 +690,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		 */
 		con_set_polling(con, PCTL_TYPE_READ_WRITE, __func__);
 
-		if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT) &&
-		    _handle_time_limit(args, con->last_read,
-				       mgr.conf_connect_timeout, "connect",
+		if (_handle_time_limit(args, con->last_read,
+				       con->timeouts->connect, "connect",
 				       con->name, __func__)) {
 			_on_connect_timeout(args, con);
 			return 0;
@@ -1023,10 +965,10 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		} else {
 			con_set_polling(con, PCTL_TYPE_READ_ONLY, __func__);
 
-			if (con_flag(con, CON_FLAG_WATCH_READ_TIMEOUT) &&
+			if (!timespec_is_infinite(con->timeouts->read) &&
 			    list_is_empty(con->write_complete_work) &&
 			    _handle_time_limit(args, con->last_read,
-					       mgr.conf_read_timeout, "read",
+					       con->timeouts->read, "read",
 					       con->name, __func__)) {
 				_on_read_timeout(args, con);
 				return 0;
@@ -1256,7 +1198,7 @@ static bool _attempt_accept(conmgr_fd_t *con)
 	}
 
 	/* hand over FD for normal processing */
-	if ((rc = add_connection(type, con, fd, fd, con->events,
+	if ((rc = add_connection(type, NULL, con, fd, fd, con->events,
 				 (conmgr_con_flags_t) flags, &addr, addrlen,
 				 false, unix_path, NULL, NULL, con->new_arg))) {
 		log_flag(CONMGR, "%s: [fd:%d] unable to a register new connection: %s",
@@ -1621,9 +1563,8 @@ static void _quiesce_max_sleep(void)
 
 	_set_time(&args);
 
-	if (_handle_time_limit(&args, mgr.quiesce.start,
-			       mgr.quiesce.conf_timeout, "quiesce", NULL,
-			       __func__))
+	if (_handle_time_limit(&args, mgr.quiesce.start, mgr.timeouts.quiesce,
+			       "quiesce", NULL, __func__))
 		_on_quiesce_timeout();
 }
 

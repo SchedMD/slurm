@@ -246,6 +246,17 @@ extern int timespec_ctime(timespec_t ts, bool abs_time, char *buffer,
 	return wrote;
 }
 
+extern timespec_ctime_str_t timespec_ctime_str(timespec_t ts, bool abs_time)
+{
+	timespec_ctime_str_t ret = {
+		.str = "INVALID",
+	};
+
+	(void) timespec_ctime(ts, abs_time, ret.str, sizeof(ret.str));
+
+	return ret;
+}
+
 /* Normalize nsec to less than a second */
 static timespec_t _normalize(timespec_t ts)
 {
@@ -373,4 +384,9 @@ extern int64_t timespec_after_deadline(const timespec_t deadline)
 		return INFINITE64;
 
 	return timespec_diff(deadline, timespec_now());
+}
+
+extern bool timespec_is_zero(timespec_t x)
+{
+	return (!x.tv_sec && !x.tv_nsec);
 }

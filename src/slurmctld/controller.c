@@ -1913,17 +1913,14 @@ static void _open_ports(void)
 
 	for (uint64_t i = 0; i < listeners.count; i++) {
 		static const conmgr_con_flags_t flags =
-			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE |
-			 CON_FLAG_WATCH_WRITE_TIMEOUT |
-			 CON_FLAG_WATCH_READ_TIMEOUT |
-			 CON_FLAG_WATCH_CONNECT_TIMEOUT);
+			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE);
 		int rc, *index_ptr;
 
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
-						   http_switch_con_type(),
+						   http_switch_con_type(), NULL,
 						   &events,
 						   (flags |
 						    http_switch_con_flags()),

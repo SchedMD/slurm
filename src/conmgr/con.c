@@ -109,9 +109,6 @@ static const struct {
 	T(FLAG_IS_FIFO),
 	T(FLAG_IS_CHR),
 	T(FLAG_TCP_NODELAY),
-	T(FLAG_WATCH_WRITE_TIMEOUT),
-	T(FLAG_WATCH_READ_TIMEOUT),
-	T(FLAG_WATCH_CONNECT_TIMEOUT),
 	T(FLAG_TLS_SERVER),
 	T(FLAG_TLS_CLIENT),
 	T(FLAG_IS_TLS_CONNECTED),
@@ -126,6 +123,7 @@ static const struct {
 typedef struct {
 	const conmgr_events_t *events;
 	void *arg;
+	const conmgr_timeouts_t *timeouts;
 	conmgr_con_type_t type;
 	int rc;
 	conmgr_con_flags_t flags;
@@ -134,6 +132,7 @@ typedef struct {
 typedef struct {
 #define MAGIC_RECEIVE_FD 0xeba8bae0
 	int magic; /* MAGIC_RECEIVE_FD */
+	const conmgr_timeouts_t *timeouts;
 	conmgr_con_type_t type;
 	const conmgr_events_t *events;
 	void *arg;
@@ -490,13 +489,33 @@ extern int conmgr_fd_change_mode(conmgr_fd_t *con, conmgr_con_type_t type)
 	return rc;
 }
 
-extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
-			  int input_fd, int output_fd,
+extern int conmgr_con_change_mode(conmgr_fd_ref_t *con, conmgr_con_type_t type)
+{
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	rc = fd_change_mode(con->con, type);
+
+	/* wake up watch() to send along any pending data */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return rc;
+}
+
+extern int add_connection(conmgr_con_type_t type,
+			  const conmgr_timeouts_t *timeouts,
+			  conmgr_fd_t *source, int input_fd, int output_fd,
 			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags, const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
 			  const char *unix_socket_path, void *tls_conn,
-			  char *tls_cert, void *arg)
+			  const char *tls_cert, void *arg)
 {
 	struct stat in_stat = { 0 };
 	struct stat out_stat = { 0 };
@@ -509,6 +528,16 @@ extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
 		(unix_socket_path ?  (strlen(unix_socket_path) + 1): 0);
 	static const size_t unix_socket_path_max =
 		sizeof(((struct sockaddr_un *) NULL)->sun_path);
+	const conmgr_timeouts_t *timeouts_ptr = NULL;
+
+	if (timeouts)
+		timeouts_ptr = timeouts;
+	else if (source)
+		timeouts_ptr = source->timeouts;
+	else
+		timeouts_ptr = &mgr.timeouts;
+
+	xassert(timeouts_ptr);
 
 	if (unix_socket_path_len &&
 	    (unix_socket_path_len > unix_socket_path_max)) {
@@ -574,6 +603,7 @@ extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
 		/* Set flags not related to connection state tracking */
 		.flags = (flags & ~FLAGS_MASK_STATE),
 		.tls_cert = xstrdup(tls_cert),
+		.timeouts = timeouts_ptr,
 	};
 
 	/* save if connection is a socket type to avoid calling fstat() again */
@@ -647,8 +677,8 @@ extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
 
 	fd_change_mode(con, type);
 
-	if (con_flag(con, FLAG_WATCH_CONNECT_TIMEOUT))
-		con->last_read = timespec_now();
+	/* Always set last_read for connect timeout */
+	con->last_read = timespec_now();
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		char *flags = con_flags_string(con->flags);
@@ -727,22 +757,24 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern int conmgr_process_fd(conmgr_con_type_t type, int input_fd,
+extern int conmgr_process_fd(conmgr_con_type_t type,
+			     const conmgr_timeouts_t *timeouts, int input_fd,
 			     int output_fd, const conmgr_events_t *events,
-			     conmgr_con_flags_t flags,
-			     const slurm_addr_t *addr, socklen_t addrlen,
-			     void *tls_conn, void *arg)
+			     conmgr_con_flags_t flags, const slurm_addr_t *addr,
+			     socklen_t addrlen, void *tls_conn, void *arg)
 {
-	return add_connection(type, NULL, input_fd, output_fd, events, flags,
-			      addr, addrlen, false, NULL, tls_conn, NULL, arg);
+	return add_connection(type, timeouts, NULL, input_fd, output_fd, events,
+			      flags, addr, addrlen, false, NULL, tls_conn, NULL,
+			      arg);
 }
 
 extern int conmgr_process_fd_listen(int fd, conmgr_con_type_t type,
+				    const conmgr_timeouts_t *timeouts,
 				    const conmgr_events_t *events,
 				    conmgr_con_flags_t flags, void *arg)
 {
-	return add_connection(type, NULL, fd, -1, events, flags, NULL, 0, true,
-			      NULL, NULL, NULL, arg);
+	return add_connection(type, timeouts, NULL, fd, -1, events, flags, NULL,
+			      0, true, NULL, NULL, NULL, arg);
 }
 
 static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
@@ -771,9 +803,10 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 		 * connection is now in an unknown state
 		 */
 		close_con(false, src);
-	} else if (add_connection(args->type, NULL, fd, fd, args->events,
-				  CON_FLAG_NONE, NULL, 0, false, NULL, NULL,
-				  NULL, args->arg) != SLURM_SUCCESS) {
+	} else if (add_connection(args->type, args->timeouts, NULL, fd, fd,
+				  args->events, CON_FLAG_NONE, NULL, 0, false,
+				  NULL, NULL, NULL,
+				  args->arg) != SLURM_SUCCESS) {
 		/*
 		 * Error already logged by add_connection() and there is no
 		 * reason to assume that failing is due to the state of src.
@@ -784,7 +817,9 @@ static void _receive_fd(conmgr_callback_args_t conmgr_args, void *arg)
 	xfree(args);
 }
 
-extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
+extern int conmgr_queue_receive_fd(conmgr_fd_t *src,
+				   const conmgr_timeouts_t *timeouts,
+				   conmgr_con_type_t type,
 				   const conmgr_events_t *events, void *arg)
 {
 	int rc = SLURM_ERROR;
@@ -813,6 +848,7 @@ extern int conmgr_queue_receive_fd(conmgr_fd_t *src, conmgr_con_type_t type,
 		receive_fd_args_t *args = xmalloc_nz(sizeof(*args));
 		*args = (receive_fd_args_t) {
 			.magic = MAGIC_RECEIVE_FD,
+			.timeouts = timeouts,
 			.type = type,
 			.events = events,
 			.arg = arg,
@@ -1036,7 +1072,8 @@ static bool _is_listening(const slurm_addr_t *addr, socklen_t addrlen)
 	return false;
 }
 
-static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
+static int _add_unix_listener(const conmgr_timeouts_t *timeouts,
+			      conmgr_con_type_t type, conmgr_con_flags_t flags,
 			      const char *listen_on, const char *unixsock,
 			      const conmgr_events_t *events, void *arg)
 {
@@ -1072,11 +1109,13 @@ static int _add_unix_listener(conmgr_con_type_t type, conmgr_con_flags_t flags,
 		fatal("%s: [%s] unable to listen(): %m",
 		      __func__, listen_on);
 
-	return add_connection(type, NULL, fd, -1, events, flags, &addr,
-			      sizeof(addr), true, unixsock, NULL, NULL, arg);
+	return add_connection(type, timeouts, NULL, fd, -1, events, flags,
+			      &addr, sizeof(addr), true, unixsock, NULL, NULL,
+			      arg);
 }
 
-static int _add_socket_listener(conmgr_con_type_t type,
+static int _add_socket_listener(const conmgr_timeouts_t *timeouts,
+				conmgr_con_type_t type,
 				conmgr_con_flags_t flags, const char *listen_on,
 				url_t *url, const conmgr_events_t *events,
 				void *arg)
@@ -1134,7 +1173,7 @@ static int _add_socket_listener(conmgr_con_type_t type,
 			fatal("%s: [%s] unable to listen(): %m",
 			      __func__, addrinfo_to_string(addr));
 
-		rc = add_connection(type, NULL, fd, -1, events, flags,
+		rc = add_connection(type, timeouts, NULL, fd, -1, events, flags,
 				    (const slurm_addr_t *) addr->ai_addr,
 				    addr->ai_addrlen, true, NULL, NULL, NULL,
 				    arg);
@@ -1144,7 +1183,8 @@ static int _add_socket_listener(conmgr_con_type_t type,
 	return rc;
 }
 
-extern int conmgr_create_listen_socket(conmgr_con_type_t type,
+extern int conmgr_create_listen_socket(const conmgr_timeouts_t *timeouts,
+				       conmgr_con_type_t type,
 				       conmgr_con_flags_t flags,
 				       const char *listen_on,
 				       const conmgr_events_t *events, void *arg)
@@ -1165,8 +1205,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 
 	switch (url.scheme) {
 	case URL_SCHEME_UNIX:
-		rc = _add_unix_listener(type, flags, listen_on, url.path,
-					events, arg);
+		rc = _add_unix_listener(timeouts, type, flags, listen_on,
+					url.path, events, arg);
 		break;
 	case URL_SCHEME_HTTPS:
 		flags |= CON_FLAG_TLS_SERVER;
@@ -1175,8 +1215,8 @@ extern int conmgr_create_listen_socket(conmgr_con_type_t type,
 		/* fall through */
 	case URL_SCHEME_HTTP:
 	case URL_SCHEME_INVALID:
-		rc = _add_socket_listener(type, flags, listen_on, &url, events,
-					  arg);
+		rc = _add_socket_listener(timeouts, type, flags, listen_on,
+					  &url, events, arg);
 		break;
 	case URL_SCHEME_INVALID_MAX:
 		fatal_abort("should never happen");
@@ -1191,20 +1231,22 @@ static int _setup_listen_socket(void *x, void *arg)
 	const char *hostport = (const char *)x;
 	socket_listen_init_t *init = arg;
 
-	init->rc = conmgr_create_listen_socket(init->type, init->flags,
-					       hostport, init->events,
-					       init->arg);
+	init->rc = conmgr_create_listen_socket(init->timeouts, init->type,
+					       init->flags, hostport,
+					       init->events, init->arg);
 
 	return (init->rc ? SLURM_ERROR : SLURM_SUCCESS);
 }
 
-extern int conmgr_create_listen_sockets(conmgr_con_type_t type,
+extern int conmgr_create_listen_sockets(const conmgr_timeouts_t *timeouts,
+					conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					list_t *hostports,
 					const conmgr_events_t *events,
 					void *arg)
 {
 	socket_listen_init_t init = {
+		.timeouts = timeouts,
 		.events = events,
 		.arg = arg,
 		.type = type,
@@ -1219,7 +1261,7 @@ extern int conmgr_create_connect_socket(conmgr_con_type_t type,
 					conmgr_con_flags_t flags,
 					slurm_addr_t *addr, socklen_t addrlen,
 					const conmgr_events_t *events,
-					char *tls_cert, void *arg)
+					const char *tls_cert, void *arg)
 {
 	int fd = -1, rc = SLURM_ERROR;
 	//socklen_t bindlen = 0;
@@ -1287,8 +1329,8 @@ again:
 	if ((type == CON_TYPE_RPC) && conn_tls_enabled())
 		flags |= FLAG_TLS_CLIENT;
 
-	return add_connection(type, NULL, fd, fd, events, flags, addr, addrlen,
-			      false, NULL, NULL, tls_cert, arg);
+	return add_connection(type, NULL, NULL, fd, fd, events, flags, addr,
+			      addrlen, false, NULL, NULL, tls_cert, arg);
 }
 
 /* WARNING: caller must not hold mgr.mutex lock */
@@ -2334,10 +2376,8 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 				 const conmgr_events_t *events, void *arg,
 				 const char *caller)
 {
-	int rc = EINVAL;
-
 	if (!ref || !ref->con)
-		return rc;
+		return EINVAL;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -2346,28 +2386,17 @@ extern int conmgr_con_set_events(conmgr_fd_ref_t *ref,
 	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
 	xassert(ref->con->magic == MAGIC_CON_MGR_FD);
 
-	/* Reject changing connections in process of cleaning up */
-	if ((ref->con->input_fd >= 0) || (ref->con->output_fd >= 0)) {
-		log_flag(CONMGR, "%s->%s: [%s] changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR,
-			 caller, __func__, ref->con->name,
-			 (uintptr_t) ref->con->events, (uintptr_t) events,
-			 (uintptr_t) ref->con->arg, (uintptr_t) arg);
+	log_flag(CONMGR, "%s->%s: [%s] changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR,
+		 caller, __func__, ref->con->name,
+		 (uintptr_t) ref->con->events, (uintptr_t) events,
+		 (uintptr_t) ref->con->arg, (uintptr_t) arg);
 
-		ref->con->events = events;
-		ref->con->arg = arg;
-		rc = SLURM_SUCCESS;
-	} else {
-		log_flag(CONMGR, "%s->%s: [%s] rejecting changing events:0x%"PRIxPTR"->0x%"PRIxPTR" arg:0x%"PRIxPTR"->0x%"PRIxPTR" for closed connection",
-			 caller, __func__, ref->con->name,
-			 (uintptr_t) ref->con->events, (uintptr_t) events,
-			 (uintptr_t) ref->con->arg, (uintptr_t) arg);
-
-		rc = ESHUTDOWN;
-	}
+	ref->con->events = events;
+	ref->con->arg = arg;
 
 	slurm_mutex_unlock(&mgr.mutex);
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 #define MAGIC_LIST_BUFFER_STATS 0x4aa19f2f
@@ -2520,4 +2549,69 @@ extern probe_status_t probe_connections(probe_log_t *log, void *arg)
 	slurm_mutex_unlock(&mgr.mutex);
 
 	return status;
+}
+
+extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *ref,
+				   const conmgr_timeouts_t *timeouts,
+				   const char *caller)
+{
+	conmgr_fd_t *con = NULL;
+
+	if (!ref)
+		return EINVAL;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	con = ref->con;
+
+	xassert(ref->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if (timeouts) {
+		log_flag(CONMGR, "%s->%s: [%s] changing connection timeouts read=%s write=%s connect=%s quiesce=%s write_complete=%s",
+			 caller, __func__, con->name,
+			 TIMESPEC_STR(timeouts->read, false),
+			 TIMESPEC_STR(timeouts->write, false),
+			 TIMESPEC_STR(timeouts->connect, false),
+			 TIMESPEC_STR(timeouts->quiesce, false),
+			 TIMESPEC_STR(timeouts->write_complete, false));
+
+		con->timeouts = timeouts;
+	} else {
+		log_flag(CONMGR, "%s->%s: [%s] changing connection timeouts to default",
+			 caller, __func__, con->name);
+
+		con->timeouts = &mgr.timeouts;
+	}
+
+	/*
+	 * Always wake up watch() as connection timeouts need to be recalculated
+	 */
+	EVENT_SIGNAL(&mgr.watch_sleep);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return SLURM_SUCCESS;
+}
+
+extern bool conmgr_con_is_equal(conmgr_fd_ref_t *con1, conmgr_fd_ref_t *con2)
+{
+	int is_equal = false;
+
+	if (!con1 || !con2)
+		return false;
+
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con1->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con1->con->magic == MAGIC_CON_MGR_FD);
+
+	xassert(con2->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con2->con->magic == MAGIC_CON_MGR_FD);
+
+	is_equal = (con1->con == con2->con);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	return is_equal;
 }

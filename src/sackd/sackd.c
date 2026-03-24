@@ -366,8 +366,8 @@ static void _listen_for_reconf(void)
 	if (conn_tls_enabled())
 		flags |= CON_FLAG_TLS_SERVER;
 
-	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, &events,
-					   flags, NULL)))
+	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, NULL,
+					   &events, flags, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, listen_fd, slurm_strerror(rc));
 }

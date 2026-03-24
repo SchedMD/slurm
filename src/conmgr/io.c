@@ -158,8 +158,7 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 	}
 
 	/* Always update read timestamp on read() success */
-	if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
-		con->last_read = timespec_now();
+	con->last_read = timespec_now();
 
 	if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
@@ -302,8 +301,7 @@ extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 				       &args);
 		xassert(!args.wrote);
 
-		if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-			con->last_write = timespec_now();
+		con->last_write = timespec_now();
 	}
 
 	if (args.iov != iov_stack)
@@ -519,8 +517,7 @@ static int _append_output(conmgr_fd_t *con, buf_t *buf)
 
 	list_append(con->out, buf);
 
-	if (con_flag(con, FLAG_WATCH_WRITE_TIMEOUT))
-		con->last_write = timespec_now();
+	con->last_write = timespec_now();
 
 	EVENT_SIGNAL(&mgr.watch_sleep);
 
@@ -677,8 +674,7 @@ extern int conmgr_con_mark_consumed_input_buffer(conmgr_fd_ref_t *ref,
 	return _mark_consumed_in_buffer(ref->con, bytes);
 }
 
-extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
-				    buf_t **buffer_ptr)
+static int _con_xfer_in_buffer(const conmgr_fd_t *con, buf_t **buffer_ptr)
 {
 	const void *data = (get_buf_data(con->in) + get_buf_offset(con->in));
 	const size_t bytes = (size_buf(con->in) - get_buf_offset(con->in));
@@ -688,10 +684,7 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 	xassert(con->type == CON_TYPE_RAW);
 	xassert(con_flag(con, FLAG_WORK_ACTIVE));
-
 	xassert(buffer_ptr);
-	if (!buffer_ptr)
-		return EINVAL;
 
 	/*
 	 * Create buffer if needed and size it size of the data to copy or the
@@ -716,7 +709,31 @@ extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con,
 	return SLURM_SUCCESS;
 }
 
-extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
+extern int conmgr_fd_xfer_in_buffer(const conmgr_fd_t *con, buf_t **buffer_ptr)
+{
+	xassert(buffer_ptr);
+	if (!buffer_ptr)
+		return EINVAL;
+
+	return _con_xfer_in_buffer(con, buffer_ptr);
+}
+
+extern int conmgr_con_xfer_in_buffer(conmgr_fd_ref_t *con, buf_t **buffer_ptr)
+{
+	xassert(buffer_ptr);
+	if (!buffer_ptr)
+		return EINVAL;
+
+	if (!con)
+		return EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	return _con_xfer_in_buffer(con->con, buffer_ptr);
+}
+
+static int _con_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 {
 	int rc;
 
@@ -737,6 +754,22 @@ extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
 		set_buf_offset(output, 0);
 
 	return rc;
+}
+
+extern int conmgr_fd_xfer_out_buffer(conmgr_fd_t *con, buf_t *output)
+{
+	return _con_xfer_out_buffer(con, output);
+}
+
+extern int conmgr_con_xfer_out_buffer(conmgr_fd_ref_t *con, buf_t *output)
+{
+	if (!con)
+		return EINVAL;
+
+	xassert(con->magic == MAGIC_CON_MGR_FD_REF);
+	xassert(con->con->magic == MAGIC_CON_MGR_FD);
+
+	return _con_xfer_out_buffer(con->con, output);
 }
 
 static int _fd_get_input_fd(conmgr_fd_t *con, int *input_fd_ptr)

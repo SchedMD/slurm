@@ -40,7 +40,10 @@
 #define _PARSE_TIME_H_
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include <time.h>
+
+#include "src/common/slurm_time.h"
 
 /* Convert string to equivalent time value
  * input formats:
@@ -54,6 +57,24 @@
  * Invalid input results in message to stderr and return value of zero
  */
 extern time_t parse_time(const char *time_str, int past);
+
+/* Convert string to equivalent timespec value
+ * WARNING: Doesn't currently support subsecond formatting
+ * input formats:
+ *   today or tomorrow
+ *   midnight, noon, teatime (4PM)
+ *   HH:MM [AM|PM]
+ *   MMDDYY or MM/DD/YY or MM.DD.YY
+ *   YYYY-MM-DD[THH[:MM[:SS]]]
+ *   now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]
+ *   [seconds(default)]
+ * IN time_str - String to parse
+ * IN past - True to make string relative to past
+ * IN ts_ptr - Pointer to timestamp to populate (only set on SLURM_SUCCESS)
+ * RET SLURM_SUCCESS or error
+ */
+extern int parse_timespec(const char *time_str, const bool past,
+			  timespec_t *ts_ptr);
 
 /*
  * Convert time_t to fixed "%FT%T" formatted string expressed in UTC.

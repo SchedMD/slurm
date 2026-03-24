@@ -125,12 +125,9 @@ typedef enum {
 	FLAG_IS_CHR = SLURM_BIT(13),
 	/* @see CON_FLAG_TCP_NODELAY */
 	FLAG_TCP_NODELAY = CON_FLAG_TCP_NODELAY,
-	/* @see CON_FLAG_WATCH_WRITE_TIMEOUT */
-	FLAG_WATCH_WRITE_TIMEOUT = CON_FLAG_WATCH_WRITE_TIMEOUT,
-	/* @see CON_FLAG_WATCH_READ_TIMEOUT */
-	FLAG_WATCH_READ_TIMEOUT = CON_FLAG_WATCH_READ_TIMEOUT,
-	/* @see CON_FLAG_WATCH_CONNECT_TIMEOUT */
-	FLAG_WATCH_CONNECT_TIMEOUT = CON_FLAG_WATCH_CONNECT_TIMEOUT,
+	/* SLURM_BIT(15) is unused */
+	/* SLURM_BIT(16) is unused */
+	/* SLURM_BIT(17) is unused */
 	/* @see CON_FLAG_TLS_SERVER */
 	FLAG_TLS_SERVER = CON_FLAG_TLS_SERVER,
 	/* @see CON_FLAG_TLS_CLIENT */
@@ -241,6 +238,9 @@ struct conmgr_fd_s {
 	 */
 	list_t *write_complete_work;
 
+	/* Connection specific timeouts */
+	const conmgr_timeouts_t *timeouts;
+
 	/* Flags set for connection */
 	con_flags_t flags;
 
@@ -264,18 +264,8 @@ typedef struct {
 	/* Configured value for max connections */
 	int conf_max_connections;
 
-	/*
-	 * Configured number of seconds to wait for recheck of output_fd for
-	 * write_complete work
-	 */
-	uint32_t conf_delay_write_complete;
-
-	/* Time delay requires to trigger a read timeout */
-	timespec_t conf_read_timeout;
-	/* Time delay requires to trigger a write timeout */
-	timespec_t conf_write_timeout;
-	/* Time delay requires to trigger a connect timeout */
-	timespec_t conf_connect_timeout;
+	/* Default timeouts derived from config */
+	conmgr_timeouts_t timeouts;
 
 	/* Max number of connections at any one time allowed */
 	int max_connections;
@@ -357,8 +347,6 @@ typedef struct {
 		bool requested;
 		/* Has conmgr quiesced */
 		bool active;
-		/* Configured value of time to active timeout */
-		timespec_t conf_timeout;
 		/* Timestamp when quiesce requested */
 		timespec_t start;
 		/* Event to broadcast when conmgr enters quiesced state */
@@ -551,6 +539,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * Add new connection from file descriptor(s)
  *
  * IN type - Initial connection type
+ * IN timeouts - Pointer to timeouts or NULL for defaults
  * IN source - connection that created this fd (listeners only)
  * IN input_fd - file descriptor for incoming data (or -1)
  * IN output_fd - file descriptor for outgoing data (or -1)
@@ -564,13 +553,14 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg);
  * IN arg - arbitrary pointer to hand to events
  * RET SLURM_SUCCESS or error
  */
-extern int add_connection(conmgr_con_type_t type, conmgr_fd_t *source,
-			  int input_fd, int output_fd,
+extern int add_connection(conmgr_con_type_t type,
+			  const conmgr_timeouts_t *timeouts,
+			  conmgr_fd_t *source, int input_fd, int output_fd,
 			  const conmgr_events_t *events,
 			  conmgr_con_flags_t flags, const slurm_addr_t *addr,
 			  socklen_t addrlen, bool is_listen,
 			  const char *unix_socket_path, void *tls_conn,
-			  char *tls_cert, void *arg);
+			  const char *tls_cert, void *arg);
 
 extern void close_all_connections(void);
 

@@ -410,7 +410,8 @@ static int _get_date(const char *time_str, int *pos, int *month, int *mday,
  * NOTE: by default this will look into the future for the next time.
  * if you want to look in the past set the past flag.
  */
-extern time_t parse_time(const char *time_str, int past)
+static int _parse_time(const char *time_str, int past, timespec_t *ts_ptr,
+		       int *pos_ptr)
 {
 	time_t time_now;
 	struct tm time_now_tm;
@@ -426,7 +427,8 @@ extern time_t parse_time(const char *time_str, int past)
 		if ((uts < 1000000) || (uts == LONG_MAX) ||
 		    (last == NULL) || (last[0] != '\0'))
 			goto prob;
-		return (time_t) uts;
+		ts_ptr->tv_sec = (time_t) uts;
+		return SLURM_SUCCESS;
 	}
 
 	time_now = time(NULL);
@@ -547,7 +549,7 @@ extern time_t parse_time(const char *time_str, int past)
 
 
 	if ((hour == -1) && (month == -1))		/* nothing specified, time=0 */
-		return (time_t) 0;
+		return SLURM_SUCCESS;
 	else if ((hour == -1) && (month != -1)) {	/* date, no time implies 00:00 */
 		hour = 0;
 		minute = 0;
@@ -607,12 +609,65 @@ extern time_t parse_time(const char *time_str, int past)
 	res_tm.tm_year  = year;
 
 /* 	printf("%d/%d/%d %d:%d\n",month+1,mday,year,hour,minute); */
-	if ((ret_time = slurm_mktime(&res_tm)) != -1)
-		return ret_time;
+	if ((ret_time = slurm_mktime(&res_tm)) != -1) {
+		ts_ptr->tv_sec = ret_time;
+		return SLURM_SUCCESS;
+	}
 
- prob:	fprintf(stderr, "Invalid time specification (pos=%d): %s\n", pos, time_str);
-	errno = ESLURM_INVALID_TIME_VALUE;
-	return (time_t) 0;
+prob:
+	*pos_ptr = pos;
+	return ESLURM_INVALID_TIME_VALUE;
+}
+
+extern time_t parse_time(const char *time_str, int past)
+{
+	int rc = EINVAL, pos = -1;
+	timespec_t ts = { 0, 0 };
+
+	if ((rc = _parse_time(time_str, past, &ts, &pos))) {
+		errno = rc;
+		fprintf(stderr, "Invalid time specification (pos=%d): %s\n",
+			pos, time_str);
+	}
+
+	return ts.tv_sec;
+}
+
+extern int parse_timespec(const char *time_str, const bool past,
+			  timespec_t *ts_ptr)
+{
+	int rc = EINVAL, pos = -1;
+	timespec_t ts = { 0, 0 };
+	bool is_integer = true;
+
+	if (!time_str || !time_str[0])
+		return EINVAL;
+
+	/* Handle [0-9]+ as seconds */
+	for (pos = 0; time_str[pos]; pos++) {
+		if ((time_str[pos] < '0') || (time_str[pos] > '9')) {
+			is_integer = false;
+			break;
+		}
+	}
+
+	if (is_integer) {
+		const unsigned long secs = slurm_atoul(time_str);
+
+		if (secs != ULONG_MAX) {
+			ts_ptr->tv_sec = secs;
+			return SLURM_SUCCESS;
+		}
+	}
+
+	if ((rc = _parse_time(time_str, (past ? 1 : 0), &ts, &pos))) {
+		debug3("%s: Parsing %s @ %d failed: %s",
+		       __func__, time_str, pos, slurm_strerror(rc));
+		return rc;
+	}
+
+	*ts_ptr = ts;
+	return SLURM_SUCCESS;
 }
 
 /*
