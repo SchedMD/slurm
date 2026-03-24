@@ -1949,7 +1949,7 @@ alloc_job:
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
-		log_flag(SELECT_TYPE, "exiting with no allocation");
+		log_flag(SELECT_TYPE, "exiting with no allocation select_rc=%d", select_rc);
 		return select_rc ? select_rc : SLURM_ERROR;
 	}
 
