@@ -3886,6 +3886,7 @@ static int _select_nodes_base(job_node_select_t *job_node_select)
 	if ((job_node_select->rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 	    (job_node_select->rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (job_node_select->rc != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE) &&
+	    !IS_TOPO_ERROR(job_node_select->rc) &&
 	    (job_node_select->rc != ESLURM_RESERVATION_BUSY) &&
 	    (job_node_select->rc != ESLURM_NODES_BUSY)) {
 		/* Job can run now */
@@ -4388,7 +4389,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 		 (error_code == ESLURM_LICENSES_UNAVAILABLE) ||
 		 (error_code == ESLURM_PORTS_BUSY) ||
 		 ((error_code == ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
-		  (job_ptr->state_reason == FAIL_CONSTRAINTS))) {
+		  (job_ptr->state_reason == FAIL_CONSTRAINTS)) ||
+		 IS_TOPO_ERROR(error_code)) {
 		/*
 		 * Non-fatal error, but job can't be scheduled right now.
 		 *
