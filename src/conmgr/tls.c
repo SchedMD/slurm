@@ -179,6 +179,26 @@ static void _wait_close(conmgr_fd_t *con)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
+static void _shutdown_complete(bool locked, conmgr_fd_t *con)
+{
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+	con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
+
+	/*
+	 * Now that TLS shutdown is done, continue with normal
+	 * connection shutdown.
+	 */
+	con_unset_flag(con, FLAG_IS_TLS_CONNECTED);
+	close_con(true, con);
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr.mutex);
+}
+
 extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
@@ -200,6 +220,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
 		log_flag(CONMGR, "%s: [%s] cancelling TLS shutdown",
 			 __func__, con->name);
+		_shutdown_complete(true, con);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
@@ -237,7 +258,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
 			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() completed after connection closed",
 				 __func__, con->name);
-			close_con(true, con);
+			_shutdown_complete(true, con);
 		} else {
 			/* Wait for more incoming data before trying again */
 			con_set_flag(con, FLAG_ON_DATA_TRIED);
@@ -257,20 +278,7 @@ extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 	} else {
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() complete",
 			 __func__, con->name);
-
-		slurm_mutex_lock(&mgr.mutex);
-
-		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
-		con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
-
-		/*
-		 * Now that TLS shutdown is done, continue with normal
-		 * connection shutdown.
-		 */
-		con_unset_flag(con, FLAG_IS_TLS_CONNECTED);
-		close_con(true, con);
-
-		slurm_mutex_unlock(&mgr.mutex);
+		_shutdown_complete(false, con);
 	}
 }
 
