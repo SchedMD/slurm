@@ -348,7 +348,14 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		list_iterator_destroy(itr);
 
 		if (sluid_ids) {
-			xstrfmtcat(*extra, "t1.job_db_inx in (%s)", sluid_ids);
+			if (job_cond->flags & JOBCOND_FLAG_DUP)
+				xstrfmtcat(
+					*extra,
+					"(t1.job_db_inx in (%s) || t1.sluid in (%s))",
+					sluid_ids, sluid_ids);
+			else
+				xstrfmtcat(*extra, "t1.job_db_inx in (%s)",
+					   sluid_ids);
 			sep = " || ";
 		}
 		if (job_ids) {
@@ -935,6 +942,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			while ((selected_step = list_next(itr))) {
 				if ((selected_step->step_id.sluid !=
 				     job->db_index) &&
+				    ((!(job_cond->flags & JOBCOND_FLAG_DUP)) ||
+				     (selected_step->step_id.sluid !=
+				      job->sluid)) &&
 				    (selected_step->step_id.job_id !=
 				     job->jobid) &&
 				    (selected_step->step_id.job_id !=
