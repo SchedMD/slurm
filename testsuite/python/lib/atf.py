@@ -4391,8 +4391,13 @@ def get_nodes(live=True, quiet=False, **run_command_kwargs):
     return nodes_dict
 
 
-def get_node_parameter(node_name, parameter_name, default=None, live=True):
+def get_node_parameter(
+    node_name, parameter_name, default=None, live=True, **run_command_kwargs
+):
     """Obtains the value for a node configuration parameter.
+
+    This function accepts the same keyword arguments as run_command
+    (e.g. user='slurm').
 
     Args:
         node_name (string): The node name.
@@ -4417,7 +4422,7 @@ def get_node_parameter(node_name, parameter_name, default=None, live=True):
         'primary'
     """
 
-    nodes_dict = get_nodes(live=live, quiet=True)
+    nodes_dict = get_nodes(live=live, quiet=True, **run_command_kwargs)
 
     if node_name in nodes_dict:
         node_dict = nodes_dict[node_name]
