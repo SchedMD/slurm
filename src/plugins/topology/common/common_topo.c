@@ -281,7 +281,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	avail_res_t **avail_res_array = topo_eval->avail_res_array;
 	job_record_t *job_ptr = topo_eval->job_ptr;
 
-	int ec;
+	int ec, first_ec = SLURM_SUCCESS;
 	bitstr_t *orig_node_map, *req_node_map = NULL;
 	bitstr_t **orig_core_array;
 	int rem_nodes;
@@ -359,6 +359,9 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 
 		if (ec == SLURM_SUCCESS)
 			break;
+
+		if (first_ec == SLURM_SUCCESS)
+			first_ec = ec;
 
 		action = _eval_nodes_get_action(topo_eval, ec);
 		if (action == ESLURM_BREAK_EVAL)
@@ -460,6 +463,11 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 			}
 		}
 	}
+
+	/* Return the first retry loop error for the most descriptive reason */
+	if (ec && first_ec)
+		ec = first_ec;
+
 	FREE_NULL_BITMAP(orig_node_map);
 	free_core_array(&orig_core_array);
 	xfree(sorted_res);
