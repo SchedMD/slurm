@@ -520,11 +520,6 @@ static int _list_find_cred_state(void *x, void *key)
 	if (s->ctime != cred->ctime)
 		return 0;
 
-	/* If the SLUID is set on both, then reject if they're not equal. */
-	if (s->step_id.sluid && cred->arg->step_id.sluid &&
-	    (s->step_id.sluid != cred->arg->step_id.sluid))
-		return 0;
-
 	return verify_step_id(&s->step_id, &cred->arg->step_id);
 }
 

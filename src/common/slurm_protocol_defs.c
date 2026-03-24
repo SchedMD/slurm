@@ -5812,8 +5812,13 @@ extern uint64_t suffix_mult(char *suffix)
 
 extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
 {
-	if (key->job_id != object->job_id)
+	/* If the SLUID is set on both, then reject if they're not equal. */
+	if (key->sluid && object->sluid) {
+		if (key->sluid != object->sluid)
+			return 0;
+	} else if (key->job_id != object->job_id) {
 		return 0;
+	}
 
 	/* Any step will do */
 	if (key->step_id == NO_VAL)
