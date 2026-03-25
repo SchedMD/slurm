@@ -1466,9 +1466,9 @@ partition limits are altered. This is the default.
 .TP
 \fBEpilog\fR
 Pathname of a script to execute as user root on every node when a user's job
-completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute path name
-(i.e. it does not start with a slash), it will be searched for in the same
-directory as the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
+completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute pathname
+(i.e. it does not start with a slash), it must be relative to the directory
+containing the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
 be used to run more than one epilog script (e.g. "/etc/slurm/epilog.d/*").
 When more than one epilog script is configured, they are executed in reverse
 alphabetical order (z-a -> Z-A -> 9-0). The Epilog script(s) may be used
@@ -3534,8 +3534,8 @@ Uses Process Group IDs.
 .TP
 \fBProlog\fR
 Pathname of a program for the slurmd to execute whenever it is asked to run a
-job step from a new job allocation. If it is not an absolute path name (i.e. it
-does not start with a slash), it will be searched for in the same directory as
+job step from a new job allocation. If it is not an absolute pathname (i.e. it
+does not start with a slash), it must be relative to the directory containing
 the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also be used to
 specify more than one program to run (e.g. "/etc/slurm/prolog.d/*"). When more
 than one prolog script is configured, they are executed in reverse alphabetical
@@ -6348,7 +6348,7 @@ For allocating unique channels within an NVIDIA IMEX domain.
 .TP
 \fBTaskEpilog\fR
 Pathname of a program to be executed as the job's user after termination of each
-task. If it is not an absolute path name (i.e. it does not start with a slash),
+task. If it is not an absolute pathname (i.e. it does not start with a slash),
 it must be relative to the directory containing the slurm.conf file.
 Will run inside of the job's container if configured. Should not be used for
 policy enforcement. See \fBTaskProlog\fR for execution order details.
@@ -6465,7 +6465,7 @@ Set to Threads, Cores or Sockets (E.g. TaskPluginParam=autobind=threads).
 .TP
 \fBTaskProlog\fR
 Pathname of a program to be executed as the job's user prior to initiation of
-each task. If it is not an absolute path name (i.e. it does not start with a
+each task. If it is not an absolute pathname (i.e. it does not start with a
 slash), it must be relative to the directory containing the slurm.conf file.
 Will run inside of the job's container if configured. Should not be used for
 policy enforcement. Besides the normal environment variables, this has
@@ -8383,8 +8383,8 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 The "include" key word can be used with modifiers within the specified
 pathname. These modifiers would be replaced with cluster name or other
 information depending on which modifier is specified. If the included file
-is not an absolute path name (i.e. it does not start with a slash), it will
-searched for in the same directory as the slurm.conf file.
+is not an absolute pathname (i.e. it does not start with a slash), it must be
+relative to the directory containing the slurm.conf file.
 
 .TP
 \fB%c\fR
