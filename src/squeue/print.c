@@ -3059,6 +3059,14 @@ static bool _filter_job(job_info_t *job)
 		bool filter = true;
 		iterator = list_iterator_create(params.job_list);
 		while ((job_step_id = list_next(iterator))) {
+			if (job_step_id->step_id.sluid) {
+				if (job_step_id->step_id.sluid ==
+				    job->step_id.sluid) {
+					filter = false;
+					break;
+				}
+				continue;
+			}
 			if (((job_step_id->array_id == NO_VAL) &&
 			     ((job_step_id->step_id.job_id ==
 			       job->array_job_id) ||

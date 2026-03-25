@@ -2322,6 +2322,14 @@ static int _walk_jobs_by_selected_step(const slurm_selected_step_t *filter,
 	if (!filter->step_id.job_id) {
 		/* 0 is never a valid job so just return now */
 		goto done;
+	} else if (filter->step_id.sluid) {
+		args->job_ptr = find_sluid(filter->step_id.sluid);
+		if (args->job_ptr)
+			_foreach_by_job_callback(args->job_ptr, args);
+		else if (args->null_callback)
+			args->control =
+				args->null_callback(filter, args->callback_arg);
+		goto done;
 	} else if (filter->step_id.job_id == NO_VAL) {
 		/* walk all jobs */
 		(void) list_for_each_ro(job_list, _foreach_job_by_id_single,
