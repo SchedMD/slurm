@@ -285,6 +285,10 @@ extern void conn_g_destroy(conn_t *conn, bool close_fds)
 
 	xassert(plugin_inited == PLUGIN_INITED);
 
+	log_flag(NET, "%s: [fd:%d] destroying 0x%"PRIxPTR" close_fds=%c",
+		 __func__, conn_g_get_fd(conn), (uintptr_t) conn,
+		 BOOL_CHARIFY(close_fds));
+
 	(*(ops.destroy_conn))(conn, close_fds);
 }
 
