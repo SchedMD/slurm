@@ -262,6 +262,22 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
 
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
+    reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
+    component = "sbin/slurmstepd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/jobacct_gather.c" in bt
+        and "jobacctinfo_aggregate" in bt
+        and "step_partial_comp" in bt
+        and "dest=0x0" in bt
+    ):
+        # TODO: Add version when t24907 is fixed
+        failures.append(reason)
+        return
+
+    failures.append(f"Unknown coredump detected, see {bt_file}")
+
 
 def run_command(
     command,
