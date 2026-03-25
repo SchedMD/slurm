@@ -146,6 +146,23 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     """
     bt = run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
 
+    reason = "Ticket Unknown: Fixed issue in slurmrestd in 25.05: SIGABRT in con_set_polling(): has_in || has_out"
+    component = "sbin/slurmrestd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/conmgr/con.c" in bt
+        and "src/conmgr/watch.c" in bt
+        and "con_set_polling" in bt
+        and "_handle_connection" in bt
+        and "has_in || has_out" in bt
+    ):
+        if get_version(component) >= (25, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket Unknown: Fixed issue in slurmdbd in 25.05: SIGABRT in _connection_fini_callback(): pthread_mutex_lock(): Invalid argument"
     component = "sbin/slurmdbd"
     if (
