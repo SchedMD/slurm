@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	list_itr_t *itr;
 	job_info_msg_t *job_info_msg;
 	slurm_job_info_t *job_ptr;
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (argc < 3) {
 		printf("Usage: job_id step_id\n");
