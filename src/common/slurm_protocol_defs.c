@@ -1049,12 +1049,39 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 	id->array_bitmap = NULL;
 	id->array_task_id = NO_VAL;
 	id->het_job_offset = NO_VAL;
-	id->step_id.job_id = NO_VAL;
-	id->step_id.step_het_comp = NO_VAL;
-	id->step_id.step_id = NO_VAL;
+	id->step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (!src || !src[0])
 		return ESLURM_EMPTY_JOB_ID;
+
+	if (src[0] == 's') {
+		sluid_t sluid;
+		char tmp[SLUID_STR_BYTES];
+
+		if (strlen(src) >= SLUID_STR_BYTES) {
+			if (src[SLUID_STR_BYTES - 1] != '.')
+				return ESLURM_INVALID_SLUID;
+		}
+
+		strlcpy(tmp, src, sizeof(tmp));
+
+		sluid = str2sluid(tmp);
+		if (!sluid)
+			return ESLURM_INVALID_SLUID;
+
+		if (src[SLUID_STR_BYTES - 1] == '.') {
+			char *step_end;
+			rc = _unfmt_step_id_str(&src[SLUID_STR_BYTES],
+						&id->step_id, &step_end);
+			if (rc != SLURM_SUCCESS)
+				return rc;
+			if (*step_end != '\0')
+				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
+		}
+
+		id->step_id.sluid = sluid;
+		return SLURM_SUCCESS;
+	}
 
 	errno = 0;
 	job = strtol(src, &end_ptr, 10);
