@@ -983,11 +983,63 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 	return array_bitmap;
 }
 
+/*
+ * Parse a step identifier (number or name) from a string.
+ * Expects the text after the '.' separator (e.g. "0", "extern", "batch").
+ *
+ * IN str - step identifier string (after the '.')
+ * IN/OUT id - step_id field is populated on success
+ * OUT end_ptr - if non-NULL, set to point past the parsed step identifier
+ * RET SLURM_SUCCESS or error
+ */
+static int _unfmt_step_id_str(const char *str, slurm_step_id_t *id,
+			      char **end_ptr)
+{
+	char *str_end;
+	long step;
+
+	if (!str || !*str)
+		return ESLURM_EMPTY_STEP_ID;
+
+	errno = 0;
+	step = strtol(str, &str_end, 10);
+
+	if (str_end == str) {
+		/* check for step name instead */
+		for (int i = 0;; i++) {
+			if (i == ARRAY_SIZE(step_names))
+				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
+
+			if (!xstrncasecmp(step_names[i].name, str,
+					  strlen(step_names[i].name))) {
+				step = step_names[i].step_id;
+				str_end = (char *) str +
+					  strlen(step_names[i].name);
+				break;
+			}
+		}
+	} else if (step < 0) {
+		return ESLURM_INVALID_STEP_ID_NEGATIVE;
+	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {
+		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+	} else if (errno) {
+		return SLURM_ERROR;
+	}
+
+	id->step_id = step;
+
+	if (end_ptr)
+		*end_ptr = str_end;
+
+	return SLURM_SUCCESS;
+}
+
 extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 			       uint32_t max_array_size)
 {
-	char *end_ptr = NULL, *step_end_ptr = NULL, *step_het_end_ptr = NULL;
-	long job, step, step_het;
+	char *end_ptr = NULL, *step_het_end_ptr = NULL;
+	long job, step_het;
+	int rc;
 
 	/*
 	 * Based on parser in scontrol_print_job() and scontrol_print_step()
@@ -1095,36 +1147,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 
 	end_ptr++;
 
-	if (*end_ptr == '\0')
-		return ESLURM_EMPTY_STEP_ID;
-
-	errno = 0;
-	step = strtol(end_ptr, &step_end_ptr, 10);
-
-	if (step_end_ptr == end_ptr) {
-		/* check for step name instead */
-		for (int i = 0; true; i++) {
-			if (!xstrncasecmp(step_names[i].name, end_ptr,
-					  strlen(step_names[i].name))) {
-				step = step_names[i].step_id;
-				step_end_ptr =
-					end_ptr + strlen(step_names[i].name);
-				break;
-			}
-
-			if (i == ARRAY_SIZE(step_names))
-				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
-		}
-	} else if (step < 0) {
-		return ESLURM_INVALID_STEP_ID_NEGATIVE;
-	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {
-		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
-	} else if (errno) {
-		return SLURM_ERROR;
-	}
-
-	id->step_id.step_id = step;
-	end_ptr = step_end_ptr;
+	if ((rc = _unfmt_step_id_str(end_ptr, &id->step_id, &end_ptr)))
+		return rc;
 
 	if (*end_ptr == '\0')
 		return SLURM_SUCCESS;
