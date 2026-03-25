@@ -4337,7 +4337,12 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 
 	error_code = _select_nodes_parts(job_ptr, no_alloc, err_msg);
 
-	set_job_features_use(job_ptr->details);
+	if (error_code) {
+		job_ptr->details->features_use = NULL;
+		job_ptr->details->feature_list_use = NULL;
+	} else {
+		set_job_features_use(job_ptr->details);
+	}
 
 	if (!test_only) {
 		last_job_update = now;
@@ -4409,8 +4414,6 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 			    (error_code == ESLURM_PORTS_BUSY) ||
 			    ((error_code == ESLURM_PARTITION_DOWN) &&
 			     (job_ptr->batch_flag))) {
-				job_ptr->details->features_use = NULL;
-				job_ptr->details->feature_list_use = NULL;
 				error_code = SLURM_SUCCESS;
 			}
 		}
