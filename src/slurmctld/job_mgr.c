@@ -2703,6 +2703,23 @@ static int _foreach_kill_hetjob_step(void *x, void *arg)
 	return 0;
 }
 
+static int _check_access_job_ptr(job_record_t *job_ptr, char *signal_str,
+				 uid_t uid)
+{
+	if (!job_ptr)
+		return ESLURM_INVALID_JOB_ID;
+
+	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
+	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid, job_ptr->account,
+					  false)) {
+		error("Security violation, %s RPC for %pJ from uid %u",
+		      signal_str, job_ptr, uid);
+		return ESLURM_ACCESS_DENIED;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Kill job or job step
  *
@@ -2731,14 +2748,9 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 		goto endit;
 	}
 
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("Security violation, JOB_CANCEL RPC for %pJ from uid %u",
-		      job_ptr, uid);
-		error_code = ESLURM_ACCESS_DENIED;
+	if ((error_code = _check_access_job_ptr(job_ptr, "JOB_CANCEL", uid)) !=
+	    SLURM_SUCCESS)
 		goto endit;
-	}
 
 	if (job_ptr->het_job_list &&
 	    (job_step_kill_msg->signal == SIGKILL) &&
@@ -5615,15 +5627,10 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 			return ESLURM_INVALID_JOB_ID;
 		}
 		job_ptr = find_het_job_record(job_id, (uint32_t) long_id);
-		if (!job_ptr)
-			return ESLURM_INVALID_JOB_ID;
-		if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account, false)) {
-			error("Security violation, REQUEST_KILL_JOB RPC for %pJ from uid %u",
-			      job_ptr, uid);
-			return ESLURM_ACCESS_DENIED;
-		}
+
+		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
+						uid)) != SLURM_SUCCESS)
+			return rc;
 
 		if (!job_ptr->het_job_id)
 			return ESLURM_NOT_HET_JOB;
@@ -5670,14 +5677,12 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		int jobs_done = 0, jobs_signaled = 0;
 		job_record_t *job_ptr_done = NULL;
 		job_ptr = find_job_record(job_id);
-		if (job_ptr && (job_ptr->user_id != uid) &&
-		    !validate_operator(uid) &&
-		    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						  job_ptr->account, false)) {
-			error("Security violation, REQUEST_KILL_JOB RPC for %pJ from uid %u",
-			      job_ptr, uid);
-			return ESLURM_ACCESS_DENIED;
-		}
+
+		if (job_ptr &&
+		    (rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
+						uid)) != SLURM_SUCCESS)
+			return rc;
+
 		if (job_ptr && job_ptr->het_job_list) {   /* Hetjob leader */
 			return het_job_signal(job_ptr, signal, flags, uid,
 					      preempt);
@@ -5774,14 +5779,9 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 		goto endit;
 	}
 
-	if ((job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("%s: Security violation JOB_CANCEL RPC for %pJ from uid %u",
-		      __func__, job_ptr, uid);
-		rc = ESLURM_ACCESS_DENIED;
+	if ((rc = _check_access_job_ptr(job_ptr, "JOB_CANCEL", uid)) !=
+	    SLURM_SUCCESS)
 		goto endit;
-	}
 
 	_signal_pending_job_array_tasks(job_ptr, &array_bitmap, NULL, signal,
 					uid, i_last, now, &rc);
@@ -17312,21 +17312,11 @@ extern int job_suspend(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 	xfree(sus_ptr->job_id_str);
 	xstrfmtcat(sus_ptr->job_id_str, "%u", sus_ptr->step_id.job_id);
 
-	/* find the job */
-	if (!(job_ptr = find_job(&sus_ptr->step_id))) {
-		rc = ESLURM_INVALID_JOB_ID;
+	/* find the job and validate access */
+	job_ptr = find_job(&sus_ptr->step_id);
+	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND", uid)) !=
+	    SLURM_SUCCESS)
 		goto reply;
-	}
-
-	/* validate the request */
-	if (!validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
-		       uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto reply;
-	}
 
 	rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
 
@@ -17387,15 +17377,9 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		goto reply;
 	}
 
-	/* validate the request */
-	if (!validate_operator(uid) &&
-	    !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-					  job_ptr->account, false)) {
-		error("SECURITY VIOLATION: Attempt to suspend job from user %u",
-		      uid);
-		rc = ESLURM_ACCESS_DENIED;
+	if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND", uid)) !=
+	    SLURM_SUCCESS)
 		goto reply;
-	}
 
 	if (end_ptr[0] == '\0') {	/* Single job (or full job array) */
 		job_record_t *job_ptr_done = NULL;
