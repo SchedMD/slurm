@@ -54,6 +54,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/threadpool.h"
@@ -422,7 +423,10 @@ static int _verify_job_ids(void)
 			continue;
 
 		for (j = 0; j < opt.job_cnt; j++) {
-			if (opt.array_id[j] == NO_VAL) {
+			if (opt.sluid[j]) {
+				if (opt.sluid[j] == job_ptr->step_id.sluid)
+					opt.job_found[j] = true;
+			} else if (opt.array_id[j] == NO_VAL) {
 				if ((opt.job_id[j] ==
 				     job_ptr->step_id.job_id) ||
 				    ((opt.job_id[j] == job_ptr->array_job_id) &&
@@ -457,6 +461,8 @@ static int _verify_job_ids(void)
 
 		if (opt.verbose < 0) {
 			;
+		} else if (opt.sluid[j]) {
+			job_id_str = sluid2str(opt.sluid[j]);
 		} else if (opt.array_id[j] == NO_VAL) {
 			xstrfmtcat(job_id_str, "%u", opt.job_id[j]);
 		} else if (opt.array_id[j] == INFINITE) {
@@ -480,6 +486,7 @@ static int _verify_job_ids(void)
 
 		/* Avoid this job in the cancel_job logic */
 		opt.job_id[j] = 0;
+		opt.sluid[j] = 0;
 	}
 
 	return rc;
@@ -645,7 +652,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 		return;
 
 	for (j = 0; j < opt.job_cnt; j++) {
-		if (opt.job_id[j] == 0)
+		if ((!opt.job_id[j] || opt.job_id[j] == NO_VAL) &&
+		    !opt.sluid[j])
 			continue;
 		if ((job_state == JOB_PENDING) && !opt.job_pend[j])
 			continue;
@@ -665,7 +673,10 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 			}
 
 			opt.job_found[j] = false;
-			if (opt.array_id[j] == NO_VAL) {
+			if (opt.sluid[j]) {
+				if (opt.sluid[j] == job_ptr->step_id.sluid)
+					opt.job_found[j] = true;
+			} else if (opt.array_id[j] == NO_VAL) {
 				if ((opt.job_id[j] ==
 				     job_ptr->step_id.job_id) ||
 				    ((opt.job_id[j] == job_ptr->array_job_id) &&

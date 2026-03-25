@@ -41,6 +41,7 @@
 #ifndef _HAVE_SCANCEL_H
 #define _HAVE_SCANCEL_H
 
+#include "src/common/sluid.h"
 #include "src/common/slurmdb_defs.h"
 
 typedef struct scancel_options {
@@ -71,6 +72,7 @@ typedef struct scancel_options {
 
 	uint16_t job_cnt;	/* count of job_id's specified	*/
 	uint32_t *job_id;	/* list of job ID's		*/
+	sluid_t *sluid; /* list of SLUIDs		*/
 	uint32_t *array_id;	/* list of job array task IDs	*/
 	uint32_t *step_id;	/* list of job step ID's	*/
 	bool *job_found;	/* Set if the job record is found */

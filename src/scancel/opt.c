@@ -535,6 +535,7 @@ _xlate_job_step_ids(char **rest)
 	buf_offset = 0;
 	opt.array_id = xmalloc(buf_size * sizeof(uint32_t));
 	opt.job_id   = xmalloc(buf_size * sizeof(uint32_t));
+	opt.sluid = xmalloc(buf_size * sizeof(sluid_t));
 	opt.step_id  = xmalloc(buf_size * sizeof(uint32_t));
 
 	id_args_size = 128;
@@ -548,7 +549,49 @@ _xlate_job_step_ids(char **rest)
 		}
 	}
 
+	/* id_args is the untokenized list of arguments */
 	for (i = 0; id_args[i] && (buf_offset < buf_size); i++) {
+		if (id_args[i][0] == 's') {
+			slurm_selected_step_t sel = { 0 };
+			char *comma = strchr(id_args[i], ',');
+
+			/*
+			 * Shift args if job IDs are comma separated.
+			 * Commas may be embedded in the task IDs, so we can't
+			 * simply split the string on commas.
+			 */
+			if (comma) {
+				*comma = '\0';
+				/* Ensure we have enough room at the tail */
+				if ((i + 4) >= id_args_size) {
+					id_args_size *= 2;
+					id_args =
+						xrealloc(id_args,
+							 sizeof(char *) *
+								 id_args_size);
+				}
+				/* Shift all args one position to the right */
+				for (j = id_args_size - 1; j > (i + 1); j--)
+					id_args[j] = id_args[j - 1];
+
+				/* Insert element after the coma as a next arg*/
+				id_args[i + 1] = xstrdup(comma + 1);
+			}
+
+			if (unfmt_job_id_string(id_args[i], &sel, NO_VAL)) {
+				error("Invalid SLUID %s", id_args[i]);
+				exit(1);
+			}
+
+			opt.array_id[buf_offset] = NO_VAL;
+			opt.job_id[buf_offset] = NO_VAL;
+			opt.sluid[buf_offset] = sel.step_id.sluid;
+			opt.step_id[buf_offset] = sel.step_id.step_id;
+
+			buf_offset++;
+			continue;
+		}
+
 		job_id = strtol(id_args[i], &next_str, 10);
 		if (job_id <= 0) {
 			error ("Invalid job id %s", id_args[i]);
