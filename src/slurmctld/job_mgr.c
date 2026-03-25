@@ -5584,8 +5584,8 @@ static void _signal_pending_job_array_tasks(job_record_t *job_ptr,
 
 /*
  * job_str_signal - signal the specified job
- * IN job_id_str - id of the job to be signaled, valid formats include "#"
- *	"#_#" and "#_[expr]"
+ * IN job_id_str - id of the job to be signaled, valid formats include "#",
+ *	"#_#", "#_[expr]", "#+#" and "s<sluid>"
  * IN signal - signal to send, SIGKILL == cancel the job
  * IN flags  - see KILL_JOB_* flags in slurm.h
  * IN uid - uid of requesting user
@@ -5606,6 +5606,29 @@ extern int job_str_signal(char *job_id_str, uint16_t signal, uint16_t flags,
 
 	if (max_array_size == NO_VAL) {
 		max_array_size = slurm_conf.max_array_sz;
+	}
+
+	if (job_id_str[0] == 's') {
+		sluid_t sluid = str2sluid(job_id_str);
+		if (!sluid) {
+			info("%s: invalid SLUID=%s", __func__, job_id_str);
+			return ESLURM_INVALID_SLUID;
+		}
+		job_ptr = find_sluid(sluid);
+
+		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_KILL_JOB",
+						uid)) != SLURM_SUCCESS)
+			return rc;
+
+		last_job_update = now;
+
+		/* If killing the leader, kill the entire job. */
+		if (job_ptr->het_job_list) {
+			return het_job_signal(job_ptr, signal, flags, uid,
+					      preempt);
+		}
+
+		return job_signal(job_ptr, signal, flags, uid, preempt);
 	}
 
 	long_id = strtol(job_id_str, &end_ptr, 10);
