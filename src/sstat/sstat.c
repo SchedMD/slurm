@@ -285,8 +285,8 @@ int main(int argc, char **argv)
 			continue;
 		} else if (!step_info->job_step_count) {
 			if (step_id.step_id == NO_VAL)
-				error("No steps running for job %u",
-				      selected_step->step_id.job_id);
+				error("No steps running for %pI",
+				      &selected_step->step_id);
 			else
 				error("%ps not found running.",
 				      &selected_step->step_id);
