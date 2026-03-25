@@ -452,15 +452,14 @@ _print_options(void)
 /*
  * _build_job_list- build a list of job_ids
  * IN str - comma separated list of job_ids
- * RET List of job_ids (uint32_t)
+ * RET List of job_ids (slurm_step_id_t)
  */
 static list_t *_build_job_list(char *str)
 {
 	list_t *my_list;
 	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
-	uint32_t *job_id = NULL;
 
-	if ( str == NULL)
+	if (str == NULL)
 		return NULL;
 
 	my_list = list_create(xfree_ptr);
@@ -468,14 +467,19 @@ static list_t *_build_job_list(char *str)
 	job = strtok_r(my_job_list, ",", &tmp_char);
 	while (job) {
 		slurm_selected_step_t sel_step;
+		slurm_step_id_t *step_id;
+
 		if (unfmt_job_id_string(job, &sel_step, NO_VAL)) {
 			error("Invalid job id: %s", job);
 			exit(1);
-		} else if (sel_step.het_job_offset != NO_VAL)
+		}
+
+		if (sel_step.het_job_offset != NO_VAL)
 			sel_step.step_id.job_id += sel_step.het_job_offset;
-		job_id = xmalloc(sizeof(uint32_t));
-		*job_id = sel_step.step_id.job_id;
-		list_append(my_list, job_id);
+
+		step_id = xmalloc(sizeof(*step_id));
+		*step_id = sel_step.step_id;
+		list_append(my_list, step_id);
 		job = strtok_r(NULL, ",", &tmp_char);
 	}
 	xfree(my_job_list);

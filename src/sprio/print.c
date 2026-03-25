@@ -43,6 +43,7 @@
 #include <sys/types.h>
 
 #include "src/common/list.h"
+#include "src/common/sluid.h"
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/uid.h"

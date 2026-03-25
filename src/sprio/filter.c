@@ -38,7 +38,13 @@
 
 static int _list_find_job_id(void *x, void *key)
 {
-	return (*(uint32_t *) x == *(uint32_t *) key);
+	slurm_step_id_t *filter = x;
+	slurm_step_id_t *job = key;
+
+	if (filter->sluid && job->sluid)
+		return (filter->sluid == job->sluid);
+
+	return (filter->job_id == job->job_id);
 }
 
 static int _list_find_user(void *x, void *key)
@@ -64,7 +70,7 @@ static int _filter_job(void *x, void *key)
 
 	if (params.job_list) {
 		if (!list_find_first(params.job_list, _list_find_job_id,
-				     &job_ptr->step_id.job_id)) {
+				     &job_ptr->step_id)) {
 			return true;
 		}
 	}
