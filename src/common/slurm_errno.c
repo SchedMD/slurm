@@ -1596,6 +1596,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_HTTP_UNKNOWN_ACCEPT_MIME_TYPE),
 		"HTTP Accept header content type is unknown or unsupported",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_HTTP_MISSING_CR),
+		"Missing an expected CR character",
+	},
 
 	/* TLS errors */
 	{
