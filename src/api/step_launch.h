@@ -47,8 +47,9 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/eio.h"
-#include "src/interfaces/mpi.h"
 #include "src/common/slurm_step_layout.h"
+
+#include "src/interfaces/mpi.h"
 
 #include "src/api/step_io.h"
 
