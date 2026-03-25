@@ -15193,6 +15193,22 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	if (max_array_size == NO_VAL)
 		max_array_size = slurm_conf.max_array_sz;
 
+	if (job_id_str[0] == 's') {
+		sluid_t sluid = str2sluid(job_id_str);
+		if (!sluid) {
+			info("%s: invalid SLUID=%s", __func__, job_id_str);
+			rc = ESLURM_INVALID_SLUID;
+			goto reply;
+		}
+		job_ptr = find_sluid(sluid);
+		if (!job_ptr) {
+			rc = ESLURM_INVALID_JOB_ID;
+			goto reply;
+		}
+		rc = _update_job(job_ptr, job_desc, uid, &err_msg);
+		goto reply;
+	}
+
 	long_id = strtol(job_id_str, &end_ptr, 10);
 	if ((long_id <= 0) || (long_id == LONG_MAX) ||
 	    ((end_ptr[0] != '\0') && (end_ptr[0] != '_') &&
