@@ -143,7 +143,9 @@ is as follows:</p>
   </ul>
 </ol>
 
-<p>Supported configuration files are:</p>
+<p>The following configuration files are supported. In addition, some
+admin-defined files (e.g., Prolog) may be included as described in
+the <a href=#LIMITATIONS>limitations</a> section.</p>
 <ul>
 <li>slurm.conf</li>
 <li>acct_gather.conf</li>
