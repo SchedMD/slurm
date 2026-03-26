@@ -361,7 +361,6 @@ test12.2   Test validity/accuracy of accounting data for exit code,
 	   memory and real-time information along with stating a running job.
 test12.3   Test sacct filtering of records by account and job name.
 test12.4   Test sacct --b, g, j, l, n, p, u, v options.
-test12.5   Test sacct --helpformat option.
 test12.6   Test hdf5 acct_gather_profile (--profile=task)
 test12.7   Validate that -D shows the correct state when jobs are requeued.
 test12.8   Validate that a job step reports TIMEOUT inside accounting.
@@ -780,7 +779,7 @@ test_100_4   Meta-test: testing test environment (coredump generation)
 
 test_101_#   Testing of sacct options.
 ======================================
-test_101_1   /commands/sacct/test_--help.py
+test_101_1   Test --help and --helpformat
 
 test_102_#   Testing of sacctmgr options.
 =========================================
