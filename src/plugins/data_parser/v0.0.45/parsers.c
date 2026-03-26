@@ -10538,20 +10538,6 @@ static const flag_bit_t PARSER_FLAG_ARRAY(NEED_PREREQS_FLAGS)[] = {
 	add_flag_bit(NEED_QOS, "QOS"),
 };
 
-static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
-	add_flag_equal(SELECT_CPU, (SELECT_CPU|SELECT_SOCKET|SELECT_CORE), "CPU"),
-	add_flag_equal(SELECT_SOCKET, (SELECT_CPU|SELECT_SOCKET|SELECT_CORE), "SOCKET"),
-	add_flag_equal(SELECT_CORE, (SELECT_CPU|SELECT_SOCKET|SELECT_CORE), "CORE"),
-	add_flag_bit(SELECT_BOARD, "BOARD"),
-	add_flag_bit(SELECT_MEMORY, "MEMORY"),
-	add_flag_bit(SELECT_ONE_TASK_PER_CORE, "ONE_TASK_PER_CORE"),
-	add_flag_bit(SELECT_PACK_NODES, "PACK_NODES"),
-	add_flag_bit(SELECT_NO_DIST_TOPO_BLOCK, "NO_DIST_TOPO_BLOCK"),
-	add_flag_bit(SELECT_CORE_DEFAULT_DIST_BLOCK, "CORE_DEFAULT_DIST_BLOCK"),
-	add_flag_bit(SELECT_LLN, "LLN"),
-	add_flag_bit(SELECT_LINEAR, "LINEAR"),
-};
-
 /* based on select_type_param_string() */
 #define SELECT_TYPE_EXCL_MASK \
 	(SELECT_CPU | SELECT_SOCKET | SELECT_CORE | SELECT_MEMORY)
@@ -12068,7 +12054,6 @@ static const parser_t parsers[] = {
 	addfa(ASSOC_SHARES_OBJ_WRAP_TYPE, uint16_t),
 	addfa(WCKEY_TAG_FLAGS, WCKEY_TAG_FLAGS_t),
 	addfa(NEED_PREREQS_FLAGS, need_t),
-	addfa(CR_TYPE, uint16_t),
 	addfa(NODE_CR_TYPE, uint32_t),
 	addfa(JOB_RES_CORE_STATUS, JOB_RES_CORE_status_t),
 	addfa(NODE_CERT_FLAGS, uint16_t),
