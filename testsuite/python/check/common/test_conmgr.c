@@ -81,16 +81,38 @@ START_TEST(test_params)
 
 	ck_assert(!conmgr_set_params(
 		"CONMGR_WAIT_WRITE_DELAY=845,,,,CONMGR_QUIESCE_TIMEOUT=3838"));
+
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26,5,0)
+	ck_assert(mgr.timeouts.write_complete.tv_sec == 845);
+	ck_assert(!mgr.timeouts.write_complete.tv_nsec);
+	ck_assert(mgr.timeouts.quiesce.tv_sec == 3838);
+	ck_assert(!mgr.timeouts.quiesce.tv_nsec);
+#else 	/* Issue 50812: Convert all timeouts in conmgr to conmgr_timeouts_t.*/
 	ck_assert(mgr.conf_delay_write_complete == 845);
 	ck_assert(mgr.quiesce.conf_timeout.tv_sec == 3838);
+#endif
 
 	ck_assert(!conmgr_set_params(",,CONMGR_READ_TIMEOUT=9858,,,,,"));
+
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26,5,0)
+	ck_assert(mgr.timeouts.read.tv_sec == 9858);
+	ck_assert(!mgr.timeouts.read.tv_nsec);
+#else 	/* Issue 50812: Convert all timeouts in conmgr to conmgr_timeouts_t.*/
 	ck_assert(mgr.conf_read_timeout.tv_sec == 9858);
+#endif
 
 	ck_assert(!conmgr_set_params(
 		"CONMGR_WRITE_TIMEOUT=3483,CONMGR_CONNECT_TIMEOUT=984"));
+
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26,5,0)
+	ck_assert(mgr.timeouts.write.tv_sec == 3483);
+	ck_assert(!mgr.timeouts.write.tv_nsec);
+	ck_assert(mgr.timeouts.connect.tv_sec == 984);
+	ck_assert(!mgr.timeouts.connect.tv_nsec);
+#else 	/* Issue 50812: Convert all timeouts in conmgr to conmgr_timeouts_t.*/
 	ck_assert(mgr.conf_write_timeout.tv_sec == 3483);
 	ck_assert(mgr.conf_connect_timeout.tv_sec == 984);
+#endif
 }
 
 END_TEST
