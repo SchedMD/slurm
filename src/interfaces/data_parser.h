@@ -692,6 +692,7 @@ typedef enum {
 	DATA_PARSER_SELECT_TYPE_PARAM, /* uint16_t - SELECT_* */
 	DATA_PARSER_LOG_LEVEL, /* log_level_t */
 	DATA_PARSER_LOG_LEVEL_UINT16, /* uint16_t -> log_level_t */
+	DATA_PARSER_TIME_SECONDS, /* uint32_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

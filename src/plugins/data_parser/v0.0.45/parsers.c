@@ -7582,6 +7582,75 @@ static int DUMP_FUNC(LOG_LEVEL_UINT16)(const parser_t *const parser, void *obj,
 	return DUMP(LOG_LEVEL, log_level, dst, args);
 }
 
+static int PARSE_FUNC(TIME_SECONDS)(const parser_t *const parser, void *obj,
+				    data_t *src, args_t *args,
+				    data_t *parent_path)
+{
+	uint32_t *secs = obj;
+
+	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	case DATA_TYPE_STRING:
+		if ((*secs = time_str2secs(data_get_string(src))) == NO_VAL)
+			return parse_error(parser, args, parent_path,
+					   ESLURM_DATA_CONV_FAILED,
+					   "Unable to parse time from %s",
+					   data_get_type_string(src));
+		return SLURM_SUCCESS;
+	case DATA_TYPE_FLOAT:
+		if (data_convert_type(src, DATA_TYPE_INT_64) !=
+		    DATA_TYPE_INT_64)
+			return parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Unable to parse seconds as integer from %s",
+				data_get_type_string(src));
+		/* fall through */
+	case DATA_TYPE_INT_64:
+		if (data_get_int(src) > UINT32_MAX)
+			return parse_error(parser, args, parent_path, EINVAL,
+					   "Too many seconds in %s",
+					   data_get_type_string(src));
+		if (data_get_int(src) < 0)
+			return parse_error(parser, args, parent_path, EINVAL,
+					   "Rejecting negative seconds in %s",
+					   data_get_type_string(src));
+
+		*secs = data_get_int(src);
+		return SLURM_SUCCESS;
+	default:
+		return parse_error(parser, args, parent_path,
+				   ESLURM_DATA_CONV_FAILED,
+				   "Unable to parse seconds from %s",
+				   data_get_type_string(src));
+	}
+
+	fatal_abort("should never happen");
+}
+
+static int DUMP_FUNC(TIME_SECONDS)(const parser_t *const parser, void *obj,
+				   data_t *dst, args_t *args)
+{
+	uint32_t *secs = obj;
+	char str[TIMESPEC_CTIME_STR_LEN] = "INVALID";
+
+	secs2time_str(*secs, str, sizeof(str));
+
+	if (!xstrcasecmp(str, "INVALID")) {
+		on_warn(DUMPING, parser->type, args, NULL, __func__,
+			"Unable to dump time: 0x%" PRIx64, (uint64_t) *secs);
+
+		if (!is_complex_mode(args))
+			data_set_string(dst, "INVALID");
+		else
+			data_set_null(dst);
+
+		return EINVAL;
+	} else {
+		(void) data_set_string(dst, str);
+		return SLURM_SUCCESS;
+	}
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -11758,6 +11827,7 @@ static const parser_t parsers[] = {
 	addpsp(H_RESOURCES_AS_LICENSE_LIST, H_RESOURCE_LIST, list_t *, NEED_NONE, "List of hierarchical resources"),
 	addps(SLUID, sluid_t, NEED_NONE, STRING, NULL, NULL, "Slurm Lexicographically-sortable Unique ID"),
 	addpsp(LOG_LEVEL_UINT16, LOG_LEVEL, uint16_t, NEED_NONE, NULL),
+	addpsp(TIME_SECONDS, STRING, uint32_t, NEED_NONE, "Time formatted as HH:MM:SS or D-HH:MM:SS"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
