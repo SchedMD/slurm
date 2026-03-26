@@ -687,6 +687,7 @@ typedef enum {
 	DATA_PARSER_CONF_FLAGS_ACCOUNTING_STORE, /* AccountingStoreFlags= specific CONF_FLAG_* */
 	DATA_PARSER_CONF_FLAGS_SLURMD_PARAMETERS, /* SlurmdParameters= specific CONF_FLAG_* */
 	DATA_PARSER_CPU_FREQ_GOVS, /* CPU_FREQ_* */
+	DATA_PARSER_DEBUG_FLAGS, /* uint64_t - DEBUG_FLAG_* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
