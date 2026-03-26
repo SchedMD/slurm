@@ -40,10 +40,25 @@
 #include "src/common/http_con.h"
 
 /*
+ * Called on bound HTTP request and headers and content received
+ * @see http_con_server_events_t::on_request()
+ * IN hcon - pointer to http connection
+ * IN name - connection name for logging
+ * IN request - pointer to parsed request
+ * IN arg - arbitrary pointer handed to http_con_assign_server()
+ * IN path_arg - pointer is always NULL
+ * RET SLURM_SUCCESS to continue parsing to error to stop
+ */
+typedef int (*http_router_on_request_event_t)(http_con_t *hcon,
+					      const char *name,
+					      const http_con_request_t *request,
+					      void *arg, void *path_arg);
+
+/*
  * Initialize HTTP router
  * IN on_not_found - callback for when request doesn't match any bound paths
  */
-extern void http_router_init(http_con_on_request_event_t on_not_found);
+extern void http_router_init(http_router_on_request_event_t on_not_found);
 
 /* Cleanup HTTP router */
 extern void http_router_fini(void);
@@ -56,7 +71,7 @@ extern void http_router_fini(void);
  * IN on_request - callbacks for on_request() event
  */
 extern void http_router_bind(http_request_method_t method, const char *path,
-			     http_con_on_request_event_t on_request);
+			     http_router_on_request_event_t on_request);
 
 /* Callback to have HTTP router match method and path to a bound callback */
 extern int http_router_on_request(http_con_t *hcon, const char *name,

@@ -70,13 +70,15 @@ static int _reply_error(http_con_t *hcon, const char *name,
 }
 
 static int _req_not_found(http_con_t *hcon, const char *name,
-			  const http_con_request_t *request, void *arg)
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
 {
 	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH);
 }
 
 static int _req_root(http_con_t *hcon, const char *name,
-		     const http_con_request_t *request, void *arg)
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
 {
 	static const char body[] =
 		"slurmd index of endpoints:\n"
@@ -93,7 +95,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 }
 
 static int _req_readyz(http_con_t *hcon, const char *name,
-		       const http_con_request_t *request, void *arg)
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 	buf_t *body = NULL;
@@ -117,7 +120,8 @@ static int _req_readyz(http_con_t *hcon, const char *name,
 }
 
 static int _req_livez(http_con_t *hcon, const char *name,
-		      const http_con_request_t *request, void *arg)
+		      const http_con_request_t *request, void *arg,
+		      void *path_arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
@@ -128,7 +132,8 @@ static int _req_livez(http_con_t *hcon, const char *name,
 }
 
 static int _req_healthz(http_con_t *hcon, const char *name,
-			const http_con_request_t *request, void *arg)
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
