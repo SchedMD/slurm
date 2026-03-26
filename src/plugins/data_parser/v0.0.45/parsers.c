@@ -7618,6 +7618,12 @@ static int DUMP_FUNC(NAMESPACE_NODE_CONF_COMPLEX)(const parser_t *const parser,
 			   flag_value, flag_mask,		\
 			   XSTRINGIFY(flag_mask), flag_string,	\
 			   false, NULL)
+#define add_flag_equal_desc(flag_value, flag_mask, flag_string, desc)	\
+	add_flag_bit_entry(FLAG_BIT_TYPE_EQUAL,			\
+			   XSTRINGIFY(flag_value),		\
+			   flag_value, flag_mask,		\
+			   XSTRINGIFY(flag_mask), flag_string,	\
+			   false, desc)
 #define add_flag_bit_entry(flag_type, flag_value_string, flag_value,  \
 			   flag_mask, flag_mask_string, flag_string,  \
 			   hidden_flag, desc_str)                     \
