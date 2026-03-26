@@ -11078,6 +11078,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(DEBUG_FLAGS)[] = {
 	add_flag_bit_desc(DEBUG_FLAG_TRIGGERS, "Triggers", "Slurmctld triggers"),
 };
 
+/* based on parse_part_enforce_type_2str() */
+static const flag_bit_t PARSER_FLAG_ARRAY(ENFORCE_PART_LIMITS)[] = {
+	add_flag_equal_desc(PARTITION_ENFORCE_NONE, INFINITE16, "NO", "Partition limits will not be enforced at submit time, but will still be enforced during scheduling."),
+	add_flag_equal_desc(PARTITION_ENFORCE_ANY, INFINITE16, "ANY", "Jobs will be accepted if they satisfy the limits on at least one of the requested partitions."),
+	add_flag_equal_desc(PARTITION_ENFORCE_ALL, INFINITE16, "ALL", "Jobs will be accepted if they satisfy the limits on all of the requested partitions."),
+};
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -12039,6 +12046,7 @@ static const parser_t parsers[] = {
 	addfa(CONF_FLAGS_SLURMD_PARAMETERS, uint32_t),
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
+	addfa(ENFORCE_PART_LIMITS, uint16_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
