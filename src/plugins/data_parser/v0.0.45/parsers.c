@@ -11107,6 +11107,21 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ENFORCE_PART_LIMITS)[] = {
 	add_flag_equal_desc(PARTITION_ENFORCE_ALL, INFINITE16, "ALL", "Jobs will be accepted if they satisfy the limits on all of the requested partitions."),
 };
 
+/* based on log_num2string() */
+static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
+	add_flag_hidden(0, INFINITE16, "(null)"),
+	add_flag_equal_desc(LOG_LEVEL_QUIET, INFINITE16, "quiet", "Log nothing"),
+	add_flag_equal_desc(LOG_LEVEL_FATAL, INFINITE16, "fatal", "Log only fatal errors"),
+	add_flag_equal_desc(LOG_LEVEL_ERROR, INFINITE16, "error", "Log only errors"),
+	add_flag_equal_desc(LOG_LEVEL_INFO, INFINITE16, "info", "Log errors and general informational messages"),
+	add_flag_equal_desc(LOG_LEVEL_VERBOSE, INFINITE16, "verbose", "Log errors and verbose informational messages"),
+	add_flag_equal_desc(LOG_LEVEL_DEBUG, INFINITE16, "debug", "Log errors and verbose informational messages and debugging messages"),
+	add_flag_equal_desc(LOG_LEVEL_DEBUG2, INFINITE16, "debug2", "Log errors and verbose informational messages and more debugging messages"),
+	add_flag_equal_desc(LOG_LEVEL_DEBUG3, INFINITE16, "debug3", "Log errors and verbose informational messages and even more debugging messages"),
+	add_flag_equal_desc(LOG_LEVEL_DEBUG4, INFINITE16, "debug4", "Log errors and verbose informational messages and even more debugging messages"),
+	add_flag_equal_desc(LOG_LEVEL_DEBUG5, INFINITE16, "debug5", "Log errors and verbose informational messages and even more debugging messages"),
+};
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -12069,6 +12084,7 @@ static const parser_t parsers[] = {
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
+	addfas(LOG_LEVEL, log_level_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),

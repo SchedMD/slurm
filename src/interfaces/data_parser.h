@@ -690,6 +690,7 @@ typedef enum {
 	DATA_PARSER_DEBUG_FLAGS, /* uint64_t - DEBUG_FLAG_* */
 	DATA_PARSER_ENFORCE_PART_LIMITS, /* uint16_t - PARTITION_ENFORCE_* */
 	DATA_PARSER_SELECT_TYPE_PARAM, /* uint16_t - SELECT_* */
+	DATA_PARSER_LOG_LEVEL, /* log_level_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
