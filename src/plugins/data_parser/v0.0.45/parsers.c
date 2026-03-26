@@ -9325,7 +9325,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, alternate, "alternate", "Alternate - Partition name of alternate partition to be used if the state of this partition is DRAIN or INACTIVE"),
 	add_parse(STRING, billing_weights_str, "tres/billing_weights", "TRESBillingWeights - Billing weights of each tracked TRES type that will be used in calculating the usage of a job"),
 	add_parse(STRING, cluster_name, "cluster", "Cluster name (read-only)"),
-	add_parse(CR_TYPE, cr_type, "select_type", "Scheduler consumable resource selection type (read-only)"),
+	add_parse(SELECT_TYPE_PARAM, cr_type, "select_type", "Scheduler consumable resource selection type (read-only)"),
 	add_parse(NODE_PARTITION_CPU_BINDING_FLAGS, cpu_bind, "cpus/task_binding", "CpuBind - Default method controlling how tasks are bound to allocated resources"),
 	add_removed(UINT64, "defaults/memory_per_cpu", "Raw value for DefMemPerCPU or DefMemPerNode", SLURM_26_05_PROTOCOL_VERSION),
 	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 1, "defaults/partition_memory_per_cpu", "DefMemPerCPU - Default real memory size available per allocated CPU in megabytes"),
