@@ -268,7 +268,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     component = "sbin/slurmstepd"
     if (
         component in bin_path
-        and "Program terminated with signal SIGASEGV" in bt
+        and "Program terminated with signal SIGSEGV" in bt
         and "src/slurmd/slurmstepd/mgr.c" in bt
         and "_spawn_job_container" in bt
         and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
