@@ -152,10 +152,10 @@ extern void http_init(void)
 		      slurm_strerror(rc));
 
 	http_router_init(_req_not_found);
-	http_router_bind(HTTP_REQUEST_GET, "/", _req_root);
-	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
-	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
-	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL);
 }
 
 extern void http_fini(void)

@@ -53,6 +53,8 @@ typedef struct {
 	int request_len;
 	/* Callback for path */
 	http_router_on_request_event_t on_request;
+	/* arbitrary pointer to path callbacks */
+	void *path_arg;
 } path_t;
 
 static struct {
@@ -125,7 +127,8 @@ static path_t *_find_path(http_request_method_t method, const char *path)
 }
 
 extern void http_router_bind(http_request_method_t method, const char *path,
-			     http_router_on_request_event_t on_request)
+			     http_router_on_request_event_t on_request,
+			     void *path_arg)
 {
 	path_t *rpath = NULL;
 
@@ -138,6 +141,7 @@ extern void http_router_bind(http_request_method_t method, const char *path,
 	*rpath = (path_t) {
 		.magic = MAGIC,
 		.on_request = on_request,
+		.path_arg = path_arg,
 	};
 
 	rpath->request_len =
@@ -158,5 +162,5 @@ extern int http_router_on_request(http_con_t *hcon, const char *name,
 		return router.on_not_found(hcon, name, request, arg, NULL);
 
 	xassert(rpath->magic == MAGIC);
-	return rpath->on_request(hcon, name, request, arg, NULL);
+	return rpath->on_request(hcon, name, request, arg, rpath->path_arg);
 }

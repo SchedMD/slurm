@@ -46,7 +46,7 @@
  * IN name - connection name for logging
  * IN request - pointer to parsed request
  * IN arg - arbitrary pointer handed to http_con_assign_server()
- * IN path_arg - pointer is always NULL
+ * IN path_arg - arbitrary pointer handed to http_router_bind()
  * RET SLURM_SUCCESS to continue parsing to error to stop
  */
 typedef int (*http_router_on_request_event_t)(http_con_t *hcon,
@@ -69,9 +69,11 @@ extern void http_router_fini(void);
  * IN method - HTTP method to bind at path
  * IN path - string HTTP URL path to bind
  * IN on_request - callbacks for on_request() event
+ * IN path_arg - arbitrary pointer to pass to on_request()
  */
 extern void http_router_bind(http_request_method_t method, const char *path,
-			     http_router_on_request_event_t on_request);
+			     http_router_on_request_event_t on_request,
+			     void *path_arg);
 
 /* Callback to have HTTP router match method and path to a bound callback */
 extern int http_router_on_request(http_con_t *hcon, const char *name,

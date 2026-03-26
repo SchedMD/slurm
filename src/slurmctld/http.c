@@ -404,20 +404,21 @@ extern void http_init(void)
 		      slurm_strerror(rc));
 
 	http_router_init(_req_not_found);
-	http_router_bind(HTTP_REQUEST_GET, "/", _req_root);
-	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
-	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
-	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
-	http_router_bind(HTTP_REQUEST_GET, "/metrics", _req_metrics);
-	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs);
-	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes",
-			 _req_metrics_nodes);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics", _req_metrics, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes", _req_metrics_nodes,
+			 NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/partitions",
-			 _req_metrics_partitions);
+			 _req_metrics_partitions, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/scheduler",
-			 _req_metrics_sched);
+			 _req_metrics_sched, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs-users-accts",
-			 _req_metrics_ua);
+			 _req_metrics_ua, NULL);
 }
 
 extern void http_fini(void)
