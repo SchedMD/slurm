@@ -357,7 +357,6 @@ test9.9    Throughput test for 5000 jobs for timing
 
 test12.#   Testing of sacct command and options
 ===============================================
-test12.1   Test sacct --help option.
 test12.2   Test validity/accuracy of accounting data for exit code,
 	   memory and real-time information along with stating a running job.
 test12.3   Test sacct filtering of records by account and job name.
