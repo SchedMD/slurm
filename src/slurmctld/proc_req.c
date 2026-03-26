@@ -2343,9 +2343,8 @@ fini:
 	 * Only return stepmgr_jobs if looking for a specific job to avoid
 	 * querying all stepmgr's for all steps.
 	 */
-	if ((args->step_id->job_id != NO_VAL) &&
-	    (job_ptr->bit_flags & STEPMGR_ENABLED) &&
-	    IS_JOB_RUNNING(job_ptr)) {
+	if (((args->step_id->job_id != NO_VAL) || args->step_id->sluid) &&
+	    (job_ptr->bit_flags & STEPMGR_ENABLED) && IS_JOB_RUNNING(job_ptr)) {
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
