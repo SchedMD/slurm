@@ -2666,6 +2666,60 @@ static int DUMP_FUNC(FLOAT64_NO_VAL)(const parser_t *const parser, void *obj,
 	return DUMP(FLOAT64_NO_VAL_STRUCT, fstruct, dst, args);
 }
 
+static int PARSE_FUNC(FLOAT32)(const parser_t *const parser, void *obj,
+			       data_t *str, args_t *args, data_t *parent_path)
+{
+	float *dst = obj;
+	int rc = SLURM_SUCCESS;
+
+	xassert(sizeof(float) * 8 == 32);
+
+	if (data_get_type(str) == DATA_TYPE_NULL)
+		*dst = 0;
+	else if (data_convert_type(str, DATA_TYPE_FLOAT) == DATA_TYPE_FLOAT)
+		*dst = data_get_float(str);
+	else
+		rc = ESLURM_DATA_CONV_FAILED;
+
+	log_flag(DATA, "%s: float %f rc[%d]=%s",
+		 __func__, *dst, rc, slurm_strerror(rc));
+
+	return rc;
+}
+
+static int DUMP_FUNC(FLOAT32)(const parser_t *const parser, void *obj,
+			      data_t *dst, args_t *args)
+{
+	float *src = obj;
+
+	if (is_complex_mode(args)) {
+		if (IS_INFINITE(*src))
+			data_set_float(dst, HUGE_VAL);
+		else if (IS_CAST_NO_VAL(*src))
+			data_set_null(dst);
+		else
+			data_set_float(dst, *src);
+	} else {
+		if (IS_INFINITE(*src) || isinf(*src)) {
+			data_set_float(dst, ((float) INFINITE));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for Infinity",
+				XSTRINGIFY(INFINITE));
+		} else if (IS_CAST_NO_VAL(*src) || isnan(*src)) {
+			data_set_float(dst, ((float) NO_VAL));
+
+			on_warn(DUMPING, parser->type, args, NULL, __func__,
+				"Dumping %s as place holder for null",
+				XSTRINGIFY(NO_VAL));
+		} else {
+			data_set_float(dst, *src);
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(INT64)(const parser_t *const parser, void *obj,
 			     data_t *str, args_t *args, data_t *parent_path)
 {
@@ -11457,6 +11511,7 @@ static const parser_t parsers[] = {
 	addps(FLOAT128, long double, NEED_NONE, NUMBER, NULL, NULL, NULL),
 	addps(FLOAT64, double, NEED_NONE, DOUBLE, NULL, NULL, NULL),
 	addpsp(FLOAT64_NO_VAL, FLOAT64_NO_VAL_STRUCT, double, NEED_NONE, "64 bit floating point number with flags"),
+	addps(FLOAT32, float, NEED_NONE, FLOAT, NULL, NULL, "32 bit floating point number"),
 	addps(BOOL, uint8_t, NEED_NONE, BOOL, NULL, NULL, NULL),
 	addps(BOOL16, uint16_t, NEED_NONE, BOOL, NULL, NULL, NULL),
 	addps(BOOL16_NO_VAL, uint16_t, NEED_NONE, BOOL, NULL, NULL, NULL),
