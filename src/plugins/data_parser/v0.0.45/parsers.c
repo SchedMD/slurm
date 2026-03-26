@@ -7558,6 +7558,30 @@ static int DUMP_FUNC(NAMESPACE_NODE_CONF_COMPLEX)(const parser_t *const parser,
 	return DUMP(NAMESPACE_CONF_PTR, ns_node_conf->ns_conf, dst, args);
 };
 
+static int PARSE_FUNC(LOG_LEVEL_UINT16)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	uint16_t *ptr = obj;
+	log_level_t log_level = LOG_LEVEL_END;
+	int rc = EINVAL;
+
+	if ((rc = PARSE(LOG_LEVEL, log_level, src, parent_path, args)))
+		return rc;
+
+	*ptr = log_level;
+	return rc;
+}
+
+static int DUMP_FUNC(LOG_LEVEL_UINT16)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	uint16_t *ptr = obj;
+	log_level_t log_level = *ptr;
+
+	return DUMP(LOG_LEVEL, log_level, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -11733,6 +11757,7 @@ static const parser_t parsers[] = {
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 	addpsp(H_RESOURCES_AS_LICENSE_LIST, H_RESOURCE_LIST, list_t *, NEED_NONE, "List of hierarchical resources"),
 	addps(SLUID, sluid_t, NEED_NONE, STRING, NULL, NULL, "Slurm Lexicographically-sortable Unique ID"),
+	addpsp(LOG_LEVEL_UINT16, LOG_LEVEL, uint16_t, NEED_NONE, NULL),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
