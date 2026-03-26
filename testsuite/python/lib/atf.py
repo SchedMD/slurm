@@ -233,6 +233,22 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
+    reason = "Ticket 24122: Known issue in slurmctld: SIGABRT in conn_g_recv(): Assertion (plugin_inited == PLUGIN_INITED) failed"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/conn.c" in bt
+        and "src/common/slurm_protocol_socket.c" in bt
+        and "src/common/forward.c" in bt
+        and "conn_g_recv" in bt
+        and "_fwd_tree_thread" in bt
+        and "plugin_inited == PLUGIN_INITED" in bt
+    ):
+        # TODO: Add version when t24122 is fixed
+        failures.append(reason)
+        return
+
     reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED)"
     component = "sbin/slurmdbd"
     if (
