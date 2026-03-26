@@ -12278,6 +12278,13 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 #undef add_parse
 #undef add_parse_overload
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(openapi_config_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_CONF_QUERY)[] = {
+	add_parse(TIMESTAMP, update_time, "update_time", "Query config updated more recently than this time (UNIX timestamp)"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -13163,6 +13170,7 @@ static const parser_t parsers[] = {
 	addpap(CONTROLLER, controller_t, NULL, FREE_FUNC(CONTROLLER)),
 	addpap(SLURM_CONF, slurm_conf_t, NULL, NULL),
 	addpap(SLURM_CONF_META, slurm_conf_t, NULL, NULL),
+	addpap(OPENAPI_CONF_QUERY, openapi_config_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
