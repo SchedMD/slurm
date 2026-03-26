@@ -22,6 +22,38 @@ sys.path.append(sys.path[0] + "/lib")
 import atf
 
 
+def pytest_collection_modifyitems(session, config, items):
+    """
+    Create a json file from --collect-file with filenames and marks.
+    It can be used to order/filter/run tests in different ways based on
+    the custom marks we may create, like "slow".
+    """
+    if not config.option.collectonly:
+        return
+
+    collect_file = config.getoption("--collect-file")
+    if collect_file is None:
+        logging.info("Not saving collect info")
+        return
+
+    files = {}
+    for item in items:
+        file_path = item.nodeid.split("::")[0]
+
+        # Initialize entry if not present
+        if file_path not in files:
+            files[file_path] = {
+                "file": file_path,
+                "marks": [m.name for m in item.iter_markers()],
+            }
+        else:
+            files[file_path]["marks"].extend([m.name for m in item.iter_markers()])
+
+    logging.info(f"Saving callected info to {collect_file}")
+    with open(collect_file, "w") as f:
+        json.dump(list(files.values()), f, indent=2)
+
+
 def pytest_terminal_summary(terminalreporter):
     terminalreporter.write_sep("=", "summary", cyan=True, bold=True)
 
@@ -108,6 +140,12 @@ def pytest_addoption(parser):
         action="store_true",
         dest="allow_slurmdbd_modify",
         help="allow running in local-config even if require_accounting(modify=True)",
+    )
+    parser.addoption(
+        "--collect-file",
+        action="store",
+        default=None,
+        help="Path to write collected test metadata",
     )
 
 
