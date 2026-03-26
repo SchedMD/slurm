@@ -39,9 +39,10 @@
 
 #include "scontrol.h"
 #include "src/common/env.h"
-#include "src/interfaces/gres.h"
 #include "src/common/proc_args.h"
+#include "src/common/sluid.h"
 #include "src/common/uid.h"
+#include "src/interfaces/gres.h"
 
 typedef struct job_ids {
 	uint32_t job_id;
@@ -72,7 +73,15 @@ static bool _is_job_id(char *job_str)
 
 	local_job_str = xstrdup(job_str);
 	for (i = 0; local_job_str[i]; i++) {
-		if (local_job_str[i] == '+') {
+		if (local_job_str[i] == 's') {
+			int end_sluid = i + SLUID_STR_BYTES - 1;
+			char c = local_job_str[end_sluid];
+			local_job_str[end_sluid] = '\0';
+			if (!str2sluid(&local_job_str[i]))
+				goto fail;
+			local_job_str[end_sluid] = c;
+			i += SLUID_STR_BYTES - 2;
+		} else if (local_job_str[i] == '+') {
 			if (have_plus)
 				goto fail;	/* multiple '+' in name */
 			have_plus = true;
@@ -1441,6 +1450,16 @@ static bool _is_single_job(char *job_id_str)
 	job_info_msg_t *resp;
 	bool is_single = false;
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
+	if (job_id_str[0] == 's') {
+		step_id.sluid = str2sluid(job_id_str);
+		if (!step_id.sluid) {
+			error("Invalid job ID %s", job_id_str);
+			return is_single;
+		}
+		/* SLUID always identifies a single job */
+		return true;
+	}
 
 	step_id.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
 	if (next_str[0] == '_') {
