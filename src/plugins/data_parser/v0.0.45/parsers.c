@@ -11001,6 +11001,21 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_SLURMD_PARAMETERS)[] = {
 	add_flag_bit_desc(CONF_FLAG_CONTAIN_SPANK, "contain_spank", "If set and a job_container plugin is specified, the spank_user(), spank_task_post_fork() and spank_task_exit() calls will be run inside the job container."),
 };
 
+/* based on cpu_freq_govlist_to_string() and _cpu_freq_govspec_string() */
+static const flag_bit_t PARSER_FLAG_ARRAY(CPU_FREQ_GOVS)[] = {
+	add_flag_equal_desc(NO_VAL, INFINITE, "Unset", "CPU governor is not set"),
+	add_flag_equal_desc(CPU_FREQ_CONSERVATIVE, INFINITE, "Conservative", "attempts to use the Conservative CPU governor"),
+	add_flag_equal_desc(CPU_FREQ_ONDEMAND, INFINITE, "OnDemand", "attempts to use the OnDemand CPU governor"),
+	add_flag_equal_desc(CPU_FREQ_PERFORMANCE, INFINITE, "Performance", "attempts to use the Performance CPU governor"),
+	add_flag_equal_desc(CPU_FREQ_POWERSAVE, INFINITE, "PowerSave", "attempts to use the PowerSave CPU governor"),
+	add_flag_equal_desc(CPU_FREQ_SCHEDUTIL, INFINITE, "SchedUtil", "attempts to use the SchedUtil CPU governor"),
+	add_flag_equal_desc(CPU_FREQ_USERSPACE, INFINITE, "UserSpace", "attempts to use the UserSpace CPU governor"),
+	add_flag_equal_desc(CPU_FREQ_LOW, INFINITE, "Low", "the lowest available frequency."),
+	add_flag_equal_desc(CPU_FREQ_MEDIUM, INFINITE, "Medium", "attempts to set a frequency in the middle of the available range."),
+	add_flag_equal_desc(CPU_FREQ_HIGHM1, INFINITE, "Highm1", "(high minus one) will select the next highest available frequency."),
+	add_flag_equal_desc(CPU_FREQ_HIGH, INFINITE, "High", "the highest available frequency."),
+};
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -11960,6 +11975,7 @@ static const parser_t parsers[] = {
 	addfa(CONF_FLAGS_COMMUNICATION_PARAMETERS, uint32_t),
 	addfa(CONF_FLAGS_ACCOUNTING_STORE, uint32_t),
 	addfa(CONF_FLAGS_SLURMD_PARAMETERS, uint32_t),
+	addfa(CPU_FREQ_GOVS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
