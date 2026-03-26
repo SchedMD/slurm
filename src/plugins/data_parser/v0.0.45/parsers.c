@@ -9146,7 +9146,7 @@ static const parser_t PARSER_ARRAY(JOB_RES)[] = {
 	add_skip(cpus),
 	add_skip(cpus_used),
 	add_skip(cores_per_socket),
-	add_parse_req(CR_TYPE, cr_type, "select_type", "Scheduler consumable resource selection type"),
+	add_parse_req(SELECT_TYPE_PARAM, cr_type, "select_type", "Scheduler consumable resource selection type"),
 	add_skip(memory_allocated),
 	add_skip(memory_used),
 	add_parse_req(UINT32, nhosts, "nodes/count", "Number of allocated nodes"),
