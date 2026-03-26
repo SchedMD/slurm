@@ -6,6 +6,8 @@ import pytest
 import re
 import logging
 
+pytestmark = pytest.mark.slow
+
 sock_0_reserved_cores = {0, 1, 2, 3}
 sock_0_regular_cores = {4, 5}
 sock_1_reserved_cores = {6, 7, 8, 9}

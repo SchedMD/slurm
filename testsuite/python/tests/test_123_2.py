@@ -4,6 +4,8 @@
 import atf
 import pytest
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():

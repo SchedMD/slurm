@@ -5,6 +5,8 @@ import atf
 import pytest
 import time
 
+pytestmark = pytest.mark.slow
+
 # Note that node_prefix needs to be known or handled properly in s2n variant
 node_prefix = "node"
 # Note that power_interval has to be at least 5 seconds, recommended 10 seconds

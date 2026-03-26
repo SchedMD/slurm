@@ -6,6 +6,8 @@ import logging
 import json
 import pytest
 
+pytestmark = pytest.mark.slow
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)

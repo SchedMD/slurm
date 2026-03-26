@@ -6,6 +6,8 @@ import atf
 import re
 import logging
 
+pytestmark = pytest.mark.slow
+
 node1 = ""
 node2 = ""
 

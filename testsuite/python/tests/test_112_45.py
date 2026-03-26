@@ -10,6 +10,8 @@ import logging
 import time
 import os
 
+pytestmark = pytest.mark.slow
+
 random.seed()
 
 cluster_name = f"test-cluster-{random.randrange(0, 99999999999)}"
