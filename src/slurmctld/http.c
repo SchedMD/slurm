@@ -54,6 +54,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+static data_parser_t **parsers = NULL;
+
 static int _reply_error(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, int err)
 {
@@ -403,6 +405,11 @@ extern void http_init(void)
 		fatal("http authentication plugins failed to load: %s",
 		      slurm_strerror(rc));
 
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL, NULL, NULL,
+						false)))
+		fatal("Unable to initialize data_parser plugins");
+
 	http_router_init(_req_not_found);
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
@@ -427,6 +434,7 @@ extern void http_fini(void)
 {
 	http_router_fini();
 	http_auth_g_fini();
+	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 }
 
 extern int on_http_connection(conmgr_fd_t *con)
