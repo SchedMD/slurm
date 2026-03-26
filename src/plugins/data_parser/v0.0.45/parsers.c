@@ -10958,6 +10958,19 @@ static const parser_t PARSER_ARRAY(NAMESPACE_CONF)[] = {
 #undef add_skip
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(JOB_DEFAULTS_TYPE)[] = {
+	add_flag_equal_desc(JOB_DEF_CPU_PER_GPU, INFINITE64, "DefCpuPerGPU", "Type representing --cpus-per-gpu"),
+	add_flag_equal_desc(JOB_DEF_MEM_PER_GPU, INFINITE64, "DefMemPerGPU", "Type representing --mem-per-gpu"),
+};
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(job_defaults_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(JOB_DEFAULTS)[] = {
+	add_parse(JOB_DEFAULTS_TYPE, type, "type", "Default Type"),
+	add_parse(UINT64, value, "value", "Default value for the given type (e.g. CPUs per GPU or memory per GPU)."),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -11815,6 +11828,7 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_NODE_CONF, ns_node_conf_t, NULL, (parser_free_func_t) slurm_free_ns_node_conf),
 	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
 	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
+	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -11911,6 +11925,7 @@ static const parser_t parsers[] = {
 	addfa(H_RESOURCE_MODE_FLAG, uint8_t),
 	addfa(NODE_PARTITION_CPU_BINDING_FLAGS, uint32_t),
 	addfa(PARTITION_FLAGS, uint32_t),
+	addfa(JOB_DEFAULTS_TYPE, uint16_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
@@ -11953,6 +11968,7 @@ static const parser_t parsers[] = {
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
 	addpl(NAMESPACE_DIR_CONF_LIST, NAMESPACE_DIR_CONF_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
+	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS, NEED_NONE),
 
 	/* alias parsers */
 	/* Can remove OPENAPI_PARTITION_PARAM_ALIAS once v0.0.44 is removed */

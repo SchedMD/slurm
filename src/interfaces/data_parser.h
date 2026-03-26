@@ -678,6 +678,10 @@ typedef enum {
 	DATA_PARSER_RING_CONFIG, /* slurm_conf_ring_t */
 	DATA_PARSER_RING_CONFIG_PTR, /* slurm_conf_ring_t* */
 	DATA_PARSER_NODE_PARTITION_CPU_BINDING_FLAGS, /* uint32_t <-> cpu_bind_type_t */
+	DATA_PARSER_JOB_DEFAULTS, /* job_defaults_t */
+	DATA_PARSER_JOB_DEFAULTS_PTR, /* job_defaults_t* */
+	DATA_PARSER_JOB_DEFAULTS_LIST, /* list_t* job_defaults_t */
+	DATA_PARSER_JOB_DEFAULTS_TYPE, /* JOB_DEF_* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
