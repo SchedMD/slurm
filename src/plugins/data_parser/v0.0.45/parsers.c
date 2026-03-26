@@ -10552,6 +10552,42 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CR_TYPE)[] = {
 	add_flag_bit(SELECT_LINEAR, "LINEAR"),
 };
 
+/* based on select_type_param_string() */
+#define SELECT_TYPE_EXCL_MASK \
+	(SELECT_CPU | SELECT_SOCKET | SELECT_CORE | SELECT_MEMORY)
+#define SELECT_TYPE_NON_EXCL_MASK (~SELECT_TYPE_EXCL_MASK)
+static const flag_bit_t PARSER_FLAG_ARRAY(SELECT_TYPE_PARAM)[] = {
+	add_flag_equal_desc(0, INFINITE, "NONE", "Nothing set"),
+	add_flag_equal_desc((SELECT_CPU | SELECT_MEMORY), SELECT_TYPE_EXCL_MASK, "CR_CPU_MEMORY", "CPUs and memory are consumable resources."),
+	add_flag_equal_desc(SELECT_CPU, SELECT_TYPE_EXCL_MASK, "CR_CPU", "CPUs are consumable resources."),
+	add_flag_hidden(SELECT_CPU, SELECT_TYPE_EXCL_MASK, "CPU"),
+	add_flag_equal_desc((SELECT_CORE | SELECT_MEMORY), SELECT_TYPE_EXCL_MASK, "CR_CORE_MEMORY", "Cores and memory are consumable resources."),
+	add_flag_equal_desc(SELECT_CORE, SELECT_TYPE_EXCL_MASK, "CR_CORE", "Cores are consumable resources."),
+	add_flag_hidden(SELECT_CORE, SELECT_TYPE_EXCL_MASK, "CORE"),
+	add_flag_equal_desc((SELECT_SOCKET | SELECT_MEMORY), SELECT_TYPE_EXCL_MASK, "CR_SOCKET_MEMORY", "Memory and sockets are consumable resources."),
+	add_flag_equal_desc(SELECT_SOCKET, SELECT_TYPE_EXCL_MASK, "CR_SOCKET", "Sockets are consumable resources."),
+	add_flag_hidden(SELECT_SOCKET, SELECT_TYPE_EXCL_MASK, "SOCKET"),
+	add_flag_equal_desc(SELECT_MEMORY, SELECT_TYPE_EXCL_MASK, "CR_MEMORY", "Memory is a consumable resource."),
+	add_flag_hidden_masked_bit(SELECT_MEMORY, SELECT_TYPE_EXCL_MASK, "MEMORY"),
+	add_flag_hidden_masked_bit(SELECT_BOARD, SELECT_TYPE_NON_EXCL_MASK, "BOARD"),
+	add_flag_masked_bit_desc(SELECT_ONE_TASK_PER_CORE, SELECT_TYPE_NON_EXCL_MASK, "CR_ONE_TASK_PER_CORE", "Allocate one task per core by default."),
+	add_flag_hidden_masked_bit(SELECT_ONE_TASK_PER_CORE, SELECT_TYPE_NON_EXCL_MASK, "ONE_TASK_PER_CORE"),
+	add_flag_masked_bit_desc(SELECT_CORE_DEFAULT_DIST_BLOCK, SELECT_TYPE_NON_EXCL_MASK, "CR_CORE_DEFAULT_DIST_BLOCK", "Allocate cores within a node using block distribution by default."),
+	add_flag_hidden_masked_bit(SELECT_CORE_DEFAULT_DIST_BLOCK, SELECT_TYPE_NON_EXCL_MASK, "CORE_DEFAULT_DIST_BLOCK"),
+	add_flag_masked_bit_desc(SELECT_NO_DIST_TOPO_BLOCK, SELECT_TYPE_NON_EXCL_MASK, "CR_NO_DIST_TOPO_BLOCK", "Disable topology node rank sort"),
+	add_flag_masked_bit_desc(SELECT_LLN, SELECT_TYPE_NON_EXCL_MASK, "CR_LLN", "Schedule resources to jobs on the least loaded nodes (based upon the number of idle CPUs)."),
+	add_flag_hidden_masked_bit(SELECT_LLN, SELECT_TYPE_NON_EXCL_MASK, "LLN"),
+	add_flag_masked_bit_desc(SELECT_PACK_NODES, SELECT_TYPE_NON_EXCL_MASK, "CR_PACK_NODES", "Pack a job's tasks as tightly as possible on its allocated nodes."),
+	add_flag_hidden_masked_bit(SELECT_PACK_NODES, SELECT_TYPE_NON_EXCL_MASK, "PACK_NODES"),
+	add_flag_masked_bit_desc(SELECT_LL_SHARED_GRES, SELECT_TYPE_NON_EXCL_MASK, "LL_SHARED_GRES", "When allocating resources for a shared GRES (gres/mps, gres/shard), prefer least loaded device (in terms of already allocated fraction)."),
+	add_flag_masked_bit_desc(SELECT_MULTIPLE_SHARING_GRES_PJ, SELECT_TYPE_NON_EXCL_MASK, "MULTIPLE_SHARING_GRES_PJ", "This allows multiple sharing gres' to be used on a single node to satisfy shared gres requirements per job."),
+	add_flag_masked_bit_desc(SELECT_ENFORCE_BINDING_GRES, SELECT_TYPE_NON_EXCL_MASK, "ENFORCE_BINDING_GRES", "Set --gres-flags=enforce-binding as the default in every job. This can be overridden with --gres-flags=disable-binding."),
+	add_flag_masked_bit_desc(SELECT_ONE_TASK_PER_SHARING_GRES, SELECT_TYPE_NON_EXCL_MASK, "ONE_TASK_PER_SHARING_GRES", "Set --gres-flags=one-task-per-sharing as the default in every job. This can be overridden with --gres-flags=multiple-tasks-per-sharing."),
+	add_flag_hidden_masked_bit(SELECT_LINEAR, SELECT_TYPE_NON_EXCL_MASK, "LINEAR"),
+};
+#undef SELECT_TYPE_EXCL_MASK
+#undef SELECT_TYPE_NON_EXCL_MASK
+
 /* Descriptions from _node_state_str() */
 static const flag_bit_t PARSER_FLAG_ARRAY(NODE_CR_TYPE)[] = {
 	add_flag_equal(NODE_CR_AVAILABLE, INFINITE, "AVAILABLE"),
@@ -12047,6 +12083,7 @@ static const parser_t parsers[] = {
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
+	addfa(SELECT_TYPE_PARAM, uint16_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
