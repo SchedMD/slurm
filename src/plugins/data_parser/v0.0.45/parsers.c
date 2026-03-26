@@ -10971,6 +10971,36 @@ static const parser_t PARSER_ARRAY(JOB_DEFAULTS)[] = {
 };
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS)[] = {
+	add_flag_bit_desc(CONF_FLAG_DRJ, "DisableRootJobs", "DisableRootJobs - User root will be prevented from running any jobs. May also be set by partition."),
+	add_flag_bit_desc(CONF_FLAG_ASRU, "AllowSpecResourcesUsage", "Allow individual jobs to override node's configured CoreSpecCount value."),
+	add_flag_bit_desc(CONF_FLAG_PAM, "UsePam", "UsePam - Enable PAM (Pluggable Authentication Modules for Linux), which is used to establish the upper bounds for resource limits."),
+	add_flag_bit_desc(CONF_FLAG_WCKEY, "TrackWCKey", "Used to set display and track of the Workload Characterization Key."),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_COMMUNICATION_PARAMETERS)[] = {
+	add_flag_bit_desc(CONF_FLAG_IPV4_ENABLED, "IPv4", "Enable using IPv4 addresses for all slurm daemons (except slurmdbd)."),
+	add_flag_bit_desc(CONF_FLAG_IPV6_ENABLED, "IPv6", "Enable using IPv6 addresses for all slurm daemons (except slurmdbd)."),
+	add_flag_bit_desc(CONF_FLAG_DISABLE_HTTP, "disable_http", "Prevent slurmctld and slurmd from responding to incoming HTTP requests."),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_ACCOUNTING_STORE)[] = {
+	add_flag_bit_desc(CONF_FLAG_SJC, "job_comment", "Include the job's comment field in the job complete message sent to the Accounting Storage database. Note the AdminComment and SystemComment are always recorded in the database."),
+	add_flag_bit_desc(CONF_FLAG_SJX, "job_extra", "Include the job's extra field in the job complete message sent to the Accounting Storage database."),
+	add_flag_bit_desc(CONF_FLAG_SJS, "job_script", "Include the job's batch script in the job start message sent to the Accounting Storage database."),
+	add_flag_bit_desc(CONF_FLAG_SJE, "job_env", "Include a batch job's environment variables used at job submission in the job start message sent to the Accounting Storage database."),
+	add_flag_bit_desc(CONF_FLAG_NO_STDIO, "no_stdio", "Exclude the stdio paths when recording data into the database on a job or step start. StdOut, StdErr and StdIn db fields for jobs and steps will be empty."),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_SLURMD_PARAMETERS)[] = {
+	add_flag_bit_desc(CONF_FLAG_OR, "config_overrides", "If set, consider the configuration of each node to be that specified in the slurm.conf configuration file and any node with less than the configured resources will not be set to INVAL/INVALID_REG."),
+	add_flag_bit_desc(CONF_FLAG_L3CSOCK, "l3cache_as_socket", "Use the hwloc l3cache as the socket count."),
+	add_flag_bit_desc(CONF_FLAG_NNSOCK, "numa_node_as_socket", "Use the hwloc NUMA Node to determine main hierarchy object to be used as socket."),
+	add_flag_bit_desc(CONF_FLAG_ECORE, "allow_ecores", "If set, and processors on your nodes have E-Cores, allows them to be used for scheduling and task placement."),
+	add_flag_bit_desc(CONF_FLAG_SHR, "shutdown_on_reboot", "If set, the Slurmd will shut itself down when a reboot request is received."),
+	add_flag_bit_desc(CONF_FLAG_CONTAIN_SPANK, "contain_spank", "If set and a job_container plugin is specified, the spank_user(), spank_task_post_fork() and spank_task_exit() calls will be run inside the job container."),
+};
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -11926,6 +11956,10 @@ static const parser_t parsers[] = {
 	addfa(NODE_PARTITION_CPU_BINDING_FLAGS, uint32_t),
 	addfa(PARTITION_FLAGS, uint32_t),
 	addfa(JOB_DEFAULTS_TYPE, uint16_t),
+	addfa(CONF_FLAGS, uint32_t),
+	addfa(CONF_FLAGS_COMMUNICATION_PARAMETERS, uint32_t),
+	addfa(CONF_FLAGS_ACCOUNTING_STORE, uint32_t),
+	addfa(CONF_FLAGS_SLURMD_PARAMETERS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),

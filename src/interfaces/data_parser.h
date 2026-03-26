@@ -682,6 +682,10 @@ typedef enum {
 	DATA_PARSER_JOB_DEFAULTS_PTR, /* job_defaults_t* */
 	DATA_PARSER_JOB_DEFAULTS_LIST, /* list_t* job_defaults_t */
 	DATA_PARSER_JOB_DEFAULTS_TYPE, /* JOB_DEF_* */
+	DATA_PARSER_CONF_FLAGS, /* CONF_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_COMMUNICATION_PARAMETERS, /* CommunicationParameters= specific CONF_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_ACCOUNTING_STORE, /* AccountingStoreFlags= specific CONF_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_SLURMD_PARAMETERS, /* SlurmdParameters= specific CONF_FLAG_* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
