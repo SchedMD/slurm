@@ -720,6 +720,10 @@ typedef enum {
 	DATA_PARSER_SLURM_CONF_CONTROLLERS, /* slurm_conf_t->control_addr,control_cnt,control_machine */
 	DATA_PARSER_SLURM_CONF_META, /* slurm_conf_t */
 	DATA_PARSER_SLURM_CONF_META_PTR, /* slurm_conf_t* */
+	DATA_PARSER_OPENAPI_CONF_RESP, /* openapi_resp_config_t */
+	DATA_PARSER_OPENAPI_CONF_RESP_PTR, /* openapi_resp_config_t* */
+	DATA_PARSER_OPENAPI_CONF_QUERY, /* openapi_config_query_t */
+	DATA_PARSER_OPENAPI_CONF_QUERY_PTR, /* openapi_config_query_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

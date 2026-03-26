@@ -12539,6 +12539,20 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_MODIFY_REQ)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(openapi_resp_config_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc)		\
+	add_parser(openapi_resp_config_t, mtype, false, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_CONF_RESP)[] = {
+	add_parse_overload(SLURM_CONF_PTR, slurm_conf, 1, "slurm_conf", "Configuration from slurm.conf"),
+	add_parse_overload(SLURM_CONF_META_PTR, slurm_conf, 1, "slurm_conf_meta", "Meta data related to slurm.conf"),
+	add_openapi_response_meta(openapi_resp_config_t),
+	add_openapi_response_errors(openapi_resp_config_t),
+	add_openapi_response_warnings(openapi_resp_config_t),
+};
+#undef add_parse
+#undef add_parse_overload
+
 #undef add_parser
 #undef add_parser_skip
 #undef add_complex_parser
@@ -13198,6 +13212,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_CREATE_NODE_REQ),
 	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
 	addoar(OPENAPI_PARTITIONS_MOD_REQ),
+	addpap(OPENAPI_CONF_RESP, openapi_resp_config_t, NULL, NULL),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
