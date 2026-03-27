@@ -60,11 +60,12 @@ Print a list of fields that can be specified with the '\-\-format' option.
 
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR
-Format is <job(.step)>. Stat this job step or comma\-separated list of
-job steps. This option is required. The step portion will default to
-the lowest numbered (not batch, extern, etc) step running if not specified,
-unless the \-\-allsteps flag is set where not specifying a step will result in
-all running steps to be displayed.
+Format is <job(.step)>. Stat this job step or comma\-separated list of job
+steps. Jobs may be specified by numeric job ID or by SLUID. This option is
+required. When no step is specified, only the lowest numbered normal step
+(excluding batch, extern, etc.) is displayed.
+Use the \fB\-\-allsteps\fR flag to display all running steps for the given
+job(s).
 \fBNOTE\fR: A step id of 'batch' will display the information about the batch
 step.
 \fBNOTE\fR: A step id of 'extern' will display the information about the
