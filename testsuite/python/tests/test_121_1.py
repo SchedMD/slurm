@@ -8,6 +8,8 @@ import atf
 import pytest
 import re
 
+pytestmark = pytest.mark.slow
+
 mps_cnt = 100 * 2
 job_mps = int(mps_cnt * 0.5)
 step_mps = int(job_mps * 0.5)

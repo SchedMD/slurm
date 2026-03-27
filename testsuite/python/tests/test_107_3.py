@@ -6,6 +6,7 @@ import logging
 import pytest
 import atf
 
+pytestmark = pytest.mark.slow
 
 # Globals
 user_name = atf.get_user_name()

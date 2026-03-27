@@ -6,6 +6,8 @@ import atf
 import datetime
 import logging
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():

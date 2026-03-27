@@ -10,6 +10,8 @@ import re
 import threading
 import time
 
+pytestmark = pytest.mark.slow
+
 # Global variables
 cluster = "test_cluster1"
 
