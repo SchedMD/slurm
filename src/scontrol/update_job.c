@@ -1444,50 +1444,33 @@ static uint32_t _get_job_time(const char *job_id_str)
 
 static bool _is_single_job(char *job_id_str)
 {
-	uint32_t task_id;
-	char *next_str = NULL;
 	int rc;
 	job_info_msg_t *resp;
 	bool is_single = false;
-	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	slurm_selected_step_t sel = { 0 };
 
-	if (job_id_str[0] == 's') {
-		step_id.sluid = str2sluid(job_id_str);
-		if (!step_id.sluid) {
-			error("Invalid job ID %s", job_id_str);
-			return is_single;
-		}
-		/* SLUID always identifies a single job */
-		return true;
-	}
-
-	step_id.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
-	if (next_str[0] == '_') {
-		task_id = (uint32_t)strtol(next_str+1, &next_str, 10);
-		if (next_str[0] != '\0') {
-			error("Invalid job ID %s", job_id_str);
-			return is_single;
-		}
-	} else if (next_str[0] != '\0') {
+	if (unfmt_job_id_string(job_id_str, &sel, NO_VAL)) {
 		error("Invalid job ID %s", job_id_str);
 		return is_single;
-	} else {
-		task_id = NO_VAL;
 	}
 
-	rc = slurm_load_job(&resp, step_id, SHOW_ALL);
+	/* SLUID always identifies a single job */
+	if (sel.step_id.sluid)
+		return true;
+
+	rc = slurm_load_job(&resp, sel.step_id, SHOW_ALL);
 	if (rc == SLURM_SUCCESS) {
 		if (resp->record_count == 0) {
 			error("Job ID %s not found", job_id_str);
 			slurm_free_job_info_msg(resp);
 			return is_single;
 		}
-		if ((resp->record_count > 1) && (task_id == NO_VAL)) {
+		if ((resp->record_count > 1) && (sel.array_task_id == NO_VAL)) {
 			error("Job resizing not supported for job arrays");
 			slurm_free_job_info_msg(resp);
 			return is_single;
 		}
-		is_single = true;	/* Do not bother to validate */
+		is_single = true;
 		slurm_free_job_info_msg(resp);
 	} else {
 		error("Could not load state information for job %s: %m",
