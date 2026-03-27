@@ -724,6 +724,11 @@ typedef enum {
 	DATA_PARSER_OPENAPI_CONF_RESP_PTR, /* openapi_resp_config_t* */
 	DATA_PARSER_OPENAPI_CONF_QUERY, /* openapi_config_query_t */
 	DATA_PARSER_OPENAPI_CONF_QUERY_PTR, /* openapi_config_query_t* */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_FLAGS, /* uint32_t - JOB_* macros */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_QUERY, /* openapi_job_requeue_query_t */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_QUERY_PTR, /* openapi_job_requeue_query_t* */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

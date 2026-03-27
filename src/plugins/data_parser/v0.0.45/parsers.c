@@ -12288,6 +12288,18 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_QUERY)[] = {
 };
 #undef add_parse
 
+/* Flags accepted by slurm_requeue2() */
+static const flag_bit_t PARSER_FLAG_ARRAY(OPENAPI_JOB_REQUEUE_FLAGS)[] = {
+	add_flag_bit_desc(JOB_RUNNING, "Incomplete", "Operate only on jobs (or tasks of a job array) which have not completed"),
+	add_flag_bit_desc(JOB_REQUEUE_HOLD, "Hold", "Hold job after requeue, will require manual release to run again"),
+	add_flag_bit_desc(JOB_SPECIAL_EXIT, "SpecialExit", "Set SPECIAL_EXIT state after requeue; must also specify the Hold flag"),
+	add_flag_hidden_bit(JOB_RECONFIG_FAIL, "Fail"),
+};
+
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_REQUEUE_QUERY)[] = {
+	add_parse_bit_eflag_array(openapi_job_requeue_query_t, OPENAPI_JOB_REQUEUE_FLAGS, flags, "Requeue flags"),
+};
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -12346,6 +12358,7 @@ add_openapi_response_single(OPENAPI_JOB_MODIFY_RESP, STRING_LIST, "results", "Jo
 add_openapi_response_single(OPENAPI_CREATE_NODE_REQ, STRING, "node_conf", "Node configuration line");
 add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_LIST, "nodes", "Node resource layouts");
 add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIST, "partitions", "list of partition descriptions");
+add_openapi_response_single(OPENAPI_JOB_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR, "status", "result of job requeue request");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -13174,6 +13187,7 @@ static const parser_t parsers[] = {
 	addpap(SLURM_CONF, slurm_conf_t, NULL, NULL),
 	addpap(SLURM_CONF_META, slurm_conf_t, NULL, NULL),
 	addpap(OPENAPI_CONF_QUERY, openapi_config_query_t, NULL, NULL),
+	addpap(OPENAPI_JOB_REQUEUE_QUERY, openapi_job_requeue_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -13224,6 +13238,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
 	addoar(OPENAPI_PARTITIONS_MOD_REQ),
 	addpap(OPENAPI_CONF_RESP, openapi_resp_config_t, NULL, NULL),
+	addoar(OPENAPI_JOB_REQUEUE_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -13292,6 +13307,7 @@ static const parser_t parsers[] = {
 	addfas(RETURN_TO_SERVICE, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
 	addfas(LOG_LEVEL, log_level_t),
+	addfa(OPENAPI_JOB_REQUEUE_FLAGS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
