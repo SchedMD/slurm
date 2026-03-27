@@ -557,6 +557,9 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->container);
 	} else if (!xstrcmp(name, "contiguous")) {
 		lua_pushnumber(L, job_desc->contiguous);
+	} else if (!xstrcmp(name, "core_spec") &&
+		   (job_desc->core_spec != NO_VAL16)) {
+		lua_pushnumber(L, job_desc->core_spec);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
 		lua_pushnumber(L, job_desc->cores_per_socket);
 	} else if (!xstrcmp(name, "cpu_freq_min")) {
@@ -855,6 +858,8 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->container = xstrdup(value_str);
 	} else if (!xstrcmp(name, "contiguous")) {
 		job_desc->contiguous = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "core_spec")) {
+		job_desc->core_spec = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
 		job_desc->cores_per_socket = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_min")) {
