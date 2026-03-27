@@ -636,6 +636,10 @@ static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id)
 	} else if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(result, "%u_%u",
 			   job_ptr->array_job_id, job_ptr->array_task_id);
+	} else if (job_ptr->step_id.sluid) {
+		char *sluid = sluid2str(job_ptr->step_id.sluid);
+		xstrfmtcat(result, "%s", sluid);
+		xfree(sluid);
 	} else {
 		xstrfmtcat(result, "%u", job_ptr->step_id.job_id);
 	}
@@ -740,6 +744,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 			} else {
 				cancel_info->step_id.job_id =
 					job_ptr->step_id.job_id;
+				cancel_info->step_id.sluid =
+					job_ptr->step_id.sluid;
 				cancel_info->step_id.step_id = opt.step_id[j];
 				slurm_thread_create_detached(NULL,
 							     _cancel_step_id,
