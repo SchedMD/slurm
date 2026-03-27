@@ -12300,6 +12300,14 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_REQUEUE_QUERY)[] = {
 	add_parse_bit_eflag_array(openapi_job_requeue_query_t, OPENAPI_JOB_REQUEUE_FLAGS, flags, "Requeue flags"),
 };
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(openapi_jobs_requeue_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOBS_REQUEUE_QUERY)[] = {
+	add_parse(OPENAPI_JOB_REQUEUE_FLAGS, flags, "flags", "Requeue flags"),
+	add_parse(SELECTED_STEP_LIST, jobs, "jobs", "List of jobs to requeue"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -12359,6 +12367,7 @@ add_openapi_response_single(OPENAPI_CREATE_NODE_REQ, STRING, "node_conf", "Node 
 add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_LIST, "nodes", "Node resource layouts");
 add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIST, "partitions", "list of partition descriptions");
 add_openapi_response_single(OPENAPI_JOB_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR, "status", "result of job requeue request");
+add_openapi_response_single(OPENAPI_JOBS_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR_LIST, "status", "result of batch job requeue request");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -13188,6 +13197,7 @@ static const parser_t parsers[] = {
 	addpap(SLURM_CONF_META, slurm_conf_t, NULL, NULL),
 	addpap(OPENAPI_CONF_QUERY, openapi_config_query_t, NULL, NULL),
 	addpap(OPENAPI_JOB_REQUEUE_QUERY, openapi_job_requeue_query_t, NULL, NULL),
+	addpap(OPENAPI_JOBS_REQUEUE_QUERY, openapi_jobs_requeue_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -13239,6 +13249,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_PARTITIONS_MOD_REQ),
 	addpap(OPENAPI_CONF_RESP, openapi_resp_config_t, NULL, NULL),
 	addoar(OPENAPI_JOB_REQUEUE_RESP),
+	addoar(OPENAPI_JOBS_REQUEUE_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),

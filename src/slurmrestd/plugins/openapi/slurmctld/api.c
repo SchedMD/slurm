@@ -325,6 +325,27 @@ const openapi_path_binding_t openapi_paths[] = {
 		.flags = OP_FLAGS,
 	},
 	{
+		.path = "/slurm/{data_parser}/jobs/requeue",
+		.callback = op_handler_jobs_requeue,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "batch requeue job(s)",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP,
+					.description = "batch job requeue request result",
+				},
+				.body = {
+					.type = DATA_PARSER_OPENAPI_JOBS_REQUEUE_QUERY,
+					.description = "batch job requeue request parameters",
+				}
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
+	{
 		.path = "/slurm/{data_parser}/nodes/",
 		.callback = op_handler_nodes,
 		.methods = (openapi_path_binding_method_t[]) {

@@ -860,3 +860,74 @@ cleanup:
 	slurm_free_job_array_resp(resp);
 	return rc;
 }
+
+extern int op_handler_jobs_requeue(openapi_ctxt_t *ctxt)
+{
+	openapi_jobs_requeue_query_t query = { 0 };
+	list_t *responses = NULL;
+	slurm_selected_step_t *step = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOBS_REQUEUE_QUERY, query,
+		       ctxt->query, ctxt->parent_path)) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Rejecting request. Failure parsing query");
+		goto cleanup;
+	}
+
+	if (!query.jobs || list_is_empty(query.jobs)) {
+		rc = ESLURM_INVALID_JOB_ID;
+		resp_error(ctxt, rc, __func__, "Query missing JobIds");
+		goto cleanup;
+	}
+
+	if ((query.flags & JOB_SPECIAL_EXIT) &&
+	    !(query.flags & JOB_REQUEUE_HOLD)) {
+		rc = ESLURM_REST_BAD_REQUEST;
+		resp_error(ctxt, rc, __func__,
+			   "SpecialExit requires Hold mode");
+		goto cleanup;
+	}
+
+	responses = list_create((ListDelF) slurm_free_job_array_resp);
+
+	while ((step = list_pop(query.jobs))) {
+		char *str = NULL;
+		job_array_resp_msg_t *resp = NULL;
+
+		if ((rc = fmt_job_id_string(step, &str))) {
+			(void) resp_error(ctxt, rc, __func__, "Invalid JobID");
+			slurm_destroy_selected_step(step);
+			break;
+		}
+
+		errno = SLURM_SUCCESS;
+		if ((rc = slurm_requeue2(str, query.flags, &resp))) {
+			if ((rc == SLURM_ERROR) && errno)
+				rc = errno;
+
+			(void) resp_error(ctxt, rc, __func__,
+					  "Requeue JobId=%s failed", str);
+		}
+
+		if (resp)
+			list_append(responses, resp);
+
+		slurm_destroy_selected_step(step);
+		xfree(str);
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOBS_REQUEUE_RESP, responses, ctxt);
+	rc = SLURM_SUCCESS;
+
+cleanup:
+	FREE_NULL_LIST(query.jobs);
+	FREE_NULL_LIST(responses);
+	return rc;
+}
