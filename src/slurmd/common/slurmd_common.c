@@ -60,7 +60,7 @@ static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
  * usec_per_rpc.
  * This logic depends upon synchronized clocks across the cluster.
  */
-static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
+static void _delay_rpc(int host_inx, int host_cnt, uint32_t usec_per_rpc)
 {
 	struct timeval tv1;
 	uint32_t cur_time;	/* current time in usec (just 9 digits) */
