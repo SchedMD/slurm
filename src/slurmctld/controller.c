@@ -2470,6 +2470,15 @@ static void *_slurmctld_background(void *no_data)
 			/* Always stop listening when shutdown requested */
 			listeners_quiesce();
 
+			/*
+			 * Persistent connection to slurmdbd must be closed
+			 * before conmgr quiesce to avoid possible deadlocks
+			 * where slurmdbd is waiting on slurmctld but
+			 * slurmctld will wait until quiesce to finish before
+			 * responding.
+			 */
+			_close_acct_storage_conn();
+
 			_flush_rpcs();
 
 			/*
@@ -2479,6 +2488,12 @@ static void *_slurmctld_background(void *no_data)
 			 * no active RPCs.
 			 */
 			conmgr_quiesce(__func__);
+
+			/*
+			 * Catch persistent connection to slurmdbd still
+			 * existing at this point
+			 */
+			xassert(!acct_db_conn);
 
 			if (!report_locks_set()) {
 				info("Saving all slurm state");
