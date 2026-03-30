@@ -746,8 +746,10 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 			} else {
 				cancel_info->step_id.job_id =
 					job_ptr->step_id.job_id;
-				cancel_info->step_id.sluid =
-					job_ptr->step_id.sluid;
+				if (opt.sluid[j]) {
+					cancel_info->step_id.sluid =
+						job_ptr->step_id.sluid;
+				}
 				cancel_info->step_id.step_id = opt.step_id[j];
 				slurm_thread_create_detached(NULL,
 							     _cancel_step_id,
@@ -926,6 +928,10 @@ _cancel_job_id (void *ci)
 			xstrfmtcat(cancel_info->job_id_str, "%u_%u",
 				   cancel_info->array_job_id,
 				   cancel_info->array_task_id);
+		} else if (cancel_info->step_id.sluid) {
+			char *sluid = sluid2str(cancel_info->step_id.sluid);
+			xstrfmtcat(cancel_info->job_id_str, "%s", sluid);
+			xfree(sluid);
 		} else {
 			xstrfmtcat(cancel_info->job_id_str, "%u",
 				   cancel_info->step_id.job_id);
@@ -1005,6 +1011,10 @@ _cancel_step_id (void *ci)
 			xstrfmtcat(cancel_info->job_id_str, "%u_%u",
 				   cancel_info->array_job_id,
 				   cancel_info->array_task_id);
+		} else if (cancel_info->step_id.sluid) {
+			char *sluid = sluid2str(cancel_info->step_id.sluid);
+			xstrfmtcat(cancel_info->job_id_str, "%s", sluid);
+			xfree(sluid);
 		} else {
 			xstrfmtcat(cancel_info->job_id_str, "%u",
 				   cancel_info->step_id.job_id);
