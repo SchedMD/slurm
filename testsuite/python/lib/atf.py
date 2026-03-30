@@ -2967,6 +2967,7 @@ def cancel_jobs(
     poll_interval=0.1,
     fatal=False,
     quiet=False,
+    **run_command_kwargs,
 ):
     """Cancels a list of jobs and waits for them to complete.
 
@@ -2997,7 +2998,9 @@ def cancel_jobs(
     if job_list_string == "":
         return True
 
-    run_command(f"scancel {job_list_string}", fatal=fatal, quiet=quiet)
+    run_command(
+        f"scancel {job_list_string}", fatal=fatal, quiet=quiet, **run_command_kwargs
+    )
 
     for job_id in job_list:
         status = wait_for_job_state(
