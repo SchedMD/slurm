@@ -236,6 +236,9 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 	if (!locked)
 		slurm_mutex_lock(&mgr.mutex);
 
+	if ((con->input_fd == con->output_fd) || (con->output_fd < 0))
+		con_unset_flag(con, FLAG_QUIESCE);
+
 	if (con->input_fd < 0) {
 		xassert(con_flag(con, FLAG_READ_EOF) ||
 			con_flag(con, FLAG_IS_LISTEN));
