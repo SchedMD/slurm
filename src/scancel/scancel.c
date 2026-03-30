@@ -430,7 +430,8 @@ static int _verify_job_ids(void)
 				if ((opt.job_id[j] ==
 				     job_ptr->step_id.job_id) ||
 				    ((opt.job_id[j] == job_ptr->array_job_id) &&
-				     (opt.step_id[j] == SLURM_BATCH_SCRIPT))) {
+				     (opt.step_id[j] == SLURM_BATCH_SCRIPT ||
+				      opt.step_id[j] == NO_VAL))) {
 					opt.job_found[j] = true;
 				}
 			} else if (opt.array_id[j] == INFINITE) {
@@ -680,7 +681,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 				if ((opt.job_id[j] ==
 				     job_ptr->step_id.job_id) ||
 				    ((opt.job_id[j] == job_ptr->array_job_id) &&
-				     (opt.step_id[j] == SLURM_BATCH_SCRIPT))) {
+				     (opt.step_id[j] == SLURM_BATCH_SCRIPT ||
+				      opt.step_id[j] == NO_VAL))) {
 					opt.job_found[j] = true;
 				}
 			} else if (opt.array_id[j] == INFINITE) {
@@ -720,7 +722,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 					&num_active_threads_lock;
 			cancel_info->num_active_threads_cond =
 					&num_active_threads_cond;
-			if (opt.step_id[j] == SLURM_BATCH_SCRIPT) {
+			if ((opt.step_id[j] == SLURM_BATCH_SCRIPT) ||
+			    (opt.step_id[j] == NO_VAL)) {
 				cancel_info->job_id_str =
 					_build_jobid_str(job_ptr,
 							 opt.array_id[j]);

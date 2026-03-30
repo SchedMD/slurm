@@ -150,7 +150,8 @@ extern bool has_job_steps(void)
 	int i;
 
 	for (i = 0; i < opt.job_cnt; i++) {
-		if (opt.step_id[i] != SLURM_BATCH_SCRIPT)
+		if (opt.step_id[i] != SLURM_BATCH_SCRIPT &&
+		    opt.step_id[i] != NO_VAL)
 			return true;
 	}
 	return false;
@@ -587,7 +588,6 @@ _xlate_job_step_ids(char **rest)
 			opt.job_id[buf_offset] = NO_VAL;
 			opt.sluid[buf_offset] = sel.step_id.sluid;
 			opt.step_id[buf_offset] = sel.step_id.step_id;
-
 			buf_offset++;
 			continue;
 		}
