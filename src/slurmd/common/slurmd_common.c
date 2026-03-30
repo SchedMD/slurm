@@ -55,7 +55,8 @@ typedef struct {
 static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Delay a message based upon the host index, total host count and RPC_TIME.
+ * Delay a message based upon the host index, total host count and
+ * usec_per_rpc.
  * This logic depends upon synchronized clocks across the cluster.
  */
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
@@ -91,12 +92,11 @@ again:
 	}
 }
 
-
 /*
  * On a parallel job, every slurmd may send the EPILOG_COMPLETE message to the
  * slurmctld at the same time, resulting in lost messages. We add a delay here
  * to spread out the message traffic assuming synchronized clocks across the
- * cluster. Allow 10 msec processing time in slurmctld for each RPC.
+ * cluster. Delay per host is controlled by EpilogMsgTime (usec).
  */
 static void _sync_messages_kill(char *node_list)
 {
