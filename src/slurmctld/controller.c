@@ -2669,6 +2669,15 @@ static void *_slurmctld_background(void *no_data)
 			listeners_quiesce();
 
 			/*
+			 * Persistent connection to slurmdbd must be closed
+			 * before conmgr quiesce to avoid possible deadlocks
+			 * where slurmdbd is waiting on slurmctld but
+			 * slurmctld will wait until quiesce to finish before
+			 * responding.
+			 */
+			_close_acct_storage_conn();
+
+			/*
 			 * Wait for all already accepted connection work to
 			 * finish before continuing on with control loop that
 			 * will unload all the plugins which requires there be
@@ -2683,6 +2692,12 @@ static void *_slurmctld_background(void *no_data)
 			 * RPC is lost.
 			 */
 			_flush_rpcs();
+
+			/*
+			 * Catch persistent connection to slurmdbd still
+			 * existing at this point
+			 */
+			xassert(!acct_db_conn);
 
 			/* Wait for backfill to release locks */
 			slurm_mutex_lock(&check_bf_running_lock);
