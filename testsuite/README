@@ -758,6 +758,7 @@ test_107_#   Testing of scancel options.
 test_107_1   /commands/scancel/test_--help.py
 test_107_2   /commands/scancel/test_--usage.py
 test_107_3   Test scancel --ctld and filtering options
+test_107_4   Test scancel signals jobs by mixes of Job IDs and SLUIDs
 
 test_108_#   Testing of scontrol options.
 =========================================
