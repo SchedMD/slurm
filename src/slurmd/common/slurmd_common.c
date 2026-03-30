@@ -69,6 +69,11 @@ static void _delay_rpc(int host_inx, int host_cnt, uint32_t usec_per_rpc)
 	uint32_t target_time;	/* desired time to issue the RPC */
 	uint32_t delta_time;
 
+	if ((usec_per_rpc == 0) || (usec_per_rpc > EPILOG_MSG_TIME_MAX)) {
+		error("%s: invalid usec_per_rpc=%u, using default %u",
+		      __func__, usec_per_rpc, DEFAULT_EPILOG_MSG_TIME);
+		usec_per_rpc = DEFAULT_EPILOG_MSG_TIME;
+	}
 again:
 	if (gettimeofday(&tv1, NULL)) {
 		usleep(host_inx * usec_per_rpc);
