@@ -879,6 +879,10 @@ test_119_#   Testing of contribs.
 test_119_1   /contribs/openlava/test_lsid.py
 test_119_2   /contribs/torque/qsub/test_basic.py
 
+test_120_#   Testing of cgroups.
+================================
+test_120_1   Check that cgroup path is constructed with the job SLUID.
+
 test_121_#   Testing of mps.
 =============================
 test_121_1   /features/gres/test_mps_options.py
