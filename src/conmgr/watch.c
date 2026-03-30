@@ -728,8 +728,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 					    (con->output_fd >= 0))) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: connection is quiesced flags=%s",
-				 __func__, flags);
+			log_flag(CONMGR, "%s: [%s] connection is quiesced flags=%s",
+				 __func__, con->name, flags);
 			xfree(flags);
 		}
 		con_set_polling(con, PCTL_TYPE_NONE, __func__);
