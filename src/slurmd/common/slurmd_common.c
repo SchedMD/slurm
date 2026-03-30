@@ -42,6 +42,8 @@
 #include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+#define EPILOG_SYNC_MIN_HOSTS 64
+
 typedef struct {
 	uint32_t job_id;
 	uint16_t msg_timeout;
@@ -104,8 +106,7 @@ static void _sync_messages_kill(char *node_list)
 
 	hosts = hostset_create(node_list);
 	host_cnt = hostset_count(hosts);
-
-	if (host_cnt <= 64)
+	if (host_cnt <= EPILOG_SYNC_MIN_HOSTS)
 		goto fini;
 	if (!conf->hostname)
 		goto fini;	/* should never happen */
