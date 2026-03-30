@@ -71,8 +71,8 @@ static void  _add_delay(void);
 static int   _cancel_jobs(void);
 static void *_cancel_job_id (void *cancel_info);
 static void *_cancel_step_id (void *cancel_info);
-static int  _confirmation(job_info_t *job_ptr, uint32_t step_id,
-			  uint32_t array_id);
+static int _confirmation(job_info_t *job_ptr, uint32_t step_id,
+			 uint32_t array_id, sluid_t sluid);
 static void _filter_job_records(void);
 static void _load_job_records (void);
 static int _multi_cluster(list_t *clusters);
@@ -624,7 +624,8 @@ static void _filter_job_records(void)
 	return;
 }
 
-static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id)
+static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id,
+			      sluid_t sluid)
 {
 	char *result = NULL;
 
@@ -636,10 +637,10 @@ static char *_build_jobid_str(job_info_t *job_ptr, uint32_t array_id)
 	} else if (job_ptr->array_task_id != NO_VAL) {
 		xstrfmtcat(result, "%u_%u",
 			   job_ptr->array_job_id, job_ptr->array_task_id);
-	} else if (job_ptr->step_id.sluid) {
-		char *sluid = sluid2str(job_ptr->step_id.sluid);
-		xstrfmtcat(result, "%s", sluid);
-		xfree(sluid);
+	} else if (sluid) {
+		char *sluid_str = sluid2str(sluid);
+		xstrfmtcat(result, "%s", sluid_str);
+		xfree(sluid_str);
 	} else {
 		xstrfmtcat(result, "%u", job_ptr->step_id.job_id);
 	}
@@ -703,8 +704,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 				continue;
 
 			if (opt.interactive &&
-			    (_confirmation(job_ptr, opt.step_id[j],
-					   opt.array_id[j]) == 0)) {
+			    (!_confirmation(job_ptr, opt.step_id[j],
+					    opt.array_id[j], opt.sluid[j]))) {
 				opt.job_id[j] = 0;	 /* Don't check again */
 				continue;
 			}
@@ -730,7 +731,8 @@ static void _cancel_jobid_by_state(uint32_t job_state, int *rc)
 			    (opt.step_id[j] == NO_VAL)) {
 				cancel_info->job_id_str =
 					_build_jobid_str(job_ptr,
-							 opt.array_id[j]);
+							 opt.array_id[j],
+							 opt.sluid[j]);
 
 				slurm_thread_create_detached(NULL,
 							     _cancel_job_id,
@@ -791,14 +793,14 @@ _cancel_jobs_by_state(uint32_t job_state, int *rc)
 			continue;
 
 		if (opt.interactive &&
-		    (_confirmation(job_ptr, SLURM_BATCH_SCRIPT, NO_VAL) == 0)) {
+		    (!_confirmation(job_ptr, SLURM_BATCH_SCRIPT, NO_VAL, 0))) {
 			job_ptr->step_id.job_id = 0;
 			continue;
 		}
 
 		cancel_info = xmalloc(sizeof(*cancel_info));
 		cancel_info->step_id = SLURM_STEP_ID_INITIALIZER;
-		cancel_info->job_id_str = _build_jobid_str(job_ptr, NO_VAL);
+		cancel_info->job_id_str = _build_jobid_str(job_ptr, NO_VAL, 0);
 		cancel_info->rc      = rc;
 		cancel_info->sig     = opt.signal;
 		cancel_info->num_active_threads = &num_active_threads;
@@ -1073,13 +1075,13 @@ _cancel_step_id (void *ci)
 }
 
 /* _confirmation - Confirm job cancel request interactively */
-static int
-_confirmation(job_info_t *job_ptr, uint32_t step_id, uint32_t array_id)
+static int _confirmation(job_info_t *job_ptr, uint32_t step_id,
+			 uint32_t array_id, sluid_t sluid)
 {
 	char *job_id_str, in_line[128];
 
 	while (1) {
-		job_id_str = _build_jobid_str(job_ptr, array_id);
+		job_id_str = _build_jobid_str(job_ptr, array_id, sluid);
 		if (step_id == SLURM_BATCH_SCRIPT) {
 			printf("Cancel job_id=%s name=%s partition=%s [y/n]? ",
 			       job_id_str, job_ptr->name,
