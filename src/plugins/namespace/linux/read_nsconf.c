@@ -94,8 +94,21 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "UserNSScript=%s", slurm_ns_conf.usernsscript);
 }
 
+static int _pack_ns_dir(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	buf_t *buf = arg;
+	packstr(dir->path, buf);
+	packstr(dir->base_path, buf);
+	packstr(dir->opts_str, buf);
+	packbool(dir->tmpfs, buf);
+	return 0;
+}
+
 static void _pack_slurm_ns_conf_buf(void)
 {
+	uint32_t count;
+
 	if (slurm_ns_conf_buf)
 		FREE_NULL_BUFFER(slurm_ns_conf_buf);
 
@@ -112,6 +125,13 @@ static void _pack_slurm_ns_conf_buf(void)
 	packstr(slurm_ns_conf.initscript, slurm_ns_conf_buf);
 	packbool(slurm_ns_conf.shared, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.usernsscript, slurm_ns_conf_buf);
+
+	count = slurm_ns_conf.dir_confs ? list_count(slurm_ns_conf.dir_confs) :
+					  0;
+	pack32(count, slurm_ns_conf_buf);
+	if (slurm_ns_conf.dir_confs)
+		list_for_each(slurm_ns_conf.dir_confs, _pack_ns_dir,
+			      slurm_ns_conf_buf);
 }
 
 static void _swap_slurm_ns_conf(ns_node_conf_t *ns_node_conf)
@@ -316,6 +336,9 @@ extern ns_conf_t *init_slurm_ns_conf(void)
 
 extern ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 {
+	uint32_t count;
+	ns_dir_t *dir = NULL;
+
 	xassert(buf);
 
 	safe_unpackbool(&slurm_ns_conf.auto_basepath, buf);
@@ -330,10 +353,24 @@ extern ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 	safe_unpackstr(&slurm_ns_conf.initscript, buf);
 	safe_unpackbool(&slurm_ns_conf.shared, buf);
 	safe_unpackstr(&slurm_ns_conf.usernsscript, buf);
+	safe_unpack32(&count, buf);
+	slurm_ns_conf.dir_confs = list_create((ListDelF) slurm_free_ns_dir);
+	for (uint32_t i = 0; i < count; i++) {
+		dir = xmalloc(sizeof(*dir));
+		safe_unpackstr(&dir->path, buf);
+		safe_unpackstr(&dir->base_path, buf);
+		safe_unpackstr(&dir->opts_str, buf);
+		safe_unpackbool(&dir->tmpfs, buf);
+		list_append(slurm_ns_conf.dir_confs, dir);
+		dir = NULL;
+	}
+
 	slurm_ns_conf_inited = true;
 
 	return &slurm_ns_conf;
 unpack_error:
+	slurm_free_ns_dir(dir);
+	FREE_NULL_LIST(slurm_ns_conf.dir_confs);
 	return NULL;
 }
 
