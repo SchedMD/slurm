@@ -611,6 +611,8 @@ main (int argc, char **argv)
 	info("Slurmd shutdown completing");
 
 	conmgr_fini();
+	if (http_switch_http_enabled())
+		http_fini();
 	http_switch_fini();
 	probe_fini();
 	log_fini();
