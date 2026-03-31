@@ -33,13 +33,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/id_util.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "src/interfaces/jobcomp.h"
-#include "src/plugins/jobcomp/common/jobcomp_common.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_CONF_JOB_FINISH
@@ -103,6 +104,7 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	uint32_t time_limit;
 	data_t *record = NULL;
 	bool event_job_finish = (event & JOBCOMP_EVENT_JOB_FINISH);
+	char sluid_str[SLUID_STR_BYTES];
 
 	usr_str = user_from_job(job_ptr);
 	grp_str = group_from_job(job_ptr);
@@ -178,6 +180,17 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	record = data_set_dict(data_new());
 
 	data_set_int(data_key_set(record, "jobid"), job_ptr->job_id);
+
+	print_sluid(job_ptr->db_index, sluid_str, sizeof(sluid_str));
+	data_set_string(data_key_set(record, "sluid"), sluid_str);
+
+	if (job_ptr->step_id.sluid) {
+		print_sluid(job_ptr->step_id.sluid, sluid_str,
+			    sizeof(sluid_str));
+		data_set_string(data_key_set(record, "original_sluid"),
+				sluid_str);
+	}
+
 	data_set_string(data_key_set(record, "container"), job_ptr->container);
 	data_set_string(data_key_set(record, "username"), usr_str);
 	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
