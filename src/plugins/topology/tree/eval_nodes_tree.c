@@ -1000,7 +1000,7 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 			goto fini;
 		}
 		if (topo_eval->max_nodes <= 0) {
-			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			rc = ESLURM_BREAK_EVAL;
 			log_flag(SELECT_TYPE, "%pJ requires nodes exceed maximum node limit",
 				 job_ptr);
 			goto fini;
