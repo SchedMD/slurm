@@ -255,13 +255,27 @@ extern bool conn_g_own_cert_loaded(void)
 
 extern conn_t *conn_g_create(const conn_args_t *conn_args)
 {
+	void *conn = NULL;
+
 	xassert(plugin_inited == PLUGIN_INITED);
 
 	log_flag(NET, "%s: fd:%d->%d mode:%d",
 		 __func__, conn_args->input_fd, conn_args->output_fd,
 		 conn_args->mode);
 
-	return (*(ops.create_conn))(conn_args);
+	conn = (*(ops.create_conn))(conn_args);
+
+	log_flag(NET, "%s: [fd:%d->%d] created 0x%"PRIxPTR" maybe=%c mode=%s defer_blinding=%c defer_negotiation=%c len(cert)=%zd",
+		 __func__, conn_args->input_fd, conn_args->output_fd,
+		 (uintptr_t) conn, BOOL_CHARIFY(conn_args->maybe),
+		 ((conn_args->mode == CONN_SERVER) ? "CONN_SERVER" :
+		  ((conn_args->mode == CONN_CLIENT) ? "CONN_CLIENT" :
+		   (conn_args->mode == CONN_NULL) ? "CONN_NULL" : "INVALID")),
+		 BOOL_CHARIFY(conn_args->defer_blinding),
+		 BOOL_CHARIFY(conn_args->defer_negotiation),
+		 (conn_args->cert ? strlen(conn_args->cert) : 0));
+
+	return conn;
 }
 
 extern void conn_g_destroy(conn_t *conn, bool close_fds)
@@ -270,6 +284,10 @@ extern void conn_g_destroy(conn_t *conn, bool close_fds)
 		return;
 
 	xassert(plugin_inited == PLUGIN_INITED);
+
+	log_flag(NET, "%s: [fd:%d] destroying 0x%"PRIxPTR" close_fds=%c",
+		 __func__, conn_g_get_fd(conn), (uintptr_t) conn,
+		 BOOL_CHARIFY(close_fds));
 
 	(*(ops.destroy_conn))(conn, close_fds);
 }
