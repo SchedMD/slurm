@@ -10820,6 +10820,19 @@ static const parser_t PARSER_ARRAY(NODE_GRES_LAYOUT)[] = {
 #undef add_parse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(ns_dir_t, mtype, false, field, 0, path, desc)
+#define add_parse_req(mtype, field, path, desc)				\
+	add_parser(ns_dir_t, mtype, true, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(NAMESPACE_DIR_CONF)[] = {
+	add_parse_req(STRING, path, "path", "Target directory to mount privately, e.g. \"/tmp\". This parameter is required."),
+	add_parse(STRING, base_path, "base_path", "Optional per-directory backing storage root. Overrides the global base_path for this mount. A job-specific subdirectory will be created here to back the private mount. This parameter is optional."),
+	add_parse(STRING, opts_str, "options", "Optional comma-separated list of mount options. Supported flags: noexec, nosuid, nodev, ro, noatime, nodiratime, relatime. For tmpfs mounts, data options such as size=4g may also be specified. This parameter is optional."),
+	add_parse(BOOL, tmpfs, "tmpfs", "Mount a fresh tmpfs at this path instead of creating a bind mount. When set, base_path is ignored. This parameter is optional."),
+};
+#undef add_parse_req
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(ns_full_conf_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(NAMESPACE_FULL_CONF)[] = {
 	add_parse(NAMESPACE_CONF_PTR, defaults, "defaults", "Default namespace configuration"),
@@ -10851,7 +10864,8 @@ static const parser_t PARSER_ARRAY(NAMESPACE_CONF)[] = {
 	add_parse(STRING, clonensepilog, "clone_ns_epilog", "Specify fully qualified pathname of an optional epilog script. This script runs just before the namespace is torn down. This script will be provided the SLURM_NS environment variable containing the path to the namespace that can be used by the nsenter command. This variable will allow the script to join the soon to be removed namespace and do any cleanup work. This parameter is optional."),
 	add_parse(UINT32, clonensscript_wait, "clone_ns_script_wait", "The number of seconds to wait for the clone_ns_script to complete before considering the script failed. The default value is 10 seconds."),
 	add_parse(UINT32, clonensepilog_wait, "clone_ns_epilog_wait", "The number of seconds to wait for the clone_ns_epilog to complete before considering the script failed. The default value is 10 seconds."),
-	add_parse(STRING, dirs, "dirs", "A list of mount points separated with commas to create private mounts for. This parameter is optional and if not specified it defaults to \"/tmp,/dev/shm\". NOTE: /dev/shm has special handling, and instead of a bind mount is always a fresh tmpfs filesystem. NOTE: When CLONE_NEWPID is specified, a unique /proc filesystem for the container will be mounted automatically."),
+	add_parse(STRING, dirs, "dirs", "A comma-separated list of mount points to create private mounts for. This parameter is optional and if not specified it defaults to \"/tmp,/dev/shm\". NOTE: /dev/shm has special handling, and instead of a bind mount is always a fresh tmpfs filesystem. NOTE: When CLONE_NEWPID is specified, a unique /proc filesystem for the container will be mounted automatically. NOTE: mutually exclusive with dir_confs; if dir_confs is set it takes precedence."),
+	add_parse(NAMESPACE_DIR_CONF_LIST, dir_confs, "dir_confs", "Structured list of per-directory mount configurations. Each entry specifies a path, an optional backing storage base_path, and optional mount options. When set, supersedes dirs. NOTE: /dev/shm has special handling; it always receives a fresh tmpfs mount."),
 	add_parse(BOOL, disable_bpf_token, "disable_bpf_token", "Specifying disable_bpf_token=true will remove the requirement for bpf tokens on systems that don't support them. When set, it is possible that device constraints will only apply at the job level. This parameter is optional."),
 	add_parse(STRING, initscript, "init_script", "Specify fully qualified pathname of an optional initialization script. This script is run before the namespace construction of a job. It can be used to make the job join additional namespaces prior to the construction of /tmp namespace or it can be used for any site-specific setup. This parameter is optional. "),
 	add_parse(BOOL, shared, "shared", "Specifying Shared=true will propagate new mounts between the job specific filesystem namespace and the root filesystem namespace, enable using autofs on the node. This parameter is optional. "),
@@ -11699,6 +11713,7 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_FULL_CONF, ns_full_conf_t, NULL, (parser_free_func_t) slurm_free_ns_full_conf),
 	addpap(NAMESPACE_NODE_CONF, ns_node_conf_t, NULL, (parser_free_func_t) slurm_free_ns_node_conf),
 	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
+	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -11835,6 +11850,7 @@ static const parser_t parsers[] = {
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
+	addpl(NAMESPACE_DIR_CONF_LIST, NAMESPACE_DIR_CONF_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 
 	/* alias parsers */
