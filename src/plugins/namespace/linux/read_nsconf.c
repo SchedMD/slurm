@@ -157,6 +157,12 @@ static void _swap_slurm_ns_conf(ns_node_conf_t *ns_node_conf)
 	SWAP_IF_SET(slurm_ns_conf.clonensflags_str, ns_conf->clonensflags_str);
 	SWAP_IF_SET(slurm_ns_conf.clonensscript, ns_conf->clonensscript);
 	SWAP_IF_SET(slurm_ns_conf.dirs, ns_conf->dirs);
+	if (ns_conf->dir_confs) {
+		FREE_NULL_LIST(slurm_ns_conf.dir_confs);
+		SWAP(slurm_ns_conf.dir_confs, ns_conf->dir_confs);
+		/* dirs no longer drives mount setup; clear to avoid confusion */
+		xfree(slurm_ns_conf.dirs);
+	}
 	SWAP_IF_SET(slurm_ns_conf.initscript, ns_conf->initscript);
 	SWAP_IF_SET(slurm_ns_conf.usernsscript, ns_conf->usernsscript);
 }
@@ -186,14 +192,86 @@ static void _set_clonensflags(void)
 		slurm_ns_conf.clonensflags |= CLONE_NEWUSER;
 }
 
+/* Build dir_confs from the legacy dirs CSV string. */
+static void _dirs_to_dir_confs(void)
+{
+	char *buf, *save_ptr = NULL, *token;
+
+	xassert(!slurm_ns_conf.dir_confs);
+	xassert(slurm_ns_conf.dirs);
+
+	slurm_ns_conf.dir_confs = list_create((ListDelF) slurm_free_ns_dir);
+	buf = xstrdup(slurm_ns_conf.dirs);
+	token = strtok_r(buf, ",", &save_ptr);
+	while (token) {
+		ns_dir_t *dir = xmalloc(sizeof(*dir));
+		dir->path = xstrdup(token);
+		list_append(slurm_ns_conf.dir_confs, dir);
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(buf);
+}
+
+static int _check_basepath_not_dir(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	char *basepath = arg;
+	char *found = xstrstr(dir->path, basepath);
+	if (found == dir->path)
+		fatal("BasePath(%s) cannot also be in DirConfs.", basepath);
+	return 0;
+}
+
+static int _find_dir_path(void *x, void *key)
+{
+	ns_dir_t *dir = x;
+	return !xstrcmp(dir->path, (char *) key);
+}
+
+static int _check_duplicate_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	list_t *seen = arg;
+
+	if (list_find_first(seen, _find_dir_path, dir->path))
+		fatal("Duplicate path \"%s\" in dir_confs.", dir->path);
+
+	list_append(seen, dir);
+	return 0;
+}
+
+static int _force_devshm_tmpfs(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+
+	if (!xstrcmp(dir->path, "/dev/shm")) {
+		dir->tmpfs = true;
+		/* only one /dev/shm, so break out of the loop */
+		return -1;
+	}
+
+	return 0;
+}
+
 static void _set_slurm_ns_conf_defaults()
 {
-	if (!slurm_ns_conf.dirs)
-		slurm_ns_conf.dirs = xstrdup(SLURM_NEWNS_DEF_DIRS);
+	list_t *seen = list_create(NULL);
+
+	if (!slurm_ns_conf.dir_confs) {
+		if (!slurm_ns_conf.dirs)
+			slurm_ns_conf.dirs = xstrdup(SLURM_NEWNS_DEF_DIRS);
+		_dirs_to_dir_confs();
+	}
+
+	list_for_each(slurm_ns_conf.dir_confs, _check_duplicate_path, seen);
+	list_for_each(slurm_ns_conf.dir_confs, _force_devshm_tmpfs, NULL);
+
 	if (!slurm_ns_conf.clonensepilog_wait)
 		slurm_ns_conf.clonensepilog_wait = SLURM_NS_WAIT_DEF;
 	if (!slurm_ns_conf.clonensscript_wait)
 		slurm_ns_conf.clonensscript_wait = SLURM_NS_WAIT_DEF;
+
+	FREE_NULL_LIST(seen);
 }
 
 static int _read_slurm_ns_conf(void)
@@ -304,25 +382,18 @@ extern ns_conf_t *init_slurm_ns_conf(void)
 {
 	int rc;
 	if (!slurm_ns_conf_inited) {
-		char *save_ptr = NULL, *token, *buffer;
 		memset(&slurm_ns_conf, 0, sizeof(slurm_ns_conf));
 		rc = _read_slurm_ns_conf();
 		if (rc != SLURM_SUCCESS)
 			return NULL;
 
-		xassert(slurm_ns_conf.dirs);
+		xassert(slurm_ns_conf.dir_confs);
 
-		/* BasePath cannot be in "Dirs" */
-		buffer = xstrdup(slurm_ns_conf.dirs);
-		token = strtok_r(buffer, ",", &save_ptr);
-		while (token) {
-			char *found = xstrstr(token, slurm_ns_conf.basepath);
-			if (found == token)
-				fatal("BasePath(%s) cannot also be in Dirs.",
+		/* BasePath cannot be a target path in dir_confs */
+		if (slurm_ns_conf.basepath)
+			list_for_each(slurm_ns_conf.dir_confs,
+				      _check_basepath_not_dir,
 				      slurm_ns_conf.basepath);
-			token = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(buffer);
 
 		_pack_slurm_ns_conf_buf();
 
