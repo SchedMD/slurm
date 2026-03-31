@@ -48,6 +48,7 @@
 #include "src/common/data.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
@@ -776,6 +777,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 				      const char *name)
 {
 	int i;
+	char sluid_str[SLUID_STR_BYTES];
 
 	if (!job_ptr) {
 		error("_job_rec_field: job_ptr is NULL");
@@ -859,6 +861,17 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushnumber(L, job_ptr->group_id);
 	} else if (!xstrcmp(name, "job_id")) {
 		lua_pushnumber(L, job_ptr->job_id);
+	} else if (!xstrcmp(name, "sluid")) {
+		print_sluid(job_ptr->db_index, sluid_str, sizeof(sluid_str));
+		lua_pushstring(L, sluid_str);
+	} else if (!xstrcmp(name, "original_sluid")) {
+		if (job_ptr->step_id.sluid) {
+			print_sluid(job_ptr->step_id.sluid, sluid_str,
+				    sizeof(sluid_str));
+			lua_pushstring(L, sluid_str);
+		} else {
+			lua_pushnil(L);
+		}
 	} else if (!xstrcmp(name, "job_state")) {
 		lua_pushnumber(L, job_ptr->job_state);
 	} else if (!xstrcmp(name, "licenses")) {
