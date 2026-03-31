@@ -51,8 +51,8 @@ def test_const1():
     ), "Verify that job #3 is not run"
 
     assert atf.wait_for_job_state(
-        job_id_3, "PENDING", "Resources"
-    ), "Verify that job #3 is not run due resources"
+        job_id_3, "PENDING", "No_suitable_topology_unit_found"
+    ), "Verify that job #3 is pending due to topology rejection"
 
 
 def test_const2():
