@@ -8707,6 +8707,7 @@ static const parser_t PARSER_ARRAY(NODE)[] = {
 	add_cparse(NODE_REASON_USER_ID, "reason_set_by_user", "User who set the reason"),
 	add_parse(TIMESTAMP_NO_VAL, resume_after, "resume_after", "Number of seconds after the node's state is updated to \"DOWN\" or \"DRAIN\" before scheduling a node state resume"),
 	add_parse(STRING, resv_name, "reservation", "Name of reservation containing this node"),
+	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", "Time in idle state before being considered for power save."),
 	add_parse(UINT64, alloc_memory, "alloc_memory", "Total memory in MB currently allocated for jobs"),
 	add_parse(UINT16, alloc_cpus, "alloc_cpus", "Total number of CPUs currently allocated for jobs"),
 	add_cparse(NODE_SELECT_ALLOC_IDLE_CPUS, "alloc_idle_cpus", "Total number of idle CPUs"),
