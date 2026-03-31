@@ -452,7 +452,7 @@ extern int load_all_node_state ( bool state_only )
 			if (IS_NODE_FUTURE(node_ptr)) {
 				/* preserve state for conf FUTURE nodes */
 				node_ptr->node_state = node_state;
-			} else if (IS_NODE_CLOUD(node_ptr) || IS_NODE_EXTERNAL(node_ptr)) {
+			} else if (IS_NODE_CLOUD(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWERED_DOWN) ||
 				     (node_state & NODE_STATE_POWERING_DOWN) ||
