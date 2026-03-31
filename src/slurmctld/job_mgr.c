@@ -17399,6 +17399,22 @@ extern int job_suspend2(slurm_msg_t *msg, suspend_msg_t *sus_ptr, uid_t uid,
 		max_array_size = slurm_conf.max_array_sz;
 	}
 
+	if (sus_ptr->job_id_str[0] == 's') {
+		sluid_t sluid = str2sluid(sus_ptr->job_id_str);
+		if (!sluid) {
+			info("%s: invalid SLUID=%s", __func__,
+			     sus_ptr->job_id_str);
+			rc = ESLURM_INVALID_SLUID;
+			goto reply;
+		}
+		job_ptr = find_sluid(sluid);
+		if ((rc = _check_access_job_ptr(job_ptr, "REQUEST_SUSPEND",
+						uid)) != SLURM_SUCCESS)
+			goto reply;
+		rc = _job_suspend(job_ptr, sus_ptr->op, indf_susp);
+		goto reply;
+	}
+
 	long_id = strtol(sus_ptr->job_id_str, &end_ptr, 10);
 	if (end_ptr[0] == '+')
 		rc = ESLURM_NOT_WHOLE_HET_JOB;
