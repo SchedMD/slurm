@@ -2061,9 +2061,6 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		 */
 		_decrement_thd_count();
 
-		log_flag(NET, "%s: [%pA] deferring servicing connection",
-			 __func__, &args->msg->address);
-
 		/*
 		 * Backoff attempts to avoid needless lock contention while
 		 * avoiding having a new thread created
@@ -2072,10 +2069,14 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
 			args->delay = MAX_THREAD_DELAY_MAX;
 
+		warning("%s: [%pA] deferring servicing connection for %s",
+			__func__, &args->msg->address,
+			TIMESPEC_STR(args->delay, false));
+
 		conmgr_add_work_con_delayed_fifo(conmgr_args.con,
 						 _try_service_msg, args,
 						 args->delay.tv_sec,
-						 args->delay.tv_sec);
+						 args->delay.tv_nsec);
 	}
 }
 
