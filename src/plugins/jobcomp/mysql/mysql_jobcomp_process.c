@@ -172,6 +172,8 @@ extern list_t *mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 		job->geo = xstrdup(row[JOBCOMP_REQ_GEOMETRY]);
 		job->bg_start_point = xstrdup(row[JOBCOMP_REQ_START]);
 		job->blockid = xstrdup(row[JOBCOMP_REQ_BLOCKID]);
+		job->sluid = xstrdup(row[JOBCOMP_REQ_SLUID]);
+		job->original_sluid = xstrdup(row[JOBCOMP_REQ_ORIGINAL_SLUID]);
 		list_append(job_list, job);
 	}
 
