@@ -230,6 +230,7 @@ extern int slurm_requeue2(char *job_id_str, uint32_t flags,
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ARRAY_ERRORS:
 		*resp = (job_array_resp_msg_t *) resp_msg.data;
+		resp_msg.data = NULL;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -240,5 +241,6 @@ extern int slurm_requeue2(char *job_id_str, uint32_t flags,
 		errno = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
+	slurm_free_msg_members(&resp_msg);
 	return rc;
 }
