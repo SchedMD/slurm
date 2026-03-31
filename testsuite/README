@@ -811,6 +811,7 @@ test_114_1   /commands/squeue/test_--help.py
 test_114_2   /commands/squeue/test_--usage.py
 test_114_3   /commands/squeue/test_--json.py
 test_114_4   Validate that squeue --only-job-state is listing jobs accurately.
+test_114_5   Check squeue SLUID support
 
 test_115_#   Testing of sreport options.
 ========================================
