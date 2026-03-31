@@ -434,6 +434,38 @@ static bitstr_t *_resv_select(resv_desc_msg_t *resv_desc_ptr,
 	job_ptr = resv_desc_ptr->job_ptr;
 
 	/*
+	 * Simple whole-node IGNORE_JOBS: resv_select->node_bitmap already
+	 * reflects partition, features, and other filters. Any min_nodes
+	 * of those bits is sufficient.
+	 *
+	 * Skip select_g_job_test(WILL_RUN). The code below
+	 * rejects when job_ptr->start_time is after reservation start/now;
+	 * WILL_RUN sets that when nodes are busy, but IGNORE_JOBS explicitly
+	 * allows overlapping running work. Core- or GRES-based reservations
+	 * must keep WILL_RUN for correct plugin accounting.
+	 *
+	 * Guards: RESERVE_FLAG_IGN_JOBS, whole-node (core_cnt unset), not a
+	 * GRES reservation request, no per-select core bitmap (core resvs use
+	 * the normal path with add_job_to_cores below).
+	 */
+	if ((resv_desc_ptr->flags & RESERVE_FLAG_IGN_JOBS) &&
+	    (resv_desc_ptr->core_cnt == NO_VAL) &&
+	    !(resv_desc_ptr->flags & RESERVE_FLAG_GRES_REQ) &&
+	    !resv_select->core_bitmap) {
+		/* Same count as NodeCnt / synthetic job min_nodes. */
+		uint32_t need = job_ptr->details->min_nodes;
+
+		/* Usual path frees this after job_test; not entered here. */
+		free_core_array(&resv_exc.exc_cores);
+		if (bit_set_count(resv_select->node_bitmap) < need)
+			return NULL;
+		/* No job_test; do not leave stale job_resrcs on synthetic job. */
+		free_job_resources(&job_ptr->job_resrcs);
+		/* New bitmap: first need set bits, ascending node index. */
+		return bit_pick_cnt(resv_select->node_bitmap, need);
+	}
+
+	/*
 	 * request the maximum nodes, require the minimum
 	 */
 	rc = select_g_job_test(
