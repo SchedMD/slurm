@@ -972,6 +972,62 @@ static void _create_het_job_id_set(hostset_t *jobid_hostset,
 	xfree(tmp_str);
 }
 
+/*
+ * _het_job_val_add - After a het component succeeds in
+ *	job_allocate(), call before linking it into the het job list so the
+ *	next component's validate path sees accumulated limit usage.
+ *
+ * When limits apply, tres_alloc_cnt must be NULL (het RPC path); aliases
+ * tres_req_cnt so _adjust_limit_usage(JOB_BEGIN) can read alloc counts without
+ * a copy. If limits are not enforced or assoc is invalid, returns without
+ * simulating begin (proc_req still appends the job; fini skips it).
+ */
+static void _het_job_val_add(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	if (!job_ptr->tres_req_cnt)
+		return;
+
+	xassert(!job_ptr->tres_alloc_cnt);
+
+	job_ptr->tres_alloc_cnt = job_ptr->tres_req_cnt;
+
+	acct_policy_job_begin(job_ptr, false);
+}
+
+/*
+ * _het_job_val_rem_each - list_for_each helper for _het_job_val_rem().
+ *	will reset the simulated allocated tres for each het component.
+ */
+static int _het_job_val_rem_each(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!job_ptr->tres_alloc_cnt)
+		return 0;
+
+	acct_policy_job_fini(job_ptr, false);
+	xassert(job_ptr->tres_alloc_cnt == job_ptr->tres_req_cnt);
+	job_ptr->tres_alloc_cnt = NULL;
+	return 0;
+}
+
+/*
+ * _het_job_val_rem - Undo every from _het_job_val_add()
+ *	for the current het RPC (success or failure). Walks submit_job_list;
+ *	jobs with non-NULL tres_alloc_cnt get JOB_FINI then tres_alloc_cnt
+ *	cleared (alias to tres_req_cnt is not freed). Caller must hold the same
+ *	locks as for job_allocate / other acct_policy_* calls with assoc_locked
+ *	false.
+ */
+static void _het_job_val_rem(list_t *submit_job_list)
+{
+	xassert(submit_job_list);
+
+	(void) list_for_each(submit_job_list, _het_job_val_rem_each, NULL);
+}
+
 /* _slurm_rpc_allocate_het_job: process RPC to allocate a hetjob resources */
 static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 {
@@ -1120,6 +1176,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		job_ptr->het_job_id     = het_job_id;
 		job_ptr->het_job_offset = het_job_offset++;
 		on_job_state_change(job_ptr, job_ptr->job_state);
+		_het_job_val_add(job_ptr);
 		list_append(submit_job_list, job_ptr);
 		inx++;
 	}
@@ -1129,15 +1186,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		error("%s: No error, but no het_job_id", __func__);
 		error_code = SLURM_ERROR;
 	}
-
-	/* Validate limits on hetjob as a whole */
-	if ((error_code == SLURM_SUCCESS) &&
-	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_het_job(submit_job_list)) {
-		info("Hetjob %u exceeded association/QOS limit for user %u",
-		     het_job_id, msg->auth_uid);
-		error_code = ESLURM_ACCOUNTING_POLICY;
-        }
 
 	/* Set the het_job_id_set */
 	_create_het_job_id_set(jobid_hostset, het_job_offset,
@@ -1151,6 +1199,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 	xfree(het_job_id_set);
+
+	_het_job_val_rem(submit_job_list);
 
 	if (error_code) {
 		/* Cancel remaining job records */
@@ -3944,6 +3994,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			job_ptr->het_job_offset = het_job_offset++;
 			job_ptr->batch_flag      = 1;
 			on_job_state_change(job_ptr, job_ptr->job_state);
+			_het_job_val_add(job_ptr);
 			list_append(submit_job_list, job_ptr);
 		}
 
@@ -3964,16 +4015,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		reject_job = true;
 	}
 
-	/* Validate limits on hetjob as a whole */
-	if (!reject_job &&
-	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_het_job(submit_job_list)) {
-		info("Hetjob %pI exceeded association/QOS limit for user %u",
-		     &step_id, job_uid);
-		error_code = ESLURM_ACCOUNTING_POLICY;
-		reject_job = true;
-	}
-
 	_create_het_job_id_set(jobid_hostset, het_job_offset,
 			       &het_job_id_set);
 	if (first_job_ptr)
@@ -3987,6 +4028,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 	xfree(het_job_id_set);
+
+	_het_job_val_rem(submit_job_list);
 
 	if (reject_job && submit_job_list) {
 		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);
