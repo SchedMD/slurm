@@ -59,6 +59,7 @@
 #define ERRTAB_ENTRY(_e) _e, #_e
 
 /* Add new error values to slurm/slurm_errno.h, and their descriptions to this table */
+// clang-format off
 slurm_errtab_t slurm_errtab[] = {
 	{
 		ERRTAB_ENTRY(SLURM_SUCCESS),
@@ -1556,6 +1557,7 @@ slurm_errtab_t slurm_errtab[] = {
 		"TLS missing but required for connection",
 	},
 };
+// clang-format on
 
 unsigned int slurm_errtab_size = sizeof(slurm_errtab) / sizeof(slurm_errtab_t);
 
