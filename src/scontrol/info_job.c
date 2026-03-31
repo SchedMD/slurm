@@ -1792,67 +1792,6 @@ cleanup:
 	FREE_NULL_LIST(steps);
 }
 
-/* Return 1 on success, 0 on failure to find a jobid in the string */
-static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
-{
-	char *ptr, *job;
-	long jobid;
-
-	job = xstrdup(jobid_str);
-	ptr = xstrchr(job, '.');
-	if (ptr != NULL) {
-		*ptr = '\0';
-	}
-
-	jobid = strtol(job, &ptr, 10);
-	if (!xstring_is_whitespace(ptr)) {
-		fprintf(stderr, "\"%s\" does not look like a jobid\n", job);
-		xfree(job);
-		return 0;
-	}
-
-	*out_jobid = (uint32_t) jobid;
-	xfree(job);
-	return 1;
-}
-
-/* Return 1 on success, 0 on failure to find a stepid in the string */
-static int _parse_stepid(const char *jobid_str, slurm_step_id_t *step_id)
-{
-	char *ptr, *job, *step;
-	int rc = 1;
-
-	job = xstrdup(jobid_str);
-	ptr = xstrchr(job, '.');
-	if (ptr == NULL) {
-		/* did not find a period, so no step ID in this string */
-		xfree(job);
-		return rc;
-	} else {
-		step = ptr + 1;
-	}
-
-	step_id->step_id = (uint32_t)strtol(step, &ptr, 10);
-
-	step = xstrchr(ptr, '+');
-	if (step) {
-		/* het step */
-		step++;
-		step_id->step_het_comp = (uint32_t)strtol(step, &ptr, 10);
-	} else
-		step_id->step_het_comp = NO_VAL;
-
-	if (!xstring_is_whitespace(ptr)) {
-		fprintf(stderr, "\"%s\" does not look like a stepid\n",
-			jobid_str);
-		rc = 0;
-	}
-
-	xfree(job);
-	return rc;
-}
-
-
 static bool
 _in_task_array(pid_t pid, slurmstepd_task_info_t *task_array,
 	       uint32_t task_array_count)
@@ -2092,33 +2031,39 @@ extern void scontrol_list_pids(int argc, char **argv)
 	char *jobid_str = NULL;
 	char *node_name = NULL;
 	list_t *listpids_list = NULL;
-	slurm_step_id_t step_id = {
-		.job_id = 0,
-		.step_id = NO_VAL,
-		.step_het_comp = NO_VAL,
-	};
+	slurm_selected_step_t sel = { 0 };
 
 	if (argc >= 2)
 		jobid_str = argv[1];
 	if (argc >= 3)
 		node_name = argv[2];
 
-	/* Job ID is optional */
-	if (jobid_str != NULL
-	    && jobid_str[0] != '*'
-	    && !_parse_jobid(jobid_str, &step_id.job_id)) {
-		exit_code = 1;
-		return;
+	/*
+	 * SLUIDs are not supported as listpids works directly with stepd socket
+	 * names which use numeric job ids.
+	 */
+	if (jobid_str && (jobid_str[0] != '*')) {
+		if (jobid_str[0] == 's') {
+			fprintf(stderr, "SLUID not supported for listpids\n");
+			exit_code = 1;
+			return;
+		}
+		if (unfmt_job_id_string(jobid_str, &sel, NO_VAL)) {
+			fprintf(stderr, "\"%s\" does not look like a jobid\n",
+				jobid_str);
+			exit_code = 1;
+			return;
+		}
 	}
 
 	listpids_list = list_create(_free_listpids_info);
 
-	/* Step ID is optional */
 	if (jobid_str == NULL || jobid_str[0] == '*') {
 		_list_pids_all_jobs(node_name, listpids_list, argc, argv);
-	} else if (_parse_stepid(jobid_str, &step_id))
-		_list_pids_all_steps(node_name, &step_id, listpids_list, argc,
-				     argv);
+	} else {
+		_list_pids_all_steps(node_name, &sel.step_id, listpids_list,
+				     argc, argv);
+	}
 
 	if (exit_code && list_count(listpids_list) == 0) {
 		goto cleanup;
