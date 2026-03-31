@@ -771,6 +771,7 @@ test_108_6   Test scontrol show topology option
 test_108_7   Test of job suspend/resume
 test_108_8   Test of InstanceId/InstanceType
 test_108_9   Test scontrol listpids with Job IDs and SLUIDs
+test_108_10  Submit and modify jobs using a mix of Job IDs and SLUIDs
 
 test_109_#   Testing of sdiag options.
 ======================================
