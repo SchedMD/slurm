@@ -804,6 +804,7 @@ test_113_2   /commands/sprio/test_job_options.py
 test_113_3   /commands/sprio/test_--help.py
 test_113_4   /commands/sprio/test_--usage.py
 test_113_5   /commands/sprio/test_--weights.py
+test_113_6   Test sprio SLUID support.
 
 test_114_#   Testing of squeue options.
 =======================================
