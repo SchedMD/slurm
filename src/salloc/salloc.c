@@ -161,7 +161,6 @@ int main(int argc, char **argv)
 	list_t *job_req_list = NULL, *job_resp_list = NULL;
 	resource_allocation_response_msg_t *alloc = NULL;
 	time_t before, after;
-	allocation_msg_thread_t *msg_thr = NULL;
 	char **env = NULL;
 	int status = 0;
 	int retries = 0;
@@ -334,8 +333,8 @@ int main(int argc, char **argv)
 	 * prevent slurmctld from killing the salloc --no-shell job.
 	 */
 	if (!saopt.no_shell) {
-		msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
-							  &callbacks);
+		slurm_alloc_msg_listener_create(&first_job->other_port,
+						&callbacks);
 		if (job_req_list)
 			list_for_each(job_req_list, _copy_other_port,
 				      &first_job->other_port);
@@ -395,8 +394,6 @@ int main(int argc, char **argv)
 		} else {
 			error("Job submit/allocate failed: %m");
 		}
-		if (msg_thr)
-			slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(error_exit);
 	} else if (job_resp_list && !tmp_salloc_destroy_sig) {
 		/* Allocation granted to regular job */
@@ -651,8 +648,6 @@ relinquish:
 	slurm_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
-	if (msg_thr)
-		slurm_allocation_msg_thr_destroy(msg_thr);
 
 	/*
 	 * Figure out what return code we should use.  If the user's command

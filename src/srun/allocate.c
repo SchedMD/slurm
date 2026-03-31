@@ -73,7 +73,6 @@
 
 pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t msg_cond = PTHREAD_COND_INITIALIZER;
-allocation_msg_thread_t *msg_thr = NULL;
 struct pollfd global_fds[1];
 
 extern char **environ;
@@ -375,7 +374,7 @@ extern resource_allocation_response_msg_t *allocate_nodes(
 	callbacks.node_fail = _node_fail_handler;
 
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&j->other_port, &callbacks);
+	slurm_alloc_msg_listener_create(&j->other_port, &callbacks);
 
 	while (!resp) {
 		resp = slurm_allocate_resources_blocking(j,
@@ -557,8 +556,7 @@ list_t *allocate_het_job_nodes(void)
 	callbacks.node_fail = _node_fail_handler;
 
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
-						  &callbacks);
+	slurm_alloc_msg_listener_create(&first_job->other_port, &callbacks);
 	list_for_each(job_req_list, _copy_other_port, &first_job->other_port);
 
 	is_het_job = true;
@@ -693,13 +691,6 @@ void
 ignore_signal(int signo)
 {
 	/* do nothing */
-}
-
-int
-cleanup_allocation(void)
-{
-	slurm_allocation_msg_thr_destroy(msg_thr);
-	return SLURM_SUCCESS;
 }
 
 extern list_t *existing_allocation(void)
