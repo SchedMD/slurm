@@ -584,6 +584,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/ring/Makefile
 		 src/plugins/topology/torus3d/Makefile
 		 src/plugins/topology/tree/Makefile
+		 src/plugins/url_parser/Makefile
+		 src/plugins/url_parser/internal/Makefile
 		 src/sacct/Makefile
 		 src/sackd/Makefile
 		 src/sacctmgr/Makefile

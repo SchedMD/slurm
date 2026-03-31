@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  url-parser.h - URL Parser plugin interface
+ url_parser_internal.c - url parser handler
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,24 +33,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _INTERFACES_URL_PARSER_H
-#define _INTERFACES_URL_PARSER_H
+#include "src/interfaces/url_parser.h"
 
-#include "src/common/http.h"
-#include "src/common/pack.h"
-
-#define URL_PARSER_MAJOR_TYPE "url_parser"
-#define URL_PARSER_PREFIX URL_PARSER_MAJOR_TYPE "/"
-#define URL_PARSER_INTERNAL_PLUGIN "internal"
+/* Required Slurm plugin symbols: */
+const char plugin_name[] = "Slurm url_parser plugin";
+const char plugin_type[] = URL_PARSER_PREFIX URL_PARSER_INTERNAL_PLUGIN;
+const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 /*
  * Load and initialize URL parser plugin
  * RET SLURM_SUCCESS or error
  */
-extern int url_parser_g_init(void);
+extern int url_parser_p_init(void)
+{
+	return SLURM_SUCCESS;
+}
 
 /* Unload URL plugin */
-extern void url_parser_g_fini(void);
+extern void url_parser_p_fini(void) {}
 
 /*
  * Parse URL
@@ -59,7 +59,7 @@ extern void url_parser_g_fini(void);
  * IN/OUT url - URL to populate with parsed components of URL
  * RET SLURM_SUCCESS or error
  */
-extern int url_parser_g_parse(const char *name, const buf_t *buffer,
-			      url_t *url);
-
-#endif
+extern int url_parser_p_parse(const char *name, const buf_t *buffer, url_t *url)
+{
+	return SLURM_SUCCESS;
+}
