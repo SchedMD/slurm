@@ -1149,6 +1149,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->config_ptr->weight, buffer);
 		pack16(dump_node_ptr->res_cores_per_gpu, buffer);
 		pack32(dump_node_ptr->reason_uid, buffer);
+		pack32(dump_node_ptr->suspend_time, buffer);
 
 		pack_time(dump_node_ptr->boot_time, buffer);
 		pack_time(dump_node_ptr->last_busy, buffer);

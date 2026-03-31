@@ -2438,6 +2438,7 @@ typedef struct node_info {
 				 * the name of the reservation */
 	time_t slurmd_start_time;/* time of slurmd startup */
 	uint16_t sockets;       /* total number of sockets per node */
+	uint32_t suspend_time; /* node idle for this long before power save */
 	uint16_t threads;       /* number of threads per core */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	char *topology_str; /* topology address string */
