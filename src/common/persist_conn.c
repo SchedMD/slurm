@@ -374,7 +374,7 @@ static void *_service_connection(void *arg)
 	 * threads have accumulated, it will no longer be possible to create new
 	 * threads (or processes).
 	 */
-	pthread_detach(pthread_self());
+	slurm_thread_detach(pthread_self());
 
 	return NULL;
 }
