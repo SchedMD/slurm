@@ -68,6 +68,7 @@
 #include "src/common/pack.h"
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
@@ -4647,8 +4648,13 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	 * in a federation, job arrays only run on the origin cluster so we just
 	 * want to find if the array, not a specific task, is on the origin
 	 * cluster. */
-	if ((sus_ptr->step_id.job_id == NO_VAL) && sus_ptr->job_id_str)
-		sus_ptr->step_id.job_id = strtol(sus_ptr->job_id_str, NULL, 10);
+	if ((sus_ptr->step_id.job_id == NO_VAL) && sus_ptr->job_id_str) {
+		if (sus_ptr->job_id_str[0] == 's')
+			sus_ptr->step_id.sluid = str2sluid(sus_ptr->job_id_str);
+		else
+			sus_ptr->step_id.job_id =
+				strtol(sus_ptr->job_id_str, NULL, 10);
+	}
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job(&sus_ptr->step_id);
