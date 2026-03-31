@@ -1409,13 +1409,6 @@ static int _try_to_reconfig(void)
 	int to_parent[2] = {-1, -1};
 	int *skip_close = NULL, skip_index = 0, auth_fd = -1;
 
-	/*
-	 * Call before env_array_copy() so that any environment variables set
-	 * by the auth plugin (e.g. SACK_RECONFIG_FD) are included in the
-	 * child's environment.
-	 */
-	auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM);
-
 	child_env = env_array_copy((const char **) environ);
 	setenvf(&child_env, "SLURMCTLD_RECONF", "1");
 	if (pidfd != -1) {
@@ -1448,7 +1441,8 @@ static int _try_to_reconfig(void)
 		xfree(ports);
 	}
 	slurm_mutex_unlock(&listeners.mutex);
-	if (auth_fd >= 0)
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
 		skip_close[skip_index++] = auth_fd;
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);

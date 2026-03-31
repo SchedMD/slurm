@@ -136,10 +136,12 @@ extern char *auth_g_token_generate(auth_plugin_type_t plugin_id,
 				   const char *username, int lifespan);
 
 /*
- * Get file descriptor that must survive reconfig
- * RET -1 or file descriptor that must survive reconfig
+ * Prepare for reconfig: set env var into child env, mark fd no-close-on-exec.
+ * IN/OUT env - child environment to update
+ * RET -1 or file descriptor to skip close
  */
-extern int auth_g_get_reconfig_fd(auth_plugin_type_t plugin_id);
+extern int auth_g_prepare_reconfig_fd(auth_plugin_type_t plugin_id,
+				      char ***env);
 
 /*
  * Set local thread security context

@@ -363,11 +363,11 @@ extern void init_sack_conmgr(void)
 	 */
 }
 
-extern int auth_p_get_reconfig_fd(void)
+extern int auth_p_prepare_reconfig_fd(char ***env)
 {
 	if (sack_fd >= 0) {
 		/* Prepare for reconfigure */
-		setenvf(NULL, SACK_RECONFIG_ENV, "%d", sack_fd);
+		setenvf(env, SACK_RECONFIG_ENV, "%d", sack_fd);
 		fd_set_noclose_on_exec(sack_fd);
 	}
 

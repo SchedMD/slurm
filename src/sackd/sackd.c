@@ -415,9 +415,6 @@ static void *_try_to_reconfig(void *ptr)
 	int to_parent[2] = {-1, -1}, auth_fd = -1;
 	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0;
 
-	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
-		close_skip[skip_index++] = auth_fd;
-
 	conmgr_quiesce(__func__);
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
@@ -432,6 +429,10 @@ static void *_try_to_reconfig(void *ptr)
 		fd_set_noclose_on_exec(listen_fd);
 		close_skip[skip_index++] = listen_fd;
 	}
+
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
+		close_skip[skip_index++] = auth_fd;
 
 	if (!daemonize && !under_systemd)
 		goto start_child;
