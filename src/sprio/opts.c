@@ -289,6 +289,7 @@ static fmt_data_t fmt_data[] = {
 	{NULL, 'S', _print_site_priority},
 	{NULL, 'q', _print_qos_priority_normalized},
 	{NULL, 'Q', _print_qos_priority_weighted},
+	{NULL, 's', _print_job_sluid},
 	{NULL, 'u', _print_job_user_name},
 	{NULL, 'y', _print_job_priority_normalized},
 	{NULL, 'Y', _print_job_priority_weighted},

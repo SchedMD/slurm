@@ -211,6 +211,26 @@ int _print_account(priority_factors_object_t *job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_sluid(priority_factors_object_t *job, int width, bool right,
+		     char *suffix)
+{
+	if (!job) {
+		_print_str("SLUID", width, right, true);
+	} else if (job == (priority_factors_object_t *) -1) {
+		_print_str("", width, right, true);
+	} else {
+		char id[SLUID_STR_BYTES] = { 0 };
+		if (job->step_id.sluid)
+			print_sluid(job->step_id.sluid, id, sizeof(id));
+		_print_str(id, width, right, true);
+	}
+
+	if (suffix)
+		printf("%s", suffix);
+
+	return SLURM_SUCCESS;
+}
+
 int _print_job_job_id(priority_factors_object_t * job, int width,
 		      bool right, char* suffix)
 {
