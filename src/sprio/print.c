@@ -219,7 +219,7 @@ int _print_job_job_id(priority_factors_object_t * job, int width,
 		_print_str("Weights", width, right, true);
 	else {
 		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->step_id.job_id);
 		_print_str(id, width, right, true);
 	}
 	if (suffix)

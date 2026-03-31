@@ -64,7 +64,7 @@ static int _filter_job(void *x, void *key)
 
 	if (params.job_list) {
 		if (!list_find_first(params.job_list, _list_find_job_id,
-				     &job_ptr->job_id)) {
+				     &job_ptr->step_id.job_id)) {
 			return true;
 		}
 	}

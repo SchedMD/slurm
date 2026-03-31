@@ -189,7 +189,7 @@ static int _sort_by_job_id(void *v1, void *v2)
 
 	_get_job_prio_from_void(&job1, &job2, v1, v2);
 
-	cmp = CMP_INT(job1->job_id, job2->job_id);
+	cmp = CMP_INT(job1->step_id.job_id, job2->step_id.job_id);
 	return COND_NEGATE(sort_descend, cmp);
 }
 

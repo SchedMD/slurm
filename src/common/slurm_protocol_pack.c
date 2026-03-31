@@ -633,7 +633,7 @@ static void _pack_priority_factors_object(void *in, uint16_t protocol_version,
 
 	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		packstr(object->account, buffer);
-		pack32(object->job_id, buffer);
+		pack_step_id(&object->step_id, buffer, protocol_version);
 		packstr(object->partition, buffer);
 
 		packdouble(object->direct_prio, buffer);
@@ -645,7 +645,7 @@ static void _pack_priority_factors_object(void *in, uint16_t protocol_version,
 		pack32(object->user_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(object->account, buffer);
-		pack32(object->job_id, buffer);
+		pack32(object->step_id.job_id, buffer);
 		packstr(object->partition, buffer);
 
 		packdouble(object->direct_prio, buffer);
@@ -667,7 +667,8 @@ static int _unpack_priority_factors_object(void **object, buf_t *buffer,
 
 	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&object_ptr->account, buffer);
-		safe_unpack32(&object_ptr->job_id, buffer);
+		safe_unpack_step_id_members(&object_ptr->step_id, buffer,
+					    protocol_version);
 		safe_unpackstr(&object_ptr->partition, buffer);
 		safe_unpackdouble(&object_ptr->direct_prio, buffer);
 
@@ -679,8 +680,9 @@ static int _unpack_priority_factors_object(void **object, buf_t *buffer,
 		safe_unpackstr(&object_ptr->qos, buffer);
 		safe_unpack32(&object_ptr->user_id, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		object_ptr->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpackstr(&object_ptr->account, buffer);
-		safe_unpack32(&object_ptr->job_id, buffer);
+		safe_unpack32(&object_ptr->step_id.job_id, buffer);
 		safe_unpackstr(&object_ptr->partition, buffer);
 		safe_unpackdouble(&object_ptr->direct_prio, buffer);
 

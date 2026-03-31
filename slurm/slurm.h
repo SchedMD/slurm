@@ -2024,7 +2024,7 @@ typedef struct priority_factors_object {
 	char *cluster_name;	/* Cluster name ONLY set in federation */
 	double direct_prio; /* Manually set priority. If it is set prio_factors
 			     * will be NULL */
-	uint32_t job_id;
+	slurm_step_id_t step_id; /* Will contain the job_id and sluid */
 	char *partition;
 	priority_factors_t *prio_factors;
 	char *qos;

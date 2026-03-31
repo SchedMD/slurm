@@ -1485,7 +1485,7 @@ static int _create_prio_list_qos(void *x, void *arg)
 	 * with _destroy_priority_factors_obj_light.
 	 */
 	obj->account = job_ptr->account;
-	obj->job_id = job_ptr->job_id;
+	obj->step_id = job_ptr->step_id;
 	obj->partition = part_ptr ? part_ptr->name : job_ptr->part_ptr->name;
 	obj->qos = qos_ptr ? qos_ptr->name :
 		job_ptr->qos_ptr ? job_ptr->qos_ptr->name : NULL;
