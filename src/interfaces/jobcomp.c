@@ -78,6 +78,8 @@ jobcomp_destroy_job(void *object)
 {
 	jobcomp_job_rec_t *job = (jobcomp_job_rec_t *)object;
 	if (job) {
+		xfree(job->sluid);
+		xfree(job->original_sluid);
 		xfree(job->partition);
 		xfree(job->start_time);
 		xfree(job->end_time);
