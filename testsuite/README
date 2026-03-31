@@ -878,6 +878,7 @@ test_117_5   Check for -j SLUID support in sstat queries
 test_118_#   Testing of strigger options.
 =========================================
 test_118_1   /commands/strigger/test_--help.py
+test_118_2   Check for SLUID and JobID support for set and get triggers.
 
 test_119_#   Testing of contribs.
 =================================
