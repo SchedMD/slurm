@@ -1694,6 +1694,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack32(object->next_state, buffer);
 		pack32(object->node_state, buffer);
 		pack32(object->cpu_bind, buffer);
+		pack32(object->suspend_time, buffer);
 		pack16(object->cpus, buffer);
 		pack16(object->boards, buffer);
 		pack16(object->tot_cores, buffer);
@@ -1915,6 +1916,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack32(&object->next_state, buffer);
 		safe_unpack32(&object->node_state, buffer);
 		safe_unpack32(&object->cpu_bind, buffer);
+		safe_unpack32(&object->suspend_time, buffer);
 		safe_unpack16(&object->cpus, buffer);
 		safe_unpack16(&object->boards, buffer);
 		safe_unpack16(&object->tot_cores, buffer);
