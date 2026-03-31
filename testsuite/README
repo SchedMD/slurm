@@ -933,6 +933,7 @@ test_123_8   Test reservation node replacement by features
 test_123_9   Test reservation access with account/user deny '-' lists
 test_123_10  Test reservation creation does not allocate MAINT-reserved nodes
 test_123_11  Test MAGNETIC+FLEX reservations will pick up long jobs
+test_123_12  Test NodeCnt reservation with IGNORE_JOBS on busy partition nodes
 
 test_124_#   Testing of AccountingStorageEnforce.
 =================================================
