@@ -300,7 +300,8 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
 			     job_ptr);
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
+			topo_eval->eval_action = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 
@@ -308,7 +309,8 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 				   ctx->rings_nodes_bitmap)) {
 			info("%pJ requires nodes which are not in rings",
 			     job_ptr);
-			rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+			rc = ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO;
+			topo_eval->eval_action = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 
@@ -316,14 +318,16 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 		if (req_node_cnt == 0) {
 			info("%pJ required node list has no nodes",
 			     job_ptr);
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
+			topo_eval->eval_action = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		if (req_node_cnt > topo_eval->max_nodes) {
 			info("%pJ requires more nodes than currently available (%u>%u)",
 			     job_ptr, req_node_cnt,
 			     topo_eval->max_nodes);
-			rc = ESLURM_BREAK_EVAL;
+			rc = ESLURM_TOPO_MAX_NODE_LIMIT;
+			topo_eval->eval_action = ESLURM_BREAK_EVAL;
 			goto fini;
 		}
 		if (min_nodes > req_node_cnt) {
@@ -341,7 +345,8 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 
 	if (!bit_set_count(topo_eval->node_map)) {
 		debug("%pJ node_map is empty", job_ptr);
-		rc = ESLURM_BREAK_EVAL;
+		rc = ESLURM_TOPO_EMPTY_NODE_MAP;
+		topo_eval->eval_action = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
@@ -361,7 +366,8 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 	if (best_segments.count < best_segments.size) {
 		log_flag(SELECT_TYPE, "%pJ unable to find all segments",
 			 job_ptr);
-		rc = ESLURM_BREAK_EVAL;
+		rc = ESLURM_TOPO_NO_FIT;
+		topo_eval->eval_action = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
@@ -397,7 +403,8 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 		goto fini;
 	}
 
-	rc = ESLURM_RETRY_EVAL_HINT;
+	rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+	topo_eval->eval_action = ESLURM_RETRY_EVAL_HINT;
 
 fini:
 
