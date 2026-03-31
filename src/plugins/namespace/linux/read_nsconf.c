@@ -120,7 +120,7 @@ static void _pack_slurm_ns_conf_buf(void)
 	packstr(slurm_ns_conf.clonensscript, slurm_ns_conf_buf);
 	pack32(slurm_ns_conf.clonensepilog_wait, slurm_ns_conf_buf);
 	pack32(slurm_ns_conf.clonensscript_wait, slurm_ns_conf_buf);
-	packstr(slurm_ns_conf.dirs, slurm_ns_conf_buf);
+	/* Omit slurm_ns_conf.dirs as it is unused in the slurmstepd */
 	packbool(slurm_ns_conf.disable_bpf_token, slurm_ns_conf_buf);
 	packstr(slurm_ns_conf.initscript, slurm_ns_conf_buf);
 	packbool(slurm_ns_conf.shared, slurm_ns_conf_buf);
@@ -439,7 +439,8 @@ extern ns_conf_t *set_slurm_ns_conf(buf_t *buf)
 	safe_unpackstr(&slurm_ns_conf.clonensscript, buf);
 	safe_unpack32(&slurm_ns_conf.clonensepilog_wait, buf);
 	safe_unpack32(&slurm_ns_conf.clonensscript_wait, buf);
-	safe_unpackstr(&slurm_ns_conf.dirs, buf);
+	/* Omit slurm_ns_conf.dirs as it is unused in the slurmstepd */
+	slurm_ns_conf.dirs = NULL;
 	safe_unpackbool(&slurm_ns_conf.disable_bpf_token, buf);
 	safe_unpackstr(&slurm_ns_conf.initscript, buf);
 	safe_unpackbool(&slurm_ns_conf.shared, buf);
