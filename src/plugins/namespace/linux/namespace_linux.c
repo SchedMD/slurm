@@ -220,6 +220,30 @@ extern void fini(void)
 	debug("%s unloaded", plugin_name);
 }
 
+static int _create_dir_base_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	int fstatus;
+
+	if (!dir->base_path || dir->tmpfs)
+		return 0;
+
+	if (dir->base_path[0] != '/') {
+		debug("%s: unable to create per-dir ns directory '%s' : does not start with '/'",
+		      __func__, dir->base_path);
+		return -1;
+	}
+
+	if ((fstatus = mkdirpath(dir->base_path, 0755, true))) {
+		debug("%s: unable to create per-dir ns directory '%s' : %s",
+		      __func__, dir->base_path,
+		      slurm_strerror(fstatus));
+		return -1;
+	}
+
+	return 0;
+}
+
 extern int namespace_p_restore(char *dir_name, bool recover)
 {
 	DIR *dp;
@@ -245,6 +269,13 @@ extern int namespace_p_restore(char *dir_name, bool recover)
 			debug("%s: unable to create ns directory '%s' : %s",
 			      __func__, ns_conf->basepath,
 			      slurm_strerror(fstatus));
+			umask(omask);
+			return SLURM_ERROR;
+		}
+
+		if (ns_conf->dir_confs &&
+		    list_for_each(ns_conf->dir_confs, _create_dir_base_path,
+				  NULL) < 0) {
 			umask(omask);
 			return SLURM_ERROR;
 		}
