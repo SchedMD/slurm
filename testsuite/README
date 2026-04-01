@@ -869,6 +869,7 @@ test_117_1   /commands/sstat/test_--version.py
 test_117_2   /commands/sstat/test_--help.py
 test_117_3   /commands/sstat/test_--usage.py
 test_117_4   /commands/sstat/test_-e.py
+test_117_5   Check for -j SLUID support in sstat queries
 
 test_118_#   Testing of strigger options.
 =========================================
