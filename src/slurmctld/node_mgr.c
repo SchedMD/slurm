@@ -833,6 +833,7 @@ static bool _is_dup_config_record(config_record_t *c1, config_record_t *c2)
 	    (c1->cpus == c2->cpus) &&
 	    (!xstrcmp(c1->feature, c2->feature)) &&
 	    (!xstrcmp(c1->gres, c2->gres)) &&
+	    (!xstrcmp(c1->parameters, c2->parameters)) &&
 	    (c1->mem_spec_limit == c2->mem_spec_limit) &&
 	    (c1->real_memory == c2->real_memory) &&
 	    (c1->res_cores_per_gpu == c2->res_cores_per_gpu) &&
