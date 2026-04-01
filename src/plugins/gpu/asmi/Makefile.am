@@ -8,5 +8,5 @@ AMDSMI_SOURCES = gpu_asmi.c
 
 pkglib_LTLIBRARIES = gpu_asmi.la
 gpu_asmi_la_SOURCES = $(AMDSMI_SOURCES)
-gpu_asmi_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS)
+gpu_asmi_la_LDFLAGS = $(NUMA_LIBS) $(PLUGIN_FLAGS) 
 gpu_asmi_la_LIBADD = ../common/libgpu_common.la

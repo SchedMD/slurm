@@ -92,9 +92,10 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_RSMI_TRUE@am__append_1 = rsmi
-@BUILD_NVML_TRUE@am__append_2 = nvml
-@BUILD_ONEAPI_TRUE@am__append_3 = oneapi
+@BUILD_ASMI_TRUE@am_append_1 = asmi
+@BUILD_RSMI_TRUE@am__append_2 = rsmi
+@BUILD_NVML_TRUE@am__append_3 = nvml
+@BUILD_ONEAPI_TRUE@am__append_4 = oneapi
 subdir = src/plugins/gpu
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -209,10 +210,11 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = common generic nrt nvidia rsmi nvml oneapi
+DIST_SUBDIRS = asmi common generic nrt nvidia rsmi nvml oneapi
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
+AMDSMI_CPPFLAGS = @AMDSMI_CPPFLAGS@
 AR = @AR@
 AR_FLAGS = @AR_FLAGS@
 AUTOCONF = @AUTOCONF@

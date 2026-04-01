@@ -138,6 +138,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_rdkafka.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
+	$(top_srcdir)/auxdir/x_ac_asmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
 	$(top_srcdir)/auxdir/x_ac_s2n.m4 \
 	$(top_srcdir)/auxdir/x_ac_selinux.m4 \
@@ -224,6 +225,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
+AMDSMI_CPPFLAGS = @AMDSMI_CPPFLAGS@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
 AR_FLAGS = @AR_FLAGS@
