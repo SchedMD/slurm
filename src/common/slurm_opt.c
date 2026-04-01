@@ -1541,6 +1541,11 @@ static int arg_set_gid(slurm_opt_t *opt, const char *arg)
 		return SLURM_ERROR;
 	}
 
+	if (opt->gid == SLURM_AUTH_NOBODY) {
+		error("Rejecting --gid as nobody specification");
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 COMMON_INT_OPTION_GET(gid);
