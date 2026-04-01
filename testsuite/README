@@ -710,6 +710,7 @@ test_100_4   Meta-test: testing test environment (coredump generation)
 test_101_#   Testing of sacct options.
 ======================================
 test_101_1   Test --help and --helpformat
+test_101_2   Test sacct SLUID support including resizes and OriginalSLUID
 
 test_102_#   Testing of sacctmgr options.
 =========================================
