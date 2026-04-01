@@ -234,8 +234,9 @@ static int _check_basepath_not_dir(void *x, void *arg)
 {
 	ns_dir_t *dir = x;
 	char *basepath = arg;
-	char *found = xstrstr(dir->path, basepath);
-	if (found == dir->path)
+	size_t len = strlen(basepath);
+	if (!xstrncmp(dir->path, basepath, len) &&
+	    (dir->path[len] == '/' || dir->path[len] == '\0'))
 		fatal("BasePath(%s) cannot also be in DirConfs.", basepath);
 	return 0;
 }
