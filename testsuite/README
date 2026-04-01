@@ -1069,3 +1069,4 @@ test_158_2   Test remote license fuzzy matching
 test_159_#   Testing of Namespace plugins
 ============================================
 test_159_1   Test basic namespace/linux functionality (25.11+)
+test_159_2   Test unique mount and mount options in namespace/linux (26.05+)
