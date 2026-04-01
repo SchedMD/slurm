@@ -3812,6 +3812,11 @@ static int arg_set_uid(slurm_opt_t *opt, const char *arg)
 		return SLURM_ERROR;
 	}
 
+	if (opt->uid == SLURM_AUTH_NOBODY) {
+		error("Rejecting --uid as nobody specification");
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 COMMON_INT_OPTION_GET(uid);
