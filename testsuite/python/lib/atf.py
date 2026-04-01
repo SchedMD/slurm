@@ -192,7 +192,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "service_conn" in bt
         and "__xassert_failed" in bt
     ):
-        if get_version(component) >= (25, 5):
+        if get_version(component)[:2] != (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
