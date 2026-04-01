@@ -87,6 +87,8 @@ to 'true' if directory is not pre\-created before slurm startup. If set to true,
 the directory is created with permission 0755. Directory is not deleted during
 slurm shutdown. If set to 'false' or not specified, plugin would expect
 directory to exist. This option can be used on a global or per\-line basis.
+When \fBdir_confs\fR is set, any per-directory \fBbase_path\fR entries in
+\fBdir_confs\fR are also created.
 This parameter is optional.
 .IP
 
@@ -155,12 +157,23 @@ if using ConstrainDevices in \fBcgroup.conf\fR.
 \fBdirs\fR
 A comma-separated list of directories to create private mount points for.
 This parameter is optional and if not specified it defaults to "/tmp,/dev/shm".
+Mutually exclusive with \fBdir_confs\fR. If both are set, \fBdir_confs\fR will
+take precedence.
 
 \fBNOTE\fR: /dev/shm has special handling, and instead of a bind mount is always
 a fresh tmpfs filesystem.
 
 \fBNOTE\fR: When CLONE_NEWPID is specified, a unique /proc filesystem for the
 container will be mounted automatically.
+.IP
+
+.TP
+\fBdir_confs\fR
+A structured list of per-directory mount configurations. Each entry specifies a
+path, optional per-directory backing storage, and optional mount options. When
+set, supersedes \fBdirs\fR. The list element attributes are described in
+\fBdir_confs list element definitions\fR below.
+This parameter is optional.
 .IP
 
 .TP
@@ -186,6 +199,77 @@ This script runs first when setting up the namespace. The environment variable
 "SLURM_NS_PID" is provided to allow constructing the path to the various map
 files that this script could write to. If not specified, every user and group
 will be mapped.
+.IP
+
+.SS "dir_confs list element definitions"
+.LP
+Each \fBdir_confs\fR element contains the following attributes:
+.LP
+
+.TP
+\fBpath\fR
+The target directory to mount privately, e.g. "/tmp". The following
+substitutions are supported: \fB%j\fR (job ID), \fB%S\fR (SLUID), and
+\fB%u\fR (username). This parameter is required.
+.IP
+
+.TP
+\fBbase_path\fR
+Optional per-directory backing storage root. Overrides the global
+\fBbase_path\fR for this mount. A job-specific subdirectory will be created
+here to back the private mount. Ignored when \fBtmpfs\fR is set. This
+parameter is optional.
+.IP
+
+.TP
+\fBoptions\fR
+Comma\-separated list of \fBmount\fR options. Support is included to pass the
+following options to the \fBmount\fR command:
+.RS
+.TP
+\fBnoatime\fR
+Do not update inode access times on this filesystem.
+.IP
+.TP
+\fBnodev\fR
+Do not interpret character or block special devices on the filesystem.
+.IP
+.TP
+\fBnodiratime\fR
+Do not update directory inode access times on this filesystem.
+.IP
+.TP
+\fBnoexec\fR
+Do not permit direct execution of any binaries on the mounted filesystem.
+.IP
+.TP
+\fBnosuid\fR
+Do not honor set\-user\-ID and set\-group\-ID bits or file capabilities when
+executing programs from this filesystem.
+.IP
+.TP
+\fBrelatime\fR
+Update inode access times relative to modify or change time.
+.IP
+.TP
+\fBro\fR
+Mount the filesystem read\-only.
+.RE
+.IP
+For tmpfs mounts, additional data options such as \fBsize=4g\fR
+and \fBmode=1777\fR may also be specified and are passed directly to the kernel.
+Options not recognized as flags are treated as tmpfs mount data and silently
+ignored on bind mounts. This parameter is optional.
+
+\fBNOTE\fR: tmpfs mounts always have \fBnosuid\fR and \fBnodev\fR applied
+regardless of this setting.
+.IP
+
+.TP
+\fBtmpfs\fR
+If set to true, mounts a fresh tmpfs at this path instead of creating a bind
+mount backed by the \fBbase_path\fR.
+This parameter is optional.
 .IP
 
 .SH "NOTES"
@@ -224,7 +308,13 @@ node_confs:
       auto_base_path: true
       base_path: "/var/nvme/storage_1"
       clone_ns_script_wait: 20
-      dirs: "/tmp"
+      dir_confs:
+        - path: "/tmp"
+          options: "noexec,nosuid,size=8g"
+          tmpfs: true
+        - path: "/scratch"
+          base_path: "/var/nvme/storage_1"
+          options: "noexec,nosuid"
       shared: false
       user_ns_script: "/path/to/user_script"
   - nodes:
