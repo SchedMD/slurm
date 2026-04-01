@@ -338,11 +338,13 @@ extern void parse_command_line(int argc, char **argv)
 	}
 
 	if ((!params.selected_step ||
-	     (params.selected_step->step_id.job_id == NO_VAL)) &&
+	     ((params.selected_step->step_id.job_id == NO_VAL) &&
+	      !params.selected_step->step_id.sluid)) &&
 	    !(params.flags & BCAST_FLAG_NO_JOB)) {
 		_fill_in_selected_step_from_env();
 	} else if ((params.selected_step &&
-		    params.selected_step->step_id.job_id != NO_VAL) &&
+		    ((params.selected_step->step_id.job_id != NO_VAL) ||
+		     params.selected_step->step_id.sluid)) &&
 		   !(params.flags & BCAST_FLAG_NO_JOB)) {
 		_fill_in_selected_step_from_controller();
 	}
