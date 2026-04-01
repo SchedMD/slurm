@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	int het_job_argc, het_job_inx, het_job_argc_off;
 	char **het_job_argv;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
-	slurm_allocation_callbacks_t callbacks;
+	static slurm_allocation_callbacks_t callbacks;
 	list_itr_t *iter_req, *iter_resp;
 	int tmp_salloc_destroy_sig = 0;
 
