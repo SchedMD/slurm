@@ -1667,18 +1667,33 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (job_step_id_str) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
-				char tmp_char[45];
-				log_build_step_id_str(&step_id, tmp_char,
-						      sizeof(tmp_char),
+				char step_str[45];
+				char job_str[64];
+				log_build_step_id_str(&step_id, step_str,
+						      sizeof(step_str),
 						      (STEP_ID_FLAG_NO_PREFIX |
 						       STEP_ID_FLAG_NO_JOB));
+				/*
+				 * SLUID can't have arrays, so array always
+				 * uses numeric job_id.
+				 */
+				if (step_id.sluid) {
+					char sluid_str[SLUID_STR_BYTES];
+					print_sluid(step_id.sluid, sluid_str,
+						    sizeof(sluid_str));
+					snprintf(job_str, sizeof(job_str), "%s",
+						 sluid_str);
+				} else {
+					snprintf(job_str, sizeof(job_str), "%u",
+						 step_id.job_id);
+				}
 				if (array_id == NO_VAL) {
-					printf("Job step %u.%s not found\n",
-					       step_id.job_id, tmp_char);
+					printf("Job step %s.%s not found\n",
+					       job_str, step_str);
 				} else {
 					printf("Job step %u_%u.%s not found\n",
 					       step_id.job_id, array_id,
-					       tmp_char);
+					       step_str);
 				}
 			}
 		} else if (quiet_flag != 1)
