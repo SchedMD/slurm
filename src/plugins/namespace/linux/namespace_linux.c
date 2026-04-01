@@ -633,13 +633,13 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 
 	xstrfmtcat(tmpstr, "/proc/%d/gid_map", pid);
 	if (!(-1 != (fd = open(tmpstr, O_WRONLY)))) {
-		error("%s: open gid_map failed: %m", __func__);
+		error("%s: open gid_map %s failed: %m", __func__, tmpstr);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 	if (!(1 <= dprintf(fd, "0 0 4294967295\n"))) {
-		error("%s: write 0 0 4294967295 failed: %m",
-		      __func__ );
+		error("%s: write 0 0 4294967295 gid_map %s failed: %m",
+		      __func__, tmpstr);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
