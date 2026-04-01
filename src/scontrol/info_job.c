@@ -1925,8 +1925,25 @@ static void _list_pids_all_steps(const char *node_name,
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (step_id->job_id != stepd->step_id.job_id)
+		if (step_id->sluid) {
+			/*
+			 * Stepd sockets are named by numeric job_id, so
+			 * connect to each and query its SLUID to match.
+			 */
+			int fd;
+			sluid_t sluid;
+			fd = stepd_connect(stepd->directory, stepd->nodename,
+					   &stepd->step_id,
+					   &stepd->protocol_version);
+			if (fd < 0)
+				continue;
+			sluid = stepd_sluid(fd, stepd->protocol_version);
+			close(fd);
+			if (sluid != step_id->sluid)
+				continue;
+		} else if (step_id->job_id != stepd->step_id.job_id) {
 			continue;
+		}
 
 		if ((step_id->step_id != NO_VAL) &&
 		    (step_id->step_id != stepd->step_id.step_id))
@@ -2038,16 +2055,8 @@ extern void scontrol_list_pids(int argc, char **argv)
 	if (argc >= 3)
 		node_name = argv[2];
 
-	/*
-	 * SLUIDs are not supported as listpids works directly with stepd socket
-	 * names which use numeric job ids.
-	 */
+	/* Job ID is optional */
 	if (jobid_str && (jobid_str[0] != '*')) {
-		if (jobid_str[0] == 's') {
-			fprintf(stderr, "SLUID not supported for listpids\n");
-			exit_code = 1;
-			return;
-		}
 		if (unfmt_job_id_string(jobid_str, &sel, NO_VAL)) {
 			fprintf(stderr, "\"%s\" does not look like a jobid\n",
 				jobid_str);
