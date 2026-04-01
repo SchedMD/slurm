@@ -179,6 +179,24 @@ static int _find_node_conf(void *x, void *key)
 	return false;
 }
 
+static int _expand_dir_base_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	char *tmp;
+
+	if (!dir->base_path)
+		return 0;
+
+	tmp = dir->base_path;
+	dir->base_path =
+		slurm_conf_expand_slurmd_path(tmp, conf->node_name, NULL);
+	xfree(tmp);
+#ifdef MULTIPLE_SLURMD
+	xstrfmtcat(dir->base_path, "/%s", conf->node_name);
+#endif
+	return 0;
+}
+
 static void _set_clonensflags(void)
 {
 	/* Always set CLONE_NEWNS */
@@ -370,6 +388,7 @@ static int _read_slurm_ns_conf(void)
 
 	_set_clonensflags();
 	_set_slurm_ns_conf_defaults();
+	list_for_each(slurm_ns_conf.dir_confs, _expand_dir_base_path, NULL);
 
 end_it:
 	xfree(conf_path);
