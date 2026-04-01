@@ -40,6 +40,11 @@
 
 #include "../common/gpu_common.h"
 
+/* Added in NVML 11.1 (R455+, CUDA 11.1+) */
+#ifndef NVML_DEVICE_NAME_V2_BUFFER_SIZE
+#define NVML_DEVICE_NAME_V2_BUFFER_SIZE NVML_DEVICE_NAME_BUFFER_SIZE
+#endif
+
 #if defined (__APPLE__)
 extern slurmd_conf_t *conf __attribute__((weak_import));
 #else
@@ -1231,7 +1236,7 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 	nvmlDevice_t mig;
 	/* Use the V2 size so it can fit extra MIG info */
 	char mig_uuid[NVML_DEVICE_UUID_V2_BUFFER_SIZE] = {0};
-	char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
+	char device_name[NVML_DEVICE_NAME_V2_BUFFER_SIZE] = { 0 };
 	char *str;
 	unsigned int gi_id;
 	unsigned int ci_id;
@@ -1253,7 +1258,7 @@ static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_minor,
 		return SLURM_ERROR;
 
 	_nvml_get_device_name(&mig, device_name,
-			      NVML_DEVICE_NAME_BUFFER_SIZE);
+			      NVML_DEVICE_NAME_V2_BUFFER_SIZE);
 	if (device_name[0] && (str = strstr(device_name, "mig_"))) {
 		/* Adding 3 to skip "mig" but keep "_" */
 		xstrfmtcat(nvml_mig->profile_name, "%s", str + 3);
@@ -1376,7 +1381,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char *cpu_aff_mac_range = NULL;
 		char *device_file = NULL;
 		char *nvlinks = NULL;
-		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
+		char device_name[NVML_DEVICE_NAME_V2_BUFFER_SIZE] = { 0 };
 		bool mig_mode = false, added_mig = false;
 		gres_slurmd_conf_t gres_slurmd_conf = {
 			.config_flags =
@@ -1398,7 +1403,7 @@ static list_t *_get_system_gpu_list_nvml(node_config_load_t *node_config)
 
 		memset(&pci_info, 0, sizeof(pci_info));
 		_nvml_get_device_name(&device, device_name,
-				      NVML_DEVICE_NAME_BUFFER_SIZE);
+				      NVML_DEVICE_NAME_V2_BUFFER_SIZE);
 		_nvml_get_device_uuid(&device, uuid,
 				      NVML_DEVICE_UUID_BUFFER_SIZE);
 		_nvml_get_device_pci_info(&device, &pci_info);
