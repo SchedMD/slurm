@@ -346,7 +346,7 @@ extern resource_allocation_response_msg_t *allocate_nodes(
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j;
-	slurm_allocation_callbacks_t callbacks;
+	static slurm_allocation_callbacks_t callbacks;
 	int tmp_srun_destroy_sig;
 	bool tmp_aborted = false;
 
@@ -502,7 +502,7 @@ list_t *allocate_het_job_nodes(void)
 {
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j, *first_job = NULL;
-	slurm_allocation_callbacks_t callbacks;
+	static slurm_allocation_callbacks_t callbacks;
 	list_itr_t *opt_iter, *resp_iter;
 	slurm_opt_t *opt_local, *first_opt = NULL;
 	list_t *job_req_list = NULL, *job_resp_list = NULL;
