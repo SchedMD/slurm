@@ -372,6 +372,7 @@ static int _mount_dir(void *x, void *arg)
 
 	if (dir->tmpfs) {
 		ms_flags = _parse_ms_flags(dir->opts_str, &mount_data);
+		ms_flags |= MS_NOSUID | MS_NODEV;
 		if (mount("tmpfs", dir->path, "tmpfs", ms_flags, mount_data)) {
 			error("%s: %s tmpfs mount failed: %m",
 			      __func__, dir->path);
