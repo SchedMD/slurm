@@ -548,6 +548,14 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 	}
 }
 
+static void _close_acct_storage_conn(void)
+{
+	acct_storage_g_close_connection(&acct_db_conn);
+
+	acct_storage_g_fini();
+	slurm_persist_conn_recv_server_fini();
+}
+
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
@@ -1033,10 +1041,7 @@ int main(int argc, char **argv)
 		ctld_assoc_mgr_fini();
 
 		/* Save any pending state save RPCs */
-		acct_storage_g_close_connection(&acct_db_conn);
-		acct_storage_g_fini();
-
-		slurm_persist_conn_recv_server_fini();
+		_close_acct_storage_conn();
 		power_save_fini();
 
 		/* attempt reconfig here */
