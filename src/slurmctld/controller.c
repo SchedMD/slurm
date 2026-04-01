@@ -612,6 +612,15 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 	}
 }
 
+static void _close_acct_storage_conn(void)
+{
+	if (acct_db_conn)
+		acct_storage_g_close_connection(&acct_db_conn);
+
+	acct_storage_g_fini();
+	slurm_persist_conn_recv_server_fini();
+}
+
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
@@ -1135,10 +1144,7 @@ int main(int argc, char **argv)
 		ctld_assoc_mgr_fini();
 
 		/* Save any pending state save RPCs */
-		acct_storage_g_close_connection(&acct_db_conn);
-		acct_storage_g_fini();
-
-		slurm_persist_conn_recv_server_fini();
+		_close_acct_storage_conn();
 		power_save_fini();
 
 		/* attempt reconfig here */
@@ -2729,6 +2735,15 @@ static void *_slurmctld_background(void *no_data)
 			listeners_quiesce();
 
 			/*
+			 * Persistent connection to slurmdbd must be closed
+			 * before conmgr quiesce to avoid possible deadlocks
+			 * where slurmdbd is waiting on slurmctld but
+			 * slurmctld will wait until quiesce to finish before
+			 * responding.
+			 */
+			_close_acct_storage_conn();
+
+			/*
 			 * Wait for all already accepted connection work to
 			 * finish before continuing on with control loop that
 			 * will unload all the plugins which requires there be
@@ -2743,6 +2758,12 @@ static void *_slurmctld_background(void *no_data)
 			 * RPC is lost.
 			 */
 			_flush_rpcs();
+
+			/*
+			 * Catch persistent connection to slurmdbd still
+			 * existing at this point
+			 */
+			xassert(!acct_db_conn);
 
 			/* Wait for backfill to release locks */
 			slurm_mutex_lock(&check_bf_running_lock);
