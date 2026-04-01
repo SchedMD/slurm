@@ -61,6 +61,9 @@ static bitstr_t	*saved_gpus;
 /* ROCM release version >= 6.0.0 required for gathering usage */
 #define AMDSMI_REQ_VERSION_USAGE 6
 
+#ifndef SLURM_ARRAY_SIZE
+# define SLURM_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#endif
 /*
  * PCI information about a GPU device.
  */
@@ -570,16 +573,17 @@ static bool _amdsmi_set_freqs(uint32_t dv_ind,
     amdsmi_processor_handle h = processor_handles[dv_ind];
 
     /* ----------------------------------------------------------- */
-    /* MEMORY CLOCK LIMIT                                          */
+    /* MEMORY CLOCK MASK                                           */
     /* ----------------------------------------------------------- */
     if (mem_bitmask != 0) {
         DEF_TIMERS;
         START_TIMER;
 
-        rc = amdsmi_set_gpu_clk_limit(h, AMDSMI_CLK_TYPE_MEM, mem_bitmask);
+        /* freq_bitmask API (correct for bitmasks) */
+        rc = amdsmi_set_clk_freq(h, AMDSMI_CLK_TYPE_MEM, mem_bitmask);
 
         END_TIMER;
-        debug3("amdsmi_set_gpu_clk_limit(MEM, 0x%llx) took %s",
+        debug3("amdsmi_set_clk_freq(MEM, 0x%llx) took %s",
                (unsigned long long)mem_bitmask, TIMER_STR());
 
         if (rc != AMDSMI_STATUS_SUCCESS) {
@@ -594,16 +598,17 @@ static bool _amdsmi_set_freqs(uint32_t dv_ind,
     }
 
     /* ----------------------------------------------------------- */
-    /* GRAPHICS CLOCK LIMIT                                        */
+    /* GRAPHICS CLOCK MASK                                         */
     /* ----------------------------------------------------------- */
     if (gfx_bitmask != 0) {
         DEF_TIMERS;
         START_TIMER;
 
-        rc = amdsmi_set_gpu_clk_limit(h, AMDSMI_CLK_TYPE_SYS, gfx_bitmask);
+        /* freq_bitmask API (correct for bitmasks) */
+        rc = amdsmi_set_clk_freq(h, AMDSMI_CLK_TYPE_SYS, gfx_bitmask);
 
         END_TIMER;
-        debug3("amdsmi_set_gpu_clk_limit(GFX, 0x%llx) took %s",
+        debug3("amdsmi_set_clk_freq(GFX, 0x%llx) took %s",
                (unsigned long long)gfx_bitmask, TIMER_STR());
 
         if (rc != AMDSMI_STATUS_SUCCESS) {
@@ -920,43 +925,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
     }
 }
 
-/*
- * Get the version of the AMD-SMI library
- *
- * version (OUT) buffer for the version string
- * len     (OUT) size of buffer
- */
-static void _amdsmi_get_version(char *version, unsigned int len)
-{
-    const char *status_string = NULL;
-    amdsmi_version_t vinfo;
-    amdsmi_status_t rc;
-
-    if (!version || len == 0) {
-        error("AMDSMI: _amdsmi_get_version() called with invalid buffer");
-        return;
-    }
-
-    version[0] = '\0';
-
-    rc = amdsmi_get_lib_version(&vinfo);
-    if (rc != AMDSMI_STATUS_SUCCESS) {
-        (void)amdsmi_status_code_to_string(rc, &status_string);
-        error("AMDSMI: Failed to get AMDSMI library version: %s",
-              status_string ? status_string : "unknown");
-        return;
-    }
-
-    /* vinfo.build is the printable build string */
-    snprintf(version, len, "%s", vinfo.build);
-
-    /* Enforce minimum version for usage collection */
-    if (vinfo.major < AMDSMI_REQ_VERSION_USAGE) {
-        get_usage = false;
-        error("%s: GPU usage accounting disabled — AMD-SMI >= 6.0.0 required.",
-              __func__);
-    }
-}
 
 /*
  * Get the version of the AMD-SMI (AMDSMI) library.
@@ -1016,7 +984,7 @@ extern void gpu_p_get_device_count(uint32_t *device_count)
 }
 
 /*
- * Get the name (market name / ASIC name) of the GPU.
+ * Get the name (market name / user-facing) of the GPU.
  *
  * dv_ind       (IN)  Device index (local AMD-SMI index)
  * device_name  (OUT) Buffer to write name into
@@ -1053,16 +1021,21 @@ static void _amdsmi_get_device_name(uint32_t dv_ind,
         return;
     }
 
-    /* info.name is the correct string field */
-    snprintf(device_name, size, "%s", info.name);
+    /* market_name and vendor_name are fixed arrays, never NULL */
+    if (info.market_name[0] != '\0') {
+        snprintf(device_name, size, "%s", info.market_name);
+    } else if (info.vendor_name[0] != '\0') {
+        snprintf(device_name, size, "%s", info.vendor_name);
+    } else {
+        snprintf(device_name, size, "unknown");
+    }
 }
-
 /*
- * Get the "brand" of the GPU — typically the vendor or market name.
+ * Get the "brand" of the GPU — typically the market name or vendor.
  *
  * dv_ind       (IN)  Device index (local AMD-SMI index)
  * device_brand (OUT) Buffer to store the brand string
- * size          (IN) Size of the provided buffer
+ * size         (IN)  Size of the provided buffer
  */
 static void _amdsmi_get_device_brand(uint32_t dv_ind,
                                      char *device_brand,
@@ -1095,28 +1068,15 @@ static void _amdsmi_get_device_brand(uint32_t dv_ind,
         return;
     }
 
-    /*
-     * The AMD-SMI ASIC info struct may include:
-     *   - info.vendor_name        (AMD)
-     *   - info.name               (ASIC codename: e.g., "MI300X")
-     *   - info.market_name        (optional; not present in all versions)
-     *
-     * For Slurm GRES type-name we prefer:
-     *     market_name → name → vendor_name
-     * depending on availability.
-     */
-
-    if (info.market_name && info.market_name[0] != '\0') {
+    /* market_name and vendor_name are fixed arrays, never NULL */
+    if (info.market_name[0] != '\0') {
         snprintf(device_brand, size, "%s", info.market_name);
-    } else if (info.name && info.name[0] != '\0') {
-        snprintf(device_brand, size, "%s", info.name);
-    } else if (info.vendor_name && info.vendor_name[0] != '\0') {
+    } else if (info.vendor_name[0] != '\0') {
         snprintf(device_brand, size, "%s", info.vendor_name);
     } else {
         snprintf(device_brand, size, "unknown");
     }
 }
-
 /*
  * Retrieves DRM renderD* minor number for the GPU.
  *
@@ -1157,11 +1117,15 @@ static void _amdsmi_get_device_minor_number(uint32_t dv_ind,
     char path[256];
     snprintf(path, sizeof(path),
              "/sys/bus/pci/devices/%04x:%02x:%02x.%x/drm",
-             bdf.domain, bdf.bus, bdf.device, bdf.function);
+             (unsigned)bdf.domain_number,
+             (unsigned)bdf.bus_number,
+             (unsigned)bdf.device_number,
+             (unsigned)bdf.function_number);
 
     DIR *d = opendir(path);
     if (!d) {
-        error("AMDSMI: Cannot open DRM sysfs dir for GPU[%u] at %s", dv_ind, path);
+        error("AMDSMI: Cannot open DRM sysfs dir for GPU[%u] at %s",
+              dv_ind, path);
         return;
     }
 
@@ -1178,7 +1142,11 @@ static void _amdsmi_get_device_minor_number(uint32_t dv_ind,
 
     closedir(d);
     error("AMDSMI: No renderD* node found for GPU[%u] (%04x:%02x:%02x.%x)",
-          dv_ind, bdf.domain, bdf.bus, bdf.device, bdf.function);
+          dv_ind,
+          (unsigned)bdf.domain_number,
+          (unsigned)bdf.bus_number,
+          (unsigned)bdf.device_number,
+          (unsigned)bdf.function_number);
 }
 
 /*
@@ -1214,24 +1182,16 @@ static void _amdsmi_get_device_pci_info(uint32_t dv_ind, amdsmiPciInfo_t *pci)
         return;
     }
 
-    /*
-     * Map AMD-SMI BDF struct:
-     *   bdf.domain
-     *   bdf.bus
-     *   bdf.device
-     *   bdf.function
-     */
-    pci->domain   = bdf.domain;
-    pci->bus      = bdf.bus;
-    pci->device   = bdf.device;
-    pci->function = bdf.function;
+    pci->domain   = (uint32_t)bdf.domain_number;
+    pci->bus      = (uint32_t)bdf.bus_number;
+    pci->device   = (uint32_t)bdf.device_number;
+    pci->function = (uint32_t)bdf.function_number;
 }
-
 /*
- * Get the Unique ID (UUID) of the GPU
+ * Get the Unique ID of the GPU
  *
  * dv_ind (IN)  The device index (AMD-SMI logical index)
- * id     (OUT) Pointer to a uint64_t receiving the UUID
+ * id     (OUT) Pointer to a uint64_t receiving the unique id
  */
 static void _amdsmi_get_device_unique_id(uint32_t dv_ind, uint64_t *id)
 {
@@ -1251,12 +1211,22 @@ static void _amdsmi_get_device_unique_id(uint32_t dv_ind, uint64_t *id)
     const char *status_string = NULL;
     amdsmi_processor_handle h = processor_handles[dv_ind];
 
-    amdsmi_status_t rc = amdsmi_get_gpu_device_uuid(h, id);
+    /*
+     * Use ASIC info's device_id as a numeric stable unique id.
+     * amdsmi_asic_info_t contains device_id (uint64_t). [1](https://rocm.docs.amd.com/projects/amdsmi/en/latest/doxygen/docBin/html/structamdsmi__asic__info__t.html)
+     */
+    amdsmi_asic_info_t info;
+    memset(&info, 0, sizeof(info));
+
+    amdsmi_status_t rc = amdsmi_get_gpu_asic_info(h, &info);
     if (rc != AMDSMI_STATUS_SUCCESS) {
         (void) amdsmi_status_code_to_string(rc, &status_string);
-        error("AMDSMI: Failed to get Unique ID of GPU[%u]: %s",
+        error("AMDSMI: Failed to get Unique ID (asic_info.device_id) of GPU[%u]: %s",
               dv_ind, status_string ? status_string : "unknown");
+        return;
     }
+
+    *id = info.device_id;
 }
 
 /*
@@ -1375,7 +1345,7 @@ static list_t *_get_system_gpu_list_amdsmi(node_config_load_t *node_config)
          * Build gres_slurmd_conf_t
          * --------------------------- */
         gres_slurmd_conf_t gres = {
-            .config_flags = GRES_CONF_ENV_AMDSMI | GRES_CONF_AUTODETECT,
+            .config_flags = GRES_CONF_ENV_RSMI | GRES_CONF_AUTODETECT,
             .count        = 1,
             .cpu_cnt      = node_config->cpu_cnt,
             .name         = "gpu"
@@ -1550,7 +1520,6 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
     return SLURM_SUCCESS;
 }
-
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
     if (!data) {
@@ -1573,49 +1542,45 @@ extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 
     _amdsmi_init();
 
-    /* Iterate across all GPUs for this PID. */
-    for (uint32_t dv_ind = 0; dv_ind < processor_handle_count; dv_ind++) {
+    /*
+     * NOTE: The current AMD-SMI API for process info is NOT per-GPU handle.
+     * Signature: amdsmi_get_gpu_compute_process_info_by_pid(uint32_t pid, amdsmi_process_info_t *proc) [1](https://github.com/ROCm/amdsmi)
+     */
+    amdsmi_process_info_t pinfo;
+    memset(&pinfo, 0, sizeof(pinfo));
 
-        amdsmi_processor_handle h = processor_handles[dv_ind];
+    const char *status_string = NULL;
+    amdsmi_status_t rc =
+        amdsmi_get_gpu_compute_process_info_by_pid((uint32_t)pid, &pinfo); /* [1](https://github.com/ROCm/amdsmi) */
 
-        amdsmi_process_info_t pinfo;
-        memset(&pinfo, 0, sizeof(pinfo));
-
-        const char *status_string = NULL;
-        amdsmi_status_t rc =
-            amdsmi_get_gpu_compute_process_info_by_pid(h, pid, &pinfo);
-
-        if (rc == AMDSMI_STATUS_NOT_FOUND) {
-            /* PID not running on this GPU; perfectly normal */
-            continue;
-        }
-        if (rc != AMDSMI_STATUS_SUCCESS) {
-            (void) amdsmi_status_code_to_string(rc, &status_string);
-            error("AMDSMI: GPU[%u] usage read failed: %s",
-                  dv_ind, status_string ? status_string : "unknown");
-            return SLURM_ERROR;
-        }
-
-        /* We have valid process usage for this GPU! */
-
-        if (track_gpuutil) {
-            /* compute_unit_busy is percentage (0–100) */
-            data[gpuutil_pos].size_read = pinfo.compute_unit_busy;
-        }
-
-        if (track_gpumem) {
-            /* pinfo.vram_usage is in bytes */
-            data[gpumem_pos].size_read = pinfo.vram_usage;
-        }
-
-        log_flag(JAG,
-                 "pid %d GPU[%u]: GPUUtil=%lu%% MemMB=%.2f",
-                 pid, dv_ind,
-                 track_gpuutil ? data[gpuutil_pos].size_read : 0UL,
-                 track_gpumem
-                     ? (data[gpumem_pos].size_read / 1048576.0)
-                     : 0.0);
+    if (rc == AMDSMI_STATUS_NOT_FOUND) {
+        /* PID not using GPU; normal */
+        return SLURM_SUCCESS;
     }
+    if (rc != AMDSMI_STATUS_SUCCESS) {
+        (void) amdsmi_status_code_to_string(rc, &status_string);
+        error("AMDSMI: process usage read failed for pid %d: %s",
+              pid, status_string ? status_string : "unknown");
+        return SLURM_ERROR;
+    }
+
+    /* pinfo.cu_occupancy is percent (0-100) [2](https://rocm.docs.amd.com/projects/amdsmi/en/latest/doxygen/docBin/html/amdsmi_8h.html) */
+    if (track_gpuutil) {
+        data[gpuutil_pos].size_read = (uint64_t)pinfo.cu_occupancy;
+    }
+
+    /*
+     * pinfo.vram_usage is in MB (per docs). Convert to bytes for Slurm gpumem TRES. [2](https://rocm.docs.amd.com/projects/amdsmi/en/latest/doxygen/docBin/html/amdsmi_8h.html)
+     */
+    if (track_gpumem) {
+        data[gpumem_pos].size_read = (uint64_t)pinfo.vram_usage * 1024ULL * 1024ULL;
+    }
+
+    log_flag(JAG,
+             "pid %d: GPUUtil=%lu%% MemMB=%lu",
+             pid,
+             track_gpuutil ? data[gpuutil_pos].size_read : 0UL,
+             (unsigned long)pinfo.vram_usage);
 
     return SLURM_SUCCESS;
 }

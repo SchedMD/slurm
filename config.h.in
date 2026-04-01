@@ -24,6 +24,9 @@
 /* Make sure we get the 1.8 HDF5 API */
 #undef H5_USE_18_API
 
+/* Define to 1 if AMD-SMI (amdsmi) library is available */
+#undef HAVE_ASMI
+
 /* Define if you are compiling with bpf. */
 #undef HAVE_BPF
 
@@ -216,9 +219,6 @@
 
 /* Define to 1 if RSMI library found */
 #undef HAVE_RSMI
-
-/*Define to 1 if AMDSMI library found*/
-#undef HAVE_ASMI
 
 /* Define to 1 if s2n library found. */
 #undef HAVE_S2N

@@ -765,6 +765,10 @@ PMIX_V2_CPPFLAGS
 BUILD_ONEAPI_FALSE
 BUILD_ONEAPI_TRUE
 ONEAPI_CPPFLAGS
+BUILD_AMDSMI_FALSE
+BUILD_AMDSMI_TRUE
+AMDSMI_LIBS
+AMDSMI_CPPFLAGS
 BUILD_RSMI_FALSE
 BUILD_RSMI_TRUE
 RSMI_CPPFLAGS
@@ -1033,8 +1037,8 @@ with_hdf5
 with_lz4
 with_hwloc
 with_nvml
-with_asmi
 with_rsmi
+with_asmi
 with_oneapi
 with_pmix
 with_freeipmi
@@ -1803,8 +1807,8 @@ Optional Packages:
   --with-lz4=PATH         Specify path to liblz4 installation
   --with-hwloc=PATH       Specify path to hwloc installation
   --with-nvml=PATH        Specify path to CUDA installation
-  --with-asmi=PATH        Specify path to ASMI installation
   --with-rsmi=PATH        Specify path to rsmi installation
+  --with-asmi=PATH        Specify path to AMD-SMI (amdsmi) installation
   --with-oneapi=PATH      Specify path to oneAPI installation
   --with-pmix=PATH        Specify path to pmix installation(s). Multiple
                           version directories can be ':' delimited.
@@ -3915,7 +3919,7 @@ printf "%s\n" "#define SLURM_VERSION_STRING \"$SLURM_VERSION_STRING\"" >>confdef
 
 
 
-am__api_version='1.17'
+am__api_version='1.18'
 
 
   # Find a good install program.  We prefer a C program (faster),
@@ -4184,10 +4188,14 @@ am_lf='
 '
 case `pwd` in
   *[\\\"\#\$\&\'\`$am_lf]*)
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
     as_fn_error $? "unsafe absolute working directory name" "$LINENO" 5;;
 esac
 case $srcdir in
   *[\\\"\#\$\&\'\`$am_lf\ \	]*)
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
     as_fn_error $? "unsafe srcdir value: '$srcdir'" "$LINENO" 5;;
 esac
 
@@ -4647,9 +4655,133 @@ AMTAR='$${TAR-tar}'
 
 
 # We'll loop over all known methods to create a tar archive until one works.
-_am_tools='gnutar  pax cpio none'
+_am_tools='gnutar plaintar pax cpio none'
 
-am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
+# The POSIX 1988 'ustar' format is defined with fixed-size fields.
+      # There is notably a 21 bits limit for the UID and the GID.  In fact,
+      # the 'pax' utility can hang on bigger UID/GID (see automake bug#8343
+      # and bug#13588).
+      am_max_uid=2097151 # 2^21 - 1
+      am_max_gid=$am_max_uid
+      # The $UID and $GID variables are not portable, so we need to resort
+      # to the POSIX-mandated id(1) utility.  Errors in the 'id' calls
+      # below are definitely unexpected, so allow the users to see them
+      # (that is, avoid stderr redirection).
+      am_uid=`id -u || echo unknown`
+      am_gid=`id -g || echo unknown`
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether UID '$am_uid' is supported by ustar format" >&5
+printf %s "checking whether UID '$am_uid' is supported by ustar format... " >&6; }
+      if test x$am_uid = xunknown; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: ancient id detected; assuming current UID is ok, but dist-ustar might not work" >&5
+printf "%s\n" "$as_me: WARNING: ancient id detected; assuming current UID is ok, but dist-ustar might not work" >&2;}
+      elif test $am_uid -le $am_max_uid; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+      else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+        _am_tools=none
+      fi
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether GID '$am_gid' is supported by ustar format" >&5
+printf %s "checking whether GID '$am_gid' is supported by ustar format... " >&6; }
+      if test x$gm_gid = xunknown; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: ancient id detected; assuming current GID is ok, but dist-ustar might not work" >&5
+printf "%s\n" "$as_me: WARNING: ancient id detected; assuming current GID is ok, but dist-ustar might not work" >&2;}
+      elif test $am_gid -le $am_max_gid; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+      else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+        _am_tools=none
+      fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking how to create a ustar tar archive" >&5
+printf %s "checking how to create a ustar tar archive... " >&6; }
+
+  # Go ahead even if we have the value already cached.  We do so because we
+  # need to set the values for the 'am__tar' and 'am__untar' variables.
+  _am_tools=${am_cv_prog_tar_ustar-$_am_tools}
+
+  for _am_tool in $_am_tools; do
+    case $_am_tool in
+    gnutar)
+      for _am_tar in tar gnutar gtar; do
+        { echo "$as_me:$LINENO: $_am_tar --version" >&5
+   ($_am_tar --version) >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); } && break
+      done
+      am__tar="$_am_tar --format=ustar -chf - "'"$$tardir"'
+      am__tar_="$_am_tar --format=ustar -chf - "'"$tardir"'
+      am__untar="$_am_tar -xf -"
+      ;;
+    plaintar)
+      # Must skip GNU tar: if it does not support --format= it doesn't create
+      # ustar tarball either.
+      (tar --version) >/dev/null 2>&1 && continue
+      am__tar='tar chf - "$$tardir"'
+      am__tar_='tar chf - "$tardir"'
+      am__untar='tar xf -'
+      ;;
+    pax)
+      am__tar='pax -L -x ustar -w "$$tardir"'
+      am__tar_='pax -L -x ustar -w "$tardir"'
+      am__untar='pax -r'
+      ;;
+    cpio)
+      am__tar='find "$$tardir" -print | cpio -o -H ustar -L'
+      am__tar_='find "$tardir" -print | cpio -o -H ustar -L'
+      am__untar='cpio -i -H ustar -d'
+      ;;
+    none)
+      am__tar=false
+      am__tar_=false
+      am__untar=false
+      ;;
+    esac
+
+    # If the value was cached, stop now.  We just wanted to have am__tar
+    # and am__untar set.
+    test -n "${am_cv_prog_tar_ustar}" && break
+
+    # tar/untar a dummy directory, and stop if the command works.
+    rm -rf conftest.dir
+    mkdir conftest.dir
+    echo GrepMe > conftest.dir/file
+    { echo "$as_me:$LINENO: tardir=conftest.dir && eval $am__tar_ >conftest.tar" >&5
+   (tardir=conftest.dir && eval $am__tar_ >conftest.tar) >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }
+    rm -rf conftest.dir
+    if test -s conftest.tar; then
+      { echo "$as_me:$LINENO: $am__untar <conftest.tar" >&5
+   ($am__untar <conftest.tar) >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }
+      { echo "$as_me:$LINENO: cat conftest.dir/file" >&5
+   (cat conftest.dir/file) >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }
+      grep GrepMe conftest.dir/file >/dev/null 2>&1 && break
+    fi
+  done
+  rm -rf conftest.dir
+
+  if test ${am_cv_prog_tar_ustar+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) am_cv_prog_tar_ustar=$_am_tool ;;
+esac
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $am_cv_prog_tar_ustar" >&5
+printf "%s\n" "$am_cv_prog_tar_ustar" >&6; }
 
 
 
@@ -5858,7 +5990,10 @@ _ACEOF
       break
     fi
   done
-  rm -f core conftest*
+  # aligned with autoconf, so not including core; see bug#72225.
+  rm -f -r a.out a.exe b.out conftest.$ac_ext conftest.$ac_objext \
+    conftest.dSYM conftest1.$ac_ext conftest1.$ac_objext conftest1.dSYM \
+    conftest2.$ac_ext conftest2.$ac_objext conftest2.dSYM
   unset am_i ;;
 esac
 fi
@@ -7047,7 +7182,10 @@ _ACEOF
       break
     fi
   done
-  rm -f core conftest*
+  # aligned with autoconf, so not including core; see bug#72225.
+  rm -f -r a.out a.exe b.out conftest.$ac_ext conftest.$ac_objext \
+    conftest.dSYM conftest1.$ac_ext conftest1.$ac_objext conftest1.dSYM \
+    conftest2.$ac_ext conftest2.$ac_objext conftest2.dSYM
   unset am_i ;;
 esac
 fi
@@ -12384,12 +12522,6 @@ lt_prog_compiler_static=
 	lt_prog_compiler_pic='-fPIC'
 	lt_prog_compiler_static='-static'
         ;;
-      # flang / f18. f95 an alias for gfortran or flang on Debian
-      flang* | f18* | f95*)
-	lt_prog_compiler_wl='-Wl,'
-	lt_prog_compiler_pic='-fPIC'
-	lt_prog_compiler_static='-static'
-        ;;
       # icc used to be incompatible with GCC.
       # ICC 10 doesn't accept -KPIC any more.
       icc* | ifort*)
@@ -12881,9 +13013,6 @@ printf %s "checking whether the $compiler linker ($LD) supports shared libraries
   interix*)
     # we just hope/assume this is gcc and not c89 (= MSVC++ or ICC)
     with_gnu_ld=yes
-    ;;
-  linux* | k*bsd*-gnu | gnu*)
-    link_all_deplibs=no
     ;;
   esac
 
@@ -13829,7 +13958,6 @@ printf "%s\n" "$lt_cv_irix_exported_symbol" >&6; }
 	if test yes = "$lt_cv_irix_exported_symbol"; then
           archive_expsym_cmds='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags $wl-soname $wl$soname `test -n "$verstring" && func_echo_all "$wl-set_version $wl$verstring"` $wl-update_registry $wl$output_objdir/so_locations $wl-exports_file $wl$export_symbols -o $lib'
 	fi
-	link_all_deplibs=no
       else
 	archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags -soname $soname `test -n "$verstring" && func_echo_all "-set_version $verstring"` -update_registry $output_objdir/so_locations -o $lib'
 	archive_expsym_cmds='$CC -shared $libobjs $deplibs $compiler_flags -soname $soname `test -n "$verstring" && func_echo_all "-set_version $verstring"` -update_registry $output_objdir/so_locations -exports_file $export_symbols -o $lib'
@@ -14997,6 +15125,9 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  # Add ABI-specific directories to the system library path.
+  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
+
   # Ideally, we could use ldconfig to report *all* directories which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -15005,7 +15136,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -15023,18 +15154,6 @@ netbsdelf*-gnu)
   need_version=no
   library_names_spec='$libname$release$shared_ext$versuffix $libname$release$shared_ext$major $libname$shared_ext'
   soname_spec='$libname$release$shared_ext$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  dynamic_linker='NetBSD ld.elf_so'
-  ;;
-
-netbsdelf*-gnu)
-  version_type=linux
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
   shlibpath_overrides_runpath=no
   hardcode_into_libs=yes
@@ -15450,12 +15569,6 @@ lt_prog_compiler_static=
         ;;
       *flang* | ftn | f18* | f95*)
         # Flang compiler.
-	lt_prog_compiler_wl='-Wl,'
-	lt_prog_compiler_pic='-fPIC'
-	lt_prog_compiler_static='-static'
-        ;;
-      # flang / f18. f95 an alias for gfortran or flang on Debian
-      flang* | f18* | f95*)
 	lt_prog_compiler_wl='-Wl,'
 	lt_prog_compiler_pic='-fPIC'
 	lt_prog_compiler_static='-static'
@@ -18928,9 +19041,6 @@ printf %s "checking whether the $compiler linker ($LD) supports shared libraries
       ;;
     esac
     ;;
-  linux* | k*bsd*-gnu | gnu*)
-    link_all_deplibs_CXX=no
-    ;;
   *)
     export_symbols_cmds_CXX='$NM $libobjs $convenience | $global_symbol_pipe | $SED '\''s/.* //'\'' | sort | uniq > $export_symbols'
     ;;
@@ -19647,6 +19757,9 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  # Add ABI-specific directories to the system library path.
+  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
+
   # Ideally, we could use ldconfig to report *all* directories which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -19655,7 +19768,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -19673,18 +19786,6 @@ netbsdelf*-gnu)
   need_version=no
   library_names_spec='$libname$release$shared_ext$versuffix $libname$release$shared_ext$major $libname$shared_ext'
   soname_spec='$libname$release$shared_ext$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  dynamic_linker='NetBSD ld.elf_so'
-  ;;
-
-netbsdelf*-gnu)
-  version_type=linux
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
   shlibpath_var=LD_LIBRARY_PATH
   shlibpath_overrides_runpath=no
   hardcode_into_libs=yes
@@ -20668,6 +20769,9 @@ printf "%s\n" "yes" >&6; }
 printf "%s\n" "no" >&6; }
 		PKG_CONFIG=""
 	fi
+fi
+if test -z "$PKG_CONFIG"; then
+	as_fn_error $? "pkg-config not found" "$LINENO" 5
 fi
 
 
@@ -25935,237 +26039,178 @@ fi
 
 
 
-# Default search dirs (similar to _x_ac_rsmi_dirs)
-_x_ac_amdsmi_dirs="/opt/rocm"
-
-# Check whether --with-amdsmi was given.
-if test ${with_amdsmi+y}; then :
-  withval=$with_amdsmi
-  if test "x$with_amdsmi" != xno && test "x$with_amdsmi" != xyes; then :
-    _x_ac_amdsmi_dirs="$with_amdsmi"
-  fi
-fi
-
-if test "x$with_amdsmi" = xno; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for amdsmi disabled" >&5
-    printf "%s\n" "$as_me: support for amdsmi disabled" >&6; }
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether AMD SMI (libamd_smi) is installed in this system" >&5
-    printf %s "checking whether AMD SMI (libamd_smi) is installed in this system... " >&6; }
-
-  ac_amdsmi="no"
-  for _x_ac_amdsmi_dir in $_x_ac_amdsmi_dirs; do
-    cppflags_save="$CPPFLAGS"
-    ldflags_save="$LDFLAGS"
-
-    AMDSMI_CPPFLAGS="-I$_x_ac_amdsmi_dir/include"
-    CPPFLAGS="$AMDSMI_CPPFLAGS"
-
-    AMDSMI_LIB_DIR="$_x_ac_amdsmi_dir/lib"
-    LDFLAGS="-L$AMDSMI_LIB_DIR"
-
-    { ac_cv_header_amd_smi_amdsmi_h=; unset ac_cv_header_amd_smi_amdsmi_h; }
-    { ac_cv_lib_amd_smi_amdsmi_init=; unset ac_cv_lib_amd_smi_amdsmi_init; }
-
-    ac_fn_c_check_header_compile "$LINENO" "amd_smi/amdsmi.h" \
-      "ac_cv_header_amd_smi_amdsmi_h" "$ac_includes_default"
-
-    if test "x$ac_cv_header_amd_smi_amdsmi_h" = xyes; then
-      ac_amdsmi_h=yes
-    else
-      ac_amdsmi_h=no
-    fi
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for amdsmi_init in -lamd_smi" >&5
-      printf %s "checking for amdsmi_init in -lamd_smi... " >&6; }
-
-    if test ${ac_cv_lib_amd_smi_amdsmi_init+y}; then
-      printf %s "(cached) " >&6
-    else
-      ac_check_lib_save_LIBS=$LIBS
-      LIBS="-lamd_smi $LIBS"
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char amdsmi_init (void);
-int main (void) { return amdsmi_init (); }
-_ACEOF
-      if ac_fn_c_try_link "$LINENO"; then
-        ac_cv_lib_amd_smi_amdsmi_init=yes
-      else
-        ac_cv_lib_amd_smi_amdsmi_init=no
-      fi
-      rm -f core conftest.err conftest.$ac_objext conftest.beam conftest$ac_exeext conftest.$ac_ext
-    fi
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_amd_smi_amdsmi_init" >&5
-      printf "%s\n" "$ac_cv_lib_amd_smi_amdsmi_init" >&6; }
-
-    if test "x$ac_cv_lib_amd_smi_amdsmi_init" = xyes; then
-      ac_amdsmi_l=yes
-    else
-      ac_amdsmi_l=no
-    fi
-
-    if test "$ac_amdsmi_l" = "yes" && test "$ac_amdsmi_h" = "yes"; then
-      ac_amdsmi="yes"
-
-      BUILD_RSMI_TRUE='#'
-      BUILD_RSMI_FALSE=
-      BUILD_AMDSMI_TRUE=
-      BUILD_AMDSMI_FALSE='#'
-
-      printf "%s\n" "#define HAVE_ASMI 1" >> confdefs.h
-      printf "%s\n" "DEBUG_AMDSMI_CPPFLAGS='$AMDSMI_CPPFLAGS'"
-      printf "%s\n" "DEBUG_AMDSMI_LDFLAGS='$LDFLAGS'"
-      printf "%s\n" "DEBUG_AMDSMI_LIBS='$LIBS'"
-      break
-    fi
-  done
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_amdsmi" >&5
-    printf "%s\n" "$ac_amdsmi" >&6; }
-fi
-
-
-#
-# Fallback to RSMI only if AMD-SMI was not found
-#
-if test "$ac_amdsmi" != "yes"; then
-
   # /opt/rocm is the current default location.
-  # /opt/rocm/rocm_smi was the default location before 5.2.0
+  # /opt/rocm/rocm_smi was the default location for before to 5.2.0
+  # We will use a for loop to check for both.
+  # Unless _x_ac_rsmi_dirs is overwritten with --with-rsmi
   _x_ac_rsmi_dirs="/opt/rocm /opt/rocm/rocm_smi"
 
-  # Check whether --with-rsmi was given.
-  if test ${with_rsmi+y}; then :
-    withval=$with_rsmi
-    if test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes; then :
-      _x_ac_rsmi_dirs="$with_rsmi"
-    fi
-  fi
+
+# Check whether --with-rsmi was given.
+if test ${with_rsmi+y}
+then :
+  withval=$with_rsmi; if test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes
+then :
+  _x_ac_rsmi_dirs="$with_rsmi"
+fi
+fi
+
 
   if test "x$with_rsmi" = xno; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rsmi disabled" >&5
-      printf "%s\n" "$as_me: support for rsmi disabled" >&6; }
+     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rsmi disabled" >&5
+printf "%s\n" "$as_me: support for rsmi disabled" >&6;}
   else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm is installed in this system" >&5
-      printf %s "checking whether RSMI/ROCm is installed in this system... " >&6; }
-
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm in installed in this system" >&5
+printf %s "checking whether RSMI/ROCm in installed in this system... " >&6; }
+    # Check for RSMI header and library in the default location
+    # or in the location specified during configure
+    #
+    # NOTE: Just because this is where we are looking and finding the
+    # libraries they must be in the ldcache when running as that is what the
+    # card will be using.
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
-      printf "%s\n" "" >&6; }
-
-    ac_rsmi=no
+printf "%s\n" "" >&6; }
     for _x_ac_rsmi_dir in $_x_ac_rsmi_dirs; do
       cppflags_save="$CPPFLAGS"
       ldflags_save="$LDFLAGS"
-
       RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
       CPPFLAGS="$RSMI_CPPFLAGS"
-
       RSMI_LIB_DIR="$_x_ac_rsmi_dir/lib"
       LDFLAGS="-L$RSMI_LIB_DIR"
-
-      { ac_cv_header_rocm_smi_rocm_smi_h=; unset ac_cv_header_rocm_smi_rocm_smi_h; }
-      { ac_cv_lib_rocm_smi64_rsmi_init=; unset ac_cv_lib_rocm_smi64_rsmi_init; }
-      { ac_cv_lib_rocm_smi64_dev_drm_render_minor_get=; unset ac_cv_lib_rocm_smi64_dev_drm_render_minor_get; }
-
-      ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" \
-        "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
-
-      if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes; then
-        ac_rsmi_h=yes
-      else
-        ac_rsmi_h=no
-      fi
+      { ac_cv_header_rocm_smi_h=; unset ac_cv_header_rocm_smi_h;}
+      { ac_cv_lib_rocm_smi64_rsmi_init=; unset ac_cv_lib_rocm_smi64_rsmi_init;}
+      { ac_cv_lib_rocm_smi64_dev_drm_render_minor_get=; unset ac_cv_lib_rocm_smi64_dev_drm_render_minor_get;}
+      ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
+if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes
+then :
+  ac_rsmi_h=yes
+else case e in #(
+  e) ac_rsmi_h=no ;;
+esac
+fi
 
       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_init in -lrocm_smi64" >&5
-        printf %s "checking for rsmi_init in -lrocm_smi64... " >&6; }
-
-      if test ${ac_cv_lib_rocm_smi64_rsmi_init+y}; then
-        printf %s "(cached) " >&6
-      else
-        ac_check_lib_save_LIBS=$LIBS
-        LIBS="-lrocm_smi64 $LIBS"
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+printf %s "checking for rsmi_init in -lrocm_smi64... " >&6; }
+if test ${ac_cv_lib_rocm_smi64_rsmi_init+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lrocm_smi64  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
 #ifdef __cplusplus
 extern "C"
 #endif
 char rsmi_init (void);
-int main (void) { return rsmi_init (); }
+int
+main (void)
+{
+return rsmi_init ();
+  ;
+  return 0;
+}
 _ACEOF
-        if ac_fn_c_try_link "$LINENO"; then
-          ac_cv_lib_rocm_smi64_rsmi_init=yes
-        else
-          ac_cv_lib_rocm_smi64_rsmi_init=no
-        fi
-        rm -f core conftest.err conftest.$ac_objext conftest.beam conftest$ac_exeext conftest.$ac_ext
-        LIBS=$ac_check_lib_save_LIBS
-      fi
-
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_init" >&5
-        printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_init" >&6; }
-
-      if test "x$ac_cv_lib_rocm_smi64_rsmi_init" = xyes; then
-        ac_rsmi_l=yes
-      else
-        ac_rsmi_l=no
-      fi
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_rocm_smi64_rsmi_init=yes
+else case e in #(
+  e) ac_cv_lib_rocm_smi64_rsmi_init=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_init" >&5
+printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_init" >&6; }
+if test "x$ac_cv_lib_rocm_smi64_rsmi_init" = xyes
+then :
+  ac_rsmi_l=yes
+else case e in #(
+  e) ac_rsmi_l=no ;;
+esac
+fi
 
       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64" >&5
-        printf %s "checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64... " >&6; }
-
-      if test ${ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get+y}; then
-        printf %s "(cached) " >&6
-      else
-        ac_check_lib_save_LIBS=$LIBS
-        LIBS="-lrocm_smi64 $LIBS"
-        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+printf %s "checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64... " >&6; }
+if test ${ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lrocm_smi64  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
 #ifdef __cplusplus
 extern "C"
 #endif
 char rsmi_dev_drm_render_minor_get (void);
-int main (void) { return rsmi_dev_drm_render_minor_get (); }
+int
+main (void)
+{
+return rsmi_dev_drm_render_minor_get ();
+  ;
+  return 0;
+}
 _ACEOF
-        if ac_fn_c_try_link "$LINENO"; then
-          ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=yes
-        else
-          ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=no
-        fi
-        rm -f core conftest.err conftest.$ac_objext conftest.beam conftest$ac_exeext conftest.$ac_ext
-        LIBS=$ac_check_lib_save_LIBS
-      fi
-
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&5
-        printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&6; }
-
-      if test "x$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" = xyes; then
-        ac_rsmi_version=yes
-      else
-        ac_rsmi_version=no
-      fi
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=yes
+else case e in #(
+  e) ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&5
+printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&6; }
+if test "x$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" = xyes
+then :
+  ac_rsmi_version=yes
+else case e in #(
+  e) ac_rsmi_version=no ;;
+esac
+fi
 
       CPPFLAGS="$cppflags_save"
       LDFLAGS="$ldflags_save"
-
       if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
         if test "$ac_rsmi_version" = "yes"; then
           ac_rsmi="yes"
-          printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
-          break
+
+printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
+
+
+          break;
         fi
       fi
     done
 
+    # Only print errors/wanrings if both _x_ac_rsmi_dirs don't work
     if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
       if test "$ac_rsmi_version" != "yes"; then
         if test -z "$with_rsmi"; then
           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: upgrade to newer version of ROCm/rsmi" >&5
-            printf "%s\n" "$as_me: WARNING: upgrade to newer version of ROCm/rsmi" >&2; }
+printf "%s\n" "$as_me: WARNING: upgrade to newer version of ROCm/rsmi" >&2;}
         else
           as_fn_error $? "upgrade to newer version of ROCm/rsmi" "$LINENO" 5
         fi
@@ -26173,25 +26218,166 @@ _ACEOF
     else
       if test -z "$with_rsmi"; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&5
-          printf "%s\n" "$as_me: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&2; }
+printf "%s\n" "$as_me: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&2;}
       else
         as_fn_error $? "unable to locate librocm_smi64.so and/or rocm_smi.h" "$LINENO" 5
       fi
     fi
   fi
+   if test "$ac_rsmi" = "yes"; then
+  BUILD_RSMI_TRUE=
+  BUILD_RSMI_FALSE='#'
+else
+  BUILD_RSMI_TRUE='#'
+  BUILD_RSMI_FALSE=
+fi
 
-  if test "$ac_rsmi" = "yes"; then
-    BUILD_RSMI_TRUE=
-    BUILD_RSMI_FALSE='#'
 
-    BUILD_AMDSMI_TRUE='#'
-    BUILD_AMDSMI_FALSE=
 
+        ac_amdsmi=no
+  AMDSMI_CPPFLAGS=""
+  AMDSMI_LIBS=""
+
+
+
+
+        _x_ac_amdsmi_dirs="/opt/rocm"
+
+
+# Check whether --with-asmi was given.
+if test ${with_asmi+y}
+then :
+  withval=$with_asmi;
+      if test "x$with_asmi" != xno && test "x$with_asmi" != xyes
+then :
+  _x_ac_amdsmi_dirs="$with_asmi"
+
+fi
+
+
+fi
+
+
+        if test "x$with_asmi" = xno; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for AMD-SMI (asmi) disabled by user" >&5
+printf "%s\n" "$as_me: support for AMD-SMI (asmi) disabled by user" >&6;}
   else
-    BUILD_RSMI_TRUE='#'
-    BUILD_RSMI_FALSE=
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for AMD-SMI (amdsmi) installation" >&5
+printf %s "checking for AMD-SMI (amdsmi) installation... " >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
+printf "%s\n" "" >&6; }
+
+    for _x_ac_amdsmi_dir in $_x_ac_amdsmi_dirs; do
+      cppflags_save="$CPPFLAGS"
+      ldflags_save="$LDFLAGS"
+
+      AMDSMI_CPPFLAGS="-I$_x_ac_amdsmi_dir/include"
+      CPPFLAGS="$CPPFLAGS $AMDSMI_CPPFLAGS"
+
+      AMDSMI_LIB_DIR="$_x_ac_amdsmi_dir/lib"
+      LDFLAGS="$LDFLAGS -L$AMDSMI_LIB_DIR"
+
+            { ac_cv_header_amd_smi_amdsmi_h=; unset ac_cv_header_amd_smi_amdsmi_h;}
+      { ac_cv_lib_amd_smi_amdsmi_init=; unset ac_cv_lib_amd_smi_amdsmi_init;}
+
+                        ac_fn_c_check_header_compile "$LINENO" "amd_smi/amdsmi.h" "ac_cv_header_amd_smi_amdsmi_h" "$ac_includes_default"
+if test "x$ac_cv_header_amd_smi_amdsmi_h" = xyes
+then :
+  ac_amdsmi_h=yes
+else case e in #(
+  e) ac_amdsmi_h=no
+       ;;
+esac
+fi
+
+
+                        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for amdsmi_init in -lamd_smi" >&5
+printf %s "checking for amdsmi_init in -lamd_smi... " >&6; }
+if test ${ac_cv_lib_amd_smi_amdsmi_init+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_lib_save_LIBS=$LIBS
+LIBS="-lamd_smi  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char amdsmi_init (void);
+int
+main (void)
+{
+return amdsmi_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_amd_smi_amdsmi_init=yes
+else case e in #(
+  e) ac_cv_lib_amd_smi_amdsmi_init=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_amd_smi_amdsmi_init" >&5
+printf "%s\n" "$ac_cv_lib_amd_smi_amdsmi_init" >&6; }
+if test "x$ac_cv_lib_amd_smi_amdsmi_init" = xyes
+then :
+  ac_amdsmi_l=yes
+else case e in #(
+  e) ac_amdsmi_l=no
+       ;;
+esac
+fi
+
+
+      CPPFLAGS="$cppflags_save"
+      LDFLAGS="$ldflags_save"
+
+      if test "x$ac_amdsmi_h" = xyes && test "x$ac_amdsmi_l" = xyes; then
+        ac_amdsmi=yes
+        AMDSMI_LIBS="-L$AMDSMI_LIB_DIR -lamd_smi"
+
+
+printf "%s\n" "#define HAVE_ASMI 1" >>confdefs.h
+
+
+        break
+      fi
+    done
+
+                if test "x$ac_amdsmi" != xyes; then
+      if test -z "$with_asmi" || test "x$with_asmi" = xyes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: AMD-SMI not found (libamd_smi.so and/or amd_smi/amdsmi.h missing)
+        " >&5
+printf "%s\n" "$as_me: WARNING: AMD-SMI not found (libamd_smi.so and/or amd_smi/amdsmi.h missing)
+        " >&2;}
+      else
+        as_fn_error $? "AMD-SMI not found in $with_asmi
+        " "$LINENO" 5
+      fi
+    fi
   fi
 
+         if test "x$ac_amdsmi" = xyes; then
+  BUILD_AMDSMI_TRUE=
+  BUILD_AMDSMI_FALSE='#'
+else
+  BUILD_AMDSMI_TRUE='#'
+  BUILD_AMDSMI_FALSE=
 fi
 
 
@@ -27977,6 +28163,9 @@ printf "%s\n" "no" >&6; }
 		PKG_CONFIG=""
 	fi
 fi
+if test -z "$PKG_CONFIG"; then
+	as_fn_error $? "pkg-config not found" "$LINENO" 5
+fi
 
   no_glib=""
 
@@ -28502,6 +28691,9 @@ printf "%s\n" "yes" >&6; }
 printf "%s\n" "no" >&6; }
 		PKG_CONFIG=""
 	fi
+fi
+if test -z "$PKG_CONFIG"; then
+	as_fn_error $? "pkg-config not found" "$LINENO" 5
 fi
 
   min_gtk_version=2.7.1
@@ -30531,7 +30723,7 @@ printf "%s\n" "${x_ac_deprecated=no}" >&6; }
 
 
 
-ac_config_files="$ac_config_files Makefile auxdir/Makefile contribs/Makefile contribs/lua/Makefile contribs/nss_slurm/Makefile contribs/openlava/Makefile contribs/pam/Makefile contribs/pam_slurm_adopt/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/pmi/Makefile contribs/pmi2/Makefile contribs/seff/Makefile contribs/sgather/Makefile contribs/sjobexit/Makefile contribs/slurm_completion_help/Makefile contribs/torque/Makefile doc/Makefile doc/html/Makefile doc/html/configurator.easy.html doc/html/configurator.html doc/man/Makefile doc/man/man1/Makefile doc/man/man5/Makefile doc/man/man8/Makefile etc/Makefile src/Makefile src/api/Makefile src/bcast/Makefile src/common/Makefile src/conmgr/Makefile src/curl/Makefile src/database/Makefile src/interfaces/Makefile src/lua/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/ctld_relay/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/acct_gather_energy/Makefile src/plugins/acct_gather_energy/gpu/Makefile src/plugins/acct_gather_energy/ibmaem/Makefile src/plugins/acct_gather_energy/ipmi/Makefile src/plugins/acct_gather_energy/pm_counters/Makefile src/plugins/acct_gather_energy/rapl/Makefile src/plugins/acct_gather_energy/xcc/Makefile src/plugins/acct_gather_filesystem/Makefile src/plugins/acct_gather_filesystem/lustre/Makefile src/plugins/acct_gather_interconnect/Makefile src/plugins/acct_gather_interconnect/ofed/Makefile src/plugins/acct_gather_interconnect/sysfs/Makefile src/plugins/acct_gather_profile/Makefile src/plugins/acct_gather_profile/hdf5/Makefile src/plugins/acct_gather_profile/hdf5/sh5util/Makefile src/plugins/acct_gather_profile/influxdb/Makefile src/plugins/auth/Makefile src/plugins/auth/jwt/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/auth/slurm/Makefile src/plugins/burst_buffer/Makefile src/plugins/burst_buffer/common/Makefile src/plugins/burst_buffer/datawarp/Makefile src/plugins/burst_buffer/lua/Makefile src/plugins/certgen/Makefile src/plugins/certgen/script/Makefile src/plugins/certmgr/Makefile src/plugins/certmgr/script/Makefile src/plugins/cgroup/Makefile src/plugins/cgroup/common/Makefile src/plugins/cgroup/v1/Makefile src/plugins/cgroup/v2/Makefile src/plugins/cli_filter/Makefile src/plugins/cli_filter/common/Makefile src/plugins/cli_filter/lua/Makefile src/plugins/cli_filter/syslog/Makefile src/plugins/cli_filter/user_defaults/Makefile src/plugins/cred/Makefile src/plugins/cred/common/Makefile src/plugins/cred/munge/Makefile src/plugins/cred/none/Makefile src/plugins/data_parser/Makefile src/plugins/data_parser/v0.0.42/Makefile src/plugins/data_parser/v0.0.43/Makefile src/plugins/data_parser/v0.0.44/Makefile src/plugins/data_parser/v0.0.45/Makefile src/plugins/gpu/Makefile src/plugins/gpu/common/Makefile src/plugins/gpu/generic/Makefile src/plugins/gpu/nrt/Makefile src/plugins/gpu/nvidia/Makefile src/plugins/gpu/nvml/Makefile src/plugins/gpu/oneapi/Makefile src/plugins/gpu/asmi/Makefile src/plugins/gpu/rsmi/Makefile src/plugins/gres/Makefile src/plugins/gres/common/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/mps/Makefile src/plugins/gres/nic/Makefile src/plugins/gres/shard/Makefile src/plugins/hash/Makefile src/plugins/hash/common_xkcp/Makefile src/plugins/hash/k12/Makefile src/plugins/hash/sha3/Makefile src/plugins/http_auth/Makefile src/plugins/http_auth/local/Makefile src/plugins/http_auth/jwt/Makefile src/plugins/http_parser/Makefile src/plugins/http_parser/libhttp_parser/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/all_partitions/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/job_submit/pbs/Makefile src/plugins/job_submit/require_timelimit/Makefile src/plugins/job_submit/throttle/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/common/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/common/Makefile src/plugins/jobcomp/elasticsearch/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/kafka/Makefile src/plugins/jobcomp/lua/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/script/Makefile src/plugins/mcs/Makefile src/plugins/mcs/account/Makefile src/plugins/mcs/group/Makefile src/plugins/mcs/label/Makefile src/plugins/mcs/user/Makefile src/plugins/metrics/Makefile src/plugins/metrics/openmetrics/Makefile src/plugins/mpi/Makefile src/plugins/mpi/cray_shasta/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/mpi/pmix/Makefile src/plugins/namespace/Makefile src/plugins/namespace/linux/Makefile src/plugins/namespace/tmpfs/Makefile src/plugins/node_features/Makefile src/plugins/node_features/helpers/Makefile src/plugins/preempt/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/prep/Makefile src/plugins/prep/script/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/select/Makefile src/plugins/select/cons_tres/Makefile src/plugins/select/linear/Makefile src/plugins/serializer/Makefile src/plugins/serializer/json/Makefile src/plugins/serializer/url-encoded/Makefile src/plugins/serializer/yaml/Makefile src/plugins/site_factor/Makefile src/plugins/site_factor/example/Makefile src/plugins/switch/Makefile src/plugins/switch/hpe_slingshot/Makefile src/plugins/switch/nvidia_imex/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/tls/Makefile src/plugins/tls/none/Makefile src/plugins/tls/s2n/Makefile src/plugins/topology/Makefile src/plugins/topology/block/Makefile src/plugins/topology/common/Makefile src/plugins/topology/flat/Makefile src/plugins/topology/ring/Makefile src/plugins/topology/tree/Makefile src/sacct/Makefile src/sackd/Makefile src/sacctmgr/Makefile src/salloc/Makefile src/sattach/Makefile src/scrun/Makefile src/sbatch/Makefile src/sbcast/Makefile src/scancel/Makefile src/scontrol/Makefile src/scrontab/Makefile src/sdiag/Makefile src/sinfo/Makefile src/slurmctld/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmrestd/Makefile src/slurmrestd/plugins/Makefile src/slurmrestd/plugins/auth/Makefile src/slurmrestd/plugins/auth/jwt/Makefile src/slurmrestd/plugins/auth/local/Makefile src/slurmrestd/plugins/openapi/Makefile src/slurmrestd/plugins/openapi/slurmctld/Makefile src/slurmrestd/plugins/openapi/slurmdbd/Makefile src/slurmrestd/plugins/openapi/util/Makefile src/sprio/Makefile src/squeue/Makefile src/sreport/Makefile src/srun/Makefile src/sshare/Makefile src/sstat/Makefile src/stepmgr/Makefile src/strigger/Makefile src/sview/Makefile testsuite/Makefile testsuite/testsuite.conf.sample testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/backfill/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/common/bitstring/Makefile testsuite/slurm_unit/common/hostlist/Makefile testsuite/slurm_unit/common/slurm_protocol_defs/Makefile testsuite/slurm_unit/common/slurm_protocol_pack/Makefile testsuite/slurm_unit/common/slurmdb_defs/Makefile testsuite/slurm_unit/common/slurmdb_pack/Makefile testsuite/slurm_unit/topology/Makefile"
+ac_config_files="$ac_config_files Makefile auxdir/Makefile contribs/Makefile contribs/lua/Makefile contribs/nss_slurm/Makefile contribs/openlava/Makefile contribs/pam/Makefile contribs/pam_slurm_adopt/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm/Makefile contribs/perlapi/libslurm/perl/Makefile.PL contribs/perlapi/libslurmdb/Makefile contribs/perlapi/libslurmdb/perl/Makefile.PL contribs/pmi/Makefile contribs/pmi2/Makefile contribs/seff/Makefile contribs/sgather/Makefile contribs/sjobexit/Makefile contribs/slurm_completion_help/Makefile contribs/torque/Makefile doc/Makefile doc/html/Makefile doc/html/configurator.easy.html doc/html/configurator.html doc/man/Makefile doc/man/man1/Makefile doc/man/man5/Makefile doc/man/man8/Makefile etc/Makefile src/Makefile src/api/Makefile src/bcast/Makefile src/common/Makefile src/conmgr/Makefile src/curl/Makefile src/database/Makefile src/interfaces/Makefile src/lua/Makefile src/plugins/Makefile src/plugins/accounting_storage/Makefile src/plugins/accounting_storage/common/Makefile src/plugins/accounting_storage/ctld_relay/Makefile src/plugins/accounting_storage/mysql/Makefile src/plugins/accounting_storage/slurmdbd/Makefile src/plugins/acct_gather_energy/Makefile src/plugins/acct_gather_energy/gpu/Makefile src/plugins/acct_gather_energy/ibmaem/Makefile src/plugins/acct_gather_energy/ipmi/Makefile src/plugins/acct_gather_energy/pm_counters/Makefile src/plugins/acct_gather_energy/rapl/Makefile src/plugins/acct_gather_energy/xcc/Makefile src/plugins/acct_gather_filesystem/Makefile src/plugins/acct_gather_filesystem/lustre/Makefile src/plugins/acct_gather_interconnect/Makefile src/plugins/acct_gather_interconnect/ofed/Makefile src/plugins/acct_gather_interconnect/sysfs/Makefile src/plugins/acct_gather_profile/Makefile src/plugins/acct_gather_profile/hdf5/Makefile src/plugins/acct_gather_profile/hdf5/sh5util/Makefile src/plugins/acct_gather_profile/influxdb/Makefile src/plugins/auth/Makefile src/plugins/auth/jwt/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/auth/slurm/Makefile src/plugins/burst_buffer/Makefile src/plugins/burst_buffer/common/Makefile src/plugins/burst_buffer/datawarp/Makefile src/plugins/burst_buffer/lua/Makefile src/plugins/certgen/Makefile src/plugins/certgen/script/Makefile src/plugins/certmgr/Makefile src/plugins/certmgr/script/Makefile src/plugins/cgroup/Makefile src/plugins/cgroup/common/Makefile src/plugins/cgroup/v1/Makefile src/plugins/cgroup/v2/Makefile src/plugins/cli_filter/Makefile src/plugins/cli_filter/common/Makefile src/plugins/cli_filter/lua/Makefile src/plugins/cli_filter/syslog/Makefile src/plugins/cli_filter/user_defaults/Makefile src/plugins/cred/Makefile src/plugins/cred/common/Makefile src/plugins/cred/munge/Makefile src/plugins/cred/none/Makefile src/plugins/data_parser/Makefile src/plugins/data_parser/v0.0.42/Makefile src/plugins/data_parser/v0.0.43/Makefile src/plugins/data_parser/v0.0.44/Makefile src/plugins/data_parser/v0.0.45/Makefile src/plugins/gpu/Makefile src/plugins/gpu/common/Makefile src/plugins/gpu/generic/Makefile src/plugins/gpu/nrt/Makefile src/plugins/gpu/nvidia/Makefile src/plugins/gpu/nvml/Makefile src/plugins/gpu/oneapi/Makefile src/plugins/gpu/rsmi/Makefile src/plugins/gpu/asmi/Makefile src/plugins/gres/Makefile src/plugins/gres/common/Makefile src/plugins/gres/gpu/Makefile src/plugins/gres/mps/Makefile src/plugins/gres/nic/Makefile src/plugins/gres/shard/Makefile src/plugins/hash/Makefile src/plugins/hash/common_xkcp/Makefile src/plugins/hash/k12/Makefile src/plugins/hash/sha3/Makefile src/plugins/http_auth/Makefile src/plugins/http_auth/local/Makefile src/plugins/http_auth/jwt/Makefile src/plugins/http_parser/Makefile src/plugins/http_parser/libhttp_parser/Makefile src/plugins/job_submit/Makefile src/plugins/job_submit/all_partitions/Makefile src/plugins/job_submit/defaults/Makefile src/plugins/job_submit/logging/Makefile src/plugins/job_submit/lua/Makefile src/plugins/job_submit/partition/Makefile src/plugins/job_submit/pbs/Makefile src/plugins/job_submit/require_timelimit/Makefile src/plugins/job_submit/throttle/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/cgroup/Makefile src/plugins/jobacct_gather/common/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/common/Makefile src/plugins/jobcomp/elasticsearch/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/kafka/Makefile src/plugins/jobcomp/lua/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/script/Makefile src/plugins/mcs/Makefile src/plugins/mcs/account/Makefile src/plugins/mcs/group/Makefile src/plugins/mcs/label/Makefile src/plugins/mcs/user/Makefile src/plugins/metrics/Makefile src/plugins/metrics/openmetrics/Makefile src/plugins/mpi/Makefile src/plugins/mpi/cray_shasta/Makefile src/plugins/mpi/pmi2/Makefile src/plugins/mpi/pmix/Makefile src/plugins/namespace/Makefile src/plugins/namespace/linux/Makefile src/plugins/namespace/tmpfs/Makefile src/plugins/node_features/Makefile src/plugins/node_features/helpers/Makefile src/plugins/preempt/Makefile src/plugins/preempt/partition_prio/Makefile src/plugins/preempt/qos/Makefile src/plugins/prep/Makefile src/plugins/prep/script/Makefile src/plugins/priority/Makefile src/plugins/priority/basic/Makefile src/plugins/priority/multifactor/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/cgroup/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/select/Makefile src/plugins/select/cons_tres/Makefile src/plugins/select/linear/Makefile src/plugins/serializer/Makefile src/plugins/serializer/json/Makefile src/plugins/serializer/url-encoded/Makefile src/plugins/serializer/yaml/Makefile src/plugins/site_factor/Makefile src/plugins/site_factor/example/Makefile src/plugins/switch/Makefile src/plugins/switch/hpe_slingshot/Makefile src/plugins/switch/nvidia_imex/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/cgroup/Makefile src/plugins/tls/Makefile src/plugins/tls/none/Makefile src/plugins/tls/s2n/Makefile src/plugins/topology/Makefile src/plugins/topology/block/Makefile src/plugins/topology/common/Makefile src/plugins/topology/flat/Makefile src/plugins/topology/ring/Makefile src/plugins/topology/tree/Makefile src/sacct/Makefile src/sackd/Makefile src/sacctmgr/Makefile src/salloc/Makefile src/sattach/Makefile src/scrun/Makefile src/sbatch/Makefile src/sbcast/Makefile src/scancel/Makefile src/scontrol/Makefile src/scrontab/Makefile src/sdiag/Makefile src/sinfo/Makefile src/slurmctld/Makefile src/slurmd/Makefile src/slurmd/common/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmdbd/Makefile src/slurmrestd/Makefile src/slurmrestd/plugins/Makefile src/slurmrestd/plugins/auth/Makefile src/slurmrestd/plugins/auth/jwt/Makefile src/slurmrestd/plugins/auth/local/Makefile src/slurmrestd/plugins/openapi/Makefile src/slurmrestd/plugins/openapi/slurmctld/Makefile src/slurmrestd/plugins/openapi/slurmdbd/Makefile src/slurmrestd/plugins/openapi/util/Makefile src/sprio/Makefile src/squeue/Makefile src/sreport/Makefile src/srun/Makefile src/sshare/Makefile src/sstat/Makefile src/stepmgr/Makefile src/strigger/Makefile src/sview/Makefile testsuite/Makefile testsuite/testsuite.conf.sample testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/backfill/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/common/bitstring/Makefile testsuite/slurm_unit/common/hostlist/Makefile testsuite/slurm_unit/common/slurm_protocol_defs/Makefile testsuite/slurm_unit/common/slurm_protocol_pack/Makefile testsuite/slurm_unit/common/slurmdb_defs/Makefile testsuite/slurm_unit/common/slurmdb_pack/Makefile testsuite/slurm_unit/topology/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -30758,6 +30950,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_RSMI_TRUE}" && test -z "${BUILD_RSMI_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_RSMI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_AMDSMI_TRUE}" && test -z "${BUILD_AMDSMI_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_AMDSMI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_ONEAPI_TRUE}" && test -z "${BUILD_ONEAPI_FALSE}"; then
@@ -31938,7 +32134,6 @@ do
     "src/plugins/data_parser/v0.0.44/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/data_parser/v0.0.44/Makefile" ;;
     "src/plugins/data_parser/v0.0.45/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/data_parser/v0.0.45/Makefile" ;;
     "src/plugins/gpu/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/Makefile" ;;
-    "src/plugins/gpu/asmi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/asmi/Makefile" ;;
     "src/plugins/gpu/common/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/common/Makefile" ;;
     "src/plugins/gpu/generic/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/generic/Makefile" ;;
     "src/plugins/gpu/nrt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/nrt/Makefile" ;;
@@ -31946,6 +32141,7 @@ do
     "src/plugins/gpu/nvml/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/nvml/Makefile" ;;
     "src/plugins/gpu/oneapi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/oneapi/Makefile" ;;
     "src/plugins/gpu/rsmi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/rsmi/Makefile" ;;
+    "src/plugins/gpu/asmi/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gpu/asmi/Makefile" ;;
     "src/plugins/gres/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gres/Makefile" ;;
     "src/plugins/gres/common/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gres/common/Makefile" ;;
     "src/plugins/gres/gpu/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/gres/gpu/Makefile" ;;

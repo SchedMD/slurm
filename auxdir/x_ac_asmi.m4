@@ -7,36 +7,51 @@
 #
 #  DESCRIPTION:
 #    Determine if AMD's AMD-SMI API library exists
+#
+#  NOTES:
+#    - Always AC_SUBST() variables so @VAR@ never leaks into Makefiles
+#    - BUILD_AMDSMI controls whether the asmi plugin is built
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_ASMI],
 [
+  dnl ------------------------------------------------------------------
+  dnl Defaults — MUST always be substituted
+  dnl ------------------------------------------------------------------
+  ac_amdsmi=no
+  AMDSMI_CPPFLAGS=""
+  AMDSMI_LIBS=""
 
-  dnl /opt/rocm is the current default location.
-  dnl Unless _x_ac_amdsmi_dirs is overwritten with --with-asmi
+  AC_SUBST([AMDSMI_CPPFLAGS])
+  AC_SUBST([AMDSMI_LIBS])
+
+  dnl ------------------------------------------------------------------
+  dnl Default search path
+  dnl ------------------------------------------------------------------
   _x_ac_amdsmi_dirs="/opt/rocm"
 
   AC_ARG_WITH(
     [asmi],
-    AS_HELP_STRING([--with-asmi=PATH], [Specify path to AMD-SMI (amdsmi) installation]),
-    [AS_IF([test "x$with_asmi" != xno && test "x$with_asmi" != xyes],
-           [_x_ac_amdsmi_dirs="$with_asmi"])]
+    AS_HELP_STRING(
+      [--with-asmi=PATH],
+      [Specify path to AMD-SMI (amdsmi) installation]
+    ),
+    [
+      AS_IF(
+        [test "x$with_asmi" != xno && test "x$with_asmi" != xyes],
+        [_x_ac_amdsmi_dirs="$with_asmi"]
+      )
+    ]
   )
 
+  dnl ------------------------------------------------------------------
+  dnl Handle --with-asmi=no explicitly
+  dnl ------------------------------------------------------------------
   if test "x$with_asmi" = xno; then
-    AC_MSG_NOTICE([support for AMD-SMI (asmi) disabled])
+    AC_MSG_NOTICE([support for AMD-SMI (asmi) disabled by user])
   else
-    AC_MSG_CHECKING([whether AMD-SMI is installed in this system])
-    dnl Check for AMD-SMI header and library in the default location
-    dnl or in the location specified during configure
-    dnl
-    dnl NOTE: Even if we find the libraries here, they must be in the
-    dnl runtime library path / ldconfig cache for the plugin to work.
+    AC_MSG_CHECKING([for AMD-SMI (amdsmi) installation])
     AC_MSG_RESULT([])
-
-    ac_amdsmi=no
-    ac_amdsmi_h=no
-    ac_amdsmi_l=no
 
     for _x_ac_amdsmi_dir in $_x_ac_amdsmi_dirs; do
       cppflags_save="$CPPFLAGS"
@@ -48,43 +63,67 @@ AC_DEFUN([X_AC_ASMI],
       AMDSMI_LIB_DIR="$_x_ac_amdsmi_dir/lib"
       LDFLAGS="$LDFLAGS -L$AMDSMI_LIB_DIR"
 
+      dnl Clear cached results so multiple paths work correctly
       AS_UNSET([ac_cv_header_amd_smi_amdsmi_h])
       AS_UNSET([ac_cv_lib_amd_smi_amdsmi_init])
 
-      dnl Header: amd_smi/amdsmi.h
-      AC_CHECK_HEADER([amd_smi/amdsmi.h],
-                      [ac_amdsmi_h=yes],
-                      [ac_amdsmi_h=no])
+      dnl --------------------------------------------------------------
+      dnl Header check
+      dnl --------------------------------------------------------------
+      AC_CHECK_HEADER(
+        [amd_smi/amdsmi.h],
+        [ac_amdsmi_h=yes],
+        [ac_amdsmi_h=no]
+      )
 
-      dnl Library: libamd_smi.so, symbol: amdsmi_init
-      AC_CHECK_LIB([amd_smi],
-                   [amdsmi_init],
-                   [ac_amdsmi_l=yes],
-                   [ac_amdsmi_l=no])
+      dnl --------------------------------------------------------------
+      dnl Library + symbol check
+      dnl --------------------------------------------------------------
+      AC_CHECK_LIB(
+        [amd_smi],
+        [amdsmi_init],
+        [ac_amdsmi_l=yes],
+        [ac_amdsmi_l=no]
+      )
 
       CPPFLAGS="$cppflags_save"
       LDFLAGS="$ldflags_save"
 
-      if test "x$ac_amdsmi_l" = xyes && test "x$ac_amdsmi_h" = xyes; then
+      if test "x$ac_amdsmi_h" = xyes && test "x$ac_amdsmi_l" = xyes; then
         ac_amdsmi=yes
-        AC_DEFINE([HAVE_ASMI], [1],
-                  [Define to 1 if AMD-SMI library found])
-        AC_SUBST([AMDSMI_CPPFLAGS])
         AMDSMI_LIBS="-L$AMDSMI_LIB_DIR -lamd_smi"
-        AC_SUBST([AMDSMI_LIBS])
+
+        AC_DEFINE(
+          [HAVE_ASMI],
+          [1],
+          [Define to 1 if AMD-SMI (amdsmi) library is available]
+        )
+
         break
       fi
     done
 
-    dnl Only print errors/warnings if _x_ac_amdsmi_dirs don't work
+    dnl --------------------------------------------------------------
+    dnl Diagnostics
+    dnl --------------------------------------------------------------
     if test "x$ac_amdsmi" != xyes; then
       if test -z "$with_asmi" || test "x$with_asmi" = xyes; then
-        AC_MSG_WARN([unable to locate libamd_smi.so and/or amd_smi/amdsmi.h])
+        AC_MSG_WARN(
+          [AMD-SMI not found (libamd_smi.so and/or amd_smi/amdsmi.h missing)]
+        )
       else
-        AC_MSG_ERROR([unable to locate libamd_smi.so and/or amd_smi/amdsmi.h in $with_asmi])
+        AC_MSG_ERROR(
+          [AMD-SMI not found in $with_asmi]
+        )
       fi
     fi
   fi
 
-  AM_CONDITIONAL([BUILD_ASMI], [test "x$ac_amdsmi" = xyes])
+  dnl ------------------------------------------------------------------
+  dnl Automake conditional
+  dnl ------------------------------------------------------------------
+  AM_CONDITIONAL(
+    [BUILD_AMDSMI],
+    [test "x$ac_amdsmi" = xyes]
+  )
 ])

@@ -6,7 +6,7 @@ if BUILD_RSMI
 SUBDIRS += rsmi
 endif
 
-if BUILD_ASMI
+if BUILD_AMDSMI
 SUBDIRS += asmi
 endif
 
