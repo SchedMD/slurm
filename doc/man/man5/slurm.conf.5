@@ -5128,6 +5128,13 @@ Set \fB\-\-gres\-flags=one\-task\-per\-sharing\fR as the default in every job.
 This can be overridden with \fB\-\-gres\-flags=multiple\-tasks\-per\-sharing\fR.
 .IP
 
+.TP
+\fBCR_NO_DIST_TOPO_BLOCK\fR
+Disable topology\-aware task distribution for steps. By default, when a
+topology plugin is configured, tasks are distributed to nodes following
+topology order. This option reverts to the standard bitmap order.
+.IP
+
 .LP
 \fBNOTE\fR: If memory isn't configured as a consumable resource (CR_CPU,
 CR_Core or CR_Socket without _Memory) memory can be oversubscribed and will not
