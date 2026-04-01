@@ -602,7 +602,8 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 
 static void _close_acct_storage_conn(void)
 {
-	acct_storage_g_close_connection(&acct_db_conn);
+	if (acct_db_conn)
+		acct_storage_g_close_connection(&acct_db_conn);
 
 	acct_storage_g_fini();
 	slurm_persist_conn_recv_server_fini();
