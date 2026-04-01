@@ -278,8 +278,6 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
-    failures.append(f"Unknown coredump detected, see {bt_file}")
-
     reason = "Ticket 24905: Known issue with slurmstepd with stepmgr"
     component = "sbin/slurmstepd"
     if (
@@ -292,8 +290,6 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         # TODO: Add version when t24905 is fixed
         failures.append(reason)
         return
-
-    failures.append(f"Unknown coredump detected, see {bt_file}")
 
     reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
     component = "sbin/slurmstepd"
@@ -309,6 +305,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
 
