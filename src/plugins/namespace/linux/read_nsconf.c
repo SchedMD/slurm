@@ -62,6 +62,14 @@ static ns_conf_t slurm_ns_conf;
 static buf_t *slurm_ns_conf_buf = NULL;
 static bool slurm_ns_conf_inited = false;
 
+static int _dump_ns_dir(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	log_flag(NAMESPACE, "DirConf path=%s base_path=%s opts=%s tmpfs=%d",
+		 dir->path, dir->base_path, dir->opts_str, dir->tmpfs);
+	return 0;
+}
+
 static void _dump_ns_conf(void)
 {
 	if (!(slurm_conf.debug_flags & DEBUG_FLAG_NAMESPACE))
@@ -77,6 +85,8 @@ static void _dump_ns_conf(void)
 	log_flag(NAMESPACE, "CloneNSScript_Wait=%u",
 		 slurm_ns_conf.clonensscript_wait);
 	log_flag(NAMESPACE, "Dirs=%s", slurm_ns_conf.dirs);
+	if (slurm_ns_conf.dir_confs)
+		list_for_each(slurm_ns_conf.dir_confs, _dump_ns_dir, NULL);
 	log_flag(NAMESPACE, "disable_bpf_token=%d",
 		 slurm_ns_conf.disable_bpf_token);
 	log_flag(NAMESPACE, "InitScript=%s", slurm_ns_conf.initscript);
