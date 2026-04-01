@@ -1944,6 +1944,80 @@ static slurm_cli_opt_t slurm_opt_ignore_pbs = {
 	.reset_func = arg_reset_ignore_pbs,
 };
 
+static int arg_set_ignore_signals(slurm_opt_t *opt, const char *arg)
+{
+	char *tmp, *tok, *parse_ptr = NULL;
+	int signal;
+
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	opt->srun_opt->ignore_signals = 0;
+	tmp = xstrdup(arg);
+	tok = strtok_r(tmp, ",", &parse_ptr);
+
+	if (!tok) {
+		error("--ignore-signals requires at least one signal");
+		xfree(tmp);
+		return SLURM_ERROR;
+	}
+
+	while (tok) {
+		signal = sig_name2num(tok);
+		if (!signal || signal > 64) {
+			error("Invalid signal name or number: %s", tok);
+			xfree(tmp);
+			return SLURM_ERROR;
+		}
+		if (signal == 64) {
+			error("Signal %s is not handled by srun and cannot be ignored",
+			      tok);
+			xfree(tmp);
+			return SLURM_ERROR;
+		}
+		opt->srun_opt->ignore_signals |= ((uint64_t) 1 << signal);
+		tok = strtok_r(NULL, ",", &parse_ptr);
+	}
+	xfree(tmp);
+
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_ignore_signals(slurm_opt_t *opt)
+{
+	char *result = NULL, *pos = NULL;
+	char *sep = "";
+
+	if (!opt->srun_opt || !opt->srun_opt->ignore_signals)
+		return xstrdup("unset");
+
+	for (int i = 1; i < 64; i++) {
+		if (opt->srun_opt->ignore_signals & ((uint64_t) 1 << i)) {
+			xstrfmtcatat(result, &pos, "%s%s", sep,
+				     sig_num2name(i));
+			sep = ",";
+		}
+	}
+
+	return result;
+}
+
+static void arg_reset_ignore_signals(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->ignore_signals = 0;
+}
+
+static slurm_cli_opt_t slurm_opt_ignore_signals = {
+	.name = "ignore-signals",
+	.has_arg = required_argument,
+	.val = LONG_OPT_IGNORE_SIGNALS,
+	.set_func_srun = arg_set_ignore_signals,
+	.get_func = arg_get_ignore_signals,
+	.reset_func = arg_reset_ignore_signals,
+	.reset_each_pass = true,
+};
+
 static int arg_set_immediate(slurm_opt_t *opt, const char *arg)
 {
 	if (opt->sbatch_opt)
@@ -4289,6 +4363,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_hint,
 	&slurm_opt_hold,
 	&slurm_opt_ignore_pbs,
+	&slurm_opt_ignore_signals,
 	&slurm_opt_immediate,
 	&slurm_opt_input,
 	&slurm_opt_interactive,

@@ -55,4 +55,10 @@ extern int srun_sig_eventfd;
 extern bool srun_sig_forward;
 extern pthread_mutex_t srun_sig_forward_lock;
 
+/* Returns true if signo is a signal handled by srun */
+extern bool srun_sig_is_handled(int signo);
+
+/* Returns true if signo may be specified to --ignore-signals */
+extern bool srun_sig_is_ignorable(int signo);
+
 #endif /* _SRUN_SIGNALS_H */
