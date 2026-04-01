@@ -2335,7 +2335,14 @@ static int DUMP_FUNC(JOB_REASON)(const parser_t *const parser, void *obj,
 	return SLURM_SUCCESS;
 }
 
-PARSE_DISABLED(OVERSUBSCRIBE_JOBS)
+static int PARSE_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser,
+					  void *obj, data_t *src, args_t *args,
+					  data_t *parent_path)
+{
+	uint16_t *state = obj;
+	int rc = PARSE(UINT16, *state, src, parent_path, args);
+	return rc;
+}
 
 static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj,
 					 data_t *dst, args_t *args)
@@ -7179,6 +7186,27 @@ static void FREE_FUNC(OPENAPI_JOB_MODIFY_REQ)(void *ptr)
 	xfree(req);
 }
 
+static void *NEW_FUNC(PARTITION_INFO)(void)
+{
+	/*
+	 * update_part_msg_t is partition_info_t
+	 * This is only used for create and update partition endpoints
+	 */
+	partition_info_t *part_info = xmalloc(sizeof(*part_info));
+	slurm_init_part_desc_msg((update_part_msg_t *) part_info);
+	return part_info;
+}
+
+static void FREE_FUNC(PARTITION_INFO)(void *ptr)
+{
+	partition_info_t *part_info = ptr;
+
+	if (!part_info)
+		return;
+	slurm_free_partition_info_members(part_info);
+	xfree(part_info);
+}
+
 static int _foreach_variable(void *x, void *arg)
 {
 	hres_variable_t *var = x, *var_cpy;
@@ -7574,6 +7602,11 @@ static int DUMP_FUNC(NAMESPACE_NODE_CONF_COMPLEX)(const parser_t *const parser,
 }
 #define add_flag_bit(flag_value, flag_string)				\
 	add_flag_masked_bit(flag_value, INFINITE64, flag_string)
+#define add_flag_hidden_bit(flag_value, flag_string)			\
+	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),	\
+			   flag_value, INFINITE64,			\
+			   XSTRINGIFY(INFINITE64), flag_string, false,	\
+			   NULL)
 #define add_flag_masked_bit(flag_value, flag_mask, flag_string)		\
 	add_flag_bit_entry(FLAG_BIT_TYPE_BIT, XSTRINGIFY(flag_value),	\
 			   flag_value, flag_mask,			\
@@ -9159,10 +9192,44 @@ static const parser_t PARSER_ARRAY(STEP_INFO)[] = {
 #undef add_skip
 #undef add_cparse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_FLAGS)[] = {
+	add_flag_bit(PART_FLAG_DEFAULT, "DEFAULT"),
+	add_flag_bit(PART_FLAG_HIDDEN, "HIDDEN"),
+	add_flag_bit(PART_FLAG_NO_ROOT, "NO_ROOT"),
+	add_flag_bit(PART_FLAG_ROOT_ONLY, "ROOT_ONLY"),
+	add_flag_bit(PART_FLAG_REQ_RESV, "REQ_RESV"),
+	add_flag_bit(PART_FLAG_LLN, "LLN"),
+	add_flag_bit(PART_FLAG_EXCLUSIVE_USER, "EXCLUSIVE_USER"),
+	add_flag_bit(PART_FLAG_PDOI, "PDOI"),
+	add_flag_bit(PART_FLAG_DEFAULT_CLR, "DEFAULT_CLEAR"),
+	add_flag_bit(PART_FLAG_HIDDEN_CLR, "HIDDEN_CLEAR"),
+	add_flag_bit(PART_FLAG_NO_ROOT_CLR, "NO_ROOT_CLEAR"),
+	add_flag_bit(PART_FLAG_ROOT_ONLY_CLR, "ROOT_ONLY_CLEAR"),
+	add_flag_bit(PART_FLAG_REQ_RESV_CLR, "REQ_RESV_CLEAR"),
+	add_flag_bit(PART_FLAG_LLN_CLR, "LLN_CLEAR"),
+	add_flag_bit(PART_FLAG_EXC_USER_CLR, "EXC_USER_CLEAR"),
+	add_flag_bit(PART_FLAG_PDOI_CLR, "PDOI_CLEAR"),
+	add_flag_bit(PART_FLAG_EXCLUSIVE_TOPO, "EXCLUSIVE_TOPO"),
+	add_flag_bit(PART_FLAG_EXC_TOPO_CLR, "EXC_TOPO_CLEAR"),
+	add_flag_hidden_bit(PART_FLAG_SCHED_FAILED, "SCHED_FAILED"),
+	add_flag_hidden_bit(PART_FLAG_SCHED_CLEARED, "SCHED_CLEARED"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_PREEMPT_MODES)[] = {
+	add_flag_equal(NO_VAL16, INFINITE64, "CLUSTER_GLOBAL"),
+	add_flag_equal(PREEMPT_MODE_OFF, INFINITE64, "DISABLED"),
+	add_flag_bit(PREEMPT_MODE_SUSPEND, "SUSPEND"),
+	add_flag_bit(PREEMPT_MODE_REQUEUE, "REQUEUE"),
+	add_flag_bit(PREEMPT_MODE_CANCEL, "CANCEL"),
+	add_flag_bit(PREEMPT_MODE_PRIORITY, "PRIORITY"),
+};
+
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(partition_info_t, mtype, false, field, 0, path, desc)
 #define add_parse_overload(mtype, field, overloads, path, desc)		\
 	add_parser(partition_info_t, mtype, false, field, overloads, path, desc)
+#define add_removed(mtype, path, desc, deprec)				\
+	add_parser_removed(partition_info_t, mtype, false, path, desc, deprec)
 #define add_skip(field)					\
 	add_parser_skip(partition_info_t, field)
 static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
@@ -9172,50 +9239,51 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, allow_qos, "qos/allowed", "AllowQOS - Comma-separated list of Qos which may execute jobs in the partition"),
 	add_parse(STRING, alternate, "alternate", "Alternate - Partition name of alternate partition to be used if the state of this partition is DRAIN or INACTIVE"),
 	add_parse(STRING, billing_weights_str, "tres/billing_weights", "TRESBillingWeights - Billing weights of each tracked TRES type that will be used in calculating the usage of a job"),
-	add_parse(STRING, cluster_name, "cluster", "Cluster name"),
-	add_parse(CR_TYPE, cr_type, "select_type", "Scheduler consumable resource selection type"),
-	add_parse(UINT32, cpu_bind, "cpus/task_binding", "CpuBind - Default method controlling how tasks are bound to allocated resources"),
-	add_parse_overload(UINT64, def_mem_per_cpu, 2, "defaults/memory_per_cpu", "Raw value for DefMemPerCPU or DefMemPerNode"),
-	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 2, "defaults/partition_memory_per_cpu", "DefMemPerCPU - Default real memory size available per allocated CPU in megabytes"),
-	add_parse_overload(MEM_PER_NODE, def_mem_per_cpu, 2, "defaults/partition_memory_per_node", "DefMemPerNode - Default real memory size available per allocated node in megabytes"),
+	add_parse(STRING, cluster_name, "cluster", "Cluster name (read-only)"),
+	add_parse(CR_TYPE, cr_type, "select_type", "Scheduler consumable resource selection type (read-only)"),
+	add_parse(NODE_PARTITION_CPU_BINDING_FLAGS, cpu_bind, "cpus/task_binding", "CpuBind - Default method controlling how tasks are bound to allocated resources"),
+	add_removed(UINT64, "defaults/memory_per_cpu", "Raw value for DefMemPerCPU or DefMemPerNode", SLURM_26_05_PROTOCOL_VERSION),
+	add_parse_overload(MEM_PER_CPUS, def_mem_per_cpu, 1, "defaults/partition_memory_per_cpu", "DefMemPerCPU - Default real memory size available per allocated CPU in megabytes"),
+	add_parse_overload(MEM_PER_NODE, def_mem_per_cpu, 1, "defaults/partition_memory_per_node", "DefMemPerNode - Default real memory size available per allocated node in megabytes"),
 	add_parse(UINT32_NO_VAL, default_time, "defaults/time", "DefaultTime - Run time limit in minutes used for jobs that don't specify a value"),
 	add_parse(STRING, deny_accounts, "accounts/deny", "DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition"),
 	add_parse(STRING, deny_qos, "qos/deny", "DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition"),
-	add_skip(flags), //FIXME
+	add_parse(PARTITION_FLAGS, flags, "flags", "Partition flag options"),
 	add_parse(UINT32, grace_time, "grace_time", "GraceTime - Grace time in seconds to be extended to a job which has been selected for preemption"),
 	add_skip(job_defaults_list), //FIXME - is this even packed?
 	add_parse(STRING, job_defaults_str, "defaults/job", "JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults)"),
 	add_parse(UINT32_NO_VAL, max_cpus_per_node, "maximums/cpus_per_node", "MaxCPUsPerNode - Maximum number of CPUs on any node available to all jobs from this partition"),
 	add_parse(UINT32_NO_VAL, max_cpus_per_socket, "maximums/cpus_per_socket", "MaxCPUsPerSocket - Maximum number of CPUs on any node available on the all jobs from this partition"),
-	add_parse_overload(UINT64, max_mem_per_cpu, 2, "maximums/memory_per_cpu", "Raw value for MaxMemPerCPU or MaxMemPerNode"),
-	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 2, "maximums/partition_memory_per_cpu", "MaxMemPerCPU - Maximum real memory size available per allocated CPU in megabytes"),
-	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 2, "maximums/partition_memory_per_node", "MaxMemPerNode - Maximum real memory size available per allocated node in a job allocation in megabytes"),
+	add_removed(UINT64, "maximums/memory_per_cpu", "Raw value for MaxMemPerCPU or MaxMemPerNode", SLURM_26_05_PROTOCOL_VERSION),
+	add_parse_overload(MEM_PER_CPUS, max_mem_per_cpu, 1, "maximums/partition_memory_per_cpu", "MaxMemPerCPU - Maximum real memory size available per allocated CPU in megabytes"),
+	add_parse_overload(MEM_PER_NODE, max_mem_per_cpu, 1, "maximums/partition_memory_per_node", "MaxMemPerNode - Maximum real memory size available per allocated node in a job allocation in megabytes"),
 	add_parse(UINT32_NO_VAL, max_nodes, "maximums/nodes", "MaxNodes - Maximum count of nodes which may be allocated to any single job"),
-	add_parse_overload(UINT16, max_share, 2, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource"),
-	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 2, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
-	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 2, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
-	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs"),
+	add_removed(UINT16, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource", SLURM_26_05_PROTOCOL_VERSION),
+	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 1, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
+	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 1, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
+	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs in minutes"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
 	add_parse(STRING, name, "name", "PartitionName - Name by which the partition may be referenced"),
 	add_skip(node_inx),
 	add_parse(STRING, nodes, "nodes/configured", "Nodes - Comma-separated list of nodes which are associated with this partition"),
 	add_parse(STRING, nodesets, "node_sets", "NodeSets - Comma-separated list of nodesets which are associated with this partition"),
 	add_parse(UINT16_NO_VAL, over_time_limit, "maximums/over_time_limit", "OverTimeLimit - Number of minutes by which a job can exceed its time limit before being canceled"),
-	add_skip(preempt_mode), // FIXME
+	add_parse(PARTITION_PREEMPT_MODES, preempt_mode, "preempt_mode", "PreemptMode - Mechanism used to preempt jobs for this partition when PreemptType=preempt/partition_prio is configured (the \"CLUSTER_GLOBAL\" flag will be ignored when updating a partition)."),
 	add_parse(UINT16, priority_job_factor, "priority/job_factor", "PriorityJobFactor - Partition factor used by priority/multifactor plugin in calculating job priority"),
 	add_parse(UINT16, priority_tier, "priority/tier", "PriorityTier - Controls the order in which the scheduler evaluates jobs from different partitions"),
 	add_parse(STRING, qos_char, "qos/assigned", "QOS - QOS name containing limits that will apply to all jobs in this partition"),
-	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (GLOBAL if both set and infinite are false)"),
+	add_parse(UINT16_NO_VAL, resume_timeout, "timeouts/resume", "ResumeTimeout - Resumed nodes which fail to respond in this time frame will be marked DOWN (read-only; GLOBAL if both set and infinite are false)."),
 	add_parse(STRING, topology_name, "topology", "Topology - Name of the topology, defined in topology.yaml, used by jobs in this partition"),
 	add_parse(PARTITION_STATES, state_up, "partition/state", "Current state(s)"),
-	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", "SuspendTime - Nodes which remain idle or down for this number of seconds will be placed into power save mode (GLOBAL if both set and infinite are false)"),
-	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend", "SuspendTimeout - Maximum time permitted (in seconds) between when a node suspend request is issued and when the node is shutdown (GLOBAL if both set and infinite are false)"),
-	add_parse(UINT32, total_cpus, "cpus/total", "TotalCPUs - Number of CPUs available in this partition"),
-	add_parse(UINT32, total_nodes, "nodes/total", "TotalNodes - Number of nodes available in this partition"),
-	add_parse(STRING, tres_fmt_str, "tres/configured", "TRES - Number of each applicable TRES type available in this partition"),
+	add_parse(UINT32_NO_VAL, suspend_time, "suspend_time", "SuspendTime - Nodes which remain idle or down for this number of seconds will be placed into power save mode (read-only; GLOBAL if both set and infinite are false)."),
+	add_parse(UINT16_NO_VAL, suspend_timeout, "timeouts/suspend", "SuspendTimeout - Maximum time permitted (in seconds) between when a node suspend request is issued and when the node is shutdown (read-only; GLOBAL if both set and infinite are false)."),
+	add_parse(UINT32, total_cpus, "cpus/total", "TotalCPUs - Number of CPUs available in this partition (read-only)"),
+	add_parse(UINT32, total_nodes, "nodes/total", "TotalNodes - Number of nodes available in this partition (read-only)"),
+	add_parse(STRING, tres_fmt_str, "tres/configured", "TRES - Number of each applicable TRES type available in this partition (read-only)"),
 };
 #undef add_parse
 #undef add_skip
+#undef add_removed
 #undef add_parse_overload
 
 #define add_parse(mtype, field, path, desc)				\
@@ -9434,7 +9502,7 @@ static const parser_t PARSER_ARRAY(JOB_SUBMIT_RESPONSE_MSG)[] = {
 #undef add_parse_overload
 #undef add_parse
 
-/* flag values based on output of slurm_sprint_cpu_bind_type() */
+/* flag values based on output of slurm_sprint_cpu_bind_type() - uint16 */
 static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
 	add_flag_equal(CPU_BIND_TO_THREADS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_THREADS"),
 	add_flag_equal(CPU_BIND_TO_CORES, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_CORES"),
@@ -9449,6 +9517,17 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CPU_BINDING_FLAGS)[] = {
 	add_flag_equal(CPU_BIND_LDMASK, CPU_BIND_T_MASK, "CPU_BIND_LDMASK"),
 	add_flag_masked_bit(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "VERBOSE"),
 	add_flag_masked_bit(CPU_BIND_ONE_THREAD_PER_CORE, CPU_BIND_ONE_THREAD_PER_CORE, "CPU_BIND_ONE_THREAD_PER_CORE"),
+};
+
+/* flag values parsable by xlate_cpu_bind_str() - uint32 */
+static const flag_bit_t PARSER_FLAG_ARRAY(NODE_PARTITION_CPU_BINDING_FLAGS)[] = {
+	add_flag_equal(CPU_BIND_TO_THREADS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_THREADS"),
+	add_flag_equal(CPU_BIND_TO_CORES, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_CORES"),
+	add_flag_equal(CPU_BIND_TO_SOCKETS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_SOCKETS"),
+	add_flag_equal(CPU_BIND_TO_LDOMS, CPU_BIND_T_TO_MASK, "CPU_BIND_TO_LDOMS"),
+	add_flag_equal(CPU_BIND_NONE, CPU_BIND_T_MASK, "CPU_BIND_NONE"),
+	add_flag_equal(CPU_BIND_OFF, CPU_BIND_T_TASK_PARAMS_MASK, "CPU_BIND_OFF"),
+	add_flag_masked_bit(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "VERBOSE"),
 };
 
 static const flag_bit_t PARSER_FLAG_ARRAY(CRON_ENTRY_FLAGS)[] = {
@@ -10834,6 +10913,7 @@ add_openapi_response_single(OPENAPI_HOSTNAMES_REQ_RESP, HOSTLIST_STRING, "hostna
 add_openapi_response_single(OPENAPI_JOB_MODIFY_RESP, STRING_LIST, "results", "Job modify results");
 add_openapi_response_single(OPENAPI_CREATE_NODE_REQ, STRING, "node_conf", "Node configuration line");
 add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_LIST, "nodes", "Node resource layouts");
+add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIST, "partitions", "list of partition descriptions");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -11526,7 +11606,7 @@ static const parser_t parsers[] = {
 	addpap(CONTROLLER_PING, controller_ping_t, NULL, NULL),
 	addpap(SLURMDBD_PING, slurmdbd_ping_t, NULL, NULL),
 	addpap(STEP_INFO, job_step_info_t, NULL, NULL),
-	addpap(PARTITION_INFO, partition_info_t, NULL, NULL),
+	addpap(PARTITION_INFO, partition_info_t, NEW_FUNC(PARTITION_INFO), FREE_FUNC(PARTITION_INFO)),
 	addpap(SINFO_DATA, sinfo_data_t, NULL, NULL),
 	addpap(ACCT_GATHER_ENERGY, acct_gather_energy_t, NULL, NULL),
 	addpap(RESERVATION_INFO, reserve_info_t, NULL, NULL),
@@ -11662,6 +11742,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_JOB_MODIFY_RESP),
 	addoar(OPENAPI_CREATE_NODE_REQ),
 	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
+	addoar(OPENAPI_PARTITIONS_MOD_REQ),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -11673,6 +11754,7 @@ static const parser_t parsers[] = {
 	addfa(QOS_FLAGS, slurmdb_qos_flags_t),
 	addfa(QOS_CONDITION_FLAGS, uint16_t),
 	addfa(QOS_PREEMPT_MODES, uint16_t),
+	addfa(PARTITION_PREEMPT_MODES, uint16_t),
 	addfa(CLUSTER_REC_FLAGS, slurmdb_cluster_flags_t),
 	addfa(NODE_STATES, uint32_t),
 	addfa(PARTITION_STATES, uint16_t),
@@ -11706,6 +11788,8 @@ static const parser_t parsers[] = {
 	addfa(JOB_RES_CORE_STATUS, JOB_RES_CORE_status_t),
 	addfa(NODE_CERT_FLAGS, uint16_t),
 	addfa(H_RESOURCE_MODE_FLAG, uint8_t),
+	addfa(NODE_PARTITION_CPU_BINDING_FLAGS, uint32_t),
+	addfa(PARTITION_FLAGS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
@@ -11746,6 +11830,11 @@ static const parser_t parsers[] = {
 	addpl(NODE_RESOURCE_LAYOUT_LIST, NODE_RESOURCE_LAYOUT_PTR, NEED_NONE),
 	addpl(NODE_GRES_LAYOUT_LIST, NODE_GRES_LAYOUT_PTR, NEED_NONE),
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
+	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
+
+	/* alias parsers */
+	/* Can remove OPENAPI_PARTITION_PARAM_ALIAS once v0.0.44 is removed */
+	addalias(OPENAPI_PARTITION_PARAM_ALIAS, OPENAPI_PARTITION_PARAM),
 };
 #undef addpl
 #undef addps

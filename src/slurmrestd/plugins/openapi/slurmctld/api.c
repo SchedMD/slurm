@@ -393,6 +393,19 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.query = DATA_PARSER_OPENAPI_PARTITIONS_QUERY,
 			},
+			{
+				.method = HTTP_REQUEST_POST,
+				.tags = tags,
+				.summary = "create or update partitions",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "partition update or create request results",
+				},
+				.body = {
+					.type = DATA_PARSER_OPENAPI_PARTITIONS_MOD_REQ,
+					.description = "partition description"
+				}
+			},
 			{0}
 		},
 		.flags = OP_FLAGS,
@@ -411,6 +424,17 @@ const openapi_path_binding_t openapi_paths[] = {
 				},
 				.parameters = DATA_PARSER_OPENAPI_PARTITION_PARAM,
 				.query = DATA_PARSER_OPENAPI_PARTITIONS_QUERY,
+			},
+			{
+				.method = HTTP_REQUEST_DELETE,
+				.tags = tags,
+				.summary = "delete partition",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_RESP,
+					.description = "partition deletion result",
+				},
+				/* Use ALIAS so it only adds to v45+ */
+				.parameters = DATA_PARSER_OPENAPI_PARTITION_PARAM_ALIAS,
 			},
 			{0}
 		},

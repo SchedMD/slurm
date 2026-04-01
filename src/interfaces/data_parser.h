@@ -461,8 +461,14 @@ typedef enum {
 	DATA_PARSER_OPENAPI_PARTITION_RESP_PTR, /* openapi_resp_partitions_info_msg_t* */
 	DATA_PARSER_OPENAPI_PARTITION_PARAM, /* openapi_partition_param_t */
 	DATA_PARSER_OPENAPI_PARTITION_PARAM_PTR, /* openapi_partition_param_t* */
+	DATA_PARSER_OPENAPI_PARTITION_PARAM_ALIAS, /* openapi_partition_param_t - needed to separate v4[2-4] from v45 */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY, /* openapi_partitions_query_t */
 	DATA_PARSER_OPENAPI_PARTITIONS_QUERY_PTR, /* openapi_partitions_query_t* */
+	DATA_PARSER_OPENAPI_PARTITIONS_MOD_REQ, /* openapi_partitions_mod_t */
+	DATA_PARSER_OPENAPI_PARTITIONS_MOD_REQ_PTR, /* openapi_partitions_mod_t* */
+	DATA_PARSER_PARTITION_FLAGS, /* uint32_t - PART_FLAG_* */
+	DATA_PARSER_PARTITION_PREEMPT_MODES, /* uint16_t */
+	DATA_PARSER_UPDATE_PARTITION_MSG_LIST, /* list_t* of update_part_msg_t* (which are partition_info_t*) */
 	DATA_PARSER_EXT_SENSORS_DATA, /* Remove when 24.11 is no longer supported: ext_sensors_data_t */
 	DATA_PARSER_EXT_SENSORS_DATA_PTR, /* Remove when 24.11 is no longer supported: ext_sensors_data_t* */
 	DATA_PARSER_POWER_MGMT_DATA, /* Remove when 24.11 is no longer supported: power_mgmt_data_t */
@@ -667,6 +673,7 @@ typedef enum {
 	DATA_PARSER_TOPOLOGY_RING_CONFIG_ARRAY, /* topology_ring_config_t->ring_configs,config_cnt */
 	DATA_PARSER_RING_CONFIG, /* slurm_conf_ring_t */
 	DATA_PARSER_RING_CONFIG_PTR, /* slurm_conf_ring_t* */
+	DATA_PARSER_NODE_PARTITION_CPU_BINDING_FLAGS, /* uint32_t <-> cpu_bind_type_t */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
