@@ -658,6 +658,13 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
 		return ESLURM_USER_ID_MISSING;
 	}
 
+	/* SLURM_AUTH_NOBODY is never allowed to submit jobs */
+	if ((uid == SLURM_AUTH_NOBODY) || (gid == SLURM_AUTH_NOBODY)) {
+		error("%s: rejecting authenticated request from nobody: UID=%u GID=%u",
+		      caller, uid, gid);
+		return ESLURM_AUTH_NOBODY;
+	}
+
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
