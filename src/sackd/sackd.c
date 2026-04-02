@@ -45,6 +45,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -518,6 +519,8 @@ rwfail:
 
 extern int main(int argc, char **argv)
 {
+	probe_init();
+
 	main_argv = argv;
 	_parse_args(argc, argv);
 
@@ -575,6 +578,7 @@ extern int main(int argc, char **argv)
 
 	info("running");
 	conmgr_run(true);
+	probe_fini();
 
 	xfree(conf_file);
 	xfree(conf_server);
