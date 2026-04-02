@@ -44,6 +44,8 @@ libcommon_la_SOURCES =				\
 	fd.h					\
 	fetch_config.c				\
 	fetch_config.h				\
+	file_bcast.c				\
+	file_bcast.h				\
 	forward.c				\
 	forward.h				\
 	global_defaults.c			\

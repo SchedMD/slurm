@@ -420,7 +420,6 @@ AC_CONFIG_FILES([Makefile
 		 etc/Makefile
 		 src/Makefile
 		 src/api/Makefile
-		 src/bcast/Makefile
 		 src/common/Makefile
 		 src/conmgr/Makefile
 		 src/curl/Makefile

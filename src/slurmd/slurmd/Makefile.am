@@ -6,7 +6,6 @@ AUTOMAKE_OPTIONS = foreign
 sbin_PROGRAMS = slurmd
 
 depend_libs = \
-	$(top_builddir)/src/bcast/libfile_bcast.la \
 	../common/libslurmd_common.o \
 	$(SLURMD_INTERFACES)
 
