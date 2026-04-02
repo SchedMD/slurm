@@ -120,7 +120,7 @@
 #include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
-#define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
+#define MAX_EXIT_VAL 65535 /* Max RequeueExit value; exceeds any slurm_err_t */
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 #define PURGE_OLD_JOB_IN_SEC 2592000 /* 30 days in seconds */
 
@@ -3159,6 +3159,7 @@ static int _foreach_kill_running_job_by_node(void *x, void *arg)
 			job_ptr->warn_flags &= ~WARN_SENT;
 
 			job_ptr->exit_code = 0;
+			job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 
 			/*
 			 * Since the job completion logger
@@ -6402,6 +6403,7 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 
 		job_state_set(job_ptr, (JOB_PENDING | job_comp_flag));
 		job_ptr->exit_code = 0;
+		job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 		/*
 		 * Since the job completion logger removes the job submit
 		 * information, we need to add it again.
@@ -12462,6 +12464,7 @@ static int _release_job_rec(job_record_t *job_ptr, slurm_msg_t *msg)
 	job_state_unset_flag(job_ptr, JOB_SPECIAL_EXIT);
 	xfree(job_ptr->state_desc);
 	job_ptr->exit_code = 0;
+	job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 	job_mgr_release_set(job_ptr);
 
 	if (job_ptr->licenses && !job_ptr->license_list) {
@@ -19773,7 +19776,7 @@ static bitstr_t *_make_requeue_array(char *conf_buf)
  */
 static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 {
-	int exit_code;
+	uint32_t exit_code;
 
 	/* --no-requeue option supersedes config for RequeueExit &
 	 * RequeueExitHold
@@ -19781,7 +19784,15 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 	if (job_ptr->details && !job_ptr->details->requeue)
 		return;
 
-	exit_code = WEXITSTATUS(job_ptr->exit_code);
+	/*
+	 * A job that Slurm failed is matched against its Slurm return code;
+	 * any other job is matched against the status it exited with. Both
+	 * share the one RequeueExit list.
+	 */
+	if (job_ptr->job_exit_rc.rc)
+		exit_code = job_ptr->job_exit_rc.rc;
+	else
+		exit_code = WEXITSTATUS(job_ptr->job_exit_rc.exit_code);
 
 	/* Only requeue on failure; success (exit 0) completes the job. */
 	if ((job_ptr->bit_flags & EXPEDITED_REQUEUE) && exit_code) {
@@ -19791,8 +19802,12 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 		return;
 	}
 
+	/* Beyond the RequeueExit and RequeueExitHold bitmaps */
+	if (exit_code > MAX_EXIT_VAL)
+		return;
+
 	if (requeue_exit && bit_test(requeue_exit, exit_code)) {
-		debug2("%s: %pJ exit code %d state JOB_REQUEUE",
+		debug2("%s: %pJ requeue value %u state JOB_REQUEUE",
 		       __func__, job_ptr, exit_code);
 		job_state_set_flag(job_ptr, JOB_REQUEUE);
 		return;
@@ -19800,7 +19815,7 @@ static void _set_job_requeue_exit_value(job_record_t *job_ptr)
 
 	if (requeue_exit_hold && bit_test(requeue_exit_hold, exit_code)) {
 		/* Not sure if want to set special exit state in this case */
-		debug2("%s: %pJ exit code %d state JOB_SPECIAL_EXIT",
+		debug2("%s: %pJ requeue value %u state JOB_SPECIAL_EXIT",
 		       __func__, job_ptr, exit_code);
 		job_state_set_flag(job_ptr, (JOB_REQUEUE | JOB_SPECIAL_EXIT));
 		return;

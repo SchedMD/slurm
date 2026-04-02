@@ -1594,6 +1594,7 @@ void _sync_jobs_to_conf(void)
 					job_ptr->node_bitmap_cg);
 				/* Reset exit code from last run */
 				job_ptr->exit_code = 0;
+				job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 			}
 		}
 	}

@@ -2287,6 +2287,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	time_t now = time(NULL);
 
 	job_ptr->exit_code = 0;
+	job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req);
 	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
@@ -2977,6 +2978,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
 	job_ptr->exit_code = 0;
+	job_ptr->job_exit_rc = (job_exit_rc_t) { 0 };
 	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req);
 	gres_stepmgr_job_clear_alloc(job_ptr->gres_list_req_accum);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);

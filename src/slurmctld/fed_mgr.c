@@ -5024,6 +5024,7 @@ extern int fed_mgr_job_revoke(job_record_t *job_ptr, bool job_complete,
 
 	/* Check if the job exited with one of the configured requeue values. */
 	job_ptr->exit_code = exit_code;
+	job_ptr->job_exit_rc.exit_code = exit_code;
 	if (job_hold_requeue(job_ptr)) {
 		batch_requeue_fini(job_ptr);
 		return SLURM_SUCCESS;
