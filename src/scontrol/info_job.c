@@ -1278,7 +1278,7 @@ scontrol_pid_info(pid_t job_pid)
 			      STEP_ID_FLAG_NO_PREFIX);
 	printf("Slurm JobId=%s ends at %s\n", tmp_str, slurm_ctime2(&end_time));
 
-	rem_time = slurm_get_rem_time(step_id.job_id);
+	rem_time = slurm_get_rem_time(step_id);
 	printf("Job remaining time is %ld seconds\n", rem_time);
 	return;
 }

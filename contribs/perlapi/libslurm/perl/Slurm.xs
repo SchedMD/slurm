@@ -550,14 +550,18 @@ slurm_get_end_time(slurm_t self, uint32_t job_id)
 
 long
 slurm_get_rem_time(slurm_t self, uint32_t job_id)
-	INIT:
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id
+		step_id.job_id = job_id;
+		RETVAL = (slurm_get_rem_time)(step_id);
+	OUTPUT:
+		RETVAL
 
 int
 slurm_job_node_ready(slurm_t self, uint32_t job_id)
