@@ -5935,6 +5935,7 @@ static int _process_archive_data(char **data_in, uint32_t data_size,
 			break;
 		case DBD_GOT_ASSOC_USAGE:
 		case DBD_GOT_WCKEY_USAGE:
+		case DBD_GOT_QOS_USAGE:
 			if (pass_cnt == 0)
 				safe_unpack16(&period, buffer);
 			data = _load_usage(ver, buffer, cluster_name, type,
