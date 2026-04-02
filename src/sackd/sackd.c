@@ -407,6 +407,14 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	(void) probe_run(true, NULL, NULL, __func__);
+}
+
 static void *_try_to_reconfig(void *ptr)
 {
 	extern char **environ;
@@ -537,6 +545,7 @@ extern int main(int argc, char **argv)
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
 	_establish_config_source();
 	slurm_conf_init(conf_file);
