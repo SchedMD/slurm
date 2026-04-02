@@ -54,7 +54,7 @@ typedef struct namespace_ops {
 					 list_t *fd_map);
 	int (*namespace_p_restore)(char *dir_name, bool recover);
 	int (*namespace_p_stepd_create)(stepd_step_rec_t *step);
-	int (*namespace_p_stepd_delete)(slurm_step_id_t *step_id);
+	int (*namespace_p_stepd_delete)(stepd_step_rec_t *step);
 	int (*namespace_p_send_stepd)(int fd);
 	int (*namespace_p_recv_stepd)(int fd);
 	bool (*namespace_p_can_bpf)(stepd_step_rec_t *step);
@@ -239,17 +239,17 @@ extern int namespace_g_stepd_create(stepd_step_rec_t *step)
 }
 
 /* Delete the namespace for the specified job, actions run in slurmstepd */
-extern int namespace_g_stepd_delete(slurm_step_id_t *step_id)
+extern int namespace_g_stepd_delete(stepd_step_rec_t *step)
 {
 	int i, rc = SLURM_SUCCESS;
 
 	xassert(g_namespace_context_num >= 0);
 
-	xassert(step_id->step_id == SLURM_EXTERN_CONT);
+	xassert(step->step_id.step_id == SLURM_EXTERN_CONT);
 
 	for (i = 0; ((i < g_namespace_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].namespace_p_stepd_delete))(step_id);
+		rc = (*(ops[i].namespace_p_stepd_delete))(step);
 	}
 
 	return rc;

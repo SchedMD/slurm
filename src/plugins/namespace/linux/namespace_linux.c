@@ -1112,7 +1112,7 @@ extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 	return _create_ns(step);
 }
 
-extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
+extern int namespace_p_stepd_delete(stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
@@ -1128,7 +1128,7 @@ extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 		ns_pid = -1;
 	}
 
-	return _delete_ns(step_id->job_id);
+	return _delete_ns(step->step_id.job_id);
 }
 
 extern int namespace_p_send_stepd(int fd)
