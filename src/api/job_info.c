@@ -775,15 +775,7 @@ extern int32_t islurm_get_rem_time2__()
 	return islurm_get_rem_time__(&jobid);
 }
 
-
-/*
- * slurm_get_end_time - get the expected end time for a given slurm job
- * IN jobid     - slurm job id
- * end_time_ptr - location in which to store scheduled end time for job
- * RET 0 or -1 on error
- */
-extern int
-slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
+extern int (slurm_get_end_time)(slurm_step_id_t step_id, time_t *end_time_ptr)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -802,31 +794,31 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	if (!end_time_ptr)
 		slurm_seterrno_ret(EINVAL);
 
-	if (jobid == 0) {
+	if (!step_id.job_id) {
 		if (jobid_env) {
-			jobid = jobid_env;
+			step_id.job_id = jobid_env;
 		} else {
 			char *env = getenv("SLURM_JOB_ID");
 			if (env) {
-				jobid = (uint32_t) atol(env);
-				jobid_env = jobid;
+				step_id.job_id = (uint32_t) atol(env);
+				jobid_env = step_id.job_id;
 			}
 		}
-		if (jobid == 0) {
+		if (!step_id.job_id) {
 			errno = ESLURM_INVALID_JOB_ID;
 			return SLURM_ERROR;
 		}
 	}
 
 	/* Just use cached data if data less than 60 seconds old */
-	if ((jobid == jobid_cache)
-	&&  (difftime(now, last_test_time) < 60)) {
+	if ((step_id.job_id == jobid_cache) &&
+	    (difftime(now, last_test_time) < 60)) {
 		*end_time_ptr  = endtime_cache;
 		return SLURM_SUCCESS;
 	}
 
 	memset(&job_msg, 0, sizeof(job_msg));
-	job_msg.step_id.job_id = jobid;
+	job_msg.step_id = step_id;
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
 
@@ -838,7 +830,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	case SRUN_TIMEOUT:
 		timeout_msg = (srun_timeout_msg_t *) resp_msg.data;
 		last_test_time = time(NULL);
-		jobid_cache    = jobid;
+		jobid_cache = step_id.job_id;
 		endtime_cache  = timeout_msg->timeout;
 		*end_time_ptr  = endtime_cache;
 		slurm_free_srun_timeout_msg(resp_msg.data);

@@ -4141,11 +4141,11 @@ extern void slurm_free_priority_factors_response_msg(
 
 /*
  * slurm_get_end_time - get the expected end time for a given slurm job
- * IN jobid     - slurm job id
- * end_time_ptr - location in which to store scheduled end time for job
+ * IN step_id - slurm step identifier
+ * OUT end_time_ptr - location in which to store scheduled end time for job
  * RET 0 or -1 on error
  */
-extern int slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr);
+extern int slurm_get_end_time(slurm_step_id_t step_id, time_t *end_time_ptr);
 
 /* Given a job record pointer, return its stderr path */
 extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t *job_ptr);
@@ -5354,6 +5354,18 @@ inline static int slurm_pid2jobid_jid(pid_t job_pid, uint32_t *job_id_ptr)
 		*job_id_ptr = step_id.job_id;
 	return rc;
 }
+
+inline static int slurm_get_end_time_jid(uint32_t jobid, time_t *end_time_ptr)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_get_end_time) (step_id, end_time_ptr);
+}
+
+#define slurm_get_end_time(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_get_end_time, \
+	default: slurm_get_end_time_jid)((id), __VA_ARGS__)
 
 #define slurm_suspend(id) \
 _Generic((id), slurm_step_id_t: slurm_suspend, default: slurm_suspend_jid)((id))
