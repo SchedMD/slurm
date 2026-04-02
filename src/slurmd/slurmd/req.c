@@ -163,7 +163,7 @@ static sbcast_cred_arg_t *_valid_sbcast_cred(file_bcast_msg_t *req,
 					     gid_t req_gid,
 					     uint16_t protocol_version);
 static void _wait_state_completed(slurm_step_id_t *step_id, int max_delay);
-static uid_t _get_job_uid(uint32_t jobid);
+static uid_t _get_job_uid(slurm_step_id_t *step_id);
 
 static int  _add_starting_step(uint16_t type, void *req);
 static void _remove_starting_step(uint16_t type, void *req);
@@ -240,7 +240,7 @@ static void _relay_stepd_msg(slurm_step_id_t *step_id, slurm_msg_t *msg,
 
 	step_id->step_het_comp = NO_VAL; /* het jobs aren't supported. */
 
-	job_uid = _get_job_uid(step_id->job_id);
+	job_uid = _get_job_uid(step_id);
 	if (job_uid == INFINITE) {
 		error("No stepd for %pI from uid %u for rpc %s",
 		      step_id, msg->auth_uid, rpc_num2string(msg->msg_type));
@@ -2310,7 +2310,7 @@ _rpc_job_notify(slurm_msg_t *msg)
 	int fd;
 
 	debug("%s: uid = %u, %ps", __func__, msg->auth_uid, &req->step_id);
-	job_uid = _get_job_uid(req->step_id.job_id);
+	job_uid = _get_job_uid(&req->step_id);
 	if (job_uid == INFINITE)
 		goto no_job;
 
@@ -2848,7 +2848,7 @@ _rpc_signal_tasks(slurm_msg_t *msg)
 	signal_tasks_msg_t *req = msg->data;
 	uid_t job_uid;
 
-	job_uid = _get_job_uid(req->step_id.job_id);
+	job_uid = _get_job_uid(&req->step_id);
 	if (job_uid == INFINITE) {
 		debug("%s: failed to get job_uid for %pI",
 		      __func__, &req->step_id);
@@ -3121,8 +3121,7 @@ static void _rpc_stat_jobacct(slurm_msg_t *msg)
 	slurm_free_job_step_stat(resp);
 }
 
-static int
-_callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
+static int _callerid_find_job(callerid_conn_t conn, slurm_step_id_t *step_id)
 {
 	ino_t inode;
 	pid_t pid;
@@ -3142,12 +3141,12 @@ _callerid_find_job(callerid_conn_t conn, uint32_t *job_id)
 	}
 	debug3("network_callerid found process %d", (pid_t)pid);
 
-	rc = slurm_pid2jobid(pid, job_id);
+	rc = slurm_pid2jobid(pid, step_id);
 	if (rc != SLURM_SUCCESS) {
 		debug3("network_callerid job not found");
 		return ESLURM_INVALID_JOB_ID;
 	}
-	debug3("network_callerid found job %u", *job_id);
+	debug3("network_callerid found job %ps", step_id);
 	return SLURM_SUCCESS;
 }
 
@@ -3158,7 +3157,7 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 	network_callerid_resp_t *resp = NULL;
 
 	uid_t job_uid = -1;
-	uint32_t job_id = NO_VAL;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	callerid_conn_t conn;
 	int rc = ESLURM_INVALID_JOB_ID;
 	char ip_src_str[INET6_ADDRSTRLEN];
@@ -3183,25 +3182,25 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 	conn.af = req->af;
 
 	/* Find the job id */
-	rc = _callerid_find_job(conn, &job_id);
+	rc = _callerid_find_job(conn, &step_id);
 	if (rc == SLURM_SUCCESS) {
 		/* We found the job */
 		if (!_slurm_authorized_user(msg->auth_uid)) {
 			/* Requester is not root or SlurmUser */
-			job_uid = _get_job_uid(job_id);
+			job_uid = _get_job_uid(&step_id);
 			if (job_uid != msg->auth_uid) {
 				/* RPC call sent by non-root user who does not
 				 * own this job. Do not send them the job ID. */
 				error("Security violation, REQUEST_NETWORK_CALLERID from uid=%u",
 				      msg->auth_uid);
-				job_id = NO_VAL;
+				step_id = SLURM_STEP_ID_INITIALIZER;
 				rc = ESLURM_INVALID_JOB_ID;
 			}
 		}
 	}
 
 	resp->step_id = SLURM_STEP_ID_INITIALIZER;
-	resp->step_id.job_id = job_id;
+	resp->step_id = step_id;
 	resp->node_name = xstrdup(conf->node_name);
 
 	resp_msg.msg_type = RESPONSE_NETWORK_CALLERID;
@@ -3222,7 +3221,7 @@ static void _rpc_list_pids(slurm_msg_t *msg)
 
 	debug3("Entering _rpc_list_pids");
 
-	job_uid = _get_job_uid(req->job_id);
+	job_uid = _get_job_uid(req);
 
 	if (job_uid == INFINITE) {
 		error("stat_pid for invalid job_id: %u",
@@ -3929,7 +3928,7 @@ done:
 	FREE_NULL_LIST(steps);
 }
 
-static uid_t _get_job_uid(uint32_t jobid)
+static uid_t _get_job_uid(slurm_step_id_t *step_id)
 {
 	list_t *steps;
 	list_itr_t *i;
@@ -3940,7 +3939,7 @@ static uid_t _get_job_uid(uint32_t jobid)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
-		if (stepd->step_id.job_id != jobid) {
+		if (stepd->step_id.job_id != step_id->job_id) {
 			/* multiple jobs expected on shared nodes */
 			continue;
 		}

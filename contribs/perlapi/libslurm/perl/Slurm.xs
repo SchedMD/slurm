@@ -661,7 +661,7 @@ slurm_notify_job(slurm_t self, uint32_t job_id, char *message)
 uint32_t
 slurm_pid2jobid(slurm_t self, pid_t job_pid)
 	PREINIT:
-		uint32_t tmp_pid;
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 		int rc;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
@@ -669,9 +669,9 @@ slurm_pid2jobid(slurm_t self, pid_t job_pid)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_pid2jobid(job_pid, &tmp_pid);
+		rc = (slurm_pid2jobid)(job_pid, &step_id);
 		if (rc == SLURM_SUCCESS) {
-			RETVAL = tmp_pid;
+			RETVAL = step_id.job_id;
 		} else {
 			XSRETURN_UNDEF;
 		}

@@ -1252,11 +1252,12 @@ extern void
 scontrol_pid_info(pid_t job_pid)
 {
 	int error_code;
-	uint32_t job_id = 0;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	time_t end_time;
 	long rem_time;
+	char tmp_str[45];
 
-	error_code = slurm_pid2jobid(job_pid, &job_id);
+	error_code = slurm_pid2jobid(job_pid, &step_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -1265,16 +1266,19 @@ scontrol_pid_info(pid_t job_pid)
 		return;
 	}
 
-	error_code = slurm_get_end_time(job_id, &end_time);
+	error_code = slurm_get_end_time(step_id.job_id, &end_time);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror("Failed to get job end time");
 		return;
 	}
-	printf("Slurm JobId=%u ends at %s\n", job_id, slurm_ctime2(&end_time));
 
-	rem_time = slurm_get_rem_time(job_id);
+	log_build_step_id_str(&step_id, tmp_str, sizeof(tmp_str),
+			      STEP_ID_FLAG_NO_PREFIX);
+	printf("Slurm JobId=%s ends at %s\n", tmp_str, slurm_ctime2(&end_time));
+
+	rem_time = slurm_get_rem_time(step_id.job_id);
 	printf("Job remaining time is %ld seconds\n", rem_time);
 	return;
 }
