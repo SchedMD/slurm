@@ -96,6 +96,7 @@ static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(pid_t pid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
+static void _wait_for_connections(void);
 
 struct io_operations msg_socket_ops = {
 	.readable = &_msg_socket_readable,
@@ -275,6 +276,7 @@ static void *_msg_thr_internal(void *ignored)
 	eio_handle_mainloop(step->msg_handle);
 	debug("Message thread exited");
 
+	_wait_for_connections();
 	return NULL;
 }
 
@@ -337,7 +339,6 @@ _msg_socket_readable(eio_obj_t *obj)
 			/* slurmd considers the job step done now that
 			 * the domain name socket is destroyed */
 			obj->fd = -1;
-			_wait_for_connections();
 		} else {
 			debug2("  false");
 		}
