@@ -489,7 +489,8 @@ static pid_t sys_clone(unsigned long flags, int *parent_tid, int *child_tid,
 }
 
 static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
-			     char *job_mount, sem_t *sem1, sem_t *sem2)
+			     char *job_mount, sem_t *sem1, sem_t *sem2,
+			     int *child_rc)
 {
 	char *argv[4] = { (char *) conf->stepd_loc, "ns_infinity", NULL, NULL };
 	int rc = 0;
@@ -553,7 +554,7 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 		goto child_exit;
 	}
 
-	if (sem_post(sem2) < 0) {
+	if ((rc = sem_post(sem2))) {
 		error("%s: sem_post failed: %m", __func__);
 		goto child_exit;
 	}
@@ -566,12 +567,15 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 	error("execvp of slurmstepd infinity failed: %m");
 
 child_exit:
+	/* Signal result to parent before posting sem2 */
+	*child_rc = rc;
 	/* Do a final post to prevent from waiting on errors */
 	sem_post(sem2);
 	sem_destroy(sem1);
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	munmap(child_rc, sizeof(*child_rc));
 
 	_exit(rc);
 }
@@ -655,6 +659,7 @@ static int _create_ns(stepd_step_rec_t *step)
 	unsigned long tls = 0;
 	sem_t *sem1 = NULL;
 	sem_t *sem2 = NULL;
+	int *child_rc = MAP_FAILED;
 
 	_create_paths(step->step_id.job_id, &job_mount, &ns_base, &src_bind);
 
@@ -772,6 +777,17 @@ static int _create_ns(stepd_step_rec_t *step)
 		munmap(sem2, sizeof(*sem2));
 		goto exit2;
 	}
+
+	/* path for the child to give an rc to the parent */
+	child_rc = mmap(NULL, sizeof(*child_rc), PROT_READ | PROT_WRITE,
+			MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (child_rc == MAP_FAILED) {
+		error("%s: mmap failed: %m", __func__);
+		rc = -1;
+		goto exit1;
+	}
+	*child_rc = 0;
+
 	ns_pid = sys_clone(ns_conf->clonensflags | SIGCHLD, &parent_tid,
 			   &child_tid, tls);
 
@@ -780,7 +796,8 @@ static int _create_ns(stepd_step_rec_t *step)
 		rc = -1;
 		goto exit1;
 	} else if (ns_pid == 0) {
-		_create_ns_child(step, src_bind, job_mount, sem1, sem2);
+		_create_ns_child(step, src_bind, job_mount, sem1, sem2,
+				 child_rc);
 	} else {
 		char *proc_path = NULL;
 
@@ -823,6 +840,14 @@ static int _create_ns(stepd_step_rec_t *step)
 		/* Wait for container to be setup */
 		if (sem_wait(sem2) < 0) {
 			error("%s: sem_Wait failed: %m", __func__);
+			rc = -1;
+			goto exit1;
+		}
+
+		/* Check if the child failed */
+		if (*child_rc) {
+			error("%s: namespace setup failed in child",
+			      __func__);
 			rc = -1;
 			goto exit1;
 		}
@@ -875,6 +900,8 @@ exit1:
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	if (child_rc != MAP_FAILED)
+		munmap(child_rc, sizeof(*child_rc));
 
 exit2:
 	if (rc) {
