@@ -144,6 +144,7 @@ extern void stepmgr_init(stepmgr_ops_t *ops)
 	 * initialized init is called.
 	 */
 	stepmgr_ops = ops;
+	slurm_daemon |= WITH_STEPMGR;
 }
 
 /* Determine how many more CPUs are required for a job step */

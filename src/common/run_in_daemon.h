@@ -46,8 +46,10 @@ extern uint32_t slurm_daemon;
 #define IS_SLURMSTEPD SLURM_BIT(5)
 #define IS_SACKD SLURM_BIT(6)
 #define IS_SLURMRESTD SLURM_BIT(7)
-#define IS_STEPMGR SLURM_BIT(8)
-#define IS_ANY_DAEMON 0xFFFFFFFF
+#define IS_ANY_DAEMON 0x0000FFFF
+
+#define WITH_STEPMGR SLURM_BIT(16)
+#define WITH_ANY_DAEMON_FLAG 0xFFFF0000
 
 /*
  * Determine if calling process is in bitmask of daemons
@@ -62,6 +64,7 @@ extern bool run_in_daemon(uint32_t daemons);
 #define running_in_slurmd_stepd() run_in_daemon(IS_SLURMD | IS_SLURMSTEPD)
 #define running_in_slurmrestd() run_in_daemon(IS_SLURMRESTD)
 #define running_in_slurmstepd() run_in_daemon(IS_SLURMSTEPD)
+#define running_with_stepmgr() run_in_daemon(WITH_STEPMGR)
 
 #define error_in_daemon(fmt, ...)		\
 do {						\
