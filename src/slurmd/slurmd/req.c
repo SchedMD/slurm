@@ -2623,6 +2623,17 @@ static int _find_step_loc(void *x, void *key)
 	step_loc_t *step_loc = (step_loc_t *) x;
 	slurm_step_id_t *step_id = (slurm_step_id_t *) key;
 
+	/* If the request has a sluid and no job id, try to find by sluid. */
+	if (!step_loc->step_id.sluid && step_id->sluid &&
+	    ((step_id->job_id == NO_VAL) || !step_id->job_id)) {
+		int fd = stepd_connect(step_loc->directory, step_loc->nodename,
+				       &step_loc->step_id,
+				       &step_loc->protocol_version);
+		step_loc->step_id.sluid =
+			stepd_sluid(fd, step_loc->protocol_version);
+		close(fd);
+	}
+
 	return verify_step_id(&step_loc->step_id, step_id);
 }
 

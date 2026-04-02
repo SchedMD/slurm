@@ -50,6 +50,7 @@
 #include "src/common/macros.h"
 #include "src/common/net.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/threadpool.h"
@@ -154,8 +155,12 @@ int sattach(int argc, char **argv)
 	jobid = opt.selected_step->step_id.job_id;
 	stepid = opt.selected_step->step_id.step_id;
 
-	totalview_jobid = NULL;
-	xstrfmtcat(totalview_jobid, "%u", jobid);
+	if (opt.selected_step->step_id.sluid)
+		totalview_jobid = sluid2str(opt.selected_step->step_id.sluid);
+	else {
+		totalview_jobid = NULL;
+		xstrfmtcat(totalview_jobid, "%u", jobid);
+	}
 	totalview_stepid = NULL;
 	xstrfmtcat(totalview_stepid, "%u", stepid);
 
@@ -509,8 +514,7 @@ _exit_handler(message_thread_state_t *mts, slurm_msg_t *exit_msg)
 	int i;
 	int rc;
 
-	if ((msg->step_id.job_id != opt.selected_step->step_id.job_id) ||
-	    (msg->step_id.step_id != opt.selected_step->step_id.step_id)) {
+	if (!verify_step_id(&msg->step_id, &opt.selected_step->step_id)) {
 		debug("Received MESSAGE_TASK_EXIT from wrong job: %ps",
 		      &msg->step_id);
 		return;
