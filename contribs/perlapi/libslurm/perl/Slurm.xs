@@ -531,13 +531,15 @@ slurm_get_end_time(slurm_t self, uint32_t job_id)
 	PREINIT:
 		time_t tmp_time;
 		int rc;
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_get_end_time(job_id, &tmp_time);
+		step_id.job_id = job_id;
+		rc = (slurm_get_end_time)(step_id, &tmp_time);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = tmp_time;
 		} else {

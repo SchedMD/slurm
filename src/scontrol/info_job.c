@@ -1266,7 +1266,7 @@ scontrol_pid_info(pid_t job_pid)
 		return;
 	}
 
-	error_code = slurm_get_end_time(step_id.job_id, &end_time);
+	error_code = slurm_get_end_time(step_id, &end_time);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)

@@ -754,9 +754,13 @@ extern int32_t islurm_get_rem_time__(uint32_t *jobid)
 	time_t end_time = 0;
 	int32_t rc;
 
-	if ((jobid == NULL)
-	    ||  (slurm_get_end_time(*jobid, &end_time)
-		 != SLURM_SUCCESS))
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
+	if (!jobid)
+		return 0;
+
+	step_id.job_id = *jobid;
+	if ((slurm_get_end_time) (step_id, &end_time) != SLURM_SUCCESS)
 		return 0;
 
 	rc = difftime(end_time, now);
