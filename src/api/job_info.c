@@ -643,15 +643,7 @@ extern int slurm_load_job_state(int job_id_count,
 	return rc;
 }
 
-/*
- * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
- *	on this machine
- * IN job_pid     - process_id of interest on this machine
- * OUT job_id_ptr - place to store a slurm job_id
- * RET 0 or -1 on error
- */
-extern int
-slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
+extern int (slurm_pid2jobid)(pid_t job_pid, slurm_step_id_t *step_id)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -718,8 +710,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		auth_g_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
-		*jobid = ((job_id_response_msg_t *) resp_msg.data)
-				 ->step_id.job_id;
+		*(step_id) = ((job_id_response_msg_t *) resp_msg.data)->step_id;
 		slurm_free_job_id_response_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:

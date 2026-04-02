@@ -4252,10 +4252,10 @@ extern int slurm_notify_job(slurm_step_id_t step_id, char *message);
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
  *	on this machine
  * IN job_pid - process_id of interest on this machine
- * OUT job_id_ptr - place to store a slurm job_id
+ * OUT step_id - place to store a slurm job_id
  * RET 0 or -1 on error
  */
-extern int slurm_pid2jobid(pid_t job_pid, uint32_t *job_id_ptr);
+extern int slurm_pid2jobid(pid_t job_pid, slurm_step_id_t *step_id);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request,
@@ -5339,6 +5339,20 @@ inline static int slurm_suspend_jid(uint32_t job_id)
 	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	step_id.job_id = job_id;
 	return slurm_suspend(step_id);
+}
+
+#define slurm_pid2jobid(job_pid, id) \
+_Generic((id), \
+	slurm_step_id_t *: slurm_pid2jobid, \
+	default: slurm_pid2jobid_jid)((job_pid), (id))
+
+inline static int slurm_pid2jobid_jid(pid_t job_pid, uint32_t *job_id_ptr)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	int rc = (slurm_pid2jobid) (job_pid, &step_id);
+	if (rc == SLURM_SUCCESS)
+		*job_id_ptr = step_id.job_id;
+	return rc;
 }
 
 #define slurm_suspend(id) \
