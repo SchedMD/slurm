@@ -118,7 +118,7 @@ static char *_get_gpu_type(void)
 #else
 		info("Configured with amdsmi, but amdsmi isn't enabled during the build.");
 #endif
-	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI)
+	} else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI){
 #ifdef HAVE_RSMI
 		(void) dlerror();
 		if (!(ext_lib_handle = dlopen("librocm_smi64.so",
