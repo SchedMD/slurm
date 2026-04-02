@@ -408,11 +408,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 	return SLURM_SUCCESS;
 }
 
-/*
- * slurm_job_batch_script - retrieve the batch script for a given jobid
- * returns SLURM_SUCCESS, or appropriate error code
- */
-extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
+extern int (slurm_job_batch_script)(FILE *out, slurm_step_id_t step_id)
 {
 	job_id_msg_t msg;
 	slurm_msg_t req, resp;
@@ -422,7 +418,7 @@ extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
 	slurm_msg_t_init(&resp);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.step_id.job_id = jobid;
+	msg.step_id = step_id;
 	req.msg_type = REQUEST_BATCH_SCRIPT;
 	req.data = &msg;
 

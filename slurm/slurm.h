@@ -3702,10 +3702,12 @@ extern int slurm_submit_batch_het_job(list_t *job_req_list,
 extern void slurm_free_submit_response_response_msg(submit_response_msg_t *msg);
 
 /*
- * slurm_job_batch_script - retrieve the batch script for a given jobid
+ * slurm_job_batch_script - retrieve the batch script for a given job
+ * IN out - file to write batch script to
+ * IN step_id - slurm step identifier
  * returns SLURM_SUCCESS, or appropriate error code
  */
-extern int slurm_job_batch_script(FILE *out, uint32_t jobid);
+extern int slurm_job_batch_script(FILE *out, slurm_step_id_t step_id);
 
 /*
  * slurm_job_will_run - determine if a job would execute immediately if
@@ -5378,6 +5380,18 @@ inline static long slurm_get_rem_time_jid(uint32_t jobid)
 _Generic((id), \
 	slurm_step_id_t: slurm_get_rem_time, \
 	default: slurm_get_rem_time_jid)((id))
+
+inline static int slurm_job_batch_script_jid(FILE *out, uint32_t jobid)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_job_batch_script) (out, step_id);
+}
+
+#define slurm_job_batch_script(out, id) \
+_Generic((id), \
+	slurm_step_id_t: slurm_job_batch_script, \
+	default: slurm_job_batch_script_jid)((out), (id))
 
 #define slurm_suspend(id) \
 _Generic((id), slurm_step_id_t: slurm_suspend, default: slurm_suspend_jid)((id))
