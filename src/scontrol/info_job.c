@@ -2595,17 +2595,20 @@ extern int scontrol_batch_script(int argc, char **argv)
 	char *filename;
 	FILE *out;
 	int exit_code;
-	uint32_t jobid;
+	slurm_selected_step_t *selected_step;
+	slurm_step_id_t step_id;
 
 	if (argc < 1)
 		return SLURM_ERROR;
 
-	jobid = atoll(argv[0]);
+	selected_step = slurm_parse_step_str(argv[0]);
+	step_id = selected_step->step_id;
+	xfree(selected_step);
 
 	if (argc > 1)
 		filename = xstrdup(argv[1]);
 	else
-		filename = xstrdup_printf("slurm-%u.sh", jobid);
+		filename = xstrdup_printf("slurm-%u.sh", step_id.job_id);
 
 	if (!xstrcmp(filename, "-")) {
 		out = stdout;
@@ -2618,7 +2621,7 @@ extern int scontrol_batch_script(int argc, char **argv)
 		}
 	}
 
-	exit_code = slurm_job_batch_script(out, jobid);
+	exit_code = slurm_job_batch_script(out, step_id);
 
 	if (out != stdout)
 		fclose(out);
@@ -2629,7 +2632,7 @@ extern int scontrol_batch_script(int argc, char **argv)
 		slurm_perror("job script retrieval failed");
 	} else if ((out != stdout) && (quiet_flag != 1)) {
 		printf("batch script for job %u written to %s\n",
-		       jobid, filename);
+		       step_id.job_id, filename);
 	}
 
 	xfree(filename);
