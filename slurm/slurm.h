@@ -3626,14 +3626,14 @@ extern int slurm_allocation_lookup(slurm_step_id_t step_id,
 /*
  * slurm_het_job_lookup - retrieve info for an existing heterogeneous job
  * 			   allocation without the addrs and such
- * IN jobid - job allocation identifier
+ * IN step_id - slurm step identifier
  * OUT resp - list of job allocation information, type
  *	      resource_allocation_response_msg_t
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_het_job_lookup(uint32_t jobid, list_t **resp);
+extern int slurm_het_job_lookup(slurm_step_id_t step_id, list_t **resp);
 
 /*
  * slurm_read_hostfile - Read a Slurm hostfile specified by "filename".
@@ -5392,6 +5392,18 @@ inline static int slurm_job_batch_script_jid(FILE *out, uint32_t jobid)
 _Generic((id), \
 	slurm_step_id_t: slurm_job_batch_script, \
 	default: slurm_job_batch_script_jid)((out), (id))
+
+inline static int slurm_het_job_lookup_jid(uint32_t jobid, list_t **resp)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_het_job_lookup) (step_id, resp);
+}
+
+#define slurm_het_job_lookup(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_het_job_lookup, \
+	default: slurm_het_job_lookup_jid)((id), __VA_ARGS__)
 
 #define slurm_suspend(id) \
 _Generic((id), slurm_step_id_t: slurm_suspend, default: slurm_suspend_jid)((id))
