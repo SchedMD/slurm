@@ -4,6 +4,12 @@
 
 <p>Note that older presentations may contain outdated information.</p>
 
+<h2>Presentations from GTC 2026, March 2026</h2>
+<ul>
+<li><a href="http://slurm.schedmd.com/MISC26/Slurm_GTC_2026.pdf">Orchestrate Next-Generation AI Workloads With Open-Source Slurm</a>
+Tim Wickberg and Danny Auble, SchedMD</li>
+</ul>
+
 <h2>Presentations from SC25, November 2025</h2>
 <ul>
 <li><a href="http://slurm.schedmd.com/SC25/Slurm_BoF_SC25.pdf">Slurm Community Birds-Of-A-Feather</a>
