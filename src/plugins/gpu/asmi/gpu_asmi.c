@@ -1345,14 +1345,15 @@ static list_t *_get_system_gpu_list_amdsmi(node_config_load_t *node_config)
          * Build gres_slurmd_conf_t
          * --------------------------- */
         gres_slurmd_conf_t gres = {
-            .config_flags = GRES_CONF_ENV_RSMI | GRES_CONF_AUTODETECT,
+            .config_flags = GRES_CONF_ENV_AMDSMI | GRES_CONF_AUTODETECT,
             .count        = 1,
             .cpu_cnt      = node_config->cpu_cnt,
+            .cpus_bitmap  = _amdsmi_get_device_cpu_mask(i),
             .name         = "gpu"
         };
 
         /* CPU mask (machine form) */
-        gres.cpus_bitmap = _amdsmi_get_device_cpu_mask(i);
+        //gres.cpus_bitmap = _amdsmi_get_device_cpu_mask(i);
 
         if (gres.cpus_bitmap) {
             cpu_aff_mac_range = bit_fmt_full(gres.cpus_bitmap);
