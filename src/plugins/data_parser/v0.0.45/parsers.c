@@ -8336,6 +8336,7 @@ static const parser_t PARSER_ARRAY(STEP)[] = {
 	add_cparse(STEP_STDERR_EXP, "step/stderr_expanded", "Step stderr with expanded fields"),
 	add_cparse(STEP_STDIN_EXP, "step/stdin_expanded", "Step stdin with expanded fields"),
 	add_cparse(STEP_STDOUT_EXP, "step/stdout_expanded", "Step stdout with expanded fields"),
+	add_parse(STRING, submit_line, "submit_line", "Full command used to submit the step"),
 	add_parse(UINT32, suspended, "time/suspended", "Total time in suspended state in seconds"),
 	add_parse(UINT64, sys_cpu_sec, "time/system/seconds", "System CPU time used by the step in seconds"),
 	add_parse(UINT32, sys_cpu_usec, "time/system/microseconds", "System CPU time used by the step in microseconds"),
