@@ -4164,10 +4164,10 @@ extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job);
 
 /*
  * slurm_get_rem_time - get the expected time remaining for a given job
- * IN jobid     - slurm job id
+ * IN step_id - slurm step identifier
  * RET remaining time in seconds or -1 on error
  */
-extern long slurm_get_rem_time(uint32_t jobid);
+extern long slurm_get_rem_time(slurm_step_id_t step_id);
 
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
@@ -5366,6 +5366,18 @@ inline static int slurm_get_end_time_jid(uint32_t jobid, time_t *end_time_ptr)
 _Generic((id), \
 	slurm_step_id_t: slurm_get_end_time, \
 	default: slurm_get_end_time_jid)((id), __VA_ARGS__)
+
+inline static long slurm_get_rem_time_jid(uint32_t jobid)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_get_rem_time) (step_id);
+}
+
+#define slurm_get_rem_time(id) \
+_Generic((id), \
+	slurm_step_id_t: slurm_get_rem_time, \
+	default: slurm_get_rem_time_jid)((id))
 
 #define slurm_suspend(id) \
 _Generic((id), slurm_step_id_t: slurm_suspend, default: slurm_suspend_jid)((id))

@@ -727,18 +727,13 @@ extern int (slurm_pid2jobid)(pid_t job_pid, slurm_step_id_t *step_id)
 	return SLURM_SUCCESS;
 }
 
-/*
- * slurm_get_rem_time - get the expected time remaining for a given job
- * IN jobid     - slurm job id
- * RET remaining time in seconds or -1 on error
- */
-extern long slurm_get_rem_time(uint32_t jobid)
+extern long (slurm_get_rem_time)(slurm_step_id_t step_id)
 {
 	time_t now = time(NULL);
 	time_t end_time = 0;
 	long rc;
 
-	if (slurm_get_end_time(jobid, &end_time) != SLURM_SUCCESS)
+	if ((slurm_get_end_time) (step_id, &end_time) != SLURM_SUCCESS)
 		return -1L;
 
 	rc = difftime(end_time, now);
