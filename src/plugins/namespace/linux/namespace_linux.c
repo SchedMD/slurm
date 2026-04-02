@@ -51,8 +51,10 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/print_fields.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
+#include "src/common/sluid.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -356,6 +358,26 @@ static unsigned long _parse_ms_flags(const char *opts_str, char **mount_data)
 	return flags;
 }
 
+static int _expand_dir_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	job_std_pattern_t *job_stp = arg;
+	char *tmp = dir->path;
+
+	dir->path = expand_stdio_fields(tmp, job_stp);
+	xfree(tmp);
+	return 0;
+}
+
+static void _expand_dir_paths(stepd_step_rec_t *step)
+{
+	job_std_pattern_t job_stp = { 0 };
+
+	job_stp.step_id = step->step_id;
+	job_stp.user = step->user_name;
+	list_for_each(ns_conf->dir_confs, _expand_dir_path, &job_stp);
+}
+
 typedef struct {
 	char *path;
 	uint32_t job_id;
@@ -564,6 +586,13 @@ static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 		env_array_overwrite_fmt(&env, "SLURM_JOB_UID", "%u", step->uid);
 		env_array_overwrite_fmt(&env, "SLURM_JOB_USER", "%s",
 					step->user_name);
+		if (step->step_id.sluid) {
+			char sluid[SLUID_STR_BYTES];
+
+			print_sluid(step->step_id.sluid, sluid, sizeof(sluid));
+			env_array_overwrite_fmt(&env, "SLURM_JOB_SLUID", "%s",
+						sluid);
+		}
 		if (step->alias_list)
 			env_array_overwrite_fmt(&env, "SLURM_NODE_ALIASES",
 						"%s", step->alias_list);
@@ -1244,6 +1273,10 @@ extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
+
+	/* Expand paths if required */
+	if (ns_conf->dir_confs)
+		_expand_dir_paths(step);
 
 	return _create_ns(step);
 }
