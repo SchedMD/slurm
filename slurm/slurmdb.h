@@ -369,6 +369,12 @@ typedef struct {
 					 * slurmctld goes down or not   */
 } slurmdbd_conf_t;
 
+/*
+ * slurmdbd_free_conf - free slurmdbd configuration message
+ * IN conf - pointer to slurmdbd configuration message
+ */
+extern void slurmdbd_free_conf(slurmdbd_conf_t *conf);
+
 /********************************************/
 
 /* Association conditions used for queries of the database */

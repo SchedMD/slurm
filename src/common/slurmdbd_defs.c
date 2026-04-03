@@ -868,6 +868,27 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 /****************************************************************************\
  * Free data structures
 \****************************************************************************/
+
+extern void slurmdbd_free_conf(slurmdbd_conf_t *conf)
+{
+	if (!conf)
+		return;
+
+	xfree(conf->archive_dir);
+	xfree(conf->archive_script);
+	xfree(conf->dbd_addr);
+	xfree(conf->dbd_backup);
+	xfree(conf->dbd_host);
+	xfree(conf->default_qos);
+	xfree(conf->log_file);
+	xfree(conf->parameters);
+	xfree(conf->pid_file);
+	xfree(conf->storage_loc);
+	xfree(conf->storage_pass_script);
+	xfree(conf->storage_user);
+	xfree(conf);
+}
+
 extern void slurmdbd_free_buffer(void *x)
 {
 	buf_t *buffer = (buf_t *) x;
