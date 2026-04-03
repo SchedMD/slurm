@@ -1688,7 +1688,8 @@ extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_config(void *db_conn, char *config_name)
+extern list_t *acct_storage_p_get_config_keypairs(void *db_conn,
+						  char *config_name)
 {
 	persist_msg_t req = {0}, resp = {0};
 	dbd_list_msg_t *got_msg;

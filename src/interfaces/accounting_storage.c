@@ -263,7 +263,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_accts",
 	"acct_storage_p_get_clusters",
 	"acct_storage_p_get_federations",
-	"acct_storage_p_get_config",
+	"acct_storage_p_get_config_keypairs",
 	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
 	"acct_storage_p_get_events",
