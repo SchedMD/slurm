@@ -211,24 +211,26 @@ int srun(int ac, char **av)
 		debug3("%s: %ps GID %u and srun process GID %u mismatch",
 		       __func__, &job->step_id, job->gid, getgid());
 
-	_setup_job_env(job, srun_job_list, got_alloc);
+	if (!sropt.async) {
+		_setup_job_env(job, srun_job_list, got_alloc);
 
-	/*
-	 * Determine if the first/only job was called with --pty and update
-	 * logging if required
-	 */
-	if (srun_job_list) {
-		srun_job_t *first_job = list_peek(srun_job_list);
-		if (first_job->pty_port) {
+		/*
+		 * Determine if the first/only job was called with --pty
+		 * and update logging if required
+		 */
+		if (srun_job_list) {
+			srun_job_t *first_job = list_peek(srun_job_list);
+			if (first_job->pty_port) {
+				logopt.raw = true;
+				log_alter(logopt, 0, NULL);
+			}
+		} else if (job && job->pty_port) {
 			logopt.raw = true;
 			log_alter(logopt, 0, NULL);
 		}
-	} else if (job && job->pty_port) {
-		logopt.raw = true;
-		log_alter(logopt, 0, NULL);
-	}
 
-	_launch_app(job, srun_job_list, got_alloc);
+		_launch_app(job, srun_job_list, got_alloc);
+	}
 
 	if ((global_rc & 0xff) == SIG_OOM)
 		global_rc = 1;	/* Exit code 1 */
