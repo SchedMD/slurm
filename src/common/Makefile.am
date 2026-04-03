@@ -36,10 +36,10 @@ libcommon_la_SOURCES =				\
 	eio.h					\
 	env.c					\
 	env.h					\
-	extra_constraints.c			\
-	extra_constraints.h			\
 	events.c				\
 	events.h				\
+	extra_constraints.c			\
+	extra_constraints.h			\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\
@@ -55,22 +55,22 @@ libcommon_la_SOURCES =				\
 	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
-	http.h					\
 	http.c					\
-	http_con.h				\
+	http.h					\
 	http_con.c				\
-	http_mime.h				\
+	http_con.h				\
 	http_mime.c				\
-	http_request.h				\
+	http_mime.h				\
 	http_request.c				\
-	http_router.h				\
+	http_request.h				\
 	http_router.c				\
-	http_switch.h				\
+	http_router.h				\
 	http_switch.c				\
-	identity.h				\
-	identity.c				\
-	id_util.h				\
+	http_switch.h				\
 	id_util.c				\
+	id_util.h				\
+	identity.c				\
+	identity.h				\
 	io_hdr.c				\
 	io_hdr.h				\
 	job_features.c				\
@@ -157,10 +157,10 @@ libcommon_la_SOURCES =				\
 	slurm_protocol_defs.h			\
 	slurm_protocol_pack.c			\
 	slurm_protocol_pack.h			\
-	slurm_protocol_util.c			\
-	slurm_protocol_util.h			\
 	slurm_protocol_socket.c			\
 	slurm_protocol_socket.h			\
+	slurm_protocol_util.c			\
+	slurm_protocol_util.h			\
 	slurm_resolv.c				\
 	slurm_resolv.h				\
 	slurm_resource_info.c			\
@@ -213,10 +213,10 @@ libcommon_la_SOURCES =				\
 	write_labelled_message.h		\
 	x11_util.c				\
 	x11_util.h				\
-	xassert.c				\
-	xassert.h				\
 	xahash.c				\
 	xahash.h				\
+	xassert.c				\
+	xassert.h				\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\
@@ -227,12 +227,12 @@ libcommon_la_SOURCES =				\
 	xregex.h				\
 	xsched.c				\
 	xsched.h				\
-	xsystemd.c				\
-	xsystemd.h				\
 	xsignal.c				\
 	xsignal.h				\
 	xstring.c				\
-	xstring.h
+	xstring.h				\
+	xsystemd.c				\
+	xsystemd.h
 
 libcommon_la_LIBADD   = $(libselinux_LIBS)
 
