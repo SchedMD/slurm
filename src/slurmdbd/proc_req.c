@@ -47,6 +47,7 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurmdbd_pack.h"
@@ -985,10 +986,10 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
-static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
-		       buf_t **out_buffer)
+static int _get_config_keypair(slurmdbd_conn_t *slurmdbd_conn,
+			       persist_msg_t *msg, buf_t **out_buffer,
+			       char *config_name)
 {
-	char *config_name = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 
 	if (config_name == NULL ||
@@ -1009,9 +1010,35 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
 			       DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
-	xfree(config_name);
 
 	return SLURM_SUCCESS;
+}
+
+static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer)
+{
+	int rc = EINVAL;
+	char *config_name = msg->data;
+
+	if (slurmdbd_conn->pcon->version < SLURM_26_05_PROTOCOL_VERSION) {
+		rc = _get_config_keypair(slurmdbd_conn, msg, out_buffer,
+					 config_name);
+	} else {
+		persist_msg_t resp = {
+			.data = slurmdbd_conf,
+			.pcon = slurmdbd_conn->pcon,
+			.msg_type = DBD_GOT_CONFIG,
+		};
+
+		xassert(!*out_buffer);
+		if ((*out_buffer =
+			     pack_slurmdbd_msg(&resp,
+					       slurmdbd_conn->pcon->version)))
+			rc = SLURM_SUCCESS;
+	}
+
+	xfree(config_name);
+	return rc;
 }
 
 static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
