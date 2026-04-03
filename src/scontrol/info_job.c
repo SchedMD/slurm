@@ -2529,9 +2529,10 @@ extern int scontrol_callerid(int argc, char **argv)
 	int af, ver = 4;
 	unsigned char ip_src[sizeof(struct in6_addr)],
 		      ip_dst[sizeof(struct in6_addr)];
-	uint32_t port_src, port_dst, job_id;
+	uint32_t port_src, port_dst;
 	network_callerid_msg_t req;
 	char node_name[HOST_NAME_MAX], *ptr;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (argc == 5) {
 		ver = strtoul(argv[4], &ptr, 0);
@@ -2575,17 +2576,17 @@ extern int scontrol_callerid(int argc, char **argv)
 	req.port_dst = port_dst;
 	req.af = af;
 
-	if (slurm_network_callerid(req, &job_id, node_name, HOST_NAME_MAX)
+	if (slurm_network_callerid(req, &step_id, node_name, HOST_NAME_MAX)
 			!= SLURM_SUCCESS) {
 		fprintf(stderr,
 			"slurm_network_callerid: unable to retrieve callerid data from remote slurmd\n");
 		return SLURM_ERROR;
-	} else if (job_id == NO_VAL) {
+	} else if (step_id.job_id == NO_VAL) {
 		fprintf(stderr,
 			"slurm_network_callerid: remote job id indeterminate\n");
 		return SLURM_ERROR;
 	} else {
-		printf("%u %s\n", job_id, node_name);
+		printf("%u %s\n", step_id.job_id, node_name);
 		return SLURM_SUCCESS;
 	}
 }

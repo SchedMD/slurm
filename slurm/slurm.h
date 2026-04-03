@@ -5182,15 +5182,14 @@ extern void slurm_print_burst_buffer_record(FILE *out,
  * slurmd based upon network socket information.
  *
  * IN req - Information about network connection in question
- * OUT job_id -  ID of the job or NO_VAL
+ * OUT step_id - Job identifier of the job
  * OUT node_name - name of the remote slurmd
  * IN node_name_size - size of the node_name buffer
  * RET SLURM_SUCCESS or SLURM_ERROR on error
  */
-extern int slurm_network_callerid(network_callerid_msg_t req,
-				  uint32_t *job_id,
-				  char *node_name,
-				  int node_name_size);
+extern int (slurm_network_callerid)(network_callerid_msg_t req,
+				    slurm_step_id_t *step_id, char *node_name,
+				    int node_name_size);
 
 /*
  * Move the specified job ID to the top of the queue for a given user ID,
@@ -5335,6 +5334,23 @@ inline static int slurm_notify_job_jid(uint32_t job_id, char *message)
 _Generic((id), \
 	slurm_step_id_t: slurm_notify_job, \
 	default: slurm_notify_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_network_callerid_jid(network_callerid_msg_t req,
+					     uint32_t *job_id,
+					     char *node_name,
+					     int node_name_size)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	int rc = (slurm_network_callerid)(req, &step_id, node_name,
+					  node_name_size);
+	*job_id = step_id.job_id;
+	return rc;
+}
+
+#define slurm_network_callerid(req, id, ...) \
+_Generic((id), \
+	slurm_step_id_t *: slurm_network_callerid, \
+	default: slurm_network_callerid_jid)((req), (id), __VA_ARGS__)
 
 inline static int slurm_suspend_jid(uint32_t job_id)
 {
