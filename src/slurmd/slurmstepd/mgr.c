@@ -540,7 +540,8 @@ static int _setup_normal_io(void)
 			}
 		}
 
-		if (io_initial_client_connect(srun, srun_stdout_tasks,
+		if (!(step->flags & LAUNCH_LOCAL_IO) &&
+		    io_initial_client_connect(srun, srun_stdout_tasks,
 					      srun_stderr_tasks) < 0) {
 			rc = ESLURMD_IO_ERROR;
 			goto claim;
