@@ -338,6 +338,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		launch.flags |= LAUNCH_WAIT_FOR_CHILDREN;
 	if (ctx->step_req->flags & SSF_KILL_ON_BAD_EXIT)
 		launch.flags |= LAUNCH_KILL_ON_BAD_EXIT;
+	if (ctx->step_req->flags & SSF_ASYNC)
+		launch.flags |= LAUNCH_LOCAL_IO;
 
 	launch.task_dist	= params->task_dist;
 	if (params->pty)
