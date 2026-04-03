@@ -3485,6 +3485,12 @@ extern list_t *acct_storage_p_get_config_keypairs(void *db_conn,
 	return NULL;
 }
 
+extern int acct_storage_p_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern list_t *acct_storage_p_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 				      slurmdb_qos_cond_t *qos_cond)
 {

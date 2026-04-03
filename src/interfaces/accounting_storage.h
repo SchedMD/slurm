@@ -434,6 +434,16 @@ extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
 						  char *config_name);
 
 /*
+ * Get config from slurmdbd
+ * IN db_conn - db connection
+ * IN slurmdbd_conf_ptr - Pointer to populate.
+ *	Pointer must released via slurmdbd_free_conf().
+ * RET: SLURM_SUCCESS or error
+ */
+extern int acct_storage_g_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr);
+
+/*
  * get info from the storage
  * IN:  slurmdb_tres_cond_t *
  * RET: List of slurmdb_tres_rec_t *

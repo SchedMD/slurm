@@ -42,6 +42,8 @@
 #include <pthread.h>
 #include <string.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/list.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -150,6 +152,7 @@ typedef struct slurm_acct_storage_ops {
 	list_t *(*get_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond);
 	list_t *(*get_config_keypairs)(void *db_conn, char *config_name);
+	int (*get_config)(void *db_conn, slurmdbd_conf_t **slurmdbd_conf_ptr);
 	list_t *(*get_tres)        (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
 	list_t *(*get_assocs)      (void *db_conn, uint32_t uid,
@@ -264,6 +267,7 @@ static const char *syms[] = {
 	"acct_storage_p_get_clusters",
 	"acct_storage_p_get_federations",
 	"acct_storage_p_get_config_keypairs",
+	"acct_storage_p_get_config",
 	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
 	"acct_storage_p_get_events",
@@ -852,6 +856,17 @@ extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
 		return NULL;
 
 	return (*(ops.get_config_keypairs))(db_conn, config_name);
+}
+
+extern int acct_storage_g_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr)
+{
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+
+	if (plugin_inited == PLUGIN_NOOP)
+		return ESLURM_NOT_SUPPORTED;
+
+	return (*(ops.get_config))(db_conn, slurmdbd_conf_ptr);
 }
 
 extern list_t *acct_storage_g_get_tres(

@@ -450,6 +450,12 @@ extern list_t *acct_storage_p_get_config_keypairs(void *db_conn,
 	return NULL;
 }
 
+extern int acct_storage_p_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr)
+{
+	return ESLURM_NOT_SUPPORTED;
+}
+
 extern list_t *acct_storage_p_get_tres(void *db_conn, uid_t uid,
 				       slurmdb_tres_cond_t *tres_cond)
 {
