@@ -221,7 +221,7 @@ extern uint32_t switch_g_job_channel(job_record_t *job_ptr, char *node_name);
 
 extern int switch_g_fs_init(stepd_step_rec_t *step);
 
-extern void switch_g_extern_step_fini(uint32_t job_id);
+extern void switch_g_stepmgr_fini(uint32_t job_id);
 
 /*
  * Initialize slurmstepd stepmgr

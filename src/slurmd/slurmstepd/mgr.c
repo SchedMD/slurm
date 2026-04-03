@@ -1541,7 +1541,7 @@ fail1:
 	stepd_send_step_complete_msgs();
 
 	if (running_with_stepmgr())
-		switch_g_extern_step_fini(step->step_id.job_id);
+		switch_g_stepmgr_fini(step->step_id.job_id);
 
 	if (slurm_conf.prolog_flags & PROLOG_FLAG_RUN_IN_JOB) {
 		/* Force all other steps to end before epilog starts */
