@@ -843,7 +843,8 @@ extern list_t *acct_storage_g_get_federations(void *db_conn, uint32_t uid,
 	return (*(ops.get_federations))(db_conn, uid, fed_cond);
 }
 
-extern list_t *acct_storage_g_get_config(void *db_conn, char *config_name)
+extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
+						  char *config_name)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 

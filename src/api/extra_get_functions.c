@@ -59,7 +59,7 @@ extern int slurmdb_reconfig(void *db_conn)
  */
 extern list_t *slurmdb_config_get_keypairs(void *db_conn)
 {
-	return acct_storage_g_get_config(db_conn, "slurmdbd.conf");
+	return acct_storage_g_get_config_keypairs(db_conn, "slurmdbd.conf");
 }
 
 /*

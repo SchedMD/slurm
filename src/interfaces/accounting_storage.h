@@ -430,7 +430,8 @@ extern list_t *acct_storage_g_get_federations(
  * RET: List of config_key_pairs_t *
  * note List needs to be freed when called
  */
-extern list_t *acct_storage_g_get_config(void *db_conn, char *config_name);
+extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
+						  char *config_name);
 
 /*
  * get info from the storage
