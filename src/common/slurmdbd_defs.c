@@ -231,6 +231,8 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 		return DBD_GET_CONFIG;
 	} else if (!xstrcasecmp(msg_type, "Got Config")) {
 		return DBD_GOT_CONFIG_KEYPAIRS;
+	} else if (!xstrcasecmp(msg_type, "Got Config Response")) {
+		return DBD_GOT_CONFIG;
 	} else if (!xstrcasecmp(msg_type, "Send Multiple Job Starts")) {
 		return DBD_SEND_MULT_JOB_START;
 	} else if (!xstrcasecmp(msg_type, "Got Multiple Job Starts")) {
@@ -845,6 +847,12 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Shutdown daemon";
 		break;
+	case DBD_GOT_CONFIG:
+		if (get_enum) {
+			return "DBD_GOT_CONFIG";
+		} else
+			return "Got Config Response";
+		break;
 	case SLURM_PERSIST_INIT:
 		if (get_enum) {
 			return "SLURM_PERSIST_INIT";
@@ -948,6 +956,9 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_GOT_MULT_MSG:
 	case DBD_FIX_RUNAWAY_JOB:
 		slurmdbd_free_list_msg(msg->data);
+		break;
+	case DBD_GOT_CONFIG:
+		slurmdbd_free_conf(msg->data);
 		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:

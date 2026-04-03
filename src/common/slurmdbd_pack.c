@@ -37,10 +37,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/slurmdbd_pack.h"
+#include <stdint.h>
+
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdb_pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -1325,6 +1327,99 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_slurmdbd_conf(const persist_msg_t *pmsg,
+				const uint16_t protocol_version, buf_t *buffer)
+{
+	const slurmdbd_conf_t *msg = pmsg->data;
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packstr(msg->archive_dir, buffer);
+		packstr(msg->archive_script, buffer);
+		pack16(msg->commit_delay, buffer);
+		packstr(msg->dbd_addr, buffer);
+		packstr(msg->dbd_backup, buffer);
+		packstr(msg->dbd_host, buffer);
+		pack16(msg->dbd_port, buffer);
+		pack16(msg->debug_level, buffer);
+		packstr(msg->default_qos, buffer);
+		pack32(msg->flags, buffer);
+		packstr(msg->log_file, buffer);
+		pack32(msg->max_purge_limit, buffer);
+		pack32(msg->max_time_range, buffer);
+		packstr(msg->parameters, buffer);
+		pack16(msg->persist_conn_rc_flags, buffer);
+		packstr(msg->pid_file, buffer);
+		pack32(msg->purge_event, buffer);
+		pack32(msg->purge_job, buffer);
+		pack32(msg->purge_resv, buffer);
+		pack32(msg->purge_step, buffer);
+		pack32(msg->purge_suspend, buffer);
+		pack32(msg->purge_txn, buffer);
+		pack32(msg->purge_usage, buffer);
+		pack32(msg->purge_jobscript, buffer);
+		pack32(msg->purge_jobenv, buffer);
+		/* never send storage_loc */
+		packstr("", buffer);
+		/* never send storage_pass_script */
+		packstr("", buffer);
+		/* never send storage_user */
+		packstr("", buffer);
+		pack16(msg->syslog_debug, buffer);
+		pack16(msg->track_wckey, buffer);
+		pack16(msg->track_ctld, buffer);
+	}
+}
+
+static int _unpack_slurmdbd_conf(persist_msg_t *pmsg,
+				 const uint16_t protocol_version, buf_t *buffer)
+{
+	slurmdbd_conf_t *build_ptr = xmalloc(sizeof(*build_ptr));
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&build_ptr->archive_dir, buffer);
+		safe_unpackstr(&build_ptr->archive_script, buffer);
+		safe_unpack16(&build_ptr->commit_delay, buffer);
+		safe_unpackstr(&build_ptr->dbd_addr, buffer);
+		safe_unpackstr(&build_ptr->dbd_backup, buffer);
+		safe_unpackstr(&build_ptr->dbd_host, buffer);
+		safe_unpack16(&build_ptr->dbd_port, buffer);
+		safe_unpack16(&build_ptr->debug_level, buffer);
+		safe_unpackstr(&build_ptr->default_qos, buffer);
+		safe_unpack32(&build_ptr->flags, buffer);
+		safe_unpackstr(&build_ptr->log_file, buffer);
+		safe_unpack32(&build_ptr->max_purge_limit, buffer);
+		safe_unpack32(&build_ptr->max_time_range, buffer);
+		safe_unpackstr(&build_ptr->parameters, buffer);
+		safe_unpack16(&build_ptr->persist_conn_rc_flags, buffer);
+		safe_unpackstr(&build_ptr->pid_file, buffer);
+		safe_unpack32(&build_ptr->purge_event, buffer);
+		safe_unpack32(&build_ptr->purge_job, buffer);
+		safe_unpack32(&build_ptr->purge_resv, buffer);
+		safe_unpack32(&build_ptr->purge_step, buffer);
+		safe_unpack32(&build_ptr->purge_suspend, buffer);
+		safe_unpack32(&build_ptr->purge_txn, buffer);
+		safe_unpack32(&build_ptr->purge_usage, buffer);
+		safe_unpack32(&build_ptr->purge_jobscript, buffer);
+		safe_unpack32(&build_ptr->purge_jobenv, buffer);
+		safe_unpackstr(&build_ptr->storage_loc, buffer);
+		safe_unpackstr(&build_ptr->storage_pass_script, buffer);
+		safe_unpackstr(&build_ptr->storage_user, buffer);
+		safe_unpack16(&build_ptr->syslog_debug, buffer);
+		safe_unpack16(&build_ptr->track_wckey, buffer);
+		safe_unpack16(&build_ptr->track_ctld, buffer);
+	} else {
+		goto unpack_error;
+	}
+
+	xassert(!pmsg->data);
+	pmsg->data = build_ptr;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdbd_free_conf(build_ptr);
+	return SLURM_ERROR;
+}
+
 extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 				   slurmdbd_msg_type_t type, buf_t *buffer)
 {
@@ -1594,6 +1689,9 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 			(dbd_list_msg_t *)req->data, rpc_version,
 			req->msg_type, buffer);
 		break;
+	case DBD_GOT_CONFIG:
+		_pack_slurmdbd_conf(req, rpc_version, buffer);
+		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:
 		_pack_acct_coord_msg(
@@ -1801,6 +1899,9 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 		rc = slurmdbd_unpack_list_msg(
 			(dbd_list_msg_t **)&resp->data, rpc_version,
 			resp->msg_type, buffer);
+		break;
+	case DBD_GOT_CONFIG:
+		rc = _unpack_slurmdbd_conf(resp, rpc_version, buffer);
 		break;
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:
