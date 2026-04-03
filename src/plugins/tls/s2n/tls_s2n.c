@@ -1205,6 +1205,9 @@ extern int tls_p_shutdown_conn(tls_conn_t *conn)
 				rc = SLURM_BLOCKED_ON_READ;
 			else if (s2n_errno == S2N_BLOCKED_ON_WRITE)
 				rc = SLURM_BLOCKED_ON_WRITE;
+			else
+				rc = EWOULDBLOCK;
+
 			/* Avoid calling on_s2n_error for blocking */
 			on_s2n_block(conn, s2n_shutdown);
 			return rc;
