@@ -1914,7 +1914,7 @@ extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr);
  * RET: List of config_key_pair_t *
  * note List needs to be freed with slurm_list_destroy() when called
  */
-extern list_t *slurmdb_config_get(void *db_conn);
+extern list_t *slurmdb_config_get_keypairs(void *db_conn);
 
 /*
  * get info from the storage

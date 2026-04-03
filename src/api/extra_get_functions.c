@@ -57,7 +57,7 @@ extern int slurmdb_reconfig(void *db_conn)
  * RET: List of config_key_pairs_t *
  * note List needs to be freed when called
  */
-extern list_t *slurmdb_config_get(void *db_conn)
+extern list_t *slurmdb_config_get_keypairs(void *db_conn)
 {
 	return acct_storage_g_get_config(db_conn, "slurmdbd.conf");
 }

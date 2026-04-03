@@ -57,7 +57,7 @@ static list_t *dbd_config_list = NULL;
 
 static void _load_dbd_config(void)
 {
-	dbd_config_list = slurmdb_config_get(db_conn);
+	dbd_config_list = slurmdb_config_get_keypairs(db_conn);
 }
 
 static void _print_dbd_config(void)

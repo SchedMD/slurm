@@ -64,7 +64,7 @@ static void _get_sync_delay(void)
 
 	sync_delay = DEFAULT_SYNC_DELAY;
 
-	dbd_config_list = slurmdb_config_get(db_conn);
+	dbd_config_list = slurmdb_config_get_keypairs(db_conn);
 	if (!dbd_config_list)
 		return;
 

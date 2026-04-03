@@ -340,7 +340,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	/* second load slurmdbd.conf params */
 	if (!(db_conn = slurmdb_connection_get(NULL)))
 		return;
-	dbd_config_list = slurmdb_config_get(db_conn);
+	dbd_config_list = slurmdb_config_get_keypairs(db_conn);
 	slurmdb_connection_close(&db_conn);
 	if (!dbd_config_list)
 		return;
