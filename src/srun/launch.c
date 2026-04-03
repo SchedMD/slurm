@@ -35,9 +35,9 @@
 
 #include "config.h"
 
-#include <stdlib.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 #include "src/srun/allocate.h"
@@ -53,7 +53,6 @@
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/net.h"
-#include "src/common/xstring.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/proc_args.h"
@@ -61,6 +60,8 @@
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
+
 #include "src/interfaces/gres.h"
 
 static list_t *local_job_list = NULL;
