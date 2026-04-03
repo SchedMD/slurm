@@ -116,12 +116,14 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
  * step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
+ * IN srun_opt - srun options
  * OUT timed_out - indicate if poll timed-out
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using step_ctx_destroy()
  */
 extern slurm_step_ctx_t *step_ctx_create_timeout(
-	job_step_create_request_msg_t *step_req, int timeout, bool *timed_out)
+	job_step_create_request_msg_t *step_req, int timeout, bool *timed_out,
+	srun_opt_t *srun_opt)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
@@ -135,17 +137,21 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 
 	xassert(step_req);
 
-	/*
-	 * We will handle the messages in the step_launch.c message handler,
-	 * but we need to open the socket right now so we can tell the
-	 * controller which port to use.
-	 */
-	if (slurm_init_msg_engine_srun_ports(&sock, &port) != SLURM_SUCCESS) {
-		error("unable to initialize step request socket: %m");
-		return NULL;
-	}
+	/* Don't need a port for async steps since they're fire and forget */
+	if (!srun_opt->async) {
+		/*
+		 * We will handle the messages in the step_launch.c
+		 * message handler, but we need to open the socket right
+		 * now so we can tell the controller which port to use.
+		 */
+		if (slurm_init_msg_engine_srun_ports(&sock, &port) !=
+		    SLURM_SUCCESS) {
+			error("unable to initialize step request socket: %m");
+			return NULL;
+		}
 
-	step_req->port = port;
+		step_req->port = port;
+	}
 
 	rc = slurm_job_step_create(step_req, &step_resp);
 	if ((rc < 0) && launch_step_retry_errno(errno)) {
@@ -185,10 +191,12 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 		}
 		slurm_mutex_unlock(&srun_destroy_sig_lock);
 
-		close(sock);
+		if (sock != -1)
+			close(sock);
 		errno = errnum;
 	} else if ((rc < 0) || (step_resp == NULL)) {
-		close(sock);
+		if (sock != -1)
+			close(sock);
 	} else {
 		ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 		ctx->launch_state = NULL;
@@ -236,11 +244,14 @@ extern slurm_step_ctx_t *step_ctx_create_no_alloc(
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
-	if (slurm_init_msg_engine_srun_ports(&sock, &port) != SLURM_SUCCESS) {
-		error("unable to initialize step context socket: %m");
-		return NULL;
+	if (!(step_req->flags & SSF_ASYNC)) {
+		if (slurm_init_msg_engine_srun_ports(&sock, &port) !=
+		    SLURM_SUCCESS) {
+			error("unable to initialize step context socket: %m");
+			return NULL;
+		}
+		step_req->port = port;
 	}
-	step_req->port = port;
 
 	/* Then make up a response with only certain things filled in */
 	step_resp = (job_step_create_response_msg_t *)

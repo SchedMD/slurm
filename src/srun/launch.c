@@ -1343,9 +1343,9 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 				step_wait = ((getpid() % 10) +
 					     slurmctld_timeout) * 1000;
 			}
-			job->step_ctx = step_ctx_create_timeout(step_req,
-								step_wait,
-								&timed_out);
+			job->step_ctx =
+				step_ctx_create_timeout(step_req, step_wait,
+							&timed_out, srun_opt);
 		}
 		if (job->step_ctx != NULL) {
 			job->step_ctx->verbose_level = opt_local->verbose;
