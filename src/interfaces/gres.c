@@ -1557,7 +1557,7 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
 	if (xstrcasestr(input, "nvidia_gpu_env"))
 		flags |= GRES_CONF_ENV_NVML;
 	if (xstrcasestr(input, "amd_gpu_env"))
-		flags |= GRES_CONF_ENV_AMDSMI;
+		flags |= GRES_CONF_ENV_AMDSMI | GRES_CONF_ENV_RSMI;
 	if (xstrcasestr(input, "intel_gpu_env"))
 		flags |= GRES_CONF_ENV_ONEAPI;
 	if (xstrcasestr(input, "opencl_env"))
