@@ -537,12 +537,12 @@ static int _handle_job_step_get_info(int fd, uid_t uid, pid_t remote_pid)
 	buffer = init_buf(BUF_SIZE);
 
 	slurm_mutex_lock(&stepmgr_mutex);
-	args.step_id = &request->step_id,
-	args.steps_packed = 0,
-	args.buffer = buffer,
-	args.proto_version = msg.protocol_version,
-	args.job_step_list = job_step_ptr->step_list,
-	args.pack_job_step_list_func = pack_ctld_job_step_info,
+	args.step_id = &request->step_id;
+	args.steps_packed = 0;
+	args.buffer = buffer;
+	args.proto_version = msg.protocol_version;
+	args.job_step_list = job_step_ptr->step_list;
+	args.pack_job_step_list_func = pack_ctld_job_step_info;
 
 	pack_job_step_info_response_msg(&args);
 	slurm_mutex_unlock(&stepmgr_mutex);
