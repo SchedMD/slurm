@@ -2122,7 +2122,7 @@ static int _fork_all_tasks(bool *io_initialized)
 	 * Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
-	if (drop_privileges (step, false, &sprivs, true) < 0)
+	if (drop_privileges(step, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (pam_setup(step->user_name, conf->hostname)
