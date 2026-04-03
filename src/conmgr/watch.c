@@ -943,7 +943,9 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 
 	/* handle already read data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
-	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
+	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
+	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
+	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN)) {
 		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
 		if (con_flag(con, FLAG_TLS_FINGERPRINT)) {
