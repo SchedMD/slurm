@@ -1353,7 +1353,7 @@ extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
 	case DBD_GOT_FEDERATIONS:
 		my_function = slurmdb_pack_federation_rec;
 		break;
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 		my_function = pack_config_key_pair;
 		break;
 	case DBD_GOT_JOBS:
@@ -1452,7 +1452,7 @@ extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
 		my_function = slurmdb_unpack_federation_rec;
 		my_destroy = slurmdb_destroy_federation_rec;
 		break;
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 		my_function = unpack_config_key_pair;
 		my_destroy = destroy_config_key_pair;
 		break;
@@ -1584,7 +1584,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 	case DBD_SEND_MULT_JOB_START:
 	case DBD_GOT_MULT_JOB_START:
 	case DBD_SEND_MULT_MSG:
@@ -1792,7 +1792,7 @@ extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 	case DBD_SEND_MULT_JOB_START:
 	case DBD_GOT_MULT_JOB_START:
 	case DBD_SEND_MULT_MSG:

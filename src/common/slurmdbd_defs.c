@@ -230,7 +230,7 @@ extern slurmdbd_msg_type_t str_2_slurmdbd_msg_type(char *msg_type)
 	} else if (!xstrcasecmp(msg_type, "Get Config")) {
 		return DBD_GET_CONFIG;
 	} else if (!xstrcasecmp(msg_type, "Got Config")) {
-		return DBD_GOT_CONFIG;
+		return DBD_GOT_CONFIG_KEYPAIRS;
 	} else if (!xstrcasecmp(msg_type, "Send Multiple Job Starts")) {
 		return DBD_SEND_MULT_JOB_START;
 	} else if (!xstrcasecmp(msg_type, "Got Multiple Job Starts")) {
@@ -791,9 +791,9 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 		} else
 			return "Get Config";
 		break;
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 		if (get_enum) {
-			return "DBD_GOT_CONFIG";
+			return "DBD_GOT_CONFIG_KEYPAIRS";
 		} else
 			return "Got Config";
 		break;
@@ -920,7 +920,7 @@ extern void slurmdbd_free_msg(persist_msg_t *msg)
 	case DBD_GOT_WCKEYS:
 	case DBD_GOT_TXN:
 	case DBD_GOT_USERS:
-	case DBD_GOT_CONFIG:
+	case DBD_GOT_CONFIG_KEYPAIRS:
 	case DBD_SEND_MULT_JOB_START:
 	case DBD_GOT_MULT_JOB_START:
 	case DBD_SEND_MULT_MSG:

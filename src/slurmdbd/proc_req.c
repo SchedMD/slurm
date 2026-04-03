@@ -1005,9 +1005,9 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	}
 
 	*out_buffer = init_buf(1024);
-	pack16((uint16_t) DBD_GOT_CONFIG, *out_buffer);
+	pack16((uint16_t) DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
 	slurmdbd_pack_list_msg(&list_msg, slurmdbd_conn->pcon->version,
-			       DBD_GOT_CONFIG, *out_buffer);
+			       DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
 	FREE_NULL_LIST(list_msg.my_list);
 	xfree(config_name);
 

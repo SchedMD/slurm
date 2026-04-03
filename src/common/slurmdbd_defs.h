@@ -124,7 +124,7 @@ typedef enum {
 	DBD_GET_RESVS,    	/* Get reservation information  	*/
 	DBD_GOT_RESVS,		/* Response to DBD_GET_RESV		*/
 	DBD_GET_CONFIG,  	/* Get configuration information	*/
-	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
+	DBD_GOT_CONFIG_KEYPAIRS, /* Response to DBD_GET_CONFIG (deprecated) */
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
 	DBD_GET_EVENTS, 	/* #1470, Get event information		*/

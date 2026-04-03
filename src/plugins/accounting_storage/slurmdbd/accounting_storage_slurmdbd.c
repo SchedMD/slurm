@@ -1715,9 +1715,10 @@ extern list_t *acct_storage_p_get_config(void *db_conn, char *config_name)
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
-	} else if (resp.msg_type != DBD_GOT_CONFIG) {
-		error("response type not DBD_GOT_CONFIG: %u",
+	} else if (resp.msg_type != DBD_GOT_CONFIG_KEYPAIRS) {
+		error("response type not DBD_GOT_CONFIG_KEYPAIRS: %u",
 		      resp.msg_type);
+		slurmdbd_free_msg(&resp);
 	} else {
 		got_msg = (dbd_list_msg_t *) resp.data;
 		ret_list = got_msg->my_list;
