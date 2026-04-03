@@ -2259,9 +2259,9 @@ typedef struct {
 	/* I/O handling */
 	bool buffered_stdio;
 	bool labelio;
-	char *remote_output_filename;
-	char *remote_error_filename;
-	char *remote_input_filename;
+	char *output_filename;
+	char *error_filename;
+	char *input_filename;
 	slurm_step_io_fds_t local_fds;
 
 	bool multi_prog;

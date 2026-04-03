@@ -1364,9 +1364,9 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.slurmd_debug = srun_opt->slurmd_debug;
 	launch_params.buffered_stdio = !srun_opt->unbuffered;
 	launch_params.labelio = srun_opt->labelio ? true : false;
-	launch_params.remote_output_filename = fname_remote_string(job->ofname);
-	launch_params.remote_input_filename  = fname_remote_string(job->ifname);
-	launch_params.remote_error_filename  = fname_remote_string(job->efname);
+	launch_params.output_filename = fname_remote_string(job->ofname);
+	launch_params.input_filename = fname_remote_string(job->ifname);
+	launch_params.error_filename = fname_remote_string(job->efname);
 	launch_params.het_job_node_offset = job->het_job_node_offset;
 	launch_params.het_job_id  = job->het_job_id;
 	launch_params.het_job_nnodes = job->het_job_nnodes;
