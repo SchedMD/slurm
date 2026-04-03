@@ -621,6 +621,95 @@ static int _parse_gpu_request(char *in_str)
 	return gpus_val;
 }
 
+static void _build_launch_params(slurm_step_launch_params_t *launch_params,
+				 srun_job_t *job, slurm_opt_t *opt_local)
+{
+	srun_opt_t *srun_opt = opt_local->srun_opt;
+	char tmp_str[128];
+
+	slurm_step_launch_params_t_init(launch_params);
+
+	if (job->step_ctx) {
+		slurm_step_layout_t *layout =
+			job->step_ctx->step_resp->step_layout;
+		if (!(srun_opt->cpu_bind_type & (~CPU_BIND_VERBOSE)) &&
+		    job->step_ctx->step_resp->def_cpu_bind_type)
+			srun_opt->cpu_bind_type =
+				job->step_ctx->step_resp->def_cpu_bind_type |
+				srun_opt->cpu_bind_type;
+		if (get_log_level() >= LOG_LEVEL_VERBOSE) {
+			slurm_sprint_cpu_bind_type(tmp_str,
+						   srun_opt->cpu_bind_type);
+			verbose("CpuBindType=%s", tmp_str);
+		}
+
+		launch_params->cpt_compact_array = layout->cpt_compact_array;
+		launch_params->cpt_compact_cnt = layout->cpt_compact_cnt;
+		launch_params->cpt_compact_reps = layout->cpt_compact_reps;
+	}
+
+	if (opt_local->acctg_freq)
+		launch_params->acctg_freq = opt_local->acctg_freq;
+	if (opt_local->cpus_set)
+		launch_params->cpus_per_task = opt_local->cpus_per_task;
+	else
+		launch_params->cpus_per_task = 1;
+
+	launch_params->accel_bind_type = srun_opt->accel_bind_type;
+	launch_params->argc = opt_local->argc;
+	launch_params->argv = opt_local->argv;
+	launch_params->buffered_stdio = !srun_opt->unbuffered;
+	launch_params->container = opt_local->container;
+	launch_params->cpu_bind = srun_opt->cpu_bind;
+	launch_params->cpu_bind_type = srun_opt->cpu_bind_type;
+	launch_params->cpu_freq_gov = opt_local->cpu_freq_gov;
+	launch_params->cpu_freq_max = opt_local->cpu_freq_max;
+	launch_params->cpu_freq_min = opt_local->cpu_freq_min;
+	launch_params->cwd = opt_local->chdir;
+	launch_params->env = _build_user_env(job, opt_local);
+	launch_params->envc = envcount(launch_params->env);
+	launch_params->error_filename = fname_remote_string(job->efname);
+	launch_params->het_job_id = job->het_job_id;
+	launch_params->het_job_nnodes = job->het_job_nnodes;
+	launch_params->het_job_node_list = job->het_job_node_list;
+	launch_params->het_job_node_offset = job->het_job_node_offset;
+	launch_params->het_job_ntasks = job->het_job_ntasks;
+	launch_params->het_job_offset = job->het_job_offset;
+	launch_params->het_job_step_cnt = srun_opt->het_step_cnt;
+	launch_params->het_job_step_task_cnts = job->het_job_step_task_cnts;
+	launch_params->het_job_task_cnts = job->het_job_task_cnts;
+	launch_params->het_job_task_offset = job->het_job_task_offset;
+	launch_params->het_job_tid_offsets = job->het_job_tid_offsets;
+	launch_params->het_job_tids = job->het_job_tids;
+	launch_params->input_filename = fname_remote_string(job->ifname);
+	launch_params->labelio = srun_opt->labelio ? true : false;
+	launch_params->mem_bind = opt_local->mem_bind;
+	launch_params->mem_bind_type = opt_local->mem_bind_type;
+	launch_params->mpi_plugin_name = srun_opt->mpi_type;
+	launch_params->multi_prog = srun_opt->multi_prog ? true : false;
+	launch_params->no_alloc = srun_opt->no_alloc;
+	launch_params->ntasks_per_board = job->ntasks_per_board;
+	launch_params->ntasks_per_core = job->ntasks_per_core;
+	launch_params->ntasks_per_socket = job->ntasks_per_socket;
+	launch_params->ntasks_per_tres = job->ntasks_per_tres;
+	launch_params->oom_kill_step = opt_local->oom_kill_step;
+	launch_params->open_mode = opt_local->open_mode;
+	launch_params->output_filename = fname_remote_string(job->ofname);
+	launch_params->preserve_env = srun_opt->preserve_env;
+	launch_params->profile = opt_local->profile;
+	launch_params->pty = srun_opt->pty;
+	launch_params->slurmd_debug = srun_opt->slurmd_debug;
+	launch_params->spank_job_env = opt_local->spank_job_env;
+	launch_params->spank_job_env_size = opt_local->spank_job_env_size;
+	launch_params->task_dist = opt_local->distribution;
+	launch_params->task_epilog = srun_opt->task_epilog;
+	launch_params->task_prolog = srun_opt->task_prolog;
+	launch_params->threads_per_core = opt_local->threads_per_core;
+	launch_params->tree_width = srun_opt->tree_width;
+	launch_params->tres_bind = opt_local->tres_bind;
+	launch_params->tres_freq = opt_local->tres_freq;
+}
+
 static job_step_create_request_msg_t *_create_job_step_create_request(
 	slurm_opt_t *opt_local, bool use_all_cpus, srun_job_t *job)
 {
@@ -1328,14 +1417,11 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
-	slurm_step_layout_t *layout;
 	int rc = SLURM_SUCCESS;
 	task_state_t *task_state;
 	bool first_launch = false;
-	char tmp_str[128];
 	xassert(srun_opt);
 
-	slurm_step_launch_params_t_init(&launch_params);
 	memcpy(&callbacks, step_callbacks, sizeof(callbacks));
 
 	task_state = task_state_find(&job->step_id, task_state_list);
@@ -1359,80 +1445,7 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		task_state_alter(task_state, job->ntasks);
 	}
 
-	launch_params.argc = opt_local->argc;
-	launch_params.argv = opt_local->argv;
-	launch_params.multi_prog = srun_opt->multi_prog ? true : false;
-	launch_params.container = opt_local->container;
-	launch_params.cwd = opt_local->chdir;
-	launch_params.slurmd_debug = srun_opt->slurmd_debug;
-	launch_params.buffered_stdio = !srun_opt->unbuffered;
-	launch_params.labelio = srun_opt->labelio ? true : false;
-	launch_params.output_filename = fname_remote_string(job->ofname);
-	launch_params.input_filename = fname_remote_string(job->ifname);
-	launch_params.error_filename = fname_remote_string(job->efname);
-	launch_params.het_job_node_offset = job->het_job_node_offset;
-	launch_params.het_job_id  = job->het_job_id;
-	launch_params.het_job_nnodes = job->het_job_nnodes;
-	launch_params.het_job_ntasks = job->het_job_ntasks;
-	launch_params.het_job_offset = job->het_job_offset;
-	launch_params.het_job_step_cnt = srun_opt->het_step_cnt;
-	launch_params.het_job_step_task_cnts = job->het_job_step_task_cnts;
-	launch_params.het_job_task_offset = job->het_job_task_offset;
-	launch_params.het_job_task_cnts = job->het_job_task_cnts;
-	launch_params.het_job_tids = job->het_job_tids;
-	launch_params.het_job_tid_offsets = job->het_job_tid_offsets;
-	launch_params.het_job_node_list = job->het_job_node_list;
-	launch_params.profile = opt_local->profile;
-	launch_params.task_prolog = srun_opt->task_prolog;
-	launch_params.task_epilog = srun_opt->task_epilog;
-
-	if (!(srun_opt->cpu_bind_type & (~CPU_BIND_VERBOSE)) &&
-	    job->step_ctx->step_resp->def_cpu_bind_type)
-		srun_opt->cpu_bind_type =
-			job->step_ctx->step_resp->def_cpu_bind_type |
-			srun_opt->cpu_bind_type;
-	if (get_log_level() >= LOG_LEVEL_VERBOSE) {
-		slurm_sprint_cpu_bind_type(tmp_str, srun_opt->cpu_bind_type);
-		verbose("CpuBindType=%s", tmp_str);
-	}
-	launch_params.cpu_bind = srun_opt->cpu_bind;
-	launch_params.cpu_bind_type = srun_opt->cpu_bind_type;
-
-	launch_params.mem_bind = opt_local->mem_bind;
-	launch_params.mem_bind_type = opt_local->mem_bind_type;
-	launch_params.accel_bind_type = srun_opt->accel_bind_type;
-	launch_params.open_mode = opt_local->open_mode;
-	if (opt_local->acctg_freq)
-		launch_params.acctg_freq = opt_local->acctg_freq;
-	launch_params.pty = srun_opt->pty;
-	if (opt_local->cpus_set)
-		launch_params.cpus_per_task	= opt_local->cpus_per_task;
-	else
-		launch_params.cpus_per_task	= 1;
-
-	layout = job->step_ctx->step_resp->step_layout;
-	launch_params.cpt_compact_array = layout->cpt_compact_array;
-	launch_params.cpt_compact_cnt = layout->cpt_compact_cnt;
-	launch_params.cpt_compact_reps = layout->cpt_compact_reps;
-	launch_params.threads_per_core   = opt_local->threads_per_core;
-	launch_params.cpu_freq_min       = opt_local->cpu_freq_min;
-	launch_params.cpu_freq_max       = opt_local->cpu_freq_max;
-	launch_params.cpu_freq_gov       = opt_local->cpu_freq_gov;
-	launch_params.tres_bind          = opt_local->tres_bind;
-	launch_params.tres_freq          = opt_local->tres_freq;
-	launch_params.task_dist          = opt_local->distribution;
-	launch_params.preserve_env       = srun_opt->preserve_env;
-	launch_params.spank_job_env      = opt_local->spank_job_env;
-	launch_params.spank_job_env_size = opt_local->spank_job_env_size;
-	launch_params.ntasks_per_board   = job->ntasks_per_board;
-	launch_params.ntasks_per_core    = job->ntasks_per_core;
-	launch_params.ntasks_per_tres    = job->ntasks_per_tres;
-	launch_params.ntasks_per_socket  = job->ntasks_per_socket;
-	launch_params.no_alloc           = srun_opt->no_alloc;
-	launch_params.mpi_plugin_name = srun_opt->mpi_type;
-	launch_params.env = _build_user_env(job, opt_local);
-	launch_params.tree_width = srun_opt->tree_width;
-	launch_params.oom_kill_step = opt_local->oom_kill_step;
+	_build_launch_params(&launch_params, job, opt_local);
 
 	memcpy(&launch_params.local_fds, cio_fds, sizeof(slurm_step_io_fds_t));
 
