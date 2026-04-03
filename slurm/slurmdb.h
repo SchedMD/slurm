@@ -1917,6 +1917,16 @@ extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr);
 extern list_t *slurmdb_config_get_keypairs(void *db_conn);
 
 /*
+ * Get config from slurmdbd
+ * IN db_conn - db connection
+ * IN slurmdbd_conf_ptr - Pointer to populate.
+ *	Pointer must released via slurmdbd_free_conf().
+ * RET: SLURM_SUCCESS or error
+ */
+extern int slurmdb_config_get(void *db_conn,
+			      slurmdbd_conf_t **slurmdbd_conf_ptr);
+
+/*
  * get info from the storage
  * IN:  slurmdb_event_cond_t *
  * RET: List of slurmdb_event_rec_t *

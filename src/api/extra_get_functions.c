@@ -62,6 +62,12 @@ extern list_t *slurmdb_config_get_keypairs(void *db_conn)
 	return acct_storage_g_get_config_keypairs(db_conn, "slurmdbd.conf");
 }
 
+extern int slurmdb_config_get(void *db_conn,
+			      slurmdbd_conf_t **slurmdbd_conf_ptr)
+{
+	return acct_storage_g_get_config(db_conn, slurmdbd_conf_ptr);
+}
+
 /*
  * get info from the storage
  * IN:  slurmdb_event_cond_t *
