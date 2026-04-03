@@ -233,6 +233,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 
 	step_ptr->cpu_count = step_specs->num_tasks;
 	step_ptr->cwd = xstrdup(step_specs->cwd);
+	step_ptr->flags = step_specs->flags;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
