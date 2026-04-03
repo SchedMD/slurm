@@ -41,38 +41,22 @@
 
 static uint16_t sync_delay = 0;
 
-static int _find_commit_delay(void *x, void *arg)
-{
-	config_key_pair_t *key_pair = x;
-	uint16_t *commit_delay = arg;
-
-	if (!xstrcmp(key_pair->name, "CommitDelay")) {
-		*commit_delay = (uint16_t) atoi(key_pair->value);
-		return 1;
-	}
-
-	return 0;
-}
-
 static void _get_sync_delay(void)
 {
-	list_t *dbd_config_list = NULL;
-	uint16_t commit_delay = 0;
+	int rc = EINVAL;
+	slurmdbd_conf_t *slurmdbd_conf = NULL;
 
 	if (sync_delay)
 		return;
 
 	sync_delay = DEFAULT_SYNC_DELAY;
 
-	dbd_config_list = slurmdb_config_get_keypairs(db_conn);
-	if (!dbd_config_list)
+	if ((rc = slurmdb_config_get(db_conn, &slurmdbd_conf)))
 		return;
 
-	list_for_each(dbd_config_list, _find_commit_delay, &commit_delay);
+	sync_delay += slurmdbd_conf->commit_delay;
 
-	FREE_NULL_LIST(dbd_config_list);
-
-	sync_delay += commit_delay;
+	slurmdbd_free_conf(slurmdbd_conf);
 }
 
 static uint32_t _parse_state(char *state_str)
