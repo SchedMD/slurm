@@ -52,6 +52,7 @@
 
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -1737,7 +1738,57 @@ extern list_t *acct_storage_p_get_config_keypairs(void *db_conn,
 extern int acct_storage_p_get_config(void *db_conn,
 				     slurmdbd_conf_t **slurmdbd_conf_ptr)
 {
-	return ESLURM_NOT_SUPPORTED;
+	persist_msg_t req = { 0 }, resp = { 0 };
+	int rc = EINVAL;
+
+	if (first)
+		init();
+
+	xassert(!*slurmdbd_conf_ptr);
+	slurmdbd_free_conf(*slurmdbd_conf_ptr);
+	*slurmdbd_conf_ptr = NULL;
+
+	req.msg_type = DBD_GET_CONFIG;
+	req.pcon = db_conn;
+	/* data should be ignored */
+	req.data = "slurmdbd.conf";
+
+	errno = SLURM_SUCCESS;
+	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &req, &resp);
+
+	if (rc) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
+		error("%s: DBD_GET_CONFIG failure: %s",
+		      __func__, slurm_strerror(rc));
+	} else if (resp.msg_type == PERSIST_RC) {
+		persist_rc_msg_t *msg = resp.data;
+
+		if (!msg->rc)
+			info("%s", msg->comment);
+		else
+			error("%s", msg->comment);
+
+		rc = msg->rc;
+		slurm_persist_free_rc_msg(msg);
+	} else if (resp.msg_type == DBD_GOT_CONFIG_KEYPAIRS) {
+		error("%s: unsupported DBD_GOT_CONFIG_KEYPAIRS: %u",
+		      __func__, resp.msg_type);
+
+		slurmdbd_free_list_msg(resp.data);
+		rc = ESLURM_NOT_SUPPORTED;
+	} else if (resp.msg_type != DBD_GOT_CONFIG) {
+		error("response type not DBD_GOT_CONFIG: %u",
+		      resp.msg_type);
+		slurmdbd_free_msg(&resp);
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+	} else {
+		*slurmdbd_conf_ptr = resp.data;
+		rc = SLURM_SUCCESS;
+	}
+
+	return rc;
 }
 
 extern list_t *acct_storage_p_get_tres(void *db_conn, uid_t uid,
