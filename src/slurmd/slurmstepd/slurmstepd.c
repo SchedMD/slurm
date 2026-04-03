@@ -1148,6 +1148,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 
 			/* only allow one stepd to be stepmgr. */
 			slurm_daemon |= WITH_STEPMGR;
+			switch_g_stepmgr_init();
 			job_step_ptr = task_msg->job_ptr;
 			job_step_ptr->part_ptr = task_msg->part_ptr;
 			job_node_array = task_msg->job_node_array;

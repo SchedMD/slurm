@@ -1101,3 +1101,8 @@ extern void switch_p_extern_step_fini(int job_id)
 {
 	slingshot_release_collectives_job(job_id);
 }
+
+extern void switch_p_stepmgr_init(void)
+{
+	(void) slingshot_init_collectives();
+}

@@ -682,3 +682,8 @@ extern void switch_p_extern_step_fini(int job_id)
 {
 	/* not supported */
 }
+
+extern void switch_p_stepmgr_init(void)
+{
+	/* not supported */
+}

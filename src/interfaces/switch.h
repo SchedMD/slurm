@@ -223,4 +223,10 @@ extern int switch_g_fs_init(stepd_step_rec_t *step);
 
 extern void switch_g_extern_step_fini(uint32_t job_id);
 
+/*
+ * Initialize slurmstepd stepmgr
+ * Execute when the slurmstepd learns it is the stepmgr
+ */
+extern void switch_g_stepmgr_init(void);
+
 #endif
