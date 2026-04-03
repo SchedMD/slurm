@@ -149,7 +149,7 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_cluster_cond_t *cluster_cond);
 	list_t *(*get_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond);
-	list_t *(*get_config)      (void *db_conn, char *config_name);
+	list_t *(*get_config_keypairs)(void *db_conn, char *config_name);
 	list_t *(*get_tres)        (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
 	list_t *(*get_assocs)      (void *db_conn, uint32_t uid,
@@ -851,7 +851,7 @@ extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
 	if (plugin_inited == PLUGIN_NOOP)
 		return NULL;
 
-	return (*(ops.get_config))(db_conn, config_name);
+	return (*(ops.get_config_keypairs))(db_conn, config_name);
 }
 
 extern list_t *acct_storage_g_get_tres(
