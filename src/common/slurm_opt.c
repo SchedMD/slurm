@@ -1541,6 +1541,11 @@ static int arg_set_gid(slurm_opt_t *opt, const char *arg)
 		return SLURM_ERROR;
 	}
 
+	if (opt->gid == SLURM_AUTH_NOBODY) {
+		error("Rejecting --gid as nobody specification");
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 COMMON_INT_OPTION_GET(gid);
@@ -3799,6 +3804,11 @@ static int arg_set_uid(slurm_opt_t *opt, const char *arg)
 
 	if (uid_from_string(arg, &opt->uid) != SLURM_SUCCESS) {
 		error("Invalid --uid specification");
+		return SLURM_ERROR;
+	}
+
+	if (opt->uid == SLURM_AUTH_NOBODY) {
+		error("Rejecting --uid as nobody specification");
 		return SLURM_ERROR;
 	}
 
