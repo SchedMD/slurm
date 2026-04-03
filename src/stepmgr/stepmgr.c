@@ -231,17 +231,17 @@ static void _build_pending_step(job_record_t *job_ptr,
 
 	*stepmgr_ops->last_job_update = time(NULL);
 
-	step_ptr->cpu_count	= step_specs->num_tasks;
-	step_ptr->port		= step_specs->port;
-	step_ptr->srun_pid	= step_specs->srun_pid;
-	step_ptr->host		= xstrdup(step_specs->host);
-	step_ptr->state		= JOB_PENDING;
-	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
-	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
+	step_ptr->cpu_count = step_specs->num_tasks;
 	step_ptr->cwd = xstrdup(step_specs->cwd);
+	step_ptr->host = xstrdup(step_specs->host);
+	step_ptr->port = step_specs->port;
+	step_ptr->srun_pid = step_specs->srun_pid;
+	step_ptr->state = JOB_PENDING;
 	step_ptr->std_err = xstrdup(step_specs->std_err);
 	step_ptr->std_in = xstrdup(step_specs->std_in);
 	step_ptr->std_out = xstrdup(step_specs->std_out);
+	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 
 	if (job_ptr->node_bitmap)
