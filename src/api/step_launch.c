@@ -381,40 +381,44 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		}
 	}
 
-	ctx->launch_state->io =
-		client_io_handler_create(params->local_fds,
-					 ctx->step_req->num_tasks,
-					 launch.nnodes, io_key,
-					 params->labelio,
-					 params->het_job_offset,
-					 params->het_job_task_offset);
-	if (!ctx->launch_state->io) {
-		rc = SLURM_ERROR;
-		goto fail1;
+	/* don't need to setup IO on client if step is handling it locally */
+	if (!(launch.flags & LAUNCH_LOCAL_IO)) {
+		ctx->launch_state->io =
+			client_io_handler_create(params->local_fds,
+						 ctx->step_req->num_tasks,
+						 launch.nnodes, io_key,
+						 params->labelio,
+						 params->het_job_offset,
+						 params->het_job_task_offset);
+		if (!ctx->launch_state->io) {
+			rc = SLURM_ERROR;
+			goto fail1;
+		}
+		/*
+		 * The client_io_t gets a pointer back to the slurm_launch_state
+		 * to notify it of I/O errors.
+		 */
+		ctx->launch_state->io->sls = ctx->launch_state;
+
+		client_io_handler_start(ctx->launch_state->io);
+
+		launch.num_io_port = ctx->launch_state->io->num_listen;
+		launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
+		memcpy(launch.io_port, ctx->launch_state->io->listenport,
+		       (sizeof(uint16_t) * launch.num_io_port));
+		/*
+		 * If the io timeout is > 0, create a flag to ping the stepds
+		 * if io_timeout seconds pass without stdio traffic to/from
+		 * the node.
+		 */
+		ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
+
+		launch.num_resp_port = ctx->launch_state->num_resp_port;
+		launch.resp_port =
+			xcalloc(launch.num_resp_port, sizeof(uint16_t));
+		memcpy(launch.resp_port, ctx->launch_state->resp_port,
+		       (sizeof(uint16_t) * launch.num_resp_port));
 	}
-	/*
-	 * The client_io_t gets a pointer back to the slurm_launch_state
-	 * to notify it of I/O errors.
-	 */
-	ctx->launch_state->io->sls = ctx->launch_state;
-
-	client_io_handler_start(ctx->launch_state->io);
-
-	launch.num_io_port = ctx->launch_state->io->num_listen;
-	launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
-	memcpy(launch.io_port, ctx->launch_state->io->listenport,
-	       (sizeof(uint16_t) * launch.num_io_port));
-	/*
-	 * If the io timeout is > 0, create a flag to ping the stepds
-	 * if io_timeout seconds pass without stdio traffic to/from
-	 * the node.
-	 */
-	ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
-
-	launch.num_resp_port = ctx->launch_state->num_resp_port;
-	launch.resp_port = xcalloc(launch.num_resp_port, sizeof(uint16_t));
-	memcpy(launch.resp_port, ctx->launch_state->resp_port,
-	       (sizeof(uint16_t) * launch.num_resp_port));
 
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
 			   params->tree_width, launch.complete_nodelist);
