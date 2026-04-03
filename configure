@@ -26039,198 +26039,198 @@ fi
 
 
 
-  # /opt/rocm is the current default location.
-  # /opt/rocm/rocm_smi was the default location for before to 5.2.0
-  # We will use a for loop to check for both.
-  # Unless _x_ac_rsmi_dirs is overwritten with --with-rsmi
-  _x_ac_rsmi_dirs="/opt/rocm /opt/rocm/rocm_smi"
+#   # /opt/rocm is the current default location.
+#   # /opt/rocm/rocm_smi was the default location for before to 5.2.0
+#   # We will use a for loop to check for both.
+#   # Unless _x_ac_rsmi_dirs is overwritten with --with-rsmi
+#   _x_ac_rsmi_dirs="/opt/rocm /opt/rocm/rocm_smi"
 
 
-# Check whether --with-rsmi was given.
-if test ${with_rsmi+y}
-then :
-  withval=$with_rsmi; if test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes
-then :
-  _x_ac_rsmi_dirs="$with_rsmi"
-fi
-fi
+# # Check whether --with-rsmi was given.
+# if test ${with_rsmi+y}
+# then :
+#   withval=$with_rsmi; if test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes
+# then :
+#   _x_ac_rsmi_dirs="$with_rsmi"
+# fi
+# fi
 
 
-  if test "x$with_rsmi" = xno; then
-     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rsmi disabled" >&5
-printf "%s\n" "$as_me: support for rsmi disabled" >&6;}
-  else
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm in installed in this system" >&5
-printf %s "checking whether RSMI/ROCm in installed in this system... " >&6; }
-    # Check for RSMI header and library in the default location
-    # or in the location specified during configure
-    #
-    # NOTE: Just because this is where we are looking and finding the
-    # libraries they must be in the ldcache when running as that is what the
-    # card will be using.
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
-printf "%s\n" "" >&6; }
-    for _x_ac_rsmi_dir in $_x_ac_rsmi_dirs; do
-      cppflags_save="$CPPFLAGS"
-      ldflags_save="$LDFLAGS"
-      RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
-      CPPFLAGS="$RSMI_CPPFLAGS"
-      RSMI_LIB_DIR="$_x_ac_rsmi_dir/lib"
-      LDFLAGS="-L$RSMI_LIB_DIR"
-      { ac_cv_header_rocm_smi_h=; unset ac_cv_header_rocm_smi_h;}
-      { ac_cv_lib_rocm_smi64_rsmi_init=; unset ac_cv_lib_rocm_smi64_rsmi_init;}
-      { ac_cv_lib_rocm_smi64_dev_drm_render_minor_get=; unset ac_cv_lib_rocm_smi64_dev_drm_render_minor_get;}
-      ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
-if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes
-then :
-  ac_rsmi_h=yes
-else case e in #(
-  e) ac_rsmi_h=no ;;
-esac
-fi
+#   if test "x$with_rsmi" = xno; then
+#      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: support for rsmi disabled" >&5
+# printf "%s\n" "$as_me: support for rsmi disabled" >&6;}
+#   else
+#     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm in installed in this system" >&5
+# printf %s "checking whether RSMI/ROCm in installed in this system... " >&6; }
+#     # Check for RSMI header and library in the default location
+#     # or in the location specified during configure
+#     #
+#     # NOTE: Just because this is where we are looking and finding the
+#     # libraries they must be in the ldcache when running as that is what the
+#     # card will be using.
+#     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: " >&5
+# printf "%s\n" "" >&6; }
+#     for _x_ac_rsmi_dir in $_x_ac_rsmi_dirs; do
+#       cppflags_save="$CPPFLAGS"
+#       ldflags_save="$LDFLAGS"
+#       RSMI_CPPFLAGS="-I$_x_ac_rsmi_dir/include"
+#       CPPFLAGS="$RSMI_CPPFLAGS"
+#       RSMI_LIB_DIR="$_x_ac_rsmi_dir/lib"
+#       LDFLAGS="-L$RSMI_LIB_DIR"
+#       { ac_cv_header_rocm_smi_h=; unset ac_cv_header_rocm_smi_h;}
+#       { ac_cv_lib_rocm_smi64_rsmi_init=; unset ac_cv_lib_rocm_smi64_rsmi_init;}
+#       { ac_cv_lib_rocm_smi64_dev_drm_render_minor_get=; unset ac_cv_lib_rocm_smi64_dev_drm_render_minor_get;}
+#       ac_fn_c_check_header_compile "$LINENO" "rocm_smi/rocm_smi.h" "ac_cv_header_rocm_smi_rocm_smi_h" "$ac_includes_default"
+# if test "x$ac_cv_header_rocm_smi_rocm_smi_h" = xyes
+# then :
+#   ac_rsmi_h=yes
+# else case e in #(
+#   e) ac_rsmi_h=no ;;
+# esac
+# fi
 
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_init in -lrocm_smi64" >&5
-printf %s "checking for rsmi_init in -lrocm_smi64... " >&6; }
-if test ${ac_cv_lib_rocm_smi64_rsmi_init+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-lrocm_smi64  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+#       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_init in -lrocm_smi64" >&5
+# printf %s "checking for rsmi_init in -lrocm_smi64... " >&6; }
+# if test ${ac_cv_lib_rocm_smi64_rsmi_init+y}
+# then :
+#   printf %s "(cached) " >&6
+# else case e in #(
+#   e) ac_check_lib_save_LIBS=$LIBS
+# LIBS="-lrocm_smi64  $LIBS"
+# cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+# /* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char rsmi_init (void);
-int
-main (void)
-{
-return rsmi_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_rocm_smi64_rsmi_init=yes
-else case e in #(
-  e) ac_cv_lib_rocm_smi64_rsmi_init=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_init" >&5
-printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_init" >&6; }
-if test "x$ac_cv_lib_rocm_smi64_rsmi_init" = xyes
-then :
-  ac_rsmi_l=yes
-else case e in #(
-  e) ac_rsmi_l=no ;;
-esac
-fi
+# /* Override any GCC internal prototype to avoid an error.
+#    Use char because int might match the return type of a GCC
+#    builtin and then its argument prototype would still apply.
+#    The 'extern "C"' is for builds by C++ compilers;
+#    although this is not generally supported in C code supporting it here
+#    has little cost and some practical benefit (sr 110532).  */
+# #ifdef __cplusplus
+# extern "C"
+# #endif
+# char rsmi_init (void);
+# int
+# main (void)
+# {
+# return rsmi_init ();
+#   ;
+#   return 0;
+# }
+# _ACEOF
+# if ac_fn_c_try_link "$LINENO"
+# then :
+#   ac_cv_lib_rocm_smi64_rsmi_init=yes
+# else case e in #(
+#   e) ac_cv_lib_rocm_smi64_rsmi_init=no ;;
+# esac
+# fi
+# rm -f core conftest.err conftest.$ac_objext conftest.beam \
+#     conftest$ac_exeext conftest.$ac_ext
+# LIBS=$ac_check_lib_save_LIBS ;;
+# esac
+# fi
+# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_init" >&5
+# printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_init" >&6; }
+# if test "x$ac_cv_lib_rocm_smi64_rsmi_init" = xyes
+# then :
+#   ac_rsmi_l=yes
+# else case e in #(
+#   e) ac_rsmi_l=no ;;
+# esac
+# fi
 
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64" >&5
-printf %s "checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64... " >&6; }
-if test ${ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-lrocm_smi64  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+#       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64" >&5
+# printf %s "checking for rsmi_dev_drm_render_minor_get in -lrocm_smi64... " >&6; }
+# if test ${ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get+y}
+# then :
+#   printf %s "(cached) " >&6
+# else case e in #(
+#   e) ac_check_lib_save_LIBS=$LIBS
+# LIBS="-lrocm_smi64  $LIBS"
+# cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+# /* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.
-   The 'extern "C"' is for builds by C++ compilers;
-   although this is not generally supported in C code supporting it here
-   has little cost and some practical benefit (sr 110532).  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char rsmi_dev_drm_render_minor_get (void);
-int
-main (void)
-{
-return rsmi_dev_drm_render_minor_get ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=yes
-else case e in #(
-  e) ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&5
-printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&6; }
-if test "x$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" = xyes
-then :
-  ac_rsmi_version=yes
-else case e in #(
-  e) ac_rsmi_version=no ;;
-esac
-fi
+# /* Override any GCC internal prototype to avoid an error.
+#    Use char because int might match the return type of a GCC
+#    builtin and then its argument prototype would still apply.
+#    The 'extern "C"' is for builds by C++ compilers;
+#    although this is not generally supported in C code supporting it here
+#    has little cost and some practical benefit (sr 110532).  */
+# #ifdef __cplusplus
+# extern "C"
+# #endif
+# char rsmi_dev_drm_render_minor_get (void);
+# int
+# main (void)
+# {
+# return rsmi_dev_drm_render_minor_get ();
+#   ;
+#   return 0;
+# }
+# _ACEOF
+# if ac_fn_c_try_link "$LINENO"
+# then :
+#   ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=yes
+# else case e in #(
+#   e) ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get=no ;;
+# esac
+# fi
+# rm -f core conftest.err conftest.$ac_objext conftest.beam \
+#     conftest$ac_exeext conftest.$ac_ext
+# LIBS=$ac_check_lib_save_LIBS ;;
+# esac
+# fi
+# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&5
+# printf "%s\n" "$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" >&6; }
+# if test "x$ac_cv_lib_rocm_smi64_rsmi_dev_drm_render_minor_get" = xyes
+# then :
+#   ac_rsmi_version=yes
+# else case e in #(
+#   e) ac_rsmi_version=no ;;
+# esac
+# fi
 
-      CPPFLAGS="$cppflags_save"
-      LDFLAGS="$ldflags_save"
-      if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
-        if test "$ac_rsmi_version" = "yes"; then
-          ac_rsmi="yes"
+#       CPPFLAGS="$cppflags_save"
+#       LDFLAGS="$ldflags_save"
+#       if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
+#         if test "$ac_rsmi_version" = "yes"; then
+#           ac_rsmi="yes"
 
-printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
+# printf "%s\n" "#define HAVE_RSMI 1" >>confdefs.h
 
 
-          break;
-        fi
-      fi
-    done
+#           break;
+#         fi
+#       fi
+#     done
 
-    # Only print errors/wanrings if both _x_ac_rsmi_dirs don't work
-    if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
-      if test "$ac_rsmi_version" != "yes"; then
-        if test -z "$with_rsmi"; then
-          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: upgrade to newer version of ROCm/rsmi" >&5
-printf "%s\n" "$as_me: WARNING: upgrade to newer version of ROCm/rsmi" >&2;}
-        else
-          as_fn_error $? "upgrade to newer version of ROCm/rsmi" "$LINENO" 5
-        fi
-      fi
-    else
-      if test -z "$with_rsmi"; then
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&5
-printf "%s\n" "$as_me: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&2;}
-      else
-        as_fn_error $? "unable to locate librocm_smi64.so and/or rocm_smi.h" "$LINENO" 5
-      fi
-    fi
-  fi
-   if test "$ac_rsmi" = "yes"; then
-  BUILD_RSMI_TRUE=
-  BUILD_RSMI_FALSE='#'
-else
-  BUILD_RSMI_TRUE='#'
-  BUILD_RSMI_FALSE=
-fi
+#     # Only print errors/wanrings if both _x_ac_rsmi_dirs don't work
+#     if test "$ac_rsmi_l" = "yes" && test "$ac_rsmi_h" = "yes"; then
+#       if test "$ac_rsmi_version" != "yes"; then
+#         if test -z "$with_rsmi"; then
+#           { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: upgrade to newer version of ROCm/rsmi" >&5
+# printf "%s\n" "$as_me: WARNING: upgrade to newer version of ROCm/rsmi" >&2;}
+#         else
+#           as_fn_error $? "upgrade to newer version of ROCm/rsmi" "$LINENO" 5
+#         fi
+#       fi
+#     else
+#       if test -z "$with_rsmi"; then
+#         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&5
+# printf "%s\n" "$as_me: WARNING: unable to locate librocm_smi64.so and/or rocm_smi.h" >&2;}
+#       else
+#         as_fn_error $? "unable to locate librocm_smi64.so and/or rocm_smi.h" "$LINENO" 5
+#       fi
+#     fi
+#   fi
+#    if test "$ac_rsmi" = "yes"; then
+#   BUILD_RSMI_TRUE=
+#   BUILD_RSMI_FALSE='#'
+# else
+#   BUILD_RSMI_TRUE='#'
+#   BUILD_RSMI_FALSE=
+# fi
 
 
 
