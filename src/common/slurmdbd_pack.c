@@ -37,14 +37,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/interfaces/hash.h"
-#include "src/interfaces/jobacct_gather.h"
+#include "src/common/slurmdbd_pack.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurmdb_pack.h"
 #include "src/common/slurmdbd_defs.h"
-#include "src/common/slurmdbd_pack.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
+#include "src/interfaces/hash.h"
+#include "src/interfaces/jobacct_gather.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
