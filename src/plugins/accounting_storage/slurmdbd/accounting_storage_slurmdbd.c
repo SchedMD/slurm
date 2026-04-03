@@ -1715,6 +1715,10 @@ extern list_t *acct_storage_p_get_config(void *db_conn, char *config_name)
 			error("%s", msg->comment);
 		}
 		slurm_persist_free_rc_msg(msg);
+	} else if (resp.msg_type == DBD_GOT_CONFIG) {
+		error("%s does not support DBD_GOT_CONFIG: %u",
+		      __func__, resp.msg_type);
+		slurmdbd_free_conf(resp.data);
 	} else if (resp.msg_type != DBD_GOT_CONFIG_KEYPAIRS) {
 		error("response type not DBD_GOT_CONFIG_KEYPAIRS: %u",
 		      resp.msg_type);
