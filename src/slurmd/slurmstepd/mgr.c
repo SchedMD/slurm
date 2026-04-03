@@ -2916,7 +2916,7 @@ static void _send_launch_resp(int rc)
 	launch_tasks_response_msg_t resp;
 	srun_info_t *srun = list_peek(step->sruns);
 
-	if (step->batch)
+	if (step->batch || !srun)
 		return;
 
 	debug("Sending launch resp rc=%d", rc);
