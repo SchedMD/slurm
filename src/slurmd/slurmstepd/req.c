@@ -520,6 +520,17 @@ done:
 	return SLURM_ERROR;
 }
 
+static int _pack_job_steps(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	pack_step_args_t *args = (pack_step_args_t *) arg;
+
+	if (!verify_step_id(&step_ptr->step_id, args->step_id))
+		return 0;
+
+	return pack_ctld_job_step_info(step_ptr, args);
+}
+
 static int _handle_job_step_get_info(int fd, uid_t uid, pid_t remote_pid)
 {
 	int rc;
@@ -542,7 +553,7 @@ static int _handle_job_step_get_info(int fd, uid_t uid, pid_t remote_pid)
 	args.buffer = buffer;
 	args.proto_version = msg.protocol_version;
 	args.job_step_list = job_step_ptr->step_list;
-	args.pack_job_step_list_func = pack_ctld_job_step_info;
+	args.pack_job_step_list_func = _pack_job_steps;
 
 	pack_job_step_info_response_msg(&args);
 	slurm_mutex_unlock(&stepmgr_mutex);

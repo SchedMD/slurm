@@ -2339,6 +2339,7 @@ fini:
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
 		sji->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+		sji->step_id.step_id = args->step_id->step_id;
 		sji->stepmgr = job_ptr->batch_host;
 		list_append(args->stepmgr_jobs, sji);
 	}
