@@ -3948,6 +3948,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
 		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
+	else if (conf->epilog_msg_time > EPILOG_MSG_TIME_MAX) {
+		error("EpilogMsgTime can not exceed %d, resetting value",
+		      EPILOG_MSG_TIME_MAX);
+		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
+	}
 
 	_load_script(&conf->epilog_slurmctld, &conf->epilog_slurmctld_cnt,
 		     "EpilogSlurmctld");
