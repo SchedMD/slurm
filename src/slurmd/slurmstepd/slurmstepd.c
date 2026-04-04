@@ -87,6 +87,7 @@
 
 #include "src/slurmd/common/privileges.h"
 #include "src/slurmd/common/set_oomadj.h"
+#include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/container.h"
@@ -209,11 +210,211 @@ extern job_record_t *find_job_record(uint32_t job_id)
 	return job_step_ptr;
 }
 
+static uint64_t _job_mem_query_usage()
+{
+	slurm_msg_t req_msg;
+	list_t *ret_list = NULL;
+	list_itr_t *ret_itr;
+	ret_data_info_t *ret_data = NULL;
+	job_mem_usage_msg_t req;
+	job_mem_usage_resp_msg_t *resp;
+	uint64_t mem_usage = 0;
+	char *nodes;
+
+	slurm_mutex_lock(&stepmgr_mutex);
+	req.step_id = STEP_ID_FROM_JOB_RECORD(job_step_ptr);
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
+	req_msg.msg_type = REQUEST_JOB_MEM_USAGE;
+	req_msg.data = &req;
+	req_msg.protocol_version = job_step_ptr->start_protocol_ver;
+	nodes = xstrdup(job_step_ptr->nodes);
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+	ret_list = slurm_send_recv_msgs(nodes, &req_msg, 0);
+	xfree(nodes);
+
+	if (ret_list == NULL) {
+		error("slurm_send_recv_msgs failed miserably: %m");
+		return 0;
+	}
+
+	ret_itr = list_iterator_create(ret_list);
+	while ((ret_data = list_next(ret_itr))) {
+		if (ret_data->type != RESPONSE_JOB_MEM_USAGE) {
+			mem_usage = 0;
+			break;
+		}
+
+		resp = ret_data->data;
+		mem_usage = MAX(mem_usage, resp->mem_usage);
+	}
+	list_iterator_destroy(ret_itr);
+	FREE_NULL_LIST(ret_list);
+
+	return mem_usage;
+}
+
+static uint64_t _job_mem_local_usage()
+{
+	jobacctinfo_t *jobacct = jobacctinfo_create(NULL);
+	uint64_t mem_usage = 0;
+
+	if (!jobacct)
+		return 0;
+
+	jobacct_gather_stat_job(jobacct);
+	jobacctinfo_getinfo(jobacct, JOBACCT_DATA_TOT_RSS, &mem_usage,
+			    SLURM_PROTOCOL_VERSION);
+
+	if (mem_usage != INFINITE64) {
+		mem_usage /= 1048576; /* B to MB */
+		mem_usage = MAX(mem_usage, 1);
+	} else {
+		mem_usage = 0;
+	}
+
+	jobacctinfo_destroy(jobacct);
+
+	return mem_usage;
+}
+
+static void *_mem_auto_reduce(void *args)
+{
+	slurm_msg_t req_msg;
+	list_t *ret_list = NULL;
+	list_itr_t *ret_itr;
+	ret_data_info_t *ret_data = NULL;
+	update_job_mem_msg_t req;
+	uint64_t new_mem;
+	uint16_t margin = 0;
+	bool one_node = false;
+	uint64_t orig_mem = 0;
+	char *nodes;
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&stepmgr_mutex);
+	one_node = (job_step_ptr->node_cnt == 1);
+	margin = job_step_ptr->details->mem_update_margin;
+	if (job_step_ptr->details->pn_min_memory & MEM_PER_CPU) {
+		job_resources_t *job_res = job_step_ptr->job_resrcs;
+		if (!job_res || !job_res->memory_allocated) {
+			slurm_mutex_unlock(&stepmgr_mutex);
+			error("%s: no job resources, skipping", __func__);
+			return NULL;
+		}
+		orig_mem = 0;
+		for (int i = 0; i < job_res->nhosts; i++)
+			orig_mem = MAX(orig_mem, job_res->memory_allocated[i]);
+	} else {
+		orig_mem = job_step_ptr->details->pn_min_memory;
+	}
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+	if (time_limit_thread_shutdown) {
+		debug("%s: shutdown before usage query", __func__);
+		return NULL;
+	}
+
+	if (one_node)
+		new_mem = _job_mem_local_usage();
+	else
+		new_mem = _job_mem_query_usage();
+
+	if (!new_mem) {
+		/* Auto reduce is not supported with jobacct_gather/linux */
+		info("%s: incomplete memory usage data, skipping resize",
+		     __func__);
+		return NULL;
+	}
+
+	info("%s: usage=%"PRIu64"MB orig=%"PRIu64"MB margin=%u%%",
+	     __func__, new_mem, orig_mem, margin);
+
+	new_mem = new_mem * (100 + margin) / 100;
+	new_mem = MAX(new_mem, orig_mem / 10);
+	new_mem = MAX(new_mem, 1);
+
+	if (new_mem >= orig_mem) {
+		info("%s: computed limit %"PRIu64"MB >= current %"PRIu64"MB, skipping",
+		     __func__, new_mem, orig_mem);
+		return NULL;
+	}
+
+	info("%s: reducing memory to %"PRIu64"MB", __func__, new_mem);
+
+	if (time_limit_thread_shutdown) {
+		debug("%s: shutdown before sending update to nodes", __func__);
+		return NULL;
+	}
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_set_r_uid(&req_msg, SLURM_AUTH_UID_ANY);
+	req_msg.msg_type = REQUEST_UPDATE_JOB_MEM;
+
+	slurm_mutex_lock(&stepmgr_mutex);
+	req.step_id = STEP_ID_FROM_JOB_RECORD(job_step_ptr);
+	req.job_mem_per_node = new_mem;
+	req.notify_ctld = false;
+	req_msg.data = &req;
+	req_msg.protocol_version = job_step_ptr->start_protocol_ver;
+	nodes = xstrdup(job_step_ptr->nodes);
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+	ret_list = slurm_send_recv_msgs(nodes, &req_msg, 0);
+	xfree(nodes);
+
+	if (ret_list == NULL) {
+		error("%s: slurm_send_recv_msgs failed: %m", __func__);
+		return NULL;
+	}
+
+	ret_itr = list_iterator_create(ret_list);
+	while ((ret_data = list_next(ret_itr))) {
+		rc = slurm_get_return_code(ret_data->type, ret_data->data);
+		if (rc)
+			break;
+	}
+	list_iterator_destroy(ret_itr);
+	FREE_NULL_LIST(ret_list);
+
+	if (rc != SLURM_SUCCESS) {
+		error("%s: node update failed, memory resize incomplete: %s", __func__,
+		      slurm_strerror(rc));
+		return NULL;
+	}
+
+	if (time_limit_thread_shutdown) {
+		debug("%s: shutdown before notifying slurmctld", __func__);
+		return NULL;
+	}
+
+	slurm_mutex_lock(&stepmgr_mutex);
+	rc = notify_slurmctld_mem_update_fini(&req.step_id, new_mem, true);
+	slurm_mutex_unlock(&stepmgr_mutex);
+
+	if (rc != SLURM_SUCCESS)
+		error("%s: failed to notify slurmctld: %s", __func__,
+		      slurm_strerror(rc));
+
+	return NULL;
+}
+
 static void *_step_time_limit_thread(void *data)
 {
 	time_t now;
+	time_t mem_update_time;
+	pthread_t mem_reduce_tid = 0;
 
 	xassert(job_step_ptr);
+
+	slurm_mutex_lock(&stepmgr_mutex);
+	mem_update_time = job_step_ptr->details->mem_update_delay * 60;
+	if (mem_update_time) {
+		mem_update_time += job_step_ptr->start_time;
+	}
+	slurm_mutex_unlock(&stepmgr_mutex);
 
 	while (!time_limit_thread_shutdown) {
 		now = time(NULL);
@@ -221,9 +422,17 @@ static void *_step_time_limit_thread(void *data)
 		list_for_each(job_step_ptr->step_list,
 			      check_job_step_time_limit, &now);
 		slurm_mutex_unlock(&stepmgr_mutex);
+
+		if (mem_update_time && (mem_update_time < now)) {
+			slurm_thread_create(NULL, &mem_reduce_tid,
+					    _mem_auto_reduce, NULL);
+			mem_update_time = 0;
+		}
+
 		sleep(1);
 	}
 
+	slurm_thread_join(mem_reduce_tid);
 	return NULL;
 }
 
