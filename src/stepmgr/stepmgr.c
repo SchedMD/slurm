@@ -426,13 +426,11 @@ void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr)
 	list_delete_ptr(job_ptr->step_list, step_ptr);
 }
 
-
 /*
- * dump_step_desc - dump the incoming step initiate request message
+ * _dump_step_desc - dump the incoming step initiate request message
  * IN step_spec - job step request specification from RPC
  */
-void
-dump_step_desc(job_step_create_request_msg_t *step_spec)
+static void _dump_step_desc(job_step_create_request_msg_t *step_spec)
 {
 	uint64_t mem_value = step_spec->pn_min_memory;
 	char *mem_type = "node";
@@ -5146,7 +5144,7 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	dump_step_desc(req_step_msg);
+	_dump_step_desc(req_step_msg);
 
 	if (lock_func) {
 		lock_func(true);

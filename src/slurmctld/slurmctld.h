@@ -617,12 +617,6 @@ extern int dump_all_part_state ( void );
  */
 extern void dump_job_desc(job_desc_msg_t *job_desc);
 
-/*
- * dump_step_desc - dump the incoming step initiate request message
- * IN step_spec - job step request specification from RPC
- */
-extern void dump_step_desc(job_step_create_request_msg_t *step_spec);
-
 /* Remove one node from a job's allocation */
 extern void excise_node_from_job(job_record_t *job_ptr,
 				 node_record_t *node_ptr);
