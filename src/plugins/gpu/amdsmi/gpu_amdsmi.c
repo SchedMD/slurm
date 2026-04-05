@@ -160,12 +160,10 @@ static void _amdsmi_init(void)
         amdsmi_status_code_to_string(amdsmi_rc, &status_string);
         error("AMDSMI: Failed to query socket count: %s",
               status_string ? status_string : "unknown error");
-        goto fail_shutdown;
     }
 
     if (socket_count == 0) {
         error("AMDSMI: No sockets reported by amdsmi_get_socket_handles()");
-        goto fail_shutdown;
     }
 
     if (socket_count > (uint32_t)SLURM_ARRAY_SIZE(socket_handles)) {
@@ -179,7 +177,6 @@ static void _amdsmi_init(void)
         amdsmi_status_code_to_string(amdsmi_rc, &status_string);
         error("AMDSMI: Failed to get socket handles: %s",
               status_string ? status_string : "unknown error");
-        goto fail_shutdown;
     }
 
     debug2("AMDSMI: Detected %u socket(s)", socket_count);
@@ -247,7 +244,6 @@ static void _amdsmi_init(void)
         debug("AMDSMI: AMD‑SMI library version: %s", version);
     debug("AMDSMI: GPU type: %s", _amdsmi_get_gpu_type());
     initialized = true;
-    return;
 }
 
 
