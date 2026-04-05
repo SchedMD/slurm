@@ -509,10 +509,9 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 		.found = false,
 		.rc_in = SLURM_SUCCESS,
 		.signal = signal,
+		.step_id = *step_id,
 		.uid = uid,
 	};
-
-	memcpy(&step_signal.step_id, step_id, sizeof(step_signal.step_id));
 
 	if (!(job_ptr = stepmgr_ops->find_job(step_id))) {
 		error("%s: invalid %pI", __func__, step_id);
