@@ -242,7 +242,6 @@ static void _amdsmi_init(void)
         debug("AMDSMI: AMD GPU driver version: %s", driver);
     if (version[0])
         debug("AMDSMI: AMD‑SMI library version: %s", version);
-    debug("AMDSMI: GPU type: %s", _amdsmi_get_gpu_type());
     initialized = true;
 }
 
