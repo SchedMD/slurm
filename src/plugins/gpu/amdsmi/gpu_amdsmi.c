@@ -105,37 +105,7 @@ static void _amdsmi_get_version(char *version, unsigned int len);
 static void _amdsmi_get_driver(char *driver, unsigned int len);
 
 
-static void _amdsmi_get_driver(char *driver, unsigned int len)
-{
-    if (!driver || len == 0)
-        return;
 
-    driver[0] = '\0';
-
-    /* Ensure AMD-SMI is initialized and handles are available */
-    _amdsmi_init();
-
-    if (processor_handle_count == 0) {
-        debug("AMDSMI: No GPU processor handles available for driver query");
-        return;
-    }
-
-    amdsmi_driver_info_t dinfo;
-    memset(&dinfo, 0, sizeof(dinfo));
-
-    const char *status_string = NULL;
-    amdsmi_status_t rc =
-        amdsmi_get_gpu_driver_info(processor_handles[0], &dinfo);
-
-    if (rc != AMDSMI_STATUS_SUCCESS) {
-        amdsmi_status_code_to_string(rc, &status_string);
-        debug("AMDSMI: Failed to get driver info: %s",
-              status_string ? status_string : "unknown");
-        return;
-    }
-
-    snprintf(driver, len, "%s", dinfo.driver_version);
-}
 /*
  * Initialize the AMD‑SMI library and cache processor handles.
  * Safe to call multiple times from the same process.
@@ -303,6 +273,38 @@ extern void fini(void)
 	debug("%s: unloading %s", __func__, plugin_name);
 
 	amdsmi_shut_down();
+}
+
+static void _amdsmi_get_driver(char *driver, unsigned int len)
+{
+    if (!driver || len == 0)
+        return;
+
+    driver[0] = '\0';
+
+    /* Ensure AMD-SMI is initialized and handles are available */
+    _amdsmi_init();
+
+    if (processor_handle_count == 0) {
+        debug("AMDSMI: No GPU processor handles available for driver query");
+        return;
+    }
+
+    amdsmi_driver_info_t dinfo;
+    memset(&dinfo, 0, sizeof(dinfo));
+
+    const char *status_string = NULL;
+    amdsmi_status_t rc =
+        amdsmi_get_gpu_driver_info(processor_handles[0], &dinfo);
+
+    if (rc != AMDSMI_STATUS_SUCCESS) {
+        amdsmi_status_code_to_string(rc, &status_string);
+        debug("AMDSMI: Failed to get driver info: %s",
+              status_string ? status_string : "unknown");
+        return;
+    }
+
+    snprintf(driver, len, "%s", dinfo.driver_version);
 }
 
 /*
