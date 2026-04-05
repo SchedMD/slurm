@@ -105,9 +105,6 @@ static void _amdsmi_get_version(char *version, unsigned int len);
 static void _amdsmi_get_driver(char *driver, unsigned int len);
 
 
-/*
- * Get the AMD GPU driver version (best-effort).
- */
 static void _amdsmi_get_driver(char *driver, unsigned int len)
 {
     if (!driver || len == 0)
@@ -115,13 +112,23 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     driver[0] = '\0';
 
-    const char *status_string = NULL;
+    if (!gpu_processor_list || list_count(gpu_processor_list) == 0) {
+        debug("AMDSMI: No GPU processor handles available for driver query");
+        return;
+    }
+
+    amdsmi_processor_handle handle =
+        *(amdsmi_processor_handle *)list_peek(gpu_processor_list);
+
     amdsmi_driver_info_t dinfo;
     memset(&dinfo, 0, sizeof(dinfo));
 
-    amdsmi_status_t rc = amdsmi_get_gpu_driver_info(&dinfo);
+    amdsmi_status_t rc =
+        amdsmi_get_gpu_driver_info(handle, &dinfo);
+
     if (rc != AMDSMI_STATUS_SUCCESS) {
-        (void) amdsmi_status_code_to_string(rc, &status_string);
+        const char *status_string = NULL;
+        amdsmi_status_code_to_string(rc, &status_string);
         debug("AMDSMI: Failed to get driver info: %s",
               status_string ? status_string : "unknown");
         return;
