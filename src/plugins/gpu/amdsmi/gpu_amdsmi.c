@@ -56,8 +56,7 @@ static bitstr_t	*saved_gpus;
 /*
  * Buffer size large enough for AMDSMI string
  */
-#define AMDSMI_STRING_BUFFER_SIZE			80
-
+#define AMDSMI_STRING_BUFFER_SIZE			256
 /* ROCM release version >= 6.0.0 required for gathering usage */
 #define AMDSMI_REQ_VERSION_USAGE 6
 
@@ -105,6 +104,31 @@ static uint32_t processor_handle_count = 0;
 static void _amdsmi_get_version(char *version, unsigned int len);
 static void _amdsmi_get_driver(char *driver, unsigned int len);
 
+
+/*
+ * Get the AMD GPU driver version (best-effort).
+ */
+static void _amdsmi_get_driver(char *driver, unsigned int len)
+{
+    if (!driver || len == 0)
+        return;
+
+    driver[0] = '\0';
+
+    const char *status_string = NULL;
+    amdsmi_driver_info_t dinfo;
+    memset(&dinfo, 0, sizeof(dinfo));
+
+    amdsmi_status_t rc = amdsmi_get_gpu_driver_info(&dinfo);
+    if (rc != AMDSMI_STATUS_SUCCESS) {
+        (void) amdsmi_status_code_to_string(rc, &status_string);
+        debug("AMDSMI: Failed to get driver info: %s",
+              status_string ? status_string : "unknown");
+        return;
+    }
+
+    snprintf(driver, len, "%s", dinfo.driver_version);
+}
 
 /*
  * Initialize the AMD‑SMI library and cache processor handles.
