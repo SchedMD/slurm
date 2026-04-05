@@ -234,7 +234,6 @@ static void _amdsmi_init(void)
 
     if (processor_handle_count == 0) {
         error("AMDSMI: No GPU processors discovered on any socket");
-        goto fail_shutdown;
     }
 
     debug("AMDSMI: Cached %u GPU processor handle(s)", processor_handle_count);
@@ -249,14 +248,6 @@ static void _amdsmi_init(void)
     debug("AMDSMI: GPU type: %s", _amdsmi_get_gpu_type());
     initialized = true;
     return;
-
-fail_shutdown:
-    /*
-     * We failed mid‑init; shut down cleanly so a later attempt can retry.
-     * We deliberately do not set initialized=true in this path.
-     */
-    amdsmi_shut_down();
-    processor_handle_count = 0;
 }
 
 
