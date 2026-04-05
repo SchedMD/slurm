@@ -115,7 +115,10 @@ static void _amdsmi_init(void)
     static pid_t init_pid = 0;
     static bool initialized = false;
 
-    pid_t my_pid = conf->pid ? conf->pid : getpid();
+    pid_t my_pid = getpid();
+
+    if (conf && conf->pid)
+        my_pid = conf->pid;
     amdsmi_status_t amdsmi_rc;
     const char *status_string = NULL;
     char version[AMDSMI_STRING_BUFFER_SIZE];
