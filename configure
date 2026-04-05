@@ -26372,7 +26372,8 @@ printf "%s\n" "$as_me: WARNING: AMD-SMI not found (libamd_smi.so and/or amd_smi/
     fi
   fi
 
-         if test "x$ac_amdsmi" = xyes; then
+         if test "x$ac_amdsmi" = xyes
+  ; then
   BUILD_AMDSMI_TRUE=
   BUILD_AMDSMI_FALSE='#'
 else

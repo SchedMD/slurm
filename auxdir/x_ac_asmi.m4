@@ -94,7 +94,7 @@ AC_DEFUN([X_AC_ASMI],
         AMDSMI_LIBS="-L$AMDSMI_LIB_DIR -lamd_smi"
 
         AC_DEFINE(
-          [HAVE_ASMI],
+          [HAVE_AMDSMI],
           [1],
           [Define to 1 if AMD-SMI (amdsmi) library is available]
         )

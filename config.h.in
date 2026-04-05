@@ -25,7 +25,7 @@
 #undef H5_USE_18_API
 
 /* Define to 1 if AMD-SMI (amdsmi) library is available */
-#undef HAVE_ASMI
+#undef HAVE_AMDSMI
 
 /* Define if you are compiling with bpf. */
 #undef HAVE_BPF
