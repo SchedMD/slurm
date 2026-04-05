@@ -26352,7 +26352,7 @@ fi
         AMDSMI_LIBS="-L$AMDSMI_LIB_DIR -lamd_smi"
 
 
-printf "%s\n" "#define HAVE_ASMI 1" >>confdefs.h
+printf "%s\n" "#define HAVE_AMDSMI 1" >>confdefs.h
 
 
         break

@@ -1,8 +1,0 @@
-libdir=/usr/local/lib
-includedir=/usr/local/include
-
-Name: slurm
-Description: Slurm Workload Manager
-Version: 26.05.0-0rc1
-Cflags: -I${includedir}
-Libs: -L${libdir} -lslurm
