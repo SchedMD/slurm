@@ -271,9 +271,6 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     driver[0] = '\0';
 
-    /* Ensure AMD-SMI is initialized and handles are available */
-    _amdsmi_init();
-
     if (processor_handle_count == 0) {
         debug("AMDSMI: No GPU processor handles available for driver query");
         return;
