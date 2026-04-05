@@ -3313,10 +3313,22 @@ static int _switch_setup(step_record_t *step_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int step_create(job_record_t *job_ptr,
-		       job_step_create_request_msg_t *step_specs,
-		       step_record_t** new_step_record,
-		       uint16_t protocol_version, char **err_msg)
+/*
+ * step_create - creates a step_record in step_specs->job_id, sets up the
+ *	according to the step_specs.
+ * IN job_ptr - job_ptr to create step in
+ * IN step_specs - job step specifications
+ * OUT new_step_record - pointer to the new step_record (NULL on error)
+ * IN protocol_version - slurm protocol version of client
+ * OUT err_msg - Custom error message to the user, caller to xfree results
+ * RET - 0 or error code
+ * NOTE: don't free the returned step_record because that is managed through
+ * 	the job.
+ */
+static int _step_create(job_record_t *job_ptr,
+			job_step_create_request_msg_t *step_specs,
+			step_record_t **new_step_record,
+			uint16_t protocol_version, char **err_msg)
 {
 	step_record_t *step_ptr;
 	bitstr_t *nodeset;
@@ -5193,8 +5205,8 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		return SLURM_SUCCESS;
 	}
 
-	error_code = step_create(job_ptr, req_step_msg, &step_rec,
-				 msg->protocol_version, &err_msg);
+	error_code = _step_create(job_ptr, req_step_msg, &step_rec,
+				  msg->protocol_version, &err_msg);
 
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred,
