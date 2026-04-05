@@ -1382,7 +1382,7 @@ static list_t *_get_system_gpu_list_amdsmi(node_config_load_t *node_config)
         gres_slurmd_conf_t gres = {
             .config_flags = GRES_CONF_ENV_AMDSMI | GRES_CONF_AUTODETECT,
             .count        = 1,
-            .cpu_cnt      = node_config->cpu_cnt,
+            .cpu_cnt = node_config ? node_config->cpu_cnt : 0,
             .cpus_bitmap  = _amdsmi_get_device_cpu_mask(i),
             .name         = "gpu"
         };
