@@ -489,7 +489,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gpu/nvml/Makefile
 		 src/plugins/gpu/oneapi/Makefile
 		 src/plugins/gpu/rsmi/Makefile
-		 src/plugins/gpu/asmi/Makefile
+		 src/plugins/gpu/amdsmi/Makefile
 		 src/plugins/gres/Makefile
 		 src/plugins/gres/common/Makefile
 		 src/plugins/gres/gpu/Makefile

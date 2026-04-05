@@ -7,7 +7,7 @@ SUBDIRS += rsmi
 endif
 
 if BUILD_AMDSMI
-SUBDIRS += asmi
+SUBDIRS += amdsmi
 endif
 
 if BUILD_NVML

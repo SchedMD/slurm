@@ -93,7 +93,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_RSMI_TRUE@am__append_1 = rsmi
-@BUILD_AMDSMI_TRUE@am__append_2 = asmi
+@BUILD_AMDSMI_TRUE@am__append_2 = amdsmi
 @BUILD_NVML_TRUE@am__append_3 = nvml
 @BUILD_ONEAPI_TRUE@am__append_4 = oneapi
 subdir = src/plugins/gpu
@@ -210,7 +210,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = common generic nrt nvidia rsmi asmi nvml oneapi
+DIST_SUBDIRS = common generic nrt nvidia rsmi amdsmi nvml oneapi
 ACLOCAL = @ACLOCAL@
 AMDSMI_CPPFLAGS = @AMDSMI_CPPFLAGS@
 AMDSMI_LIBS = @AMDSMI_LIBS@
