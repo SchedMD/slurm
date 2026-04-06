@@ -72,6 +72,10 @@
 
 static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
 				char *efname);
+static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
+				      slurm_addr_t *resp_addr,
+				      slurm_addr_t *ioaddr, uid_t uid,
+				      uint16_t protocol_version);
 static void _srun_info_destructor(void *arg);
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
 						 char *ifname, char *ofname,
@@ -418,8 +422,8 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		memset(&io_addr, 0, sizeof(slurm_addr_t));
 	}
 
-	srun = srun_info_create(msg->cred, msg->alloc_tls_cert, &resp_addr,
-				&io_addr, step->uid, protocol_version);
+	srun = _srun_info_create(msg->cred, msg->alloc_tls_cert, &resp_addr,
+				 &io_addr, step->uid, protocol_version);
 
 	step->profile     = msg->profile;
 	step->task_prolog = xstrdup(msg->task_prolog);
@@ -591,7 +595,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	get_cred_gres(msg->cred, conf->node_name,
 		      &step->job_gres_list, &step->step_gres_list);
 
-	srun = srun_info_create(NULL, NULL, NULL, NULL, step->uid, NO_VAL16);
+	srun = _srun_info_create(NULL, NULL, NULL, NULL, step->uid, NO_VAL16);
 
 	list_append(step->sruns, (void *) srun);
 
@@ -708,10 +712,10 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step);
 }
 
-extern srun_info_t *srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
-				     slurm_addr_t *resp_addr,
-				     slurm_addr_t *ioaddr, uid_t uid,
-				     uint16_t protocol_version)
+static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
+				      slurm_addr_t *resp_addr,
+				      slurm_addr_t *ioaddr, uid_t uid,
+				      uint16_t protocol_version)
 {
 	srun_info_t *srun = xmalloc(sizeof(srun_info_t));
 
