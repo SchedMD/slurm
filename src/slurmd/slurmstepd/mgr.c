@@ -451,8 +451,6 @@ static int _setup_normal_io(void)
 		int srun_stdout_tasks = -1;
 		int srun_stderr_tasks = -1;
 
-		xassert(srun != NULL);
-
 		/* If I/O is labelled with task num, and if a separate file is
 		   written per node or per task, the I/O needs to be sent
 		   back to the stepd, get a label appended, and written from
