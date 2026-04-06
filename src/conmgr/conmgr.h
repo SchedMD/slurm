@@ -1214,4 +1214,10 @@ extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *con,
 				   const conmgr_timeouts_t *timeouts,
 				   const char *caller);
 
+/*
+ * Initialize timeout fields to defaults
+ * IN timeouts - non-zero timeouts in this struct will be set to defaults.
+ */
+extern void conmgr_timeouts_init_default(conmgr_timeouts_t *timeouts);
+
 #endif /* _CONMGR_H */
