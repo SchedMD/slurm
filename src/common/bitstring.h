@@ -102,6 +102,7 @@ bitoff_t bit_ffs(bitstr_t *b);
  */
 #define bit_free(__b) slurm_bit_free((bitstr_t **)&(__b))
 void slurm_bit_free(bitstr_t **b);
+void bit_free_ptr(void *p);
 #define bit_realloc(__b, __n) slurm_bit_realloc((bitstr_t **)&(__b), __n)
 bitstr_t *slurm_bit_realloc(bitstr_t **b, bitoff_t nbits);
 
