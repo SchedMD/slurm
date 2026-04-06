@@ -202,7 +202,7 @@ int unpack_header(header_t *header, buf_t *buffer)
 		return SLURM_PROTOCOL_VERSION_ERROR;
 	}
 
-	forward_init(&header->forward);
+	header->forward = FORWARD_INITIALIZER;
 
 	if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&header->flags, buffer);

@@ -46,20 +46,41 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/events.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/macros.h"
+#include "src/common/probes.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
+#include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
+#include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/conn.h"
 #include "src/interfaces/topology.h"
+
+#define HIGH_LOAD_FORWARD_THREAD_COUNT 256
+
+static pthread_mutex_t global_forward_mutex = PTHREAD_MUTEX_INITIALIZER;
+static event_signal_t event_fini = EVENT_INITIALIZER("FWD-TREE-FINISH");
+static bool enabled = false;
+static int thread_count = 0;
+
+static struct {
+	/* histogram of the latency from request to run */
+	latency_histogram_t request;
+	/* histogram of the time to run _forward_thread() */
+	latency_histogram_t run;
+} forward_stats = {
+	.request = LATENCY_HISTOGRAM_INITIALIZER,
+	.run = LATENCY_HISTOGRAM_INITIALIZER,
+};
 
 static slurm_node_alias_addrs_t *last_alias_addrs = NULL;
 static pthread_mutex_t alias_addrs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -128,6 +149,9 @@ static void *_forward_thread(void *arg)
 	hostlist_t *hl = hostlist_create(fwd_ptr->nodelist);
 	slurm_addr_t addr;
 	char *buf = NULL;
+	timespec_t ts_start = timespec_now();
+
+	HISTOGRAM_ADD_DURATION(&forward_stats.request, fwd_msg->ts_requested);
 
 	/* repeat until we are sure the message was sent */
 	while ((name = hostlist_shift(hl))) {
@@ -282,7 +306,7 @@ static void *_forward_thread(void *arg)
 			   should catch the failed forwards and pipe
 			   them back down, but this is here so we
 			   never have to worry about a locked
-			   mutex */
+			   forward_mutex */
 			list_itr_t *itr = NULL;
 			char *tmp = NULL;
 			int first_node_found = 0;
@@ -342,6 +366,16 @@ static void *_forward_thread(void *arg)
 	}
 	free(name);
 cleanup:
+	slurm_mutex_lock(&global_forward_mutex);
+	thread_count--;
+	xassert(thread_count >= 0);
+	EVENT_BROADCAST(&event_fini);
+	slurm_mutex_unlock(&global_forward_mutex);
+
+	log_flag(NET, "%s: END: tree forwarding %s from %pA to %s",
+		 __func__, rpc_num2string(fwd_msg->header.msg_type),
+		 &fwd_msg->header.orig_addr, buf);
+
 	conn_g_destroy(conn, true);
 	hostlist_destroy(hl);
 	fwd_ptr->alias_addrs.net_cred = NULL;
@@ -352,6 +386,8 @@ cleanup:
 	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
 	xfree(fwd_msg);
+
+	HISTOGRAM_ADD_DURATION(&forward_stats.run, ts_start);
 
 	return (NULL);
 }
@@ -588,6 +624,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 	int j;
 	forward_msg_t *fwd_msg = NULL;
 	char *buf = NULL, *tmp_char = NULL;
+	const timespec_t ts_requested = timespec_now();
 
 	if (timeout <= 0)
 		/* convert secs to msec */
@@ -596,6 +633,7 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 	for (j = 0; j < hl_count; j++) {
 		fwd_msg = xmalloc(sizeof(forward_msg_t));
 
+		fwd_msg->ts_requested = ts_requested;
 		fwd_msg->fwd_struct = fwd_struct;
 
 		fwd_msg->timeout = timeout;
@@ -620,23 +658,23 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 			free(tmp_char);
 		}
 
-		forward_init(&fwd_msg->header.forward);
+		fwd_msg->header.forward = FORWARD_INITIALIZER;
 		fwd_msg->header.forward.nodelist = buf;
 		fwd_msg->header.forward.tree_width = header->forward.tree_width;
 		fwd_msg->header.forward.tree_depth = header->forward.tree_depth;
 		fwd_msg->header.forward.timeout = header->forward.timeout;
+
+		slurm_mutex_lock(&global_forward_mutex);
+		thread_count++;
+		xassert(thread_count > 0);
+		slurm_mutex_unlock(&global_forward_mutex);
+
+		log_flag(NET, "%s: BEGIN: tree forwarding %s from %pA to %s",
+			 __func__, rpc_num2string(fwd_msg->header.msg_type),
+			 &fwd_msg->header.orig_addr, buf);
+
 		slurm_thread_create_detached(NULL, _forward_thread, fwd_msg);
 	}
-}
-
-/*
- * forward_init    - initialize forward structure
- * IN: forward     - forward_t *   - struct to store forward info
- * RET: VOID
- */
-extern void forward_init(forward_t *forward)
-{
-	*forward = (forward_t) FORWARD_INITIALIZER;
 }
 
 /*
@@ -656,6 +694,12 @@ extern int forward_msg(forward_struct_t *forward_struct, header_t *header)
 	hostlist_t *hl = NULL;
 	hostlist_t **sp_hl;
 	int hl_count = 0, depth;
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&global_forward_mutex);
+	xassert(enabled);
+	slurm_mutex_unlock(&global_forward_mutex);
+#endif
 
 	if (!forward_struct->ret_list) {
 		error("didn't get a ret_list from forward_struct");
@@ -983,4 +1027,88 @@ static void _destroy_forward_struct(forward_struct_t *forward_struct)
 		slurm_free_node_alias_addrs(forward_struct->alias_addrs);
 		xfree(forward_struct);
 	}
+}
+
+static void _probe_verbose(probe_log_t *log)
+{
+	char histogram[LATENCY_METRIC_HISTOGRAM_STR_LEN] = { 0 };
+
+	probe_log(log, "state: enabled:%c thread_count:%d",
+		  BOOL_CHARIFY(enabled), thread_count);
+
+	(void) latency_histogram_print_labels(histogram, sizeof(histogram));
+	probe_log(log, "histogram: %s", histogram);
+
+	(void) latency_histogram_print(&forward_stats.request, histogram,
+				       sizeof(histogram));
+	probe_log(log, "request histogram: %s", histogram);
+
+	(void) latency_histogram_print(&forward_stats.run, histogram,
+				       sizeof(histogram));
+	probe_log(log, "run histogram: %s", histogram);
+}
+
+static probe_status_t _probe(probe_log_t *log, void *arg)
+{
+	probe_status_t status = PROBE_RC_UNKNOWN;
+
+	slurm_mutex_lock(&global_forward_mutex);
+
+	if (log)
+		_probe_verbose(log);
+
+	if (!enabled)
+		status = PROBE_RC_ONLINE;
+	else if (thread_count >= HIGH_LOAD_FORWARD_THREAD_COUNT)
+		status = PROBE_RC_BUSY;
+	else
+		status = PROBE_RC_READY;
+
+	slurm_mutex_unlock(&global_forward_mutex);
+
+	return status;
+}
+
+extern void forward_init(void)
+{
+	slurm_mutex_lock(&global_forward_mutex);
+
+	if (!enabled) {
+		log_flag(NET, "%s: tree forwarding enabled", __func__);
+		probe_register("tree-forward", _probe, NULL);
+		enabled = true;
+	}
+
+	slurm_mutex_unlock(&global_forward_mutex);
+}
+
+extern void forward_fini(void)
+{
+	DEF_TIMERS;
+
+	START_TIMER;
+
+	slurm_mutex_lock(&global_forward_mutex);
+
+	if (!enabled) {
+		xassert(!thread_count);
+		slurm_mutex_unlock(&global_forward_mutex);
+		return;
+	}
+
+	enabled = false;
+
+	while (thread_count > 0) {
+		log_flag(NET, "%s: tree forwarding waiting for %d threads for %s",
+			 __func__, thread_count, TIMER_STR());
+
+		EVENT_WAIT(&event_fini, &global_forward_mutex);
+	}
+
+	slurm_mutex_unlock(&global_forward_mutex);
+
+	END_TIMER2(__func__);
+
+	log_flag(NET, "%s: tree forwarding shutdown complete after %s",
+		 __func__, TIMER_STR());
 }
