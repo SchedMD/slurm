@@ -165,11 +165,11 @@ libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	callerid.lo cbuf.lo core_array.lo cpu_frequency.lo cron.lo \
 	daemonize.lo data.lo duplex_relay.lo dynamic_plugin_data.lo \
-	eio.lo env.lo extra_constraints.lo events.lo fd.lo \
+	eio.lo env.lo events.lo extra_constraints.lo fd.lo \
 	fetch_config.lo file_bcast.lo forward.lo global_defaults.lo \
 	group_cache.lo half_duplex.lo hostlist.lo http.lo http_con.lo \
 	http_mime.lo http_request.lo http_router.lo http_switch.lo \
-	identity.lo id_util.lo io_hdr.lo job_features.lo \
+	id_util.lo identity.lo io_hdr.lo job_features.lo \
 	job_options.lo job_record.lo job_resources.lo \
 	job_state_reason.lo list.lo log.lo msg_type.lo net.lo \
 	node_conf.lo node_features.lo oci_config.lo openapi.lo optz.lo \
@@ -180,17 +180,17 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo atomic.lo bitstring.lo \
 	run_in_daemon.lo sack_api.lo sercli.lo serdes.lo \
 	setproctitle.lo sluid.lo slurm_errno.lo slurm_opt.lo \
 	slurm_protocol_api.lo slurm_protocol_defs.lo \
-	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket.lo slurm_resolv.lo \
-	slurm_resource_info.lo slurm_rlimits_info.lo \
-	slurm_step_layout.lo slurm_time.lo slurmdb_defs.lo \
-	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo spank.lo \
-	state_save.lo stepd_api.lo stepd_proxy.lo strlcpy.lo \
-	strnatcmp.lo threadpool.lo timers.lo track_script.lo \
-	tres_bind.lo tres_frequency.lo uid.lo util-net.lo \
-	working_cluster.lo write_labelled_message.lo x11_util.lo \
-	xassert.lo xahash.lo xhash.lo xmalloc.lo xrandom.lo xregex.lo \
-	xsched.lo xsystemd.lo xsignal.lo xstring.lo
+	slurm_protocol_pack.lo slurm_protocol_socket.lo \
+	slurm_protocol_util.lo slurm_resolv.lo slurm_resource_info.lo \
+	slurm_rlimits_info.lo slurm_step_layout.lo slurm_time.lo \
+	slurmdb_defs.lo slurmdb_pack.lo slurmdbd_defs.lo \
+	slurmdbd_pack.lo spank.lo state_save.lo step_ctx.lo \
+	stepd_api.lo stepd_proxy.lo strlcpy.lo strnatcmp.lo \
+	threadpool.lo timers.lo track_script.lo tres_bind.lo \
+	tres_frequency.lo uid.lo util-net.lo working_cluster.lo \
+	write_labelled_message.lo x11_util.lo xahash.lo xassert.lo \
+	xhash.lo xmalloc.lo xrandom.lo xregex.lo xsched.lo xsignal.lo \
+	xstring.lo xsystemd.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -265,12 +265,13 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo ./$(DEPDIR)/atomic.Plo \
 	./$(DEPDIR)/slurmdb_defs.Plo ./$(DEPDIR)/slurmdb_pack.Plo \
 	./$(DEPDIR)/slurmdbd_defs.Plo ./$(DEPDIR)/slurmdbd_pack.Plo \
 	./$(DEPDIR)/spank.Plo ./$(DEPDIR)/state_save.Plo \
-	./$(DEPDIR)/stepd_api.Plo ./$(DEPDIR)/stepd_proxy.Plo \
-	./$(DEPDIR)/strlcpy.Plo ./$(DEPDIR)/strnatcmp.Plo \
-	./$(DEPDIR)/threadpool.Plo ./$(DEPDIR)/timers.Plo \
-	./$(DEPDIR)/track_script.Plo ./$(DEPDIR)/tres_bind.Plo \
-	./$(DEPDIR)/tres_frequency.Plo ./$(DEPDIR)/uid.Plo \
-	./$(DEPDIR)/util-net.Plo ./$(DEPDIR)/working_cluster.Plo \
+	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/stepd_api.Plo \
+	./$(DEPDIR)/stepd_proxy.Plo ./$(DEPDIR)/strlcpy.Plo \
+	./$(DEPDIR)/strnatcmp.Plo ./$(DEPDIR)/threadpool.Plo \
+	./$(DEPDIR)/timers.Plo ./$(DEPDIR)/track_script.Plo \
+	./$(DEPDIR)/tres_bind.Plo ./$(DEPDIR)/tres_frequency.Plo \
+	./$(DEPDIR)/uid.Plo ./$(DEPDIR)/util-net.Plo \
+	./$(DEPDIR)/working_cluster.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xahash.Plo \
 	./$(DEPDIR)/xassert.Plo ./$(DEPDIR)/xhash.Plo \
@@ -613,10 +614,10 @@ libcommon_la_SOURCES = \
 	eio.h					\
 	env.c					\
 	env.h					\
-	extra_constraints.c			\
-	extra_constraints.h			\
 	events.c				\
 	events.h				\
+	extra_constraints.c			\
+	extra_constraints.h			\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\
@@ -632,22 +633,22 @@ libcommon_la_SOURCES = \
 	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
-	http.h					\
 	http.c					\
-	http_con.h				\
+	http.h					\
 	http_con.c				\
-	http_mime.h				\
+	http_con.h				\
 	http_mime.c				\
-	http_request.h				\
+	http_mime.h				\
 	http_request.c				\
-	http_router.h				\
+	http_request.h				\
 	http_router.c				\
-	http_switch.h				\
+	http_router.h				\
 	http_switch.c				\
-	identity.h				\
-	identity.c				\
-	id_util.h				\
+	http_switch.h				\
 	id_util.c				\
+	id_util.h				\
+	identity.c				\
+	identity.h				\
 	io_hdr.c				\
 	io_hdr.h				\
 	job_features.c				\
@@ -734,10 +735,10 @@ libcommon_la_SOURCES = \
 	slurm_protocol_defs.h			\
 	slurm_protocol_pack.c			\
 	slurm_protocol_pack.h			\
-	slurm_protocol_util.c			\
-	slurm_protocol_util.h			\
 	slurm_protocol_socket.c			\
 	slurm_protocol_socket.h			\
+	slurm_protocol_util.c			\
+	slurm_protocol_util.h			\
 	slurm_resolv.c				\
 	slurm_resolv.h				\
 	slurm_resource_info.c			\
@@ -761,6 +762,8 @@ libcommon_la_SOURCES = \
 	spank.h					\
 	state_save.c				\
 	state_save.h				\
+	step_ctx.c				\
+	step_ctx.h				\
 	stepd_api.c				\
 	stepd_api.h				\
 	stepd_proxy.c				\
@@ -790,10 +793,10 @@ libcommon_la_SOURCES = \
 	write_labelled_message.h		\
 	x11_util.c				\
 	x11_util.h				\
-	xassert.c				\
-	xassert.h				\
 	xahash.c				\
 	xahash.h				\
+	xassert.c				\
+	xassert.h				\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\
@@ -804,12 +807,12 @@ libcommon_la_SOURCES = \
 	xregex.h				\
 	xsched.c				\
 	xsched.h				\
-	xsystemd.c				\
-	xsystemd.h				\
 	xsignal.c				\
 	xsignal.h				\
 	xstring.c				\
-	xstring.h
+	xstring.h				\
+	xsystemd.c				\
+	xsystemd.h
 
 libcommon_la_LIBADD = $(libselinux_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
@@ -960,6 +963,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_pack.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spank.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/state_save.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_proxy.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@ # am--include-marker
@@ -1196,6 +1200,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
 	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_save.Plo
+	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/stepd_proxy.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo
@@ -1352,6 +1357,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmdbd_pack.Plo
 	-rm -f ./$(DEPDIR)/spank.Plo
 	-rm -f ./$(DEPDIR)/state_save.Plo
+	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f ./$(DEPDIR)/stepd_api.Plo
 	-rm -f ./$(DEPDIR)/stepd_proxy.Plo
 	-rm -f ./$(DEPDIR)/strlcpy.Plo

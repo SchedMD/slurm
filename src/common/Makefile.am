@@ -184,6 +184,8 @@ libcommon_la_SOURCES =				\
 	spank.h					\
 	state_save.c				\
 	state_save.h				\
+	step_ctx.c				\
+	step_ctx.h				\
 	stepd_api.c				\
 	stepd_api.h				\
 	stepd_proxy.c				\
