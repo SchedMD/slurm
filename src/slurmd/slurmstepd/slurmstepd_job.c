@@ -376,7 +376,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	}
 
 	step->eio     = eio_handle_create(0);
-	step->sruns   = list_create((ListDelF) _srun_info_destructor);
+	step->sruns = list_create(_srun_info_destructor);
 
 	/*
 	 * Based on my testing the next 3 lists here could use the
@@ -567,7 +567,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	step->env = slurm_char_array_copy(msg->envc, msg->environment);
 	step->eio     = eio_handle_create(0);
-	step->sruns   = list_create((ListDelF) _srun_info_destructor);
+	step->sruns = list_create(_srun_info_destructor);
 	step->envtp   = xmalloc(sizeof(env_t));
 	step->envtp->jobid = -1;
 	step->envtp->stepid = -1;
