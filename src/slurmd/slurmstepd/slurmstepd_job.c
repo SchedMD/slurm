@@ -426,6 +426,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	srun = _srun_info_create(msg->cred, msg->alloc_tls_cert, &resp_addr,
 				 &io_addr, step->uid, protocol_version);
+	list_append(step->sruns, srun);
 
 	step->profile     = msg->profile;
 	step->task_prolog = xstrdup(msg->task_prolog);
@@ -480,8 +481,6 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 	get_cred_gres(msg->cred, conf->node_name,
 		      &step->job_gres_list, &step->step_gres_list);
-
-	list_append(step->sruns, (void *) srun);
 
 	_job_init_task_info(msg->global_task_ids, msg->ifname, msg->ofname,
 			    msg->efname);
