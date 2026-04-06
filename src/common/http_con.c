@@ -867,3 +867,9 @@ extern int http_con_get_auth_creds(http_con_t *hcon, uid_t *cred_uid,
 	return conmgr_con_get_auth_creds(hcon->con, cred_uid, cred_gid,
 					 cred_pid);
 }
+
+extern bool http_con_is_tls(http_con_t *hcon)
+{
+	xassert(hcon->magic == MAGIC);
+	return conmgr_fd_is_tls(hcon->con);
+}
