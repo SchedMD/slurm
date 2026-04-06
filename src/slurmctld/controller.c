@@ -1173,9 +1173,9 @@ int main(int argc, char **argv)
 			slurm_conf.slurmctld_pidfile);
 	}
 
+	conmgr_request_shutdown();
 	http_fini();
 	http_switch_fini();
-	conmgr_request_shutdown();
 	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
