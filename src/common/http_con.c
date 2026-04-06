@@ -846,3 +846,9 @@ failed:
 
 	return rc;
 }
+
+extern bool http_con_is_tls(http_con_t *hcon)
+{
+	xassert(hcon->magic == MAGIC);
+	return conmgr_fd_is_tls(hcon->con);
+}

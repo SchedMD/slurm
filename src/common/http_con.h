@@ -128,4 +128,7 @@ extern int http_con_send_response(http_con_t *hcon,
 				  list_t *headers, bool close_header,
 				  const buf_t *body, const char *body_encoding);
 
+/* True if the HTTP connection uses TLS (cf. request URL https scheme). */
+extern bool http_con_is_tls(http_con_t *hcon);
+
 #endif
