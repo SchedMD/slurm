@@ -508,6 +508,16 @@ extern int conmgr_con_change_mode(conmgr_fd_ref_t *con, conmgr_con_type_t type)
 	return rc;
 }
 
+static void _check_timeouts(const conmgr_timeouts_t *timeouts)
+{
+	xassert(timeouts);
+	xassert(!timespec_is_zero(timeouts->read));
+	xassert(!timespec_is_zero(timeouts->write));
+	xassert(!timespec_is_zero(timeouts->connect));
+	xassert(!timespec_is_zero(timeouts->quiesce));
+	xassert(!timespec_is_zero(timeouts->write_complete));
+}
+
 extern int add_connection(conmgr_con_type_t type,
 			  const conmgr_timeouts_t *timeouts,
 			  conmgr_fd_t *source, int input_fd, int output_fd,
@@ -538,6 +548,7 @@ extern int add_connection(conmgr_con_type_t type,
 		timeouts_ptr = &mgr.timeouts;
 
 	xassert(timeouts_ptr);
+	_check_timeouts(timeouts_ptr);
 
 	if (unix_socket_path_len &&
 	    (unix_socket_path_len > unix_socket_path_max)) {
@@ -2568,6 +2579,8 @@ extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *ref,
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
 	if (timeouts) {
+		_check_timeouts(timeouts);
+
 		log_flag(CONMGR, "%s->%s: [%s] changing connection timeouts read=%s write=%s connect=%s quiesce=%s write_complete=%s",
 			 caller, __func__, con->name,
 			 TIMESPEC_STR(timeouts->read, false),
@@ -2578,6 +2591,8 @@ extern int conmgr_con_set_timeouts(conmgr_fd_ref_t *ref,
 
 		con->timeouts = timeouts;
 	} else {
+		_check_timeouts(&mgr.timeouts);
+
 		log_flag(CONMGR, "%s->%s: [%s] changing connection timeouts to default",
 			 caller, __func__, con->name);
 
