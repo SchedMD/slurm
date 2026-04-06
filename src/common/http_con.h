@@ -155,4 +155,7 @@ extern int http_con_fstat_input(http_con_t *hcon, struct stat *stat_ptr);
 extern int http_con_get_auth_creds(http_con_t *hcon, uid_t *cred_uid,
 				   gid_t *cred_gid, pid_t *cred_pid);
 
+/* True if the HTTP connection uses TLS (cf. request URL https scheme). */
+extern bool http_con_is_tls(http_con_t *hcon);
+
 #endif
