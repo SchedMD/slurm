@@ -555,7 +555,8 @@ static bool can_extract(conmgr_fd_t *con, const bool is_tls)
 
 	/* Waiting for TLS negotiation */
 	if (is_tls && (!con_flag(con, FLAG_IS_TLS_CONNECTED) ||
-		       con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)))
+		       con_flag(con, FLAG_TLS_WAIT_ON_CLOSE) ||
+		       con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN)))
 		return false;
 
 	/* Wait to extract until Quiesce has ended */
@@ -618,11 +619,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (((con->input_fd < 0) && (con->output_fd < 0)) ||
-	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
+	if (((con->input_fd < 0) && (con->output_fd < 0))) {
 		xassert(con_flag(con, FLAG_READ_EOF));
 		/* connection already closed */
-	} else if (con_flag(con, FLAG_IS_CONNECTED)) {
+	} else if (con_flag(con, FLAG_IS_CONNECTED) ||
+		   con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
 		/* continue on to follow other checks */
 	} else if (!con_flag(con, FLAG_IS_SOCKET) ||
 		   con_flag(con, FLAG_CAN_READ) ||
@@ -900,6 +901,7 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
 	    !con_flag(con, FLAG_READ_EOF)) {
 		xassert(!con_flag(con, FLAG_TLS_FINGERPRINT));
+		xassert(!con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
 		/*
 		 * TLS handshake must happen attempting to process any of the
@@ -912,22 +914,38 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		return 0;
 	}
 
-	if (!con_flag(con, FLAG_IS_LISTEN) && is_tls &&
-	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
-	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
-	    con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
-	    !con_flag(con, FLAG_READ_EOF)) {
+	if (con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN)) {
 		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(is_tls);
+		xassert(!con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
-		log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown",
+		log_flag(CONMGR, "%s: [%s] queuing up initial TLS shutdown work",
 			 __func__, con->name);
-		add_work_con_fifo(true, con, tls_close, NULL);
+		add_work_con_fifo(true, con, tls_shutdown, NULL);
+		return 0;
+	}
+
+	if (con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN)) {
+		xassert(con_flag(con, FLAG_IS_TLS_CONNECTED));
+		xassert(is_tls);
+		xassert(!con_flag(con, FLAG_IS_LISTEN));
+
+		if (con_flag(con, FLAG_ON_DATA_TRIED)) {
+			log_flag(CONMGR, "%s: [%s] waiting for incoming to continue TLS shutdown",
+				 __func__, con->name);
+		} else {
+			log_flag(CONMGR, "%s: [%s] queuing up continuation of TLS shutdown",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, tls_shutdown, NULL);
+		}
 		return 0;
 	}
 
 	/* handle already read data */
 	if (!con_flag(con, FLAG_IS_LISTEN) && get_buf_offset(con->in) &&
-	    !con_flag(con, FLAG_ON_DATA_TRIED)) {
+	    !con_flag(con, FLAG_ON_DATA_TRIED) &&
+	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
+	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN)) {
 		xassert(!is_tls || con_flag(con, FLAG_IS_TLS_CONNECTED));
 
 		if (con_flag(con, FLAG_TLS_FINGERPRINT)) {
@@ -1061,6 +1079,16 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		log_flag(CONMGR, "%s: [%s] waiting to close output_fd=%d",
 			 __func__, con->name, con->output_fd);
 		_on_close_output_fd(con);
+		return 0;
+	}
+
+	if (con->tls) {
+		xassert(is_tls);
+
+		log_flag(CONMGR, "%s: [%s] queuing TLS destroy",
+			 __func__, con->name);
+
+		add_work_con_fifo(true, con, tls_destroy, NULL);
 		return 0;
 	}
 

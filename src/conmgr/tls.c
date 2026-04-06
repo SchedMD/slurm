@@ -78,19 +78,48 @@ static void _shift_buf_bytes(buf_t *buf, const size_t bytes)
 	set_buf_offset(buf, remain);
 }
 
-static void _post_wait_close_fds(bool locked, conmgr_fd_t *con)
+extern void tls_destroy(conmgr_callback_args_t conmgr_args, void *arg)
 {
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
+	conmgr_fd_t *con = conmgr_args.con;
+	void *tls = NULL;
+	buf_t *tls_in = NULL;
+	list_t *tls_out = NULL;
+	int rc = EINVAL;
 
-	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+	slurm_mutex_lock(&mgr.mutex);
 
-	close_con(true, con);
+	/* Connection must already be soft closed */
+	xassert(con_flag(con, FLAG_READ_EOF));
 
-	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
+	SWAP(tls, con->tls);
+	xassert(tls);
 
-	if (!locked)
-		slurm_mutex_unlock(&mgr.mutex);
+	SWAP(tls_in, con->tls_in);
+	xassert(tls_in);
+
+	SWAP(tls_out, con->tls_out);
+	xassert(tls_out);
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	errno = SLURM_SUCCESS;
+	tls_g_destroy_conn(tls, false);
+	if ((rc = errno))
+		log_flag(CONMGR, "%s: [%s] tls_g_destroy_conn() failed: %s",
+			 __func__, con->name, slurm_strerror(rc));
+
+#ifndef NDEBUG
+	slurm_mutex_lock(&mgr.mutex);
+	xassert(!con->tls);
+	xassert(!con->tls_in);
+	xassert(!con->tls_out);
+	slurm_mutex_unlock(&mgr.mutex);
+#endif
+
+	FREE_NULL_BUFFER(tls_in);
+	FREE_NULL_LIST(tls_out);
+
+	log_flag(CONMGR, "%s: [%s] TLS destroy finished", __func__, con->name);
 }
 
 static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
@@ -99,19 +128,26 @@ static void _delayed_close(conmgr_callback_args_t conmgr_args, void *arg)
 
 	log_flag(CONMGR, "%s: [%s] close wait complete", __func__, con->name);
 
-	_post_wait_close_fds(false, con);
+	slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+
+	close_con(true, con);
+
+	con_unset_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
+
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 /*
  * Check and enforce if TLS has requested wait on operations and then close
  * connection
  */
-static void _wait_close(bool locked, conmgr_fd_t *con)
+static void _wait_close(conmgr_fd_t *con)
 {
 	timespec_t delay = { 0 };
 
-	if (!locked)
-		slurm_mutex_lock(&mgr.mutex);
+	slurm_mutex_lock(&mgr.mutex);
 
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
 
@@ -119,8 +155,10 @@ static void _wait_close(bool locked, conmgr_fd_t *con)
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 	con_set_flag(con, FLAG_READ_EOF);
 	con_set_flag(con, FLAG_TLS_WAIT_ON_CLOSE);
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 	con_unset_flag(con, FLAG_CAN_WRITE);
 	con_unset_flag(con, FLAG_CAN_READ);
+	con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
 
 	xassert(con->tls);
 	delay = tls_g_get_delay(con->tls);
@@ -132,24 +170,40 @@ static void _wait_close(bool locked, conmgr_fd_t *con)
 		add_work_con_delayed_abs_fifo(true, con, _delayed_close, NULL,
 					      delay);
 	} else {
-		log_flag(CONMGR, "%s: [%s] closing now",
+		log_flag(CONMGR, "%s: [%s] queuing close",
 			 __func__, con->name);
 
-		_post_wait_close_fds(true, con);
+		add_work_con_fifo(true, con, _delayed_close, NULL);
 	}
+
+	slurm_mutex_unlock(&mgr.mutex);
+}
+
+static void _shutdown_complete(bool locked, conmgr_fd_t *con)
+{
+	if (!locked)
+		slurm_mutex_lock(&mgr.mutex);
+
+	xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+	con_unset_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
+
+	/*
+	 * Now that TLS shutdown is done, continue with normal
+	 * connection shutdown.
+	 */
+	con_unset_flag(con, FLAG_IS_TLS_CONNECTED);
+	close_con(true, con);
 
 	if (!locked)
 		slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
+extern void tls_shutdown(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	conmgr_fd_t *con = conmgr_args.con;
 	void *tls = NULL;
 	int rc = EINVAL;
-	buf_t *tls_in = NULL;
-	list_t *tls_out = NULL;
-	bool defer_close = false;
 
 	slurm_mutex_lock(&mgr.mutex);
 
@@ -157,22 +211,32 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	xassert(con_flag(con, FLAG_TLS_CLIENT) ^
 		con_flag(con, FLAG_TLS_SERVER));
 	xassert(!con_flag(con, FLAG_TLS_WAIT_ON_CLOSE));
+	xassert(con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) ||
+		con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
 
-	tls = con->tls;
+	con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
+	con_unset_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
-	if (!tls) {
-		log_flag(CONMGR, "%s: [%s] TLS state doesn't exist, skip closing it",
+	if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+		log_flag(CONMGR, "%s: [%s] cancelling TLS shutdown",
 			 __func__, con->name);
+		_shutdown_complete(true, con);
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
-	if (con_flag(con, FLAG_READ_EOF)) {
-		log_flag(CONMGR, "%s: [%s] connection already closed, skipping TLS close",
-			 __func__, con->name);
-		slurm_mutex_unlock(&mgr.mutex);
-		goto destroy;
-	}
+	tls = con->tls;
+
+	/*
+	 * tls_g_shutdown_conn() may attempt to read or write data. In case it
+	 * is attempting to write, FLAG_ON_DATA_TRIED is unset here to ensure
+	 * that tls_shutdown() is called again if tls_g_shutdown_conn() blocks
+	 * on writing.
+	 *
+	 * If tls_g_shutdown_conn() is blocked on reading, FLAG_ON_DATA_TRIED
+	 * will be set.
+	 */
+	con_unset_flag(con, FLAG_ON_DATA_TRIED);
 
 	slurm_mutex_unlock(&mgr.mutex);
 
@@ -185,46 +249,37 @@ extern void tls_close(conmgr_callback_args_t conmgr_args, void *arg)
 	 */
 	rc = tls_g_shutdown_conn(tls);
 
-	if (rc == EWOULDBLOCK) {
-		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() requires more incoming data",
-			 __func__, con->name);
-
+	if (rc == SLURM_BLOCKED_ON_READ) {
 		slurm_mutex_lock(&mgr.mutex);
 
-		/* Wait for more incoming data before trying again */
-		con_set_flag(con, FLAG_ON_DATA_TRIED);
+		xassert(tls == con->tls);
+		xassert(con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN));
+
+		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() completed after connection closed",
+				 __func__, con->name);
+			_shutdown_complete(true, con);
+		} else {
+			/* Wait for more incoming data before trying again */
+			con_set_flag(con, FLAG_ON_DATA_TRIED);
+
+			log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() requires more incoming data",
+				 __func__, con->name);
+		}
 
 		slurm_mutex_unlock(&mgr.mutex);
-		return;
+	} else if (rc == SLURM_BLOCKED_ON_WRITE) {
+		log_flag(NET, "%s: [%s] write required for tls_g_shutdown_conn() blocked, will try again",
+			 __func__, con->name);
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() failed: %s",
 			 __func__, con->name, slurm_strerror(rc));
-		_wait_close(false, con);
-		defer_close = true;
+		_wait_close(con);
+	} else {
+		log_flag(CONMGR, "%s: [%s] tls_g_shutdown_conn() complete",
+			 __func__, con->name);
+		_shutdown_complete(false, con);
 	}
-
-destroy:
-	log_flag(CONMGR, "%s: [%s] TLS shutdown finished", __func__, con->name);
-
-	errno = SLURM_SUCCESS;
-	tls_g_destroy_conn(tls, false);
-	if ((rc = errno))
-		log_flag(CONMGR, "%s: [%s] tls_g_destroy() failed: %s",
-			 __func__, con->name, slurm_strerror(rc));
-
-	slurm_mutex_lock(&mgr.mutex);
-	xassert(tls == con->tls);
-	con->tls = NULL;
-
-	SWAP(tls_in, con->tls_in);
-	SWAP(tls_out, con->tls_out);
-	slurm_mutex_unlock(&mgr.mutex);
-
-	FREE_NULL_BUFFER(tls_in);
-	FREE_NULL_LIST(tls_out);
-
-	if (!defer_close)
-		conmgr_con_queue_close(conmgr_args.ref);
 }
 
 static int _recv(void *io_context, uint8_t *buf, uint32_t len)
@@ -276,6 +331,14 @@ extern void tls_handle_decrypt(conmgr_callback_args_t conmgr_args, void *arg)
 
 again:
 	slurm_mutex_lock(&mgr.mutex);
+
+	if ((need = get_buf_offset(con->tls_in)) <= 0) {
+		log_flag(NET, "%s: [%s] already decrypted all incoming TLS data",
+			 __func__, con->name);
+		slurm_mutex_unlock(&mgr.mutex);
+		return;
+	}
+
 	if (con_flag(con, FLAG_ON_DATA_TRIED) ||
 	    con_flag(con, FLAG_TLS_WAIT_ON_CLOSE)) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
@@ -287,6 +350,7 @@ again:
 		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
+
 	slurm_mutex_unlock(&mgr.mutex);
 
 	if (try > 1) {
@@ -301,16 +365,10 @@ again:
 		return;
 	}
 
-	if ((need = get_buf_offset(con->tls_in)) <= 0) {
-		log_flag(NET, "%s: [%s] already decrypted all incoming TLS data",
-			 __func__, con->name);
-		return;
-	}
-
 	if ((rc = try_grow_buf_remaining(buf, need))) {
 		error("%s: [%s] unable to allocate larger input buffer for TLS data: %s",
 		      __func__, con->name, slurm_strerror(rc));
-		_wait_close(false, con);
+		_wait_close(con);
 		return;
 	}
 
@@ -334,20 +392,19 @@ again:
 		log_flag(NET, "%s: [%s] error while decrypting TLS: %m",
 			 __func__, con->name);
 
-		_wait_close(false, con);
+		_wait_close(con);
 		return;
 	} else if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read EOF with %u bytes previously decrypted",
 			 __func__, con->name, get_buf_offset(buf));
 
-		/* Need to shutdown TLS layer before closing connection */
-		slurm_mutex_lock(&mgr.mutex);
-		con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
-		add_work_con_fifo(true, con, tls_close, NULL);
-		slurm_mutex_unlock(&mgr.mutex);
-
+		close_con(false, con);
 		return;
 	} else {
+		size_t offset = 0;
+
+		slurm_mutex_lock(&mgr.mutex);
+
 		log_flag(NET, "%s: [%s] decrypted TLS %zd/%zd bytes with %u bytes previously decrypted",
 			 __func__, con->name, read_c, readable,
 			 get_buf_offset(buf));
@@ -359,7 +416,11 @@ again:
 
 		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
 
-		if (get_buf_offset(con->tls_in) > 0) {
+		offset = get_buf_offset(con->tls_in);
+
+		slurm_mutex_unlock(&mgr.mutex);
+
+		if (offset) {
 			try++;
 			goto again;
 		}
@@ -423,7 +484,7 @@ static void _negotiate(conmgr_fd_t *con, void *tls)
 	} else if (rc) {
 		log_flag(CONMGR, "%s: [%s] tls_g_negotiate_conn() failed: %s",
 				 __func__, con->name, slurm_strerror(rc));
-		_wait_close(false, con);
+		_wait_close(con);
 		return;
 	} else {
 		slurm_mutex_lock(&mgr.mutex);
@@ -741,7 +802,7 @@ extern void tls_handle_encrypt(conmgr_callback_args_t conmgr_args, void *arg)
 		      __func__, con->name);
 		/* drop outbound data on the floor */
 		list_flush(con->out);
-		_wait_close(false, con);
+		_wait_close(con);
 	}
 }
 

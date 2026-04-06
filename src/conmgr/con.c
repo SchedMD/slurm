@@ -250,14 +250,17 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		return;
 	}
 
-	if (con->tls) {
-		con_set_flag(con, FLAG_IS_TLS_SHUTTING_DOWN);
-		add_work_con_fifo(true, con, tls_close, NULL);
+	if (con->tls && con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
+	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
+	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
+		/* Attempt graceful TLS shutdown once */
+		con_set_flag(con, FLAG_INITIATE_TLS_SHUTDOWN);
 
 		if (!locked)
 			slurm_mutex_unlock(&mgr.mutex);
 
-		log_flag(CONMGR, "%s: [%s] closing tls connection before closing fd",
+		log_flag(CONMGR, "%s: [%s] attempting TLS shutdown",
 			 __func__, con->name);
 		return;
 	}
