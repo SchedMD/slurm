@@ -162,11 +162,13 @@ static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
 }
 
 /* destructor for list routines */
-static void
-_srun_info_destructor(void *arg)
+static void _srun_info_destructor(void *arg)
 {
-	srun_info_t *srun = (srun_info_t *)arg;
-	srun_info_destroy(srun);
+	srun_info_t *srun = arg;
+
+	xfree(srun->key);
+	xfree(srun->tls_cert);
+	xfree(srun);
 }
 
 static void
@@ -738,14 +740,6 @@ static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
 	if (resp_addr != NULL)
 		srun->resp_addr = *resp_addr;
 	return srun;
-}
-
-extern void
-srun_info_destroy(srun_info_t *srun)
-{
-	xfree(srun->key);
-	xfree(srun->tls_cert);
-	xfree(srun);
 }
 
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,

@@ -270,8 +270,6 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
 extern void stepd_step_rec_destroy(void);
 
-void  srun_info_destroy(srun_info_t *srun);
-
 stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
 					  char *ifname, char *ofname,
 					  char *efname);
