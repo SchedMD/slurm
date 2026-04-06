@@ -344,7 +344,15 @@ typedef struct gres_job_state {
 	 *              GRES allocated to the job.
 	 */
 	uint64_t total_gres;
-	uint32_t node_cnt;		/* 0 if no_consume */
+	/*
+	 * node_cnt - Size of the arrays below.
+	 *            For jobs: length of the job allocation (number of nodes
+	 *            allocated to the job).
+	 *            For reservations: node_record_count (full cluster node
+	 *            table size).
+	 *            0 if no_consume.
+	 */
+	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;	/* Per node GRES allocated,
 					 * Used with GRES files */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
