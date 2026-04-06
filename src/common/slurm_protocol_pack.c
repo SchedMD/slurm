@@ -61,6 +61,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/interfaces/accounting_storage.h"
 #include "src/interfaces/acct_gather_energy.h"
 #include "src/interfaces/auth.h"
