@@ -14,9 +14,7 @@ SRCS = \
 
 convenience_libs = $(LIB_SLURM)
 
-if HAVE_LUA
-
-AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(lua_CFLAGS) -DHAVE_LUA
 
 bin_PROGRAMS = scrun
 scrun_SOURCES = $(SRCS)
@@ -33,7 +31,3 @@ scrun_LDADD += $(LIB_REF)
 force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
-
-else
-EXTRA_scrun_SOURCES = $(SRCS)
-endif

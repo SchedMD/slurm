@@ -185,10 +185,9 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@HAVE_LUA_TRUE@jobcomp_lua_la_DEPENDENCIES =  \
-@HAVE_LUA_TRUE@	$(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@	$(am__DEPENDENCIES_1)
-@HAVE_LUA_TRUE@am_jobcomp_lua_la_OBJECTS = jobcomp_lua.lo
+jobcomp_lua_la_DEPENDENCIES = $(top_builddir)/src/lua/libslurm_lua.la \
+	$(am__DEPENDENCIES_1)
+am_jobcomp_lua_la_OBJECTS = jobcomp_lua.lo
 jobcomp_lua_la_OBJECTS = $(am_jobcomp_lua_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -198,7 +197,6 @@ jobcomp_lua_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(jobcomp_lua_la_LDFLAGS) $(LDFLAGS) -o \
 	$@
-@HAVE_LUA_TRUE@am_jobcomp_lua_la_rpath = -rpath $(pkglibdir)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -234,7 +232,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(jobcomp_lua_la_SOURCES) $(EXTRA_jobcomp_lua_la_SOURCES)
+SOURCES = $(jobcomp_lua_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -521,15 +519,14 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) $(lua_CFLAGS)
-@HAVE_LUA_TRUE@pkglib_LTLIBRARIES = jobcomp_lua.la
+pkglib_LTLIBRARIES = jobcomp_lua.la
 
 # cli_filter lua plugin.
-@HAVE_LUA_TRUE@jobcomp_lua_la_SOURCES = jobcomp_lua.c
-@HAVE_LUA_TRUE@jobcomp_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_LUA_TRUE@jobcomp_lua_la_LIBADD = $(top_builddir)/src/lua/libslurm_lua.la \
-@HAVE_LUA_TRUE@			 $(lua_LIBS)
+jobcomp_lua_la_SOURCES = jobcomp_lua.c
+jobcomp_lua_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_lua_la_LIBADD = $(top_builddir)/src/lua/libslurm_lua.la \
+			 $(lua_LIBS)
 
-@HAVE_LUA_FALSE@EXTRA_jobcomp_lua_la_SOURCES = jobcomp_lua.c
 all: all-am
 
 .SUFFIXES:
@@ -598,7 +595,7 @@ clean-pkglibLTLIBRARIES:
 	$(am__rm_f) $${locs}
 
 jobcomp_lua.la: $(jobcomp_lua_la_OBJECTS) $(jobcomp_lua_la_DEPENDENCIES) $(EXTRA_jobcomp_lua_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(jobcomp_lua_la_LINK) $(am_jobcomp_lua_la_rpath) $(jobcomp_lua_la_OBJECTS) $(jobcomp_lua_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(jobcomp_lua_la_LINK) -rpath $(pkglibdir) $(jobcomp_lua_la_OBJECTS) $(jobcomp_lua_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

@@ -7,8 +7,6 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) \
 	      $(lua_CFLAGS)
 
-if HAVE_LUA
-
 # Burst buffer lua plugin.
 pkglib_LTLIBRARIES = burst_buffer_lua.la
 burst_buffer_lua_la_SOURCES = burst_buffer_lua.c
@@ -20,5 +18,3 @@ burst_buffer_lua_la_LIBADD = ../common/libburst_buffer_common.la \
 force:
 $(burst_buffer_lua_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
-
-endif

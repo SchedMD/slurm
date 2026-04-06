@@ -90,7 +90,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@LINUX_BUILD_TRUE@am__append_1 = pam_slurm_adopt
+@HAVE_LUA_TRUE@am__append_1 = lua
+@LINUX_BUILD_TRUE@am__append_2 = pam_slurm_adopt
 subdir = contribs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -204,8 +205,8 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = lua nss_slurm openlava pam perlapi pmi pmi2 seff \
-	sgather sjobexit slurm_completion_help torque pam_slurm_adopt
+DIST_SUBDIRS = nss_slurm openlava pam perlapi pmi pmi2 seff sgather \
+	sjobexit slurm_completion_help torque lua pam_slurm_adopt
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -467,8 +468,9 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = lua nss_slurm openlava pam perlapi pmi pmi2 seff sgather \
-	sjobexit slurm_completion_help torque $(am__append_1)
+SUBDIRS = nss_slurm openlava pam perlapi pmi pmi2 seff sgather \
+	sjobexit slurm_completion_help torque $(am__append_1) \
+	$(am__append_2)
 all: all-recursive
 
 .SUFFIXES:
