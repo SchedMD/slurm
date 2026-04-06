@@ -1848,6 +1848,22 @@ extern void listeners_unquiesce(void)
 	slurm_mutex_unlock(&listeners.mutex);
 }
 
+/*
+ * Return true when listeners.standby_mode is set (in run_backup() standby),
+ * false when the main loop is on the primary controller path
+ * (slurmctld_primary || backup_has_control) in normal steady state.
+ */
+extern bool slurmctld_listeners_in_standby(void)
+{
+	bool standby;
+
+	slurm_mutex_lock(&listeners.mutex);
+	standby = listeners.standby_mode;
+	slurm_mutex_unlock(&listeners.mutex);
+
+	return standby;
+}
+
 static probe_status_t _probe_listeners(probe_log_t *log, void *arg)
 {
 	probe_status_t status = PROBE_RC_UNKNOWN;
