@@ -100,6 +100,15 @@ uint32_t *cr_node_cores_offset = NULL;
 bool spec_cores_first = false;
 time_t slurmd_start_time = 0;
 
+/*
+ * Old-to-new node index mapping built during load_all_node_state()
+ * so that GRES per-node arrays can be remapped after the node table
+ * is re-sorted.  Populated in slurmctld's node_mgr.c.
+ */
+int *node_old_to_new_map = NULL;
+uint32_t old_node_record_count = 0;
+bool is_node_table_changed = false;
+
 /* Local function definitions */
 static void _delete_config_record(void);
 static void _delete_node_config_ptr(node_record_t *node_ptr);
