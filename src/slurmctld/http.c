@@ -153,6 +153,93 @@ static int _req_not_found(http_con_t *hcon, const char *name,
 	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH);
 }
 
+/*
+ * Build a URL for the configured primary slurmctld with the same path and query
+ * as request. Return xmalloc'd string, or NULL if no controller config is
+ * found.
+ */
+static char *_primary_slurmctld_url(http_con_t *hcon,
+				    const http_con_request_t *request)
+{
+	char *location = NULL, *host_fmt = NULL;
+	const char *host;
+	const char *scheme_prefix;
+	bool use_https;
+
+	if (!slurm_conf.control_cnt || !slurm_conf.control_addr ||
+	    !slurm_conf.control_addr[0])
+		return NULL;
+
+	use_https = (request->url.scheme == URL_SCHEME_HTTPS) ||
+		    http_con_is_tls(hcon);
+	scheme_prefix = use_https ? "https://" : "http://";
+
+	host = slurm_conf.control_addr[0];
+	if (xstrchr(host, ':'))
+		/* Handle IPv6 literal */
+		xstrfmtcat(host_fmt, "[%s]", host);
+	else
+		host_fmt = xstrdup(host);
+
+	xstrfmtcat(location, "%s%s:%u%s", scheme_prefix, host_fmt,
+		   (unsigned int) slurm_conf.slurmctld_port,
+		   request->url.path ? request->url.path : "");
+	xfree(host_fmt);
+
+	if (request->url.query && request->url.query[0])
+		xstrfmtcat(location, "?%s", request->url.query);
+
+	return location;
+}
+
+/*
+ * If this slurmctld's listeners are in backup standby, send 303 with Location
+ * pointing at the configured primary (first SlurmctldHost). Return true if a
+ * response was sent, with *rc_out set to the send result.
+ */
+static bool _metrics_redirect_to_primary(http_con_t *hcon,
+					 const http_con_request_t *request,
+					 int *rc_out)
+{
+	char *location = NULL;
+	list_t *headers = NULL;
+	http_header_t *loc_hdr = NULL;
+
+	if (slurmctld_listeners_in_standby()) {
+		location = _primary_slurmctld_url(hcon, request);
+		if (!location) {
+			static const char body[] =
+				"slurmctld: primary mode controller address unavailable\n";
+
+			debug2("HTTP metrics: standby redirect target unavailable (configured primary SlurmctldHost)");
+
+			*rc_out = http_con_send_response(
+				hcon,
+				HTTP_STATUS_CODE_SRVERR_SERVICE_UNAVAILABLE,
+				NULL, true,
+				&SHADOW_BUF_INITIALIZER(body, strlen(body)),
+				MIME_TYPE_TEXT);
+			return true;
+		}
+
+		debug2("HTTP metrics: standby sending 303 See Other to configured primary (SlurmctldHost[0]) for %s",
+		       (request->url.path && request->url.path[0]) ?
+		       request->url.path : "/");
+
+		headers = list_create((ListDelF) free_http_header);
+		loc_hdr = http_header_new("Location", location);
+		xfree(location);
+		list_append(headers, loc_hdr);
+
+		*rc_out = http_con_send_response(
+			hcon, HTTP_STATUS_CODE_REDIRECT_SEE_OTHER, headers,
+			true, NULL, NULL);
+		FREE_NULL_LIST(headers);
+		return true;
+	}
+	return false;
+}
+
 static int _req_metrics(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, void *arg,
 			void *path_arg)
@@ -164,7 +251,11 @@ static int _req_metrics(http_con_t *hcon, const char *name,
 		"  '/metrics/partitions': get partition metrics\n"
 		"  '/metrics/jobs-users-accts': get user and account jobs metrics\n"
 		"  '/metrics/scheduler': get scheduler metrics\n";
+
 	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
 
 	if (_check_metrics_authorized(hcon, name, request, &rc) !=
 	    SLURM_SUCCESS)
@@ -264,6 +355,9 @@ extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
 	char *stats_str = NULL;
 	int rc = SLURM_SUCCESS;
 
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
 	if (_check_metrics_authorized(hcon, name, request, &rc) !=
 	    SLURM_SUCCESS)
 		return rc;
@@ -284,6 +378,9 @@ extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
 	nodes_stats_t *stats;
 	char *stats_str;
 	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
 
 	if (_check_metrics_authorized(hcon, name, request, &rc) !=
 	    SLURM_SUCCESS)
@@ -314,6 +411,9 @@ extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
 		.part = READ_LOCK,
 	};
 
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
 	if (_check_metrics_authorized(hcon, name, request, &rc) !=
 	    SLURM_SUCCESS)
 		return rc;
@@ -342,6 +442,9 @@ extern int _req_metrics_ua(http_con_t *hcon, const char *name,
 	char *stats_str;
 	int rc = SLURM_SUCCESS;
 
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
+
 	if (_check_metrics_authorized(hcon, name, request, &rc) !=
 	    SLURM_SUCCESS)
 		return rc;
@@ -364,6 +467,9 @@ extern int _req_metrics_sched(http_con_t *hcon, const char *name,
 	scheduling_stats_t *stats;
 	char *stats_str;
 	int rc = SLURM_SUCCESS;
+
+	if (_metrics_redirect_to_primary(hcon, request, &rc))
+		return rc;
 
 	if (_check_metrics_authorized(hcon, name, request, &rc) !=
 	    SLURM_SUCCESS)
