@@ -55,11 +55,9 @@
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "src/common/fd.h"
-#include "src/common/file_bcast.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -98,7 +96,6 @@
 
 #define THREAD_COUNT 3
 
-static struct termios termdefaults;
 static uint32_t global_rc = 0;
 static uint32_t mpi_plugin_rc = 0;
 static srun_job_t *job = NULL;
@@ -121,17 +118,12 @@ typedef struct _launch_app_data
 /*
  * forward declaration of static funcs
  */
-static void  _file_bcast(slurm_opt_t *opt_local, srun_job_t *job);
 static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
-static void  _pty_restore(void);
 static void  _set_exit_code(void);
 static void  _setup_env_working_cluster(void);
 static void _setup_job_env(srun_job_t *job, list_t *srun_job_list,
 			   bool got_alloc);
-static void  _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
-				bool got_alloc);
-static char *_uint16_array_to_str(int count, const uint16_t *array);
 
 /*
  * from libvirt-0.6.2 GPL2
@@ -641,139 +633,6 @@ static void _launch_app(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
 	}
 }
 
-static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
-			       bool got_alloc)
-{
-	env_t *env = xmalloc(sizeof(env_t));
-	srun_opt_t *srun_opt = opt_local->srun_opt;
-	xassert(srun_opt);
-
-	xassert(job);
-
-	env->localid = -1;
-	env->nodeid  = -1;
-	env->procid  = -1;
-	env->stepid  = -1;
-
-	if (srun_opt->bcast_flag)
-		_file_bcast(opt_local, job);
-	if (opt_local->cpus_set)
-		env->cpus_per_task = opt_local->cpus_per_task;
-	if (opt_local->ntasks_per_node != NO_VAL)
-		env->ntasks_per_node = opt_local->ntasks_per_node;
-	if (opt_local->ntasks_per_socket != NO_VAL)
-		env->ntasks_per_socket = opt_local->ntasks_per_socket;
-	if (opt_local->ntasks_per_core != NO_VAL)
-		env->ntasks_per_core = opt_local->ntasks_per_core;
-	if (opt_local->ntasks_per_tres != NO_VAL)
-		env->ntasks_per_tres = opt_local->ntasks_per_tres;
-	else if (opt_local->ntasks_per_gpu != NO_VAL)
-		env->ntasks_per_tres = opt_local->ntasks_per_gpu;
-	if (opt_local->threads_per_core != NO_VAL)
-		env->threads_per_core = opt_local->threads_per_core;
-	env->distribution = opt_local->distribution;
-	if (opt_local->plane_size != NO_VAL)
-		env->plane_size = opt_local->plane_size;
-	env->cpu_bind_type = srun_opt->cpu_bind_type;
-	env->cpu_bind = srun_opt->cpu_bind;
-
-	env->cpu_freq_min = opt_local->cpu_freq_min;
-	env->cpu_freq_max = opt_local->cpu_freq_max;
-	env->cpu_freq_gov = opt_local->cpu_freq_gov;
-	env->mem_bind_type = opt_local->mem_bind_type;
-	env->mem_bind = opt_local->mem_bind;
-	env->overcommit = opt_local->overcommit;
-	env->slurmd_debug = srun_opt->slurmd_debug;
-	env->labelio = srun_opt->labelio;
-	if (opt_local->job_name)
-		env->job_name = opt_local->job_name;
-
-	if (job->het_job_node_list)
-		env->nodelist = job->het_job_node_list;
-	else
-		env->nodelist = job->nodelist;
-	env->partition = job->partition;
-	if (job->het_job_nnodes != NO_VAL)
-		env->nhosts = job->het_job_nnodes;
-	else if (got_alloc)	/* Don't overwrite unless we got allocation */
-		env->nhosts = job->nhosts;
-	if (job->het_job_ntasks != NO_VAL)
-		env->ntasks = job->het_job_ntasks;
-	else
-		env->ntasks = job->ntasks;
-	env->task_count = _uint16_array_to_str(
-		job->nhosts, job->step_ctx->step_resp->step_layout->tasks);
-	if (job->het_job_id != NO_VAL)
-		env->jobid = job->het_job_id;
-	else
-		env->jobid = job->step_id.job_id;
-	env->stepid = job->step_id.step_id;
-	env->account = job->account;
-	env->qos = job->qos;
-	env->resv_name = job->resv_name;
-	env->uid = job->uid;
-	env->user_name = xstrdup(job->user_name);
-	env->gid = job->gid;
-	env->group_name = xstrdup(job->group_name);
-	env->oom_kill_step = opt_local->oom_kill_step;
-
-	if (srun_opt->pty) {
-		job->input_fd = STDIN_FILENO;
-
-		if (srun_opt->pty[0]) {
-			/* srun passed FD to use for pty */
-			if (!isdigit(srun_opt->pty[0])) {
-				fatal("--pty=%s must be numeric file descriptor",
-				      srun_opt->pty);
-			}
-
-			job->input_fd = atoi(srun_opt->pty);
-		}
-
-		if (set_winsize(job->input_fd, job)) {
-			error("Not using a pseudo-terminal, disregarding --pty%s%s option",
-			      (srun_opt->pty[0] ? "=" : ""),
-			      (srun_opt->pty[0] ? srun_opt->pty : ""));
-			xfree(srun_opt->pty);
-		} else {
-			/* Save terminal settings for restore */
-			tcgetattr(job->input_fd, &termdefaults);
-			atexit(&_pty_restore);
-
-			pty_thread_create(job);
-			env->pty_port = job->pty_port;
-			env->ws_col = job->ws_col;
-			env->ws_row = job->ws_row;
-		}
-	}
-
-	setup_env(env, srun_opt->preserve_env);
-	/*
-	 * set_env_from_opts() could set job->env vars that are already set in
-	 * environ, but the values could be different (srun requests something
-	 * that is different from the job's environment) and we want the
-	 * job->env to take precedence.
-	 *
-	 * env_array_merge() overwrites anything in dest (the first argument)
-	 * with anything in source (the second argument). Thus, anything in
-	 * environ would overwrite anything already in job->env. The environ
-	 * vars could differ from vars in job->env, and at this point job->env
-	 * is the correct one.
-	 *
-	 * So, we need to first set the env vars from job->env to the environ,
-	 * then do the merge.
-	 */
-	set_env_from_opts(opt_local, &job->env,
-			  (job->het_job_offset == NO_VAL) ?
-			  -1 : job->het_job_offset);
-	env_array_set_environment(job->env);
-	env_array_merge(&job->env, (const char **)environ);
-
-	xfree(env->task_count);
-	xfree(env->user_name);
-	xfree(env);
-}
-
 static void _setup_job_env(srun_job_t *job, list_t *srun_job_list, bool got_alloc)
 {
 	list_itr_t *opt_iter, *job_iter;
@@ -800,123 +659,15 @@ static void _setup_job_env(srun_job_t *job, list_t *srun_job_list, bool got_allo
 				      __func__, list_count(srun_job_list),
 				      list_count(opt_list));
 			}
-			_setup_one_job_env(opt_local, job, got_alloc);
+			setup_one_job_env(opt_local, job, got_alloc);
 		}
 		list_iterator_destroy(job_iter);
 		list_iterator_destroy(opt_iter);
 	} else if (job) {
-		_setup_one_job_env(&opt, job, got_alloc);
+		setup_one_job_env(&opt, job, got_alloc);
 	} else {
 		fatal("%s: No job information", __func__);
 	}
-}
-
-static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
-{
-	srun_opt_t *srun_opt = opt_local->srun_opt;
-	struct bcast_parameters *params;
-	char *tmp = NULL;
-	xassert(srun_opt);
-
-	if ((opt_local->argc == 0) || (opt_local->argv[0] == NULL))
-		fatal("No command name to broadcast");
-
-	params = xmalloc(sizeof(struct bcast_parameters));
-	params->block_size = 8 * 1024 * 1024;
-	if (srun_opt->compress) {
-		params->compress = srun_opt->compress;
-	} else if ((tmp = conf_get_opt_str(slurm_conf.bcast_parameters,
-					   "Compression="))) {
-		params->compress = parse_compress_type(tmp);
-		xfree(tmp);
-	}
-	params->exclude = xstrdup(srun_opt->bcast_exclude);
-	if (srun_opt->bcast_file && (srun_opt->bcast_file[0] == '/')) {
-		params->dst_fname = xstrdup(srun_opt->bcast_file);
-	} else if ((params->dst_fname =
-		    conf_get_opt_str(slurm_conf.bcast_parameters,
-				     "DestDir="))) {
-		xstrcatchar(params->dst_fname, '/');
-	} else {
-		xstrfmtcat(params->dst_fname, "%s/", opt_local->chdir);
-	}
-	if (srun_opt->send_libs)
-		params->flags |= BCAST_FLAG_SEND_LIBS;
-	params->tree_width = 0;
-	params->selected_step = xmalloc(sizeof(*params->selected_step));
-	params->selected_step->array_task_id = NO_VAL;
-	memcpy(&params->selected_step->step_id, &job->step_id,
-	       sizeof(params->selected_step->step_id));
-	params->flags |= BCAST_FLAG_FORCE;
-	if (srun_opt->het_grp_bits)
-		params->selected_step->het_job_offset =
-			bit_ffs(srun_opt->het_grp_bits);
-	else
-		params->selected_step->het_job_offset = NO_VAL;
-	params->flags |= BCAST_FLAG_PRESERVE;
-	params->src_fname = xstrdup(opt_local->argv[0]);
-	params->timeout = 0;
-	params->verbose = opt_local->verbose;
-
-	if (bcast_file(params) != SLURM_SUCCESS)
-		fatal("Failed to broadcast '%s'. Step launch aborted.",
-		      params->src_fname);
-
-	/*
-	 * Defer setting argv[0] to dst_fname till later point in
-	 * _launch_one_app(). Use bcast_file member as value placeholder.
-	 */
-	xfree(srun_opt->bcast_file);
-	srun_opt->bcast_file = xstrdup(params->dst_fname);
-
-	slurm_destroy_selected_step(params->selected_step);
-	xfree(params->dst_fname);
-	xfree(params->exclude);
-	xfree(params->src_fname);
-	xfree(params);
-}
-
-/*
- * Return a string representation of an array of uint32_t elements.
- * Each value in the array is printed in decimal notation and elements
- * are separated by a comma.  If sequential elements in the array
- * contain the same value, the value is written out just once followed
- * by "(xN)", where "N" is the number of times the value is repeated.
- *
- * Example:
- *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
- *
- * Returns an xmalloc'ed string.  Free with xfree().
- */
-static char *_uint16_array_to_str(int array_len, const uint16_t *array)
-{
-	int i;
-	int previous = 0;
-	char *sep = ",";  /* separator */
-	char *str = xstrdup("");
-
-	if (array == NULL)
-		return str;
-
-	for (i = 0; i < array_len; i++) {
-		if ((i+1 < array_len)
-		    && (array[i] == array[i+1])) {
-				previous++;
-				continue;
-		}
-
-		if (i == array_len-1) /* last time through loop */
-			sep = "";
-		if (previous > 0) {
-			xstrfmtcat(str, "%u(x%u)%s",
-				   array[i], previous+1, sep);
-		} else {
-			xstrfmtcat(str, "%u%s", array[i], sep);
-		}
-		previous = 0;
-	}
-
-	return str;
 }
 
 static void _set_exit_code(void)
@@ -939,13 +690,6 @@ static void _set_exit_code(void)
 		else
 			immediate_exit = i;
 	}
-}
-
-static void _pty_restore(void)
-{
-	/* STDIN is probably closed by now */
-	if (tcsetattr(STDOUT_FILENO, TCSANOW, &termdefaults) < 0)
-		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
 }
 
 static void _setup_env_working_cluster(void)

@@ -178,4 +178,7 @@ extern void job_update_io_fnames(srun_job_t *job, slurm_opt_t *opt_local);
 /* Set up port to handle messages from slurmctld */
 int slurmctld_msg_init(void);
 
+extern void setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
+			      bool got_alloc);
+
 #endif /* !_HAVE_JOB_H */
