@@ -490,7 +490,6 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
-	srun_info_t  *srun = NULL;
 	char *in_name;
 
 	xassert(msg != NULL);
@@ -595,10 +594,6 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	get_cred_gres(msg->cred, conf->node_name,
 		      &step->job_gres_list, &step->step_gres_list);
-
-	srun = _srun_info_create(NULL, NULL, NULL, NULL, step->uid, NO_VAL16);
-
-	list_append(step->sruns, (void *) srun);
 
 	if (msg->argc) {
 		step->argc    = msg->argc;
