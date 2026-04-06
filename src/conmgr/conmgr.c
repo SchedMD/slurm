@@ -211,16 +211,7 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 		 },
 		 0, __func__);
 
-	if (timespec_is_zero(mgr.timeouts.write_complete))
-		mgr.timeouts.write_complete.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.read))
-		mgr.timeouts.read.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.write))
-		mgr.timeouts.write.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.connect))
-		mgr.timeouts.connect.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.quiesce))
-		mgr.timeouts.quiesce.tv_sec = (2 * slurm_conf.msg_timeout);
+	conmgr_timeouts_init_default(&mgr.timeouts);
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
