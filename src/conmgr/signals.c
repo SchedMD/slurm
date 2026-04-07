@@ -272,6 +272,8 @@ static int _on_data(conmgr_callback_args_t conmgr_args, void *arg)
 static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	signal_handler_t *handlers = NULL;
+	work_t **cancel_work = NULL;
+	int cancel_work_count = 0;
 	int signal_fd_close = -1, count = 0;
 	int fd;
 
@@ -297,6 +299,15 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	SWAP(signal_handler_count, count);
 	SWAP(signal_handlers, handlers);
 
+	/*
+	 * Detach pending signal work under the lock so cancellation can run
+	 * outside. handle_work() takes mgr.mutex, and the rest of this file
+	 * uses mgr.mutex -> signals.lock; calling handle_work() under
+	 * signals.lock would invert the order against the watch thread.
+	 */
+	SWAP(signal_work_count, cancel_work_count);
+	SWAP(signal_work, cancel_work);
+
 	for (int i = 0; i < signal_handler_count; i++) {
 		signal_handler_t *handler = &handlers[signal_handler_count];
 
@@ -315,23 +326,21 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 
 	xfree(handlers);
 
-	for (int i = 0; i < signal_work_count; i++) {
-		work_t *work = NULL;
-
-		SWAP(signal_work[i], work);
-		xassert(work->magic == MAGIC_WORK);
-
-		work->status = CONMGR_WORK_STATUS_CANCELLED;
-		handle_work(true, work);
-	}
-
-	xfree(signal_work);
-	signal_work_count = 0;
-
 	log_flag(CONMGR, "%s: [%s] closed signal pipe",
 			 __func__, conmgr_con_get_name(conmgr_args.ref));
 
 	slurm_rwlock_unlock(&lock);
+
+	for (int i = 0; i < cancel_work_count; i++) {
+		work_t *work = cancel_work[i];
+
+		xassert(work->magic == MAGIC_WORK);
+
+		work->status = CONMGR_WORK_STATUS_CANCELLED;
+		handle_work(false, work);
+	}
+
+	xfree(cancel_work);
 }
 
 static void _atfork_child(void)
