@@ -6089,6 +6089,104 @@ extern void gres_job_clear_alloc(gres_job_state_t *gres_js)
 	gres_js->node_cnt = 0;
 }
 
+/*
+ * Remap a pointer array from old node indices to new ones.
+ * Orphaned elements (old index maps to -1 or out of range) are freed
+ * via elem_free; pass NULL to simply discard orphaned values.
+ */
+static void _remap_ptr_array(void ***arr_ptr, int *old_to_new, uint32_t limit,
+			     uint32_t new_cnt, void (*elem_free)(void *))
+{
+	void **old_arr = *arr_ptr;
+	void **new_arr = xcalloc(new_cnt, sizeof(void *));
+
+	for (uint32_t i = 0; i < limit; i++) {
+		if (!old_arr[i])
+			continue;
+		if ((old_to_new[i] >= 0) && (old_to_new[i] < (int) new_cnt))
+			new_arr[old_to_new[i]] = old_arr[i];
+		else if (elem_free)
+			elem_free(old_arr[i]);
+		old_arr[i] = NULL;
+	}
+	xfree(*arr_ptr);
+	*arr_ptr = new_arr;
+}
+
+/*
+ * Remap a uint64_t value array from old node indices to new ones.
+ * Orphaned entries (old index maps to -1 or out of range) are dropped.
+ */
+static void _remap_uint64_t_array(uint64_t **arr_ptr, int *old_to_new,
+				  uint32_t limit, uint32_t new_cnt)
+{
+	uint64_t *old_arr = *arr_ptr;
+	uint64_t *new_arr = xcalloc(new_cnt, sizeof(uint64_t));
+
+	for (uint32_t i = 0; i < limit; i++) {
+		if ((old_to_new[i] >= 0) && (old_to_new[i] < (int) new_cnt))
+			new_arr[old_to_new[i]] = old_arr[i];
+	}
+	xfree(*arr_ptr);
+	*arr_ptr = new_arr;
+}
+
+static int _foreach_resv_gres_remap(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	gres_job_state_t *gres_js;
+	uint32_t new_cnt = node_record_count;
+	uint32_t limit;
+
+	if (!gres_state_job)
+		return 0;
+	gres_js = gres_state_job->gres_data;
+	if (!gres_js || !gres_js->node_cnt)
+		return 0;
+
+	log_flag(GRES, "%s: remapping %s:%s node_cnt %u -> %u",
+		 __func__,
+		 gres_state_job->gres_name ? gres_state_job->gres_name : "?",
+		 (gres_js->type_name && gres_js->type_name[0]) ?
+			 gres_js->type_name : "(typeless)",
+		 gres_js->node_cnt, new_cnt);
+
+	limit = MIN(gres_js->node_cnt, old_node_record_count);
+
+	if (gres_js->gres_bit_alloc)
+		_remap_ptr_array((void ***) &gres_js->gres_bit_alloc,
+				 node_old_to_new_map, limit, new_cnt,
+				 bit_free_ptr);
+	if (gres_js->gres_cnt_node_alloc)
+		_remap_uint64_t_array(&gres_js->gres_cnt_node_alloc,
+				      node_old_to_new_map, limit, new_cnt);
+	if (gres_js->gres_per_bit_alloc)
+		_remap_ptr_array((void ***) &gres_js->gres_per_bit_alloc,
+				 node_old_to_new_map, limit, new_cnt,
+				 xfree_ptr);
+
+	gres_js->node_cnt = new_cnt;
+	return 0;
+}
+
+extern void gres_resv_list_remap_global_indices(list_t *gres_list)
+{
+	xassert(gres_list);
+	xassert(node_record_count);
+	xassert(node_old_to_new_map);
+	xassert(old_node_record_count);
+
+	if (!gres_list || !node_record_count || !node_old_to_new_map ||
+	    !old_node_record_count) {
+		error("%s: called with invalid state (gres_list=%p node_record_count=%d map=%p old_cnt=%u)",
+		      __func__, gres_list, node_record_count,
+		      node_old_to_new_map, old_node_record_count);
+		return;
+	}
+
+	(void) list_for_each(gres_list, _foreach_resv_gres_remap, NULL);
+}
+
 extern void gres_job_list_delete(void *list_element)
 {
 	gres_state_t *gres_state_job;
