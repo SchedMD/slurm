@@ -632,6 +632,70 @@ def run_command_exit(command, **run_command_kwargs):
     return results["exit_code"]
 
 
+def timer(
+    timeout=default_polling_timeout,
+    poll_interval=None,
+    fatal=False,
+    xfail=False,
+):
+    """A timer to do-while a timeout is not triggered.
+
+    Iterates in a loop, sleeping between iterations, until the caller breaks
+    or the timeout is reached.
+
+    Args:
+        timeout (float): Maximum time in seconds to wait (default:
+            default_polling_timeout).
+        poll_interval (float): Seconds between iterations. Defaults to
+            timeout / 10.0
+        fatal (bool): If True, call pytest.fail() on timeout. Otherwise the
+            caller should use the for-else to detect the timeout.
+        xfail (bool): If True, a timeout is expected.
+
+    Example:
+        >>> running = False
+        >>> for t in atf.timer(timeout=60, fatal=False):
+        ...     if get_job_state(job_id) == 'RUNNING':
+        ...         running = True
+        ...         break
+        ... else:
+        ...     logging.warning("Job was not RUNNING before the timeout.")
+        ... assert running, "Job should be running"
+    """
+
+    if poll_interval is None:
+        poll_interval = timeout / 10.0
+
+    _not = " not" if not xfail else ""
+    message = f"Timer should{_not} timeout"
+
+    start = time.time()
+    remaining_time = timeout
+    while True:
+
+        # Run the caller loop (at least once, like a do-while)
+        yield remaining_time
+
+        # Check for timeout
+        remaining_time = timeout - (time.time() - start)
+        if remaining_time <= 0:
+            msg = message + " (timeout)"
+
+            if not xfail:
+                if fatal:
+                    pytest.fail(msg)
+
+                logging.warning(msg)
+            else:
+                logging.debug(msg)
+
+            return
+
+        # Wait for the next attempt
+        logging.debug(message + f", remaining time: {remaining_time:.0f}s")
+        time.sleep(poll_interval)
+
+
 def repeat_until(
     callable,
     condition,
