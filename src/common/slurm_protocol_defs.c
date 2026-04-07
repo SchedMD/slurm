@@ -1220,6 +1220,15 @@ extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst)
 
 	xassert(dst && !*dst);
 
+	if (id->step_id.sluid &&
+	    ((id->step_id.job_id == NO_VAL) || !id->step_id.job_id)) {
+		char sluid_str[SLUID_STR_BYTES];
+		print_sluid(id->step_id.sluid, sluid_str, sizeof(sluid_str));
+		xstrfmtcatat(str, &pos, "%s", sluid_str);
+		*dst = str;
+		return SLURM_SUCCESS;
+	}
+
 	if (id->step_id.job_id == NO_VAL) {
 		rc = ESLURM_EMPTY_JOB_ID;
 		goto cleanup;
