@@ -1274,8 +1274,6 @@ typedef struct {
 	uint16_t rpc_version;
 } accounting_update_msg_t;
 
-typedef slurm_conf_t slurm_ctl_conf_info_msg_t;
-
 /*****************************************************************************\
  *      Container RPCs
 \*****************************************************************************/
