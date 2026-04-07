@@ -1200,7 +1200,11 @@ value. Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both
 .TP
 \fBMinMemoryNode\fR=<\fImegabytes\fR>
 Set the job's minimum real memory required per node to the specified value.
-Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
+For running jobs, only reduction is allowed. If the job was submitted with
+\fB\-\-mem\-per\-cpu\fR, the new per\-node limit replaces the per\-CPU limit
+(compared against the highest per\-node allocation across all nodes).
+Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both
+(for pending jobs).
 .IP
 
 .TP
