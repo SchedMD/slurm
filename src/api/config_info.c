@@ -103,9 +103,9 @@ _reset_period_str(uint16_t reset_period)
  * IN node_info_ptr - pointer to node table of information
  * IN part_info_ptr - pointer to partition information
  */
-void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
-			    node_info_msg_t * node_info_ptr,
-			    partition_info_msg_t * part_info_ptr)
+void slurm_write_ctl_conf(slurm_conf_t *slurm_ctl_conf_ptr,
+			  node_info_msg_t *node_info_ptr,
+			  partition_info_msg_t *part_info_ptr)
 {
 	int i = 0;
 	char time_str[256];
@@ -472,8 +472,7 @@ static void _print_config_plugin_params_list(FILE *out, list_t *l, char *title)
  * IN out - file to write to
  * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
-void slurm_print_ctl_conf ( FILE* out,
-			    slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
+void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_ctl_conf_ptr)
 {
 	char time_str[32], tmp_str[256];
 	void *ret_list = NULL;
@@ -1277,7 +1276,7 @@ int slurm_load_ctl_conf(time_t update_time, slurm_conf_t **confp)
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_BUILD_INFO:
-		*confp = (slurm_ctl_conf_info_msg_t *) resp_msg.data;
+		*confp = (slurm_conf_t *) resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

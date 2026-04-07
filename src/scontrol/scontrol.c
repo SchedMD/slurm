@@ -88,7 +88,7 @@ job_info_msg_t *old_job_info_ptr = NULL;
 node_info_msg_t *old_node_info_ptr = NULL;
 partition_info_msg_t *old_part_info_ptr = NULL;
 reserve_info_msg_t *old_res_info_ptr = NULL;
-slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
+slurm_conf_t *old_slurm_ctl_conf_ptr = NULL;
 
 static void	_create_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
@@ -461,7 +461,7 @@ static void _write_config(char *file_name)
 	int error_code;
 	node_info_msg_t *node_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	slurm_conf_t *slurm_ctl_conf_ptr = NULL;
 
 	/* slurm config loading code copied from _print_config() */
 
@@ -529,7 +529,7 @@ static void _write_config(char *file_name)
 static void _print_config(char *config_param, int argc, char **argv)
 {
 	int error_code;
-	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	slurm_conf_t *slurm_ctl_conf_ptr = NULL;
 
 	/*
 	 * There isn't a parser for slurm.conf but there is one for ping, which
@@ -632,7 +632,7 @@ static void _print_ping(int argc, char **argv)
 static void
 _print_daemons (void)
 {
-	slurm_ctl_conf_info_msg_t *conf;
+	slurm_conf_t *conf;
 	char node_name_short[HOST_NAME_MAX];
 	char node_name_long[HOST_NAME_MAX];
 	char *c, *n, *token, *save_ptr = NULL;
@@ -1469,7 +1469,7 @@ static int _process_command (int argc, char **argv)
 		}
 	} else if (!xstrncasecmp(tag, "takeover", MAX(tag_len, 8))) {
 		int backup_inx = 1, control_cnt;
-		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+		slurm_conf_t *slurm_ctl_conf_ptr = NULL;
 
 		slurm_ctl_conf_ptr = slurm_conf_lock();
 		control_cnt = slurm_ctl_conf_ptr->control_cnt;

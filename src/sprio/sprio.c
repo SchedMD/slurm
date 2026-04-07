@@ -81,7 +81,7 @@ int main (int argc, char **argv)
 	}
 
 	if (working_cluster_rec) {
-		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr;
+		slurm_conf_t *slurm_ctl_conf_ptr;
 
 		error_code = slurm_load_ctl_conf((time_t) NULL,
 						  &slurm_ctl_conf_ptr);

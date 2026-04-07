@@ -4285,7 +4285,7 @@ unpack_error:
 
 static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
-	slurm_ctl_conf_info_msg_t *msg = smsg->data;
+	slurm_conf_t *msg = smsg->data;
 
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		pack_time(msg->last_update, buffer);
@@ -5342,7 +5342,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
-	slurm_ctl_conf_info_msg_t *build_ptr = xmalloc(sizeof(*build_ptr));
+	slurm_conf_t *build_ptr = xmalloc(sizeof(*build_ptr));
 
 	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */

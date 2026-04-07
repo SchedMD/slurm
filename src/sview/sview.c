@@ -90,7 +90,7 @@ node_info_msg_t *g_node_info_ptr = NULL;
 partition_info_msg_t *g_part_info_ptr = NULL;
 reserve_info_msg_t *g_resv_info_ptr = NULL;
 burst_buffer_info_msg_t *g_bb_info_ptr = NULL;
-slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
+slurm_conf_t *g_ctl_info_ptr = NULL;
 job_step_info_response_msg_t *g_step_info_ptr = NULL;
 topo_info_response_msg_t *g_topo_info_msg_ptr = NULL;
 int g_switch_nodes_maps_count = 0;
@@ -426,7 +426,7 @@ static void _reconfigure(GtkToggleAction *action)
 static void _get_current_debug(GtkRadioAction *action)
 {
 	static int debug_level = 0;
-	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	static slurm_conf_t *slurm_ctl_conf_ptr = NULL;
 	static GtkAction *debug_action = NULL;
 	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
 
@@ -447,7 +447,7 @@ static void _get_current_debug(GtkRadioAction *action)
 static void _get_current_debug_flags(GtkToggleAction *action)
 {
 	static uint64_t debug_flags = 0, tmp_flags;
-	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	static slurm_conf_t *slurm_ctl_conf_ptr = NULL;
 	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
 	GtkAction *debug_action = NULL;
 	GtkToggleAction *toggle_action;

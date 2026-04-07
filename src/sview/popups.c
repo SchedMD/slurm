@@ -238,7 +238,7 @@ static void _gtk_print_config_plugin_params_list(list_t *l, char *title,
 }
 
 static void _layout_conf_ctl(GtkTreeStore *treestore,
-			     slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr)
+			     slurm_conf_t *slurm_ctl_conf_ptr)
 {
 	char time_str[256], tmp_str[300];
 	GtkTreeIter iter;
@@ -370,7 +370,7 @@ extern void create_config_popup(GtkAction *action, gpointer user_data)
 		NULL);
 	GtkTreeStore *treestore =
 		_local_create_treestore_2cols(popup, 600, 400);
-	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	static slurm_conf_t *slurm_ctl_conf_ptr = NULL;
 
 	gtk_window_set_type_hint(GTK_WINDOW(popup),
 				 GDK_WINDOW_TYPE_HINT_NORMAL);
