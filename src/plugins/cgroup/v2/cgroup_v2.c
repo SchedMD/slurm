@@ -1294,10 +1294,20 @@ static int _reparent_into_cgroup(char *new_path, char *name)
 {
 	char *new_home = NULL;
 	pid_t slurmd_pid = getpid();
+	xcgroup_t original_cg = { 0 };
+	original_cg.path = int_cg[CG_LEVEL_ROOT].path;
+
+	/*
+	 * If we are already inside /name, do not attempt to move ourselves
+	 * again. This is useful in reconfigure situations.
+	 */
+	if (!xstrcmp(xbasename(original_cg.path), name))
+		return SLURM_SUCCESS;
 
 	xstrfmtcat(new_home, "%s/%s", new_path, name);
 	bit_clear_all(int_cg_ns.avail_controllers);
 	xfree(int_cg_ns.mnt_point);
+	int_cg[CG_LEVEL_ROOT].path = NULL;
 	common_cgroup_destroy(&int_cg[CG_LEVEL_ROOT]);
 
 	int_cg_ns.mnt_point = new_home;
@@ -1305,13 +1315,13 @@ static int _reparent_into_cgroup(char *new_path, char *name)
 	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_ROOT], "",
 				 (uid_t) 0, (gid_t) 0) != SLURM_SUCCESS) {
 		error("unable to create root cgroup");
-		return SLURM_ERROR;
+		goto error;
 	}
 
 	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_ROOT]) !=
 	    SLURM_SUCCESS) {
 		error("Unable to instantiate slurmd %s cgroup", new_home);
-		return SLURM_ERROR;
+		goto error;
 	}
 	log_flag(CGROUP, "Created %s", new_home);
 
@@ -1325,21 +1335,31 @@ static int _reparent_into_cgroup(char *new_path, char *name)
 	    SLURM_SUCCESS) {
 		error("Unable to attach slurmd pid %d to %s cgroup.",
 		      slurmd_pid, new_home);
-		return SLURM_ERROR;
+		goto error;
+	}
+
+	if (!common_cgroup_wait_pid_moved(&original_cg, slurmd_pid,
+					  original_cg.path)) {
+		error("Timeout waiting for pid %d to leave %s", slurmd_pid,
+		      original_cg.path);
+		goto error;
 	}
 
 	if (_get_controllers(new_path, int_cg_ns.avail_controllers) !=
 	    SLURM_SUCCESS)
-		return SLURM_ERROR;
+		goto error;
 
 	if (_enable_subtree_control(new_path, int_cg_ns.avail_controllers) !=
 	    SLURM_SUCCESS) {
 		error("Cannot enable subtree_control at the top level %s",
 		      int_cg_ns.mnt_point);
-		return SLURM_ERROR;
+		goto error;
 	}
-
+	common_cgroup_destroy(&original_cg);
 	return SLURM_SUCCESS;
+error:
+	common_cgroup_destroy(&original_cg);
+	return SLURM_ERROR;
 }
 
 static void _get_memory_events(uint64_t *job_kills, uint64_t *step_kills)
