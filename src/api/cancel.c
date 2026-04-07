@@ -89,15 +89,16 @@ static int _slurm_kill_job_internal(uint32_t job_id,
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - the step_id containing the job id to kill
  * IN signal     - signal number
  * IN flags      - see KILL_JOB_* flags in slurm.h
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int
-slurm_kill_job (uint32_t job_id, uint16_t signal, uint16_t flags)
+extern int (slurm_kill_job)(slurm_step_id_t step_id, uint16_t signal,
+			    uint16_t flags)
 {
-	return _slurm_kill_job_internal(job_id, NULL, NULL, signal, flags);
+	return _slurm_kill_job_internal(step_id.job_id, NULL, NULL, signal,
+					flags);
 }
 
 extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,

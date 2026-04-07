@@ -64,7 +64,11 @@ int main(int argc, char **argv)
 	slurm_list_iterator_destroy(itr);
 	slurm_job_step_pids_response_msg_free(resp);
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(26, 5, 0)
+	rc = slurm_load_job(&job_info_msg, step_id, SHOW_ALL);
+#else /* Ticket 13506 (!3137): Change API to accept slurm_step_id_t */
 	rc = slurm_load_job(&job_info_msg, step_id.job_id, SHOW_ALL);
+#endif
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("slurm_load_job");
 		exit(1);

@@ -846,7 +846,7 @@ static int _kill_job(conmgr_fd_t *con, int signal)
 	unlock_state();
 
 	if ((step_id.job_id != NO_VAL) && (status <= CONTAINER_ST_STOPPING)) {
-		rc = slurm_kill_job(step_id.job_id, signal, KILL_FULL_JOB);
+		rc = slurm_kill_job(step_id, signal, KILL_FULL_JOB);
 
 		debug("%s: [%s] slurm_kill_job(%pI, Signal[%d]=%s, 0) = %s",
 		      __func__, (con ? conmgr_fd_get_name(con) : "self"),

@@ -198,25 +198,24 @@ static int _terminate_job_step(const job_step_info_t *step)
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - the step_id related to the job to signal
  * IN signal     - signal number
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int
-slurm_signal_job (uint32_t job_id, uint16_t signal)
+extern int (slurm_signal_job)(slurm_step_id_t step_id, uint16_t signal)
 {
 	int rc = SLURM_SUCCESS;
 	resource_allocation_response_msg_t *alloc_info = NULL;
 	signal_tasks_msg_t rpc;
 
-	if (slurm_allocation_lookup(job_id, &alloc_info)) {
+	if (slurm_allocation_lookup(step_id, &alloc_info)) {
 		rc = errno;
 		goto fail1;
 	}
 
 	/* same remote procedure call for each node */
 	memset(&rpc, 0, sizeof(rpc));
-	rpc.step_id.job_id = job_id;
+	rpc.step_id = step_id;
 	rpc.step_id.step_id = NO_VAL;
 	rpc.step_id.step_het_comp = NO_VAL;
 	rpc.signal = signal;
@@ -246,7 +245,7 @@ extern int slurm_signal_job_step(slurm_step_id_t *step_id, uint32_t signal)
 	 */
 	if (step_id->step_id == SLURM_BATCH_SCRIPT) {
 		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(step_id->job_id, &alloc_info))
+		if (slurm_allocation_lookup(*step_id, &alloc_info))
 			return -1;
 
 		rc = _signal_batch_script_step(alloc_info, signal);
@@ -301,7 +300,7 @@ extern int slurm_terminate_job_step(slurm_step_id_t *step_id)
 	 */
 	if (step_id->step_id == SLURM_BATCH_SCRIPT) {
 		resource_allocation_response_msg_t *alloc_info = NULL;
-		if (slurm_allocation_lookup(step_id->job_id, &alloc_info))
+		if (slurm_allocation_lookup(*step_id, &alloc_info))
 			return -1;
 
 		rc = _terminate_batch_script_step(alloc_info);
@@ -336,11 +335,11 @@ fail:
 /*
  * slurm_notify_job - send message to the job's stdout,
  *	usable only by user root
- * IN job_id - slurm job_id or 0 for all jobs
+ * IN step_id - step identifier, .sluid and .job_id 0 for all jobs
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job (uint32_t job_id, char *message)
+extern int (slurm_notify_job)(slurm_step_id_t step_id, char *message)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -351,9 +350,7 @@ extern int slurm_notify_job (uint32_t job_id, char *message)
 	 * Request message:
 	 */
 	memset(&req, 0, sizeof(req));
-	req.step_id.job_id = job_id;
-	req.step_id.step_id = NO_VAL;	/* currently not used */
-	req.step_id.step_het_comp = NO_VAL;	/* currently not used */
+	req.step_id = step_id;
 	req.message     = message;
 	msg.msg_type    = REQUEST_JOB_NOTIFY;
 	msg.data        = &req;

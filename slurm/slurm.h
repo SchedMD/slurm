@@ -3615,25 +3615,25 @@ extern list_t *slurm_allocate_het_job_blocking(
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource
  *			     allocation
- * IN job_id - job allocation identifier
+ * IN step_id - step identifier
  * OUT resp - job allocation information
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-extern int slurm_allocation_lookup(uint32_t job_id,
+extern int slurm_allocation_lookup(slurm_step_id_t step_id,
 				   resource_allocation_response_msg_t **resp);
 
 /*
  * slurm_het_job_lookup - retrieve info for an existing heterogeneous job
  * 			   allocation without the addrs and such
- * IN jobid - job allocation identifier
+ * IN step_id - slurm step identifier
  * OUT resp - list of job allocation information, type
  *	      resource_allocation_response_msg_t
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: returns information an individual job as well
  * NOTE: free the response using list_destroy()
  */
-extern int slurm_het_job_lookup(uint32_t jobid, list_t **resp);
+extern int slurm_het_job_lookup(slurm_step_id_t step_id, list_t **resp);
 
 /*
  * slurm_read_hostfile - Read a Slurm hostfile specified by "filename".
@@ -3702,10 +3702,12 @@ extern int slurm_submit_batch_het_job(list_t *job_req_list,
 extern void slurm_free_submit_response_response_msg(submit_response_msg_t *msg);
 
 /*
- * slurm_job_batch_script - retrieve the batch script for a given jobid
+ * slurm_job_batch_script - retrieve the batch script for a given job
+ * IN out - file to write batch script to
+ * IN step_id - slurm step identifier
  * returns SLURM_SUCCESS, or appropriate error code
  */
-extern int slurm_job_batch_script(FILE *out, uint32_t jobid);
+extern int slurm_job_batch_script(FILE *out, slurm_step_id_t step_id);
 
 /*
  * slurm_job_will_run - determine if a job would execute immediately if
@@ -3860,12 +3862,13 @@ typedef struct {
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - step identifier
  * IN signal     - signal number
  * IN flags      - see KILL_JOB_* flags above
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_kill_job(uint32_t job_id, uint16_t signal, uint16_t flags);
+extern int slurm_kill_job(slurm_step_id_t step_id, uint16_t signal,
+			  uint16_t flags);
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step
@@ -3898,11 +3901,11 @@ extern int slurm_kill_jobs(kill_jobs_msg_t *kill_msg,
 
 /*
  * slurm_signal_job - send the specified signal to all steps of an existing job
- * IN job_id     - the job's id
+ * IN step_id    - step identifier
  * IN signal     - signal number
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_signal_job(uint32_t job_id, uint16_t signal);
+extern int slurm_signal_job(slurm_step_id_t step_id, uint16_t signal);
 
 /*
  * slurm_signal_job_step - send the specified signal to an existing job step
@@ -4140,11 +4143,11 @@ extern void slurm_free_priority_factors_response_msg(
 
 /*
  * slurm_get_end_time - get the expected end time for a given slurm job
- * IN jobid     - slurm job id
- * end_time_ptr - location in which to store scheduled end time for job
+ * IN step_id - slurm step identifier
+ * OUT end_time_ptr - location in which to store scheduled end time for job
  * RET 0 or -1 on error
  */
-extern int slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr);
+extern int slurm_get_end_time(slurm_step_id_t step_id, time_t *end_time_ptr);
 
 /* Given a job record pointer, return its stderr path */
 extern void slurm_get_job_stderr(char *buf, int buf_size, job_info_t *job_ptr);
@@ -4163,32 +4166,31 @@ extern char *slurm_expand_job_stdio_fields(char *path, job_info_t *job);
 
 /*
  * slurm_get_rem_time - get the expected time remaining for a given job
- * IN jobid     - slurm job id
+ * IN step_id - slurm step identifier
  * RET remaining time in seconds or -1 on error
  */
-extern long slurm_get_rem_time(uint32_t jobid);
+extern long slurm_get_rem_time(slurm_step_id_t step_id);
 
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
- * IN job_id - slurm job id
+ * IN step_id - step identifier
  * RET: READY_* values defined above
  */
-extern int slurm_job_node_ready(uint32_t job_id);
+extern int slurm_job_node_ready(slurm_step_id_t step_id);
 
 /*
  * slurm_load_job - issue RPC to get job information for one job ID
  * IN job_info_msg_pptr - place to store a job configuration pointer
- * IN job_id -  ID of job we want information about
+ * IN step_id - step identifier
  * IN show_flags - job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int slurm_load_job(job_info_msg_t **resp,
-			  uint32_t job_id,
+extern int slurm_load_job(job_info_msg_t **resp, slurm_step_id_t step_id,
 			  uint16_t show_flags);
 
-extern int slurm_load_job_sluid(job_info_msg_t **resp, sluid_t sluid,
-				uint16_t show_flags);
+#define slurm_load_job_sluid(resp, _sluid, show_flags) \
+slurm_load_job((resp), ((slurm_step_id_t) { .sluid = (_sluid) }), (show_flags))
 
 /*
  * slurm_load_job_prio - issue RPC to get job priority information for jobs
@@ -4242,20 +4244,20 @@ extern int slurm_load_job_state(int job_id_count,
 /*
  * slurm_notify_job - send message to the job's stdout,
  *	usable only by user root
- * IN job_id - slurm job_id or 0 for all jobs
+ * IN step_id - step identifier, .sluid and .job_id 0 for all jobs
  * IN message - arbitrary message
  * RET 0 or -1 on error
  */
-extern int slurm_notify_job(uint32_t job_id, char *message);
+extern int slurm_notify_job(slurm_step_id_t step_id, char *message);
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
  *	on this machine
  * IN job_pid - process_id of interest on this machine
- * OUT job_id_ptr - place to store a slurm job_id
+ * OUT step_id - place to store a slurm job_id
  * RET 0 or -1 on error
  */
-extern int slurm_pid2jobid(pid_t job_pid, uint32_t *job_id_ptr);
+extern int slurm_pid2jobid(pid_t job_pid, slurm_step_id_t *step_id);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request,
@@ -4898,10 +4900,10 @@ extern int slurm_update_suspend_exc_states(char *states, update_mode_t mode);
 
 /*
  * slurm_suspend - suspend execution of a job.
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * RET 0 or a slurm error code
  */
-extern int slurm_suspend(uint32_t job_id);
+extern int slurm_suspend(slurm_step_id_t step_id);
 
 /*
  * slurm_suspend2 - suspend execution of a job.
@@ -4915,10 +4917,10 @@ extern int slurm_suspend2(char *job_id, job_array_resp_msg_t **resp);
 
 /*
  * slurm_resume - resume execution of a previously suspended job.
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * RET 0 or a slurm error code
  */
-extern int slurm_resume(uint32_t job_id);
+extern int slurm_resume(slurm_step_id_t step_id);
 
 /*
  * slurm_resume2 - resume execution of a previously suspended job.
@@ -4936,7 +4938,7 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *resp);
 /*
  * slurm_requeue - re-queue a batch job, if already running
  *	then terminate it first
- * IN job_id  - job on which to perform operation
+ * IN step_id - step identifier (job_id or sluid to target)
  * IN flags - JOB_SPECIAL_EXIT - job should be placed special exit state and
  *		  held.
  *            JOB_REQUEUE_HOLD - job should be placed JOB_PENDING state and
@@ -4946,7 +4948,7 @@ extern void slurm_free_job_array_resp(job_array_resp_msg_t *resp);
  *		  CONFIGURING, RUNNING, STOPPED or SUSPENDED.
  * RET 0 or a slurm error code
  */
-extern int slurm_requeue(uint32_t job_id, uint32_t flags);
+extern int slurm_requeue(slurm_step_id_t step_id, uint32_t flags);
 
 /*
  * slurm_requeue2 - re-queue a batch job, if already running
@@ -5180,15 +5182,14 @@ extern void slurm_print_burst_buffer_record(FILE *out,
  * slurmd based upon network socket information.
  *
  * IN req - Information about network connection in question
- * OUT job_id -  ID of the job or NO_VAL
+ * OUT step_id - Job identifier of the job
  * OUT node_name - name of the remote slurmd
  * IN node_name_size - size of the node_name buffer
  * RET SLURM_SUCCESS or SLURM_ERROR on error
  */
-extern int slurm_network_callerid(network_callerid_msg_t req,
-				  uint32_t *job_id,
-				  char *node_name,
-				  int node_name_size);
+extern int (slurm_network_callerid)(network_callerid_msg_t req,
+				    slurm_step_id_t *step_id, char *node_name,
+				    int node_name_size);
 
 /*
  * Move the specified job ID to the top of the queue for a given user ID,
@@ -5251,6 +5252,202 @@ extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
 							   list_t *jobs);
 
 extern int slurm_remove_crontab(uid_t uid, gid_t gid);
+
+#ifdef SLURM_BACKWARD_COMPAT
+/*
+ * Backward compatibility wrappers for external consumers.
+ * Define SLURM_BACKWARD_COMPAT before including slurm.h to enable _Generic,
+ * which will allow uint32_t job_id arguments where slurm_step_id_t is now
+ * required. Requires C11 or later.
+ */
+inline static int slurm_allocation_lookup_jid(uint32_t job_id,
+					      resource_allocation_response_msg_t
+						      **resp)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_allocation_lookup(step_id, resp);
+}
+
+#define slurm_allocation_lookup(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_allocation_lookup, \
+	default: slurm_allocation_lookup_jid)((id), __VA_ARGS__)
+
+inline static int slurm_kill_job_jid(uint32_t job_id, uint16_t signal,
+				     uint16_t flags)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_kill_job(step_id, signal, flags);
+}
+
+#define slurm_kill_job(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_kill_job, \
+	default: slurm_kill_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_signal_job_jid(uint32_t job_id, uint16_t signal)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_signal_job(step_id, signal);
+}
+
+#define slurm_signal_job(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_signal_job, \
+	default: slurm_signal_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_job_node_ready_jid(uint32_t job_id)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_job_node_ready(step_id);
+}
+
+#define slurm_job_node_ready(id) \
+_Generic((id), \
+	slurm_step_id_t: slurm_job_node_ready, \
+	default: slurm_job_node_ready_jid)((id))
+
+inline static int slurm_load_job_jid(job_info_msg_t **resp, uint32_t job_id,
+				     uint16_t show_flags)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_load_job(resp, step_id, show_flags);
+}
+
+#define slurm_load_job(resp, id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_load_job, \
+	default: slurm_load_job_jid)((resp), (id), __VA_ARGS__)
+
+inline static int slurm_notify_job_jid(uint32_t job_id, char *message)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_notify_job(step_id, message);
+}
+
+#define slurm_notify_job(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_notify_job, \
+	default: slurm_notify_job_jid)((id), __VA_ARGS__)
+
+inline static int slurm_network_callerid_jid(network_callerid_msg_t req,
+					     uint32_t *job_id,
+					     char *node_name,
+					     int node_name_size)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	int rc = (slurm_network_callerid)(req, &step_id, node_name,
+					  node_name_size);
+	*job_id = step_id.job_id;
+	return rc;
+}
+
+#define slurm_network_callerid(req, id, ...) \
+_Generic((id), \
+	slurm_step_id_t *: slurm_network_callerid, \
+	default: slurm_network_callerid_jid)((req), (id), __VA_ARGS__)
+
+inline static int slurm_suspend_jid(uint32_t job_id)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_suspend(step_id);
+}
+
+#define slurm_pid2jobid(job_pid, id) \
+_Generic((id), \
+	slurm_step_id_t *: slurm_pid2jobid, \
+	default: slurm_pid2jobid_jid)((job_pid), (id))
+
+inline static int slurm_pid2jobid_jid(pid_t job_pid, uint32_t *job_id_ptr)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	int rc = (slurm_pid2jobid) (job_pid, &step_id);
+	if (rc == SLURM_SUCCESS)
+		*job_id_ptr = step_id.job_id;
+	return rc;
+}
+
+inline static int slurm_get_end_time_jid(uint32_t jobid, time_t *end_time_ptr)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_get_end_time) (step_id, end_time_ptr);
+}
+
+#define slurm_get_end_time(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_get_end_time, \
+	default: slurm_get_end_time_jid)((id), __VA_ARGS__)
+
+inline static long slurm_get_rem_time_jid(uint32_t jobid)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_get_rem_time) (step_id);
+}
+
+#define slurm_get_rem_time(id) \
+_Generic((id), \
+	slurm_step_id_t: slurm_get_rem_time, \
+	default: slurm_get_rem_time_jid)((id))
+
+inline static int slurm_job_batch_script_jid(FILE *out, uint32_t jobid)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_job_batch_script) (out, step_id);
+}
+
+#define slurm_job_batch_script(out, id) \
+_Generic((id), \
+	slurm_step_id_t: slurm_job_batch_script, \
+	default: slurm_job_batch_script_jid)((out), (id))
+
+inline static int slurm_het_job_lookup_jid(uint32_t jobid, list_t **resp)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = jobid;
+	return (slurm_het_job_lookup) (step_id, resp);
+}
+
+#define slurm_het_job_lookup(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_het_job_lookup, \
+	default: slurm_het_job_lookup_jid)((id), __VA_ARGS__)
+
+#define slurm_suspend(id) \
+_Generic((id), slurm_step_id_t: slurm_suspend, default: slurm_suspend_jid)((id))
+
+inline static int slurm_resume_jid(uint32_t job_id)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_resume(step_id);
+}
+
+#define slurm_resume(id) \
+_Generic((id), slurm_step_id_t: slurm_resume, default: slurm_resume_jid)((id))
+
+inline static int slurm_requeue_jid(uint32_t job_id, uint32_t flags)
+{
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = job_id;
+	return slurm_requeue(step_id, flags);
+}
+
+#define slurm_requeue(id, ...) \
+_Generic((id), \
+	slurm_step_id_t: slurm_requeue, \
+	default: slurm_requeue_jid)((id), __VA_ARGS__)
+
+#endif /* SLURM_BACKWARD_COMPAT */
 
 #ifdef __cplusplus
 }

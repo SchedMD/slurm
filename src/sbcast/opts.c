@@ -89,8 +89,7 @@ static bool _need_hetjob_components(job_info_msg_t **job_info_msg)
 		exit(1);
 	}
 
-	if ((rc = slurm_load_job(job_info_msg,
-				 params.selected_step->step_id.job_id,
+	if ((rc = slurm_load_job(job_info_msg, params.selected_step->step_id,
 				 SHOW_ALL)) != SLURM_SUCCESS) {
 		error("Failed to load JobId=%u: '%s'",
 		      params.selected_step->step_id.job_id,

@@ -159,7 +159,7 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	openapi_job_info_query_t query = {0};
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
-	uint32_t id;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	openapi_resp_job_info_msg_t resp = {0};
 
 	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_QUERY, query, ctxt->query,
@@ -169,10 +169,10 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 		return;
 	}
 
+	step_id.job_id = job_id->step_id.job_id;
+
 	if (job_id->het_job_offset != NO_VAL)
-		id = job_id->step_id.job_id + job_id->het_job_offset;
-	else
-		id = job_id->step_id.job_id;
+		step_id.job_id += job_id->het_job_offset;
 
 	if (job_id->array_task_id != NO_VAL)
 		resp_warn(ctxt, __func__, "Job array Ids are not currently supported for job searches. Showing all jobs in array instead.");
@@ -183,7 +183,7 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 	if (!query.show_flags)
 		query.show_flags = SHOW_ALL | SHOW_DETAIL;
 
-	if ((rc = slurm_load_job(&job_info_ptr, id, query.show_flags))) {
+	if ((rc = slurm_load_job(&job_info_ptr, step_id, query.show_flags))) {
 		char *id = NULL;
 
 		fmt_job_id_string(job_id, &id);

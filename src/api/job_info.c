@@ -408,11 +408,7 @@ static int _load_fed_jobs(slurm_msg_t *req_msg,
 	return SLURM_SUCCESS;
 }
 
-/*
- * slurm_job_batch_script - retrieve the batch script for a given jobid
- * returns SLURM_SUCCESS, or appropriate error code
- */
-extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
+extern int (slurm_job_batch_script)(FILE *out, slurm_step_id_t step_id)
 {
 	job_id_msg_t msg;
 	slurm_msg_t req, resp;
@@ -422,7 +418,7 @@ extern int slurm_job_batch_script(FILE *out, uint32_t jobid)
 	slurm_msg_t_init(&resp);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.step_id.job_id = jobid;
+	msg.step_id = step_id;
 	req.msg_type = REQUEST_BATCH_SCRIPT;
 	req.data = &msg;
 
@@ -563,57 +559,15 @@ extern int slurm_load_job_user (job_info_msg_t **job_info_msg_pptr,
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-extern int
-slurm_load_job (job_info_msg_t **job_info_msg_pptr, uint32_t job_id,
-		uint16_t show_flags)
-{
-	slurm_msg_t req_msg;
-	job_id_msg_t req;
-	void *ptr = NULL;
-	slurmdb_federation_rec_t *fed;
-	int rc;
-
-	if ((show_flags & SHOW_LOCAL) == 0) {
-		if (slurm_load_federation(&ptr) ||
-		    !cluster_in_federation(ptr, slurm_conf.cluster_name)) {
-			/* Not in federation */
-			show_flags |= SHOW_LOCAL;
-		}
-	}
-
-	memset(&req, 0, sizeof(req));
-	slurm_msg_t_init(&req_msg);
-	req.step_id.job_id = job_id;
-	req.show_flags   = show_flags;
-	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
-	req_msg.data     = &req;
-
-	/* With -M option, working_cluster_rec is set and  we only get
-	 * information for that cluster */
-	if (working_cluster_rec || !ptr || (show_flags & SHOW_LOCAL)) {
-		rc = _load_cluster_jobs(&req_msg, job_info_msg_pptr,
-					working_cluster_rec);
-	} else {
-		fed = (slurmdb_federation_rec_t *) ptr;
-		rc = _load_fed_jobs(&req_msg, job_info_msg_pptr, show_flags,
-				    slurm_conf.cluster_name, fed);
-	}
-
-	if (ptr)
-		slurm_destroy_federation_rec(ptr);
-
-	return rc;
-}
-
-extern int slurm_load_job_sluid(job_info_msg_t **job_info_msg_pptr,
-				sluid_t sluid, uint16_t show_flags)
+extern int (slurm_load_job)(job_info_msg_t **job_info_msg_pptr,
+			    slurm_step_id_t step_id, uint16_t show_flags)
 {
 	slurm_msg_t req_msg;
 	job_id_msg_t req;
 	void *fed = NULL;
 	int rc;
 
-	if (!(show_flags & SHOW_LOCAL)) {
+	if ((show_flags & SHOW_LOCAL) == 0) {
 		if (slurm_load_federation(&fed) ||
 		    !cluster_in_federation(fed, slurm_conf.cluster_name)) {
 			/* Not in federation */
@@ -623,10 +577,10 @@ extern int slurm_load_job_sluid(job_info_msg_t **job_info_msg_pptr,
 
 	memset(&req, 0, sizeof(req));
 	slurm_msg_t_init(&req_msg);
-	req.step_id.sluid = sluid;
-	req.show_flags = show_flags;
+	req.step_id = step_id;
+	req.show_flags   = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO_SINGLE;
-	req_msg.data = &req;
+	req_msg.data     = &req;
 
 	/*
 	 * With -M option, working_cluster_rec is set and  we only get
@@ -685,15 +639,7 @@ extern int slurm_load_job_state(int job_id_count,
 	return rc;
 }
 
-/*
- * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id
- *	on this machine
- * IN job_pid     - process_id of interest on this machine
- * OUT job_id_ptr - place to store a slurm job_id
- * RET 0 or -1 on error
- */
-extern int
-slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
+extern int (slurm_pid2jobid)(pid_t job_pid, slurm_step_id_t *step_id)
 {
 	int rc;
 	slurm_msg_t req_msg;
@@ -760,8 +706,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 		auth_g_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
-		*jobid = ((job_id_response_msg_t *) resp_msg.data)
-				 ->step_id.job_id;
+		*(step_id) = ((job_id_response_msg_t *) resp_msg.data)->step_id;
 		slurm_free_job_id_response_msg(resp_msg.data);
 		break;
 	case RESPONSE_SLURM_RC:
@@ -778,18 +723,13 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	return SLURM_SUCCESS;
 }
 
-/*
- * slurm_get_rem_time - get the expected time remaining for a given job
- * IN jobid     - slurm job id
- * RET remaining time in seconds or -1 on error
- */
-extern long slurm_get_rem_time(uint32_t jobid)
+extern long (slurm_get_rem_time)(slurm_step_id_t step_id)
 {
 	time_t now = time(NULL);
 	time_t end_time = 0;
 	long rc;
 
-	if (slurm_get_end_time(jobid, &end_time) != SLURM_SUCCESS)
+	if ((slurm_get_end_time) (step_id, &end_time) != SLURM_SUCCESS)
 		return -1L;
 
 	rc = difftime(end_time, now);
@@ -805,9 +745,13 @@ extern int32_t islurm_get_rem_time__(uint32_t *jobid)
 	time_t end_time = 0;
 	int32_t rc;
 
-	if ((jobid == NULL)
-	    ||  (slurm_get_end_time(*jobid, &end_time)
-		 != SLURM_SUCCESS))
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+
+	if (!jobid)
+		return 0;
+
+	step_id.job_id = *jobid;
+	if ((slurm_get_end_time) (step_id, &end_time) != SLURM_SUCCESS)
 		return 0;
 
 	rc = difftime(end_time, now);
@@ -826,15 +770,7 @@ extern int32_t islurm_get_rem_time2__()
 	return islurm_get_rem_time__(&jobid);
 }
 
-
-/*
- * slurm_get_end_time - get the expected end time for a given slurm job
- * IN jobid     - slurm job id
- * end_time_ptr - location in which to store scheduled end time for job
- * RET 0 or -1 on error
- */
-extern int
-slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
+extern int (slurm_get_end_time)(slurm_step_id_t step_id, time_t *end_time_ptr)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -853,31 +789,31 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	if (!end_time_ptr)
 		slurm_seterrno_ret(EINVAL);
 
-	if (jobid == 0) {
+	if (!step_id.job_id) {
 		if (jobid_env) {
-			jobid = jobid_env;
+			step_id.job_id = jobid_env;
 		} else {
 			char *env = getenv("SLURM_JOB_ID");
 			if (env) {
-				jobid = (uint32_t) atol(env);
-				jobid_env = jobid;
+				step_id.job_id = (uint32_t) atol(env);
+				jobid_env = step_id.job_id;
 			}
 		}
-		if (jobid == 0) {
+		if (!step_id.job_id) {
 			errno = ESLURM_INVALID_JOB_ID;
 			return SLURM_ERROR;
 		}
 	}
 
 	/* Just use cached data if data less than 60 seconds old */
-	if ((jobid == jobid_cache)
-	&&  (difftime(now, last_test_time) < 60)) {
+	if ((step_id.job_id == jobid_cache) &&
+	    (difftime(now, last_test_time) < 60)) {
 		*end_time_ptr  = endtime_cache;
 		return SLURM_SUCCESS;
 	}
 
 	memset(&job_msg, 0, sizeof(job_msg));
-	job_msg.step_id.job_id = jobid;
+	job_msg.step_id = step_id;
 	req_msg.msg_type   = REQUEST_JOB_END_TIME;
 	req_msg.data       = &job_msg;
 
@@ -889,7 +825,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	case SRUN_TIMEOUT:
 		timeout_msg = (srun_timeout_msg_t *) resp_msg.data;
 		last_test_time = time(NULL);
-		jobid_cache    = jobid;
+		jobid_cache = step_id.job_id;
 		endtime_cache  = timeout_msg->timeout;
 		*end_time_ptr  = endtime_cache;
 		slurm_free_srun_timeout_msg(resp_msg.data);
@@ -915,10 +851,10 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 
 /*
  * slurm_job_node_ready - report if nodes are ready for job to execute now
- * IN job_id - slurm job id
+ * IN step_id - slurm step_id containing the job to query
  * RET: READY_* values as defined in slurm.h
  */
-extern int slurm_job_node_ready(uint32_t job_id)
+extern int (slurm_job_node_ready)(slurm_step_id_t step_id)
 {
 	slurm_msg_t req, resp;
 	job_id_msg_t msg;
@@ -928,7 +864,7 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	slurm_msg_t_init(&resp);
 
 	memset(&msg, 0, sizeof(msg));
-	msg.step_id.job_id = job_id;
+	msg.step_id = step_id;
 	req.msg_type = REQUEST_JOB_READY;
 	req.data     = &msg;
 
@@ -956,19 +892,9 @@ extern int slurm_job_node_ready(uint32_t job_id)
 	return rc;
 }
 
-/*
- * slurm_network_callerid - issue RPC to get the job id of a job from a remote
- * slurmd based upon network socket information.
- *
- * IN req - Information about network connection in question
- * OUT job_id -  ID of the job or NO_VAL
- * OUT node_name - name of the remote slurmd
- * IN node_name_size - size of the node_name buffer
- * RET SLURM_SUCCESS or SLURM_ERROR on error
- */
-extern int
-slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
-	char *node_name, int node_name_size)
+extern int (slurm_network_callerid)(network_callerid_msg_t req,
+				    slurm_step_id_t *step_id, char *node_name,
+				    int node_name_size)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -1008,7 +934,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 	switch (resp_msg.msg_type) {
 		case RESPONSE_NETWORK_CALLERID:
 			resp = (network_callerid_resp_t*)resp_msg.data;
-			*job_id = resp->step_id.job_id;
+			*step_id = resp->step_id;
 			strlcpy(node_name, resp->node_name, node_name_size);
 			break;
 		case RESPONSE_SLURM_RC:

@@ -234,7 +234,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		}
 		i += 1;
 
-		rc = slurm_job_node_ready(alloc->step_id.job_id);
+		rc = slurm_job_node_ready(alloc->step_id);
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
 
@@ -687,7 +687,9 @@ extern list_t *existing_allocation(void)
 	}
 
 	old_job_id = (uint32_t) sropt.jobid;
-	if (slurm_het_job_lookup(old_job_id, &job_resp_list) < 0) {
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	step_id.job_id = old_job_id;
+	if (slurm_het_job_lookup(step_id, &job_resp_list) < 0) {
 		if (sropt.parallel_debug)
 			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE)

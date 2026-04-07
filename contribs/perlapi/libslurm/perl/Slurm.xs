@@ -327,25 +327,35 @@ slurm_job_will_run(slurm_t self, HV *job_desc)
 ######################################################################
 int
 slurm_kill_job(slurm_t self, uint32_t job_id, uint16_t signal, uint16_t batch_flag=0)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, signal, batch_flag
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_kill_job(step_id, signal, batch_flag);
+	OUTPUT:
+		RETVAL
 
 int
 slurm_signal_job(slurm_t self, uint32_t job_id, uint16_t signal)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, signal
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_signal_job(step_id, signal);
+	OUTPUT:
+		RETVAL
 
 ######################################################################
 #	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -521,13 +531,15 @@ slurm_get_end_time(slurm_t self, uint32_t job_id)
 	PREINIT:
 		time_t tmp_time;
 		int rc;
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_get_end_time(job_id, &tmp_time);
+		step_id.job_id = job_id;
+		rc = (slurm_get_end_time)(step_id, &tmp_time);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = tmp_time;
 		} else {
@@ -538,25 +550,34 @@ slurm_get_end_time(slurm_t self, uint32_t job_id)
 
 long
 slurm_get_rem_time(slurm_t self, uint32_t job_id)
-	INIT:
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id
+		step_id.job_id = job_id;
+		RETVAL = (slurm_get_rem_time)(step_id);
+	OUTPUT:
+		RETVAL
 
 int
 slurm_job_node_ready(slurm_t self, uint32_t job_id)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_job_node_ready(step_id);
+	OUTPUT:
+		RETVAL
 
 #
 # $resp = $slurm->load_job($job_id, $show_flags);
@@ -564,6 +585,7 @@ slurm_job_node_ready(slurm_t self, uint32_t job_id)
 HV *
 slurm_load_job(slurm_t self, uint32_t job_id, uint16_t show_flags=0)
 	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 		job_info_msg_t *ji_msg;
 		int rc;
 	CODE:
@@ -572,7 +594,8 @@ slurm_load_job(slurm_t self, uint32_t job_id, uint16_t show_flags=0)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_load_job(&ji_msg, job_id, show_flags);
+		step_id.job_id = job_id;
+		rc = slurm_load_job(&ji_msg, step_id, show_flags);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
@@ -624,14 +647,19 @@ slurm_load_jobs(slurm_t self, time_t update_time=0, uint16_t show_flags=0)
 
 int
 slurm_notify_job(slurm_t self, uint32_t job_id, char *message)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, message
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_notify_job(step_id, message);
+	OUTPUT:
+		RETVAL
 
 #
 # $job_id = $slurm->pid2jobid($job_pid);
@@ -639,7 +667,7 @@ slurm_notify_job(slurm_t self, uint32_t job_id, char *message)
 uint32_t
 slurm_pid2jobid(slurm_t self, pid_t job_pid)
 	PREINIT:
-		uint32_t tmp_pid;
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 		int rc;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
@@ -647,9 +675,9 @@ slurm_pid2jobid(slurm_t self, pid_t job_pid)
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		rc = slurm_pid2jobid(job_pid, &tmp_pid);
+		rc = (slurm_pid2jobid)(job_pid, &step_id);
 		if (rc == SLURM_SUCCESS) {
-			RETVAL = tmp_pid;
+			RETVAL = step_id.job_id;
 		} else {
 			XSRETURN_UNDEF;
 		}
@@ -1261,36 +1289,51 @@ slurm_set_schedlog_level(slurm_t self, uint32_t schedlog_level)
 
 int
 slurm_suspend(slurm_t self, uint32_t job_id)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_suspend(step_id);
+	OUTPUT:
+		RETVAL
 
 int
 slurm_resume(slurm_t self, uint32_t job_id)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_resume(step_id);
+	OUTPUT:
+		RETVAL
 
 int
 slurm_requeue(slurm_t self, uint32_t job_id, uint32_t state)
+	PREINIT:
+		slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-	C_ARGS:
-		job_id, state
+		step_id.job_id = job_id;
+	CODE:
+		RETVAL = slurm_requeue(step_id, state);
+	OUTPUT:
+		RETVAL
 
 
 ######################################################################
