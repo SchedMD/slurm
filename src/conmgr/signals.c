@@ -309,7 +309,7 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	SWAP(signal_work, cancel_work);
 
 	for (int i = 0; i < signal_handler_count; i++) {
-		signal_handler_t *handler = &handlers[signal_handler_count];
+		signal_handler_t *handler = &handlers[i];
 
 		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
 		xassert(handler->signal > 0);
