@@ -2159,6 +2159,19 @@ static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
 		       __func__, job_ptr, resp_msg->node_name, TIMER_STR());
 	}
 
+	if (resp_msg->all_nodes) {
+		if ((rc = job_mem_resize_begin(job_ptr,
+					       resp_msg->job_mem_per_node)))
+			goto fini;
+
+		debug("%s: %pJ resizing from stepmgr", __func__, job_ptr);
+		/*
+		 * Safe to cancel any in-flight per-node resize: new limit is
+		 * always lower, so the previous target is already satisfied.
+		 */
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+	}
+
 	if (job_ptr->node_bitmap_rs && resp_msg->node_name) {
 		node_record_t *node_ptr = find_node_record(resp_msg->node_name);
 
