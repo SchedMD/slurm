@@ -88,7 +88,7 @@ job_info_msg_t *old_job_info_ptr = NULL;
 node_info_msg_t *old_node_info_ptr = NULL;
 partition_info_msg_t *old_part_info_ptr = NULL;
 reserve_info_msg_t *old_res_info_ptr = NULL;
-slurm_conf_t *old_slurm_ctl_conf_ptr = NULL;
+slurm_conf_t *old_slurm_conf_ptr = NULL;
 
 static void	_create_it(int argc, char **argv);
 static void	_delete_it(int argc, char **argv);
@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 	slurm_free_node_info_msg(old_node_info_ptr);
 	slurm_free_partition_info_msg(old_part_info_ptr);
 	slurm_free_reservation_info_msg(old_res_info_ptr);
-	slurm_free_conf(old_slurm_ctl_conf_ptr);
+	slurm_free_conf(old_slurm_conf_ptr);
 
 #endif /* MEMORY_LEAK_DEBUG */
 
@@ -461,18 +461,18 @@ static void _write_config(char *file_name)
 	int error_code;
 	node_info_msg_t *node_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	slurm_conf_t *slurm_ctl_conf_ptr = NULL;
+	slurm_conf_t *slurm_conf_ptr = NULL;
 
 	/* slurm config loading code copied from _print_config() */
 
-	if (old_slurm_ctl_conf_ptr) {
-		error_code = slurm_load_ctl_conf (
-				old_slurm_ctl_conf_ptr->last_update,
-				&slurm_ctl_conf_ptr);
+	if (old_slurm_conf_ptr) {
+		error_code =
+			slurm_load_ctl_conf(old_slurm_conf_ptr->last_update,
+					    &slurm_conf_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_conf(old_slurm_ctl_conf_ptr);
+			slurm_free_conf(old_slurm_conf_ptr);
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
+			slurm_conf_ptr = old_slurm_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
 				printf ("slurm_load_ctl_conf no change "
@@ -480,15 +480,14 @@ static void _write_config(char *file_name)
 			}
 		}
 	} else {
-		error_code = slurm_load_ctl_conf ((time_t) NULL,
-						  &slurm_ctl_conf_ptr);
+		error_code =
+			slurm_load_ctl_conf((time_t) NULL, &slurm_conf_ptr);
 	}
 
 	if (error_code) {
 		_printf_error("slurm_load_ctl_conf error");
 	} else
-		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
-
+		old_slurm_conf_ptr = slurm_conf_ptr;
 
 	if (error_code == SLURM_SUCCESS) {
 		int save_all_flag = all_flag;
@@ -516,9 +515,8 @@ static void _write_config(char *file_name)
 		}
 
 		/* send the info off to be written */
-		slurm_write_ctl_conf (slurm_ctl_conf_ptr,
-				      node_info_ptr,
-				      part_info_ptr);
+		slurm_write_ctl_conf(slurm_conf_ptr, node_info_ptr,
+				     part_info_ptr);
 	}
 }
 
@@ -529,7 +527,7 @@ static void _write_config(char *file_name)
 static void _print_config(char *config_param, int argc, char **argv)
 {
 	int error_code;
-	slurm_conf_t *slurm_ctl_conf_ptr = NULL;
+	slurm_conf_t *slurm_conf_ptr = NULL;
 
 	/*
 	 * There isn't a parser for slurm.conf but there is one for ping, which
@@ -538,37 +536,35 @@ static void _print_config(char *config_param, int argc, char **argv)
 	 */
 	mime_type = NULL;
 
-	if (old_slurm_ctl_conf_ptr) {
-		error_code = slurm_load_ctl_conf (
-				old_slurm_ctl_conf_ptr->last_update,
-				&slurm_ctl_conf_ptr);
+	if (old_slurm_conf_ptr) {
+		error_code =
+			slurm_load_ctl_conf(old_slurm_conf_ptr->last_update,
+					    &slurm_conf_ptr);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_conf(old_slurm_ctl_conf_ptr);
+			slurm_free_conf(old_slurm_conf_ptr);
 		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
-			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
+			slurm_conf_ptr = old_slurm_conf_ptr;
 			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1) {
 				printf ("slurm_load_ctl_conf no change "
 					"in data\n");
 			}
 		}
-	}
-	else
-		error_code = slurm_load_ctl_conf ((time_t) NULL,
-						  &slurm_ctl_conf_ptr);
+	} else
+		error_code =
+			slurm_load_ctl_conf((time_t) NULL, &slurm_conf_ptr);
 
 	if (error_code) {
 		_printf_error("slurm_load_ctl_conf error");
 	}
 	else
-		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
-
+		old_slurm_conf_ptr = slurm_conf_ptr;
 
 	if (error_code == SLURM_SUCCESS) {
-		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
+		slurm_print_ctl_conf(stdout, slurm_conf_ptr);
 		fprintf(stdout, "\n");
 	}
-	if (slurm_ctl_conf_ptr)
+	if (slurm_conf_ptr)
 		_print_ping(argc, argv);
 }
 
@@ -1104,8 +1100,8 @@ static int _process_command (int argc, char **argv)
 		old_part_info_ptr = NULL;
 		slurm_free_reservation_info_msg(old_res_info_ptr);
 		old_res_info_ptr = NULL;
-		slurm_free_conf(old_slurm_ctl_conf_ptr);
-		old_slurm_ctl_conf_ptr = NULL;
+		slurm_free_conf(old_slurm_conf_ptr);
+		old_slurm_conf_ptr = NULL;
 		/* if (old_job_info_ptr) */
 		/* 	old_job_info_ptr->last_update = 0; */
 		/* if (old_node_info_ptr) */
@@ -1114,8 +1110,8 @@ static int _process_command (int argc, char **argv)
 		/* 	old_part_info_ptr->last_update = 0; */
 		/* if (old_res_info_ptr) */
 		/* 	old_res_info_ptr->last_update = 0; */
-		/* if (old_slurm_ctl_conf_ptr) */
-		/* 	old_slurm_ctl_conf_ptr->last_update = 0; */
+		/* if (old_slurm_conf_ptr) */
+		/* 	old_slurm_conf_ptr->last_update = 0; */
 	} else if (!xstrncasecmp(tag, "create", MAX(tag_len, 2))) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -1469,10 +1465,10 @@ static int _process_command (int argc, char **argv)
 		}
 	} else if (!xstrncasecmp(tag, "takeover", MAX(tag_len, 8))) {
 		int backup_inx = 1, control_cnt;
-		slurm_conf_t *slurm_ctl_conf_ptr = NULL;
+		slurm_conf_t *slurm_conf_ptr = NULL;
 
-		slurm_ctl_conf_ptr = slurm_conf_lock();
-		control_cnt = slurm_ctl_conf_ptr->control_cnt;
+		slurm_conf_ptr = slurm_conf_lock();
+		control_cnt = slurm_conf_ptr->control_cnt;
 		slurm_conf_unlock();
 		if (argc > 2) {
 			exit_code = 1;

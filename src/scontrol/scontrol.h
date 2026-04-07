@@ -94,7 +94,7 @@ extern job_info_msg_t *old_job_info_ptr;
 extern node_info_msg_t *old_node_info_ptr;
 extern partition_info_msg_t *old_part_info_ptr;
 extern reserve_info_msg_t *old_res_info_ptr;
-extern slurm_conf_t *old_slurm_ctl_conf_ptr;
+extern slurm_conf_t *old_slurm_conf_ptr;
 
 extern int	parse_requeue_flags(char *s, uint32_t *flags);
 extern int	scontrol_batch_script(int argc, char **argv);

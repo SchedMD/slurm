@@ -4026,48 +4026,48 @@ extern long slurm_api_version(void);
  * slurm_load_ctl_conf - issue RPC to get slurm control configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data
- * IN slurm_ctl_conf_ptr - place to store slurm control configuration
+ * IN slurm_conf_ptr - place to store slurm control configuration
  *	pointer
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_conf
  */
 extern int slurm_load_ctl_conf(time_t update_time,
-                               slurm_conf_t **slurm_ctl_conf_ptr);
+			       slurm_conf_t **slurm_conf_ptr);
 
 /*
  * slurm_free_conf - free slurm control information response message
  * IN msg - pointer to slurm control information response message
  * NOTE: buffer is loaded by slurm_load_ctl_conf
  */
-extern void slurm_free_conf(slurm_conf_t *slurm_ctl_conf_ptr);
+extern void slurm_free_conf(slurm_conf_t *slurm_conf_ptr);
 
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration
  *	message as loaded using slurm_load_ctl_conf
  * IN out - file to write to
- * IN slurm_ctl_conf_ptr - slurm control configuration pointer
+ * IN slurm_conf_ptr - slurm control configuration pointer
  */
-extern void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_ctl_conf_ptr);
+extern void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_conf_ptr);
 
 /*
  * slurm_write_ctl_conf - write the contents of slurm control configuration
  *	message as loaded using slurm_load_ctl_conf to a file
  * IN out - file to write to
- * IN slurm_ctl_conf_ptr - slurm control configuration pointer
+ * IN slurm_conf_ptr - slurm control configuration pointer
  * IN node_info_ptr - pointer to node table of information
  * IN part_info_ptr - pointer to partition information
  */
-extern void slurm_write_ctl_conf(slurm_conf_t *slurm_ctl_conf_ptr,
-                                 node_info_msg_t *node_info_ptr,
-                                 partition_info_msg_t *part_info_ptr);
+extern void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
+				 node_info_msg_t *node_info_ptr,
+				 partition_info_msg_t *part_info_ptr);
 
 /*
  * slurm_ctl_conf_2_key_pairs - put the slurm_conf_t variables into
  *	a list_t of opaque data type config_key_pair_t
- * IN slurm_ctl_conf_ptr - slurm control configuration pointer
+ * IN slurm_conf_ptr - slurm control configuration pointer
  * RET list of opaque data type config_key_pair_t
  */
-extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr);
+extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_conf_ptr);
 
 /*
  * slurm_print_key_pairs - output the contents of key_pairs

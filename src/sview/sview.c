@@ -426,12 +426,12 @@ static void _reconfigure(GtkToggleAction *action)
 static void _get_current_debug(GtkRadioAction *action)
 {
 	static int debug_level = 0;
-	static slurm_conf_t *slurm_ctl_conf_ptr = NULL;
+	static slurm_conf_t *slurm_conf_ptr = NULL;
 	static GtkAction *debug_action = NULL;
-	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
+	int err_code = get_new_info_config(&slurm_conf_ptr);
 
 	if (err_code != SLURM_ERROR)
-		debug_level = slurm_ctl_conf_ptr->slurmctld_debug;
+		debug_level = slurm_conf_ptr->slurmctld_debug;
 
 	if (!debug_action)
 		debug_action = gtk_action_group_get_action(
@@ -447,15 +447,15 @@ static void _get_current_debug(GtkRadioAction *action)
 static void _get_current_debug_flags(GtkToggleAction *action)
 {
 	static uint64_t debug_flags = 0, tmp_flags;
-	static slurm_conf_t *slurm_ctl_conf_ptr = NULL;
-	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
+	static slurm_conf_t *slurm_conf_ptr = NULL;
+	int err_code = get_new_info_config(&slurm_conf_ptr);
 	GtkAction *debug_action = NULL;
 	GtkToggleAction *toggle_action;
 	gboolean orig_state, new_state;
 	int i;
 
 	if (err_code != SLURM_ERROR)
-		debug_flags = slurm_ctl_conf_ptr->debug_flags;
+		debug_flags = slurm_conf_ptr->debug_flags;
 
 	for (i = 0; i < debug_action_entries; i++)  {
 		debug_action = gtk_action_group_get_action(
