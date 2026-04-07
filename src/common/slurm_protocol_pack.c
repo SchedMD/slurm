@@ -4283,7 +4283,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_slurm_ctl_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
+static void _pack_slurm_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	slurm_conf_t *msg = smsg->data;
 
@@ -13824,7 +13824,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_last_update_msg(msg, buffer);
 		break;
 	case RESPONSE_BUILD_INFO:
-		_pack_slurm_ctl_conf_msg(msg, buffer);
+		_pack_slurm_conf_msg(msg, buffer);
 		break;
 	case RESPONSE_BATCH_SCRIPT:
 		_pack_job_script_msg(msg, buffer);
