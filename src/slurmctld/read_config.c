@@ -1811,6 +1811,12 @@ extern int read_slurm_conf(int recover)
 	_requeue_job_node_failed();
 	load_part_uid_allow_list(true);
 
+	/*
+	 * Initialize HRES before restoring reservations which could have
+	 * reserved some HRES.
+	 */
+	hres_init();
+
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	load_all_resv_state(recover);
 	/* Free the old-to-new mapping after load_all_resv_state() */
@@ -1821,7 +1827,6 @@ extern int read_slurm_conf(int recover)
 		trigger_state_restore();
 		controller_reconfig_scheduling();
 	}
-	hres_init();
 	restore_job_accounting();
 
 	/* sort config_list by weight for scheduling */
