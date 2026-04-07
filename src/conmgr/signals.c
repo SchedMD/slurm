@@ -274,26 +274,20 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	signal_handler_t *handlers = NULL;
 	work_t **cancel_work = NULL;
 	int cancel_work_count = 0;
-	int signal_fd_close = -1, count = 0;
-	int fd;
+	int count = 0;
+	int fd = SIGNAL_FD_FAILED;
 
 	xassert(arg == conmgr_args.con);
 
 	slurm_rwlock_wrlock(&lock);
 
-	fd = signal_fd;
-	signal_fd = -1;
+	SWAP(fd, signal_fd);
 
 	xassert(fd != -1);
 	fd_close(&fd);
 
 	xassert(conmgr_args.con == signal_con);
 	signal_con = NULL;
-
-	/* try to be as atomic as possible to close(signal_fd) */
-	signal_fd_close = signal_fd;
-	signal_fd = SIGNAL_FD_FAILED;
-	fd_close(&signal_fd_close);
 
 	/* Swap out handlers array before cleanup */
 	SWAP(signal_handler_count, count);
@@ -308,7 +302,7 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	SWAP(signal_work_count, cancel_work_count);
 	SWAP(signal_work, cancel_work);
 
-	for (int i = 0; i < signal_handler_count; i++) {
+	for (int i = 0; i < count; i++) {
 		signal_handler_t *handler = &handlers[i];
 
 		xassert(handler->magic == MAGIC_SIGNAL_HANDLER);
