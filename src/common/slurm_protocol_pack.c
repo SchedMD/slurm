@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5336,1169 +5337,1162 @@ static void _pack_slurm_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	_pack_slurm_conf(msg, smsg->protocol_version, buffer);
 }
 
-static int _unpack_slurm_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
+static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
+			      const uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
-	slurm_conf_t *build_ptr = xmalloc(sizeof(*build_ptr));
+	slurm_conf_t *conf = xmalloc(sizeof(*conf));
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+	xassert(!*conf_ptr);
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
-		safe_unpack_time(&build_ptr->last_update, buffer);
+		safe_unpack_time(&conf->last_update, buffer);
 
-		safe_unpack16(&build_ptr->accounting_storage_enforce, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_backup_host,
-			       buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_ext_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_params, buffer);
-		safe_unpack16(&build_ptr->accounting_storage_port, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_tres, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_type, buffer);
+		safe_unpack16(&conf->accounting_storage_enforce, buffer);
+		safe_unpackstr(&conf->accounting_storage_backup_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_ext_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_params, buffer);
+		safe_unpack16(&conf->accounting_storage_port, buffer);
+		safe_unpackstr(&conf->accounting_storage_tres, buffer);
+		safe_unpackstr(&conf->accounting_storage_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->acct_gather_conf,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->acct_gather_energy_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_filesystem_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_interconnect_type,
-			       buffer);
-		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_profile_type, buffer);
+		safe_unpackstr(&conf->acct_gather_energy_type, buffer);
+		safe_unpackstr(&conf->acct_gather_filesystem_type, buffer);
+		safe_unpackstr(&conf->acct_gather_interconnect_type, buffer);
+		safe_unpack16(&conf->acct_gather_node_freq, buffer);
+		safe_unpackstr(&conf->acct_gather_profile_type, buffer);
 
-		safe_unpackstr(&build_ptr->authalttypes, buffer);
-		safe_unpackstr(&build_ptr->authalt_params, buffer);
-		safe_unpackstr(&build_ptr->authinfo, buffer);
-		safe_unpackstr(&build_ptr->authtype, buffer);
+		safe_unpackstr(&conf->authalttypes, buffer);
+		safe_unpackstr(&conf->authalt_params, buffer);
+		safe_unpackstr(&conf->authinfo, buffer);
+		safe_unpackstr(&conf->authtype, buffer);
 
-		safe_unpack16(&build_ptr->batch_start_timeout, buffer);
-		safe_unpack_time(&build_ptr->boot_time, buffer);
-		safe_unpackstr(&build_ptr->bb_type, buffer);
-		safe_unpackstr(&build_ptr->bcast_exclude, buffer);
-		safe_unpackstr(&build_ptr->bcast_parameters, buffer);
-		safe_unpackstr(&build_ptr->certmgr_params, buffer);
-		safe_unpackstr(&build_ptr->certmgr_type, buffer);
+		safe_unpack16(&conf->batch_start_timeout, buffer);
+		safe_unpack_time(&conf->boot_time, buffer);
+		safe_unpackstr(&conf->bb_type, buffer);
+		safe_unpackstr(&conf->bcast_exclude, buffer);
+		safe_unpackstr(&conf->bcast_parameters, buffer);
+		safe_unpackstr(&conf->certmgr_params, buffer);
+		safe_unpackstr(&conf->certmgr_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->cgroup_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->cgroup_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->cli_filter_params, buffer);
-		safe_unpackstr(&build_ptr->cli_filter_plugins, buffer);
-		safe_unpackstr(&build_ptr->cluster_name, buffer);
-		safe_unpackstr(&build_ptr->comm_params, buffer);
-		safe_unpack16(&build_ptr->complete_wait, buffer);
-		safe_unpack32(&build_ptr->conf_flags, buffer);
-		safe_unpackstr_array(&build_ptr->control_addr,
-				     &build_ptr->control_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->control_machine,
-				     &uint32_tmp, buffer);
-		if (build_ptr->control_cnt != uint32_tmp)
+		safe_unpackstr(&conf->cli_filter_params, buffer);
+		safe_unpackstr(&conf->cli_filter_plugins, buffer);
+		safe_unpackstr(&conf->cluster_name, buffer);
+		safe_unpackstr(&conf->comm_params, buffer);
+		safe_unpack16(&conf->complete_wait, buffer);
+		safe_unpack32(&conf->conf_flags, buffer);
+		safe_unpackstr_array(&conf->control_addr, &conf->control_cnt,
+				     buffer);
+		safe_unpackstr_array(&conf->control_machine, &uint32_tmp,
+				     buffer);
+		if (conf->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
-		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr(&build_ptr->cred_type, buffer);
-		safe_unpackstr(&build_ptr->data_parser_parameters, buffer);
+		safe_unpack32(&conf->cpu_freq_def, buffer);
+		safe_unpack32(&conf->cpu_freq_govs, buffer);
+		safe_unpackstr(&conf->cred_type, buffer);
+		safe_unpackstr(&conf->data_parser_parameters, buffer);
 
-		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack64(&build_ptr->debug_flags, buffer);
-		safe_unpackstr(&build_ptr->dependency_params, buffer);
+		safe_unpack64(&conf->def_mem_per_cpu, buffer);
+		safe_unpack64(&conf->debug_flags, buffer);
+		safe_unpackstr(&conf->dependency_params, buffer);
 
-		safe_unpack16(&build_ptr->eio_timeout, buffer);
-		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr_array(&build_ptr->epilog,
-				     &build_ptr->epilog_cnt, buffer);
-		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr_array(&build_ptr->epilog_slurmctld,
-				     &build_ptr->epilog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->epilog_timeout, buffer);
+		safe_unpack16(&conf->eio_timeout, buffer);
+		safe_unpack16(&conf->enforce_part_limits, buffer);
+		safe_unpackstr_array(&conf->epilog, &conf->epilog_cnt, buffer);
+		safe_unpack32(&conf->epilog_msg_time, buffer);
+		safe_unpackstr_array(&conf->epilog_slurmctld,
+				     &conf->epilog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->epilog_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->fed_params, buffer);
-		safe_unpack32(&build_ptr->first_job_id, buffer);
-		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
+		safe_unpackstr(&conf->fed_params, buffer);
+		safe_unpack32(&conf->first_job_id, buffer);
+		safe_unpack16(&conf->fs_dampening_factor, buffer);
 
-		safe_unpackstr(&build_ptr->gres_plugins, buffer);
-		safe_unpack16(&build_ptr->group_time, buffer);
-		safe_unpack16(&build_ptr->group_force, buffer);
-		safe_unpackstr(&build_ptr->gpu_freq_def, buffer);
+		safe_unpackstr(&conf->gres_plugins, buffer);
+		safe_unpack16(&conf->group_time, buffer);
+		safe_unpack16(&conf->group_force, buffer);
+		safe_unpackstr(&conf->gpu_freq_def, buffer);
 
-		safe_unpackstr(&build_ptr->hash_plugin, buffer);
-		safe_unpack32(&build_ptr->hash_val, buffer);
+		safe_unpackstr(&conf->hash_plugin, buffer);
+		safe_unpack32(&conf->hash_val, buffer);
 
-		safe_unpack16(&build_ptr->health_check_interval, buffer);
-		safe_unpack16(&build_ptr->health_check_node_state, buffer);
-		safe_unpackstr(&build_ptr->health_check_program, buffer);
+		safe_unpack16(&conf->health_check_interval, buffer);
+		safe_unpack16(&conf->health_check_node_state, buffer);
+		safe_unpackstr(&conf->health_check_program, buffer);
 
-		safe_unpackstr(&build_ptr->http_parser_type, buffer);
+		safe_unpackstr(&conf->http_parser_type, buffer);
 
-		safe_unpack16(&build_ptr->inactive_limit, buffer);
-		safe_unpackstr(&build_ptr->interactive_step_opts, buffer);
+		safe_unpack16(&conf->inactive_limit, buffer);
+		safe_unpackstr(&conf->interactive_step_opts, buffer);
 
-		safe_unpackstr(&build_ptr->job_acct_gather_freq, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_type, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_params, buffer);
+		safe_unpackstr(&conf->job_acct_gather_freq, buffer);
+		safe_unpackstr(&conf->job_acct_gather_type, buffer);
+		safe_unpackstr(&conf->job_acct_gather_params, buffer);
 
-		safe_unpackstr(&build_ptr->job_comp_host, buffer);
-		safe_unpackstr(&build_ptr->job_comp_loc, buffer);
-		safe_unpackstr(&build_ptr->job_comp_params, buffer);
-		safe_unpack32(&build_ptr->job_comp_port, buffer);
-		safe_unpackstr(&build_ptr->job_comp_type, buffer);
-		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
+		safe_unpackstr(&conf->job_comp_host, buffer);
+		safe_unpackstr(&conf->job_comp_loc, buffer);
+		safe_unpackstr(&conf->job_comp_params, buffer);
+		safe_unpack32(&conf->job_comp_port, buffer);
+		safe_unpackstr(&conf->job_comp_type, buffer);
+		safe_unpackstr(&conf->job_comp_user, buffer);
+		safe_unpackstr(&conf->namespace_plugin, buffer);
 
-		if (slurm_unpack_list(&build_ptr->job_defaults_list,
+		if (slurm_unpack_list(&conf->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
-				      smsg->protocol_version) != SLURM_SUCCESS)
+				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack16(&build_ptr->job_file_append, buffer);
-		safe_unpack16(&build_ptr->job_requeue, buffer);
-		safe_unpackstr(&build_ptr->job_submit_plugins, buffer);
+		safe_unpack16(&conf->job_file_append, buffer);
+		safe_unpack16(&conf->job_requeue, buffer);
+		safe_unpackstr(&conf->job_submit_plugins, buffer);
 
-		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
-		safe_unpack16(&build_ptr->kill_wait, buffer);
+		safe_unpack16(&conf->kill_on_bad_exit, buffer);
+		safe_unpack16(&conf->kill_wait, buffer);
 
-		safe_unpackstr(&build_ptr->launch_params, buffer);
-		safe_unpackstr(&build_ptr->licenses, buffer);
-		safe_unpack16(&build_ptr->log_fmt, buffer);
+		safe_unpackstr(&conf->launch_params, buffer);
+		safe_unpackstr(&conf->licenses, buffer);
+		safe_unpack16(&conf->log_fmt, buffer);
 
-		safe_unpack32(&build_ptr->max_array_sz, buffer);
-		safe_unpack32(&build_ptr->max_batch_requeue, buffer);
-		safe_unpack32(&build_ptr->max_dbd_msgs, buffer);
-		safe_unpackstr(&build_ptr->mail_domain, buffer);
-		safe_unpackstr(&build_ptr->mail_prog, buffer);
-		safe_unpack32(&build_ptr->max_job_cnt, buffer);
-		safe_unpack32(&build_ptr->max_job_id, buffer);
-		safe_unpack64(&build_ptr->max_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->max_node_cnt, buffer);
-		safe_unpack32(&build_ptr->max_step_cnt, buffer);
-		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin_params, buffer);
-		safe_unpackstr(&build_ptr->metrics_type, buffer);
-		safe_unpack32(&build_ptr->min_job_age, buffer);
-		if (unpack_key_pair_list(&build_ptr->mpi_conf,
-					 smsg->protocol_version,
+		safe_unpack32(&conf->max_array_sz, buffer);
+		safe_unpack32(&conf->max_batch_requeue, buffer);
+		safe_unpack32(&conf->max_dbd_msgs, buffer);
+		safe_unpackstr(&conf->mail_domain, buffer);
+		safe_unpackstr(&conf->mail_prog, buffer);
+		safe_unpack32(&conf->max_job_cnt, buffer);
+		safe_unpack32(&conf->max_job_id, buffer);
+		safe_unpack64(&conf->max_mem_per_cpu, buffer);
+		safe_unpack32(&conf->max_node_cnt, buffer);
+		safe_unpack32(&conf->max_step_cnt, buffer);
+		safe_unpack16(&conf->max_tasks_per_node, buffer);
+		safe_unpackstr(&conf->mcs_plugin, buffer);
+		safe_unpackstr(&conf->mcs_plugin_params, buffer);
+		safe_unpackstr(&conf->metrics_type, buffer);
+		safe_unpack32(&conf->min_job_age, buffer);
+		if (unpack_key_pair_list(&conf->mpi_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->mpi_default, buffer);
-		safe_unpackstr(&build_ptr->mpi_params, buffer);
-		safe_unpack16(&build_ptr->msg_timeout, buffer);
+		safe_unpackstr(&conf->mpi_default, buffer);
+		safe_unpackstr(&conf->mpi_params, buffer);
+		safe_unpack16(&conf->msg_timeout, buffer);
 
-		safe_unpack32(&build_ptr->next_job_id, buffer);
+		safe_unpack32(&conf->next_job_id, buffer);
 
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->node_features_conf,
-			    smsg->protocol_version, buffer) != SLURM_SUCCESS)
+		if (unpack_config_plugin_params_list(&conf->node_features_conf,
+						     protocol_version,
+						     buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->node_features_plugins, buffer);
+		safe_unpackstr(&conf->node_features_plugins, buffer);
 
-		safe_unpack16(&build_ptr->over_time_limit, buffer);
+		safe_unpack16(&conf->over_time_limit, buffer);
 
-		safe_unpackstr(&build_ptr->plugindir, buffer);
-		safe_unpackstr(&build_ptr->plugstack, buffer);
+		safe_unpackstr(&conf->plugindir, buffer);
+		safe_unpackstr(&conf->plugstack, buffer);
 
-		safe_unpack16(&build_ptr->preempt_mode, buffer);
-		safe_unpackstr(&build_ptr->preempt_params, buffer);
-		safe_unpackstr(&build_ptr->preempt_type, buffer);
-		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
-		safe_unpackstr(&build_ptr->prep_params, buffer);
-		safe_unpackstr(&build_ptr->prep_plugins, buffer);
+		safe_unpack16(&conf->preempt_mode, buffer);
+		safe_unpackstr(&conf->preempt_params, buffer);
+		safe_unpackstr(&conf->preempt_type, buffer);
+		safe_unpack32(&conf->preempt_exempt_time, buffer);
+		safe_unpackstr(&conf->prep_params, buffer);
+		safe_unpackstr(&conf->prep_plugins, buffer);
 
-		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
-		safe_unpack32(&build_ptr->priority_calc_period, buffer);
-		safe_unpack16(&build_ptr->priority_favor_small, buffer);
-		safe_unpack16(&build_ptr->priority_flags, buffer);
-		safe_unpack32(&build_ptr->priority_max_age, buffer);
-		safe_unpackstr(&build_ptr->priority_params, buffer);
-		safe_unpack16(&build_ptr->priority_reset_period, buffer);
-		safe_unpackstr(&build_ptr->priority_type, buffer);
-		safe_unpack32(&build_ptr->priority_weight_age, buffer);
-		safe_unpack32(&build_ptr->priority_weight_assoc, buffer);
-		safe_unpack32(&build_ptr->priority_weight_fs, buffer);
-		safe_unpack32(&build_ptr->priority_weight_js, buffer);
-		safe_unpack32(&build_ptr->priority_weight_part, buffer);
-		safe_unpack32(&build_ptr->priority_weight_qos, buffer);
-		safe_unpackstr(&build_ptr->priority_weight_tres, buffer);
+		safe_unpack32(&conf->priority_decay_hl, buffer);
+		safe_unpack32(&conf->priority_calc_period, buffer);
+		safe_unpack16(&conf->priority_favor_small, buffer);
+		safe_unpack16(&conf->priority_flags, buffer);
+		safe_unpack32(&conf->priority_max_age, buffer);
+		safe_unpackstr(&conf->priority_params, buffer);
+		safe_unpack16(&conf->priority_reset_period, buffer);
+		safe_unpackstr(&conf->priority_type, buffer);
+		safe_unpack32(&conf->priority_weight_age, buffer);
+		safe_unpack32(&conf->priority_weight_assoc, buffer);
+		safe_unpack32(&conf->priority_weight_fs, buffer);
+		safe_unpack32(&conf->priority_weight_js, buffer);
+		safe_unpack32(&conf->priority_weight_part, buffer);
+		safe_unpack32(&conf->priority_weight_qos, buffer);
+		safe_unpackstr(&conf->priority_weight_tres, buffer);
 
-		safe_unpack16(&build_ptr->private_data, buffer);
-		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr_array(&build_ptr->prolog,
-				     &build_ptr->prolog_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->prolog_slurmctld,
-				     &build_ptr->prolog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->prolog_timeout, buffer);
-		safe_unpack16(&build_ptr->prolog_flags, buffer);
-		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits_except, buffer);
+		safe_unpack16(&conf->private_data, buffer);
+		safe_unpackstr(&conf->proctrack_type, buffer);
+		safe_unpackstr_array(&conf->prolog, &conf->prolog_cnt, buffer);
+		safe_unpackstr_array(&conf->prolog_slurmctld,
+				     &conf->prolog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->prolog_timeout, buffer);
+		safe_unpack16(&conf->prolog_flags, buffer);
+		safe_unpack16(&conf->propagate_prio_process, buffer);
+		safe_unpackstr(&conf->propagate_rlimits, buffer);
+		safe_unpackstr(&conf->propagate_rlimits_except, buffer);
 
-		safe_unpackstr(&build_ptr->reboot_program, buffer);
-		safe_unpack16(&build_ptr->reconfig_flags, buffer);
+		safe_unpackstr(&conf->reboot_program, buffer);
+		safe_unpack16(&conf->reconfig_flags, buffer);
 
-		safe_unpackstr(&build_ptr->requeue_exit, buffer);
-		safe_unpackstr(&build_ptr->requeue_exit_hold, buffer);
+		safe_unpackstr(&conf->requeue_exit, buffer);
+		safe_unpackstr(&conf->requeue_exit_hold, buffer);
 
-		safe_unpackstr(&build_ptr->resume_fail_program, buffer);
-		safe_unpackstr(&build_ptr->resume_program, buffer);
-		safe_unpack16(&build_ptr->resume_rate, buffer);
-		safe_unpack16(&build_ptr->resume_timeout, buffer);
-		safe_unpackstr(&build_ptr->resv_epilog, buffer);
-		safe_unpack16(&build_ptr->resv_over_run, buffer);
-		safe_unpackstr(&build_ptr->resv_prolog, buffer);
-		safe_unpack16(&build_ptr->ret2service, buffer);
+		safe_unpackstr(&conf->resume_fail_program, buffer);
+		safe_unpackstr(&conf->resume_program, buffer);
+		safe_unpack16(&conf->resume_rate, buffer);
+		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpackstr(&conf->resv_epilog, buffer);
+		safe_unpack16(&conf->resv_over_run, buffer);
+		safe_unpackstr(&conf->resv_prolog, buffer);
+		safe_unpack16(&conf->ret2service, buffer);
 
-		safe_unpackstr(&build_ptr->sched_params, buffer);
-		safe_unpackstr(&build_ptr->sched_logfile, buffer);
-		safe_unpack16(&build_ptr->sched_log_level, buffer);
-		safe_unpack16(&build_ptr->sched_time_slice, buffer);
-		safe_unpackstr(&build_ptr->schedtype, buffer);
-		safe_unpackstr(&build_ptr->scron_params, buffer);
-		safe_unpackstr(&build_ptr->select_type, buffer);
+		safe_unpackstr(&conf->sched_params, buffer);
+		safe_unpackstr(&conf->sched_logfile, buffer);
+		safe_unpack16(&conf->sched_log_level, buffer);
+		safe_unpack16(&conf->sched_time_slice, buffer);
+		safe_unpackstr(&conf->schedtype, buffer);
+		safe_unpackstr(&conf->scron_params, buffer);
+		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->select_conf_key_pairs,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack16(&build_ptr->select_type_param, buffer);
+		safe_unpack16(&conf->select_type_param, buffer);
 
-		safe_unpackstr(&build_ptr->slurm_conf, buffer);
-		safe_unpack32(&build_ptr->slurm_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurm_user_name, buffer);
-		safe_unpack32(&build_ptr->slurmd_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurmd_user_name, buffer);
+		safe_unpackstr(&conf->slurm_conf, buffer);
+		safe_unpack32(&conf->slurm_user_id, buffer);
+		safe_unpackstr(&conf->slurm_user_name, buffer);
+		safe_unpack32(&conf->slurmd_user_id, buffer);
+		safe_unpackstr(&conf->slurmd_user_name, buffer);
 
-		safe_unpackstr(&build_ptr->slurmctld_addr, buffer);
-		safe_unpack16(&build_ptr->slurmctld_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_params, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmctld_port, buffer);
-		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_off_prog, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_on_prog, buffer);
-		safe_unpack16(&build_ptr->slurmctld_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+		safe_unpackstr(&conf->slurmctld_addr, buffer);
+		safe_unpack16(&conf->slurmctld_debug, buffer);
+		safe_unpackstr(&conf->slurmctld_logfile, buffer);
+		safe_unpackstr(&conf->slurmctld_params, buffer);
+		safe_unpackstr(&conf->slurmctld_pidfile, buffer);
+		safe_unpack32(&conf->slurmctld_port, buffer);
+		safe_unpack16(&conf->slurmctld_port_count, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_off_prog, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_on_prog, buffer);
+		safe_unpack16(&conf->slurmctld_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmctld_timeout, buffer);
 
-		safe_unpack16(&build_ptr->slurmd_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmd_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmd_params, buffer);
-		safe_unpackstr(&build_ptr->slurmd_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmd_port, buffer);
+		safe_unpack16(&conf->slurmd_debug, buffer);
+		safe_unpackstr(&conf->slurmd_logfile, buffer);
+		safe_unpackstr(&conf->slurmd_params, buffer);
+		safe_unpackstr(&conf->slurmd_pidfile, buffer);
+		safe_unpack32(&conf->slurmd_port, buffer);
 
-		safe_unpackstr(&build_ptr->slurmd_spooldir, buffer);
-		safe_unpack16(&build_ptr->slurmd_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
+		safe_unpackstr(&conf->slurmd_spooldir, buffer);
+		safe_unpack16(&conf->slurmd_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmd_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->srun_epilog, buffer);
+		safe_unpackstr(&conf->srun_epilog, buffer);
 
-		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
-		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
-		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
+		conf->srun_port_range = xcalloc(2, sizeof(uint16_t));
+		safe_unpack16(&conf->srun_port_range[0], buffer);
+		safe_unpack16(&conf->srun_port_range[1], buffer);
 
-		safe_unpackstr(&build_ptr->srun_prolog, buffer);
-		safe_unpackstr(&build_ptr->state_save_location, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_nodes, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_parts, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_states, buffer);
-		safe_unpackstr(&build_ptr->suspend_program, buffer);
-		safe_unpack16(&build_ptr->suspend_rate, buffer);
-		safe_unpack32(&build_ptr->suspend_time, buffer);
-		safe_unpack16(&build_ptr->suspend_timeout, buffer);
-		safe_unpackstr(&build_ptr->switch_param, buffer);
-		safe_unpackstr(&build_ptr->switch_type, buffer);
+		safe_unpackstr(&conf->srun_prolog, buffer);
+		safe_unpackstr(&conf->state_save_location, buffer);
+		safe_unpackstr(&conf->suspend_exc_nodes, buffer);
+		safe_unpackstr(&conf->suspend_exc_parts, buffer);
+		safe_unpackstr(&conf->suspend_exc_states, buffer);
+		safe_unpackstr(&conf->suspend_program, buffer);
+		safe_unpack16(&conf->suspend_rate, buffer);
+		safe_unpack32(&conf->suspend_time, buffer);
+		safe_unpack16(&conf->suspend_timeout, buffer);
+		safe_unpackstr(&conf->switch_param, buffer);
+		safe_unpackstr(&conf->switch_type, buffer);
 
-		safe_unpackstr(&build_ptr->task_epilog, buffer);
-		safe_unpackstr(&build_ptr->task_prolog, buffer);
-		safe_unpackstr(&build_ptr->task_plugin, buffer);
-		safe_unpack32(&build_ptr->task_plugin_param, buffer);
-		safe_unpack16(&build_ptr->tcp_timeout, buffer);
-		safe_unpackstr(&build_ptr->tls_params, buffer);
-		safe_unpackstr(&build_ptr->tls_type, buffer);
-		safe_unpackstr(&build_ptr->tmp_fs, buffer);
-		safe_unpackstr(&build_ptr->topology_param, buffer);
-		safe_unpackstr(&build_ptr->topology_plugin, buffer);
-		safe_unpack16(&build_ptr->tree_width, buffer);
+		safe_unpackstr(&conf->task_epilog, buffer);
+		safe_unpackstr(&conf->task_prolog, buffer);
+		safe_unpackstr(&conf->task_plugin, buffer);
+		safe_unpack32(&conf->task_plugin_param, buffer);
+		safe_unpack16(&conf->tcp_timeout, buffer);
+		safe_unpackstr(&conf->tls_params, buffer);
+		safe_unpackstr(&conf->tls_type, buffer);
+		safe_unpackstr(&conf->tmp_fs, buffer);
+		safe_unpackstr(&conf->topology_param, buffer);
+		safe_unpackstr(&conf->topology_plugin, buffer);
+		safe_unpack16(&conf->tree_width, buffer);
 
-		safe_unpackstr(&build_ptr->unkillable_program, buffer);
-		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
-		safe_unpackstr(&build_ptr->url_parser_type, buffer);
-		safe_unpackstr(&build_ptr->version, buffer);
-		safe_unpack16(&build_ptr->vsize_factor, buffer);
+		safe_unpackstr(&conf->unkillable_program, buffer);
+		safe_unpack16(&conf->unkillable_timeout, buffer);
+		safe_unpackstr(&conf->url_parser_type, buffer);
+		safe_unpackstr(&conf->version, buffer);
+		safe_unpack16(&conf->vsize_factor, buffer);
 
-		safe_unpack16(&build_ptr->wait_time, buffer);
-		safe_unpackstr(&build_ptr->x11_params, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		safe_unpack16(&conf->wait_time, buffer);
+		safe_unpackstr(&conf->x11_params, buffer);
+	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
-		safe_unpack_time(&build_ptr->last_update, buffer);
+		safe_unpack_time(&conf->last_update, buffer);
 
-		safe_unpack16(&build_ptr->accounting_storage_enforce, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_backup_host,
-			       buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_ext_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_params, buffer);
-		safe_unpack16(&build_ptr->accounting_storage_port, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_tres, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_type, buffer);
+		safe_unpack16(&conf->accounting_storage_enforce, buffer);
+		safe_unpackstr(&conf->accounting_storage_backup_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_ext_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_params, buffer);
+		safe_unpack16(&conf->accounting_storage_port, buffer);
+		safe_unpackstr(&conf->accounting_storage_tres, buffer);
+		safe_unpackstr(&conf->accounting_storage_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->acct_gather_conf,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->acct_gather_energy_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_filesystem_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_interconnect_type,
-			       buffer);
-		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_profile_type, buffer);
+		safe_unpackstr(&conf->acct_gather_energy_type, buffer);
+		safe_unpackstr(&conf->acct_gather_filesystem_type, buffer);
+		safe_unpackstr(&conf->acct_gather_interconnect_type, buffer);
+		safe_unpack16(&conf->acct_gather_node_freq, buffer);
+		safe_unpackstr(&conf->acct_gather_profile_type, buffer);
 
-		safe_unpackstr(&build_ptr->authalttypes, buffer);
-		safe_unpackstr(&build_ptr->authalt_params, buffer);
-		safe_unpackstr(&build_ptr->authinfo, buffer);
-		safe_unpackstr(&build_ptr->authtype, buffer);
+		safe_unpackstr(&conf->authalttypes, buffer);
+		safe_unpackstr(&conf->authalt_params, buffer);
+		safe_unpackstr(&conf->authinfo, buffer);
+		safe_unpackstr(&conf->authtype, buffer);
 
-		safe_unpack16(&build_ptr->batch_start_timeout, buffer);
-		safe_unpack_time(&build_ptr->boot_time, buffer);
-		safe_unpackstr(&build_ptr->bb_type, buffer);
-		safe_unpackstr(&build_ptr->bcast_exclude, buffer);
-		safe_unpackstr(&build_ptr->bcast_parameters, buffer);
-		safe_unpackstr(&build_ptr->certmgr_params, buffer);
-		safe_unpackstr(&build_ptr->certmgr_type, buffer);
+		safe_unpack16(&conf->batch_start_timeout, buffer);
+		safe_unpack_time(&conf->boot_time, buffer);
+		safe_unpackstr(&conf->bb_type, buffer);
+		safe_unpackstr(&conf->bcast_exclude, buffer);
+		safe_unpackstr(&conf->bcast_parameters, buffer);
+		safe_unpackstr(&conf->certmgr_params, buffer);
+		safe_unpackstr(&conf->certmgr_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->cgroup_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->cgroup_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->cli_filter_params, buffer);
-		safe_unpackstr(&build_ptr->cli_filter_plugins, buffer);
-		safe_unpackstr(&build_ptr->cluster_name, buffer);
-		safe_unpackstr(&build_ptr->comm_params, buffer);
-		safe_unpack16(&build_ptr->complete_wait, buffer);
-		safe_unpack32(&build_ptr->conf_flags, buffer);
-		safe_unpackstr_array(&build_ptr->control_addr,
-		                     &build_ptr->control_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->control_machine,
-		                     &uint32_tmp, buffer);
-		if (build_ptr->control_cnt != uint32_tmp)
+		safe_unpackstr(&conf->cli_filter_params, buffer);
+		safe_unpackstr(&conf->cli_filter_plugins, buffer);
+		safe_unpackstr(&conf->cluster_name, buffer);
+		safe_unpackstr(&conf->comm_params, buffer);
+		safe_unpack16(&conf->complete_wait, buffer);
+		safe_unpack32(&conf->conf_flags, buffer);
+		safe_unpackstr_array(&conf->control_addr, &conf->control_cnt,
+				     buffer);
+		safe_unpackstr_array(&conf->control_machine, &uint32_tmp,
+				     buffer);
+		if (conf->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
-		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr(&build_ptr->cred_type, buffer);
-		safe_unpackstr(&build_ptr->data_parser_parameters, buffer);
+		safe_unpack32(&conf->cpu_freq_def, buffer);
+		safe_unpack32(&conf->cpu_freq_govs, buffer);
+		safe_unpackstr(&conf->cred_type, buffer);
+		safe_unpackstr(&conf->data_parser_parameters, buffer);
 
-		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack64(&build_ptr->debug_flags, buffer);
-		safe_unpackstr(&build_ptr->dependency_params, buffer);
+		safe_unpack64(&conf->def_mem_per_cpu, buffer);
+		safe_unpack64(&conf->debug_flags, buffer);
+		safe_unpackstr(&conf->dependency_params, buffer);
 
-		safe_unpack16(&build_ptr->eio_timeout, buffer);
-		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr_array(&build_ptr->epilog,
-				     &build_ptr->epilog_cnt, buffer);
-		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr_array(&build_ptr->epilog_slurmctld,
-				     &build_ptr->epilog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->epilog_timeout, buffer);
+		safe_unpack16(&conf->eio_timeout, buffer);
+		safe_unpack16(&conf->enforce_part_limits, buffer);
+		safe_unpackstr_array(&conf->epilog, &conf->epilog_cnt, buffer);
+		safe_unpack32(&conf->epilog_msg_time, buffer);
+		safe_unpackstr_array(&conf->epilog_slurmctld,
+				     &conf->epilog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->epilog_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->fed_params, buffer);
-		safe_unpack32(&build_ptr->first_job_id, buffer);
-		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
+		safe_unpackstr(&conf->fed_params, buffer);
+		safe_unpack32(&conf->first_job_id, buffer);
+		safe_unpack16(&conf->fs_dampening_factor, buffer);
 
-		safe_unpackstr(&build_ptr->gres_plugins, buffer);
-		safe_unpack16(&build_ptr->group_time, buffer);
-		safe_unpack16(&build_ptr->group_force, buffer);
-		safe_unpackstr(&build_ptr->gpu_freq_def, buffer);
+		safe_unpackstr(&conf->gres_plugins, buffer);
+		safe_unpack16(&conf->group_time, buffer);
+		safe_unpack16(&conf->group_force, buffer);
+		safe_unpackstr(&conf->gpu_freq_def, buffer);
 
-		safe_unpackstr(&build_ptr->hash_plugin, buffer);
-		safe_unpack32(&build_ptr->hash_val, buffer);
+		safe_unpackstr(&conf->hash_plugin, buffer);
+		safe_unpack32(&conf->hash_val, buffer);
 
-		safe_unpack16(&build_ptr->health_check_interval, buffer);
-		safe_unpack16(&build_ptr->health_check_node_state, buffer);
-		safe_unpackstr(&build_ptr->health_check_program, buffer);
+		safe_unpack16(&conf->health_check_interval, buffer);
+		safe_unpack16(&conf->health_check_node_state, buffer);
+		safe_unpackstr(&conf->health_check_program, buffer);
 
-		safe_unpackstr(&build_ptr->http_parser_type, buffer);
+		safe_unpackstr(&conf->http_parser_type, buffer);
 
-		safe_unpack16(&build_ptr->inactive_limit, buffer);
-		safe_unpackstr(&build_ptr->interactive_step_opts, buffer);
+		safe_unpack16(&conf->inactive_limit, buffer);
+		safe_unpackstr(&conf->interactive_step_opts, buffer);
 
-		safe_unpackstr(&build_ptr->job_acct_gather_freq, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_type, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_params, buffer);
+		safe_unpackstr(&conf->job_acct_gather_freq, buffer);
+		safe_unpackstr(&conf->job_acct_gather_type, buffer);
+		safe_unpackstr(&conf->job_acct_gather_params, buffer);
 
-		safe_unpackstr(&build_ptr->job_comp_host, buffer);
-		safe_unpackstr(&build_ptr->job_comp_loc, buffer);
-		safe_unpackstr(&build_ptr->job_comp_params, buffer);
-		safe_unpack32(&build_ptr->job_comp_port, buffer);
-		safe_unpackstr(&build_ptr->job_comp_type, buffer);
-		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
+		safe_unpackstr(&conf->job_comp_host, buffer);
+		safe_unpackstr(&conf->job_comp_loc, buffer);
+		safe_unpackstr(&conf->job_comp_params, buffer);
+		safe_unpack32(&conf->job_comp_port, buffer);
+		safe_unpackstr(&conf->job_comp_type, buffer);
+		safe_unpackstr(&conf->job_comp_user, buffer);
+		safe_unpackstr(&conf->namespace_plugin, buffer);
 
-		if (slurm_unpack_list(&build_ptr->job_defaults_list,
+		if (slurm_unpack_list(&conf->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
-				      smsg->protocol_version) != SLURM_SUCCESS)
+				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack16(&build_ptr->job_file_append, buffer);
-		safe_unpack16(&build_ptr->job_requeue, buffer);
-		safe_unpackstr(&build_ptr->job_submit_plugins, buffer);
+		safe_unpack16(&conf->job_file_append, buffer);
+		safe_unpack16(&conf->job_requeue, buffer);
+		safe_unpackstr(&conf->job_submit_plugins, buffer);
 
-		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
-		safe_unpack16(&build_ptr->kill_wait, buffer);
+		safe_unpack16(&conf->kill_on_bad_exit, buffer);
+		safe_unpack16(&conf->kill_wait, buffer);
 
-		safe_unpackstr(&build_ptr->launch_params, buffer);
-		safe_unpackstr(&build_ptr->licenses, buffer);
-		safe_unpack16(&build_ptr->log_fmt, buffer);
+		safe_unpackstr(&conf->launch_params, buffer);
+		safe_unpackstr(&conf->licenses, buffer);
+		safe_unpack16(&conf->log_fmt, buffer);
 
-		safe_unpack32(&build_ptr->max_array_sz, buffer);
-		safe_unpack32(&build_ptr->max_batch_requeue, buffer);
-		safe_unpack32(&build_ptr->max_dbd_msgs, buffer);
-		safe_unpackstr(&build_ptr->mail_domain, buffer);
-		safe_unpackstr(&build_ptr->mail_prog, buffer);
-		safe_unpack32(&build_ptr->max_job_cnt, buffer);
-		safe_unpack32(&build_ptr->max_job_id, buffer);
-		safe_unpack64(&build_ptr->max_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->max_node_cnt, buffer);
-		safe_unpack32(&build_ptr->max_step_cnt, buffer);
-		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin_params, buffer);
-		safe_unpackstr(&build_ptr->metrics_type, buffer);
-		safe_unpack32(&build_ptr->min_job_age, buffer);
-		if (unpack_key_pair_list(&build_ptr->mpi_conf,
-					 smsg->protocol_version,
+		safe_unpack32(&conf->max_array_sz, buffer);
+		safe_unpack32(&conf->max_batch_requeue, buffer);
+		safe_unpack32(&conf->max_dbd_msgs, buffer);
+		safe_unpackstr(&conf->mail_domain, buffer);
+		safe_unpackstr(&conf->mail_prog, buffer);
+		safe_unpack32(&conf->max_job_cnt, buffer);
+		safe_unpack32(&conf->max_job_id, buffer);
+		safe_unpack64(&conf->max_mem_per_cpu, buffer);
+		safe_unpack32(&conf->max_node_cnt, buffer);
+		safe_unpack32(&conf->max_step_cnt, buffer);
+		safe_unpack16(&conf->max_tasks_per_node, buffer);
+		safe_unpackstr(&conf->mcs_plugin, buffer);
+		safe_unpackstr(&conf->mcs_plugin_params, buffer);
+		safe_unpackstr(&conf->metrics_type, buffer);
+		safe_unpack32(&conf->min_job_age, buffer);
+		if (unpack_key_pair_list(&conf->mpi_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->mpi_default, buffer);
-		safe_unpackstr(&build_ptr->mpi_params, buffer);
-		safe_unpack16(&build_ptr->msg_timeout, buffer);
+		safe_unpackstr(&conf->mpi_default, buffer);
+		safe_unpackstr(&conf->mpi_params, buffer);
+		safe_unpack16(&conf->msg_timeout, buffer);
 
-		safe_unpack32(&build_ptr->next_job_id, buffer);
+		safe_unpack32(&conf->next_job_id, buffer);
 
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->node_features_conf,
-			    smsg->protocol_version, buffer) != SLURM_SUCCESS)
+		if (unpack_config_plugin_params_list(&conf->node_features_conf,
+						     protocol_version,
+						     buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->node_features_plugins, buffer);
+		safe_unpackstr(&conf->node_features_plugins, buffer);
 
-		safe_unpack16(&build_ptr->over_time_limit, buffer);
+		safe_unpack16(&conf->over_time_limit, buffer);
 
-		safe_unpackstr(&build_ptr->plugindir, buffer);
-		safe_unpackstr(&build_ptr->plugstack, buffer);
+		safe_unpackstr(&conf->plugindir, buffer);
+		safe_unpackstr(&conf->plugstack, buffer);
 
-		safe_unpack16(&build_ptr->preempt_mode, buffer);
-		safe_unpackstr(&build_ptr->preempt_params, buffer);
-		safe_unpackstr(&build_ptr->preempt_type, buffer);
-		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
-		safe_unpackstr(&build_ptr->prep_params, buffer);
-		safe_unpackstr(&build_ptr->prep_plugins, buffer);
+		safe_unpack16(&conf->preempt_mode, buffer);
+		safe_unpackstr(&conf->preempt_params, buffer);
+		safe_unpackstr(&conf->preempt_type, buffer);
+		safe_unpack32(&conf->preempt_exempt_time, buffer);
+		safe_unpackstr(&conf->prep_params, buffer);
+		safe_unpackstr(&conf->prep_plugins, buffer);
 
-		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
-		safe_unpack32(&build_ptr->priority_calc_period, buffer);
-		safe_unpack16(&build_ptr->priority_favor_small, buffer);
-		safe_unpack16(&build_ptr->priority_flags, buffer);
-		safe_unpack32(&build_ptr->priority_max_age, buffer);
-		safe_unpackstr(&build_ptr->priority_params, buffer);
-		safe_unpack16(&build_ptr->priority_reset_period, buffer);
-		safe_unpackstr(&build_ptr->priority_type, buffer);
-		safe_unpack32(&build_ptr->priority_weight_age, buffer);
-		safe_unpack32(&build_ptr->priority_weight_assoc, buffer);
-		safe_unpack32(&build_ptr->priority_weight_fs, buffer);
-		safe_unpack32(&build_ptr->priority_weight_js, buffer);
-		safe_unpack32(&build_ptr->priority_weight_part, buffer);
-		safe_unpack32(&build_ptr->priority_weight_qos, buffer);
-		safe_unpackstr(&build_ptr->priority_weight_tres, buffer);
+		safe_unpack32(&conf->priority_decay_hl, buffer);
+		safe_unpack32(&conf->priority_calc_period, buffer);
+		safe_unpack16(&conf->priority_favor_small, buffer);
+		safe_unpack16(&conf->priority_flags, buffer);
+		safe_unpack32(&conf->priority_max_age, buffer);
+		safe_unpackstr(&conf->priority_params, buffer);
+		safe_unpack16(&conf->priority_reset_period, buffer);
+		safe_unpackstr(&conf->priority_type, buffer);
+		safe_unpack32(&conf->priority_weight_age, buffer);
+		safe_unpack32(&conf->priority_weight_assoc, buffer);
+		safe_unpack32(&conf->priority_weight_fs, buffer);
+		safe_unpack32(&conf->priority_weight_js, buffer);
+		safe_unpack32(&conf->priority_weight_part, buffer);
+		safe_unpack32(&conf->priority_weight_qos, buffer);
+		safe_unpackstr(&conf->priority_weight_tres, buffer);
 
-		safe_unpack16(&build_ptr->private_data, buffer);
-		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr_array(&build_ptr->prolog,
-				     &build_ptr->prolog_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->prolog_slurmctld,
-				     &build_ptr->prolog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->prolog_timeout, buffer);
-		safe_unpack16(&build_ptr->prolog_flags, buffer);
-		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits_except, buffer);
+		safe_unpack16(&conf->private_data, buffer);
+		safe_unpackstr(&conf->proctrack_type, buffer);
+		safe_unpackstr_array(&conf->prolog, &conf->prolog_cnt, buffer);
+		safe_unpackstr_array(&conf->prolog_slurmctld,
+				     &conf->prolog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->prolog_timeout, buffer);
+		safe_unpack16(&conf->prolog_flags, buffer);
+		safe_unpack16(&conf->propagate_prio_process, buffer);
+		safe_unpackstr(&conf->propagate_rlimits, buffer);
+		safe_unpackstr(&conf->propagate_rlimits_except, buffer);
 
-		safe_unpackstr(&build_ptr->reboot_program, buffer);
-		safe_unpack16(&build_ptr->reconfig_flags, buffer);
+		safe_unpackstr(&conf->reboot_program, buffer);
+		safe_unpack16(&conf->reconfig_flags, buffer);
 
-		safe_unpackstr(&build_ptr->requeue_exit, buffer);
-		safe_unpackstr(&build_ptr->requeue_exit_hold, buffer);
+		safe_unpackstr(&conf->requeue_exit, buffer);
+		safe_unpackstr(&conf->requeue_exit_hold, buffer);
 
-		safe_unpackstr(&build_ptr->resume_fail_program, buffer);
-		safe_unpackstr(&build_ptr->resume_program, buffer);
-		safe_unpack16(&build_ptr->resume_rate, buffer);
-		safe_unpack16(&build_ptr->resume_timeout, buffer);
-		safe_unpackstr(&build_ptr->resv_epilog, buffer);
-		safe_unpack16(&build_ptr->resv_over_run, buffer);
-		safe_unpackstr(&build_ptr->resv_prolog, buffer);
-		safe_unpack16(&build_ptr->ret2service, buffer);
+		safe_unpackstr(&conf->resume_fail_program, buffer);
+		safe_unpackstr(&conf->resume_program, buffer);
+		safe_unpack16(&conf->resume_rate, buffer);
+		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpackstr(&conf->resv_epilog, buffer);
+		safe_unpack16(&conf->resv_over_run, buffer);
+		safe_unpackstr(&conf->resv_prolog, buffer);
+		safe_unpack16(&conf->ret2service, buffer);
 
-		safe_unpackstr(&build_ptr->sched_params, buffer);
-		safe_unpackstr(&build_ptr->sched_logfile, buffer);
-		safe_unpack16(&build_ptr->sched_log_level, buffer);
-		safe_unpack16(&build_ptr->sched_time_slice, buffer);
-		safe_unpackstr(&build_ptr->schedtype, buffer);
-		safe_unpackstr(&build_ptr->scron_params, buffer);
-		safe_unpackstr(&build_ptr->select_type, buffer);
+		safe_unpackstr(&conf->sched_params, buffer);
+		safe_unpackstr(&conf->sched_logfile, buffer);
+		safe_unpack16(&conf->sched_log_level, buffer);
+		safe_unpack16(&conf->sched_time_slice, buffer);
+		safe_unpackstr(&conf->schedtype, buffer);
+		safe_unpackstr(&conf->scron_params, buffer);
+		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->select_conf_key_pairs,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack16(&build_ptr->select_type_param, buffer);
+		safe_unpack16(&conf->select_type_param, buffer);
 
-		safe_unpackstr(&build_ptr->slurm_conf, buffer);
-		safe_unpack32(&build_ptr->slurm_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurm_user_name, buffer);
-		safe_unpack32(&build_ptr->slurmd_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurmd_user_name, buffer);
+		safe_unpackstr(&conf->slurm_conf, buffer);
+		safe_unpack32(&conf->slurm_user_id, buffer);
+		safe_unpackstr(&conf->slurm_user_name, buffer);
+		safe_unpack32(&conf->slurmd_user_id, buffer);
+		safe_unpackstr(&conf->slurmd_user_name, buffer);
 
-		safe_unpackstr(&build_ptr->slurmctld_addr, buffer);
-		safe_unpack16(&build_ptr->slurmctld_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_params, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmctld_port, buffer);
-		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_off_prog, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_on_prog, buffer);
-		safe_unpack16(&build_ptr->slurmctld_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+		safe_unpackstr(&conf->slurmctld_addr, buffer);
+		safe_unpack16(&conf->slurmctld_debug, buffer);
+		safe_unpackstr(&conf->slurmctld_logfile, buffer);
+		safe_unpackstr(&conf->slurmctld_params, buffer);
+		safe_unpackstr(&conf->slurmctld_pidfile, buffer);
+		safe_unpack32(&conf->slurmctld_port, buffer);
+		safe_unpack16(&conf->slurmctld_port_count, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_off_prog, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_on_prog, buffer);
+		safe_unpack16(&conf->slurmctld_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmctld_timeout, buffer);
 
-		safe_unpack16(&build_ptr->slurmd_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmd_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmd_params, buffer);
-		safe_unpackstr(&build_ptr->slurmd_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmd_port, buffer);
+		safe_unpack16(&conf->slurmd_debug, buffer);
+		safe_unpackstr(&conf->slurmd_logfile, buffer);
+		safe_unpackstr(&conf->slurmd_params, buffer);
+		safe_unpackstr(&conf->slurmd_pidfile, buffer);
+		safe_unpack32(&conf->slurmd_port, buffer);
 
-		safe_unpackstr(&build_ptr->slurmd_spooldir, buffer);
-		safe_unpack16(&build_ptr->slurmd_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
+		safe_unpackstr(&conf->slurmd_spooldir, buffer);
+		safe_unpack16(&conf->slurmd_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmd_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->srun_epilog, buffer);
+		safe_unpackstr(&conf->srun_epilog, buffer);
 
-		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
-		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
-		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
+		conf->srun_port_range = xcalloc(2, sizeof(uint16_t));
+		safe_unpack16(&conf->srun_port_range[0], buffer);
+		safe_unpack16(&conf->srun_port_range[1], buffer);
 
-		safe_unpackstr(&build_ptr->srun_prolog, buffer);
-		safe_unpackstr(&build_ptr->state_save_location, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_nodes, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_parts, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_states, buffer);
-		safe_unpackstr(&build_ptr->suspend_program, buffer);
-		safe_unpack16(&build_ptr->suspend_rate, buffer);
-		safe_unpack32(&build_ptr->suspend_time, buffer);
-		safe_unpack16(&build_ptr->suspend_timeout, buffer);
-		safe_unpackstr(&build_ptr->switch_param, buffer);
-		safe_unpackstr(&build_ptr->switch_type, buffer);
+		safe_unpackstr(&conf->srun_prolog, buffer);
+		safe_unpackstr(&conf->state_save_location, buffer);
+		safe_unpackstr(&conf->suspend_exc_nodes, buffer);
+		safe_unpackstr(&conf->suspend_exc_parts, buffer);
+		safe_unpackstr(&conf->suspend_exc_states, buffer);
+		safe_unpackstr(&conf->suspend_program, buffer);
+		safe_unpack16(&conf->suspend_rate, buffer);
+		safe_unpack32(&conf->suspend_time, buffer);
+		safe_unpack16(&conf->suspend_timeout, buffer);
+		safe_unpackstr(&conf->switch_param, buffer);
+		safe_unpackstr(&conf->switch_type, buffer);
 
-		safe_unpackstr(&build_ptr->task_epilog, buffer);
-		safe_unpackstr(&build_ptr->task_prolog, buffer);
-		safe_unpackstr(&build_ptr->task_plugin, buffer);
-		safe_unpack32(&build_ptr->task_plugin_param, buffer);
-		safe_unpack16(&build_ptr->tcp_timeout, buffer);
-		safe_unpackstr(&build_ptr->tls_params, buffer);
-		safe_unpackstr(&build_ptr->tls_type, buffer);
-		safe_unpackstr(&build_ptr->tmp_fs, buffer);
-		safe_unpackstr(&build_ptr->topology_param, buffer);
-		safe_unpackstr(&build_ptr->topology_plugin, buffer);
-		safe_unpack16(&build_ptr->tree_width, buffer);
+		safe_unpackstr(&conf->task_epilog, buffer);
+		safe_unpackstr(&conf->task_prolog, buffer);
+		safe_unpackstr(&conf->task_plugin, buffer);
+		safe_unpack32(&conf->task_plugin_param, buffer);
+		safe_unpack16(&conf->tcp_timeout, buffer);
+		safe_unpackstr(&conf->tls_params, buffer);
+		safe_unpackstr(&conf->tls_type, buffer);
+		safe_unpackstr(&conf->tmp_fs, buffer);
+		safe_unpackstr(&conf->topology_param, buffer);
+		safe_unpackstr(&conf->topology_plugin, buffer);
+		safe_unpack16(&conf->tree_width, buffer);
 
-		safe_unpackstr(&build_ptr->unkillable_program, buffer);
-		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
-		safe_unpackstr(&build_ptr->url_parser_type, buffer);
-		safe_unpackstr(&build_ptr->version, buffer);
-		safe_unpack16(&build_ptr->vsize_factor, buffer);
+		safe_unpackstr(&conf->unkillable_program, buffer);
+		safe_unpack16(&conf->unkillable_timeout, buffer);
+		safe_unpackstr(&conf->url_parser_type, buffer);
+		safe_unpackstr(&conf->version, buffer);
+		safe_unpack16(&conf->vsize_factor, buffer);
 
-		safe_unpack16(&build_ptr->wait_time, buffer);
-		safe_unpackstr(&build_ptr->x11_params, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		safe_unpack16(&conf->wait_time, buffer);
+		safe_unpackstr(&conf->x11_params, buffer);
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
-		safe_unpack_time(&build_ptr->last_update, buffer);
+		safe_unpack_time(&conf->last_update, buffer);
 
-		safe_unpack16(&build_ptr->accounting_storage_enforce, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_backup_host,
-			       buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_ext_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_params, buffer);
-		safe_unpack16(&build_ptr->accounting_storage_port, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_tres, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_type, buffer);
+		safe_unpack16(&conf->accounting_storage_enforce, buffer);
+		safe_unpackstr(&conf->accounting_storage_backup_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_ext_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_params, buffer);
+		safe_unpack16(&conf->accounting_storage_port, buffer);
+		safe_unpackstr(&conf->accounting_storage_tres, buffer);
+		safe_unpackstr(&conf->accounting_storage_type, buffer);
 		safe_skipstr(buffer); /* was accounting_storage_user */
 
-		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->acct_gather_conf,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->acct_gather_energy_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_filesystem_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_interconnect_type,
-			       buffer);
-		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_profile_type, buffer);
+		safe_unpackstr(&conf->acct_gather_energy_type, buffer);
+		safe_unpackstr(&conf->acct_gather_filesystem_type, buffer);
+		safe_unpackstr(&conf->acct_gather_interconnect_type, buffer);
+		safe_unpack16(&conf->acct_gather_node_freq, buffer);
+		safe_unpackstr(&conf->acct_gather_profile_type, buffer);
 
-		safe_unpackstr(&build_ptr->authalttypes, buffer);
-		safe_unpackstr(&build_ptr->authalt_params, buffer);
-		safe_unpackstr(&build_ptr->authinfo, buffer);
-		safe_unpackstr(&build_ptr->authtype, buffer);
+		safe_unpackstr(&conf->authalttypes, buffer);
+		safe_unpackstr(&conf->authalt_params, buffer);
+		safe_unpackstr(&conf->authinfo, buffer);
+		safe_unpackstr(&conf->authtype, buffer);
 
-		safe_unpack16(&build_ptr->batch_start_timeout, buffer);
-		safe_unpack_time(&build_ptr->boot_time, buffer);
-		safe_unpackstr(&build_ptr->bb_type, buffer);
-		safe_unpackstr(&build_ptr->bcast_exclude, buffer);
-		safe_unpackstr(&build_ptr->bcast_parameters, buffer);
-		safe_unpackstr(&build_ptr->certmgr_params, buffer);
-		safe_unpackstr(&build_ptr->certmgr_type, buffer);
+		safe_unpack16(&conf->batch_start_timeout, buffer);
+		safe_unpack_time(&conf->boot_time, buffer);
+		safe_unpackstr(&conf->bb_type, buffer);
+		safe_unpackstr(&conf->bcast_exclude, buffer);
+		safe_unpackstr(&conf->bcast_parameters, buffer);
+		safe_unpackstr(&conf->certmgr_params, buffer);
+		safe_unpackstr(&conf->certmgr_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->cgroup_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->cgroup_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->cli_filter_plugins, buffer);
-		safe_unpackstr(&build_ptr->cluster_name, buffer);
-		safe_unpackstr(&build_ptr->comm_params, buffer);
-		safe_unpack16(&build_ptr->complete_wait, buffer);
-		safe_unpack32(&build_ptr->conf_flags, buffer);
-		safe_unpackstr_array(&build_ptr->control_addr,
-		                     &build_ptr->control_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->control_machine,
-		                     &uint32_tmp, buffer);
-		if (build_ptr->control_cnt != uint32_tmp)
+		safe_unpackstr(&conf->cli_filter_plugins, buffer);
+		safe_unpackstr(&conf->cluster_name, buffer);
+		safe_unpackstr(&conf->comm_params, buffer);
+		safe_unpack16(&conf->complete_wait, buffer);
+		safe_unpack32(&conf->conf_flags, buffer);
+		safe_unpackstr_array(&conf->control_addr, &conf->control_cnt,
+				     buffer);
+		safe_unpackstr_array(&conf->control_machine, &uint32_tmp,
+				     buffer);
+		if (conf->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
-		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr(&build_ptr->cred_type, buffer);
-		safe_unpackstr(&build_ptr->data_parser_parameters, buffer);
+		safe_unpack32(&conf->cpu_freq_def, buffer);
+		safe_unpack32(&conf->cpu_freq_govs, buffer);
+		safe_unpackstr(&conf->cred_type, buffer);
+		safe_unpackstr(&conf->data_parser_parameters, buffer);
 
-		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack64(&build_ptr->debug_flags, buffer);
-		safe_unpackstr(&build_ptr->dependency_params, buffer);
+		safe_unpack64(&conf->def_mem_per_cpu, buffer);
+		safe_unpack64(&conf->debug_flags, buffer);
+		safe_unpackstr(&conf->dependency_params, buffer);
 
-		safe_unpack16(&build_ptr->eio_timeout, buffer);
-		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr_array(&build_ptr->epilog,
-				     &build_ptr->epilog_cnt, buffer);
-		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr_array(&build_ptr->epilog_slurmctld,
-				     &build_ptr->epilog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->epilog_timeout, buffer);
+		safe_unpack16(&conf->eio_timeout, buffer);
+		safe_unpack16(&conf->enforce_part_limits, buffer);
+		safe_unpackstr_array(&conf->epilog, &conf->epilog_cnt, buffer);
+		safe_unpack32(&conf->epilog_msg_time, buffer);
+		safe_unpackstr_array(&conf->epilog_slurmctld,
+				     &conf->epilog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->epilog_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->fed_params, buffer);
-		safe_unpack32(&build_ptr->first_job_id, buffer);
-		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
+		safe_unpackstr(&conf->fed_params, buffer);
+		safe_unpack32(&conf->first_job_id, buffer);
+		safe_unpack16(&conf->fs_dampening_factor, buffer);
 
-		safe_unpackstr(&build_ptr->gres_plugins, buffer);
-		safe_unpack16(&build_ptr->group_time, buffer);
-		safe_unpack16(&build_ptr->group_force, buffer);
-		safe_unpackstr(&build_ptr->gpu_freq_def, buffer);
+		safe_unpackstr(&conf->gres_plugins, buffer);
+		safe_unpack16(&conf->group_time, buffer);
+		safe_unpack16(&conf->group_force, buffer);
+		safe_unpackstr(&conf->gpu_freq_def, buffer);
 
-		safe_unpackstr(&build_ptr->hash_plugin, buffer);
-		safe_unpack32(&build_ptr->hash_val, buffer);
+		safe_unpackstr(&conf->hash_plugin, buffer);
+		safe_unpack32(&conf->hash_val, buffer);
 
-		safe_unpack16(&build_ptr->health_check_interval, buffer);
-		safe_unpack16(&build_ptr->health_check_node_state, buffer);
-		safe_unpackstr(&build_ptr->health_check_program, buffer);
+		safe_unpack16(&conf->health_check_interval, buffer);
+		safe_unpack16(&conf->health_check_node_state, buffer);
+		safe_unpackstr(&conf->health_check_program, buffer);
 
-		safe_unpack16(&build_ptr->inactive_limit, buffer);
-		safe_unpackstr(&build_ptr->interactive_step_opts, buffer);
+		safe_unpack16(&conf->inactive_limit, buffer);
+		safe_unpackstr(&conf->interactive_step_opts, buffer);
 
-		safe_unpackstr(&build_ptr->job_acct_gather_freq, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_type, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_params, buffer);
+		safe_unpackstr(&conf->job_acct_gather_freq, buffer);
+		safe_unpackstr(&conf->job_acct_gather_type, buffer);
+		safe_unpackstr(&conf->job_acct_gather_params, buffer);
 
-		safe_unpackstr(&build_ptr->job_comp_host, buffer);
-		safe_unpackstr(&build_ptr->job_comp_loc, buffer);
-		safe_unpackstr(&build_ptr->job_comp_params, buffer);
-		safe_unpack32(&build_ptr->job_comp_port, buffer);
-		safe_unpackstr(&build_ptr->job_comp_type, buffer);
-		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
+		safe_unpackstr(&conf->job_comp_host, buffer);
+		safe_unpackstr(&conf->job_comp_loc, buffer);
+		safe_unpackstr(&conf->job_comp_params, buffer);
+		safe_unpack32(&conf->job_comp_port, buffer);
+		safe_unpackstr(&conf->job_comp_type, buffer);
+		safe_unpackstr(&conf->job_comp_user, buffer);
+		safe_unpackstr(&conf->namespace_plugin, buffer);
 
-		if (slurm_unpack_list(&build_ptr->job_defaults_list,
+		if (slurm_unpack_list(&conf->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
-				      smsg->protocol_version) != SLURM_SUCCESS)
+				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack16(&build_ptr->job_file_append, buffer);
-		safe_unpack16(&build_ptr->job_requeue, buffer);
-		safe_unpackstr(&build_ptr->job_submit_plugins, buffer);
+		safe_unpack16(&conf->job_file_append, buffer);
+		safe_unpack16(&conf->job_requeue, buffer);
+		safe_unpackstr(&conf->job_submit_plugins, buffer);
 
-		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
-		safe_unpack16(&build_ptr->kill_wait, buffer);
+		safe_unpack16(&conf->kill_on_bad_exit, buffer);
+		safe_unpack16(&conf->kill_wait, buffer);
 
-		safe_unpackstr(&build_ptr->launch_params, buffer);
-		safe_unpackstr(&build_ptr->licenses, buffer);
-		safe_unpack16(&build_ptr->log_fmt, buffer);
+		safe_unpackstr(&conf->launch_params, buffer);
+		safe_unpackstr(&conf->licenses, buffer);
+		safe_unpack16(&conf->log_fmt, buffer);
 
-		safe_unpack32(&build_ptr->max_array_sz, buffer);
-		safe_unpack32(&build_ptr->max_batch_requeue, buffer);
-		safe_unpack32(&build_ptr->max_dbd_msgs, buffer);
-		safe_unpackstr(&build_ptr->mail_domain, buffer);
-		safe_unpackstr(&build_ptr->mail_prog, buffer);
-		safe_unpack32(&build_ptr->max_job_cnt, buffer);
-		safe_unpack32(&build_ptr->max_job_id, buffer);
-		safe_unpack64(&build_ptr->max_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->max_node_cnt, buffer);
-		safe_unpack32(&build_ptr->max_step_cnt, buffer);
-		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin_params, buffer);
-		safe_unpack32(&build_ptr->min_job_age, buffer);
-		if (unpack_key_pair_list(&build_ptr->mpi_conf,
-					 smsg->protocol_version,
+		safe_unpack32(&conf->max_array_sz, buffer);
+		safe_unpack32(&conf->max_batch_requeue, buffer);
+		safe_unpack32(&conf->max_dbd_msgs, buffer);
+		safe_unpackstr(&conf->mail_domain, buffer);
+		safe_unpackstr(&conf->mail_prog, buffer);
+		safe_unpack32(&conf->max_job_cnt, buffer);
+		safe_unpack32(&conf->max_job_id, buffer);
+		safe_unpack64(&conf->max_mem_per_cpu, buffer);
+		safe_unpack32(&conf->max_node_cnt, buffer);
+		safe_unpack32(&conf->max_step_cnt, buffer);
+		safe_unpack16(&conf->max_tasks_per_node, buffer);
+		safe_unpackstr(&conf->mcs_plugin, buffer);
+		safe_unpackstr(&conf->mcs_plugin_params, buffer);
+		safe_unpack32(&conf->min_job_age, buffer);
+		if (unpack_key_pair_list(&conf->mpi_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->mpi_default, buffer);
-		safe_unpackstr(&build_ptr->mpi_params, buffer);
-		safe_unpack16(&build_ptr->msg_timeout, buffer);
+		safe_unpackstr(&conf->mpi_default, buffer);
+		safe_unpackstr(&conf->mpi_params, buffer);
+		safe_unpack16(&conf->msg_timeout, buffer);
 
-		safe_unpack32(&build_ptr->next_job_id, buffer);
+		safe_unpack32(&conf->next_job_id, buffer);
 
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->node_features_conf,
-			    smsg->protocol_version, buffer) != SLURM_SUCCESS)
+		if (unpack_config_plugin_params_list(&conf->node_features_conf,
+						     protocol_version,
+						     buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->node_features_plugins, buffer);
+		safe_unpackstr(&conf->node_features_plugins, buffer);
 
-		safe_unpack16(&build_ptr->over_time_limit, buffer);
+		safe_unpack16(&conf->over_time_limit, buffer);
 
-		safe_unpackstr(&build_ptr->plugindir, buffer);
-		safe_unpackstr(&build_ptr->plugstack, buffer);
+		safe_unpackstr(&conf->plugindir, buffer);
+		safe_unpackstr(&conf->plugstack, buffer);
 
-		safe_unpack16(&build_ptr->preempt_mode, buffer);
-		safe_unpackstr(&build_ptr->preempt_params, buffer);
-		safe_unpackstr(&build_ptr->preempt_type, buffer);
-		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
-		safe_unpackstr(&build_ptr->prep_params, buffer);
-		safe_unpackstr(&build_ptr->prep_plugins, buffer);
+		safe_unpack16(&conf->preempt_mode, buffer);
+		safe_unpackstr(&conf->preempt_params, buffer);
+		safe_unpackstr(&conf->preempt_type, buffer);
+		safe_unpack32(&conf->preempt_exempt_time, buffer);
+		safe_unpackstr(&conf->prep_params, buffer);
+		safe_unpackstr(&conf->prep_plugins, buffer);
 
-		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
-		safe_unpack32(&build_ptr->priority_calc_period, buffer);
-		safe_unpack16(&build_ptr->priority_favor_small, buffer);
-		safe_unpack16(&build_ptr->priority_flags, buffer);
-		safe_unpack32(&build_ptr->priority_max_age, buffer);
-		safe_unpackstr(&build_ptr->priority_params, buffer);
-		safe_unpack16(&build_ptr->priority_reset_period, buffer);
-		safe_unpackstr(&build_ptr->priority_type, buffer);
-		safe_unpack32(&build_ptr->priority_weight_age, buffer);
-		safe_unpack32(&build_ptr->priority_weight_assoc, buffer);
-		safe_unpack32(&build_ptr->priority_weight_fs, buffer);
-		safe_unpack32(&build_ptr->priority_weight_js, buffer);
-		safe_unpack32(&build_ptr->priority_weight_part, buffer);
-		safe_unpack32(&build_ptr->priority_weight_qos, buffer);
-		safe_unpackstr(&build_ptr->priority_weight_tres, buffer);
+		safe_unpack32(&conf->priority_decay_hl, buffer);
+		safe_unpack32(&conf->priority_calc_period, buffer);
+		safe_unpack16(&conf->priority_favor_small, buffer);
+		safe_unpack16(&conf->priority_flags, buffer);
+		safe_unpack32(&conf->priority_max_age, buffer);
+		safe_unpackstr(&conf->priority_params, buffer);
+		safe_unpack16(&conf->priority_reset_period, buffer);
+		safe_unpackstr(&conf->priority_type, buffer);
+		safe_unpack32(&conf->priority_weight_age, buffer);
+		safe_unpack32(&conf->priority_weight_assoc, buffer);
+		safe_unpack32(&conf->priority_weight_fs, buffer);
+		safe_unpack32(&conf->priority_weight_js, buffer);
+		safe_unpack32(&conf->priority_weight_part, buffer);
+		safe_unpack32(&conf->priority_weight_qos, buffer);
+		safe_unpackstr(&conf->priority_weight_tres, buffer);
 
-		safe_unpack16(&build_ptr->private_data, buffer);
-		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr_array(&build_ptr->prolog,
-				     &build_ptr->prolog_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->prolog_slurmctld,
-				     &build_ptr->prolog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->prolog_timeout, buffer);
-		safe_unpack16(&build_ptr->prolog_flags, buffer);
-		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits_except, buffer);
+		safe_unpack16(&conf->private_data, buffer);
+		safe_unpackstr(&conf->proctrack_type, buffer);
+		safe_unpackstr_array(&conf->prolog, &conf->prolog_cnt, buffer);
+		safe_unpackstr_array(&conf->prolog_slurmctld,
+				     &conf->prolog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->prolog_timeout, buffer);
+		safe_unpack16(&conf->prolog_flags, buffer);
+		safe_unpack16(&conf->propagate_prio_process, buffer);
+		safe_unpackstr(&conf->propagate_rlimits, buffer);
+		safe_unpackstr(&conf->propagate_rlimits_except, buffer);
 
-		safe_unpackstr(&build_ptr->reboot_program, buffer);
-		safe_unpack16(&build_ptr->reconfig_flags, buffer);
+		safe_unpackstr(&conf->reboot_program, buffer);
+		safe_unpack16(&conf->reconfig_flags, buffer);
 
-		safe_unpackstr(&build_ptr->requeue_exit, buffer);
-		safe_unpackstr(&build_ptr->requeue_exit_hold, buffer);
+		safe_unpackstr(&conf->requeue_exit, buffer);
+		safe_unpackstr(&conf->requeue_exit_hold, buffer);
 
-		safe_unpackstr(&build_ptr->resume_fail_program, buffer);
-		safe_unpackstr(&build_ptr->resume_program, buffer);
-		safe_unpack16(&build_ptr->resume_rate, buffer);
-		safe_unpack16(&build_ptr->resume_timeout, buffer);
-		safe_unpackstr(&build_ptr->resv_epilog, buffer);
-		safe_unpack16(&build_ptr->resv_over_run, buffer);
-		safe_unpackstr(&build_ptr->resv_prolog, buffer);
-		safe_unpack16(&build_ptr->ret2service, buffer);
+		safe_unpackstr(&conf->resume_fail_program, buffer);
+		safe_unpackstr(&conf->resume_program, buffer);
+		safe_unpack16(&conf->resume_rate, buffer);
+		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpackstr(&conf->resv_epilog, buffer);
+		safe_unpack16(&conf->resv_over_run, buffer);
+		safe_unpackstr(&conf->resv_prolog, buffer);
+		safe_unpack16(&conf->ret2service, buffer);
 
-		safe_unpackstr(&build_ptr->sched_params, buffer);
-		safe_unpackstr(&build_ptr->sched_logfile, buffer);
-		safe_unpack16(&build_ptr->sched_log_level, buffer);
-		safe_unpack16(&build_ptr->sched_time_slice, buffer);
-		safe_unpackstr(&build_ptr->schedtype, buffer);
-		safe_unpackstr(&build_ptr->scron_params, buffer);
-		safe_unpackstr(&build_ptr->select_type, buffer);
+		safe_unpackstr(&conf->sched_params, buffer);
+		safe_unpackstr(&conf->sched_logfile, buffer);
+		safe_unpack16(&conf->sched_log_level, buffer);
+		safe_unpack16(&conf->sched_time_slice, buffer);
+		safe_unpackstr(&conf->schedtype, buffer);
+		safe_unpackstr(&conf->scron_params, buffer);
+		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->select_conf_key_pairs,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack16(&build_ptr->select_type_param, buffer);
+		safe_unpack16(&conf->select_type_param, buffer);
 
-		safe_unpackstr(&build_ptr->slurm_conf, buffer);
-		safe_unpack32(&build_ptr->slurm_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurm_user_name, buffer);
-		safe_unpack32(&build_ptr->slurmd_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurmd_user_name, buffer);
+		safe_unpackstr(&conf->slurm_conf, buffer);
+		safe_unpack32(&conf->slurm_user_id, buffer);
+		safe_unpackstr(&conf->slurm_user_name, buffer);
+		safe_unpack32(&conf->slurmd_user_id, buffer);
+		safe_unpackstr(&conf->slurmd_user_name, buffer);
 
-		safe_unpackstr(&build_ptr->slurmctld_addr, buffer);
-		safe_unpack16(&build_ptr->slurmctld_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_params, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmctld_port, buffer);
-		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_off_prog, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_on_prog, buffer);
-		safe_unpack16(&build_ptr->slurmctld_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+		safe_unpackstr(&conf->slurmctld_addr, buffer);
+		safe_unpack16(&conf->slurmctld_debug, buffer);
+		safe_unpackstr(&conf->slurmctld_logfile, buffer);
+		safe_unpackstr(&conf->slurmctld_params, buffer);
+		safe_unpackstr(&conf->slurmctld_pidfile, buffer);
+		safe_unpack32(&conf->slurmctld_port, buffer);
+		safe_unpack16(&conf->slurmctld_port_count, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_off_prog, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_on_prog, buffer);
+		safe_unpack16(&conf->slurmctld_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmctld_timeout, buffer);
 
-		safe_unpack16(&build_ptr->slurmd_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmd_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmd_params, buffer);
-		safe_unpackstr(&build_ptr->slurmd_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmd_port, buffer);
+		safe_unpack16(&conf->slurmd_debug, buffer);
+		safe_unpackstr(&conf->slurmd_logfile, buffer);
+		safe_unpackstr(&conf->slurmd_params, buffer);
+		safe_unpackstr(&conf->slurmd_pidfile, buffer);
+		safe_unpack32(&conf->slurmd_port, buffer);
 
-		safe_unpackstr(&build_ptr->slurmd_spooldir, buffer);
-		safe_unpack16(&build_ptr->slurmd_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
+		safe_unpackstr(&conf->slurmd_spooldir, buffer);
+		safe_unpack16(&conf->slurmd_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmd_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->srun_epilog, buffer);
+		safe_unpackstr(&conf->srun_epilog, buffer);
 
-		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
-		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
-		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
+		conf->srun_port_range = xcalloc(2, sizeof(uint16_t));
+		safe_unpack16(&conf->srun_port_range[0], buffer);
+		safe_unpack16(&conf->srun_port_range[1], buffer);
 
-		safe_unpackstr(&build_ptr->srun_prolog, buffer);
-		safe_unpackstr(&build_ptr->state_save_location, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_nodes, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_parts, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_states, buffer);
-		safe_unpackstr(&build_ptr->suspend_program, buffer);
-		safe_unpack16(&build_ptr->suspend_rate, buffer);
-		safe_unpack32(&build_ptr->suspend_time, buffer);
-		safe_unpack16(&build_ptr->suspend_timeout, buffer);
-		safe_unpackstr(&build_ptr->switch_param, buffer);
-		safe_unpackstr(&build_ptr->switch_type, buffer);
+		safe_unpackstr(&conf->srun_prolog, buffer);
+		safe_unpackstr(&conf->state_save_location, buffer);
+		safe_unpackstr(&conf->suspend_exc_nodes, buffer);
+		safe_unpackstr(&conf->suspend_exc_parts, buffer);
+		safe_unpackstr(&conf->suspend_exc_states, buffer);
+		safe_unpackstr(&conf->suspend_program, buffer);
+		safe_unpack16(&conf->suspend_rate, buffer);
+		safe_unpack32(&conf->suspend_time, buffer);
+		safe_unpack16(&conf->suspend_timeout, buffer);
+		safe_unpackstr(&conf->switch_param, buffer);
+		safe_unpackstr(&conf->switch_type, buffer);
 
-		safe_unpackstr(&build_ptr->task_epilog, buffer);
-		safe_unpackstr(&build_ptr->task_prolog, buffer);
-		safe_unpackstr(&build_ptr->task_plugin, buffer);
-		safe_unpack32(&build_ptr->task_plugin_param, buffer);
-		safe_unpack16(&build_ptr->tcp_timeout, buffer);
-		safe_unpackstr(&build_ptr->tls_params, buffer);
-		safe_unpackstr(&build_ptr->tls_type, buffer);
-		safe_unpackstr(&build_ptr->tmp_fs, buffer);
-		safe_unpackstr(&build_ptr->topology_param, buffer);
-		safe_unpackstr(&build_ptr->topology_plugin, buffer);
-		safe_unpack16(&build_ptr->tree_width, buffer);
+		safe_unpackstr(&conf->task_epilog, buffer);
+		safe_unpackstr(&conf->task_prolog, buffer);
+		safe_unpackstr(&conf->task_plugin, buffer);
+		safe_unpack32(&conf->task_plugin_param, buffer);
+		safe_unpack16(&conf->tcp_timeout, buffer);
+		safe_unpackstr(&conf->tls_params, buffer);
+		safe_unpackstr(&conf->tls_type, buffer);
+		safe_unpackstr(&conf->tmp_fs, buffer);
+		safe_unpackstr(&conf->topology_param, buffer);
+		safe_unpackstr(&conf->topology_plugin, buffer);
+		safe_unpack16(&conf->tree_width, buffer);
 
-		safe_unpackstr(&build_ptr->unkillable_program, buffer);
-		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
-		safe_unpackstr(&build_ptr->version, buffer);
-		safe_unpack16(&build_ptr->vsize_factor, buffer);
+		safe_unpackstr(&conf->unkillable_program, buffer);
+		safe_unpack16(&conf->unkillable_timeout, buffer);
+		safe_unpackstr(&conf->version, buffer);
+		safe_unpack16(&conf->vsize_factor, buffer);
 
-		safe_unpack16(&build_ptr->wait_time, buffer);
-		safe_unpackstr(&build_ptr->x11_params, buffer);
-	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack16(&conf->wait_time, buffer);
+		safe_unpackstr(&conf->x11_params, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* unpack timestamp of snapshot */
-		safe_unpack_time(&build_ptr->last_update, buffer);
+		safe_unpack_time(&conf->last_update, buffer);
 
-		safe_unpack16(&build_ptr->accounting_storage_enforce, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_backup_host,
-			       buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_ext_host, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_params, buffer);
-		safe_unpack16(&build_ptr->accounting_storage_port, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_tres, buffer);
-		safe_unpackstr(&build_ptr->accounting_storage_type, buffer);
+		safe_unpack16(&conf->accounting_storage_enforce, buffer);
+		safe_unpackstr(&conf->accounting_storage_backup_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_ext_host, buffer);
+		safe_unpackstr(&conf->accounting_storage_params, buffer);
+		safe_unpack16(&conf->accounting_storage_port, buffer);
+		safe_unpackstr(&conf->accounting_storage_tres, buffer);
+		safe_unpackstr(&conf->accounting_storage_type, buffer);
 		safe_skipstr(buffer); /* was accounting_storage_user */
 
-		if (unpack_key_pair_list(&build_ptr->acct_gather_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->acct_gather_conf,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->acct_gather_energy_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_filesystem_type, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_interconnect_type,
-			       buffer);
-		safe_unpack16(&build_ptr->acct_gather_node_freq, buffer);
-		safe_unpackstr(&build_ptr->acct_gather_profile_type, buffer);
+		safe_unpackstr(&conf->acct_gather_energy_type, buffer);
+		safe_unpackstr(&conf->acct_gather_filesystem_type, buffer);
+		safe_unpackstr(&conf->acct_gather_interconnect_type, buffer);
+		safe_unpack16(&conf->acct_gather_node_freq, buffer);
+		safe_unpackstr(&conf->acct_gather_profile_type, buffer);
 
-		safe_unpackstr(&build_ptr->authalttypes, buffer);
-		safe_unpackstr(&build_ptr->authalt_params, buffer);
-		safe_unpackstr(&build_ptr->authinfo, buffer);
-		safe_unpackstr(&build_ptr->authtype, buffer);
+		safe_unpackstr(&conf->authalttypes, buffer);
+		safe_unpackstr(&conf->authalt_params, buffer);
+		safe_unpackstr(&conf->authinfo, buffer);
+		safe_unpackstr(&conf->authtype, buffer);
 
-		safe_unpack16(&build_ptr->batch_start_timeout, buffer);
-		safe_unpack_time(&build_ptr->boot_time, buffer);
-		safe_unpackstr(&build_ptr->bb_type, buffer);
-		safe_unpackstr(&build_ptr->bcast_exclude, buffer);
-		safe_unpackstr(&build_ptr->bcast_parameters, buffer);
+		safe_unpack16(&conf->batch_start_timeout, buffer);
+		safe_unpack_time(&conf->boot_time, buffer);
+		safe_unpackstr(&conf->bb_type, buffer);
+		safe_unpackstr(&conf->bcast_exclude, buffer);
+		safe_unpackstr(&conf->bcast_parameters, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->cgroup_conf,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->cgroup_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->cli_filter_plugins, buffer);
-		safe_unpackstr(&build_ptr->cluster_name, buffer);
-		safe_unpackstr(&build_ptr->comm_params, buffer);
-		safe_unpack16(&build_ptr->complete_wait, buffer);
-		safe_unpack32(&build_ptr->conf_flags, buffer);
-		safe_unpackstr_array(&build_ptr->control_addr,
-		                     &build_ptr->control_cnt, buffer);
-		safe_unpackstr_array(&build_ptr->control_machine,
-		                     &uint32_tmp, buffer);
-		if (build_ptr->control_cnt != uint32_tmp)
+		safe_unpackstr(&conf->cli_filter_plugins, buffer);
+		safe_unpackstr(&conf->cluster_name, buffer);
+		safe_unpackstr(&conf->comm_params, buffer);
+		safe_unpack16(&conf->complete_wait, buffer);
+		safe_unpack32(&conf->conf_flags, buffer);
+		safe_unpackstr_array(&conf->control_addr, &conf->control_cnt,
+				     buffer);
+		safe_unpackstr_array(&conf->control_machine, &uint32_tmp,
+				     buffer);
+		if (conf->control_cnt != uint32_tmp)
 			goto unpack_error;
-		safe_unpack32(&build_ptr->cpu_freq_def, buffer);
-		safe_unpack32(&build_ptr->cpu_freq_govs, buffer);
-		safe_unpackstr(&build_ptr->cred_type, buffer);
-		safe_unpackstr(&build_ptr->data_parser_parameters, buffer);
+		safe_unpack32(&conf->cpu_freq_def, buffer);
+		safe_unpack32(&conf->cpu_freq_govs, buffer);
+		safe_unpackstr(&conf->cred_type, buffer);
+		safe_unpackstr(&conf->data_parser_parameters, buffer);
 
-		safe_unpack64(&build_ptr->def_mem_per_cpu, buffer);
-		safe_unpack64(&build_ptr->debug_flags, buffer);
-		safe_unpackstr(&build_ptr->dependency_params, buffer);
+		safe_unpack64(&conf->def_mem_per_cpu, buffer);
+		safe_unpack64(&conf->debug_flags, buffer);
+		safe_unpackstr(&conf->dependency_params, buffer);
 
-		safe_unpack16(&build_ptr->eio_timeout, buffer);
-		safe_unpack16(&build_ptr->enforce_part_limits, buffer);
-		safe_unpackstr_array(&build_ptr->epilog,
-				     &build_ptr->epilog_cnt, buffer);
-		safe_unpack32(&build_ptr->epilog_msg_time, buffer);
-		safe_unpackstr_array(&build_ptr->epilog_slurmctld,
-				     &build_ptr->epilog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->eio_timeout, buffer);
+		safe_unpack16(&conf->enforce_part_limits, buffer);
+		safe_unpackstr_array(&conf->epilog, &conf->epilog_cnt, buffer);
+		safe_unpack32(&conf->epilog_msg_time, buffer);
+		safe_unpackstr_array(&conf->epilog_slurmctld,
+				     &conf->epilog_slurmctld_cnt, buffer);
 
-		safe_unpackstr(&build_ptr->fed_params, buffer);
-		safe_unpack32(&build_ptr->first_job_id, buffer);
-		safe_unpack16(&build_ptr->fs_dampening_factor, buffer);
+		safe_unpackstr(&conf->fed_params, buffer);
+		safe_unpack32(&conf->first_job_id, buffer);
+		safe_unpack16(&conf->fs_dampening_factor, buffer);
 
 		safe_unpack16(&uint16_tmp, buffer); /* was get_env_timeout */
-		safe_unpackstr(&build_ptr->gres_plugins, buffer);
-		safe_unpack16(&build_ptr->group_time, buffer);
-		safe_unpack16(&build_ptr->group_force, buffer);
-		safe_unpackstr(&build_ptr->gpu_freq_def, buffer);
+		safe_unpackstr(&conf->gres_plugins, buffer);
+		safe_unpack16(&conf->group_time, buffer);
+		safe_unpack16(&conf->group_force, buffer);
+		safe_unpackstr(&conf->gpu_freq_def, buffer);
 
-		safe_unpackstr(&build_ptr->hash_plugin, buffer);
-		safe_unpack32(&build_ptr->hash_val, buffer);
+		safe_unpackstr(&conf->hash_plugin, buffer);
+		safe_unpack32(&conf->hash_val, buffer);
 
-		safe_unpack16(&build_ptr->health_check_interval, buffer);
-		safe_unpack16(&build_ptr->health_check_node_state, buffer);
-		safe_unpackstr(&build_ptr->health_check_program, buffer);
+		safe_unpack16(&conf->health_check_interval, buffer);
+		safe_unpack16(&conf->health_check_node_state, buffer);
+		safe_unpackstr(&conf->health_check_program, buffer);
 
-		safe_unpack16(&build_ptr->inactive_limit, buffer);
-		safe_unpackstr(&build_ptr->interactive_step_opts, buffer);
+		safe_unpack16(&conf->inactive_limit, buffer);
+		safe_unpackstr(&conf->interactive_step_opts, buffer);
 
-		safe_unpackstr(&build_ptr->job_acct_gather_freq, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_type, buffer);
-		safe_unpackstr(&build_ptr->job_acct_gather_params, buffer);
+		safe_unpackstr(&conf->job_acct_gather_freq, buffer);
+		safe_unpackstr(&conf->job_acct_gather_type, buffer);
+		safe_unpackstr(&conf->job_acct_gather_params, buffer);
 
-		safe_unpackstr(&build_ptr->job_comp_host, buffer);
-		safe_unpackstr(&build_ptr->job_comp_loc, buffer);
-		safe_unpackstr(&build_ptr->job_comp_params, buffer);
-		safe_unpack32(&build_ptr->job_comp_port, buffer);
-		safe_unpackstr(&build_ptr->job_comp_type, buffer);
-		safe_unpackstr(&build_ptr->job_comp_user, buffer);
-		safe_unpackstr(&build_ptr->namespace_plugin, buffer);
+		safe_unpackstr(&conf->job_comp_host, buffer);
+		safe_unpackstr(&conf->job_comp_loc, buffer);
+		safe_unpackstr(&conf->job_comp_params, buffer);
+		safe_unpack32(&conf->job_comp_port, buffer);
+		safe_unpackstr(&conf->job_comp_type, buffer);
+		safe_unpackstr(&conf->job_comp_user, buffer);
+		safe_unpackstr(&conf->namespace_plugin, buffer);
 
-		if (slurm_unpack_list(&build_ptr->job_defaults_list,
+		if (slurm_unpack_list(&conf->job_defaults_list,
 				      job_defaults_unpack, xfree_ptr, buffer,
-				      smsg->protocol_version) != SLURM_SUCCESS)
+				      protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpack16(&build_ptr->job_file_append, buffer);
-		safe_unpack16(&build_ptr->job_requeue, buffer);
-		safe_unpackstr(&build_ptr->job_submit_plugins, buffer);
+		safe_unpack16(&conf->job_file_append, buffer);
+		safe_unpack16(&conf->job_requeue, buffer);
+		safe_unpackstr(&conf->job_submit_plugins, buffer);
 
-		safe_unpack16(&build_ptr->kill_on_bad_exit, buffer);
-		safe_unpack16(&build_ptr->kill_wait, buffer);
+		safe_unpack16(&conf->kill_on_bad_exit, buffer);
+		safe_unpack16(&conf->kill_wait, buffer);
 
-		safe_unpackstr(&build_ptr->launch_params, buffer);
-		safe_unpackstr(&build_ptr->licenses, buffer);
-		safe_unpack16(&build_ptr->log_fmt, buffer);
+		safe_unpackstr(&conf->launch_params, buffer);
+		safe_unpackstr(&conf->licenses, buffer);
+		safe_unpack16(&conf->log_fmt, buffer);
 
-		safe_unpack32(&build_ptr->max_array_sz, buffer);
-		safe_unpack32(&build_ptr->max_batch_requeue, buffer);
-		safe_unpack32(&build_ptr->max_dbd_msgs, buffer);
-		safe_unpackstr(&build_ptr->mail_domain, buffer);
-		safe_unpackstr(&build_ptr->mail_prog, buffer);
-		safe_unpack32(&build_ptr->max_job_cnt, buffer);
-		safe_unpack32(&build_ptr->max_job_id, buffer);
-		safe_unpack64(&build_ptr->max_mem_per_cpu, buffer);
-		safe_unpack32(&build_ptr->max_node_cnt, buffer);
-		safe_unpack32(&build_ptr->max_step_cnt, buffer);
-		safe_unpack16(&build_ptr->max_tasks_per_node, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin, buffer);
-		safe_unpackstr(&build_ptr->mcs_plugin_params, buffer);
-		safe_unpack32(&build_ptr->min_job_age, buffer);
-		if (unpack_key_pair_list(&build_ptr->mpi_conf,
-					 smsg->protocol_version,
+		safe_unpack32(&conf->max_array_sz, buffer);
+		safe_unpack32(&conf->max_batch_requeue, buffer);
+		safe_unpack32(&conf->max_dbd_msgs, buffer);
+		safe_unpackstr(&conf->mail_domain, buffer);
+		safe_unpackstr(&conf->mail_prog, buffer);
+		safe_unpack32(&conf->max_job_cnt, buffer);
+		safe_unpack32(&conf->max_job_id, buffer);
+		safe_unpack64(&conf->max_mem_per_cpu, buffer);
+		safe_unpack32(&conf->max_node_cnt, buffer);
+		safe_unpack32(&conf->max_step_cnt, buffer);
+		safe_unpack16(&conf->max_tasks_per_node, buffer);
+		safe_unpackstr(&conf->mcs_plugin, buffer);
+		safe_unpackstr(&conf->mcs_plugin_params, buffer);
+		safe_unpack32(&conf->min_job_age, buffer);
+		if (unpack_key_pair_list(&conf->mpi_conf, protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr(&build_ptr->mpi_default, buffer);
-		safe_unpackstr(&build_ptr->mpi_params, buffer);
-		safe_unpack16(&build_ptr->msg_timeout, buffer);
+		safe_unpackstr(&conf->mpi_default, buffer);
+		safe_unpackstr(&conf->mpi_params, buffer);
+		safe_unpack16(&conf->msg_timeout, buffer);
 
-		safe_unpack32(&build_ptr->next_job_id, buffer);
+		safe_unpack32(&conf->next_job_id, buffer);
 
-		if (unpack_config_plugin_params_list(
-			    &build_ptr->node_features_conf,
-			    smsg->protocol_version, buffer) != SLURM_SUCCESS)
+		if (unpack_config_plugin_params_list(&conf->node_features_conf,
+						     protocol_version,
+						     buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpackstr(&build_ptr->node_features_plugins, buffer);
+		safe_unpackstr(&conf->node_features_plugins, buffer);
 
-		safe_unpack16(&build_ptr->over_time_limit, buffer);
+		safe_unpack16(&conf->over_time_limit, buffer);
 
-		safe_unpackstr(&build_ptr->plugindir, buffer);
-		safe_unpackstr(&build_ptr->plugstack, buffer);
+		safe_unpackstr(&conf->plugindir, buffer);
+		safe_unpackstr(&conf->plugstack, buffer);
 
-		safe_unpack16(&build_ptr->preempt_mode, buffer);
-		safe_unpackstr(&build_ptr->preempt_params, buffer);
-		safe_unpackstr(&build_ptr->preempt_type, buffer);
-		safe_unpack32(&build_ptr->preempt_exempt_time, buffer);
-		safe_unpackstr(&build_ptr->prep_params, buffer);
-		safe_unpackstr(&build_ptr->prep_plugins, buffer);
+		safe_unpack16(&conf->preempt_mode, buffer);
+		safe_unpackstr(&conf->preempt_params, buffer);
+		safe_unpackstr(&conf->preempt_type, buffer);
+		safe_unpack32(&conf->preempt_exempt_time, buffer);
+		safe_unpackstr(&conf->prep_params, buffer);
+		safe_unpackstr(&conf->prep_plugins, buffer);
 
-		safe_unpack32(&build_ptr->priority_decay_hl, buffer);
-		safe_unpack32(&build_ptr->priority_calc_period, buffer);
-		safe_unpack16(&build_ptr->priority_favor_small, buffer);
-		safe_unpack16(&build_ptr->priority_flags, buffer);
-		safe_unpack32(&build_ptr->priority_max_age, buffer);
-		safe_unpackstr(&build_ptr->priority_params, buffer);
-		safe_unpack16(&build_ptr->priority_reset_period, buffer);
-		safe_unpackstr(&build_ptr->priority_type, buffer);
-		safe_unpack32(&build_ptr->priority_weight_age, buffer);
-		safe_unpack32(&build_ptr->priority_weight_assoc, buffer);
-		safe_unpack32(&build_ptr->priority_weight_fs, buffer);
-		safe_unpack32(&build_ptr->priority_weight_js, buffer);
-		safe_unpack32(&build_ptr->priority_weight_part, buffer);
-		safe_unpack32(&build_ptr->priority_weight_qos, buffer);
-		safe_unpackstr(&build_ptr->priority_weight_tres, buffer);
+		safe_unpack32(&conf->priority_decay_hl, buffer);
+		safe_unpack32(&conf->priority_calc_period, buffer);
+		safe_unpack16(&conf->priority_favor_small, buffer);
+		safe_unpack16(&conf->priority_flags, buffer);
+		safe_unpack32(&conf->priority_max_age, buffer);
+		safe_unpackstr(&conf->priority_params, buffer);
+		safe_unpack16(&conf->priority_reset_period, buffer);
+		safe_unpackstr(&conf->priority_type, buffer);
+		safe_unpack32(&conf->priority_weight_age, buffer);
+		safe_unpack32(&conf->priority_weight_assoc, buffer);
+		safe_unpack32(&conf->priority_weight_fs, buffer);
+		safe_unpack32(&conf->priority_weight_js, buffer);
+		safe_unpack32(&conf->priority_weight_part, buffer);
+		safe_unpack32(&conf->priority_weight_qos, buffer);
+		safe_unpackstr(&conf->priority_weight_tres, buffer);
 
-		safe_unpack16(&build_ptr->private_data, buffer);
-		safe_unpackstr(&build_ptr->proctrack_type, buffer);
-		safe_unpackstr_array(&build_ptr->prolog,
-				     &build_ptr->prolog_cnt, buffer);
+		safe_unpack16(&conf->private_data, buffer);
+		safe_unpackstr(&conf->proctrack_type, buffer);
+		safe_unpackstr_array(&conf->prolog, &conf->prolog_cnt, buffer);
 
 		/* Originally prolog_epilog_timeout */
-		safe_unpack16(&build_ptr->prolog_timeout, buffer);
-		build_ptr->epilog_timeout = build_ptr->prolog_timeout;
+		safe_unpack16(&conf->prolog_timeout, buffer);
+		conf->epilog_timeout = conf->prolog_timeout;
 
-		safe_unpackstr_array(&build_ptr->prolog_slurmctld,
-				     &build_ptr->prolog_slurmctld_cnt, buffer);
-		safe_unpack16(&build_ptr->prolog_flags, buffer);
-		safe_unpack16(&build_ptr->propagate_prio_process, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits, buffer);
-		safe_unpackstr(&build_ptr->propagate_rlimits_except, buffer);
+		safe_unpackstr_array(&conf->prolog_slurmctld,
+				     &conf->prolog_slurmctld_cnt, buffer);
+		safe_unpack16(&conf->prolog_flags, buffer);
+		safe_unpack16(&conf->propagate_prio_process, buffer);
+		safe_unpackstr(&conf->propagate_rlimits, buffer);
+		safe_unpackstr(&conf->propagate_rlimits_except, buffer);
 
-		safe_unpackstr(&build_ptr->reboot_program, buffer);
-		safe_unpack16(&build_ptr->reconfig_flags, buffer);
+		safe_unpackstr(&conf->reboot_program, buffer);
+		safe_unpack16(&conf->reconfig_flags, buffer);
 
-		safe_unpackstr(&build_ptr->requeue_exit, buffer);
-		safe_unpackstr(&build_ptr->requeue_exit_hold, buffer);
+		safe_unpackstr(&conf->requeue_exit, buffer);
+		safe_unpackstr(&conf->requeue_exit_hold, buffer);
 
-		safe_unpackstr(&build_ptr->resume_fail_program, buffer);
-		safe_unpackstr(&build_ptr->resume_program, buffer);
-		safe_unpack16(&build_ptr->resume_rate, buffer);
-		safe_unpack16(&build_ptr->resume_timeout, buffer);
-		safe_unpackstr(&build_ptr->resv_epilog, buffer);
-		safe_unpack16(&build_ptr->resv_over_run, buffer);
-		safe_unpackstr(&build_ptr->resv_prolog, buffer);
-		safe_unpack16(&build_ptr->ret2service, buffer);
+		safe_unpackstr(&conf->resume_fail_program, buffer);
+		safe_unpackstr(&conf->resume_program, buffer);
+		safe_unpack16(&conf->resume_rate, buffer);
+		safe_unpack16(&conf->resume_timeout, buffer);
+		safe_unpackstr(&conf->resv_epilog, buffer);
+		safe_unpack16(&conf->resv_over_run, buffer);
+		safe_unpackstr(&conf->resv_prolog, buffer);
+		safe_unpack16(&conf->ret2service, buffer);
 
-		safe_unpackstr(&build_ptr->sched_params, buffer);
-		safe_unpackstr(&build_ptr->sched_logfile, buffer);
-		safe_unpack16(&build_ptr->sched_log_level, buffer);
-		safe_unpack16(&build_ptr->sched_time_slice, buffer);
-		safe_unpackstr(&build_ptr->schedtype, buffer);
-		safe_unpackstr(&build_ptr->scron_params, buffer);
-		safe_unpackstr(&build_ptr->select_type, buffer);
+		safe_unpackstr(&conf->sched_params, buffer);
+		safe_unpackstr(&conf->sched_logfile, buffer);
+		safe_unpack16(&conf->sched_log_level, buffer);
+		safe_unpack16(&conf->sched_time_slice, buffer);
+		safe_unpackstr(&conf->schedtype, buffer);
+		safe_unpackstr(&conf->scron_params, buffer);
+		safe_unpackstr(&conf->select_type, buffer);
 
-		if (unpack_key_pair_list(&build_ptr->select_conf_key_pairs,
-					 smsg->protocol_version,
+		if (unpack_key_pair_list(&conf->select_conf_key_pairs,
+					 protocol_version,
 					 buffer) != SLURM_SUCCESS)
 			goto unpack_error;
 
-		safe_unpack16(&build_ptr->select_type_param, buffer);
+		safe_unpack16(&conf->select_type_param, buffer);
 
-		safe_unpackstr(&build_ptr->slurm_conf, buffer);
-		safe_unpack32(&build_ptr->slurm_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurm_user_name, buffer);
-		safe_unpack32(&build_ptr->slurmd_user_id, buffer);
-		safe_unpackstr(&build_ptr->slurmd_user_name, buffer);
+		safe_unpackstr(&conf->slurm_conf, buffer);
+		safe_unpack32(&conf->slurm_user_id, buffer);
+		safe_unpackstr(&conf->slurm_user_name, buffer);
+		safe_unpack32(&conf->slurmd_user_id, buffer);
+		safe_unpackstr(&conf->slurmd_user_name, buffer);
 
-		safe_unpackstr(&build_ptr->slurmctld_addr, buffer);
-		safe_unpack16(&build_ptr->slurmctld_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_params, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmctld_port, buffer);
-		safe_unpack16(&build_ptr->slurmctld_port_count, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_off_prog, buffer);
-		safe_unpackstr(&build_ptr->slurmctld_primary_on_prog, buffer);
-		safe_unpack16(&build_ptr->slurmctld_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+		safe_unpackstr(&conf->slurmctld_addr, buffer);
+		safe_unpack16(&conf->slurmctld_debug, buffer);
+		safe_unpackstr(&conf->slurmctld_logfile, buffer);
+		safe_unpackstr(&conf->slurmctld_params, buffer);
+		safe_unpackstr(&conf->slurmctld_pidfile, buffer);
+		safe_unpack32(&conf->slurmctld_port, buffer);
+		safe_unpack16(&conf->slurmctld_port_count, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_off_prog, buffer);
+		safe_unpackstr(&conf->slurmctld_primary_on_prog, buffer);
+		safe_unpack16(&conf->slurmctld_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmctld_timeout, buffer);
 
-		safe_unpack16(&build_ptr->slurmd_debug, buffer);
-		safe_unpackstr(&build_ptr->slurmd_logfile, buffer);
-		safe_unpackstr(&build_ptr->slurmd_params, buffer);
-		safe_unpackstr(&build_ptr->slurmd_pidfile, buffer);
-		safe_unpack32(&build_ptr->slurmd_port, buffer);
+		safe_unpack16(&conf->slurmd_debug, buffer);
+		safe_unpackstr(&conf->slurmd_logfile, buffer);
+		safe_unpackstr(&conf->slurmd_params, buffer);
+		safe_unpackstr(&conf->slurmd_pidfile, buffer);
+		safe_unpack32(&conf->slurmd_port, buffer);
 
-		safe_unpackstr(&build_ptr->slurmd_spooldir, buffer);
-		safe_unpack16(&build_ptr->slurmd_syslog_debug, buffer);
-		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
+		safe_unpackstr(&conf->slurmd_spooldir, buffer);
+		safe_unpack16(&conf->slurmd_syslog_debug, buffer);
+		safe_unpack16(&conf->slurmd_timeout, buffer);
 
-		safe_unpackstr(&build_ptr->srun_epilog, buffer);
+		safe_unpackstr(&conf->srun_epilog, buffer);
 
-		build_ptr->srun_port_range = xcalloc(2, sizeof(uint16_t));
-		safe_unpack16(&build_ptr->srun_port_range[0], buffer);
-		safe_unpack16(&build_ptr->srun_port_range[1], buffer);
+		conf->srun_port_range = xcalloc(2, sizeof(uint16_t));
+		safe_unpack16(&conf->srun_port_range[0], buffer);
+		safe_unpack16(&conf->srun_port_range[1], buffer);
 
-		safe_unpackstr(&build_ptr->srun_prolog, buffer);
-		safe_unpackstr(&build_ptr->state_save_location, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_nodes, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_parts, buffer);
-		safe_unpackstr(&build_ptr->suspend_exc_states, buffer);
-		safe_unpackstr(&build_ptr->suspend_program, buffer);
-		safe_unpack16(&build_ptr->suspend_rate, buffer);
-		safe_unpack32(&build_ptr->suspend_time, buffer);
-		safe_unpack16(&build_ptr->suspend_timeout, buffer);
-		safe_unpackstr(&build_ptr->switch_param, buffer);
-		safe_unpackstr(&build_ptr->switch_type, buffer);
+		safe_unpackstr(&conf->srun_prolog, buffer);
+		safe_unpackstr(&conf->state_save_location, buffer);
+		safe_unpackstr(&conf->suspend_exc_nodes, buffer);
+		safe_unpackstr(&conf->suspend_exc_parts, buffer);
+		safe_unpackstr(&conf->suspend_exc_states, buffer);
+		safe_unpackstr(&conf->suspend_program, buffer);
+		safe_unpack16(&conf->suspend_rate, buffer);
+		safe_unpack32(&conf->suspend_time, buffer);
+		safe_unpack16(&conf->suspend_timeout, buffer);
+		safe_unpackstr(&conf->switch_param, buffer);
+		safe_unpackstr(&conf->switch_type, buffer);
 
-		safe_unpackstr(&build_ptr->task_epilog, buffer);
-		safe_unpackstr(&build_ptr->task_prolog, buffer);
-		safe_unpackstr(&build_ptr->task_plugin, buffer);
-		safe_unpack32(&build_ptr->task_plugin_param, buffer);
-		safe_unpack16(&build_ptr->tcp_timeout, buffer);
-		safe_unpackstr(&build_ptr->tls_type, buffer);
-		safe_unpackstr(&build_ptr->tmp_fs, buffer);
-		safe_unpackstr(&build_ptr->topology_param, buffer);
-		safe_unpackstr(&build_ptr->topology_plugin, buffer);
-		safe_unpack16(&build_ptr->tree_width, buffer);
+		safe_unpackstr(&conf->task_epilog, buffer);
+		safe_unpackstr(&conf->task_prolog, buffer);
+		safe_unpackstr(&conf->task_plugin, buffer);
+		safe_unpack32(&conf->task_plugin_param, buffer);
+		safe_unpack16(&conf->tcp_timeout, buffer);
+		safe_unpackstr(&conf->tls_type, buffer);
+		safe_unpackstr(&conf->tmp_fs, buffer);
+		safe_unpackstr(&conf->topology_param, buffer);
+		safe_unpackstr(&conf->topology_plugin, buffer);
+		safe_unpack16(&conf->tree_width, buffer);
 
-		safe_unpackstr(&build_ptr->unkillable_program, buffer);
-		safe_unpack16(&build_ptr->unkillable_timeout, buffer);
-		safe_unpackstr(&build_ptr->version, buffer);
-		safe_unpack16(&build_ptr->vsize_factor, buffer);
+		safe_unpackstr(&conf->unkillable_program, buffer);
+		safe_unpack16(&conf->unkillable_timeout, buffer);
+		safe_unpackstr(&conf->version, buffer);
+		safe_unpack16(&conf->vsize_factor, buffer);
 
-		safe_unpack16(&build_ptr->wait_time, buffer);
-		safe_unpackstr(&build_ptr->x11_params, buffer);
+		safe_unpack16(&conf->wait_time, buffer);
+		safe_unpackstr(&conf->x11_params, buffer);
 	}
 
-	smsg->data = build_ptr;
+	*conf_ptr = conf;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_conf(build_ptr);
+	slurm_free_conf(conf);
 	return SLURM_ERROR;
+}
+
+static int _unpack_slurm_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	int rc = EINVAL;
+	slurm_conf_t *build_ptr = NULL;
+
+	if (!(rc = _unpack_slurm_conf(&build_ptr, smsg->protocol_version,
+				      buffer)))
+		smsg->data = build_ptr;
+	else
+		xassert(!build_ptr);
+
+	return rc;
 }
 
 static void _pack_sib_msg(const slurm_msg_t *smsg, buf_t *buffer)
