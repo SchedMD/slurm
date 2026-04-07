@@ -1441,9 +1441,6 @@ static void *_try_to_reconfig(void *ptr)
 	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0, auth_fd = -1;
 	DEF_TIMERS;
 
-	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
-		close_skip[skip_index++] = auth_fd;
-
 	conmgr_quiesce(__func__);
 
 	START_TIMER;
@@ -1481,6 +1478,10 @@ static void *_try_to_reconfig(void *ptr)
 		close_skip[skip_index++] = conf->lfd;
 		debug3("%s: retaining listener socket fd:%d", __func__, conf->lfd);
 	}
+
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
+		close_skip[skip_index++] = auth_fd;
 
 	if (!conf->daemonize && !under_systemd)
 		goto start_child;

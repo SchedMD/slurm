@@ -1451,7 +1451,8 @@ static int _try_to_reconfig(void)
 		xfree(ports);
 	}
 	slurm_mutex_unlock(&listeners.mutex);
-	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
 		skip_close[skip_index++] = auth_fd;
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);

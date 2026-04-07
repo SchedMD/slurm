@@ -300,7 +300,7 @@ char *auth_p_token_generate(const char *username, int lifespan)
 	return NULL;
 }
 
-extern int auth_p_get_reconfig_fd(void)
+extern int auth_p_prepare_reconfig_fd(char ***env)
 {
 	return -1;
 }
