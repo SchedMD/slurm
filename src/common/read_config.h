@@ -544,12 +544,12 @@ extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
 						    s_p_hashtbl_t **out_hashtbl);
 
 /*
- * init_slurm_conf - initialize or re-initialize the slurm configuration
+ * conf - initialize or re-initialize the slurm configuration
  *	values to defaults (NULL or NO_VAL). Note that the configuration
  *	file pathname (slurm_conf) is not changed.
- * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
+ * IN/OUT conf - pointer to data structure to be initialized
  */
-extern void init_slurm_conf(slurm_conf_t *ctl_conf_ptr);
+extern void init_slurm_conf(slurm_conf_t *conf);
 
 /*
  * free_slurm_conf - free all storage associated with a slurm_conf_t.
