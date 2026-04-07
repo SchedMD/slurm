@@ -104,6 +104,17 @@ cycle times, backfill statistics, and queue lengths
 <p>All endpoints return data in UTF-8 text format making them compatible with
 Prometheus and other monitoring systems.</p>
 
+<h3 id="ha_standby">Standby Controllers (high availability)
+<a class="slurm_link" href="#ha_standby"></a>
+</h3>
+
+<p>When multiple <a href="slurm.conf.html#OPT_SlurmctldHost">SlurmctldHost</a>
+entries are configured, a daemon in standby mode will answer <b>GET
+/metrics*</b> with HTTP 303 "See Other" with the <b>Location</b> header
+pointing at the same path and query on the first listed controller. If no such
+address is available, the response will be HTTP 503 "Service Unavailable"
+instead of a redirect.</p>
+
 <h2 id="openmetrics">OpenMetrics Plugin
 <a class="slurm_link" href="#openmetrics"></a>
 </h2>
