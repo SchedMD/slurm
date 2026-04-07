@@ -169,7 +169,7 @@ static void _handle_job_get(ctxt_t *ctxt, slurm_selected_step_t *job_id)
 		return;
 	}
 
-	step_id.job_id = job_id->step_id.job_id;
+	step_id = job_id->step_id;
 
 	if (job_id->het_job_offset != NO_VAL)
 		step_id.job_id += job_id->het_job_offset;
@@ -519,9 +519,10 @@ extern int op_handler_job(openapi_ctxt_t *ctxt)
 
 	job_id = &params.job_id;
 
-	if ((job_id->step_id.job_id == NO_VAL) ||
-	    (job_id->step_id.job_id <= 0) ||
-	    (job_id->step_id.job_id >= MAX_JOB_ID)) {
+	if (!job_id->step_id.sluid &&
+	    ((job_id->step_id.job_id == NO_VAL) ||
+	     (job_id->step_id.job_id <= 0) ||
+	     (job_id->step_id.job_id >= MAX_JOB_ID))) {
 		return resp_error(ctxt, ESLURM_INVALID_JOB_ID, __func__,
 				  "Invalid JobID=%u rejected",
 				  job_id->step_id.job_id);
