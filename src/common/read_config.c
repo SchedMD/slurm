@@ -3668,14 +3668,6 @@ static void _sort_task_plugin(char **task_plugin)
 	*task_plugin = sorted_list;
 }
 
-/*
- *
- * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
- *
- * NOTE: a backup_controller or control_machine of "localhost" are over-written
- *	with this machine's name.
- * NOTE: if control_addr is NULL, it is over-written by control_machine
- */
 static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl)
 {
