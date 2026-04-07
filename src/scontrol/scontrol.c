@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 	slurm_free_node_info_msg(old_node_info_ptr);
 	slurm_free_partition_info_msg(old_part_info_ptr);
 	slurm_free_reservation_info_msg(old_res_info_ptr);
-	slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+	slurm_free_conf(old_slurm_ctl_conf_ptr);
 
 #endif /* MEMORY_LEAK_DEBUG */
 
@@ -470,7 +470,7 @@ static void _write_config(char *file_name)
 				old_slurm_ctl_conf_ptr->last_update,
 				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS) {
-			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+			slurm_free_conf(old_slurm_ctl_conf_ptr);
 		} else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
@@ -543,7 +543,7 @@ static void _print_config(char *config_param, int argc, char **argv)
 				old_slurm_ctl_conf_ptr->last_update,
 				&slurm_ctl_conf_ptr);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+			slurm_free_conf(old_slurm_ctl_conf_ptr);
 		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = SLURM_SUCCESS;
@@ -1104,7 +1104,7 @@ static int _process_command (int argc, char **argv)
 		old_part_info_ptr = NULL;
 		slurm_free_reservation_info_msg(old_res_info_ptr);
 		old_res_info_ptr = NULL;
-		slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
+		slurm_free_conf(old_slurm_ctl_conf_ptr);
 		old_slurm_ctl_conf_ptr = NULL;
 		/* if (old_job_info_ptr) */
 		/* 	old_job_info_ptr->last_update = 0; */

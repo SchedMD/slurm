@@ -6499,7 +6499,7 @@ static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_ctl_conf(build_ptr);
+	slurm_free_conf(build_ptr);
 	return SLURM_ERROR;
 }
 

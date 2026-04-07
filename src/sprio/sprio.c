@@ -97,7 +97,7 @@ int main (int argc, char **argv)
 		weight_qos  = slurm_ctl_conf_ptr->priority_weight_qos;
 		weight_tres = slurm_ctl_conf_ptr->priority_weight_tres;
 		prio_type = slurm_ctl_conf_ptr->priority_type;
-		slurm_free_ctl_conf(slurm_ctl_conf_ptr);
+		slurm_free_conf(slurm_ctl_conf_ptr);
 	} else {
 		weight_age = slurm_conf.priority_weight_age;
 		weight_assoc = slurm_conf.priority_weight_assoc;

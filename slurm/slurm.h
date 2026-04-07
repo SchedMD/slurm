@@ -4029,17 +4029,17 @@ extern long slurm_api_version(void);
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration
  *	pointer
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- * NOTE: free the response using slurm_free_ctl_conf
+ * NOTE: free the response using slurm_free_conf
  */
 extern int slurm_load_ctl_conf(time_t update_time,
                                slurm_conf_t **slurm_ctl_conf_ptr);
 
 /*
- * slurm_free_ctl_conf - free slurm control information response message
+ * slurm_free_conf - free slurm control information response message
  * IN msg - pointer to slurm control information response message
  * NOTE: buffer is loaded by slurm_load_ctl_conf
  */
-extern void slurm_free_ctl_conf(slurm_conf_t *slurm_ctl_conf_ptr);
+extern void slurm_free_conf(slurm_conf_t *slurm_ctl_conf_ptr);
 
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration

@@ -1253,7 +1253,7 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
  * IN slurm_ctl_conf_ptr - place to store slurm control configuration
  *	pointer
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- * NOTE: free the response using slurm_free_ctl_conf
+ * NOTE: free the response using slurm_free_conf
  */
 int slurm_load_ctl_conf(time_t update_time, slurm_conf_t **confp)
 {
