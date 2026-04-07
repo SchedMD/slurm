@@ -245,8 +245,20 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_fwd_tree_thread" in bt
         and "plugin_inited == PLUGIN_INITED" in bt
     ):
-        # TODO: Add version when t24122 is fixed
-        failures.append(reason)
+        # Fixed in 25.11.5 and 25.5.8
+        if (
+            (get_version(component) < (25, 5))
+            or (
+                (25, 5) < get_version(component) and get_version(component) < (25, 5, 8)
+            )
+            or (
+                (25, 11) < get_version(component)
+                and get_version(component) < (25, 11, 5)
+            )
+        ):
+            xfailures.append(reason)
+        else:
+            failures.append(reason)
         return
 
     reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED)"
