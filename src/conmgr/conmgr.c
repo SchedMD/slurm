@@ -77,6 +77,22 @@ const conmgr_timeouts_t conmgr_timeouts_disabled = {
 	.write_complete = TIMESPEC_INFINITE,
 };
 
+extern void conmgr_timeouts_init_default(conmgr_timeouts_t *timeouts)
+{
+	xassert(timeouts);
+
+	if (timespec_is_zero(timeouts->read))
+		timeouts->read.tv_sec = slurm_conf.msg_timeout;
+	if (timespec_is_zero(timeouts->write))
+		timeouts->write.tv_sec = slurm_conf.msg_timeout;
+	if (timespec_is_zero(timeouts->connect))
+		timeouts->connect.tv_sec = slurm_conf.msg_timeout;
+	if (timespec_is_zero(timeouts->write_complete))
+		timeouts->write_complete.tv_sec = slurm_conf.msg_timeout;
+	if (timespec_is_zero(timeouts->quiesce))
+		timeouts->quiesce.tv_sec = (2 * slurm_conf.msg_timeout);
+}
+
 static void _atfork_child(void)
 {
 	/* Do nothing if conmgr was not running or already cleaned up */
@@ -195,16 +211,7 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 		 },
 		 0, __func__);
 
-	if (timespec_is_zero(mgr.timeouts.write_complete))
-		mgr.timeouts.write_complete.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.read))
-		mgr.timeouts.read.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.write))
-		mgr.timeouts.write.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.connect))
-		mgr.timeouts.connect.tv_sec = slurm_conf.msg_timeout;
-	if (timespec_is_zero(mgr.timeouts.quiesce))
-		mgr.timeouts.quiesce.tv_sec = (2 * slurm_conf.msg_timeout);
+	conmgr_timeouts_init_default(&mgr.timeouts);
 
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
