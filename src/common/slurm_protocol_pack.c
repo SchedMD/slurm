@@ -4283,1059 +4283,1057 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_slurm_conf(const slurm_conf_t *conf,
+			     const uint16_t protocol_version, buf_t *buffer)
+{
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_time(conf->last_update, buffer);
+
+		pack16(conf->accounting_storage_enforce, buffer);
+		packstr(conf->accounting_storage_backup_host, buffer);
+		packstr(conf->accounting_storage_host, buffer);
+		packstr(conf->accounting_storage_ext_host, buffer);
+		packstr(conf->accounting_storage_params, buffer);
+		pack16(conf->accounting_storage_port, buffer);
+		packstr(conf->accounting_storage_tres, buffer);
+		packstr(conf->accounting_storage_type, buffer);
+
+		pack_key_pair_list(conf->acct_gather_conf, protocol_version,
+				   buffer);
+
+		packstr(conf->acct_gather_energy_type, buffer);
+		packstr(conf->acct_gather_filesystem_type, buffer);
+		packstr(conf->acct_gather_interconnect_type, buffer);
+		pack16(conf->acct_gather_node_freq, buffer);
+		packstr(conf->acct_gather_profile_type, buffer);
+
+		packstr(conf->authalttypes, buffer);
+		packstr(conf->authalt_params, buffer);
+		packstr(conf->authinfo, buffer);
+		packstr(conf->authtype, buffer);
+
+		pack16(conf->batch_start_timeout, buffer);
+		pack_time(conf->boot_time, buffer);
+		packstr(conf->bb_type, buffer);
+		packstr(conf->bcast_exclude, buffer);
+		packstr(conf->bcast_parameters, buffer);
+		packstr(conf->certmgr_params, buffer);
+		packstr(conf->certmgr_type, buffer);
+
+		pack_key_pair_list(conf->cgroup_conf, protocol_version, buffer);
+		packstr(conf->cli_filter_params, buffer);
+		packstr(conf->cli_filter_plugins, buffer);
+		packstr(conf->cluster_name, buffer);
+		packstr(conf->comm_params, buffer);
+		pack16(conf->complete_wait, buffer);
+		pack32(conf->conf_flags, buffer);
+		packstr_array(conf->control_addr, conf->control_cnt, buffer);
+		packstr_array(conf->control_machine, conf->control_cnt, buffer);
+		pack32(conf->cpu_freq_def, buffer);
+		pack32(conf->cpu_freq_govs, buffer);
+		packstr(conf->cred_type, buffer);
+		packstr(conf->data_parser_parameters, buffer);
+
+		pack64(conf->def_mem_per_cpu, buffer);
+		pack64(conf->debug_flags, buffer);
+		packstr(conf->dependency_params, buffer);
+
+		pack16(conf->eio_timeout, buffer);
+		pack16(conf->enforce_part_limits, buffer);
+		packstr_array(conf->epilog, conf->epilog_cnt, buffer);
+		pack32(conf->epilog_msg_time, buffer);
+		packstr_array(conf->epilog_slurmctld,
+			      conf->epilog_slurmctld_cnt, buffer);
+		pack16(conf->epilog_timeout, buffer);
+
+		packstr(conf->fed_params, buffer);
+		pack32(conf->first_job_id, buffer);
+		pack16(conf->fs_dampening_factor, buffer);
+
+		packstr(conf->gres_plugins, buffer);
+		pack16(conf->group_time, buffer);
+		pack16(conf->group_force, buffer);
+		packstr(conf->gpu_freq_def, buffer);
+
+		packstr(conf->hash_plugin, buffer);
+		pack32(conf->hash_val, buffer);
+
+		pack16(conf->health_check_interval, buffer);
+		pack16(conf->health_check_node_state, buffer);
+		packstr(conf->health_check_program, buffer);
+
+		packstr(conf->http_parser_type, buffer);
+
+		pack16(conf->inactive_limit, buffer);
+		packstr(conf->interactive_step_opts, buffer);
+
+		packstr(conf->job_acct_gather_freq, buffer);
+		packstr(conf->job_acct_gather_type, buffer);
+		packstr(conf->job_acct_gather_params, buffer);
+
+		packstr(conf->job_comp_host, buffer);
+		packstr(conf->job_comp_loc, buffer);
+		packstr(conf->job_comp_params, buffer);
+		pack32((uint32_t) conf->job_comp_port, buffer);
+		packstr(conf->job_comp_type, buffer);
+		packstr(conf->job_comp_user, buffer);
+		packstr(conf->namespace_plugin, buffer);
+
+		(void) slurm_pack_list(conf->job_defaults_list,
+				       job_defaults_pack, buffer,
+				       protocol_version);
+		pack16(conf->job_file_append, buffer);
+		pack16(conf->job_requeue, buffer);
+		packstr(conf->job_submit_plugins, buffer);
+
+		pack16(conf->kill_on_bad_exit, buffer);
+		pack16(conf->kill_wait, buffer);
+
+		packstr(conf->launch_params, buffer);
+		packstr(conf->licenses, buffer);
+		pack16(conf->log_fmt, buffer);
+
+		pack32(conf->max_array_sz, buffer);
+		pack32(conf->max_batch_requeue, buffer);
+		pack32(conf->max_dbd_msgs, buffer);
+		packstr(conf->mail_domain, buffer);
+		packstr(conf->mail_prog, buffer);
+		pack32(conf->max_job_cnt, buffer);
+		pack32(conf->max_job_id, buffer);
+		pack64(conf->max_mem_per_cpu, buffer);
+		pack32(conf->max_node_cnt, buffer);
+		pack32(conf->max_step_cnt, buffer);
+		pack16(conf->max_tasks_per_node, buffer);
+
+		packstr(conf->mcs_plugin, buffer);
+		packstr(conf->mcs_plugin_params, buffer);
+
+		packstr(conf->metrics_type, buffer);
+
+		pack32(conf->min_job_age, buffer);
+		pack_key_pair_list(conf->mpi_conf, protocol_version, buffer);
+		packstr(conf->mpi_default, buffer);
+		packstr(conf->mpi_params, buffer);
+		pack16(conf->msg_timeout, buffer);
+
+		pack32(conf->next_job_id, buffer);
+
+		pack_config_plugin_params_list(conf->node_features_conf,
+					       protocol_version, buffer);
+
+		packstr(conf->node_features_plugins, buffer);
+
+		pack16(conf->over_time_limit, buffer);
+
+		packstr(conf->plugindir, buffer);
+		packstr(conf->plugstack, buffer);
+		pack16(conf->preempt_mode, buffer);
+		packstr(conf->preempt_params, buffer);
+		packstr(conf->preempt_type, buffer);
+		pack32(conf->preempt_exempt_time, buffer);
+		packstr(conf->prep_params, buffer);
+		packstr(conf->prep_plugins, buffer);
+
+		pack32(conf->priority_decay_hl, buffer);
+		pack32(conf->priority_calc_period, buffer);
+		pack16(conf->priority_favor_small, buffer);
+		pack16(conf->priority_flags, buffer);
+		pack32(conf->priority_max_age, buffer);
+		packstr(conf->priority_params, buffer);
+		pack16(conf->priority_reset_period, buffer);
+		packstr(conf->priority_type, buffer);
+		pack32(conf->priority_weight_age, buffer);
+		pack32(conf->priority_weight_assoc, buffer);
+		pack32(conf->priority_weight_fs, buffer);
+		pack32(conf->priority_weight_js, buffer);
+		pack32(conf->priority_weight_part, buffer);
+		pack32(conf->priority_weight_qos, buffer);
+		packstr(conf->priority_weight_tres, buffer);
+
+		pack16(conf->private_data, buffer);
+		packstr(conf->proctrack_type, buffer);
+		packstr_array(conf->prolog, conf->prolog_cnt, buffer);
+		packstr_array(conf->prolog_slurmctld,
+			      conf->prolog_slurmctld_cnt, buffer);
+		pack16(conf->prolog_timeout, buffer);
+		pack16(conf->prolog_flags, buffer);
+		pack16(conf->propagate_prio_process, buffer);
+		packstr(conf->propagate_rlimits, buffer);
+		packstr(conf->propagate_rlimits_except, buffer);
+
+		packstr(conf->reboot_program, buffer);
+		pack16(conf->reconfig_flags, buffer);
+		packstr(conf->requeue_exit, buffer);
+		packstr(conf->requeue_exit_hold, buffer);
+		packstr(conf->resume_fail_program, buffer);
+		packstr(conf->resume_program, buffer);
+		pack16(conf->resume_rate, buffer);
+		pack16(conf->resume_timeout, buffer);
+		packstr(conf->resv_epilog, buffer);
+		pack16(conf->resv_over_run, buffer);
+		packstr(conf->resv_prolog, buffer);
+		pack16(conf->ret2service, buffer);
+
+		packstr(conf->sched_params, buffer);
+		packstr(conf->sched_logfile, buffer);
+		pack16(conf->sched_log_level, buffer);
+		pack16(conf->sched_time_slice, buffer);
+		packstr(conf->schedtype, buffer);
+		packstr(conf->scron_params, buffer);
+		packstr(conf->select_type, buffer);
+
+		pack_key_pair_list(conf->select_conf_key_pairs,
+				   protocol_version, buffer);
+
+		pack16(conf->select_type_param, buffer);
+
+		packstr(conf->slurm_conf, buffer);
+		pack32(conf->slurm_user_id, buffer);
+		packstr(conf->slurm_user_name, buffer);
+		pack32(conf->slurmd_user_id, buffer);
+		packstr(conf->slurmd_user_name, buffer);
+
+		packstr(conf->slurmctld_addr, buffer);
+		pack16(conf->slurmctld_debug, buffer);
+		packstr(conf->slurmctld_logfile, buffer);
+		packstr(conf->slurmctld_params, buffer);
+		packstr(conf->slurmctld_pidfile, buffer);
+		pack32(conf->slurmctld_port, buffer);
+		pack16(conf->slurmctld_port_count, buffer);
+		packstr(conf->slurmctld_primary_off_prog, buffer);
+		packstr(conf->slurmctld_primary_on_prog, buffer);
+		pack16(conf->slurmctld_syslog_debug, buffer);
+		pack16(conf->slurmctld_timeout, buffer);
+
+		pack16(conf->slurmd_debug, buffer);
+		packstr(conf->slurmd_logfile, buffer);
+		packstr(conf->slurmd_params, buffer);
+		packstr(conf->slurmd_pidfile, buffer);
+		pack32(conf->slurmd_port, buffer);
+
+		packstr(conf->slurmd_spooldir, buffer);
+		pack16(conf->slurmd_syslog_debug, buffer);
+		pack16(conf->slurmd_timeout, buffer);
+		packstr(conf->srun_epilog, buffer);
+		pack16(conf->srun_port_range[0], buffer);
+		pack16(conf->srun_port_range[1], buffer);
+		packstr(conf->srun_prolog, buffer);
+		packstr(conf->state_save_location, buffer);
+		packstr(conf->suspend_exc_nodes, buffer);
+		packstr(conf->suspend_exc_parts, buffer);
+		packstr(conf->suspend_exc_states, buffer);
+		packstr(conf->suspend_program, buffer);
+		pack16(conf->suspend_rate, buffer);
+		pack32(conf->suspend_time, buffer);
+		pack16(conf->suspend_timeout, buffer);
+		packstr(conf->switch_param, buffer);
+		packstr(conf->switch_type, buffer);
+
+		packstr(conf->task_epilog, buffer);
+		packstr(conf->task_prolog, buffer);
+		packstr(conf->task_plugin, buffer);
+		pack32(conf->task_plugin_param, buffer);
+		pack16(conf->tcp_timeout, buffer);
+		packstr(conf->tls_params, buffer);
+		packstr(conf->tls_type, buffer);
+		packstr(conf->tmp_fs, buffer);
+		packstr(conf->topology_param, buffer);
+		packstr(conf->topology_plugin, buffer);
+		pack16(conf->tree_width, buffer);
+
+		packstr(conf->unkillable_program, buffer);
+		pack16(conf->unkillable_timeout, buffer);
+		packstr(conf->url_parser_type, buffer);
+		packstr(conf->version, buffer);
+		pack16(conf->vsize_factor, buffer);
+
+		pack16(conf->wait_time, buffer);
+		packstr(conf->x11_params, buffer);
+	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		pack_time(conf->last_update, buffer);
+
+		pack16(conf->accounting_storage_enforce, buffer);
+		packstr(conf->accounting_storage_backup_host, buffer);
+		packstr(conf->accounting_storage_host, buffer);
+		packstr(conf->accounting_storage_ext_host, buffer);
+		packstr(conf->accounting_storage_params, buffer);
+		pack16(conf->accounting_storage_port, buffer);
+		packstr(conf->accounting_storage_tres, buffer);
+		packstr(conf->accounting_storage_type, buffer);
+
+		pack_key_pair_list(conf->acct_gather_conf, protocol_version,
+				   buffer);
+
+		packstr(conf->acct_gather_energy_type, buffer);
+		packstr(conf->acct_gather_filesystem_type, buffer);
+		packstr(conf->acct_gather_interconnect_type, buffer);
+		pack16(conf->acct_gather_node_freq, buffer);
+		packstr(conf->acct_gather_profile_type, buffer);
+
+		packstr(conf->authalttypes, buffer);
+		packstr(conf->authalt_params, buffer);
+		packstr(conf->authinfo, buffer);
+		packstr(conf->authtype, buffer);
+
+		pack16(conf->batch_start_timeout, buffer);
+		pack_time(conf->boot_time, buffer);
+		packstr(conf->bb_type, buffer);
+		packstr(conf->bcast_exclude, buffer);
+		packstr(conf->bcast_parameters, buffer);
+		packstr(conf->certmgr_params, buffer);
+		packstr(conf->certmgr_type, buffer);
+
+		pack_key_pair_list(conf->cgroup_conf, protocol_version, buffer);
+		packstr(conf->cli_filter_params, buffer);
+		packstr(conf->cli_filter_plugins, buffer);
+		packstr(conf->cluster_name, buffer);
+		packstr(conf->comm_params, buffer);
+		pack16(conf->complete_wait, buffer);
+		pack32(conf->conf_flags, buffer);
+		packstr_array(conf->control_addr, conf->control_cnt, buffer);
+		packstr_array(conf->control_machine, conf->control_cnt, buffer);
+		pack32(conf->cpu_freq_def, buffer);
+		pack32(conf->cpu_freq_govs, buffer);
+		packstr(conf->cred_type, buffer);
+		packstr(conf->data_parser_parameters, buffer);
+
+		pack64(conf->def_mem_per_cpu, buffer);
+		pack64(conf->debug_flags, buffer);
+		packstr(conf->dependency_params, buffer);
+
+		pack16(conf->eio_timeout, buffer);
+		pack16(conf->enforce_part_limits, buffer);
+		packstr_array(conf->epilog, conf->epilog_cnt, buffer);
+		pack32(conf->epilog_msg_time, buffer);
+		packstr_array(conf->epilog_slurmctld,
+			      conf->epilog_slurmctld_cnt, buffer);
+		pack16(conf->epilog_timeout, buffer);
+
+		packstr(conf->fed_params, buffer);
+		pack32(conf->first_job_id, buffer);
+		pack16(conf->fs_dampening_factor, buffer);
+
+		packstr(conf->gres_plugins, buffer);
+		pack16(conf->group_time, buffer);
+		pack16(conf->group_force, buffer);
+		packstr(conf->gpu_freq_def, buffer);
+
+		packstr(conf->hash_plugin, buffer);
+		pack32(conf->hash_val, buffer);
+
+		pack16(conf->health_check_interval, buffer);
+		pack16(conf->health_check_node_state, buffer);
+		packstr(conf->health_check_program, buffer);
+
+		packstr(conf->http_parser_type, buffer);
+
+		pack16(conf->inactive_limit, buffer);
+		packstr(conf->interactive_step_opts, buffer);
+
+		packstr(conf->job_acct_gather_freq, buffer);
+		packstr(conf->job_acct_gather_type, buffer);
+		packstr(conf->job_acct_gather_params, buffer);
+
+		packstr(conf->job_comp_host, buffer);
+		packstr(conf->job_comp_loc, buffer);
+		packstr(conf->job_comp_params, buffer);
+		pack32((uint32_t) conf->job_comp_port, buffer);
+		packstr(conf->job_comp_type, buffer);
+		packstr(conf->job_comp_user, buffer);
+		packstr(conf->namespace_plugin, buffer);
+
+		(void) slurm_pack_list(conf->job_defaults_list,
+				       job_defaults_pack, buffer,
+				       protocol_version);
+		pack16(conf->job_file_append, buffer);
+		pack16(conf->job_requeue, buffer);
+		packstr(conf->job_submit_plugins, buffer);
+
+		pack16(conf->kill_on_bad_exit, buffer);
+		pack16(conf->kill_wait, buffer);
+
+		packstr(conf->launch_params, buffer);
+		packstr(conf->licenses, buffer);
+		pack16(conf->log_fmt, buffer);
+
+		pack32(conf->max_array_sz, buffer);
+		pack32(conf->max_batch_requeue, buffer);
+		pack32(conf->max_dbd_msgs, buffer);
+		packstr(conf->mail_domain, buffer);
+		packstr(conf->mail_prog, buffer);
+		pack32(conf->max_job_cnt, buffer);
+		pack32(conf->max_job_id, buffer);
+		pack64(conf->max_mem_per_cpu, buffer);
+		pack32(conf->max_node_cnt, buffer);
+		pack32(conf->max_step_cnt, buffer);
+		pack16(conf->max_tasks_per_node, buffer);
+
+		packstr(conf->mcs_plugin, buffer);
+		packstr(conf->mcs_plugin_params, buffer);
+
+		packstr(conf->metrics_type, buffer);
+
+		pack32(conf->min_job_age, buffer);
+		pack_key_pair_list(conf->mpi_conf, protocol_version, buffer);
+		packstr(conf->mpi_default, buffer);
+		packstr(conf->mpi_params, buffer);
+		pack16(conf->msg_timeout, buffer);
+
+		pack32(conf->next_job_id, buffer);
+
+		pack_config_plugin_params_list(conf->node_features_conf,
+					       protocol_version, buffer);
+
+		packstr(conf->node_features_plugins, buffer);
+
+		pack16(conf->over_time_limit, buffer);
+
+		packstr(conf->plugindir, buffer);
+		packstr(conf->plugstack, buffer);
+		pack16(conf->preempt_mode, buffer);
+		packstr(conf->preempt_params, buffer);
+		packstr(conf->preempt_type, buffer);
+		pack32(conf->preempt_exempt_time, buffer);
+		packstr(conf->prep_params, buffer);
+		packstr(conf->prep_plugins, buffer);
+
+		pack32(conf->priority_decay_hl, buffer);
+		pack32(conf->priority_calc_period, buffer);
+		pack16(conf->priority_favor_small, buffer);
+		pack16(conf->priority_flags, buffer);
+		pack32(conf->priority_max_age, buffer);
+		packstr(conf->priority_params, buffer);
+		pack16(conf->priority_reset_period, buffer);
+		packstr(conf->priority_type, buffer);
+		pack32(conf->priority_weight_age, buffer);
+		pack32(conf->priority_weight_assoc, buffer);
+		pack32(conf->priority_weight_fs, buffer);
+		pack32(conf->priority_weight_js, buffer);
+		pack32(conf->priority_weight_part, buffer);
+		pack32(conf->priority_weight_qos, buffer);
+		packstr(conf->priority_weight_tres, buffer);
+
+		pack16(conf->private_data, buffer);
+		packstr(conf->proctrack_type, buffer);
+		packstr_array(conf->prolog, conf->prolog_cnt, buffer);
+		packstr_array(conf->prolog_slurmctld,
+			      conf->prolog_slurmctld_cnt, buffer);
+		pack16(conf->prolog_timeout, buffer);
+		pack16(conf->prolog_flags, buffer);
+		pack16(conf->propagate_prio_process, buffer);
+		packstr(conf->propagate_rlimits, buffer);
+		packstr(conf->propagate_rlimits_except, buffer);
+
+		packstr(conf->reboot_program, buffer);
+		pack16(conf->reconfig_flags, buffer);
+		packstr(conf->requeue_exit, buffer);
+		packstr(conf->requeue_exit_hold, buffer);
+		packstr(conf->resume_fail_program, buffer);
+		packstr(conf->resume_program, buffer);
+		pack16(conf->resume_rate, buffer);
+		pack16(conf->resume_timeout, buffer);
+		packstr(conf->resv_epilog, buffer);
+		pack16(conf->resv_over_run, buffer);
+		packstr(conf->resv_prolog, buffer);
+		pack16(conf->ret2service, buffer);
+
+		packstr(conf->sched_params, buffer);
+		packstr(conf->sched_logfile, buffer);
+		pack16(conf->sched_log_level, buffer);
+		pack16(conf->sched_time_slice, buffer);
+		packstr(conf->schedtype, buffer);
+		packstr(conf->scron_params, buffer);
+		packstr(conf->select_type, buffer);
+
+		pack_key_pair_list(conf->select_conf_key_pairs,
+				   protocol_version, buffer);
+
+		pack16(conf->select_type_param, buffer);
+
+		packstr(conf->slurm_conf, buffer);
+		pack32(conf->slurm_user_id, buffer);
+		packstr(conf->slurm_user_name, buffer);
+		pack32(conf->slurmd_user_id, buffer);
+		packstr(conf->slurmd_user_name, buffer);
+
+		packstr(conf->slurmctld_addr, buffer);
+		pack16(conf->slurmctld_debug, buffer);
+		packstr(conf->slurmctld_logfile, buffer);
+		packstr(conf->slurmctld_params, buffer);
+		packstr(conf->slurmctld_pidfile, buffer);
+		pack32(conf->slurmctld_port, buffer);
+		pack16(conf->slurmctld_port_count, buffer);
+		packstr(conf->slurmctld_primary_off_prog, buffer);
+		packstr(conf->slurmctld_primary_on_prog, buffer);
+		pack16(conf->slurmctld_syslog_debug, buffer);
+		pack16(conf->slurmctld_timeout, buffer);
+
+		pack16(conf->slurmd_debug, buffer);
+		packstr(conf->slurmd_logfile, buffer);
+		packstr(conf->slurmd_params, buffer);
+		packstr(conf->slurmd_pidfile, buffer);
+		pack32(conf->slurmd_port, buffer);
+
+		packstr(conf->slurmd_spooldir, buffer);
+		pack16(conf->slurmd_syslog_debug, buffer);
+		pack16(conf->slurmd_timeout, buffer);
+		packstr(conf->srun_epilog, buffer);
+		pack16(conf->srun_port_range[0], buffer);
+		pack16(conf->srun_port_range[1], buffer);
+		packstr(conf->srun_prolog, buffer);
+		packstr(conf->state_save_location, buffer);
+		packstr(conf->suspend_exc_nodes, buffer);
+		packstr(conf->suspend_exc_parts, buffer);
+		packstr(conf->suspend_exc_states, buffer);
+		packstr(conf->suspend_program, buffer);
+		pack16(conf->suspend_rate, buffer);
+		pack32(conf->suspend_time, buffer);
+		pack16(conf->suspend_timeout, buffer);
+		packstr(conf->switch_param, buffer);
+		packstr(conf->switch_type, buffer);
+
+		packstr(conf->task_epilog, buffer);
+		packstr(conf->task_prolog, buffer);
+		packstr(conf->task_plugin, buffer);
+		pack32(conf->task_plugin_param, buffer);
+		pack16(conf->tcp_timeout, buffer);
+		packstr(conf->tls_params, buffer);
+		packstr(conf->tls_type, buffer);
+		packstr(conf->tmp_fs, buffer);
+		packstr(conf->topology_param, buffer);
+		packstr(conf->topology_plugin, buffer);
+		pack16(conf->tree_width, buffer);
+
+		packstr(conf->unkillable_program, buffer);
+		pack16(conf->unkillable_timeout, buffer);
+		packstr(conf->url_parser_type, buffer);
+		packstr(conf->version, buffer);
+		pack16(conf->vsize_factor, buffer);
+
+		pack16(conf->wait_time, buffer);
+		packstr(conf->x11_params, buffer);
+	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+		pack_time(conf->last_update, buffer);
+
+		pack16(conf->accounting_storage_enforce, buffer);
+		packstr(conf->accounting_storage_backup_host, buffer);
+		packstr(conf->accounting_storage_host, buffer);
+		packstr(conf->accounting_storage_ext_host, buffer);
+		packstr(conf->accounting_storage_params, buffer);
+		pack16(conf->accounting_storage_port, buffer);
+		packstr(conf->accounting_storage_tres, buffer);
+		packstr(conf->accounting_storage_type, buffer);
+		packstr("N/A", buffer); /* was accounting_storage_user */
+
+		pack_key_pair_list(conf->acct_gather_conf, protocol_version,
+				   buffer);
+
+		packstr(conf->acct_gather_energy_type, buffer);
+		packstr(conf->acct_gather_filesystem_type, buffer);
+		packstr(conf->acct_gather_interconnect_type, buffer);
+		pack16(conf->acct_gather_node_freq, buffer);
+		packstr(conf->acct_gather_profile_type, buffer);
+
+		packstr(conf->authalttypes, buffer);
+		packstr(conf->authalt_params, buffer);
+		packstr(conf->authinfo, buffer);
+		packstr(conf->authtype, buffer);
+
+		pack16(conf->batch_start_timeout, buffer);
+		pack_time(conf->boot_time, buffer);
+		packstr(conf->bb_type, buffer);
+		packstr(conf->bcast_exclude, buffer);
+		packstr(conf->bcast_parameters, buffer);
+		packstr(conf->certmgr_params, buffer);
+		packstr(conf->certmgr_type, buffer);
+
+		pack_key_pair_list(conf->cgroup_conf, protocol_version, buffer);
+		packstr(conf->cli_filter_plugins, buffer);
+		packstr(conf->cluster_name, buffer);
+		packstr(conf->comm_params, buffer);
+		pack16(conf->complete_wait, buffer);
+		pack32(conf->conf_flags, buffer);
+		packstr_array(conf->control_addr, conf->control_cnt, buffer);
+		packstr_array(conf->control_machine, conf->control_cnt, buffer);
+		pack32(conf->cpu_freq_def, buffer);
+		pack32(conf->cpu_freq_govs, buffer);
+		packstr(conf->cred_type, buffer);
+		packstr(conf->data_parser_parameters, buffer);
+
+		pack64(conf->def_mem_per_cpu, buffer);
+		pack64(conf->debug_flags, buffer);
+		packstr(conf->dependency_params, buffer);
+
+		pack16(conf->eio_timeout, buffer);
+		pack16(conf->enforce_part_limits, buffer);
+		packstr_array(conf->epilog, conf->epilog_cnt, buffer);
+		pack32(conf->epilog_msg_time, buffer);
+		packstr_array(conf->epilog_slurmctld,
+			      conf->epilog_slurmctld_cnt, buffer);
+		pack16(conf->epilog_timeout, buffer);
+
+		packstr(conf->fed_params, buffer);
+		pack32(conf->first_job_id, buffer);
+		pack16(conf->fs_dampening_factor, buffer);
+
+		packstr(conf->gres_plugins, buffer);
+		pack16(conf->group_time, buffer);
+		pack16(conf->group_force, buffer);
+		packstr(conf->gpu_freq_def, buffer);
+
+		packstr(conf->hash_plugin, buffer);
+		pack32(conf->hash_val, buffer);
+
+		pack16(conf->health_check_interval, buffer);
+		pack16(conf->health_check_node_state, buffer);
+		packstr(conf->health_check_program, buffer);
+
+		pack16(conf->inactive_limit, buffer);
+		packstr(conf->interactive_step_opts, buffer);
+
+		packstr(conf->job_acct_gather_freq, buffer);
+		packstr(conf->job_acct_gather_type, buffer);
+		packstr(conf->job_acct_gather_params, buffer);
+
+		packstr(conf->job_comp_host, buffer);
+		packstr(conf->job_comp_loc, buffer);
+		packstr(conf->job_comp_params, buffer);
+		pack32((uint32_t) conf->job_comp_port, buffer);
+		packstr(conf->job_comp_type, buffer);
+		packstr(conf->job_comp_user, buffer);
+		packstr(conf->namespace_plugin, buffer);
+
+		(void) slurm_pack_list(conf->job_defaults_list,
+				       job_defaults_pack, buffer,
+				       protocol_version);
+		pack16(conf->job_file_append, buffer);
+		pack16(conf->job_requeue, buffer);
+		packstr(conf->job_submit_plugins, buffer);
+
+		pack16(conf->kill_on_bad_exit, buffer);
+		pack16(conf->kill_wait, buffer);
+
+		packstr(conf->launch_params, buffer);
+		packstr(conf->licenses, buffer);
+		pack16(conf->log_fmt, buffer);
+
+		pack32(conf->max_array_sz, buffer);
+		pack32(conf->max_batch_requeue, buffer);
+		pack32(conf->max_dbd_msgs, buffer);
+		packstr(conf->mail_domain, buffer);
+		packstr(conf->mail_prog, buffer);
+		pack32(conf->max_job_cnt, buffer);
+		pack32(conf->max_job_id, buffer);
+		pack64(conf->max_mem_per_cpu, buffer);
+		pack32(conf->max_node_cnt, buffer);
+		pack32(conf->max_step_cnt, buffer);
+		pack16(conf->max_tasks_per_node, buffer);
+
+		packstr(conf->mcs_plugin, buffer);
+		packstr(conf->mcs_plugin_params, buffer);
+
+		pack32(conf->min_job_age, buffer);
+		pack_key_pair_list(conf->mpi_conf, protocol_version, buffer);
+		packstr(conf->mpi_default, buffer);
+		packstr(conf->mpi_params, buffer);
+		pack16(conf->msg_timeout, buffer);
+
+		pack32(conf->next_job_id, buffer);
+
+		pack_config_plugin_params_list(conf->node_features_conf,
+					       protocol_version, buffer);
+
+		packstr(conf->node_features_plugins, buffer);
+
+		pack16(conf->over_time_limit, buffer);
+
+		packstr(conf->plugindir, buffer);
+		packstr(conf->plugstack, buffer);
+		pack16(conf->preempt_mode, buffer);
+		packstr(conf->preempt_params, buffer);
+		packstr(conf->preempt_type, buffer);
+		pack32(conf->preempt_exempt_time, buffer);
+		packstr(conf->prep_params, buffer);
+		packstr(conf->prep_plugins, buffer);
+
+		pack32(conf->priority_decay_hl, buffer);
+		pack32(conf->priority_calc_period, buffer);
+		pack16(conf->priority_favor_small, buffer);
+		pack16(conf->priority_flags, buffer);
+		pack32(conf->priority_max_age, buffer);
+		packstr(conf->priority_params, buffer);
+		pack16(conf->priority_reset_period, buffer);
+		packstr(conf->priority_type, buffer);
+		pack32(conf->priority_weight_age, buffer);
+		pack32(conf->priority_weight_assoc, buffer);
+		pack32(conf->priority_weight_fs, buffer);
+		pack32(conf->priority_weight_js, buffer);
+		pack32(conf->priority_weight_part, buffer);
+		pack32(conf->priority_weight_qos, buffer);
+		packstr(conf->priority_weight_tres, buffer);
+
+		pack16(conf->private_data, buffer);
+		packstr(conf->proctrack_type, buffer);
+		packstr_array(conf->prolog, conf->prolog_cnt, buffer);
+		packstr_array(conf->prolog_slurmctld,
+			      conf->prolog_slurmctld_cnt, buffer);
+		pack16(conf->prolog_timeout, buffer);
+		pack16(conf->prolog_flags, buffer);
+		pack16(conf->propagate_prio_process, buffer);
+		packstr(conf->propagate_rlimits, buffer);
+		packstr(conf->propagate_rlimits_except, buffer);
+
+		packstr(conf->reboot_program, buffer);
+		pack16(conf->reconfig_flags, buffer);
+		packstr(conf->requeue_exit, buffer);
+		packstr(conf->requeue_exit_hold, buffer);
+		packstr(conf->resume_fail_program, buffer);
+		packstr(conf->resume_program, buffer);
+		pack16(conf->resume_rate, buffer);
+		pack16(conf->resume_timeout, buffer);
+		packstr(conf->resv_epilog, buffer);
+		pack16(conf->resv_over_run, buffer);
+		packstr(conf->resv_prolog, buffer);
+		pack16(conf->ret2service, buffer);
+
+		packstr(conf->sched_params, buffer);
+		packstr(conf->sched_logfile, buffer);
+		pack16(conf->sched_log_level, buffer);
+		pack16(conf->sched_time_slice, buffer);
+		packstr(conf->schedtype, buffer);
+		packstr(conf->scron_params, buffer);
+		packstr(conf->select_type, buffer);
+
+		pack_key_pair_list(conf->select_conf_key_pairs,
+				   protocol_version, buffer);
+
+		pack16(conf->select_type_param, buffer);
+
+		packstr(conf->slurm_conf, buffer);
+		pack32(conf->slurm_user_id, buffer);
+		packstr(conf->slurm_user_name, buffer);
+		pack32(conf->slurmd_user_id, buffer);
+		packstr(conf->slurmd_user_name, buffer);
+
+		packstr(conf->slurmctld_addr, buffer);
+		pack16(conf->slurmctld_debug, buffer);
+		packstr(conf->slurmctld_logfile, buffer);
+		packstr(conf->slurmctld_params, buffer);
+		packstr(conf->slurmctld_pidfile, buffer);
+		pack32(conf->slurmctld_port, buffer);
+		pack16(conf->slurmctld_port_count, buffer);
+		packstr(conf->slurmctld_primary_off_prog, buffer);
+		packstr(conf->slurmctld_primary_on_prog, buffer);
+		pack16(conf->slurmctld_syslog_debug, buffer);
+		pack16(conf->slurmctld_timeout, buffer);
+
+		pack16(conf->slurmd_debug, buffer);
+		packstr(conf->slurmd_logfile, buffer);
+		packstr(conf->slurmd_params, buffer);
+		packstr(conf->slurmd_pidfile, buffer);
+		pack32(conf->slurmd_port, buffer);
+
+		packstr(conf->slurmd_spooldir, buffer);
+		pack16(conf->slurmd_syslog_debug, buffer);
+		pack16(conf->slurmd_timeout, buffer);
+		packstr(conf->srun_epilog, buffer);
+		pack16(conf->srun_port_range[0], buffer);
+		pack16(conf->srun_port_range[1], buffer);
+		packstr(conf->srun_prolog, buffer);
+		packstr(conf->state_save_location, buffer);
+		packstr(conf->suspend_exc_nodes, buffer);
+		packstr(conf->suspend_exc_parts, buffer);
+		packstr(conf->suspend_exc_states, buffer);
+		packstr(conf->suspend_program, buffer);
+		pack16(conf->suspend_rate, buffer);
+		pack32(conf->suspend_time, buffer);
+		pack16(conf->suspend_timeout, buffer);
+		packstr(conf->switch_param, buffer);
+		packstr(conf->switch_type, buffer);
+
+		packstr(conf->task_epilog, buffer);
+		packstr(conf->task_prolog, buffer);
+		packstr(conf->task_plugin, buffer);
+		pack32(conf->task_plugin_param, buffer);
+		pack16(conf->tcp_timeout, buffer);
+		packstr(conf->tls_params, buffer);
+		packstr(conf->tls_type, buffer);
+		packstr(conf->tmp_fs, buffer);
+		packstr(conf->topology_param, buffer);
+		packstr(conf->topology_plugin, buffer);
+		pack16(conf->tree_width, buffer);
+
+		packstr(conf->unkillable_program, buffer);
+		pack16(conf->unkillable_timeout, buffer);
+		packstr(conf->version, buffer);
+		pack16(conf->vsize_factor, buffer);
+
+		pack16(conf->wait_time, buffer);
+		packstr(conf->x11_params, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack_time(conf->last_update, buffer);
+
+		pack16(conf->accounting_storage_enforce, buffer);
+		packstr(conf->accounting_storage_backup_host, buffer);
+		packstr(conf->accounting_storage_host, buffer);
+		packstr(conf->accounting_storage_ext_host, buffer);
+		packstr(conf->accounting_storage_params, buffer);
+		pack16(conf->accounting_storage_port, buffer);
+		packstr(conf->accounting_storage_tres, buffer);
+		packstr(conf->accounting_storage_type, buffer);
+		packstr("N/A", buffer); /* was accounting_storage_user */
+
+		pack_key_pair_list(conf->acct_gather_conf, protocol_version,
+				   buffer);
+
+		packstr(conf->acct_gather_energy_type, buffer);
+		packstr(conf->acct_gather_filesystem_type, buffer);
+		packstr(conf->acct_gather_interconnect_type, buffer);
+		pack16(conf->acct_gather_node_freq, buffer);
+		packstr(conf->acct_gather_profile_type, buffer);
+
+		packstr(conf->authalttypes, buffer);
+		packstr(conf->authalt_params, buffer);
+		packstr(conf->authinfo, buffer);
+		packstr(conf->authtype, buffer);
+
+		pack16(conf->batch_start_timeout, buffer);
+		pack_time(conf->boot_time, buffer);
+		packstr(conf->bb_type, buffer);
+		packstr(conf->bcast_exclude, buffer);
+		packstr(conf->bcast_parameters, buffer);
+
+		pack_key_pair_list(conf->cgroup_conf, protocol_version, buffer);
+		packstr(conf->cli_filter_plugins, buffer);
+		packstr(conf->cluster_name, buffer);
+		packstr(conf->comm_params, buffer);
+		pack16(conf->complete_wait, buffer);
+		pack32(conf->conf_flags, buffer);
+		packstr_array(conf->control_addr, conf->control_cnt, buffer);
+		packstr_array(conf->control_machine, conf->control_cnt, buffer);
+		pack32(conf->cpu_freq_def, buffer);
+		pack32(conf->cpu_freq_govs, buffer);
+		packstr(conf->cred_type, buffer);
+		packstr(conf->data_parser_parameters, buffer);
+
+		pack64(conf->def_mem_per_cpu, buffer);
+		pack64(conf->debug_flags, buffer);
+		packstr(conf->dependency_params, buffer);
+
+		pack16(conf->eio_timeout, buffer);
+		pack16(conf->enforce_part_limits, buffer);
+		packstr_array(conf->epilog, conf->epilog_cnt, buffer);
+		pack32(conf->epilog_msg_time, buffer);
+		packstr_array(conf->epilog_slurmctld,
+			      conf->epilog_slurmctld_cnt, buffer);
+
+		packstr(conf->fed_params, buffer);
+		pack32(conf->first_job_id, buffer);
+		pack16(conf->fs_dampening_factor, buffer);
+
+		pack16(DEFAULT_GET_ENV_TIMEOUT, buffer); /* was get_env_timeout */
+		packstr(conf->gres_plugins, buffer);
+		pack16(conf->group_time, buffer);
+		pack16(conf->group_force, buffer);
+		packstr(conf->gpu_freq_def, buffer);
+
+		packstr(conf->hash_plugin, buffer);
+		pack32(conf->hash_val, buffer);
+
+		pack16(conf->health_check_interval, buffer);
+		pack16(conf->health_check_node_state, buffer);
+		packstr(conf->health_check_program, buffer);
+
+		pack16(conf->inactive_limit, buffer);
+		packstr(conf->interactive_step_opts, buffer);
+
+		packstr(conf->job_acct_gather_freq, buffer);
+		packstr(conf->job_acct_gather_type, buffer);
+		packstr(conf->job_acct_gather_params, buffer);
+
+		packstr(conf->job_comp_host, buffer);
+		packstr(conf->job_comp_loc, buffer);
+		packstr(conf->job_comp_params, buffer);
+		pack32((uint32_t) conf->job_comp_port, buffer);
+		packstr(conf->job_comp_type, buffer);
+		packstr(conf->job_comp_user, buffer);
+		packstr(conf->namespace_plugin, buffer);
+
+		(void) slurm_pack_list(conf->job_defaults_list,
+				       job_defaults_pack, buffer,
+				       protocol_version);
+		pack16(conf->job_file_append, buffer);
+		pack16(conf->job_requeue, buffer);
+		packstr(conf->job_submit_plugins, buffer);
+
+		pack16(conf->kill_on_bad_exit, buffer);
+		pack16(conf->kill_wait, buffer);
+
+		packstr(conf->launch_params, buffer);
+		packstr(conf->licenses, buffer);
+		pack16(conf->log_fmt, buffer);
+
+		pack32(conf->max_array_sz, buffer);
+		pack32(conf->max_batch_requeue, buffer);
+		pack32(conf->max_dbd_msgs, buffer);
+		packstr(conf->mail_domain, buffer);
+		packstr(conf->mail_prog, buffer);
+		pack32(conf->max_job_cnt, buffer);
+		pack32(conf->max_job_id, buffer);
+		pack64(conf->max_mem_per_cpu, buffer);
+		pack32(conf->max_node_cnt, buffer);
+		pack32(conf->max_step_cnt, buffer);
+		pack16(conf->max_tasks_per_node, buffer);
+
+		packstr(conf->mcs_plugin, buffer);
+		packstr(conf->mcs_plugin_params, buffer);
+
+		pack32(conf->min_job_age, buffer);
+		pack_key_pair_list(conf->mpi_conf, protocol_version, buffer);
+		packstr(conf->mpi_default, buffer);
+		packstr(conf->mpi_params, buffer);
+		pack16(conf->msg_timeout, buffer);
+
+		pack32(conf->next_job_id, buffer);
+
+		pack_config_plugin_params_list(conf->node_features_conf,
+					       protocol_version, buffer);
+
+		packstr(conf->node_features_plugins, buffer);
+		packnull(buffer); /* was node_prefix */
+
+		pack16(conf->over_time_limit, buffer);
+
+		packstr(conf->plugindir, buffer);
+		packstr(conf->plugstack, buffer);
+		pack16(conf->preempt_mode, buffer);
+		packstr(conf->preempt_params, buffer);
+		packstr(conf->preempt_type, buffer);
+		pack32(conf->preempt_exempt_time, buffer);
+		packstr(conf->prep_params, buffer);
+		packstr(conf->prep_plugins, buffer);
+
+		pack32(conf->priority_decay_hl, buffer);
+		pack32(conf->priority_calc_period, buffer);
+		pack16(conf->priority_favor_small, buffer);
+		pack16(conf->priority_flags, buffer);
+		pack32(conf->priority_max_age, buffer);
+		packstr(conf->priority_params, buffer);
+		pack16(conf->priority_reset_period, buffer);
+		packstr(conf->priority_type, buffer);
+		pack32(conf->priority_weight_age, buffer);
+		pack32(conf->priority_weight_assoc, buffer);
+		pack32(conf->priority_weight_fs, buffer);
+		pack32(conf->priority_weight_js, buffer);
+		pack32(conf->priority_weight_part, buffer);
+		pack32(conf->priority_weight_qos, buffer);
+		packstr(conf->priority_weight_tres, buffer);
+
+		pack16(conf->private_data, buffer);
+		packstr(conf->proctrack_type, buffer);
+		packstr_array(conf->prolog, conf->prolog_cnt, buffer);
+		pack16(MAX(conf->prolog_timeout, conf->epilog_timeout), buffer);
+		packstr_array(conf->prolog_slurmctld,
+			      conf->prolog_slurmctld_cnt, buffer);
+		pack16(conf->prolog_flags, buffer);
+		pack16(conf->propagate_prio_process, buffer);
+		packstr(conf->propagate_rlimits, buffer);
+		packstr(conf->propagate_rlimits_except, buffer);
+
+		packstr(conf->reboot_program, buffer);
+		pack16(conf->reconfig_flags, buffer);
+		packstr(conf->requeue_exit, buffer);
+		packstr(conf->requeue_exit_hold, buffer);
+		packstr(conf->resume_fail_program, buffer);
+		packstr(conf->resume_program, buffer);
+		pack16(conf->resume_rate, buffer);
+		pack16(conf->resume_timeout, buffer);
+		packstr(conf->resv_epilog, buffer);
+		pack16(conf->resv_over_run, buffer);
+		packstr(conf->resv_prolog, buffer);
+		pack16(conf->ret2service, buffer);
+
+		packstr(conf->sched_params, buffer);
+		packstr(conf->sched_logfile, buffer);
+		pack16(conf->sched_log_level, buffer);
+		pack16(conf->sched_time_slice, buffer);
+		packstr(conf->schedtype, buffer);
+		packstr(conf->scron_params, buffer);
+		packstr(conf->select_type, buffer);
+
+		pack_key_pair_list(conf->select_conf_key_pairs,
+				   protocol_version, buffer);
+
+		pack16(conf->select_type_param, buffer);
+
+		packstr(conf->slurm_conf, buffer);
+		pack32(conf->slurm_user_id, buffer);
+		packstr(conf->slurm_user_name, buffer);
+		pack32(conf->slurmd_user_id, buffer);
+		packstr(conf->slurmd_user_name, buffer);
+
+		packstr(conf->slurmctld_addr, buffer);
+		pack16(conf->slurmctld_debug, buffer);
+		packstr(conf->slurmctld_logfile, buffer);
+		packstr(conf->slurmctld_params, buffer);
+		packstr(conf->slurmctld_pidfile, buffer);
+		pack32(conf->slurmctld_port, buffer);
+		pack16(conf->slurmctld_port_count, buffer);
+		packstr(conf->slurmctld_primary_off_prog, buffer);
+		packstr(conf->slurmctld_primary_on_prog, buffer);
+		pack16(conf->slurmctld_syslog_debug, buffer);
+		pack16(conf->slurmctld_timeout, buffer);
+
+		pack16(conf->slurmd_debug, buffer);
+		packstr(conf->slurmd_logfile, buffer);
+		packstr(conf->slurmd_params, buffer);
+		packstr(conf->slurmd_pidfile, buffer);
+		pack32(conf->slurmd_port, buffer);
+
+		packstr(conf->slurmd_spooldir, buffer);
+		pack16(conf->slurmd_syslog_debug, buffer);
+		pack16(conf->slurmd_timeout, buffer);
+		packstr(conf->srun_epilog, buffer);
+		pack16(conf->srun_port_range[0], buffer);
+		pack16(conf->srun_port_range[1], buffer);
+		packstr(conf->srun_prolog, buffer);
+		packstr(conf->state_save_location, buffer);
+		packstr(conf->suspend_exc_nodes, buffer);
+		packstr(conf->suspend_exc_parts, buffer);
+		packstr(conf->suspend_exc_states, buffer);
+		packstr(conf->suspend_program, buffer);
+		pack16(conf->suspend_rate, buffer);
+		pack32(conf->suspend_time, buffer);
+		pack16(conf->suspend_timeout, buffer);
+		packstr(conf->switch_param, buffer);
+		packstr(conf->switch_type, buffer);
+
+		packstr(conf->task_epilog, buffer);
+		packstr(conf->task_prolog, buffer);
+		packstr(conf->task_plugin, buffer);
+		pack32(conf->task_plugin_param, buffer);
+		pack16(conf->tcp_timeout, buffer);
+		packstr(conf->tls_type, buffer);
+		packstr(conf->tmp_fs, buffer);
+		packstr(conf->topology_param, buffer);
+		packstr(conf->topology_plugin, buffer);
+		pack16(conf->tree_width, buffer);
+
+		packstr(conf->unkillable_program, buffer);
+		pack16(conf->unkillable_timeout, buffer);
+		packstr(conf->version, buffer);
+		pack16(conf->vsize_factor, buffer);
+
+		pack16(conf->wait_time, buffer);
+		packstr(conf->x11_params, buffer);
+	}
+}
+
 static void _pack_slurm_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	slurm_conf_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
-		pack_time(msg->last_update, buffer);
-
-		pack16(msg->accounting_storage_enforce, buffer);
-		packstr(msg->accounting_storage_backup_host, buffer);
-		packstr(msg->accounting_storage_host, buffer);
-		packstr(msg->accounting_storage_ext_host, buffer);
-		packstr(msg->accounting_storage_params, buffer);
-		pack16(msg->accounting_storage_port, buffer);
-		packstr(msg->accounting_storage_tres, buffer);
-		packstr(msg->accounting_storage_type, buffer);
-
-		pack_key_pair_list(msg->acct_gather_conf,
-				   smsg->protocol_version, buffer);
-
-		packstr(msg->acct_gather_energy_type, buffer);
-		packstr(msg->acct_gather_filesystem_type, buffer);
-		packstr(msg->acct_gather_interconnect_type, buffer);
-		pack16(msg->acct_gather_node_freq, buffer);
-		packstr(msg->acct_gather_profile_type, buffer);
-
-		packstr(msg->authalttypes, buffer);
-		packstr(msg->authalt_params, buffer);
-		packstr(msg->authinfo, buffer);
-		packstr(msg->authtype, buffer);
-
-		pack16(msg->batch_start_timeout, buffer);
-		pack_time(msg->boot_time, buffer);
-		packstr(msg->bb_type, buffer);
-		packstr(msg->bcast_exclude, buffer);
-		packstr(msg->bcast_parameters, buffer);
-		packstr(msg->certmgr_params, buffer);
-		packstr(msg->certmgr_type, buffer);
-
-		pack_key_pair_list(msg->cgroup_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->cli_filter_params, buffer);
-		packstr(msg->cli_filter_plugins, buffer);
-		packstr(msg->cluster_name, buffer);
-		packstr(msg->comm_params, buffer);
-		pack16(msg->complete_wait, buffer);
-		pack32(msg->conf_flags, buffer);
-		packstr_array(msg->control_addr, msg->control_cnt, buffer);
-		packstr_array(msg->control_machine, msg->control_cnt, buffer);
-		pack32(msg->cpu_freq_def, buffer);
-		pack32(msg->cpu_freq_govs, buffer);
-		packstr(msg->cred_type, buffer);
-		packstr(msg->data_parser_parameters, buffer);
-
-		pack64(msg->def_mem_per_cpu, buffer);
-		pack64(msg->debug_flags, buffer);
-		packstr(msg->dependency_params, buffer);
-
-		pack16(msg->eio_timeout, buffer);
-		pack16(msg->enforce_part_limits, buffer);
-		packstr_array(msg->epilog, msg->epilog_cnt, buffer);
-		pack32(msg->epilog_msg_time, buffer);
-		packstr_array(msg->epilog_slurmctld, msg->epilog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->epilog_timeout, buffer);
-
-		packstr(msg->fed_params, buffer);
-		pack32(msg->first_job_id, buffer);
-		pack16(msg->fs_dampening_factor, buffer);
-
-		packstr(msg->gres_plugins, buffer);
-		pack16(msg->group_time, buffer);
-		pack16(msg->group_force, buffer);
-		packstr(msg->gpu_freq_def, buffer);
-
-		packstr(msg->hash_plugin, buffer);
-		pack32(msg->hash_val, buffer);
-
-		pack16(msg->health_check_interval, buffer);
-		pack16(msg->health_check_node_state, buffer);
-		packstr(msg->health_check_program, buffer);
-
-		packstr(msg->http_parser_type, buffer);
-
-		pack16(msg->inactive_limit, buffer);
-		packstr(msg->interactive_step_opts, buffer);
-
-		packstr(msg->job_acct_gather_freq, buffer);
-		packstr(msg->job_acct_gather_type, buffer);
-		packstr(msg->job_acct_gather_params, buffer);
-
-		packstr(msg->job_comp_host, buffer);
-		packstr(msg->job_comp_loc, buffer);
-		packstr(msg->job_comp_params, buffer);
-		pack32((uint32_t) msg->job_comp_port, buffer);
-		packstr(msg->job_comp_type, buffer);
-		packstr(msg->job_comp_user, buffer);
-		packstr(msg->namespace_plugin, buffer);
-
-		(void) slurm_pack_list(msg->job_defaults_list,
-				       job_defaults_pack, buffer,
-				       smsg->protocol_version);
-		pack16(msg->job_file_append, buffer);
-		pack16(msg->job_requeue, buffer);
-		packstr(msg->job_submit_plugins, buffer);
-
-		pack16(msg->kill_on_bad_exit, buffer);
-		pack16(msg->kill_wait, buffer);
-
-		packstr(msg->launch_params, buffer);
-		packstr(msg->licenses, buffer);
-		pack16(msg->log_fmt, buffer);
-
-		pack32(msg->max_array_sz, buffer);
-		pack32(msg->max_batch_requeue, buffer);
-		pack32(msg->max_dbd_msgs, buffer);
-		packstr(msg->mail_domain, buffer);
-		packstr(msg->mail_prog, buffer);
-		pack32(msg->max_job_cnt, buffer);
-		pack32(msg->max_job_id, buffer);
-		pack64(msg->max_mem_per_cpu, buffer);
-		pack32(msg->max_node_cnt, buffer);
-		pack32(msg->max_step_cnt, buffer);
-		pack16(msg->max_tasks_per_node, buffer);
-
-		packstr(msg->mcs_plugin, buffer);
-		packstr(msg->mcs_plugin_params, buffer);
-
-		packstr(msg->metrics_type, buffer);
-
-		pack32(msg->min_job_age, buffer);
-		pack_key_pair_list(msg->mpi_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->mpi_default, buffer);
-		packstr(msg->mpi_params, buffer);
-		pack16(msg->msg_timeout, buffer);
-
-		pack32(msg->next_job_id, buffer);
-
-		pack_config_plugin_params_list(msg->node_features_conf,
-					       smsg->protocol_version, buffer);
-
-		packstr(msg->node_features_plugins, buffer);
-
-		pack16(msg->over_time_limit, buffer);
-
-		packstr(msg->plugindir, buffer);
-		packstr(msg->plugstack, buffer);
-		pack16(msg->preempt_mode, buffer);
-		packstr(msg->preempt_params, buffer);
-		packstr(msg->preempt_type, buffer);
-		pack32(msg->preempt_exempt_time, buffer);
-		packstr(msg->prep_params, buffer);
-		packstr(msg->prep_plugins, buffer);
-
-		pack32(msg->priority_decay_hl, buffer);
-		pack32(msg->priority_calc_period, buffer);
-		pack16(msg->priority_favor_small, buffer);
-		pack16(msg->priority_flags, buffer);
-		pack32(msg->priority_max_age, buffer);
-		packstr(msg->priority_params, buffer);
-		pack16(msg->priority_reset_period, buffer);
-		packstr(msg->priority_type, buffer);
-		pack32(msg->priority_weight_age, buffer);
-		pack32(msg->priority_weight_assoc, buffer);
-		pack32(msg->priority_weight_fs, buffer);
-		pack32(msg->priority_weight_js, buffer);
-		pack32(msg->priority_weight_part, buffer);
-		pack32(msg->priority_weight_qos, buffer);
-		packstr(msg->priority_weight_tres, buffer);
-
-		pack16(msg->private_data, buffer);
-		packstr(msg->proctrack_type, buffer);
-		packstr_array(msg->prolog, msg->prolog_cnt, buffer);
-		packstr_array(msg->prolog_slurmctld, msg->prolog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->prolog_timeout, buffer);
-		pack16(msg->prolog_flags, buffer);
-		pack16(msg->propagate_prio_process, buffer);
-		packstr(msg->propagate_rlimits, buffer);
-		packstr(msg->propagate_rlimits_except, buffer);
-
-		packstr(msg->reboot_program, buffer);
-		pack16(msg->reconfig_flags, buffer);
-		packstr(msg->requeue_exit, buffer);
-		packstr(msg->requeue_exit_hold, buffer);
-		packstr(msg->resume_fail_program, buffer);
-		packstr(msg->resume_program, buffer);
-		pack16(msg->resume_rate, buffer);
-		pack16(msg->resume_timeout, buffer);
-		packstr(msg->resv_epilog, buffer);
-		pack16(msg->resv_over_run, buffer);
-		packstr(msg->resv_prolog, buffer);
-		pack16(msg->ret2service, buffer);
-
-		packstr(msg->sched_params, buffer);
-		packstr(msg->sched_logfile, buffer);
-		pack16(msg->sched_log_level, buffer);
-		pack16(msg->sched_time_slice, buffer);
-		packstr(msg->schedtype, buffer);
-		packstr(msg->scron_params, buffer);
-		packstr(msg->select_type, buffer);
-
-		pack_key_pair_list(msg->select_conf_key_pairs,
-				   smsg->protocol_version, buffer);
-
-		pack16(msg->select_type_param, buffer);
-
-		packstr(msg->slurm_conf, buffer);
-		pack32(msg->slurm_user_id, buffer);
-		packstr(msg->slurm_user_name, buffer);
-		pack32(msg->slurmd_user_id, buffer);
-		packstr(msg->slurmd_user_name, buffer);
-
-		packstr(msg->slurmctld_addr, buffer);
-		pack16(msg->slurmctld_debug, buffer);
-		packstr(msg->slurmctld_logfile, buffer);
-		packstr(msg->slurmctld_params, buffer);
-		packstr(msg->slurmctld_pidfile, buffer);
-		pack32(msg->slurmctld_port, buffer);
-		pack16(msg->slurmctld_port_count, buffer);
-		packstr(msg->slurmctld_primary_off_prog, buffer);
-		packstr(msg->slurmctld_primary_on_prog, buffer);
-		pack16(msg->slurmctld_syslog_debug, buffer);
-		pack16(msg->slurmctld_timeout, buffer);
-
-		pack16(msg->slurmd_debug, buffer);
-		packstr(msg->slurmd_logfile, buffer);
-		packstr(msg->slurmd_params, buffer);
-		packstr(msg->slurmd_pidfile, buffer);
-		pack32(msg->slurmd_port, buffer);
-
-		packstr(msg->slurmd_spooldir, buffer);
-		pack16(msg->slurmd_syslog_debug, buffer);
-		pack16(msg->slurmd_timeout, buffer);
-		packstr(msg->srun_epilog, buffer);
-		pack16(msg->srun_port_range[0], buffer);
-		pack16(msg->srun_port_range[1], buffer);
-		packstr(msg->srun_prolog, buffer);
-		packstr(msg->state_save_location, buffer);
-		packstr(msg->suspend_exc_nodes, buffer);
-		packstr(msg->suspend_exc_parts, buffer);
-		packstr(msg->suspend_exc_states, buffer);
-		packstr(msg->suspend_program, buffer);
-		pack16(msg->suspend_rate, buffer);
-		pack32(msg->suspend_time, buffer);
-		pack16(msg->suspend_timeout, buffer);
-		packstr(msg->switch_param, buffer);
-		packstr(msg->switch_type, buffer);
-
-		packstr(msg->task_epilog, buffer);
-		packstr(msg->task_prolog, buffer);
-		packstr(msg->task_plugin, buffer);
-		pack32(msg->task_plugin_param, buffer);
-		pack16(msg->tcp_timeout, buffer);
-		packstr(msg->tls_params, buffer);
-		packstr(msg->tls_type, buffer);
-		packstr(msg->tmp_fs, buffer);
-		packstr(msg->topology_param, buffer);
-		packstr(msg->topology_plugin, buffer);
-		pack16(msg->tree_width, buffer);
-
-		packstr(msg->unkillable_program, buffer);
-		pack16(msg->unkillable_timeout, buffer);
-		packstr(msg->url_parser_type, buffer);
-		packstr(msg->version, buffer);
-		pack16(msg->vsize_factor, buffer);
-
-		pack16(msg->wait_time, buffer);
-		packstr(msg->x11_params, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
-		pack_time(msg->last_update, buffer);
-
-		pack16(msg->accounting_storage_enforce, buffer);
-		packstr(msg->accounting_storage_backup_host, buffer);
-		packstr(msg->accounting_storage_host, buffer);
-		packstr(msg->accounting_storage_ext_host, buffer);
-		packstr(msg->accounting_storage_params, buffer);
-		pack16(msg->accounting_storage_port, buffer);
-		packstr(msg->accounting_storage_tres, buffer);
-		packstr(msg->accounting_storage_type, buffer);
-
-		pack_key_pair_list(msg->acct_gather_conf,
-				   smsg->protocol_version, buffer);
-
-		packstr(msg->acct_gather_energy_type, buffer);
-		packstr(msg->acct_gather_filesystem_type, buffer);
-		packstr(msg->acct_gather_interconnect_type, buffer);
-		pack16(msg->acct_gather_node_freq, buffer);
-		packstr(msg->acct_gather_profile_type, buffer);
-
-		packstr(msg->authalttypes, buffer);
-		packstr(msg->authalt_params, buffer);
-		packstr(msg->authinfo, buffer);
-		packstr(msg->authtype, buffer);
-
-		pack16(msg->batch_start_timeout, buffer);
-		pack_time(msg->boot_time, buffer);
-		packstr(msg->bb_type, buffer);
-		packstr(msg->bcast_exclude, buffer);
-		packstr(msg->bcast_parameters, buffer);
-		packstr(msg->certmgr_params, buffer);
-		packstr(msg->certmgr_type, buffer);
-
-		pack_key_pair_list(msg->cgroup_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->cli_filter_params, buffer);
-		packstr(msg->cli_filter_plugins, buffer);
-		packstr(msg->cluster_name, buffer);
-		packstr(msg->comm_params, buffer);
-		pack16(msg->complete_wait, buffer);
-		pack32(msg->conf_flags, buffer);
-		packstr_array(msg->control_addr, msg->control_cnt, buffer);
-		packstr_array(msg->control_machine, msg->control_cnt, buffer);
-		pack32(msg->cpu_freq_def, buffer);
-		pack32(msg->cpu_freq_govs, buffer);
-		packstr(msg->cred_type, buffer);
-		packstr(msg->data_parser_parameters, buffer);
-
-		pack64(msg->def_mem_per_cpu, buffer);
-		pack64(msg->debug_flags, buffer);
-		packstr(msg->dependency_params, buffer);
-
-		pack16(msg->eio_timeout, buffer);
-		pack16(msg->enforce_part_limits, buffer);
-		packstr_array(msg->epilog, msg->epilog_cnt, buffer);
-		pack32(msg->epilog_msg_time, buffer);
-		packstr_array(msg->epilog_slurmctld, msg->epilog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->epilog_timeout, buffer);
-
-		packstr(msg->fed_params, buffer);
-		pack32(msg->first_job_id, buffer);
-		pack16(msg->fs_dampening_factor, buffer);
-
-		packstr(msg->gres_plugins, buffer);
-		pack16(msg->group_time, buffer);
-		pack16(msg->group_force, buffer);
-		packstr(msg->gpu_freq_def, buffer);
-
-		packstr(msg->hash_plugin, buffer);
-		pack32(msg->hash_val, buffer);
-
-		pack16(msg->health_check_interval, buffer);
-		pack16(msg->health_check_node_state, buffer);
-		packstr(msg->health_check_program, buffer);
-
-		packstr(msg->http_parser_type, buffer);
-
-		pack16(msg->inactive_limit, buffer);
-		packstr(msg->interactive_step_opts, buffer);
-
-		packstr(msg->job_acct_gather_freq, buffer);
-		packstr(msg->job_acct_gather_type, buffer);
-		packstr(msg->job_acct_gather_params, buffer);
-
-		packstr(msg->job_comp_host, buffer);
-		packstr(msg->job_comp_loc, buffer);
-		packstr(msg->job_comp_params, buffer);
-		pack32((uint32_t) msg->job_comp_port, buffer);
-		packstr(msg->job_comp_type, buffer);
-		packstr(msg->job_comp_user, buffer);
-		packstr(msg->namespace_plugin, buffer);
-
-		(void) slurm_pack_list(msg->job_defaults_list,
-				       job_defaults_pack, buffer,
-				       smsg->protocol_version);
-		pack16(msg->job_file_append, buffer);
-		pack16(msg->job_requeue, buffer);
-		packstr(msg->job_submit_plugins, buffer);
-
-		pack16(msg->kill_on_bad_exit, buffer);
-		pack16(msg->kill_wait, buffer);
-
-		packstr(msg->launch_params, buffer);
-		packstr(msg->licenses, buffer);
-		pack16(msg->log_fmt, buffer);
-
-		pack32(msg->max_array_sz, buffer);
-		pack32(msg->max_batch_requeue, buffer);
-		pack32(msg->max_dbd_msgs, buffer);
-		packstr(msg->mail_domain, buffer);
-		packstr(msg->mail_prog, buffer);
-		pack32(msg->max_job_cnt, buffer);
-		pack32(msg->max_job_id, buffer);
-		pack64(msg->max_mem_per_cpu, buffer);
-		pack32(msg->max_node_cnt, buffer);
-		pack32(msg->max_step_cnt, buffer);
-		pack16(msg->max_tasks_per_node, buffer);
-
-		packstr(msg->mcs_plugin, buffer);
-		packstr(msg->mcs_plugin_params, buffer);
-
-		packstr(msg->metrics_type, buffer);
-
-		pack32(msg->min_job_age, buffer);
-		pack_key_pair_list(msg->mpi_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->mpi_default, buffer);
-		packstr(msg->mpi_params, buffer);
-		pack16(msg->msg_timeout, buffer);
-
-		pack32(msg->next_job_id, buffer);
-
-		pack_config_plugin_params_list(msg->node_features_conf,
-					       smsg->protocol_version, buffer);
-
-		packstr(msg->node_features_plugins, buffer);
-
-		pack16(msg->over_time_limit, buffer);
-
-		packstr(msg->plugindir, buffer);
-		packstr(msg->plugstack, buffer);
-		pack16(msg->preempt_mode, buffer);
-		packstr(msg->preempt_params, buffer);
-		packstr(msg->preempt_type, buffer);
-		pack32(msg->preempt_exempt_time, buffer);
-		packstr(msg->prep_params, buffer);
-		packstr(msg->prep_plugins, buffer);
-
-		pack32(msg->priority_decay_hl, buffer);
-		pack32(msg->priority_calc_period, buffer);
-		pack16(msg->priority_favor_small, buffer);
-		pack16(msg->priority_flags, buffer);
-		pack32(msg->priority_max_age, buffer);
-		packstr(msg->priority_params, buffer);
-		pack16(msg->priority_reset_period, buffer);
-		packstr(msg->priority_type, buffer);
-		pack32(msg->priority_weight_age, buffer);
-		pack32(msg->priority_weight_assoc, buffer);
-		pack32(msg->priority_weight_fs, buffer);
-		pack32(msg->priority_weight_js, buffer);
-		pack32(msg->priority_weight_part, buffer);
-		pack32(msg->priority_weight_qos, buffer);
-		packstr(msg->priority_weight_tres, buffer);
-
-		pack16(msg->private_data, buffer);
-		packstr(msg->proctrack_type, buffer);
-		packstr_array(msg->prolog, msg->prolog_cnt, buffer);
-		packstr_array(msg->prolog_slurmctld, msg->prolog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->prolog_timeout, buffer);
-		pack16(msg->prolog_flags, buffer);
-		pack16(msg->propagate_prio_process, buffer);
-		packstr(msg->propagate_rlimits, buffer);
-		packstr(msg->propagate_rlimits_except, buffer);
-
-		packstr(msg->reboot_program, buffer);
-		pack16(msg->reconfig_flags, buffer);
-		packstr(msg->requeue_exit, buffer);
-		packstr(msg->requeue_exit_hold, buffer);
-		packstr(msg->resume_fail_program, buffer);
-		packstr(msg->resume_program, buffer);
-		pack16(msg->resume_rate, buffer);
-		pack16(msg->resume_timeout, buffer);
-		packstr(msg->resv_epilog, buffer);
-		pack16(msg->resv_over_run, buffer);
-		packstr(msg->resv_prolog, buffer);
-		pack16(msg->ret2service, buffer);
-
-		packstr(msg->sched_params, buffer);
-		packstr(msg->sched_logfile, buffer);
-		pack16(msg->sched_log_level, buffer);
-		pack16(msg->sched_time_slice, buffer);
-		packstr(msg->schedtype, buffer);
-		packstr(msg->scron_params, buffer);
-		packstr(msg->select_type, buffer);
-
-		pack_key_pair_list(msg->select_conf_key_pairs,
-				   smsg->protocol_version, buffer);
-
-		pack16(msg->select_type_param, buffer);
-
-		packstr(msg->slurm_conf, buffer);
-		pack32(msg->slurm_user_id, buffer);
-		packstr(msg->slurm_user_name, buffer);
-		pack32(msg->slurmd_user_id, buffer);
-		packstr(msg->slurmd_user_name, buffer);
-
-		packstr(msg->slurmctld_addr, buffer);
-		pack16(msg->slurmctld_debug, buffer);
-		packstr(msg->slurmctld_logfile, buffer);
-		packstr(msg->slurmctld_params, buffer);
-		packstr(msg->slurmctld_pidfile, buffer);
-		pack32(msg->slurmctld_port, buffer);
-		pack16(msg->slurmctld_port_count, buffer);
-		packstr(msg->slurmctld_primary_off_prog, buffer);
-		packstr(msg->slurmctld_primary_on_prog, buffer);
-		pack16(msg->slurmctld_syslog_debug, buffer);
-		pack16(msg->slurmctld_timeout, buffer);
-
-		pack16(msg->slurmd_debug, buffer);
-		packstr(msg->slurmd_logfile, buffer);
-		packstr(msg->slurmd_params, buffer);
-		packstr(msg->slurmd_pidfile, buffer);
-		pack32(msg->slurmd_port, buffer);
-
-		packstr(msg->slurmd_spooldir, buffer);
-		pack16(msg->slurmd_syslog_debug, buffer);
-		pack16(msg->slurmd_timeout, buffer);
-		packstr(msg->srun_epilog, buffer);
-		pack16(msg->srun_port_range[0], buffer);
-		pack16(msg->srun_port_range[1], buffer);
-		packstr(msg->srun_prolog, buffer);
-		packstr(msg->state_save_location, buffer);
-		packstr(msg->suspend_exc_nodes, buffer);
-		packstr(msg->suspend_exc_parts, buffer);
-		packstr(msg->suspend_exc_states, buffer);
-		packstr(msg->suspend_program, buffer);
-		pack16(msg->suspend_rate, buffer);
-		pack32(msg->suspend_time, buffer);
-		pack16(msg->suspend_timeout, buffer);
-		packstr(msg->switch_param, buffer);
-		packstr(msg->switch_type, buffer);
-
-		packstr(msg->task_epilog, buffer);
-		packstr(msg->task_prolog, buffer);
-		packstr(msg->task_plugin, buffer);
-		pack32(msg->task_plugin_param, buffer);
-		pack16(msg->tcp_timeout, buffer);
-		packstr(msg->tls_params, buffer);
-		packstr(msg->tls_type, buffer);
-		packstr(msg->tmp_fs, buffer);
-		packstr(msg->topology_param, buffer);
-		packstr(msg->topology_plugin, buffer);
-		pack16(msg->tree_width, buffer);
-
-		packstr(msg->unkillable_program, buffer);
-		pack16(msg->unkillable_timeout, buffer);
-		packstr(msg->url_parser_type, buffer);
-		packstr(msg->version, buffer);
-		pack16(msg->vsize_factor, buffer);
-
-		pack16(msg->wait_time, buffer);
-		packstr(msg->x11_params, buffer);
-	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
-		pack_time(msg->last_update, buffer);
-
-		pack16(msg->accounting_storage_enforce, buffer);
-		packstr(msg->accounting_storage_backup_host, buffer);
-		packstr(msg->accounting_storage_host, buffer);
-		packstr(msg->accounting_storage_ext_host, buffer);
-		packstr(msg->accounting_storage_params, buffer);
-		pack16(msg->accounting_storage_port, buffer);
-		packstr(msg->accounting_storage_tres, buffer);
-		packstr(msg->accounting_storage_type, buffer);
-		packstr("N/A", buffer); /* was accounting_storage_user */
-
-		pack_key_pair_list(msg->acct_gather_conf,
-				   smsg->protocol_version, buffer);
-
-		packstr(msg->acct_gather_energy_type, buffer);
-		packstr(msg->acct_gather_filesystem_type, buffer);
-		packstr(msg->acct_gather_interconnect_type, buffer);
-		pack16(msg->acct_gather_node_freq, buffer);
-		packstr(msg->acct_gather_profile_type, buffer);
-
-		packstr(msg->authalttypes, buffer);
-		packstr(msg->authalt_params, buffer);
-		packstr(msg->authinfo, buffer);
-		packstr(msg->authtype, buffer);
-
-		pack16(msg->batch_start_timeout, buffer);
-		pack_time(msg->boot_time, buffer);
-		packstr(msg->bb_type, buffer);
-		packstr(msg->bcast_exclude, buffer);
-		packstr(msg->bcast_parameters, buffer);
-		packstr(msg->certmgr_params, buffer);
-		packstr(msg->certmgr_type, buffer);
-
-		pack_key_pair_list(msg->cgroup_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->cli_filter_plugins, buffer);
-		packstr(msg->cluster_name, buffer);
-		packstr(msg->comm_params, buffer);
-		pack16(msg->complete_wait, buffer);
-		pack32(msg->conf_flags, buffer);
-		packstr_array(msg->control_addr, msg->control_cnt, buffer);
-		packstr_array(msg->control_machine, msg->control_cnt, buffer);
-		pack32(msg->cpu_freq_def, buffer);
-		pack32(msg->cpu_freq_govs, buffer);
-		packstr(msg->cred_type, buffer);
-		packstr(msg->data_parser_parameters, buffer);
-
-		pack64(msg->def_mem_per_cpu, buffer);
-		pack64(msg->debug_flags, buffer);
-		packstr(msg->dependency_params, buffer);
-
-		pack16(msg->eio_timeout, buffer);
-		pack16(msg->enforce_part_limits, buffer);
-		packstr_array(msg->epilog, msg->epilog_cnt, buffer);
-		pack32(msg->epilog_msg_time, buffer);
-		packstr_array(msg->epilog_slurmctld, msg->epilog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->epilog_timeout, buffer);
-
-		packstr(msg->fed_params, buffer);
-		pack32(msg->first_job_id, buffer);
-		pack16(msg->fs_dampening_factor, buffer);
-
-		packstr(msg->gres_plugins, buffer);
-		pack16(msg->group_time, buffer);
-		pack16(msg->group_force, buffer);
-		packstr(msg->gpu_freq_def, buffer);
-
-		packstr(msg->hash_plugin, buffer);
-		pack32(msg->hash_val, buffer);
-
-		pack16(msg->health_check_interval, buffer);
-		pack16(msg->health_check_node_state, buffer);
-		packstr(msg->health_check_program, buffer);
-
-		pack16(msg->inactive_limit, buffer);
-		packstr(msg->interactive_step_opts, buffer);
-
-		packstr(msg->job_acct_gather_freq, buffer);
-		packstr(msg->job_acct_gather_type, buffer);
-		packstr(msg->job_acct_gather_params, buffer);
-
-		packstr(msg->job_comp_host, buffer);
-		packstr(msg->job_comp_loc, buffer);
-		packstr(msg->job_comp_params, buffer);
-		pack32((uint32_t) msg->job_comp_port, buffer);
-		packstr(msg->job_comp_type, buffer);
-		packstr(msg->job_comp_user, buffer);
-		packstr(msg->namespace_plugin, buffer);
-
-		(void) slurm_pack_list(msg->job_defaults_list,
-				       job_defaults_pack, buffer,
-				       smsg->protocol_version);
-		pack16(msg->job_file_append, buffer);
-		pack16(msg->job_requeue, buffer);
-		packstr(msg->job_submit_plugins, buffer);
-
-		pack16(msg->kill_on_bad_exit, buffer);
-		pack16(msg->kill_wait, buffer);
-
-		packstr(msg->launch_params, buffer);
-		packstr(msg->licenses, buffer);
-		pack16(msg->log_fmt, buffer);
-
-		pack32(msg->max_array_sz, buffer);
-		pack32(msg->max_batch_requeue, buffer);
-		pack32(msg->max_dbd_msgs, buffer);
-		packstr(msg->mail_domain, buffer);
-		packstr(msg->mail_prog, buffer);
-		pack32(msg->max_job_cnt, buffer);
-		pack32(msg->max_job_id, buffer);
-		pack64(msg->max_mem_per_cpu, buffer);
-		pack32(msg->max_node_cnt, buffer);
-		pack32(msg->max_step_cnt, buffer);
-		pack16(msg->max_tasks_per_node, buffer);
-
-		packstr(msg->mcs_plugin, buffer);
-		packstr(msg->mcs_plugin_params, buffer);
-
-		pack32(msg->min_job_age, buffer);
-		pack_key_pair_list(msg->mpi_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->mpi_default, buffer);
-		packstr(msg->mpi_params, buffer);
-		pack16(msg->msg_timeout, buffer);
-
-		pack32(msg->next_job_id, buffer);
-
-		pack_config_plugin_params_list(msg->node_features_conf,
-					       smsg->protocol_version, buffer);
-
-		packstr(msg->node_features_plugins, buffer);
-
-		pack16(msg->over_time_limit, buffer);
-
-		packstr(msg->plugindir, buffer);
-		packstr(msg->plugstack, buffer);
-		pack16(msg->preempt_mode, buffer);
-		packstr(msg->preempt_params, buffer);
-		packstr(msg->preempt_type, buffer);
-		pack32(msg->preempt_exempt_time, buffer);
-		packstr(msg->prep_params, buffer);
-		packstr(msg->prep_plugins, buffer);
-
-		pack32(msg->priority_decay_hl, buffer);
-		pack32(msg->priority_calc_period, buffer);
-		pack16(msg->priority_favor_small, buffer);
-		pack16(msg->priority_flags, buffer);
-		pack32(msg->priority_max_age, buffer);
-		packstr(msg->priority_params, buffer);
-		pack16(msg->priority_reset_period, buffer);
-		packstr(msg->priority_type, buffer);
-		pack32(msg->priority_weight_age, buffer);
-		pack32(msg->priority_weight_assoc, buffer);
-		pack32(msg->priority_weight_fs, buffer);
-		pack32(msg->priority_weight_js, buffer);
-		pack32(msg->priority_weight_part, buffer);
-		pack32(msg->priority_weight_qos, buffer);
-		packstr(msg->priority_weight_tres, buffer);
-
-		pack16(msg->private_data, buffer);
-		packstr(msg->proctrack_type, buffer);
-		packstr_array(msg->prolog, msg->prolog_cnt, buffer);
-		packstr_array(msg->prolog_slurmctld, msg->prolog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->prolog_timeout, buffer);
-		pack16(msg->prolog_flags, buffer);
-		pack16(msg->propagate_prio_process, buffer);
-		packstr(msg->propagate_rlimits, buffer);
-		packstr(msg->propagate_rlimits_except, buffer);
-
-		packstr(msg->reboot_program, buffer);
-		pack16(msg->reconfig_flags, buffer);
-		packstr(msg->requeue_exit, buffer);
-		packstr(msg->requeue_exit_hold, buffer);
-		packstr(msg->resume_fail_program, buffer);
-		packstr(msg->resume_program, buffer);
-		pack16(msg->resume_rate, buffer);
-		pack16(msg->resume_timeout, buffer);
-		packstr(msg->resv_epilog, buffer);
-		pack16(msg->resv_over_run, buffer);
-		packstr(msg->resv_prolog, buffer);
-		pack16(msg->ret2service, buffer);
-
-		packstr(msg->sched_params, buffer);
-		packstr(msg->sched_logfile, buffer);
-		pack16(msg->sched_log_level, buffer);
-		pack16(msg->sched_time_slice, buffer);
-		packstr(msg->schedtype, buffer);
-		packstr(msg->scron_params, buffer);
-		packstr(msg->select_type, buffer);
-
-		pack_key_pair_list(msg->select_conf_key_pairs,
-				   smsg->protocol_version, buffer);
-
-		pack16(msg->select_type_param, buffer);
-
-		packstr(msg->slurm_conf, buffer);
-		pack32(msg->slurm_user_id, buffer);
-		packstr(msg->slurm_user_name, buffer);
-		pack32(msg->slurmd_user_id, buffer);
-		packstr(msg->slurmd_user_name, buffer);
-
-		packstr(msg->slurmctld_addr, buffer);
-		pack16(msg->slurmctld_debug, buffer);
-		packstr(msg->slurmctld_logfile, buffer);
-		packstr(msg->slurmctld_params, buffer);
-		packstr(msg->slurmctld_pidfile, buffer);
-		pack32(msg->slurmctld_port, buffer);
-		pack16(msg->slurmctld_port_count, buffer);
-		packstr(msg->slurmctld_primary_off_prog, buffer);
-		packstr(msg->slurmctld_primary_on_prog, buffer);
-		pack16(msg->slurmctld_syslog_debug, buffer);
-		pack16(msg->slurmctld_timeout, buffer);
-
-		pack16(msg->slurmd_debug, buffer);
-		packstr(msg->slurmd_logfile, buffer);
-		packstr(msg->slurmd_params, buffer);
-		packstr(msg->slurmd_pidfile, buffer);
-		pack32(msg->slurmd_port, buffer);
-
-		packstr(msg->slurmd_spooldir, buffer);
-		pack16(msg->slurmd_syslog_debug, buffer);
-		pack16(msg->slurmd_timeout, buffer);
-		packstr(msg->srun_epilog, buffer);
-		pack16(msg->srun_port_range[0], buffer);
-		pack16(msg->srun_port_range[1], buffer);
-		packstr(msg->srun_prolog, buffer);
-		packstr(msg->state_save_location, buffer);
-		packstr(msg->suspend_exc_nodes, buffer);
-		packstr(msg->suspend_exc_parts, buffer);
-		packstr(msg->suspend_exc_states, buffer);
-		packstr(msg->suspend_program, buffer);
-		pack16(msg->suspend_rate, buffer);
-		pack32(msg->suspend_time, buffer);
-		pack16(msg->suspend_timeout, buffer);
-		packstr(msg->switch_param, buffer);
-		packstr(msg->switch_type, buffer);
-
-		packstr(msg->task_epilog, buffer);
-		packstr(msg->task_prolog, buffer);
-		packstr(msg->task_plugin, buffer);
-		pack32(msg->task_plugin_param, buffer);
-		pack16(msg->tcp_timeout, buffer);
-		packstr(msg->tls_params, buffer);
-		packstr(msg->tls_type, buffer);
-		packstr(msg->tmp_fs, buffer);
-		packstr(msg->topology_param, buffer);
-		packstr(msg->topology_plugin, buffer);
-		pack16(msg->tree_width, buffer);
-
-		packstr(msg->unkillable_program, buffer);
-		pack16(msg->unkillable_timeout, buffer);
-		packstr(msg->version, buffer);
-		pack16(msg->vsize_factor, buffer);
-
-		pack16(msg->wait_time, buffer);
-		packstr(msg->x11_params, buffer);
-	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack_time(msg->last_update, buffer);
-
-		pack16(msg->accounting_storage_enforce, buffer);
-		packstr(msg->accounting_storage_backup_host, buffer);
-		packstr(msg->accounting_storage_host, buffer);
-		packstr(msg->accounting_storage_ext_host, buffer);
-		packstr(msg->accounting_storage_params, buffer);
-		pack16(msg->accounting_storage_port, buffer);
-		packstr(msg->accounting_storage_tres, buffer);
-		packstr(msg->accounting_storage_type, buffer);
-		packstr("N/A", buffer); /* was accounting_storage_user */
-
-		pack_key_pair_list(msg->acct_gather_conf,
-				   smsg->protocol_version, buffer);
-
-		packstr(msg->acct_gather_energy_type, buffer);
-		packstr(msg->acct_gather_filesystem_type, buffer);
-		packstr(msg->acct_gather_interconnect_type, buffer);
-		pack16(msg->acct_gather_node_freq, buffer);
-		packstr(msg->acct_gather_profile_type, buffer);
-
-		packstr(msg->authalttypes, buffer);
-		packstr(msg->authalt_params, buffer);
-		packstr(msg->authinfo, buffer);
-		packstr(msg->authtype, buffer);
-
-		pack16(msg->batch_start_timeout, buffer);
-		pack_time(msg->boot_time, buffer);
-		packstr(msg->bb_type, buffer);
-		packstr(msg->bcast_exclude, buffer);
-		packstr(msg->bcast_parameters, buffer);
-
-		pack_key_pair_list(msg->cgroup_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->cli_filter_plugins, buffer);
-		packstr(msg->cluster_name, buffer);
-		packstr(msg->comm_params, buffer);
-		pack16(msg->complete_wait, buffer);
-		pack32(msg->conf_flags, buffer);
-		packstr_array(msg->control_addr, msg->control_cnt, buffer);
-		packstr_array(msg->control_machine, msg->control_cnt, buffer);
-		pack32(msg->cpu_freq_def, buffer);
-		pack32(msg->cpu_freq_govs, buffer);
-		packstr(msg->cred_type, buffer);
-		packstr(msg->data_parser_parameters, buffer);
-
-		pack64(msg->def_mem_per_cpu, buffer);
-		pack64(msg->debug_flags, buffer);
-		packstr(msg->dependency_params, buffer);
-
-		pack16(msg->eio_timeout, buffer);
-		pack16(msg->enforce_part_limits, buffer);
-		packstr_array(msg->epilog, msg->epilog_cnt, buffer);
-		pack32(msg->epilog_msg_time, buffer);
-		packstr_array(msg->epilog_slurmctld, msg->epilog_slurmctld_cnt,
-			      buffer);
-
-		packstr(msg->fed_params, buffer);
-		pack32(msg->first_job_id, buffer);
-		pack16(msg->fs_dampening_factor, buffer);
-
-		pack16(DEFAULT_GET_ENV_TIMEOUT, buffer); /* was get_env_timeout */
-		packstr(msg->gres_plugins, buffer);
-		pack16(msg->group_time, buffer);
-		pack16(msg->group_force, buffer);
-		packstr(msg->gpu_freq_def, buffer);
-
-		packstr(msg->hash_plugin, buffer);
-		pack32(msg->hash_val, buffer);
-
-		pack16(msg->health_check_interval, buffer);
-		pack16(msg->health_check_node_state, buffer);
-		packstr(msg->health_check_program, buffer);
-
-		pack16(msg->inactive_limit, buffer);
-		packstr(msg->interactive_step_opts, buffer);
-
-		packstr(msg->job_acct_gather_freq, buffer);
-		packstr(msg->job_acct_gather_type, buffer);
-		packstr(msg->job_acct_gather_params, buffer);
-
-		packstr(msg->job_comp_host, buffer);
-		packstr(msg->job_comp_loc, buffer);
-		packstr(msg->job_comp_params, buffer);
-		pack32((uint32_t) msg->job_comp_port, buffer);
-		packstr(msg->job_comp_type, buffer);
-		packstr(msg->job_comp_user, buffer);
-		packstr(msg->namespace_plugin, buffer);
-
-		(void) slurm_pack_list(msg->job_defaults_list,
-				       job_defaults_pack, buffer,
-				       smsg->protocol_version);
-		pack16(msg->job_file_append, buffer);
-		pack16(msg->job_requeue, buffer);
-		packstr(msg->job_submit_plugins, buffer);
-
-		pack16(msg->kill_on_bad_exit, buffer);
-		pack16(msg->kill_wait, buffer);
-
-		packstr(msg->launch_params, buffer);
-		packstr(msg->licenses, buffer);
-		pack16(msg->log_fmt, buffer);
-
-		pack32(msg->max_array_sz, buffer);
-		pack32(msg->max_batch_requeue, buffer);
-		pack32(msg->max_dbd_msgs, buffer);
-		packstr(msg->mail_domain, buffer);
-		packstr(msg->mail_prog, buffer);
-		pack32(msg->max_job_cnt, buffer);
-		pack32(msg->max_job_id, buffer);
-		pack64(msg->max_mem_per_cpu, buffer);
-		pack32(msg->max_node_cnt, buffer);
-		pack32(msg->max_step_cnt, buffer);
-		pack16(msg->max_tasks_per_node, buffer);
-
-		packstr(msg->mcs_plugin, buffer);
-		packstr(msg->mcs_plugin_params, buffer);
-
-		pack32(msg->min_job_age, buffer);
-		pack_key_pair_list(msg->mpi_conf, smsg->protocol_version,
-				   buffer);
-		packstr(msg->mpi_default, buffer);
-		packstr(msg->mpi_params, buffer);
-		pack16(msg->msg_timeout, buffer);
-
-		pack32(msg->next_job_id, buffer);
-
-		pack_config_plugin_params_list(msg->node_features_conf,
-					       smsg->protocol_version, buffer);
-
-		packstr(msg->node_features_plugins, buffer);
-		packnull(buffer); /* was node_prefix */
-
-		pack16(msg->over_time_limit, buffer);
-
-		packstr(msg->plugindir, buffer);
-		packstr(msg->plugstack, buffer);
-		pack16(msg->preempt_mode, buffer);
-		packstr(msg->preempt_params, buffer);
-		packstr(msg->preempt_type, buffer);
-		pack32(msg->preempt_exempt_time, buffer);
-		packstr(msg->prep_params, buffer);
-		packstr(msg->prep_plugins, buffer);
-
-		pack32(msg->priority_decay_hl, buffer);
-		pack32(msg->priority_calc_period, buffer);
-		pack16(msg->priority_favor_small, buffer);
-		pack16(msg->priority_flags, buffer);
-		pack32(msg->priority_max_age, buffer);
-		packstr(msg->priority_params, buffer);
-		pack16(msg->priority_reset_period, buffer);
-		packstr(msg->priority_type, buffer);
-		pack32(msg->priority_weight_age, buffer);
-		pack32(msg->priority_weight_assoc, buffer);
-		pack32(msg->priority_weight_fs, buffer);
-		pack32(msg->priority_weight_js, buffer);
-		pack32(msg->priority_weight_part, buffer);
-		pack32(msg->priority_weight_qos, buffer);
-		packstr(msg->priority_weight_tres, buffer);
-
-		pack16(msg->private_data, buffer);
-		packstr(msg->proctrack_type, buffer);
-		packstr_array(msg->prolog, msg->prolog_cnt, buffer);
-		pack16(MAX(msg->prolog_timeout, msg->epilog_timeout), buffer);
-		packstr_array(msg->prolog_slurmctld, msg->prolog_slurmctld_cnt,
-			      buffer);
-		pack16(msg->prolog_flags, buffer);
-		pack16(msg->propagate_prio_process, buffer);
-		packstr(msg->propagate_rlimits, buffer);
-		packstr(msg->propagate_rlimits_except, buffer);
-
-		packstr(msg->reboot_program, buffer);
-		pack16(msg->reconfig_flags, buffer);
-		packstr(msg->requeue_exit, buffer);
-		packstr(msg->requeue_exit_hold, buffer);
-		packstr(msg->resume_fail_program, buffer);
-		packstr(msg->resume_program, buffer);
-		pack16(msg->resume_rate, buffer);
-		pack16(msg->resume_timeout, buffer);
-		packstr(msg->resv_epilog, buffer);
-		pack16(msg->resv_over_run, buffer);
-		packstr(msg->resv_prolog, buffer);
-		pack16(msg->ret2service, buffer);
-
-		packstr(msg->sched_params, buffer);
-		packstr(msg->sched_logfile, buffer);
-		pack16(msg->sched_log_level, buffer);
-		pack16(msg->sched_time_slice, buffer);
-		packstr(msg->schedtype, buffer);
-		packstr(msg->scron_params, buffer);
-		packstr(msg->select_type, buffer);
-
-		pack_key_pair_list(msg->select_conf_key_pairs,
-				   smsg->protocol_version, buffer);
-
-		pack16(msg->select_type_param, buffer);
-
-		packstr(msg->slurm_conf, buffer);
-		pack32(msg->slurm_user_id, buffer);
-		packstr(msg->slurm_user_name, buffer);
-		pack32(msg->slurmd_user_id, buffer);
-		packstr(msg->slurmd_user_name, buffer);
-
-		packstr(msg->slurmctld_addr, buffer);
-		pack16(msg->slurmctld_debug, buffer);
-		packstr(msg->slurmctld_logfile, buffer);
-		packstr(msg->slurmctld_params, buffer);
-		packstr(msg->slurmctld_pidfile, buffer);
-		pack32(msg->slurmctld_port, buffer);
-		pack16(msg->slurmctld_port_count, buffer);
-		packstr(msg->slurmctld_primary_off_prog, buffer);
-		packstr(msg->slurmctld_primary_on_prog, buffer);
-		pack16(msg->slurmctld_syslog_debug, buffer);
-		pack16(msg->slurmctld_timeout, buffer);
-
-		pack16(msg->slurmd_debug, buffer);
-		packstr(msg->slurmd_logfile, buffer);
-		packstr(msg->slurmd_params, buffer);
-		packstr(msg->slurmd_pidfile, buffer);
-		pack32(msg->slurmd_port, buffer);
-
-		packstr(msg->slurmd_spooldir, buffer);
-		pack16(msg->slurmd_syslog_debug, buffer);
-		pack16(msg->slurmd_timeout, buffer);
-		packstr(msg->srun_epilog, buffer);
-		pack16(msg->srun_port_range[0], buffer);
-		pack16(msg->srun_port_range[1], buffer);
-		packstr(msg->srun_prolog, buffer);
-		packstr(msg->state_save_location, buffer);
-		packstr(msg->suspend_exc_nodes, buffer);
-		packstr(msg->suspend_exc_parts, buffer);
-		packstr(msg->suspend_exc_states, buffer);
-		packstr(msg->suspend_program, buffer);
-		pack16(msg->suspend_rate, buffer);
-		pack32(msg->suspend_time, buffer);
-		pack16(msg->suspend_timeout, buffer);
-		packstr(msg->switch_param, buffer);
-		packstr(msg->switch_type, buffer);
-
-		packstr(msg->task_epilog, buffer);
-		packstr(msg->task_prolog, buffer);
-		packstr(msg->task_plugin, buffer);
-		pack32(msg->task_plugin_param, buffer);
-		pack16(msg->tcp_timeout, buffer);
-		packstr(msg->tls_type, buffer);
-		packstr(msg->tmp_fs, buffer);
-		packstr(msg->topology_param, buffer);
-		packstr(msg->topology_plugin, buffer);
-		pack16(msg->tree_width, buffer);
-
-		packstr(msg->unkillable_program, buffer);
-		pack16(msg->unkillable_timeout, buffer);
-		packstr(msg->version, buffer);
-		pack16(msg->vsize_factor, buffer);
-
-		pack16(msg->wait_time, buffer);
-		packstr(msg->x11_params, buffer);
-	}
+	_pack_slurm_conf(msg, smsg->protocol_version, buffer);
 }
 
 static int _unpack_slurm_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
