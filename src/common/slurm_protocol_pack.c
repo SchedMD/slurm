@@ -5338,7 +5338,7 @@ static void _pack_slurm_conf_msg(const slurm_msg_t *smsg, buf_t *buffer)
 	}
 }
 
-static int _unpack_slurm_ctl_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
+static int _unpack_slurm_conf_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
@@ -14318,7 +14318,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_last_update_msg(msg, buffer);
 		break;
 	case RESPONSE_BUILD_INFO:
-		rc = _unpack_slurm_ctl_conf_msg(msg, buffer);
+		rc = _unpack_slurm_conf_msg(msg, buffer);
 		break;
 	case REQUEST_STEP_BY_CONTAINER_ID:
 		rc = _unpack_container_id_request_msg(msg, buffer);
