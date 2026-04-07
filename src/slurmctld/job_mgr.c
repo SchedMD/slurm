@@ -423,6 +423,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(job_record_t *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
+static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem);
 static int _update_job_nodes_str(job_record_t *job_ptr);
 static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    bitstr_t *req_bitmap, part_record_t *part_ptr,
@@ -12313,6 +12314,46 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 	return true;
 }
 
+static void _update_job_mem_on_nodes(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+	agent_arg_t *agent_args = NULL;
+	update_job_mem_msg_t *mem_msg = NULL;
+
+	agent_args = xmalloc(sizeof(*agent_args));
+	agent_args->msg_type = REQUEST_UPDATE_JOB_MEM;
+	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create(NULL);
+
+	mem_msg = xmalloc(sizeof(*mem_msg));
+	mem_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	mem_msg->job_mem_per_node = job_ptr->details->pn_min_memory;
+	mem_msg->notify_ctld = true;
+
+	agent_args->protocol_version = job_ptr->start_protocol_ver;
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
+		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+	}
+
+	if (agent_args->node_count == 0) {
+		xfree(mem_msg);
+		hostlist_destroy(agent_args->hostlist);
+		xfree(agent_args);
+		return;
+	}
+
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+	job_ptr->node_bitmap_rs = bit_copy(job_ptr->node_bitmap);
+
+	agent_args->msg_args = mem_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(agent_args);
+}
+
 extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem)
 {
 	job_resources_t *job_res = job_ptr->job_resrcs;
@@ -12359,6 +12400,31 @@ extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem)
 	job_ptr->details->pn_min_memory = new_mem;
 	job_ptr->bit_flags |= JOB_MEM_SET;
 	job_state_set_flag(job_ptr, JOB_RESIZING);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Handle memory limit update for a running job.
+ * Only reduction is allowed.
+ */
+static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
+{
+	int rc;
+
+	if (job_ptr->node_bitmap_rs) {
+		info("%s: memory resize already in progress for %pJ",
+		     __func__, job_ptr);
+		return ESLURM_TRANSITION_STATE_NO_UPDATE;
+	}
+
+	if ((rc = job_mem_resize_begin(job_ptr, new_mem)))
+		return rc;
+
+	info("%s: reducing memory to %"PRIu64"MB for running %pJ",
+	     __func__, new_mem, job_ptr);
+
+	_update_job_mem_on_nodes(job_ptr);
 
 	return SLURM_SUCCESS;
 }
@@ -14042,7 +14108,13 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		goto fini;
 
 	if (job_desc->pn_min_memory != NO_VAL64) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
+		if (IS_JOB_RUNNING(job_ptr) && detail_ptr) {
+			error_code = _update_job_mem_running(
+				job_ptr, job_desc->pn_min_memory);
+			if (!error_code)
+				detail_ptr->orig_pn_min_memory =
+					job_desc->pn_min_memory;
+		} else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
 		} else if (job_desc->pn_min_memory ==
 			   detail_ptr->pn_min_memory) {
