@@ -834,14 +834,17 @@ static int _foreach_license_set_mode3(void *x, void *arg)
 			args->idx = 0;
 			args->prev_hres_id = license->id.hres_id;
 
-			if (license->hres_rec.topology_name &&
-			    topology_g_get(TOPO_DATA_TCTX_IDX,
-					   license->hres_rec.topology_name,
-					   &(license->hres_rec.topology_idx))) {
-				error("%s %s: topology %s doesn't exist ",
-				      __func__, license->name,
-				      license->hres_rec.topology_name);
-				return -1;
+			if (license->hres_rec.topology_name) {
+				if (topology_g_get(TOPO_DATA_TCTX_IDX,
+						   license->hres_rec
+							   .topology_name,
+						   &(license->hres_rec
+							     .topology_idx))) {
+					error("%s %s: topology %s doesn't exist ",
+					      __func__, license->name,
+					      license->hres_rec.topology_name);
+					return -1;
+				}
 			} else
 				license->hres_rec.topology_idx = -1;
 		} else {
