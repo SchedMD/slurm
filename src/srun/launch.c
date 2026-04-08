@@ -45,6 +45,7 @@
 #include "src/srun/launch.h"
 #include "src/srun/multi_prog.h"
 #include "src/srun/signals.h"
+#include "src/srun/srun_job.h"
 #include "src/srun/task_state.h"
 
 #include "src/api/pmi_server.h"
@@ -626,6 +627,9 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	char tmp_str[128];
+
+	if (!job->env)
+		setup_one_job_env(opt_local, job, true);
 
 	slurm_step_launch_params_t_init(launch_params);
 
