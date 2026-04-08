@@ -2985,7 +2985,7 @@ typedef struct {
 					 * password */
 	uint16_t accounting_storage_port;/* node accounting storage port */
 	char *accounting_storage_type; /* accounting storage type */
-	void *acct_gather_conf; /* account gather config */
+	list_t *acct_gather_conf; /* account gather config */
 	char *acct_gather_energy_type; /* energy accounting type */
 	char *acct_gather_profile_type; /* profile accounting type */
 	char *acct_gather_interconnect_type; /* interconnect accounting type */
@@ -3004,7 +3004,7 @@ typedef struct {
 	char *certgen_type;	/* certgen type */
 	char *certmgr_params;	/* certmgr parameters */
 	char *certmgr_type;	/* certmgr type */
-	void *cgroup_conf;	/* cgroup support config file */
+	list_t *cgroup_conf; /* cgroup support config file */
 	char *cli_filter_params; /* CliFilterParameters */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
 	uint16_t cluster_id; /* unique ID for this cluster from the DBD */
@@ -3103,12 +3103,12 @@ typedef struct {
 	char *metrics_type; /* metrics plugin type */
 	uint32_t min_job_age;	/* COMPLETED jobs over this age (secs)
 				 * purged from in memory records */
-	void *mpi_conf;		/* MPI support config file */
+	list_t *mpi_conf; /* MPI support config file */
 	char *mpi_default;	/* Default version of MPI in use */
 	char *mpi_params;	/* MPI parameters */
 	uint16_t msg_timeout;	/* message timeout */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
-	void *node_features_conf; /* Node Features Plugin config file */
+	list_t *node_features_conf; /* Node Features Plugin config file */
 	char *node_features_plugins; /* List of node_features plugins to use */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
@@ -3177,7 +3177,7 @@ typedef struct {
 	char *schedtype;	/* type of scheduler to use */
 	char *scron_params;	/* ScronParameters */
 	char *select_type;	/* type of node selector to use */
-	void *select_conf_key_pairs; /* key-pair list which can be
+	list_t *select_conf_key_pairs; /* key-pair list which can be
 				      * listed with slurm_print_key_pairs() */
 	uint16_t select_type_param; /* Parameters
 				     * describing the select_type plugin */

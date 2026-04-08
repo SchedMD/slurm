@@ -6011,8 +6011,8 @@ extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
 	*object = object_ptr;
 	safe_unpackstr(&object_ptr->name, buff);
 
-	if (unpack_key_pair_list((void *) &object_ptr->key_pairs,
-				 protocol_version, buff) != SLURM_SUCCESS)
+	if (unpack_key_pair_list(&object_ptr->key_pairs, protocol_version,
+				 buff))
 		goto unpack_error;
 
 	return SLURM_SUCCESS;
@@ -6040,7 +6040,7 @@ extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
 	}
 }
 
-extern int unpack_config_plugin_params_list(void **plugin_params_l,
+extern int unpack_config_plugin_params_list(list_t **plugin_params_l,
 					    uint16_t protocol_version,
 					    buf_t *buff)
 {
@@ -6061,7 +6061,7 @@ extern int unpack_config_plugin_params_list(void **plugin_params_l,
 				goto unpack_error;
 			list_append(tmp_list, object);
 		}
-		*plugin_params_l = (void *)tmp_list;
+		*plugin_params_l = tmp_list;
 	}
 	return SLURM_SUCCESS;
 
@@ -6125,7 +6125,7 @@ extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
 	}
 }
 
-extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
+extern int unpack_key_pair_list(list_t **key_pairs, uint16_t protocol_version,
 				buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
@@ -6147,7 +6147,7 @@ extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
 		}
 	}
 
-	*key_pairs = (void *) tmp_list;
+	*key_pairs = tmp_list;
 	return SLURM_SUCCESS;
 
 unpack_error:

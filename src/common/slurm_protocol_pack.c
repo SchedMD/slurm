@@ -13511,7 +13511,7 @@ static int _unpack_container_state_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->status, buffer);
 		safe_unpack32(&msg->pid, buffer);
 		safe_unpackstr(&msg->bundle, buffer);
-		if (unpack_key_pair_list((void **) &msg->annotations,
+		if (unpack_key_pair_list(&msg->annotations,
 					 smsg->protocol_version, buffer))
 			goto unpack_error;
 	}

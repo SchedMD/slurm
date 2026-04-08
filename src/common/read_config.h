@@ -628,14 +628,14 @@ extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
 				       buf_t *buff);
 extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
 					   buf_t *buff);
-extern int unpack_config_plugin_params_list(void **object,
+extern int unpack_config_plugin_params_list(list_t **object,
 					    uint16_t protocol_version,
 					    buf_t *buff);
 
 extern void destroy_config_key_pair(void *object);
 extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
 			       buf_t *buffer);
-extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
+extern int unpack_key_pair_list(list_t **key_pairs, uint16_t protocol_version,
 				buf_t *buffer);
 extern void pack_config_key_pair(void *in, uint16_t protocol_version,
 				 buf_t *buffer);
