@@ -1417,7 +1417,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	last_update_msg_t *last_time_msg = msg->data;
-	slurm_ctl_conf_info_msg_t config_tbl;
+	slurm_conf_t config_tbl;
 	/* Locks: Read config, job, partition, fed */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };

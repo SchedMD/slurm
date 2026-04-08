@@ -544,20 +544,20 @@ extern slurm_conf_node_t *slurm_conf_parse_nodeline(const char *nodeline,
 						    s_p_hashtbl_t **out_hashtbl);
 
 /*
- * init_slurm_conf - initialize or re-initialize the slurm configuration
+ * conf - initialize or re-initialize the slurm configuration
  *	values to defaults (NULL or NO_VAL). Note that the configuration
  *	file pathname (slurm_conf) is not changed.
- * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
+ * IN/OUT conf - pointer to data structure to be initialized
  */
-extern void init_slurm_conf(slurm_conf_t *ctl_conf_ptr);
+extern void init_slurm_conf(slurm_conf_t *conf);
 
 /*
  * free_slurm_conf - free all storage associated with a slurm_conf_t.
- * IN/OUT ctl_conf_ptr - pointer to data structure to be freed
+ * IN/OUT conf - pointer to data structure to be freed
  * IN purge_node_hash - purge system-wide node hash table if set,
  *			set to zero if clearing private copy of config data
  */
-extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash);
+extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash);
 
 /*
  * gethostname_short - equivalent to gethostname(), but return only the first

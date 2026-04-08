@@ -90,7 +90,7 @@ node_info_msg_t *g_node_info_ptr = NULL;
 partition_info_msg_t *g_part_info_ptr = NULL;
 reserve_info_msg_t *g_resv_info_ptr = NULL;
 burst_buffer_info_msg_t *g_bb_info_ptr = NULL;
-slurm_ctl_conf_info_msg_t *g_ctl_info_ptr = NULL;
+slurm_conf_t *g_ctl_info_ptr = NULL;
 job_step_info_response_msg_t *g_step_info_ptr = NULL;
 topo_info_response_msg_t *g_topo_info_msg_ptr = NULL;
 int g_switch_nodes_maps_count = 0;
@@ -426,12 +426,12 @@ static void _reconfigure(GtkToggleAction *action)
 static void _get_current_debug(GtkRadioAction *action)
 {
 	static int debug_level = 0;
-	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
+	static slurm_conf_t *slurm_conf_ptr = NULL;
 	static GtkAction *debug_action = NULL;
-	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
+	int err_code = get_new_info_config(&slurm_conf_ptr);
 
 	if (err_code != SLURM_ERROR)
-		debug_level = slurm_ctl_conf_ptr->slurmctld_debug;
+		debug_level = slurm_conf_ptr->slurmctld_debug;
 
 	if (!debug_action)
 		debug_action = gtk_action_group_get_action(
@@ -447,15 +447,15 @@ static void _get_current_debug(GtkRadioAction *action)
 static void _get_current_debug_flags(GtkToggleAction *action)
 {
 	static uint64_t debug_flags = 0, tmp_flags;
-	static slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
-	int err_code = get_new_info_config(&slurm_ctl_conf_ptr);
+	static slurm_conf_t *slurm_conf_ptr = NULL;
+	int err_code = get_new_info_config(&slurm_conf_ptr);
 	GtkAction *debug_action = NULL;
 	GtkToggleAction *toggle_action;
 	gboolean orig_state, new_state;
 	int i;
 
 	if (err_code != SLURM_ERROR)
-		debug_flags = slurm_ctl_conf_ptr->debug_flags;
+		debug_flags = slurm_conf_ptr->debug_flags;
 
 	for (i = 0; i < debug_action_entries; i++)  {
 		debug_action = gtk_action_group_get_action(
@@ -1042,7 +1042,7 @@ static void _change_cluster_main(GtkComboBox *combo, gpointer extra)
 	g_part_info_ptr = NULL;
 	slurm_free_reservation_info_msg(g_resv_info_ptr);
 	g_resv_info_ptr = NULL;
-	slurm_free_ctl_conf(g_ctl_info_ptr);
+	slurm_free_conf(g_ctl_info_ptr);
 	g_ctl_info_ptr = NULL;
 	slurm_free_job_step_info_response_msg(g_step_info_ptr);
 	g_step_info_ptr = NULL;

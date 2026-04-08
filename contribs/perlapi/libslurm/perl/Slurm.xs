@@ -395,7 +395,7 @@ slurm_load_ctl_conf(slurm_t self, time_t update_time=0)
 			RETVAL = newHV();
 			sv_2mortal((SV*)RETVAL);
 			rc = slurm_ctl_conf_to_hv(ctl_conf, RETVAL);
-			slurm_free_ctl_conf(ctl_conf);
+			slurm_free_conf(ctl_conf);
 			if (rc < 0) {
 				XSRETURN_UNDEF;
 			}

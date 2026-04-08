@@ -1274,8 +1274,6 @@ typedef struct {
 	uint16_t rpc_version;
 } accounting_update_msg_t;
 
-typedef slurm_conf_t slurm_ctl_conf_info_msg_t;
-
 /*****************************************************************************\
  *      Container RPCs
 \*****************************************************************************/
@@ -1659,7 +1657,7 @@ extern void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg);
 extern void slurm_free_submit_response_response_msg(
 		submit_response_msg_t * msg);
-extern void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr);
+extern void slurm_free_conf(slurm_conf_t *config_ptr);
 extern void slurm_free_job_info_msg(job_info_msg_t * job_buffer_ptr);
 extern void slurm_free_job_step_info_response_msg(
 		job_step_info_response_msg_t * msg);

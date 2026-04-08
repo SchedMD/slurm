@@ -39,16 +39,16 @@
 
 #include "src/sview/sview.h"
 
-extern int get_new_info_config(slurm_ctl_conf_info_msg_t **info_ptr)
+extern int get_new_info_config(slurm_conf_t **info_ptr)
 {
-	static slurm_ctl_conf_info_msg_t *new_ctl_ptr = NULL;
+	static slurm_conf_t *new_ctl_ptr = NULL;
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 
 	if (g_ctl_info_ptr) {
 		error_code = slurm_load_ctl_conf(g_ctl_info_ptr->last_update,
 						 &new_ctl_ptr);
 		if (error_code == SLURM_SUCCESS)
-			slurm_free_ctl_conf(g_ctl_info_ptr);
+			slurm_free_conf(g_ctl_info_ptr);
 		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_ctl_ptr = g_ctl_info_ptr;

@@ -4221,13 +4221,12 @@ extern void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
 	}
 }
 
-
 /*
- * slurm_free_ctl_conf - free slurm control information response message
+ * slurm_free_conf - free slurm control information response message
  * IN msg - pointer to slurm control information response message
  * NOTE: buffer is loaded by slurm_load_jobs
  */
-extern void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
+extern void slurm_free_conf(slurm_conf_t *config_ptr)
 {
 	if (config_ptr) {
 		free_slurm_conf(config_ptr, 0);
@@ -4990,7 +4989,7 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 		slurm_free_last_update_msg(data);
 		break;
 	case RESPONSE_BUILD_INFO:
-		slurm_free_ctl_conf(data);
+		slurm_free_conf(data);
 		break;
 	case REQUEST_JOB_INFO:
 		slurm_free_job_info_request_msg(data);
