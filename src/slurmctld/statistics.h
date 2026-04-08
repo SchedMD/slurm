@@ -36,6 +36,7 @@
 #ifndef _STATISTICS_H
 #define _STATISTICS_H
 
+#include "src/common/bitstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct node_stats {
@@ -196,6 +197,7 @@ typedef struct job_statistics {
 	uint16_t max_nodes;
 	uint64_t memory_alloc;
 	uint16_t min_nodes;
+	bitstr_t *node_bitmap;
 	uint16_t nodes_alloc;
 	char *partition;
 	uint32_t state_reason;
@@ -219,6 +221,7 @@ typedef struct jobs_statistics {
 	uint32_t job_cnt;
 	list_t *jobs;
 	uint64_t memory_alloc;
+	bitstr_t *node_bitmap;
 	uint16_t nodes_alloc;
 	uint32_t node_failed;
 	uint32_t oom;
