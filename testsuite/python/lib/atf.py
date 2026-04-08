@@ -286,8 +286,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "OPENSSL_cleanup" in bt
         and "_int_free_maybe_consolidate" in bt
     ):
-        # TODO: Add version when t24822 is fixed
-        failures.append(reason)
+        if get_version(component) >= (26, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 24905: Known issue with slurmstepd with stepmgr"
