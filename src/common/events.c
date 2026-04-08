@@ -35,13 +35,12 @@
 
 #include <pthread.h>
 
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include <time.h>
-
-#include "src/conmgr/events.h"
 
 static void _wait_pending(event_signal_t *event, const char *caller)
 {
@@ -83,7 +82,7 @@ static void _wait(event_signal_t *event, pthread_mutex_t *mutex,
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 		/* we want the time but not to warn about a time limit */
-		END_TIMER3(NULL, 0);
+		END_TIMER;
 
 		log_flag(CONMGR, "%s->%s: [EVENT:%s] END waited after %s with %d other pending waiters",
 			 caller, __func__, event->name, TIME_STR,

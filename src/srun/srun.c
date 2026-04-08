@@ -59,6 +59,7 @@
 #include <unistd.h>
 
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
@@ -176,6 +177,8 @@ int srun(int ac, char **av)
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
+	forward_init();
+
 	if (cli_filter_init() != SLURM_SUCCESS)
 		fatal("failed to initialize cli_filter plugin");
 	if (switch_g_init(false) != SLURM_SUCCESS )
@@ -235,6 +238,7 @@ int srun(int ac, char **av)
 		global_rc = mpi_plugin_rc;
 	}
 
+	forward_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();

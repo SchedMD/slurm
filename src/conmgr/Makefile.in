@@ -163,8 +163,8 @@ PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libconmgr_la_LIBADD =
 @HAVE_EPOLL_TRUE@am__objects_1 = epoll.lo
-am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo events.lo io.lo \
-	poll.lo polling.lo rpc.lo signals.lo tls.lo tls_fingerprint.lo \
+am_libconmgr_la_OBJECTS = con.lo conmgr.lo delayed.lo io.lo poll.lo \
+	polling.lo rpc.lo signals.lo tls.lo tls_fingerprint.lo \
 	watch.lo work.lo workers.lo $(am__objects_1)
 libconmgr_la_OBJECTS = $(am_libconmgr_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -194,7 +194,7 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/con.Plo ./$(DEPDIR)/conmgr.Plo \
 	./$(DEPDIR)/delayed.Plo ./$(DEPDIR)/epoll.Plo \
-	./$(DEPDIR)/events.Plo ./$(DEPDIR)/io.Plo ./$(DEPDIR)/poll.Plo \
+	./$(DEPDIR)/io.Plo ./$(DEPDIR)/poll.Plo \
 	./$(DEPDIR)/polling.Plo ./$(DEPDIR)/rpc.Plo \
 	./$(DEPDIR)/signals.Plo ./$(DEPDIR)/tls.Plo \
 	./$(DEPDIR)/tls_fingerprint.Plo ./$(DEPDIR)/watch.Plo \
@@ -505,9 +505,9 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir)
 noinst_LTLIBRARIES = libconmgr.la
 libconmgr_la_SOURCES = con.c conmgr.c conmgr.h delayed.c delayed.h \
-	events.c events.h io.c mgr.h poll.c polling.c polling.h rpc.c \
-	signals.c signals.h tls.c tls.h tls_fingerprint.c \
-	tls_fingerprint.h watch.c work.c workers.c $(am__append_1)
+	io.c mgr.h poll.c polling.c polling.h rpc.c signals.c \
+	signals.h tls.c tls.h tls_fingerprint.c tls_fingerprint.h \
+	watch.c work.c workers.c $(am__append_1)
 libconmgr_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libconmgr
@@ -573,7 +573,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/delayed.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/epoll.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/events.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/poll.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polling.Plo@am__quote@ # am--include-marker
@@ -713,7 +712,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
 	-rm -f ./$(DEPDIR)/epoll.Plo
-	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
 	-rm -f ./$(DEPDIR)/poll.Plo
 	-rm -f ./$(DEPDIR)/polling.Plo
@@ -773,7 +771,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/conmgr.Plo
 	-rm -f ./$(DEPDIR)/delayed.Plo
 	-rm -f ./$(DEPDIR)/epoll.Plo
-	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/io.Plo
 	-rm -f ./$(DEPDIR)/poll.Plo
 	-rm -f ./$(DEPDIR)/polling.Plo

@@ -64,6 +64,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/http_switch.h"
@@ -754,6 +755,8 @@ int main(int argc, char **argv)
 	if (serializer_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize serialization plugins.");
 
+	forward_init();
+
 	if (original && !under_systemd) {
 		/*
 		 * Need to create pidfile here in case we setuid() below
@@ -1173,6 +1176,11 @@ int main(int argc, char **argv)
 			slurm_conf.slurmctld_pidfile);
 	}
 
+	conmgr_request_shutdown();
+	forward_fini();
+	http_fini();
+	http_switch_fini();
+	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 {
@@ -1231,11 +1239,6 @@ int main(int argc, char **argv)
 	bit_cache_fini();
 }
 #endif
-
-	conmgr_request_shutdown();
-	conmgr_fini();
-	http_fini();
-	http_switch_fini();
 
 	rate_limit_shutdown();
 	log_fini();
