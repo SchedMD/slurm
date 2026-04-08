@@ -1113,6 +1113,9 @@ environment is retrieved.
 If \fBsbatch\fR is run as root, and the \fB\-\-gid\fR option is used,
 submit the job with \fIgroup\fR's group access permissions. \fIgroup\fR
 may be the group name or the numerical group ID.
+.br
+\fBNOTE\fR: The \fB\-\-gid\fR argument is deprecated and will be removed in a
+future release.
 .IP
 
 .TP
@@ -2642,6 +2645,9 @@ may use this option to run jobs as a normal user in a RootOnly
 partition for example. If run as root, \fBsbatch\fR will drop
 its permissions to the uid specified after node allocation is
 successful. \fIuser\fR may be the user name or numerical user ID.
+.br
+\fBNOTE\fR: The \fB\-\-uid\fR argument is deprecated and will be removed in a
+future release.
 .IP
 
 .TP
