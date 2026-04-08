@@ -358,8 +358,20 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
-	launch.ofname = params->output_filename;
-	launch.efname = params->error_filename;
+	/*
+	 * Async steps have no client-side I/O sink, so a NULL filename means
+	 * "use a sensible default" rather than "route via the listener".
+	 * launch.ofname/efname are borrowed (not xstrdup'd, not freed by this
+	 * path), so a string literal is safe here.
+	 */
+	if ((ctx->step_req->flags & SSF_ASYNC) && !params->output_filename)
+		launch.ofname = "slurm-%J.out";
+	else
+		launch.ofname = params->output_filename;
+	if (!params->error_filename)
+		launch.efname = launch.ofname;
+	else
+		launch.efname = params->error_filename;
 	launch.ifname = params->input_filename;
 	if (params->oom_kill_step != NO_VAL16)
 		launch.oom_kill_step = (params->oom_kill_step == 1);

@@ -622,6 +622,29 @@ static int _parse_gpu_request(char *in_str)
 	return gpus_val;
 }
 
+/*
+ * Free the slurm_step_launch_params_t that _build_launch_params() built.
+ * The struct owns env (from _build_user_env) and the *_filename strings
+ * (from fname_remote_string xstrdup); every other pointer field is an
+ * alias to opt_local/srun_opt/job/step_layout, which outlive step_req
+ * and retain ownership.  After this, req->launch_params is NULL so the
+ * subsequent slurm_free_job_step_create_request_msg() (here on error,
+ * or via step_ctx_destroy() on srun exit if step_ctx took ownership)
+ * skips slurm_free_launch_parameters() entirely and does not xfree the
+ * still-borrowed pointers.
+ */
+static void _free_built_launch_params(job_step_create_request_msg_t *req)
+{
+	if (!req || !req->launch_params)
+		return;
+	env_array_free(req->launch_params->env);
+	xfree(req->launch_params->error_filename);
+	xfree(req->launch_params->output_filename);
+	xfree(req->launch_params->input_filename);
+	xfree(req->launch_params);
+	req->launch_params = NULL;
+}
+
 static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 				 srun_job_t *job, slurm_opt_t *opt_local)
 {
@@ -672,7 +695,12 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->cwd = opt_local->chdir;
 	launch_params->env = _build_user_env(job, opt_local);
 	launch_params->envc = envcount(launch_params->env);
-	launch_params->error_filename = fname_remote_string(job->efname);
+	if (srun_opt->async)
+		launch_params->error_filename = xstrdup(opt_local->efname);
+	else
+		launch_params->error_filename =
+			fname_remote_string(job->efname);
+
 	launch_params->het_job_id = job->het_job_id;
 	launch_params->het_job_nnodes = job->het_job_nnodes;
 	launch_params->het_job_node_list = job->het_job_node_list;
@@ -685,7 +713,11 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->het_job_task_offset = job->het_job_task_offset;
 	launch_params->het_job_tid_offsets = job->het_job_tid_offsets;
 	launch_params->het_job_tids = job->het_job_tids;
-	launch_params->input_filename = fname_remote_string(job->ifname);
+	if (srun_opt->async)
+		launch_params->input_filename = xstrdup(opt_local->ifname);
+	else
+		launch_params->input_filename =
+			fname_remote_string(job->ifname);
 	launch_params->labelio = srun_opt->labelio ? true : false;
 	launch_params->mem_bind = opt_local->mem_bind;
 	launch_params->mem_bind_type = opt_local->mem_bind_type;
@@ -698,7 +730,11 @@ static void _build_launch_params(slurm_step_launch_params_t *launch_params,
 	launch_params->ntasks_per_tres = job->ntasks_per_tres;
 	launch_params->oom_kill_step = opt_local->oom_kill_step;
 	launch_params->open_mode = opt_local->open_mode;
-	launch_params->output_filename = fname_remote_string(job->ofname);
+	if (srun_opt->async)
+		launch_params->output_filename = xstrdup(opt_local->ofname);
+	else
+		launch_params->output_filename =
+			fname_remote_string(job->ofname);
 	launch_params->preserve_env = srun_opt->preserve_env;
 	launch_params->profile = opt_local->profile;
 	launch_params->pty = srun_opt->pty;
@@ -1062,6 +1098,17 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	}
 
 	/*
+	 * If step is async, need to figure out launch_params before sending
+	 * create step request since stepmgr will handle launching the step
+	 */
+	if (srun_opt->async) {
+		step_req->launch_params =
+			xmalloc(sizeof(*step_req->launch_params));
+		slurm_step_launch_params_t_init(step_req->launch_params);
+		_build_launch_params(step_req->launch_params, job, opt_local);
+	}
+
+	/*
 	 * This must be handled *after* we potentially set srun_opt->exact
 	 * above.
 	 */
@@ -1221,7 +1268,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 				  slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	unsigned long step_wait = 0;
 	uint16_t slurmctld_timeout;
 	slurm_step_layout_t *step_layout;
@@ -1318,6 +1365,7 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 		     !launch_step_retry_errno(rc))) {
 			error("Unable to create step for job %u: %m",
 			      step_req->step_id.job_id);
+			_free_built_launch_params(step_req);
 			slurm_free_job_step_create_request_msg(step_req);
 			return SLURM_ERROR;
 		}
@@ -1361,6 +1409,9 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 			break;
 		}
 	}
+
+	_free_built_launch_params(step_req);
+
 	if (i > 0) {
 		slurm_mutex_lock(&srun_destroy_sig_lock);
 		tmp_srun_destroy_sig = srun_destroy_sig;
@@ -1376,6 +1427,22 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	job->step_id.job_id = step_req->step_id.job_id;
 	job->step_id.step_id = step_req->step_id.step_id;
+
+	if (srun_opt->async) {
+		char tmp_char[64];
+		log_build_step_id_str(&step_req->step_id, tmp_char,
+				      sizeof(tmp_char), STEP_ID_FLAG_NO_PREFIX);
+		info("Submitted step %s", tmp_char);
+	} else if (i > 0) {
+		info("Step created for %ps", &step_req->step_id);
+	}
+
+	/* stepmgr handles launching async steps */
+	if (srun_opt->async) {
+		if (!job->step_ctx)
+			slurm_free_job_step_create_request_msg(step_req);
+		return SLURM_SUCCESS;
+	}
 
 	step_layout = launch_get_slurm_step_layout(job);
 	if (!step_layout) {
