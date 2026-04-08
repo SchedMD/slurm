@@ -36,6 +36,7 @@
 #include <sys/eventfd.h>
 
 #include "src/common/fd.h"
+#include "src/common/probes.h"
 #include "src/common/read_config.h"
 
 #include "src/conmgr/conmgr.h"
@@ -70,6 +71,14 @@ int srun_sig_eventfd = -1;
 	})
 
 #define SIGNAL_EXIT_BASE 128
+
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	(void) probe_run(true, NULL, NULL, __func__);
+}
 
 static void _handle_intr(srun_job_t *job)
 {
@@ -217,6 +226,8 @@ extern void srun_sig_init(void)
 #define X(sig, str) conmgr_add_work_signal(sig, _on_##str, NULL);
 	SRUN_SIGNALS
 #undef X
+
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
 	return;
 }
