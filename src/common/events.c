@@ -111,7 +111,7 @@ static void _broadcast(event_signal_t *event, const char *caller)
 	xassert(!event->pending);
 
 	log_flag(THREAD, "%s->%s: [EVENT:%s] broadcasting to all %d waiters",
-		 caller, __func__, event->name, event->pending);
+		 caller, __func__, event->name, event->waiting);
 
 	slurm_cond_broadcast(&event->cond);
 }
