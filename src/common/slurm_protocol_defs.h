@@ -630,6 +630,7 @@ typedef struct job_step_specs {
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
+	slurm_step_launch_params_t *launch_params;
 	uint64_t pn_min_memory; /* minimum real memory per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
@@ -1657,6 +1658,7 @@ extern void slurm_free_resv_desc_members(resv_desc_msg_t *msg);
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
 extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg);
+extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params);
 extern void slurm_free_job_step_create_request_msg(
 		job_step_create_request_msg_t * msg);
 extern void slurm_free_job_step_create_response_msg(
