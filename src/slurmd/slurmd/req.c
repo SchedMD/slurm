@@ -3199,7 +3199,6 @@ static void _rpc_network_callerid(slurm_msg_t *msg)
 		}
 	}
 
-	resp->step_id = SLURM_STEP_ID_INITIALIZER;
 	resp->step_id = step_id;
 	resp->node_name = xstrdup(conf->node_name);
 
