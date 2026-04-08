@@ -283,6 +283,10 @@ static void _build_pending_step(job_record_t *job_ptr,
 		step_ptr->step_req = step_specs;
 		_set_step_id(step_ptr, step_specs);
 		step_specs->step_id = step_ptr->step_id;
+		step_ptr->name = xstrdup(step_specs->name);
+
+		jobacct_storage_g_step_start(stepmgr_ops->acct_db_conn,
+					     step_ptr);
 	} else {
 		step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 		step_ptr->step_id.step_id = SLURM_PENDING_STEP;
