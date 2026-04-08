@@ -6051,9 +6051,8 @@ end_it:
 	 */
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if ((rc_msg = slurm_persist_send_msg(&p_tmp, ret_buf))) {
-		debug("Problem sending response to connection %d uid(%u): %s",
-		      conn_g_get_fd(p_tmp.conn), msg->auth_uid,
-		      slurm_strerror(rc_msg));
+		debug("Problem sending response to connection uid(%u): %s",
+		      msg->auth_uid, slurm_strerror(rc_msg));
 	}
 
 	if (rc && persist_conn) {
