@@ -37,8 +37,8 @@
  * Named event based signaling and waiting
  */
 
-#ifndef _CONMGR_EVENTS_H
-#define _CONMGR_EVENTS_H
+#ifndef _SLURM_EVENTS_H
+#define _SLURM_EVENTS_H
 
 #include <pthread.h>
 #include <stdbool.h>
@@ -65,9 +65,9 @@ typedef struct {
 	}
 
 #define EVENT_FREE_MEMBERS(event) \
-do { \
-	slurm_cond_destroy(&((event)->cond)); \
-} while (false)
+	do { \
+		slurm_cond_destroy(&((event)->cond)); \
+	} while (false)
 
 /*
  * Wait (aka block) for a signal for a given event
@@ -92,7 +92,7 @@ extern void event_wait_now(event_signal_t *event, pthread_mutex_t *mutex,
  * IN mutex - the mutex controlling event->cond
  */
 #define EVENT_WAIT(event, mutex) \
-	event_wait_now(event, mutex, (struct timespec) {0}, __func__)
+	event_wait_now(event, mutex, (struct timespec) { 0 }, __func__)
 
 /*
  * Wait (aka block) for a signal for a given event
@@ -122,13 +122,11 @@ extern void event_signal_now(bool broadcast, event_signal_t *event,
  * Send signal to one waiter even if EVENT_WAIT() called later but drop signal
  * if there is already another reliable signal pending a waiter.
  */
-#define EVENT_SIGNAL(event) \
-	event_signal_now(false, event, __func__)
+#define EVENT_SIGNAL(event) event_signal_now(false, event, __func__)
 /*
  * Send signal to all currently waiting threads or drop signal if there are no
  * currently waiting threads.
  */
-#define EVENT_BROADCAST(event) \
-	event_signal_now(true, event, __func__)
+#define EVENT_BROADCAST(event) event_signal_now(true, event, __func__)
 
-#endif /* _CONMGR_EVENTS_H */
+#endif

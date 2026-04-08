@@ -41,6 +41,7 @@
 
 #include <pthread.h>
 
+#include "src/common/events.h"
 #include "src/common/macros.h"
 #include "src/common/read_config.h"
 #include "src/common/xassert.h"
@@ -48,7 +49,6 @@
 #include "src/common/xsched.h"
 
 #include "src/conmgr/conmgr.h"
-#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 
 /* Threads to create per kernel reported CPU */

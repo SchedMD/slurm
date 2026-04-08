@@ -48,6 +48,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/events.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -59,7 +60,6 @@
 
 #include "src/conmgr/conmgr.h"
 #include "src/conmgr/delayed.h"
-#include "src/conmgr/events.h"
 #include "src/conmgr/mgr.h"
 #include "src/conmgr/polling.h"
 #include "src/conmgr/signals.h"

@@ -164,7 +164,7 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	cbuf.lo core_array.lo cpu_frequency.lo cron.lo daemonize.lo \
-	data.lo eio.lo env.lo extra_constraints.lo fd.lo \
+	data.lo eio.lo env.lo extra_constraints.lo events.lo fd.lo \
 	fetch_config.lo forward.lo global_defaults.lo group_cache.lo \
 	half_duplex.lo hostlist.lo http.lo identity.lo id_util.lo \
 	io_hdr.lo job_features.lo job_options.lo job_record.lo \
@@ -218,7 +218,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/core_array.Plo \
 	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
 	./$(DEPDIR)/daemonize.Plo ./$(DEPDIR)/data.Plo \
-	./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo \
+	./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo ./$(DEPDIR)/events.Plo \
 	./$(DEPDIR)/extra_constraints.Plo ./$(DEPDIR)/fd.Plo \
 	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/forward.Plo \
 	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/group_cache.Plo \
@@ -597,6 +597,8 @@ libcommon_la_SOURCES = \
 	env.h					\
 	extra_constraints.c			\
 	extra_constraints.h			\
+	events.c				\
+	events.h				\
 	fd.c					\
 	fd.h					\
 	fetch_config.c				\
@@ -842,6 +844,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/events.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/extra_constraints.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fetch_config.Plo@am__quote@ # am--include-marker
@@ -1063,6 +1066,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
 	-rm -f ./$(DEPDIR)/env.Plo
+	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/extra_constraints.Plo
 	-rm -f ./$(DEPDIR)/fd.Plo
 	-rm -f ./$(DEPDIR)/fetch_config.Plo
@@ -1204,6 +1208,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/data.Plo
 	-rm -f ./$(DEPDIR)/eio.Plo
 	-rm -f ./$(DEPDIR)/env.Plo
+	-rm -f ./$(DEPDIR)/events.Plo
 	-rm -f ./$(DEPDIR)/extra_constraints.Plo
 	-rm -f ./$(DEPDIR)/fd.Plo
 	-rm -f ./$(DEPDIR)/fetch_config.Plo
