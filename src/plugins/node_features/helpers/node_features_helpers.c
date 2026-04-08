@@ -790,6 +790,30 @@ fini:
 	return rc;
 }
 
+extern bool node_features_p_job_features_need_reboot(char *features)
+{
+	char *input, *tmp, *saveptr;
+	const plugin_feature_t *feature;
+
+	if (!features || !features[0])
+		return false;
+
+	input = xstrdup(features);
+	for (tmp = strtok_r(input, ",", &saveptr); tmp;
+	     tmp = strtok_r(NULL, ",", &saveptr)) {
+		feature = list_find_first(helper_features, _cmp_features, tmp);
+		if (!feature)
+			continue;
+		if (!(feature->flags & FEATURE_FLAG_NO_REBOOT)) {
+			xfree(input);
+			return true;
+		}
+	}
+	xfree(input);
+
+	return false;
+}
+
 static int _foreach_filter_modes(void *x, void *y)
 {
 	char *feature = (char *)x;
