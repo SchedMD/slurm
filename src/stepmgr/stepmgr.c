@@ -126,6 +126,10 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       node_rank_order_t *order_map,
 				       int order_cnt);
 static void _step_dealloc_lps(step_record_t *step_ptr);
+static int _step_create(job_record_t *job_ptr,
+			job_step_create_request_msg_t *step_specs,
+			step_record_t **new_step_record,
+			uint16_t protocol_version, char **err_msg);
 static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
 	job_step_create_request_msg_t *step_specs,
@@ -135,6 +139,8 @@ static int _build_ext_launcher_step(step_record_t **new_step_record,
 				    job_step_create_request_msg_t *step_specs,
 				    uint16_t protocol_version);
 static void _wake_pending_steps(job_record_t *job_ptr);
+static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
+			   uint16_t protocol_version);
 
 stepmgr_ops_t *stepmgr_ops = NULL;
 
@@ -761,17 +767,131 @@ typedef struct {
 
 static int _wake_steps(void *x, void *arg)
 {
-	step_record_t *step_ptr = (step_record_t *) x;
-	wake_steps_args_t *args = (wake_steps_args_t *) arg;
+	step_record_t *pend_step_ptr = x;
+	wake_steps_args_t *args = arg;
 
-	if (step_ptr->state != JOB_PENDING)
+	if (pend_step_ptr->state != JOB_PENDING)
 		return 0;
 
 	if ((args->start_count < args->config_start_count) ||
-	    (step_ptr->time_last_active <= args->max_age)) {
-		srun_step_signal(step_ptr, 0);
-		args->start_count++;
-		return 1;
+	    (pend_step_ptr->time_last_active <= args->max_age)) {
+		if (pend_step_ptr->flags & SSF_ASYNC) {
+			slurm_step_ctx_t *ctx;
+			char *err_msg = NULL;
+			job_record_t *job_ptr;
+			step_record_t *new_step_ptr = NULL;
+			int rc;
+			slurm_cred_t *slurm_cred = NULL;
+			job_step_create_request_msg_t *step_req =
+				pend_step_ptr->step_req;
+			job_step_create_response_msg_t *step_resp;
+
+			debug2("Attempting launching of pending async step");
+			_dump_step_desc(step_req);
+
+			if (step_req->array_task_id != NO_VAL) {
+				job_ptr = stepmgr_ops->find_job_array_rec(
+					pend_step_ptr->step_id.job_id,
+					step_req->array_task_id);
+			} else {
+				job_ptr = stepmgr_ops->find_job(
+					&pend_step_ptr->step_id);
+			}
+
+			/*
+			 * We hold the lock so it shouldn't be possible for a
+			 * job_ptr to be deleted out from under us, but double
+			 * check just in case
+			 */
+			if (!job_ptr) {
+				debug("%s: job for pending async step %ps no longer exists, dropping",
+				      __func__, &pend_step_ptr->step_id);
+				jobacct_storage_g_step_complete(
+					stepmgr_ops->acct_db_conn,
+					pend_step_ptr);
+				return 1;
+			}
+
+			step_req->immediate = 1;
+			rc = _step_create(job_ptr, step_req, &new_step_ptr,
+					  job_ptr->start_protocol_ver,
+					  &err_msg);
+			step_req->immediate = 0;
+
+			if (rc == ESLURM_STEP_QUEUED) {
+				debug2("Resources busy, async step still queued");
+				xfree(err_msg);
+				/* 0 means don't remove step from pending list */
+				return 0;
+			} else if (rc) {
+				error("Could not create async step: %s",
+				      slurm_strerror(rc));
+				xfree(err_msg);
+				jobacct_storage_g_step_complete(
+					stepmgr_ops->acct_db_conn,
+					pend_step_ptr);
+				return 1;
+			}
+			rc = _make_step_cred(new_step_ptr, &slurm_cred,
+					     job_ptr->start_protocol_ver);
+			if (rc) {
+				error("Could not create cred for async step: %s",
+				      slurm_strerror(rc));
+				xfree(err_msg);
+				_cleanup_failed_step(new_step_ptr);
+				return 1;
+			}
+
+			step_resp = xmalloc(sizeof(*step_resp));
+			step_resp->def_cpu_bind_type =
+				step_req->launch_params->cpu_bind_type;
+			step_resp->resv_ports = xstrdup(new_step_ptr->resv_ports);
+			step_resp->step_id = new_step_ptr->step_id;
+			step_resp->step_layout =
+				slurm_step_layout_copy(new_step_ptr->step_layout);
+
+			step_resp->stepmgr = xstrdup(job_ptr->batch_host);
+			step_resp->cred = slurm_cred;
+			if (new_step_ptr->switch_step)
+				switch_g_stepinfo_duplicate(
+					new_step_ptr->switch_step,
+					&step_resp->switch_step);
+			step_resp->use_protocol_ver =
+				job_ptr->start_protocol_ver;
+
+			ctx = _step_ctx_create_stepmgr(step_req, step_resp,
+						       new_step_ptr);
+
+			rc = slurm_step_launch(
+				ctx, step_req->launch_params, NULL);
+
+			ctx->step_req = NULL;
+			step_ctx_destroy(ctx);
+			xfree(err_msg);
+
+			if (rc) {
+				error("Could not launch async step: %s",
+				      slurm_strerror(rc));
+				_cleanup_failed_step(new_step_ptr);
+			} else {
+				/*
+				 * step_req was retained on pend_step_ptr
+				 * across _build_pending_step until launch.
+				 * Free it now that the step is launched and
+				 * clear the alias so free_step_record(), run
+				 * when list_delete_all() removes pend_step_ptr
+				 * after we return 1, doesn't double-free.
+				 */
+				slurm_free_job_step_create_request_msg(
+					step_req);
+				pend_step_ptr->step_req = NULL;
+			}
+			return 1;
+		} else {
+			srun_step_signal(pend_step_ptr, 0);
+			args->start_count++;
+			return 1;
+		}
 	}
 
 	return 0;
@@ -5276,7 +5396,29 @@ end_it:
 			log_flag(STEPS, "%s for suspended %ps: %s",
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
-		else
+		else if (error_code == ESLURM_STEP_QUEUED) {
+			log_flag(STEPS, "%s queued async %ps: %s",
+				 __func__, &req_step_msg->step_id,
+				 slurm_strerror(error_code));
+			/*
+			 * The pending step retains step_req; stop the
+			 * regular RPC flow from freeing it.  Reply with
+			 * RESPONSE_JOB_STEP_CREATE carrying the assigned
+			 * step_id and state = JOB_PENDING so srun can
+			 * surface it.  _step_create translates busy
+			 * errnos to ESLURM_STEP_QUEUED only after a
+			 * successful _build_pending_step, so step_id is
+			 * guaranteed to be set here.
+			 */
+			msg->data = NULL;
+
+			memset(&job_step_resp, 0, sizeof(job_step_resp));
+			job_step_resp.step_id = req_step_msg->step_id;
+			job_step_resp.state = JOB_PENDING;
+			_send_msg(msg, slurmd_fd, RESPONSE_JOB_STEP_CREATE,
+				  &job_step_resp);
+			return error_code;
+		} else
 			log_flag(STEPS, "%s for %ps: %s",
 				 __func__, &req_step_msg->step_id,
 				 slurm_strerror(error_code));
