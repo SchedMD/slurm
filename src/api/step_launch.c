@@ -270,9 +270,11 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->env == NULL) {
 		/*
 		 * If the user didn't specify an environment, then use the
-		 * environment of the running process
+		 * environment of the running process except when this is
+		 * running in a daemon (ex: async steps)
 		 */
-		env_array_merge(&env, (const char **)environ);
+		if (!running_in_daemon())
+			env_array_merge(&env, (const char **) environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);
 	}
