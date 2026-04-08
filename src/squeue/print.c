@@ -1299,14 +1299,28 @@ int _print_job_num_tasks(job_info_t * job, int width, bool right, char* suffix)
 	return SLURM_SUCCESS;
 }
 
+int _print_job_exclusive(job_info_t *job, int width, bool right_justify,
+			 char *suffix)
+{
+	if (job == NULL) { /* Print the Header instead */
+		_print_str("EXCLUSIVE", width, right_justify, true);
+	} else {
+		_print_str(job_exclusive_display_string(job->exclusive), width,
+			   right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_over_subscribe(job_info_t * job, int width, bool right_justify,
 			      char* suffix)
 {
 	if (job == NULL) {	/* Print the Header instead */
 		_print_str("OVER_SUBSCRIBE", width, right_justify, true);
 	} else {
-		_print_str(job_share_string(job->shared),
-			   width, right_justify, true);
+		_print_str(job_oversubscribe_string(job->oversubscribe), width,
+			   right_justify, true);
 	}
 	if (suffix)
 		printf("%s", suffix);
