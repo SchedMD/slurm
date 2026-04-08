@@ -45,6 +45,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -406,6 +407,14 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	(void) probe_run(true, NULL, NULL, __func__);
+}
+
 static void *_try_to_reconfig(void *ptr)
 {
 	extern char **environ;
@@ -519,6 +528,8 @@ rwfail:
 
 extern int main(int argc, char **argv)
 {
+	probe_init();
+
 	main_argv = argv;
 	_parse_args(argc, argv);
 
@@ -538,6 +549,7 @@ extern int main(int argc, char **argv)
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
 	if (getuid() != slurm_conf.slurm_user_id) {
 		char *user = uid_to_string(getuid());
@@ -576,6 +588,7 @@ extern int main(int argc, char **argv)
 
 	info("running");
 	conmgr_run(true);
+	probe_fini();
 
 	xfree(conf_file);
 	xfree(conf_server);
