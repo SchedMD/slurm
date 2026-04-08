@@ -123,6 +123,7 @@
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/serializer.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 #include "src/interfaces/topology.h"
@@ -610,6 +611,8 @@ main (int argc, char **argv)
 	info("Slurmd shutdown completing");
 
 	conmgr_fini();
+	if (http_switch_http_enabled())
+		http_fini();
 	http_switch_fini();
 	probe_fini();
 	log_fini();
@@ -2683,6 +2686,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (conn_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	if (serializer_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize serialization plugins.");
 
 	_dynamic_init();
 
@@ -2838,6 +2843,7 @@ _slurmd_fini(void)
 	_resource_spec_fini();
 	namespace_g_fini();
 	acct_gather_conf_destroy();
+	serializer_g_fini();
 	fini_system_cgroup();
 	cgroup_g_fini();
 	slurm_mutex_lock(&cached_features_mutex);
