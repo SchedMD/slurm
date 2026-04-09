@@ -342,7 +342,6 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "Program terminated with signal SIGSEGV" in bt
         and "src/slurmd/slurmstepd/req.c" in bt
         and "_wait_for_job_running" in bt
-        and "step_partial_comp" in bt
         and "___pthread_mutex_lock" in bt
     ):
         # TODO: Add version when t24991 is fixed
