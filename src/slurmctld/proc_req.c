@@ -1969,6 +1969,12 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
+	if (!validate_slurm_user(msg->auth_uid)) {
+		error("Security violation, REQUEST_COMPLETE_PROLOG RPC from uid=%u",
+		      msg->auth_uid);
+		return;
+	}
+
 	/* init */
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from %pI",
