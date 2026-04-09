@@ -45,6 +45,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
+#include "src/common/probes.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
@@ -366,8 +367,8 @@ static void _listen_for_reconf(void)
 	if (conn_tls_enabled())
 		flags |= CON_FLAG_TLS_SERVER;
 
-	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, &events,
-					   flags, NULL)))
+	if ((rc = conmgr_process_fd_listen(listen_fd, CON_TYPE_RPC, NULL,
+					   &events, flags, NULL)))
 		fatal("%s: conmgr refused fd=%d: %s",
 		      __func__, listen_fd, slurm_strerror(rc));
 }
@@ -406,6 +407,14 @@ static void _on_sigpipe(conmgr_callback_args_t conmgr_args, void *arg)
 	info("Caught SIGPIPE. Ignoring.");
 }
 
+static void _on_sigprof(conmgr_callback_args_t conmgr_args, void *arg)
+{
+	if (conmgr_args.status == CONMGR_WORK_STATUS_CANCELLED)
+		return;
+
+	(void) probe_run(true, NULL, NULL, __func__);
+}
+
 static void *_try_to_reconfig(void *ptr)
 {
 	extern char **environ;
@@ -414,9 +423,6 @@ static void *_try_to_reconfig(void *ptr)
 	pid_t pid;
 	int to_parent[2] = {-1, -1}, auth_fd = -1;
 	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0;
-
-	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
-		close_skip[skip_index++] = auth_fd;
 
 	conmgr_quiesce(__func__);
 
@@ -432,6 +438,10 @@ static void *_try_to_reconfig(void *ptr)
 		fd_set_noclose_on_exec(listen_fd);
 		close_skip[skip_index++] = listen_fd;
 	}
+
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
+		close_skip[skip_index++] = auth_fd;
 
 	if (!daemonize && !under_systemd)
 		goto start_child;
@@ -518,6 +528,8 @@ rwfail:
 
 extern int main(int argc, char **argv)
 {
+	probe_init();
+
 	main_argv = argv;
 	_parse_args(argc, argv);
 
@@ -528,15 +540,16 @@ extern int main(int argc, char **argv)
 		if (xdaemon())
 			error("daemon(): %m");
 
+	_establish_config_source();
+	slurm_conf_init(conf_file);
+
 	conmgr_init(0, 0, 0);
 
 	conmgr_add_work_signal(SIGINT, _on_sigint, NULL);
 	conmgr_add_work_signal(SIGHUP, _on_sighup, NULL);
 	conmgr_add_work_signal(SIGUSR2, _on_sigusr2, NULL);
 	conmgr_add_work_signal(SIGPIPE, _on_sigpipe, NULL);
-
-	_establish_config_source();
-	slurm_conf_init(conf_file);
+	conmgr_add_work_signal(SIGPROF, _on_sigprof, NULL);
 
 	if (getuid() != slurm_conf.slurm_user_id) {
 		char *user = uid_to_string(getuid());
@@ -575,6 +588,7 @@ extern int main(int argc, char **argv)
 
 	info("running");
 	conmgr_run(true);
+	probe_fini();
 
 	xfree(conf_file);
 	xfree(conf_server);

@@ -81,23 +81,23 @@ int main (int argc, char **argv)
 	}
 
 	if (working_cluster_rec) {
-		slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr;
+		slurm_conf_t *slurm_conf_ptr;
 
-		error_code = slurm_load_ctl_conf((time_t) NULL,
-						  &slurm_ctl_conf_ptr);
+		error_code =
+			slurm_load_ctl_conf((time_t) NULL, &slurm_conf_ptr);
 		if (error_code) {
 			slurm_perror ("slurm_load_ctl_conf error");
 			exit(error_code);
 		}
-		weight_age  = slurm_ctl_conf_ptr->priority_weight_age;
-		weight_assoc = slurm_ctl_conf_ptr->priority_weight_assoc;
-		weight_fs   = slurm_ctl_conf_ptr->priority_weight_fs;
-		weight_js   = slurm_ctl_conf_ptr->priority_weight_js;
-		weight_part = slurm_ctl_conf_ptr->priority_weight_part;
-		weight_qos  = slurm_ctl_conf_ptr->priority_weight_qos;
-		weight_tres = slurm_ctl_conf_ptr->priority_weight_tres;
-		prio_type = slurm_ctl_conf_ptr->priority_type;
-		slurm_free_ctl_conf(slurm_ctl_conf_ptr);
+		weight_age = slurm_conf_ptr->priority_weight_age;
+		weight_assoc = slurm_conf_ptr->priority_weight_assoc;
+		weight_fs = slurm_conf_ptr->priority_weight_fs;
+		weight_js = slurm_conf_ptr->priority_weight_js;
+		weight_part = slurm_conf_ptr->priority_weight_part;
+		weight_qos = slurm_conf_ptr->priority_weight_qos;
+		weight_tres = slurm_conf_ptr->priority_weight_tres;
+		prio_type = slurm_conf_ptr->priority_type;
+		slurm_free_conf(slurm_conf_ptr);
 	} else {
 		weight_age = slurm_conf.priority_weight_age;
 		weight_assoc = slurm_conf.priority_weight_assoc;

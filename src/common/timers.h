@@ -140,66 +140,6 @@ extern void timer_compare_limit(const timespec_t tv1, const timespec_t tv2,
 extern timer_str_t timer_duration_str(const timespec_t tv1,
 				      const timespec_t tv2);
 
-/* Struct to hold latency metric state */
-typedef struct {
-	latency_histogram_t histogram;
-	timespec_t total;
-	uint64_t count;
-	timespec_t last_log;
-} latency_metric_t;
-
-typedef struct {
-	double avg; /* Average latency in seconds or 0 if not calculated */
-	timespec_t delay; /* Delay from START_LATENCY_TIMER() */
-} latency_metric_rc_t;
-
-/*
- * Start recording latency metric
- * NOTE: Must have DECL_LATENCY_TIMER() in scope
- * NOTE: call BEGIN_LATENCY_TIMER() instead
- * IN metric - metric state
- * IN start - timestamp to populate
- */
-extern void latency_metric_begin(latency_metric_t *metric, timespec_t *start);
-
-/*
- * Stop recording latency metric and perform analysis
- * NOTE: Must have DECL_LATENCY_TIMER() in scope
- * NOTE: call END_LATENCY_TIMER() instead
- * IN metric - metric state
- * IN start - timestamp populated by START_LATENCY_TIMER()
- * IN end - timestamp when event ended or timespec_now()
- * IN interval
- *	Min interval between calculating analysis
- *	TIMESPEC_INFINITE to skip
- * RET struct full of latency metric analysis
- */
-extern latency_metric_rc_t latency_metric_end(latency_metric_t *metric,
-					      timespec_t *start, timespec_t end,
-					      const timespec_t interval);
-
-/* Declare latency timer */
-#define DECL_LATENCY_TIMER \
-	static latency_metric_t latency_metric = LATENCY_METRIC_INITIALIZER; \
-	static __thread timespec_t latency_metric_start = { 0, 0 };
-
-#define LATENCY_METRIC_INITIALIZER \
-	((latency_metric_t) { \
-		.histogram = LATENCY_HISTOGRAM_INITIALIZER, \
-		.total = { 0, 0 }, \
-		.count = 0, \
-		.last_log = { 0, 0 }, \
-	})
-
-/* Start latency timer */
-#define START_LATENCY_TIMER() \
-	latency_metric_begin(&latency_metric, &latency_metric_start)
-
-/* End latency timer and generate analysis if past interval */
-#define END_LATENCY_TIMER(interval) \
-	latency_metric_end(&latency_metric, &latency_metric_start, \
-			   timespec_now(), interval)
-
 /* Expected buffer size to hold printed latency histogram */
 #define LATENCY_METRIC_HISTOGRAM_STR_LEN 1024
 

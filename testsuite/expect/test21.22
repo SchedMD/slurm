@@ -535,7 +535,7 @@ if {$access_err != 0} {
 #
 # Build input script file - to create original associations
 #
-if {[package vcompare [get_version] "25.05.0"] >= 0} {
+if {[package vcompare [get_version $sacctmgr] "25.05.0"] >= 0} {
 	# Issue 50238: Testing feature to remove QOS doing a clean load
 	set qs2_str "$qs - '$qs2'"
 	foreach option [array names qos2_info1] {
@@ -561,7 +561,7 @@ exec echo "$usr - '$tu2':$coo=$ta3:$dac=$ta3:$fs=$fs2:$mm=$mm1:$mc=$mc1:$mj=$mj1
 #
 # Second input file - to modify and add associations to the original
 #
-if {[package vcompare [get_version] "25.05.0"] >= 0} {
+if {[package vcompare [get_version $sacctmgr] "25.05.0"] >= 0} {
 	# Issue 50238: Testing feature to remove QOS doing a clean load
 	set qs2_str "$qs - '$qs2'"
 	foreach option [array names qos2_info2] {
@@ -716,7 +716,7 @@ if {$matches != 2} {
 #
 # Use sacctmgr to list the test original association additions
 #
-if {[package vcompare [get_version] "25.05.0"] >= 0} {
+if {[package vcompare [get_version $sacctmgr] "25.05.0"] >= 0} {
 	# Issue 50238: Testing feature to remove QOS doing a clean load
 	check_qos_limits $qs2 [array get qos2_info1]
 } else {
@@ -759,7 +759,7 @@ if {$matches != 2} {
 #
 # Use sacctmgr to list the test modifications to the original association
 #
-if {[package vcompare [get_version] "25.05.0"] >= 0} {
+if {[package vcompare [get_version $sacctmgr] "25.05.0"] >= 0} {
 	# Issue 50238: Testing feature to remove QOS doing a clean load
 	check_qos_limits $qs2 [array get qos2_info2]
 } else {

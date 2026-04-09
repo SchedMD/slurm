@@ -266,7 +266,7 @@ if {$matches != 2} {
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
 # making the child the parent
 set rc [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]]
-if {[package vcompare [get_version] "25.05.1"] >= 0} {
+if {[package vcompare [get_version $slurmdbd] "25.05.1"] >= 0} {
 	# Ticket 22650: Fix issue where lower sub-associations were missed
 	#               Re-parent is not anymore allowed
 	subtest {$rc == $::RETURN_ERROR} "We shouldn't be able to re-parent $ta2 to child $ta3"
@@ -311,7 +311,7 @@ if {$matches != 4} {
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
 set rc [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]]
-if {[package vcompare [get_version] "25.05.1"] >= 0} {
+if {[package vcompare [get_version $slurmdbd] "25.05.1"] >= 0} {
 	# Ticket 22650: Fix issue where lower sub-associations were missed
 	#               Re-parent is not anymore allowed
 	subtest {$rc == $::RETURN_ERROR} "We shouldn't be able to re-parent $ta3 to child $ta2"

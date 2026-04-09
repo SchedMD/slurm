@@ -47,28 +47,14 @@ make_bash_script $file_in "$bin_id"
 #
 # Test that sbatch prints "debug" messages with "-vvv" option
 #
-set debug  0
-spawn $sbatch -N1 --output=none --error=none -t1 -vvv $file_in
-expect {
-	-re "debug:" {
-		set debug 1
-		exp_continue
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command -fail "$sbatch -N1 --output=none --error=none -t1 -vvv $file_in"]
+subtest {[regexp "debug: " $output] != 0} "Test that sbatch prints debug messages with -vvv option"
+
+set job_id 0
+regexp "Submitted batch job ($number)" $output - job_id
 if {$job_id == 0} {
 	fail "Failed to submit job"
 }
-subtest {$debug != 0} "Test that sbatch prints debug messages with -vvv option"
 cancel_job $job_id
 
 #

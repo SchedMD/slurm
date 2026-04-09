@@ -532,4 +532,11 @@ typedef struct {
 	slurmdb_job_rec_t *job_rec;
 } openapi_job_modify_req_t;
 
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	list_t *partition_list; /* list of update_part_msg_t* */
+} openapi_part_mod_req_t;
+
 #endif /* SLURM_OPENAPI_H */

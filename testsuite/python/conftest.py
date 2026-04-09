@@ -22,6 +22,92 @@ sys.path.append(sys.path[0] + "/lib")
 import atf
 
 
+def pytest_collection_modifyitems(session, config, items):
+    """
+    Create a json file from --collect-file with filenames and marks.
+    It can be used to order/filter/run tests in different ways based on
+    the custom marks we may create, like "slow".
+    """
+    if not config.option.collectonly:
+        return
+
+    collect_file = config.getoption("--collect-file")
+    if collect_file is None:
+        logging.info("Not saving collect info")
+        return
+
+    files = {}
+    for item in items:
+        file_path = item.nodeid.split("::")[0]
+
+        # Initialize entry if not present
+        if file_path not in files:
+            files[file_path] = {
+                "file": file_path,
+                "marks": [m.name for m in item.iter_markers()],
+            }
+        else:
+            files[file_path]["marks"].extend([m.name for m in item.iter_markers()])
+
+    logging.info(f"Saving callected info to {collect_file}")
+    with open(collect_file, "w") as f:
+        json.dump(list(files.values()), f, indent=2)
+
+
+def pytest_terminal_summary(terminalreporter):
+    terminalreporter.write_sep("=", "summary", cyan=True, bold=True)
+
+    passed = terminalreporter.stats.get("passed", [])
+    failed = terminalreporter.stats.get("failed", [])
+    skipped = terminalreporter.stats.get("skipped", [])
+
+    for rep in passed:
+        terminalreporter.write("PASSED", green=True, bold=True)
+        terminalreporter.write_line(f" {rep.nodeid}")
+
+    for rep in skipped:
+        terminalreporter.write("SKIPPED", yellow=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        terminalreporter.write_line(
+            f" - {rep.longrepr[2].removeprefix('Skipped: ')}", bold=True
+        )
+
+    for rep in failed:
+        # In some corner cases there's no reprcrash
+        if hasattr(rep.longrepr, "reprcrash"):
+            reason = rep.longrepr.reprcrash.message
+        else:
+            reason = str(rep.longrepr)
+
+        terminalreporter.write("FAILED", red=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        terminalreporter.write_line(f" - {reason.removeprefix('Failed: ')}", bold=True)
+
+
+#
+# Hook to force printing separators between setup - test call (- teardown)
+#
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_setup(item):
+    terminalreporter = item.config.pluginmanager.getplugin("terminalreporter")
+    terminalreporter.write_sep("-", "test fixture - setup", bold=True)
+    yield
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_call(item):
+    terminalreporter = item.config.pluginmanager.getplugin("terminalreporter")
+    terminalreporter.write_sep("-", "test function", bold=True)
+    yield
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_teardown(item):
+    terminalreporter = item.config.pluginmanager.getplugin("terminalreporter")
+    terminalreporter.write_sep("-", "test fixture - teardown", bold=True)
+    yield
+
+
 # Add test description (docstring) as a junit property
 def pytest_itemcollected(item):
     node = item.obj
@@ -54,6 +140,12 @@ def pytest_addoption(parser):
         action="store_true",
         dest="allow_slurmdbd_modify",
         help="allow running in local-config even if require_accounting(modify=True)",
+    )
+    parser.addoption(
+        "--collect-file",
+        action="store",
+        default=None,
+        help="Path to write collected test metadata",
     )
 
 
@@ -118,7 +210,11 @@ def session_setup(request):
     atf.properties["allow-slurmdbd-modify"] = request.config.getoption(
         "--allow-slurmdbd-modify"
     )
-    if not request.config.getoption("--no-color"):
+    if request.config.getoption("--no-color"):
+        atf.properties["no-color"] = True
+    else:
+        atf.properties["no-color"] = False
+
         # Customize logging level colors
         color_log_level(logging.CRITICAL, red=True, bold=True)
         color_log_level(logging.ERROR, red=True)

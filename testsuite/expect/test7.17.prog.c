@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 	strlcpy(slurm_conf, strcat(test, "/slurm.conf"), sizeof(slurm_conf));
 
 	/* Enable detailed logging for now */
-	opts.stderr_level = LOG_LEVEL_DEBUG;
+	opts.stderr_level = LOG_LEVEL_ERROR;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
 	/*

@@ -157,6 +157,7 @@ proc check_job { exp_num_jobs } {
 
 # TODO: Temporarily increase logging to debug bug 12729 (remove once fixed)
 save_conf $config_dir/slurm.conf
+run_command -none "$bin_echo >> $config_dir/slurm.conf"
 run_command -none "$bin_echo SlurmdDebug=debug3 >> $config_dir/slurm.conf"
 run_command -none "$bin_echo DebugFlags=cgroup >> $config_dir/slurm.conf"
 run_command "$scontrol reconfigure"

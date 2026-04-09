@@ -68,6 +68,7 @@
 
 #include "src/common/callerid.h"
 #include "src/interfaces/cgroup.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 
 typedef enum {
@@ -481,6 +482,7 @@ static int _rpc_network_callerid(callerid_conn_t *conn, char *user_name,
 	network_callerid_msg_t req;
 	char ip_src_str[INET6_ADDRSTRLEN];
 	char node_name[HOST_NAME_MAX];
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	memset(&req, 0, sizeof(req));
 	memcpy((void *)&req.ip_src, (void *)&conn->ip_src, 16);
@@ -488,20 +490,20 @@ static int _rpc_network_callerid(callerid_conn_t *conn, char *user_name,
 	req.port_src = conn->port_src;
 	req.port_dst = conn->port_dst;
 	req.af = conn->af;
-
 	inet_ntop(req.af, &conn->ip_src, ip_src_str, sizeof(ip_src_str));
-	if (slurm_network_callerid(req, job_id, node_name, sizeof(node_name))
+	if (slurm_network_callerid(req, &step_id, node_name, sizeof(node_name))
 	    != SLURM_SUCCESS) {
 		debug("From %s port %d as %s: unable to retrieve callerid data from remote slurmd",
 		      ip_src_str, req.port_src, user_name);
 		return SLURM_ERROR;
-	} else if (*job_id == NO_VAL) {
+	} else if (step_id.job_id == NO_VAL) {
 		debug("From %s port %d as %s: job indeterminate",
 		      ip_src_str, req.port_src, user_name);
 		return SLURM_ERROR;
 	} else {
+		*job_id = step_id.job_id;
 		info("From %s port %d as %s: member of job %u",
-		     ip_src_str, req.port_src, user_name, *job_id);
+		     ip_src_str, req.port_src, user_name, step_id.job_id);
 		return SLURM_SUCCESS;
 	}
 }

@@ -6,6 +6,8 @@ import pytest
 import re
 import logging
 
+pytestmark = pytest.mark.slow
+
 sock_0_reserved_cores = {0, 1, 2, 3}
 sock_0_regular_cores = {4, 5}
 sock_1_reserved_cores = {6, 7, 8, 9}
@@ -371,7 +373,6 @@ fail_test_parameters = [
 def test_fail(job_args, expected_msg):
     output = atf.run_command(
         f"srun {job_args} shostname",
-        timeout=1,
         fatal=False,
     )
     assert output["exit_code"] != 0, (

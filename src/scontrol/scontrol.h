@@ -94,7 +94,7 @@ extern job_info_msg_t *old_job_info_ptr;
 extern node_info_msg_t *old_node_info_ptr;
 extern partition_info_msg_t *old_part_info_ptr;
 extern reserve_info_msg_t *old_res_info_ptr;
-extern slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr;
+extern slurm_conf_t *old_slurm_conf_ptr;
 
 extern int	parse_requeue_flags(char *s, uint32_t *flags);
 extern int	scontrol_batch_script(int argc, char **argv);
@@ -111,8 +111,8 @@ extern void scontrol_list_jobs(int argc, char **argv);
 extern void scontrol_list_pids(int argc, char **argv);
 extern void scontrol_list_steps(int argc, char **argv);
 extern void	scontrol_getent(const char *node_name);
-extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
-			     uint32_t job_id);
+extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr,
+			     slurm_step_id_t step_id);
 extern int 	scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr,
 				     uint16_t show_flags);
 extern int 	scontrol_load_partitions (partition_info_msg_t **

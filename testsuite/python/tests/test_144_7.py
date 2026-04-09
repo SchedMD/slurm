@@ -8,6 +8,8 @@ import pytest
 import re
 from pathlib import Path
 
+pytestmark = pytest.mark.slow
+
 job_file = None
 step_file = None
 job_output_file = None

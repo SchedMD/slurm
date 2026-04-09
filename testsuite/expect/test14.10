@@ -37,7 +37,7 @@ if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $a
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
-	skip "This test requires that the SlurmdUser be root"
+	skip "This test requires that the SlurmdUser is not root"
 }
 
 set hostlist [get_nodes_by_request "-N2"]
@@ -49,31 +49,35 @@ set node1    [lindex $hostlist 0]
 set node2    [lindex $hostlist 1]
 set hostlist [join $hostlist ","]
 
-make_bash_script $file_in1 "
-$srun $bin_rm -f /tmp/$node1/${test_name}_file
-$srun $bin_rm -fr /tmp/$node1
-$srun $bin_rm -f /tmp/$node2/${test_name}_file
-$srun $bin_rm -fr /tmp/$node2
+set tmp1 /tmp/${test_name}-${node1}
+set tmp2 /tmp/${test_name}-${node2}
 
-$srun -N1 -n1 -w$node1 mkdir /tmp/$node1
-$srun -N1 -n1 -w$node2 mkdir /tmp/$node2
+make_bash_script $file_in1 "
+
+$srun $bin_rm -f $tmp1/${test_name}_file
+$srun $bin_rm -fr $tmp1
+$srun $bin_rm -f $tmp2/${test_name}_file
+$srun $bin_rm -fr $tmp2
+
+$srun -N1 -n1 -w$node1 mkdir $tmp1
+$srun -N1 -n1 -w$node2 mkdir $tmp2
 
 $srun -N1 -n1 -w$node2 $file_in2
 
 echo -n \"Checking node 1: \"
-$srun -Q -N1 -n1 -w$node2 ls /tmp/$node2/${test_name}_file
+$srun -Q -N1 -n1 -w$node2 ls $tmp2/${test_name}_file
 
 echo -n \"Checking node 0: \"
-$srun -Q -N1 -n1 -w$node1 ls /tmp/$node1/${test_name}_file
+$srun -Q -N1 -n1 -w$node1 ls $tmp1/${test_name}_file
 
-$srun $bin_rm -f /tmp/$node1/${test_name}_file
-$srun $bin_rm -fr /tmp/$node1
-$srun $bin_rm -f /tmp/$node2/${test_name}_file
-$srun $bin_rm -fr /tmp/$node2
+$srun $bin_rm -f $tmp1/${test_name}_file
+$srun $bin_rm -fr $tmp1
+$srun $bin_rm -f $tmp2/${test_name}_file
+$srun $bin_rm -fr $tmp2
 "
 
 make_bash_script $file_in2 "
-$sbcast -f -j\$SLURM_JOBID.\$SLURM_STEPID $srun /tmp/\$SLURMD_NODENAME/${test_name}_file
+$sbcast -f -j\$SLURM_JOBID.\$SLURM_STEPID $srun /tmp/${test_name}-\$SLURMD_NODENAME/${test_name}_file
 "
 
 # Make allocations
@@ -95,11 +99,11 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "Checking node 1: */tmp/$node2/${test_name}_file" {
+	-re "Checking node 1: *$tmp2/${test_name}_file" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 0: */tmp/$node1/${test_name}_file" {
+	-re "Checking node 0: *$tmp1/${test_name}_file" {
 		set matches -999
 		exp_continue
 	}

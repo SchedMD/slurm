@@ -5,6 +5,8 @@ import atf
 import pytest
 import re
 
+pytestmark = pytest.mark.slow
+
 sleep_time = 90
 kill_wait = 30
 

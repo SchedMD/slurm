@@ -125,9 +125,7 @@ static int _get_stepmgr_steps(void *x, void *arg)
 	}
 
 	job_step_info_request_msg_t req_data = {0};
-	req_data.step_id.job_id = sji->step_id.job_id;
-	req_data.step_id.step_id = NO_VAL;
-	req_data.step_id.step_het_comp = NO_VAL;
+	req_data.step_id = sji->step_id;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
 	req_msg.data = &req_data;

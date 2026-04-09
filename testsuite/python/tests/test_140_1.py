@@ -8,6 +8,8 @@ import atf
 import pytest
 import re
 
+pytestmark = pytest.mark.slow
+
 cpu_total_cnt = 6
 license_total_cnt = 50
 shard_total_cnt = 7

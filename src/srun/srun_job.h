@@ -43,7 +43,6 @@
 
 #include "slurm/slurm.h"
 
-#include "src/common/eio.h"
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"

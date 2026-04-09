@@ -37,6 +37,8 @@ Untested (not covered by this file):
 import atf
 import pytest
 
+pytestmark = pytest.mark.slow
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)

@@ -37,7 +37,7 @@ array set nodes  {}
 array set tasks  {}
 
 # some systems take a while to run the | sort -V | uniq -c stuff
-set timeout 60
+set timeout $max_job_delay
 
 if {![param_contains [get_config_param "SelectTypeParameters"] "CR_PACK_NODES"]} {
 	skip "This test requires SelectTypeParameters=CR_PACK_NODES"

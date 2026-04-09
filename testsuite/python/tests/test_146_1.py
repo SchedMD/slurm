@@ -6,6 +6,8 @@ import pytest
 
 # import re
 
+pytestmark = pytest.mark.slow
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)

@@ -34,10 +34,15 @@
 \*****************************************************************************/
 
 #include <pthread.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "slurm/slurm.h"
+#include "slurm/slurm_errno.h"
+
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -250,13 +255,27 @@ extern bool conn_g_own_cert_loaded(void)
 
 extern conn_t *conn_g_create(const conn_args_t *conn_args)
 {
+	void *conn = NULL;
+
 	xassert(plugin_inited == PLUGIN_INITED);
 
 	log_flag(NET, "%s: fd:%d->%d mode:%d",
 		 __func__, conn_args->input_fd, conn_args->output_fd,
 		 conn_args->mode);
 
-	return (*(ops.create_conn))(conn_args);
+	conn = (*(ops.create_conn))(conn_args);
+
+	log_flag(NET, "%s: [fd:%d->%d] created 0x%"PRIxPTR" maybe=%c mode=%s defer_blinding=%c defer_negotiation=%c len(cert)=%zd",
+		 __func__, conn_args->input_fd, conn_args->output_fd,
+		 (uintptr_t) conn, BOOL_CHARIFY(conn_args->maybe),
+		 ((conn_args->mode == CONN_SERVER) ? "CONN_SERVER" :
+		  ((conn_args->mode == CONN_CLIENT) ? "CONN_CLIENT" :
+		   (conn_args->mode == CONN_NULL) ? "CONN_NULL" : "INVALID")),
+		 BOOL_CHARIFY(conn_args->defer_blinding),
+		 BOOL_CHARIFY(conn_args->defer_negotiation),
+		 (conn_args->cert ? strlen(conn_args->cert) : 0));
+
+	return conn;
 }
 
 extern void conn_g_destroy(conn_t *conn, bool close_fds)
@@ -266,31 +285,82 @@ extern void conn_g_destroy(conn_t *conn, bool close_fds)
 
 	xassert(plugin_inited == PLUGIN_INITED);
 
+	log_flag(NET, "%s: [fd:%d] destroying 0x%"PRIxPTR" close_fds=%c",
+		 __func__, conn_g_get_fd(conn), (uintptr_t) conn,
+		 BOOL_CHARIFY(close_fds));
+
 	(*(ops.destroy_conn))(conn, close_fds);
 }
 
 extern ssize_t conn_g_send(conn_t *conn, const void *buf, size_t n)
 {
+	ssize_t bytes = -1;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.send))(conn, buf, n);
+
+	log_flag_hex(NET_RAW, buf, n, "%s: [fd:%d] sending to 0x%"PRIxPTR,
+		     __func__, conn_g_get_fd(conn), (uintptr_t) conn);
+
+	bytes = (*(ops.send))(conn, buf, n);
+
+	log_flag(NET, "%s: [fd:%d] sent %zd/%zu bytes to 0x%"PRIxPTR,
+		 __func__, conn_g_get_fd(conn), bytes, n, (uintptr_t) conn);
+
+	return bytes;
 }
 
 extern ssize_t conn_g_sendv(conn_t *conn, const struct iovec *bufs, int count)
 {
+	ssize_t bytes = -1;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.sendv))(conn, bufs, count);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET_RAW) {
+		for (int i = 0; i < count; i++)
+			log_flag_hex(NET_RAW, bufs[i].iov_base, bufs[i].iov_len,
+				     "%s: [fd:%d] sending iovec %d to 0x%"PRIxPTR,
+				     __func__, conn_g_get_fd(conn), i,
+				     (uintptr_t) conn);
+	}
+
+	bytes = (*(ops.sendv))(conn, bufs, count);
+
+	log_flag(NET, "%s: [fd:%d] sent %zd bytes to 0x%"PRIxPTR,
+		 __func__, conn_g_get_fd(conn), bytes, (uintptr_t) conn);
+
+	return bytes;
 }
 
 extern uint32_t conn_g_peek(conn_t *conn)
 {
+	uint32_t peek = 0;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.peek))(conn);
+
+	peek = (*(ops.peek))(conn);
+
+	log_flag_hex(NET_RAW, &peek, sizeof(peek),
+		     "%s: [fd:%d] peek 0x%"PRIxPTR,
+		     __func__, conn_g_get_fd(conn), (uintptr_t) conn);
+
+	return peek;
 }
 
 extern ssize_t conn_g_recv(conn_t *conn, void *buf, size_t n)
 {
+	ssize_t bytes = -1;
+
 	xassert(plugin_inited == PLUGIN_INITED);
-	return (*(ops.recv))(conn, buf, n);
+	bytes = (*(ops.recv))(conn, buf, n);
+
+	if (bytes > 0)
+		log_flag_hex(NET_RAW, buf, bytes, "%s: [fd:%d] recv from 0x%"PRIxPTR,
+			     __func__, conn_g_get_fd(conn), (uintptr_t) conn);
+
+	log_flag(NET, "%s: [fd:%d] recv %zd bytes from 0x%"PRIxPTR,
+		 __func__, conn_g_get_fd(conn), bytes, (uintptr_t) conn);
+
+	return bytes;
 }
 
 extern timespec_t conn_g_get_delay(conn_t *conn)

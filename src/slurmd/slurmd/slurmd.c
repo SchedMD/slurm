@@ -123,6 +123,7 @@
 #include "src/interfaces/prep.h"
 #include "src/interfaces/proctrack.h"
 #include "src/interfaces/select.h"
+#include "src/interfaces/serializer.h"
 #include "src/interfaces/switch.h"
 #include "src/interfaces/task.h"
 #include "src/interfaces/topology.h"
@@ -517,6 +518,8 @@ main (int argc, char **argv)
 		fatal("%s: Unable to reliably execute %s",
 		      __func__, conf->binary);
 
+	forward_init();
+
 	plugins_registered = true;
 
 	conf->pid = getpid();
@@ -608,6 +611,8 @@ main (int argc, char **argv)
 	info("Slurmd shutdown completing");
 
 	conmgr_fini();
+	if (http_switch_http_enabled())
+		http_fini();
 	http_switch_fini();
 	probe_fini();
 	log_fini();
@@ -1439,9 +1444,6 @@ static void *_try_to_reconfig(void *ptr)
 	int close_skip[] = { -1, -1, -1, -1 }, skip_index = 0, auth_fd = -1;
 	DEF_TIMERS;
 
-	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
-		close_skip[skip_index++] = auth_fd;
-
 	conmgr_quiesce(__func__);
 
 	START_TIMER;
@@ -1479,6 +1481,10 @@ static void *_try_to_reconfig(void *ptr)
 		close_skip[skip_index++] = conf->lfd;
 		debug3("%s: retaining listener socket fd:%d", __func__, conf->lfd);
 	}
+
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
+		close_skip[skip_index++] = auth_fd;
 
 	if (!conf->daemonize && !under_systemd)
 		goto start_child;
@@ -2061,9 +2067,6 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		 */
 		_decrement_thd_count();
 
-		log_flag(NET, "%s: [%pA] deferring servicing connection",
-			 __func__, &args->msg->address);
-
 		/*
 		 * Backoff attempts to avoid needless lock contention while
 		 * avoiding having a new thread created
@@ -2072,10 +2075,14 @@ static void _try_service_msg(conmgr_callback_args_t conmgr_args, void *arg)
 		if (timespec_is_after(args->delay, MAX_THREAD_DELAY_MAX))
 			args->delay = MAX_THREAD_DELAY_MAX;
 
+		warning("%s: [%pA] deferring servicing connection for %s",
+			__func__, &args->msg->address,
+			TIMESPEC_STR(args->delay, false));
+
 		conmgr_add_work_con_delayed_fifo(conmgr_args.con,
 						 _try_service_msg, args,
 						 args->delay.tv_sec,
-						 args->delay.tv_sec);
+						 args->delay.tv_nsec);
 	}
 }
 
@@ -2185,8 +2192,7 @@ static void _create_msg_socket(void)
 	int rc;
 	static const conmgr_con_flags_t flags =
 		(CON_FLAG_RPC_RECV_FORWARD | CON_FLAG_RPC_KEEP_BUFFER |
-		 CON_FLAG_QUIESCE | CON_FLAG_WATCH_WRITE_TIMEOUT |
-		 CON_FLAG_WATCH_READ_TIMEOUT | CON_FLAG_WATCH_CONNECT_TIMEOUT);
+		 CON_FLAG_QUIESCE);
 
 	if (getenv("SLURMD_RECONF_LISTEN_FD")) {
 		conf->lfd = atoi(getenv("SLURMD_RECONF_LISTEN_FD"));
@@ -2196,7 +2202,7 @@ static void _create_msg_socket(void)
 	}
 
 	if ((rc = conmgr_process_fd_listen(conf->lfd, http_switch_con_type(),
-					   &events,
+					   NULL, &events,
 					   (flags | http_switch_con_flags()),
 					   NULL)))
 		fatal("%s: unable to process fd:%d error:%s",
@@ -2680,6 +2686,8 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (conn_g_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
+	if (serializer_g_init() != SLURM_SUCCESS)
+		fatal("Failed to initialize serialization plugins.");
 
 	_dynamic_init();
 
@@ -2825,6 +2833,7 @@ _slurmd_fini(void)
 	topology_g_fini();
 	job_mem_limit_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
+	forward_fini();
 	conn_g_fini();
 	if ((rc = spank_slurmd_exit())) {
 		error("%s: SPANK slurmd exit failed: %s",
@@ -2834,6 +2843,7 @@ _slurmd_fini(void)
 	_resource_spec_fini();
 	namespace_g_fini();
 	acct_gather_conf_destroy();
+	serializer_g_fini();
 	fini_system_cgroup();
 	cgroup_g_fini();
 	slurm_mutex_lock(&cached_features_mutex);

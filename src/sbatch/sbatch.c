@@ -71,7 +71,7 @@
 
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
-static int   _job_wait(uint32_t job_id);
+static int _job_wait(slurm_step_id_t step_id);
 static char *_script_wrap(char *command_string);
 static void  _set_exit_code(void);
 static int   _set_rlimit_env(void);
@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 	}
 
 	if (sbopt.wait)
-		rc = _job_wait(resp->step_id.job_id);
+		rc = _job_wait(resp->step_id);
 
 #ifdef MEMORY_LEAK_DEBUG
 	cli_filter_fini();
@@ -366,7 +366,7 @@ int main(int argc, char **argv)
 }
 
 /* Wait for specified job ID to terminate, return it's exit code */
-static int _job_wait(uint32_t job_id)
+static int _job_wait(slurm_step_id_t step_id)
 {
 	slurm_job_info_t *job_ptr;
 	job_info_msg_t *resp = NULL;
@@ -386,7 +386,7 @@ static int _job_wait(uint32_t job_id)
 		    (sleep_time < MAX_WAIT_SLEEP_TIME))
 			sleep_time *= 4;
 
-		rc = slurm_load_job(&resp, job_id, SHOW_ALL);
+		rc = slurm_load_job(&resp, step_id, SHOW_ALL);
 		if (rc == SLURM_SUCCESS) {
 			for (i = 0, job_ptr = resp->job_array;
 			     (i < resp->record_count); i++, job_ptr++) {
@@ -404,7 +404,7 @@ static int _job_wait(uint32_t job_id)
 			slurm_free_job_info_msg(resp);
 		} else if (rc == ESLURM_INVALID_JOB_ID) {
 			error("Job %u no longer found and exit code not found",
-			      job_id);
+			      step_id.job_id);
 		} else {
 			complete = false;
 			error("Currently unable to load job state information, retrying: %m");

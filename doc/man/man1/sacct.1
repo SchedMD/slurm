@@ -150,20 +150,11 @@ are not specified.
 
 .TP
 \fB\-D\fR, \fB\-\-duplicates\fR
-If Slurm job ids are reset, some job numbers will probably appear more
-than once in the accounting log file but refer to different jobs.
-Such jobs can be distinguished by the "submit" time stamp in the data
-records.
-.IP
-
-When data for specific jobs are requested with the \-\-jobs option,
-\fBsacct\fR returns the most recent job with that number. This
-behavior can be overridden by specifying \-\-duplicates, in which case
-all records that match the selection criteria will be returned.
-.IP
-
-\fBNOTE\fR: Revoked federated sibling jobs are hidden unless the
-\fB\-\-duplicates\fR option is specified.
+Allow multiple job records for the same job ID to be shown. By default, if
+multiple job records for the same job ID match the request, only the most recent
+one will be shown. Duplicate records can result from requeues, federation, or
+from job IDs reaching the \fBMaxJobId\fR value and resetting. Such records can
+be distinguished by the \fBSubmit\fR time stamp or by the \fBSLUID\fR.
 .IP
 
 .TP
@@ -1101,6 +1092,15 @@ used to create the job allocation.
 .IP
 
 .TP
+\f3SLUID\fP
+A unique identifier for a specific run of a job. Unlike a job ID, the SLUID
+changes each time a job is requeued/restarted, allowing different runs of
+the same job to be distinguished. Previous runs of the job can be shown with
+the \fB\-D\fR/\fB\-\-duplicates\fR option. SLUIDs are globally unique across the
+accounting system.
+.IP
+
+.TP
 \f3Start\fP
 Initiation time of the job. In the same format as \f3End\fP.
 .IP
@@ -1151,8 +1151,8 @@ shown as defined in the original batch submission.
 The time the job was submitted. In the same format as \f3End\fP.
 
 \fBNOTE\fR: If a job is requeued, the submit time is reset. To obtain the
-original submit time it is necessary to use the \-D or \-\-duplicate option
-to display all duplicate entries for a job.
+original submit time it is necessary to use the \fB\-D\fR/\fB\-\-duplicates\fR
+option to display all duplicate entries for a job.
 .IP
 
 .TP
