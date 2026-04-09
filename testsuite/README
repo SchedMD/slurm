@@ -751,6 +751,7 @@ test_106_#   Testing of sbcast options.
 test_106_1   /commands/sbcast/test_--usage.py
 test_106_2   Test sbcast with job_container plugin
 test_106_3   Test sbcast with compression
+test_106_4   Test sbcast copies a file to a job with JobID and SLUID
 
 test_107_#   Testing of scancel options.
 ========================================
