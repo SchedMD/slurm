@@ -2366,6 +2366,49 @@ static int DUMP_FUNC(OVERSUBSCRIBE_JOBS)(const parser_t *const parser, void *obj
 	return SLURM_SUCCESS;
 }
 
+PARSE_DISABLED(PARTITION_OVERSUBSCRIBE)
+PARSE_DISABLED(PARTITION_EXCLUSIVE)
+
+static int DUMP_FUNC(PARTITION_OVERSUBSCRIBE)(const parser_t *const parser,
+					      void *obj, data_t *dst,
+					      args_t *args)
+{
+	partition_info_t *part = obj;
+	uint16_t force = part->max_share & SHARED_FORCE;
+	uint16_t val = part->max_share & (~SHARED_FORCE);
+
+	if (!val)
+		data_set_string(dst, "NO");
+	else if (force)
+		data_set_string_fmt(dst, "FORCE:%u", val);
+	else if (val == 1)
+		data_set_string(dst, "NO");
+	else
+		data_set_string_fmt(dst, "YES:%u", val);
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(PARTITION_EXCLUSIVE)(const parser_t *const parser,
+					  void *obj, data_t *dst, args_t *args)
+{
+	partition_info_t *part = obj;
+	const char *excl;
+	uint16_t share_val = part->max_share & (~SHARED_FORCE);
+
+	if (part->flags & PART_FLAG_EXCLUSIVE_TOPO)
+		excl = "TOPO";
+	else if (share_val == 0)
+		excl = "NODE";
+	else if (part->flags & PART_FLAG_EXCLUSIVE_USER)
+		excl = "USER";
+	else
+		excl = "NO";
+	data_set_string(dst, excl);
+
+	return SLURM_SUCCESS;
+}
+
 static int PARSE_FUNC(JOB_STATE_ID_STRING)(const parser_t *const parser,
 					   void *obj, data_t *src, args_t *args,
 					   data_t *parent_path)
@@ -6104,6 +6147,32 @@ static int PARSE_FUNC(JOB_EXCLUSIVE)(const parser_t *const parser, void *obj,
 		return SLURM_SUCCESS;
 	}
 
+	if (data_get_type(src) == DATA_TYPE_STRING) {
+		const char *str = data_get_string(src);
+
+		/* Legacy NONE accepted; display uses NO (job_exclusive_display_string) */
+		if (!xstrcasecmp(str, "NO") || !xstrcasecmp(str, "NONE")) {
+			*flag = JOB_SHARED_OK;
+			return SLURM_SUCCESS;
+		}
+		if (!xstrcasecmp(str, "NODE")) {
+			*flag = JOB_SHARED_NONE;
+			return SLURM_SUCCESS;
+		}
+		if (!xstrcasecmp(str, "USER")) {
+			*flag = JOB_SHARED_USER;
+			return SLURM_SUCCESS;
+		}
+		if (!xstrcasecmp(str, "MCS")) {
+			*flag = JOB_SHARED_MCS;
+			return SLURM_SUCCESS;
+		}
+		if (!xstrcasecmp(str, "TOPO")) {
+			*flag = JOB_SHARED_TOPO;
+			return SLURM_SUCCESS;
+		}
+	}
+
 	return PARSE(JOB_EXCLUSIVE_FLAGS, *flag, src, parent_path, args);
 }
 
@@ -9785,6 +9854,8 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PARTITION_PREEMPT_MODES)[] = {
 	add_parser_removed(partition_info_t, mtype, false, path, desc, deprec)
 #define add_skip(field)					\
 	add_parser_skip(partition_info_t, field)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(partition_info_t, mtype, false, path, desc)
 static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, allow_alloc_nodes, "nodes/allowed_allocation", "AllocNodes - Comma-separated list of nodes from which users can submit jobs in the partition"),
 	add_parse(STRING, allow_accounts, "accounts/allowed", "AllowAccounts - Comma-separated list of accounts which may execute jobs in the partition"),
@@ -9802,6 +9873,8 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_parse(STRING, deny_accounts, "accounts/deny", "DenyAccounts - Comma-separated list of accounts which may not execute jobs in the partition"),
 	add_parse(STRING, deny_qos, "qos/deny", "DenyQOS - Comma-separated list of Qos which may not execute jobs in the partition"),
 	add_parse(PARTITION_FLAGS, flags, "flags", "Partition flag options"),
+	add_cparse(PARTITION_EXCLUSIVE, "partition/exclusive",
+		   "Exclusive= string (same as scontrol show partition)"),
 	add_parse(UINT32, grace_time, "grace_time", "GraceTime - Grace time in seconds to be extended to a job which has been selected for preemption"),
 	add_skip(job_defaults_list), //FIXME - is this even packed?
 	add_parse(STRING, job_defaults_str, "defaults/job", "JobDefaults - Comma-separated list of job default values (this field is only used to set new defaults)"),
@@ -9814,6 +9887,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 	add_removed(UINT16, "maximums/shares", "OverSubscribe - Controls the ability of the partition to execute more than one job at a time on each resource", SLURM_26_05_PROTOCOL_VERSION),
 	add_parse_overload(OVERSUBSCRIBE_JOBS, max_share, 1, "maximums/oversubscribe/jobs", "Maximum number of jobs allowed to oversubscribe resources"),
 	add_parse_overload(OVERSUBSCRIBE_FLAGS, max_share, 1, "maximums/oversubscribe/flags", "Flags applicable to the OverSubscribe setting"),
+	add_cparse(PARTITION_OVERSUBSCRIBE, "partition/oversubscribe", "OverSubscribe display: FORCE:n, NO, or YES:n (same as show partition and sinfo)"),
 	add_parse(UINT32_NO_VAL, max_time, "maximums/time", "MaxTime - Maximum run time limit for jobs in minutes"),
 	add_parse(UINT32, min_nodes, "minimums/nodes", "MinNodes - Minimum count of nodes which may be allocated to any single job"),
 	add_parse(STRING, name, "name", "PartitionName - Name by which the partition may be referenced"),
@@ -9838,6 +9912,7 @@ static const parser_t PARSER_ARRAY(PARTITION_INFO)[] = {
 #undef add_skip
 #undef add_removed
 #undef add_parse_overload
+#undef add_cparse
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(sinfo_data_t, mtype, false, field, 0, path, desc)
@@ -12980,6 +13055,8 @@ static const parser_t parsers[] = {
 	addpca(JOB_RES_NODES, JOB_RES_NODE, JOB_RES_NODE_t, NEED_NONE, "Job resources for a node"),
 	addpca(STEP_INFO_MSG, STEP_INFO, job_step_info_response_msg_t, NEED_TRES, NULL),
 	addpca(PARTITION_INFO_MSG, PARTITION_INFO, partition_info_msg_t, NEED_TRES, NULL),
+	addpc(PARTITION_EXCLUSIVE, partition_info_t, NEED_NONE, STRING, NULL),
+	addpc(PARTITION_OVERSUBSCRIBE, partition_info_t, NEED_NONE, STRING, NULL),
 	addpca(RESERVATION_INFO_MSG, RESERVATION_INFO, reserve_info_msg_t, NEED_NONE, NULL),
 	addpca(RESERVATION_INFO_CORE_SPEC, RESERVATION_CORE_SPEC, reserve_info_t, NEED_NONE, NULL),
 	addpcp(JOB_DESC_MSG_ARGV, STRING_ARRAY, job_desc_msg_t, NEED_NONE, NULL),
