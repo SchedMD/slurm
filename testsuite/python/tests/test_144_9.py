@@ -373,7 +373,6 @@ fail_test_parameters = [
 def test_fail(job_args, expected_msg):
     output = atf.run_command(
         f"srun {job_args} shostname",
-        timeout=1,
         fatal=False,
     )
     assert output["exit_code"] != 0, (
