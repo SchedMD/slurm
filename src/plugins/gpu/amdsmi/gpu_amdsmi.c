@@ -1389,6 +1389,8 @@ static list_t *_get_system_gpu_list_amdsmi(node_config_load_t *node_config)
         /* Device name, brand, PCI BDF, UUID, renderD* minor */
         _amdsmi_get_device_name(i, device_name, sizeof(device_name));
         _amdsmi_get_device_brand(i, device_brand, sizeof(device_brand));
+        gpu_common_underscorify_tolower(device_name);
+        gpu_common_underscorify_tolower(device_brand);
         _amdsmi_get_device_minor_number(i, &minor_number);
         _amdsmi_get_device_pci_info(i, &pci_info);
         _amdsmi_get_device_unique_id(i, &uuid);
