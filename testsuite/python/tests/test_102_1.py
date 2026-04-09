@@ -7,6 +7,8 @@ import pytest
 import re
 import pexpect
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():

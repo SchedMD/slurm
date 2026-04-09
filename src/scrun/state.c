@@ -263,7 +263,7 @@ static int _get_job_state()
 	debug2("%s: query slurmctld for %pS state of %s",
 	       __func__, &step, state.id);
 
-	rc = slurm_load_job(&jobs, step->job_id, 0);
+	rc = slurm_load_job(&jobs, *step, 0);
 
 	if (rc || !jobs || (jobs->record_count <= 0)) {
 		/* no job with name found */

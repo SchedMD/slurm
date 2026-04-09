@@ -9,6 +9,8 @@ import os
 # import time
 import pwd
 
+pytestmark = pytest.mark.slow
+
 max_mem_cpu = 2
 max_mem_node = 1
 min_num_nodes = 2

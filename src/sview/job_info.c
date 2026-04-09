@@ -567,7 +567,7 @@ static uint16_t _xlate_signal_name(const char *signal_name)
 	return NO_VAL16;
 }
 
-static int _cancel_job_id (uint32_t job_id, uint16_t signal)
+static int _cancel_job_id(slurm_step_id_t step_id, uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
@@ -577,13 +577,13 @@ static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		/* NOTE: RPC always sent to slurmctld rather than directly
 		 * to slurmd daemons */
-		error_code = slurm_kill_job(job_id, signal, false);
+		error_code = slurm_kill_job(step_id, signal, false);
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
 			break;
-		temp = g_strdup_printf("Sending signal %u to job %u",
-				       signal, job_id);
+		temp = g_strdup_printf("Sending signal %u to job %u", signal,
+				       step_id.job_id);
 		display_edit_note(temp);
 		g_free(temp);
 		sleep ( 5 + i );
@@ -594,7 +594,7 @@ static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 		    (error_code != ESLURM_INVALID_JOB_ID)) {
 			temp = g_strdup_printf(
 				"Kill job error on job id %u: %s",
-				job_id, slurm_strerror(errno));
+				step_id.job_id, slurm_strerror(errno));
 			display_edit_note(temp);
 			g_free(temp);
 		} else {
@@ -605,19 +605,13 @@ static int _cancel_job_id (uint32_t job_id, uint16_t signal)
 	return error_code;
 }
 
-static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
-			   uint16_t signal)
+static int _cancel_step_id(slurm_step_id_t step_id, uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
 	char *temp = NULL;
 	char tmp_char[45];
-	slurm_step_id_t step_id_tmp = {
-		.job_id = job_id,
-		.step_het_comp = NO_VAL,
-		.step_id = step_id,
-	};
 
-	log_build_step_id_str(&step_id_tmp, tmp_char, sizeof(tmp_char),
+	log_build_step_id_str(&step_id, tmp_char, sizeof(tmp_char),
 			      STEP_ID_FLAG_NONE);
 
 	if (signal == (uint16_t)-1)
@@ -626,7 +620,7 @@ static int _cancel_step_id(uint32_t job_id, uint32_t step_id,
 	for (i = 0; i < MAX_CANCEL_RETRY; i++) {
 		/* NOTE: RPC always sent to slurmctld rather than directly
 		 * to slurmd daemons */
-		error_code = slurm_kill_job_step(&step_id_tmp, signal, 0);
+		error_code = slurm_kill_job_step(&step_id, signal, 0);
 
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
@@ -4332,9 +4326,7 @@ extern void popup_all_job(GtkTreeModel *model, GtkTreeIter *iter, int id)
 
 static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 {
-	int jobid;
 	int state;
-	int stepid;
 	uint16_t signal = SIGKILL;
 	int response = 0;
 	char *tmp_char_ptr = "";
@@ -4361,8 +4353,6 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 		if (global_error_code)
 			break;
 
-		jobid = job_foreach->step_id.job_id;
-		stepid = job_foreach->step_id.step_id;
 		state = job_foreach->state;
 
 		switch(jobs_foreach_common->edit_type) {
@@ -4372,16 +4362,17 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 			 * just a regular cancel).
 			 */
 		case EDIT_CANCEL:
-			if (stepid == NO_VAL)
+			if (job_foreach->step_id.step_id == NO_VAL)
 				global_error_code =
-					_cancel_job_id(jobid, signal);
+					_cancel_job_id(job_foreach->step_id,
+						       signal);
 			else
 				global_error_code =
-					_cancel_step_id(jobid,
-							stepid, signal);
+					_cancel_step_id(job_foreach->step_id,
+							signal);
 			break;
 		case EDIT_REQUEUE:
-			response = slurm_requeue(jobid, 0);
+			response = slurm_requeue(job_foreach->step_id, 0);
 
 			if (response) {
 				/* stop rest of jobs */
@@ -4389,7 +4380,8 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 				tmp_char_ptr = g_strdup_printf(
 					"Error happened trying "
 					"to requeue job %u: %s",
-					jobid, slurm_strerror(response));
+					job_foreach->step_id.job_id,
+					slurm_strerror(response));
 				display_edit_note(tmp_char_ptr);
 				g_free(tmp_char_ptr);
 			}
@@ -4397,16 +4389,16 @@ static void process_foreach_list(jobs_foreach_common_t *jobs_foreach_common)
 		case EDIT_SUSPEND:
 			//note: derive state from job_foreach..
 			if (state == JOB_SUSPENDED)
-				response = slurm_resume(jobid);
+				response = slurm_resume(job_foreach->step_id);
 			else
-				response = slurm_suspend(jobid);
+				response = slurm_suspend(job_foreach->step_id);
 			if (!response) {
 				/* stop rest of jobs */
 				global_error_code = response;
 				tmp_char_ptr = g_strdup_printf(
 					"Error happened trying to "
 					"SUSPEND/RESUME job %u.",
-					jobid);
+					job_foreach->step_id.job_id);
 				display_edit_note(tmp_char_ptr);
 				g_free(tmp_char_ptr);
 			}

@@ -38,9 +38,10 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/forward.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
 /*
@@ -132,18 +133,34 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 		}
 	}
 
-	if (rc) {
+	if (rc && (rc != SLURM_PROTOCOL_AUTHENTICATION_ERROR)) {
 		/*
 		 * Always close input_fd on failure as it is not possible to
 		 * safely parse another incoming rpc on this connection.
-		 * Callback func will decide to close outbound connection as
-		 * error state by the returned rc.
+		 * Avoid sending a msg to callback where the msg is an unknown
+		 * state.
 		 */
 		close_con(false, con);
+		FREE_NULL_MSG(msg);
 	} else {
 		log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",
 			 __func__, con->name, need,
 			 rpc_num2string(msg->msg_type));
+
+		if (rc == SLURM_PROTOCOL_AUTHENTICATION_ERROR) {
+			xassert(!msg->auth_ids_set);
+			/*
+			 * Never trust an unauthenticated message but allow
+			 * callback to decide how to proceed
+			 */
+			msg->auth_ids_set = false;
+			msg->auth_uid = SLURM_AUTH_NOBODY;
+			msg->auth_gid = SLURM_AUTH_NOBODY;
+			msg->conn_is_mtls = false;
+			msg->flags |= SLURM_NO_AUTH_CRED;
+		} else if (con->tls) {
+			msg->conn_is_mtls = tls_is_client_authenticated(con);
+		}
 
 		if (con_flag(con, FLAG_RPC_KEEP_BUFFER)) {
 			xassert(!msg->buffer);
@@ -153,9 +170,6 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 			msg->flags |= SLURM_MSG_KEEP_BUFFER;
 			set_buf_offset(msg->buffer, size_buf(rpc));
 		}
-
-		if (con->tls)
-			msg->conn_is_mtls = tls_is_client_authenticated(con);
 
 		/* notify conmgr we processed some data successfully */
 		set_buf_offset(con->in, need);

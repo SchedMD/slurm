@@ -8,6 +8,8 @@ import atf
 import pytest
 import re
 
+pytestmark = pytest.mark.slow
+
 user_name = atf.properties["test-user"]
 
 

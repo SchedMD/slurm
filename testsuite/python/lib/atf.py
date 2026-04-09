@@ -146,6 +146,23 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     """
     bt = run_command_output(f"cat {bt_file}", quiet=True, fatal=True)
 
+    reason = "Ticket Unknown: Fixed issue in slurmrestd in 25.05: SIGABRT in con_set_polling(): has_in || has_out"
+    component = "sbin/slurmrestd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/conmgr/con.c" in bt
+        and "src/conmgr/watch.c" in bt
+        and "con_set_polling" in bt
+        and "_handle_connection" in bt
+        and "has_in || has_out" in bt
+    ):
+        if get_version(component) >= (25, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
     reason = "Ticket Unknown: Fixed issue in slurmdbd in 25.05: SIGABRT in _connection_fini_callback(): pthread_mutex_lock(): Invalid argument"
     component = "sbin/slurmdbd"
     if (
@@ -175,7 +192,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "service_conn" in bt
         and "__xassert_failed" in bt
     ):
-        if get_version(component) >= (25, 5):
+        if get_version(component)[:2] != (25, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
@@ -216,6 +233,34 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             xfailures.append(reason)
         return
 
+    reason = "Ticket 24122: Known issue in slurmctld: SIGABRT in conn_g_recv(): Assertion (plugin_inited == PLUGIN_INITED) failed"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/conn.c" in bt
+        and "src/common/slurm_protocol_socket.c" in bt
+        and "src/common/forward.c" in bt
+        and "conn_g_recv" in bt
+        and "_fwd_tree_thread" in bt
+        and "plugin_inited == PLUGIN_INITED" in bt
+    ):
+        # Fixed in 25.11.5 and 25.5.8
+        if (
+            (get_version(component) < (25, 5))
+            or (
+                (25, 5) < get_version(component) and get_version(component) < (25, 5, 8)
+            )
+            or (
+                (25, 11) < get_version(component)
+                and get_version(component) < (25, 11, 5)
+            )
+        ):
+            xfailures.append(reason)
+        else:
+            failures.append(reason)
+        return
+
     reason = "Ticket 24562: Known issue when shutting down slurmdbd: SIGABORT in acct_storage_g_close_connection(): Assertion (plugin_inited != PLUGIN_NOT_INITED)"
     component = "sbin/slurmdbd"
     if (
@@ -241,10 +286,69 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "OPENSSL_cleanup" in bt
         and "_int_free_maybe_consolidate" in bt
     ):
-        # TODO: Add version when t24822 is fixed
+        if get_version(component) >= (26, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
+    reason = "Ticket 24905: Known issue with slurmstepd with stepmgr"
+    component = "sbin/slurmstepd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "src/slurmd/slurmstepd/mgr.c" in bt
+        and "_spawn_job_container" in bt
+        and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
+    ):
+        # TODO: Add version when t24905 is fixed
         failures.append(reason)
         return
 
+    reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
+    component = "sbin/slurmstepd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/jobacct_gather.c" in bt
+        and "jobacctinfo_aggregate" in bt
+        and "step_partial_comp" in bt
+        and "dest=0x0" in bt
+    ):
+        # TODO: Add version when t24907 is fixed
+        failures.append(reason)
+        return
+
+    reason = "Ticket 24952: Known issue with slurmctld auth_g_destroy(): Assertion (g_context_num > 0)"
+    component = "sbin/slurmctld"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/interfaces/auth.c" in bt
+        and "auth_g_destroy" in bt
+        and "slurm_receive_msgs" in bt
+        and "g_context_num > 0" in bt
+    ):
+        if get_version(component) >= (25, 5):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
+        return
+
+    reason = "Ticket 24991: Known issue with slurmstepd and _wait_for_job_running"
+    component = "sbin/slurmstepd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGSEGV" in bt
+        and "src/slurmd/slurmstepd/req.c" in bt
+        and "_wait_for_job_running" in bt
+        and "___pthread_mutex_lock" in bt
+    ):
+        # TODO: Add version when t24991 is fixed
+        failures.append(reason)
+        return
+
+    # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
 
@@ -553,6 +657,70 @@ def run_command_exit(command, **run_command_kwargs):
     results = run_command(command, **run_command_kwargs)
 
     return results["exit_code"]
+
+
+def timer(
+    timeout=default_polling_timeout,
+    poll_interval=None,
+    fatal=False,
+    xfail=False,
+):
+    """A timer to do-while a timeout is not triggered.
+
+    Iterates in a loop, sleeping between iterations, until the caller breaks
+    or the timeout is reached.
+
+    Args:
+        timeout (float): Maximum time in seconds to wait (default:
+            default_polling_timeout).
+        poll_interval (float): Seconds between iterations. Defaults to
+            timeout / 10.0
+        fatal (bool): If True, call pytest.fail() on timeout. Otherwise the
+            caller should use the for-else to detect the timeout.
+        xfail (bool): If True, a timeout is expected.
+
+    Example:
+        >>> running = False
+        >>> for t in atf.timer(timeout=60, fatal=False):
+        ...     if get_job_state(job_id) == 'RUNNING':
+        ...         running = True
+        ...         break
+        ... else:
+        ...     logging.warning("Job was not RUNNING before the timeout.")
+        ... assert running, "Job should be running"
+    """
+
+    if poll_interval is None:
+        poll_interval = timeout / 10.0
+
+    _not = " not" if not xfail else ""
+    message = f"Timer should{_not} timeout"
+
+    start = time.time()
+    remaining_time = timeout
+    while True:
+
+        # Run the caller loop (at least once, like a do-while)
+        yield remaining_time
+
+        # Check for timeout
+        remaining_time = timeout - (time.time() - start)
+        if remaining_time <= 0:
+            msg = message + " (timeout)"
+
+            if not xfail:
+                if fatal:
+                    pytest.fail(msg)
+
+                logging.warning(msg)
+            else:
+                logging.debug(msg)
+
+            return
+
+        # Wait for the next attempt
+        logging.debug(message + f", remaining time: {remaining_time:.0f}s")
+        time.sleep(poll_interval)
 
 
 def repeat_until(
@@ -1490,6 +1658,23 @@ def upgrade_component(component, new_version=True):
         start_slurmctld()
 
 
+def get_slurmd_C():
+    """Return a dict with the main values reported by 'slurmd -C'"""
+    fields = [
+        "NodeName",
+        "CPUs",
+        "Boards",
+        "SocketsPerBoard",
+        "CoresPerSocket",
+        "ThreadsPerCore",
+        "RealMemory",
+        "Gres",
+    ]
+    output = run_command_output("slurmd -C", fatal=True)
+    keys = re.findall(r"(" + "|".join(fields) + r")=(\S+)", output)
+    return dict(keys)
+
+
 def get_version(component="sbin/slurmctld", slurm_prefix=""):
     """Returns the version of the Slurm component as a tuple.
 
@@ -1528,6 +1713,117 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
         )
 
     return tuple(int(part) if part.isdigit() else 0 for part in version_str.split("."))
+
+
+def require_expect():
+    """Setup the expect directory to be used later with run_expect_test()"""
+
+    # Create a tmp expect dir from sources with the right permissions
+    properties["expect_dir"] = f"{module_tmp_path}/expect"
+    run_command(
+        f"rsync -a {properties['testsuite_base_dir']}/expect/ {properties['expect_dir']}/",
+        user=properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+    # Create the globals.local
+    properties["expect_globals_file"] = f"{properties['expect_dir']}/globals.local"
+    colorize = 1
+    if "no-color" in properties and properties["no-color"]:
+        colorize = 0
+
+    globals_local_content = f"""\
+set testsuite_user {get_user_name()}
+set testsuite_colorize {colorize}
+set testsuite_cleanup_on_failure false
+
+# These are not necessary because we should use SLURM_TESTSUITE_CONF
+# set slurm_dir  {properties['slurm-prefix']}
+# set build_dir  {properties['slurm-build-dir']}
+# set src_dir    {properties['slurm-source-dir']}
+    """
+
+    run_command(
+        f"cat > {properties['expect_globals_file']}",
+        input=globals_local_content,
+        user=properties["slurm-user"],
+        fatal=True,
+        quiet=True,
+    )
+
+
+def run_expect_test(test_num=None):
+    """Run the expect test corresponding to the test_name"""
+    if test_num is None:
+        test_num = (
+            properties["test_name"]
+            .replace("test_", "")
+            .replace("_py", "")
+            .replace("_", ".")
+        )
+
+    # Most expect tests assume that are run by SlurmUser
+    cmd = (
+        f"sudo"
+        f" -u {properties['slurm-user']}"
+        f" --preserve-env=SLURM_TESTSUITE_CONF"
+        f" SLURM_LOCAL_GLOBALS_FILE={properties['expect_globals_file']}"
+        f" {properties['expect_dir']}/test{test_num}"
+    )
+
+    # Expect tests need to be launch in the expect_dir.
+    proc = subprocess.Popen(
+        cmd,
+        cwd=properties["expect_dir"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        shell=True,
+        text=True,
+    )
+
+    stdout = ""
+    for line in proc.stdout:
+        print(line, end="")
+        stdout += line
+
+    proc.wait()
+
+    # If it passed just end
+    if proc.returncode == 0:
+        return
+
+    # Clean the stdout to search for the main reasons to not pass
+    ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+    stdout = ansi_escape.sub("", stdout)
+
+    # Get the actual body of the test
+    sections = [s for s in stdout.split("=" * 78 + "\n")]
+    if len(sections) < 3:
+        pytest.fail("Something failed while running the expect test")
+    body = sections[2]
+
+    # Search for the main reason to not pass (as in regression.py)
+    fatals = re.findall(r"(?ms)\[[^\]]+\][ \[]+Fatal[ \]:]+(.*?) \(fail[^\)]+\)$", body)
+    errors = re.findall(
+        r"(?ms)\[[^\]]+\][ \[]+Error[ \]:]+(.*?) \(subfail[^\)]+\)$", body
+    )
+    warnings = re.findall(
+        r"(?ms)\[[^\]]+\][ \[]+Warning[ \]:]+((?:(?!Warning).)*) \((?:sub)?skip[^\)]+\)$",
+        body,
+    )
+    if fatals:
+        reason = fatals[0]
+    elif errors:
+        reason = errors[0]
+    elif warnings:
+        reason = warnings[0]
+
+    # Forward the expect result to pytest
+    if proc.returncode > 127:
+        pytest.skip(reason)
+    else:
+        pytest.fail(reason)
 
 
 def require_version(
@@ -2347,7 +2643,6 @@ def require_config_file(
     if filename in {
         "slurm.conf",
         "slurmdbd.conf",
-        "gres.conf",
         "cgroup.conf",
         "testsuite.conf",
     }:
@@ -2776,6 +3071,7 @@ def cancel_jobs(
     poll_interval=0.1,
     fatal=False,
     quiet=False,
+    **run_command_kwargs,
 ):
     """Cancels a list of jobs and waits for them to complete.
 
@@ -2806,7 +3102,9 @@ def cancel_jobs(
     if job_list_string == "":
         return True
 
-    run_command(f"scancel {job_list_string}", fatal=fatal, quiet=quiet)
+    run_command(
+        f"scancel {job_list_string}", fatal=fatal, quiet=quiet, **run_command_kwargs
+    )
 
     for job_id in job_list:
         status = wait_for_job_state(
@@ -2830,7 +3128,7 @@ def cancel_jobs(
 def cancel_all_jobs(
     timeout=default_polling_timeout, poll_interval=0.1, fatal=False, quiet=False
 ):
-    """Cancels all jobs by the test user and waits for them to be cancelled.
+    """Cancels all jobs in the system, and waits for them to be cancelled.
 
     Args:
         fatal (boolean): If True, a timeout will result in the test failing.
@@ -2849,17 +3147,19 @@ def cancel_all_jobs(
         False
     """
 
-    user_name = properties["test-user"]
+    jobs = get_jobs()
 
-    run_command(f"scancel -u {user_name}", fatal=fatal, quiet=quiet)
+    if not jobs:
+        logging.debug("No jobs to cancel")
+        return True
 
-    return repeat_command_until(
-        f"squeue -u {user_name} --noheader",
-        lambda results: results["stdout"] == "",
-        timeout=timeout,
-        poll_interval=poll_interval,
+    return cancel_jobs(
+        jobs.keys(),
         fatal=fatal,
         quiet=quiet,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        user=properties["slurm-user"],
     )
 
 

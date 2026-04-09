@@ -220,7 +220,8 @@ static void _init_hs256(void)
 
 extern int init(void)
 {
-	if (running_in_slurmctld() || running_in_slurmdbd()) {
+	if (running_in_slurmctld() || running_in_slurmdbd() ||
+	    running_in_slurmd()) {
 		char *claim;
 
 		_init_jwks();
@@ -661,7 +662,7 @@ fail:
 	return NULL;
 }
 
-extern int auth_p_get_reconfig_fd(void)
+extern int auth_p_prepare_reconfig_fd(char ***env)
 {
 	return -1;
 }

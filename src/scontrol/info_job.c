@@ -1184,13 +1184,15 @@ static void _print_step_info(job_step_info_t *job_step_ptr)
 }
 
 /* Load current job table information into *job_buffer_pptr */
-extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
-			     uint32_t job_id)
+extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr,
+			     slurm_step_id_t step_id)
 {
 	int error_code;
 	static uint16_t last_show_flags = 0xffff;
 	uint16_t show_flags = 0;
 	job_info_msg_t * job_info_ptr = NULL;
+	uint32_t job_id = step_id.job_id;
+	sluid_t sluid = step_id.sluid;
 
 	if (all_flag)
 		show_flags |= SHOW_ALL;
@@ -1208,7 +1210,7 @@ extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
 		if (last_show_flags != show_flags)
 			old_job_info_ptr->last_update = (time_t) 0;
 		if (job_id) {
-			error_code = slurm_load_job(&job_info_ptr, job_id,
+			error_code = slurm_load_job(&job_info_ptr, step_id,
 						    show_flags);
 		} else {
 			error_code = slurm_load_jobs(
@@ -1223,11 +1225,8 @@ extern int scontrol_load_job(job_info_msg_t **job_buffer_pptr, sluid_t sluid,
 			if (quiet_flag == -1)
  				printf ("slurm_load_jobs no change in data\n");
 		}
-	} else if (sluid) {
-		error_code =
-			slurm_load_job_sluid(&job_info_ptr, sluid, show_flags);
-	} else if (job_id) {
-		error_code = slurm_load_job(&job_info_ptr, job_id, show_flags);
+	} else if (sluid || job_id) {
+		error_code = slurm_load_job(&job_info_ptr, step_id, show_flags);
 	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr,
 					     show_flags);
@@ -1253,11 +1252,12 @@ extern void
 scontrol_pid_info(pid_t job_pid)
 {
 	int error_code;
-	uint32_t job_id = 0;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 	time_t end_time;
 	long rem_time;
+	char tmp_str[45];
 
-	error_code = slurm_pid2jobid(job_pid, &job_id);
+	error_code = slurm_pid2jobid(job_pid, &step_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -1266,16 +1266,19 @@ scontrol_pid_info(pid_t job_pid)
 		return;
 	}
 
-	error_code = slurm_get_end_time(job_id, &end_time);
+	error_code = slurm_get_end_time(step_id, &end_time);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror("Failed to get job end time");
 		return;
 	}
-	printf("Slurm JobId=%u ends at %s\n", job_id, slurm_ctime2(&end_time));
 
-	rem_time = slurm_get_rem_time(job_id);
+	log_build_step_id_str(&step_id, tmp_str, sizeof(tmp_str),
+			      STEP_ID_FLAG_NO_PREFIX);
+	printf("Slurm JobId=%s ends at %s\n", tmp_str, slurm_ctime2(&end_time));
+
+	rem_time = slurm_get_rem_time(step_id);
 	printf("Job remaining time is %ld seconds\n", rem_time);
 	return;
 }
@@ -1291,8 +1294,13 @@ scontrol_print_completing (void)
 	job_info_msg_t  *job_info_msg;
 	job_info_t      *job_info;
 	node_info_msg_t *node_info_msg;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
-	error_code = scontrol_load_job(&job_info_msg, 0, 0);
+	/* All jobs */
+	step_id.job_id = 0;
+	step_id.sluid = 0;
+
+	error_code = scontrol_load_job(&job_info_msg, step_id);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -1410,6 +1418,7 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 	job_info_msg_t * job_buffer_ptr = NULL;
 	job_info_t *job_ptr = NULL;
 	char *end_ptr = NULL;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	/* check for valid SLUID first */
 	sluid = str2sluid(job_id_str);
@@ -1437,7 +1446,9 @@ extern void scontrol_print_job(char *job_id_str, int argc, char **argv)
 			het_job_offset = strtol(end_ptr + 1, &end_ptr, 10);
 	}
 
-	error_code = scontrol_load_job(&job_buffer_ptr, sluid, job_id);
+	step_id.sluid = sluid;
+	step_id.job_id = job_id;
+	error_code = scontrol_load_job(&job_buffer_ptr, step_id);
 
 	if (mime_type) {
 		openapi_resp_job_info_msg_t resp = {
@@ -2450,7 +2461,7 @@ extern int scontrol_encode_hostlist(char *arg_hostlist, bool sorted)
 	return SLURM_SUCCESS;
 }
 
-static int _wait_nodes_ready(uint32_t job_id)
+static int _wait_nodes_ready(slurm_step_id_t step_id)
 {
 	int is_ready = SLURM_ERROR, i, rc = 0;
 	int cur_delay = 0;
@@ -2469,7 +2480,7 @@ static int _wait_nodes_ready(uint32_t job_id)
 			cur_delay += POLL_SLEEP;
 		}
 
-		rc = slurm_job_node_ready(job_id);
+		rc = slurm_job_node_ready(step_id);
 
 		if (rc == READY_JOB_FATAL)
 			break;				/* fatal error */
@@ -2484,11 +2495,11 @@ static int _wait_nodes_ready(uint32_t job_id)
 		}
 	}
 	if (is_ready == SLURM_SUCCESS)
-     		info("Nodes are ready for job %u", job_id);
+		info("Nodes are ready for job %u", step_id.job_id);
 	else if ((rc & READY_JOB_STATE) == 0)
-		info("Job %u no longer running", job_id);
+		info("Job %u no longer running", step_id.job_id);
 	else
-		info("Problem running job %u", job_id);
+		info("Problem running job %u", step_id.job_id);
 
 	return is_ready;
 }
@@ -2501,14 +2512,16 @@ static int _wait_nodes_ready(uint32_t job_id)
 extern int scontrol_job_ready(char *job_id_str)
 {
 	uint32_t job_id;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	job_id = atoi(job_id_str);
 	if (job_id <= 0) {
 		fprintf(stderr, "Invalid job_id %s", job_id_str);
 		return SLURM_ERROR;
 	}
+	step_id.job_id = job_id;
 
-	return _wait_nodes_ready(job_id);
+	return _wait_nodes_ready(step_id);
 }
 
 extern int scontrol_callerid(int argc, char **argv)
@@ -2516,9 +2529,10 @@ extern int scontrol_callerid(int argc, char **argv)
 	int af, ver = 4;
 	unsigned char ip_src[sizeof(struct in6_addr)],
 		      ip_dst[sizeof(struct in6_addr)];
-	uint32_t port_src, port_dst, job_id;
+	uint32_t port_src, port_dst;
 	network_callerid_msg_t req;
 	char node_name[HOST_NAME_MAX], *ptr;
+	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (argc == 5) {
 		ver = strtoul(argv[4], &ptr, 0);
@@ -2562,17 +2576,17 @@ extern int scontrol_callerid(int argc, char **argv)
 	req.port_dst = port_dst;
 	req.af = af;
 
-	if (slurm_network_callerid(req, &job_id, node_name, HOST_NAME_MAX)
+	if (slurm_network_callerid(req, &step_id, node_name, HOST_NAME_MAX)
 			!= SLURM_SUCCESS) {
 		fprintf(stderr,
 			"slurm_network_callerid: unable to retrieve callerid data from remote slurmd\n");
 		return SLURM_ERROR;
-	} else if (job_id == NO_VAL) {
+	} else if (step_id.job_id == NO_VAL) {
 		fprintf(stderr,
 			"slurm_network_callerid: remote job id indeterminate\n");
 		return SLURM_ERROR;
 	} else {
-		printf("%u %s\n", job_id, node_name);
+		printf("%u %s\n", step_id.job_id, node_name);
 		return SLURM_SUCCESS;
 	}
 }
@@ -2582,17 +2596,20 @@ extern int scontrol_batch_script(int argc, char **argv)
 	char *filename;
 	FILE *out;
 	int exit_code;
-	uint32_t jobid;
+	slurm_selected_step_t *selected_step;
+	slurm_step_id_t step_id;
 
 	if (argc < 1)
 		return SLURM_ERROR;
 
-	jobid = atoll(argv[0]);
+	selected_step = slurm_parse_step_str(argv[0]);
+	step_id = selected_step->step_id;
+	xfree(selected_step);
 
 	if (argc > 1)
 		filename = xstrdup(argv[1]);
 	else
-		filename = xstrdup_printf("slurm-%u.sh", jobid);
+		filename = xstrdup_printf("slurm-%u.sh", step_id.job_id);
 
 	if (!xstrcmp(filename, "-")) {
 		out = stdout;
@@ -2605,7 +2622,7 @@ extern int scontrol_batch_script(int argc, char **argv)
 		}
 	}
 
-	exit_code = slurm_job_batch_script(out, jobid);
+	exit_code = slurm_job_batch_script(out, step_id);
 
 	if (out != stdout)
 		fclose(out);
@@ -2616,7 +2633,7 @@ extern int scontrol_batch_script(int argc, char **argv)
 		slurm_perror("job script retrieval failed");
 	} else if ((out != stdout) && (quiet_flag != 1)) {
 		printf("batch script for job %u written to %s\n",
-		       jobid, filename);
+		       step_id.job_id, filename);
 	}
 
 	xfree(filename);

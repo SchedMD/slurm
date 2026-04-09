@@ -5,6 +5,8 @@ import pytest
 import atf
 import os
 
+pytestmark = pytest.mark.slow
+
 # Ensure that job ids are not truncated
 os.environ["SLURM_BITSTR_LEN"] = "0"
 

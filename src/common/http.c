@@ -463,6 +463,13 @@ extern http_status_code_t http_status_from_error(slurm_err_t error)
 		if (error == http_status_errors[i].error)
 			return http_status_errors[i].code;
 
+	/* If error comes from the slurmctld or slurmdbd, the REST API
+	 * query is formatted correctly but may be semantically
+	 * incorrect; Respond with HTTP code 422 */
+	if (((error >= ESLURM_INVALID_PARTITION_NAME) &&
+	     (error <= ESLURM_INVALID_SLUID)) ||
+	    ((error >= ESLURM_DB_CONNECTION) && (error <= ESLURM_NO_RPC_STATS)))
+		return HTTP_STATUS_CODE_ERROR_UNPROCESSABLE_CONTENT;
 	return HTTP_STATUS_CODE_SRVERR_INTERNAL;
 }
 

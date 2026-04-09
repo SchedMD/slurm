@@ -658,6 +658,13 @@ static int _valid_id(char *caller, job_desc_msg_t *msg, uid_t uid, gid_t gid,
 		return ESLURM_USER_ID_MISSING;
 	}
 
+	/* SLURM_AUTH_NOBODY is never allowed to submit jobs */
+	if ((uid == SLURM_AUTH_NOBODY) || (gid == SLURM_AUTH_NOBODY)) {
+		error("%s: rejecting authenticated request from nobody: UID=%u GID=%u",
+		      caller, uid, gid);
+		return ESLURM_AUTH_NOBODY;
+	}
+
 	/*
 	 * If UID/GID not given use the authenticated values.
 	 */
@@ -1410,7 +1417,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	last_update_msg_t *last_time_msg = msg->data;
-	slurm_ctl_conf_info_msg_t config_tbl;
+	slurm_conf_t config_tbl;
 	/* Locks: Read config, job, partition, fed */
 	slurmctld_lock_t config_read_lock = {
 		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
@@ -2332,6 +2339,7 @@ fini:
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
 		sji->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+		sji->step_id.step_id = args->step_id->step_id;
 		sji->stepmgr = job_ptr->batch_host;
 		list_append(args->stepmgr_jobs, sji);
 	}
@@ -6043,9 +6051,8 @@ end_it:
 	 */
 	ret_buf = slurm_persist_make_rc_msg(&p_tmp, rc, comment, p_tmp.version);
 	if ((rc_msg = slurm_persist_send_msg(&p_tmp, ret_buf))) {
-		debug("Problem sending response to connection %d uid(%u): %s",
-		      conn_g_get_fd(p_tmp.conn), msg->auth_uid,
-		      slurm_strerror(rc_msg));
+		debug("Problem sending response to connection uid(%u): %s",
+		      msg->auth_uid, slurm_strerror(rc_msg));
 	}
 
 	if (rc && persist_conn) {

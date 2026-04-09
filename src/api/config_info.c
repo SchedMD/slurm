@@ -99,13 +99,13 @@ _reset_period_str(uint16_t reset_period)
 
 /*
  * slurm_write_ctl_conf - write the contents of slurm control configuration
- * IN slurm_ctl_conf_ptr - slurm control configuration pointer
+ * IN slurm_conf_ptr - slurm control configuration pointer
  * IN node_info_ptr - pointer to node table of information
  * IN part_info_ptr - pointer to partition information
  */
-void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
-			    node_info_msg_t * node_info_ptr,
-			    partition_info_msg_t * part_info_ptr)
+void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
+			  node_info_msg_t *node_info_ptr,
+			  partition_info_msg_t *part_info_ptr)
 {
 	int i = 0;
 	char time_str[256];
@@ -123,11 +123,11 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 	} *rp = NULL;
 	struct records *crp;
 
-	if ( slurm_ctl_conf_ptr == NULL )
+	if (slurm_conf_ptr == NULL)
 		return ;
 
-	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update,
-			     time_str, sizeof(time_str));
+	slurm_make_time_str((time_t *) &slurm_conf_ptr->last_update, time_str,
+			    sizeof(time_str));
 
 	/* open new slurm.conf.<datetime> file for write. This file will
 	 * contain the currently running slurm configuration. */
@@ -156,7 +156,7 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		"########################################################\n");
 	fprintf(fp, "#\n#\n");
 
-	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
+	ret_list = slurm_ctl_conf_2_key_pairs(slurm_conf_ptr);
 	if (ret_list) {
 		_write_key_pairs(fp, ret_list);
 		FREE_NULL_LIST(ret_list);
@@ -218,9 +218,9 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 				   node_info_ptr->node_array[i].features);
 
 		if (node_info_ptr->node_array[i].port &&
-		    node_info_ptr->node_array[i].port
-		    != slurm_ctl_conf_ptr->slurmd_port)
-		        xstrfmtcat(tmp_str, " Port=%u",
+		    node_info_ptr->node_array[i].port !=
+			    slurm_conf_ptr->slurmd_port)
+			xstrfmtcat(tmp_str, " Port=%u",
 				   node_info_ptr->node_array[i].port);
 
 		/* check for duplicate records */
@@ -470,47 +470,47 @@ static void _print_config_plugin_params_list(FILE *out, list_t *l, char *title)
  * slurm_print_ctl_conf - output the contents of slurm control configuration
  *	message as loaded using slurm_load_ctl_conf()
  * IN out - file to write to
- * IN slurm_ctl_conf_ptr - slurm control configuration pointer
+ * IN slurm_conf_ptr - slurm control configuration pointer
  */
-void slurm_print_ctl_conf ( FILE* out,
-			    slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
+void slurm_print_ctl_conf(FILE *out, slurm_conf_t *slurm_conf_ptr)
 {
 	char time_str[32], tmp_str[256];
 	void *ret_list = NULL;
 	char *select_title = "Select Plugin Configuration";
 	char *tmp2_str = NULL;
 
-	if (slurm_ctl_conf_ptr == NULL)
+	if (slurm_conf_ptr == NULL)
 		return;
 
-	slurm_make_time_str((time_t *)&slurm_ctl_conf_ptr->last_update,
-			     time_str, sizeof(time_str));
+	slurm_make_time_str((time_t *) &slurm_conf_ptr->last_update, time_str,
+			    sizeof(time_str));
 	snprintf(tmp_str, sizeof(tmp_str), "Configuration data as of %s\n",
 		 time_str);
 
-	ret_list = slurm_ctl_conf_2_key_pairs(slurm_ctl_conf_ptr);
+	ret_list = slurm_ctl_conf_2_key_pairs(slurm_conf_ptr);
 	if (ret_list) {
 		slurm_print_key_pairs(out, ret_list, tmp_str);
 		FREE_NULL_LIST(ret_list);
 	}
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->acct_gather_conf,
+	slurm_print_key_pairs(out, slurm_conf_ptr->acct_gather_conf,
 			      "\nAccount Gather Configuration:\n");
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->cgroup_conf,
+	slurm_print_key_pairs(out, slurm_conf_ptr->cgroup_conf,
 			      "\nCgroup Support Configuration:\n");
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->mpi_conf,
+	slurm_print_key_pairs(out, slurm_conf_ptr->mpi_conf,
 			      "\nMPI Plugins Configuration:\n");
 
 	xstrcat(tmp2_str, "\nNode Features Configuration:");
 	_print_config_plugin_params_list(out,
-		 (list_t *) slurm_ctl_conf_ptr->node_features_conf, tmp2_str);
+					 (list_t *) slurm_conf_ptr
+						 ->node_features_conf,
+					 tmp2_str);
 	xfree(tmp2_str);
 
-	slurm_print_key_pairs(out, slurm_ctl_conf_ptr->select_conf_key_pairs,
+	slurm_print_key_pairs(out, slurm_conf_ptr->select_conf_key_pairs,
 			      select_title);
-
 }
 
 static char *_accountingstoreflags(uint32_t conf_flags)
@@ -1251,10 +1251,10 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
  * slurm_load_ctl_conf - issue RPC to get slurm control configuration
  *	information if changed since update_time
  * IN update_time - time of current configuration data
- * IN slurm_ctl_conf_ptr - place to store slurm control configuration
+ * IN slurm_conf_ptr - place to store slurm control configuration
  *	pointer
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- * NOTE: free the response using slurm_free_ctl_conf
+ * NOTE: free the response using slurm_free_conf
  */
 int slurm_load_ctl_conf(time_t update_time, slurm_conf_t **confp)
 {
@@ -1277,7 +1277,7 @@ int slurm_load_ctl_conf(time_t update_time, slurm_conf_t **confp)
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_BUILD_INFO:
-		*confp = (slurm_ctl_conf_info_msg_t *) resp_msg.data;
+		*confp = (slurm_conf_t *) resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

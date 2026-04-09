@@ -7,6 +7,8 @@ import os
 import re
 import time
 
+pytestmark = pytest.mark.slow
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)

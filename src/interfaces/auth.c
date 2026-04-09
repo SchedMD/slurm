@@ -48,6 +48,7 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
+#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/util-net.h"
 #include "src/common/xassert.h"
@@ -81,7 +82,7 @@ typedef struct {
 	int		(*thread_config) (const char *token, const char *username);
 	void		(*thread_clear) (void);
 	char *		(*token_generate) (const char *username, int lifespan);
-	int		(*get_reconfig_fd)(void);
+	int (*prepare_reconfig_fd)(char ***env);
 	void *(*cred_generate)(const char *token, const char *username,
 			       uid_t uid, gid_t gid);
 } auth_ops_t;
@@ -105,7 +106,7 @@ static const char *syms[] = {
 	"auth_p_thread_config",
 	"auth_p_thread_clear",
 	"auth_p_token_generate",
-	"auth_p_get_reconfig_fd",
+	"auth_p_prepare_reconfig_fd",
 	"auth_p_cred_generate",
 };
 
@@ -211,7 +212,7 @@ extern int auth_g_init(void)
 	if (!type || type[0] == '\0')
 		goto done;
 
-	if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD))
+	if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD | IS_SLURMD))
 		list = auth_alt_types = xstrdup(slurm_conf.authalttypes);
 	g_context_num = 0;
 
@@ -664,7 +665,7 @@ extern void *auth_g_cred_generate(auth_plugin_type_t plugin_id,
 	return NULL;
 }
 
-extern int auth_g_get_reconfig_fd(auth_plugin_type_t plugin_id)
+extern int auth_g_prepare_reconfig_fd(auth_plugin_type_t plugin_id, char ***env)
 {
 	int fd = -1;
 
@@ -673,7 +674,7 @@ extern int auth_g_get_reconfig_fd(auth_plugin_type_t plugin_id)
 	slurm_rwlock_rdlock(&context_lock);
 	for (int i = 0; i < g_context_num; i++) {
 		if (plugin_id == *(ops[i].plugin_id)) {
-			fd = (*(ops[i].get_reconfig_fd))();
+			fd = (*(ops[i].prepare_reconfig_fd))(env);
 			break;
 		}
 	}

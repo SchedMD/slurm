@@ -102,8 +102,8 @@ bool slurmctld_init_db = true;
 static void _build_bitmaps(void);
 static void _gres_reconfig(void);
 static void _init_all_slurm_conf(void);
-static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
-                                       uint16_t old_select_type_p);
+static int _preserve_select_type_param(slurm_conf_t *conf,
+				       uint16_t old_select_type_p);
 static int  _reset_node_bitmaps(void *x, void *arg);
 
 static void _set_features(node_record_t **old_node_table_ptr,
@@ -2151,15 +2151,15 @@ static void _set_features(node_record_t **old_node_table_ptr,
  *	select plugin value changes to take effect.
  * RET zero or error code
  */
-static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
-                                       uint16_t old_select_type_p)
+static int _preserve_select_type_param(slurm_conf_t *conf,
+				       uint16_t old_select_type_p)
 {
 	int rc = SLURM_SUCCESS;
 
 	/* SelectTypeParameters cannot change */
 	if (old_select_type_p) {
-		if (old_select_type_p != ctl_conf_ptr->select_type_param) {
-			ctl_conf_ptr->select_type_param = old_select_type_p;
+		if (old_select_type_p != conf->select_type_param) {
+			conf->select_type_param = old_select_type_p;
 			rc = ESLURM_INVALID_SELECTTYPE_CHANGE;
 		}
 	}

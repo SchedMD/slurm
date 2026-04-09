@@ -64,6 +64,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/extra_constraints.h"
 #include "src/common/fd.h"
+#include "src/common/forward.h"
 #include "src/common/group_cache.h"
 #include "src/common/hostlist.h"
 #include "src/common/http_switch.h"
@@ -612,6 +613,15 @@ static void _retry_init_db_conn(assoc_init_args_t *args)
 	}
 }
 
+static void _close_acct_storage_conn(void)
+{
+	if (acct_db_conn)
+		acct_storage_g_close_connection(&acct_db_conn);
+
+	acct_storage_g_fini();
+	slurm_persist_conn_recv_server_fini();
+}
+
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char **argv)
 {
@@ -769,6 +779,8 @@ int main(int argc, char **argv)
 		fatal("Failed to initialize certmgr plugin");
 	if (serializer_g_init() != SLURM_SUCCESS)
 		fatal("Failed to initialize serialization plugins.");
+
+	forward_init();
 
 	if (original && !under_systemd) {
 		/*
@@ -1135,10 +1147,7 @@ int main(int argc, char **argv)
 		ctld_assoc_mgr_fini();
 
 		/* Save any pending state save RPCs */
-		acct_storage_g_close_connection(&acct_db_conn);
-		acct_storage_g_fini();
-
-		slurm_persist_conn_recv_server_fini();
+		_close_acct_storage_conn();
 		power_save_fini();
 
 		/* attempt reconfig here */
@@ -1194,6 +1203,9 @@ int main(int argc, char **argv)
 			slurm_conf.slurmctld_pidfile);
 	}
 
+	conmgr_request_shutdown();
+	forward_fini();
+	conmgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 {
@@ -1253,8 +1265,6 @@ int main(int argc, char **argv)
 }
 #endif
 
-	conmgr_request_shutdown();
-	conmgr_fini();
 	http_fini();
 	http_switch_fini();
 	/* Multiple threads never exit naturally during shutdown */
@@ -1441,7 +1451,8 @@ static int _try_to_reconfig(void)
 		xfree(ports);
 	}
 	slurm_mutex_unlock(&listeners.mutex);
-	if ((auth_fd = auth_g_get_reconfig_fd(AUTH_PLUGIN_SLURM)) >= 0)
+	if ((auth_fd = auth_g_prepare_reconfig_fd(AUTH_PLUGIN_SLURM,
+						  &child_env)) >= 0)
 		skip_close[skip_index++] = auth_fd;
 	for (int i = 0; i < 3; i++)
 		fd_set_noclose_on_exec(i);
@@ -1758,9 +1769,9 @@ static int _on_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
 		 * failure to give the sender a hint to fix their authentication
 		 * issue with authentication disabled.
 		 */
-		msg->flags |= SLURM_NO_AUTH_CRED;
 		slurm_send_rc_msg(msg, SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 		FREE_NULL_MSG(msg);
+		conmgr_queue_close_fd(con);
 		return SLURM_SUCCESS;
 	} else if (unpack_rc) {
 		error("%s: [%s] rejecting malformed RPC and closing connection: %s",
@@ -1913,17 +1924,14 @@ static void _open_ports(void)
 
 	for (uint64_t i = 0; i < listeners.count; i++) {
 		static const conmgr_con_flags_t flags =
-			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE |
-			 CON_FLAG_WATCH_WRITE_TIMEOUT |
-			 CON_FLAG_WATCH_READ_TIMEOUT |
-			 CON_FLAG_WATCH_CONNECT_TIMEOUT);
+			(CON_FLAG_RPC_KEEP_BUFFER | CON_FLAG_QUIESCE);
 		int rc, *index_ptr;
 
 		index_ptr = xmalloc(sizeof(*index_ptr));
 		*index_ptr = i;
 
 		if ((rc = conmgr_process_fd_listen(listeners.fd[i],
-						   http_switch_con_type(),
+						   http_switch_con_type(), NULL,
 						   &events,
 						   (flags |
 						    http_switch_con_flags()),
@@ -2732,6 +2740,15 @@ static void *_slurmctld_background(void *no_data)
 			listeners_quiesce();
 
 			/*
+			 * Persistent connection to slurmdbd must be closed
+			 * before conmgr quiesce to avoid possible deadlocks
+			 * where slurmdbd is waiting on slurmctld but
+			 * slurmctld will wait until quiesce to finish before
+			 * responding.
+			 */
+			_close_acct_storage_conn();
+
+			/*
 			 * Wait for all already accepted connection work to
 			 * finish before continuing on with control loop that
 			 * will unload all the plugins which requires there be
@@ -2746,6 +2763,12 @@ static void *_slurmctld_background(void *no_data)
 			 * RPC is lost.
 			 */
 			_flush_rpcs();
+
+			/*
+			 * Catch persistent connection to slurmdbd still
+			 * existing at this point
+			 */
+			xassert(!acct_db_conn);
 
 			/* Wait for backfill to release locks */
 			slurm_mutex_lock(&check_bf_running_lock);

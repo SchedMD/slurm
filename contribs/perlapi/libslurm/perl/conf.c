@@ -20,8 +20,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 
 	STORE_FIELD(hv, conf, last_update, time_t);
 
-	if (conf->acct_gather_conf)
-		STORE_FIELD(hv, conf, acct_gather_conf, charp);
 	if (conf->acct_gather_energy_type)
 		STORE_FIELD(hv, conf, acct_gather_energy_type, charp);
 	if (conf->acct_gather_filesystem_type)
@@ -261,7 +259,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->schedtype)
 		STORE_FIELD(hv, conf, schedtype, charp);
 
-	STORE_PTR_FIELD(hv, conf, select_conf_key_pairs, "Slurm::List"); /* TODO: Think about memory management */
 	if (conf->select_type)
 		STORE_FIELD(hv, conf, select_type, charp);
 	STORE_FIELD(hv, conf, select_type_param, uint16_t);
@@ -359,7 +356,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	memset(conf, 0, sizeof(*conf));
 
 	FETCH_FIELD(hv, conf, last_update, time_t, FALSE);
-	FETCH_FIELD(hv, conf, acct_gather_conf, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_energy_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_filesystem_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, acct_gather_interconnect_type, charp, FALSE);
@@ -512,7 +508,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, sched_params, charp, FALSE);
 	FETCH_FIELD(hv, conf, sched_time_slice, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, schedtype, charp, FALSE);
-	FETCH_FIELD(hv, conf, select_conf_key_pairs, charp, FALSE);
 	FETCH_FIELD(hv, conf, select_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, select_type_param, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, slurm_conf, charp, FALSE);

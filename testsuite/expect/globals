@@ -174,6 +174,7 @@ cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
 cset slurmctld   "${slurm_dir}/sbin/slurmctld"
+cset slurmdbd    "${slurm_dir}/sbin/slurmdbd"
 cset slurmd      "${slurm_dir}/sbin/slurmd"
 cset slurmrestd  "${slurm_dir}/sbin/slurmrestd"
 

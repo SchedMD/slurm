@@ -5,6 +5,8 @@ import atf
 import pytest
 import pexpect
 
+pytestmark = pytest.mark.slow
+
 
 # Setup
 @pytest.fixture(scope="module", autouse=True)

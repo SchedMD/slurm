@@ -51,6 +51,7 @@
 #include "src/common/slurm_time.h"
 #include "src/common/threadpool.h"
 #include "src/common/timers.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -140,6 +141,8 @@ static struct {
 	list_t *pending;
 	/* list_t * of thread_t * */
 	list_t *zombies;
+	/* list_t * of thread_t * */
+	list_t *attached;
 	/* Number of running threads */
 	int running;
 	/* Number of idle threads */
@@ -225,14 +228,46 @@ static int _join(const pthread_t id, const char *caller)
 
 static int _match_thread_id(void *x, void *key)
 {
-	thread_t *thread = x;
-	pthread_t id = (pthread_t) key;
+	const thread_t *thread = x;
+	const pthread_t *id_ptr = key;
 
 	xassert(thread->magic == THREAD_MAGIC);
-	xassert(thread->id > 0);
-	xassert(id > 0);
+	xassert(*id_ptr > 0);
 
-	return ((thread->id == id) ? 1 : 0);
+	return ((thread->id == *id_ptr) ? 1 : 0);
+}
+
+#ifndef NDEBUG
+
+static int _match_thread_ptr(void *x, void *y)
+{
+	thread_t *thread = x;
+	thread_t *key = y;
+
+	xassert(thread->magic == THREAD_MAGIC);
+	xassert(key->magic == THREAD_MAGIC);
+
+	return ((thread == key) ? 1 : 0);
+}
+
+#endif
+
+static int _threadpool_on_detach(thread_t *thread, const bool remove,
+				 const char *caller)
+{
+	log_flag(THREAD, "%s->%s: detached pthread id=0x%"PRIx64,
+		       caller, __func__, (uint64_t) thread->id);
+
+	if (remove && !list_delete_ptr(threadpool.attached, thread))
+		fatal_abort("this should never happen");
+
+	xassert(!thread->detached);
+	thread->detached = true;
+
+	EVENT_BROADCAST(&threadpool.events.join);
+	EVENT_BROADCAST(&threadpool.events.zombie);
+
+	return SLURM_SUCCESS;
 }
 
 static int _threadpool_join(const pthread_t id, const char *caller)
@@ -243,13 +278,29 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 
 	slurm_mutex_lock(&threadpool.mutex);
 
+	log_flag(THREAD, "%s->%s: joining pthread id=0x%"PRIx64,
+		       caller, __func__, (uint64_t) id);
+
 	do {
-		if ((thread = list_remove_first(threadpool.zombies,
-						_match_thread_id, (void *) id)))
+		if (!(thread = list_find_first(threadpool.attached,
+					       _match_thread_id,
+					       (void *) &id))) {
+			log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" does not exist",
+				       caller, __func__, (uint64_t) id);
+			slurm_mutex_unlock(&threadpool.mutex);
+
+			return ESRCH;
+		}
+
+		/* Catch thread being detached */
+		xassert(thread->magic == THREAD_MAGIC);
+
+		if (list_delete_ptr(threadpool.zombies, thread))
 			break;
 
-		if (!threadpool.running)
-			break;
+		/* Thread is not a zombie yet */
+		xassert(threadpool.running > 0);
+		xassert(!thread->detached);
 
 		log_flag(THREAD, "%s->%s: waiting for thread id=0x%"PRIx64" with %d running threads",
 			       caller, __func__, (uint64_t) id,
@@ -257,22 +308,13 @@ static int _threadpool_join(const pthread_t id, const char *caller)
 		EVENT_WAIT(&threadpool.events.zombie, &threadpool.mutex);
 	} while (true);
 
-	if (thread) {
-		log_flag(THREAD, "%s->%s: joined pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
-			       caller, __func__, (uint64_t) thread->id,
-			       (uintptr_t) thread->ret);
+	log_flag(THREAD, "%s->%s: joined pthread id=0x%"PRIx64" returned: 0x%"PRIxPTR,
+		 caller, __func__, (uint64_t) thread->id,
+		 (uintptr_t) thread->ret);
 
-		xassert(!thread->detached);
-		thread->detached = true;
-		EVENT_BROADCAST(&threadpool.events.join);
+	rc = _threadpool_on_detach(thread, true, caller);
 
-		HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
-		rc = SLURM_SUCCESS;
-	} else {
-		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
-			       caller, __func__, (uint64_t) id);
-		rc = ESRCH;
-	}
+	HISTOGRAM_ADD_DURATION(&threadpool.histograms.join, start_ts);
 
 	slurm_mutex_unlock(&threadpool.mutex);
 
@@ -340,7 +382,27 @@ static void _thread_free(thread_t *thread)
 	if (!thread)
 		return;
 
+#ifndef NDEBUG
 	xassert(thread->magic == THREAD_MAGIC);
+
+	if (threadpool.enabled) {
+		/* All threads must be detached at cleanup */
+		xassert(thread->detached);
+		xassert(!thread->requester);
+
+		slurm_mutex_lock(&threadpool.mutex);
+
+		/* check for dangling pointers */
+		xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
+					 thread));
+		xassert(!list_find_first(threadpool.pending, _match_thread_ptr,
+					 thread));
+		xassert(!list_find_first(threadpool.zombies, _match_thread_ptr,
+					 thread));
+
+		slurm_mutex_unlock(&threadpool.mutex);
+	}
+#endif
 
 	thread->magic = ~THREAD_MAGIC;
 	xfree(thread->thread_name);
@@ -432,12 +494,20 @@ static void _threadpool_zombie(thread_t *thread)
 			 __func__, _thread_name(thread), (uint64_t) thread->id);
 	}
 
+	/* Thread must exist in the attached list until detached */
+	xassert(list_find_first(threadpool.attached, _match_thread_ptr,
+				thread));
+
 	list_append(threadpool.zombies, thread);
 
 	while (!thread->detached) {
 		EVENT_BROADCAST(&threadpool.events.zombie);
 		EVENT_WAIT(&threadpool.events.join, &threadpool.mutex);
 	}
+
+	/* Thread must not exist in the attached list after being detached */
+	xassert(!list_find_first(threadpool.attached, _match_thread_ptr,
+				 thread));
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_THREAD) && start_ts.tv_sec) {
 		char ts[CTIME_STR_LEN] = "UNKNOWN";
@@ -452,7 +522,8 @@ static void _threadpool_zombie(thread_t *thread)
 	}
 
 	/* join thread should have removed ptr from zombie list */
-	xassert(!list_delete_ptr(threadpool.zombies, thread));
+	xassert(!list_find_first(threadpool.zombies, _match_thread_ptr,
+				 thread));
 }
 
 /* caller must hold threadpool.mutex lock */
@@ -462,8 +533,10 @@ static void _threadpool_prerun(thread_t *thread)
 
 	threadpool.total_run++;
 
-	xassert(!thread->id);
-	thread->id = pthread_self();
+	if (!thread->id)
+		thread->id = pthread_self();
+	else
+		xassert(thread->id == pthread_self());
 
 	threadpool.idle--;
 	threadpool.running++;
@@ -480,17 +553,18 @@ static void _threadpool_prerun(thread_t *thread)
 /* caller must hold threadpool.mutex lock */
 static void _threadpool_postrun(thread_t *thread)
 {
+	xassert(thread->id == pthread_self());
+
 	threadpool.running--;
 	threadpool.idle++;
 
 	xassert(threadpool.idle > 0);
 	xassert(threadpool.running >= 0);
 
-	if (thread->requester)
-		_threadpool_wait_ack(thread);
-
 	if (!thread->detached)
 		_threadpool_zombie(thread);
+
+	thread->id = 0;
 
 	xassert(thread->magic == THREAD_MAGIC);
 	xassert(thread->detached);
@@ -530,6 +604,9 @@ static void *_thread(void *arg)
 	do {
 		if (thread) {
 			_threadpool_prerun(thread);
+
+			if (thread->requester)
+				_threadpool_wait_ack(thread);
 
 			slurm_mutex_unlock(&threadpool.mutex);
 			_run(thread);
@@ -593,8 +670,21 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	pthread_attr_t attr;
 	int rc = EINVAL;
 
-	xassert((!thread && threadpool.enabled) ||
-		(thread->magic == THREAD_MAGIC));
+#ifndef NDEBUG
+	if (thread) {
+		if (threadpool.enabled)
+			slurm_mutex_lock(&threadpool.mutex);
+
+		xassert(thread->magic == THREAD_MAGIC);
+		xassert(!thread->id);
+
+		if (threadpool.enabled)
+			slurm_mutex_unlock(&threadpool.mutex);
+	} else {
+		/* only threadpool will have pre-allocated threads */
+		xassert(threadpool.enabled);
+	}
+#endif
 
 	if ((rc = pthread_attr_init(&attr)))
 		fatal("%s->%s: pthread_attr_init() failed: %s",
@@ -627,6 +717,13 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		error("%s->%s: pthread_create() failed: %s",
 		      caller, __func__, slurm_strerror(rc));
 
+		if (threadpool.enabled && !thread->detached) {
+			xassert(!thread->id);
+
+			if (!list_delete_ptr(threadpool.attached, thread))
+				fatal_abort("this should never happen");
+		}
+
 		_thread_free(thread);
 	} else {
 		xassert(threadpool.enabled || thread->func_name);
@@ -640,7 +737,14 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 
 		if (threadpool.enabled) {
 			slurm_mutex_lock(&threadpool.mutex);
+
+			if (thread) {
+				xassert(!thread->id || (thread->id == id));
+				thread->id = id;
+			}
+
 			threadpool.total_created++;
+
 			slurm_mutex_unlock(&threadpool.mutex);
 		}
 	}
@@ -714,6 +818,9 @@ static bool _assign(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		xassert(thread->requester == pthread_self());
 		xassert(threadpool.idle > 0);
 
+		log_flag(THREAD, "%s->%s: waiting for assignment for %s() with %d idle threads",
+			 caller, __func__, thread->func_name, threadpool.idle);
+
 		EVENT_SIGNAL(&threadpool.events.assign);
 		EVENT_WAIT(&threadpool.events.assigned, &threadpool.mutex);
 	}
@@ -762,8 +869,13 @@ extern int threadpool_create(threadpool_func_t func, const char *func_name,
 		.requested = timespec_now(),
 	};
 
-	if (threadpool.enabled && _assign(thread, id_ptr, caller))
-		return SLURM_SUCCESS;
+	if (threadpool.enabled) {
+		if (!detached)
+			list_append(threadpool.attached, thread);
+
+		if (_assign(thread, id_ptr, caller))
+			return SLURM_SUCCESS;
+	}
 
 	return _new_thread(thread, id_ptr, caller);
 }
@@ -865,16 +977,19 @@ static void _probe_verbose(probe_log_t *log)
 
 	probe_log(
 		log,
-		"state: shutdown:%c pending:%d zombies:%d running:%d idle:%d total_run:%" PRIu64 " total_created:%" PRIu64 " peak_count:%" PRIu64,
+		"state: shutdown:%c pending:%d zombies:%d attached:%d running:%d idle:%d total_run:%" PRIu64 " total_created:%" PRIu64 " peak_count:%" PRIu64,
 		BOOL_CHARIFY(threadpool.shutdown),
 		list_count(threadpool.pending), list_count(threadpool.zombies),
-		threadpool.running, threadpool.idle, threadpool.total_run,
-		threadpool.total_created, threadpool.peak_count);
+		list_count(threadpool.attached), threadpool.running,
+		threadpool.idle, threadpool.total_run, threadpool.total_created,
+		threadpool.peak_count);
 
 	logt.type = "pending";
 	(void) list_for_each_ro(threadpool.pending, _log_thread, &logt);
 	logt.type = "zombie";
 	(void) list_for_each_ro(threadpool.zombies, _log_thread, &logt);
+	logt.type = "attached";
+	(void) list_for_each_ro(threadpool.attached, _log_thread, &logt);
 
 	(void) latency_histogram_print_labels(histogram, sizeof(histogram));
 	probe_log(log, "histogram: %s", histogram);
@@ -934,10 +1049,13 @@ extern void threadpool_init(const int default_count, const char *params)
 	threadpool.enabled = true;
 
 	xassert(!threadpool.pending);
-	threadpool.pending = list_create((ListDelF) _thread_free);
+	threadpool.pending = list_create(NULL);
 
 	xassert(!threadpool.zombies);
-	threadpool.zombies = list_create((ListDelF) _thread_free);
+	threadpool.zombies = list_create(NULL);
+
+	xassert(!threadpool.attached);
+	threadpool.attached = list_create(NULL);
 
 	preallocate = threadpool.config.preallocate;
 
@@ -971,4 +1089,50 @@ extern void threadpool_fini(void)
 	threadpool.shutdown = true;
 
 	slurm_mutex_unlock(&threadpool.mutex);
+}
+
+static int _threadpool_detach(const pthread_t id, const char *caller)
+{
+	thread_t *thread = NULL;
+	int rc = EINVAL;
+
+	slurm_mutex_lock(&threadpool.mutex);
+
+	if (!(thread = list_remove_first(threadpool.attached, _match_thread_id,
+					 (void *) &id))) {
+		log_flag(THREAD, "%s->%s: pthread id=0x%"PRIx64" not found",
+			       caller, __func__, (uint64_t) id);
+		rc = ESRCH;
+	} else {
+		rc = _threadpool_on_detach(thread, false, caller);
+	}
+
+	slurm_mutex_unlock(&threadpool.mutex);
+
+	return rc;
+}
+
+static int _detach(const pthread_t id, const char *caller)
+{
+	int rc = EINVAL;
+
+	if ((rc = pthread_detach(id)))
+		error("%s->%s: pthread_detach(id=0x%"PRIx64") failed: %s",
+		      caller, __func__, (uint64_t) id, slurm_strerror(rc));
+
+	return rc;
+}
+
+extern int threadpool_detach(const pthread_t id, const char *caller)
+{
+	if (!id) {
+		log_flag(THREAD, "%s->%s: Ignoring invalid pthread id=0x0",
+		       caller, __func__);
+		return SLURM_SUCCESS;
+	}
+
+	if (threadpool.enabled)
+		return _threadpool_detach(id, caller);
+	else
+		return _detach(id, caller);
 }

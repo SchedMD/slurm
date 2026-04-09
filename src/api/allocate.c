@@ -907,20 +907,20 @@ trystepmgr:
 /*
  * slurm_allocation_lookup - retrieve info for an existing resource allocation
  * 			     without the addrs and such
- * IN jobid - job allocation identifier
+ * IN step_id - step_id containing the job allocation identifier
  * OUT info - job allocation information
  * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  * NOTE: free the response using slurm_free_resource_allocation_response_msg()
  */
-extern int slurm_allocation_lookup(uint32_t jobid,
-				   resource_allocation_response_msg_t **info)
+extern int (slurm_allocation_lookup)(slurm_step_id_t step_id,
+				     resource_allocation_response_msg_t **info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 
 	memset(&req, 0, sizeof(req));
-	req.step_id.job_id = jobid;
+	req.step_id = step_id;
 	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -951,16 +951,7 @@ extern int slurm_allocation_lookup(uint32_t jobid,
 	return SLURM_SUCCESS;
 }
 
-/*
- * slurm_het_job_lookup - retrieve info for an existing heterogeneous job
- * 			   allocation without the addrs and such
- * IN jobid - job allocation identifier
- * OUT info - job allocation information
- * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
- * NOTE: returns information an individual job as well
- * NOTE: free the response using list_destroy()
- */
-extern int slurm_het_job_lookup(uint32_t jobid, list_t **info)
+extern int (slurm_het_job_lookup)(slurm_step_id_t step_id, list_t **info)
 {
 	job_alloc_info_msg_t req;
 	slurm_msg_t req_msg;
@@ -968,7 +959,7 @@ extern int slurm_het_job_lookup(uint32_t jobid, list_t **info)
 	char *stepmgr_nodename = NULL;
 
 	memset(&req, 0, sizeof(req));
-	req.step_id.job_id = jobid;
+	req.step_id = step_id;
 	req.req_cluster = slurm_conf.cluster_name;
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);
@@ -1525,13 +1516,13 @@ static void _wait_for_allocation_response(slurm_step_id_t *step_id,
 		 */
 		if (msg_type == RESPONSE_RESOURCE_ALLOCATION) {
 			if (slurm_allocation_lookup(
-				    step_id->job_id,
+				    *step_id,
 				    (resource_allocation_response_msg_t **)
 					    resp) >= 0)
 				return;
 		} else if (msg_type == RESPONSE_HET_JOB_ALLOCATION) {
-			if (slurm_het_job_lookup(step_id->job_id,
-						 (list_t **) resp) >= 0)
+			if (slurm_het_job_lookup(*step_id, (list_t **) resp) >=
+			    0)
 				return;
 		} else {
 			error("%s: Invalid msg_type (%u)", __func__, msg_type);
