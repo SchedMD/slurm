@@ -255,5 +255,24 @@ extern void topology_p_get_topology_str(node_record_t *node_ptr,
 					char **topology_str_ptr,
 					topology_ctx_t *tctx)
 {
-	return;
+	torus3d_context_t *ctx = tctx->plugin_ctx;
+
+	if (!ctx)
+		return;
+
+	for (int i = 0; i < ctx->record_count; i++) {
+		torus3d_record_t *torus = &ctx->records[i];
+		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
+			continue;
+		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+			uint16_t x, y, z;
+			if (torus->nodes_map[idx] != node_ptr->index)
+				continue;
+			torus3d_index_to_coord(torus, idx, &x, &y, &z);
+			xstrfmtcat(*topology_str_ptr, "%s%s:%s:%u:%u:%u",
+				   *topology_str_ptr ? "," : "", tctx->name,
+				   torus->name, x, y, z);
+			return;
+		}
+	}
 }
