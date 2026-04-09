@@ -558,17 +558,12 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 		goto child_exit;
 	}
 
-	sem_destroy(sem1);
-	munmap(sem1, sizeof(*sem1));
-	sem_destroy(sem2);
-	munmap(sem2, sizeof(*sem2));
-
 	/* become an infinity process */
 	xstrfmtcat(argv[2], "%u", step->step_id.job_id);
 
 	execvp(argv[0], argv);
+	rc = 127;
 	error("execvp of slurmstepd infinity failed: %m");
-	_exit(127);
 
 child_exit:
 	/* Do a final post to prevent from waiting on errors */
@@ -578,7 +573,7 @@ child_exit:
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
 
-	exit(rc);
+	_exit(rc);
 }
 
 static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
