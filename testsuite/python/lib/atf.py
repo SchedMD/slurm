@@ -3128,7 +3128,7 @@ def cancel_jobs(
 def cancel_all_jobs(
     timeout=default_polling_timeout, poll_interval=0.1, fatal=False, quiet=False
 ):
-    """Cancels all jobs by the test user and waits for them to be cancelled.
+    """Cancels all jobs in the system, and waits for them to be cancelled.
 
     Args:
         fatal (boolean): If True, a timeout will result in the test failing.
@@ -3147,17 +3147,19 @@ def cancel_all_jobs(
         False
     """
 
-    user_name = properties["test-user"]
+    jobs = get_jobs()
 
-    run_command(f"scancel -u {user_name}", fatal=fatal, quiet=quiet)
+    if not jobs:
+        logging.debug("No jobs to cancel")
+        return True
 
-    return repeat_command_until(
-        f"squeue -u {user_name} --noheader",
-        lambda results: results["stdout"] == "",
-        timeout=timeout,
-        poll_interval=poll_interval,
+    return cancel_jobs(
+        jobs.keys(),
         fatal=fatal,
         quiet=quiet,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        user=properties["slurm-user"],
     )
 
 
