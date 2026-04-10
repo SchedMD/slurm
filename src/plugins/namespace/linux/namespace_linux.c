@@ -489,7 +489,8 @@ static pid_t sys_clone(unsigned long flags, int *parent_tid, int *child_tid,
 }
 
 static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
-			     char *job_mount, sem_t *sem1, sem_t *sem2)
+			     char *job_mount, sem_t *sem1, sem_t *sem2,
+			     int *child_rc)
 {
 	char *argv[4] = { (char *) conf->stepd_loc, "ns_infinity", NULL, NULL };
 	int rc = 0;
@@ -553,32 +554,30 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 		goto child_exit;
 	}
 
-	if (sem_post(sem2) < 0) {
+	if ((rc = sem_post(sem2))) {
 		error("%s: sem_post failed: %m", __func__);
 		goto child_exit;
 	}
-
-	sem_destroy(sem1);
-	munmap(sem1, sizeof(*sem1));
-	sem_destroy(sem2);
-	munmap(sem2, sizeof(*sem2));
 
 	/* become an infinity process */
 	xstrfmtcat(argv[2], "%u", step->step_id.job_id);
 
 	execvp(argv[0], argv);
+	rc = 127;
 	error("execvp of slurmstepd infinity failed: %m");
-	_exit(127);
 
 child_exit:
+	/* Signal result to parent before posting sem2 */
+	*child_rc = rc;
 	/* Do a final post to prevent from waiting on errors */
 	sem_post(sem2);
 	sem_destroy(sem1);
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	munmap(child_rc, sizeof(*child_rc));
 
-	exit(rc);
+	_exit(rc);
 }
 
 static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
@@ -633,13 +632,13 @@ static int _clonens_user_setup(stepd_step_rec_t *step, pid_t pid)
 
 	xstrfmtcat(tmpstr, "/proc/%d/gid_map", pid);
 	if (!(-1 != (fd = open(tmpstr, O_WRONLY)))) {
-		error("%s: open gid_map failed: %m", __func__);
+		error("%s: open gid_map %s failed: %m", __func__, tmpstr);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
 	if (!(1 <= dprintf(fd, "0 0 4294967295\n"))) {
-		error("%s: write 0 0 4294967295 failed: %m",
-		      __func__ );
+		error("%s: write 0 0 4294967295 gid_map %s failed: %m",
+		      __func__, tmpstr);
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
@@ -660,6 +659,7 @@ static int _create_ns(stepd_step_rec_t *step)
 	unsigned long tls = 0;
 	sem_t *sem1 = NULL;
 	sem_t *sem2 = NULL;
+	int *child_rc = MAP_FAILED;
 
 	_create_paths(step->step_id.job_id, &job_mount, &ns_base, &src_bind);
 
@@ -757,7 +757,6 @@ static int _create_ns(stepd_step_rec_t *step)
 		    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 	if (sem2 == MAP_FAILED) {
 		error("%s: mmap failed: %m", __func__);
-		sem_destroy(sem1);
 		munmap(sem1, sizeof(*sem1));
 		rc = -1;
 		goto exit2;
@@ -766,13 +765,29 @@ static int _create_ns(stepd_step_rec_t *step)
 	rc = sem_init(sem1, 1, 0);
 	if (rc) {
 		error("%s: sem_init: %m", __func__);
-		goto exit1;
+		munmap(sem1, sizeof(*sem1));
+		munmap(sem2, sizeof(*sem2));
+		goto exit2;
 	}
 	rc = sem_init(sem2, 1, 0);
 	if (rc) {
 		error("%s: sem_init: %m", __func__);
+		sem_destroy(sem1);
+		munmap(sem1, sizeof(*sem1));
+		munmap(sem2, sizeof(*sem2));
+		goto exit2;
+	}
+
+	/* path for the child to give an rc to the parent */
+	child_rc = mmap(NULL, sizeof(*child_rc), PROT_READ | PROT_WRITE,
+			MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (child_rc == MAP_FAILED) {
+		error("%s: mmap failed: %m", __func__);
+		rc = -1;
 		goto exit1;
 	}
+	*child_rc = 0;
+
 	ns_pid = sys_clone(ns_conf->clonensflags | SIGCHLD, &parent_tid,
 			   &child_tid, tls);
 
@@ -781,7 +796,8 @@ static int _create_ns(stepd_step_rec_t *step)
 		rc = -1;
 		goto exit1;
 	} else if (ns_pid == 0) {
-		_create_ns_child(step, src_bind, job_mount, sem1, sem2);
+		_create_ns_child(step, src_bind, job_mount, sem1, sem2,
+				 child_rc);
 	} else {
 		char *proc_path = NULL;
 
@@ -824,6 +840,14 @@ static int _create_ns(stepd_step_rec_t *step)
 		/* Wait for container to be setup */
 		if (sem_wait(sem2) < 0) {
 			error("%s: sem_Wait failed: %m", __func__);
+			rc = -1;
+			goto exit1;
+		}
+
+		/* Check if the child failed */
+		if (*child_rc) {
+			error("%s: namespace setup failed in child",
+			      __func__);
 			rc = -1;
 			goto exit1;
 		}
@@ -876,6 +900,8 @@ exit1:
 	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
 	munmap(sem2, sizeof(*sem2));
+	if (child_rc != MAP_FAILED)
+		munmap(child_rc, sizeof(*child_rc));
 
 exit2:
 	if (rc) {
@@ -1091,7 +1117,7 @@ extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
-	if (ns_pid) {
+	if (ns_pid != -1) {
 		int wstatus;
 		/*
 		 * The namespace process may have been signaled already, but
@@ -1128,7 +1154,7 @@ rwfail:
 extern int namespace_p_recv_stepd(int fd)
 {
 	int len;
-	buf_t *buf;
+	buf_t *buf = NULL;
 
 	safe_read(fd, &len, sizeof(len));
 
@@ -1142,6 +1168,7 @@ extern int namespace_p_recv_stepd(int fd)
 
 	return SLURM_SUCCESS;
 rwfail:
+	free_buf(buf);
 	error("%s: failed", __func__);
 	return SLURM_ERROR;
 }
