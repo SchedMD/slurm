@@ -95,6 +95,7 @@ strong_alias(xstrcasecmp,       slurm_xstrcasecmp);
 strong_alias(xstrncasecmp,      slurm_xstrncasecmp);
 strong_alias(xstrstr,           slurm_xstrstr);
 strong_alias(xstrcasestr,       slurm_xstrcasestr);
+strong_alias(xstrtoken, slurm_xstrtoken);
 strong_alias(xbase64_from_base64url, slurm_xbase64_from_base64url);
 
 /*
@@ -890,6 +891,17 @@ extern char *xstring_bytes2printable(const unsigned char *string, int len,
 	}
 
 	return str;
+}
+
+extern char *xstrtoken(char *str, const char *delim, char **saveptr)
+{
+	if (!str && !*saveptr)
+		return NULL;
+
+	if (*saveptr)
+		return strtok_r(NULL, delim, saveptr);
+
+	return strtok_r(str, delim, saveptr);
 }
 
 extern char *xbase64_from_base64url(const char *in)
