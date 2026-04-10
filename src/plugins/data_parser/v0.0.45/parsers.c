@@ -11307,6 +11307,22 @@ static const flag_bit_t PARSER_FLAG_ARRAY(ENFORCE_PART_LIMITS)[] = {
 	add_flag_equal_desc(PARTITION_ENFORCE_ALL, INFINITE16, "ALL", "Jobs will be accepted if they satisfy the limits on all of the requested partitions."),
 };
 
+/* based on priority_flags_string() */
+static const flag_bit_t PARSER_FLAG_ARRAY(PRIORITY_FLAGS)[] = {
+	add_flag_bit_desc(PRIORITY_FLAGS_ACCRUE_ALWAYS, "ACCRUE_ALWAYS", "Always accrue age priority to pending jobs ignoring dependencies or holds."),
+	add_flag_bit_desc(PRIORITY_FLAGS_SIZE_RELATIVE, "SMALL_RELATIVE_TO_TIME", "Enable job size measurement relative to its time limit."),
+	add_flag_bit_desc(PRIORITY_FLAGS_CALCULATE_RUNNING, "CALCULATE_RUNNING", "Calculate priorities for running jobs, not only the pending jobs."),
+	add_flag_bit_desc(PRIORITY_FLAGS_DEPTH_OBLIVIOUS, "DEPTH_OBLIVIOUS", "Use depth oblivious formula for computing hierarchical fairshare."),
+	add_flag_bit_desc(PRIORITY_FLAGS_FAIR_TREE, "FAIR_TREE", "Prioritize by level in account hierarchy."),
+	add_flag_bit_desc(PRIORITY_FLAGS_INCR_ONLY, "INCR_ONLY", "Priority can only increase, never decrease in value."),
+	add_flag_bit_desc(PRIORITY_FLAGS_MAX_TRES, "MAX_TRES", "Calculate billed_tres as the MAX of TRES on a node rather than the sum of TRES."),
+	add_flag_bit_desc(PRIORITY_FLAGS_MAX_TRES_GRES, "MAX_TRES_GRES", "Calculate billed_tres as the MAX of TRES (CPU and memory) plus GRES on a node rather than the sum of all TRES."),
+	add_flag_bit_desc(PRIORITY_FLAGS_NO_NORMAL_ASSOC, "NO_NORMAL_ASSOC", "Do not normalize the association factor."),
+	add_flag_bit_desc(PRIORITY_FLAGS_NO_NORMAL_PART, "NO_NORMAL_PART", "Do not normalize the partition factor."),
+	add_flag_bit_desc(PRIORITY_FLAGS_NO_NORMAL_QOS, "NO_NORMAL_QOS", "Do not normalize the QOS factor."),
+	add_flag_bit_desc(PRIORITY_FLAGS_NO_NORMAL_TRES, "NO_NORMAL_TRES", "Do not normalize the TRES factor."),
+};
+
 /* based on log_num2string() */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_hidden(0, INFINITE16, "(null)"),
@@ -12296,6 +12312,7 @@ static const parser_t parsers[] = {
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
+	addfa(PRIORITY_FLAGS, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
 	addfas(LOG_LEVEL, log_level_t),
 
