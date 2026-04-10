@@ -56,6 +56,7 @@
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -5380,6 +5381,38 @@ static int DUMP_FUNC(JOB_INFO_STDERR_EXP)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(SLURMDB_PURGE)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	uint32_t *purge_ptr = obj;
+	slurmdb_purge_units_t pu = { 0 };
+	int rc = EINVAL;
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		*purge_ptr = NO_VAL;
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = PARSE(SLURMDB_PURGE_UNITS, pu, src, parent_path, args)))
+		return rc;
+
+	*purge_ptr = slurmdb_purge_units_2_int(&pu);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURMDB_PURGE)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	uint32_t *purge_ptr = obj;
+	uint32_t purge = *purge_ptr;
+	slurmdb_purge_units_t pu = { 0 };
+
+	slurmdb_int_2_purge_units(purge, &pu);
+
+	return DUMP(SLURMDB_PURGE_UNITS, pu, dst, args);
+}
+
 PARSE_DISABLED(STEP_INFO_STDIN_EXP)
 PARSE_DISABLED(STEP_INFO_STDOUT_EXP)
 PARSE_DISABLED(STEP_INFO_STDERR_EXP)
@@ -8384,6 +8417,17 @@ static const parser_t PARSER_ARRAY(USER_SHORT)[] = {
 #undef add_parse
 #undef add_parse_req
 #undef add_skip
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(slurmdb_purge_units_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SLURMDB_PURGE_UNITS)[] = {
+	add_parse(BOOL, set, "set", "whether purge has been set"),
+	add_parse(UINT32, hours, "hours", "hours"),
+	add_parse(UINT32, days, "days", "days"),
+	add_parse(UINT32, months, "months", "months"),
+	add_parse(BOOL, archive, "archive", "whether to archive purged records"),
+};
+#undef add_parse
 
 #define add_skip(field)					\
 	add_parser_skip(slurmdb_user_rec_t, field)
@@ -12935,6 +12979,8 @@ static const parser_t parsers[] = {
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 	addpsp(H_RESOURCES_AS_LICENSE_LIST, H_RESOURCE_LIST, list_t *, NEED_NONE, "List of hierarchical resources"),
 	addps(SLUID, sluid_t, NEED_NONE, STRING, NULL, NULL, "Slurm Lexicographically-sortable Unique ID"),
+	addpsp(SLURMDB_PURGE, SLURMDB_PURGE_UNITS, uint32_t, NEED_NONE, NULL),
+	addpa(SLURMDB_PURGE_UNITS, slurmdb_purge_units_t),
 	addpsp(LOG_LEVEL_UINT16, LOG_LEVEL, uint16_t, NEED_NONE, NULL),
 	addpsp(TIME_SECONDS, STRING, uint32_t, NEED_NONE, "Time formatted as HH:MM:SS or D-HH:MM:SS"),
 	addpsp(PORT_RANGE_ARRAY, PORT_RANGE, uint16_t *, NEED_NONE, "Port range"),
