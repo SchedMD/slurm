@@ -501,6 +501,12 @@ typedef struct {
 	bool first_layer;
 } resource_as_licenses_args_t;
 
+typedef struct {
+	uint16_t min;
+	uint16_t max;
+	bool set;
+} port_range_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -7651,6 +7657,107 @@ static int DUMP_FUNC(TIME_SECONDS)(const parser_t *const parser, void *obj,
 	}
 }
 
+static int _parse_port_range_dict(const parser_t *const parser, uint16_t *range,
+				  data_t *src, args_t *args,
+				  data_t *parent_path)
+{
+	int rc = EINVAL;
+	port_range_t range_struct = {
+		.min = 0,
+		.max = 0,
+		.set = false,
+	};
+
+	if ((rc = PARSE(PORT_RANGE, range_struct, src, parent_path, args)))
+		return rc;
+
+	if (range_struct.set) {
+		range[0] = range_struct.min;
+		range[1] = range_struct.max;
+	}
+
+	return rc;
+}
+
+static int PARSE_FUNC(PORT_RANGE_ARRAY)(const parser_t *const parser, void *obj,
+					data_t *src, args_t *args,
+					data_t *parent_path)
+{
+	uint16_t **range_ptr = obj;
+	int rc = EINVAL;
+	uint16_t *range = xcalloc(2, sizeof(*range));
+
+	xassert(!*range_ptr);
+
+	switch (data_convert_type(src, DATA_TYPE_NONE)) {
+	case DATA_TYPE_NULL:
+		rc = SLURM_SUCCESS;
+		/* Avoid providing range array when NULL */
+		xfree(range);
+		break;
+	case DATA_TYPE_DICT:
+		rc = _parse_port_range_dict(parser, range, src, args,
+					    parent_path);
+		break;
+	case DATA_TYPE_STRING:
+		if (sscanf(data_get_string(src), "%hu-%hu", &range[0],
+			   &range[1]) != 2)
+			rc = parse_error(
+				parser, args, parent_path,
+				ESLURM_DATA_CONV_FAILED,
+				"Unable to parse port range as (min-max): %s",
+				data_get_type_string(src));
+		break;
+	default:
+		rc = parse_error(parser, args, parent_path,
+				 ESLURM_DATA_CONV_FAILED,
+				 "Unable to parse port range as %s",
+				 data_type_to_string(data_get_type(src)));
+	}
+
+	if (rc) {
+		xfree(range);
+		return rc;
+	}
+
+	if (range && (range[0] > range[1])) {
+		char *path = NULL;
+
+		on_warn(PARSING, parser->type, args,
+			set_source_path(&path, args, parent_path), __func__,
+			"Changed ports from %hu-%hu to %hu-%hu", range[0],
+			range[1], range[1], range[0]);
+
+		SWAP(range[0], range[1]);
+
+		xfree(path);
+	}
+
+	*range_ptr = range;
+	return rc;
+}
+
+static int DUMP_FUNC(PORT_RANGE_ARRAY)(const parser_t *const parser, void *obj,
+				       data_t *dst, args_t *args)
+{
+	const uint16_t **range_ptr = obj;
+	const uint16_t *range = *range_ptr;
+	port_range_t range_struct = {
+		.min = 0,
+		.max = 0,
+		.set = false,
+	};
+
+	if (range && (range[0] > 0) && (range[1] > 0))
+		range_struct = (port_range_t) {
+			.min = range[0],
+			.max = range[1],
+			.set = true,
+		};
+
+	return DUMP(PORT_RANGE, range_struct, dst, args);
+}
+
 /*
  * The following struct arrays are not following the normal Slurm style but are
  * instead being treated as piles of data instead of code.
@@ -11215,6 +11322,15 @@ static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_equal_desc(LOG_LEVEL_DEBUG5, INFINITE16, "debug5", "Log errors and verbose informational messages and even more debugging messages"),
 };
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(port_range_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(PORT_RANGE)[] = {
+	add_parse(UINT16, min, "minimum", "Minimum port number"),
+	add_parse(UINT16, max, "maximum", "Maximum port number"),
+	add_parse(BOOL, set, "set", "True if minimum and maximum are set (or ignored on false)"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -11828,6 +11944,7 @@ static const parser_t parsers[] = {
 	addps(SLUID, sluid_t, NEED_NONE, STRING, NULL, NULL, "Slurm Lexicographically-sortable Unique ID"),
 	addpsp(LOG_LEVEL_UINT16, LOG_LEVEL, uint16_t, NEED_NONE, NULL),
 	addpsp(TIME_SECONDS, STRING, uint32_t, NEED_NONE, "Time formatted as HH:MM:SS or D-HH:MM:SS"),
+	addpsp(PORT_RANGE_ARRAY, PORT_RANGE, uint16_t *, NEED_NONE, "Port range"),
 
 	/* Complex type parsers */
 	addpcp(ASSOC_ID, UINT32, slurmdb_assoc_rec_t, NEED_NONE, "Association ID"),
@@ -12075,6 +12192,7 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
 	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
 	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
+	addpap(PORT_RANGE, port_range_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

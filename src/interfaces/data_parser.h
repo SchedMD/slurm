@@ -693,6 +693,9 @@ typedef enum {
 	DATA_PARSER_LOG_LEVEL, /* log_level_t */
 	DATA_PARSER_LOG_LEVEL_UINT16, /* uint16_t -> log_level_t */
 	DATA_PARSER_TIME_SECONDS, /* uint32_t */
+	DATA_PARSER_PORT_RANGE_ARRAY, /* uint16_t[2] */
+	DATA_PARSER_PORT_RANGE, /* port_range_t */
+	DATA_PARSER_PORT_RANGE_PTR, /* port_range_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
