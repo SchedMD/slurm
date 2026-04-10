@@ -1753,8 +1753,6 @@ gres.conf files and restart daemons.
 If GRES are associated with specific sockets, that information will be reported
 For example if all 4 GPUs on a node are all associated with socket zero, then
 "Gres=gpu:4(S:0)". If associated with sockets 0 and 1 then "Gres=gpu:4(S:0\-1)".
-The information of which specific GPUs are associated with specific GPUs is not
-reported, but only available by parsing the gres.conf file.
 Generic resources assigned via \fBscontrol\fR will only persist across the
 restart of the slurmctld daemon with the \fI\-R\fR option and state files
 preserved or slurmctld's receipt of a SIGHUP.
