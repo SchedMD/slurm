@@ -507,6 +507,11 @@ typedef struct {
 	bool set;
 } port_range_t;
 
+typedef struct {
+	char *addr;
+	char *machine;
+} controller_t;
+
 static int PARSE_FUNC(UINT64_NO_VAL)(const parser_t *const parser, void *obj,
 				     data_t *str, args_t *args,
 				     data_t *parent_path);
@@ -7707,6 +7712,8 @@ static int PARSE_FUNC(PORT_RANGE_ARRAY)(const parser_t *const parser, void *obj,
 				ESLURM_DATA_CONV_FAILED,
 				"Unable to parse port range as (min-max): %s",
 				data_get_type_string(src));
+		else
+			rc = SLURM_SUCCESS;
 		break;
 	default:
 		rc = parse_error(parser, args, parent_path,
@@ -7756,6 +7763,264 @@ static int DUMP_FUNC(PORT_RANGE_ARRAY)(const parser_t *const parser, void *obj,
 		};
 
 	return DUMP(PORT_RANGE, range_struct, dst, args);
+}
+
+static int PARSE_FUNC(SLURM_CONF_EPILOG)(const parser_t *const parser,
+					 void *obj, data_t *src, args_t *args,
+					 data_t *parent_path)
+{
+	slurm_conf_t *conf = obj;
+	int rc = EINVAL;
+
+	xassert(!conf->epilog);
+	xassert(!conf->epilog_cnt);
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	if ((rc = PARSE(STRING_ARRAY, conf->epilog, src, parent_path, args)))
+		return rc;
+
+	for (; conf->epilog[conf->epilog_cnt]; conf->epilog_cnt++)
+		; /* count entries */
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURM_CONF_EPILOG)(const parser_t *const parser, void *obj,
+					data_t *dst, args_t *args)
+{
+	int rc = EINVAL;
+	slurm_conf_t *conf = obj;
+	char **array = NULL;
+
+	if (!conf->epilog_cnt) {
+		data_set_list(dst);
+		return SLURM_SUCCESS;
+	}
+
+	/* Build NULL-terminated intermediary for STRING_ARRAY dump */
+	array = xcalloc(conf->epilog_cnt + 1, sizeof(*array));
+	memcpy(array, conf->epilog, (conf->epilog_cnt * sizeof(*array)));
+
+	rc = DUMP(STRING_ARRAY, array, dst, args);
+	xfree(array);
+	return rc;
+}
+
+static int PARSE_FUNC(SLURM_CONF_EPILOG_SLURMCTLD)(const parser_t *const parser,
+						   void *obj, data_t *src,
+						   args_t *args,
+						   data_t *parent_path)
+{
+	slurm_conf_t *conf = obj;
+	int rc = EINVAL;
+
+	xassert(!conf->epilog_slurmctld);
+	xassert(!conf->epilog_slurmctld_cnt);
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	if ((rc = PARSE(STRING_ARRAY, conf->epilog_slurmctld, src, parent_path,
+			args)))
+		return rc;
+
+	for (; conf->epilog_slurmctld[conf->epilog_slurmctld_cnt];
+	     conf->epilog_slurmctld_cnt++)
+		; /* count entries */
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURM_CONF_EPILOG_SLURMCTLD)(const parser_t *const parser,
+						  void *obj, data_t *dst,
+						  args_t *args)
+{
+	int rc = EINVAL;
+	slurm_conf_t *conf = obj;
+	char **array = NULL;
+
+	if (!conf->epilog_slurmctld_cnt) {
+		data_set_list(dst);
+		return SLURM_SUCCESS;
+	}
+
+	/* Build NULL-terminated intermediary for STRING_ARRAY dump */
+	array = xcalloc(conf->epilog_slurmctld_cnt + 1, sizeof(*array));
+	memcpy(array, conf->epilog_slurmctld,
+	       (conf->epilog_slurmctld_cnt * sizeof(*array)));
+
+	rc = DUMP(STRING_ARRAY, array, dst, args);
+	xfree(array);
+	return rc;
+}
+
+static int PARSE_FUNC(SLURM_CONF_PROLOG)(const parser_t *const parser,
+					 void *obj, data_t *src, args_t *args,
+					 data_t *parent_path)
+{
+	slurm_conf_t *conf = obj;
+	int rc = EINVAL;
+
+	xassert(!conf->prolog);
+	xassert(!conf->prolog_cnt);
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	if ((rc = PARSE(STRING_ARRAY, conf->prolog, src, parent_path, args)))
+		return rc;
+
+	for (; conf->prolog[conf->prolog_cnt]; conf->prolog_cnt++)
+		; /* count entries */
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURM_CONF_PROLOG)(const parser_t *const parser, void *obj,
+					data_t *dst, args_t *args)
+{
+	int rc = EINVAL;
+	slurm_conf_t *conf = obj;
+	char **array = NULL;
+
+	if (!conf->prolog_cnt) {
+		data_set_list(dst);
+		return SLURM_SUCCESS;
+	}
+
+	/* Build NULL-terminated intermediary for STRING_ARRAY dump */
+	array = xcalloc(conf->prolog_cnt + 1, sizeof(*array));
+	memcpy(array, conf->prolog, (conf->prolog_cnt * sizeof(*array)));
+
+	rc = DUMP(STRING_ARRAY, array, dst, args);
+	xfree(array);
+	return rc;
+}
+
+static int PARSE_FUNC(SLURM_CONF_PROLOG_SLURMCTLD)(const parser_t *const parser,
+						   void *obj, data_t *src,
+						   args_t *args,
+						   data_t *parent_path)
+{
+	slurm_conf_t *conf = obj;
+	int rc = EINVAL;
+
+	xassert(!conf->prolog_slurmctld);
+	xassert(!conf->prolog_slurmctld_cnt);
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	if ((rc = PARSE(STRING_ARRAY, conf->prolog_slurmctld, src, parent_path,
+			args)))
+		return rc;
+
+	for (; conf->prolog_slurmctld[conf->prolog_slurmctld_cnt];
+	     conf->prolog_slurmctld_cnt++)
+		; /* count entries */
+
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURM_CONF_PROLOG_SLURMCTLD)(const parser_t *const parser,
+						  void *obj, data_t *dst,
+						  args_t *args)
+{
+	int rc = EINVAL;
+	slurm_conf_t *conf = obj;
+	char **array = NULL;
+
+	if (!conf->prolog_slurmctld_cnt) {
+		data_set_list(dst);
+		return SLURM_SUCCESS;
+	}
+
+	/* Build NULL-terminated intermediary for STRING_ARRAY dump */
+	array = xcalloc(conf->prolog_slurmctld_cnt + 1, sizeof(*array));
+	memcpy(array, conf->prolog_slurmctld,
+	       (conf->prolog_slurmctld_cnt * sizeof(*array)));
+
+	rc = DUMP(STRING_ARRAY, array, dst, args);
+	xfree(array);
+	return rc;
+}
+
+static void FREE_FUNC(CONTROLLER)(void *ptr)
+{
+	controller_t *controller = ptr;
+
+	if (!controller)
+		return;
+
+	xfree(controller->addr);
+	xfree(controller->machine);
+	xfree(controller);
+}
+
+static int PARSE_FUNC(SLURM_CONF_CONTROLLERS)(const parser_t *const parser,
+					      void *obj, data_t *src,
+					      args_t *args, data_t *parent_path)
+{
+	slurm_conf_t *conf = obj;
+	controller_t *controllers = NULL;
+	int rc = EINVAL;
+
+	xassert(!conf->control_addr);
+	xassert(!conf->control_machine);
+	xassert(!conf->control_cnt);
+
+	if (data_get_type(src) == DATA_TYPE_NULL)
+		return SLURM_SUCCESS;
+
+	if ((rc = PARSE(CONTROLLERS_ARRAY, controllers, src, parent_path,
+			args)))
+		return rc;
+
+	/* Get total count */
+	for (; controllers[conf->control_cnt].machine; conf->control_cnt++)
+		; /* do nothing */
+
+	/* populate conf arrays using parsed controllers array */
+	conf->control_addr =
+		xcalloc(conf->control_cnt, sizeof(*conf->control_addr));
+	conf->control_machine =
+		xcalloc(conf->control_cnt, sizeof(*conf->control_machine));
+
+	for (int i = 0; i < conf->control_cnt; i++) {
+		conf->control_addr[i] = controllers[i].addr;
+		conf->control_machine[i] = controllers[i].machine;
+	}
+
+	xfree(controllers);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURM_CONF_CONTROLLERS)(const parser_t *const parser,
+					     void *obj, data_t *dst,
+					     args_t *args)
+{
+	int rc = EINVAL;
+	slurm_conf_t *conf = obj;
+	controller_t *controllers = NULL;
+
+	if (!conf->control_cnt) {
+		data_set_list(dst);
+		return SLURM_SUCCESS;
+	}
+
+	/* Build null-terminated controller_t array from conf's arrays */
+	controllers = xcalloc((conf->control_cnt + 1), sizeof(*controllers));
+
+	for (uint32_t i = 0; i < conf->control_cnt; i++) {
+		controllers[i].machine = conf->control_machine[i];
+		controllers[i].addr = conf->control_addr[i];
+	}
+
+	rc = DUMP(CONTROLLERS_ARRAY, controllers, dst, args);
+	xfree(controllers);
+	return rc;
 }
 
 /*
@@ -11482,6 +11747,537 @@ static const parser_t PARSER_ARRAY(PORT_RANGE)[] = {
 };
 #undef add_parse
 
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(controller_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(CONTROLLER)[] = {
+	add_parse(STRING, addr, "address", "Controller address (IP or hostname)"),
+	add_parse(STRING, machine, "machine", "Name of machine hosting controller"),
+};
+#undef add_parse
+
+#define add_skip(field)					\
+	add_parser_skip(slurm_conf_t, field)
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(slurm_conf_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc)		\
+	add_parser(slurm_conf_t, mtype, false, field, overloads, path, desc)
+#define add_cparse(mtype, path, desc)					\
+	add_complex_parser(slurm_conf_t, mtype, false, path, desc)
+static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
+	add_skip(last_update),
+	add_parse(CSV_STRING, accounting_storage_tres, "AccountingStorageTRES", "List of registered TRES"),
+	add_parse(STRING, accounting_storage_backup_host, "AccountingStorageBackupHost", "Accounting storage backup host"),
+	add_parse(ACCT_STORAGE_ENFORCE, accounting_storage_enforce, "AccountingStorageEnforce", "Controls what level of association-based enforcement to impose on job submissions"),
+	add_parse(STRING, accounting_storage_ext_host, "AccountingStorageExternalHost", "Accounting storage ext host"),
+	add_parse(STRING, accounting_storage_host, "AccountingStorageHost", "Accounting storage host"),
+	add_parse(CSV_STRING, accounting_storage_params, "AccountingStorageParameters", "Accounting storage params"),
+	add_skip(accounting_storage_pass),
+	add_parse(UINT16, accounting_storage_port, "AccountingStoragePort", "Node accounting storage port"),
+	add_parse(STRING, accounting_storage_type, "AccountingStorageType", "Accounting storage type"),
+	add_skip(acct_gather_conf),
+	add_parse(CSV_STRING, acct_gather_energy_type, "AcctGatherEnergyType", "Energy accounting type"),
+	add_parse(STRING, acct_gather_profile_type, "AcctGatherProfileType", "Profile accounting type"),
+	add_parse(STRING, acct_gather_interconnect_type, "AcctGatherInterconnectType", "Interconnect accounting type"),
+	add_parse(STRING, acct_gather_filesystem_type, "AcctGatherFilesystemType", "Filesystem accounting type"),
+	add_parse(UINT16, acct_gather_node_freq, "AcctGatherNodeFreq", "Secs between node acct request"),
+	add_parse_overload(CONF_FLAGS, conf_flags, 3, "ConfFlags", "General configuration flags (DisableRootJobs, AllowSpecResourcesUsage, UsePAM, TrackWCKey)"),
+	add_parse(CSV_STRING, authalttypes, "AuthAltTypes", "Alternate authentication types"),
+	add_parse(STRING, authinfo, "AuthInfo", "Authentication info"),
+	add_parse(STRING, authalt_params, "AuthAltParameters", "Alternate authentication parameters"),
+	add_parse(STRING, authtype, "AuthType", "Authentication type"),
+	add_parse(UINT16, batch_start_timeout, "BatchStartTimeout", "Maximum seconds for batch job to start"),
+	add_parse(STRING, bb_type, "BurstBufferType", "Burst buffer plugin type"),
+	add_parse(CSV_STRING, bcast_exclude, "BcastExclude", "Bcast exclude library paths"),
+	add_parse(CSV_STRING, bcast_parameters, "BcastParameters", "Bcast options"),
+	add_skip(boot_time),
+	add_parse(CSV_STRING, certgen_params, "CertgenParameters", "Certgen parameters"),
+	add_parse(STRING, certgen_type, "CertgenType", "Certgen type"),
+	add_parse(STRING, certmgr_params, "CertmgrParameters", "Certmgr parameters"),
+	add_parse(STRING, certmgr_type, "CertmgrType", "Certmgr type"),
+	add_skip(cgroup_conf),
+	add_parse(CSV_STRING, cli_filter_params, "CliFilterParameters", "Parameters for cli_filter plugins"),
+	add_parse(CSV_STRING, cli_filter_plugins, "CliFilterPlugins", "List of cli_filter plugins to use"),
+	add_skip(cluster_id),
+	add_parse(STRING, cluster_name, "ClusterName", "General name of the entire cluster"),
+	add_parse(CSV_STRING, comm_params, "CommunicationParameters", "Communication parameters"),
+	add_parse(UINT16, complete_wait, "CompleteWait", "Seconds to wait for job completion before scheduling another job"),
+	add_parse_overload(CONF_FLAGS_COMMUNICATION_PARAMETERS, conf_flags, 3, "CommunicationParametersFlags", "CommunicationParameters specific CONF_FLAG_* flags"),
+	add_parse_overload(CONF_FLAGS_ACCOUNTING_STORE, conf_flags, 3, "AccountingStoreFlags", "AccountingStoreFlags specific CONF_FLAG_* flags"),
+	add_parse_overload(CONF_FLAGS_SLURMD_PARAMETERS, conf_flags, 3, "SlurmdParametersFlags", "SlurmdParameters specific CONF_FLAG_* flags"),
+	add_skip(control_addr),
+	add_skip(control_cnt),
+	add_skip(control_machine),
+	add_cparse(SLURM_CONF_CONTROLLERS, "controllers", "slurmctld controllers"),
+	add_parse(CPU_FREQ_FLAGS, cpu_freq_def, "CpuFreqDef", "Default CPU frequency or governor for job steps if not set via --cpu-freq"),
+	add_parse(CPU_FREQ_GOVS, cpu_freq_govs, "CpuFreqGovernors", "CPU frequency governors allowed via --cpu-freq"),
+	add_parse(STRING, cred_type, "CredType", "Credential signature plugin"),
+	add_parse(STRING, data_parser_parameters, "DataParserParameters", "Data parser parameters"),
+	add_parse(DEBUG_FLAGS, debug_flags, "DebugFlags", "Subsystems which provide more detailed event logging"),
+	add_parse(UINT64, def_mem_per_cpu, "DefMemPerCPU", "Default MB memory per allocated CPU"),
+	add_parse(CSV_STRING, dependency_params, "DependencyParameters", "Options controlling job dependency behavior"),
+	add_parse(UINT16, eio_timeout, "EioTimeout", "Seconds srun waits for slurmstepd to close the TCP/IP connection"),
+	add_parse(ENFORCE_PART_LIMITS, enforce_part_limits, "EnforcePartLimits", "Controls whether partition limits are enforced at job submission time"),
+	add_skip(epilog),
+	add_skip(epilog_cnt),
+	add_cparse(SLURM_CONF_EPILOG, "Epilog", "pathname of job epilog run by slurmd"),
+	add_parse(UINT32, epilog_msg_time, "EpilogMsgTime", "Usecs for slurmctld to process an epilog complete message"),
+	add_skip(epilog_slurmctld),
+	add_skip(epilog_slurmctld_cnt),
+	add_cparse(SLURM_CONF_EPILOG_SLURMCTLD, "EpilogSlurmctld", "pathname of job epilog run by slurmctld"),
+	add_parse(UINT16_NO_VAL, epilog_timeout, "EpilogTimeout", "Epilog timeout in seconds"),
+	add_parse(CSV_STRING, fed_params, "FederationParameters", "Federation parameters"),
+	add_parse(UINT32, first_job_id, "FirstJobId", "First slurm generated job_id to assign"),
+	add_parse(UINT16, fs_dampening_factor, "FairShareDampeningFactor", "Dampening factor for the effect of exceeding fair share of resources"),
+	add_parse(UINT16, getnameinfo_cache_timeout, "GetNameInfoCacheTimeout", "For getnameinfo() cache"),
+	add_parse(CSV_STRING, gres_plugins, "GresTypes", "Comma-delimited list of generic resources to be managed"),
+	add_parse(UINT16, group_time, "GroupUpdateTime", "Interval in seconds between updates of user/group partition membership"),
+	add_parse(BOOL16, group_force, "GroupUpdateForce", "Update group/partition info even if no change detected"),
+	add_parse(STRING, gpu_freq_def, "GpuFreqDef", "Default GPU frequency for job steps if not set via --gpu-freq"),
+	add_parse(STRING, hash_plugin, "HashPlugin", "Hash plugin type"),
+	add_skip(hash_val),
+	add_parse(UINT16, health_check_interval, "HealthCheckInterval", "Secs between health checks"),
+	add_parse(HEALTH_CHECK_NODE_STATE, health_check_node_state, "HealthCheckNodeState", "Node states on which to execute the HealthCheckProgram"),
+	add_parse(STRING, health_check_program, "HealthCheckProgram", "Pathname of health check program"),
+	add_parse(STRING, http_parser_type, "HttpParserType", "Http_parser plugin type"),
+	add_parse(UINT32, host_unreach_retry_count, "HostUnreachRetryCount", "Times to retry connecting if rc=EHOSTUNREACH"),
+	add_parse(UINT16, inactive_limit, "InactiveLimit", "Seconds of inactivity before a inactive resource allocation is released"),
+	add_parse(STRING, interactive_step_opts, "InteractiveStepOptions", "Options for srun when using LaunchParameters=use_interactive_step with salloc"),
+	add_parse(CSV_STRING, job_acct_gather_freq, "JobAcctGatherFrequency", "Poll frequency for job accounting gather plugins"),
+	add_parse(STRING, job_acct_gather_type, "JobAcctGatherType", "Job accounting gather type"),
+	add_parse(CSV_STRING, job_acct_gather_params, "JobAcctGatherParams", "Job accounting gather parameters"),
+	add_parse(BOOL16, job_acct_oom_kill, "JobAcctOomKill", "Enforce mem limit at runtime y|n"),
+	add_parse(STRING, job_comp_host, "JobCompHost", "Job completion logging host"),
+	add_parse(STRING, job_comp_loc, "JobCompLoc", "Job completion logging location"),
+	add_parse(STRING, job_comp_params, "JobCompParams", "Job completion parameters for plugin"),
+	/* Skipping passwords to avoid leaking them */
+	add_skip(job_comp_pass),
+	/* Skipping passwords to avoid leaking them */
+	add_skip(job_comp_pass_script),
+	add_parse(UINT32, job_comp_port, "JobCompPort", "Job completion storage port"),
+	add_parse(STRING, job_comp_type, "JobCompType", "Job completion storage type"),
+	add_parse(STRING, job_comp_user, "JobCompUser", "Job completion storage user"),
+	add_parse(JOB_DEFAULTS_LIST, job_defaults_list, "JobDefaults", "List of job_defaults_t elements"),
+	add_parse(BOOL16, job_file_append, "JobFileAppend", "If set, append to stdout/err file"),
+	add_parse(BOOL16, job_requeue, "JobRequeue", "If set, jobs get requeued on node failure"),
+	add_parse(CSV_STRING, job_submit_plugins, "JobSubmitPlugins", "List of job_submit plugins to use"),
+	add_parse(UINT32, keepalive_interval, "KeepaliveInterval", "Interval between keepalive probes"),
+	add_parse(UINT32, keepalive_probes, "KeepaliveProbes", "Number of keepalive probe attempts"),
+	add_parse(UINT32, keepalive_time, "KeepaliveTime", "Keep alive time for srun I/O sockets"),
+	add_parse(BOOL16, kill_on_bad_exit, "KillOnBadExit", "If set, the job will be terminated immediately when one of the processes is aborted or crashed"),
+	add_parse(UINT16, kill_wait, "KillWait", "Seconds between SIGTERM and SIGKILL when a job reaches its time limit"),
+	add_parse(CSV_STRING, launch_params, "LaunchParameters", "Step launcher plugin options"),
+	add_parse(CSV_STRING, licenses, "Licenses", "Licenses available on this cluster"),
+	add_parse(CSV_STRING, license_params, "LicenseParameters", "Options for licenses/HRES"),
+	add_parse(LOG_TIME_FORMAT, log_fmt, "LogTimeFormat", "Format of the timestamp in slurmctld and slurmd log files"),
+	add_parse(STRING, mail_domain, "MailDomain", "Default domain to append to usernames"),
+	add_parse(STRING, mail_prog, "MailProg", "Pathname of mail program"),
+	add_parse(UINT32, max_array_sz, "MaxArraySize", "Maximum job array size"),
+	add_parse(UINT32, max_batch_requeue, "MaxBatchRequeue", "Max times a batch job may be auto-requeued before being held"),
+	add_parse(UINT32, max_dbd_msgs, "MaxDBDMsgs", "Maximum number of messages queued while DBD is not connected"),
+	add_parse(UINT32, max_job_cnt, "MaxJobCount", "Maximum number of active jobs"),
+	add_parse(UINT32, max_job_id, "MaxJobId", "Maximum job id before wrapping back to FirstJobId"),
+	/*
+	 * This displays slightly differently than 'scontrol show config'
+	 * but is an existing parser. Using MEM_PER_NODE since the
+	 * computation matches what's in config_info.c for max_mem_per_cpu
+	 */
+	add_parse(MEM_PER_NODE, max_mem_per_cpu, "MaxMemPerCPU", "Maximum MB memory per allocated CPU"),
+	add_parse(UINT32, max_node_cnt, "MaxNodeCount", "Max number of static + dynamic nodes"),
+	add_parse(UINT32, max_step_cnt, "MaxStepCount", "Maximum number of steps per job"),
+	add_parse(UINT16, max_tasks_per_node, "MaxTasksPerNode", "Maximum tasks per node"),
+	add_parse(STRING, mcs_plugin, "MCSPlugin", "Mcs plugin type"),
+	add_parse(CSV_STRING, mcs_plugin_params, "MCSParameters", "Mcs plugin parameters"),
+	add_skip(metrics_auth), /* Internal - derived from other metrics* parameters */
+	add_parse(CSV_STRING, metrics_auth_users, "MetricsAuthUsers", "Users allowed to query metrics"),
+	add_parse(CSV_STRING, metrics_params, "MetricsParameters", "Parameters related to metrics plugins"),
+	add_parse(STRING, metrics_type, "MetricsType", "Metrics plugin type"),
+	add_parse(UINT32, min_job_age, "MinJobAge", "COMPLETED jobs over this age (secs) purged from in memory records"),
+	add_skip(mpi_conf),
+	add_parse(STRING, mpi_default, "MpiDefault", "Default type of MPI to be used"),
+	add_parse(CSV_STRING, mpi_params, "MpiParams", "MPI parameters"),
+	add_parse(UINT16, msg_timeout, "MessageTimeout", "Seconds permitted for a round-trip communication to complete"),
+	add_parse(STRING, namespace_plugin, "NamespaceType", "Job container plugin type"),
+	add_skip(next_job_id),
+	add_skip(node_features_conf),
+	add_parse(CSV_STRING, node_features_plugins, "NodeFeaturesPlugins", "List of node_features plugins to use"),
+	add_parse(UINT16, over_time_limit, "OverTimeLimit", "Minutes by which a job can exceed its time limit before being canceled"),
+	add_parse(STRING, plugindir, "PluginDir", "Pathname to plugins"),
+	add_parse(STRING, plugstack, "PlugStackConfig", "Pathname to plugin stack config file"),
+	add_parse(UINT32_NO_VAL, preempt_exempt_time, "PreemptExemptTime", "Minimum run time for all jobs before they can be considered for preemption"),
+	add_parse(SLURM_CONF_PREEMPT_MODES, preempt_mode, "PreemptMode", "Mechanism used to preempt jobs or enable gang scheduling"),
+	add_parse(CSV_STRING, preempt_params, "PreemptParameters", "Options controlling preemption behavior"),
+	add_parse(STRING, preempt_type, "PreemptType", "Job preemption selection plugin"),
+	add_parse(STRING, prep_params, "PrEpParameters", "PrEp parameters"),
+	add_parse(CSV_STRING, prep_plugins, "PrEpPlugins", "PrEp plugins"),
+	add_parse(TIME_SECONDS, priority_decay_hl, "PriorityDecayHalfLife", "How long prior resource use is considered in determining job priority"),
+	add_parse(TIME_SECONDS, priority_calc_period, "PriorityCalcPeriod", "Period in minutes between half-life decay recalculations"),
+	add_parse(BOOL16, priority_favor_small, "PriorityFavorSmall", "If set, give small jobs preferential scheduling priority"),
+	add_parse(PRIORITY_FLAGS, priority_flags, "PriorityFlags", "Flags controlling priority calculation behavior"),
+	add_parse(TIME_SECONDS, priority_max_age, "PriorityMaxAge", "Job age at which the maximum age priority factor is assigned"),
+	add_parse(STRING, priority_params, "PriorityParameters", "Priority plugin parameters"),
+	add_parse(PRIORITY_RESET_PERIOD, priority_reset_period, "PriorityUsageResetPeriod", "Interval at which association usage is reset to zero"),
+	add_parse(STRING, priority_type, "PriorityType", "Priority type plugin"),
+	add_parse(UINT32, priority_weight_age, "PriorityWeightAge", "Degree to which queue wait time contributes to job priority"),
+	add_parse(UINT32, priority_weight_assoc, "PriorityWeightAssoc", "Degree to which association contributes to job priority"),
+	add_parse(UINT32, priority_weight_fs, "PriorityWeightFairshare", "Degree to which fair-share contributes to job priority"),
+	add_parse(UINT32, priority_weight_js, "PriorityWeightJobSize", "Degree to which job size contributes to job priority"),
+	add_parse(UINT32, priority_weight_part, "PriorityWeightPartition", "Degree to which partition contributes to job priority"),
+	add_parse(UINT32, priority_weight_qos, "PriorityWeightQOS", "Degree to which QOS contributes to job priority"),
+	add_parse(STRING, priority_weight_tres, "PriorityWeightTRES", "TRES types and weights controlling their contribution to job priority"),
+	add_parse(PRIVATE_DATA, private_data, "PrivateData", "Controls what information is hidden from regular users"),
+	add_parse(STRING, proctrack_type, "ProctrackType", "Process tracking plugin type"),
+	add_skip(prolog),
+	add_skip(prolog_cnt),
+	add_cparse(SLURM_CONF_PROLOG, "Prolog", "pathname of job prolog run by slurmd"),
+	add_skip(prolog_slurmctld),
+	add_skip(prolog_slurmctld_cnt),
+	add_cparse(SLURM_CONF_PROLOG_SLURMCTLD, "PrologSlurmctld", "pathname of job prolog run by slurmctld"),
+	add_parse(UINT16_NO_VAL, prolog_timeout, "PrologTimeout", "Prolog timeout in seconds"),
+	add_parse(PROPAGATE_PRIO_PROCESS, propagate_prio_process, "PropagatePrioProcess", "Controls scheduling priority (nice value) of user spawned tasks"),
+	add_parse(PROLOG_FLAGS, prolog_flags, "PrologFlags", "Flags controlling Prolog and Epilog behavior"),
+	add_parse(CSV_STRING, propagate_rlimits, "PropagateResourceLimits", "Propagate (all/specific) resource limits"),
+	add_parse(CSV_STRING, propagate_rlimits_except, "PropagateResourceLimitsExcept", "Propagate all rlimits except these"),
+	add_parse(STRING, reboot_program, "RebootProgram", "Program to reboot the node"),
+	add_parse(RECONFIG_FLAGS, reconfig_flags, "ReconfigFlags", "Flags controlling actions taken on scontrol reconfig"),
+	add_parse(CSV_STRING, requeue_exit, "RequeueExit", "Exit codes that trigger automatic batch job requeue"),
+	add_parse(CSV_STRING, requeue_exit_hold, "RequeueExitHold", "Exit codes that trigger automatic requeue with job hold"),
+	add_parse(STRING, resume_fail_program, "ResumeFailProgram", "Program executed when nodes fail to resume by ResumeTimeout"),
+	add_parse(STRING, resume_program, "ResumeProgram", "Program to bring nodes out of power save mode when assigned work"),
+	add_parse(UINT16, resume_rate, "ResumeRate", "Rate at which nodes are resumed from power save mode per minute"),
+	add_parse(UINT16, resume_timeout, "ResumeTimeout", "Max seconds between a resume request and node availability"),
+	add_parse(STRING, resv_epilog, "ResvEpilog", "Path of reservation epilog run by slurmctld"),
+	add_parse(UINT16, resv_over_run, "ResvOverRun", "Minutes a running job can continue after its reservation ends"),
+	add_parse(STRING, resv_prolog, "ResvProlog", "Path of reservation prolog run by slurmctld"),
+	add_parse(RETURN_TO_SERVICE, ret2service, "ReturnToService", "Controls when a DOWN node is returned to service"),
+	add_parse(STRING, sched_logfile, "SlurmSchedLogFile", "Where slurm Scheduler log gets written"),
+	add_parse(UINT16, sched_log_level, "SlurmSchedLogLevel", "Configured level of slurm Scheduler log"),
+	add_parse(CSV_STRING, sched_params, "SchedulerParameters", "Options controlling scheduler behavior (varies by SchedulerType)"),
+	add_parse(UINT16, sched_time_slice, "SchedulerTimeSlice", "Time slice in seconds for gang scheduling"),
+	add_parse(STRING, schedtype, "SchedulerType", "Type of scheduler to use"),
+	add_parse(CSV_STRING, scron_params, "ScronParameters", "Options controlling scrontab behavior"),
+	add_parse(STRING, select_type, "SelectType", "Type of node selector to use"),
+	add_parse(SELECT_TYPE_PARAM, select_type_param, "SelectTypeParameters", "Scheduler consumable resource selection type"),
+	/* select_conf_key_pairs is not populated or used anywhere */
+	add_skip(select_conf_key_pairs),
+	add_parse(STRING, site_factor_plugin, "PrioritySiteFactorPlugin", "Plugin for computing site-specific priority factors"),
+	add_parse(STRING, site_factor_params, "PrioritySiteFactorParameters", "Parameters for the site-specific priority factor plugin"),
+	add_skip(slurm_conf),
+	/*
+	 * 'scontrol show config' combines slurm_user_id and slurm_user_name
+	 * as 'user(uid)'
+	 */
+	add_parse(UINT32, slurm_user_id, "SlurmUserId", "Uid of slurm_user_name"),
+	add_parse(STRING, slurm_user_name, "SlurmUser", "User that slurmctld runs as"),
+	/*
+	 * 'scontrol show config' combines slurmd_user_id and slurmd_user_name
+	 * as 'user(uid)'
+	 */
+	add_parse(UINT32, slurmd_user_id, "SlurmdUserId", "Uid of slurmd_user_name"),
+	add_parse(STRING, slurmd_user_name, "SlurmdUser", "User that slurmd runs as"),
+	add_parse(STRING, slurmctld_addr, "SlurmctldAddr", "Address used for communications to the currently active slurmctld daemon"),
+	add_parse(LOG_LEVEL_UINT16, slurmctld_debug, "SlurmctldDebug", "Slurmctld logging level"),
+	add_parse(STRING, slurmctld_logfile, "SlurmctldLogFile", "Where slurmctld error log gets written"),
+	add_parse(STRING, slurmctld_pidfile, "SlurmctldPidFile", "Where to put slurmctld pidfile"),
+	add_parse(UINT32, slurmctld_port, "SlurmctldPort", "Default communications port to slurmctld"),
+	add_parse(UINT16, slurmctld_port_count, "SlurmctldPortCount", "Number of slurmctld comm ports"),
+	add_parse(STRING, slurmctld_primary_off_prog, "SlurmctldPrimaryOffProg", "Run when becomes slurmctld backup"),
+	add_parse(STRING, slurmctld_primary_on_prog, "SlurmctldPrimaryOnProg", "Run when becomes slurmctld primary"),
+	add_parse(LOG_LEVEL_UINT16, slurmctld_syslog_debug, "SlurmctldSyslogDebug", "Slurmctld output to local logfile and syslog"),
+	add_parse(UINT16, slurmctld_timeout, "SlurmctldTimeout", "Seconds the backup controller waits for the primary before taking over"),
+	add_parse(CSV_STRING, slurmctld_params, "SlurmctldParameters", "Options controlling slurmctld behavior"),
+	add_parse(LOG_LEVEL_UINT16, slurmd_debug, "SlurmdDebug", "Slurmd logging level"),
+	add_parse(STRING, slurmd_logfile, "SlurmdLogFile", "Where slurmd error log gets written"),
+	add_parse(CSV_STRING, slurmd_params, "SlurmdParameters", "Options controlling slurmd behavior"),
+	add_parse(STRING, slurmd_pidfile, "SlurmdPidFile", "Where to put slurmd pidfile"),
+	add_parse(UINT32, slurmd_port, "SlurmdPort", "Default communications port to slurmd"),
+	add_parse(STRING, slurmd_spooldir, "SlurmdSpoolDir", "Where slurmd put temporary state info"),
+	add_parse(LOG_LEVEL_UINT16, slurmd_syslog_debug, "SlurmdSyslogDebug", "Slurmd output to local logfile and syslog"),
+	add_parse(UINT16, slurmd_timeout, "SlurmdTimeout", "Seconds slurmctld waits for slurmd before marking node DOWN"),
+	add_parse(STRING, srun_epilog, "SrunEpilog", "Srun epilog program"),
+	add_parse(PORT_RANGE_ARRAY, srun_port_range, "SrunPortRange", "Port range for srun communications"),
+	add_parse(STRING, srun_prolog, "SrunProlog", "Srun prolog program"),
+	add_parse(STRING, state_save_location, "StateSaveLocation", "Pathname of slurmctld state save directory"),
+	add_parse(CSV_STRING, suspend_exc_nodes, "SuspendExcNodes", "Nodes excluded from power save mode"),
+	add_parse(CSV_STRING, suspend_exc_parts, "SuspendExcParts", "Partitions whose nodes are excluded from power save mode"),
+	add_parse(CSV_STRING, suspend_exc_states, "SuspendExcStates", "States that should not be powered down"),
+	add_parse(STRING, suspend_program, "SuspendProgram", "Program to place idle nodes into power save mode"),
+	add_parse(UINT16, suspend_rate, "SuspendRate", "Rate at which nodes are placed into power save mode per minute"),
+	add_parse(UINT32_NO_VAL, suspend_time, "SuspendTime", "Seconds a node must be idle before being placed in power save mode"),
+	add_parse(UINT16, suspend_timeout, "SuspendTimeout", "Max seconds between a suspend request and node shutdown"),
+	add_parse(STRING, switch_type, "SwitchType", "Switch or interconnect type"),
+	add_parse(CSV_STRING, switch_param, "SwitchParameters", "Options for the switch plugin"),
+	add_parse(STRING, task_epilog, "TaskEpilog", "Pathname of task launch epilog"),
+	add_parse(CSV_STRING, task_plugin, "TaskPlugin", "Task launch plugin"),
+	add_parse(TASK_PLUGIN_PARAM_FLAGS, task_plugin_param, "TaskPluginParam", "Default task binding and distribution options"),
+	add_parse(STRING, task_prolog, "TaskProlog", "Pathname of task launch prolog"),
+	add_parse(CSV_STRING, tls_params, "TLSParameters", "Options for the TLS plugin"),
+	add_parse(STRING, tls_type, "TLSType", "Tls plugin type"),
+	add_parse(UINT16, tcp_timeout, "TCPTimeout", "Seconds permitted for a TCP connection to be established"),
+	add_parse(STRING, tmp_fs, "TmpFS", "Pathname of temporary file system"),
+	add_parse(CSV_STRING, topology_param, "TopologyParam", "Network topology parameters"),
+	add_parse(STRING, topology_plugin, "TopologyPlugin", "Network topology plugin"),
+	add_parse(UINT16, tree_width, "TreeWidth", "Fanout of the slurmd communication tree"),
+	add_parse(STRING, unkillable_program, "UnkillableStepProgram", "Program run by the slurmstepd when processes in a job step are unkillable"),
+	add_parse(UINT16, unkillable_timeout, "UnkillableStepTimeout", "Time in seconds, after processes in a job step have been signaled, before they are considered \"unkillable\"."),
+	add_parse(STRING, url_parser_type, "UrlParserType", "Url_parser plugin type"),
+	add_skip(version),
+	add_parse(UINT16, vsize_factor, "VSizeFactor", "Job virtual memory limit as a percentage of its real memory limit"),
+	add_parse(UINT16, wait_time, "WaitTime", "Default seconds srun waits after first task exits before terminating all"),
+	add_parse(CSV_STRING, x11_params, "X11Parameters", "Options for X11 forwarding"),
+};
+#undef add_skip
+#undef add_parse
+#undef add_cparse
+#undef add_parse_overload
+
+#define add_skip(field)					\
+	add_parser_skip(slurm_conf_t, field)
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(slurm_conf_t, mtype, false, field, 0, path, desc)
+#define add_parse_overload(mtype, field, overloads, path, desc)		\
+	add_parser(slurm_conf_t, mtype, false, field, overloads, path, desc)
+static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
+	add_parse(TIMESTAMP, last_update, "LastUpdate", "Last update time of the build parameters"),
+	add_skip(accounting_storage_tres),
+	add_skip(accounting_storage_backup_host),
+	add_skip(accounting_storage_enforce),
+	add_skip(accounting_storage_ext_host),
+	add_skip(accounting_storage_host),
+	add_skip(accounting_storage_params),
+	add_skip(accounting_storage_pass),
+	add_skip(accounting_storage_port),
+	add_skip(accounting_storage_type),
+	add_skip(acct_gather_conf),
+	add_skip(acct_gather_energy_type),
+	add_skip(acct_gather_profile_type),
+	add_skip(acct_gather_interconnect_type),
+	add_skip(acct_gather_filesystem_type),
+	add_skip(acct_gather_node_freq),
+	add_skip(conf_flags),
+	add_skip(authalttypes),
+	add_skip(authinfo),
+	add_skip(authalt_params),
+	add_skip(authtype),
+	add_skip(batch_start_timeout),
+	add_skip(bb_type),
+	add_skip(bcast_exclude),
+	add_skip(bcast_parameters),
+	add_parse(TIMESTAMP, boot_time, "BOOT_TIME", "Time slurmctld last booted"),
+	add_skip(certgen_params),
+	add_skip(certgen_type),
+	add_skip(certmgr_params),
+	add_skip(certmgr_type),
+	add_skip(cgroup_conf),
+	add_skip(cli_filter_params),
+	add_skip(cli_filter_plugins),
+	add_parse(UINT16, cluster_id, "ClusterId", "Unique ID for this cluster from the DBD"),
+	add_skip(cluster_name),
+	add_skip(comm_params),
+	add_skip(complete_wait),
+	add_skip(control_addr),
+	add_skip(control_cnt),
+	add_skip(control_machine),
+	add_skip(cpu_freq_def),
+	add_skip(cpu_freq_govs),
+	add_skip(cred_type),
+	add_skip(data_parser_parameters),
+	add_skip(debug_flags),
+	add_skip(def_mem_per_cpu),
+	add_skip(dependency_params),
+	add_skip(eio_timeout),
+	add_skip(enforce_part_limits),
+	add_skip(epilog),
+	add_skip(epilog_cnt),
+	add_skip(epilog_msg_time),
+	add_skip(epilog_slurmctld),
+	add_skip(epilog_slurmctld_cnt),
+	add_skip(epilog_timeout),
+	add_skip(fed_params),
+	add_skip(first_job_id),
+	add_skip(fs_dampening_factor),
+	add_skip(getnameinfo_cache_timeout),
+	add_skip(gres_plugins),
+	add_skip(group_time),
+	add_skip(group_force),
+	add_skip(gpu_freq_def),
+	add_skip(hash_plugin),
+	add_parse(UINT32, hash_val, "HashValue", "Hash value of the slurm.conf file"),
+	add_skip(health_check_interval),
+	add_skip(health_check_node_state),
+	add_skip(health_check_program),
+	add_skip(http_parser_type),
+	add_skip(host_unreach_retry_count),
+	add_skip(inactive_limit),
+	add_skip(interactive_step_opts),
+	add_skip(job_acct_gather_freq),
+	add_skip(job_acct_gather_type),
+	add_skip(job_acct_gather_params),
+	add_skip(job_acct_oom_kill),
+	add_skip(job_comp_host),
+	add_skip(job_comp_loc),
+	add_skip(job_comp_params),
+	add_skip(job_comp_pass),
+	add_skip(job_comp_pass_script),
+	add_skip(job_comp_port),
+	add_skip(job_comp_type),
+	add_skip(job_comp_user),
+	add_skip(job_defaults_list),
+	add_skip(job_file_append),
+	add_skip(job_requeue),
+	add_skip(job_submit_plugins),
+	add_skip(keepalive_interval),
+	add_skip(keepalive_probes),
+	add_skip(keepalive_time),
+	add_skip(kill_on_bad_exit),
+	add_skip(kill_wait),
+	add_skip(launch_params),
+	add_skip(licenses),
+	add_skip(license_params),
+	add_skip(log_fmt),
+	add_skip(mail_domain),
+	add_skip(mail_prog),
+	add_skip(max_array_sz),
+	add_skip(max_batch_requeue),
+	add_skip(max_dbd_msgs),
+	add_skip(max_job_cnt),
+	add_skip(max_job_id),
+	add_skip(max_mem_per_cpu),
+	add_skip(max_node_cnt),
+	add_skip(max_step_cnt),
+	add_skip(max_tasks_per_node),
+	add_skip(mcs_plugin),
+	add_skip(mcs_plugin_params),
+	add_skip(metrics_auth),
+	add_skip(metrics_auth_users),
+	add_skip(metrics_params),
+	add_skip(metrics_type),
+	add_skip(min_job_age),
+	add_skip(mpi_conf),
+	add_skip(mpi_default),
+	add_skip(mpi_params),
+	add_skip(msg_timeout),
+	add_skip(namespace_plugin),
+	add_parse(UINT32, next_job_id, "NEXT_JOB_ID", "Next slurm generated job_id to assign"),
+	add_skip(node_features_conf),
+	add_skip(node_features_plugins),
+	add_skip(over_time_limit),
+	add_skip(plugindir),
+	add_skip(plugstack),
+	add_skip(preempt_exempt_time),
+	add_skip(preempt_mode),
+	add_skip(preempt_params),
+	add_skip(preempt_type),
+	add_skip(prep_params),
+	add_skip(prep_plugins),
+	add_skip(priority_decay_hl),
+	add_skip(priority_calc_period),
+	add_skip(priority_favor_small),
+	add_skip(priority_flags),
+	add_skip(priority_max_age),
+	add_skip(priority_params),
+	add_skip(priority_reset_period),
+	add_skip(priority_type),
+	add_skip(priority_weight_age),
+	add_skip(priority_weight_assoc),
+	add_skip(priority_weight_fs),
+	add_skip(priority_weight_js),
+	add_skip(priority_weight_part),
+	add_skip(priority_weight_qos),
+	add_skip(priority_weight_tres),
+	add_skip(private_data),
+	add_skip(proctrack_type),
+	add_skip(prolog),
+	add_skip(prolog_cnt),
+	add_skip(prolog_slurmctld),
+	add_skip(prolog_slurmctld_cnt),
+	add_skip(prolog_timeout),
+	add_skip(propagate_prio_process),
+	add_skip(prolog_flags),
+	add_skip(propagate_rlimits),
+	add_skip(propagate_rlimits_except),
+	add_skip(reboot_program),
+	add_skip(reconfig_flags),
+	add_skip(requeue_exit),
+	add_skip(requeue_exit_hold),
+	add_skip(resume_fail_program),
+	add_skip(resume_program),
+	add_skip(resume_rate),
+	add_skip(resume_timeout),
+	add_skip(resv_epilog),
+	add_skip(resv_over_run),
+	add_skip(resv_prolog),
+	add_skip(ret2service),
+	add_skip(sched_logfile),
+	add_skip(sched_log_level),
+	add_skip(sched_params),
+	add_skip(sched_time_slice),
+	add_skip(schedtype),
+	add_skip(scron_params),
+	add_skip(select_type),
+	add_skip(select_conf_key_pairs),
+	add_skip(select_type_param),
+	add_skip(site_factor_plugin),
+	add_skip(site_factor_params),
+	add_parse(STRING, slurm_conf, "SLURM_CONF", "Pathname of slurm config file"),
+	add_skip(slurm_user_id),
+	add_skip(slurm_user_name),
+	add_skip(slurmd_user_id),
+	add_skip(slurmd_user_name),
+	add_skip(slurmctld_addr),
+	add_skip(slurmctld_debug),
+	add_skip(slurmctld_logfile),
+	add_skip(slurmctld_pidfile),
+	add_skip(slurmctld_port),
+	add_skip(slurmctld_port_count),
+	add_skip(slurmctld_primary_off_prog),
+	add_skip(slurmctld_primary_on_prog),
+	add_skip(slurmctld_syslog_debug),
+	add_skip(slurmctld_timeout),
+	add_skip(slurmctld_params),
+	add_skip(slurmd_debug),
+	add_skip(slurmd_logfile),
+	add_skip(slurmd_params),
+	add_skip(slurmd_pidfile),
+	add_skip(slurmd_port),
+	add_skip(slurmd_spooldir),
+	add_skip(slurmd_syslog_debug),
+	add_skip(slurmd_timeout),
+	add_skip(srun_epilog),
+	add_skip(srun_port_range),
+	add_skip(srun_prolog),
+	add_skip(state_save_location),
+	add_skip(suspend_exc_nodes),
+	add_skip(suspend_exc_parts),
+	add_skip(suspend_exc_states),
+	add_skip(suspend_program),
+	add_skip(suspend_rate),
+	add_skip(suspend_time),
+	add_skip(suspend_timeout),
+	add_skip(switch_type),
+	add_skip(switch_param),
+	add_skip(task_epilog),
+	add_skip(task_plugin),
+	add_skip(task_plugin_param),
+	add_skip(task_prolog),
+	add_skip(tls_params),
+	add_skip(tls_type),
+	add_skip(tcp_timeout),
+	add_skip(tmp_fs),
+	add_skip(topology_param),
+	add_skip(topology_plugin),
+	add_skip(tree_width),
+	add_skip(unkillable_program),
+	add_skip(unkillable_timeout),
+	add_skip(url_parser_type),
+	add_parse(STRING, version, "SLURM_VERSION", "Version of slurmctld"),
+	add_skip(vsize_factor),
+	add_skip(wait_time),
+	add_skip(x11_params),
+};
+#undef add_skip
+#undef add_parse
+#undef add_parse_overload
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -12181,6 +12977,11 @@ static const parser_t parsers[] = {
 	addpca(TOPOLOGY_BLOCK_CONFIG_ARRAY, BLOCK_CONFIG, topology_block_config_t, NEED_NONE, "Array of block configurations"),
 	addpca(TOPOLOGY_RING_CONFIG_ARRAY, RING_CONFIG, topology_ring_config_t, NEED_NONE, "Array of ring configurations"),
 	addpcp(NAMESPACE_NODE_CONF_COMPLEX, NAMESPACE_CONF_PTR, ns_node_conf_t, NEED_NONE, "Namespace node specific configuration"),
+	addpcp(SLURM_CONF_EPILOG, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Epilog programs run by slurmd"),
+	addpcp(SLURM_CONF_EPILOG_SLURMCTLD, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Epilog programs run by slurmctld"),
+	addpcp(SLURM_CONF_PROLOG, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Prolog programs run by slurmd"),
+	addpcp(SLURM_CONF_PROLOG_SLURMCTLD, STRING_ARRAY, slurm_conf_t, NEED_NONE, "Prolog programs run by slurmctld"),
+	addpcp(SLURM_CONF_CONTROLLERS, CONTROLLERS_ARRAY, slurm_conf_t, NEED_NONE, "List of slurmctld controllers"),
 
 	/* NULL terminated model parsers */
 	addnt(CONTROLLER_PING_ARRAY, CONTROLLER_PING),
@@ -12192,6 +12993,7 @@ static const parser_t parsers[] = {
 	addntp(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY_PTR),
 	addnt(JOB_RES_SOCKET_ARRAY, JOB_RES_SOCKET),
 	addnt(JOB_RES_CORE_ARRAY, JOB_RES_CORE),
+	addnt(CONTROLLERS_ARRAY, CONTROLLER),
 
 	/* Pointer model parsers */
 	addpp(JOB_ARRAY_RESPONSE_MSG_PTR, job_array_resp_msg_t *, JOB_ARRAY_RESPONSE_MSG, false, NULL, NULL),
@@ -12344,6 +13146,9 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
 	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
 	addpap(PORT_RANGE, port_range_t, NULL, NULL),
+	addpap(CONTROLLER, controller_t, NULL, FREE_FUNC(CONTROLLER)),
+	addpap(SLURM_CONF, slurm_conf_t, NULL, NULL),
+	addpap(SLURM_CONF_META, slurm_conf_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),

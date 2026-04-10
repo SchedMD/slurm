@@ -708,6 +708,18 @@ typedef enum {
 	DATA_PARSER_PORT_RANGE_ARRAY, /* uint16_t[2] */
 	DATA_PARSER_PORT_RANGE, /* port_range_t */
 	DATA_PARSER_PORT_RANGE_PTR, /* port_range_t* */
+	DATA_PARSER_SLURM_CONF_EPILOG, /* slurm_conf_t->epilog,epilog_cnt */
+	DATA_PARSER_SLURM_CONF_EPILOG_SLURMCTLD, /* slurm_conf_t->epilog_slurmctld,epilog_slurmctld_cnt */
+	DATA_PARSER_SLURM_CONF_PROLOG, /* slurm_conf_t->prolog,prolog_cnt */
+	DATA_PARSER_SLURM_CONF_PROLOG_SLURMCTLD, /* slurm_conf_t->prolog_slurmctld,prolog_slurmctld_cnt */
+	DATA_PARSER_CONTROLLER, /* controllers_t */
+	DATA_PARSER_CONTROLLER_PTR, /* controllers_t* */
+	DATA_PARSER_CONTROLLERS_ARRAY, /* controllers_t[] (null terminated) */
+	DATA_PARSER_SLURM_CONF, /* slurm_conf_t */
+	DATA_PARSER_SLURM_CONF_PTR, /* slurm_conf_t* */
+	DATA_PARSER_SLURM_CONF_CONTROLLERS, /* slurm_conf_t->control_addr,control_cnt,control_machine */
+	DATA_PARSER_SLURM_CONF_META, /* slurm_conf_t */
+	DATA_PARSER_SLURM_CONF_META_PTR, /* slurm_conf_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
