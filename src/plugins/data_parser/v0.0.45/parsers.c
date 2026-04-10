@@ -11323,6 +11323,18 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIORITY_FLAGS)[] = {
 	add_flag_bit_desc(PRIORITY_FLAGS_NO_NORMAL_TRES, "NO_NORMAL_TRES", "Do not normalize the TRES factor."),
 };
 
+/* based on prolog_flags2str() */
+static const flag_bit_t PARSER_FLAG_ARRAY(PROLOG_FLAGS)[] = {
+	add_flag_bit_desc(PROLOG_FLAG_ALLOC, "Alloc", "Execute prolog upon allocation."),
+	add_flag_bit_desc(PROLOG_FLAG_NOHOLD, "NoHold", "Do not block salloc/srun until prolog completes."),
+	add_flag_bit_desc(PROLOG_FLAG_CONTAIN, "Contain", "Use proctrack plugin to create a job container."),
+	add_flag_bit_desc(PROLOG_FLAG_SERIAL, "Serial", "Serially execute prolog/epilog."),
+	add_flag_bit_desc(PROLOG_FLAG_X11, "X11", "Enable Slurm X11 forwarding support."),
+	add_flag_bit_desc(PROLOG_FLAG_DEFER_BATCH, "DeferBatch", "Defer batch job launch until prolog completes on all nodes."),
+	add_flag_bit_desc(PROLOG_FLAG_FORCE_REQUEUE_ON_FAIL, "ForceRequeueOnFail", "Always requeue job on prolog failure."),
+	add_flag_bit_desc(PROLOG_FLAG_RUN_IN_JOB, "RunInJob", "Run prolog/epilog in slurmstepd."),
+};
+
 /* based on log_num2string() */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_hidden(0, INFINITE16, "(null)"),
@@ -12313,6 +12325,7 @@ static const parser_t parsers[] = {
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
+	addfa(PROLOG_FLAGS, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
 	addfas(LOG_LEVEL, log_level_t),
 
