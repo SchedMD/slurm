@@ -96,13 +96,6 @@
 #include "src/srun/srun_pty.h"
 #include "src/srun/step_ctx.h"
 
-#ifndef OPEN_MPI_PORT_ERROR
-/* This exit code indicates the launched Open MPI tasks could
- *	not open the reserved port. It was already open by some
- *	other process. */
-#define OPEN_MPI_PORT_ERROR 108
-#endif
-
 #define THREAD_COUNT 3
 
 static struct termios termdefaults;

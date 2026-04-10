@@ -63,15 +63,6 @@
 #include "src/common/xsignal.h"
 #include "src/interfaces/gres.h"
 
-#ifndef OPEN_MPI_PORT_ERROR
-/* This exit code indicates the launched Open MPI tasks could
- *	not open the reserved port. It was already open by some
- *	other process. */
-#define OPEN_MPI_PORT_ERROR 108
-#endif
-
-#define MAX_STEP_RETRIES 4
-
 static list_t *local_job_list = NULL;
 static uint32_t *local_global_rc = NULL;
 static pthread_mutex_t launch_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -81,9 +72,6 @@ static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static slurm_opt_t *opt_save = NULL;
 
 static list_t *task_state_list = NULL;
-static time_t launch_start_time;
-static bool retry_step_begin = false;
-static int  retry_step_cnt = 0;
 
 extern char **environ;
 
@@ -243,37 +231,6 @@ static const char *_taskstr(int n)
 		return "tasks";
 }
 
-static int _is_openmpi_port_error(int errcode)
-{
-	if (errcode != OPEN_MPI_PORT_ERROR)
-		return 0;
-	if (opt_save && (opt_save->resv_port_cnt == NO_VAL))
-		return 0;
-	if (difftime(time(NULL), launch_start_time) > slurm_conf.msg_timeout)
-		return 0;
-	return 1;
-}
-
-static void
-_handle_openmpi_port_error(const char *tasks, const char *hosts,
-			   slurm_step_ctx_t *step_ctx)
-{
-	char *msg = "retrying";
-
-	if (!retry_step_begin) {
-		retry_step_begin = true;
-		retry_step_cnt++;
-	}
-
-	if (retry_step_cnt >= MAX_STEP_RETRIES)
-		msg = "aborting";
-	error("%s: tasks %s unable to claim reserved port, %s.",
-	      hosts, tasks, msg);
-
-	info("Terminating job step %ps", &step_ctx->step_req->step_id);
-	slurm_kill_job_step(&step_ctx->step_req->step_id, SIGKILL, 0);
-}
-
 static char *_mpir_get_host_name(char *node_name)
 {
 	if ((xstrcasestr(slurm_conf.launch_params, "mpir_use_nodeaddr")))
@@ -423,9 +380,6 @@ static void _task_finish(task_exit_msg_t *msg)
 		if ((rc = WEXITSTATUS(msg->return_code)) == 0) {
 			verbose("%s: %s %s: Completed", hosts, task_str, tasks);
 			normal_exit = 1;
-		} else if (_is_openmpi_port_error(rc)) {
-			_handle_openmpi_port_error(tasks, hosts,
-						   my_srun_job->step_ctx);
 		} else if ((reduce_task_exit_msg == 0) ||
 			   (msg_printed == 0) ||
 			   (msg->return_code != last_task_exit_rc)) {
@@ -1515,7 +1469,6 @@ extern int launch_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	}
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-	launch_start_time = time(NULL);
 	if (first_launch) {
 		if (slurm_step_launch(job->step_ctx, &launch_params,
 				      &callbacks) != SLURM_SUCCESS) {
@@ -1575,24 +1528,6 @@ extern int launch_step_wait(srun_job_t *job, bool got_alloc,
 	int rc = 0;
 
 	slurm_step_launch_wait_finish(job->step_ctx);
-	if ((MPIR_being_debugged == 0) && retry_step_begin &&
-	    (retry_step_cnt < MAX_STEP_RETRIES) &&
-	     (job->het_job_id == NO_VAL)) {	/* Not hetjob step */
-
-		slurm_mutex_lock(&srun_sig_forward_lock);
-		srun_sig_forward = false;
-		slurm_mutex_unlock(&srun_sig_forward_lock);
-
-		retry_step_begin = false;
-		step_ctx_destroy(job->step_ctx);
-		if (got_alloc)
-			rc = launch_create_job_step(job, true, opt_local);
-		else
-			rc = launch_create_job_step(job, false, opt_local);
-		if (rc < 0)
-			exit(error_exit);
-		rc = -1;
-	}
 	return rc;
 }
 
