@@ -150,6 +150,8 @@ typedef struct {
 	uint64_t pn_min_memory;		/* minimum memory per node (MB) OR
 					 * memory per allocated
 					 * CPU | MEM_PER_CPU */
+	uint64_t pn_min_memory_pre_resize; /* saved pn_min_memory to revert
+					      failed resize */
 	uint64_t orig_pn_min_memory;	/* requested value of pn_min_memory */
 	uint16_t oom_kill_step;		/* Kill whole step in case of OOM */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
