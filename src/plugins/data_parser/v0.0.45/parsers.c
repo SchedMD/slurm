@@ -11300,6 +11300,34 @@ static const flag_bit_t PARSER_FLAG_ARRAY(DEBUG_FLAGS)[] = {
 	add_flag_bit_desc(DEBUG_FLAG_TRIGGERS, "Triggers", "Slurmctld triggers"),
 };
 
+#define HEALTH_CHECK_BASE_STATE_MASK (HEALTH_CHECK_NODE_ANY | \
+				HEALTH_CHECK_START_ONLY | \
+				HEALTH_CHECK_REBOOT_ONLY)
+/* Add new orthogonal state flags to this mask */
+#define HEALTH_CHECK_ORTHOGONAL_MASK (HEALTH_CHECK_CYCLE)
+
+/* based on health_check_node_state_str() */
+static const flag_bit_t PARSER_FLAG_ARRAY(HEALTH_CHECK_NODE_STATE)[] = {
+	/* Flags that can't be combined with any others */
+	add_flag_equal_desc(HEALTH_CHECK_START_ONLY, HEALTH_CHECK_BASE_STATE_MASK, "START_ONLY", "Execute only at slurmd startup."),
+	add_flag_equal_desc(HEALTH_CHECK_REBOOT_ONLY, HEALTH_CHECK_BASE_STATE_MASK, "REBOOT_ONLY", "Execute only after slurmd reboot."),
+
+	/* "ANY" supersedes other base states */
+	add_flag_equal_desc(HEALTH_CHECK_NODE_ANY, HEALTH_CHECK_NODE_ANY, "ANY", "Execute on all node states."),
+
+	/* Base state flags that can be mixed, but are suppressed by "ANY" */
+	add_flag_masked_bit_desc(HEALTH_CHECK_NODE_IDLE, HEALTH_CHECK_NODE_ANY, "IDLE", "Execute on idle nodes."),
+	add_flag_masked_bit_desc(HEALTH_CHECK_NODE_ALLOC, HEALTH_CHECK_NODE_ANY, "ALLOC", "Execute on fully allocated nodes."),
+	add_flag_masked_bit_desc(HEALTH_CHECK_NODE_MIXED, HEALTH_CHECK_NODE_ANY, "MIXED", "Execute on partially allocated nodes."),
+	add_flag_masked_bit_desc(HEALTH_CHECK_NODE_NONDRAINED_IDLE, HEALTH_CHECK_NODE_ANY, "NONDRAINED_IDLE", "Execute on idle nodes that are not drained."),
+
+	/* Flags that can be mixed with other base states and each other, but not with the exclusive states */
+	add_flag_masked_bit_desc(HEALTH_CHECK_CYCLE, HEALTH_CHECK_ORTHOGONAL_MASK, "CYCLE", "Cycle through nodes to spread health check execution over the HealthCheckInterval."),
+};
+
+#undef HEALTH_CHECK_BASE_STATE_MASK
+#undef HEALTH_CHECK_ORTHOGONAL_MASK
+
 /* based on parse_part_enforce_type_2str() */
 static const flag_bit_t PARSER_FLAG_ARRAY(ENFORCE_PART_LIMITS)[] = {
 	add_flag_equal_desc(PARTITION_ENFORCE_NONE, INFINITE16, "NO", "Partition limits will not be enforced at submit time, but will still be enforced during scheduling."),
@@ -12331,6 +12359,7 @@ static const parser_t parsers[] = {
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
+	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
 	addfa(PROLOG_FLAGS, uint16_t),
 	addfa(RECONFIG_FLAGS, uint16_t),
