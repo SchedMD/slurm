@@ -11406,6 +11406,23 @@ static const parser_t PARSER_ARRAY(OPENAPI_JOB_MODIFY_REQ)[] = {
 		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
 		.ptr_offset = NO_VAL,                                          \
 	}
+/* Single value from flag array */
+#define addfas(typev, typet)                                                    \
+	{                                                                      \
+		.magic = MAGIC_PARSER,                                         \
+		.model = PARSER_MODEL_FLAG_ARRAY,                              \
+		.type = DATA_PARSER_##typev,                                   \
+		.type_string = XSTRINGIFY(DATA_PARSER_ ## typev),              \
+		.obj_type_string = XSTRINGIFY(typet),                          \
+		.obj_openapi = OPENAPI_FORMAT_ARRAY,                           \
+		.size = sizeof(typet),                                         \
+		.needs = NEED_NONE,                                            \
+		.flag_bit_array = PARSER_FLAG_ARRAY(typev),                    \
+		.flag_bit_array_count = ARRAY_SIZE(PARSER_FLAG_ARRAY(typev)),  \
+		.single_flag = true,                                           \
+		.ptr_offset = NO_VAL,                                          \
+	}
+
 /* add removed parser */
 #define addr(typev, typeo, deprec)                                             \
 	{                                                                      \
