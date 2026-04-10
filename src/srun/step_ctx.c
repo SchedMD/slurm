@@ -129,8 +129,6 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 	int sock = -1;
 	uint16_t port = 0;
 	int errnum = 0;
-	int cc;
-	uint16_t *ports;
 	struct pollfd fds[2];
 	long elapsed_time;
 	DEF_TIMERS;
@@ -142,11 +140,7 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
-	if ((ports = slurm_get_srun_port_range()))
-		cc = net_stream_listen_ports(&sock, &port, ports, false);
-	else
-		cc = net_stream_listen(&sock, &port);
-	if (cc < 0) {
+	if (slurm_init_msg_engine_srun_ports(&sock, &port) != SLURM_SUCCESS) {
 		error("unable to initialize step request socket: %m");
 		return NULL;
 	}
