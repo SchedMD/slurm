@@ -298,6 +298,14 @@ typedef struct {
 	list_t *associations;
 } openapi_resp_slurmdbd_config_t;
 
+/* represents the actual slurmdbd.conf file */
+typedef struct {
+	OPENAPI_RESP_STRUCT_META_FIELD;
+	OPENAPI_RESP_STRUCT_ERRORS_FIELD;
+	OPENAPI_RESP_STRUCT_WARNINGS_FIELD;
+	slurmdbd_conf_t *slurmdb_conf;
+} openapi_resp_slurmdbd_conf_t;
+
 typedef struct {
 	slurm_selected_step_t *id;
 } openapi_job_param_t;
