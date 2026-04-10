@@ -5272,6 +5272,7 @@ static int _validate_job_resv(job_record_t *job_ptr)
 	if (rc != SLURM_SUCCESS) {
 		error("%pJ linked to invalid reservation: %s, holding the job.",
 		      job_ptr, job_ptr->resv_name);
+		job_ptr->priority = 0;
 		job_ptr->state_reason = WAIT_RESV_INVALID;
 		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
 		xstrfmtcat(job_ptr->state_desc,
