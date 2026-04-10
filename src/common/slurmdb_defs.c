@@ -3021,6 +3021,51 @@ extern uint32_t slurmdb_parse_purge(char *string)
 	return purge;
 }
 
+extern uint32_t slurmdb_purge_units_2_int(const slurmdb_purge_units_t
+						  *purge_units)
+{
+	uint32_t purge = NO_VAL;
+
+	if (!purge_units->set)
+		return NO_VAL;
+
+	if (purge_units->hours)
+		purge = (SLURMDB_PURGE_HOURS | purge_units->hours);
+	else if (purge_units->days)
+		purge = (SLURMDB_PURGE_DAYS | purge_units->days);
+	else if (purge_units->months)
+		purge = (SLURMDB_PURGE_MONTHS | purge_units->months);
+
+	if ((purge != NO_VAL) && purge_units->archive)
+		purge |= SLURMDB_PURGE_ARCHIVE;
+
+	return purge;
+}
+
+extern void slurmdb_int_2_purge_units(const uint32_t purge,
+				      slurmdb_purge_units_t *purge_units)
+{
+	uint32_t units = 0;
+
+	xassert(purge_units);
+	*purge_units = (slurmdb_purge_units_t) { 0 };
+
+	if (purge == NO_VAL)
+		return;
+
+	purge_units->set = true;
+	units = SLURMDB_PURGE_GET_UNITS(purge);
+
+	if (SLURMDB_PURGE_IN_HOURS(purge))
+		purge_units->hours = units;
+	else if (SLURMDB_PURGE_IN_DAYS(purge))
+		purge_units->days = units;
+	else if (SLURMDB_PURGE_IN_MONTHS(purge))
+		purge_units->months = units;
+
+	purge_units->archive = SLURMDB_PURGE_ARCHIVE_SET(purge);
+}
+
 extern char *slurmdb_purge_string(uint32_t purge, char *string, int len,
 				  bool with_archive)
 {
