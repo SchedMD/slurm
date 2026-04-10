@@ -11335,6 +11335,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PROLOG_FLAGS)[] = {
 	add_flag_bit_desc(PROLOG_FLAG_RUN_IN_JOB, "RunInJob", "Run prolog/epilog in slurmstepd."),
 };
 
+/* based on reconfig_flags2str() */
+static const flag_bit_t PARSER_FLAG_ARRAY(RECONFIG_FLAGS)[] = {
+	add_flag_bit_desc(RECONFIG_KEEP_PART_INFO, "KeepPartInfo", "Keep dynamic partition info on scontrol reconfig."),
+	add_flag_bit_desc(RECONFIG_KEEP_PART_STAT, "KeepPartState", "Keep dynamic partition state on scontrol reconfig."),
+	add_flag_bit_desc(RECONFIG_KEEP_POWER_SAVE_SETTINGS, "KeepPowerSaveSettings", "Keep dynamic power save settings on scontrol reconfig."),
+};
+
 /* based on log_num2string() */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_hidden(0, INFINITE16, "(null)"),
@@ -12326,6 +12333,7 @@ static const parser_t parsers[] = {
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
 	addfa(PROLOG_FLAGS, uint16_t),
+	addfa(RECONFIG_FLAGS, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
 	addfas(LOG_LEVEL, log_level_t),
 
