@@ -121,6 +121,7 @@ typedef struct {
 	char *rootfs; /* path to container rootfs */
 	char *spool_dir; /* path to slurmd's spool dir for container */
 	char *task_spool_dir; /* path to slurmd's spool dir for container task */
+	char *work_dir; /* step's original working directory */
 } step_container_t;
 
 typedef struct {

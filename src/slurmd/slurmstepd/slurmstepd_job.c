@@ -659,6 +659,7 @@ extern void stepd_step_rec_destroy(void)
 		xfree(c->mount_spool_dir);
 		xfree(c->rootfs);
 		xfree(c->spool_dir);
+		xfree(c->work_dir);
 		xfree(step->container);
 	}
 
