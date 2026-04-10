@@ -138,6 +138,12 @@ typedef struct {
 	char *pos;
 } foreach_libdir_args_t;
 
+typedef struct {
+	bool extern_updated;
+	update_job_mem_msg_t *req;
+	int rc;
+} foreach_update_step_mem_t;
+
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(slurm_step_id_t *step_id);
 static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
@@ -2915,7 +2921,8 @@ static void _rpc_job_mem_usage(slurm_msg_t *msg)
 static int _update_step_mem(void *x, void *arg)
 {
 	step_loc_t *stepd = x;
-	update_job_mem_msg_t *req = arg;
+	foreach_update_step_mem_t *args = arg;
+	update_job_mem_msg_t *req = args->req;
 	int fd;
 
 	if (!_match_job(&stepd->step_id, &req->step_id))
@@ -2933,6 +2940,9 @@ static int _update_step_mem(void *x, void *arg)
 				   req->job_mem_per_node) != SLURM_SUCCESS) {
 		error("%s: failed to update memory for %ps",
 		      __func__, &stepd->step_id);
+		args->rc = SLURM_ERROR;
+	} else if (stepd->step_id.step_id == SLURM_EXTERN_CONT) {
+		args->extern_updated = true;
 	}
 	close(fd);
 
@@ -2944,6 +2954,11 @@ static void _rpc_update_job_mem(slurm_msg_t *msg)
 	update_job_mem_msg_t *req = msg->data;
 	list_t *steps;
 	int notify_rc = SLURM_ERROR;
+	int update_rc = SLURM_SUCCESS;
+	foreach_update_step_mem_t args = {
+		.rc = SLURM_SUCCESS,
+		.req = req,
+	};
 
 	debug("%s: updating memory limit for %pI to %"PRIu64"MB",
 	      __func__, &req->step_id, req->job_mem_per_node);
@@ -2961,16 +2976,19 @@ static void _rpc_update_job_mem(slurm_msg_t *msg)
 				   auth_g_get_time(msg->auth_cred)));
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	list_for_each(steps, _update_step_mem, req);
+	list_for_each(steps, _update_step_mem, &args);
 	FREE_NULL_LIST(steps);
 
 	slurm_mutex_unlock(&prolog_mutex);
+
+	if (!args.extern_updated)
+		update_rc = args.rc ? args.rc : ESLURM_INVALID_JOB_ID;
 
 	while (req->notify_ctld && notify_rc != SLURM_SUCCESS) {
 		notify_rc =
 			notify_slurmctld_mem_update_fini(&(req->step_id),
 							 req->job_mem_per_node,
-							 false);
+							 update_rc, false);
 		if (notify_rc != SLURM_SUCCESS) {
 			info("%s: Retrying memory update complete RPC for %pI [sleeping %us]",
 			     __func__, &req->step_id, RETRY_DELAY);
@@ -2979,7 +2997,7 @@ static void _rpc_update_job_mem(slurm_msg_t *msg)
 	}
 
 	if (!req->notify_ctld)
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_send_rc_msg(msg, update_rc);
 }
 
 static void

@@ -2109,6 +2109,19 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 	log_flag(TRACE_JOBS, "%s: return %pJ", __func__, job_ptr);
 }
 
+static void _job_mem_resize_abort(job_record_t *job_ptr)
+{
+	job_details_t *detail_ptr = job_ptr->details;
+
+	xassert(detail_ptr);
+
+	job_state_unset_flag(job_ptr, JOB_RESIZING);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+	detail_ptr->pn_min_memory = detail_ptr->pn_min_memory_pre_resize;
+	detail_ptr->pn_min_memory_pre_resize = 0;
+	last_job_update = time(NULL);
+}
+
 static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
@@ -2154,6 +2167,10 @@ static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
 		error("%s: %pJ Node=%s rc=%s",
 		      __func__, job_ptr, resp_msg->node_name,
 		      slurm_strerror(resp_msg->return_code));
+		if (!resp_msg->all_nodes) {
+			_job_mem_resize_abort(job_ptr);
+			goto fini;
+		}
 	} else {
 		debug2("%s: %pJ Node=%s %s",
 		       __func__, job_ptr, resp_msg->node_name, TIMER_STR());

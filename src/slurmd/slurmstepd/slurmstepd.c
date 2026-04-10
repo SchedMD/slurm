@@ -391,7 +391,8 @@ static void *_mem_auto_reduce(void *args)
 	}
 
 	slurm_mutex_lock(&stepmgr_mutex);
-	rc = notify_slurmctld_mem_update_fini(&req.step_id, new_mem, true);
+	rc = notify_slurmctld_mem_update_fini(&req.step_id, new_mem,
+					      SLURM_SUCCESS, true);
 	slurm_mutex_unlock(&stepmgr_mutex);
 
 	if (rc != SLURM_SUCCESS)

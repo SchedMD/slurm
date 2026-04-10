@@ -454,7 +454,7 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 
 extern int notify_slurmctld_mem_update_fini(slurm_step_id_t *step_id,
 					    uint64_t job_mem_per_node,
-					    bool all_nodes)
+					    int return_code, bool all_nodes)
 {
 	int ret_c, rc;
 	slurm_msg_t resp_msg;
@@ -463,6 +463,7 @@ extern int notify_slurmctld_mem_update_fini(slurm_step_id_t *step_id,
 	resp.node_name = conf->node_name;
 	resp.step_id = *step_id;
 	resp.job_mem_per_node = job_mem_per_node;
+	resp.return_code = return_code;
 	resp.all_nodes = all_nodes;
 
 	slurm_msg_t_init(&resp_msg);
