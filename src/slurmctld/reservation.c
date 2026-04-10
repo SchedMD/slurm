@@ -5251,9 +5251,8 @@ extern void validate_all_reservations(bool run_now, bool run_locked)
 	}
 }
 
-static int _validate_job_resv(void *job, void *y)
+static int _validate_job_resv(job_record_t *job_ptr)
 {
-	job_record_t *job_ptr = (job_record_t *)job;
 	int rc = SLURM_SUCCESS;
 
 	if (job_ptr->resv_name == NULL)
@@ -5322,7 +5321,7 @@ static void _validate_all_reservations(void)
 	 */
 	iter = list_iterator_create(job_list);
 	while ((job_ptr = list_next(iter)))
-		_validate_job_resv(job_ptr, NULL);
+		_validate_job_resv(job_ptr);
 	list_iterator_destroy(iter);
 }
 
