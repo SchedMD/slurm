@@ -1003,7 +1003,6 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	uint16_t port;
 	eio_obj_t *obj;
 	int i, rc = SLURM_SUCCESS;
-	uint16_t *ports;
 
 	debug("Entering _msg_thr_create()");
 
@@ -1017,15 +1016,9 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	if (!message_socket_ops.timeout)
 		message_socket_ops.timeout = slurm_conf.msg_timeout * 8000;
 
-	ports = slurm_get_srun_port_range();
 	for (i = 0; i < sls->num_resp_port; i++) {
-		int cc;
-
-		if (ports)
-			cc = net_stream_listen_ports(&sock, &port, ports, false);
-		else
-			cc = net_stream_listen(&sock, &port);
-		if (cc < 0) {
+		if (slurm_init_msg_engine_srun_ports(&sock, &port) !=
+		    SLURM_SUCCESS) {
 			error("unable to initialize step launch listening "
 			      "socket: %m");
 			return SLURM_ERROR;
