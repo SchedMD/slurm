@@ -103,6 +103,12 @@ void _destroy_tree_fwd(fwd_tree_t *fwd_tree)
 		slurm_cond_signal(fwd_tree->notify);
 		slurm_mutex_unlock(fwd_tree->tree_mutex);
 
+		slurm_mutex_lock(&global_forward_mutex);
+		thread_count--;
+		xassert(thread_count >= 0);
+		EVENT_BROADCAST(&event_fini);
+		slurm_mutex_unlock(&global_forward_mutex);
+
 		xfree(fwd_tree);
 	}
 }
@@ -581,6 +587,11 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		slurm_mutex_lock(fwd_tree->tree_mutex);
 		(*fwd_tree->p_thr_count)++;
 		slurm_mutex_unlock(fwd_tree->tree_mutex);
+
+		slurm_mutex_lock(&global_forward_mutex);
+		thread_count++;
+		xassert(thread_count > 0);
+		slurm_mutex_unlock(&global_forward_mutex);
 
 		slurm_thread_create_detached(_fwd_tree_thread, fwd_tree);
 	}
