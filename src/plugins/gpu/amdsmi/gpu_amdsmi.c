@@ -1522,6 +1522,14 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     memset(&power_info, 0, sizeof(power_info));
 
     amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
+    debug("amdsmi_get_power_info() took %s", TIMER_STR());
+    debug("GPU[%u] power read: avg_socket_power=%u mW",
+          dv_ind, power_info.average_socket_power);
+    debug("GPU[%u] power read: avg_gpu_power=%u mW",
+          dv_ind, power_info.average_gpu_power);
+    debug("GPU[%u] power read: power_counter=%lu mWh",
+          dv_ind, power_info.power_counter);
+        
     if (rc != AMDSMI_STATUS_SUCCESS) {
         (void)amdsmi_status_code_to_string(rc, &status_string);
         error("AMDSMI: Failed to get power for GPU[%u]: %s",
