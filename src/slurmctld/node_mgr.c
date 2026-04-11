@@ -3827,9 +3827,10 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 					acct_db_conn, node_ptr, now);
 			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
-			   ((slurm_conf.ret2service == 2) ||
+			   ((slurm_conf.ret2service == RETURN_TO_SERVICE_ALL) ||
 			    IS_NODE_REBOOT_ISSUED(node_ptr) ||
-			    ((slurm_conf.ret2service == 1) &&
+			    ((slurm_conf.ret2service ==
+			      RETURN_TO_SERVICE_NON_RESP) &&
 			     !xstrcmp(node_ptr->reason, "Not responding") &&
 			     (node_ptr->boot_time <
 			      node_ptr->last_response)))) {
@@ -3876,7 +3877,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			   !IS_NODE_MAINT(node_ptr) &&
 			   node_ptr->last_response &&
 			   (node_ptr->boot_time > node_ptr->last_response) &&
-			   (slurm_conf.ret2service != 2)) {
+			   (slurm_conf.ret2service != RETURN_TO_SERVICE_ALL)) {
 			if (!node_ptr->reason ||
 			    (node_ptr->reason &&
 			     (!xstrcmp(node_ptr->reason, "Not responding") ||
@@ -3910,12 +3911,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			last_node_update = now;
 			reg_msg->job_count = 0;
 		} else if (IS_NODE_ALLOCATED(node_ptr) &&
-			   (reg_msg->job_count == 0)) {	/* job vanished */
+			   (reg_msg->job_count == 0)) { /* job vanished */
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 			node_ptr->last_busy = now;
 			last_node_update = now;
 		} else if (IS_NODE_COMPLETING(node_ptr) &&
-			   (reg_msg->job_count == 0)) {	/* job already done */
+			   (reg_msg->job_count == 0)) { /* job already done */
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 			last_node_update = now;
 			bit_clear(cg_node_bitmap, node_ptr->index);
@@ -4029,11 +4030,10 @@ static void _node_did_resp(node_record_t *node_ptr)
 						      node_ptr, now);
 		}
 	}
-	if (IS_NODE_DOWN(node_ptr) &&
-	    !IS_NODE_INVALID_REG(node_ptr) &&
-	    ((slurm_conf.ret2service == 2) ||
-	     (node_ptr->boot_req_time != 0)    ||
-	     ((slurm_conf.ret2service == 1) &&
+	if (IS_NODE_DOWN(node_ptr) && !IS_NODE_INVALID_REG(node_ptr) &&
+	    ((slurm_conf.ret2service == RETURN_TO_SERVICE_ALL) ||
+	     (node_ptr->boot_req_time != 0) ||
+	     ((slurm_conf.ret2service == RETURN_TO_SERVICE_NON_RESP) &&
 	      !xstrcmp(node_ptr->reason, "Not responding")))) {
 		node_ptr->last_busy = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;

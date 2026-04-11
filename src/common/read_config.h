@@ -137,7 +137,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
 #define DEFAULT_PRIORITY_TYPE       "priority/multifactor"
 #define DEFAULT_RECONF_KEEP_PART_STATE 0
-#define DEFAULT_RETURN_TO_SERVICE   0
+#define DEFAULT_RETURN_TO_SERVICE RETURN_TO_SERVICE_NONE
 #define DEFAULT_RESUME_RATE         300
 #define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_ROUTE_PLUGIN   	    "route/default"
