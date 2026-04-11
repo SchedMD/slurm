@@ -11375,6 +11375,18 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIORITY_RESET_PERIOD)[] = {
 	add_flag_equal_desc(PRIORITY_RESET_YEARLY, INFINITE64, "YEARLY", "Cleared on the first day of each year at time 00:00."),
 };
 
+/* based on private_data_string() */
+static const flag_bit_t PARSER_FLAG_ARRAY(PRIVATE_DATA)[] = {
+	add_flag_bit_desc(PRIVATE_DATA_ACCOUNTS, "accounts", "Prevents users from viewing any account definitions unless they are coordinators of them."),
+	add_flag_bit_desc(PRIVATE_DATA_EVENTS, "events", "Prevents users from viewing event information unless they have operator status or above."),
+	add_flag_bit_desc(PRIVATE_DATA_JOBS, "jobs", "Prevents users from viewing jobs or job steps belonging to other users."),
+	add_flag_bit_desc(PRIVATE_DATA_NODES, "nodes", "Prevents users from viewing node state information."),
+	add_flag_bit_desc(PRIVATE_DATA_PARTITIONS, "partitions", "Prevents users from viewing partition state information."),
+	add_flag_bit_desc(PRIVATE_DATA_RESERVATIONS, "reservations", "Prevents regular users from viewing reservations which they can not use."),
+	add_flag_bit_desc(PRIVATE_DATA_USAGE, "usage", "Prevents users from viewing usage of any other user."),
+	add_flag_bit_desc(PRIVATE_DATA_USERS, "users", "Prevents users from viewing information of any user other than themselves."),
+};
+
 /* based on _logfmtstr() */
 static const flag_bit_t PARSER_FLAG_ARRAY(LOG_TIME_FORMAT)[] = {
 	add_flag_equal_desc(LOG_FMT_ISO8601_MS, INFINITE64, "iso8601_ms", "ISO 8601 timestamp with millisecond precision."),
@@ -12398,6 +12410,7 @@ static const parser_t parsers[] = {
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfas(LOG_TIME_FORMAT, uint16_t),
 	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),
+	addfa(PRIVATE_DATA, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
 	addfas(PRIORITY_RESET_PERIOD, uint16_t),
 	addfa(PROLOG_FLAGS, uint16_t),
