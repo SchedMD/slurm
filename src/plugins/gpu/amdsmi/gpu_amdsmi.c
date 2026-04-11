@@ -1531,7 +1531,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         gpu->energy.current_watts =
             (double)power_info.average_socket_power;
     } else if (rc == AMDSMI_STATUS_NOT_SUPPORTED) {
-
+        debug2("AMDSMI: Power info not supported for GPU[%u]", dv_ind);
         amdsmi_energy_count_t ec;
         if (amdsmi_get_energy_count(h, &ec) == AMDSMI_STATUS_SUCCESS) {
             time_t now = time(NULL);
@@ -1551,12 +1551,16 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
             last_energy_joules[dv_ind] = ec.energy_accumulator;
             last_energy_time[dv_ind] = now;
+        } else {
+            debug2("AMDSMI: Energy accumulator not supported for GPU[%u]", dv_ind);
+            gpu->energy.current_watts = NO_VAL;
+            return SLURM_ERROR;
         }
     }
-
-
+    debug2("AMDSMI: GPU[%u] energy read: %.2f W", dv_ind, gpu->energy.current_watts);
     return SLURM_SUCCESS;
 }
+
 extern int gpu_p_usage_read(pid_t pid, acct_gather_data_t *data)
 {
     if (!data) {
