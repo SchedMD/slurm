@@ -11206,6 +11206,19 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_COMMUNICATION_PARAMETERS)[]
 	add_flag_bit_desc(CONF_FLAG_DISABLE_HTTP, "disable_http", "Prevent slurmctld and slurmd from responding to incoming HTTP requests."),
 };
 
+/* based on _validate_accounting_storage_enforce() and accounting_enforce_string() */
+static const flag_bit_t PARSER_FLAG_ARRAY(ACCT_STORAGE_ENFORCE)[] = {
+	add_flag_hidden(ACCOUNTING_ENFORCE_ALL, ACCOUNTING_ENFORCE_ALL, "all"),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_ASSOCS, "associations", "No new job is allowed to run unless a corresponding association exists in the system."),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_LIMITS, "limits", "Users can be limited by association to whatever job size or run time limits are defined. Implies associations."),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_WCKEYS, "wckeys", "Jobs will not be scheduled unless a valid workload characterization key is specified. Implies associations and TrackWCKey."),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_QOS, "qos", "Jobs will not be scheduled unless a valid qos is specified. Implies associations."),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_SAFE, "safe", "A job will only be launched against an association or qos that has a TRES-minutes limit set if the job will be able to run to completion. Implies limits and associations."),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_NO_JOBS, "nojobs", "Slurm will not account for any jobs or steps on the system. Implies nosteps."),
+	add_flag_bit_desc(ACCOUNTING_ENFORCE_NO_STEPS, "nosteps", "Slurm will not account for any steps that have run."),
+	/* Skip ACCOUNTING_ENFORCE_TRES - not a configurable, only used internally, do not make it parsable */
+};
+
 static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_ACCOUNTING_STORE)[] = {
 	add_flag_bit_desc(CONF_FLAG_SJC, "job_comment", "Include the job's comment field in the job complete message sent to the Accounting Storage database. Note the AdminComment and SystemComment are always recorded in the database."),
 	add_flag_bit_desc(CONF_FLAG_SJX, "job_extra", "Include the job's extra field in the job complete message sent to the Accounting Storage database."),
@@ -12366,6 +12379,7 @@ static const parser_t parsers[] = {
 	addfa(CONF_FLAGS, uint32_t),
 	addfa(CONF_FLAGS_COMMUNICATION_PARAMETERS, uint32_t),
 	addfa(CONF_FLAGS_ACCOUNTING_STORE, uint32_t),
+	addfa(ACCT_STORAGE_ENFORCE, uint16_t),
 	addfa(CONF_FLAGS_SLURMD_PARAMETERS, uint32_t),
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
