@@ -11447,6 +11447,17 @@ static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_equal_desc(LOG_LEVEL_DEBUG5, INFINITE16, "debug5", "Log errors and verbose informational messages and even more debugging messages"),
 };
 
+/* based on preempt_mode_string() and _validate_and_set_defaults() */
+static const flag_bit_t PARSER_FLAG_ARRAY(SLURM_CONF_PREEMPT_MODES)[] = {
+	add_flag_equal_desc(PREEMPT_MODE_OFF, INFINITE64, "DISABLED", "Disables job preemption and gang scheduling."),
+	add_flag_bit_desc(PREEMPT_MODE_SUSPEND, "SUSPEND", "The preempted jobs will be suspended, and later the Gang scheduler will resume them. The SUSPEND preemption mode always needs the GANG option to be specified."),
+	add_flag_bit_desc(PREEMPT_MODE_REQUEUE, "REQUEUE", "Preempts jobs by requeuing them (if possible) or canceling them."),
+	add_flag_bit_desc(PREEMPT_MODE_CANCEL, "CANCEL", "The preempted job will be cancelled."),
+	add_flag_bit_desc(PREEMPT_MODE_GANG, "GANG", "Enables gang scheduling (time slicing) of jobs in the same partition, and allows the resuming of suspended jobs."),
+	add_flag_bit_desc(PREEMPT_MODE_WITHIN, "WITHIN", "For PreemptType=preempt/qos, allow jobs within the same QOS to preempt one another."),
+	add_flag_bit_desc(PREEMPT_MODE_PRIORITY, "PRIORITY", "Allow preemption only if the preemptor's job priority is higher than the preemptee's job priority."),
+};
+
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(port_range_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(PORT_RANGE)[] = {
@@ -12379,6 +12390,7 @@ static const parser_t parsers[] = {
 	addfa(QOS_CONDITION_FLAGS, uint16_t),
 	addfa(QOS_PREEMPT_MODES, uint16_t),
 	addfa(PARTITION_PREEMPT_MODES, uint16_t),
+	addfa(SLURM_CONF_PREEMPT_MODES, uint16_t),
 	addfa(CLUSTER_REC_FLAGS, slurmdb_cluster_flags_t),
 	addfa(NODE_STATES, uint32_t),
 	addfa(PARTITION_STATES, uint16_t),
