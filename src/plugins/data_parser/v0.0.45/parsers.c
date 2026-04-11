@@ -11406,6 +11406,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PROPAGATE_PRIO_PROCESS)[] = {
 	add_flag_equal_desc(PROP_PRIO_NICER, INFINITE64, "nicer", "Tasks inherit scheduling priority of the command used to submit them with their nice value always one higher than the slurm daemon."),
 };
 
+/* based on _validate_and_set_defaults() ReturnToService */
+static const flag_bit_t PARSER_FLAG_ARRAY(RETURN_TO_SERVICE)[] = {
+	add_flag_equal_desc(RETURN_TO_SERVICE_NONE, INFINITE64, "none", "Node stays DOWN until a system administrator explicitly changes its state."),
+	add_flag_equal_desc(RETURN_TO_SERVICE_NON_RESP, INFINITE64, "non_responsive_only", "DOWN node returns to service on registration with a valid configuration only if it was set DOWN due to being non-responsive."),
+	add_flag_equal_desc(RETURN_TO_SERVICE_ALL, INFINITE64, "all", "DOWN node returns to service on registration with a valid configuration regardless of reason for being set DOWN."),
+};
+
 /* based on prolog_flags2str() */
 static const flag_bit_t PARSER_FLAG_ARRAY(PROLOG_FLAGS)[] = {
 	add_flag_bit_desc(PROLOG_FLAG_ALLOC, "Alloc", "Execute prolog upon allocation."),
@@ -12423,6 +12430,7 @@ static const parser_t parsers[] = {
 	addfas(PROPAGATE_PRIO_PROCESS, uint16_t),
 	addfa(PROLOG_FLAGS, uint16_t),
 	addfa(RECONFIG_FLAGS, uint16_t),
+	addfas(RETURN_TO_SERVICE, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
 	addfas(LOG_LEVEL, log_level_t),
 
