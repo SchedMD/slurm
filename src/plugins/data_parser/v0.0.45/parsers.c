@@ -11351,6 +11351,17 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIORITY_FLAGS)[] = {
 	add_flag_bit_desc(PRIORITY_FLAGS_NO_NORMAL_TRES, "NO_NORMAL_TRES", "Do not normalize the TRES factor."),
 };
 
+/* based on _validate_and_set_defaults() PriorityUsageResetPeriod handling */
+static const flag_bit_t PARSER_FLAG_ARRAY(PRIORITY_RESET_PERIOD)[] = {
+	add_flag_equal_desc(PRIORITY_RESET_NONE, INFINITE64, "NONE", "Never clear historic usage."),
+	add_flag_equal_desc(PRIORITY_RESET_NOW, INFINITE64, "NOW", "Clear the historic usage now. Executed at startup and reconfiguration time."),
+	add_flag_equal_desc(PRIORITY_RESET_DAILY, INFINITE64, "DAILY", "Cleared every day at midnight."),
+	add_flag_equal_desc(PRIORITY_RESET_WEEKLY, INFINITE64, "WEEKLY", "Cleared every week on Sunday at time 00:00."),
+	add_flag_equal_desc(PRIORITY_RESET_MONTHLY, INFINITE64, "MONTHLY", "Cleared on the first day of each month at time 00:00."),
+	add_flag_equal_desc(PRIORITY_RESET_QUARTERLY, INFINITE64, "QUARTERLY", "Cleared on the first day of each quarter at time 00:00."),
+	add_flag_equal_desc(PRIORITY_RESET_YEARLY, INFINITE64, "YEARLY", "Cleared on the first day of each year at time 00:00."),
+};
+
 /* based on prolog_flags2str() */
 static const flag_bit_t PARSER_FLAG_ARRAY(PROLOG_FLAGS)[] = {
 	add_flag_bit_desc(PROLOG_FLAG_ALLOC, "Alloc", "Execute prolog upon allocation."),
@@ -12361,6 +12372,7 @@ static const parser_t parsers[] = {
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
 	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
+	addfas(PRIORITY_RESET_PERIOD, uint16_t),
 	addfa(PROLOG_FLAGS, uint16_t),
 	addfa(RECONFIG_FLAGS, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
