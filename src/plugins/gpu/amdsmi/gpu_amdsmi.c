@@ -1521,24 +1521,39 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     amdsmi_power_info_t power_info;
     memset(&power_info, 0, sizeof(power_info));
 
-    amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
-        
-    if (rc != AMDSMI_STATUS_SUCCESS) {
-        (void)amdsmi_status_code_to_string(rc, &status_string);
-        error("AMDSMI: Failed to get power for GPU[%u]: %s",
-              dv_ind, status_string ? status_string : "unknown");
+    // amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
 
-        gpu->energy.current_watts = NO_VAL;
-        return SLURM_ERROR;
+        
+    
+    amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
+
+    if (rc == AMDSMI_STATUS_SUCCESS) {
+        gpu->energy.current_watts =
+            (double)power_info.average_socket_power;
+    } else if (rc == AMDSMI_STATUS_NOT_SUPPORTED) {
+
+        amdsmi_energy_count_t ec;
+        if (amdsmi_get_energy_count(h, &ec) == AMDSMI_STATUS_SUCCESS) {
+            time_t now = time(NULL);
+
+            if (last_energy_time[dv_ind] != 0) {
+                double delta_j =
+                    (double)ec.energy_accumulator -
+                    last_energy_joules[dv_ind];
+
+                double delta_t =
+                    difftime(now, last_energy_time[dv_ind]);
+
+                if (delta_t > 0) {
+                    gpu->energy.current_watts = delta_j / delta_t;
+                }
+            }
+
+            last_energy_joules[dv_ind] = ec.energy_accumulator;
+            last_energy_time[dv_ind] = now;
+        }
     }
 
-    /* average_socket_power is reported in W, NOT mW */
-    double watts = (double)power_info.average_socket_power;
-
-    gpu->energy.current_watts = watts;
-    gpu->previous_update_time = gpu->last_update_time;
-    gpu->last_update_time     = time(NULL);
-    gpu->last_update_watt     = watts;
 
     return SLURM_SUCCESS;
 }
