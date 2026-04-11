@@ -94,7 +94,8 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static int gpumem_pos = -1;
 static int gpuutil_pos = -1;
-
+static double last_energy_joules[256];
+static time_t last_energy_time[256];
 static bool get_usage = true;
 
 /* Processor handles cache for AMD-SMI API */
@@ -1503,61 +1504,75 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
  */
 extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 {
-    if (!gpu) {
-        error("AMDSMI: gpu_p_energy_read() called with NULL gpu pointer");
-        return SLURM_ERROR;
-    }
-
-    if (dv_ind >= processor_handle_count) {
-        error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
-        gpu->energy.current_watts = NO_VAL;
-        return SLURM_ERROR;
-    }
-
     amdsmi_processor_handle h = processor_handles[dv_ind];
     const char *status_string = NULL;
 
     amdsmi_power_info_t power_info;
     memset(&power_info, 0, sizeof(power_info));
 
-    // amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
+    amdsmi_status_t rc =
+        amdsmi_get_power_info(h, &power_info);
 
-        
-    
-    amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
+    time_t now = time(NULL);
 
     if (rc == AMDSMI_STATUS_SUCCESS) {
-        gpu->energy.current_watts =
-            (double)power_info.average_socket_power;
-    } else if (rc == AMDSMI_STATUS_NOT_SUPPORTED) {
-        debug2("AMDSMI: Power info not supported for GPU[%u]", dv_ind);
-        amdsmi_energy_count_t ec;
-        if (amdsmi_get_energy_count(h, &ec) == AMDSMI_STATUS_SUCCESS) {
-            time_t now = time(NULL);
 
+        /* Preferred fast path */
+        gpu->energy.current_watts =
+            (double) power_info.average_socket_power;
+
+    } else if (rc == AMDSMI_STATUS_NOT_SUPPORTED) {
+
+        /* Fallback path: energy → power */
+        amdsmi_energy_count_t ec;
+        memset(&ec, 0, sizeof(ec));
+
+        if (amdsmi_get_energy_count(h, &ec) == AMDSMI_STATUS_SUCCESS) {
+
+            /*
+             * Lazy initialization:
+             * first sample just seeds the cache
+             */
             if (last_energy_time[dv_ind] != 0) {
+
                 double delta_j =
-                    (double)ec.energy_accumulator -
+                    ec.energy_accumulator -
                     last_energy_joules[dv_ind];
 
                 double delta_t =
                     difftime(now, last_energy_time[dv_ind]);
 
-                if (delta_t > 0) {
+                if (delta_t > 0 && delta_j >= 0) {
                     gpu->energy.current_watts = delta_j / delta_t;
+                } else {
+                    gpu->energy.current_watts = NO_VAL;
                 }
+            } else {
+                /* First sample → no power yet */
+                gpu->energy.current_watts = NO_VAL;
             }
 
+            /* Always update cache */
             last_energy_joules[dv_ind] = ec.energy_accumulator;
-            last_energy_time[dv_ind] = now;
+            last_energy_time[dv_ind]   = now;
         } else {
-            debug2("AMDSMI: Energy accumulator not supported for GPU[%u]", dv_ind);
             gpu->energy.current_watts = NO_VAL;
             return SLURM_ERROR;
         }
+
+    } else {
+        /* Real error */
+        amdsmi_status_code_to_string(rc, &status_string);
+        error("AMDSMI: power read failed for GPU[%u]: %s",
+              dv_ind, status_string ? status_string : "unknown");
+        gpu->energy.current_watts = NO_VAL;
+        return SLURM_ERROR;
     }
-    debug2("AMDSMI: GPU[%u] energy read: %.2f W", dv_ind, gpu->energy.current_watts);
+
+    /* Slurm bookkeeping */
+    gpu->previous_update_time = gpu->last_update_time;
+    gpu->last_update_time     = now;
+
     return SLURM_SUCCESS;
 }
 
