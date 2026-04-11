@@ -11375,6 +11375,18 @@ static const flag_bit_t PARSER_FLAG_ARRAY(PRIORITY_RESET_PERIOD)[] = {
 	add_flag_equal_desc(PRIORITY_RESET_YEARLY, INFINITE64, "YEARLY", "Cleared on the first day of each year at time 00:00."),
 };
 
+/* based on _logfmtstr() */
+static const flag_bit_t PARSER_FLAG_ARRAY(LOG_TIME_FORMAT)[] = {
+	add_flag_equal_desc(LOG_FMT_ISO8601_MS, INFINITE64, "iso8601_ms", "ISO 8601 timestamp with millisecond precision."),
+	add_flag_equal_desc(LOG_FMT_ISO8601, INFINITE64, "iso8601", "ISO 8601 timestamp."),
+	add_flag_equal_desc(LOG_FMT_RFC5424_MS, INFINITE64, "rfc5424_ms", "RFC 5424 timestamp with millisecond precision. Same as iso8601_ms with timezone."),
+	add_flag_equal_desc(LOG_FMT_RFC5424, INFINITE64, "rfc5424", "RFC 5424 timestamp. Same as iso8601 with timezone."),
+	add_flag_equal_desc(LOG_FMT_RFC3339, INFINITE64, "rfc3339", "RFC 3339 timestamp."),
+	add_flag_equal_desc(LOG_FMT_CLOCK, INFINITE64, "clock", "Timestamp in microseconds from C standard clock() function."),
+	add_flag_equal_desc(LOG_FMT_SHORT, INFINITE64, "short", "Short date and time format."),
+	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Timestamp in ctime() format without the year, with microseconds, process ID, and thread name and ID."),
+};
+
 /* based on prolog_flags2str() */
 static const flag_bit_t PARSER_FLAG_ARRAY(PROLOG_FLAGS)[] = {
 	add_flag_bit_desc(PROLOG_FLAG_ALLOC, "Alloc", "Execute prolog upon allocation."),
@@ -12384,6 +12396,7 @@ static const parser_t parsers[] = {
 	addfa(CPU_FREQ_GOVS, uint32_t),
 	addfa(DEBUG_FLAGS, uint64_t),
 	addfa(ENFORCE_PART_LIMITS, uint16_t),
+	addfas(LOG_TIME_FORMAT, uint16_t),
 	addfa(HEALTH_CHECK_NODE_STATE, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
 	addfas(PRIORITY_RESET_PERIOD, uint16_t),
