@@ -11447,6 +11447,21 @@ static const flag_bit_t PARSER_FLAG_ARRAY(LOG_LEVEL)[] = {
 	add_flag_equal_desc(LOG_LEVEL_DEBUG5, INFINITE16, "debug5", "Log errors and verbose informational messages and even more debugging messages"),
 };
 
+/* based on _validate_and_set_defaults() TaskPluginParam handling */
+static const flag_bit_t PARSER_FLAG_ARRAY(TASK_PLUGIN_PARAM_FLAGS)[] = {
+	add_flag_equal_desc(CPU_BIND_NONE, CPU_BIND_T_MASK, "None", "Perform no task binding by default. Overrides automatic binding."),
+	add_flag_equal_desc(CPU_BIND_TO_THREADS, CPU_BIND_T_TO_MASK, "Threads", "Bind to threads by default. Overrides automatic binding."),
+	add_flag_equal_desc(CPU_BIND_TO_CORES, CPU_BIND_T_TO_MASK, "Cores", "Bind tasks to cores by default. Overrides automatic binding."),
+	add_flag_equal_desc(CPU_BIND_TO_SOCKETS, CPU_BIND_T_TO_MASK, "Sockets", "Bind to sockets by default. Overrides automatic binding."),
+	add_flag_equal_desc(CPU_AUTO_BIND_TO_THREADS, CPU_BIND_T_AUTO_TO_MASK, "autobind=threads", "Set default binding to threads in the event that auto binding doesn't find a match."),
+	add_flag_equal_desc(CPU_AUTO_BIND_TO_CORES, CPU_BIND_T_AUTO_TO_MASK, "autobind=cores", "Set default binding to cores in the event that auto binding doesn't find a match."),
+	add_flag_equal_desc(CPU_AUTO_BIND_TO_SOCKETS, CPU_BIND_T_AUTO_TO_MASK, "autobind=sockets", "Set default binding to sockets in the event that auto binding doesn't find a match."),
+	add_flag_masked_bit_desc(CPU_BIND_VERBOSE, CPU_BIND_VERBOSE, "Verbose", "Verbosely report binding before tasks run by default."),
+	add_flag_bit_desc(SLURMD_OFF_SPEC, "SlurmdOffSpec", "Slurm daemons on compute nodes should run outside of specialized resources."),
+	add_flag_bit_desc(OOM_KILL_STEP, "OOMKillStep", "Kill the whole step in all nodes in case an OOM event is triggered in any task of the step."),
+	add_flag_bit_desc(SLURMD_SPEC_OVERRIDE, "SlurmdSpecOverride", "If slurmd is started in a cgroup with cpuset or memory constraints, CpuSpecList and MemSpecLimit will be set and will override the configured values."),
+};
+
 /* based on preempt_mode_string() and _validate_and_set_defaults() */
 static const flag_bit_t PARSER_FLAG_ARRAY(SLURM_CONF_PREEMPT_MODES)[] = {
 	add_flag_equal_desc(PREEMPT_MODE_OFF, INFINITE64, "DISABLED", "Disables job preemption and gang scheduling."),
@@ -12391,6 +12406,7 @@ static const parser_t parsers[] = {
 	addfa(QOS_PREEMPT_MODES, uint16_t),
 	addfa(PARTITION_PREEMPT_MODES, uint16_t),
 	addfa(SLURM_CONF_PREEMPT_MODES, uint16_t),
+	addfa(TASK_PLUGIN_PARAM_FLAGS, uint32_t),
 	addfa(CLUSTER_REC_FLAGS, slurmdb_cluster_flags_t),
 	addfa(NODE_STATES, uint32_t),
 	addfa(PARTITION_STATES, uint16_t),
