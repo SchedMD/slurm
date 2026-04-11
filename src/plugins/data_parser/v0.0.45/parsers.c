@@ -11399,6 +11399,13 @@ static const flag_bit_t PARSER_FLAG_ARRAY(LOG_TIME_FORMAT)[] = {
 	add_flag_equal_desc(LOG_FMT_THREAD_ID, INFINITE64, "thread_id", "Timestamp in ctime() format without the year, with microseconds, process ID, and thread name and ID."),
 };
 
+/* based on _validate_and_set_defaults() PropagatePrioProcess */
+static const flag_bit_t PARSER_FLAG_ARRAY(PROPAGATE_PRIO_PROCESS)[] = {
+	add_flag_equal_desc(PROP_PRIO_OFF, INFINITE64, "off", "Tasks inherit scheduling priority from the slurm daemon."),
+	add_flag_equal_desc(PROP_PRIO_ON, INFINITE64, "on", "Tasks inherit scheduling priority of the command used to submit them."),
+	add_flag_equal_desc(PROP_PRIO_NICER, INFINITE64, "nicer", "Tasks inherit scheduling priority of the command used to submit them with their nice value always one higher than the slurm daemon."),
+};
+
 /* based on prolog_flags2str() */
 static const flag_bit_t PARSER_FLAG_ARRAY(PROLOG_FLAGS)[] = {
 	add_flag_bit_desc(PROLOG_FLAG_ALLOC, "Alloc", "Execute prolog upon allocation."),
@@ -12413,6 +12420,7 @@ static const parser_t parsers[] = {
 	addfa(PRIVATE_DATA, uint16_t),
 	addfa(PRIORITY_FLAGS, uint16_t),
 	addfas(PRIORITY_RESET_PERIOD, uint16_t),
+	addfas(PROPAGATE_PRIO_PROCESS, uint16_t),
 	addfa(PROLOG_FLAGS, uint16_t),
 	addfa(RECONFIG_FLAGS, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
