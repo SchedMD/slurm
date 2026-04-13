@@ -1097,7 +1097,7 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 	return SLURM_SUCCESS;
 }
 
-extern void switch_p_stepmgr_fini(int job_id)
+extern void switch_p_stepmgr_fini(uint32_t job_id)
 {
 	slingshot_release_collectives_job(job_id);
 }
