@@ -733,7 +733,6 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 		char *end = (ptr + get_buf_offset(buf));
 
 		*end = '\0';
-		set_buf_offset(buf, (get_buf_offset(buf) + 1));
 	}
 
 	if (length)
