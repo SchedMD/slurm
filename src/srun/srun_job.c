@@ -1542,7 +1542,8 @@ extern void create_srun_job(void **p_job, bool *got_alloc)
 	 * Spawn process to ensure clean-up of job and/or step
 	 * on abnormal termination
 	 */
-	shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);
+	if (!sropt.async)
+		shepherd_fd = _shepherd_spawn(job, srun_job_list, *got_alloc);
 
 	if (opt_list)
 		*p_job = (void *) srun_job_list;
