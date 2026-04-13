@@ -107,9 +107,10 @@ static list_t *power_action_list = NULL;
 
 list_t *resume_job_list = NULL;
 
-power_action_t *suspend_prog = NULL;
-power_action_t *resume_prog = NULL;
+power_action_t *reboot_prog = NULL;
 power_action_t *resume_fail_prog = NULL;
+power_action_t *resume_prog = NULL;
+power_action_t *suspend_prog = NULL;
 
 typedef struct {
 	power_action_t *action;
@@ -151,6 +152,7 @@ static void _clear_power_config(void);
 static void  _do_power_work(time_t now);
 static int _do_resume_action(void *entry, void *payload);
 static int _do_power_action(void *entry, void *payload);
+static int _do_power_action_reboot(void *entry, void *payload);
 static int   _init_power_config(void);
 static void *_power_save_thread(void *arg);
 static uint64_t _timespec_to_msec(struct timespec *tv);
@@ -445,6 +447,39 @@ static int _pick_exc_nodes(void *x, void *arg)
 	return 0;
 }
 
+static bool _node_needs_reboot(node_record_t *node_ptr)
+{
+	bool want_reboot = false;
+	if (!IS_NODE_REBOOT_REQUESTED(node_ptr))
+		return false;
+	if (IS_NODE_REBOOT_ISSUED(node_ptr)) {
+		debug2("%s: Still waiting for boot of node %s",
+		       __func__, node_ptr->name);
+		return false;
+	}
+	if (IS_NODE_COMPLETING(node_ptr)) {
+		return false;
+	}
+	/* only active idle nodes, don't reboot
+	 * nodes that are idle but have suspended
+	 * jobs on them
+	 */
+	if (IS_NODE_IDLE(node_ptr) && !IS_NODE_NO_RESPOND(node_ptr) &&
+	    !IS_NODE_POWERING_UP(node_ptr) && node_ptr->sus_job_cnt == 0)
+		want_reboot = true;
+	else if (IS_NODE_FUTURE(node_ptr) &&
+		 (node_ptr->last_response == (time_t) 0))
+		want_reboot = true; /* system just restarted */
+	else if (IS_NODE_DOWN(node_ptr))
+		want_reboot = true;
+	else
+		want_reboot = false;
+	if (!want_reboot) {
+		return false;
+	}
+	return true;
+}
+
 static int _find_action_entry(void *action_entry_ptr, void *key)
 {
 	action_entry_t *action_entry = (action_entry_t *) action_entry_ptr;
@@ -452,7 +487,8 @@ static int _find_action_entry(void *action_entry_ptr, void *key)
 }
 
 static list_t *_build_power_action_list(bitstr_t *node_bitmap,
-					char *default_action)
+					char *default_action,
+					bool force_default)
 {
 	node_record_t *node_ptr = NULL;
 	action_entry_t *entry = NULL;
@@ -460,11 +496,20 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		char *key = NULL;
 		if (node_ptr->power_action_name) {
-			key = node_ptr->power_action_name;
-			node_ptr->power_action_name = NULL;
+			if (force_default) {
+				debug3("%s: force default power action '%s' for node %s",
+				       __func__, default_action ? default_action : "(none)",
+				       node_ptr->name);
+				key = xstrdup(default_action);
+				xfree(node_ptr->power_action_name);
+			} else {
+				key = node_ptr->power_action_name;
+				node_ptr->power_action_name = NULL;
+			}
 		} else if (default_action) {
 			key = xstrdup(default_action);
-		} else {
+		}
+		if (!key) {
 			error("power_save: no power action found for node %s (default_action=%s)",
 			      node_ptr->name,
 			      default_action ? default_action : "(none)");
@@ -500,6 +545,7 @@ static void _do_power_work(time_t now)
 	uint32_t susp_state;
 	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
+	bitstr_t *reboot_node_bitmap = NULL;
 	node_record_t *node_ptr;
 	data_t *resume_json_data = NULL;
 	data_t *jobs_data = NULL;
@@ -809,6 +855,45 @@ static void _do_power_work(time_t now)
 			}
 			nodes_updated = true;
 		}
+
+		/*
+		 * Reboot nodes as appropriate
+		 */
+		if (_node_needs_reboot(node_ptr)) {
+			if (reboot_node_bitmap == NULL) {
+				reboot_node_bitmap =
+					bit_alloc(node_record_count);
+			}
+			bit_set(reboot_node_bitmap, node_ptr->index);
+			/*
+                         * node_ptr->node_state &= ~NODE_STATE_MAINT;
+                         * The NODE_STATE_MAINT bit will just get set again as
+                         * long as the node remains in the maintenance
+                         * reservation, so don't clear it here because it won't
+                         * do anything.
+                         */
+			node_ptr->node_state &= NODE_STATE_FLAGS;
+			node_ptr->node_state |= NODE_STATE_DOWN;
+			node_ptr->node_state &= ~NODE_STATE_REBOOT_REQUESTED;
+			node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
+
+			bit_clear(avail_node_bitmap, node_ptr->index);
+			bit_clear(idle_node_bitmap, node_ptr->index);
+
+			/* Unset this as this node is not in reboot ASAP
+                         * anymore. */
+			bit_clear(asap_node_bitmap, node_ptr->index);
+
+			node_ptr->boot_req_time = now;
+
+			set_node_reason(node_ptr, "reboot issued", now);
+
+			clusteracct_storage_g_node_down(acct_db_conn, node_ptr,
+							now, NULL,
+							slurm_conf
+								.slurm_user_id);
+			nodes_updated = true;
+		}
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
 	if (power_save_debug && ((now - last_log) > 600) && (susp_total > 0)) {
@@ -822,7 +907,8 @@ static void _do_power_work(time_t now)
 			_build_power_action_list(sleep_node_bitmap,
 						 suspend_prog ?
 							 suspend_prog->name :
-							 NULL);
+							 NULL,
+						 false);
 		FREE_NULL_BITMAP(sleep_node_bitmap);
 
 		list_for_each(sleep_action_list, _do_power_action, NULL);
@@ -835,7 +921,8 @@ static void _do_power_work(time_t now)
 			_build_power_action_list(wake_node_bitmap,
 						 resume_prog ?
 							 resume_prog->name :
-							 NULL);
+							 NULL,
+						 false);
 		FREE_NULL_BITMAP(wake_node_bitmap);
 		list_for_each(wake_action_list, _do_resume_action,
 			      resume_json_data);
@@ -849,11 +936,26 @@ static void _do_power_work(time_t now)
 						 resume_fail_prog ?
 							 resume_fail_prog
 								 ->name :
-							 NULL);
+							 NULL,
+						 false);
 		FREE_NULL_BITMAP(failed_node_bitmap);
+
 		list_for_each(fail_action_list, _do_power_action, NULL);
 		FREE_NULL_LIST(fail_action_list);
 		nodes_updated = true;
+	}
+
+	if (reboot_node_bitmap) {
+		list_t *reboot_action_list =
+			_build_power_action_list(reboot_node_bitmap,
+						 reboot_prog ?
+							 reboot_prog->name :
+							 NULL,
+						 false);
+		FREE_NULL_BITMAP(reboot_node_bitmap);
+		list_for_each(reboot_action_list, _do_power_action_reboot,
+			      NULL);
+		FREE_NULL_LIST(reboot_action_list);
 	}
 
 	if (nodes_updated)
@@ -958,13 +1060,93 @@ static int _do_power_action(void *e, void *payload)
 	return SLURM_SUCCESS;
 }
 
+void power_action_reboot(bitstr_t *bitmap, char *features)
+{
+	list_t *action_list = NULL;
+
+	if (!reboot_prog) {
+		error("power_save: reboot requested but RebootProgram is not configured");
+		return;
+	}
+	action_list = _build_power_action_list(bitmap, reboot_prog->name, true);
+	list_for_each(action_list, _do_power_action_reboot, xstrdup(features));
+	FREE_NULL_LIST(action_list);
+}
+
+static int _do_power_action_reboot(void *e, void *payload)
+{
+	action_entry_t *entry = e;
+	agent_arg_t *agent_args;
+	char *features = payload;
+	char *host_str = NULL;
+	hostlist_t *hl;
+	power_action_t *action = NULL;
+
+	hl = bitmap2hostlist(entry->bitmap);
+	if (!hl) {
+		error("power_save: failed bitmap2hostlist");
+		xfree(features);
+		return SLURM_ERROR;
+	}
+	host_str = hostlist_ranged_string_xmalloc(hl);
+
+	action = entry->action;
+	if (!action) {
+		action = power_action_find(power_action_list,
+					   entry->action_name);
+		if (!action) {
+			error("Invalid PowerAction '%s', skipping nodes %s",
+			      entry->action_name, host_str);
+			FREE_NULL_HOSTLIST(hl);
+			xfree(host_str);
+			xfree(features);
+			return SLURM_ERROR;
+		}
+	}
+
+	if (action->on_slurmctld) {
+		log_flag(POWER, "Issuing slurmctld power action reboot '%s' request for nodes %s",
+			 action->name,
+			 host_str);
+		slurmscriptd_run_power_action(action, host_str, features, 0,
+					      max_timeout, NULL, NULL);
+		FREE_NULL_HOSTLIST(hl);
+	} else {
+		reboot_msg_t *reboot_msg;
+
+		log_flag(POWER, "Issuing slurmd power action reboot '%s' request for nodes %s",
+			action->name,
+			host_str);
+		agent_args = xmalloc(sizeof(*agent_args));
+		agent_args->msg_type = REQUEST_REBOOT_NODES;
+		agent_args->retry = 0;
+		agent_args->hostlist = hl;
+		agent_args->node_count = hostlist_count(hl);
+		agent_args->protocol_version = entry->protocol_version ?
+						       entry->protocol_version :
+						       SLURM_PROTOCOL_VERSION;
+
+		reboot_msg = xmalloc(sizeof(*reboot_msg));
+		slurm_init_reboot_msg(reboot_msg, true);
+		reboot_msg->power_action_name = xstrdup(action->name);
+		reboot_msg->features = features;
+		agent_args->msg_args = reboot_msg;
+
+		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
+		agent_queue_request(agent_args);
+	}
+	xfree(host_str);
+	return SLURM_SUCCESS;
+}
+
 static void _clear_power_config(void)
 {
 	FREE_NULL_LIST(power_action_list);
 
-	suspend_prog = NULL;
-	resume_prog = NULL;
+	reboot_prog = NULL;
 	resume_fail_prog = NULL;
+	resume_prog = NULL;
+	suspend_prog = NULL;
 
 	suspend_exc_down = false;
 	suspend_exc_state_flags = 0;
@@ -1139,6 +1321,8 @@ static int _print_power_action(void *action_ptr, void *unused)
 		default_prog_str = "ResumeProgram";
 	} else if (action == resume_fail_prog) {
 		default_prog_str = "ResumeFailProgram";
+	} else if (action == reboot_prog) {
+		default_prog_str = "RebootProgram";
 	}
 	log_flag(POWER, "PowerAction entry: %s (%s) (%s:%s)",
 		 action->name,
@@ -1178,7 +1362,15 @@ static int _init_power_config(void)
 		power_action_find_or_create(power_action_list,
 					    slurm_conf.resume_fail_program,
 					    POWER_ACTION_RESUME_FAIL);
+	reboot_prog = power_action_find_or_create(power_action_list,
+						  slurm_conf.reboot_program,
+						  POWER_ACTION_REBOOT);
 
+	if (reboot_prog && !power_action_valid_prog(reboot_prog)) {
+		error("Invalid RebootProgram PowerAction %s (%s)",
+			reboot_prog->name, reboot_prog->program);
+		reboot_prog = NULL;
+	}
 	if (suspend_prog && !power_action_valid_prog(suspend_prog)) {
 		error("Invalid SuspendProgram PowerAction %s (%s)",
 			suspend_prog->name, suspend_prog->program);

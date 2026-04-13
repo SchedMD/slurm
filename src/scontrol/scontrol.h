@@ -157,6 +157,7 @@ extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
 /* reboot_node.c */
 extern int      scontrol_cancel_reboot(char *nodes);
 extern int scontrol_reboot_nodes(char *node_list, bool asap, bool force,
-				 uint32_t next_state, char *reason);
+				 uint32_t next_state, char *reason,
+				 char *power_action);
 
 #endif

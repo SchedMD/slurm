@@ -4768,49 +4768,15 @@ extern bitstr_t *node_features_reboot(job_record_t *job_ptr,
 	return boot_node_bitmap;
 }
 
-/*
- * reboot_job_nodes - Reboot the compute nodes allocated to a job.
- * Also change the modes of KNL nodes for node_features/knl_generic plugin.
- * IN job_ptr - pointer to job that will be initiated
- * RET SLURM_SUCCESS(0) or error code
- */
-static void _send_reboot_msg(bitstr_t *node_bitmap, char *features,
-			     uint16_t protocol_version)
-{
-	agent_arg_t *reboot_agent_args = NULL;
-	reboot_msg_t *reboot_msg;
-	hostlist_t *hostlist;
-
-	reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-	reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-	reboot_agent_args->retry = 0;
-	reboot_agent_args->node_count = 0;
-	reboot_agent_args->protocol_version = protocol_version;
-
-	if ((hostlist = bitmap2hostlist(node_bitmap))) {
-		reboot_agent_args->hostlist = hostlist;
-		reboot_agent_args->node_count = hostlist_count(hostlist);
-	}
-
-	reboot_msg = xmalloc(sizeof(reboot_msg_t));
-	slurm_init_reboot_msg(reboot_msg, false);
-	reboot_agent_args->msg_args = reboot_msg;
-	reboot_msg->features = xstrdup(features);
-
-	set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
-	agent_queue_request(reboot_agent_args);
-}
-
-static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
-		       job_record_t *job_ptr, char *reboot_features,
-		       uint16_t protocol_version)
+static void _do_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
+		       char *reboot_features, uint16_t protocol_version)
 {
 	xassert(node_bitmap);
 
 	if (bit_ffs(node_bitmap) == -1)
 		return;
 
-	_send_reboot_msg(node_bitmap, reboot_features, protocol_version);
+	power_action_reboot(node_bitmap, reboot_features);
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		char *nodes = bitmap2node_name(node_bitmap);
 		if (nodes) {
@@ -4991,22 +4957,21 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 
 	if (feature_node_bitmap) {
 		/* Reboot nodes to change KNL NUMA and/or MCDRAM mode */
-		_do_reboot(power_save_on, feature_node_bitmap, job_ptr,
-			   reboot_features, protocol_version);
+		_do_reboot(feature_node_bitmap, job_ptr, reboot_features,
+			   protocol_version);
 		bit_and_not(boot_node_bitmap, feature_node_bitmap);
 	}
 
 	if (non_feature_node_bitmap) {
 		/* Reboot nodes with no feature changes */
-		_do_reboot(power_save_on, non_feature_node_bitmap, job_ptr,
-			   NULL, protocol_version);
+		_do_reboot(non_feature_node_bitmap, job_ptr, NULL,
+			   protocol_version);
 		bit_and_not(boot_node_bitmap, non_feature_node_bitmap);
 	}
 
 	if (job_ptr->reboot) {
 		/* Reboot the remaining nodes blindly as per direct request */
-		_do_reboot(power_save_on, boot_node_bitmap, job_ptr, NULL,
-			   protocol_version);
+		_do_reboot(boot_node_bitmap, job_ptr, NULL, protocol_version);
 	}
 
 cleanup:

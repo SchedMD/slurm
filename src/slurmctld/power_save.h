@@ -67,6 +67,15 @@ extern power_action_t *power_save_find_action(char *action_name);
 extern bool power_save_valid_action(char *action_name);
 
 /*
+ * Reboot compute nodes for a job using the configured
+ * RebootProgram / PowerAction for reboot.
+ *
+ * IN node_bitmap - bitmap of nodes to reboot
+ * IN features - optional features that the nodes need to be rebooted with
+ */
+extern void power_action_reboot(bitstr_t *bitmap, char *features);
+
+/*
  * Parse settings for excluding nodes, partitions and states from being
  * suspended.
  *

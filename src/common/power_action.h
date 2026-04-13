@@ -46,11 +46,13 @@
 #define POWER_ACTION_NAME_SUSPEND "__suspendprog__"
 #define POWER_ACTION_NAME_RESUME "__resumeprog__"
 #define POWER_ACTION_NAME_RESUME_FAIL "__resumefailprog__"
+#define POWER_ACTION_NAME_REBOOT "__rebootprog__"
 
 typedef enum power_action_type {
 	POWER_ACTION_RESUME,
 	POWER_ACTION_SUSPEND,
 	POWER_ACTION_RESUME_FAIL,
+	POWER_ACTION_REBOOT,
 } power_action_type_t;
 
 typedef struct power_action {

@@ -116,8 +116,6 @@ extern void slurmscriptd_run_power_action(power_action_t *action, char *hosts,
 					  uint32_t timeout,
 					  char *tmp_file_env_name,
 					  char *tmp_file_str);
-extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
-				   char **argv);
 
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 				  uint32_t timeout, char *script_name);

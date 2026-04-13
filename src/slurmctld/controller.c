@@ -218,7 +218,6 @@ int	sched_interval = 60;
 slurmctld_config_t slurmctld_config = {0};
 diag_stats_t slurmctld_diag_stats;
 bool slurmctld_primary = true;
-bool	want_nodes_reboot = true;
 int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
 uint16_t running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
@@ -2467,102 +2466,6 @@ static void _update_parts_and_resvs()
 	part_list_update_assoc_lists();
 }
 
-static void _queue_reboot_msg(void)
-{
-	agent_arg_t *reboot_agent_args = NULL;
-	node_record_t *node_ptr;
-	char *host_str;
-	time_t now = time(NULL);
-	int i;
-	bool want_reboot;
-
-	want_nodes_reboot = false;
-	for (i = 0; (node_ptr = next_node(&i)); i++) {
-		/* Allow nodes in maintenance reservations to reboot
-		 * (they previously could not).
-		 */
-		if (!IS_NODE_REBOOT_REQUESTED(node_ptr))
-			continue;	/* No reboot needed */
-		else if (IS_NODE_REBOOT_ISSUED(node_ptr)) {
-			debug2("%s: Still waiting for boot of node %s",
-			       __func__, node_ptr->name);
-			continue;
-		}
-		if (IS_NODE_COMPLETING(node_ptr)) {
-			want_nodes_reboot = true;
-			continue;
-		}
-                /* only active idle nodes, don't reboot
-                 * nodes that are idle but have suspended
-                 * jobs on them
-                 */
-		if (IS_NODE_IDLE(node_ptr)
-                    && !IS_NODE_NO_RESPOND(node_ptr)
-                    && !IS_NODE_POWERING_UP(node_ptr)
-                    && node_ptr->sus_job_cnt == 0)
-			want_reboot = true;
-		else if (IS_NODE_FUTURE(node_ptr) &&
-			 (node_ptr->last_response == (time_t) 0))
-			want_reboot = true; /* system just restarted */
-		else if (IS_NODE_DOWN(node_ptr))
-			want_reboot = true;
-		else
-			want_reboot = false;
-		if (!want_reboot) {
-			want_nodes_reboot = true;	/* defer reboot */
-			continue;
-		}
-		if (reboot_agent_args == NULL) {
-			reboot_agent_args = xmalloc(sizeof(agent_arg_t));
-			reboot_agent_args->msg_type = REQUEST_REBOOT_NODES;
-			reboot_agent_args->retry = 0;
-			reboot_agent_args->hostlist = hostlist_create(NULL);
-			reboot_agent_args->protocol_version =
-				SLURM_PROTOCOL_VERSION;
-		}
-		if (reboot_agent_args->protocol_version
-		    > node_ptr->protocol_version)
-			reboot_agent_args->protocol_version =
-				node_ptr->protocol_version;
-		hostlist_push_host(reboot_agent_args->hostlist, node_ptr->name);
-		reboot_agent_args->node_count++;
-		/*
-		 * node_ptr->node_state &= ~NODE_STATE_MAINT;
-		 * The NODE_STATE_MAINT bit will just get set again as long
-		 * as the node remains in the maintenance reservation, so
-		 * don't clear it here because it won't do anything.
-		 */
-		node_ptr->node_state &=  NODE_STATE_FLAGS;
-		node_ptr->node_state |=  NODE_STATE_DOWN;
-		node_ptr->node_state &= ~NODE_STATE_REBOOT_REQUESTED;
-		node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
-
-		bit_clear(avail_node_bitmap, node_ptr->index);
-		bit_clear(idle_node_bitmap, node_ptr->index);
-
-		/* Unset this as this node is not in reboot ASAP anymore. */
-		bit_clear(asap_node_bitmap, node_ptr->index);
-
-		node_ptr->boot_req_time = now;
-
-		set_node_reason(node_ptr, "reboot issued", now);
-
-		clusteracct_storage_g_node_down(acct_db_conn, node_ptr, now,
-		                                NULL, slurm_conf.slurm_user_id);
-	}
-	if (reboot_agent_args != NULL) {
-		hostlist_uniq(reboot_agent_args->hostlist);
-		host_str = hostlist_ranged_string_xmalloc(
-				reboot_agent_args->hostlist);
-		debug("Issuing reboot request for nodes %s", host_str);
-		xfree(host_str);
-		set_agent_arg_r_uid(reboot_agent_args, SLURM_AUTH_UID_ANY);
-		agent_queue_request(reboot_agent_args);
-		last_node_update = now;
-		schedule_node_save();
-	}
-}
-
 static void _flush_rpcs(void)
 {
 	struct timespec ts = {0, 0};
@@ -2893,12 +2796,6 @@ static void *_slurmctld_background(void *no_data)
 			debug2("Performing srun ping");
 			srun_ping();
 			unlock_slurmctld(job_read_lock);
-		}
-
-		if (want_nodes_reboot) {
-			lock_slurmctld(node_write_lock);
-			_queue_reboot_msg();
-			unlock_slurmctld(node_write_lock);
 		}
 
 		/* Process any pending agent work */

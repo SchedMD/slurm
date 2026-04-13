@@ -2606,6 +2606,7 @@ static void _rpc_run_power_action(slurm_msg_t *msg)
 		} else {
 			env_array_append(&env, action_msg->file_env_name,
 					 filename);
+			close(tmp_fd);
 		}
 		xfree(filename);
 	}
@@ -2647,14 +2648,14 @@ static void _rpc_run_power_action(slurm_msg_t *msg)
 static void
 _rpc_reboot(slurm_msg_t *msg)
 {
-	char *reboot_program, *cmd = NULL, *sp;
 	reboot_msg_t *reboot_msg;
-	slurm_conf_t *cfg;
-	int exit_code;
+	slurm_conf_t *cf;
 	bool need_reboot = true;
 
-	cfg = slurm_conf_lock();
-	reboot_program = cfg->reboot_program;
+	list_t *power_action_list = NULL;
+	power_action_t *reboot_power_action = NULL;
+	power_action_t *default_reboot_action = NULL;
+
 	reboot_msg = msg->data;
 
 	if (reboot_msg && reboot_msg->features) {
@@ -2676,7 +2677,6 @@ _rpc_reboot(slurm_msg_t *msg)
 			xstrfmtcat(update_node_msg.reason,
 				   "Failed to set node feature(s): '%s'",
 				   new_features);
-			slurm_conf_unlock();
 
 			/*
 			 * Send updated registration to clear booting
@@ -2695,61 +2695,139 @@ _rpc_reboot(slurm_msg_t *msg)
 		xfree(new_features);
 		log_flag(NODE_FEATURES, "Features on node updated successfully");
 	}
+	/*
+	 * Get the power action list from slurm.conf and find the reboot action
+	 * by name or use the default reboot action generated from
+	 * RebootProgram.
+	 */
+	cf = slurm_conf_lock();
+	slurm_conf_power_action_list(&power_action_list);
+	default_reboot_action =
+		power_action_find_or_create(power_action_list,
+					    slurm_conf.reboot_program,
+					    POWER_ACTION_REBOOT);
+	slurm_conf_unlock();
+	cf = NULL;
+	if (!reboot_msg || !reboot_msg->power_action_name) {
+		if (default_reboot_action)
+			reboot_power_action = default_reboot_action;
+	} else {
+		reboot_power_action =
+			power_action_find(power_action_list,
+					  reboot_msg->power_action_name);
+	}
+	if (reboot_power_action) {
+		if (!power_action_valid_prog(reboot_power_action)) {
+			error("Invalid reboot PowerAction (%s) program (%s)",
+			      reboot_power_action->name ?
+		      		reboot_power_action->name : "none",
+		      	      reboot_power_action->program ?
+		      		reboot_power_action->program : "none");
+			reboot_power_action = NULL;
+		} else if (reboot_power_action->on_slurmctld) {
+			error("Invalid reboot PowerAction (%s) expects to run on slurmctld",
+			      reboot_power_action->name ?
+			      	reboot_power_action->name : "none");
+			reboot_power_action = NULL;
+		}
+	}
 	if (!need_reboot) {
 		log_flag(NODE_FEATURES, "Reboot not required - sending registration message");
 		conf->boot_time = time(NULL);
 		slurm_mutex_lock(&cached_features_mutex);
 		refresh_cached_features = true;
 		slurm_mutex_unlock(&cached_features_mutex);
-		slurm_conf_unlock();
+
 		send_registration_msg(SLURM_SUCCESS);
+		FREE_NULL_LIST(power_action_list);
 		return;
-	} else if (need_reboot && reboot_program) {
-		sp = strchr(reboot_program, ' ');
-		if (sp)
-			sp = xstrndup(reboot_program, (sp - reboot_program));
-		else
-			sp = xstrdup(reboot_program);
+	}
+	if (reboot_power_action) {
+		run_command_args_t run_args = { 0 };
+		int status = 0;
+		int i = 0;
+		/* room for executable name */
+		uint32_t argc = reboot_power_action->argc + 1;
+		char **argv = NULL;
+		char **argv1 = NULL;
+		char *exec_name = NULL;
+		char **env = NULL;
+		char *resp = NULL;
+		char *features = NULL;
+
+		debug2("%s: reboot using power action %s (%s)", __func__,
+		      reboot_power_action->name,
+		      reboot_power_action->program ?
+			reboot_power_action->program : "none");
+
 		if (reboot_msg && reboot_msg->features) {
 			/*
-				 * Run reboot_program with only arguments given
-				 * in reboot_msg->features.
-				 */
-			info("Node reboot request with features %s being processed",
-				     reboot_msg->features);
-			if (reboot_msg->features[0]) {
-				xstrfmtcat(cmd, "%s '%s'", sp,
-					   reboot_msg->features);
-			} else {
-				cmd = xstrdup(sp);
-			}
-		} else {
-			/* Run reboot_program verbatim */
-			cmd = xstrdup(reboot_program);
-			info("Node reboot request being processed");
+			 * Run reboot_program with features given as an argument
+			 */
+			features = xstrdup(reboot_msg->features);
+			argc += 1;
 		}
-		if (access(sp, R_OK | X_OK) < 0)
-			error("Cannot run RebootProgram [%s]: %m", sp);
-		else if ((exit_code = system(cmd)))
-			error("system(%s) returned %d", reboot_program,
-				      exit_code);
-		xfree(sp);
-		xfree(cmd);
+		argv = xmalloc((argc + 1) * sizeof(char *));
+		exec_name = strrchr(reboot_power_action->program, '/');
+		argv[0] = xstrdup(exec_name ? exec_name + 1 :
+					      reboot_power_action->program);
+		/* Copy args from power_action and append features */
+		argv1 = argv + 1;
+		for (; i < reboot_power_action->argc; i++) {
+			argv1[i] = xstrdup(reboot_power_action->argv[i]);
+		}
+		if (features) {
+			argv1[i] = features;
+			features = NULL;
+		}
+		argv[argc] = NULL;
+
+		env = env_array_create();
+		env_array_append(&env, "SLURM_NODE_NAME", conf->node_name);
+
+		run_args.script_type = "reboot";
+		run_args.script_path = reboot_power_action->program;
+		run_args.script_argv = argv;
+		run_args.env = env;
+		run_args.status = &status;
+		run_args.max_wait = -1;
+		run_args.direct_exec = true;
+		run_args.orphan_on_shutdown = true;
+
+		resp = run_command(&run_args);
+
+		if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+			error("Reboot power action %s (%s) exited with status %d",
+			      reboot_power_action->name,
+			      run_args.script_path,
+			      WEXITSTATUS(status));
+		else if (WIFSIGNALED(status))
+			error("Reboot power action %s (%s) killed by signal %u",
+			      reboot_power_action->name,
+			      run_args.script_path,
+			      WTERMSIG(status));
+		xfree(resp);
+		for (int i = 0; argv && argv[i]; i++)
+			xfree(argv[i]);
+		xfree(argv);
+		env_array_free(env);
 
 		/*
-			 * Explicitly shutdown the slurmd. This is usually
-			 * taken care of by calling reboot_program, but in
-			 * case that fails to shut things down this will at
-			 * least offline this node until someone intervenes.
-			 */
-		if (cfg->conf_flags & CONF_FLAG_SHR) {
+		 * Explicitly shutdown the slurmd. This is usually
+		 * taken care of by calling reboot_program, but in
+		 * case that fails to shut things down this will at
+		 * least offline this node until someone intervenes.
+		 */
+		cf = slurm_conf_lock();
+		if (cf->conf_flags & CONF_FLAG_SHR) {
 			slurmd_shutdown();
 		}
 		slurm_conf_unlock();
+		cf = NULL;
 	} else {
-		error("RebootProgram isn't defined in config");
-		slurm_conf_unlock();
+		error("No valid reboot PowerAction available, not rebooting");
 	}
+	FREE_NULL_LIST(power_action_list);
 
 	/* Never return a message, slurmctld does not expect one */
 	/* slurm_send_rc_msg(msg, rc); */

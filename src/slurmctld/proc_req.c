@@ -5684,9 +5684,10 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	node_record_t *node_ptr;
 	reboot_msg_t *reboot_msg = msg->data;
 	char *nodelist = NULL;
+	bool want_nodes_reboot = false;
 	bitstr_t *bitmap = NULL, *cannot_reboot_nodes = NULL;
 	/* Locks: write node lock */
-	slurmctld_lock_t node_write_lock = {
+	slurmctld_lock_t node_job_write_lock = {
 		.job = WRITE_LOCK,
 		.node = WRITE_LOCK,
 	};
@@ -5701,6 +5702,15 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		return;
 	}
 
+	if (reboot_msg && reboot_msg->power_action_name &&
+	    reboot_msg->power_action_name[0]) {
+		if (!power_save_valid_action(reboot_msg->power_action_name)) {
+			error("Invalid power action %s for REBOOT_NODES request",
+			      reboot_msg->power_action_name);
+			slurm_send_rc_msg(msg, ESLURM_INVALID_POWER_ACTION);
+			return;
+		}
+	}
 	/* do RPC call */
 	if (reboot_msg)
 		nodelist = reboot_msg->node_list;
@@ -5726,7 +5736,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	}
 
 	cannot_reboot_nodes = bit_alloc(node_record_count);
-	lock_slurmctld(node_write_lock);
+	lock_slurmctld(node_job_write_lock);
 	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
 		if (IS_NODE_FUTURE(node_ptr)) {
 			bit_clear(bitmap, node_ptr->index);
@@ -5774,6 +5784,9 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		node_ptr->node_state |= NODE_STATE_REBOOT_REQUESTED;
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;
+			xfree(node_ptr->power_action_name);
+			node_ptr->power_action_name =
+				xstrdup(reboot_msg->power_action_name);
 			if (node_ptr->next_state == NODE_RESUME)
 				bit_set(rs_node_bitmap, node_ptr->index);
 
@@ -5815,7 +5828,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 
 	if (want_nodes_reboot == true)
 		schedule_node_save();
-	unlock_slurmctld(node_write_lock);
+	unlock_slurmctld(node_job_write_lock);
 	if (want_nodes_reboot == true) {
 		nodelist = bitmap2node_name(bitmap);
 		info("reboot request queued for nodes %s", nodelist);

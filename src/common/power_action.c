@@ -66,6 +66,8 @@ extern const char *power_action_type_name(power_action_type_t type)
 		return POWER_ACTION_NAME_SUSPEND;
 	case POWER_ACTION_RESUME_FAIL:
 		return POWER_ACTION_NAME_RESUME_FAIL;
+	case POWER_ACTION_REBOOT:
+		return POWER_ACTION_NAME_REBOOT;
 	default:
 		error("%s: invalid power action type %d", __func__,
 			      type);
@@ -78,6 +80,21 @@ extern power_action_t *power_action_find_or_create(list_t *power_action_list,
 						   power_action_type_t type)
 {
 	power_action_t *action = power_action_find(power_action_list, field);
+	bool on_slurmctld = true;
+	if (type == POWER_ACTION_REBOOT) {
+		/*
+		 * Legacy RebootProgram runs on compute nodes unless
+		 * reboot_from_controller is set. But when run from the slurmd,
+		 * assume it should be run there.
+		 */
+		if (running_in_slurmctld() &&
+		    xstrcasestr(slurm_conf.slurmctld_params,
+				"reboot_from_controller")) {
+			on_slurmctld = true;
+		} else {
+			on_slurmctld = false;
+		}
+	}
 	/*
 	 * If an action of name $source already exists, then it will be found
 	 * first instead of the one created here. Without switching to a hashmap
@@ -90,7 +107,8 @@ extern power_action_t *power_action_find_or_create(list_t *power_action_list,
 			      type);
 			return NULL;
 		}
-		if (power_action_create(name, xstrdup(field), true, &action)) {
+		if (power_action_create(name, xstrdup(field), on_slurmctld,
+					&action)) {
 			error("Failed to create power action %s", name);
 			return NULL;
 		}

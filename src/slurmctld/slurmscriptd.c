@@ -1688,29 +1688,6 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 				     send_args);
 }
 
-extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
-				   char **argv)
-{
-	int status;
-
-	run_script_msg_t run_script_msg;
-
-	memset(&run_script_msg, 0, sizeof(run_script_msg));
-
-	/* Init run_script_msg */
-	run_script_msg.argc = argc;
-	run_script_msg.argv = argv;
-	run_script_msg.script_name = "RebootProgram";
-	run_script_msg.script_path = script_path;
-	run_script_msg.script_type = SLURMSCRIPTD_REBOOT;
-
-	/* Send message; wait for response */
-	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-				       &run_script_msg, true, NULL, NULL);
-
-	return status;
-}
-
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 				  uint32_t timeout, char *script_name)
 {

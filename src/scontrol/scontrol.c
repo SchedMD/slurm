@@ -729,6 +729,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 	bool asap = false;
 	bool force = false;
 	char *node_list = NULL;
+	char *power_action = NULL;
 	char *reason = NULL;
 	char *tok = NULL;
 	uint32_t next_state = NO_VAL;
@@ -746,6 +747,18 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 			asap = true;
 		} else if (!strcasecmp(tok, "FORCE")) {
 			force = true;
+		} else if (!xstrncasecmp(tok, "Action=", strlen("Action="))) {
+			char *tmp_ptr = strchr(tok, '=');
+			if (!tmp_ptr || !*(tmp_ptr + 1)) {
+				_printf_error("missing power action");
+				goto cleanup;
+			}
+			if (power_action) {
+				_printf_error(
+					"multiple power actions specified");
+				goto cleanup;
+			}
+			power_action = xstrdup(tmp_ptr + 1);
 		} else if (!xstrncasecmp(tok, "Reason=", strlen("Reason="))) {
 			char *tmp_ptr = strchr(tok, '=');
 			if (!tmp_ptr || !*(tmp_ptr + 1)) {
@@ -798,16 +811,17 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, "Missing node list. Specify ALL|<NodeList>");
 	} else {
-		error_code = scontrol_reboot_nodes(node_list, asap, force,
-						   next_state, reason);
+		error_code =
+			scontrol_reboot_nodes(node_list, asap, force,
+					      next_state, reason, power_action);
 	}
-
 	if (error_code)
 		_printf_error("scontrol_reboot_nodes error");
 
 cleanup:
-	xfree(node_list);
 	xfree(reason);
+	xfree(node_list);
+	xfree(power_action);
 }
 
 void _process_power_command(const char *tag, int argc, char **argv)
