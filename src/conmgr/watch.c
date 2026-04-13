@@ -324,6 +324,10 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 		return;
 	}
 
+	/* un-quiesce if input is already closed to allow cleanup */
+	if (con_flag(con, FLAG_READ_EOF))
+		con_unset_flag(con, FLAG_QUIESCE);
+
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	if (con->out)
@@ -674,7 +678,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 			 * needs to be done
 			 */
 		}
-	} else {
+	} else if (!con_flag(con, FLAG_READ_EOF) ||
+		   (con->output_fd != con->input_fd)) {
 		xassert(!con_flag(con, FLAG_CAN_READ) &&
 			!con_flag(con, FLAG_CAN_WRITE));
 
@@ -727,8 +732,8 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 					    (con->output_fd >= 0))) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CONMGR) {
 			char *flags = con_flags_string(con->flags);
-			log_flag(CONMGR, "%s: connection is quiesced flags=%s",
-				 __func__, flags);
+			log_flag(CONMGR, "%s: [%s] connection is quiesced flags=%s",
+				 __func__, con->name, flags);
 			xfree(flags);
 		}
 		con_set_polling(con, PCTL_TYPE_NONE, __func__);
