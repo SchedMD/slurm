@@ -463,9 +463,10 @@ static void _dump_step_desc(job_step_create_request_msg_t *step_spec)
 	       mem_type, mem_value, step_spec->resv_port_cnt,
 	       step_spec->immediate,
 	       (step_spec->flags & SSF_NO_KILL) ? "yes" : "no");
-	debug3("   overcommit=%s time_limit=%u",
+	debug3("   overcommit=%s time_limit=%u async=%s",
 	       (step_spec->flags & SSF_OVERCOMMIT) ? "yes" : "no",
-	       step_spec->time_limit);
+	       step_spec->time_limit,
+	       (step_spec->flags & SSF_ASYNC) ? "yes" : "no");
 
 	if (step_spec->cpus_per_tres)
 		debug3("   CPUs_per_TRES=%s", step_spec->cpus_per_tres);
