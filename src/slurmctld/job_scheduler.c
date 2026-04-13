@@ -4810,11 +4810,7 @@ static void _do_reboot(bool power_save_on, bitstr_t *node_bitmap,
 	if (bit_ffs(node_bitmap) == -1)
 		return;
 
-	if (power_save_on)
-		power_job_reboot(node_bitmap, job_ptr, reboot_features);
-	else
-		_send_reboot_msg(node_bitmap, reboot_features,
-				 protocol_version);
+	_send_reboot_msg(node_bitmap, reboot_features, protocol_version);
 	if (get_log_level() >= LOG_LEVEL_DEBUG) {
 		char *nodes = bitmap2node_name(node_bitmap);
 		if (nodes) {

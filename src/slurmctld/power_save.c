@@ -788,28 +788,6 @@ static void _do_power_work(time_t now)
 	FREE_NULL_BITMAP(job_power_node_bitmap);
 }
 
-extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
-			    char *features)
-{
-	int rc = SLURM_SUCCESS;
-	char *nodes;
-
-	nodes = bitmap2node_name(node_bitmap);
-	if (nodes) {
-		slurmscriptd_run_power(resume_prog, nodes, features,
-				       job_ptr->job_id, "resumeprog_reboot",
-				       max_timeout, NULL, NULL);
-		log_flag(POWER, "%s: reboot nodes %s features %s",
-			 __func__, nodes, features);
-	} else {
-		error("%s: bitmap2nodename", __func__);
-		rc = SLURM_ERROR;
-	}
-	xfree(nodes);
-
-	return rc;
-}
-
 static void _do_failed_nodes(char *hosts)
 {
 	slurmscriptd_run_power(resume_fail_prog, hosts, NULL, 0,
