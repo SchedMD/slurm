@@ -2168,6 +2168,11 @@ static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
 		      __func__, job_ptr, resp_msg->node_name,
 		      slurm_strerror(resp_msg->return_code));
 		if (!resp_msg->all_nodes) {
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc,
+				   "Memory resize to %"PRIu64"MB failed on node %s",
+				   resp_msg->job_mem_per_node,
+				   resp_msg->node_name);
 			_job_mem_resize_abort(job_ptr);
 			goto fini;
 		}
