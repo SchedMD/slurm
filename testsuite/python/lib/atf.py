@@ -3107,14 +3107,19 @@ def cancel_jobs(
     )
 
     for t in timer(timeout=timeout, poll_interval=poll_interval):
-        jobs = get_jobs(quiet=True)
+        jobs = get_jobs(quiet=True, use_json=True)
 
         jobs_not_in_system, jobs_not_done = [], []
         for job_id in job_list:
             if job_id not in jobs:
                 jobs_not_in_system.append(job_id)
                 continue
-            if not is_job_state_done(jobs[job_id]["JobState"]):
+
+            job_state = jobs[job_id]["job_state"]
+            if not job_state:
+                pytest.fail(f"JobState info not found for job {job_id}: {jobs[job_id]}")
+
+            if not is_job_state_done(job_state[0]):
                 jobs_not_done.append(job_id)
 
         if jobs_not_in_system and not quiet:
@@ -3158,7 +3163,7 @@ def cancel_all_jobs(
         False
     """
 
-    jobs = get_jobs(quiet=True)
+    jobs = get_jobs(quiet=True, use_json=True)
 
     if not jobs:
         logging.debug("No jobs to cancel")
@@ -3977,7 +3982,7 @@ def get_qos(name=None, **run_command_kwargs):
     return qos_dict
 
 
-def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
+def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
     """Returns the jobs in the system as a dictionary of dictionaries.
 
     Args:
@@ -4012,6 +4017,22 @@ def get_jobs(job_id=None, dbd=False, **run_command_kwargs):
             jobs_dict[job["job_id"]] = job
 
     else:
+
+        # TODO: We should always use --json to properly parse Slurm parameters.
+        #       This is still optional because using it means that the keys
+        #       of the jobs_dict will be different in all existing tests.
+        if use_json:
+            command = "scontrol --json -d show jobs"
+            if job_id is not None:
+                command += f" {job_id}"
+            output = run_command_output(command, **run_command_kwargs)
+
+            jobs_list = json.loads(output)["jobs"]
+            for job in jobs_list:
+                jobs_dict[job["job_id"]] = job
+
+            return jobs_dict
+
         command = "scontrol -d -o show jobs"
         if job_id is not None:
             command += f" {job_id}"
