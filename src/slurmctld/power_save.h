@@ -40,6 +40,8 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+#include "src/common/power_action.h"
+
 #ifndef _HAVE_POWER_SAVE_H
 #define _HAVE_POWER_SAVE_H
 
@@ -57,6 +59,12 @@ extern void power_save_fini(void);
 
 /* Report if node power saving is enabled */
 extern bool power_save_test(void);
+
+/* Find a power action by name */
+extern power_action_t *power_save_find_action(char *action_name);
+
+/* Check if a power action is valid */
+extern bool power_save_valid_action(char *action_name);
 
 /*
  * Parse settings for excluding nodes, partitions and states from being

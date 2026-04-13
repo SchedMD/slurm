@@ -62,6 +62,7 @@
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/parse_value.h"
+#include "src/common/power_action.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/state_save.h"
@@ -2087,6 +2088,28 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			base_state &= NODE_STATE_BASE;
 		}
 
+		if (update_node_msg->power_action_name &&
+		    update_node_msg->power_action_name[0]) {
+			power_action_t *power_action = power_save_find_action(
+				update_node_msg->power_action_name);
+			if (!power_action) {
+				error("power action %s not found for node %s",
+				      update_node_msg->power_action_name,
+				      this_node_name);
+				error_code = ESLURM_INVALID_POWER_ACTION;
+				state_val = NO_VAL;
+			} else if (state_val != NO_VAL &&
+				   (state_val & NODE_STATE_POWER_UP) &&
+				   !power_action->on_slurmctld) {
+				error("invalid power up action %s for node %s, cannot power up from slurmd",
+				      update_node_msg->power_action_name,
+				      this_node_name);
+				error_code = ESLURM_INVALID_POWER_ACTION;
+				state_val = NO_VAL;
+			}
+			power_action_destroy(power_action);
+		}
+
 		if (state_val != NO_VAL) {
 			node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			if (state_val == NODE_RESUME) {
@@ -2343,6 +2366,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					info("powering down node %s",
 					     this_node_name);
 
+				xfree(node_ptr->power_action_name);
+				node_ptr->power_action_name =
+					xstrdup(update_node_msg
+							->power_action_name);
 				node_ptr->node_state |=
 					NODE_STATE_POWER_DOWN;
 
@@ -2363,24 +2390,26 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWERED_DOWN(node_ptr)) {
 					if (IS_NODE_POWERING_UP(node_ptr)) {
+						info("power up request repeating for node %s",
+						     this_node_name);
 						node_ptr->node_state |=
 							NODE_STATE_POWERED_DOWN;
-						node_ptr->node_state |=
-							NODE_STATE_POWER_UP;
-						info("power up request "
-						     "repeating for node %s",
-						     this_node_name);
 					} else {
-						verbose("node %s is already "
-							"powered up",
+						verbose("node %s is already powered up",
 							this_node_name);
+						free(this_node_name);
+						continue;
 					}
 				} else {
-					node_ptr->node_state |=
-						NODE_STATE_POWER_UP;
 					info("powering up node %s",
 					     this_node_name);
 				}
+				node_ptr->node_state |= NODE_STATE_POWER_UP;
+
+				xfree(node_ptr->power_action_name);
+				node_ptr->power_action_name =
+					xstrdup(update_node_msg
+							->power_action_name);
 				bit_set(power_up_node_bitmap, node_ptr->index);
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);

@@ -930,6 +930,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_INVALID_SLUID),
 		"SLUID is invalid",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_POWER_ACTION),
+		"Invalid power action",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{

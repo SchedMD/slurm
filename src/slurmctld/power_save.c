@@ -61,22 +61,28 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/power_action.h"
 #include "src/common/read_config.h"
 #include "src/common/threadpool.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/interfaces/accounting_storage.h"
+#include "src/interfaces/auth.h"
 #include "src/interfaces/node_features.h"
 #include "src/interfaces/serializer.h"
 
+#include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/power_save.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
+#include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 /* avoid magic numbers */
@@ -91,14 +97,34 @@ bool power_save_started = false;
 bool power_save_debug = false;
 
 int suspend_rate, resume_rate, max_timeout;
-char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
 time_t last_log = (time_t) 0;
 uint16_t slurmd_timeout;
 static bool idle_on_node_suspend = false;
 static uint16_t power_save_interval = 10;
 static uint16_t power_save_min_interval = 0;
 
+static list_t *power_action_list = NULL;
+
 list_t *resume_job_list = NULL;
+
+power_action_t *suspend_prog = NULL;
+power_action_t *resume_prog = NULL;
+power_action_t *resume_fail_prog = NULL;
+
+typedef struct {
+	power_action_t *action;
+	char *features;
+	hostlist_t *hostlist;
+} power_script_args_t;
+
+/* Group of nodes to suspend with the same PowerAction */
+typedef struct {
+	power_action_t *action;
+	char *action_name;
+	bitstr_t *bitmap;
+	char *env_name;
+	uint16_t protocol_version; /* protocol version to use */
+} action_entry_t;
 
 typedef struct {
 	bool inited;
@@ -121,14 +147,12 @@ bitstr_t *exc_node_bitmap = NULL;
 static bool suspend_exc_down;
 static uint32_t suspend_exc_state_flags;
 
-static void  _clear_power_config(void);
-static void  _do_failed_nodes(char *hosts);
+static void _clear_power_config(void);
 static void  _do_power_work(time_t now);
-static void  _do_resume(char *host, char *json);
-static void  _do_suspend(char *host);
+static int _do_resume_action(void *entry, void *payload);
+static int _do_power_action(void *entry, void *payload);
 static int   _init_power_config(void);
 static void *_power_save_thread(void *arg);
-static bool  _valid_prog(char *file_name);
 static uint64_t _timespec_to_msec(struct timespec *tv);
 
 static void _rl_init(rl_config_t *config,
@@ -140,6 +164,19 @@ static uint32_t _rl_get_tokens(rl_config_t *config);
 static void _rl_spend_token(rl_config_t *config);
 
 static rl_config_t resume_rl_config, suspend_rl_config;
+
+static void _free_action_entry(void *p)
+{
+	action_entry_t *e = p;
+	xfree(e->action_name);
+	/*
+	 * e->action points at shared power_action_t in power_action_list and is
+	 * never owned.
+	 */
+	FREE_NULL_BITMAP(e->bitmap);
+	xfree(e->env_name);
+	xfree(e);
+}
 
 static void _exc_node_part_free(void *x)
 {
@@ -408,6 +445,54 @@ static int _pick_exc_nodes(void *x, void *arg)
 	return 0;
 }
 
+static int _find_action_entry(void *action_entry_ptr, void *key)
+{
+	action_entry_t *action_entry = (action_entry_t *) action_entry_ptr;
+	return !xstrcasecmp(action_entry->action_name, (char *) key);
+}
+
+static list_t *_build_power_action_list(bitstr_t *node_bitmap,
+					char *default_action)
+{
+	node_record_t *node_ptr = NULL;
+	action_entry_t *entry = NULL;
+	list_t *action_list = list_create(_free_action_entry);
+	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
+		char *key = NULL;
+		if (node_ptr->power_action_name) {
+			key = node_ptr->power_action_name;
+			node_ptr->power_action_name = NULL;
+		} else if (default_action) {
+			key = xstrdup(default_action);
+		} else {
+			error("power_save: no power action found for node %s (default_action=%s)",
+			      node_ptr->name,
+			      default_action ? default_action : "(none)");
+			continue;
+		}
+		entry = list_find_first(action_list, _find_action_entry, key);
+		if (!entry) {
+			entry = xmalloc(sizeof(action_entry_t));
+			entry->action = NULL;
+			entry->action_name = xstrdup(key);
+			entry->bitmap = bit_alloc(node_record_count);
+			entry->protocol_version = SLURM_PROTOCOL_VERSION;
+			list_append(action_list, entry);
+			debug3("power action entry created for %s",
+			       key);
+		} else {
+			debug3("power action entry found for %s",
+			       key);
+		}
+		bit_set(entry->bitmap, node_ptr->index);
+		if (node_ptr->protocol_version < entry->protocol_version) {
+			entry->protocol_version = node_ptr->protocol_version;
+		}
+		xfree(key);
+	}
+	return action_list;
+}
+
 /* Perform any power change work to nodes */
 static void _do_power_work(time_t now)
 {
@@ -634,9 +719,9 @@ static void _do_power_work(time_t now)
 					trigger_node_up(node_ptr);
 				}
 
-				node_ptr->node_state =
-					NODE_STATE_IDLE |
-					(node_ptr->node_state & NODE_STATE_FLAGS);
+				node_ptr->node_state = NODE_STATE_IDLE |
+						       (node_ptr->node_state &
+							NODE_STATE_FLAGS);
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 			}
@@ -732,51 +817,42 @@ static void _do_power_work(time_t now)
 	}
 
 	if (sleep_node_bitmap) {
-		char *nodes;
-		nodes = bitmap2node_name(sleep_node_bitmap);
-		if (nodes)
-			_do_suspend(nodes);
-		else
-			error("power_save: bitmap2nodename");
-		xfree(nodes);
+		/* Group nodes by power_down_action (NULL = default SuspendProgram) */
+		list_t *sleep_action_list =
+			_build_power_action_list(sleep_node_bitmap,
+						 suspend_prog ?
+							 suspend_prog->name :
+							 NULL);
 		FREE_NULL_BITMAP(sleep_node_bitmap);
+
+		list_for_each(sleep_action_list, _do_power_action, NULL);
+		FREE_NULL_LIST(sleep_action_list);
 		nodes_updated = true;
 	}
 
 	if (wake_node_bitmap) {
-		int rc;
-		char *nodes, *json = NULL;
-		nodes = bitmap2node_name(wake_node_bitmap);
-
-		data_set_string(data_key_set(resume_json_data,
-					     "all_nodes_resume"),
-				nodes);
-		rc = serialize_g_data_to_string(&json, NULL, resume_json_data,
-						MIME_TYPE_JSON,
-						SER_FLAGS_COMPACT);
-		if ((rc != SLURM_SUCCESS) &&
-		    (rc != ESLURM_DATA_UNKNOWN_MIME_TYPE))
-			error("failed to generate json for resume job/node list");
-
-		if (nodes)
-			_do_resume(nodes, json);
-		else
-			error("power_save: bitmap2nodename");
-		xfree(nodes);
-		xfree(json);
+		list_t *wake_action_list =
+			_build_power_action_list(wake_node_bitmap,
+						 resume_prog ?
+							 resume_prog->name :
+							 NULL);
 		FREE_NULL_BITMAP(wake_node_bitmap);
+		list_for_each(wake_action_list, _do_resume_action,
+			      resume_json_data);
+		FREE_NULL_LIST(wake_action_list);
 		nodes_updated = true;
 	}
 
 	if (failed_node_bitmap) {
-		char *nodes;
-		nodes = bitmap2node_name(failed_node_bitmap);
-		if (nodes)
-			_do_failed_nodes(nodes);
-		else
-			error("power_save: bitmap2nodename");
-		xfree(nodes);
+		list_t *fail_action_list =
+			_build_power_action_list(failed_node_bitmap,
+						 resume_fail_prog ?
+							 resume_fail_prog
+								 ->name :
+							 NULL);
 		FREE_NULL_BITMAP(failed_node_bitmap);
+		list_for_each(fail_action_list, _do_power_action, NULL);
+		FREE_NULL_LIST(fail_action_list);
 		nodes_updated = true;
 	}
 
@@ -788,33 +864,108 @@ static void _do_power_work(time_t now)
 	FREE_NULL_BITMAP(job_power_node_bitmap);
 }
 
-static void _do_failed_nodes(char *hosts)
+static int _do_resume_action(void *e, void *payload)
 {
-	slurmscriptd_run_power(resume_fail_prog, hosts, NULL, 0,
-			       "resumefailprog", max_timeout, NULL, NULL);
-	log_flag(POWER, "power_save: handle failed nodes %s", hosts);
+	action_entry_t *entry = e;
+	data_t *resume_json_data = payload;
+	char *json = NULL;
+	char *nodes = bitmap2node_name(entry->bitmap);
+	if (!nodes) {
+		error("power_save: failed bitmap2nodename");
+		return SLURM_ERROR;
+	}
+	data_set_string(data_key_set(resume_json_data, "all_nodes_resume"),
+			nodes);
+	serialize_g_data_to_string(&json, NULL, resume_json_data,
+				   MIME_TYPE_JSON, SER_FLAGS_COMPACT);
+	data_key_unset(resume_json_data, "all_nodes_resume");
+
+	entry->env_name = xstrdup("SLURM_RESUME_FILE");
+	_do_power_action(entry, json);
+	xfree(nodes);
+	xfree(json);
+	return SLURM_SUCCESS;
 }
 
-static void _do_resume(char *host, char *json)
+static int _do_power_action(void *e, void *payload)
 {
-	slurmscriptd_run_power(resume_prog, host, NULL, 0, "resumeprog",
-			       max_timeout, "SLURM_RESUME_FILE", json);
-	log_flag(POWER, "power_save: waking nodes %s", host);
+	action_entry_t *entry = e;
+	char *json = payload;
+	char *host_str = NULL;
+	hostlist_t *hl;
+	bitstr_t *bitmap = entry->bitmap;
+	power_action_t *action = NULL;
+
+	hl = bitmap2hostlist(bitmap);
+	if (!hl) {
+		error("power_save: failed bitmap2hostlist");
+		return SLURM_ERROR;
+	}
+	host_str = hostlist_ranged_string_xmalloc(hl);
+	action = entry->action;
+	if (!action) {
+		action = power_action_find(power_action_list,
+					   entry->action_name);
+		if (!action) {
+			error("Invalid PowerAction '%s', skipping nodes %s",
+			      entry->action_name, host_str);
+			xfree(host_str);
+			FREE_NULL_HOSTLIST(hl);
+			return SLURM_ERROR;
+		}
+	}
+	if (!power_action_valid_prog(action)) {
+		info("Invalid PowerAction '%s', skipping nodes %s",
+		      action->name, host_str);
+		xfree(host_str);
+		FREE_NULL_HOSTLIST(hl);
+		return SLURM_ERROR;
+	}
+
+	if (action->on_slurmctld) {
+		slurmscriptd_run_power_action(action, host_str, NULL, 0,
+					      max_timeout, entry->env_name,
+					      json);
+		log_flag(POWER, "Issued slurmctld power action %s on nodes %s",
+			 action->name, host_str);
+		FREE_NULL_HOSTLIST(hl);
+	} else {
+		/* Location=slurmd: send RPC to each slurmd to run the script */
+		agent_arg_t *agent_args;
+		run_power_action_msg_t *action_msg;
+
+		action_msg = xmalloc(sizeof(*action_msg));
+		action_msg->action_name = xstrdup(action->name);
+		action_msg->file_env_name = xstrdup(entry->env_name);
+		action_msg->file_content = xstrdup(json);
+
+		agent_args = xmalloc(sizeof(*agent_args));
+		agent_args->msg_type = REQUEST_RUN_POWER_ACTION;
+		agent_args->retry = 0;
+		agent_args->hostlist = hl;
+		agent_args->node_count = hostlist_count(hl);
+		agent_args->msg_args = action_msg;
+		agent_args->protocol_version = entry->protocol_version ?
+						       entry->protocol_version :
+						       SLURM_PROTOCOL_VERSION;
+		set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
+
+		agent_queue_request(agent_args);
+		log_flag(POWER, "Issued slurmd power action %s on nodes %s",
+			 action->name, host_str);
+	}
+	xfree(host_str);
+	return SLURM_SUCCESS;
 }
 
-static void _do_suspend(char *host)
-{
-	slurmscriptd_run_power(suspend_prog, host, NULL, 0, "suspendprog",
-			       max_timeout, NULL, NULL);
-	log_flag(POWER, "power_save: suspending nodes %s", host);
-}
-
-/* Free all allocated memory */
 static void _clear_power_config(void)
 {
-	xfree(suspend_prog);
-	xfree(resume_prog);
-	xfree(resume_fail_prog);
+	FREE_NULL_LIST(power_action_list);
+
+	suspend_prog = NULL;
+	resume_prog = NULL;
+	resume_fail_prog = NULL;
+
 	suspend_exc_down = false;
 	suspend_exc_state_flags = 0;
 	FREE_NULL_BITMAP(exc_node_bitmap);
@@ -978,6 +1129,26 @@ static void power_save_rl_setup(void)
 	}
 }
 
+static int _print_power_action(void *action_ptr, void *unused)
+{
+	power_action_t *action = (power_action_t *) action_ptr;
+	const char *default_prog_str = "";
+	if (action == suspend_prog) {
+		default_prog_str = "SuspendProgram";
+	} else if (action == resume_prog) {
+		default_prog_str = "ResumeProgram";
+	} else if (action == resume_fail_prog) {
+		default_prog_str = "ResumeFailProgram";
+	}
+	log_flag(POWER, "PowerAction entry: %s (%s) (%s:%s)",
+		 action->name,
+		 default_prog_str,
+		 action->on_slurmctld ? "slurmctld" :
+		 			"slurmd",
+		 action->program);
+	return SLURM_SUCCESS;
+}
+
 /*
  * Initialize power_save module parameters.
  * Return 0 on valid configuration to run power saving,
@@ -987,20 +1158,53 @@ static int _init_power_config(void)
 {
 	char *tmp_ptr;
 	bool suspend_time_set = false;
+	bool auto_power_save_disabled = false;
 
-	last_log	= 0;
+	last_log = 0;
 	suspend_rate = slurm_conf.suspend_rate;
 	resume_rate = slurm_conf.resume_rate;
 	slurmd_timeout = slurm_conf.slurmd_timeout;
 	max_timeout = MAX(slurm_conf.suspend_timeout,
 			  slurm_conf.resume_timeout);
 	_clear_power_config();
-	if (slurm_conf.suspend_program)
-		suspend_prog = xstrdup(slurm_conf.suspend_program);
-	if (slurm_conf.resume_fail_program)
-		resume_fail_prog = xstrdup(slurm_conf.resume_fail_program);
-	if (slurm_conf.resume_program)
-		resume_prog = xstrdup(slurm_conf.resume_program);
+	slurm_conf_power_action_list(&power_action_list);
+	suspend_prog = power_action_find_or_create(power_action_list,
+						   slurm_conf.suspend_program,
+						   POWER_ACTION_SUSPEND);
+	resume_prog = power_action_find_or_create(power_action_list,
+						  slurm_conf.resume_program,
+						  POWER_ACTION_RESUME);
+	resume_fail_prog =
+		power_action_find_or_create(power_action_list,
+					    slurm_conf.resume_fail_program,
+					    POWER_ACTION_RESUME_FAIL);
+
+	if (suspend_prog && !power_action_valid_prog(suspend_prog)) {
+		error("Invalid SuspendProgram PowerAction %s (%s)",
+			suspend_prog->name, suspend_prog->program);
+		suspend_prog = NULL;
+	}
+	if (resume_prog && !power_action_valid_prog(resume_prog)) {
+		error("Invalid ResumeProgram PowerAction %s (%s)",
+			resume_prog->name, resume_prog->program);
+		resume_prog = NULL;
+	}
+	if (resume_fail_prog && !power_action_valid_prog(resume_fail_prog)) {
+		error("Invalid ResumeFailProgram PowerAction %s (%s)",
+			resume_fail_prog->name, resume_fail_prog->program);
+		resume_fail_prog = NULL;
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER) {
+		if (list_count(power_action_list) > 0)
+			list_for_each(power_action_list, _print_power_action,
+				      NULL);
+		else
+			log_flag(POWER, "No PowerAction entries");
+	}
+
+	if (!suspend_prog || !resume_prog)
+		auto_power_save_disabled = true;
 
 	idle_on_node_suspend = xstrcasestr(slurm_conf.slurmctld_params,
 					   "idle_on_node_suspend");
@@ -1019,87 +1223,79 @@ static int _init_power_config(void)
 
 	power_save_set_timeouts(&suspend_time_set);
 
-	if ((slurm_conf.suspend_time == INFINITE) &&
-	    !suspend_time_set) { /* not an error */
-		debug("power_save module disabled, SuspendTime < 0");
-		return -1;
-	}
-	if (suspend_rate < 0) {
-		error("power_save module disabled, SuspendRate < 0");
-		return -1;
-	}
-	if (resume_rate < 0) {
-		error("power_save module disabled, ResumeRate < 0");
-		return -1;
-	}
-	if (suspend_prog == NULL) {
-		error("power_save module disabled, NULL SuspendProgram");
-		return -1;
-	} else if (!_valid_prog(suspend_prog)) {
-		error("power_save module disabled, invalid SuspendProgram %s",
-		      suspend_prog);
-		return -1;
-	}
-	if (resume_prog == NULL) {
-		error("power_save module disabled, NULL ResumeProgram");
-		return -1;
-	} else if (!_valid_prog(resume_prog)) {
-		error("power_save module disabled, invalid ResumeProgram %s",
-		      resume_prog);
-		return -1;
-	}
-	if (((resume_rate || suspend_rate)) &&
-	    ((power_save_interval > 60) || (power_save_min_interval > 60))) {
-		error("power save module can not work effectively with interval > 60 seconds");
-		return -1;
-	}
-	if ((suspend_rate > MAX_NODE_RATE) || (resume_rate > MAX_NODE_RATE)) {
-		error("selected suspend/resume rate exceeds maximum: %d/%d max: %d",
-		      suspend_rate, resume_rate, MAX_NODE_RATE);
-		return -1;
-	}
-
 	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER)
 		power_save_debug = true;
 	else
 		power_save_debug = false;
 
-	if (resume_fail_prog && !_valid_prog(resume_fail_prog)) {
-		/* error's already reported in _valid_prog() */
-		xfree(resume_fail_prog);
-	}
-
 	power_save_exc_setup();
 	power_save_rl_setup();
 
-	return 0;
+	if (((resume_rate || suspend_rate)) &&
+	    ((power_save_interval > 60) || (power_save_min_interval > 60))) {
+		error("power save module can not work effectively with interval > 60 seconds");
+		auto_power_save_disabled = true;
+	}
+	if ((suspend_rate > MAX_NODE_RATE) || (resume_rate > MAX_NODE_RATE)) {
+		error("power: selected suspend/resume rate exceeds maximum: %d/%d max: %d",
+		      suspend_rate, resume_rate, MAX_NODE_RATE);
+		auto_power_save_disabled = true;
+	}
+
+	if ((slurm_conf.suspend_time == INFINITE) && !suspend_time_set) {
+		/* not an error */
+		debug("power: SuspendTime < 0");
+		auto_power_save_disabled = true;
+	}
+	if (suspend_rate < 0) {
+		error("auto power save module disabled, SuspendRate < 0");
+		auto_power_save_disabled = true;
+	}
+	if (resume_rate < 0) {
+		error("auto power save module disabled, ResumeRate < 0");
+		auto_power_save_disabled = true;
+	}
+	if (!suspend_prog) {
+		debug("power: No valid SuspendProgram");
+		auto_power_save_disabled = true;
+	}
+	if (!resume_prog) {
+		debug("power: No valid ResumeProgram");
+		auto_power_save_disabled = true;
+	}
+	if (auto_power_save_disabled) {
+		info("power: automatic power save mode disabled");
+	}
+	return auto_power_save_disabled ? -1 : 0;
 }
 
-static bool _valid_prog(char *file_name)
+extern power_action_t *power_save_find_action(char *action_name)
 {
-	struct stat buf;
+	power_action_t *action;
 
-	if (file_name[0] != '/') {
-		error("power_save program %s not absolute pathname", file_name);
-		return false;
+	slurm_mutex_lock(&power_mutex);
+	while (!power_save_config) {
+		slurm_cond_wait(&power_cond, &power_mutex);
 	}
+	action = power_action_find(power_action_list, action_name);
+	action = power_action_copy(action);
+	slurm_mutex_unlock(&power_mutex);
+	return action;
+}
 
-	if (access(file_name, X_OK) != 0) {
-		error("power_save program %s not executable", file_name);
-		return false;
-	}
+extern bool power_save_valid_action(char *action_name)
+{
+	bool valid = false;
+	power_action_t *action = NULL;
 
-	if (stat(file_name, &buf)) {
-		error("power_save program %s not found", file_name);
-		return false;
+	slurm_mutex_lock(&power_mutex);
+	while (!power_save_config) {
+		slurm_cond_wait(&power_cond, &power_mutex);
 	}
-	if (buf.st_mode & 022) {
-		error("power_save program %s has group or "
-		      "world write permission", file_name);
-		return false;
-	}
-
-	return true;
+	action = power_action_find(power_action_list, action_name);
+	valid = action && power_action_valid_prog(action);
+	slurm_mutex_unlock(&power_mutex);
+	return valid;
 }
 
 extern void config_power_mgr(void)
@@ -1130,15 +1326,6 @@ extern void config_power_mgr_fini(void)
 extern void power_save_init(void)
 {
 	slurm_mutex_lock(&power_mutex);
-	if (power_save_started || !power_save_enabled) {
-		if (!power_save_enabled && power_thread) {
-			slurm_mutex_unlock(&power_mutex);
-			slurm_thread_join(power_thread);
-			return;
-		}
-		slurm_mutex_unlock(&power_mutex);
-		return;
-	}
 	power_save_started = true;
 
 	slurm_thread_create("powersave", &power_thread, _power_save_thread,

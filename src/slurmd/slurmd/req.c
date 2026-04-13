@@ -78,8 +78,11 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/msg_type.h"
+#include "src/common/power_action.h"
 #include "src/common/read_config.h"
 #include "src/common/reverse_tree.h"
+#include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -2511,6 +2514,134 @@ _rpc_shutdown(slurm_msg_t *msg)
 		error("kill(%u,SIGTERM): %m", conf->pid);
 
 	/* Never return a message, slurmctld does not expect one */
+}
+
+static void _rpc_run_power_action(slurm_msg_t *msg)
+{
+	run_power_action_msg_t *action_msg = msg->data;
+	run_command_args_t run_args = { 0 };
+	list_t *power_action_list = NULL;
+	power_action_t *power_action = NULL;
+	int status = 0;
+	int i = 0;
+	size_t argc = 0;
+	char **argv1 = NULL;
+	char **argv = NULL, **env = NULL;
+	char *resp = NULL;
+	char *exec_name = NULL;
+	char *program = NULL;
+	char *filename = NULL;
+	int tmp_fd = 0;
+	slurm_conf_t *cf = NULL;
+
+	if (!action_msg || !action_msg->action_name ||
+	    !action_msg->action_name[0]) {
+		error("REQUEST_RUN_POWER_ACTION: missing power action");
+		return;
+	}
+	/*
+	 * load the action list and create them if they don't exist.
+	 * power_action_find will find them from the name if using default.
+	 */
+	cf = slurm_conf_lock();
+	slurm_conf_power_action_list(&power_action_list);
+	power_action_find_or_create(power_action_list, cf->suspend_program,
+				    POWER_ACTION_SUSPEND);
+	power_action_find_or_create(power_action_list, cf->resume_program,
+				    POWER_ACTION_RESUME);
+	power_action_find_or_create(power_action_list, cf->resume_fail_program,
+				    POWER_ACTION_RESUME_FAIL);
+	slurm_conf_unlock();
+	cf = NULL;
+	power_action =
+		power_action_find(power_action_list, action_msg->action_name);
+	if (!power_action) {
+		error("Invalid power action %s, cannot run power action",
+		      action_msg->action_name);
+		FREE_NULL_LIST(power_action_list);
+		return;
+	}
+
+	if (!power_action_valid_prog(power_action)) {
+		error("Invalid power action %s, cannot run power action",
+		      action_msg->action_name);
+		FREE_NULL_LIST(power_action_list);
+		return;
+	}
+
+	if (power_action->on_slurmctld) {
+		error("Power action %s expects to run on slurmctld",
+		      action_msg->action_name);
+		FREE_NULL_LIST(power_action_list);
+		return;
+	}
+	program = power_action->program;
+
+	/* room for executable name and node name*/
+	argc = power_action->argc + 2;
+	argv = xmalloc((argc + 1) * sizeof(char *));
+
+	/* first arg is executable name */
+	exec_name = strrchr(program, '/');
+	argv[0] = xstrdup(exec_name ? exec_name + 1 : program);
+
+	/* Copy args from power_action and append node name */
+	argv1 = argv + 1;
+	for (i = 0; i < power_action->argc; i++) {
+		argv1[i] = xstrdup(power_action->argv[i]);
+	}
+	argv1[i] = xstrdup(conf->node_name);
+	argv[argc] = NULL;
+
+	/* Add node name to environment for consistency with reboot program */
+	env = env_array_create();
+	env_array_overwrite(&env, "SLURM_NODE_NAME", conf->node_name);
+	if (action_msg->file_content && action_msg->file_content[0]) {
+		tmp_fd = dump_to_memfd("power", action_msg->file_content,
+				       &filename);
+		if (tmp_fd == SLURM_ERROR) {
+			error("Failed to create tmp file for power action %s",
+			      action_msg->action_name);
+			tmp_fd = 0;
+		} else {
+			env_array_append(&env, action_msg->file_env_name,
+					 filename);
+		}
+		xfree(filename);
+	}
+
+	log_flag(POWER, "Running power action %s", action_msg->action_name);
+
+	run_args.script_path = program;
+	run_args.script_argv = argv;
+	run_args.script_type = "power";
+	run_args.env = env;
+	run_args.status = &status;
+	run_args.max_wait = -1;
+	run_args.direct_exec = true;
+	/*
+	 * Power down (suspend) actions are expected to power off the node,
+	 * which kills slurmd before the script returns. Don't let
+	 * run_command() SIGKILL the script when slurmd starts shutting down
+	 * or the node will be left only half powered down.
+	 */
+	run_args.orphan_on_shutdown = true;
+
+	resp = run_command(&run_args);
+
+	if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+		error("Power action %s exited with status %d",
+		      run_args.script_type, WEXITSTATUS(status));
+	else if (WIFSIGNALED(status))
+		error("Power action %s killed by signal %u",
+		      run_args.script_type, WTERMSIG(status));
+
+	xfree(resp);
+	for (int i = 0; argv && argv[i]; i++)
+		xfree(argv[i]);
+	xfree(argv);
+	env_array_free(env);
+	FREE_NULL_LIST(power_action_list);
 }
 
 static void
@@ -5249,6 +5380,11 @@ slurmd_rpc_t slurmd_rpcs[] = {
 		.msg_type = REQUEST_REBOOT_NODES,
 		.from_slurmctld = true,
 		.func = _rpc_reboot,
+	},
+	{
+		.msg_type = REQUEST_RUN_POWER_ACTION,
+		.from_slurmctld = true,
+		.func = _rpc_run_power_action,
 	},
 	{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */

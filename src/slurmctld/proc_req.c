@@ -70,6 +70,7 @@
 #include "src/common/read_config.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/xstring.h"
