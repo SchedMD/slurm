@@ -185,6 +185,21 @@ static void _get_unique_job_node_cnt(job_record_t *job_ptr,
 }
 
 /*
+ * _het_job_in_validation_state()
+ *
+ * When a het job is being validated we set the tres_alloc_cnt to the
+ * tres_req_cnt. This is a sure sign we are trying to validate if the whole job
+ * doesn't break limits in the various QOS or associations in the sum of all
+ * it's components.
+ */
+static bool _het_job_in_validation_state(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	return (job_ptr->tres_alloc_cnt == job_ptr->tres_req_cnt);
+}
+
+/*
  * Update node allocation information for a job being started.
  * This includes grp_node_bitmap, grp_node_job_cnt and
  * grp_used_tres[TRES_ARRAY_NODE] of an object (qos, assoc, etc).
@@ -199,7 +214,10 @@ static void _add_usage_node_bitmap(job_record_t *job_ptr,
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
+		if (_het_job_in_validation_state(job_ptr)) {
+			*grp_used_tres +=
+				job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
+		} else if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
 			/*
 			 * Hetjobs reach here as part of testing before any
 			 * resource allocation. See _het_job_limit_check()
@@ -235,7 +253,16 @@ static void _rm_usage_node_bitmap(job_record_t *job_ptr,
 	xassert(grp_used_tres);
 
 	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->node_bitmap) {
-		if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
+		if (_het_job_in_validation_state(job_ptr)) {
+			uint64_t n = job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE];
+			if (*grp_used_tres >= n)
+				*grp_used_tres -= n;
+			else {
+				debug2("%s: grp_used_tres[TRES_ARRAY_NODE] underflow! Trying to remove %"PRIu64" when there was only %"PRIu64,
+				       __func__, n, *grp_used_tres);
+				*grp_used_tres = 0;
+			}
+		} else if (IS_JOB_PENDING(job_ptr) && job_ptr->het_job_id) {
 			/*
 			 * Hetjobs reach here as part of testing before any
 			 * resource allocation. See _het_job_limit_check()
