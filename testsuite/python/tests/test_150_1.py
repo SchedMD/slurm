@@ -53,7 +53,6 @@ def test_const1():
     assert atf.wait_for_job_state(
         job_id_3, "PENDING", "Resources"
     ), "Verify that job #3 is not run due resources"
-    atf.cancel_all_jobs(quiet=True)
 
 
 def test_const2():
@@ -63,7 +62,6 @@ def test_const2():
     job_id_2 = atf.submit_job_sbatch('-N 5 --exclusive --mem=1 --wrap="sleep 20"')
     atf.wait_for_job_state(job_id_1, "RUNNING", fatal=True, timeout=5)
     atf.wait_for_job_state(job_id_2, "RUNNING", fatal=True, timeout=5)
-    atf.cancel_all_jobs(quiet=True)
 
 
 def test_segment1():
@@ -79,4 +77,3 @@ def test_segment1():
         )
         == 0
     ), "Job should fail -- 5%2 "
-    atf.cancel_all_jobs(quiet=True)

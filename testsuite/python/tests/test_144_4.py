@@ -24,12 +24,6 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="function", autouse=True)
-def cleanup_test():
-    yield
-    atf.cancel_all_jobs(quiet=True)
-
-
 def test_gres_alloc_dealloc_file():
     """Test alloc/dealloc of gres when file is set, but not type"""
 
