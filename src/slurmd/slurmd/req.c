@@ -2564,62 +2564,61 @@ _rpc_reboot(slurm_msg_t *msg)
 		xfree(new_features);
 		log_flag(NODE_FEATURES, "Features on node updated successfully");
 	}
-		if (!need_reboot) {
-			log_flag(NODE_FEATURES, "Reboot not required - sending registration message");
-			conf->boot_time = time(NULL);
-			slurm_mutex_lock(&cached_features_mutex);
-			refresh_cached_features = true;
-			slurm_mutex_unlock(&cached_features_mutex);
-			slurm_conf_unlock();
-			send_registration_msg(SLURM_SUCCESS);
-			return;
-		} else if (need_reboot && reboot_program) {
-			sp = strchr(reboot_program, ' ');
-			if (sp)
-				sp = xstrndup(reboot_program,
-					      (sp - reboot_program));
-			else
-				sp = xstrdup(reboot_program);
-			if (reboot_msg && reboot_msg->features) {
-				/*
+	if (!need_reboot) {
+		log_flag(NODE_FEATURES, "Reboot not required - sending registration message");
+		conf->boot_time = time(NULL);
+		slurm_mutex_lock(&cached_features_mutex);
+		refresh_cached_features = true;
+		slurm_mutex_unlock(&cached_features_mutex);
+		slurm_conf_unlock();
+		send_registration_msg(SLURM_SUCCESS);
+		return;
+	} else if (need_reboot && reboot_program) {
+		sp = strchr(reboot_program, ' ');
+		if (sp)
+			sp = xstrndup(reboot_program, (sp - reboot_program));
+		else
+			sp = xstrdup(reboot_program);
+		if (reboot_msg && reboot_msg->features) {
+			/*
 				 * Run reboot_program with only arguments given
 				 * in reboot_msg->features.
 				 */
-				info("Node reboot request with features %s being processed",
+			info("Node reboot request with features %s being processed",
 				     reboot_msg->features);
-				if (reboot_msg->features[0]) {
-					xstrfmtcat(cmd, "%s '%s'",
-						   sp, reboot_msg->features);
-				} else {
-					cmd = xstrdup(sp);
-				}
+			if (reboot_msg->features[0]) {
+				xstrfmtcat(cmd, "%s '%s'", sp,
+					   reboot_msg->features);
 			} else {
-				/* Run reboot_program verbatim */
-				cmd = xstrdup(reboot_program);
-				info("Node reboot request being processed");
+				cmd = xstrdup(sp);
 			}
-			if (access(sp, R_OK | X_OK) < 0)
-				error("Cannot run RebootProgram [%s]: %m", sp);
-			else if ((exit_code = system(cmd)))
-				error("system(%s) returned %d", reboot_program,
+		} else {
+			/* Run reboot_program verbatim */
+			cmd = xstrdup(reboot_program);
+			info("Node reboot request being processed");
+		}
+		if (access(sp, R_OK | X_OK) < 0)
+			error("Cannot run RebootProgram [%s]: %m", sp);
+		else if ((exit_code = system(cmd)))
+			error("system(%s) returned %d", reboot_program,
 				      exit_code);
-			xfree(sp);
-			xfree(cmd);
+		xfree(sp);
+		xfree(cmd);
 
-			/*
+		/*
 			 * Explicitly shutdown the slurmd. This is usually
 			 * taken care of by calling reboot_program, but in
 			 * case that fails to shut things down this will at
 			 * least offline this node until someone intervenes.
 			 */
-			if (cfg->conf_flags & CONF_FLAG_SHR) {
-				slurmd_shutdown();
-			}
-			slurm_conf_unlock();
-		} else {
-			error("RebootProgram isn't defined in config");
-			slurm_conf_unlock();
+		if (cfg->conf_flags & CONF_FLAG_SHR) {
+			slurmd_shutdown();
 		}
+		slurm_conf_unlock();
+	} else {
+		error("RebootProgram isn't defined in config");
+		slurm_conf_unlock();
+	}
 
 	/* Never return a message, slurmctld does not expect one */
 	/* slurm_send_rc_msg(msg, rc); */
