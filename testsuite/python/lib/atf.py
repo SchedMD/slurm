@@ -3106,23 +3106,34 @@ def cancel_jobs(
         f"scancel {job_list_string}", fatal=fatal, quiet=quiet, **run_command_kwargs
     )
 
-    for job_id in job_list:
-        status = wait_for_job_state(
-            job_id,
-            "DONE",
-            timeout=timeout,
-            poll_interval=poll_interval,
-            fatal=fatal,
-            quiet=quiet,
-        )
-        if not status:
-            if fatal:
-                pytest.fail(
-                    f"Job ({job_id}) was not cancelled within the {timeout} second timeout"
-                )
-            return status
+    for t in timer(timeout=timeout, poll_interval=poll_interval):
+        jobs = get_jobs(quiet=True)
 
-    return True
+        jobs_not_in_system, jobs_not_done = [], []
+        for job_id in job_list:
+            if job_id not in jobs:
+                jobs_not_in_system.append(job_id)
+                continue
+            if not is_job_state_done(jobs[job_id]["JobState"]):
+                jobs_not_done.append(job_id)
+
+        if jobs_not_in_system and not quiet:
+            logging.warning(
+                f"Cancelled job(s) {jobs_not_in_system} not anymore in the system"
+            )
+
+        if not jobs_not_done:
+            if not quiet:
+                logging.debug(f"Jobs {job_list} successfully cancelled")
+            return True
+
+        if not quiet:
+            logging.debug(f"Cancelled job(s) {jobs_not_done} still not DONE")
+    else:
+        if fatal:
+            pytest.fail("Unable to cancel all jobs")
+
+    return False
 
 
 def cancel_all_jobs(
@@ -3147,7 +3158,7 @@ def cancel_all_jobs(
         False
     """
 
-    jobs = get_jobs()
+    jobs = get_jobs(quiet=True)
 
     if not jobs:
         logging.debug("No jobs to cancel")
@@ -4415,6 +4426,24 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
     )
 
 
+def is_job_state_done(job_state):
+    """Return True if job_state is one of the final JobStates, or False otherwise"""
+    done_states = [
+        "NOT_FOUND",
+        "BOOT_FAIL",
+        "CANCELLED",
+        "COMPLETED",
+        "DEADLINE",
+        "FAILED",
+        "NODE_FAIL",
+        "OUT_OF_MEMORY",
+        "TIMEOUT",
+        "PREEMPTED",
+    ]
+
+    return job_state in done_states
+
+
 def wait_for_job_state(
     job_id,
     desired_job_state,
@@ -4490,18 +4519,7 @@ def wait_for_job_state(
         )
 
         message = f"Job ({job_id}) is in state {job_state}, but we are waiting for {desired_job_state}"
-        if job_state in [
-            "NOT_FOUND",
-            "BOOT_FAIL",
-            "CANCELLED",
-            "COMPLETED",
-            "DEADLINE",
-            "FAILED",
-            "NODE_FAIL",
-            "OUT_OF_MEMORY",
-            "TIMEOUT",
-            "PREEMPTED",
-        ]:
+        if is_job_state_done(job_state):
             if desired_job_state == "DONE" or job_state == desired_job_state:
                 message = f"Job ({job_id}) is in the {xfail_str}desired state {desired_job_state}"
                 reason = get_job_parameter(
