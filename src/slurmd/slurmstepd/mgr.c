@@ -910,6 +910,17 @@ extern void set_job_state(slurmstepd_state_t new_state)
 	slurm_mutex_unlock(&step->state_mutex);
 }
 
+extern slurmstepd_state_t get_job_state(void)
+{
+	slurmstepd_state_t state;
+
+	slurm_mutex_lock(&step->state_mutex);
+	state = step->state;
+	slurm_mutex_unlock(&step->state_mutex);
+
+	return state;
+}
+
 /*
  * Run SPANK functions within the job namespace.
  * WARNING: This is running as a separate process, but sharing the parent's

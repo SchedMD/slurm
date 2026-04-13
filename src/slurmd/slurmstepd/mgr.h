@@ -72,6 +72,7 @@ extern int mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg,
 extern int job_manager(void);
 
 extern void set_job_state(slurmstepd_state_t new_state);
+extern slurmstepd_state_t get_job_state(void);
 
 extern void stepd_drain_node(char *reason);
 extern int stepd_send_pending_exit_msgs(void);
