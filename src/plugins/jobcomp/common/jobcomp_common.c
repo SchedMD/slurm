@@ -45,6 +45,7 @@
 #define JOBCOMP_CONF_DEFAULT_EVENTS JOBCOMP_CONF_JOB_FINISH
 
 static bool send_script = false;
+static bool send_comment = false;
 
 static bool _valid_date_format(char *date_str)
 {
@@ -60,6 +61,8 @@ extern void jobcomp_common_conf_init(void)
 {
 	if (xstrcasestr(slurm_conf.job_comp_params, "send_script"))
 		send_script = true;
+	if (xstrcasestr(slurm_conf.job_comp_params, "send_comment"))
+		send_comment = true;
 }
 
 extern void jobcomp_common_conf_fini(void)
@@ -345,6 +348,14 @@ extern data_t *jobcomp_common_job_record_to_data(job_record_t *job_ptr,
 	if (job_ptr->account)
 		data_set_string(data_key_set(record, "account"),
 				job_ptr->account);
+
+	if (job_ptr->admin_comment)
+		data_set_string(data_key_set(record, "admin_comment"),
+				job_ptr->admin_comment);
+
+	if (send_comment && job_ptr->comment)
+		data_set_string(data_key_set(record, "comment"),
+				job_ptr->comment);
 
 	if (send_script && (script = get_job_script(job_ptr))) {
 		data_set_string(data_key_set(record, "script"),
