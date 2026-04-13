@@ -24,6 +24,12 @@ need to be able to selectively open just the ports that are necessary.
 This document will go over what is needed for different components to be
 able to talk to each other.</p>
 
+<p>Slurm requires IP connectivity bidirectionally between all hosts in each
+cluster and from any hosts where srun may be run (such as login nodes). The
+ports listed below must be opened in any firewalls. If IP communications are
+blocked then Slurm will not be able to fully function, potentially resulting
+in failed jobs, node problems, command timeouts or other problems.<p>
+
 <p>Below is a diagram of a fairly typical cluster, with <b>slurmctld</b>
 and <b>slurmdbd</b> on separate machines. In smaller clusters, MySQL can run
 on the same machine as the <b>slurmdbd</b>, but in most cases it is preferable
