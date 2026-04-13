@@ -319,11 +319,21 @@ void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
 		if (p[i].flags & PART_FLAG_NO_ROOT)
 			fprintf(fp, " DisableRootJobs=YES");
 
-		if (p[i].flags & PART_FLAG_EXCLUSIVE_USER)
-			fprintf(fp, " ExclusiveUser=YES");
+		force = p[i].max_share & SHARED_FORCE;
+		val = p[i].max_share & (~SHARED_FORCE);
 
+		/*
+		 * Exclusive= matches slurm_sprint_partition_info (partition_info.c).
+		 * Not legacy ExclusiveUser=/ExclusiveTopo= lines.
+		 */
 		if (p[i].flags & PART_FLAG_EXCLUSIVE_TOPO)
-			fprintf(fp, " ExclusiveTopo=YES");
+			fprintf(fp, " Exclusive=TOPO");
+		else if (val == 0)
+			fprintf(fp, " Exclusive=NODE");
+		else if (p[i].flags & PART_FLAG_EXCLUSIVE_USER)
+			fprintf(fp, " Exclusive=USER");
+		else
+			fprintf(fp, " Exclusive=NO");
 
 		if (p[i].grace_time)
 			fprintf(fp, " GraceTime=%u", p[i].grace_time);
@@ -395,14 +405,12 @@ void slurm_write_ctl_conf(slurm_conf_t *slurm_conf_ptr,
 		if (p[i].flags & PART_FLAG_PDOI)
 			fprintf(fp, " PowerDownOnIdle=YES");
 
-		force = p[i].max_share & SHARED_FORCE;
-		val = p[i].max_share & (~SHARED_FORCE);
 		if (val == 0)
-		        fprintf(fp, " OverSubscribe=EXCLUSIVE");
-		else if (force) {
-		        fprintf(fp, " OverSubscribe=FORCE:%u", val);
-		} else if (val != 1)
-		        fprintf(fp, " OverSubscribe=YES:%u", val);
+			fprintf(fp, " OverSubscribe=NO");
+		else if (force)
+			fprintf(fp, " OverSubscribe=FORCE:%u", val);
+		else if (val != 1)
+			fprintf(fp, " OverSubscribe=YES:%u", val);
 
 		if (p[i].state_up == PARTITION_UP)
 	                fprintf(fp, " State=UP");
