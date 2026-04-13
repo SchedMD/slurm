@@ -244,7 +244,6 @@ def test_enforce_binding(test_id, description, job_args, cpu_ids, gpu_idx):
     job_id = atf.submit_job_sbatch(job_str, fatal=True, quiet=False)
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True, timeout=60, quiet=False)
     job_dict = atf.get_job(job_id)
-    atf.cancel_all_jobs(quiet=True)
     assert job_dict["CPU_IDs"] == cpu_ids
     assert job_dict["GRES"] == gpu_idx
 
@@ -340,5 +339,4 @@ def test_multi_node_enforce_binding(
     # Do this for debugging purposes: so the test will log the output of scontrol show job
     atf.get_job(job_id)
 
-    atf.cancel_all_jobs(quiet=True)
     _validate_job_allocation(job, exp_gres, exp_nodes, exp_cpu_count, exp_cores)

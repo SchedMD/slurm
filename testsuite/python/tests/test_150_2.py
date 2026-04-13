@@ -76,5 +76,3 @@ def test_segment_nodelist():
         )
         == 0
     ), "Job should fail requested node count > number of specified nodes"
-
-    atf.cancel_all_jobs(quiet=True)
