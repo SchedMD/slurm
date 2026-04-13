@@ -324,6 +324,10 @@ static void _on_close_output_fd(conmgr_fd_t *con)
 		return;
 	}
 
+	/* un-quiesce if input is already closed to allow cleanup */
+	if (con_flag(con, FLAG_READ_EOF))
+		con_unset_flag(con, FLAG_QUIESCE);
+
 	con_set_polling(con, PCTL_TYPE_NONE, __func__);
 
 	if (con->out)
