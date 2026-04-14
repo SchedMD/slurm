@@ -5,4 +5,6 @@
 
 [Testsuite] @SchedMD/dev/qa-reviewers
 !/testsuite/**/Makefile.*
+!/testsuite/python/tests/
+!/testsuite/README
 /testsuite/
