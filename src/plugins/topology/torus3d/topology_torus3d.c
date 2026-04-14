@@ -357,6 +357,13 @@ extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 
 extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 {
+	torus3d_context_t *ctx = tctx;
+
+	for (int i = 0; i < ctx->record_count; i++) {
+		if (bit_overlap_any(ctx->records[i].nodes_bitmap, node_mask))
+			bit_or(node_mask, ctx->records[i].nodes_bitmap);
+	}
+
 	return SLURM_SUCCESS;
 }
 
