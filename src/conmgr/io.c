@@ -124,7 +124,7 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (con->input_fd < 0) {
+	if ((con->input_fd < 0) || con_flag(con, FLAG_READ_EOF)) {
 		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(NET, "%s: [%s] called on closed connection",
 			 __func__, con->name);
