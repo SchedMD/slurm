@@ -3,6 +3,7 @@
 ############################################################################
 import atf
 import pytest
+import re
 
 # Global variables
 cluster1 = "cluster1"
@@ -14,8 +15,16 @@ acct3 = "acct3"
 acct4 = "acct4"
 acct5 = "acct4_sub"
 acct6 = "acct4_sub_sub"
+acct7 = "acct5"
+acct8 = "acct6"
+acct9 = "acct7"
 user1 = "user1"
+user2 = "user2"
+user3 = "user3"
 part1 = "part1"
+part2 = "part2"
+part3 = "part3"
+part4 = "part4"
 defacct = acct1
 
 
@@ -24,7 +33,7 @@ def setup():
     """Test setup with required configurations."""
     atf.require_accounting(modify=True)
     atf.require_config_parameter_includes("AccountingStorageEnforce", "associations")
-    atf.require_config_parameter("AllowNoDefAcct", None, source="slurmdbd")
+    atf.require_config_parameter("AllowNoDefAcct", "No", source="slurmdbd")
     # these can be helpful when debugging/tracing
     # atf.require_config_parameter("DebugLevel", "debug4", source="slurmdbd")
     # atf.require_config_parameter("DebugFlags", f"{atf.get_config(live=False, source="slurmdbd", quiet=True)["DebugFlags"]},DB_ASSOC", source="slurmdbd")
@@ -52,7 +61,7 @@ def setup_db():
     yield
 
     atf.run_command(
-        f"sacctmgr -i remove user {user1} {acct1},{acct2},{acct3},{acct4}",
+        f"sacctmgr -i remove user {user1} acct={acct1},{acct2},{acct3},{acct4}",
         user=atf.properties["slurm-user"],
         quiet=True,
     )
@@ -139,14 +148,14 @@ def test_account_removal():
 
     # Remove all accounts of user on cluster2
     atf.run_command(
-        f"sacctmgr -i remove user {user1} {acct2},{acct3},{acct4} cluster={cluster2}",
+        f"sacctmgr -i remove user {user1} acct={acct2},{acct3},{acct4} cluster={cluster2}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
 
     # Remove accounts acct2,acct3,acct4 from user on remaining clusters
     atf.run_command(
-        f"sacctmgr -i remove user {user1} {acct2},{acct3},{acct4}",
+        f"sacctmgr -i remove user {user1} acct={acct2},{acct3},{acct4}",
         user=atf.properties["slurm-user"],
         fatal=True,
     )
@@ -164,7 +173,7 @@ def test_account_removal():
 
 @pytest.mark.xfail(
     atf.get_version("sbin/slurmdbd") < (25, 11),
-    reason="Ticket 24228: In 24.11.4 we fixed an issue when removing and account specifying the parent",
+    reason="Ticket 24228: In 24.11.4 we fixed an issue when removing an account specifying the parent",
 )
 def test_account_removal_with_parent():
     """Test removing an account using parent="""
@@ -237,3 +246,143 @@ def test_account_removal_with_partition():
     assert (
         output == ""
     ), f"Account {acct4} with partition {part1} shouldn't have an assoc anymore"
+
+
+def test_add_del_user_def_acct():
+    """Test adding multiple default accounts"""
+
+    # Add account
+    atf.run_command(
+        f"sacctmgr -i add acct {acct7} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Add user with default account (no partition)
+    atf.run_command(
+        f"sacctmgr -i add user {user2} defaultaccount={acct7} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Add user with default account and partition
+    atf.run_command(
+        f"sacctmgr -i add user {user2} defaultaccount={acct7} partition={part1} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Confirm there are two defaults
+    output = atf.run_command_output(
+        f"sacctmgr -n -P show assoc where user={user2} format=acct onlydef",
+        fatal=True,
+    )
+    assert (
+        len(re.findall(rf"{acct7}", output, re.IGNORECASE)) == 2
+    ), f"User {user2} should have more than one default assoc"
+
+    # Confirm the last default added should be able to be removed
+    result = atf.run_command(
+        f"sacctmgr -i del user {user2} acct={acct7} partition={part1} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert (
+        result["exit_code"] == 0
+    ), f"Should be able to remove acct {acct7} for user {user2} with partition {part1}"
+
+    # Add back in the default account (with partition)
+    atf.run_command(
+        f"sacctmgr -i add user {user2} defaultaccount={acct7} partition={part1} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    # Confirm removing user assoc with default account AND no partition succeeds
+    result = atf.run_command(
+        f'sacctmgr -i del user {user2} acct={acct7} partition=\\"\\" cluster={cluster1}',
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert (
+        result["exit_code"] == 0
+    ), f"Should be able to remove acct {acct7} for user {user2} with empty partition"
+
+
+def test_change_user_def_acct():
+    """Test changing default account for user"""
+
+    # Add two accts
+    atf.run_command(
+        f"sacctmgr -i add acct {acct8} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.run_command(
+        f"sacctmgr -i add acct {acct9} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Add user with default account and partition
+    atf.run_command(
+        f"sacctmgr -i add user {user3} defaultaccount={acct8} partition={part1} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Add user with another default account and partition
+    atf.run_command(
+        f"sacctmgr -i add user {user3} defaultaccount={acct8} partition={part2} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    # Add user with default account and no partition
+    atf.run_command(
+        f"sacctmgr -i add user {user3} defaultaccount={acct8} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Add user with a non-def account and partition
+    atf.run_command(
+        f"sacctmgr -i add user {user3} account={acct9} partition={part3} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    # Add user with a non-def account and another partition
+    atf.run_command(
+        f"sacctmgr -i add user {user3} account={acct9} partition={part4} cluster={cluster1}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+
+    # Now change def account
+    result = atf.run_command(
+        f"sacctmgr -i mod user {user3} cluster={cluster1} set defaultaccount={acct9}",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    assert (
+        result["exit_code"] == 0
+    ), f"Should be able to set new default account {acct9} for user {user3}"
+
+    # Confirm total assocs for user
+    output = atf.run_command_output(
+        f"sacctmgr -n -P show assoc where user={user3} format=acct,partition",
+        fatal=True,
+    )
+    assert (
+        len(re.findall(rf"{acct8}", output, re.IGNORECASE)) == 3
+    ), f"User {user3} should have 3 assocs for acct {acct8}"
+    assert (
+        len(re.findall(rf"{acct9}", output, re.IGNORECASE)) == 2
+    ), f"User {user3} should have 5 assocs for acct {acct9}"
+
+    # Confirm there are two defaults with partitions
+    output = atf.run_command_output(
+        f"sacctmgr -n -P show assoc where user={user3} format=acct,partition onlydef",
+        fatal=True,
+    )
+    assert (
+        len(re.findall(rf"{acct9}\|part[0-9]", output, re.IGNORECASE)) == 2
+    ), f"User {user3} should have 2 default assocs with partitions"
