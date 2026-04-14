@@ -12,14 +12,14 @@ import json
 def get_cluster_names(remote_license):
     """Find all cluster names"""
 
-    cluster_names = {
+    cluster_names = [
         k
         for item in remote_license["actions"]
         if "clusters" in item
         for k in item["clusters"]
-    }
+    ]
 
-    return cluster_names
+    return sorted(cluster_names)
 
 
 # Setup
@@ -28,6 +28,10 @@ def setup(remote_license):
 
     for cluster in cluster_names:
         atf.set_config_parameter("ClusterName", cluster)
+        # TODO: Set cluster name for all clusters when multi-cluster ability is
+        # available.
+        break
+
     if "preserve_case" in remote_license and remote_license["preserve_case"]:
         atf.require_config_parameter(
             "Parameters", "PreserveCaseResource", source="slurmdbd"
