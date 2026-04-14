@@ -301,8 +301,10 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         and "_spawn_job_container" in bt
         and "for (uint32_t i = 0; i < step->node_tasks; i++)" in bt
     ):
-        # TODO: Add version when t24905 is fixed
-        failures.append(reason)
+        if get_version(component) >= (25, 11, 6):
+            failures.append(reason)
+        else:
+            xfailures.append(reason)
         return
 
     reason = "Ticket 24907: Known issue with slurmstepd and jobacct_gather"
