@@ -79,6 +79,8 @@ extern void torus3d_index_to_coord(torus3d_record_t *torus, uint32_t index,
 
 extern int torus3d_record_validate(topology_ctx_t *tctx);
 
+extern void torus3d_record_update_torus_config(topology_ctx_t *tctx, int idx);
+
 extern void torus3d_record_table_destroy(torus3d_context_t *ctx);
 
 #endif

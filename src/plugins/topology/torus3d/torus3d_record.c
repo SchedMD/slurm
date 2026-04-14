@@ -532,6 +532,148 @@ extern int torus3d_record_validate(topology_ctx_t *tctx)
 	return SLURM_SUCCESS;
 }
 
+static void _build_region(torus3d_record_t *torus, bitstr_t *visited,
+			  uint16_t ax, uint16_t ay, uint16_t az,
+			  slurm_conf_torus3d_region_t **regions_ptr,
+			  int *region_count, int *region_alloc)
+{
+	uint16_t ex, ey, ez;
+	slurm_conf_torus3d_region_t *r;
+	hostlist_t *hl;
+
+	ex = ax + 1;
+	while (ex < torus->x) {
+		uint32_t idx = torus3d_coord_to_index(torus, ex, ay, az);
+		if (torus->nodes_map[idx] == NO_VAL || bit_test(visited, idx))
+			break;
+		ex++;
+	}
+
+	ey = ay + 1;
+	while (ey < torus->y) {
+		bool full = true;
+		for (uint16_t x = ax; x < ex; x++) {
+			uint32_t idx = torus3d_coord_to_index(torus, x, ey, az);
+			if (torus->nodes_map[idx] == NO_VAL ||
+			    bit_test(visited, idx)) {
+				full = false;
+				break;
+			}
+		}
+		if (!full)
+			break;
+		ey++;
+	}
+
+	ez = az + 1;
+	while (ez < torus->z) {
+		bool full = true;
+		for (uint16_t y = ay; y < ey && full; y++) {
+			for (uint16_t x = ax; x < ex; x++) {
+				uint32_t idx =
+					torus3d_coord_to_index(torus, x, y, ez);
+				if (torus->nodes_map[idx] == NO_VAL ||
+				    bit_test(visited, idx)) {
+					full = false;
+					break;
+				}
+			}
+		}
+		if (!full)
+			break;
+		ez++;
+	}
+
+	for (uint16_t z = az; z < ez; z++)
+		for (uint16_t y = ay; y < ey; y++)
+			for (uint16_t x = ax; x < ex; x++)
+				bit_set(visited,
+					torus3d_coord_to_index(torus, x, y, z));
+
+	if (*region_count >= *region_alloc) {
+		*region_alloc *= 2;
+		xrecalloc(*regions_ptr, *region_alloc, sizeof(**regions_ptr));
+	}
+
+	r = &(*regions_ptr)[(*region_count)++];
+	r->anchor.x = ax;
+	r->anchor.y = ay;
+	r->anchor.z = az;
+	r->dims.x = ex - ax;
+	r->dims.y = ey - ay;
+	r->dims.z = ez - az;
+
+	hl = hostlist_create(NULL);
+	for (uint16_t z = az; z < ez; z++) {
+		for (uint16_t y = ay; y < ey; y++) {
+			for (uint16_t x = ax; x < ex; x++) {
+				uint32_t linear_idx =
+					torus3d_coord_to_index(torus, x, y, z);
+				uint32_t node_index =
+					torus->nodes_map[linear_idx];
+				node_record_t *node_ptr =
+					node_record_table_ptr[node_index];
+				hostlist_push_host(hl, node_ptr->name);
+			}
+		}
+	}
+
+	r->nodes = hostlist_ranged_string_xmalloc(hl);
+	hostlist_destroy(hl);
+}
+
+static void _rebuild_regions(torus3d_record_t *torus,
+			     slurm_conf_torus3d_t *config)
+{
+	bitstr_t *visited = bit_alloc(torus->node_count);
+	int region_count = 0;
+	int region_alloc = 8;
+	slurm_conf_torus3d_region_t *regions =
+		xcalloc(region_alloc, sizeof(*regions));
+
+	for (uint16_t az = 0; az < torus->z; az++) {
+		for (uint16_t ay = 0; ay < torus->y; ay++) {
+			for (uint16_t ax = 0; ax < torus->x; ax++) {
+				uint32_t li = torus3d_coord_to_index(torus, ax,
+								     ay, az);
+				if (torus->nodes_map[li] == NO_VAL ||
+				    bit_test(visited, li))
+					continue;
+				_build_region(torus, visited, ax, ay, az,
+					      &regions, &region_count,
+					      &region_alloc);
+			}
+		}
+	}
+
+	FREE_NULL_BITMAP(visited);
+
+	config->regions = regions;
+	config->region_count = region_count;
+}
+
+extern void torus3d_record_update_torus_config(topology_ctx_t *tctx, int idx)
+{
+	torus3d_context_t *ctx = tctx->plugin_ctx;
+	topology_torus3d_config_t *torus_config = tctx->config;
+	slurm_conf_torus3d_t *config;
+
+	if (!torus_config)
+		return;
+
+	config = &torus_config->torus3d_configs[idx];
+
+	xfree(config->nodes);
+	if (config->regions) {
+		for (int i = 0; i < config->region_count; i++)
+			xfree(config->regions[i].nodes);
+		xfree(config->regions);
+	}
+
+	_rebuild_regions(&ctx->records[idx],
+			 &torus_config->torus3d_configs[idx]);
+}
+
 extern void torus3d_record_table_destroy(torus3d_context_t *ctx)
 {
 	if (!ctx)
