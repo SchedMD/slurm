@@ -418,7 +418,7 @@ static void _do_power_work(time_t now)
 	node_record_t *node_ptr;
 	data_t *resume_json_data = NULL;
 	data_t *jobs_data = NULL;
-	list_itr_t *iter;
+	list_itr_t *resume_job_iter = NULL;
 	bitstr_t *job_power_node_bitmap;
 	uint32_t *job_id_ptr;
 	bool nodes_updated = false;
@@ -459,8 +459,8 @@ static void _do_power_work(time_t now)
 
 	job_power_node_bitmap = bit_alloc(node_record_count);
 
-	iter = list_iterator_create(resume_job_list);
-	while ((job_id_ptr = list_next(iter))) {
+	resume_job_iter = list_iterator_create(resume_job_list);
+	while ((job_id_ptr = list_next(resume_job_iter))) {
 		char *nodes, *node_bitmap;
 		job_record_t *job_ptr;
 		data_t *job_node_data;
@@ -474,20 +474,20 @@ static void _do_power_work(time_t now)
 		if (!(job_ptr = find_job_record(*job_id_ptr))) {
 			log_flag(POWER, "%u needed resuming but is gone now",
 				 *job_id_ptr);
-			list_delete_item(iter);
+			list_delete_item(resume_job_iter);
 			continue;
 		}
 		if (!IS_JOB_CONFIGURING(job_ptr)) {
 			log_flag(POWER, "%pJ needed resuming but isn't configuring anymore",
 				 job_ptr);
-			list_delete_item(iter);
+			list_delete_item(resume_job_iter);
 			continue;
 		}
 		if (!bit_overlap_any(job_ptr->node_bitmap,
 		                     power_down_node_bitmap)) {
 			log_flag(POWER, "%pJ needed resuming but nodes aren't power_save anymore",
 				 job_ptr);
-			list_delete_item(iter);
+			list_delete_item(resume_job_iter);
 			continue;
 		}
 
@@ -539,7 +539,7 @@ static void _do_power_work(time_t now)
 		if (!bit_set_count(need_resume_bitmap)) {
 			log_flag(POWER, "no more nodes to resume for job %pJ",
 				 job_ptr);
-			list_delete_item(iter);
+			list_delete_item(resume_job_iter);
 		} else if (power_save_debug) {
 			char *still_needed_nodes =
 				bitmap2node_name(need_resume_bitmap);
@@ -783,6 +783,7 @@ static void _do_power_work(time_t now)
 	if (nodes_updated)
 		last_node_update = time(NULL);
 
+	list_iterator_destroy(resume_job_iter);
 	FREE_NULL_DATA(resume_json_data);
 	FREE_NULL_BITMAP(job_power_node_bitmap);
 }
