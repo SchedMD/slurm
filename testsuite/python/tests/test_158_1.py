@@ -7,6 +7,7 @@ import pytest
 import csv
 import io
 import json
+import re
 
 
 def get_cluster_names(remote_license):
@@ -137,7 +138,6 @@ def _remote_licenses(remote_license):
 
     # Add/modify cluster licenses
     for action in remote_license["actions"]:
-        output = ""
         if action["type"] == "validate":
             pass  # no mods
         elif "clusters" in action:
@@ -146,16 +146,20 @@ def _remote_licenses(remote_license):
                 if action["type"] == "modify":
                     mod_cmd = " set"
 
-                if res["allowed"]:
+                if "allowed" in res:
                     mod_cmd += f" allowed={res['allowed']}"
                 if "flags" in res:
                     mod_cmd += f" flags{res['flags']}"
 
-                output = atf.run_command_output(
+                proc = atf.run_command(
                     f"sacctmgr -i {action['type']} resource {remote_license['name']} cluster={cname} {mod_cmd}",
                     user=atf.properties["slurm-user"],
-                    fatal=True,
                 )
+                if "error" in action:
+                    assert re.match(action["error"], proc["stderr"])
+                    assert proc["exit_code"] == 1
+                else:
+                    assert proc["exit_code"] == 0
         else:
             mod_cmd = ""
             if action["type"] == "modify":
@@ -164,14 +168,18 @@ def _remote_licenses(remote_license):
             if "flags" in action:
                 mod_cmd += f" flags{action['flags']}"
 
-            output = atf.run_command_output(
+            if "lastconsumed" in action:
+                mod_cmd += f" lastconsumed={action['lastconsumed']}"
+
+            proc = atf.run_command(
                 f"sacctmgr -i {action['type']} resource {remote_license['name']} {mod_cmd}",
                 user=atf.properties["slurm-user"],
-                fatal=True,
             )
-
-        if "error" in action:
-            assert action["error"] == output
+            if "error" in action:
+                assert re.match(action["error"], proc["stderr"])
+                assert proc["exit_code"] == 1
+            else:
+                assert proc["exit_code"] == 0
 
         # Verify
         resources = cluster_resources_to_dict()
@@ -180,7 +188,10 @@ def _remote_licenses(remote_license):
             for cname, res in action["clusters"].items():
                 assert resources[cname]["Count"] == remote_license["count"]
                 assert resources[cname]["Allocated"] == action["allocated"]
-                assert resources[cname]["Allowed"] == res["allowed"]
+                if "expected_allowed" in res:
+                    assert resources[cname]["Allowed"] == res["expected_allowed"]
+                else:
+                    assert resources[cname]["Allowed"] == res["allowed"]
 
             for cname, res in action["clusters"].items():
                 output = atf.run_command_output(
@@ -200,8 +211,8 @@ def _remote_licenses(remote_license):
                     None,
                 )
                 print(resource)
-                assert resource["Total"] == res["actual"]
-                assert resource["Free"] == res["actual"]
+                assert resource["Total"] == res["actual_total"]
+                assert resource["Free"] == res["actual_free"]
                 assert resource["Remote"]
                 assert resource["Used"] == 0
 
@@ -225,16 +236,72 @@ def test_remote_license_percent(request, do_licenses, preserve_case):
                 "type": "add",
                 "allocated": 100,
                 "clusters": {
-                    "c1": {"allowed": 25, "actual": 50},
-                    "c2": {"allowed": 75, "actual": 150},
+                    "c1": {"allowed": 25, "actual_total": 50, "actual_free": 50},
+                    "c2": {"allowed": 75, "actual_total": 150, "actual_free": 150},
                 },
             },
             {
                 "type": "modify",
                 "allocated": 60,
                 "clusters": {
-                    "c1": {"allowed": 10, "actual": 20},
-                    "c2": {"allowed": 50, "actual": 100},
+                    "c1": {"allowed": 10, "actual_total": 20, "actual_free": 20},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                },
+            },
+            {
+                "type": "modify",
+                "allocated": 100,
+                "clusters": {
+                    "c1": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 100,
+            },
+            {
+                "type": "validate",
+                "allocated": 100,
+                "clusters": {
+                    "c1": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 200,
+            },
+            {
+                "type": "validate",
+                "allocated": 100,
+                "clusters": {
+                    "c1": {"allowed": 50, "actual_total": 100, "actual_free": 0},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 0},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 180,
+            },
+            {
+                "type": "validate",
+                "allocated": 100,
+                "clusters": {
+                    "c1": {"allowed": 50, "actual_total": 100, "actual_free": 20},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 20},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 101,
+            },
+            {
+                "type": "validate",
+                "allocated": 100,
+                "clusters": {
+                    "c1": {"allowed": 50, "actual_total": 100, "actual_free": 99},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 99},
                 },
             },
         ],
@@ -264,17 +331,237 @@ def test_remote_license_absolute(do_licenses):
                 "type": "add",
                 "allocated": 100,
                 "clusters": {
-                    "c1": {"allowed": 25, "actual": 25},
-                    "c2": {"allowed": 75, "actual": 75},
+                    "c1": {"allowed": 25, "actual_total": 25, "actual_free": 25},
+                    "c2": {"allowed": 75, "actual_total": 75, "actual_free": 75},
                 },
             },
             {
                 "type": "modify",
                 "allocated": 60,
                 "clusters": {
-                    "c1": {"allowed": 10, "actual": 10},
-                    "c2": {"allowed": 50, "actual": 50},
+                    "c1": {"allowed": 10, "actual_total": 10, "actual_free": 10},
+                    "c2": {"allowed": 50, "actual_total": 50, "actual_free": 50},
                 },
+            },
+            {
+                "type": "modify",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 100, "actual_free": 100},
+                    "c2": {"allowed": 100, "actual_total": 100, "actual_free": 100},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 100,
+            },
+            {
+                "type": "validate",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 100, "actual_free": 100},
+                    "c2": {"allowed": 100, "actual_total": 100, "actual_free": 100},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 200,
+            },
+            {
+                "type": "validate",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 100, "actual_free": 0},
+                    "c2": {"allowed": 100, "actual_total": 100, "actual_free": 0},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 180,
+            },
+            {
+                "type": "validate",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 100, "actual_free": 20},
+                    "c2": {"allowed": 100, "actual_total": 100, "actual_free": 20},
+                },
+            },
+            {
+                "type": "modify",
+                "lastconsumed": 101,
+            },
+            {
+                "type": "validate",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 100, "actual_free": 99},
+                    "c2": {"allowed": 100, "actual_total": 100, "actual_free": 99},
+                },
+            },
+        ],
+    }
+
+    do_licenses(remote_license)
+
+
+@pytest.mark.skipif(atf.get_version() < (26, 5), reason="SharedPool added in 26.05.")
+def test_remote_license_sharedpool(do_licenses):
+    """Remote licenses - Percent,SharedPool"""
+
+    remote_license = {
+        "name": "lic1",
+        "count": 200,
+        "flags": "sharedpool",
+        "actions": [
+            {
+                "type": "add",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 200, "actual_free": 200},
+                    "c2": {"allowed": 100, "actual_total": 200, "actual_free": 200},
+                },
+            },
+            {"type": "modify", "lastconsumed": 150},
+            {
+                "type": "validate",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 200, "actual_free": 50},
+                    "c2": {"allowed": 100, "actual_total": 200, "actual_free": 50},
+                },
+            },
+            {"type": "modify", "lastconsumed": 0},
+            # Remove flag. Should only let you do it once the license usage is less
+            # than 100%.
+            {
+                "type": "modify",
+                "flags": "-=sharedpool",
+                "error": r"sacctmgr: error: You can not allocate more than 100% of a resource.*",
+            },
+            {
+                "type": "modify",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {
+                        "allowed": 5,
+                        "actual_total": 200,
+                        "actual_free": 200,
+                        "expected_allowed": 100,
+                    },
+                },
+                "error": r"sacctmgr: error: Invalid value for Allowed field when SharedPool enabled, must be 0 or 100% \(without Absolute\) or Count \(with Absolute\)\..*",
+            },
+            {
+                "type": "modify",
+                "allocated": 0,
+                "clusters": {
+                    "c1": {"allowed": 0, "actual_total": 0, "actual_free": 0},
+                    "c2": {"allowed": 0, "actual_total": 0, "actual_free": 0},
+                },
+            },
+            {
+                "type": "modify",
+                "flags": "-=sharedpool",
+            },
+        ],
+    }
+
+    do_licenses(remote_license)
+
+
+@pytest.mark.skipif(atf.get_version() < (26, 5), reason="SharedPool added in 26.05.")
+def test_remote_license_add_sharedpool(do_licenses):
+    """Test adding SharedPool flag to existing external license"""
+
+    remote_license = {
+        "name": "lic1",
+        "count": 200,
+        "flags": "",
+        "actions": [
+            {
+                "type": "add",
+                "allocated": 100,
+                "clusters": {
+                    "c1": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                    "c2": {"allowed": 50, "actual_total": 100, "actual_free": 100},
+                },
+            },
+            {
+                "type": "modify",
+                "flags": "=sharedpool",
+                "allocated": 100,
+                "error": r"sacctmgr: error: Invalid value for Allowed field when SharedPool enabled, must be 0 or 100% \(without Absolute\) or Count \(with Absolute\)\..*",
+            },
+            {
+                "type": "modify",
+                "allocated": 0,
+                "clusters": {
+                    "c1": {"allowed": 0, "actual_total": 0, "actual_free": 0},
+                    "c2": {"allowed": 0, "actual_total": 0, "actual_free": 0},
+                },
+            },
+            {
+                "type": "modify",
+                "allocated": 0,
+                "flags": "=sharedpool",
+            },
+            {
+                "type": "modify",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 100, "actual_total": 200, "actual_free": 200},
+                    "c2": {"allowed": 100, "actual_total": 200, "actual_free": 200},
+                },
+            },
+        ],
+    }
+
+    do_licenses(remote_license)
+
+
+@pytest.mark.skipif(atf.get_version() < (26, 5), reason="SharedPool added in 26.05.")
+def test_remote_license_abs_sharedpool(do_licenses):
+    """Remote licenses - Absolute,SharedPool"""
+
+    remote_license = {
+        "name": "lic1",
+        "count": 200,
+        "flags": "absolute,sharedpool",
+        "actions": [
+            {
+                "type": "add",
+                "allocated": 400,
+                "clusters": {
+                    "c1": {"allowed": 200, "actual_total": 200, "actual_free": 200},
+                    "c2": {"allowed": 200, "actual_total": 200, "actual_free": 200},
+                },
+            },
+            # Remove flag. Should only let you do it once the license usage is less
+            # than absolute value.
+            {
+                "type": "modify",
+                "flags": "-=sharedpool",
+                "error": r"sacctmgr: error: You can not allocate more than 100% of a resource.*",
+            },
+            # Setting flags. Should only let you do it once the license usage
+            # is less than absolute value.
+            {
+                "type": "modify",
+                "flags": "=absolute",
+                "error": r"sacctmgr: error: You can not allocate more than 100% of a resource.*",
+            },
+            {
+                "type": "modify",
+                "allocated": 200,
+                "clusters": {
+                    "c1": {"allowed": 0, "actual_total": 0, "actual_free": 0},
+                    "c2": {"allowed": 200, "actual_total": 200, "actual_free": 200},
+                },
+            },
+            {
+                "type": "modify",
+                "flags": "-=sharedpool",
             },
         ],
     }
