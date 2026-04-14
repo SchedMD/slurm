@@ -697,6 +697,13 @@ typedef enum auth_plugin_type {
 	AUTH_PLUGIN_SLURM	= 103,
 } auth_plugin_type_t;
 
+/* compress plugin (id) to use for compression */
+enum compress_plugin_type {
+	COMPRESS_PLUGIN_NONE = 0,
+	/* 1 was formerly zlib */
+	COMPRESS_PLUGIN_LZ4 = 2,
+};
+
 /*
  * Hash plugin (id) used for communication.
  */

@@ -207,7 +207,7 @@ am__define_uniq_tagged_files = \
 DIST_SUBDIRS = accounting_storage acct_gather_energy \
 	acct_gather_profile acct_gather_interconnect \
 	acct_gather_filesystem auth burst_buffer certgen certmgr \
-	cli_filter cred data_parser gpu gres hash http_auth \
+	cli_filter compress cred data_parser gpu gres hash http_auth \
 	http_parser jobacct_gather jobcomp job_submit metrics mcs mpi \
 	namespace node_features preempt prep priority proctrack sched \
 	select serializer site_factor switch task tls topology cgroup
@@ -474,11 +474,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = accounting_storage acct_gather_energy acct_gather_profile \
 	acct_gather_interconnect acct_gather_filesystem auth \
-	burst_buffer certgen certmgr cli_filter cred data_parser gpu \
-	gres hash http_auth http_parser jobacct_gather jobcomp \
-	job_submit metrics mcs mpi namespace node_features preempt \
-	prep priority proctrack sched select serializer site_factor \
-	switch task tls topology $(am__append_1)
+	burst_buffer certgen certmgr cli_filter compress cred \
+	data_parser gpu gres hash http_auth http_parser jobacct_gather \
+	jobcomp job_submit metrics mcs mpi namespace node_features \
+	preempt prep priority proctrack sched select serializer \
+	site_factor switch task tls topology $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

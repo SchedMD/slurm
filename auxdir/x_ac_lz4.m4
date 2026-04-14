@@ -75,6 +75,7 @@ else
     fi
   fi
 
+  AM_CONDITIONAL(BUILD_LZ4, test "$HAVE_LZ4" = 1)
 
 fi
 

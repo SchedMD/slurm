@@ -78,6 +78,7 @@
 
 #include "src/interfaces/auth.h"
 #include "src/interfaces/cli_filter.h"
+#include "src/interfaces/compress.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/switch.h"
 
@@ -187,6 +188,8 @@ int srun(int ac, char **av)
 		fatal("failed to initialize cli_filter plugin");
 	if (switch_g_init(false) != SLURM_SUCCESS )
 		fatal("failed to initialize switch plugins");
+	if (compress_g_init() != SLURM_SUCCESS)
+		fatal("failed to initialize compress plugin");
 
 	_setup_env_working_cluster();
 
@@ -248,6 +251,7 @@ int srun(int ac, char **av)
 
 #ifdef MEMORY_LEAK_DEBUG
 	probe_fini();
+	compress_g_fini();
 	cli_filter_fini();
 	mpi_fini();
 	switch_g_fini();

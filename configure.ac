@@ -471,6 +471,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/cli_filter/lua/Makefile
 		 src/plugins/cli_filter/syslog/Makefile
 		 src/plugins/cli_filter/user_defaults/Makefile
+		 src/plugins/compress/Makefile
+		 src/plugins/compress/none/Makefile
+		 src/plugins/compress/lz4/Makefile
 		 src/plugins/cred/Makefile
 		 src/plugins/cred/common/Makefile
 		 src/plugins/cred/munge/Makefile

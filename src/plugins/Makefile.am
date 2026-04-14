@@ -9,6 +9,7 @@ SUBDIRS = \
 	certgen			\
 	certmgr			\
 	cli_filter		\
+	compress		\
 	cred			\
 	data_parser		\
 	gpu			\
