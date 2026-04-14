@@ -369,6 +369,13 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 
 extern bitstr_t *topology_p_get_bitmap(char *name, void *tctx)
 {
+	torus3d_context_t *ctx = tctx;
+
+	for (int i = 0; i < ctx->record_count; i++) {
+		if (!xstrcmp(ctx->records[i].name, name))
+			return ctx->records[i].nodes_bitmap;
+	}
+
 	return NULL;
 }
 
