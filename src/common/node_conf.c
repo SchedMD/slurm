@@ -1174,7 +1174,8 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 
 	if (!xstrncmp("blockwith{", node_str, 10) ||
 	    !xstrncmp("ringwith{", node_str, 9) ||
-	    !xstrncmp("switchwith{", node_str, 11)) {
+	    !xstrncmp("switchwith{", node_str, 11) ||
+	    !xstrncmp("toruswith{", node_str, 10)) {
 		node_record_t *node_ptr;
 		bitstr_t *tmp_bitmap = bit_alloc(node_record_count);
 
@@ -1192,7 +1193,8 @@ static int _parse_hostlist_function(bitstr_t *node_bitmap, char *node_str)
 		FREE_NULL_BITMAP(tmp_bitmap);
 	} else if (!xstrncmp("block{", node_str, 6) ||
 		   !xstrncmp("ring{", node_str, 5) ||
-		   !xstrncmp("switch{", node_str, 7)) {
+		   !xstrncmp("switch{", node_str, 7) ||
+		   !xstrncmp("torus{", node_str, 6)) {
 		bitstr_t *tmp_bitmap = topology_g_get_bitmap(start_ptr);
 
 		if (tmp_bitmap) {
