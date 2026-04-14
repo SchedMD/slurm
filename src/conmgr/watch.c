@@ -1610,6 +1610,9 @@ static void _on_quiesce_timeout(void)
 
 	/* Close all connections but not listeners */
 	list_for_each(mgr.connections, _close_con_for_each, NULL);
+
+	/* Wake up poll() as all the connections should be closed */
+	pollctl_interrupt(__func__);
 }
 
 static void _quiesce_max_sleep(void)
