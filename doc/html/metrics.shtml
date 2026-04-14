@@ -40,10 +40,26 @@ Prometheus, Grafana, and other observability tools.</p>
 <p>The metrics feature requires specific configuration in <i>slurm.conf</i>:</p>
 
 <ul>
-<li><b>PrivateData must not be set</b>: The metrics feature is disabled if any
-<i>PrivateData</i> parameter is configured in slurm.conf. This is a security
-requirement to prevent exposure of sensitive information through metrics.</li>
-
+<li><b>MetricsAuthUsers parameter</b>: Set
+<a href="slurm.conf.html#OPT_MetricsAuthUsers">MetricsAuthUsers</a> to control
+which users are allowed to query metrics plugin endpoints. <i>SlurmUser</i> and
+<i>root</i> are always allowed. When set, it will ignore <i>PrivateData</i>
+and/or <i>MetricsParameters=ignore_private_data</i>, allowing users in the list
+to query the metrics endpoints. This option enables JWT authentication for
+querying metrics endpoints.
+<li><b>MetricsParameters parameter</b>: Set
+<a href="slurm.conf.html#OPT_MetricsParameters">MetricsParameters</a> to
+configure the behavior of metrics plugins. Multiple parameters may be comma
+separated. Currently supported parameters include:
+<ul>
+<li><b>ignore_private_data</b>: Set
+<a href="slurm.conf.html#OPT_ignore_private_data">
+MetricsParameters=ignore_private_data</a> to make the metrics plugin ignore
+<i>PrivateData</i>, and allow all users to query metrics endpoints without
+authentication. This option will be ignored if <i>MetricsAuthUsers</i> is set.
+</li>
+</ul>
+</li>
 <li><b>MetricsType parameter</b>: Set the
 <a href="slurm.conf.html#OPT_MetricsType">MetricsType</a> parameter to specify
 which metrics plugin to use. Currently, only the OpenMetrics plugin is
@@ -223,16 +239,24 @@ Examples include:</p>
 <p>The metrics system has several important security implications:</p>
 
 <ul>
-<li><b>No authentication</b>: There is no built-in authentication mechanism for
-metrics endpoints. Anyone with network access to the slurmctld port can query
-metrics.</li>
-
-<li><b>PrivateData dependency</b>: The metrics feature is automatically disabled
-when any <i>PrivateData</i> parameter is set in slurm.conf to prevent exposure
-of sensitive information.</li>
+<li><b>Authentication</b>: By default, metrics endpoints do not require
+authentication. They are either accessible to everyone or to no one (with the
+exceptions of <i>SlurmUser</i> and <i>root</i>), depending on whether
+<i>PrivateData</i> is set. It can be made globally accessible when
+<i>PrivateData</i> is set by using
+<a href="slurm.conf.html#OPT_ignore_private_data">
+MetricsParameters=ignore_private_data</a>.
+However, if <a href="slurm.conf.html#OPT_MetricsAuthUsers">MetricsAuthUsers</a>
+is used, the values of both <i>PrivateData</i> and
+<i>MetricsParameters=ignore_private_data</i> are ignored, and only the users in
+this list (plus <i>SlurmUser</i> and <i>root</i>) are allowed to query metrics
+endpoints. When querying without global access enabled, the metrics endpoints
+require authentication, and the user must provide a JWT token to perform such
+action.</li>
 
 <li><b>Network access</b>: Metrics are exposed through the slurmctld network
-interface. Consider firewall rules and network segmentation to control access.</li>
+interface. Consider firewall rules and network segmentation to further control
+access.</li>
 
 <li><b>Information disclosure</b>: Metrics may reveal information about cluster
 utilization, job patterns, and user activity that could be considered sensitive
@@ -314,6 +338,15 @@ slurm_nodes_alloc 15
 ...
 </pre>
 
+<p>When <i>MetricsAuthUsers</i>, and/or <i>PrivateData</i> without
+<i>MetricsParameters=ignore_private_data</i> are configured, global access is
+restricted. A JWT token must be provided in these cases:</p>
+
+<pre>
+$ curl -H "X-SLURM-USER-TOKEN:$SLURM_JWT" \
+    http://slurmctld.example.com:6817/metrics/<i>endpoint</i>
+</pre>
+
 <h3 id="prometheus_config">Prometheus Configuration
 <a class="slurm_link" href="#prometheus_config"></a>
 </h3>
@@ -347,6 +380,22 @@ scrape_configs:
     static_configs:
       - targets: ['slurm.example.com:6817']
     metrics_path: '/metrics/jobs-users-accts'
+</pre>
+
+<p>If <i>MetricsAuthUsers</i> and/or <i>PrivateData</i> without
+<i>MetricsParameters=ignore_private_data</i> are configured, global access is
+restricted. Add a JWT token for a user that is allowed to access to query jobs.
+For example:</p>
+
+<pre>
+scrape_configs:
+  - job_name: 'slurm_jobs'
+    static_configs:
+      - targets: ['slurm.example.com:6817']
+    metrics_path: '/metrics/jobs'
+    authorization:
+      type: Bearer
+      credentials: '&lt;JWT_TOKEN&gt;'
 </pre>
 
 <!--#include virtual="footer.txt"-->

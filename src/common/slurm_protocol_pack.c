@@ -4409,6 +4409,8 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		packstr(conf->mcs_plugin, buffer);
 		packstr(conf->mcs_plugin_params, buffer);
 
+		packstr(conf->metrics_auth_users, buffer);
+		packstr(conf->metrics_params, buffer);
 		packstr(conf->metrics_type, buffer);
 
 		pack32(conf->min_job_age, buffer);
@@ -5476,6 +5478,8 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpack16(&conf->max_tasks_per_node, buffer);
 		safe_unpackstr(&conf->mcs_plugin, buffer);
 		safe_unpackstr(&conf->mcs_plugin_params, buffer);
+		safe_unpackstr(&conf->metrics_auth_users, buffer);
+		safe_unpackstr(&conf->metrics_params, buffer);
 		safe_unpackstr(&conf->metrics_type, buffer);
 		safe_unpack32(&conf->min_job_age, buffer);
 		if (unpack_key_pair_list(&conf->mpi_conf, protocol_version,
