@@ -109,7 +109,7 @@ static const char *syms[] = {
 	"cgroup_p_has_pid",
 	"cgroup_p_constrain_get",
 	"cgroup_p_constrain_set",
-        "cgroup_p_constrain_apply",
+	"cgroup_p_constrain_apply",
 	"cgroup_p_step_start_oom_mgr",
 	"cgroup_p_step_stop_oom_mgr",
 	"cgroup_p_task_addto",
