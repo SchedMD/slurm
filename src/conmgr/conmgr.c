@@ -213,6 +213,11 @@ extern void conmgr_init(int thread_count, int default_thread_count,
 
 	conmgr_timeouts_init_default(&mgr.timeouts);
 
+	if (timespec_is_infinite(mgr.timeouts.quiesce))
+		warning("%s%s could result in this process hanging during a quiesce due to slow network I/O",
+			CONMGR_PARAM_QUIESCE_TIMEOUT,
+			TIMESPEC_STR(mgr.timeouts.quiesce, false));
+
 	mgr.max_connections = max_connections;
 	mgr.connections = list_create(NULL);
 	mgr.listen_conns = list_create(NULL);
