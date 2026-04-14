@@ -5396,6 +5396,7 @@ extern int stepmgr_get_job_sbcast_cred_msg(job_record_t *job_ptr,
 		sbcast_arg.step_id.step_id = job_ptr->next_step_id;
 	sbcast_arg.nodes = node_list; /* avoid extra copy */
 	sbcast_arg.expiration = job_ptr->end_time;
+	sbcast_arg.id = job_ptr->id;
 
 	if (!(sbcast_cred = create_sbcast_cred(&sbcast_arg, job_ptr->user_id,
 					       job_ptr->group_id,
