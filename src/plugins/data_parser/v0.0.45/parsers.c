@@ -8439,6 +8439,14 @@ static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_PERSIST_CONN_RC)[] = {
 	add_flag_hidden_bit(PERSIST_FLAG_DONT_UPDATE_CLUSTER, "DontUpdateCluster"),
 };
 
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_DBD)[] = {
+	add_flag_bit(DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT, "AllowNoDefAcct"),
+	add_flag_bit(DBD_CONF_FLAG_ALL_RES_ABS, "AllResourcesAbsolute"),
+	add_flag_bit(DBD_CONF_FLAG_DISABLE_COORD_DBD, "DisableCoordDBD"),
+	add_flag_hidden_bit(DBD_CONF_FLAG_GET_DBVER, "GetDBVer"),
+	add_flag_bit(DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS, "DisableArchiveCommands"),
+};
+
 #define add_skip(field)					\
 	add_parser_skip(slurmdb_user_rec_t, field)
 #define add_parse(mtype, field, path, desc)				\
@@ -13355,6 +13363,7 @@ static const parser_t parsers[] = {
 	addfa(NODE_PARTITION_CPU_BINDING_FLAGS, uint32_t),
 	addfa(PARTITION_FLAGS, uint32_t),
 	addfa(CONF_FLAGS_PERSIST_CONN_RC, uint16_t),
+	addfa(CONF_FLAGS_DBD, uint32_t),
 	addfa(JOB_DEFAULTS_TYPE, uint16_t),
 	addfa(CONF_FLAGS, uint32_t),
 	addfa(CONF_FLAGS_COMMUNICATION_PARAMETERS, uint32_t),
