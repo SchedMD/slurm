@@ -935,7 +935,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		xassert(is_tls);
 		xassert(!con_flag(con, FLAG_IS_LISTEN));
 
-		if (con_flag(con, FLAG_ON_DATA_TRIED)) {
+		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+			log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown cleanup on closed connection",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, tls_shutdown, NULL);
+		} else if (con_flag(con, FLAG_ON_DATA_TRIED)) {
 			log_flag(CONMGR, "%s: [%s] waiting for incoming to continue TLS shutdown",
 				 __func__, con->name);
 		} else {
