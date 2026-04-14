@@ -205,6 +205,11 @@ extern int topology_p_destroy_config(topology_ctx_t *tctx)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_eval_node(topology_eval_t *topo_eval, int node_idx)
+{
+	return common_test_node(topo_eval, node_idx);
+}
+
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
 	topo_eval->eval_nodes = eval_nodes_tree;

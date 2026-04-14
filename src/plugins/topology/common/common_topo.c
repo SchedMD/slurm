@@ -37,6 +37,7 @@
 
 #include "common_topo.h"
 #include "eval_nodes.h"
+#include "gres_sched.h"
 
 #include "src/common/bitstring.h"
 #include "src/common/core_array.h"
@@ -446,4 +447,31 @@ fini:	if ((ec == SLURM_SUCCESS) && job_ptr->gres_list_req &&
 	free_core_array(&orig_core_array);
 	xfree(sorted_res);
 	return ec;
+}
+
+extern int common_test_node(topology_eval_t *topo_eval, int node_idx)
+{
+	job_record_t *job_ptr = topo_eval->job_ptr;
+	job_details_t *details_ptr = job_ptr->details;
+	int64_t rem_max_cpus;
+	uint64_t maxtasks;
+
+	rem_max_cpus = eval_nodes_get_rem_max_cpus(details_ptr, 1);
+	maxtasks = eval_nodes_set_max_tasks(job_ptr, rem_max_cpus, 1);
+
+	eval_nodes_select_cores(topo_eval, node_idx, 1);
+	eval_nodes_cpus_to_use(topo_eval, node_idx, rem_max_cpus, 1, &maxtasks,
+			       true);
+
+	if ((topo_eval->avail_cpus == 0) ||
+	    (details_ptr->min_cpus > topo_eval->avail_cpus) ||
+	    !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
+		return SLURM_ERROR;
+	}
+
+	bit_clear_all(topo_eval->node_map);
+	bit_set(topo_eval->node_map, node_idx);
+	eval_nodes_clip_socket_cores(topo_eval);
+
+	return SLURM_SUCCESS;
 }

@@ -63,6 +63,7 @@ typedef struct slurm_topo_ops {
 			   topology_ctx_t *tctx);
 	int (*build_config)(topology_ctx_t *tctx);
 	int (*destroy_config)(topology_ctx_t *tctx);
+	int (*eval_node)(topology_eval_t *topo_eval, int node_inx);
 	int (*eval_nodes) (topology_eval_t *topo_eval);
 
 	int (*whole_topo)(bitstr_t *node_mask, void *tctx);
@@ -105,6 +106,7 @@ static const char *syms[] = {
 	"topology_p_add_rm_node",
 	"topology_p_build_config",
 	"topology_p_destroy_config",
+	"topology_p_eval_node",
 	"topology_p_eval_nodes",
 	"topology_p_whole_topo",
 	"topology_p_get_bitmap",
@@ -434,6 +436,25 @@ extern int topology_g_eval_nodes(topology_eval_t *topo_eval)
 	topo_eval->tctx = &(tctx[idx]);
 
 	return (*(ops[tctx[idx].idx].eval_nodes))(topo_eval);
+}
+
+extern int topology_g_eval_node(topology_eval_t *topo_eval, int node_inx)
+{
+	int idx = topo_eval->job_ptr->part_ptr->topology_idx;
+
+	xassert(plugin_inited != PLUGIN_NOT_INITED);
+	xassert((idx >= 0) && (idx < tctx_num));
+
+	/*
+	 * topo_jobinfo needs to be reset in interface before entering plugin in
+	 * case it was set by a different topology plugin.
+	 */
+	topology_g_jobinfo_free(topo_eval->job_ptr->topo_jobinfo);
+	topo_eval->job_ptr->topo_jobinfo = NULL;
+
+	topo_eval->tctx = &(tctx[idx]);
+
+	return (*(ops[tctx[idx].idx].eval_node))(topo_eval, node_inx);
 }
 
 extern int topology_g_whole_topo(bitstr_t *node_mask, int idx)
