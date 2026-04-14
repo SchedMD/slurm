@@ -142,13 +142,15 @@ static int _check_metrics_authorized(http_con_t *hcon, const char *name,
 }
 
 static int _req_not_found(http_con_t *hcon, const char *name,
-			  const http_con_request_t *request, void *arg)
+			  const http_con_request_t *request, void *arg,
+			  void *path_arg)
 {
 	return _reply_error(hcon, name, request, ESLURM_URL_INVALID_PATH);
 }
 
 static int _req_metrics(http_con_t *hcon, const char *name,
-			const http_con_request_t *request, void *arg)
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
 {
 	static const char body[] =
 		"slurmctld index of metrics endpoints:\n"
@@ -172,7 +174,8 @@ static int _req_metrics(http_con_t *hcon, const char *name,
 }
 
 static int _req_root(http_con_t *hcon, const char *name,
-		     const http_con_request_t *request, void *arg)
+		     const http_con_request_t *request, void *arg,
+		     void *path_arg)
 {
 	static const char body[] =
 		"slurmctld index of endpoints:\n"
@@ -190,7 +193,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 }
 
 static int _req_readyz(http_con_t *hcon, const char *name,
-		       const http_con_request_t *request, void *arg)
+		       const http_con_request_t *request, void *arg,
+		       void *path_arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 	buf_t *body = NULL;
@@ -246,7 +250,8 @@ static int _send_metrics_resp(http_con_t *hcon, char *stats_str)
 }
 
 extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
-			     const http_con_request_t *request, void *arg)
+			     const http_con_request_t *request, void *arg,
+			     void *path_arg)
 {
 	jobs_stats_t *stats;
 	char *stats_str = NULL;
@@ -266,7 +271,8 @@ extern int _req_metrics_jobs(http_con_t *hcon, const char *name,
 }
 
 extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
-			      const http_con_request_t *request, void *arg)
+			      const http_con_request_t *request, void *arg,
+			      void *path_arg)
 {
 	nodes_stats_t *stats;
 	char *stats_str;
@@ -286,7 +292,8 @@ extern int _req_metrics_nodes(http_con_t *hcon, const char *name,
 }
 
 extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
-				   const http_con_request_t *request, void *arg)
+				   const http_con_request_t *request, void *arg,
+				   void *path_arg)
 {
 	jobs_stats_t *jobs_stats;
 	nodes_stats_t *nodes_stats;
@@ -320,7 +327,8 @@ extern int _req_metrics_partitions(http_con_t *hcon, const char *name,
 }
 
 extern int _req_metrics_ua(http_con_t *hcon, const char *name,
-			   const http_con_request_t *request, void *arg)
+			   const http_con_request_t *request, void *arg,
+			   void *path_arg)
 {
 	jobs_stats_t *jobs_stats;
 	users_accts_stats_t *ua_stats;
@@ -343,7 +351,8 @@ extern int _req_metrics_ua(http_con_t *hcon, const char *name,
 }
 
 extern int _req_metrics_sched(http_con_t *hcon, const char *name,
-			      const http_con_request_t *request, void *arg)
+			      const http_con_request_t *request, void *arg,
+			      void *path_arg)
 {
 	scheduling_stats_t *stats;
 	char *stats_str;
@@ -363,7 +372,8 @@ extern int _req_metrics_sched(http_con_t *hcon, const char *name,
 }
 
 static int _req_livez(http_con_t *hcon, const char *name,
-		      const http_con_request_t *request, void *arg)
+		      const http_con_request_t *request, void *arg,
+		      void *path_arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
@@ -374,7 +384,8 @@ static int _req_livez(http_con_t *hcon, const char *name,
 }
 
 static int _req_healthz(http_con_t *hcon, const char *name,
-			const http_con_request_t *request, void *arg)
+			const http_con_request_t *request, void *arg,
+			void *path_arg)
 {
 	http_status_code_t status = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
@@ -393,20 +404,23 @@ extern void http_init(void)
 		      slurm_strerror(rc));
 
 	http_router_init(_req_not_found);
-	http_router_bind(HTTP_REQUEST_GET, "/", _req_root);
-	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz);
-	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez);
-	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz);
-	http_router_bind(HTTP_REQUEST_GET, "/metrics", _req_metrics);
-	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs);
-	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes",
-			 _req_metrics_nodes);
+	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/readyz", _req_readyz, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics", _req_metrics, NULL,
+			 NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs", _req_metrics_jobs,
+			 NULL, NULL);
+	http_router_bind(HTTP_REQUEST_GET, "/metrics/nodes", _req_metrics_nodes,
+			 NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/partitions",
-			 _req_metrics_partitions);
+			 _req_metrics_partitions, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/scheduler",
-			 _req_metrics_sched);
+			 _req_metrics_sched, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs-users-accts",
-			 _req_metrics_ua);
+			 _req_metrics_ua, NULL, NULL);
 }
 
 extern void http_fini(void)

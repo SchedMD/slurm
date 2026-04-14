@@ -285,10 +285,8 @@ extern int serialize_p_data_to_string(char **dest, size_t *length,
 
 	/* string will die with jobj */
 	*dest = xstrdup(json_object_to_json_string_ext(jobj, jflags));
-	if (length) {
-		/* add 1 for \0 */
-		*length = strlen(*dest) + 1;
-	}
+	if (length)
+		*length = strlen(*dest);
 
 	/* put is equiv to free() */
 	json_object_put(jobj);
