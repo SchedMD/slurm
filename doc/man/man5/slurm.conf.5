@@ -3709,12 +3709,12 @@ Currently supported options are:
 .RS
 .TP 8
 \fBAlloc\fR
-If set, the Prolog script will be executed at job allocation. By default,
-Prolog is executed just before the task is launched. Therefore, when salloc
-is started, no Prolog is executed. Alloc is useful for preparing things
-before a user starts to use any allocated resources.
-In particular, this flag is needed on a Cray system when cluster compatibility
-mode is enabled.
+If set, the Prolog script will always be executed at job allocation. Otherwise,
+the Prolog is executed just before the first task is launched, which includes
+batch and interactive steps (see \fBLaunchParameters=use_interactive_step\fR).
+Alloc can be useful for preparing things before a user starts to use any
+allocated resources. In particular, this flag is needed on a Cray system
+when cluster compatibility mode is enabled.
 
 \fBNOTE\fR: Use of the Alloc flag will increase the time required to start jobs.
 .IP
