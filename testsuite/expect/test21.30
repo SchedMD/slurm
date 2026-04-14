@@ -186,10 +186,11 @@ if {$tmpc == 0 || $tmpn == 0} {
 	skip "Not enough Nodes and/or CPUs"
 }
 
-if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
-	set prio_multifactor 1
-} else {
-	set prio_multifactor 0
+if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
+	skip "Some test cases like GrpWall fail without priority/multifactor"
+}
+if {[get_config_param "PriorityDecayHalfLife"] ne "00:00:00"} {
+	skip "This test requires no usage decay"
 }
 
 set got_node 0
@@ -401,18 +402,15 @@ set mod_qos_vals(GrpCpuMin) "-1"
 
 #
 # Test GroupCPURunMins
-# Requires priority/multifactor to properly handle decay well
 #
-if { $prio_multifactor != 0 } {
-	set mod_qos_vals(GrpCpuRunMin) $grpcpurunmin_num
-	mod_qos $qostest [array get mod_qos_vals]
-	sleep $time_spacing
-	if { $one_task_pc } {
-		set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
-	}
-	inc21_30_10 "QOSGrpCPURunMinutesLimit"
-	set mod_qos_vals(GrpCpuRunMin) "-1"
+set mod_qos_vals(GrpCpuRunMin) $grpcpurunmin_num
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+if { $one_task_pc } {
+	set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
 }
+inc21_30_10 "QOSGrpCPURunMinutesLimit"
+set mod_qos_vals(GrpCpuRunMin) "-1"
 
 #
 # Test Group Memory
@@ -425,15 +423,12 @@ set mod_qos_vals(GrpMem) "-1"
 
 #
 # Test Group wall
-# Requires priority/multifactor to properly handle decay well
 #
-if { $prio_multifactor != 0 } {
-	set mod_qos_vals(GrpWall) $grpwall_num
-	mod_qos $qostest [array get mod_qos_vals]
-	sleep $time_spacing
-	inc21_30_12
-	set mod_qos_vals(GrpWall) "-1"
-}
+set mod_qos_vals(GrpWall) $grpwall_num
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+inc21_30_12
+set mod_qos_vals(GrpWall) "-1"
 
 #
 # Test Max Cpu Mins
@@ -539,18 +534,15 @@ set mod_qos_vals(GrpTRESMins=billing) "-1"
 
 #
 # Test GroupTRESRunMins=billing
-# Requires priority/multifactor to properly handle decay well
 #
-if { $prio_multifactor != 0 } {
-	set mod_qos_vals(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
-	mod_qos $qostest [array get mod_qos_vals]
-	sleep $time_spacing
-	if { $one_task_pc } {
-		set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
-	}
-	inc21_30_10 "QOSGrpBillingRunMinutes"
-	set mod_qos_vals(GrpTRESRunMins=billing) "-1"
+set mod_qos_vals(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
+mod_qos $qostest [array get mod_qos_vals]
+sleep $time_spacing
+if { $one_task_pc } {
+	set grpcpurunmin_num [expr $grpcpurunmin_num / $nthreads]
 }
+inc21_30_10 "QOSGrpBillingRunMinutes"
+set mod_qos_vals(GrpTRESRunMins=billing) "-1"
 
 
 #

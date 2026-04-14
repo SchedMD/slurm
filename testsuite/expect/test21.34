@@ -167,10 +167,11 @@ if {[param_contains [get_config_param "SelectType"] "select/linear"]} {
 	skip "This test is incompatible select/linear"
 }
 
-if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
-	set prio_multifactor 1
-} else {
-	set prio_multifactor 0
+if {[get_config_param "PriorityType"] ne "priority/multifactor"} {
+	skip "Some test cases like GrpWall fail without priority/multifactor"
+}
+if {[get_config_param "PriorityDecayHalfLife"] ne "00:00:00"} {
+	skip "This test requires no usage decay"
 }
 
 proc cleanup { } {
