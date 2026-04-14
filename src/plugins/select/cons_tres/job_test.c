@@ -783,6 +783,91 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 	return avail_res_array;
 }
 
+static int _cmp_node(const void *x, const void *y)
+{
+	node_record_t *n1 = *(node_record_t **) x;
+	node_record_t *n2 = *(node_record_t **) y;
+
+	if (n1->sched_weight < n2->sched_weight)
+		return -1;
+	else if (n1->sched_weight > n2->sched_weight)
+		return 1;
+	return 0;
+}
+
+static int _get_one_res(topology_eval_t *topo_eval,
+			node_use_record_t *node_usage, bool test_only,
+			bool will_run, bitstr_t **part_core_map,
+			resv_exc_t *resv_exc_ptr)
+{
+	avail_res_t **avail_res_array = NULL;
+	node_record_t **sorted_nodes;
+	node_record_t *node_ptr;
+	job_record_t *job_ptr = topo_eval->job_ptr;
+	bitstr_t *req_map = job_ptr->details->req_node_bitmap;
+	uint32_t s_p_n = _socks_per_node(job_ptr);
+	int32_t avail_node_cnt;
+	int rc = ESLURM_BREAK_EVAL;
+	bitstr_t **orig_core_array;
+
+	if (req_map)
+		bit_and(topo_eval->node_map, req_map);
+
+	avail_node_cnt = bit_set_count(topo_eval->node_map);
+
+	if (avail_node_cnt <= 0)
+		return rc;
+
+	orig_core_array = copy_core_array(topo_eval->avail_core);
+
+	avail_res_array = xcalloc(node_record_count, sizeof(avail_res_t *));
+	topo_eval->avail_res_array = avail_res_array;
+	topo_eval->min_nodes = 1;
+	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
+
+	log_flag(SELECT_TYPE, "begin");
+
+	sorted_nodes = xcalloc(avail_node_cnt, sizeof(*sorted_nodes));
+
+	for (int i = 0, idx = 0;
+	     (node_ptr = next_node_bitmap(topo_eval->node_map, &i)); i++)
+		sorted_nodes[idx++] = node_ptr;
+
+	qsort(sorted_nodes, avail_node_cnt, sizeof(*sorted_nodes), _cmp_node);
+
+check_nodes:
+	for (int idx = 0; idx < avail_node_cnt; idx++) {
+		int i = sorted_nodes[idx]->index;
+
+		avail_res_array[i] =
+			_can_job_run_on_node(job_ptr, topo_eval->avail_core, i,
+					     s_p_n, node_usage,
+					     topo_eval->cr_type, test_only,
+					     will_run, part_core_map,
+					     resv_exc_ptr);
+
+		if (!avail_res_array[i] || !avail_res_array[i]->avail_cpus)
+			continue;
+		log_flag(SELECT_TYPE, "check %s", sorted_nodes[idx]->name);
+		if (topology_g_eval_node(topo_eval, i))
+			continue;
+
+		log_flag(SELECT_TYPE, "chosen:%s", sorted_nodes[idx]->name);
+		rc = SLURM_SUCCESS;
+		break;
+	}
+	if (rc && topo_eval->first_pass) {
+		topo_eval->first_pass = false;
+		topo_eval->gres_per_job =
+			gres_sched_init(job_ptr->gres_list_req);
+		core_array_or(topo_eval->avail_core, orig_core_array);
+		goto check_nodes;
+	}
+	xfree(sorted_nodes);
+	free_core_array(&orig_core_array);
+	return rc;
+}
+
 /* For a given job already past it's end time, guess when it will actually end.
  * Used for backfill scheduling. */
 static time_t _guess_job_end(job_record_t *job_ptr, time_t now)
@@ -932,6 +1017,13 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 
 	core_array_log("_select_nodes/enter",
 		       topo_eval.node_map, topo_eval.avail_core);
+
+	if (topo_eval.max_nodes == 1) {
+		rc = _get_one_res(&topo_eval, node_usage, test_only, will_run,
+				  part_core_map, resv_exc_ptr);
+		goto sync;
+	}
+
 	/* Determine resource availability on each node for pending job */
 	topo_eval.avail_res_array =
 		_get_res_avail(topo_eval.job_ptr, topo_eval.node_map,
@@ -967,7 +1059,7 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 	rc = topology_g_eval_nodes(&topo_eval);
 	if (rc != SLURM_SUCCESS)
 		goto fini;
-
+sync:
 	core_array_log("_select_nodes/choose_nodes",
 		       topo_eval.node_map, topo_eval.avail_core);
 
