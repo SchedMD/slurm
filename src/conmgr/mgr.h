@@ -525,6 +525,10 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Read input_fd into buffer
+ * WARNING: caller must not hold mgr.mutex lock
+ * IN con - conmgr connection ptr
+ * IN buf - buffer to read into (will be grown as needed)
+ * IN what - description of buffer for logging
  */
 extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what);
 

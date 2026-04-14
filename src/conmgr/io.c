@@ -174,7 +174,7 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
 			 __func__, con->name, get_buf_offset(buf), what);
 
-		/* lock to tell mgr that we are done */
+		/* tell mgr that we are done */
 		con_set_flag(con, FLAG_READ_EOF);
 	} else {
 		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in %s",
