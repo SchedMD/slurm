@@ -766,6 +766,7 @@ test_108_4   /commands/scontrol/test_reconfigure.py
 test_108_5   /commands/scontrol/test_--json.py
 test_108_6   Test scontrol show topology option
 test_108_7   Test of job suspend/resume
+test_108_8   Test of InstanceId/InstanceType
 
 test_109_#   Testing of sdiag options.
 ======================================

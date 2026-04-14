@@ -1605,28 +1605,39 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	int error_code = 0, node_cnt;
 	node_record_t *node_ptr = NULL;
 	char *this_node_name = NULL, *tmp_feature, *orig_features_act = NULL;
-	hostlist_t *host_list, *hostaddr_list = NULL, *hostname_list = NULL;
+	hostlist_t *host_list = NULL, *hostaddr_list = NULL;
+	hostlist_t *hostname_list = NULL;
+	hostlist_t *instance_id_list = NULL;
+	hostlist_t *instance_type_list = NULL;
+	char *instance_id_broadcast = NULL;
+	char *instance_type_broadcast = NULL;
 	uint32_t base_state = 0, node_flags, state_val, resume_after = NO_VAL;
 	time_t now = time(NULL);
 	bool uniq = true;
 
 	if (update_node_msg->node_names == NULL ) {
 		info("%s: invalid node name", __func__);
-		return ESLURM_INVALID_NODE_NAME;
+		error_code = ESLURM_INVALID_NODE_NAME;
+		goto end;
 	}
 
-	if (update_node_msg->node_addr || update_node_msg->node_hostname)
+	if (update_node_msg->node_addr || update_node_msg->node_hostname ||
+	    (update_node_msg->instance_id && update_node_msg->instance_id[0]) ||
+	    (update_node_msg->instance_type &&
+	     update_node_msg->instance_type[0]))
 		uniq = false;
 
 	if (!(host_list = nodespec_to_hostlist(update_node_msg->node_names,
-					       uniq, NULL)))
-		return ESLURM_INVALID_NODE_NAME;
+					       uniq, NULL))) {
+		error_code = ESLURM_INVALID_NODE_NAME;
+		goto end;
+	}
 
 	if (!(node_cnt = hostlist_count(host_list))) {
 		info("%s: expansion of node specification '%s' resulted in zero nodes",
 		     __func__, update_node_msg->node_names);
-		FREE_NULL_HOSTLIST(host_list);
-		return ESLURM_INVALID_NODE_NAME;
+		error_code = ESLURM_INVALID_NODE_NAME;
+		goto end;
 	}
 
 	if (update_node_msg->node_addr) {
@@ -1634,14 +1645,13 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (hostaddr_list == NULL) {
 			info("update_node: hostlist_create error on %s: %m",
 			     update_node_msg->node_addr);
-			FREE_NULL_HOSTLIST(host_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 		if (node_cnt != hostlist_count(hostaddr_list)) {
 			info("update_node: nodecount mismatch");
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 	}
 
@@ -1650,16 +1660,48 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (hostname_list == NULL) {
 			info("update_node: hostlist_create error on %s: %m",
 			     update_node_msg->node_hostname);
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 		if (node_cnt != hostlist_count(hostname_list)) {
 			info("update_node: nodecount mismatch");
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			FREE_NULL_HOSTLIST(hostname_list);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+	}
+
+	if (update_node_msg->instance_id && update_node_msg->instance_id[0]) {
+		instance_id_list =
+			hostlist_create(update_node_msg->instance_id);
+		if (instance_id_list == NULL) {
+			info("update_node: hostlist_create error on %s: %m",
+			     update_node_msg->instance_id);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+		if ((hostlist_count(instance_id_list) != 1) &&
+		    (node_cnt != hostlist_count(instance_id_list))) {
+			info("update_node: nodecount mismatch");
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+	}
+
+	if (update_node_msg->instance_type &&
+	    update_node_msg->instance_type[0]) {
+		instance_type_list =
+			hostlist_create(update_node_msg->instance_type);
+		if (instance_type_list == NULL) {
+			info("update_node: hostlist_create error on %s: %m",
+			     update_node_msg->instance_type);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
+		}
+		if ((hostlist_count(instance_type_list) != 1) &&
+		    (node_cnt != hostlist_count(instance_type_list))) {
+			info("update_node: nodecount mismatch");
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 	}
 
@@ -1670,11 +1712,9 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 
 		if (hostlist2bitmap(host_list, false, &bmp)) {
 			info("update_node: hostlist2bitmap failed");
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			FREE_NULL_HOSTLIST(hostname_list);
 			FREE_NULL_BITMAP(bmp);
-			return ESLURM_INVALID_NODE_NAME;
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto end;
 		}
 		bit_or(bmp, power_up_node_bitmap);
 		count = bit_set_count(bmp);
@@ -1682,12 +1722,23 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		if (count > max_powered_nodes) {
 			error("update_node: Cannot power up more nodes due to MaxPoweredUpNodes=%d",
 			      max_powered_nodes);
-			FREE_NULL_HOSTLIST(host_list);
-			FREE_NULL_HOSTLIST(hostaddr_list);
-			FREE_NULL_HOSTLIST(hostname_list);
-			return ESLURM_MAX_POWERED_NODES;
+			error_code = ESLURM_MAX_POWERED_NODES;
+			goto end;
 		}
 		log_flag(POWER, "powered nodes good %d", count);
+	}
+
+	/*
+	 * If a single instance_id/instance_type is specified for multiple
+	 * nodes, broadcast the value to all nodes.
+	 */
+	if (instance_id_list && (hostlist_count(instance_id_list) == 1)) {
+		instance_id_broadcast = hostlist_shift(instance_id_list);
+		FREE_NULL_HOSTLIST(instance_id_list);
+	}
+	if (instance_type_list && (hostlist_count(instance_type_list) == 1)) {
+		instance_type_broadcast = hostlist_shift(instance_type_list);
+		FREE_NULL_HOSTLIST(instance_type_list);
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
@@ -1849,19 +1900,36 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					xstrdup(update_node_msg->comment);
 		}
 
-		if (update_node_msg->instance_id) {
+		if (instance_id_broadcast) {
 			xfree(node_ptr->instance_id);
-			if (update_node_msg->instance_id[0])
-				node_ptr->instance_id = xstrdup(
-					update_node_msg->instance_id);
+			node_ptr->instance_id = xstrdup(instance_id_broadcast);
+			update_db = true;
+		} else if (instance_id_list) {
+			char *this_instance_id =
+				hostlist_shift(instance_id_list);
+			xfree(node_ptr->instance_id);
+			node_ptr->instance_id = xstrdup(this_instance_id);
+			free(this_instance_id);
+			update_db = true;
+		} else if (update_node_msg->instance_id) {
+			xfree(node_ptr->instance_id);
 			update_db = true;
 		}
 
-		if (update_node_msg->instance_type) {
+		if (instance_type_broadcast) {
 			xfree(node_ptr->instance_type);
-			if (update_node_msg->instance_type[0])
-				node_ptr->instance_type = xstrdup(
-					update_node_msg->instance_type);
+			node_ptr->instance_type =
+				xstrdup(instance_type_broadcast);
+			update_db = true;
+		} else if (instance_type_list) {
+			char *this_instance_type =
+				hostlist_shift(instance_type_list);
+			xfree(node_ptr->instance_type);
+			node_ptr->instance_type = xstrdup(this_instance_type);
+			free(this_instance_type);
+			update_db = true;
+		} else if (update_node_msg->instance_type) {
+			xfree(node_ptr->instance_type);
 			update_db = true;
 		}
 
@@ -2308,9 +2376,6 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 	/* Write/clear log */
 	(void)update_node_active_features(NULL, NULL, FEATURE_MODE_PEND);
 
-	FREE_NULL_HOSTLIST(host_list);
-	FREE_NULL_HOSTLIST(hostaddr_list);
-	FREE_NULL_HOSTLIST(hostname_list);
 	last_node_update = now;
 
 	if ((error_code == SLURM_SUCCESS) && (update_node_msg->features)) {
@@ -2337,6 +2402,15 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 			list_sort(config_list, &list_compare_config);
 		}
 	}
+
+end:
+	FREE_NULL_HOSTLIST(host_list);
+	FREE_NULL_HOSTLIST(hostaddr_list);
+	FREE_NULL_HOSTLIST(hostname_list);
+	FREE_NULL_HOSTLIST(instance_id_list);
+	FREE_NULL_HOSTLIST(instance_type_list);
+	free(instance_id_broadcast);
+	free(instance_type_broadcast);
 
 	return error_code;
 }
