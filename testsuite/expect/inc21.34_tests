@@ -54,7 +54,7 @@ proc part_test { } {
 	global grpcpurunmin_num grpmem_num grpwall_num maxcpumin_num
 	global maxwall_num maxcpuspu_num maxnodespu_num
 	global part_qos mod_job_qos time_spacing selectparam
-	global nthreads job_qos mod_part_qos prio_multifactor
+	global nthreads job_qos mod_part_qos
 	global tres_cpu_mult
 
 	# We will set qostest with the qos that we will test since the some of
@@ -172,18 +172,15 @@ proc part_test { } {
 
 	#
 	# Test GroupCPURunMins
-	# Requires priority/multifactor to properly handle decay well
 	#
-	if { $prio_multifactor != 0 } {
-		set mod_job_qos(GrpCpuRunMin) 1
-		set mod_part_qos(GrpCpuRunMin) $grpcpurunmin_num
-		mod_qos $part_qos [array get mod_part_qos]
-		mod_qos $job_qos [array get mod_job_qos]
-		sleep $time_spacing
-		inc21_30_10 "QOSGrpCPURunMinutesLimit"
-		set mod_job_qos(GrpCpuRunMin) "-1"
-		set mod_part_qos(GrpCpuRunMin) "-1"
-	}
+	set mod_job_qos(GrpCpuRunMin) 1
+	set mod_part_qos(GrpCpuRunMin) $grpcpurunmin_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_10 "QOSGrpCPURunMinutesLimit"
+	set mod_job_qos(GrpCpuRunMin) "-1"
+	set mod_part_qos(GrpCpuRunMin) "-1"
 
 	#
 	# Test Group Memory
@@ -199,18 +196,15 @@ proc part_test { } {
 
 	#
 	# Test Group wall
-	# Requires priority/multifactor to properly handle decay well
 	#
-	if { $prio_multifactor != 0 } {
-		set mod_job_qos(GrpWall) 1
-		set mod_part_qos(GrpWall) $grpwall_num
-		mod_qos $part_qos [array get mod_part_qos]
-		mod_qos $job_qos [array get mod_job_qos]
-		sleep $time_spacing
-		inc21_34_2 $part_qos
-		set mod_job_qos(GrpWall) "-1"
-		set mod_part_qos(GrpWall) "-1"
-	}
+	set mod_job_qos(GrpWall) 1
+	set mod_part_qos(GrpWall) $grpwall_num
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_34_2 $part_qos
+	set mod_job_qos(GrpWall) "-1"
+	set mod_part_qos(GrpWall) "-1"
 
 	#
 	# Test Max Cpu Mins
@@ -308,18 +302,15 @@ proc part_test { } {
 
 	#
 	# Test GrpTRESRunMins=billing
-	# Requires priority/multifactor to properly handle decay well
 	#
-	if { $prio_multifactor != 0 } {
-		set mod_job_qos(GrpTRESRunMins=billing) 1
-		set mod_part_qos(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
-		mod_qos $part_qos [array get mod_part_qos]
-		mod_qos $job_qos [array get mod_job_qos]
-		sleep $time_spacing
-		inc21_30_10 "QOSGrpBillingRunMinutes"
-		set mod_job_qos(GrpTRESRunMins=billing) "-1"
-		set mod_part_qos(GrpTRESRunMins=billing) "-1"
-	}
+	set mod_job_qos(GrpTRESRunMins=billing) 1
+	set mod_part_qos(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_10 "QOSGrpBillingRunMinutes"
+	set mod_job_qos(GrpTRESRunMins=billing) "-1"
+	set mod_part_qos(GrpTRESRunMins=billing) "-1"
 
 
 	#
@@ -377,7 +368,7 @@ proc qos_test { } {
 	global grpcpurunmin_num grpmem_num grpwall_num maxcpumin_num
 	global maxwall_num maxcpuspu_num maxnodespu_num
 	global job_qos mod_job_qos time_spacing selectparam
-	global nthreads part_qos mod_part_qos prio_multifactor
+	global nthreads part_qos mod_part_qos
 	global tres_cpu_mult
 
 	# We will set qostest with the qos that we will test since the some of
@@ -495,18 +486,15 @@ proc qos_test { } {
 
 	#
 	# Test GroupCPURunMins
-	# Requires priority/multifactor to properly handle decay well
 	#
-	if { $prio_multifactor != 0 } {
-		set mod_job_qos(GrpCpuRunMin) $grpcpurunmin_num
-		set mod_part_qos(GrpCpuRunMin) 1
-		mod_qos $job_qos [array get mod_job_qos]
-		mod_qos $part_qos [array get mod_part_qos]
-		sleep $time_spacing
-		inc21_30_10  "QOSGrpCPURunMinutesLimit"
-		set mod_job_qos(GrpCpuRunMin) "-1"
-		set mod_part_qos(GrpCpuRunMin) "-1"
-	}
+	set mod_job_qos(GrpCpuRunMin) $grpcpurunmin_num
+	set mod_part_qos(GrpCpuRunMin) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_30_10  "QOSGrpCPURunMinutesLimit"
+	set mod_job_qos(GrpCpuRunMin) "-1"
+	set mod_part_qos(GrpCpuRunMin) "-1"
 
 	#
 	# Test Group Memory
@@ -522,18 +510,15 @@ proc qos_test { } {
 
 	#
 	# Test Group wall
-	# Requires priority/multifactor to properly handle decay well
 	#
-	if { $prio_multifactor != 0 } {
-		set mod_job_qos(GrpWall) $grpwall_num
-		set mod_part_qos(GrpWall) 1
-		mod_qos $job_qos [array get mod_job_qos]
-		mod_qos $part_qos [array get mod_part_qos]
-		sleep $time_spacing
-		inc21_34_2 $job_qos
-		set mod_job_qos(GrpWall) "-1"
-		set mod_part_qos(GrpWall) "-1"
-	}
+	set mod_job_qos(GrpWall) $grpwall_num
+	set mod_part_qos(GrpWall) 1
+	mod_qos $job_qos [array get mod_job_qos]
+	mod_qos $part_qos [array get mod_part_qos]
+	sleep $time_spacing
+	inc21_34_2 $job_qos
+	set mod_job_qos(GrpWall) "-1"
+	set mod_part_qos(GrpWall) "-1"
 
 	#
 	# Test Max Cpu Mins
@@ -632,18 +617,15 @@ proc qos_test { } {
 
 	#
 	# Test GrpTRESRunMins=billing
-	# Requires priority/multifactor to properly handle decay well
 	#
-	if { $prio_multifactor != 0 } {
-		set mod_job_qos(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
-		set mod_part_qos(GrpTRESRunMins=billing) 1
-		mod_qos $part_qos [array get mod_part_qos]
-		mod_qos $job_qos [array get mod_job_qos]
-		sleep $time_spacing
-		inc21_30_10  "QOSGrpBillingRunMinutes"
-		set mod_job_qos(GrpTRESRunMins=billing) "-1"
-		set mod_part_qos(GrpTRESRunMins=billing) "-1"
-	}
+	set mod_job_qos(GrpTRESRunMins=billing) [expr $grpcpurunmin_num * $tres_cpu_mult]
+	set mod_part_qos(GrpTRESRunMins=billing) 1
+	mod_qos $part_qos [array get mod_part_qos]
+	mod_qos $job_qos [array get mod_job_qos]
+	sleep $time_spacing
+	inc21_30_10  "QOSGrpBillingRunMinutes"
+	set mod_job_qos(GrpTRESRunMins=billing) "-1"
+	set mod_part_qos(GrpTRESRunMins=billing) "-1"
 
 
 	#

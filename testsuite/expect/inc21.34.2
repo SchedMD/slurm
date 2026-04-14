@@ -30,29 +30,24 @@ proc inc21_34_2 { qostest } {
 
 	log_info "Starting Grpwall test"
 	set job_id_list [list]
-	set consumption_job_count 6 ; # This should be an evenly divisible factor of 60
+	set consumption_job_count 20 ; # This should be an evenly divisible factor of 60
 
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		# Since wall is a decayed variable, reset it to make sure the test
-		# gets exactly what we would expect.
+		# Reset it to make sure the test gets exactly what we would expect.
 		if [reset_qos_usage "" $qostest] {
 			error "Unable to reset QOS usage"
 		}
 
-		# If we just ran a single job to consume the full group wall time, the priority decay
-		# would make it consume slightly less than the limit. Using a larger time limit would
-		# be blocked by the GrpWall limit. So, we use multiple jobs to consume the GrpWall limit.
-		# The last job will consume an additional second to supersede the priority decay.
+		# If we just ran a single job to consume the full group wall time it will
+		# need more time, therefore we use multiple jobs to consume the GrpWall
+		# limit.
 		log_debug "Submitting multiple jobs to consume the usage of the GrpWall limit"
 		for {set i 0} {$i < $consumption_job_count} {incr i} {
 			set sleep_time [expr $grpwall_num * 60 / $consumption_job_count]
-			if {$i == $consumption_job_count - 1} {
-				incr sleep_time
-			}
 
-			set result [run_command "$sbatch --account=$acct -N2 -t1 --wrap '$srun $bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+			set result [run_command "$sbatch --account=$acct -N1 -t1 --wrap '$srun $bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
 
 			if [dict get $result exit_code] {
 				error "Consumption$i job submission failed ([dict get $result output])"
@@ -70,7 +65,7 @@ proc inc21_34_2 { qostest } {
 		}
 
 		log_debug "Submitting a final job to surpass the GrpWall limit"
-		set result [run_command "$sbatch --account=$acct -N1 -t1 --wrap '$srun $bin_sleep 10' -o /dev/null -e /dev/null"]
+		set result [run_command "$sbatch --account=$acct -N1 -t1 --wrap '$srun $bin_sleep 20' -o /dev/null -e /dev/null"]
 		if [dict get $result exit_code] {
 			error "Final job submission failed ([dict get $result output])"
 		}
