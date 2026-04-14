@@ -58,6 +58,7 @@
 #define CONFIG_MAGIC	0xc065eded
 #define NODE_MAGIC	0x0de575ed
 
+/* NOTE: when adding to this struct, add check to _is_dup_config_record() */
 typedef struct {
 	uint16_t boards;	/* count of boards configured */
 	uint16_t core_spec_cnt;	/* number of specialized cores */

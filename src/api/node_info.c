@@ -401,6 +401,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	} else {
 		xstrcat(out, "ResumeAfterTime=None");
 	}
+
+	if (node_ptr->suspend_time == INFINITE)
+		xstrcat(out, " SuspendTime=INFINITE");
+	else
+		xstrfmtcat(out, " SuspendTime=%d", node_ptr->suspend_time);
+
 	xstrcat(out, line_end);
 
 	/****** TRES Line ******/

@@ -972,6 +972,7 @@ test_140_1   Test --tres-per-task option
 test_141_#   Testing PowerSave/Cloud operations.
 ================================================
 test_141_1   Test state cycle, timeouts, scontrol commands, PowerDownOnIdle, and Node Features reboot
+test_141_2   Testing Global,Per-Partition,Per-Node Cloud Options
 
 test_143_#   Testing --switches.
 ================================
