@@ -65,7 +65,7 @@ extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
 	else
 		node_msg.node_state = NODE_STATE_POWER_DOWN;
 
-	if (!power_up && force)
+	if (force)
 		node_msg.node_state |= NODE_STATE_POWERED_DOWN;
 
 	if (!power_up && asap)

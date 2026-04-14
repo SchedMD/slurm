@@ -2387,8 +2387,24 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				bit_clear(rs_node_bitmap, node_ptr->index);
 				free(this_node_name);
 				continue;
-			} else if (state_val == NODE_STATE_POWER_UP) {
-				if (!IS_NODE_POWERED_DOWN(node_ptr)) {
+			} else if (state_val & NODE_STATE_POWER_UP) {
+				if (state_val & NODE_STATE_POWERED_DOWN) {
+					info("force power up request for node %s",
+					     this_node_name);
+					/*
+					 * Kill any running jobs and requeue if
+					 * possible.
+					 */
+					kill_running_job_by_node_ptr(node_ptr);
+					node_ptr->node_state |=
+						NODE_STATE_POWERED_DOWN;
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_DOWN);
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_UP);
+					node_ptr->node_state &=
+						(~NODE_STATE_POWER_DRAIN);
+				} else if (!IS_NODE_POWERED_DOWN(node_ptr)) {
 					if (IS_NODE_POWERING_UP(node_ptr)) {
 						info("power up request repeating for node %s",
 						     this_node_name);
@@ -3136,6 +3152,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_POWER_DOWN:
 		case NODE_STATE_POWER_UP:
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_UP):
+		case (NODE_STATE_POWER_UP | NODE_STATE_POWERED_DOWN):
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWERED_DOWN):
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_DRAIN):
 			if (power_save_on)

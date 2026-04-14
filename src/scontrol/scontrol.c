@@ -827,10 +827,6 @@ void _process_power_command(const char *tag, int argc, char **argv)
 		}
 		idx++;
 
-		/*
-		 * Optional asap|force if powerering down. Silently ignore
-		 * asap|force if powering up as there's no such option.
-		 */
 		if (!xstrcasecmp(argv[idx], "ASAP")) {
 			asap = true;
 			idx++;
@@ -839,7 +835,7 @@ void _process_power_command(const char *tag, int argc, char **argv)
 			idx++;
 		}
 
-		if ((force || asap) && power_up) {
+		if (asap && power_up) {
 			_printf_error("The '%s' argument is not valid for power up requests",
 				      argv[idx - 1]);
 			goto done;
