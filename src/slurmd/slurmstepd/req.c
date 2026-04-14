@@ -313,8 +313,17 @@ static void _wait_for_connections(void)
 
 	slurm_mutex_lock(&message_lock);
 	ts.tv_sec = time(NULL) + STEPD_MESSAGE_COMP_WAIT;
-	while (message_connections > 0 && rc == 0)
+	while (message_connections > 0 && rc == 0) {
+		log_flag(NET, "Waiting on %d connections to finish",
+			 message_connections);
 		rc = pthread_cond_timedwait(&message_cond, &message_lock, &ts);
+	}
+	if (message_connections > 0) {
+		error("Timed out waiting for %d connections to finish, abandoning them now.",
+		      message_connections);
+	} else {
+		log_flag(NET, "All connections finished.");
+	}
 
 	slurm_mutex_unlock(&message_lock);
 }
