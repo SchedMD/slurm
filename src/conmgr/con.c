@@ -256,7 +256,8 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		return;
 	}
 
-	if (con->tls && con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	if (!mgr.shutdown_requested && con->tls &&
+	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
 	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
 	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
