@@ -1,3 +1,41 @@
+## Changes in 25.11.5
+
+* slurmctld - Prevent crash when deleting the only node in the cluster which also belongs to an inactive reservation.
+* Fix assoc corruption on account add race condition.
+* slurmctld - Re-enforce accounting policy limits when updating a job's QOS/assoc/partition.
+* Prevent double call to requeue logic when PrologSlurmctld fails leading to extra records in database.
+* Fix backfill to honor partition OverSubscribe=EXCLUSIVE
+* stepmgr - Avoid leaking MPI ports when jobs that use the stepmgr are allocated nonconsecutive ports.
+* Fix always showing 0 for slurm_cpus_alloc, slurm_nodes_alloc and slurm_memory_alloc in the metrics/jobs endpoint.
+* Fix BPF token support compilation on systems with glibc >= 2.36 by using <sys/mount.h> where available instead of <linux/mount.h>.
+* Fix a regression in 25.11.0 that could cause bounded hang after hitting conmgr_max_connections.
+* Fix Insufficient Size error in NVML library call for long gpu names.
+* slurmctld - Correct race condition during reconfigure and creating new cluster in slurmdbd that could cause both daemons to deadlock.
+* slurmctld - Reject all job submissions as reserved user or group nobody(99).
+* sbatch,srun,salloc - Reject arg --uid=99.
+* sbatch,srun,salloc - Reject arg --gid=99.
+* Jobs that complete quickly will not be marked as runaway.
+* Correctly identify whether a job is in the DB.
+* slurmctld - Avoid possible race condition during shutdown that could cause a crash in the HTTP handling logic.
+* slurmctld - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmd - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmstepd - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* srun - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* slurmdbd - Avoid race condition during shutdown that could cause a crash due to tree forwarding.
+* Fix race condition with cgroups not migrating slurmd process quickly, which caused EBUSY errors on startup.
+* Fix slurmd reconfigure failure with cgroup/v2.
+* Fix a regression added in 25.05.0 concerning how the slurmctld inherits /run/slurmctld/sack.socket when using AuthType=auth/slurm to prevent clients that connected during a reconfigure from hanging indefinitely.
+* slurmctld - Wait for forwarding threads to complete before shutdown to avoid crashing due to NULL dereferences or using unloaded plugins.
+* Avoid failure for spank options that do not require arguments.
+* Allow archive load of qos_usage tables
+* namespace/linux - fix memory leak in slurmstepd  when namespace_p_recv_stepd() fails.
+* namespace/linux - Fix potential crash on failure if mmap() or sem_init() fails during namespace construction.
+* namespace/linux - fix unlikely error that could cause sigkill to be sent to a job during shutdown.
+* namespace/linux - fix failure to detect namespace setup problems when launching a job.
+* Fix slurmctld crash when querying the metrics endpoint after a partition is deleted with finished jobs still present.
+* reservations - Fix creation with NodeCnt and Flags=IGNORE_JOBS failing when partition nodes are occupied.
+* cons_tres - Prevent slurmctld SIGFPE during node selection.
+
 ## Changes in 25.11.4
 
 * slurmrestd - Remove ExecReload from unit file since the daemon does not handle SIGHUP (reload would terminate the process).
