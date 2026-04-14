@@ -180,6 +180,9 @@ static void _free_placement(torus3d_placement_t *placement)
 	}
 	xfree(placement->anchor_bitmaps);
 	xfree(placement->anchor_nodes);
+	xfree(placement->xs);
+	xfree(placement->ys);
+	xfree(placement->zs);
 	placement->anchor_count = 0;
 }
 
@@ -225,6 +228,13 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 	placement->anchor_nodes = xcalloc(placement->anchor_count,
 					  sizeof(*placement->anchor_nodes));
 
+	placement->xs = xs;
+	placement->ys = ys;
+	placement->zs = zs;
+	placement->x_count = count_x;
+	placement->y_count = count_y;
+	placement->z_count = count_z;
+
 	for (uint16_t ix = 0; ix < count_x; ix++) {
 		for (uint16_t iy = 0; iy < count_y; iy++) {
 			for (uint16_t iz = 0; iz < count_z; iz++) {
@@ -238,10 +248,6 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 			}
 		}
 	}
-
-	xfree(xs);
-	xfree(ys);
-	xfree(zs);
 
 	return SLURM_SUCCESS;
 }

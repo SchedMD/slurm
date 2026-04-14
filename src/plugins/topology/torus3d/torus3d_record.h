@@ -45,6 +45,12 @@ typedef struct torus3d_placement {
 	slurm_conf_torus3d_dims_t anchor_spacing;
 	slurm_conf_torus3d_dims_t dims;
 	uint32_t size;
+	uint16_t *xs;
+	uint16_t *ys;
+	uint16_t *zs;
+	uint16_t x_count;
+	uint16_t y_count;
+	uint16_t z_count;
 } torus3d_placement_t;
 
 typedef struct {
