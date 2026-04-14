@@ -16,8 +16,14 @@ def setup():
     atf.require_config_parameter_includes("AccountingStorageEnforce", "safe")
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
+
+    # Avoid usage decay to simplify test and avoiding false failures
+    atf.require_config_parameter("PriorityDecayHalfLife", "0")
+    atf.require_config_parameter("PriorityUsageResetPeriod", "YEARLY")
+
+    # Allow 20 parallel jobs of 3s to speed up test to reach 1min usage
     atf.require_nodes(
-        2,
+        20,
         [
             ("CPUS", 8),
             ("Sockets", 2),

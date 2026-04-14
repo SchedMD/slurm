@@ -34,14 +34,13 @@ proc inc21_30_12 { } {
 	# Raise an error to abort the catch block
 	set exception_code [catch {
 
-		set jobs            5.0
-		set grpwall_per_job [expr $grpwall_num * 1.1 / $jobs]
+		set jobs            20.0
+		set grpwall_per_job [expr $grpwall_num * 1.0 / $jobs]
 		set sleep_time      [expr int(ceil($grpwall_per_job * 60))]
 		set job_time        [expr int(ceil($grpwall_per_job))]
 		set timeout         120
 
-		# Since wall is a decayed variable lets reset it to make sure the test
-		# gets exactly what we would expect.
+		# Reset it to make sure the test gets exactly what we would expect.
 		if [reset_qos_usage "" $qostest] {
 			error "Unable to reset QOS usage"
 		}
