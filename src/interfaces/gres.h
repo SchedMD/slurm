@@ -131,7 +131,7 @@ typedef struct {
 #define GRES_CONF_HAS_TYPE   SLURM_BIT(2) /* Type= is configured */
 #define GRES_CONF_COUNT_ONLY SLURM_BIT(3) /* GRES lacks plugin to load */
 #define GRES_CONF_LOADED     SLURM_BIT(4) /* used to avoid loading a plugin
-					   * multiple times */
+								multiple times */
 #define GRES_CONF_ENV_NVML   SLURM_BIT(5) /* Set CUDA_VISIBLE_DEVICES */
 #define GRES_CONF_ENV_RSMI   SLURM_BIT(6) /* Set ROCR_VISIBLE_DEVICES */
 #define GRES_CONF_ENV_AMDSMI  SLURM_BIT(7) /* Set GPU_DEVICE_ORDINAL */
@@ -140,7 +140,7 @@ typedef struct {
 
 #define GRES_CONF_SHARED     SLURM_BIT(9) /* Treat this as a shared GRES */
 #define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES
-					     * on one of the sharing GRES */
+					     /* on one of the sharing GRES */
 
 #define GRES_CONF_ENV_ONEAPI SLURM_BIT(11) /* Set ZE_AFFINITY_MASK */
 #define GRES_CONF_EXPLICIT   SLURM_BIT(12) /* Don't allocate as part of

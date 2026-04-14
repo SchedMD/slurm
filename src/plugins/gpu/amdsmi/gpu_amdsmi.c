@@ -1501,83 +1501,72 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 /*
  * Read current average socket power for GPU dv_ind.
  * Update gpu_status_t accordingly.
+ * For MI300x, prefers energy-based wattage calculation with fallback to power_info.
  */
 extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 {
+    if (dv_ind >= processor_handle_count) {
+        error("AMDSMI: Invalid device index %u (max %u)",
+              dv_ind, processor_handle_count);
+        return SLURM_ERROR;
+    }
+
     amdsmi_processor_handle h = processor_handles[dv_ind];
     const char *status_string = NULL;
-
-    amdsmi_power_info_t power_info;
-    memset(&power_info, 0, sizeof(power_info));
-
-    amdsmi_status_t rc =
-        amdsmi_get_power_info(h, &power_info);
-
     time_t now = time(NULL);
 
+    /* Try energy-based method first (MI300x preferred path) */
+    uint64_t energy_uj = 0;
+    float energy_res_uj = 0.0f;
+    uint64_t energy_ts_ns = 0;
+
+    amdsmi_status_t rc = amdsmi_get_energy_count(h,
+                                                  &energy_uj,
+                                                  &energy_res_uj,
+                                                  &energy_ts_ns);
+
     if (rc == AMDSMI_STATUS_SUCCESS) {
+        /* Energy-based calculation: compute watts from energy delta */
+        if (last_energy_time[dv_ind] != 0) {
+            double delta_j = ((double)energy_uj * 1e-6) - last_energy_joules[dv_ind];
+            double delta_t = difftime(now, last_energy_time[dv_ind]);
 
-        /* Preferred fast path */
-        gpu->energy.current_watts =
-            (double) power_info.average_socket_power;
-
-    
-    } else if (rc == AMDSMI_STATUS_NOT_SUPPORTED) {
-
-        uint64_t energy_uj = 0;
-        float    energy_res_uj = 0.0f;
-        uint64_t energy_ts_ns = 0;
-
-        if (amdsmi_get_energy_count(h,
-                                    &energy_uj,
-                                    &energy_res_uj,
-                                    &energy_ts_ns) == AMDSMI_STATUS_SUCCESS) {
-
-            time_t now = time(NULL);
-
-            /* Lazy init: first sample seeds the cache */
-            if (last_energy_time[dv_ind] != 0) {
-
-                double delta_j =
-                    ((double)energy_uj * 1e-6) -
-                    last_energy_joules[dv_ind];
-
-                double delta_t =
-                    difftime(now, last_energy_time[dv_ind]);
-
-                if (delta_t > 0.0 && delta_j >= 0.0) {
-                    gpu->energy.current_watts = delta_j / delta_t;
-                } else {
-                    gpu->energy.current_watts = NO_VAL;
-                }
+            if (delta_t > 0.0 && delta_j >= 0.0) {
+                gpu->energy.current_watts = delta_j / delta_t;
             } else {
-                gpu->energy.current_watts = NO_VAL;
+                gpu->energy.current_watts = 0;
             }
-
-            /* Always update cache */
-            last_energy_joules[dv_ind] =
-                (double)energy_uj * 1e-6;
-
-            last_energy_time[dv_ind] = now;
-
         } else {
-            gpu->energy.current_watts = NO_VAL;
-
-            return SLURM_ERROR;
+            /* Lazy init: first sample seeds the cache */
+            gpu->energy.current_watts = 0;
         }
 
+        /* Always update cache */
+        last_energy_joules[dv_ind] = (double)energy_uj * 1e-6;
+        last_energy_time[dv_ind] = now;
+
     } else {
-        /* Real error */
-        amdsmi_status_code_to_string(rc, &status_string);
-        error("AMDSMI: power read failed for GPU[%u]: %s",
-              dv_ind, status_string ? status_string : "unknown");
-        gpu->energy.current_watts = NO_VAL;
-        return SLURM_ERROR;
+        /* Fallback to direct power_info API */
+        amdsmi_power_info_t power_info;
+        memset(&power_info, 0, sizeof(power_info));
+
+        rc = amdsmi_get_power_info(h, &power_info);
+
+        if (rc == AMDSMI_STATUS_SUCCESS) {
+            gpu->energy.current_watts = (double)power_info.average_socket_power;
+        } else {
+            /* Both methods failed */
+            amdsmi_status_code_to_string(rc, &status_string);
+            error("AMDSMI: power read failed for GPU[%u]: %s",
+                  dv_ind, status_string ? status_string : "unknown");
+            gpu->energy.current_watts = NO_VAL;
+            return SLURM_ERROR;
+        }
     }
 
     /* Slurm bookkeeping */
     gpu->previous_update_time = gpu->last_update_time;
-    gpu->last_update_time     = now;
+    gpu->last_update_time = now;
 
     return SLURM_SUCCESS;
 }

@@ -199,7 +199,6 @@ static void _update_energy(gpu_status_t *gpu, uint32_t readings)
 	}
 	e->poll_time = time(NULL);
 }
-
 /*
  * _thread_update_node_energy calls _read_gpu_values and updates all values
  * for node consumption
