@@ -83,9 +83,246 @@ extern void fini(void)
 	return;
 }
 
+static torus3d_record_t *_find_torus_by_node(torus3d_context_t *ctx,
+					     node_record_t *node_ptr)
+{
+	for (int i = 0; i < ctx->record_count; i++) {
+		torus3d_record_t *torus = &ctx->records[i];
+		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
+			continue;
+		return torus;
+	}
+
+	return NULL;
+}
+
+static torus3d_record_t *_find_torus_by_name(torus3d_context_t *ctx,
+					     char *torus_name)
+{
+	for (int i = 0; i < ctx->record_count; i++) {
+		torus3d_record_t *torus = &ctx->records[i];
+		if (xstrcmp(torus->name, torus_name))
+			continue;
+		return torus;
+	}
+
+	return NULL;
+}
+
+static void _remove_node_from_placements(torus3d_record_t *torus,
+					 torus3d_context_t *ctx, int node_idx)
+{
+	if (!bit_test(ctx->placement_nodes_bitmap, node_idx))
+		return;
+
+	for (int j = 0; j < torus->placement_count; j++) {
+		torus3d_placement_t *p = &torus->placements[j];
+		for (int k = 0; k < p->anchor_count; k++) {
+			if (bit_test(p->anchor_bitmaps[k], node_idx)) {
+				bit_clear(p->anchor_bitmaps[k], node_idx);
+				p->anchor_nodes[k]--;
+			}
+		}
+	}
+	bit_clear(ctx->placement_nodes_bitmap, node_idx);
+}
+
+static bool _coord_in_range(uint16_t pos, uint16_t start, uint16_t size,
+			    uint16_t limit)
+{
+	bool wrap = ((start + size) > limit);
+
+	if (wrap)
+		return ((pos >= start) || pos < ((start + size) % limit));
+
+	return (pos >= start && pos < (start + size));
+}
+
+static void _add_node_to_placements(torus3d_record_t *torus,
+				    torus3d_context_t *ctx, int node_idx,
+				    uint16_t x, uint16_t y, uint16_t z)
+{
+	bool added = false;
+	for (int j = 0; j < torus->placement_count; j++) {
+		torus3d_placement_t *p = &torus->placements[j];
+		uint16_t *match_x, *match_y, *match_z;
+		int nx = 0, ny = 0, nz = 0;
+
+		match_x = xcalloc(p->x_count, sizeof(*match_x));
+		match_y = xcalloc(p->y_count, sizeof(*match_y));
+		match_z = xcalloc(p->z_count, sizeof(*match_z));
+
+		for (uint16_t i = 0; i < p->x_count; i++)
+			if (_coord_in_range(x, p->xs[i], p->dims.x, torus->x))
+				match_x[nx++] = i;
+		for (uint16_t i = 0; i < p->y_count; i++)
+			if (_coord_in_range(y, p->ys[i], p->dims.y, torus->y))
+				match_y[ny++] = i;
+		for (uint16_t i = 0; i < p->z_count; i++)
+			if (_coord_in_range(z, p->zs[i], p->dims.z, torus->z))
+				match_z[nz++] = i;
+
+		for (int mx = 0; mx < nx; mx++) {
+			for (int my = 0; my < ny; my++) {
+				for (int mz = 0; mz < nz; mz++) {
+					int idx = match_x[mx] * p->y_count *
+							  p->z_count +
+						  match_y[my] * p->z_count +
+						  match_z[mz];
+					bit_set(p->anchor_bitmaps[idx],
+						node_idx);
+					p->anchor_nodes[idx]++;
+					added = true;
+				}
+			}
+		}
+
+		xfree(match_x);
+		xfree(match_y);
+		xfree(match_z);
+	}
+	if (added)
+		bit_set(ctx->placement_nodes_bitmap, node_idx);
+}
+
+static void _remove_node_from_torus(torus3d_record_t *torus,
+				    torus3d_context_t *ctx,
+				    node_record_t *node_ptr)
+{
+	for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+		if (torus->nodes_map[idx] == node_ptr->index) {
+			torus->nodes_map[idx] = NO_VAL;
+			break;
+		}
+	}
+
+	bit_clear(torus->nodes_bitmap, node_ptr->index);
+
+	_remove_node_from_placements(torus, ctx, node_ptr->index);
+}
+
 extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 				  topology_ctx_t *tctx)
 {
+	torus3d_context_t *ctx = tctx->plugin_ctx;
+	char *tmp, *torus_name;
+	char *tok, *endptr;
+	unsigned long val;
+	uint16_t coord[3] = { 0 };
+	uint32_t linear_idx;
+	bool in_torus;
+	torus3d_record_t *torus_dst = NULL;
+	torus3d_record_t *torus_src = NULL;
+
+	if (!unit) {
+		torus3d_record_t *torus = _find_torus_by_node(ctx, node_ptr);
+
+		if (!torus)
+			return SLURM_SUCCESS;
+
+		debug2("remove %s from torus3d:%s", node_ptr->name, tctx->name);
+
+		_remove_node_from_torus(torus, ctx, node_ptr);
+		torus3d_record_update_torus_config(tctx, torus - ctx->records);
+
+		return SLURM_SUCCESS;
+	}
+
+	tmp = xstrdup(unit);
+	torus_name = tmp;
+	tok = strchr(torus_name, ':');
+	if (!tok) {
+		error("invalid torus3d unit '%s' for %s (expected torus_name:x:y:z)",
+		      unit, node_ptr->name);
+		xfree(tmp);
+		return SLURM_ERROR;
+	}
+	*tok++ = '\0';
+
+	for (int i = 0; i < 3; i++) {
+		val = strtoul(tok, &endptr, 0);
+		if (tok == endptr || val > UINT16_MAX ||
+		    ((*endptr != ':') && ((i < 2) || (*endptr != '\0')))) {
+			error("invalid coordinate in '%s' for %s", unit,
+			      node_ptr->name);
+			xfree(tmp);
+			return SLURM_ERROR;
+		}
+		coord[i] = (uint16_t) val;
+		tok = endptr + 1;
+	}
+
+	torus_dst = _find_torus_by_name(ctx, torus_name);
+
+	if (!torus_dst) {
+		error("torus3d '%s' not found for %s", torus_name,
+		      node_ptr->name);
+		xfree(tmp);
+		return SLURM_ERROR;
+	}
+
+	xfree(tmp);
+
+	/* Validate coordinates */
+	if (coord[0] >= torus_dst->x || coord[1] >= torus_dst->y ||
+	    coord[2] >= torus_dst->z) {
+		error("Can't add node %s, coordinates (%u,%u,%u) out of bounds for torus %s (%ux%ux%u)",
+		      node_ptr->name, coord[0], coord[1], coord[2],
+		      torus_dst->name, torus_dst->x, torus_dst->y,
+		      torus_dst->z);
+		return SLURM_ERROR;
+	}
+
+	linear_idx =
+		torus3d_coord_to_index(torus_dst, coord[0], coord[1], coord[2]);
+
+	if (torus_dst->nodes_map[linear_idx] == node_ptr->index) {
+		debug2("node %s already at (%u,%u,%u) in torus %s",
+		       node_ptr->name, coord[0], coord[1], coord[2],
+		       torus_dst->name);
+		return SLURM_SUCCESS;
+	}
+
+	/* Check if cell is occupied by a different node */
+	if (torus_dst->nodes_map[linear_idx] != NO_VAL) {
+		uint32_t current_idx = torus_dst->nodes_map[linear_idx];
+		error("torus3d %s cell (%u,%u,%u) already occupied by %s, cannot add %s",
+		      torus_dst->name, coord[0], coord[1], coord[2],
+		      node_record_table_ptr[current_idx]->name,
+		      node_ptr->name);
+		return SLURM_ERROR;
+	}
+
+	debug2("add %s to torus3d %s at (%u,%u,%u)",
+	       node_ptr->name, torus_dst->name, coord[0], coord[1], coord[2]);
+
+	in_torus = bit_test(torus_dst->nodes_bitmap, node_ptr->index);
+
+	if (!in_torus && (torus_src = _find_torus_by_node(ctx, node_ptr))) {
+		_remove_node_from_torus(torus_src, ctx, node_ptr);
+		torus3d_record_update_torus_config(tctx,
+						   torus_src - ctx->records);
+	}
+
+	if (in_torus) {
+		for (uint32_t idx = 0; idx < torus_dst->node_count; idx++) {
+			if (torus_dst->nodes_map[idx] == node_ptr->index) {
+				torus_dst->nodes_map[idx] = NO_VAL;
+				break;
+			}
+		}
+	}
+
+	torus_dst->nodes_map[linear_idx] = node_ptr->index;
+	bit_set(torus_dst->nodes_bitmap, node_ptr->index);
+
+	_remove_node_from_placements(torus_dst, ctx, node_ptr->index);
+
+	_add_node_to_placements(torus_dst, ctx, node_ptr->index, coord[0],
+				coord[1], coord[2]);
+
+	torus3d_record_update_torus_config(tctx, torus_dst - ctx->records);
+
 	return SLURM_SUCCESS;
 }
 
