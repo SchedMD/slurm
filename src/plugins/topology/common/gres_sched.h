@@ -48,12 +48,6 @@
 extern char *gres_sched_str(list_t *sock_gres_list);
 
 /*
- * Clear GRES allocation info for all job GRES at start of scheduling cycle
- * Return TRUE if any gres_per_job constraints to satisfy
- */
-extern bool gres_sched_init(list_t *job_gres_list);
-
-/*
  * Return TRUE if all gres_per_job specifications are satisfied
  */
 extern bool gres_sched_test(list_t *job_gres_list, uint32_t job_id);

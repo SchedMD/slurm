@@ -10542,6 +10542,36 @@ extern void gres_step_state_log(list_t *gres_list, uint32_t job_id,
 	(void) list_for_each(gres_list, _step_state_log, &tmp_step_id);
 }
 
+static int _foreach_gres_init(void *x, void *arg)
+{
+	gres_state_t *gres_state_job = x;
+	bool *rc = arg;
+	gres_job_state_t *gres_js = gres_state_job->gres_data;
+
+	if (!gres_js->gres_per_job)
+		return 0;
+	gres_js->total_gres = 0;
+	*rc = true;
+
+	return 0;
+}
+
+/*
+ * Clear GRES allocation info for all job GRES at start of scheduling cycle
+ * Return TRUE if any gres_per_job constraints to satisfy
+ */
+extern bool gres_sched_init(list_t *job_gres_list)
+{
+	bool rc = false;
+
+	if (!job_gres_list)
+		return rc;
+
+	(void) list_for_each(job_gres_list, _foreach_gres_init, &rc);
+
+	return rc;
+}
+
 /*
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
