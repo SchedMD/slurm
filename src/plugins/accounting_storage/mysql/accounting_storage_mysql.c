@@ -258,11 +258,13 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 	char *dassoc_inx[] = {
 		"user",
 		"acct",
+		"`partition`",
 	};
 
 	enum {
 		DASSOC_USER,
 		DASSOC_ACCT,
+		DASSOC_PART,
 		DASSOC_COUNT
 	};
 
@@ -288,11 +290,17 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		"having max(is_def)=1 " /* Is default account is selected */
 		"and not count(*)=" /* Is this all of that user's assocs? */
 		"(select count(*) FROM \"%s_%s\" "
-		"where deleted=0 AND user=myuser)) "
+		"where deleted=0 AND user=myuser) "
+		/* Only portion of defaults being removed? */
+		"and not (select count(*) from \"%s_%s\" %s where deleted=0 "
+		"and user=myuser and (%s) and is_def=1)<(select count(*) "
+		"FROM \"%s_%s\" where deleted=0 and user=myuser and is_def=1)) "
 		"as t3 ON user=myuser "
 		"where is_def=1 AND deleted=0",
 		tmp_char, cluster_name, assoc_table, cluster_name, assoc_table,
-		as_statement, assoc_char, cluster_name, assoc_table);
+		as_statement, assoc_char, cluster_name, assoc_table,
+		cluster_name, assoc_table, as_statement, assoc_char,
+		cluster_name, assoc_table);
 
 	xfree(tmp_char);
 	DB_DEBUG(DB_ASSOC, mysql_conn->conn, "query\n%s", query);
@@ -320,6 +328,8 @@ static int _check_is_def_acct_before_remove(remove_common_args_t *args)
 		tmp_char = xstrdup_printf("C = %-15s A = %-10s U = %-9s",
 					  cluster_name, row[DASSOC_ACCT],
 					  row[DASSOC_USER]);
+		if (row[DASSOC_PART][0])
+			xstrfmtcat(tmp_char, " P = %-9s", row[DASSOC_PART]);
 		list_append(ret_list, tmp_char);
 	}
 
