@@ -7627,8 +7627,10 @@ The default value is "NO".
 
 .TP
 \fBDefaultTime\fR
-Run time limit used for jobs that don't specify a value. If not set
-then MaxTime will be used.
+Run time limit used for jobs that don't specify a value. If not set, the
+default will be set to an applicable time limit, which may be from the
+partition (MaxTime) or from a QOS or association (MaxWall or GrpWall).
+Regardless, MaxTime will still be enforced.
 Format is the same as for MaxTime.
 .IP
 
