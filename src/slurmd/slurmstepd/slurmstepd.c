@@ -644,6 +644,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	fini_setproctitle();
 
 	cgroup_conf_destroy();
+	switch_g_fini();
 
 	xfree(cli);
 	xfree(conf->block_map);
