@@ -169,7 +169,8 @@ static void *_rpc_thread(void *data)
 	if (agent_arg_ptr->addr) {
 		msg.address = *agent_arg_ptr->addr;
 
-		if (msg.msg_type == SRUN_JOB_COMPLETE) {
+		if ((msg.msg_type == SRUN_JOB_COMPLETE) ||
+		    (msg.msg_type == SRUN_STEP_SIGNAL)) {
 			slurm_send_msg_maybe(&msg);
 		} else if (slurm_send_only_node_msg(&msg) && !srun_agent) {
 			error("failed to send message type %d/%s",

@@ -1782,14 +1782,6 @@ fail2:
 			      __func__);
 	}
 
-	/*
-	 * Notify srun of completion AFTER frequency reset to avoid race
-	 * condition starting another job on these CPUs.
-	 */
-	while (stepd_send_pending_exit_msgs()) {
-		;
-	}
-
 	debug2("Before call to spank_fini()");
 	if (spank_fini(step))
 		error("spank_fini failed");
@@ -1805,15 +1797,7 @@ fail2:
 		pam_finish();
 
 fail1:
-	/* If interactive job startup was abnormal,
-	 * be sure to notify client.
-	 */
 	set_job_state(SLURMSTEPD_STEP_ENDING);
-	if (rc != 0) {
-		error("%s: exiting abnormally: %s",
-		      __func__, slurm_strerror(rc));
-		_send_launch_resp(rc);
-	}
 
 	if (!step->batch && (step_complete.rank > -1)) {
 		if (step->aborted)
@@ -1830,6 +1814,28 @@ fail1:
 			step_complete.step_rc = rc;
 
 		stepd_send_step_complete_msgs();
+	}
+
+	/*
+	 * Notify srun of completion AFTER frequency reset to avoid race
+	 * condition starting another job on these CPUs. Doing this after
+	 * stepd_send_step_complete_msgs() also avoids a potential race
+	 * condition when performing sequential sruns: the next srun could
+	 * issue step create request before notifying the controller that
+	 * the previous one ended.
+	 */
+	while (stepd_send_pending_exit_msgs()) {
+		;
+	}
+
+	/*
+	 * If interactive job startup was abnormal,
+	 * be sure to notify client.
+	 */
+	if (rc != SLURM_SUCCESS) {
+		error("%s: exiting abnormally: %s",
+		      __func__, slurm_strerror(rc));
+		_send_launch_resp(rc);
 	}
 
 	return(rc);
