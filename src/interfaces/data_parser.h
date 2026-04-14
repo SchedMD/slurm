@@ -736,6 +736,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_SLURMDB_PURGE, /* uint32_t */
 	DATA_PARSER_SLURMDB_PURGE_UNITS, /* slurmdb_purge_units_t */
+	DATA_PARSER_CONF_FLAGS_PERSIST_CONN_RC, /* PERSIST_FLAG_* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

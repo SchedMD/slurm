@@ -8429,6 +8429,16 @@ static const parser_t PARSER_ARRAY(SLURMDB_PURGE_UNITS)[] = {
 };
 #undef add_parse
 
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_PERSIST_CONN_RC)[] = {
+	add_flag_hidden_bit(PERSIST_FLAG_DBD, "DBD"),
+	add_flag_hidden_bit(PERSIST_FLAG_RECONNECT, "Reconnect"),
+	add_flag_hidden_bit(PERSIST_FLAG_ALREADY_INITED, "AlreadyInited"),
+	add_flag_bit(PERSIST_FLAG_P_USER_CASE, "PreserveCaseUser"),
+	add_flag_hidden_bit(PERSIST_FLAG_SUPPRESS_ERR, "SuppressError"),
+	add_flag_hidden_bit(PERSIST_FLAG_EXT_DBD, "ExternalDBD"),
+	add_flag_hidden_bit(PERSIST_FLAG_DONT_UPDATE_CLUSTER, "DontUpdateCluster"),
+};
+
 #define add_skip(field)					\
 	add_parser_skip(slurmdb_user_rec_t, field)
 #define add_parse(mtype, field, path, desc)				\
@@ -13344,6 +13354,7 @@ static const parser_t parsers[] = {
 	addfa(H_RESOURCE_MODE_FLAG, uint8_t),
 	addfa(NODE_PARTITION_CPU_BINDING_FLAGS, uint32_t),
 	addfa(PARTITION_FLAGS, uint32_t),
+	addfa(CONF_FLAGS_PERSIST_CONN_RC, uint16_t),
 	addfa(JOB_DEFAULTS_TYPE, uint16_t),
 	addfa(CONF_FLAGS, uint32_t),
 	addfa(CONF_FLAGS_COMMUNICATION_PARAMETERS, uint32_t),
