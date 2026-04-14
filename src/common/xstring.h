@@ -266,6 +266,15 @@ extern char *xstring_bytes2printable(const unsigned char *string, int len,
 				     const char replace);
 
 /*
+ * Alternative to strtok_r() that's easier to construct loops with.
+ * If str and *saveptr are NULL then returns NULL.
+ * Unlike strtok_r, the str argument should continue to point to the
+ * string being parsed. This avoids needing to manipulate the first
+ * argument as part of the loop.
+ */
+extern char *xstrtoken(char *str, const char *delim, char **saveptr);
+
+/*
  * Return an xmalloc'd string in base64 format given a base64url string.
  */
 extern char *xbase64_from_base64url(const char *in);

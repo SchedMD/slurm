@@ -18129,8 +18129,7 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
 
 	top_job_list = list_create(NULL);
 	job_str_tmp = xstrdup(top_ptr->job_id_str);
-	tok = strtok_r(job_str_tmp, ",", &save_ptr);
-	while (tok) {
+	while ((tok = xstrtoken(job_str_tmp, ",", &save_ptr))) {
 		long_id = strtol(tok, &end_ptr, 10);
 		if ((long_id <= 0) || (long_id == LONG_MAX) ||
 		    ((end_ptr[0] != '\0') && (end_ptr[0] != '_'))) {
@@ -18164,7 +18163,6 @@ extern int job_set_top(slurm_msg_t *msg, top_job_msg_t *top_ptr, uid_t uid,
 			}
 			list_append(top_job_list, job_ptr);
 		}
-		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 
 	if (list_count(top_job_list) == 0) {
