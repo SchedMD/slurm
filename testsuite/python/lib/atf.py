@@ -953,8 +953,10 @@ def gcore(component, pid=None, sbin=True):
 
     if not pids:
         logging.warning(f"Process {prefix}/{component} not found")
-    logging.debug(f"Getting gcores for PIDs: {pids}")
+
+    logging.debug(f"Getting gcores and sending SIGPROF to PIDs: {pids}")
     for pid in pids:
+        run_command(f"kill -SIGPROF {pid}", user="root")
         run_command(
             f"sudo gcore -o {properties['slurm-logs-dir']}/{component}.core {pid}"
         )
