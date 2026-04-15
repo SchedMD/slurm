@@ -42,8 +42,9 @@
 #include "gres_select_util.h"
 #include "gres_sock_list.h"
 
-#include "src/slurmctld/licenses.h"
 #include "src/common/slurm_time.h"
+
+#include "src/slurmctld/licenses.h"
 
 typedef struct {
 	int action;
