@@ -994,7 +994,7 @@ static int _get_config_keypair(slurmdbd_conn_t *slurmdbd_conn,
 
 	if (config_name == NULL ||
 	    xstrcmp(config_name, "slurmdbd.conf") == 0)
-		list_msg.my_list = dump_config();
+		list_msg.my_list = slurmdb_config_get_keypairs(slurmdbd_conf);
 	else if ((list_msg.my_list =
 			  acct_storage_g_get_config_keypairs(slurmdbd_conn
 								     ->db_conn,
