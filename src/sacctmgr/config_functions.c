@@ -38,6 +38,8 @@
 
 #include "config.h"
 
+#include "slurm/slurmdb.h"
+
 #include "src/common/list.h"
 #include "src/common/read_config.h"
 #include "src/common/sercli.h"
@@ -57,7 +59,15 @@ static list_t *dbd_config_list = NULL;
 
 static void _load_dbd_config(void)
 {
-	dbd_config_list = slurmdb_config_get_keypairs(db_conn);
+	int rc = EINVAL;
+	slurmdbd_conf_t *slurmdbd_conf = NULL;
+
+	if ((rc = slurmdb_config_get(db_conn, &slurmdbd_conf)))
+		fatal("Unable to query slurmdbd.conf: %s", slurm_strerror(rc));
+
+	dbd_config_list = slurmdb_config_get_keypairs(slurmdbd_conf);
+
+	slurmdbd_free_conf(slurmdbd_conf);
 }
 
 static void _print_dbd_config(void)

@@ -1910,11 +1910,12 @@ extern int slurmdb_clear_stats(void *db_conn);
 extern int slurmdb_get_stats(void *db_conn, slurmdb_stats_rec_t **stats_pptr);
 
 /*
- * get info from the storage
- * RET: List of config_key_pair_t *
- * note List needs to be freed with slurm_list_destroy() when called
+ * Get descriptive keypairs from slurmdbd_conf
+ * IN slurmdbd_conf - Pointer to slurmdbd_conf instance
+ * RET: List of config_key_pair_t * (caller must FREE_NULL_LIST())
  */
-extern list_t *slurmdb_config_get_keypairs(void *db_conn);
+extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t
+						   *slurmdbd_conf);
 
 /*
  * Get config from slurmdbd

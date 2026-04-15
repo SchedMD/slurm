@@ -286,6 +286,7 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	char tmp_str[256], *user_name = NULL;
 	list_t *dbd_config_list = NULL;
 	void *db_conn = NULL;
+	slurmdbd_conf_t *slurmdbd_conf = NULL;
 
 	/* first load accounting params from slurm.conf */
 	uint16_t track_wckey = slurm_get_track_wckey();
@@ -340,7 +341,14 @@ static void _layout_conf_dbd(GtkTreeStore *treestore)
 	/* second load slurmdbd.conf params */
 	if (!(db_conn = slurmdb_connection_get(NULL)))
 		return;
-	dbd_config_list = slurmdb_config_get_keypairs(db_conn);
+	if (slurmdb_config_get(db_conn, &slurmdbd_conf)) {
+		slurmdb_connection_close(&db_conn);
+		return;
+	}
+
+	dbd_config_list = slurmdb_config_get_keypairs(slurmdbd_conf);
+
+	slurmdbd_free_conf(slurmdbd_conf);
 	slurmdb_connection_close(&db_conn);
 	if (!dbd_config_list)
 		return;
