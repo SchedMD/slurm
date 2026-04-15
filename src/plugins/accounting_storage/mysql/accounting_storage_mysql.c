@@ -3479,12 +3479,6 @@ end_it:
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_config_keypairs(void *db_conn,
-						  char *config_name)
-{
-	return NULL;
-}
-
 extern int acct_storage_p_get_config(void *db_conn,
 				     slurmdbd_conf_t **slurmdbd_conf_ptr)
 {

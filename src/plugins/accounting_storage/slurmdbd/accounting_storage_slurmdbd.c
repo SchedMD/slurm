@@ -1689,52 +1689,6 @@ extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_config_keypairs(void *db_conn,
-						  char *config_name)
-{
-	persist_msg_t req = {0}, resp = {0};
-	dbd_list_msg_t *got_msg;
-	int rc;
-	list_t *ret_list = NULL;
-
-	if (first)
-		init();
-
-	req.msg_type = DBD_GET_CONFIG;
-	req.pcon = db_conn;
-	req.data = config_name;
-	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &req, &resp);
-
-	if (rc != SLURM_SUCCESS)
-		error("DBD_GET_CONFIG failure: %m");
-	else if (resp.msg_type == PERSIST_RC) {
-		persist_rc_msg_t *msg = resp.data;
-		if (msg->rc == SLURM_SUCCESS) {
-			info("%s", msg->comment);
-			ret_list = list_create(NULL);
-		} else {
-			errno = msg->rc;
-			error("%s", msg->comment);
-		}
-		slurm_persist_free_rc_msg(msg);
-	} else if (resp.msg_type == DBD_GOT_CONFIG) {
-		error("%s does not support DBD_GOT_CONFIG: %u",
-		      __func__, resp.msg_type);
-		slurmdbd_free_conf(resp.data);
-	} else if (resp.msg_type != DBD_GOT_CONFIG_KEYPAIRS) {
-		error("response type not DBD_GOT_CONFIG_KEYPAIRS: %u",
-		      resp.msg_type);
-		slurmdbd_free_msg(&resp);
-	} else {
-		got_msg = (dbd_list_msg_t *) resp.data;
-		ret_list = got_msg->my_list;
-		got_msg->my_list = NULL;
-		slurmdbd_free_list_msg(got_msg);
-	}
-
-	return ret_list;
-}
-
 extern int acct_storage_p_get_config(void *db_conn,
 				     slurmdbd_conf_t **slurmdbd_conf_ptr)
 {

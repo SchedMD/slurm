@@ -426,14 +426,6 @@ extern list_t *acct_storage_g_get_federations(
 	void *db_conn, uint32_t uid, slurmdb_federation_cond_t *fed_cond);
 
 /*
- * get info from the storage
- * RET: List of config_key_pairs_t *
- * note List needs to be freed when called
- */
-extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
-						  char *config_name);
-
-/*
  * Get config from slurmdbd
  * IN db_conn - db connection
  * IN slurmdbd_conf_ptr - Pointer to populate.

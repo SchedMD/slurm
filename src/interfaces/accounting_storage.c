@@ -151,7 +151,6 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_cluster_cond_t *cluster_cond);
 	list_t *(*get_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond);
-	list_t *(*get_config_keypairs)(void *db_conn, char *config_name);
 	int (*get_config)(void *db_conn, slurmdbd_conf_t **slurmdbd_conf_ptr);
 	list_t *(*get_tres)        (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
@@ -266,7 +265,6 @@ static const char *syms[] = {
 	"acct_storage_p_get_accts",
 	"acct_storage_p_get_clusters",
 	"acct_storage_p_get_federations",
-	"acct_storage_p_get_config_keypairs",
 	"acct_storage_p_get_config",
 	"acct_storage_p_get_tres",
 	"acct_storage_p_get_assocs",
@@ -845,17 +843,6 @@ extern list_t *acct_storage_g_get_federations(void *db_conn, uint32_t uid,
 		return NULL;
 
 	return (*(ops.get_federations))(db_conn, uid, fed_cond);
-}
-
-extern list_t *acct_storage_g_get_config_keypairs(void *db_conn,
-						  char *config_name)
-{
-	xassert(plugin_inited != PLUGIN_NOT_INITED);
-
-	if (plugin_inited == PLUGIN_NOOP)
-		return NULL;
-
-	return (*(ops.get_config_keypairs))(db_conn, config_name);
 }
 
 extern int acct_storage_g_get_config(void *db_conn,
