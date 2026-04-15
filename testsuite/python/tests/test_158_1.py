@@ -12,14 +12,14 @@ import json
 def get_cluster_names(remote_license):
     """Find all cluster names"""
 
-    cluster_names = {
+    cluster_names = [
         k
         for item in remote_license["actions"]
         if "clusters" in item
         for k in item["clusters"]
-    }
+    ]
 
-    return cluster_names
+    return sorted(cluster_names)
 
 
 # Setup
@@ -28,6 +28,14 @@ def setup(remote_license):
 
     for cluster in cluster_names:
         atf.set_config_parameter("ClusterName", cluster)
+        # TODO: Set cluster name for all clusters when multi-cluster ability is
+        # available.
+        break
+
+    if "preserve_case" in remote_license and remote_license["preserve_case"]:
+        atf.require_config_parameter(
+            "Parameters", "PreserveCaseResource", source="slurmdbd"
+        )
     atf.require_accounting(modify=True)
     atf.require_slurm_running()
 
@@ -201,13 +209,17 @@ def _remote_licenses(remote_license):
                 break
 
 
-def test_remote_license_percent(do_licenses):
+@pytest.mark.parametrize(
+    "preserve_case", [False, True], ids=["PreserveCase=No", "PreserveCase=yes"]
+)
+def test_remote_license_percent(do_licenses, preserve_case):
     """Remote licenses - Percent"""
 
     remote_license = {
         "name": "lic1",
         "count": 200,
         "flags": "",
+        "preserve_case": preserve_case,
         "actions": [
             {
                 "type": "add",
@@ -227,6 +239,10 @@ def test_remote_license_percent(do_licenses):
             },
         ],
     }
+
+    if preserve_case:
+        atf.require_version((26, 5), reason="PreserveCaseResource added in 26.05")
+        remote_license["name"] = "LiC1"
 
     do_licenses(remote_license)
 

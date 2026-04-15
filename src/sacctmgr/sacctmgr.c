@@ -75,8 +75,9 @@ list_t *g_tres_list = NULL;
 const char *mime_type = NULL; /* mimetype if we are using data_parser */
 const char *data_parser = NULL; /* data_parser args */
 
-/* by default, normalize all usernames to lower case */
+/* by default, normalize all usernames and resource names to lower case */
 bool user_case_norm = true;
+bool resource_case_norm = true;
 bool tree_display = 0;
 bool have_db_conn = false;
 
@@ -239,7 +240,8 @@ int main(int argc, char **argv)
 
 	if (persist_conn_flags & PERSIST_FLAG_P_USER_CASE)
 		user_case_norm = false;
-
+	if (persist_conn_flags & PERSIST_FLAG_P_RESOURCE_CASE)
+		resource_case_norm = false;
 
 	/* We are only running a single command and exiting */
 	if (optind < argc) {
