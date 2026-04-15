@@ -3704,7 +3704,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpack32(&job->max_nodes, buffer);
 			safe_unpack32(&job->num_tasks, buffer);
 
+			safe_unpack16(&job->exclusive, buffer);
 			safe_unpack16(&job->shared, buffer);
+			safe_unpack16(&job->oversubscribe, buffer);
 
 			safe_unpackstr(&job->cronspec, buffer);
 

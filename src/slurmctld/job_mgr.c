@@ -11162,7 +11162,9 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 		else
 			pack32(NO_VAL, buffer);
 
+		pack16(get_job_exclusive_display_value(job_ptr), buffer);
 		pack16(shared, buffer);
+		pack16(get_job_oversubscribe_value(job_ptr), buffer);
 
 		if (detail_ptr->crontab_entry)
 			packstr(detail_ptr->crontab_entry->cronspec, buffer);
