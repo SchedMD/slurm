@@ -5732,24 +5732,21 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		 * a time. mysql_db_delete_affected_rows will return < 0 on
 		 * failure or 0 if no records are affected.
 		 */
-		if ((rc = mysql_db_delete_affected_rows(
-			     mysql_conn, purge_query)) > 0) {
-			/* Commit here every time since this could create a huge
-			 * transaction.
-			 */
-			if ((rc = mysql_db_commit(mysql_conn)))
-				error("Couldn't commit cluster (%s) purge",
-				      cluster_name);
-		}
-
-		if (rc != SLURM_SUCCESS) {
+		rc = mysql_db_delete_affected_rows(mysql_conn, purge_query);
+		if (rc < 0) {
 			error("Couldn't remove old data from %s table",
 			      sql_table);
+			rc = SLURM_ERROR;
 			goto end_it;
-		} else if (mysql_db_commit(mysql_conn)) {
+		}
+
+		/* Commit here every time since this could create a huge
+		 * transaction.
+		 */
+		if ((rc = mysql_db_commit(mysql_conn))) {
 			error("Couldn't commit cluster (%s) purge",
 			      cluster_name);
-			break;
+			goto end_it;
 		}
 	}
 end_it:
