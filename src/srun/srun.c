@@ -59,6 +59,7 @@
 #include <unistd.h>
 
 #include "src/common/fd.h"
+#include "src/common/file_bcast.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -81,8 +82,6 @@
 #include "src/interfaces/compress.h"
 #include "src/interfaces/jobacct_gather.h"
 #include "src/interfaces/switch.h"
-
-#include "src/bcast/file_bcast.h"
 
 #include "src/api/pmi_server.h"
 #include "src/api/step_launch.h"

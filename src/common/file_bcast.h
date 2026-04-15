@@ -64,25 +64,25 @@ struct bcast_parameters {
 };
 
 typedef struct file_bcast_info {
-	void *data;		/* mmap of file data */
-	int fd;			/* file descriptor */
-	uint64_t file_size;	/* file size */
-	char *fname;		/* filename */
-	gid_t gid;		/* gid of owner */
-	uint32_t job_id;	/* job id */
-	uint32_t step_id;	/* step id */
-	time_t last_update;	/* transfer last block received */
-	int received_blocks;	/* number of blocks received */
-	time_t start_time;	/* transfer start time */
-	uid_t uid;		/* uid of owner */
+	void *data; /* mmap of file data */
+	int fd; /* file descriptor */
+	uint64_t file_size; /* file size */
+	char *fname; /* filename */
+	gid_t gid; /* gid of owner */
+	uint32_t job_id; /* job id */
+	uint32_t step_id; /* step id */
+	time_t last_update; /* transfer last block received */
+	int received_blocks; /* number of blocks received */
+	time_t start_time; /* transfer start time */
+	uid_t uid; /* uid of owner */
 } file_bcast_info_t;
 
 typedef struct {
-	uint32_t bcast_sent_cnt;		/* succeeded bcast count */
-	int bcast_total_cnt;			/* libs in list count */
-	struct bcast_parameters *params;	/* bcast parameters */
-	list_t *excluded_paths;			/* excluded paths list */
-	int return_code;			/* bcast_file() rc */
+	uint32_t bcast_sent_cnt; /* succeeded bcast count */
+	int bcast_total_cnt; /* libs in list count */
+	struct bcast_parameters *params; /* bcast parameters */
+	list_t *excluded_paths; /* excluded paths list */
+	int return_code; /* bcast_file() rc */
 } foreach_shared_object_t;
 
 extern int bcast_file(struct bcast_parameters *params);

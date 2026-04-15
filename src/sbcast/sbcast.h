@@ -42,10 +42,9 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/file_bcast.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
-
-#include "src/bcast/file_bcast.h"
 
 extern struct bcast_parameters params;
 

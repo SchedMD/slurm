@@ -51,6 +51,7 @@
 #include <unistd.h>
 
 #include "slurm/slurm_errno.h"
+#include "src/common/file_bcast.h"
 #include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -68,28 +69,26 @@
 #include "src/common/xstring.h"
 #include "src/interfaces/compress.h"
 
-#include "file_bcast.h"
-
 /*
  * This should likely be detected at build time, but I have not
  * seen any common systems where this is not the correct path.
  */
 #define LDD_PATH "/usr/bin/ldd"
 #define DEFAULT_THREADS 8
-#define MAX_THREADS     64	/* These can be huge messages, so
-				 * only run MAX_THREADS at one time */
+/* These can be huge messages, so only run MAX_THREADS at one time */
+#define MAX_THREADS 64
 
-int block_len;				/* block size */
-int fd;					/* source file descriptor */
-void *src;				/* source mmap'd address */
-struct stat f_stat;			/* source file stats */
-job_sbcast_cred_msg_t *sbcast_cred;	/* job alloc info and sbcast cred */
+int block_len; /* block size */
+int fd; /* source file descriptor */
+void *src; /* source mmap'd address */
+struct stat f_stat; /* source file stats */
+job_sbcast_cred_msg_t *sbcast_cred; /* job alloc info and sbcast cred */
 
-static int   _bcast_file(struct bcast_parameters *params);
-static int   _file_bcast(struct bcast_parameters *params,
-			 file_bcast_msg_t *bcast_msg,
-			 job_sbcast_cred_msg_t *sbcast_cred);
-static int   _file_state(struct bcast_parameters *params);
+static int _bcast_file(struct bcast_parameters *params);
+static int _file_bcast(struct bcast_parameters *params,
+		       file_bcast_msg_t *bcast_msg,
+		       job_sbcast_cred_msg_t *sbcast_cred);
+static int _file_state(struct bcast_parameters *params);
 static list_t *_fill_in_excluded_paths(struct bcast_parameters *params);
 static int _find_subpath(void *x, void *key);
 static int _foreach_shared_object(void *x, void *y);
@@ -181,7 +180,7 @@ static int _get_cred_no_job(struct bcast_parameters *params)
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	sbcast_cred_req_msg_t cred_req_msg = {0};
+	sbcast_cred_req_msg_t cred_req_msg = { 0 };
 	int *resp_rc;
 
 	slurm_msg_t_init(&req_msg);
@@ -289,25 +288,25 @@ static int _bcast_file(struct bcast_parameters *params)
 	buffer = xmalloc(block_len);
 
 	memset(&bcast_msg, 0, sizeof(file_bcast_msg_t));
-	bcast_msg.fname		= params->dst_fname;
+	bcast_msg.fname = params->dst_fname;
 	bcast_msg.exe_fname = params->exe_fname;
-	bcast_msg.block_no	= 1;
+	bcast_msg.block_no = 1;
 	if (params->flags & BCAST_FLAG_FORCE)
 		bcast_msg.flags |= FILE_BCAST_FORCE;
 	if (params->flags & BCAST_FLAG_SHARED_OBJECT)
 		bcast_msg.flags |= FILE_BCAST_SO;
 	else if (params->flags & BCAST_FLAG_SEND_LIBS)
 		bcast_msg.flags |= FILE_BCAST_EXE;
-	bcast_msg.modes		= f_stat.st_mode;
-	bcast_msg.uid		= f_stat.st_uid;
-	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
-	bcast_msg.gid		= f_stat.st_gid;
-	bcast_msg.file_size	= f_stat.st_size;
-	bcast_msg.cred          = sbcast_cred->sbcast_cred;
+	bcast_msg.modes = f_stat.st_mode;
+	bcast_msg.uid = f_stat.st_uid;
+	bcast_msg.user_name = uid_to_string(f_stat.st_uid);
+	bcast_msg.gid = f_stat.st_gid;
+	bcast_msg.file_size = f_stat.st_size;
+	bcast_msg.cred = sbcast_cred->sbcast_cred;
 
 	if (params->flags & BCAST_FLAG_PRESERVE) {
-		bcast_msg.atime     = f_stat.st_atime;
-		bcast_msg.mtime     = f_stat.st_mtime;
+		bcast_msg.atime = f_stat.st_atime;
+		bcast_msg.mtime = f_stat.st_mtime;
 	}
 
 	if (!params->tree_width)
@@ -340,7 +339,7 @@ static int _bcast_file(struct bcast_parameters *params)
 		if (rc != SLURM_SUCCESS)
 			break;
 		if (bcast_msg.flags & FILE_BCAST_LAST_BLOCK)
-			break;	/* end of file */
+			break; /* end of file */
 		bcast_msg.block_no++;
 		bcast_msg.block_offset += orig_len;
 	}
@@ -353,8 +352,8 @@ static int _bcast_file(struct bcast_parameters *params)
 		 * "truncation towards zero" which gives unexpected values for
 		 * pct. This construct avoids that problem.
 		 */
-		pct = (pct>=0) ? pct * 100 / size_uncompressed
-			       : - (-pct * 100 / size_uncompressed);
+		pct = (pct >= 0) ? pct * 100 / size_uncompressed :
+				   -(-pct * 100 / size_uncompressed);
 		verbose("File compressed from %"PRIu64" to %"PRIu64" (%d percent) in %u usec",
 			size_uncompressed, size_compressed, (int) pct,
 			time_compression);
@@ -536,8 +535,7 @@ static list_t *_fill_in_excluded_paths(struct bcast_parameters *params)
 static int _bcast_shared_objects(struct bcast_parameters *params,
 				 list_t *lib_paths)
 {
-	foreach_shared_object_t args =
-		{ .return_code = SLURM_SUCCESS };
+	foreach_shared_object_t args = { .return_code = SLURM_SUCCESS };
 	list_t *excl_paths = NULL;
 	char *save_dst = params->dst_fname;
 	char *save_src = params->src_fname;
@@ -605,7 +603,7 @@ extern int bcast_file(struct bcast_parameters *params)
 		FREE_NULL_LIST(lib_paths);
 	}
 
-/*	slurm_free_sbcast_cred_msg(sbcast_cred); */
+	/* slurm_free_sbcast_cred_msg(sbcast_cred); */
 	return rc;
 }
 

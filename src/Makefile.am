@@ -1,6 +1,5 @@
 SUBDIRS =		\
 	api		\
-	bcast		\
 	common		\
 	conmgr		\
 	curl		\
