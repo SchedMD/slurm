@@ -455,7 +455,7 @@ def module_teardown():
             # Generate the .bt file if binary was found
             if not bin_path:
                 failures.append(
-                    f"Coredump detected ({coredump}), but unable to get binary"
+                    f"Coredump detected ({coredump}), but unable to get binary, file info: {file_out}"
                 )
             else:
                 bt_file = f"{coredump}.bt"
@@ -483,9 +483,9 @@ def module_teardown():
                     f.write(results["stdout"])
                     f.write(results["stderr"])
 
-            # If coredump is not a known issue, reported as a failure.
-            # Otherwise a new reason will be appended to xfailures.
-            atf.classify_coredump(bin_path, bt_file, failures, xfailures)
+                # If coredump is not a known issue, reported as a failure.
+                # Otherwise a new reason will be appended to xfailures.
+                atf.classify_coredump(bin_path, bt_file, failures, xfailures)
 
         # Save logs dir for the test and restore the orifinal
         atf.run_command(
