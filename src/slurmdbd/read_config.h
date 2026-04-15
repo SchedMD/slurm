@@ -68,8 +68,4 @@ extern void log_config(void);
  */
 extern int read_slurmdbd_conf(void);
 
-/* Dump the configuration in name,value pairs for output to
- *	"sacctmgr show config", caller must call list_destroy() */
-extern list_t *dump_config(void);
-
 #endif /* !_DBD_READ_CONFIG_H */
