@@ -71,8 +71,6 @@ pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Local functions */
 static void _clear_slurmdbd_conf(void);
 
-static time_t boot_time;
-
 /*
  * free_slurmdbd_conf - free storage associated with the global variable
  *	slurmdbd_conf
@@ -210,7 +208,6 @@ extern int read_slurmdbd_conf(void)
 	slurm_mutex_lock(&conf_mutex);
 	if (slurmdbd_conf == NULL) {
 		slurmdbd_conf = xmalloc(sizeof(*slurmdbd_conf));
-		boot_time = time(NULL);
 	}
 	_clear_slurmdbd_conf();
 
@@ -871,11 +868,6 @@ extern list_t *dump_config(void)
 	add_key_pair(my_list, "AuthInfo", "%s", slurm_conf.authinfo);
 
 	add_key_pair(my_list, "AuthType", "%s", slurm_conf.authtype);
-
-	tmp_ptr = xmalloc(256);
-	slurm_make_time_str((time_t *)&boot_time, tmp_ptr, 256);
-	add_key_pair(my_list, "BOOT_TIME", "%s", tmp_ptr);
-	xfree(tmp_ptr);
 
 	add_key_pair(my_list, "CommitDelay", "%u", slurmdbd_conf->commit_delay);
 
