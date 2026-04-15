@@ -342,6 +342,8 @@ static void *_service_connection(void *arg)
 {
 	persist_service_conn_t *service_conn = arg;
 	int thread_loc;
+	persist_conn_callback_fini_t callback_fini = NULL;
+	void *callback_fini_arg = NULL;
 
 	xassert(service_conn);
 	xassert(service_conn->pcon);
@@ -359,22 +361,37 @@ static void *_service_connection(void *arg)
 				    service_conn->arg);
 
 	/*
-	 * service_conn may be already freed by
+	 * service_conn may have already been freed by
 	 * slurm_persist_conn_recv_server_fini(), so re-fetch from the
 	 * global array under lock and null-check before dereferencing.
+	 *
+	 * Copy callback info and unlock before invoking callback_fini to
+	 * avoid lock-ordering inversion with slurmctld federation locks
+	 * (fed_mgr_add_sibling_conn holds fed_read_lock then acquires
+	 * thread_count_lock; calling callback_fini under thread_count_lock
+	 * would acquire fed_write_lock — ABBA deadlock).
+	 *
+	 * The copied pointers remain valid because recv_server_fini() joins
+	 * this thread before destroying the slot, and free_thread_loc()
+	 * defers cleanup to fini during shutdown.
 	 */
 	slurm_mutex_lock(&thread_count_lock);
 	service_conn = persist_service_conn[thread_loc];
 	if (service_conn && service_conn->pcon &&
-	    service_conn->pcon->callback_fini)
-		(service_conn->pcon->callback_fini)(service_conn->arg);
-	else if (service_conn && service_conn->pcon)
+	    service_conn->pcon->callback_fini) {
+		SWAP(callback_fini, service_conn->pcon->callback_fini);
+		SWAP(callback_fini_arg, service_conn->arg);
+	} else if (service_conn && service_conn->pcon) {
 		log_flag(NET, "%s: Persist connection from cluster %s has disconnected",
 			 __func__, service_conn->pcon->cluster_name);
-	else
+	} else {
 		log_flag(NET, "%s: Persist connection has disconnected",
 			 __func__);
+	}
 	slurm_mutex_unlock(&thread_count_lock);
+
+	if (callback_fini)
+		callback_fini(callback_fini_arg);
 
 	/* service_conn is freed inside here, unless already freed */
 	slurm_persist_conn_free_thread_loc(thread_loc, true);
