@@ -1051,3 +1051,4 @@ test_157_1   Test job_desc with JobSubmitPlugins=lua
 test_158_#   Testing of Licenses
 ============================================
 test_158_1   Remote Licenses
+test_158_2   Test remote license fuzzy matching
