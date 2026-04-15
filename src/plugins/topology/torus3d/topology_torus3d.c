@@ -463,10 +463,38 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 	case TOPO_DATA_TOPOLOGY_PTR:
 	{
 		dynamic_plugin_data_t **topoinfo_pptr = data;
+		topoinfo_torus3d_t *topoinfo = xmalloc(sizeof(*topoinfo));
 
-		*topoinfo_pptr = xmalloc(sizeof(dynamic_plugin_data_t));
-		(*topoinfo_pptr)->data = NULL;
+		*topoinfo_pptr = xmalloc(sizeof(**topoinfo_pptr));
+		(*topoinfo_pptr)->data = topoinfo;
 		(*topoinfo_pptr)->plugin_id = plugin_id;
+
+		topoinfo->record_count = ctx ? ctx->record_count : 0;
+		topoinfo->topo_array = xcalloc(topoinfo->record_count,
+					       sizeof(*topoinfo->topo_array));
+
+		for (uint32_t i = 0; i < topoinfo->record_count; i++) {
+			torus3d_record_t *torus = &ctx->records[i];
+			topoinfo_torus3d_record_t *rec =
+				&topoinfo->topo_array[i];
+
+			rec->name = xstrdup(torus->name);
+			rec->nodes = bitmap2node_name(torus->nodes_bitmap);
+			rec->x_size = torus->x;
+			rec->y_size = torus->y;
+			rec->z_size = torus->z;
+			rec->placement_count = torus->placement_count;
+			rec->placements = xcalloc(rec->placement_count,
+						  sizeof(*rec->placements));
+			for (uint32_t j = 0; j < rec->placement_count; j++) {
+				torus3d_placement_t *p = &torus->placements[j];
+				rec->placements[j].x_size = p->dims.x;
+				rec->placements[j].y_size = p->dims.y;
+				rec->placements[j].z_size = p->dims.z;
+				rec->placements[j].anchor_count =
+					p->anchor_count;
+			}
+		}
 
 		break;
 	}
