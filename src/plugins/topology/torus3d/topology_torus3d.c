@@ -444,6 +444,28 @@ extern bool topology_p_generate_node_ranking(topology_ctx_t *tctx)
 extern int topology_p_get_node_addr(char *node_name, char **paddr,
 				    char **ppattern, void *tctx)
 {
+	node_record_t *node_ptr = find_node_record(node_name);
+	torus3d_context_t *ctx = tctx;
+
+	if (!node_ptr)
+		return SLURM_ERROR;
+
+	for (int i = 0; i < ctx->record_count; i++) {
+		torus3d_record_t *torus = &ctx->records[i];
+		if (!bit_test(torus->nodes_bitmap, node_ptr->index))
+			continue;
+		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+			uint16_t x, y, z;
+			if (torus->nodes_map[idx] != node_ptr->index)
+				continue;
+			torus3d_index_to_coord(torus, idx, &x, &y, &z);
+			*paddr = xstrdup_printf("%s:%u:%u:%u.%s", torus->name,
+						x, y, z, node_name);
+			*ppattern = xstrdup("torus:x:y:z.node");
+			return SLURM_SUCCESS;
+		}
+	}
+
 	return common_topo_get_node_addr(node_name, paddr, ppattern);
 }
 
