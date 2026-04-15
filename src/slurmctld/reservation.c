@@ -5358,6 +5358,9 @@ static void _resv_node_replace(slurmctld_resv_t *resv_ptr)
 	preserve_bitmap = bit_copy(avail_node_bitmap);
 	if (resv_ptr->flags & RESERVE_FLAG_REPLACE)
 		bit_and(preserve_bitmap, idle_node_bitmap);
+	/* Only nodes in the reservation's partition are valid candidates */
+	if (resv_ptr->part_ptr && resv_ptr->part_ptr->node_bitmap)
+		bit_and(preserve_bitmap, resv_ptr->part_ptr->node_bitmap);
 	bit_and(preserve_bitmap, resv_ptr->node_bitmap);
 	preserve_nodes = bit_set_count(preserve_bitmap);
 
