@@ -38,6 +38,7 @@
 #include "src/common/http_con.h"
 #include "src/common/http_mime.h"
 #include "src/common/http_router.h"
+#include "src/common/log.h"
 #include "src/common/openapi.h"
 #include "src/common/read_config.h"
 #include "src/common/serdes.h"
@@ -104,10 +105,18 @@ static int _on_request(http_con_t *hcon, const char *name,
 		return breq->on_error(&event, hcon, name, request, rc);
 	}
 
-	log_flag(NET, "%s: [%s] Accepted HTTP request: method=%s path=%s uid[%d]:%s read_mime:%s write_mime:%s",
-		 __func__, name, get_http_method_string(request->method),
-		 request->url.path, uid, uid_to_string_or_null(uid),
-		 event.read_mime, event.write_mime);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_NET) {
+		char *uid_str = uid_to_string_or_null(uid);
+
+		log_flag(NET, "%s: [%s] Accepted HTTP request: method=%s path=%s uid[%d]:%s read_mime:%s write_mime:%s",
+			 __func__, name,
+			 get_http_method_string(request->method),
+			 request->url.path, uid, uid_str, event.read_mime,
+			 event.write_mime);
+
+		xfree(uid_str);
+	}
+
 	return breq->on_request(&event, hcon, name, uid, request->method,
 				request, breq->arg);
 }
