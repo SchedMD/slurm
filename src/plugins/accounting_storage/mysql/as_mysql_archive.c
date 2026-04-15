@@ -5226,10 +5226,10 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "%s <= %ld && time_end != 0 "
+				       "%s > 0 && %s <= %ld "
 				       "LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end,
+				       col_name, period_end,
 				       slurmdbd_conf->max_purge_limit);
 
 		break;
@@ -5420,11 +5420,10 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 		break;
 
 	default:
-		query = xstrdup_printf(
-			"select %s from \"%s_%s\" where %s <= %ld "
-			"&& time_end != 0 order by %s asc LIMIT 1",
-			col_name, cluster, table, col_name, period_end,
-			col_name);
+		query = xstrdup_printf("select %s from \"%s_%s\" where %s > 0 "
+				       "&& %s <= %ld order by %s asc LIMIT 1",
+				       col_name, cluster, table, col_name,
+				       col_name, period_end, col_name);
 		break;
 	}
 
