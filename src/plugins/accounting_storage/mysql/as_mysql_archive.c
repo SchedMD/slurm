@@ -5219,7 +5219,7 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_JOB_ENV_NJ:
 	case PURGE_JOB_SCRIPT_NJ:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "unix_timestamp(%s) <= %ld LIMIT %d",
+				       "%s <= FROM_UNIXTIME(%ld) LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       period_end,
 				       slurmdbd_conf->max_purge_limit);
@@ -5411,8 +5411,9 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	case PURGE_JOB_SCRIPT_NJ:
 	case PURGE_JOB_ENV_NJ:
 		query = xstrdup_printf("select unix_timestamp(%s) from "
-				       "\"%s_%s\" where unix_timestamp(%s) "
-				       "<= %ld order by %s asc limit 1",
+				       "\"%s_%s\" where %s "
+				       "<= FROM_UNIXTIME(%ld) order by %s "
+				       "asc limit 1",
 				       col_name, cluster, table, col_name,
 				       period_end, col_name);
 
