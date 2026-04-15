@@ -691,15 +691,15 @@ static void _do_power_work(time_t now)
 			susp_total++;
 
 		/* Resume nodes as appropriate */
-		if ((bit_test(job_power_node_bitmap, node_ptr->index)) ||
+		if ((power_save_enabled &&
+		     bit_test(job_power_node_bitmap, node_ptr->index)) ||
 		    (susp_state &&
 		     ((resume_rate == 0) ||
 		      (_rl_get_tokens(&resume_rl_config))) &&
 		     !IS_NODE_POWERING_DOWN(node_ptr) &&
 		     IS_NODE_POWER_UP(node_ptr))) {
 			if (wake_node_bitmap == NULL) {
-				wake_node_bitmap =
-					bit_alloc(node_record_count);
+				wake_node_bitmap = bit_alloc(node_record_count);
 			}
 			if (!(bit_test(job_power_node_bitmap,
 				       node_ptr->index)))
@@ -731,7 +731,7 @@ static void _do_power_work(time_t now)
 		     (_rl_get_tokens(&suspend_rl_config))) &&
 		    (node_ptr->sus_job_cnt == 0) &&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
-		     ((node_ptr->last_busy != 0) &&
+		     (power_save_enabled && (node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
 		      _node_state_should_suspend(node_ptr) &&
 		      ((avoid_node_bitmap == NULL) ||
@@ -822,6 +822,7 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
+			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
 			reset_node_active_features(node_ptr);
@@ -893,6 +894,23 @@ static void _do_power_work(time_t now)
 							slurm_conf
 								.slurm_user_id);
 			nodes_updated = true;
+		}
+		if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
+		    (node_ptr->resume_timeout != INFINITE16) &&
+		    node_ptr->boot_req_time &&
+		    (now >
+		     (node_ptr->boot_req_time + node_ptr->resume_timeout))) {
+			/*
+			 * Remove states now so that event state shows as DOWN.
+			 * Does not remove drain state in case it was set by
+			 * scontrol update nodename.
+			 */
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
+			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
+			node_ptr->boot_req_time = 0;
+			set_node_down_ptr(node_ptr, "reboot timed out");
+
+			bit_clear(rs_node_bitmap, node_ptr->index);
 		}
 	}
 	FREE_NULL_BITMAP(avoid_node_bitmap);
@@ -1496,7 +1514,7 @@ extern void config_power_mgr(void)
 	if (_init_power_config()) {
 		if (power_save_enabled) {
 			/* transition from enabled to disabled */
-			info("power_save mode has been disabled due to configuration changes");
+			info("automatic power_save mode has been disabled due to configuration changes");
 		}
 		power_save_enabled = false;
 	} else {
@@ -1518,6 +1536,10 @@ extern void config_power_mgr_fini(void)
 extern void power_save_init(void)
 {
 	slurm_mutex_lock(&power_mutex);
+	if (power_save_started) {
+		slurm_mutex_unlock(&power_mutex);
+		return;
+	}
 	power_save_started = true;
 
 	slurm_thread_create("powersave", &power_thread, _power_save_thread,
@@ -1599,11 +1621,6 @@ static void *_power_save_thread(void *arg)
 		if (slurmctld_config.shutdown_time)
 			break;
 
-		if (!power_save_enabled) {
-			debug("power_save mode not enabled, stopping power_save thread");
-			goto fini;
-		}
-
 		now = time(NULL);
 		if ((now > (last_power_scan + power_save_min_interval)) &&
 		    ((last_node_update > last_power_scan) ||
@@ -1615,7 +1632,6 @@ static void *_power_save_thread(void *arg)
 		}
 	}
 
-fini:
 	slurm_mutex_lock(&power_mutex);
 	power_save_started = false;
 	slurm_cond_signal(&power_cond);

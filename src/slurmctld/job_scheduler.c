@@ -4817,14 +4817,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	bitstr_t *non_feature_node_bitmap = NULL;
 	char *reboot_features = NULL;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
-	static bool power_save_on = false;
-	static time_t sched_update = 0;
-	static bool logged = false;
-
-	if (sched_update != slurm_conf.last_update) {
-		power_save_on = power_save_test();
-		sched_update = slurm_conf.last_update;
-	}
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
 		return;
@@ -4834,15 +4826,6 @@ extern void reboot_job_nodes(job_record_t *job_ptr)
 	else
 		boot_node_bitmap = node_features_reboot(job_ptr,
 							&reboot_features);
-
-	if (!logged && boot_node_bitmap &&
-	    (!power_save_on &&
-	     ((slurm_conf.reboot_program == NULL) ||
-	      (slurm_conf.reboot_program[0] == '\0')))) {
-		info("%s: Preparing node reboot without power saving and RebootProgram",
-		     __func__);
-		logged = true;
-	}
 
 	if (boot_node_bitmap &&
 	    job_ptr->details->features_use &&
