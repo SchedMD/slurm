@@ -74,6 +74,7 @@ TaskPlugin=task/affinity
 #GetEnvTimeout=2
 #HealthCheckInterval=0
 #HealthCheckProgram=
+#HealthCheckTimeout=60
 InactiveLimit=0
 KillWait=30
 #MessageTimeout=10

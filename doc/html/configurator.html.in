@@ -165,6 +165,7 @@ function displayfile()
    "#GetEnvTimeout=2 <br>" +
    "#HealthCheckInterval=0 <br>" +
    "#HealthCheckProgram= <br>" +
+   "#HealthCheckTimeout=60 <br>" +
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#MessageTimeout=10 <br>" +
