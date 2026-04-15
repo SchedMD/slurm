@@ -806,7 +806,7 @@ extern void log_config(void)
 	if (slurmdbd_conf->debug_level < LOG_LEVEL_DEBUG2)
 		return;
 
-	dbd_config_list = dump_config();
+	dbd_config_list = slurmdb_config_get_keypairs(slurmdbd_conf);
 
 	itr = list_iterator_create(dbd_config_list);
 	while ((key_pair = list_next(itr)))
