@@ -987,26 +987,11 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 }
 
 static int _get_config_keypair(slurmdbd_conn_t *slurmdbd_conn,
-			       persist_msg_t *msg, buf_t **out_buffer,
-			       char *config_name)
+			       persist_msg_t *msg, buf_t **out_buffer)
 {
 	dbd_list_msg_t list_msg = { NULL };
 
-	if (config_name == NULL ||
-	    xstrcmp(config_name, "slurmdbd.conf") == 0)
-		list_msg.my_list = slurmdb_config_get_keypairs(slurmdbd_conf);
-	else if ((list_msg.my_list =
-			  acct_storage_g_get_config_keypairs(slurmdbd_conn
-								     ->db_conn,
-							     config_name)) ==
-		 NULL) {
-		*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->pcon,
-							errno,
-							slurm_strerror(errno),
-							DBD_GET_CONFIG);
-		xfree(config_name);
-		return SLURM_ERROR;
-	}
+	list_msg.my_list = slurmdb_config_get_keypairs(slurmdbd_conf);
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_CONFIG_KEYPAIRS, *out_buffer);
@@ -1021,11 +1006,9 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		       buf_t **out_buffer)
 {
 	int rc = EINVAL;
-	char *config_name = msg->data;
 
 	if (slurmdbd_conn->pcon->version < SLURM_26_05_PROTOCOL_VERSION) {
-		rc = _get_config_keypair(slurmdbd_conn, msg, out_buffer,
-					 config_name);
+		rc = _get_config_keypair(slurmdbd_conn, msg, out_buffer);
 	} else {
 		persist_msg_t resp = {
 			.data = slurmdbd_conf,
@@ -1040,7 +1023,6 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			rc = SLURM_SUCCESS;
 	}
 
-	xfree(config_name);
 	return rc;
 }
 

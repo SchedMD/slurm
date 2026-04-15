@@ -57,18 +57,32 @@ strong_alias(pack_slurmdbd_msg, slurm_pack_slurmdbd_msg);
 strong_alias(unpack_slurmdbd_msg, slurm_unpack_slurmdbd_msg);
 strong_alias(slurmdbd_pack_fini_msg, slurm_slurmdbd_pack_fini_msg);
 
+static void _pack_config_name(uint16_t rpc_version, slurmdbd_msg_type_t type,
+			      buf_t *buffer)
+{
+	if (rpc_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		/* nothing to pack */
+	} else {
+		/* always pack place holder */
+		packstr("slurmdbd.conf", buffer);
+	}
+}
 
 static int _unpack_config_name(char **object, uint16_t rpc_version,
 			       buf_t *buffer)
 {
-	char *config_name;
+	if (rpc_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		/* nothing to unpack */
+	} else {
+		/* config_name needs to be unpacked but is ignored */
+		char *config_name = NULL;
+		safe_unpackstr(&config_name, buffer);
+		xfree(config_name);
+	}
 
-	safe_unpackstr(&config_name, buffer);
-	*object = config_name;
 	return SLURM_SUCCESS;
 
 unpack_error:
-	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -1815,7 +1829,7 @@ extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version)
 			buffer);
 		break;
 	case DBD_GET_CONFIG:
-		packstr((char *)req->data, buffer);
+		_pack_config_name(rpc_version, req->msg_type, buffer);
 		break;
 	case DBD_RECONFIG:
 	case DBD_GET_STATS:
