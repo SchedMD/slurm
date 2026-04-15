@@ -46,8 +46,19 @@ if {$nodes_avail < $nodes_min} {
 	skip "Not enough nodes currently available ($nodes_avail avail < $nodes_min needed)."
 }
 
-if {[get_partition_param [default_partition] "OverSubscribe"] != "NO"} {
-	skip "This tests not works if OverSubscribe is enabled"
+# 26.05+ (20588): default partition may show OverSubscribe=NO with Exclusive=NODE
+# for configs that previously appeared as OverSubscribe=EXCLUSIVE; same skip as then.
+set def_part_bf [default_partition]
+set os_bf [get_partition_param $def_part_bf "OverSubscribe"]
+if {[package vcompare [get_version] "26.05.0"] >= 0} {
+	set exc_bf [get_partition_param $def_part_bf "Exclusive"]
+	if {$os_bf != "NO" || $exc_bf eq "NODE" || $exc_bf eq "TOPO"} {
+		skip "This test does not run with OverSubscribe other than NO or with partition Exclusive=NODE/TOPO"
+	}
+} else {
+	if {$os_bf != "NO"} {
+		skip "This tests not works if OverSubscribe is enabled"
+	}
 }
 
 proc cleanup { } {

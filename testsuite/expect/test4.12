@@ -220,10 +220,17 @@ if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
-# Check for OverSubscribe
+# Check for partition-wide exclusivity (OverSubscribe=EXCLUSIVE before 26.05;
+# 26.05+ shows OverSubscribe=NO with Exclusive=NODE/TOPO; ticket 20588).
 set part_exclusive 0
 if {[get_partition_param [default_partition] "OverSubscribe"] == "EXCLUSIVE"} {
 	set part_exclusive 1
+}
+if {[package vcompare [get_version] "26.05.0"] >= 0} {
+	set part_exc [get_partition_param [default_partition] "Exclusive"]
+	if {$part_exc eq "NODE" || $part_exc eq "TOPO"} {
+		set part_exclusive 1
+	}
 }
 
 # Get an idle node and their main params
