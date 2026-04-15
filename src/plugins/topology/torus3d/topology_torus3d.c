@@ -72,6 +72,63 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 const uint32_t plugin_id = TOPOLOGY_PLUGIN_3DTORUS;
 const bool supports_exclusive_topo = false;
 
+typedef struct {
+	uint16_t x_size;
+	uint16_t y_size;
+	uint16_t z_size;
+	uint32_t anchor_count;
+} topoinfo_torus3d_placement_t;
+
+typedef struct {
+	char *name;
+	char *nodes;
+	uint16_t x_size;
+	uint16_t y_size;
+	uint16_t z_size;
+	uint32_t placement_count;
+	topoinfo_torus3d_placement_t *placements;
+} topoinfo_torus3d_record_t;
+
+typedef struct {
+	uint32_t record_count;
+	topoinfo_torus3d_record_t *topo_array;
+} topoinfo_torus3d_t;
+
+static void _print_topo_record(topoinfo_torus3d_record_t *rec, char **out)
+{
+	char *env, *line = NULL, *pos = NULL;
+
+	xstrfmtcatat(line, &pos, "TorusName=%s Dims=%ux%ux%u", rec->name,
+		     rec->x_size, rec->y_size, rec->z_size);
+
+	if (rec->nodes)
+		xstrfmtcatat(line, &pos, " Nodes=%s", rec->nodes);
+
+	if ((env = getenv("SLURM_TOPO_LEN")))
+		xstrfmtcat(*out, "%.*s\n", atoi(env), line);
+	else
+		xstrfmtcat(*out, "%s\n", line);
+	xfree(line);
+
+	for (uint32_t i = 0; i < rec->placement_count; i++) {
+		topoinfo_torus3d_placement_t *p = &rec->placements[i];
+		line = NULL;
+		pos = NULL;
+		xstrfmtcatat(line, &pos,
+			     "  TorusName=%s PlacementDims=%ux%ux%u(%u)"
+			     " Anchors=%u",
+			     rec->name, p->x_size, p->y_size, p->z_size,
+			     (uint32_t) p->x_size * p->y_size * p->z_size,
+			     p->anchor_count);
+
+		if ((env = getenv("SLURM_TOPO_LEN")))
+			xstrfmtcat(*out, "%.*s\n", atoi(env), line);
+		else
+			xstrfmtcat(*out, "%s\n", line);
+		xfree(line);
+	}
+}
+
 extern int init(void)
 {
 	verbose("%s loaded", plugin_name);
@@ -434,26 +491,144 @@ extern int topology_p_get(topology_data_t type, void *data, void *tctx)
 
 extern int topology_p_topoinfo_free(void *topoinfo_ptr)
 {
+	topoinfo_torus3d_t *topoinfo = topoinfo_ptr;
+	if (topoinfo) {
+		for (uint32_t i = 0; i < topoinfo->record_count; i++) {
+			xfree(topoinfo->topo_array[i].name);
+			xfree(topoinfo->topo_array[i].nodes);
+			xfree(topoinfo->topo_array[i].placements);
+		}
+		xfree(topoinfo->topo_array);
+		xfree(topoinfo);
+	}
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_pack(void *topoinfo_ptr, buf_t *buffer,
 				    uint16_t protocol_version)
 {
+	topoinfo_torus3d_t *topoinfo = topoinfo_ptr;
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack32(topoinfo->record_count, buffer);
+		for (uint32_t i = 0; i < topoinfo->record_count; i++) {
+			topoinfo_torus3d_record_t *rec =
+				&topoinfo->topo_array[i];
+			packstr(rec->name, buffer);
+			packstr(rec->nodes, buffer);
+			pack16(rec->x_size, buffer);
+			pack16(rec->y_size, buffer);
+			pack16(rec->z_size, buffer);
+			pack32(rec->placement_count, buffer);
+			for (uint32_t j = 0; j < rec->placement_count; j++) {
+				pack16(rec->placements[j].x_size, buffer);
+				pack16(rec->placements[j].y_size, buffer);
+				pack16(rec->placements[j].z_size, buffer);
+				pack32(rec->placements[j].anchor_count, buffer);
+			}
+		}
+	} else {
+		return SLURM_ERROR;
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 				     char *unit, char **out)
 {
+	uint32_t i, match, match_cnt = 0;
+	topoinfo_torus3d_t *topoinfo = topoinfo_ptr;
+
 	*out = NULL;
+
+	if ((!nodes_list || (nodes_list[0] == '\0')) &&
+	    (!unit || (unit[0] == '\0'))) {
+		if (topoinfo->record_count == 0) {
+			error("No topology information available");
+			return SLURM_SUCCESS;
+		}
+
+		for (i = 0; i < topoinfo->record_count; i++)
+			_print_topo_record(&topoinfo->topo_array[i], out);
+
+		return SLURM_SUCCESS;
+	}
+
+	for (i = 0; i < topoinfo->record_count; i++) {
+		hostset_t *hs;
+
+		if (unit && xstrcmp(topoinfo->topo_array[i].name, unit))
+			continue;
+
+		if (nodes_list) {
+			if ((topoinfo->topo_array[i].nodes == NULL) ||
+			    (topoinfo->topo_array[i].nodes[0] == '\0'))
+				continue;
+			hs = hostset_create(topoinfo->topo_array[i].nodes);
+			if (hs == NULL)
+				fatal("hostset_create: memory allocation failure");
+			match = hostset_within(hs, nodes_list);
+			hostset_destroy(hs);
+			if (!match)
+				continue;
+		}
+		match_cnt++;
+		_print_topo_record(&topoinfo->topo_array[i], out);
+	}
+
+	if (match_cnt == 0) {
+		error("Topology information contains no torus%s%s%s%s",
+		      unit ? " named " : "",
+		      unit ? unit : "",
+		      nodes_list ? " with nodes " : "",
+		      nodes_list ? nodes_list : "");
+	}
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_topoinfo_unpack(void **topoinfo_pptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
+	topoinfo_torus3d_t *topoinfo = xmalloc(sizeof(*topoinfo));
+
+	*topoinfo_pptr = topoinfo;
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack32(&topoinfo->record_count, buffer);
+		safe_xcalloc(topoinfo->topo_array, topoinfo->record_count,
+			     sizeof(*topoinfo->topo_array));
+		for (uint32_t i = 0; i < topoinfo->record_count; i++) {
+			topoinfo_torus3d_record_t *rec =
+				&topoinfo->topo_array[i];
+			safe_unpackstr(&rec->name, buffer);
+			safe_unpackstr(&rec->nodes, buffer);
+			safe_unpack16(&rec->x_size, buffer);
+			safe_unpack16(&rec->y_size, buffer);
+			safe_unpack16(&rec->z_size, buffer);
+			safe_unpack32(&rec->placement_count, buffer);
+			safe_xcalloc(rec->placements, rec->placement_count,
+				     sizeof(*rec->placements));
+			for (uint32_t j = 0; j < rec->placement_count; j++) {
+				safe_unpack16(&rec->placements[j].x_size,
+					      buffer);
+				safe_unpack16(&rec->placements[j].y_size,
+					      buffer);
+				safe_unpack16(&rec->placements[j].z_size,
+					      buffer);
+				safe_unpack32(&rec->placements[j].anchor_count,
+					      buffer);
+			}
+		}
+	} else {
+		goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
+
+unpack_error:
+	topology_p_topoinfo_free(topoinfo);
+	*topoinfo_pptr = NULL;
+	return SLURM_ERROR;
 }
 
 extern void topology_p_jobinfo_free(void *topo_jobinfo)
