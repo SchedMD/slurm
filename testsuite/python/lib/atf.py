@@ -3159,8 +3159,10 @@ def cancel_jobs(
             if not job_state:
                 pytest.fail(f"JobState info not found for job {job_id}: {jobs[job_id]}")
 
-            if not is_job_state_done(job_state[0]):
-                jobs_not_done.append(job_id)
+            for state in job_state:
+                if not is_job_state_done(state):
+                    jobs_not_done.append(job_id)
+                    break
 
         if jobs_not_in_system and not quiet:
             logging.warning(
