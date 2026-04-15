@@ -2483,6 +2483,24 @@ RLIMIT_RSS is set, as is done for tasks running in regular steps.
 .IP
 
 .TP
+\fBLicenseParameters\fR
+Parameters to control the license behavior. By default no parameters are set.
+Multiple parameters may be specified in a comma\-separated list.
+Currently supported options are:
+.IP
+.RS
+.TP 8
+\fBRemoteFuzzyMatch\fR
+Allow jobs to be submitted with a shorthand for remote licenses that omits
+the server name. For example, "matlab@licenseServer" can be requested with
+"matlab". Requests including the server name will always be recognized.
+If a local (slurm.conf-defined) license exists, it will prefer to match that.
+If multiple servers exist with the same license name, the fuzzy match fails
+and an exact match (with the server name) must be used.
+.IP
+.RE
+
+.TP
 \fBLicenses\fR
 Specification of licenses (or other resources available on all
 nodes of the cluster) which can be allocated to jobs.

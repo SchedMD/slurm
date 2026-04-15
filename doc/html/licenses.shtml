@@ -222,8 +222,10 @@ LicenseName=nastran@flex_host
 starting with Slurm 26.05 you can configure <b>Parameters=PreserveCaseResource</b>
 in slurmdbd.conf to allow resource names with uppercase characters.</p>
 
-<p>When submitting jobs to remote licenses, the name and server must be
-used.</p>
+<p>When submitting jobs using remote licenses, by default the name and server
+must be used. Starting with Slurm 26.05, it is possible to only use the name
+(without the server) if <b>LicenseParameters=RemoteFuzzyMatch</b> is set in
+slurm.conf</p>
 <pre>
 $ sbatch -L nastran@flex_host script.sh
 Submitted batch job 5172
