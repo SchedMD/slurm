@@ -185,6 +185,7 @@ extern void fini(void)
 	select_node_usage = NULL;
 	part_data_destroy_res(select_part_record);
 	select_part_record = NULL;
+	free_core_array(&suspend_exempt_cores);
 	cr_fini_global_core_data();
 }
 

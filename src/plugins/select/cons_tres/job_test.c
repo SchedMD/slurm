@@ -44,6 +44,7 @@
 
 #include "src/common/slurm_time.h"
 
+#include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/licenses.h"
 
 typedef struct {
@@ -91,6 +92,7 @@ bool preempt_strict_order = false;
 bool preempt_for_licenses = false;
 int preempt_reorder_cnt	= 1;
 bool soft_time_limit = false;
+bitstr_t **suspend_exempt_cores = NULL;
 
 /* Local functions */
 static avail_res_t *_allocate(job_record_t *job_ptr,
@@ -1613,6 +1615,13 @@ skip_test0:
 	free_cores = copy_core_array(avail_cores);
 	if (resv_exc_ptr->exc_cores)
 		core_array_and_not(free_cores, resv_exc_ptr->exc_cores);
+
+	/*
+	 * Remove cores that are exempt from preemption. Only applicable when
+	 * using PreemptMode=suspend,gang and PreemptExemptTime.
+	 */
+	if (suspend_exempt_cores && !test_only)
+		core_array_and_not(free_cores, suspend_exempt_cores);
 
 	if (preempt_by_part) {
 		/*
@@ -3850,6 +3859,80 @@ static avail_res_t *_allocate(job_record_t *job_ptr,
 			    cpu_alloc_size, alloc_sockets, req_sock_map);
 }
 
+static int _add_exempt_cores(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	job_resources_t *job_resrcs;
+	node_record_t *node_ptr;
+	int core_cnt = 0;
+
+	if (!IS_JOB_RUNNING(job_ptr))
+		return 0;
+	job_resrcs = job_ptr->job_resrcs;
+	if (!job_resrcs || !job_resrcs->core_bitmap || !job_resrcs->node_bitmap)
+		return 0;
+	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_SUSPEND)
+		return 0;
+	if (!acct_policy_is_job_preempt_exempt(job_ptr))
+		return 0;
+
+	log_flag(SELECT_TYPE, "%pJ is exempt from SUSPEND preemption via PreemptExemptTime, adding cores to suspend_exempt_cores",
+		 job_ptr);
+
+	/*
+	 * For each node in the job, create/set a corresponding core bitmap in
+	 * suspend_exempt_cores that will be used later to prevent pending jobs
+	 * from SUSPEND preempting this job.
+	 *
+	 * See build_job_resources() for navigating job_resrcs bitmaps.
+	 */
+	for (int i = 0;
+	     (node_ptr = next_node_bitmap(job_resrcs->node_bitmap, &i)); i++) {
+		if (!suspend_exempt_cores[i])
+			suspend_exempt_cores[i] =
+				bit_alloc(node_ptr->tot_cores);
+
+		if (job_resrcs->whole_node == 1) {
+			bit_set_all(suspend_exempt_cores[i]);
+		} else {
+			for (int c = 0; c < node_ptr->tot_cores; c++) {
+				if (bit_test(job_resrcs->core_bitmap,
+					     core_cnt + c))
+					bit_set(suspend_exempt_cores[i], c);
+			}
+		}
+		core_cnt += node_ptr->tot_cores;
+	}
+
+	return 0;
+}
+
+/*
+ * Rebuild array of cores currently exempt from preemption.  Caches the result
+ * and skips the rebuild if already called within the same second.
+ * PreemptExemptTime has one-second granularity so this is safe, and it avoids
+ * iterating over job_list for every job_test() called.
+ */
+static void _rebuild_suspend_exempt_cores(void)
+{
+	static time_t last_rebuild = 0;
+	time_t now = time(NULL);
+
+	/* Only rebuild the core array at most once per second */
+	if (last_rebuild == now)
+		return;
+	last_rebuild = now;
+
+	if (!suspend_exempt_cores)
+		suspend_exempt_cores = build_core_array();
+	else
+		clear_core_array(suspend_exempt_cores);
+
+	list_for_each(job_list, _add_exempt_cores, NULL);
+
+	core_array_log("suspend_exempt_cores", NULL, suspend_exempt_cores);
+}
+
 /*
  * job_test - Given a specification of scheduling requirements,
  *	identify the nodes which "best" satisfy the request.
@@ -3932,6 +4015,16 @@ extern int job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			bit_set_count(node_bitmap));
 		node_data_dump();
 	}
+
+	/*
+	 * If using PreemptMode=suspend,gang and PreemptExemptTime is set, build
+	 * core array of all cores that are exempt from suspend preemption
+	 * because the jobs using them have not been running for long enough
+	 * yet. (haven't run for PreemptExemptTime seconds yet)
+	 */
+	if (gang_mode && (slurm_conf.preempt_exempt_time != INFINITE) &&
+	    slurm_conf.preempt_exempt_time && (mode != SELECT_MODE_TEST_ONLY))
+		_rebuild_suspend_exempt_cores();
 
 	if (mode == SELECT_MODE_WILL_RUN) {
 		rc = _will_run_test(job_ptr, node_bitmap, min_nodes,

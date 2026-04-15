@@ -44,6 +44,7 @@ extern bool preempt_strict_order;
 extern bool preempt_for_licenses;
 extern int preempt_reorder_cnt;
 extern bool soft_time_limit;
+extern bitstr_t **suspend_exempt_cores;
 
 /*
  * job_test - Given a specification of scheduling requirements,
