@@ -799,11 +799,6 @@ extern void conmgr_set_exit_on_error(bool exit_on_error);
 extern bool conmgr_get_exit_on_error(void);
 
 /*
- * Get last error code from conmgr
- */
-extern int conmgr_get_error(void);
-
-/*
  * Get assigned connection name - stays same for life of connection
  */
 extern const char *conmgr_fd_get_name(const conmgr_fd_t *con);

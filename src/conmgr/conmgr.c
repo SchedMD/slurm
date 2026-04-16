@@ -374,16 +374,6 @@ extern bool conmgr_get_exit_on_error(void)
 	return exit_on_error;
 }
 
-extern int conmgr_get_error(void)
-{
-	/*
-	 * mgr.error is gone; per-connection status_code replaces it.
-	 * Callers that still link against this symbol get SLURM_SUCCESS
-	 * until the declaration is removed in the follow-up.
-	 */
-	return SLURM_SUCCESS;
-}
-
 extern bool conmgr_enabled(void)
 {
 	if (enabled_init)
