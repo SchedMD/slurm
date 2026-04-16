@@ -538,8 +538,11 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] TLS disabled: Unable to secure connection. Closing connection.",
 			 __func__, con->name);
 
-		close_con(false, con);
-		close_con_output(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, ESLURM_TLS_REQUIRED);
+		close_con(true, con);
+		close_con_output(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
@@ -596,7 +599,10 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 			log_flag(CONMGR, "%s: [%s] out of memory for TLS handshake: %s",
 				 __func__, con->name, slurm_strerror(rc));
 
-			close_con(false, con);
+			slurm_mutex_lock(&mgr.mutex);
+			con_set_status_code(con, rc);
+			close_con(true, con);
+			slurm_mutex_unlock(&mgr.mutex);
 			return;
 		}
 
@@ -644,6 +650,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(!con->tls);
 
+		con_set_status_code(con, rc);
 		close_con(true, con);
 		con->tls_in = NULL;
 		con->tls_out = NULL;
