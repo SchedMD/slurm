@@ -23252,7 +23252,11 @@ printf "%s\n" "$as_me: WARNING: unable to locate libhttp_parser library" >&2;}
 printf "%s\n" "#define HAVE_HTTP_PARSER 1" >>confdefs.h
 
 	  LIBHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_libhttp_parser_dir/include"
-	  LIBHTTP_PARSER_LDFLAGS="-L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+	  if test "$ac_with_rpath" = "yes"; then
+	  	LIBHTTP_PARSER_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_libhttp_parser_dir/$bit -L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+	  else
+	  	LIBHTTP_PARSER_LDFLAGS="-L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+          fi
 	fi
 
 
@@ -23347,7 +23351,11 @@ printf "%s\n" "$as_me: WARNING: unable to locate llhttp parser library" >&2;}
 		fi
 	else
 	  LLHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_llhttp_parser_dir/include"
-	  LLHTTP_PARSER_LDFLAGS="-L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+	  if test "$ac_with_rpath" = "yes"; then
+	  	LLHTTP_PARSER_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_llhttp_parser_dir/$bit -L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+	  else
+	  	LLHTTP_PARSER_LDFLAGS="-L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+          fi
 	  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for llhttp major version >= 9" >&5
 printf %s "checking for llhttp major version >= 9... " >&6; }
 	  save_CPPFLAGS="$CPPFLAGS"
