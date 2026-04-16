@@ -191,14 +191,28 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH</pre>
 <li><a id="httpparser" href="https://github.com/nodejs/http-parser">
     <b>HTTP Parser</b></a>
 	<p><a href="rest.html">slurmrestd</a> requires <b>libhttp_parser
-	(&gt;= v2.6.0)</b>. Instructions for the build are as follows:</p>
-	<pre>
+	(&gt;= v2.6.0)</b> or <a href="#llhttp">llhttp</a>. Instructions for the
+	build are as follows:</p><pre>
 git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser
 cd http_parser
 make
 sudo make install</pre>
 	Add the following argument when running <i>configure</i> for Slurm:
 	<pre>--with-libhttp-parser=/usr/local/</pre>
+</li><br>
+
+<li><a id="llhttp" href="https://github.com/nodejs/llhttp">
+    <b>LLHTTP Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> requires <b>llhttp
+	(&gt;= v9.0.0)</b> or <a href="#httpparser">libhttp_parser</a>.
+	Instructions for the build are as follows:</p><pre>
+git clone --depth 1 --single-branch -b v9.0.0 https://github.com/nodejs/llhttp.git llhttp
+cd llhttp
+npm ci
+make
+sudo make install</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-llhttp-parser=/usr/local/</pre>
 </li><br>
 
 <li><a id="yaml" href="https://github.com/yaml/libyaml">
