@@ -270,10 +270,16 @@ static work_t *_run_work(work_t *work)
 	xassert(work->magic == MAGIC_WORK);
 
 	if (work->ref) {
-		CONMGR_CON_LINK(work->ref, args.ref);
+		slurm_mutex_lock(&mgr.mutex);
+
+		fd_new_ref(work->ref->con, &args.ref);
 		xassert(args.ref->magic == MAGIC_CON_MGR_FD_REF);
 		args.con = fd_get_ref(work->ref);
 		xassert(args.con->magic == MAGIC_CON_MGR_FD);
+
+		args.status_code = args.con->status_code;
+
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 
 	_log_work(work, __func__, "BEGIN");
