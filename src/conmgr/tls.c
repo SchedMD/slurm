@@ -920,7 +920,10 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		/* should never happen */
 		xassert(false);
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, match);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
 
