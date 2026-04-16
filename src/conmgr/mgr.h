@@ -249,6 +249,15 @@ struct conmgr_fd_s {
 
 	/* Number of active references of this connection */
 	int refs;
+
+	/*
+	 * Latest non-SLURM_ERROR error observed on this connection.
+	 * SLURM_SUCCESS (0) until first error. Written under mgr.mutex
+	 * via con_set_status_code(). Mirrored into
+	 * conmgr_callback_args_t.status_code before each callback
+	 * invocation.
+	 */
+	slurm_err_t status_code;
 };
 
 typedef struct {
