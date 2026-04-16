@@ -403,6 +403,7 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		      __func__, con->name, slurm_strerror(rc));
 
 		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
 		if (mgr.exit_on_error)
 			mgr.shutdown_requested = true;
 
