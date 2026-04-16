@@ -506,6 +506,15 @@ extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg);
 extern void con_close_on_poll_error(conmgr_fd_t *con, int fd);
 
 /*
+ * Update con->status_code following the "latest non-SLURM_ERROR wins"
+ * policy. Filters SLURM_SUCCESS, SLURM_ERROR, EAGAIN, EWOULDBLOCK so the
+ * stored value retains the most recent specific error. Logs every real
+ * transition via log_flag(CONMGR, ...).
+ * NOTE: Caller must hold mgr.mutex lock.
+ */
+extern void con_set_status_code(conmgr_fd_t *con, slurm_err_t status_code);
+
+/*
  * Set connection polling state
  * NOTE: Caller must hold mgr.mutex lock.
  * IN type - Set type of polling for connection or PCTL_TYPE_INVALID to disable

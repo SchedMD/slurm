@@ -227,6 +227,28 @@ extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg)
 	close_con(false, conmgr_args.con);
 }
 
+extern void con_set_status_code(conmgr_fd_t *con, slurm_err_t status_code)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if ((status_code == SLURM_SUCCESS) || (status_code == EAGAIN) ||
+	    (status_code == EWOULDBLOCK))
+		return;
+
+	if (con->status_code == status_code)
+		return;
+
+	if ((status_code == SLURM_ERROR) && con->status_code)
+		return;
+
+	log_flag(CONMGR, "%s: [%s] status_code %s -> %s",
+		 __func__, con->name,
+		 slurm_strerror(con->status_code),
+		 slurm_strerror(status_code));
+
+	con->status_code = status_code;
+}
+
 /*
  * Stop reading from connection but write out the remaining buffer and finish
  * any queued work
