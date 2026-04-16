@@ -58,6 +58,44 @@ def get_and_down_nodes():
     )
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmctld") < (26, 5),
+    reason="Ticket 24758: DST-aware reoccurring reservation overlap check added in 26.05",
+)
+def test_overlap_DST(get_and_down_nodes):
+    """Verify that DST changes are respected when checking for overlapping"""
+    nodes = get_and_down_nodes
+
+    logging.info(f"Resuming only node {nodes[0]}:")
+    atf.run_command(
+        f"scontrol update nodename={nodes[0]} state=resume",
+        user=atf.properties["slurm-user"],
+        fatal=True,
+    )
+    atf.repeat_until(
+        lambda: atf.get_node_parameter(nodes[0], "state"),
+        lambda state: state == ["IDLE"],
+        fatal=True,
+    )
+
+    logging.info(f"Creating resv1: {atf.get_node_parameter(nodes[0], 'state')}")
+    rc = atf.run_command(
+        f"scontrol create reservation ReservationName=resv1 StartTime={datetime.date.today().year + 1}-04-22T15:00:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']} flags=DAILY",
+        user=atf.properties["slurm-user"],
+    )
+    assert rc["exit_code"] == 0, "resv1 should be created"
+
+    logging.info("Ensuring that resv2 cannot be created after resv1:")
+    rc = atf.run_command(
+        f"scontrol create reservation ReservationName=resv2 StartTime={datetime.date.today().year + 1}-11-15T15:00:00 nodecnt=1 duration=00:15:00 user={atf.properties['test-user']}",
+        user=atf.properties["slurm-user"],
+        xfail=True,
+    )
+    assert (
+        rc["exit_code"] != 0
+    ), f"resv2 should NOT be created after resv1 because {nodes[0]} should be used only by resv1"
+
+
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
 def test_overlap_weeks(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap nodes if they are have a start time difference greater than a week"""
