@@ -367,7 +367,10 @@ static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 			 __func__, con->name,
 			 TIMESPEC_STR(con->timeouts->connect, false),
 			 slurm_strerror(rc));
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(CONMGR, "%s: [%s] connect %s timeout resetting",
 			 __func__, con->name,
@@ -413,6 +416,8 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 			 slurm_strerror(rc));
 
 		slurm_mutex_lock(&mgr.mutex);
+
+		con_set_status_code(con, rc);
 
 		/* Close read and write file descriptors */
 		close_con(true, con);
@@ -461,7 +466,10 @@ static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
 							   false),
 			 slurm_strerror(rc));
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(CONMGR, "%s: [%s] read %s timeout resetting",
 			 __func__, con->name, TIMESPEC_STR(con->timeouts->read,
