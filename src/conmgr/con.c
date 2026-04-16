@@ -2520,8 +2520,9 @@ static int _foreach_log_connection(void *x, void *arg)
 		(void) list_for_each_ro(con->tls_out, _foreach_count_buffer,
 					&tls_out_stats);
 
-	probe_log(log, "connection: [%s]+%d flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
-		  con->name, con->refs, flags, conmgr_con_type_string(con->type),
+	probe_log(log, "connection: [%s]+%d status_code=%s flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
+		  con->name, con->refs, slurm_strerror(con->status_code),
+		  flags, conmgr_con_type_string(con->type),
 	     con->input_fd, con->output_fd, &con->address,
 	     BOOL_CHARIFY(con->tls),
 	     (con->tls_in ? get_buf_offset(con->tls_in) : 0),
