@@ -134,7 +134,8 @@ static void _log_work(work_t *work, const char *caller, const char *fmt, ...)
 
 	if (work->ref) {
 		conmgr_fd_t *con = fd_get_ref(work->ref);
-		xstrfmtcat(con_name, " [%s]", con->name);
+		xstrfmtcat(con_name, " [%s] status_code=%s", con->name,
+			   slurm_strerror(con->status_code));
 	}
 
 	if (work->callback.func)
