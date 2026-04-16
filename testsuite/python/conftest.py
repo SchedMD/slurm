@@ -666,16 +666,21 @@ def taskget(module_setup):
 
 
 @pytest.fixture(scope="module")
-def mpi_program(module_setup):
-    """Create the MPI program from the mpi_program.c in scripts directory.
-    Returns the bin path of the mpi_program."""
+def mpi_program(request, module_setup):
+    """Create an MPI program from a .c file in the scripts directory.
+    Returns the bin path of the compiled program.
+
+    By default compiles mpi_program.c. Use indirect parametrize to select
+    a different source file:
+        @pytest.mark.parametrize("mpi_program", ["mpi_signal_test"], indirect=True)
+    """
 
     # Check for MPI setup
     atf.require_mpi("pmix", "mpicc")
 
-    # Use the external C source file
-    src_path = atf.properties["testsuite_scripts_dir"] + "/mpi_program.c"
-    bin_path = os.getcwd() + "/mpi_program"
+    name = getattr(request, "param", "mpi_program")
+    src_path = atf.properties["testsuite_scripts_dir"] + f"/{name}.c"
+    bin_path = os.getcwd() + f"/{name}"
 
     # Compile the MPI program
     atf.run_command(f"mpicc -o {bin_path} {src_path}", fatal=True)
