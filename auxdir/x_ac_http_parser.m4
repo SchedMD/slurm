@@ -57,7 +57,11 @@ AC_DEFUN([X_AC_HTTP_PARSER], [
 	else
 	  AC_DEFINE([HAVE_HTTP_PARSER], [1], [Define if you are compiling with libhttp_parser or llhttp.])
 	  LIBHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_libhttp_parser_dir/include"
-	  LIBHTTP_PARSER_LDFLAGS="-L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+	  if test "$ac_with_rpath" = "yes"; then
+	  	LIBHTTP_PARSER_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_libhttp_parser_dir/$bit -L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+	  else
+	  	LIBHTTP_PARSER_LDFLAGS="-L$x_ac_cv_libhttp_parser_dir/$bit -lhttp_parser"
+          fi
 	fi
 
 	AC_SUBST(LIBHTTP_PARSER_CPPFLAGS)
@@ -107,7 +111,11 @@ AC_DEFUN([X_AC_HTTP_PARSER], [
 		fi
 	else
 	  LLHTTP_PARSER_CPPFLAGS="-I$x_ac_cv_llhttp_parser_dir/include"
-	  LLHTTP_PARSER_LDFLAGS="-L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+	  if test "$ac_with_rpath" = "yes"; then
+	  	LLHTTP_PARSER_LDFLAGS="-Wl,-rpath -Wl,$x_ac_cv_llhttp_parser_dir/$bit -L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+	  else
+	  	LLHTTP_PARSER_LDFLAGS="-L$x_ac_cv_llhttp_parser_dir/$bit -lllhttp"
+          fi
 	  AC_MSG_CHECKING([for llhttp major version >= 9])
 	  save_CPPFLAGS="$CPPFLAGS"
 	  CPPFLAGS="$CPPFLAGS $LLHTTP_PARSER_CPPFLAGS"
