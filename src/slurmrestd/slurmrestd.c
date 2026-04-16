@@ -869,9 +869,6 @@ int main(int argc, char **argv)
 					    NULL, operations_router)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
-
-		/* fail on first error if this is piped process */
-		conmgr_set_exit_on_error(true);
 	} else if (run_mode.listen) {
 		mode_t mask = umask(0);
 
@@ -895,7 +892,7 @@ int main(int argc, char **argv)
 	 * Inet mode expects connection errors to propagate upwards as
 	 * connection errors so they can be logged appropriately.
 	 */
-	if (conmgr_get_exit_on_error() && !rc)
+	if (inetd_mode && !rc)
 		rc = http_events_get_last_status_code();
 
 	/* cleanup everything */
