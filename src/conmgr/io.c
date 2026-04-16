@@ -418,8 +418,6 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 
 		slurm_mutex_lock(&mgr.mutex);
 		con_set_status_code(con, rc);
-		if (mgr.exit_on_error)
-			mgr.shutdown_requested = true;
 
 		/*
 		 * processing data failed so drop any
