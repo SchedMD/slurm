@@ -323,8 +323,6 @@ typedef struct {
 
 	/* Caller requests finish on error */
 	bool exit_on_error;
-	/* First observed error */
-	int error;
 	/* list of work_t */
 	list_t *delayed_work;
 	/* list of work_t* */
@@ -378,7 +376,6 @@ typedef struct {
 		.conf_max_connections = -1,\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
-		.error = SLURM_SUCCESS,\
 		.shutdown_requested = true,\
 		.workers.conf_threads = -1,\
 		.quiesce = { \

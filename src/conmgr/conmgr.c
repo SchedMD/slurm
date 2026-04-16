@@ -107,7 +107,6 @@ static void _atfork_child(void)
 	mgr = CONMGR_DEFAULT;
 	mgr.initialized = true;
 	mgr.shutdown_requested = true;
-	mgr.error = ESHUTDOWN;
 }
 
 static void _at_exit(void)
@@ -314,7 +313,6 @@ extern void conmgr_fini(void)
 
 extern int conmgr_run(bool blocking)
 {
-	int rc = SLURM_SUCCESS;
 	bool running = false;
 
 	slurm_mutex_lock(&mgr.mutex);
@@ -323,12 +321,9 @@ extern int conmgr_run(bool blocking)
 		log_flag(CONMGR, "%s: refusing to run when conmgr is shutdown",
 			 __func__);
 
-		rc = mgr.error;
 		slurm_mutex_unlock(&mgr.mutex);
-		return rc;
+		return ESHUTDOWN;
 	}
-
-	xassert(!mgr.error || !mgr.exit_on_error);
 
 	if (mgr.watch_thread)
 		running = true;
@@ -346,11 +341,7 @@ extern int conmgr_run(bool blocking)
 			(void) watch(NULL);
 	}
 
-	slurm_mutex_lock(&mgr.mutex);
-	rc = mgr.error;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern void conmgr_request_shutdown(void)
@@ -385,13 +376,12 @@ extern bool conmgr_get_exit_on_error(void)
 
 extern int conmgr_get_error(void)
 {
-	int rc;
-
-	slurm_mutex_lock(&mgr.mutex);
-	rc = mgr.error;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return rc;
+	/*
+	 * mgr.error is gone; per-connection status_code replaces it.
+	 * Callers that still link against this symbol get SLURM_SUCCESS
+	 * until the declaration is removed in the follow-up.
+	 */
+	return SLURM_SUCCESS;
 }
 
 extern bool conmgr_enabled(void)

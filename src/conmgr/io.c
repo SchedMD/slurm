@@ -421,9 +421,6 @@ extern void wrap_on_data(conmgr_callback_args_t conmgr_args, void *arg)
 		if (mgr.exit_on_error)
 			mgr.shutdown_requested = true;
 
-		if (!mgr.error)
-			mgr.error = rc;
-
 		/*
 		 * processing data failed so drop any
 		 * pending data on the floor
