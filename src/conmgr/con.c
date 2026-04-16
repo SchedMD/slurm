@@ -1615,6 +1615,8 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 		else if (err)
 			error("%s: [%s] socket error encountered while polling: %s",
 			      __func__, con->name, slurm_strerror(err));
+
+		con_set_status_code(con, (rc ? rc : err));
 	}
 
 	/*
