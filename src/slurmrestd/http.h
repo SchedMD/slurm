@@ -87,6 +87,13 @@ typedef http_context_t *(*on_http_connection_t)(int fd);
 /* Get http events for conmgr connections */
 const conmgr_events_t *http_events_get(void);
 
+/*
+ * Return the latest non-success status_code captured from an HTTP conmgr
+ * connection's on_finish. Used by inet mode to propagate a connection
+ * error up to the slurmrestd exit code. SLURM_SUCCESS if no error.
+ */
+extern slurm_err_t http_events_get_last_status_code(void);
+
 typedef struct {
 	conmgr_fd_t *con; /* assigned connection */
 	uint16_t http_major; /* HTTP major version */

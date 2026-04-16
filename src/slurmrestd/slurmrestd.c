@@ -728,7 +728,7 @@ static void _load_oas_specs(void)
 
 int main(int argc, char **argv)
 {
-	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	socket_listen = list_create(xfree_ptr);
 	conmgr_con_flags_t flags = CON_FLAG_NONE;
 
@@ -895,8 +895,8 @@ int main(int argc, char **argv)
 	 * Inet mode expects connection errors to propagate upwards as
 	 * connection errors so they can be logged appropriately.
 	 */
-	if (conmgr_get_exit_on_error())
-		parse_rc = conmgr_get_error();
+	if (conmgr_get_exit_on_error() && !rc)
+		rc = http_events_get_last_status_code();
 
 	/* cleanup everything */
 	destroy_rest_auth();
@@ -929,5 +929,5 @@ int main(int argc, char **argv)
 	log_fini();
 
 	/* send parsing RC if there were no higher level errors */
-	return (rc ? rc : parse_rc);
+	return rc;
 }
