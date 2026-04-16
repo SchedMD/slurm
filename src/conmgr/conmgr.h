@@ -793,12 +793,6 @@ extern void conmgr_add_work(conmgr_fd_t *con, conmgr_callback_t callback,
 		}, __func__)
 
 /*
- * Control if conmgr will exit on any error
- */
-extern void conmgr_set_exit_on_error(bool exit_on_error);
-extern bool conmgr_get_exit_on_error(void);
-
-/*
  * Get assigned connection name - stays same for life of connection
  */
 extern const char *conmgr_fd_get_name(const conmgr_fd_t *con);

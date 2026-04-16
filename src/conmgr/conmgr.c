@@ -356,24 +356,6 @@ extern void conmgr_request_shutdown(void)
 	slurm_mutex_unlock(&mgr.mutex);
 }
 
-extern void conmgr_set_exit_on_error(bool exit_on_error)
-{
-	slurm_mutex_lock(&mgr.mutex);
-	mgr.exit_on_error = exit_on_error;
-	slurm_mutex_unlock(&mgr.mutex);
-}
-
-extern bool conmgr_get_exit_on_error(void)
-{
-	bool exit_on_error;
-
-	slurm_mutex_lock(&mgr.mutex);
-	exit_on_error = mgr.exit_on_error;
-	slurm_mutex_unlock(&mgr.mutex);
-
-	return exit_on_error;
-}
-
 extern bool conmgr_enabled(void)
 {
 	if (enabled_init)
