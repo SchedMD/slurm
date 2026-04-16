@@ -328,6 +328,13 @@ typedef struct conmgr_callback_args_s {
 	 *	of doing the work.
 	 */
 	conmgr_work_status_t status;
+	/*
+	 * Latest non-SLURM_ERROR error observed on this connection so far.
+	 * SLURM_SUCCESS if no error. SLURM_ERROR, EAGAIN, and EWOULDBLOCK
+	 * never overwrite a more specific code. Always valid; check
+	 * against SLURM_SUCCESS to branch on error state.
+	 */
+	slurm_err_t status_code;
 } conmgr_callback_args_t;
 
 /*
