@@ -1036,6 +1036,21 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		log_flag(CONMGR, "%s: [%s] queuing close of incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
 		xassert(con_flag(con, FLAG_READ_EOF));
+
+		/*
+		 * Peer EOF while on_data stalled on a partial message means
+		 * a truncated frame — record it as an error so on_finish()
+		 * sees why the connection closed.
+		 */
+		if (con_flag(con, FLAG_ON_DATA_TRIED) ||
+		    (con->in && get_buf_offset(con->in))) {
+			log_flag(CONMGR, "%s: [%s] peer closed with %u bytes of unparsed input; marking incomplete",
+				 __func__, con->name,
+				 (con->in ? get_buf_offset(con->in) : 0));
+			con_set_status_code(con,
+					    ESLURM_PROTOCOL_INCOMPLETE_PACKET);
+		}
+
 		add_work_con_fifo(true, con, work_close_con, NULL);
 		return 0;
 	}
