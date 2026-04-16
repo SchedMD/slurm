@@ -145,23 +145,31 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 	if ((rc = try_grow_buf_remaining(buf, readable))) {
 		error("%s: [%s] unable to allocate larger %s: %s",
 		      __func__, con->name, what, slurm_strerror(rc));
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
 	/* check for errors with a NULL read */
 	if ((read_c = read(input_fd, (get_buf_data(buf) + get_buf_offset(buf)),
 			   readable)) < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		int read_errno = errno;
+
+		if (read_errno == EAGAIN || read_errno == EWOULDBLOCK) {
 			log_flag(NET, "%s: [%s] socket would block on read",
 				 __func__, con->name);
 			return;
 		}
 
-		log_flag(NET, "%s: [%s] error while reading: %m",
-			 __func__, con->name);
+		log_flag(NET, "%s: [%s] error while reading: %s",
+			 __func__, con->name, slurm_strerror(read_errno));
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, read_errno);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
