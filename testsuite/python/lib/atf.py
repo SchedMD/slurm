@@ -3109,8 +3109,6 @@ def cancel_jobs(
     job_list,
     timeout=default_polling_timeout,
     poll_interval=0.1,
-    fatal=False,
-    quiet=False,
     **run_command_kwargs,
 ):
     """Cancels a list of jobs and waits for them to complete.
@@ -3121,8 +3119,6 @@ def cancel_jobs(
             timing out.
         poll_interval (float): Number of seconds to wait between job state
             polls.
-        fatal (boolean): If True, a timeout will result in the test failing.
-        quiet (boolean): If True, logging is performed at the TRACE log level.
 
     Returns:
         True if all jobs were successfully cancelled and completed within
@@ -3134,6 +3130,10 @@ def cancel_jobs(
         >>> cancel_jobs([9876, 5432], timeout=30, fatal=False)
         False
     """
+
+    # Get the quiet and fatal values but don't forward them
+    quiet = run_command_kwargs.pop("quiet", None)
+    fatal = run_command_kwargs.pop("fatal", None)
 
     # Filter list to ignore job_ids being 0
     job_list = [i for i in job_list if i != 0]
@@ -3147,7 +3147,7 @@ def cancel_jobs(
     )
 
     for t in timer(timeout=timeout, poll_interval=poll_interval):
-        jobs = get_jobs(quiet=True, use_json=True)
+        jobs = get_jobs(quiet=True, use_json=True, **run_command_kwargs)
 
         jobs_not_in_system, jobs_not_done = [], []
         for job_id in job_list:
@@ -3205,7 +3205,7 @@ def cancel_all_jobs(
         False
     """
 
-    jobs = get_jobs(quiet=True, use_json=True)
+    jobs = get_jobs(quiet=True, use_json=True, user=properties["slurm-user"])
 
     if not jobs:
         logging.debug("No jobs to cancel")
@@ -4064,7 +4064,7 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
         #       This is still optional because using it means that the keys
         #       of the jobs_dict will be different in all existing tests.
         if use_json:
-            command = "scontrol --json -d show jobs"
+            command = "scontrol --json -d -a show jobs"
             if job_id is not None:
                 command += f" {job_id}"
             output = run_command_output(command, **run_command_kwargs)
