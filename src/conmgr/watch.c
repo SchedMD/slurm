@@ -1194,29 +1194,36 @@ static bool _attempt_accept(conmgr_fd_t *con)
 	/* try to get the new file descriptor and retry on errors */
 	if ((fd = accept4(input_fd, (struct sockaddr *) &addr, &addrlen,
 			  SOCK_CLOEXEC)) < 0) {
-		if (errno == EINTR) {
+		int accept_errno = errno;
+
+		if (accept_errno == EINTR) {
 			log_flag(CONMGR, "%s: [%s] interrupt on accept(). Retrying.",
 				 __func__, con->name);
 			return true;
 		}
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-			log_flag(CONMGR, "%s: [%s] retry: %m",
-				 __func__, con->name);
+		if ((accept_errno == EAGAIN) || (accept_errno == EWOULDBLOCK)) {
+			log_flag(CONMGR, "%s: [%s] retry: %s",
+				 __func__, con->name,
+				 slurm_strerror(accept_errno));
 			return false;
 		}
 
-		error("%s: [%s] Error on accept socket: %m",
-		      __func__, con->name);
+		error("%s: [%s] Error on accept socket: %s",
+		      __func__, con->name, slurm_strerror(accept_errno));
 
-		if ((errno == EMFILE) || (errno == ENFILE) ||
-		    (errno == ENOBUFS) || (errno == ENOMEM)) {
-			error("%s: [%s] retry on error: %m",
-			      __func__, con->name);
+		if ((accept_errno == EMFILE) || (accept_errno == ENFILE) ||
+		    (accept_errno == ENOBUFS) || (accept_errno == ENOMEM)) {
+			error("%s: [%s] retry on error: %s",
+			      __func__, con->name,
+			      slurm_strerror(accept_errno));
 			return false;
 		}
 
 		/* socket is likely dead: fail out */
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, accept_errno);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return true;
 	}
 
