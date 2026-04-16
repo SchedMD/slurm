@@ -301,12 +301,18 @@ extern void write_output(conmgr_fd_t *con, const int out_count, list_t *out)
 			log_flag(NET, "%s: [%s] retry write: %m",
 				 __func__, con->name);
 		} else {
-			error("%s: [%s] writev(%d) failed: %m",
-			      __func__, con->name, con->output_fd);
+			int write_errno = errno;
+
+			error("%s: [%s] writev(%d) failed: %s",
+			      __func__, con->name, con->output_fd,
+			      slurm_strerror(write_errno));
 			/* drop outbound data on the floor */
 			list_flush(out);
-			close_con(false, con);
-			close_con_output(false, con);
+			slurm_mutex_lock(&mgr.mutex);
+			con_set_status_code(con, write_errno);
+			close_con(true, con);
+			close_con_output(true, con);
+			slurm_mutex_unlock(&mgr.mutex);
 		}
 	} else if (args.wrote == 0) {
 		log_flag(NET, "%s: [%s] wrote 0 bytes", __func__, con->name);
