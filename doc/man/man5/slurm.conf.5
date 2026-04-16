@@ -1794,6 +1794,8 @@ Use the libhttp_parser based plugin.
 .TP
 \fBhttp_parser/llhttp_parser\fR
 Use the llhttp based plugin.
+
+Note: \fBUrlParserType\fR=\fBurl_parser/internal\fR must also be configured.
 .RE
 .IP
 
@@ -6988,6 +6990,13 @@ Acceptable values at present:
 .TP
 \fBurl_parser/libhttp_parser\fR
 Use the libhttp_parser based plugin.
+.IP
+
+.TP
+\fBurl_parser/internal\fR
+Use Slurm's internal url parser plugin.
+
+Note: required when \fBHttpParserType\fR=\fBhttp_parser/llhttp_parser\fR.
 .RE
 .IP
 
