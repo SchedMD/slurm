@@ -12406,6 +12406,15 @@ extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem)
 	return SLURM_SUCCESS;
 }
 
+static int _find_extern_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	if (step_ptr->step_id.step_id == SLURM_EXTERN_CONT)
+		return 1;
+	return 0;
+}
+
 /*
  * Handle memory limit update for a running job.
  * Only reduction is allowed.
@@ -12419,6 +12428,10 @@ static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
 		     __func__, job_ptr);
 		return ESLURM_TRANSITION_STATE_NO_UPDATE;
 	}
+
+	if (!job_ptr->step_list ||
+	    !list_find_first(job_ptr->step_list, _find_extern_step, NULL))
+		return ESLURM_EXTERN_ONLY;
 
 	if ((rc = job_mem_resize_begin(job_ptr, new_mem)))
 		return rc;
