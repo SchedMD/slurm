@@ -85,7 +85,10 @@ extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg)
 		 __func__, con->name, bytes, slurm_strerror(rc));
 
 	/* conmgr will be unable to read entire RPC -> close connection now */
-	close_con(false, con);
+	slurm_mutex_lock(&mgr.mutex);
+	con_set_status_code(con, rc);
+	close_con(true, con);
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 static int _get_fd_readable(const int fd, const int mss, const char *name)
