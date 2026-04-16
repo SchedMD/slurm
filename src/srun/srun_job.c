@@ -1581,8 +1581,6 @@ extern void fini_srun(srun_job_t *job, bool got_alloc, uint32_t *global_rc)
 
 	_run_srun_epilog(job);
 
-	step_ctx_destroy(job->step_ctx);
-
 	if (WIFEXITED(*global_rc))
 		*global_rc = WEXITSTATUS(*global_rc);
 	else if (WIFSIGNALED(*global_rc))

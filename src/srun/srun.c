@@ -256,6 +256,9 @@ int srun(int ac, char **av)
 	forward_fini();
 	conmgr_fini();
 
+	if (job)
+		step_ctx_destroy(job->step_ctx);
+
 #ifdef MEMORY_LEAK_DEBUG
 	probe_fini();
 	compress_g_fini();
