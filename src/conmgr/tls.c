@@ -383,14 +383,20 @@ again:
 	read_c = tls_g_recv(con->tls, start, readable);
 
 	if (read_c < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		int recv_errno = errno;
+
+		if ((recv_errno == EAGAIN) || (recv_errno == EWOULDBLOCK)) {
 			log_flag(NET, "%s: [%s] TLS would block on tls_g_recv()",
 				 __func__, con->name);
 			return;
 		}
 
-		log_flag(NET, "%s: [%s] error while decrypting TLS: %m",
-			 __func__, con->name);
+		log_flag(NET, "%s: [%s] error while decrypting TLS: %s",
+			 __func__, con->name, slurm_strerror(recv_errno));
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, recv_errno);
+		slurm_mutex_unlock(&mgr.mutex);
 
 		_wait_close(con);
 		return;
