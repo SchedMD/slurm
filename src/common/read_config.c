@@ -75,6 +75,7 @@
 #include "src/interfaces/node_features.h"
 #include "src/common/parse_config.h"
 #include "src/common/parse_time.h"
+#include "src/common/power_action.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/interfaces/accounting_storage.h"
@@ -168,6 +169,9 @@ static int _parse_downnodes(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
 static void _destroy_downnodes(void *ptr);
+static int _parse_power_action(void **dest, slurm_parser_enum_t type,
+			       const char *key, const char *value,
+			       const char *line, char **leftover);
 static int _parse_nodeset(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover);
@@ -449,6 +453,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DownNodes", S_P_ARRAY, _parse_downnodes, _destroy_downnodes},
 	{"NodeName", S_P_ARRAY, _parse_nodename, _destroy_nodename},
 	{"NodeSet", S_P_ARRAY, _parse_nodeset, _destroy_nodeset},
+	{"PowerAction", S_P_ARRAY, _parse_power_action, power_action_destroy},
 	{"PartitionName", S_P_ARRAY, _parse_partitionname,
 	 _destroy_partitionname},
 	{"SlurmctldHost", S_P_ARRAY, _parse_slurmctld_host,
@@ -1940,6 +1945,92 @@ extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[])
 		*ptr_array = NULL;
 		return 0;
 	}
+}
+
+extern int slurm_conf_power_action_list(list_t **power_action_list)
+{
+	list_t *list;
+	power_action_t **action_arr = NULL;
+	int count = 0;
+	if (!s_p_get_array((void ***) &action_arr, &count, "PowerAction",
+			   conf_hashtbl)) {
+		debug3("no power actions found in slurm.conf");
+		*power_action_list = list_create(power_action_destroy);
+		return SLURM_SUCCESS;
+	}
+	list = list_create(power_action_destroy);
+	for (int i = 0; i < count; i++) {
+		power_action_t *conf_action = action_arr[i];
+		list_append(list, power_action_copy(conf_action));
+		debug3("power action entry %s added (on_slurmctld=%d, program=%s)",
+		       conf_action->name, conf_action->on_slurmctld,
+		       conf_action->program);
+	}
+	*power_action_list = list;
+	return SLURM_SUCCESS;
+}
+
+static int _parse_power_action(void **dest, slurm_parser_enum_t type,
+			       const char *key, const char *value,
+			       const char *line, char **leftover)
+{
+	s_p_hashtbl_t *tbl;
+	char *location = NULL;
+	char *program = NULL;
+	bool on_slurmctld = false;
+	power_action_t *action = NULL;
+	static s_p_options_t _power_action_options[] = {
+		{ "Program", S_P_STRING },
+		{ "Location", S_P_STRING },
+		{ NULL },
+	};
+	tbl = s_p_hashtbl_create(_power_action_options);
+	s_p_parse_line(tbl, *leftover, leftover);
+
+	if (!s_p_get_string(&location, "Location", tbl) || !location) {
+		error("PowerAction '%s' requires Location=slurmctld or Location=slurmd",
+		      value);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+	if (!xstrcasecmp(location, "slurmctld")) {
+		on_slurmctld = true;
+	} else if (!xstrcasecmp(location, "slurmd")) {
+		on_slurmctld = false;
+	} else {
+		error("Invalid Location '%s' for PowerAction '%s', valid values are 'slurmctld' and 'slurmd'",
+		      location, value);
+		xfree(location);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+	xfree(location);
+
+	s_p_get_string(&program, "Program", tbl);
+	if (!program || !program[0]) {
+		error("PowerAction '%s' requires Program= with a non-empty path",
+		      value);
+		xfree(program);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+
+	if (power_action_create(value, program, on_slurmctld, &action)) {
+		error("Failed to create power action %s", value);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+
+	if (!power_action_valid_prog(action)) {
+		error("invalid power action %s (%s)",
+		      action->name, action->program);
+		power_action_destroy(action);
+		s_p_hashtbl_destroy(tbl);
+		return -1;
+	}
+	*dest = (void *) action;
+	s_p_hashtbl_destroy(tbl);
+	return 1;
 }
 
 static int _parse_nodeset(void **dest, slurm_parser_enum_t type,

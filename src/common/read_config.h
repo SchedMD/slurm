@@ -431,6 +431,13 @@ extern int slurm_conf_check_addr(const char *node_name, bool *dynamic);
 extern int slurm_conf_nodename_array(slurm_conf_node_t **ptr_array[]);
 
 /*
+ * Get list of power actions from slurm.conf
+ *
+ * Return value is SLURM_SUCCESS on success, SLURM_ERROR otherwise.
+ */
+extern int slurm_conf_power_action_list(list_t **power_action_list);
+
+/*
  * Set "ptr_array" with the pointer to an array of pointers to
  * slurm_conf_partition_t structures.
  *
