@@ -752,7 +752,25 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	update_node_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packstr(msg->cert_token, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->cpu_bind, buffer);
+		packstr(msg->extra, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->resume_after, buffer);
+		packstr(msg->topology_str, buffer);
+		pack32(msg->weight, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -796,7 +814,25 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 	slurm_init_update_node_msg(msg);
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->cert_token, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->features_act, buffer);
+		safe_unpackstr(&msg->gres, buffer);
+		safe_unpackstr(&msg->instance_id, buffer);
+		safe_unpackstr(&msg->instance_type, buffer);
+		safe_unpackstr(&msg->node_addr, buffer);
+		safe_unpackstr(&msg->node_hostname, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpack32(&msg->node_state, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack32(&msg->resume_after, buffer);
+		safe_unpackstr(&msg->topology_str, buffer);
+		safe_unpack32(&msg->weight, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->cert_token, buffer);
 		safe_unpackstr(&msg->comment, buffer);
 		safe_unpack32(&msg->cpu_bind, buffer);
