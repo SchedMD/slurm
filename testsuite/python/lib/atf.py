@@ -677,6 +677,7 @@ def timer(
     poll_interval=None,
     fatal=False,
     xfail=False,
+    quiet=False,
 ):
     """A timer to do-while a timeout is not triggered.
 
@@ -691,6 +692,7 @@ def timer(
         fatal (bool): If True, call pytest.fail() on timeout. Otherwise the
             caller should use the for-else to detect the timeout.
         xfail (bool): If True, a timeout is expected.
+        quiet (bool): If True, no progress is log.
 
     Example:
         >>> running = False
@@ -714,7 +716,7 @@ def timer(
     while True:
 
         # Run the caller loop (at least once, like a do-while)
-        yield remaining_time
+        yield int(remaining_time)
 
         # Check for timeout
         remaining_time = timeout - (time.time() - start)
@@ -732,7 +734,8 @@ def timer(
             return
 
         # Wait for the next attempt
-        logging.debug(message + f", remaining time: {remaining_time:.0f}s")
+        if not quiet:
+            logging.debug(message + f", remaining time: {remaining_time:.0f}s")
         time.sleep(poll_interval)
 
 
