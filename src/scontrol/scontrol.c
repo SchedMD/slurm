@@ -727,76 +727,84 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	bool asap = false;
+	char *node_list = NULL;
 	char *reason = NULL;
+	char *tok = NULL;
 	uint32_t next_state = NO_VAL;
 	int argc_offset = 1;
 
-	if (argc > 1) {
-		int i = 1;
-		for (; i <= 3 && i < argc; i++) {
-			if (!strcasecmp(argv[i], "ASAP")) {
-				asap = true;
-				argc_offset++;
-			} else if (!xstrncasecmp(argv[i], "Reason=",
-						 strlen("Reason="))) {
-				char *tmp_ptr = strchr(argv[i], '=');
-				if (!tmp_ptr || !*(tmp_ptr + 1)) {
-					_printf_error("missing reason");
-					xfree(reason);
-					return;
-				}
+	if (argc > 7) {
+		exit_code = 1;
+		_printf_error("too many arguments for keyword:%s", tag);
+		return;
+	}
 
-				xfree(reason);
-				reason = xstrdup(tmp_ptr+1);
-				argc_offset++;
-			} else if (!xstrncasecmp(argv[i], "nextstate=",
-						 strlen("nextstate="))) {
-				int state_str_len;
-				char* state_str;
-				char *tmp_ptr = strchr(argv[i], '=');
-				if (!tmp_ptr || !*(tmp_ptr + 1)) {
-					_printf_error("missing state");
-					xfree(reason);
-					return;
-				}
+	for (; argc_offset < argc; argc_offset++) {
+		tok = argv[argc_offset];
+		if (!strcasecmp(tok, "ASAP")) {
+			asap = true;
+		} else if (!xstrncasecmp(tok, "Reason=", strlen("Reason="))) {
+			char *tmp_ptr = strchr(tok, '=');
+			if (!tmp_ptr || !*(tmp_ptr + 1)) {
+				_printf_error("missing reason");
+				goto cleanup;
+			}
 
-				state_str = xstrdup(tmp_ptr+1);
-				state_str_len = strlen(state_str);
-				argc_offset++;
+			if (reason) {
+				_printf_error("multiple reasons specified");
+				goto cleanup;
+			}
+			reason = xstrdup(tmp_ptr + 1);
+		} else if (!xstrncasecmp(tok,
+					 "nextstate=", strlen("nextstate="))) {
+			int state_str_len;
+			char *state_str;
+			char *tmp_ptr = strchr(tok, '=');
+			if (!tmp_ptr || !*(tmp_ptr + 1)) {
+				_printf_error("missing state");
+				goto cleanup;
+			}
 
-				if (!xstrncasecmp(state_str, "DOWN",
-						  MAX(state_str_len, 1)))
-					next_state = NODE_STATE_DOWN;
-				else if (!xstrncasecmp(state_str, "RESUME",
-						       MAX(state_str_len, 1)))
-					next_state = NODE_RESUME;
-				else {
-					_printf_error("Invalid state: %s\n Valid states: DOWN, RESUME",
-						      state_str);
-					xfree(reason);
-					xfree(state_str);
-					return;
-				}
+			state_str = xstrdup(tmp_ptr + 1);
+			state_str_len = strlen(state_str);
+
+			if (!xstrncasecmp(state_str, "DOWN",
+					  MAX(state_str_len, 1))) {
+				next_state = NODE_STATE_DOWN;
+			} else if (!xstrncasecmp(state_str, "RESUME",
+						 MAX(state_str_len, 1))) {
+				next_state = NODE_RESUME;
+			} else {
+				_printf_error(
+					"Invalid state: %s\n Valid states: DOWN, RESUME",
+					state_str);
 				xfree(state_str);
+				goto cleanup;
+			}
+			xfree(state_str);
+		} else {
+			if (node_list) {
+				_printf_error("Multiple node lists specified");
+				goto cleanup;
+			} else {
+				node_list = xstrdup(tok);
 			}
 		}
 	}
-	if ((argc - argc_offset) > 1) {
-		exit_code = 1;
-		fprintf (stderr,
-			 "too many arguments for keyword:%s\n",
-			 tag);
-	} else if ((argc - argc_offset) < 1) {
+	if (!node_list) {
 		exit_code = 1;
 		fprintf(stderr, "Missing node list. Specify ALL|<NodeList>");
 	} else {
-		error_code = scontrol_reboot_nodes(argv[argc_offset], asap,
-						   next_state, reason);
+		error_code = scontrol_reboot_nodes(node_list, asap, next_state,
+						   reason);
 	}
 
-	xfree(reason);
 	if (error_code)
 		_printf_error("scontrol_reboot_nodes error");
+
+cleanup:
+	xfree(node_list);
+	xfree(reason);
 }
 
 void _process_power_command(const char *tag, int argc, char **argv)
