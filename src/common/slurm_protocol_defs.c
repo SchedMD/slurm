@@ -2055,6 +2055,16 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 	}
 }
 
+extern void slurm_free_run_power_action_msg(run_power_action_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->action_name);
+		xfree(msg->file_content);
+		xfree(msg->file_env_name);
+		xfree(msg);
+	}
+}
+
 extern void slurm_free_update_part_msg(update_part_msg_t * msg)
 {
 	if (msg) {
@@ -5177,6 +5187,9 @@ extern void slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_DELETE_NODE:
 		slurm_free_update_node_msg(data);
 		break;
+	case REQUEST_RUN_POWER_ACTION:
+		slurm_free_run_power_action_msg(data);
+		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		slurm_free_update_part_msg(data);
@@ -6575,6 +6588,9 @@ extern void purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_prolog_launch_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES)
 			slurm_free_reboot_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == REQUEST_RUN_POWER_ACTION)
+			slurm_free_run_power_action_msg(agent_arg_ptr
+								->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_SACKD)
 			slurm_free_config_response_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == REQUEST_RECONFIGURE_WITH_CONFIG)

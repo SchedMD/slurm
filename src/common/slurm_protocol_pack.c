@@ -879,6 +879,35 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_run_power_action_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	run_power_action_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packstr(msg->action_name, buffer);
+		packstr(msg->file_content, buffer);
+		packstr(msg->file_env_name, buffer);
+	}
+}
+
+static int _unpack_run_power_action_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	run_power_action_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->action_name, buffer);
+		safe_unpackstr(&msg->file_content, buffer);
+		safe_unpackstr(&msg->file_env_name, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_run_power_action_msg(msg);
+	return SLURM_ERROR;
+}
+
 static void _pack_acct_gather_node_resp_msg(const slurm_msg_t *smsg,
 					    buf_t *buffer)
 {
@@ -14191,6 +14220,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_DELETE_NODE:
 		_pack_update_node_msg(msg, buffer);
 		break;
+	case REQUEST_RUN_POWER_ACTION:
+		_pack_run_power_action_msg(msg, buffer);
+		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_pack_update_partition_msg(msg, buffer);
@@ -14714,6 +14746,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_UPDATE_NODE:
 	case REQUEST_DELETE_NODE:
 		rc = _unpack_update_node_msg(msg, buffer);
+		break;
+	case REQUEST_RUN_POWER_ACTION:
+		rc = _unpack_run_power_action_msg(msg, buffer);
 		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
