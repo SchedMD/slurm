@@ -472,8 +472,8 @@ static void _do_power_work(time_t now)
 		}
 
 		if (!(job_ptr = find_job_record(*job_id_ptr))) {
-			log_flag(POWER, "%pJ needed resuming but is gone now",
-				 job_ptr);
+			log_flag(POWER, "%u needed resuming but is gone now",
+				 *job_id_ptr);
 			list_delete_item(iter);
 			continue;
 		}
