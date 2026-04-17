@@ -789,7 +789,10 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	if (!arg) {
 		error("%s: [%s] closing connection due to NULL return from on_connection",
 		      __func__, con->name);
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, SLURM_COMMUNICATIONS_REJECTED);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
