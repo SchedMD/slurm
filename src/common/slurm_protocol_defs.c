@@ -2048,6 +2048,7 @@ extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 		xfree(msg->node_addr);
 		xfree(msg->node_hostname);
 		xfree(msg->node_names);
+		xfree(msg->power_action_name);
 		xfree(msg->reason);
 		xfree(msg->topology_str);
 		xfree(msg);

@@ -766,6 +766,7 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->node_hostname, buffer);
 		packstr(msg->node_names, buffer);
 		pack32(msg->node_state, buffer);
+		packstr(msg->power_action_name, buffer);
 		packstr(msg->reason, buffer);
 		pack32(msg->resume_after, buffer);
 		packstr(msg->topology_str, buffer);
@@ -828,6 +829,7 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->node_hostname, buffer);
 		safe_unpackstr(&msg->node_names, buffer);
 		safe_unpack32(&msg->node_state, buffer);
+		safe_unpackstr(&msg->power_action_name, buffer);
 		safe_unpackstr(&msg->reason, buffer);
 		safe_unpack32(&msg->resume_after, buffer);
 		safe_unpackstr(&msg->topology_str, buffer);
