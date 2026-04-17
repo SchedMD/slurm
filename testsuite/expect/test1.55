@@ -37,11 +37,7 @@ set job_id      0
 make_bash_script $test_script {
 	echo "Running"
 
-	sleep 5
-
-	for ((i = 0; i < 100; i++)); do
-		cat /etc/hosts
-	done
+	sleep infinity
 }
 
 proc cleanup {} {
@@ -85,41 +81,9 @@ set file [exp_open]
 close $file
 
 #
-# Lets see if the job step finishes normally
+# Lets see if the job step finishes as expected
 #
-set running "seed"
-set i 0
-while {$running ne ""} {
-	set running [exec $squeue --noheader --states=running --steps=$step_id]
-	sleep 1
-	if {$i == 30} {
-		cancel_job $job_id
-		sleep 5
-		exec kill -9 $srun_pid
-		fail "Job step is not completing"
-	}
-	incr i 1
-}
-log_debug "Test sees step is gone, srun should have exited as well"
-
-#
-# And finally check to see if srun is still hanging around (it should
-# have exited by now) and job has completed
-#
-if [catch {exec kill -0 $srun_pid}] {
-	log_debug "Srun command is terminated, as desired"
-} else {
-	fail "srun is still running after job exits!"
-}
-spawn $squeue --noheader --jobs=$job_id
-expect {
-	-re "R" {
-		fail "Job not completed!"
-	}
-	timeout {
-		fail "squeue not responding"
-	}
-	eof {
-		wait
-	}
-}
+subtest {
+	[wait_job_reason $job_id "FAILED" "RaisedSignal:9(Killed)"]
+		== $::RETURN_SUCCESS
+} "The srun job should fail due stdio being closed"
