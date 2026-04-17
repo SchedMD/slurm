@@ -154,6 +154,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_REJECTED),
 		"Connection rejected by handler",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_QUIESCE_TIMEOUT),
+		"Connection forced closed by quiesce timeout",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
