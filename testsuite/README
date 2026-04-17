@@ -1013,6 +1013,7 @@ test_150_#   Testing topology/block.
 ================================
 test_150_1   Test topology/block
 test_150_2   Test "--nodelist" + "--segment"
+test_150_3   Test topology-aware task distribution
 
 test_151_#   Testing Oversubscribe
 ===========================================
