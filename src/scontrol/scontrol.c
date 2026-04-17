@@ -727,6 +727,7 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 {
 	int error_code = SLURM_SUCCESS;
 	bool asap = false;
+	bool force = false;
 	char *node_list = NULL;
 	char *reason = NULL;
 	char *tok = NULL;
@@ -743,6 +744,8 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 		tok = argv[argc_offset];
 		if (!strcasecmp(tok, "ASAP")) {
 			asap = true;
+		} else if (!strcasecmp(tok, "FORCE")) {
+			force = true;
 		} else if (!xstrncasecmp(tok, "Reason=", strlen("Reason="))) {
 			char *tmp_ptr = strchr(tok, '=');
 			if (!tmp_ptr || !*(tmp_ptr + 1)) {
@@ -795,8 +798,8 @@ void _process_reboot_command(const char *tag, int argc, char **argv)
 		exit_code = 1;
 		fprintf(stderr, "Missing node list. Specify ALL|<NodeList>");
 	} else {
-		error_code = scontrol_reboot_nodes(node_list, asap, next_state,
-						   reason);
+		error_code = scontrol_reboot_nodes(node_list, asap, force,
+						   next_state, reason);
 	}
 
 	if (error_code)

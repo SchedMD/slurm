@@ -66,7 +66,7 @@ extern int scontrol_cancel_reboot(char *nodes)
  *
  * RET SLURM_SUCCESS or a slurm error code
  */
-extern int scontrol_reboot_nodes(char *node_list, bool asap,
+extern int scontrol_reboot_nodes(char *node_list, bool asap, bool force,
 				 uint32_t next_state, char *reason)
 {
 	slurm_conf_t *conf;
@@ -91,6 +91,8 @@ extern int scontrol_reboot_nodes(char *node_list, bool asap,
 	req.reason     = reason;
 	if (asap)
 		req.flags |= REBOOT_FLAGS_ASAP;
+	if (force)
+		req.flags |= REBOOT_FLAGS_FORCE;
 	msg.msg_type = REQUEST_REBOOT_NODES;
 	msg.data = &req;
 

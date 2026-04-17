@@ -5687,7 +5687,9 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	bitstr_t *bitmap = NULL, *cannot_reboot_nodes = NULL;
 	/* Locks: write node lock */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+	};
 	time_t now = time(NULL);
 	DEF_TIMERS;
 
@@ -5726,14 +5728,44 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 	cannot_reboot_nodes = bit_alloc(node_record_count);
 	lock_slurmctld(node_write_lock);
 	for (int i = 0; (node_ptr = next_node_bitmap(bitmap, &i)); i++) {
-		if (IS_NODE_FUTURE(node_ptr) ||
-		    IS_NODE_REBOOT_REQUESTED(node_ptr) ||
-		    IS_NODE_REBOOT_ISSUED(node_ptr) ||
-		    IS_NODE_POWER_DOWN(node_ptr) ||
-		    IS_NODE_POWERED_DOWN(node_ptr) ||
-		    IS_NODE_POWERING_DOWN(node_ptr)) {
+		if (IS_NODE_FUTURE(node_ptr)) {
 			bit_clear(bitmap, node_ptr->index);
 			bit_set(cannot_reboot_nodes, node_ptr->index);
+			debug2("Skipping reboot of node %s in state %s",
+			       node_ptr->name,
+			       node_state_string(node_ptr->node_state));
+			continue;
+		}
+		if (reboot_msg && (reboot_msg->flags & REBOOT_FLAGS_FORCE)) {
+			debug("Force reboot of node %s in state %s",
+			       node_ptr->name,
+			       node_state_string(node_ptr->node_state));
+			/*
+			 * Kill any running jobs and requeue if
+			 * possible.
+			 */
+			kill_running_job_by_node_ptr(node_ptr);
+			node_ptr->node_state &= ~NODE_STATE_COMPLETING;
+			node_ptr->node_state &= ~NODE_STATE_REBOOT_ISSUED;
+			node_ptr->node_state &= ~NODE_STATE_POWER_DOWN;
+			node_ptr->node_state &= ~NODE_STATE_POWERED_DOWN;
+			node_ptr->node_state &= ~NODE_STATE_POWERING_DOWN;
+			node_ptr->node_state &= ~NODE_STATE_POWERING_UP;
+
+			bit_set(asap_node_bitmap, node_ptr->index);
+			bit_clear(avail_node_bitmap, node_ptr->index);
+			bit_clear(cg_node_bitmap, node_ptr->index);
+			bit_set(idle_node_bitmap, node_ptr->index);
+			bit_set(share_node_bitmap, node_ptr->index);
+			bit_clear(up_node_bitmap, node_ptr->index);
+		} else if (IS_NODE_REBOOT_REQUESTED(node_ptr) ||
+			   IS_NODE_REBOOT_ISSUED(node_ptr) ||
+			   IS_NODE_POWER_DOWN(node_ptr) ||
+			   IS_NODE_POWERED_DOWN(node_ptr) ||
+			   IS_NODE_POWERING_DOWN(node_ptr)) {
+			bit_clear(bitmap, node_ptr->index);
+			bit_set(cannot_reboot_nodes, node_ptr->index);
+
 			debug2("Skipping reboot of node %s in state %s",
 			       node_ptr->name,
 			       node_state_string(node_ptr->node_state));

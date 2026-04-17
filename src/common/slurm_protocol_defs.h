@@ -571,6 +571,7 @@ typedef struct epilog_complete_msg {
 } epilog_complete_msg_t;
 
 #define REBOOT_FLAGS_ASAP 0x0001	/* Drain to reboot ASAP */
+#define REBOOT_FLAGS_FORCE 0x0002 /* Force reboot */
 typedef struct reboot_msg {
 	char *features;
 	uint16_t flags;
