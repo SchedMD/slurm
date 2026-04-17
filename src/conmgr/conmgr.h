@@ -262,8 +262,8 @@ typedef struct {
 	 * Call back when connect timeout occurs
 	 * Called once per timeout triggering or being detected.
 	 *
-	 * If on_read_timeout=NULL is treated same as returning
-	 *	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT
+	 * If on_connect_timeout=NULL is treated same as returning
+	 *	SLURM_COMMUNICATIONS_CONNECT_TIMEOUT
 	 *
 	 * IN conmgr_args - Args relaying conmgr callback state
 	 * IN arg - arg ptr handed to fd processing functions

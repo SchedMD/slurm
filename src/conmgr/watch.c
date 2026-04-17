@@ -360,7 +360,7 @@ static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 	if (con->events->on_connect_timeout)
 		rc = con->events->on_connect_timeout(conmgr_args, con->new_arg);
 	else
-		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+		rc = SLURM_COMMUNICATIONS_CONNECT_TIMEOUT;
 
 	if (rc) {
 		log_flag(CONMGR, "%s: [%s] closing due to connect %s timeout failed: %s",
