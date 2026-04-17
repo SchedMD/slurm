@@ -163,7 +163,8 @@ static void _connection_fini_callback(void *arg)
 		 * below.
 		 */
 		slurm_mutex_lock(&registered_lock);
-		list_delete_ptr(registered_clusters, dbd_conn);
+		if (registered_clusters)
+			list_delete_ptr(registered_clusters, dbd_conn);
 		if (!stay_locked)
 			slurm_mutex_unlock(&registered_lock);
 
