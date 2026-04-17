@@ -458,7 +458,7 @@ static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
 	if (con->events->on_read_timeout)
 		rc = con->events->on_read_timeout(conmgr_args, con->arg);
 	else
-		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+		rc = SLURM_COMMUNICATIONS_READ_TIMEOUT;
 
 	if (rc) {
 		log_flag(CONMGR, "%s: [%s] closing due to read %s timeout failed: %s",
