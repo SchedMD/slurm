@@ -89,8 +89,9 @@ const conmgr_events_t *http_events_get(void);
 
 /*
  * Return the latest non-success status_code captured from an HTTP conmgr
- * connection's on_finish. Used by inet mode to propagate a connection
- * error up to the slurmrestd exit code. SLURM_SUCCESS if no error.
+ * connection's on_close callback. Used by inet mode to propagate a
+ * connection error up to the slurmrestd exit code. SLURM_SUCCESS if no
+ * error.
  */
 extern slurm_err_t http_events_get_last_status_code(void);
 
