@@ -38,15 +38,18 @@
 /*
  * Issue RPC to control node(s) power state
  *
- * IN node_list  - list of nodes to issue command to
- * IN power_up   - flag to indicate power up/down of nodes
- * IN asap       - ASAP option
- * IN force      - FORCE option
+ * IN node_list - list of nodes to issue command to
+ * IN power_up - flag to indicate power up/down of nodes
+ * IN asap - ASAP option
+ * IN force - FORCE option
+ * IN reason - reason for power down (optional)
+ * IN power_action - PowerAction name for power up/down (optional)
  *
  * RET SLURM_SUCCESS or a slurm error code
  */
 extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
-				bool force, char *reason)
+				bool force, char *reason,
+				char *power_action_name)
 {
 	update_node_msg_t node_msg;
 
@@ -67,6 +70,7 @@ extern int scontrol_power_nodes(char *node_list, bool power_up, bool asap,
 
 	if (!power_up && asap)
 		node_msg.node_state |= NODE_STATE_POWER_DRAIN;
+	node_msg.power_action_name = power_action_name;
 
 	return slurm_update_node(&node_msg);
 }

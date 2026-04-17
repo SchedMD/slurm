@@ -806,14 +806,15 @@ void _process_power_command(const char *tag, int argc, char **argv)
 	bool asap = false;
 	bool force = false;
 	int min_argv = 3;
-	int max_argv = 5;
+	int max_argv = 6;
+	char *power_action = NULL;
+	char *reason = NULL;
 
 	/* at least 'power' should have been supplied */
 	xassert(argc);
 
 	if ((argc <= max_argv) && (argc >= min_argv)) {
 		int idx = 1;
-		char *reason = NULL;
 
 		/* up or down subcommand */
 		if (!xstrcasecmp(argv[idx], "UP")) {
@@ -851,35 +852,38 @@ void _process_power_command(const char *tag, int argc, char **argv)
 			goto done;
 		}
 
-		/* We have one more argument - it may be Reason= */
-		if ((idx + 1) < argc) {
-			if (!xstrncasecmp(argv[idx + 1],
+		/* Optional arguments: Reason= (power down only), Action= (power up or down) */
+		for (int opt = idx + 1; opt < argc; opt++) {
+			char *tmp_ptr = strchr(argv[opt], '=');
+			if (!tmp_ptr || !*(tmp_ptr + 1)) {
+				_printf_error("invalid argument: '%s'",
+					      argv[opt]);
+				goto done;
+			}
+			if (!xstrncasecmp(argv[opt],
 					  "Reason=", strlen("Reason="))) {
 				if (!power_up) {
-					char *tmp_ptr =
-						strchr(argv[idx + 1], '=');
-
-					if (!tmp_ptr || !*(tmp_ptr + 1)) {
-						exit_code = 1;
-						_printf_error("missing reason");
-						goto done;
-					}
+					xfree(reason);
 					reason = xstrdup(tmp_ptr + 1);
 				} else {
-					_printf_error("Reason only allowed for scontrol power down operation");
+					_printf_error(
+						"Reason only allowed for scontrol power down operation");
 					goto done;
 				}
+			} else if (!xstrncasecmp(argv[opt], "Action=",
+						 strlen("Action="))) {
+				xfree(power_action);
+				power_action = xstrdup(tmp_ptr + 1);
 			} else {
 				_printf_error("unexpected argument:'%s'",
-					      argv[idx + 1]);
+					      argv[opt]);
 				goto done;
 			}
 		}
 
 		/* call with nodelist */
 		error_code = scontrol_power_nodes(argv[idx], power_up, asap,
-						  force, reason);
-		xfree(reason);
+						  force, reason, power_action);
 
 	} else if (argc < min_argv) {
 		_printf_error("too few arguments for keyword:%s", argv[0]);
@@ -888,6 +892,9 @@ void _process_power_command(const char *tag, int argc, char **argv)
 	}
 
 done:
+	xfree(reason);
+	xfree(power_action);
+
 	if (error_code)
 		_printf_error("scontrol_power_nodes error");
 }
