@@ -1192,8 +1192,8 @@ extern void power_save_fini(void)
 	slurm_mutex_lock(&power_mutex);
 	if (power_save_started) {     /* Already running */
 		power_save_started = false;
-		FREE_NULL_LIST(resume_job_list);
 	}
+	FREE_NULL_LIST(resume_job_list);
 	slurm_mutex_unlock(&power_mutex);
 }
 
