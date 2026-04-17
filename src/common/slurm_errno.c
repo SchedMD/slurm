@@ -150,6 +150,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_BLOCKED_ON_WRITE),
 		"Write would block",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_REJECTED),
+		"Connection rejected by handler",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
