@@ -341,40 +341,60 @@ static int _process_service_connection(persist_conn_t *persist_conn, int fd,
 static void *_service_connection(void *arg)
 {
 	persist_service_conn_t *service_conn = arg;
+	int thread_loc;
+	persist_conn_callback_fini_t callback_fini = NULL;
+	void *callback_fini_arg = NULL;
 
 	xassert(service_conn);
 	xassert(service_conn->pcon);
 
+	/*
+	 * Backup this value for later usage, service_conn can be already freed
+	 * after leaving _process_service_connection on shutdown
+	 */
+	thread_loc = service_conn->thread_loc;
+	xassert(!service_conn->thread_id ||
+		pthread_equal(service_conn->thread_id, pthread_self()));
 	service_conn->thread_id = pthread_self();
 
 	_process_service_connection(service_conn->pcon, service_conn->fd,
 				    service_conn->arg);
 
-	if (service_conn->pcon->callback_fini)
-		(service_conn->pcon->callback_fini)(service_conn->arg);
-	else
+	/*
+	 * service_conn may have already been freed by
+	 * slurm_persist_conn_recv_server_fini(), so re-fetch from the
+	 * global array under lock and null-check before dereferencing.
+	 *
+	 * Copy callback info and unlock before invoking callback_fini to
+	 * avoid lock-ordering inversion with slurmctld federation locks
+	 * (fed_mgr_add_sibling_conn holds fed_read_lock then acquires
+	 * thread_count_lock; calling callback_fini under thread_count_lock
+	 * would acquire fed_write_lock — ABBA deadlock).
+	 *
+	 * The copied pointers remain valid because recv_server_fini() joins
+	 * this thread before destroying the slot, and free_thread_loc()
+	 * defers cleanup to fini during shutdown.
+	 */
+	slurm_mutex_lock(&thread_count_lock);
+	service_conn = persist_service_conn[thread_loc];
+	if (service_conn && service_conn->pcon &&
+	    service_conn->pcon->callback_fini) {
+		SWAP(callback_fini, service_conn->pcon->callback_fini);
+		SWAP(callback_fini_arg, service_conn->arg);
+	} else if (service_conn && service_conn->pcon) {
 		log_flag(NET, "%s: Persist connection from cluster %s has disconnected",
 			 __func__, service_conn->pcon->cluster_name);
+	} else {
+		log_flag(NET, "%s: Persist connection has disconnected",
+			 __func__);
+	}
+	slurm_mutex_unlock(&thread_count_lock);
 
-	/* service_conn is freed inside here */
-	slurm_persist_conn_free_thread_loc(service_conn->thread_loc);
-//	xfree(service_conn);
+	if (callback_fini)
+		callback_fini(callback_fini_arg);
 
-	/* In order to avoid zombie threads, detach the thread now before
-	 * exiting.  slurm_persist_conn_recv_server_fini() will not try to join
-	 * the thread because slurm_persist_conn_free_thread_loc() will have
-	 * free'd the connection. If their are threads at shutdown, the join
-	 * will happen before the detach so recv_fini() will wait until the
-	 * thread is done.
-	 *
-	 * pthread_join man page:
-	 * Failure to join with a thread that is joinable (i.e., one that is not
-	 * detached), produces a "zombie thread". Avoid doing this, since each
-	 * zombie thread consumes some system resources, and when enough zombie
-	 * threads have accumulated, it will no longer be possible to create new
-	 * threads (or processes).
-	 */
-	slurm_thread_detach(pthread_self());
+	/* service_conn is freed inside here, unless already freed */
+	slurm_persist_conn_free_thread_loc(thread_loc, true);
 
 	return NULL;
 }
@@ -398,8 +418,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 {
 	int i;
 
-	shutdown_time = time(NULL);
 	slurm_mutex_lock(&thread_count_lock);
+	shutdown_time = time(NULL);
 	for (i=0; i<MAX_THREAD_COUNT; i++) {
 		if (!persist_service_conn[i])
 			continue;
@@ -413,10 +433,8 @@ extern void slurm_persist_conn_recv_server_fini(void)
 	for (i=0; i<MAX_THREAD_COUNT; i++) {
 		if (!persist_service_conn[i])
 			continue;
-		if (persist_service_conn[i]->thread_id) {
-			pthread_t thread_id =
-				persist_service_conn[i]->thread_id;
-
+		pthread_t thread_id = persist_service_conn[i]->thread_id;
+		if (thread_id && !pthread_equal(pthread_self(), thread_id)) {
 			/*
 			 * Let go of lock in case the persistent connection
 			 * thread is cleaning itself up.
@@ -425,11 +443,9 @@ extern void slurm_persist_conn_recv_server_fini(void)
 			 * thread_count mutex which this has locked.
 			 * After joining persist_service_conn[i] could be NULL
 			 */
-			if (thread_id != pthread_self()) {
-				slurm_mutex_unlock(&thread_count_lock);
-				slurm_thread_join(thread_id);
-				slurm_mutex_lock(&thread_count_lock);
-			}
+			slurm_mutex_unlock(&thread_count_lock);
+			slurm_thread_join(thread_id);
+			slurm_mutex_lock(&thread_count_lock);
 		}
 		if (persist_service_conn[i] && persist_service_conn[i]->pcon) {
 			persist_service_conn[i]->pcon->skip_conn_shutdown =
@@ -456,9 +472,27 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 
 	slurm_mutex_lock(&thread_count_lock);
 	service_conn = persist_service_conn[thread_loc];
-	xassert(service_conn);
+	/*
+	 * Between call for slurm_persist_conn_wait_for_thread_loc and this
+	 * point we have unlocked and locked again, so we may have let the
+	 * shutdown procedure to start.
+	 *
+	 * This causes persist_service_conn to be freed, thus service_conn may
+	 * be NULL at this point.
+	 *
+	 * If this is the case, just return immediately.
+	 */
+	if (!service_conn) {
+		xassert(thread_count > 0);
+		thread_count--;
+
+		slurm_cond_broadcast(&thread_count_cond);
+		slurm_mutex_unlock(&thread_count_lock);
+		slurm_persist_conn_destroy(persist_conn);
+		fd_close(&fd);
+		return;
+	}
 	xassert(!service_conn->arg);
-	slurm_mutex_unlock(&thread_count_lock);
 
 	service_conn->arg = arg;
 	service_conn->pcon = persist_conn;
@@ -472,8 +506,16 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 	(void) snprintf(name, sizeof(name), "p-%s",
 			service_conn->pcon->cluster_name);
 
+	/*
+	 * Hold thread_count_lock through slurm_thread_create() so that
+	 * recv_server_fini() cannot destroy this slot before thread_id is
+	 * set. Without the lock, fini sees thread_id == 0, skips the join,
+	 * and frees persist_service_conn[thread_loc] while we are still
+	 * writing to it.
+	 */
 	slurm_thread_create(name, &persist_service_conn[thread_loc]->thread_id,
 			    _service_connection, service_conn);
+	slurm_mutex_unlock(&thread_count_lock);
 }
 
 /* Increment thread_count and don't return until its value is no larger
@@ -531,21 +573,45 @@ extern int slurm_persist_conn_wait_for_thread_loc(void)
 }
 
 /* my_tid IN - Thread ID of spawned thread, 0 if no thread spawned */
-extern void slurm_persist_conn_free_thread_loc(int thread_loc)
+extern void slurm_persist_conn_free_thread_loc(int thread_loc, bool detach)
 {
-	/* we will handle this in the fini */
-	if (shutdown_time)
-		return;
+	pthread_t thread_id;
 
 	slurm_mutex_lock(&thread_count_lock);
+
+	/* we will handle this in the fini */
+	if (shutdown_time)
+		goto end;
+
 	if (thread_count > 0)
 		thread_count--;
 	else
 		error("thread_count underflow");
 
+	thread_id = persist_service_conn[thread_loc]->thread_id;
 	_destroy_persist_service(persist_service_conn[thread_loc]);
 	persist_service_conn[thread_loc] = NULL;
 
+	/*
+	 * In order to avoid zombie threads, detach the thread now before
+	 * exiting. slurm_persist_conn_recv_server_fini() will not try to join
+	 * the thread because here we have just free'd the connection. If the
+	 * threads are at shutdown, the join will happen before the detach so
+	 * slurm_persist_conn_recv_server_fini() will wait at the join until the
+	 * thread is done.
+	 */
+	if (detach)
+		slurm_thread_detach(thread_id);
+
+end:
+	/*
+	 * We need to ensure we broadcast cond even if no thread is cleaned,
+	 * something that happens if we delegate cleanup to the shutdown
+	 * procedure; or we, otherwise, can cause slurm_cond_wait in
+	 * slurm_persist_conn_wait_for_thread_loc to wait forever.
+	 *
+	 * If this happens, the daemon will never finish.
+	 */
 	slurm_cond_broadcast(&thread_count_cond);
 	slurm_mutex_unlock(&thread_count_lock);
 }
