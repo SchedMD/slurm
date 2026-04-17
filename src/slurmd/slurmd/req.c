@@ -5377,7 +5377,7 @@ rwfail:
 }
 
 typedef struct {
-	uint16_t msg_type;
+	slurm_msg_type_t msg_type;
 	bool from_slurmctld;
 	void (*func)(slurm_msg_t *msg);
 } slurmd_rpc_t;
