@@ -5331,6 +5331,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		return ESLURM_NODES_BUSY;
 	}
 
+	xfree(node_ptr->power_action_name);
 	xfree(node_ptr->topology_orig_str);
 	xfree(node_ptr->topology_str);
 	topology_g_add_rm_node(node_ptr);
