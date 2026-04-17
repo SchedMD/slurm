@@ -483,6 +483,10 @@ extern void slurm_persist_conn_recv_thread_init(persist_conn_t *persist_conn,
 	 * If this is the case, just return immediately.
 	 */
 	if (!service_conn) {
+		xassert(thread_count > 0);
+		thread_count--;
+
+		slurm_cond_broadcast(&thread_count_cond);
 		slurm_mutex_unlock(&thread_count_lock);
 		slurm_persist_conn_destroy(persist_conn);
 		fd_close(&fd);
