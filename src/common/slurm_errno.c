@@ -166,6 +166,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_WRITE_TIMEOUT),
 		"Connection timed out writing",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_READ_TIMEOUT),
+		"Connection timed out reading",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
