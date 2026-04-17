@@ -267,6 +267,7 @@ typedef struct {
 
 typedef struct {
 	job_record_t *het_job_leader;
+	job_exit_rc_t job_exit_rc;
 	uint32_t job_return_code;
 	slurm_msg_t *msg; /* needed for auth */
 	bool node_fail;
@@ -6215,6 +6216,8 @@ extern int prolog_complete(prolog_complete_msg_t *msg)
 	if (msg->prolog_rc) {
 		error("Prolog launch failure, %pJ", job_ptr);
 		job_ptr->exit_code = msg->prolog_rc;
+		job_ptr->job_exit_rc.rc = msg->prolog_rc;
+		job_ptr->job_exit_rc.exit_code = W_EXITCODE(1, 0);
 
 		/*
 		 * Only a node this allocation is still waiting on can fail its
@@ -6279,7 +6282,8 @@ static void _handle_requeue_limit(job_record_t *job_ptr, const char *caller)
 }
 
 static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
-			 bool node_fail, uint32_t job_return_code)
+			 bool node_fail, uint32_t job_return_code,
+			 job_exit_rc_t job_exit_rc)
 {
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
@@ -6293,8 +6297,10 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 	xassert(verify_lock(FED_LOCK, READ_LOCK));
 
 	if (IS_JOB_FINISHED(job_ptr)) {
-		if (job_ptr->exit_code == 0)
+		if (job_ptr->exit_code == 0) {
 			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc.exit_code = job_exit_rc.exit_code;
+		}
 		return ESLURM_ALREADY_DONE;
 	}
 
@@ -6365,6 +6371,7 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 		} else {
 			job_state_set(job_ptr, JOB_NODE_FAIL);
 			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc = job_exit_rc;
 		}
 
 		job_completion_logger(job_ptr, true);
@@ -6439,17 +6446,20 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 		} else if ((job_return_code & 0xff) == SIG_OOM) {
 			job_state_set(job_ptr, (JOB_OOM | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->state_reason = FAIL_OOM;
 			xfree(job_ptr->state_desc);
 		} else if (WIFEXITED(job_return_code) &&
 			   WEXITSTATUS(job_return_code)) {
 			job_state_set(job_ptr, (JOB_FAILED | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
 			xfree(job_ptr->state_desc);
 		} else if (WIFSIGNALED(job_return_code)) {
 			job_state_set(job_ptr, (JOB_FAILED | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc = job_exit_rc;
 			job_ptr->state_reason = FAIL_SIGNAL;
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc,
@@ -6469,6 +6479,7 @@ static int _job_complete(slurm_msg_t *msg, job_record_t *job_ptr, bool requeue,
 		} else {
 			job_state_set(job_ptr, (JOB_COMPLETE | job_comp_flag));
 			job_ptr->exit_code = job_return_code;
+			job_ptr->job_exit_rc = job_exit_rc;
 		}
 
 		if (suspended) {
@@ -6513,7 +6524,8 @@ static int _foreach_het_job_complete(void *x, void *arg)
 	rc = _job_complete(foreach_complete_hetjob->msg, het_job_ptr,
 			   foreach_complete_hetjob->requeue,
 			   foreach_complete_hetjob->node_fail,
-			   foreach_complete_hetjob->job_return_code);
+			   foreach_complete_hetjob->job_return_code,
+			   foreach_complete_hetjob->job_exit_rc);
 	if (rc != SLURM_SUCCESS)
 		foreach_complete_hetjob->rc = rc;
 
@@ -6521,7 +6533,8 @@ static int _foreach_het_job_complete(void *x, void *arg)
 }
 
 extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
-			bool requeue, bool node_fail, uint32_t job_return_code)
+			bool requeue, bool node_fail, uint32_t job_return_code,
+			job_exit_rc_t job_exit_rc)
 {
 	job_record_t *job_ptr;
 	int rc;
@@ -6549,6 +6562,7 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 	if (job_ptr->het_job_list) {
 		foreach_complete_hetjob_t foreach_complete_hetjob = {
 			.het_job_leader = job_ptr,
+			.job_exit_rc = job_exit_rc,
 			.job_return_code = job_return_code,
 			.msg = msg,
 			.node_fail = node_fail,
@@ -6562,7 +6576,7 @@ extern int job_complete(slurm_msg_t *msg, slurm_step_id_t *step_id,
 		rc = foreach_complete_hetjob.rc;
 	} else {
 		rc = _job_complete(msg, job_ptr, requeue, node_fail,
-				   job_return_code);
+				   job_return_code, job_exit_rc);
 	}
 
 	return rc;
@@ -16621,7 +16635,8 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 		     job_ptr, job_ptr->batch_host, requeue_msg);
 		xfree(job_ptr->failed_node);
 		job_ptr->failed_node = xstrdup(job_ptr->batch_host);
-		job_complete(NULL, &step_id, requeue, true, 1);
+		job_complete(NULL, &step_id, requeue, true, 1,
+			     (job_exit_rc_t) { .exit_code = 1 });
 	} else {
 		foreach_purge_missing_jobs->job_ptr = job_ptr;
 
@@ -16657,7 +16672,8 @@ static int _foreach_purge_missing_jobs(void *x, void *arg)
 
 			error("%s: Revoking job %pI due to nodes not responding",
 			      __func__, &step_id);
-			job_complete(NULL, &step_id, requeue, true, 1);
+			job_complete(NULL, &step_id, requeue, true, 1,
+				     (job_exit_rc_t) { .exit_code = 1 });
 		}
 	}
 	return 0;
@@ -20517,5 +20533,5 @@ extern void job_mgr_handle_cred_failure(job_record_t *job_ptr)
 	xfree(job_ptr->system_comment);
 	job_ptr->system_comment =
 		xstrdup("slurm_cred_create failure, holding job.");
-	job_complete(NULL, &step_id, true, false, 0);
+	job_complete(NULL, &step_id, true, false, 0, (job_exit_rc_t) { 0 });
 }

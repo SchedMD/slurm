@@ -2525,7 +2525,8 @@ job_failed:
 	last_job_update = time(NULL);
 	slurm_free_job_launch_msg(launch_msg_ptr);
 	/* ignore the return as job is in an unknown state anyway */
-	job_complete(NULL, &step_id, false, false, 1);
+	job_complete(NULL, &step_id, false, false, 1,
+		     (job_exit_rc_t) { .exit_code = 1 });
 	return NULL;
 }
 

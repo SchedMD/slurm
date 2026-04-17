@@ -757,7 +757,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 
 			lock_slurmctld(job_write_lock);
 			job_complete(NULL, &launch_msg_ptr->step_id, true,
-				     false, 0);
+				     false, 0, (job_exit_rc_t) { 0 });
 			unlock_slurmctld(job_write_lock);
 		} else if (agent_ptr->msg_type == REQUEST_LAUNCH_PROLOG) {
 			prolog_launch_msg_t *prolog_msg_ptr =
@@ -781,10 +781,14 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			    !job_ptr->batch_flag) {
 				slurm_step_id_t step_id =
 					STEP_ID_FROM_JOB_RECORD(job_ptr);
+				job_exit_rc_t exit_rc = {
+					.exit_code = W_EXITCODE(1, 0)
+				};
 
 				error("%s: Revoking job %pI due to nodes not responding",
 				      __func__, &step_id);
-				job_complete(NULL, &step_id, false, true, 1);
+				job_complete(NULL, &step_id, false, true, 1,
+					     exit_rc);
 			}
 			unlock_slurmctld(job_write_lock);
 		}
@@ -1179,13 +1183,16 @@ static void *_thread_per_group_rpc(void *args)
 		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr =
 				task_ptr->msg_args_ptr;
+			int status = _wif_status();
+
 			info("Killing non-startable batch %pI: %s",
 			     &launch_msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
 			job_complete(NULL, &launch_msg_ptr->step_id, false,
-				     false, _wif_status());
+				     false, status,
+				     (job_exit_rc_t) { .exit_code = status });
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_RESOURCE_ALLOCATION) &&
@@ -1195,12 +1202,15 @@ static void *_thread_per_group_rpc(void *args)
 			 * behind on the allocated nodes. */
 			resource_allocation_response_msg_t *msg_ptr =
 				task_ptr->msg_args_ptr;
+			int status = _wif_status();
+
 			info("Killing interactive %pI: %s",
 			     &msg_ptr->step_id, slurm_strerror(rc));
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
 			job_complete(NULL, &msg_ptr->step_id, false, false,
-				     _wif_status());
+				     status,
+				     (job_exit_rc_t) { .exit_code = status });
 			unlock_slurmctld(job_write_lock);
 			continue;
 		} else if ((msg_type == RESPONSE_HET_JOB_ALLOCATION) &&
@@ -1210,6 +1220,8 @@ static void *_thread_per_group_rpc(void *args)
 			 * behind on the allocated nodes. */
 			list_t *het_alloc_list = task_ptr->msg_args_ptr;
 			resource_allocation_response_msg_t *msg_ptr;
+			int status = _wif_status();
+
 			if (!het_alloc_list ||
 			    (list_count(het_alloc_list) == 0))
 				continue;
@@ -1219,7 +1231,8 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_FAILED;
 			lock_slurmctld(job_write_lock);
 			job_complete(NULL, &msg_ptr->step_id, false, false,
-				     _wif_status());
+				     status,
+				     (job_exit_rc_t) { .exit_code = status });
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}
