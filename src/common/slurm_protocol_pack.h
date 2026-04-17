@@ -130,6 +130,20 @@ extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 					     buf_t *buffer);
 extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg,
 					      buf_t *buffer);
+/*
+ * Pack/unpack a job_exit_rc_t (the job's exit status and Slurm return code).
+ * The unpack macro below jumps to unpack_error on failure.
+ */
+extern void slurm_pack_job_exit_rc(job_exit_rc_t *msg, buf_t *buffer,
+				   uint16_t protocol_version);
+extern int slurm_unpack_job_exit_rc(job_exit_rc_t *msg, buf_t *buffer,
+				    uint16_t protocol_version);
+
+#define safe_unpack_job_exit_rc(job_exit_rc, buf, version) \
+	do { \
+		if (slurm_unpack_job_exit_rc(job_exit_rc, buf, version)) \
+			goto unpack_error; \
+	} while (0)
 
 extern void pack_step_id(slurm_step_id_t *msg, buf_t *buffer,
 			 uint16_t protocol_version);

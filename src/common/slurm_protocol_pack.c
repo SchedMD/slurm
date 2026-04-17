@@ -16337,6 +16337,35 @@ cleanup:
 	return rc;
 }
 
+extern void slurm_pack_job_exit_rc(job_exit_rc_t *msg, buf_t *buffer,
+				   uint16_t protocol_version)
+{
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		pack32(msg->exit_code, buffer);
+		pack32(msg->rc, buffer);
+	}
+}
+
+extern int slurm_unpack_job_exit_rc(job_exit_rc_t *msg, buf_t *buffer,
+				    uint16_t protocol_version)
+{
+	xassert(msg);
+
+	if (protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->rc, buffer);
+	} else {
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
 extern void pack_step_id(slurm_step_id_t *msg, buf_t *buffer,
 			 uint16_t protocol_version)
 {

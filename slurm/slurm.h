@@ -1885,6 +1885,21 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t x11_target_port; /* target tcp port, 6000 + the display number */
 } job_desc_msg_t;
 
+/*
+ * A job's completion status, split into its two distinct value spaces.
+ *
+ * exit_code: raw wait(2) status - exit status in the high 8 bits
+ *            (WEXITSTATUS), terminating signal in the low 7 (WTERMSIG).
+ * rc:        Slurm error code (slurm_err_t, see slurm/slurm_errno.h), or 0 if
+ *            the job did not fail with a Slurm error.
+ *
+ * Never run WEXITSTATUS() or WTERMSIG() on rc.
+ */
+typedef struct {
+	uint32_t exit_code;
+	uint32_t rc;
+} job_exit_rc_t;
+
 typedef struct job_info {
 	char *account;		/* charge to specified account */
 	time_t accrue_time;	/* time job is eligible for running */
