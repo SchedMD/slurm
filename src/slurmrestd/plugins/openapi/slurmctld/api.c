@@ -639,6 +639,41 @@ const openapi_path_binding_t openapi_paths[] = {
 		},
 		.flags = OP_FLAGS,
 	},
+	{
+		.path = "/slurm/{data_parser}/default/topology",
+		.callback = op_handler_topology,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get the cluster's default topology info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_TOPO_INFO_RESP,
+					.description = "topology information of the cluster's default topology",
+				},
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
+	{
+		.path = "/slurm/{data_parser}/topology/{topology_name}",
+		.callback = op_handler_topology,
+		.methods = (openapi_path_binding_method_t[]) {
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "get topology info",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_TOPO_INFO_RESP,
+					.description = "topology information",
+				},
+				.parameters = DATA_PARSER_OPENAPI_TOPO_INFO_PARAM,
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
 	{0}
 };
 

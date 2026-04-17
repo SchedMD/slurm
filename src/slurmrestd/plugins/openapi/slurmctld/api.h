@@ -71,5 +71,6 @@ extern int op_handler_resources(openapi_ctxt_t *ctxt);
 extern int op_handler_config(openapi_ctxt_t *ctxt);
 extern int op_handler_job_requeue(openapi_ctxt_t *ctxt);
 extern int op_handler_jobs_requeue(openapi_ctxt_t *ctxt);
+extern int op_handler_topology(openapi_ctxt_t *ctxt);
 
 #endif

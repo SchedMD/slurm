@@ -1448,6 +1448,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_REST_BAD_REQUEST),
 		"Query requirements not met",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_REST_TOPO_NOT_FOUND),
+		"Requested topology not found",
+	},
 
 	/* data_t errors */
 	{
