@@ -383,6 +383,10 @@ slurm_errtab_t slurm_errtab[] = {
 		"Only batch jobs are accepted or processed",
 	},
 	{
+		ERRTAB_ENTRY(ESLURM_EXTERN_ONLY),
+		"Requested operation requires extern step",
+	},
+	{
 		ERRTAB_ENTRY(ESLURM_LICENSES_UNAVAILABLE),
 		"Licenses currently unavailable",
 	},
