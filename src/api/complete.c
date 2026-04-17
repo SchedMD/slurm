@@ -55,6 +55,7 @@ extern int slurm_complete_job(slurm_step_id_t *step_id,
 	slurm_msg_t_init(&req_msg);
 	memset(&req, 0, sizeof(req));
 	req.step_id = *step_id;
+	req.job_exit_rc.exit_code = job_return_code;
 	req.job_rc       = job_return_code;
 	req_msg.msg_type = REQUEST_COMPLETE_JOB_ALLOCATION;
 	req_msg.data	 = &req;

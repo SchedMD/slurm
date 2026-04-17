@@ -588,6 +588,7 @@ typedef struct {
 } step_alloc_check_msg_t;
 
 typedef struct complete_job_allocation {
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t job_rc;
 	slurm_step_id_t step_id;
 } complete_job_allocation_msg_t;

@@ -1967,6 +1967,7 @@ typedef struct job_info {
 	uint32_t het_job_id;	/* job ID of hetjob leader */
 	char *het_job_id_set;	/* job IDs for all components */
 	uint32_t het_job_offset; /* HetJob component offset from leader */
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	job_resources_t *job_resrcs; /* opaque data type, job resources */
 	char *job_size_str;
 	uint32_t job_state;	/* state of the job, see enum job_states */

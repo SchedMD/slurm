@@ -4082,6 +4082,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->derived_ec, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack_job_exit_rc(&job->job_exit_rc, buffer,
+					protocol_version);
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4304,6 +4306,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->derived_ec, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
+		job->job_exit_rc.rc = 0;
+		job->job_exit_rc.exit_code = job->exit_code;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4523,6 +4527,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->derived_ec, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
+		job->job_exit_rc.rc = 0;
+		job->job_exit_rc.exit_code = job->exit_code;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -4730,6 +4736,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->derived_ec, buffer);
 
 		safe_unpack32(&job->exit_code, buffer);
+		job->job_exit_rc.rc = 0;
+		job->job_exit_rc.exit_code = job->exit_code;
 		safe_unpackstr(&job->extra, buffer);
 
 		safe_unpackstr(&job->failed_node, buffer);
@@ -10321,6 +10329,8 @@ static void _pack_complete_job_allocation_msg(const slurm_msg_t *smsg,
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->job_rc, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
 		pack32(msg->job_rc, buffer);
@@ -10338,14 +10348,20 @@ static int _unpack_complete_job_allocation_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->job_rc, buffer);
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
 	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->job_rc, buffer);
+		msg->job_exit_rc.rc = 0;
+		msg->job_exit_rc.exit_code = msg->job_rc;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_rc, buffer);
+		msg->job_exit_rc.rc = 0;
+		msg->job_exit_rc.exit_code = msg->job_rc;
 	}
 
 	smsg->data = msg;

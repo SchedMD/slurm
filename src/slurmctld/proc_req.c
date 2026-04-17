@@ -2164,9 +2164,16 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 	job_ptr = find_job(&comp_msg->step_id);
 	log_flag(TRACE_JOBS, "%s: enter %pJ", __func__, job_ptr);
 
+	/*
+	 * A job's rc is a Slurm error code, which only Slurm may record. Any
+	 * job owner can send this RPC, so do not let one set it.
+	 */
+	if (!validate_internal_msg(msg))
+		comp_msg->job_exit_rc.rc = 0;
+
 	/* Mark job and/or job step complete */
 	error_code = job_complete(msg, &comp_msg->step_id, false, false,
-				  comp_msg->job_rc, (job_exit_rc_t) { 0 });
+				  comp_msg->job_rc, comp_msg->job_exit_rc);
 	if (error_code) {
 		if (error_code == ESLURM_INVALID_JOB_ID) {
 			info("%s: %pI error %s",

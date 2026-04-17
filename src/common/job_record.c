@@ -2413,6 +2413,8 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		pack32(dump_job_ptr->derived_ec, buffer);
 
 		pack32(dump_job_ptr->exit_code, buffer);
+		slurm_pack_job_exit_rc(&dump_job_ptr->job_exit_rc, buffer,
+				       protocol_version);
 		packstr(dump_job_ptr->extra, buffer);
 
 		packstr(dump_job_ptr->failed_node, buffer);
@@ -2504,7 +2506,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		pack32(dump_job_ptr->delay_boot, buffer);
 		pack32(dump_job_ptr->derived_ec, buffer);
 
-		pack32(dump_job_ptr->exit_code, buffer);
+		pack32(dump_job_ptr->job_exit_rc.exit_code, buffer);
 		packstr(dump_job_ptr->extra, buffer);
 
 		packstr(dump_job_ptr->failed_node, buffer);
@@ -2594,7 +2596,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		pack32(dump_job_ptr->delay_boot, buffer);
 		pack32(dump_job_ptr->derived_ec, buffer);
 
-		pack32(dump_job_ptr->exit_code, buffer);
+		pack32(dump_job_ptr->job_exit_rc.exit_code, buffer);
 		packstr(dump_job_ptr->extra, buffer);
 
 		packstr(dump_job_ptr->failed_node, buffer);
@@ -2683,7 +2685,7 @@ extern void job_record_pack_common(job_record_t *dump_job_ptr,
 		pack32(dump_job_ptr->delay_boot, buffer);
 		pack32(dump_job_ptr->derived_ec, buffer);
 
-		pack32(dump_job_ptr->exit_code, buffer);
+		pack32(dump_job_ptr->job_exit_rc.exit_code, buffer);
 		packstr(dump_job_ptr->extra, buffer);
 
 		packstr(dump_job_ptr->failed_node, buffer);
@@ -2790,6 +2792,8 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->derived_ec, buffer);
 
 		safe_unpack32(&job_ptr->exit_code, buffer);
+		safe_unpack_job_exit_rc(&job_ptr->job_exit_rc, buffer,
+					protocol_version);
 		safe_unpackstr(&job_ptr->extra, buffer);
 
 		safe_unpackstr(&job_ptr->failed_node, buffer);
@@ -2896,6 +2900,8 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->derived_ec, buffer);
 
 		safe_unpack32(&job_ptr->exit_code, buffer);
+		job_ptr->job_exit_rc.rc = 0;
+		job_ptr->job_exit_rc.exit_code = job_ptr->exit_code;
 		safe_unpackstr(&job_ptr->extra, buffer);
 
 		safe_unpackstr(&job_ptr->failed_node, buffer);
@@ -3000,6 +3006,8 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->derived_ec, buffer);
 
 		safe_unpack32(&job_ptr->exit_code, buffer);
+		job_ptr->job_exit_rc.rc = 0;
+		job_ptr->job_exit_rc.exit_code = job_ptr->exit_code;
 		safe_unpackstr(&job_ptr->extra, buffer);
 
 		safe_unpackstr(&job_ptr->failed_node, buffer);
@@ -3102,6 +3110,8 @@ extern int job_record_unpack_common(job_record_t *job_ptr,
 		safe_unpack32(&job_ptr->derived_ec, buffer);
 
 		safe_unpack32(&job_ptr->exit_code, buffer);
+		job_ptr->job_exit_rc.rc = 0;
+		job_ptr->job_exit_rc.exit_code = job_ptr->exit_code;
 		safe_unpackstr(&job_ptr->extra, buffer);
 
 		safe_unpackstr(&job_ptr->failed_node, buffer);
