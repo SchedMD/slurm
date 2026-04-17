@@ -733,13 +733,18 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 			if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
 				continue;
 
-			used_limits->tres[i] += job_ptr->tres_alloc_cnt[i];
+			if (i != TRES_ARRAY_NODE) {
+				used_limits->tres[i] +=
+					job_ptr->tres_alloc_cnt[i];
+				used_limits_a->tres[i] +=
+					job_ptr->tres_alloc_cnt[i];
+				qos_ptr->usage->grp_used_tres[i] +=
+					job_ptr->tres_alloc_cnt[i];
+			}
+
 			used_limits->tres_run_secs[i] += used_tres_run_secs[i];
-			used_limits_a->tres[i] += job_ptr->tres_alloc_cnt[i];
 			used_limits_a->tres_run_secs[i] += used_tres_run_secs[i];
 
-			qos_ptr->usage->grp_used_tres[i] +=
-				job_ptr->tres_alloc_cnt[i];
 			qos_ptr->usage->grp_used_tres_run_secs[i] +=
 				used_tres_run_secs[i];
 			debug2("acct_policy_job_begin: after adding %pJ, qos %s grp_used_tres_run_secs(%s) is %"PRIu64,
@@ -785,7 +790,8 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 		}
 
 		for (i=0; i<slurmctld_tres_cnt; i++) {
-			if (i == TRES_ARRAY_ENERGY)
+			if (i == TRES_ARRAY_ENERGY ||
+			    (i == TRES_ARRAY_NODE))
 				continue;
 
 			if (job_ptr->tres_alloc_cnt[i] == NO_CONSUME_VAL64)
