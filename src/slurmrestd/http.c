@@ -129,7 +129,7 @@ static int _on_request(http_con_t *hcon, const char *name,
 	return rc;
 }
 
-static void _on_close(const char *name, void *arg)
+static void _on_close(const char *name, slurm_err_t status_code, void *arg)
 {
 	http_context_t *ctxt = arg;
 
