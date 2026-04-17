@@ -162,6 +162,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_CONNECT_TIMEOUT),
 		"Connection timed out establishing",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_WRITE_TIMEOUT),
+		"Connection timed out writing",
+	},
 
 	/* communication failures to/from slurmctld */
 	{
