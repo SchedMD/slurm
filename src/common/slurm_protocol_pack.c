@@ -10632,6 +10632,8 @@ static void _pack_complete_batch_script_msg(const slurm_msg_t *smsg,
 	if (smsg->protocol_version >= SLURM_26_11_PROTOCOL_VERSION) {
 		jobacctinfo_pack(msg->jobacct, smsg->protocol_version,
 				 PROTOCOL_TYPE_SLURM, buffer);
+		slurm_pack_job_exit_rc(&msg->job_exit_rc, buffer,
+				       smsg->protocol_version);
 		pack32(msg->job_rc, buffer);
 		pack32(msg->slurm_rc, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -10665,6 +10667,8 @@ static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 				       PROTOCOL_TYPE_SLURM, buffer,
 				       1) != SLURM_SUCCESS)
 			goto unpack_error;
+		safe_unpack_job_exit_rc(&msg->job_exit_rc, buffer,
+					smsg->protocol_version);
 		safe_unpack32(&msg->job_rc, buffer);
 		safe_unpack32(&msg->slurm_rc, buffer);
 		safe_unpack_step_id_members(&msg->step_id, buffer,
@@ -10678,6 +10682,15 @@ static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 			goto unpack_error;
 		safe_unpack32(&msg->job_rc, buffer);
 		safe_unpack32(&msg->slurm_rc, buffer);
+		/*
+		 * slurm_rc is untyped and can be a bare SLURM_ERROR, so only a
+		 * slurm_err_t becomes rc. Otherwise -1 reaches RequeueExit as
+		 * 4294967295. Cast slurm_rc back to int to compare.
+		 */
+		msg->job_exit_rc.rc = 0;
+		if ((int) msg->slurm_rc >= SLURM_UNEXPECTED_MSG_ERROR)
+			msg->job_exit_rc.rc = msg->slurm_rc;
+		msg->job_exit_rc.exit_code = msg->job_rc;
 		safe_unpack_step_id_members(&msg->step_id, buffer,
 					    smsg->protocol_version);
 		safe_unpack32(&msg->user_id, buffer);
@@ -10691,6 +10704,10 @@ static int _unpack_complete_batch_script_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->job_rc, buffer);
 		safe_unpack32(&msg->slurm_rc, buffer);
+		msg->job_exit_rc.rc = 0;
+		if ((int) msg->slurm_rc >= SLURM_UNEXPECTED_MSG_ERROR)
+			msg->job_exit_rc.rc = msg->slurm_rc;
+		msg->job_exit_rc.exit_code = msg->job_rc;
 		safe_unpack32(&msg->user_id, buffer);
 		safe_unpackstr(&msg->node_name, buffer);
 	}

@@ -592,8 +592,21 @@ typedef struct complete_job_allocation {
 	slurm_step_id_t step_id;
 } complete_job_allocation_msg_t;
 
+/*
+ * job_rc, slurm_rc and job_exit_rc all describe how a batch script finished
+ * and are not interchangeable:
+ *
+ *   job_rc      raw wait(2) status of the batch script, or SIG_OOM.
+ *   slurm_rc    slurmstepd infrastructure error. The controller classifies
+ *               this to decide whether to drain the node, and resets it to
+ *               SLURM_SUCCESS for benign cases, so it is not a durable record
+ *               of why the job failed.
+ *   job_exit_rc the job's own Slurm return code paired with its wait(2) exit
+ *               status. This is what gets stored and reported.
+ */
 typedef struct complete_batch_script {
 	jobacctinfo_t *jobacct;
+	job_exit_rc_t job_exit_rc;
 	uint32_t job_rc;
 	uint32_t slurm_rc;
 	slurm_step_id_t step_id;
