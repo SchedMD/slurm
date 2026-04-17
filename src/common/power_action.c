@@ -156,8 +156,8 @@ extern power_action_t *power_action_copy(power_action_t *action)
 	copy->on_slurmctld = action->on_slurmctld;
 	copy->program = xstrdup(action->program);
 	copy->argc = action->argc;
-	copy->argv = xmalloc(copy->argc * sizeof(char *));
-	for (int i = 0; copy->argv && i < copy->argc; i++)
+	copy->argv = xcalloc(copy->argc, sizeof(char *));
+	for (int i = 0; i < copy->argc; i++)
 		copy->argv[i] = xstrdup(action->argv[i]);
 	return copy;
 }

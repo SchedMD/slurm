@@ -577,6 +577,7 @@ typedef struct reboot_msg {
 	uint16_t flags;
 	uint32_t next_state;		/* state after reboot */
 	char *node_list;
+	char *power_action_name;
 	char *reason;
 } reboot_msg_t;
 

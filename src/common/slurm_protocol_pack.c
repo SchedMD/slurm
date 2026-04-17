@@ -9598,11 +9598,13 @@ static void _pack_reboot_msg(const slurm_msg_t *smsg, buf_t *buffer)
 			pack16(msg->flags, buffer);
 			pack32(msg->next_state, buffer);
 			packstr(msg->node_list, buffer);
+			packstr(msg->power_action_name, buffer);
 			packstr(msg->reason, buffer);
 		} else {
 			packnull(buffer);
 			pack16((uint16_t) 0, buffer);
 			pack32((uint32_t) NO_VAL, buffer);
+			packnull(buffer);
 			packnull(buffer);
 			packnull(buffer);
 		}
@@ -9634,6 +9636,7 @@ static int _unpack_reboot_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpack32(&msg->next_state, buffer);
 		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->power_action_name, buffer);
 		safe_unpackstr(&msg->reason, buffer);
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->features, buffer);
