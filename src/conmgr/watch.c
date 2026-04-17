@@ -1607,8 +1607,10 @@ static int _close_con_for_each(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
 
-	if (!is_signal_connection(con))
+	if (!is_signal_connection(con)) {
+		con_set_status_code(con, SLURM_COMMUNICATIONS_QUIESCE_TIMEOUT);
 		close_con(true, con);
+	}
 
 	return 1;
 }
