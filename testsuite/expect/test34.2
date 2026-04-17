@@ -202,7 +202,13 @@ set preempt_mode_list "$preempt_mode_cancel $preempt_mode_requeue"
 # Job types to test for each mode
 set job_type_batch "batch"
 set job_type_het   "het"
-set job_type_list "$job_type_batch $job_type_het"
+
+if {[get_config_param "SelectType"] eq "select/linear"} {
+	# Ticket 6909: Preemption of HetJobs only supported by cons_tres
+	set job_type_list "$job_type_batch"
+} else {
+	set job_type_list "$job_type_batch $job_type_het"
+}
 
 log_info "**** Cleanup from previous run ****"
 
