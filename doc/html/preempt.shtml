@@ -271,6 +271,8 @@ the first identified component of the job with the highest order PreemptMode
 (<I>SUSPEND</I> (highest), <I>REQUEUE</I>, <I>CANCEL</I> (lowest)) will be
 used to set the PreemptMode for all components. The <I>GraceTime</I> and user
 warning signal for each component of the heterogeneous job remain unique.
+Note that preemption of heterogeneous jobs is only supported with
+<I>SelectType=select/cons_tres</I>, not with <I>select/linear</I>.
 </P>
 
 <p>
