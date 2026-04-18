@@ -907,9 +907,8 @@ int main(int argc, char **argv)
 		xfree(auth_plugin_types[i]);
 	}
 	xfree(auth_plugin_types);
-	if ((rc = plugrack_destroy(auth_rack)))
-		fatal_abort("unable to clean up plugrack: %s",
-			    slurm_strerror(rc));
+	if (plugrack_destroy(auth_rack))
+		fatal_abort("unable to clean up plugrack");
 	auth_rack = NULL;
 
 	xfree(auth_plugin_handles);
