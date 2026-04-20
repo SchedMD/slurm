@@ -30,15 +30,15 @@ set file_in     "$test_dir/script"
 set test_timer  "$test_dir/test_timer"
 set test_srun   "$test_dir/test_srun"
 set sync_dir    "$test_dir/sync"
-set run_timer   2
+set run_timer   10
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {[check_config_select "linear"]} {
-	if {$nb_nodes < 2} {
+	if {$nb_nodes < $run_timer} {
 		skip "This test is incompatible with select/linear and only one node"
 	}
 } elseif {[default_part_exclusive]} {
-	if {$nb_nodes < 2} {
+	if {$nb_nodes < $run_timer} {
 		skip "This test is incompatible with exclusive node allocations and only one node"
 	}
 }
@@ -98,4 +98,4 @@ for {set t 1} {$t <= $run_timer} {incr t} {
 
 subtest {$timer_match == [expr $run_timer*10]} "srun should execute all timers" "$timer_match != [expr $run_timer*10]"
 subtest {$fini_match == $run_timer} "srun should finish the submitted program" "$fini_match != $run_timer"
-subtest {$jobs == 2} "Both jobs should be started before timers start"
+subtest {$jobs == $run_timer} "All jobs should be started before timers start"

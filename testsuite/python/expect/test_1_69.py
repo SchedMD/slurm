@@ -9,7 +9,7 @@ import atf
 def setup():
     atf.require_expect()
 
-    atf.require_nodes(2, [("CPUs", 1), ("RealMemory", 1024)])
+    atf.require_nodes(10, [("CPUs", 1), ("RealMemory", 1024)])
     atf.require_slurm_running()
 
 
