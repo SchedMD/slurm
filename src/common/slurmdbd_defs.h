@@ -124,7 +124,7 @@ typedef enum {
 	DBD_GET_RESVS,    	/* Get reservation information  	*/
 	DBD_GOT_RESVS,		/* Response to DBD_GET_RESV		*/
 	DBD_GET_CONFIG,  	/* Get configuration information	*/
-	DBD_GOT_CONFIG,		/* Response to DBD_GET_CONFIG		*/
+	DBD_GOT_CONFIG_KEYPAIRS, /* Response to DBD_GET_CONFIG (deprecated) */
 	DBD_GET_PROBS,  	/* Get problems existing in accounting	*/
 	DBD_GOT_PROBS,		/* Response to DBD_GET_PROBS		*/
 	DBD_GET_EVENTS, 	/* #1470, Get event information		*/
@@ -168,6 +168,7 @@ typedef enum {
 	DBD_GOT_QOS_USAGE,  	/* Response to DBD_GET_QOS_USAGE */
 	DBD_GET_ASSOC_NG_USAGE, /* Get non-grouped assoc usage
 				 * (this is used for sreport user topuser) */
+	DBD_GOT_CONFIG, /* Response to DBD_GET_CONFIG */
 	SLURM_DBD_MESSAGES_END = 2000, /* So that we don't overlap with any
 					* slurm_msg_type_t numbers. */
 	SLURM_PERSIST_INIT = 6500, /* So we don't use the

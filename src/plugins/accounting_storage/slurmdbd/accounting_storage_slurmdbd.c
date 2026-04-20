@@ -52,6 +52,7 @@
 
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
@@ -1688,44 +1689,60 @@ extern list_t *acct_storage_p_get_federations(void *db_conn, uid_t uid,
 	return ret_list;
 }
 
-extern list_t *acct_storage_p_get_config(void *db_conn, char *config_name)
+extern int acct_storage_p_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr)
 {
-	persist_msg_t req = {0}, resp = {0};
-	dbd_list_msg_t *got_msg;
-	int rc;
-	list_t *ret_list = NULL;
+	persist_msg_t req = { 0 }, resp = { 0 };
+	int rc = EINVAL;
 
 	if (first)
 		init();
 
+	xassert(!*slurmdbd_conf_ptr);
+	slurmdbd_free_conf(*slurmdbd_conf_ptr);
+	*slurmdbd_conf_ptr = NULL;
+
 	req.msg_type = DBD_GET_CONFIG;
 	req.pcon = db_conn;
-	req.data = config_name;
+	/* data should be ignored */
+	req.data = "slurmdbd.conf";
+
+	errno = SLURM_SUCCESS;
 	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &req, &resp);
 
-	if (rc != SLURM_SUCCESS)
-		error("DBD_GET_CONFIG failure: %m");
-	else if (resp.msg_type == PERSIST_RC) {
+	if (rc) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
+		error("%s: DBD_GET_CONFIG failure: %s",
+		      __func__, slurm_strerror(rc));
+	} else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
-		if (msg->rc == SLURM_SUCCESS) {
+
+		if (!msg->rc)
 			info("%s", msg->comment);
-			ret_list = list_create(NULL);
-		} else {
-			errno = msg->rc;
+		else
 			error("%s", msg->comment);
-		}
+
+		rc = msg->rc;
 		slurm_persist_free_rc_msg(msg);
+	} else if (resp.msg_type == DBD_GOT_CONFIG_KEYPAIRS) {
+		error("%s: unsupported DBD_GOT_CONFIG_KEYPAIRS: %u",
+		      __func__, resp.msg_type);
+
+		slurmdbd_free_list_msg(resp.data);
+		rc = ESLURM_NOT_SUPPORTED;
 	} else if (resp.msg_type != DBD_GOT_CONFIG) {
 		error("response type not DBD_GOT_CONFIG: %u",
 		      resp.msg_type);
+		slurmdbd_free_msg(&resp);
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	} else {
-		got_msg = (dbd_list_msg_t *) resp.data;
-		ret_list = got_msg->my_list;
-		got_msg->my_list = NULL;
-		slurmdbd_free_list_msg(got_msg);
+		*slurmdbd_conf_ptr = resp.data;
+		rc = SLURM_SUCCESS;
 	}
 
-	return ret_list;
+	return rc;
 }
 
 extern list_t *acct_storage_p_get_tres(void *db_conn, uid_t uid,

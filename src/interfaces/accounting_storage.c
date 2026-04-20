@@ -42,6 +42,8 @@
 #include <pthread.h>
 #include <string.h>
 
+#include "slurm/slurm_errno.h"
+
 #include "src/common/list.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
@@ -149,7 +151,7 @@ typedef struct slurm_acct_storage_ops {
 				    slurmdb_cluster_cond_t *cluster_cond);
 	list_t *(*get_federations) (void *db_conn, uint32_t uid,
 				    slurmdb_federation_cond_t *fed_cond);
-	list_t *(*get_config)      (void *db_conn, char *config_name);
+	int (*get_config)(void *db_conn, slurmdbd_conf_t **slurmdbd_conf_ptr);
 	list_t *(*get_tres)        (void *db_conn, uint32_t uid,
 				    slurmdb_tres_cond_t *tres_cond);
 	list_t *(*get_assocs)      (void *db_conn, uint32_t uid,
@@ -843,14 +845,15 @@ extern list_t *acct_storage_g_get_federations(void *db_conn, uint32_t uid,
 	return (*(ops.get_federations))(db_conn, uid, fed_cond);
 }
 
-extern list_t *acct_storage_g_get_config(void *db_conn, char *config_name)
+extern int acct_storage_g_get_config(void *db_conn,
+				     slurmdbd_conf_t **slurmdbd_conf_ptr)
 {
 	xassert(plugin_inited != PLUGIN_NOT_INITED);
 
 	if (plugin_inited == PLUGIN_NOOP)
-		return NULL;
+		return ESLURM_NOT_SUPPORTED;
 
-	return (*(ops.get_config))(db_conn, config_name);
+	return (*(ops.get_config))(db_conn, slurmdbd_conf_ptr);
 }
 
 extern list_t *acct_storage_g_get_tres(
