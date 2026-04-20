@@ -1732,7 +1732,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
             .replace("slurm ", "")
         )
 
-    return tuple(int(part) if part.isdigit() else 0 for part in version_str.split("."))
+    return tuple(int(n) for p in version_str.split(".") for n in [p.split("-")[0]])
 
 
 def require_expect():
