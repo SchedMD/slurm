@@ -56,12 +56,6 @@ if {$profile == 0} {
 	skip "acct_gather_profile/hdf5 not installed on this system"
 }
 log_info "Acct_gather_profile/hdf5 plugin installed"
-log_debug "Note: this test takes 3 minutes to run"
-
-set task_freq [get_job_acct_freq]
-if {$task_freq < 30} {
-	log_warn "jobacct_gather_freq < 30 ($task_freq), results are unreliable"
-}
 
 #
 # Build a test program to put a known load on the system
@@ -70,9 +64,12 @@ exec $bin_rm -f $file_prog
 exec $bin_cc -I$build_dir $file_prog.c -lm -o $file_prog
 exec $bin_chmod 700 $file_prog
 
-set timeout [expr $max_job_delay + 200]
+set timeout $max_job_delay
 
-spawn $srun --acctg-freq=$task_freq --profile=task -t5 ./$file_prog
+# file_prog takes 16s, and we want to have around 4 profile samples with
+# enough time between them (4s)
+set task_freq 4
+spawn $srun --acctg-freq=task=$task_freq --profile=task -t1 ./$file_prog
 expect {
 	-re "SLURM_JobId=($number)" {
 		set job_id $expect_out(1,string)
@@ -93,7 +90,6 @@ expect {
 	}
 }
 
-set timeout 10
 spawn $sh5util -j $job_id
 expect {
 	"Output file generated is empty" {
@@ -120,16 +116,20 @@ expect {
 	}
 }
 
-set line ""
+# See the final result:
 set nerr 0
 set lno 0
-set fd 0
 set last_et 0
-set fd [open $file_out "r"]
 set et_col -1
 set cpu_util_col -1
 set read_disk_col -1
-while {$fd > 0 && [gets $fd line] != -1} {
+
+# Read all lines; the last data line is the "job complete" record with no
+# profile data, so process only up to the second-to-last line.
+set output [run_command_output -fail "cat $file_out"]
+set all_lines [split [string trimright $output "\n"] "\n"]
+
+foreach line [lrange $all_lines 0 end-1] {
 	incr lno
 
 	set tokens [split $line ","]
@@ -165,12 +165,9 @@ while {$fd > 0 && [gets $fd line] != -1} {
 	}
 
 	set cputil [lindex $tokens $cpu_util_col]
-	# The range on cpu utilization is pretty wide
-	# Linux accounting resolution is only to one second, so in a
-	# typical 30 interval an extra second is 3%. The burn loop
-	# consumes a bit more that asked for. There is additional type
-	# managing the I/O portion. Slurm and linux also consume some
-	# cpu.
+	# The range on cpu utilization is pretty wide. The burn loop
+	# consumes a bit more that asked for. There is additional time
+	# managing the I/O portion. Slurm and linux also consume some cpu.
 	if {$cputil < 38.0 || $cputil > 47.0 } {
 		log_warn "CPU Busy $cputil not near 40% on line $lno"
 		incr nerr
@@ -185,12 +182,11 @@ while {$fd > 0 && [gets $fd line] != -1} {
 		incr nerr
 	}
 }
-close $fd
 
 if {$lno == 0} {
 	fail "Output file ($file_out) is empty"
 }
 
-if {$nerr > 3} {
+if {$nerr > 1} {
 	fail "Too many values out of range ($nerr)"
 }
