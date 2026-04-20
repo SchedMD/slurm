@@ -853,6 +853,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		assoc->leaf_usage = NULL;
 
 		slurmdb_destroy_assoc_usage(assoc->usage);
+		slurmdb_destroy_assoc_usage(assoc->usage_het);
 		/* NOTE assoc->user_rec is a soft reference, do not free here */
 		assoc->user_rec = NULL;
 		slurmdb_destroy_bf_usage(assoc->bf_usage);

@@ -711,6 +711,7 @@ typedef struct slurmdb_assoc_rec {
 
 	uint32_t uid;		   /* user ID */
 	slurmdb_assoc_usage_t *usage;
+	slurmdb_assoc_usage_t *usage_het;
 	char *user;		   /* user associated to assoc */
 	slurmdb_user_rec_t *user_rec; /* Cache of user record
 				       * soft ref - mem not managed here

@@ -973,6 +973,41 @@ static void _create_het_job_id_set(hostset_t *jobid_hostset,
 }
 
 /*
+ * _het_job_val_init - Set up usage_het on the assoc tree and QOS..
+ */
+static void _het_job_val_init(job_record_t *job_ptr)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+	xassert(job_ptr);
+
+	/*
+	 * This is called on each of the components so only go up the tree once.
+	 */
+	assoc_ptr = job_ptr->assoc_ptr;
+	while (assoc_ptr && !assoc_ptr->usage_het) {
+		if (assoc_ptr->usage_het)
+			break;
+		assoc_ptr->usage_het =
+			slurmdb_create_assoc_usage(slurmctld_tres_cnt);
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+}
+
+/*
+ * _het_job_val_fini - free memory allocated in _het_job_val_init.
+ */
+static void _het_job_val_fini(job_record_t *job_ptr)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+
+	while (assoc_ptr && assoc_ptr->usage_het) {
+		slurmdb_destroy_assoc_usage(assoc_ptr->usage_het);
+		assoc_ptr->usage_het = NULL;
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+}
+
+/*
  * _het_job_val_add - After a het component succeeds in
  *	job_allocate(), call before linking it into the het job list so the
  *	next component's validate path sees accumulated limit usage.
@@ -1010,6 +1045,9 @@ static int _het_job_val_rem_each(void *x, void *arg)
 	acct_policy_job_fini(job_ptr, false);
 	xassert(job_ptr->tres_alloc_cnt == job_ptr->tres_req_cnt);
 	job_ptr->tres_alloc_cnt = NULL;
+
+	_het_job_val_fini(job_ptr);
+
 	return 0;
 }
 
@@ -1164,6 +1202,9 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		if (error_code && (job_ptr->job_state == JOB_FAILED))
 			break;
 		error_code = SLURM_SUCCESS;	/* Non-fatal error */
+
+		_het_job_val_init(job_ptr);
+
 		if (het_job_id == 0) {
 			het_job_id = job_ptr->job_id;
 			first_job_ptr = job_ptr;
@@ -3978,6 +4019,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		    (error_code && job_ptr->job_state == JOB_FAILED)) {
 			reject_job = true;
 		} else {
+			_het_job_val_init(job_ptr);
+
 			if (step_id.job_id == NO_VAL) {
 				step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 				step_id.step_id = SLURM_BATCH_SCRIPT;

@@ -1068,30 +1068,33 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
+		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
+			assoc_ptr->usage_het : assoc_ptr->usage;
+
 		switch (type) {
 		case ACCT_POLICY_ADD_SUBMIT:
-			assoc_ptr->usage->used_submit_jobs += job_cnt;
+			use_usage->used_submit_jobs += job_cnt;
 			break;
 		case ACCT_POLICY_REM_SUBMIT:
-			if (assoc_ptr->usage->used_submit_jobs >= job_cnt)
-				assoc_ptr->usage->used_submit_jobs -= job_cnt;
+			if (use_usage->used_submit_jobs >= job_cnt)
+				use_usage->used_submit_jobs -= job_cnt;
 			else {
 				debug2("acct_policy_remove_job_submit: "
 				       "used_submit_jobs underflow for "
 				       "account %s (%u < %u)",
 				       assoc_ptr->acct,
-				       assoc_ptr->usage->used_submit_jobs,
+				       use_usage->used_submit_jobs,
 				       job_cnt);
-				assoc_ptr->usage->used_submit_jobs = 0;
+				use_usage->used_submit_jobs = 0;
 			}
 			break;
 		case ACCT_POLICY_JOB_BEGIN:
-			assoc_ptr->usage->used_jobs++;
+			use_usage->used_jobs++;
 			_add_usage_node_bitmap(
 				job_ptr,
-				&assoc_ptr->usage->grp_node_bitmap,
-				&assoc_ptr->usage->grp_node_job_cnt,
-				&assoc_ptr->usage->
+				&use_usage->grp_node_bitmap,
+				&use_usage->grp_node_job_cnt,
+				&use_usage->
 				grp_used_tres[TRES_ARRAY_NODE]);
 
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
@@ -1102,31 +1105,31 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 					continue;
 
 				if (i != TRES_ARRAY_NODE) {
-					assoc_ptr->usage->grp_used_tres[i] +=
+					use_usage->grp_used_tres[i] +=
 						job_ptr->tres_alloc_cnt[i];
 				}
-				assoc_ptr->usage->grp_used_tres_run_secs[i] +=
+				use_usage->grp_used_tres_run_secs[i] +=
 					used_tres_run_secs[i];
 				debug2("acct_policy_job_begin: after adding %pJ, assoc %u(%s/%s/%s) grp_used_tres_run_secs(%s) is %"PRIu64,
 				       job_ptr, assoc_ptr->id, assoc_ptr->acct,
 				       assoc_ptr->user, assoc_ptr->partition,
 				       assoc_mgr_tres_name_array[i],
-				       assoc_ptr->usage->
+				       use_usage->
 				       grp_used_tres_run_secs[i]);
 			}
 			break;
 		case ACCT_POLICY_JOB_FINI:
-			if (assoc_ptr->usage->used_jobs)
-				assoc_ptr->usage->used_jobs--;
+			if (use_usage->used_jobs)
+				use_usage->used_jobs--;
 			else
 				debug2("acct_policy_job_fini: used_jobs "
 				       "underflow for account %s",
 				       assoc_ptr->acct);
 			_rm_usage_node_bitmap(
 				job_ptr,
-				assoc_ptr->usage->grp_node_bitmap,
-				assoc_ptr->usage->grp_node_job_cnt,
-				&assoc_ptr->usage->
+				use_usage->grp_node_bitmap,
+				use_usage->grp_node_job_cnt,
+				&use_usage->
 				grp_used_tres[TRES_ARRAY_NODE]);
 			for (i = 0; i < slurmctld_tres_cnt; i++) {
 				if ((i == TRES_ARRAY_ENERGY) ||
@@ -1137,8 +1140,8 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 					continue;
 
 				if (job_ptr->tres_alloc_cnt[i] >
-				    assoc_ptr->usage->grp_used_tres[i]) {
-					assoc_ptr->usage->grp_used_tres[i] = 0;
+				    use_usage->grp_used_tres[i]) {
+					use_usage->grp_used_tres[i] = 0;
 					debug2("acct_policy_job_fini: "
 					       "grp_used_tres(%s) "
 					       "underflow for assoc "
@@ -1148,7 +1151,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 					       assoc_ptr->user,
 					       assoc_ptr->partition);
 				} else {
-					assoc_ptr->usage->grp_used_tres[i] -=
+					use_usage->grp_used_tres[i] -=
 						job_ptr->tres_alloc_cnt[i];
 				}
 			}
@@ -1159,7 +1162,7 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 			break;
 		}
 		/* now handle all the group limits of the parents */
-		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+		assoc_ptr = use_usage->parent_assoc_ptr;
 	}
 
 	/*
@@ -3037,6 +3040,9 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
+		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
+			assoc_ptr->usage_het : assoc_ptr->usage;
+
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
 				continue;
@@ -3049,16 +3055,16 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 				new_used_tres_run_secs[i];
 			if ((used_tres_run_sec_decr < 0) ||
 			    (used_tres_run_sec_decr <
-			     assoc_ptr->usage->grp_used_tres_run_secs[i]))
-				assoc_ptr->usage->grp_used_tres_run_secs[i] -=
+			     use_usage->grp_used_tres_run_secs[i]))
+				use_usage->grp_used_tres_run_secs[i] -=
 					used_tres_run_sec_decr;
 			else
-				assoc_ptr->usage->grp_used_tres_run_secs[i] = 0;
+				use_usage->grp_used_tres_run_secs[i] = 0;
 
 			debug2("altering %pJ assoc %u(%s/%s/%s) got %"PRIu64" just removed %"PRIu64" and added %"PRIu64,
 			       job_ptr, assoc_ptr->id, assoc_ptr->acct,
 			       assoc_ptr->user, assoc_ptr->partition,
-			       assoc_ptr->usage->grp_used_tres_run_secs[i],
+			       use_usage->grp_used_tres_run_secs[i],
 			       used_tres_run_secs[i],
 			       new_used_tres_run_secs[i]);
 		}
@@ -3121,6 +3127,7 @@ static void _add_accrue_time_internal(void *x, void *arg)
 			acct_policy_accrue->cnt;
 
 	while (assoc_ptr) {
+		xassert(!assoc_ptr->usage_het);
 		log_flag(ACCRUE, "assoc_id %u(%s/%s/%s/%p) added %d count %d",
 			 assoc_ptr->id, assoc_ptr->acct, assoc_ptr->user,
 			 assoc_ptr->partition, assoc_ptr->usage,
@@ -3187,6 +3194,7 @@ static void _remove_accrue_time_internal(void *x, void *arg)
 	}
 
 	while (assoc_ptr) {
+		xassert(!assoc_ptr->usage_het);
 		if (assoc_ptr->usage->accrue_cnt >= acct_policy_accrue->cnt) {
 			log_flag(ACCRUE, "assoc_id %u(%s/%s/%s/%p) removed %d count %d",
 				 assoc_ptr->id, assoc_ptr->acct,
@@ -3323,6 +3331,9 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
                 limit_factor = qos_ptr_2->limit_factor;
 
 	while (assoc_ptr) {
+		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
+			assoc_ptr->usage_het : assoc_ptr->usage;
+
 		int tres_pos = 0;
 		for (int i = 0; i < slurmctld_tres_cnt; i++) {
 			grp_tres_ctld[i] = assoc_ptr->grp_tres_ctld[i];
@@ -3360,7 +3371,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 
 		if ((qos_rec.grp_submit_jobs == INFINITE) &&
 		    (assoc_ptr->grp_submit_jobs != INFINITE) &&
-		    ((assoc_ptr->usage->used_submit_jobs + job_cnt)
+		    ((use_usage->used_submit_jobs + job_cnt)
 		     > assoc_ptr->grp_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_GRP_SUB_JOB;
@@ -3368,7 +3379,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 			       user_name,
 			       job_desc->user_id,
 			       assoc_ptr->grp_submit_jobs,
-			       assoc_ptr->usage->used_submit_jobs, job_cnt,
+			       use_usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -3528,7 +3539,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		if ((qos_rec.max_submit_jobs_pa == INFINITE) &&
 		    (qos_rec.max_submit_jobs_pu == INFINITE) &&
 		    (assoc_ptr->max_submit_jobs != INFINITE) &&
-		    ((assoc_ptr->usage->used_submit_jobs + job_cnt)
+		    ((use_usage->used_submit_jobs + job_cnt)
 		     > assoc_ptr->max_submit_jobs)) {
 			if (reason)
 				*reason = WAIT_ASSOC_MAX_SUB_JOB;
@@ -3536,7 +3547,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 			       user_name,
 			       job_desc->user_id,
 			       assoc_ptr->max_submit_jobs,
-			       assoc_ptr->usage->used_submit_jobs, job_cnt,
+			       use_usage->used_submit_jobs, job_cnt,
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -3743,16 +3754,19 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
+		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
+			assoc_ptr->usage_het : assoc_ptr->usage;
+
 		/* This only trips when the grp_used_wall is divisible
 		 * by 60, i.e if a limit is 1 min and you have only
 		 * accumulated 59 seconds you will still be able to
 		 * get another job in as 59/60 = 0 int wise.
 		 */
-		wall_mins = assoc_ptr->usage->grp_used_wall / 60;
+		wall_mins = use_usage->grp_used_wall / 60;
 
 #if _DEBUG
 		info("acct_job_limits: %u of %u",
-		     assoc_ptr->usage->used_jobs, assoc_ptr->max_jobs);
+		     use_usage->used_jobs, assoc_ptr->max_jobs);
 #endif
 		/* we don't need to check grp_cpu_mins here */
 
@@ -3762,12 +3776,12 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 
 		if ((qos_rec.grp_jobs == INFINITE) &&
 		    (assoc_ptr->grp_jobs != INFINITE) &&
-		    (assoc_ptr->usage->used_jobs >= assoc_ptr->grp_jobs)) {
+		    (use_usage->used_jobs >= assoc_ptr->grp_jobs)) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_ASSOC_GRP_JOB;
 			debug2("%pJ being held, assoc %u is at or exceeds group max jobs limit %u with %u for account %s",
 			       job_ptr, assoc_ptr->id, assoc_ptr->grp_jobs,
-			       assoc_ptr->usage->used_jobs, assoc_ptr->acct);
+			       use_usage->used_jobs, assoc_ptr->acct);
 
 			rc = false;
 			goto end_it;
@@ -3842,13 +3856,13 @@ extern bool acct_policy_job_runnable_pre_select(job_record_t *job_ptr,
 		if ((qos_rec.max_jobs_pa == INFINITE) &&
 		    (qos_rec.max_jobs_pu == INFINITE) &&
 		    (assoc_ptr->max_jobs != INFINITE) &&
-		    (assoc_ptr->usage->used_jobs >= assoc_ptr->max_jobs)) {
+		    (use_usage->used_jobs >= assoc_ptr->max_jobs)) {
 			xfree(job_ptr->state_desc);
 			job_ptr->state_reason = WAIT_ASSOC_MAX_JOBS;
 			debug2("%pJ being held, assoc %u is at or exceeds max jobs limit %u with %u for account %s",
 			       job_ptr, assoc_ptr->id,
 			       assoc_ptr->max_jobs,
-			       assoc_ptr->usage->used_jobs, assoc_ptr->acct);
+			       use_usage->used_jobs, assoc_ptr->acct);
 			rc = false;
 			goto end_it;
 		}
@@ -4018,12 +4032,15 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
+		slurmdb_assoc_usage_t *use_usage = assoc_ptr->usage_het ?
+			assoc_ptr->usage_het : assoc_ptr->usage;
+
 		for (i = 0; i < slurmctld_tres_cnt; i++) {
 			tres_usage_mins[i] =
-				(uint64_t)(assoc_ptr->usage->usage_tres_raw[i]
+				(uint64_t)(use_usage->usage_tres_raw[i]
 					   / 60);
 			tres_run_mins[i] =
-				assoc_ptr->usage->grp_used_tres_run_secs[i] /
+				use_usage->grp_used_tres_run_secs[i] /
 				60;
 
 			/*
@@ -4045,7 +4062,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 
 #if _DEBUG
 		info("acct_job_limits: %u of %u",
-		     assoc_ptr->usage->used_jobs, assoc_ptr->max_jobs);
+		     use_usage->used_jobs, assoc_ptr->max_jobs);
 #endif
 		/*
 		 * If the association has a GrpCPUMins limit set (and there
@@ -4115,12 +4132,12 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 
 		orig_node_cnt = tres_req_cnt[TRES_ARRAY_NODE];
 		_get_unique_job_node_cnt(job_ptr,
-					 assoc_ptr->usage->grp_node_bitmap,
+					 use_usage->grp_node_bitmap,
 					 &tres_req_cnt[TRES_ARRAY_NODE]);
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos,
 			grp_tres_ctld, qos_rec.grp_tres_ctld,
-			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
+			tres_req_cnt, use_usage->grp_used_tres,
 			NULL, job_ptr->limit_set.tres, true);
 		tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
 		switch (tres_usage) {
@@ -4149,7 +4166,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       grp_tres_ctld[tres_pos],
-			       assoc_ptr->usage->grp_used_tres[tres_pos],
+			       use_usage->grp_used_tres[tres_pos],
 			       tres_req_cnt[tres_pos]);
 			rc = false;
 			goto end_it;
@@ -4709,6 +4726,7 @@ static void _get_accrue_limits(acct_policy_accrue_t *acct_policy_accrue,
 
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
+		xassert(!assoc_ptr->usage_het);
 		/*
 		 * Find the first limit whether it be from the qos above or in
 		 * the hierarchy.
