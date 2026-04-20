@@ -1372,7 +1372,8 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 		 */
 		exit_code = 256;
 	}
-	xstrfmtcat(query, ", exit_code=%d, ", exit_code);
+	xstrfmtcat(query, ", exit_code=%d, slurm_rc=%u, ", exit_code,
+		   job_ptr->job_exit_rc.rc);
 
 	if (job_ptr->kill_requid == (uid_t) -1)
 		xstrfmtcat(query, "kill_requid=null ");
