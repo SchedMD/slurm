@@ -61,15 +61,17 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 	list_t *my_list = list_create(destroy_config_key_pair);
 
 	add_key_pair_bool(my_list, "AllowNoDefAcct",
-		(slurmdbd_conf->flags & DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT));
+			  (slurmdbd_conf->flags &
+			   DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT));
 
 	add_key_pair(my_list, "ArchiveDir", "%s", slurmdbd_conf->archive_dir);
 
 	add_key_pair_bool(my_list, "ArchiveEvents",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_event));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf
+							    ->purge_event));
 
 	add_key_pair_bool(my_list, "ArchiveJobs",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_job));
 
 	add_key_pair_bool(my_list, "ArchiveJobScript",
 			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf
@@ -80,22 +82,24 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 							    ->purge_jobenv));
 
 	add_key_pair_bool(my_list, "ArchiveResvs",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_resv));
 
 	add_key_pair(my_list, "ArchiveScript", "%s",
 		     slurmdbd_conf->archive_script);
 
 	add_key_pair_bool(my_list, "ArchiveSteps",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_step));
 
 	add_key_pair_bool(my_list, "ArchiveSuspend",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_suspend));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf
+							    ->purge_suspend));
 
 	add_key_pair_bool(my_list, "ArchiveTXN",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_txn));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_txn));
 
 	add_key_pair_bool(my_list, "ArchiveUsage",
-		SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf->purge_usage));
+			  SLURMDB_PURGE_ARCHIVE_SET(slurmdbd_conf
+							    ->purge_usage));
 
 	add_key_pair(my_list, "AuthAltTypes", "%s", slurm_conf.authalttypes);
 
@@ -169,8 +173,8 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_event != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_event,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_event, tmp_ptr, 32,
+				     1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -179,8 +183,7 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_job != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_job,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_job, tmp_ptr, 32, 1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -189,8 +192,7 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_resv != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_resv,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_resv, tmp_ptr, 32, 1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -199,8 +201,7 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_step != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_step,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_step, tmp_ptr, 32, 1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -209,8 +210,8 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_suspend != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_suspend,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_suspend, tmp_ptr, 32,
+				     1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -219,8 +220,7 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_txn != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_txn,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_txn, tmp_ptr, 32, 1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -229,8 +229,8 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	if (slurmdbd_conf->purge_usage != NO_VAL) {
 		tmp_ptr = xmalloc(32);
-		slurmdb_purge_string(slurmdbd_conf->purge_usage,
-				     tmp_ptr, 32 , 1);
+		slurmdb_purge_string(slurmdbd_conf->purge_usage, tmp_ptr, 32,
+				     1);
 	} else
 		tmp_ptr = xstrdup("NONE");
 
@@ -295,8 +295,7 @@ extern list_t *slurmdb_config_get_keypairs(const slurmdbd_conf_t *slurmdbd_conf)
 
 	add_key_pair(my_list, "TLSType", "%s", slurm_conf.tls_type);
 
-	add_key_pair_bool(my_list, "TrackWCKey",
-			  slurmdbd_conf->track_wckey);
+	add_key_pair_bool(my_list, "TrackWCKey", slurmdbd_conf->track_wckey);
 
 	add_key_pair_bool(my_list, "TrackSlurmctldDown",
 			  slurmdbd_conf->track_ctld);
