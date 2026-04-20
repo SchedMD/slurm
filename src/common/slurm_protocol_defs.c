@@ -6590,6 +6590,10 @@ extern int validate_resv_create_desc(resv_desc_msg_t *resv_msg, char **err_msg,
 			resv_msg->flags = RESERVE_FLAG_PART_NODES;
 		else
 			resv_msg->flags |= RESERVE_FLAG_PART_NODES;
+
+		if (res_free_flags && (*res_free_flags & RESV_FREE_STR_NODES))
+			xfree(resv_msg->node_list);
+
 		resv_msg->node_list = xstrdup("ALL");
 
 		if (res_free_flags)
