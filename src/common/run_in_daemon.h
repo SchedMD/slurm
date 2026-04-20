@@ -46,6 +46,7 @@ extern uint32_t slurm_daemon;
 #define IS_SLURMSTEPD SLURM_BIT(5)
 #define IS_SACKD SLURM_BIT(6)
 #define IS_SLURMRESTD SLURM_BIT(7)
+#define IS_STEPMGR SLURM_BIT(8)
 #define IS_ANY_DAEMON 0xFFFFFFFF
 
 /*
