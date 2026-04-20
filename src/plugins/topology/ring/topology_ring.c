@@ -410,6 +410,98 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 	return SLURM_SUCCESS;
 }
 
+static uint16_t _get_ring_pos(ring_record_t *ring_ptr, int index)
+{
+	uint16_t ring_pos = INFINITE16;
+
+	if (!bit_test(ring_ptr->nodes_bitmap, index))
+		return ring_pos;
+
+	for (int i = 0; i < ring_ptr->ring_size; i++) {
+		if (ring_ptr->nodes_map[i] == index) {
+			ring_pos = i;
+			break;
+		}
+	}
+
+	return ring_pos;
+}
+
+static uint16_t _get_segment_start(ring_record_t *ring_ptr,
+				   bitstr_t *node_bitmap)
+{
+	uint16_t ring_size = ring_ptr->ring_size;
+
+	if (!ring_size || !bit_test(node_bitmap, ring_ptr->nodes_map[0]) ||
+	    !bit_test(node_bitmap, ring_ptr->nodes_map[ring_size - 1]))
+		return 0;
+
+	/* Segment wraps around position 0, find actual start */
+	for (uint16_t p = 1; p < ring_size; p++) {
+		if (!bit_test(node_bitmap, ring_ptr->nodes_map[p])) {
+			for (p++; p < ring_size; p++) {
+				if (bit_test(node_bitmap,
+					     ring_ptr->nodes_map[p]))
+					return p;
+			}
+			break;
+		}
+	}
+
+	return 0;
+}
+
+extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, void *tctx)
+{
+	uint32_t count = 0;
+	ring_context_t *ctx = tctx;
+	uint16_t *ring_starts;
+
+	xassert(node_rank);
+	xassert(size);
+
+	*node_rank = NULL;
+	*size = 0;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+
+	if (!count)
+		return SLURM_SUCCESS;
+
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+	*size = count;
+
+	ring_starts = xcalloc(ctx->ring_count, sizeof(*ring_starts));
+	for (int j = 0; j < ctx->ring_count; j++)
+		ring_starts[j] =
+			_get_segment_start(&ctx->rings[j], node_bitmap);
+
+	count = 0;
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		ring_record_t *ring_ptr = ctx->rings;
+		for (int j = 0; j < ctx->ring_count; j++, ring_ptr++) {
+			uint16_t ring_pos = _get_ring_pos(ring_ptr, i);
+			if (ring_pos != INFINITE16) {
+				ring_pos +=
+					(ring_ptr->ring_size - ring_starts[j]);
+				ring_pos %= ring_ptr->ring_size;
+				(*node_rank)[count] = (ring_ptr->ring_index
+						       << TOPO_RANK_ID_SHIFT);
+				(*node_rank)[count] += ring_pos;
+				break;
+			}
+		}
+		count++;
+	}
+
+	xfree(ring_starts);
+	return SLURM_SUCCESS;
+}
+
 /*
  * Get bitmap of nodes in ring
  *

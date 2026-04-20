@@ -1114,7 +1114,10 @@ typedef enum {
 	SELECT_PACK_NODES = SLURM_BIT(9),
 	/* Prefer least-loaded device for shared GRES */
 	SELECT_LL_SHARED_GRES = SLURM_BIT(10),
-	/* SLURM_BIT(11), empty */
+	/*
+	 * Disable topology node rank sort
+	 */
+	SELECT_NO_DIST_TOPO_BLOCK = SLURM_BIT(11),
 	/*
 	 * By default, distribute cores using a block approach inside the
 	 * nodes
@@ -2083,12 +2086,11 @@ typedef struct suspend_exc_update_msg {
 
 typedef struct {
 	char *node_list; /* nodelist corresponding to task layout */
-	uint16_t *cpus_per_node; /* cpus per node */
-	uint32_t *cpu_count_reps; /* how many nodes have same cpu count */
+	uint16_t *cpus_per_node; /* flat array: one entry per node */
+	uint32_t *node_ranks; /* Topology rank of each node */
 	uint32_t num_hosts; /* number of hosts we have */
 	uint32_t num_tasks; /* number of tasks to distribute across these cpus*/
-	uint16_t *cpus_per_task; /* number of cpus per task */
-	uint32_t *cpus_task_reps; /* how many nodes have same per task count */
+	uint16_t *cpus_per_task; /* flat array: one entry per node */
 	uint32_t task_dist; /* type of distribution we are using */
 	uint16_t plane_size; /* plane size (only needed for plane distribution*/
 } slurm_step_layout_req_t;

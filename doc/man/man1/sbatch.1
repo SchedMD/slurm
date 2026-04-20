@@ -769,6 +769,10 @@ First distribution method (distribution of tasks across nodes):
 .TP
 .B *
 Use the default method for distributing tasks to nodes (block).
+If a topology plugin is configured and the user does not specify a
+distribution method, tasks are distributed following topology order
+rather than node index order. See \fBCR_NO_DIST_TOPO_BLOCK\fR in
+\fBSelectTypeParameters\fR to disable this behavior.
 .IP
 
 .TP

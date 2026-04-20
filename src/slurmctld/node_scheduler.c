@@ -3017,7 +3017,7 @@ extern int select_nodes(job_node_select_t *job_node_select,
 
 	allocate_nodes(job_ptr);
 	job_array_start(job_ptr);
-	build_node_details(job_ptr, true);
+	build_node_details(job_ptr);
 	rebuild_job_part_list(job_ptr);
 
 	if ((job_ptr->mail_type & MAIL_JOB_BEGIN) &&
@@ -3055,7 +3055,8 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		}
 	}
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
-	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
+	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap) ||
+	    pick_batch_host(job_ptr)) {
 		/* This handles nodes explicitly requesting node reboot */
 		job_state_set_flag(job_ptr, JOB_CONFIGURING);
 	}
@@ -4314,11 +4315,10 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
 }
 
 /*
- * build_node_details - sets addresses for allocated nodes
+ * build_node_details - sets node_cnt
  * IN job_ptr - pointer to a job record
- * IN new_alloc - set if new job allocation, cleared if state recovery
  */
-extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
+extern void build_node_details(job_record_t *job_ptr)
 {
 	hostlist_t *host_list = NULL;
 	node_record_t *node_ptr;
@@ -4331,12 +4331,9 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 		return;
 	}
 
-	/* Use hostlist here to ensure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);
 	job_ptr->total_nodes = job_ptr->node_cnt = hostlist_count(host_list);
-
-	xfree(job_ptr->batch_host);
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		if ((node_ptr = find_node_record(this_node_name))) {
@@ -4344,14 +4341,6 @@ extern void build_node_details(job_record_t *job_ptr, bool new_alloc)
 		} else {
 			error("Invalid node %s in %pJ",
 			      this_node_name, job_ptr);
-		}
-		if (!job_ptr->batch_host && !job_ptr->batch_features) {
-			/*
-			 * Do not select until launch_job() as node features
-			 * might be changed by node_features plugin between
-			 * allocation time (now) and launch.
-			 */
-			job_ptr->batch_host = xstrdup(this_node_name);
 		}
 		free(this_node_name);
 	}

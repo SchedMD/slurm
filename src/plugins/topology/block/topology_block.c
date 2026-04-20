@@ -283,6 +283,45 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 	return SLURM_SUCCESS;
 }
 
+extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, void *tctx)
+{
+	uint32_t count = 0;
+	block_context_t *ctx = tctx;
+
+	xassert(node_rank);
+	xassert(size);
+
+	*node_rank = NULL;
+	*size = 0;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+
+	if (!count)
+		return SLURM_SUCCESS;
+
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+	*size = count;
+
+	count = 0;
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		block_record_t *block_ptr = ctx->block_record_table;
+		for (int j = 0; j < ctx->block_count; j++, block_ptr++) {
+			if (bit_test(block_ptr->node_bitmap, i)) {
+				(*node_rank)[count] = block_ptr->block_index
+						      << TOPO_RANK_ID_SHIFT;
+				break;
+			}
+		}
+		count++;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Get bitmap of nodes in block
  *

@@ -2156,6 +2156,20 @@ alloc_job:
 	xfree(tres_mc_ptr);
 	_free_avail_res_array(avail_res_array);
 	free_core_array(&avail_cores);
+
+	if ((error_code == SLURM_SUCCESS) && (job_res->nhosts > 1) &&
+	    !(slurm_conf.select_type_param & SELECT_NO_DIST_TOPO_BLOCK)) {
+		uint32_t cnt = 0;
+		error_code =
+			topology_g_get_rank(job_res->node_bitmap,
+					    &(job_res->node_ranks), &cnt,
+					    job_ptr->part_ptr->topology_idx);
+		if (job_res->node_ranks && (cnt != job_res->nhosts))
+			error_code = SLURM_ERROR;
+		if (error_code)
+			error("problem building node_ranks array");
+	}
+
 	if (error_code != SLURM_SUCCESS) {
 		free_job_resources(&job_ptr->job_resrcs);
 		return error_code;
