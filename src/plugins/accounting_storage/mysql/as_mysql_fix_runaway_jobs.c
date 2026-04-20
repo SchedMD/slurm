@@ -202,11 +202,15 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		goto bail;
 	}
 
-	/* Set rollup to the last day of the previous month of the first
-	 * runaway job */
-	rc = _first_job_roll_up(mysql_conn, first_job->submit);
-	if (rc != SLURM_SUCCESS)
-		error("Failed to fix runaway jobs");
+	if (!(slurmdbd_conf->flags & DBD_CONF_FLAG_DISABLE_ROLLUPS)) {
+		/*
+		 * Set rollup to the last day of the previous month of the first
+		 * runaway job.
+		 */
+		rc = _first_job_roll_up(mysql_conn, first_job->submit);
+		if (rc != SLURM_SUCCESS)
+			error("Failed to fix runaway jobs");
+	}
 
 bail:
 	xfree(job_ids);

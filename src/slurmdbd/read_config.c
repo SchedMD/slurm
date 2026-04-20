@@ -157,6 +157,7 @@ extern int read_slurmdbd_conf(void)
 		{"DefaultQOS", S_P_STRING},
 		{"DisableCoordDBD", S_P_BOOLEAN},
 		{"DisableArchiveCommands", S_P_BOOLEAN},
+		{"DisableRollups", S_P_BOOLEAN},
 		{"HashPlugin", S_P_STRING},
 		{"JobPurge", S_P_UINT32},
 		{"LogFile", S_P_STRING},
@@ -369,6 +370,11 @@ extern int read_slurmdbd_conf(void)
 		if (tmp_bool)
 			slurmdbd_conf->flags |=
 				DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS;
+
+		tmp_bool = false;
+		s_p_get_boolean(&tmp_bool, "DisableRollups", tbl);
+		if (tmp_bool)
+			slurmdbd_conf->flags |= DBD_CONF_FLAG_DISABLE_ROLLUPS;
 
 		if (!s_p_get_string(&slurm_conf.hash_plugin, "HashPlugin", tbl))
 			slurm_conf.hash_plugin = xstrdup(DEFAULT_HASH_PLUGIN);
@@ -902,6 +908,10 @@ extern list_t *dump_config(void)
 	add_key_pair_bool(my_list, "DisableArchiveCommands",
 			  (slurmdbd_conf->flags &
 			   DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS));
+
+	add_key_pair_bool(my_list, "DisableRollups",
+			  (slurmdbd_conf->flags &
+			   DBD_CONF_FLAG_DISABLE_ROLLUPS));
 
 	add_key_pair(my_list, "HashPlugin", "%s", slurm_conf.hash_plugin);
 

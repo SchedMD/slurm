@@ -613,6 +613,14 @@ slurmdbd interactions.
 .IP
 
 .TP
+\fBDisableRollups\fR
+Disable automatic rollups of job usage data. This will prevent sreport from
+having any usage data to show but will reduce load on the database. Re-enabling
+rollups will not generate any previously skipped rollups.
+Accepted values are yes or no. The default value is no.
+.IP
+
+.TP
 \fBHashPlugin\fR
 Identifies the type of hash plugin to use for network communication.
 Acceptable values include:
