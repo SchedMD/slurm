@@ -388,6 +388,7 @@ int main(int argc, char **argv)
 	/* Daemon termination handled here */
 
 end_it:
+	conmgr_request_shutdown();
 
 	slurm_thread_join(commit_handler_thread);
 
@@ -411,6 +412,7 @@ end_it:
 		_restart_self(argc, argv);
 	}
 
+	conmgr_fini();
 	assoc_mgr_fini(0);
 	acct_storage_g_fini();
 	auth_g_fini();
@@ -422,7 +424,6 @@ end_it:
 	rpc_stats = NULL;
 	slurm_mutex_unlock(&rpc_mutex);
 
-	conmgr_fini();
 	log_fini();
 	return SLURM_SUCCESS;
 }
