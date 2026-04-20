@@ -767,8 +767,6 @@ int main(int argc, char **argv)
 
 	conmgr_add_work_fifo(_register_signal_handlers, NULL);
 
-	conmgr_run(false);
-
 	if (auth_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize auth plugin");
 	if (hash_g_init() != SLURM_SUCCESS)
@@ -781,6 +779,8 @@ int main(int argc, char **argv)
 		fatal("Failed to initialize serialization plugins.");
 
 	forward_init();
+
+	conmgr_run(false);
 
 	if (original && !under_systemd) {
 		/*
