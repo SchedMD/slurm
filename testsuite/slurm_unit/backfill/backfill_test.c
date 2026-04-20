@@ -204,7 +204,8 @@ static int _print_job(void *x, void *arg)
 }
 
 job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
-			uint32_t num_tasks, uint32_t time_limit, char *licenses)
+			uint32_t num_tasks, uint16_t segment_size,
+			uint32_t time_limit, char *licenses)
 {
 	static uint32_t last_job_id = 0;
 
@@ -229,6 +230,7 @@ job_record_t *__add_job(uint32_t job_id, uint32_t priority, uint32_t nodes,
 	job_ptr->details->max_cpus = NO_VAL;
 	job_ptr->details->cpus_per_task = 1;
 	job_ptr->details->task_dist = SLURM_DIST_CYCLIC;
+	job_ptr->details->segment_size = segment_size;
 	job_ptr->details->share_res = 1;
 	job_ptr->details->whole_node = 0;
 	job_ptr->time_limit = time_limit;
@@ -265,15 +267,18 @@ void load_test()
 	while (fgets(buffer, 256, f)) {
 		char *p;
 		uint32_t job_id, priority, nodes, num_tasks, time_limit;
+		uint16_t segment_size;
 		if ((buffer[0] == '#') || (buffer[0] == '\n'))
 			continue;
 		job_id = strtoul(buffer, &p, 10);
 		priority = strtoul(p, &p, 10);
 		nodes = strtoul(p, &p, 10);
 		num_tasks = strtoul(p, &p, 10);
+		segment_size = strtoul(p, &p, 10);
 		time_limit = strtoul(p, &p, 10);
 
-		__add_job(job_id, priority, nodes, num_tasks, time_limit, p);
+		__add_job(job_id, priority, nodes, num_tasks, segment_size,
+			  time_limit, p);
 	}
 	fclose(f);
 }
@@ -290,10 +295,10 @@ START_TEST(test_backfill_1)
 	job_record_t *job_ptr;
 	uint32_t now = time(NULL);
 
-	/* job_id, priority, nodes, num_tasks, time_limit, licenses */
-	__add_job(0, 10, 1, 1, 10, NULL);
-	__add_job(0, 5, 32, 32, 10, NULL);
-	__add_job(0, 1, 31, 31, 5, NULL);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	__add_job(0, 10, 1, 1, 0, 10, NULL);
+	__add_job(0, 5, 32, 32, 0, 10, NULL);
+	__add_job(0, 1, 31, 31, 0, 5, NULL);
 
 	__attempt_backfill();
 
@@ -322,16 +327,16 @@ START_TEST(test_backfill_2)
 {
 	uint32_t now = time(NULL);
 
-	/* job_id, priority, nodes, num_tasks, time_limit, licenses */
-	__add_job(0, 10, 6, 6, 10, NULL);
-	__add_job(0, 9, 27, 27, 15, NULL);
-	__add_job(0, 8, 28, 28, 14, NULL);
-	__add_job(0, 7, 29, 29, 13, NULL);
-	__add_job(0, 6, 30, 30, 12, NULL);
-	__add_job(0, 5, 5, 5, 10, NULL);
-	__add_job(0, 5, 5, 5, 10, NULL);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	__add_job(0, 10, 6, 6, 0, 10, NULL);
+	__add_job(0, 9, 27, 27, 0, 15, NULL);
+	__add_job(0, 8, 28, 28, 0, 14, NULL);
+	__add_job(0, 7, 29, 29, 0, 13, NULL);
+	__add_job(0, 6, 30, 30, 0, 12, NULL);
+	__add_job(0, 5, 5, 5, 0, 10, NULL);
+	__add_job(0, 5, 5, 5, 0, 10, NULL);
 	/* This job would jump ahead of the priority 6 job */
-	__add_job(0, 1, 30, 30, 11, NULL);
+	__add_job(0, 1, 30, 30, 0, 11, NULL);
 
 	__attempt_backfill();
 	list_for_each(job_list, _print_job, &now);
@@ -367,8 +372,8 @@ START_TEST(test_backfill_3)
 	job_record_t *job2_ptr;
 
 	for (int i = 0; i < 1000; i++) {
-		/* job_id, priority, nodes, num_tasks, time_limit, licenses */
-		__add_job(0, 10, 6, 6, 10, NULL);
+		/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+		__add_job(0, 10, 6, 6, 0, 10, NULL);
 	}
 
 	__attempt_backfill();
@@ -393,11 +398,11 @@ START_TEST(test_backfill_lic_1)
 	uint32_t now = time(NULL);
 	job_record_t *job_ptr;
 
-	/* job_id, priority, nodes, num_tasks, time_limit, licenses */
-	__add_job(1, 10, 1, 1, 10, "lic1");
-	__add_job(2, 9, 1, 1, 10, "lic1");
-	__add_job(3, 8, 1, 1, 10, "lic1");
-	__add_job(4, 7, 1, 1, 10, NULL);
+	/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+	__add_job(1, 10, 1, 1, 0, 10, "lic1");
+	__add_job(2, 9, 1, 1, 0, 10, "lic1");
+	__add_job(3, 8, 1, 1, 0, 10, "lic1");
+	__add_job(4, 7, 1, 1, 0, 10, NULL);
 
 	__attempt_backfill();
 	list_for_each(job_list, _print_job, &now);
@@ -429,8 +434,8 @@ START_TEST(test_backfill_lic_2)
 	part_ptr->max_share = 1;
 
 	for (int i = 0; i < 12; i++) {
-		/* job_id, priority, nodes, num_tasks, time_limit, licenses */
-		__add_job(0, 10, 1, 1, 10, "lic2");
+		/* job_id, priority, nodes, num_tasks, segment_size, time_limit, licenses */
+		__add_job(0, 10, 1, 1, 0, 10, "lic2");
 	}
 	__attempt_backfill();
 	list_for_each(job_list, _print_job, &now);
