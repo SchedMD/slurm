@@ -5251,9 +5251,8 @@ extern void validate_all_reservations(bool run_now, bool run_locked)
 	}
 }
 
-static int _validate_job_resv(void *job, void *y)
+static int _validate_job_resv(job_record_t *job_ptr)
 {
-	job_record_t *job_ptr = (job_record_t *)job;
 	int rc = SLURM_SUCCESS;
 
 	if (job_ptr->resv_name == NULL)
@@ -5273,6 +5272,7 @@ static int _validate_job_resv(void *job, void *y)
 	if (rc != SLURM_SUCCESS) {
 		error("%pJ linked to invalid reservation: %s, holding the job.",
 		      job_ptr, job_ptr->resv_name);
+		job_ptr->priority = 0;
 		job_ptr->state_reason = WAIT_RESV_INVALID;
 		job_state_set_flag(job_ptr, JOB_RESV_DEL_HOLD);
 		xstrfmtcat(job_ptr->state_desc,
@@ -5322,7 +5322,7 @@ static void _validate_all_reservations(void)
 	 */
 	iter = list_iterator_create(job_list);
 	while ((job_ptr = list_next(iter)))
-		_validate_job_resv(job_ptr, NULL);
+		_validate_job_resv(job_ptr);
 	list_iterator_destroy(iter);
 }
 
