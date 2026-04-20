@@ -989,7 +989,8 @@ typedef struct {
 	time_t end;
 	char *env;
 	char *exclusive;
-	uint32_t exitcode;
+	uint32_t exitcode; /* Alias of job_exit_rc.exit_code, kept for
+			    * compatibility. */
 	char *extra; /* Extra - arbitrary string */
 	char *failed_node;
 	uint32_t flags;
@@ -997,6 +998,7 @@ typedef struct {
 	uint32_t gid;
 	uint32_t het_job_id;
 	uint32_t het_job_offset;
+	job_exit_rc_t job_exit_rc; /* Slurm return code and exit status */
 	uint32_t jobid;
 	char	*jobname;
 	char *layout; /* comma-separated key=value pairs */
