@@ -29,6 +29,7 @@ source ./globals
 set file_in     "$test_dir/script"
 set test_timer  "$test_dir/test_timer"
 set test_srun   "$test_dir/test_srun"
+set sync_dir    "$test_dir/sync"
 set run_timer   2
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
@@ -49,13 +50,16 @@ if {[param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 }
 
 make_bash_script $test_timer "
-echo \"JOB STARTED: \$SLURM_JOB_ID \"
-echo \"Give time to the other job to also start...\"
-sleep 10
+mkdir -p $sync_dir
+echo \"JOB STARTED: \$SLURM_JOB_ID\"
+touch $sync_dir/\$SLURM_JOB_ID.ready
+while \[ \$(ls $sync_dir/*.ready 2>/dev/null | wc -l) -lt $run_timer \]; do
+    sleep 0.5
+done
 for i in \{1..10\}
 do
 	echo \"timer \$a time \$i\"
-	sleep 1
+	sleep 0.5
 done
 echo \"Timer \$a finished\"
 "
