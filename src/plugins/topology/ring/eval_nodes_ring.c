@@ -275,6 +275,12 @@ extern int eval_nodes_ring(topology_eval_t *topo_eval)
 	topo_eval->gres_per_job = gres_sched_init(job_ptr->gres_list_req);
 	rem_nodes = MIN(min_nodes, req_nodes);
 
+	if (details_ptr->arbitrary_tpn) {
+		info("topology ring does not support arbitrary tasks distribution");
+		rc = ESLURM_NOT_SUPPORTED;
+		goto fini;
+	}
+
 	if (segment_size > rem_nodes) {
 		info("Ignoring segment_size (%u): larger than job size (%u)",
 		     segment_size, rem_nodes);
