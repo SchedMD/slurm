@@ -295,14 +295,15 @@ typedef enum {
 #define DB_CONN_FLAG_ROLLBACK SLURM_BIT(1)
 #define DB_CONN_FLAG_FEDUPDATE SLURM_BIT(2)
 
-#define DEFAULT_SLURMDBD_AUTHTYPE	"auth/munge"
+#define DEFAULT_SLURMDBD_AUTHTYPE "auth/munge"
 //#define DEFAULT_SLURMDBD_JOB_PURGE	12
-#define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
-#define DEFAULT_SLURMDBD_ARCHIVE_DIR	"/tmp"
+#define DEFAULT_SLURMDBD_PIDFILE "/var/run/slurmdbd.pid"
+#define DEFAULT_SLURMDBD_ARCHIVE_DIR "/tmp"
 #define DEFAULT_SLURMDBD_KEEPALIVE_INTERVAL 30
 #define DEFAULT_SLURMDBD_KEEPALIVE_PROBES 3
 #define DEFAULT_SLURMDBD_KEEPALIVE_TIME 30
 #define DEFAULT_SLURMDBD_MAX_PURGE_LIMIT 50000
+
 //#define DEFAULT_SLURMDBD_STEP_PURGE	1
 
 /* Define slurmdbd_conf_t flags */
@@ -317,54 +318,54 @@ enum dbd_conf_flag {
 
 /* SlurmDBD configuration parameters */
 typedef struct {
-	char *		archive_dir;    /* location to locally store
+	char *archive_dir; /* location to locally store
 					 * data if not using a script   */
-	char *		archive_script;	/* script to archive old data	*/
-	uint16_t        commit_delay;   /* On busy systems delay
+	char *archive_script; /* script to archive old data	*/
+	uint16_t commit_delay; /* On busy systems delay
 					 * commits from slurmctld this
 					 * many seconds                 */
-	char *		dbd_addr;	/* network address of Slurm DBD	*/
-	char *		dbd_backup;	/* hostname of Slurm DBD backup */
-	char *		dbd_host;	/* hostname of Slurm DBD	*/
-	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
-	uint16_t	debug_level;	/* Debug level, default=3	*/
-	char *          default_qos;	/* default qos setting when
+	char *dbd_addr; /* network address of Slurm DBD	*/
+	char *dbd_backup; /* hostname of Slurm DBD backup */
+	char *dbd_host; /* hostname of Slurm DBD	*/
+	uint16_t dbd_port; /* port number for RPCs to DBD	*/
+	uint16_t debug_level; /* Debug level, default=3	*/
+	char *default_qos; /* default qos setting when
 					 * adding clusters              */
-	uint32_t flags;			/* Various flags see DBD_CONF_FLAG_* */
-	char *		log_file;	/* Log file			*/
+	uint32_t flags; /* Various flags see DBD_CONF_FLAG_* */
+	char *log_file; /* Log file			*/
 	uint32_t max_purge_limit; /* max number of records that are purged in a
 				   * single query so that locks can be
 				   * periodically released */
-	uint32_t	max_time_range;	/* max time range for user queries */
-	char *		parameters;	/* parameters to change behavior with
+	uint32_t max_time_range; /* max time range for user queries */
+	char *parameters; /* parameters to change behavior with
 					 * the slurmdbd directly	*/
-	uint16_t        persist_conn_rc_flags; /* flags to be sent back on any
+	uint16_t persist_conn_rc_flags; /* flags to be sent back on any
 						* persist connection init
 						*/
-	char *		pid_file;	/* where to store current PID	*/
-					/* purge variable format
+	char *pid_file; /* where to store current PID	*/
+	/* purge variable format
 					 * controlled by PURGE_FLAGS	*/
-	uint32_t        purge_event;    /* purge events older than
+	uint32_t purge_event; /* purge events older than
 					 * this in months or days       */
-	uint32_t	purge_job;	/* purge time for job info	*/
-	uint32_t	purge_resv;	/* purge time for reservation info */
-	uint32_t	purge_step;	/* purge time for step info	*/
-	uint32_t        purge_suspend;  /* purge suspend data older
+	uint32_t purge_job; /* purge time for job info	*/
+	uint32_t purge_resv; /* purge time for reservation info */
+	uint32_t purge_step; /* purge time for step info	*/
+	uint32_t purge_suspend; /* purge suspend data older
 					 * than this in months or days	*/
-	uint32_t        purge_txn;      /* purge transaction data older
+	uint32_t purge_txn; /* purge transaction data older
 					 * than this in months or days	*/
-	uint32_t        purge_usage;    /* purge usage data older
+	uint32_t purge_usage; /* purge usage data older
 					 * than this in months or days	*/
 	uint32_t purge_jobscript; /* purge job scripts older
 				   * than this in months or days  */
 	uint32_t purge_jobenv; /* purge job environments older
 				* than this in months or days  */
-	char *		storage_loc;	/* database name		*/
+	char *storage_loc; /* database name		*/
 	char *storage_pass_script;
 	char *storage_user;
-	uint16_t	syslog_debug;	/* output to both logfile and syslog*/
-	uint16_t        track_wckey;    /* Whether or not to track wckey*/
-	uint16_t        track_ctld;     /* Whether or not track when a
+	uint16_t syslog_debug; /* output to both logfile and syslog*/
+	uint16_t track_wckey; /* Whether or not to track wckey*/
+	uint16_t track_ctld; /* Whether or not track when a
 					 * slurmctld goes down or not   */
 } slurmdbd_conf_t;
 
