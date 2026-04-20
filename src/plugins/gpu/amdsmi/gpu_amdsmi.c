@@ -41,7 +41,6 @@
 
 #include <dlfcn.h>
 #include <amd_smi/amdsmi.h>
-
 #include "../common/gpu_common.h"
 
 #ifdef HAVE_NUMA
