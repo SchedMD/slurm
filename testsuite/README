@@ -1081,3 +1081,7 @@ test_159_2   Test unique mount and mount options in namespace/linux (26.05+)
 test_160_#   Testing dynamic memory limits.
 ===========================================
 test_160_1   Test memory reduction on running jobs (scontrol and --mem-update)
+
+test_161_#   Testing topology/torus3d.
+========================================
+test_161_1   Test topology/torus3d placements, constraints, and --segment
