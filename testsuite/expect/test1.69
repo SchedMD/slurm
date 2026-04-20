@@ -73,66 +73,25 @@ make_bash_script $file_in "
 $bin_bash -i $test_srun
 "
 
-# We make sure that all timers run at the same time by making sure that
-# all timer's report "time 3" before any of them report "time 4", etc.
-set timeout $max_job_delay
-set tmp_time 1
-set time_num 1
-set fini_num 1
+# We make sure that all timers run at the same time by checking that all
+# expected output is present. Order is not enforced since concurrent jobs
+# may produce output in any order depending on system load.
+set output [run_command_output -fail "bash -i $file_in"]
+
+set jobs [regexp -all {JOB STARTED:} $output]
 set timer_match 0
-set time_match 0
 set fini_match 0
-set jobs 0
-spawn bash -i $file_in
-expect {
-	-re "JOB STARTED: ($number)" {
-		set job_id $expect_out(1,string)
-		log_debug "Job $job_id started"
-		incr jobs
-		exp_continue
-	}
-	-re "timer ($number) time ($number)" {
-		set tr_num $expect_out(1,string)
-		set t_num  $expect_out(2,string)
-
-		for {set i 1} {$run_timer>=$i} {incr i} {
-			if {$tr_num == $i} {
-				incr timer_match
-			}
+for {set t 1} {$t <= $run_timer} {incr t} {
+	for {set i 1} {$i <= 10} {incr i} {
+		if {[regexp "timer $t time $i" $output]} {
+			incr timer_match
 		}
-		if {$t_num == $time_num} {
-			incr time_match
-		} else {
-			log_error "Timer value $t_num did not match expected value $time_num"
-		}
-		if {$tmp_time == $run_timer} {
-			incr time_num
-			set tmp_time 0
-		}
-
-		incr tmp_time
-		exp_continue
 	}
-	-re "Timer ($number) finished" {
-		set tmp_fini $expect_out(1,string)
-		for {set i 1} {$run_timer>=$i} {incr i} {
-			if {$tmp_fini == $i} {
-				incr fini_match
-			}
-		}
-		incr fini_num
-		exp_continue
-	}
-	timeout {
-		fail "srun is not responding"
-	}
-	eof {
-		wait
+	if {[regexp "Timer $t finished" $output]} {
+		incr fini_match
 	}
 }
 
-
 subtest {$timer_match == [expr $run_timer*10]} "srun should execute all timers" "$timer_match != [expr $run_timer*10]"
-subtest {$time_match == [expr $run_timer*10]} "srun should generate the right output" "$time_match != [expr $run_timer*10]"
 subtest {$fini_match == $run_timer} "srun should finish the submitted program" "$fini_match != $run_timer"
 subtest {$jobs == 2} "Both jobs should be started before timers start"
