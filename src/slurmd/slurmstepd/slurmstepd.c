@@ -1122,6 +1122,7 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			job_step_ptr = task_msg->job_ptr;
 			job_step_ptr->part_ptr = task_msg->part_ptr;
 			job_node_array = task_msg->job_node_array;
+			slurm_daemon |= IS_STEPMGR;
 
 			/*
 			 * job_record doesn't pack its node_addrs array, so get
