@@ -1169,8 +1169,15 @@ static int _post_plugin_gres_conf(void *x, void *arg)
 	if (gres_slurmd_conf->plugin_id != gres_ctx->plugin_id)
 		return 0;
 
-	if (gres_slurmd_conf->config_flags & GRES_CONF_GLOBAL_INDEX)
-		gres_ctx->config_flags |= GRES_CONF_GLOBAL_INDEX;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_UUID) {
+		if (!gres_slurmd_conf->unique_id) {
+			warning("Flags=env_uuid set but no GPU UUID available for device %s. Falling back to numeric indices.",
+				gres_slurmd_conf->file ? gres_slurmd_conf->file :
+				"(unknown)");
+			gres_slurmd_conf->config_flags &= ~GRES_CONF_UUID;
+		} else
+			gres_ctx->config_flags |= GRES_CONF_UUID;
+	}
 
 	return 1;
 }
@@ -1561,6 +1568,8 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
 		flags |= GRES_CONF_ONE_SHARING;
 	if (xstrcasestr(input, "explicit"))
 		flags |= GRES_CONF_EXPLICIT;
+	if (xstrcasestr(input, "env_uuid"))
+		flags |= GRES_CONF_UUID;
 	/* String 'no_gpu_env' will clear all GPU env vars */
 	if (no_gpu_env)
 		*no_gpu_env = xstrcasestr(input, "no_gpu_env");
@@ -1709,20 +1718,28 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			fatal("Invalid GRES record name=%s type=%s: Flags (%s) contains \"no_gpu_env\", which must be mutually exclusive to all other GRES env flags of same node and name",
 			      p->name, p->type_name, tmp_str);
 
-		set_default_envs = false;
 		/*
-		 * Make sure that Flags are consistent with each other
-		 * if set for multiple lines of the same GRES.
+		 * Only override default env logic when explicit vendor
+		 * env flags or no_gpu_env are present. Pure modifier
+		 * flags like env_uuid (GRES_CONF_UUID) let defaults or
+		 * AutoDetect provide vendor flags.
 		 */
-		if (prev_gres.name_hash &&
-		    _same_gres_name_as_prev(&prev_gres, p) &&
-		    ((prev_gres.flags != flags) ||
-		     (prev_gres.no_gpu_env != no_gpu_env)))
-			fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
-			      p->name, p->type_name, tmp_str);
+		if (env_flags || no_gpu_env) {
+			set_default_envs = false;
+			/*
+			 * Make sure that Flags are consistent with each
+			 * other if set for multiple lines of the same
+			 * GRES.
+			 */
+			if (prev_gres.name_hash &&
+			    _same_gres_name_as_prev(&prev_gres, p) &&
+			    ((prev_gres.flags != flags) ||
+			     (prev_gres.no_gpu_env != no_gpu_env)))
+				fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
+				      p->name, p->type_name, tmp_str);
 
-		_set_prev_gres_flags(&prev_gres, p, flags,
-				     no_gpu_env);
+			_set_prev_gres_flags(&prev_gres, p, flags, no_gpu_env);
+		}
 
 		xfree(tmp_str);
 	} else if ((prev_gres.flags || prev_gres.no_gpu_env) &&
@@ -1738,6 +1755,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	/* Flags not set. By default, all env vars are set for GPUs */
 	if (set_default_envs && !xstrcasecmp(p->name, "gpu")) {
 		uint32_t env_flags = GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF;
+		/* Preserve modifier flags (e.g. env_uuid) already set */
+		env_flags |= p->config_flags & GRES_CONF_UUID;
 		p->config_flags |= env_flags;
 		_set_prev_gres_flags(&prev_gres, p, env_flags, false);
 	}
@@ -1892,9 +1911,11 @@ static int _foreach_gres_conf(void *x, void *arg)
 		gres_ctx->config_flags |= GRES_CONF_ONE_SHARING;
 
 	if (!(gres_slurmd_conf->config_flags & GRES_CONF_ENV_DEF) &&
-	    gres_slurmd_conf->config_flags & GRES_CONF_ENV_SET)
+	    (gres_slurmd_conf->config_flags &
+	     (GRES_CONF_ENV_SET | GRES_CONF_UUID)))
 		gres_ctx->config_flags |=
-			(gres_slurmd_conf->config_flags & GRES_CONF_ENV_SET);
+			(gres_slurmd_conf->config_flags &
+			 (GRES_CONF_ENV_SET | GRES_CONF_UUID));
 	/*
 	 * Since there could be multiple types of the same plugin we
 	 * need to only make sure we load it once.
@@ -2297,7 +2318,8 @@ static void _merge_gres2(merge_gres_t *merge_gres,
 
 	/* Set default env flags, and allow AutoDetect to override */
 	if (!xstrcasecmp(merge_gres->gres_ctx->gres_name, "gpu")) {
-		if (merge_gres->gres_ctx->config_flags & GRES_CONF_ENV_SET)
+		if (merge_gres->gres_ctx->config_flags &
+		    (GRES_CONF_ENV_SET | GRES_CONF_UUID))
 			gres_slurmd_conf.config_flags |=
 				merge_gres->gres_ctx->config_flags;
 		else
@@ -2714,9 +2736,6 @@ static int _foreach_fill_in_gres_devices(void *x, void *arg)
 			    fill_in_gres_devices->max_dev_num)
 				fill_in_gres_devices->max_dev_num =
 					gres_device->dev_num;
-
-			if (gres_slurmd_conf->config_flags & GRES_CONF_MIG)
-				gres_device->flags |= GRES_DEV_MIG;
 
 			list_append(*fill_in_gres_devices->gres_devices,
 				    gres_device);
@@ -10253,14 +10272,13 @@ static int _get_usable_gres(int context_inx, int proc_id,
 		 * Consolidate allocated gres bitstring so that we get the GRES
 		 * device index of the GRES within the context of the job, and
 		 * not within the context of the whole node, unless specifically
-		 * required with the GRES_CONF_GLOBAL_INDEX flag.
+		 * required with the GRES_CONF_UUID flag.
 		 */
-		if (!(gres_context[context_inx].config_flags &
-		      GRES_CONF_GLOBAL_INDEX))
+		if (!(gres_context[context_inx].config_flags & GRES_CONF_UUID))
 			bit_consolidate(gres_bit_alloc);
 	}
 
-	if (gres_context[context_inx].config_flags & GRES_CONF_GLOBAL_INDEX) {
+	if (gres_context[context_inx].config_flags & GRES_CONF_UUID) {
 		use_local_index = false;
 		dev_index_mode_set = true;
 	}
@@ -11046,6 +11064,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_ENV_NVML) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "ENV_NVML");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_UUID) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "UUID");
 		sep = ",";
 	}
 

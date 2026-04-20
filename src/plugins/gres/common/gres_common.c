@@ -137,13 +137,12 @@ extern void common_gres_set_env(common_gres_env_t *gres_env)
 		}
 
 		/*
-		 * NVIDIA MIG devices require the CUDA_VISIBLE_DEVICES
-		 * environment variable to be the device's UUID, not a local
-		 * index. For this reason, 'unique_id' is used here instead of
-		 * 'index'.
+		 * MIG devices always use UUID.
+		 * Non-MIG GPUs use UUID when env_uuid is set in gres.conf.
+		 * Both methods set GRES_CONF_UUID.
 		 */
-		if ((gres_device->flags & GRES_DEV_MIG) &&
-		    gres_device->unique_id)
+		if (gres_device->unique_id &&
+		    ((gres_env->gres_conf_flags & GRES_CONF_UUID)))
 			xstrfmtcat(new_local_list, "%s%s%s", local_prefix,
 				   gres_env->prefix, gres_device->unique_id);
 		else
@@ -430,10 +429,8 @@ extern int gres_common_set_env_types_on_node_flags(void *x, void *arg)
 		*node_flags |= GRES_CONF_ENV_OPENCL;
 	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_ONEAPI)
 		*node_flags |= GRES_CONF_ENV_ONEAPI;
-
-	/* No need to continue if all are set */
-	if ((*node_flags & GRES_CONF_ENV_SET) == GRES_CONF_ENV_SET)
-		return -1;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_UUID)
+		*node_flags |= GRES_CONF_UUID;
 
 	return 0;
 }

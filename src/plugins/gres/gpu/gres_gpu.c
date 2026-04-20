@@ -525,10 +525,9 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 			print_gres_conf(gres_slurmd_conf_sys, LOG_LEVEL_DEBUG);
 
 			/*
-			 * If the conf record did not fall back to default env
-			 * flags (i.e. it explicitly set env flags), then use
-			 * the conf's env flags. Otherwise, use the AutoDetected
-			 * env flags.
+			 * If the conf record explicitly set env flags,
+			 * override the system-detected env flags.
+			 * Otherwise keep the AutoDetected vendor flags.
 			 */
 			if (!(gres_slurmd_conf->config_flags &
 			      GRES_CONF_ENV_DEF)) {
@@ -538,10 +537,13 @@ static void _merge_system_gres_conf(list_t *gres_list_conf,
 					gres_slurmd_conf->config_flags &
 					GRES_CONF_ENV_SET;
 			}
-
+			/*
+			 * Always propagate modifier flags that layer on
+			 * top of vendor env flags.
+			 */
 			gres_slurmd_conf_sys->config_flags |=
 				gres_slurmd_conf->config_flags &
-				GRES_CONF_EXPLICIT;
+				(GRES_CONF_EXPLICIT | GRES_CONF_UUID);
 
 			list_remove(itr2);
 			list_append(gres_list_gpu, gres_slurmd_conf_sys);
@@ -703,6 +705,10 @@ static void _add_fake_gpus_from_file(list_t *gres_list_system,
 		if ((i < 5) || (i > 7))
 			error("Line #%d in fake_gpus.conf failed to parse! Make sure that the line has no empty tokens and that the format is <type>|<sys_cpu_count>|<cpu_range>|<links>|<device_file>[|<unique_id>[|<flags>]]",
 			      line_number);
+
+		if (!(gres_slurmd_conf.config_flags & GRES_CONF_ENV_SET))
+			warning("Line #%d in fake_gpus.conf has no env flags set. Real GPU plugins always set vendor env flags (e.g. nvidia_gpu_env).",
+				line_number);
 
 		gres_slurmd_conf.cpus_bitmap =
 			bit_alloc(gres_slurmd_conf.cpu_cnt);

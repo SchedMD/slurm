@@ -225,6 +225,18 @@ with that gres will have this flag implied.
 .IP
 
 .TP
+\fBenv_uuid\fR
+Set vendor environment variables using UUIDs instead of numeric
+device indices.
+Affects these environment variables: \fICUDA_VISIBLE_DEVICES\fR and
+\fIROCR_VISIBLE_DEVICES\fR.
+Requires the use of \fBAutoDetect\fR so that UUIDs are available.
+
+For example, instead of "\fICUDA_VISIBLE_DEVICES=0\fR", it would look like:
+"\fICUDA_VISIBLE_DEVICES=GPU-8932f937-d72c-4106-c12f-20bd9faed9f6\fR"
+.IP
+
+.TP
 \fBexplicit\fR
 If the flag is set, GRES is not allocated to the job as part of whole node
 allocation (--exclusive or OverSubscribe=EXCLUSIVE set on partition) unless
