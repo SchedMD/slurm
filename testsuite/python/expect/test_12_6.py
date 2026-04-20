@@ -11,7 +11,8 @@ pytestmark = pytest.mark.slow
 def setup():
     atf.require_expect()
 
-    # TODO: Why is this test failing?
+    atf.require_config_parameter("JobAcctGatherType", "jobacct_gather/linux")
+
     hdf5_dir = f"{atf.module_tmp_path}/profile"
     atf.require_config_parameter("AcctGatherProfileType", "acct_gather_profile/hdf5")
     atf.require_config_file("acct_gather.conf", f"ProfileHDF5Dir={hdf5_dir}")
