@@ -201,7 +201,8 @@ extern data_t *parse_url_path(const char *path, bool convert_types,
  * IN ptr - pointing to % character
  * RET \0 on error or decoded character
  */
-extern unsigned char url_decode_escape_seq(const char *ptr);
+extern unsigned char url_decode_escape_seq(const char *ptr,
+					   const char *ptr_end);
 
 typedef struct {
 	url_scheme_t scheme;

@@ -194,9 +194,11 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	data_t *d = data_set_dict(data_new());
 	char *key = NULL;
 	char *buffer = NULL;
+	const char *src_end = src + length;
 
 	/* extract each word */
-	for (const char *ptr = src; ptr && !rc && *ptr != '\0'; ++ptr) {
+	for (const char *ptr = src;
+	     ptr && !rc && (ptr < src_end) && (*ptr != '\0'); ++ptr) {
 		if (_is_valid_url_char(*ptr)) {
 			xstrcatchar(buffer, *ptr);
 			continue;
@@ -205,15 +207,15 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 		switch (*ptr) {
 		case '%': /* rfc3986 */
 		{
-			const char c = url_decode_escape_seq(ptr);
+			const char c = url_decode_escape_seq(ptr, src_end);
 			if (c != '\0') {
 				/* shift past the hex value */
 				ptr += 2;
 
 				xstrcatchar(buffer, c);
 			} else {
-				debug("%s: invalid URL escape sequence: %s",
-				      __func__, ptr);
+				debug("%s: invalid URL escape sequence: %.*s",
+				      __func__, (int) (src_end - ptr), ptr);
 				rc = SLURM_ERROR;
 				break;
 			}
