@@ -3799,7 +3799,7 @@ static int _start_job(job_record_t *job_ptr, bitstr_t *resv_bitmap)
 	if (rc == SLURM_SUCCESS) {
 		/* job initiated */
 		last_job_update = time(NULL);
-		info("Started %pJ in %s on %s",
+		log_flag(HETJOB, "Started %pJ in %s on %s",
 		     job_ptr, job_ptr->part_ptr->name, job_ptr->nodes);
 		if (job_ptr->batch_flag == 0)
 			srun_allocate(job_ptr);
@@ -4591,8 +4591,8 @@ static void _het_job_kill_now(het_job_map_t *map)
 		job_ptr = rec->job_ptr;
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
-		info("Deallocate %pJ due to hetjob start failure",
-		     job_ptr);
+		log_flag(HETJOB, "Deallocate %pJ due to hetjob start failure",
+			 job_ptr);
 		job_ptr->details->begin_time = now + cred_lifetime + 1;
 		job_ptr->end_time   = now;
 		job_state_set(job_ptr, (JOB_PENDING | JOB_COMPLETING));
@@ -4838,14 +4838,15 @@ static bool _het_job_deadlock_test(job_record_t *job_ptr)
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BACKFILL) {
 		part_iter = list_iterator_create(deadlock_global_list);
 		while ((dl_part_ptr2 = list_next(part_iter))){
-			info("Partition %s Hetjobs:",
-			     dl_part_ptr2->part_ptr->name);
+			log_flag(HETJOB, "Partition %s Hetjobs:",
+				 dl_part_ptr2->part_ptr->name);
 			job_iter = list_iterator_create(dl_part_ptr2->
 							deadlock_job_list);
 			while ((dl_job_ptr2 = list_next(job_iter))) {
-				info("   Hetjob %u to start at %"PRIu64,
-				     dl_job_ptr2->het_job_id,
-				     (uint64_t) dl_job_ptr2->start_time);
+				log_flag(HETJOB,
+					 "   Hetjob %u to start at %"PRIu64,
+					 dl_job_ptr2->het_job_id,
+					 (uint64_t) dl_job_ptr2->start_time);
 			}
 			list_iterator_destroy(job_iter);
 		}
