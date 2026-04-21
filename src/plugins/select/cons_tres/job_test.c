@@ -810,7 +810,7 @@ static int _get_one_res(topology_eval_t *topo_eval,
 	bitstr_t *req_map = job_ptr->details->req_node_bitmap;
 	uint32_t s_p_n = _socks_per_node(job_ptr);
 	int32_t avail_node_cnt;
-	int rc = ESLURM_BREAK_EVAL;
+	int rc = SLURM_ERROR;
 	bitstr_t **orig_core_array;
 
 	if (req_map)
