@@ -5678,6 +5678,14 @@ def default_partition():
             return partition_name
 
 
+def get_run_dir_path():
+    if "slurm-run-dir" not in properties:
+        properties["slurm-run-dir"] = get_config_parameter(
+            "SlurmdPidFile", live=False, quiet=True
+        )
+    return os.path.dirname(properties["slurm-run-dir"])
+
+
 # This is supplied for ease-of-use in test development only.
 # Tests should not use this permanently. Use logging.debug() instead.
 def log_debug(msg):

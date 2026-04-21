@@ -58,15 +58,12 @@ def make_rebooter_script(node_name, out_file):
     atf.make_bash_script(
         reboot_file,
         f"""
-slurmd_pid=$(ps -p $PPID -o ppid:1=)
+slurmd_pid=$(<"{atf.get_run_dir_path()}/slurmd.{node_name}.pid")
 slurmd_start_cmd=$(ps -p $slurmd_pid -o cmd=)
-kill -9 $slurmd_pid
-while [ $SECONDS -lt 10 ]; do
-    if ! ps -p $slurmd_pid; then
-        break
-    fi
-done
-$($slurmd_start_cmd -b)
+kill $slurmd_pid
+echo "slurmd_start_cmd: $slurmd_start_cmd"
+($slurmd_start_cmd -b)
+sleep 5
 while [ $SECONDS -lt 10 ]; do
     if ps -p $(pgrep -f '{slurmd_path}'); then
         echo 'done' > {out_file}
