@@ -967,6 +967,7 @@ test_138_3   Stress test multiple simultaneous commands via multiple threads
 test_139_#   Testing dynamic nodes.
 ===================================
 test_139_1   Test creation, registration, usage, and deletion of dynamic nodes.
+test_139_2   Test dynamic external node states don't go NOT_RESPONDING after update.
 
 test_140_#   Testing --tres options.
 ====================================
