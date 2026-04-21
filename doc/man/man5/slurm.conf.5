@@ -1465,10 +1465,10 @@ partition limits are altered. This is the default.
 
 .TP
 \fBEpilog\fR
-Pathname of a script to execute as user root on every node when a user's job
-completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute path name
-(i.e. it does not start with a slash), it will be searched for in the same
-directory as the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
+Pathname of a program to execute as user root on every node when a user's job
+completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute pathname
+(i.e. it does not start with a slash), it must be relative to the directory
+containing the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
 be used to run more than one epilog script (e.g. "/etc/slurm/epilog.d/*").
 When more than one epilog script is configured, they are executed in reverse
 alphabetical order (z-a -> Z-A -> 9-0). The Epilog script(s) may be used
@@ -3534,8 +3534,8 @@ Uses Process Group IDs.
 .TP
 \fBProlog\fR
 Pathname of a program for the slurmd to execute whenever it is asked to run a
-job step from a new job allocation. If it is not an absolute path name (i.e. it
-does not start with a slash), it will be searched for in the same directory as
+job step from a new job allocation. If it is not an absolute pathname (i.e. it
+does not start with a slash), it must be relative to the directory containing
 the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also be used to
 specify more than one program to run (e.g. "/etc/slurm/prolog.d/*"). When more
 than one prolog script is configured, they are executed in reverse alphabetical
@@ -5944,7 +5944,7 @@ The default value is "root".
 
 .TP
 \fBSrunEpilog\fR
-Fully qualified pathname of an executable to be run by srun following
+Fully qualified pathname of a program for srun to execute following
 the completion of a job step. The command line arguments for the
 executable will be the command and arguments of the job step. This
 configuration parameter may be overridden by srun's \fB\-\-epilog\fR
@@ -5985,7 +5985,7 @@ srun \-N 200      will use 12 listening ports.
 
 .TP
 \fBSrunProlog\fR
-Fully qualified pathname of an executable to be run by srun prior to
+Fully qualified pathname of a program for srun to execute prior to
 the launch of a job step. The command line arguments for the
 executable will be the command and arguments of the job step. This
 configuration parameter may be overridden by srun's \fB\-\-prolog\fR
@@ -6347,10 +6347,11 @@ For allocating unique channels within an NVIDIA IMEX domain.
 
 .TP
 \fBTaskEpilog\fR
-Fully qualified pathname of a program to be executed as the slurm job's user
-after termination of each task. Will run inside of the job's container if
-configured. Should not be used for policy enforcement.
-See \fBTaskProlog\fR for execution order details.
+Pathname of a program to be executed as the job's user after termination of each
+task. If it is not an absolute pathname (i.e. it does not start with a slash),
+it must be relative to the directory containing the slurm.conf file.
+Will run inside of the job's container if configured. Should not be used for
+policy enforcement. See \fBTaskProlog\fR for execution order details.
 .IP
 
 .TP
@@ -6463,11 +6464,12 @@ Set to Threads, Cores or Sockets (E.g. TaskPluginParam=autobind=threads).
 
 .TP
 \fBTaskProlog\fR
-Fully qualified pathname of a program to be executed as the slurm job's user
-prior to initiation of each task. Will run inside of the job's container if
-configured. Should not be used for policy enforcement.
-Besides the normal environment variables, this has SLURM_TASK_PID
-available to identify the process ID of the task being started.
+Pathname of a program to be executed as the job's user prior to initiation of
+each task. If it is not an absolute pathname (i.e. it does not start with a
+slash), it must be relative to the directory containing the slurm.conf file.
+Will run inside of the job's container if configured. Should not be used for
+policy enforcement. Besides the normal environment variables, this has
+SLURM_TASK_PID available to identify the process ID of the task being started.
 Standard output from this program can be used to control the environment
 variables and output for the user program.
 .IP
@@ -8381,8 +8383,8 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 The "include" key word can be used with modifiers within the specified
 pathname. These modifiers would be replaced with cluster name or other
 information depending on which modifier is specified. If the included file
-is not an absolute path name (i.e. it does not start with a slash), it will
-searched for in the same directory as the slurm.conf file.
+is not an absolute pathname (i.e. it does not start with a slash), it must be
+relative to the directory containing the slurm.conf file.
 
 .TP
 \fB%c\fR
