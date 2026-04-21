@@ -357,6 +357,12 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 
 		ec = eval_nodes(topo_eval);
 
+		/*
+		 * Permanent errors should be returned on first pass only.
+		 */
+		xassert(ec != ESLURM_NOT_SUPPORTED);
+		xassert(ec != ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE);
+
 		if (ec == SLURM_SUCCESS)
 			break;
 
