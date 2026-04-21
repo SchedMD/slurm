@@ -244,7 +244,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			bool shift = false;
 			uint16_t shift_idx;
 
-			debug2("%s: add %s to %s on position:%u", __func__,
+			debug2("add %s to %s on position:%u",
 			       node_ptr->name, ring_ptr->ring_name, ring_pos);
 			bit_set(ring_ptr->nodes_bitmap, node_ptr->index);
 
@@ -276,7 +276,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			hostlist_t *host_list_out = hostlist_create(NULL);
 			bool shift = false;
 
-			debug2("%s: remove %s from %s", __func__,
+			debug2("remove %s from %s",
 			       node_ptr->name, ring_ptr->ring_name);
 			bit_clear(ring_ptr->nodes_bitmap, node_ptr->index);
 			xfree(ring_ptr->nodes);
@@ -304,7 +304,7 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 			bool shift_l = false;
 			uint16_t shift_idx = MAX_RING_SIZE;
 
-			debug2("%s: move %s  %s", __func__, node_ptr->name,
+			debug2("move %s  %s", node_ptr->name,
 			       ring_ptr->ring_name);
 			xfree(ring_ptr->nodes);
 			for (int j = 0; j < ring_ptr->ring_size; j++) {

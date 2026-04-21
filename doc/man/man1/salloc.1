@@ -2066,8 +2066,9 @@ that will be used to create the job allocation.
 No requirement would be placed on all segments for a job needing to
 be placed within the same higher-level block.
 
-\fBNOTE\fR: The requested node count must always be evenly divisible by
-the requested segment size.
+\fBNOTE\fR: If the requested node count (\fB\-\-nodes\fR) is larger than the
+requested segment size, it must also be evenly divisible by the segment size.
+If all nodes fit within a single segment, this option has no effect.
 
 \fBNOTE\fR: When used in conjunction with \fB\-\-nodelist=<node_list>\fR:
 The requested node count must be less than or equal to the total
