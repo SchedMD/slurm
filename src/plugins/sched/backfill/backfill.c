@@ -4413,6 +4413,19 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 					       (job_ptr->bit_flags &
 						JOB_MEM_SET), sockets_per_node,
 					       job_ptr->details->num_tasks);
+
+		/*
+		 * The Node TRES is only set here to set up
+		 * tres_req_cnt[TRES_ARRAY_BILLING]. We can't test against it in
+		 * acct_policy_job_runnable_[pre|pos]t_select() fully as
+		 * acct_policy_job_begin() -> _add_usage_node_bitmap() skips
+		 * setting up usage on this on purpose because we don't know if
+		 * we will overlap nodes or not with other jobs we are also
+		 * running with the same assoc/qos. This limit will be checked
+		 * later on though and fail. If it does fail the begin_time will
+		 * be moved forward in time 1200 seconds (see
+		 * _het_job_kill_now()).
+		 */
 		tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 		assoc_mgr_lock(&locks);
