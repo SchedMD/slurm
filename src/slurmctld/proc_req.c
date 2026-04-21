@@ -1055,7 +1055,6 @@ static int _het_job_val_rem_each(void *x, void *arg)
 	xassert(job_ptr->tres_alloc_cnt == job_ptr->tres_req_cnt);
 	job_ptr->tres_alloc_cnt = NULL;
 
-
 	_het_job_val_fini(job_ptr);
 
 	return 0;
@@ -1074,6 +1073,30 @@ static void _het_job_val_rem(list_t *submit_job_list)
 	xassert(submit_job_list);
 
 	(void) list_for_each(submit_job_list, _het_job_val_rem_each, NULL);
+}
+
+/*
+ * Accounting policy for one heterogeneous job component: pre-select limits
+ * plus post-select TRES checks (request-shaped counts, cf. select_nodes()).
+ */
+static bool _het_job_component_acct_policy_runnable(job_record_t *job_ptr)
+{
+	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+
+	if (!acct_policy_job_runnable_pre_select(job_ptr, false))
+		return false;
+
+	xassert(job_ptr->tres_req_cnt);
+	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
+	tres_req_cnt[TRES_ARRAY_CPU] =
+		(uint64_t)(job_ptr->total_cpus ? job_ptr->total_cpus :
+			   job_ptr->details->min_cpus);
+	tres_req_cnt[TRES_ARRAY_BILLING] =
+		assoc_mgr_tres_weighted(tres_req_cnt,
+					job_ptr->part_ptr->billing_weights,
+					slurm_conf.priority_flags, true);
+	return acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt,
+						    false);
 }
 
 /* _slurm_rpc_allocate_het_job: process RPC to allocate a hetjob resources */
@@ -1214,6 +1237,11 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		error_code = SLURM_SUCCESS;	/* Non-fatal error */
 
 		_het_job_val_init(job_ptr);
+		if (!_het_job_component_acct_policy_runnable(job_ptr)) {
+			error_code = ESLURM_ACCOUNTING_POLICY;
+			_het_job_val_fini(job_ptr);
+			break;
+		}
 
 		if (het_job_id == 0) {
 			het_job_id = job_ptr->job_id;
@@ -4030,6 +4058,12 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			reject_job = true;
 		} else {
 			_het_job_val_init(job_ptr);
+			if (!_het_job_component_acct_policy_runnable(job_ptr)) {
+				error_code = ESLURM_ACCOUNTING_POLICY;
+				reject_job = true;
+				_het_job_val_fini(job_ptr);
+				break;
+			}
 
 			if (step_id.job_id == NO_VAL) {
 				step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);

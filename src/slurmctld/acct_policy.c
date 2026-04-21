@@ -813,7 +813,7 @@ static void _qos_adjust_limit_usage(int type, job_record_t *job_ptr,
 		if (!job_ptr->tres_alloc_cnt)
 			break;
 		use_usage->grp_used_jobs--;
-		if ((int32_t)use_usage->grp_used_jobs < 0) {
+		if ((int32_t) use_usage->grp_used_jobs < 0) {
 			use_usage->grp_used_jobs = 0;
 			debug2("acct_policy_job_fini: used_jobs "
 			       "underflow for qos %s", qos_ptr->name);
@@ -2428,7 +2428,7 @@ static int _qos_job_runnable_post_select(job_record_t *job_ptr,
 		tres_run_mins_pu[i] =
 			used_limits->tres_run_secs[i] / 60;
 		tres_usage_mins[i] =
-			(uint64_t)(use_usage->usage_tres_raw[i] / 60.0);
+			(uint64_t) (use_usage->usage_tres_raw[i] / 60.0);
 
 		/*
 		 * Clear usage if factor is 0 so that jobs can run. Otherwise
