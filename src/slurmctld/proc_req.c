@@ -991,6 +991,10 @@ static void _het_job_val_init(job_record_t *job_ptr)
 			slurmdb_create_assoc_usage(slurmctld_tres_cnt);
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
 	}
+
+	if (job_ptr->qos_ptr && !job_ptr->qos_ptr->usage_het)
+		job_ptr->qos_ptr->usage_het =
+			slurmdb_create_qos_usage(slurmctld_tres_cnt);
 }
 
 /*
@@ -1004,6 +1008,11 @@ static void _het_job_val_fini(job_record_t *job_ptr)
 		slurmdb_destroy_assoc_usage(assoc_ptr->usage_het);
 		assoc_ptr->usage_het = NULL;
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->usage_het) {
+		slurmdb_destroy_qos_usage(job_ptr->qos_ptr->usage_het);
+		job_ptr->qos_ptr->usage_het = NULL;
 	}
 }
 
@@ -1045,6 +1054,7 @@ static int _het_job_val_rem_each(void *x, void *arg)
 	acct_policy_job_fini(job_ptr, false);
 	xassert(job_ptr->tres_alloc_cnt == job_ptr->tres_req_cnt);
 	job_ptr->tres_alloc_cnt = NULL;
+
 
 	_het_job_val_fini(job_ptr);
 

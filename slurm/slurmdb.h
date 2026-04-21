@@ -1200,6 +1200,7 @@ typedef struct {
 			     * heterogeneous systems */
 	uint64_t *relative_tres_cnt; /* Only here for convenience DON'T PACK */
 	slurmdb_qos_usage_t *usage; /* For internal use only, DON'T PACK */
+	slurmdb_qos_usage_t *usage_het; /* For internal use only, DON'T PACK */
 	double usage_factor; /* factor to apply to usage in this qos */
 	double usage_thres; /* percent of effective usage of an
 			       association when breached will deny

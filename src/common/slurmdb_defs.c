@@ -974,6 +974,7 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		FREE_NULL_LIST(qos->preempt_list);
 		xfree(qos->relative_tres_cnt);
 		slurmdb_destroy_qos_usage(qos->usage);
+		slurmdb_destroy_qos_usage(qos->usage_het);
 	}
 }
 
