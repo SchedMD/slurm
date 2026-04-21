@@ -43,6 +43,8 @@
 #include "src/slurmd/common/slurmd_common.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
+#define EPILOG_SYNC_MIN_HOSTS 64
+
 typedef struct {
 	uint32_t job_id;
 	uint16_t msg_timeout;
@@ -54,10 +56,11 @@ typedef struct {
 static pthread_mutex_t prolog_serial_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Delay a message based upon the host index, total host count and RPC_TIME.
+ * Delay a message based upon the host index, total host count and
+ * usec_per_rpc.
  * This logic depends upon synchronized clocks across the cluster.
  */
-static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
+static void _delay_rpc(int host_inx, int host_cnt, uint32_t usec_per_rpc)
 {
 	struct timeval tv1;
 	uint32_t cur_time;	/* current time in usec (just 9 digits) */
@@ -66,6 +69,11 @@ static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
 	uint32_t target_time;	/* desired time to issue the RPC */
 	uint32_t delta_time;
 
+	if ((usec_per_rpc == 0) || (usec_per_rpc > EPILOG_MSG_TIME_MAX)) {
+		error("%s: invalid usec_per_rpc=%u, using default %u",
+		      __func__, usec_per_rpc, DEFAULT_EPILOG_MSG_TIME);
+		usec_per_rpc = DEFAULT_EPILOG_MSG_TIME;
+	}
 again:
 	if (gettimeofday(&tv1, NULL)) {
 		usleep(host_inx * usec_per_rpc);
@@ -90,12 +98,11 @@ again:
 	}
 }
 
-
 /*
  * On a parallel job, every slurmd may send the EPILOG_COMPLETE message to the
  * slurmctld at the same time, resulting in lost messages. We add a delay here
  * to spread out the message traffic assuming synchronized clocks across the
- * cluster. Allow 10 msec processing time in slurmctld for each RPC.
+ * cluster. Delay per host is controlled by EpilogMsgTime (usec).
  */
 static void _sync_messages_kill(char *node_list)
 {
@@ -105,8 +112,7 @@ static void _sync_messages_kill(char *node_list)
 
 	hosts = hostset_create(node_list);
 	host_cnt = hostset_count(hosts);
-
-	if (host_cnt <= 64)
+	if (host_cnt <= EPILOG_SYNC_MIN_HOSTS)
 		goto fini;
 	if (!conf->hostname)
 		goto fini;	/* should never happen */

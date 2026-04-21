@@ -180,7 +180,7 @@ extern void pack_slurm_conf_lite(buf_t *buffer)
 	/* eio_timeout */
 	/* enforce_part_limits */
 	packstr_array(slurm_conf.epilog, slurm_conf.epilog_cnt, buffer);
-	/* epilog_msg_time */
+	pack32(slurm_conf.epilog_msg_time, buffer);
 	/* epilog_slurmctld */
 	/* epilog_timeout */
 	/* fed_params */
@@ -416,7 +416,7 @@ extern int unpack_slurm_conf_lite_no_alloc(buf_t *buffer)
 	/* enforce_part_limits */
 	safe_unpackstr_array(&slurm_conf.epilog, &slurm_conf.epilog_cnt,
 			     buffer);
-	/* epilog_msg_time */
+	safe_unpack32(&slurm_conf.epilog_msg_time, buffer);
 	/* epilog_slurmctld */
 	/* epilog_timeout */
 	/* fed_params */
