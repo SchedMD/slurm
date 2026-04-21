@@ -83,27 +83,6 @@ static const uint8_t normal_url_char[32] = {
 #define IS_HOST_CHAR(c) \
 	(IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
 
-enum url_fields {
-	UF_SCHEMA = 0,
-	UF_HOST = 1,
-	UF_PORT = 2,
-	UF_PATH = 3,
-	UF_QUERY = 4,
-	UF_FRAGMENT = 5,
-	UF_USERINFO = 6,
-	UF_MAX = 7,
-};
-
-struct parsed_url {
-	uint16_t field_set; /* Bitmask of (1 << UF_*) values */
-	uint16_t port; /* Converted UF_PORT string */
-
-	struct {
-		uint16_t off; /* Offset into buffer in which field starts */
-		uint16_t len; /* Length of run in buffer */
-	} field_data[UF_MAX];
-};
-
 enum state {
 	S_DEAD = 1, /* important that this is > 0 */
 	S_REQ_SPACES_BEFORE_URL,
@@ -446,8 +425,8 @@ static enum state _parse_url_char(enum state s, const char ch)
 	return S_DEAD;
 }
 
-int parse_url(const char *buf, size_t buflen, int is_connect,
-	      struct parsed_url *u)
+extern int parse_url(const char *buf, size_t buflen, int is_connect,
+		     struct parsed_url *u)
 {
 	enum state s;
 	const char *p;

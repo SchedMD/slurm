@@ -22,4 +22,33 @@
  * IN THE SOFTWARE.
  \*****************************************************************************/
 
+#ifndef _HTTP_PARSER_URL_PORT_H
+#define _HTTP_PARSER_URL_PORT_H
+
 #include "slurm/slurm.h"
+
+enum url_fields {
+	UF_SCHEMA = 0,
+	UF_HOST = 1,
+	UF_PORT = 2,
+	UF_PATH = 3,
+	UF_QUERY = 4,
+	UF_FRAGMENT = 5,
+	UF_USERINFO = 6,
+	UF_MAX = 7,
+};
+
+struct parsed_url {
+	uint16_t field_set; /* Bitmask of (1 << UF_*) values */
+	uint16_t port; /* Converted UF_PORT string */
+
+	struct {
+		uint16_t off; /* Offset into buffer in which field starts */
+		uint16_t len; /* Length of run in buffer */
+	} field_data[UF_MAX];
+};
+
+extern int parse_url(const char *buf, size_t buflen, int is_connect,
+		     struct parsed_url *u);
+
+#endif
