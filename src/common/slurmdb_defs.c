@@ -3966,7 +3966,9 @@ extern char *slurmdb_format_tres_str(
 			while (tmp_str[end]) {
 				if (tmp_str[end] == '=')
 					break;
-				if (((tmp_str[end] == '+') || (tmp_str[end] == '-')) && (tmp_str[end+1] == '='))
+				if (((tmp_str[end] == '+') ||
+				     (tmp_str[end] == '-')) &&
+				    (tmp_str[end + 1] == '='))
 					break;
 				end++;
 			}
