@@ -210,7 +210,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
             or "(service_conn->conn->callback_fini)" in bt
         )
     ):
-        if get_version(component) >= (25, 11, 4):
+        if get_version(component) >= (26, 5):
             failures.append(reason)
         else:
             xfailures.append(reason)
