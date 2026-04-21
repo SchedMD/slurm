@@ -244,6 +244,7 @@ extern void reset_stats(int level)
 
 static void _free_job_stats(job_stats_t *j)
 {
+	FREE_NULL_BITMAP(j->node_bitmap);
 	xfree(j->user_name);
 	xfree(j->partition);
 	xfree(j->account);
@@ -552,10 +553,17 @@ static int _fill_jobs_statistics(void *x, void *arg)
 		new->memory_alloc =
 			(j->tres_alloc_cnt ? j->tres_alloc_cnt[TRES_ARRAY_MEM] :
 					     0);
+		if (j->node_bitmap)
+			new->node_bitmap = bit_copy(j->node_bitmap);
 
 		js->cpus_alloc += new->cpus_alloc;
-		js->nodes_alloc += new->nodes_alloc;
 		js->memory_alloc += new->memory_alloc;
+		if (j->node_bitmap) {
+			if (!js->node_bitmap)
+				js->node_bitmap = bit_copy(j->node_bitmap);
+			else
+				bit_or(js->node_bitmap, j->node_bitmap);
+		}
 	}
 
 	/*
@@ -637,10 +645,24 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		s->cpus_alloc += j->cpus_alloc;
 		s->memory_alloc += j->memory_alloc;
-		s->nodes_alloc += j->nodes_alloc;
+		if (j->node_bitmap) {
+			if (!s->node_bitmap)
+				s->node_bitmap = bit_copy(j->node_bitmap);
+			else
+				bit_or(s->node_bitmap, j->node_bitmap);
+		}
 	}
 
 	s->job_cnt++;
+}
+
+static int _finalize_ua_nodes_alloc(void *x, void *arg)
+{
+	ua_stats_t *ua = x;
+
+	if (ua->s->node_bitmap)
+		ua->s->nodes_alloc = bit_set_count(ua->s->node_bitmap);
+	return SLURM_SUCCESS;
 }
 
 static int _get_users_accts(void *x, void *args)
@@ -687,6 +709,9 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 		lock_slurmctld(job_read_lock);
 
 	list_for_each_ro(job_list, _fill_jobs_statistics, s);
+
+	if (s->node_bitmap)
+		s->nodes_alloc = bit_set_count(s->node_bitmap);
 
 	if (lock)
 		unlock_slurmctld(job_read_lock);
@@ -897,11 +922,15 @@ extern users_accts_stats_t *statistics_get_users_accounts(jobs_stats_t *js)
 
 	list_for_each(js->jobs, _get_users_accts, ua);
 
+	list_for_each(ua->users, _finalize_ua_nodes_alloc, NULL);
+	list_for_each(ua->accounts, _finalize_ua_nodes_alloc, NULL);
+
 	return ua;
 }
 
 extern void statistics_free_jobs(jobs_stats_t *s)
 {
+	FREE_NULL_BITMAP(s->node_bitmap);
 	FREE_NULL_LIST(s->jobs);
 	xfree(s);
 }
