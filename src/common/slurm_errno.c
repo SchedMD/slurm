@@ -923,18 +923,6 @@ slurm_errtab_t slurm_errtab[] = {
 		"Invalid job state",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_BREAK_EVAL),
-		"Break common_topo_choose_nodes",
-	},
-	{
-		ERRTAB_ENTRY(ESLURM_RETRY_EVAL),
-		"Remove nodes and retry eval_nodes",
-	},
-	{
-		ERRTAB_ENTRY(ESLURM_RETRY_EVAL_HINT),
-		"Remove one node and retry eval_nodes",
-	},
-	{
 		ERRTAB_ENTRY(ESLURM_INVALID_SLUID),
 		"SLUID is invalid",
 	},
