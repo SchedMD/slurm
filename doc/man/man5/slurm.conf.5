@@ -2970,8 +2970,8 @@ allows the resuming of suspended jobs. In order to use gang scheduling, the
 \fBNOTE:\fR
 If \fBGANG\fR scheduling is enabled with
 \fBPreemptType=preempt/partition_prio\fR, the controller will ignore
-\fBPreemptExemptTime\fR and the following \fBPreemptParameters\fR:
-\fBreorder_count\fR, \fBstrict_order\fR, and \fByoungest_first\fR.
+the following \fBPreemptParameters\fR: \fBreorder_count\fR, \fBstrict_order\fR,
+and \fByoungest_first\fR.
 
 \fBNOTE\fR:
 Gang scheduling is performed independently for each partition, so
@@ -3150,8 +3150,7 @@ See the \fBsacctmgr\fR man page to configure the options for \fBpreempt/qos\fR.
 \fBPreemptExemptTime\fR
 Global option for minimum run time for all jobs before they can be considered
 for preemption. Any QOS PreemptExemptTime takes precedence over the global
-option. This is only honored for \fBPreemptMode=REQUEUE\fR and
-\fBPreemptMode=CANCEL\fR.
+option.
 .br
 A time of \-1 disables the option, equivalent to 0. Acceptable time formats
 include "minutes", "minutes:seconds", "hours:minutes:seconds", "days\-hours",
