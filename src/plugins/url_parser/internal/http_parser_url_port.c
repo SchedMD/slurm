@@ -26,17 +26,11 @@
 
 #include "src/common/xassert.h"
 
-#if URL_PARSER_STRICT
-#define T(v) 0
-#else
-#define T(v) v
-#endif
-
 static const uint8_t normal_url_char[32] = {
 /*   0 nul    1 soh    2 stx    3 etx    4 eot    5 enq    6 ack    7 bel  */
         0    |   0    |   0    |   0    |   0    |   0    |   0    |   0,
 /*   8 bs     9 ht    10 nl    11 vt    12 np    13 cr    14 so    15 si   */
-        0    | T(2)   |   0    |   0    | T(16)  |   0    |   0    |   0,
+        0    |   2    |   0    |   0    |   16   |   0    |   0    |   0,
 /*  16 dle   17 dc1   18 dc2   19 dc3   20 dc4   21 nak   22 syn   23 etb */
         0    |   0    |   0    |   0    |   0    |   0    |   0    |   0,
 /*  24 can   25 em    26 sub   27 esc   28 fs    29 gs    30 rs    31 us  */
@@ -67,8 +61,6 @@ static const uint8_t normal_url_char[32] = {
         1    |   2    |   4    |   8    |   16   |   32   |   64   |   0,
 };
 
-#undef T
-
 #define LOWER(c) (unsigned char) (c | 0x20)
 #define IS_ALPHA(c) (LOWER(c) >= 'a' && LOWER(c) <= 'z')
 #define IS_NUM(c) ((c) >= '0' && (c) <= '9')
@@ -86,16 +78,10 @@ static const uint8_t normal_url_char[32] = {
 	(IS_ALPHANUM(c) || IS_MARK(c) || (c) == '%' || (c) == ';' || \
 	 (c) == ':' || (c) == '&' || (c) == '=' || (c) == '+' || (c) == '$' || \
 	 (c) == ',')
-
-#if URL_PARSER_STRICT
-#define IS_URL_CHAR(c) (BIT_AT(normal_url_char, (unsigned char) c))
-#define IS_HOST_CHAR(c) (IS_ALPHANUM(c) || (c) == '.' || (c) == '-')
-#else
 #define IS_URL_CHAR(c) \
 	(BIT_AT(normal_url_char, (unsigned char) c) || ((c) & 0x80))
 #define IS_HOST_CHAR(c) \
 	(IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
-#endif
 
 enum url_fields {
 	UF_SCHEMA = 0,
@@ -322,12 +308,6 @@ static enum state _parse_url_char(enum state s, const char ch)
 	if (ch == ' ' || ch == '\r' || ch == '\n') {
 		return S_DEAD;
 	}
-
-#if URL_PARSER_STRICT
-	if (ch == '\t' || ch == '\f') {
-		return S_DEAD;
-	}
-#endif
 
 	switch (s) {
 	case S_REQ_SPACES_BEFORE_URL:
