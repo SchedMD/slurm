@@ -1181,7 +1181,7 @@ static int _set_partition_options(void *x, void *ignored)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
 
 	if (part_ptr->suspend_timeout != NO_VAL16)
-		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
+		max_timeout = MAX(max_timeout, part_ptr->suspend_timeout);
 
 	for (int i = 0;
 	     (node_ptr = next_node_bitmap(part_ptr->node_bitmap, &i)); i++) {
