@@ -342,25 +342,27 @@ static int _eval_nodes_dfly(topology_eval_t *topo_eval)
 		}
 	}
 
+	/* Check that all specifically required nodes are on shared network */
+	if (req_nodes_bitmap &&
+	    (top_switch_inx == -1 ||
+	     !bit_super_set(req_nodes_bitmap,
+			    switch_node_bitmap[top_switch_inx]))) {
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		info("%pJ requires nodes that do not have shared network",
+		     job_ptr);
+		goto fini;
+	}
+
 	/*
 	 * Top switch is highest level switch containing all required nodes
 	 * OR all nodes of the lowest scheduling weight
 	 * OR -1 of can not identify top-level switch
 	 */
 	if (top_switch_inx == -1) {
-		error("%pJ unable to identify top level switch",
-		       job_ptr);
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		goto fini;
-	}
-
-	/* Check that all specifically required nodes are on shared network */
-	if (req_nodes_bitmap &&
-	    !bit_super_set(req_nodes_bitmap,
-			   switch_node_bitmap[top_switch_inx])) {
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		info("%pJ requires nodes that do not have shared network",
-		     job_ptr);
+		log_flag(SELECT_TYPE, "%pJ unable to identify top level switch",
+			 job_ptr);
+		rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+		topo_eval->eval_action = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
@@ -973,6 +975,17 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 		bit_clear_all(topo_eval->node_map);
 	}
 
+	/* Check that all specifically required nodes are on shared network */
+	if (req_nodes_bitmap &&
+	    (top_switch_inx == -1 ||
+	     !bit_super_set(req_nodes_bitmap,
+			    switch_node_bitmap[top_switch_inx]))) {
+		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
+		info("%pJ requires nodes that do not have shared network",
+		     job_ptr);
+		goto fini;
+	}
+
 	/*
 	 * Top switch is highest level switch containing all required nodes
 	 * OR all nodes of the lowest scheduling weight
@@ -982,17 +995,8 @@ static int _eval_nodes_topo(topology_eval_t *topo_eval)
 	if (top_switch_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to identify top level switch",
 			 job_ptr);
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		goto fini;
-	}
-
-	/* Check that all specifically required nodes are on shared network */
-	if (req_nodes_bitmap &&
-	    !bit_super_set(req_nodes_bitmap,
-			   switch_node_bitmap[top_switch_inx])) {
-		rc = ESLURM_REQUESTED_TOPO_CONFIG_UNAVAILABLE;
-		info("%pJ requires nodes that do not have shared network",
-		     job_ptr);
+		rc = ESLURM_TOPO_INSUFFICIENT_RESOURCES;
+		topo_eval->eval_action = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
