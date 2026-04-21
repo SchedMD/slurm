@@ -264,16 +264,16 @@ extern bool common_topo_route_part(void)
 /*
  * Return the retry loop action after an eval_nodes() call.
  */
-static int _eval_nodes_get_action(topology_eval_t *topo_eval)
+static eval_action_t _eval_nodes_get_action(topology_eval_t *topo_eval)
 {
-	int action = topo_eval->eval_action;
+	eval_action_t action = topo_eval->eval_action;
 
-	if (!action) {
+	if (action == EVAL_ACTION_NONE) {
 		error("%s: eval_action not set, using default", __func__);
-		action = ESLURM_RETRY_EVAL_DEFAULT;
+		action = EVAL_ACTION_RETRY_DEFAULT;
 	}
 
-	topo_eval->eval_action = 0;
+	topo_eval->eval_action = EVAL_ACTION_NONE;
 	return action;
 }
 
@@ -343,7 +343,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * GPU count if using GPUs, otherwise the CPU count) and retry
 	 */
 	topo_eval->first_pass = false;
-	topo_eval->eval_action = 0;
+	topo_eval->eval_action = EVAL_ACTION_NONE;
 	rem_nodes = bit_set_count(orig_node_map);
 
 	/*
@@ -351,7 +351,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 	 * removing nodes.
 	 */
 	do {
-		int action;
+		eval_action_t action;
 		topo_eval->max_nodes = orig_max_nodes;
 		bit_copybits(topo_eval->node_map, orig_node_map);
 		core_array_or(topo_eval->avail_core, orig_core_array);
@@ -371,13 +371,13 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			first_ec = ec;
 
 		action = _eval_nodes_get_action(topo_eval);
-		if (action == ESLURM_BREAK_EVAL)
+		if (action == EVAL_ACTION_BREAK)
 			break;
 
 		if (rem_nodes <= topo_eval->min_nodes)
 			break;
 
-		if (action == ESLURM_RETRY_EVAL) {
+		if (action == EVAL_ACTION_RETRY) {
 			bit_and_not(orig_node_map, topo_eval->node_map);
 			rem_nodes = bit_set_count(orig_node_map);
 
@@ -409,7 +409,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 			idx = 0;
 		}
 
-		if (action == ESLURM_RETRY_EVAL_HINT &&
+		if (action == EVAL_ACTION_RETRY_HINT &&
 		    (bit_ffs(topo_eval->node_map) >= 0)) {
 			int tmp_idx = idx;
 
