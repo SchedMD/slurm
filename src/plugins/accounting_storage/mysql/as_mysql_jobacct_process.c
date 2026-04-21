@@ -936,7 +936,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				if ((selected_step->step_id.job_id !=
 				     job->jobid) &&
 				    (selected_step->step_id.job_id !=
-				     job->het_job_id)&&
+				     job->het_job_id) &&
 				    (selected_step->step_id.job_id !=
 				     job->array_job_id)) {
 					continue;
