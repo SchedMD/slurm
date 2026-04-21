@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  common_topo.c - common functions for accounting storage
+ *  common_topo.c - common functions for topology plugins
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
  *
