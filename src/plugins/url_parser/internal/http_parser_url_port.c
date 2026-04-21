@@ -26,7 +26,7 @@
 
 #include "src/common/xassert.h"
 
-#if HTTP_PARSER_STRICT
+#if URL_PARSER_STRICT
 #define T(v) 0
 #else
 #define T(v) v
@@ -87,7 +87,7 @@ static const uint8_t normal_url_char[32] = {
 	 (c) == ':' || (c) == '&' || (c) == '=' || (c) == '+' || (c) == '$' || \
 	 (c) == ',')
 
-#if HTTP_PARSER_STRICT
+#if URL_PARSER_STRICT
 #define IS_URL_CHAR(c) (BIT_AT(normal_url_char, (unsigned char) c))
 #define IS_HOST_CHAR(c) (IS_ALPHANUM(c) || (c) == '.' || (c) == '-')
 #else
@@ -97,7 +97,7 @@ static const uint8_t normal_url_char[32] = {
 	(IS_ALPHANUM(c) || (c) == '.' || (c) == '-' || (c) == '_')
 #endif
 
-enum http_parser_url_fields {
+enum url_fields {
 	UF_SCHEMA = 0,
 	UF_HOST = 1,
 	UF_PORT = 2,
@@ -108,7 +108,7 @@ enum http_parser_url_fields {
 	UF_MAX = 7,
 };
 
-struct http_parser_url {
+struct parsed_url {
 	uint16_t field_set; /* Bitmask of (1 << UF_*) values */
 	uint16_t port; /* Converted UF_PORT string */
 
@@ -134,7 +134,7 @@ enum state {
 	S_REQ_FRAGMENT,
 };
 
-enum http_host_state {
+enum host_state {
 	S_HTTP_HOST_DEAD = 1,
 	S_HTTP_USERINFO_START,
 	S_HTTP_USERINFO,
@@ -149,8 +149,7 @@ enum http_host_state {
 	S_HTTP_HOST_PORT,
 };
 
-static enum http_host_state http_parse_host_char(enum http_host_state s,
-						 const char ch)
+static enum host_state _parse_host_char(enum host_state s, const char ch)
 {
 	switch (s) {
 	case S_HTTP_USERINFO:
@@ -232,10 +231,9 @@ static enum http_host_state http_parse_host_char(enum http_host_state s,
 	return S_HTTP_HOST_DEAD;
 }
 
-static int http_parse_host(const char *buf, struct http_parser_url *u,
-			   int found_at)
+static int _parse_host(const char *buf, struct parsed_url *u, int found_at)
 {
-	enum http_host_state s;
+	enum host_state s;
 
 	const char *p;
 	size_t buflen = u->field_data[UF_HOST].off + u->field_data[UF_HOST].len;
@@ -247,7 +245,7 @@ static int http_parse_host(const char *buf, struct http_parser_url *u,
 	s = found_at ? S_HTTP_USERINFO_START : S_HTTP_HOST_START;
 
 	for (p = buf + u->field_data[UF_HOST].off; p < buf + buflen; p++) {
-		enum http_host_state new_s = http_parse_host_char(s, *p);
+		enum host_state new_s = _parse_host_char(s, *p);
 
 		if (new_s == S_HTTP_HOST_DEAD) {
 			return 1;
@@ -319,13 +317,13 @@ static int http_parse_host(const char *buf, struct http_parser_url *u,
 	return 0;
 }
 
-static enum state parse_url_char(enum state s, const char ch)
+static enum state _parse_url_char(enum state s, const char ch)
 {
 	if (ch == ' ' || ch == '\r' || ch == '\n') {
 		return S_DEAD;
 	}
 
-#if HTTP_PARSER_STRICT
+#if URL_PARSER_STRICT
 	if (ch == '\t' || ch == '\f') {
 		return S_DEAD;
 	}
@@ -468,12 +466,12 @@ static enum state parse_url_char(enum state s, const char ch)
 	return S_DEAD;
 }
 
-int http_parser_parse_url(const char *buf, size_t buflen, int is_connect,
-			  struct http_parser_url *u)
+int parse_url(const char *buf, size_t buflen, int is_connect,
+	      struct parsed_url *u)
 {
 	enum state s;
 	const char *p;
-	enum http_parser_url_fields uf, old_uf;
+	enum url_fields uf, old_uf;
 	int found_at = 0;
 
 	if (buflen == 0) {
@@ -485,7 +483,7 @@ int http_parser_parse_url(const char *buf, size_t buflen, int is_connect,
 	old_uf = UF_MAX;
 
 	for (p = buf; p < buf + buflen; p++) {
-		s = parse_url_char(s, *p);
+		s = _parse_url_char(s, *p);
 
 		/* Figure out the next field that we're operating on */
 		switch (s) {
@@ -552,7 +550,7 @@ int http_parser_parse_url(const char *buf, size_t buflen, int is_connect,
 	}
 
 	if (u->field_set & (1 << UF_HOST)) {
-		if (http_parse_host(buf, u, found_at) != 0) {
+		if (_parse_host(buf, u, found_at) != 0) {
 			return 1;
 		}
 	}
