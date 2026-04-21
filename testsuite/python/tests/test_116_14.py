@@ -39,20 +39,30 @@ srun -n{srun_tasks} -N{srun_nodes} printenv SLURM_NTASKS""",
         f"-O --output={file_out} -N{num_nodes} -n{num_tasks} {file_in}"
     )
     atf.wait_for_job_state(job_id, "DONE")
-    atf.wait_for_file(file_out)
-    f = open(file_out, "r")
+
+    # Wait until file is complete
+    for t in atf.timer():
+        output = atf.run_command_output(f"cat {file_out}")
+        if len(output.splitlines()) >= 6:
+            break
+    else:
+        assert (
+            False
+        ), f"Output should contain 6 lines, but got {len(output.splitlines())}"
+
+    lines = output.splitlines()
     error_msg = "Incorrect output from:"
-    assert num_nodes == int(f.readline()), f"{error_msg} printenv SLURM_NNODES"
+    assert num_nodes == int(lines[0]), f"{error_msg} printenv SLURM_NNODES"
     assert num_nodes == int(
-        f.readline()
+        lines[1]
     ), f"{error_msg} srun -E -n{srun_tasks} -N{srun_nodes} printenv SLURM_NNODES"
-    assert num_tasks == int(f.readline()), f"{error_msg} printenv SLURM_NTASKS"
+    assert num_tasks == int(lines[2]), f"{error_msg} printenv SLURM_NTASKS"
     assert num_tasks == int(
-        f.readline()
+        lines[3]
     ), f"{error_msg} srun --preserve-env -n{srun_tasks} -N{srun_nodes} printenv SLURM_NTASKS"
     assert srun_nodes == int(
-        f.readline()
+        lines[4]
     ), f"{error_msg} srun -n{srun_tasks} -N{srun_nodes} printenv SLURM_NNODES"
     assert srun_tasks == int(
-        f.readline()
+        lines[5]
     ), f"{error_msg} srun -n{srun_tasks} -N{srun_nodes} printenv SLURM_NTASKS"
