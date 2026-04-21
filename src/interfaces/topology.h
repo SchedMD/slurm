@@ -110,6 +110,14 @@ typedef struct {
 	int tctx_num; /* size of array */
 } topology_ctx_array_t;
 
+typedef enum {
+	EVAL_ACTION_NONE = 0,
+	EVAL_ACTION_BREAK,
+	EVAL_ACTION_RETRY,
+	EVAL_ACTION_RETRY_HINT,
+	EVAL_ACTION_RETRY_DEFAULT,
+} eval_action_t;
+
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
 	uint16_t avail_cpus; /* How many cpus available, UPDATED */
