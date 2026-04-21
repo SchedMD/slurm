@@ -1483,13 +1483,15 @@ this option on multiple lines.\fR
 .TP
 \fBEpilogMsgTime\fR
 The number of microseconds that the slurmctld daemon requires to process
-an epilog completion message from the slurmd daemons. This parameter can
-be used to prevent a burst of epilog completion messages from being sent
-at the same time which should help prevent lost messages and improve
-throughput for large jobs.
+an epilog completion message from the slurmd daemons.
+For jobs spanning more than 64 nodes, each host delays its message
+based on its index in the job's node list and this value, preventing
+a burst of simultaneous RPCs that could result in lost messages.
 The default value is 2000 microseconds.
-For a 1000 node job, this spreads the epilog completion messages out over
-two seconds.
+The maximum value is 1000000 (1 second). Values exceeding the maximum
+will be reset to the default.
+For a 1000 node job, the default value will spread the epilog completion
+messages out over two seconds.
 .IP
 
 .TP
