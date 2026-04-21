@@ -3914,6 +3914,7 @@ Program to be executed on each compute node to reboot it. Invoked on each node
 once it becomes idle after the command "scontrol reboot" is executed by
 an authorized user or a job is submitted with the "\-\-reboot" option.
 After rebooting, the node is returned to normal use.
+This can alternatively be set to the name of a \fBPowerAction\fR.
 See \fBResumeTimeout\fR to configure the time you expect a reboot to finish in.
 A node will be marked DOWN if it doesn't reboot within \fBResumeTimeout\fR.
 .IP
@@ -3984,6 +3985,7 @@ set to the number of times the job has been restarted.
 The program that will be executed when nodes fail to resume to by
 \fBResumeTimeout\fR. The argument to the program will be the names of the failed
 nodes (using Slurm's hostlist expression format).
+It can alternatively be set to the name of a \fBPowerAction\fR.
 Programs will be killed if they run longer than the largest configured, global
 or partition, \fBResumeTimeout\fR or \fBSuspendTimeout\fR.
 .IP
@@ -3995,7 +3997,8 @@ remain idle for an extended period of time.
 This is typically accomplished by reducing voltage and frequency or powering
 the node down.
 \fBResumeProgram\fR is the program that will be executed when a node
-in power save mode is assigned work to perform.
+in power save mode is assigned work to perform. It can alternatively be set to
+the name of a \fBPowerAction\fR.
 For reasons of reliability, \fBResumeProgram\fR may execute more than once
 for a node when the \fBslurmctld\fR daemon crashes and is restarted.
 If \fBResumeProgram\fR is unable to restore a node to service with a responding
@@ -5478,7 +5481,8 @@ tracking more than MaxDBDMsgs.
 Run the \fBRebootProgram\fR from the controller instead of on the slurmds. The
 RebootProgram will be passed a comma\-separated list of nodes to reboot as the
 first argument and if applicable the required features needed for reboot as the
-second argument.
+second argument. If \fBRebootProgram\fR is set to a \fBPowerAction\fR, this
+parameter is ignored in favor of the \fBPowerAction\fR Location.
 .IP
 
 .TP
@@ -6160,7 +6164,8 @@ See \fBReconfigFlags=KeepPowerSaveSettings\fR for setting persistence.
 .TP
 \fBSuspendProgram\fR
 \fBSuspendProgram\fR is the program that will be executed when a node
-remains idle for an extended period of time.
+remains idle for an extended period of time. It can also be set to the name
+of a \fBPowerAction\fR.
 This program is expected to place the node into some power save mode.
 This can be used to reduce the frequency and voltage of a node or
 completely power the node off.
@@ -8316,6 +8321,27 @@ Refer to the TRES page for more details: <https://slurm.schedmd.com/tres.html>
 .RE
 .IP
 
+.SH "POWERACTION CONFIGURATION"
+The PowerAction configuration creates a named script to execute a node
+reboot, power up (Resume), or power down (Suspend). It includes the following
+parameters:
+
+.TP
+\fBPowerAction\fR
+Unique name for the PowerAction.
+.IP
+
+.TP
+\fBLocation\fR
+Specifies where to run the script, supporting values "slurmd" and "slurmctld".
+.IP
+
+.TP
+\fBProgram\fR
+Program to be executed to perform the task of power up, power down, or reboot.
+Arguments to be passed to the program can be included in this field.
+.IP
+
 .SH "PROLOG AND EPILOG SCRIPTS"
 There are a variety of prolog and epilog program options that
 execute with various permissions and at various times.
@@ -8542,6 +8568,15 @@ The file must be accessible by the primary and backup control machines.
 Must be executable by user \fBSlurmUser\fR.
 Must not be writable by regular users.
 The file must be accessible by the primary and backup control machines.
+.IP
+
+.TP
+\fBPowerAction\fR
+If \fBLocation=slurmd\fR, then the \fBProgram\fR must be executable by user
+\fBSlurmdUser\fR and be accessible on all compute nodes.
+
+If \fBLocation=slurmctld\fR, then the \fBProgram\fR must be executable by user
+\fBSlurmUser\fR and be accessible by the primary and backup control machines.
 .IP
 
 .TP
