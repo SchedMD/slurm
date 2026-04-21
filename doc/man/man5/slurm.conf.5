@@ -1465,7 +1465,7 @@ partition limits are altered. This is the default.
 
 .TP
 \fBEpilog\fR
-Pathname of a script to execute as user root on every node when a user's job
+Pathname of a program to execute as user root on every node when a user's job
 completes (e.g. "/usr/local/slurm/epilog"). If it is not an absolute pathname
 (i.e. it does not start with a slash), it must be relative to the directory
 containing the slurm.conf file. A glob pattern (See \fBglob\fR (7)) may also
@@ -5944,7 +5944,7 @@ The default value is "root".
 
 .TP
 \fBSrunEpilog\fR
-Fully qualified pathname of an executable to be run by srun following
+Fully qualified pathname of a program for srun to execute following
 the completion of a job step. The command line arguments for the
 executable will be the command and arguments of the job step. This
 configuration parameter may be overridden by srun's \fB\-\-epilog\fR
@@ -5985,7 +5985,7 @@ srun \-N 200      will use 12 listening ports.
 
 .TP
 \fBSrunProlog\fR
-Fully qualified pathname of an executable to be run by srun prior to
+Fully qualified pathname of a program for srun to execute prior to
 the launch of a job step. The command line arguments for the
 executable will be the command and arguments of the job step. This
 configuration parameter may be overridden by srun's \fB\-\-prolog\fR
