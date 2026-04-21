@@ -4942,6 +4942,10 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 		return SLURM_ERROR;
 	}
 
+	/* We don't need to run this if validating a het job */
+	if (_het_job_in_validation_state(job_ptr))
+		return SLURM_SUCCESS;
+
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
 	 * submit_time (Not begin).  Accrue limits don't work with this flag.
@@ -5022,6 +5026,10 @@ extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 		.uid = job_ptr->user_id,
 	};
 
+	/* We don't need to run this if validating a het job */
+	if (_het_job_in_validation_state(job_ptr))
+		return;
+
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
 	 * submit_time (Not begin). Accrue limits don't work with this flag.
@@ -5080,6 +5088,10 @@ extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 	acct_policy_accrue_t acct_policy_accrue = {
 		.uid = job_ptr->user_id,
 	};
+
+	/* We don't need to run this if validating a het job */
+	if (_het_job_in_validation_state(job_ptr))
+		return;
 
 	/*
 	 * ACCRUE_ALWAYS flag will always force the accrue_time to be the
