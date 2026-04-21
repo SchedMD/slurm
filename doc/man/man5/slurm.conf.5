@@ -7976,11 +7976,11 @@ Also see \fBSuspendTime\fR.
 
 .TP
 \fBPreemptMode\fR
-Mechanism used to preempt jobs for this partition when
+Mechanism used to preempt jobs running in this partition when
 \fBPreemptType=preempt/partition_prio\fR is configured.
 This partition\-specific \fBPreemptMode\fR configuration parameter will
-override the cluster\-wide \fBPreemptMode\fR for this partition.
-It can be set to OFF to disable preemption for this partition.
+override the cluster\-wide \fBPreemptMode\fR for jobs in this partition.
+It can be set to OFF to prevent jobs in this partition from being preempted.
 See also \fBPriorityTier\fR and the above description of the cluster\-wide
 \fBPreemptMode\fR parameter for further details.
 .br
