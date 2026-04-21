@@ -263,17 +263,18 @@ extern bool common_topo_route_part(void)
 
 /*
  * Return the retry loop action after an eval_nodes() call.
- * Uses topo_eval->eval_action if set by the eval_nodes().
  */
-static int _eval_nodes_get_action(topology_eval_t *topo_eval, int ec)
+static int _eval_nodes_get_action(topology_eval_t *topo_eval)
 {
-	if (topo_eval->eval_action) {
-		int action = topo_eval->eval_action;
-		topo_eval->eval_action = 0;
-		return action;
+	int action = topo_eval->eval_action;
+
+	if (!action) {
+		error("%s: eval_action not set, using default", __func__);
+		action = ESLURM_RETRY_EVAL_DEFAULT;
 	}
 
-	return ec;
+	topo_eval->eval_action = 0;
+	return action;
 }
 
 extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
@@ -369,7 +370,7 @@ extern int common_topo_choose_nodes(topology_eval_t *topo_eval)
 		if (first_ec == SLURM_SUCCESS)
 			first_ec = ec;
 
-		action = _eval_nodes_get_action(topo_eval, ec);
+		action = _eval_nodes_get_action(topo_eval);
 		if (action == ESLURM_BREAK_EVAL)
 			break;
 
