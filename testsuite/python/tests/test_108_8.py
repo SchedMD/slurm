@@ -50,6 +50,10 @@ def test_single_node_instance_type(nodes):
     ), f"InstanceType for {node} should be {instance_type}"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_multiple_nodes_instance_id(nodes):
     """Verify InstanceId can be set on multiple nodes with comma-separated values"""
 
@@ -70,6 +74,10 @@ def test_multiple_nodes_instance_id(nodes):
     ), f"InstanceId for {node1} should be {id1}"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_multiple_nodes_instance_type(nodes):
     """Verify InstanceType can be set on multiple nodes with comma-separated values"""
 
@@ -138,6 +146,10 @@ def test_overwrite_instance_type(nodes):
     ), "InstanceType should be updated to new value"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_overwrite_multiple_nodes_instance_id(nodes):
     """Verify InstanceId can be overwritten on multiple nodes"""
 
@@ -164,6 +176,10 @@ def test_overwrite_multiple_nodes_instance_id(nodes):
     ), f"InstanceId for {node1} should be updated"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_overwrite_multiple_nodes_instance_type(nodes):
     """Verify InstanceType can be overwritten on multiple nodes"""
 
@@ -238,6 +254,10 @@ def test_reset_instance_type(nodes):
     ), "InstanceType should be empty after reset"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_reset_multiple_nodes_instance_id(nodes):
     """Verify InstanceId can be cleared on multiple nodes"""
 
@@ -264,6 +284,10 @@ def test_reset_multiple_nodes_instance_id(nodes):
     ), f"InstanceId for {node1} should be empty after reset"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_reset_multiple_nodes_instance_type(nodes):
     """Verify InstanceType can be cleared on multiple nodes"""
 
@@ -330,6 +354,10 @@ def test_broadcast_instance_type(nodes):
     ), f"InstanceType for {node1} should be {instance_type}"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_mismatched_instance_id_count(nodes):
     """Verify mismatched InstanceId count is rejected"""
 
@@ -345,6 +373,10 @@ def test_mismatched_instance_id_count(nodes):
     ), "scontrol should fail when InstanceId count does not match node count"
 
 
+@pytest.mark.xfail(
+    atf.get_version() < (25, 11, 6),
+    reason="Ticket 24886: InstanceType can be set on multiple nodes",
+)
 def test_mismatched_instance_type_count(nodes):
     """Verify mismatched InstanceType count is rejected"""
 
