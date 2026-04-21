@@ -46,10 +46,17 @@
 #include "src/common/xstring.h"
 #include "src/common/slurmdbd_defs.h"
 
+#include "src/common/assoc_mgr.h"
+#include "src/interfaces/gres.h"
 #include "src/interfaces/select.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/statistics.h"
+
+typedef struct foreach_fill_jobs_args {
+	int gpu_tres_pos;
+	jobs_stats_t *js;
+} foreach_fill_jobs_args_t;
 
 typedef struct foreach_part_gen_stats {
 	jobs_stats_t *js;
@@ -342,6 +349,7 @@ static int _statistics_part_aggregate_job(void *x, void *arg)
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		ps->jobs_cpus_alloc += j->cpus_alloc;
+		ps->jobs_gpus_alloc += j->gpus_alloc;
 		ps->jobs_memory_alloc += j->memory_alloc;
 	}
 
@@ -378,6 +386,8 @@ static void _statistics_part_aggregate_node(partition_stats_t *ps,
 	ps->nodes_cpus_alloc += ns->cpus_alloc;
 	ps->nodes_cpus_efctv += ns->cpus_efctv;
 	ps->nodes_cpus_idle += ns->cpus_idle;
+
+	ps->total_gpus += ns->gpus_total;
 
 	ps->nodes_mem_alloc += ns->mem_alloc;
 	ps->nodes_mem_avail += ns->mem_avail;
@@ -473,7 +483,9 @@ static int _get_part_statistics(void *x, void *arg)
 static int _fill_jobs_statistics(void *x, void *arg)
 {
 	job_record_t *j = x;
-	jobs_stats_t *js = arg;
+	foreach_fill_jobs_args_t *args = arg;
+	jobs_stats_t *js = args->js;
+	int gpu_tres_pos = args->gpu_tres_pos;
 	job_stats_t *new = xmalloc(sizeof(*new));
 
 	new->job_array_cnt = (j->array_recs && j->array_recs->task_cnt) ?
@@ -553,9 +565,13 @@ static int _fill_jobs_statistics(void *x, void *arg)
 			(j->tres_alloc_cnt ? j->tres_alloc_cnt[TRES_ARRAY_MEM] :
 					     0);
 
+		if ((gpu_tres_pos >= 0) && j->tres_alloc_cnt)
+			new->gpus_alloc = j->tres_alloc_cnt[gpu_tres_pos];
+
 		js->cpus_alloc += new->cpus_alloc;
 		js->nodes_alloc += new->nodes_alloc;
 		js->memory_alloc += new->memory_alloc;
+		js->gpus_alloc += new->gpus_alloc;
 	}
 
 	/*
@@ -636,6 +652,7 @@ static void _aggregate_job_to_jobs(jobs_stats_t *s, job_stats_t *j)
 
 	if (IS_JOB_RUNNING(j) || IS_JOB_SUSPENDED(j)) {
 		s->cpus_alloc += j->cpus_alloc;
+		s->gpus_alloc += j->gpus_alloc;
 		s->memory_alloc += j->memory_alloc;
 		s->nodes_alloc += j->nodes_alloc;
 	}
@@ -680,13 +697,20 @@ extern jobs_stats_t *statistics_get_jobs(bool lock)
 		.fed = READ_LOCK,
 	};
 	jobs_stats_t *s = xmalloc(sizeof(*s));
+	slurmdb_tres_rec_t tres_rec = { .type = "gres", .name = "gpu" };
+
+	/* Avoid looking for tres pos at each iteration, store in args. */
+	foreach_fill_jobs_args_t args = {
+		.gpu_tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false),
+		.js = s,
+	};
 
 	s->jobs = list_create((ListDelF) _free_job_stats);
 
 	if (lock)
 		lock_slurmctld(job_read_lock);
 
-	list_for_each_ro(job_list, _fill_jobs_statistics, s);
+	list_for_each_ro(job_list, _fill_jobs_statistics, &args);
 
 	if (lock)
 		unlock_slurmctld(job_read_lock);
@@ -702,6 +726,9 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 		.part = READ_LOCK,
 		.select_node = WRITE_LOCK, /*select_g_select_nodeinfo_set_all*/
 	};
+	slurmdb_tres_rec_t tres_rec = { .type = "gres", .name = "gpu" };
+	int gpu_tres_pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+	uint32_t gpu_plugin_id = gres_get_gpu_plugin_id();
 	node_record_t *node_ptr;
 	nodes_stats_t *s = xmalloc(sizeof(*s));
 
@@ -734,6 +761,24 @@ extern nodes_stats_t *statistics_get_nodes(bool lock)
 							  node_ptr->free_mem);
 		n->mem_total = node_ptr->real_memory;
 		n->node_state = node_ptr->node_state;
+
+		/* GPU totals from TRES */
+		if ((gpu_tres_pos >= 0) && node_ptr->tres_cnt)
+			n->gpus_total = node_ptr->tres_cnt[gpu_tres_pos];
+
+		/* GPU allocated from GRES node state */
+		if (node_ptr->gres_list) {
+			gres_state_t *gres_state_node;
+			gres_state_node =
+				list_find_first(node_ptr->gres_list,
+						gres_find_id, &gpu_plugin_id);
+			if (gres_state_node) {
+				gres_node_state_t *gres_ns =
+					gres_state_node->gres_data;
+				n->gpus_alloc = gres_ns->gres_cnt_alloc;
+			}
+		}
+
 		s->node_stats_table[i] = n;
 
 		/*

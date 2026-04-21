@@ -1028,6 +1028,7 @@ test_152_2   Test --network=unique-channel-per-segment
 test_153_#   Testing Metrics/Type.
 ========================================
 test_153_1   Test basic metrics/openmetrics
+test_153_2   Test various allocation fields for metrics/openmetrics
 
 test_154_#   Testing HRes.
 ========================================
