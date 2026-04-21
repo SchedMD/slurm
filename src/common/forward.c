@@ -697,9 +697,6 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count)
 {
-	int j;
-	fwd_tree_t *fwd_tree;
-
 	xassert((hl || sp_hl) && !(hl && sp_hl));
 	xassert(fwd_tree_in);
 	xassert(fwd_tree_in->p_thr_count);
@@ -714,8 +711,8 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		/* convert secs to msec */
 		fwd_tree_in->timeout = slurm_conf.msg_timeout * 1000;
 
-	for (j = 0; j < hl_count; j++) {
-		fwd_tree = xmalloc(sizeof(fwd_tree_t));
+	for (int j = 0; j < hl_count; j++) {
+		fwd_tree_t *fwd_tree = xmalloc(sizeof(*fwd_tree));
 		memcpy(fwd_tree, fwd_tree_in, sizeof(fwd_tree_t));
 
 		if (sp_hl) {
