@@ -66,9 +66,9 @@ exec $bin_chmod 700 $file_prog
 
 set timeout $max_job_delay
 
-# file_prog takes 16s, and we want to have around 4 profile samples with
-# enough time between them (4s)
-set task_freq 4
+# file_prog takes 24s, and we want to have around 4 profile samples with
+# enough time between them (8s)
+set task_freq 8
 spawn $srun --acctg-freq=task=$task_freq --profile=task -t1 ./$file_prog
 expect {
 	-re "SLURM_JobId=($number)" {
