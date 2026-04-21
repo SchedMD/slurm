@@ -1746,10 +1746,8 @@ more_nodes:
 		min_rem_nodes--;
 	}
 
-	if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
-	    !gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
-		error_code = SLURM_ERROR;
-	} else {
+	if ((rem_cpus <= 0) && (min_rem_nodes <= 0) &&
+	    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
 		error_code = SLURM_SUCCESS;
 	}
 
