@@ -3412,6 +3412,14 @@ static uint16_t _health_node_state(char *state_str)
 	}
 	if (!state_set)
 		state_num |= HEALTH_CHECK_NODE_ANY;
+
+	if ((state_num & HEALTH_CHECK_START_ONLY) &&
+	    (state_num != HEALTH_CHECK_START_ONLY))
+		fatal("HealthCheckNodeState=START_ONLY cannot be combined with other options.");
+	if ((state_num & HEALTH_CHECK_REBOOT_ONLY) &&
+	    (state_num != HEALTH_CHECK_REBOOT_ONLY))
+		fatal("HealthCheckNodeState=REBOOT_ONLY cannot be combined with other options.");
+
 	xfree(tmp_str);
 
 	return state_num;
