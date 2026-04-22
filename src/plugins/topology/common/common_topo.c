@@ -267,7 +267,12 @@ extern bool common_topo_route_part(void)
 static eval_action_t _eval_nodes_get_action(topology_eval_t *topo_eval)
 {
 	eval_action_t action = topo_eval->eval_action;
-
+	/*
+	 * Every branch should set eval_action. If it does not, catch this
+	 * in a development build with xassert(), but allow a non-dev build
+	 * to gracefully retry.
+	 */
+	xassert(action != EVAL_ACTION_NONE);
 	if (action == EVAL_ACTION_NONE) {
 		error("%s: eval_action not set, using default", __func__);
 		action = EVAL_ACTION_RETRY_DEFAULT;
