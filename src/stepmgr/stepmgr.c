@@ -3742,8 +3742,15 @@ static int _step_create(job_record_t *job_ptr,
 				   cpus_per_task, node_count, &ret_code);
 	if (nodeset == NULL) {
 		FREE_NULL_LIST(step_gres_list);
-		if (ret_code == ESLURM_NODES_BUSY)
-			_build_pending_step(job_ptr, step_specs);
+		if (ret_code == ESLURM_NODES_BUSY) {
+			if (step_specs->flags & SSF_ASYNC) {
+				if (!step_specs->immediate)
+					_build_pending_step(job_ptr, step_specs);
+				if (step_specs->step_id.step_id != NO_VAL)
+					ret_code = ESLURM_STEP_QUEUED;
+			} else
+				_build_pending_step(job_ptr, step_specs);
+		}
 		return ret_code;
 	}
 	_set_def_cpu_bind(job_ptr);
@@ -3921,8 +3928,16 @@ static int _step_create(job_record_t *job_ptr,
 		step_ptr->resv_port_cnt = step_specs->resv_port_cnt;
 		i = resv_port_step_alloc(step_ptr);
 		if (i != SLURM_SUCCESS) {
-			if (i == ESLURM_PORTS_BUSY)
-				_build_pending_step(job_ptr, step_specs);
+			if (i == ESLURM_PORTS_BUSY) {
+				if (step_specs->flags & SSF_ASYNC) {
+					if (!step_specs->immediate)
+						_build_pending_step(job_ptr,
+								    step_specs);
+					if (step_specs->step_id.step_id != NO_VAL)
+						i = ESLURM_STEP_QUEUED;
+				} else
+					_build_pending_step(job_ptr, step_specs);
+			}
 			delete_step_record(job_ptr, step_ptr);
 			return i;
 		}
