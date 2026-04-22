@@ -654,6 +654,45 @@ static void _cancel_fwd(fwd_tree_t *fwd_tree, fwd_tree_t *fwd_tree_in,
 			     fwd_tree_in->notify, hl, sp_hl, j, hl_count);
 }
 
+/*
+ * forward_fini() already completed. Mark the current iteration's host
+ * (fwd_msg->header.forward.nodelist) and every remaining iteration after
+ * j as failed on fwd_struct->ret_list so the caller does not wait forever
+ * for responses that will never arrive. Frees fwd_msg.
+ *
+ * IN     fwd_msg    - per-iteration forward_msg that was going to be
+ *                     handed to _forward_thread; freed by this call
+ * IN/OUT fwd_struct - caller's forward_struct; its ret_list is extended
+ *                     with failed entries
+ * IN     hl         - non-split hostlist (NULL if sp_hl is used)
+ * IN/OUT sp_hl      - split hostlist array (NULL if hl is used); entries
+ *                     [j+1, hl_count) are drained and freed
+ * IN     j          - index of the iteration that hit the disabled
+ *                     branch; iterations after j are drained
+ * IN     hl_count   - total number of iterations
+ */
+static void _cancel_fwd_msg(forward_msg_t *fwd_msg,
+			    forward_struct_t *fwd_struct, hostlist_t *hl,
+			    hostlist_t **sp_hl, int j, int hl_count)
+{
+	hostlist_t *cur_hl = hostlist_create(fwd_msg->header.forward.nodelist);
+	char *name = NULL;
+
+	slurm_mutex_lock(&fwd_struct->forward_mutex);
+	while ((name = hostlist_shift(cur_hl))) {
+		mark_as_failed_forward(&fwd_struct->ret_list, name,
+				       SLURM_SHUTTING_DOWN);
+		free(name);
+	}
+	slurm_mutex_unlock(&fwd_struct->forward_mutex);
+	FREE_NULL_HOSTLIST(cur_hl);
+	destroy_forward(&fwd_msg->header.forward);
+	xfree(fwd_msg);
+
+	_fail_remaining_fwds(&fwd_struct->ret_list, &fwd_struct->forward_mutex,
+			     &fwd_struct->notify, hl, sp_hl, j, hl_count);
+}
+
 static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 				     fwd_tree_t *fwd_tree_in,
 				     int hl_count)
@@ -765,6 +804,13 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		fwd_msg->header.forward.timeout = header->forward.timeout;
 
 		slurm_mutex_lock(&global_forward_mutex);
+		if (shutdown_requested) {
+			slurm_mutex_unlock(&global_forward_mutex);
+
+			_cancel_fwd_msg(fwd_msg, fwd_struct, hl, sp_hl, j,
+					hl_count);
+			return;
+		}
 		thread_count++;
 		xassert(thread_count > 0);
 		slurm_mutex_unlock(&global_forward_mutex);
