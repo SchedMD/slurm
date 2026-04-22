@@ -6110,6 +6110,70 @@ def get_licenses(
     return licenses_dict
 
 
+def get_log(component, num_lines=0, fatal=False, quiet=True):
+    """Returns the log of a Slurm daemon.
+
+    The log file is the one configured for the daemon (SlurmctldLogFile,
+    SlurmdLogFile or LogFile in slurmdbd.conf), read from the config files so
+    it works even when the daemons are down. slurmrestd and sackd are started
+    by the testsuite with their output redirected to the log directory of
+    slurmctld.
+
+    Args:
+        component (string): 'slurmctld', 'slurmdbd', 'slurmrestd', 'sackd',
+            or a node name to get the log of its slurmd.
+        num_lines (integer): Number of trailing lines to return (tail).
+            If 0, the whole log is returned.
+        fatal (boolean): If True, fail the test if the log cannot be read.
+        quiet (boolean): If True, the command and the log are logged at the
+            TRACE log level.
+
+    Returns:
+        The requested log content as a string, or an empty string if the log
+        cannot be read and fatal is False.
+
+    Example:
+        >>> get_log("slurmctld", num_lines=15)
+        '[2026-10-26T20:12:01.123] debug:  sched: Running job scheduler...'
+        >>> get_log("node2", fatal=True)
+        '[2026-10-26T20:11:58.456] slurmd version 26.11.0 started...'
+    """
+
+    def _conf_value(name, source):
+        conf = get_config(live=False, source=source, quiet=True)
+        return next(
+            (v for k, v in conf.items() if k.casefold() == name.casefold()), None
+        )
+
+    match component:
+        case "slurmctld":
+            log_file = _conf_value("SlurmctldLogFile", "slurm")
+        case "slurmdbd":
+            log_file = _conf_value("LogFile", "slurmdbd")
+        case "slurmrestd" | "sackd":
+            log_file = _conf_value("SlurmctldLogFile", "slurm")
+            if log_file:
+                log_file = f"{os.path.dirname(log_file)}/{component}.log"
+        case node:
+            log_file = _conf_value("SlurmdLogFile", "slurm")
+            if log_file:
+                log_file = log_file.replace("%n", node)
+
+    if not log_file:
+        message = f"No log file configured for {component}"
+        if fatal:
+            pytest.fail(message)
+        logging.warning(message)
+        return ""
+
+    if num_lines:
+        command = f"tail -n {num_lines} {log_file}"
+    else:
+        command = f"cat {log_file}"
+
+    return run_command_output(command, user="root", fatal=fatal, quiet=quiet)
+
+
 class SetMatch(enum.Enum):
     EQUAL = "=="
     INTERSECTS = "~="
