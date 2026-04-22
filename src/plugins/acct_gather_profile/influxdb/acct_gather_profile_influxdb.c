@@ -411,7 +411,9 @@ extern int acct_gather_profile_p_task_end(pid_t taskpid)
 {
 	debug3("%s %s called", plugin_type, __func__);
 
-	_send_data(NULL);
+	if (g_profile_running > ACCT_GATHER_PROFILE_NONE)
+		_send_data(NULL);
+
 	return SLURM_SUCCESS;
 }
 
