@@ -286,7 +286,7 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 
 	debug3("%s %s called", plugin_type, __func__);
 
-	influxdb_conf.def = ACCT_GATHER_PROFILE_ALL;
+	influxdb_conf.def = ACCT_GATHER_PROFILE_NONE;
 	if (tbl) {
 		if (s_p_get_string(&tmp, "ProfileInfluxDBDefault", tbl)) {
 			influxdb_conf.def =
