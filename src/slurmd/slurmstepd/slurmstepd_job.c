@@ -424,9 +424,12 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		memset(&io_addr, 0, sizeof(slurm_addr_t));
 	}
 
-	srun = _srun_info_create(msg->cred, msg->alloc_tls_cert, &resp_addr,
-				 &io_addr, step->uid, protocol_version);
-	list_append(step->sruns, srun);
+	if (!(msg->flags & LAUNCH_LOCAL_IO)) {
+		srun = _srun_info_create(msg->cred, msg->alloc_tls_cert,
+					 &resp_addr, &io_addr, step->uid,
+					 protocol_version);
+		list_append(step->sruns, srun);
+	}
 
 	step->profile     = msg->profile;
 	step->task_prolog = xstrdup(msg->task_prolog);
