@@ -1572,6 +1572,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool licenses_unavailable = false;
 	int shared = 0, select_mode;
 	list_t *preemptee_cand = NULL;
+	int avail_pick_code = SLURM_SUCCESS;
 
 	/*
 	 * Since you could potentially have multiple features and the
@@ -1912,11 +1913,6 @@ try_sched:
 
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
-				if (bit_set_count(avail_bitmap) > max_nodes) {
-					/* end of tests for this feature */
-					avail_nodes = 0;
-					break;
-				}
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -1955,8 +1951,7 @@ try_sched:
 						smallest_min_mem;
 			}
 
-			if ((pick_code == SLURM_SUCCESS) &&
-			     (bit_set_count(avail_bitmap) <= max_nodes)) {
+			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(possible_bitmap);
 				*select_bitmap = avail_bitmap;
@@ -1966,6 +1961,8 @@ try_sched:
 
 		if (pick_code == ESLURM_LICENSES_UNAVAILABLE)
 			licenses_unavailable = true;
+
+		avail_pick_code = pick_code;
 
 		/* determine if job could possibly run (if all configured
 		 * nodes available) */
@@ -2007,9 +2004,7 @@ try_sched:
 
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
-					if (bit_set_count(avail_bitmap) <=
-					     max_nodes)
-						runable_avail = true;
+					runable_avail = true;
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = avail_bitmap;
 					avail_bitmap = NULL;
@@ -2111,11 +2106,15 @@ try_sched:
 					  idle_node_bitmap)) {
 			error_code = ESLURM_NODES_BUSY;
 			/* Note: IDLE nodes are not COMPLETING */
+		} else if (IS_TOPO_ERROR(avail_pick_code)) {
+			error_code = avail_pick_code;
 		}
 	} else if (job_ptr->details->req_node_bitmap &&
 		   bit_overlap_any(job_ptr->details->req_node_bitmap,
 				   cg_node_bitmap)) {
 		error_code = ESLURM_NODES_BUSY;
+	} else if (IS_TOPO_ERROR(avail_pick_code)) {
+		error_code = avail_pick_code;
 	}
 
 	if (error_code == SLURM_SUCCESS) {
@@ -2866,6 +2865,9 @@ extern int select_nodes(job_node_select_t *job_node_select,
 		} else {
 			job_ptr->state_reason = WAIT_RESOURCES;
 			xfree(job_ptr->state_desc);
+			if (IS_TOPO_ERROR(error_code))
+				job_ptr->state_desc =
+					xstrdup(slurm_strerror(error_code));
 		}
 		goto cleanup;
 	}

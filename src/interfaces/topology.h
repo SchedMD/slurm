@@ -110,6 +110,14 @@ typedef struct {
 	int tctx_num; /* size of array */
 } topology_ctx_array_t;
 
+typedef enum {
+	EVAL_ACTION_NONE = 0,
+	EVAL_ACTION_BREAK,
+	EVAL_ACTION_RETRY,
+	EVAL_ACTION_RETRY_HINT,
+	EVAL_ACTION_RETRY_DEFAULT,
+} eval_action_t;
+
 typedef struct topology_eval {
 	bitstr_t **avail_core; /* available core bitmap, UPDATED */
 	uint16_t avail_cpus; /* How many cpus available, UPDATED */
@@ -117,6 +125,8 @@ typedef struct topology_eval {
 					* UPDATED */
 	uint16_t cr_type; /* allocation type (sockets, cores, etc.) */
 	bool enforce_binding; /* Enforce GPU Binding or not */
+	eval_action_t eval_action; /* retry loop directive for
+				    * common_topo_choose_nodes() */
 	int (*eval_nodes)(struct topology_eval *topo_eval);
 	bool first_pass; /* First pass through eval_nodes() or not */
 	bool gres_per_job; /* if gres_per_job was requested */

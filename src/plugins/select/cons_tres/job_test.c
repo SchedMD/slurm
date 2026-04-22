@@ -810,7 +810,7 @@ static int _get_one_res(topology_eval_t *topo_eval,
 	bitstr_t *req_map = job_ptr->details->req_node_bitmap;
 	uint32_t s_p_n = _socks_per_node(job_ptr);
 	int32_t avail_node_cnt;
-	int rc = ESLURM_BREAK_EVAL;
+	int rc = SLURM_ERROR;
 	bitstr_t **orig_core_array;
 
 	if (req_map)
@@ -1949,7 +1949,7 @@ alloc_job:
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
-		log_flag(SELECT_TYPE, "exiting with no allocation");
+		log_flag(SELECT_TYPE, "exiting with no allocation select_rc=%d", select_rc);
 		return select_rc ? select_rc : SLURM_ERROR;
 	}
 

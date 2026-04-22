@@ -59,6 +59,7 @@
 #define ERRTAB_ENTRY(_e) _e, #_e
 
 /* Add new error values to slurm/slurm_errno.h, and their descriptions to this table */
+// clang-format off
 slurm_errtab_t slurm_errtab[] = {
 	{
 		ERRTAB_ENTRY(SLURM_SUCCESS),
@@ -922,20 +923,42 @@ slurm_errtab_t slurm_errtab[] = {
 		"Invalid job state",
 	},
 	{
-		ERRTAB_ENTRY(ESLURM_BREAK_EVAL),
-		"Break common_topo_choose_nodes",
-	},
-	{
-		ERRTAB_ENTRY(ESLURM_RETRY_EVAL),
-		"Remove nodes and retry eval_nodes",
-	},
-	{
-		ERRTAB_ENTRY(ESLURM_RETRY_EVAL_HINT),
-		"Remove one node and retry eval_nodes",
-	},
-	{
 		ERRTAB_ENTRY(ESLURM_INVALID_SLUID),
 		"SLUID is invalid",
+	},
+
+	/* Topology eval_nodes rejection reasons */
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_REQ_NODES_NOT_AVAIL),
+		"Required nodes lack available resources",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO),
+		"Required nodes do not fit topology",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_NO_FIT),
+		"No suitable topology unit found",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_SEGMENT_NO_FIT),
+		"No suitable topology unit found for segment",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_INSUFFICIENT_RESOURCES),
+		"Insufficient resources in topology unit",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_WEIGHT_NO_FIT),
+		"Weight-based selection could not satisfy request within topology unit",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_MAX_NODE_LIMIT),
+		"Exceeded maximum node limit during topology allocation",
+	},
+	{
+		ERRTAB_ENTRY(ESLURM_TOPO_EMPTY_NODE_MAP),
+		"No available nodes in topology",
 	},
 
 	/* SPANK errors */
@@ -1556,6 +1579,7 @@ slurm_errtab_t slurm_errtab[] = {
 		"TLS missing but required for connection",
 	},
 };
+// clang-format on
 
 unsigned int slurm_errtab_size = sizeof(slurm_errtab) / sizeof(slurm_errtab_t);
 

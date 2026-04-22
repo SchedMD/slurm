@@ -1996,10 +1996,18 @@ skip_start:
 				     job_state_reason_string(
 					     job_ptr->state_reason),
 				     job_ptr->priority, job_ptr->partition);
+		} else if (IS_TOPO_ERROR(error_code)) {
+			sched_debug2("%pJ cannot start: %s. Partition=%s. state_desc=%s",
+				   job_ptr, slurm_strerror(error_code),
+				   job_ptr->partition,
+				   job_ptr->state_desc);
+			if (!use_prefer)
+				fail_by_part = true;
 		} else if ((error_code !=
 			    ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
-			   (error_code != ESLURM_NODE_NOT_AVAIL)      &&
-			   (error_code != ESLURM_INVALID_BURST_BUFFER_REQUEST)){
+			   (error_code != ESLURM_NODE_NOT_AVAIL) &&
+			   (error_code !=
+			    ESLURM_INVALID_BURST_BUFFER_REQUEST)) {
 			sched_info("schedule: %pJ non-runnable: %s",
 				   job_ptr, slurm_strerror(error_code));
 			last_job_update = now;
