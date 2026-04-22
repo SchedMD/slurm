@@ -249,6 +249,15 @@ struct conmgr_fd_s {
 
 	/* Number of active references of this connection */
 	int refs;
+
+	/*
+	 * Latest non-SLURM_ERROR error observed on this connection.
+	 * SLURM_SUCCESS (0) until first error. Written under mgr.mutex
+	 * via con_set_status_code(). Mirrored into
+	 * conmgr_callback_args_t.status_code before each callback
+	 * invocation.
+	 */
+	slurm_err_t status_code;
 };
 
 typedef struct {
@@ -312,10 +321,6 @@ typedef struct {
 	/* True if watch() is only waiting on work to complete */
 	bool waiting_on_work;
 
-	/* Caller requests finish on error */
-	bool exit_on_error;
-	/* First observed error */
-	int error;
 	/* list of work_t */
 	list_t *delayed_work;
 	/* list of work_t* */
@@ -369,7 +374,6 @@ typedef struct {
 		.conf_max_connections = -1,\
 		.mutex = PTHREAD_MUTEX_INITIALIZER,\
 		.max_connections = -1,\
-		.error = SLURM_SUCCESS,\
 		.shutdown_requested = true,\
 		.workers.conf_threads = -1,\
 		.quiesce = { \
@@ -497,6 +501,15 @@ extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg);
 extern void con_close_on_poll_error(conmgr_fd_t *con, int fd);
 
 /*
+ * Update con->status_code following the "latest non-SLURM_ERROR wins"
+ * policy. Filters SLURM_SUCCESS, SLURM_ERROR, EAGAIN, EWOULDBLOCK so the
+ * stored value retains the most recent specific error. Logs every real
+ * transition via log_flag(CONMGR, ...).
+ * NOTE: Caller must hold mgr.mutex lock.
+ */
+extern void con_set_status_code(conmgr_fd_t *con, slurm_err_t status_code);
+
+/*
  * Set connection polling state
  * NOTE: Caller must hold mgr.mutex lock.
  * IN type - Set type of polling for connection or PCTL_TYPE_INVALID to disable
@@ -525,6 +538,10 @@ extern void handle_write(conmgr_callback_args_t conmgr_args, void *arg);
 
 /*
  * Read input_fd into buffer
+ * WARNING: caller must not hold mgr.mutex lock
+ * IN con - conmgr connection ptr
+ * IN buf - buffer to read into (will be grown as needed)
+ * IN what - description of buffer for logging
  */
 extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what);
 

@@ -92,9 +92,10 @@ typedef struct {
 	 * Call back when connection is closed.
 	 * Note: hcon will already be free()ed before this callback.
 	 * IN name - connection name for logging
+	 * IN status_code - SLURM_SUCCESS or error
 	 * IN arg - arbitrary pointer handed to http_con_assign_server()
 	 */
-	void (*on_close)(const char *name, void *arg);
+	void (*on_close)(const char *name, slurm_err_t status_code, void *arg);
 } http_con_server_events_t;
 
 /* Declare alias for http_con_server_events_t->on_request */

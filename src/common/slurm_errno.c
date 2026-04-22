@@ -150,6 +150,26 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(SLURM_BLOCKED_ON_WRITE),
 		"Write would block",
 	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_REJECTED),
+		"Connection rejected by handler",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_QUIESCE_TIMEOUT),
+		"Connection forced closed by quiesce timeout",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_CONNECT_TIMEOUT),
+		"Connection timed out establishing",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_WRITE_TIMEOUT),
+		"Connection timed out writing",
+	},
+	{
+		ERRTAB_ENTRY(SLURM_COMMUNICATIONS_READ_TIMEOUT),
+		"Connection timed out reading",
+	},
 
 	/* communication failures to/from slurmctld */
 	{

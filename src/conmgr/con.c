@@ -217,11 +217,36 @@ extern void close_all_connections(void)
 	/* close all connections */
 	list_for_each(mgr.connections, _close_con_for_each, NULL);
 	list_for_each(mgr.listen_conns, _close_con_for_each, NULL);
+
+	/* Wake up poll() as all the connections should be closed */
+	pollctl_interrupt(__func__);
 }
 
 extern void work_close_con(conmgr_callback_args_t conmgr_args, void *arg)
 {
 	close_con(false, conmgr_args.con);
+}
+
+extern void con_set_status_code(conmgr_fd_t *con, slurm_err_t status_code)
+{
+	xassert(con->magic == MAGIC_CON_MGR_FD);
+
+	if ((status_code == SLURM_SUCCESS) || (status_code == EAGAIN) ||
+	    (status_code == EWOULDBLOCK))
+		return;
+
+	if (con->status_code == status_code)
+		return;
+
+	if ((status_code == SLURM_ERROR) && con->status_code)
+		return;
+
+	log_flag(CONMGR, "%s: [%s] status_code %s -> %s",
+		 __func__, con->name,
+		 slurm_strerror(con->status_code),
+		 slurm_strerror(status_code));
+
+	con->status_code = status_code;
 }
 
 /*
@@ -253,7 +278,8 @@ extern void close_con(bool locked, conmgr_fd_t *con)
 		return;
 	}
 
-	if (con->tls && con_flag(con, FLAG_IS_TLS_CONNECTED) &&
+	if (!mgr.shutdown_requested && con->tls &&
+	    con_flag(con, FLAG_IS_TLS_CONNECTED) &&
 	    !con_flag(con, FLAG_INITIATE_TLS_SHUTDOWN) &&
 	    !con_flag(con, FLAG_IS_TLS_SHUTTING_DOWN) &&
 	    !con_flag(con, FLAG_READ_EOF) && !(con->output_fd < 0)) {
@@ -763,7 +789,10 @@ extern void wrap_on_connection(conmgr_callback_args_t conmgr_args, void *arg)
 	if (!arg) {
 		error("%s: [%s] closing connection due to NULL return from on_connection",
 		      __func__, con->name);
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, SLURM_COMMUNICATIONS_REJECTED);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
@@ -1589,6 +1618,8 @@ extern void con_close_on_poll_error(conmgr_fd_t *con, int fd)
 		else if (err)
 			error("%s: [%s] socket error encountered while polling: %s",
 			      __func__, con->name, slurm_strerror(err));
+
+		con_set_status_code(con, (rc ? rc : err));
 	}
 
 	/*
@@ -2494,8 +2525,9 @@ static int _foreach_log_connection(void *x, void *arg)
 		(void) list_for_each_ro(con->tls_out, _foreach_count_buffer,
 					&tls_out_stats);
 
-	probe_log(log, "connection: [%s]+%d flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
-		  con->name, con->refs, flags, conmgr_con_type_string(con->type),
+	probe_log(log, "connection: [%s]+%d status_code=%s flags=%s type=%s input_fd=%d output_fd=%d address=%pA TLS=%c tls_input_buffer=%d/%d tls_output_buffer=%d/%d[%d] input_buffer=%d/%d%s%s output_buffers=%d/%d[%d]%s%s mss=%d extracting=%c polling=%s/%s",
+		  con->name, con->refs, slurm_strerror(con->status_code),
+		  flags, conmgr_con_type_string(con->type),
 	     con->input_fd, con->output_fd, &con->address,
 	     BOOL_CHARIFY(con->tls),
 	     (con->tls_in ? get_buf_offset(con->tls_in) : 0),

@@ -140,7 +140,10 @@ static int _try_parse_rpc(conmgr_fd_t *con, slurm_msg_t **msg_ptr)
 		 * Avoid sending a msg to callback where the msg is an unknown
 		 * state.
 		 */
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		FREE_NULL_MSG(msg);
 	} else {
 		log_flag(NET, "%s: [%s] unpacked %u bytes containing %s RPC",

@@ -383,14 +383,20 @@ again:
 	read_c = tls_g_recv(con->tls, start, readable);
 
 	if (read_c < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+		int recv_errno = errno;
+
+		if ((recv_errno == EAGAIN) || (recv_errno == EWOULDBLOCK)) {
 			log_flag(NET, "%s: [%s] TLS would block on tls_g_recv()",
 				 __func__, con->name);
 			return;
 		}
 
-		log_flag(NET, "%s: [%s] error while decrypting TLS: %m",
-			 __func__, con->name);
+		log_flag(NET, "%s: [%s] error while decrypting TLS: %s",
+			 __func__, con->name, slurm_strerror(recv_errno));
+
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, recv_errno);
+		slurm_mutex_unlock(&mgr.mutex);
 
 		_wait_close(con);
 		return;
@@ -532,8 +538,11 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		log_flag(CONMGR, "%s: [%s] TLS disabled: Unable to secure connection. Closing connection.",
 			 __func__, con->name);
 
-		close_con(false, con);
-		close_con_output(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, ESLURM_TLS_REQUIRED);
+		close_con(true, con);
+		close_con_output(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return;
 	}
 
@@ -590,7 +599,10 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 			log_flag(CONMGR, "%s: [%s] out of memory for TLS handshake: %s",
 				 __func__, con->name, slurm_strerror(rc));
 
-			close_con(false, con);
+			slurm_mutex_lock(&mgr.mutex);
+			con_set_status_code(con, rc);
+			close_con(true, con);
+			slurm_mutex_unlock(&mgr.mutex);
 			return;
 		}
 
@@ -638,6 +650,7 @@ extern void tls_create(conmgr_callback_args_t conmgr_args, void *arg)
 		xassert(!con_flag(con, FLAG_IS_TLS_CONNECTED));
 		xassert(!con->tls);
 
+		con_set_status_code(con, rc);
 		close_con(true, con);
 		con->tls_in = NULL;
 		con->tls_out = NULL;
@@ -907,7 +920,10 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 		/* should never happen */
 		xassert(false);
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, match);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 	}
 }
 

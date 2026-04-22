@@ -360,14 +360,17 @@ static void _wrap_on_connect_timeout(conmgr_callback_args_t conmgr_args,
 	if (con->events->on_connect_timeout)
 		rc = con->events->on_connect_timeout(conmgr_args, con->new_arg);
 	else
-		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+		rc = SLURM_COMMUNICATIONS_CONNECT_TIMEOUT;
 
 	if (rc) {
 		log_flag(CONMGR, "%s: [%s] closing due to connect %s timeout failed: %s",
 			 __func__, con->name,
 			 TIMESPEC_STR(con->timeouts->connect, false),
 			 slurm_strerror(rc));
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(CONMGR, "%s: [%s] connect %s timeout resetting",
 			 __func__, con->name,
@@ -404,7 +407,7 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 	if (con->events->on_write_timeout)
 		rc = con->events->on_write_timeout(conmgr_args, con->arg);
 	else
-		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+		rc = SLURM_COMMUNICATIONS_WRITE_TIMEOUT;
 
 	if (rc) {
 		log_flag(CONMGR, "%s: [%s] closing due to write %s timeout failed: %s",
@@ -413,6 +416,8 @@ static void _wrap_on_write_timeout(conmgr_callback_args_t conmgr_args,
 			 slurm_strerror(rc));
 
 		slurm_mutex_lock(&mgr.mutex);
+
+		con_set_status_code(con, rc);
 
 		/* Close read and write file descriptors */
 		close_con(true, con);
@@ -453,7 +458,7 @@ static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
 	if (con->events->on_read_timeout)
 		rc = con->events->on_read_timeout(conmgr_args, con->arg);
 	else
-		rc = SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT;
+		rc = SLURM_COMMUNICATIONS_READ_TIMEOUT;
 
 	if (rc) {
 		log_flag(CONMGR, "%s: [%s] closing due to read %s timeout failed: %s",
@@ -461,7 +466,10 @@ static void _wrap_on_read_timeout(conmgr_callback_args_t conmgr_args, void *arg)
 							   false),
 			 slurm_strerror(rc));
 
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, rc);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(CONMGR, "%s: [%s] read %s timeout resetting",
 			 __func__, con->name, TIMESPEC_STR(con->timeouts->read,
@@ -935,7 +943,11 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		xassert(is_tls);
 		xassert(!con_flag(con, FLAG_IS_LISTEN));
 
-		if (con_flag(con, FLAG_ON_DATA_TRIED)) {
+		if (con_flag(con, FLAG_READ_EOF) || (con->output_fd < 0)) {
+			log_flag(CONMGR, "%s: [%s] queuing up TLS shutdown cleanup on closed connection",
+				 __func__, con->name);
+			add_work_con_fifo(true, con, tls_shutdown, NULL);
+		} else if (con_flag(con, FLAG_ON_DATA_TRIED)) {
 			log_flag(CONMGR, "%s: [%s] waiting for incoming to continue TLS shutdown",
 				 __func__, con->name);
 		} else {
@@ -1024,6 +1036,21 @@ static int _handle_connection(conmgr_fd_t *con, handle_connection_args_t *args)
 		log_flag(CONMGR, "%s: [%s] queuing close of incoming on connection input_fd=%d",
 			 __func__, con->name, con->input_fd);
 		xassert(con_flag(con, FLAG_READ_EOF));
+
+		/*
+		 * Peer EOF while on_data stalled on a partial message means
+		 * a truncated frame — record it as an error so on_finish()
+		 * sees why the connection closed.
+		 */
+		if (con_flag(con, FLAG_ON_DATA_TRIED) ||
+		    (con->in && get_buf_offset(con->in))) {
+			log_flag(CONMGR, "%s: [%s] peer closed with %u bytes of unparsed input; marking incomplete",
+				 __func__, con->name,
+				 (con->in ? get_buf_offset(con->in) : 0));
+			con_set_status_code(con,
+					    ESLURM_PROTOCOL_INCOMPLETE_PACKET);
+		}
+
 		add_work_con_fifo(true, con, work_close_con, NULL);
 		return 0;
 	}
@@ -1167,29 +1194,36 @@ static bool _attempt_accept(conmgr_fd_t *con)
 	/* try to get the new file descriptor and retry on errors */
 	if ((fd = accept4(input_fd, (struct sockaddr *) &addr, &addrlen,
 			  SOCK_CLOEXEC)) < 0) {
-		if (errno == EINTR) {
+		int accept_errno = errno;
+
+		if (accept_errno == EINTR) {
 			log_flag(CONMGR, "%s: [%s] interrupt on accept(). Retrying.",
 				 __func__, con->name);
 			return true;
 		}
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
-			log_flag(CONMGR, "%s: [%s] retry: %m",
-				 __func__, con->name);
+		if ((accept_errno == EAGAIN) || (accept_errno == EWOULDBLOCK)) {
+			log_flag(CONMGR, "%s: [%s] retry: %s",
+				 __func__, con->name,
+				 slurm_strerror(accept_errno));
 			return false;
 		}
 
-		error("%s: [%s] Error on accept socket: %m",
-		      __func__, con->name);
+		error("%s: [%s] Error on accept socket: %s",
+		      __func__, con->name, slurm_strerror(accept_errno));
 
-		if ((errno == EMFILE) || (errno == ENFILE) ||
-		    (errno == ENOBUFS) || (errno == ENOMEM)) {
-			error("%s: [%s] retry on error: %m",
-			      __func__, con->name);
+		if ((accept_errno == EMFILE) || (accept_errno == ENFILE) ||
+		    (accept_errno == ENOBUFS) || (accept_errno == ENOMEM)) {
+			error("%s: [%s] retry on error: %s",
+			      __func__, con->name,
+			      slurm_strerror(accept_errno));
 			return false;
 		}
 
 		/* socket is likely dead: fail out */
-		close_con(false, con);
+		slurm_mutex_lock(&mgr.mutex);
+		con_set_status_code(con, accept_errno);
+		close_con(true, con);
+		slurm_mutex_unlock(&mgr.mutex);
 		return true;
 	}
 
@@ -1573,8 +1607,10 @@ static int _close_con_for_each(void *x, void *arg)
 {
 	conmgr_fd_t *con = x;
 
-	if (!is_signal_connection(con))
+	if (!is_signal_connection(con)) {
+		con_set_status_code(con, SLURM_COMMUNICATIONS_QUIESCE_TIMEOUT);
 		close_con(true, con);
+	}
 
 	return 1;
 }
@@ -1586,6 +1622,9 @@ static void _on_quiesce_timeout(void)
 
 	/* Close all connections but not listeners */
 	list_for_each(mgr.connections, _close_con_for_each, NULL);
+
+	/* Wake up poll() as all the connections should be closed */
+	pollctl_interrupt(__func__);
 }
 
 static void _quiesce_max_sleep(void)

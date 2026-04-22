@@ -784,7 +784,8 @@ static void _on_finish(conmgr_callback_args_t conmgr_args, void *arg)
 	 */
 
 	if (hcon_events->on_close)
-		hcon_events->on_close(conmgr_con_get_name(hcon_con), hcon_arg);
+		hcon_events->on_close(conmgr_con_get_name(hcon_con),
+				      conmgr_args.status_code, hcon_arg);
 
 	CONMGR_CON_UNLINK(hcon_con);
 }
