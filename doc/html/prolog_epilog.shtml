@@ -554,9 +554,13 @@ individual host names.</li>
 Number of nodes assigned to a job.</li>
 
 <li><b>SLURM_JOB_OVERSUBSCRIBE</b>
-Job OverSubscribe status.
-See the <a href="squeue.html#OPT_OverSubscribe">squeue man page</a> for
-possible values.
+Set to NO, YES, or OK (oversubscribe disposition for the job; see
+<a href="squeue.html#OPT_%h">squeue --format</a> <code>%h</code>).
+Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
+
+<li><b>SLURM_JOB_EXCLUSIVE</b>
+Set to NO, NODE, USER, MCS, or TOPO (exclusive disposition for the job; see
+<a href="squeue.html#OPT_Exclusive">squeue --Format Exclusive</a>.
 Available in Prolog, PrologSlurmctld, Epilog and EpilogSlurmctld.</li>
 
 <li><b>SLURM_JOB_PARTITION</b>

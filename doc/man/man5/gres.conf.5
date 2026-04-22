@@ -239,7 +239,7 @@ For example, instead of "\fICUDA_VISIBLE_DEVICES=0\fR", it would look like:
 .TP
 \fBexplicit\fR
 If the flag is set, GRES is not allocated to the job as part of whole node
-allocation (--exclusive or OverSubscribe=EXCLUSIVE set on partition) unless
+allocation (--exclusive or partition \fBExclusive=NODE\fR set) unless
 it was explicitly requested by the job.
 
 \fBNOTE\fR: If a gres has this flag configured it is global, so all other nodes

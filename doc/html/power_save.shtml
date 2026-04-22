@@ -151,6 +151,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
   "all_nodes_resume" : "cloud[1-3,7-8]",
   "jobs" : [
     {
+      "exclusive" : "NO",
       "extra" : "An arbitrary string from --extra",
       "features" : "c1,c2",
       "job_id" : 140814,
@@ -161,6 +162,7 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       "reservation" : "resv_1234"
     },
     {
+      "exclusive" : "NO",
       "extra" : null,
       "features" : "c1,c2",
       "job_id" : 140815,
@@ -171,8 +173,9 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       "reservation" : null
     },
     {
+      "exclusive" : "NODE",
       "extra" : null,
-      "features" : null
+      "features" : null,
       "job_id" : 140816,
       "nodes_alloc" : "cloud[7-8]",
       "nodes_resume" : "cloud[7-8]",
@@ -184,8 +187,12 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
 }
 </pre>
 
-    <p>See the <a href="squeue.html#OPT_OverSubscribe">squeue man page</a>
-    for possible values for <b>oversubscribe</b>.</p>
+    <p><b>oversubscribe</b> is NO, YES, or OK; <b>exclusive</b> is NO, NODE,
+    USER, MCS, or TOPO (same meanings as <a href="squeue.html#OPT_%h">squeue
+    --format</a> <code>%h</code> and
+    <a href="squeue.html#OPT_Exclusive">squeue --Format Exclusive</a>. See also
+    <code>SLURM_JOB_OVERSUBSCRIBE</code> and <code>SLURM_JOB_EXCLUSIVE</code> in
+    <a href="prolog_epilog.html">prolog_epilog</a>.</p>
 
     <p><b>NOTE</b>: The <b>SLURM_RESUME_FILE</b> will only exist and be
     usable if Slurm was compiled with the <a href=
@@ -490,10 +497,10 @@ SLURM_RESUME_FILE=/proc/1647372/fd/7:
       <li>Completing all running jobs without additional jobs being
       allocated.</li>
 
-      <li><i>ExclusiveUser=YES</i> and after all running jobs complete but
+      <li><i>Exclusive=USER</i> and after all running jobs complete but
       before another user's job is allocated.</li>
 
-      <li><i>OverSubscribe=EXCLUSIVE</i> and after the running job completes
+      <li><i>Exclusive=NODE</i> and after the running job completes
       but before another job is allocated.</li>
     </ul>
 

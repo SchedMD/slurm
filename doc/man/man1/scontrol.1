@@ -1402,11 +1402,6 @@ Value may be reset to job default with blank data value, "StdOut=".
 .IP
 
 .TP
-\fBShared\fR={yes|no}
-See \fIOverSubscribe\fP option above.
-.IP
-
-.TP
 \fBStartTime\fR=<\fItime_spec\fR>
 Set the job's earliest initiation time.
 It accepts times of the form \fIHH:MM:SS\fR to run a job at
@@ -2238,10 +2233,26 @@ Possible values are "YES" and "NO".
 .IP
 
 .TP
-\fBExclusiveUser\fR={yes|no}
-When enabled nodes will be exclusively allocated to users. Multiple jobs can
-be run simultaneously, but those jobs must be from a single user.
+\fBExclusive\fR={no|none|node|user|topo}
+Set partition\-level exclusivity to a single mode.
+.RS
+.TP
+\fBNO\fR (or \fBNONE\fR): no partition\-level exclusivity (default).
+.TP
+\fBNODE\fR: allocate whole nodes (similar to job \fB\-\-exclusive\fR).
+.TP
+\fBUSER\fR: only one user's jobs may share a node (similar to
+\fB\-\-exclusive=user\fR).
+.TP
+\fBTOPO\fR: only one job per topology segment (similar to
+\fB\-\-exclusive=topo\fR); also implies \fBNODE\fR.
+.TP
+See the \fBExclusive\fR entry in \fBslurm.conf\fR(5) for full semantics.
+Older \fBExclusiveUser=YES\fR and \fBExclusiveTopo=YES\fR are still accepted
+and are equivalent to \fBExclusive=USER\fR and \fBExclusive=TOPO\fR
+respectively.
 .IP
+.RE
 
 .TP
 \fBGraceTime\fR=<\fIseconds\fR>
@@ -2353,12 +2364,14 @@ have already begun execution.
 .IP
 
 .TP
-\fBOverSubscribe\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
+\fBOverSubscribe\fR={yes|no|force}[:<\fIjob_count\fR>]
 Specify if compute resources (i.e. individual CPUs) in this partition can be
 shared by multiple jobs.
-Possible values are "YES", "NO", "EXCLUSIVE" and "FORCE".
+Possible values are "YES", "NO", and "FORCE".
 An optional job count specifies how many jobs can be allocated to use
 each resource.
+Whole\-node\-exclusive partitions can be configured with \fBExclusive\fR=node
+(see above).
 .IP
 
 .TP
@@ -2431,11 +2444,6 @@ Possible values are "YES" and "NO".
 Specify if only allocation requests initiated by user root will be satisfied.
 This can be used to restrict control of the partition to some meta\-scheduler.
 Possible values are "YES" and "NO".
-.IP
-
-.TP
-\fBShared\fR={yes|no|exclusive|force}[:<\fIjob_count\fR>]
-Renamed to \fIOverSubscribe\fP, see option descriptions above.
 .IP
 
 .TP
@@ -3246,7 +3254,7 @@ scontrol: show part debug
 PartitionName=debug
    AllowGroups=ALL AllowAccounts=ALL AllowQos=ALL
    AllocNodes=ALL Default=YES QoS=N/A
-   DefaultTime=NONE DisableRootJobs=NO ExclusiveUser=NO ExclusiveTopo=NO GraceTime=0 Hidden=NO
+   DefaultTime=NONE DisableRootJobs=NO Exclusive=NO GraceTime=0 Hidden=NO
    MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=0 LLN=NO MaxCPUsPerNode=UNLIMITED MaxCPUsPerSocket=UNLIMITED
    NodeSets=ALL
    Nodes=snowflake[0\-48]
@@ -3272,7 +3280,7 @@ JobId=71701 Name=hostname
    NumNodes=1 NumCPUs=10 CPUs/Task=2 ReqS:C:T=1:1:1
    MinCPUsNode=2 MinMemoryNode=0 MinTmpDiskNode=0
    Features=(null) Reservation=(null)
-   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   OverSubscribe=OK Exclusive=NO Contiguous=0 Licenses=(null) Network=(null)
 scontrol: update JobId=71701 TimeLimit=30:00 Priority=500
 scontrol: show hostnames tux[1\-3]
 tux1
