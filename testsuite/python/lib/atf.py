@@ -363,6 +363,20 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    reason = "Ticket 25070: Known issue with slurmd: fatal: _forward_thread: pthread_mutex_lock(): Invalid argument"
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/log.c" in bt
+        and "in fatal_abort" in bt
+        and "in _forward_thread" in bt
+        and "%s: pthread_mutex_lock(): %m" in bt
+    ):
+        # TODO: Add version when t25070 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
