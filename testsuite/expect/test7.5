@@ -115,9 +115,28 @@ expect {
 		# sleep to make sure the process is actually running
 		exec $bin_sleep 1
 		exec $bin_kill -INT $srun_pid
-		exec $bin_kill -INT $srun_pid
-		log_debug "Sent SIGINT * 2"
+		log_debug "Sent first SIGINT"
+
+		# From https://man7.org/linux/man-pages/man7/signal.7.html:
+		#
+		# Standard signals do not queue.  If multiple instances of a
+                # standard signal are generated while that signal is blocked,
+                # then only one instance of the signal is marked as pending (and
+                # the signal will be delivered just once when it is unblocked).
+                # In the case where a standard signal is already pending, the
+                # siginfo_t structure (see sigaction(2)) associated with that
+                # signal is not overwritten on arrival of subsequent instances
+                # of the same signal.
+                # Thus, the process will receive the information associated with
+                # the first instance of the signal.
+                #
+                # Therefore, we need to send the second SIGINT once the
+                # first has been processed.
 		exp_continue
+	}
+	-re "(one more within 1 sec to abort)" {
+		exec $bin_kill -INT $srun_pid
+		log_debug "Sent second SIGINT"
 	}
 	-re "Received signal" {
 		fail "Unexpected signal processed after SIGINT"
