@@ -616,14 +616,14 @@ static void _start_msg_tree_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		 * fwd thread was not able to get all the return codes from
 		 * children, the waiting loop was deadlocked.
 		 */
-		slurm_mutex_lock(fwd_tree->tree_mutex);
-		(*fwd_tree->p_thr_count)++;
-		slurm_mutex_unlock(fwd_tree->tree_mutex);
-
 		slurm_mutex_lock(&global_forward_mutex);
 		thread_count++;
 		xassert(thread_count > 0);
 		slurm_mutex_unlock(&global_forward_mutex);
+
+		slurm_mutex_lock(fwd_tree->tree_mutex);
+		(*fwd_tree->p_thr_count)++;
+		slurm_mutex_unlock(fwd_tree->tree_mutex);
 
 		slurm_thread_create_detached(NULL, _fwd_tree_thread, fwd_tree);
 	}
