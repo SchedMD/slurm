@@ -4459,6 +4459,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		pack16(conf->kill_wait, buffer);
 
 		packstr(conf->launch_params, buffer);
+		packstr(conf->license_params, buffer);
 		packstr(conf->licenses, buffer);
 		pack16(conf->log_fmt, buffer);
 
@@ -5530,6 +5531,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpack16(&conf->kill_wait, buffer);
 
 		safe_unpackstr(&conf->launch_params, buffer);
+		safe_unpackstr(&conf->license_params, buffer);
 		safe_unpackstr(&conf->licenses, buffer);
 		safe_unpack16(&conf->log_fmt, buffer);
 

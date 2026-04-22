@@ -6078,6 +6078,50 @@ extern void slurm_format_tres_string(char **s, char *tres_type)
 	xfree(prefix);
 }
 
+/*
+ * Fuzzy name comparison for remote licenses
+ * query IN - query string
+ * name IN - license name
+ * RET rc - 0 for no match, 1 for exact match, 2 for fuzzy match
+ */
+extern int slurm_remote_license_fuzzy_match(const char *query, const char *name)
+{
+	char *split = NULL, *query_split = NULL;
+	size_t cnt = 0;
+
+	if ((query == NULL) || (name == NULL))
+		return LIC_NO_MATCH;
+
+	query_split = xstrchr(query, '@');
+	split = xstrchr(name, '@');
+	if (split)
+		cnt = split - name;
+	/*
+	 * fuzzy match cases
+	 * check1:
+	 * 	"matlab" querying "matlab@test" -> should match
+	 * check2:
+	 * 	"matla"  querying "matlab@test" -> should fail
+	 * check3:
+	 * 	"matlab2" querying "matlab@test" -> should fail
+	 * check4:
+	 * 	"matlab@test" querying "matlab@test" -> should match
+	 * thus, the proper fuzzy matching logic is something like
+	 * If the query string has an '@', match the whole string,
+	 * if the query string does not have an '@', match only the
+	 * pre-@ portion of the string
+	 */
+	if (!query_split) {
+		if (strlen(query) != cnt)
+			return LIC_NO_MATCH;
+		if (xstrncmp(name, query, cnt))
+			return LIC_NO_MATCH;
+		return LIC_FUZZY_MATCH;
+	} else if (xstrcmp(name, query))
+		return LIC_NO_MATCH;
+	return LIC_EXACT_MATCH;
+}
+
 extern int slurm_get_next_tres(
 	char **tres_type, char *in_val, char **name_ptr, char **type_ptr,
 	uint64_t *cnt, char **save_ptr)

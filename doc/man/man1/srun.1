@@ -1687,6 +1687,10 @@ meaning AND), then all requested licenses are required for the job. For example,
 "\-\-licenses=foo:4,bar". If they are separated by a pipe ('|' meaning OR),
 then only one of the license requests are required for the job. For example,
 "\-\-licenses=foo:4|bar". AND and OR cannot both be used.
+To submit jobs using remote licenses (those served by slurmdbd), specify the
+name of the server providing the licenses. For example,
+"\-\-license=nastran@slurmdb:12". If \fBLicenseParameters=RemoteFuzzyMatch\fR
+is set in slurm.conf, it is possible to omit the server name.
 
 \fBNOTE\fR: When submitting heterogeneous jobs, license requests
 may only be made on the first component job.

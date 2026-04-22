@@ -50,6 +50,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/sercli.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -242,6 +243,65 @@ static int _license_find_rec(void *x, void *key)
 	if (xstrcmp(license_entry->name, name))
 		return 0;
 	return 1;
+}
+
+static int _license_remote_fuzzy_find_rec(void *x, void *key)
+{
+	licenses_t *license_entry = (licenses_t *) x;
+	char *name = (char *) key;
+
+	if ((license_entry->name == NULL) || (name == NULL))
+		return 0;
+	if (license_entry->remote)
+		return slurm_remote_license_fuzzy_match(name,
+							license_entry->name);
+	else if (xstrcmp(license_entry->name, name))
+		return 0;
+	return 1;
+}
+
+/*
+ * Match query license string possibly to local or remote license name.
+ * If there is a local exact match that *must* be selected, otherwise
+ * an unambiguous remote license must be selected (e.g., if the same license
+ * name exists for multiple server values, we must not randomly select one and
+ * prefer to error out.
+ */
+static licenses_t *_fuzzy_match_remote_licenses(char *name)
+{
+	list_itr_t *iter;
+	licenses_t *license_entry, *match;
+
+	match = NULL;
+	iter = list_iterator_create(cluster_license_list);
+
+	/*
+	 * have to go through the entire list to ensure we pick either the
+	 * exact local match or the unambiguous remote match
+	 */
+	while ((license_entry = list_next(iter))) {
+		int ismatch =
+			_license_remote_fuzzy_find_rec(license_entry, name);
+
+		xassert(ismatch < LIC_MAX_MATCH);
+		if (ismatch == LIC_EXACT_MATCH) {
+			match = license_entry;
+			break;
+		} else if (ismatch == LIC_FUZZY_MATCH) {
+			if (match) {
+				/*
+				 * there is a previous match meaning that there
+				 * is ambiguity about which server the user
+				 * might mean, fail
+				 */
+				match = NULL;
+				break;
+			}
+			match = license_entry;
+		}
+	}
+	list_iterator_destroy(iter);
+	return match;
 }
 
 static int _license_find_root_rec(void *x, void *key)
@@ -1839,11 +1899,14 @@ extern void license_free(void)
  *                    send in NULL otherwise
  * OUT valid - true if required licenses are valid and a sufficient number
  *             are configured (though not necessarily available now)
+ * OUT fuzzy_match - true if fuzzy matching was actually used in validation
+ *                   ok to pass NULL if caller doesn't require the output
  * RET license_list, must be destroyed by caller
  */
 extern list_t *license_validate(char *licenses, bool validate_configured,
 				bool validate_existing, bool hres,
-				uint64_t *tres_req_cnt, bool *valid)
+				uint64_t *tres_req_cnt, bool *valid,
+				bool *fuzzy_match)
 {
 	list_itr_t *iter;
 	licenses_t *license_entry, *match;
@@ -1852,6 +1915,14 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	static slurmdb_tres_rec_t tres_req;
 	int tres_pos;
 	bool has_mode3 = false;
+	bool fuzzy_match_remote = false;
+	bool is_fuzzy_match = false;
+
+	if (xstrcasestr(slurm_conf.license_params, "RemoteFuzzyMatch"))
+		fuzzy_match_remote = true;
+	/* initialize in case the caller didn't */
+	if (fuzzy_match)
+		*fuzzy_match = false;
 
 	/* Init all the license TRES to 0 */
 	if (tres_req_cnt) {
@@ -1888,6 +1959,7 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(job_license_list);
 	while ((license_entry = list_next(iter))) {
+		is_fuzzy_match = false; /* reset for each entry */
 		if (cluster_license_list) {
 			if (license_entry->nodes) {
 				licenses_find_rec_by_nodes_t args = {
@@ -1897,10 +1969,16 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 				match = list_find_first(
 					cluster_license_list,
 					_license_find_rec_by_nodes, &args);
-			} else
+			} else if (xstrchr(license_entry->name, '@') ||
+				   !fuzzy_match_remote)
 				match = list_find_first(cluster_license_list,
 							_license_find_root_rec,
 							license_entry->name);
+			else {
+				match = _fuzzy_match_remote_licenses(
+					license_entry->name);
+				is_fuzzy_match = true;
+			}
 		} else
 			match = NULL;
 		if (!match) {
@@ -1921,6 +1999,13 @@ extern list_t *license_validate(char *licenses, bool validate_configured,
 			break;
 		}
 
+		if (is_fuzzy_match) {
+			/* copy real name to maintain exact match */
+			xfree(license_entry->name);
+			license_entry->name = xstrdup(match->name);
+			if (fuzzy_match)
+				*fuzzy_match = true;
+		}
 		license_entry->id.lic_id = match->id.lic_id;
 		license_entry->id.hres_id = match->id.hres_id;
 		license_entry->mode = match->mode;

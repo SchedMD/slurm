@@ -306,6 +306,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillWait", S_P_UINT16},
 	{"LaunchParameters", S_P_STRING},
 	{"LaunchType", S_P_STRING},
+	{"LicenseParameters", S_P_STRING},
 	{"Licenses", S_P_STRING},
 	{"LogTimeFormat", S_P_STRING},
 	{"MailDomain", S_P_STRING},
@@ -2656,6 +2657,7 @@ extern void free_slurm_conf(slurm_conf_t *conf, bool purge_node_hash)
 	FREE_NULL_LIST(conf->job_defaults_list);
 	xfree(conf->job_submit_plugins);
 	xfree(conf->launch_params);
+	xfree(conf->license_params);
 	xfree(conf->licenses);
 	xfree(conf->mail_domain);
 	xfree(conf->mail_prog);
@@ -4176,6 +4178,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (xstrcasestr(conf->launch_params, "enable_nss_slurm") &&
 	    xstrcasestr(conf->launch_params, "disable_send_gids"))
 		fatal("LaunchParameters options enable_nss_slurm and disable_send_gids are mutually exclusive.");
+
+	(void) s_p_get_string(&conf->license_params, "LicenseParameters",
+			      hashtbl);
 
 	(void) s_p_get_string(&conf->licenses, "Licenses", hashtbl);
 

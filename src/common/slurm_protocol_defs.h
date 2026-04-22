@@ -1925,6 +1925,22 @@ extern int slurm_get_rep_count_inx(
  */
 extern void slurm_format_tres_string(char **s, char *tres_type);
 
+enum {
+	LIC_NO_MATCH = 0,
+	LIC_EXACT_MATCH,
+	LIC_FUZZY_MATCH,
+	LIC_MAX_MATCH
+};
+
+/*
+ * Fuzzy name comparison for remote licenses
+ * query IN - query string
+ * name IN - license name
+ * RET rc - 0 for no match, 1 for exact match, 2 for fuzzy match
+ */
+extern int slurm_remote_license_fuzzy_match(const char *query,
+					    const char *name);
+
 /*
  * Reentrant TRES specification parse logic
  * tres_type IN/OUT - type of tres we are looking for, If *tres_type is NULL we

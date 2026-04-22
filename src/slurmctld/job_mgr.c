@@ -7242,7 +7242,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_record_t *job_ptr = NULL;
 	slurmdb_assoc_rec_t assoc_rec, *assoc_ptr = NULL;
 	list_t *license_list = NULL, *gres_list = NULL;
-	bool valid;
+	bool valid, lic_fuzzy_match = false;
 	slurmdb_qos_rec_t *qos_ptr;
 	uint32_t user_submit_priority, acct_reason = 0;
 	uint32_t qos_id = 0;
@@ -7391,13 +7391,18 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	license_list =
 		license_validate(job_desc->licenses_tot, validate_cfgd_licenses,
-				 true, false, job_desc->tres_req_cnt, &valid);
+				 true, false, job_desc->tres_req_cnt, &valid,
+				 &lic_fuzzy_match);
 
 	if (!valid) {
 		info("Job's requested licenses are invalid: %s",
 		     job_desc->licenses_tot);
 		error_code = ESLURM_INVALID_LICENSES;
 		goto cleanup_fail;
+	} else if (lic_fuzzy_match) {
+		/* rewrite user request to actual matches licenses */
+		xfree(job_desc->licenses_tot);
+		job_desc->licenses_tot = license_list_to_string(license_list);
 	}
 
 	if ((job_desc->bitflags & GRES_ONE_TASK_PER_SHARING) &&
@@ -13108,12 +13113,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			    __func__, job_ptr->licenses);
 	} else if (job_desc->licenses_tot) {
 		bool pending = IS_JOB_PENDING(job_ptr);
+		bool fuzzy_match = false;
+
 		license_list =
 			license_validate(job_desc->licenses_tot, true, true,
 					 false,
 					 pending ? job_desc->tres_req_cnt :
 						   NULL,
-					 &valid_licenses);
+					 &valid_licenses, &fuzzy_match);
 
 		if (!valid_licenses) {
 			sched_info("%s: invalid licenses: %s",
@@ -13121,6 +13128,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 			error_code = ESLURM_INVALID_LICENSES;
 		} else if (!license_list)
 			xfree(job_desc->licenses_tot);
+		else if (fuzzy_match) {
+			xfree(job_desc->licenses_tot);
+			job_desc->licenses_tot =
+				license_list_to_string(license_list);
+		}
 	}
 
 	if (error_code != SLURM_SUCCESS)
