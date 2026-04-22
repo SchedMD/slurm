@@ -3753,7 +3753,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	int set_nodes = 0/* , set_tasks = 0 */;
 	int pos = -1;
 	uint16_t ntasks_per_core = step_ptr->ntasks_per_core;
-	uint16_t ntasks_per_socket = 0;
 	node_record_t *node_ptr;
 	gres_stepmgr_step_test_args_t gres_test_args = {
 		.cpus_per_task = step_ptr->cpus_per_task,
@@ -3856,17 +3855,8 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				threads_per_core =
 					node_ptr->config_ptr->threads;
 			cpus_per_task_array[set_nodes] = cpus_per_task;
-			if (ntasks_per_socket == 1) {
-				uint16_t threads_per_socket;
-				threads_per_socket =
-					node_ptr->config_ptr->cores;
-				threads_per_socket *= threads_per_core;
-
-				if (cpus_per_task < threads_per_socket)
-					cpus_per_task_array[set_nodes] =
-						threads_per_socket;
-			} else if ((ntasks_per_core == 1) &&
-				   (cpus_per_task < threads_per_core))
+			if ((ntasks_per_core == 1) &&
+			    (cpus_per_task < threads_per_core))
 				cpus_per_task_array[set_nodes] =
 					threads_per_core;
 		}
