@@ -644,6 +644,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 	fini_setproctitle();
 
 	cgroup_conf_destroy();
+	switch_g_fini();
 
 	xfree(cli);
 	xfree(conf->block_map);
@@ -1147,10 +1148,11 @@ _init_from_slurmd(int sock, char **argv, slurm_addr_t **_cli,
 			slurm_addr_t *node_addrs;
 
 			/* only allow one stepd to be stepmgr. */
+			slurm_daemon |= WITH_STEPMGR;
+			switch_g_stepmgr_init();
 			job_step_ptr = task_msg->job_ptr;
 			job_step_ptr->part_ptr = task_msg->part_ptr;
 			job_node_array = task_msg->job_node_array;
-			slurm_daemon |= IS_STEPMGR;
 
 			/*
 			 * job_record doesn't pack its node_addrs array, so get

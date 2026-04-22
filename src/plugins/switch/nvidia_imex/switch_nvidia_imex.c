@@ -678,7 +678,12 @@ extern int switch_p_fs_init(stepd_step_rec_t *step)
 	return _stepd_setup_imex_channel(step);
 }
 
-extern void switch_p_extern_step_fini(int job_id)
+extern void switch_p_stepmgr_fini(uint32_t job_id)
+{
+	/* not supported */
+}
+
+extern void switch_p_stepmgr_init(void)
 {
 	/* not supported */
 }

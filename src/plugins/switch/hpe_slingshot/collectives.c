@@ -151,7 +151,8 @@ static void *_cleanup_thread(void *data)
 extern bool slingshot_init_collectives(void)
 {
 	/* Enable Hardware Collectives only if fm_url is configured */
-	if (!slingshot_config.fm_url)
+	if (!slingshot_config.fm_url ||
+	    (!running_in_slurmctld() && !running_with_stepmgr()))
 		return true;
 
 	if (running_in_slurmctld() &&

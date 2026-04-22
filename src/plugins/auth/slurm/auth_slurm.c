@@ -89,7 +89,7 @@ extern int init(void)
 {
 	static bool init_run = false;
 	bool need_key = run_in_daemon(IS_SACKD | IS_SLURMD | IS_SLURMCTLD |
-				      IS_SLURMDBD | IS_STEPMGR);
+				      IS_SLURMDBD | WITH_STEPMGR);
 
 	/*
 	 * auth/slurm and cred/slurm plugins use the same .so, so they get
