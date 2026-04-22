@@ -1550,7 +1550,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (hash_inx), "
 				  "unique index env_hash_inx "
 				  "(env_hash(66)), "
-				  "key archive_delete (deleted))")
+				  "key archive_delete (deleted), "
+				  "key archive_purge (last_used))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1561,7 +1562,8 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 				  ", primary key (hash_inx), "
 				  "unique index script_hash_inx "
 				  "(script_hash(66)), "
-				  "key archive_delete (deleted))")
+				  "key archive_delete (deleted), "
+				  "key archive_purge (last_used))")
 	    == SLURM_ERROR)
 		return SLURM_ERROR;
 

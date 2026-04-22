@@ -5219,17 +5219,17 @@ static uint32_t _purge_mark(purge_type_t type, mysql_conn_t *mysql_conn,
 	case PURGE_JOB_ENV_NJ:
 	case PURGE_JOB_SCRIPT_NJ:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "unix_timestamp(%s) <= %ld LIMIT %d",
+				       "%s <= FROM_UNIXTIME(%ld) LIMIT %d",
 				       cluster_name, sql_table, col_name,
 				       period_end,
 				       slurmdbd_conf->max_purge_limit);
 		break;
 	default:
 		query = xstrdup_printf("update \"%s_%s\" set deleted = 1 where "
-				       "%s <= %ld && time_end != 0 "
+				       "%s > 0 && %s <= %ld "
 				       "LIMIT %d",
 				       cluster_name, sql_table, col_name,
-				       period_end,
+				       col_name, period_end,
 				       slurmdbd_conf->max_purge_limit);
 
 		break;
@@ -5411,19 +5411,19 @@ static int _get_oldest_record(mysql_conn_t *mysql_conn, char *cluster,
 	case PURGE_JOB_SCRIPT_NJ:
 	case PURGE_JOB_ENV_NJ:
 		query = xstrdup_printf("select unix_timestamp(%s) from "
-				       "\"%s_%s\" where unix_timestamp(%s) "
-				       "<= %ld order by %s asc limit 1",
+				       "\"%s_%s\" where %s "
+				       "<= FROM_UNIXTIME(%ld) order by %s "
+				       "asc limit 1",
 				       col_name, cluster, table, col_name,
 				       period_end, col_name);
 
 		break;
 
 	default:
-		query = xstrdup_printf(
-			"select %s from \"%s_%s\" where %s <= %ld "
-			"&& time_end != 0 order by %s asc LIMIT 1",
-			col_name, cluster, table, col_name, period_end,
-			col_name);
+		query = xstrdup_printf("select %s from \"%s_%s\" where %s > 0 "
+				       "&& %s <= %ld order by %s asc LIMIT 1",
+				       col_name, cluster, table, col_name,
+				       col_name, period_end, col_name);
 		break;
 	}
 
@@ -5732,24 +5732,21 @@ static int _archive_purge_table(purge_type_t purge_type, uint32_t usage_info,
 		 * a time. mysql_db_delete_affected_rows will return < 0 on
 		 * failure or 0 if no records are affected.
 		 */
-		if ((rc = mysql_db_delete_affected_rows(
-			     mysql_conn, purge_query)) > 0) {
-			/* Commit here every time since this could create a huge
-			 * transaction.
-			 */
-			if ((rc = mysql_db_commit(mysql_conn)))
-				error("Couldn't commit cluster (%s) purge",
-				      cluster_name);
-		}
-
-		if (rc != SLURM_SUCCESS) {
+		rc = mysql_db_delete_affected_rows(mysql_conn, purge_query);
+		if (rc < 0) {
 			error("Couldn't remove old data from %s table",
 			      sql_table);
+			rc = SLURM_ERROR;
 			goto end_it;
-		} else if (mysql_db_commit(mysql_conn)) {
+		}
+
+		/* Commit here every time since this could create a huge
+		 * transaction.
+		 */
+		if ((rc = mysql_db_commit(mysql_conn))) {
 			error("Couldn't commit cluster (%s) purge",
 			      cluster_name);
-			break;
+			goto end_it;
 		}
 	}
 end_it:
