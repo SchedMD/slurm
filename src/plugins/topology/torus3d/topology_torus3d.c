@@ -727,6 +727,168 @@ extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tctx)
 	return frag;
 }
 
+/*
+ * Find the minimal wrapping span for a set of coordinates on a circular axis.
+ * Sets the start position and span size.
+ */
+static void _min_wrap_span(bitstr_t *axis_bitmap, uint16_t *start,
+			   uint16_t *span)
+{
+	int axis_size = bit_size(axis_bitmap);
+	int coord_set;
+	int box_start, box_end;
+	int prev_coord;
+	int max_gap;
+
+	coord_set = bit_set_count(axis_bitmap);
+
+	/* Single coordinate */
+	if (coord_set == 1) {
+		*start = bit_ffs(axis_bitmap);
+		*span = 1;
+		return;
+		/* All positions occupied */
+	} else if (coord_set == axis_size) {
+		*start = 0;
+		*span = axis_size;
+		return;
+	}
+
+	box_start = bit_ffs(axis_bitmap);
+	box_end = bit_fls(axis_bitmap);
+
+	/*
+	 * If internal gaps can't exceed the wrap-around gap, the linear
+	 * [box_start, box_end] span is already optimal.
+	 */
+	if ((2 * (box_end - box_start)) < (axis_size + coord_set)) {
+		*start = box_start;
+		*span = (box_end - box_start + 1);
+		return;
+	}
+
+	max_gap = axis_size - (box_end - box_start + 1);
+	prev_coord = box_start;
+	for (int i = prev_coord + 1;
+	     (i = bit_ffs_from_bit(axis_bitmap, i)) >= 0; i++) {
+		int gap = i - prev_coord - 1;
+		if (gap > max_gap) {
+			box_start = i;
+			box_end = prev_coord;
+			max_gap = gap;
+		}
+		prev_coord = i;
+	}
+
+	*start = box_start;
+	*span = axis_size - max_gap;
+}
+
+static uint32_t _morton_encode(uint16_t x, uint16_t y, uint16_t z)
+{
+	uint32_t result = 0;
+	for (int i = 0; i < 5; i++) {
+		result |= ((uint32_t) ((x >> i) & 1)) << (3 * i);
+		result |= ((uint32_t) ((y >> i) & 1)) << (3 * i + 1);
+		result |= ((uint32_t) ((z >> i) & 1)) << (3 * i + 2);
+	}
+	return result;
+}
+
+extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
+			       uint32_t *size, void *tctx)
+{
+	uint32_t count = 0;
+	torus3d_context_t *ctx = tctx;
+
+	xassert(node_rank);
+	xassert(size);
+
+	*node_rank = NULL;
+	*size = 0;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+
+	if (!count)
+		return SLURM_SUCCESS;
+
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+	*size = count;
+
+	for (int t = 0; t < ctx->record_count; t++) {
+		torus3d_record_t *torus = &ctx->records[t];
+		bitstr_t *x_bitmap, *y_bitmap, *z_bitmap;
+		uint16_t x_start, y_start, z_start;
+		uint16_t x_span, y_span, z_span;
+		uint32_t rank_idx = 0;
+
+		if (!bit_overlap_any(torus->nodes_bitmap, node_bitmap))
+			continue;
+
+		if (bit_super_set(torus->nodes_bitmap, node_bitmap)) {
+			x_start = 0;
+			y_start = 0;
+			z_start = 0;
+			x_span = torus->x;
+			y_span = torus->y;
+			z_span = torus->z;
+			goto whole_torus;
+		}
+
+		x_bitmap = bit_alloc(torus->x);
+		y_bitmap = bit_alloc(torus->y);
+		z_bitmap = bit_alloc(torus->z);
+
+		for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+			uint32_t node_idx = torus->nodes_map[idx];
+			uint16_t x, y, z;
+			if (node_idx == NO_VAL)
+				continue;
+			if (!bit_test(node_bitmap, node_idx))
+				continue;
+			torus3d_index_to_coord(torus, idx, &x, &y, &z);
+			bit_set(x_bitmap, x);
+			bit_set(y_bitmap, y);
+			bit_set(z_bitmap, z);
+		}
+
+		_min_wrap_span(x_bitmap, &x_start, &x_span);
+		_min_wrap_span(y_bitmap, &y_start, &y_span);
+		_min_wrap_span(z_bitmap, &z_start, &z_span);
+
+		FREE_NULL_BITMAP(x_bitmap);
+		FREE_NULL_BITMAP(y_bitmap);
+		FREE_NULL_BITMAP(z_bitmap);
+whole_torus:
+		for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+			if (!bit_test(torus->nodes_bitmap, i)) {
+				rank_idx++;
+				continue;
+			}
+			for (uint32_t idx = 0; idx < torus->node_count; idx++) {
+				uint16_t x, y, z;
+				if (torus->nodes_map[idx] != (uint32_t) i)
+					continue;
+				torus3d_index_to_coord(torus, idx, &x, &y, &z);
+				uint16_t rx = (x + torus->x - x_start) % x_span;
+				uint16_t ry = (y + torus->y - y_start) % y_span;
+				uint16_t rz = (z + torus->z - z_start) % z_span;
+				(*node_rank)[rank_idx] =
+					((uint32_t) (t + 1)
+					 << TOPO_RANK_ID_SHIFT) |
+					_morton_encode(rx, ry, rz);
+				break;
+			}
+			rank_idx++;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern void topology_p_get_topology_str(node_record_t *node_ptr,
 					char **topology_str_ptr,
 					topology_ctx_t *tctx)
