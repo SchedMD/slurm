@@ -172,7 +172,11 @@ def test_account_removal():
 
 
 @pytest.mark.xfail(
-    atf.get_version("sbin/slurmdbd") < (25, 11),
+    atf.get_version("sbin/slurmdbd") < (24, 11, 4)
+    or (
+        (25, 5) <= atf.get_version("sbin/slurmdbd")
+        and atf.get_version("sbin/slurmdbd") < (25, 11)
+    ),
     reason="Ticket 24228: In 24.11.4 we fixed an issue when removing an account specifying the parent",
 )
 def test_account_removal_with_parent():
@@ -248,6 +252,10 @@ def test_account_removal_with_partition():
     ), f"Account {acct4} with partition {part1} shouldn't have an assoc anymore"
 
 
+@pytest.mark.xfail(
+    atf.get_version("sbin/slurmdbd") < (25, 11, 6),
+    reason="Ticket 24442: In 24.11.6+ we allow a user default account to be removed if more than one set",
+)
 def test_add_del_user_def_acct():
     """Test adding multiple default accounts"""
 
