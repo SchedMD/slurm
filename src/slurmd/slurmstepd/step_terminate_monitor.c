@@ -177,8 +177,6 @@ static void *_monitor(void *ignored)
 			/* Notify parent stepd or ctld directly */
 			stepd_send_step_complete_msgs();
 		}
-
-		stepd_cleanup(NULL, NULL, rc, false);
 	} else if (rc != 0) {
 		error("Error waiting on condition in _monitor: %m");
 	}
