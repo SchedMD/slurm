@@ -232,50 +232,24 @@ done""",
     # Test %N puts the short hostname in the file name
     file_out = create_file_path("N")
     file_err = create_file_path("N", ERROR_TYPE)
-    job_id = atf.submit_job_srun(f"--output={file_out} printenv SLURMD_NODENAME")
-    jobs = atf.get_jobs(use_json=True)
-    result_out = create_file(jobs[job_id]["nodes"])
-    wait_and_assert_files([result_out])
-    for t in atf.timer():
-        content = atf.run_command_output(f"cat {result_out}")
-        if content.strip():
-            break
-    else:
-        pytest.fail(f"Output file {result_out} is empty")
-    node_name = content.strip()
-    node_host_name = atf.get_node_parameter(node_name, "hostname")
-    node_addr = atf.get_node_parameter(node_name, "address")
-    if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
-        node_host_name = node_addr
 
+    job_id = atf.submit_job_srun(f"--output={file_out} -N1 -O id")
+    node_name = atf.get_job_parameter(job_id, "NodeList")
     if atf.get_version("sbin/slurmd") >= (25, 11):
-        # Ticket 23357: Use the node_name instead of hostname in file name creation.
+        # Ticket 23357: Use the node_name instead of hostname with %N
         expected_name = node_name
     else:
-        expected_name = node_host_name
-
-    assert (
-        re.search(expected_name, result_out) is not None
-    ), f"%N: Output file ({result_out}) does not contain the expected node name ({expected_name})"
+        expected_name = atf.get_node_parameter(node_name, "hostname")
+        node_addr = atf.get_node_parameter(node_name, "address")
+        if node_addr != expected_name and not atf.is_integer(node_addr[0]):
+            expected_name = node_addr
+    result_out = create_file(expected_name)
+    wait_and_assert_files([result_out])
     remove_file(result_out)
 
-    job_id = atf.submit_job_srun(f"--error={file_err} true")
-    node_name = atf.get_job_parameter(job_id, "NodeList")
-    node_host_name = atf.get_node_parameter(node_name, "hostname")
-    node_addr = atf.get_node_parameter(node_name, "address")
-    if node_addr != node_host_name and not atf.is_integer(node_addr[0]):
-        node_host_name = node_addr
-
-    if atf.get_version("sbin/slurmd") >= (25, 11):
-        # Ticket 23357: Use the node_name instead of hostname in file name creation.
-        expected_name = node_name
-    else:
-        expected_name = node_host_name
-
-    result_err = wait_and_assert_files()[0]
-    assert (
-        re.search(expected_name, result_err) is not None
-    ), f"%N: Error file ({result_err}) does not contain the expected node name ({expected_name})"
+    atf.submit_job_srun(f"--error={file_err} -N1 -O -w {node_name} true")
+    result_err = create_file(expected_name, ERROR_TYPE)
+    wait_and_assert_files([result_err])
     remove_file(result_err)
 
     # Test %A puts the Job array's master job allocation number in the file name
