@@ -63,6 +63,7 @@
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_time.h"
 #include "src/common/timers.h"
 #include "src/common/xstring.h"
@@ -73,8 +74,9 @@
 #define DEFAULT_INFLUXDB_TIMEOUT 10
 
 #define INFLUXDB_EXTRA_TAG_CLUSTER SLURM_BIT(0)
-#define INFLUXDB_EXTRA_TAG_UID SLURM_BIT(1)
-#define INFLUXDB_EXTRA_TAG_USER SLURM_BIT(2)
+#define INFLUXDB_EXTRA_TAG_SLUID SLURM_BIT(1)
+#define INFLUXDB_EXTRA_TAG_UID SLURM_BIT(2)
+#define INFLUXDB_EXTRA_TAG_USER SLURM_BIT(3)
 
 #define INFLUXDB_FLAG_GROUPED_FIELDS SLURM_BIT(0)
 
@@ -175,6 +177,8 @@ static uint32_t _str2extra_tags(char *tags_str)
 	while (tok) {
 		if (!xstrcasecmp(tok, "cluster"))
 			rc |= INFLUXDB_EXTRA_TAG_CLUSTER;
+		else if (!xstrcasecmp(tok, "sluid"))
+			rc |= INFLUXDB_EXTRA_TAG_SLUID;
 		else if (!xstrcasecmp(tok, "uid"))
 			rc |= INFLUXDB_EXTRA_TAG_UID;
 		else if (!xstrcasecmp(tok, "user"))
@@ -194,6 +198,8 @@ static char *_extra_tags2str(uint32_t tags)
 
 	if (tags & INFLUXDB_EXTRA_TAG_CLUSTER)
 		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""), "cluster");
+	if (tags & INFLUXDB_EXTRA_TAG_SLUID)
+		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""), "sluid");
 	if (tags & INFLUXDB_EXTRA_TAG_UID)
 		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""), "uid");
 	if (tags & INFLUXDB_EXTRA_TAG_USER)
@@ -579,8 +585,15 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	table->tags = NULL;
 	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_CLUSTER)
 		xstrfmtcat(table->tags, "cluster=%s,", slurm_conf.cluster_name);
-	xstrfmtcat(table->tags, "host=%s,job=%d,step=%s",
-		g_job->node_name, g_job->step_id.job_id, step_name);
+	xstrfmtcat(table->tags, "host=%s,job=%d", g_job->node_name,
+		   g_job->step_id.job_id);
+	if ((influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_SLUID) &&
+	    g_job->step_id.sluid) {
+		char sluid_str[SLUID_STR_BYTES];
+		print_sluid(g_job->step_id.sluid, sluid_str, sizeof(sluid_str));
+		xstrfmtcat(table->tags, ",sluid=%s", sluid_str);
+	}
+	xstrfmtcat(table->tags, ",step=%s", step_name);
 	if (task_name)
 		xstrfmtcat(table->tags, ",task=%s", task_name);
 	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_UID)
