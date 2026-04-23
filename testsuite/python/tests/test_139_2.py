@@ -10,18 +10,6 @@ import atf
 import pytest
 
 
-pytestmark = [
-    pytest.mark.skipif(
-        atf.get_version("bin/scontrol") < (25, 11),
-        reason="Ticket 50831: EXTERNAL node resume fix is only present in slurmctld 25.11+, but scontrol required due issue #50689 of NODE_STATE_EXTERNAL missing with --json",
-    ),
-    pytest.mark.parametrize(
-        "pre_state",
-        ["drain", "down"],
-    ),
-]
-
-
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("Wants to create EXTERNAL dynamic nodes")
@@ -59,6 +47,11 @@ def _states(node):
     return st
 
 
+@pytest.mark.xfail(
+    atf.get_version("bin/scontrol") < (25, 11),
+    reason="Ticket 50831: EXTERNAL node resume fix is only present in slurmctld 25.11+, but scontrol required due issue #50689 of NODE_STATE_EXTERNAL missing with --json",
+)
+@pytest.mark.parametrize("pre_state", ["drain", "down"])
 def test_resume_external_no_not_responding(external_node, pre_state):
     """resume on an EXTERNAL node must clear/avoid NOT_RESPONDING."""
     node = external_node
