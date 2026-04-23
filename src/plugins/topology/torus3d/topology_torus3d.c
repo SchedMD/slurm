@@ -108,6 +108,13 @@ extern int topology_p_eval_node(topology_eval_t *topo_eval, int node_idx)
 
 extern int topology_p_eval_nodes(topology_eval_t *topo_eval)
 {
+	torus3d_context_t *ctx = topo_eval->tctx->plugin_ctx;
+	if (ctx->placement_nodes_bitmap &&
+	    bit_overlap_any(ctx->placement_nodes_bitmap, topo_eval->node_map)) {
+		topo_eval->eval_nodes = eval_nodes_torus3d;
+		topo_eval->trump_others = true;
+	}
+
 	return common_topo_choose_nodes(topo_eval);
 }
 
