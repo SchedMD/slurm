@@ -373,9 +373,14 @@ static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd)
 	if (rc == SLURM_SUCCESS) {
 		step_loc_t stepd;
 		memset(&stepd, 0, sizeof(stepd));
-		/* We only need the step_id struct needed to be filled in here
-		   all the rest isn't needed for the adopt.
-		*/
+		/*
+		 * Fill in the opts.node_name just in case that was set so we go
+		 * to the right node.
+		 */
+		stepd.nodename = opts.node_name;
+		/*
+		 * Fill in the step_id with the basics.
+		 */
 		stepd.step_id.job_id = job_id;
 		stepd.step_id.step_id = SLURM_EXTERN_CONT;
 		stepd.step_id.step_het_comp = NO_VAL;
