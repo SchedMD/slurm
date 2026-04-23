@@ -163,6 +163,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_ONEAPI 0x00000008
 #define GRES_AUTODETECT_GPU_NRT 0x00000010
 #define GRES_AUTODETECT_GPU_NVIDIA 0x00000020
+#define GRES_AUTODETECT_GPU_FULL 0x00000040 /* try all gpu plugins in order */
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
@@ -1066,6 +1067,9 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 				       char **autodetect_str);
 
 extern uint32_t gres_get_autodetect_flags(void);
+
+/* Replace GPU-related autodetect bits in autodetect_flags */
+extern void gres_autodetect_flags_set_gpu(uint32_t gpu_flags_part);
 
 /* Convert the major/minor info to a string */
 extern char *gres_device_id2str(gres_device_id_t *gres_dev);

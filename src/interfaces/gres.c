@@ -1334,7 +1334,9 @@ static char *_get_autodetect_flags_str(void)
 	if (!(autodetect_flags & GRES_AUTODETECT_GPU_FLAGS))
 		xstrfmtcat(flags, "%sunset", flags ? "," : "");
 	else {
-		if (autodetect_flags & GRES_AUTODETECT_GPU_NVML)
+		if (autodetect_flags & GRES_AUTODETECT_GPU_FULL)
+			xstrfmtcat(flags, "%sfull", flags ? "," : "");
+		else if (autodetect_flags & GRES_AUTODETECT_GPU_NVML)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI)
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
@@ -1356,7 +1358,9 @@ static uint32_t _handle_autodetect_flags(char *str)
 	uint32_t flags = 0;
 
 	/* Set the node-local gpus value of autodetect_flags */
-	if (xstrcasestr(str, "nvml"))
+	if (xstrcasestr(str, "full"))
+		flags |= GRES_AUTODETECT_GPU_FULL;
+	else if (xstrcasestr(str, "nvml"))
 		flags |= GRES_AUTODETECT_GPU_NVML;
 	else if (xstrcasestr(str, "rsmi"))
 		flags |= GRES_AUTODETECT_GPU_RSMI;
@@ -1485,7 +1489,7 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 
 	for (int i = 0; autodetect_options[i] != GRES_AUTODETECT_UNSET; i++) {
 		autodetect_flags = autodetect_options[i];
-		if (gpu_plugin_init() != SLURM_SUCCESS)
+		if (gpu_plugin_init(&node_conf) != SLURM_SUCCESS)
 			continue;
 		gres_list_system = gpu_g_get_system_gpu_list(&node_conf);
 		if (gres_list_system) {
@@ -2688,11 +2692,11 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
 }
 
 /* Load the specific GRES plugins here */
-static int _load_specific_gres_plugins(void)
+static int _load_specific_gres_plugins(node_config_load_t *node_conf)
 {
 	int rc;
 
-	if ((rc = gpu_plugin_init()) != SLURM_SUCCESS)
+	if ((rc = gpu_plugin_init(node_conf)) != SLURM_SUCCESS)
 		return rc;
 
 	return rc;
@@ -2885,6 +2889,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		info("Can not stat gres.conf file (%s), using slurm.conf data",
 		     gres_conf_file);
+		gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
 	} else {
 		if (xstrcmp(gres_node_name, node_name)) {
 			xfree(gres_node_name);
@@ -2892,6 +2897,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		}
 
 		gres_cpu_cnt = cpu_cnt;
+		gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
 		tbl = s_p_hashtbl_create(_gres_conf_options);
 		if (s_p_parse_file(tbl, NULL, gres_conf_file, 0, NULL) ==
 		    SLURM_ERROR)
@@ -2946,7 +2952,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	/* Merge slurm.conf and gres.conf together into gres_conf_list */
 	_merge_config(&node_conf, gres_conf_list, gres_list);
 
-	if ((rc = _load_specific_gres_plugins()) != SLURM_SUCCESS) {
+	if ((rc = _load_specific_gres_plugins(&node_conf)) != SLURM_SUCCESS) {
 		goto fini;
 	}
 
@@ -10940,7 +10946,7 @@ extern int gres_g_recv_stepd(int fd, slurm_msg_t *msg)
 	/* Set debug flags only */
 	(void) gres_init();
 
-	rc = _load_specific_gres_plugins();
+	rc = _load_specific_gres_plugins(NULL);
 
 	return rc;
 rwfail:
@@ -10951,7 +10957,7 @@ rwfail:
 	/* Set debug flags only */
 	(void) gres_init();
 
-	rc = _load_specific_gres_plugins();
+	rc = _load_specific_gres_plugins(NULL);
 
 	return rc;
 }
@@ -11053,6 +11059,12 @@ extern int gres_get_step_info(list_t *step_gres_list, char *gres_name,
 extern uint32_t gres_get_autodetect_flags(void)
 {
 	return autodetect_flags;
+}
+
+extern void gres_autodetect_flags_set_gpu(uint32_t gpu_flags_part)
+{
+	autodetect_flags = (autodetect_flags & ~GRES_AUTODETECT_GPU_FLAGS) |
+			   (gpu_flags_part & GRES_AUTODETECT_GPU_FLAGS);
 }
 
 extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked)

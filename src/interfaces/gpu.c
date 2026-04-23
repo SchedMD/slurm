@@ -36,7 +36,9 @@
 #include <dlfcn.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/list.h"
 #include "src/common/plugin.h"
+#include "src/common/xmalloc.h"
 
 #include "src/interfaces/gpu.h"
 
@@ -140,22 +142,75 @@ static char *_get_gpu_type(void)
 	return "gpu/generic";
 }
 
+static void _gpu_clear_plugin_locked(void)
+{
+	if (ext_lib_handle) {
+		dlclose(ext_lib_handle);
+		ext_lib_handle = NULL;
+	}
+	if (g_context) {
+		plugin_context_destroy(g_context);
+		g_context = NULL;
+	}
+}
 
 /*
- * Initialize the GRES plugins.
- *
- * Returns a Slurm errno.
+ * Try init'ing GPU plugins in order until hardware is found (Autodetect=full).
  */
-extern int gpu_plugin_init(void)
+static void _gpu_plugin_init_full(node_config_load_t *node_conf)
+{
+	const char *plugin_type = "gpu";
+	char *type;
+	static const uint32_t probe_order[] = {
+		GRES_AUTODETECT_GPU_NVML,
+		GRES_AUTODETECT_GPU_NVIDIA,
+		GRES_AUTODETECT_GPU_RSMI,
+		GRES_AUTODETECT_GPU_ONEAPI,
+		GRES_AUTODETECT_GPU_NRT,
+	};
+
+	for (int i = 0; i < ARRAY_SIZE(probe_order); i++) {
+		list_t *gres_list_system;
+
+		gres_autodetect_flags_set_gpu(probe_order[i]);
+		type = _get_gpu_type();
+		g_context = plugin_context_create(
+			plugin_type, type, (void **)&ops, syms, sizeof(syms));
+		if (!g_context) {
+			_gpu_clear_plugin_locked();
+			continue;
+		}
+		gres_list_system = gpu_g_get_system_gpu_list(node_conf);
+		if (gres_list_system && list_count(gres_list_system)) {
+			verbose("%s: autodetect=full selected %s",
+				__func__, type);
+			FREE_NULL_LIST(gres_list_system);
+			return;
+		}
+		FREE_NULL_LIST(gres_list_system);
+		_gpu_clear_plugin_locked();
+	}
+	gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
+}
+
+extern int gpu_plugin_init(node_config_load_t *node_conf)
 {
 	int retval = SLURM_SUCCESS;
-	char *plugin_type = "gpu";
+	const char *plugin_type = "gpu";
 	char *type = NULL;
 
 	slurm_mutex_lock(&g_context_lock);
 
 	if (g_context)
 		goto done;
+
+	if ((gres_get_autodetect_flags() & GRES_AUTODETECT_GPU_FULL) &&
+	    node_conf && node_conf->in_slurmd) {
+		_gpu_plugin_init_full(node_conf);
+		if (g_context)
+			goto done;
+		/* Probe found no devices; fall through to gpu/generic. */
+	}
 
 	type = _get_gpu_type();
 
