@@ -309,6 +309,22 @@ Task (I/O, Memory, ...) data is collected.
 .IP
 
 .TP
+\fBProfileInfluxDBFlags\fR=<flags>
+A comma-delimited list of flags that tune the InfluxDB plugin behavior.
+Valid flags are:
+.IP
+.RS
+.TP 10
+\fBgrouped_fields\fR
+Emit all fields from a single sample as one InfluxDB measurement line,
+with the dataset name (e.g., "task", "network", "filesystem", "energy")
+as the measurement, rather than one measurement per field. This reduces
+InfluxDB series cardinality and removes ambiguity caused by identical
+field names coming from different plugins.
+.IP
+.RE
+
+.TP
 \fBProfileInfluxDBFrequency\fR=<seconds>
 How often in seconds data should be sent to the InfluxDB server. Note that in
 practice, profile data will be sent no more often than every
