@@ -309,6 +309,34 @@ Task (I/O, Memory, ...) data is collected.
 .IP
 
 .TP
+\fBProfileInfluxDBExtraTags\fR=<tags>
+A comma-delimited list of additional tags to attach to every InfluxDB
+measurement. Requires \fBProfileInfluxDBFlags=grouped_fields\fR.
+Valid tags are:
+.IP
+.RS
+.TP 10
+\fBcluster\fR
+The Slurm cluster name.
+.IP
+
+.TP
+\fBsluid\fR
+The SLUID of the job.
+.IP
+
+.TP
+\fBuid\fR
+The user ID of the user who ran the job.
+.IP
+
+.TP
+\fBuser\fR
+The user name of the user who ran the job.
+.IP
+.RE
+
+.TP
 \fBProfileInfluxDBFlags\fR=<flags>
 A comma-delimited list of flags that tune the InfluxDB plugin behavior.
 Valid flags are:
