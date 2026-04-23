@@ -467,17 +467,14 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 
 	table->tags = NULL;
 
-	if (influxdb_conf.new_format) {
+	if (influxdb_conf.new_format)
 		log_build_step_id_str(&g_job->step_id, step_name,
 				      sizeof(step_name),
 				      STEP_ID_FLAG_NO_PREFIX |
 					      STEP_ID_FLAG_NO_JOB);
-	} else {
+	else
 		snprintf(step_name, sizeof(step_name), "%u",
 			 g_job->step_id.step_id);
-	}
-	xstrfmtcat(table->tags, "host=%s,job=%d,step=%s",
-		g_job->node_name, g_job->step_id.job_id, step_name);
 
 	if (task_name)
 		xstrfmtcat(table->tags, ",task=%s", task_name);
