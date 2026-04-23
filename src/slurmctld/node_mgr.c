@@ -835,8 +835,24 @@ extern int load_all_node_state ( bool state_only )
 		xfree(node_old_to_new_map);
 		old_node_record_count = 0;
 		debug2("Node record table ordering and size from state file matches what was loaded in from slurm.conf.");
-	} else {
+	} else if (get_log_level() >= LOG_LEVEL_DEBUG2) {
 		debug2("Node record table ordering and size from state file does not match what was loaded from slurm.conf:");
+		debug2("  node_record_count %u -> %d",
+		       old_node_record_count, node_record_count);
+		for (int i = 0; i < old_node_record_count; i++) {
+			int new_inx = node_old_to_new_map[i];
+
+			if (new_inx == -1) {
+				debug2("  node at old index %d has been removed",
+				       i);
+				continue;
+			}
+
+			debug2("  node:%-15s old index:%-5d -> new index:%-5d",
+			       node_record_table_ptr[new_inx] ?
+			       node_record_table_ptr[new_inx]->name : NULL,
+			       i, new_inx);
+		}
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
