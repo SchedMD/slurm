@@ -69,6 +69,33 @@ typedef struct slurm_conf_ring {
 	char *nodes; /* names of nodes in this ring */
 } slurm_conf_ring_t;
 
+typedef struct slurm_conf_torus3d_dims {
+	uint16_t x;
+	uint16_t y;
+	uint16_t z;
+} slurm_conf_torus3d_dims_t;
+
+typedef struct slurm_conf_torus3d_placement {
+	slurm_conf_torus3d_dims_t anchor_spacing;
+	slurm_conf_torus3d_dims_t dims;
+} slurm_conf_torus3d_placement_t;
+
+typedef struct slurm_conf_torus3d_region {
+	slurm_conf_torus3d_dims_t anchor;
+	slurm_conf_torus3d_dims_t dims;
+	char *nodes; /* nodes for this region */
+} slurm_conf_torus3d_region_t;
+
+typedef struct slurm_conf_torus3d {
+	slurm_conf_torus3d_dims_t dims;
+	char *name; /* name of this torus */
+	char *nodes; /* names of nodes in this torus */
+	int placement_count;
+	slurm_conf_torus3d_placement_t *placements;
+	int region_count;
+	slurm_conf_torus3d_region_t *regions;
+} slurm_conf_torus3d_t;
+
 typedef struct slurm_conf_switches {
 	uint32_t link_speed; /* link speed, arbitrary units */
 	char *nodes; /* names of nodes directly connect to
@@ -80,8 +107,7 @@ typedef struct slurm_conf_switches {
 
 typedef struct topology_ctx {
 	bool cluster_default; /* topo used when operation not tied with part */
-	void *config; /* topology_tree_config_t*, topology_block_config_t*, or
-		       * NULL based on plugin value. */
+	void *config; /* topology_*_config_t* or NULL based on plugin value. */
 	int idx;
 	char *name;
 	char *plugin;
@@ -98,6 +124,11 @@ typedef struct {
 	int config_cnt; /* size of config array */
 	slurm_conf_ring_t *ring_configs; /* array of ring configs */
 } topology_ring_config_t;
+
+typedef struct {
+	int config_cnt; /* size of config array */
+	slurm_conf_torus3d_t *torus3d_configs; /* array of torus configs */
+} topology_torus3d_config_t;
 
 typedef struct {
 	int config_cnt; /* size of config array */
@@ -353,11 +384,15 @@ extern void free_topology_block_config(topology_block_config_t *config);
 
 extern void free_topology_ring_config(topology_ring_config_t *config);
 
+extern void free_topology_torus3d_config(topology_torus3d_config_t *config);
+
 extern void free_topology_tree_config(topology_tree_config_t *config);
 
 extern void free_block_conf(slurm_conf_block_t *config);
 
 extern void free_ring_conf(slurm_conf_ring_t *config);
+
+extern void free_torus3d_conf(slurm_conf_torus3d_t *config);
 
 extern void free_switch_conf(slurm_conf_switches_t *config);
 #endif
