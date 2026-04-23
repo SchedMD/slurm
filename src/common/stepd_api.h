@@ -93,6 +93,8 @@ typedef enum {
 	SLURMSTEPD_STEP_ENDING
 } slurmstepd_state_t;
 
+extern const char *stepd_state_2str(slurmstepd_state_t state);
+
 typedef enum {
 	GETPW_MATCH_USER_AND_PID = 0,	/* user must match, pid must belong */
 	GETPW_MATCH_ALWAYS,		/* always return */
