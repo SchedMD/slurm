@@ -685,19 +685,26 @@ static void _do_power_work(time_t now)
 
 	/* Build bitmaps identifying each node which should change state */
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
+		bool has_job_to_resume;
+		bool not_rate_limited;
+		bool no_suspended_jobs;
+		bool suspend_time_exceeded;
+		bool not_avoid_node;
+
 		susp_state = IS_NODE_POWERED_DOWN(node_ptr);
 
 		if (susp_state)
 			susp_total++;
 
 		/* Resume nodes as appropriate */
-		if ((power_save_enabled &&
-		     bit_test(job_power_node_bitmap, node_ptr->index)) ||
-		    (susp_state &&
-		     ((resume_rate == 0) ||
-		      (_rl_get_tokens(&resume_rl_config))) &&
-		     !IS_NODE_POWERING_DOWN(node_ptr) &&
-		     IS_NODE_POWER_UP(node_ptr))) {
+		has_job_to_resume =
+			(power_save_enabled &&
+			 bit_test(job_power_node_bitmap, node_ptr->index));
+		not_rate_limited =
+			(resume_rate == 0 || _rl_get_tokens(&resume_rl_config));
+		if (has_job_to_resume || (susp_state && not_rate_limited &&
+					  !IS_NODE_POWERING_DOWN(node_ptr) &&
+					  IS_NODE_POWER_UP(node_ptr))) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap = bit_alloc(node_record_count);
 			}
@@ -726,16 +733,22 @@ static void _do_power_work(time_t now)
 		}
 
 		/* Suspend nodes as appropriate */
-		if (_node_state_suspendable(node_ptr) &&
-		    ((suspend_rate == 0) ||
-		     (_rl_get_tokens(&suspend_rl_config))) &&
-		    (node_ptr->sus_job_cnt == 0) &&
+		not_rate_limited = (suspend_rate == 0 ||
+				    _rl_get_tokens(&suspend_rl_config));
+		no_suspended_jobs = (node_ptr->sus_job_cnt == 0);
+		suspend_time_exceeded =
+			(power_save_enabled && (node_ptr->last_busy != 0) &&
+			 (node_ptr->last_busy <
+			  (now - node_ptr->suspend_time)));
+		not_avoid_node =
+			(avoid_node_bitmap == NULL ||
+			 (!bit_test(avoid_node_bitmap, node_ptr->index)));
+		if (_node_state_suspendable(node_ptr) && not_rate_limited &&
+		    no_suspended_jobs &&
 		    (IS_NODE_POWER_DOWN(node_ptr) ||
-		     (power_save_enabled && (node_ptr->last_busy != 0) &&
-		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
+		     (suspend_time_exceeded &&
 		      _node_state_should_suspend(node_ptr) &&
-		      ((avoid_node_bitmap == NULL) ||
-		       (bit_test(avoid_node_bitmap, node_ptr->index) == 0))))) {
+		      not_avoid_node))) {
 			if (sleep_node_bitmap == NULL) {
 				sleep_node_bitmap =
 					bit_alloc(node_record_count);
