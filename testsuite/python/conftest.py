@@ -55,11 +55,14 @@ def pytest_collection_modifyitems(session, config, items):
 
 
 def pytest_terminal_summary(terminalreporter):
+    """Callback/hook required to avoid duplicates and ensure that files are printed."""
     terminalreporter.write_sep("=", "summary", cyan=True, bold=True)
 
     passed = terminalreporter.stats.get("passed", [])
     failed = terminalreporter.stats.get("failed", [])
     skipped = terminalreporter.stats.get("skipped", [])
+    xfailed = terminalreporter.stats.get("xfailed", [])
+    xpassed = terminalreporter.stats.get("xpassed", [])
 
     for rep in passed:
         terminalreporter.write("PASSED", green=True, bold=True)
@@ -71,6 +74,18 @@ def pytest_terminal_summary(terminalreporter):
         terminalreporter.write_line(
             f" - {rep.longrepr[2].removeprefix('Skipped: ')}", bold=True
         )
+
+    for rep in xfailed:
+        terminalreporter.write("XFAIL", yellow=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        reason = getattr(rep, "wasxfail", "")
+        terminalreporter.write_line(f" - {reason}" if reason else "", bold=True)
+
+    for rep in xpassed:
+        terminalreporter.write("XPASS", yellow=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        reason = getattr(rep, "wasxfail", "")
+        terminalreporter.write_line(f" - {reason}" if reason else "", bold=True)
 
     for rep in failed:
         # In some corner cases there's no reprcrash
