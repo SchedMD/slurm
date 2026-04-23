@@ -527,8 +527,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		xfree(prefix);
 		if (str)
 			xstrcat(str, suffix);
-	}
-	else {
+	} else {
 		for (int i = 0; i < table->size; i++) {
 			switch (table->types[i]) {
 			case PROFILE_FIELD_UINT64:
