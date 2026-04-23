@@ -187,10 +187,10 @@ static int _send_data(const char *data)
 		return rc;
 	}
 
-	xstrfmtcat(url, "%s/write?db=%s&precision=s", influxdb_conf.host, influxdb_conf.database);
-	if (influxdb_conf.rt_policy) {
+	xstrfmtcat(url, "%s/write?db=%s&precision=s", influxdb_conf.host,
+		   influxdb_conf.database);
+	if (influxdb_conf.rt_policy)
 		xstrfmtcat(url, "&rp=%s", influxdb_conf.rt_policy);
-	}
 
 	rc = slurm_curl_request(datastr, url, influxdb_conf.username,
 				influxdb_conf.password, NULL, NULL, NULL, false,
