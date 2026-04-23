@@ -3508,7 +3508,7 @@ typedef struct license_info_msg {
 
 typedef struct {
 	uint32_t  job_array_count;
-	char    **job_array_id; /* Note: The string may be truncated */
+	char **job_array_id;
 	uint32_t *error_code;
 	char **err_msg;
 } job_array_resp_msg_t;

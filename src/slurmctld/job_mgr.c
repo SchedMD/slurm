@@ -118,7 +118,6 @@
 #include "src/stepmgr/srun_comm.h"
 #include "src/stepmgr/stepmgr.h"
 
-#define ARRAY_ID_BUF_SIZE 32
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
@@ -752,7 +751,6 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 					       uint32_t job_id)
 {
 	job_array_resp_msg_t *msg;
-	char task_str[ARRAY_ID_BUF_SIZE];
 	int *ffs = NULL;
 	int i, j, low;
 
@@ -767,6 +765,8 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 	msg->error_code = xcalloc(resp->resp_array_cnt, sizeof(uint32_t));
 	msg->err_msg = xcalloc(resp->resp_array_cnt, sizeof(char *));
 	for (i = 0; i < resp->resp_array_cnt; i++) {
+		slurm_selected_step_t id = SLURM_SELECTED_STEP_INITIALIZER;
+
 		low = -1;
 		for (j = 0; j < resp->resp_array_cnt; j++) {
 			if ((ffs[j] != -1) &&
@@ -779,16 +779,12 @@ static job_array_resp_msg_t *_resp_array_xlate(resp_array_struct_t *resp,
 
 		msg->error_code[i] = resp->resp_array_rc[low];
 		msg->err_msg[i] = xstrdup(resp->err_msg[low]);
-		bit_fmt(task_str, ARRAY_ID_BUF_SIZE,
-			resp->resp_array_task_id[low]);
-		if (strlen(task_str) >= ARRAY_ID_BUF_SIZE - 2) {
-			/* Append "..." to the buffer on overflow */
-			task_str[ARRAY_ID_BUF_SIZE - 4] = '.';
-			task_str[ARRAY_ID_BUF_SIZE - 3] = '.';
-			task_str[ARRAY_ID_BUF_SIZE - 2] = '.';
-			task_str[ARRAY_ID_BUF_SIZE - 1] = '\0';
+		id.array_bitmap = resp->resp_array_task_id[low];
+		id.step_id.job_id = job_id;
+		if (fmt_job_id_string(&id, &msg->job_array_id[i])) {
+			/* this shouldn't happen */
+			error("%s: Failed to format jobid", __func__);
 		}
-		xstrfmtcat(msg->job_array_id[i], "%u_%s", job_id, task_str);
 	}
 
 	xfree(ffs);
