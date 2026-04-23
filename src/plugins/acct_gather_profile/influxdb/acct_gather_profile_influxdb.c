@@ -69,6 +69,7 @@
 #include "src/interfaces/proctrack.h"
 
 #define DEFAULT_INFLUXDB_FREQUENCY 30
+#define DEFAULT_INFLUXDB_NEW_FORMAT 0
 #define DEFAULT_INFLUXDB_TIMEOUT 10
 
 /* Required Slurm plugin symbols: */
@@ -85,6 +86,7 @@ typedef struct {
 	uint32_t frequency;
 	uint32_t timeout;
 	char *username;
+	bool new_format;
 } slurm_influxdb_conf_t;
 
 typedef struct {
@@ -92,6 +94,7 @@ typedef struct {
 	uint32_t *types;
 	size_t size;
 	char * name;
+	char * tags;
 } table_t;
 
 union data_t{
@@ -126,7 +129,7 @@ static void _free_tables(void)
 		for (j = 0; j < table->size; j++)
 			xfree(table->names[j]);
 		xfree(table->name);
-		xfree(table->names);
+		xfree(table->tags);
 		xfree(table->types);
 	}
 	xfree(tables);
@@ -273,6 +276,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 		{"ProfileInfluxDBDefault", S_P_STRING},
 		{"ProfileInfluxDBFrequency", S_P_UINT32},
 		{"ProfileInfluxDBHost", S_P_STRING},
+		{"ProfileInfluxDBNewFormat", S_P_BOOLEAN},
 		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
 		{"ProfileInfluxDBTimeout", S_P_UINT32},
@@ -305,6 +309,9 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 				    "ProfileInfluxDBFrequency", tbl))
 			influxdb_conf.frequency = DEFAULT_INFLUXDB_FREQUENCY;
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
+		if (!s_p_get_boolean(&influxdb_conf.new_format,
+			       "ProfileInfluxDBNewFormat", tbl))
+			influxdb_conf.new_format = DEFAULT_INFLUXDB_NEW_FORMAT;
 		s_p_get_string(&influxdb_conf.password,
 			       "ProfileInfluxDBPass", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
@@ -430,6 +437,7 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 {
 	table_t * table;
 	acct_gather_profile_dataset_t *dataset_loc = dataset;
+	const char *task_name;
 
 	debug3("%s %s called", plugin_type, __func__);
 
@@ -445,9 +453,24 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	}
 
 	table = &(tables[tables_cur_len]);
-	table->name = xstrdup(name);
-	table->size = 0;
+	if (parent == NO_PARENT) {
+		task_name = NULL;
+		table->name = xstrdup(name);
+		xstrtolower(table->name);
+	} else {
+		task_name = name;
+		table->name = xstrdup("task");
+	}
 
+	table->tags = NULL;
+
+	xstrfmtcat(table->tags, "host=%s,job=%d,step=%d",
+		g_job->node_name, g_job->step_id.job_id, g_job->step_id.step_id);
+
+	if (task_name)
+		xstrfmtcat(table->tags, ",task=%s", task_name);
+
+	table->size = 0;
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
 		table->names = xrealloc(table->names,
 					(table->size+1) * sizeof(char *));
@@ -479,36 +502,49 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	table_t *table = &tables[table_id];
 	int i = 0;
 	char *str = NULL;
+	char *suffix = NULL;
 
 	debug3("%s %s called", plugin_type, __func__);
 
-	for(; i < table->size; i++) {
-		switch (table->types[i]) {
-		case PROFILE_FIELD_UINT64:
-			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
-				   "host=%s value=%"PRIu64" "
-				   "%"PRIu64"\n", table->names[i],
-				   g_job->step_id.job_id,
-				   g_job->step_id.step_id,
-				   table->name, g_job->node_name,
-				   ((union data_t*)data)[i].u,
-				   (uint64_t)sample_time);
-			break;
-		case PROFILE_FIELD_DOUBLE:
-			xstrfmtcat(str, "%s,job=%d,step=%d,task=%s,"
-				   "host=%s value=%.2f %"PRIu64""
-				   "\n", table->names[i],
-				   g_job->step_id.job_id,
-				   g_job->step_id.step_id,
-				   table->name, g_job->node_name,
-				   ((union data_t*)data)[i].d,
-				   (uint64_t)sample_time);
-			break;
-		case PROFILE_FIELD_NOT_SET:
-			break;
+	xstrfmtcat(suffix, " %" PRIu64 "\n", (uint64_t)sample_time);
+
+	if (influxdb_conf.new_format) {
+		char *prefix = NULL, *delim;
+		xstrfmtcat(prefix, "%s,%s ", table->name, table->tags);
+		delim = prefix;
+		for(; i < table->size; i++) {
+			switch (table->types[i]) {
+			case PROFILE_FIELD_UINT64:
+				xstrfmtcat(str, "%s%s=%" PRIu64, delim, table->names[i], ((union data_t*)data)[i].u);
+				break;
+			case PROFILE_FIELD_DOUBLE:
+				xstrfmtcat(str, "%s%s=%.2f", delim, table->names[i], ((union data_t*)data)[i].d);
+				break;
+			default:
+				continue;
+			}
+			delim = ",";
+		}
+		xfree(prefix);
+		if (str)
+			xstrcat(str, suffix);
+	}
+	else {
+		for(; i < table->size; i++) {
+			switch (table->types[i]) {
+			case PROFILE_FIELD_UINT64:
+				xstrfmtcat(str, "%s,%s value=%" PRIu64 "%s", table->names[i], table->tags, ((union data_t*)data)[i].u, suffix);
+				break;
+			case PROFILE_FIELD_DOUBLE:
+				xstrfmtcat(str, "%s,%s value=%.2f%s", table->names[i], table->tags, ((union data_t*)data)[i].d, suffix);
+				break;
+			case PROFILE_FIELD_NOT_SET:
+				break;
+			}
 		}
 	}
 
+	xfree(suffix);
 	_send_data(str);
 	xfree(str);
 
@@ -528,6 +564,9 @@ extern void acct_gather_profile_p_conf_values(list_t **data)
 
 	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
 		     influxdb_conf.host);
+
+	add_key_pair_bool(*data, "ProfileInfluxDBNewFormat",
+		     influxdb_conf.new_format);
 
 	/* skip over ProfileInfluxDBPass for security reasons */
 
