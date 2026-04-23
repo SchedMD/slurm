@@ -580,6 +580,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/topology/common/Makefile
 		 src/plugins/topology/flat/Makefile
 		 src/plugins/topology/ring/Makefile
+		 src/plugins/topology/torus3d/Makefile
 		 src/plugins/topology/tree/Makefile
 		 src/sacct/Makefile
 		 src/sackd/Makefile
