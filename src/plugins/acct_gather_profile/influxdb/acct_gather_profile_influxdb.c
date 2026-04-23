@@ -88,6 +88,7 @@ typedef struct {
 	uint32_t timeout;
 	char *username;
 	bool new_format;
+	char *extra_tags;
 } slurm_influxdb_conf_t;
 
 typedef struct {
@@ -263,6 +264,7 @@ extern void fini(void)
 	xfree(datastr);
 	xfree(influxdb_conf.host);
 	xfree(influxdb_conf.database);
+	xfree(influxdb_conf.extra_tags);
 	xfree(influxdb_conf.password);
 	xfree(influxdb_conf.rt_policy);
 	xfree(influxdb_conf.username);
@@ -276,6 +278,7 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 	s_p_options_t options[] = {
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
+		{"ProfileInfluxDBExtraTags", S_P_STRING},
 		{"ProfileInfluxDBFrequency", S_P_UINT32},
 		{"ProfileInfluxDBHost", S_P_STRING},
 		{"ProfileInfluxDBNewFormat", S_P_BOOLEAN},
@@ -307,6 +310,8 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database,
 			       "ProfileInfluxDBDatabase", tbl);
+		s_p_get_string(&influxdb_conf.extra_tags,
+			       "ProfileInfluxDBExtraTags", tbl);
 		if (!s_p_get_uint32(&influxdb_conf.frequency,
 				    "ProfileInfluxDBFrequency", tbl))
 			influxdb_conf.frequency = DEFAULT_INFLUXDB_FREQUENCY;
@@ -466,6 +471,12 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	}
 
 	table->tags = NULL;
+	if (xstrcasestr(influxdb_conf.extra_tags, "cluster"))
+		xstrfmtcat(table->tags, "cluster=%s,", slurm_conf.cluster_name);
+	if (xstrcasestr(influxdb_conf.extra_tags, "uid"))
+		xstrfmtcat(table->tags, "uid=%lu,", (unsigned long int) g_job->uid);
+	if (xstrcasestr(influxdb_conf.extra_tags, "user"))
+		xstrfmtcat(table->tags, "user=%s,", g_job->user_name);
 
 	if (influxdb_conf.new_format)
 		log_build_step_id_str(&g_job->step_id, step_name,
@@ -575,6 +586,9 @@ extern void acct_gather_profile_p_conf_values(list_t **data)
 
 	add_key_pair(*data, "ProfileInfluxDBDefault", "%s",
 		     acct_gather_profile_to_string(influxdb_conf.def));
+
+	add_key_pair(*data, "ProfileInfluxDBExtraTags", "%s",
+		     influxdb_conf.extra_tags);
 
 	add_key_pair(*data, "ProfileInfluxDBFrequency", "%u",
 		     influxdb_conf.frequency);
