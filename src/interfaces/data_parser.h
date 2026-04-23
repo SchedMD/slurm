@@ -744,6 +744,20 @@ typedef enum {
 	DATA_PARSER_CONF_FLAGS_DBD, /* DBD_CONF_FLAG_* */
 	DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP, /* openapi_resp_slurmdbd_conf_t */
 	DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP_PTR, /* openapi_resp_slurmdbd_conf_t* */
+	DATA_PARSER_TOPOLOGY_TORUS3D, /* topology_ctx_t topology/torus3d plugin */
+	DATA_PARSER_TOPOLOGY_TORUS3D_CONFIG, /* topology_torus3d_config_t */
+	DATA_PARSER_TOPOLOGY_TORUS3D_CONFIG_PTR, /* topology_torus3d_config_t* */
+	DATA_PARSER_TOPOLOGY_TORUS3D_CONFIG_ARRAY, /* topology_torus3d_config_t->torus3d_configs,config_cnt */
+	DATA_PARSER_TORUS3D_CONFIG, /* slurm_conf_torus3d_t */
+	DATA_PARSER_TORUS3D_CONFIG_PTR, /* slurm_conf_torus3d_t* */
+	DATA_PARSER_TORUS3D_DIMS, /* slurm_conf_torus3d_dims_t */
+	DATA_PARSER_TORUS3D_DIMS_PTR, /* slurm_conf_torus3d_dims_t* */
+	DATA_PARSER_TORUS3D_PLACEMENT, /* slurm_conf_torus3d_placement_t */
+	DATA_PARSER_TORUS3D_PLACEMENT_PTR, /* slurm_conf_torus3d_placement_t* */
+	DATA_PARSER_TORUS3D_PLACEMENT_ARRAY, /* slurm_conf_torus3d_t placements */
+	DATA_PARSER_TORUS3D_REGION, /* slurm_conf_torus3d_region_t */
+	DATA_PARSER_TORUS3D_REGION_PTR, /* slurm_conf_torus3d_region_t* */
+	DATA_PARSER_TORUS3D_REGION_ARRAY, /* slurm_conf_torus3d_t regions */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 
