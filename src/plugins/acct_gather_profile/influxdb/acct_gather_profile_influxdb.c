@@ -94,7 +94,7 @@ typedef struct {
 	uint32_t *types;
 	size_t size;
 	char * name;
-	char * tags;
+	char *tags;
 } table_t;
 
 union data_t{
