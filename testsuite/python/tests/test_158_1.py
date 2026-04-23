@@ -212,7 +212,7 @@ def _remote_licenses(remote_license):
 @pytest.mark.parametrize(
     "preserve_case", [False, True], ids=["PreserveCase=No", "PreserveCase=yes"]
 )
-def test_remote_license_percent(do_licenses, preserve_case):
+def test_remote_license_percent(request, do_licenses, preserve_case):
     """Remote licenses - Percent"""
 
     remote_license = {
@@ -241,7 +241,12 @@ def test_remote_license_percent(do_licenses, preserve_case):
     }
 
     if preserve_case:
-        atf.require_version((26, 5), reason="PreserveCaseResource added in 26.05")
+        if atf.get_version("bin/sacctmgr") < (26, 5):
+            request.applymarker(
+                pytest.mark.xfail(
+                    reason="Issue 50782: PreserveCaseResource added in 26.05"
+                )
+            )
         remote_license["name"] = "LiC1"
 
     do_licenses(remote_license)
