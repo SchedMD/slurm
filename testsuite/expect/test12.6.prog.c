@@ -26,7 +26,7 @@
 #include <sys/time.h>
 #include <math.h>
 
-#define SECOND2RUN 24
+#define SECOND2RUN 48
 #define BURNBUFSIZ 1024*1024
 #define CPUBUSY_PCT 40
 #define READLOOP 10
