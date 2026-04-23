@@ -517,12 +517,12 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 			case PROFILE_FIELD_UINT64:
 				xstrfmtcat(str, "%s%s=%" PRIu64 "u", delim,
 					   table->names[i],
-					   ((union data_t*)data)[i].u);
+					   ((union data_t*) data)[i].u);
 				break;
 			case PROFILE_FIELD_DOUBLE:
 				xstrfmtcat(str, "%s%s=%.9g", delim,
 					   table->names[i],
-					   ((union data_t*)data)[i].d);
+					   ((union data_t*) data)[i].d);
 				break;
 			default:
 				continue;
@@ -538,13 +538,13 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 			case PROFILE_FIELD_UINT64:
 				xstrfmtcat(str, "%s,%s value=%" PRIu64 "%s",
 					   table->names[i], table->tags,
-					   ((union data_t*)data)[i].u,
+					   ((union data_t*) data)[i].u,
 					   suffix);
 				break;
 			case PROFILE_FIELD_DOUBLE:
 				xstrfmtcat(str, "%s,%s value=%.2f%s",
 					   table->names[i], table->tags,
-					   ((union data_t*)data)[i].d,
+					   ((union data_t*) data)[i].d,
 					   suffix);
 				break;
 			case PROFILE_FIELD_NOT_SET:
