@@ -187,8 +187,11 @@ static int _send_data(const char *data)
 		return rc;
 	}
 
-	xstrfmtcat(url, "%s/write?db=%s&rp=%s&precision=s", influxdb_conf.host,
-		   influxdb_conf.database, influxdb_conf.rt_policy);
+	xstrfmtcat(url, "%s/write?db=%s&precision=s", influxdb_conf.host, influxdb_conf.database);
+	if (influxdb_conf.rt_policy) {
+		xstrfmtcat(url, "&rp=%s", influxdb_conf.rt_policy);
+	}
+
 	rc = slurm_curl_request(datastr, url, influxdb_conf.username,
 				influxdb_conf.password, NULL, NULL, NULL, false,
 				influxdb_conf.timeout, &response_str,
@@ -323,10 +326,6 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 
 	if (influxdb_conf.password && !influxdb_conf.username)
 		fatal("No ProfileInfluxDBUser in your acct_gather.conf file. This is required if ProfileInfluxDBPass is specified to use the %s plugin",
-		      plugin_type);
-
-	if (!influxdb_conf.rt_policy)
-		fatal("No ProfileInfluxDBRTPolicy in your acct_gather.conf file. This is required to use the %s plugin",
 		      plugin_type);
 
 	debug("%s loaded", plugin_name);
