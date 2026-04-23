@@ -96,6 +96,11 @@ static struct {
 	bool join_container;
 } opts;
 
+typedef struct {
+	uid_t uid;
+	list_t *user_extern_steps;
+} find_user_extern_steps_t;
+
 static void _init_opts(void)
 {
 	opts.single_job_skip_rpc = 1;
@@ -451,29 +456,45 @@ static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, list_t *steps
 	}
 }
 
-/* _user_job_count returns the count of jobs owned by the user AND sets job_id
- * to the last job from the user that is found */
-static int _user_job_count(list_t *steps, uid_t uid, step_loc_t **out_stepd)
+static int _find_user_extern_steps(void *x, void *arg)
 {
-	list_itr_t *itr = NULL;
-	int user_job_cnt = 0;
-	step_loc_t *stepd = NULL;
-	*out_stepd = NULL;
+	step_loc_t *stepd = x;
+	find_user_extern_steps_t *find_user_extern_steps = arg;
 
-	itr = list_iterator_create(steps);
-	while ((stepd = list_next(itr))) {
-		/*
-		 * Only count container steps from this user
-		 */
-		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
-		    (uid == _get_job_uid(stepd))) {
-			user_job_cnt++;
-			*out_stepd = stepd;
-		}
-	}
-	list_iterator_destroy(itr);
+	/*
+	 * Only add steps from this user
+	 */
+	if ((stepd->step_id.step_id != SLURM_EXTERN_CONT) ||
+	    (find_user_extern_steps->uid != _get_job_uid(stepd)))
+		return 0;
 
-	return user_job_cnt;
+	if (!find_user_extern_steps->user_extern_steps)
+		find_user_extern_steps->user_extern_steps = list_create(NULL);
+	list_push(find_user_extern_steps->user_extern_steps, stepd);
+
+	return 0;
+}
+
+/*
+ * Sort the job list by start_time first, if that is the same sort by job_id
+ * with the largest first.
+ */
+static int _sort_steps_by_start_time(void *x, void *y)
+{
+	step_loc_t *stepd1 = x;
+	step_loc_t *stepd2 = y;
+
+	if (stepd1->start_time < stepd2->start_time)
+		return 1;
+	if (stepd1->start_time > stepd2->start_time)
+		return -1;
+
+	if (stepd1->step_id.job_id < stepd2->step_id.job_id)
+		return 1;
+	if (stepd1->step_id.job_id > stepd2->step_id.job_id)
+		return -1;
+
+	return 0;
 }
 
 static int _rpc_network_callerid(callerid_conn_t *conn, char *user_name,
@@ -795,12 +816,15 @@ static int check_pam_service(pam_handle_t *pamh)
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 				__attribute__((unused)), int argc, const char **argv)
 {
-	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize, user_jobs;
+	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize;
 	char *user_name;
 	list_t *steps = NULL;
-	step_loc_t *stepd = NULL;
 	struct passwd pwd, *pwd_result;
 	char *buf = NULL;
+	int user_extern_step_cnt = 0;
+	find_user_extern_steps_t find_user_extern_steps = {
+		.uid = SLURM_AUTH_NOBODY,
+	};
 
 	_init_opts();
 	_parse_opts(pamh, argc, argv);
@@ -904,8 +928,20 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 
 	/* Check to see if this user has only one job on the node. If so, choose
 	 * that job and adopt this process into it (unless configured not to) */
-	user_jobs = _user_job_count(steps, pwd.pw_uid, &stepd);
-	if (user_jobs == 0) {
+	find_user_extern_steps.uid = pwd.pw_uid;
+
+	/* We only really want the jobs for this user and the extern step */
+	(void) list_for_each(steps, _find_user_extern_steps,
+			     &find_user_extern_steps);
+	if (find_user_extern_steps.user_extern_steps) {
+		user_extern_step_cnt =
+			list_count(find_user_extern_steps.user_extern_steps);
+		/* Sort with the newest job on first */
+		list_sort(find_user_extern_steps.user_extern_steps,
+			  _sort_steps_by_start_time);
+	}
+
+	if (!user_extern_step_cnt) {
 		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
 			debug("uid %u owns no jobs => deny", pwd.pw_uid);
 			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
@@ -917,8 +953,10 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			rc = PAM_IGNORE;
 		}
 		goto cleanup;
-	} else if (user_jobs == 1) {
+	} else if (user_extern_step_cnt == 1) {
 		if (opts.single_job_skip_rpc) {
+			step_loc_t *stepd = list_peek(
+				find_user_extern_steps.user_extern_steps);
 			info("Connection by user %s: user has only one job %u",
 			     user_name, stepd->step_id.job_id);
 			slurmrc = _adopt_process(pamh, getpid(), stepd);
@@ -938,7 +976,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			goto cleanup;
 		}
 	} else {
-		debug("uid %u has %d jobs", pwd.pw_uid, user_jobs);
+		debug("uid %u has %d jobs", pwd.pw_uid, user_extern_step_cnt);
 	}
 
 	/* Single job check turned up nothing (or we skipped it). Make RPC call
@@ -950,10 +988,12 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 
 	/* The source of the connection either didn't reply or couldn't
 	 * determine the job ID at the source. Proceed to action_unknown */
-	rc = _action_unknown(pamh, &pwd, steps);
+	rc = _action_unknown(pamh, &pwd,
+			     find_user_extern_steps.user_extern_steps);
 
 cleanup:
 	slurm_cgroup_conf_destroy();
+	FREE_NULL_LIST(find_user_extern_steps.user_extern_steps);
 	FREE_NULL_LIST(steps);
 	xfree(buf);
 	xfree(opts.node_name);
