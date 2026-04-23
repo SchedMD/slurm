@@ -512,7 +512,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		char *prefix = NULL, *delim;
 		xstrfmtcat(prefix, "%s,%s ", table->name, table->tags);
 		delim = prefix;
-		for(; i < table->size; i++) {
+		for (; i < table->size; i++) {
 			switch (table->types[i]) {
 			case PROFILE_FIELD_UINT64:
 				xstrfmtcat(str, "%s%s=%" PRIu64, delim, table->names[i], ((union data_t*)data)[i].u);
@@ -530,7 +530,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 			xstrcat(str, suffix);
 	}
 	else {
-		for(; i < table->size; i++) {
+		for (; i < table->size; i++) {
 			switch (table->types[i]) {
 			case PROFILE_FIELD_UINT64:
 				xstrfmtcat(str, "%s,%s value=%" PRIu64 "%s", table->names[i], table->tags, ((union data_t*)data)[i].u, suffix);
