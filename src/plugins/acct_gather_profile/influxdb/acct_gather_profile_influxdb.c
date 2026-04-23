@@ -380,6 +380,10 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		fatal("No ProfileInfluxDBUser in your acct_gather.conf file. This is required if ProfileInfluxDBPass is specified to use the %s plugin",
 		      plugin_type);
 
+	if (influxdb_conf.extra_tags &&
+	    !(influxdb_conf.flags & INFLUXDB_FLAG_GROUPED_FIELDS))
+		fatal("ProfileInfluxDBExtraTags requires ProfileInfluxDBFlags=grouped_fields");
+
 	debug("%s loaded", plugin_name);
 }
 
