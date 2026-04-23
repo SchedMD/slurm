@@ -1682,8 +1682,8 @@ The default value is zero, which disables execution.
 .TP
 \fBHealthCheckNodeState\fR
 Identify what node states should execute the \fBHealthCheckProgram\fR.
-Multiple state values may be specified with a comma separator.
-The default value is ANY to execute on nodes in any state.
+Multiple state values may be specified with a comma separator, except for the
+*_ONLY states. The default value is ANY to execute on nodes in any state.
 .IP
 .RS
 .TP 12
@@ -1720,8 +1720,13 @@ Run on nodes in the MIXED state (some CPUs idle and other CPUs allocated).
 .IP
 
 .TP
+\fBREBOOT_ONLY\fR
+Run only after a node reboot. This state is mutually exclusive with any other state.
+.IP
+
+.TP
 \fBSTART_ONLY\fR
-Run only at slurmd startup.
+Run only at slurmd startup. This state is mutually exclusive with any other state.
 .RE
 .IP
 
@@ -1743,8 +1748,8 @@ This program will be killed if it does not terminate normally within
 60 seconds.
 This program will also be executed when the slurmd daemon is first started and
 before it registers with the slurmctld daemon. If \fBHealthCheckNodeState\fR is
-\fBSTART_ONLY\fR it will be executed only when the slurmd daemon is first
-started.
+\fBSTART_ONLY\fR or \fBREBOOT_ONLY\fR, it will be executed only when the slurmd
+daemon is first started or when slurmd reports back after a reboot.
 By default, no program will be executed.
 .IP
 

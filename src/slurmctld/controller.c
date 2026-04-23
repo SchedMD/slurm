@@ -2845,6 +2845,8 @@ static void *_slurmctld_background(void *no_data)
 
 		if (!(slurm_conf.health_check_node_state &
 		      HEALTH_CHECK_START_ONLY) &&
+		    !(slurm_conf.health_check_node_state &
+		      HEALTH_CHECK_REBOOT_ONLY) &&
 		    slurm_conf.health_check_interval &&
 		    (difftime(now, last_health_check_time) >=
 		     slurm_conf.health_check_interval) &&

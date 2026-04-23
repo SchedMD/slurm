@@ -1637,6 +1637,9 @@ extern int on_backup_msg(conmgr_callback_args_t conmgr_args, slurm_msg_t *msg,
  */
 extern int ping_controllers(bool active_controller);
 
+/* Spawn health check function for a single node */
+extern void run_health_check_individual(node_record_t *node_ptr);
+
 /* Spawn health check function for every node that is not DOWN */
 extern void run_health_check(void);
 
