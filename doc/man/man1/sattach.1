@@ -5,7 +5,7 @@
 sattach \- Attach to a Slurm job step.
 .SH "SYNOPSIS"
 .LP
-sattach [\fIoptions\fP] <jobid.stepid>
+sattach [\fIoptions\fP] <jobid|sluid)>.<stepid>
 .SH "DESCRIPTION"
 .LP
 sattach attaches to a running Slurm job step. By attaching, it makes available
@@ -13,6 +13,8 @@ the IO streams of all of the tasks of a running Slurm job step. It is also
 suitable for use with a parallel debugger like TotalView. It cannot be used to
 attach directly to extern or batch steps since the IO channels of these steps
 are not set or directly forwarded to a file.
+.PP
+A SLUID may be used in place of a numeric job ID to identify the job.
 
 .SH "OPTIONS"
 .LP
@@ -136,6 +138,13 @@ Attach to job 15, step 0:
 .IP
 .nf
 $ sattach 15.0
+.fi
+
+.TP
+Attach to job with SLUID s4SNKN57XZTE00, step 1:
+.IP
+.nf
+$ sattach s4SNKN57XZTE00.1
 .fi
 
 .TP

@@ -158,6 +158,11 @@ Partition name
 .IP
 
 .TP
+\fB%s\fR
+SLUID assigned to the job.
+.IP
+
+.TP
 \fB%S\fR
 Weighted admin priority.
 .IP
@@ -196,10 +201,7 @@ Print a help message describing all options \fBsprio\fR.
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
 Requests a comma separated list of job ids to display. Defaults to
-all jobs. Since this option's argument is optional, for proper parsing
-the single letter option must be followed immediately with the value
-and not include a space between them. For example "\-j1008,1009" and
-not "\-j 1008,1009".
+all jobs. Jobs may be specified by numeric job ID or by SLUID.
 .IP
 
 .TP

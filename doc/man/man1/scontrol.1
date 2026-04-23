@@ -213,8 +213,8 @@ Display a description of scontrol options and commands.
 .TP
 \fBhold\fR <\fIjob_list\fR>
 Prevent a pending job from being started (sets its priority to 0).
-The job_list argument is a space separated list of job IDs OR
-"jobname=" with the job's name, which will attempt to hold all jobs having
+The job_list argument is a space separated list of job IDs (numeric or SLUID)
+OR "jobname=" with the job's name, which will attempt to hold all jobs having
 that name.
 
 Only a privileged user, account coordinator, or job owner may hold jobs. If
@@ -389,9 +389,9 @@ or authentication mechanism.
 .TP
 \fBrelease\fR <\fIjob_list\fR>
 Release a previously held job to begin execution.
-The job_list argument is a space separated list of job IDs OR
-"jobname=" with the job's name, which will attempt to release all jobs having
-that name.
+The job_list argument is a space separated list of job IDs (numeric or SLUID)
+OR "jobname=" with the job's name, which will attempt to release all jobs
+having that name.
 Note that a privileged user may release an admin-hold or a user-hold.
 An unprivileged job owner or coordinator may only release a user-hold.
 Also see \fBhold\fR.
@@ -631,8 +631,8 @@ is mapped to "tux1","tux2" and "tux3" (one hostname per line).
 
 .TP
 \fBjob\fR
-Displays statistics about all jobs by default. If an optional jobid is
-specified, details for just that job will be displayed.
+Displays statistics about all jobs by default. If an optional jobid (numeric
+or SLUID) is specified, details for just that job will be displayed.
 If the job does not specify socket\-per\-node, cores\-per\-socket or
 threads\-per\-core then it will display '*' in the ReqS:C:T=*:*:* field.
 .IP
@@ -670,8 +670,9 @@ Displays statistics for the slurmd running on the current node.
 .TP
 \fBstep\fR
 Displays statistics about all job steps by default. If an optional jobid
-is specified, details about steps for just that job will be displayed.
-If a jobid.stepid is specified, details for just that step will be displayed.
+(numeric or SLUID) is specified, details about steps for just that job will be
+displayed. If a jobid.stepid is specified, details for just that step will be
+displayed.
 If a container-id=<\fIid\fR> is specified, then the first matching step with
 the given container-id will be displayed.
 .IP

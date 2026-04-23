@@ -83,6 +83,7 @@ char *job_req_inx[] = {
 	"t1.id_user",
 	"t1.id_wckey",
 	"t1.job_db_inx",
+	"t1.sluid",
 	"t1.job_name",
 	"t1.kill_requid",
 	"t1.licenses",
@@ -150,6 +151,7 @@ enum {
 	JOB_REQ_UID,
 	JOB_REQ_WCKEYID,
 	JOB_REQ_DB_INX,
+	JOB_REQ_SLUID,
 	JOB_REQ_NAME,
 	JOB_REQ_KILL_REQUID,
 	JOB_REQ_LICENSES,
@@ -303,6 +305,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		char *job_ids = NULL, *sep = "";
 		char *array_job_ids = NULL, *array_task_ids = NULL;
 		char *het_job_ids = NULL, *het_job_offset = NULL;
+		char *sluid_ids = NULL;
 
 		if (*extra)
 			xstrcat(*extra, " && (");
@@ -311,7 +314,12 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 
 		itr = list_iterator_create(job_cond->step_list);
 		while ((selected_step = list_next(itr))) {
-			if (selected_step->array_task_id != NO_VAL) {
+			if (selected_step->step_id.sluid) {
+				if (sluid_ids)
+					xstrcat(sluid_ids, " ,");
+				xstrfmtcat(sluid_ids, "%" PRIu64,
+					   selected_step->step_id.sluid);
+			} else if (selected_step->array_task_id != NO_VAL) {
 				if (array_task_ids)
 					xstrcat(array_task_ids, " ,");
 				xstrfmtcat(array_task_ids, "(%u, %u)",
@@ -339,22 +347,35 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		}
 		list_iterator_destroy(itr);
 
+		if (sluid_ids) {
+			if (job_cond->flags & JOBCOND_FLAG_DUP)
+				xstrfmtcat(
+					*extra,
+					"(t1.job_db_inx in (%s) || t1.sluid in (%s))",
+					sluid_ids, sluid_ids);
+			else
+				xstrfmtcat(*extra, "t1.job_db_inx in (%s)",
+					   sluid_ids);
+			sep = " || ";
+		}
 		if (job_ids) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
-				xstrfmtcat(*extra, "t1.id_job in (%s) || "
+				xstrfmtcat(*extra,
+					   "%st1.id_job in (%s) || "
 					   "t1.het_job_id in (select "
 					   "t4.het_job_id from \"%s_%s\" as "
 					   "t4 where t4.id_job in (%s) && "
 					   "t4.het_job_id)",
-					   job_ids, cluster_name, job_table,
-					   job_ids);
+					   sep, job_ids, cluster_name,
+					   job_table, job_ids);
 			else if (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB)
-				xstrfmtcat(*extra, "t1.id_job in (%s)",
+				xstrfmtcat(*extra, "%st1.id_job in (%s)", sep,
 					   job_ids);
 			else
-				xstrfmtcat(*extra,
-					   "t1.id_job in (%s) || t1.het_job_id in (%s)",
-					   job_ids, job_ids);
+				xstrfmtcat(
+					*extra,
+					"%st1.id_job in (%s) || t1.het_job_id in (%s)",
+					sep, job_ids, job_ids);
 			sep = " || ";
 		}
 		if (het_job_offset) {
@@ -380,6 +401,7 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		}
 
 		xstrcat(*extra, ")");
+		xfree(sluid_ids);
 		xfree(job_ids);
 		xfree(array_job_ids);
 		xfree(array_task_ids);
@@ -854,6 +876,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 
 		job->db_index = slurm_atoull(db_inx_char);
 		job->jobid = curr_id;
+		job->sluid = slurm_atoull(row[JOB_REQ_SLUID]);
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->gid = slurm_atoul(row[JOB_REQ_GID]);
 		job->exitcode = slurm_atoul(row[JOB_REQ_EXIT_CODE]);
@@ -917,10 +940,15 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			set = 0;
 			itr = list_iterator_create(job_cond->step_list);
 			while ((selected_step = list_next(itr))) {
-				if ((selected_step->step_id.job_id !=
+				if ((selected_step->step_id.sluid !=
+				     job->db_index) &&
+				    ((!(job_cond->flags & JOBCOND_FLAG_DUP)) ||
+				     (selected_step->step_id.sluid !=
+				      job->sluid)) &&
+				    (selected_step->step_id.job_id !=
 				     job->jobid) &&
 				    (selected_step->step_id.job_id !=
-				     job->het_job_id)&&
+				     job->het_job_id) &&
 				    (selected_step->step_id.job_id !=
 				     job->array_job_id)) {
 					continue;

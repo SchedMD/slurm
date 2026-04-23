@@ -143,7 +143,10 @@ thus reducing power consumption.
 
 .TP
 \fB\-j\fR, \fB\-\-jobid\fR=<\fIid\fR>
-Job ID of interest.
+Job ID of interest. A SLUID may also be used in place of a numeric job ID.
+The RES_ID is stored as specified. If a SLUID is used to set a trigger, the
+trigger must be queried or cleared using the same SLUID, not the numeric job ID
+(and vice versa).
 \fBNOTE\fR: The \fB\-\-jobid\fR option can not be used in conjunction
 with the \fB\-\-node\fR option. When the \fB\-\-jobid\fR option is
 used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option,

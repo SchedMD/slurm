@@ -1667,18 +1667,33 @@ extern void scontrol_print_step(char *job_step_id_str, int argc, char **argv)
 		if (job_step_id_str) {
 			exit_code = 1;
 			if (quiet_flag != 1) {
-				char tmp_char[45];
-				log_build_step_id_str(&step_id, tmp_char,
-						      sizeof(tmp_char),
+				char step_str[45];
+				char job_str[64];
+				log_build_step_id_str(&step_id, step_str,
+						      sizeof(step_str),
 						      (STEP_ID_FLAG_NO_PREFIX |
 						       STEP_ID_FLAG_NO_JOB));
+				/*
+				 * SLUID can't have arrays, so array always
+				 * uses numeric job_id.
+				 */
+				if (step_id.sluid) {
+					char sluid_str[SLUID_STR_BYTES];
+					print_sluid(step_id.sluid, sluid_str,
+						    sizeof(sluid_str));
+					snprintf(job_str, sizeof(job_str), "%s",
+						 sluid_str);
+				} else {
+					snprintf(job_str, sizeof(job_str), "%u",
+						 step_id.job_id);
+				}
 				if (array_id == NO_VAL) {
-					printf("Job step %u.%s not found\n",
-					       step_id.job_id, tmp_char);
+					printf("Job step %s.%s not found\n",
+					       job_str, step_str);
 				} else {
 					printf("Job step %u_%u.%s not found\n",
 					       step_id.job_id, array_id,
-					       tmp_char);
+					       step_str);
 				}
 			}
 		} else if (quiet_flag != 1)
@@ -1791,67 +1806,6 @@ cleanup:
 	FREE_NULL_LIST(jobs_seen);
 	FREE_NULL_LIST(steps);
 }
-
-/* Return 1 on success, 0 on failure to find a jobid in the string */
-static int _parse_jobid(const char *jobid_str, uint32_t *out_jobid)
-{
-	char *ptr, *job;
-	long jobid;
-
-	job = xstrdup(jobid_str);
-	ptr = xstrchr(job, '.');
-	if (ptr != NULL) {
-		*ptr = '\0';
-	}
-
-	jobid = strtol(job, &ptr, 10);
-	if (!xstring_is_whitespace(ptr)) {
-		fprintf(stderr, "\"%s\" does not look like a jobid\n", job);
-		xfree(job);
-		return 0;
-	}
-
-	*out_jobid = (uint32_t) jobid;
-	xfree(job);
-	return 1;
-}
-
-/* Return 1 on success, 0 on failure to find a stepid in the string */
-static int _parse_stepid(const char *jobid_str, slurm_step_id_t *step_id)
-{
-	char *ptr, *job, *step;
-	int rc = 1;
-
-	job = xstrdup(jobid_str);
-	ptr = xstrchr(job, '.');
-	if (ptr == NULL) {
-		/* did not find a period, so no step ID in this string */
-		xfree(job);
-		return rc;
-	} else {
-		step = ptr + 1;
-	}
-
-	step_id->step_id = (uint32_t)strtol(step, &ptr, 10);
-
-	step = xstrchr(ptr, '+');
-	if (step) {
-		/* het step */
-		step++;
-		step_id->step_het_comp = (uint32_t)strtol(step, &ptr, 10);
-	} else
-		step_id->step_het_comp = NO_VAL;
-
-	if (!xstring_is_whitespace(ptr)) {
-		fprintf(stderr, "\"%s\" does not look like a stepid\n",
-			jobid_str);
-		rc = 0;
-	}
-
-	xfree(job);
-	return rc;
-}
-
 
 static bool
 _in_task_array(pid_t pid, slurmstepd_task_info_t *task_array,
@@ -1986,8 +1940,25 @@ static void _list_pids_all_steps(const char *node_name,
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if (step_id->job_id != stepd->step_id.job_id)
+		if (step_id->sluid) {
+			/*
+			 * Stepd sockets are named by numeric job_id, so
+			 * connect to each and query its SLUID to match.
+			 */
+			int fd;
+			sluid_t sluid;
+			fd = stepd_connect(stepd->directory, stepd->nodename,
+					   &stepd->step_id,
+					   &stepd->protocol_version);
+			if (fd < 0)
+				continue;
+			sluid = stepd_sluid(fd, stepd->protocol_version);
+			close(fd);
+			if (sluid != step_id->sluid)
+				continue;
+		} else if (step_id->job_id != stepd->step_id.job_id) {
 			continue;
+		}
 
 		if ((step_id->step_id != NO_VAL) &&
 		    (step_id->step_id != stepd->step_id.step_id))
@@ -2092,11 +2063,7 @@ extern void scontrol_list_pids(int argc, char **argv)
 	char *jobid_str = NULL;
 	char *node_name = NULL;
 	list_t *listpids_list = NULL;
-	slurm_step_id_t step_id = {
-		.job_id = 0,
-		.step_id = NO_VAL,
-		.step_het_comp = NO_VAL,
-	};
+	slurm_selected_step_t sel = { 0 };
 
 	if (argc >= 2)
 		jobid_str = argv[1];
@@ -2104,21 +2071,23 @@ extern void scontrol_list_pids(int argc, char **argv)
 		node_name = argv[2];
 
 	/* Job ID is optional */
-	if (jobid_str != NULL
-	    && jobid_str[0] != '*'
-	    && !_parse_jobid(jobid_str, &step_id.job_id)) {
-		exit_code = 1;
-		return;
+	if (jobid_str && (jobid_str[0] != '*')) {
+		if (unfmt_job_id_string(jobid_str, &sel, NO_VAL)) {
+			fprintf(stderr, "\"%s\" does not look like a jobid\n",
+				jobid_str);
+			exit_code = 1;
+			return;
+		}
 	}
 
 	listpids_list = list_create(_free_listpids_info);
 
-	/* Step ID is optional */
 	if (jobid_str == NULL || jobid_str[0] == '*') {
 		_list_pids_all_jobs(node_name, listpids_list, argc, argv);
-	} else if (_parse_stepid(jobid_str, &step_id))
-		_list_pids_all_steps(node_name, &step_id, listpids_list, argc,
-				     argv);
+	} else {
+		_list_pids_all_steps(node_name, &sel.step_id, listpids_list,
+				     argc, argv);
+	}
 
 	if (exit_code && list_count(listpids_list) == 0) {
 		goto cleanup;

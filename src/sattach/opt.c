@@ -47,6 +47,7 @@
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h" /* contains getnodename() */
 #include "src/interfaces/mpi.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/uid.h"
@@ -409,9 +410,14 @@ static bool _opt_verify(void)
 
 static void _opt_list()
 {
+	char tmp[SLUID_STR_BYTES];
+
+	print_sluid(opt.selected_step->step_id.sluid, tmp, sizeof(tmp));
+
 	info("defined options for program `%s'", opt.progname);
 	info("--------------- ---------------------");
 	info("job ID         : %u", opt.selected_step->step_id.job_id);
+	info("sluid          : %s", tmp);
 	info("step ID        : %u", opt.selected_step->step_id.step_id);
 	info("user           : `%s'", opt.user);
 	info("uid            : %u", opt.uid);

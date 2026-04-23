@@ -39,9 +39,10 @@
 
 #include "scontrol.h"
 #include "src/common/env.h"
-#include "src/interfaces/gres.h"
 #include "src/common/proc_args.h"
+#include "src/common/sluid.h"
 #include "src/common/uid.h"
+#include "src/interfaces/gres.h"
 
 typedef struct job_ids {
 	uint32_t job_id;
@@ -72,7 +73,15 @@ static bool _is_job_id(char *job_str)
 
 	local_job_str = xstrdup(job_str);
 	for (i = 0; local_job_str[i]; i++) {
-		if (local_job_str[i] == '+') {
+		if (local_job_str[i] == 's') {
+			int end_sluid = i + SLUID_STR_BYTES - 1;
+			char c = local_job_str[end_sluid];
+			local_job_str[end_sluid] = '\0';
+			if (!str2sluid(&local_job_str[i]))
+				goto fail;
+			local_job_str[end_sluid] = c;
+			i += SLUID_STR_BYTES - 2;
+		} else if (local_job_str[i] == '+') {
 			if (have_plus)
 				goto fail;	/* multiple '+' in name */
 			have_plus = true;
@@ -1435,40 +1444,33 @@ static uint32_t _get_job_time(const char *job_id_str)
 
 static bool _is_single_job(char *job_id_str)
 {
-	uint32_t task_id;
-	char *next_str = NULL;
 	int rc;
 	job_info_msg_t *resp;
 	bool is_single = false;
-	slurm_step_id_t step_id = SLURM_STEP_ID_INITIALIZER;
+	slurm_selected_step_t sel = { 0 };
 
-	step_id.job_id = (uint32_t) strtol(job_id_str, &next_str, 10);
-	if (next_str[0] == '_') {
-		task_id = (uint32_t)strtol(next_str+1, &next_str, 10);
-		if (next_str[0] != '\0') {
-			error("Invalid job ID %s", job_id_str);
-			return is_single;
-		}
-	} else if (next_str[0] != '\0') {
+	if (unfmt_job_id_string(job_id_str, &sel, NO_VAL)) {
 		error("Invalid job ID %s", job_id_str);
 		return is_single;
-	} else {
-		task_id = NO_VAL;
 	}
 
-	rc = slurm_load_job(&resp, step_id, SHOW_ALL);
+	/* SLUID always identifies a single job */
+	if (sel.step_id.sluid)
+		return true;
+
+	rc = slurm_load_job(&resp, sel.step_id, SHOW_ALL);
 	if (rc == SLURM_SUCCESS) {
 		if (resp->record_count == 0) {
 			error("Job ID %s not found", job_id_str);
 			slurm_free_job_info_msg(resp);
 			return is_single;
 		}
-		if ((resp->record_count > 1) && (task_id == NO_VAL)) {
+		if ((resp->record_count > 1) && (sel.array_task_id == NO_VAL)) {
 			error("Job resizing not supported for job arrays");
 			slurm_free_job_info_msg(resp);
 			return is_single;
 		}
-		is_single = true;	/* Do not bother to validate */
+		is_single = true;
 		slurm_free_job_info_msg(resp);
 	} else {
 		error("Could not load state information for job %s: %m",

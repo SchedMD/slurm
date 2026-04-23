@@ -100,6 +100,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/threadpool.h"
 #include "src/common/xmalloc.h"
@@ -130,6 +131,8 @@ static int agent_exit = 0;
  */
 struct jobcomp_info {
 	uint32_t jobid;
+	sluid_t sluid;
+	sluid_t original_sluid;
 	uint32_t array_job_id;
 	uint32_t array_task_id;
 	uint32_t exit_code;
@@ -175,6 +178,8 @@ static struct jobcomp_info *_jobcomp_info_create(job_record_t *job)
 	partition = job->part_ptr ? job->part_ptr->name : job->partition;
 
 	j->jobid = job->job_id;
+	j->sluid = job->db_index;
+	j->original_sluid = job->step_id.sluid;
 	j->exit_code = job->exit_code;
 	if (job->details)
 		j->constraints = xstrdup(job->details->features);
@@ -372,11 +377,21 @@ static char ** _create_environment (struct jobcomp_info *job)
 	char *tz;
 	char time_str[32];
 	int tmp_int = 0, tmp_int2 = 0;
+	char sluid_str[SLUID_STR_BYTES];
 
 	env = xmalloc (1 * sizeof (*env));
 	env[0] = NULL;
 
 	_env_append_fmt (&env, "JOBID", "%u",  job->jobid);
+
+	print_sluid(job->sluid, sluid_str, sizeof(sluid_str));
+	_env_append(&env, "SLUID", sluid_str);
+
+	if (job->original_sluid) {
+		print_sluid(job->original_sluid, sluid_str, sizeof(sluid_str));
+		_env_append(&env, "ORIGINAL_SLUID", sluid_str);
+	}
+
 	if (job->exit_code != NO_VAL) {
 		if (WIFSIGNALED(job->exit_code))
 			tmp_int2 = WTERMSIG(job->exit_code);

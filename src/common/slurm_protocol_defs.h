@@ -1489,7 +1489,8 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 					int32_t *i_last_p);
 
 /*
- * Take a string identifying any part of a job and parses it into an id
+ * Parse a single job/step identifier token into a slurm_selected_step_t.
+ * Does not handle comma-separated lists; callers must tokenize first.
  *
  * Formats parsed:
  *      0000 - JobId
@@ -1499,10 +1500,16 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
  *      0000_0000.0000 - Array Job Step
  *      0000.0000 - Job Step
  *      0000.0000+0000 - Job HetStep
+ *      s<sluid> - SLUID
+ *      s<sluid>.0000 - SLUID Step
+ *      s<sluid>.name - SLUID Step (by name)
  *
  * Rejected formats:
- *      0000_0000+0000 Array HetJob (not permitted)
- *      0000+0000.0000+0000 HetJob with HetStep (not permitted)
+ *      0000_0000+0000 - Array HetJob (not permitted)
+ *      0000+0000.0000+0000 - HetJob with HetStep (not permitted)
+ *      s<sluid>_0000 - SLUID Array (not permitted)
+ *      s<sluid>+0000 - SLUID HetJob (not permitted)
+ *      s<sluid>.0000+0000 - SLUID HetStep (not permitted)
  *
  * IN src - identifier string
  * IN/OUT id - ptr to id to be populated.

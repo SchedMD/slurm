@@ -76,8 +76,8 @@ static int _foreach_bcast_file(void *x, void *arg)
 	params.selected_step = x;
 
 	if ((*rc = bcast_file(&params) != SLURM_SUCCESS)) {
-		error("Failed to broadcast to JobId=%u nodes",
-		      params.selected_step->step_id.job_id);
+		error("Failed to broadcast to %pI nodes",
+		      &params.selected_step->step_id);
 		return -1;
 	}
 

@@ -50,6 +50,7 @@
 #include <sys/types.h>
 #include "src/common/id_util.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "src/interfaces/select.h"
 
 /* Required Slurm plugin symbols: */
@@ -84,6 +85,8 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "geometry", "tinytext" },
 	{ "start", "tinytext" },
 	{ "blockid", "tinytext" },
+	{ "sluid", "tinytext" },
+	{ "original_sluid", "tinytext" },
 	{ NULL, NULL}
 };
 
@@ -173,6 +176,7 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 	char *query = NULL, *on_dup = NULL;
 	uint32_t time_limit;
 	time_t start_time, end_time;
+	char sluid_str[SLUID_STR_BYTES];
 
 	if (!jobcomp_mysql_conn || mysql_db_ping(jobcomp_mysql_conn) != 0) {
 		if (jobcomp_p_set_location())
@@ -233,6 +237,9 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 		xstrcat(query, ", nodelist");
 	if (job_ptr->details && (job_ptr->details->max_cpus != NO_VAL))
 		xstrcat(query, ", maxprocs");
+	xstrcat(query, ", sluid");
+	if (job_ptr->step_id.sluid)
+		xstrcat(query, ", original_sluid");
 	xstrfmtcat(query, ") values (%u, %u, '%s', %u, '%s', '%s', %u, %u, "
 		   "'%s', '%s', %ld, %ld, %u",
 		   job_ptr->job_id, job_ptr->user_id, usr_str,
@@ -256,6 +263,17 @@ extern int jobcomp_p_record_job_end(job_record_t *job_ptr, uint32_t event)
 		xstrfmtcat(query, ", '%u'", job_ptr->details->max_cpus);
 		xstrfmtcat(on_dup, ", maxprocs='%u'",
 			   job_ptr->details->max_cpus);
+	}
+
+	print_sluid(job_ptr->db_index, sluid_str, sizeof(sluid_str));
+	xstrfmtcat(query, ", '%s'", sluid_str);
+	xstrfmtcat(on_dup, ", sluid='%s'", sluid_str);
+
+	if (job_ptr->step_id.sluid) {
+		print_sluid(job_ptr->step_id.sluid, sluid_str,
+			    sizeof(sluid_str));
+		xstrfmtcat(query, ", '%s'", sluid_str);
+		xstrfmtcat(on_dup, ", original_sluid='%s'", sluid_str);
 	}
 
 	xstrfmtcat(query, ") ON DUPLICATE KEY UPDATE %s;", on_dup);

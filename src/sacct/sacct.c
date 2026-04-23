@@ -104,6 +104,7 @@ print_field_t fields[] = {
 	{8,  "NNodes", print_fields_uint, PRINT_NNODES},
 	{15, "NodeList", print_fields_str, PRINT_NODELIST},
 	{8,  "NTasks", print_fields_uint, PRINT_NTASKS},
+	{14, "OriginalSLUID", print_fields_sluid, PRINT_ORIGINAL_SLUID},
 	{10, "Partition", print_fields_str, PRINT_PARTITION},
 	{10, "Planned", print_fields_time_from_secs, PRINT_PLANNED},
 	{10, "PlannedCPU", print_fields_time_from_secs, PRINT_PLANNED_CPU},

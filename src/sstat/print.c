@@ -39,6 +39,7 @@
 #include "sstat.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "slurm/slurm.h"
 #define FORMAT_STRING_SIZE 34
 
@@ -590,6 +591,14 @@ void print_fields(slurmdb_step_rec_t *step)
 					   step->req_cpufreq_gov);
 			field->print_routine(field,
 					     outbuf,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_SLUID:
+			if (step->step_id.sluid) {
+				print_sluid(step->step_id.sluid, outbuf,
+					    sizeof(outbuf));
+			}
+			field->print_routine(field, outbuf,
 					     (curr_inx == field_count));
 			break;
 		default:

@@ -199,12 +199,20 @@ extern void parse_command_line(int argc, char **argv)
 		case (int)'j':
 			if (!optarg) /* CLANG Fix */
 				break;
-			tmp_l = atol(optarg);
-			if (tmp_l <= 0) {
-				error("Invalid jobid %s", optarg);
-				exit(1);
+			if (optarg[0] == 's') {
+				params.sluid = str2sluid(optarg);
+				if (!params.sluid) {
+					error("Invalid SLUID %s", optarg);
+					exit(1);
+				}
+			} else {
+				tmp_l = atol(optarg);
+				if (tmp_l <= 0) {
+					error("Invalid jobid %s", optarg);
+					exit(1);
+				}
+				params.job_id = tmp_l;
 			}
-			params.job_id = tmp_l;
 			break;
 		case (int) 'M':
 			FREE_NULL_LIST(params.clusters);
@@ -412,7 +420,7 @@ static void _validate_options( void )
 	}
 
 	if (params.mode_clear && (params.user_id == NO_VAL) &&
-	    (params.trigger_id == 0) && (params.job_id == 0)) {
+	    (params.trigger_id == 0) && (params.job_id == 0) && !params.sluid) {
 		error("You must specify a --id, --jobid, or --user to clear");
 		exit(1);
 	}
@@ -437,8 +445,8 @@ static void _validate_options( void )
 		exit(1);
 	}
 
-	if (((params.job_fini + params.time_limit) != 0)
-	&&  (params.job_id == 0)) {
+	if (((params.job_fini + params.time_limit) != 0) &&
+	    (params.job_id == 0) && !params.sluid) {
 		error("You must specify a --jobid value");
 		exit(1);
 	}

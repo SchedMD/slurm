@@ -160,7 +160,6 @@ test2.7    Validate scontrol pidinfo command.
 test2.8    Validate scontrol show commands for jobs and steps.
 test2.9    Validate scontrol completing command.
 test2.10   Validate scontrol oneliner mode (--oneliner option).
-test2.11   Validate scontrol listpids command.
 test2.13   Validate scontrol update command for job steps.
 test2.14   Validate scontrol update size of running job.
 test2.15   Validate scontrol update size of running job with some running tasks.
@@ -710,6 +709,7 @@ test_100_4   Meta-test: testing test environment (coredump generation)
 test_101_#   Testing of sacct options.
 ======================================
 test_101_1   Test --help and --helpformat
+test_101_2   Test sacct SLUID support including resizes and OriginalSLUID
 
 test_102_#   Testing of sacctmgr options.
 =========================================
@@ -732,6 +732,7 @@ test_103_2   Test salloc with default command
 test_104_#   Testing of sattach options.
 ========================================
 test_104_1   /commands/sattach/test_--usage.py
+test_104_2   Test sattach gets job output, by JobID and by SLUID.
 
 test_105_#   Testing of sbatch options.
 =======================================
@@ -751,12 +752,14 @@ test_106_#   Testing of sbcast options.
 test_106_1   /commands/sbcast/test_--usage.py
 test_106_2   Test sbcast with job_container plugin
 test_106_3   Test sbcast with compression
+test_106_4   Test sbcast copies a file to a job with JobID and SLUID
 
 test_107_#   Testing of scancel options.
 ========================================
 test_107_1   /commands/scancel/test_--help.py
 test_107_2   /commands/scancel/test_--usage.py
 test_107_3   Test scancel --ctld and filtering options
+test_107_4   Test scancel signals jobs by mixes of Job IDs and SLUIDs
 
 test_108_#   Testing of scontrol options.
 =========================================
@@ -768,6 +771,8 @@ test_108_5   /commands/scontrol/test_--json.py
 test_108_6   Test scontrol show topology option
 test_108_7   Test of job suspend/resume
 test_108_8   Test of InstanceId/InstanceType
+test_108_9   Test scontrol listpids with Job IDs and SLUIDs
+test_108_10  Submit and modify jobs using a mix of Job IDs and SLUIDs
 
 test_109_#   Testing of sdiag options.
 ======================================
@@ -801,6 +806,7 @@ test_113_2   /commands/sprio/test_job_options.py
 test_113_3   /commands/sprio/test_--help.py
 test_113_4   /commands/sprio/test_--usage.py
 test_113_5   /commands/sprio/test_--weights.py
+test_113_6   Test sprio SLUID support.
 
 test_114_#   Testing of squeue options.
 =======================================
@@ -808,6 +814,7 @@ test_114_1   /commands/squeue/test_--help.py
 test_114_2   /commands/squeue/test_--usage.py
 test_114_3   /commands/squeue/test_--json.py
 test_114_4   Validate that squeue --only-job-state is listing jobs accurately.
+test_114_5   Check squeue SLUID support
 
 test_115_#   Testing of sreport options.
 ========================================
@@ -869,15 +876,21 @@ test_117_1   /commands/sstat/test_--version.py
 test_117_2   /commands/sstat/test_--help.py
 test_117_3   /commands/sstat/test_--usage.py
 test_117_4   /commands/sstat/test_-e.py
+test_117_5   Check for -j SLUID support in sstat queries
 
 test_118_#   Testing of strigger options.
 =========================================
 test_118_1   /commands/strigger/test_--help.py
+test_118_2   Check for SLUID and JobID support for set and get triggers.
 
 test_119_#   Testing of contribs.
 =================================
 test_119_1   /contribs/openlava/test_lsid.py
 test_119_2   /contribs/torque/qsub/test_basic.py
+
+test_120_#   Testing of cgroups.
+================================
+test_120_1   Check that cgroup path is constructed with the job SLUID.
 
 test_121_#   Testing of mps.
 =============================

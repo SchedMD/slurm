@@ -2623,6 +2623,17 @@ static int _find_step_loc(void *x, void *key)
 	step_loc_t *step_loc = (step_loc_t *) x;
 	slurm_step_id_t *step_id = (slurm_step_id_t *) key;
 
+	/* If the request has a sluid and no job id, try to find by sluid. */
+	if (!step_loc->step_id.sluid && step_id->sluid &&
+	    ((step_id->job_id == NO_VAL) || !step_id->job_id)) {
+		int fd = stepd_connect(step_loc->directory, step_loc->nodename,
+				       &step_loc->step_id,
+				       &step_loc->protocol_version);
+		step_loc->step_id.sluid =
+			stepd_sluid(fd, step_loc->protocol_version);
+		close(fd);
+	}
+
 	return verify_step_id(&step_loc->step_id, step_id);
 }
 
@@ -3937,7 +3948,28 @@ static uid_t _get_job_uid(slurm_step_id_t *step_id)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
-		if (stepd->step_id.job_id != step_id->job_id) {
+		if (step_id->sluid &&
+		    ((step_id->job_id == NO_VAL) || !step_id->job_id)) {
+			/*
+			 * SLUID provided without numeric job_id.
+			 * Query the stepd for its SLUID to match.
+			 */
+			uint16_t proto;
+			sluid_t sluid;
+			fd = stepd_connect(stepd->directory, stepd->nodename,
+					   &stepd->step_id, &proto);
+			if (fd < 0)
+				continue;
+			sluid = stepd_sluid(fd, proto);
+			close(fd);
+			if (sluid != step_id->sluid)
+				continue;
+			/*
+			 * Resolve numeric job_id for stepd_connect() as it
+			 * uses the socket name which has the job_id.
+			 */
+			step_id->job_id = stepd->step_id.job_id;
+		} else if (stepd->step_id.job_id != step_id->job_id) {
 			/* multiple jobs expected on shared nodes */
 			continue;
 		}

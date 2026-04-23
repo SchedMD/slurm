@@ -52,6 +52,7 @@
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
 #include "src/common/ref.h"
+#include "src/common/sluid.h"
 #include "src/common/uid.h"
 #include "src/interfaces/serializer.h"
 #include "src/common/parse_time.h"
@@ -542,6 +543,7 @@ extern void parse_command_line(int argc, char **argv)
 	if (params.job_list && (list_count(params.job_list) == 1)) {
 		squeue_job_step_t *job_step_ptr = list_peek(params.job_list);
 		params.job_id = job_step_ptr->step_id.job_id;
+		params.sluid = job_step_ptr->step_id.sluid;
 	}
 	if (params.user_list && (list_count(params.user_list) == 1)) {
 		list_itr_t *iterator;
@@ -1236,39 +1238,33 @@ endit:
 
 
 /*
- * _build_job_list- build a list of job_ids
- * IN str - comma separated list of job_ids
- * RET List of job_ids (uint32_t)
+ * _build_job_list- build a list of job ids in squeue_job_step_t
+ * IN str - comma separated list of job ids (numeric or SLUID) to convert
+ * RET List of job ids (squeue_job_step_t)
  */
 static list_t *_build_job_list(char *str)
 {
 	list_t *my_list;
-	char *end_ptr = NULL, *job = NULL, *tmp_char = NULL;
+	char *job = NULL, *tmp_char = NULL;
 	char *my_job_list = NULL;
-	int job_id, array_id;
 	squeue_job_step_t *job_step_id;
 
-	if ( str == NULL )
+	if (str == NULL)
 		return NULL;
-	my_list = list_create( NULL );
-	my_job_list = xstrdup( str );
-	job = strtok_r( my_job_list, ",", &tmp_char );
+	my_list = list_create(NULL);
+	my_job_list = xstrdup(str);
+	job = strtok_r(my_job_list, ",", &tmp_char);
 	while (job) {
-		job_id = strtol( job, &end_ptr, 10 );
-		if (end_ptr[0] == '_')
-			array_id = strtol( end_ptr + 1, &end_ptr, 10 );
-		else
-			array_id = NO_VAL;
-		if (job_id <= 0) {
-			error( "Invalid job id: %s", job );
-			exit( 1 );
+		slurm_selected_step_t sel = { 0 };
+		if (unfmt_job_id_string(job, &sel, NO_VAL)) {
+			error("Invalid job id: %s", job);
+			exit(1);
 		}
-
-		job_step_id = xmalloc( sizeof( squeue_job_step_t ) );
-		job_step_id->step_id.job_id   = job_id;
-		job_step_id->array_id = array_id;
-		list_append( my_list, job_step_id );
-		job = strtok_r (NULL, ",", &tmp_char);
+		job_step_id = xmalloc(sizeof(squeue_job_step_t));
+		job_step_id->step_id = sel.step_id;
+		job_step_id->array_id = sel.array_task_id;
+		list_append(my_list, job_step_id);
+		job = strtok_r(NULL, ",", &tmp_char);
 	}
 	xfree(my_job_list);
 	return my_list;

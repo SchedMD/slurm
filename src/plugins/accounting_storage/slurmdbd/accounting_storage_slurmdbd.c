@@ -2629,6 +2629,8 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	req.db_flags = job_ptr->db_flags;
 
 	req.db_index = job_ptr->db_index;
+	req.sluid = job_ptr->step_id.sluid;
+
 	if (!IS_JOB_PENDING(job_ptr))
 		req.constraints = job_ptr->details->features_use;
 	else

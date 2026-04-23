@@ -68,6 +68,7 @@
 #include "src/common/pack.h"
 #include "src/common/persist_conn.h"
 #include "src/common/read_config.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
@@ -2295,9 +2296,11 @@ static int _pack_ctld_job_steps(void *x, void *arg)
 	job_record_t *job_ptr = (job_record_t *) x;
 	pack_step_args_t *args = (pack_step_args_t *) arg;
 
-	if ((args->step_id->job_id != NO_VAL) &&
-	    (args->step_id->job_id != job_ptr->job_id) &&
-	    (args->step_id->job_id != job_ptr->array_job_id))
+	if ((args->step_id->sluid &&
+	     (args->step_id->sluid != job_ptr->step_id.sluid)) ||
+	    (args->step_id->job_id != NO_VAL &&
+	     args->step_id->job_id != job_ptr->job_id &&
+	     args->step_id->job_id != job_ptr->array_job_id))
 		return 0;
 
 	args->valid_job = 1;
@@ -2341,9 +2344,8 @@ fini:
 	 * Only return stepmgr_jobs if looking for a specific job to avoid
 	 * querying all stepmgr's for all steps.
 	 */
-	if ((args->step_id->job_id != NO_VAL) &&
-	    (job_ptr->bit_flags & STEPMGR_ENABLED) &&
-	    IS_JOB_RUNNING(job_ptr)) {
+	if (((args->step_id->job_id != NO_VAL) || args->step_id->sluid) &&
+	    (job_ptr->bit_flags & STEPMGR_ENABLED) && IS_JOB_RUNNING(job_ptr)) {
 		stepmgr_job_info_t *sji = xmalloc(sizeof(*sji));
 		if (!args->stepmgr_jobs)
 			args->stepmgr_jobs = list_create(NULL);
@@ -4646,8 +4648,13 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	 * in a federation, job arrays only run on the origin cluster so we just
 	 * want to find if the array, not a specific task, is on the origin
 	 * cluster. */
-	if ((sus_ptr->step_id.job_id == NO_VAL) && sus_ptr->job_id_str)
-		sus_ptr->step_id.job_id = strtol(sus_ptr->job_id_str, NULL, 10);
+	if ((sus_ptr->step_id.job_id == NO_VAL) && sus_ptr->job_id_str) {
+		if (sus_ptr->job_id_str[0] == 's')
+			sus_ptr->step_id.sluid = str2sluid(sus_ptr->job_id_str);
+		else
+			sus_ptr->step_id.job_id =
+				strtol(sus_ptr->job_id_str, NULL, 10);
+	}
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job(&sus_ptr->step_id);

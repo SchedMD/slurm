@@ -53,6 +53,7 @@
 #include "src/common/job_record.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/sluid.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_time.h"
 #include "src/common/slurmdbd_defs.h"
@@ -755,7 +756,7 @@ static int _addto_step_list_internal(list_t *step_list, char *name, void *x)
 {
 	slurm_selected_step_t *selected_step = NULL;
 
-	if (!isdigit(*name)) {
+	if (!isdigit(*name) && (name[0] != 's')) {
 		fatal("Bad job/step specified: %s", name);
 		return SLURM_ERROR;
 	}
@@ -982,11 +983,63 @@ extern bitstr_t *slurm_array_str2bitmap(char *str, uint32_t max_array_size,
 	return array_bitmap;
 }
 
+/*
+ * Parse a step identifier (number or name) from a string.
+ * Expects the text after the '.' separator (e.g. "0", "extern", "batch").
+ *
+ * IN str - step identifier string (after the '.')
+ * IN/OUT id - step_id field is populated on success
+ * OUT end_ptr - if non-NULL, set to point past the parsed step identifier
+ * RET SLURM_SUCCESS or error
+ */
+static int _unfmt_step_id_str(const char *str, slurm_step_id_t *id,
+			      char **end_ptr)
+{
+	char *str_end;
+	long step;
+
+	if (!str || !*str)
+		return ESLURM_EMPTY_STEP_ID;
+
+	errno = 0;
+	step = strtol(str, &str_end, 10);
+
+	if (str_end == str) {
+		/* check for step name instead */
+		for (int i = 0;; i++) {
+			if (i == ARRAY_SIZE(step_names))
+				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
+
+			if (!xstrncasecmp(step_names[i].name, str,
+					  strlen(step_names[i].name))) {
+				step = step_names[i].step_id;
+				str_end = (char *) str +
+					  strlen(step_names[i].name);
+				break;
+			}
+		}
+	} else if (step < 0) {
+		return ESLURM_INVALID_STEP_ID_NEGATIVE;
+	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {
+		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
+	} else if (errno) {
+		return SLURM_ERROR;
+	}
+
+	id->step_id = step;
+
+	if (end_ptr)
+		*end_ptr = str_end;
+
+	return SLURM_SUCCESS;
+}
+
 extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 			       uint32_t max_array_size)
 {
-	char *end_ptr = NULL, *step_end_ptr = NULL, *step_het_end_ptr = NULL;
-	long job, step, step_het;
+	char *end_ptr = NULL, *step_het_end_ptr = NULL;
+	long job, step_het;
+	int rc;
 
 	/*
 	 * Based on parser in scontrol_print_job() and scontrol_print_step()
@@ -996,12 +1049,39 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 	id->array_bitmap = NULL;
 	id->array_task_id = NO_VAL;
 	id->het_job_offset = NO_VAL;
-	id->step_id.job_id = NO_VAL;
-	id->step_id.step_het_comp = NO_VAL;
-	id->step_id.step_id = NO_VAL;
+	id->step_id = SLURM_STEP_ID_INITIALIZER;
 
 	if (!src || !src[0])
 		return ESLURM_EMPTY_JOB_ID;
+
+	if (src[0] == 's') {
+		sluid_t sluid;
+		char tmp[SLUID_STR_BYTES];
+
+		if (strlen(src) >= SLUID_STR_BYTES) {
+			if (src[SLUID_STR_BYTES - 1] != '.')
+				return ESLURM_INVALID_SLUID;
+		}
+
+		strlcpy(tmp, src, sizeof(tmp));
+
+		sluid = str2sluid(tmp);
+		if (!sluid)
+			return ESLURM_INVALID_SLUID;
+
+		if (src[SLUID_STR_BYTES - 1] == '.') {
+			char *step_end;
+			rc = _unfmt_step_id_str(&src[SLUID_STR_BYTES],
+						&id->step_id, &step_end);
+			if (rc != SLURM_SUCCESS)
+				return rc;
+			if (*step_end != '\0')
+				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
+		}
+
+		id->step_id.sluid = sluid;
+		return SLURM_SUCCESS;
+	}
 
 	errno = 0;
 	job = strtol(src, &end_ptr, 10);
@@ -1094,36 +1174,8 @@ extern int unfmt_job_id_string(const char *src, slurm_selected_step_t *id,
 
 	end_ptr++;
 
-	if (*end_ptr == '\0')
-		return ESLURM_EMPTY_STEP_ID;
-
-	errno = 0;
-	step = strtol(end_ptr, &step_end_ptr, 10);
-
-	if (step_end_ptr == end_ptr) {
-		/* check for step name instead */
-		for (int i = 0; true; i++) {
-			if (!xstrncasecmp(step_names[i].name, end_ptr,
-					  strlen(step_names[i].name))) {
-				step = step_names[i].step_id;
-				step_end_ptr =
-					end_ptr + strlen(step_names[i].name);
-				break;
-			}
-
-			if (i == ARRAY_SIZE(step_names))
-				return ESLURM_INVALID_STEP_ID_NON_NUMERIC;
-		}
-	} else if (step < 0) {
-		return ESLURM_INVALID_STEP_ID_NEGATIVE;
-	} else if (step >= SLURM_MAX_NORMAL_STEP_ID) {
-		return ESLURM_INVALID_STEP_ID_TOO_LARGE;
-	} else if (errno) {
-		return SLURM_ERROR;
-	}
-
-	id->step_id.step_id = step;
-	end_ptr = step_end_ptr;
+	if ((rc = _unfmt_step_id_str(end_ptr, &id->step_id, &end_ptr)))
+		return rc;
 
 	if (*end_ptr == '\0')
 		return SLURM_SUCCESS;
@@ -1167,6 +1219,15 @@ extern int fmt_job_id_string(slurm_selected_step_t *id, char **dst)
 	char *str = NULL, *pos = NULL;
 
 	xassert(dst && !*dst);
+
+	if (id->step_id.sluid &&
+	    ((id->step_id.job_id == NO_VAL) || !id->step_id.job_id)) {
+		char sluid_str[SLUID_STR_BYTES];
+		print_sluid(id->step_id.sluid, sluid_str, sizeof(sluid_str));
+		xstrfmtcatat(str, &pos, "%s", sluid_str);
+		*dst = str;
+		return SLURM_SUCCESS;
+	}
 
 	if (id->step_id.job_id == NO_VAL) {
 		rc = ESLURM_EMPTY_JOB_ID;
@@ -1231,61 +1292,16 @@ cleanup:
 extern slurm_selected_step_t *slurm_parse_step_str(char *name)
 {
 	slurm_selected_step_t *selected_step;
-	char *dot, *plus = NULL, *under;
+	int rc;
 
 	xassert(name);
 
 	selected_step = xmalloc(sizeof(*selected_step));
-	selected_step->step_id.step_het_comp = NO_VAL;
-
-	if ((dot = xstrstr(name, "."))) {
-		*dot++ = 0;
-		/* can't use NO_VAL since that means all */
-		if (!xstrcmp(dot, "batch"))
-			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
-		else if (!xstrcmp(dot, "extern"))
-			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
-		else if (!xstrcmp(dot, "interactive"))
-			selected_step->step_id.step_id = SLURM_INTERACTIVE_STEP;
-		else if (!xstrcmp(dot, "TBD"))
-			selected_step->step_id.step_id = SLURM_PENDING_STEP;
-		else if (isdigit(*dot))
-			selected_step->step_id.step_id = atoi(dot);
-		else
-			fatal("Bad step specified: %s", name);
-		plus = xstrchr(dot, '+');
-		if (plus) {
-			/* het step */
-			plus++;
-			selected_step->step_id.step_het_comp =
-				slurm_atoul(plus);
-		}
-	} else {
-		debug2("No jobstep requested");
-		selected_step->step_id.step_id = NO_VAL;
+	rc = unfmt_job_id_string(name, selected_step, NO_VAL);
+	if (rc) {
+		fatal("Bad job/step specified: %s: %s", name,
+		      slurm_strerror(rc));
 	}
-
-	if ((under = xstrstr(name, "_"))) {
-		*under++ = 0;
-		if (isdigit(*under))
-			selected_step->array_task_id = atoi(under);
-		else
-			fatal("Bad job array element specified: %s", name);
-		selected_step->het_job_offset = NO_VAL;
-	} else if (!plus && (plus = xstrstr(name, "+"))) {
-		selected_step->array_task_id = NO_VAL;
-		*plus++ = 0;
-		if (isdigit(*plus))
-			selected_step->het_job_offset = atoi(plus);
-		else
-			fatal("Bad hetjob offset specified: %s", name);
-	} else {
-		debug2("No jobarray or hetjob requested");
-		selected_step->array_task_id = NO_VAL;
-		selected_step->het_job_offset = NO_VAL;
-	}
-
-	selected_step->step_id.job_id = atoi(name);
 
 	return selected_step;
 }
@@ -5812,8 +5828,13 @@ extern uint64_t suffix_mult(char *suffix)
 
 extern bool verify_step_id(slurm_step_id_t *object, slurm_step_id_t *key)
 {
-	if (key->job_id != object->job_id)
+	/* If the SLUID is set on both, then reject if they're not equal. */
+	if (key->sluid && object->sluid) {
+		if (key->sluid != object->sluid)
+			return 0;
+	} else if (key->job_id != object->job_id) {
 		return 0;
+	}
 
 	/* Any step will do */
 	if (key->step_id == NO_VAL)
@@ -5838,22 +5859,28 @@ extern char *slurm_get_selected_step_id(
 {
 	int pos = 0;
 
-	pos = snprintf(job_id_str, len, "%u",
-		       selected_step->step_id.job_id);
-	if (pos > len)
-		goto endit;
+	if (selected_step->step_id.sluid) {
+		print_sluid(selected_step->step_id.sluid, job_id_str, len);
+		pos = strlen(job_id_str);
+	} else {
+		pos = snprintf(job_id_str, len, "%u",
+			       selected_step->step_id.job_id);
 
-	if (selected_step->array_task_id != NO_VAL)
-		pos += snprintf(job_id_str + pos, len - pos, "_%u",
-				selected_step->array_task_id);
-	if (pos > len)
-		goto endit;
+		if (pos > len)
+			goto endit;
 
-	if (selected_step->het_job_offset != NO_VAL)
-		pos += snprintf(job_id_str + pos, len - pos, "+%u",
-				selected_step->het_job_offset);
-	if (pos > len)
-		goto endit;
+		if (selected_step->array_task_id != NO_VAL)
+			pos += snprintf(job_id_str + pos, len - pos, "_%u",
+					selected_step->array_task_id);
+		if (pos > len)
+			goto endit;
+
+		if (selected_step->het_job_offset != NO_VAL)
+			pos += snprintf(job_id_str + pos, len - pos, "+%u",
+					selected_step->het_job_offset);
+		if (pos > len)
+			goto endit;
+	}
 
 	if (selected_step->step_id.step_id != NO_VAL) {
 		job_id_str[pos++] = '.';

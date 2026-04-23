@@ -547,7 +547,8 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 
 		xstrfmtcatat(query, &pos,
 			     "insert into \"%s_%s\" "
-			     "(job_db_inx, id_job, mod_time, id_array_job, id_array_task, "
+			     "(job_db_inx, id_job, sluid, mod_time, "
+			     "id_array_job, id_array_task, "
 			     "het_job_id, het_job_offset, "
 			     "id_assoc, id_qos, id_user, "
 			     "id_group, nodelist, id_resv, timelimit, "
@@ -604,26 +605,24 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 			xstrcatat(query, &pos, ", resv_req");
 
 		xstrfmtcatat(query, &pos,
-			     ") values (%"PRIu64", %u, UNIX_TIMESTAMP(), "
-			     "%u, %u, %u, %u, %u, %u, %u, %u, "
-			     "'%s', %u, %u, %ld, %ld, %ld, "
-			     "'%s', %u, %u, %u, %u, %"PRIu64", %u, %u, "
-			     "%"PRIu64", %"PRIu64", %u",
+			     ") values (%" PRIu64 ", %u, %" PRIu64 ", "
+			     "UNIX_TIMESTAMP(), %u, %u, %u, %u, %u, %u, %u, "
+			     "%u, '%s', %u, %u, %ld, %ld, %ld, '%s', %u, %u, "
+			     "%u, %u, %" PRIu64 ", %u, %u, %" PRIu64
+			     ", %" PRIu64 ", "
+			     "%u",
 			     job_ptr->db_index, job_ptr->job_id,
-			     job_ptr->array_job_id, array_task_id,
-			     job_ptr->het_job_id, het_job_offset,
+			     job_ptr->step_id.sluid, job_ptr->array_job_id,
+			     array_task_id, job_ptr->het_job_id, het_job_offset,
 			     job_ptr->assoc_id, job_ptr->qos_id,
 			     job_ptr->user_id, job_ptr->group_id, nodes,
-			     job_ptr->resv_id, job_ptr->time_limit,
-			     begin_time, submit_time, start_time,
-			     jname, job_state,
+			     job_ptr->resv_id, job_ptr->time_limit, begin_time,
+			     submit_time, start_time, jname, job_state,
 			     job_ptr->priority, job_ptr->details->min_cpus,
 			     job_ptr->total_nodes,
-			     job_ptr->details->pn_min_memory,
-			     job_ptr->db_flags,
-			     job_ptr->state_reason_prev_db,
-			     env_hash_inx, script_hash_inx,
-			     job_ptr->restart_cnt);
+			     job_ptr->details->pn_min_memory, job_ptr->db_flags,
+			     job_ptr->state_reason_prev_db, env_hash_inx,
+			     script_hash_inx, job_ptr->restart_cnt);
 
 		if (wckeyid)
 			xstrfmtcatat(query, &pos, ", %u", wckeyid);
