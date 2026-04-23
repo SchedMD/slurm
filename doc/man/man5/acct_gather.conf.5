@@ -340,8 +340,13 @@ optional in v1.x InfluxDB.
 .TP
 \fBProfileInfluxDBRTPolicy\fR
 The InfluxDB v1.x retention policy name for the database configured in
-ProfileInfluxDBDatabase option. The InfluxDB v2.x retention policy bucket name
-for the database configured in ProfileInfluxDBDatabase option.
+ProfileInfluxDBDatabase option. If unset, InfluxDB writes to the default
+retention policy.
+
+For InfluxDB v2.x, this value is passed on the v1-compatibility \fB/write\fR
+endpoint and, together with ProfileInfluxDBDatabase, selects a DBRP mapping
+that resolves to a v2 bucket. Recent v2.x releases auto-create a default
+DBRP mapping per bucket, so leaving this option unset is usually sufficient.
 .IP
 
 .TP
