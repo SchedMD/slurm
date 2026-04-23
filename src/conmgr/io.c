@@ -86,14 +86,13 @@ extern void resize_input_buffer(conmgr_callback_args_t conmgr_args, void *arg)
 	close_con(false, con);
 }
 
-static int _get_fd_readable(conmgr_fd_t *con)
+static int _get_fd_readable(const int fd, const int mss, const char *name)
 {
 	int readable = 0;
 
-	if (fd_get_readable_bytes(con->input_fd, &readable, con->name) ||
-	    !readable) {
-		if (con->mss != NO_VAL)
-			readable = con->mss;
+	if (fd_get_readable_bytes(fd, &readable, name) || !readable) {
+		if (mss != NO_VAL)
+			readable = mss;
 		else
 			readable = DEFAULT_READ_BYTES;
 	}
@@ -117,18 +116,28 @@ static int _get_fd_readable(conmgr_fd_t *con)
 extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 {
 	ssize_t read_c;
-	int rc, readable;
+	int rc = EINVAL, readable = -1, input_fd = -1, mss = NO_VAL;
 
-	con_unset_flag(con, FLAG_CAN_READ);
 	xassert(con->magic == MAGIC_CON_MGR_FD);
 
-	if (con->input_fd < 0) {
+	slurm_mutex_lock(&mgr.mutex);
+
+	if ((con->input_fd < 0) || con_flag(con, FLAG_READ_EOF)) {
+		slurm_mutex_unlock(&mgr.mutex);
 		log_flag(NET, "%s: [%s] called on closed connection",
 			 __func__, con->name);
 		return;
 	}
 
-	readable = _get_fd_readable(con);
+	/* Reset poll()ed status on the input */
+	con_unset_flag(con, FLAG_CAN_READ);
+
+	input_fd = con->input_fd;
+	mss = con->mss;
+
+	slurm_mutex_unlock(&mgr.mutex);
+
+	readable = _get_fd_readable(input_fd, mss, con->name);
 
 	/* Grow buffer as needed to handle the incoming data */
 	if ((rc = try_grow_buf_remaining(buf, readable))) {
@@ -139,8 +148,7 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 	}
 
 	/* check for errors with a NULL read */
-	if ((read_c = read(con->input_fd,
-			   (get_buf_data(buf) + get_buf_offset(buf)),
+	if ((read_c = read(input_fd, (get_buf_data(buf) + get_buf_offset(buf)),
 			   readable)) < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			log_flag(NET, "%s: [%s] socket would block on read",
@@ -155,6 +163,8 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 		return;
 	}
 
+	slurm_mutex_lock(&mgr.mutex);
+
 	/* Always update read timestamp on read() success */
 	if (con_flag(con, FLAG_WATCH_READ_TIMEOUT))
 		con->last_read = timespec_now();
@@ -163,10 +173,8 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 		log_flag(NET, "%s: [%s] read EOF with %u bytes to process already in %s",
 			 __func__, con->name, get_buf_offset(buf), what);
 
-		slurm_mutex_lock(&mgr.mutex);
 		/* lock to tell mgr that we are done */
 		con_set_flag(con, FLAG_READ_EOF);
-		slurm_mutex_unlock(&mgr.mutex);
 	} else {
 		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in %s",
 			 __func__, con->name, read_c, get_buf_offset(buf),
@@ -177,6 +185,8 @@ extern void read_input(conmgr_fd_t *con, buf_t *buf, const char *what)
 
 		set_buf_offset(buf, (get_buf_offset(buf) + read_c));
 	}
+
+	slurm_mutex_unlock(&mgr.mutex);
 }
 
 extern void handle_read(conmgr_callback_args_t conmgr_args, void *arg)
