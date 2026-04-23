@@ -58,6 +58,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/fd.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/interfaces/acct_gather_profile.h"
 #include "src/common/slurm_protocol_api.h"
@@ -439,6 +440,7 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	table_t * table;
 	acct_gather_profile_dataset_t *dataset_loc = dataset;
 	const char *task_name;
+	char step_name[32];
 
 	debug3("%s %s called", plugin_type, __func__);
 
@@ -465,8 +467,14 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 
 	table->tags = NULL;
 
-	xstrfmtcat(table->tags, "host=%s,job=%d,step=%d",
-		g_job->node_name, g_job->step_id.job_id, g_job->step_id.step_id);
+	if (influxdb_conf.new_format) {
+		log_build_step_id_str(&g_job->step_id, step_name, sizeof(step_name),
+			STEP_ID_FLAG_NO_PREFIX | STEP_ID_FLAG_NO_JOB);
+	} else {
+		snprintf(step_name, sizeof(step_name), "%d", g_job->step_id.step_id);
+	}
+	xstrfmtcat(table->tags, "host=%s,job=%d,step=%s",
+		g_job->node_name, g_job->step_id.job_id, step_name);
 
 	if (task_name)
 		xstrfmtcat(table->tags, ",task=%s", task_name);
