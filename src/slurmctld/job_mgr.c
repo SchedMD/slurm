@@ -7689,7 +7689,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		char *tmp;
 		if ((error_code = _copy_job_desc_to_file(job_desc,
 							 job_ptr->job_id))) {
-			error_code = ESLURM_WRITING_TO_FILE;
 			goto cleanup_fail;
 		}
 		job_ptr->batch_flag = 1;
