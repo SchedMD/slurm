@@ -568,7 +568,7 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres,
 
 		if (license_entry) {
 			license_entry->total += num;
-		} else {
+		} else if (num > 0) {
 			license_entry = xmalloc(sizeof(licenses_t));
 			license_entry->id.lic_id = NO_VAL16;
 			license_entry->id.hres_id = NO_VAL16;
@@ -579,11 +579,19 @@ static list_t *_build_license_list(char *licenses, bool *valid, bool hres,
 				license_entry->op_or = true;
 			/* Append to preserve the order requested by the user */
 			list_append(lic_list, license_entry);
+		} else {
+			log_flag(LICENSE, "%s: dropping zero-count request for license %s",
+				 __func__, name);
 		}
 	}
 	xfree(tmp_str);
 
 	if (*valid == false) {
+		FREE_NULL_LIST(lic_list);
+	}
+	if (lic_list && !list_count(lic_list)) {
+		log_flag(LICENSE, "%s: all requested licenses were zero-count; treating as no license request",
+			 __func__);
 		FREE_NULL_LIST(lic_list);
 	}
 	return lic_list;
