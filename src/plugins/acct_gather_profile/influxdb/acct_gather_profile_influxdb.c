@@ -72,6 +72,10 @@
 #define DEFAULT_INFLUXDB_FREQUENCY 30
 #define DEFAULT_INFLUXDB_TIMEOUT 10
 
+#define INFLUXDB_EXTRA_TAG_CLUSTER SLURM_BIT(0)
+#define INFLUXDB_EXTRA_TAG_UID SLURM_BIT(1)
+#define INFLUXDB_EXTRA_TAG_USER SLURM_BIT(2)
+
 #define INFLUXDB_FLAG_GROUPED_FIELDS SLURM_BIT(0)
 
 /* Required Slurm plugin symbols: */
@@ -89,7 +93,7 @@ typedef struct {
 	uint32_t timeout;
 	char *username;
 	uint32_t flags;
-	char *extra_tags;
+	uint32_t extra_tags;
 } slurm_influxdb_conf_t;
 
 typedef struct {
@@ -150,6 +154,50 @@ static char *_flags2str(uint32_t flags)
 	if (flags & INFLUXDB_FLAG_GROUPED_FIELDS)
 		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""),
 			     "grouped_fields");
+
+	return str;
+}
+
+/*
+ * Parse a comma-separated ProfileInfluxDBExtraTags string into a bitmask.
+ * fatal()s on an unrecognised token.
+ */
+static uint32_t _str2extra_tags(char *tags_str)
+{
+	uint32_t rc = 0;
+	char *tmp_str, *tok, *last = NULL;
+
+	if (!tags_str)
+		return rc;
+
+	tmp_str = xstrdup(tags_str);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if (!xstrcasecmp(tok, "cluster"))
+			rc |= INFLUXDB_EXTRA_TAG_CLUSTER;
+		else if (!xstrcasecmp(tok, "uid"))
+			rc |= INFLUXDB_EXTRA_TAG_UID;
+		else if (!xstrcasecmp(tok, "user"))
+			rc |= INFLUXDB_EXTRA_TAG_USER;
+		else
+			fatal("Invalid ProfileInfluxDBExtraTags token: %s",
+			      tok);
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+	return rc;
+}
+
+static char *_extra_tags2str(uint32_t tags)
+{
+	char *str = NULL, *at = NULL;
+
+	if (tags & INFLUXDB_EXTRA_TAG_CLUSTER)
+		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""), "cluster");
+	if (tags & INFLUXDB_EXTRA_TAG_UID)
+		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""), "uid");
+	if (tags & INFLUXDB_EXTRA_TAG_USER)
+		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""), "user");
 
 	return str;
 }
@@ -301,7 +349,6 @@ extern void fini(void)
 	xfree(datastr);
 	xfree(influxdb_conf.host);
 	xfree(influxdb_conf.database);
-	xfree(influxdb_conf.extra_tags);
 	xfree(influxdb_conf.password);
 	xfree(influxdb_conf.rt_policy);
 	xfree(influxdb_conf.username);
@@ -347,8 +394,10 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 		}
 		s_p_get_string(&influxdb_conf.database,
 			       "ProfileInfluxDBDatabase", tbl);
-		s_p_get_string(&influxdb_conf.extra_tags,
-			       "ProfileInfluxDBExtraTags", tbl);
+		if (s_p_get_string(&tmp, "ProfileInfluxDBExtraTags", tbl)) {
+			influxdb_conf.extra_tags = _str2extra_tags(tmp);
+			xfree(tmp);
+		}
 		if (s_p_get_string(&tmp, "ProfileInfluxDBFlags", tbl)) {
 			influxdb_conf.flags = _str2flags(tmp);
 			xfree(tmp);
@@ -513,11 +562,12 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	}
 
 	table->tags = NULL;
-	if (xstrcasestr(influxdb_conf.extra_tags, "cluster"))
+	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_CLUSTER)
 		xstrfmtcat(table->tags, "cluster=%s,", slurm_conf.cluster_name);
-	if (xstrcasestr(influxdb_conf.extra_tags, "uid"))
-		xstrfmtcat(table->tags, "uid=%lu,", (unsigned long int) g_job->uid);
-	if (xstrcasestr(influxdb_conf.extra_tags, "user"))
+	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_UID)
+		xstrfmtcat(table->tags, "uid=%lu,",
+			   (unsigned long int) g_job->uid);
+	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_USER)
 		xstrfmtcat(table->tags, "user=%s,", g_job->user_name);
 
 	if (influxdb_conf.flags & INFLUXDB_FLAG_GROUPED_FIELDS)
@@ -629,8 +679,8 @@ extern void acct_gather_profile_p_conf_values(list_t **data)
 	add_key_pair(*data, "ProfileInfluxDBDefault", "%s",
 		     acct_gather_profile_to_string(influxdb_conf.def));
 
-	add_key_pair(*data, "ProfileInfluxDBExtraTags", "%s",
-		     influxdb_conf.extra_tags);
+	add_key_pair_own(*data, "ProfileInfluxDBExtraTags",
+			 _extra_tags2str(influxdb_conf.extra_tags));
 
 	add_key_pair_own(*data, "ProfileInfluxDBFlags",
 			 _flags2str(influxdb_conf.flags));
