@@ -70,8 +70,9 @@
 #include "src/interfaces/proctrack.h"
 
 #define DEFAULT_INFLUXDB_FREQUENCY 30
-#define DEFAULT_INFLUXDB_NEW_FORMAT 0
 #define DEFAULT_INFLUXDB_TIMEOUT 10
+
+#define INFLUXDB_FLAG_GROUPED_FIELDS SLURM_BIT(0)
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "AcctGatherProfile influxdb plugin";
@@ -87,7 +88,7 @@ typedef struct {
 	uint32_t frequency;
 	uint32_t timeout;
 	char *username;
-	bool new_format;
+	uint32_t flags;
 	char *extra_tags;
 } slurm_influxdb_conf_t;
 
@@ -116,6 +117,42 @@ static size_t tables_max_len = 0;
 static size_t tables_cur_len = 0;
 
 static time_t last_send = 0;
+
+/*
+ * Parse a comma-separated ProfileInfluxDBFlags string into a bitmask.
+ * fatal()s on an unrecognised token.
+ */
+static uint32_t _str2flags(char *flags_str)
+{
+	uint32_t rc = 0;
+	char *tmp_str, *tok, *last = NULL;
+
+	if (!flags_str)
+		return rc;
+
+	tmp_str = xstrdup(flags_str);
+	tok = strtok_r(tmp_str, ",", &last);
+	while (tok) {
+		if (!xstrcasecmp(tok, "grouped_fields"))
+			rc |= INFLUXDB_FLAG_GROUPED_FIELDS;
+		else
+			fatal("Invalid ProfileInfluxDBFlags token: %s", tok);
+		tok = strtok_r(NULL, ",", &last);
+	}
+	xfree(tmp_str);
+	return rc;
+}
+
+static char *_flags2str(uint32_t flags)
+{
+	char *str = NULL, *at = NULL;
+
+	if (flags & INFLUXDB_FLAG_GROUPED_FIELDS)
+		xstrfmtcatat(str, &at, "%s%s", (str ? "," : ""),
+			     "grouped_fields");
+
+	return str;
+}
 
 static void _free_tables(void)
 {
@@ -279,9 +316,9 @@ extern void acct_gather_profile_p_conf_options(s_p_options_t **full_options,
 		{"ProfileInfluxDBDatabase", S_P_STRING},
 		{"ProfileInfluxDBDefault", S_P_STRING},
 		{"ProfileInfluxDBExtraTags", S_P_STRING},
+		{"ProfileInfluxDBFlags", S_P_STRING},
 		{"ProfileInfluxDBFrequency", S_P_UINT32},
 		{"ProfileInfluxDBHost", S_P_STRING},
-		{"ProfileInfluxDBNewFormat", S_P_BOOLEAN},
 		{"ProfileInfluxDBPass", S_P_STRING},
 		{"ProfileInfluxDBRTPolicy", S_P_STRING},
 		{"ProfileInfluxDBTimeout", S_P_UINT32},
@@ -312,13 +349,14 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 			       "ProfileInfluxDBDatabase", tbl);
 		s_p_get_string(&influxdb_conf.extra_tags,
 			       "ProfileInfluxDBExtraTags", tbl);
+		if (s_p_get_string(&tmp, "ProfileInfluxDBFlags", tbl)) {
+			influxdb_conf.flags = _str2flags(tmp);
+			xfree(tmp);
+		}
 		if (!s_p_get_uint32(&influxdb_conf.frequency,
 				    "ProfileInfluxDBFrequency", tbl))
 			influxdb_conf.frequency = DEFAULT_INFLUXDB_FREQUENCY;
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
-		if (!s_p_get_boolean(&influxdb_conf.new_format,
-			       "ProfileInfluxDBNewFormat", tbl))
-			influxdb_conf.new_format = DEFAULT_INFLUXDB_NEW_FORMAT;
 		s_p_get_string(&influxdb_conf.password,
 			       "ProfileInfluxDBPass", tbl);
 		s_p_get_string(&influxdb_conf.rt_policy,
@@ -478,7 +516,7 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	if (xstrcasestr(influxdb_conf.extra_tags, "user"))
 		xstrfmtcat(table->tags, "user=%s,", g_job->user_name);
 
-	if (influxdb_conf.new_format)
+	if (influxdb_conf.flags & INFLUXDB_FLAG_GROUPED_FIELDS)
 		log_build_step_id_str(&g_job->step_id, step_name,
 				      sizeof(step_name),
 				      STEP_ID_FLAG_NO_PREFIX |
@@ -527,7 +565,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 
 	xstrfmtcat(suffix, " %" PRIu64 "\n", (uint64_t) sample_time);
 
-	if (influxdb_conf.new_format) {
+	if (influxdb_conf.flags & INFLUXDB_FLAG_GROUPED_FIELDS) {
 		char *prefix = NULL, *delim;
 		xstrfmtcat(prefix, "%s,%s ", table->name, table->tags);
 		delim = prefix;
@@ -590,14 +628,14 @@ extern void acct_gather_profile_p_conf_values(list_t **data)
 	add_key_pair(*data, "ProfileInfluxDBExtraTags", "%s",
 		     influxdb_conf.extra_tags);
 
+	add_key_pair_own(*data, "ProfileInfluxDBFlags",
+			 _flags2str(influxdb_conf.flags));
+
 	add_key_pair(*data, "ProfileInfluxDBFrequency", "%u",
 		     influxdb_conf.frequency);
 
 	add_key_pair(*data, "ProfileInfluxDBHost", "%s",
 		     influxdb_conf.host);
-
-	add_key_pair_bool(*data, "ProfileInfluxDBNewFormat",
-		     influxdb_conf.new_format);
 
 	/* skip over ProfileInfluxDBPass for security reasons */
 
