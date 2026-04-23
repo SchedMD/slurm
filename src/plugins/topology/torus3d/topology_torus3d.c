@@ -230,7 +230,25 @@ extern int topology_p_jobinfo_get(topology_jobinfo_type_t type,
 
 extern uint32_t topology_p_get_fragmentation(bitstr_t *node_mask, void *tctx)
 {
-	return 0;
+	torus3d_context_t *ctx = tctx;
+	uint32_t frag = 0;
+
+	if (!ctx)
+		return 0;
+
+	for (int i = 0; i < ctx->record_count; i++) {
+		torus3d_record_t *torus = &ctx->records[i];
+		for (int j = 0; j < torus->placement_count; j++) {
+			torus3d_placement_t *p = &torus->placements[j];
+			for (int k = 0; k < p->anchor_count; k++) {
+				if (!bit_super_set(p->anchor_bitmaps[k],
+						   node_mask))
+					frag += p->size;
+			}
+		}
+	}
+
+	return frag;
 }
 
 extern void topology_p_get_topology_str(node_record_t *node_ptr,
