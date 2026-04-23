@@ -515,10 +515,10 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 		for (int i = 0; i < table->size; i++) {
 			switch (table->types[i]) {
 			case PROFILE_FIELD_UINT64:
-				xstrfmtcat(str, "%s%s=%" PRIu64, delim, table->names[i], ((union data_t*)data)[i].u);
+				xstrfmtcat(str, "%s%s=%" PRIu64 "u", delim, table->names[i], ((union data_t*)data)[i].u);
 				break;
 			case PROFILE_FIELD_DOUBLE:
-				xstrfmtcat(str, "%s%s=%.2f", delim, table->names[i], ((union data_t*)data)[i].d);
+				xstrfmtcat(str, "%s%s=%.9g", delim, table->names[i], ((union data_t*)data)[i].d);
 				break;
 			default:
 				continue;
