@@ -12,8 +12,8 @@ import pytest
 
 pytestmark = [
     pytest.mark.skipif(
-        atf.get_version() < (25, 11),
-        reason="EXTERNAL node resume fix is only present in 25.11 and later",
+        atf.get_version("bin/scontrol") < (25, 11),
+        reason="Ticket 50831: EXTERNAL node resume fix is only present in slurmctld 25.11+, but scontrol required due issue #50689 of NODE_STATE_EXTERNAL missing with --json",
     ),
     pytest.mark.parametrize(
         "pre_state",
