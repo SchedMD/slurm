@@ -563,15 +563,6 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 	}
 	xstrtolower(table->name);
 
-	table->tags = NULL;
-	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_CLUSTER)
-		xstrfmtcat(table->tags, "cluster=%s,", slurm_conf.cluster_name);
-	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_UID)
-		xstrfmtcat(table->tags, "uid=%lu,",
-			   (unsigned long int) g_job->uid);
-	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_USER)
-		xstrfmtcat(table->tags, "user=%s,", g_job->user_name);
-
 	if (influxdb_conf.flags & INFLUXDB_FLAG_GROUPED_FIELDS)
 		log_build_step_id_str(&g_job->step_id, step_name,
 				      sizeof(step_name),
@@ -581,8 +572,22 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 		snprintf(step_name, sizeof(step_name), "%u",
 			 g_job->step_id.step_id);
 
+	/*
+	 * Build the tag set with keys in alphabetical order for best
+	 * InfluxDB ingest performance.
+	 */
+	table->tags = NULL;
+	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_CLUSTER)
+		xstrfmtcat(table->tags, "cluster=%s,", slurm_conf.cluster_name);
+	xstrfmtcat(table->tags, "host=%s,job=%d,step=%s",
+		g_job->node_name, g_job->step_id.job_id, step_name);
 	if (task_name)
 		xstrfmtcat(table->tags, ",task=%s", task_name);
+	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_UID)
+		xstrfmtcat(table->tags, ",uid=%lu",
+			   (unsigned long int) g_job->uid);
+	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_USER)
+		xstrfmtcat(table->tags, ",user=%s", g_job->user_name);
 
 	table->size = 0;
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
