@@ -473,7 +473,7 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 				      STEP_ID_FLAG_NO_PREFIX |
 					      STEP_ID_FLAG_NO_JOB);
 	} else {
-		snprintf(step_name, sizeof(step_name), "%d",
+		snprintf(step_name, sizeof(step_name), "%u",
 			 g_job->step_id.step_id);
 	}
 	xstrfmtcat(table->tags, "host=%s,job=%d,step=%s",
