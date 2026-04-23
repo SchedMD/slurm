@@ -1399,8 +1399,8 @@ static int _dump_nt_array(const parser_t *const parser, void *src, data_t *dst,
 			return SLURM_SUCCESS;
 
 		for (int i = 0; !rc && array[i]; i++) {
-			rc = dump(array[i], NO_VAL,
-				  NULL, find_parser_by_type(parser->array_type),
+			rc = dump((array + i), NO_VAL, NULL,
+				  find_parser_by_type(parser->array_type),
 				  data_list_append(dst), args);
 		}
 	} else if (parser->model == PARSER_MODEL_NT_ARRAY) {
