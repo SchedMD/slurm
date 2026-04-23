@@ -129,6 +129,7 @@ static void _free_tables(void)
 		for (j = 0; j < table->size; j++)
 			xfree(table->names[j]);
 		xfree(table->name);
+		xfree(table->names);
 		xfree(table->tags);
 		xfree(table->types);
 	}
