@@ -84,16 +84,16 @@ const char plugin_type[] = "acct_gather_profile/influxdb";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 typedef struct {
-	char *host;
 	char *database;
 	uint32_t def;
+	uint32_t extra_tags;
+	uint32_t flags;
+	uint32_t frequency;
+	char *host;
 	char *password;
 	char *rt_policy;
-	uint32_t frequency;
 	uint32_t timeout;
 	char *username;
-	uint32_t flags;
-	uint32_t extra_tags;
 } slurm_influxdb_conf_t;
 
 typedef struct {
