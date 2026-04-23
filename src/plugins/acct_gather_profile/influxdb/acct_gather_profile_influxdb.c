@@ -553,13 +553,15 @@ extern int acct_gather_profile_p_create_dataset(const char* name,
 
 	table = &(tables[tables_cur_len]);
 	if (parent == NO_PARENT) {
+		/* Category dataset (energy/network/filesystem). */
 		task_name = NULL;
 		table->name = xstrdup(name);
-		xstrtolower(table->name);
 	} else {
+		/* Per-task dataset: name is the task id, used as a tag. */
 		task_name = name;
 		table->name = xstrdup("task");
 	}
+	xstrtolower(table->name);
 
 	table->tags = NULL;
 	if (influxdb_conf.extra_tags & INFLUXDB_EXTRA_TAG_CLUSTER)
