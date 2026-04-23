@@ -83,7 +83,8 @@ def setup(request):
 
 
 @pytest.mark.skipif(
-    atf.get_version() < (26, 5), reason="Per-node SuspendTime added in 26.05"
+    atf.get_version("bin/scontrol") < (26, 5),
+    reason="Ticket 24669: Per-node SuspendTime added in 26.05",
 )
 @pytest.mark.parametrize("setup", [100, "INFINITE"], indirect=True)
 def test_cloud_options(setup):
