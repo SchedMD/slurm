@@ -506,7 +506,7 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 
 	debug3("%s %s called", plugin_type, __func__);
 
-	xstrfmtcat(suffix, " %" PRIu64 "\n", (uint64_t)sample_time);
+	xstrfmtcat(suffix, " %" PRIu64 "\n", (uint64_t) sample_time);
 
 	if (influxdb_conf.new_format) {
 		char *prefix = NULL, *delim;
