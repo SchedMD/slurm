@@ -1517,7 +1517,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     amdsmi_power_info_t power_info;
     memset(&power_info, 0, sizeof(power_info));
 
-    rc = amdsmi_get_power_info(h, &power_info);
+    amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
 
     if (rc == AMDSMI_STATUS_SUCCESS) {
         if (power_info.current_socket_power != 0) {
