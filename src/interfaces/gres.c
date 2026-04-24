@@ -384,6 +384,7 @@ static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static list_t *gres_conf_list = NULL;
 static uint32_t gpu_plugin_id = NO_VAL;
 static volatile uint32_t autodetect_flags = GRES_AUTODETECT_UNSET;
+static bool gres_conf_parsed_early = false;
 static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 static bool reset_prev = true;
@@ -1452,6 +1453,14 @@ static int _merge_by_type(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _match_gres_name(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = x;
+	char *name = arg;
+
+	return !xstrcasecmp(gres_slurmd_conf->name, name);
+}
+
 static int _slurm_conf_gres_str(void *x, void *arg)
 {
 	gres_slurmd_conf_t *gres_slurmd_conf = x;
@@ -1523,6 +1532,49 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 			xfree(gres_str);
 		}
 	}
+}
+
+extern char *gres_get_dynamic_gpu_str(node_config_load_t node_conf)
+{
+	list_t *gres_list_system = NULL, *gres_list_merged = NULL;
+	char *gres_str = NULL;
+	uint32_t saved_gpu_flags;
+
+	xassert(slurm_conf.plugindir);
+
+	/* Honor Autodetect=off in gres.conf. */
+	if (autodetect_flags & GRES_AUTODETECT_GPU_OFF)
+		return NULL;
+
+	if (gres_conf_list &&
+	    list_find_first_ro(gres_conf_list, _match_gres_name, "gpu"))
+		return NULL;
+
+	saved_gpu_flags = autodetect_flags & GRES_AUTODETECT_GPU_FLAGS;
+
+	/* Default to FULL when gres.conf didn't pin a plugin. */
+	if (!saved_gpu_flags)
+		gres_autodetect_flags_set_gpu(GRES_AUTODETECT_GPU_FULL);
+
+	if (gpu_plugin_init(&node_conf) != SLURM_SUCCESS) {
+		gres_autodetect_flags_set_gpu(saved_gpu_flags);
+		return NULL;
+	}
+
+	gres_list_system = gpu_g_get_system_gpu_list(&node_conf);
+	if (gres_list_system) {
+		gres_list_merged = list_create(NULL);
+		list_for_each(gres_list_system, _merge_by_type,
+			      gres_list_merged);
+		list_for_each(gres_list_merged, _slurm_conf_gres_str,
+			      &gres_str);
+		FREE_NULL_LIST(gres_list_merged);
+		FREE_NULL_LIST(gres_list_system);
+	}
+
+	gres_autodetect_flags_set_gpu(saved_gpu_flags);
+
+	return gres_str;
 }
 
 /*
@@ -2825,24 +2877,14 @@ extern int gres_node_config_load(list_t *gres_conf_list,
 }
 
 /*
- * Load this node's configuration (how many resources it has, topology, etc.)
- * IN cpu_cnt - Number of CPUs configured for node node_name.
- * IN node_name - Name of the node to load the GRES config for.
- * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
- * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
- *	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
- *	derived from gres.conf's "Cores" range string) into machine format
- *	(normal slrumd/stepd operation). If not, it will remain unconverted (for
- *	testing purposes or when unused).
- * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
- *	convert CPU affinities from machine format (as collected from NVML and
- *	others) into abstract format, for sanity checking purposes.
- * NOTE: Called from slurmd (and from slurmctld for each cloud node)
+ * Parse gres.conf into gres_conf_list and update autodetect_flags. Refreshes
+ * gres_node_name to match node_name. Caller must hold gres_context_lock.
+ *
+ * IN node_name - Name of the node to load the GRES config for
+ * IN cpu_cnt - number of CPUs configured for node_name
+ * RET SLURM_SUCCESS or ESLURM_UNSUPPORTED_GRES
  */
-extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
-				   list_t *gres_list,
-				   void *xcpuinfo_abs_to_mac,
-				   void *xcpuinfo_mac_to_abs)
+static int _parse_gres_conf_locked(char *node_name, uint32_t cpu_cnt)
 {
 	static s_p_options_t _gres_conf_options[] = {
 		{"AutoDetect", S_P_STRING},
@@ -2850,54 +2892,26 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		{"NodeName", S_P_ARRAY, _parse_gres_config_node, NULL},
 		{NULL}
 	};
-	list_t *tmp_gres_conf_list = NULL;
-
-	int count = 0, i, rc, rc2;
+	list_t *tmp_gres_conf_list = list_create(destroy_gres_slurmd_conf);
+	int count = 0, i, rc = SLURM_SUCCESS;
 	struct stat config_stat;
 	s_p_hashtbl_t *tbl;
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file = NULL;
 	char *autodetect_string = NULL;
-	bool in_slurmd = running_in_slurmd();
 
-	node_config_load_t node_conf = {
-		.cpu_cnt = cpu_cnt,
-		.in_slurmd = in_slurmd,
-		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
-	};
-
-	if (cpu_cnt == 0) {
-		error("%s: Invalid cpu_cnt of 0 for node %s",
-		      __func__, node_name);
-		return ESLURM_INVALID_CPU_COUNT;
+	if (xstrcmp(gres_node_name, node_name)) {
+		xfree(gres_node_name);
+		gres_node_name = xstrdup(node_name);
 	}
+	gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
 
-	if (xcpuinfo_abs_to_mac)
-		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
-
-	xassert(gres_context_cnt >= 0);
-
-	slurm_mutex_lock(&gres_context_lock);
-
-	if (gres_context_cnt == 0) {
-		rc = SLURM_SUCCESS;
-		goto fini;
-	}
-
-	tmp_gres_conf_list = list_create(destroy_gres_slurmd_conf);
 	gres_conf_file = get_extra_conf_path("gres.conf");
 	if (stat(gres_conf_file, &config_stat) < 0) {
 		info("Can not stat gres.conf file (%s), using slurm.conf data",
 		     gres_conf_file);
-		gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
 	} else {
-		if (xstrcmp(gres_node_name, node_name)) {
-			xfree(gres_node_name);
-			gres_node_name = xstrdup(node_name);
-		}
-
 		gres_cpu_cnt = cpu_cnt;
-		gres_autodetect_flags_set_gpu(GRES_AUTODETECT_UNSET);
 		tbl = s_p_hashtbl_create(_gres_conf_options);
 		if (s_p_parse_file(tbl, NULL, gres_conf_file, 0, NULL) ==
 		    SLURM_ERROR)
@@ -2937,9 +2951,98 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 		}
 		s_p_hashtbl_destroy(tbl);
 	}
+
 	FREE_NULL_LIST(gres_conf_list);
 	gres_conf_list = tmp_gres_conf_list;
 	tmp_gres_conf_list = NULL;
+
+fini:
+	FREE_NULL_LIST(tmp_gres_conf_list);
+	xfree(gres_conf_file);
+	return rc;
+}
+
+extern int gres_parse_conf(char *node_name, uint32_t cpu_cnt)
+{
+	int rc;
+
+	if (cpu_cnt == 0) {
+		error("%s: Invalid cpu_cnt of 0 for node %s",
+		      __func__, node_name);
+		return ESLURM_INVALID_CPU_COUNT;
+	}
+
+	xassert(gres_context_cnt >= 0);
+
+	slurm_mutex_lock(&gres_context_lock);
+	if (gres_context_cnt == 0) {
+		slurm_mutex_unlock(&gres_context_lock);
+		return SLURM_SUCCESS;
+	}
+
+	rc = _parse_gres_conf_locked(node_name, cpu_cnt);
+	if (rc == SLURM_SUCCESS)
+		gres_conf_parsed_early = true;
+	slurm_mutex_unlock(&gres_context_lock);
+	return rc;
+}
+
+/*
+ * Load this node's configuration (how many resources it has, topology, etc.)
+ *
+ * IN cpu_cnt - Number of CPUs configured for node node_name.
+ * IN node_name - Name of the node to load the GRES config for.
+ * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
+ * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
+ *	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
+ *	derived from gres.conf's "Cores" range string) into machine format
+ *	(normal slrumd/stepd operation). If not, it will remain unconverted (for
+ *	testing purposes or when unused).
+ * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
+ *	convert CPU affinities from machine format (as collected from NVML and
+ *	others) into abstract format, for sanity checking purposes.
+ * NOTE: Called from slurmd (and from slurmctld for each cloud node)
+ */
+extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
+				   list_t *gres_list,
+				   void *xcpuinfo_abs_to_mac,
+				   void *xcpuinfo_mac_to_abs)
+{
+	int i, rc, rc2;
+	bool in_slurmd = running_in_slurmd();
+
+	node_config_load_t node_conf = {
+		.cpu_cnt = cpu_cnt,
+		.in_slurmd = in_slurmd,
+		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs,
+	};
+
+	if (cpu_cnt == 0) {
+		error("%s: Invalid cpu_cnt of 0 for node %s",
+		      __func__, node_name);
+		return ESLURM_INVALID_CPU_COUNT;
+	}
+
+	if (xcpuinfo_abs_to_mac)
+		xcpuinfo_ops.xcpuinfo_abs_to_mac = xcpuinfo_abs_to_mac;
+
+	xassert(gres_context_cnt >= 0);
+
+	slurm_mutex_lock(&gres_context_lock);
+
+	if (gres_context_cnt == 0) {
+		rc = SLURM_SUCCESS;
+		goto fini;
+	}
+
+	if (gres_conf_parsed_early && !xstrcmp(gres_node_name, node_name)) {
+		gres_conf_parsed_early = false;
+	} else {
+		gres_conf_parsed_early = false;
+		rc = _parse_gres_conf_locked(node_name, cpu_cnt);
+		if (rc != SLURM_SUCCESS)
+			goto fini;
+	}
 
 	/* Validate gres.conf and slurm.conf somewhat before merging */
 	for (i = 0; i < gres_context_cnt; i++) {
@@ -2994,8 +3097,6 @@ fini:
 	 */
 	if (!in_slurmd || !xstrstr(slurm_conf.acct_gather_energy_type, "gpu"))
 		gpu_plugin_fini();
-	xfree(gres_conf_file);
-	FREE_NULL_LIST(tmp_gres_conf_list);
 	_pack_context_buf();
 	_pack_gres_conf();
 	slurm_mutex_unlock(&gres_context_lock);

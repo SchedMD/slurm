@@ -84,6 +84,46 @@ NodeName=node1 CPUs=16 RealMemory=331848
 \-\-conf "CPUs=16 RealMemory=30000 Gres=gpu:2"
 NodeName=node1 CPUs=16 RealMemory=30000 Gres=gpu:2"
 .fi
+
+GPU detection occurs automatically when:
+.RS
+.TP
+\[bu] \fB\-\-conf\fR does not specify any GPU GRES
+.IP
+.TP
+\[bu] \fBgres.conf\fR does not contain any explicit GPU GRES records for the node
+.IP
+.TP
+\[bu] \fBgres.conf\fR does not contain \fBAutoDetect=off\fR
+.IP
+.RE
+
+If \fBAutoDetect\fR in \fBgres.conf\fR specifies a particular detection
+mechanism (e.g., \fBNVML\fR, \fBNVIDIA\fR, \fBRSMI\fR, \fBoneAPI\fR, \fBNRT\fR),
+it will use that mechanism to try to detect a GPU. If no \fBAutoDetect\fR is
+specified, the slurmd defaults to the \fBfull\fR GPU detection method.
+
+The following shows GPU autodetection behavior for a node with 2 local A100 GPUs:
+
+no \-\-conf, no AutoDetect in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=gpu:a100:2
+.fi
+
+\-\-conf "Gres=tmpfs:1000", no AutoDetect in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=tmpfs:1000,gpu:a100:2
+.fi
+
+\-\-conf "Gres=tmpfs:1000", AutoDetect=nvml in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=tmpfs:1000,gpu:a100:2
+.fi
+
+\-\-conf "Gres=tmpfs:1000", AutoDetect=off in gres.conf:
+.nf
+NodeName=node1 CPUs=16 Boards=1 SocketsPerBoard=1 CoresPerSocket=8 ThreadsPerCore=2 RealMemory=31848 Gres=tmpfs:1000
+.fi
 .IP
 
 .TP
