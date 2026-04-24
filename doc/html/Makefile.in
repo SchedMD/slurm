@@ -556,12 +556,19 @@ generated_html = \
 	user_permissions.html \
 	wckey.html
 
+
+# The configurator pages are self-contained HTML and are always installed.
 html_DATA = \
-	${generated_html} \
+	configurator.html \
+	configurator.easy.html
+
+
+# Static assets referenced by the generated HTML (via header.txt). These are
+# only useful alongside the full doc set, so they install with `make
+# install-html` rather than with the default `make install`.
+html_assets = \
 	allocation_pies.gif \
 	arch.gif \
-	configurator.html \
-	configurator.easy.html \
 	cg_hierarchy.jpg \
 	entities.gif \
 	example_usage.gif \
@@ -721,7 +728,7 @@ dvi-am:
 
 html: html-am
 
-html-am:
+html-am: html-local
 
 info: info-am
 
@@ -737,7 +744,7 @@ install-exec-am:
 
 install-html: install-html-am
 
-install-html-am:
+install-html-am: install-html-local
 
 install-info: install-info-am
 
@@ -771,24 +778,47 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-htmlDATA
+uninstall-am: uninstall-htmlDATA uninstall-local
 
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	cscopelist-am ctags-am distclean distclean-generic \
-	distclean-libtool dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-htmlDATA install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am tags-am uninstall uninstall-am uninstall-htmlDATA
+	distclean-libtool dvi dvi-am html html-am html-local info \
+	info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-html-local \
+	install-htmlDATA install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags-am uninstall uninstall-am uninstall-htmlDATA \
+	uninstall-local
 
 .PRECIOUS: Makefile
 
+
+# Generated HTML is kept out of html_DATA so that `make` (and `make install`)
+# do not rebuild it. Use `make html` to build and `make install-html` to
+# install the generated pages along with their static assets.
+html-local: ${generated_html}
+
+install-html-local: ${generated_html}
+	@$(NORMAL_INSTALL)
+	test -z "$(htmldir)" || $(MKDIR_P) "$(DESTDIR)$(htmldir)"
+	@list='$(generated_html) $(html_assets)'; for f in $$list; do \
+	  if test -f "$$f"; then d=; else d="$(srcdir)/"; fi; \
+	  echo " $(INSTALL_DATA) $$d$$f '$(DESTDIR)$(htmldir)'"; \
+	  $(INSTALL_DATA) "$$d$$f" "$(DESTDIR)$(htmldir)" || exit $$?; \
+	done
+
+uninstall-local:
+	@$(NORMAL_UNINSTALL)
+	@list='$(generated_html) $(html_assets)'; for f in $$list; do \
+	  echo " rm -f '$(DESTDIR)$(htmldir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(htmldir)/$$f"; \
+	done
 
 .shtml.html:
 	`dirname $<`/shtml2html.py @SLURM_MAJOR@.@SLURM_MINOR@ $<
