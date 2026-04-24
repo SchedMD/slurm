@@ -6,6 +6,7 @@
 .*.swp
 .*.swo
 .deps
+.vscode
 .libs
 __pycache__
 Makefile
