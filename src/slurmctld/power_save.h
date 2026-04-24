@@ -60,11 +60,16 @@ extern void power_save_fini(void);
 /* Report if node power saving is enabled */
 extern bool power_save_test(void);
 
-/* Find a power action by name */
-extern power_action_t *power_save_find_action(char *action_name);
-
-/* Check if a power action is valid */
-extern bool power_save_valid_action(char *action_name);
+/*
+ * Check if a power action is valid from name or check default action for type.
+ *
+ * IN type - type of the power action to check
+ * IN action_name - name of the power action to check
+ *
+ * RET true if the power action is valid, false otherwise
+ */
+extern bool power_save_valid_action_default(power_action_type_t type,
+					    char *action_name);
 
 /*
  * Reboot compute nodes for a job using the configured

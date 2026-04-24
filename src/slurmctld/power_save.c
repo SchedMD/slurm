@@ -1492,31 +1492,49 @@ static int _init_power_config(void)
 	return auto_power_save_disabled ? -1 : 0;
 }
 
-extern power_action_t *power_save_find_action(char *action_name)
+extern bool power_save_valid_action_default(power_action_type_t type,
+					    char *action_name)
 {
-	power_action_t *action;
-
-	slurm_mutex_lock(&power_mutex);
-	while (!power_save_config) {
-		slurm_cond_wait(&power_cond, &power_mutex);
-	}
-	action = power_action_find(power_action_list, action_name);
-	action = power_action_copy(action);
-	slurm_mutex_unlock(&power_mutex);
-	return action;
-}
-
-extern bool power_save_valid_action(char *action_name)
-{
-	bool valid = false;
 	power_action_t *action = NULL;
-
+	bool valid = false;
 	slurm_mutex_lock(&power_mutex);
 	while (!power_save_config) {
 		slurm_cond_wait(&power_cond, &power_mutex);
 	}
-	action = power_action_find(power_action_list, action_name);
-	valid = action && power_action_valid_prog(action);
+	if (action_name) {
+		action = power_action_find(power_action_list, action_name);
+	} else {
+		switch (type) {
+		case POWER_ACTION_RESUME:
+			action = resume_prog;
+			break;
+		case POWER_ACTION_SUSPEND:
+			action = suspend_prog;
+			break;
+		case POWER_ACTION_RESUME_FAIL:
+			action = resume_fail_prog;
+			break;
+		case POWER_ACTION_REBOOT:
+			action = reboot_prog;
+			break;
+		case POWER_ACTION_NONE:
+			action = NULL;
+			break;
+		default:
+			error("Invalid power action type %d", type);
+			action = NULL;
+			break;
+		}
+	}
+	if (!action) {
+		valid = false;
+	} else if (type == POWER_ACTION_RESUME && !action->on_slurmctld) {
+		error("Invalid power up action %s, cannot resume from slurmd",
+		      (action_name ? action_name : action->name));
+		valid = false;
+	} else if (power_action_valid_prog(action)) {
+		valid = true;
+	}
 	slurm_mutex_unlock(&power_mutex);
 	return valid;
 }

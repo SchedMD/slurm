@@ -1734,6 +1734,29 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		log_flag(POWER, "powered nodes good %d", count);
 	}
 
+	/* Validate specified power action or default action for type */
+	if (((update_node_msg->node_state != NO_VAL) &&
+	     (update_node_msg->node_state &
+	      (NODE_STATE_POWER_UP | NODE_STATE_POWER_DOWN))) ||
+	    update_node_msg->power_action_name) {
+		power_action_type_t type = POWER_ACTION_NONE;
+
+		if (update_node_msg->node_state & NODE_STATE_POWER_UP)
+			type = POWER_ACTION_RESUME;
+		else if (update_node_msg->node_state & NODE_STATE_POWER_DOWN)
+			type = POWER_ACTION_SUSPEND;
+
+		if (!power_save_valid_action_default(
+			    type, update_node_msg->power_action_name)) {
+			error("Invalid power action %s for nodes %s",
+			      update_node_msg->power_action_name ?
+			      update_node_msg->power_action_name : "(default)",
+			      update_node_msg->node_names);
+			error_code = ESLURM_INVALID_POWER_ACTION;
+			goto end;
+		}
+	}
+
 	/*
 	 * If a single instance_id/instance_type is specified for multiple
 	 * nodes, broadcast the value to all nodes.
@@ -2017,28 +2040,6 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					ESLURM_INVALID_NODE_STATE_TRANSITION;
 			}
 			base_state &= NODE_STATE_BASE;
-		}
-
-		if (update_node_msg->power_action_name &&
-		    update_node_msg->power_action_name[0]) {
-			power_action_t *power_action = power_save_find_action(
-				update_node_msg->power_action_name);
-			if (!power_action) {
-				error("power action %s not found for node %s",
-				      update_node_msg->power_action_name,
-				      this_node_name);
-				error_code = ESLURM_INVALID_POWER_ACTION;
-				state_val = NO_VAL;
-			} else if (state_val != NO_VAL &&
-				   (state_val & NODE_STATE_POWER_UP) &&
-				   !power_action->on_slurmctld) {
-				error("invalid power up action %s for node %s, cannot power up from slurmd",
-				      update_node_msg->power_action_name,
-				      this_node_name);
-				error_code = ESLURM_INVALID_POWER_ACTION;
-				state_val = NO_VAL;
-			}
-			power_action_destroy(power_action);
 		}
 
 		if (state_val != NO_VAL) {

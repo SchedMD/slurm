@@ -53,6 +53,7 @@ typedef enum power_action_type {
 	POWER_ACTION_SUSPEND,
 	POWER_ACTION_RESUME_FAIL,
 	POWER_ACTION_REBOOT,
+	POWER_ACTION_NONE,
 } power_action_type_t;
 
 typedef struct power_action {

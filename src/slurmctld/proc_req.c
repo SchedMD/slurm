@@ -5702,15 +5702,17 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		return;
 	}
 
-	if (reboot_msg && reboot_msg->power_action_name &&
-	    reboot_msg->power_action_name[0]) {
-		if (!power_save_valid_action(reboot_msg->power_action_name)) {
-			error("Invalid power action %s for REBOOT_NODES request",
-			      reboot_msg->power_action_name);
-			slurm_send_rc_msg(msg, ESLURM_INVALID_POWER_ACTION);
-			return;
-		}
+	if (!power_save_valid_action_default(
+		    POWER_ACTION_REBOOT,
+		    reboot_msg ? reboot_msg->power_action_name : NULL)) {
+		error("Invalid power action %s for REBOOT_NODES request",
+		      (reboot_msg && reboot_msg->power_action_name)
+			      ? reboot_msg->power_action_name
+			      : "(default)");
+		slurm_send_rc_msg(msg, ESLURM_INVALID_POWER_ACTION);
+		return;
 	}
+
 	/* do RPC call */
 	if (reboot_msg)
 		nodelist = reboot_msg->node_list;

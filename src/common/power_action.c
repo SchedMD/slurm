@@ -68,6 +68,8 @@ extern const char *power_action_type_name(power_action_type_t type)
 		return POWER_ACTION_NAME_RESUME_FAIL;
 	case POWER_ACTION_REBOOT:
 		return POWER_ACTION_NAME_REBOOT;
+	case POWER_ACTION_NONE:
+		return NULL;
 	default:
 		error("%s: invalid power action type %d", __func__,
 			      type);
