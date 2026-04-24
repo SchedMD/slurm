@@ -6,6 +6,11 @@ import atf
 
 
 def setup_module():
+    atf.require_version(
+        (26, 5),
+        "sbin/slurmd",
+        reason="Ticket 22180: SLUID availability added in 26.05+",
+    )
     atf.require_nodes(1, [("CPUs", 1)])
     atf.require_config_parameter_includes("JobAcctGatherType", "jobacct_gather/cgroup")
     atf.require_slurm_running()

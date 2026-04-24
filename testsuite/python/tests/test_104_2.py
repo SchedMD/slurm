@@ -8,6 +8,11 @@ line_received = "Line received:"
 
 
 def setup_module():
+    atf.require_version(
+        (26, 5),
+        "bin/sattach",
+        reason="Ticket 22180: SLUID availability added in 26.05+",
+    )
     atf.require_nodes(1)
     atf.require_slurm_running()
 

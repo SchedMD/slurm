@@ -58,6 +58,12 @@ def get_running_user_steps(job_id):
 )
 def test_verbose_signal(id_type, step):
     """Verify scancel --verbose shows correct 'Signal N to job/step <id>' message."""
+    if id_type == "SLUID":
+        atf.require_version(
+            (26, 5),
+            "bin/scancel",
+            reason="Ticket 22180: SLUID availability added in 26.05+",
+        )
 
     job_id = submit_running_job()
     identifier = str(atf.get_job_parameter(job_id, id_type))
@@ -73,6 +79,10 @@ def test_verbose_signal(id_type, step):
     atf.wait_for_job_state(job_id, "FAILED", fatal=True)
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/scancel") < (26, 5),
+    reason="Ticket 22180: SLUID availability added in 26.05+",
+)
 def test_verbose_mixed_ids():
     """Verify scancel --verbose output with a mix of job IDs, step IDs, SLUIDs, and SLUID steps.
 
@@ -126,6 +136,14 @@ def test_verbose_mixed_ids():
 )
 def test_cancel_terminates(id_type, step, expected_state):
     """Verify scancel with job/step ID or SLUID actually terminates the job."""
+
+    if id_type == "SLUID":
+        atf.require_version(
+            (26, 5),
+            "bin/scancel",
+            reason="Ticket 22180: SLUID availability added in 26.05+",
+        )
+
     job_id = submit_running_job()
     identifier = str(atf.get_job_parameter(job_id, id_type))
     target = f"{identifier}.0" if step else identifier
@@ -137,6 +155,13 @@ def test_cancel_terminates(id_type, step, expected_state):
 @pytest.mark.parametrize("id_type", ["JobId", "SLUID"])
 def test_signal_delivers(id_type):
     """Verify scancel --signal with a job ID or SLUID delivers SIGSTOP/SIGCONT."""
+
+    if id_type == "SLUID":
+        atf.require_version(
+            (26, 5),
+            "bin/scancel",
+            reason="Ticket 22180: SLUID availability added in 26.05+",
+        )
 
     job_id = submit_running_job()
     identifier = str(atf.get_job_parameter(job_id, id_type))
@@ -151,6 +176,10 @@ def test_signal_delivers(id_type):
     atf.wait_for_job_state(job_id, "CANCELLED", fatal=True)
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/scancel") < (26, 5),
+    reason="Ticket 22180: SLUID availability added in 26.05+",
+)
 def test_cancel_mixed_terminates():
     """Verify scancel with mixed job IDs, step IDs, SLUIDs, and SLUID steps terminates all jobs."""
 
@@ -175,6 +204,13 @@ def test_cancel_mixed_terminates():
 @pytest.mark.parametrize("id_type", ["JobId", "SLUID"])
 def test_cancel_one_step(id_type):
     """Cancel only step 0 in a multi-step job; step 1 must survive."""
+
+    if id_type == "SLUID":
+        atf.require_version(
+            (26, 5),
+            "bin/scancel",
+            reason="Ticket 22180: SLUID availability added in 26.05+",
+        )
 
     job_id = submit_multistep_job()
     identifier = str(atf.get_job_parameter(job_id, id_type))

@@ -15,6 +15,13 @@ def sbcast_job(request):
     """Submit a job that waits for a marker file, and return the job identifier
     based on request.param (JobId or SLUID) for use with sbcast -j."""
 
+    if request.param == "SLUID":
+        atf.require_version(
+            (26, 5),
+            "bin/sbcast",
+            reason="Ticket 22180: SLUID availability added in 26.05+",
+        )
+
     marker_file = atf.module_tmp_path / "sbcast_marker"
     src_file = atf.module_tmp_path / "sbcast_src"
 

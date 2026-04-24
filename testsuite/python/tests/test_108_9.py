@@ -3,6 +3,7 @@
 ############################################################################
 import re
 import atf
+import pytest
 
 
 def setup_module():
@@ -43,6 +44,10 @@ def test_listpids():
     ), f"Expected 2 listpids entries for {job_id} step 0, got {len(matches)}: {output}"
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/scontrol") < (26, 5),
+    reason="Ticket 22180: SLUID availability added in 26.05+",
+)
 def test_listpids_sluid():
     """Validate scontrol listpids with SLUID and SLUID.stepid."""
 
