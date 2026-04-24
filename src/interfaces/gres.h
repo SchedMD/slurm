@@ -344,7 +344,15 @@ typedef struct gres_job_state {
 	 *              GRES allocated to the job.
 	 */
 	uint64_t total_gres;
-	uint32_t node_cnt;		/* 0 if no_consume */
+	/*
+	 * node_cnt - Size of the arrays below.
+	 *            For jobs: length of the job allocation (number of nodes
+	 *            allocated to the job).
+	 *            For reservations: node_record_count (full cluster node
+	 *            table size).
+	 *            0 if no_consume.
+	 */
+	uint32_t node_cnt;
 	bitstr_t **gres_bit_alloc;	/* Per node GRES allocated,
 					 * Used with GRES files */
 	uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated,
@@ -1131,6 +1139,30 @@ extern gres_state_t *gres_create_state(void *src_ptr,
 extern void gres_job_state_delete(gres_job_state_t *gres_js);
 
 extern void gres_job_clear_alloc(gres_job_state_t *gres_js);
+
+/*
+ * Remap reservation GRES per-node arrays (indexed by global node table
+ * position) after the node table has been re-sorted (e.g. nodes added, removed,
+ * or reordered between slurmctld restarts).
+ *
+ * Reservation gres_list_alloc arrays are cluster-length (node_record_count),
+ * unlike job arrays which are sized to the job allocation.
+ *
+ * Elements are moved from their old node index to the new one using the global
+ * node_old_to_new_map; entries that map to -1 (removed nodes) have their data
+ * freed.
+ *
+ * Callers must only invoke this when is_node_table_changed is true and the
+ * global node_old_to_new_map is populated.
+ *
+ * Uses globals:
+ *   node_old_to_new_map   - map[old_index] = new_index (-1 if node removed)
+ *   old_node_record_count - length of node_old_to_new_map (previous node count)
+ *   node_record_count     - current node table size (new array length)
+ *
+ * IN gres_list  - reservation gres_list_alloc whose arrays need remapping
+ */
+extern void gres_resv_list_remap_global_indices(list_t *gres_list);
 
 extern void gres_job_list_delete(void *list_element);
 

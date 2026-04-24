@@ -226,6 +226,16 @@ extern int active_node_record_count;	/* non-null node count in
 extern xhash_t* node_hash_table;	/* hash table for node records */
 extern time_t last_node_update;		/* time of last node record update */
 
+/*
+ * Old-to-new node index mapping.  map[old_index] == new_index, or -1
+ * if the node was removed.  Built by slurmctld during load_all_node_state().
+ * When the mapping is an identity (!is_node_table_changed) the array is freed
+ * early and callers can skip remapping.
+ */
+extern int *node_old_to_new_map;
+extern uint32_t old_node_record_count;
+extern bool is_node_table_changed;
+
 extern uint16_t *cr_node_num_cores;
 extern uint32_t *cr_node_cores_offset;
 

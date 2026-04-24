@@ -1,4 +1,4 @@
-	/*****************************************************************************\
+/*****************************************************************************\
  *  reservation.c - resource reservation management
  *****************************************************************************
  *  Copyright (C) 2009-2010 Lawrence Livermore National Security.
@@ -5216,6 +5216,15 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 			schedule_resv_save();
 		}
 	}
+
+	/*
+	 * Reservation GRES arrays are indexed by global node_inx.
+	 * After a restart the node table may have been re-sorted, so remap
+	 * GRES per-node arrays from old indices to current ones and
+	 * expand to cover the current node_record_count.
+	 */
+	if (resv_ptr->gres_list_alloc && is_node_table_changed)
+		gres_resv_list_remap_global_indices(resv_ptr->gres_list_alloc);
 
 	return true;
 }

@@ -368,6 +368,12 @@ void slurm_bit_free(bitstr_t **b)
 		xfree(*b);
 }
 
+void bit_free_ptr(void *p)
+{
+	bitstr_t *b = p;
+	slurm_bit_free(&b);
+}
+
 /*
  * Return the number of possible bits in a bitstring.
  *   b (IN)		bitstring to check

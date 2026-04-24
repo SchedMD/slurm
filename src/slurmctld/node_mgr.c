@@ -229,9 +229,11 @@ int dump_all_node_state ( void )
 	lock_slurmctld (node_read_lock);
 	_dump_cluster_settings(buffer);
 	sackd_mgr_dump_state(buffer, SLURM_PROTOCOL_VERSION);
+	pack32(node_record_count, buffer);
 	for (inx = 0; (node_ptr = next_node(&inx)); inx++) {
 		xassert (node_ptr->magic == NODE_MAGIC);
 		xassert (node_ptr->config_ptr->magic == CONFIG_MAGIC);
+		pack32(inx, buffer);
 		node_record_pack_state(node_ptr, SLURM_PROTOCOL_VERSION,
 				       buffer);
 	}
@@ -348,9 +350,25 @@ extern int load_all_node_state ( bool state_only )
 	if (sackd_mgr_load_state(buffer, protocol_version))
 		goto unpack_error;
 
+	xfree(node_old_to_new_map);
+	old_node_record_count = 0;
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack32(&old_node_record_count, buffer);
+		if (old_node_record_count) {
+			node_old_to_new_map =
+				xcalloc(old_node_record_count, sizeof(int));
+			memset(node_old_to_new_map, -1,
+			       old_node_record_count * sizeof(int));
+		}
+	}
+
 	while (remaining_buf (buffer) > 0) {
 		node_record_t *node_state_rec = NULL;
 		uint32_t node_state, base_state;
+		uint32_t old_inx = NO_VAL;
+
+		if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION)
+			safe_unpack32(&old_inx, buffer);
 
 		if (node_record_unpack((void *) &node_state_rec,
 				       protocol_version, buffer)) {
@@ -433,6 +451,12 @@ extern int load_all_node_state ( bool state_only )
 
 		/* find record and perform update */
 		node_ptr = find_node_record (node_state_rec->name);
+
+		/* Record mapping of the old node index to the new node index */
+		if (node_ptr && (old_inx != NO_VAL) && node_old_to_new_map &&
+		    (old_inx < old_node_record_count))
+			node_old_to_new_map[old_inx] = node_ptr->index;
+
 		if (node_ptr == NULL) {
 			error ("Node %s has vanished from configuration",
 			       node_state_rec->name);
@@ -781,6 +805,54 @@ extern int load_all_node_state ( bool state_only )
 		}
 
 		purge_node_rec(node_state_rec);
+	}
+
+	/*
+	 * Check if the ordering/count of nodes saved in state is different than
+	 * the current ordering/count of nodes loaded from slurm.conf. This may
+	 * change if nodes were added/removed, or if a different rank ordering
+	 * is used (e.g. BlockAsNodeRank or SwitchAsNodeRank)
+	 */
+	is_node_table_changed = false;
+	if (node_old_to_new_map &&
+	    (old_node_record_count != node_record_count)) {
+		is_node_table_changed = true;
+	} else if (node_old_to_new_map &&
+		   (old_node_record_count == node_record_count)) {
+		for (int i = 0; i < old_node_record_count; i++) {
+			if (node_old_to_new_map[i] != i) {
+				is_node_table_changed = true;
+				break;
+			}
+		}
+	}
+
+	/*
+	 * If no changes are detected in the node record table ordering/count,
+	 * node_old_to_new_map is freed as it provides no useful information.
+	 */
+	if (!is_node_table_changed) {
+		xfree(node_old_to_new_map);
+		old_node_record_count = 0;
+		debug2("Node record table ordering and size from state file matches what was loaded in from slurm.conf.");
+	} else if (get_log_level() >= LOG_LEVEL_DEBUG2) {
+		debug2("Node record table ordering and size from state file does not match what was loaded from slurm.conf:");
+		debug2("  node_record_count %u -> %d",
+		       old_node_record_count, node_record_count);
+		for (int i = 0; i < old_node_record_count; i++) {
+			int new_inx = node_old_to_new_map[i];
+
+			if (new_inx == -1) {
+				debug2("  node at old index %d has been removed",
+				       i);
+				continue;
+			}
+
+			debug2("  node:%-15s old index:%-5d -> new index:%-5d",
+			       node_record_table_ptr[new_inx] ?
+			       node_record_table_ptr[new_inx]->name : NULL,
+			       i, new_inx);
+		}
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);

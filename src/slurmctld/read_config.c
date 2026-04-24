@@ -1807,6 +1807,10 @@ extern int read_slurm_conf(int recover)
 
 	/* NOTE: Run load_all_resv_state() before _restore_job_accounting */
 	load_all_resv_state(recover);
+	/* Free the old-to-new mapping after load_all_resv_state() */
+	xfree(node_old_to_new_map);
+	old_node_record_count = 0;
+	is_node_table_changed = false;
 	if (recover >= 1) {
 		trigger_state_restore();
 		controller_reconfig_scheduling();
