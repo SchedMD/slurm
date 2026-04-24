@@ -59,7 +59,7 @@ def get_and_down_nodes():
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-def test_overlap_weeks(request, get_and_down_nodes, reocurring_flag):
+def test_overlap_weeks(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap nodes if they are have a start time difference greater than a week"""
 
     nodes = get_and_down_nodes
@@ -117,7 +117,7 @@ def test_overlap_weeks(request, get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-def test_overlap_weeks_reverse(request, get_and_down_nodes, reocurring_flag):
+def test_overlap_weeks_reverse(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap nodes if they are have a start time difference greater than a week"""
 
     nodes = get_and_down_nodes
@@ -175,7 +175,7 @@ def test_overlap_weeks_reverse(request, get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-def test_overlap_reocurring(request, get_and_down_nodes, reocurring_flag):
+def test_overlap_reocurring(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap when the start at 1 recurring period"""
 
     nodes = get_and_down_nodes
@@ -242,7 +242,7 @@ def test_overlap_reocurring(request, get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-def test_overlap_reocurring_week(request, get_and_down_nodes, reocurring_flag):
+def test_overlap_reocurring_week(get_and_down_nodes, reocurring_flag):
     """Verify that recurring reservations don't overlap if they are have a start time difference greater than a week"""
 
     nodes = get_and_down_nodes
@@ -296,7 +296,7 @@ def test_overlap_reocurring_week(request, get_and_down_nodes, reocurring_flag):
 
 
 @pytest.mark.parametrize("reocurring_flag", ["HOURLY", "DAILY", "WEEKLY"])
-def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
+def test_overlap_replacing(get_and_down_nodes, reocurring_flag):
     """Verify that reservations don't overlap when replacing nodes"""
 
     nodes = get_and_down_nodes
@@ -465,7 +465,7 @@ def test_overlap_replacing(request, get_and_down_nodes, reocurring_flag):
         ("WEEKEND", "WEEKEND"),
     ],
 )
-def test_overlap_weekdays(request, get_and_down_nodes, reocurring_flag, week_flag):
+def test_overlap_weekdays(get_and_down_nodes, reocurring_flag, week_flag):
     """Verify that recurring reservations with weekdays and weekends handle overlapping properly with other reocurrings"""
 
     nodes = get_and_down_nodes
@@ -521,9 +521,7 @@ def test_overlap_weekdays(request, get_and_down_nodes, reocurring_flag, week_fla
 @pytest.mark.parametrize(
     "resv1_flag,resv2_flag", [("WEEKEND", "WEEKDAY"), ("WEEKDAY", "WEEKEND")]
 )
-def test_no_overlap_weekday_weekend(
-    request, get_and_down_nodes, resv1_flag, resv2_flag
-):
+def test_no_overlap_weekday_weekend(get_and_down_nodes, resv1_flag, resv2_flag):
     """Verify that recurring reservations with weekdays and weekends handle overlapping properly between them"""
 
     nodes = get_and_down_nodes
