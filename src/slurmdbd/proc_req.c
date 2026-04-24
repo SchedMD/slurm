@@ -688,6 +688,14 @@ static void _apply_purge_default(uint32_t *purge, uint32_t conf_purge)
 {
 	if (*purge == NO_VAL)
 		*purge = conf_purge;
+	else if (!(*purge & SLURMDB_PURGE_BASE))
+		/*
+		 * When `sacctmgr archive dump` is given a bare keyword like
+		 * "Jobs" but no duration, *purge has a value of 0 with
+		 * SLURMDB_PURGE_ARCHIVE set. Use the configured default in that
+		 * case too.
+		 */
+		*purge |= conf_purge;
 }
 
 static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
