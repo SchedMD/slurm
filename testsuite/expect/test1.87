@@ -241,6 +241,84 @@ expect {
 subtest {$error != 0} "Error expected for inconsistent node count"
 
 #
+# Verify relative node selection ignores prior cyclic step placement.
+#
+set matches 0
+send "$srun -l -N1 -n1 --relative=1 $bin_printenv SLURMD_NODENAME\r"
+expect {
+	-re "($number): *($re_word_str)" {
+		if {$expect_out(2,string) eq $host_1} {
+			incr matches
+		} else {
+			fail "Wrong node responded, expected node 1"
+		}
+		exp_continue
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	"$test_prompt" {
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches >= 1} "Relative step should start on node 1"
+
+set matches 0
+send "$srun -l -N1 -n1 --relative=0 $bin_printenv SLURMD_NODENAME\r"
+expect {
+	-re "($number): *($re_word_str)" {
+		if {$expect_out(2,string) eq $host_0} {
+			incr matches
+		} else {
+			fail "Wrong node responded, expected node 0"
+		}
+		exp_continue
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	"$test_prompt" {
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches >= 1} "Relative step should start on node 0 after prior step"
+
+set matches 0
+send "$srun -l -N1 -n1 --relative=2 $bin_printenv SLURMD_NODENAME\r"
+expect {
+	-re "($number): *($re_word_str)" {
+		if {$expect_out(2,string) eq $host_2} {
+			incr matches
+		} else {
+			fail "Wrong node responded, expected node 2"
+		}
+		exp_continue
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	"$test_prompt" {
+	}
+	timeout {
+		fail "srun not responding"
+	}
+	eof {
+		wait
+	}
+}
+subtest {$matches >= 1} "Relative step should start on node 2 after prior steps"
+
+#
 # Post-processing
 #
 send "exit\r"
