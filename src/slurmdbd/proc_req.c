@@ -684,6 +684,12 @@ end_it:
 	return rc;
 }
 
+static void _apply_purge_default(uint32_t *purge, uint32_t conf_purge)
+{
+	if (*purge == NO_VAL)
+		*purge = conf_purge;
+}
+
 static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 			 buf_t **out_buffer)
 {
@@ -713,24 +719,24 @@ static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 		arch_cond->archive_script =
 			xstrdup(slurmdbd_conf->archive_script);
 
-	if (arch_cond->purge_event == NO_VAL)
-		arch_cond->purge_event = slurmdbd_conf->purge_event;
-	if (arch_cond->purge_job == NO_VAL)
-		arch_cond->purge_job = slurmdbd_conf->purge_job;
-	if (arch_cond->purge_resv == NO_VAL)
-		arch_cond->purge_resv = slurmdbd_conf->purge_resv;
-	if (arch_cond->purge_step == NO_VAL)
-		arch_cond->purge_step = slurmdbd_conf->purge_step;
-	if (arch_cond->purge_suspend == NO_VAL)
-		arch_cond->purge_suspend = slurmdbd_conf->purge_suspend;
-	if (arch_cond->purge_txn == NO_VAL)
-		arch_cond->purge_txn = slurmdbd_conf->purge_txn;
-	if (arch_cond->purge_usage == NO_VAL)
-		arch_cond->purge_usage = slurmdbd_conf->purge_usage;
-	if (arch_cond->purge_jobscript == NO_VAL)
-		arch_cond->purge_jobscript = slurmdbd_conf->purge_jobscript;
-	if (arch_cond->purge_jobenv == NO_VAL)
-		arch_cond->purge_jobenv = slurmdbd_conf->purge_jobenv;
+	/*
+	 * Use purge durations from slurmdbd.conf when the RPC from sacctmgr
+	 * didn't specify them.
+	 */
+	_apply_purge_default(&arch_cond->purge_event,
+			     slurmdbd_conf->purge_event);
+	_apply_purge_default(&arch_cond->purge_job, slurmdbd_conf->purge_job);
+	_apply_purge_default(&arch_cond->purge_resv, slurmdbd_conf->purge_resv);
+	_apply_purge_default(&arch_cond->purge_step, slurmdbd_conf->purge_step);
+	_apply_purge_default(&arch_cond->purge_suspend,
+			     slurmdbd_conf->purge_suspend);
+	_apply_purge_default(&arch_cond->purge_txn, slurmdbd_conf->purge_txn);
+	_apply_purge_default(&arch_cond->purge_usage,
+			     slurmdbd_conf->purge_usage);
+	_apply_purge_default(&arch_cond->purge_jobscript,
+			     slurmdbd_conf->purge_jobscript);
+	_apply_purge_default(&arch_cond->purge_jobenv,
+			     slurmdbd_conf->purge_jobenv);
 
 	rc = jobacct_storage_g_archive(slurmdbd_conn->db_conn, arch_cond);
 	if (rc != SLURM_SUCCESS) {
