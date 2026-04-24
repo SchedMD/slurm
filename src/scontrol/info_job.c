@@ -262,7 +262,8 @@ static char *_sprint_job_info(job_info_t *job_ptr)
 	/****** Line 5a (optional) ******/
 	if (detail_flag) {
 		exit_code_decode(job_ptr->derived_ec, &exit_status, &term_sig);
-		xstrfmtcat(out, "DerivedExitCode=%u:%u", exit_status, term_sig);
+		xstrfmtcat(out, "DerivedExitCode=%u:%u SlurmRC=%u", exit_status,
+			   term_sig, job_ptr->job_exit_rc.rc);
 		xstrcat(out, line_end);
 	}
 
