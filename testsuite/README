@@ -1010,6 +1010,7 @@ test_144_8   Test various parameters with and without enforce binding
 test_144_9   Test RestrictedCoresPerGPU
 test_144_10  Test Flags=env_uuid sets proper environment variables
 test_144_11  Test GRES reservation with node table changes
+test_144_12  Test dynamic-normal slurmd (`slurmd -Z`) GRES autofill
 
 test_145_#   Testing --constraint.
 ==================================
