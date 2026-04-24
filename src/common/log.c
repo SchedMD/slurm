@@ -1749,7 +1749,7 @@ extern char *log_build_step_id_str(
 	else if (step_id->step_id == SLURM_INTERACTIVE_STEP)
 		pos += snprintf(buf + pos, buf_size - pos, "interactive");
 	else if (step_id->step_id == SLURM_PENDING_STEP)
-		pos += snprintf(buf + pos, buf_size - pos, "TDB");
+		pos += snprintf(buf + pos, buf_size - pos, "TBD");
 	else
 		pos += snprintf(buf + pos, buf_size - pos, "%u",
 				step_id->step_id);
