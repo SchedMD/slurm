@@ -67,8 +67,9 @@ static uint16_t _wrap_add(uint16_t base, uint16_t delta, uint16_t limit)
 
 static void _log_placement(torus3d_placement_t *placement)
 {
-	debug("\tPlacement size:%u dims:%ux%ux%u", placement->size,
-		      placement->dims.x, placement->dims.y, placement->dims.z);
+	debug("\tPlacement size:%u dims:%ux%ux%u overlap:%s",
+	      placement->size, placement->dims.x, placement->dims.y,
+	      placement->dims.z, placement->has_overlap ? "yes" : "no");
 	if (placement->anchor_bitmaps) {
 		for (int i = 0; i < placement->anchor_count; i++) {
 			char *tmp_str =
@@ -378,6 +379,49 @@ static int _placement_cmp(const void *a, const void *b)
 	return 0;
 }
 
+static uint16_t _gcd(uint16_t a, uint16_t b)
+{
+	while (b) {
+		uint16_t tmp = b;
+		b = a % b;
+		a = tmp;
+	}
+	return a;
+}
+
+/*
+ * Self-overlap: anchors within the same placement overlap when the spacing
+ * on any axis is smaller than the placement dims on that axis.
+ *
+ * Cross-overlap: two different placements of the same size always share
+ * anchor (0,0,0), so their sub-cubes always overlap.
+ */
+static void _detect_placement_overlaps(torus3d_record_t *torus)
+{
+	for (int i = 0; i < torus->placement_count; i++) {
+		torus3d_placement_t *p = &torus->placements[i];
+
+		if (p->has_overlap)
+			continue;
+
+		/* Self-overlap */
+		if ((_gcd(p->anchor_spacing.x, torus->x) < p->dims.x) ||
+		    (_gcd(p->anchor_spacing.y, torus->y) < p->dims.y) ||
+		    (_gcd(p->anchor_spacing.z, torus->z) < p->dims.z)) {
+			p->has_overlap = true;
+			continue;
+		}
+
+		/* Cross-overlap: mark all placements in same-size group */
+		for (int j = i + 1; j < torus->placement_count; j++) {
+			if (torus->placements[j].size != p->size)
+				break;
+			p->has_overlap = true;
+			torus->placements[j].has_overlap = true;
+		}
+	}
+}
+
 static int _validate_config(slurm_conf_torus3d_t *config,
 			    torus3d_record_t *torus)
 {
@@ -471,6 +515,7 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 		}
 		qsort(torus->placements, torus->placement_count,
 		      sizeof(*torus->placements), _placement_cmp);
+		_detect_placement_overlaps(torus);
 	}
 
 end:

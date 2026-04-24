@@ -44,6 +44,7 @@ typedef struct torus3d_placement {
 	int anchor_count;
 	slurm_conf_torus3d_dims_t anchor_spacing;
 	slurm_conf_torus3d_dims_t dims;
+	bool has_overlap;
 	uint32_t size;
 	uint16_t *xs;
 	uint16_t *ys;
