@@ -502,6 +502,8 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->selinux_context);
 	} else if (!xstrcmp(name, "site_factor")) {
 		lua_pushinteger(L, job_info->site_factor);
+	} else if (!xstrcmp(name, "slurm_rc")) {
+		lua_pushinteger(L, job_info->job_exit_rc.rc);
 	} else if (!xstrcmp(name, "sockets_per_board")) {
 		lua_pushinteger(L, job_info->sockets_per_board);
 	} else if (!xstrcmp(name, "sockets_per_node")) {

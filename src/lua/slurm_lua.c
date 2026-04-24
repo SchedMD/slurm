@@ -1014,6 +1014,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 			lua_pushnumber(L,
 				       (((int64_t)job_ptr->site_factor)
 					- NICE_OFFSET));
+	} else if (!xstrcmp(name, "slurm_rc")) {
+		lua_pushnumber(L, job_ptr->job_exit_rc.rc);
 	} else if (!xstrcmp(name, "spank_job_env")) {
 		if ((job_ptr->spank_job_env_size == 0) ||
 		    (job_ptr->spank_job_env == NULL)) {
