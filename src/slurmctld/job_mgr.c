@@ -3094,6 +3094,8 @@ extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
 {
 	static time_t sched_update = 0;
 	static bool requeue_on_resume_failure = false;
+	list_itr_t *iter;
+	job_record_t *job_ptr = NULL;
 	foreach_kill_job_by_t foreach_kill_job_by = {
 		.node_ptr = node_ptr,
 		.now = time(NULL),
@@ -3114,9 +3116,17 @@ extern int kill_running_job_by_node_ptr(node_record_t *node_ptr)
 
 	foreach_kill_job_by.requeue_on_resume_failure =
 		requeue_on_resume_failure;
-
-	list_for_each(job_list, _foreach_kill_running_job_by_node,
-		      &foreach_kill_job_by);
+	/*
+	 * This needs to be an iterator since
+	 * _foreach_kill_running_job_by_node() may eventually call
+	 * _pick_node_cnt() which will deadlock the job_list lock.
+	 */
+	iter = list_iterator_create(job_list);
+	while ((job_ptr = list_next(iter))) {
+		_foreach_kill_running_job_by_node(job_ptr,
+						  &foreach_kill_job_by);
+	}
+	list_iterator_destroy(iter);
 
 	if (foreach_kill_job_by.kill_job_cnt)
 		last_job_update = foreach_kill_job_by.now;
