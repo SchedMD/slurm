@@ -222,6 +222,7 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 	uint16_t segment_size = details_ptr->segment_size;
 	int segment_cnt = 0, rem_segment_cnt = 0;
 	bitstr_t *req_nodes_bitmap = NULL;
+	bool size_overlap = false;
 
 	if (details_ptr->arbitrary_tpn) {
 		info("topology torus3d does not support arbitrary tasks distribution");
@@ -352,7 +353,7 @@ next_segment:
 	if (!best.valid) {
 		log_flag(SELECT_TYPE, "%pJ unable to find torus3d placement",
 			 job_ptr);
-		if (bit_ffs(selected_bitmap) >= 0) {
+		if (size_overlap) {
 			bit_copybits(topo_eval->node_map, selected_bitmap);
 			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
 			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
@@ -362,6 +363,9 @@ next_segment:
 		}
 		goto fini;
 	}
+
+	if (!size_overlap)
+		size_overlap = best.placement->has_overlap;
 
 	for (int node_idx = 0; next_node_bitmap(best.nodes_bitmap, &node_idx);
 	     node_idx++) {
