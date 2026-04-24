@@ -94,6 +94,7 @@ typedef struct {
 	char *eligible_time;
 	char *derived_ec;
 	char *exit_code;
+	char *rc;
 } jobcomp_job_rec_t;
 
 extern void jobcomp_destroy_job(void *object);

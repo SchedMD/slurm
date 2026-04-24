@@ -272,6 +272,13 @@ static jobcomp_job_rec_t *_parse_line(list_t *job_info_list)
 			} else
 				error("%s: %s already given on this line, skipping '%s'",
 				      __func__, "ExitCode", jobcomp_info->val);
+		} else if (!xstrcasecmp("SlurmRC", jobcomp_info->name)) {
+			if (!job->rc) {
+				job->rc = xstrdup(jobcomp_info->val);
+			} else {
+				error("%s: %s already given on this line, skipping '%s'",
+				      __func__, "SlurmRC", jobcomp_info->val);
+			}
 		} else {
 			error("Unknown type %s: %s", jobcomp_info->name,
 			      jobcomp_info->val);

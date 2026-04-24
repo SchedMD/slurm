@@ -63,7 +63,7 @@ const char default_job_comp_loc[] = "/var/log/slurm_jobcomp.log";
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u "\
 		"WorkDir=%s ReservationName=%s Tres=%s Account=%s QOS=%s "\
 		"WcKey=%s Cluster=%s SubmitTime=%s EligibleTime=%s%s%s "\
-		"DerivedExitCode=%s ExitCode=%s \n"
+		"DerivedExitCode=%s ExitCode=%s SlurmRC=%u \n"
 
 /* File descriptor used for logging */
 static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -284,7 +284,7 @@ extern int jobcomp_p_record_job_event(job_record_t *job_ptr, uint32_t event)
 		   job_ptr->nodes, job_ptr->node_cnt, job_ptr->total_cpus,
 		   work_dir, resv_name, tres, account, qos, wckey, cluster,
 		   submit_time, eligible_time, array_id, het_id, derived_ec_str,
-		   exit_code_str);
+		   exit_code_str, job_ptr->job_exit_rc.rc);
 	tot_size = strlen(job_rec);
 
 	while (offset < tot_size) {
