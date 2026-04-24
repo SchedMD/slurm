@@ -50,9 +50,15 @@ def test_const1():
         job_id_3, "RUNNING", timeout=5, xfail=True
     ), "Verify that job #3 is not run"
 
-    assert atf.wait_for_job_state(
-        job_id_3, "PENDING", "No_suitable_topology_unit_found"
-    ), "Verify that job #3 is pending due to topology rejection"
+    if atf.get_version() >= (26, 5):
+        # Ticket 23990: Observability for block scheduling improved in 26.05+
+        assert atf.wait_for_job_state(
+            job_id_3, "PENDING", "No_suitable_topology_unit_found"
+        ), "Verify that job #3 is pending due to topology rejection"
+    else:
+        assert atf.wait_for_job_state(
+            job_id_3, "PENDING", "Resources"
+        ), "Verify that job #3 is not run due resources"
 
 
 def test_const2():
