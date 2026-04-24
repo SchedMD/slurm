@@ -51,8 +51,10 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/print_fields.h"
 #include "src/common/read_config.h"
 #include "src/common/run_command.h"
+#include "src/common/sluid.h"
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
@@ -220,6 +222,30 @@ extern void fini(void)
 	debug("%s unloaded", plugin_name);
 }
 
+static int _create_dir_base_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	int fstatus;
+
+	if (!dir->base_path || dir->tmpfs)
+		return 0;
+
+	if (dir->base_path[0] != '/') {
+		debug("%s: unable to create per-dir ns directory '%s' : does not start with '/'",
+		      __func__, dir->base_path);
+		return -1;
+	}
+
+	if ((fstatus = mkdirpath(dir->base_path, 0755, true))) {
+		debug("%s: unable to create per-dir ns directory '%s' : %s",
+		      __func__, dir->base_path,
+		      slurm_strerror(fstatus));
+		return -1;
+	}
+
+	return 0;
+}
+
 extern int namespace_p_restore(char *dir_name, bool recover)
 {
 	DIR *dp;
@@ -245,6 +271,13 @@ extern int namespace_p_restore(char *dir_name, bool recover)
 			debug("%s: unable to create ns directory '%s' : %s",
 			      __func__, ns_conf->basepath,
 			      slurm_strerror(fstatus));
+			umask(omask);
+			return SLURM_ERROR;
+		}
+
+		if (ns_conf->dir_confs &&
+		    list_for_each(ns_conf->dir_confs, _create_dir_base_path,
+				  NULL) < 0) {
 			umask(omask);
 			return SLURM_ERROR;
 		}
@@ -281,118 +314,224 @@ extern int namespace_p_restore(char *dir_name, bool recover)
 	return rc;
 }
 
-static int _mount_private_dirs(char *path, uid_t uid)
+/*
+ * Parse opts_str (e.g. "noexec,nosuid,size=4g") into:
+ *   - return value: MS_* flags for the mount() flags argument
+ *   - *mount_data: remaining tokens treated as tmpfs data (caller must xfree)
+ */
+static unsigned long _parse_ms_flags(const char *opts_str, char **mount_data)
 {
-	char *buffer = NULL, *mount_path = NULL, *save_ptr = NULL, *token;
+	char *buf, *save_ptr = NULL, *token;
+	unsigned long flags = 0;
+
+	*mount_data = NULL;
+	if (!opts_str)
+		return 0;
+
+	buf = xstrdup(opts_str);
+	token = strtok_r(buf, ",", &save_ptr);
+	while (token) {
+		if (!xstrcasecmp(token, "noexec"))
+			flags |= MS_NOEXEC;
+		else if (!xstrcasecmp(token, "nosuid"))
+			flags |= MS_NOSUID;
+		else if (!xstrcasecmp(token, "nodev"))
+			flags |= MS_NODEV;
+		else if (!xstrcasecmp(token, "ro"))
+			flags |= MS_RDONLY;
+		else if (!xstrcasecmp(token, "noatime"))
+			flags |= MS_NOATIME;
+		else if (!xstrcasecmp(token, "nodiratime"))
+			flags |= MS_NODIRATIME;
+		else if (!xstrcasecmp(token, "relatime"))
+			flags |= MS_RELATIME;
+		else {
+			/* Collect remaining tokens as tmpfs mount data */
+			if (*mount_data)
+				xstrfmtcat(*mount_data, ",%s", token);
+			else
+				*mount_data = xstrdup(token);
+		}
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(buf);
+	return flags;
+}
+
+static int _expand_dir_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	job_std_pattern_t *job_stp = arg;
+	char *tmp = dir->path;
+
+	dir->path = expand_stdio_fields(tmp, job_stp);
+	xfree(tmp);
+	return 0;
+}
+
+static void _expand_dir_paths(stepd_step_rec_t *step)
+{
+	job_std_pattern_t job_stp = { 0 };
+
+	job_stp.step_id = step->step_id;
+	job_stp.user = step->user_name;
+	list_for_each(ns_conf->dir_confs, _expand_dir_path, &job_stp);
+}
+
+typedef struct {
+	char *path;
+	uint32_t job_id;
+	int rc;
+} _mount_dir_args_t;
+
+static int _mount_dir(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	_mount_dir_args_t *args = arg;
+	char *backing_base = NULL, *mount_path = NULL, *mount_data = NULL;
+	unsigned long ms_flags;
 	int rc = 0;
 
-	if (!path) {
-		error("%s: no path to private directories specified.",
-		      __func__);
-		return -1;
-	}
-	buffer = xstrdup(ns_conf->dirs);
-	token = strtok_r(buffer, ",", &save_ptr);
-	while (token) {
-		/* skip /dev/shm, this is handled elsewhere */
-		if (!xstrcmp(token, "/dev/shm")) {
-			token = strtok_r(NULL, ",", &save_ptr);
-			continue;
-		}
-		xstrfmtcat(mount_path, "%s/%s", path, token);
-		for (char *t = mount_path + strlen(path) + 1; *t; t++) {
-			if (*t == '/')
-				*t = '_';
-		}
-		rc = mkdir(mount_path, 0700);
-		if (rc && errno != EEXIST) {
-			error("%s: Failed to create %s, %m",
-			      __func__, mount_path);
-			goto private_mounts_exit;
-		}
-		if (mount(mount_path, token, NULL, MS_BIND, NULL)) {
-			error("%s: %s mount failed, %m", __func__, token);
+	if (dir->tmpfs) {
+		ms_flags = _parse_ms_flags(dir->opts_str, &mount_data);
+		ms_flags |= MS_NOSUID | MS_NODEV;
+		if (mount("tmpfs", dir->path, "tmpfs", ms_flags, mount_data)) {
+			error("%s: %s tmpfs mount failed: %m",
+			      __func__, dir->path);
 			rc = -1;
-			goto private_mounts_exit;
 		}
-		token = strtok_r(NULL, ",", &save_ptr);
-		xfree(mount_path);
+		xfree(mount_data);
+		if (rc)
+			args->rc = rc;
+		return rc;
 	}
 
-private_mounts_exit:
-	xfree(buffer);
+	if (dir->base_path)
+		xstrfmtcat(backing_base, "%s/%u", dir->base_path, args->job_id);
+	else
+		backing_base = xstrdup(args->path);
+
+	xstrfmtcat(mount_path, "%s/%s", backing_base, dir->path);
+	for (char *t = mount_path + strlen(backing_base) + 1; *t; t++) {
+		if (*t == '/')
+			*t = '_';
+	}
+
+	if (dir->base_path) {
+		rc = mkdir(backing_base, 0700);
+		if (rc && errno != EEXIST) {
+			error("%s: Failed to create %s: %m",
+			      __func__, backing_base);
+			goto exit;
+		}
+	}
+
+	rc = mkdir(mount_path, 0700);
+	if (rc && errno != EEXIST) {
+		error("%s: Failed to create %s: %m", __func__, mount_path);
+		goto exit;
+	}
+	rc = 0;
+
+	ms_flags = _parse_ms_flags(dir->opts_str, &mount_data);
+	if (mount_data)
+		error("%s: %s: ignoring tmpfs data \"%s\" on bind mount",
+		      __func__, dir->path, mount_data);
+
+	if (mount(mount_path, dir->path, NULL, MS_BIND, NULL)) {
+		error("%s: %s mount failed: %m", __func__, dir->path);
+		rc = -1;
+		goto exit;
+	}
+	/*
+	 * MS_BIND ignores all flags except MS_REC; re-mount with
+	 * MS_REMOUNT to apply the requested flags.
+	 */
+	if (ms_flags && mount(NULL, dir->path, NULL,
+			      MS_BIND | MS_REMOUNT | ms_flags, NULL)) {
+		error("%s: %s remount failed: %m", __func__, dir->path);
+		rc = -1;
+		goto exit;
+	}
+
+exit:
+	xfree(backing_base);
 	xfree(mount_path);
+	xfree(mount_data);
+	if (rc)
+		args->rc = rc;
 	return rc;
 }
 
-static int _chown_private_dirs(char *path, uid_t uid)
+static int _mount_private_dirs(char *path, stepd_step_rec_t *step)
 {
-	char *buffer = NULL, *mount_path = NULL, *save_ptr = NULL, *token;
-	int rc = 0;
+	_mount_dir_args_t args = { .path = path,
+				   .job_id = step->step_id.job_id };
 
 	if (!path) {
 		error("%s: no path to private directories specified.",
 		      __func__);
 		return -1;
 	}
-	buffer = xstrdup(ns_conf->dirs);
-	token = strtok_r(buffer, ",", &save_ptr);
-	while (token) {
-		/* skip /dev/shm, this is handled elsewhere */
-		if (!xstrcmp(token, "/dev/shm")) {
-			token = strtok_r(NULL, ",", &save_ptr);
-			continue;
-		}
-		xstrfmtcat(mount_path, "%s/%s", path, token);
-		for (char *t = mount_path + strlen(path) + 1; *t; t++) {
-			if (*t == '/')
-				*t = '_';
-		}
-		rc = lchown(mount_path, uid, -1);
-		if (rc) {
-			error("%s: lchown failed for %s: %m",
-			      __func__, mount_path);
-			goto private_mounts_exit;
-		}
-		token = strtok_r(NULL, ",", &save_ptr);
-		xfree(mount_path);
+
+	list_for_each(ns_conf->dir_confs, _mount_dir, &args);
+	return args.rc;
+}
+
+typedef struct {
+	char *path;
+	uid_t uid;
+	uint32_t job_id;
+	int rc;
+} _chown_dir_args_t;
+
+static int _chown_dir(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	_chown_dir_args_t *args = arg;
+	char *backing_base = NULL, *mount_path = NULL;
+	int rc = 0;
+
+	/* Skip chown of tmpfs, there will not be be a directory */
+	if (dir->tmpfs)
+		return 0;
+
+	if (dir->base_path)
+		xstrfmtcat(backing_base, "%s/%u", dir->base_path, args->job_id);
+	else
+		backing_base = xstrdup(args->path);
+
+	xstrfmtcat(mount_path, "%s/%s", backing_base, dir->path);
+	for (char *t = mount_path + strlen(backing_base) + 1; *t; t++) {
+		if (*t == '/')
+			*t = '_';
 	}
 
-private_mounts_exit:
-	xfree(buffer);
+	rc = lchown(mount_path, args->uid, -1);
+	if (rc)
+		error("%s: lchown failed for %s: %m", __func__, mount_path);
+
+	xfree(backing_base);
 	xfree(mount_path);
+	if (rc)
+		args->rc = rc;
 	return rc;
 }
 
-static int _mount_private_shm(void)
+static int _chown_private_dirs(char *path, stepd_step_rec_t *step)
 {
-	char *loc = NULL;
-	int rc = 0;
+	_chown_dir_args_t args = { .path = path,
+				   .uid = step->uid,
+				   .job_id = step->step_id.job_id };
 
-	/* return early if "/dev/shm" is not in the mount list */
-	if (!(loc = xstrcasestr(ns_conf->dirs, "/dev/shm")))
-		return rc;
-	if (!((loc[8] == ',') || (loc[8] == 0)))
-		return rc;
-
-	/* handle mounting a new /dev/shm */
-	if (!ns_conf->shared) {
-		/*
-		 * only unmount old /dev/shm if private, otherwise this can
-		 * impact the root namespace
-		 */
-		rc = umount("/dev/shm");
-		if (rc && errno != EINVAL) {
-			error("%s: umount /dev/shm failed: %m", __func__);
-			return rc;
-		}
-	}
-	rc = mount("tmpfs", "/dev/shm", "tmpfs", 0, NULL);
-	if (rc) {
-		error("%s: /dev/shm mount failed: %m", __func__);
+	if (!path) {
+		error("%s: no path to private directories specified.",
+		      __func__);
 		return -1;
 	}
-	return rc;
+
+	list_for_each(ns_conf->dir_confs, _chown_dir, &args);
+	return args.rc;
 }
 
 static int _mount_private_proc(void)
@@ -447,6 +586,13 @@ static char **_setup_script_env(uint32_t job_id, stepd_step_rec_t *step,
 		env_array_overwrite_fmt(&env, "SLURM_JOB_UID", "%u", step->uid);
 		env_array_overwrite_fmt(&env, "SLURM_JOB_USER", "%s",
 					step->user_name);
+		if (step->step_id.sluid) {
+			char sluid[SLUID_STR_BYTES];
+
+			print_sluid(step->step_id.sluid, sluid, sizeof(sluid));
+			env_array_overwrite_fmt(&env, "SLURM_JOB_SLUID", "%s",
+						sluid);
+		}
 		if (step->alias_list)
 			env_array_overwrite_fmt(&env, "SLURM_NODE_ALIASES",
 						"%s", step->alias_list);
@@ -534,7 +680,7 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 	 * Now we have a persistent mount namespace.
 	 * Mount private directories inside the namespace.
 	 */
-	if (_mount_private_dirs(src_bind, step->uid) == -1) {
+	if (_mount_private_dirs(src_bind, step) == -1) {
 		rc = -1;
 		goto child_exit;
 	}
@@ -546,11 +692,6 @@ static void _create_ns_child(stepd_step_rec_t *step, char *src_bind,
 	if ((rc = switch_g_fs_init(step))) {
 		error("%s: switch_g_fs_init failed", __func__);
 		rc = -1;
-		goto child_exit;
-	}
-
-	if ((rc = _mount_private_shm())) {
-		error("%s: could not mount private shm", __func__);
 		goto child_exit;
 	}
 
@@ -859,7 +1000,7 @@ static int _create_ns(stepd_step_rec_t *step)
 			goto exit1;
 		}
 
-		if (_chown_private_dirs(src_bind, step->uid) == -1) {
+		if (_chown_private_dirs(src_bind, step) == -1) {
 			rc = -1;
 			goto exit1;
 		}
@@ -1028,6 +1169,25 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 	return SLURM_SUCCESS;
 }
 
+static int _delete_dir_job_path(void *x, void *arg)
+{
+	ns_dir_t *dir = x;
+	uint32_t job_id = *(uint32_t *) arg;
+	char *dir_job_path = NULL;
+
+	if (!dir->base_path)
+		return 0;
+
+	xstrfmtcat(dir_job_path, "%s/%u", dir->base_path, job_id);
+	if (rmdir_recursive(dir_job_path, false))
+		error("%s: failed to remove files from %s",
+		      __func__, dir_job_path);
+	if (rmdir(dir_job_path))
+		log_flag(NAMESPACE, "rmdir %s failed: %m", dir_job_path);
+	xfree(dir_job_path);
+	return 0;
+}
+
 static int _delete_ns(uint32_t job_id)
 {
 	char *job_mount = NULL, *ns_base = NULL;
@@ -1098,6 +1258,11 @@ static int _delete_ns(uint32_t job_id)
 	if (rmdir(job_mount))
 		error("rmdir %s failed: %m", job_mount);
 
+	/* Clean up per-dir base_path job directories */
+	if (ns_conf && ns_conf->dir_confs)
+		list_for_each(ns_conf->dir_confs, _delete_dir_job_path,
+			      &job_id);
+
 	xfree(job_mount);
 	xfree(ns_base);
 
@@ -1109,10 +1274,14 @@ extern int namespace_p_stepd_create(stepd_step_rec_t *step)
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
 
+	/* Expand paths if required */
+	if (ns_conf->dir_confs)
+		_expand_dir_paths(step);
+
 	return _create_ns(step);
 }
 
-extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
+extern int namespace_p_stepd_delete(stepd_step_rec_t *step)
 {
 	if (plugin_disabled)
 		return SLURM_SUCCESS;
@@ -1128,7 +1297,7 @@ extern int namespace_p_stepd_delete(slurm_step_id_t *step_id)
 		ns_pid = -1;
 	}
 
-	return _delete_ns(step_id->job_id);
+	return _delete_ns(step->step_id.job_id);
 }
 
 extern int namespace_p_send_stepd(int fd)

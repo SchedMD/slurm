@@ -615,7 +615,7 @@ extern void stepd_cleanup(slurm_msg_t *msg, slurm_addr_t *cli, int rc,
 		cleanup_container();
 
 	if (step->step_id.step_id == SLURM_EXTERN_CONT) {
-		if (namespace_g_stepd_delete(&step->step_id))
+		if (namespace_g_stepd_delete(step))
 			error("namespace_g_stepd_delete(%pI): %m",
 			      &step->step_id);
 	}
