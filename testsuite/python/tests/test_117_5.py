@@ -8,6 +8,9 @@ import atf
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (26, 5), "bin/sacct", reason="Ticket 22180: SLUID availability added in 26.05+"
+    )
     atf.require_nodes(1, [("CPUs", 2)])
     atf.require_slurm_running()
 

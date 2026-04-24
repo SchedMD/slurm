@@ -7,6 +7,11 @@ import atf
 
 
 def setup_module():
+    atf.require_version(
+        (26, 5),
+        "bin/scontrol",
+        reason="Ticket 22180: SLUID availability added in 26.05+",
+    )
     atf.require_nodes(2, [("CPUs", 2)])
     atf.require_slurm_running()
 

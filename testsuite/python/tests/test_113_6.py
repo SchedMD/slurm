@@ -8,6 +8,9 @@ import re
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (26, 5), "bin/sprio", reason="Ticket 22180: SLUID availability added in 26.05+"
+    )
     atf.require_accounting()
     atf.require_config_parameter("PriorityType", "priority/multifactor")
     atf.require_slurm_running()
