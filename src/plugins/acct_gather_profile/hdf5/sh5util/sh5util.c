@@ -422,7 +422,8 @@ static int _set_options(const int argc, char **argv)
 				return -1;
 			}
 			params.job_id = selected_step.step_id.job_id;
-			params.step_id = selected_step.step_id.step_id;
+			if (selected_step.step_id.step_id != NO_VAL)
+				params.step_id = selected_step.step_id.step_id;
 			break;
 		}
 		case 'l':
