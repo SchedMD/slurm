@@ -46,9 +46,15 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
 #include "src/common/node_conf.h"
+#include "src/common/strnatcmp.h"
 #include "src/common/xstring.h"
 
 #include "../common/common_topo.h"
+
+typedef struct {
+	uint32_t pos;
+	char *name;
+} alpha_sort_t;
 
 /* Required Slurm plugin symbols: */
 const char plugin_name[] = "topology Flat plugin";
@@ -83,11 +89,14 @@ extern bool topology_p_allow_one_node(void *tctx)
 
 extern int topology_p_build_config(topology_ctx_t *tctx)
 {
+	/* No runtime state; expose parsed config directly via plugin_ctx. */
+	tctx->plugin_ctx = tctx->config;
 	return SLURM_SUCCESS;
 }
 
 extern int topology_p_destroy_config(topology_ctx_t *tctx)
 {
+	tctx->plugin_ctx = NULL;
 	return SLURM_SUCCESS;
 }
 
@@ -106,14 +115,59 @@ extern int topology_p_whole_topo(bitstr_t *node_mask, void *tctx)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Compare two nodes by name using the same natural ordering used by
+ * _sort_node_record_table_ptr() to sort the node table and by hostrange_cmp()
+ * to sort hostlists, so that alphabetical order is consistent across Slurm.
+ */
+static int _sort_by_name(const void *a, const void *b)
+{
+	const alpha_sort_t *n1 = a;
+	const alpha_sort_t *n2 = b;
+
+	return strnatcmp(n1->name, n2->name);
+}
+
 extern int topology_p_get_rank(bitstr_t *node_bitmap, uint32_t **node_rank,
 			       uint32_t *size, void *tctx)
 {
+	topology_flat_config_t *cfg = tctx;
+	uint32_t count;
+	uint32_t pos = 0;
+	alpha_sort_t *order_map;
+
 	xassert(node_rank);
 	xassert(size);
 
 	*node_rank = NULL;
 	*size = 0;
+
+	if (!cfg || !cfg->alpha_step_rank)
+		return SLURM_SUCCESS;
+
+	if (!node_bitmap)
+		return SLURM_SUCCESS;
+
+	count = bit_set_count(node_bitmap);
+	if (!count)
+		return SLURM_SUCCESS;
+
+	order_map = xcalloc(count, sizeof(*order_map));
+	for (int i = 0; next_node_bitmap(node_bitmap, &i); i++) {
+		order_map[pos].pos = pos;
+		order_map[pos].name = node_record_table_ptr[i]->name;
+		pos++;
+	}
+
+	/* Sort by name to determine alpha position of each node. */
+	qsort(order_map, count, sizeof(*order_map), _sort_by_name);
+	*node_rank = xcalloc(count, sizeof(**node_rank));
+
+	for (uint32_t i = 0; i < count; i++)
+		(*node_rank)[order_map[i].pos] = i;
+
+	*size = count;
+	xfree(order_map);
 
 	return SLURM_SUCCESS;
 }
