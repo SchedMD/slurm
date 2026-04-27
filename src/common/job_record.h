@@ -363,7 +363,7 @@ struct job_record {
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
 					 * completing */
-	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
+	char *cpus_per_tres; /* TRES list, see slurm_get_next_tres() */
 	/*
 	 * Last job start sent to accounting had an INFINITE eligible time
 	 * (WAIT_ARRAY_TASK_LIMIT). Not saved in state.
@@ -460,7 +460,7 @@ struct job_record {
 					    * limit was set from admin */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
-	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres; /* TRES list, see slurm_get_next_tres() */
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
 	char *name;			/* name of the job */
 	char *network;			/* network/switch requirement spec */
@@ -612,10 +612,10 @@ struct job_record {
 					 * for accounting */
 	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_freq;		/* TRES frequency directives */
-	char *tres_per_job;		/* comma delimited list of TRES values */
-	char *tres_per_node;		/* comma delimited list of TRES values */
-	char *tres_per_socket;		/* comma delimited list of TRES values */
-	char *tres_per_task;		/* comma delimited list of TRES values */
+	char *tres_per_job; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_node; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_socket; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_task; /* TRES list, see slurm_get_next_tres() */
 	uint64_t *tres_req_cnt;         /* array of tres counts requested
 					 * based off g_tres_count in
 					 * assoc_mgr */
@@ -719,7 +719,7 @@ typedef struct {
 	uint32_t cpu_freq_gov; 		/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* cpus per task initiated */
 	uint16_t ntasks_per_core;	/* Maximum tasks per core */
-	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
+	char *cpus_per_tres; /* TRES list, see slurm_get_next_tres() */
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	uint32_t flags;		        /* flags from step_spec_flags_t */
@@ -731,7 +731,7 @@ typedef struct {
 					 * step */
 	bool launch_sent; /* batch launch RPC has been sent */
 	uint32_t max_npids; /* maximum number of PIDs per step on each node */
-	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
+	char *mem_per_tres; /* TRES list, see slurm_get_next_tres() */
 	uint64_t *memory_allocated;	/* per node array of memory allocated */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
@@ -783,10 +783,10 @@ typedef struct {
 	char *tres_bind;		/* Task to TRES binding directives */
 	char *tres_fmt_alloc_str;       /* formatted tres string for step */
 	char *tres_freq;		/* TRES frequency directives */
-	char *tres_per_step;		/* semicolon delimited list of TRES=# values */
-	char *tres_per_node;		/* semicolon delimited list of TRES=# values */
-	char *tres_per_socket;		/* semicolon delimited list of TRES=# values */
-	char *tres_per_task;		/* semicolon delimited list of TRES=# values */
+	char *tres_per_step; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_node; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_socket; /* TRES list, see slurm_get_next_tres() */
+	char *tres_per_task; /* TRES list, see slurm_get_next_tres() */
 
 	/* DO NOT PACK. Used to bounce info into accounting subsystem. */
 	char *kill_user; /* name of the user that requested termination */
