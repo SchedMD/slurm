@@ -74,6 +74,138 @@ static slurm_ops_t ops;
 static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static void *ext_lib_handle = NULL;
+
+/*
+ * Parses fake_gpus_file for fake GPU devices and adds them to gres_list_system
+ *
+ * The file format is: <type>|<sys_cpu_count>|<cpu_range>|<links>|<device_file>
+ *
+ * Each line represents a single GPU device. Therefore, <device_file> can't
+ * specify more than one file (i.e. ranges like [1-2] won't work).
+ *
+ * Each line has a max of 256 characters, including the newline.
+ *
+ * If `_` or `(null)` is specified, then the value will be left NULL or 0.
+ *
+ * If a <cpu_range> is of the form `~F0F0`, an array of unsigned longs will be
+ * generated with the specified cpu hex mask and then converted to a bitstring.
+ * This is to test converting the cpu mask from NVML to Slurm.
+ * Only 0xF and 0x0 are supported.
+ */
+static void _add_fake_gpus_from_file(list_t *gres_list_system,
+				     char *fake_gpus_file)
+{
+	char buffer[256];
+	int line_number = 0;
+	FILE *f = fopen(fake_gpus_file, "r");
+	if (f == NULL) {
+		error("Unable to read \"%s\": %m", fake_gpus_file);
+		return;
+	}
+
+	while (fgets(buffer, 256, f)) {
+		char *save_ptr = NULL;
+		char *tok;
+		int i = 0;
+		gres_slurmd_conf_t gres_slurmd_conf = {
+			.count = 1,
+			.name = "gpu",
+		};
+
+		line_number++;
+
+		buffer[strcspn(buffer, "\r\n")] = '\0';
+
+		if (!buffer[0] || buffer[0] == '#')
+			continue;
+
+		debug("%s", buffer);
+
+		tok = strtok_r(buffer, "|", &save_ptr);
+		while (tok) {
+			if (xstrcmp(tok, "(null)") == 0) {
+				i++;
+				tok = strtok_r(NULL, "|", &save_ptr);
+				continue;
+			}
+
+			switch (i) {
+			case 0:
+				gres_slurmd_conf.type_name = xstrdup(tok);
+				break;
+			case 1:
+				gres_slurmd_conf.cpu_cnt = atoi(tok);
+				break;
+			case 2:
+				if (tok[0] == '~')
+					/* accommodate special tests */
+					gres_slurmd_conf.cpus =
+						gpu_g_test_cpu_conv(tok);
+				else
+					gres_slurmd_conf.cpus = xstrdup(tok);
+				break;
+			case 3:
+				gres_slurmd_conf.links = xstrdup(tok);
+				break;
+			case 4:
+				gres_slurmd_conf.file = xstrdup(tok);
+				break;
+			case 5:
+				gres_slurmd_conf.unique_id = xstrdup(tok);
+				break;
+			case 6:
+				gres_slurmd_conf.config_flags =
+					gres_flags_parse(tok, NULL, NULL);
+				break;
+			default:
+				error("Malformed line: too many data fields");
+				break;
+			}
+			i++;
+			tok = strtok_r(NULL, "|", &save_ptr);
+		}
+
+		if ((i < 5) || (i > 7))
+			error("Line #%d in fake_gpus.conf failed to parse! Make sure that the line has no empty tokens and that the format is <type>|<sys_cpu_count>|<cpu_range>|<links>|<device_file>[|<unique_id>[|<flags>]]",
+			      line_number);
+
+		if (!(gres_slurmd_conf.config_flags & GRES_CONF_ENV_SET))
+			warning("Line #%d in fake_gpus.conf has no env flags set. Real GPU plugins always set vendor env flags (e.g. nvidia_gpu_env).",
+				line_number);
+
+		gres_slurmd_conf.cpus_bitmap =
+			bit_alloc(gres_slurmd_conf.cpu_cnt);
+		if (bit_unfmt(gres_slurmd_conf.cpus_bitmap,
+			      gres_slurmd_conf.cpus))
+			fatal("bit_unfmt() failed for CPU range: %s",
+			      gres_slurmd_conf.cpus);
+
+		add_gres_to_list(gres_list_system, &gres_slurmd_conf);
+		FREE_NULL_BITMAP(gres_slurmd_conf.cpus_bitmap);
+		xfree(gres_slurmd_conf.cpus);
+		xfree(gres_slurmd_conf.file);
+		xfree(gres_slurmd_conf.type_name);
+		xfree(gres_slurmd_conf.links);
+		xfree(gres_slurmd_conf.unique_id);
+	}
+	fclose(f);
+}
+
+static list_t *gpu_get_fake_system_list(void)
+{
+	list_t *gres_list_system = NULL;
+	struct stat config_stat;
+	char *fake_gpus_file = get_extra_conf_path("fake_gpus.conf");
+
+	if (stat(fake_gpus_file, &config_stat) >= 0) {
+		info("Adding fake system GPU data from %s", fake_gpus_file);
+		gres_list_system = list_create(destroy_gres_slurmd_conf);
+		_add_fake_gpus_from_file(gres_list_system, fake_gpus_file);
+	}
+	xfree(fake_gpus_file);
+	return gres_list_system;
+}
+
 /*
  *  Common function to dlopen() the appropriate gpu libraries, and
  *   report back type needed.
@@ -276,6 +408,12 @@ extern void gpu_get_tres_pos(int *gpumem_pos, int *gpuutil_pos)
 
 extern list_t *gpu_g_get_system_gpu_list(node_config_load_t *node_conf)
 {
+	list_t *fake = gpu_get_fake_system_list();
+	if (fake)
+		return fake;
+	/* No fake override; only probe real hardware from slurmd. */
+	if (node_conf && !node_conf->in_slurmd)
+		return NULL;
 	xassert(g_context);
 	return (*(ops.get_system_gpu_list))(node_conf);
 }
