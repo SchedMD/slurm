@@ -670,6 +670,8 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 	pthread_t id = 0;
 	pthread_attr_t attr;
 	int rc = EINVAL;
+	const char *func_name = (thread ? thread->func_name : NULL);
+	const bool detached = (thread && thread->detached);
 
 #ifndef NDEBUG
 	if (thread) {
@@ -706,7 +708,7 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		*id_ptr = 0;
 
 	/* All threadpool threads are always detached */
-	if ((threadpool.enabled || thread->detached) &&
+	if ((threadpool.enabled || detached) &&
 	    (rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)))
 		fatal("%s->%s: pthread_attr_setdetachstate failed: %s",
 		      caller, __func__, slurm_strerror(rc));
@@ -718,23 +720,25 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 		error("%s->%s: pthread_create() failed: %s",
 		      caller, __func__, slurm_strerror(rc));
 
-		if (threadpool.enabled && !thread->detached) {
+		if (threadpool.enabled && thread && !detached) {
 			xassert(!thread->id);
 
+			slurm_mutex_lock(&threadpool.mutex);
 			if (!list_delete_ptr(threadpool.attached, thread))
 				fatal_abort("this should never happen");
+			slurm_mutex_unlock(&threadpool.mutex);
 		}
 
 		_thread_free(thread);
 	} else {
-		xassert(threadpool.enabled || thread->func_name);
+		xassert(threadpool.enabled || func_name);
 		log_flag(THREAD, "%s->%s: pthread_create() created new %spthread id=0x%"PRIx64" for %s%s",
 			 caller, __func__,
 			 (threadpool.enabled ? "" :
-			  (thread->detached ? "detached " : "attached ")),
+			  (detached ? "detached " : "attached ")),
 			 (uint64_t) id,
 			 (threadpool.enabled ? "threadpool" :
-			  thread->func_name), (threadpool.enabled ? "" : "()"));
+			  func_name), (threadpool.enabled ? "" : "()"));
 
 		if (threadpool.enabled) {
 			slurm_mutex_lock(&threadpool.mutex);
