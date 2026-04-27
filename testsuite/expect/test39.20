@@ -147,25 +147,7 @@ set job_id2 [submit_job -fail "--account=$acct --gres=craynetwork:0 --gpus=$gpu_
 
 wait_for_job -fail $job_id2 "DONE"
 
-set match 0
-spawn $scontrol show job $job_id1
-expect {
-	-re "JobState=PENDING" {
-		incr match
-		exp_continue
-	}
-	-re "Reason=.*AssocMaxGRESPerJob" {
-		incr match
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 2} {
+if {[wait_for_job -fail $job_id1 "PENDING" "AssocMaxGRESPerJob"] != $::RETURN_SUCCESS} {
 	fail "Job ($job_id1) state is bad"
 }
 cancel_job $job_id1
