@@ -1522,7 +1522,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		   step_ptr->step_id.step_id,
 		   step_ptr->step_id.step_het_comp,
 		   (int)start_time, step_ptr->time_limit, step_ptr->name,
-		   JOB_RUNNING, step_ptr->tres_alloc_str,
+		   step_ptr->state, step_ptr->tres_alloc_str,
 		   nodes, tasks, node_list, node_inx, task_dist,
 		   step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
 		   step_ptr->cpu_freq_gov);
@@ -1546,7 +1546,7 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		   "state=%d, nodelist='%s', node_inx='%s', task_dist=%d, "
 		   "req_cpufreq=%u, req_cpufreq_min=%u, req_cpufreq_gov=%u,"
 		   "tres_alloc='%s'",
-		   nodes, tasks, step_ptr->time_limit, JOB_RUNNING,
+		   nodes, tasks, step_ptr->time_limit, step_ptr->state,
 		   node_list, node_inx, task_dist, step_ptr->cpu_freq_max,
 		   step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
 		   step_ptr->tres_alloc_str);

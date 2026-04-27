@@ -1188,6 +1188,7 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 		pack32(msg->req_cpufreq_gov, buffer);
 		pack_step_id(&msg->step_id, buffer, rpc_version);
 		packstr(msg->cwd, buffer);
+		pack32(msg->state, buffer);
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_in, buffer);
 		packstr(msg->std_out, buffer);
@@ -1265,6 +1266,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 					   rpc_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr(&msg_ptr->cwd, buffer);
+		safe_unpack32(&msg_ptr->state, buffer);
 		safe_unpackstr(&msg_ptr->std_err, buffer);
 		safe_unpackstr(&msg_ptr->std_in, buffer);
 		safe_unpackstr(&msg_ptr->std_out, buffer);
@@ -1298,6 +1300,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->time_limit, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
+		msg_ptr->state = JOB_RUNNING;
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
@@ -1318,6 +1321,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 		safe_unpack32(&msg_ptr->task_dist, buffer);
 		safe_unpack32(&msg_ptr->total_tasks, buffer);
 		safe_unpackstr(&msg_ptr->tres_alloc_str, buffer);
+		msg_ptr->state = JOB_RUNNING;
 	} else
 		goto unpack_error;
 
