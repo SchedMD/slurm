@@ -972,6 +972,133 @@ static void _create_het_job_id_set(hostset_t *jobid_hostset,
 	xfree(tmp_str);
 }
 
+/*
+ * _het_job_val_init - Set up usage_het on the assoc tree and QOS..
+ */
+static void _het_job_val_init(job_record_t *job_ptr)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = NULL;
+	xassert(job_ptr);
+
+	/*
+	 * This is called on each of the components so only go up the tree once.
+	 */
+	assoc_ptr = job_ptr->assoc_ptr;
+	while (assoc_ptr && !assoc_ptr->usage_het) {
+		if (assoc_ptr->usage_het)
+			break;
+		assoc_ptr->usage_het =
+			slurmdb_create_assoc_usage(slurmctld_tres_cnt);
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+
+	if (job_ptr->qos_ptr && !job_ptr->qos_ptr->usage_het)
+		job_ptr->qos_ptr->usage_het =
+			slurmdb_create_qos_usage(slurmctld_tres_cnt);
+}
+
+/*
+ * _het_job_val_fini - free memory allocated in _het_job_val_init.
+ */
+static void _het_job_val_fini(job_record_t *job_ptr)
+{
+	slurmdb_assoc_rec_t *assoc_ptr = job_ptr->assoc_ptr;
+
+	while (assoc_ptr && assoc_ptr->usage_het) {
+		slurmdb_destroy_assoc_usage(assoc_ptr->usage_het);
+		assoc_ptr->usage_het = NULL;
+		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
+	}
+
+	if (job_ptr->qos_ptr && job_ptr->qos_ptr->usage_het) {
+		slurmdb_destroy_qos_usage(job_ptr->qos_ptr->usage_het);
+		job_ptr->qos_ptr->usage_het = NULL;
+	}
+}
+
+/*
+ * _het_job_val_add - After a het component succeeds in
+ *	job_allocate(), call before linking it into the het job list so the
+ *	next component's validate path sees accumulated limit usage.
+ *
+ * When limits apply, tres_alloc_cnt must be NULL (het RPC path); aliases
+ * tres_req_cnt so _adjust_limit_usage(JOB_BEGIN) can read alloc counts without
+ * a copy. If limits are not enforced or assoc is invalid, returns without
+ * simulating begin (proc_req still appends the job; fini skips it).
+ */
+static void _het_job_val_add(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	if (!job_ptr->tres_req_cnt)
+		return;
+
+	xassert(!job_ptr->tres_alloc_cnt);
+
+	job_ptr->tres_alloc_cnt = job_ptr->tres_req_cnt;
+
+	acct_policy_job_begin(job_ptr, false);
+}
+
+/*
+ * _het_job_val_rem_each - list_for_each helper for _het_job_val_rem().
+ *	will reset the simulated allocated tres for each het component.
+ */
+static int _het_job_val_rem_each(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if (!job_ptr->tres_alloc_cnt)
+		return 0;
+
+	acct_policy_job_fini(job_ptr, false);
+	xassert(job_ptr->tres_alloc_cnt == job_ptr->tres_req_cnt);
+	job_ptr->tres_alloc_cnt = NULL;
+
+	_het_job_val_fini(job_ptr);
+
+	return 0;
+}
+
+/*
+ * _het_job_val_rem - Undo every from _het_job_val_add()
+ *	for the current het RPC (success or failure). Walks submit_job_list;
+ *	jobs with non-NULL tres_alloc_cnt get JOB_FINI then tres_alloc_cnt
+ *	cleared (alias to tres_req_cnt is not freed). Caller must hold the same
+ *	locks as for job_allocate / other acct_policy_* calls with assoc_locked
+ *	false.
+ */
+static void _het_job_val_rem(list_t *submit_job_list)
+{
+	xassert(submit_job_list);
+
+	(void) list_for_each(submit_job_list, _het_job_val_rem_each, NULL);
+}
+
+/*
+ * Accounting policy for one heterogeneous job component: pre-select limits
+ * plus post-select TRES checks (request-shaped counts, cf. select_nodes()).
+ */
+static bool _het_job_component_acct_policy_runnable(job_record_t *job_ptr)
+{
+	uint64_t tres_req_cnt[slurmctld_tres_cnt];
+
+	if (!acct_policy_job_runnable_pre_select(job_ptr, false))
+		return false;
+
+	xassert(job_ptr->tres_req_cnt);
+	memcpy(tres_req_cnt, job_ptr->tres_req_cnt, sizeof(tres_req_cnt));
+	tres_req_cnt[TRES_ARRAY_CPU] =
+		(uint64_t)(job_ptr->total_cpus ? job_ptr->total_cpus :
+			   job_ptr->details->min_cpus);
+	tres_req_cnt[TRES_ARRAY_BILLING] =
+		assoc_mgr_tres_weighted(tres_req_cnt,
+					job_ptr->part_ptr->billing_weights,
+					slurm_conf.priority_flags, true);
+	return acct_policy_job_runnable_post_select(job_ptr, tres_req_cnt,
+						    false);
+}
+
 /* _slurm_rpc_allocate_het_job: process RPC to allocate a hetjob resources */
 static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 {
@@ -1108,6 +1235,14 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		if (error_code && (job_ptr->job_state == JOB_FAILED))
 			break;
 		error_code = SLURM_SUCCESS;	/* Non-fatal error */
+
+		_het_job_val_init(job_ptr);
+		if (!_het_job_component_acct_policy_runnable(job_ptr)) {
+			error_code = ESLURM_ACCOUNTING_POLICY;
+			_het_job_val_fini(job_ptr);
+			break;
+		}
+
 		if (het_job_id == 0) {
 			het_job_id = job_ptr->job_id;
 			first_job_ptr = job_ptr;
@@ -1120,6 +1255,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		job_ptr->het_job_id     = het_job_id;
 		job_ptr->het_job_offset = het_job_offset++;
 		on_job_state_change(job_ptr, job_ptr->job_state);
+		_het_job_val_add(job_ptr);
 		list_append(submit_job_list, job_ptr);
 		inx++;
 	}
@@ -1129,15 +1265,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 		error("%s: No error, but no het_job_id", __func__);
 		error_code = SLURM_ERROR;
 	}
-
-	/* Validate limits on hetjob as a whole */
-	if ((error_code == SLURM_SUCCESS) &&
-	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_het_job(submit_job_list)) {
-		info("Hetjob %u exceeded association/QOS limit for user %u",
-		     het_job_id, msg->auth_uid);
-		error_code = ESLURM_ACCOUNTING_POLICY;
-        }
 
 	/* Set the het_job_id_set */
 	_create_het_job_id_set(jobid_hostset, het_job_offset,
@@ -1151,6 +1278,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 	xfree(het_job_id_set);
+
+	_het_job_val_rem(submit_job_list);
 
 	if (error_code) {
 		/* Cancel remaining job records */
@@ -3928,6 +4057,14 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		    (error_code && job_ptr->job_state == JOB_FAILED)) {
 			reject_job = true;
 		} else {
+			_het_job_val_init(job_ptr);
+			if (!_het_job_component_acct_policy_runnable(job_ptr)) {
+				error_code = ESLURM_ACCOUNTING_POLICY;
+				reject_job = true;
+				_het_job_val_fini(job_ptr);
+				break;
+			}
+
 			if (step_id.job_id == NO_VAL) {
 				step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
 				step_id.step_id = SLURM_BATCH_SCRIPT;
@@ -3944,6 +4081,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			job_ptr->het_job_offset = het_job_offset++;
 			job_ptr->batch_flag      = 1;
 			on_job_state_change(job_ptr, job_ptr->job_state);
+			_het_job_val_add(job_ptr);
 			list_append(submit_job_list, job_ptr);
 		}
 
@@ -3964,16 +4102,6 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 		reject_job = true;
 	}
 
-	/* Validate limits on hetjob as a whole */
-	if (!reject_job &&
-	    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    !acct_policy_validate_het_job(submit_job_list)) {
-		info("Hetjob %pI exceeded association/QOS limit for user %u",
-		     &step_id, job_uid);
-		error_code = ESLURM_ACCOUNTING_POLICY;
-		reject_job = true;
-	}
-
 	_create_het_job_id_set(jobid_hostset, het_job_offset,
 			       &het_job_id_set);
 	if (first_job_ptr)
@@ -3987,6 +4115,8 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(iter);
 	xfree(het_job_id_set);
+
+	_het_job_val_rem(submit_job_list);
 
 	if (reject_job && submit_job_list) {
 		(void) list_for_each(submit_job_list, _het_job_cancel, NULL);

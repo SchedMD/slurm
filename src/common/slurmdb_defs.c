@@ -853,6 +853,7 @@ extern void slurmdb_free_assoc_rec_members(slurmdb_assoc_rec_t *assoc)
 		assoc->leaf_usage = NULL;
 
 		slurmdb_destroy_assoc_usage(assoc->usage);
+		slurmdb_destroy_assoc_usage(assoc->usage_het);
 		/* NOTE assoc->user_rec is a soft reference, do not free here */
 		assoc->user_rec = NULL;
 		slurmdb_destroy_bf_usage(assoc->bf_usage);
@@ -973,6 +974,7 @@ extern void slurmdb_free_qos_rec_members(slurmdb_qos_rec_t *qos)
 		FREE_NULL_LIST(qos->preempt_list);
 		xfree(qos->relative_tres_cnt);
 		slurmdb_destroy_qos_usage(qos->usage);
+		slurmdb_destroy_qos_usage(qos->usage_het);
 	}
 }
 
