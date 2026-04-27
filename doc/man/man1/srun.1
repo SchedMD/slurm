@@ -1609,6 +1609,55 @@ allocations.
 .IP
 
 .TP
+\fB\-\-ignore\-signals\fR=<\fIsignals_list\fR>
+Specify a comma-separated list of signals for srun to ignore. Both
+signal names and numbers are accepted. Normally srun reacts to these
+signals by forwarding them to the running tasks or by performing
+cleanup; when a signal is listed here, srun takes no action on it.
+Ignoring signals may interfere with mechanisms for cancelling or otherwise
+controlling job behavior. Carefully consider the details listed below
+before using this option.
+Valid signals and their default handling are as follows:
+.IP
+.RS
+.TP 10
+\fBSIGINT\fR
+Triggers an interactive abort sequence.
+Ignoring this will prevent srun termination with Ctrl+C.
+.IP
+
+.TP
+\fBSIGQUIT\fR
+Forwarded as SIGKILL.
+.IP
+
+.TP
+\fBSIGTERM\fR
+Forwarded as SIGKILL.
+Ignoring this inside sbatch/salloc allocations may delay job
+termination upon scancel or timeout.
+.IP
+
+.TP
+\fBSIGHUP\fR
+Forwarded as SIGKILL.
+Ignoring this may delay job termination on terminal hangup or at the
+end of an interactive salloc allocation and interfere with cleanup tasks.
+.IP
+
+.TP
+\fBSIGUSR1\fR
+Forwarded as-is to tasks.
+.IP
+
+.TP
+\fBSIGUSR2\fR
+Forwarded as-is to tasks.
+.IP
+.RE
+.IP
+
+.TP
 \fB\-I\fR, \fB\-\-immediate\fR[=<\fIseconds\fR>]
 exit if resources are not available within the
 time period specified.

@@ -37,6 +37,7 @@
 
 #include "src/common/fd.h"
 #include "src/common/probes.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 
 #include "src/conmgr/conmgr.h"
@@ -64,6 +65,36 @@ int srun_sig_eventfd = -1;
 	X(SIGUSR1, sigusr1) \
 	X(SIGUSR2, sigusr2) \
 	X(SIGPIPE, sigpipe)
+
+extern bool srun_sig_is_handled(int signo)
+{
+#define X(sig, str) \
+	if (signo == sig) \
+		return true;
+	SRUN_SIGNALS
+#undef X
+	return false;
+}
+
+/*
+ * SIGALRM, SIGCONT, and SIGPIPE are excluded on purpose:
+ *  - SIGALRM is used internally by srun for the --wait (max_wait) timer.
+ *  - SIGCONT's handler is load-bearing for wake-up semantics; ignoring it
+ *    is effectively a no-op at the kernel level but we keep it reserved.
+ *  - SIGPIPE triggers the I/O teardown path; ignoring it leaves srun with
+ *    a dead stdio socket and no cleanup.
+ */
+extern bool srun_sig_is_ignorable(int signo)
+{
+	switch (signo) {
+	case SIGALRM:
+	case SIGCONT:
+	case SIGPIPE:
+		return false;
+	default:
+		return srun_sig_is_handled(signo);
+	}
+}
 
 #define SRUN_SIGINT_TIMEOUT \
 	((timespec_t) { \
@@ -112,6 +143,12 @@ static void _handle_pipe(void)
 
 static void _forward_signal(int signo)
 {
+	if (sropt.ignore_signals & ((uint64_t) 1 << signo)) {
+		debug("Ignoring signal %s as requested by --ignore-signals",
+		      sig_num2name(signo));
+		return;
+	}
+
 	switch (signo) {
 	case SIGINT:
 		slurm_mutex_lock(&srun_first_job_lock);

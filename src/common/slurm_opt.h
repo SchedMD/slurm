@@ -121,6 +121,7 @@ enum {
 	LONG_OPT_GRES_FLAGS,
 	LONG_OPT_HINT,
 	LONG_OPT_IGNORE_PBS,
+	LONG_OPT_IGNORE_SIGNALS,
 	LONG_OPT_INTERACTIVE,
 	LONG_OPT_JOBID,
 	LONG_OPT_KILL_INV_DEP,
@@ -261,6 +262,7 @@ typedef struct {
 	char *epilog;			/* --epilog			*/
 	bool exact;			/* --exact			*/
 	bool exclusive;			/* --exclusive			*/
+	uint64_t ignore_signals; /* --ignore-signals		*/
 	bool interactive;		/* --interactive		*/
 	uint32_t jobid;			/* --jobid			*/
 	uint32_t array_task_id;		/* --jobid			*/
