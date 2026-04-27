@@ -591,8 +591,7 @@ static void *_thread(void *arg)
 
 	slurm_mutex_lock(&threadpool.mutex);
 
-	xassert(!thread || (thread->magic == THREAD_MAGIC));
-
+	threadpool.total_created++;
 	threadpool.idle++;
 
 #ifndef NDEBUG
@@ -604,6 +603,10 @@ static void *_thread(void *arg)
 
 	do {
 		if (thread) {
+			xassert(thread->magic == THREAD_MAGIC);
+			xassert(!thread->id);
+			thread->id = pthread_self();
+
 			_threadpool_prerun(thread);
 
 			if (thread->requester)
@@ -621,11 +624,8 @@ static void *_thread(void *arg)
 			slurm_mutex_lock(&threadpool.mutex);
 		}
 
-		if ((thread = list_pop(threadpool.pending))) {
-			xassert(thread->magic == THREAD_MAGIC);
-			xassert(!thread->id);
+		if ((thread = list_pop(threadpool.pending)))
 			continue;
-		}
 
 		if (threadpool.shutdown) {
 			log_flag(THREAD, "%s: [0x%"PRIx64"] exiting due to shutdown",
