@@ -731,6 +731,9 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 
 		_thread_free(thread);
 	} else {
+		/* Thread may have already free()ed the thread */
+		thread = NULL;
+
 		xassert(threadpool.enabled || func_name);
 		log_flag(THREAD, "%s->%s: pthread_create() created new %spthread id=0x%"PRIx64" for %s%s",
 			 caller, __func__,
@@ -739,20 +742,6 @@ static int _new_thread(thread_t *thread, pthread_t *id_ptr, const char *caller)
 			 (uint64_t) id,
 			 (threadpool.enabled ? "threadpool" :
 			  func_name), (threadpool.enabled ? "" : "()"));
-
-		if (threadpool.enabled) {
-			slurm_mutex_lock(&threadpool.mutex);
-
-			if (thread) {
-				xassert(!thread->id ||
-					pthread_equal(thread->id, id));
-				thread->id = id;
-			}
-
-			threadpool.total_created++;
-
-			slurm_mutex_unlock(&threadpool.mutex);
-		}
 	}
 
 	_free_attr(&attr);
