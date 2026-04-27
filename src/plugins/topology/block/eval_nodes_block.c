@@ -687,12 +687,11 @@ next_segment:
 	if (block_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to find block",
 			 job_ptr);
-		rc = ESLURM_TOPO_NO_FIT;
-		if (alloc_node_map && !block_per_asblock) {
-			bit_or(topo_eval->node_map, alloc_node_map);
-			topo_eval->eval_action = EVAL_ACTION_RETRY_HINT;
-		} else
-			topo_eval->eval_action = EVAL_ACTION_BREAK;
+		if (segment_cnt > 1)
+			rc = ESLURM_TOPO_SEGMENT_NO_FIT;
+		else
+			rc = ESLURM_TOPO_NO_FIT;
+		topo_eval->eval_action = EVAL_ACTION_BREAK;
 		goto fini;
 	}
 
