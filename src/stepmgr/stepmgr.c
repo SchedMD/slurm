@@ -582,6 +582,23 @@ static void _dump_step_desc(job_step_create_request_msg_t *step_spec)
 		       step_spec->container_id);
 }
 
+static int _delete_pending_steps(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+	step_signal_t *step_signal = arg;
+
+	if ((step_ptr->state == JOB_PENDING) &&
+	    verify_step_id(&step_ptr->step_id, &step_signal->step_id)) {
+		step_signal->found = true;
+		if (step_ptr->flags & SSF_ASYNC)
+			jobacct_storage_g_step_complete(
+				stepmgr_ops->acct_db_conn, step_ptr);
+		return 1;
+	}
+
+	return 0;
+}
+
 /*
  * job_step_signal - signal the specified job step
  * IN step_id - filled in slurm_step_id_t
@@ -623,6 +640,8 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 	}
 
 	list_for_each(job_ptr->step_list, _step_signal, &step_signal);
+	list_delete_all(job_ptr->step_list, _delete_pending_steps,
+			&step_signal);
 
 	if (!step_signal.found && running_in_slurmctld() &&
 	    (job_ptr->bit_flags & STEPMGR_ENABLED)) {
