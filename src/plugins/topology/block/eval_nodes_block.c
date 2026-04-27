@@ -669,11 +669,7 @@ next_segment:
 	if (block_inx == -1) {
 		log_flag(SELECT_TYPE, "%pJ unable to find block",
 			 job_ptr);
-		if (alloc_node_map && !block_per_asblock) {
-			bit_or(topo_eval->node_map, alloc_node_map);
-			rc = ESLURM_RETRY_EVAL_HINT;
-		} else
-			rc = ESLURM_BREAK_EVAL;
+		rc = ESLURM_BREAK_EVAL;
 		goto fini;
 	}
 
