@@ -40,6 +40,7 @@
 #include "config.h"
 
 #include <fcntl.h>
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
@@ -3020,70 +3021,78 @@ static bool _slots_overlap(const constraint_slot_t *slot0,
 }
 
 /*
- * Get number of seconds to next reoccurring time slot.
- *
- * Used to check overlapping time slots. See _advance_time() for actual
- * advancement of reservation.
+ * Advance a reservation slot to the next reocurrence using calendar-aware
+ * logic (localtime_r + slurm_mktime), matching _advance_time().
+ * This correctly handles Daylight Saving Time transitions.
  */
-static time_t _get_advance_secs(const constraint_slot_t *slot)
+static int _advance_slot(constraint_slot_t *slot)
 {
-	time_t reoccurring_secs = -1;
 	struct tm tm;
-
-	if (slot->flags & RESERVE_FLAG_WEEKDAY) {
-		localtime_r(&(slot->start), &tm);
-		if (tm.tm_wday == 5)		/* Friday */
-			reoccurring_secs = 60 * 60 * 24 * 3;
-		else if (tm.tm_wday == 6)	/* Saturday */
-			reoccurring_secs = 60 * 60 * 24 * 2;
-		else
-			reoccurring_secs = 60 * 60 * 24;
-	} else if (slot->flags & RESERVE_FLAG_WEEKEND) {
-		localtime_r(&(slot->start), &tm);
-		if (tm.tm_wday == 6)	/* Saturday */
-			reoccurring_secs = 60 * 60 * 24;
-		else
-			reoccurring_secs = 60 * 60 * 24 * (6 - tm.tm_wday);
-	} else if (slot->flags & RESERVE_FLAG_WEEKLY) {
-		reoccurring_secs = 60 * 60 * 24 * 7;
-	} else if (slot->flags & RESERVE_FLAG_DAILY) {
-		reoccurring_secs = 60 * 60 * 24;
-	} else if (slot->flags & RESERVE_FLAG_HOURLY) {
-		reoccurring_secs = 60 * 60;
-	} else {
-		error("%s: Unknown recurring reservation flags",
-		      __func__);
-		return -1;
-	}
-
-	return reoccurring_secs;
-}
-
-static void _advance_slot(constraint_slot_t *slot)
-{
-	time_t reoccurring_secs = 0;
+	time_t new_start, delta;
+	int day_cnt = 0, hour_cnt = 0;
 
 	if (!slot) {
 		error("%s: Reservation slot is NULL and it shouldn't happen",
 		      __func__);
-		return;
+		return SLURM_ERROR;
 	}
 
 	if (!(slot->flags & RESERVE_REOCCURRING))
-		return;
+		return SLURM_ERROR;
 
-	if ((reoccurring_secs = _get_advance_secs(slot)) == -1)
-		return;
+	localtime_r(&(slot->start), &tm);
 
-	slot->start += reoccurring_secs;
-	slot->end += reoccurring_secs;
+	if (slot->flags & RESERVE_FLAG_WEEKDAY) {
+		if (tm.tm_wday == 5) /* Friday */
+			day_cnt = 3;
+		else if (tm.tm_wday == 6) /* Saturday */
+			day_cnt = 2;
+		else
+			day_cnt = 1;
+	} else if (slot->flags & RESERVE_FLAG_WEEKEND) {
+		if (tm.tm_wday == 6) /* Saturday */
+			day_cnt = 1;
+		else
+			day_cnt = 6 - tm.tm_wday;
+	} else if (slot->flags & RESERVE_FLAG_WEEKLY) {
+		day_cnt = 7;
+	} else if (slot->flags & RESERVE_FLAG_DAILY) {
+		day_cnt = 1;
+	} else if (slot->flags & RESERVE_FLAG_HOURLY) {
+		hour_cnt = 1;
+	} else {
+		error("%s: Unknown recurring reservation flags",
+		      __func__);
+		return SLURM_ERROR;
+	}
+
+	tm.tm_mday += day_cnt;
+	tm.tm_hour += hour_cnt;
+	new_start = slurm_mktime(&tm);
+	if (new_start == (time_t) (-1)) {
+		error("%s: Could not compute reservation time %lu",
+		      __func__, (long unsigned int) slot->start);
+		return SLURM_ERROR;
+	}
+	if (new_start <= slot->start) {
+		error("%s: Computed time did not advance from %lu",
+		      __func__, (long unsigned int) slot->start);
+		return SLURM_ERROR;
+	}
+
+	delta = new_start - slot->start;
+	slot->start = new_start;
+	slot->end += delta;
+
+	return SLURM_SUCCESS;
 }
 
 static void _advance_slot_until(constraint_slot_t *slot, time_t end)
 {
 	constraint_slot_t slot_advanced;
-	time_t reoccurring_secs = 0;
-	int reoccurrings = 0;
+	struct tm tm_start;
+	time_t new_start, delta, days;
+	int jump_days;
 
 	if (!slot) {
 		error("%s: Reservation slot is NULL and it shouldn't happen",
@@ -3100,28 +3109,49 @@ static void _advance_slot_until(constraint_slot_t *slot, time_t end)
 		return;
 	}
 
-	if (slot->flags & (RESERVE_FLAG_WEEKDAY | RESERVE_FLAG_WEEKEND)) {
-		slot_advanced = *slot;
-		while (slot_advanced.start < end) {
-			*slot = slot_advanced;
-			_advance_slot(&slot_advanced);
-		}
-	} else {
-		/* Avoid while loop for regular reoccurrings for performance */
-		if ((reoccurring_secs = _get_advance_secs(slot)) == -1)
-			return;
+	/*
+	 * Jump close to end to avoid iterating through long time spans.
+	 * Leave a 7-day margin so the loop below handles the final
+	 * alignment for all recurrence types (including weekly).
+	 */
+	days = (end - slot->start) / (24 * 3600);
 
+	if (days > 7) {
 		/*
-		 * As reoccurrings is a truncated integer we ensure that
-		 * slot->start will be <= end-1 (ie, < end).
+		 * tm_mday is int and will be incremented by jump_days below.
+		 * Bound days so neither the narrowing cast nor the addition
+		 * to tm_mday (max starting value 31) can overflow int.
 		 */
-		reoccurrings = (end - 1 - slot->start) / reoccurring_secs;
-		slot->start += reoccurrings * reoccurring_secs;
-		slot->end += reoccurrings * reoccurring_secs;
-
-		if (reoccurrings < 0)
-			error("%s: Number of reoccurrings for the reservation slot is negative and this shouldn't happen",
+		if (days > INT_MAX - 31) {
+			error("%s: Absurd reservation time gap between reservations; aborting",
 			      __func__);
+			return;
+		}
+		jump_days = (int) (days - 7);
+
+		if (slot->flags & RESERVE_FLAG_WEEKLY)
+			jump_days -= jump_days % 7;
+
+		localtime_r(&(slot->start), &tm_start);
+		tm_start.tm_mday += jump_days;
+		new_start = slurm_mktime(&tm_start);
+		if (new_start == (time_t) (-1)) {
+			error("%s: Could not compute reservation time %lu",
+			      __func__, (long unsigned int) slot->start);
+			return;
+		}
+
+		delta = new_start - slot->start;
+		slot->start = new_start;
+		slot->end += delta;
+	}
+
+	/* Loop the remaining days to find the last occurrence before end */
+	slot_advanced = *slot;
+	while (slot_advanced.start < end) {
+		*slot = slot_advanced;
+		if (_advance_slot(&slot_advanced) != SLURM_SUCCESS)
+			break;
 	}
 }
 
@@ -3201,7 +3231,7 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		 *    before the later slot ends.
 		 */
 		_advance_slot_until(slot[0], slot[1]->end);
-		if (slot[0]->end > slot[1]->end) {
+		if (slot[0]->start > slot[1]->end) {
 			error("%s: Reservation slot is already the last one, and it shouldn't happen",
 			      __func__);
 			return true;
@@ -3217,8 +3247,10 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		/*
 		 * 2) Advance earlier slot once to convert it into the later one
 		 */
-		_advance_slot(slot[0]);
-		if (slot[0]->end < slot[1]->end) {
+		if (_advance_slot(slot[0]) != SLURM_SUCCESS)
+			return true;
+
+		if (slot[0]->start < slot[1]->end) {
 			error("%s: Reservation slot is still the first one, and it shouldn't happen",
 			      __func__);
 			return true;
@@ -3237,7 +3269,7 @@ static bool _resv_time_overlap(resv_desc_msg_t *resv_desc_ptr,
 		if (slot[1]->flags & RESERVE_REOCCURRING) {
 			/* 3) Repeat 1) with slot1 being the earlier one */
 			_advance_slot_until(slot[1], slot[0]->end);
-			if (slot[1]->end > slot[0]->end) {
+			if (slot[1]->start > slot[0]->end) {
 				error("%s: Reservation slot is the later one again, and it shouldn't happen",
 				      __func__);
 				return true;
