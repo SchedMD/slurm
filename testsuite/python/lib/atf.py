@@ -377,6 +377,22 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
         failures.append(reason)
         return
 
+    reason = (
+        "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage"
+    )
+    component = "sbin/slurmd"
+    if (
+        component in bin_path
+        and "Program terminated with signal SIGABRT" in bt
+        and "src/common/slurmdb_defs.c" in bt
+        and "in slurm_xfree" in bt
+        and "in slurmdb_destroy_assoc_usage" in bt
+        and "in slurmdb_free_assoc_rec_members" in bt
+    ):
+        # TODO: Add version when t25095 is fixed
+        failures.append(reason)
+        return
+
     # If coredump is unknown, add it as failure
     failures.append(f"Unknown coredump detected, see {bt_file}")
 
