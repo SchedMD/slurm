@@ -1176,7 +1176,7 @@ if it contains a "/" character. This option applies to job and step allocations.
 .IP
 
 .TP
-\fB\-\-exclusive\fR[={mcs|topo|user}]
+\fB\-\-exclusive\fR[={allocation|mcs|topo|user}]
 Request exclusive resources either for the job or job step depending on context.
 When \fBsrun \-\-exclusive\fR is used to initiate a \fBstep\fR within a running
 job, it is a synonym for \fB\-\-exact\fR.
@@ -1184,7 +1184,12 @@ job, it is a synonym for \fB\-\-exact\fR.
 When \fBsrun \-\-exlusive\fR is used to initiate a \fBjob\fR and a \fBstep\fR
 BOTH whole nodes AND \-\-exact behavior will be executed, meaning all resources
 of a node(s) will be allocated to the job, and only specific resources will be
-granted to each task within the step.
+granted to each task within the step. The \fBallocation\fR option will get
+whole nodes but \fBNOT\fR apply the \-\-exact behavior -- meaning each step will
+get access to all resources within the allocation (similar to running srun
+without other limiting options in a running allocation).
+The \fBallocation\fR option can be made default by setting
+\fBLaunchParameters=srun_exclusive_allocation\fR in slurm.conf.
 
 Options (mcs|topo|user) exist solely to control how multiple jobs share
 resources when srun is used to allocate a job and do not imply \-\-exact.

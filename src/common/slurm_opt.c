@@ -1327,10 +1327,15 @@ static slurm_cli_opt_t slurm_opt_exclude = {
 
 static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 {
-	if (!arg || !xstrcasecmp(arg, "exclusive")) {
+	if (!arg || !xstrcasecmp(arg, "exclusive") ||
+	    !xstrcasecmp(arg, "allocation")) {
 		if (opt->srun_opt) {
-			opt->srun_opt->exclusive = true;
-			opt->srun_opt->exact = true;
+			if (xstrcasecmp(arg, "allocation") &&
+			    !xstrstr(slurm_conf.launch_params,
+				     "srun_exclusive_allocation")) {
+				opt->srun_opt->exclusive = true;
+				opt->srun_opt->exact = true;
+			}
 		}
 		opt->shared = JOB_SHARED_NONE;
 	} else if (!xstrcasecmp(arg, "oversubscribe")) {
@@ -1350,8 +1355,18 @@ static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_exclusive(slurm_opt_t *opt)
 {
-	if (opt->shared == JOB_SHARED_NONE)
+	if (opt->shared == JOB_SHARED_NONE) {
+		/*
+		 * if a job allocation is JOB_SHARED_NONE _and_ does not
+		 * have exact applied, the only way this happened is with
+		 * --exclusive=allocation or --exclusive with
+		 * LaunchParamaters=srun_exclusive_allocation.
+		 * A user specifying --exact separately could confuse this
+		 */
+		if (opt->srun_opt && !opt->srun_opt->exact)
+			return xstrdup("allocation");
 		return xstrdup("exclusive");
+	}
 	if (opt->shared == JOB_SHARED_OK)
 		return xstrdup("oversubscribe");
 	if (opt->shared == JOB_SHARED_USER)

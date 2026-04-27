@@ -2464,6 +2464,14 @@ Lock the slurmstepd process's current and future memory in RAM.
 .IP
 
 .TP
+\fBsrun_exclusive_allocation\fR
+Have \fBsrun \-\-exclusive\fR default to the \fB\-\-exclusive=allocation\fR
+option. This disables the implicit \fB\-\-exact\fR that exclusive adds for srun.
+Users can still specify \fBsrun \-\-exclusive \-\-exact\fR to get the
+standard behavior.
+.IP
+
+.TP
 \fBtest_exec\fR
 Have srun verify existence of the executable program along with user
 execute permission on the node where srun was called before attempting to

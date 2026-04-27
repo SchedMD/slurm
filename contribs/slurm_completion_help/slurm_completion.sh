@@ -1332,6 +1332,7 @@ function __slurm_comp_common_flags() {
 		"S"
 	)
 	local exclusive_types=(
+		"allocation"
 		"exclusive"
 		"mcs"
 		"oversubscribe"
