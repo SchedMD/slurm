@@ -54,9 +54,6 @@ const char plugin_name[] = "Slurm http_parser libhttp_parser plugin";
 const char plugin_type[] = HTTP_PARSER_PREFIX LIBHTTP_PARSER_PLUGIN;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-#define UNIX_PREFIX "unix:"
-#define UNIX_PREFIX_BYTES strlen("unix:")
-
 #define LOG_PARSE(state, fmt, ...) \
 	_log_parse(state, NULL, 0, __func__, fmt, ##__VA_ARGS__)
 #define LOG_PARSE_AT(state, at, bytes, fmt, ...) \
