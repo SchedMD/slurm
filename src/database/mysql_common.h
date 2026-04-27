@@ -71,10 +71,17 @@ typedef struct {
 	char *wsrep_trx_fragment_unit_orig;
 } mysql_conn_t;
 
+typedef enum {
+	HOST_SCHEME_ADDR = 0,
+	HOST_SCHEME_UNIX,
+} storage_host_scheme_t;
+
 typedef struct {
 	char *backup;
+	storage_host_scheme_t backup_scheme;
 	uint32_t port;
 	char *host;
+	storage_host_scheme_t host_scheme;
 	char *user;
 	char *params;
 	char *pass;
