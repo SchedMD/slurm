@@ -534,10 +534,7 @@ static void _threadpool_prerun(thread_t *thread)
 
 	threadpool.total_run++;
 
-	if (!thread->id)
-		thread->id = pthread_self();
-	else
-		xassert(pthread_equal(thread->id, pthread_self()));
+	xassert(pthread_equal(thread->id, pthread_self()));
 
 	threadpool.idle--;
 	threadpool.running++;
