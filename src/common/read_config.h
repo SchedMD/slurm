@@ -177,6 +177,9 @@ typedef struct node_record node_record_t;
  */
 #define DEFAULT_MAX_TASKS_PER_NODE  MAX_TASKS_PER_NODE
 
+#define UNIX_PREFIX "unix:"
+#define UNIX_PREFIX_BYTES strlen("unix:")
+
 typedef struct slurm_conf_node {
 	char *nodenames;
 	char *hostnames;
