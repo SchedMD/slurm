@@ -1176,10 +1176,23 @@ if it contains a "/" character. This option applies to job and step allocations.
 .IP
 
 .TP
-\fB\-\-exclusive\fR[={user|mcs|topo}]
-This option applies to job and job step allocations, and has two slightly
-different meanings for each one.
+\fB\-\-exclusive\fR[={allocation|mcs|topo|user}]
+Request exclusive resources either for the job or job step depending on context.
+When \fBsrun \-\-exclusive\fR is used to initiate a \fBstep\fR within a running
+job, it is a synonym for \fB\-\-exact\fR.
 
+When \fBsrun \-\-exlusive\fR is used to initiate a \fBjob\fR and a \fBstep\fR
+BOTH whole nodes AND \-\-exact behavior will be executed, meaning all resources
+of a node(s) will be allocated to the job, and only specific resources will be
+granted to each task within the step. The \fBallocation\fR option will get
+whole nodes but \fBNOT\fR apply the \-\-exact behavior -- meaning each step will
+get access to all resources within the allocation (similar to running srun
+without other limiting options in a running allocation).
+The \fBallocation\fR option can be made default by setting
+\fBLaunchParameters=srun_exclusive_allocation\fR in slurm.conf.
+
+Options (mcs|topo|user) exist solely to control how multiple jobs share
+resources when srun is used to allocate a job and do not imply \-\-exact.
 When used to initiate a \fBjob\fR, the job allocation can not share nodes
 (or topology segment with the "=topo") with other running jobs (or just other
 users with the "=user" option or "=mcs" option). If user/mcs/topo are not
@@ -1193,19 +1206,6 @@ partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 \fBNOTE\fR: Since shared GRES (MPS) cannot be allocated at the same time as a
 sharing GRES (GPU) this option only allocates all sharing GRES and no underlying
 shared GRES.
-
-This option can also be used when initiating more than one \fBjob step\fR within
-an existing resource allocation (default), where you want separate processors to
-be dedicated to each job step. The job step is only allocated as much GRES as is
-requested. If sufficient processors are not available to initiate the job step,
-it will be deferred. This can be thought of as providing a mechanism for
-resource management to the job within its allocation (\fB\-\-exact\fR implied).
-The exclusive allocation of CPUs applies to job steps by default, but \-\-exact
-is \fBNOT\fR the default. In other words, the default behavior is this: job
-steps will not share CPUs, but job steps will be allocated all CPUs available
-to the job on all nodes allocated to the steps.
-
-In order to share the resources use the \fB\-\-overlap\fR option.
 
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-oversubscribe\fR.
 

@@ -869,6 +869,8 @@ test_116_47  /commands/srun/test_identity.py
 test_116_48  Test SrunPortRange
 test_116_49  Basic MPI functionality tests via srun.
 test_116_50  Test CPU affinity/binding support (--cpu-bind options)
+test_116_51 /commands/srun/test_--exclusive=allocation
+test_116_52 /commands/srun/test_--exclusive_with_LaunchParamsExclAlloc
 
 test_117_#   Testing of sstat options.
 ======================================
