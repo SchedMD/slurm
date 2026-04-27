@@ -380,7 +380,7 @@ def classify_coredump(bin_path, bt_file, failures, xfailures):
     reason = (
         "Ticket 25095: Known issue with slurmctld: SIGABRT: slurmdb_destroy_assoc_usage"
     )
-    component = "sbin/slurmd"
+    component = "sbin/slurmctld"
     if (
         component in bin_path
         and "Program terminated with signal SIGABRT" in bt
