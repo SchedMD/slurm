@@ -215,6 +215,44 @@ static int _purge_duplicate_steps(void *x, void *arg)
 	return 0;
 }
 
+static void _set_step_id(step_record_t *step_ptr,
+			 job_step_create_request_msg_t *step_specs)
+{
+	job_record_t *job_ptr = step_ptr->job_ptr;
+
+	/*
+	 * Do not use STEP_ID_FROM_JOB_PTR here.
+	 * The step_specs layout is already set up in the exact
+	 * way required for HetStep launches.
+	 */
+	step_ptr->step_id = step_specs->step_id;
+	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
+
+	if (step_specs->array_task_id != NO_VAL)
+		step_ptr->step_id.job_id = job_ptr->job_id;
+
+	if (step_specs->step_id.step_id != NO_VAL) {
+		if (step_specs->step_id.step_het_comp == NO_VAL) {
+			job_ptr->next_step_id =
+				MAX(job_ptr->next_step_id,
+				    step_specs->step_id.step_id);
+			job_ptr->next_step_id++;
+		}
+	} else if (job_ptr->het_job_id &&
+		   (job_ptr->het_job_id != job_ptr->job_id)) {
+		job_record_t *het_job;
+		het_job = stepmgr_ops->find_job_record(job_ptr->het_job_id);
+		if (het_job)
+			step_ptr->step_id.step_id = het_job->next_step_id++;
+		else
+			step_ptr->step_id.step_id = job_ptr->next_step_id++;
+		job_ptr->next_step_id =
+			MAX(job_ptr->next_step_id, step_ptr->step_id.step_id);
+	} else {
+		step_ptr->step_id.step_id = job_ptr->next_step_id++;
+	}
+}
+
 /* The step with a state of PENDING is used as a placeholder for a host and
  * port that can be used to wake a pending srun as soon another step ends */
 static void _build_pending_step(job_record_t *job_ptr,
@@ -240,12 +278,14 @@ static void _build_pending_step(job_record_t *job_ptr,
 	step_ptr->std_err = xstrdup(step_specs->std_err);
 	step_ptr->std_in = xstrdup(step_specs->std_in);
 	step_ptr->std_out = xstrdup(step_specs->std_out);
-	step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
-	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 	if (step_specs->flags & SSF_ASYNC) {
 		step_ptr->step_req = step_specs;
+		_set_step_id(step_ptr, step_specs);
+		step_specs->step_id = step_ptr->step_id;
 	} else {
+		step_ptr->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+		step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 		step_ptr->port = step_specs->port;
 	}
 
@@ -3359,7 +3399,8 @@ static int _step_create(job_record_t *job_ptr,
 	if (step_specs->user_id != job_ptr->user_id)
 		return ESLURM_ACCESS_DENIED ;
 
-	if (step_specs->step_id.step_id != NO_VAL) {
+	if ((step_specs->step_id.step_id != NO_VAL) &&
+	    !((step_specs->flags & SSF_ASYNC) && step_specs->immediate)) {
 		if (list_delete_first(job_ptr->step_list,
 				      _purge_duplicate_steps,
 				      step_specs) < 0)
@@ -3551,36 +3592,11 @@ static int _step_create(job_record_t *job_ptr,
 	step_ptr->start_time = time(NULL);
 	step_ptr->state      = JOB_RUNNING;
 
-	/*
-	 * Do not use STEP_ID_FROM_JOB_PTR here.
-	 * The step_specs layout is already set up in the exact
-	 * way required for HetStep launches.
-	 */
-	step_ptr->step_id = step_specs->step_id;
-	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
-
-	if (step_specs->array_task_id != NO_VAL)
-		step_ptr->step_id.job_id = job_ptr->job_id;
-
-	if (step_specs->step_id.step_id != NO_VAL) {
-		if (step_specs->step_id.step_het_comp == NO_VAL) {
-			job_ptr->next_step_id =
-				MAX(job_ptr->next_step_id,
-				    step_specs->step_id.step_id);
-			job_ptr->next_step_id++;
-		}
-	} else if (job_ptr->het_job_id &&
-		   (job_ptr->het_job_id != job_ptr->job_id)) {
-		job_record_t *het_job;
-		het_job = stepmgr_ops->find_job_record(job_ptr->het_job_id);
-		if (het_job)
-			step_ptr->step_id.step_id = het_job->next_step_id++;
-		else
-			step_ptr->step_id.step_id = job_ptr->next_step_id++;
-		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
-					    step_ptr->step_id.step_id);
-	} else {
-		step_ptr->step_id.step_id = job_ptr->next_step_id++;
+	if ((step_specs->flags & SSF_ASYNC) && step_specs->immediate) {
+		/* Async pending step already has a step_id. */
+		step_ptr->step_id = step_specs->step_id;
+	} else if (!(step_specs->flags & SSF_ASYNC)) {
+		_set_step_id(step_ptr, step_specs);
 	}
 
 	/* Here is where the node list is set for the step */
@@ -3732,6 +3748,9 @@ static int _step_create(job_record_t *job_ptr,
 			return i;
 		}
 	}
+
+	if ((step_specs->flags & SSF_ASYNC) && !step_specs->immediate)
+		_set_step_id(step_ptr, step_specs);
 
 	if ((ret_code = _switch_setup(step_ptr))) {
 		delete_step_record(job_ptr, step_ptr);
@@ -4939,37 +4958,7 @@ static int _build_ext_launcher_step(step_record_t **step_rec,
 	/* Needed for not considering it in _mark_busy_nodes */
 	step_ptr->flags |= SSF_EXT_LAUNCHER;
 
-	/*
-	 * Do not use STEP_ID_FROM_JOB_PTR here.
-	 * The step_specs layout is already set up in the exact
-	 * way required for HetStep launches.
-	 */
-	step_ptr->step_id = step_specs->step_id;
-	step_ptr->step_id.sluid = job_ptr->step_id.sluid;
-
-	if (step_specs->array_task_id != NO_VAL)
-		step_ptr->step_id.job_id = job_ptr->job_id;
-
-	if (step_specs->step_id.step_id != NO_VAL) {
-		if (step_specs->step_id.step_het_comp == NO_VAL) {
-			job_ptr->next_step_id =
-				MAX(job_ptr->next_step_id,
-				    step_specs->step_id.step_id);
-			job_ptr->next_step_id++;
-		}
-	} else if (job_ptr->het_job_id &&
-		   (job_ptr->het_job_id != job_ptr->job_id)) {
-		job_record_t *het_job;
-		het_job = stepmgr_ops->find_job_record(job_ptr->het_job_id);
-		if (het_job)
-			step_ptr->step_id.step_id = het_job->next_step_id++;
-		else
-			step_ptr->step_id.step_id = job_ptr->next_step_id++;
-		job_ptr->next_step_id = MAX(job_ptr->next_step_id,
-					    step_ptr->step_id.step_id);
-	} else {
-		step_ptr->step_id.step_id = job_ptr->next_step_id++;
-	}
+	_set_step_id(step_ptr, step_specs);
 
 	/* The step needs to run on all the cores. */
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
