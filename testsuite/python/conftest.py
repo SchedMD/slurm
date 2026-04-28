@@ -60,6 +60,7 @@ def pytest_terminal_summary(terminalreporter):
 
     passed = terminalreporter.stats.get("passed", [])
     failed = terminalreporter.stats.get("failed", [])
+    errors = terminalreporter.stats.get("error", [])
     skipped = terminalreporter.stats.get("skipped", [])
     xfailed = terminalreporter.stats.get("xfailed", [])
     xpassed = terminalreporter.stats.get("xpassed", [])
@@ -86,6 +87,17 @@ def pytest_terminal_summary(terminalreporter):
         terminalreporter.write(f" {rep.nodeid}")
         reason = getattr(rep, "wasxfail", "")
         terminalreporter.write_line(f" - {reason}" if reason else "", bold=True)
+
+    for rep in errors:
+        # In some corner cases there's no reprcrash
+        if hasattr(rep.longrepr, "reprcrash"):
+            reason = rep.longrepr.reprcrash.message
+        else:
+            reason = str(rep.longrepr)
+
+        terminalreporter.write("ERROR", red=True, bold=True)
+        terminalreporter.write(f" {rep.nodeid}")
+        terminalreporter.write_line(f" - {reason}", bold=True)
 
     for rep in failed:
         # In some corner cases there's no reprcrash
