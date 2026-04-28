@@ -968,14 +968,18 @@ static void *_thread_per_group_rpc(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
+		.job = WRITE_LOCK,
+		.node = WRITE_LOCK,
+		.fed = READ_LOCK,
+	};
 	/* Lock: Read node */
 	slurmctld_lock_t node_read_lock = {
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		.node = READ_LOCK,
+	};
 	/* Lock: Write node */
 	slurmctld_lock_t node_write_lock = {
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	uint32_t job_id;
+		.node = WRITE_LOCK,
+	};
 
 	xassert(args != NULL);
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT)	||
@@ -1223,12 +1227,11 @@ static void *_thread_per_group_rpc(void *args)
 
 			if ((msg_ptr->signal == SIGCONT) ||
 			    (msg_ptr->signal == SIGSTOP)) {
-				job_id = msg_ptr->step_id.job_id;
 				lock_slurmctld(job_write_lock);
-				job_ptr = find_job_record(job_id);
+				job_ptr = find_job(&msg_ptr->step_id);
 				if (job_ptr == NULL) {
-					info("%s: invalid JobId=%u",
-					     __func__, job_id);
+					info("%s: invalid %pI",
+					     __func__, &msg_ptr->step_id);
 				} else if (rc == SLURM_SUCCESS) {
 					if (msg_ptr->signal == SIGSTOP) {
 						job_state_set_flag(job_ptr,
@@ -1324,9 +1327,8 @@ cleanup:
 			task_ptr->msg_args_ptr;
 		if ((msg_ptr->signal == SIGCONT) ||
 		    (msg_ptr->signal == SIGSTOP)) {
-			job_id = msg_ptr->step_id.job_id;
 			lock_slurmctld(job_write_lock);
-			job_ptr = find_job_record(job_id);
+			job_ptr = find_job(&msg_ptr->step_id);
 			if (job_ptr)
 				job_state_unset_flag(job_ptr, JOB_SIGNALING);
 			unlock_slurmctld(job_write_lock);

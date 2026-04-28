@@ -138,6 +138,12 @@ extern int jobacct_gather_add_task(pid_t pid, jobacct_id_t *jobacct_id,
 extern jobacctinfo_t *jobacct_gather_stat_task(pid_t pid, bool update_data);
 
 extern void jobacct_gather_stat_all_task(jobacctinfo_t *ret_jobacct);
+
+/*
+ * Get accounting data from the job-level.
+ */
+extern void jobacct_gather_stat_job(jobacctinfo_t *ret_jobacct);
+
 /*
  * Find task by pid and remove from tracked task list.
  *

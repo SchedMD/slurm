@@ -55,6 +55,7 @@ typedef struct {
 	time_t ctime;		/* Time that this entry was created         */
 	time_t expiration;	/* Time at which credentials can be purged  */
 	time_t revoked;		/* Time at which credentials were revoked   */
+	time_t reject_before; /* Oldest acceptable credential creation time */
 	slurm_step_id_t step_id;
 } job_state_t;
 
@@ -93,6 +94,7 @@ static job_state_t *_job_state_create(slurm_step_id_t *step_id)
 	j->revoked = (time_t) 0;
 	j->ctime = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
+	j->reject_before = (time_t) MAX_TIME;
 
 	return j;
 }
@@ -174,6 +176,7 @@ static void _job_state_pack(void *x, uint16_t protocol_version, buf_t *buffer)
 	pack_time(j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
+	pack_time(j->reject_before, buffer);
 }
 
 static int _job_state_unpack(void **out, uint16_t protocol_version,
@@ -181,18 +184,28 @@ static int _job_state_unpack(void **out, uint16_t protocol_version,
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&j->step_id, buffer,
 					   protocol_version))
 			goto unpack_error;
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
+		safe_unpack_time(&j->reject_before, buffer);
+	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&j->step_id, buffer,
+					   protocol_version))
+			goto unpack_error;
+		safe_unpack_time(&j->revoked, buffer);
+		safe_unpack_time(&j->ctime, buffer);
+		safe_unpack_time(&j->expiration, buffer);
+		j->reject_before = MAX_TIME; /* No limit */
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&j->step_id.job_id, buffer);
 		safe_unpack_time(&j->revoked, buffer);
 		safe_unpack_time(&j->ctime, buffer);
 		safe_unpack_time(&j->expiration, buffer);
+		j->reject_before = MAX_TIME; /* No limit */
 	}
 
 	debug3("cred_unpack: %pI ctime:%ld revoked:%ld expires:%ld",
@@ -544,6 +557,22 @@ static bool _credential_replayed(slurm_cred_t *cred)
 	return false;
 }
 
+static bool _credential_too_old(slurm_cred_t *cred)
+{
+	job_state_t *j = _find_job_state(&cred->arg->step_id);
+
+	if (!j || (j->reject_before == (time_t) MAX_TIME))
+		return false;
+
+	if (cred->ctime <= j->reject_before) {
+		error("cred for %pI created at %ld rejected (reject_before=%ld)",
+		      &cred->arg->step_id, cred->ctime, j->reject_before);
+		return true;
+	}
+
+	return false;
+}
+
 extern bool cred_cache_valid(slurm_cred_t *cred)
 {
 	slurm_mutex_lock(&cred_cache_mutex);
@@ -563,10 +592,38 @@ extern bool cred_cache_valid(slurm_cred_t *cred)
 		goto error;
 	}
 
+	if (_credential_too_old(cred)) {
+		errno = ESLURMD_CREDENTIAL_REVOKED;
+		goto error;
+	}
+
 	slurm_mutex_unlock(&cred_cache_mutex);
 	return true;
 
 error:
 	slurm_mutex_unlock(&cred_cache_mutex);
 	return false;
+}
+
+extern void cred_set_reject_before(slurm_step_id_t *step_id,
+				   time_t reject_before)
+{
+	job_state_t *j;
+
+	slurm_mutex_lock(&cred_cache_mutex);
+
+	if (!(j = _find_job_state(step_id))) {
+		j = _job_state_create(step_id);
+		list_append(cred_job_list, j);
+	}
+
+	if (j->reject_before == (time_t) MAX_TIME)
+		j->reject_before = reject_before;
+	else
+		j->reject_before = MAX(j->reject_before, reject_before);
+
+	debug("%s: %pI reject credentials created before %ld",
+	      __func__, step_id, reject_before);
+
+	slurm_mutex_unlock(&cred_cache_mutex);
 }

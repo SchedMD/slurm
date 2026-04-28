@@ -123,6 +123,17 @@ extern int task_g_post_step(stepd_step_rec_t *step);
  */
 extern int task_g_add_pid(pid_t pid);
 
+/*
+ * Update the memory limit for a running job/step.
+ * Only memory reduction is supported.
+ *
+ * IN step - step record
+ * IN new_job_mem - new job memory limit in MB
+ * IN new_step_mem - new step memory limit in MB
+ * RET - slurm error code
+ */
+extern int task_g_update_mem_limit(stepd_step_rec_t *step, uint64_t new_job_mem,
+				   uint64_t new_step_mem);
 
 extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *step,
 				   int statval, uint32_t taskid);

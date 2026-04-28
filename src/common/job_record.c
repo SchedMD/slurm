@@ -273,10 +273,12 @@ extern void job_record_delete(void *job_entry)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_preempt);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
+	xfree(job_ptr->nodes_rs);
 	xfree(job_ptr->origin_cluster);
 	if (job_ptr->het_details && job_ptr->het_job_id) {
 		/* xfree struct if hetjob leader and NULL ptr otherwise. */
@@ -631,6 +633,9 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		packstr(detail_ptr->mem_bind, buffer);
 		pack16(detail_ptr->mem_bind_type, buffer);
 
+		pack16(detail_ptr->mem_update_delay, buffer);
+		pack16(detail_ptr->mem_update_margin, buffer);
+
 		pack8(detail_ptr->open_mode, buffer);
 		pack8(detail_ptr->overcommit, buffer);
 		pack8(detail_ptr->prolog_running, buffer);
@@ -638,6 +643,7 @@ static void _dump_job_details(job_details_t *detail_ptr, buf_t *buffer,
 		pack32(detail_ptr->pn_min_cpus, buffer);
 		pack32(detail_ptr->orig_pn_min_cpus, buffer);
 		pack64(detail_ptr->pn_min_memory, buffer);
+		pack64(detail_ptr->pn_min_memory_pre_resize, buffer);
 		pack64(detail_ptr->orig_pn_min_memory, buffer);
 		pack16(detail_ptr->oom_kill_step, buffer);
 		pack32(detail_ptr->pn_min_tmp_disk, buffer);
@@ -1718,7 +1724,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t min_cpus = 1, orig_min_cpus = 1;
 	uint32_t max_cpus = NO_VAL, orig_max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, orig_pn_min_cpus, pn_min_tmp_disk;
-	uint64_t pn_min_memory, orig_pn_min_memory;
+	uint64_t pn_min_memory, orig_pn_min_memory,
+		pn_min_memory_pre_resize = 0;
 	uint16_t oom_kill_step = NO_VAL16;
 	uint32_t cpu_freq_min = NO_VAL;
 	uint32_t cpu_freq_max = NO_VAL;
@@ -1728,6 +1735,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t ntasks_per_node, ntasks_per_tres = 0, requeue;
 	uint16_t cpus_per_task, orig_cpus_per_task;
 	uint16_t cpu_bind_type, mem_bind_type;
+	uint16_t mem_update_delay = 0, mem_update_margin = 0;
 	uint16_t segment_size = 0;
 	uint16_t resv_port_cnt = NO_VAL16;
 	uint16_t x11 = 0, x11_target_port = 0;
@@ -1783,6 +1791,9 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr(&mem_bind, buffer);
 		safe_unpack16(&mem_bind_type, buffer);
 
+		safe_unpack16(&mem_update_delay, buffer);
+		safe_unpack16(&mem_update_margin, buffer);
+
 		safe_unpack8(&open_mode, buffer);
 		safe_unpack8(&overcommit, buffer);
 		safe_unpack8(&prolog_running, buffer);
@@ -1790,6 +1801,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&pn_min_cpus, buffer);
 		safe_unpack32(&orig_pn_min_cpus, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
+		safe_unpack64(&pn_min_memory_pre_resize, buffer);
 		safe_unpack64(&orig_pn_min_memory, buffer);
 		safe_unpack16(&oom_kill_step, buffer);
 		safe_unpack32(&pn_min_tmp_disk, buffer);
@@ -2106,6 +2118,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->pn_min_cpus = pn_min_cpus;
 	job_ptr->details->orig_pn_min_cpus = orig_pn_min_cpus;
 	job_ptr->details->pn_min_memory = pn_min_memory;
+	job_ptr->details->pn_min_memory_pre_resize = pn_min_memory_pre_resize;
 	job_ptr->details->oom_kill_step = oom_kill_step;
 	job_ptr->details->orig_pn_min_memory = orig_pn_min_memory;
 	job_ptr->details->pn_min_tmp_disk = pn_min_tmp_disk;
@@ -2115,6 +2128,8 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->mc_ptr = mc_ptr;
 	job_ptr->details->mem_bind = mem_bind;
 	job_ptr->details->mem_bind_type = mem_bind_type;
+	job_ptr->details->mem_update_delay = mem_update_delay;
+	job_ptr->details->mem_update_margin = mem_update_margin;
 	job_ptr->details->min_cpus = min_cpus;
 	job_ptr->details->orig_min_cpus = orig_min_cpus;
 	job_ptr->details->min_nodes = min_nodes;
@@ -3127,6 +3142,8 @@ extern int job_record_pack(job_record_t *dump_job_ptr,
 			packstr(dump_job_ptr->nodes_completing, buffer);
 		if (dump_job_ptr->state_reason == WAIT_PROLOG)
 			packstr(dump_job_ptr->nodes_pr, buffer);
+		if (IS_JOB_RESIZING(dump_job_ptr))
+			packstr(dump_job_ptr->nodes_rs, buffer);
 		packstr(dump_job_ptr->nodes, buffer);
 		pack32(dump_job_ptr->node_cnt, buffer);
 		/* node_bitmap not packed — rebuilt from nodes string */
@@ -3642,6 +3659,8 @@ extern int job_record_unpack(job_record_t **out,
 			safe_unpackstr(&job_ptr->nodes_completing, buffer);
 		if (job_ptr->state_reason == WAIT_PROLOG)
 			safe_unpackstr(&job_ptr->nodes_pr, buffer);
+		if (job_ptr->job_state & JOB_RESIZING)
+			safe_unpackstr(&job_ptr->nodes_rs, buffer);
 		safe_unpackstr(&job_ptr->nodes, buffer);
 		safe_unpack32(&job_ptr->node_cnt, buffer);
 		/* node_bitmap not unpacked — rebuilt from nodes string */

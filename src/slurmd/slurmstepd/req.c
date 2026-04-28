@@ -112,6 +112,7 @@ static pthread_mutex_t extern_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t extern_thread_cond = PTHREAD_COND_INITIALIZER;
 
 pthread_mutex_t stepmgr_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t resize_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t message_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t message_cond = PTHREAD_COND_INITIALIZER;
@@ -834,6 +835,83 @@ static int _handle_mem_limits(int fd, uid_t uid, pid_t remote_pid)
 {
 	safe_write(fd, &step->job_mem, sizeof(uint64_t));
 
+	return SLURM_SUCCESS;
+rwfail:
+	return SLURM_ERROR;
+}
+
+static int _cap_step_mem(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+	uint64_t new_job_mem = *(uint64_t *) arg;
+	job_resources_t *resrcs = job_step_ptr->job_resrcs;
+	int job_node_inx = -1, step_node_inx = -1;
+
+	if (step_ptr->pn_min_memory && !(step_ptr->pn_min_memory & MEM_PER_CPU))
+		step_ptr->pn_min_memory =
+			MIN(step_ptr->pn_min_memory, new_job_mem);
+
+	if (!step_ptr->memory_allocated)
+		return SLURM_SUCCESS;
+
+	for (int i = 0; next_node_bitmap(resrcs->node_bitmap, &i); i++) {
+		job_node_inx++;
+		if (!bit_test(step_ptr->step_node_bitmap, i))
+			continue;
+		step_node_inx++;
+		step_ptr->memory_allocated[step_node_inx] =
+			MIN(step_ptr->memory_allocated[step_node_inx],
+			    new_job_mem);
+		if (!(step_ptr->flags & SSF_MEM_ZERO) &&
+		    !(step_ptr->flags & SSF_OVERLAP_FORCE))
+			resrcs->memory_used[job_node_inx] +=
+				step_ptr->memory_allocated[step_node_inx];
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _handle_update_mem_limits(int fd, uid_t uid, pid_t remote_pid)
+{
+	uint64_t new_job_mem;
+	uint64_t new_step_mem;
+	int rc;
+
+	safe_read(fd, &new_job_mem, sizeof(uint64_t));
+
+	slurm_mutex_lock(&resize_mutex);
+	/*
+	 * Cap the step memory at the new job memory if it exceeds it.
+	 * Otherwise keep the step's existing limit.
+	 */
+	new_step_mem = MIN(step->step_mem, new_job_mem);
+
+	rc = task_g_update_mem_limit(step, new_job_mem, new_step_mem);
+
+	if (rc == SLURM_SUCCESS) {
+		step->job_mem = new_job_mem;
+		step->step_mem = new_step_mem;
+
+		if (job_step_ptr) {
+			job_resources_t *resrcs;
+
+			slurm_mutex_lock(&stepmgr_mutex);
+			job_step_ptr->details->pn_min_memory = new_job_mem;
+			resrcs = job_step_ptr->job_resrcs;
+			for (int i = 0; i < resrcs->nhosts; i++) {
+				resrcs->memory_allocated[i] =
+					MIN(resrcs->memory_allocated[i],
+					    new_job_mem);
+				resrcs->memory_used[i] = 0;
+			}
+			list_for_each(job_step_ptr->step_list, _cap_step_mem,
+				      &new_job_mem);
+			slurm_mutex_unlock(&stepmgr_mutex);
+		}
+	}
+	slurm_mutex_unlock(&resize_mutex);
+
+	safe_write(fd, &rc, sizeof(int));
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;
@@ -2262,6 +2340,24 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static int _handle_job_usage(int fd, uid_t uid, pid_t remote_pid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	int rc;
+
+	debug("%s for %ps", __func__, &step->step_id);
+
+	jobacct = jobacctinfo_create(NULL);
+	jobacct_gather_stat_job(jobacct);
+
+	rc = jobacctinfo_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd,
+				 SLURM_PROTOCOL_VERSION);
+
+	jobacctinfo_destroy(jobacct);
+
+	return rc;
+}
+
 /* We don't check the uid in this function, anyone may list the task info. */
 static int _handle_task_info(int fd, uid_t uid, pid_t remote_pid)
 {
@@ -2420,6 +2516,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.func = _handle_mem_limits,
 	},
 	{
+		.msg_type = REQUEST_STEP_UPDATE_MEM_LIMITS,
+		.from_slurmd = true,
+		.func = _handle_update_mem_limits,
+	},
+	{
 		.msg_type = REQUEST_STEP_UID,
 		.func = _handle_uid,
 	},
@@ -2473,6 +2574,11 @@ slurmstepd_rpc_t stepd_rpcs[] = {
 		.msg_type = REQUEST_STEP_STAT,
 		.from_job_owner = true,
 		.func = _handle_stat_jobacct,
+	},
+	{
+		.msg_type = REQUEST_JOB_USAGE,
+		.from_slurmd = true,
+		.func = _handle_job_usage,
 	},
 	{
 		.msg_type = REQUEST_STEP_LIST_PIDS,

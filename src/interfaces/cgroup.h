@@ -406,6 +406,13 @@ extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *step,
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
 
 /*
+ * Return accounting data from the job-level cgroup.
+ *
+ * RET cgroup_acct_t - struct containing the required data.
+ */
+extern cgroup_acct_t *cgroup_g_job_get_acct_data(void);
+
+/*
  * Return conversion units used for stats gathered from cpuacct.
  * Dividing the provided data by this number will give seconds.
  *

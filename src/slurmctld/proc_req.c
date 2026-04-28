@@ -2109,6 +2109,116 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t *msg)
 	log_flag(TRACE_JOBS, "%s: return %pJ", __func__, job_ptr);
 }
 
+static void _job_mem_resize_abort(job_record_t *job_ptr)
+{
+	job_details_t *detail_ptr = job_ptr->details;
+
+	xassert(detail_ptr);
+
+	job_state_unset_flag(job_ptr, JOB_RESIZING);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+	detail_ptr->pn_min_memory = detail_ptr->pn_min_memory_pre_resize;
+	detail_ptr->pn_min_memory_pre_resize = 0;
+	last_job_update = time(NULL);
+}
+
+static void _slurm_rpc_response_update_job_mem(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	response_update_job_mem_msg_t *resp_msg = msg->data;
+	slurmctld_lock_t job_write_lock = {
+		.job = WRITE_LOCK,
+		.node = READ_LOCK,
+	};
+	job_record_t *job_ptr;
+	int rc = SLURM_SUCCESS;
+
+	START_TIMER;
+
+	if (!validate_slurm_user(msg->auth_uid)) {
+		error("Security violation, RESPONSE_UPDATE_JOB_MEM RPC from uid=%u",
+		      msg->auth_uid);
+		return;
+	}
+
+	lock_slurmctld(job_write_lock);
+
+	if (!(job_ptr = find_job(&resp_msg->step_id))) {
+		error("%s: unable to find %pI",
+		      __func__, &resp_msg->step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto fini;
+	}
+
+	if (!IS_JOB_RUNNING(job_ptr)) {
+		verbose("%s: %pJ not running", __func__, job_ptr);
+		rc = ESLURM_JOB_NOT_RUNNING;
+		goto fini;
+	}
+
+	if (!job_ptr->node_bitmap_rs && !resp_msg->all_nodes) {
+		debug("%s: %pJ not resizing memory, skipping", __func__,
+		      job_ptr);
+		rc = ESLURM_INVALID_JOB_STATE;
+		goto fini;
+	}
+
+	if (resp_msg->return_code) {
+		error("%s: %pJ Node=%s rc=%s",
+		      __func__, job_ptr, resp_msg->node_name,
+		      slurm_strerror(resp_msg->return_code));
+		if (!resp_msg->all_nodes) {
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc,
+				   "Memory resize to %"PRIu64"MB failed on node %s",
+				   resp_msg->job_mem_per_node,
+				   resp_msg->node_name);
+			_job_mem_resize_abort(job_ptr);
+			goto fini;
+		}
+	} else {
+		debug2("%s: %pJ Node=%s %s",
+		       __func__, job_ptr, resp_msg->node_name, TIMER_STR());
+	}
+
+	if (resp_msg->all_nodes) {
+		if ((rc = job_mem_resize_begin(job_ptr,
+					       resp_msg->job_mem_per_node)))
+			goto fini;
+
+		debug("%s: %pJ resizing from stepmgr", __func__, job_ptr);
+		/*
+		 * Safe to cancel any in-flight per-node resize: new limit is
+		 * always lower, so the previous target is already satisfied.
+		 */
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+	}
+
+	if (job_ptr->node_bitmap_rs && resp_msg->node_name) {
+		node_record_t *node_ptr = find_node_record(resp_msg->node_name);
+
+		if (node_ptr) {
+			bit_clear(job_ptr->node_bitmap_rs, node_ptr->index);
+		} else {
+			error("%s: can't find node:%s", __func__,
+			      resp_msg->node_name);
+		}
+	}
+
+	if (!job_ptr->node_bitmap_rs ||
+	    (bit_ffs(job_ptr->node_bitmap_rs) == -1)) {
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+		job_mem_resize_complete(job_ptr);
+		last_job_update = time(NULL);
+	}
+
+fini:
+	unlock_slurmctld(job_write_lock);
+
+	slurm_send_rc_msg(msg, rc);
+	END_TIMER2(__func__);
+}
+
 /* _slurm_rpc_complete_prolog - process RPC to note the
  *	completion of a prolog */
 static void _slurm_rpc_complete_prolog(slurm_msg_t *msg)
@@ -6782,6 +6892,9 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 			.conf = READ_LOCK,
 			.part = READ_LOCK,
 		},
+	},{
+		.msg_type = RESPONSE_UPDATE_JOB_MEM,
+		.func = _slurm_rpc_response_update_job_mem,
 	},{
 		.msg_type = MESSAGE_EPILOG_COMPLETE,
 		.max_per_cycle = 256,

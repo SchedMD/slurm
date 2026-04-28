@@ -451,3 +451,28 @@ extern int run_epilog(job_env_t *job_env, slurm_cred_t *cred)
 
 	return error_code;
 }
+
+extern int notify_slurmctld_mem_update_fini(slurm_step_id_t *step_id,
+					    uint64_t job_mem_per_node,
+					    int return_code, bool all_nodes)
+{
+	int ret_c, rc;
+	slurm_msg_t resp_msg;
+	response_update_job_mem_msg_t resp = { 0 };
+
+	resp.node_name = conf->node_name;
+	resp.step_id = *step_id;
+	resp.job_mem_per_node = job_mem_per_node;
+	resp.return_code = return_code;
+	resp.all_nodes = all_nodes;
+
+	slurm_msg_t_init(&resp_msg);
+	resp_msg.msg_type = RESPONSE_UPDATE_JOB_MEM;
+	resp_msg.data = &resp;
+
+	if ((ret_c = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
+						       working_cluster_rec)))
+		error("Error sending memory update completion notification: %m");
+
+	return ret_c;
+}

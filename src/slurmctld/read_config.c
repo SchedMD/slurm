@@ -1456,6 +1456,14 @@ void _sync_jobs_to_conf(void)
 			      job_ptr->nodes_pr, job_ptr);
 			job_fail = true;
 		}
+		FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+		if (job_ptr->nodes_rs &&
+		    node_name2bitmap(job_ptr->nodes_rs, false,
+				     &job_ptr->node_bitmap_rs, NULL)) {
+			error("Invalid nodes_rs (%s) for %pJ",
+			      job_ptr->nodes_rs, job_ptr);
+			job_fail = true;
+		}
 		if (reset_node_bitmap(job_ptr))
 			job_fail = true;
 		if (!job_fail &&

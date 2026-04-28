@@ -2045,6 +2045,33 @@ options are mutually exclusive.
 .IP
 
 .TP
+\fB\-\-mem\-update\fR=<\fImargin\fR>@<\fIdelay\fR>
+Automatically reduce the job's memory limit after it has been running for the
+time specified by \fIdelay\fR. The new limit is set to the job's current memory
+usage plus \fImargin\fR percent. The \fImargin\fR value is a percentage (e.g. 20
+means 20% above current usage). The \fIdelay\fR specifies how long after job
+start to sample memory usage and apply the reduction.
+Acceptable time formats for \fIdelay\fR include "minutes", "minutes:seconds",
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and
+"days\-hours:minutes:seconds".
+The memory limit can only be reduced, never increased. If the calculated new
+limit is not lower than the current limit, no change is made. A floor of 10%
+of the original memory request is enforced to prevent reducing the limit to
+an unreasonably small value.
+The memory usage is measured as RSS (resident physical memory) only; swap
+usage is not included. When \fBConstrainSwapSpace\fR is configured, the swap
+limit is also reduced proportionally with the memory limit.
+This option works with both \fB\-\-mem\fR and \fB\-\-mem\-per\-cpu\fR jobs.
+For \fB\-\-mem\-per\-cpu\fR jobs, the new limit is applied as a per\-node value,
+compared against the highest per\-node allocation across all nodes.
+This is a one\-shot operation: the reduction is applied at most once per job
+run. On job requeue, the auto\-reduction may trigger again.
+This option applies to job allocations.
+This option requires \fBSlurmctldParameters=enable_stepmgr\fR and
+\fBJobAcctGatherType=jobacct_gather/cgroup\fR to be configured.
+.IP
+
+.TP
 \fB\-\-mincpus\fR=<\fIn\fR>
 Specify a minimum number of logical cpus/processors per node. This option
 applies to job allocations.

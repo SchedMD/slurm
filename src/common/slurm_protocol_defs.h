@@ -541,6 +541,29 @@ typedef struct signal_tasks_msg {
 	slurm_step_id_t step_id;
 } signal_tasks_msg_t;
 
+typedef struct {
+	slurm_step_id_t step_id;
+} job_mem_usage_msg_t;
+
+typedef struct {
+	slurm_step_id_t step_id;
+	uint64_t mem_usage; /* total RSS in MB for this job on this node */
+} job_mem_usage_resp_msg_t;
+
+typedef struct update_job_mem_msg {
+	bool notify_ctld;
+	uint64_t job_mem_per_node; /* new memory limit per node in MB */
+	slurm_step_id_t step_id;
+} update_job_mem_msg_t;
+
+typedef struct response_update_job_mem_msg {
+	bool all_nodes;
+	uint64_t job_mem_per_node; /* new memory limit per node in MB */
+	char *node_name;
+	uint32_t return_code;
+	slurm_step_id_t step_id;
+} response_update_job_mem_msg_t;
+
 typedef struct epilog_complete_msg {
 	slurm_step_id_t step_id;
 	uint32_t return_code;
@@ -1633,6 +1656,11 @@ extern void slurm_free_launch_tasks_response_msg(
 		launch_tasks_response_msg_t * msg);
 extern void slurm_free_task_exit_msg(task_exit_msg_t * msg);
 extern void slurm_free_signal_tasks_msg(signal_tasks_msg_t * msg);
+extern void slurm_free_job_mem_usage_msg(job_mem_usage_msg_t *msg);
+extern void slurm_free_job_mem_usage_resp_msg(job_mem_usage_resp_msg_t *msg);
+extern void slurm_free_update_job_mem_msg(update_job_mem_msg_t *msg);
+extern void slurm_free_response_update_job_mem_msg(response_update_job_mem_msg_t
+							   *msg);
 extern void slurm_free_reattach_tasks_request_msg(
 		reattach_tasks_request_msg_t * msg);
 extern void slurm_free_reattach_tasks_response_msg(

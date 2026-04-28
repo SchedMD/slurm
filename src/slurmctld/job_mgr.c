@@ -423,6 +423,7 @@ static void _signal_job(job_record_t *job_ptr, int signal, uint16_t flags);
 static void _suspend_job(job_record_t *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp);
 static bool _top_priority(job_record_t *job_ptr, uint32_t het_job_offset);
+static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem);
 static int _update_job_nodes_str(job_record_t *job_ptr);
 static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    bitstr_t *req_bitmap, part_record_t *part_ptr,
@@ -3604,10 +3605,12 @@ extern job_record_t *job_array_split(job_record_t *job_ptr, bool list_add)
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
 	job_ptr_pend->node_bitmap_pr = NULL;
+	job_ptr_pend->node_bitmap_rs = NULL;
 	job_ptr_pend->node_bitmap_preempt = NULL;
 	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
 	job_ptr_pend->nodes_pr = NULL;
+	job_ptr_pend->nodes_rs = NULL;
 	job_ptr_pend->origin_cluster = xstrdup(job_ptr->origin_cluster);
 	job_ptr_pend->partition = xstrdup(job_ptr->partition);
 	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
@@ -8937,6 +8940,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	if (job_desc->pn_min_memory != NO_VAL64)
 		detail_ptr->pn_min_memory = job_desc->pn_min_memory;
 	detail_ptr->orig_pn_min_memory = detail_ptr->pn_min_memory;
+	detail_ptr->mem_update_delay = job_desc->mem_update_delay;
+	detail_ptr->mem_update_margin = job_desc->mem_update_margin;
 	if (job_desc->pn_min_tmp_disk != NO_VAL)
 		detail_ptr->pn_min_tmp_disk = job_desc->pn_min_tmp_disk;
 
@@ -11024,15 +11029,10 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 	*core_cnt_ptr = max_core_cnt;
 }
 
-/* pack default job details for "get_job_info" RPC */
-static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
-				      uint16_t protocol_version)
+static void _pack_node_cnt(job_record_t *job_ptr, buf_t *buffer)
 {
 	int max_cpu_cnt = -1, max_core_cnt = -1;
 	job_details_t *detail_ptr = job_ptr->details;
-	uint16_t shared = 0;
-
-	shared = get_job_share_value(job_ptr);
 
 	if (job_ptr->part_ptr && job_ptr->part_ptr->max_cpu_cnt) {
 		max_cpu_cnt  = job_ptr->part_ptr->max_cpu_cnt;
@@ -11040,7 +11040,142 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 	} else
 		_find_node_config(&max_cpu_cnt, &max_core_cnt);
 
-	if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
+		pack32(job_ptr->node_cnt, buffer);
+		pack32((uint32_t) 0, buffer);
+	} else if (job_ptr->total_nodes) {
+		pack32(job_ptr->total_nodes, buffer);
+		pack32((uint32_t) 0, buffer);
+	} else if (job_ptr->node_cnt_wag) {
+		/* This should catch everything else, but
+		 * just in case this is 0 (startup or
+		 * whatever) we will keep the rest of
+		 * this if statement around.
+		 */
+		pack32(job_ptr->node_cnt_wag, buffer);
+		pack32((uint32_t) detail_ptr->max_nodes, buffer);
+	} else if (detail_ptr->ntasks_per_node) {
+		/* min_nodes based upon task count and ntasks
+		 * per node */
+		uint32_t min_nodes;
+		min_nodes = detail_ptr->num_tasks / detail_ptr->ntasks_per_node;
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		pack32(min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+	} else if (detail_ptr->cpus_per_task > 1) {
+		/* min_nodes based upon task count and cpus
+		 * per task */
+		uint32_t ntasks_per_node, min_nodes;
+		ntasks_per_node = max_cpu_cnt / detail_ptr->cpus_per_task;
+		ntasks_per_node = MAX(ntasks_per_node, 1);
+		min_nodes = detail_ptr->num_tasks / ntasks_per_node;
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		pack32(min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+	} else if (detail_ptr->mc_ptr && detail_ptr->mc_ptr->ntasks_per_core &&
+		   (detail_ptr->mc_ptr->ntasks_per_core != INFINITE16)) {
+		/* min_nodes based upon task count and ntasks
+		 * per core */
+		uint32_t min_cores, min_nodes;
+		min_cores = ROUNDUP(detail_ptr->num_tasks,
+				    detail_ptr->mc_ptr->ntasks_per_core);
+		min_nodes = ROUNDUP(min_cores, max_core_cnt);
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		pack32(min_nodes, buffer);
+		pack32(detail_ptr->max_nodes, buffer);
+	} else {
+		/* min_nodes based upon task count only */
+		uint32_t min_nodes;
+		uint32_t max_nodes;
+
+		min_nodes = ROUNDUP(detail_ptr->num_tasks, max_cpu_cnt);
+		min_nodes = MAX(min_nodes, detail_ptr->min_nodes);
+		max_nodes = MAX(min_nodes, detail_ptr->max_nodes);
+		pack32(min_nodes, buffer);
+		pack32(max_nodes, buffer);
+	}
+}
+
+/* pack default job details for "get_job_info" RPC */
+static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
+				      uint16_t protocol_version)
+{
+	job_details_t *detail_ptr = job_ptr->details;
+	uint16_t shared = 0;
+
+	shared = get_job_share_value(job_ptr);
+
+	if (protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		if (!detail_ptr) {
+			packbool(false, buffer);
+
+			if (job_ptr->total_cpus)
+				pack32(job_ptr->total_cpus, buffer);
+			else
+				pack32(job_ptr->cpu_cnt, buffer);
+
+			pack32(job_ptr->node_cnt, buffer);
+			pack32(NICE_OFFSET, buffer); /* Best guess */
+			return;
+		}
+		packbool(true, buffer);
+		job_record_pack_details_common(detail_ptr, buffer,
+					       protocol_version);
+
+		if (!IS_JOB_PENDING(job_ptr)) {
+			packstr(detail_ptr->features_use, buffer);
+			packnull(buffer);
+		} else {
+			packstr(detail_ptr->features, buffer);
+			packstr(detail_ptr->prefer, buffer);
+		}
+
+		if (detail_ptr->argv)
+			packstr(detail_ptr->argv[0], buffer);
+		else
+			packnull(buffer);
+		packstr(detail_ptr->submit_line, buffer);
+
+		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->cpu_cnt) {
+			pack32(job_ptr->cpu_cnt, buffer);
+			pack32((uint32_t) 0, buffer);
+		} else if (job_ptr->total_cpus && !IS_JOB_PENDING(job_ptr)) {
+			/* If job is PENDING ignore total_cpus,
+			 * which may have been set by previous run
+			 * followed by job requeue. */
+			pack32(job_ptr->total_cpus, buffer);
+			pack32((uint32_t) 0, buffer);
+		} else {
+			pack32(detail_ptr->min_cpus, buffer);
+			if (detail_ptr->max_cpus != NO_VAL)
+				pack32(detail_ptr->max_cpus, buffer);
+			else
+				pack32((uint32_t) 0, buffer);
+		}
+
+		_pack_node_cnt(job_ptr, buffer);
+
+		if (detail_ptr->num_tasks)
+			pack32(detail_ptr->num_tasks, buffer);
+		else if (IS_JOB_PENDING(job_ptr))
+			pack32(detail_ptr->min_nodes, buffer);
+		else if (job_ptr->tres_alloc_cnt)
+			pack32((uint32_t)
+				       job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE],
+			       buffer);
+		else
+			pack32(NO_VAL, buffer);
+
+		pack16(shared, buffer);
+
+		if (detail_ptr->crontab_entry)
+			packstr(detail_ptr->crontab_entry->cronspec, buffer);
+		else
+			packnull(buffer);
+
+		pack16(detail_ptr->mem_update_delay, buffer);
+		pack16(detail_ptr->mem_update_margin, buffer);
+	} else if (protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		if (!detail_ptr) {
 			packbool(false, buffer);
 
@@ -11089,73 +11224,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				pack32((uint32_t) 0, buffer);
 		}
 
-		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
-			pack32(job_ptr->node_cnt, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->total_nodes) {
-			pack32(job_ptr->total_nodes, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->node_cnt_wag) {
-			/* This should catch everything else, but
-			 * just in case this is 0 (startup or
-			 * whatever) we will keep the rest of
-			 * this if statement around.
-			 */
-			pack32(job_ptr->node_cnt_wag, buffer);
-			pack32((uint32_t) detail_ptr->max_nodes,
-			       buffer);
-		} else if (detail_ptr->ntasks_per_node) {
-			/* min_nodes based upon task count and ntasks
-			 * per node */
-			uint32_t min_nodes;
-			min_nodes = detail_ptr->num_tasks /
-				detail_ptr->ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->cpus_per_task > 1) {
-			/* min_nodes based upon task count and cpus
-			 * per task */
-			uint32_t ntasks_per_node, min_nodes;
-			ntasks_per_node = max_cpu_cnt /
-				detail_ptr->cpus_per_task;
-			ntasks_per_node = MAX(ntasks_per_node, 1);
-			min_nodes = detail_ptr->num_tasks /
-				ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->mc_ptr &&
-			   detail_ptr->mc_ptr->ntasks_per_core &&
-			   (detail_ptr->mc_ptr->ntasks_per_core
-			    != INFINITE16)) {
-			/* min_nodes based upon task count and ntasks
-			 * per core */
-			uint32_t min_cores, min_nodes;
-			min_cores = ROUNDUP(detail_ptr->num_tasks,
-					    detail_ptr->mc_ptr->
-					    ntasks_per_core);
-			min_nodes = ROUNDUP(min_cores, max_core_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else {
-			/* min_nodes based upon task count only */
-			uint32_t min_nodes;
-			uint32_t max_nodes;
+		_pack_node_cnt(job_ptr, buffer);
 
-			min_nodes = ROUNDUP(detail_ptr->num_tasks,
-					    max_cpu_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			max_nodes = MAX(min_nodes,
-					detail_ptr->max_nodes);
-			pack32(min_nodes, buffer);
-			pack32(max_nodes, buffer);
-		}
 		if (detail_ptr->num_tasks)
 			pack32(detail_ptr->num_tasks, buffer);
 		else if (IS_JOB_PENDING(job_ptr))
@@ -11222,73 +11292,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				pack32((uint32_t) 0, buffer);
 		}
 
-		if (IS_JOB_COMPLETING(job_ptr) && job_ptr->node_cnt) {
-			pack32(job_ptr->node_cnt, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->total_nodes) {
-			pack32(job_ptr->total_nodes, buffer);
-			pack32((uint32_t) 0, buffer);
-		} else if (job_ptr->node_cnt_wag) {
-			/* This should catch everything else, but
-			 * just in case this is 0 (startup or
-			 * whatever) we will keep the rest of
-			 * this if statement around.
-			 */
-			pack32(job_ptr->node_cnt_wag, buffer);
-			pack32((uint32_t) detail_ptr->max_nodes,
-			       buffer);
-		} else if (detail_ptr->ntasks_per_node) {
-			/* min_nodes based upon task count and ntasks
-			 * per node */
-			uint32_t min_nodes;
-			min_nodes = detail_ptr->num_tasks /
-				detail_ptr->ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->cpus_per_task > 1) {
-			/* min_nodes based upon task count and cpus
-			 * per task */
-			uint32_t ntasks_per_node, min_nodes;
-			ntasks_per_node = max_cpu_cnt /
-				detail_ptr->cpus_per_task;
-			ntasks_per_node = MAX(ntasks_per_node, 1);
-			min_nodes = detail_ptr->num_tasks /
-				ntasks_per_node;
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else if (detail_ptr->mc_ptr &&
-			   detail_ptr->mc_ptr->ntasks_per_core &&
-			   (detail_ptr->mc_ptr->ntasks_per_core
-			    != INFINITE16)) {
-			/* min_nodes based upon task count and ntasks
-			 * per core */
-			uint32_t min_cores, min_nodes;
-			min_cores = ROUNDUP(detail_ptr->num_tasks,
-					    detail_ptr->mc_ptr->
-					    ntasks_per_core);
-			min_nodes = ROUNDUP(min_cores, max_core_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			pack32(min_nodes, buffer);
-			pack32(detail_ptr->max_nodes, buffer);
-		} else {
-			/* min_nodes based upon task count only */
-			uint32_t min_nodes;
-			uint32_t max_nodes;
+		_pack_node_cnt(job_ptr, buffer);
 
-			min_nodes = ROUNDUP(detail_ptr->num_tasks,
-					    max_cpu_cnt);
-			min_nodes = MAX(min_nodes,
-					detail_ptr->min_nodes);
-			max_nodes = MAX(min_nodes,
-					detail_ptr->max_nodes);
-			pack32(min_nodes, buffer);
-			pack32(max_nodes, buffer);
-		}
 		if (detail_ptr->num_tasks)
 			pack32(detail_ptr->num_tasks, buffer);
 		else if (IS_JOB_PENDING(job_ptr))
@@ -12309,6 +12314,134 @@ static bool _valid_license_job_expansion(job_record_t *job_ptr1,
 		return false;
 
 	return true;
+}
+
+static void _update_job_mem_on_nodes(job_record_t *job_ptr)
+{
+	node_record_t *node_ptr;
+	agent_arg_t *agent_args = NULL;
+	update_job_mem_msg_t *mem_msg = NULL;
+
+	agent_args = xmalloc(sizeof(*agent_args));
+	agent_args->msg_type = REQUEST_UPDATE_JOB_MEM;
+	agent_args->retry = 1;
+	agent_args->hostlist = hostlist_create(NULL);
+
+	mem_msg = xmalloc(sizeof(*mem_msg));
+	mem_msg->step_id = STEP_ID_FROM_JOB_RECORD(job_ptr);
+	mem_msg->job_mem_per_node = job_ptr->details->pn_min_memory;
+	mem_msg->notify_ctld = true;
+
+	agent_args->protocol_version = job_ptr->start_protocol_ver;
+	for (int i = 0; (node_ptr = next_node_bitmap(job_ptr->node_bitmap, &i));
+	     i++) {
+		hostlist_push_host(agent_args->hostlist, node_ptr->name);
+		agent_args->node_count++;
+		if (PACK_FANOUT_ADDRS(node_ptr))
+			agent_args->msg_flags |= SLURM_PACK_ADDRS;
+	}
+
+	if (agent_args->node_count == 0) {
+		xfree(mem_msg);
+		hostlist_destroy(agent_args->hostlist);
+		xfree(agent_args);
+		return;
+	}
+
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
+	job_ptr->node_bitmap_rs = bit_copy(job_ptr->node_bitmap);
+
+	agent_args->msg_args = mem_msg;
+	set_agent_arg_r_uid(agent_args, SLURM_AUTH_UID_ANY);
+	agent_queue_request(agent_args);
+}
+
+extern int job_mem_resize_begin(job_record_t *job_ptr, uint64_t new_mem)
+{
+	job_resources_t *job_res = job_ptr->job_resrcs;
+	uint64_t old_mem;
+
+	if (new_mem & MEM_PER_CPU) {
+		error("%s: MEM_PER_CPU not supported for running %pJ",
+		      __func__, job_ptr);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
+
+	if (new_mem == 0) {
+		info("%s: cannot set memory to 0 for running %pJ",
+		     __func__, job_ptr);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
+
+	/*
+	 * For MEM_PER_CPU or whole-mem (pn_min_memory == 0) jobs,
+	 * get old_mem from allocations.
+	 */
+	if (job_ptr->details->pn_min_memory & MEM_PER_CPU ||
+	    !job_ptr->details->pn_min_memory) {
+		if (!job_res || !job_res->memory_allocated) {
+			error("%s: no job resources for %pJ",
+			      __func__, job_ptr);
+			return ESLURM_INVALID_TASK_MEMORY;
+		}
+		old_mem = 0;
+		for (int i = 0; i < job_res->nhosts; i++)
+			old_mem = MAX(old_mem, job_res->memory_allocated[i]);
+	} else {
+		old_mem = job_ptr->details->pn_min_memory;
+	}
+
+	if (new_mem >= old_mem) {
+		info("%s: cannot increase memory for running %pJ (%"PRIu64" >= %"PRIu64")",
+		     __func__, job_ptr, new_mem, old_mem);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
+
+	job_ptr->details->pn_min_memory_pre_resize =
+		job_ptr->details->pn_min_memory;
+	job_ptr->details->pn_min_memory = new_mem;
+	job_ptr->bit_flags |= JOB_MEM_SET;
+	job_state_set_flag(job_ptr, JOB_RESIZING);
+
+	return SLURM_SUCCESS;
+}
+
+static int _find_extern_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = x;
+
+	if (step_ptr->step_id.step_id == SLURM_EXTERN_CONT)
+		return 1;
+	return 0;
+}
+
+/*
+ * Handle memory limit update for a running job.
+ * Only reduction is allowed.
+ */
+static int _update_job_mem_running(job_record_t *job_ptr, uint64_t new_mem)
+{
+	int rc;
+
+	if (job_ptr->node_bitmap_rs) {
+		info("%s: memory resize already in progress for %pJ",
+		     __func__, job_ptr);
+		return ESLURM_TRANSITION_STATE_NO_UPDATE;
+	}
+
+	if (!job_ptr->step_list ||
+	    !list_find_first(job_ptr->step_list, _find_extern_step, NULL))
+		return ESLURM_EXTERN_ONLY;
+
+	if ((rc = job_mem_resize_begin(job_ptr, new_mem)))
+		return rc;
+
+	info("%s: reducing memory to %"PRIu64"MB for running %pJ",
+	     __func__, new_mem, job_ptr);
+
+	_update_job_mem_on_nodes(job_ptr);
+
+	return SLURM_SUCCESS;
 }
 
 static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
@@ -13990,10 +14123,16 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_desc,
 		goto fini;
 
 	if (job_desc->pn_min_memory != NO_VAL64) {
-		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
+		if (IS_JOB_RUNNING(job_ptr) && detail_ptr) {
+			error_code = _update_job_mem_running(
+				job_ptr, job_desc->pn_min_memory);
+			if (!error_code)
+				detail_ptr->orig_pn_min_memory =
+					job_desc->pn_min_memory;
+		} else if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
-		} else if (job_desc->pn_min_memory
-			   == detail_ptr->pn_min_memory) {
+		} else if (job_desc->pn_min_memory ==
+			   detail_ptr->pn_min_memory) {
 			sched_debug("%s: new memory limit identical to old limit for %pJ",
 				    __func__, job_ptr);
 		} else {
@@ -15573,6 +15712,26 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	job_ptr->end_time_exp = job_ptr->end_time;
 }
 
+extern void job_mem_resize_complete(job_record_t *job_ptr)
+{
+	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
+	xassert(verify_lock(NODE_LOCK, READ_LOCK));
+
+	job_pre_resize_acctg(job_ptr);
+	select_g_job_mem_reduce(job_ptr);
+
+	if (job_ptr->job_resrcs) {
+		uint64_t new_mem = job_ptr->details->pn_min_memory;
+		job_resources_t *job_res = job_ptr->job_resrcs;
+		for (int i = 0; i < job_res->nhosts; i++)
+			job_res->memory_allocated[i] =
+				MIN(job_res->memory_allocated[i], new_mem);
+	}
+
+	job_post_resize_acctg(job_ptr);
+	debug("%s: %pJ resizing, complete", __func__, job_ptr);
+}
+
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node
  *	are actually running, if not clean up the job records and/or node
@@ -16519,9 +16678,11 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->node_addrs);
 	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->nodes_rs);
 	xfree(job_ptr->failed_node);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_rs);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->resv_ports);
 
@@ -18295,6 +18456,7 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
 {
 	xfree(job_ptr->nodes_completing);
 	xfree(job_ptr->nodes_pr);
+	xfree(job_ptr->nodes_rs);
 
 	if (!job_ptr->node_bitmap)
 		return 0;
@@ -18316,6 +18478,9 @@ static int _update_job_nodes_str(job_record_t *job_ptr)
 			job_ptr->nodes_pr =
 				bitmap2node_name(job_ptr->node_bitmap);
 		}
+	}
+	if (IS_JOB_RESIZING(job_ptr) && job_ptr->node_bitmap_rs) {
+		job_ptr->nodes_rs = bitmap2node_name(job_ptr->node_bitmap_rs);
 	}
 
 	return 0;

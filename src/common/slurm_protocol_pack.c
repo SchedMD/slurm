@@ -3707,6 +3707,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpack16(&job->shared, buffer);
 
 			safe_unpackstr(&job->cronspec, buffer);
+
+			safe_unpack16(&job->mem_update_delay, buffer);
+			safe_unpack16(&job->mem_update_margin, buffer);
 		}
 
 		/*** unpack pending job details ***/
@@ -6993,6 +6996,8 @@ static void _pack_job_desc_msg(const slurm_msg_t *smsg, buf_t *buffer)
 		packstr(msg->burst_buffer, buffer);
 		pack16(msg->pn_min_cpus, buffer);
 		pack64(msg->pn_min_memory, buffer);
+		pack16(msg->mem_update_delay, buffer);
+		pack16(msg->mem_update_margin, buffer);
 		pack16(msg->oom_kill_step, buffer);
 		pack32(msg->pn_min_tmp_disk, buffer);
 		packstr(msg->prefer, buffer);
@@ -7557,6 +7562,8 @@ static int _unpack_job_desc_msg(slurm_msg_t *smsg, buf_t *buffer)
 		safe_unpackstr(&msg->burst_buffer, buffer);
 		safe_unpack16(&msg->pn_min_cpus, buffer);
 		safe_unpack64(&msg->pn_min_memory, buffer);
+		safe_unpack16(&msg->mem_update_delay, buffer);
+		safe_unpack16(&msg->mem_update_margin, buffer);
 		safe_unpack16(&msg->oom_kill_step, buffer);
 		safe_unpack32(&msg->pn_min_tmp_disk, buffer);
 
@@ -9388,6 +9395,127 @@ static int _unpack_cancel_tasks_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 unpack_error:
 	slurm_free_signal_tasks_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_job_mem_usage_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_mem_usage_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+	}
+}
+
+static int _unpack_job_mem_usage_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_mem_usage_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_job_mem_usage_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_job_mem_usage_resp_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_mem_usage_resp_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack64(msg->mem_usage, buffer);
+	}
+}
+
+static int _unpack_job_mem_usage_resp_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	job_mem_usage_resp_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		safe_unpack64(&msg->mem_usage, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_job_mem_usage_resp_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_update_job_mem_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_job_mem_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack64(msg->job_mem_per_node, buffer);
+		packbool(msg->notify_ctld, buffer);
+	}
+}
+
+static int _unpack_update_job_mem_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	update_job_mem_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&msg->step_id, buffer,
+					   smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack64(&msg->job_mem_per_node, buffer);
+		safe_unpackbool(&msg->notify_ctld, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_update_job_mem_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_response_update_job_mem_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
+{
+	response_update_job_mem_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		packstr(msg->node_name, buffer);
+		pack64(msg->job_mem_per_node, buffer);
+		packbool(msg->all_nodes, buffer);
+		pack32(msg->return_code, buffer);
+	}
+}
+
+static int _unpack_response_update_job_mem_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	response_update_job_mem_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&msg->step_id, buffer,
+					   smsg->protocol_version))
+			goto unpack_error;
+		safe_unpackstr(&msg->node_name, buffer);
+		safe_unpack64(&msg->job_mem_per_node, buffer);
+		safe_unpackbool(&msg->all_nodes, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_response_update_job_mem_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -14113,6 +14241,18 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_TERMINATE_JOB:
 		_pack_kill_job_msg(msg, buffer);
 		break;
+	case REQUEST_JOB_MEM_USAGE:
+		_pack_job_mem_usage_msg(msg, buffer);
+		break;
+	case RESPONSE_JOB_MEM_USAGE:
+		_pack_job_mem_usage_resp_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_JOB_MEM:
+		_pack_update_job_mem_msg(msg, buffer);
+		break;
+	case RESPONSE_UPDATE_JOB_MEM:
+		_pack_response_update_job_mem_msg(msg, buffer);
+		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		_pack_epilog_comp_msg(msg, buffer);
 		break;
@@ -14623,6 +14763,18 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_KILL_TIMELIMIT:
 	case REQUEST_TERMINATE_JOB:
 		rc = _unpack_kill_job_msg(msg, buffer);
+		break;
+	case REQUEST_JOB_MEM_USAGE:
+		rc = _unpack_job_mem_usage_msg(msg, buffer);
+		break;
+	case RESPONSE_JOB_MEM_USAGE:
+		rc = _unpack_job_mem_usage_resp_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_JOB_MEM:
+		rc = _unpack_update_job_mem_msg(msg, buffer);
+		break;
+	case RESPONSE_UPDATE_JOB_MEM:
+		rc = _unpack_response_update_job_mem_msg(msg, buffer);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		rc = _unpack_epilog_comp_msg(msg, buffer);

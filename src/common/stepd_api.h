@@ -81,6 +81,8 @@ typedef enum {
 	REQUEST_GETHOST,
 	REQUEST_GET_NS_FDS,
 	REQUEST_GET_BPF_TOKEN,
+	REQUEST_STEP_UPDATE_MEM_LIMITS,
+	REQUEST_JOB_USAGE,
 } step_msg_t;
 
 typedef enum {
@@ -177,6 +179,14 @@ int stepd_notify_job(int fd, uint16_t protocol_version, char *message);
  */
 int stepd_signal_container(int fd, uint16_t protocol_version, int signal,
 			   int flags, char *details, uid_t uid);
+
+/*
+ * Update the memory limit for a running job step.
+ *
+ * Returns SLURM_SUCCESS on success, or -1 on failure.
+ */
+extern int stepd_update_mem_limit(int fd, uint16_t protocol_version,
+				  uint64_t job_mem_per_node);
 
 /*
  * Attach a client to a running job step.
@@ -306,6 +316,14 @@ int stepd_completion(int fd, uint16_t protocol_version,
 int stepd_stat_jobacct(int fd, uint16_t protocol_version,
 		       slurm_step_id_t *sent, job_step_stat_t *resp);
 
+/*
+ * Get job-level accounting data.
+ *
+ * Returns SLURM_SUCCESS on success or SLURM_ERROR on error.
+ * resp receives a jobacctinfo_t which must be freed if SUCCESS.
+ */
+extern int stepd_job_usage(int fd, uint16_t protocol_version,
+			   jobacctinfo_t **jobacct);
 
 int stepd_task_info(int fd, uint16_t protocol_version,
 		    slurmstepd_task_info_t **task_info,

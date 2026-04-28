@@ -254,4 +254,10 @@ extern int select_g_job_expand(job_record_t *from_job_ptr,
  */
 extern int select_g_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 
+/*
+ * Reduce per-node allocated memory tracking for a running job.
+ * IN job_ptr - pointer to the job
+ */
+extern void select_g_job_mem_reduce(job_record_t *job_ptr);
+
 #endif

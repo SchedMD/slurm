@@ -127,6 +127,8 @@ typedef struct {
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 	char *mem_bind;			/* binding map for map/mask_cpu */
 	uint16_t mem_bind_type;		/* see mem_bind_type_t */
+	uint16_t mem_update_delay; /* auto-reduce delay in minutes */
+	uint16_t mem_update_margin; /* auto-reduce margin percent */
 	uint32_t min_cpus;		/* minimum number of cpus */
 	uint32_t orig_min_cpus;		/* requested value of min_cpus */
 	int min_gres_cpu;		/* Minimum CPU count per node required
@@ -150,6 +152,8 @@ typedef struct {
 	uint64_t pn_min_memory;		/* minimum memory per node (MB) OR
 					 * memory per allocated
 					 * CPU | MEM_PER_CPU */
+	uint64_t pn_min_memory_pre_resize; /* saved pn_min_memory to revert
+					      failed resize */
 	uint64_t orig_pn_min_memory;	/* requested value of pn_min_memory */
 	uint16_t oom_kill_step;		/* Kill whole step in case of OOM */
 	uint32_t pn_min_tmp_disk;	/* minimum tempdisk per node, MB */
@@ -392,6 +396,7 @@ struct job_record {
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
 	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
+	bitstr_t *node_bitmap_rs; /* bitmap of nodes with mem resize */
 	bitstr_t *node_bitmap_preempt; /* bitmap of nodes selected for the job
 					 * when trying to preempt other jobs.
 					 * (DO NOT SAVE OR PACK). */
@@ -412,6 +417,8 @@ struct job_record {
 					 * used only to dump/load nodes from/to dump file */
 	char *nodes_pr;			/* nodes with prolog running,
 					 * used only to dump/load nodes from/to dump file */
+	char *nodes_rs; /* nodes pending mem resize confirm,
+			 * used only to dump/load nodes from/to dump file */
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */

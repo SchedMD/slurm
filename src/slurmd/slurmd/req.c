@@ -138,6 +138,12 @@ typedef struct {
 	char *pos;
 } foreach_libdir_args_t;
 
+typedef struct {
+	bool extern_updated;
+	update_job_mem_msg_t *req;
+	int rc;
+} foreach_update_step_mem_t;
+
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(slurm_step_id_t *step_id);
 static int _kill_all_active_steps(slurm_step_id_t *step_id, int sig, int flags,
@@ -174,6 +180,7 @@ static void _remove_job_running_prolog(slurm_step_id_t *step_id);
 static void _wait_for_job_running_prolog(slurm_step_id_t *step_id);
 static int _wait_for_request_launch_prolog(slurm_step_id_t *step_id,
 					   bool *first_job_run);
+static int _match_job(void *x, void *key);
 
 /*
  *  List of threads waiting for jobs to complete
@@ -2851,6 +2858,148 @@ static int _signal_jobstep(slurm_step_id_t *step_id, uint16_t signal,
 	return rc;
 }
 
+static void _rpc_job_mem_usage(slurm_msg_t *msg)
+{
+	job_mem_usage_msg_t *req = msg->data;
+	slurm_msg_t resp_msg;
+	job_mem_usage_resp_msg_t *resp;
+	jobacctinfo_t *jobacct = NULL;
+	uint16_t protocol_version;
+	int fd, rc;
+	slurm_step_id_t extern_step_id = {
+		.job_id = req->step_id.job_id,
+		.sluid = req->step_id.sluid,
+		.step_id = SLURM_EXTERN_CONT,
+		.step_het_comp = NO_VAL,
+	};
+
+	debug("%s: querying memory usage for %pI", __func__, &req->step_id);
+
+	fd = stepd_connect(conf->spooldir, conf->node_name, &extern_step_id,
+			   &protocol_version);
+	if (fd == -1) {
+		error("%s: Cannot connect to extern step for %pI: %m",
+		      __func__, &req->step_id);
+		slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return;
+	}
+
+	if ((rc = stepd_job_usage(fd, protocol_version, &jobacct))) {
+		error("%s: stepd_job_usage failed for %pI",
+		      __func__, &req->step_id);
+		close(fd);
+		slurm_send_rc_msg(msg, rc);
+		return;
+	}
+	close(fd);
+
+	resp = xmalloc(sizeof(*resp));
+	resp->step_id = req->step_id;
+
+	if (jobacct) {
+		uint64_t rss = 0;
+		jobacctinfo_getinfo(jobacct, JOBACCT_DATA_TOT_RSS, &rss,
+				    protocol_version);
+		if (rss != INFINITE64) {
+			rss /= 1048576; /* B to MB */
+			resp->mem_usage = MAX(rss, 1);
+		}
+		jobacctinfo_destroy(jobacct);
+	}
+
+	debug("%s: %pI total RSS=%"PRIu64"MB", __func__, &req->step_id,
+	      resp->mem_usage);
+
+	slurm_msg_t_copy(&resp_msg, msg);
+	resp_msg.msg_type = RESPONSE_JOB_MEM_USAGE;
+	resp_msg.data = resp;
+
+	slurm_send_node_msg(msg->conn, &resp_msg);
+	slurm_free_job_mem_usage_resp_msg(resp);
+}
+
+static int _update_step_mem(void *x, void *arg)
+{
+	step_loc_t *stepd = x;
+	foreach_update_step_mem_t *args = arg;
+	update_job_mem_msg_t *req = args->req;
+	int fd;
+
+	if (!_match_job(&stepd->step_id, &req->step_id))
+		return 0;
+
+	fd = stepd_connect(stepd->directory, stepd->nodename, &stepd->step_id,
+			   &stepd->protocol_version);
+	if (fd == -1) {
+		debug("%s: unable to connect to %ps: %m",
+		      __func__, &stepd->step_id);
+		return 0;
+	}
+
+	if (stepd_update_mem_limit(fd, stepd->protocol_version,
+				   req->job_mem_per_node) != SLURM_SUCCESS) {
+		error("%s: failed to update memory for %ps",
+		      __func__, &stepd->step_id);
+		args->rc = SLURM_ERROR;
+	} else if (stepd->step_id.step_id == SLURM_EXTERN_CONT) {
+		args->extern_updated = true;
+	}
+	close(fd);
+
+	return 0;
+}
+
+static void _rpc_update_job_mem(slurm_msg_t *msg)
+{
+	update_job_mem_msg_t *req = msg->data;
+	list_t *steps;
+	int notify_rc = SLURM_ERROR;
+	int update_rc = SLURM_SUCCESS;
+	foreach_update_step_mem_t args = {
+		.rc = SLURM_SUCCESS,
+		.req = req,
+	};
+
+	debug("%s: updating memory limit for %pI to %"PRIu64"MB",
+	      __func__, &req->step_id, req->job_mem_per_node);
+
+	/*
+	 *  Indicate to slurmctld that we've received the message
+	 */
+	if (req->notify_ctld)
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+	slurm_mutex_lock(&prolog_mutex);
+
+	cred_set_reject_before(&(req->step_id),
+			       MAX(time(NULL),
+				   auth_g_get_time(msg->auth_cred)));
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	list_for_each(steps, _update_step_mem, &args);
+	FREE_NULL_LIST(steps);
+
+	slurm_mutex_unlock(&prolog_mutex);
+
+	if (!args.extern_updated)
+		update_rc = args.rc ? args.rc : ESLURM_INVALID_JOB_ID;
+
+	while (req->notify_ctld && notify_rc != SLURM_SUCCESS) {
+		notify_rc =
+			notify_slurmctld_mem_update_fini(&(req->step_id),
+							 req->job_mem_per_node,
+							 update_rc, false);
+		if (notify_rc != SLURM_SUCCESS) {
+			info("%s: Retrying memory update complete RPC for %pI [sleeping %us]",
+			     __func__, &req->step_id, RETRY_DELAY);
+			sleep(RETRY_DELAY);
+		}
+	}
+
+	if (!req->notify_ctld)
+		slurm_send_rc_msg(msg, update_rc);
+}
+
 static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {
@@ -5012,148 +5161,198 @@ typedef struct {
 	void (*func)(slurm_msg_t *msg);
 } slurmd_rpc_t;
 
-slurmd_rpc_t slurmd_rpcs[] =
-{
+slurmd_rpc_t slurmd_rpcs[] = {
 	{
 		.msg_type = REQUEST_LAUNCH_PROLOG,
 		.from_slurmctld = true,
 		.func = _rpc_prolog,
-	},{
+	},
+	{
 		.msg_type = REQUEST_BATCH_JOB_LAUNCH,
 		.from_slurmctld = true,
 		.func = _rpc_batch_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_LAUNCH_TASKS,
 		.func = _rpc_launch_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SIGNAL_TASKS,
 		.func = _rpc_signal_tasks,
-	},{
+	},
+	{
+		.msg_type = REQUEST_JOB_MEM_USAGE,
+		.from_slurmctld = true,
+		.func = _rpc_job_mem_usage,
+	},
+	{
+		.msg_type = REQUEST_UPDATE_JOB_MEM,
+		.from_slurmctld = true,
+		.func = _rpc_update_job_mem,
+	},
+	{
 		.msg_type = REQUEST_TERMINATE_TASKS,
 		.func = _rpc_terminate_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_KILL_PREEMPTED,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
-	},{
+	},
+	{
 		.msg_type = REQUEST_KILL_TIMELIMIT,
 		.from_slurmctld = true,
 		.func = _rpc_timelimit,
-	},{
+	},
+	{
 		.msg_type = REQUEST_REATTACH_TASKS,
 		.func = _rpc_reattach_tasks,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SUSPEND_INT,
 		.from_slurmctld = true,
 		.func = _rpc_suspend_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_ABORT_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_abort_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_TERMINATE_JOB,
 		.from_slurmctld = true,
 		.func = _rpc_terminate_job,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SHUTDOWN,
 		.from_slurmctld = true,
 		.func = _rpc_shutdown,
-	},{
+	},
+	{
 		.msg_type = REQUEST_RECONFIGURE,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SET_DEBUG_FLAGS,
 		.func = _rpc_set_slurmd_debug_flags,
-	},{
+	},
+	{
 		.msg_type = REQUEST_SET_DEBUG_LEVEL,
 		.func = _rpc_set_slurmd_debug,
-	},{
+	},
+	{
 		.msg_type = REQUEST_RECONFIGURE_WITH_CONFIG,
 		.from_slurmctld = true,
 		.func = _rpc_reconfig,
-	},{
+	},
+	{
 		.msg_type = REQUEST_REBOOT_NODES,
 		.from_slurmctld = true,
 		.func = _rpc_reboot,
-	},{
+	},
+	{
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
 		.from_slurmctld = true,
 		.func = _rpc_ping,
-	},{
+	},
+	{
 		.msg_type = REQUEST_PING,
 		.from_slurmctld = true,
 		.func = _rpc_ping,
-	},{
+	},
+	{
 		.msg_type = REQUEST_HEALTH_CHECK,
 		.from_slurmctld = true,
 		.func = _rpc_health_check,
-	},{
+	},
+	{
 		.msg_type = REQUEST_ACCT_GATHER_UPDATE,
 		.from_slurmctld = true,
 		.func = _rpc_acct_gather_update,
-	},{
+	},
+	{
 		.msg_type = REQUEST_ACCT_GATHER_ENERGY,
 		.func = _rpc_acct_gather_energy,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_ID,
 		.func = _rpc_pid2jid,
-	},{
+	},
+	{
 		.msg_type = REQUEST_FILE_BCAST,
 		.func = _rpc_file_bcast,
-	},{
+	},
+	{
 		.msg_type = REQUEST_STEP_COMPLETE,
 		.func = _rpc_step_complete,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_CREATE,
 		.func = _slurm_rpc_job_step_create,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_STAT,
 		.func = _rpc_stat_jobacct,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_PIDS,
 		.func = _rpc_list_pids,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_STEP_INFO,
 		.func = _slurm_rpc_job_step_get_info,
-	},{
+	},
+	{
 		.msg_type = REQUEST_DAEMON_STATUS,
 		.func = _rpc_daemon_status,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_NOTIFY,
 		.func = _rpc_job_notify,
-	},{
+	},
+	{
 		.msg_type = REQUEST_FORWARD_DATA,
 		.func = _rpc_forward_data,
-	},{
+	},
+	{
 		.msg_type = REQUEST_NETWORK_CALLERID,
 		.func = _rpc_network_callerid,
-	},{
+	},
+	{
 		.msg_type = REQUEST_CANCEL_JOB_STEP,
 		.func = _slurm_rpc_job_step_kill,
-	},{
+	},
+	{
 		.msg_type = SRUN_JOB_COMPLETE,
 		.func = _slurm_rpc_srun_job_complete,
-	},{
+	},
+	{
 		.msg_type = SRUN_NODE_FAIL,
 		.func = _slurm_rpc_srun_node_fail,
-	},{
+	},
+	{
 		.msg_type = SRUN_TIMEOUT,
 		.func = _slurm_rpc_srun_timeout,
-	},{
+	},
+	{
 		.msg_type = REQUEST_UPDATE_JOB_STEP,
 		.func = _slurm_rpc_update_step,
-	},{
+	},
+	{
 		.msg_type = REQUEST_STEP_LAYOUT,
 		.func = _slurm_rpc_step_layout,
-	},{
+	},
+	{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
 		.func = _slurm_rpc_sbcast_cred,
-	},{
+	},
+	{
 		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
 		.func = _slurm_het_job_alloc_info,
-	},{
+	},
+	{
 		/* terminate the array. this must be last. */
 		.msg_type = 0,
 		.func = NULL,

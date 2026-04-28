@@ -2473,6 +2473,63 @@ static slurm_cli_opt_t slurm_opt_mem_per_gpu = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_mem_update(slurm_opt_t *opt, const char *arg)
+{
+	char *tmparg = xstrdup(arg);
+	char *split = xstrchr(tmparg, '@');
+	long margin;
+	int delay;
+	char *end;
+
+	if (!split) {
+		error("--mem-update requires MARGIN@DELAY format");
+		xfree(tmparg);
+		return SLURM_ERROR;
+	}
+
+	split[0] = '\0';
+	split++;
+
+	margin = strtol(tmparg, &end, 10);
+	delay = time_str2mins(split);
+
+	if ((margin <= 0) || (margin > UINT16_MAX) || (delay > UINT16_MAX) ||
+	    (delay <= 0) || (delay == NO_VAL) || (*end != '\0')) {
+		error("Invalid --mem-update specification");
+		xfree(tmparg);
+		return SLURM_ERROR;
+	}
+
+	opt->mem_update_margin = (uint16_t) margin;
+	opt->mem_update_delay = (uint16_t) delay;
+
+	xfree(tmparg);
+	return SLURM_SUCCESS;
+}
+
+static char *arg_get_mem_update(slurm_opt_t *opt)
+{
+	if (opt->mem_update_margin && opt->mem_update_delay)
+		return xstrdup_printf("%u@%u", opt->mem_update_margin,
+				      opt->mem_update_delay);
+	return xstrdup("unset");
+}
+
+static void arg_reset_mem_update(slurm_opt_t *opt)
+{
+	opt->mem_update_margin = 0;
+	opt->mem_update_delay = 0;
+}
+
+static slurm_cli_opt_t slurm_opt_mem_update = {
+	.name = "mem-update",
+	.has_arg = required_argument,
+	.val = LONG_OPT_MEM_UPDATE,
+	.set_func = arg_set_mem_update,
+	.get_func = arg_get_mem_update,
+	.reset_func = arg_reset_mem_update,
+};
+
 COMMON_INT_OPTION_SET(pn_min_cpus, "--mincpus");
 COMMON_INT_OPTION_GET(pn_min_cpus);
 COMMON_OPTION_RESET(pn_min_cpus, -1);
@@ -4397,6 +4454,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_mem_bind,
 	&slurm_opt_mem_per_cpu,
 	&slurm_opt_mem_per_gpu,
+	&slurm_opt_mem_update,
 	&slurm_opt_mincpus,
 	&slurm_opt_mpi,
 	&slurm_opt_msg_timeout,
@@ -6146,6 +6204,9 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	if (opt_local->pn_min_tmp_disk != NO_VAL64)
 		job_desc->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
+
+	job_desc->mem_update_margin = opt_local->mem_update_margin;
+	job_desc->mem_update_delay = opt_local->mem_update_delay;
 
 	if (opt_local->req_switch >= 0)
 		job_desc->req_switch = opt_local->req_switch;
