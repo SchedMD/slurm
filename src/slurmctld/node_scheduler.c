@@ -1704,7 +1704,11 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	 * Accumulate resources for this job based upon its required
 	 * features (possibly with node counts).
 	 */
+	job_ptr->bit_flags |= NEED_MORE_FEATURES;
 	for (j = min_feature; j <= max_feature; j++) {
+		if (j >= max_feature) {
+			job_ptr->bit_flags &= ~NEED_MORE_FEATURES;
+		}
 		if (job_ptr->details->req_node_bitmap) {
 			bool missing_required_nodes = false;
 			bool feature_found = false;

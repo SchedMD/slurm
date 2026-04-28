@@ -3153,7 +3153,8 @@ top:	orig_node_map = bit_copy(save_node_map);
 			return rc;
 		}
 		FREE_NULL_LIST(preemptees_to_suspend_by_qos);
-	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates) {
+	} else if ((rc != SLURM_SUCCESS) && preemptee_candidates &&
+		   !(job_ptr->bit_flags & NEED_MORE_FEATURES)) {
 		int preemptee_cand_cnt = list_count(preemptee_candidates);
 		/* Remove preemptable jobs from simulated environment */
 		preempt_mode = true;
