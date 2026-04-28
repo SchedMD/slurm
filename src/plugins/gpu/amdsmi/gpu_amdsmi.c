@@ -1525,7 +1525,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         /* Prefer average_socket_power (stable) over socket_power/current_socket_power
          * for MI300X/MI355X reliable energy accounting in Slurm. */
         if (power_info.average_socket_power != 0 &&
-            power_info.average_socket_power != NO_VAL) {
+            power_info.average_socket_power != NO_VAL && power_info.average_socket_power != 65535) {
             watts = power_info.average_socket_power;
             debug2("AMDSMI: GPU[%u] power read: average_socket_power=%u W, current_socket_power=%u W",
                    dv_ind, power_info.average_socket_power,
