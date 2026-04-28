@@ -111,15 +111,16 @@ extern int save_buf_to_state(const char *target_file, buf_t *buf,
 	if ((rc = fsync_and_close(fd, new_file)) < 0)
 		goto fail;
 
-	(void) unlink(old_file);
-	if (link(reg_file, old_file))
-		debug2("unable to create link for %s -> %s: %m",
+	if (rename(reg_file, old_file)) {
+		debug2("unable to rename %s -> %s: %m",
 		       reg_file, old_file);
-
-	(void) unlink(reg_file);
-	if (link(new_file, reg_file))
-		debug2("unable to create link for %s -> %s: %m",
+	}
+	if (rename(new_file, reg_file)) {
+		debug2("unable to rename %s -> %s: %m",
 		       new_file, reg_file);
+		rc = SLURM_ERROR;
+		goto fail;
+	}
 
 	if (high_buffer_size)
 		*high_buffer_size = MAX(get_buf_offset(buf), *high_buffer_size);
