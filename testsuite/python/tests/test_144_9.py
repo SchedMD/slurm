@@ -377,12 +377,14 @@ def test_fail(job_args, expected_msg):
     )
     assert output["exit_code"] != 0, (
         f"Expected non-zero exit code for job_args: '{job_args}', because of ReservedCoresPerGPU.\n"
-        f"STDERR: {output['stderr']}"
+        f"STDOUT: {output['stdout']!r}\n"
+        f"STDERR: {output['stderr']!r}"
     )
-    if re.search(expected_msg, str(output["stderr"])) is None:
-        raise AssertionError(
-            f"STDERR did not match expected regex.\n"
-            f"job_args: {job_args}\n"
-            f"Expected regex: {expected_msg}\n"
-            f"Actual STDERR: {output['stderr']}"
-        )
+    assert re.search(expected_msg, output["stderr"]), (
+        f"Expected error should be in stderr, got:\n"
+        f"job_args: {job_args}\n"
+        f"exit_code: {output['exit_code']}\n"
+        f"Expected regex: {expected_msg}\n"
+        f"STDOUT: {output['stdout']!r}\n"
+        f"STDERR: {output['stderr']!r}"
+    )
