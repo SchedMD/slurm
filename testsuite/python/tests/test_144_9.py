@@ -372,8 +372,8 @@ fail_test_parameters = [
 )
 def test_fail(job_args, expected_msg):
     output = atf.run_command(
-        f"srun {job_args} shostname",
-        fatal=False,
+        f"srun {job_args} true",
+        xfail=True,
     )
     assert output["exit_code"] != 0, (
         f"Expected non-zero exit code for job_args: '{job_args}', because of ReservedCoresPerGPU.\n"
