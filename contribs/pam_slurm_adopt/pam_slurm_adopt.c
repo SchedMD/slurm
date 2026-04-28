@@ -730,8 +730,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	if (!user_extern_step_cnt) {
 		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
 			debug("uid %u owns no jobs => deny", pwd.pw_uid);
-			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
-				      ": you have no active jobs on this node");
+			send_user_msg(pamh, "Access denied by "PAM_MODULE_NAME": you have no active jobs on this node");
 			rc = PAM_PERM_DENIED;
 		} else {
 			debug("uid %u owns no jobs but action_no_jobs=ignore",
@@ -768,8 +767,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 		} else if (opts.action_unknown == CALLERID_ACTION_DENY) {
 			debug("uid %u owns multiple jobs and action_unknown=deny => deny",
 			      pwd.pw_uid);
-			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
-				      ": unable to determine source job");
+			send_user_msg(pamh, "Access denied by "PAM_MODULE_NAME": unable to determine source job");
 			rc = PAM_PERM_DENIED;
 			goto cleanup;
 		}
@@ -789,8 +787,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	else {
 		debug("uid %u failed to adopt %ps action_adopt_failure=deny => deny",
 		      pwd.pw_uid, &stepd->step_id);
-		send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
-			      ": adoption failure");
+		send_user_msg(pamh, "Access denied by "PAM_MODULE_NAME": adoption failure");
 		rc = PAM_PERM_DENIED;
 	}
 
