@@ -1520,29 +1520,44 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
 
     if (rc == AMDSMI_STATUS_SUCCESS) {
-        /* Prefer average_socket_power (stable) over socket_power (instantaneous/noisy)
-         * for MI300X/MI355X reliable energy accounting in Slurm */
-        if (power_info.average_socket_power != 0) {
-            gpu->energy.current_watts = power_info.average_socket_power;
-            debug2("AMDSMI: GPU[%u] power read: average_socket_power=%.2f W, socket_power=%.2f W",
-                   dv_ind, power_info.average_socket_power, power_info.current_socket_power);
-        } else if (power_info.current_socket_power != 0) {
-            /* Fallback to instantaneous socket_power if average is unavailable */
-            gpu->energy.current_watts = power_info.current_socket_power;
-            debug2("AMDSMI: GPU[%u] power read: average_socket_power unavailable, socket_power=%.2f W used as fallback",
+        uint32_t watts = NO_VAL;
+
+        /* Prefer average_socket_power (stable) over socket_power/current_socket_power
+         * for MI300X/MI355X reliable energy accounting in Slurm. */
+        if (power_info.average_socket_power != 0 &&
+            power_info.average_socket_power != NO_VAL) {
+            watts = power_info.average_socket_power;
+            debug2("AMDSMI: GPU[%u] power read: average_socket_power=%u W, current_socket_power=%u W",
+                   dv_ind, power_info.average_socket_power,
+                   power_info.current_socket_power);
+        } else if (power_info.current_socket_power != 0 &&
+                   power_info.current_socket_power != NO_VAL) {
+            /* Fallback to current_socket_power if average is unavailable */
+            watts = power_info.current_socket_power;
+            debug2("AMDSMI: GPU[%u] power read: average_socket_power unavailable, current_socket_power=%u W used as fallback",
                    dv_ind, power_info.current_socket_power);
+        } else if (power_info.socket_power != 0 && power_info.socket_power != NO_VAL) {
+            /* Last resort fallback to generic socket_power */
+            watts = (uint32_t) power_info.socket_power;
+            debug2("AMDSMI: GPU[%u] power read: average/current socket power unavailable, socket_power=%" PRIu64 " W used as fallback",
+                   dv_ind, power_info.socket_power);
         } else {
             gpu->energy.current_watts = NO_VAL;
-            debug2("AMDSMI: power read for GPU[%u] returned zero for both average_socket_power and socket_power; treating as unavailable",
+            gpu->last_update_watt = NO_VAL;
+            debug2("AMDSMI: power read for GPU[%u] returned zero for all socket power fields; treating as unavailable",
                    dv_ind);
             return SLURM_ERROR;
         }
+
+        gpu->energy.current_watts = watts;
+        gpu->last_update_watt = watts;
     } else {
         /* Both methods failed */
         amdsmi_status_code_to_string(rc, &status_string);
         error("AMDSMI: power read failed for GPU[%u]: %s",
                 dv_ind, status_string ? status_string : "unknown");
         gpu->energy.current_watts = NO_VAL;
+        gpu->last_update_watt = NO_VAL;
         return SLURM_ERROR;
     }
 
