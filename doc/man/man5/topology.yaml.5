@@ -51,6 +51,7 @@ fields, see below.
 \fBflat\fR
 If set to \fBtrue\fR, this topology will use the \fBtopology/flat\fR plugin,
 which is the default if no TopologyPlugin or topology.yaml is specified.
+May also be set to a dictionary of options, see "Flat definitions" below.
 .IP
 
 .TP
@@ -250,6 +251,18 @@ torus. Defaults to the placement \fBdims\fR if not specified.
 .RE
 .IP
 .RE
+
+.SS "Flat definitions"
+.LP
+Each flat topology may contain the following attribute:
+.LP
+
+.TP
+\fBalpha_step_rank\fR
+If set to \fBtrue\fR, sort the job's allocated nodes alphabetically by name
+when picking step nodes and laying out tasks. By default the order follows
+the internal node table index, which for dynamically registered nodes
+reflects registration order rather than name order.
 .IP
 
 .SH "EXAMPLE"
@@ -283,6 +296,10 @@ torus. Defaults to the placement \fBdims\fR if not specified.
 - topology: topo3
   cluster_default: false
   flat: true
+- topology: topo3a
+  cluster_default: false
+  flat:
+    alpha_step_rank: true
 - topology: topo4
   cluster_default: false
   ring:
