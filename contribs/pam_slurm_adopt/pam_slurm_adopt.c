@@ -67,9 +67,11 @@
 #include "src/common/slurm_xlator.h"
 
 #include "src/common/callerid.h"
-#include "src/interfaces/cgroup.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/stepd_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 typedef enum {
 	CALLERID_ACTION_NEWEST,
@@ -235,201 +237,12 @@ static uid_t _get_job_uid(step_loc_t *stepd)
 	return uid;
 }
 
-/* Return mtime of a cgroup. If we can't read the right cgroup information,
- * return 0. That results in a (somewhat) random choice of job */
-static time_t _cgroup_creation_time(char *uidcg, uint32_t job_id)
-{
-	char path[PATH_MAX];
-	struct stat statbuf;
-
-	if (snprintf(path, PATH_MAX, "%s/job_%u", uidcg, job_id) >= PATH_MAX) {
-		info("snprintf: '%s/job_%u' longer than PATH_MAX of %d",
-		     uidcg, job_id, PATH_MAX);
-		return 0;
-	}
-
-	if (stat(path, &statbuf) != 0) {
-		info("Couldn't stat path '%s': %m", path);
-		return 0;
-	}
-
-	return statbuf.st_mtime;
-}
-
-static int _check_cg_version()
-{
-	char *type;
-	int cg_ver = 0;
-
-	/* Check cgroup version */
-	type = slurm_cgroup_conf.cgroup_plugin;
-
-	/* Default is autodetect */
-	if (!type)
-		type = "autodetect";
-
-	if (!xstrcmp(type, "autodetect"))
-		if (!(type = slurm_autodetect_cgroup_version()))
-			return cg_ver;
-
-	if (!xstrcmp("cgroup/v1", type))
-		cg_ver = 1;
-	else if (!xstrcmp("cgroup/v2", type))
-		cg_ver = 2;
-
-	return cg_ver;
-}
-
-/*
- * Pick a random job belonging to this user.
- * Unlike when using cgroup/v1, we will pick here the job with the highest JobID
- * instead of getting the job which has the earliest cgroup creation time.
- */
-static int _indeterminate_multiple_v2(pam_handle_t *pamh, list_t *steps,
-				      uid_t uid, step_loc_t **out_stepd)
-{
-	int rc = PAM_PERM_DENIED;
-	list_itr_t *itr = NULL;
-	step_loc_t *stepd = NULL;
-	uint32_t most_recent = 0;
-
-	itr = list_iterator_create(steps);
-	while ((stepd = list_next(itr))) {
-		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
-		    (uid == _get_job_uid(stepd))) {
-			if (stepd->step_id.job_id > most_recent) {
-				most_recent = stepd->step_id.job_id;
-				*out_stepd = stepd;
-				rc = PAM_SUCCESS;
-			}
-		}
-	}
-
-	if (rc != PAM_SUCCESS) {
-		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
-			debug("uid %u owns no jobs => deny", uid);
-			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
-				      ": you have no active jobs on this node");
-			rc = PAM_PERM_DENIED;
-		} else {
-			debug("uid %u owns no jobs but action_no_jobs=allow",
-			      uid);
-			rc = PAM_SUCCESS;
-		}
-	}
-
-	list_iterator_destroy(itr);
-	return rc;
-}
-
-static int _indeterminate_multiple(pam_handle_t *pamh, list_t *steps, uid_t uid,
-				   step_loc_t **out_stepd)
-{
-	list_itr_t *itr = NULL;
-	int rc = PAM_PERM_DENIED;
-	step_loc_t *stepd = NULL;
-	time_t most_recent = 0, cgroup_time = 0;
-	char uidcg[PATH_MAX];
-	char *cgroup_suffix = "";
-	char *cgroup_res = "";
-	int cg_ver;
-
-	if (opts.action_unknown == CALLERID_ACTION_DENY) {
-		debug("Denying due to action_unknown=deny");
-		send_user_msg(pamh,
-			      "Access denied by "
-			      PAM_MODULE_NAME
-			      ": unable to determine source job");
-		return PAM_PERM_DENIED;
-	}
-
-	cg_ver = _check_cg_version();
-	debug("Detected cgroup version %d", cg_ver);
-
-	if (cg_ver != 1 && cg_ver != 2)
-		return PAM_SESSION_ERR;
-
-	if (cg_ver == 2)
-		return _indeterminate_multiple_v2(pamh, steps, uid, out_stepd);
-
-	if (opts.node_name)
-		cgroup_suffix = xstrdup_printf("_%s", opts.node_name);
-
-	/* pick a cgroup that is likely to exist */
-	if (slurm_cgroup_conf.constrain_ram_space ||
-	    slurm_cgroup_conf.constrain_swap_space) {
-		cgroup_res = "memory";
-	} else if (slurm_cgroup_conf.constrain_cores) {
-		cgroup_res = "cpuset";
-	} else if (slurm_cgroup_conf.constrain_devices) {
-		cgroup_res = "devices";
-	} else {
-		/* last resort, from proctrack/cgroup */
-		cgroup_res = "freezer";
-	}
-
-	if (snprintf(uidcg, PATH_MAX, "%s/%s/slurm%s/uid_%u",
-		     slurm_cgroup_conf.cgroup_mountpoint, cgroup_res,
-		     cgroup_suffix, uid)
-	    >= PATH_MAX) {
-		info("snprintf: '%s/%s/slurm%s/uid_%u' longer than PATH_MAX of %d",
-		     slurm_cgroup_conf.cgroup_mountpoint, cgroup_res,
-		     cgroup_suffix, uid, PATH_MAX);
-		/* Make the uidcg an empty string. This will effectively switch
-		 * to a (somewhat) random selection of job rather than picking
-		 * the latest, but how did you overflow PATH_MAX chars anyway?
-		 */
-		uidcg[0] = '\0';
-	}
-
-	if (opts.node_name)
-		xfree(cgroup_suffix);
-
-	itr = list_iterator_create(steps);
-	while ((stepd = list_next(itr))) {
-		/*
-		 * Only use container steps from this user
-		 */
-		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
-		    (uid == _get_job_uid(stepd))) {
-			cgroup_time = _cgroup_creation_time(
-				uidcg, stepd->step_id.job_id);
-			/* Return the newest job_id, according to cgroup
-			 * creation. Hopefully this is a good way to do this */
-			if (cgroup_time >= most_recent) {
-				most_recent = cgroup_time;
-				*out_stepd = stepd;
-				rc = PAM_SUCCESS;
-			}
-		}
-	}
-
-	/* No jobs from this user exist on this node. This should have been
-	 * caught earlier but wasn't for some reason. */
-	if (rc != PAM_SUCCESS) {
-		if (opts.action_no_jobs == CALLERID_ACTION_DENY) {
-			debug("uid %u owns no jobs => deny", uid);
-			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
-				      ": you have no active jobs on this node");
-			rc = PAM_PERM_DENIED;
-		} else {
-			debug("uid %u owns no jobs but action_no_jobs=allow",
-			      uid);
-			rc = PAM_SUCCESS;
-		}
-	}
-
-	list_iterator_destroy(itr);
-	return rc;
-}
-
 /* This is the action of last resort. If action_unknown=allow, allow it through
  * without adoption. Otherwise, call _indeterminate_multiple to pick a job. If
  * successful, adopt it into a process and use a return code based on success of
  * the adoption and the action_adopt_failure setting. */
 static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, list_t *steps)
 {
-	int rc;
 	step_loc_t *stepd = NULL;
 
 	if (opts.action_unknown == CALLERID_ACTION_ALLOW) {
@@ -437,23 +250,15 @@ static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, list_t *steps
 		return PAM_SUCCESS;
 	}
 
-	/* Both the single job check and the RPC call have failed to ascertain
-	 * the correct job to adopt this into. Time for drastic measures */
-	rc = _indeterminate_multiple(pamh, steps, pwd->pw_uid, &stepd);
-	if (rc == PAM_SUCCESS) {
-		info("action_unknown: Picked job %u", stepd->step_id.job_id);
-		if (_adopt_process(pamh, getpid(), stepd) == SLURM_SUCCESS) {
-			return PAM_SUCCESS;
-		}
-		if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
-			return PAM_SUCCESS;
-		else
-			return PAM_PERM_DENIED;
-	} else {
-		/* This pam module was worthless, apparently */
-		debug("_indeterminate_multiple failed to find a job to adopt this into");
-		return rc;
+	stepd = list_peek(steps);
+	info("action_unknown: Picked job %u", stepd->step_id.job_id);
+	if (_adopt_process(pamh, getpid(), stepd) == SLURM_SUCCESS) {
+		return PAM_SUCCESS;
 	}
+	if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
+		return PAM_SUCCESS;
+	else
+		return PAM_PERM_DENIED;
 }
 
 static int _find_user_extern_steps(void *x, void *arg)
@@ -912,7 +717,6 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	 * there is a problem initializing Slurm.
 	 */
 	slurm_init(NULL);
-	slurm_cgroup_conf_init();
 
 	/*
 	 * Check if there are any steps on the node from any user. A failure here
@@ -992,7 +796,6 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			     find_user_extern_steps.user_extern_steps);
 
 cleanup:
-	slurm_cgroup_conf_destroy();
 	FREE_NULL_LIST(find_user_extern_steps.user_extern_steps);
 	FREE_NULL_LIST(steps);
 	xfree(buf);
