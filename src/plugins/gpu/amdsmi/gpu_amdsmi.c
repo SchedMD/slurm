@@ -1548,9 +1548,8 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
                    dv_ind);
             return SLURM_ERROR;
         }
-
-        gpu->energy.current_watts = watts;
         gpu->last_update_watt = watts;
+//        gpu->energy.current_watts = watts;
     } else {
         /* Both methods failed */
         amdsmi_status_code_to_string(rc, &status_string);
