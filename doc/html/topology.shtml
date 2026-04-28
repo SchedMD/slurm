@@ -4,24 +4,15 @@
 
 <p>Slurm can be configured to support topology-aware resource
 allocation to optimize job performance.
-Slurm supports several modes of operation, one to optimize performance on
-systems with a three-dimensional torus interconnect and another for
-a hierarchical interconnect.
-The hierarchical mode of operation supports both fat-tree or dragonfly networks,
-using slightly different algorithms.</p>
-
-<p>Slurm's native mode of resource selection is to consider the nodes
-as a one-dimensional array.
-Jobs are allocated resources on a best-fit basis.
-For larger jobs, this minimizes the number of sets of consecutive nodes
-allocated to the job.</p>
+Without a topology plugin, Slurm's native mode of resource selection
+considers nodes as a one-dimensional array and allocates resources
+on a best-fit basis.</p>
 
 <h2 id="contents">Contents
-<a class="slurm_link" href="#topo_3d"></a>
+<a class="slurm_link" href="#contents"></a>
 </h2>
 
 <ul>
-<li><a href="#topo_3d">Three-dimensional Topology</a></li>
 <li><a href="#hierarchical">Tree Topology (Hierarchical Networks)</a>
 <ul>
 <li><a href="#config_generators">Configuration Generators</a></li>
@@ -36,22 +27,6 @@ allocated to the job.</p>
 <li><a href="#multi_topo">Multiple Topologies</a></li>
 <li><a href="#dynamic_topo">Dynamic Topology</a></li>
 </ul>
-
-<h2 id="topo_3d">Three-dimensional Topology
-<a class="slurm_link" href="#topo_3d"></a>
-</h2>
-
-<p>Some larger computers rely upon a three-dimensional torus interconnect.
-The Cray XT and XE systems also have three-dimensional
-torus interconnects, but do not require that jobs execute in adjacent nodes.
-On those systems, Slurm only needs to allocate resources to a job which
-are nearby on the network.
-Slurm accomplishes this using a
-<a href="http://en.wikipedia.org/wiki/Hilbert_curve">Hilbert curve</a>
-to map the nodes from a three-dimensional space into a one-dimensional
-space.
-Slurm's native best-fit algorithm is thus able to achieve a high degree
-of locality for jobs.</p>
 
 <h2 id="hierarchical">Tree Topology (Hierarchical Networks)
 <a class="slurm_link" href="#hierarchical"></a>
