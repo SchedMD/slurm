@@ -985,8 +985,6 @@ static void _het_job_val_init(job_record_t *job_ptr)
 	 */
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr && !assoc_ptr->usage_het) {
-		if (assoc_ptr->usage_het)
-			break;
 		assoc_ptr->usage_het =
 			slurmdb_create_assoc_usage(slurmctld_tres_cnt);
 		assoc_ptr = assoc_ptr->usage->parent_assoc_ptr;
