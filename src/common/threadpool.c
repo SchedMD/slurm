@@ -1039,7 +1039,7 @@ extern void threadpool_init(const int default_count, const char *params)
 
 	slurm_mutex_lock(&threadpool.mutex);
 
-	if (threadpool.shutdown || !threadpool.enabled) {
+	if (threadpool.pending || threadpool.shutdown || !threadpool.enabled) {
 		slurm_mutex_unlock(&threadpool.mutex);
 		return;
 	}
