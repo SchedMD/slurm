@@ -815,6 +815,13 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->comment);
 	} else if (!xstrcmp(name, "container")) {
 		lua_pushstring(L, job_ptr->container);
+	} else if (!xstrcmp(name, "core_spec")) {
+		if (job_ptr->details &&
+		    (job_ptr->details->core_spec != NO_VAL16) &&
+		    !(job_ptr->details->core_spec & CORE_SPEC_THREAD))
+			lua_pushnumber(L, job_ptr->details->core_spec);
+		else
+			lua_pushnil(L);
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
 		lua_pushstring(L, job_ptr->cpus_per_tres);
 	} else if (!xstrcmp(name, "delay_boot")) {
@@ -1033,6 +1040,14 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "submit_time")) {
 		if (job_ptr->details)
 			lua_pushnumber(L, job_ptr->details->submit_time);
+		else
+			lua_pushnil(L);
+	} else if (!xstrcmp(name, "thread_spec")) {
+		if (job_ptr->details &&
+		    (job_ptr->details->core_spec != NO_VAL16) &&
+		    (job_ptr->details->core_spec & CORE_SPEC_THREAD))
+			lua_pushnumber(L, job_ptr->details->core_spec &
+						  ~CORE_SPEC_THREAD);
 		else
 			lua_pushnil(L);
 	} else if (!xstrcmp(name, "time_limit")) {
