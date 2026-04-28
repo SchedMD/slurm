@@ -36,8 +36,9 @@
 #include <dlfcn.h>
 
 #include "src/common/assoc_mgr.h"
-#include "src/interfaces/gpu.h"
 #include "src/common/plugin.h"
+
+#include "src/interfaces/gpu.h"
 
 /* Gres symbols provided by the plugin */
 typedef struct slurm_ops {
