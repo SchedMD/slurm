@@ -1270,6 +1270,8 @@ typedef enum {
 #define SPREAD_SEGMENTS SLURM_BIT(43) /* Spread segments across blocks*/
 #define CONSOLIDATE_SEGMENTS SLURM_BIT(44) /* Consolidate segments */
 #define EXPEDITED_REQUEUE SLURM_BIT(45) /* expedited requeue requested */
+#define NEED_MORE_FEATURES SLURM_BIT(46) /* protect from jobs being preempted
+					  * while resources are available */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
