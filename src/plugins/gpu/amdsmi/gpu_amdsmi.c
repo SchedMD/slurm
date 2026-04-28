@@ -1525,12 +1525,12 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         if (power_info.average_socket_power != 0) {
             gpu->energy.current_watts = power_info.average_socket_power;
             debug2("AMDSMI: GPU[%u] power read: average_socket_power=%.2f W, socket_power=%.2f W",
-                   dv_ind, power_info.average_socket_power, power_info.socket_power);
-        } else if (power_info.socket_power != 0) {
+                   dv_ind, power_info.average_socket_power, power_info.current_socket_power);
+        } else if (power_info.current_socket_power != 0) {
             /* Fallback to instantaneous socket_power if average is unavailable */
-            gpu->energy.current_watts = power_info.socket_power;
+            gpu->energy.current_watts = power_info.current_socket_power;
             debug2("AMDSMI: GPU[%u] power read: average_socket_power unavailable, socket_power=%.2f W used as fallback",
-                   dv_ind, power_info.socket_power);
+                   dv_ind, power_info.current_socket_power);
         } else {
             gpu->energy.current_watts = NO_VAL;
             debug2("AMDSMI: power read for GPU[%u] returned zero for both average_socket_power and socket_power; treating as unavailable",
