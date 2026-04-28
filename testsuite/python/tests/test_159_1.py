@@ -21,7 +21,11 @@ defaults:
 # Setup
 @pytest.fixture(scope="module", autouse=True)
 def setup():
-    atf.require_version((25, 11), component="sbin/slurmd")
+    atf.require_version(
+        (25, 11),
+        component="bin/scontrol",
+        reason="Issue 50766: NamespaceType added in 25.11+",
+    )
     atf.require_auto_config("Wants to configure namespace/linux plugin")
     atf.require_config_parameter("NamespaceType", "namespace/linux")
     atf.require_config_parameter_includes("PrologFlags", "Contain")
