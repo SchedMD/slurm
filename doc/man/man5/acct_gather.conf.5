@@ -309,6 +309,50 @@ Task (I/O, Memory, ...) data is collected.
 .IP
 
 .TP
+\fBProfileInfluxDBExtraTags\fR=<tags>
+A comma-delimited list of additional tags to attach to every InfluxDB
+measurement. Requires \fBProfileInfluxDBFlags=grouped_fields\fR.
+Valid tags are:
+.IP
+.RS
+.TP 10
+\fBcluster\fR
+The Slurm cluster name.
+.IP
+
+.TP
+\fBsluid\fR
+The SLUID of the job.
+.IP
+
+.TP
+\fBuid\fR
+The user ID of the user who ran the job.
+.IP
+
+.TP
+\fBuser\fR
+The user name of the user who ran the job.
+.IP
+.RE
+
+.TP
+\fBProfileInfluxDBFlags\fR=<flags>
+A comma-delimited list of flags that tune the InfluxDB plugin behavior.
+Valid flags are:
+.IP
+.RS
+.TP 10
+\fBgrouped_fields\fR
+Emit all fields from a single sample as one InfluxDB measurement line,
+with the dataset name (e.g., "task", "network", "filesystem", "energy")
+as the measurement, rather than one measurement per field. This reduces
+InfluxDB series cardinality and removes ambiguity caused by identical
+field names coming from different plugins.
+.IP
+.RE
+
+.TP
 \fBProfileInfluxDBFrequency\fR=<seconds>
 How often in seconds data should be sent to the InfluxDB server. Note that in
 practice, profile data will be sent no more often than every
@@ -340,8 +384,13 @@ optional in v1.x InfluxDB.
 .TP
 \fBProfileInfluxDBRTPolicy\fR
 The InfluxDB v1.x retention policy name for the database configured in
-ProfileInfluxDBDatabase option. The InfluxDB v2.x retention policy bucket name
-for the database configured in ProfileInfluxDBDatabase option.
+ProfileInfluxDBDatabase option. If unset, InfluxDB writes to the default
+retention policy.
+
+For InfluxDB v2.x, this value is passed on the v1-compatibility \fB/write\fR
+endpoint and, together with ProfileInfluxDBDatabase, selects a DBRP mapping
+that resolves to a v2 bucket. Recent v2.x releases auto-create a default
+DBRP mapping per bucket, so leaving this option unset is usually sufficient.
 .IP
 
 .TP
