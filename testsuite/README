@@ -985,6 +985,7 @@ test_139_2   Test dynamic external node states don't go NOT_RESPONDING after upd
 test_140_#   Testing --tres options.
 ====================================
 test_140_1   Test --tres-per-task option
+test_140_2   Test --tres-bind validation
 
 test_141_#   Testing PowerSave/Cloud operations.
 ================================================
