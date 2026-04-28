@@ -398,7 +398,8 @@ static parse_state_t _yaml_to_data(int depth, yaml_parser_t *parser,
 	return PARSE_CONTINUE;
 }
 
-static int _parse_yaml(const char *buffer, yaml_parser_t *parser, data_t *data)
+static int _parse_yaml(const char *buffer, size_t buf_len,
+		       yaml_parser_t *parser, data_t *data)
 {
 	const unsigned char *buf = (const unsigned char *) buffer;
 	int rc = SLURM_SUCCESS;
@@ -413,7 +414,7 @@ static int _parse_yaml(const char *buffer, yaml_parser_t *parser, data_t *data)
 		return SLURM_ERROR;
 	}
 
-	yaml_parser_set_input_string(parser, buf, strlen(buffer));
+	yaml_parser_set_input_string(parser, buf, buf_len);
 
 	(void) _yaml_to_data(0, parser, data, &rc);
 
@@ -765,13 +766,16 @@ extern int serialize_p_string_to_data(data_t **dest, const char *src,
 	data_t *data;
 	yaml_parser_t parser;
 
-	/* string must be NULL terminated */
-	if (!length || (src[length] && (strnlen(src, length) >= length)))
+	/*
+	 * String must contain at least one non-NULL character.
+	 * The yaml lib doesn't allow NULL terminator be part of the length.
+	 */
+	if (!length || !(length = strnlen(src, length)))
 		return EINVAL;
 
 	data = data_new();
 
-	if (_parse_yaml(src, &parser, data)) {
+	if (_parse_yaml(src, length, &parser, data)) {
 		FREE_NULL_DATA(data);
 		return ESLURM_DATA_CONV_FAILED;
 	}

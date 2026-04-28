@@ -262,9 +262,10 @@ static bool _is_valid_url_char(char buffer)
 		buffer == '-' || buffer == '.' || buffer == '_');
 }
 
-extern unsigned char url_decode_escape_seq(const char *ptr)
+extern unsigned char url_decode_escape_seq(const char *ptr, const char *ptr_end)
 {
-	if (isxdigit(*(ptr + 1)) && isxdigit(*(ptr + 2))) {
+	if ((ptr + 2 < ptr_end) && isxdigit(*(ptr + 1)) &&
+	    isxdigit(*(ptr + 2))) {
 		/* using uint16_t char to catch any overflows */
 		uint16_t high = *(ptr + 1);
 		uint16_t low = *(ptr + 2);
@@ -288,9 +289,9 @@ extern unsigned char url_decode_escape_seq(const char *ptr)
 
 		return (unsigned char) decoded;
 	} else {
-		log_flag_hex(DATA, ptr, strnlen(ptr, 3),
-			     "%s: invalid URL escape sequence: %s", __func__,
-			     ptr);
+		log_flag_hex(DATA, ptr, strnlen(ptr, MIN(3, ptr_end - ptr)),
+			     "%s: invalid URL escape sequence: %.*s", __func__,
+			     (int) (ptr_end - ptr), ptr);
 		return '\0';
 	}
 }
@@ -322,6 +323,7 @@ extern data_t *parse_url_path(const char *path, bool convert_types,
 	int rc = SLURM_SUCCESS;
 	data_t *d = data_set_list(data_new());
 	char *buffer = NULL;
+	const char *path_end = path + strlen(path) + 1;
 
 	/* extract each word */
 	for (const char *ptr = path; !rc && *ptr != '\0'; ++ptr) {
@@ -354,7 +356,7 @@ extern data_t *parse_url_path(const char *path, bool convert_types,
 			}
 		case '%': /* rfc3986 */
 		{
-			const char c = url_decode_escape_seq(ptr);
+			const char c = url_decode_escape_seq(ptr, path_end);
 			if (c != '\0') {
 				/* shift past the hex value */
 				ptr += 2;
