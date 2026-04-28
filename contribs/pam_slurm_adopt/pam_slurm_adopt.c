@@ -786,8 +786,13 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 		rc = PAM_SUCCESS;
 	else if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
 		rc = PAM_SUCCESS;
-	else
+	else {
+		debug("uid %u failed to adopt %ps action_adopt_failure=deny => deny",
+		      pwd.pw_uid, &stepd->step_id);
+		send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
+			      ": adoption failure");
 		rc = PAM_PERM_DENIED;
+	}
 
 cleanup:
 	FREE_NULL_LIST(find_user_extern_steps.user_extern_steps);
