@@ -198,9 +198,11 @@ scontrol_parse_part_options (int argc, char **argv, int *update_cnt_ptr,
 		else if (!xstrncasecmp(tag, "ExclusiveTopo", MAX(taglen, 1))) {
 			if (xstrncasecmp(val, "NO", MAX(vallen, 1)) == 0)
 				part_msg_ptr->flags |= PART_FLAG_EXC_TOPO_CLR;
-			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0)
+			else if (xstrncasecmp(val, "YES", MAX(vallen, 1)) == 0) {
+				/* TOPO implies Exclusive=NODE */
 				part_msg_ptr->flags |= PART_FLAG_EXCLUSIVE_TOPO;
-			else {
+				part_msg_ptr->max_share = 0;
+			} else {
 				exit_code = 1;
 				error("Invalid input: %s", argv[i]);
 				error("Acceptable ExclusiveTopo values are YES and NO");

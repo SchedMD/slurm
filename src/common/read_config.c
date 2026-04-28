@@ -1372,6 +1372,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 
 		s_p_get_boolean((bool *)&p->exclusive_topo, "ExclusiveTopo",
 				tbl);
+		if (p->exclusive_topo) {
+			/* TOPO implies Exclusive=NODE */
+			p->max_share = 0;
+		}
 
 		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl))
 			s_p_get_boolean(&p->hidden_flag, "Hidden", dflt);
