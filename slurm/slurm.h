@@ -1158,6 +1158,15 @@ typedef enum {
 #define PROP_PRIO_ON		0x0001	/* Propagate user nice value */
 #define PROP_PRIO_NICER		0x0002	/* Ensure that user tasks have a nice
 					 * value that is higher than slurmd */
+/* Node stays DOWN until admin intervenes */
+#define RETURN_TO_SERVICE_NONE 0x0000
+/*
+ * DOWN node returns to service on registration only if set DOWN due to being
+ * non-responsive
+ */
+#define RETURN_TO_SERVICE_NON_RESP 0x0001
+/* DOWN node returns to service on registration regardless of reason */
+#define RETURN_TO_SERVICE_ALL 0x0002
 
 #define PRIORITY_FLAGS_ACCRUE_ALWAYS	 SLURM_BIT(0) /* Flag to always accrue
 						       * age priority to pending

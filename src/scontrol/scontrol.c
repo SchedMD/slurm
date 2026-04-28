@@ -44,6 +44,8 @@
 #include <limits.h>
 #include <stdarg.h>
 
+#include "slurm/slurm.h"
+
 #include "src/common/data.h"
 #include "src/common/proc_args.h"
 #include "src/common/ref.h"
@@ -520,6 +522,17 @@ static void _write_config(char *file_name)
 	}
 }
 
+static void _dump_config(int argc, char **argv,
+			 slurm_conf_t *slurm_ctl_conf_ptr)
+{
+	openapi_resp_config_t resp = {
+		.slurm_conf = slurm_ctl_conf_ptr,
+	};
+
+	DATA_DUMP_CLI(OPENAPI_CONF_RESP, resp, argc, argv, NULL, mime_type,
+		      data_parser, exit_code);
+}
+
 /*
  * _print_config - print the specified configuration parameter and value
  * IN config_param - NULL to print all parameters and values
@@ -529,17 +542,11 @@ static void _print_config(char *config_param, int argc, char **argv)
 	int error_code;
 	slurm_conf_t *slurm_conf_ptr = NULL;
 
-	/*
-	 * There isn't a parser for slurm.conf but there is one for ping, which
-	 * gets printed as part of this function. So to make sure the output is
-	 * not mixing output types disable json/yaml output for ping.
-	 */
-	mime_type = NULL;
-
 	if (old_slurm_conf_ptr) {
 		error_code =
 			slurm_load_ctl_conf(old_slurm_conf_ptr->last_update,
 					    &slurm_conf_ptr);
+
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_conf(old_slurm_conf_ptr);
 		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
@@ -560,11 +567,15 @@ static void _print_config(char *config_param, int argc, char **argv)
 	else
 		old_slurm_conf_ptr = slurm_conf_ptr;
 
-	if (error_code == SLURM_SUCCESS) {
-		slurm_print_ctl_conf(stdout, slurm_conf_ptr);
-		fprintf(stdout, "\n");
+	if (slurm_conf_ptr) {
+		if (mime_type) {
+			_dump_config(argc, argv, slurm_conf_ptr);
+		} else {
+			slurm_print_ctl_conf(stdout, slurm_conf_ptr);
+			fprintf(stdout, "\n");
+		}
 	}
-	if (slurm_conf_ptr)
+	if (slurm_conf_ptr && !mime_type)
 		_print_ping(argc, argv);
 }
 

@@ -3463,16 +3463,9 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 			conf->accounting_storage_enforce
 				|= ACCOUNTING_ENFORCE_QOS;
 		} else if (!xstrcasecmp(tok, "all")) {
-			conf->accounting_storage_enforce = 0xffff;
+			conf->accounting_storage_enforce =
+				ACCOUNTING_ENFORCE_ALL;
 			conf->conf_flags |= CONF_FLAG_WCKEY;
-			/*
-			 * If all is used, nojobs and nosteps aren't
-			 * part of it.  They must be requested as well.
-			 */
-			conf->accounting_storage_enforce
-				&= (~ACCOUNTING_ENFORCE_NO_JOBS);
-			conf->accounting_storage_enforce
-				&= (~ACCOUNTING_ENFORCE_NO_STEPS);
 			/*
 			 * Everything that "all" doesn't mean should be put
 			 * below here.

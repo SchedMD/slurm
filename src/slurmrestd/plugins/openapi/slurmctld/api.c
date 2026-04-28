@@ -560,6 +560,24 @@ const openapi_path_binding_t openapi_paths[] = {
 		},
 		.flags = OP_FLAGS,
 	},
+	{
+		.path = "/slurm/{data_parser}/conf",
+		.callback = op_handler_config,
+		.methods = (openapi_path_binding_method_t[]){
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "Dump slurm configuration",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_CONF_RESP,
+					.description = "slurm configuration",
+				},
+				.query = DATA_PARSER_OPENAPI_CONF_QUERY,
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
 	{0}
 };
 

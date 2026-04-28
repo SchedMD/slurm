@@ -62,7 +62,12 @@ extern char *default_plugin_path;
 #ifndef node_record_t
 typedef struct node_record node_record_t;
 #endif
-
+/*
+ * If all is used, nojobs and nosteps aren't
+ * part of it.  They must be requested as well.
+ */
+#define ACCOUNTING_ENFORCE_ALL \
+	(0xffff & ~(ACCOUNTING_ENFORCE_NO_JOBS | ACCOUNTING_ENFORCE_NO_STEPS))
 #define ACCOUNTING_ENFORCE_ASSOCS SLURM_BIT(0)
 #define ACCOUNTING_ENFORCE_LIMITS SLURM_BIT(1)
 #define ACCOUNTING_ENFORCE_WCKEYS SLURM_BIT(2)
@@ -132,7 +137,7 @@ typedef struct node_record node_record_t;
 #define DEFAULT_PRIORITY_CALC_PERIOD 300 /* in seconds */
 #define DEFAULT_PRIORITY_TYPE       "priority/multifactor"
 #define DEFAULT_RECONF_KEEP_PART_STATE 0
-#define DEFAULT_RETURN_TO_SERVICE   0
+#define DEFAULT_RETURN_TO_SERVICE RETURN_TO_SERVICE_NONE
 #define DEFAULT_RESUME_RATE         300
 #define DEFAULT_RESUME_TIMEOUT      60
 #define DEFAULT_ROUTE_PLUGIN   	    "route/default"
