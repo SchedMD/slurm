@@ -9,7 +9,11 @@ import pytest
 @pytest.fixture(scope="module", autouse=True)
 def setup():
     atf.require_auto_config("wants to create custom gpu files and custom gres")
-    atf.require_version((26, 5), component="sbin/slurmctld")
+    atf.require_version(
+        (26, 5),
+        component="bin/scontrol",
+        reason="Ticket 24746: MetricsType only supported in 26.05+",
+    )
 
     atf.require_config_parameter("SelectType", "select/cons_tres")
     atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
