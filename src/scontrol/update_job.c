@@ -937,9 +937,9 @@ extern int scontrol_update_job(int argc, char **argv)
 		} else if (!xstrncasecmp(tag, "OverSubscribe", MAX(taglen, 2)) ||
 			   !xstrncasecmp(tag, "Shared", MAX(taglen, 2))) {
 			if (!xstrncasecmp(val, "YES", MAX(vallen, 1)))
-				job_msg.shared = 1;
+				job_msg.shared = JOB_SHARED_OK;
 			else if (!xstrncasecmp(val, "NO", MAX(vallen, 1)))
-				job_msg.shared = 0;
+				job_msg.shared = JOB_SHARED_NONE;
 			else if (parse_uint16(val, &job_msg.shared)) {
 				error("Invalid OverSubscribe value: %s", val);
 				exit_code = 1;
