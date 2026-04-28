@@ -557,6 +557,10 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->container);
 	} else if (!xstrcmp(name, "contiguous")) {
 		lua_pushnumber(L, job_desc->contiguous);
+	} else if (!xstrcmp(name, "core_spec") &&
+		   (job_desc->core_spec != NO_VAL16) &&
+		   !(job_desc->core_spec & CORE_SPEC_THREAD)) {
+		lua_pushnumber(L, job_desc->core_spec);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
 		lua_pushnumber(L, job_desc->cores_per_socket);
 	} else if (!xstrcmp(name, "cpu_freq_min")) {
@@ -726,6 +730,10 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->std_in);
 	} else if (!xstrcmp(name, "std_out")) {
 		lua_pushstring(L, job_desc->std_out);
+	} else if (!xstrcmp(name, "thread_spec") &&
+		   (job_desc->core_spec != NO_VAL16) &&
+		   (job_desc->core_spec & CORE_SPEC_THREAD)) {
+		lua_pushnumber(L, (job_desc->core_spec & ~CORE_SPEC_THREAD));
 	} else if (!xstrcmp(name, "threads_per_core")) {
 		lua_pushnumber(L, job_desc->threads_per_core);
 	} else if (!xstrcmp(name, "time_limit")) {
@@ -855,6 +863,8 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->container = xstrdup(value_str);
 	} else if (!xstrcmp(name, "contiguous")) {
 		job_desc->contiguous = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "core_spec")) {
+		job_desc->core_spec = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
 		job_desc->cores_per_socket = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cpu_freq_min")) {
@@ -1039,6 +1049,9 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->std_out);
 		if (strlen(value_str))
 			job_desc->std_out = xstrdup(value_str);
+	} else if (!xstrcmp(name, "thread_spec")) {
+		job_desc->core_spec = luaL_checknumber(L, 3);
+		job_desc->core_spec |= CORE_SPEC_THREAD;
 	} else if (!xstrcmp(name, "threads_per_core")) {
 		job_desc->threads_per_core = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "time_limit")) {
