@@ -761,11 +761,16 @@ extern list_t *stepd_available(const char *directory, const char *nodename)
 		slurm_step_id_t step_id;
 
 		if (!_sockname_regex(&re, ent->d_name, &step_id)) {
+			char *full_string =
+				xstrdup_printf("%s/%s", dir, ent->d_name);
 			debug4("found %ps", &step_id);
 			loc = xmalloc(sizeof(step_loc_t));
 			loc->directory = xstrdup(dir);
 			loc->nodename = xstrdup(nodename);
 			loc->step_id = step_id;
+			if (!stat(full_string, &stat_buf))
+				loc->start_time = stat_buf.st_ctime;
+			xfree(full_string);
 			list_append(l, (void *) loc);
 		}
 	}

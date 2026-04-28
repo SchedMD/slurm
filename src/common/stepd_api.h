@@ -132,6 +132,7 @@ typedef struct step_location {
 	char *directory;
 	char *nodename;
 	uint16_t protocol_version;
+	time_t start_time;
 	slurm_step_id_t step_id;
 } step_loc_t;
 
