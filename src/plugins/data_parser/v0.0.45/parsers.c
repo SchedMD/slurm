@@ -7174,19 +7174,39 @@ static int PARSE_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
 				     data_t *parent_path)
 {
 	topology_ctx_t *tctx = obj;
-	bool tmp;
 	int rc = SLURM_SUCCESS;
 	xassert(tctx);
 
-	rc = PARSE(BOOL, tmp, src, parent_path, args);
+	/* Accept "flat: <bool>" shorthand without options. */
+	if (data_get_type(src) != DATA_TYPE_DICT) {
+		bool tmp;
 
-	if (tmp && tctx->plugin) {
+		rc = PARSE(BOOL, tmp, src, parent_path, args);
+		if (rc)
+			return rc;
+
+		if (tmp && tctx->plugin) {
+			rc = SLURM_ERROR;
+			parse_error(
+				parser, args, parent_path, rc,
+				"Field flat is mutually exclusive with other plugins");
+		} else if (tmp) {
+			tctx->plugin = xstrdup("topology/flat");
+		}
+		return rc;
+	}
+
+	if (tctx->plugin) {
 		rc = SLURM_ERROR;
 		parse_error(
 			parser, args, parent_path, rc,
-			"Field flat is mutually excusive with fields tree and block");
-	} else if (tmp)
-		tctx->plugin = xstrdup("topology/flat");
+			"Field flat is mutually exclusive with other plugins");
+		return rc;
+	}
+
+	tctx->plugin = xstrdup("topology/flat");
+	rc = PARSE(TOPOLOGY_FLAT_CONFIG_PTR, tctx->config, src, parent_path,
+		   args);
 
 	return rc;
 }
@@ -7196,11 +7216,20 @@ static int DUMP_FUNC(TOPOLOGY_FLAT)(const parser_t *const parser, void *obj,
 {
 	topology_ctx_t *tctx = obj;
 	int rc = SLURM_SUCCESS;
-	bool is_topo_flat;
 	xassert(tctx);
 
-	is_topo_flat = !xstrcmp(tctx->plugin, "topology/flat");
-	rc = DUMP(BOOL, is_topo_flat, dst, args);
+	if (xstrcmp(tctx->plugin, "topology/flat")) {
+		data_set_dict(dst);
+		return rc;
+	}
+
+	if (!tctx->config) {
+		/* No options: emit "flat: true" shorthand. */
+		bool tmp = true;
+		return DUMP(BOOL, tmp, dst, args);
+	}
+
+	rc = DUMP(TOPOLOGY_FLAT_CONFIG_PTR, tctx->config, dst, args);
 
 	return rc;
 }
@@ -11730,6 +11759,13 @@ static const parser_t PARSER_ARRAY(TOPOLOGY_RING_CONFIG)[] = {
 #undef add_cparse
 
 #define add_parse(mtype, field, path, desc)				\
+	add_parser(topology_flat_config_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(TOPOLOGY_FLAT_CONFIG)[] = {
+	add_parse(BOOL, alpha_step_rank, "alpha_step_rank", "Sort step nodes alphabetically by name when picking step nodes and laying out tasks"),
+};
+#undef add_parse
+
+#define add_parse(mtype, field, path, desc)				\
 	add_parser(slurm_conf_torus3d_dims_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(TORUS3D_DIMS)[] = {
 	add_parse(UINT16, x, "x", "X dimension"),
@@ -13499,7 +13535,7 @@ static const parser_t parsers[] = {
 	addpcp(TOPOLOGY_BLOCK, TOPOLOGY_BLOCK_CONFIG_PTR, topology_block_config_t *, NEED_NONE, "topology/block plugin configuration"),
 	addpcp(TOPOLOGY_RING, TOPOLOGY_RING_CONFIG_PTR, topology_ring_config_t *, NEED_NONE, "topology/ring plugin configuration"),
 	addpcp(TOPOLOGY_TORUS3D, TOPOLOGY_TORUS3D_CONFIG_PTR, topology_torus3d_config_t *, NEED_NONE, "topology/torus3d plugin configuration"),
-	addpcp(TOPOLOGY_FLAT, BOOL, bool, NEED_NONE, "topology/flat plugin"),
+	addpcp(TOPOLOGY_FLAT, TOPOLOGY_FLAT_CONFIG_PTR, topology_flat_config_t *, NEED_NONE, "topology/flat plugin configuration"),
 	addpca(TOPOLOGY_TREE_CONFIG_ARRAY, SWITCH_CONFIG, topology_tree_config_t, NEED_NONE, "Array of switch configurations"),
 	addpca(TOPOLOGY_BLOCK_CONFIG_ARRAY, BLOCK_CONFIG, topology_block_config_t, NEED_NONE, "Array of block configurations"),
 	addpca(TOPOLOGY_RING_CONFIG_ARRAY, RING_CONFIG, topology_ring_config_t, NEED_NONE, "Array of ring configurations"),
@@ -13664,6 +13700,7 @@ static const parser_t parsers[] = {
 	addpap(TOPOLOGY_BLOCK_CONFIG, topology_block_config_t, NULL, (parser_free_func_t) free_topology_block_config),
 	addpap(TOPOLOGY_RING_CONFIG, topology_ring_config_t, NULL, (parser_free_func_t) free_topology_ring_config),
 	addpap(TOPOLOGY_TORUS3D_CONFIG, topology_torus3d_config_t, NULL, (parser_free_func_t) free_topology_torus3d_config),
+	addpap(TOPOLOGY_FLAT_CONFIG, topology_flat_config_t, NULL, (parser_free_func_t) free_topology_flat_config),
 	addpap(SWITCH_CONFIG, slurm_conf_switches_t, NULL, (parser_free_func_t) free_switch_conf),
 	addpap(BLOCK_CONFIG, slurm_conf_block_t, NULL, (parser_free_func_t) free_block_conf),
 	addpap(RING_CONFIG, slurm_conf_ring_t, NULL, (parser_free_func_t) free_ring_conf),
