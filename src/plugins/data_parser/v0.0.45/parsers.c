@@ -4842,7 +4842,8 @@ static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
 		entry->msg = msg->err_msg[i];
 
 		if ((rc = unfmt_job_id_string(msg->job_array_id[i],
-					      &entry->step, NO_VAL))) {
+					      &entry->step,
+					      slurm_conf.max_array_sz))) {
 			on_warn(DUMPING, parser->type, args,
 				"unfmt_job_id_string()", __func__,
 				"Unable to parse JobId=%s: %s",
@@ -4853,6 +4854,8 @@ static int DUMP_FUNC(JOB_ARRAY_RESPONSE_MSG)(const parser_t *const parser,
 	}
 
 	rc = DUMP(JOB_ARRAY_RESPONSE_ARRAY, array, dst, args);
+	for (int i = 0; i < msg->job_array_count; i++)
+		FREE_NULL_BITMAP(array[i].step.array_bitmap);
 	xfree(array);
 	return rc;
 }
@@ -12285,6 +12288,26 @@ static const parser_t PARSER_ARRAY(OPENAPI_CONF_QUERY)[] = {
 };
 #undef add_parse
 
+/* Flags accepted by slurm_requeue2() */
+static const flag_bit_t PARSER_FLAG_ARRAY(OPENAPI_JOB_REQUEUE_FLAGS)[] = {
+	add_flag_bit_desc(JOB_RUNNING, "Incomplete", "Operate only on jobs (or tasks of a job array) which have not completed"),
+	add_flag_bit_desc(JOB_REQUEUE_HOLD, "Hold", "Hold job after requeue, will require manual release to run again"),
+	add_flag_bit_desc(JOB_SPECIAL_EXIT, "SpecialExit", "Set SPECIAL_EXIT state after requeue; must also specify the Hold flag"),
+	add_flag_hidden_bit(JOB_RECONFIG_FAIL, "Fail"),
+};
+
+static const parser_t PARSER_ARRAY(OPENAPI_JOB_REQUEUE_QUERY)[] = {
+	add_parse_bit_eflag_array(openapi_job_requeue_query_t, OPENAPI_JOB_REQUEUE_FLAGS, flags, "Requeue flags"),
+};
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(openapi_jobs_requeue_query_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(OPENAPI_JOBS_REQUEUE_QUERY)[] = {
+	add_parse(OPENAPI_JOB_REQUEUE_FLAGS, flags, "flags", "Requeue flags"),
+	add_parse(SELECTED_STEP_LIST, jobs, "jobs", "List of jobs to requeue"),
+};
+#undef add_parse
+
 #define add_openapi_response_meta(rtype)				\
 	add_parser(rtype, OPENAPI_META_PTR, false, meta, 0, XSTRINGIFY(OPENAPI_RESP_STRUCT_META_FIELD_NAME), "Slurm meta values")
 #define add_openapi_response_errors(rtype)				\
@@ -12334,8 +12357,8 @@ add_openapi_response_single(OPENAPI_WCKEY_RESP, WCKEY_LIST, "wckeys", "wckeys");
 add_openapi_response_single(OPENAPI_WCKEY_REMOVED_RESP, STRING_LIST, "deleted_wckeys", "deleted wckeys");
 add_openapi_response_single(OPENAPI_SHARES_RESP, SHARES_RESP_MSG_PTR, "shares", "fairshare info");
 add_openapi_response_single(OPENAPI_SINFO_RESP, SINFO_DATA_LIST, "sinfo", "node and partition info");
-add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
-add_openapi_response_single(OPENAPI_KILL_JOB_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "resultant status of signal request");
+add_openapi_response_single(OPENAPI_KILL_JOBS_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "result of signal request");
+add_openapi_response_single(OPENAPI_KILL_JOB_RESP, KILL_JOBS_RESP_MSG_PTR, "status", "result of signal request");
 add_openapi_response_single(OPENAPI_RESERVATION_MOD_RESP, RESERVATION_DESC_MSG_LIST, "reservations", "Reservation descriptions");
 add_openapi_response_single(OPENAPI_HOSTLIST_REQ_RESP, HOSTLIST_STRING_TO_STRING, "hostlist", "Hostlist expression string");
 add_openapi_response_single(OPENAPI_HOSTNAMES_REQ_RESP, HOSTLIST_STRING, "hostnames", "Array of host names");
@@ -12343,6 +12366,8 @@ add_openapi_response_single(OPENAPI_JOB_MODIFY_RESP, STRING_LIST, "results", "Jo
 add_openapi_response_single(OPENAPI_CREATE_NODE_REQ, STRING, "node_conf", "Node configuration line");
 add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_LIST, "nodes", "Node resource layouts");
 add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIST, "partitions", "list of partition descriptions");
+add_openapi_response_single(OPENAPI_JOB_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR, "status", "result of job requeue request");
+add_openapi_response_single(OPENAPI_JOBS_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR_LIST, "status", "result of batch job requeue request");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -13011,7 +13036,7 @@ static const parser_t parsers[] = {
 	addntp(PARTITION_INFO_ARRAY, PARTITION_INFO_PTR),
 	addntp(STEP_INFO_ARRAY, STEP_INFO_PTR),
 	addntp(RESERVATION_INFO_ARRAY, RESERVATION_INFO_PTR),
-	addntp(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY_PTR),
+	addnt(JOB_ARRAY_RESPONSE_ARRAY, JOB_ARRAY_RESPONSE_MSG_ENTRY),
 	addnt(JOB_RES_SOCKET_ARRAY, JOB_RES_SOCKET),
 	addnt(JOB_RES_CORE_ARRAY, JOB_RES_CORE),
 	addnt(CONTROLLERS_ARRAY, CONTROLLER),
@@ -13171,6 +13196,8 @@ static const parser_t parsers[] = {
 	addpap(SLURM_CONF, slurm_conf_t, NULL, NULL),
 	addpap(SLURM_CONF_META, slurm_conf_t, NULL, NULL),
 	addpap(OPENAPI_CONF_QUERY, openapi_config_query_t, NULL, NULL),
+	addpap(OPENAPI_JOB_REQUEUE_QUERY, openapi_job_requeue_query_t, NULL, NULL),
+	addpap(OPENAPI_JOBS_REQUEUE_QUERY, openapi_jobs_requeue_query_t, NULL, NULL),
 
 	/* OpenAPI responses */
 	addoar(OPENAPI_RESP),
@@ -13221,6 +13248,8 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
 	addoar(OPENAPI_PARTITIONS_MOD_REQ),
 	addpap(OPENAPI_CONF_RESP, openapi_resp_config_t, NULL, NULL),
+	addoar(OPENAPI_JOB_REQUEUE_RESP),
+	addoar(OPENAPI_JOBS_REQUEUE_RESP),
 
 	/* Flag bit arrays */
 	addfa(ASSOC_FLAGS, slurmdb_assoc_flags_t),
@@ -13289,6 +13318,7 @@ static const parser_t parsers[] = {
 	addfas(RETURN_TO_SERVICE, uint16_t),
 	addfa(SELECT_TYPE_PARAM, uint16_t),
 	addfas(LOG_LEVEL, log_level_t),
+	addfa(OPENAPI_JOB_REQUEUE_FLAGS, uint32_t),
 
 	/* List parsers */
 	addpl(QOS_LIST, QOS_PTR, NEED_QOS),
@@ -13332,6 +13362,7 @@ static const parser_t parsers[] = {
 	addpl(NAMESPACE_DIR_CONF_LIST, NAMESPACE_DIR_CONF_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
 	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS, NEED_NONE),
+	addpl(JOB_ARRAY_RESPONSE_MSG_PTR_LIST, JOB_ARRAY_RESPONSE_MSG_PTR, NEED_NONE),
 
 	/* alias parsers */
 	/* Can remove OPENAPI_PARTITION_PARAM_ALIAS once v0.0.44 is removed */

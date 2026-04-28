@@ -40,6 +40,7 @@
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -795,5 +796,138 @@ extern int op_handler_job_states(openapi_ctxt_t *ctxt)
 	slurm_free_job_state_response_msg(resp.jobs);
 	FREE_NULL_LIST(query.job_id_list);
 	xfree(job_ids);
+	return rc;
+}
+
+extern int op_handler_job_requeue(openapi_ctxt_t *ctxt)
+{
+	openapi_job_requeue_query_t query = { 0 };
+	job_array_resp_msg_t *resp = NULL;
+	openapi_job_info_param_t params = { { 0 } };
+	char *job_str = NULL;
+	int rc = EINVAL;
+
+	if (ctxt->method != HTTP_REQUEST_GET) {
+		return resp_error(ctxt, (rc = ESLURM_REST_INVALID_QUERY),
+				  __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+	}
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_INFO_PARAM, params,
+		       ctxt->parameters, ctxt->parent_path)) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Rejecting request. Failure parsing parameters");
+		goto cleanup;
+	}
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOB_REQUEUE_QUERY, query,
+		       ctxt->query, ctxt->parent_path)) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Rejecting request. Failure parsing query");
+		goto cleanup;
+	}
+
+	if ((rc = fmt_job_id_string(&params.job_id, &job_str))) {
+		resp_error(ctxt, rc, __func__, "Invalid JobID");
+		goto cleanup;
+	}
+
+	if ((query.flags & JOB_SPECIAL_EXIT) &&
+	    !(query.flags & JOB_REQUEUE_HOLD)) {
+		rc = ESLURM_REST_BAD_REQUEST;
+		resp_error(ctxt, rc, __func__,
+			   "SpecialExit requires Hold mode");
+		goto cleanup;
+	}
+
+	errno = SLURM_SUCCESS;
+	if ((rc = slurm_requeue2(job_str, query.flags, &resp))) {
+		if ((rc == SLURM_ERROR) && errno)
+			rc = errno;
+
+		(void) resp_error(ctxt, rc, __func__, "Requeue JobID=%s failed",
+				  job_str);
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOB_REQUEUE_RESP, resp, ctxt);
+
+cleanup:
+	FREE_NULL_BITMAP(params.job_id.array_bitmap);
+	xfree(job_str);
+	slurm_free_job_array_resp(resp);
+	return rc;
+}
+
+extern int op_handler_jobs_requeue(openapi_ctxt_t *ctxt)
+{
+	openapi_jobs_requeue_query_t query = { 0 };
+	list_t *responses = NULL;
+	slurm_selected_step_t *step = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (ctxt->method != HTTP_REQUEST_POST)
+		return resp_error(ctxt, ESLURM_REST_INVALID_QUERY, __func__,
+				  "Unsupported HTTP method requested: %s",
+				  get_http_method_string(ctxt->method));
+
+	if (DATA_PARSE(ctxt->parser, OPENAPI_JOBS_REQUEUE_QUERY, query,
+		       ctxt->query, ctxt->parent_path)) {
+		rc = ESLURM_REST_INVALID_QUERY;
+		resp_error(ctxt, rc, __func__,
+			   "Rejecting request. Failure parsing query");
+		goto cleanup;
+	}
+
+	if (!query.jobs || list_is_empty(query.jobs)) {
+		rc = ESLURM_INVALID_JOB_ID;
+		resp_error(ctxt, rc, __func__, "Query missing JobIds");
+		goto cleanup;
+	}
+
+	if ((query.flags & JOB_SPECIAL_EXIT) &&
+	    !(query.flags & JOB_REQUEUE_HOLD)) {
+		rc = ESLURM_REST_BAD_REQUEST;
+		resp_error(ctxt, rc, __func__,
+			   "SpecialExit requires Hold mode");
+		goto cleanup;
+	}
+
+	responses = list_create((ListDelF) slurm_free_job_array_resp);
+
+	while ((step = list_pop(query.jobs))) {
+		char *str = NULL;
+		job_array_resp_msg_t *resp = NULL;
+
+		if ((rc = fmt_job_id_string(step, &str))) {
+			(void) resp_error(ctxt, rc, __func__, "Invalid JobID");
+			slurm_destroy_selected_step(step);
+			break;
+		}
+
+		errno = SLURM_SUCCESS;
+		if ((rc = slurm_requeue2(str, query.flags, &resp))) {
+			if ((rc == SLURM_ERROR) && errno)
+				rc = errno;
+
+			(void) resp_error(ctxt, rc, __func__,
+					  "Requeue JobId=%s failed", str);
+		}
+
+		if (resp)
+			list_append(responses, resp);
+
+		slurm_destroy_selected_step(step);
+		xfree(str);
+	}
+
+	DUMP_OPENAPI_RESP_SINGLE(OPENAPI_JOBS_REQUEUE_RESP, responses, ctxt);
+	rc = SLURM_SUCCESS;
+
+cleanup:
+	FREE_NULL_LIST(query.jobs);
+	FREE_NULL_LIST(responses);
 	return rc;
 }

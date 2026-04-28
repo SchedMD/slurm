@@ -498,6 +498,7 @@ typedef enum {
 	DATA_PARSER_OPENAPI_RESERVATION_MOD_RESP_PTR, /* openapi_openapi_resp_single_t* */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG, /* job_array_resp_msg_t */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR, /* job_array_resp_msg_t * */
+	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_PTR_LIST, /* list_t *job_array_resp_msg_t * */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_ENTRY, /* JOB_ARRAY_RESPONSE_MSG_entry_t */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_MSG_ENTRY_PTR, /* JOB_ARRAY_RESPONSE_MSG_entry_t* */
 	DATA_PARSER_JOB_ARRAY_RESPONSE_ARRAY, /* JOB_ARRAY_RESPONSE_MSG_entry_t[] */
@@ -724,6 +725,15 @@ typedef enum {
 	DATA_PARSER_OPENAPI_CONF_RESP_PTR, /* openapi_resp_config_t* */
 	DATA_PARSER_OPENAPI_CONF_QUERY, /* openapi_config_query_t */
 	DATA_PARSER_OPENAPI_CONF_QUERY_PTR, /* openapi_config_query_t* */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_FLAGS, /* uint32_t - JOB_* macros */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_QUERY, /* openapi_job_requeue_query_t */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_QUERY_PTR, /* openapi_job_requeue_query_t* */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOB_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_QUERY, /* openapi_jobs_requeue_query_t */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_QUERY_PTR, /* openapi_jobs_requeue_query_t* */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP, /* openapi_resp_single_t */
+	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

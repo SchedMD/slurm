@@ -550,4 +550,13 @@ typedef struct {
 	time_t update_time;
 } openapi_config_query_t;
 
+typedef struct {
+	uint32_t flags;
+} openapi_job_requeue_query_t;
+
+typedef struct {
+	list_t *jobs;
+	uint32_t flags;
+} openapi_jobs_requeue_query_t;
+
 #endif /* SLURM_OPENAPI_H */
