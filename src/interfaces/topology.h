@@ -138,6 +138,10 @@ typedef struct {
 } topology_block_config_t;
 
 typedef struct {
+	bool alpha_step_rank; /* sort step nodes alphabetically by name */
+} topology_flat_config_t;
+
+typedef struct {
 	topology_ctx_t *tctx; /* array of topology_ctx_t */
 	int tctx_num; /* size of array */
 } topology_ctx_array_t;
@@ -392,6 +396,8 @@ extern char *topology_g_get_topology_str(node_record_t *node_ptr);
 extern void free_topology_ctx(topology_ctx_t *tctx_ptr);
 
 extern void free_topology_block_config(topology_block_config_t *config);
+
+extern void free_topology_flat_config(topology_flat_config_t *config);
 
 extern void free_topology_ring_config(topology_ring_config_t *config);
 
