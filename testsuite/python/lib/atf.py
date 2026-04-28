@@ -4118,7 +4118,16 @@ def get_jobs(job_id=None, dbd=False, use_json=False, **run_command_kwargs):
                 command += f" {job_id}"
             output = run_command_output(command, **run_command_kwargs)
 
-            jobs_list = json.loads(output)["jobs"]
+            try:
+                jobs_list = json.loads(output)["jobs"]
+            except json.JSONDecodeError as e:
+                msg = f"Error parsing scontrol output: {output}\n{e}"
+                if "fatal" in run_command_kwargs and run_command_kwargs["fatal"]:
+                    pytest.fail(msg)
+                else:
+                    logging.warning(msg)
+                    return jobs_dict
+
             for job in jobs_list:
                 jobs_dict[job["job_id"]] = job
 
