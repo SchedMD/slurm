@@ -626,7 +626,7 @@ static int check_pam_service(pam_handle_t *pamh)
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 				__attribute__((unused)), int argc, const char **argv)
 {
-	int retval = PAM_IGNORE, rc = PAM_IGNORE, slurmrc, bufsize;
+	int retval = PAM_IGNORE, rc = PAM_IGNORE, bufsize;
 	char *user_name;
 	list_t *steps = NULL;
 	struct passwd pwd, *pwd_result;
@@ -762,38 +762,20 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			rc = PAM_IGNORE;
 		}
 		goto cleanup;
-	} else if (user_extern_step_cnt == 1) {
-		if (opts.single_job_skip_rpc) {
-			step_loc_t *stepd = list_peek(
-				find_user_extern_steps.user_extern_steps);
-			info("Connection by user %s: user has only one job %u",
-			     user_name, stepd->step_id.job_id);
-			slurmrc = _adopt_process(pamh, getpid(), stepd);
-			/* If adoption into the only job fails, it is time to
-			 * exit. Return code is based on the
-			 * action_adopt_failure setting */
-			if (slurmrc == SLURM_SUCCESS ||
-			    (opts.action_adopt_failure ==
-			     CALLERID_ACTION_ALLOW))
-				rc = PAM_SUCCESS;
-			else {
-				send_user_msg(pamh, "Access denied by "
-					      PAM_MODULE_NAME
-					      ": failed to adopt process into cgroup, denying access because action_adopt_failure=deny");
-				rc = PAM_PERM_DENIED;
-			}
-			goto cleanup;
-		}
-	} else {
-		debug("uid %u has %d jobs", pwd.pw_uid, user_extern_step_cnt);
 	}
 
-	/* Single job check turned up nothing (or we skipped it). Make RPC call
-	 * to slurmd at source IP. If it can tell us the job, the function calls
-	 * _adopt_process */
-	rc = _try_rpc(pamh, &pwd);
-	if (rc == PAM_SUCCESS)
-		goto cleanup;
+	debug("uid %u has %d job(s)", pwd.pw_uid, user_extern_step_cnt);
+
+	if (!opts.single_job_skip_rpc || (user_extern_step_cnt > 1)) {
+		/*
+		 * We are trying the RPC call to see if that can determine which
+		 * job this should be added to. If that fails we will go off the
+		 * list. If it can tell us the job, the function calls
+		 * _adopt_process().
+		 */
+		if ((rc = _try_rpc(pamh, &pwd)) == PAM_SUCCESS)
+			goto cleanup;
+	}
 
 	/* The source of the connection either didn't reply or couldn't
 	 * determine the job ID at the source. Proceed to action_unknown */
