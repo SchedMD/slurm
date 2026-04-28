@@ -7332,12 +7332,17 @@ extern void slurmctld_req(slurm_msg_t *msg, slurmctld_rpc_t *this_rpc)
 	if (this_rpc->skip_stale && _is_connection_stale(msg, this_rpc, fd))
 		return;
 
+	/*
+	 * For keep_msg handlers, record stats before the call since the
+	 * handler takes ownership of msg and may free it before returning.
+	 */
+	if (this_rpc->keep_msg && !(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		END_TIMER;
+		record_rpc_stats(msg, TIMER_DURATION_USEC());
+	}
+
 	(*(this_rpc->func))(msg);
 
-	/*
-	 * When keep_msg is set the handler takes ownership of msg and may have
-	 * already freed it — do not dereference msg after the call.
-	 */
 	if (!this_rpc->keep_msg && !(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		END_TIMER;
 		record_rpc_stats(msg, TIMER_DURATION_USEC());
