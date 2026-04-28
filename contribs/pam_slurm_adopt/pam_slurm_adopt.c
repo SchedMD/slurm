@@ -237,30 +237,6 @@ static uid_t _get_job_uid(step_loc_t *stepd)
 	return uid;
 }
 
-/* This is the action of last resort. If action_unknown=allow, allow it through
- * without adoption. Otherwise, call _indeterminate_multiple to pick a job. If
- * successful, adopt it into a process and use a return code based on success of
- * the adoption and the action_adopt_failure setting. */
-static int _action_unknown(pam_handle_t *pamh, struct passwd *pwd, list_t *steps)
-{
-	step_loc_t *stepd = NULL;
-
-	if (opts.action_unknown == CALLERID_ACTION_ALLOW) {
-		debug("Allowing due to action_unknown=allow");
-		return PAM_SUCCESS;
-	}
-
-	stepd = list_peek(steps);
-	info("action_unknown: Picked job %u", stepd->step_id.job_id);
-	if (_adopt_process(pamh, getpid(), stepd) == SLURM_SUCCESS) {
-		return PAM_SUCCESS;
-	}
-	if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
-		return PAM_SUCCESS;
-	else
-		return PAM_PERM_DENIED;
-}
-
 static int _find_user_extern_steps(void *x, void *arg)
 {
 	step_loc_t *stepd = x;
@@ -629,6 +605,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	int retval = PAM_IGNORE, rc = PAM_IGNORE, bufsize;
 	char *user_name;
 	list_t *steps = NULL;
+	step_loc_t *stepd = NULL;
 	struct passwd pwd, *pwd_result;
 	char *buf = NULL;
 	int user_extern_step_cnt = 0;
@@ -777,10 +754,40 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			goto cleanup;
 	}
 
-	/* The source of the connection either didn't reply or couldn't
-	 * determine the job ID at the source. Proceed to action_unknown */
-	rc = _action_unknown(pamh, &pwd,
-			     find_user_extern_steps.user_extern_steps);
+	if (user_extern_step_cnt > 1) {
+		/*
+		 * With multiple jobs we now look at opts.action_unknown.
+		 * If action_unknown=allow, allow it through without
+		 * adoption. If action_unknown=deny, deny without trying to
+		 * adopt.
+		 */
+
+		if (opts.action_unknown == CALLERID_ACTION_ALLOW) {
+			rc = PAM_SUCCESS;
+			goto cleanup;
+		} else if (opts.action_unknown == CALLERID_ACTION_DENY) {
+			debug("uid %u owns multiple jobs and action_unknown=deny => deny",
+			      pwd.pw_uid);
+			send_user_msg(pamh, "Access denied by " PAM_MODULE_NAME
+				      ": unable to determine source job");
+			rc = PAM_PERM_DENIED;
+			goto cleanup;
+		}
+	}
+
+	/*
+	 * The source of the connection either didn't reply or couldn't
+	 * determine the job ID at the source. Pick the newest job.
+	 */
+
+	stepd = list_peek(find_user_extern_steps.user_extern_steps);
+	info("Newest job %u", stepd->step_id.job_id);
+	if (_adopt_process(pamh, getpid(), stepd) == SLURM_SUCCESS)
+		rc = PAM_SUCCESS;
+	else if (opts.action_adopt_failure == CALLERID_ACTION_ALLOW)
+		rc = PAM_SUCCESS;
+	else
+		rc = PAM_PERM_DENIED;
 
 cleanup:
 	FREE_NULL_LIST(find_user_extern_steps.user_extern_steps);
