@@ -1368,6 +1368,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_REST_AUTH_FAIL),
 		"Authentication failure",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_REST_BAD_REQUEST),
+		"Query requirements not met",
+	},
 
 	/* data_t errors */
 	{
