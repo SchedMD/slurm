@@ -111,12 +111,14 @@ static int _valid_gres_bind(char *arg)
 		arg += 8;
 	if (!xstrncasecmp(arg, "closest", 7))
 		return 0;
-	if (!xstrncasecmp(arg, "map_gpu:", 8) || //Old syntax
-	    !xstrncasecmp(arg, "map:", 4))
+	if (!xstrncasecmp(arg, "map_gpu:", 8)) //Old syntax
 		return _valid_num_list(arg + 8, false);
-	if (!xstrncasecmp(arg, "mask_gpu:", 9) || //Old syntax
-	    !xstrncasecmp(arg, "mask:", 5))
+	if (!xstrncasecmp(arg, "map:", 4))
+		return _valid_num_list(arg + 4, false);
+	if (!xstrncasecmp(arg, "mask_gpu:", 9)) //Old syntax
 		return _valid_num_list(arg + 9, true);
+	if (!xstrncasecmp(arg, "mask:", 5))
+		return _valid_num_list(arg + 5, true);
 	if (!xstrncasecmp(arg, "none", 4))
 		return 0;
 	if (!xstrncasecmp(arg, "per_task:", 9))
