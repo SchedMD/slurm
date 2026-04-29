@@ -928,19 +928,20 @@ restricted to user root, \fByes\fR or \fBno\fR.
 
 .TP
 \fBOVERSUBSCRIBE\fR
-Whether jobs allocated resources in this partition can/will oversubscribe
-those compute resources (e.g. CPUs).
-\fBNO\fR indicates resources are never oversubscribed.
-\fBEXCLUSIVE\fR indicates whole nodes are dedicated to jobs
-(equivalent to srun \-\-exclusive option, may be used even
-with select/cons_tres managing individual processors).
-\fBFORCE\fR indicates resources are always available to be oversubscribed.
-\fBYES\fR indicates resource may be oversubscribed, if requested by the job's
-resource allocation.
-
-\fBNOTE\fR: If OverSubscribe is set to FORCE or YES,
-the OversubScribe value will be appended to the output.
+Whether the partition allows more than one job at a time on the same
+resource (node, socket, or core per \fBSelectTypeParameters\fR), and the
+maximum share when applicable.
+.RS
+.TP
+\fBNO\fR: no sharing, only one job per resource.
+.TP
+\fBYES:n\fR: sharing allowed when the job requests \fB\-\-oversubscribe\fR,
+up to \fBn\fR jobs per resource.
+.TP
+\fBFORCE:n\fR: sharing always allowed, up to \fBn\fR jobs per resource (jobs
+cannot opt out).
 .IP
+.RE
 
 .TP
 \fBSTATE\fR

@@ -1615,6 +1615,26 @@ typedef bitstr_t bitoff_t;
 #define JOB_SHARED_MCS          0x0003
 #define JOB_SHARED_TOPO 0x0004
 
+/*
+ * Oversubscribe display
+ * (for job_info.oversubscribe, cred, SLURM_JOB_OVERSUBSCRIBE).
+ * NO=no oversubscribe, YES=user --oversubscribe, OK=partition allows.
+ */
+#define JOB_OVERSUBSCRIBE_NO 0
+#define JOB_OVERSUBSCRIBE_YES 1
+#define JOB_OVERSUBSCRIBE_OK 2
+
+/*
+ * Exclusive display
+ * (for job_info.exclusive, cred, SLURM_JOB_EXCLUSIVE).
+ * Single value: NONE/NODE/USER/MCS/TOPO. No combinations.
+ */
+#define JOB_EXCLUSIVE_NONE 0
+#define JOB_EXCLUSIVE_NODE 1
+#define JOB_EXCLUSIVE_USER 2
+#define JOB_EXCLUSIVE_MCS 3
+#define JOB_EXCLUSIVE_TOPO 4
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1895,6 +1915,7 @@ typedef struct job_info {
 	int32_t *exc_node_inx;	/* excluded list index pairs into node_table:
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
+	uint16_t exclusive; /* JOB_EXCLUSIVE_* (NONE/NODE/USER/MCS/TOPO) */
 	uint32_t exit_code;	/* exit code for job (status from wait call) */
 	char *extra;		/* Arbitrary string */
 	char *failed_node;	/* if set, node that caused job to fail */
@@ -1942,6 +1963,7 @@ typedef struct job_info {
 	uint32_t num_nodes;	/* minimum number of nodes required by job */
 	uint32_t num_tasks;	/* requested task count */
 	uint16_t oom_kill_step;	/* kill whole step in case of task oom */
+	uint16_t oversubscribe; /* JOB_OVERSUBSCRIBE_NO/YES/OK */
 	char *partition;	/* name of assigned partition */
 	char *prefer;		/* comma separated list of soft features */
 	uint64_t pn_min_memory; /* minimum real memory per node, default=0 */

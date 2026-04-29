@@ -11162,7 +11162,9 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 		else
 			pack32(NO_VAL, buffer);
 
+		pack16(get_job_exclusive_display_value(job_ptr), buffer);
 		pack16(shared, buffer);
+		pack16(get_job_oversubscribe_value(job_ptr), buffer);
 
 		if (detail_ptr->crontab_entry)
 			packstr(detail_ptr->crontab_entry->cronspec, buffer);
@@ -19601,7 +19603,11 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 				job_ptr->details->features_use);
 
 		setenvf(&my_env, "SLURM_JOB_OVERSUBSCRIBE", "%s",
-			job_share_string(get_job_share_value(job_ptr)));
+			job_oversubscribe_string(
+				get_job_oversubscribe_value(job_ptr)));
+		setenvf(&my_env, "SLURM_JOB_EXCLUSIVE", "%s",
+			job_exclusive_display_string(
+				get_job_exclusive_display_value(job_ptr)));
 
 		if (job_ptr->details->std_err)
 			setenvf(&my_env, "SLURM_JOB_STDERR", "%s",

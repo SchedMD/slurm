@@ -3680,9 +3680,15 @@ proc default_part_exclusive {} {
 	set oversubscribe [partition_oversubscribe $def_part]
 	if {$oversubscribe eq "EXCLUSIVE"} {
 		return 1
-	} else {
-		return 0
 	}
+	# 26.05+ (20588): sinfo %h is NO for exclusive partitions; use Exclusive=.
+	if {[package vcompare [get_version] "26.05.0"] >= 0} {
+		set exc [get_partition_param $def_part "Exclusive"]
+		if {$exc eq "NODE" || $exc eq "TOPO"} {
+			return 1
+		}
+	}
+	return 0
 }
 
 

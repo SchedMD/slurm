@@ -78,6 +78,8 @@
 strong_alias(preempt_mode_string, slurm_preempt_mode_string);
 strong_alias(preempt_mode_num, slurm_preempt_mode_num);
 strong_alias(job_share_string, slurm_job_share_string);
+strong_alias(job_oversubscribe_string, slurm_job_oversubscribe_string);
+strong_alias(job_exclusive_display_string, slurm_job_exclusive_display_string);
 strong_alias(job_state_string, slurm_job_state_string);
 strong_alias(job_state_string_compact, slurm_job_state_string_compact);
 strong_alias(job_state_num, slurm_job_state_num);
@@ -2776,6 +2778,42 @@ extern char *job_share_string(uint16_t shared)
 		return "TOPO";
 	else
 		return "OK";
+}
+
+/*
+ * Oversubscribe display string for cred/env: NO|YES|OK (JOB_OVERSUBSCRIBE_*).
+ */
+extern char *job_oversubscribe_string(uint16_t val)
+{
+	if (val == JOB_OVERSUBSCRIBE_NO)
+		return "NO";
+	if (val == JOB_OVERSUBSCRIBE_YES)
+		return "YES";
+	if (val == JOB_OVERSUBSCRIBE_OK)
+		return "OK";
+	return "NO";
+}
+
+/*
+ * Exclusive display string for cred/env: NO|NODE|USER|MCS|TOPO.
+ * val is JOB_EXCLUSIVE_* (single value, no combinations).
+ */
+extern char *job_exclusive_display_string(uint16_t val)
+{
+	switch (val) {
+	case JOB_EXCLUSIVE_NONE:
+		return "NO";
+	case JOB_EXCLUSIVE_NODE:
+		return "NODE";
+	case JOB_EXCLUSIVE_USER:
+		return "USER";
+	case JOB_EXCLUSIVE_MCS:
+		return "MCS";
+	case JOB_EXCLUSIVE_TOPO:
+		return "TOPO";
+	default:
+		return "NO";
+	}
 }
 
 extern char *job_state_string(uint32_t inx)
@@ -6610,6 +6648,69 @@ extern uint16_t get_job_share_value(job_record_t *job_ptr)
 		shared = NO_VAL16;	/* No user or partition info */
 
 	return shared;
+}
+
+/*
+ * Return oversubscribe display value for cred/env: 0=NO, 1=YES, 2=OK.
+ */
+extern uint16_t get_job_oversubscribe_value(job_record_t *job_ptr)
+{
+	job_details_t *d = job_ptr->details;
+
+	if (!d)
+		return JOB_OVERSUBSCRIBE_NO;
+	if (d->share_res == 1)
+		return JOB_OVERSUBSCRIBE_YES;
+	if ((d->share_res == NO_VAL8) && job_ptr->part_ptr) {
+		uint16_t m = job_ptr->part_ptr->max_share;
+		if ((m > 1) || (m & SHARED_FORCE))
+			return JOB_OVERSUBSCRIBE_OK;
+	}
+	return JOB_OVERSUBSCRIBE_NO;
+}
+
+/*
+ * Return exclusive display value for cred/env (JOB_EXCLUSIVE_*).
+ * Single value: NONE|NODE|USER|MCS|TOPO.
+ */
+extern uint16_t get_job_exclusive_display_value(job_record_t *job_ptr)
+{
+	job_details_t *d = job_ptr->details;
+	part_record_t *p = job_ptr->part_ptr;
+	bool part_topo = p && (p->flags & PART_FLAG_EXCLUSIVE_TOPO);
+
+	if (d) {
+		if (d->share_res == 1)
+			return JOB_EXCLUSIVE_NONE;
+		if (d->whole_node & WHOLE_TOPO)
+			return JOB_EXCLUSIVE_TOPO;
+		/*
+		 * WHOLE_NODE_REQUIRED takes precedence over USER/MCS so the
+		 * display reflects actual scheduling behavior. The scheduler
+		 * (linear, or any partition with max_share=0) may add
+		 * WHOLE_NODE_REQUIRED on top of a job's WHOLE_NODE_USER /
+		 * WHOLE_NODE_MCS request, in which case the job actually gets
+		 * a whole node.
+		 */
+		if (d->whole_node & WHOLE_NODE_REQUIRED) {
+			if (part_topo)
+				return JOB_EXCLUSIVE_TOPO;
+			return JOB_EXCLUSIVE_NODE;
+		}
+		if (d->whole_node & WHOLE_NODE_USER)
+			return JOB_EXCLUSIVE_USER;
+		if (d->whole_node & WHOLE_NODE_MCS)
+			return JOB_EXCLUSIVE_MCS;
+	}
+	if (p) {
+		if (p->flags & PART_FLAG_EXCLUSIVE_TOPO)
+			return JOB_EXCLUSIVE_TOPO;
+		if (p->flags & PART_FLAG_EXCLUSIVE_USER)
+			return JOB_EXCLUSIVE_USER;
+		if (p->max_share == 0)
+			return JOB_EXCLUSIVE_NODE;
+	}
+	return JOB_EXCLUSIVE_NONE;
 }
 
 extern void slurm_free_stepmgr_job_info(stepmgr_job_info_t *object)

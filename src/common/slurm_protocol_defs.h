@@ -1780,6 +1780,8 @@ extern uint16_t bb_state_num(char *tok);
 extern char *health_check_node_state_str(uint32_t node_state);
 
 extern char *job_share_string(uint16_t shared);
+extern char *job_oversubscribe_string(uint16_t val);
+extern char *job_exclusive_display_string(uint16_t val);
 extern char *job_state_string(uint32_t inx);
 extern char *job_state_string_compact(uint32_t inx);
 /* Caller must xfree() the return value */
@@ -2058,6 +2060,16 @@ extern bool validate_slurmd_user(uid_t uid);
  * Return the job's sharing value from job or partition value.
  */
 extern uint16_t get_job_share_value(job_record_t *job_ptr);
+
+/*
+ * Oversubscribe display value for cred/env: JOB_OVERSUBSCRIBE_NO/YES/OK.
+ */
+extern uint16_t get_job_oversubscribe_value(job_record_t *job_ptr);
+
+/*
+ * Exclusive display for cred/env: JOB_EXCLUSIVE_* (NO/NODE/USER/MCS/TOPO).
+ */
+extern uint16_t get_job_exclusive_display_value(job_record_t *job_ptr);
 
 /*
  * Free stepmgr_job_info_t

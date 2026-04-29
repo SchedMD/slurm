@@ -4981,8 +4981,9 @@ Acceptable values include
 The resources (cores, memory, GPUs and all other trackable resources) within
 a node are individually allocated as consumable resources.
 Note that whole nodes can be allocated to jobs for selected
-partitions by using the \fIOverSubscribe=Exclusive\fR option.
-See the partition \fBOverSubscribe\fR parameter for more information.
+partitions by using the partition \fBExclusive\fR parameter (e.g.
+\fBExclusive=NODE\fR).
+See \fBExclusive\fR and \fBOverSubscribe\fR for more information.
 This is the default value.
 .IP
 
@@ -7793,20 +7794,22 @@ root to execute jobs).
 .IP
 
 .TP
-\fBExclusiveTopo\fR
-If set to "YES," then only one job may be run on a single topology segment.
-This capability is also available on a per\-job basis by using the
-\fB\-\-exclusive=topo\fR option.
-.IP
+\fBExclusive\fR
+Controls partition\-level exclusivity together with \fBOverSubscribe\fR.
+Specify one of "NO", "NODE", "USER", or "TOPO".
+NODE allocates whole nodes (typically used with \fBOverSubscribe=NO\fR).
+USER allows only one user to have jobs on a node at a time (similar to
+\fB\-\-exclusive=user\fR).
+TOPO allows only one job per topology segment (similar to
+\fB\-\-exclusive=topo\fR).
+For node\-exclusive partitions, jobs receive all CPUs and generic resources on
+allocated nodes, but only as much memory as requested; use \fB\-\-mem=0\fR at
+submit time to request all memory on the node (notably when using gang
+scheduling and suspended jobs still occupy memory).
+If unset, no partition\-level exclusivity is added beyond \fBOverSubscribe\fR.
 
-.TP
-\fBExclusiveUser\fR
-If set to "YES" then nodes will be exclusively allocated to users.
-Multiple jobs may be run for the same user, but only one user can be active
-at a time.
-This capability is also available on a per\-job basis by using the
-\fB\-\-exclusive=user\fR option.
-.IP
+This replaces the deprecated options \fBOverSubscribe=EXCLUSIVE\fR,
+\fBExclusiveUser\fR, and \fBExclusiveTopo\fR.
 
 .TP
 \fBGraceTime\fR
@@ -7939,7 +7942,9 @@ memory as a consumable resource and the \fB\-\-mem\fR option
 should be used for job allocations.
 Sharing of resources is typically useful only when using gang scheduling
 (\fBPreemptMode=suspend,gang\fR).
-Possible values for \fBOverSubscribe\fR are "EXCLUSIVE", "FORCE", "YES", and "NO".
+Possible values for \fBOverSubscribe\fR are "FORCE", "YES", and "NO".
+Whole\-node exclusive partitions can be configured with \fBExclusive=node\fR
+(see above).
 Note that a value of "YES" or "FORCE" can negatively impact performance
 for systems with many thousands of running jobs.
 The default value is "NO".
@@ -7957,18 +7962,6 @@ For more information see the following web pages:
 .IP
 .RS
 .TP 12
-\fBEXCLUSIVE\fR
-Allocates entire nodes to jobs even with \fBSelectType=select/cons_tres\fR
-configured.
-Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
-exclusive access to all allocated nodes.
-These jobs are allocated all CPUs and GRES on the nodes, but they are only
-allocated as much memory as they ask for. This is by design to support gang
-scheduling, because suspended jobs still reside in memory. To request all the
-memory on a node, use \fB\-\-mem=0\fR at submit time.
-.IP
-
-.TP
 \fBFORCE\fR
 Makes all resources (except GRES) in the partition available for
 oversubscription without any means for users to disable it.
@@ -8068,10 +8061,10 @@ The following will cause a transition from COMPLETING to IDLE:
 .br
 Completing all running jobs without additional jobs being allocated.
 .br
-ExclusiveUser=YES and after all running jobs complete but before another user's
-job is allocated.
+\fBExclusive=USER\fR and after all running jobs complete but before another
+user's job is allocated.
 .br
-OverSubscribe=EXCLUSIVE and after the running job completes but before another
+\fBExclusive=NODE\fR and after the running job completes but before another
 job is allocated.
 
 \fBNOTE\fR:
@@ -8236,12 +8229,6 @@ Supported values are \fBCR_Core\fR, \fBCR_Core_Memory\fR, \fBCR_Socket\fR and
 Use requires the system\-wide \fBSelectTypeParameters\fR value be set to
 any of the four supported values previously listed; otherwise, the
 partition\-specific value will be ignored.
-.IP
-
-.TP
-\fBShared\fR
-The \fBShared\fR configuration parameter has been replaced by the
-\fBOverSubscribe\fR parameter described above.
 .IP
 
 .TP

@@ -132,6 +132,7 @@ enum {
 	SORTID_DEPENDENCY,
 	SORTID_DERIVED_EC,
 	SORTID_EXIT_CODE,
+	SORTID_EXCLUSIVE,
 	SORTID_EXTRA,
 	SORTID_FEATURES,
 	SORTID_FED_ACTIVE_SIBS,
@@ -324,7 +325,9 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_TASKS, "Task Count",
 	 false, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_OVER_SUBSCRIBE, "OverSubscribe", false,
-	 EDIT_MODEL, refresh_job, create_model_job, admin_edit_job},
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
+	{G_TYPE_STRING, SORTID_EXCLUSIVE, "Exclusive", false,
+	 EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_ERR, "Standard Error",
 	 false, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_STD_IN, "Standard In",
@@ -679,7 +682,6 @@ static void _set_active_combo_job(GtkComboBox *combo,
 	case SORTID_CONTIGUOUS:
 	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
-	case SORTID_OVER_SUBSCRIBE:
 		if (!xstrcasecmp(temp_char, "yes"))
 			action = 0;
 		else if (!xstrcasecmp(temp_char, "no"))
@@ -884,14 +886,6 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 	case SORTID_WCKEY:
 		job_msg->wckey = xstrdup(new_text);
 		type = "wckey";
-		break;
-	case SORTID_OVER_SUBSCRIBE:
-		if (!xstrcasecmp(new_text, "yes"))
-			job_msg->shared = 1;
-		else
-			job_msg->shared = 0;
-
-		type = "oversubscribe";
 		break;
 	case SORTID_CONTIGUOUS:
 		if (!xstrcasecmp(new_text, "yes"))
@@ -1603,7 +1597,14 @@ static void _layout_job_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_job,
 						 SORTID_OVER_SUBSCRIBE),
-				   job_share_string(job_ptr->shared));
+				   job_oversubscribe_string(
+					   job_ptr->oversubscribe));
+
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_job,
+						 SORTID_EXCLUSIVE),
+				   job_exclusive_display_string(
+					   job_ptr->exclusive));
 
 	if (job_ptr->het_job_id) {
 		snprintf(tmp_char, sizeof(tmp_char), "%u",
@@ -2245,6 +2246,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_COMMENT,      job_ptr->comment,
 				   SORTID_CONTIGUOUS,   tmp_cont,
 				   SORTID_EXTRA, job_ptr->extra,
+				   SORTID_OVER_SUBSCRIBE,
+				   job_oversubscribe_string(job_ptr->oversubscribe),
+				   SORTID_EXCLUSIVE,
+				   job_exclusive_display_string(job_ptr->exclusive),
 				   SORTID_JOBID,        tmp_job_id,
 				   SORTID_JOBID_FORMATTED, tmp_job_id,
 				   SORTID_HET_JOB_ID,     tmp_het_job_id,
@@ -2316,7 +2321,11 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 				   SORTID_NODES_MAX,    tmp_nodes_max,
 				   SORTID_NODES_MIN,    tmp_nodes_min,
 				   SORTID_OVER_SUBSCRIBE,
-				   job_share_string(job_ptr->shared),
+				   job_oversubscribe_string(
+					   job_ptr->oversubscribe),
+				   SORTID_EXCLUSIVE,
+				   job_exclusive_display_string(
+					   job_ptr->exclusive),
 				   SORTID_HET_JOB_ID,     tmp_het_job_id,
 				   SORTID_HET_JOB_ID_SET, tmp_het_job_id_set,
 				   SORTID_HET_JOB_OFFSET, tmp_het_job_offset,
@@ -3601,7 +3610,6 @@ extern GtkListStore *create_model_job(int type)
 	case SORTID_CONTIGUOUS:
 	case SORTID_REBOOT:
 	case SORTID_REQUEUE:
-	case SORTID_OVER_SUBSCRIBE:
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,

@@ -507,6 +507,10 @@ static void _do_power_work(time_t now)
 		}
 
 		job_node_data = data_set_dict(data_list_append(jobs_data));
+		data_set_string(data_key_set(job_node_data, "exclusive"),
+				job_exclusive_display_string(
+					get_job_exclusive_display_value(
+						job_ptr)));
 		data_set_string(data_key_set(job_node_data, "extra"),
 				job_ptr->extra);
 		data_set_int(data_key_set(job_node_data, "job_id"),
@@ -524,7 +528,8 @@ static void _do_power_work(time_t now)
 		data_set_string_own(data_key_set(job_node_data, "nodes_resume"),
 				    nodes);
 		data_set_string(data_key_set(job_node_data, "oversubscribe"),
-				job_share_string(get_job_share_value(job_ptr)));
+				job_oversubscribe_string(
+					get_job_oversubscribe_value(job_ptr)));
 		data_set_string(data_key_set(job_node_data, "partition"),
 				job_ptr->part_ptr->name);
 		data_set_string(data_key_set(job_node_data, "reservation"),

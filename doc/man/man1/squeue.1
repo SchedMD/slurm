@@ -225,16 +225,11 @@ Group ID of the job.
 
 .TP
 \fB%h\fR
-Can the compute resources allocated to the job be over subscribed by other jobs.
-The resources to be over subscribed can be nodes, sockets, cores, or
-hyperthreads depending upon configuration.
-The value will be "YES" if the job was submitted with the oversubscribe option
-or the partition is configured with OverSubscribe=Force,
-"NO" if the job requires exclusive node access,
-"USER" if the allocated compute nodes are dedicated to a single user,
-"MCS" if the allocated compute nodes are dedicated to a single security class
-(See MCSPlugin and MCSParameters configuration parameters for more information),
-"OK" otherwise (typically allocated dedicated CPUs),
+Oversubscribe disposition for the job (\fBOVER_SUBSCRIBE\fR column): "YES" if
+the job requested \fB\-\-oversubscribe\fR; "NO" otherwise; "OK" if the
+partition allows oversubscription (without the job disabling it) when the job
+did not request \fB\-\-oversubscribe\fR.
+This does not encode exclusivity; see the \fBExclusive\fR field below.
 (Valid for jobs only)
 .IP
 
@@ -966,18 +961,34 @@ Cluster ID where federated job originated from.
 
 .TP
 \fBOverSubscribe\fR
-Can the compute resources allocated to the job be over subscribed by other jobs.
-The resources to be over subscribed can be nodes, sockets, cores, or
-hyperthreads depending upon configuration.
-The value will be "YES" if the job was submitted with the oversubscribe option
-or the partition is configured with OverSubscribe=Force,
-"NO" if the job requires exclusive node access,
-"USER" if the allocated compute nodes are dedicated to a single user,
-"MCS" if the allocated compute nodes are dedicated to a single security class
-(See MCSPlugin and MCSParameters configuration parameters for more information),
-"OK" otherwise (typically allocated dedicated CPUs),
+Same values as \fB%h\fR / \fBOVER_SUBSCRIBE\fR: "YES", "NO", or "OK".
+See \fB%h\fR above.
 (Valid for jobs only)
 .IP
+
+.TP
+\fBExclusive\fR
+Exclusive disposition for the job (\fBEXCLUSIVE\fR column).
+.RS
+.TP
+\fBNO\fR: no exclusivity.
+.TP
+\fBNODE\fR: whole-node allocation (job submitted with \fB\-\-exclusive\fR, or
+partition \fBExclusive=NODE\fR).
+.TP
+\fBUSER\fR: only one user's jobs may share a node (job submitted with
+\fB\-\-exclusive=user\fR, or partition \fBExclusive=USER\fR).
+.TP
+\fBMCS\fR: only jobs with the same MCS label may share a node (job submitted
+with \fB\-\-exclusive=mcs\fR).
+.TP
+\fBTOPO\fR: only one job per topology segment (job submitted with
+\fB\-\-exclusive=topo\fR, or partition \fBExclusive=TOPO\fR).
+Same tokens as the \fBExclusive\fR field in \fBscontrol show job\fR.
+.TP
+(Valid for jobs only)
+.IP
+.RS
 
 .TP
 \fBPartition\fR
