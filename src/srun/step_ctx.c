@@ -198,6 +198,27 @@ extern slurm_step_ctx_t *step_ctx_create_timeout(
 		if (sock != -1)
 			close(sock);
 	} else {
+		if (step_resp->state == JOB_PENDING) {
+			/*
+			 * Async pending step: controller queued it
+			 * with a real step_id but did not launch.
+			 * Surface step_id to caller via step_req;
+			 * no ctx (srun returns SUCCESS for --async
+			 * without a live step).
+			 */
+			if (step_req->step_id.step_id == NO_VAL)
+				step_req->step_id.step_id =
+					step_resp->step_id.step_id;
+			if (step_req->array_task_id != NO_VAL)
+				step_req->step_id.job_id =
+					step_resp->step_id.job_id;
+			slurm_free_job_step_create_response_msg(step_resp);
+			if (sock != -1)
+				close(sock);
+			errno = ESLURM_STEP_QUEUED;
+			return NULL;
+		}
+
 		ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
 		ctx->launch_state = NULL;
 		ctx->magic	= STEP_CTX_MAGIC;

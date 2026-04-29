@@ -1347,12 +1347,13 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 				step_ctx_create_timeout(step_req, step_wait,
 							&timed_out, srun_opt);
 		}
-		if (job->step_ctx != NULL) {
-			job->step_ctx->verbose_level = opt_local->verbose;
-			if (i > 0) {
-				info("Step created for %ps",
-				     &step_req->step_id);
-			}
+		rc = errno;
+		if (job->step_ctx ||
+		    (srun_opt->async &&
+		      (rc == ESLURM_STEP_QUEUED))) {
+			if (job->step_ctx)
+				job->step_ctx->verbose_level =
+					opt_local->verbose;
 			break;
 		}
 		rc = errno;
