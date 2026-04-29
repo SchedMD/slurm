@@ -934,6 +934,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_INVALID_POWER_ACTION),
 		"Invalid power action",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_STEP_QUEUED),
+		"Step queued as pending",
+	},
 
 	/* Topology eval_nodes rejection reasons */
 	{
