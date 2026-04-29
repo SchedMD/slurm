@@ -466,12 +466,7 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 		rc = _validate_regions_config(config, torus, &invalid_hl);
 		if (rc != SLURM_SUCCESS)
 			goto end;
-	} else {
-		if (!config->nodes || !config->nodes[0]) {
-			error("Torus3d configuration missing nodes");
-			return SLURM_ERROR;
-		}
-
+	} else if (config->nodes && config->nodes[0]) {
 		if (!(host_list = hostlist_create(config->nodes))) {
 			error("hostlist_create error on torus3d nodes");
 			return SLURM_ERROR;
