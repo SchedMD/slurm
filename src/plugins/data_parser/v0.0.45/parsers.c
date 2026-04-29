@@ -12235,7 +12235,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(mpi_params),
 	add_skip(msg_timeout),
 	add_skip(namespace_plugin),
-	add_parse(UINT32, next_job_id, "NEXT_JOB_ID", "Next slurm generated job_id to assign"),
+	add_parse(UINT32_NO_VAL, next_job_id, "NEXT_JOB_ID", "Next slurm generated job_id to assign"),
 	add_skip(node_features_conf),
 	add_skip(node_features_plugins),
 	add_skip(over_time_limit),
