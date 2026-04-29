@@ -24,15 +24,17 @@ def test_modify_job_tres_in_accounting():
             fatal=True,
         )
 
-        output = atf.run_command_output(
-            f"sacct -j{job_id} --format=alloctres -PnX",
-            fatal=True,
-            quiet=True,
-        )
-
-        assert (
-            output.find(tres_mod) != -1
-        ), f"Job {job_id} doesn't have the right TRES. Expecting {tres_mod} to be part of {output} but it isn't"
+        for t in atf.timer(fatal=False):
+            output = atf.run_command_output(
+                f"sacct -j{job_id} --format=alloctres -PnX",
+                fatal=True,
+            )
+            if tres_mod in output:
+                break
+        else:
+            assert (
+                False
+            ), f"Job {job_id} should have the right TRES. Expecting {tres_mod} to be part of {output} but it isn't"
 
         return 0
 
