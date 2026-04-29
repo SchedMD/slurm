@@ -389,6 +389,8 @@ cleanup:
 	fwd_ptr->alias_addrs.node_list = NULL;
 	destroy_forward(fwd_ptr);
 	FREE_NULL_BUFFER(buffer);
+	fwd_struct->thread_cnt--;
+	xassert(fwd_struct->thread_cnt >= 0);
 	slurm_cond_signal(&fwd_struct->notify);
 	slurm_mutex_unlock(&fwd_struct->forward_mutex);
 	xfree(fwd_msg);
@@ -679,6 +681,14 @@ static void _forward_msg_internal(hostlist_t *hl, hostlist_t **sp_hl,
 		thread_count++;
 		xassert(thread_count > 0);
 		slurm_mutex_unlock(&global_forward_mutex);
+
+		/*
+		 * Track the new thread on fwd_struct so forward_wait() can tell
+		 * when it is safe to destroy it
+		 */
+		slurm_mutex_lock(&fwd_struct->forward_mutex);
+		fwd_struct->thread_cnt++;
+		slurm_mutex_unlock(&fwd_struct->forward_mutex);
 
 		log_flag(NET, "%s: BEGIN: tree forwarding %s from %pA to %s",
 			 __func__, rpc_num2string(fwd_msg->header.msg_type),
