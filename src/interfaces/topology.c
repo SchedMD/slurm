@@ -61,6 +61,7 @@ typedef struct slurm_topo_ops {
 	bool(*supports_exclusive_topo);
 	int (*add_rm_node)(node_record_t *node_ptr, char *addr,
 			   topology_ctx_t *tctx);
+	bool (*allow_one_node)(void *tctx);
 	int (*build_config)(topology_ctx_t *tctx);
 	int (*destroy_config)(topology_ctx_t *tctx);
 	int (*eval_node)(topology_eval_t *topo_eval, int node_inx);
@@ -106,6 +107,7 @@ static const char *syms[] = {
 	"plugin_type",
 	"supports_exclusive_topo",
 	"topology_p_add_rm_node",
+	"topology_p_allow_one_node",
 	"topology_p_build_config",
 	"topology_p_destroy_config",
 	"topology_p_eval_node",
@@ -539,6 +541,14 @@ extern int topology_g_add_rm_node(node_record_t *node_ptr)
 	xfree(topology_str);
 
 	return rc;
+}
+
+extern bool topology_g_allow_one_node(int idx)
+{
+	xassert(plugin_inited);
+	xassert((idx >= 0) && (idx < tctx_num));
+
+	return (*(ops[tctx[idx].idx].allow_one_node))(tctx[idx].plugin_ctx);
 }
 
 extern char *topology_g_get_topology_str(node_record_t *node_ptr)

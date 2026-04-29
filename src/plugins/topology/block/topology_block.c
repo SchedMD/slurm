@@ -220,6 +220,11 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	return SLURM_SUCCESS;
 }
 
+extern bool topology_p_allow_one_node(void *tctx)
+{
+	return true;
+}
+
 /*
  * topo_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.

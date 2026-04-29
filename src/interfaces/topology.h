@@ -217,6 +217,16 @@ extern int topology_get_plugin_id(void);
 extern int topology_g_add_rm_node(node_record_t *node_ptr);
 
 /*
+ * topology_g_allow_one_node - Check if topology plugin allows the single-node
+ *                             fast path that bypasses topology evaluation.
+ *
+ * IN idx - topology context index
+ * RET true if the fast path is allowed, false if full topology evaluation
+ *     is required even for single-node jobs.
+ */
+extern bool topology_g_allow_one_node(int idx);
+
+/*
  * topology_g_build_config - build or rebuild system topology information
  *	after a system startup or reconfiguration.
  */
