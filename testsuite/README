@@ -710,6 +710,7 @@ test_101_#   Testing of sacct options.
 ======================================
 test_101_1   Test --help and --helpformat
 test_101_2   Test sacct SLUID support including resizes and OriginalSLUID
+test_101_3   Test sacct OverSubscribe and Exclusive reporting from slurmdbd
 
 test_102_#   Testing of sacctmgr options.
 =========================================
@@ -1038,6 +1039,7 @@ test_150_3   Test topology-aware task distribution
 test_151_#   Testing Oversubscribe
 ===========================================
 test_151_1   Test oversubscribe with sharing partitions
+test_151_2   Test OverSubscribe and Exclusive intent in scontrol and env vars
 
 test_152_#   Testing switch/nvidia_imex.
 ========================================
