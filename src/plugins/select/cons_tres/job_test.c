@@ -1021,7 +1021,8 @@ static avail_res_t **_select_nodes(job_record_t *job_ptr, uint32_t min_nodes,
 	core_array_log("_select_nodes/enter",
 		       topo_eval.node_map, topo_eval.avail_core);
 
-	if (topo_eval.max_nodes == 1) {
+	if ((topo_eval.max_nodes == 1) &&
+	    topology_g_allow_one_node(job_ptr->part_ptr->topology_idx)) {
 		rc = _get_one_res(&topo_eval, node_usage, test_only, will_run,
 				  part_core_map, resv_exc_ptr);
 		goto sync;
