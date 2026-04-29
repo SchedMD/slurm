@@ -225,7 +225,8 @@ important parameters include:</p>
 <ul>
 <li><b>JobCompHost</b>:
 Only needed if using a database. The name or address of the host where
-the database server executes.</li>
+the database server executes. Can be a UNIX socket, e.g.,
+"unix:/path/to/socket".</li>
 
 <li><b>JobCompLoc</b>:
 Only needed if using a flat file. Location of file to write the job
@@ -567,7 +568,9 @@ and is not root, it must be added to accounting with AdminLevel=Admin and
 Define the name of the host the database is running where we are going
 to store the data.
 This can be the host on which slurmdbd executes, but for larger systems, we
-recommend keeping the database on a separate machine.</li>
+recommend keeping the database on a separate machine.
+Can be a UNIX socket, e.g., "unix:/path/to/socket".
+Default is "localhost".</li>
 
 <li><b>StorageLoc</b>:
 Specifies the name of the database where accounting
