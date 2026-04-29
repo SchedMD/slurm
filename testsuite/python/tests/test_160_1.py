@@ -18,7 +18,6 @@ def setup():
     )
     atf.require_nodes(2, [("RealMemory", 500)])
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
-    atf.require_config_parameter("SelectTypeParameters", "CR_Core_Memory")
     atf.require_config_parameter_includes("PrologFlags", "Alloc")
     atf.require_config_parameter_includes("PrologFlags", "Contain")
     atf.require_config_parameter("JobAcctGatherType", "jobacct_gather/cgroup")
