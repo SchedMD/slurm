@@ -36,7 +36,9 @@
 #include "src/common/http.h"
 #include "src/common/http_con.h"
 #include "src/common/http_mime.h"
+#include "src/common/http_request.h"
 #include "src/common/http_router.h"
+#include "src/common/openapi.h"
 #include "src/common/pack.h"
 #include "src/common/probes.h"
 #include "src/common/read_config.h"
@@ -47,6 +49,7 @@
 #include "src/interfaces/http_auth.h"
 
 #include "src/slurmd/slurmd/http.h"
+#include "src/slurmd/slurmd/slurmd.h"
 
 static data_parser_t **parsers = NULL;
 
@@ -85,6 +88,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 {
 	static const char body[] =
 		"slurmd index of endpoints:\n"
+		"  '/{data_parser}/conf': dump slurm configuration\n"
+		"     ({data_parser} is the version)\n"
 		"  '/readyz': check slurmd is servicing RPCs\n"
 		"  '/livez': check slurmd is running\n"
 		"  '/healthz': check slurmd is running\n";
@@ -146,6 +151,45 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
 }
 
+static int _req_failed(http_request_event_t *event, http_con_t *hcon,
+		       const char *name, const http_con_request_t *request,
+		       int err)
+{
+	return _reply_error(hcon, name, request, err);
+}
+
+static int _req_conf(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	slurm_conf_t conf_shallow_copy = { 0 };
+	slurm_conf_t *slurm_conf_ptr = NULL;
+	openapi_resp_config_t resp = {
+		.slurm_conf = &conf_shallow_copy,
+	};
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	if ((slurm_conf_ptr = slurm_conf_lock())) {
+		conf_shallow_copy = *slurm_conf_ptr;
+		conf_shallow_copy.boot_time = conf->boot_time;
+		conf_shallow_copy.version = SLURM_VERSION_STRING;
+		conf_shallow_copy.next_job_id = NO_VAL;
+		conf_shallow_copy.cluster_id = NO_VAL16;
+	}
+
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, true, &resp,
+				sizeof(resp));
+
+	slurm_conf_unlock();
+
+	return rc;
+}
+
 extern void http_init(void)
 {
 	int rc = EINVAL;
@@ -165,6 +209,10 @@ extern void http_init(void)
 	http_router_bind(HTTP_REQUEST_GET, "/livez", _req_livez, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/healthz", _req_healthz, NULL,
 			 NULL);
+
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/conf", _req_conf,
+			  _req_failed, DATA_PARSER_OPENAPI_CONF_RESP, NULL);
 }
 
 extern void http_fini(void)
