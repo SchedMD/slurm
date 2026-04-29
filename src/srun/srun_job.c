@@ -46,7 +46,9 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef __APPLE__
 #include <sys/eventfd.h>
+#endif
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>

@@ -76,6 +76,7 @@ AC_SUBST(AR_FLAGS, [cr])
 
 AM_CONDITIONAL(WITH_CXX, test -n "$ac_ct_CXX")
 AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
+AM_CONDITIONAL(DARWIN, [case "$host_os" in darwin*) true ;; *) false ;; esac])
 
 AC_PATH_PROG([SLEEP_CMD], [sleep], [/bin/sleep])
 AC_DEFINE_UNQUOTED([SLEEP_CMD], ["$SLEEP_CMD"], [Define path to sleep command])

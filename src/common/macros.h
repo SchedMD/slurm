@@ -50,6 +50,129 @@
 #include "src/common/log.h"	/* for error() */
 #include "src/common/strlcpy.h"
 
+#ifdef __APPLE__
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#ifndef SOCK_CLOEXEC
+#  define SOCK_CLOEXEC 0
+#endif
+
+static inline int accept4(int sockfd, struct sockaddr *addr,
+			   socklen_t *addrlen, int flags)
+{
+	int fd = accept(sockfd, addr, addrlen);
+	if (fd < 0)
+		return fd;
+	if (flags & O_CLOEXEC)
+		fcntl(fd, F_SETFD, FD_CLOEXEC);
+	if (flags & O_NONBLOCK)
+		fcntl(fd, F_SETFL, O_NONBLOCK);
+	return fd;
+}
+
+static inline int pipe2(int fds[2], int flags)
+{
+	if (pipe(fds) < 0)
+		return -1;
+	if (flags & O_CLOEXEC) {
+		fcntl(fds[0], F_SETFD, FD_CLOEXEC);
+		fcntl(fds[1], F_SETFD, FD_CLOEXEC);
+	}
+	if (flags & O_NONBLOCK) {
+		fcntl(fds[0], F_SETFL, O_NONBLOCK);
+		fcntl(fds[1], F_SETFL, O_NONBLOCK);
+	}
+	return 0;
+}
+
+static inline int fexecve(int fd, char *const argv[], char *const envp[])
+{
+	/* macOS does not have fexecve; fall back to /dev/fd path */
+	char path[32];
+	snprintf(path, sizeof(path), "/dev/fd/%d", fd);
+	execve(path, argv, envp);
+	return -1;
+}
+
+static inline int setresgid(gid_t rgid, gid_t egid, gid_t sgid)
+{
+	(void)sgid;
+	return setregid(rgid, egid);
+}
+
+static inline int setresuid(uid_t ruid, uid_t euid, uid_t suid)
+{
+	(void)suid;
+	return setreuid(ruid, euid);
+}
+
+/* POSIX real-time timer shims using setitimer(ITIMER_REAL) */
+#include <signal.h>
+#include <sys/time.h>
+#include <time.h>
+
+typedef int timer_t;
+
+#ifndef TIMER_ABSTIME
+#  define TIMER_ABSTIME 1
+#endif
+
+struct itimerspec {
+	struct timespec it_interval;
+	struct timespec it_value;
+};
+
+static inline int timer_create(int clockid, struct sigevent *sevp,
+				timer_t *timerid)
+{
+	(void)clockid;
+	(void)sevp;
+	*timerid = 0;
+	return 0;
+}
+
+static inline int timer_delete(timer_t timerid)
+{
+	(void)timerid;
+	struct itimerval val = {{0}};
+	return setitimer(ITIMER_REAL, &val, NULL);
+}
+
+static inline int timer_settime(timer_t timerid, int flags,
+				const struct itimerspec *new_value,
+				struct itimerspec *old_value)
+{
+	(void)timerid;
+	(void)old_value;
+	struct itimerval val = {{0}};
+
+	if (new_value->it_value.tv_sec == 0 &&
+	    new_value->it_value.tv_nsec == 0) {
+		return setitimer(ITIMER_REAL, &val, NULL);
+	}
+
+	if (flags & TIMER_ABSTIME) {
+		struct timespec now;
+		clock_gettime(CLOCK_REALTIME, &now);
+		long sec = new_value->it_value.tv_sec - now.tv_sec;
+		long nsec = new_value->it_value.tv_nsec - now.tv_nsec;
+		if (nsec < 0) { sec--; nsec += 1000000000L; }
+		if (sec < 0) sec = 0;
+		val.it_value.tv_sec = sec;
+		val.it_value.tv_usec = nsec / 1000;
+	} else {
+		val.it_value.tv_sec = new_value->it_value.tv_sec;
+		val.it_value.tv_usec = new_value->it_value.tv_nsec / 1000;
+	}
+	val.it_interval.tv_sec = new_value->it_interval.tv_sec;
+	val.it_interval.tv_usec = new_value->it_interval.tv_nsec / 1000;
+	return setitimer(ITIMER_REAL, &val, NULL);
+}
+#endif
+
 #define STACK_SIZE (8 * 1024 * 1024)
 
 #ifndef MAX

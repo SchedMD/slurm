@@ -128,6 +128,9 @@ extern int slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask)
 #ifdef __FreeBSD__
 	rval = cpuset_setaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
 				  mask);
+#elif defined(__APPLE__)
+	rval = -1;
+	errno = ENOTSUP;
 #else
 	rval = sched_setaffinity(pid, size, mask);
 #endif
@@ -156,6 +159,10 @@ extern int slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask)
 #ifdef __FreeBSD__
 	rval = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid, size,
 				  mask);
+#elif defined(__APPLE__)
+	CPU_ZERO(mask);
+	rval = -1;
+	errno = ENOTSUP;
 #else
 	rval = sched_getaffinity(pid, size, mask);
 #endif
@@ -174,5 +181,13 @@ extern int task_cpuset_get_assigned_count(size_t size, cpu_set_t *mask)
 	if (!size || !mask)
 		return -1;
 
+#ifdef __APPLE__
+	int count = 0;
+	for (size_t i = 0; i < CPU_SETSIZE; i++)
+		if (CPU_ISSET(i, mask))
+			count++;
+	return count;
+#else
 	return CPU_COUNT_S(size, mask);
+#endif
 }

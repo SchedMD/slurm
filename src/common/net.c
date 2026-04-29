@@ -46,6 +46,9 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#ifndef SOL_TCP
+#  define SOL_TCP IPPROTO_TCP
+#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -551,7 +554,9 @@ extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 	struct xucred cred = {
 		.cr_uid = SLURM_AUTH_NOBODY,
 		.cr_groups = { SLURM_AUTH_NOBODY, },
+#ifdef __FreeBSD__
 		.cr_pid = 0,
+#endif
 	};
 	socklen_t len = sizeof(cred);
 
@@ -563,7 +568,11 @@ extern int net_get_peer(int fd, uid_t *cred_uid, gid_t *cred_gid,
 
 	*cred_uid = cred.cr_uid;
 	*cred_gid = cred.cr_groups[0];
+#ifdef __FreeBSD__
 	*cred_pid = cred.cr_pid;
+#else
+	*cred_pid = 0;
+#endif
 #endif
 
 	/* Sanity check returned creds */

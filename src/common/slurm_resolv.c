@@ -37,6 +37,9 @@
 
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
+#ifdef __APPLE__
+#include <arpa/nameser_compat.h>
+#endif
 #include <netinet/in.h>
 #include <resolv.h>
 

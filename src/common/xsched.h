@@ -42,6 +42,15 @@
 typedef cpuset_t cpu_set_t;
 #endif
 
+#ifdef __APPLE__
+typedef unsigned long cpu_set_t;
+#define CPU_SETSIZE (sizeof(cpu_set_t) * 8)
+#define CPU_ZERO(s)       (*(s) = 0)
+#define CPU_SET(n, s)     (*(s) |= (1UL << (n)))
+#define CPU_CLR(n, s)     (*(s) &= ~(1UL << (n)))
+#define CPU_ISSET(n, s)   (!!(*(s) & (1UL << (n))))
+#endif
+
 #ifdef __NetBSD__
 #define CPU_ZERO(c) cpuset_zero(*(c))
 #define CPU_ISSET(i, c) cpuset_isset((i), *(c))
