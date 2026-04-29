@@ -689,6 +689,11 @@ typedef struct job_step_create_response_msg {
 	uint16_t use_protocol_ver;   /* This is no longer used and can be
 				      * removed when 25.05 is no longer
 				      * supported. */
+	uint32_t state; /* JOB_RUNNING or JOB_PENDING; must be
+			 * set on every populated response
+			 * since JOB_PENDING == 0 is the
+			 * memset default — the immediate-
+			 * launch path assigns JOB_RUNNING. */
 } job_step_create_response_msg_t;
 
 #define LAUNCH_PARALLEL_DEBUG SLURM_BIT(0)

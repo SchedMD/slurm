@@ -2980,7 +2980,19 @@ static void _pack_job_step_create_response_msg(const slurm_msg_t *smsg,
 {
 	job_step_create_response_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		pack32(msg->def_cpu_bind_type, buffer);
+		packstr(msg->resv_ports, buffer);
+		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
+		pack_slurm_step_layout(msg->step_layout, buffer,
+				       smsg->protocol_version);
+		packstr(msg->stepmgr, buffer);
+		packbool(!!msg->cred, buffer);
+		if (msg->cred)
+			slurm_cred_pack(msg->cred, buffer,
+					smsg->protocol_version);
+		pack32(msg->state, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		pack32(msg->def_cpu_bind_type, buffer);
 		packstr(msg->resv_ports, buffer);
 		pack_step_id(&msg->step_id, buffer, smsg->protocol_version);
@@ -3006,7 +3018,25 @@ static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 {
 	job_step_create_response_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		bool has_cred;
+
+		safe_unpack32(&msg->def_cpu_bind_type, buffer);
+		safe_unpackstr(&msg->resv_ports, buffer);
+		safe_unpack_step_id_members(&msg->step_id, buffer,
+					    smsg->protocol_version);
+		if (unpack_slurm_step_layout(&msg->step_layout, buffer,
+					     smsg->protocol_version))
+			goto unpack_error;
+		safe_unpackstr(&msg->stepmgr, buffer);
+
+		safe_unpackbool(&has_cred, buffer);
+		if (has_cred &&
+		    !(msg->cred = slurm_cred_unpack(buffer,
+						    smsg->protocol_version)))
+			goto unpack_error;
+		safe_unpack32(&msg->state, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_11_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->def_cpu_bind_type, buffer);
 		safe_unpackstr(&msg->resv_ports, buffer);
 		safe_unpack_step_id_members(&msg->step_id, buffer,
@@ -3019,6 +3049,7 @@ static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 		if (!(msg->cred = slurm_cred_unpack(buffer,
 						    smsg->protocol_version)))
 			goto unpack_error;
+		msg->state = JOB_RUNNING;
 	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		msg->step_id = SLURM_STEP_ID_INITIALIZER;
 		safe_unpack32(&msg->def_cpu_bind_type, buffer);
@@ -3035,6 +3066,7 @@ static int _unpack_job_step_create_response_msg(slurm_msg_t *smsg,
 			goto unpack_error;
 
 		safe_unpack16(&msg->use_protocol_ver, buffer);
+		msg->state = JOB_RUNNING;
 	}
 
 	smsg->data = msg;

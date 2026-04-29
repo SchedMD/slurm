@@ -5254,6 +5254,7 @@ end_it:
 
 		memset(&job_step_resp, 0, sizeof(job_step_resp));
 		job_step_resp.step_id = step_rec->step_id;
+		job_step_resp.state = JOB_RUNNING;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
 
 		step_layout = slurm_step_layout_copy(step_rec->step_layout);
