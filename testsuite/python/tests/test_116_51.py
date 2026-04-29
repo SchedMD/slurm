@@ -79,6 +79,10 @@ def test_step_exclusivity_default_exact():
     assert re.search(r"1: CUDA_VISIBLE_DEVICES=\d", output) is not None
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="Ticket 24115: The srun option --exclusive=allocate was added in 26.05+",
+)
 def test_step_exclusivity_allocation_only():
     """
     User can run a job specifying --exclusive=allocation and get a whole node
@@ -100,6 +104,10 @@ def test_step_exclusivity_allocation_only():
     assert re.search(r"1: CUDA_VISIBLE_DEVICES=\d", output) is not None
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="Ticket 24115: The srun option --exclusive=allocate was added in 26.05+",
+)
 def test_exclusive_exact_forward():
     """
     User can run a job specifying --exclusive=allocation --exact and get a
@@ -121,6 +129,10 @@ def test_exclusive_exact_forward():
     assert re.search(r"1: CUDA_VISIBLE_DEVICES=\d", output) is not None
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="Ticket 24115: The srun option --exclusive=allocate was added in 26.05+",
+)
 def test_exclusive_exact_reverse():
     """
     User can run a job specifying --exact --exclusive=allocation and get a
@@ -142,6 +154,10 @@ def test_exclusive_exact_reverse():
     assert re.search(r"1: CUDA_VISIBLE_DEVICES=\d", output) is not None
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="Ticket 24115: The srun option --exclusive=allocate was added in 26.05+",
+)
 def test_sbatch_normal_with_exclusive_allocation():
     """
     User can submit a batch job specifying --exclusive=allocation and get a
@@ -176,6 +192,10 @@ def test_sbatch_normal_with_exclusive_allocation():
     assert re.search(r"1: CUDA_VISIBLE_DEVICES=\d", output) is not None
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="Ticket 24115: The srun option --exclusive=allocate was added in 26.05+",
+)
 def test_salloc_normal_with_exclusive_allocation():
     """
     User can submit an interactive salloc job specifying --exclusive=allocation
