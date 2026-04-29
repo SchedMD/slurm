@@ -52,6 +52,10 @@ def get_task_cpus(output):
     return ret
 
 
+@pytest.mark.skipif(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="Ticket 24115: LaunchParamters=srun_exclusive_allocation was added in 26.05+",
+)
 def test_srun_exclusive_allocation_launch_param():
     """
     User can run a job specifying --exclusive and get a whole node
@@ -79,8 +83,8 @@ def test_srun_exclusive_allocation_launch_param():
 def test_srun_exclusive_allocation_with_exact():
     """
     User can run a job specifying --exclusive --exact and get a whole node
-    allocation with all GRES but specific CPUs set per task, so long as
-    slurm.conf LaunchParamters=srun_exclusive_allocation parameter is set
+    allocation with all GRES but specific CPUs set per task, even with
+    LaunchParamters=srun_exclusive_allocation parameter set.
 
     Expected Result:
     0: Cpus_allowed_list:	0
@@ -102,14 +106,18 @@ def test_srun_exclusive_allocation_with_exact():
 def test_srun_exclusive_allocation_with_exact_reverse():
     """
     User can run a job specifying --exact --exclusive and get a whole node
-    allocation with all GRES but specific CPUs set per task, so long as
-    slurm.conf LaunchParamters=srun_exclusive_allocation parameter is set
+    allocation with all GRES but specific CPUs set per task, even if
+    LaunchParamters=srun_exclusive_allocation parameter is set.
 
     Expected Result:
     0: Cpus_allowed_list:	0
     1: Cpus_allowed_list:	1
     0: CUDA_VISIBLE_DEVICES=0
     1: CUDA_VISIBLE_DEVICES=1
+
+    Moreover, doing this with `--exact` first ensures that `--exclusive` is not
+    overwriting anything and making it so we get different behavior depending
+    on order of the arguments.
     """
     output = atf.run_job_output(
         '--exact --exclusive --gpus-per-task=1 -n 2 -N 1 --label /bin/bash -c "grep Cpus_allowed_list /proc/self/status && env | grep CUDA_VISIBLE_DEVICES"'
