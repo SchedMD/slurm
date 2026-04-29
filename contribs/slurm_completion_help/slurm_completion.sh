@@ -4141,7 +4141,7 @@ function __scontrol_update_partitionname() {
 		"denyaccounts="
 		"denyqos="
 		"disablerootjobs="
-		"exclusiveuser="
+		"exclusive="
 		"gracetime="
 		"hidden="
 		"jobdefaults="
@@ -4177,10 +4177,15 @@ function __scontrol_update_partitionname() {
 		"defmempergpu="
 	)
 	local oversubscribe_types=(
-		"exclusive"
 		"force"
 		"no"
 		"yes"
+	)
+	local part_exclusive_types=(
+		"no"
+		"node"
+		"topo"
+		"user"
 	)
 	local states=(
 		"down"
@@ -4210,7 +4215,7 @@ function __scontrol_update_partitionname() {
 	denyaccount?(s)) __slurm_compreply_list "$(__slurm_accounts)" ;;
 	denyqos) __slurm_compreply_list "$(__slurm_qos)" ;;
 	disablerootjob?(s)) __slurm_compreply "$(__slurm_boolean)" ;;
-	exclusiveuser) __slurm_compreply "$(__slurm_boolean)" ;;
+	exclusive) __slurm_compreply "${part_exclusive_types[*]}" ;;
 	hidden) __slurm_compreply "$(__slurm_boolean)" ;;
 	jobdefault?(s)) __slurm_compreply "${job_defaults[*]}" ;;
 	lln) __slurm_compreply "$(__slurm_boolean)" ;;
