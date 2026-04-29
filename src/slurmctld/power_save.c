@@ -531,6 +531,10 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 		}
 		bit_set(entry->bitmap, node_ptr->index);
 		if (node_ptr->protocol_version < entry->protocol_version) {
+			debug2("%s: in order to run PowerAction %s, node %s requires downgrading protocol version from %hu to %hu",
+				__func__, key, node_ptr->name,
+			       entry->protocol_version,
+			       node_ptr->protocol_version);
 			entry->protocol_version = node_ptr->protocol_version;
 		}
 		xfree(key);
@@ -1067,6 +1071,14 @@ static int _do_power_action(void *e, void *payload)
 		agent_arg_t *agent_args;
 		run_power_action_msg_t *action_msg;
 
+		if (entry->protocol_version < SLURM_26_05_PROTOCOL_VERSION) {
+			error("power_save: nodes needing power action %s must be running at least Slurm 26.05",
+			      action->name);
+			FREE_NULL_HOSTLIST(hl);
+			xfree(host_str);
+			return SLURM_ERROR;
+		}
+
 		action_msg = xmalloc(sizeof(*action_msg));
 		action_msg->action_name = xstrdup(action->name);
 		action_msg->file_env_name = xstrdup(entry->env_name);
@@ -1145,6 +1157,14 @@ static int _do_power_action_reboot(void *e, void *payload)
 	} else {
 		reboot_msg_t *reboot_msg;
 
+		if (entry->protocol_version < SLURM_26_05_PROTOCOL_VERSION) {
+			error("power_save: nodes needing power action %s must be running at least Slurm 26.05",
+			      action->name);
+			FREE_NULL_HOSTLIST(hl);
+			xfree(host_str);
+			xfree(features);
+			return SLURM_ERROR;
+		}
 		log_flag(POWER, "Issuing slurmd power action reboot '%s' request for nodes %s",
 			action->name,
 			host_str);
