@@ -987,7 +987,13 @@ extern void forward_wait(slurm_msg_t * msg)
 			count = list_count(msg->ret_list);
 
 		debug2("Got back %d", count);
-		while ((count < msg->forward_struct->fwd_cnt)) {
+
+		/*
+		 * Wait for the expected number of returns and for all the
+		 * threads with a reference to forward_struct to exit
+		 */
+		while ((count < msg->forward_struct->fwd_cnt) ||
+		       (msg->forward_struct->thread_cnt > 0)) {
 			slurm_cond_wait(&msg->forward_struct->notify,
 					&msg->forward_struct->forward_mutex);
 
