@@ -888,6 +888,24 @@ next:
 	xfree(tmp_opts);
 }
 
+/* Check if the storage host is a host address or a socket path */
+static void _select_storage_host(storage_host_scheme_t scheme, char *value,
+				 char **db_host, char **db_socket)
+{
+	switch (scheme) {
+	case HOST_SCHEME_ADDR:
+		*db_host = value;
+		*db_socket = NULL;
+		break;
+	case HOST_SCHEME_UNIX:
+		*db_host = NULL;
+		*db_socket = value;
+		break;
+	default:
+		fatal("%s: invalid storage_host_scheme: %d", __func__, scheme);
+	}
+}
+
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
@@ -896,6 +914,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 
 	MYSQL *db_ptr = NULL;
 	char *db_host = NULL;
+	char *db_socket = NULL;
 
 	while (rc == SLURM_ERROR) {
 		char *pass = NULL;
@@ -906,19 +925,24 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		_set_mysql_ssl_opts(mysql_db, db_info->params);
 		pass = _current_password(db_info);
 
-		db_host = db_info->host;
+		_select_storage_host(db_info->host_scheme, db_info->host,
+				     &db_host, &db_socket);
 		db_ptr = mysql_real_connect(mysql_db, db_host, db_info->user,
-					    pass, NULL, db_info->port, NULL, 0);
+					    pass, NULL, db_info->port,
+					    db_socket, 0);
 
 		if (!db_ptr && db_info->backup) {
 			info("Connection failed to host = %s "
 			     "user = %s port = %u",
-			     db_host, db_info->user,
+			     db_host ? db_host : db_socket, db_info->user,
 			     db_info->port);
-			db_host = db_info->backup;
-			db_ptr = mysql_real_connect(mysql_db, db_host,
-						    db_info->user, pass, NULL,
-						    db_info->port, NULL, 0);
+			_select_storage_host(db_info->backup_scheme,
+					     db_info->backup, &db_host,
+					     &db_socket);
+			db_ptr =
+				mysql_real_connect(mysql_db, db_host,
+						   db_info->user, pass, NULL,
+						   db_info->port, db_socket, 0);
 		}
 
 		if (db_ptr) {
@@ -936,7 +960,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 		} else {
 			info("Connection failed to host = %s "
 			     "user = %s port = %u",
-			     db_host, db_info->user,
+			     db_host ? db_host : db_socket, db_info->user,
 			     db_info->port);
 			error("mysql_real_connect failed: %d %s",
 			      mysql_errno(mysql_db),
@@ -996,18 +1020,36 @@ static void _parse_token_params(mysql_db_info_t *db_info)
 	xfree(duration);
 }
 
+/* Parse path from storage host if it begins with 'unix:' or leave as addr */
+static void _parse_storage_host(const char *src, char **dest,
+				storage_host_scheme_t *scheme)
+{
+	if (!src)
+		return;
+	if (!xstrncasecmp(UNIX_PREFIX, src, UNIX_PREFIX_BYTES)) {
+		if (src[UNIX_PREFIX_BYTES] == '\0')
+			fatal("empty UNIX socket path, expected 'unix:/path'");
+		*scheme = HOST_SCHEME_UNIX;
+		*dest = xstrdup(src + UNIX_PREFIX_BYTES);
+	} else {
+		*scheme = HOST_SCHEME_ADDR;
+		*dest = xstrdup(src);
+	}
+}
+
 extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 {
 	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
+	char *db_backup = NULL;
+	char *db_host = NULL;
 
 	slurm_mutex_init(&db_info->token_lock);
 
 	switch (type) {
 	case SLURM_MYSQL_PLUGIN_AS:
 		db_info->port = slurm_conf.accounting_storage_port;
-		db_info->host = xstrdup(slurm_conf.accounting_storage_host);
-		db_info->backup =
-			xstrdup(slurm_conf.accounting_storage_backup_host);
+		db_host = slurm_conf.accounting_storage_host;
+		db_backup = slurm_conf.accounting_storage_backup_host;
 		db_info->user = xstrdup(slurmdbd_conf->storage_user);
 		db_info->pass = xstrdup(slurm_conf.accounting_storage_pass);
 		db_info->pass_script =
@@ -1018,7 +1060,7 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 		if (!slurm_conf.job_comp_port)
 			slurm_conf.job_comp_port = DEFAULT_MYSQL_PORT;
 		db_info->port = slurm_conf.job_comp_port;
-		db_info->host = xstrdup(slurm_conf.job_comp_host);
+		db_host = slurm_conf.job_comp_host;
 		db_info->user = xstrdup(slurm_conf.job_comp_user);
 		db_info->pass = xstrdup(slurm_conf.job_comp_pass);
 		db_info->pass_script =
@@ -1037,6 +1079,10 @@ extern mysql_db_info_t *create_mysql_db_info(slurm_mysql_plugin_type_t type)
 		debug2("mysql_common: Script-based authentication enabled for %s",
 		       db_info->pass_script);
 	}
+
+	_parse_storage_host(db_host, &db_info->host, &db_info->host_scheme);
+	_parse_storage_host(db_backup, &db_info->backup,
+			    &db_info->backup_scheme);
 
 	return db_info;
 }
@@ -1059,9 +1105,13 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
-	char *db_host = db_info->host;
+	char *db_host = NULL;
+	char *db_socket = NULL;
 	char *pass = NULL;
 	unsigned int my_timeout = 30;
+
+	_select_storage_host(db_info->host_scheme, db_info->host, &db_host,
+			     &db_socket);
 
 	xassert(mysql_conn);
 
@@ -1085,7 +1135,8 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	_set_mysql_ssl_opts(mysql_conn->db_conn, db_info->params);
 
 	while (!storage_init) {
-		debug2("Attempting to connect to %s:%d", db_host,
+		debug2("Attempting to connect to %s:%d",
+		       db_host ? db_host : db_socket,
 		       db_info->port);
 
 		xfree(pass);
@@ -1093,7 +1144,7 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 
 		if (!mysql_real_connect(mysql_conn->db_conn, db_host,
 					db_info->user, pass, db_name,
-					db_info->port, NULL,
+					db_info->port, db_socket,
 					CLIENT_MULTI_STATEMENTS)) {
 			const char *err_str = NULL;
 			int err = mysql_errno(mysql_conn->db_conn);
@@ -1115,10 +1166,14 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 
 			err_str = mysql_error(mysql_conn->db_conn);
 
-			if ((db_host == db_info->host) && db_info->backup) {
+			if (((db_host == db_info->host) ||
+			     (db_socket == db_info->host)) &&
+			    db_info->backup) {
 				debug2("mysql_real_connect failed: %d %s",
 				       err, err_str);
-				db_host = db_info->backup;
+				_select_storage_host(db_info->backup_scheme,
+						     db_info->backup, &db_host,
+						     &db_socket);
 				continue;
 			}
 
