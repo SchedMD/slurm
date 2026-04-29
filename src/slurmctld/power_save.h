@@ -38,12 +38,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#ifndef _HAVE_POWER_SAVE_H
+#define _HAVE_POWER_SAVE_H
+
 #include "src/slurmctld/slurmctld.h"
 
 #include "src/common/power_action.h"
-
-#ifndef _HAVE_POWER_SAVE_H
-#define _HAVE_POWER_SAVE_H
 
 /* Global Variables */
 extern list_t *resume_job_list;
