@@ -18,7 +18,7 @@ man5_MANS = \
 
 if HAVE_MAN2HTML
 
-html_DATA = \
+generated_html = \
 	acct_gather.conf.html \
 	burst_buffer.conf.html \
 	cgroup.conf.html \
@@ -34,7 +34,27 @@ html_DATA = \
 	topology.conf.html \
 	topology.yaml.html
 
-MOSTLYCLEANFILES = ${html_DATA}
+# Generated HTML man pages are kept out of html_DATA so that `make` (and
+# `make install`) do not rebuild them. Use `make html` to build and
+# `make install-html` to install.
+html-local: ${generated_html}
+
+install-html-local: ${generated_html}
+	@$(NORMAL_INSTALL)
+	test -z "$(htmldir)" || $(MKDIR_P) "$(DESTDIR)$(htmldir)"
+	@list='$(generated_html)'; for f in $$list; do \
+	  echo " $(INSTALL_DATA) $$f '$(DESTDIR)$(htmldir)'"; \
+	  $(INSTALL_DATA) "$$f" "$(DESTDIR)$(htmldir)" || exit $$?; \
+	done
+
+uninstall-local:
+	@$(NORMAL_UNINSTALL)
+	@list='$(generated_html)'; for f in $$list; do \
+	  echo " rm -f '$(DESTDIR)$(htmldir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(htmldir)/$$f"; \
+	done
+
+MOSTLYCLEANFILES = ${generated_html}
 
 SUFFIXES = .html
 
