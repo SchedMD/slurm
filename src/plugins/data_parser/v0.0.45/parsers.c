@@ -12148,7 +12148,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(cgroup_conf),
 	add_skip(cli_filter_params),
 	add_skip(cli_filter_plugins),
-	add_parse(UINT16, cluster_id, "ClusterId", "Unique ID for this cluster from the DBD"),
+	add_parse(UINT16_NO_VAL, cluster_id, "ClusterId", "Unique ID for this cluster from the DBD"),
 	add_skip(cluster_name),
 	add_skip(comm_params),
 	add_skip(complete_wait),
@@ -12235,7 +12235,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(mpi_params),
 	add_skip(msg_timeout),
 	add_skip(namespace_plugin),
-	add_parse(UINT32, next_job_id, "NEXT_JOB_ID", "Next slurm generated job_id to assign"),
+	add_parse(UINT32_NO_VAL, next_job_id, "NEXT_JOB_ID", "Next slurm generated job_id to assign"),
 	add_skip(node_features_conf),
 	add_skip(node_features_plugins),
 	add_skip(over_time_limit),
@@ -13438,7 +13438,7 @@ static const parser_t parsers[] = {
 	addpl(NAMESPACE_NODE_CONF_LIST, NAMESPACE_NODE_CONF_PTR, NEED_NONE),
 	addpl(NAMESPACE_DIR_CONF_LIST, NAMESPACE_DIR_CONF_PTR, NEED_NONE),
 	addpl(UPDATE_PARTITION_MSG_LIST, PARTITION_INFO_PTR, NEED_NONE),
-	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS, NEED_NONE),
+	addpl(JOB_DEFAULTS_LIST, JOB_DEFAULTS_PTR, NEED_NONE),
 	addpl(JOB_ARRAY_RESPONSE_MSG_PTR_LIST, JOB_ARRAY_RESPONSE_MSG_PTR, NEED_NONE),
 
 	/* alias parsers */

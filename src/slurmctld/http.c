@@ -38,7 +38,9 @@
 #include "src/common/http.h"
 #include "src/common/http_con.h"
 #include "src/common/http_mime.h"
+#include "src/common/http_request.h"
 #include "src/common/http_router.h"
+#include "src/common/openapi.h"
 #include "src/common/pack.h"
 #include "src/common/probes.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -47,12 +49,15 @@
 
 #include "src/conmgr/conmgr.h"
 
+#include "src/interfaces/data_parser.h"
 #include "src/interfaces/http_auth.h"
 #include "src/interfaces/metrics.h"
 
 #include "src/slurmctld/http.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+
+static data_parser_t **parsers = NULL;
 
 static int _reply_error(http_con_t *hcon, const char *name,
 			const http_con_request_t *request, int err)
@@ -179,6 +184,8 @@ static int _req_root(http_con_t *hcon, const char *name,
 {
 	static const char body[] =
 		"slurmctld index of endpoints:\n"
+		"  '/{data_parser}/conf': dump slurm configuration\n"
+		"     ({data_parser} is the version)\n"
 		"  '/readyz': check slurmctld is servicing RPCs\n"
 		"  '/livez': check slurmctld is running\n"
 		"  '/healthz': check slurmctld is running\n"
@@ -395,6 +402,47 @@ static int _req_healthz(http_con_t *hcon, const char *name,
 	return http_con_send_response(hcon, status, NULL, true, NULL, NULL);
 }
 
+static int _req_failed(http_request_event_t *event, http_con_t *hcon,
+		       const char *name, const http_con_request_t *request,
+		       int err)
+{
+	return _reply_error(hcon, name, request, err);
+}
+
+static int _req_conf(http_request_event_t *event, http_con_t *hcon,
+		     const char *name, const uid_t uid,
+		     http_request_method_t method,
+		     const http_con_request_t *request, void *arg)
+{
+	int rc = EINVAL;
+	slurm_conf_t conf_shallow_copy = { 0 };
+	openapi_resp_config_t resp = {
+		.slurm_conf = &conf_shallow_copy,
+	};
+	slurmctld_lock_t conf_read_lock = {
+		.conf = READ_LOCK,
+		.job = READ_LOCK,
+		.fed = READ_LOCK,
+	};
+
+	/* User must be authenticated */
+	if (uid == SLURM_AUTH_NOBODY)
+		return _req_failed(event, hcon, name, request, EPERM);
+
+	lock_slurmctld(conf_read_lock);
+	conf_shallow_copy = slurm_conf;
+	conf_shallow_copy.boot_time = slurmctld_config.boot_time;
+	conf_shallow_copy.version = SLURM_VERSION_STRING;
+	conf_shallow_copy.next_job_id = get_next_job_id(true);
+	if (!conf_shallow_copy.cluster_id)
+		conf_shallow_copy.cluster_id = NO_VAL16;
+	rc = http_request_reply(event, SLURM_SUCCESS, NULL, true, &resp,
+				sizeof(resp));
+	unlock_slurmctld(conf_read_lock);
+
+	return rc;
+}
+
 extern void http_init(void)
 {
 	int rc = EINVAL;
@@ -402,6 +450,11 @@ extern void http_init(void)
 	if ((rc = http_auth_g_init(NULL, NULL)))
 		fatal("http authentication plugins failed to load: %s",
 		      slurm_strerror(rc));
+
+	if (!(parsers = data_parser_g_new_array(NULL, NULL, NULL, NULL, NULL,
+						NULL, NULL, NULL, NULL, NULL,
+						false)))
+		fatal("Unable to initialize data_parser plugins");
 
 	http_router_init(_req_not_found);
 	http_router_bind(HTTP_REQUEST_GET, "/", _req_root, NULL, NULL);
@@ -421,12 +474,17 @@ extern void http_init(void)
 			 _req_metrics_sched, NULL, NULL);
 	http_router_bind(HTTP_REQUEST_GET, "/metrics/jobs-users-accts",
 			 _req_metrics_ua, NULL, NULL);
+
+	http_request_bind(parsers, HTTP_REQUEST_GET,
+			  "/" OPENAPI_DATA_PARSER_PARAM "/conf", _req_conf,
+			  _req_failed, DATA_PARSER_OPENAPI_CONF_RESP, NULL);
 }
 
 extern void http_fini(void)
 {
 	http_router_fini();
 	http_auth_g_fini();
+	FREE_NULL_DATA_PARSER_ARRAY(parsers, false);
 }
 
 extern int on_http_connection(conmgr_fd_t *con)
