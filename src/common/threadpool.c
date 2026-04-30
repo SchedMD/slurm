@@ -898,15 +898,15 @@ static void _parse_params(const int default_count, const char *params)
 			const char *value = (tok + strlen(THREADPOOL_PARAM));
 
 			if (!xstrcasecmp(value, "enabled"))
-				; /* ignore as enabled by default */
+				threadpool.enabled = true;
 			else if (!xstrcasecmp(value, "disabled"))
-				threadpool.shutdown = true;
+				threadpool.enabled = false;
 			else
 				fatal("Invalid parameter %s", tok);
 
 			log_flag(THREAD, "%s: threadpool is %s",
-				 __func__, (threadpool.shutdown ? "disabled" :
-					    "enabled"));
+				 __func__,
+				 (threadpool.enabled ? "enabled" : "disabled"));
 		} else if (
 			!xstrncasecmp(tok, THREADPOOL_PARAM_PREALLOCATE,
 				      strlen(THREADPOOL_PARAM_PREALLOCATE))) {
@@ -1039,14 +1039,13 @@ extern void threadpool_init(const int default_count, const char *params)
 
 	slurm_mutex_lock(&threadpool.mutex);
 
-	if (threadpool.enabled || threadpool.shutdown) {
+	if (threadpool.pending || threadpool.shutdown || !threadpool.enabled) {
 		slurm_mutex_unlock(&threadpool.mutex);
 		return;
 	}
 
 	xassert(!threadpool.shutdown);
-
-	threadpool.enabled = true;
+	xassert(threadpool.enabled);
 
 	xassert(!threadpool.pending);
 	threadpool.pending = list_create(NULL);
