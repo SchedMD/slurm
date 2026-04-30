@@ -44,6 +44,10 @@ extern void srun_sig_init(void);
  * destroy srun. Otherwise, this will be set to 0.
  */
 extern int srun_destroy_sig;
+
+/* Set when SRUN_JOB_COMPLETE is received. */
+extern bool srun_job_complete_recvd;
+
 extern pthread_mutex_t srun_destroy_sig_lock;
 
 extern int srun_sig_eventfd;

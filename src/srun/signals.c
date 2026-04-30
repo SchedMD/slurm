@@ -52,6 +52,7 @@ bool srun_sig_forward = false;
 
 pthread_mutex_t srun_destroy_sig_lock = PTHREAD_MUTEX_INITIALIZER;
 int srun_destroy_sig = 0;
+bool srun_job_complete_recvd = false;
 
 int srun_sig_eventfd = -1;
 
