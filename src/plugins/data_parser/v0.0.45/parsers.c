@@ -10987,7 +10987,7 @@ static const flag_bit_t PARSER_FLAG_ARRAY(JOB_STATE)[] = {
 	add_flag_eq(JOB_BOOT_FAIL, JOB_STATE_BASE, "BOOT_FAIL", false, "terminated due to node boot failure"),
 	add_flag_eq(JOB_DEADLINE, JOB_STATE_BASE, "DEADLINE", false, "terminated on deadline"),
 	add_flag_eq(JOB_OOM, JOB_STATE_BASE, "OUT_OF_MEMORY", false, "experienced out of memory error"),
-	add_flag_eq(JOB_END, JOB_STATE_BASE, "invalid-placeholder", true, NULL),
+	add_flag_hidden(JOB_END, JOB_STATE_BASE, "END"),
 	add_flag(JOB_LAUNCH_FAILED, JOB_STATE_FLAGS, "LAUNCH_FAILED", false, "job launch failed"),
 	add_flag(JOB_REQUEUE, JOB_STATE_FLAGS, "REQUEUED", false, "Requeue job in completing state"),
 	add_flag(JOB_REQUEUE_HOLD, JOB_STATE_FLAGS, "REQUEUE_HOLD", false, "Requeue any job in hold"),
