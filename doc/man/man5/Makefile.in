@@ -13,7 +13,6 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -199,10 +198,9 @@ am__uninstall_files_from_dir = { \
        $(am__cd) "$$dir" && echo $$files | $(am__xargs_n) 40 $(am__rm_f); }; \
   }
 man5dir = $(mandir)/man5
-am__installdirs = "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(htmldir)"
+am__installdirs = "$(DESTDIR)$(man5dir)"
 NROFF = nroff
 MANS = $(man5_MANS)
-DATA = $(html_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -481,7 +479,7 @@ man5_MANS = \
 	topology.conf.5 \
 	topology.yaml.5
 
-@HAVE_MAN2HTML_TRUE@html_DATA = \
+@HAVE_MAN2HTML_TRUE@generated_html = \
 @HAVE_MAN2HTML_TRUE@	acct_gather.conf.html \
 @HAVE_MAN2HTML_TRUE@	burst_buffer.conf.html \
 @HAVE_MAN2HTML_TRUE@	cgroup.conf.html \
@@ -497,7 +495,7 @@ man5_MANS = \
 @HAVE_MAN2HTML_TRUE@	topology.conf.html \
 @HAVE_MAN2HTML_TRUE@	topology.yaml.html
 
-@HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
+@HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${generated_html}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html
 all: all-am
 
@@ -579,27 +577,6 @@ uninstall-man5:
 	} | sed -e 's,.*/,,;h;s,.*\.,,;s,^[^5][0-9a-z]*$$,5,;x' \
 	      -e 's,\.[0-9a-z]*$$,,;$(transform);G;s,\n,.,'`; \
 	dir='$(DESTDIR)$(man5dir)'; $(am__uninstall_files_from_dir)
-install-htmlDATA: $(html_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(html_DATA)'; test -n "$(htmldir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(htmldir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(htmldir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(htmldir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(htmldir)" || exit $$?; \
-	done
-
-uninstall-htmlDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(html_DATA)'; test -n "$(htmldir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(htmldir)'; $(am__uninstall_files_from_dir)
 tags TAGS:
 
 ctags CTAGS:
@@ -608,9 +585,9 @@ cscope cscopelist:
 
 check-am: all-am
 check: check-am
-all-am: Makefile $(MANS) $(DATA)
+all-am: Makefile $(MANS)
 installdirs:
-	for dir in "$(DESTDIR)$(man5dir)" "$(DESTDIR)$(htmldir)"; do \
+	for dir in "$(DESTDIR)$(man5dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -644,6 +621,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@HAVE_MAN2HTML_FALSE@html-local:
+@HAVE_MAN2HTML_FALSE@install-html-local:
+@HAVE_MAN2HTML_FALSE@uninstall-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool mostlyclean-am
@@ -658,13 +638,13 @@ dvi-am:
 
 html: html-am
 
-html-am:
+html-am: html-local
 
 info: info-am
 
 info-am:
 
-install-data-am: install-htmlDATA install-man
+install-data-am: install-man
 
 install-dvi: install-dvi-am
 
@@ -674,7 +654,7 @@ install-exec-am:
 
 install-html: install-html-am
 
-install-html-am:
+install-html-am: install-html-local
 
 install-info: install-info-am
 
@@ -708,7 +688,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-htmlDATA uninstall-man
+uninstall-am: uninstall-local uninstall-man
 
 uninstall-man: uninstall-man5
 
@@ -716,19 +696,39 @@ uninstall-man: uninstall-man5
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	cscopelist-am ctags-am distclean distclean-generic \
-	distclean-libtool dvi dvi-am html html-am info info-am install \
-	install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-htmlDATA install-info install-info-am \
-	install-man install-man5 install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am tags-am uninstall uninstall-am uninstall-htmlDATA \
-	uninstall-man uninstall-man5
+	distclean-libtool dvi dvi-am html html-am html-local info \
+	info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-html-local install-info \
+	install-info-am install-man install-man5 install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags-am uninstall \
+	uninstall-am uninstall-local uninstall-man uninstall-man5
 
 .PRECIOUS: Makefile
 
+
+# Generated HTML man pages are kept out of html_DATA so that `make` (and
+# `make install`) do not rebuild them. Use `make html` to build and
+# `make install-html` to install.
+@HAVE_MAN2HTML_TRUE@html-local: ${generated_html}
+
+@HAVE_MAN2HTML_TRUE@install-html-local: ${generated_html}
+@HAVE_MAN2HTML_TRUE@	@$(NORMAL_INSTALL)
+@HAVE_MAN2HTML_TRUE@	test -z "$(htmldir)" || $(MKDIR_P) "$(DESTDIR)$(htmldir)"
+@HAVE_MAN2HTML_TRUE@	@list='$(generated_html)'; for f in $$list; do \
+@HAVE_MAN2HTML_TRUE@	  echo " $(INSTALL_DATA) $$f '$(DESTDIR)$(htmldir)'"; \
+@HAVE_MAN2HTML_TRUE@	  $(INSTALL_DATA) "$$f" "$(DESTDIR)$(htmldir)" || exit $$?; \
+@HAVE_MAN2HTML_TRUE@	done
+
+@HAVE_MAN2HTML_TRUE@uninstall-local:
+@HAVE_MAN2HTML_TRUE@	@$(NORMAL_UNINSTALL)
+@HAVE_MAN2HTML_TRUE@	@list='$(generated_html)'; for f in $$list; do \
+@HAVE_MAN2HTML_TRUE@	  echo " rm -f '$(DESTDIR)$(htmldir)/$$f'"; \
+@HAVE_MAN2HTML_TRUE@	  rm -f "$(DESTDIR)$(htmldir)/$$f"; \
+@HAVE_MAN2HTML_TRUE@	done
 
 @HAVE_MAN2HTML_TRUE@.5.html:
 @HAVE_MAN2HTML_TRUE@	`dirname $<`/../man2html.py @SLURM_MAJOR@.@SLURM_MINOR@ $(srcdir)/../../html/header.txt $(srcdir)/../../html/footer.txt $<

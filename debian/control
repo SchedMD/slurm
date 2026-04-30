@@ -103,8 +103,8 @@ Depends:
  ${misc:Depends}
 Conflicts:
  slurm-wlm-doc
-Description: Slurm HTML documentation
- This package contains the Slurm html documentation.
+Description: Slurm configurator scripts
+ This package contains the Slurm configurator HTML scripts.
 
 Package: slurm-smd-slurmctld
 Architecture: any
