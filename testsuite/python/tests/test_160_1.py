@@ -14,7 +14,8 @@ slurm_user = atf.properties["slurm-user"]
 def setup():
     atf.require_version(
         (26, 5),
-        reason="Dynamic memory limits were added in 26.05",
+        "bin/scontrol",
+        reason="Issue 50781: Dynamic memory limits were added in 26.05",
     )
     atf.require_nodes(2, [("RealMemory", 500)])
     atf.require_config_parameter_includes("SlurmctldParameters", "enable_stepmgr")
