@@ -294,6 +294,29 @@ rwfail:
 	return status;
 }
 
+#define T(flag, str) { flag, XSTRINGIFY(flag), str }
+
+static const struct {
+	slurmstepd_state_t val;
+	char *state_str;
+	const char *str;
+} slurmstepd_state_map[] = {
+	T(SLURMSTEPD_NOT_RUNNING, "NOT RUNNING"),
+	T(SLURMSTEPD_STEP_STARTING, "STARTING"),
+	T(SLURMSTEPD_STEP_RUNNING, "RUNNING"),
+	T(SLURMSTEPD_STEP_CANCELLED, "CANCELLED"),
+	T(SLURMSTEPD_STEP_ENDING, "ENDING"),
+};
+
+extern const char *stepd_state_2str(slurmstepd_state_t state)
+{
+	for (int i = 0; i < ARRAY_SIZE(slurmstepd_state_map); i++) {
+		if (slurmstepd_state_map[i].val == state)
+			return slurmstepd_state_map[i].str;
+	}
+	return "UNKNOWN";
+}
+
 /*
  * Send job notification message to a batch job
  */

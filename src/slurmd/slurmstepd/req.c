@@ -96,6 +96,7 @@ static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(pid_t pid);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, list_t *objs);
+static void _wait_for_connections(void);
 
 struct io_operations msg_socket_ops = {
 	.readable = &_msg_socket_readable,
@@ -275,6 +276,7 @@ static void *_msg_thr_internal(void *ignored)
 	eio_handle_mainloop(step->msg_handle);
 	debug("Message thread exited");
 
+	_wait_for_connections();
 	return NULL;
 }
 
@@ -311,8 +313,17 @@ static void _wait_for_connections(void)
 
 	slurm_mutex_lock(&message_lock);
 	ts.tv_sec = time(NULL) + STEPD_MESSAGE_COMP_WAIT;
-	while (message_connections > 0 && rc == 0)
+	while (message_connections > 0 && rc == 0) {
+		log_flag(NET, "Waiting on %d connections to finish",
+			 message_connections);
 		rc = pthread_cond_timedwait(&message_cond, &message_lock, &ts);
+	}
+	if (message_connections > 0) {
+		error("Timed out waiting for %d connections to finish, abandoning them now.",
+		      message_connections);
+	} else {
+		log_flag(NET, "All connections finished.");
+	}
 
 	slurm_mutex_unlock(&message_lock);
 }
@@ -337,7 +348,6 @@ _msg_socket_readable(eio_obj_t *obj)
 			/* slurmd considers the job step done now that
 			 * the domain name socket is destroyed */
 			obj->fd = -1;
-			_wait_for_connections();
 		} else {
 			debug2("  false");
 		}
@@ -1168,7 +1178,9 @@ static int _handle_terminate(int fd, uid_t uid, pid_t remote_pid)
 	uint32_t i;
 
 	debug("_handle_terminate for %ps uid=%u", &step->step_id, uid);
-	step_terminate_monitor_start();
+
+	if (get_job_state() < SLURMSTEPD_STEP_CANCELLED)
+		step_terminate_monitor_start();
 
 	/*
 	 * Sanity checks
