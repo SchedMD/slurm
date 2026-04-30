@@ -12148,7 +12148,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF_META)[] = {
 	add_skip(cgroup_conf),
 	add_skip(cli_filter_params),
 	add_skip(cli_filter_plugins),
-	add_parse(UINT16, cluster_id, "ClusterId", "Unique ID for this cluster from the DBD"),
+	add_parse(UINT16_NO_VAL, cluster_id, "ClusterId", "Unique ID for this cluster from the DBD"),
 	add_skip(cluster_name),
 	add_skip(comm_params),
 	add_skip(complete_wait),
