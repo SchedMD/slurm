@@ -465,6 +465,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->db_flags, buffer);
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
+		pack8(msg->exclusive, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
@@ -477,6 +478,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		packstr(msg->node_inx, buffer);
 		pack32(msg->het_job_id, buffer);
 		pack32(msg->het_job_offset, buffer);
+		pack8(msg->oversubscribe, buffer);
 		packstr(msg->partition, buffer);
 		pack32(msg->priority, buffer);
 		pack32(msg->qos_id, buffer);
@@ -626,6 +628,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
+		safe_unpack8(&msg_ptr->exclusive, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
 		safe_unpackstr(&msg_ptr->gres_used, buffer);
 		safe_unpack32(&msg_ptr->job_id, buffer);
@@ -638,6 +641,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpackstr(&msg_ptr->node_inx, buffer);
 		safe_unpack32(&msg_ptr->het_job_id, buffer);
 		safe_unpack32(&msg_ptr->het_job_offset, buffer);
+		safe_unpack8(&msg_ptr->oversubscribe, buffer);
 		safe_unpackstr(&msg_ptr->partition, buffer);
 		safe_unpack32(&msg_ptr->priority, buffer);
 		safe_unpack32(&msg_ptr->qos_id, buffer);

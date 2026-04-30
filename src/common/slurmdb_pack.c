@@ -3472,6 +3472,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->eligible, buffer);
 		pack_time(job->end, buffer);
 		packstr(job->env, buffer);
+		packstr(job->exclusive, buffer);
 		pack32((uint32_t) job->exitcode, buffer);
 		packstr(job->extra, buffer);
 		packstr(job->failed_node, buffer);
@@ -3488,6 +3489,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->nodes, buffer);
 		pack32(job->het_job_id, buffer);
 		pack32(job->het_job_offset, buffer);
+		packstr(job->oversubscribe, buffer);
 		packstr(job->partition, buffer);
 		pack32(job->priority, buffer);
 		pack32(job->qosid, buffer);
@@ -3764,6 +3766,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack_time(&job_ptr->eligible, buffer);
 		safe_unpack_time(&job_ptr->end, buffer);
 		safe_unpackstr(&job_ptr->env, buffer);
+		safe_unpackstr(&job_ptr->exclusive, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->exitcode = (int32_t) uint32_tmp;
 		safe_unpackstr(&job_ptr->extra, buffer);
@@ -3779,6 +3782,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr(&job_ptr->nodes, buffer);
 		safe_unpack32(&job_ptr->het_job_id, buffer);
 		safe_unpack32(&job_ptr->het_job_offset, buffer);
+		safe_unpackstr(&job_ptr->oversubscribe, buffer);
 		safe_unpackstr(&job_ptr->partition, buffer);
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);

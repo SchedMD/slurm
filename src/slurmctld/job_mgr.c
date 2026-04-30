@@ -8125,7 +8125,7 @@ extern int validate_job_create_req(job_desc_msg_t * job_desc, uid_t submit_uid,
 	}
 
 	if (job_desc->reboot && (job_desc->reboot != NO_VAL16))
-		job_desc->shared = 0;
+		job_desc->shared = JOB_SHARED_NONE;
 
 fini:
 	on_job_state_change(job_ptr, NO_VAL);

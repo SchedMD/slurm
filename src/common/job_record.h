@@ -324,6 +324,11 @@ struct job_record {
 					   going to end. */
 	uint16_t epilog_failed;		/* true if any Epilog failed */
 	bool epilog_running;		/* true of EpilogSlurmctld is running */
+	/*
+	 * JOB_EXCLUSIVE_* display string, only set in slurmdbd reconstructed
+	 * job_record_t for accounting storage. NULL in live ctld jobs.
+	 */
+	char *exclusive;
 	uint32_t exit_code;		/* exit code for job (status from
 					 * wait call) */
 	char *extra;			/* Arbitrary string */
@@ -422,6 +427,11 @@ struct job_record {
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
+	/*
+	 * JOB_OVERSUBSCRIBE_* display string, only set in slurmdbd reconstructed
+	 * job_record_t for accounting storage. NULL in live ctld jobs.
+	 */
+	char *oversubscribe;
 	char *partition;		/* name of job partition(s) */
 	list_t *part_ptr_list;		/* list of pointers to partition recs */
 	bool part_nodes_missing;	/* set if job's nodes removed from this

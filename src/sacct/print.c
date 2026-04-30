@@ -1900,6 +1900,28 @@ extern void print_fields(type_t type, void *object)
 			field->print_routine(field, &tmp_uint16,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_EXCLUSIVE:
+			switch (type) {
+			case JOB:
+				tmp_char = job->exclusive;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
+		case PRINT_OVERSUBSCRIBE:
+			switch (type) {
+			case JOB:
+				tmp_char = job->oversubscribe;
+				break;
+			default:
+				break;
+			}
+			field->print_routine(field, tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_START:
 			switch(type) {
 			case JOB:

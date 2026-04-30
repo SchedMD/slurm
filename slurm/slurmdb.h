@@ -980,6 +980,7 @@ typedef struct {
 	time_t eligible;
 	time_t end;
 	char *env;
+	char *exclusive;
 	uint32_t exitcode;
 	char *extra; /* Extra - arbitrary string */
 	char *failed_node;
@@ -995,6 +996,7 @@ typedef struct {
 	char *licenses;
 	char 	*mcs_label;
 	char	*nodes;
+	char *oversubscribe;
 	char	*partition;
 	uint32_t priority;
 	uint32_t qosid;

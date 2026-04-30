@@ -2238,6 +2238,9 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	job.start_protocol_ver = slurmdbd_conn->pcon->version;
 	job.start_time = job_start_msg->start_time;
 	details.segment_size = job_start_msg->segment_size;
+	job.exclusive = job_exclusive_display_string(job_start_msg->exclusive);
+	job.oversubscribe =
+		job_oversubscribe_string(job_start_msg->oversubscribe);
 	details.std_err = job_start_msg->std_err;
 	details.std_in = job_start_msg->std_in;
 	details.std_out = job_start_msg->std_out;
