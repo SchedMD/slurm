@@ -1110,6 +1110,13 @@ static void _adjust_limit_usage(int type, job_record_t *job_ptr,
 			}
 			break;
 		case ACCT_POLICY_JOB_FINI:
+			/*
+			 * If tres_alloc_cnt doesn't exist means
+			 * ACCT_POLICY_JOB_BEGIN was never called so no need to
+			 * clean up that which was never set up.
+			 */
+			if (!job_ptr->tres_alloc_cnt)
+				break;
 			if (assoc_ptr->usage->used_jobs)
 				assoc_ptr->usage->used_jobs--;
 			else
