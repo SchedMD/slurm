@@ -1201,13 +1201,21 @@ extern list_t *as_mysql_modify_res(mysql_conn_t *mysql_conn, uint32_t uid,
 		char *name = NULL;
 		int curr_res = atoi(row[RES_REQ_ID]);
 		uint32_t total_pos = 100;
+		uint32_t db_flags = slurm_atoul(row[RES_REQ_FLAGS]);
+		uint32_t delta_flags = res->flags & SLURMDB_RES_FLAG_BASE;
+		uint32_t adj_flags = 0;
 		char *percent_str = "%";
 
-		if ((res->flags & SLURMDB_RES_FLAG_ABSOLUTE) &&
-		    (res->flags & SLURMDB_RES_FLAG_REMOVE)) {
-		} else if ((res->flags & SLURMDB_RES_FLAG_ABSOLUTE) ||
-			   (slurm_atoul(row[RES_REQ_FLAGS]) &
-			    SLURMDB_RES_FLAG_ABSOLUTE)) {
+		if (res->flags & SLURMDB_RES_FLAG_NOTSET)
+			adj_flags = db_flags;
+		else if (res->flags & SLURMDB_RES_FLAG_ADD)
+			adj_flags = db_flags | delta_flags;
+		else if (res->flags & SLURMDB_RES_FLAG_REMOVE)
+			adj_flags = db_flags & ~delta_flags;
+		else
+			adj_flags = delta_flags;
+
+		if (adj_flags & SLURMDB_RES_FLAG_ABSOLUTE) {
 			total_pos = slurm_atoul(row[RES_REQ_COUNT]);
 			percent_str = "";
 		}
