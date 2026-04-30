@@ -67,9 +67,12 @@ static uint16_t _wrap_add(uint16_t base, uint16_t delta, uint16_t limit)
 
 static void _log_placement(torus3d_placement_t *placement)
 {
-	debug("\tPlacement size:%u dims:%ux%ux%u overlap:%s",
+	debug("\tPlacement size:%u dims:%ux%ux%u seed:%u,%u,%u overlap:%s",
 	      placement->size, placement->dims.x, placement->dims.y,
-	      placement->dims.z, placement->has_overlap ? "yes" : "no");
+	      placement->dims.z,
+	      placement->anchor_seed.x, placement->anchor_seed.y,
+	      placement->anchor_seed.z,
+	      placement->has_overlap ? "yes" : "no");
 	if (placement->anchor_bitmaps) {
 		for (int i = 0; i < placement->anchor_count; i++) {
 			char *tmp_str =
@@ -119,14 +122,14 @@ static void _log_toruses(torus3d_context_t *ctx)
 }
 
 static uint16_t *_build_axis_positions(uint16_t size, uint16_t stride,
-				       uint16_t *count)
+				       uint16_t seed, uint16_t *count)
 {
 	uint16_t *positions;
-	uint16_t pos = 0;
+	uint16_t pos = seed;
 	uint16_t idx = 0;
 
 	positions = xcalloc(size, sizeof(*positions));
-	positions[idx++] = 0;
+	positions[idx++] = pos;
 
 	if (stride == 0) {
 		*count = 1;
@@ -135,7 +138,7 @@ static uint16_t *_build_axis_positions(uint16_t size, uint16_t stride,
 
 	while (1) {
 		pos = _wrap_add(pos, stride, size);
-		if (pos == 0)
+		if (pos == positions[0])
 			break;
 		positions[idx++] = pos;
 	}
@@ -210,9 +213,18 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 		return EINVAL;
 	}
 
-	xs = _build_axis_positions(torus->x, spacing_x, &count_x);
-	ys = _build_axis_positions(torus->y, spacing_y, &count_y);
-	zs = _build_axis_positions(torus->z, spacing_z, &count_z);
+	if (src->anchor_seed.x >= torus->x || src->anchor_seed.y >= torus->y ||
+	    src->anchor_seed.z >= torus->z) {
+		error("Torus3d placement anchor_seed must be within torus dimensions");
+		return EINVAL;
+	}
+
+	xs = _build_axis_positions(torus->x, spacing_x, src->anchor_seed.x,
+				   &count_x);
+	ys = _build_axis_positions(torus->y, spacing_y, src->anchor_seed.y,
+				   &count_y);
+	zs = _build_axis_positions(torus->z, spacing_z, src->anchor_seed.z,
+				   &count_z);
 
 	anchor_total = (uint64_t) count_x * count_y * count_z;
 	if (anchor_total == 0 || anchor_total > INT_MAX) {
@@ -279,6 +291,8 @@ static int _validate_placement(torus3d_record_t *torus,
 
 	placement->size = (uint32_t) expected_size;
 	placement->dims = src->dims;
+	placement->anchor_seed = src->anchor_seed;
+
 	if ((src->anchor_spacing.x == 0) && (src->anchor_spacing.y == 0) &&
 	    (src->anchor_spacing.z == 0)) {
 		placement->anchor_spacing = src->dims;
@@ -390,34 +404,80 @@ static uint16_t _gcd(uint16_t a, uint16_t b)
 }
 
 /*
+ * Check if two periodic sub-cube grids overlap on a single axis modeled in
+ * infinite space. By Bezout's identity the set of distances between anchors
+ * is {delta + m * gcd(s_a, s_b) : m in Z}.
+ */
+static bool _grids_overlap_axis(uint16_t seed_a, uint16_t s_a, uint16_t dim_a,
+				uint16_t seed_b, uint16_t s_b, uint16_t dim_b)
+{
+	uint16_t g = _gcd(s_a, s_b);
+	uint16_t r;
+
+	xassert(g);
+
+	if (seed_a == seed_b)
+		return true;
+
+	if (seed_b > seed_a) {
+		r = (seed_b - seed_a) % g;
+		return (r < dim_a) || ((g - r) < dim_b);
+	} else {
+		r = (seed_a - seed_b) % g;
+		return (r < dim_b) || ((g - r) < dim_a);
+	}
+}
+
+/*
  * Self-overlap: anchors within the same placement overlap when the spacing
  * on any axis is smaller than the placement dims on that axis.
  *
- * Cross-overlap: two different placements of the same size always share
- * anchor (0,0,0), so their sub-cubes always overlap.
+ * Cross-overlap: two same-size placements overlap when their anchor sub-cube
+ * grids overlap on ALL three axes simultaneously.
  */
 static void _detect_placement_overlaps(torus3d_record_t *torus)
 {
 	for (int i = 0; i < torus->placement_count; i++) {
 		torus3d_placement_t *p = &torus->placements[i];
 
-		if (p->has_overlap)
-			continue;
-
 		/* Self-overlap */
 		if ((_gcd(p->anchor_spacing.x, torus->x) < p->dims.x) ||
 		    (_gcd(p->anchor_spacing.y, torus->y) < p->dims.y) ||
-		    (_gcd(p->anchor_spacing.z, torus->z) < p->dims.z)) {
+		    (_gcd(p->anchor_spacing.z, torus->z) < p->dims.z))
 			p->has_overlap = true;
-			continue;
-		}
+	}
 
-		/* Cross-overlap: mark all placements in same-size group */
+	/* Cross-overlap: check all pairs within each same-size group */
+	for (int i = 0; i < torus->placement_count; i++) {
+		torus3d_placement_t *p = &torus->placements[i];
+
 		for (int j = i + 1; j < torus->placement_count; j++) {
-			if (torus->placements[j].size != p->size)
+			torus3d_placement_t *q = &torus->placements[j];
+
+			if (q->size != p->size)
 				break;
-			p->has_overlap = true;
-			torus->placements[j].has_overlap = true;
+
+			if (p->has_overlap && q->has_overlap)
+				continue;
+
+			if (_grids_overlap_axis(p->anchor_seed.x,
+						p->anchor_spacing.x, p->dims.x,
+						q->anchor_seed.x,
+						q->anchor_spacing.x,
+						q->dims.x) &&
+			    _grids_overlap_axis(p->anchor_seed.y,
+						p->anchor_spacing.y, p->dims.y,
+						q->anchor_seed.y,
+						q->anchor_spacing.y,
+						q->dims.y) &&
+			    _grids_overlap_axis(p->anchor_seed.z,
+						p->anchor_spacing.z, p->dims.z,
+						q->anchor_seed.z,
+						q->anchor_spacing.z,
+						q->dims.z)) {
+				p->has_overlap = true;
+				q->has_overlap = true;
+			}
 		}
 	}
 }

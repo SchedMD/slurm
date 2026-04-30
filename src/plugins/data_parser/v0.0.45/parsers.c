@@ -11742,6 +11742,7 @@ static const parser_t PARSER_ARRAY(TORUS3D_DIMS)[] = {
 	add_parser(slurm_conf_torus3d_placement_t, mtype, false, field, 0, path, desc)
 static const parser_t PARSER_ARRAY(TORUS3D_PLACEMENT)[] = {
 	add_parse(TORUS3D_DIMS, dims, "dims", "Placement dimensions"),
+	add_parse(TORUS3D_DIMS, anchor_seed, "anchor_seed", "Starting coordinate offset for anchor grid"),
 	add_parse(TORUS3D_DIMS, anchor_spacing, "anchor_spacing", "Anchor spacing for placement"),
 };
 #undef add_parse

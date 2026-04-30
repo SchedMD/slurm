@@ -76,6 +76,7 @@ typedef struct slurm_conf_torus3d_dims {
 } slurm_conf_torus3d_dims_t;
 
 typedef struct slurm_conf_torus3d_placement {
+	slurm_conf_torus3d_dims_t anchor_seed;
 	slurm_conf_torus3d_dims_t anchor_spacing;
 	slurm_conf_torus3d_dims_t dims;
 } slurm_conf_torus3d_placement_t;
