@@ -1018,7 +1018,7 @@ standalone values or aggregated/calculated into a data structure.
 For example, the <b>TresUsageInTot</b> field can be queried with
 <a href="sstat.html">sstat</a> during job runtime, and for every TRES, it
 stores the sum of the gathered metrics of all tasks. For example, if we have 5
-tasks, all of them consuming 1GB of memory, then the <b>TresUsageInTot</b>
+tasks, all of them consuming 1GiB of memory, then the <b>TresUsageInTot</b>
 would read "memory=5G". With the same example, and for the
 <b>TresUsageInMax</b> instead, it will store the maximum memory peak seen by
 any task of this step, so it would read "memory=1G".

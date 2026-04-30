@@ -3145,7 +3145,7 @@ Each TRES can be one of the Slurm defaults (e.g., \fIcpu\fR, \fImem\fR,
 resources by running \fBsacctmgr show tres\fR.
 
 Each TRES has a different limit, e.g., "GrpTRES=cpu=16,mem=32G" would
-establish 2 different limits: one for 16 CPUs and another for 32 GB of memory.
+establish 2 different limits: one for 16 CPUs and another for 32 GiB of memory.
 
 Setting a new value for a TRES type does not affect any other TRES types that
 were previously specified. For example, on the same entity as above, a
@@ -3161,7 +3161,7 @@ to or remove from the previously set value for that TRES, e.g.,
 "GrpTRES=mem-=8G,gres/gpu+=2" would result in "GrpTRES=mem=24G,gres/gpu=4" on
 that entity.
 
-\fBNOTE\fR: When dealing with Memory as a TRES the default units are MB. A
+\fBNOTE\fR: When dealing with Memory as a TRES the default units are MiB. A
 suffix of G, T, or P can be added to specify a limit in larger units.
 
 \fBNOTE\fR: The Billing TRES is calculated from a partition's

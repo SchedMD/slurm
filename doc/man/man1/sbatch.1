@@ -1468,7 +1468,7 @@ the MCS documentation for more details: <https://slurm.schedmd.com/mcs.html>
 .TP
 \fB\-\-mem\fR=<\fIsize\fR>[\fIunits\fR]
 Specify the real memory required per node.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both parameters can be
@@ -1607,7 +1607,7 @@ verbosely report binding before task runs
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per usable allocated CPU.
-Default units are megabytes.
+Default units are mebibytes.
 The default value is \fBDefMemPerCPU\fR and the maximum value is
 \fBMaxMemPerCPU\fR (see exception below). If configured, both parameters can be
 seen using the \fBscontrol show config\fR command.
@@ -1684,7 +1684,7 @@ $ sacct \-j $SLURM_JOB_ID \-X \-o jobid%7,reqtres%35,alloctres%35
 .TP
 \fB\-\-mem\-per\-gpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per allocated GPU.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerGPU\fR and is available on both a global and
 per partition basis.
@@ -2532,7 +2532,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 .TP
 \fB\-\-tmp\fR=<\fIsize\fR>[\fIunits\fR]
 Specify a minimum amount of temporary disk space per node.
-Default units are megabytes.
+Default units are mebibytes.
 Different units can be specified using the suffix [K|M|G|T].
 .IP
 

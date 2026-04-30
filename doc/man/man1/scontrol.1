@@ -1192,13 +1192,13 @@ Set the job's minimum number of CPUs per node to the specified value.
 .IP
 
 .TP
-\fBMinMemoryCPU\fR=<\fImegabytes\fR>
+\fBMinMemoryCPU\fR=<\fImebibytes\fR>
 Set the job's minimum real memory required per allocated CPU to the specified
 value. Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both.
 .IP
 
 .TP
-\fBMinMemoryNode\fR=<\fImegabytes\fR>
+\fBMinMemoryNode\fR=<\fImebibytes\fR>
 Set the job's minimum real memory required per node to the specified value.
 For running jobs, only reduction is allowed. If the job was submitted with
 \fB\-\-mem\-per\-cpu\fR, the new per\-node limit replaces the per\-CPU limit
@@ -1208,7 +1208,7 @@ Either \fIMinMemoryCPU\fP or \fIMinMemoryNode\fP may be set, but not both
 .IP
 
 .TP
-\fBMinTmpDiskNode\fR=<\fImegabytes\fR>
+\fBMinTmpDiskNode\fR=<\fImebibytes\fR>
 Set the job's minimum temporary disk space required per node to the specified value.
 .IP
 
@@ -1922,7 +1922,7 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .TP
 \fBAllocMem\fR
-The total memory, in MB, currently allocated by jobs on the node.
+The total memory, in MiB, currently allocated by jobs on the node.
 .IP
 
 .TP
@@ -1938,7 +1938,7 @@ exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 
 .TP
 \fBFreeMem\fR
-The total memory, in MB, currently free on the node as reported by the OS.
+The total memory, in MiB, currently free on the node as reported by the OS.
 .IP
 
 .TP
@@ -1950,13 +1950,13 @@ LastBusy > SuspendTime).
 
 .TP
 \fBMemSpecLimit\fR
-The combined memory limit, in megabytes, on this node for the Slurm compute
+The combined memory limit, in mebibytes, on this node for the Slurm compute
 node daemons (slurmd, slurmstepd).
 .IP
 
 .TP
 \fBRealMemory\fR
-The total memory, in MB, on the node.
+The total memory, in MiB, on the node.
 .IP
 
 .TP
@@ -2202,13 +2202,13 @@ Format is the same as for MaxTime.
 .TP
 \fBDefMemPerCPU\fR=<\fIMB\fR>
 Set the default memory to be allocated per CPU for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
 \fBDefMemPerNode\fR=<\fIMB\fR>
 Set the default memory to be allocated per node for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
@@ -2284,7 +2284,7 @@ Default number of CPUs per allocated GPU.
 
 .TP
 \fBDefMemPerGPU\fR
-Default memory limit (in megabytes) per allocated GPU.
+Default memory limit (in mebibytes) per allocated GPU.
 .RE
 .IP
 
@@ -2308,13 +2308,13 @@ in this partition.
 .TP
 \fBMaxMemPerCPU\fR=<\fIMB\fR>
 Set the maximum memory to be allocated per CPU for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP
 \fBMaxMemPerNode\fR=<\fIMB\fR>
 Set the maximum memory to be allocated per node for jobs in this partition.
-The memory size is specified in megabytes.
+The memory size is specified in mebibytes.
 .IP
 
 .TP

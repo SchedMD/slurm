@@ -1314,7 +1314,7 @@ the job didn't specify \-\-cpus\-per\-task and \-\-cpus\-per\-gpu.
 
 .TP
 \fBDefMemPerCPU\fR
-Default real memory size available per usable allocated CPU in megabytes.
+Default real memory size available per usable allocated CPU in mebibytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerCPU\fR would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_tres\fR).
@@ -1372,7 +1372,7 @@ $ sacct \-j $SLURM_JOB_ID \-X \-o jobid%7,reqtres%35,alloctres%35
 
 .TP
 \fBDefMemPerGPU\fR
-Default real memory size available per allocated GPU in megabytes.
+Default real memory size available per allocated GPU in mebibytes.
 The default value is 0 (unlimited).
 Please note a best effort attempt is made to predict which GPUs on the system
 will be used, but this could change between job submission and start time,
@@ -1385,7 +1385,7 @@ mutually exclusive.
 
 .TP
 \fBDefMemPerNode\fR
-Default real memory size available per allocated node in megabytes.
+Default real memory size available per allocated node in mebibytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
@@ -2689,7 +2689,7 @@ Also see \fBFirstJobId\fR.
 
 .TP
 \fBMaxMemPerCPU\fR
-Maximum real memory size available per allocated CPU in megabytes.
+Maximum real memory size available per allocated CPU in mebibytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerCPU\fR would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_tres\fR).
@@ -2709,7 +2709,7 @@ submit LUA plugin instead to enforce auto\-adjustments to your specific needs.
 .TP
 \fBMaxMemPerNode\fR
 Maximum real memory size available per allocated node in a job allocation in
-megabytes. Used to avoid over\-subscribing memory and causing paging.
+mebibytes. Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
 resources are over\-subscribed (\fBOverSubscribe=yes\fR or
@@ -6988,9 +6988,9 @@ as resident set size). It is possible to enforce virtual memory limits for
 both jobs and job steps by limiting their virtual memory to some percentage
 of their real memory allocation. The \fBVSizeFactor\fR parameter specifies
 the job's or job step's virtual memory limit as a percentage of its real
-memory limit. For example, if a job's real memory limit is 500MB and
+memory limit. For example, if a job's real memory limit is 500MiB and
 VSizeFactor is set to 101 then the job will be killed if its real memory
-exceeds 500MB or its virtual memory exceeds 505MB (101 percent of the
+exceeds 500MiB or its virtual memory exceeds 505MiB (101 percent of the
 real memory limit).
 The default value is 0, which disables enforcement of virtual memory limits.
 The value may not exceed 65533 percent.
@@ -7281,7 +7281,7 @@ Also see \fBFeatures\fR for Boolean flags to filter nodes using job constraints.
 
 .TP
 \fBMemSpecLimit\fR
-Amount of \fBRealMemory\fR, in megabytes, reserved for system use and not
+Amount of \fBRealMemory\fR, in mebibytes, reserved for system use and not
 available for user allocations. Must be less than the amount defined for
 \fBRealMemory\fR.
 If the task/cgroup plugin is configured and that plugin constrains memory
@@ -7326,7 +7326,7 @@ See \fBCPUs\fR.
 
 .TP
 \fBRealMemory\fR
-Size of real memory on the node in megabytes (e.g. "2048").
+Size of real memory on the node in mebibytes (e.g. "2048").
 The default value is 1. Lowering RealMemory with the goal of setting
 aside some amount for the OS and not available for job allocations
 will not work as intended if Memory is not set as a consumable
@@ -7493,7 +7493,7 @@ The default value is 1.
 
 .TP
 \fBTmpDisk\fR
-Total size of temporary disk storage in \fBTmpFS\fR in megabytes
+Total size of temporary disk storage in \fBTmpFS\fR in mebibytes
 (e.g. "16384"). \fBTmpFS\fR (for "Temporary File System")
 identifies the location which jobs should use for temporary storage.
 Note this does not indicate the amount of free
@@ -7731,7 +7731,7 @@ the job didn't specify \-\-cpus\-per\-task and \-\-cpus\-per\-gpu.
 
 .TP
 \fBDefMemPerCPU\fR
-Default real memory size available per allocated CPU in megabytes.
+Default real memory size available per allocated CPU in mebibytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerCPU\fR would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_tres\fR).
@@ -7743,7 +7743,7 @@ exclusive.
 
 .TP
 \fBDefMemPerGPU\fR
-Default real memory size available per allocated GPU in megabytes.
+Default real memory size available per allocated GPU in mebibytes.
 Please note a best effort attempt is made to predict which GPUs on the system
 will be used, but this could change between job submission and start time,
 causing \fBMaxMemPerNode\fR to potentially not work as expected for
@@ -7755,7 +7755,7 @@ exclusive.
 
 .TP
 \fBDefMemPerNode\fR
-Default real memory size available per allocated node in megabytes.
+Default real memory size available per allocated node in mebibytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBDefMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
@@ -7873,7 +7873,7 @@ Also see \fBMaxCPUsPerNode\fR.
 
 .TP
 \fBMaxMemPerCPU\fR
-Maximum real memory size available per allocated CPU in megabytes.
+Maximum real memory size available per allocated CPU in mebibytes.
 Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerCPU\fR would generally be used if individual processors
 are allocated to jobs (\fBSelectType=select/cons_tres\fR).
@@ -7885,7 +7885,7 @@ Also see \fBDefMemPerCPU\fR and \fBMaxMemPerNode\fR.
 .TP
 \fBMaxMemPerNode\fR
 Maximum real memory size available per allocated node in a job allocation in
-megabytes. Used to avoid over\-subscribing memory and causing paging.
+mebibytes. Used to avoid over\-subscribing memory and causing paging.
 \fBMaxMemPerNode\fR would generally be used if whole nodes
 are allocated to jobs (\fBSelectType=select/linear\fR) and
 resources are over\-subscribed (\fBOverSubscribe=yes\fR or

@@ -18290,7 +18290,7 @@
 <div class="param">instance_type (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Cloud instance type </div>
 <div class="param">last_busy (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_uint64_no_val_struct">v0.0.44_uint64_no_val_struct</a></span>  </div>
 <div class="param">mcs_label (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Multi-Category Security label </div>
-<div class="param">specialized_memory (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Combined memory limit, in MB, for Slurm compute node daemons format: int64</div>
+<div class="param">specialized_memory (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Combined memory limit, in MiB, for Slurm compute node daemons format: int64</div>
 <div class="param">name (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> NodeName </div>
 <div class="param">next_state_after_reboot (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span> The state the node will be assigned after rebooting </div>
         <div class="param-enum-header">Enum:</div>
@@ -18304,7 +18304,7 @@
 <div class="param">owner (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User allowed to run jobs on this node (unset if no restriction) </div>
 <div class="param">partitions (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">array[String]</a></span>  </div>
 <div class="param">port (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> TCP port number of the slurmd format: int32</div>
-<div class="param">real_memory (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Total memory in MB on the node format: int64</div>
+<div class="param">real_memory (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Total memory in MiB on the node format: int64</div>
 <div class="param">res_cores_per_gpu (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of CPU cores per GPU restricted to GPU jobs format: int32</div>
 <div class="param">comment (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Arbitrary comment </div>
 <div class="param">reason (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Describes why the node is in a "DOWN", "DRAINED", "DRAINING", "FAILING" or "FAIL" state </div>
@@ -18312,7 +18312,7 @@
 <div class="param">reason_set_by_user (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> User who set the reason </div>
 <div class="param">resume_after (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_uint64_no_val_struct">v0.0.44_uint64_no_val_struct</a></span>  </div>
 <div class="param">reservation (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Name of reservation containing this node </div>
-<div class="param">alloc_memory (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Total memory in MB currently allocated for jobs format: int64</div>
+<div class="param">alloc_memory (optional)</div><div class="param-desc"><span class="param-type"><a href="#long">Long</a></span> Total memory in MiB currently allocated for jobs format: int64</div>
 <div class="param">alloc_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total number of CPUs currently allocated for jobs format: int32</div>
 <div class="param">alloc_idle_cpus (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total number of idle CPUs format: int32</div>
 <div class="param">tres_used (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Trackable resources currently allocated for jobs </div>
@@ -18320,7 +18320,7 @@
 <div class="param">slurmd_start_time (optional)</div><div class="param-desc"><span class="param-type"><a href="#v0.0.44_uint64_no_val_struct">v0.0.44_uint64_no_val_struct</a></span>  </div>
 <div class="param">sockets (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of physical processor sockets/chips on the node format: int32</div>
 <div class="param">threads (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Number of logical threads in a single physical core format: int32</div>
-<div class="param">temporary_disk (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total size in MB of temporary disk storage in TmpFS format: int32</div>
+<div class="param">temporary_disk (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Total size in MiB of temporary disk storage in TmpFS format: int32</div>
 <div class="param">weight (optional)</div><div class="param-desc"><span class="param-type"><a href="#integer">Integer</a></span> Weight of the node for scheduling purposes format: int32</div>
 <div class="param">topology (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Topology </div>
 <div class="param">tres (optional)</div><div class="param-desc"><span class="param-type"><a href="#string">String</a></span> Configured trackable resources </div>
