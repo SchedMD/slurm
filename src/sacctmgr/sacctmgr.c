@@ -808,6 +808,28 @@ static void _clear_it(int argc, char **argv)
 }
 
 /*
+ * _dump_it - dump the slurmdbd configuration in the format specified
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _dump_it(int argc, char **argv)
+{
+	int rc = SLURM_SUCCESS;
+	slurmdbd_conf_t *slurmdbd_conf = NULL;
+
+	if (!(rc = slurmdb_config_get(db_conn, &slurmdbd_conf))) {
+		openapi_resp_slurmdbd_conf_t resp = {
+			.slurmdb_conf = slurmdbd_conf,
+		};
+
+		DATA_DUMP_CLI(OPENAPI_SLURMDBD_CONF_RESP, resp, argc, argv,
+			      db_conn, mime_type, data_parser, rc);
+	}
+
+	slurmdbd_free_conf(slurmdbd_conf);
+}
+
+/*
  * _show_it - list the slurm configuration per the supplied arguments
  * IN argc - count of arguments
  * IN argv - list of arguments
@@ -846,7 +868,10 @@ static void _show_it(int argc, char **argv)
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else if (xstrncasecmp(argv[0], "Configuration",
 				MAX(command_len, 2)) == 0) {
-		error_code = sacctmgr_list_config();
+		if (mime_type)
+			_dump_it(argc, argv);
+		else
+			error_code = sacctmgr_list_config();
 	} else if (xstrncasecmp(argv[0], "Events",
 				MAX(command_len, 1)) == 0) {
 		error_code = sacctmgr_list_event((argc - 1), &argv[1]);

@@ -49,13 +49,14 @@
 #include "src/common/net.h"
 #include "src/common/openapi.h"
 #include "src/common/parse_time.h"
-#include "src/common/proc_args.h"
 #include "src/common/print_fields.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/ref.h"
 #include "src/common/sluid.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurmdb_defs.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -5423,6 +5424,38 @@ static int DUMP_FUNC(JOB_INFO_STDERR_EXP)(const parser_t *const parser,
 	return SLURM_SUCCESS;
 }
 
+static int PARSE_FUNC(SLURMDB_PURGE)(const parser_t *const parser, void *obj,
+				     data_t *src, args_t *args,
+				     data_t *parent_path)
+{
+	uint32_t *purge_ptr = obj;
+	slurmdb_purge_units_t pu = { 0 };
+	int rc = EINVAL;
+
+	if (data_get_type(src) == DATA_TYPE_NULL) {
+		*purge_ptr = NO_VAL;
+		return SLURM_SUCCESS;
+	}
+
+	if ((rc = PARSE(SLURMDB_PURGE_UNITS, pu, src, parent_path, args)))
+		return rc;
+
+	*purge_ptr = slurmdb_purge_units_2_int(&pu);
+	return SLURM_SUCCESS;
+}
+
+static int DUMP_FUNC(SLURMDB_PURGE)(const parser_t *const parser, void *obj,
+				    data_t *dst, args_t *args)
+{
+	uint32_t *purge_ptr = obj;
+	uint32_t purge = *purge_ptr;
+	slurmdb_purge_units_t pu = { 0 };
+
+	slurmdb_int_2_purge_units(purge, &pu);
+
+	return DUMP(SLURMDB_PURGE_UNITS, pu, dst, args);
+}
+
 PARSE_DISABLED(STEP_INFO_STDIN_EXP)
 PARSE_DISABLED(STEP_INFO_STDOUT_EXP)
 PARSE_DISABLED(STEP_INFO_STDERR_EXP)
@@ -8453,6 +8486,72 @@ static const parser_t PARSER_ARRAY(USER_SHORT)[] = {
 #undef add_parse
 #undef add_parse_req
 #undef add_skip
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(slurmdb_purge_units_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SLURMDB_PURGE_UNITS)[] = {
+	add_parse(BOOL, set, "set", "whether purge has been set"),
+	add_parse(UINT32, hours, "hours", "hours"),
+	add_parse(UINT32, days, "days", "days"),
+	add_parse(UINT32, months, "months", "months"),
+	add_parse(BOOL, archive, "archive", "whether to archive purged records"),
+};
+#undef add_parse
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_PERSIST_CONN_RC)[] = {
+	add_flag_hidden_bit(PERSIST_FLAG_DBD, "DBD"),
+	add_flag_hidden_bit(PERSIST_FLAG_RECONNECT, "Reconnect"),
+	add_flag_hidden_bit(PERSIST_FLAG_ALREADY_INITED, "AlreadyInited"),
+	add_flag_bit(PERSIST_FLAG_P_USER_CASE, "PreserveCaseUser"),
+	add_flag_hidden_bit(PERSIST_FLAG_SUPPRESS_ERR, "SuppressError"),
+	add_flag_hidden_bit(PERSIST_FLAG_EXT_DBD, "ExternalDBD"),
+	add_flag_hidden_bit(PERSIST_FLAG_DONT_UPDATE_CLUSTER, "DontUpdateCluster"),
+};
+
+static const flag_bit_t PARSER_FLAG_ARRAY(CONF_FLAGS_DBD)[] = {
+	add_flag_bit(DBD_CONF_FLAG_ALLOW_NO_DEF_ACCT, "AllowNoDefAcct"),
+	add_flag_bit(DBD_CONF_FLAG_ALL_RES_ABS, "AllResourcesAbsolute"),
+	add_flag_bit(DBD_CONF_FLAG_DISABLE_COORD_DBD, "DisableCoordDBD"),
+	add_flag_hidden_bit(DBD_CONF_FLAG_GET_DBVER, "GetDBVer"),
+	add_flag_bit(DBD_CONF_FLAG_DISABLE_ARCHIVE_COMMANDS, "DisableArchiveCommands"),
+};
+
+#define add_parse(mtype, field, path, desc)				\
+	add_parser(slurmdbd_conf_t, mtype, false, field, 0, path, desc)
+static const parser_t PARSER_ARRAY(SLURMDBD_CONF)[] = {
+	add_parse(STRING, archive_dir, "ArchiveDir", "location to locally store data if not using a script"),
+	add_parse(STRING, archive_script, "ArchiveScript", "script to archive old data"),
+	add_parse(UINT16, commit_delay, "CommitDelay", "on busy systems, delay commits from slurmctld this many seconds"),
+	add_parse(STRING, dbd_addr, "DbdAddr", "network address of Slurm DBD"),
+	add_parse(STRING, dbd_backup, "DbdBackupHost", "hostname of Slurm DBD backup"),
+	add_parse(STRING, dbd_host, "DbdHost", "hostname of Slurm DBD"),
+	add_parse(UINT16, dbd_port, "DbdPort", "port number for RPCs to DBD"),
+	add_parse(LOG_LEVEL_UINT16, debug_level, "DebugLevel", "debug level, default=3"),
+	add_parse(STRING, default_qos, "DefaultQOS", "default qos setting when adding clusters"),
+	add_parse(CONF_FLAGS_DBD, flags, "Flags", "various flags, see DBD_CONF_FLAG_*"),
+	add_parse(STRING, log_file, "LogFile", "fully qualified pathname of the slurmdbd log file (default unset; logs go to syslog)"),
+	add_parse(UINT32, max_purge_limit, "MaxPurgeLimit", "max number of records that are purged in a single query so that locks can be periodically released"),
+	add_parse(TIME_SECONDS, max_time_range, "MaxQueryTimeRange", "max time range for user queries"),
+	add_parse(CSV_STRING, parameters, "Parameters", "parameters to change behavior with the slurmdbd directly"),
+	add_parse(CONF_FLAGS_PERSIST_CONN_RC, persist_conn_rc_flags, "PersistConnFlags", "flags to be sent back on any persist connection init"),
+	add_parse(STRING, pid_file, "PidFile", "where to store current PID"),
+	add_parse(SLURMDB_PURGE, purge_event, "PurgeEventAfter", "purge events older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_job, "PurgeJobAfter", "purge jobs older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_resv, "PurgeResvAfter", "purge reservations older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_step, "PurgeStepAfter", "purge steps older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_suspend, "PurgeSuspendAfter", "purge suspend data older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_txn, "PurgeTXNAfter", "purge transaction data older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_usage, "PurgeUsageAfter", "purge usage data older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_jobscript, "PurgeJobScriptAfter", "purge job scripts older than this in hours, days, or months"),
+	add_parse(SLURMDB_PURGE, purge_jobenv, "PurgeJobEnvAfter", "purge job environments older than this in hours, days, or months"),
+	add_parse(STRING, storage_loc, "StorageLoc", "name of the database where accounting records are written (default slurm_acct_db)"),
+	add_parse(STRING, storage_pass_script, "StoragePassScript", "path to executable script that emits ephemeral DB authentication tokens used in place of StoragePass"),
+	add_parse(STRING, storage_user, "StorageUser", "username used to connect to the accounting database (defaults to the user running slurmdbd)"),
+	add_parse(LOG_LEVEL_UINT16, syslog_debug, "DebugLevelSyslog", "output to both log file and syslog"),
+	add_parse(BOOL16, track_wckey, "TrackWCKey", "whether or not to track WCKey"),
+	add_parse(BOOL16, track_ctld, "TrackSlurmctldDown", "whether or not to track when a slurmctld goes down"),
+};
+#undef add_parse
 
 #define add_skip(field)					\
 	add_parser_skip(slurmdb_user_rec_t, field)
@@ -12443,6 +12542,7 @@ add_openapi_response_single(OPENAPI_RESOURCE_LAYOUT_RESP, NODE_RESOURCE_LAYOUT_L
 add_openapi_response_single(OPENAPI_PARTITIONS_MOD_REQ, UPDATE_PARTITION_MSG_LIST, "partitions", "list of partition descriptions");
 add_openapi_response_single(OPENAPI_JOB_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR, "status", "result of job requeue request");
 add_openapi_response_single(OPENAPI_JOBS_REQUEUE_RESP, JOB_ARRAY_RESPONSE_MSG_PTR_LIST, "status", "result of batch job requeue request");
+add_openapi_response_single(OPENAPI_SLURMDBD_CONF_RESP, SLURMDBD_CONF_PTR, "slurmdbd_conf", "slurmdbd.conf");
 
 #define add_parse(mtype, field, path, desc)				\
 	add_parser(openapi_job_post_response_t, mtype, false, field, 0, path, desc)
@@ -13010,6 +13110,8 @@ static const parser_t parsers[] = {
 	addpsp(CONTROLLER_PING_PRIMARY, BOOL, int, NEED_NONE, "Is responding slurmctld the primary controller"),
 	addpsp(H_RESOURCES_AS_LICENSE_LIST, H_RESOURCE_LIST, list_t *, NEED_NONE, "List of hierarchical resources"),
 	addps(SLUID, sluid_t, NEED_NONE, STRING, NULL, NULL, "Slurm Lexicographically-sortable Unique ID"),
+	addpsp(SLURMDB_PURGE, SLURMDB_PURGE_UNITS, uint32_t, NEED_NONE, NULL),
+	addpa(SLURMDB_PURGE_UNITS, slurmdb_purge_units_t),
 	addpsp(LOG_LEVEL_UINT16, LOG_LEVEL, uint16_t, NEED_NONE, NULL),
 	addpsp(TIME_SECONDS, STRING, uint32_t, NEED_NONE, "Time formatted as HH:MM:SS or D-HH:MM:SS"),
 	addpsp(PORT_RANGE_ARRAY, PORT_RANGE, uint16_t *, NEED_NONE, "Port range"),
@@ -13267,6 +13369,7 @@ static const parser_t parsers[] = {
 	addpap(NAMESPACE_NODE_CONF, ns_node_conf_t, NULL, (parser_free_func_t) slurm_free_ns_node_conf),
 	addpap(NAMESPACE_CONF, ns_conf_t, NULL, (parser_free_func_t) slurm_free_ns_conf),
 	addpap(NAMESPACE_DIR_CONF, ns_dir_t, NULL, (parser_free_func_t) slurm_free_ns_dir),
+	addpap(SLURMDBD_CONF, slurmdbd_conf_t, NULL, (parser_free_func_t) slurmdbd_free_conf),
 	addpap(JOB_DEFAULTS, job_defaults_t, NULL, NULL),
 	addpap(PORT_RANGE, port_range_t, NULL, NULL),
 	addpap(CONTROLLER, controller_t, NULL, FREE_FUNC(CONTROLLER)),
@@ -13324,6 +13427,7 @@ static const parser_t parsers[] = {
 	addoar(OPENAPI_CREATE_NODE_REQ),
 	addoar(OPENAPI_RESOURCE_LAYOUT_RESP),
 	addoar(OPENAPI_PARTITIONS_MOD_REQ),
+	addoar(OPENAPI_SLURMDBD_CONF_RESP),
 	addpap(OPENAPI_CONF_RESP, openapi_resp_config_t, NULL, NULL),
 	addoar(OPENAPI_JOB_REQUEUE_RESP),
 	addoar(OPENAPI_JOBS_REQUEUE_RESP),
@@ -13375,6 +13479,8 @@ static const parser_t parsers[] = {
 	addfa(H_RESOURCE_MODE_FLAG, uint8_t),
 	addfa(NODE_PARTITION_CPU_BINDING_FLAGS, uint32_t),
 	addfa(PARTITION_FLAGS, uint32_t),
+	addfa(CONF_FLAGS_PERSIST_CONN_RC, uint16_t),
+	addfa(CONF_FLAGS_DBD, uint32_t),
 	addfa(JOB_DEFAULTS_TYPE, uint16_t),
 	addfa(CONF_FLAGS, uint32_t),
 	addfa(CONF_FLAGS_COMMUNICATION_PARAMETERS, uint32_t),

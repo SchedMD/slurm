@@ -736,6 +736,14 @@ typedef enum {
 	DATA_PARSER_OPENAPI_JOBS_REQUEUE_QUERY_PTR, /* openapi_jobs_requeue_query_t* */
 	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP, /* openapi_resp_single_t */
 	DATA_PARSER_OPENAPI_JOBS_REQUEUE_RESP_PTR, /* openapi_resp_single_t* */
+	DATA_PARSER_SLURMDBD_CONF, /* slurmdbd_conf_t */
+	DATA_PARSER_SLURMDBD_CONF_PTR, /* slurmdbd_conf_t* */
+	DATA_PARSER_SLURMDB_PURGE, /* uint32_t */
+	DATA_PARSER_SLURMDB_PURGE_UNITS, /* slurmdb_purge_units_t */
+	DATA_PARSER_CONF_FLAGS_PERSIST_CONN_RC, /* PERSIST_FLAG_* */
+	DATA_PARSER_CONF_FLAGS_DBD, /* DBD_CONF_FLAG_* */
+	DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP, /* openapi_resp_slurmdbd_conf_t */
+	DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP_PTR, /* openapi_resp_slurmdbd_conf_t* */
 	DATA_PARSER_TYPE_MAX
 } data_parser_type_t;
 

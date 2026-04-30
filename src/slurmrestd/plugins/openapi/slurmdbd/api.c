@@ -150,6 +150,23 @@ const openapi_path_binding_t openapi_paths[] = {
 		.flags = OP_FLAGS,
 	},
 	{
+		.path = "/slurmdb/{data_parser}/conf",
+		.callback = op_handler_conf,
+		.methods = (openapi_path_binding_method_t[]){
+			{
+				.method = HTTP_REQUEST_GET,
+				.tags = tags,
+				.summary = "Dump slurmdbd configuration",
+				.response = {
+					.type = DATA_PARSER_OPENAPI_SLURMDBD_CONF_RESP,
+					.description = "slurmdbd configuration",
+				},
+			},
+			{0}
+		},
+		.flags = OP_FLAGS,
+	},
+	{
 		.path = "/slurmdb/{data_parser}/tres/",
 		.callback = op_handler_tres,
 		.methods = (openapi_path_binding_method_t[]) {
