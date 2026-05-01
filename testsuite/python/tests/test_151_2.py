@@ -84,6 +84,11 @@ test_name = os.path.splitext(os.path.basename(__file__))[0]
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (26, 5),
+        "bin/scontrol",
+        reason="Ticket 20588: Change OverSubscribe output to show exclude as a second value in 26.05+",
+    )
     atf.require_slurm_running()
 
 
