@@ -2670,8 +2670,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
-					      buf_t *buffer)
+extern void pack_job_step_create_request_msg(const slurm_msg_t *smsg,
+					     buf_t *buffer)
 {
 	job_step_create_request_msg_t *msg = smsg->data;
 
@@ -2827,7 +2827,7 @@ static void _pack_job_step_create_request_msg(const slurm_msg_t *smsg,
 	}
 }
 
-static int _unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+extern int unpack_job_step_create_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	job_step_create_request_msg_t *msg = xmalloc(sizeof(*msg));
 
@@ -14607,7 +14607,7 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 		_pack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		_pack_job_step_create_request_msg(msg, buffer);
+		pack_job_step_create_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ID:
 		_pack_job_id_request_msg(msg, buffer);
@@ -15138,7 +15138,7 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 		rc = _unpack_job_step_create_response_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
-		rc = _unpack_job_step_create_request_msg(msg, buffer);
+		rc = unpack_job_step_create_request_msg(msg, buffer);
 		break;
 	case REQUEST_JOB_ID:
 		rc = _unpack_job_id_request_msg(msg, buffer);
