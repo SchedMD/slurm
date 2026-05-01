@@ -356,6 +356,17 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 	/* step_ptr->state = JOB_COMPLETE; */
 }
 
+static void _cleanup_failed_step(step_record_t *step_ptr)
+{
+	job_record_t *job_ptr;
+
+	if (!step_ptr)
+		return;
+	job_ptr = step_ptr->job_ptr;
+	_internal_step_complete(step_ptr, 0);
+	delete_step_record(job_ptr, step_ptr);
+}
+
 static int _step_signal(void *object, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *)object;
@@ -5224,6 +5235,10 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred,
 					     step_rec->start_protocol_ver);
+		if (error_code) {
+			_cleanup_failed_step(step_rec);
+			step_rec = NULL;
+		}
 	}
 	END_TIMER2(__func__);
 
