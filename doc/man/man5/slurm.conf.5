@@ -569,6 +569,19 @@ nss_slurm, the user information can be managed on the compute nodes by
 slurmstepd. This would allow the cluster to operate in an environment where
 only the login nodes have access to LDAP/OS user information.
 See <https://slurm.schedmd.com/nss_slurm.html> for more information.
+
+\fBNOTE\fR: Some Slurm capabilities require user authentication but are not
+covered by \fBuse_client_ids\fR, including:
+.RS
+.TP
+\[bu] Partition configuration with \fBAllowGroups\fR
+.IP
+.TP
+\[bu] Reservation creation with \fBUsers\fR
+.IP
+.TP
+\[bu] The \fBAllowUserBoot\fR parameter in \fBhelpers.conf\fR(5)
+.IP
 .RE
 .IP
 
