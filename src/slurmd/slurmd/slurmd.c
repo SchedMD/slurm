@@ -2458,6 +2458,69 @@ static void _validate_dynamic_conf(void)
 	}
 }
 
+static void _insert_gpu_conf(char **tmp)
+{
+	char *gres_ptr = NULL;
+	char *gpu_gres_str = NULL;
+	uint32_t cpu_cnt = MAX(conf->actual_cpus, conf->block_map_size);
+	node_config_load_t node_conf = {
+		.cpu_cnt = cpu_cnt,
+		.in_slurmd = true,
+		.gres_name = "gpu",
+		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs,
+	};
+
+	if (conf->dynamic_conf &&
+	    (gres_ptr = xstrcasestr(conf->dynamic_conf, "Gres="))) {
+		char *gres_end = strchr(gres_ptr, ' ');
+
+		if (gres_end)
+			*gres_end = '\0';
+		if (xstrcasestr(gres_ptr, "gpu:")) {
+			if (gres_end)
+				*gres_end = ' ';
+			return; /* GPU GRES already exists */
+		}
+		if (gres_end)
+			*gres_end = ' ';
+	}
+
+	/* Parse gres.conf so autofill honors admin settings. */
+	(void) gres_parse_conf(conf->node_name, cpu_cnt);
+
+	gpu_gres_str = gres_get_dynamic_gpu_str(node_conf);
+	if (!gpu_gres_str)
+		return; /* No GPU GRES found */
+
+	verbose("Autodetected Gres for dynamic node %s: %s",
+	        conf->node_name, gpu_gres_str);
+
+	if (gres_ptr) {
+		char *gres_end = strchr(gres_ptr, ' ');
+		char *new_dynamic_conf = NULL;
+
+		/*
+		 * If Gres= is already present, append the GPU GRES to
+		 * conf->dynamic_conf instead of *tmp like normal
+		 */
+		if (gres_end) {
+			*gres_end = '\0';
+			xstrfmtcat(new_dynamic_conf, "%s,%s %s",
+				   conf->dynamic_conf, gpu_gres_str,
+				   gres_end + 1);
+			*gres_end = ' ';
+		} else {
+			xstrfmtcat(new_dynamic_conf, "%s,%s",
+				   conf->dynamic_conf, gpu_gres_str);
+		}
+		xfree(conf->dynamic_conf);
+		conf->dynamic_conf = new_dynamic_conf;
+	} else {
+		xstrfmtcat(*tmp, "Gres=%s ", gpu_gres_str);
+	}
+	xfree(gpu_gres_str);
+}
+
 static void _dynamic_init(void)
 {
 	if (!conf->dynamic_type)
@@ -2529,6 +2592,8 @@ static void _dynamic_init(void)
 		if (!xstrcasestr(conf->dynamic_conf, "RealMemory="))
 			xstrfmtcat(tmp, "RealMemory=%"PRIu64" ",
 				   conf->physical_memory_size);
+
+		_insert_gpu_conf(&tmp);
 
 		if (conf->dynamic_conf)
 			xstrcat(tmp, conf->dynamic_conf);

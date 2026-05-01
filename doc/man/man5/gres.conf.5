@@ -56,6 +56,17 @@ Currently, the options are:
 .IP
 .RS
 .TP
+\fBfull\fR
+On \fBslurmd\fR, try all hardware detection mechanisms in order (NVML, NVIDIA,
+RSMI, oneAPI, NRT) until GPUs are detected, stopping after the first one that
+finds a device.
+
+\fBNOTE\fR: This is the default for dynamic nodes (\fBslurmd \-Z\fR) when
+gres.conf has no \fBAutoDetect\fR setting and no explicit \fBName=gpu\fR
+records.
+.IP
+
+.TP
 \fBnrt\fR
 Automatically detect AWS Trainium/Inferentia devices.
 .IP

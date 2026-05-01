@@ -163,6 +163,7 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_ONEAPI 0x00000008
 #define GRES_AUTODETECT_GPU_NRT 0x00000010
 #define GRES_AUTODETECT_GPU_NVIDIA 0x00000020
+#define GRES_AUTODETECT_GPU_FULL 0x00000040 /* try all gpu plugins in order */
 
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
@@ -1065,7 +1066,39 @@ extern void gres_get_autodetected_gpus(node_config_load_t node_conf,
 				       char **first_gres_str,
 				       char **autodetect_str);
 
+/*
+ * Parse gres.conf early, before the local node record exists, populating
+ * gres_conf_list and autodetect_flags. The next gres_g_node_config_load()
+ * call with the same node_name will reuse this result and skip re-parsing.
+ *
+ * IN node_name - name of the node to load the gres.conf records for
+ * IN cpu_cnt - number of CPUs configured for node node_name; must be > 0
+ * RET SLURM_SUCCESS, ESLURM_INVALID_CPU_COUNT if cpu_cnt is 0, or another
+ *     error code from the gres.conf parse
+ */
+extern int gres_parse_conf(char *node_name, uint32_t cpu_cnt);
+
+/*
+ * Build a "Gres=" value ("gpu:<type>:<count>[,...]") for splicing into a
+ * synthesized NodeName= line for a dynamic-normal slurmd ("slurmd -Z").
+ *
+ * Caller should run gres_parse_conf() first so this honors gres.conf:
+ *   - returns NULL if Autodetect=off
+ *   - returns NULL if gres.conf already declares Name=gpu entries
+ *   - probes only the plugin pinned by Autodetect=<X> if set
+ *   - otherwise defaults to Autodetect=full (try NVML, NVIDIA, RSMI,
+ *     oneAPI, NRT in order until one finds devices)
+ *
+ * IN node_conf - node_config_load_t describing this slurmd.
+ * RET malloc'd "gpu:<type>:<count>[,...]" string, or NULL if autofill is
+ *     suppressed or no GPUs are detected. Caller must xfree().
+ */
+extern char *gres_get_dynamic_gpu_str(node_config_load_t node_conf);
+
 extern uint32_t gres_get_autodetect_flags(void);
+
+/* Replace GPU-related autodetect bits in autodetect_flags */
+extern void gres_autodetect_flags_set_gpu(uint32_t gpu_flags_part);
 
 /* Convert the major/minor info to a string */
 extern char *gres_device_id2str(gres_device_id_t *gres_dev);
