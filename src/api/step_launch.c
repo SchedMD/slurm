@@ -238,11 +238,12 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		return SLURM_ERROR;
 	}
 
-	/* Create message receiving sockets and handler thread */
-	rc = _create_listeners(ctx->launch_state,
-			       ctx->step_resp->step_layout->node_cnt);
-	if (rc != SLURM_SUCCESS)
-		return rc;
+	if (!(ctx->step_req->flags & SSF_ASYNC)) {
+		rc = _create_listeners(ctx->launch_state,
+				       ctx->step_resp->step_layout->node_cnt);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
 
 	/* Start tasks on compute nodes */
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
@@ -278,7 +279,10 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->het_job_ntasks != NO_VAL)
 		preserve_env = true;
 	env_array_for_step(&env, ctx->step_resp, &launch,
-			   ctx->launch_state->resp_port[0], preserve_env);
+			   ctx->launch_state->resp_port ?
+				   ctx->launch_state->resp_port[0] :
+				   0,
+			   preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
 
