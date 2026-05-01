@@ -92,12 +92,6 @@ def setup():
     atf.require_slurm_running()
 
 
-@pytest.fixture(scope="function", autouse=True)
-def cancel_jobs(setup):
-    yield
-    atf.cancel_all_jobs()
-
-
 def test_scontrol_show_job_oversubscribe_exclusive(setup):
     """scontrol show job must show OverSubscribe= and Exclusive= with valid tokens."""
     job_id = atf.submit_job_sbatch('--wrap "sleep 10"', fatal=True)
