@@ -1992,6 +1992,13 @@ typedef struct job_info {
 	char *resv_ports;	/* Reserved MPI ports (as hostlist str) */
 	char *sched_nodes;	/* list of nodes scheduled to be used for job */
 	char *selinux_context;
+	/*
+	 * Legacy display value, superseded by oversubscribe / exclusive.
+	 * Retained for data_parser/v0.0.42-v0.0.44, which still expose it as
+	 * the "shared" REST field. Remove this field, the 26.05 wire-format
+	 * pack/unpack of it, and get_job_share_value()/job_share_string()
+	 * once the minimum supported data_parser version is v0.0.45.
+	 */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint32_t site_factor;	/* factor to consider in priority */
 	slurm_step_id_t step_id;

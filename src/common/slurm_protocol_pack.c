@@ -3772,6 +3772,11 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			safe_unpack32(&job->num_tasks, buffer);
 
 			safe_unpack16(&job->exclusive, buffer);
+			/*
+			 * Legacy job_info_t.shared. Drop this unpack (and the
+			 * matching pack in _pack_default_job_details) once the
+			 * minimum supported data_parser version is v0.0.45.
+			 */
 			safe_unpack16(&job->shared, buffer);
 			safe_unpack16(&job->oversubscribe, buffer);
 
