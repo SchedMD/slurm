@@ -4125,7 +4125,8 @@ static int _step_partial_comp(step_record_t *step_ptr,
 	bit_nset(step_ptr->exit_node_bitmap,
 		 req->range_first, req->range_last);
 
-	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
+	if (step_ptr->jobacct && req->jobacct)
+		jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
 
 no_aggregate:
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
