@@ -594,7 +594,7 @@ fini:
 
 static int _eval_nodes_consec(topology_eval_t *topo_eval)
 {
-	int i, j, error_code = SLURM_ERROR;
+	int i, error_code = SLURM_ERROR;
 	int *consec_cpus;	/* how many CPUs we can add from this
 				 * consecutive set of nodes */
 	list_t **consec_gres;	/* how many GRES we can add from this
@@ -1036,7 +1036,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 			int first = consec_start[best_fit_index];
 			int last  = consec_end[best_fit_index];
 			if (rem_nodes <= 1) {
-				for (i = first, j = 0; i <= last; i++, j++) {
+				for (i = first; i <= last; i++) {
 					if (bit_test(topo_eval->node_map, i) ||
 					    !avail_res_array[i])
 						continue;
@@ -1071,7 +1071,7 @@ static int _eval_nodes_consec(topology_eval_t *topo_eval)
 				}
 			}
 
-			for (i = first, j = 0; i <= last; i++, j++) {
+			for (i = first; i <= last; i++) {
 				if ((topo_eval->max_nodes == 0) ||
 				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				     (!topo_eval->gres_per_job ||
