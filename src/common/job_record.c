@@ -123,6 +123,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->std_err);
 	xfree(step_ptr->std_in);
 	xfree(step_ptr->std_out);
+	slurm_free_job_step_create_request_msg(step_ptr->step_req);
 	xfree(step_ptr->submit_line);
 	xfree(step_ptr->tres_bind);
 	xfree(step_ptr->tres_freq);
