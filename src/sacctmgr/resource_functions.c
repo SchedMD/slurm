@@ -47,8 +47,12 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 	slurmdb_res_rec_t *found_res;
 	slurmdb_clus_res_rec_t *clus_res = NULL;
 	char *cluster;
+	bool remove_sharedpool = (res->flags & SLURMDB_RES_FLAG_REMOVE) &&
+				 (res->flags & SLURMDB_RES_FLAG_SHARED_POOL);
 
-	if (res->allocated == NO_VAL)
+	if (remove_sharedpool) {
+		/* no-op */
+	} else if (res->allocated == NO_VAL)
 		return;
 
 	/* Don't use the global g_res_list since we are going to
@@ -68,6 +72,8 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 			"from database.  Contact your admin.\n");
 		return;
 	}
+
+	fprintf(stderr, " If change was accepted it would look like this...\n");
 
 	itr = list_iterator_create(res_list);
 	while ((found_res = list_next(itr))) {
@@ -103,8 +109,10 @@ static void _print_overcommit(slurmdb_res_rec_t *res,
 					 */
 					cluster = "nothing";
 				}
-				allowed = cluster ? res->allocated :
-					clus_res->allowed;
+				if (cluster && (res->allocated != NO_VAL))
+					allowed = res->allocated;
+				else
+					allowed = clus_res->allowed;
 				total += allowed;
 
 				fprintf(stderr,
@@ -930,11 +938,10 @@ extern int sacctmgr_modify_res(int argc, char **argv)
 	} else if (ret_list) {
 		printf("  Nothing modified\n");
 		rc = SLURM_ERROR;
-	} else if (errno == ESLURM_OVER_ALLOCATE) {
+	} else if ((errno == ESLURM_OVER_ALLOCATE) ||
+		   (errno == ESLURM_INVALID_SHARED_POOL_ALLOWED)) {
 		exit_code=1;
 		rc = SLURM_ERROR;
-		fprintf(stderr,
-			" If change was accepted it would look like this...\n");
 		_print_overcommit(res, res_cond);
 
 	} else {

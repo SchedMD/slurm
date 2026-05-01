@@ -155,6 +155,7 @@ typedef enum {
 #define	SLURMDB_RES_FLAG_REMOVE      0x40000000
 
 #define	SLURMDB_RES_FLAG_ABSOLUTE    SLURM_BIT(0)
+#define SLURMDB_RES_FLAG_SHARED_POOL SLURM_BIT(1)
 
 /* Define Federation flags */
 #define	FEDERATION_FLAG_BASE           0x0fffffff

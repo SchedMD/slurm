@@ -1224,6 +1224,10 @@ slurm_errtab_t slurm_errtab[] = {
 		ERRTAB_ENTRY(ESLURM_NO_RPC_STATS),
 		"No RPC stats are available",
 	},
+	{
+		ERRTAB_ENTRY(ESLURM_INVALID_SHARED_POOL_ALLOWED),
+		"Invalid value for Allowed field when SharedPool enabled, must be 0 or 100% (without Absolute) or Count (with Absolute).",
+	},
 
 	/* Federation Errors */
 	{

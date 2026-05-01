@@ -2651,6 +2651,14 @@ as absolute counts instead of percentages.
 \fBNOTE\fR: If removing this with flags-=absolute there is no effort to convert
 the numbers in the database back to percentages. This is required by the user.
 .IP
+
+.TP
+\fBSharedPool\fR
+Allows each cluster to access the full resource pool without requiring a value
+to be exclusively allocated to each cluster. Requires
+each cluster's \fBAllowed\fR to be 0 or the full \fBCount\fR/100%
+(with/without \fBAbsolute\fR).
+.IP
 .RE
 .IP
 
