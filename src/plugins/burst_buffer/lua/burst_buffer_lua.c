@@ -499,8 +499,6 @@ static int _lua_job_info_field(lua_State *L, const job_info_t *job_info,
 		lua_pushstring(L, job_info->sched_nodes);
 	} else if (!xstrcmp(name, "selinux_context")) {
 		lua_pushstring(L, job_info->selinux_context);
-	} else if (!xstrcmp(name, "shared")) {
-		lua_pushinteger(L, job_info->shared);
 	} else if (!xstrcmp(name, "site_factor")) {
 		lua_pushinteger(L, job_info->site_factor);
 	} else if (!xstrcmp(name, "sockets_per_board")) {
