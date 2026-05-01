@@ -327,7 +327,8 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 
 	jobacct_storage_g_step_complete(stepmgr_ops->acct_db_conn, step_ptr);
 
-	if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
+	if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP) ||
+	    (step_ptr->state == JOB_PENDING))
 		return;
 
 	/*
@@ -361,6 +362,10 @@ static int _step_signal(void *object, void *arg)
 
 	if (!(step_signal->flags & KILL_FULL_JOB) &&
 	    !find_step_id(step_ptr, &step_signal->step_id))
+		return SLURM_SUCCESS;
+
+	if ((step_ptr->state == JOB_PENDING) &&
+	    (step_ptr->flags & SSF_ASYNC))
 		return SLURM_SUCCESS;
 
 	step_signal->found = true;
