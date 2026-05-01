@@ -1124,7 +1124,7 @@ static uint16_t _free_job_vni(uint32_t job_id)
 /*
  * Parse --network 'depth=<value>' token: return value, or 0 on error
  */
-static uint32_t _setup_depth(const char *token)
+static uint32_t _setup_depth(char *token)
 {
 	uint32_t ret;
 	char *arg = strchr(token, '=');
@@ -1157,7 +1157,7 @@ err:
  *   res_<NIC_resource>: reserved value for resource
  *   max_<NIC_resource>: maximum value for resource
  */
-static bool _parse_network_token(const char *token, bool is_job,
+static bool _parse_network_token(char *token, bool is_job,
 				 slingshot_stepinfo_t *job,
 				 bool *job_vni, bool *single_node_vni,
 				 bool *no_vni)
