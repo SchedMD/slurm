@@ -63,6 +63,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/slurm_protocol_socket.h"
 #include "src/common/slurm_resource_info.h"
+#include "src/common/step_ctx.h"
 #include "src/common/stepd_proxy.h"
 #include "src/common/tres_bind.h"
 #include "src/common/tres_frequency.h"
@@ -253,6 +254,24 @@ static void _set_step_id(step_record_t *step_ptr,
 	}
 }
 
+static slurm_step_ctx_t *_step_ctx_create_stepmgr(job_step_create_request_msg_t
+							  *step_req,
+						  job_step_create_response_msg_t
+							  *step_resp,
+						  step_record_t *step_rec)
+{
+	slurm_step_ctx_t *ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
+
+	ctx->launch_state = NULL;
+	ctx->magic = STEP_CTX_MAGIC;
+	ctx->job_id = step_rec->step_id.job_id;
+	ctx->step_resp = step_resp;
+	ctx->step_req = step_req;
+
+	ctx->launch_state = step_launch_state_create(ctx);
+	return ctx;
+}
+
 /* The step with a state of PENDING is used as a placeholder for a host and
  * port that can be used to wake a pending srun as soon another step ends */
 static void _build_pending_step(job_record_t *job_ptr,
@@ -260,7 +279,8 @@ static void _build_pending_step(job_record_t *job_ptr,
 {
 	step_record_t *step_ptr;
 
-	if ((step_specs->host == NULL) || (step_specs->port == 0))
+	if ((!step_specs->host || !step_specs->port) &&
+	    !(step_specs->flags & SSF_ASYNC))
 		return;
 
 	step_ptr = create_step_record(job_ptr, 0);
@@ -5315,17 +5335,49 @@ end_it:
 			msg->protocol_version = step_rec->start_protocol_ver;
 		}
 
-		if (_send_msg(msg, slurmd_fd, RESPONSE_JOB_STEP_CREATE,
-			      &job_step_resp)) {
-			step_complete_msg_t req;
+		if ((error_code == SLURM_SUCCESS) &&
+		    (step_rec->flags & SSF_ASYNC)) {
+			slurm_step_ctx_t *ctx;
+			debug2("launching async step");
 
-			memset(&req, 0, sizeof(req));
-			req.step_id = step_rec->step_id;
-			req.jobacct = step_rec->jobacct;
-			req.step_rc = SIGKILL;
-			req.range_first = 0;
-			req.range_last = step_layout->node_cnt - 1;
-			_kill_step_on_msg_fail(&req, msg, fail_lock_func);
+			ctx = _step_ctx_create_stepmgr(req_step_msg,
+						       &job_step_resp,
+						       step_rec);
+			error_code = slurm_step_launch(
+				ctx, req_step_msg->launch_params, NULL);
+			ctx->step_req = NULL;
+			ctx->step_resp = NULL;
+			step_ctx_destroy(ctx);
+
+			if (error_code != SLURM_SUCCESS) {
+				error("Could not launch async step: %s",
+				      slurm_strerror(error_code));
+				_cleanup_failed_step(step_rec);
+				step_rec = NULL;
+			}
+		}
+
+		if (error_code == SLURM_SUCCESS) {
+			if (_send_msg(msg, slurmd_fd,
+				      RESPONSE_JOB_STEP_CREATE,
+				      &job_step_resp)) {
+				step_complete_msg_t req;
+
+				memset(&req, 0, sizeof(req));
+				req.step_id = step_rec->step_id;
+				req.jobacct = step_rec->jobacct;
+				req.step_rc = SIGKILL;
+				req.range_first = 0;
+				req.range_last = step_layout->node_cnt - 1;
+				_kill_step_on_msg_fail(&req, msg,
+						       fail_lock_func);
+			}
+		} else {
+			return_code_msg_t rc_msg = {
+				.return_code = error_code,
+			};
+			_send_msg(msg, slurmd_fd, RESPONSE_SLURM_RC,
+				  &rc_msg);
 		}
 
 		slurm_cred_destroy(slurm_cred);
