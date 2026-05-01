@@ -60,6 +60,12 @@ fields, see below.
 .IP
 
 .TP
+\fBtorus3d\fR
+This topology will use the \fBtopology/torus3d\fR plugin. Must contain
+additional fields, see below.
+.IP
+
+.TP
 \fBtree\fR
 This topology will use the \fBtopology/tree\fR plugin. Must contain additional
 fields, see below.
@@ -155,6 +161,97 @@ A maximum of 16 nodes can be specified per ring.
 .RE
 .IP
 
+.SS "Torus3d definitions"
+.LP
+Each torus3d topology contains the following attribute:
+.LP
+
+.TP
+\fBtoruses\fR
+List of 3D torus definitions. Each torus contains the following attributes:
+
+.RS
+.TP
+\fBname\fR
+The name of the torus. This name is internal to Slurm and arbitrary.
+Each torus should have a unique name.
+This field must be specified.
+.IP
+
+.TP
+\fBdims\fR
+The dimensions of the torus as an object with \fBx\fR, \fBy\fR, and \fBz\fR
+fields (each a positive integer). The product x*y*z defines the total number
+of coordinate cells in the torus.
+.IP
+
+.TP
+\fBnodes\fR
+Child nodes of the torus. Nodes are mapped to coordinates in x\-major order
+(x varies fastest). Mutually exclusive with \fBregions\fR.
+.IP
+
+.TP
+\fBregions\fR
+List of regions within the torus that map subsets of coordinates to nodes.
+Mutually exclusive with \fBnodes\fR.
+Each region contains the following attributes:
+
+.RS
+.TP
+\fBanchor\fR
+Starting coordinate of the region as an object with \fBx\fR, \fBy\fR, and
+\fBz\fR fields.
+.IP
+
+.TP
+\fBdims\fR
+Size of the region as an object with \fBx\fR, \fBy\fR, and \fBz\fR fields.
+The region covers coordinates from \fBanchor\fR to
+\fBanchor\fR + \fBdims\fR \- 1. The region must fit within the torus
+dimensions (no wrap\-around).
+.IP
+
+.TP
+\fBnodes\fR
+Nodes to place in the region, mapped in x\-major order within the region's
+coordinate range.
+.IP
+.RE
+.IP
+
+.TP
+\fBplacements\fR
+List of allowed placement shapes for this torus. Jobs requesting a number of
+nodes matching a placement size will be allocated as a contiguous sub\-cube.
+Jobs that don't match a placement size will not receive an allocation.
+Each placement contains the following attributes:
+
+.RS
+.TP
+\fBdims\fR
+Dimensions of the placement shape as an object with \fBx\fR, \fBy\fR, and
+\fBz\fR fields. The product x*y*z defines the placement size (number of nodes).
+.IP
+
+.TP
+\fBanchor_seed\fR
+Optional starting coordinate offset for the anchor grid as an object with
+\fBx\fR, \fBy\fR, and \fBz\fR fields. Shifts the entire anchor grid by the
+given offset. Defaults to {0, 0, 0}.
+.IP
+
+.TP
+\fBanchor_spacing\fR
+Optional spacing between placement anchors as an object with \fBx\fR, \fBy\fR,
+and \fBz\fR fields. Controls how anchor positions are generated across the
+torus. Defaults to the placement \fBdims\fR if not specified.
+.IP
+.RE
+.IP
+.RE
+.IP
+
 .SH "EXAMPLE"
 .nf
 ---
@@ -194,6 +291,29 @@ A maximum of 16 nodes can be specified per ring.
         nodes: node[01-08]
       - ring: ring1
         nodes: node[09-16]
+- topology: topo5
+  cluster_default: false
+  torus3d:
+    toruses:
+      - name: pod1
+        dims:
+          x: 4
+          y: 4
+          z: 2
+        nodes: node[01-32]
+        placements:
+          - dims:
+              x: 2
+              y: 2
+              z: 1
+          - dims:
+              x: 2
+              y: 2
+              z: 2
+          - dims:
+              x: 4
+              y: 4
+              z: 2
 .fi
 
 .SH "COPYING"

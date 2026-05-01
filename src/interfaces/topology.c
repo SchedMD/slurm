@@ -147,6 +147,8 @@ static void _free_topology_ctx_members(topology_ctx_t *tctx_ptr)
 			free_topology_block_config(tctx_ptr->config);
 		else if (!xstrcmp(tctx_ptr->plugin, "topology/ring"))
 			free_topology_ring_config(tctx_ptr->config);
+		else if (!xstrcmp(tctx_ptr->plugin, "topology/torus3d"))
+			free_topology_torus3d_config(tctx_ptr->config);
 
 		xfree(tctx_ptr->name);
 		xfree(tctx_ptr->plugin);
@@ -952,6 +954,38 @@ extern void free_topology_ring_config(topology_ring_config_t *config)
 		for (int i = 0; i < config->config_cnt; i++)
 			_free_ring_conf_members(&config->ring_configs[i]);
 		xfree(config->ring_configs);
+		xfree(config);
+	}
+}
+
+static void _free_torus3d_conf_members(slurm_conf_torus3d_t *config)
+{
+	if (config) {
+		xfree(config->name);
+		xfree(config->nodes);
+		xfree(config->placements);
+		if (config->regions) {
+			for (int i = 0; i < config->region_count; i++)
+				xfree(config->regions[i].nodes);
+		}
+		xfree(config->regions);
+	}
+}
+
+extern void free_torus3d_conf(slurm_conf_torus3d_t *config)
+{
+	if (config) {
+		_free_torus3d_conf_members(config);
+		xfree(config);
+	}
+}
+
+extern void free_topology_torus3d_config(topology_torus3d_config_t *config)
+{
+	if (config) {
+		for (int i = 0; i < config->config_cnt; i++)
+			_free_torus3d_conf_members(&config->torus3d_configs[i]);
+		xfree(config->torus3d_configs);
 		xfree(config);
 	}
 }

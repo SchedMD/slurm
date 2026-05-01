@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  switch_record.h - Determine order of nodes for job using tree algo.
+ *  torus3d_record.h - Parse and validate 3D torus configuration.
  *****************************************************************************
- *  Copyright (C) SchedMD LLC.
+ *  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,53 +33,56 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _TOPO_TREE_SWITCH_RECORD_H
-#define _TOPO_TREE_SWITCH_RECORD_H
+#ifndef _TOPO_TORUS3D_RECORD_H
+#define _TOPO_TORUS3D_RECORD_H
 
 #include "../common/common_topo.h"
 
-/*****************************************************************************\
- *  SWITCH topology data structures
- *  defined here but is really tree plugin related
-\*****************************************************************************/
-typedef struct {
-	int level;			/* level in hierarchy, leaf=0 */
-	uint32_t link_speed;		/* link speed, arbitrary units */
-	char *name;			/* switch name */
-	bitstr_t *node_bitmap;		/* bitmap of all nodes descended from
-					 * this switch */
-	char *nodes;			/* name if direct descendant nodes */
-	uint16_t  num_desc_switches;	/* number of descendant switches */
-	uint16_t  num_switches;		/* number of direct descendant
-					   switches */
-	uint16_t  parent;		/* index of parent switch */
-	char *switches;			/* name of direct descendant switches */
-	uint32_t *switches_dist;
-	uint16_t *switch_desc_index;	/* indexes of child descendant
-					 * switches */
-	uint16_t *switch_index;		/* indexes of child direct descendant
-					   switches */
-} switch_record_t;
-
-#define SWITCH_NO_PARENT 0xffff
+typedef struct torus3d_placement {
+	bitstr_t **anchor_bitmaps;
+	uint32_t *anchor_nodes;
+	int anchor_count;
+	slurm_conf_torus3d_dims_t anchor_seed;
+	slurm_conf_torus3d_dims_t anchor_spacing;
+	slurm_conf_torus3d_dims_t dims;
+	bool has_overlap;
+	uint32_t size;
+	uint16_t *xs;
+	uint16_t *ys;
+	uint16_t *zs;
+	uint16_t x_count;
+	uint16_t y_count;
+	uint16_t z_count;
+} torus3d_placement_t;
 
 typedef struct {
-	switch_record_t *switch_table; /* ptr to switch records */
-	int switch_count; /* size of switch_table */
-	int switch_levels; /* number of switch levels     */
-} tree_context_t;
+	char *name;
+	uint32_t node_count;
+	bitstr_t *nodes_bitmap;
+	uint32_t *nodes_map;
+	int placement_count;
+	torus3d_placement_t *placements;
+	uint16_t x;
+	uint16_t y;
+	uint16_t z;
+} torus3d_record_t;
 
-/* Free all memory associated with switch_table structure */
-extern void switch_record_table_destroy(tree_context_t *ctx);
+typedef struct {
+	bitstr_t *placement_nodes_bitmap;
+	int record_count;
+	torus3d_record_t *records;
+} torus3d_context_t;
 
-extern int switch_record_validate(topology_ctx_t *tctx);
+extern uint32_t torus3d_coord_to_index(torus3d_record_t *torus, uint16_t x,
+				       uint16_t y, uint16_t z);
 
-extern void switch_record_update_switch_config(topology_ctx_t *tctx, int idx);
+extern void torus3d_index_to_coord(torus3d_record_t *torus, uint32_t index,
+				   uint16_t *x, uint16_t *y, uint16_t *z);
 
-extern int switch_record_add_switch(topology_ctx_t *tctx, char *name,
-				    int parent);
+extern int torus3d_record_validate(topology_ctx_t *tctx);
 
-/* Return the index of a given switch name or -1 if not found */
-extern int switch_record_get_switch_inx(const char *name, tree_context_t *ctx);
+extern void torus3d_record_update_torus_config(topology_ctx_t *tctx, int idx);
+
+extern void torus3d_record_table_destroy(torus3d_context_t *ctx);
 
 #endif
