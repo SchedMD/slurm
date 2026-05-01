@@ -5205,6 +5205,16 @@ extern int step_create_from_msg(slurm_msg_t *msg, int slurmd_fd,
 		return SLURM_SUCCESS;
 	}
 
+	if ((req_step_msg->flags & SSF_ASYNC) &&
+	    (running_in_slurmctld() ||
+	     req_step_msg->immediate ||
+	     !req_step_msg->launch_params ||
+	     req_step_msg->launch_params->pty)) {
+		error("Invalid async step create request");
+		error_code = ESLURM_INVALID_FEATURE;
+		goto end_it;
+	}
+
 	error_code = _step_create(job_ptr, req_step_msg, &step_rec,
 				  msg->protocol_version, &err_msg);
 
