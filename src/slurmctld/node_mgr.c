@@ -62,6 +62,7 @@
 #include "src/common/pack.h"
 #include "src/common/parse_time.h"
 #include "src/common/parse_value.h"
+#include "src/common/power_action.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/state_save.h"
@@ -304,15 +305,10 @@ extern int load_all_node_state ( bool state_only )
 	time_t time_stamp;
 	buf_t *buffer;
 	char *ver_str = NULL;
-	hostset_t *hs = NULL;
 	hostlist_t *down_nodes = NULL;
-	bool power_save_mode = false;
 	uint16_t protocol_version = NO_VAL16;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
-
-	if (slurm_conf.suspend_program && slurm_conf.resume_program)
-		power_save_mode = true;
 
 	/* read the file */
 	buffer = state_save_open("node_state", &state_file);
@@ -477,21 +473,6 @@ extern int load_all_node_state ( bool state_only )
 				/* preserve state for conf FUTURE nodes */
 				node_ptr->node_state = node_state;
 			} else if (IS_NODE_CLOUD(node_ptr)) {
-				if ((!power_save_mode) &&
-				    ((node_state & NODE_STATE_POWERED_DOWN) ||
-				     (node_state & NODE_STATE_POWERING_DOWN) ||
-	 			     (node_state & NODE_STATE_POWERING_UP))) {
-					node_state &= (~NODE_STATE_POWERED_DOWN);
-					node_state &= (~NODE_STATE_POWERING_UP);
-					node_state &= (~NODE_STATE_POWERING_DOWN);
-					if (hs)
-						hostset_insert(
-							hs,
-							node_state_rec->name);
-					else
-						hs = hostset_create(
-							node_state_rec->name);
-				}
 				/*
 				 * Replace FUTURE state with new state (idle),
 				 * but preserve recovered state flags
@@ -509,9 +490,7 @@ extern int load_all_node_state ( bool state_only )
 					 * If node was FUTURE, then it wasn't up
 					 * so mark it as powered down.
 					 */
-					if (power_save_mode)
-						node_state |=
-							NODE_STATE_POWERED_DOWN;
+					node_state |= NODE_STATE_POWERED_DOWN;
 				}
 
 				node_ptr->node_state =
@@ -549,29 +528,10 @@ extern int load_all_node_state ( bool state_only )
 						NODE_STATE_FAIL;
 				if ((node_state & NODE_STATE_POWERED_DOWN) ||
 				    (node_state & NODE_STATE_POWERING_DOWN)) {
-					uint32_t power_flag =
+					node_ptr->node_state |=
 						node_state &
 						(NODE_STATE_POWERED_DOWN |
 						 NODE_STATE_POWERING_DOWN);
-					if (power_save_mode &&
-					    IS_NODE_UNKNOWN(node_ptr)) {
-						orig_flags = node_ptr->
-							node_state &
-							     NODE_STATE_FLAGS;
-						node_ptr->node_state =
-							NODE_STATE_IDLE |
-							orig_flags |
-							power_flag;
-					} else if (power_save_mode) {
-						node_ptr->node_state |=
-							power_flag;
-					} else if (hs)
-						hostset_insert(
-							hs,
-							node_state_rec->name);
-					else
-						hs = hostset_create(
-							node_state_rec->name);
 					/* Recover hardware state for powered
 					 * down nodes */
 					node_ptr->cpus = node_state_rec->cpus;
@@ -601,16 +561,8 @@ extern int load_all_node_state ( bool state_only )
 					node_ptr->node_state |=
 						NODE_STATE_REBOOT_ISSUED;
 				if (node_state & NODE_STATE_POWERING_UP) {
-					if (power_save_mode) {
-						node_ptr->node_state |=
-							NODE_STATE_POWERING_UP;
-					} else if (hs)
-						hostset_insert(
-							hs,
-							node_state_rec->name);
-					else
-						hs = hostset_create(
-							node_state_rec->name);
+					node_ptr->node_state |=
+						NODE_STATE_POWERING_UP;
 				}
 			}
 
@@ -660,20 +612,6 @@ extern int load_all_node_state ( bool state_only )
 				node_state_rec->gpu_spec_bitmap;
 			node_state_rec->gpu_spec_bitmap = NULL;
 		} else {
-			if ((!power_save_mode) &&
-			    ((node_state & NODE_STATE_POWERED_DOWN) ||
-			     (node_state & NODE_STATE_POWERING_DOWN) ||
- 			     (node_state & NODE_STATE_POWERING_UP))) {
-				node_state &= (~NODE_STATE_POWERED_DOWN);
-				node_state &= (~NODE_STATE_POWERING_DOWN);
-				node_state &= (~NODE_STATE_POWERING_UP);
-				if (hs)
-					hostset_insert(hs,
-						       node_state_rec->name);
-				else
-					hs = hostset_create(
-						node_state_rec->name);
-			}
 			if ((IS_NODE_CLOUD(node_ptr) ||
 			    (node_state & NODE_STATE_DYNAMIC_FUTURE) ||
 			    (node_state & NODE_STATE_DYNAMIC_NORM)) &&
@@ -856,12 +794,6 @@ extern int load_all_node_state ( bool state_only )
 	}
 
 fini:	info("Recovered state of %d nodes", node_cnt);
-	if (hs) {
-		char *node_names = hostset_ranged_string_xmalloc(hs);
-		info("Cleared POWER_SAVE flag from nodes %s", node_names);
-		hostset_destroy(hs);
-		xfree(node_names);
-	}
 
 	if (down_nodes) {
 		char *down_host_str = NULL;
@@ -1802,6 +1734,29 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 		log_flag(POWER, "powered nodes good %d", count);
 	}
 
+	/* Validate specified power action or default action for type */
+	if (((update_node_msg->node_state != NO_VAL) &&
+	     (update_node_msg->node_state &
+	      (NODE_STATE_POWER_UP | NODE_STATE_POWER_DOWN))) ||
+	    update_node_msg->power_action_name) {
+		power_action_type_t type = POWER_ACTION_NONE;
+
+		if (update_node_msg->node_state & NODE_STATE_POWER_UP)
+			type = POWER_ACTION_RESUME;
+		else if (update_node_msg->node_state & NODE_STATE_POWER_DOWN)
+			type = POWER_ACTION_SUSPEND;
+
+		if (!power_save_valid_action_default(
+			    type, update_node_msg->power_action_name)) {
+			error("Invalid power action %s for nodes %s",
+			      update_node_msg->power_action_name ?
+			      update_node_msg->power_action_name : "(default)",
+			      update_node_msg->node_names);
+			error_code = ESLURM_INVALID_POWER_ACTION;
+			goto end;
+		}
+	}
+
 	/*
 	 * If a single instance_id/instance_type is specified for multiple
 	 * nodes, broadcast the value to all nodes.
@@ -2343,6 +2298,10 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 					info("powering down node %s",
 					     this_node_name);
 
+				xfree(node_ptr->power_action_name);
+				node_ptr->power_action_name =
+					xstrdup(update_node_msg
+							->power_action_name);
 				node_ptr->node_state |=
 					NODE_STATE_POWER_DOWN;
 
@@ -2360,27 +2319,45 @@ int update_node(update_node_msg_t *update_node_msg, uid_t auth_uid)
 				bit_clear(rs_node_bitmap, node_ptr->index);
 				free(this_node_name);
 				continue;
-			} else if (state_val == NODE_STATE_POWER_UP) {
-				if (!IS_NODE_POWERED_DOWN(node_ptr)) {
+			} else if (state_val & NODE_STATE_POWER_UP) {
+				if (state_val & NODE_STATE_POWERED_DOWN) {
+					info("force power up request for node %s",
+					     this_node_name);
+					/*
+					 * Kill any running jobs and requeue if
+					 * possible.
+					 */
+					kill_running_job_by_node_ptr(node_ptr);
+					node_ptr->node_state |=
+						NODE_STATE_POWERED_DOWN;
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_DOWN);
+					node_ptr->node_state &=
+						(~NODE_STATE_POWERING_UP);
+					node_ptr->node_state &=
+						(~NODE_STATE_POWER_DRAIN);
+				} else if (!IS_NODE_POWERED_DOWN(node_ptr)) {
 					if (IS_NODE_POWERING_UP(node_ptr)) {
+						info("power up request repeating for node %s",
+						     this_node_name);
 						node_ptr->node_state |=
 							NODE_STATE_POWERED_DOWN;
-						node_ptr->node_state |=
-							NODE_STATE_POWER_UP;
-						info("power up request "
-						     "repeating for node %s",
-						     this_node_name);
 					} else {
-						verbose("node %s is already "
-							"powered up",
+						verbose("node %s is already powered up",
 							this_node_name);
+						free(this_node_name);
+						continue;
 					}
 				} else {
-					node_ptr->node_state |=
-						NODE_STATE_POWER_UP;
 					info("powering up node %s",
 					     this_node_name);
 				}
+				node_ptr->node_state |= NODE_STATE_POWER_UP;
+
+				xfree(node_ptr->power_action_name);
+				node_ptr->power_action_name =
+					xstrdup(update_node_msg
+							->power_action_name);
 				bit_set(power_up_node_bitmap, node_ptr->index);
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_ptr->index);
@@ -3078,19 +3055,12 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 static bool _valid_node_state_change(uint32_t old, uint32_t new)
 {
 	uint32_t base_state, node_flags;
-	static bool power_save_on = false;
-	static time_t sched_update = 0;
 
 	if (old == new)
 		return true;
 
 	base_state = old & NODE_STATE_BASE;
 	node_flags = old & NODE_STATE_FLAGS;
-
-	if (sched_update != slurm_conf.last_update) {
-		power_save_on = power_save_test();
-		sched_update = slurm_conf.last_update;
-	}
 
 	switch (new) {
 		case NODE_STATE_DOWN:
@@ -3107,12 +3077,10 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_POWER_DOWN:
 		case NODE_STATE_POWER_UP:
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_UP):
+		case (NODE_STATE_POWER_UP | NODE_STATE_POWERED_DOWN):
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWERED_DOWN):
 		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_DRAIN):
-			if (power_save_on)
-				return true;
-			info("attempt to do power work on node but PowerSave is disabled");
-			break;
+			return true;
 
 		case NODE_RESUME:
 			if (node_flags & NODE_STATE_POWERING_DOWN)
@@ -4843,35 +4811,10 @@ extern void check_node_timers(void)
 	int i;
 	node_record_t *node_ptr;
 	time_t now = time(NULL);
-	uint16_t resume_timeout = slurm_conf.resume_timeout;
-	static bool power_save_on = false;
-	static time_t sched_update = 0;
 	hostlist_t *resume_hostlist = NULL;
 
-	if (sched_update != slurm_conf.last_update) {
-		power_save_on = power_save_test();
-		sched_update = slurm_conf.last_update;
-	}
-
 	for (i = 0; (node_ptr = next_node(&i)); i++) {
-
-		if ((IS_NODE_REBOOT_ISSUED(node_ptr) ||
-		     (!power_save_on && IS_NODE_POWERING_UP(node_ptr))) &&
-		    node_ptr->boot_req_time &&
-		    (node_ptr->boot_req_time + resume_timeout < now)) {
-			/*
-			 * Remove states now so that event state shows as DOWN.
-			 * Does not remove drain state in case it was set by
-			 * scontrol update nodename.
-			 */
-			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
-			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
-			node_ptr->boot_req_time = 0;
-			set_node_down_ptr(node_ptr, "reboot timed out");
-
-			bit_clear(rs_node_bitmap, node_ptr->index);
-		} else if (node_ptr->resume_after &&
-			   (now > node_ptr->resume_after)) {
+		if (node_ptr->resume_after && (now > node_ptr->resume_after)) {
 			/* Fire resume, reset the time */
 			node_ptr->resume_after = 0;
 
@@ -5331,6 +5274,7 @@ static int _delete_node_ptr(node_record_t *node_ptr)
 		return ESLURM_NODES_BUSY;
 	}
 
+	xfree(node_ptr->power_action_name);
 	xfree(node_ptr->topology_orig_str);
 	xfree(node_ptr->topology_str);
 	topology_g_add_rm_node(node_ptr);

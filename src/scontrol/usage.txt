@@ -70,7 +70,7 @@ scontrol [<OPTION>] [<COMMAND>]
                               FORCE and optionally set node Reason field.
      quiet                    print no messages other than error messages.
      quit                     terminate this command.
-     reboot [ASAP] [nextstate=] [reason=] <ALL|nodelist>
+     reboot [ASAP] [FORCE] [nextstate=] [reason=] [action=] <ALL|nodelist>
 			      reboot the nodes when they become idle.
      reconfigure              re-read configuration files.
      release <job_list>       permit specified job to start (see hold)

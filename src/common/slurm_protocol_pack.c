@@ -752,7 +752,26 @@ static void _pack_update_node_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	update_node_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packstr(msg->cert_token, buffer);
+		packstr(msg->comment, buffer);
+		pack32(msg->cpu_bind, buffer);
+		packstr(msg->extra, buffer);
+		packstr(msg->features, buffer);
+		packstr(msg->features_act, buffer);
+		packstr(msg->gres, buffer);
+		packstr(msg->instance_id, buffer);
+		packstr(msg->instance_type, buffer);
+		packstr(msg->node_addr, buffer);
+		packstr(msg->node_hostname, buffer);
+		packstr(msg->node_names, buffer);
+		pack32(msg->node_state, buffer);
+		packstr(msg->power_action_name, buffer);
+		packstr(msg->reason, buffer);
+		pack32(msg->resume_after, buffer);
+		packstr(msg->topology_str, buffer);
+		pack32(msg->weight, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		packstr(msg->cert_token, buffer);
 		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
@@ -796,7 +815,26 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 	slurm_init_update_node_msg(msg);
 
-	if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->cert_token, buffer);
+		safe_unpackstr(&msg->comment, buffer);
+		safe_unpack32(&msg->cpu_bind, buffer);
+		safe_unpackstr(&msg->extra, buffer);
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpackstr(&msg->features_act, buffer);
+		safe_unpackstr(&msg->gres, buffer);
+		safe_unpackstr(&msg->instance_id, buffer);
+		safe_unpackstr(&msg->instance_type, buffer);
+		safe_unpackstr(&msg->node_addr, buffer);
+		safe_unpackstr(&msg->node_hostname, buffer);
+		safe_unpackstr(&msg->node_names, buffer);
+		safe_unpack32(&msg->node_state, buffer);
+		safe_unpackstr(&msg->power_action_name, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+		safe_unpack32(&msg->resume_after, buffer);
+		safe_unpackstr(&msg->topology_str, buffer);
+		safe_unpack32(&msg->weight, buffer);
+	} else if (smsg->protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->cert_token, buffer);
 		safe_unpackstr(&msg->comment, buffer);
 		safe_unpack32(&msg->cpu_bind, buffer);
@@ -838,6 +876,35 @@ static int _unpack_update_node_msg(slurm_msg_t *smsg, buf_t *buffer)
 
 unpack_error:
 	slurm_free_update_node_msg(msg);
+	return SLURM_ERROR;
+}
+
+static void _pack_run_power_action_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	run_power_action_msg_t *msg = smsg->data;
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		packstr(msg->action_name, buffer);
+		packstr(msg->file_content, buffer);
+		packstr(msg->file_env_name, buffer);
+	}
+}
+
+static int _unpack_run_power_action_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	run_power_action_msg_t *msg = xmalloc(sizeof(*msg));
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->action_name, buffer);
+		safe_unpackstr(&msg->file_content, buffer);
+		safe_unpackstr(&msg->file_env_name, buffer);
+	}
+
+	smsg->data = msg;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_run_power_action_msg(msg);
 	return SLURM_ERROR;
 }
 
@@ -9525,7 +9592,23 @@ static void _pack_reboot_msg(const slurm_msg_t *smsg, buf_t *buffer)
 {
 	reboot_msg_t *msg = smsg->data;
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		if (msg) {
+			packstr(msg->features, buffer);
+			pack16(msg->flags, buffer);
+			pack32(msg->next_state, buffer);
+			packstr(msg->node_list, buffer);
+			packstr(msg->power_action_name, buffer);
+			packstr(msg->reason, buffer);
+		} else {
+			packnull(buffer);
+			pack16((uint16_t) 0, buffer);
+			pack32((uint32_t) NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+		}
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (msg) {
 			packstr(msg->features, buffer);
 			pack16(msg->flags, buffer);
@@ -9546,7 +9629,16 @@ static int _unpack_reboot_msg(slurm_msg_t *smsg, buf_t *buffer)
 {
 	reboot_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	slurm_init_reboot_msg(msg, true);
+
+	if (smsg->protocol_version >= SLURM_26_05_PROTOCOL_VERSION) {
+		safe_unpackstr(&msg->features, buffer);
+		safe_unpack16(&msg->flags, buffer);
+		safe_unpack32(&msg->next_state, buffer);
+		safe_unpackstr(&msg->node_list, buffer);
+		safe_unpackstr(&msg->power_action_name, buffer);
+		safe_unpackstr(&msg->reason, buffer);
+	} else if (smsg->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr(&msg->features, buffer);
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpack32(&msg->next_state, buffer);
@@ -14153,6 +14245,9 @@ pack_msg(slurm_msg_t *msg, buf_t *buffer)
 	case REQUEST_DELETE_NODE:
 		_pack_update_node_msg(msg, buffer);
 		break;
+	case REQUEST_RUN_POWER_ACTION:
+		_pack_run_power_action_msg(msg, buffer);
+		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:
 		_pack_update_partition_msg(msg, buffer);
@@ -14676,6 +14771,9 @@ unpack_msg(slurm_msg_t * msg, buf_t *buffer)
 	case REQUEST_UPDATE_NODE:
 	case REQUEST_DELETE_NODE:
 		rc = _unpack_update_node_msg(msg, buffer);
+		break;
+	case REQUEST_RUN_POWER_ACTION:
+		rc = _unpack_run_power_action_msg(msg, buffer);
 		break;
 	case REQUEST_CREATE_PARTITION:
 	case REQUEST_UPDATE_PARTITION:

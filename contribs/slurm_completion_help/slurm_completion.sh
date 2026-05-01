@@ -3433,6 +3433,7 @@ function __scontrol_pidinfo() {
 # completion handler for: scontrol power up *
 function __scontrol_power_up() {
 	local parameters=(
+		"action="
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
@@ -3440,7 +3441,8 @@ function __scontrol_power_up() {
 	__slurm_log_trace "$(__func__): parameters[*]='${parameters[*]}'"
 
 	case "${prev}" in
-	up) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	up) __slurm_compreply_list "$(__slurm_nodes)" "ALL force" "true" ;;
+	force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"
@@ -3452,6 +3454,7 @@ function __scontrol_power_up() {
 function __scontrol_power_down() {
 	local parameters=(
 		"reason="
+		"action="
 	)
 
 	__slurm_log_debug "$(__func__): prev='$prev' cur='$cur'"
@@ -3499,8 +3502,10 @@ function __scontrol_listpids() {
 function __scontrol_reboot() {
 	local parameters=(
 		"asap"
+		"force"
 		"nextstate="
 		"reason="
+		"action="
 	)
 	local states=(
 		"down"
@@ -3513,7 +3518,8 @@ function __scontrol_reboot() {
 
 	case "${prev}" in
 	nextstate) __slurm_compreply "${states[*]}" ;;
-	reboot) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
+	reboot) __slurm_compreply_list "$(__slurm_nodes)" "ALL force" "true" ;;
+	force) __slurm_compreply_list "$(__slurm_nodes)" "ALL" "true" ;;
 	*)
 		$split && return
 		__slurm_compreply_param "${parameters[*]}"

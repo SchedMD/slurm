@@ -283,10 +283,11 @@ primary slurmctld daemon of the specified cluster.
 .TP
 \fBpower\fR  {up|down} [asap|force] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>} [Reason=<\fIreason\fR>]
 Control power state of the provided node list/set. For 'power down', the
-optional ASAP/FORCE flag will be added to the power down request, but will
-otherwise be rejected for power up requests. All arguments will be processed
-insensitive of case except for the node list/set. Optional \fIreason\fR may be
-be specified only when powering down. This subcommand obsoletes the
+optional ASAP flag will be added to the power down request, but will
+otherwise be rejected for power up requests.
+All arguments will be processed insensitive of case except for the node
+list/set. Optional \fIreason\fR may be be specified only when powering down.
+This subcommand obsoletes the
 prior usage of scontrol's update command:
 
 scontrol update NodeName=<\fInodes\fR>
@@ -331,10 +332,11 @@ effect until the configured \fIResumeTimeout\fR is reached.
 .IP
 
 .TP
-\fBreboot\fR [ASAP] [nextstate={RESUME|DOWN}] [reason=<\fIreason\fR>] {ALL|\
-<\fINodeList\fR>|<\fINodeSet\fR>}
+\fBreboot\fR [ASAP] [FORCE] [nextstate={RESUME|DOWN}] [reason=<\fIreason\fR>]\
+[action=<\fIpower action name\fR>] {ALL|<\fINodeList\fR>|<\fINodeSet\fR>}
 Reboot the nodes in the system when they become idle using the
-\fBRebootProgram\fP as configured in Slurm's slurm.conf file.
+\fBRebootProgram\fP as configured in Slurm's slurm.conf file. If "action" is
+set, the \fBPowerAction\fP by the specified name will be used instead.
 Each node will have the "REBOOT" flag added to its node state.
 After a node reboots and the slurmd daemon starts up again, the
 HealthCheckProgram will run once. Then, the slurmd daemon will register
@@ -344,6 +346,8 @@ additional jobs from running on the node so it can be
 rebooted and returned to service "As Soon As Possible" (i.e. ASAP).
 "ASAP" will also set the node reason to "Reboot ASAP" if the "reason" option
 isn't specified and will set nextstate=UNDRAIN if nextstate isn't specified.
+The "FORCE" option will ignore the current state and any jobs running, resetting
+reboot and power states, requeueing jobs, and requesting immediate reboot.
 If the "nextstate" option is specified
 as "DOWN", then the node will remain in a down state after rebooting. If
 "nextstate" is specified as "RESUME", then the nodes will resume as normal

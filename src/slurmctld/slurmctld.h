@@ -277,8 +277,7 @@ extern bool running_configless;
 /*****************************************************************************\
  *  NODE parameters and data structures, mostly in src/common/node_conf.h
 \*****************************************************************************/
-extern bool ping_nodes_now;		/* if set, ping nodes immediately */
-extern bool want_nodes_reboot;		/* if set, check for idle nodes */
+extern bool ping_nodes_now; /* if set, ping nodes immediately */
 extern bool ignore_state_errors;
 
 extern list_t *conf_includes_list;  /* list of conf_includes_map_t */

@@ -1726,6 +1726,7 @@ static void _node_record_pack(void *in, uint16_t protocol_version,
 		pack_time(object->last_response, buffer);
 		packstr(object->parameters, buffer);
 		pack16(object->port, buffer);
+		packstr(object->power_action_name, buffer);
 		pack16(object->protocol_version, buffer);
 		pack16(object->tpc, buffer);
 		packstr(object->mcs_label, buffer);
@@ -1948,6 +1949,7 @@ extern int node_record_unpack(void **out,
 		safe_unpack_time(&object->last_response, buffer);
 		safe_unpackstr(&object->parameters, buffer);
 		safe_unpack16(&object->port, buffer);
+		safe_unpackstr(&object->power_action_name, buffer);
 		safe_unpack16(&object->protocol_version, buffer);
 		safe_unpack16(&object->tpc, buffer);
 		safe_unpackstr(&object->mcs_label, buffer);

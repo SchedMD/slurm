@@ -120,6 +120,8 @@ libcommon_la_SOURCES =				\
 	plugrack.h				\
 	port_mgr.c				\
 	port_mgr.h				\
+	power_action.c				\
+	power_action.h				\
 	print_fields.c				\
 	print_fields.h				\
 	probes.c				\

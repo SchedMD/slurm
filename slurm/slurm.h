@@ -3340,6 +3340,7 @@ typedef struct slurm_update_node_msg {
 	char *node_hostname;	/* node's hostname (optional) */
 	char *node_names;	/* nodelist expression */
 	uint32_t node_state;	/* see enum node_states */
+	char *power_action_name; /* PowerAction name for power up/down */
 	char *reason;		/* reason for node being DOWN or DRAINING */
 	uint32_t resume_after;	/* automatically resume DOWN or DRAINED node
 				 * after this amount of seconds */

@@ -189,7 +189,6 @@ typedef struct {
 static void _agent_defer(void);
 static void _agent_retry(int min_wait, bool wait_too);
 static int  _batch_launch_defer(queued_request_t *queued_req_ptr);
-static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr);
 static int  _signal_defer(queued_request_t *queued_req_ptr);
 static inline int _comm_err(char *node_name, slurm_msg_type_t msg_type);
 static void _list_delete_retry(void *retry_entry);
@@ -273,8 +272,6 @@ void *agent(void *args)
 	time_t begin_time;
 	bool spawn_retry_agent = false;
 	int rpc_thread_cnt;
-	static time_t sched_update = 0;
-	static bool reboot_from_ctld = false;
 
 	log_flag(AGENT, "%s: Agent_cnt=%d agent_thread_cnt=%d with msg_type=%s retry_list_size=%d",
 		 __func__, agent_cnt, agent_thread_cnt,
@@ -282,14 +279,6 @@ void *agent(void *args)
 		 retry_list_size());
 
 	slurm_mutex_lock(&agent_cnt_mutex);
-
-	if (sched_update != slurm_conf.last_update) {
-		reboot_from_ctld = false;
-		if (xstrcasestr(slurm_conf.slurmctld_params,
-		                "reboot_from_controller"))
-			reboot_from_ctld = true;
-		sched_update = slurm_conf.last_update;
-	}
 
 	rpc_thread_cnt = 2 + MIN(agent_arg_ptr->node_count, AGENT_THREAD_COUNT);
 	while (1) {
@@ -310,12 +299,6 @@ void *agent(void *args)
 	begin_time = time(NULL);
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
-
-	if (reboot_from_ctld &&
-	    (agent_arg_ptr->msg_type == REQUEST_REBOOT_NODES)) {
-		_reboot_from_ctld(agent_arg_ptr);
-		goto cleanup;
-	}
 
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
@@ -468,6 +451,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 
 	if ((agent_arg_ptr->msg_type != REQUEST_JOB_NOTIFY)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_REBOOT_NODES)	&&
+	    (agent_arg_ptr->msg_type != REQUEST_RUN_POWER_ACTION) &&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)	&&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE_SACKD) &&
 	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE_WITH_CONFIG) &&
@@ -2512,51 +2496,4 @@ extern int retry_list_size(void)
 	if (retry_list == NULL)
 		return 0;
 	return list_count(retry_list);
-}
-
-static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
-{
-	char *argv[4], *pname;
-	uint32_t argc;
-	int rc, status = 0;
-	reboot_msg_t *reboot_msg = agent_arg_ptr->msg_args;
-
-	if (!agent_arg_ptr->hostlist) {
-		error("%s: hostlist is NULL", __func__);
-		return;
-	}
-	if ((!slurm_conf.reboot_program) ||
-	    (!slurm_conf.reboot_program[0])) {
-		error("%s: Requested reboot from slurmctld but RebootProgram is not defined", __func__);
-		return;
-	}
-
-	pname = strrchr(slurm_conf.reboot_program, '/');
-	if (pname)
-		argv[0] = pname + 1;
-	else
-		argv[0] = slurm_conf.reboot_program;
-	argv[1] = hostlist_deranged_string_xmalloc(agent_arg_ptr->hostlist);
-	if (reboot_msg && reboot_msg->features) {
-		argc = 4;
-		argv[2] = reboot_msg->features;
-		argv[3] = NULL;
-	} else {
-		argc = 3;
-		argv[2] = NULL;
-	}
-
-	status = slurmscriptd_run_reboot(slurm_conf.reboot_program, argc, argv);
-	if (WIFEXITED(status)) {
-		rc = WEXITSTATUS(status);
-		if (rc != 0) {
-			error("RebootProgram exit status of %d",
-			      rc);
-		}
-	} else if (WIFSIGNALED(status)) {
-		error("RebootProgram signaled: %s",
-		      strsignal(WTERMSIG(status)));
-	}
-
-	xfree(argv[1]);
 }

@@ -38,6 +38,8 @@
 
 #include <unistd.h>
 
+#include "src/common/power_action.h"
+
 #define SLURMSCRIPTD_MODE_ENV "SLURMSCRIPTD_MODE"
 #define SLURMSCRIPT_READ_FD (STDERR_FILENO + 1)
 #define SLURMSCRIPT_WRITE_FD (STDERR_FILENO + 2)
@@ -109,13 +111,11 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
  *                        the temporary file is stored
  * IN tmp_file_str - data to put in the temporary file
  */
-extern void slurmscriptd_run_power(char *script_path, char *hosts,
-				   char *features, uint32_t job_id,
-				   char *script_name, uint32_t timeout,
-				   char *tmp_file_env_name, char *tmp_file_str);
-
-extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
-				   char **argv);
+extern void slurmscriptd_run_power_action(power_action_t *action, char *hosts,
+					  char *features, uint32_t job_id,
+					  uint32_t timeout,
+					  char *tmp_file_env_name,
+					  char *tmp_file_str);
 
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,
 				  uint32_t timeout, char *script_name);

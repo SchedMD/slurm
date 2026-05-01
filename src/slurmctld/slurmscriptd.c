@@ -55,6 +55,7 @@
 #include "src/common/fetch_config.h"
 #include "src/common/log.h"
 #include "src/common/msg_type.h"
+#include "src/common/power_action.h"
 #include "src/common/probes.h"
 #include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
@@ -1553,21 +1554,45 @@ extern int slurmscriptd_run_mail(char *script_path, uint32_t argc, char **argv,
 	return status;
 }
 
-extern void slurmscriptd_run_power(char *script_path, char *hosts,
-				   char *features, uint32_t job_id,
-				   char *script_name, uint32_t timeout,
-				   char *tmp_file_env_name, char *tmp_file_str)
+extern void slurmscriptd_run_power_action(power_action_t *action, char *hosts,
+					  char *features, uint32_t job_id,
+					  uint32_t timeout,
+					  char *tmp_file_env_name,
+					  char *tmp_file_str)
 {
 	run_script_msg_t *run_script_msg;
-	slurmscriptd_msg_t *send_args = xmalloc(sizeof(*send_args));
+	slurmscriptd_msg_t *send_args;
 	int argc;
+	int i = 0;
+	char **argv1 = NULL;
 	char **env, **argv;
+	char *exec_name = NULL;
+	char *script_path = NULL;
+	char *script_name = NULL;
 
-	argc = 3;
+	if (!action) {
+		error("%s: NULL PowerAction", __func__);
+		return;
+	}
+	script_path = action->program;
+	script_name = action->name;
+	send_args = xmalloc(sizeof(*send_args));
+
+	argc = action->argc + 2;
+	if (features)
+		argc += 1;
 	argv = xcalloc(argc + 1, sizeof(char*)); /* Null terminated */
-	argv[0] = xstrdup(script_path);
-	argv[1] = xstrdup(hosts);
-	argv[2] = xstrdup(features);
+	/* first arg is executable name */
+	exec_name = strrchr(action->program, '/');
+	argv[0] = xstrdup(exec_name ? exec_name + 1 : action->program);
+	argv1 = argv + 1;
+	for (i = 0; i < action->argc; i++) {
+		argv1[i] = xstrdup(action->argv[i]);
+	}
+	argv1[i++] = xstrdup(hosts);
+	if (features)
+		argv1[i] = features;
+	argv[argc] = NULL;
 
 	env = env_array_create();
 	env_array_append(&env, "SLURM_CONF", slurm_conf.slurm_conf);
@@ -1661,29 +1686,6 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	send_args->msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
 	slurm_thread_create_detached(NULL, _async_send_to_slurmscriptd,
 				     send_args);
-}
-
-extern int slurmscriptd_run_reboot(char *script_path, uint32_t argc,
-				   char **argv)
-{
-	int status;
-
-	run_script_msg_t run_script_msg;
-
-	memset(&run_script_msg, 0, sizeof(run_script_msg));
-
-	/* Init run_script_msg */
-	run_script_msg.argc = argc;
-	run_script_msg.argv = argv;
-	run_script_msg.script_name = "RebootProgram";
-	run_script_msg.script_path = script_path;
-	run_script_msg.script_type = SLURMSCRIPTD_REBOOT;
-
-	/* Send message; wait for response */
-	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-				       &run_script_msg, true, NULL, NULL);
-
-	return status;
 }
 
 extern void slurmscriptd_run_resv(char *script_path, uint32_t argc, char **argv,

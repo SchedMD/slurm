@@ -1011,6 +1011,42 @@ def gcore(component, pid=None, sbin=True):
         )
 
 
+def start_slurmd(slurmd_name, quiet=False):
+    """Starts slurmd for node.
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+    logging.debug(f"Starting slurmd for {slurmd_name}...")
+    # Check whether slurmd is running
+    slurmd_pgrep = run_command(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
+    if slurmd_pgrep["exit_code"] != 0:
+        # Start slurmd
+        results = run_command(
+            f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
+            user="root",
+            quiet=quiet,
+        )
+        if results["exit_code"] != 0:
+            pytest.fail(
+                f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
+            )
+
+        # Verify that the slurmd is running
+        if run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet) != 0:
+            pytest.fail(f"Slurmd -N {slurmd_name} is not running")
+    else:
+        logging.warning(f"slurmd for {slurmd_name} already running")
+        logging.warning(f"slurmd_pgrep['stdout']: {slurmd_pgrep['stdout']}")
+        logging.warning(f"slurmd_pgrep['stderr']: {slurmd_pgrep['stderr']}")
+        logging.warning(f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}")
+
+
 def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
     """Starts the Slurm controller daemon (slurmctld).
 
@@ -1075,47 +1111,19 @@ def start_slurmctld(clean=False, quiet=False, also_slurmds=False):
 
         # (Multi)Slurmds
         for slurmd_name in slurmd_list:
-            logging.debug(f"Starting slurmd for {slurmd_name}...")
-            # Check whether slurmd is running
-            slurmd_pgrep = run_command(
-                f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet
-            )
-            if slurmd_pgrep["exit_code"] != 0:
-                # Start slurmd
-                results = run_command(
-                    f"{properties['slurm-sbin-dir']}/slurmd -N {slurmd_name}",
-                    user="root",
-                    quiet=quiet,
-                )
-                if results["exit_code"] != 0:
-                    pytest.fail(
-                        f"Unable to start slurmd -N {slurmd_name} (rc={results['exit_code']}): {results['stderr']}"
-                    )
-
-                # Verify that the slurmd is running
-                if (
-                    run_command_exit(f"pgrep -f 'slurmd -N {slurmd_name}'", quiet=quiet)
-                    != 0
-                ):
-                    pytest.fail(f"Slurmd -N {slurmd_name} is not running")
-            else:
-                logging.warning(f"slurmd for {slurmd_name} already running")
-                logging.warning(f"slurmd_pgrep['stdout']: {slurmd_pgrep['stdout']}")
-                logging.warning(f"slurmd_pgrep['stderr']: {slurmd_pgrep['stderr']}")
-                logging.warning(
-                    f"slurmd_pgrep['exit_code']: {slurmd_pgrep['exit_code']}"
-                )
-
+            start_slurmd(slurmd_name, quiet)
         # Verify that the slurmd is registered correctly
         timeout = 30 + 5 * len(slurmd_list)
         if not repeat_until(
             lambda: get_nodes(quiet=True),
-            lambda nodes: all(nodes[name]["state"] == ["IDLE"] for name in slurmd_list),
+            lambda nodes: all(
+                nodes[name]["state"][0] == "IDLE" for name in slurmd_list
+            ),
             timeout=timeout,
         ):
             nodes = get_nodes(quiet=True)
             non_idle = [
-                name for name in slurmd_list if nodes[name]["state"] != ["IDLE"]
+                name for name in slurmd_list if nodes[name]["state"][0] != "IDLE"
             ]
             logging.warning(
                 f"Getting the core files of the still not IDLE slurmds ({non_idle})"
@@ -1179,6 +1187,35 @@ def start_slurmdbd(clean=False, quiet=False):
             logging.debug("Slurmdbd started successfully")
 
 
+def clean_slurm_conf_nodes(quiet=False):
+    """Cleans the Slurm configuration file from unnecessary default node0.
+
+    This function may only be used in auto-config mode.
+
+    Args:
+        quiet (boolean): If True, logging is performed at the TRACE log level.
+
+    Returns:
+        None
+    """
+
+    if not properties["auto-config"]:
+        require_auto_config("wants to start slurmds")
+
+    # Remove unnecessary default node0 from config to avoid being used or reserved
+    output = run_command_output(
+        f"cat {properties['slurm-config-dir']}/slurm.conf",
+        user=properties["slurm-user"],
+        quiet=quiet,
+    )
+    if len(re.findall(r"NodeName=", output)) > 1:
+        run_command(
+            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
+            user=properties["slurm-user"],
+            quiet=quiet,
+        )
+
+
 def start_slurm(clean=False, quiet=False):
     """Starts all applicable Slurm daemons.
 
@@ -1209,18 +1246,7 @@ def start_slurm(clean=False, quiet=False):
     ):
         start_slurmdbd(clean, quiet)
 
-    # Remove unnecessary default node0 from config to avoid being used or reserved
-    output = run_command_output(
-        f"cat {properties['slurm-config-dir']}/slurm.conf",
-        user=properties["slurm-user"],
-        quiet=quiet,
-    )
-    if len(re.findall(r"NodeName=", output)) > 1:
-        run_command(
-            f"sed -i '/NodeName=node0 /d' {properties['slurm-config-dir']}/slurm.conf",
-            user=properties["slurm-user"],
-            quiet=quiet,
-        )
+    clean_slurm_conf_nodes(quiet)
 
     # Start slurmctld
     start_slurmctld(clean, quiet, also_slurmds=True)
@@ -5163,7 +5189,7 @@ def make_bash_script(script_name, script_contents):
         f.write("#!/bin/bash\n")
         f.write(script_contents)
 
-    run_command(f"chmod 777 {script_name}", user="root", fatal=True, quiet=True)
+    run_command(f"chmod 755 {script_name}", user="root", fatal=True, quiet=True)
 
     if properties["test-user-set"]:
         run_command(
@@ -5676,6 +5702,14 @@ def default_partition():
     for partition_name in partitions_dict:
         if partitions_dict[partition_name]["Default"] == "YES":
             return partition_name
+
+
+def get_run_dir_path():
+    if "slurm-run-dir" not in properties:
+        properties["slurm-run-dir"] = get_config_parameter(
+            "SlurmdPidFile", live=False, quiet=True
+        )
+    return os.path.dirname(properties["slurm-run-dir"])
 
 
 # This is supplied for ease-of-use in test development only.

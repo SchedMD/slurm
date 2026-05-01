@@ -59,15 +59,18 @@ extern int scontrol_cancel_reboot(char *nodes)
 /*
  * Issue RPC to have compute nodes reboot when idle
  *
- * IN node_list  - list of nodes to reboot or ALL
- * IN asap       - ASAP option
+ * IN node_list - list of nodes to reboot or ALL
+ * IN asap - ASAP option
+ * IN force - FORCE option
  * IN next_state - next_state for the node after reboot
- * IN reason     - reason to attach to node during reboot
+ * IN reason - reason to attach to node during reboot
+ * IN power_action - PowerAction name (slurm.conf) for reboot script, or NULL for RebootProgram
  *
  * RET SLURM_SUCCESS or a slurm error code
  */
-extern int scontrol_reboot_nodes(char *node_list, bool asap,
-				 uint32_t next_state, char *reason)
+extern int scontrol_reboot_nodes(char *node_list, bool asap, bool force,
+				 uint32_t next_state, char *reason,
+				 char *power_action)
 {
 	slurm_conf_t *conf;
 	int rc;
@@ -75,11 +78,12 @@ extern int scontrol_reboot_nodes(char *node_list, bool asap,
 	reboot_msg_t req;
 
 	conf = slurm_conf_lock();
-	if (conf->reboot_program == NULL) {
-		error("RebootProgram isn't defined");
-		slurm_conf_unlock();
-		errno = SLURM_ERROR;
-		return SLURM_ERROR;
+	if (!power_action || !power_action[0]) {
+		if (!conf->reboot_program) {
+			error("RebootProgram isn't defined");
+			slurm_conf_unlock();
+			slurm_seterrno_ret(SLURM_ERROR);
+		}
 	}
 	slurm_conf_unlock();
 
@@ -89,8 +93,11 @@ extern int scontrol_reboot_nodes(char *node_list, bool asap,
 	req.next_state = next_state;
 	req.node_list  = node_list;
 	req.reason     = reason;
+	req.power_action_name = power_action;
 	if (asap)
 		req.flags |= REBOOT_FLAGS_ASAP;
+	if (force)
+		req.flags |= REBOOT_FLAGS_FORCE;
 	msg.msg_type = REQUEST_REBOOT_NODES;
 	msg.data = &req;
 

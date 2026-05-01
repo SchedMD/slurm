@@ -38,10 +38,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/slurmctld/slurmctld.h"
-
 #ifndef _HAVE_POWER_SAVE_H
 #define _HAVE_POWER_SAVE_H
+
+#include "src/slurmctld/slurmctld.h"
+
+#include "src/common/power_action.h"
 
 /* Global Variables */
 extern list_t *resume_job_list;
@@ -59,14 +61,24 @@ extern void power_save_fini(void);
 extern bool power_save_test(void);
 
 /*
- * Reboot compute nodes for a job from the head node using ResumeProgram.
+ * Check if a power action is valid from name or check default action for type.
+ *
+ * IN type - type of the power action to check
+ * IN action_name - name of the power action to check
+ *
+ * RET true if the power action is valid, false otherwise
+ */
+extern bool power_save_valid_action_default(power_action_type_t type,
+					    char *action_name);
+
+/*
+ * Reboot compute nodes for a job using the configured
+ * RebootProgram / PowerAction for reboot.
  *
  * IN node_bitmap - bitmap of nodes to reboot
- * IN job_ptr - job requesting reboot
  * IN features - optional features that the nodes need to be rebooted with
  */
-extern int power_job_reboot(bitstr_t *node_bitmap, job_record_t *job_ptr,
-			    char *features);
+extern void power_action_reboot(bitstr_t *bitmap, char *features);
 
 /*
  * Parse settings for excluding nodes, partitions and states from being
