@@ -53,12 +53,25 @@
 
 static bitstr_t	*saved_gpus;
 
+typedef struct {
+    amdsmi_processor_handle handle;
+    int      gpu_index;       /* logical GPU number       */
+    uint64_t energy_start;    /* energy counter at start   */
+    uint64_t energy_end;      /* energy counter at end     */
+    float    counter_res;     /* counter resolution        */
+    uint64_t ts_start;        /* timestamp at start        */
+    uint64_t ts_end;          /* timestamp at end          */
+    uint32_t power_w;         /* current_socket_power (W)  */
+} gpu_info_t;
+
 /*
  * Buffer size large enough for AMDSMI string
  */
 #define AMDSMI_STRING_BUFFER_SIZE			256
 /* ROCM release version >= 6.0.0 required for gathering usage */
 #define AMDSMI_REQ_VERSION_USAGE 6
+
+#define MAX_GPU_DEVICES 256
 
 #ifndef SLURM_ARRAY_SIZE
 # define SLURM_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
@@ -98,9 +111,8 @@ static double last_energy_joules[256];
 static time_t last_energy_time[256];
 static bool get_usage = true;
 
-/* Processor handles cache for AMD-SMI API */
-static amdsmi_processor_handle processor_handles[256] = {0};
-static uint32_t processor_handle_count = 0;
+static int gpu_count = 0;
+static gpu_info_t gpus[MAX_GPU_DEVICES];
 
 static void _amdsmi_get_version(char *version, unsigned int len);
 static void _amdsmi_get_driver(char *driver, unsigned int len);
@@ -117,9 +129,6 @@ static void _amdsmi_init(void)
     static bool initialized = false;
 
     pid_t my_pid = getpid();
-
-    if (conf && conf->pid)
-        my_pid = conf->pid;
     amdsmi_status_t amdsmi_rc;
     const char *status_string = NULL;
     char version[AMDSMI_STRING_BUFFER_SIZE];
@@ -133,7 +142,8 @@ static void _amdsmi_init(void)
         return;
 
     init_pid = my_pid;
-    processor_handle_count = 0;
+    gpu_count = 0;
+    memset(gpus, 0, sizeof(gpus));
 
     DEF_TIMERS;
     START_TIMER;
@@ -182,56 +192,77 @@ static void _amdsmi_init(void)
 
     debug2("AMDSMI: Detected %u socket(s)", socket_count);
 
-    /*
-     * For each socket, query processor handles (devices) on that socket.
-     * We only keep up to processor_handles[] capacity.
-     */
+    // /*
+    //  * For each socket, query processor handles (devices) on that socket.
+    //  * We only keep up to processor_handles[] capacity.
+    //  */
+    // for (uint32_t s = 0; s < socket_count; s++) {
+    //     uint32_t dev_count = 0;
+
+    //     /* First call to get dev_count for this socket. */
+    //     amdsmi_rc = amdsmi_get_processor_handles(socket_handles[s],
+    //                          &dev_count,
+    //                          NULL);
+    //     if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
+    //         amdsmi_status_code_to_string(amdsmi_rc, &status_string);
+    //         error("AMDSMI: Failed to query device count on socket %u: %s",
+    //               s, status_string ? status_string : "unknown error");
+    //         continue;
+    //     }
+
+    //     if (dev_count == 0)
+    //         continue;
+
+    //     if (processor_handle_count + dev_count >
+    //         SLURM_ARRAY_SIZE(processor_handles)) {
+    //         uint32_t allowed = SLURM_ARRAY_SIZE(processor_handles) -
+    //                    processor_handle_count;
+    //         debug("AMDSMI: Truncating devices on socket %u from %u to %u "
+    //               "to fit processor_handles[]",
+    //               s, dev_count, allowed);
+    //         dev_count = allowed;
+    //     }
+
+    //     if (dev_count == 0)
+    //         continue;
+
+    //     amdsmi_rc = amdsmi_get_processor_handles(
+    //         socket_handles[s],
+    //         &dev_count,
+    //         &processor_handles[processor_handle_count]);
+    //     if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
+    //         amdsmi_status_code_to_string(amdsmi_rc, &status_string);
+    //         error("AMDSMI: Failed to get processor handles on socket %u: %s",
+    //               s, status_string ? status_string : "unknown error");
+    //         continue;
+    //     }
+
+    //     processor_handle_count += dev_count;
+    // }
+
     for (uint32_t s = 0; s < socket_count; s++) {
-        uint32_t dev_count = 0;
+        amdsmi_processor_handle procs[MAX_GPU_DEVICES];
+        uint32_t proc_count = MAX_GPU_DEVICES - gpu_count;
 
-        /* First call to get dev_count for this socket. */
-        amdsmi_rc = amdsmi_get_processor_handles(socket_handles[s],
-                             &dev_count,
-                             NULL);
-        if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
-            amdsmi_status_code_to_string(amdsmi_rc, &status_string);
-            error("AMDSMI: Failed to query device count on socket %u: %s",
-                  s, status_string ? status_string : "unknown error");
+        status = amdsmi_get_processor_handles(sockets[s], &proc_count, procs);
+        if (status != AMDSMI_STATUS_SUCCESS) {
+            fprintf(stderr, "WARNING: get_processor_handles(socket %u) -> %s\n",
+                    s, amdsmi_status_str(status));
             continue;
         }
 
-        if (dev_count == 0)
-            continue;
-
-        if (processor_handle_count + dev_count >
-            SLURM_ARRAY_SIZE(processor_handles)) {
-            uint32_t allowed = SLURM_ARRAY_SIZE(processor_handles) -
-                       processor_handle_count;
-            debug("AMDSMI: Truncating devices on socket %u from %u to %u "
-                  "to fit processor_handles[]",
-                  s, dev_count, allowed);
-            dev_count = allowed;
+        for (uint32_t p = 0; p < proc_count && gpu_count < MAX_GPU_DEVICES; p++) {
+            gpus[gpu_count].handle = procs[p];
+            gpus[gpu_count].gpu_index = gpu_count;
+            gpu_count++;
         }
-
-        if (dev_count == 0)
-            continue;
-
-        amdsmi_rc = amdsmi_get_processor_handles(
-            socket_handles[s],
-            &dev_count,
-            &processor_handles[processor_handle_count]);
-        if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
-            amdsmi_status_code_to_string(amdsmi_rc, &status_string);
-            error("AMDSMI: Failed to get processor handles on socket %u: %s",
-                  s, status_string ? status_string : "unknown error");
-            continue;
-        }
-
-        processor_handle_count += dev_count;
     }
 
     if (processor_handle_count == 0) {
         error("AMDSMI: No GPU processors discovered on any socket");
+        amdsmi_shut_down();
+        initialized = false;
+        return;
     }
 
     debug("AMDSMI: Cached %u GPU processor handle(s)", processor_handle_count);
@@ -282,7 +313,7 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     const char *status_string = NULL;
     amdsmi_status_t rc =
-        amdsmi_get_gpu_driver_info(processor_handles[0], &dinfo);
+        amdsmi_get_gpu_driver_info(gpus[0].handle, &dinfo);
 
     if (rc != AMDSMI_STATUS_SUCCESS) {
         amdsmi_status_code_to_string(rc, &status_string);
@@ -327,7 +358,7 @@ static bool _amdsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
 
     DEF_TIMERS;
     START_TIMER;
-    amdsmi_rc = amdsmi_get_clk_freq(processor_handles[dv_ind],
+    amdsmi_rc = amdsmi_get_clk_freq(gpus[dv_ind].handle,
                                     AMDSMI_CLK_TYPE_MEM,
                                     &amdsmi_freqs);
     END_TIMER;
@@ -396,7 +427,7 @@ static bool _amdsmi_get_gfx_freqs(uint32_t dv_ind, uint32_t *gfx_freqs_size,
 
     DEF_TIMERS;
     START_TIMER;
-    amdsmi_rc = amdsmi_get_clk_freq(processor_handles[dv_ind],
+    amdsmi_rc = amdsmi_get_clk_freq(gpus[dv_ind].handle,
                                     AMDSMI_CLK_TYPE_SYS,
                                     &amdsmi_freqs);
     END_TIMER;
@@ -589,7 +620,7 @@ static bool _amdsmi_set_freqs(uint32_t dv_ind,
         return false;
     }
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     /* ----------------------------------------------------------- */
     /* MEMORY CLOCK MASK                                           */
@@ -665,7 +696,7 @@ static bool _amdsmi_reset_freqs(uint32_t dv_ind)
         return false;
     }
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     DEF_TIMERS;
     START_TIMER;
@@ -724,7 +755,7 @@ static uint32_t _amdsmi_get_freq(uint32_t dv_ind, amdsmi_clk_type_t type)
 	}
 
 	START_TIMER;
-	amdsmi_rc = amdsmi_get_clk_freq(processor_handles[dv_ind], type, &amdsmi_freqs);
+	amdsmi_rc = amdsmi_get_clk_freq(gpus[dv_ind].handle, type, &amdsmi_freqs);
 	END_TIMER;
 	debug3("amdsmi_get_clk_freq(%s) took %s", type_str, TIMER_STR());
 	if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
@@ -996,7 +1027,7 @@ extern void gpu_p_get_device_count(uint32_t *device_count)
     /* Ensure AMD-SMI is initialized and processor_handles[] is populated */
     _amdsmi_init();
 
-    *device_count = processor_handle_count;
+    *device_count = gpu_count;
 
     debug2("AMDSMI: gpu_p_get_device_count -> %u device(s)",
            *device_count);
@@ -1030,7 +1061,7 @@ static void _amdsmi_get_device_name(uint32_t dv_ind,
     amdsmi_asic_info_t info;
     memset(&info, 0, sizeof(info));
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     amdsmi_status_t rc = amdsmi_get_gpu_asic_info(h, &info);
     if (rc != AMDSMI_STATUS_SUCCESS) {
@@ -1077,7 +1108,7 @@ static void _amdsmi_get_device_brand(uint32_t dv_ind,
     amdsmi_asic_info_t info;
     memset(&info, 0, sizeof(info));
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     amdsmi_status_t rc = amdsmi_get_gpu_asic_info(h, &info);
     if (rc != AMDSMI_STATUS_SUCCESS) {
@@ -1122,7 +1153,7 @@ static void _amdsmi_get_device_minor_number(uint32_t dv_ind,
     amdsmi_bdf_t bdf;
     memset(&bdf, 0, sizeof(bdf));
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     amdsmi_status_t rc = amdsmi_get_gpu_device_bdf(h, &bdf);
     if (rc != AMDSMI_STATUS_SUCCESS) {
@@ -1191,7 +1222,7 @@ static void _amdsmi_get_device_pci_info(uint32_t dv_ind, amdsmiPciInfo_t *pci)
     amdsmi_bdf_t bdf;
     memset(&bdf, 0, sizeof(bdf));
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     amdsmi_status_t rc = amdsmi_get_gpu_device_bdf(h, &bdf);
     if (rc != AMDSMI_STATUS_SUCCESS) {
@@ -1228,7 +1259,7 @@ static void _amdsmi_get_device_unique_id(uint32_t dv_ind, uint64_t *id)
     }
 
     const char *status_string = NULL;
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
 
     /*
      * Use ASIC info's device_id as a numeric stable unique id.
@@ -1268,7 +1299,7 @@ static bitstr_t *_amdsmi_get_device_cpu_mask(uint32_t dv_ind)
         return NULL;
     }
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
     const char *status_string = NULL;
 
     uint32_t nnid = 0;
@@ -1511,7 +1542,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         return SLURM_ERROR;
     }
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = gpus[dv_ind].handle;
     const char *status_string = NULL;
     time_t now = time(NULL);
     amdsmi_power_info_t power_info;
