@@ -240,12 +240,12 @@ static void _amdsmi_init(void)
     //     processor_handle_count += dev_count;
     // }
     amdsmi_status_t status;
-    amdsmi_socket_handle sockets[8];
+    amdsmi_socket_handle sockets[socket_count];
     for (uint32_t s = 0; s < socket_count; s++) {
         amdsmi_processor_handle procs[MAX_GPU_DEVICES];
         uint32_t proc_count = MAX_GPU_DEVICES - gpu_count;
 
-        status = amdsmi_get_processor_handles(sockets[s], &proc_count, procs);
+        status = amdsmi_get_processor_handles(sockets[s], &proc_count, &procs);
         if (status != AMDSMI_STATUS_SUCCESS) {
             amdsmi_status_code_to_string(status, &status_string);
             error("AMDSMI: Failed to get processor handles on socket %u: %s",
