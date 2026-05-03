@@ -139,8 +139,7 @@ typedef struct {
 #define GRES_CONF_ENV_DEF    SLURM_BIT(8) /* Env flags were set to defaults */
 
 #define GRES_CONF_SHARED     SLURM_BIT(9) /* Treat this as a shared GRES */
-#define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES
-					     /* on one of the sharing GRES */
+#define GRES_CONF_ONE_SHARING SLURM_BIT(10) /* Only allow use of a shared GRES on one of the sharing GRES */
 
 #define GRES_CONF_ENV_ONEAPI SLURM_BIT(11) /* Set ZE_AFFINITY_MASK */
 #define GRES_CONF_EXPLICIT   SLURM_BIT(12) /* Don't allocate as part of
