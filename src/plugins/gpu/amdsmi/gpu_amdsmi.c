@@ -247,8 +247,9 @@ static void _amdsmi_init(void)
 
         status = amdsmi_get_processor_handles(sockets[s], &proc_count, procs);
         if (status != AMDSMI_STATUS_SUCCESS) {
-            fprintf(stderr, "WARNING: get_processor_handles(socket %u) -> %s\n",
-                    s, amdsmi_status_str(status));
+            amdsmi_status_code_to_string(status, &status_string);
+            error("AMDSMI: Failed to get processor handles on socket %u: %s",
+                  s, status_string ? status_string : "unknown error");
             continue;
         }
 
