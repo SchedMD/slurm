@@ -209,10 +209,16 @@ static int _thread_update_node_energy(void)
 	uint16_t i;
 	static uint32_t readings = 0;
 
+	log_flag(ENERGY, "%s: polling %u GPU(s), reading #%u",
+		 plugin_name, gpus_len, readings);
+
 	for (i = 0; i < gpus_len; i++) {
 		rc = gpu_g_energy_read(i, &gpus[i]);
 		if (rc == SLURM_SUCCESS) {
 			_update_energy(&gpus[i], readings);
+		} else {
+			error("%s: gpu_g_energy_read(%u) failed: %s",
+			      __func__, i, slurm_strerror(rc));
 		}
 	}
 	readings++;
@@ -243,6 +249,8 @@ static void *_thread_gpu_run(void *no_data)
 
 	slurm_mutex_lock(&gpu_mutex);
 	if (gpus_len && gpus) {
+		log_flag(ENERGY, "%s thread init: %u GPU(s) available",
+			 plugin_name, gpus_len);
 		log_flag(ENERGY, "%s thread init", plugin_name);
 	} else {
 		error("%s thread init failed, no GPU available", plugin_name);
@@ -320,6 +328,9 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	if (!saved_usable_gpus)
 		return;
 
+	log_flag(ENERGY, "%s: computing node energy from %u GPU(s)",
+		 __func__, gpus_len);
+
 	// Check if GPUs are constrained by cgroups
 	cgroup_conf_init();
 	constrained_devices = slurm_cgroup_conf.constrain_devices;
@@ -344,6 +355,12 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 			log_flag(ENERGY, "Passing over gpu %u", i);
 			continue;
 		}
+		log_flag(ENERGY,
+			 "%s: adding gpu %u current=%u consumed=%"PRIu64" base=%"PRIu64" poll=%ld",
+			 __func__, i, gpus[i].energy.current_watts,
+			 gpus[i].energy.consumed_energy,
+			 gpus[i].energy.base_consumed_energy,
+			 (long)gpus[i].energy.poll_time);
 		_add_energy(energy, &gpus[i].energy, i);
 	}
 	log_flag(ENERGY, "current_watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
@@ -387,23 +404,33 @@ static int _get_joules_task(uint16_t delta)
 	if (!gres_get_gres_cnt())
 		return SLURM_SUCCESS;
 
+	log_flag(ENERGY, "%s: requesting job energy from slurmd (delta=%u, first=%s)",
+		 __func__, delta, stepd_first ? "yes" : "no");
+
 	if (slurm_get_node_energy(conf->node_name, context_id, delta, &gpu_cnt,
 				  &energies)) {
 		if (errno == ESLURMD_TOO_MANY_RPCS)
 			log_flag(ENERGY, "energy RPC limit reached on slurmd, request dropped");
 		else
 			error("%s: can't get info from slurmd", __func__);
+		log_flag(ENERGY,
+			 "%s: slurm_get_node_energy(node=%s, delta=%u) failed (errno=%d)",
+			 __func__, conf ? conf->node_name : "(null)", delta, errno);
 		return SLURM_ERROR;
 	}
 
 	/* If there are no gpus then there is no energy to get, just return. */
-	if (!gpu_cnt)
+	if (!gpu_cnt) {
+		log_flag(ENERGY, "%s: no GPU energy sensors returned", __func__);
 		return SLURM_SUCCESS;
+	}
 
 	if (stepd_first) {
 		gpus_len = gpu_cnt;
 		gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 		start_current_energies = xcalloc(sizeof(uint64_t), gpus_len);
+		log_flag(ENERGY, "%s: first fetch, tracking %u GPU(s)",
+			 __func__, gpus_len);
 	}
 
 	if (gpu_cnt != gpus_len) {
@@ -513,9 +540,11 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_NODE_ENERGY_UP:
 		if (running_in_slurmd()) {
 			/* Signal the thread to update node energy */
+			log_flag(ENERGY, "%s: ENERGY_DATA_NODE_ENERGY_UP via slurmd", __func__);
 			slurm_cond_signal(&gpu_cond);
 			_get_node_energy(energy);
 		} else {
+			log_flag(ENERGY, "%s: ENERGY_DATA_NODE_ENERGY_UP via stepd", __func__);
 			_get_joules_task(10);
 			_get_node_energy_up(energy);
 		}
@@ -540,8 +569,10 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	case ENERGY_DATA_JOULES_TASK:
 		if (running_in_slurmd()) {
 			/* Signal the thread to update node energy */
+			log_flag(ENERGY, "%s: ENERGY_DATA_JOULES_TASK via slurmd", __func__);
 			slurm_cond_signal(&gpu_cond);
 		} else {
+			log_flag(ENERGY, "%s: ENERGY_DATA_JOULES_TASK via stepd", __func__);
 			_get_joules_task(10);
 		}
 		for (i = 0; i < gpus_len; ++i)
@@ -630,18 +661,26 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	if (!flag_init) {
 		flag_init = true;
 		if (running_in_slurmd()) {
+			log_flag(ENERGY, "%s: running in slurmd, probing GPU count", __func__);
 			if (gres_get_gres_cnt())
 				gpu_g_get_device_count(
 					(unsigned int *) &gpus_len);
+			log_flag(ENERGY, "%s: discovered %u GPU(s)", __func__, gpus_len);
 			if (gpus_len) {
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 				slurm_thread_create(NULL, &thread_gpu_id_run,
 						    _thread_gpu_run, NULL);
 				log_flag(ENERGY, "%s thread launched",
 					 plugin_name);
+			} else {
+				log_flag(ENERGY, "%s: no GPU devices discovered, energy thread not started",
+					 __func__);
 			}
-		} else
+		} else {
+			log_flag(ENERGY, "%s: running in stepd, fetching initial joules",
+				 __func__);
 			_get_joules_task(0);
+		}
 
 	}
 
