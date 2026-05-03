@@ -1511,7 +1511,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         return SLURM_ERROR;
     }
 
-    amdsmi_processor_handle h = processor_handles[dv_ind];
+    amdsmi_processor_handle h = dv_ind;;
     const char *status_string = NULL;
     time_t now = time(NULL);
     amdsmi_power_info_t power_info;
