@@ -258,14 +258,14 @@ static void _amdsmi_init(void)
         }
     }
 
-    if (processor_handle_count == 0) {
+    if (gpu_count == 0) {
         error("AMDSMI: No GPU processors discovered on any socket");
         amdsmi_shut_down();
         initialized = false;
         return;
     }
 
-    debug("AMDSMI: Cached %u GPU processor handle(s)", processor_handle_count);
+    debug("AMDSMI: Cached %u GPU processor handle(s)", gpu_count);
 
     /* Log driver + library version information (best‑effort, non‑fatal). */
     _amdsmi_get_driver(driver, AMDSMI_STRING_BUFFER_SIZE);
@@ -303,7 +303,7 @@ static void _amdsmi_get_driver(char *driver, unsigned int len)
 
     driver[0] = '\0';
 
-    if (processor_handle_count == 0) {
+    if (gpu_count == 0) {
         debug("AMDSMI: No GPU processor handles available for driver query");
         return;
     }
@@ -348,9 +348,9 @@ static bool _amdsmi_get_mem_freqs(uint32_t dv_ind, uint32_t *mem_freqs_size,
         return false;
     }
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return false;
     }
 
@@ -417,9 +417,9 @@ static bool _amdsmi_get_gfx_freqs(uint32_t dv_ind, uint32_t *gfx_freqs_size,
         return false;
     }
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return false;
     }
 
@@ -614,9 +614,9 @@ static bool _amdsmi_set_freqs(uint32_t dv_ind,
     amdsmi_status_t rc;
 
     /* Validate device index */
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return false;
     }
 
@@ -690,9 +690,9 @@ static bool _amdsmi_reset_freqs(uint32_t dv_ind)
     amdsmi_status_t rc;
 
     /* Validate device index */
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return false;
     }
 
@@ -735,8 +735,8 @@ static uint32_t _amdsmi_get_freq(uint32_t dv_ind, amdsmi_clk_type_t type)
 	amdsmi_frequencies_t amdsmi_freqs;
 	char *type_str = "unknown";
 
-	if (dv_ind >= processor_handle_count) {
-		error("AMDSMI: Invalid device index %u (max %u)", dv_ind, processor_handle_count);
+	if (dv_ind >= gpu_count) {
+		error("AMDSMI: Invalid device index %u (max %u)", dv_ind, gpu_count);
 		return 0;
 	}
 
@@ -1051,9 +1051,9 @@ static void _amdsmi_get_device_name(uint32_t dv_ind,
 
     device_name[0] = '\0';
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return;
     }
 
@@ -1098,9 +1098,9 @@ static void _amdsmi_get_device_brand(uint32_t dv_ind,
 
     device_brand[0] = '\0';
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return;
     }
 
@@ -1143,9 +1143,9 @@ static void _amdsmi_get_device_minor_number(uint32_t dv_ind,
 
     *minor = 0;
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return;
     }
 
@@ -1212,9 +1212,9 @@ static void _amdsmi_get_device_pci_info(uint32_t dv_ind, amdsmiPciInfo_t *pci)
         return;
     }
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return;
     }
 
@@ -1252,9 +1252,9 @@ static void _amdsmi_get_device_unique_id(uint32_t dv_ind, uint64_t *id)
 
     *id = 0;
 
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return;
     }
 
@@ -1293,9 +1293,9 @@ static bitstr_t *_amdsmi_get_device_cpu_mask(uint32_t dv_ind)
 #ifndef HAVE_NUMA
     return NULL;  /* No NUMA support at build time */
 #else
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return NULL;
     }
 
@@ -1536,9 +1536,9 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
  */
 extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 {
-    if (dv_ind >= processor_handle_count) {
+    if (dv_ind >= gpu_count) {
         error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, processor_handle_count);
+              dv_ind, gpu_count);
         return SLURM_ERROR;
     }
 
