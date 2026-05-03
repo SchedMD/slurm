@@ -1526,6 +1526,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
          * for MI300X/MI355X reliable energy accounting in Slurm. */
         if (power_info.average_socket_power != 0 &&
             power_info.average_socket_power != NO_VAL && power_info.average_socket_power != 65535) {
+            //if the metric is not supported, amd-smi puts power_info.average_socket_power to 65535 (65kW are a bit too high even for MI300x)
             watts = power_info.average_socket_power;
             debug2("AMDSMI: GPU[%u] power read: average_socket_power=%u W, current_socket_power=%u W",
                    dv_ind, power_info.average_socket_power,
@@ -1549,20 +1550,20 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
             return SLURM_ERROR;
         }
         gpu->last_update_watt = watts;
-//        gpu->energy.current_watts = watts;
+        gpu->energy.current_watts = watts;
     } else {
         /* Both methods failed */
         amdsmi_status_code_to_string(rc, &status_string);
         error("AMDSMI: power read failed for GPU[%u]: %s",
                 dv_ind, status_string ? status_string : "unknown");
         gpu->energy.current_watts = NO_VAL;
-        gpu->last_update_watt = NO_VAL;
+        //gpu->last_update_watt = NO_VAL;
         return SLURM_ERROR;
     }
 
     /* Slurm bookkeeping */
     gpu->previous_update_time = gpu->last_update_time;
-    gpu->last_update_time = now;
+    gpu->last_update_time = time(NULL);
 
     return SLURM_SUCCESS;
 }

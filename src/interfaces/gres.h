@@ -134,7 +134,7 @@ typedef struct {
 								multiple times */
 #define GRES_CONF_ENV_NVML   SLURM_BIT(5) /* Set CUDA_VISIBLE_DEVICES */
 #define GRES_CONF_ENV_RSMI   SLURM_BIT(6) /* Set ROCR_VISIBLE_DEVICES */
-#define GRES_CONF_ENV_AMDSMI  SLURM_BIT(7) /* Set GPU_DEVICE_ORDINAL */
+#define GRES_CONF_ENV_AMDSMI  SLURM_BIT(6) /* Set GPU_DEVICE_ORDINAL */
 #define GRES_CONF_ENV_OPENCL SLURM_BIT(7) /* Set GPU_DEVICE_ORDINAL */
 #define GRES_CONF_ENV_DEF    SLURM_BIT(8) /* Env flags were set to defaults */
 

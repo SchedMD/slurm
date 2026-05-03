@@ -1330,9 +1330,13 @@ static char *_get_autodetect_flags_str(void)
 		if (autodetect_flags & GRES_AUTODETECT_GPU_NVML)
 			xstrfmtcat(flags, "%snvml", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_AMDSMI)
+			#ifdef HAVE_AMDSMI
 			xstrfmtcat(flags, "%samdsmi", flags ? "," : "");
+			#endif
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_RSMI)
+			#ifdef HAVE_RSMI
 			xstrfmtcat(flags, "%srsmi", flags ? "," : "");
+			#endif
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_ONEAPI)
 			xstrfmtcat(flags, "%soneapi", flags ? "," : "");
 		else if (autodetect_flags & GRES_AUTODETECT_GPU_NRT)
@@ -1557,7 +1561,7 @@ extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env,
 	if (xstrcasestr(input, "nvidia_gpu_env"))
 		flags |= GRES_CONF_ENV_NVML;
 	if (xstrcasestr(input, "amd_gpu_env"))
-		flags |= GRES_CONF_ENV_AMDSMI | GRES_CONF_ENV_RSMI;
+		flags |= GRES_CONF_ENV_AMDSMI;
 	if (xstrcasestr(input, "intel_gpu_env"))
 		flags |= GRES_CONF_ENV_ONEAPI;
 	if (xstrcasestr(input, "opencl_env"))
