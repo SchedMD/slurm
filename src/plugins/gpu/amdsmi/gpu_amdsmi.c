@@ -1515,6 +1515,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     }
 
     amdsmi_processor_handle h = gpus[dv_ind].handle;
+    debug("AMDSMI: Reading power for GPU[%u]", h);
     const char *status_string = NULL;
     time_t now = time(NULL);
     amdsmi_power_info_t power_info;
