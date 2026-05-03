@@ -1515,7 +1515,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     }
 
     amdsmi_processor_handle h = gpus[dv_ind].handle;
-    debug("AMDSMI: Reading power for GPU[%u]", h);
+    debug("AMDSMI: Reading power for GPU[%u]", dv_ind);
     const char *status_string = NULL;
     time_t now = time(NULL);
     amdsmi_power_info_t power_info;
@@ -1565,10 +1565,11 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
         amdsmi_status_code_to_string(rc, &status_string);
         error("AMDSMI: power read failed for GPU[%u]: %s",
                 dv_ind, status_string ? status_string : "unknown");
-         debug2("AMDSMI: power read failed for GPU[%u], setting watts to NO_VAL", dv_ind);
-         debug2("AMDSMI: fetched: average_socket_power=%u, current_socket_power=%u, socket_power=%" PRIu64,
-             power_info.average_socket_power,
-             power_info.current_socket_power, power_info.socket_power);
+        debug2("AMDSMI: power read failed for GPU[%u], setting watts to NO_VAL", dv_ind);
+        debug2("AMDSMI: fetched: average_socket_power=%u, current_socket_power=%u, socket_power=%" PRIu64,
+               dv_ind,
+               power_info.average_socket_power,
+               power_info.current_socket_power, power_info.socket_power);
         gpu->energy.current_watts = NO_VAL;
         //gpu->last_update_watt = NO_VAL;
         return SLURM_ERROR;
