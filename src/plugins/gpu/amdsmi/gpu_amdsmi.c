@@ -192,68 +192,38 @@ static void _amdsmi_init(void)
 
     debug2("AMDSMI: Detected %u socket(s)", socket_count);
 
-    // /*
-    //  * For each socket, query processor handles (devices) on that socket.
-    //  * We only keep up to processor_handles[] capacity.
-    //  */
-    // for (uint32_t s = 0; s < socket_count; s++) {
-    //     uint32_t dev_count = 0;
-
-    //     /* First call to get dev_count for this socket. */
-    //     amdsmi_rc = amdsmi_get_processor_handles(socket_handles[s],
-    //                          &dev_count,
-    //                          NULL);
-    //     if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
-    //         amdsmi_status_code_to_string(amdsmi_rc, &status_string);
-    //         error("AMDSMI: Failed to query device count on socket %u: %s",
-    //               s, status_string ? status_string : "unknown error");
-    //         continue;
-    //     }
-
-    //     if (dev_count == 0)
-    //         continue;
-
-    //     if (processor_handle_count + dev_count >
-    //         SLURM_ARRAY_SIZE(processor_handles)) {
-    //         uint32_t allowed = SLURM_ARRAY_SIZE(processor_handles) -
-    //                    processor_handle_count;
-    //         debug("AMDSMI: Truncating devices on socket %u from %u to %u "
-    //               "to fit processor_handles[]",
-    //               s, dev_count, allowed);
-    //         dev_count = allowed;
-    //     }
-
-    //     if (dev_count == 0)
-    //         continue;
-
-    //     amdsmi_rc = amdsmi_get_processor_handles(
-    //         socket_handles[s],
-    //         &dev_count,
-    //         &processor_handles[processor_handle_count]);
-    //     if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
-    //         amdsmi_status_code_to_string(amdsmi_rc, &status_string);
-    //         error("AMDSMI: Failed to get processor handles on socket %u: %s",
-    //               s, status_string ? status_string : "unknown error");
-    //         continue;
-    //     }
-
-    //     processor_handle_count += dev_count;
-    // }
-    amdsmi_status_t status;
-    amdsmi_socket_handle sockets[socket_count];
+    /*
+     * For each socket, query processor handles (devices) on that socket.
+     * AMDSMI on this platform requires a real output buffer; a NULL handle
+     * array returns AMDSMI_STATUS_INVAL, so we query directly into a temp
+     * buffer and append the results into our cache.
+     */
     for (uint32_t s = 0; s < socket_count; s++) {
-        amdsmi_processor_handle procs[MAX_GPU_DEVICES];
-        uint32_t proc_count = MAX_GPU_DEVICES - gpu_count;
+        amdsmi_processor_handle procs[MAX_GPU_DEVICES] = {0};
+        uint32_t proc_count = MAX_GPU_DEVICES;
 
-        status = amdsmi_get_processor_handles(sockets[s], &proc_count, &procs);
-        if (status != AMDSMI_STATUS_SUCCESS) {
-            amdsmi_status_code_to_string(status, &status_string);
+        amdsmi_rc = amdsmi_get_processor_handles(socket_handles[s],
+                                                 &proc_count,
+                                                 procs);
+        if (amdsmi_rc != AMDSMI_STATUS_SUCCESS) {
+            amdsmi_status_code_to_string(amdsmi_rc, &status_string);
             error("AMDSMI: Failed to get processor handles on socket %u: %s",
                   s, status_string ? status_string : "unknown error");
             continue;
         }
 
-        for (uint32_t p = 0; p < proc_count && gpu_count < MAX_GPU_DEVICES; p++) {
+        if (proc_count == 0)
+            continue;
+
+        if (gpu_count + proc_count > MAX_GPU_DEVICES) {
+            uint32_t allowed = MAX_GPU_DEVICES - gpu_count;
+            debug("AMDSMI: Truncating devices on socket %u from %u to %u "
+                  "to fit gpus[]",
+                  s, proc_count, allowed);
+            proc_count = allowed;
+        }
+
+        for (uint32_t p = 0; p < proc_count; p++) {
             gpus[gpu_count].handle = procs[p];
             gpus[gpu_count].gpu_index = gpu_count;
             gpu_count++;
