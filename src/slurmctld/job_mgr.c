@@ -9824,6 +9824,10 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 		info("%s: job failed to specify Script", __func__);
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}
+	if ((job_desc_msg->bitflags & EXTERNAL_JOB) && job_desc_msg->script) {
+		info("%s: external job must not have a script", __func__);
+		return ESLURM_INVALID_EXTERNAL_JOB;
+	}
 	if (job_desc_msg->script && job_desc_msg->x11) {
 		info("%s: batch job cannot use X11 forwarding", __func__);
 		return ESLURM_X11_NOT_AVAIL;
