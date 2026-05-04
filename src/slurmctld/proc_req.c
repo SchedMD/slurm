@@ -6801,6 +6801,7 @@ static void _slurm_rpc_node_alias_addrs(slurm_msg_t *msg)
 	hostlist2bitmap(hl, true, &node_bitmap);
 	FREE_NULL_HOSTLIST(hl);
 
+	bit_and_not(node_bitmap, external_node_bitmap);
 	if (bit_ffs(node_bitmap) != -1) {
 		int addr_index = 0;
 		alias_addrs.node_list = bitmap2node_name_sortable(node_bitmap,
