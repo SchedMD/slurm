@@ -1529,7 +1529,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 
     /* ---- PRIMARY: energy counter delta ---- */
     uint64_t energy_now = 0;
-    float    counter_res = 0.0f;
+    float    counter_res = 15.30f;
     uint64_t ts = 0;
     uint32_t watts = NO_VAL;
     bool have_watts = false;
