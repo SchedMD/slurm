@@ -906,6 +906,18 @@ static void _select_storage_host(storage_host_scheme_t scheme, char *value,
 	}
 }
 
+/* Log a connection failure with appropriate fields for host vs socket */
+static void _log_connect_failure(mysql_db_info_t *db_info, char *db_host,
+				 char *db_socket)
+{
+	if (db_host)
+		info("Connection failed to host = %s port = %u user = %s",
+		     db_host, db_info->port, db_info->user);
+	else
+		info("Connection failed to socket = %s user = %s",
+		     db_socket, db_info->user);
+}
+
 /* NOTE: Ensure that mysql_conn->lock is set on function entry */
 static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
@@ -932,10 +944,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 					    db_socket, 0);
 
 		if (!db_ptr && db_info->backup) {
-			info("Connection failed to host = %s "
-			     "user = %s port = %u",
-			     db_host ? db_host : db_socket, db_info->user,
-			     db_info->port);
+			_log_connect_failure(db_info, db_host, db_socket);
 			_select_storage_host(db_info->backup_scheme,
 					     db_info->backup, &db_host,
 					     &db_socket);
@@ -958,10 +967,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 				mysql_thread_end();
 			mysql_close(mysql_db);
 		} else {
-			info("Connection failed to host = %s "
-			     "user = %s port = %u",
-			     db_host ? db_host : db_socket, db_info->user,
-			     db_info->port);
+			_log_connect_failure(db_info, db_host, db_socket);
 			error("mysql_real_connect failed: %d %s",
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db));
@@ -1135,9 +1141,11 @@ extern int mysql_db_get_db_connection(mysql_conn_t *mysql_conn, char *db_name,
 	_set_mysql_ssl_opts(mysql_conn->db_conn, db_info->params);
 
 	while (!storage_init) {
-		debug2("Attempting to connect to %s:%d",
-		       db_host ? db_host : db_socket,
-		       db_info->port);
+		if (db_host)
+			debug2("Attempting to connect to %s:%u",
+			       db_host, db_info->port);
+		else
+			debug2("Attempting to connect to socket %s", db_socket);
 
 		xfree(pass);
 		pass = _current_password(db_info);
