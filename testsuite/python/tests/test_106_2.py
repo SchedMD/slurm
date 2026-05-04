@@ -64,7 +64,14 @@ def test_sbcast_contained():
     atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
 
     # Send file
-    atf.run_command("echo 'Successful sbcast' > test", fatal=True)
+    expected_content = "Successful sbcast"
+    atf.run_command(f"echo '{expected_content}' > test", fatal=True)
+    for t in atf.timer():
+        output = atf.run_command_output("cat test")
+        if expected_content in output:
+            break
+    else:
+        pytest.fail("Unable to create the test file.")
     atf.run_command(f"sbcast -j {job_id} test {ns_dir}/test", fatal=True)
 
     # Wait for job to finish
@@ -79,7 +86,7 @@ def test_sbcast_contained():
 
         found = []
         found.append("Found test file in private mount" in content)
-        found.append("Successful sbcast" in content)
+        found.append(expected_content in content)
         found.append("job_container/tmpfs created private mount" in content)
 
         if all(found):
