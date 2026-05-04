@@ -762,7 +762,49 @@ void
 job_desc_msg_destroy(job_desc_msg_t *j)
 {
 	if (j) {
+		xfree(j->account);
+		xfree(j->acctg_freq);
+		xfree(j->burst_buffer);
+		xfree(j->cluster_features);
+		xfree(j->clusters);
+		xfree(j->comment);
+		xfree(j->container);
+		xfree(j->container_id);
+		xfree(j->container_type);
+		xfree(j->cpu_bind);
+		xfree(j->cpus_per_tres);
+		xfree(j->dependency);
+		xfree(j->exc_nodes);
+		xfree(j->extra);
+		xfree(j->features);
+		xfree(j->job_size_str);
+		xfree(j->licenses);
+		xfree(j->mail_user);
+		xfree(j->mcs_label);
+		xfree(j->mem_bind);
+		xfree(j->mem_per_tres);
+		xfree(j->name);
+		xfree(j->network);
+		xfree(j->origin_cluster);
+		xfree(j->partition);
+		xfree(j->prefer);
+		xfree(j->qos);
+		xfree(j->req_context);
 		xfree(j->req_nodes);
+		xfree(j->reservation);
+		for (int i = 0; i < j->spank_job_env_size; i++)
+			xfree(j->spank_job_env[i]);
+		xfree(j->spank_job_env);
+		xfree(j->tres_bind);
+		xfree(j->tres_freq);
+		xfree(j->tres_per_job);
+		xfree(j->tres_per_node);
+		xfree(j->tres_per_socket);
+		xfree(j->tres_per_task);
+		xfree(j->wckey);
+		xfree(j->work_dir);
+		xfree(j->x11_magic_cookie);
+		xfree(j->x11_target);
 		xfree(j);
 	}
 }
