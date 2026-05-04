@@ -119,7 +119,6 @@
 #include "src/stepmgr/stepmgr.h"
 
 #define MAX_EXIT_VAL 255	/* Maximum value returned by WIFEXITED() */
-#define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
 #define PURGE_OLD_JOB_IN_SEC 2592000 /* 30 days in seconds */
 
@@ -385,9 +384,9 @@ static bool _get_whole_hetjob(void);
 static bool _higher_precedence(job_record_t *job_ptr, job_record_t *job_ptr2);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 			    bool requeue);
-static int  _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
-			bool cron, job_record_t **job_rec_ptr, uid_t submit_uid,
-			char **err_msg, uint16_t protocol_version);
+static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
+		       bool cron, job_record_t **job_rec_ptr, uid_t submit_uid,
+		       char **err_msg, uint16_t protocol_version);
 static void _job_timed_out(job_record_t *job_ptr, bool preempted);
 static void _kill_dependent(job_record_t *job_ptr);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -430,9 +429,9 @@ static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr,
 			    list_t *qos_ptr_list);
-static int  _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
-			       bool cron, uid_t submit_uid,
-			       part_record_t *part_ptr, list_t *part_list);
+static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
+			      bool cron, uid_t submit_uid,
+			      part_record_t *part_ptr, list_t *part_list);
 static void _validate_job_files(void);
 static int _clear_state_dir_flag(void *x, void *arg);
 static int _test_state_dir_flag(void *x, void *arg);
@@ -4127,7 +4126,7 @@ static inline bool _has_deadline(job_record_t *job_ptr)
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - resource allocation request only if set, batch job if zero
+ * IN allocate - true for resource allocation request, false for batch submit
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
  * OUT err_msg - Custom error message to the user, caller to xfree results
@@ -4139,11 +4138,10 @@ static inline bool _has_deadline(job_record_t *job_ptr)
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition
  */
-extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
-			int will_run, will_run_response_msg_t **resp,
-			int allocate, uid_t submit_uid, bool cron,
-			job_record_t **job_pptr, char **err_msg,
-			uint16_t protocol_version)
+extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
+			will_run_response_msg_t **resp, bool allocate,
+			uid_t submit_uid, bool cron, job_record_t **job_pptr,
+			char **err_msg, uint16_t protocol_version)
 {
 	static time_t sched_update = 0;
 	static bool defer_batch = false, defer_sched = false;
@@ -4329,8 +4327,8 @@ extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
 	 * fed jobs need to go to the siblings first so don't attempt to
 	 * schedule the job now.
 	 */
-	test_only = will_run || job_ptr->deadline || (allocate == 0) ||
-		job_ptr->fed_details;
+	test_only = will_run || job_ptr->deadline || !allocate ||
+		    job_ptr->fed_details;
 
 	no_alloc = test_only || too_fragmented || _has_deadline(job_ptr) ||
 		(!top_prio) || (!independent) ||
@@ -7270,7 +7268,7 @@ static bool _expedited_requeue_enabled(void)
  *	partition, nodes count in partition, and sufficient processors in
  *	partition).
  * IN job_desc - job specifications
- * IN allocate - resource allocation request if set rather than job submit
+ * IN allocate - true for resource allocation request, false for batch submit
  * IN will_run - job is not to be created, test of validity only
  * OUT job_pptr - pointer to the job (NULL on error)
  * OUT err_msg - Error message for user
@@ -7279,7 +7277,7 @@ static bool _expedited_requeue_enabled(void)
  *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  */
 
-static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
+static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 		       bool cron, job_record_t **job_pptr, uid_t submit_uid,
 		       char **err_msg, uint16_t protocol_version)
 {
@@ -9807,10 +9805,10 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
 /* _validate_job_desc - validate that a job descriptor for job submit or
  *	allocate has valid data, set values to defaults as required
  * IN/OUT job_desc_msg - pointer to job descriptor, modified as needed
- * IN allocate - if clear job to be queued, if set allocate for user now
+ * IN allocate - true for resource allocation request, false for batch submit
  * IN submit_uid - who request originated
  */
-static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
+static int _validate_job_desc(job_desc_msg_t *job_desc_msg, bool allocate,
 			      bool cron, uid_t submit_uid,
 			      part_record_t *part_ptr, list_t *part_list)
 {
@@ -9821,8 +9819,7 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		     __func__);
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
-	if ((allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0) &&
-	    (job_desc_msg->script == NULL) &&
+	if (!allocate && !job_desc_msg->script &&
 	    !(job_desc_msg->bitflags & EXTERNAL_JOB)) {
 		info("%s: job failed to specify Script", __func__);
 		return ESLURM_JOB_SCRIPT_MISSING;

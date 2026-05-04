@@ -898,7 +898,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  * IN will_run - don't initiate the job if set, just test if it could run
  *	now or later
  * OUT resp - will run response (includes start location, time, etc.)
- * IN allocate - resource allocation request only if set, batch job if zero
+ * IN allocate - resource allocation request if true, batch job if false
  * IN submit_uid -uid of user issuing the request
  * IN cron - true if cron
  * OUT job_pptr - set to pointer to job record
@@ -915,10 +915,9 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  *	default_part_loc - pointer to default partition
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-extern int job_allocate(job_desc_msg_t *job_desc, int immediate,
-			int will_run, will_run_response_msg_t **resp,
-			int allocate, uid_t submit_uid, bool cron,
-			job_record_t **job_pptr,
+extern int job_allocate(job_desc_msg_t *job_desc, int immediate, int will_run,
+			will_run_response_msg_t **resp, bool allocate,
+			uid_t submit_uid, bool cron, job_record_t **job_pptr,
 			char **err_msg, uint16_t protocol_version);
 
 /* If this is a job array meta-job, prepare it for being scheduled */

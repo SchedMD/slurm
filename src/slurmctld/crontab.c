@@ -117,9 +117,9 @@ static int _handle_job(void *x, void *y)
 		return -1;
 	}
 
-	args->return_code = job_allocate(job, 0, false, NULL, 0, args->uid,
-					 true, &job_ptr, args->err_msg,
-					 args->protocol_version);
+	args->return_code =
+		job_allocate(job, 0, false, NULL, false, args->uid, true,
+			     &job_ptr, args->err_msg, args->protocol_version);
 
 	/*
 	 * job_allocate() will return non-terminal error codes.
