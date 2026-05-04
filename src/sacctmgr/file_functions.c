@@ -1083,9 +1083,11 @@ static void _destory_local_mod_qos(void *x)
 	if (!local_mod_qos)
 		return;
 
+	xfree(local_mod_qos->change_info);
 	slurmdb_destroy_qos_rec(local_mod_qos->qos_rec_new);
 	/* Don't free old */
 	// slurmdb_destroy_qos_rec(local_mod_qos->qos_rec_old);
+	xfree(local_mod_qos);
 }
 
 static char *_check_mod_qos(slurmdb_qos_rec_t *qos_rec_in,
