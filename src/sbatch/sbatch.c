@@ -130,10 +130,10 @@ int main(int argc, char **argv)
 		log_alter(logopt, 0, NULL);
 	}
 
-	if (sbopt.wrap != NULL) {
-		script_body = _script_wrap(sbopt.wrap);
-	} else if (opt.job_flags & EXTERNAL_JOB) {
+	if (opt.job_flags & EXTERNAL_JOB) {
 		script_body = NULL;
+	} else if (sbopt.wrap) {
+		script_body = _script_wrap(sbopt.wrap);
 	} else {
 		script_body = _get_script_buffer(script_name, &script_size);
 		if (!script_body)
