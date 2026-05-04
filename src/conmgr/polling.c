@@ -91,6 +91,18 @@ extern const char *pollctl_type_to_string(pollctl_fd_type_t type)
 	return _get_funcs()->type_to_string(type);
 }
 
+extern bool pollctl_fd_type_is_read(pollctl_fd_type_t type)
+{
+	return ((type == PCTL_TYPE_READ_ONLY) ||
+		(type == PCTL_TYPE_READ_WRITE));
+}
+
+extern bool pollctl_fd_type_is_write(pollctl_fd_type_t type)
+{
+	return ((type == PCTL_TYPE_WRITE_ONLY) ||
+		(type == PCTL_TYPE_READ_WRITE));
+}
+
 extern void pollctl_init(const int max_connections)
 {
 	if (mode == POLL_MODE_INVALID)
