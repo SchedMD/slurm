@@ -102,6 +102,11 @@ sudo {slurmd_bin} -N $SLURM_NODE_NAME -b
 
 @pytest.fixture(scope="module", autouse=True)
 def setup():
+    atf.require_version(
+        (26, 5),
+        component="bin/scontrol",
+        reason="Issue 50669: PowerAction option added in 26.05",
+    )
     atf.get_run_dir_path()
     atf.require_config_parameter("ReturnToService", 2)
     atf.require_config_parameter("DebugFlags", "POWER")

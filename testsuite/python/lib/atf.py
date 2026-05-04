@@ -1798,7 +1798,7 @@ def get_version(component="sbin/slurmctld", slurm_prefix=""):
 
         version_str = (
             run_command_output(
-                f"{slurm_prefix}/{component} -V", quiet=True, user="root"
+                f"{slurm_prefix}/{component} -V", quiet=True, user="root", fatal=True
             )
             .strip()
             .replace("slurm ", "")
