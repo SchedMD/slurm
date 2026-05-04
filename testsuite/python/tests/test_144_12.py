@@ -17,7 +17,8 @@ import re
 pytestmark = pytest.mark.slow
 
 
-dyn_node = "dyn_gpu_node"
+# Needs to be in the form of nodeNN for the s2n variant
+dyn_node = "node100"
 reg_timeout = 30
 
 
