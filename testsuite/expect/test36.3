@@ -47,4 +47,4 @@ set job_id [submit_job -fail "-N1 -o /dev/null --wrap '$bin_sleep 30'"]
 #
 set output [run_command_output -fail "$bkill $job_id"]
 subtest {[regexp "Job <$job_id> is being terminated" $output]} "Verify termination message"
-subtest {![wait_for_job -timeout 15 $job_id CANCELLED]} "Verify job state is now CANCELLED"
+subtest {![wait_for_job $job_id CANCELLED]} "Verify job state is now CANCELLED"
