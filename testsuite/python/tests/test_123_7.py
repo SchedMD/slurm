@@ -113,24 +113,27 @@ def _bring_node_up(node: str):
 
 
 @pytest.mark.parametrize(
-    "resv_a, resv_b, can_replacement_overlap",
+    "resv_a, resv_b, start_time, can_replacement_overlap",
     [
         # Normal vs REPLACE_DOWN - replacement must NOT overlap
         (
             ("resv_a1", ""),
             ("resv_b1", "REPLACE_DOWN"),
+            ("now"),
             False,
         ),
         # Normal vs REPLACE - replacement must NOT overlap
         (
             ("resv_a2", ""),
             ("resv_b2", "REPLACE"),
+            ("now"),
             False,
         ),
         # MAINT vs Normal - replacement must NOT overlap
         pytest.param(
             ("resv_a3", "MAINT"),
             ("resv_b3", ""),
+            ("now"),
             False,
             marks=pytest.mark.xfail(
                 atf.get_version() < (25, 11),
@@ -141,6 +144,7 @@ def _bring_node_up(node: str):
         pytest.param(
             ("resv_a4", "MAINT"),
             ("resv_b4", "REPLACE_DOWN"),
+            ("now"),
             False,
             marks=pytest.mark.xfail(
                 atf.get_version() < (25, 11),
@@ -151,6 +155,7 @@ def _bring_node_up(node: str):
         pytest.param(
             ("resv_a5", "MAINT"),
             ("resv_b5", "REPLACE"),
+            ("now"),
             False,
             marks=pytest.mark.xfail(
                 atf.get_version() < (25, 11),
@@ -161,24 +166,45 @@ def _bring_node_up(node: str):
         (
             ("resv_a6", "OVERLAP"),
             ("resv_b6", ""),
+            ("now"),
             True,
         ),
         # OVERLAP vs REPLACE_DOWN - replacement overlap is allowed
         (
             ("resv_a7", "OVERLAP"),
             ("resv_b7", "REPLACE_DOWN"),
+            ("now"),
             True,
         ),
         # OVERLAP vs REPLACE - replacement overlap is allowed
         (
             ("resv_a8", "OVERLAP"),
             ("resv_b8", "REPLACE"),
+            ("now"),
+            True,
+        ),
+        # REOCCURRING vs MAINT - replacement must NOT overlap
+        pytest.param(
+            ("resv_a9", "MAINT"),
+            ("resv_b9", "DAILY"),
+            ("now+1day"),
+            False,
+            marks=pytest.mark.xfail(
+                atf.get_version() < (26, 5),
+                reason="Do not select replacement nodes from MAINT reservations (reoccurring)",
+            ),
+        ),
+        # REOCCURRING vs MAINT - replacement overlap is allowed
+        (
+            ("resv_a10", "MAINT"),
+            ("resv_b10", "DAILY"),
+            ("now+8day"),
             True,
         ),
     ],
 )
 def test_reservation_replacement_overlap_behavior(
-    resv_a, resv_b, can_replacement_overlap
+    resv_a, resv_b, start_time, can_replacement_overlap
 ):
     """
     1) Create A and B with names/flags
@@ -200,7 +226,7 @@ def test_reservation_replacement_overlap_behavior(
         # Create first reservation
         atf.run_command(
             f"scontrol create reservation reservationname={name_a} "
-            f"user={atf.properties['test-user']} start=now duration=1 "
+            f"user={atf.properties['test-user']} start={start_time} duration=1 "
             f"Nodes={resv_a_nodes} partition={part_name} "
             f"flags={flags_a}",
             user=atf.properties["slurm-user"],
