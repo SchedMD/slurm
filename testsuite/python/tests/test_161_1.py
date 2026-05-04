@@ -36,6 +36,7 @@ topology_yaml = """
 def setup():
     atf.require_version(
         (26, 5),
+        component="sbin/slurmd",
         reason="topology/torus3d was added in 26.05",
     )
     atf.require_nodes(32)
