@@ -1349,6 +1349,50 @@ static int _get_old_tres_pos(slurmdb_tres_rec_t **new_array,
 	return pos;
 }
 
+/*
+ * Resize and (if needed) reorder the TRES-indexed arrays in a single
+ * slurmdb_assoc_usage_t to match a new TRES count and ordering.
+ */
+static void _resize_assoc_usage_tres_arrays(slurmdb_assoc_usage_t *usage,
+					    int new_cnt, bool changed_size,
+					    bool changed_pos)
+{
+	int array_size = sizeof(uint64_t) * new_cnt;
+	int d_array_size = sizeof(long double) * new_cnt;
+
+	if (changed_size) {
+		usage->tres_cnt = new_cnt;
+		xrealloc(usage->grp_used_tres, array_size);
+		xrealloc(usage->grp_used_tres_run_secs, array_size);
+		xrealloc(usage->usage_tres_raw, d_array_size);
+	}
+
+	if (changed_pos) {
+		uint64_t grp_used_tres[new_cnt];
+		uint64_t grp_used_tres_run_secs[new_cnt];
+		long double usage_tres_raw[new_cnt];
+
+		memset(grp_used_tres, 0, array_size);
+		memset(grp_used_tres_run_secs, 0, array_size);
+		memset(usage_tres_raw, 0, d_array_size);
+
+		for (int i = 0; i < new_cnt; i++) {
+			int old_pos = assoc_mgr_tres_old_pos[i];
+			if (old_pos == -1)
+				continue;
+
+			grp_used_tres[i] = usage->grp_used_tres[old_pos];
+			grp_used_tres_run_secs[i] =
+				usage->grp_used_tres_run_secs[old_pos];
+			usage_tres_raw[i] = usage->usage_tres_raw[old_pos];
+		}
+		memcpy(usage->grp_used_tres, grp_used_tres, array_size);
+		memcpy(usage->grp_used_tres_run_secs, grp_used_tres_run_secs,
+		       array_size);
+		memcpy(usage->usage_tres_raw, usage_tres_raw, d_array_size);
+	}
+}
+
 /* assoc, qos and tres write lock should be locked before calling this
  * return 1 if callback is needed */
 extern int assoc_mgr_post_tres_list(list_t *new_list)
@@ -1464,45 +1508,15 @@ extern int assoc_mgr_post_tres_list(list_t *new_list)
 			if (!assoc_rec->usage)
 				continue;
 
-			/* Need to increase the size of the usage counts. */
-			if (changed_size) {
-				assoc_rec->usage->tres_cnt = new_cnt;
-				xrealloc(assoc_rec->usage->grp_used_tres,
-					 array_size);
-				xrealloc(assoc_rec->usage->
-					 grp_used_tres_run_secs,
-					 array_size);
-				xrealloc(assoc_rec->usage->usage_tres_raw,
-					 d_array_size);
-			}
+			_resize_assoc_usage_tres_arrays(assoc_rec->usage,
+							new_cnt, changed_size,
+							changed_pos);
 
-
-			if (changed_pos) {
-				memset(grp_used_tres, 0, array_size);
-				memset(grp_used_tres_run_secs, 0, array_size);
-				memset(usage_tres_raw, 0, d_array_size);
-
-				for (i=0; i<new_cnt; i++) {
-					int old_pos = assoc_mgr_tres_old_pos[i];
-					if (old_pos == -1)
-						continue;
-
-					grp_used_tres[i] = assoc_rec->
-						usage->grp_used_tres[old_pos];
-					grp_used_tres_run_secs[i] = assoc_rec->
-						usage->grp_used_tres_run_secs
-						[old_pos];
-					usage_tres_raw[i] =
-						assoc_rec->usage->usage_tres_raw
-						[old_pos];
-				}
-				memcpy(assoc_rec->usage->grp_used_tres,
-				       grp_used_tres, array_size);
-				memcpy(assoc_rec->usage->grp_used_tres_run_secs,
-				       grp_used_tres_run_secs, array_size);
-				memcpy(assoc_rec->usage->usage_tres_raw,
-				       usage_tres_raw, d_array_size);
-			}
+			if (assoc_rec->leaf_usage &&
+			    (assoc_rec->leaf_usage != assoc_rec->usage))
+				_resize_assoc_usage_tres_arrays(
+					assoc_rec->leaf_usage, new_cnt,
+					changed_size, changed_pos);
 		}
 		list_iterator_destroy(itr);
 
