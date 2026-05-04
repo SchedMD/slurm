@@ -9302,6 +9302,15 @@ static int _unpack_launch_tasks_request_msg(slurm_msg_t *smsg, buf_t *buffer)
 		}
 		safe_unpack32(&msg->het_job_offset, buffer);
 		safe_unpack32(&msg->het_job_step_cnt, buffer);
+		/*
+		 * het_job_step_task_cnts is not present in the pre-25.05 RPC.
+		 * Initialize a zero-filled array so the re-pack to slurmstepd
+		 * at SLURM_PROTOCOL_VERSION has a valid pointer.
+		 */
+		if ((msg->het_job_offset < NO_VAL) &&
+		    (msg->het_job_step_cnt > 0))
+			safe_xcalloc(msg->het_job_step_task_cnts,
+				     msg->het_job_step_cnt, sizeof(uint32_t));
 		safe_unpack32(&msg->het_job_task_offset, buffer);
 		safe_unpackstr(&msg->het_job_node_list, buffer);
 		safe_unpack32(&msg->mpi_plugin_id, buffer);
