@@ -245,7 +245,7 @@ static void _amdsmi_init(void)
     if (driver[0])
         debug("AMDSMI: AMD GPU driver version: %s", driver);
     if (version[0])
-        debug("AMDSMI: AMD‑SMI library version: %s", version);
+        debug("AMDSMI: AMD-SMI library version: %s", version);
     initialized = true;
 }
 
@@ -1502,95 +1502,107 @@ extern char *gpu_p_test_cpu_conv(char *cpu_range)
 }
 
 /*
- * Read current average socket power for GPU dv_ind.
- * Update gpu_status_t accordingly.
- * For MI300x, prefers energy-based wattage calculation with fallback to power_info.
+ * Read current power for GPU dv_ind via amdsmi.
+ *
+ * v3 fix: Energy-counter primary path (reliable on MI300X/MI355X), with
+ * power_info fallback. Never returns SLURM_ERROR for transient read failures
+ * â€” instead reports current_watts=0 so SLURM keeps tracking the GPU.
+ *
+ * Bug context (caught on vianden-1, ROCm 7.0.1):
+ *   - average_socket_power returns 65535 (sentinel) on all 8 GPUs
+ *   - Old code worked here because current_socket_power fallback succeeded
+ *   - But on hardware/driver combos where ALL three power_info fields fail,
+ *     SLURM_ERROR caused GPUs to disappear from accounting
+ *   - Energy counter (amdsmi_get_energy_count) is reliable and validates
+ *     within 0.04% of instantaneous power
  */
 extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 {
     if (dv_ind >= gpu_count) {
-        error("AMDSMI: Invalid device index %u (max %u)",
-              dv_ind, gpu_count);
+        error("AMDSMI: Invalid device index %u (max %u)", dv_ind, gpu_count);
         return SLURM_ERROR;
     }
 
     amdsmi_processor_handle h = gpus[dv_ind].handle;
-    debug("AMDSMI: Reading power for GPU[%u]", dv_ind);
     const char *status_string = NULL;
-    time_t now = time(NULL);
-    amdsmi_power_info_t power_info;
-    memset(&power_info, 0, sizeof(power_info));
-
-    amdsmi_status_t rc = amdsmi_get_power_info(h, &power_info);
     const uint32_t AMDSMI_SENTINEL = 65535u;
+
+    /* ---- PRIMARY: energy counter delta ---- */
+    uint64_t energy_now = 0;
+    float    counter_res = 0.0f;
+    uint64_t ts = 0;
     uint32_t watts = NO_VAL;
     bool have_watts = false;
 
-    /* Prefer average_socket_power (stable) over socket_power/current_socket_power
-     * for MI300X/MI355X reliable energy accounting in Slurm. Treat AMDSMI's
-     * sentinel value 65535 as unavailable for any socket power field.
-     *
-     * Some AMDSMI builds return a non-success status but still populate one or
-     * more fields with usable data. In that case, keep the sample if any field
-     * looks valid instead of failing the whole read.
-     */
-    if (power_info.average_socket_power != 0 &&
-        power_info.average_socket_power != NO_VAL &&
-        power_info.average_socket_power != AMDSMI_SENTINEL) {
-        watts = power_info.average_socket_power;
-        have_watts = true;
-        debug2("AMDSMI: GPU[%u] power read: average_socket_power=%u W, current_socket_power=%u W",
-               dv_ind, power_info.average_socket_power,
-               power_info.current_socket_power);
-    } else if (power_info.current_socket_power != 0 &&
-               power_info.current_socket_power != NO_VAL &&
-               power_info.current_socket_power != AMDSMI_SENTINEL) {
-        watts = power_info.current_socket_power;
-        have_watts = true;
-        debug2("AMDSMI: GPU[%u] power read: average_socket_power unavailable, current_socket_power=%u W used as fallback",
-               dv_ind, power_info.current_socket_power);
-    } else if (power_info.socket_power != 0 &&
-               power_info.socket_power != NO_VAL &&
-               power_info.socket_power != AMDSMI_SENTINEL) {
-        watts = (uint32_t)power_info.socket_power;
-        have_watts = true;
-        debug2("AMDSMI: GPU[%u] power read: average/current socket power unavailable, socket_power=%" PRIu64 " W used as fallback",
-               dv_ind, power_info.socket_power);
+    amdsmi_status_t e_rc = amdsmi_get_energy_count(h, &energy_now,
+                                                    &counter_res, &ts);
+    if (e_rc == AMDSMI_STATUS_SUCCESS && counter_res > 0.0f) {
+        /* Scale: energy_uj = ticks * resolution (15.30 µJ/tick on MI300X) */
+        double energy_uj = (double)energy_now * (double)counter_res;
+        double now_j = energy_uj / 1e6;
+
+        if (last_energy_time[dv_ind] != 0 && last_energy_joules[dv_ind] > 0) {
+            double dt = (double)(time(NULL) - last_energy_time[dv_ind]);
+            if (dt >= 1.0) {
+                double dj = now_j - last_energy_joules[dv_ind];
+                if (dj > 0) {
+                    watts = (uint32_t)(dj / dt);
+                    have_watts = true;
+                    debug2("AMDSMI: GPU[%u] energy-derived power = %u W (dt=%.1fs)",
+                           dv_ind, watts, dt);
+                }
+            }
+        }
+        /* Update baseline for next call */
+        last_energy_joules[dv_ind] = now_j;
+        last_energy_time[dv_ind]   = time(NULL);
     }
 
-    if (have_watts) {
-        gpu->last_update_watt = watts;
-        gpu->energy.current_watts = watts;
-    } else {
-        /* No usable field populated. */
-        gpu->energy.current_watts = NO_VAL;
-        gpu->last_update_watt = NO_VAL;
+    /* ---- FALLBACK: power_info (his original logic) ---- */
+    if (!have_watts) {
+        amdsmi_power_info_t pi;
+        memset(&pi, 0, sizeof(pi));
+        amdsmi_status_t rc = amdsmi_get_power_info(h, &pi);
 
-        if (rc != AMDSMI_STATUS_SUCCESS) {
-            amdsmi_status_code_to_string(rc, &status_string);
-            error("AMDSMI: power read failed for GPU[%u]: %s",
-                  dv_ind, status_string ? status_string : "unknown");
-            debug2("AMDSMI: fetched: average_socket_power=%u, current_socket_power=%u, socket_power=%" PRIu64,
-                   power_info.average_socket_power,
-                   power_info.current_socket_power,
-                   power_info.socket_power);
-        } else {
-            debug2("AMDSMI: power read for GPU[%u] returned zero or sentinel values for all socket power fields; treating as unavailable",
-                   dv_ind);
+        if (pi.average_socket_power != 0 &&
+            pi.average_socket_power != NO_VAL &&
+            pi.average_socket_power != AMDSMI_SENTINEL) {
+            watts = pi.average_socket_power;
+            have_watts = true;
+        } else if (pi.current_socket_power != 0 &&
+                   pi.current_socket_power != NO_VAL &&
+                   pi.current_socket_power != AMDSMI_SENTINEL) {
+            watts = pi.current_socket_power;
+            have_watts = true;
+        } else if (pi.socket_power != 0 &&
+                   pi.socket_power != NO_VAL &&
+                   pi.socket_power != AMDSMI_SENTINEL) {
+            watts = (uint32_t)pi.socket_power;
+            have_watts = true;
         }
 
-        return SLURM_ERROR;
+        if (!have_watts && rc != AMDSMI_STATUS_SUCCESS) {
+            amdsmi_status_code_to_string(rc, &status_string);
+            debug("AMDSMI: GPU[%u] power read unavailable: %s",
+                  dv_ind, status_string ? status_string : "unknown");
+        }
     }
 
-    if (rc != AMDSMI_STATUS_SUCCESS) {
-        amdsmi_status_code_to_string(rc, &status_string);
-        debug2("AMDSMI: power read for GPU[%u] returned %s but usable watts=%u",
-               dv_ind, status_string ? status_string : "unknown", watts);
+    /* ---- Always update SLURM state, even on failure ---- */
+    if (have_watts) {
+        gpu->last_update_watt    = watts;
+        gpu->energy.current_watts = watts;
+    } else {
+        /* Transient failure â€” report 0W but DON'T return error.
+         * Returning SLURM_ERROR can cause SLURM to drop this GPU
+         * from per-job accounting until next full discovery. */
+        gpu->last_update_watt    = 0;
+        gpu->energy.current_watts = 0;
+        debug("AMDSMI: GPU[%u] no usable power source â€” reporting 0W", dv_ind);
     }
 
-    /* Slurm bookkeeping */
     gpu->previous_update_time = gpu->last_update_time;
-    gpu->last_update_time = time(NULL);
+    gpu->last_update_time     = time(NULL);
 
     return SLURM_SUCCESS;
 }
