@@ -4639,7 +4639,8 @@ static int _foreach_job_start_data_part(void *x, void *arg)
 		resp_data->start_time = MAX(job_ptr->start_time,
 					    orig_start_time);
 		resp_data->start_time = MAX(resp_data->start_time, start_res);
-		job_ptr->start_time   = 0;  /* restore pending job start time */
+		/* restore pending job start time to what backfill set */
+		job_ptr->start_time = orig_start_time;
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		resp_data->part_name  = xstrdup(part_ptr->name);
 
