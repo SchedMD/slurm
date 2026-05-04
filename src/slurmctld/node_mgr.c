@@ -2713,6 +2713,7 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 		if (rc) {
 			info("%s: invalid node_name (%s)",
 			     __func__, node_names);
+			FREE_NULL_BITMAP(node_bitmap);
 			return rc;
 		}
 
