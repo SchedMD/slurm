@@ -405,7 +405,10 @@ def test_remote_license_absolute(do_licenses):
     do_licenses(remote_license)
 
 
-@pytest.mark.skipif(atf.get_version() < (26, 5), reason="SharedPool added in 26.05.")
+@pytest.mark.skipif(
+    atf.get_version("bin/sacctmgr") < (26, 5),
+    reason="Issue 50784: SharedPool added in 26.05.",
+)
 def test_remote_license_sharedpool(do_licenses):
     """Remote licenses - Percent,SharedPool"""
 
@@ -470,7 +473,10 @@ def test_remote_license_sharedpool(do_licenses):
     do_licenses(remote_license)
 
 
-@pytest.mark.skipif(atf.get_version() < (26, 5), reason="SharedPool added in 26.05.")
+@pytest.mark.skipif(
+    atf.get_version("bin/sacctmgr") < (26, 5),
+    reason="Issue 50784: SharedPool added in 26.05.",
+)
 def test_remote_license_add_sharedpool(do_licenses):
     """Test adding SharedPool flag to existing external license"""
 
@@ -520,7 +526,10 @@ def test_remote_license_add_sharedpool(do_licenses):
     do_licenses(remote_license)
 
 
-@pytest.mark.skipif(atf.get_version() < (26, 5), reason="SharedPool added in 26.05.")
+@pytest.mark.skipif(
+    atf.get_version("bin/sacctmgr") < (26, 5),
+    reason="Issue 50784: SharedPool added in 26.05.",
+)
 def test_remote_license_abs_sharedpool(do_licenses):
     """Remote licenses - Absolute,SharedPool"""
 
