@@ -482,8 +482,10 @@ def module_teardown():
                 coredump = coredump_new
 
             # Get the binary that generated the coredump
+            # Using "-P elf_phnum=65536" to avoid the "too many program headers"
+            # issues in some core files.
             file_out = atf.run_command_output(
-                f"file {coredump}", user="root", quiet=True
+                f"file -P elf_phnum=65536 {coredump}", user="root", quiet=True
             )
             bin_match = re.search(r"execfn: '([^']+)'", file_out) or re.search(
                 r"from '([^']+)'", file_out
