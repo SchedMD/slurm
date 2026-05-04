@@ -155,6 +155,10 @@ def dynamic_slurmd():
         )
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Issue 50653: slurmd -Z defaults to Autodetect=Full in 26.05",
+)
 def test_dynamic_norm_default_autodetect_full_adopts_fake_gpu(dynamic_slurmd):
     """Empty gres.conf: autofill promotes to GPU_FULL and adopts the fake GPU."""
     _write_gres_conf("")
@@ -165,6 +169,10 @@ def test_dynamic_norm_default_autodetect_full_adopts_fake_gpu(dynamic_slurmd):
     _assert_gres_has(node, "gpu:1")
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Issue 50653: Autodetect=Full in gres.conf added in 26.05",
+)
 def test_dynamic_norm_explicit_autodetect_full_adopts_fake_gpu(dynamic_slurmd):
     """Autodetect=full in gres.conf uses the full plugin probe path."""
     _write_gres_conf("Autodetect=full\n")
@@ -175,6 +183,10 @@ def test_dynamic_norm_explicit_autodetect_full_adopts_fake_gpu(dynamic_slurmd):
     _assert_gres_has(node, "gpu:a100:1")
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Issue 50653: slurmd -Z defaults to Autodetect=Full in 26.05",
+)
 def test_dynamic_norm_autofills_gres_into_nodeline(dynamic_slurmd):
     """Bare `slurmd -Z` autofills Gres= and emits the autofill info log line.
 
@@ -231,6 +243,10 @@ def test_dynamic_norm_skips_autofill_when_gres_conf_has_name_gpu(dynamic_slurmd)
     )
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Issue 50653: slurmd -Z defaults to Autodetect=Full in 26.05",
+)
 def test_dynamic_norm_autofills_when_name_gpu_scoped_to_other_node(dynamic_slurmd):
     """Name=gpu scoped to a different NodeName= must NOT suppress autofill here.
 
@@ -335,6 +351,10 @@ def test_dynamic_norm_explicit_gres_conf_disables_adopt_all(dynamic_slurmd):
     ), f"adopt-all appears to have fired, got Gres={gres!r}"
 
 
+@pytest.mark.skipif(
+    atf.get_version("sbin/slurmd") < (26, 5),
+    reason="Issue 50653: slurmd -Z defaults to Autodetect=Full in 26.05",
+)
 def test_dynamic_norm_autofills_gpu_with_other_gres_in_conf(dynamic_slurmd):
     """A non-GPU --conf Gres entry does not suppress GPU autofill."""
     _write_gres_conf("")
