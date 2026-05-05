@@ -142,11 +142,12 @@ static int tctx_num = -1;
 static void _free_topology_ctx_members(topology_ctx_t *tctx_ptr)
 {
 	if (tctx_ptr) {
-		/* topology/flat has NULL config */
 		if (!xstrcmp(tctx_ptr->plugin, "topology/tree"))
 			free_topology_tree_config(tctx_ptr->config);
 		else if (!xstrcmp(tctx_ptr->plugin, "topology/block"))
 			free_topology_block_config(tctx_ptr->config);
+		else if (!xstrcmp(tctx_ptr->plugin, "topology/flat"))
+			free_topology_flat_config(tctx_ptr->config);
 		else if (!xstrcmp(tctx_ptr->plugin, "topology/ring"))
 			free_topology_ring_config(tctx_ptr->config);
 		else if (!xstrcmp(tctx_ptr->plugin, "topology/torus3d"))
@@ -940,6 +941,11 @@ extern void free_topology_block_config(topology_block_config_t *config)
 		FREE_NULL_LIST(config->block_sizes);
 		xfree(config);
 	}
+}
+
+extern void free_topology_flat_config(topology_flat_config_t *config)
+{
+	xfree(config);
 }
 
 static void _free_ring_conf_members(slurm_conf_ring_t *config)
