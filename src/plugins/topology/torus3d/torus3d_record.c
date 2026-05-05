@@ -404,14 +404,15 @@ static uint16_t _gcd(uint16_t a, uint16_t b)
 }
 
 /*
- * Check if two periodic sub-cube grids overlap on a single axis modeled in
- * infinite space. By Bezout's identity the set of distances between anchors
- * is {delta + m * gcd(s_a, s_b) : m in Z}.
+ * Check if two periodic sub-cube grids overlap on a single torus axis.
+ * By Bezout's identity the set of distances between anchors is
+ * {delta + m * gcd(s_a, s_b, L) : m in Z}, where L is the torus size.
  */
 static bool _grids_overlap_axis(uint16_t seed_a, uint16_t s_a, uint16_t dim_a,
-				uint16_t seed_b, uint16_t s_b, uint16_t dim_b)
+				uint16_t seed_b, uint16_t s_b, uint16_t dim_b,
+				uint16_t L)
 {
-	uint16_t g = _gcd(s_a, s_b);
+	uint16_t g = _gcd(_gcd(s_a, s_b), L);
 	uint16_t r;
 
 	xassert(g);
@@ -464,17 +465,17 @@ static void _detect_placement_overlaps(torus3d_record_t *torus)
 						p->anchor_spacing.x, p->dims.x,
 						q->anchor_seed.x,
 						q->anchor_spacing.x,
-						q->dims.x) &&
+						q->dims.x, torus->x) &&
 			    _grids_overlap_axis(p->anchor_seed.y,
 						p->anchor_spacing.y, p->dims.y,
 						q->anchor_seed.y,
 						q->anchor_spacing.y,
-						q->dims.y) &&
+						q->dims.y, torus->y) &&
 			    _grids_overlap_axis(p->anchor_seed.z,
 						p->anchor_spacing.z, p->dims.z,
 						q->anchor_seed.z,
 						q->anchor_spacing.z,
-						q->dims.z)) {
+						q->dims.z, torus->z)) {
 				p->has_overlap = true;
 				q->has_overlap = true;
 			}
