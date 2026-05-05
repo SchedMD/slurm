@@ -192,10 +192,15 @@ static void _update_energy(gpu_status_t *gpu, uint32_t readings)
 					e->current_watts);
 		e->previous_consumed_energy = e->consumed_energy;
 		e->consumed_energy += e->base_consumed_energy;
+		debug2("gpu: %d, current watts: %u, previous watts: %u, consumed %"PRIu64" Joules %"PRIu64" new, ave watts %u",
+		       gpu->dv_ind, e->current_watts, prev_watts,
+		       e->consumed_energy, e->base_consumed_energy, e->ave_watts);
 	} else {
 		e->consumed_energy = 0;
 		e->ave_watts = 0;
 		e->current_watts = gpu->last_update_watt;
+		debug2("gpu: %d, current watts: %u, no previous watts, can't calculate energy",
+		       gpu->dv_ind, e->current_watts);
 	}
 	e->poll_time = time(NULL);
 }

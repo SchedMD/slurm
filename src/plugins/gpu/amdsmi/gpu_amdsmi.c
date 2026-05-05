@@ -1553,6 +1553,8 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
                     have_watts = true;
                     info("AMDSMI: GPU[%u] energy-derived power = %u W (dt=%.1fs)",
                            dv_ind, watts, dt);
+                    debug2("AMDSMI: GPU[%u] I found watts, %s", dv_ind,
+                           (have_watts ? "success" : "failure"));
                 }
             }
         }
@@ -1597,7 +1599,8 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     /* ---- Always update SLURM state, even on failure ---- */
     if (have_watts) {
         gpu->last_update_watt    = watts;
-        //gpu->energy.current_watts = watts;
+        gpu->energy.current_watts = watts;
+        info("AMDSMI: GPU[%u] power reading = %u W", dv_ind, watts);
     } else {
         /* Transient failure â€” report 0W but DON'T return error.
          * Returning SLURM_ERROR can cause SLURM to drop this GPU
