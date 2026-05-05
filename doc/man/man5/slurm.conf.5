@@ -1772,6 +1772,14 @@ By default, no program will be executed.
 .IP
 
 .TP
+\fBHealthCheckTimeout\fR
+Time in seconds that \fBHealthCheckProgram\fR is allowed to run. The default
+value is 60. \fBHealthCheckTimeout\fR should be less than
+\fBHealthCheckInterval\fR; an error is logged otherwise. A value of 0 is not
+allowed and is reset to default. The maximum value is 65535.
+.IP
+
+.TP
 \fBHttpParserType\fR
 Specify the http_parser implementation that will be used. Default is
 \fIhttp_parser/libhttp_parser\fR.

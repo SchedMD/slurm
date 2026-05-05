@@ -1614,6 +1614,7 @@ _print_conf(void)
 
 	debug3("Logfile     = `%s'",     conf->logfile);
 	debug3("HealthCheck = `%s'",     cf->health_check_program);
+	debug3("HealthCheckTimeout = %u", cf->health_check_timeout);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 
@@ -3421,6 +3422,7 @@ extern int run_script_health_check(void)
 		char **env = env_array_create();
 		char *cmd_argv[2];
 		char *resp = NULL;
+
 		/*
 		 * We can point script_argv to cmd_argv now (before setting
 		 * values inside cmd_argv) since cmd_argv is on the stack
@@ -3428,7 +3430,7 @@ extern int run_script_health_check(void)
 		 */
 		run_command_args_t run_command_args = {
 			.job_id = 0, /* implicit job_id = 0 */
-			.max_wait = 60 * 1000,
+			.max_wait = slurm_conf.health_check_timeout * 1000,
 			.script_argv = cmd_argv,
 			.script_path = slurm_conf.health_check_program,
 			.script_type = "health_check",

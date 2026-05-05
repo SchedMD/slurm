@@ -285,6 +285,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckNodeState", S_P_STRING},
 	{"HealthCheckProgram", S_P_STRING},
+	{"HealthCheckTimeout", S_P_UINT16},
 	{"HttpParserType", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"InteractiveStepOptions", S_P_STRING},
@@ -2931,6 +2932,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->hash_val = NO_VAL;
 	conf->health_check_interval = 0;
 	xfree(conf->health_check_program);
+	conf->health_check_timeout = DEFAULT_HEALTH_CHECK_TIMEOUT;
 	xfree(conf->http_parser_type);
 	conf->inactive_limit = NO_VAL16;
 	xfree(conf->interactive_step_opts);
@@ -4240,6 +4242,24 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	(void) s_p_get_string(&conf->health_check_program, "HealthCheckProgram",
 			      hashtbl);
+
+	if (s_p_get_uint16(&conf->health_check_timeout, "HealthCheckTimeout",
+			   hashtbl)) {
+		if (conf->health_check_timeout == 0) {
+			error_in_daemon(
+				"HealthCheckTimeout %u invalid, resetting to default (%u).",
+				conf->health_check_timeout,
+				DEFAULT_HEALTH_CHECK_TIMEOUT);
+			conf->health_check_timeout =
+				DEFAULT_HEALTH_CHECK_TIMEOUT;
+		}
+	}
+	if ((conf->health_check_interval > 0) &&
+	    (conf->health_check_timeout >= conf->health_check_interval))
+		error_in_daemon(
+			"HealthCheckTimeout (%u) must be less than HealthCheckInterval (%u), please review.",
+			conf->health_check_timeout,
+			conf->health_check_interval);
 
 	if (!s_p_get_string(&conf->http_parser_type, "HttpParserType", hashtbl))
 		conf->http_parser_type = xstrdup(DEFAULT_HTTP_PARSER_TYPE);

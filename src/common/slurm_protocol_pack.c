@@ -4533,6 +4533,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		pack16(conf->health_check_interval, buffer);
 		pack16(conf->health_check_node_state, buffer);
 		packstr(conf->health_check_program, buffer);
+		pack16(conf->health_check_timeout, buffer);
 
 		packstr(conf->http_parser_type, buffer);
 
@@ -5604,6 +5605,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpack16(&conf->health_check_interval, buffer);
 		safe_unpack16(&conf->health_check_node_state, buffer);
 		safe_unpackstr(&conf->health_check_program, buffer);
+		safe_unpack16(&conf->health_check_timeout, buffer);
 
 		safe_unpackstr(&conf->http_parser_type, buffer);
 
