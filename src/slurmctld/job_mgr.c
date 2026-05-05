@@ -11162,6 +11162,13 @@ static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 			pack32(NO_VAL, buffer);
 
 		pack16(get_job_exclusive_display_value(job_ptr), buffer);
+		/*
+		 * Legacy job_info_t.shared. Still packed so the older
+		 * data_parser versions (v0.0.42-v0.0.44) keep returning a
+		 * meaningful "shared" REST field. Drop this pack16 (and the
+		 * matching unpack in _unpack_job_info_members) once the
+		 * minimum supported data_parser version is v0.0.45.
+		 */
 		pack16(shared, buffer);
 		pack16(get_job_oversubscribe_value(job_ptr), buffer);
 
