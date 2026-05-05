@@ -270,12 +270,6 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg);
 
 extern void stepd_step_rec_destroy(void);
 
-srun_info_t *srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
-			      slurm_addr_t *respaddr, slurm_addr_t *ioaddr,
-			      uid_t uid, uint16_t protocol_version);
-
-void  srun_info_destroy(srun_info_t *srun);
-
 stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
 					  char *ifname, char *ofname,
 					  char *efname);

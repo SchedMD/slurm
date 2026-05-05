@@ -123,6 +123,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->std_err);
 	xfree(step_ptr->std_in);
 	xfree(step_ptr->std_out);
+	slurm_free_job_step_create_request_msg(step_ptr->step_req);
 	xfree(step_ptr->submit_line);
 	xfree(step_ptr->tres_bind);
 	xfree(step_ptr->tres_freq);
@@ -923,6 +924,15 @@ static void _pack_step_state(void *object, uint16_t protocol_version,
 				     step_ptr->step_layout->node_cnt, buffer);
 		else
 			pack64_array(step_ptr->memory_allocated, 0, buffer);
+
+		packbool(!!step_ptr->step_req, buffer);
+		if (step_ptr->step_req) {
+			slurm_msg_t step_req_msg;
+			slurm_msg_t_init(&step_req_msg);
+			step_req_msg.protocol_version = protocol_version;
+			step_req_msg.data = step_ptr->step_req;
+			pack_job_step_create_request_msg(&step_req_msg, buffer);
+		}
 	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		pack32(step_ptr->step_id.step_id, buffer);
 		pack32(step_ptr->step_id.step_het_comp, buffer);
@@ -1131,8 +1141,10 @@ extern int dump_job_step_state(void *x, void *arg)
 extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 			   uint16_t protocol_version)
 {
+	bool has_step_req;
 	step_record_t *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
+	job_step_create_request_msg_t *step_req = NULL;
 	uint8_t uint8_tmp;
 	uint16_t cyclic_alloc, port;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
@@ -1247,6 +1259,17 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack64_array(&memory_allocated, &tmp32, buffer);
 		if (tmp32 == 0)
 			xfree(memory_allocated);
+
+		safe_unpackbool(&has_step_req, buffer);
+		if (has_step_req) {
+			slurm_msg_t step_req_msg;
+			slurm_msg_t_init(&step_req_msg);
+			step_req_msg.protocol_version = protocol_version;
+			if (unpack_job_step_create_request_msg(&step_req_msg,
+							       buffer))
+				goto unpack_error;
+			step_req = step_req_msg.data;
+		}
 	} else if (protocol_version >= SLURM_25_05_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
@@ -1438,6 +1461,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->memory_allocated = memory_allocated;
 	memory_allocated = NULL;
 	step_ptr->name         = name;
+	step_ptr->step_req     = step_req;
 	step_ptr->network      = network;
 	step_ptr->flags        = flags;
 	step_ptr->gres_list_req = gres_list_req;
@@ -1573,6 +1597,7 @@ unpack_error:
 	xfree(tres_per_socket);
 	xfree(tres_per_task);
 
+	slurm_free_job_step_create_request_msg(step_req);
 	return SLURM_ERROR;
 }
 

@@ -451,22 +451,22 @@ static int _setup_normal_io(void)
 		int srun_stdout_tasks = -1;
 		int srun_stderr_tasks = -1;
 
-		xassert(srun != NULL);
-
 		/* If I/O is labelled with task num, and if a separate file is
 		   written per node or per task, the I/O needs to be sent
 		   back to the stepd, get a label appended, and written from
 		   the stepd rather than sent back to srun or written directly
 		   from the node.  When a task has ofname or efname == NULL, it
 		   means data gets sent back to the client. */
-		if (step->flags & LAUNCH_LABEL_IO) {
+		if ((step->flags & LAUNCH_LABEL_IO) ||
+		    (step->flags & LAUNCH_LOCAL_IO)) {
+			int file_flags = io_get_file_flags();
+			bool labelio =
+				(step->flags & LAUNCH_LABEL_IO) ? true : false;
 			slurmd_filename_pattern_t outpattern, errpattern;
 			bool same = false;
-			int file_flags;
 
 			io_find_filename_pattern(&outpattern, &errpattern,
 						 &same);
-			file_flags = io_get_file_flags();
 
 			/* Make eio objects to write from the slurmstepd */
 			if (outpattern == SLURMD_ALL_UNIQUE) {
@@ -474,7 +474,7 @@ static int _setup_normal_io(void)
 				for (ii = 0; ii < step->node_tasks; ii++) {
 					rc = io_create_local_client(
 						step->task[ii]->ofname,
-						file_flags, 1,
+						file_flags, labelio,
 						step->task[ii]->id,
 						same ? step->task[ii]->id : -2);
 					if (rc != SLURM_SUCCESS) {
@@ -491,7 +491,8 @@ static int _setup_normal_io(void)
 				/* Open a file for all tasks */
 				rc = io_create_local_client(step->task[0]
 								    ->ofname,
-							    file_flags, 1, -1,
+							    file_flags, labelio,
+							    -1,
 							    same ? -1 : -2);
 				if (rc != SLURM_SUCCESS) {
 					error("Could not open output file %s: %m",
@@ -511,7 +512,8 @@ static int _setup_normal_io(void)
 					     ii < step->node_tasks; ii++) {
 						rc = io_create_local_client(
 							step->task[ii]->efname,
-							file_flags, 1, -2,
+							file_flags, labelio,
+							-2,
 							step->task[ii]->id);
 						if (rc != SLURM_SUCCESS) {
 							error("Could not open error file %s: %m",
@@ -526,7 +528,7 @@ static int _setup_normal_io(void)
 					/* Open a file for all tasks */
 					rc = io_create_local_client(
 						step->task[0]->efname,
-						file_flags, 1, -2, -1);
+						file_flags, labelio, -2, -1);
 					if (rc != SLURM_SUCCESS) {
 						error("Could not open error file %s: %m",
 						      step->task[0]->efname);
@@ -538,7 +540,8 @@ static int _setup_normal_io(void)
 			}
 		}
 
-		if (io_initial_client_connect(srun, srun_stdout_tasks,
+		if (!(step->flags & LAUNCH_LOCAL_IO) &&
+		    io_initial_client_connect(srun, srun_stdout_tasks,
 					      srun_stderr_tasks) < 0) {
 			rc = ESLURMD_IO_ERROR;
 			goto claim;
@@ -2122,7 +2125,7 @@ static int _fork_all_tasks(bool *io_initialized)
 	 * Temporarily drop effective privileges, except for the euid.
 	 * We need to wait until after pam_setup() to drop euid.
 	 */
-	if (drop_privileges (step, false, &sprivs, true) < 0)
+	if (drop_privileges(step, false, &sprivs, true) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 
 	if (pam_setup(step->user_name, conf->hostname)
@@ -2914,7 +2917,7 @@ static void _send_launch_resp(int rc)
 	launch_tasks_response_msg_t resp;
 	srun_info_t *srun = list_peek(step->sruns);
 
-	if (step->batch)
+	if (step->batch || !srun)
 		return;
 
 	debug("Sending launch resp rc=%d", rc);

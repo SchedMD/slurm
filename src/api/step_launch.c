@@ -238,11 +238,12 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		return SLURM_ERROR;
 	}
 
-	/* Create message receiving sockets and handler thread */
-	rc = _create_listeners(ctx->launch_state,
-			       ctx->step_resp->step_layout->node_cnt);
-	if (rc != SLURM_SUCCESS)
-		return rc;
+	if (!(ctx->step_req->flags & SSF_ASYNC)) {
+		rc = _create_listeners(ctx->launch_state,
+				       ctx->step_resp->step_layout->node_cnt);
+		if (rc != SLURM_SUCCESS)
+			return rc;
+	}
 
 	/* Start tasks on compute nodes */
 	memcpy(&launch.step_id, &ctx->step_req->step_id,
@@ -269,16 +270,21 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	if (params->env == NULL) {
 		/*
 		 * If the user didn't specify an environment, then use the
-		 * environment of the running process
+		 * environment of the running process except when this is
+		 * running in a daemon (ex: async steps)
 		 */
-		env_array_merge(&env, (const char **)environ);
+		if (!running_in_daemon())
+			env_array_merge(&env, (const char **) environ);
 	} else {
 		env_array_merge(&env, (const char **)params->env);
 	}
 	if (params->het_job_ntasks != NO_VAL)
 		preserve_env = true;
 	env_array_for_step(&env, ctx->step_resp, &launch,
-			   ctx->launch_state->resp_port[0], preserve_env);
+			   ctx->launch_state->resp_port ?
+				   ctx->launch_state->resp_port[0] :
+				   0,
+			   preserve_env);
 	env_array_merge(&env, (const char **)mpi_env);
 	env_array_free(mpi_env);
 
@@ -334,6 +340,8 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		launch.flags |= LAUNCH_WAIT_FOR_CHILDREN;
 	if (ctx->step_req->flags & SSF_KILL_ON_BAD_EXIT)
 		launch.flags |= LAUNCH_KILL_ON_BAD_EXIT;
+	if (ctx->step_req->flags & SSF_ASYNC)
+		launch.flags |= LAUNCH_LOCAL_IO;
 
 	launch.task_dist	= params->task_dist;
 	if (params->pty)
@@ -350,9 +358,21 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
-	launch.ofname = params->remote_output_filename;
-	launch.efname = params->remote_error_filename;
-	launch.ifname = params->remote_input_filename;
+	/*
+	 * Async steps have no client-side I/O sink, so a NULL filename means
+	 * "use a sensible default" rather than "route via the listener".
+	 * launch.ofname/efname are borrowed (not xstrdup'd, not freed by this
+	 * path), so a string literal is safe here.
+	 */
+	if ((ctx->step_req->flags & SSF_ASYNC) && !params->output_filename)
+		launch.ofname = "slurm-%J.out";
+	else
+		launch.ofname = params->output_filename;
+	if (!params->error_filename)
+		launch.efname = launch.ofname;
+	else
+		launch.efname = params->error_filename;
+	launch.ifname = params->input_filename;
 	if (params->oom_kill_step != NO_VAL16)
 		launch.oom_kill_step = (params->oom_kill_step == 1);
 	else
@@ -373,40 +393,44 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		}
 	}
 
-	ctx->launch_state->io =
-		client_io_handler_create(params->local_fds,
-					 ctx->step_req->num_tasks,
-					 launch.nnodes, io_key,
-					 params->labelio,
-					 params->het_job_offset,
-					 params->het_job_task_offset);
-	if (!ctx->launch_state->io) {
-		rc = SLURM_ERROR;
-		goto fail1;
+	/* don't need to setup IO on client if step is handling it locally */
+	if (!(launch.flags & LAUNCH_LOCAL_IO)) {
+		ctx->launch_state->io =
+			client_io_handler_create(params->local_fds,
+						 ctx->step_req->num_tasks,
+						 launch.nnodes, io_key,
+						 params->labelio,
+						 params->het_job_offset,
+						 params->het_job_task_offset);
+		if (!ctx->launch_state->io) {
+			rc = SLURM_ERROR;
+			goto fail1;
+		}
+		/*
+		 * The client_io_t gets a pointer back to the slurm_launch_state
+		 * to notify it of I/O errors.
+		 */
+		ctx->launch_state->io->sls = ctx->launch_state;
+
+		client_io_handler_start(ctx->launch_state->io);
+
+		launch.num_io_port = ctx->launch_state->io->num_listen;
+		launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
+		memcpy(launch.io_port, ctx->launch_state->io->listenport,
+		       (sizeof(uint16_t) * launch.num_io_port));
+		/*
+		 * If the io timeout is > 0, create a flag to ping the stepds
+		 * if io_timeout seconds pass without stdio traffic to/from
+		 * the node.
+		 */
+		ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
+
+		launch.num_resp_port = ctx->launch_state->num_resp_port;
+		launch.resp_port =
+			xcalloc(launch.num_resp_port, sizeof(uint16_t));
+		memcpy(launch.resp_port, ctx->launch_state->resp_port,
+		       (sizeof(uint16_t) * launch.num_resp_port));
 	}
-	/*
-	 * The client_io_t gets a pointer back to the slurm_launch_state
-	 * to notify it of I/O errors.
-	 */
-	ctx->launch_state->io->sls = ctx->launch_state;
-
-	client_io_handler_start(ctx->launch_state->io);
-
-	launch.num_io_port = ctx->launch_state->io->num_listen;
-	launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
-	memcpy(launch.io_port, ctx->launch_state->io->listenport,
-	       (sizeof(uint16_t) * launch.num_io_port));
-	/*
-	 * If the io timeout is > 0, create a flag to ping the stepds
-	 * if io_timeout seconds pass without stdio traffic to/from
-	 * the node.
-	 */
-	ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
-
-	launch.num_resp_port = ctx->launch_state->num_resp_port;
-	launch.resp_port = xcalloc(launch.num_resp_port, sizeof(uint16_t));
-	memcpy(launch.resp_port, ctx->launch_state->resp_port,
-	       (sizeof(uint16_t) * launch.num_resp_port));
 
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
 			   params->tree_width, launch.complete_nodelist);
@@ -550,9 +574,9 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	launch.tasks_to_launch = ctx->step_resp->step_layout->tasks;
 	launch.global_task_ids = ctx->step_resp->step_layout->tids;
 
-	launch.ofname = params->remote_output_filename;
-	launch.efname = params->remote_error_filename;
-	launch.ifname = params->remote_input_filename;
+	launch.ofname = params->output_filename;
+	launch.efname = params->error_filename;
+	launch.ifname = params->input_filename;
 	if (params->buffered_stdio)
 		launch.flags	|= LAUNCH_BUFFERED_IO;
 	if (params->labelio)

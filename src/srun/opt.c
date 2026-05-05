@@ -1018,6 +1018,16 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (sropt.async && sropt.pty) {
+		error("--async and --pty are mutually exclusive.");
+		verified = false;
+	}
+
+	if (opt.immediate && sropt.async) {
+		error("--immediate and --async are mutually exclusive.");
+		verified = false;
+	}
+
 	if (!_validate_ignore_signals())
 		verified = false;
 
@@ -1537,6 +1547,7 @@ static void _usage(void)
 "            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB] [--tres-bind=...] [--tres-per-task=list]\n"
 "            [--oom-kill-step[=0|1]] [--ignore-signals=signals...]\n"
+"            [--async]\n"
 "            executable [args...]\n");
 
 }
@@ -1554,6 +1565,7 @@ static void _help(void)
 "                              intervals. Supported datatypes:\n"
 "                              task=<interval> energy=<interval>\n"
 "                              network=<interval> filesystem=<interval>\n"
+"      --async                 create async step\n"
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"
 "      --bcast=<dest_path>     Copy executable file to compute nodes\n"

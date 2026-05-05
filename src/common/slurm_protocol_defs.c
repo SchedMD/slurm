@@ -2142,6 +2142,42 @@ extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg)
 	xfree(msg);
 }
 
+extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params)
+{
+	if (!params)
+		return;
+	xfree_array(params->argv);
+	env_array_free(params->env);
+	xfree(params->container);
+	xfree(params->cwd);
+	xfree(params->output_filename);
+	xfree(params->error_filename);
+	xfree(params->input_filename);
+	xfree(params->het_job_step_task_cnts);
+	if (params->het_job_nnodes != NO_VAL) {
+		xfree(params->het_job_task_cnts);
+		if (params->het_job_tids) {
+			for (uint32_t i = 0; i < params->het_job_nnodes; i++)
+				xfree(params->het_job_tids[i]);
+			xfree(params->het_job_tids);
+		}
+		xfree(params->het_job_tid_offsets);
+	}
+	xfree(params->het_job_node_list);
+	xfree(params->task_prolog);
+	xfree(params->task_epilog);
+	xfree(params->cpu_bind);
+	xfree(params->mem_bind);
+	xfree(params->cpt_compact_array);
+	xfree(params->cpt_compact_reps);
+	xfree(params->mpi_plugin_name);
+	xfree(params->acctg_freq);
+	xfree_array(params->spank_job_env);
+	xfree(params->tres_bind);
+	xfree(params->tres_freq);
+	xfree(params);
+}
+
 extern void slurm_free_job_step_create_request_msg(
 		job_step_create_request_msg_t *msg)
 {
@@ -2153,6 +2189,7 @@ extern void slurm_free_job_step_create_request_msg(
 		xfree(msg->exc_nodes);
 		xfree(msg->features);
 		xfree(msg->host);
+		slurm_free_launch_parameters(msg->launch_params);
 		xfree(msg->mem_per_tres);
 		xfree(msg->name);
 		xfree(msg->network);

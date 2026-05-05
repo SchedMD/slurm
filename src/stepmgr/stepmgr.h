@@ -79,23 +79,6 @@ extern int job_step_signal(slurm_step_id_t *step_id,
 			   uint16_t signal, uint16_t flags, uid_t uid);
 
 /*
- * step_create - creates a step_record in step_specs->job_id, sets up the
- *	according to the step_specs.
- * IN job_ptr - job_ptr to create step in
- * IN step_specs - job step specifications
- * OUT new_step_record - pointer to the new step_record (NULL on error)
- * IN protocol_version - slurm protocol version of client
- * OUT err_msg - Custom error message to the user, caller to xfree results
-  * RET - 0 or error code
- * NOTE: don't free the returned step_record because that is managed through
- * 	the job.
- */
-extern int step_create(job_record_t *job_ptr,
-		       job_step_create_request_msg_t *step_specs,
-		       step_record_t **new_step_record,
-		       uint16_t protocol_version, char **err_msg);
-
-/*
  * step_layout_create - creates a step_layout according to the inputs.
  * IN step_ptr - step having tasks laid out
  * IN step_node_list - node list of hosts in step

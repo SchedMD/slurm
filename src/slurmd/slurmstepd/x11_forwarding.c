@@ -302,15 +302,16 @@ extern int setup_x11_forward(void)
 	uint16_t ports[2] = {6020, 6099};
 
 	srun_info_t *srun = list_peek(step->sruns);
-	/* This should always be set to something else we have a bug. */
-	xassert(srun && srun->protocol_version);
-	protocol_version = srun->protocol_version;
+
+	if (srun) {
+		protocol_version = srun->protocol_version;
+		srun_tls_cert = xstrdup(srun->tls_cert);
+	}
 
 	job_id = step->step_id.job_id;
 	job_uid = step->uid;
 	x11_target = xstrdup(step->x11_target);
 	x11_target_port = step->x11_target_port;
-	srun_tls_cert = xstrdup(srun->tls_cert);
 
 	slurm_set_addr(&alloc_node, step->x11_alloc_port, step->x11_alloc_host);
 

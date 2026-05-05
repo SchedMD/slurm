@@ -1040,6 +1040,7 @@ extern int as_build_step_start_msg(dbd_step_start_msg_t *req,
 		req->std_out = step_ptr->std_out;
 	}
 
+	req->state = step_ptr->state;
 	req->submit_line = step_ptr->submit_line;
 	req->tres_alloc_str = step_ptr->tres_alloc_str;
 

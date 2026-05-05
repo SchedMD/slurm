@@ -1296,6 +1296,8 @@ typedef enum {
 	SSF_GRES_ALLOW_TASK_SHARING = 1 << 9,
 	SSF_WAIT_FOR_CHILDREN = 1 << 10,
 	SSF_KILL_ON_BAD_EXIT = 1 << 11,
+	SSF_ASYNC = 1 << 12, /* step is async, launching is managed by stepmgr
+			      * instead of srun */
 } step_spec_flags_t;
 
 enum topology_plugin_type {
@@ -2257,9 +2259,9 @@ typedef struct {
 	/* I/O handling */
 	bool buffered_stdio;
 	bool labelio;
-	char *remote_output_filename;
-	char *remote_error_filename;
-	char *remote_input_filename;
+	char *output_filename;
+	char *error_filename;
+	char *input_filename;
 	slurm_step_io_fds_t local_fds;
 
 	bool multi_prog;

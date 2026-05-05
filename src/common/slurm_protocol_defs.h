@@ -630,6 +630,7 @@ typedef struct job_step_specs {
 	char *host;		/* host to contact initiating srun */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
+	slurm_step_launch_params_t *launch_params;
 	uint64_t pn_min_memory; /* minimum real memory per node OR
 				 * real memory per CPU | MEM_PER_CPU,
 				 * default=0 (use job limit) */
@@ -689,20 +690,26 @@ typedef struct job_step_create_response_msg {
 	uint16_t use_protocol_ver;   /* This is no longer used and can be
 				      * removed when 25.05 is no longer
 				      * supported. */
+	uint32_t state; /* JOB_RUNNING or JOB_PENDING; must be
+			 * set on every populated response
+			 * since JOB_PENDING == 0 is the
+			 * memset default — the immediate-
+			 * launch path assigns JOB_RUNNING. */
 } job_step_create_response_msg_t;
 
-#define LAUNCH_PARALLEL_DEBUG	SLURM_BIT(0)
-#define LAUNCH_MULTI_PROG	SLURM_BIT(1)
-#define LAUNCH_PTY		SLURM_BIT(2)
-#define LAUNCH_BUFFERED_IO	SLURM_BIT(3)
-#define LAUNCH_LABEL_IO		SLURM_BIT(4)
-#define LAUNCH_EXT_LAUNCHER	SLURM_BIT(5)
-#define LAUNCH_NO_ALLOC 	SLURM_BIT(6)
-#define LAUNCH_OVERCOMMIT 	SLURM_BIT(7)
-#define LAUNCH_NO_SIG_FAIL 	SLURM_BIT(8)
+#define LAUNCH_PARALLEL_DEBUG SLURM_BIT(0)
+#define LAUNCH_MULTI_PROG SLURM_BIT(1)
+#define LAUNCH_PTY SLURM_BIT(2)
+#define LAUNCH_BUFFERED_IO SLURM_BIT(3)
+#define LAUNCH_LABEL_IO SLURM_BIT(4)
+#define LAUNCH_EXT_LAUNCHER SLURM_BIT(5)
+#define LAUNCH_NO_ALLOC SLURM_BIT(6)
+#define LAUNCH_OVERCOMMIT SLURM_BIT(7)
+#define LAUNCH_NO_SIG_FAIL SLURM_BIT(8)
 #define LAUNCH_GRES_ALLOW_TASK_SHARING SLURM_BIT(9)
 #define LAUNCH_WAIT_FOR_CHILDREN SLURM_BIT(10)
 #define LAUNCH_KILL_ON_BAD_EXIT SLURM_BIT(11)
+#define LAUNCH_LOCAL_IO SLURM_BIT(12)
 
 typedef struct launch_tasks_request_msg {
 	uint32_t  het_job_node_offset;	/* Hetjob node offset or NO_VAL */
@@ -1651,6 +1658,7 @@ extern void slurm_free_resv_desc_members(resv_desc_msg_t *msg);
 extern void slurm_free_resv_desc_msg(resv_desc_msg_t * msg);
 extern void slurm_free_resv_name_msg(reservation_name_msg_t * msg);
 extern void slurm_free_resv_info_request_msg(resv_info_request_msg_t * msg);
+extern void slurm_free_launch_parameters(slurm_step_launch_params_t *params);
 extern void slurm_free_job_step_create_request_msg(
 		job_step_create_request_msg_t * msg);
 extern void slurm_free_job_step_create_response_msg(

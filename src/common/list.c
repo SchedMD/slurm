@@ -520,11 +520,12 @@ extern int list_delete_all(list_t *l, ListFindF f, void *key)
 	list_node_t **pp;
 	void *v;
 	int n = 0;
+	LIST_THREAD_LOCK_DEF
 
 	xassert(l != NULL);
 	xassert(f != NULL);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	LIST_THREAD_LOCK(l, true);
 
 	pp = &l->head;
 	while (*pp) {
@@ -539,7 +540,7 @@ extern int list_delete_all(list_t *l, ListFindF f, void *key)
 			pp = &(*pp)->next;
 		}
 	}
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, true);
 
 	return n;
 }
@@ -583,11 +584,12 @@ extern int list_delete_ptr(list_t *l, void *key)
 	list_node_t **pp;
 	void *v;
 	int n = 0;
+	LIST_THREAD_LOCK_DEF
 
 	xassert(l);
 	xassert(key);
 	xassert(l->magic == LIST_MAGIC);
-	slurm_rwlock_wrlock(&l->mutex);
+	LIST_THREAD_LOCK(l, true);
 
 	pp = &l->head;
 	while (*pp) {
@@ -601,7 +603,7 @@ extern int list_delete_ptr(list_t *l, void *key)
 		} else
 			pp = &(*pp)->next;
 	}
-	slurm_rwlock_unlock(&l->mutex);
+	LIST_THREAD_UNLOCK(l, true);
 
 	return n;
 }

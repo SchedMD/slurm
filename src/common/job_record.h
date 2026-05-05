@@ -661,6 +661,7 @@ typedef struct {
 	char *std_err;			/* pathname of step's stderr file */
 	char *std_in;			/* pathname of step's stdin file */
 	char *std_out;			/* pathname of step's stdout file */
+	job_step_create_request_msg_t *step_req;
 /*	time_t suspend_time;		 * time step last suspended or resumed
 					 * implicitly the same as suspend_time
 					 * in the job record */

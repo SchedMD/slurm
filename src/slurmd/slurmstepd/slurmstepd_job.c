@@ -72,6 +72,10 @@
 
 static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
 				char *efname);
+static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
+				      slurm_addr_t *resp_addr,
+				      slurm_addr_t *ioaddr, uid_t uid,
+				      uint16_t protocol_version);
 static void _srun_info_destructor(void *arg);
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,
 						 char *ifname, char *ofname,
@@ -158,11 +162,13 @@ static void _job_init_task_info(uint32_t **gtid, char *ifname, char *ofname,
 }
 
 /* destructor for list routines */
-static void
-_srun_info_destructor(void *arg)
+static void _srun_info_destructor(void *arg)
 {
-	srun_info_t *srun = (srun_info_t *)arg;
-	srun_info_destroy(srun);
+	srun_info_t *srun = arg;
+
+	xfree(srun->key);
+	xfree(srun->tls_cert);
+	xfree(srun);
 }
 
 static void
@@ -370,7 +376,7 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	}
 
 	step->eio     = eio_handle_create(0);
-	step->sruns   = list_create((ListDelF) _srun_info_destructor);
+	step->sruns = list_create(_srun_info_destructor);
 
 	/*
 	 * Based on my testing the next 3 lists here could use the
@@ -418,8 +424,12 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		memset(&io_addr, 0, sizeof(slurm_addr_t));
 	}
 
-	srun = srun_info_create(msg->cred, msg->alloc_tls_cert, &resp_addr,
-				&io_addr, step->uid, protocol_version);
+	if (!(msg->flags & LAUNCH_LOCAL_IO)) {
+		srun = _srun_info_create(msg->cred, msg->alloc_tls_cert,
+					 &resp_addr, &io_addr, step->uid,
+					 protocol_version);
+		list_append(step->sruns, srun);
+	}
 
 	step->profile     = msg->profile;
 	step->task_prolog = xstrdup(msg->task_prolog);
@@ -475,8 +485,6 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	get_cred_gres(msg->cred, conf->node_name,
 		      &step->job_gres_list, &step->step_gres_list);
 
-	list_append(step->sruns, (void *) srun);
-
 	_job_init_task_info(msg->global_task_ids, msg->ifname, msg->ofname,
 			    msg->efname);
 
@@ -485,7 +493,6 @@ extern int stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 
 extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 {
-	srun_info_t  *srun = NULL;
 	char *in_name;
 
 	xassert(msg != NULL);
@@ -561,7 +568,7 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	step->env = slurm_char_array_copy(msg->envc, msg->environment);
 	step->eio     = eio_handle_create(0);
-	step->sruns   = list_create((ListDelF) _srun_info_destructor);
+	step->sruns = list_create(_srun_info_destructor);
 	step->envtp   = xmalloc(sizeof(env_t));
 	step->envtp->jobid = -1;
 	step->envtp->stepid = -1;
@@ -590,10 +597,6 @@ extern int batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 
 	get_cred_gres(msg->cred, conf->node_name,
 		      &step->job_gres_list, &step->step_gres_list);
-
-	srun = srun_info_create(NULL, NULL, NULL, NULL, step->uid, NO_VAL16);
-
-	list_append(step->sruns, (void *) srun);
 
 	if (msg->argc) {
 		step->argc    = msg->argc;
@@ -708,10 +711,10 @@ extern void stepd_step_rec_destroy(void)
 	xfree(step);
 }
 
-extern srun_info_t *srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
-				     slurm_addr_t *resp_addr,
-				     slurm_addr_t *ioaddr, uid_t uid,
-				     uint16_t protocol_version)
+static srun_info_t *_srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
+				      slurm_addr_t *resp_addr,
+				      slurm_addr_t *ioaddr, uid_t uid,
+				      uint16_t protocol_version)
 {
 	srun_info_t *srun = xmalloc(sizeof(srun_info_t));
 
@@ -734,14 +737,6 @@ extern srun_info_t *srun_info_create(slurm_cred_t *cred, char *alloc_tls_cert,
 	if (resp_addr != NULL)
 		srun->resp_addr = *resp_addr;
 	return srun;
-}
-
-extern void
-srun_info_destroy(srun_info_t *srun)
-{
-	xfree(srun->key);
-	xfree(srun->tls_cert);
-	xfree(srun);
 }
 
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,

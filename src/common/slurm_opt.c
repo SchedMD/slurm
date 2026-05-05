@@ -549,6 +549,15 @@ static slurm_cli_opt_t slurm_opt_argv = {
 	.reset_func = arg_reset_argv,
 };
 
+COMMON_SRUN_BOOL_OPTION(async);
+static slurm_cli_opt_t slurm_opt_async = {
+	.name = "async",
+	.has_arg = no_argument,
+	.val = LONG_OPT_ASYNC,
+	.set_func_srun = arg_set_async,
+	.get_func = arg_get_async,
+	.reset_func = arg_reset_async,
+};
 
 COMMON_SBATCH_STRING_OPTION(batch_features);
 static slurm_cli_opt_t slurm_opt_batch = {
@@ -4374,6 +4383,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_array,
 	&slurm_opt_argv,
+	&slurm_opt_async,
 	&slurm_opt_autocomplete,
 	&slurm_opt_batch,
 	&slurm_opt_bcast,

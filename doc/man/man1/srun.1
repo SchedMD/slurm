@@ -27,6 +27,11 @@ task that exited with a signal.
 .br
 The value 253 is reserved for out\-of\-memory errors.
 
+When invoked with \fB\-\-async\fR, \fBsrun\fR returns 0 once the controller
+accepts the step\-create request, regardless of how the step's tasks
+ultimately exit. Use \fBsacct\fR(1) to inspect the step's exit code after
+it completes.
+
 .SH "EXECUTABLE PATH RESOLUTION"
 
 The executable is resolved in the following order:
@@ -109,6 +114,37 @@ but a value of 30 seconds is not likely to be noticeable for
 applications having less than 10,000 tasks. This option applies to job
 allocations.
 .RE
+.IP
+
+.TP
+\fB\-\-async\fR
+Submit a job step that runs asynchronously, instead of synchronously
+with the \fBsrun\fR command that submitted it. The step is launched and
+supervised by the job's step manager, which will queue the step for later
+execution if resources are not currently available. The \fBsrun\fR command
+returns immediately after the step is accepted by the controller and reports
+its stepid, without waiting for the step to start or finish.
+
+Output is written directly on the compute nodes to the files named by
+\fB\-\-output\fR and \fB\-\-error\fR; if neither is given, \fIslurm-%J.out\fR
+(relative to each task's working directory) is used. Standard input redirection
+is not supported. Options that affect \fBsrun\fR's local I/O handling
+(\fB\-\-label\fR, \fB\-\-unbuffered\fR, terminal \fB\-\-input\fR) therefore have
+no visible effect.
+
+Since \fBsrun\fR exits before the step finishes, it does not propagate the
+step's exit code and does not forward signals (e.g., SIGINT from Ctrl\-C) to the
+running tasks. Use \fBscancel <jobid>.<stepid>\fR to signal or terminate
+an asynchronous step.
+
+This option can only be used in a job allocation that has the step manager
+enabled (see \fB\-\-stepmgr\fR in \fBsalloc\fR(1)/\fBsbatch\fR(1) and
+\fBSlurmctldParameters=enable_stepmgr\fR in \fBslurm.conf\fR(5)).
+
+This option is mutually exclusive with \fB\-\-pty\fR and \fB\-\-immediate\fR.
+
+\fBNOTE\fR: This is a new feature that is still in beta, its usage may change
+in future releases.
 .IP
 
 .TP
@@ -4555,6 +4591,11 @@ terminated without waiting for remote tasks to exit or their I/O to
 complete.
 
 The escape sequence \fB<control\-z>\fR is presently ignored.
+
+Signal forwarding is not available for asynchronous steps (\fB\-\-async\fR);
+\fBsrun\fR exits before the step starts and holds no connection to the
+running tasks. Use \fBscancel \-\-signal\fR to send signals to an
+asynchronous step.
 
 .SH "MPI SUPPORT"
 MPI use depends upon the type of MPI being used.
