@@ -228,7 +228,10 @@ extern void *auth_p_get_identity(auth_cred_t *cred)
 	if (!cred)
 		return NULL;
 
-	return copy_identity(cred->id);
+	if (use_client_ids)
+		return copy_identity(cred->id);
+
+	return NULL;
 }
 
 extern int auth_p_pack(auth_cred_t *cred, buf_t *buf,
