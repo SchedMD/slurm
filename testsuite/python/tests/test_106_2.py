@@ -37,7 +37,7 @@ def test_sbcast_contained():
     # Clear old test files and create a file outside the container
     atf.run_command("rm init_complete")
     atf.run_command(f"rm -rf {ns_dir}/*", fatal=True)
-    atf.run_command(f"touch {ns_dir}/public_file", fatal=True)
+    atf.run_command(f"touch {ns_dir}/host_file", fatal=True)
 
     atf.make_bash_script(
         "job.sh",
@@ -46,7 +46,7 @@ def test_sbcast_contained():
         touch init_complete
 
         # Check to make sure job_container/tmpfs made a private mount
-        if [[ -f {ns_dir}/public_file ]]; then
+        if [[ -f {ns_dir}/host_file ]]; then
             echo "job_container/tmpfs failed to create private mount"
         else
             echo "job_container/tmpfs created private mount"
