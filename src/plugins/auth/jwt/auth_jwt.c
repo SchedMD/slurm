@@ -2,6 +2,7 @@
  *  auth_jwt.c - JWT token-based slurm authentication plugin
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
+ *  Copyright Amazon.com Inc. or its affiliates.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -44,7 +45,9 @@
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/data.h"
+#include "src/common/identity.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/run_in_daemon.h"
@@ -54,6 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/interfaces/serializer.h"
+#include "src/plugins/auth/common/auth_common.h"
 
 #include "auth_jwt.h"
 
@@ -75,6 +79,13 @@ typedef struct {
 
 	uid_t uid;
 	gid_t gid;
+
+	/*
+	 * Enables identity information to be provided as part
+	 * of the JWT claims when the controller does not have
+	 * identity information
+	 */
+	identity_t *id;
 
 	/* packed data below */
 	char *token;
@@ -289,6 +300,7 @@ extern void auth_p_destroy(auth_token_t *cred)
 
 	xfree(cred->token);
 	xfree(cred->username);
+	FREE_NULL_IDENTITY(cred->id);
 	xfree(cred);
 }
 
@@ -330,6 +342,48 @@ static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 	*args->jwt = jwt;
 
 	return DATA_FOR_EACH_STOP;
+}
+
+static void _handle_identity(jwt_t *jwt, auth_token_t *cred)
+{
+	char *jwt_json = NULL;
+	data_t *jwt_data = NULL;
+
+	/* Get JWT payload as JSON and parse to data_t */
+	if (!(jwt_json = jwt_get_grants_json(jwt, NULL))) {
+		debug("%s: failed to get JWT grants", __func__);
+		goto fail;
+	}
+
+	if (serialize_g_string_to_data(&jwt_data, jwt_json, strlen(jwt_json),
+				       MIME_TYPE_JSON)) {
+		debug("%s: failed to parse JWT JSON", __func__);
+		goto fail;
+	}
+
+	cred->id = auth_common_extract_identity_from_data(jwt_data);
+
+	if (cred->id) {
+		/* Store extracted identity information */
+		xfree(cred->username);
+		cred->username = xstrdup(cred->id->pw_name);
+
+		cred->uid = cred->id->uid;
+		cred->gid = cred->id->gid;
+		cred->ids_set = true;
+
+		/* Set assoc_mgr entry */
+		if (running_in_slurmctld() || running_in_slurmdbd())
+			assoc_mgr_set_uid(cred->uid, cred->username);
+
+		debug("%s: successfully resolved identity for user %s from JWT claims",
+		      __func__, cred->username);
+	}
+
+fail:
+	if (jwt_json)
+		free(jwt_json);
+	FREE_NULL_DATA(jwt_data);
 }
 
 /*
@@ -466,7 +520,7 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 
 	/*
 	 * at this point we have a verified jwt to work with
-	 * check the expiration, and sort out the appropriate username
+	 * check the expiration, and extract identity using auth/common
 	 */
 
 	if (jwt_get_grant_int(jwt, "exp") < time(NULL)) {
@@ -475,12 +529,19 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		goto fail;
 	}
 
-	if (_handle_username(jwt, cred))
+	if (use_client_ids)
+		_handle_identity(jwt, cred);
+
+	if (!cred->id && use_client_ids_only) {
+		error("%s: failed to retrieve required identity", __func__);
+		goto fail;
+	}
+
+	if (!cred->id && _handle_username(jwt, cred))
 		goto fail;
 
 	jwt_free(jwt);
 	jwt = NULL;
-
 	cred->verified = true;
 	return SLURM_SUCCESS;
 
@@ -513,17 +574,24 @@ extern void auth_p_get_ids(auth_token_t *cred, uid_t *uid, gid_t *gid)
 		return;
 	}
 
-	if (uid_from_string(cred->username, &pw_uid))
-		return;
-	cred->uid = pw_uid;
+	/*
+	 * If JWT identity claims are enabled but ids_set is false,
+	 * it means auth_p_verify() didn't find identity claims.
+	 * Fall back to traditional username lookup if allowed.
+	 */
+	if (!use_client_ids_only) {
+		if (uid_from_string(cred->username, &pw_uid))
+			return;
+		cred->uid = pw_uid;
 
-	if (((cred->gid = gid_from_uid(cred->uid)) == (gid_t) -1))
-		return;
+		if (((cred->gid = gid_from_uid(cred->uid)) == (gid_t) -1))
+			return;
 
-	cred->ids_set = true;
+		cred->ids_set = true;
 
-	*uid = cred->uid;
-	*gid = cred->gid;
+		*uid = cred->uid;
+		*gid = cred->gid;
+	}
 }
 
 extern char *auth_p_get_host(auth_token_t *cred)
@@ -560,6 +628,13 @@ extern void *auth_p_get_identity(auth_token_t *cred)
 		errno = ESLURM_AUTH_BADARG;
 		return NULL;
 	}
+
+	/*
+	 * Identity information is extracted during auth_p_verify() if
+	 * JWT identity claims are enabled. Simply return a copy if available.
+	 */
+	if (use_client_ids)
+		return copy_identity(cred->id);
 
 	return NULL;
 }
