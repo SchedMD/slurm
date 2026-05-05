@@ -6867,7 +6867,7 @@ static int PARSE_FUNC(TOPOLOGY_CONF_ARRAY)(const parser_t *const parser,
 		fargs.array = ctx_array->tctx;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -6982,7 +6982,7 @@ static int PARSE_FUNC(TOPOLOGY_TREE_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = tree_configs->switch_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7097,7 +7097,7 @@ static int PARSE_FUNC(TOPOLOGY_BLOCK_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = block_configs->block_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
@@ -7458,7 +7458,7 @@ static int PARSE_FUNC(TOPOLOGY_RING_CONFIG_ARRAY)(const parser_t *const parser,
 		fargs.array = ring_configs->ring_configs;
 		(void) data_list_for_each(src, _foreach_topo_array, &fargs);
 	} else {
-		rc = on_error(DUMPING, parser->type, args,
+		rc = on_error(PARSING, parser->type, args,
 			      ESLURM_DATA_CONV_FAILED, __func__, __func__,
 			      "Unexpected type %s when expecting a list",
 			      data_type_to_string(data_get_type(src)));
