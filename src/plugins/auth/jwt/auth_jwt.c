@@ -320,6 +320,52 @@ static data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
 }
 
 /*
+ * Retrieve and set the username. Allows for the username to be overridden
+ * for SlurmUser/root tokens so slurmrestd can issue RPCs under other
+ * accounts.
+ */
+static int _handle_username(jwt_t *jwt, auth_token_t *cred)
+{
+	char *username = NULL;
+
+	/*
+	 * 'sun' is preferred if available
+	 * 'username' is used otherwise
+	 */
+	if (!(username = xstrdup(jwt_get_grant(jwt, "sun"))) &&
+	    !(username = xstrdup(jwt_get_grant(jwt, "username"))) &&
+	    (!claim_field ||
+	     !(username = xstrdup(jwt_get_grant(jwt, claim_field))))) {
+		error("%s: jwt_get_grant failure", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (!cred->username) {
+		cred->username = username;
+	} else if (!xstrcmp(cred->username, username)) {
+		/* if they match, ignore it, they were being redundant */
+		xfree(username);
+	} else {
+		uid_t uid = NO_VAL;
+		if (uid_from_string(username, &uid)) {
+			error("%s: uid_from_string failure", __func__);
+			xfree(username);
+			return SLURM_ERROR;
+		}
+		if ((uid != 0) && (slurm_conf.slurm_user_id != uid)) {
+			error("%s: attempt to authenticate as alternate user %s from non-SlurmUser %s",
+			      __func__, username, cred->username);
+			xfree(username);
+			return SLURM_ERROR;
+		}
+		/* use the packed username instead of the token value */
+		xfree(username);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
  * Verify a credential to approve or deny authentication.
  *
  * Return SLURM_SUCCESS if the credential is in order and valid.
@@ -416,41 +462,11 @@ extern int auth_p_verify(auth_token_t *cred, char *auth_info)
 		goto fail;
 	}
 
-	/*
-	 * 'sun' is preferred if available
-	 * 'username' is used otherwise
-	 */
-	if (!(username = xstrdup(jwt_get_grant(jwt, "sun"))) &&
-	    !(username = xstrdup(jwt_get_grant(jwt, "username"))) &&
-	    (!claim_field ||
-	     !(username = xstrdup(jwt_get_grant(jwt, claim_field)))))
-	{
-		error("%s: jwt_get_grant failure", __func__);
+	if (_handle_username(jwt, cred))
 		goto fail;
-	}
 
 	jwt_free(jwt);
 	jwt = NULL;
-
-	if (!cred->username)
-		cred->username = username;
-	else if (!xstrcmp(cred->username, username)) {
-		/* if they match, ignore it, they were being redundant */
-		xfree(username);
-	} else {
-		uid_t uid = NO_VAL;
-		if (uid_from_string(username, &uid)) {
-			error("%s: uid_from_string failure", __func__);
-			goto fail;
-		}
-		if ((uid != 0) && (slurm_conf.slurm_user_id != uid)) {
-			error("%s: attempt to authenticate as alternate user %s from non-SlurmUser %s",
-			      __func__, username, cred->username);
-			goto fail;
-		}
-		/* use the packed username instead of the token value */
-		xfree(username);
-	}
 
 	cred->verified = true;
 	return SLURM_SUCCESS;
