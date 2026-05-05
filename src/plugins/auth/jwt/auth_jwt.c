@@ -85,6 +85,8 @@ static data_t *jwks = NULL;
 static buf_t *key = NULL;
 static char *token = NULL;
 static char *claim_field = NULL;
+static bool use_client_ids = false;
+static bool use_client_ids_only = false;
 static __thread char *thread_token = NULL;
 static __thread char *thread_username = NULL;
 
@@ -224,6 +226,16 @@ static void _parse_auth_params(void)
 
 	if (!slurm_conf.authalt_params)
 		return;
+
+	/* intentionally matches "use_jwt_client_ids_only" as well */
+	if (xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids"))
+		use_client_ids = true;
+
+	if (xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids_only"))
+		use_client_ids_only = true;
+
+	debug("use_jwt_client_ids: %d, use_jwt_client_ids_only: %d",
+	      use_client_ids, use_client_ids_only);
 
 	/* Parse userclaimfield parameter */
 	if ((param_val = conf_get_opt_str(slurm_conf.authalt_params,
