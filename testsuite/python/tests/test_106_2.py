@@ -34,13 +34,17 @@ def test_sbcast_contained():
     Verify sbcast only transfers the file into the container
     """
 
-    # Clear out the private mount and create a file outside the container
+    # Clear old test files and create a file outside the container
+    atf.run_command("rm init_complete")
     atf.run_command(f"rm -rf {ns_dir}/*", fatal=True)
     atf.run_command(f"touch {ns_dir}/public_file", fatal=True)
 
     atf.make_bash_script(
         "job.sh",
         f"""
+        # Signal that namespace creation is complete
+        touch init_complete
+
         # Check to make sure job_container/tmpfs made a private mount
         if [[ -f {ns_dir}/public_file ]]; then
             echo "job_container/tmpfs failed to create private mount"
@@ -61,7 +65,7 @@ def test_sbcast_contained():
 
     # Wait for job to run
     job_id = atf.submit_job_sbatch("--output=output job.sh", fatal=True)
-    atf.wait_for_job_state(job_id, "RUNNING", fatal=True)
+    atf.wait_for_file("init_complete")
 
     # Send file
     expected_content = "Successful sbcast"
