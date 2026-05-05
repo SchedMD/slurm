@@ -222,16 +222,15 @@ Then "gres/gpu:tesla" and "gres/gpu:volta" will track only jobs that explicitly
 request those two GPU types, while "gres/gpu" will track allocated GPUs of any
 type ("tesla", "volta" or any other GPU type).
 
-Given a configuration of
-"AccountingStorageTRES=gres/gpu:tesla,gres/gpu:volta"
-Then "gres/gpu:tesla" and "gres/gpu:volta" will track jobs that explicitly
-request those GPU types.
-If a job requests GPUs, but does not explicitly specify the GPU type, then
-its resource allocation will be accounted for as either "gres/gpu:tesla" or
-"gres/gpu:volta", although the accounting may not match the actual GPU type
-allocated to the job and the GPUs allocated to the job could be heterogeneous.
-In an environment containing various GPU types, use of a job_submit plugin
-may be desired in order to force jobs to explicitly specify some GPU type.
+Tracking only typed GRES (e.g. "gres/gpu:tesla,gres/gpu:volta") can lead to
+unintuitive behavior where the untyped counterpart (e.g. "gres/gpu") is
+inconsistently recognized as a valid resource name. In this case, if a job
+requests the untyped version, then its resource allocation will be recorded
+as a specific type, which may not match the actual type allocated to the job if
+multiple different types are allocated. Thus it is recommended to always track
+the untyped counterpart for any typed GRES that are tracked. In addition, you
+may wish to use a job_submit plugin to force jobs to explicitly specify some
+GRES type.
 
 \fBNOTE\fR: Setting gres/gpu will also set gres/gpumem and gres/gpuutil.
 gres/gpumem and gres/gpuutil can be set individually when gres/gpu is not set.
