@@ -92,6 +92,17 @@ int _sort_clusters_by_name(void *x, void *y)
 }
 
 /*
+ * Format "host:port", bracketing IPv6 literals per RFC 3986 so that the colons
+ * in the address don't run together with the port separator.
+ */
+static char *_fmt_host_port(const char *host, uint32_t port)
+{
+	if (host && xstrchr(host, ':'))
+		return xstrdup_printf("[%s]:%d", host, port);
+	return xstrdup_printf("%s:%d", host ? host : "", port);
+}
+
+/*
  * slurm_print_federation - prints slurmdb_federation_rec_t (passed as void*
  * 			    since slurm.h doesn't know about slurmdb.h).
  */
@@ -120,20 +131,21 @@ extern void slurm_print_federation(void *ptr)
 
 	/* Display local Cluster */
 	while ((cluster = list_next(itr))) {
-		char *features, *tmp_str;
+		char *addr, *features, *tmp_str;
 		if (xstrcmp(cluster->name, cluster_name))
 			continue;
 
 		features = slurm_char_list_to_xstr( cluster->fed.feature_list);
 		tmp_str = slurmdb_cluster_fed_states_str( cluster->fed.state);
+		addr = _fmt_host_port(cluster->control_host,
+				      cluster->control_port);
 
-		printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s\n",
-		       left_col_size, "Self:", cluster->name,
-		       cluster->control_host ? cluster->control_host : "",
-		       cluster->control_port,
+		printf("%-*s %s:%s ID:%d FedState:%s Features:%s\n",
+		       left_col_size, "Self:", cluster->name, addr,
 		       cluster->fed.id, (tmp_str ? tmp_str : ""),
 		       features ? features : "");
 
+		xfree(addr);
 		xfree(features);
 		break;
 	}
@@ -141,6 +153,7 @@ extern void slurm_print_federation(void *ptr)
 	/* Display siblings */
 	list_iterator_reset(itr);
 	while ((cluster = list_next(itr))) {
+		char *addr = NULL;
 		char *tmp_str = NULL;
 		char *features = NULL;
 
@@ -149,16 +162,18 @@ extern void slurm_print_federation(void *ptr)
 
 		features = slurm_char_list_to_xstr(cluster->fed.feature_list);
 		tmp_str = slurmdb_cluster_fed_states_str(cluster->fed.state);
-		printf("%-*s %s:%s:%d ID:%d FedState:%s Features:%s PersistConnSend/Recv:%s/%s Synced:%s\n",
-		       left_col_size, "Sibling:", cluster->name,
-		       cluster->control_host ? cluster->control_host : "",
-		       cluster->control_port,
+		addr = _fmt_host_port(cluster->control_host,
+				      cluster->control_port);
+
+		printf("%-*s %s:%s ID:%d FedState:%s Features:%s PersistConnSend/Recv:%s/%s Synced:%s\n",
+		       left_col_size, "Sibling:", cluster->name, addr,
 		       cluster->fed.id, (tmp_str ? tmp_str : ""),
 		       features ? features : "",
 		       cluster->fed.send ? "Yes" : "No",
 		       cluster->fed.recv ? "Yes" : "No",
 		       cluster->fed.sync_recvd ? "Yes" : "No");
 
+		xfree(addr);
 		xfree(features);
 	}
 
