@@ -51,6 +51,9 @@
 
 #include "src/plugins/auth/common/auth_common.h"
 
+static identity_t *_extract_identity_from_data(data_t *data_id, uid_t uid,
+					       gid_t gid);
+
 extern char *auth_common_get_identity_string(identity_t *id, uid_t uid,
 					     gid_t gid)
 {
@@ -153,9 +156,8 @@ static data_for_each_cmd_t _for_each_gid(const data_t *data, void *arg)
 extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
 						gid_t gid)
 {
-	data_t *data_id = NULL, *groups = NULL, *gids = NULL;
-	int ngids;
-	identity_t *id = xmalloc(sizeof(*id));
+	data_t *data_id = NULL;
+	identity_t *id = NULL;
 
 	if (serialize_g_string_to_data(&data_id, json, strlen(json),
 				       MIME_TYPE_JSON)) {
@@ -163,6 +165,19 @@ extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
 		FREE_NULL_IDENTITY(id);
 		return NULL;
 	}
+
+	id = _extract_identity_from_data(data_id, uid, gid);
+
+	FREE_NULL_DATA(data_id);
+	return id;
+}
+
+static identity_t *_extract_identity_from_data(data_t *data_id, uid_t uid,
+					       gid_t gid)
+{
+	data_t *groups = NULL, *gids = NULL;
+	int ngids;
+	identity_t *id = xmalloc(sizeof(*id));
 
 	id->uid = uid;
 	id->gid = gid;
@@ -179,7 +194,6 @@ extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
 
 		if (data_dict_for_each_const(groups, _for_each_group, id) < 0) {
 			error("%s: data_dict_for_each_const failed", __func__);
-			FREE_NULL_DATA(data_id);
 			FREE_NULL_IDENTITY(id);
 			return NULL;
 		}
@@ -188,12 +202,10 @@ extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
 		id->gids = xcalloc(ngids, sizeof(gid_t));
 		if (data_list_for_each_const(gids, _for_each_gid, id) < 0) {
 			error("%s: data_list_for_each_const failed", __func__);
-			FREE_NULL_DATA(data_id);
 			FREE_NULL_IDENTITY(id);
 			return NULL;
 		}
 	}
 
-	FREE_NULL_DATA(data_id);
 	return id;
 }
