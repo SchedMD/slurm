@@ -43,6 +43,7 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -53,6 +54,85 @@
 
 static identity_t *_extract_identity_from_data(data_t *data_id, uid_t uid,
 					       gid_t gid);
+
+static int _validate_identity_required_fields(identity_t *id)
+{
+	xassert(id);
+
+	if (!id->pw_name || !*id->pw_name) {
+		debug("%s: identity missing required field: name", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (!id->pw_gecos || !*id->pw_gecos) {
+		debug("%s: identity missing required field: gecos", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (!id->pw_dir || (*id->pw_dir != '/')) {
+		debug("%s: identity missing required field: dir", __func__);
+		return SLURM_ERROR;
+	}
+
+	if (!id->pw_shell || (*id->pw_shell != '/')) {
+		debug("%s: identity missing required field: shell", __func__);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern identity_t *auth_common_extract_identity_from_data(data_t *jwt_data)
+{
+	data_t *id_data = NULL;
+	int64_t uid_val, gid_val;
+	uid_t uid = SLURM_AUTH_NOBODY;
+	gid_t gid = SLURM_AUTH_NOBODY;
+	identity_t *identity = NULL;
+
+	if (!data_get_int_converted(data_key_get(jwt_data, "uid"), &uid_val)) {
+		if ((uid_val < 0) || (uid_val > UINT32_MAX)) {
+			debug("%s: JWT has invalid uid value: %ld",
+			      __func__, uid_val);
+			return NULL;
+		}
+		uid = (uid_t) uid_val;
+	} else {
+		debug("%s: uid required but not found in JWT", __func__);
+		return NULL;
+	}
+
+	if (!data_get_int_converted(data_key_get(jwt_data, "gid"), &gid_val)) {
+		if ((gid_val < 0) || (gid_val > UINT32_MAX)) {
+			debug("%s: JWT has invalid gid value: %ld",
+			      __func__, gid_val);
+			return NULL;
+		}
+		gid = (gid_t) gid_val;
+	} else {
+		debug("%s: gid required but not found in JWT", __func__);
+		return NULL;
+	}
+
+	if (!(id_data = data_key_get(jwt_data, "id"))) {
+		debug("%s: no 'id' object found, identity parsing not possible",
+		      __func__);
+		return NULL;
+	}
+
+	identity = _extract_identity_from_data(id_data, uid, gid);
+
+	/* Validate the complete identity */
+	if (!identity || _validate_identity_required_fields(identity)) {
+		error("%s: identity validation failed", __func__);
+		FREE_NULL_IDENTITY(identity);
+	} else {
+		debug2("%s: successfully parsed identity for user '%s'",
+		       __func__, identity->pw_name);
+	}
+
+	return identity;
+}
 
 extern char *auth_common_get_identity_string(identity_t *id, uid_t uid,
 					     gid_t gid)

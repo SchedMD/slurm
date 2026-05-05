@@ -41,6 +41,12 @@
 #include "src/common/identity.h"
 
 /*
+ * Main identity parsing function for JWT tokens
+ * RETURNS: identity_t structure, or NULL on error
+ */
+extern identity_t *auth_common_extract_identity_from_data(data_t *jwt_data);
+
+/*
  * These functions provide conversion between identity_t structures
  * and various data formats (JSON, data_t) for serialization.
  */
