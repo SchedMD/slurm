@@ -37,4 +37,39 @@
 #ifndef _AUTH_COMMON_H
 #define _AUTH_COMMON_H
 
+#include "src/common/data.h"
+#include "src/common/identity.h"
+
+/*
+ * These functions provide conversion between identity_t structures
+ * and various data formats (JSON, data_t) for serialization.
+ */
+
+/*
+ * Convert identity_t structure to JSON string
+ * IN id - Identity structure to convert (can be NULL)
+ * IN uid - UID to use if id is NULL
+ * IN gid - GID to use if id is NULL
+ * RETURNS: JSON string (caller must free with xfree)
+ */
+extern char *auth_common_get_identity_string(identity_t *id, uid_t uid,
+					     gid_t gid);
+
+/*
+ * Convert identity_t structure to data_t for serialization
+ * IN id - Identity structure to convert
+ * RETURNS: data_t structure (caller must free with FREE_NULL_DATA)
+ */
+extern data_t *auth_common_identity_to_data(identity_t *id);
+
+/*
+ * Extract identity_t structure from JSON string
+ * IN json - JSON string containing identity data
+ * IN uid - UID to set in identity structure
+ * IN gid - GID to set in identity structure
+ * RETURNS: identity_t structure (caller must free with FREE_NULL_IDENTITY)
+ */
+extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
+						gid_t gid);
+
 #endif

@@ -97,9 +97,6 @@ do {					\
 } while (0)
 
 extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred);
-extern char *get_identity_string(identity_t *id, uid_t uid, gid_t gid);
-extern data_t *identity_to_data(identity_t *id);
-extern identity_t *extract_identity(char *json, uid_t uid, gid_t gid);
 
 extern char *encode_launch(slurm_cred_arg_t *cred);
 extern slurm_cred_t *extract_launch(char *json);

@@ -185,6 +185,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 auth_slurm_la_DEPENDENCIES =  \
+	$(top_builddir)/src/plugins/auth/common/libauth_common.la \
 	$(top_builddir)/src/plugins/cred/common/libcred_common.la
 am_auth_slurm_la_OBJECTS = auth_slurm.lo cred_slurm.lo external.lo \
 	internal.lo net_aliases.lo sack.lo sbcast.lo util.lo
@@ -537,7 +538,11 @@ auth_slurm_la_SOURCES = \
 	util.c
 
 auth_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(JWT_LDFLAGS)
-auth_slurm_la_LIBADD = $(top_builddir)/src/plugins/cred/common/libcred_common.la $(JWT_LIBS)
+auth_slurm_la_LIBADD = \
+	$(top_builddir)/src/plugins/auth/common/libauth_common.la \
+	$(top_builddir)/src/plugins/cred/common/libcred_common.la \
+	$(JWT_LIBS)
+
 all: all-am
 
 .SUFFIXES:
