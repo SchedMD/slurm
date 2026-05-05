@@ -207,13 +207,13 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 	if (spacing_x > torus->x || spacing_y > torus->y ||
 	    spacing_z > torus->z) {
 		error("Torus3d placement anchor_spacing must be within torus dimensions");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	if (src->anchor_seed.x >= torus->x || src->anchor_seed.y >= torus->y ||
 	    src->anchor_seed.z >= torus->z) {
 		error("Torus3d placement anchor_seed must be within torus dimensions");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	xs = _build_axis_positions(torus->x, spacing_x, src->anchor_seed.x,
@@ -229,7 +229,7 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 		xfree(xs);
 		xfree(ys);
 		xfree(zs);
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	placement->anchor_count = (int) anchor_total;
@@ -270,20 +270,20 @@ static int _validate_placement(torus3d_record_t *torus,
 
 	if (!src->dims.x || !src->dims.y || !src->dims.z) {
 		error("Torus3d placement dims must be non-zero");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	expected_size = (uint64_t) src->dims.x * src->dims.y * src->dims.z;
 	if (expected_size > UINT32_MAX) {
 		error("Torus3d placement dims %ux%ux%u exceed size limit",
 		      src->dims.x, src->dims.y, src->dims.z);
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	if (src->dims.x > torus->x || src->dims.y > torus->y ||
 	    src->dims.z > torus->z) {
 		error("Torus3d placement dims exceed torus dimensions");
-		return EINVAL;
+		return SLURM_ERROR;
 	}
 
 	placement->size = (uint32_t) expected_size;
@@ -315,24 +315,24 @@ static int _validate_regions_config(slurm_conf_torus3d_t *config,
 
 		if (!region->nodes || !region->nodes[0]) {
 			error("Torus3d region missing nodes");
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 		if ((region->anchor.x + region->dims.x) > config->dims.x ||
 		    (region->anchor.y + region->dims.y) > config->dims.y ||
 		    (region->anchor.z + region->dims.z) > config->dims.z) {
 			error("Torus3d region dims exceed torus dimensions");
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 
 		host_list = hostlist_create(region->nodes);
 		if (!host_list) {
 			error("hostlist_create error on torus3d region nodes");
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 		if (hostlist_count(host_list) != region_size) {
 			error("Torus3d region node count does not match dims");
 			hostlist_destroy(host_list);
-			return EINVAL;
+			return SLURM_ERROR;
 		}
 
 		for (idx = 0; idx < region_size; idx++) {
@@ -364,7 +364,7 @@ static int _validate_regions_config(slurm_conf_torus3d_t *config,
 				error("Torus3d region overlaps existing nodes");
 				free(node_name);
 				hostlist_destroy(host_list);
-				return EINVAL;
+				return SLURM_ERROR;
 			}
 
 			torus->nodes_map[linear_idx] = node_ptr->index;
