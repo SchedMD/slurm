@@ -2703,16 +2703,20 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 {
 	static char *last_avail_features = NULL;
 	static bitstr_t *last_node_bitmap = NULL;
+	hostlist_t *host_list = NULL;
 	bitstr_t *node_bitmap = NULL, *tmp_bitmap;
 	list_itr_t *config_iterator;
 	config_record_t *config_ptr, *new_config_ptr, *first_new = NULL;
 	int rc, config_cnt, tmp_cnt;
 
 	if (mode < FEATURE_MODE_PEND) {
-		rc = node_name2bitmap(node_names, false, &node_bitmap, NULL);
+		host_list = nodespec_to_hostlist(node_names, false, NULL);
+		if (!host_list)
+			return ESLURM_INVALID_NODE_NAME;
+		rc = hostlist2bitmap(host_list, false, &node_bitmap);
 		if (rc) {
-			info("%s: invalid node_name (%s)",
-			     __func__, node_names);
+			FREE_NULL_BITMAP(node_bitmap);
+			FREE_NULL_HOSTLIST(host_list);
 			return rc;
 		}
 
@@ -2773,6 +2777,7 @@ extern int update_node_avail_features(char *node_names, char *avail_features,
 				   &last_avail_features, avail_features,
 				   &last_node_bitmap, &node_bitmap,
 				   mode, "available");
+	FREE_NULL_HOSTLIST(host_list);
 	FREE_NULL_BITMAP(node_bitmap);
 
 	return SLURM_SUCCESS;
