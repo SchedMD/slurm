@@ -394,7 +394,7 @@ static int _set_options(const int argc, char **argv)
 			break;
 		case 'h':
 			_help_msg();
-			return -1;
+			exit(0);
 			break;
 		case 'i':
 			xfree(params.input);
@@ -469,14 +469,14 @@ static int _set_options(const int argc, char **argv)
 			break;
 		case 'U':
 			_help_msg();
-			return -1;
+			exit(0);
 			break;
 		case 'v':
 			params.verbose++;
 			break;
 		case 'V':
 			print_slurm_version();
-			return -1;
+			exit(0);
 			break;
 		case ':':
 		case '?': /* getopt() has explained it */
