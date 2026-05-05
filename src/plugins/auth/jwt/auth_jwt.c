@@ -364,6 +364,14 @@ static void _handle_identity(jwt_t *jwt, auth_token_t *cred)
 	cred->id = auth_common_extract_identity_from_data(jwt_data);
 
 	if (cred->id) {
+		if (cred->username &&
+		    !xstrcmp(cred->username, cred->id->pw_name)) {
+			error("%s: cannot override identity for %s with requested user %s",
+			      __func__, cred->id->pw_name, cred->username);
+			FREE_NULL_IDENTITY(cred->id);
+			goto fail;
+		}
+
 		/* Store extracted identity information */
 		xfree(cred->username);
 		cred->username = xstrdup(cred->id->pw_name);
