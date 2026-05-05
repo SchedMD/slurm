@@ -123,6 +123,7 @@ typedef struct {
 	power_action_t *action;
 	char *action_name;
 	bitstr_t *bitmap;
+	bool is_default;
 	char *env_name;
 	uint16_t protocol_version; /* protocol version to use */
 } action_entry_t;
@@ -493,6 +494,7 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 	node_record_t *node_ptr = NULL;
 	action_entry_t *entry = NULL;
 	list_t *action_list = list_create(_free_action_entry);
+	bool is_default = false;
 	for (int i = 0; (node_ptr = next_node_bitmap(node_bitmap, &i)); i++) {
 		char *key = NULL;
 		if (node_ptr->power_action_name) {
@@ -501,6 +503,7 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 				       __func__, default_action ? default_action : "(none)",
 				       node_ptr->name);
 				key = xstrdup(default_action);
+				is_default = true;
 				xfree(node_ptr->power_action_name);
 			} else {
 				key = node_ptr->power_action_name;
@@ -508,6 +511,7 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 			}
 		} else if (default_action) {
 			key = xstrdup(default_action);
+			is_default = true;
 		}
 		if (!key) {
 			error("power_save: no power action found for node %s (default_action=%s)",
@@ -520,6 +524,7 @@ static list_t *_build_power_action_list(bitstr_t *node_bitmap,
 			entry = xmalloc(sizeof(action_entry_t));
 			entry->action = NULL;
 			entry->action_name = xstrdup(key);
+			entry->is_default = is_default;
 			entry->bitmap = bit_alloc(node_record_count);
 			entry->protocol_version = SLURM_PROTOCOL_VERSION;
 			list_append(action_list, entry);
@@ -1157,7 +1162,8 @@ static int _do_power_action_reboot(void *e, void *payload)
 	} else {
 		reboot_msg_t *reboot_msg;
 
-		if (entry->protocol_version < SLURM_26_05_PROTOCOL_VERSION) {
+		if ((entry->protocol_version < SLURM_26_05_PROTOCOL_VERSION) &&
+		    !entry->is_default) {
 			error("power_save: nodes needing power action %s must be running at least Slurm 26.05",
 			      action->name);
 			FREE_NULL_HOSTLIST(hl);
