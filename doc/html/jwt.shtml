@@ -140,6 +140,80 @@ the slurmrestd daemon to activate <i>AuthAltTypes=auth/jwt</i> as the primary
 authentication mechanism.</li>
 </ol>
 
+<h2 id="advanced_config">Advanced Configuration Parameters
+<a class="slurm_link" href="#advanced_config"></a>
+</h2>
+<p>The following additional parameters can be configured in <b>AuthAltParameters</b>
+to control JWT authentication behavior:</p>
+
+<h3 id="identity_claims">JWT Identity Claims
+<a class="slurm_link" href="#identity_claims"></a>
+</h3>
+<p>By default, Slurm performs local (to slurmctld) system lookups to resolve
+user identity information (uid, gid, home directory, shell, etc.) based on the
+username in the JWT token. However, JWT tokens can optionally contain complete
+identity information, eliminating the need for local lookups.</p>
+
+<p>To enable JWT identity claims support:</p>
+<pre>
+AuthAltParameters=use_jwt_client_ids
+</pre>
+
+<p>When enabled, JWT tokens must contain the following claims to provide complete
+user identity information. Incomplete identity claims will be discarded.</p>
+<ul>
+<li><b>uid</b>: User ID (numeric)</li>
+<li><b>gid</b>: Primary group ID (numeric)</li>
+<li><b>id</b> (as nested JSON)
+  <ul>
+    <li><b>name</b>: Username</li>
+    <li><b>gecos</b>: User full name or description</li>
+    <li><b>dir</b>: Home directory path</li>
+    <li><b>shell</b>: Login shell path</li>
+    <li><b>groups</b> or <b>gids</b>: Group membership information
+    <ul>
+     <li><b>groups</b>: Dictionary mapping group names to group IDs</li>
+     <li><b>gids</b>: Array of numeric group IDs</li>
+    </ul>
+    </li>
+  </ul>
+</li>
+</ul>
+
+<p><b>Note:</b> JWT tokens must contain either <b>groups</b> or <b>gids</b>,
+but not both.</p>
+
+<h3 id="use_jwt_client_ids_only">Local User Lookup Control
+<a class="slurm_link" href="#use_jwt_client_ids_only"></a>
+</h3>
+<p>The <b>use_jwt_client_ids_only</b> parameter controls whether Slurm performs local
+(to slurmctld) identity lookups when JWT claims do not contain complete identity information:</p>
+
+<pre>
+AuthAltParameters=use_jwt_client_ids_only
+</pre>
+
+<p>When set, authentication will fail if complete identity information is not
+available from JWT claims.
+This parameter implies <b>use_jwt_client_ids</b>.</p>
+
+<h3 id="combined_example">Combined Configuration Example
+<a class="slurm_link" href="#combined_example"></a>
+</h3>
+<p>Example configuration using JWT identity claims with JWKS:</p>
+<pre>
+AuthAltTypes=auth/jwt
+AuthAltParameters=jwks=/etc/slurm/jwks.json,use_jwt_client_ids_only
+</pre>
+
+<p>This configuration:
+<ul>
+<li>Uses JWKS for token verification</li>
+<li>Requires complete identity information in JWT claims</li>
+<li>Disables JWTs without identity claims</li>
+</ul>
+</p>
+
 <h2 id="external_auth">
 External Authentication Integration with JWKS and RS256 Tokens
 <a class="slurm_link" href="#external_auth"></a>
