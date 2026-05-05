@@ -218,28 +218,29 @@ static void _init_hs256(void)
 	xfree(key_file);
 }
 
+static void _parse_auth_params(void)
+{
+	char *param_val;
+
+	if (!slurm_conf.authalt_params)
+		return;
+
+	/* Parse userclaimfield parameter */
+	if ((param_val = conf_get_opt_str(slurm_conf.authalt_params,
+					  "userclaimfield="))) {
+		xfree(claim_field);
+		claim_field = xstrdup(param_val);
+		debug("Custom user claim field: %s", claim_field);
+	}
+}
+
 extern int init(void)
 {
 	if (running_in_slurmctld() || running_in_slurmdbd() ||
 	    running_in_slurmd()) {
-		char *claim;
-
+		_parse_auth_params();
 		_init_jwks();
 		_init_hs256();
-
-		/*
-		 * Support an optional custom username claim field in addition
-		 * to 'sun' and 'username'.
-		 */
-		if ((claim = xstrstr(slurm_conf.authalt_params, "userclaimfield="))) {
-			char *end;
-
-			claim_field = xstrdup(claim + 15);
-			if ((end = xstrstr(claim_field, ",")))
-				*end = '\0';
-
-			info("Custom user claim field: %s", claim_field);
-		}
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
