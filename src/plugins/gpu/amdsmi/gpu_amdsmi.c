@@ -1547,6 +1547,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
                 double dj = now_j - last_energy_joules[dv_ind];
                 info("AMDSMI: GPU[%u] energy delta = %f J over %.1f s",
                        dv_ind, dj, dt);
+                
                 if (dj > 0) {
                     watts = (uint32_t)(dj / dt);
                     have_watts = true;
@@ -1555,6 +1556,8 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
                 }
             }
         }
+        gpu->energy.previous_consumed_energy = gpu -> energy.consumed_energy;
+        gpu->energy.consumed_energy = now_j;
         debug2("AMDSMI: GPU[%u] energy count = %f J (raw=%lu, res=%f)", dv_ind, now_j, energy_now, counter_res);
         /* Update baseline for next call */
         last_energy_joules[dv_ind] = now_j;
@@ -1594,7 +1597,7 @@ extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
     /* ---- Always update SLURM state, even on failure ---- */
     if (have_watts) {
         gpu->last_update_watt    = watts;
-        gpu->energy.current_watts = watts;
+        //gpu->energy.current_watts = watts;
     } else {
         /* Transient failure â€” report 0W but DON'T return error.
          * Returning SLURM_ERROR can cause SLURM to drop this GPU
