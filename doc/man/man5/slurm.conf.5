@@ -498,12 +498,30 @@ If not set, the default key file is jwt_hs256.key in \fIStateSaveLocation\fR.
 .IP
 
 .TP
+\fBuse_jwt_client_ids\fR
+Allow JWT tokens to contain full identity information. When enabled, JWT tokens
+must contain uid and gid fields. They must also include a id claim with a JSON
+object that includes gecos, dir, shell, and either gids (array) or groups
+(dict) elements to provide complete user identity information. This bypasses
+slurmctld system lookups for user information when valid claims are present
+in the JWT. (For auth/jwt.)
+.IP
+
+.TP
+\fBuse_jwt_client_ids_only\fR
+When this flag is set, auth/jwt authentication will fail if complete identity
+information is not available from JWT claims.
+This option implies \fBuse_jwt_client_ids\fR. (For auth/jwt.)
+.IP
+
+.TP
 \fBuserclaimfield\fR=
 Use an alternative claim field for the Slurm UserName (\fBsun\fR) field. This
 option is designed to allow compatibility with tokens generated outside of
 Slurm. (This field may also be known as a grant.)
 
 Default: (disabled)
+
 .RE
 .IP
 

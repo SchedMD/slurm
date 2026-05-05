@@ -634,7 +634,8 @@ static void _set_identity(slurm_msg_t *msg, void **id)
 	static bool set = false, use_client_ids = false;
 
 	if (!set) {
-		if (xstrstr(slurm_conf.authinfo, "use_client_ids"))
+		if (xstrstr(slurm_conf.authinfo, "use_client_ids") ||
+		    xstrstr(slurm_conf.authalt_params, "use_jwt_client_ids"))
 			use_client_ids = true;
 		set = true;
 	}

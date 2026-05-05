@@ -1,7 +1,8 @@
 /*****************************************************************************\
- *  auth_slurm.h
+ *  auth_common.h - Common authentication utilities for Slurm auth plugins
  *****************************************************************************
  *  Copyright (C) SchedMD LLC.
+ *  Copyright Amazon.com Inc. or its affiliates.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -33,78 +34,48 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _AUTH_SLURM_H
-#define _AUTH_SLURM_H
-
-#include <jwt.h>
-#include <stdbool.h>
-#include <sys/types.h>
+#ifndef _AUTH_COMMON_H
+#define _AUTH_COMMON_H
 
 #include "src/common/data.h"
 #include "src/common/identity.h"
-#include "src/interfaces/cred.h"
 
-#define DEFAULT_TTL 60
+/*
+ * Main identity parsing function for JWT tokens
+ * RETURNS: identity_t structure, or NULL on error
+ */
+extern identity_t *auth_common_extract_identity_from_data(data_t *jwt_data);
 
-typedef struct {
-	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
+/*
+ * These functions provide conversion between identity_t structures
+ * and various data formats (JSON, data_t) for serialization.
+ */
 
-	bool verified;
+/*
+ * Convert identity_t structure to JSON string
+ * IN id - Identity structure to convert (can be NULL)
+ * IN uid - UID to use if id is NULL
+ * IN gid - GID to use if id is NULL
+ * RETURNS: JSON string (caller must free with xfree)
+ */
+extern char *auth_common_get_identity_string(identity_t *id, uid_t uid,
+					     gid_t gid);
 
-	time_t ctime;
+/*
+ * Convert identity_t structure to data_t for serialization
+ * IN id - Identity structure to convert
+ * RETURNS: data_t structure (caller must free with FREE_NULL_DATA)
+ */
+extern data_t *auth_common_identity_to_data(identity_t *id);
 
-	uid_t uid;
-	gid_t gid;
-	char *hostname;
-	char *cluster;
-	char *context;
-
-	void *data;
-	int dlen;
-
-	identity_t *id;
-
-	/* packed data below */
-	char *token;
-} auth_cred_t;
-
-extern bool internal;
-extern bool use_client_ids;
-
-/* Borrow these from libjwt despite them not being public. */
-extern int jwt_Base64encode(char *encoded, const char *string, int len);
-extern int jwt_Base64decode(unsigned char *bufplain, const char *bufcoded);
-
-extern void init_internal(void);
-extern void fini_internal(void);
-extern char *create_internal(char *context, uid_t uid, gid_t gid, uid_t r_uid,
-			     void *data, int dlen, char *extra);
-extern int verify_internal(auth_cred_t *cred, uid_t decoder_uid);
-extern jwt_t *decode_jwt(char *token, bool verify, uid_t decoder_uid);
-
-extern auth_cred_t *create_external(uid_t r_uid, void *data, int dlen);
-extern int verify_external(auth_cred_t *cred);
-
-extern void init_sack_conmgr(void);
-
-extern auth_cred_t *new_cred(void);
-extern void destroy_cred(auth_cred_t *cred);
-#define FREE_NULL_CRED(_X)		\
-do {					\
-	if (_X)				\
-		destroy_cred(_X);	\
-	_X = NULL;			\
-} while (0)
-
-extern int copy_jwt_grants_to_cred(jwt_t *jwt, auth_cred_t *cred);
-
-extern char *encode_launch(slurm_cred_arg_t *cred);
-extern slurm_cred_t *extract_launch(char *json);
-
-extern char *encode_sbcast(sbcast_cred_arg_t *cred);
-extern sbcast_cred_t *extract_sbcast(char *json);
-
-extern char *encode_net_aliases(slurm_node_alias_addrs_t *aliases);
-extern slurm_node_alias_addrs_t *extract_net_aliases(jwt_t *jwt);
+/*
+ * Extract identity_t structure from JSON string
+ * IN json - JSON string containing identity data
+ * IN uid - UID to set in identity structure
+ * IN gid - GID to set in identity structure
+ * RETURNS: identity_t structure (caller must free with FREE_NULL_IDENTITY)
+ */
+extern identity_t *auth_common_extract_identity(char *json, uid_t uid,
+						gid_t gid);
 
 #endif

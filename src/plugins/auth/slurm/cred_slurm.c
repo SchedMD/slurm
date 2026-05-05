@@ -41,6 +41,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#include "src/plugins/auth/common/auth_common.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
 #include "src/plugins/cred/common/cred_common.h"
 
@@ -56,8 +57,8 @@ extern slurm_cred_t *cred_p_create(slurm_cred_arg_t *cred_arg, bool sign_it,
 	if (!running_in_daemon())
 		init_internal();
 
-	extra = get_identity_string(cred_arg->id, cred_arg->id->uid,
-				    cred_arg->id->gid);
+	extra = auth_common_get_identity_string(cred_arg->id, cred_arg->id->uid,
+						cred_arg->id->gid);
 
 	cred = cred_create(cred_arg, protocol_version);
 
@@ -115,8 +116,10 @@ extern slurm_cred_t *cred_p_unpack(buf_t *buf, uint16_t protocol_version)
 		debug2("%s: no identity provided", __func__);
 		cred->arg->id = fetch_identity(auth_cred->uid, auth_cred->gid,
 					       false);
-	} else if (!(cred->arg->id = extract_identity(json_id, auth_cred->uid,
-						      auth_cred->gid))) {
+	} else if (!(cred->arg->id =
+			     auth_common_extract_identity(json_id,
+							  auth_cred->uid,
+							  auth_cred->gid))) {
 		error("%s: extract_identity() failed", __func__);
 		goto unpack_error;
 	}
@@ -265,8 +268,10 @@ extern sbcast_cred_t *sbcast_p_unpack(buf_t *buf, bool verify,
 		debug2("%s: no identity provided", __func__);
 		cred->arg.id = fetch_identity(auth_cred->uid, auth_cred->gid,
 					      false);
-	} else if (!(cred->arg.id = extract_identity(json_id, auth_cred->uid,
-						     auth_cred->gid))) {
+	} else if (!(cred->arg.id =
+			     auth_common_extract_identity(json_id,
+							  auth_cred->uid,
+							  auth_cred->gid))) {
 		error("%s: extract_identity() failed", __func__);
 		goto unpack_error;
 	} else {

@@ -50,6 +50,7 @@
 #include "src/interfaces/cred.h"
 #include "src/interfaces/serializer.h"
 
+#include "src/plugins/auth/common/auth_common.h"
 #include "src/plugins/auth/slurm/auth_slurm.h"
 
 extern char *encode_sbcast(sbcast_cred_arg_t *cred)
@@ -57,7 +58,7 @@ extern char *encode_sbcast(sbcast_cred_arg_t *cred)
 	data_t *data = NULL, *data_sbcast = NULL;
 	char *json = NULL;
 
-	data = identity_to_data(cred->id);
+	data = auth_common_identity_to_data(cred->id);
 
 	data_sbcast = data_set_dict(data_key_set(data, "sbcast"));
 
