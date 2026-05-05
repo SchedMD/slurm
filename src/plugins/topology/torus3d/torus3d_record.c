@@ -511,6 +511,11 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 
 	expected_count =
 		((uint64_t) config->dims.x * config->dims.y * config->dims.z);
+	if (expected_count > UINT32_MAX) {
+		error("Torus3d dims %ux%ux%u exceed size limit",
+		      config->dims.x, config->dims.y, config->dims.z);
+		return SLURM_ERROR;
+	}
 
 	torus->x = config->dims.x;
 	torus->y = config->dims.y;
