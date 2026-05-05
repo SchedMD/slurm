@@ -309,7 +309,7 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 					uint32_t step_id)
 {
 	long status = 0;
-	json_object *respjson = NULL;
+	json_object *respjson = NULL, *tokjson = NULL;
 	char *jobid_str = NULL, *url;
 	const char *token = NULL;
 	bool rc = false;
@@ -342,8 +342,8 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 	}
 
 	/* Get per-job session token out of response */
-	if (!(token = json_object_get_string(
-			json_object_object_get(respjson, "sessionToken")))) {
+	if (!json_object_object_get_ex(respjson, "sessionToken", &tokjson) ||
+	    !(token = json_object_get_string(tokjson))) {
 		error("Couldn't extract sessionToken from fabric manager response");
 		goto out;
 	}
