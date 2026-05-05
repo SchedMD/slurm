@@ -485,6 +485,15 @@ struct job_record {
 					 * and epilog scripts as set by SPANK
 					 * plugins */
 	uint32_t spank_job_env_size;	/* element count in spank_env */
+	/*
+	 * Time the first RPC that drives srun_response() was queued for
+	 * dispatch since the last reply. 0 if no request is outstanding.
+	 * Subsequent sends do not update it; only srun_response() clears it
+	 * back to 0.
+	 *
+	 * DON'T PACK.
+	 */
+	time_t srun_no_resp_time;
 	uint16_t start_protocol_ver;	/* Slurm version job was
 					 * started with either the
 					 * creating message or the
