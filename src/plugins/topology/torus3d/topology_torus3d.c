@@ -190,9 +190,9 @@ static bool _coord_in_range(uint16_t pos, uint16_t start, uint16_t size,
 	bool wrap = ((start + size) > limit);
 
 	if (wrap)
-		return ((pos >= start) || pos < ((start + size) % limit));
+		return ((pos >= start) || (pos < ((start + size) % limit)));
 
-	return (pos >= start && pos < (start + size));
+	return ((pos >= start) && (pos < (start + size)));
 }
 
 static void _add_node_to_placements(torus3d_record_t *torus,
@@ -222,9 +222,9 @@ static void _add_node_to_placements(torus3d_record_t *torus,
 		for (int mx = 0; mx < nx; mx++) {
 			for (int my = 0; my < ny; my++) {
 				for (int mz = 0; mz < nz; mz++) {
-					int idx = match_x[mx] * p->y_count *
-							  p->z_count +
-						  match_y[my] * p->z_count +
+					int idx = (match_x[mx] * p->y_count *
+						   p->z_count) +
+						  (match_y[my] * p->z_count) +
 						  match_z[mz];
 					bit_set(p->anchor_bitmaps[idx],
 						node_idx);
@@ -321,8 +321,8 @@ extern int topology_p_add_rm_node(node_record_t *node_ptr, char *unit,
 	xfree(tmp);
 
 	/* Validate coordinates */
-	if (coord[0] >= torus_dst->x || coord[1] >= torus_dst->y ||
-	    coord[2] >= torus_dst->z) {
+	if ((coord[0] >= torus_dst->x) || (coord[1] >= torus_dst->y) ||
+	    (coord[2] >= torus_dst->z)) {
 		error("Can't add node %s, coordinates (%u,%u,%u) out of bounds for torus %s (%ux%ux%u)",
 		      node_ptr->name, coord[0], coord[1], coord[2],
 		      torus_dst->name, torus_dst->x, torus_dst->y,
@@ -618,11 +618,11 @@ extern int topology_p_topoinfo_print(void *topoinfo_ptr, char *nodes_list,
 			continue;
 
 		if (nodes_list) {
-			if ((topoinfo->topo_array[i].nodes == NULL) ||
-			    (topoinfo->topo_array[i].nodes[0] == '\0'))
+			if (!topoinfo->topo_array[i].nodes ||
+			    !topoinfo->topo_array[i].nodes[0])
 				continue;
 			hs = hostset_create(topoinfo->topo_array[i].nodes);
-			if (hs == NULL)
+			if (!hs)
 				fatal("hostset_create: memory allocation failure");
 			match = hostset_within(hs, nodes_list);
 			hostset_destroy(hs);
@@ -753,8 +753,10 @@ static void _min_wrap_span(bitstr_t *axis_bitmap, uint16_t *start,
 		*start = bit_ffs(axis_bitmap);
 		*span = 1;
 		return;
-		/* All positions occupied */
-	} else if (coord_set == axis_size) {
+	}
+
+	/* All positions occupied */
+	if (coord_set == axis_size) {
 		*start = 0;
 		*span = axis_size;
 		return;
@@ -875,16 +877,14 @@ whole_torus:
 				continue;
 			}
 			for (uint32_t idx = 0; idx < torus->node_count; idx++) {
-				uint16_t x, y, z;
+				uint16_t x, y, z, rx, ry, rz;
+
 				if (torus->nodes_map[idx] != (uint32_t) i)
 					continue;
 				torus3d_index_to_coord(torus, idx, &x, &y, &z);
-				uint16_t rx = (x + torus->x - x_start) %
-					torus->x;
-				uint16_t ry = (y + torus->y - y_start) %
-					torus->y;
-				uint16_t rz = (z + torus->z - z_start) %
-					torus->z;
+				rx = (x + torus->x - x_start) % torus->x;
+				ry = (y + torus->y - y_start) % torus->y;
+				rz = (z + torus->z - z_start) % torus->z;
 				(*node_rank)[rank_idx] =
 					((uint32_t) (t + 1)
 					 << TOPO_RANK_ID_SHIFT) |

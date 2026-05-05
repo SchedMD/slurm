@@ -44,12 +44,12 @@
 
 typedef struct {
 	bitstr_t *avail_nodes;
+	int32_t frag_cost;
 	bitstr_t *nodes_bitmap;
 	torus3d_placement_t *placement;
-	int32_t frag_cost;
 	uint32_t torus_idle_nodes;
-	uint64_t weight;
 	bool valid;
+	uint64_t weight;
 } torus3d_candidate_t;
 
 static void _get_frag_cost(torus3d_candidate_t *cand,
@@ -277,7 +277,7 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 		if (!bit_super_set(job_ptr->details->req_node_bitmap,
 				   topo_eval->node_map)) {
 			info("%pJ requires nodes which are not currently available",
-		     job_ptr);
+			     job_ptr);
 			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
@@ -287,7 +287,7 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 		    !bit_super_set(job_ptr->details->req_node_bitmap,
 				   ctx->placement_nodes_bitmap)) {
 			info("%pJ requires nodes which are not in torus3d placements",
-		     job_ptr);
+			     job_ptr);
 			rc = ESLURM_TOPO_REQ_NODES_NO_MATCH_TOPO;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
@@ -296,15 +296,15 @@ extern int eval_nodes_torus3d(topology_eval_t *topo_eval)
 		req_node_cnt = bit_set_count(job_ptr->details->req_node_bitmap);
 		if (req_node_cnt == 0) {
 			info("%pJ required node list has no nodes",
-		     job_ptr);
+			     job_ptr);
 			rc = ESLURM_TOPO_REQ_NODES_NOT_AVAIL;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;
 		}
 		if (req_node_cnt > topo_eval->max_nodes) {
 			info("%pJ requires more nodes than currently available (%u>%u)",
-		     job_ptr, req_node_cnt,
-		     topo_eval->max_nodes);
+			     job_ptr, req_node_cnt,
+			     topo_eval->max_nodes);
 			rc = ESLURM_TOPO_MAX_NODE_LIMIT;
 			topo_eval->eval_action = EVAL_ACTION_BREAK;
 			goto fini;

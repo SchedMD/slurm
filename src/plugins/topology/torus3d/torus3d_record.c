@@ -77,7 +77,7 @@ static void _log_placement(torus3d_placement_t *placement)
 		for (int i = 0; i < placement->anchor_count; i++) {
 			char *tmp_str =
 				bitmap2node_name(placement->anchor_bitmaps[i]);
-			debug("\t\tnodes: %s",tmp_str);
+			debug("\t\tnodes: %s", tmp_str);
 			xfree(tmp_str);
 		}
 	}
@@ -461,18 +461,18 @@ static void _detect_placement_overlaps(torus3d_record_t *torus)
 			if (_grids_overlap_axis(p->anchor_seed.x,
 						p->anchor_spacing.x, p->dims.x,
 						q->anchor_seed.x,
-						q->anchor_spacing.x,
-						q->dims.x, torus->x) &&
+						q->anchor_spacing.x, q->dims.x,
+						torus->x) &&
 			    _grids_overlap_axis(p->anchor_seed.y,
 						p->anchor_spacing.y, p->dims.y,
 						q->anchor_seed.y,
-						q->anchor_spacing.y,
-						q->dims.y, torus->y) &&
+						q->anchor_spacing.y, q->dims.y,
+						torus->y) &&
 			    _grids_overlap_axis(p->anchor_seed.z,
 						p->anchor_spacing.z, p->dims.z,
 						q->anchor_seed.z,
-						q->anchor_spacing.z,
-						q->dims.z, torus->z)) {
+						q->anchor_spacing.z, q->dims.z,
+						torus->z)) {
 				p->has_overlap = true;
 				q->has_overlap = true;
 			}
@@ -483,12 +483,8 @@ static void _detect_placement_overlaps(torus3d_record_t *torus)
 static int _validate_config(slurm_conf_torus3d_t *config,
 			    torus3d_record_t *torus)
 {
-	hostlist_t *host_list;
 	hostlist_t *invalid_hl = NULL;
-	char *node_name;
-	uint32_t node_count;
 	uint64_t expected_count;
-	uint32_t node_index = 0;
 	int rc = SLURM_SUCCESS;
 
 	if (!config->name || !config->name[0]) {
@@ -530,6 +526,11 @@ static int _validate_config(slurm_conf_torus3d_t *config,
 		if (rc != SLURM_SUCCESS)
 			goto end;
 	} else if (config->nodes && config->nodes[0]) {
+		hostlist_t *host_list;
+		char *node_name;
+		uint32_t node_count;
+		uint32_t node_index = 0;
+
 		if (!(host_list = hostlist_create(config->nodes))) {
 			error("hostlist_create error on torus3d nodes");
 			return SLURM_ERROR;
