@@ -13524,7 +13524,6 @@ static const parser_t parsers[] = {
 	addpp(KILL_JOBS_RESP_MSG_PTR, kill_jobs_resp_msg_t *, KILL_JOBS_RESP_MSG, false, NULL, FREE_FUNC(KILL_JOBS_RESP_MSG)),
 	addpp(INT32_PTR, int32_t *, INT32, false, NULL, xfree_ptr),
 	addpp(SLUID_PTR, sluid_t *, STRING, true, NULL, xfree_ptr),
-	addpp(TOPOLOGY_TORUS3D_CONFIG_PTR, topology_torus3d_config_t *, TOPOLOGY_TORUS3D_CONFIG, false, NULL, (parser_free_func_t) free_topology_torus3d_config),
 
 	/* Array of parsers */
 	addpap(ASSOC_SHORT, slurmdb_assoc_rec_t, NEW_FUNC(ASSOC), slurmdb_destroy_assoc_rec),
