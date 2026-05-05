@@ -285,6 +285,8 @@ static int _allocate_test(slurm_opt_t *opt_local)
 
 	if ((j = _job_desc_msg_create_from_opts(opt_local)) == NULL)
 		return SLURM_ERROR;
+	if (opt_local->srun_opt->jobid != NO_VAL)
+		j->step_id.job_id = opt_local->srun_opt->jobid;
 
 	if (opt_local->clusters &&
 	    (slurmdb_get_first_avail_cluster(j, opt_local->clusters,

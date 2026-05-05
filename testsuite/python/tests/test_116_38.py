@@ -24,3 +24,21 @@ def test_test_only():
     assert (
         re.search(r"Job \d+ to start at \d+", error_output) is not None
     ), "Failed out output job number or start time"
+
+
+def test_test_only_with_jobid():
+    """Test --test-only with --jobid for a pending (held) job"""
+
+    job_id = atf.submit_job_sbatch("-N1 -H --wrap 'sleep infinity'", fatal=True)
+    atf.wait_for_job_state(job_id, "PENDING", fatal=True)
+
+    results = atf.run_command(
+        f"srun --test-only --jobid={job_id}",
+        fatal=True,
+    )
+    combined = results["stderr"] + results["stdout"]
+    assert (
+        re.search(rf"Job {job_id} to start at ", combined) is not None
+    ), f"Expected --test-only to report will-run for pending job id {job_id}"
+
+    atf.cancel_jobs([job_id])
