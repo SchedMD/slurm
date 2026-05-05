@@ -879,9 +879,12 @@ whole_torus:
 				if (torus->nodes_map[idx] != (uint32_t) i)
 					continue;
 				torus3d_index_to_coord(torus, idx, &x, &y, &z);
-				uint16_t rx = (x + torus->x - x_start) % x_span;
-				uint16_t ry = (y + torus->y - y_start) % y_span;
-				uint16_t rz = (z + torus->z - z_start) % z_span;
+				uint16_t rx = (x + torus->x - x_start) %
+					torus->x;
+				uint16_t ry = (y + torus->y - y_start) %
+					torus->y;
+				uint16_t rz = (z + torus->z - z_start) %
+					torus->z;
 				(*node_rank)[rank_idx] =
 					((uint32_t) (t + 1)
 					 << TOPO_RANK_ID_SHIFT) |
