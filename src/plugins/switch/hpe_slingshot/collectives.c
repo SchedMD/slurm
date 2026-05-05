@@ -337,6 +337,7 @@ extern bool slingshot_setup_collectives(slingshot_stepinfo_t *job,
 
 	if (status == HTTP_NOT_FOUND) {
 		/* If the job object doesn't exist, create it */
+		json_object_put(respjson);
 		respjson = _post_job_to_fabric_manager(job_id);
 	}
 
