@@ -202,10 +202,7 @@ static int _build_placement_anchors(torus3d_record_t *torus,
 	uint64_t anchor_total = 0;
 	int idx = 0;
 
-	if (!spacing_x || !spacing_y || !spacing_z) {
-		error("Torus3d placement anchor_spacing can't be 0");
-		return EINVAL;
-	}
+	xassert(spacing_x && spacing_y && spacing_z);
 
 	if (spacing_x > torus->x || spacing_y > torus->y ||
 	    spacing_z > torus->z) {
@@ -293,13 +290,13 @@ static int _validate_placement(torus3d_record_t *torus,
 	placement->dims = src->dims;
 	placement->anchor_seed = src->anchor_seed;
 
-	if ((src->anchor_spacing.x == 0) && (src->anchor_spacing.y == 0) &&
-	    (src->anchor_spacing.z == 0)) {
-		placement->anchor_spacing = src->dims;
-		src->anchor_spacing = src->dims;
-	} else {
-		placement->anchor_spacing = src->anchor_spacing;
-	}
+	if (!src->anchor_spacing.x)
+		src->anchor_spacing.x = src->dims.x;
+	if (!src->anchor_spacing.y)
+		src->anchor_spacing.y = src->dims.y;
+	if (!src->anchor_spacing.z)
+		src->anchor_spacing.z = src->dims.z;
+	placement->anchor_spacing = src->anchor_spacing;
 
 	return _build_placement_anchors(torus, src, placement);
 }
