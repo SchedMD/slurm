@@ -724,6 +724,7 @@ test_102_7   Test sacctmgr modify job tres
 test_102_8   Test sacctmgr remove multiple qos
 test_102_9   Performance test: sacctmgr delete user with large assoc table
 test_102_10  Test sacctmgr modify TRES with +=/-= syntax
+test_102_11  Test sacctmgr archive dump uses configured Purge*After when no duration is given
 
 test_103_#   Testing of salloc options.
 =======================================
