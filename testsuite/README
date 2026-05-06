@@ -9,7 +9,7 @@ expect testsuite and the python testsuite.
 Quick Start:
 
 * Configure, build, install and start Slurm
-* cp BUILDDIR/testsuite/testsuite.conf.sample SRCDIR/testsuite/testsuite.conf
+* cp SRCDIR/testsuite/testsuite.conf.sample SRCDIR/testsuite/testsuite.conf
 * cd SRCDIR/testsuite
 * ./run-tests
 
@@ -17,11 +17,11 @@ To run the testsuites using the unified test-runner:
 
 * Slurm must first be installed, configured and running.
 * The testsuites requires the existence of a testsuite.conf file.
-  Running configure will have created a sample configuration file in your
-  build directory (BUILDDIR/testsuite/testsuite.conf.sample) which can be
-  used as a starting point for this file. By default, the testsuite.conf file
-  is expected to be found in the testsuite subdirectory of your source
-  directory (SRCDIR/testsuite/testsuite.conf).
+  A sample configuration file is provided in the source tree
+  (SRCDIR/testsuite/testsuite.conf.sample) which can be used as a starting
+  point for this file. By default, the testsuite.conf file is expected to be
+  found in the testsuite subdirectory of your source directory
+  (SRCDIR/testsuite/testsuite.conf).
   If placed elsewhere, you must set the SLURM_TESTSUITE_CONF environment
   variable to the full path of your testsuite.conf file.
   Review and edit testsuite.conf as necessary.
