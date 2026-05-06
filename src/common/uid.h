@@ -97,7 +97,7 @@ extern char *uid_to_string_or_null(uid_t uid);
  */
 extern char *uid_to_string(uid_t uid);
 
-/* Free any memory allocated by uid_to_string_cached() */
+/* Empty the uid cache and free any memory */
 extern void uid_cache_clear(void);
 
 /*
