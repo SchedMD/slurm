@@ -128,7 +128,7 @@ static bool _is_fd_skipped(int fd, int *skipped, log_closeall_skip_t log_skip)
 
 extern void closeall_except(int fd, int *skipped)
 {
-	int highest_skipped = -1;
+	int highest_skipped = fd;
 	log_closeall_skip_t log_skip = log_closeall_pre();
 
 	for (int i = 0; skipped && (skipped[i] >= 0); i++) {
