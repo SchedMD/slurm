@@ -994,6 +994,12 @@ extern void forward_wait(slurm_msg_t * msg)
 		 */
 		while ((count < msg->forward_struct->fwd_cnt) ||
 		       (msg->forward_struct->thread_count > 0)) {
+			log_flag(NET, "%s: [%pA] %s RPC waiting on %d/%d replies forwarded by %d threads",
+				 __func__, &msg->address,
+				 rpc_num2string(msg->msg_type), count,
+				 msg->forward_struct->fwd_cnt,
+				 msg->forward_struct->thread_count);
+
 			slurm_cond_wait(&msg->forward_struct->notify,
 					&msg->forward_struct->forward_mutex);
 
