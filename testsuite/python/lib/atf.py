@@ -5412,11 +5412,13 @@ def run_check_test(source_file, build_args=""):
     )
     xml_test = check_test + ".xml"
 
+    build_args = " ".join([build_args, "-lcheck -lm -lsubunit"])
+
     compile_against_libslurm(
         f"{properties['testsuite_check_dir']}/{source_file}",
         check_test,
         full=True,
-        build_args=build_args + "-lcheck -lm -lsubunit",
+        build_args=build_args,
         fatal=True,
         quiet=True,
     )
