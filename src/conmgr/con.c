@@ -1807,6 +1807,7 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	int has_in, has_out, in, out, is_same;
 	int rc_in = SLURM_SUCCESS, rc_out = SLURM_SUCCESS;
 	pollctl_fd_type_t in_type = PCTL_TYPE_NONE, out_type = PCTL_TYPE_NONE;
+	pollctl_fd_type_t old_in = PCTL_TYPE_NONE, old_out = PCTL_TYPE_NONE;
 
 	_validate_pctl_type(type);
 	_validate_pctl_type(con->polling_input_fd);
@@ -1884,6 +1885,9 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 
 	_log_set_polling(con, has_in, has_out, type, in_type, out_type, caller);
 
+	old_in = con->polling_input_fd;
+	old_out = con->polling_output_fd;
+
 	if (is_same) {
 		/* same never link output_fd */
 		xassert((con->polling_output_fd == PCTL_TYPE_NONE) ||
@@ -1907,6 +1911,28 @@ extern void con_set_polling(conmgr_fd_t *con, pollctl_fd_type_t type,
 	if (rc_out)
 		_on_change_polling_rc(con, rc_out, con->polling_output_fd,
 				      out_type, false, caller);
+
+	/*
+	 * Because EPOLLET is used, POLLIN/POLLOUT events may have already been
+	 * triggered and consumed when a previous poll setting was used.
+	 *
+	 * Set FLAG_CAN_* optimistically on the not-monitored -> monitored
+	 * transition. If FLAG_CAN_READ/FLAG_CAN_WRITE is wrong, the connection
+	 * will hit a single EWOULDBLOCK/EAGAIN from read()/writev(), then wait
+	 * for another event on the fd.
+	 */
+	if (!con_flag(con, FLAG_IS_CONNECTED))
+		return;
+
+	if (!pollctl_fd_type_is_read(old_in) &&
+	    pollctl_fd_type_is_read(con->polling_input_fd))
+		con_set_flag(con, FLAG_CAN_READ);
+	if (!pollctl_fd_type_is_write(old_in) &&
+	    pollctl_fd_type_is_write(con->polling_input_fd))
+		con_set_flag(con, FLAG_CAN_WRITE);
+	if (!pollctl_fd_type_is_write(old_out) &&
+	    pollctl_fd_type_is_write(con->polling_output_fd))
+		con_set_flag(con, FLAG_CAN_WRITE);
 }
 
 extern void on_extract(conmgr_callback_args_t conmgr_args, void *arg)

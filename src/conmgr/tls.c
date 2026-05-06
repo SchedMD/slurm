@@ -828,14 +828,6 @@ extern void tls_check_fingerprint(conmgr_callback_args_t conmgr_args, void *arg)
 
 	slurm_mutex_lock(&mgr.mutex);
 
-	if (con_flag(con, FLAG_READ_EOF) || con_flag(con, FLAG_CAN_READ)) {
-		slurm_mutex_unlock(&mgr.mutex);
-
-		log_flag(CONMGR, "%s: [%s] skipping TLS fingerprint match on closed connection",
-			 __func__, con->name);
-		return;
-	}
-
 	if (con_flag(con, FLAG_TLS_CLIENT) || con_flag(con, FLAG_TLS_SERVER)) {
 		slurm_mutex_unlock(&mgr.mutex);
 
