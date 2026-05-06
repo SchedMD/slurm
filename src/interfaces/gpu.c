@@ -274,16 +274,20 @@ static char *_get_gpu_type(void)
 	return "gpu/generic";
 }
 
-static void _gpu_clear_plugin_locked(void)
+static int _gpu_clear_plugin_locked(void)
 {
+	int rc = SLURM_SUCCESS;
+
 	if (ext_lib_handle) {
 		dlclose(ext_lib_handle);
 		ext_lib_handle = NULL;
 	}
 	if (g_context) {
-		plugin_context_destroy(g_context);
+		rc = plugin_context_destroy(g_context);
 		g_context = NULL;
 	}
+
+	return rc;
 }
 
 static char *_gpu_create_plugin_context(bool error_on_failure)
@@ -325,7 +329,7 @@ static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 		gres_autodetect_flags_set_gpu(probe_order[i]);
 		type = _gpu_create_plugin_context(false);
 		if (!g_context) {
-			_gpu_clear_plugin_locked();
+			(void) _gpu_clear_plugin_locked();
 			continue;
 		}
 		gres_list_system = gpu_g_get_system_gpu_list(node_conf);
@@ -370,13 +374,8 @@ extern int gpu_plugin_fini(void)
 
 	slurm_mutex_lock(&g_context_lock);
 
-	if (ext_lib_handle) {
-		dlclose(ext_lib_handle);
-		ext_lib_handle = NULL;
-	}
+	rc = _gpu_clear_plugin_locked();
 
-	rc = plugin_context_destroy(g_context);
-	g_context = NULL;
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
