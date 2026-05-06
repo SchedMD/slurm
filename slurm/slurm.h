@@ -3264,6 +3264,7 @@ typedef struct {
 				    * on non-responding primarily controller */
 	char *slurmctld_params;	/* SlurmctldParameters */
 	uint16_t slurmd_debug;	/* slurmd logging level */
+	char *slurmd_http_auth_params;
 	char *slurmd_logfile;	/* where slurmd error log gets written */
 	char *slurmd_params;	/* SlurmdParameters */
 	char *slurmd_pidfile;   /* where to put slurmd pidfile           */

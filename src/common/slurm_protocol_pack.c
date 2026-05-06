@@ -4893,6 +4893,7 @@ static void _pack_slurm_conf(const slurm_conf_t *conf,
 		pack16(conf->slurmctld_timeout, buffer);
 
 		pack16(conf->slurmd_debug, buffer);
+		packstr(conf->slurmd_http_auth_params, buffer);
 		packstr(conf->slurmd_logfile, buffer);
 		packstr(conf->slurmd_params, buffer);
 		packstr(conf->slurmd_pidfile, buffer);
@@ -5973,6 +5974,7 @@ static int _unpack_slurm_conf(slurm_conf_t **conf_ptr,
 		safe_unpack16(&conf->slurmctld_timeout, buffer);
 
 		safe_unpack16(&conf->slurmd_debug, buffer);
+		safe_unpackstr(&conf->slurmd_http_auth_params, buffer);
 		safe_unpackstr(&conf->slurmd_logfile, buffer);
 		safe_unpackstr(&conf->slurmd_params, buffer);
 		safe_unpackstr(&conf->slurmd_pidfile, buffer);

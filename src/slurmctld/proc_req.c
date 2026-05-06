@@ -516,6 +516,8 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->slurmctld_syslog_debug = conf->slurmctld_syslog_debug;
 	conf_ptr->slurmctld_timeout   = conf->slurmctld_timeout;
 	conf_ptr->slurmd_debug        = conf->slurmd_debug;
+	conf_ptr->slurmd_http_auth_params =
+		xstrdup(conf->slurmd_http_auth_params);
 	conf_ptr->slurmd_logfile      = xstrdup(conf->slurmd_logfile);
 	conf_ptr->slurmd_params	      = xstrdup(conf->slurmd_params);
 	conf_ptr->slurmd_pidfile      = xstrdup(conf->slurmd_pidfile);
