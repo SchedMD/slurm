@@ -1412,6 +1412,29 @@ def test_partitions(slurm):
     assert resp.partitions
 
 
+def test_partition_get_post_roundtrip(slurm, admin_level):
+    """GET one partition, POST the same partition descriptions as an update.
+
+    Echoing read-only fields (cluster, totals, tres, etc.) may produce warnings
+    but must not produce errors.
+    """
+    from openapi_client.models.v0046_openapi_partitions_mod_req import (
+        V0046OpenapiPartitionsModReq,
+    )
+
+    get_resp = slurm.slurm_v0046_get_partition(partition_name)
+    assert len(get_resp.errors) == 0, "GET partition should not return errors"
+    assert len(get_resp.warnings) == 0, "GET partition should not return warnings"
+    assert len(get_resp.partitions) == 1, "GET partition should return one partition"
+
+    for part in get_resp.partitions:
+        assert part.name == partition_name, "GET should return the requested partition"
+
+    req = V0046OpenapiPartitionsModReq(partitions=get_resp.partitions)
+    post_resp = slurm.slurm_v0046_post_partitions(req)
+    assert len(post_resp.errors) == 0, "POST echoed partition must not return errors"
+
+
 def test_post_partitions(slurm, admin_level):
     from openapi_client.models.v0046_openapi_partitions_mod_req import (
         V0046OpenapiPartitionsModReq,
@@ -1422,11 +1445,8 @@ def test_post_partitions(slurm, admin_level):
         V0046PartitionInfoDefaults,
     )
     from openapi_client.models.v0046_uint64_no_val_struct import V0046Uint64NoValStruct
-    from openapi_client.models.v0046_partition_info_maximums import (
-        V0046PartitionInfoMaximums,
-    )
-    from openapi_client.models.v0046_partition_info_maximums_oversubscribe import (
-        V0046PartitionInfoMaximumsOversubscribe,
+    from openapi_client.models.v0046_partition_info_partition import (
+        V0046PartitionInfoPartition,
     )
 
     part_1_name = "part_1"
@@ -1451,8 +1471,6 @@ def test_post_partitions(slurm, admin_level):
                     "ROOT_ONLY",
                     "REQ_RESV",
                     "LLN",
-                    "EXCLUSIVE_USER",
-                    "EXCLUSIVE_TOPO",
                     "PDOI",
                 ],
                 preempt_mode=[
@@ -1464,10 +1482,8 @@ def test_post_partitions(slurm, admin_level):
                         number=10,
                     ),
                 ),
-                maximums=V0046PartitionInfoMaximums(
-                    oversubscribe=V0046PartitionInfoMaximumsOversubscribe(
-                        flags=["force"], jobs=5
-                    )
+                partition=V0046PartitionInfoPartition(
+                    oversubscribe="FORCE:5", exclusive="USER"
                 ),
             ),
             V0046PartitionInfo(
@@ -1483,8 +1499,8 @@ def test_post_partitions(slurm, admin_level):
                         number=12,
                     )
                 ),
-                maximums=V0046PartitionInfoMaximums(
-                    oversubscribe=V0046PartitionInfoMaximumsOversubscribe(jobs=6)
+                partition=V0046PartitionInfoPartition(
+                    oversubscribe="YES:6", exclusive="NO"
                 ),
             ),
         ]
@@ -1528,15 +1544,11 @@ def test_post_partitions(slurm, admin_level):
                 req.partitions[inx].defaults.partition_memory_per_node.number
                 == part.defaults.partition_memory_per_node.number
             ), "Partition was not create with the correct DefMemPerNode"
-        if req.partitions[inx].maximums.oversubscribe.flags:
-            assert (
-                req.partitions[inx].maximums.oversubscribe.flags
-                == part.maximums.oversubscribe.flags
-            ), "Partition was not create with the correct oversubscribe flags"
+        assert req.partitions[inx].partition is not None
+        assert part.partition is not None
         assert (
-            req.partitions[inx].maximums.oversubscribe.jobs
-            == part.maximums.oversubscribe.jobs
-        ), "Partition was not create with the correct oversubscribe jobs count"
+            req.partitions[inx].partition.oversubscribe == part.partition.oversubscribe
+        ), "Partition oversubscribe string did not round-trip"
 
     assert match_cnt == 2
 
@@ -1549,13 +1561,15 @@ def test_post_partitions(slurm, admin_level):
         "ROOT_ONLY_CLEAR",
         "REQ_RESV_CLEAR",
         "LLN_CLEAR",
-        "EXC_USER_CLEAR",
         "PDOI_CLEAR",
-        "EXC_TOPO_CLEAR",
     ]
     req.partitions[1].flags = [  # append HIDDEN to existing LLN
         "HIDDEN",
     ]
+    req.partitions[0].partition.oversubscribe = "NO"
+    req.partitions[0].partition.exclusive = "TOPO"
+    req.partitions[1].partition.oversubscribe = "FORCE:1"
+    req.partitions[1].partition.exclusive = "USER"
 
     resp = slurm.slurm_v0046_post_partitions(req)
     assert len(resp.warnings) == 0
@@ -1587,6 +1601,13 @@ def test_post_partitions(slurm, admin_level):
                 "HIDDEN",
                 "LLN",
             }, "Partition flags did not update correctly"
+
+        assert (
+            req.partitions[inx].partition.oversubscribe == part.partition.oversubscribe
+        ), "Partition oversubscribe failed to update"
+        assert (
+            req.partitions[inx].partition.exclusive == part.partition.exclusive
+        ), "Partition exclusive failed to update"
 
     assert match_cnt == 2
 
