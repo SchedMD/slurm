@@ -105,6 +105,7 @@ static pid_t fd_test_lock(int fd, int type);
 
 static int (*close_range_f)(unsigned int first, unsigned int last,
 			    int flags) = NULL;
+static int rlimit_nofile = INT_MAX;
 
 static bool _is_fd_skipped(int fd, int *skipped, log_closeall_skip_t log_skip)
 {
@@ -124,61 +125,32 @@ static bool _is_fd_skipped(int fd, int *skipped, log_closeall_skip_t log_skip)
 	return false;
 }
 
-static void _slow_closeall(int fd, int *skipped, log_closeall_skip_t log_skip)
-{
-	struct rlimit rlim;
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
-		error("getrlimit(RLIMIT_NOFILE): %m");
-		rlim.rlim_cur = 4096;
-	}
-
-	for (; fd < rlim.rlim_cur; fd++)
-		if (!_is_fd_skipped(fd, skipped, log_skip))
-			close(fd);
-}
-
 extern void closeall_except(int fd, int *skipped)
 {
-	char *name = "/proc/self/fd";
-	DIR *d;
-	int fd_of_d = -1;
-	struct dirent *dir;
+	int highest_skipped = -1;
 	log_closeall_skip_t log_skip = log_closeall_pre();
 
-	/*
-	 * Blindly closing all file descriptors is slow.
-	 *
-	 * Instead get all open file descriptors from /proc/self/fd, then
-	 * close each one of those that are greater than or equal to fd.
-	 */
-	if (!(d = opendir(name))) {
-		debug("Could not read open files from %s: %m, closing all potential file descriptors",
-		      name);
-		_slow_closeall(fd, skipped, log_skip);
-		log_closeall_post();
-		return;
+	for (int i = 0; skipped && (skipped[i] >= 0); i++) {
+		if (skipped[i] > highest_skipped)
+			highest_skipped = skipped[i];
 	}
 
-	/*
-	 * Do not close fd_of_d during the loop, or successive readdir() calls
-	 * will fail, and the loop will terminate prematurely leaking fds to
-	 * the child process.
-	 */
-	fd_of_d = dirfd(d);
+	if (log_skip.log_fd > highest_skipped)
+		highest_skipped = log_skip.log_fd;
+	if (log_skip.sched_log_fd > highest_skipped)
+		highest_skipped = log_skip.sched_log_fd;
 
-	while ((dir = readdir(d))) {
-		/* Ignore "." and ".." entries */
-		if (dir->d_type != DT_DIR) {
-			int open_fd = atoi(dir->d_name);
-
-			if ((open_fd >= fd) && (open_fd != fd_of_d) &&
-			    !_is_fd_skipped(open_fd, skipped, log_skip))
-				close(open_fd);
-		}
+	for (int i = fd; i < highest_skipped; i++) {
+		if (!_is_fd_skipped(i, skipped, log_skip))
+			close(i);
 	}
-	closedir(d);
-	/* dirfd(3) says fd_of_d is closed automatically by closedir() */
+
+	if (close_range_f) {
+		close_range_f(highest_skipped + 1, ~0U, 0);
+	} else {
+		for (int i = highest_skipped + 1; i < rlimit_nofile; i++)
+			close(i);
+	}
 
 	log_closeall_post();
 }
@@ -191,10 +163,15 @@ extern void closeall_except(int fd, int *skipped)
  */
 extern void closeall_init(void)
 {
+	struct rlimit rlim;
 	void *self = dlopen(0, RTLD_GLOBAL | RTLD_NOW);
 
 	if (self)
 		close_range_f = dlsym(self, "close_range");
+	else if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
+		rlimit_nofile = INT_MAX;
+	else
+		rlimit_nofile = rlim.rlim_cur;
 
 	debug2("%s: close_range %sfound", __func__, close_range_f ? "" : "not ");
 }
