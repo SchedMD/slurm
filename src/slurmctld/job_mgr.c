@@ -6863,7 +6863,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 	/* Check Partition with the highest limits when there are multiple */
 	if (job_desc->min_nodes == NO_VAL) {
 		/* Avoid setting the job request to 0 nodes unless requested */
-		if (!part_min_nodes)
+		if (!part_min_nodes ||
+		    (qos_ptr && (qos_ptr->flags & QOS_FLAG_PART_MIN_NODE)))
 			job_desc->min_nodes = 1;
 		else
 			job_desc->min_nodes = part_min_nodes;
@@ -6878,7 +6879,8 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		goto fini;
 	} else if ((job_desc->min_nodes < part_min_nodes) &&
 		   ((job_desc->max_nodes == NO_VAL) ||
-		    (job_desc->max_nodes >= part_min_nodes))) {
+		    (job_desc->max_nodes >= part_min_nodes)) &&
+		   (!qos_ptr || !(qos_ptr->flags & QOS_FLAG_PART_MIN_NODE))) {
 		job_desc->min_nodes = part_min_nodes;
 	}
 
