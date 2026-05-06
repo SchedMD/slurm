@@ -1112,6 +1112,7 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 			    bool step_create)
 {
 	char *job_mount = NULL, *ns_base = NULL;
+	int fds[NS_L_END];
 	int rc = SLURM_SUCCESS;
 
 	if (plugin_disabled)
@@ -1130,32 +1131,32 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 
 	_create_paths(step_id->job_id, &job_mount, &ns_base, NULL);
 
-	/* Open all namespaces first, however we cannot assume this is shared */
+	for (int i = 0; i < NS_L_END; i++)
+		fds[i] = -1;
+
+	/*
+	 * Open all namespace fds first; once we setns() into a user namespace
+	 * we may lose the capabilities needed to open the remaining ones.
+	 */
 	for (int i = 0; i < NS_L_END; i++) {
 		if (!ns_l_enabled[i].enabled)
 			continue;
-		/* This is called on the slurmd so we can't use ns_fd. */
-		ns_l_enabled[i].fd = open(ns_l_enabled[i].path, O_RDONLY);
-		if (ns_l_enabled[i].fd == -1) {
+		fds[i] = open(ns_l_enabled[i].path, O_RDONLY);
+		if (fds[i] == -1) {
 			error("%s: open failed for %s: %m",
 			      __func__, ns_l_enabled[i].path);
-			xfree(job_mount);
-			xfree(ns_base);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto cleanup;
 		}
 	}
 	for (int i = 0; i < NS_L_END; i++) {
 		if (!ns_l_enabled[i].enabled)
 			continue;
-		rc = setns(ns_l_enabled[i].fd, 0);
-		fd_close(&ns_l_enabled[i].fd);
-		if (rc) {
+		if (setns(fds[i], 0)) {
 			error("%s: setns failed for %s: %m",
 			      __func__, ns_l_enabled[i].path);
-			/* closed after error() */
-			xfree(job_mount);
-			xfree(ns_base);
-			return SLURM_ERROR;
+			rc = SLURM_ERROR;
+			goto cleanup;
 		}
 		log_flag(NAMESPACE, "%ps entered %s namespace", step_id,
 			 ns_l_enabled[i].path);
@@ -1163,10 +1164,13 @@ extern int namespace_p_join(slurm_step_id_t *step_id, uid_t uid,
 
 	log_flag(NAMESPACE, "%ps entered namespace", step_id);
 
+cleanup:
+	for (int i = 0; i < NS_L_END; i++)
+		fd_close(&fds[i]);
 	xfree(job_mount);
 	xfree(ns_base);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _delete_dir_job_path(void *x, void *arg)
