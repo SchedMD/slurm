@@ -184,22 +184,22 @@ def _bring_node_up(node: str):
             True,
         ),
         # REOCCURRING vs MAINT - replacement must NOT overlap
-        pytest.param(
+        (
             ("resv_a9", "MAINT"),
             ("resv_b9", "DAILY"),
             ("now+1day"),
             False,
-            marks=pytest.mark.xfail(
-                atf.get_version() < (26, 5),
-                reason="Do not select replacement nodes from MAINT reservations (reoccurring)",
-            ),
         ),
         # REOCCURRING vs MAINT - replacement overlap is allowed
-        (
+        pytest.param(
             ("resv_a10", "MAINT"),
             ("resv_b10", "DAILY"),
             ("now+8day"),
             True,
+            marks=pytest.mark.xfail(
+                atf.get_version() < (26, 5),
+                reason="Ticket 24838: Pre 26.05 we were not distinguishing based on start date",
+            ),
         ),
     ],
 )
