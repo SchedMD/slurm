@@ -228,14 +228,15 @@ static void _dirs_to_dir_confs(void)
 	xfree(buf);
 }
 
-static int _check_basepath_not_dir(void *x, void *arg)
+static int _check_dir_not_under_basepath(void *x, void *arg)
 {
 	ns_dir_t *dir = x;
 	char *basepath = arg;
 	size_t len = strlen(basepath);
 	if (!xstrncmp(dir->path, basepath, len) &&
 	    (dir->path[len] == '/' || dir->path[len] == '\0'))
-		fatal("BasePath(%s) cannot also be in DirConfs.", basepath);
+		fatal("DirConfs path(%s) cannot be at or under BasePath(%s).",
+		      dir->path, basepath);
 	return 0;
 }
 
@@ -389,10 +390,10 @@ extern ns_conf_t *init_slurm_ns_conf(void)
 
 		xassert(slurm_ns_conf.dir_confs);
 
-		/* BasePath cannot be a target path in dir_confs */
+		/* No DirConf path may be at or under BasePath */
 		if (slurm_ns_conf.basepath)
 			list_for_each(slurm_ns_conf.dir_confs,
-				      _check_basepath_not_dir,
+				      _check_dir_not_under_basepath,
 				      slurm_ns_conf.basepath);
 
 		_pack_slurm_ns_conf_buf();
