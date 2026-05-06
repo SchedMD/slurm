@@ -26,6 +26,10 @@ def test_test_only():
     ), "Failed out output job number or start time"
 
 
+@pytest.mark.xfail(
+    atf.get_version("bin/srun") < (26, 5),
+    reason="MR !3126: srun --test-only --jobid fixed in 26.05",
+)
 def test_test_only_with_jobid():
     """Test --test-only with --jobid for a pending (held) job"""
 
