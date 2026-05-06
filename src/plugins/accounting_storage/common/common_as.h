@@ -44,8 +44,6 @@
 extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 			     void *object);
 
-extern void dump_update_list(list_t *update_list);
-
 extern int cluster_first_reg(char *host, uint16_t port, uint16_t rpc_version);
 
 extern int set_usage_information(char **usage_table,

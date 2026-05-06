@@ -98,55 +98,6 @@ static int _sort_update_object_dec(void *a, void *b)
 	return 0;
 }
 
-static void _dump_slurmdb_assoc_records(list_t *assoc_list)
-{
-	slurmdb_assoc_rec_t *assoc = NULL;
-	list_itr_t *itr = NULL;
-
-	itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		debug("\t\tid=%d", assoc->id);
-	}
-	list_iterator_destroy(itr);
-}
-
-static void _dump_slurmdb_clus_res_record(slurmdb_clus_res_rec_t *clus_res)
-{
-	debug("\t\t\tname=%s", clus_res->cluster);
-	debug("\t\t\tallowed=%u", clus_res->allowed);
-}
-
-static void _dump_slurmdb_clus_res_records(list_t *clus_res_list)
-{
-	slurmdb_clus_res_rec_t *clus_res = NULL;
-	list_itr_t *itr = NULL;
-	itr = list_iterator_create(clus_res_list);
-	while ((clus_res = list_next(itr))) {
-		_dump_slurmdb_clus_res_record(clus_res);
-	}
-	list_iterator_destroy(itr);
-}
-
-static void _dump_slurmdb_res_records(list_t *res_list)
-{
-	slurmdb_res_rec_t *res = NULL;
-	list_itr_t *itr = NULL;
-	itr = list_iterator_create(res_list);
-	while ((res = list_next(itr))) {
-		debug("\t\tname=%s", res->name);
-		debug("\t\tcount=%u", res->count);
-		debug("\t\ttype=%u", res->type);
-		debug("\t\tmanager=%s", res->manager);
-		debug("\t\tserver=%s", res->server);
-		debug("\t\tdescription=%s", res->description);
-		if (res->clus_res_rec && res->clus_res_rec->cluster)
-			_dump_slurmdb_clus_res_record(res->clus_res_rec);
-		else if (res->clus_res_list)
-			_dump_slurmdb_clus_res_records(res->clus_res_list);
-	}
-	list_iterator_destroy(itr);
-}
-
 static bool _is_user_min_admin_level(void *db_conn, uid_t uid,
 				     slurmdb_admin_level_t min_level,
 				     bool locked)
@@ -341,71 +292,6 @@ extern int addto_update_list(list_t *update_list, slurmdb_update_type_t type,
 	list_sort(update_list, (ListCmpF)_sort_update_object_dec);
 	return SLURM_SUCCESS;
 }
-
-/*
- * dump_update_list - dump contents of updates
- * IN update_list: updates to perform
- */
-extern void dump_update_list(list_t *update_list)
-{
-	list_itr_t *itr = NULL;
-	slurmdb_update_object_t *object = NULL;
-
-	debug3("========== DUMP UPDATE LIST ==========");
-	itr = list_iterator_create(update_list);
-	while((object = list_next(itr))) {
-		if (!object->objects || !list_count(object->objects)) {
-			debug3("\tUPDATE OBJECT WITH NO RECORDS, type: %d",
-			       object->type);
-			continue;
-		}
-		switch(object->type) {
-		case SLURMDB_MODIFY_USER:
-		case SLURMDB_ADD_USER:
-		case SLURMDB_REMOVE_USER:
-		case SLURMDB_ADD_COORD:
-		case SLURMDB_REMOVE_COORD:
-			debug3("\tUSER RECORDS");
-			break;
-		case SLURMDB_ADD_TRES:
-			debug3("\tTRES RECORDS");
-			break;
-		case SLURMDB_ADD_ASSOC:
-		case SLURMDB_MODIFY_ASSOC:
-		case SLURMDB_REMOVE_ASSOC:
-			debug3("\tASSOC RECORDS");
-			_dump_slurmdb_assoc_records(object->objects);
-			break;
-		case SLURMDB_UPDATE_FEDS:
-			debug3("\tFEDERATION RECORDS");
-			break;
-		case SLURMDB_ADD_QOS:
-		case SLURMDB_MODIFY_QOS:
-		case SLURMDB_REMOVE_QOS:
-			debug3("\tQOS RECORDS");
-			break;
-		case SLURMDB_ADD_RES:
-		case SLURMDB_MODIFY_RES:
-		case SLURMDB_REMOVE_RES:
-			debug3("\tRES RECORDS");
-			_dump_slurmdb_res_records(object->objects);
-			break;
-		case SLURMDB_ADD_WCKEY:
-		case SLURMDB_MODIFY_WCKEY:
-		case SLURMDB_REMOVE_WCKEY:
-			debug3("\tWCKEY RECORDS");
-			break;
-		case SLURMDB_UPDATE_NOTSET:
-		default:
-			error("unknown type set in "
-			      "update_object: %d",
-			      object->type);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-}
-
 
 /*
  * cluster_first_reg - ask for controller to send nodes in a down state
