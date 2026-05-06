@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -101,6 +102,9 @@ strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
+
+static int (*close_range_f)(unsigned int first, unsigned int last,
+			    int flags) = NULL;
 
 static bool _is_fd_skipped(int fd, int *skipped, log_closeall_skip_t log_skip)
 {
@@ -179,9 +183,28 @@ extern void closeall_except(int fd, int *skipped)
 	log_closeall_post();
 }
 
+/*
+ * close_range() is not necessarily available on all systems so we detect it at
+ * runtime. However, this detection is not async-signal-safe, so cannot happen
+ * when closeall() is called post-fork(). Detect early in the process start
+ * so the symbol is available when needed.
+ */
+extern void closeall_init(void)
+{
+	void *self = dlopen(0, RTLD_GLOBAL | RTLD_NOW);
+
+	if (self)
+		close_range_f = dlsym(self, "close_range");
+
+	debug2("%s: close_range %sfound", __func__, close_range_f ? "" : "not ");
+}
+
 extern void closeall(int fd)
 {
-	return closeall_except(fd, NULL);
+	if (close_range_f)
+		close_range_f(fd, ~0U, 0);
+	else
+		closeall_except(fd, NULL);
 }
 
 extern void fd_close(int *fd)
