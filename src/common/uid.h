@@ -64,11 +64,30 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 			     char **buf_malloc, size_t *bufsize,
 			     struct passwd **result);
 /*
- * Return validated uid_t for string in ``name'' which contains
- *  either the UID number or user name
+ * uid_from_string() - given a string with either a username or a uid in it
+ *      populate the passed uid pointer with the correct uid and return an
+ *      integer indicated the degree of success.  This function is sanitizing
+ *      inputs against current system state and provides UIDs that the Slurm
+ *      daemons use in a security sensitive manner.
  *
- * Returns uid int uidp after verifying presence in /etc/passwd, or
- *  -1 on failure.
+ * IN name: string with either a provided username or provided string uid
+ *          ownership of the username pointer
+ * IN/OUT uidp: pointer to the caller's uid_t memory, will be populated with
+ *          the identified uid, though degree of success is communicated via
+ *          the return code.
+ *
+ * Returns:
+ *     SLURM_SUCCESS: uid was successfully looked up, uidp populated with
+ *                    the passwd database version of the uid
+ *     SLURM_ERROR: the name string was not a username nor was it a valid
+ *                    number that *might* be a uid. uidp is NOT populated,
+ *                    caller should NOT proceed with the results
+ *     ESLURM_USER_ID_UNKNOWN: the name string had an encoded number but was
+ *                    not in the user database accessible to the system.
+ *                    uidp is populated with the parsed uid number. caller
+ *                    should proceed with care.
+ *     SLURM_AUTH_NOBODY: requested name matches SLURM_AUTH_NOBODY_NAME,
+ *     		      the in/out variables are untouched.
  */
 extern int uid_from_string(const char *name, uid_t *uidp);
 
