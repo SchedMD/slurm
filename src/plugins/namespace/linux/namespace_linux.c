@@ -380,6 +380,31 @@ typedef struct {
 	int rc;
 } _mount_dir_args_t;
 
+/*
+ * Build per-DirConf paths:
+ *   *backing_base = "<base_path>/<job_id>" if base_path is set,
+ *                   else a copy of src_bind.
+ *   *mount_path   = "<backing_base>/<dir->path>" with all but the leading
+ *                   '/' separator turned into '_' (so directory paths
+ *                   nest as flat names under backing_base).
+ * Caller xfree()s both outputs.
+ */
+static void _build_dir_paths(const ns_dir_t *dir, const char *src_bind,
+			     uint32_t job_id, char **backing_base,
+			     char **mount_path)
+{
+	if (dir->base_path)
+		xstrfmtcat(*backing_base, "%s/%u", dir->base_path, job_id);
+	else
+		*backing_base = xstrdup(src_bind);
+
+	xstrfmtcat(*mount_path, "%s/%s", *backing_base, dir->path);
+	for (char *t = *mount_path + strlen(*backing_base) + 1; *t; t++) {
+		if (*t == '/')
+			*t = '_';
+	}
+}
+
 static int _mount_dir(void *x, void *arg)
 {
 	ns_dir_t *dir = x;
@@ -402,16 +427,8 @@ static int _mount_dir(void *x, void *arg)
 		return rc;
 	}
 
-	if (dir->base_path)
-		xstrfmtcat(backing_base, "%s/%u", dir->base_path, args->job_id);
-	else
-		backing_base = xstrdup(args->path);
-
-	xstrfmtcat(mount_path, "%s/%s", backing_base, dir->path);
-	for (char *t = mount_path + strlen(backing_base) + 1; *t; t++) {
-		if (*t == '/')
-			*t = '_';
-	}
+	_build_dir_paths(dir, args->path, args->job_id, &backing_base,
+			 &mount_path);
 
 	if (dir->base_path) {
 		rc = mkdir(backing_base, 0700);
@@ -492,16 +509,8 @@ static int _chown_dir(void *x, void *arg)
 	if (dir->tmpfs)
 		return 0;
 
-	if (dir->base_path)
-		xstrfmtcat(backing_base, "%s/%u", dir->base_path, args->job_id);
-	else
-		backing_base = xstrdup(args->path);
-
-	xstrfmtcat(mount_path, "%s/%s", backing_base, dir->path);
-	for (char *t = mount_path + strlen(backing_base) + 1; *t; t++) {
-		if (*t == '/')
-			*t = '_';
-	}
+	_build_dir_paths(dir, args->path, args->job_id, &backing_base,
+			 &mount_path);
 
 	rc = lchown(mount_path, args->uid, -1);
 	if (rc)
