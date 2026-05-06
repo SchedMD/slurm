@@ -48,6 +48,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -668,6 +669,7 @@ extern int main(int argc, char **argv)
 	bool only_mem = true;
 
 	probe_init();
+	closeall_init();
 
 	_main_thread_init();
 

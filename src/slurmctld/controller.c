@@ -667,6 +667,8 @@ int main(int argc, char **argv)
 	if (getenv(SLURMSCRIPTD_MODE_ENV))
 		slurmscriptd_mode = true;
 
+	closeall_init();
+
 	/*
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
