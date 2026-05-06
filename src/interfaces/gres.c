@@ -5736,6 +5736,38 @@ extern void gres_node_state_dealloc_all(list_t *gres_list)
 	(void) list_for_each(gres_list, _node_state_dealloc, NULL);
 }
 
+static bool _is_shared_gres_full_alloc(gres_node_state_t *gres_ns, int topo_inx)
+{
+	gres_node_state_t *alt_gres_ns;
+
+	xassert(gres_ns);
+	xassert(topo_inx < gres_ns->topo_cnt);
+
+	if (!gres_ns->alt_gres || !gres_ns->topo_gres_bitmap ||
+	    !gres_ns->topo_gres_bitmap[topo_inx])
+		return false;
+
+	alt_gres_ns = gres_ns->alt_gres->gres_data;
+	if (!alt_gres_ns || !alt_gres_ns->gres_bit_alloc)
+		return false;
+
+	return bit_overlap_any(gres_ns->topo_gres_bitmap[topo_inx],
+			       alt_gres_ns->gres_bit_alloc);
+}
+
+static void _xstrfmtcat_shared_gres_used(char **str, const char *sep,
+					 gres_node_state_t *gres_ns,
+					 int topo_inx)
+{
+	uint64_t alloc = gres_ns->topo_gres_cnt_alloc[topo_inx];
+	uint64_t avail = gres_ns->topo_gres_cnt_avail[topo_inx];
+
+	if (!alloc && _is_shared_gres_full_alloc(gres_ns, topo_inx))
+		xstrfmtcat(*str, "%s-/%" PRIu64, sep, avail);
+	else
+		xstrfmtcat(*str, "%s%" PRIu64 "/%" PRIu64, sep, alloc, avail);
+}
+
 static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 {
 	char *sep = "";
@@ -5772,12 +5804,11 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 
 			is_shared = gres_is_shared_name(gres_name);
 			if (is_shared) {
-				uint64_t alloc, avail;
+				uint64_t alloc;
+				_xstrfmtcat_shared_gres_used(
+					&topo_gres_cnt_alloc_str, "", gres_ns,
+					i);
 				alloc = gres_ns->topo_gres_cnt_alloc[i];
-				avail = gres_ns->topo_gres_cnt_avail[i];
-				xstrfmtcat(topo_gres_cnt_alloc_str,
-					   "%"PRIu64"/%"PRIu64,
-					   alloc, avail);
 				gres_alloc_cnt += alloc;
 			} else if (gres_ns->topo_gres_bitmap[i]) {
 				topo_gres_bitmap =
@@ -5792,12 +5823,11 @@ static char *_node_gres_used(gres_node_state_t *gres_ns, char *gres_name)
 					continue;
 				bit_set(topo_printed, j);
 				if (is_shared) {
-					uint64_t alloc, avail;
+					uint64_t alloc;
+					_xstrfmtcat_shared_gres_used(
+						&topo_gres_cnt_alloc_str, ",",
+						gres_ns, j);
 					alloc = gres_ns->topo_gres_cnt_alloc[j];
-					avail = gres_ns->topo_gres_cnt_avail[j];
-					xstrfmtcat(topo_gres_cnt_alloc_str,
-						   ",%"PRIu64"/%"PRIu64,
-						   alloc, avail);
 					gres_alloc_cnt += alloc;
 				} else if (gres_ns->topo_gres_bitmap[j]) {
 					if (!topo_gres_bitmap) {
