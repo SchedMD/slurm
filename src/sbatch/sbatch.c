@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 		cli_filter_g_post_submit(i, resp->step_id.job_id, NO_VAL);
 
 	if (!quiet) {
-		if (!sbopt.parsable) {
+		if (!opt.parsable) {
 			printf("Submitted batch job %u", resp->step_id.job_id);
 			if (working_cluster_rec)
 				printf(" on cluster %s",
