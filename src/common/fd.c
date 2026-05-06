@@ -47,6 +47,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -155,6 +156,17 @@ extern void closeall_except(int fd, int *skipped)
 	log_closeall_post();
 }
 
+#ifdef SYS_close_range
+/*
+ * Used as a fallback if the kernel supports close_range() but libc does not.
+ */
+extern int close_range_internal(unsigned int first, unsigned int last,
+				int flags)
+{
+	return syscall(SYS_close_range, first, last, flags);
+}
+#endif
+
 /*
  * close_range() is not necessarily available on all systems so we detect it at
  * runtime. However, this detection is not async-signal-safe, so cannot happen
@@ -166,12 +178,31 @@ extern void closeall_init(void)
 	struct rlimit rlim;
 	void *self = dlopen(0, RTLD_GLOBAL | RTLD_NOW);
 
-	if (self)
+	if (self) {
 		close_range_f = dlsym(self, "close_range");
-	else if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
-		rlimit_nofile = INT_MAX;
-	else
-		rlimit_nofile = rlim.rlim_cur;
+
+		if (!close_range_f)
+			close_range_f = dlsym(self, "close_range_internal");
+
+		/*
+		 * Attempt calling close range with invalid arguments,
+		 * to make sure it's implemented by underlying kernel.
+		 * This can happen when newer libc runs on old kernel,
+		 * e.g. new container image running on old OS.
+		 */
+		if (close_range_f) {
+			close_range_f(1, 0, 0);
+			if (errno == ENOSYS) /* errno should be EINVAL */
+				close_range_f = NULL;
+		}
+	}
+
+	if (!close_range_f) {
+		if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
+			rlimit_nofile = INT_MAX;
+		else
+			rlimit_nofile = rlim.rlim_cur;
+	}
 
 	debug2("%s: close_range %sfound", __func__, close_range_f ? "" : "not ");
 }
