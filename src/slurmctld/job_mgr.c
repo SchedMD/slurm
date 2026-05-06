@@ -7588,6 +7588,14 @@ static int _job_create(job_desc_msg_t *job_desc, bool allocate, int will_run,
 		goto cleanup_fail;
 	}
 
+	if ((job_desc->num_tasks != NO_VAL) && (job_desc->num_tasks != 0) &&
+	    (job_desc->num_tasks < job_desc->min_nodes)) {
+		info("%s: Job's num_tasks(%u) < min_nodes(%u)",
+		     __func__, job_desc->num_tasks, job_desc->min_nodes);
+		error_code = ESLURM_BAD_TASK_COUNT;
+		goto cleanup_fail;
+	}
+
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       &req_bitmap,
