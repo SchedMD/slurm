@@ -56,14 +56,33 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+typedef enum {
+	UID_CACHE_SORT_UID = 0,
+	UID_CACHE_SORT_USERNAME = 1,
+} uid_cache_sort_t;
+
+#define UID_CACHE_MAX_UNLIMITED 0
+#define UID_CACHE_MAX_UPPER 65536
+
 typedef struct {
     uid_t uid;
     char *username;
 } uid_cache_entry_t;
 
+typedef struct {
+	uid_cache_entry_t *cache;
+	int capacity;
+	int max_entries;
+	int sort;
+	int used;
+} uid_cache_t;
+
 static pthread_mutex_t uid_lock = PTHREAD_MUTEX_INITIALIZER;
-static uid_cache_entry_t *uid_cache = NULL;
-static int uid_cache_used = 0;
+
+static uid_cache_t uid_cache = {
+	.max_entries = UID_CACHE_MAX_UNLIMITED,
+	.sort = UID_CACHE_SORT_UID,
+};
 
 extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 			     char **buf_malloc, size_t *bufsize,
@@ -99,6 +118,94 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 		break;
 	}
 	END_TIMER2("getpwuid_r");
+}
+
+static int _uid_cache_cmp_uid(const void *tkey, const void *tmember)
+{
+	const uid_t key = *(const uid_t *) tkey;
+	const uid_cache_entry_t *member = (const uid_cache_entry_t *) tmember;
+	if (key < member->uid)
+		return -1;
+	else if (key == member->uid)
+		return 0;
+	else
+		return 1;
+}
+
+static int _uid_cache_cmp_username(const void *tkey, const void *tmember)
+{
+	const char *key = *(const char **) tkey;
+	const uid_cache_entry_t *member = (const uid_cache_entry_t *) tmember;
+	return xstrcmp(key, member->username);
+}
+
+static int _uid_cache_cmp(uid_cache_t *cache, int i, uid_cache_entry_t *item)
+{
+	if (cache->sort == UID_CACHE_SORT_UID)
+		return _uid_cache_cmp_uid(&item->uid, &cache->cache[i]);
+	/* must be UID_CACHE_SORT_USERNAME */
+	return _uid_cache_cmp_username(&item->username, &cache->cache[i]);
+}
+
+/*
+ * _uid_cache_insert - add a new entry into the uid cache
+ *	will automatically expand the cache as needed
+ * IN pointer to entry, this function copies the values as-is, assumes
+ *    ownership of the username pointer
+ *
+ * NOTE: caller MUST have the mutex uid_lock prior to the call
+ */
+static void _uid_cache_insert(uid_cache_t *cache, uid_cache_entry_t *item)
+{
+	int low = 0, high = cache->used;
+
+	if ((cache->max_entries != UID_CACHE_MAX_UNLIMITED) &&
+	    (cache->used >= cache->max_entries)) {
+		xfree(item->username);
+		return;
+	}
+
+	/* binary insertion sort to manage cache */
+	while (low < high) {
+		int mid = (low + high) / 2;
+		int cmp = _uid_cache_cmp(cache, mid, item);
+		if (!cmp) {
+			/* had a cache hit, do not insert, clean up */
+			xfree(item->username);
+			return;
+		} else if (cmp > 0) {
+			low = mid + 1;
+		} else {
+			high = mid;
+		}
+	}
+	if (cache->used >= cache->capacity) {
+		cache->capacity += 128;
+		cache->cache = xrecalloc(cache->cache, cache->capacity,
+					 sizeof(uid_cache_entry_t));
+	}
+	if (low < cache->used)
+		memmove(&cache->cache[low + 1], &cache->cache[low],
+			(cache->used - low) * sizeof(uid_cache_entry_t));
+	cache->cache[low] = *item;
+	cache->used++;
+}
+
+static uid_cache_entry_t *_uid_cache_search_uid(const uid_cache_t *cache,
+						uid_t tgt_uid)
+{
+	if (cache->sort == UID_CACHE_SORT_UID) {
+		return bsearch(&tgt_uid, cache->cache, cache->used,
+			       sizeof(uid_cache_entry_t), _uid_cache_cmp_uid);
+	} else {
+		/* linear scan fallback in case cache is searched by uid */
+		for (int i = 0; i < cache->used; i++) {
+			if (cache->cache[i].uid == tgt_uid) {
+				return &cache->cache[i];
+			}
+		}
+	}
+	return NULL;
 }
 
 int uid_from_string(const char *name, uid_t *uidp)
@@ -216,41 +323,35 @@ extern char *uid_to_string(uid_t uid)
 	return result;
 }
 
+static void _uid_cache_clear(uid_cache_t *cache)
+{
+	for (int i = 0; i < cache->used; i++)
+		xfree(cache->cache[i].username);
+	xfree(cache->cache);
+	cache->used = 0;
+	cache->capacity = 0;
+}
+
 extern void uid_cache_clear(void)
 {
-	int i;
-
 	slurm_mutex_lock(&uid_lock);
-	for (i = 0; i < uid_cache_used; i++)
-		xfree(uid_cache[i].username);
-	xfree(uid_cache);
-	uid_cache_used = 0;
+	_uid_cache_clear(&uid_cache);
 	slurm_mutex_unlock(&uid_lock);
 }
 
 extern char *uid_to_string_cached(uid_t uid)
 {
 	uid_cache_entry_t *entry;
-	uid_cache_entry_t target = {uid, NULL};
 
 	if (uid == SLURM_AUTH_NOBODY)
 		return SLURM_AUTH_NOBODY_NAME;
 
 	slurm_mutex_lock(&uid_lock);
-	/*
-	 * bsearch and qsort depend on the first field of uid_cache_entry
-	 * being a 32 bit integer uid
-	 */
-	entry = bsearch(&target, uid_cache, uid_cache_used,
-			sizeof(uid_cache_entry_t), slurm_sort_uint32_list_asc);
+	entry = _uid_cache_search_uid(&uid_cache, uid);
 	if (entry == NULL) {
 		uid_cache_entry_t new_entry = {uid, uid_to_string(uid)};
-		uid_cache_used++;
-		uid_cache = xrealloc(uid_cache,
-				     sizeof(uid_cache_entry_t)*uid_cache_used);
-		uid_cache[uid_cache_used-1] = new_entry;
-		qsort(uid_cache, uid_cache_used, sizeof(uid_cache_entry_t),
-		      slurm_sort_uint32_list_asc);
+
+		_uid_cache_insert(&uid_cache, &new_entry);
 		slurm_mutex_unlock(&uid_lock);
 		return new_entry.username;
 	}
