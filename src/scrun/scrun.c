@@ -46,6 +46,7 @@
 #include <unistd.h>
 
 #include "src/common/data.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -671,6 +672,7 @@ extern int main(int argc, char **argv)
 	if (log_init(xbasename(argv[0]), log_opt, log_fac, log_file))
 		fatal("Unable to setup logging: %m");
 
+	closeall_init();
 	init_setproctitle(argc, argv);
 	_parse_env();
 	argv_offset = _parse_commandline(argc, argv) - 1;
