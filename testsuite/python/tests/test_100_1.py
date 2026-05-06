@@ -63,6 +63,20 @@ if atf.get_version() < (26, 5):
             "Issue #50096. Math operations fail cross negatives",
         )
     )
+    xfail_tests.append(
+        (
+            "common/test_uid.c",
+            "test_negative_cache",
+            "uid negative cache does not exist until Slurm 26.05.0",
+        )
+    )
+    xfail_tests.append(
+        (
+            "common/test_uid.c",
+            "test_uid_lookup_time",
+            "uid_from_string caching does not exist until Slurm 26.05.0",
+        )
+    )
 if atf.get_version() < (25, 11):
     skip_tests.append(
         (
@@ -110,7 +124,7 @@ for test in test_files:
                 pytest.skip("The libcheck test doesn't work with upgrade setups")
 
             # Run the libcheck tests and get the xml parsed results
-            test_results = atf.run_check_test(src)
+            test_results = atf.run_check_test(src, build_args="-Wl,--export-dynamic")
 
             # Get a list of test cases (ensure it's a list)
             test_cases = test_results["test"]
