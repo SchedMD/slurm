@@ -461,44 +461,6 @@ extern int set_usage_information(char **usage_table,
 	return SLURM_SUCCESS;
 }
 
-
-/*
- * merge_delta_qos_list - apply delta_qos_list to qos_list
- *
- * IN/OUT qos_list: list of QOS'es
- * IN delta_qos_list: list of delta QOS'es
- */
-extern void merge_delta_qos_list(list_t *qos_list, list_t *delta_qos_list)
-{
-	list_itr_t *curr_itr = list_iterator_create(qos_list);
-	list_itr_t *new_itr = list_iterator_create(delta_qos_list);
-	char *new_qos = NULL, *curr_qos = NULL;
-
-	while((new_qos = list_next(new_itr))) {
-		if (new_qos[0] == '-') {
-			while((curr_qos = list_next(curr_itr))) {
-				if (!xstrcmp(curr_qos, new_qos+1)) {
-					list_delete_item(curr_itr);
-					break;
-				}
-			}
-			list_iterator_reset(curr_itr);
-		} else if (new_qos[0] == '+') {
-			while((curr_qos = list_next(curr_itr))) {
-				if (!xstrcmp(curr_qos, new_qos+1)) {
-					break;
-				}
-			}
-			if (!curr_qos) {
-				list_append(qos_list, xstrdup(new_qos+1));
-			}
-			list_iterator_reset(curr_itr);
-		}
-	}
-	list_iterator_destroy(new_itr);
-	list_iterator_destroy(curr_itr);
-}
-
 extern bool is_user_min_admin_level(void *db_conn, uid_t uid,
 				    slurmdb_admin_level_t min_level)
 {
