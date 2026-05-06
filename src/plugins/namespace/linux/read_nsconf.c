@@ -199,11 +199,9 @@ static int _expand_dir_base_path(void *x, void *arg)
 
 static void _set_clonensflags(void)
 {
-	/* Always set CLONE_NEWNS */
+	/* CLONE_NEWNS is mandatory; the user list only adds optional flags. */
 	slurm_ns_conf.clonensflags = CLONE_NEWNS;
 
-	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWNS"))
-		slurm_ns_conf.clonensflags |= CLONE_NEWNS;
 	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWPID"))
 		slurm_ns_conf.clonensflags |= CLONE_NEWPID;
 	if (xstrcasestr(slurm_ns_conf.clonensflags_str, "CLONE_NEWUSER"))
