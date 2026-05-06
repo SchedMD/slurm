@@ -1433,7 +1433,12 @@ extern int launch_create_job_step(srun_job_t *job, bool use_all_cpus,
 		char tmp_char[64];
 		log_build_step_id_str(&step_req->step_id, tmp_char,
 				      sizeof(tmp_char), STEP_ID_FLAG_NO_PREFIX);
-		info("Submitted step %s", tmp_char);
+		if (!opt_local->quiet) {
+			if (opt_local->parsable)
+				printf("%s\n", tmp_char);
+			else
+				printf("Submitted step %s\n", tmp_char);
+		}
 	} else if (i > 0) {
 		info("Step created for %ps", &step_req->step_id);
 	}

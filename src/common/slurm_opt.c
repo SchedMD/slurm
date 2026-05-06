@@ -3124,6 +3124,7 @@ static slurm_cli_opt_t slurm_opt_parsable = {
 	.has_arg = no_argument,
 	.val = LONG_OPT_PARSABLE,
 	.set_func_sbatch = arg_set_parsable,
+	.set_func_srun = arg_set_parsable,
 	.get_func = arg_get_parsable,
 	.reset_func = arg_reset_parsable,
 };
