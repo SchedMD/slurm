@@ -3251,6 +3251,7 @@ typedef struct {
 	char *slurmctld_addr;	/* Address used for communications to the
 				 * currently active slurmctld daemon */
 	uint16_t slurmctld_debug; /* slurmctld logging level */
+	char *slurmctld_http_auth_params;
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	char *slurmctld_pidfile;/* where to put slurmctld pidfile         */
 	uint32_t slurmctld_port;  /* default communications port to slurmctld */

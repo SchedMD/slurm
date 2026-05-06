@@ -12491,6 +12491,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(STRING, slurmd_user_name, "SlurmdUser", "User that slurmd runs as"),
 	add_parse(STRING, slurmctld_addr, "SlurmctldAddr", "Address used for communications to the currently active slurmctld daemon"),
 	add_parse(LOG_LEVEL_UINT16, slurmctld_debug, "SlurmctldDebug", "Slurmctld logging level"),
+	add_parse(CSV_STRING, slurmctld_http_auth_params, "SlurmctldHttpAuthParams", NULL), /* FIX ME make docs match slurm.conf */
 	add_parse(STRING, slurmctld_logfile, "SlurmctldLogFile", "Where slurmctld error log gets written"),
 	add_parse(STRING, slurmctld_pidfile, "SlurmctldPidFile", "Where to put slurmctld pidfile"),
 	add_parse(UINT32, slurmctld_port, "SlurmctldPort", "Default communications port to slurmctld"),
