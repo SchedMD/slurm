@@ -1289,7 +1289,7 @@ def stop_slurmctld(quiet=False, also_slurmds=False):
 
     results = run_command(command, user=properties["slurm-user"], quiet=quiet)
     if results["exit_code"] != 0:
-        failures.append(f"Command {command} failed with rc={results['exit_code']}")
+        failures.append(f"Command {command} failed: {results}")
 
     # Verify that slurmctld is not running
     if not repeat_until(
