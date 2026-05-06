@@ -92,6 +92,27 @@ extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 extern int uid_from_string(const char *name, uid_t *uidp);
 
 /*
+ * Same interface in/out as uid_from_string() with the proviso that it uses
+ * a cache layer to speed interactions. The cache must be explicitly enabled
+ * with uid_from_string_cache_enable() and then explicitly disabled with
+ * uid_from_string_cache_disable() setting boundary points around cache
+ * survival.  These are meant to represent discrete periods in time when a
+ * single run of many repeated lookups may occur (for example during daemon
+ * startup).
+ */
+extern int uid_from_string_cached(const char *name, uid_t *uidp);
+
+/*
+ * Enable the uid_from_string cache explicitly.
+ */
+extern void uid_from_string_cache_enable(void);
+
+/*
+ * Disable the uid_from_string cache explicitly.
+ */
+extern void uid_from_string_cache_disable(void);
+
+/*
  * Return the primary group id for a given user id, or
  * (gid_t) -1 on failure.
  */

@@ -83,6 +83,19 @@ static uid_cache_t uid_cache = {
 	.max_entries = UID_CACHE_MAX_UNLIMITED,
 	.sort = UID_CACHE_SORT_UID,
 };
+static uid_cache_t uidfrom_uid_cache = {
+	.max_entries = UID_CACHE_MAX_UNLIMITED,
+	.sort = UID_CACHE_SORT_UID,
+};
+static uid_cache_t uidfrom_uname_cache = {
+	.max_entries = UID_CACHE_MAX_UNLIMITED,
+	.sort = UID_CACHE_SORT_USERNAME,
+};
+static uid_cache_t uidfrom_uname_neg_cache = {
+	.max_entries = UID_CACHE_MAX_UPPER,
+	.sort = UID_CACHE_SORT_USERNAME,
+};
+static int uidfrom_cache_enabled = 0;
 
 extern void slurm_getpwuid_r(uid_t uid, struct passwd *pwd, char **curr_buf,
 			     char **buf_malloc, size_t *bufsize,
@@ -191,6 +204,14 @@ static void _uid_cache_insert(uid_cache_t *cache, uid_cache_entry_t *item)
 	cache->used++;
 }
 
+static void _uid_cache_insert_by_username(uid_cache_t *cache, const char *name)
+{
+	uid_cache_entry_t entry = { 0 };
+	entry.uid = NO_VAL;
+	entry.username = xstrdup(name);
+	_uid_cache_insert(cache, &entry);
+}
+
 static uid_cache_entry_t *_uid_cache_search_uid(const uid_cache_t *cache,
 						uid_t tgt_uid)
 {
@@ -208,8 +229,81 @@ static uid_cache_entry_t *_uid_cache_search_uid(const uid_cache_t *cache,
 	return NULL;
 }
 
+static uid_cache_entry_t *_uid_cache_search_username(const uid_cache_t *cache,
+						     const char *tgt_username)
+{
+	if (cache->sort == UID_CACHE_SORT_USERNAME) {
+		return bsearch(&tgt_username, cache->cache, cache->used,
+			       sizeof(uid_cache_entry_t),
+			       _uid_cache_cmp_username);
+	} else {
+		/* linear scan fallback in case cache is searched by username */
+		for (int i = 0; i < cache->used; i++) {
+			if (!xstrcmp(cache->cache[i].username, tgt_username)) {
+				return &cache->cache[i];
+			}
+		}
+	}
+	return NULL;
+}
+
 /*
- * uid_from_string() - given a string with either a username or a uid in it
+ * _uid_from_string_cached() - check username_cache for any entry matching
+ * 			       the input string.
+ *
+ * IN name - string with either a provided username or provided string uid
+ * IN uidp - pointer to the caller's uid_t memory. Upon success, will be
+ * 	     populated with the identified uid.
+ *
+ * Returns:
+ *     SLURM_SUCCESS: uid was successfully looked up in the cache, uidp
+ *     		      populated with the cached version of the uid
+ *     SLURM_ERROR: the name was not in the username cache
+ *
+ *
+ * NOTE: Caller is assumed to hold lock on uid_lock to call this
+ */
+static int _uid_from_string_cached(const char *name, uid_t *uidp)
+{
+	uid_cache_entry_t *entry = NULL;
+	long l;
+	char *p = NULL;
+	uid_t target;
+
+	if (!name)
+		return SLURM_ERROR;
+
+	entry = _uid_cache_search_username(&uidfrom_uname_cache, name);
+	if (entry) {
+		*uidp = entry->uid;
+		return SLURM_SUCCESS;
+	}
+
+	/* maybe we were given a string of a uid? */
+	errno = 0;
+	l = strtol(name, &p, 10);
+	if (((errno == ERANGE) && ((l == LONG_MIN) || (l == LONG_MAX))) ||
+	    (name == p) || (*p != '\0') || (l < 0) || (l > UINT32_MAX))
+		return SLURM_ERROR;
+
+	target = (uid_t) l;
+
+	entry = _uid_cache_search_uid(&uidfrom_uid_cache, target);
+
+	/*
+	 * Only trusting a string of a uid if it is already cached because then
+	 * the insertion point will have been a valid lookup of the uid
+	 * previously.
+	 */
+	if (entry) {
+		*uidp = entry->uid;
+		return SLURM_SUCCESS;
+	}
+	return SLURM_ERROR;
+}
+
+/*
+ * _uid_from_string() - given a string with either a username or a uid in it
  *      populate the passed uid pointer with the correct uid and return an
  *      integer indicated the degree of success.  This function is sanitizing
  *      inputs against current system state and provides UIDs that the Slurm
@@ -220,6 +314,12 @@ static uid_cache_entry_t *_uid_cache_search_uid(const uid_cache_t *cache,
  * IN/OUT uidp: pointer to the caller's uid_t memory, will be populated with
  *          the identified uid, though degree of success is communicated via
  *          the return code.
+ * IN/OUT unamep - pointer to caller's username string, if non-NULL, will be
+ * 	    populated with the identified username only when SLURM_SUCCESS is
+ * 	    returned. If non-NULL, will be populated with NULL when
+ * 	    ESLURM_USER_ID_UNKNOWN is returned. Unchanged for any other return
+ * 	    values. Caller takes on ownership of any non-NULL value set in
+ * 	    unamep.
  *
  * Returns:
  *     SLURM_SUCCESS: uid was successfully looked up, uidp populated with
@@ -234,7 +334,7 @@ static uid_cache_entry_t *_uid_cache_search_uid(const uid_cache_t *cache,
  *     SLURM_AUTH_NOBODY: requested name matches SLURM_AUTH_NOBODY_NAME,
  *     		      the in/out variables are untouched.
  */
-int uid_from_string(const char *name, uid_t *uidp)
+static int _uid_from_string(const char *name, uid_t *uidp, char **unamep)
 {
 	DEF_TIMERS;
 	struct passwd pwd, *result = NULL;
@@ -278,11 +378,8 @@ int uid_from_string(const char *name, uid_t *uidp)
 	}
 	END_TIMER2("getpwnam_r");
 
-	if (result) {
-		*uidp = pwd.pw_uid;
-		xfree(buf_malloc);
-		return SLURM_SUCCESS;
-	}
+	if (result)
+		goto success;
 
 	/*
 	 *  If username was not valid, check for a valid UID.
@@ -305,13 +402,76 @@ int uid_from_string(const char *name, uid_t *uidp)
 		 * ESLURM_USER_ID_UNKNOWN
 		 */
 		*uidp = (uid_t) l;
+		if (unamep)
+			*unamep = NULL;
 		xfree(buf_malloc);
 		return ESLURM_USER_ID_UNKNOWN;
 	}
 
+success:
 	*uidp = pwd.pw_uid;
+	if (unamep)
+		*unamep = xstrdup(pwd.pw_name);
+
 	xfree(buf_malloc);
 	return SLURM_SUCCESS;
+}
+
+extern int uid_from_string(const char *name, uid_t *uidp)
+{
+	return _uid_from_string(name, uidp, NULL);
+}
+
+extern int uid_from_string_cached(const char *name, uid_t *uidp)
+{
+	int rc = SLURM_ERROR;
+	char *resolved_username = NULL;
+
+	if (!name)
+		return SLURM_ERROR;
+
+	/* Check to see if name is in username cache first */
+	slurm_mutex_lock(&uid_lock);
+	if (uidfrom_cache_enabled) {
+		if (_uid_from_string_cached(name, uidp) == SLURM_SUCCESS) {
+			slurm_mutex_unlock(&uid_lock);
+			return SLURM_SUCCESS;
+		}
+		if (_uid_cache_search_username(&uidfrom_uname_neg_cache,
+					       name)) {
+			slurm_mutex_unlock(&uid_lock);
+			return SLURM_ERROR;
+		}
+	}
+	slurm_mutex_unlock(&uid_lock);
+
+	rc = _uid_from_string(name, uidp, &resolved_username);
+	slurm_mutex_lock(&uid_lock);
+	if (uidfrom_cache_enabled) {
+		if (rc == SLURM_SUCCESS) {
+			uid_cache_entry_t entry = { 0 };
+			entry.uid = *uidp;
+			/* duplicating username for first cache reference */
+			entry.username = xstrdup(resolved_username);
+			_uid_cache_insert(&uidfrom_uname_cache, &entry);
+
+			/* handing off username for second cache reference */
+			entry.username = resolved_username;
+			_uid_cache_insert(&uidfrom_uid_cache, &entry);
+			resolved_username = NULL;
+		} else if (rc == SLURM_ERROR) {
+			_uid_cache_insert_by_username(&uidfrom_uname_neg_cache,
+						      name);
+		} else if (rc == ESLURM_USER_ID_UNKNOWN) {
+			/* do nothing */
+		} else if (rc == SLURM_AUTH_NOBODY) {
+			/* do nothing */
+		}
+	}
+	slurm_mutex_unlock(&uid_lock);
+
+	xfree(resolved_username);
+	return rc;
 }
 
 /*
@@ -366,6 +526,39 @@ extern void uid_cache_clear(void)
 {
 	slurm_mutex_lock(&uid_lock);
 	_uid_cache_clear(&uid_cache);
+	_uid_cache_clear(&uidfrom_uid_cache);
+	_uid_cache_clear(&uidfrom_uname_cache);
+	_uid_cache_clear(&uidfrom_uname_neg_cache);
+	slurm_mutex_unlock(&uid_lock);
+}
+
+/*
+ * Turns on uid_from_string caching. Will clear any entries existing in the
+ * cache. Reference counts so as not to re-init the caches until truly
+ * re-enabling from a disabled state.
+ */
+extern void uid_from_string_cache_enable(void)
+{
+	slurm_mutex_lock(&uid_lock);
+	if (!uidfrom_cache_enabled) {
+		_uid_cache_clear(&uidfrom_uid_cache);
+		_uid_cache_clear(&uidfrom_uname_cache);
+		_uid_cache_clear(&uidfrom_uname_neg_cache);
+	}
+	uidfrom_cache_enabled += 1;
+	slurm_mutex_unlock(&uid_lock);
+}
+
+/*
+ * Turns off uid_from_string caching. xassert exists to make sure we do not
+ * underflow the reference count if there is an imbalance in enable/disable
+ * calls
+ */
+extern void uid_from_string_cache_disable(void)
+{
+	slurm_mutex_lock(&uid_lock);
+	uidfrom_cache_enabled -= 1;
+	xassert(uidfrom_cache_enabled >= 0);
 	slurm_mutex_unlock(&uid_lock);
 }
 
