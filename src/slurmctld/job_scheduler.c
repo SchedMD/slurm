@@ -2689,17 +2689,20 @@ static void _set_job_env(job_record_t *job, batch_job_launch_msg_t *launch)
 		env_array_overwrite(&launch->environment, "SLURM_JOB_NAME",
 				    job->name);
 
-	if (job->details) {
-		/* These return static strings; do not xfree. */
-		env_array_overwrite(&launch->environment,
-				    "SLURM_JOB_OVERSUBSCRIBE",
-				    job_oversubscribe_string(
-					    get_job_oversubscribe_value(job)));
-		env_array_overwrite(&launch->environment,
-				    "SLURM_JOB_EXCLUSIVE",
-				    job_exclusive_display_string(
-					    get_job_exclusive_display_value(job)));
-	}
+	/*
+	 * The oversubscribe/exclusive helpers handle job->details == NULL
+	 * internally; the rest of this function dereferences job->details
+	 * unconditionally, so no guard is needed here. These return static
+	 * strings; do not xfree.
+	 */
+	env_array_overwrite(&launch->environment,
+			    "SLURM_JOB_OVERSUBSCRIBE",
+			    job_oversubscribe_string(
+				    get_job_oversubscribe_value(job)));
+	env_array_overwrite(&launch->environment,
+			    "SLURM_JOB_EXCLUSIVE",
+			    job_exclusive_display_string(
+				    get_job_exclusive_display_value(job)));
 
 	if (job->details->open_mode) {
 		/* Propagate mode to spawned job using environment variable */
