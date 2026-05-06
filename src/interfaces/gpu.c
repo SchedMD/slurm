@@ -317,6 +317,8 @@ static void _gpu_plugin_init_full(node_config_load_t *node_conf)
 		GRES_AUTODETECT_GPU_NRT,
 	};
 
+	xassert(!g_context);
+
 	for (int i = 0; i < ARRAY_SIZE(probe_order); i++) {
 		list_t *gres_list_system;
 
