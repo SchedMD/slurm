@@ -279,7 +279,7 @@ int uid_from_string(const char *name, uid_t *uidp)
 	END_TIMER2("getpwnam_r");
 
 	if (result) {
-		*uidp = result->pw_uid;
+		*uidp = pwd.pw_uid;
 		xfree(buf_malloc);
 		return SLURM_SUCCESS;
 	}
@@ -295,17 +295,21 @@ int uid_from_string(const char *name, uid_t *uidp)
 		return SLURM_ERROR;
 	}
 
-	*uidp = (uid_t) l;
-
 	/*
 	 *  Now ensure the supplied uid is in the user database
 	 */
 	slurm_getpwuid_r(l, &pwd, &curr_buf, &buf_malloc, &bufsize, &result);
 	if (!result) {
+		/*
+		 * some calling clients still use the value of *uidp even with
+		 * ESLURM_USER_ID_UNKNOWN
+		 */
+		*uidp = (uid_t) l;
 		xfree(buf_malloc);
 		return ESLURM_USER_ID_UNKNOWN;
 	}
 
+	*uidp = pwd.pw_uid;
 	xfree(buf_malloc);
 	return SLURM_SUCCESS;
 }
