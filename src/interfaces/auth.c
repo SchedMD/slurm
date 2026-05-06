@@ -48,7 +48,6 @@
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/read_config.h"
-#include "src/common/run_in_daemon.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/util-net.h"
 #include "src/common/xassert.h"
@@ -214,7 +213,7 @@ extern int auth_g_init(void)
 	if (!type || type[0] == '\0')
 		goto done;
 
-	if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD | IS_SLURMD))
+	if (run_in_daemon(IS_SLURMCTLD | IS_SLURMDBD))
 		list = auth_alt_types = xstrdup(slurm_conf.authalttypes);
 	g_context_num = 0;
 
