@@ -48,6 +48,11 @@
 #include "src/common/macros.h"
 
 /*
+ * Locate close_range() if available so closeall() can use it.
+ */
+extern void closeall_init(void);
+
+/*
  * Close all FDs >= a specified value
  * NOTE: logging file descriptors will be skipped
  * WARNING: Will skip close()ing any open logging file descriptors

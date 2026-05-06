@@ -824,7 +824,6 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		/* no memory checking, default */
 		char *const argv[2] = { (char *)conf->stepd_loc, NULL};
 #endif
-		int i;
 		int failed = 0;
 
 		/*
@@ -855,18 +854,6 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		}
 
 		/*
-		 * Just in case we (or someone we are linking to)
-		 * opened a file and didn't do a close on exec.  This
-		 * is needed mostly to protect us against libs we link
-		 * to that don't set the flag as we should already be
-		 * setting it for those that we open.  The number 256
-		 * is an arbitrary number based off test7.9.
-		 */
-		for (i=3; i<256; i++) {
-			(void) fcntl(i, F_SETFD, FD_CLOEXEC);
-		}
-
-		/*
 		 * Grandchild exec's the slurmstepd
 		 *
 		 * If the slurmd is being shutdown/restarted before
@@ -882,26 +869,36 @@ static int _forkexec_slurmstepd(uint16_t type, void *req, slurm_addr_t *cli,
 		if (close(to_slurmd[0]) < 0)
 			error("close read to_slurmd in parent: %m");
 
-		(void) close(STDIN_FILENO); /* ignore return */
 		if (dup2(to_stepd[0], STDIN_FILENO) == -1) {
 			error("dup2 over STDIN_FILENO: %m");
 			_exit(1);
 		}
 		fd_set_close_on_exec(to_stepd[0]);
-		(void) close(STDOUT_FILENO); /* ignore return */
+
 		if (dup2(to_slurmd[1], STDOUT_FILENO) == -1) {
 			error("dup2 over STDOUT_FILENO: %m");
 			_exit(1);
 		}
 		fd_set_close_on_exec(to_slurmd[1]);
-		(void) close(STDERR_FILENO); /* ignore return */
+
 		if (dup2(devnull, STDERR_FILENO) == -1) {
 			error("dup2 /dev/null to STDERR_FILENO: %m");
 			_exit(1);
 		}
 		fd_set_noclose_on_exec(STDERR_FILENO);
+
 		log_fini();
+
 		if (!failed) {
+			/*
+			 * Just in case we (or someone we are linking to)
+			 * opened a file and didn't do a close on exec.  This
+			 * is needed mostly to protect us against libs we link
+			 * to that don't set the flag as we should already be
+			 * setting it for those that we open.
+			 */
+			closeall(3);
+
 			execvp(argv[0], argv);
 			error("exec of slurmstepd failed: %m");
 		}

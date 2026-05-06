@@ -404,6 +404,7 @@ main (int argc, char **argv)
 
 	probe_init();
 	probe_register("rpc-listeners", _probe_listener, NULL);
+	closeall_init();
 
 	if (original) {
 		/*
