@@ -42,7 +42,19 @@ def test_modify_job_tres_in_accounting():
     job_id = atf.submit_job_srun("-N1 -n1 hostname", fatal=True)
     atf.wait_for_job_state(job_id, "DONE")
 
-    logging.debug("Adding energy to the mix (it is probably not there")
+    # Wait for AllocTres in the DB, without the energy value
+    atf.wait_for_job_accounted(
+        job_id, field="AllocTRES", value="billing=1,cpu=1", fatal=True
+    )
+    energy = next(
+        alloc_tres["count"]
+        for alloc_tres in atf.get_jobs(dbd=True)[job_id]["tres"]["allocated"]
+        if alloc_tres["type"] == "energy"
+    )
+    if energy > 0:
+        pytest.fail("The AllocTRES in the DB shouldn't contain an energy value yet")
+
+    logging.debug("Adding energy to the mix")
     _change_tres(job_id, "energy=1234")
 
     logging.debug("Modifying energy to the mix")

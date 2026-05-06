@@ -4571,7 +4571,7 @@ def wait_for_job_accounted(job_id, field="Start", value=None, **repeat_until_kwa
     if not value:
         value = r"."
     return repeat_until(
-        lambda: run_command_output(f"sacct -Xnj {job_id} -o {field}"),
+        lambda: run_command_output(f"sacct -XPnj {job_id} -o {field}"),
         lambda out: re.search(value, out.strip()) is not None,
         **repeat_until_kwargs,
     )
