@@ -398,6 +398,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmctldAddr", S_P_STRING},
 	{"SlurmctldDebug", S_P_STRING},
+	{"SlurmctldHttpAuthParameters", S_P_STRING},
 	{"SlurmctldLogFile", S_P_STRING},
 	{"SlurmctldParameters", S_P_STRING},
 	{"SlurmctldPidFile", S_P_STRING},
@@ -407,6 +408,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmctldSyslogDebug", S_P_STRING},
 	{"SlurmctldTimeout", S_P_UINT16},
 	{"SlurmdDebug", S_P_STRING},
+	{"SlurmdHttpAuthParameters", S_P_STRING},
 	{"SlurmdLogFile", S_P_STRING},
 	{"SlurmdParameters", S_P_STRING},
 	{"SlurmdPidFile",  S_P_STRING},
@@ -3019,6 +3021,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->slurmd_user_id = SLURM_AUTH_NOBODY;
 	xfree(conf->slurmd_user_name);
 	conf->slurmctld_debug = NO_VAL16;
+	xfree(conf->slurmctld_http_auth_params);
 	xfree(conf->slurmctld_logfile);
 	conf->slurmctld_syslog_debug = NO_VAL16;
 	xfree(conf->sched_logfile);
@@ -3032,6 +3035,7 @@ extern void init_slurm_conf(slurm_conf_t *conf)
 	conf->slurmctld_timeout = NO_VAL16;
 	xfree(conf->slurmctld_params);
 	conf->slurmd_debug = NO_VAL16;
+	xfree(conf->slurmd_http_auth_params);
 	xfree(conf->slurmd_logfile);
 	xfree(conf->slurmd_params);
 	conf->slurmd_syslog_debug = NO_VAL16;
@@ -5104,6 +5108,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			    "SlurmctldPidFile", hashtbl))
 		conf->slurmctld_pidfile = xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
 
+	(void) s_p_get_string(&conf->slurmctld_http_auth_params,
+			      "SlurmctldHttpAuthParameters", hashtbl);
+
 	(void )s_p_get_string(&conf->slurmctld_logfile, "SlurmctldLogFile",
 			      hashtbl);
 
@@ -5176,6 +5183,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		_normalize_debug_level(&conf->slurmd_debug);
 	} else
 		conf->slurmd_debug = LOG_LEVEL_INFO;
+
+	(void) s_p_get_string(&conf->slurmd_http_auth_params,
+			      "SlurmdHttpAuthParameters", hashtbl);
 
 	(void) s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
 

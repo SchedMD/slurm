@@ -1110,6 +1110,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 		xfree(key);
 	}
 
+	add_key_pair(ret_list, "SlurmctldHttpAuthParameters", "%s",
+		     conf->slurmctld_http_auth_params);
+
 	add_key_pair(ret_list, "SlurmctldLogFile", "%s",
 		     conf->slurmctld_logfile);
 
@@ -1140,6 +1143,9 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *conf)
 
 	add_key_pair(ret_list, "SlurmdDebug", "%s",
 		     log_num2string(conf->slurmd_debug));
+
+	add_key_pair(ret_list, "SlurmdHttpAuthParameters", "%s",
+		     conf->slurmd_http_auth_params);
 
 	add_key_pair(ret_list, "SlurmdLogFile", "%s", conf->slurmd_logfile);
 

@@ -12491,6 +12491,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(STRING, slurmd_user_name, "SlurmdUser", "User that slurmd runs as"),
 	add_parse(STRING, slurmctld_addr, "SlurmctldAddr", "Address used for communications to the currently active slurmctld daemon"),
 	add_parse(LOG_LEVEL_UINT16, slurmctld_debug, "SlurmctldDebug", "Slurmctld logging level"),
+	add_parse(CSV_STRING, slurmctld_http_auth_params, "SlurmctldHttpAuthParams", NULL), /* FIX ME make docs match slurm.conf */
 	add_parse(STRING, slurmctld_logfile, "SlurmctldLogFile", "Where slurmctld error log gets written"),
 	add_parse(STRING, slurmctld_pidfile, "SlurmctldPidFile", "Where to put slurmctld pidfile"),
 	add_parse(UINT32, slurmctld_port, "SlurmctldPort", "Default communications port to slurmctld"),
@@ -12501,6 +12502,7 @@ static const parser_t PARSER_ARRAY(SLURM_CONF)[] = {
 	add_parse(UINT16, slurmctld_timeout, "SlurmctldTimeout", "Seconds the backup controller waits for the primary before taking over"),
 	add_parse(CSV_STRING, slurmctld_params, "SlurmctldParameters", "Options controlling slurmctld behavior"),
 	add_parse(LOG_LEVEL_UINT16, slurmd_debug, "SlurmdDebug", "Slurmd logging level"),
+	add_parse(CSV_STRING, slurmd_http_auth_params, "SlurmdHttpAuthParams", NULL), /* FIX ME make docs match slurm.conf */
 	add_parse(STRING, slurmd_logfile, "SlurmdLogFile", "Where slurmd error log gets written"),
 	add_parse(CSV_STRING, slurmd_params, "SlurmdParameters", "Options controlling slurmd behavior"),
 	add_parse(STRING, slurmd_pidfile, "SlurmdPidFile", "Where to put slurmd pidfile"),
