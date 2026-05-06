@@ -105,6 +105,7 @@ strong_alias(rmdir_recursive, slurm_rmdir_recursive);
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
 
+static bool closeall_initialized = false;
 static int (*close_range_f)(unsigned int first, unsigned int last,
 			    int flags) = NULL;
 static int rlimit_nofile = INT_MAX;
@@ -131,6 +132,8 @@ extern void closeall_except(int fd, int *skipped)
 {
 	int highest_skipped = fd;
 	log_closeall_skip_t log_skip = log_closeall_pre();
+
+	xassert(closeall_initialized);
 
 	for (int i = 0; skipped && (skipped[i] >= 0); i++) {
 		if (skipped[i] > highest_skipped)
@@ -178,6 +181,7 @@ extern void closeall_init(void)
 {
 	struct rlimit rlim;
 	void *self = dlopen(0, RTLD_GLOBAL | RTLD_NOW);
+	closeall_initialized = true;
 
 	if (self) {
 		close_range_f = dlsym(self, "close_range");
@@ -214,6 +218,8 @@ extern void closeall_init(void)
 
 extern void closeall(int fd)
 {
+	xassert(closeall_initialized);
+
 	if (close_range_f)
 		close_range_f(fd, ~0U, 0);
 	else
