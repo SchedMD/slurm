@@ -45,6 +45,7 @@
 #include <poll.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -198,10 +199,14 @@ extern void closeall_init(void)
 	}
 
 	if (!close_range_f) {
-		if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
-			rlimit_nofile = INT_MAX;
-		else
+		if ((getrlimit(RLIMIT_NOFILE, &rlim) == 0) &&
+		    (rlim.rlim_cur != RLIM_INFINITY)) {
 			rlimit_nofile = rlim.rlim_cur;
+		} else {
+			rlimit_nofile = (int) sysconf(_SC_OPEN_MAX);
+			if (rlimit_nofile == -1)
+				rlimit_nofile = INT_MAX;
+		}
 	}
 
 	debug2("%s: close_range %sfound", __func__, close_range_f ? "" : "not ");
